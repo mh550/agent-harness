@@ -34,7 +34,7 @@ RUN_DIR=.harness/runs/$RUN_ID LIST=.harness/runs/$RUN_ID/feature_list.json
 LOGS=$STATE/logs ATT=$STATE/attempts.json
 STATE_ROOT=$(cd "$STATE/../.." && pwd) LIMIT_FILE=$(cd "$STATE/../.." && pwd)/LIMIT_UNTIL
 SCRATCH=${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/$RUN_ID
-LIVE_LOCK=${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/live.lock
+LIVE_LOCK=${LIVE_LOCK:-${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/live.lock}
 CHECK=$HARNESS_HOME/lib/check.sh
 LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
 PORT=$(cat "$STATE/port")

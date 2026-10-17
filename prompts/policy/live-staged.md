@@ -8,10 +8,16 @@ or doesn't cover what you need, treat the project as build-only for that step.
 Build and test first, against fakes and the sandboxed suite. A live stage is the **last step of a feature**,
 never a way to debug.
 
+### The backup comes first
+If the project's **Backups** section names a backup window (the nightly job's time), make **no live write and no
+deploy inside it or while the backup job runs**: a stage that would cross it waits, or the session does build work
+instead. The backup takes the same lock you do (below), so a stage holding it delays the backup, never the reverse.
+
 ### Before the first live write of a session
 1. The full suite (`{{CHECK}}`) is green on the commit you will run, and the tree is clean and pushed.
 2. The project's **Check** (from `CLAUDE.md`) passes.
-3. Take the **Snapshots** the project lists.
+3. Take the **Snapshots** the project lists, named with this run's id (`{{RUN_ID}}`) so the nightly backup or the
+   next run can't overwrite your restore point.
 4. Read the **Backups** status: the last backup must have succeeded within the age the project states. If it
    didn't, stop: no live writes this session; say so in your progress entry.
 5. Note in your progress entry: the backup status, the running version/image, and the snapshot paths.
@@ -32,8 +38,8 @@ happened at the top of `progress.md` with the exact commands you ran. Don't flip
 the same session.
 
 ### One live writer at a time
-Wrap every live write and every deploy in `flock -n {{LIVE_LOCK}} <command>`. If the lock is taken, another run
-or Michael is writing: don't wait. Log it and do only build work this session.
+Wrap every live write and every deploy in `flock -n {{LIVE_LOCK}} <command>`. If the lock is taken, another run,
+Michael or the backup job is working: don't wait. Log it and do only build work this session.
 
 ### Always
 - Every live command you ran goes into your progress entry, verbatim, with its result.
