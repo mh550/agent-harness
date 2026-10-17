@@ -41,7 +41,12 @@ log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
 note() { log "$*"; echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; }   # phone-readable, committed
 notify() { [[ -n $NOTIFY_CMD ]] && bash -c "$NOTIFY_CMD" _ "[$RUN_ID] $*" > /dev/null 2>&1; return 0; }
 commit_all() { git add -A && ! git diff --cached --quiet && git commit -q -m "$1"; return 0; }
-green() { bash -c "$CHECK_CMD" > "$SCRATCH/check.out" 2>&1; }
+# The code tree's identity, ignoring the run record: an unchanged tree that was green is not re-tested (slow suites).
+tree_key() { { git ls-files -s -- . ':!.harness/runs'; git diff HEAD -- . ':!.harness/runs'; } | sha1sum | cut -c1-16; }
+green() {
+  local k; k=$(tree_key); [[ -f $SCRATCH/green-$k ]] && return 0
+  bash -c "$CHECK_CMD" > "$SCRATCH/check.out" 2>&1 && touch "$SCRATCH/green-$k"
+}
 
 [[ -z $BRANCH || $BRANCH == "$MAIN_BRANCH" ]] && { log "refusing to run on '${BRANCH:-detached HEAD}'"; exit 1; }
 
