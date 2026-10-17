@@ -44,3 +44,41 @@
 - 2026-10-17 05:18 · T6-02 · claude-opus-5-5 · passes=false · 21/37 passing
 - 2026-10-17 05:18 · run ended: 21/37 passing · 44 sessions · 21 features passed · $46.80 · 1.2 h · by kind: init 1 ($5.97), coding 40 ($40.34), verify 3 ($0.49) · by model: claude-fable-5-1 1 ($5.97), claude-opus-5-5 31 ($40.09), claude-sonnet-5-5 12 ($0.75)
 - 2026-10-17 05:18 · final verified and tagged run/threads-2026-10-17/final · PR https://github.com/mh550/pathways/pull/4
+- 2026-10-17 12:56 · T0 merged into main · https://github.com/mh550/pathways/pull/6
+- 2026-10-17 12:56 · T1 merged into main · https://github.com/mh550/pathways/pull/7
+- 2026-10-17 12:56 · T3 merged into main · https://github.com/mh550/pathways/pull/8
+- 2026-10-17 12:56 · closed the whole-run PR for harness/threads-2026-10-17 (milestones merge through their own PRs now)
+- 2026-10-17 13:29 · T4-09 · claude-opus-5-5 · passes=true · 12 min · 22/37 passing
+- 2026-10-17 13:42 · verify T4: evidence short of the steps (no new verify entry in progress.md); re-running on opus
+- 2026-10-17 13:49 · verify T4: T4-08 failed the re-check, back in the queue (one more attempt)
+- 2026-10-17 13:50 · T4-08 · claude-sonnet-5-5 · passes=true · 0 min · 22/37 passing
+- 2026-10-17 13:55 · T4 verified and tagged run/threads-2026-10-17/T4
+- 2026-10-17 13:55 · T4 merged into main · https://github.com/mh550/pathways/pull/9
+- 2026-10-17 13:59 · T5-01 · claude-opus-5-5 · passes=true · 4 min · 23/37 passing
+- 2026-10-17 14:07 · T5-02 · claude-opus-5-5 · passes=true · 8 min · 24/37 passing
+- 2026-10-17 14:09 · T5-03 · claude-sonnet-5-5 · passes=true · 1 min · 25/37 passing
+- 2026-10-17 14:19 · T5-04 · claude-opus-5-5 · passes=true · 10 min · 26/37 passing
+- 2026-10-17 14:19 · merged main into harness/threads-2026-10-17
+- 2026-10-17 14:22 · T5 verified and tagged run/threads-2026-10-17/T5
+- 2026-10-17 14:22 · T5 merged into main · https://github.com/mh550/pathways/pull/10
+- 2026-10-17 14:23 · T7-01 · claude-sonnet-5-5 · passes=true · 0 min · 27/37 passing
+- 2026-10-17 14:23 · T7-02 · claude-sonnet-5-5 · passes=true · 0 min · 28/37 passing
+- 2026-10-17 14:25 · T7-03 · claude-sonnet-5-5 · passes=true · 1 min · 29/37 passing
+- 2026-10-17 14:25 · merged main into harness/threads-2026-10-17
+- 2026-10-17 14:27 · T7 verified and tagged run/threads-2026-10-17/T7
+- 2026-10-17 14:28 · T7 merged into main · https://github.com/mh550/pathways/pull/11
+- 2026-10-17 14:31 · T6-01 · claude-opus-5-5 · passes=true · 3 min · 30/37 passing
+- 2026-10-17 14:36 · T6-02 · claude-opus-5-5 · passes=true · 4 min · 31/37 passing
+- 2026-10-17 14:42 · T6-03 · claude-opus-5-5 · passes=true · 5 min · 32/37 passing
+- 2026-10-17 14:50 · T6-04 · claude-opus-5-5 · passes=true · 8 min · 33/37 passing
+- 2026-10-17 15:13 · T6-05 · claude-opus-5-5 · passes=true · 22 min · 34/37 passing
+- 2026-10-17 15:13 · merged main into harness/threads-2026-10-17
+- 2026-10-17 15:15 · T6 verified and tagged run/threads-2026-10-17/T6
+- 2026-10-17 15:15 · T6 merged into main · https://github.com/mh550/pathways/pull/12
+- 2026-10-17 15:15 · session for S-01 hit a limit (You've hit your session limit · resets 4pm (America/New_York)); not counted; resuming at 16:02
+- 2026-10-17 15:15 · usage-limit window (shared by all runs): waiting until 16:02 (46 min)
+- 2026-10-17 16:09 · S-01 · claude-opus-5-5 · passes=true · 7 min · 35/37 passing
+- 2026-10-17 16:15 · S-02 · claude-opus-5-5 · passes=false · 6 min · 35/37 passing
+- 2026-10-17 16:16 · S-02 · claude-opus-5-5 · passes=false · 1 min · 35/37 passing
+- 2026-10-17 16:16 · blocked: the remaining features wait on S-02 (given up; needs Michael)
+- 2026-10-17 16:16 · run ended (blocked on S-02): 35/37 passing · 68 sessions (49 real) · 35 features passed · $84.47 · 2.2 h · by kind: init 1 ($5.97), coding 58 ($72.01), verify 9 ($6.49) · by model: claude-fable-5-1 1 ($5.97), claude-opus-5-5 45 ($73.59), claude-sonnet-5-5 22 ($4.91)

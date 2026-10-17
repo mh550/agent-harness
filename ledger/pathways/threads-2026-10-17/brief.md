@@ -1,0 +1,2 @@
+## 2026-10-17 13:16
+T4-09 (the T4 review) must cover the 2026-10-17 Opus review findings in ~/projects/agent-harness/journal/runs/threads-2026-10-17.md §1: record the outside-the-graph rule of splitOut (src/threads.ts) as a §12 D default and make editor and Live agree; correct the README's /live?graph= claims (commit b3dd73c); headless checks for the ui/app.js flows (D29 join, switcher URL vs localStorage, Select-mode order, deleted-graph recovery); the editor accepts graph names (D25); T4-08's proposals. Then T5, T7, T6 as listed. T0, T1 and T3 are already merged into main.

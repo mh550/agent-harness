@@ -3,7 +3,9 @@
   "branch": "harness/threads-2026-10-17",
   "features": [
     {
-      "id": "T0-01", "milestone": "T0", "model": "opus",
+      "id": "T0-01",
+      "milestone": "T0",
+      "model": "opus",
       "description": "A plan for schema v3 exists at docs/plans/2026-10-16-t0-schema-v3.md, naming every table, column, index and the v2→v3 migration test.",
       "steps": [
         "docs/plans/2026-10-16-t0-schema-v3.md exists, written with superpowers:writing-plans, under 150 lines",
@@ -16,7 +18,9 @@
       "passes": true
     },
     {
-      "id": "T0-02", "milestone": "T0", "model": "opus",
+      "id": "T0-02",
+      "milestone": "T0",
+      "model": "opus",
       "description": "Opening a v2 database upgrades it to schema v3 (threads, thread_tracks, graphs, graph_threads, graph_tracks, plays.graph_id/via_edge_id, graph 'default' = Everything) without losing rows.",
       "steps": [
         "tests/fixtures/schema-v2.sql holds the v2 DDL (meta, tracks, track_aliases, connection_types, edges, import_runs, plays and their indexes) and tests/schema-v3.test.ts builds a v2 DB from it with 2 tracks, 1 edge, 1 play and schema_version '2', then calls migrate()",
@@ -29,7 +33,9 @@
       "passes": true
     },
     {
-      "id": "T0-03", "milestone": "T0", "model": "opus",
+      "id": "T0-03",
+      "milestone": "T0",
+      "model": "opus",
       "description": "T0 is reviewed and simplified: an Opus reviewer read the T0 diff, Critical/Important findings are fixed test-first, and the schema docs mention v3.",
       "steps": [
         "git diff 8245182..HEAD -- src tests docs > $HARNESS_SCRATCH/t0.diff; an Opus subagent reviewed that file for correctness (migration idempotence, FK directions, SET NULL vs CASCADE) and returned findings; the findings and their disposition are listed in the progress entry",
@@ -40,9 +46,10 @@
       ],
       "passes": true
     },
-
     {
-      "id": "T1-01", "milestone": "T1", "model": "opus",
+      "id": "T1-01",
+      "milestone": "T1",
+      "model": "opus",
       "description": "A plan for memberships and the pure rules exists at docs/plans/2026-10-16-t1-memberships.md, with the exact function signatures and JSON shapes later milestones build on.",
       "steps": [
         "docs/plans/2026-10-16-t1-memberships.md exists, written with superpowers:writing-plans, under 200 lines",
@@ -56,7 +63,9 @@
       "passes": true
     },
     {
-      "id": "T1-02", "milestone": "T1", "model": "opus",
+      "id": "T1-02",
+      "milestone": "T1",
+      "model": "opus",
       "description": "The pure rules in src/threads.ts decide which songs are in a graph, which pathways out of a song are in-graph, context or elsewhere, and the export order, with unit tests and no database.",
       "steps": [
         "src/threads.ts exports graphSongIds, splitOut and the ThreadRef type with the signatures from docs/plans/2026-10-16-t1-memberships.md; it imports only types (no Db, no Graph)",
@@ -69,7 +78,9 @@
       "passes": true
     },
     {
-      "id": "T1-03", "milestone": "T1", "model": "opus",
+      "id": "T1-03",
+      "milestone": "T1",
+      "model": "opus",
       "description": "Graph has threads CRUD in brainstorm order: createThread({name, motif?, notes?, color?, track_ids?}) keeps the given song order, getThread returns songs by position plus the derived pathways among them, and merging tracks keeps thread memberships.",
       "steps": [
         "tests/helpers/threads-fixture.ts imports samples/notes-sample.md into an in-memory Graph and creates thread 'Good Times bassline' (Good Times, Rapper's Delight, Another One Bites the Dust, Le Freak; color #f59e0b) and 'French touch filter family' (Voyager, Music Sounds Better With You, Get Down Saturday Night; color #38bdf8)",
@@ -83,7 +94,9 @@
       "passes": true
     },
     {
-      "id": "T1-04", "milestone": "T1", "model": "opus",
+      "id": "T1-04",
+      "milestone": "T1",
+      "model": "opus",
       "description": "Graph has graphs CRUD with induced pathways and context: graph 'Saturday disco' (both threads) has 7 songs and 11 pathways, and from Good Times in 'Hip-hop block party' the split is out=Rapper's Delight, context=Another One Bites the Dust (Good Times bassline), elsewhere 0.",
       "steps": [
         "tests/helpers/threads-fixture.ts also creates graph 'Saturday disco' with both threads (setGraphThreads) and graph 'Hip-hop block party' with own songs Good Times, Rapper's Delight (addGraphTracks) and no threads",
@@ -97,7 +110,9 @@
       "passes": true
     },
     {
-      "id": "T1-05", "milestone": "T1", "model": "opus",
+      "id": "T1-05",
+      "milestone": "T1",
+      "model": "opus",
       "description": "T1 is reviewed and simplified: an Opus reviewer read the T1 diff, Critical/Important findings are fixed test-first, the four /simplify angles are applied, and architecture.md describes the data model.",
       "steps": [
         "git diff <T0-03 commit>..HEAD -- src tests docs > $HARNESS_SCRATCH/t1.diff (the T0-03 commit hash is in progress.md); an Opus subagent reviewed it for correctness (position gaps after remove, merge collisions, default graph guards, SQL injection via refs, N+1 queries in listThreads/listGraphs) and returned findings listed in the progress entry",
@@ -108,9 +123,10 @@
       ],
       "passes": true
     },
-
     {
-      "id": "T3-01", "milestone": "T3", "model": "opus",
+      "id": "T3-01",
+      "milestone": "T3",
+      "model": "opus",
       "description": "A plan for the API, the LiveState split and ?graph= exists at docs/plans/2026-10-16-t3-api-live.md with every route, status code and snapshot field.",
       "steps": [
         "docs/plans/2026-10-16-t3-api-live.md exists, written with superpowers:writing-plans, under 200 lines",
@@ -123,7 +139,9 @@
       "passes": true
     },
     {
-      "id": "T3-02", "milestone": "T3", "model": "opus",
+      "id": "T3-02",
+      "milestone": "T3",
+      "model": "opus",
       "description": "The HTTP API exposes threads and graphs: POST /api/threads with track_ids creates 'Good Times bassline' in order, GET /api/graphs/:id returns songs, pathways, threads and context summary, unknown refs are 404 and edits to 'default' are 400.",
       "steps": [
         "src/server.ts routes: GET/POST /api/threads; GET/PATCH/DELETE /api/threads/:ref; POST /api/threads/:ref/tracks {track_ids}; DELETE /api/threads/:ref/tracks/:track_id; PUT /api/threads/:ref/order {track_ids}; GET/POST /api/graphs; GET/PATCH/DELETE /api/graphs/:ref; PUT /api/graphs/:ref/threads {thread_ids}; POST /api/graphs/:ref/tracks {track_ids}; DELETE /api/graphs/:ref/tracks/:track_id; PUT /api/graphs/:ref/order {track_ids}",
@@ -136,7 +154,9 @@
       "passes": true
     },
     {
-      "id": "T3-03", "milestone": "T3", "model": "opus",
+      "id": "T3-03",
+      "milestone": "T3",
+      "model": "opus",
       "description": "The Live snapshot is graph-aware: /api/live?graph=<ref> and the SSE stream split pathways into out, context (with thread chip data) and elsewhere_count, name the graph, and find a cued track in context.",
       "steps": [
         "src/live.ts: LiveState.snapshot(graphId = 'default') returns graph:{id,name}, out (in-graph), context (with thread {id,name,color}), elsewhere_count; cued_edge_id is searched in out then context; subscribers are called with no argument and src/server.ts computes live.snapshot(graphId) per SSE connection; ui/live-render.d.ts / docs/api.md LiveSnapshot type updated",
@@ -149,7 +169,9 @@
       "passes": true
     },
     {
-      "id": "T3-04", "milestone": "T3", "model": "opus",
+      "id": "T3-04",
+      "milestone": "T3",
+      "model": "opus",
       "description": "The recorder and CLI know graphs: `pathways serve --graph <ref>` stamps plays.graph_id and via_edge_id (null = jump), and `pathways threads list|show` / `graphs list|show` print the T1 fixture by name; docs/api.md covers every new route.",
       "steps": [
         "src/live.ts: LiveState takes an optional graphId (constructor option or setGraph); recordPlay stamps graph_id; when a new play is created and the previous play of the same session_ref has a track, via_edge_id = an edge previous→current (preferring one with both songs in the graph), else null; src/graph.ts recordPlay/PlayRow carry graph_id and via_edge_id",
@@ -162,7 +184,9 @@
       "passes": true
     },
     {
-      "id": "T3-05", "milestone": "T3", "model": "opus",
+      "id": "T3-05",
+      "milestone": "T3",
+      "model": "opus",
       "description": "T3 is reviewed and simplified: an Opus reviewer read the T3 diff, Critical/Important findings are fixed test-first, the four /simplify angles are applied, and docs/api.md matches the code.",
       "steps": [
         "git diff <T1-05 commit>..HEAD -- src tests docs ui > $HARNESS_SCRATCH/t3.diff; an Opus subagent reviewed it (route ordering in api(), ref decoding, per-subscriber SSE leaks, refresh/rematch rules, via_edge selection, error codes) and returned findings listed in the progress entry",
@@ -173,9 +197,10 @@
       ],
       "passes": true
     },
-
     {
-      "id": "T4-01", "milestone": "T4", "model": "opus",
+      "id": "T4-01",
+      "milestone": "T4",
+      "model": "opus",
       "description": "A plan for the editor's graph switcher, context rendering, Threads and Graphs tabs exists at docs/plans/2026-10-16-t4-editor.md, with DOM ids, CSS classes and the words.js contract.",
       "steps": [
         "docs/plans/2026-10-16-t4-editor.md exists, written with superpowers:writing-plans, under 250 lines",
@@ -189,7 +214,9 @@
       "passes": true
     },
     {
-      "id": "T4-02", "milestone": "T4", "model": "opus",
+      "id": "T4-02",
+      "milestone": "T4",
+      "model": "opus",
       "description": "Every on-screen noun comes from ui/words.js: the Live view's chips and headings and the editor's tab labels read song/pathway/thread/graph/set/context from one file, so the Q8 rename is a one-file change.",
       "steps": [
         "ui/words.js exports words (song, songs, pathway, pathways, thread, threads, graph, graphs, set, sets, context, elsewhere, everything) plus plural(n, one, many) and cap(s); ui/words.d.ts declares them; tests/words.test.ts asserts plural(1, words.pathway, words.pathways) === 'pathway' and plural(3, …) === 'pathways'",
@@ -202,7 +229,9 @@
       "passes": true
     },
     {
-      "id": "T4-03", "milestone": "T4", "model": "opus",
+      "id": "T4-03",
+      "milestone": "T4",
+      "model": "opus",
       "description": "The editor has a graph switcher: choosing 'Hip-hop block party' lists its 2 songs in the aside and the Track view of Good Times shows Rapper's Delight in full, Another One Bites the Dust dimmed with the chip 'Good Times bassline · context' and a '+ add to graph' button.",
       "steps": [
         "ui/index.html header has <select id=\"graphSwitch\"> fed from GET /api/graphs (Everything first, then by name); the choice is written to ?graph=<id> via history.replaceState and localStorage 'pathways.graph'; on load the URL wins over localStorage; an unknown stored id falls back to Everything without a console error",
@@ -215,7 +244,9 @@
       "passes": true
     },
     {
-      "id": "T4-04", "milestone": "T4", "model": "opus",
+      "id": "T4-04",
+      "milestone": "T4",
+      "model": "opus",
       "description": "The Web view respects the active graph: in 'Hip-hop block party' centred on Good Times, Rapper's Delight is a solid node, Another One Bites the Dust is a dashed outline in the thread colour with a dashed 45 % edge, and elsewhere songs are not drawn.",
       "steps": [
         "ui/app.js renderWeb() takes out, context and elsewhere_count from GET /api/tracks/:id?graph=: context edges are drawn with stroke-dasharray and opacity .45 in the thread colour; context-only songs are nodes with fill none and a dashed stroke in the thread colour; elsewhere pathways are not drawn and a caption '← N elsewhere' appears under the SVG when N > 0; incoming edges from songs outside the graph are not drawn either",
@@ -227,7 +258,9 @@
       "passes": true
     },
     {
-      "id": "T4-05", "milestone": "T4", "model": "opus",
+      "id": "T4-05",
+      "milestone": "T4",
+      "model": "opus",
       "description": "The editor has a Threads tab: the list shows colour, song count and the graphs using each thread; a thread page lists songs in brainstorm order with up/down reorder, add via the search picker and remove, plus the pathways among them; a form creates a thread with name, motif and colour.",
       "steps": [
         "ui/index.html has a Threads tab button (label from words.js) and <section id=\"view-threads\">; ui/app.js renderThreads() lists GET /api/threads as rows with a colour swatch, name, motif, '<n> songs', and 'in: <graph names>' or 'in no graph'",
@@ -239,7 +272,9 @@
       "passes": true
     },
     {
-      "id": "T4-06", "milestone": "T4", "model": "opus",
+      "id": "T4-06",
+      "milestone": "T4",
+      "model": "opus",
       "description": "The editor has a Graphs tab and 'Make thread from songs': graphs are created, renamed and deleted, threads are ticked as checkboxes, own songs are added via the picker, removed and reordered, Everything is read-only, and ticking songs in the aside in order creates a thread in that order.",
       "steps": [
         "ui/index.html has a Graphs tab and <section id=\"view-graphs\">; renderGraphs() lists GET /api/graphs with song and pathway counts; a create form POSTs /api/graphs; a graph page has: rename (PATCH), Delete graph (confirm, DELETE; memberships only), a checkbox per thread (PUT /api/graphs/:id/threads with the full checked list), own songs with ↑ ↓ ✕ and '+ Add song' (openPicker → POST /api/tracks → POST /api/graphs/:id/tracks); the Everything page shows its counts and the text 'Everything holds every song and pathway and cannot be edited' with no controls",
@@ -251,7 +286,9 @@
       "passes": true
     },
     {
-      "id": "T4-07", "milestone": "T4", "model": "opus",
+      "id": "T4-07",
+      "milestone": "T4",
+      "model": "opus",
       "description": "docs/demo/threads-399.sh seeds a running server with the 399 set's 8 songs, 7 pathways, threads 'Tea-tent Latin jazz' and 'Night closers' and graphs 'Sunday tea tent' and 'Soul hour', so the 399 replay shows in-graph, context and elsewhere cards; init.sh runs it.",
       "steps": [
         "docs/demo/threads-399.sh <base-url, default http://localhost:7777> uses curl and bash, with node -e for pulling ids out of JSON (no jq, no new dependency): it POSTs the 8 songs with the exact raw titles/artists of tests/fixtures/serato/399.session (Woman of the World — Donald Byrd; Rico Suave Bossa Nova feat. Azymuth — J Dilla; Leroy's Latin Lament: Lonnie Dreams/The Way We Feel/ La Fiesta/Lament — War; Samba Cantina — Paul Desmond; What's Going On — Marvin Gaye; Coffy Is The Color — Roy Ayers; Glide — Pleasure; All Night Long — Splendor), 7 pathways (Woman of the World→All Night Long [vibe], Woman of the World→Rico Suave Bossa Nova [vibe], Woman of the World→Glide [bass], Rico Suave→Leroy's Latin Lament [vibe], Leroy's Latin Lament→Samba Cantina [vibe], What's Going On→Coffy Is The Color [vocal], Coffy Is The Color→Glide [bass]) with short notes, thread 'Tea-tent Latin jazz' = Woman of the World, Rico Suave Bossa Nova, Leroy's Latin Lament, Samba Cantina (colour #22d3cf), thread 'Night closers' = Woman of the World, All Night Long (colour #e879f9), graph 'Sunday tea tent' = own songs Woman of the World, What's Going On, Coffy Is The Color, All Night Long (no threads), graph 'Soul hour' = own songs Woman of the World, What's Going On, Coffy Is The Color, Glide (no threads)",
@@ -264,7 +301,9 @@
       "passes": true
     },
     {
-      "id": "T4-08", "milestone": "T4", "model": "sonnet",
+      "id": "T4-08",
+      "milestone": "T4",
+      "model": "sonnet",
       "description": "What Michael will see after T4: editor screenshots at 1280 and 390 px for the switcher, Threads, thread page, Graphs and context states, and a table of the 399 replay at speed 0 against the demo seed in the progress entry.",
       "steps": [
         "Headless Chromium (createRequire($HARNESS_PW)) against the init server (port $HARNESS_PORT, seeded by init.sh): no console errors except art 404s and no horizontal scroll at 390 px on /, /?graph=<Sunday tea tent id> (Track view of Woman of the World), the Threads tab, the Tea-tent Latin jazz thread page, the Graphs tab",
@@ -277,7 +316,9 @@
       "passes": true
     },
     {
-      "id": "T4-09", "milestone": "T4", "model": "opus",
+      "id": "T4-09",
+      "milestone": "T4",
+      "model": "opus",
       "description": "T4 is reviewed and simplified: an Opus reviewer read the T4 diff, Critical/Important findings and T4-08's proposed changes are fixed test-first or rebutted, the four /simplify angles are applied to the UI code, and the README editor section is current.",
       "steps": [
         "git diff <T3-05 commit>..HEAD -- src tests docs ui .harness/init.sh > $HARNESS_SCRATCH/t4.diff; an Opus subagent reviewed it (XSS via thread names/colours in innerHTML, localStorage fallbacks, race between switcher and track load, reorder off-by-one, seed idempotence) and returned findings listed in the progress entry",
@@ -286,11 +327,12 @@
         "README.md has a 'Threads and graphs' section: the switcher, Threads and Graphs tabs, Make thread from songs, the demo seed command and the two /live?graph= URLs; docs/screenshots names listed",
         "node .harness/smoke.mjs 4/4; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
-
     {
-      "id": "T5-01", "milestone": "T5", "model": "opus",
+      "id": "T5-01",
+      "milestone": "T5",
+      "model": "opus",
       "description": "A plan for the Live view's context list exists at docs/plans/2026-10-16-t5-live-context.md with the exact HTML classes, the §7 rules and the test cases over the demo seed.",
       "steps": [
         "docs/plans/2026-10-16-t5-live-context.md exists, written with superpowers:writing-plans, under 150 lines",
@@ -299,10 +341,12 @@
         "It lists the tests: live-render over the demo seed (Sunday tea tent: 1 out, 1 context, '← 1 elsewhere'; Soul hour: 1 out, 2 context, All Night Long cued in context) and the headless screenshots of T5-03",
         "No file outside docs/ changed; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "T5-02", "milestone": "T5", "model": "opus",
+      "id": "T5-02",
+      "milestone": "T5",
+      "model": "opus",
       "description": "/live?graph=<ref> shows the graph name, lists in-graph pathways first, then context cards dimmed under 'from thread X (not in this graph)', then '← N elsewhere', and a cued track reachable only through context lights up in the dimmed style.",
       "steps": [
         "ui/live-render.js renderCards renders out, then per-thread rule lines + .pcard.context cards (style --thread:<colour>, chip '<thread> · context', note hidden until tap via class open toggled in ui/live.js), then .elsewhere '← N elsewhere'; a context card whose edge id equals cued_edge_id has class 'context cued' and the cued chip; renderNow adds the graph chip when graph.id !== 'default'; all words from ui/words.js",
@@ -312,10 +356,12 @@
         "node .harness/smoke.mjs 4/4 and a Sonnet headless check of /live?graph=<Sunday tea tent id> on the init server: 1 .pcard.context visible, header shows 'Sunday tea tent', no console errors, no horizontal scroll at 390",
         "Suite grows by at least 4 tests; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "T5-03", "milestone": "T5", "model": "sonnet",
+      "id": "T5-03",
+      "milestone": "T5",
+      "model": "sonnet",
       "description": "What Michael will see after T5: Live screenshots live-context and live-cued-context at 1280 and 390 px, and the 399 replay table (speed 0, demo seed, graph Sunday tea tent and Soul hour) in the progress entry.",
       "steps": [
         "Headless Chromium against the init server (seeded, replay at its end state: current Woman of the World, deck 2 All Night Long cued): /live?graph=<Sunday tea tent id> and /live?graph=<Soul hour id> at 1280 and 390 px load with no console errors except art 404s and no horizontal scroll at 390",
@@ -324,10 +370,12 @@
         "Anything that looks wrong to a first-time viewer is listed under 'Proposed changes' in the progress entry",
         "npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "T5-04", "milestone": "T5", "model": "opus",
+      "id": "T5-04",
+      "milestone": "T5",
+      "model": "opus",
       "description": "T5 is reviewed and simplified: an Opus reviewer read the T5 diff, Critical/Important findings and T5-03's proposed changes are fixed test-first or rebutted, the four /simplify angles are applied, and docs/api.md plus README describe /live?graph=.",
       "steps": [
         "git diff <T4-09 commit>..HEAD -- src tests docs ui > $HARNESS_SCRATCH/t5.diff; an Opus subagent reviewed it (escaping of thread names/colours, cued-in-context precedence, the Add pathway button rule, 404 handling in live.js, duplicated CSS between style.css and live.css) and returned findings listed in the progress entry",
@@ -336,11 +384,12 @@
         "docs/api.md Live section documents graph, context and elsewhere_count with an example snapshot; README.md 'Threads and graphs' section links /live?graph=<name> and the two screenshots",
         "node .harness/smoke.mjs 4/4; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
-
     {
-      "id": "T7-01", "milestone": "T7", "model": "sonnet",
+      "id": "T7-01",
+      "milestone": "T7",
+      "model": "sonnet",
       "description": "A short docs plan exists at docs/plans/2026-10-16-t7-docs.md and the README fully describes the threads-and-graphs slice: editor tabs, /live?graph=, CLI, demo seed, layout table and test count.",
       "steps": [
         "docs/plans/2026-10-16-t7-docs.md exists (under 60 lines): which docs T7 touches and what each must say",
@@ -349,10 +398,12 @@
         "`npm run check --silent` output pass count is quoted in the progress entry and matches the README",
         "npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "T7-02", "milestone": "T7", "model": "sonnet",
+      "id": "T7-02",
+      "milestone": "T7",
+      "model": "sonnet",
       "description": "docs/api.md is complete for every new route and snapshot field, and docs/architecture.md's data-model section and the design doc's §12 reflect what was built.",
       "steps": [
         "docs/api.md: every route handled in src/server.ts under /api/threads and /api/graphs appears in a table row with body and response (cross-check: grep -o '\"threads\"\\|\"graphs\"' src/server.ts and the ref/sub branches, list them in the progress entry); the ?graph= query on GET /api/tracks/:id, GET /api/live and /api/live/events is documented with the 404 rule; the Sets section documents graph_id and via_edge_id; the Schema section says SCHEMA_VERSION = 3 with all five tables' columns",
@@ -360,10 +411,12 @@
         "docs/specs/2026-10-14-threads-and-graphs-design.md §12 lists every D<n> *default* taken during this run (at least D25 and D26 from T1-01; any others named in progress.md), each with one sentence",
         "No code changed (git diff --stat shows only docs/); npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "T7-03", "milestone": "T7", "model": "sonnet",
+      "id": "T7-03",
+      "milestone": "T7",
+      "model": "sonnet",
       "description": "docs/STATUS.md is rewritten for this slice with a 'Review in 10 minutes' that uses the demo seed and the 399 replay, validation with real numbers, gaps, and a drafted ideas/ text block for the review conversation.",
       "steps": [
         "docs/STATUS.md header names the run (threads-2026-10-17), the branch, the test count and SCHEMA_VERSION 3; 'Review in 10 minutes' gives the exact commands: npm install && npm run check, PATHWAYS_DB=/tmp/pathways-review.db, bin/pathways import samples/notes-sample.md, bin/pathways serve --replay tests/fixtures/serato/399.session --speed 0 --graph 'Sunday tea tent' (after running docs/demo/threads-399.sh against a first `serve`), then /live?graph=Sunday%20tea%20tent and /live?graph=Soul%20hour, and what to look for (All Night Long cued in graph; Rico Suave Bossa Nova context; '← 1 elsewhere'; in Soul hour the cued card is context)",
@@ -372,11 +425,12 @@
         "The progress entry contains a text block 'ideas/ updates' (under 25 lines) summarising what the review conversation should carry into ~/projects/ideas: threads as brainstorm-ordered song sets, graphs as induced subgraphs, context rendering, Navidrome as the graph sync target",
         "No code changed; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
-
     {
-      "id": "T6-01", "milestone": "T6", "model": "opus",
+      "id": "T6-01",
+      "milestone": "T6",
+      "model": "opus",
       "description": "A plan for graph ↔ Navidrome exists at docs/plans/2026-10-16-t6-navidrome.md with the Subsonic calls, the fake server's four responses and the export/import rules.",
       "steps": [
         "docs/plans/2026-10-16-t6-navidrome.md exists, written with superpowers:writing-plans, under 150 lines",
@@ -386,10 +440,12 @@
         "It specifies `pathways sets show <ref>` printing per play the pathway taken (type name, note) or 'jump' from via_edge_id, and that with no .env (D15) every real-Navidrome step is logged as 'fake only'",
         "No file outside docs/ changed; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "T6-02", "milestone": "T6", "model": "opus",
+      "id": "T6-02",
+      "milestone": "T6",
+      "model": "opus",
       "description": "SubsonicLibrary can list, read, create and replace playlists against a fake Navidrome that answers in Subsonic 1.16.1 shapes with token auth.",
       "steps": [
         "src/library.ts SubsonicLibrary gains getPlaylists(), getPlaylist(id), createPlaylist({name, songIds}) and replacePlaylist(playlistId, songIds) (createPlaylist.view with playlistId and repeated songId params); errors throw 'subsonic <method>: <message>' like search",
@@ -397,10 +453,12 @@
         "The fake records every request's params so tests assert songId is repeated per song and the password never travels (p absent, t and s present)",
         "Suite grows by at least 4 tests; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "T6-03", "milestone": "T6", "model": "opus",
+      "id": "T6-03",
+      "milestone": "T6",
+      "model": "opus",
       "description": "`pathways graphs export <ref> --navidrome [--dry-run]` writes playlist 'Pathways · <graph>' in export order from the songs' Navidrome refs, replaces it on re-export, and reports exported and skipped songs by name.",
       "steps": [
         "src/sync.ts (or src/navidrome-sync.ts) exports exportGraphToNavidrome(graph, nav, graphRef, {dryRun}) → {playlist: {id,name}|null, exported: Track[], skipped: Track[], created: boolean}; src/cli.ts `graphs export <ref> --navidrome [--dry-run]` prints 'Pathways · <name>: exported N, skipped M (no Navidrome ref)' then the skipped titles; without SUBSONIC_* in the environment it exits 1 with 'Navidrome is not configured (D15): add SUBSONIC_URL/USER/PASS to .env'",
@@ -409,10 +467,12 @@
         "The progress entry says 'fake only' (no .env on this box, D15) or names the real playlist if .env existed",
         "Suite grows by at least 4 tests; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "T6-04", "milestone": "T6", "model": "opus",
+      "id": "T6-04",
+      "milestone": "T6",
+      "model": "opus",
       "description": "`pathways graphs import <playlist> [--graph <name>]` turns a Navidrome playlist into a graph's own songs in order, and `pathways sets show <ref>` prints the pathway taken at each step or 'jump'.",
       "steps": [
         "src/sync.ts importPlaylistToGraph(graph, nav, playlistRef, {graphName}) → {graph, songs: Track[], created: Track[], matched: Track[]}: songs matched by library_ref first, else upsertTrack({title, artist, bpm, library_ref}) (D19: an artist-less existing track adopts the artist), own songs replaced in playlist order; graph created when missing (name = --graph or the playlist name without the 'Pathways · ' prefix); the Everything graph is refused with 'the Everything graph cannot be edited'",
@@ -421,10 +481,12 @@
         "HELP lists `graphs export <ref> --navidrome [--dry-run]` and `graphs import <playlist> [--graph <name>]`; docs/api.md is unchanged (CLI only until D15)",
         "Suite grows by at least 4 tests; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "T6-05", "milestone": "T6", "model": "opus",
+      "id": "T6-05",
+      "milestone": "T6",
+      "model": "opus",
       "description": "T6 is reviewed and simplified: an Opus reviewer read the T6 diff, Critical/Important findings are fixed test-first, the four /simplify angles are applied, and README, STATUS and the design doc describe the Navidrome sync.",
       "steps": [
         "git diff <T7-03 commit>..HEAD -- src tests docs > $HARNESS_SCRATCH/t6.diff; an Opus subagent reviewed it (credential handling, songId ordering, replace-vs-create race, D19 adoption, Everything guard) and returned findings listed in the progress entry",
@@ -433,11 +495,12 @@
         "README.md 'Threads and graphs' and docs/STATUS.md gain the two CLI commands and 'fake only until .env (D15)'; design doc §12 D24 gets one sentence on what was built",
         "npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
-
     {
-      "id": "S-01", "milestone": "stretch", "model": "opus",
+      "id": "S-01",
+      "milestone": "stretch",
+      "model": "opus",
       "description": "On the Live view a context card has a '+ add to graph' button that adds the target song to the current graph, after which the card renders as an in-graph pathway.",
       "steps": [
         "ui/live-render.js renders <button class=\"btn sadd\" data-addgraph=\"<to_id>\">+ add to graph</button> inside each .pcard.context (not inside the card's own tap target: the card tap still looks ahead); ui/live.js POSTs /api/graphs/<graph id>/tracks {track_ids:[to_id]} and reloads the snapshot",
@@ -445,10 +508,12 @@
         "Headless (Sonnet): /live?graph=<Sunday tea tent id>, click '+ add to graph' on Rico Suave Bossa Nova → the card is no longer .context and GET /api/graphs/<id> has 5 songs; at 390 px the button is ≥ 44 px tall and no horizontal scroll",
         "docs/api.md unchanged; README Live paragraph gains one sentence; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
-      "id": "S-02", "milestone": "stretch", "model": "opus",
+      "id": "S-02",
+      "milestone": "stretch",
+      "model": "opus",
       "description": "`pathways threads from-set <ref> --name <n>` creates a thread from a recorded set's matched songs in play order (de-duplicated), e.g. replay-399 → Rico Suave Bossa Nova, Leroy's Latin Lament, Woman of the World, What's Going On, Coffy Is The Color, Glide.",
       "steps": [
         "src/graph.ts threadFromSet(session_ref, name) → the thread with the set's matched tracks in started_at order, each song once (first appearance), plays with track_id null skipped and counted; src/cli.ts `threads from-set <ref> --name <n>` prints the thread name, the song count and the number of unmatched plays skipped; HELP updated",
@@ -458,7 +523,9 @@
       "passes": false
     },
     {
-      "id": "S-03", "milestone": "stretch", "model": "sonnet",
+      "id": "S-03",
+      "milestone": "stretch",
+      "model": "sonnet",
       "description": "The design doc has a §13 'Two-way graph ↔ playlist sync' note stating what wins on conflict, as a design only.",
       "steps": [
         "docs/specs/2026-10-14-threads-and-graphs-design.md gains §13 (under 60 lines): the one-way export of D24 restated; the conflict cases (song added on one side, removed on one side, reordered on both); a recommended rule (last writer wins per song membership, order from the side edited last, with a dry-run diff shown first) marked *default*; what the sync would need (playlist changed timestamp from getPlaylist, a graphs.synced_at column) and an explicit 'not built in this run'",
