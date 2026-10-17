@@ -21,7 +21,6 @@ set -uo pipefail
 cd "$WT" || exit 1
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"
-harness_config "$WT" "$STATE"
 
 PROJECT_NAME=$(basename "$PROJECT_DIR")
 CLAUDE=${HARNESS_CLAUDE:-claude} GH=${HARNESS_GH:-gh}
@@ -34,17 +33,23 @@ RUN_DIR=.harness/runs/$RUN_ID LIST=.harness/runs/$RUN_ID/feature_list.json
 LOGS=$STATE/logs ATT=$STATE/attempts.json
 STATE_ROOT=$(cd "$STATE/../.." && pwd) LIMIT_FILE=$(cd "$STATE/../.." && pwd)/LIMIT_UNTIL
 SCRATCH=${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/$RUN_ID
-LIVE_LOCK=${LIVE_LOCK:-${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/live.lock}
 CHECK=$HARNESS_HOME/lib/check.sh
 LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
 PORT=$(cat "$STATE/port")
 mkdir -p "$LOGS" "$RUN_DIR" "$SCRATCH"
+# The configuration comes from the worktree, so it is loaded again after a resumed run merges main (which may have
+# changed .harness/config.sh, e.g. a new POLICY).
+load_config() {
+  harness_config "$WT" "$STATE"
+  LIVE_LOCK=${LIVE_LOCK:-${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/live.lock}
+  export HARNESS_RUN_ID=$RUN_ID HARNESS_RUN_DIR=$RUN_DIR HARNESS_BRANCH=$BRANCH HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH \
+    HARNESS_CHECK="$CHECK" HARNESS_CHECK_CMD=$CHECK_CMD HARNESS_SMOKE_CMD=$SMOKE_CMD HARNESS_INIT_CMD=$INIT_CMD \
+    HARNESS_SPEC_FILES=$SPEC_FILES HARNESS_MAIN_BRANCH=$MAIN_BRANCH HARNESS_PROJECT=$PROJECT_NAME HARNESS_WT=$WT \
+    HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green
+}
+load_config
 echo "$MAX_ATTEMPTS" > "$STATE/max-attempts"
 DEADLINE=$(( $(date +%s) + HOURS * 3600 )); (( DEADLINE_AT > 0 && DEADLINE_AT < DEADLINE )) && DEADLINE=$DEADLINE_AT
-export HARNESS_RUN_ID=$RUN_ID HARNESS_RUN_DIR=$RUN_DIR HARNESS_BRANCH=$BRANCH HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH \
-  HARNESS_CHECK="$CHECK" HARNESS_CHECK_CMD=$CHECK_CMD HARNESS_SMOKE_CMD=$SMOKE_CMD HARNESS_INIT_CMD=$INIT_CMD \
-  HARNESS_SPEC_FILES=$SPEC_FILES HARNESS_MAIN_BRANCH=$MAIN_BRANCH HARNESS_PROJECT=$PROJECT_NAME HARNESS_WT=$WT \
-  HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green
 rm -f "$STATE"/waited-*   # a restart inside a usage-limit window waits for it again
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
@@ -362,8 +367,15 @@ if [[ -s $STATE/brief.md ]]; then   # a brief given at start or continue: commit
 fi
 commit_all "HARNESS: start run $RUN_ID"
 sync
-if [[ -f $LIST ]]; then   # a resumed run: catch up with main, merge what is verified
-  sync_main; merge_milestones
+if [[ -f $LIST ]]; then   # a resumed run: catch up with main (and its configuration), merge what is verified
+  before_cfg=$(git rev-parse -q HEAD:.harness/config.sh 2>/dev/null)
+  sync_main
+  if [[ $(git rev-parse -q HEAD:.harness/config.sh 2>/dev/null) != "$before_cfg" ]]; then
+    load_config
+    [[ -f $HARNESS_HOME/prompts/policy/$POLICY.md ]] || { log "unknown POLICY '$POLICY' after merging main"; END_REASON="unknown POLICY"; exit 1; }
+    note "configuration reloaded after merging $MAIN_BRANCH: policy $POLICY · suite ${CHECK_CMD:-none} · spec ${SPEC_FILES:-(none)}"
+  fi
+  merge_milestones
 fi
 if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 whole-run PR (milestones merge through their own PRs)
   if [[ $($GH pr view "$BRANCH" --json state -q .state 2>/dev/null) == OPEN ]]; then

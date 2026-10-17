@@ -64,6 +64,6 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
 ## Tests
 
 ```bash
-tests/run.sh    # end-to-end with stub claude/gh on a throwaway repo with a bare origin: 47 checks (~3 min)
+tests/run.sh    # end-to-end with stub claude/gh on a throwaway repo with a bare origin: 48 checks (~3 min)
 ```
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

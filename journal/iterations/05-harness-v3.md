@@ -39,7 +39,7 @@ Michael's review of the evaluation, verbatim in substance:
   work, a self-paused driver blocking the queue forever, two queued starts sharing one run id, `continue` un-stopping
   a live run, `gc` deleting progress logs the ledger didn't keep. The fix for "what may merge" became one invariant:
   **the tree that lands on main is byte-for-byte a tree that was verified** (`git merge-tree` == the tag's tree).
-- `tests/run.sh`: **47/47** checks (v2: 22), including the real 10-17 limit lines, a limit that cuts a session off
+- `tests/run.sh`: **48/48** checks (v2: 22), including the real 10-17 limit lines, a limit that cuts a session off
   mid-work, a $0 session, a window set by another run, gating, an independent milestone that verifies but doesn't
   merge before an unverified one, thin evidence escalating, a refused merge fixed later with `harness merge`, a
   paused run finished by `harness continue`, the queue, the ledger, `gc` of record-only branches.

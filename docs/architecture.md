@@ -57,7 +57,7 @@ view of the plan's usage limit.
 | `lib/summary.mjs` | ~230 | Run summary, writeup, ledger rows, trends, calibration |
 | `lib/render.mjs` | ~15 | Prompt templating (`{{X}}` ← `HARNESS_X`) and titled sections |
 | `prompts/*.md` | | initializer, coding, verify, retro, supervisor, draft-claude-md; `policy/{build-only,live-staged}.md` |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude` and `gh` on a throwaway repo with a bare origin: 47 checks |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude` and `gh` on a throwaway repo with a bare origin: 48 checks |
 
 ## 4. Where state lives
 
@@ -84,7 +84,7 @@ view of the plan's usage limit.
 
 ```
 harness start ─► worktree + branch ─► driver:
-  [resume?] merge main in · merge verified (v3) milestones
+  [resume?] merge main in (and reload the config if it changed) · merge verified (v3) milestones
   [no list] init + suite ─► INITIALIZER ─► feature_list.json, progress.md
   loop:
     stop if: session cap · deadline · STOP/"status: stop"
