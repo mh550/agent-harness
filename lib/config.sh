@@ -1,0 +1,49 @@
+# shellcheck shell=bash
+# Configuration, in layers (later wins):
+#   1. harness defaults (below)
+#   2. the user's config: ${HARNESS_CONFIG:-~/.config/harness/config.sh} (models, limits, merge policy, queue width, notify)
+#   3. the project's .harness/config.sh (optional: POLICY plus real overrides)
+#   4. the run's overrides: <state>/run.env (written by `harness start --spec/--until`)
+#   5. conventions for anything still unset: the suite, the smoke check and the init script are detected in the repo
+# Usage: source lib/config.sh; harness_config <worktree> [<state dir>]
+
+harness_config() {
+  local wt=$1 st=${2:-} f
+  HOURS=8 MAX_SESSIONS=auto MAX_ATTEMPTS=2 MAX_REPAIRS=3 MAX_VERIFY_ROUNDS=2 MAX_LIMIT_HITS=6
+  LIMIT_WAITS="900 1800 3600" SESSION_TIMEOUT=100m MAX_TURNS=250 SESSION_BUDGET_USD=20
+  INIT_MODEL=fable WORKER_MODEL=opus VERIFY_MODEL=sonnet VERIFY_ESCALATE_MODEL=opus RETRO_MODEL=sonnet SUPERVISOR_MODEL=opus
+  POLICY=build-only MERGE_POLICY=auto MAIN_BRANCH=main RETRO=1 AUTO_CONTINUE=1
+  MAX_PARALLEL_RUNS=1 LEDGER_COMMIT=1 BASE_PORT=7800 DEADLINE_AT=0
+  CHECK_CMD="" INIT_CMD="" SMOKE_CMD="" SPEC_FILES="" NOTIFY_CMD="" AGENT_SETTINGS=.claude/settings.json PR_POLICY=""
+  for f in "${HARNESS_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/harness/config.sh}" "$wt/.harness/config.sh" ${st:+"$st/run.env"}; do
+    # shellcheck source=/dev/null
+    [[ -f $f ]] && source "$f"
+  done
+  [[ $PR_POLICY == off ]] && MERGE_POLICY=off   # v2 name; "milestone" and "end" are superseded by MERGE_POLICY
+  [[ -n $CHECK_CMD ]] || CHECK_CMD=$(detect_check "$wt")
+  [[ -n $SMOKE_CMD ]] || SMOKE_CMD=$(detect_smoke "$wt")
+  [[ -n $INIT_CMD ]] || { [[ -f $wt/.harness/init.sh ]] && INIT_CMD=.harness/init.sh || INIT_CMD=true; }
+}
+
+# The project's suite, by convention. Empty when nothing is found (the driver warns; nothing can be gated on it).
+detect_check() {
+  local wt=$1
+  if [[ -f $wt/.harness/check.sh ]]; then echo ".harness/check.sh"
+  elif [[ -f $wt/package.json ]] && node -e 'process.exit(require(process.argv[1]).scripts?.check ? 0 : 1)' "$wt/package.json" 2>/dev/null; then
+    echo "npm run check --silent"
+  elif [[ -f $wt/package.json ]] && node -e 'const t=require(process.argv[1]).scripts?.test; process.exit(t && !/no test specified/.test(t) ? 0 : 1)' "$wt/package.json" 2>/dev/null; then
+    echo "npm test --silent"
+  elif [[ -f $wt/pytest.ini || -f $wt/pyproject.toml || -f $wt/setup.cfg || -d $wt/tests ]] && compgen -G "$wt/tests/*.py" > /dev/null; then
+    echo "python3 -m pytest -q"
+  elif [[ -f $wt/Cargo.toml ]]; then echo "cargo test"
+  elif [[ -f $wt/go.mod ]]; then echo "go test ./..."
+  elif [[ -f $wt/Makefile ]] && grep -q '^test:' "$wt/Makefile"; then echo "make test"
+  fi
+}
+
+detect_smoke() {
+  local wt=$1
+  if [[ -f $wt/.harness/smoke.mjs ]]; then echo "node .harness/smoke.mjs"
+  elif [[ -f $wt/.harness/smoke.sh ]]; then echo "bash .harness/smoke.sh"
+  else echo true; fi
+}

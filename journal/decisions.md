@@ -86,7 +86,7 @@ agents are driven*.
 - **Also:** dj's suite takes about 7 min. The driver caches a green result per code tree, so a
   session doesn't pay for the same check two or three times.
 
-### D-H11 · Detect limits from the structured error, and test against the real message *(proposed, after 10-17)*
+### D-H11 · Detect limits from the structured error, and test against the real message *(accepted 2026-10-17, built in v3)*
 - **Problem:** D-H9's regex missed "You've hit your session limit"; 45 sessions were counted as failures in 6 min.
   The stub emitted a message I had guessed.
 - **Options:** widen the regex · **read `api_error` / `api_error_status` / `terminal_reason` first, regex as fallback,
@@ -94,24 +94,24 @@ agents are driven*.
 - **Why:** structure doesn't change wording between releases; the $0 rule catches the next unknown error too.
   The stub replays a real result line captured on 10-17 ("fakes mirror the live API", ON2).
 
-### D-H12 · One limit for all runs on the box *(proposed)*
+### D-H12 · One limit for all runs on the box *(accepted 2026-10-17, built in v3)*
 - **Options:** run one project per night · **a shared `LIMIT_UNTIL` marker every driver honours, plus
   `harness start --after <run>`** · a token-bucket scheduler.
 - **Why:** two runs spent the five-hour window in 2 h 49 min (10-17), three loops did the same on 10-14. The marker
   is 15 lines; a scheduler is a project.
 
-### D-H13 · The end of a run is reported, not "verified" *(proposed)*
+### D-H13 · The end of a run is reported, not "verified" *(accepted 2026-10-17, built in v3)*
 - **Choice:** tag `final` only when every milestone is verified; otherwise update the PR body with what is verified,
   what is on the branch unverified, and the tag to merge. Delete the two `run/*/final` tags from 10-17 (Michael).
 - **Why:** the PR is the review surface; a label that says "verified" over unreviewed T4 code invites a bad merge.
 
-### D-H14 · A failed milestone gate blocks later milestones *(proposed)*
+### D-H14 · A failed milestone gate blocks later milestones *(accepted 2026-10-17, built in v3)*
 - **Options:** keep going in array order (v2) · **skip features whose earlier milestone is given up or failed its
   review; mark it "needs Michael"** · stop the run.
 - **Why:** with a real failure, T5 would have been built on unreviewed T4. Independent milestones can still opt out
   by having no dependency (a later milestone id with `"after": []`).
 
-### D-H15 · Per-project configuration: conventions + one policy line + `CLAUDE.md` + a run brief *(proposed)*
+### D-H15 · Per-project configuration: conventions + one policy line + `CLAUDE.md` + a run brief *(accepted 2026-10-17, built in v3)*
 - **Options:** keep `.harness/{config.sh,init.sh,project.md}` · initializer drafts `project.md` in the run ·
   reuse `CLAUDE.md` · policy profiles · move generic rules to `prompts/` · **all but the in-run draft, combined**.
 - **Choice:** generic rules live in `prompts/`; check/smoke/init/port by convention; `POLICY=build-only|live-staged`
@@ -122,7 +122,7 @@ agents are driven*.
   came out contradictory on 10-17. An in-run draft would govern a night before anyone reviewed it.
 - **Undo:** the driver still appends `.harness/project.md` if present.
 
-### D-H16 · Live systems: staged live operations under a protocol, replacing D-H10's build-only nights *(proposed)*
+### D-H16 · Live systems: staged live operations under a protocol, replacing D-H10's build-only nights *(accepted 2026-10-17, built in v3)*
 - **Context:** Michael wants agents to operate dj live (backed up by git and nightly restic). D-H10 forbade it.
 - **Choice:** `POLICY=live-staged`: preflight (check green, `sqlite3 .backup` snapshots, last restic run and running
   image noted), stages dry run → `--limit 5` → `--limit 50` → all with checks after each, stop and revert on the
@@ -130,3 +130,39 @@ agents are driven*.
   image noted; still never Soulseek transfers, `/srv/incoming`, the amperfy account, secrets or history rewrites.
   Allow rules for the needed commands are Michael's to add (text in the evaluation).
 - **Gate:** not before the trash-step fixes I1/I2 from the 10-17 review, and one attended run of the protocol.
+
+### D-H17 · The harness merges each verified milestone into main itself *(accepted 2026-10-17, built in v3)*
+- **Context:** D-H6 kept a human tap on every merge after the classifier refused an unreviewed push to `main`.
+  After the first night Michael asked for merges to be handled by the harness, so mornings aren't a merge queue.
+- **Options:** keep one whole-run PR for Michael (v2) · merge the run branch at the end · **one PR per verified
+  milestone, created and merged by the driver, in milestone order** · GitHub auto-merge on a PR per run.
+- **Choice:** a verified milestone's tag commit is pushed to `harness-merge/<run>-<m>`, a PR opened with the features
+  and the verify evidence table, and merged with `--match-head-commit`. Main is merged into the run branch before
+  each verify, so what was verified is what merges. Milestones merge strictly in order (a later tag contains the
+  earlier commits); a conflict or refusal stops merging and notifies. `MERGE_POLICY=pr` restores the human tap.
+- **Why it is still reviewed:** each merge has passed its own review feature (Opus reviewer on the milestone
+  diff), an independent verify with one evidence row per step, and a green suite on the merged tree. The human
+  review moved from "every merge" to "policy and permissions" (D-H15, D-H16).
+- **Partial runs** stop being a choice between "merge as-is" and "run again": verified work is merged as it
+  happens; the rest continues (D-H18).
+
+### D-H18 · A queue, serial by default; continuations are queued, not started *(accepted 2026-10-17, built in v3)*
+- **Options:** start runs by hand · parallel runs with a shared limit marker only · **a queue with
+  `MAX_PARALLEL_RUNS` (default 1), an `--until` time, and the shared limit window**.
+- **Why:** 10-17's two parallel runs spent the five-hour window in 2 h 49 min. Serial runs each get the whole
+  window; queueing a night's work is one command per project. A run ending on time, sessions or limits queues
+  its own continuation (fresh attempts, same branch); a blocked run does not.
+
+### D-H19 · Every run is measured and retro'd into a ledger the harness learns from *(accepted 2026-10-17, built in v3)*
+- **Choice:** the driver writes `summary.json` (automatic cause per non-passing feature), runs a read-only Sonnet
+  retro (judgment causes + ≤ 3 proposed harness changes, noting repeats), and appends to `ledger/` in this repo.
+  `harness trends` shows all runs; the initializer gets real feature durations as calibration.
+- **Why:** the first night's evaluation took a human-directed session with six subagents. Most of it was
+  mechanical (costs, causes, wall times) and is now computed; the judgment part is a $0.20 session per run.
+  The human step that stays: turning repeated proposals into decisions here, test-first.
+
+### D-H20 · Gating by dependency, with `after` for independent work *(accepted 2026-10-17, built in v3)*
+- **Default:** a feature depends on every feature before it; a given-up feature blocks the rest and the run ends
+  "blocked on X" (needs Michael). The initializer marks independent work with `after: [ids]`.
+- **Why:** v2 moved from a failed T4 review straight to T5, which builds on T4 (D-H14). Conservative by default,
+  explicit when it's safe to go on.

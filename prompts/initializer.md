@@ -9,40 +9,52 @@ You are in a git worktree on branch `{{BRANCH}}`. The run record lives in `{{RUN
 
 ## Read first
 
-- The spec: {{SPEC_FILES}}, in full. The project rules at the end of this prompt bind every session.
+- The spec: {{SPEC_FILES}}, in full, and the **brief for this run** (at the end of this prompt, if
+  there is one): the brief wins on scope. The project rules at the end bind every session.
 - Enough of the code to plan realistically: the entry points, the modules the spec names, and the
   list of tests.
-- The harness has already run the project's init (`{{INIT_CMD}}`); its output is at the end of
-  this prompt.
+- The harness has already run the project's init and the suite; their output is at the end.
+- How big features turned out in earlier runs: {{CALIBRATION}}
 
 ## Write `{{RUN_DIR}}/feature_list.json`
 
 ```json
 { "run": "{{RUN_ID}}", "branch": "{{BRANCH}}",
   "features": [
-    { "id": "T1-03", "milestone": "T1", "model": "opus",
+    { "id": "T1-03", "milestone": "T1", "kind": "build", "model": "opus",
       "description": "one sentence: the behaviour a user or a test can observe",
-      "steps": ["concrete check 1", "concrete check 2", "{{CHECK_CMD}} is green"],
+      "steps": ["concrete check 1", "concrete check 2", "the suite is green"],
+      "after": ["T1-02"],
       "passes": false }
   ] }
 ```
 
 Rules:
 
-- **Array order is priority and dependency order.** The harness always gives a session the first
-  feature that isn't passing. Never let a feature depend on a later one.
-- **One feature = one session**: about 30–90 minutes of work for one agent, ending in a commit
-  with a green suite. Split anything bigger.
+- **Array order is priority and dependency order.** The harness gives a session the first feature
+  that isn't passing and whose dependencies pass. Never let a feature depend on a later one.
+- **`after`** (optional) lists the ids a feature really needs. Without it, a feature waits on
+  **every** feature before it, so one failure stops everything behind it. Give `after` to work that
+  is independent (a later milestone that doesn't build on an earlier one, docs that need only the
+  plan), so a failure elsewhere doesn't block it.
+- **One feature = one session**: aim for 15–60 minutes of agent work ending in a commit with a green
+  suite. Split anything bigger; merge anything trivially small into its neighbour (for a small
+  milestone, plan and build can be one feature).
 - **Steps are verifiable** with real names, numbers, pages, widths and commands, never "works
-  correctly". The last step is always that `{{CHECK_CMD}}` is green.
+  correctly". A verifier re-runs each step and writes one evidence row per step. The last step is
+  always that the suite is green.
+- **`kind`**: `plan` · `build` · `review` · `check` (a "What Michael will see" pass: screenshots,
+  replays) · `docs`.
 - **Milestones** (the spec's, or yours if it has none) follow this pattern:
-  1. a plan feature (writes the plan file the project rules name);
+  1. a plan feature (writes the milestone's plan file);
   2. implementation features, test-first, pure rules before wiring;
-  3. a closing **review + simplify** feature: an Opus reviewer reads the milestone diff from a
+  3. for a milestone with UI, a `check` feature ("What Michael will see": screenshots at the
+     project's widths and what is on them);
+  4. a closing **review + simplify** feature: an Opus reviewer reads the milestone diff from a
      file; Critical/Important findings are fixed RED→GREEN; simplification passes are applied;
      docs touched by the milestone are updated.
-  When every feature of a milestone passes, the harness runs a separate verify session and then
-  proposes the milestone for merging. So a milestone should be a coherent, mergeable unit.
+  When every feature of a milestone passes, the harness verifies it independently and **merges it
+  into `{{MAIN_BRANCH}}`**. So a milestone must be a coherent unit that is safe to ship on its own.
 - **`model`**: `"opus"` for plans, code, UI and reviews; `"sonnet"` for docs-only,
   verification-only and mechanical features; `"fable"` only where the project rules say so.
 - Every `passes` starts `false`. From now on, a session may change only its own feature's
@@ -57,7 +69,7 @@ Rules:
 - Leave `{{RUN_DIR}}/INBOX.md` as the harness created it.
 
 Commit `HARNESS: feature list (<n> features) and progress log for {{RUN_ID}}` and push
-`git push -u origin {{BRANCH}}`. Leave merging to the harness and to Michael.
+`git push -u origin {{BRANCH}}`.
 
 Final message: at most 150 words. Give the feature count per milestone, the first three ids, and
 any question for Michael.

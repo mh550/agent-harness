@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
-# .harness/init.sh — run by the harness before every session, in the run's worktree.
-# Gets HARNESS_PORT and HARNESS_SCRATCH. Make it idempotent: install deps, run the suite, (re)start a dev server.
-# Its output (last 4 KB) is pasted into the session's prompt, so keep it short and say what failed.
+# .harness/init.sh (optional) — run by the harness before every session, in the run's worktree, with HARNESS_PORT and
+# HARNESS_SCRATCH set. The harness runs the suite itself; this only prepares what sessions need, e.g. a dev server.
+# Idempotent: stop the server the previous session left (pid in $SCRATCH/server.pid). Output (last 4 KB) goes into the prompt.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PORT=${HARNESS_PORT:?} SCRATCH=${HARNESS_SCRATCH:?}
-
-[[ -d node_modules ]] || npm install --no-audit --no-fund
-npm run check --silent > "$SCRATCH/check.log" 2>&1 && echo "check: green" || { echo "check: RED"; tail -30 "$SCRATCH/check.log"; }
-
-# start a dev server on $PORT here, stopping the one from the previous session first (pid in $SCRATCH/server.pid)
+[[ -f $SCRATCH/server.pid ]] && { kill "$(cat "$SCRATCH/server.pid")" 2>/dev/null || true; }
+# nohup <start the dev server on $PORT> > "$SCRATCH/server.log" 2>&1 & echo $! > "$SCRATCH/server.pid"
 echo "server: (none configured)"

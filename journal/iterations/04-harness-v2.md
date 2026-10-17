@@ -89,7 +89,7 @@ First real run: two projects in parallel, 2026-10-17 02:24 → 05:23 EDT
   heading, "you can test live" bullets, "code only" scope).
 
 ## Led to
-Harness v3, not built yet. The ranked list is in [the evaluation](../runs/2026-10-17-evaluation.md#ranked-changes-for-harness-v3);
+[Iteration 5 — harness v3](05-harness-v3.md), built the same day. The ranked list is in [the evaluation](../runs/2026-10-17-evaluation.md#ranked-changes-for-harness-v3);
 proposed decisions D-H11 to D-H16. The first three changes go in before the next unattended night:
 1. limit detection on the structured error, plus a fake that replays the real message;
 2. a shared limit marker across parallel runs;

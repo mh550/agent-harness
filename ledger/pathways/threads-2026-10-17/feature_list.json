@@ -1,0 +1,471 @@
+{
+  "run": "threads-2026-10-17",
+  "branch": "harness/threads-2026-10-17",
+  "features": [
+    {
+      "id": "T0-01", "milestone": "T0", "model": "opus",
+      "description": "A plan for schema v3 exists at docs/plans/2026-10-16-t0-schema-v3.md, naming every table, column, index and the v2→v3 migration test.",
+      "steps": [
+        "docs/plans/2026-10-16-t0-schema-v3.md exists, written with superpowers:writing-plans, under 150 lines",
+        "It lists the five v3 tables (threads, thread_tracks, graphs, graph_threads, graph_tracks) with every column from design §12 + OVERNIGHT.md T0, the indexes on thread_tracks(track_id), graph_threads(thread_id), graph_tracks(track_id), and the two plays columns graph_id (→ graphs ON DELETE SET NULL) and via_edge_id (→ edges ON DELETE SET NULL)",
+        "It names the test file tests/schema-v3.test.ts and the fixture tests/fixtures/schema-v2.sql (the v2 DDL captured from `SELECT sql FROM sqlite_master` of a v2 DB), and states how the test builds a v2 DB with 2 tracks, 1 edge, 1 play before calling migrate()",
+        "It states that the seed is one row graphs('default','Everything') inserted with INSERT OR IGNORE and that SCHEMA_VERSION becomes 3",
+        "No file outside docs/plans/ changed",
+        "npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T0-02", "milestone": "T0", "model": "opus",
+      "description": "Opening a v2 database upgrades it to schema v3 (threads, thread_tracks, graphs, graph_threads, graph_tracks, plays.graph_id/via_edge_id, graph 'default' = Everything) without losing rows.",
+      "steps": [
+        "tests/fixtures/schema-v2.sql holds the v2 DDL (meta, tracks, track_aliases, connection_types, edges, import_runs, plays and their indexes) and tests/schema-v3.test.ts builds a v2 DB from it with 2 tracks, 1 edge, 1 play and schema_version '2', then calls migrate()",
+        "After migrate(): meta.schema_version = '3'; the 2 tracks, 1 edge and 1 play are still there; PRAGMA table_info shows plays.graph_id and plays.via_edge_id; the five new tables exist; graphs has exactly one row id 'default', name 'Everything'",
+        "Calling migrate() a second time changes nothing (same counts, still one 'default' row); openDb(':memory:') on a fresh DB also yields schema_version '3' and the 'default' graph",
+        "src/db.ts: SCHEMA_VERSION = 3; the new tables are in SCHEMA with ON DELETE CASCADE on every membership FK; plays gains the two columns via the same PRAGMA table_info column-check pattern as v1→v2; indexes idx_thread_tracks_track, idx_graph_threads_thread, idx_graph_tracks_track exist",
+        "Tests (raw SQL in tests/schema-v3.test.ts): deleting a thread row removes only its thread_tracks and graph_threads rows (tracks count unchanged); deleting a graph row removes only graph_threads and graph_tracks rows; deleting a track removes its thread_tracks and graph_tracks rows; deleting a graph sets plays.graph_id to NULL",
+        "Suite grows by at least 4 tests (122 → ≥126); npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T0-03", "milestone": "T0", "model": "opus",
+      "description": "T0 is reviewed and simplified: an Opus reviewer read the T0 diff, Critical/Important findings are fixed test-first, and the schema docs mention v3.",
+      "steps": [
+        "git diff 8245182..HEAD -- src tests docs > $HARNESS_SCRATCH/t0.diff; an Opus subagent reviewed that file for correctness (migration idempotence, FK directions, SET NULL vs CASCADE) and returned findings; the findings and their disposition are listed in the progress entry",
+        "Every Critical or Important finding is fixed with a failing test first (RED→GREEN) or explicitly rebutted in the progress entry",
+        "The four /simplify angles (reuse, simplification, efficiency, altitude) were applied to src/db.ts and tests/schema-v3.test.ts; the progress entry names what was simplified or says 'nothing to simplify' per angle",
+        "docs/api.md 'Schema' heading says SCHEMA_VERSION = 3 and lists the five new tables and the two plays columns in one paragraph; README.md 'Data model (SQLite)' mentions threads and graphs in one sentence",
+        "npm run check --silent is green"
+      ],
+      "passes": true
+    },
+
+    {
+      "id": "T1-01", "milestone": "T1", "model": "opus",
+      "description": "A plan for memberships and the pure rules exists at docs/plans/2026-10-16-t1-memberships.md, with the exact function signatures and JSON shapes later milestones build on.",
+      "steps": [
+        "docs/plans/2026-10-16-t1-memberships.md exists, written with superpowers:writing-plans, under 200 lines",
+        "It fixes the signatures of src/threads.ts: graphSongIds(ownSongIds: string[], threadSongIds: string[][]): string[] (own first, then threads in order, de-duplicated = export order), splitOut(edges: EdgeWithTracks[], inGraph: Set<string>, threadsByTrack: Map<string, ThreadRef[]>): { out, context: (EdgeWithTracks & { thread: ThreadRef })[], elsewhere_count }, where ThreadRef = { id, name, color }",
+        "It lists every Graph method with its return shape: createThread, listThreads (with song_count, pathway_count, graphs:[{id,name}]), getThread (songs by position, pathways = edges with both ends in the thread), updateThread, deleteThread, addThreadTracks, removeThreadTrack, reorderThread, threadsOf(trackId); createGraph, listGraphs (song_count, pathway_count), getGraph, updateGraph, deleteGraph, setGraphThreads, addGraphTracks, removeGraphTrack, reorderGraph, graphContent(id) → { songs, pathways }, outEdgesIn(graphId, trackId) → splitOut result; resolveGraphRef(ref) and resolveThreadRef(ref) accept an id or an exact name (case-insensitive) and return null when unknown",
+        "It states the position rule: position = MAX(position)+1 on add, reorder = full ordered track_ids list rewriting positions 1..n, lists ORDER BY position, added_at; and the merge rule: mergeTracks moves thread_tracks and graph_tracks with INSERT OR IGNORE keeping the lower position, then deletes the dropped rows",
+        "It names the test fixture: the two threads (Good Times bassline = Good Times, Rapper's Delight, Another One Bites the Dust, Le Freak; French touch filter family = Voyager, Music Sounds Better With You, Get Down Saturday Night) and two graphs (Saturday disco = both threads; Hip-hop block party = own songs Good Times, Rapper's Delight) built in a tests/helpers/threads-fixture.ts over samples/notes-sample.md",
+        "Design doc §12 gains 'D25 *default*: thread and graph refs in URLs, the CLI and --graph accept the id or the exact name' and 'D26 *default*: when several threads hold both songs of a context pathway the chip names the first by name; Everything lists every thread'",
+        "No file outside docs/ changed; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T1-02", "milestone": "T1", "model": "opus",
+      "description": "The pure rules in src/threads.ts decide which songs are in a graph, which pathways out of a song are in-graph, context or elsewhere, and the export order, with unit tests and no database.",
+      "steps": [
+        "src/threads.ts exports graphSongIds, splitOut and the ThreadRef type with the signatures from docs/plans/2026-10-16-t1-memberships.md; it imports only types (no Db, no Graph)",
+        "tests/threads.test.ts: graphSongIds(['a','b'], [['b','c'],['d','a']]) returns ['a','b','c','d']; graphSongIds([], []) returns []",
+        "splitOut on 3 edges from A (A→B with B in graph, A→C with C out of graph but thread 'Good Times bassline' holding A and C, A→D with D out of graph and no shared thread) returns out=[A→B], context=[A→C with thread {name:'Good Times bassline'}], elsewhere_count=1",
+        "splitOut with inGraph holding every endpoint returns every edge in out, context [] and elsewhere_count 0 (the Everything case); an edge whose from song is not in the graph is dropped from all three",
+        "When two threads hold both A and C, the context chip thread is the one whose name sorts first (D26)",
+        "Suite grows by at least 5 tests; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T1-03", "milestone": "T1", "model": "opus",
+      "description": "Graph has threads CRUD in brainstorm order: createThread({name, motif?, notes?, color?, track_ids?}) keeps the given song order, getThread returns songs by position plus the derived pathways among them, and merging tracks keeps thread memberships.",
+      "steps": [
+        "tests/helpers/threads-fixture.ts imports samples/notes-sample.md into an in-memory Graph and creates thread 'Good Times bassline' (Good Times, Rapper's Delight, Another One Bites the Dust, Le Freak; color #f59e0b) and 'French touch filter family' (Voyager, Music Sounds Better With You, Get Down Saturday Night; color #38bdf8)",
+        "tests/graph-threads.test.ts: getThread('Good Times bassline' by id) returns songs in exactly that order with positions 1..4 and 4 pathways (Good Times→Rapper's Delight, Good Times→Another One Bites the Dust, Another One Bites the Dust→Good Times, Le Freak→Good Times); French touch returns 3 songs and 4 pathways",
+        "listThreads returns both with song_count 4 and 3, pathway_count 4 and 4, graphs [] (no graphs yet)",
+        "addThreadTracks appends at MAX(position)+1 and ignores a song already in the thread; removeThreadTrack removes one row; reorderThread(id, track_ids) rewrites positions 1..n and throws on a list that is not a permutation of the thread's songs; updateThread renames and recolours; a duplicate name throws 'a thread named … already exists'; a colour like 'red' throws via the existing assertHexColor",
+        "deleteThread removes the thread and its memberships; tracks and edges counts are unchanged (9 tracks, 15 edges); threadsOf(Good Times id) returns [Good Times bassline] as ThreadRef[]",
+        "mergeTracks(keep=Good Times, drop=Le Freak) leaves Good Times bassline with 3 songs, Good Times at position 1 (the lower one kept), no row for Le Freak; resolveThreadRef accepts the id, the exact name and 'good times BASSLINE', returns null for 'nope'",
+        "Suite grows by at least 8 tests; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T1-04", "milestone": "T1", "model": "opus",
+      "description": "Graph has graphs CRUD with induced pathways and context: graph 'Saturday disco' (both threads) has 7 songs and 11 pathways, and from Good Times in 'Hip-hop block party' the split is out=Rapper's Delight, context=Another One Bites the Dust (Good Times bassline), elsewhere 0.",
+      "steps": [
+        "tests/helpers/threads-fixture.ts also creates graph 'Saturday disco' with both threads (setGraphThreads) and graph 'Hip-hop block party' with own songs Good Times, Rapper's Delight (addGraphTracks) and no threads",
+        "tests/graph-graphs.test.ts: graphContent(Saturday disco) returns 7 songs (Good Times, Rapper's Delight, Another One Bites the Dust, Le Freak, Voyager, Music Sounds Better With You, Get Down Saturday Night in export order: own songs first, then thread songs by thread order) and 11 pathways; Summer Madness and Thinking of You are absent",
+        "outEdgesIn(Hip-hop block party, Good Times) returns out=[→Rapper's Delight], context=[→Another One Bites the Dust with thread.name 'Good Times bassline', thread.color '#f59e0b'], elsewhere_count 0; outEdgesIn(Saturday disco, Voyager) returns out of 3 (Get Down Saturday Night, Music Sounds Better With You, Good Times), context [], elsewhere_count 2",
+        "graphContent('default') returns all 9 songs and all 15 edges in the same order as allEdges(); outEdgesIn('default', Voyager).out deep-equals outEdges(Voyager) and context is [] with elsewhere_count 0; updateGraph/deleteGraph/setGraphThreads/addGraphTracks on 'default' throw 'the Everything graph cannot be edited'",
+        "listGraphs returns default first (song_count 9, pathway_count 15) then the others by name with their counts; getGraph(Hip-hop block party) returns { graph, threads: [], own_songs: [Good Times, Rapper's Delight], songs, pathways: [Good Times→Rapper's Delight], context_summary: [{ thread: Good Times bassline, songs_out: 2 }] }; getGraph('default').threads lists both threads (D26)",
+        "createGraph with a duplicate name throws; deleteGraph(Saturday disco) leaves 9 tracks, 15 edges and both threads; removeGraphTrack and reorderGraph behave like their thread counterparts; mergeTracks(keep=Good Times, drop=Rapper's Delight) leaves Hip-hop block party with one own song; resolveGraphRef accepts id, exact name, 'saturday DISCO' and 'default'",
+        "Suite grows by at least 8 tests; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T1-05", "milestone": "T1", "model": "opus",
+      "description": "T1 is reviewed and simplified: an Opus reviewer read the T1 diff, Critical/Important findings are fixed test-first, the four /simplify angles are applied, and architecture.md describes the data model.",
+      "steps": [
+        "git diff <T0-03 commit>..HEAD -- src tests docs > $HARNESS_SCRATCH/t1.diff (the T0-03 commit hash is in progress.md); an Opus subagent reviewed it for correctness (position gaps after remove, merge collisions, default graph guards, SQL injection via refs, N+1 queries in listThreads/listGraphs) and returned findings listed in the progress entry",
+        "Every Critical or Important finding is fixed RED→GREEN or rebutted in the progress entry",
+        "The four /simplify angles were applied to src/threads.ts and the new Graph methods; the progress entry names what changed per angle",
+        "docs/architecture.md gains one paragraph in the data-model section: threads hold songs in brainstorm order, graphs hold threads + own songs, pathways are induced, context per D23, Everything is virtual",
+        "npm run check --silent is green"
+      ],
+      "passes": true
+    },
+
+    {
+      "id": "T3-01", "milestone": "T3", "model": "opus",
+      "description": "A plan for the API, the LiveState split and ?graph= exists at docs/plans/2026-10-16-t3-api-live.md with every route, status code and snapshot field.",
+      "steps": [
+        "docs/plans/2026-10-16-t3-api-live.md exists, written with superpowers:writing-plans, under 200 lines",
+        "It lists every route from OVERNIGHT.md T3 with method, body, response shape and errors: unknown thread/graph ref → 404; edits to 'default' → 400; duplicate name → 400; bad colour → 400; it states that :id segments resolve via resolveGraphRef/resolveThreadRef (D25)",
+        "It specifies LiveSnapshot additions: graph: {id, name}, context: (EdgeWithTracks & {thread: ThreadRef})[], elsewhere_count: number; out = in-graph only; cued_edge_id searched in out then context; LiveState.snapshot(graphId = 'default'); subscribers receive no snapshot argument and call live.snapshot(theirGraphId) themselves so each SSE stream carries its own graph; GET /api/live?graph= and /api/live/events?graph= 404 on an unknown ref (tests/live-server.test.ts's `graph:'anything'` assertion changes accordingly)",
+        "It specifies the recorder: serve --graph <id|name> validated at start (error message names the ref), plays.graph_id stamped, via_edge_id = the edge previous-play.track → this track within the same session_ref (prefer an edge whose two songs are in the graph), null for a jump",
+        "It specifies CLI `threads list|show <ref>` and `graphs list|show <ref>` output lines, and the docs/api.md sections to add",
+        "No file outside docs/ changed; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T3-02", "milestone": "T3", "model": "opus",
+      "description": "The HTTP API exposes threads and graphs: POST /api/threads with track_ids creates 'Good Times bassline' in order, GET /api/graphs/:id returns songs, pathways, threads and context summary, unknown refs are 404 and edits to 'default' are 400.",
+      "steps": [
+        "src/server.ts routes: GET/POST /api/threads; GET/PATCH/DELETE /api/threads/:ref; POST /api/threads/:ref/tracks {track_ids}; DELETE /api/threads/:ref/tracks/:track_id; PUT /api/threads/:ref/order {track_ids}; GET/POST /api/graphs; GET/PATCH/DELETE /api/graphs/:ref; PUT /api/graphs/:ref/threads {thread_ids}; POST /api/graphs/:ref/tracks {track_ids}; DELETE /api/graphs/:ref/tracks/:track_id; PUT /api/graphs/:ref/order {track_ids}",
+        "tests/threads-server.test.ts builds the T1 fixture over HTTP (import sample, create both threads and both graphs) and asserts: GET /api/threads lists 2 with song_count 4 and 3 and graphs [{name:'Saturday disco'}]; GET /api/graphs/<Saturday disco> has 7 songs, 11 pathways, 2 threads; GET /api/graphs/<Hip-hop block party> has context_summary [{thread:{name:'Good Times bassline'}, songs_out:2}]",
+        "GET /api/graphs/Saturday%20disco (by name) equals GET by id; GET /api/graphs/nope → 404; PATCH /api/graphs/default → 400 'the Everything graph cannot be edited'; POST /api/threads with a duplicate name → 400; POST /api/threads {name:'x', color:'red'} → 400; DELETE /api/threads/<id> → 204 and tracks count stays 9",
+        "GET /api/tracks/:id?graph=<Hip-hop block party> returns {track, out:[→Rapper's Delight], context:[→Another One Bites the Dust, thread.name 'Good Times bassline'], elsewhere_count:0, in:[…], graph:{id,name:'Hip-hop block party'}}; without ?graph it returns out/in exactly as before (existing tests unchanged)",
+        "A membership change (POST /api/graphs/:ref/tracks) calls live.refresh({rematch:false}) — the test subscribes to live and counts exactly one push with no re-resolution (spy on graph.resolveTrack or check updated_at changed while decks stay identical)",
+        "Suite grows by at least 6 tests; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T3-03", "milestone": "T3", "model": "opus",
+      "description": "The Live snapshot is graph-aware: /api/live?graph=<ref> and the SSE stream split pathways into out, context (with thread chip data) and elsewhere_count, name the graph, and find a cued track in context.",
+      "steps": [
+        "src/live.ts: LiveState.snapshot(graphId = 'default') returns graph:{id,name}, out (in-graph), context (with thread {id,name,color}), elsewhere_count; cued_edge_id is searched in out then context; subscribers are called with no argument and src/server.ts computes live.snapshot(graphId) per SSE connection; ui/live-render.d.ts / docs/api.md LiveSnapshot type updated",
+        "tests/live-graph.test.ts (hand-made NowEvents like tests/live-render.test.ts) over the T1 fixture: current Good Times, other deck Another One Bites the Dust loaded, graph Hip-hop block party → out 1 (Rapper's Delight), context 1 (Another One Bites the Dust, thread Good Times bassline), elsewhere_count 0, cued_edge_id = the context edge's id; same decks with graph 'default' → out 2, context [], cued_edge_id = the Good Times→Another One Bites the Dust edge; graph Saturday disco with current Voyager → out 3, elsewhere_count 2",
+        "tests/live-server.test.ts: GET /api/live?graph=anything → 404; GET /api/live?graph=default → snapshot.graph deep-equals {id:'default', name:'Everything'} and context [] / elsewhere_count 0; the rest of the existing e2e test still passes",
+        "tests/threads-server.test.ts: two SSE connections, /api/live/events?graph=<Hip-hop block party> and /api/live/events (default), both receive an event: now after POST /api/live/now {title:'Good Times', artist:'Chic'}; the first has out.length 1 and context.length 1, the second out.length 2 and context.length 0; /api/live/events?graph=nope → 404",
+        "A client that ignores the new fields keeps working: ui/live.js and ui/live-render.js are untouched in this feature except the .d.ts, and node .harness/smoke.mjs still passes 4/4",
+        "Suite grows by at least 5 tests; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T3-04", "milestone": "T3", "model": "opus",
+      "description": "The recorder and CLI know graphs: `pathways serve --graph <ref>` stamps plays.graph_id and via_edge_id (null = jump), and `pathways threads list|show` / `graphs list|show` print the T1 fixture by name; docs/api.md covers every new route.",
+      "steps": [
+        "src/live.ts: LiveState takes an optional graphId (constructor option or setGraph); recordPlay stamps graph_id; when a new play is created and the previous play of the same session_ref has a track, via_edge_id = an edge previous→current (preferring one with both songs in the graph), else null; src/graph.ts recordPlay/PlayRow carry graph_id and via_edge_id",
+        "tests/live-graph.test.ts: two ingests Good Times then Rapper's Delight (same session_ref, played:true, rows 1 and 2) with graph Hip-hop block party → the second play has via_edge_id = the Good Times→Rapper's Delight edge id and graph_id = the graph id; Good Times then Summer Madness → via_edge_id null; without --graph, graph_id is null and via_edge_id still fills from any edge",
+        "src/cli.ts: `serve --graph <ref>` resolves id or name at start and exits 1 with 'no graph: <ref>' when unknown (tested by spawning bin/pathways with PATHWAYS_DB=<temp> --graph nope --port 0); `threads list` prints one line per thread (name, song count, pathway count, graphs using it); `threads show <ref>` prints songs in position order then pathways; `graphs list` prints Everything first then each graph with song/pathway counts; `graphs show <ref>` prints threads, own songs, then every song and pathway; the four commands are in HELP",
+        "tests/cli-threads.test.ts spawns bin/pathways against a temp DB seeded via the T1 fixture code (or via `import` + direct Graph calls) and asserts `threads show 'Good Times bassline'` output contains the 4 songs in order and 'Le Freak → Good Times'; `graphs list` output contains 'Everything' and 'Saturday disco  7 songs  11 pathways' (or the plan's exact format)",
+        "docs/api.md has a 'Threads' section and a 'Graphs' section listing every T3-02 route with body and response, the ?graph= query on GET /api/tracks/:id, the new LiveSnapshot fields and the 404/400 rules; the Sets section mentions graph_id and via_edge_id",
+        "Suite grows by at least 4 tests; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T3-05", "milestone": "T3", "model": "opus",
+      "description": "T3 is reviewed and simplified: an Opus reviewer read the T3 diff, Critical/Important findings are fixed test-first, the four /simplify angles are applied, and docs/api.md matches the code.",
+      "steps": [
+        "git diff <T1-05 commit>..HEAD -- src tests docs ui > $HARNESS_SCRATCH/t3.diff; an Opus subagent reviewed it (route ordering in api(), ref decoding, per-subscriber SSE leaks, refresh/rematch rules, via_edge selection, error codes) and returned findings listed in the progress entry",
+        "Every Critical or Important finding is fixed RED→GREEN or rebutted in the progress entry",
+        "The four /simplify angles were applied to src/server.ts, src/live.ts and src/cli.ts changes; the progress entry names what changed per angle",
+        "Every route in docs/api.md 'Threads' and 'Graphs' is exercised by a test (grep the test files for each path) or the gap is listed in the progress entry",
+        "node .harness/smoke.mjs passes 4/4; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+
+    {
+      "id": "T4-01", "milestone": "T4", "model": "opus",
+      "description": "A plan for the editor's graph switcher, context rendering, Threads and Graphs tabs exists at docs/plans/2026-10-16-t4-editor.md, with DOM ids, CSS classes and the words.js contract.",
+      "steps": [
+        "docs/plans/2026-10-16-t4-editor.md exists, written with superpowers:writing-plans, under 250 lines",
+        "It specifies ui/words.js: export const words = { song, songs, pathway, pathways, thread, threads, graph, graphs, set, sets, context, elsewhere, everything: 'Everything' } plus plural(n, one, many) and cap(s); ui/words.d.ts for the typecheck; which strings in ui/live-render.js, ui/live.html, ui/index.html and ui/app.js switch to it",
+        "It specifies the graph switcher: <select id=\"graphSwitch\"> in the editor header fed by GET /api/graphs, Everything first; the active graph is carried in ?graph=<id> and remembered in localStorage key 'pathways.graph'; the aside track list shows the graph's songs; Track and Web views use GET /api/tracks/:id?graph=",
+        "It specifies context rendering per design §7: .pcard.context { opacity:.45; border-left:2px dashed var(--thread) }, chip '<thread name> · context' (class tchip, thread colour), note hidden until tap (class open), button '+ add to graph' posting POST /api/graphs/:id/tracks {track_ids:[to_id]}, the '← N elsewhere' line (class elsewhere), Web view context-only songs as dashed outlines and context edges dashed at 45 %",
+        "It specifies the Threads tab (list → thread page with up/down reorder, add via openPicker, remove, derived pathways), the Graphs tab (create/rename/delete, thread checkboxes, own songs add/remove/reorder, Everything read-only), the 'Make thread from songs' selection mode in the aside (a Select toggle, numbered ticks in click order, a 'Make thread' button → POST /api/threads {name, track_ids}), and that '+ New track' while a graph other than Everything is active also POSTs the new track to that graph",
+        "It specifies the demo seed docs/demo/threads-399.sh (see T4-07) and the headless check and screenshot names of T4-08",
+        "No file outside docs/ changed; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T4-02", "milestone": "T4", "model": "opus",
+      "description": "Every on-screen noun comes from ui/words.js: the Live view's chips and headings and the editor's tab labels read song/pathway/thread/graph/set/context from one file, so the Q8 rename is a one-file change.",
+      "steps": [
+        "ui/words.js exports words (song, songs, pathway, pathways, thread, threads, graph, graphs, set, sets, context, elsewhere, everything) plus plural(n, one, many) and cap(s); ui/words.d.ts declares them; tests/words.test.ts asserts plural(1, words.pathway, words.pathways) === 'pathway' and plural(3, …) === 'pathways'",
+        "ui/live-render.js imports ./words.js and uses it for the hero chip ('5 pathways', '1 pathway'), the empty-state texts and the '← N lead here' chip; tests/live-render.test.ts still passes unchanged (the words are the same tonight)",
+        "ui/live.html's static 'Pathways from this track' heading is set from words at load in ui/live.js (or rendered by live-render.js); ui/index.html tab labels Track/Web stay, and ui/app.js uses words for 'pathway' in toasts, confirm texts and card texts (grep -c 'pathway' ui/app.js shows only the import and words.* uses)",
+        "grep -rn \"'pathway\\|\\\"pathway\\|pathways\\b\" ui/*.js | grep -v words.js | grep -v '^ui/picker' returns no hard-coded on-screen uses (comments and CSS class names excepted)",
+        "node .harness/smoke.mjs passes 4/4 (no console errors at 1280/390 on either page)",
+        "npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T4-03", "milestone": "T4", "model": "opus",
+      "description": "The editor has a graph switcher: choosing 'Hip-hop block party' lists its 2 songs in the aside and the Track view of Good Times shows Rapper's Delight in full, Another One Bites the Dust dimmed with the chip 'Good Times bassline · context' and a '+ add to graph' button.",
+      "steps": [
+        "ui/index.html header has <select id=\"graphSwitch\"> fed from GET /api/graphs (Everything first, then by name); the choice is written to ?graph=<id> via history.replaceState and localStorage 'pathways.graph'; on load the URL wins over localStorage; an unknown stored id falls back to Everything without a console error",
+        "With a graph other than Everything active the aside lists only the graph's songs (GET /api/graphs/:id → songs) and the header pill reads '<n> songs · <m> pathways · <graph name>' (words.js); with Everything it behaves as before",
+        "Track view uses GET /api/tracks/:id?graph=<id>: out cards render as today; context cards get class context, style --thread:<colour>, the chip '<thread name> · context', the note hidden until the card is tapped (class open toggles), and a '+ add to graph' button that POSTs /api/graphs/:id/tracks {track_ids:[to_id]} and re-renders (the card is then a normal out card); after the cards a line '← N elsewhere' when elsewhere_count > 0",
+        "ui/style.css: .pcard.context { opacity:.45; border-left:2px dashed var(--thread) }, .tchip in the thread colour via inkFor-style contrast or a bordered outline, .elsewhere dim text; nothing in ui/live.css changes",
+        "Headless (Sonnet subagent, Playwright via createRequire($HARNESS_PW)): against the init server seeded with the T1 fixture through the API (the subagent POSTs the two threads and two graphs), open /?graph=<Hip-hop block party id>, click Good Times: exactly 1 .pcard without .context (Rapper's Delight), 1 .pcard.context whose .tchip text is 'Good Times bassline · context', no .elsewhere line; click '+ add to graph' → 2 normal cards; at 390 px no horizontal scroll and no console errors",
+        "tests/editor-render.test.ts exists only if a pure renderer was extracted (optional); otherwise the headless log is pasted into the progress entry; node .harness/smoke.mjs 4/4; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T4-04", "milestone": "T4", "model": "opus",
+      "description": "The Web view respects the active graph: in 'Hip-hop block party' centred on Good Times, Rapper's Delight is a solid node, Another One Bites the Dust is a dashed outline in the thread colour with a dashed 45 % edge, and elsewhere songs are not drawn.",
+      "steps": [
+        "ui/app.js renderWeb() takes out, context and elsewhere_count from GET /api/tracks/:id?graph=: context edges are drawn with stroke-dasharray and opacity .45 in the thread colour; context-only songs are nodes with fill none and a dashed stroke in the thread colour; elsewhere pathways are not drawn and a caption '← N elsewhere' appears under the SVG when N > 0; incoming edges from songs outside the graph are not drawn either",
+        "In Everything the Web view output is unchanged (same node and line count for Voyager as before: 6 nodes, 6 lines)",
+        "Clicking a context node re-centres on it (as today) and the Track view of that song shows its own split for the same graph",
+        "Headless (Sonnet subagent): /?graph=<Hip-hop block party id>, Web tab, Good Times centred: svg has exactly 3 g.node, one with class context (or stroke-dasharray) labelled 'Another One Bites the Dust', 2 lines of which 1 dashed; at 390 px no horizontal scroll, no console errors; screenshot $HARNESS_SCRATCH/web-context-1280.png",
+        "node .harness/smoke.mjs 4/4; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T4-05", "milestone": "T4", "model": "opus",
+      "description": "The editor has a Threads tab: the list shows colour, song count and the graphs using each thread; a thread page lists songs in brainstorm order with up/down reorder, add via the search picker and remove, plus the pathways among them; a form creates a thread with name, motif and colour.",
+      "steps": [
+        "ui/index.html has a Threads tab button (label from words.js) and <section id=\"view-threads\">; ui/app.js renderThreads() lists GET /api/threads as rows with a colour swatch, name, motif, '<n> songs', and 'in: <graph names>' or 'in no graph'",
+        "A create form (name, motif, colour input type=color defaulting to a palette colour) POSTs /api/threads and opens the new thread page; a duplicate name shows the server's 400 message in the toast",
+        "Thread page: songs in position order each with ↑ ↓ ✕ buttons (↑/↓ PUT /api/threads/:id/order with the full list, ✕ DELETE /api/threads/:id/tracks/:track_id), an '+ Add song' button using window.openPicker then POST /api/tracks (upsert) and POST /api/threads/:id/tracks, a 'Pathways in this thread' list of the derived pathways reusing card(), rename/motif/colour editing and a Delete thread button (confirm) that removes memberships only",
+        "Headless (Sonnet subagent) on the init server with the T1 fixture: Threads tab shows 'Good Times bassline' with '4 songs' and 'in: Saturday disco'; open it: 4 song rows in order Good Times, Rapper's Delight, Another One Bites the Dust, Le Freak and 4 pathway cards; press ↓ on Good Times → the order is Rapper's Delight, Good Times, …; press ✕ on Le Freak → 3 rows and GET /api/tracks still has 9 tracks; at 390 px no horizontal scroll and no console errors; screenshots $HARNESS_SCRATCH/threads-{1280,390}.png",
+        "node .harness/smoke.mjs 4/4; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T4-06", "milestone": "T4", "model": "opus",
+      "description": "The editor has a Graphs tab and 'Make thread from songs': graphs are created, renamed and deleted, threads are ticked as checkboxes, own songs are added via the picker, removed and reordered, Everything is read-only, and ticking songs in the aside in order creates a thread in that order.",
+      "steps": [
+        "ui/index.html has a Graphs tab and <section id=\"view-graphs\">; renderGraphs() lists GET /api/graphs with song and pathway counts; a create form POSTs /api/graphs; a graph page has: rename (PATCH), Delete graph (confirm, DELETE; memberships only), a checkbox per thread (PUT /api/graphs/:id/threads with the full checked list), own songs with ↑ ↓ ✕ and '+ Add song' (openPicker → POST /api/tracks → POST /api/graphs/:id/tracks); the Everything page shows its counts and the text 'Everything holds every song and pathway and cannot be edited' with no controls",
+        "'+ New track' in the aside, while a graph other than Everything is active, POSTs the new track to /api/graphs/<active>/tracks too, so it appears in the aside list immediately",
+        "Aside 'Select' toggle: in selection mode clicking a song appends it to an ordered selection (a numbered badge 1, 2, 3… on the row), clicking again removes it; a 'Make thread (n)' button prompts for a name and POSTs /api/threads {name, track_ids} in click order, then opens the Threads tab on the new thread and leaves selection mode",
+        "Headless (Sonnet subagent) on the init server with the T1 fixture: Graphs tab lists Everything (9 songs · 15 pathways), Hip-hop block party (2 · 1), Saturday disco (7 · 11); open Hip-hop block party, tick 'Good Times bassline' → GET /api/graphs/<id> has 4 songs and 4 pathways; untick → back to 2; Everything page has zero buttons/inputs; selection mode: click Le Freak, Voyager, Good Times in that order, Make thread 'Chic family' → GET /api/threads/<new> songs are Le Freak, Voyager, Good Times; at 390 px no horizontal scroll, no console errors; screenshots $HARNESS_SCRATCH/graphs-{1280,390}.png",
+        "node .harness/smoke.mjs 4/4; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T4-07", "milestone": "T4", "model": "opus",
+      "description": "docs/demo/threads-399.sh seeds a running server with the 399 set's 8 songs, 7 pathways, threads 'Tea-tent Latin jazz' and 'Night closers' and graphs 'Sunday tea tent' and 'Soul hour', so the 399 replay shows in-graph, context and elsewhere cards; init.sh runs it.",
+      "steps": [
+        "docs/demo/threads-399.sh <base-url, default http://localhost:7777> uses curl and bash, with node -e for pulling ids out of JSON (no jq, no new dependency): it POSTs the 8 songs with the exact raw titles/artists of tests/fixtures/serato/399.session (Woman of the World — Donald Byrd; Rico Suave Bossa Nova feat. Azymuth — J Dilla; Leroy's Latin Lament: Lonnie Dreams/The Way We Feel/ La Fiesta/Lament — War; Samba Cantina — Paul Desmond; What's Going On — Marvin Gaye; Coffy Is The Color — Roy Ayers; Glide — Pleasure; All Night Long — Splendor), 7 pathways (Woman of the World→All Night Long [vibe], Woman of the World→Rico Suave Bossa Nova [vibe], Woman of the World→Glide [bass], Rico Suave→Leroy's Latin Lament [vibe], Leroy's Latin Lament→Samba Cantina [vibe], What's Going On→Coffy Is The Color [vocal], Coffy Is The Color→Glide [bass]) with short notes, thread 'Tea-tent Latin jazz' = Woman of the World, Rico Suave Bossa Nova, Leroy's Latin Lament, Samba Cantina (colour #22d3cf), thread 'Night closers' = Woman of the World, All Night Long (colour #e879f9), graph 'Sunday tea tent' = own songs Woman of the World, What's Going On, Coffy Is The Color, All Night Long (no threads), graph 'Soul hour' = own songs Woman of the World, What's Going On, Coffy Is The Color, Glide (no threads)",
+        "The script is idempotent: a second run creates nothing (tracks and edges upsert; a thread/graph whose name exists is looked up via GET and skipped) and exits 0; it prints one line per created or existing object and ends with the two graph ids and the two URLs /live?graph=<Sunday tea tent id> and /live?graph=<Soul hour id>",
+        "tests/demo-seed.test.ts starts createApp on an ephemeral port, runs `bash docs/demo/threads-399.sh http://127.0.0.1:<port>` twice, then: 8 tracks, 7 edges, 2 threads, 3 graphs (with default); after a ReplaySource(399.session, speed 0) into the LiveState, snapshot(<Sunday tea tent>) has current Woman of the World (match exact), out = [All Night Long] with cued_edge_id set, context = [Rico Suave Bossa Nova with thread Tea-tent Latin jazz], elsewhere_count 1; snapshot(<Soul hour>) has out = [Glide], context = [All Night Long (Night closers), Rico Suave Bossa Nova (Tea-tent Latin jazz)], elsewhere_count 0, cued_edge_id = the Woman of the World→All Night Long edge (cued in context)",
+        ".harness/init.sh runs `bash docs/demo/threads-399.sh http://localhost:$PORT > $SCRATCH/seed.log` after the server answers and prints 'seed: ok' (or the tail of the log on failure); running .harness/init.sh by hand with HARNESS_PORT=7791 HARNESS_SCRATCH=/tmp/harness/pathways/threads-2026-10-17 shows 'seed: ok' and GET /api/graphs lists Sunday tea tent and Soul hour",
+        "README.md 'Run it' or the Live section gains three lines: how to run the seed and open /live?graph=…",
+        "Suite grows by at least 2 tests; npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T4-08", "milestone": "T4", "model": "sonnet",
+      "description": "What Michael will see after T4: editor screenshots at 1280 and 390 px for the switcher, Threads, thread page, Graphs and context states, and a table of the 399 replay at speed 0 against the demo seed in the progress entry.",
+      "steps": [
+        "Headless Chromium (createRequire($HARNESS_PW)) against the init server (port $HARNESS_PORT, seeded by init.sh): no console errors except art 404s and no horizontal scroll at 390 px on /, /?graph=<Sunday tea tent id> (Track view of Woman of the World), the Threads tab, the Tea-tent Latin jazz thread page, the Graphs tab",
+        "Screenshots written: docs/screenshots/editor-switcher-{1280,390}.png (switcher open or showing 'Sunday tea tent'), editor-threads-{1280,390}.png, editor-thread-page-{1280,390}.png (Tea-tent Latin jazz), editor-graphs-{1280,390}.png, editor-context-{1280,390}.png (Woman of the World in Sunday tea tent: All Night Long full, Rico Suave Bossa Nova dimmed with chip 'Tea-tent Latin jazz · context', '← 1 elsewhere')",
+        "Replay: a second server on port $HARNESS_PORT+1 with a fresh DB under $HARNESS_SCRATCH: import samples/notes-sample.md, run docs/demo/threads-399.sh, restart it with --replay tests/fixtures/serato/399.session --speed 0 --graph 'Sunday tea tent'; read GET /api/sets/replay-399, GET /api/live?graph=<Sunday tea tent>, and GET /api/tracks/<id>?graph=<Sunday tea tent> for each matched play",
+        "The progress entry has a table with one row per play (7 rows): start time (America/New_York) · deck · status · raw title — artist · match · resolved track · graph · cards in graph / context (thread names) / elsewhere count · cued yes/no (and whether the cue is in context); expected last row: 18:23:55 · d1 · current · Woman of the World — Donald Byrd · exact · Woman of the World · Sunday tea tent · 1 / 1 (Tea-tent Latin jazz) / 1 · cued yes (in graph); via_edge_id is noted per row (jump or the pathway)",
+        "Anything that looks wrong to a first-time viewer (clipped text, wrong word, missing chip) is listed under 'Proposed changes' in the progress entry, not fixed here",
+        "npm run check --silent is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "T4-09", "milestone": "T4", "model": "opus",
+      "description": "T4 is reviewed and simplified: an Opus reviewer read the T4 diff, Critical/Important findings and T4-08's proposed changes are fixed test-first or rebutted, the four /simplify angles are applied to the UI code, and the README editor section is current.",
+      "steps": [
+        "git diff <T3-05 commit>..HEAD -- src tests docs ui .harness/init.sh > $HARNESS_SCRATCH/t4.diff; an Opus subagent reviewed it (XSS via thread names/colours in innerHTML, localStorage fallbacks, race between switcher and track load, reorder off-by-one, seed idempotence) and returned findings listed in the progress entry",
+        "Every Critical or Important finding and every T4-08 'Proposed changes' item is fixed (RED→GREEN where a test can express it; otherwise re-checked headless by a Sonnet subagent) or rebutted in the progress entry",
+        "The four /simplify angles were applied to ui/app.js (shared list/reorder helpers for threads and graphs), ui/style.css and the seed script; the progress entry names what changed per angle",
+        "README.md has a 'Threads and graphs' section: the switcher, Threads and Graphs tabs, Make thread from songs, the demo seed command and the two /live?graph= URLs; docs/screenshots names listed",
+        "node .harness/smoke.mjs 4/4; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+
+    {
+      "id": "T5-01", "milestone": "T5", "model": "opus",
+      "description": "A plan for the Live view's context list exists at docs/plans/2026-10-16-t5-live-context.md with the exact HTML classes, the §7 rules and the test cases over the demo seed.",
+      "steps": [
+        "docs/plans/2026-10-16-t5-live-context.md exists, written with superpowers:writing-plans, under 150 lines",
+        "It specifies renderCards(snap): out cards as today; then, when snap.context is non-empty, a rule line 'from thread <name> (not in this graph)' per thread (class ctxrule, thread colour) followed by that thread's context cards with class context (45 % opacity, dashed left border in --thread, chip '<thread> · context', note hidden until tap); then '← N elsewhere' (class elsewhere) when elsewhere_count > 0; a cued context card gets class cued and the 'cued' chip while keeping the context chip (§7 rule 4)",
+        "It specifies renderNow(): the hero chips count out.length only and add a chip 'graph <name>' when snap.graph.id !== 'default' (words.js); ui/live.html header shows the graph name next to LIVE; ui/live.js passes ?graph= to /api/live and /api/live/events (already does) and shows 'Unknown graph' in the source pill on a 404",
+        "It lists the tests: live-render over the demo seed (Sunday tea tent: 1 out, 1 context, '← 1 elsewhere'; Soul hour: 1 out, 2 context, All Night Long cued in context) and the headless screenshots of T5-03",
+        "No file outside docs/ changed; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T5-02", "milestone": "T5", "model": "opus",
+      "description": "/live?graph=<ref> shows the graph name, lists in-graph pathways first, then context cards dimmed under 'from thread X (not in this graph)', then '← N elsewhere', and a cued track reachable only through context lights up in the dimmed style.",
+      "steps": [
+        "ui/live-render.js renderCards renders out, then per-thread rule lines + .pcard.context cards (style --thread:<colour>, chip '<thread> · context', note hidden until tap via class open toggled in ui/live.js), then .elsewhere '← N elsewhere'; a context card whose edge id equals cued_edge_id has class 'context cued' and the cued chip; renderNow adds the graph chip when graph.id !== 'default'; all words from ui/words.js",
+        "ui/live.css: .pcard.context { opacity:.45; border-left:3px dashed var(--thread) } .pcard.context.cued { opacity:1 } (accent outline kept), .ctxrule, .tchip, .elsewhere styles reuse the Live palette; tap targets stay ≥ 44 px at 390 px",
+        "ui/live.js: the header shows the graph name (element #graphName) from snapshot.graph.name when not Everything; a 404 from /api/live?graph= puts 'Unknown graph' in the source pill; the Add pathway button is hidden when the cued edge is in context (there is already a pathway)",
+        "tests/live-render.test.ts (or tests/live-context-render.test.ts) over the demo seed built in-process (tests/helpers/demo-seed.ts or the T4-07 script): Sunday tea tent with current Woman of the World and All Night Long loaded → renderCards has 1 .pcard not .context (All Night Long, cued), 1 .pcard.context with tchip 'Tea-tent Latin jazz · context', one .ctxrule containing 'from thread Tea-tent Latin jazz', and '← 1 elsewhere'; Soul hour → 1 plain card (Glide), 2 context cards, the All Night Long card has classes context and cued and the cued chip, no .elsewhere; Everything → no .ctxrule, no .elsewhere; thread names with <b> are escaped",
+        "node .harness/smoke.mjs 4/4 and a Sonnet headless check of /live?graph=<Sunday tea tent id> on the init server: 1 .pcard.context visible, header shows 'Sunday tea tent', no console errors, no horizontal scroll at 390",
+        "Suite grows by at least 4 tests; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T5-03", "milestone": "T5", "model": "sonnet",
+      "description": "What Michael will see after T5: Live screenshots live-context and live-cued-context at 1280 and 390 px, and the 399 replay table (speed 0, demo seed, graph Sunday tea tent and Soul hour) in the progress entry.",
+      "steps": [
+        "Headless Chromium against the init server (seeded, replay at its end state: current Woman of the World, deck 2 All Night Long cued): /live?graph=<Sunday tea tent id> and /live?graph=<Soul hour id> at 1280 and 390 px load with no console errors except art 404s and no horizontal scroll at 390",
+        "Screenshots written: docs/screenshots/live-context-{1280,390}.png (Sunday tea tent: All Night Long full and cued, Rico Suave Bossa Nova dimmed under 'from thread Tea-tent Latin jazz (not in this graph)', '← 1 elsewhere') and docs/screenshots/live-cued-context-{1280,390}.png (Soul hour: Glide full, All Night Long dimmed-but-cued under Night closers, Rico Suave Bossa Nova under Tea-tent Latin jazz, no elsewhere line)",
+        "Replay table as in T4-08 (second server on $HARNESS_PORT+1, --graph 'Sunday tea tent'), 7 rows with start time · deck · status · raw title — artist · match · resolved track · graph · in graph / context (thread names) / elsewhere · cued yes/no (in context?), plus the same table's last row for --graph 'Soul hour' showing 'cued yes (in context, Night closers)'; via_edge_id per row (expected: Rico Suave→Leroy's Latin Lament, What's Going On→Coffy Is The Color and Coffy Is The Color→Glide are pathways; the other 4 plays are jumps)",
+        "Anything that looks wrong to a first-time viewer is listed under 'Proposed changes' in the progress entry",
+        "npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T5-04", "milestone": "T5", "model": "opus",
+      "description": "T5 is reviewed and simplified: an Opus reviewer read the T5 diff, Critical/Important findings and T5-03's proposed changes are fixed test-first or rebutted, the four /simplify angles are applied, and docs/api.md plus README describe /live?graph=.",
+      "steps": [
+        "git diff <T4-09 commit>..HEAD -- src tests docs ui > $HARNESS_SCRATCH/t5.diff; an Opus subagent reviewed it (escaping of thread names/colours, cued-in-context precedence, the Add pathway button rule, 404 handling in live.js, duplicated CSS between style.css and live.css) and returned findings listed in the progress entry",
+        "Every Critical or Important finding and every T5-03 'Proposed changes' item is fixed RED→GREEN (or re-checked headless by a Sonnet subagent) or rebutted in the progress entry",
+        "The four /simplify angles were applied to ui/live-render.js, ui/live.js and ui/live.css; the progress entry names what changed per angle",
+        "docs/api.md Live section documents graph, context and elsewhere_count with an example snapshot; README.md 'Threads and graphs' section links /live?graph=<name> and the two screenshots",
+        "node .harness/smoke.mjs 4/4; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+
+    {
+      "id": "T7-01", "milestone": "T7", "model": "sonnet",
+      "description": "A short docs plan exists at docs/plans/2026-10-16-t7-docs.md and the README fully describes the threads-and-graphs slice: editor tabs, /live?graph=, CLI, demo seed, layout table and test count.",
+      "steps": [
+        "docs/plans/2026-10-16-t7-docs.md exists (under 60 lines): which docs T7 touches and what each must say",
+        "README.md 'Threads and graphs' section covers: what a thread and a graph are (two sentences from design §12 D20–D23), the editor's switcher, Threads tab, Graphs tab, Make thread from songs, /live?graph=<name>, CLI `threads list|show`, `graphs list|show`, `serve --graph`, the demo seed command and both /live?graph= URLs, and the screenshot names",
+        "README.md 'Layout' table lists src/threads.ts and ui/words.js with their test files; the 'Data model (SQLite)' paragraph names the five v3 tables; every test count in README.md equals the current `npm test` pass count (grep for 'tests' and check the number)",
+        "`npm run check --silent` output pass count is quoted in the progress entry and matches the README",
+        "npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T7-02", "milestone": "T7", "model": "sonnet",
+      "description": "docs/api.md is complete for every new route and snapshot field, and docs/architecture.md's data-model section and the design doc's §12 reflect what was built.",
+      "steps": [
+        "docs/api.md: every route handled in src/server.ts under /api/threads and /api/graphs appears in a table row with body and response (cross-check: grep -o '\"threads\"\\|\"graphs\"' src/server.ts and the ref/sub branches, list them in the progress entry); the ?graph= query on GET /api/tracks/:id, GET /api/live and /api/live/events is documented with the 404 rule; the Sets section documents graph_id and via_edge_id; the Schema section says SCHEMA_VERSION = 3 with all five tables' columns",
+        "docs/architecture.md data-model section describes threads (songs in brainstorm order), graphs (threads + own songs, induced pathways), the context rule (D23) and the virtual Everything graph, and names src/threads.ts as the pure-rules module",
+        "docs/specs/2026-10-14-threads-and-graphs-design.md §12 lists every D<n> *default* taken during this run (at least D25 and D26 from T1-01; any others named in progress.md), each with one sentence",
+        "No code changed (git diff --stat shows only docs/); npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T7-03", "milestone": "T7", "model": "sonnet",
+      "description": "docs/STATUS.md is rewritten for this slice with a 'Review in 10 minutes' that uses the demo seed and the 399 replay, validation with real numbers, gaps, and a drafted ideas/ text block for the review conversation.",
+      "steps": [
+        "docs/STATUS.md header names the run (threads-2026-10-17), the branch, the test count and SCHEMA_VERSION 3; 'Review in 10 minutes' gives the exact commands: npm install && npm run check, PATHWAYS_DB=/tmp/pathways-review.db, bin/pathways import samples/notes-sample.md, bin/pathways serve --replay tests/fixtures/serato/399.session --speed 0 --graph 'Sunday tea tent' (after running docs/demo/threads-399.sh against a first `serve`), then /live?graph=Sunday%20tea%20tent and /live?graph=Soul%20hour, and what to look for (All Night Long cued in graph; Rico Suave Bossa Nova context; '← 1 elsewhere'; in Soul hour the cued card is context)",
+        "A 'What's done' table maps T0, T1, T3, T4, T5 (and T6 if passing) to files and tests; a 'Validation performed' list quotes the T4-08 and T5-03 replay tables (copied from progress.md) and the final pass count",
+        "A 'Gaps / needs Michael' list copies every open question from progress.md (Q8 naming, D15, D16, D18, D19, D21/D22 check, D25, D26 and any newer) verbatim with the simplest answer each needs",
+        "The progress entry contains a text block 'ideas/ updates' (under 25 lines) summarising what the review conversation should carry into ~/projects/ideas: threads as brainstorm-ordered song sets, graphs as induced subgraphs, context rendering, Navidrome as the graph sync target",
+        "No code changed; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+
+    {
+      "id": "T6-01", "milestone": "T6", "model": "opus",
+      "description": "A plan for graph ↔ Navidrome exists at docs/plans/2026-10-16-t6-navidrome.md with the Subsonic calls, the fake server's four responses and the export/import rules.",
+      "steps": [
+        "docs/plans/2026-10-16-t6-navidrome.md exists, written with superpowers:writing-plans, under 150 lines",
+        "It specifies SubsonicLibrary methods getPlaylists(): {id, name, songCount}[], getPlaylist(id): {id, name, songs: LibraryHit[]}, createPlaylist({name, songIds}) and replacePlaylist(playlistId, songIds) (Subsonic 1.16.1 createPlaylist with playlistId replaces the song list), each with the response path (subsonic-response.playlists.playlist[], .playlist.entry[], .playlist)",
+        "It specifies the fake in tests (extend the one in tests/subsonic.test.ts or a shared tests/helpers/subsonic-fake.ts) with getPlaylists, getPlaylist, createPlaylist responses in 1.16.1 shapes, song objects shaped like ~/projects/dj-crate-streaming/fixtures/navidrome_playlist_song_search3.sample.json (read-only reference; copy the shape, not the file)",
+        "It specifies `pathways graphs export <ref> --navidrome [--dry-run]`: export order from graphContent (own songs by position, then threads in graph order), song ids from tracks.library_ref 'subsonic:<id>', playlist name 'Pathways · <graph name>' created or replaced, report lines 'exported N, skipped M (no Navidrome ref): <titles>'; and `pathways graphs import <playlist name|id> [--graph <name>]`: the playlist's songs become the graph's own songs in order (match by library_ref, else upsertTrack with the ref filled, D19 rules), graph created if missing, existing own songs replaced",
+        "It specifies `pathways sets show <ref>` printing per play the pathway taken (type name, note) or 'jump' from via_edge_id, and that with no .env (D15) every real-Navidrome step is logged as 'fake only'",
+        "No file outside docs/ changed; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T6-02", "milestone": "T6", "model": "opus",
+      "description": "SubsonicLibrary can list, read, create and replace playlists against a fake Navidrome that answers in Subsonic 1.16.1 shapes with token auth.",
+      "steps": [
+        "src/library.ts SubsonicLibrary gains getPlaylists(), getPlaylist(id), createPlaylist({name, songIds}) and replacePlaylist(playlistId, songIds) (createPlaylist.view with playlistId and repeated songId params); errors throw 'subsonic <method>: <message>' like search",
+        "tests/helpers/subsonic-fake.ts (extracted from tests/subsonic.test.ts, which keeps passing) serves getPlaylists.view, getPlaylist.view, createPlaylist.view with in-memory playlists and the same md5 token check; tests/subsonic-playlists.test.ts asserts: getPlaylists on an empty fake → []; createPlaylist('Pathways · Soul hour', [id1,id2]) → a playlist with songCount 2; getPlaylist returns 2 songs with ref 'subsonic:<id>' in order; replacePlaylist(pid, [id2]) → songCount 1; a wrong password throws",
+        "The fake records every request's params so tests assert songId is repeated per song and the password never travels (p absent, t and s present)",
+        "Suite grows by at least 4 tests; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T6-03", "milestone": "T6", "model": "opus",
+      "description": "`pathways graphs export <ref> --navidrome [--dry-run]` writes playlist 'Pathways · <graph>' in export order from the songs' Navidrome refs, replaces it on re-export, and reports exported and skipped songs by name.",
+      "steps": [
+        "src/sync.ts (or src/navidrome-sync.ts) exports exportGraphToNavidrome(graph, nav, graphRef, {dryRun}) → {playlist: {id,name}|null, exported: Track[], skipped: Track[], created: boolean}; src/cli.ts `graphs export <ref> --navidrome [--dry-run]` prints 'Pathways · <name>: exported N, skipped M (no Navidrome ref)' then the skipped titles; without SUBSONIC_* in the environment it exits 1 with 'Navidrome is not configured (D15): add SUBSONIC_URL/USER/PASS to .env'",
+        "tests/sync.test.ts over the T1 fixture with library_ref set on Good Times ('subsonic:gt'), Rapper's Delight ('subsonic:rd') and nothing on Another One Bites the Dust: export Hip-hop block party → playlist 'Pathways · Hip-hop block party' with songIds [gt, rd] in own-song order, skipped []; export Saturday disco → exported 2, skipped 5 by name (Another One Bites the Dust first); second export of Hip-hop block party → created false, the fake has still one playlist of that name; --dry-run creates nothing and reports the same counts",
+        "`graphs export default --navidrome` is allowed and exports every song with a ref in allEdges/listTracks order; `graphs export nope --navidrome` → exit 1 'no graph: nope'",
+        "The progress entry says 'fake only' (no .env on this box, D15) or names the real playlist if .env existed",
+        "Suite grows by at least 4 tests; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T6-04", "milestone": "T6", "model": "opus",
+      "description": "`pathways graphs import <playlist> [--graph <name>]` turns a Navidrome playlist into a graph's own songs in order, and `pathways sets show <ref>` prints the pathway taken at each step or 'jump'.",
+      "steps": [
+        "src/sync.ts importPlaylistToGraph(graph, nav, playlistRef, {graphName}) → {graph, songs: Track[], created: Track[], matched: Track[]}: songs matched by library_ref first, else upsertTrack({title, artist, bpm, library_ref}) (D19: an artist-less existing track adopts the artist), own songs replaced in playlist order; graph created when missing (name = --graph or the playlist name without the 'Pathways · ' prefix); the Everything graph is refused with 'the Everything graph cannot be edited'",
+        "tests/sync.test.ts: a fake playlist 'Pathways · Soul hour' with 3 songs (one already a track with the ref, one matching by title/artist without a ref, one new) → graph 'Soul hour' has 3 own songs in playlist order, 1 created track, the ref filled on the title-matched one; importing again changes nothing (same ids, same order); `--graph 'Sunday closers'` names the graph",
+        "`pathways sets show replay-399` (after `serve --replay … --speed 0 --graph 'Sunday tea tent'` against the seeded DB) prints per play '→ <pathway type>: <note>' when via_edge_id is set and 'jump' otherwise; a test over two hand-made plays (via_edge set / null) asserts both forms in the output of the formatting helper (formatSetLine or similar, exported from src/cli.ts or a small src/sets.ts)",
+        "HELP lists `graphs export <ref> --navidrome [--dry-run]` and `graphs import <playlist> [--graph <name>]`; docs/api.md is unchanged (CLI only until D15)",
+        "Suite grows by at least 4 tests; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T6-05", "milestone": "T6", "model": "opus",
+      "description": "T6 is reviewed and simplified: an Opus reviewer read the T6 diff, Critical/Important findings are fixed test-first, the four /simplify angles are applied, and README, STATUS and the design doc describe the Navidrome sync.",
+      "steps": [
+        "git diff <T7-03 commit>..HEAD -- src tests docs > $HARNESS_SCRATCH/t6.diff; an Opus subagent reviewed it (credential handling, songId ordering, replace-vs-create race, D19 adoption, Everything guard) and returned findings listed in the progress entry",
+        "Every Critical or Important finding is fixed RED→GREEN or rebutted in the progress entry",
+        "The four /simplify angles were applied to src/sync.ts, the Subsonic additions and the CLI; the progress entry names what changed per angle",
+        "README.md 'Threads and graphs' and docs/STATUS.md gain the two CLI commands and 'fake only until .env (D15)'; design doc §12 D24 gets one sentence on what was built",
+        "npm run check --silent is green"
+      ],
+      "passes": false
+    },
+
+    {
+      "id": "S-01", "milestone": "stretch", "model": "opus",
+      "description": "On the Live view a context card has a '+ add to graph' button that adds the target song to the current graph, after which the card renders as an in-graph pathway.",
+      "steps": [
+        "ui/live-render.js renders <button class=\"btn sadd\" data-addgraph=\"<to_id>\">+ add to graph</button> inside each .pcard.context (not inside the card's own tap target: the card tap still looks ahead); ui/live.js POSTs /api/graphs/<graph id>/tracks {track_ids:[to_id]} and reloads the snapshot",
+        "tests/live-render.test.ts: Sunday tea tent with Woman of the World current → the Rico Suave Bossa Nova context card contains data-addgraph; the Everything snapshot has none",
+        "Headless (Sonnet): /live?graph=<Sunday tea tent id>, click '+ add to graph' on Rico Suave Bossa Nova → the card is no longer .context and GET /api/graphs/<id> has 5 songs; at 390 px the button is ≥ 44 px tall and no horizontal scroll",
+        "docs/api.md unchanged; README Live paragraph gains one sentence; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "S-02", "milestone": "stretch", "model": "opus",
+      "description": "`pathways threads from-set <ref> --name <n>` creates a thread from a recorded set's matched songs in play order (de-duplicated), e.g. replay-399 → Rico Suave Bossa Nova, Leroy's Latin Lament, Woman of the World, What's Going On, Coffy Is The Color, Glide.",
+      "steps": [
+        "src/graph.ts threadFromSet(session_ref, name) → the thread with the set's matched tracks in started_at order, each song once (first appearance), plays with track_id null skipped and counted; src/cli.ts `threads from-set <ref> --name <n>` prints the thread name, the song count and the number of unmatched plays skipped; HELP updated",
+        "tests/graph-threads.test.ts: after replaying 399.session at speed 0 into a seeded Graph (demo seed helper), threadFromSet('replay-399', 'Sunday as played') has 6 songs in the order Rico Suave Bossa Nova, Leroy's Latin Lament, Woman of the World, What's Going On, Coffy Is The Color, Glide (Woman of the World once); an unknown ref throws 'no set: <ref>'; a duplicate thread name throws",
+        "README 'Threads and graphs' CLI list gains the command; npm run check --silent is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "S-03", "milestone": "stretch", "model": "sonnet",
+      "description": "The design doc has a §13 'Two-way graph ↔ playlist sync' note stating what wins on conflict, as a design only.",
+      "steps": [
+        "docs/specs/2026-10-14-threads-and-graphs-design.md gains §13 (under 60 lines): the one-way export of D24 restated; the conflict cases (song added on one side, removed on one side, reordered on both); a recommended rule (last writer wins per song membership, order from the side edited last, with a dry-run diff shown first) marked *default*; what the sync would need (playlist changed timestamp from getPlaylist, a graphs.synced_at column) and an explicit 'not built in this run'",
+        "OVERNIGHT.md 'Needs Michael' gains one line pointing at §13 with the question 'which side wins when both changed?'",
+        "No code changed; npm run check --silent is green"
+      ],
+      "passes": false
+    }
+  ]
+}

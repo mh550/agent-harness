@@ -30,6 +30,7 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 | 2 | [Orchestrator + subagents](iterations/02-orchestrator-and-subagents.md) | 15–16 Oct | The main session only orchestrates; Opus implements, Sonnet verifies, Opus reviews; context stays small |
 | 3 | [Harness v1](iterations/03-harness-v1.md) | 16 Oct | After Anthropic's "effective harnesses": initializer + one fresh session per feature, inside the app repo |
 | 4 | [Harness v2](iterations/04-harness-v2.md) | 16 Oct | A reusable tool: worktrees, a deterministic driver, repair not stop, verify gates, PRs, phone steering, metrics |
+| 5 | [Harness v3](iterations/05-harness-v3.md) | 17 Oct | Merges verified milestones itself, waits out limits box-wide, queues nights, measures and retros every run into a ledger |
 
 ## How to keep it (the habit)
 
