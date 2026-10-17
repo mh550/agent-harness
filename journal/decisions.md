@@ -166,3 +166,15 @@ agents are driven*.
   "blocked on X" (needs Michael). The initializer marks independent work with `after: [ids]`.
 - **Why:** v2 moved from a failed T4 review straight to T5, which builds on T4 (D-H14). Conservative by default,
   explicit when it's safe to go on.
+
+### D-H21 · Live writes and the nightly backup exclude each other *(accepted 2026-10-17)*
+- **Finding:** the 03:30 restic job (03:39–03:41 on 10-17) ran inside both overnight runs. A live stage during the
+  backup's file walk gives a snapshot of a half-applied stage; `snapshot-crates-db.sh` writes the same file a run
+  would use as its restore point; navidrome.db is backed up as raw WAL files. Checked: a skipped backup exits 1,
+  so `ExecMainStatus=0` means a snapshot was saved.
+- **Choice:** (1) now, in the protocol: no live write 03:15–04:30 or while `restic-backup.service` is active;
+  restore points named with the run id; (2) a shared lock, `LIVE_LOCK=/srv/docker/crates/live.lock`, which sessions
+  take with `flock -n` (skip if busy) and the backup script holds while it snapshots and backs up (a 3-line root
+  edit for Michael); (3) dj milestone H1: navidrome.db in the nightly snapshot, worker heartbeat, healthchecks.
+- **Rejected:** moving the backup out of the night (the night is when the box is idle); triggering a backup from a
+  run (needs root for agents).
