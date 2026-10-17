@@ -61,8 +61,37 @@ rejected options are in [`decisions.md`](../decisions.md) (D-H1 to D-H8).
   `main`. I can still turn on GitHub auto-merge myself.
 
 ## What worked / what broke
-- *(to fill in after the first real run: features passed, sessions, $ per feature, interventions,
-  which guards fired, what I changed)*
+First real run: two projects in parallel, 2026-10-17 02:24 → 05:23 EDT
+([Pathways](../runs/threads-2026-10-17.md), [dj](../runs/dj-2026-10-17.md),
+[evaluation](../runs/2026-10-17-evaluation.md)).
+
+- ✅ **The loop held for 2 h 49 min.** 27 real coding sessions, each one feature, test-first, inbox read, progress
+  logged, committed and pushed. **0** feature-list repairs, **0** red-suite un-passes, **0** permission denials,
+  **0** human interventions, and no live-system command in the dj run.
+- ✅ **Delivered:** Pathways 21/37 features, tests **122 → 211**, T0/T1/T3 verified and tagged; dj 5/19, the
+  duplicate cleanup (plan → repoint → trash) with a staged runbook, N1 verified. **$2.23** and **$4.51** per
+  passing feature; ~7 and ~20 min of session time per feature.
+- ✅ **Fable initializer:** two lists with zero repairs, executable steps and real handover notes, for 18 % of the
+  night's cost.
+- ✅ **Tag + PR per verified milestone** gave Michael something precise to merge (`run/threads-2026-10-17/T3`).
+- ❌ **The usage-limit backoff never fired.** Both runs hit the plan's five-hour limit at 05:13. The real message
+  ("You've hit your session limit", `api_error: usage_limit_reached`) didn't match the regex, which had been tested
+  only against a message I invented for the stub. 45 sessions were counted as failed attempts in 6 minutes;
+  Pathways stopped at `MAX_SESSIONS=40`, dj ran out of features, both with 5 h of budget left.
+- ❌ **Two parallel runs share one plan limit** and spent it in under 3 h.
+- ❌ **Verify sessions were too thin** (29–40 s on Pathways). The defects that matter were found by an Opus review
+  the next morning: a half-built `/live?graph=`, a README promising it, unrecorded decisions, and four Important
+  gaps in dj's trash step.
+- ❌ **Mislabels:** every run ends "final verified and tagged"; `harness status` says "running" for finished runs;
+  metrics reported 1.2 h of session time for 2.54 h of real sessions.
+- ❌ **Per-project configuration is heavy and fragile:** ~150 lines per project, of which ~15 are durable facts
+  only the project knows. dj's policy was edited 46 s before the run and came out contradictory ("never operate"
+  heading, "you can test live" bullets, "code only" scope).
 
 ## Led to
-*(after the first run)*
+Harness v3, not built yet. The ranked list is in [the evaluation](../runs/2026-10-17-evaluation.md#ranked-changes-for-harness-v3);
+proposed decisions D-H11 to D-H16. The first three changes go in before the next unattended night:
+1. limit detection on the structured error, plus a fake that replays the real message;
+2. a shared limit marker across parallel runs;
+3. an honest end of run (no "final verified" unless it is).
+Per-project configuration moves to conventions, one `POLICY=` line, `CLAUDE.md` and a run brief (D-H15).

@@ -18,7 +18,7 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 | `evidence/timeline.md` | Dated table of every session or run, with real numbers | refreshed by an agent from git and docs |
 | `evidence/prompts/` | The prompts that changed the outcome, verbatim, each with its "why it matters" | added as they happen |
 | `sessions/` | Verbatim transcript excerpts of design conversations (my messages, the key answers) | after a design conversation |
-| `runs/` | One-paragraph retro per harness run + its `metrics.jsonl` summary | after each run (the harness writes the metrics) |
+| `runs/` | One evaluation per harness run (delivery, failures by cause, guards, cost) plus a cross-run evaluation per night | after each run (the harness writes the metrics) |
 | `raw/` | Local, git-ignored raw material (transcript copies, screenshots) | never published as is |
 
 ## The iterations so far

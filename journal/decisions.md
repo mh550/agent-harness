@@ -85,3 +85,48 @@ agents are driven*.
   - the agent settings live in `.harness/agent-settings.json`, so interactive deploy sessions are unaffected.
 - **Also:** dj's suite takes about 7 min. The driver caches a green result per code tree, so a
   session doesn't pay for the same check two or three times.
+
+### D-H11 · Detect limits from the structured error, and test against the real message *(proposed, after 10-17)*
+- **Problem:** D-H9's regex missed "You've hit your session limit"; 45 sessions were counted as failures in 6 min.
+  The stub emitted a message I had guessed.
+- **Options:** widen the regex · **read `api_error` / `api_error_status` / `terminal_reason` first, regex as fallback,
+  never count a $0 ≤1-turn session, sleep until `resetsAt`, pause after 3 fast failures** · stop the run on any error.
+- **Why:** structure doesn't change wording between releases; the $0 rule catches the next unknown error too.
+  The stub replays a real result line captured on 10-17 ("fakes mirror the live API", ON2).
+
+### D-H12 · One limit for all runs on the box *(proposed)*
+- **Options:** run one project per night · **a shared `LIMIT_UNTIL` marker every driver honours, plus
+  `harness start --after <run>`** · a token-bucket scheduler.
+- **Why:** two runs spent the five-hour window in 2 h 49 min (10-17), three loops did the same on 10-14. The marker
+  is 15 lines; a scheduler is a project.
+
+### D-H13 · The end of a run is reported, not "verified" *(proposed)*
+- **Choice:** tag `final` only when every milestone is verified; otherwise update the PR body with what is verified,
+  what is on the branch unverified, and the tag to merge. Delete the two `run/*/final` tags from 10-17 (Michael).
+- **Why:** the PR is the review surface; a label that says "verified" over unreviewed T4 code invites a bad merge.
+
+### D-H14 · A failed milestone gate blocks later milestones *(proposed)*
+- **Options:** keep going in array order (v2) · **skip features whose earlier milestone is given up or failed its
+  review; mark it "needs Michael"** · stop the run.
+- **Why:** with a real failure, T5 would have been built on unreviewed T4. Independent milestones can still opt out
+  by having no dependency (a later milestone id with `"after": []`).
+
+### D-H15 · Per-project configuration: conventions + one policy line + `CLAUDE.md` + a run brief *(proposed)*
+- **Options:** keep `.harness/{config.sh,init.sh,project.md}` · initializer drafts `project.md` in the run ·
+  reuse `CLAUDE.md` · policy profiles · move generic rules to `prompts/` · **all but the in-run draft, combined**.
+- **Choice:** generic rules live in `prompts/`; check/smoke/init/port by convention; `POLICY=build-only|live-staged`
+  appends a harness-owned protocol; durable facts (and a `## Live system` fact sheet) live in `CLAUDE.md`, which
+  interactive sessions read too; "tonight's" scope goes in `harness start --brief`, recorded in the run record.
+  `harness init` drafts a `CLAUDE.md` *before* a run for Michael to edit; it never writes settings.
+- **Why:** ~150 lines per project had ~15 project-only lines; the one policy decision was buried in prose and
+  came out contradictory on 10-17. An in-run draft would govern a night before anyone reviewed it.
+- **Undo:** the driver still appends `.harness/project.md` if present.
+
+### D-H16 · Live systems: staged live operations under a protocol, replacing D-H10's build-only nights *(proposed)*
+- **Context:** Michael wants agents to operate dj live (backed up by git and nightly restic). D-H10 forbade it.
+- **Choice:** `POLICY=live-staged`: preflight (check green, `sqlite3 .backup` snapshots, last restic run and running
+  image noted), stages dry run → `--limit 5` → `--limit 50` → all with checks after each, stop and revert on the
+  first problem, one writer (`flock`), deploy only via `scripts/deploy.sh` from the run's worktree with the previous
+  image noted; still never Soulseek transfers, `/srv/incoming`, the amperfy account, secrets or history rewrites.
+  Allow rules for the needed commands are Michael's to add (text in the evaluation).
+- **Gate:** not before the trash-step fixes I1/I2 from the 10-17 review, and one attended run of the protocol.
