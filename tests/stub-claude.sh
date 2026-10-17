@@ -24,6 +24,9 @@ EOF
       git -C "$tmp" commit -qam "phone: stop" && git -C "$tmp" push -q origin "$HARNESS_BRANCH"
     fi ;;
   "# Coding session"*)
+    if [[ ${STUB_LIMIT_HITS:-} ]] && (( $(count limit) <= STUB_LIMIT_HITS )); then   # the plan's usage limit, nothing done
+      echo '{"type":"result","subtype":"success","is_error":true,"result":"Claude AI usage limit reached|1760700000"}'; exit 1
+    fi
     id=$(sed -n 's/^# Coding session — `\([^`]*\)`.*/\1/p' <<< "$first"); n=$(count "$id")
     echo "$id attempt $n" >> "$HARNESS_SCRATCH/sessions.log"
     set_passes "$id" true

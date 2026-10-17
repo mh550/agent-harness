@@ -57,6 +57,13 @@ R3=$T/wt/proj/strict/.harness/runs/strict
 check "verify ping-pong capped, needs Michael" 'grep -q "M1 needs Michael" "$R3/harness-log.md" && (( $(grep -c "^A attempt" "$T/scratch/proj/strict/sessions.log") <= 2 ))'
 check "M2 still done after M1 stalls"     'git -C "$T/origin.git" tag | grep -qx run/strict/M2'
 
+# ---- run 4: usage limit for 3 sessions — attempts not spent, run waits and finishes ----
+STUB_LIMIT_HITS=3 HARNESS_LIMIT_SLEEP=0 "$H" start "$T/proj" limited --foreground > "$T/run4.out" 2>&1
+R4=$T/wt/proj/limited/.harness/runs/limited
+check "usage limit not counted, run completes" '[[ $(grep -c "hit a limit" "$R4/harness-log.md") == 3 ]] && [[ $(node "$HERE/../lib/features.mjs" summary "$R4/feature_list.json") == "3/3 passing" ]]'
+STUB_LIMIT_HITS=99 HARNESS_LIMIT_SLEEP=0 HARNESS_PAUSE_POLL=0 timeout 20 "$H" start "$T/proj" walled --foreground > "$T/run5.out" 2>&1
+check "endless limit pauses the run"      'grep -q "usage-limit hits in a row" "$T/wt/proj/walled/.harness/runs/walled/harness-log.md" && [[ -f $HARNESS_STATE/proj/walled/PAUSE ]]'
+
 (( fails )) && { echo "--- run1 output"; tail -30 "$T/run1.out"; echo "--- harness-log"; cat "$RD/harness-log.md" 2>/dev/null; }
-echo "$(( 20 - fails ))/20 checks passed"
+echo "$(( 22 - fails ))/22 checks passed"
 exit $(( fails > 0 ))

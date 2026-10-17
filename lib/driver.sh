@@ -12,7 +12,8 @@ cd "$WT" || exit 1
 
 # ---- configuration: defaults, then the project's .harness/config.sh ----
 PROJECT_NAME=$(basename "$PROJECT_DIR")
-HOURS=8 MAX_SESSIONS=40 MAX_ATTEMPTS=2 MAX_REPAIRS=3 MAX_VERIFY_ROUNDS=2
+HOURS=8 MAX_SESSIONS=40 MAX_ATTEMPTS=2 MAX_REPAIRS=3 MAX_VERIFY_ROUNDS=2 MAX_LIMIT_HITS=6
+LIMIT_WAITS="900 1800 3600"   # seconds to wait after the 1st, 2nd, 3rd+ consecutive usage-limit hit
 SESSION_TIMEOUT=100m MAX_TURNS=250 SESSION_BUDGET_USD=20
 INIT_MODEL=fable WORKER_MODEL=opus VERIFY_MODEL=sonnet
 PR_POLICY=milestone MAIN_BRANCH=main
@@ -158,7 +159,7 @@ if [[ ! -f $LIST ]]; then
   notify "started: $(F summary "$LIST")"
 fi
 
-repairs=0 n=0
+repairs=0 n=0 limits=0
 while (( n < MAX_SESSIONS )); do
   (( $(date +%s) >= DEADLINE )) && { note "deadline (${HOURS} h) reached"; break; }
   take_answers; sync
@@ -178,9 +179,24 @@ while (( n < MAX_SESSIONS )); do
   run_init
   HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
   log "session $n · $id · $mdl"
-  slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
+  slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl" t0=$(date +%s)
   session coding "$mdl" "$slog"
   commit_all "WIP: $id — uncommitted at session end (harness)"
+
+  # A usage/rate limit or an outage is not the feature's fault: give the attempt back, wait, try again.
+  if why=$(MET limit "$slog" $(( $(date +%s) - t0 ))); then
+    F unbump "$ATT" "$id"; n=$(( n - 1 )); limits=$(( limits + 1 ))
+    read -ra waits <<< "$LIMIT_WAITS"; w=${waits[$(( limits > ${#waits[@]} ? ${#waits[@]} - 1 : limits - 1 ))]}
+    if (( limits >= MAX_LIMIT_HITS )); then
+      touch "$STATE/PAUSE"; note "$limits usage-limit hits in a row ($why); paused — harness resume $RUN_ID"; notify "paused: usage limit"; continue
+    fi
+    (( limits == 1 )) && notify "usage limit, waiting"
+    left=$(( DEADLINE - $(date +%s) )); (( w > left )) && w=$(( left > 0 ? left : 0 ))
+    note "session for $id hit a limit ($why); not counted; waiting $(( w / 60 )) min"
+    commit_all "HARNESS: usage limit"; sync
+    sleep "${HARNESS_LIMIT_SLEEP:-$w}"; continue
+  fi
+  limits=0
 
   if out=$(F repair "$LIST" "$STATE/before.json" "$id"); then repairs=0; else
     repairs=$(( repairs + 1 )); note "restored the feature list after $id: $out"
