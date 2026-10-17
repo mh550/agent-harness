@@ -110,15 +110,20 @@ STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS
 D=$(date +%F)
 check "queue ran both entries, distinct run ids" '[[ $($F summary "$(list proj-$D)") == "3/3 passing" && $($F summary "$(list proj-$D-2)") == "3/3 passing" ]] && grep -q "queue empty" "$HARNESS_STATE/queue/runner.log"'
 check "trends lists every run"            'grep -q "| proj-$D-2 | proj |" <<< "$("$H" trends)"'
-DB=$T/debriefs.log Q=$HARNESS_STATE/queue
-check "queue end triggers one debrief"    '[[ $(grep -c . "$DB") == 1 ]] && compgen -G "$T/ledger/debriefs/*.md" > /dev/null && grep -q "debrief written" "$Q/runner.log"'
+DB=$T/debriefs.log Q=$HARNESS_STATE/queue NOTE=$T/ledger/debrief.md
+ndb() { cat "$DB" 2>/dev/null | grep -c .; }
+settle() {   # the runner's debrief is detached: wait until no debrief process is left
+  local i; sleep 0.5
+  for i in $(seq 150); do pgrep -f "$HH/lib/debrief\.sh|$HH/bin/harness debrief" > /dev/null || return 0; sleep 0.2; done; return 1
+}
+HH=$(cd "$HERE/.." && pwd); settle
+check "queue end triggers one debrief, detached" '[[ $(ndb) == 1 && -s $NOTE && -s $Q/last-debrief ]] && grep -q "debrief written" "$Q/runner.log" && grep -q "harness debrief (detached" "$Q/runner.log"'
 check "the debrief saw the queue's runs"  'grep -q "### proj-$D-2 (proj)" "$T/debrief-prompt" && grep -q "### proj-$D (proj)" "$T/debrief-prompt"'
-"$H" debrief --if-missed > "$T/missed1.out" 2>&1
-check "--if-missed: no-op after the queue's own debrief" '[[ $(grep -c . "$DB") == 1 ]] && grep -q "already debriefed" "$T/missed1.out"'
-sleep 1; HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2.out" 2>&1
-check "a runner that started nothing: no debrief" '[[ $(grep -c . "$DB") == 1 ]] && grep -q "queue empty" "$T/queue2.out"'
-"$H" debrief --if-missed > "$T/missed2.out" 2>&1
-check "--if-missed: no-op when the last runner started nothing" '[[ $(grep -c . "$DB") == 1 ]] && grep -q "no runs started" "$T/missed2.out"'
+"$H" debrief > "$T/again.out" 2>&1
+check "by hand right after: nothing new, no session" '[[ $(ndb) == 1 ]] && grep -q "no runs started since the last debrief" "$T/again.out"'
+"$H" queue add --continue stoppy > /dev/null   # Michael stopped stoppy: the runner skips it, so it starts nothing
+HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2.out" 2>&1; settle
+check "a runner that started nothing (a skipped continuation): no debrief" '[[ $(ndb) == 1 ]] && grep -q "skipping queued continuation of stoppy" "$Q/runner.log" && ! grep -q "harness debrief (detached" "$T/queue2.out"'
 
 # ---- run 11: a verify refused by the usage limit is deferred, never a "holds" ----
 STUB_VERIFY_LIMIT=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" vlimit --spec SPEC.md --foreground > "$T/run11.out" 2>&1
@@ -151,38 +156,70 @@ STUB_PHONE_STOP=1 "$H" start "$T/proj" flip --spec SPEC.md --foreground > "$T/ru
 "$H" continue flip --foreground > "$T/run15b.out" 2>&1
 check "resume reloads config merged from main" 'hlog flip | grep -q "configuration reloaded after merging main: policy live-staged"'
 
-# ---- debrief: a runner that died without one; --dry-run, --if-missed, continuations, notification, limits ----
-printf '%s\n' 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify.log\"'" > "$T/user-config.sh"
-sleep 1; echo "$(date '+%F %T') runner up · MAX_PARALLEL_RUNS=1" >> "$Q/runner.log"   # …and then it was killed
-echo "$(date '+%F %T') run stoppy on harness/stoppy in $T/wt/proj/stoppy · port 7951" >> "$HARNESS_STATE/proj/stoppy/run.log"
-echo "deadline · $(date '+%F %T')" > "$HARNESS_STATE/proj/stoppy/ended"
-"$H" debrief --dry-run > "$T/dry.out" 2>&1
-check "--dry-run prints the context, launches nothing" '[[ $(grep -c . "$DB") == 1 && -f $(head -1 "$T/dry.out") ]] && grep -q "^## harness status" "$T/dry.out" && grep -q "^### stoppy (proj)" "$T/dry.out" && grep -q "ended: deadline" "$T/dry.out" && grep -q "runner up" "$T/dry.out"'
-STUB_DEBRIEF_CONTINUE=1 "$H" debrief --if-missed > "$T/missed3.out" 2>&1
-N=$(ls -t "$T/ledger/debriefs/"*.md | head -1)
-check "--if-missed fires after a runner that never debriefed" '[[ $(grep -c . "$DB") == 2 ]] && grep -q "stub runs" "$N"'
-check "the session carries the never-list as disallowed tools" 'A=$T/debrief-args; grep -qx -- --disallowedTools "$A" && grep -qx Edit "$A" && grep -qx Write "$A" && grep -qxF "Bash(git push:*)" "$A" && grep -qxF "Bash(gh pr merge:*)" "$A" && grep -qxF "Bash(harness queue start:*)" "$A" && grep -qxF "Bash(harness merge:*)" "$A" && grep -qxF "Bash(harness continue:*)" "$A" && grep -qx "$($F model sonnet)" "$A"'
-check "continuation queued for a run out of time" 'f=$(compgen -G "$Q/*-continue-stoppy.args") && grep -qx "do C next" "$f" && grep -q "Queued: .*stoppy" "$N" && ! grep -q "debrief: queued" "$N"'
-check "no continuation for an ineligible run" '! compgen -G "$Q/*-continue-demo.args" > /dev/null && grep -q "Not queued: demo" "$N" && ! grep -q "^CONTINUE:" "$N"'
-check "NOTIFY_CMD gets 3 headline lines and the note path" 'M=$(sed "/^===$/q" "$T/notify.log" | grep -v "^===$"); (( $(wc -l <<< "$M") <= 4 )) && grep -q "Landed: proj M1" <<< "$M" && grep -qF "$N" <<< "$M" && ! grep -q FOURTH <<< "$M"'
-"$H" debrief --if-missed > "$T/missed4.out" 2>&1
-check "--if-missed: no-op once debriefed" '[[ $(grep -c . "$DB") == 2 ]] && grep -q "already debriefed" "$T/missed4.out"'
-echo $$ > "$Q/runner.pid"; echo $(( $(date +%s) - 600 )) > "$Q/runner.until"   # a runner still going
-"$H" debrief --if-missed > "$T/missed5.out" 2>&1
-check "--if-missed: a runner within 1 h of its --until is left alone" '[[ $(grep -c . "$DB") == 2 ]] && grep -q "still running" "$T/missed5.out"'
-echo $(( $(date +%s) - 7200 )) > "$Q/runner.until"
-"$H" debrief --if-missed > "$T/missed6.out" 2>&1
-N=$(ls -t "$T/ledger/debriefs/"*.md | head -1)
-check "--if-missed: a stuck runner gets a 'queue looks stuck' debrief" '[[ $(grep -c . "$DB") == 3 ]] && grep -qi "queue looks stuck" "$N" && grep -qi "queue looks stuck" "$T/debrief-prompt" && tail -n 6 "$T/notify.log" | grep -qi "queue looks stuck"'
-rm -f "$Q/runner.pid" "$Q/runner.until"
-echo $(( $(date +%s) + 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
-"$H" debrief > "$T/limit1.out" 2>&1
-check "debrief waits for the usage-limit window, then runs" 'grep -q "usage-limit window" "$T/limit1.out" && [[ $(grep -c . "$DB") == 4 ]]'
-echo $(( $(date +%s) + 6 * 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
-"$H" debrief > "$T/limit2.out" 2>&1
-check "a window past the 5 h cap: no session, left to the fallback" 'grep -q "5 h cap" "$T/limit2.out" && [[ $(grep -c . "$DB") == 4 ]]'
+# ---- debrief: the runner's other exits ----
 rm -f "$HARNESS_STATE/LIMIT_UNTIL"
-check "fallback timer units: daily 09:00, --if-missed" 'U=$HERE/../contrib/systemd; grep -q "OnCalendar=.*09:00" "$U/harness-debrief.timer" && grep -q "harness debrief --if-missed" "$U/harness-debrief.service"'
+"$H" queue add "$T/proj" --spec SPEC.md > /dev/null; "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
+B=$(ndb); STUB_QUEUE_STOP=1 STUB_PHONE_STOP=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue3.out" 2>&1; settle
+check "queue stop after a run: one debrief" '[[ $(ndb) == $((B + 1)) ]] && grep -q "stopped by harness queue stop" "$T/queue3.out" && [[ $(ls "$Q"/*.args | wc -l) == 1 ]]'
+"$H" queue add "$T/proj" --spec SPEC.md > /dev/null
+B=$(ndb); STUB_SLOW_INIT=3 STUB_PHONE_STOP=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" $(( $(date +%s) + 2 )) > "$T/queue4.out" 2>&1; settle
+check "past --until after a run: one debrief" '[[ $(ndb) == $((B + 1)) ]] && grep -q "past the --until time" "$T/queue4.out"'
+rm -f "$Q"/*.args
+
+# ---- debrief: since the last success; failed and killed debriefs; continuations; notification ----
+printf '%s\n' 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify.log\"'" > "$T/user-config.sh"
+ran() { local r; sleep 1; for r; do echo "$(date '+%F %T') run $r on harness/$r in $T/wt/proj/$r · port 7999" >> "$HARNESS_STATE/proj/$r/run.log"; done; }   # runs since
+ran stoppy demo walled limited gated
+for r in stoppy limited gated; do echo "deadline · $(date '+%F %T')" > "$HARNESS_STATE/proj/$r/ended"; done
+echo "usage limit (6 sessions refused in a row) · $(date '+%F %T')" > "$HARNESS_STATE/proj/walled/ended"
+LD=$(cat "$Q/last-debrief") B=$(ndb)
+STUB_DEBRIEF_LIMIT=1 "$H" debrief > "$T/refused.out" 2>&1
+check "a refused debrief: no note, nothing marked done, LIMIT_UNTIL set" '[[ $(cat "$Q/last-debrief") == "$LD" && -f $HARNESS_STATE/LIMIT_UNTIL ]] && ! grep -q "stoppy" "$NOTE" && grep -q "refused" "$T/refused.out"'
+rm -f "$HARNESS_STATE/LIMIT_UNTIL"
+STUB_DEBRIEF_ERROR=1 "$H" debrief > "$T/error.out" 2>&1
+check "a failed session: its error text is never the note" '[[ $(cat "$Q/last-debrief") == "$LD" ]] && ! grep -q "max turns" "$NOTE" && ! grep -qs "max turns" "$T/notify.log"'
+echo $(( $(date +%s) + 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
+HARNESS_LIMIT_SLEEP=60 setsid "$H" debrief > "$T/killed.out" 2>&1 & P=$!
+for i in $(seq 50); do grep -q "waiting" "$T/killed.out" && break; sleep 0.2; done; kill -- -"$P"; wait "$P" 2> /dev/null
+rm -f "$HARNESS_STATE/LIMIT_UNTIL"
+check "a killed debrief changes nothing" '[[ $(cat "$Q/last-debrief") == "$LD" && $(ndb) == $B ]] && grep -q "waiting" "$T/killed.out"'
+touch "$Q/0099-continue-walled.args"; echo $$ > "$HARNESS_STATE/proj/gated/driver.pid"
+"$H" debrief --dry-run > "$T/dry.out" 2>&1
+check "--dry-run prints the context, launches nothing" '[[ $(ndb) == $B && -f $(head -1 "$T/dry.out") && $(cat "$Q/last-debrief") == "$LD" ]] && grep -q "^## harness status" "$T/dry.out" && grep -q "^### stoppy (proj)" "$T/dry.out" && grep -q "ended: deadline" "$T/dry.out"'
+cp "$NOTE" "$T/note-before.md"
+STUB_DEBRIEF_CONTINUE="stoppy demo walled limited gated" "$H" debrief > "$T/next.out" 2>&1
+check "the next debrief covers what the failed and killed ones missed" '[[ $(ndb) == $((B + 1)) && $(cat "$Q/last-debrief") != "$LD" ]] && ! for r in stoppy demo walled limited gated; do grep -q "^### $r (proj)" "$T/debrief-prompt" || echo missing; done | grep -q missing'
+check "one note, overwritten: ledger/debrief.md" '! cmp -s "$NOTE" "$T/note-before.md" && [[ $(grep -c "^# Debrief" "$NOTE") == 1 && ! -e $T/ledger/debriefs ]] && grep -q "stub runs" "$NOTE"'
+check "the session: an allowlist (dontAsk) and the never-list" 'A=$T/debrief-args; grep -qx dontAsk "$A" && ! grep -qx auto "$A" && grep -qx -- --allowedTools "$A" && grep -qx Read "$A" && grep -qxF "Bash(git log:*)" "$A" && grep -qx -- --disallowedTools "$A" && grep -qx Edit "$A" && grep -qx Write "$A" && grep -qxF "Bash(git push:*)" "$A" && grep -qxF "Bash(gh pr merge:*)" "$A" && grep -qxF "Bash(harness queue start:*)" "$A" && grep -qxF "Bash(harness merge:*)" "$A" && grep -qxF "Bash(harness continue:*)" "$A" && grep -qx "$($F model sonnet)" "$A"'
+check "the prompt goes in on stdin, not as an argument" 'grep -q "^# Debrief" "$T/debrief-prompt" && ! grep -q "# Debrief" "$T/debrief-args"'
+check "continuation queued: keeps attempts, brief marked as the debrief's" 'f=$(compgen -G "$Q/*-continue-stoppy.args") && grep -qx -- --keep-attempts "$f" && grep -q "do C next" "$f" && grep -qi "suggested by the debrief" "$f" && grep -q "Queued: .*stoppy" "$NOTE" && ! grep -q "debrief: queued" "$NOTE"'
+check "not queued: ended done / already queued / no work left / still running" 'grep -q "Not queued: demo (it ended .done." "$NOTE" && grep -q "Not queued: walled (a continuation is already queued)" "$NOTE" && grep -q "Not queued: limited (no work left)" "$NOTE" && grep -q "Not queued: gated (still running)" "$NOTE" && ! compgen -G "$Q/*-continue-demo.args" > /dev/null && ! compgen -G "$Q/*-continue-limited.args" > /dev/null && ! compgen -G "$Q/*-continue-gated.args" > /dev/null && ! grep -q "CONTINUE:" "$NOTE"'
+check "NOTIFY_CMD gets 3 headline lines and the note path" 'M=$(sed "/^===$/q" "$T/notify.log" | grep -v "^===$"); (( $(wc -l <<< "$M") <= 4 )) && grep -q "Landed: proj M1" <<< "$M" && grep -qF "$NOTE" <<< "$M" && ! grep -q FOURTH <<< "$M"'
+check "a run still going is covered again next time" 'S=$(cut -f2 "$Q/last-debrief"); "$H" debrief --dry-run | grep -q "^### gated (proj)" && [[ $S < $(date "+%F %T") ]]'
+rm -f "$HARNESS_STATE/proj/gated/driver.pid" "$Q"/*.args
+
+# ---- debrief: a big record, a session that writes, the limit window, no node, git history as the archive ----
+ran stoppy; head -c 300000 /dev/zero | tr '\0' x | fold -w 100 > "$T/wt/proj/stoppy/.harness/runs/stoppy/report.md"
+B=$(ndb); STUB_DEBRIEF_TAMPER=1 "$H" debrief > "$T/tamper.out" 2>&1
+C=$(ls -td "$HARNESS_STATE"/debrief/*/ | head -1)context.md
+check "a 300 KB report: the context stays small, the session runs" '(( $(wc -c < "$C") < 200000 )) && [[ $(ndb) == $((B + 1)) ]]'
+check "files changed during the session are flagged in the note" 'grep -q "changed during the debrief session" "$NOTE" && grep -q "debrief-tamper.txt" "$NOTE"'
+rm -f "$T/wt/proj/stoppy/debrief-tamper.txt"
+ran stoppy; echo $(( $(date +%s) + 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
+B=$(ndb); t0=$(date +%s); HARNESS_LIMIT_SLEEP=2 "$H" debrief > "$T/limit1.out" 2>&1; t1=$(date +%s)
+check "debrief waits for the usage-limit window, then runs" 'grep -q "usage-limit window" "$T/limit1.out" && (( t1 - t0 >= 2 )) && [[ $(ndb) == $((B + 1)) ]] && (( $(stat -c %Y "$T/debrief-prompt") >= t0 + 2 ))'
+ran stoppy; echo $(( $(date +%s) + 6 * 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
+B=$(ndb); "$H" debrief > "$T/limit2.out" 2>&1
+check "a window past the 5 h cap: no session (the next debrief covers it)" 'grep -q "5 h cap" "$T/limit2.out" && [[ $(ndb) == $B ]]'
+rm -f "$HARNESS_STATE/LIMIT_UNTIL"
+NP=$(tr : '\n' <<< "$PATH" | while read -r d; do [[ -x $d/node ]] || printf '%s:' "$d"; done)
+B=$(ndb); PATH=${NP%:} NVM_DIR=$T/no-nvm HOME=$T/nohome "$H" debrief > "$T/nonode.out" 2>&1; rc=$?
+check "preflight: no node anywhere, a clear failure and no session" '(( rc != 0 )) && grep -q "missing: node" "$T/nonode.out" && [[ $(ndb) == $B ]]'
+git -C "$T/ledger" init -q && git -C "$T/ledger" add -A && git -C "$T/ledger" -c user.name=t -c user.email=t@t commit -qm ledger
+printf '%s\n' 'LEDGER_COMMIT=1 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+for i in 1 2; do ran stoppy; GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t "$H" debrief > "$T/commit$i.out" 2>&1; done
+check "each debrief is a commit of ledger/debrief.md" '[[ $(git -C "$T/ledger" log --oneline -- debrief.md | grep -c "ledger: debrief") == 2 && -z $(git -C "$T/ledger" status --porcelain) ]]'
+echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
 
 (( fails )) && { echo "--- run1 output"; tail -30 "$T/run1.out"; echo "--- harness-log"; hlog demo; }
 echo "$(( total - fails ))/$total checks passed"

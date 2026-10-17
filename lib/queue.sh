@@ -2,8 +2,10 @@
 # The queue runner (`harness queue start`, tmux session h-queue). Starts queued runs in order: at most
 # MAX_PARALLEL_RUNS at a time (user config; 1 = one after another), never while the box-wide usage-limit window is
 # closed, and none after the --until time. Exits when the queue is empty and nothing it started is still running,
-# when it is past --until with nothing running, or on `harness queue stop`. Whichever way it exits, if it started a
-# run it then runs `harness debrief` once (after removing runner.pid, so a new runner can start meanwhile).
+# when it is past --until with nothing running, or on `harness queue stop`. Every run it starts is marked with its id
+# (<state>/runners, by `harness start`). Whichever way it exits, if it started a run it starts `harness debrief`
+# detached (setsid: a new runner replacing tmux h-queue doesn't kill it). The debrief covers every run since the last
+# successful one, so a debrief that fails or is killed is caught up by the next one (or `harness debrief` by hand).
 #   queue.sh [<until epoch, 0 = none>]
 set -uo pipefail
 : "${HARNESS_HOME:?}"
@@ -15,9 +17,9 @@ H=$HARNESS_HOME/bin/harness
 mkdir -p "$Q/done"
 log() { echo "$(date '+%F %T') $*" | tee -a "$Q/runner.log"; }
 alive_count() { local d p n=0; for d in "$STATE_ROOT"/*/*/; do p=$(cat "$d/driver.pid" 2>/dev/null) && kill -0 "$p" 2>/dev/null && n=$(( n + 1 )); done; echo "$n"; }
-echo $$ > "$Q/runner.pid"; echo "$UNTIL" > "$Q/runner.until"; trap 'rm -f "$Q/runner.pid" "$Q/runner.until"' EXIT
-started=0
-log "runner up · MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS$( (( UNTIL )) && echo " · no new runs after $(date -d "@$UNTIL" '+%F %H:%M')")"
+echo $$ > "$Q/runner.pid"; trap 'rm -f "$Q/runner.pid"' EXIT
+RID=$(date +%Y%m%d-%H%M%S)-$$ UP=$(date '+%F %T'); export HARNESS_RUNNER_ID=$RID
+echo "$UP runner up · MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS$( (( UNTIL )) && echo " · no new runs after $(date -d "@$UNTIL" '+%F %H:%M')") · id $RID" | tee -a "$Q/runner.log"
 
 while :; do
   [[ -f $Q/STOP ]] && { rm -f "$Q/STOP"; log "stopped by harness queue stop"; break; }
@@ -36,11 +38,12 @@ while :; do
   extra=(--now); [[ ${HARNESS_QUEUE_FOREGROUND:-} ]] && extra=(--foreground) || extra+=(--no-supervisor)
   (( UNTIL )) && extra+=(--until-epoch "$UNTIL")
   log "starting: harness ${args[*]}"
-  if "$H" "${args[@]}" "${extra[@]}" >> "$Q/runner.log" 2>&1; then started=$(( started + 1 )); else log "failed: harness ${args[*]} (see above)"; fi
+  "$H" "${args[@]}" "${extra[@]}" >> "$Q/runner.log" 2>&1 || log "failed: harness ${args[*]} (see above)"
   sleep "${HARNESS_QUEUE_SETTLE:-10}"   # let the new driver write its pid before counting again
 done
-rm -f "$Q/runner.pid" "$Q/runner.until"; trap - EXIT
+rm -f "$Q/runner.pid"; trap - EXIT
+started=$(grep -lsx -- "$RID" "$STATE_ROOT"/*/*/runners | wc -l)
 if (( started )); then
-  log "runner down after starting $started run(s): harness debrief"
-  "$H" debrief || log "debrief failed (exit $?); the daily harness debrief --if-missed retries"
+  log "runner down after starting $started run(s): harness debrief (detached; output in queue/debrief.out)"
+  setsid -f "$H" debrief >> "$Q/debrief.out" 2>&1 < /dev/null
 fi

@@ -4,7 +4,9 @@
 # lines captured on 2026-10-17 (fixtures/usage-limit.jsonl): fakes mirror the live API.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
-ARGS=("$@"); prompt=""; while (( $# )); do [[ $1 == -p ]] && { prompt=$2; shift; }; shift; done
+ARGS=("$@"); prompt=""
+while (( $# )); do [[ $1 == -p && -n ${2:-} && ${2:-} != -* ]] && { prompt=$2; shift; }; shift; done
+[[ -n $prompt ]] || prompt=$(cat)   # `claude -p` with the prompt on stdin
 first=$(head -1 <<< "$prompt")
 L=${HARNESS_RUN_DIR:-.}/feature_list.json
 count() { local f=$HARNESS_SCRATCH/count-$1 n; n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$f"; echo "$n"; }
@@ -13,6 +15,8 @@ ok() { echo "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"t
 
 case $first in
   "# Initializer session"*)
+    [[ ${STUB_SLOW_INIT:-} ]] && sleep "$STUB_SLOW_INIT"
+    [[ ${STUB_QUEUE_STOP:-} ]] && touch "$HARNESS_STATE/queue/STOP"   # Michael runs `harness queue stop` meanwhile
     after=""; [[ ${STUB_INDEPENDENT_M2:-} ]] && after=', "after": []'
     cat > "$L" <<JSON
 { "run": "test", "features": [
@@ -71,10 +75,17 @@ JSON
     echo "retro" >> "$HARNESS_SCRATCH/sessions.log"
     [[ ${STUB_RETRO_EDITS:-} ]] && { echo "retro was here" > retro-hack.txt; echo x >> "$HARNESS_RUN_DIR/progress.md"; }
     ok 0.2 "## Outcome\\nStub retro.\\n\\n## Proposed harness changes\\n1. none" ;;
-  "# Debrief"*)   # records its command line; STUB_DEBRIEF_CONTINUE: asks for continuations (one eligible, one not)
-    echo "debrief" >> "$STUB_DIR/debriefs.log"; printf '%s\n' "${ARGS[@]}" > "$STUB_DIR/debrief-args"
-    printf '%s\n' "$prompt" > "$STUB_DIR/debrief-prompt"
+  "# Debrief"*)   # records its command line and prompt; STUB_DEBRIEF_CONTINUE="<run>…": asks to continue each
+    printf '%s\n' "${ARGS[@]}" > "$STUB_DIR/debrief-args"; printf '%s\n' "$prompt" > "$STUB_DIR/debrief-prompt"
+    [[ ${STUB_DEBRIEF_LIMIT:-} ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }
+    if [[ ${STUB_DEBRIEF_ERROR:-} ]]; then
+      echo '{"type":"result","subtype":"error_max_turns","is_error":true,"total_cost_usd":0.4,"num_turns":40,"result":"Error: reached max turns"}'; exit 1
+    fi
+    if [[ ${STUB_DEBRIEF_TAMPER:-} ]]; then   # writes into a run's worktree despite the rules
+      for ((i = 0; i < ${#ARGS[@]}; i++)); do [[ ${ARGS[i]} == --add-dir && ${ARGS[i+1]} == "$STUB_DIR"/wt/* ]] && { echo x > "${ARGS[i+1]}/debrief-tamper.txt"; break; }; done
+    fi
+    echo "debrief" >> "$STUB_DIR/debriefs.log"
     note=$'## Headline\nLanded: proj M1, M2 on main.\nBlocked: nothing.\nSpend $1.20; window open.\nFOURTH headline line\n\n## Runs\nstub runs\n'
-    [[ ${STUB_DEBRIEF_CONTINUE:-} ]] && note+=$'\nCONTINUE: stoppy :: do C next\nCONTINUE: demo :: again\n'
+    lead="- "; for r in ${STUB_DEBRIEF_CONTINUE:-}; do note+=$'\n'"${lead}CONTINUE: $r :: do C next"; lead=""; done
     jq -cn --arg r "$note" '{type:"result",subtype:"success",is_error:false,total_cost_usd:0.3,duration_ms:1000,num_turns:5,result:$r}' ;;
 esac

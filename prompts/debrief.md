@@ -1,9 +1,8 @@
 # Debrief — harness queue, {{NOW}}
 
-A harness queue has just finished (or stalled). You write Michael's **debrief**: what happened, what needs
+A harness queue has just finished (or Michael asked for a debrief). You write Michael's **debrief**: what happened, what needs
 him, and what the next interactive session should pick up. Nobody opens a session to triage; your note is
 the triage. He reads it on his phone, so use real run ids, milestone ids, numbers and paths, and no filler.
-{{STUCK}}
 
 Everything gathered for you is under **Context** below: `harness status`, `harness trends`, the queue, the
 runner's log, and for every run this queue started: why it ended, `summary.json`, `report.md`, `retro.md`,
@@ -33,9 +32,10 @@ continued. To ask for it, put this line in your note, on its own line, once per 
 
     CONTINUE: <run-id> :: <one-sentence brief for its next session>
 
-The harness checks the line (the run is one of this queue's, ended on time or a usage limit, has work left,
-isn't queued) and runs `harness queue add --continue <run-id> --brief "…"` itself; it replaces the line
-with what it did. It starts when Michael next starts the queue. Nothing else is ever queued.
+The harness checks the line (the run is one of this queue's, ended on time or a usage limit, isn't running,
+has work left, isn't queued) and queues `harness continue <run-id> --keep-attempts` itself, with your brief
+marked as the debrief's suggestion (not Michael's words); it replaces the line with what it did. Attempts are
+kept: a given-up feature stays given up. It starts when Michael next starts the queue. Nothing else is queued.
 
 ## The note
 
