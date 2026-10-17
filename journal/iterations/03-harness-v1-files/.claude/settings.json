@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "defaultMode": "auto",
+    "allow": [
+      "Bash(harness/init.sh)",
+      "Bash(./harness/init.sh)",
+      "Bash(node harness/smoke.mjs:*)",
+      "Bash(node harness/features.mjs:*)",
+      "Bash(npm run check:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run cli:*)",
+      "Bash(npm install --no-audit --no-fund)",
+      "Bash(npm i --prefix /tmp/pathways-harness/pw:*)",
+      "Bash(node --experimental-strip-types:*)",
+      "Bash(node --test:*)",
+      "Bash(bin/pathways:*)",
+      "Bash(PATHWAYS_DB=/tmp/pathways-harness/:*)",
+      "Bash(curl -s http://localhost:*)",
+      "Bash(curl -sf http://localhost:*)",
+      "Bash(curl -s http://127.0.0.1:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch --show-current)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git restore:*)",
+      "Bash(git push -u origin harness/2026-10-16)",
+      "Bash(git push origin harness/2026-10-16)",
+      "Bash(mkdir -p /tmp/pathways-harness:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)"
+    ],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push -u origin main:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git checkout main:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(cat .env:*)",
+      "Read(./.env)",
+      "Read(/srv/docker/.env)"
+    ]
+  }
+}

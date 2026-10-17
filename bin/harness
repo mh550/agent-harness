@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+# harness — long-running agent harness (initializer + one fresh session per feature), reusable across projects.
+#
+#   harness init   <project>                    scaffold <project>/.harness/ (config, init, project rules, permissions)
+#   harness start  <project> <run-id> [--base <ref>] [--no-supervisor] [--foreground]
+#                                               new run: worktree + branch harness/<run-id>; an existing run resumes
+#   harness status [<run-id>]                   every run (or one): alive?, features, last log lines
+#   harness attach <run-id>                     the run's tmux session (driver · log · supervisor windows)
+#   harness pause|resume|stop <run-id>          between sessions; the current session finishes first
+#   harness answer <run-id> <text>              an answer for the sessions (lands in the run's INBOX.md)
+#   harness gc     <project> [--all-merged] [--dry-run]
+#                                               delete merged harness/* branches (or every merged branch) and their
+#                                               clean worktrees, locally and on origin. Unmerged work is never touched.
+#
+# Where things live:  worktree ~/worktrees/<project>/<run-id> · branch harness/<run-id>
+#   committed run record  <worktree>/.harness/runs/<run-id>/{feature_list.json,progress.md,INBOX.md,harness-log.md,metrics.jsonl}
+#   local state           ~/.local/state/harness/<project>/<run-id>/{run.log,logs/*.jsonl,attempts.json,port,PAUSE,STOP}
+#   scratch               /tmp/harness/<project>/<run-id>/
+set -euo pipefail
+HARNESS_HOME=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd); export HARNESS_HOME
+STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}
+WT_ROOT=${HARNESS_WORKTREES:-$HOME/worktrees}
+
+die() { echo "harness: $*" >&2; exit 1; }
+toplevel() { git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "$1 is not a git repository"; }
+state_of() {   # run-id → state dir
+  local d; d=$(compgen -G "$STATE_ROOT/*/$1" | head -1 || true)
+  [[ -n $d ]] || die "no run '$1' (see: harness status)"; echo "$d"
+}
+tmux_name() { echo "h-${1//./-}"; }
+port_taken() { (echo > "/dev/tcp/127.0.0.1/$1") 2>/dev/null || grep -qsx "$1" "$STATE_ROOT"/*/*/port; }
+
+cmd_init() {
+  local p; p=$(toplevel "${1:?usage: harness init <project>}")
+  mkdir -p "$p/.harness" "$p/.claude"
+  for f in config.sh init.sh project.md; do
+    [[ -e $p/.harness/$f ]] && echo "keep    .harness/$f" || { cp "$HARNESS_HOME/templates/project/$f" "$p/.harness/$f"; echo "created .harness/$f"; }
+  done
+  chmod +x "$p/.harness/init.sh"
+  [[ -e $p/.claude/settings.json ]] && echo "keep    .claude/settings.json (compare with templates/project/settings.json)" \
+    || { cp "$HARNESS_HOME/templates/project/settings.json" "$p/.claude/settings.json"; echo "created .claude/settings.json"; }
+  echo "next: edit .harness/config.sh and .harness/project.md, commit them to main, then: harness start $p <run-id>"
+}
+
+cmd_start() {
+  local p run base="" supervisor=1 fg=0
+  p=$(toplevel "${1:?usage: harness start <project> <run-id>}"); run=${2:?usage: harness start <project> <run-id>}; shift 2
+  while (( $# )); do case $1 in
+    --base) base=$2; shift 2 ;; --no-supervisor) supervisor=0; shift ;; --foreground) fg=1; supervisor=0; shift ;;
+    *) die "unknown option $1" ;; esac; done
+  [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
+  local proj branch=harness/$run wt state
+  proj=$(basename "$p"); wt=$WT_ROOT/$proj/$run; state=$STATE_ROOT/$proj/$run
+  if [[ -d $wt ]]; then
+    echo "resuming $run in $wt"
+  else
+    git -C "$p" fetch -q origin
+    if git -C "$p" rev-parse -q --verify "refs/remotes/origin/$branch" > /dev/null; then
+      git -C "$p" worktree add -q "$wt" -B "$branch" "origin/$branch"
+    else
+      git -C "$p" worktree add -q -b "$branch" "$wt" "${base:-origin/main}"
+    fi
+    echo "worktree $wt on $branch (from ${base:-origin/main})"
+  fi
+  [[ -f $wt/.harness/config.sh ]] || die "$wt has no .harness/config.sh — commit it to the base branch first (harness init)"
+  mkdir -p "$state"
+  if [[ ! -f $state/port ]]; then
+    local port; port=$(bash -c 'source "$1/.harness/config.sh"; echo "${BASE_PORT:-7800}"' _ "$wt")
+    while port_taken "$port"; do port=$(( port + 1 )); done
+    echo "$port" > "$state/port"
+  fi
+  printf 'PROJECT_DIR=%q\nWT=%q\nRUN_ID=%q\nSTATE=%q\n' "$p" "$wt" "$run" "$state" > "$state/meta.env"
+  rm -f "$state/STOP"
+  local env="WT=$(printf %q "$wt") RUN_ID=$run STATE=$(printf %q "$state") PROJECT_DIR=$(printf %q "$p") HARNESS_HOME=$(printf %q "$HARNESS_HOME")"
+  if (( fg )); then eval "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh")"; return; fi
+
+  local s; s=$(tmux_name "$run")
+  tmux has-session -t "$s" 2> /dev/null && die "run $run is already running (harness attach $run)"
+  tmux new-session -d -s "$s" -n driver -c "$wt" "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh"); echo; echo '[driver exited — this window stays open]'; exec bash"
+  tmux new-window -d -t "$s" -n log "touch $(printf %q "$state/run.log"); tail -n 100 -F $(printf %q "$state/run.log")"
+  if (( supervisor )); then
+    local model; model=$(bash -c 'source "$1/.harness/config.sh"; echo "${SUPERVISOR_MODEL:-opus}"' _ "$wt")
+    HARNESS_RUN_ID=$run HARNESS_STATE=$state HARNESS_WT=$wt HARNESS_BRANCH=$branch HARNESS_PROJECT_DIR=$p \
+      node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/supervisor.md" > "$state/supervisor-prompt.md"
+    tmux new-window -d -t "$s" -n supervisor -c "$p" \
+      "claude --model $(printf %q "$(node "$HARNESS_HOME/lib/features.mjs" model "$model")") \"\$(cat $(printf %q "$state/supervisor-prompt.md"))\"; exec bash"
+  fi
+  echo "started tmux session $s (windows: driver, log$( (( supervisor )) && echo ', supervisor'))"
+  echo "  watch:   harness attach $run      (Ctrl-b n = next window, Ctrl-b d = detach)"
+  echo "  status:  harness status $run      steer from the phone: $branch → .harness/runs/$run/INBOX.md"
+}
+
+cmd_status() {
+  local d want=${1:-} any=0
+  for d in "$STATE_ROOT"/*/*/; do
+    [[ -f $d/meta.env ]] || continue
+    [[ -n $want && $(basename "$d") != "$want" ]] && continue
+    any=1
+    # shellcheck source=/dev/null
+    ( source "$d/meta.env"
+      alive=stopped list=$WT/.harness/runs/$RUN_ID/feature_list.json
+      tmux has-session -t "$(tmux_name "$RUN_ID")" 2> /dev/null && alive=running
+      [[ -f $STATE/PAUSE ]] && alive="$alive, paused"
+      echo "$RUN_ID ($(basename "$PROJECT_DIR")) · $alive · port $(cat "$STATE/port") · $( [[ -f $list ]] && node "$HARNESS_HOME/lib/features.mjs" summary "$list" || echo 'no feature list yet')"
+      [[ -f $STATE/run.log ]] && tail -n "${N:-3}" "$STATE/run.log" | sed 's/^/    /'
+    )
+  done
+  (( any )) || echo "no runs under $STATE_ROOT"
+}
+
+cmd_control() {   # pause|resume|stop run-id
+  local st; st=$(state_of "${2:?usage: harness $1 <run-id>}")
+  case $1 in
+    pause) touch "$st/PAUSE"; echo "pausing $2 after the current session" ;;
+    resume) rm -f "$st/PAUSE"; echo "resuming $2 (within a minute)" ;;
+    stop) touch "$st/STOP"; echo "stopping $2 after the current session" ;;
+  esac
+}
+
+cmd_answer() {
+  local st; st=$(state_of "${1:?usage: harness answer <run-id> <text>}"); shift
+  printf '%s\n' "$*" >> "$st/inbox.md"; echo "queued for the next session"
+}
+
+cmd_gc() {
+  local p all=0 dry=0 b; p=$(toplevel "${1:?usage: harness gc <project>}"); shift
+  while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; *) die "unknown option $1" ;; esac; shift; done
+  act() { if (( dry )); then echo "would: $*"; else echo "+ $*"; "$@"; fi; }
+  git -C "$p" fetch -q --prune origin
+  local main=origin/main pattern='harness/*'; (( all )) && pattern='*'
+  # worktrees of merged, clean runs
+  while read -r wt; do
+    [[ $wt == "$WT_ROOT"/* ]] || continue
+    b=$(git -C "$wt" branch --show-current)
+    [[ -n $b && -z $(git -C "$wt" status --porcelain) ]] && git -C "$p" merge-base --is-ancestor "$b" "$main" \
+      && act git -C "$p" worktree remove "$wt"
+  done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p')
+  # local branches: -d refuses anything unmerged, so this can never drop work
+  for b in $(git -C "$p" for-each-ref --format='%(refname:short)' "refs/heads/$pattern"); do
+    [[ $b == main || $b == "$(git -C "$p" branch --show-current)" ]] && continue
+    git -C "$p" merge-base --is-ancestor "$b" "$main" && act git -C "$p" branch -d "$b"
+  done
+  # remote branches fully contained in origin/main
+  for b in $(git -C "$p" for-each-ref --format='%(refname:lstrip=3)' "refs/remotes/origin/$pattern"); do
+    [[ $b == main || $b == HEAD ]] && continue
+    git -C "$p" merge-base --is-ancestor "origin/$b" "$main" && act git -C "$p" push -q origin --delete "$b"
+  done
+  return 0
+}
+
+case ${1:-help} in
+  init) shift; cmd_init "$@" ;;
+  start) shift; cmd_start "$@" ;;
+  status) shift; cmd_status "$@" ;;
+  attach) tmux attach -t "$(tmux_name "${2:?usage: harness attach <run-id>}")" ;;
+  pause|resume|stop) cmd_control "$1" "${2:-}" ;;
+  answer) shift; cmd_answer "$@" ;;
+  gc) shift; cmd_gc "$@" ;;
+  *) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' ;;
+esac
