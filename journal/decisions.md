@@ -178,3 +178,40 @@ agents are driven*.
   edit for Michael); (3) dj milestone H1: navidrome.db in the nightly snapshot, worker heartbeat, healthchecks.
 - **Rejected:** moving the backup out of the night (the night is when the box is idle); triggering a backup from a
   run (needs root for agents).
+
+### D-H22 · A debrief after every queue, triggered by the queue ending, not by a clock *(accepted 2026-10-17, built in v3)*
+- **Finding:** the morning triage (status, retros, inbox, what to queue next) was done by hand in an interactive
+  session. A fixed-time "morning session" was the first idea, but queues end at different times (06:10, 23:00), and
+  a 07:30 session either runs too early or waits for nothing.
+- **Choice:** the queue runner starts `harness debrief` detached as it exits (any path), if it started at least one
+  run itself. A debrief covers every run since the last debrief that produced a note, so a refused, failed or
+  killed debrief is covered by the next one. `harness debrief` by hand is the fallback.
+- **Rejected:** a 09:00 fallback timer (Michael: "we shouldn't rely on the timer"). The review found it couldn't
+  find node (nvm loads only in interactive shells) and raced the runner's own debrief. "Since the last successful
+  debrief" makes it unnecessary. Also rejected: a queue entry at the end of the queue, which never runs if
+  `--until` stops the queue first and would need re-adding every time.
+
+### D-H23 · Debrief history is one file plus git *(accepted 2026-10-17, built in v3)*
+- **Choice:** each debrief overwrites `ledger/debrief.md` and commits it. `git log -p ledger/debrief.md` is the
+  archive. Michael reads one path, and there's no retention or gc code.
+- **Rejected:** dated files keeping the last 3–5 (gc code for no benefit git doesn't already give); a file that
+  isn't committed (loses history).
+
+### D-H24 · The debrief's scope: read and report now; widen it along the "is there a gate?" line *(accepted 2026-10-17 for v1; widening proposed)*
+- **v1 (now):** the debrief reads and reports. It writes only its note, and *proposes* continuations as
+  `CONTINUE:` lines that bash checks (the run is this debrief's, ended on time or a limit, has work left, isn't
+  queued or running) and queues with `--keep-attempts`. It never starts the queue. Enforced, not just prompted: the
+  session runs in `dontAsk` mode with one commented `ALLOW` list in lib/debrief.sh, plus a deny list, and the git
+  state of the ledger, run worktrees and projects is compared before and after, with any change flagged in the
+  note.
+- **Why strict first:** it runs unattended right after the queue, and nobody looks until morning. The first
+  version (a deny list in auto mode) could still write via `sed -i`, `tee` or `git -C … push`. The scope was the
+  evaluating session's choice, not Michael's, so this records it as the starting point, not a principle.
+- **The principle for widening:** the line that matters is not read vs. write but whether a change passes a gate
+  before it counts.
+  - **Gated, so safe to allow later:** run branches. Anything written there must pass the suite and a verify
+    session before it reaches main, so resolving merge conflicts and writing inbox answers there can be allowed.
+  - **Ungated, so never:** main, the live server, policy/CLAUDE.md/permissions, starting runs or the queue (that
+    spends the budget).
+- **Proposed:** after about a week of reliable notes, widen `ALLOW` to run-branch writes (conflict resolution,
+  inbox answers), test-first. Revisit if a note is ever wrong about what happened.
