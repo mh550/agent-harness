@@ -110,6 +110,15 @@ STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS
 D=$(date +%F)
 check "queue ran both entries, distinct run ids" '[[ $($F summary "$(list proj-$D)") == "3/3 passing" && $($F summary "$(list proj-$D-2)") == "3/3 passing" ]] && grep -q "queue empty" "$HARNESS_STATE/queue/runner.log"'
 check "trends lists every run"            'grep -q "| proj-$D-2 | proj |" <<< "$("$H" trends)"'
+DB=$T/debriefs.log Q=$HARNESS_STATE/queue
+check "queue end triggers one debrief"    '[[ $(grep -c . "$DB") == 1 ]] && compgen -G "$T/ledger/debriefs/*.md" > /dev/null && grep -q "debrief written" "$Q/runner.log"'
+check "the debrief saw the queue's runs"  'grep -q "### proj-$D-2 (proj)" "$T/debrief-prompt" && grep -q "### proj-$D (proj)" "$T/debrief-prompt"'
+"$H" debrief --if-missed > "$T/missed1.out" 2>&1
+check "--if-missed: no-op after the queue's own debrief" '[[ $(grep -c . "$DB") == 1 ]] && grep -q "already debriefed" "$T/missed1.out"'
+sleep 1; HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2.out" 2>&1
+check "a runner that started nothing: no debrief" '[[ $(grep -c . "$DB") == 1 ]] && grep -q "queue empty" "$T/queue2.out"'
+"$H" debrief --if-missed > "$T/missed2.out" 2>&1
+check "--if-missed: no-op when the last runner started nothing" '[[ $(grep -c . "$DB") == 1 ]] && grep -q "no runs started" "$T/missed2.out"'
 
 # ---- run 11: a verify refused by the usage limit is deferred, never a "holds" ----
 STUB_VERIFY_LIMIT=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" vlimit --spec SPEC.md --foreground > "$T/run11.out" 2>&1
@@ -141,6 +150,39 @@ STUB_PHONE_STOP=1 "$H" start "$T/proj" flip --spec SPEC.md --foreground > "$T/ru
 (cd "$T/proj" && git pull -q origin main && echo "POLICY=live-staged" >> .harness/config.sh && git commit -qam "policy: live-staged" && git push -q origin main)
 "$H" continue flip --foreground > "$T/run15b.out" 2>&1
 check "resume reloads config merged from main" 'hlog flip | grep -q "configuration reloaded after merging main: policy live-staged"'
+
+# ---- debrief: a runner that died without one; --dry-run, --if-missed, continuations, notification, limits ----
+printf '%s\n' 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify.log\"'" > "$T/user-config.sh"
+sleep 1; echo "$(date '+%F %T') runner up · MAX_PARALLEL_RUNS=1" >> "$Q/runner.log"   # …and then it was killed
+echo "$(date '+%F %T') run stoppy on harness/stoppy in $T/wt/proj/stoppy · port 7951" >> "$HARNESS_STATE/proj/stoppy/run.log"
+echo "deadline · $(date '+%F %T')" > "$HARNESS_STATE/proj/stoppy/ended"
+"$H" debrief --dry-run > "$T/dry.out" 2>&1
+check "--dry-run prints the context, launches nothing" '[[ $(grep -c . "$DB") == 1 && -f $(head -1 "$T/dry.out") ]] && grep -q "^## harness status" "$T/dry.out" && grep -q "^### stoppy (proj)" "$T/dry.out" && grep -q "ended: deadline" "$T/dry.out" && grep -q "runner up" "$T/dry.out"'
+STUB_DEBRIEF_CONTINUE=1 "$H" debrief --if-missed > "$T/missed3.out" 2>&1
+N=$(ls -t "$T/ledger/debriefs/"*.md | head -1)
+check "--if-missed fires after a runner that never debriefed" '[[ $(grep -c . "$DB") == 2 ]] && grep -q "stub runs" "$N"'
+check "the session carries the never-list as disallowed tools" 'A=$T/debrief-args; grep -qx -- --disallowedTools "$A" && grep -qx Edit "$A" && grep -qx Write "$A" && grep -qxF "Bash(git push:*)" "$A" && grep -qxF "Bash(gh pr merge:*)" "$A" && grep -qxF "Bash(harness queue start:*)" "$A" && grep -qxF "Bash(harness merge:*)" "$A" && grep -qxF "Bash(harness continue:*)" "$A" && grep -qx "$($F model sonnet)" "$A"'
+check "continuation queued for a run out of time" 'f=$(compgen -G "$Q/*-continue-stoppy.args") && grep -qx "do C next" "$f" && grep -q "Queued: .*stoppy" "$N" && ! grep -q "debrief: queued" "$N"'
+check "no continuation for an ineligible run" '! compgen -G "$Q/*-continue-demo.args" > /dev/null && grep -q "Not queued: demo" "$N" && ! grep -q "^CONTINUE:" "$N"'
+check "NOTIFY_CMD gets 3 headline lines and the note path" 'M=$(sed "/^===$/q" "$T/notify.log" | grep -v "^===$"); (( $(wc -l <<< "$M") <= 4 )) && grep -q "Landed: proj M1" <<< "$M" && grep -qF "$N" <<< "$M" && ! grep -q FOURTH <<< "$M"'
+"$H" debrief --if-missed > "$T/missed4.out" 2>&1
+check "--if-missed: no-op once debriefed" '[[ $(grep -c . "$DB") == 2 ]] && grep -q "already debriefed" "$T/missed4.out"'
+echo $$ > "$Q/runner.pid"; echo $(( $(date +%s) - 600 )) > "$Q/runner.until"   # a runner still going
+"$H" debrief --if-missed > "$T/missed5.out" 2>&1
+check "--if-missed: a runner within 1 h of its --until is left alone" '[[ $(grep -c . "$DB") == 2 ]] && grep -q "still running" "$T/missed5.out"'
+echo $(( $(date +%s) - 7200 )) > "$Q/runner.until"
+"$H" debrief --if-missed > "$T/missed6.out" 2>&1
+N=$(ls -t "$T/ledger/debriefs/"*.md | head -1)
+check "--if-missed: a stuck runner gets a 'queue looks stuck' debrief" '[[ $(grep -c . "$DB") == 3 ]] && grep -qi "queue looks stuck" "$N" && grep -qi "queue looks stuck" "$T/debrief-prompt" && tail -n 6 "$T/notify.log" | grep -qi "queue looks stuck"'
+rm -f "$Q/runner.pid" "$Q/runner.until"
+echo $(( $(date +%s) + 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
+"$H" debrief > "$T/limit1.out" 2>&1
+check "debrief waits for the usage-limit window, then runs" 'grep -q "usage-limit window" "$T/limit1.out" && [[ $(grep -c . "$DB") == 4 ]]'
+echo $(( $(date +%s) + 6 * 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
+"$H" debrief > "$T/limit2.out" 2>&1
+check "a window past the 5 h cap: no session, left to the fallback" 'grep -q "5 h cap" "$T/limit2.out" && [[ $(grep -c . "$DB") == 4 ]]'
+rm -f "$HARNESS_STATE/LIMIT_UNTIL"
+check "fallback timer units: daily 09:00, --if-missed" 'U=$HERE/../contrib/systemd; grep -q "OnCalendar=.*09:00" "$U/harness-debrief.timer" && grep -q "harness debrief --if-missed" "$U/harness-debrief.service"'
 
 (( fails )) && { echo "--- run1 output"; tail -30 "$T/run1.out"; echo "--- harness-log"; hlog demo; }
 echo "$(( total - fails ))/$total checks passed"

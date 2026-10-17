@@ -1,0 +1,11 @@
+# The fallback for `harness debrief`: the queue runner debriefs as it exits; this catches a runner that was killed,
+# a debrief refused by the usage limit, or a queue stuck past its --until. A no-op when there is nothing to do.
+# User unit (not installed by the harness): see docs/architecture.md, "Debrief".
+[Unit]
+Description=harness debrief --if-missed (fallback for the queue's own debrief)
+
+[Service]
+Type=oneshot
+# a login shell, so PATH has claude, node, jq and gh, and ~/.config/harness/config.sh applies as usual
+ExecStart=/bin/bash -lc 'exec harness debrief --if-missed'
+TimeoutStartSec=7h

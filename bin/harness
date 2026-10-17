@@ -13,6 +13,8 @@
 #   harness status [<run-id>]                    every run: running / ended (why), features, last log lines
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
 #   harness trends                               every recorded run in one table (the harness ledger)
+#   harness debrief [--if-missed] [--dry-run]    after a queue: one short read-only session writes the debrief
+#                               (ledger/debriefs/; NOTIFY_CMD gets its headline). The runner runs it as it exits
 #   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each)
 #   harness attach <run-id>                      the run's tmux session (driver · log · supervisor)
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
@@ -27,7 +29,7 @@
 #                         metrics.jsonl,brief.md,summary.json,report.md,retro.md}
 #   local state           ~/.local/state/harness/<project>/<run-id>/{run.log,logs/*.jsonl,attempts.json,port,driver.pid,ended,…}
 #   queue                 ~/.local/state/harness/queue/   · shared usage-limit window: ~/.local/state/harness/LIMIT_UNTIL
-#   ledger                <harness>/ledger/{runs.jsonl,<project>/<run-id>/}
+#   ledger                <harness>/ledger/{runs.jsonl,<project>/<run-id>/,debriefs/}
 #   scratch               /tmp/harness/<project>/<run-id>/
 #   config layers         harness defaults → ~/.config/harness/config.sh → <project>/.harness/config.sh → the run's options
 set -euo pipefail
@@ -324,5 +326,6 @@ case ${1:-help} in
   pause|resume|stop) cmd_control "$1" "${2:-}" ;;
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
-  *) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//' ;;
+  debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
+  *) sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac
