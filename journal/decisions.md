@@ -64,3 +64,24 @@ agents are driven*.
 - **Caveat:** deny rules match the start of the command text, so they are a speed bump. The real
   guarantees belong on GitHub: branch protection against force pushes and deletion, and a
   narrowly scoped token.
+
+### D-H9 · A usage limit doesn't spend an attempt
+- **Problem:** with 2 attempts per feature, a plan usage limit (seen on 10-14, when three loops ran
+  at once) would make every session fail within seconds. The whole feature list would be "given
+  up" within minutes.
+- **Choice:** the driver reads each session's final result. A usage/rate limit or an outage (or no
+  result within 2 minutes) gives the attempt back and backs off 15 → 30 → 60 min. After 6 hits in
+  a row it pauses the run and notifies. Tested with a stub that hits the limit 3 times, and one that
+  hits it forever.
+
+### D-H10 · Live systems get build-only nights
+- **Context:** dj-crate-streaming runs Michael's live music server. Its next items end in
+  production operations: trash, repoint and tag writes on `/srv/music` and Navidrome.
+- **Choice:**
+  - unattended runs build and test against fakes only;
+  - each item's live run is written as `docs/live-steps/…` for an attended session;
+  - the suite runs sandboxed (`.harness/check.sh`: every path in scratch, credentials unset);
+  - agent permissions deny docker, deploy, `/srv` and the live service ports;
+  - the agent settings live in `.harness/agent-settings.json`, so interactive deploy sessions are unaffected.
+- **Also:** dj's suite takes about 7 min. The driver caches a green result per code tree, so a
+  session doesn't pay for the same check two or three times.
