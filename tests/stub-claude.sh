@@ -81,9 +81,8 @@ JSON
     if [[ ${STUB_DEBRIEF_ERROR:-} ]]; then
       echo '{"type":"result","subtype":"error_max_turns","is_error":true,"total_cost_usd":0.4,"num_turns":40,"result":"Error: reached max turns"}'; exit 1
     fi
-    if [[ ${STUB_DEBRIEF_TAMPER:-} ]]; then   # writes into a run's worktree despite the rules
-      for ((i = 0; i < ${#ARGS[@]}; i++)); do [[ ${ARGS[i]} == --add-dir && ${ARGS[i+1]} == "$STUB_DIR"/wt/* ]] && { echo x > "${ARGS[i+1]}/debrief-tamper.txt"; break; }; done
-    fi
+    [[ ${STUB_DEBRIEF_DEAD:-} ]] && { echo "Error: unknown option '--whatever'" >&2; exit 1; }   # dies at startup
+    [[ ${STUB_DEBRIEF_TOUCH:-} ]] && echo x > "$STUB_DEBRIEF_TOUCH"   # writes a file while it runs
     echo "debrief" >> "$STUB_DIR/debriefs.log"
     note=$'## Headline\nLanded: proj M1, M2 on main.\nBlocked: nothing.\nSpend $1.20; window open.\nFOURTH headline line\n\n## Runs\nstub runs\n'
     lead="- "; for r in ${STUB_DEBRIEF_CONTINUE:-}; do note+=$'\n'"${lead}CONTINUE: $r :: do C next"; lead=""; done

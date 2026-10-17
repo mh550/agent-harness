@@ -86,8 +86,9 @@ session** (merge conflicts, retro proposals seen in two or more retros). It can 
 ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harness checks it and queues it with
 `--keep-attempts`; nothing starts.
 
-- **The note** is one file, `ledger/debrief.md`, overwritten each time and committed with the ledger (`LEDGER_COMMIT`):
-  the archive is `git log -p ledger/debrief.md`. `NOTIFY_CMD` gets its three-line headline and the path.
+- **The note** is one file, `ledger/debrief.md`, overwritten each time and committed with the ledger (`LEDGER_COMMIT`),
+  only while the harness checkout is on `main` with no rebase or merge going: the archive is
+  `git log -p ledger/debrief.md`. `NOTIFY_CMD` gets its three-line headline and the path, or one line if it failed.
 - **Read-only**: the session runs in `dontAsk` mode with an allowlist of read-only tools (one commented array in
   `lib/debrief.sh`, where the scope can be widened) plus the never-list as `--disallowedTools`; anything that still
   changes in the ledger, run worktrees or projects while it runs is flagged in the note. See `docs/architecture.md` §16.
@@ -99,6 +100,6 @@ ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harne
 ## Tests
 
 ```bash
-tests/run.sh    # end-to-end with stub claude/gh on a throwaway repo with a bare origin: 72 checks (~2 min)
+tests/run.sh    # end-to-end with stub claude/gh on a throwaway repo with a bare origin: 83 checks (~2 min)
 ```
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

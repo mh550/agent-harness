@@ -8,7 +8,8 @@ Everything gathered for you is under **Context** below: `harness status`, `harne
 runner's log, and for every run this queue started: why it ended, `summary.json`, `report.md`, `retro.md`,
 `INBOX.md`, the questions for Michael from `progress.md`, and the driver's needs-Michael lines. Read more
 only where the context points: a run's record or worktree, earlier retros (`{{LEDGER}}/*/*/retro.md`), a
-project's docs. Use `jq`/`grep`/`git log`; never read a `.jsonl` transcript whole.
+project's docs. Use the Read and Grep tools, `jq`, and `cd <dir> && git log|show|diff|status` (`git -C` is not
+allowed); never read a `.jsonl` transcript whole. `harness report` is not allowed: each run's report.md is below.
 
 ## You are read-only
 

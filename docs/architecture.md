@@ -58,7 +58,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/summary.mjs` | ~230 | Run summary, writeup, ledger rows, trends, calibration |
 | `lib/render.mjs` | ~15 | Prompt templating (`{{X}}` ← `HARNESS_X`) and titled sections |
 | `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md; `policy/{build-only,live-staged}.md` |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude` and `gh` on a throwaway repo with a bare origin: 72 checks |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude` and `gh` on a throwaway repo with a bare origin: 83 checks |
 
 ## 4. Where state lives
 
@@ -314,20 +314,25 @@ queue runner exits (empty · past --until · queue stop), having started ≥ 1 r
   ─► setsid -f harness debrief  (output: queue/debrief.out)
 harness debrief [--dry-run]:
   preflight: node, jq, git, flock, claude (sources nvm.sh, adds ~/.local/bin; else logs "missing: …" and exits 1)
-  flock debrief.lock (a second debrief waits, then covers only what is left)
-  since = queue/last-debrief (the first time: the newest "runner up"); runs = every driver started since (run.log)
+  flock debrief.lock (a second debrief says it waits, waits, then covers only what is left)
+  since = queue/last-debrief (the first time: the newest "runner up"); the next "since" is taken now, before
+    runs = every driver started since (run.log): a run starting during the wait or the session is covered next time
     none → nothing to do, no session
   LIMIT_UNTIL in the future: wait (≤ 5 h; HARNESS_LIMIT_SLEEP in tests), else exit (the next debrief covers it)
   context.md (bash, $0, each part capped): status · trends · queue · runner.log since · per run: ended · summary.json
      · report.md · retro.md · INBOX.md · progress.md questions · needs-Michael lines · limit window · rate-limit info
+     · the whole capped at 150 KB; pasted into the prompt with render.mjs --raw ({{X}} in it stays literal)
      (--dry-run: print it and stop)
   DEBRIEF SESSION (DEBRIEF_MODEL=sonnet, 40 turns, $3, SESSION_TIMEOUT; prompt on stdin; --permission-mode dontAsk,
-     --allowedTools ALLOW, --disallowedTools DENY; --add-dir ledger + each run's worktree and project)
-  refused (LIMIT_UNTIL updated) / not "success" / no text → exit 1, last-debrief untouched: the next one covers it
+     --allowedTools ALLOW, --disallowedTools DENY; --add-dir ledger, queue/, each run's state dir, worktree and project)
+  refused by a usage limit → LIMIT_UNTIL updated; died at startup, not "success", no text → failed (no window):
+     exit 1, one line to NOTIFY_CMD, last-debrief untouched: the next one covers these runs
   git status + refs of the ledger, worktrees and projects: before vs after → a warning section in the note
   "CONTINUE: <run> :: <brief>" lines → checked → harness queue add --continue <run> --keep-attempts --brief "Suggested by
      the debrief …" (or "Not queued: why")
-  ─► ledger/debrief.md (overwritten, committed like the ledger) · last-debrief · NOTIFY_CMD: 3 lines + path
+  ─► ledger/debrief.md (overwritten) · last-debrief · NOTIFY_CMD: 3 lines + path
+  commit (LEDGER_COMMIT=1) only if the harness checkout is on MAIN_BRANCH with no rebase/merge/cherry-pick going, only
+     that file; a failed commit is unstaged again ("written but not committed" in runner.log)
 ```
 
 **Since the last success.** `queue/last-debrief` holds the time the last successful debrief gathered its context (or
@@ -352,9 +357,9 @@ commits, or runs anything live. Enforced in layers:
 
 | | How |
 |---|---|
-| `--permission-mode dontAsk` + `--allowedTools ALLOW` | only these run: Read, Grep, Glob; `cd ls cat head tail wc grep rg jq date`; `git log/show/diff/status/branch/rev-parse/rev-list/merge-base/for-each-ref/ls-files/grep`; `gh pr view/list/checks`; `harness status/trends/queue list/report`. **The scope lives in one commented array (`ALLOW`) in `lib/debrief.sh`**: widen it there |
-| `--disallowedTools DENY` (wins over ALLOW) | `Edit`, `Write`, `NotebookEdit`; every state-changing `harness` command (bare and by full path); `git push/commit/merge/rebase/reset/checkout/switch/restore/stash/tag/worktree`, `git branch -d/-D/-f/-m`; `gh pr merge/create/close/edit/review/comment/ready`, `gh api/repo/release/workflow`; `sudo ssh scp rsync docker systemctl kubectl tmux kill pkill rm mv cp curl wget npm npx` |
-| After the session | `git status --porcelain`, HEAD and refs of the ledger repo, each run worktree and project, compared with before: any change is logged and flagged in the note |
+| `--permission-mode dontAsk` + `--allowedTools ALLOW` | only these run: Read, Grep, Glob; `cd ls cat head tail wc grep jq date`; `git log/show/diff/status/rev-parse/rev-list/merge-base/for-each-ref/ls-files`, `git branch --list/-a/-v/-vv/-av/--show-current`; `gh pr view/list/checks`; `harness status/trends/queue list`. Left out on purpose: `rg` and `git grep` (`--pre`, `-O` run programs), plain `git branch`, `harness report` (rewrites summary.json). **The scope lives in one commented array (`ALLOW`) in `lib/debrief.sh`**: widen it there. Checked against the real CLI (haiku, 2026-10-17, $0.004): a read in an added state dir works; Write, a shell redirect and `git … --output=` are denied |
+| `--disallowedTools DENY` (wins over ALLOW) | `Edit`, `Write`, `NotebookEdit`; `git diff/log/show --output`; every state-changing `harness` command and `harness report` (bare and by full path); `git push/commit/merge/rebase/reset/checkout/switch/restore/stash/tag/worktree`, `git branch -d/-D/-f/-m`; `gh pr merge/create/close/edit/review/comment/ready`, `gh api/repo/release/workflow`; `sudo ssh scp rsync docker systemctl kubectl tmux kill pkill rm mv cp curl wget npm npx` |
+| After the session | compared with before: the ledger directory's files; the worktrees of runs that have ended and the projects: files, HEAD, local branches and tags (not remote refs, not the harness repo's commits, not a still-running run's worktree). Any change is logged and flagged in the note |
 | The prompt | the same list in words, including what prefix rules can't express (`git -C …`, shell redirection, a project's `## Live system` commands) |
 | Bash | continuations are queued only by bash, after the checks above |
 

@@ -25,17 +25,19 @@ for a in "$@"; do case $a in --dry-run) dry=1 ;; *) echo "usage: harness debrief
 mkdir -p "$Q"
 log() { echo "$(date '+%F %T') $*" | tee -a "$Q/runner.log"; }   # what a debrief did: next to the runner's own lines
 say() { echo "harness debrief: $*"; }                            # why it did nothing: stdout only
+# shellcheck source=lib/config.sh
+source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # defaults + the user's config (NOTIFY_CMD, models)
+tell() { [[ -n $NOTIFY_CMD ]] && bash -c "$NOTIFY_CMD" _ "$*" > /dev/null 2>&1 9>&-; return 0; }
+fail() { log "debrief: $1"; tell "[debrief] ${2:-failed}: $1"; exit 1; }   # one line to Michael, and the next debrief covers these runs
 
-# A detached or cron-like start may not have Michael's PATH (node comes from nvm, claude from ~/.local/bin).
+# A detached start may not have Michael's PATH (node comes from nvm, claude from ~/.local/bin).
 missing() { local c m=(); for c in node jq git flock "$CLAUDE"; do command -v "$c" > /dev/null 2>&1 || m+=("$c"); done; echo "${m[*]}"; }
 if [[ -n $(missing) ]]; then
   # shellcheck source=/dev/null
   [[ -s ${NVM_DIR:-$HOME/.nvm}/nvm.sh ]] && { set +u; . "${NVM_DIR:-$HOME/.nvm}/nvm.sh" > /dev/null 2>&1; set -u; }
   PATH=$HOME/.local/bin:$PATH
-  [[ -z $(missing) ]] || { log "debrief: cannot run, missing: $(missing) (PATH=$PATH)"; exit 1; }
+  [[ -z $(missing) ]] || fail "cannot run, missing: $(missing) (PATH=$PATH)"
 fi
-# shellcheck source=lib/config.sh
-source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # defaults + the user's config
 F() { node "$HARNESS_HOME/lib/features.mjs" "$@"; }
 MET() { node "$HARNESS_HOME/lib/metrics.mjs" "$@"; }
 alive() { local p; p=$(cat "$1/driver.pid" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null; }
@@ -46,7 +48,11 @@ rec_dir() {   # state dir → the run's record: in its worktree, else the ledger
 
 if (( ! dry )); then
   exec 9> "$STATE_ROOT/debrief.lock"
-  flock -w "$LOCK_WAIT" 9 || { log "debrief: another debrief held the lock for 7 h; giving up"; exit 1; }
+  if ! flock -n 9; then
+    say "waiting for the debrief already running (since $(cat "$STATE_ROOT/debrief.running" 2>/dev/null || echo '?'))"
+    flock -w "$LOCK_WAIT" 9 || fail "another debrief held the lock for 7 h; giving up"
+  fi
+  date '+%F %T' > "$STATE_ROOT/debrief.running"; trap 'rm -f "$STATE_ROOT/debrief.running"' EXIT
 fi
 
 # ---- which runs: since the last successful debrief (decided under the lock) --------------------------------------
@@ -55,6 +61,9 @@ if [[ -z $SINCE ]]; then   # the first debrief: since the newest "runner up" (el
   SINCE=$(grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9:]{8} runner up' "$Q/runner.log" 2>/dev/null | tail -1 | cut -c1-19)
   [[ -n $SINCE ]] || SINCE=$(date -d '24 hours ago' '+%F %T')
 fi
+# The next debrief's "since", taken before the scan: a run that starts from here on (during the limit wait, the
+# session) is not in this note, and the next debrief covers it.
+STARTED=$(date '+%F %T')
 RUNS=()
 for d in "$STATE_ROOT"/*/*/; do
   [[ -f $d/meta.env && -f $d/run.log ]] || continue
@@ -75,8 +84,7 @@ if (( ! dry )); then
 fi
 
 # ---- the context, deterministically (every part capped: it all goes into one prompt) ------------------------------
-STARTED=$(date '+%F %T')   # becomes the next debrief's "since" if this one produces a note…
-for d in "${RUNS[@]}"; do   # …or a still-running run's start, so the next debrief sees how it ended
+for d in "${RUNS[@]}"; do   # a still-running run: the next debrief starts from its start, so it sees how it ended
   alive "$d" || continue
   t=$(awk -v s="$SINCE" '/^[0-9-]+ [0-9:]+ run [^ ]+ on / && ($1 " " $2) >= s { t = $1 " " $2 } END { print t }' "$d/run.log")
   [[ -n $t && $t < $STARTED ]] && STARTED=$t
@@ -153,26 +161,35 @@ names() { local d; for d in "${RUNS[@]}"; do basename "$d"; done | paste -sd' ' 
   echo; echo "## Earlier retros (newest first; for proposals seen in two or more)"; echo
   ls -t "$LEDGER"/*/*/retro.md 2>/dev/null | head -20 | fence
 } > "$CTX"
+CMAX=${HARNESS_DEBRIEF_CONTEXT_MAX:-150000}   # the whole context, after each part's own cap (many runs add up)
+if (( $(wc -c < "$CTX") > CMAX )); then
+  n=$(wc -c < "$CTX"); head -c $(( CMAX - 300 )) "$CTX" > "$WS/c.md"
+  printf '\n\n… (context cut at %s of %s bytes; the rest is in the run records listed above)\n' "$CMAX" "$n" >> "$WS/c.md"; mv "$WS/c.md" "$CTX"
+fi
 
 if (( dry )); then echo "$CTX"; echo; cat "$CTX"; exit 0; fi
 
 # ---- the session ------------------------------------------------------------------------------------------------
 # THE SCOPE, in one place. The session runs with --permission-mode dontAsk: only what ALLOW lists can run, and DENY
 # wins over ALLOW. v1 is strictly read-only. To widen the scope (e.g. let it write a draft file), add to ALLOW here,
-# take the matching entry out of DENY, and say so in prompts/debrief.md.
+# take the matching entry out of DENY, and say so in prompts/debrief.md. Not on ALLOW, on purpose: rg and git grep
+# (they can run programs: --pre, -O; the Grep tool covers them), plain `git branch` (it can create, move, delete),
+# `harness report` (it rewrites summary.json; the context has report.md).
 HB=(harness "$H")   # harness as Michael types it, and by its full path
 ALLOW=(
   Read Grep Glob                                                     # files: read only
-  "Bash(cd:*)" "Bash(ls:*)" "Bash(cat:*)" "Bash(head:*)" "Bash(tail:*)" "Bash(wc:*)" "Bash(grep:*)" "Bash(rg:*)"
-  "Bash(jq:*)" "Bash(date:*)"
-  "Bash(git log:*)" "Bash(git show:*)" "Bash(git diff:*)" "Bash(git status:*)" "Bash(git branch:*)"
-  "Bash(git rev-parse:*)" "Bash(git rev-list:*)" "Bash(git merge-base:*)" "Bash(git for-each-ref:*)"
-  "Bash(git ls-files:*)" "Bash(git grep:*)"
+  "Bash(cd:*)" "Bash(ls:*)" "Bash(cat:*)" "Bash(head:*)" "Bash(tail:*)" "Bash(wc:*)" "Bash(grep:*)" "Bash(jq:*)" "Bash(date:*)"
+  "Bash(git log:*)" "Bash(git show:*)" "Bash(git diff:*)" "Bash(git status:*)"   # --output=<file> is on DENY
+  "Bash(git branch --list:*)" "Bash(git branch -a)" "Bash(git branch -v)" "Bash(git branch -vv)" "Bash(git branch -av)"
+  "Bash(git branch --show-current)" "Bash(git rev-parse:*)" "Bash(git rev-list:*)" "Bash(git merge-base:*)"
+  "Bash(git for-each-ref:*)" "Bash(git ls-files:*)"
   "Bash(gh pr view:*)" "Bash(gh pr list:*)" "Bash(gh pr checks:*)"     # PRs: look only
-  "Bash(${HB[0]} status:*)" "Bash(${HB[0]} trends:*)" "Bash(${HB[0]} queue list:*)" "Bash(${HB[0]} report:*)"
-  "Bash(${HB[1]} status:*)" "Bash(${HB[1]} trends:*)" "Bash(${HB[1]} queue list:*)" "Bash(${HB[1]} report:*)"
+  "Bash(${HB[0]} status:*)" "Bash(${HB[0]} trends:*)" "Bash(${HB[0]} queue list:*)"
+  "Bash(${HB[1]} status:*)" "Bash(${HB[1]} trends:*)" "Bash(${HB[1]} queue list:*)"
 )
 DENY=(Edit Write NotebookEdit                                       # the never-list, as far as prefix rules go
+  "Bash(git diff --output:*)" "Bash(git log --output:*)" "Bash(git show --output:*)"
+  "Bash(git diff * --output*)" "Bash(git log * --output*)" "Bash(git show * --output*)"
   "Bash(git push:*)" "Bash(git commit:*)" "Bash(git merge:*)" "Bash(git rebase:*)" "Bash(git reset:*)"
   "Bash(git checkout:*)" "Bash(git switch:*)" "Bash(git restore:*)" "Bash(git stash:*)" "Bash(git tag:*)"
   "Bash(git branch -d:*)" "Bash(git branch -D:*)" "Bash(git branch -f:*)" "Bash(git branch -m:*)" "Bash(git worktree:*)"
@@ -182,25 +199,33 @@ DENY=(Edit Write NotebookEdit                                       # the never-
   "Bash(tmux:*)" "Bash(kill:*)" "Bash(pkill:*)" "Bash(rm:*)" "Bash(mv:*)" "Bash(cp:*)" "Bash(curl:*)" "Bash(wget:*)"
   "Bash(npm:*)" "Bash(npx:*)")
 for h in "${HB[@]}"; do
-  for c in start continue merge gc init answer pause resume stop debrief "queue add" "queue start" "queue stop" "queue rm" "queue clear"; do
+  for c in start continue merge gc init answer pause resume stop debrief report "queue add" "queue start" "queue stop" "queue rm" "queue clear"; do
     DENY+=("Bash($h $c:*)"); done
 done
-ADD=(--add-dir "$LEDGER") WATCH=()
-LTOP=$(git -C "$LEDGER" rev-parse --show-toplevel 2>/dev/null) && WATCH+=("$LTOP")
+# Readable: the ledger, the queue, and each run's state dir, worktree and project. Watched for changes: the ledger
+# directory's files, and the worktrees (of runs that have ended) and projects: files, HEAD, local branches and tags.
+# Not watched: remote refs (a fetch is not a write), the harness repo's own commits, a still-running run's worktree.
+ADD=(--add-dir "$LEDGER" --add-dir "$Q") WATCH=()
+LTOP=$(git -C "$LEDGER" rev-parse --show-toplevel 2>/dev/null)
 for d in "${RUNS[@]}"; do
-  while read -r x; do [[ -d $x ]] && { ADD+=(--add-dir "$x"); WATCH+=("$x"); }; done < <(source "$d/meta.env"; echo "$WT"; echo "$PROJECT_DIR")
+  ADD+=(--add-dir "$d")
+  while read -r x; do [[ -d $x ]] || continue; ADD+=(--add-dir "$x")
+    [[ $x == "$(source "$d/meta.env"; echo "$WT")" ]] && alive "$d" && continue; WATCH+=("$x")
+  done < <(source "$d/meta.env"; echo "$WT"; echo "$PROJECT_DIR")
 done
-snapshot() {   # what a read-only session must not change: each repo's files, HEAD and refs
+snapshot() {   # what a read-only session must not change
   local d
+  [[ -n $LTOP ]] && git -C "$LEDGER" status --porcelain -- . 2>/dev/null | sed "s|^|ledger: |"
   while IFS= read -r d; do
+    [[ -n $d ]] || continue
     git -C "$d" status --porcelain 2>/dev/null | sed "s|^|$d: |"
-    git -C "$d" for-each-ref --format="$d: %(refname) %(objectname)" 2>/dev/null
+    git -C "$d" for-each-ref --format="$d: %(refname) %(objectname)" refs/heads refs/tags 2>/dev/null
     echo "$d: HEAD $(git -C "$d" rev-parse HEAD 2>/dev/null)"
   done < <(printf '%s\n' "${WATCH[@]}" | sort -u)
 }
 MODEL=$(F model "$DEBRIEF_MODEL")
 HARNESS_NOW=$(date '+%F %H:%M') HARNESS_LEDGER=$LEDGER HARNESS_SINCE=$SINCE \
-  node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/debrief.md" "Context=$CTX" > "$WS/prompt.md"
+  node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/debrief.md" --raw "Context=$CTX" > "$WS/prompt.md"
 log "debrief · $MODEL · ${#RUNS[@]} run(s) since $SINCE · $WS"
 snapshot > "$WS/before.txt"
 t0=$(date +%s)
@@ -209,15 +234,21 @@ t0=$(date +%s)
     --output-format stream-json --verbose < "$WS/prompt.md" > "$WS/session.jsonl" 2>&1 9>&- )
 rc=$? wall=$(( $(date +%s) - t0 ))
 snapshot > "$WS/after.txt"
-if why=$(MET limit "$WS/session.jsonl" "$wall" "$rc"); then   # refused: no note; the window is shared with every run
-  upto=$(( ${why##*$'\t'} > 0 ? ${why##*$'\t'} + 120 : $(date +%s) + 900 ))
-  (( upto > $(cat "$STATE_ROOT/LIMIT_UNTIL" 2>/dev/null || echo 0) )) && echo "$upto" > "$STATE_ROOT/LIMIT_UNTIL"
-  log "debrief: session refused (${why%%$'\t'*}); no note (the next debrief covers these runs)"; exit 1
+if why=$(MET limit "$WS/session.jsonl" "$wall" "$rc"); then
+  reason=${why%%$'\t'*} reset=${why##*$'\t'}
+  # Only a real usage limit closes the box-wide window (it pauses every driver and the queue). A session that died
+  # at startup (auth, a changed CLI flag, a crash: "no result", "$0, one turn") is a failed debrief, nothing more.
+  if (( reset > 0 )) || grep -qiE 'usage limit|session limit|weekly limit|rate.?limit|limit reached|overloaded|quota|credit balance' <<< "$reason"; then
+    upto=$(( reset > 0 ? reset + 120 : $(date +%s) + 900 ))
+    (( upto > $(cat "$STATE_ROOT/LIMIT_UNTIL" 2>/dev/null || echo 0) )) && echo "$upto" > "$STATE_ROOT/LIMIT_UNTIL"
+    fail "session refused ($reason); no note, the next debrief covers these runs" refused
+  fi
+  fail "the session failed ($reason; exit $rc); no note ($WS/session.jsonl)"
 fi
 result=$(grep '^{' "$WS/session.jsonl" | jq -rs '[.[] | select(.type == "result")] | last // {} | "\(.subtype // "no result") \(.is_error // false)"' 2>/dev/null)
-[[ $result == "success false" ]] || { log "debrief: the session failed ($result, exit $rc); no note ($WS/session.jsonl)"; exit 1; }
+[[ $result == "success false" ]] || fail "the session failed ($result, exit $rc); no note ($WS/session.jsonl)"
 MET final "$WS/session.jsonl" > "$WS/final.md"
-[[ -n $(tr -d '[:space:]' < "$WS/final.md") ]] || { log "debrief: the session wrote no note (exit $rc; $WS/session.jsonl)"; exit 1; }
+[[ -n $(tr -d '[:space:]' < "$WS/final.md") ]] || fail "the session wrote no note (exit $rc; $WS/session.jsonl)"
 COST=$(grep '^{' "$WS/session.jsonl" | jq -s '[.[] | select(.type == "result") | .total_cost_usd // 0] | max // 0' 2>/dev/null || echo "?")
 
 # ---- continuations, the note, the notification -------------------------------------------------------------------
@@ -256,14 +287,28 @@ mkdir -p "$LEDGER"
   echo "_runs since $SINCE: $(names) · $MODEL, \$$COST · context: ${CTX}_"
   echo; cat "$WS/body.md"; } > "$NOTE"
 printf '%s\t%s\n' "$(date +%s)" "$STARTED" > "$Q/last-debrief"   # only now: a failed or killed debrief changes nothing
+# The ledger is the harness's own checkout, where people work too: commit only on MAIN_BRANCH with no rebase, merge
+# or cherry-pick going, only this file, and never leave it staged.
+ledger_busy() {
+  local b g; b=$(git -C "$LTOP" symbolic-ref -q --short HEAD) || { echo "a detached HEAD"; return 0; }
+  [[ $b == "$MAIN_BRANCH" ]] || { echo "branch $b, not $MAIN_BRANCH"; return 0; }
+  for g in rebase-merge rebase-apply MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD; do
+    [[ -e $(git -C "$LTOP" rev-parse --git-path "$g") ]] && { echo "a ${g%%_*} in progress"; return 0; }
+  done
+  return 1
+}
 if [[ $LEDGER_COMMIT == 1 && -n $LTOP ]]; then
-  ( flock 9; git -C "$LEDGER" add -- "$NOTE" && git -C "$LEDGER" commit -q -m "ledger: debrief $(date '+%F %H:%M')" -- "$NOTE" ) 9> "$STATE_ROOT/ledger.lock" \
-    || log "debrief: ledger commit skipped"
+  if why=$(ledger_busy); then log "debrief: the note is written but not committed: $LTOP is on $why"
+  elif ! ( flock 9; git -C "$LEDGER" add -- "$NOTE" && git -C "$LEDGER" commit -q -m "ledger: debrief $(date '+%F %H:%M')" -- "$NOTE" ) \
+       9> "$STATE_ROOT/ledger.lock" > "$WS/commit.out" 2>&1; then
+    git -C "$LEDGER" reset -q -- "$NOTE" 2> /dev/null
+    log "debrief: the note is written but not committed (git: $(tail -1 "$WS/commit.out"))"
+  fi
 fi
 log "debrief written: $NOTE ($MODEL, \$$COST)"
 
 mapfile -t HL < <(awk '/^## / { if (on) exit; if (tolower($0) ~ /^## headline/) { on = 1; next } } on && NF' "$WS/body.md" | head -3)
 (( ${#HL[@]} )) || mapfile -t HL < <(grep -v '^#' "$WS/body.md" | grep . | head -3)
 HL[0]="[debrief] ${HL[0]:-}"
-[[ -n $NOTIFY_CMD ]] && bash -c "$NOTIFY_CMD" _ "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" > /dev/null 2>&1 9>&-
+tell "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")"
 exit 0
