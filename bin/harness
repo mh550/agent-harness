@@ -234,7 +234,7 @@ cmd_queue() {
       for f in "$Q"/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g")"; done
       (( n )) || echo "  (empty)"
       echo "running: $(for d in "$STATE_ROOT"/*/*/; do alive "$d" && basename "$d"; done | paste -sd' ' -)"
-      [[ -f $Q/runner.log ]] && { echo "recent:"; tail -n 5 "$Q/runner.log" | sed 's/^/  /'; } ;;
+      if [[ -f $Q/runner.log ]]; then echo "recent:"; tail -n 5 "$Q/runner.log" | sed 's/^/  /'; fi ;;
     add)
       if [[ ${1:-} == --continue ]]; then
         local run=${2:?usage: harness queue add --continue <run-id>}; shift 2; state_of "$run" > /dev/null
