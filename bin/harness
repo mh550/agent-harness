@@ -13,6 +13,8 @@
 #   harness status [<run-id>]                    every run: running / ended (why), features, last log lines
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
 #   harness trends                               every recorded run in one table (the harness ledger)
+#   harness debrief [--dry-run]                  after a queue: one short read-only session writes the debrief
+#                               (ledger/debrief.md; NOTIFY_CMD gets its headline). The queue runner starts it as it exits
 #   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each)
 #   harness attach <run-id>                      the run's tmux session (driver · log · supervisor)
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
@@ -27,7 +29,7 @@
 #                         metrics.jsonl,brief.md,summary.json,report.md,retro.md}
 #   local state           ~/.local/state/harness/<project>/<run-id>/{run.log,logs/*.jsonl,attempts.json,port,driver.pid,ended,…}
 #   queue                 ~/.local/state/harness/queue/   · shared usage-limit window: ~/.local/state/harness/LIMIT_UNTIL
-#   ledger                <harness>/ledger/{runs.jsonl,<project>/<run-id>/}
+#   ledger                <harness>/ledger/{runs.jsonl,<project>/<run-id>/,debrief.md}
 #   scratch               /tmp/harness/<project>/<run-id>/
 #   config layers         harness defaults → ~/.config/harness/config.sh → <project>/.harness/config.sh → the run's options
 set -euo pipefail
@@ -136,6 +138,7 @@ cmd_start() {
     echo "$port" > "$state/port"
   fi
   printf 'PROJECT_DIR=%q\nWT=%q\nRUN_ID=%q\nSTATE=%q\n' "$p" "$wt" "$run" "$state" > "$state/meta.env"
+  [[ -n ${HARNESS_RUNNER_ID:-} ]] && echo "$HARNESS_RUNNER_ID" >> "$state/runners"   # started by that queue runner (its debrief covers it)
   # the run's own settings: --spec persists across resumes; --until applies to this start only
   local kept=() l; [[ -f $state/run.env ]] && mapfile -t kept < "$state/run.env"
   { for l in "${kept[@]}"; do [[ $l == DEADLINE_AT=* || ( -n $spec && $l == SPEC_FILES=* ) ]] || echo "$l"; done
@@ -324,5 +327,6 @@ case ${1:-help} in
   pause|resume|stop) cmd_control "$1" "${2:-}" ;;
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
-  *) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//' ;;
+  debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
+  *) sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

@@ -30,6 +30,18 @@ harness queue add --continue dj-2026-10-17
 harness queue start --until 07:30        # tmux h-queue; no run starts after 07:30, and each one stops by then
 ```
 
+When the runner exits (queue empty, past `--until`, or `harness queue stop`) and it started at least one run, it runs
+**`harness debrief`**, detached: one short read-only Sonnet session that reads what happened and overwrites
+`ledger/debrief.md`. `NOTIFY_CMD` gets its three-line headline and the note's path (see [Debrief](#debrief)).
+
+| Command | What |
+|---|---|
+| `harness start` · `continue` · `merge` · `stop` · `pause` · `resume` · `answer` | one run |
+| `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue |
+| `harness status` · `report` · `trends` · `attach` | look |
+| `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
+| `harness init` · `gc` | set up a project, clean up merged runs |
+
 ## What a project needs
 
 | File | What | Required |
@@ -61,9 +73,33 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
 - **After a partial run:** nothing, usually: verified milestones are already merged and a continuation is queued.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 
+## Debrief
+
+After a queue, `harness debrief` replaces the "morning session". The queue runner starts it, detached, as it exits
+(queue empty, past `--until`, or `harness queue stop`), if it started a run; run it by hand any time. It covers every
+run whose driver started since the last debrief that produced a note, so a debrief that was refused, failed or killed
+is caught up by the next one. Bash gathers the context (status, trends, the queue, the runner's log, and per run: end
+reason, summary, report, retro, INBOX.md, open questions, the usage-limit window), then one Sonnet session writes the
+note: a headline (what landed on main, what's blocked, spend against the usage window), 3–6 lines per run, **Needs
+Michael**, draft answers the project's docs support (it never writes to INBOX.md), and **For the next interactive
+session** (merge conflicts, retro proposals seen in two or more retros). It can ask for a continuation of a run that
+ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harness checks it and queues it with
+`--keep-attempts`; nothing starts.
+
+- **The note** is one file, `ledger/debrief.md`, overwritten each time and committed with the ledger (`LEDGER_COMMIT`),
+  only while the harness checkout is on `main` with no rebase or merge going: the archive is
+  `git log -p ledger/debrief.md`. `NOTIFY_CMD` gets its three-line headline and the path, or one line if it failed.
+- **Read-only**: the session runs in `dontAsk` mode with an allowlist of read-only tools (one commented array in
+  `lib/debrief.sh`, where the scope can be widened) plus the never-list as `--disallowedTools`; anything that still
+  changes in the ledger, run worktrees or projects while it runs is flagged in the note. See `docs/architecture.md` §16.
+- **Cost.** One Sonnet session per queue (`DEBRIEF_MODEL`), at most 40 turns and $3 like the retro; the context is
+  capped at a few tens of KB, so a typical debrief is well under $1. Nothing to cover: no session, $0. A closed
+  usage-limit window is waited out up to 5 h; past that, the next debrief (or yours, by hand) covers these runs.
+- `harness debrief --dry-run` prints the gathered context and launches nothing.
+
 ## Tests
 
 ```bash
-tests/run.sh    # end-to-end with stub claude/gh on a throwaway repo with a bare origin: 48 checks (~3 min)
+tests/run.sh    # end-to-end with stub claude/gh on a throwaway repo with a bare origin: 83 checks (~2 min)
 ```
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

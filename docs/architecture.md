@@ -11,7 +11,7 @@ dependency order, and does all the bookkeeping around them: init, suite, sync, g
 a milestone passes, an independent **verify** session re-runs every step. A verified milestone is tagged and
 **merged into `main` through its own PR**. At the end the driver writes a summary, runs a **retro** session that
 proposes harness changes, and records the run in the harness's own **ledger**. Runs are queued, and they share one
-view of the plan's usage limit.
+view of the plan's usage limit. When a queue ends, one read-only **debrief** session writes Michael a triage note.
 
 ## 2. Principles (each one is a decision in `journal/decisions.md`)
 
@@ -47,17 +47,18 @@ view of the plan's usage limit.
 
 | Component | Lines | Responsibility |
 |---|---|---|
-| `bin/harness` | ~330 | CLI: start/continue/merge/queue/status/report/trends/attach/pause/resume/stop/answer/init/gc. Creates worktrees, ports, state dirs, tmux sessions |
+| `bin/harness` | ~330 | CLI: start/continue/merge/queue/status/report/trends/attach/pause/resume/stop/answer/init/gc/debrief. Creates worktrees, ports, state dirs, tmux sessions |
 | `lib/driver.sh` | ~370 | The run loop (§5). The only component that runs sessions, commits on the run's behalf, tags and merges |
-| `lib/queue.sh` | ~45 | Starts queued runs within the parallel limit, the `--until` time and the usage-limit window |
+| `lib/queue.sh` | ~45 | Starts queued runs within the parallel limit, the `--until` time and the usage-limit window; starts `harness debrief`, detached, as it exits (§16) |
+| `lib/debrief.sh` | ~280 | `harness debrief`: gathers the context in bash, waits out the limit window, one read-only session, the note, checked continuations, the notification (§16) |
 | `lib/config.sh` | ~60 | Config layers and conventions (§10) |
 | `lib/check.sh` + `treekey.mjs` | ~40 | The suite, cached per content of the code tree. One command for the driver and every session |
 | `lib/features.mjs` | ~200 | The feature-list contract: scheduling, gating, repair, kinds, evidence counting |
 | `lib/metrics.mjs` | ~100 | Per-session metrics; the "environmental?" decision (limits, API errors, $0) |
 | `lib/summary.mjs` | ~230 | Run summary, writeup, ledger rows, trends, calibration |
 | `lib/render.mjs` | ~15 | Prompt templating (`{{X}}` ← `HARNESS_X`) and titled sections |
-| `prompts/*.md` | | initializer, coding, verify, retro, supervisor, draft-claude-md; `policy/{build-only,live-staged}.md` |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude` and `gh` on a throwaway repo with a bare origin: 48 checks |
+| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md; `policy/{build-only,live-staged}.md` |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude` and `gh` on a throwaway repo with a bare origin: 83 checks |
 
 ## 4. Where state lives
 
@@ -75,7 +76,9 @@ view of the plan's usage limit.
 | Attempts | `…/attempts.json` | driver (bump, unbump, grant, reset) | scheduler | no |
 | Markers | `…/{driver.pid, ended, PAUSE, STOP, verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, verify-rounds-<m>, tests-start, tests-end, waited-<t>, port, meta.env, run.env, brief.md, inbox.md}` | driver, CLI | driver, CLI, summary | no |
 | Shared limit window | `~/.local/state/harness/LIMIT_UNTIL` (epoch) | any driver hitting a limit | every driver, the queue runner, status | no |
-| Queue | `~/.local/state/harness/queue/NNNN-<verb>-<name>.args`, `done/`, `runner.log`, `runner.pid`, `STOP` | CLI, driver (continuations) | runner | no |
+| Queue | `~/.local/state/harness/queue/NNNN-<verb>-<name>.args`, `done/`, `runner.log`, `runner.pid`, `STOP`, `last-debrief` (when the last note was produced, and the "since" of the next), `debrief.out` | CLI, driver (continuations), debrief | runner, debrief | no |
+| Debrief workspace | `~/.local/state/harness/debrief/<stamp>/{context.md,prompt.md,session.jsonl,final.md,body.md}`, `debrief.lock` | `harness debrief` | you (`--dry-run` prints `context.md`) | no |
+| Debrief note | `<harness>/ledger/debrief.md`, overwritten each time (history: `git log -p`) · `<state>/runners` marks the runs a queue runner started | `harness debrief` (flock, `git commit -- <note>` when `LEDGER_COMMIT=1`) · `harness start` | Michael, the next interactive session | yes, harness repo |
 | Scratch | `/tmp/harness/<p>/<run>/` (`init.out`, `check.out`, `check-<key>.out`, `green-<key>`, dev DB, screenshots) | driver, init, check, sessions | sessions, driver | no |
 | Live-write lock | `LIVE_LOCK` (default `/tmp/harness/<p>/live.lock`; dj: `/srv/docker/crates/live.lock`, shared with the backup job) | sessions under `live-staged` (`flock -n`), the backup script (`flock -w`) | both | no |
 | Ledger | `<harness>/ledger/runs.jsonl`, `ledger/<p>/<run>/{summary.json,retro.md,…}` | driver at the end (flock, `git commit -- <paths>`) | `harness trends`, retro, calibration | yes, harness repo |
@@ -255,6 +258,9 @@ id is chosen when it starts) and ensures the runner (tmux `h-queue`); `--now` by
 skipped if you stopped the run; `harness continue` refuses a run whose driver is alive. `harness queue add …` queues without starting;
 `harness queue start --until 07:30` runs the queue and gives every run it starts that deadline. The runner never
 starts a run while `LIMIT_UNTIL` is in the future. With 1, nights are serial: each run gets the whole plan window.
+The runner exits when the queue is empty and nothing it started runs, when it is past `--until` with nothing running,
+or on `harness queue stop`; whichever, if it started at least one run (marked in `<state>/runners`), it then starts
+`harness debrief` once, detached with `setsid`, so a new runner replacing tmux `h-queue` can't kill it (§16).
 
 ## 13. Extending it
 
@@ -297,3 +303,66 @@ record and their own `passes`; make every new behaviour visible in `harness-log.
   gitignored files. Verify and review are the backstop.
 - A milestone held because main moved, with no later milestone to carry it, waits for you (`harness merge` after a
   `harness continue` that adds a milestone, or a manual PR).
+
+## 16. Debrief
+
+After a queue, one short session reviews what happened and tells Michael, so nobody opens a session to triage.
+It replaces a fixed-time morning session: the queue's end triggers it; `harness debrief` by hand is the fallback.
+
+```
+queue runner exits (empty · past --until · queue stop), having started ≥ 1 run (<state>/runners)
+  ─► setsid -f harness debrief  (output: queue/debrief.out)
+harness debrief [--dry-run]:
+  preflight: node, jq, git, flock, claude (sources nvm.sh, adds ~/.local/bin; else logs "missing: …" and exits 1)
+  flock debrief.lock (a second debrief says it waits, waits, then covers only what is left)
+  since = queue/last-debrief (the first time: the newest "runner up"); the next "since" is taken now, before
+    runs = every driver started since (run.log): a run starting during the wait or the session is covered next time
+    none → nothing to do, no session
+  LIMIT_UNTIL in the future: wait (≤ 5 h; HARNESS_LIMIT_SLEEP in tests), else exit (the next debrief covers it)
+  context.md (bash, $0, each part capped): status · trends · queue · runner.log since · per run: ended · summary.json
+     · report.md · retro.md · INBOX.md · progress.md questions · needs-Michael lines · limit window · rate-limit info
+     · the whole capped at 150 KB; pasted into the prompt with render.mjs --raw ({{X}} in it stays literal)
+     (--dry-run: print it and stop)
+  DEBRIEF SESSION (DEBRIEF_MODEL=sonnet, 40 turns, $3, SESSION_TIMEOUT; prompt on stdin; --permission-mode dontAsk,
+     --allowedTools ALLOW, --disallowedTools DENY; --add-dir ledger, queue/, each run's state dir, worktree and project)
+  refused by a usage limit → LIMIT_UNTIL updated; died at startup, not "success", no text → failed (no window):
+     exit 1, one line to NOTIFY_CMD, last-debrief untouched: the next one covers these runs
+  git status + refs of the ledger, worktrees and projects: before vs after → a warning section in the note
+  "CONTINUE: <run> :: <brief>" lines → checked → harness queue add --continue <run> --keep-attempts --brief "Suggested by
+     the debrief …" (or "Not queued: why")
+  ─► ledger/debrief.md (overwritten) · last-debrief · NOTIFY_CMD: 3 lines + path
+  commit (LEDGER_COMMIT=1) only if the harness checkout is on MAIN_BRANCH with no rebase/merge/cherry-pick going, only
+     that file; a failed commit is unstaged again ("written but not committed" in runner.log)
+```
+
+**Since the last success.** `queue/last-debrief` holds the time the last successful debrief gathered its context (or
+the start of a run that was still going then, so its end is seen next time). It is written only after a note is
+produced, so a refused, failed or killed debrief changes nothing and the next one covers its runs too.
+
+**The note**: Headline (≤ 3 lines; the notification): what landed on main, what is blocked and why, spend against
+the usage window. **Runs**: 3–6 lines each. **Needs Michael**: policy, permission and product questions, sudo steps,
+inbox questions the docs can't answer. **Draft answers**: only where the project's docs answer, quoting the doc path;
+Michael pastes them into INBOX.md himself. **For the next interactive session**: merge conflicts on run branches,
+held or refused merges, retro proposals seen in two or more retros (candidate harness PRs). v1 lists; it resolves
+nothing and opens no PR. One file, overwritten; `git log -p ledger/debrief.md` is the archive.
+
+**Continuations.** The session may only *ask*; bash queues, and only a run of this debrief that ended on its
+deadline or a usage limit, isn't running, has work left (`summary.json`) and isn't already queued. It is queued with
+`--keep-attempts` (given-up features stay given up; verify holds stay) and a brief labelled as the debrief's
+suggestion. Nothing starts: it waits for the next `harness queue start`.
+
+**Read-only, and the never-list.** The debrief never edits files (in particular INBOX.md, policies, CLAUDE.md,
+settings), answers for Michael, starts/continues/merges/stops runs or starts the queue, merges or edits PRs, pushes,
+commits, or runs anything live. Enforced in layers:
+
+| | How |
+|---|---|
+| `--permission-mode dontAsk` + `--allowedTools ALLOW` | only these run: Read, Grep, Glob; `cd ls cat head tail wc grep jq date`; `git log/show/diff/status/rev-parse/rev-list/merge-base/for-each-ref/ls-files`, `git branch --list/-a/-v/-vv/-av/--show-current`; `gh pr view/list/checks`; `harness status/trends/queue list`. Left out on purpose: `rg` and `git grep` (`--pre`, `-O` run programs), plain `git branch`, `harness report` (rewrites summary.json). **The scope lives in one commented array (`ALLOW`) in `lib/debrief.sh`**: widen it there. Checked against the real CLI (haiku, 2026-10-17, $0.004): a read in an added state dir works; Write, a shell redirect and `git … --output=` are denied |
+| `--disallowedTools DENY` (wins over ALLOW) | `Edit`, `Write`, `NotebookEdit`; `git diff/log/show --output`; every state-changing `harness` command and `harness report` (bare and by full path); `git push/commit/merge/rebase/reset/checkout/switch/restore/stash/tag/worktree`, `git branch -d/-D/-f/-m`; `gh pr merge/create/close/edit/review/comment/ready`, `gh api/repo/release/workflow`; `sudo ssh scp rsync docker systemctl kubectl tmux kill pkill rm mv cp curl wget npm npx` |
+| After the session | compared with before: the ledger directory's files; the worktrees of runs that have ended and the projects: files, HEAD, local branches and tags (not remote refs, not the harness repo's commits, not a still-running run's worktree). Any change is logged and flagged in the note |
+| The prompt | the same list in words, including what prefix rules can't express (`git -C …`, shell redirection, a project's `## Live system` commands) |
+| Bash | continuations are queued only by bash, after the checks above |
+
+**Cost.** One Sonnet session per queue that started a run, at most 40 turns and $3 (the retro's caps); the context is
+capped at a few tens of KB, so expect well under $1. With nothing to cover there is no session. The note's second line
+records the model and the session's cost.
