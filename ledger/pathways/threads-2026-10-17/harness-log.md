@@ -82,3 +82,11 @@
 - 2026-10-17 16:16 · S-02 · claude-opus-5-5 · passes=false · 1 min · 35/37 passing
 - 2026-10-17 16:16 · blocked: the remaining features wait on S-02 (given up; needs Michael)
 - 2026-10-17 16:16 · run ended (blocked on S-02): 35/37 passing · 68 sessions (49 real) · 35 features passed · $84.47 · 2.2 h · by kind: init 1 ($5.97), coding 58 ($72.01), verify 9 ($6.49) · by model: claude-fable-5-1 1 ($5.97), claude-opus-5-5 45 ($73.59), claude-sonnet-5-5 22 ($4.91)
+- 2026-10-17 21:10 · merged main into harness/threads-2026-10-17
+- 2026-10-17 21:11 · S-02 · claude-opus-5-5 · passes=true · 1 min · 36/38 passing
+- 2026-10-17 21:12 · S-03 · claude-sonnet-5-5 · passes=true · 0 min · 37/38 passing
+- 2026-10-17 21:17 · S-04 · claude-opus-5-5 · passes=true · 5 min · 38/38 passing
+- 2026-10-17 21:19 · stretch verified and tagged run/threads-2026-10-17/stretch
+- 2026-10-17 21:19 · stretch merged into main · https://github.com/mh550/pathways/pull/13
+- 2026-10-17 21:19 · every feature passes
+- 2026-10-17 21:19 · run ended (done): 38/38 passing · 73 sessions (54 real) · 38 features passed · $86.86 · 2.3 h · by kind: init 1 ($5.97), coding 61 ($74.05), verify 10 ($6.71), retro 1 ($0.13) · by model: claude-fable-5-1 1 ($5.97), claude-opus-5-5 47 ($75.45), claude-sonnet-5-5 25 ($5.44)

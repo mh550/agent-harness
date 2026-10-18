@@ -3,14 +3,14 @@
   "project": "pathways",
   "branch": "harness/threads-2026-10-17",
   "started": "2026-10-17T06:24:24.000Z",
-  "ended_at": "2026-10-17T20:17:11.000Z",
+  "ended_at": "2026-10-18T01:19:39.000Z",
   "end_reason": "session cap",
-  "continuations": 2,
+  "continuations": 3,
   "features": {
-    "total": 37,
-    "passing": 35,
-    "verified": 34,
-    "merged": 34
+    "total": 38,
+    "passing": 38,
+    "verified": 38,
+    "merged": 38
   },
   "milestones": [
     {
@@ -64,54 +64,54 @@
     },
     {
       "id": "stretch",
-      "features": 3,
-      "passing": 1,
-      "verified": false,
-      "merged": false
+      "features": 4,
+      "passing": 4,
+      "verified": true,
+      "merged": true
     }
   ],
   "tests": {
     "start": 122,
-    "end": 256
+    "end": 257
   },
   "cost": {
-    "total": 84.6,
-    "per_passing_feature": 2.42,
+    "total": 87.01,
+    "per_passing_feature": 2.29,
     "by_role": {
       "init": 5.97,
       "plan": 7.98,
-      "build": 39.4,
+      "build": 41.44,
       "review": 23.27,
-      "verify": 6.5,
+      "verify": 6.72,
       "check": 0.75,
       "docs": 0.61,
-      "retro": 0.13
+      "retro": 0.28
     },
     "by_model": {
       "claude-fable-5-1": 5.97,
-      "claude-opus-5-5": 73.58,
-      "claude-sonnet-5-5": 5.06
+      "claude-opus-5-5": 75.44,
+      "claude-sonnet-5-5": 5.61
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 5.91,
-    "sessions_h": 4.93,
-    "driver_h": 0.98,
+    "wall_h": 6.08,
+    "sessions_h": 5.08,
+    "driver_h": 0.99,
     "by_role_h": {
       "init": 0.18,
       "plan": 0.41,
-      "build": 2.6,
+      "build": 2.73,
       "review": 1.09,
-      "verify": 0.54,
+      "verify": 0.56,
       "check": 0.06,
       "docs": 0.03,
-      "retro": 0.01
+      "retro": 0.02
     }
   },
   "sessions": {
-    "total": 69,
-    "real": 49,
+    "total": 74,
+    "real": 54,
     "environmental": 20
   },
   "guards": {
@@ -120,7 +120,7 @@
     "verify_failed": 1,
     "limit_waits": 1,
     "verify_escalations": 1,
-    "merges": 7
+    "merges": 8
   },
   "features_detail": [
     {
@@ -639,8 +639,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 1,
       "minutes": 7,
@@ -653,30 +653,45 @@
       "milestone": "stretch",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 2,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 3,
       "refused": 0,
-      "minutes": 7,
-      "cost": 2.23,
-      "cause": "not done",
-      "detail": "S-02 does not pass yet. The command is built and works, but two of its steps contradict each other. Step 1 orders songs by start time, so Leroy's Latin Lament (started 19:55Z) comes first. Step 2's ex"
+      "minutes": 9,
+      "cost": 2.7,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "S-03",
       "milestone": "stretch",
       "kind": "build",
       "model": "sonnet",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: session cap"
+      "minutes": 1,
+      "cost": 0.18,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "S-04",
+      "milestone": "stretch",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 5,
+      "cost": 1.39,
+      "cause": null,
+      "detail": null
     }
   ]
 }

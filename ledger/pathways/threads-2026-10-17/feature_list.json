@@ -514,13 +514,13 @@
       "id": "S-02",
       "milestone": "stretch",
       "model": "opus",
-      "description": "`pathways threads from-set <ref> --name <n>` creates a thread from a recorded set's matched songs in play order (de-duplicated), e.g. replay-399 → Rico Suave Bossa Nova, Leroy's Latin Lament, Woman of the World, What's Going On, Coffy Is The Color, Glide.",
+      "description": "`pathways threads from-set <ref> --name <n>` creates a thread from a recorded set's matched songs in play order (started_at, D33) (de-duplicated), e.g. replay-399 → Leroy's Latin Lament, Rico Suave Bossa Nova, Woman of the World, What's Going On, Coffy Is The Color, Glide.",
       "steps": [
         "src/graph.ts threadFromSet(session_ref, name) → the thread with the set's matched tracks in started_at order, each song once (first appearance), plays with track_id null skipped and counted; src/cli.ts `threads from-set <ref> --name <n>` prints the thread name, the song count and the number of unmatched plays skipped; HELP updated",
-        "tests/graph-threads.test.ts: after replaying 399.session at speed 0 into a seeded Graph (demo seed helper), threadFromSet('replay-399', 'Sunday as played') has 6 songs in the order Rico Suave Bossa Nova, Leroy's Latin Lament, Woman of the World, What's Going On, Coffy Is The Color, Glide (Woman of the World once); an unknown ref throws 'no set: <ref>'; a duplicate thread name throws",
+        "tests/graph-threads.test.ts: after replaying 399.session at speed 0 into a seeded Graph (demo seed helper), threadFromSet('replay-399', 'Sunday as played') has 6 songs in the order Leroy's Latin Lament, Rico Suave Bossa Nova, Woman of the World, What's Going On, Coffy Is The Color, Glide (Woman of the World once); an unknown ref throws 'no set: <ref>'; a duplicate thread name throws",
         "README 'Threads and graphs' CLI list gains the command; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S-03",
@@ -532,7 +532,20 @@
         "OVERNIGHT.md 'Needs Michael' gains one line pointing at §13 with the question 'which side wins when both changed?'",
         "No code changed; npm run check --silent is green"
       ],
-      "passes": false
+      "passes": true
+    },
+    {
+      "id": "S-04",
+      "milestone": "stretch",
+      "model": "opus",
+      "description": "On a dimmed (not cued, not open) Live context card, '+ add to graph' reads as a proposed change: about 75 % opacity with a dashed border, while the rest of the card keeps the §7 rule 2 look (45 %, dashed thread-colour left border).",
+      "steps": [
+        "ui/live.css: the button is no longer dimmed with the whole card (opacity on a parent multiplies, so dim the card's contents instead of .pcard.context itself, or equivalent); .pcard.context .sadd sits at ≈ .75 opacity with a dashed border; a cued or open context card is unchanged (everything at full opacity); hover/focus stay visible; the editor's context card gets the same button look if it shares the class",
+        "tests/live-render.test.ts (or a CSS-free render assertion) still passes; the S-01 flow in .harness/flows.mjs still clicks '+ add to graph' and the card becomes an in-graph pathway",
+        "Headless (Sonnet) at 390 px on /live?graph=Soul hour with the 399 replay: the non-cued Rico Suave context card's button computes to opacity ≈ .75 (button × ancestors) with a dashed border, the card's title stays at .45; button ≥ 44 px tall, no horizontal scroll; re-shoot docs/screenshots/live-cued-context-390.png and -1280.png",
+        "Design doc §12 gains a one-line D-note for the button look (Michael's answer of 2026-10-17); npm run check --silent is green"
+      ],
+      "passes": true
     }
   ]
 }

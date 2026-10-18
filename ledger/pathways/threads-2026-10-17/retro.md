@@ -1,31 +1,30 @@
 ## Outcome
-35 of 37 features passed (tests 122 → 256, $84.47, 5.9 h wall). Milestones T0, T1, T3, T4, T5, T7 and T6 were each verified and merged, as PRs #6–#12. S-01 passed but wasn't verified or merged. S-02 stayed `passes=false`, so the run ended "blocked on S-02" with S-03 never tried. The cause was a contradiction in the S-02 feature list, not the code.
+All 38 of 38 features passed, and all 8 milestones were verified and merged (PRs #6–#13). Tests went from 122 to 257. The run cost $86.86 over 6.07 h wall time (3 continuations). It ended "done" at 21:19, after Michael answered the S-02 question in INBOX. The first segment ended 21/37, a usage-limit refusal stall. The second ended 35/37, blocked on S-02. The main delay was one contradictory feature step, not the code.
 
 ## Non-passing features by cause
-- **S-02 (not done): spec or feature-list problem.** Its final detail reads: "The command is built and works, but two of its steps contradict each other. Step 1 orders songs by start time, so Leroy's Latin Lament (started 19:55Z) comes first. Step 2's example…" Step 1 says `started_at` order; step 2's test expects Rico Suave Bossa Nova before Leroy's Latin Lament.
-- **S-03 (not reached): depends on a failed feature.** The log says "blocked: the remaining features wait on S-02". But S-03's `depends_on` is `null`, and it is a docs-only task with no code. The driver blocked it on its own, with no dependency in the feature list. That is a harness bug, not a real dependency.
+No feature is non-passing; `summary.json` has `cause: null` everywhere.
+
+The earlier S-02 stall was a spec or feature-list problem. Its step 1 said `started_at` order, and the example in step 2 put Rico Suave before Leroy. The progress entry at 20:50 reads: "step 1 … and step 2's example (Rico first) cannot both hold." The entry also asks: "**Harness:** please hold S-02 for Michael (or skip to S-03) rather than re-running it."
 
 ## Harness behaviour
-- **Guards.**
-  - The T4 verify guard worked as designed. At 13:42 it flagged "evidence short of the steps" and re-ran on opus. At 13:49 T4-08 failed the re-check, and a retry then passed.
-  - The usage-limit wait (46 min at 15:15) was correct.
-  - Repairs and red-unpass guards never fired.
-- **Waste.**
-  - S-02 got a second session (1 min, $2.23 across both) that only re-confirmed the contradiction. Writing the test to the step-2 order and noting the conflict would have been cheaper.
-  - S-03 was skipped for about $1 of work. There was no reason to stop the run there.
-  - The 20 "environmental" sessions out of 68 (29%) look like retries and limit stalls.
-  - Driver time was 0.98 h (17% of wall).
-- **Verify.**
-  - I did not check evidence rows against steps in `progress.md`. The T4 guard fired once. Verify entries exist for every milestone, with some timestamps out of order (e.g. 20:30 for T5 against a run that ended at 16:16).
-  - `metrics.jsonl` verify rows have `cost: null` and `minutes: null`, so per-verify cost and time can't be audited.
-  - There was no verify for the stretch milestone, which is why S-01 stayed unmerged.
+- **Guards:**
+  - The usage-limit wait at 15:15 (46 min) was correct.
+  - The T4 verify guard fired correctly. At 13:42 it flagged "evidence short of the steps". It re-ran on opus, T4-08 failed the re-check, and a retry passed.
+  - Repairs and red_unpass guards never fired.
+- **Blocking:**
+  - At 16:16 the driver wrote "remaining features wait on S-02" and ended the run with S-03 and S-04 unattempted.
+  - Run `dj-2026-10-17` hit the same pattern behind H3-04, and its retro already proposed this change.
+- **Waste:**
+  - S-02 used 3 sessions ($2.70) and the later ones re-confirmed the blocker.
+  - Several features show `refused: 2` (T4-09 through S-01) alongside 1 session, because refusal counts from the first segment were carried over.
+  - There were 20 environmental sessions of 73 (27%). Driver time was 0.99 h (16% of wall).
+- **Verify:**
+  - Only one verify entry in progress.md is dated after the S-02 stall (the 21:30 S-02 entry).
+  - The progress.md table has S-02 evidence rows (3 rows for 3 steps), and each cites files, commands and a result.
+  - The early verify sessions (T0, T1, T3) ran 6–7 turns and 29–40 s each, which looks like a suite re-run plus a read. T4 was the first to catch a failure, after the driver flagged it.
+  - The 21:19 stretch verify took 71 s and 11 turns, covering 4 features.
 
 ## Proposed harness changes
-1. **Block only on declared dependencies** (driver blocking logic). The "remaining features wait on S-02" rule held back S-03, which had `depends_on: null`. Skip the failed feature and continue with independent ones. I found no earlier retro proposing this. The only prior pathways retro is a one-line stub (see 3).
-2. **Handle spec contradictions in a session** (builder prompt and driver). When a build session reports contradictory steps, the driver should do one of three things:
-   - run a cheap, bounded "reconcile" step that picks the simplest reading, records it as `D<n> *default*` and amends the step;
-   - or park the feature straight away, with no second identical retry;
-   - or have `plan` or the init session lint feature steps for contradictions before the run, since this one is statically detectable.
-   
-   Evidence: S-02's two sessions, $2.23. The project's own CLAUDE.md already says to take the simplest reversible default. Not proposed before.
-3. **Make metrics complete and run a real retro session** (`metrics.jsonl` writer and driver). Verify rows have null cost and minutes, and the previous pathways run's retro was "written by hand: v2 had no retro session". Also run verify for the stretch milestone so S-01 isn't left unmerged. Not proposed before.
+1. **Block only on declared `depends_on`** (driver scheduler). Skip a given-up feature and continue with independent ones. Evidence: "remaining features wait on S-02" ended the run at 16:16 with S-03 and S-04 unstarted. They passed at 21:12–21:17 once restarted. Already proposed in `pathways/threads-2026-10-17` (earlier run) and `dj-2026-10-17`, so this is the third time and should be first priority.
+2. **Stop retrying a feature whose last session reports "nothing left to build"** (driver). Park it to INBOX immediately, with no second identical session. Evidence: S-02 sessions 2–3 ($2.70 total) added only a re-check. Proposed in the earlier pathways retro (point 2) and, for H3-04, in `dj-2026-10-17`.
+3. **Reset per-feature `refused` counts when a new continuation starts** (`summary` generator). Evidence: T4-09 through S-01 show `refused: 1–2` while passing on session 1, with only one actual limit wait. Not proposed before; low cost.

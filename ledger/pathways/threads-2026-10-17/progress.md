@@ -14,6 +14,44 @@ This is the run's log. **Newest entry first.** Every session adds one entry at t
   `docs/naming-options.md`. Project rules are appended to every prompt.
 
 ---
+### 2026-10-17 verify stretch
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| S-01 | 1 | read `ui/live-render.js:151`, `ui/live.js:69-92` | `<button class="btn sadd" data-addgraph=…>+ add to graph</button>` after the `.ptap`; live.js POSTs `/api/graphs/<id>/tracks {track_ids:[…]}` | yes |
+| S-01 | 2 | `tests/live-render.test.ts:180-183`; `node --test` on it | Rico card matches data-addgraph, tap closes before button; exactly 1 data-addgraph; Everything snapshot has none; pass | yes |
+| S-01 | 3 | `node .harness/flows.mjs`, S-01 flow (Sunday tea tent, headless, 390 px) | PASS: songs = before(4)+1 incl. Rico, no .context card left, button ≥ 44 px, no horizontal scroll | yes |
+| S-01 | 4 | `git show f451a91 --stat`; `npm run check` via check.sh | docs/api.md untouched; README gains one sentence; check green, 257 tests | yes |
+| S-02 | 1 | read `src/graph.ts:418`, `src/cli.ts:29,212-221`; ran `threads from-set replay-399 --name …` on the scratch dev DB | prints name, song count, unmatched skipped ("0 songs 7 unmatched plays skipped": the dev DB's plays are unmatched; scratch only); HELP lists it | yes |
+| S-02 | 2 | `tests/graph-threads.test.ts:151-170`, ran it | 6 songs in started_at order (Leroy, Rico, Woman, What's Going On, Coffy, Glide), Woman once; 'no set: nope'; duplicate name throws; pass | yes |
+| S-02 | 3 | `README.md:103`; check.sh | command in the README list; green | yes |
+| S-03 | 1 | read design doc §13 (lines 423-458) | 36 lines; D24 restated; add/remove/reorder cases; last-writer rule *default* (D34); `synced_at`, `changed` timestamp; "Not built in this run" | yes |
+| S-03 | 2 | `OVERNIGHT.md:333` | Needs Michael line points at §13: "which side wins when both changed?" | yes |
+| S-03 | 3 | `git show --stat 22d0aa0` | only docs, OVERNIGHT, harness files; no code; check green | yes |
+| S-04 | 1 | read `ui/live.css`; `tests/live-context-render.test.ts:115-119` | `.pcard.context .sadd` opacity .75 + dashed; cued/open → 1 + solid; test passes | yes |
+| S-04 | 2 | `tests/live-render.test.ts` pass; flows.mjs S-01 flow | 10/10 flows PASS, add flow still turns the card into an in-graph pathway | yes |
+| S-04 | 3 | headless playwright, 390 px, `/live?graph=<Soul hour>` on :7791 | Rico (non-cued): button opacity 0.75×ancestors, dashed, 44 px; title 0.45; card opacity 1; scrollWidth 390/390. Cued All Night Long: 1 / solid. Screenshots `live-cued-context-{390,1280}.png` re-shot in 9fe8c8f | yes |
+| S-04 | 4 | `design.md:414` (D35); check.sh | D35 present with Michael's 2026-10-17 answer; green | yes |
+
+### 2026-10-17 22:50 · S-04 · passes
+`ui/live.css`: a dimmed Live context card no longer has `opacity:.45` on the card itself, because that multiplied into its button. It fades piece by piece instead, to `--f:45%`: background and borders through `color-mix`, and the tap target `.ptap` through opacity. **+ add to graph** sits at `.75` with a dashed border (full on hover and focus). A cued or opened card sets `--f:100%` and the button turns solid, with the cued accent border kept. §12 **D35** records Michael's answer. Test: `tests/live-context-render.test.ts` +1, a CSS check over `live.css` that includes the cued and open rules (a mutation check confirmed it fails when the cued border rule is dropped). check.sh green, 256 → 257 tests; smoke 4/4; flows 10/10, including S-01's add flow.
+Verified headless (Sonnet, :7791, 390 px, `/live?graph=<Soul hour>`; `?graph=Soul%20hour` works too). On the non-cued Rico Suave card, the button's opacity multiplied over its ancestors is 0.75, with a dashed border, 44 px tall; the title is at 0.45; the card's own opacity is 1, its left border is dashed in the thread colour at alpha .45. On the cued All Night Long card, title and button are at 1 and the button border is solid. Width 390/390, no page errors. Both `live-cued-context-{390,1280}.png` are re-shot; I looked at the 390 one.
+Opus review: 0 Critical. I fixed its Important point (the test was too tied to formatting and missed the cued and open rules) and one Minor point (`.ptap` now fades in step with the colours). Still open, all Minor: `color-mix` needs Chrome 111 / Safari 16.2 / Firefox 113; the fade is a hair off the old whole-card fade (115 vs 113 of 255 for white text); on a phone, a tapped button stays at hover brightness until the next tap.
+Not changed: the editor's context card uses `btn small` (not `.sadd`), so per step 1 it keeps the old look, button at 45 % with the card.
+**Question for Michael:** should the editor's context-card button get the same 75 %, dashed look? Default: no (unchanged). Proposed changes: none.
+
+### 2026-10-17 22:10 · S-03 · passes
+Design only. `docs/specs/2026-10-14-threads-and-graphs-design.md` gains §13 (36 lines): D24's one-way export restated; rule **D34 *default*** (last writer wins per song membership, order from the side edited last, dry-run diff first); what it needs (`getPlaylist` changed timestamp, `graphs.synced_at`, a stored base snapshot); three worked examples on Leroy / Rico / Glide / Coffy (added on one side, removed on one side, reordered on both); limits; "not built in this run". `OVERNIGHT.md` "Needs Michael" gains the line pointing at §13. No code changed; check.sh green, 256 → 256 tests.
+Verified: `awk` count of §13 = 36 lines (< 60); D34 was unused elsewhere (grep); `git diff --stat` shows only the two docs plus the run files.
+Next session must know: S-04 (add button at ~75 % with dashed border on dimmed context cards) is next.
+Question for Michael: which side wins when both changed? (Default: the later edit, per above.) Proposed changes: none.
+
+### 2026-10-17 21:30 · S-02 · passes
+Michael kept D33 (INBOX): play order = `started_at`. No code change; §12 D33 now reads as decided (*default* dropped, the load-order alternative removed). check.sh green, 256 → 256 tests; smoke 4/4.
+Verified on a fresh DB built in the right order (sample import, `threads-399.sh` seed, then `serve --replay 399.session --speed 0`): `sets show replay-399` lists 7 plays, all exact; `threads from-set replay-399 --name 'Sunday as played'` → `Sunday as played  6 songs  0 unmatched plays skipped`, and `threads show` lists Leroy's Latin Lament, Rico Suave Bossa Nova, Woman of the World (once), What's Going On, Coffy Is The Color, Glide, the corrected step 2 order. `sunday AS played` again → `already exists` (exit 1); `nope` → `error: no set: nope` (exit 1); a bare `from-set` → usage. HELP and README l.103 list the command. The two S-02 tests (graph-threads, cli-threads) pass.
+Next session must know: S-03 (§13 two-way sync note, design only, one worked example per conflict case) is next, then S-04 (the add button at ~75 % with a dashed border).
+Questions: none. Proposed changes: none.
+
 ### 2026-10-17 20:50 · S-02 · not yet
 No code changes this session; S-02 is still blocked on one question. Rechecked on its own: in the 399 replay against `demoSeed()`, Leroy's Latin Lament is row 403 and started 19:55Z (15:55 local); Rico Suave is row 402 and started 20:05Z. So step 1 ("started_at order") and step 2's example (Rico first) cannot both hold. INBOX has no answer yet.
 Every other step holds: `threads from-set nope --name X` → `error: no set: nope` (exit 1); a bare `from-set` prints usage; HELP and README l.103 list the command; check.sh green, 256 tests (unchanged); smoke 4/4.
