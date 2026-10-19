@@ -14,6 +14,23 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 15:20 · P3-05 · passes
+
+- `lib/desk.sh` gained housekeeping (before the run path):
+  - `--list` prints one `printf '%-12s %-26s %-50s %s'` line per window: window, run (`(debrief)` for the debrief, `-` for a window that isn't a desk), URL (or `-`), age from `desk/last-event` (`<n> min|h|d`, or `-`). With no windows it prints `no desks`.
+  - `--close <run>` kills the windows of that name by id and removes `desk/url`. It prints `closed desk <run>`, or `no desk for <run>`, and exits 0.
+  - `--all` runs `kill-session` and prints `closed every desk (n)` (`no desks` when there are none).
+  - `--gc <project> [--dry-run]` closes desks idle for over 24 h that still have a window open, the debrief's included. It prints `closed idle desk <run>`, or `would close …` on a dry run.
+  - `bin/harness`: `cmd_gc` runs `desk.sh --gc` after its branch work, under `|| echo …`, so gc never fails on it. New usage line `harness desk --list | --close <run>|--all`; the help range is now `2,38p`.
+  - Tests 158 → 162.
+- Verified: the 4 new checks were red first (158/162) and green after. `check.sh` green in 238 s (162/162). In the kept state, `--list` showed parky/debrief/desky/strict with session_TEST5/10/6/9 at `0 min` and `odd - - -`. gc printed `closed idle desk strict` only; parky (23 h) stayed and stoppy (25 h, no window) was skipped. No tmux server was left after the suite.
+- Opus review: no Critical or Important findings. Fixed:
+  - `--close`, `--all` and non-dry `--gc` take `desk.lock`, so they can't kill a window a desk start is using.
+  - `--close` matches the window name through `ENVIRON`, not `awk -v` (backslashes).
+  - `--gc` exits 0 quietly on project names that run ids can't have.
+  - `--all` logs `desk: closed every desk (n, …)` to `queue/runner.log`.
+- Closes are logged only to run.log and runner.log, not to harness-log.md: a commit there would re-dirty the worktree gc just cleaned. Recorded as built in plan §10. **For P3-06:** gc can remove a finished run's worktree while that run's desk is still open (parky in the suite); the desk then loses its `--add-dir`. Should gc skip worktrees with an open desk, or close the desk with them? Docs (architecture, README, D-H31 built) are still P3-06's.
+
 ### 2026-10-19 14:48 · P3-04 · passes
 
 - `lib/driver.sh`: a `desk "<why>"` helper (DESK=1 only; `harness desk <run> --why …`, output dropped, `9>&-`, a non-zero exit becomes the note `desk: could not start (exit n): …`, always returns 0). Called after a park's notification (`B parked: …`), in `needs_you` (`M1 needs Michael: A fails verification`, `… conflicts with main`), on a refused merge (`M1: merge refused`), and in `finish` for `blocked on…`/`waiting on Michael…` (`ended: …`, typed into the park's open desk). `lib/debrief.sh`: with DESK=1 and a non-empty "Needs Michael", it runs `harness desk --debrief` (failure → runner.log line). Usage headers updated. Tests 153 → 158 (the plan said 157; P3-03 added one more).

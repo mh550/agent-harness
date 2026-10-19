@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # `harness desk`: a Remote Control claude session in tmux that briefs Michael on what a run needs and passes his answers on.
-# Usage: desk.sh <run> [--why "<one line>"] | --debrief [--why "<one line>"]
+# Usage: desk.sh <run> [--why "<one line>"] | --debrief [--why "<one line>"] | --list | --close <run>|--all | --gc <project> [--dry-run]
 # (plan: docs/plans/2026-10-19-P3-desk.md) 1. the prompt <state>/desk/<stamp>.md from prompts/desk.md; 2. one window per
 # run (window <run> in tmux session ${HARNESS_DESK_SESSION:-h-desk}): an open desk gets "New since your last brief: …"
 # typed in; otherwise a new window runs `claude --remote-control "desk · <run> · <why>"` in the project directory
@@ -8,14 +8,90 @@
 # "Read <prompt> and follow it."; 5. notes it in the run record, notifies with the URL as the click, prints it.
 # A desk that can't start (no URL in time, no tmux, the lock) is a note and the plain notification: exit 0 whenever
 # Michael was told, so a caller never has to care. --debrief: window 'debrief' for the newest ledger/debrief.md.
+# --list: window, run, URL, age · --close/--all kill desk windows · --gc (from harness gc): those idle for 24 h.
 set -uo pipefail
 : "${HARNESS_HOME:?}"
 STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}
 S=${HARNESS_DESK_SESSION:-h-desk} WAIT=${HARNESS_DESK_WAIT:-60} LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
 
 die() { echo "harness: $*" >&2; exit 1; }
-usage() { echo 'usage: harness desk <run> [--why "<one line>"] | --debrief [--why "<one line>"]' >&2; exit 2; }
+usage() { echo 'usage: harness desk <run> [--why "<one line>"] | --debrief [--why "<one line>"] | --list | --close <run>|--all' >&2; exit 2; }
 alive() { local p; p=$(cat "$1/driver.pid" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null; }
+# the first call may start the tmux server: one that inherited a lock fd (ours, the driver's or debrief's 9) would hold
+# it forever, and one that inherited NTFY_TOKEN would hand it to every later window
+t() { env -u NTFY_TOKEN tmux "$@" 8>&- 9>&-; }
+
+# ---- housekeeping (read-only but for kill-window and desk/url): --list, --close <run>|--all, --gc <project> ----
+desk_dir() {   # <window name> → that desk's state dir (a window that isn't a run's desk: nothing, status 1)
+  local m
+  [[ $1 == debrief ]] && { echo "$STATE_ROOT/queue/desk"; return; }
+  [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || return 1   # never a glob
+  m=$(compgen -G "$STATE_ROOT/*/$1/meta.env" | head -1) && echo "${m%/meta.env}/desk"
+}
+age() {   # <desk dir> → the time since its last event: <n> min | <n> h | <n> d, or -
+  local e s; e=$(cat "$1/last-event" 2> /dev/null) && [[ $e =~ ^[0-9]+$ ]] || { echo -; return; }
+  s=$(( $(date +%s) - e ))
+  if (( s < 3600 )); then echo "$(( s / 60 )) min"; elif (( s < 172800 )); then echo "$(( s / 3600 )) h"; else echo "$(( s / 86400 )) d"; fi
+}
+windows() { t list-windows -t "=$S" -F '#{window_id}'$'\t''#{window_name}' 2> /dev/null; }
+close() {   # <window name> <why, for the run's log> → 0 when a window went
+  local id n=0 d
+  # ENVIRON: -v would read backslashes in the name as escapes
+  for id in $(windows | w=$1 awk -F '\t' '$2 == ENVIRON["w"] { print $1 }'); do t kill-window -t "$id" 2> /dev/null && n=$(( n + 1 )); done
+  (( n )) || return 1
+  if d=$(desk_dir "$1"); then   # local logs only: committing to the run branch would re-dirty what gc just cleaned
+    rm -f "$d/url"
+    if [[ $1 == debrief ]]; then echo "$(date '+%F %T') desk: closed ($2)" >> "$STATE_ROOT/queue/runner.log"
+    else echo "$(date '+%F %T') desk: closed ($2)" >> "${d%/desk}/run.log"; fi
+  fi
+}
+lock() {   # a desk start in progress (it holds the lock until notified) must not lose its window to a close
+  mkdir -p "$STATE_ROOT"; exec 8> "$STATE_ROOT/desk.lock"
+  flock -w $(( WAIT + 10 )) 8 || { echo "harness: a desk start held the lock; try again" >&2; exit 1; }
+}
+case ${1:-} in
+  --list)
+    (( $# == 1 )) || usage
+    L=$(windows); [[ -n $L ]] || { echo "no desks"; exit 0; }
+    while IFS=$'\t' read -r _ w; do
+      r=- u=- a=-
+      if d=$(desk_dir "$w"); then
+        r=$w; [[ $w == debrief ]] && r="(debrief)"
+        u=$(cat "$d/url" 2> /dev/null) && [[ -n $u ]] || u=-
+        a=$(age "$d")
+      fi
+      printf '%-12s %-26s %-50s %s\n' "$w" "$r" "$u" "$a"
+    done <<< "$L"
+    exit 0 ;;
+  --close)
+    (( $# == 2 )) && [[ -n $2 && $2 != -* ]] || usage
+    lock
+    if close "$2" "harness desk --close"; then echo "closed desk $2"; else echo "no desk for $2"; fi
+    exit 0 ;;
+  --all)
+    (( $# == 1 )) || usage
+    lock
+    n=$(windows | wc -l); (( n )) || { echo "no desks"; exit 0; }
+    t kill-session -t "=$S" 2> /dev/null
+    rm -f "$STATE_ROOT"/*/*/desk/url "$STATE_ROOT/queue/desk/url"; mkdir -p "$STATE_ROOT/queue"
+    echo "$(date '+%F %T') desk: closed every desk ($n, harness desk --all)" >> "$STATE_ROOT/queue/runner.log"
+    echo "closed every desk ($n)"; exit 0 ;;
+  --gc)   # harness gc <project>: close the project's desks (and the debrief's) idle for 24 h; fresh or windowless ones stay
+    (( $# >= 2 && $# <= 3 )) && [[ -n $2 && ( $# == 2 || $3 == --dry-run ) ]] || usage
+    [[ $2 =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || exit 0   # no run of such a project has a desk (run ids are checked the same way)
+    [[ -n $(windows) ]] || exit 0
+    [[ ${3:-} == --dry-run ]] || lock   # then last-event is read under it: a start that just refreshed it wins
+    now=$(date +%s) W=$(windows | cut -f2)
+    for e in "$STATE_ROOT/$2"/*/desk/last-event "$STATE_ROOT/queue/desk/last-event"; do
+      [[ -f $e ]] || continue
+      d=${e%/last-event}; w=$(basename "${d%/desk}"); [[ $d == "$STATE_ROOT/queue/desk" ]] && w=debrief
+      v=$(cat "$e" 2> /dev/null); [[ $v =~ ^[0-9]+$ ]] && (( now - v > 86400 )) || continue
+      grep -qxF -- "$w" <<< "$W" || continue
+      if [[ ${3:-} == --dry-run ]]; then echo "would close idle desk $w"
+      elif close "$w" "idle for 24 h, harness gc"; then echo "closed idle desk $w"; fi
+    done
+    exit 0 ;;
+esac
 
 run="" why="" debrief=0
 while (( $# )); do case $1 in
@@ -52,9 +128,6 @@ else
 fi
 # shellcheck source=lib/notify.sh
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID
-# the first call may start the tmux server: one that inherited a lock fd (ours, the driver's or debrief's 9) would hold
-# it forever, and one that inherited NTFY_TOKEN would hand it to every later window
-t() { env -u NTFY_TOKEN tmux "$@" 8>&- 9>&-; }
 type_in() { t send-keys -t "$1" -l "$2" && sleep 0.5 && t send-keys -t "$1" Enter; }   # -l: literal text; Enter apart: a burst reads as a paste, its Enter a newline
 
 # The notification, with the desk's URL as the click, or (no URL) the plain one: the INBOX on GitHub, if there is one.

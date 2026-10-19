@@ -21,10 +21,12 @@
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
 #   harness parked [<run-id>] [--json]           what parked features wait on: why, the INBOX question, the next commands
 #   harness desk <run> [--why "…"] | --debrief   a Remote Control session that briefs you and takes your answers (tmux h-desk)
+#   harness desk --list | --close <run>|--all    the open desks: window, run, URL, age · close them
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
 #                                                CLAUDE.md from the repo's docs for you to edit)
 #   harness gc <project> [--all-merged] [--dry-run]
-#                               delete merged harness branches and their clean worktrees, locally and on origin
+#                               delete merged harness branches and their clean worktrees, locally and on origin;
+#                               close the project's desks idle for 24 h
 #
 # Where things live:  worktree ~/worktrees/<project>/<run-id> · branch harness/<run-id>
 #   committed run record  <worktree>/.harness/runs/<run-id>/{feature_list.json,progress.md,INBOX.md,harness-log.md,
@@ -332,6 +334,8 @@ cmd_gc() {
     done
     (( all )) && break
   done
+  local dd=(); (( dry )) && dd=(--dry-run)
+  "$HARNESS_HOME/lib/desk.sh" --gc "$(basename "$p")" "${dd[@]}" || echo "harness: could not check the desks"   # never fails gc
   return 0
 }
 
@@ -351,5 +355,5 @@ case ${1:-help} in
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
   desk) shift; exec "$HARNESS_HOME/lib/desk.sh" "$@" ;;
-  *) sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) sed -n '2,38p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

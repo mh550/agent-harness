@@ -238,7 +238,7 @@
         "tests/run.sh check 'harness desk --all': kills every remaining window; `tmux has-session -t $HARNESS_DESK_SESSION` fails afterwards (the session goes with its last window) and the EXIT trap tolerates that",
         "bin/harness's usage header lists --list, --close <run>|--all and --debrief; bash -n lib/desk.sh bin/harness; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P3-06",
