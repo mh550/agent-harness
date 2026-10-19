@@ -1,0 +1,47 @@
+{
+  "run": "portfolio_site-2026-10-19",
+  "project": "portfolio_site",
+  "branch": "harness/portfolio_site-2026-10-19",
+  "started": "2026-10-19T22:23:21.000Z",
+  "ended_at": "2026-10-19T22:25:52.000Z",
+  "end_reason": "usage limit before the feature list",
+  "continuations": 0,
+  "features": {
+    "total": 0,
+    "passing": 0,
+    "verified": 0,
+    "merged": 0
+  },
+  "milestones": [],
+  "tests": {
+    "start": 6,
+    "end": 6
+  },
+  "cost": {
+    "total": 0,
+    "per_passing_feature": null,
+    "by_role": {},
+    "by_model": {},
+    "manager": 0
+  },
+  "time": {
+    "wall_h": 0.04,
+    "sessions_h": 0,
+    "driver_h": 0.04,
+    "by_role_h": {}
+  },
+  "sessions": {
+    "total": 0,
+    "real": 0,
+    "environmental": 0
+  },
+  "guards": {
+    "repairs": 0,
+    "red_unpass": 0,
+    "verify_failed": 0,
+    "limit_waits": 0,
+    "verify_escalations": 0,
+    "merges": 0
+  },
+  "features_detail": []
+}
