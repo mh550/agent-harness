@@ -207,7 +207,7 @@
         "tests/run.sh check 'harness desk --debrief': exits 0, a window 'debrief' exists in $HARNESS_DESK_SESSION, its prompt file (under $HARNESS_STATE/queue/desk/) names ledger/debrief.md and its 'Needs Michael' section, and the notification title is '[debrief] needs you'",
         "bash -n lib/desk.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P3-04",

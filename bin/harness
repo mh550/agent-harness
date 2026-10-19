@@ -20,7 +20,7 @@
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
 #   harness parked [<run-id>] [--json]           what parked features wait on: why, the INBOX question, the next commands
-#   harness desk <run> [--why "…"]               a Remote Control session that briefs you and takes your answers (tmux h-desk)
+#   harness desk <run> [--why "…"] | --debrief   a Remote Control session that briefs you and takes your answers (tmux h-desk)
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
 #                                                CLAUDE.md from the repo's docs for you to edit)
 #   harness gc <project> [--all-merged] [--dry-run]
@@ -115,6 +115,7 @@ cmd_start() {
   fi
   run=${run:-$(auto_id "$p")}
   [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
+  [[ $run == desk || $run == debrief ]] && die "run-id '$run' is taken by the desk (tmux h-desk, <state>/queue/desk)"
   local proj branch=harness/$run wt state
   proj=$(basename "$p"); wt=$WT_ROOT/$proj/$run; state=$STATE_ROOT/$proj/$run
   if alive "$state"; then die "run $run is already running (harness attach $run)"; fi
