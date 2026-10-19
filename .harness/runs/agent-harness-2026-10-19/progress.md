@@ -14,6 +14,50 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 12:03 · verify P1
+
+`check.sh` green; full suite re-run: 125/125. All 5 features hold.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P1-01 | 1 | read docs/plans/2026-10-19-P1-notifications.md line 1; `git cat-file -t a462525…` | line 1 `Milestone base: a4625257b22e…`, a commit in this repo (base precedes P1 work) | yes |
+| P1-01 | 2 | read plan §2 and §1 | notify signature with title/body/click/actions/priority/tags; five HARNESS_NOTIFY_* in table; '`$1` to NOTIFY_CMD stays exactly `[<run>] <message>`' | yes |
+| P1-01 | 3 | read plan §4; `head -2 tests/fixtures/ntfy-publish.txt` | stub-curl record format (one arg per line, `===`) described; fixture line 1 `https://docs.ntfy.sh/publish/`, shows Title/Priority/Tags/Click/Actions/Authorization | yes |
+| P1-01 | 4 | read plan §3 | githubUrls, trimBody(cap=3500), actionsHeader, inboxQuestion with signatures as the step lists | yes |
+| P1-01 | 5 | read plan §5 table and §1 config row | call sites with title/priority/click for driver and debrief (rows 1–15); `NTFY_URL="" NTFY_TOKEN="" DESK_URL=""` named | yes |
+| P1-01 | 6 | read plan §7 incl. insteadOf trick; checks names exist in tests/run.sh via grep | checks for P1-02/03/04 listed by name, insteadOf + remote.origin.url=git@github.com:test/proj.git described; names match run.sh | yes |
+| P1-01 | 7 | `bash tests/run.sh` | 125/125 checks passed, 0 FAIL | yes |
+| P1-02 | 1 | `ls -l tests/stub-curl.sh`; read it; `grep HARNESS_CURL tests/run.sh`; `head -1` fixture | executable; appends blocks to $STUB_DIR/curl.log; run.sh line 8 exports HARNESS_CURL=$HERE/stub-curl.sh; fixture line 1 docs.ntfy.sh URL | yes |
+| P1-02 | 2 | `grep -n notify.sh lib/driver.sh lib/debrief.sh`; `bash -n lib/notify.sh`; read header | one source line each (driver:61, debrief:32); bash -n ok; usage header present | yes |
+| P1-02 | 3 | ran the trimBody one-liner (plus 100-byte unchanged case) | exit 0 | yes |
+| P1-02 | 4 | read check 'NOTIFY_CMD-only: $1 unchanged, fields as env' (run.sh:100); it passed in the suite | asserts `[stoppy] started: 0/3 passing` as $1 and HARNESS_NOTIFY_TITLE=harness in notify-env.log; matches step (run is stoppy not demo, same assertion) | yes |
+| P1-02 | 5 | read check 'NTFY_URL: curl posts the fields…' (run.sh:84) | asserts URL last, `-H`/`Title: harness`, message as --data-binary, notify-cmd.log absent; PASS (Priority covered elsewhere on high notifications) | yes |
+| P1-02 | 6 | read check 'NTFY_TOKEN: bearer header…' (run.sh:85) | asserts Authorization: Bearer tok-secret-123 in curl.log and grep -r over run state dir and run record finds nothing; PASS | yes |
+| P1-02 | 7 | read check 'a body over the cap is trimmed' (run.sh:60) | 4000-byte body → ≤3500 and >3000 bytes, ends `…`; PASS | yes |
+| P1-02 | 8 | read checks 'a failed post is noted…' (:116) and 'a successful post: a line in run.log only' (:86) | harness-log has `notification failed (curl exit 22): harness`; success only in run.log; PASS | yes |
+| P1-02 | 9 | `bash -n` on notify.sh driver.sh debrief.sh config.sh run.sh stub-curl.sh; `node --check lib/*.mjs`; `bash tests/run.sh` | all ok; 125/125 checks passed | yes |
+| P1-03 | 1 | ran the githubUrls one-liner | exit 0 | yes |
+| P1-03 | 2 | ran the inboxQuestion one-liner | exit 0 | yes |
+| P1-03 | 3 | `grep -n inbox-before lib/driver.sh`; read notify_park (driver.sh:119-126) | cp at :490 before coding session; body = PARKED line, added lines, `Answer: harness answer <run> "…"` (question empty → PARKED + Answer) | yes |
+| P1-03 | 4 | read check 'a park notification: title, question, answer command, click and Edit INBOX action' (run.sh:341) | asserts Title [parky] B needs you, Priority high, Tags question, body lines, Click INBOX blob URL, Edit INBOX and Progress actions; PASS | yes |
+| P1-03 | 5 | read check 'Answer with Claude only when DESK_URL is set' (:346) | parky has the action with env-test URL; parkn block has Edit INBOX but no Answer with Claude; PASS | yes |
+| P1-03 | 6 | read check 'no URLs for a non-GitHub origin' (:353) | parkl block: Priority high, answer command in body, no Click, no Actions, no github.com; PASS | yes |
+| P1-03 | 7 | `grep -n 'NTFY_URL\|DESK_URL' lib/config.sh` | line 22 defaults NTFY_URL/NTFY_TOKEN/DESK_URL on the defaults line | yes |
+| P1-03 | 8 | `bash -n lib/driver.sh lib/notify.sh`, `node --check lib/notify.mjs`, `bash tests/run.sh` | all ok; 125/125 checks passed | yes |
+| P1-04 | 1 | `grep -n 'notify \|needs_you ' lib/driver.sh` | needs-Michael calls (:116,:125,:219) and `ended` (:372) pass priority and click; verify/conflict via needs_you; routine ones click only | yes |
+| P1-04 | 2 | read check 'a waiting-on-Michael run end…' (run.sh:355) | asserts Priority high and Click …/parky/report.md in the `ended (waiting on Michael: B)` block; PASS | yes |
+| P1-04 | 3 | read check 'a refused merge…' (:159) | run `later` block: Title, Priority high, Click = the stub PR URL https://example.test/pr/N; PASS | yes |
+| P1-04 | 4 | read check 'verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)' (:108) | strict block: Priority high, Click …/harness/strict/…/progress.md; says GitHub-shaped; PASS | yes |
+| P1-04 | 5 | read check 'routine notifications keep the default priority' (:87) | demo started and M1 merged blocks have no Priority line (also Click asserted); PASS | yes |
+| P1-04 | 6 | read debrief.sh:33,327 and checks :278, :287 | fail()/headline use shared notify; existing NOTIFY_CMD debrief checks pass; with NTFY_URL, headline block has Title harness debrief, no Click; PASS | yes |
+| P1-04 | 7 | `bash -n lib/driver.sh lib/debrief.sh`, `bash tests/run.sh` | ok; 125/125 checks passed | yes |
+| P1-05 | 1 | `git diff a4625257b22e..HEAD -- lib bin tests prompts > /tmp/p1.diff` (672 lines, 10 files); read docs/plans/2026-10-19-P1-review.md | diff written; review lists I1 and Minors with severity, file:line, resolution (fixed in ba78f9f / skipped because …) | yes |
+| P1-05 | 2 | read review I1 row; grep run.sh for the named check | I1 is the only Important; check 'the run end goes out before the retro, once report.md is pushed' named, stated red on pre-fix lib/ (121/125); check exists in run.sh and passes | yes |
+| P1-05 | 3 | `grep -n '### D-H29' journal/decisions.md`; read it | present at :258 with Finding/Choice/Rejected | yes |
+| P1-05 | 4 | `grep -n` README for NTFY_URL, NTFY_TOKEN, DESK_URL, HARNESS_NOTIFY_*; README:122 vs suite | all named, 'NTFY_URL wins: NOTIFY_CMD is then not called' (:75); Tests line says 125 checks = 125/125 | yes |
+| P1-05 | 5 | `grep` docs/architecture.md | §3 rows for lib/notify.sh and lib/notify.mjs; §10 rows for NTFY_URL/NTFY_TOKEN and DESK_URL; §13 notifications row names tests/stub-curl.sh and tests/fixtures/ntfy-publish.txt | yes |
+| P1-05 | 6 | `bash -n` on touched .sh, `node --check lib/*.mjs`, `bash tests/run.sh` | all ok; 125/125 checks passed | yes |
+
 ### 2026-10-19 12:30 · P1-05 · passes
 
 - **What changed:** Opus read `/tmp/p1.diff` (base `a4625257` → `3a16c96`, 593 lines); the findings and how each was resolved are in `docs/plans/2026-10-19-P1-review.md`. A second Opus pass read the fixes. Nothing Critical; one Important:
