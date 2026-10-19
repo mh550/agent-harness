@@ -88,7 +88,7 @@
         "docs/architecture.md §3 lists lib/notify.sh and lib/notify.mjs, §10 lists NTFY_URL, NTFY_TOKEN and DESK_URL, §13's notifications row names the stub curl and the fixture",
         "bash -n on every .sh touched in P1 and node --check on every .mjs pass; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
 
     {

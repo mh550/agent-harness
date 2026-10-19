@@ -14,6 +14,18 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 12:30 · P1-05 · passes
+
+- **What changed:** Opus read `/tmp/p1.diff` (base `a4625257` → `3a16c96`, 593 lines); the findings and how each was resolved are in `docs/plans/2026-10-19-P1-review.md`. A second Opus pass read the fixes. Nothing Critical; one Important:
+  - **I1:** a blocked run end was notified only after the retro, so a crash there sent nothing. `finish` now writes report.md, pushes `HARNESS: run ended (…)` and notifies before the retro.
+  - **Minors fixed:** verify and conflict notifications go out after their entry is pushed (`needs_you`; a conflict is reported once per main); `inboxQuestion` with no `## Answers` heading; debrief `Queued`/`Not queued` lines no longer make the headline high; header control bytes stripped; the message capped too; `--retry 2 --retry-max-time 20`.
+  - **Docs:** D-H29 is in `journal/decisions.md`; README Notifications; architecture §3/§5/§10/§13/§16.
+  - **Tests:** 123 → 125.
+- **Verified:** `check.sh` green, 125/125. The 4 new or extended checks were red on a scratch copy with the old `lib/` (121/125): *the run end goes out before the retro, once report.md is pushed*, *verify needs Michael goes out after the verify entry is pushed*, inboxQuestion (old answers), debrief Not-queued priority. `bash -n` passes on all 8 P1 shell files and `node --check` on notify.mjs.
+- **Next session (P2-01):** `curl_last` (newest matching block) sits beside `curl_with` (first match) in tests/run.sh. `needs_you <m> <why> <file>` is the milestone needs-Michael call. Not applied: S1, sending the body and token over stdin. It would take the token out of `ps`, but it changes the stub-curl record format; do it with P3, which touches notify again.
+- **Questions for Michael:** D-H29 records the default from P1-01: one high `ended` notification instead of `needs Michael:` plus `ended`. It now goes out before the retro. OK? Also, a `DESK_URL` must not contain `,` or `;` (README says so).
+- **Proposed changes:** none.
+
 ### 2026-10-19 11:45 · P1-04 · passes
 
 - **What changed:** `lib/driver.sh`: rows 2–12 of the plan's §5 table. Verify thin/red/fail, the merge conflict and the refused merge are `[<run>] <m> needs you` at priority high. Their click is progress.md, harness-log.md or the PR. A proposed merge is `<m> ready to merge` and a merge sends `merged`; both get the PR as click and no priority. `started:` gets progress.md as click. `finish` sends the run's one end notification: `[<run>] ended: <reason>` with report.md as click, and high plus Edit INBOX/Progress actions for blocked, waiting, feature-list edits and initializer failed. The separate `needs Michael: …`, `ended: …`, `stopped: …` and `initializer failed` notifications are dropped. Each `notify` call fits on one line, so the step-1 grep shows its fields. `lib/debrief.sh`: `tell()` is gone and `fail` and the headline call `notify` with title `harness debrief`. The headline goes high when the note's `## Needs Michael` has anything but Nothing/None, and it has no click. `tests/stub-claude.sh`: the stub note gains `## Needs Michael` / `_Nothing._`, and `STUB_DEBRIEF_NEEDS` fills it. Run 12 (claim) now runs with `MERGE_POLICY=pr` to cover the proposed row. Tests 114 → 123.
