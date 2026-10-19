@@ -57,7 +57,8 @@ rm -f "$STATE"/waited-*   # a restart inside a usage-limit window waits for it a
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
 note() { log "$*"; echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; }   # phone-readable, committed
-notify() { [[ -n $NOTIFY_CMD ]] && bash -c "$NOTIFY_CMD" _ "[$RUN_ID] $*" > /dev/null 2>&1; return 0; }
+# shellcheck source=lib/notify.sh
+source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID   # notify "<message>" [title=… body=… click=… …]: "[<run>] <message>"
 commit_all() { git add -A && ! git diff --cached --quiet && git commit -q -m "$1"; return 0; }
 green() { "$CHECK" > /dev/null 2>&1; }
 
@@ -353,6 +354,8 @@ finish() {   # reason → summary, retro, ledger, notification, continuation
       && note "continuation queued ($(( conts + 1 )) of ${AUTO_CONTINUE_MAX:-3}; it starts when the queue runs)"
   fi
   notify "ended ($1): $(F summary "$LIST" 2>/dev/null) · $(jq -r '"$\(.cost.total) · $\(.cost.per_passing_feature) per passing feature"' "$RUN_DIR/summary.json" 2>/dev/null)"
+  # a failed post notes it in harness-log.md: commit that too, or the worktree stays dirty and gc skips it
+  [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: run-end notification failed"; sync; }
   log "run kept in $WT on $BRANCH · report: harness report $RUN_ID · continue: harness continue $RUN_ID"
   exit 0
 }

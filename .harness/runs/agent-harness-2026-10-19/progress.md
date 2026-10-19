@@ -14,6 +14,14 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 10:45 · P1-02 · passes
+
+- **What changed:** new `lib/notify.sh` (`notify "<msg>" [title= body= click= actions= priority= tags=]`; NTFY_URL → stub-able `${HARNESS_CURL:-curl}` post with Title/Priority/Tags/Click/Actions/Bearer headers, NOTIFY_CMD skipped; else NOTIFY_CMD with `$1` unchanged + five `HARNESS_NOTIFY_*`), `lib/notify.mjs` (`trimBody`, `actionsHeader` + `trim`/`actions` CLI), `tests/stub-curl.sh`, `tests/fixtures/ntfy-publish.txt`. driver.sh sources it with `NOTIFY_TAG=$RUN_ID`; debrief.sh sources it (its `tell()` stays on NOTIFY_CMD until P1-04). config.sh defaults `NTFY_URL NTFY_TOKEN DESK_URL`; `HARNESS_CURL` is in bin/harness's tmux env list. Tests 98 → 107.
+- **Verified:** check.sh green in 180 s, 107/107. The 8 plan checks plus 1 from review were each watched failing first (98/106 before the code). Kept-dir spot check: the demo `started:` block is `-H Title: harness`, `-H Authorization: Bearer …`, `--data-binary [demo] started: 0/3 passing`, URL last. The token appears nowhere but curl.log and the configs.
+- **Review (Opus) found one Important bug, fixed:** a failed run-end post notes into harness-log.md after the last commit, which leaves the worktree dirty so `harness gc` skips it. `finish` now commits and syncs the run record after its notify when it changed. New check: `a failed run-end post is committed: the worktree stays clean for gc`. Two checks that could pass vacuously were tightened. Minors left for P1-05: a body that starts with `@` gets a leading space (curl would read `@file`); `$(…)` drops a body's trailing newlines.
+- **Next session (P1-03/04):** until P1-04, the debrief still notifies through NOTIFY_CMD even when NTFY_URL is set (the suite's base config now sets both, so `$T/notify-cmd.log` gets debrief lines). `curl_with <key>`/`curl_body <key>` are in tests/run.sh beside `on_main`; the base config is `$T/base-config.sh` (run 2 rewrites the config and restores it from there).
+- **Proposed changes:** none.
+
 ### 2026-10-19 · P1-01 · passes
 
 - **What changed:** new `docs/plans/2026-10-19-P1-notifications.md` (Milestone base `a4625257b22e…` = HEAD at session start). It fixes `notify "<msg>" [title= body= click= actions= priority= tags=]` in `lib/notify.sh` (with `NOTIFY_TAG=$RUN_ID` so `$1` stays `[<run>] <msg>`), the five `HARNESS_NOTIFY_*` variables, the exact curl argv (URL last, `--data-binary` before it), the four `lib/notify.mjs` helpers + CLI, `tests/stub-curl.sh` (`===` blocks, `STUB_CURL_FAIL=1` → exit 22) and the fixture text copied from docs.ntfy.sh/publish, a 15-row call-site table (driver + debrief), and the checks for P1-02/03/04 by name. No code changed; tests 98 → 98.

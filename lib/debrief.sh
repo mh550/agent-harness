@@ -28,6 +28,8 @@ log() { echo "$(date '+%F %T') $*" | tee -a "$Q/runner.log"; }   # what a debrie
 say() { echo "harness debrief: $*"; }                            # why it did nothing: stdout only
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # defaults + the user's config (NOTIFY_CMD, models)
+# shellcheck source=lib/notify.sh
+source "$HARNESS_HOME/lib/notify.sh"   # no NOTIFY_TAG: the debrief's messages start "[debrief]" themselves
 tell() { [[ -n $NOTIFY_CMD ]] && bash -c "$NOTIFY_CMD" _ "$*" > /dev/null 2>&1 9>&-; return 0; }
 fail() { log "debrief: $1"; tell "[debrief] ${2:-failed}: $1"; exit 1; }   # one line to Michael, and the next debrief covers these runs
 
