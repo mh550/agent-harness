@@ -14,6 +14,47 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 16:20 · verify P3
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P3-01 | 1 | read docs/plans/2026-10-19-P3-desk.md line 1 | 'Milestone base: 8f17332…', git rev-parse resolves it | yes |
+| P3-01 | 2 | read plan §2: tmux new-session -s/-n/-c, claude --remote-control, capture-pane loop with the URL regex and HARNESS_DESK_WAIT:-60, send-keys -l then Enter, reuse via pane_dead | all present (lines 103-133, 183-184) | yes |
+| P3-01 | 3 | read plan state-files table and §2.7 | desk/<stamp>.md, desk/url, desk/last-event, queue/desk/ and window 'debrief' in HARNESS_HOME described | yes |
+| P3-01 | 4 | read plan stub section and §9 check list; tests/stub-claude.sh | no -p mode, fixture line, count, .in files, STUB_DESK_NO_URL, EXIT trap all specified and built | yes |
+| P3-01 | 5 | read plan §7 and §8 | trigger points with why texts, desk() helper that never changes the run, DESK=0 DESK_MODEL=opus defaults | yes |
+| P3-01 | 6 | `bash tests/run.sh` | full suite: 168/168 checks passed (my own run); no FAIL lines | yes |
+| P3-02 | 1 | read tests/stub-claude.sh, tests/fixtures/remote-control-pane.txt, tests/run.sh:8-9; check 'the stub claude's interactive mode…' | fixture line 1 names source (claude 2.1.303, 2026-10-19); stub prints session_TEST<n>, appends stdin; trap kills session; PASS | yes |
+| P3-02 | 2 | grep bin/harness, lib/config.sh; check 'DESK=0 by default, DESK_MODEL=opus' | desk) dispatches to lib/desk.sh, usage lists desk <run> [--why], defaults DESK=0 DESK_MODEL=opus; PASS | yes |
+| P3-02 | 3 | read prompts/desk.md and check 'the desk prompt names the run, its commands and the never-list' | asserts each named item, no {{ placeholders; PASS | yes |
+| P3-02 | 4 | check 'harness desk: one window, the Read line, the prompt, the notification click' | asserts exit 0, session_TEST1 output, one window 'parky', Read line, INBOX path, url file; PASS | yes |
+| P3-02 | 5 | check 'the desk notification' | asserts Title, Priority: high, Click: session_TEST1; PASS | yes |
+| P3-02 | 6 | check "the desk's claude: --remote-control, the model id, --add-dir…" | asserts argv --remote-control, opus model id, --add-dir worktree, PWD=project dir; PASS | yes |
+| P3-02 | 7 | check "harness desk notes 'desk started:'…"; bash -n on all shell files; suite | line asserted exactly; bash -n clean; 168/168 | yes |
+| P3-03 | 1 | check 'a second event reuses the desk window' | one 'parky' window, last .in line 'New since your last brief: C parked: db url. Re-read …', same click URL; PASS | yes |
+| P3-03 | 2 | check 'no URL in time: no window, the plain notification' | exit 0, no window, log line with '2 s', plain title, no claude.ai Click; PASS | yes |
+| P3-03 | 3 | check 'a dead desk is replaced' | fresh window, Read line, no 'New since'; PASS | yes |
+| P3-03 | 4 | check 'harness desk --debrief' | window 'debrief', prompt in queue/desk names ledger/debrief.md and Needs Michael, title '[debrief] needs you'; PASS | yes |
+| P3-03 | 5 | bash -n lib/desk.sh; suite | clean; 168/168 | yes |
+| P3-04 | 1 | check 'DESK=1: a park starts one desk, the run end reuses it' | desky ends 'waiting on Michael: B', one window, Read then 'New since…ended: waiting on Michael: B', one 'desk started:'; PASS | yes |
+| P3-04 | 2 | check 'DESK=0: no desk' (placed before the by-hand desk checks) | no desk dirs/windows/log lines; PASS | yes |
+| P3-04 | 3 | check 'a desk that cannot start never changes the run' | still 'waiting on Michael: B', plain park notification, 'no session URL' logged; PASS | yes |
+| P3-04 | 4 | check 'verify needs Michael starts a desk' | window 'strict', Read line, prompt names 'M1 needs Michael: A fails verification'; PASS | yes |
+| P3-04 | 5 | check 'the debrief starts a desk when Needs Michael is non-empty' | no window without the flag, window with STUB_DEBRIEF_NEEDS=1; PASS | yes |
+| P3-04 | 6 | grep harness-log assertions in the checks; bash -n driver/debrief/desk; suite | 'desk started:' and 'desk: … plain notification' asserted; bash -n clean; 168/168 | yes |
+| P3-05 | 1 | check 'harness desk --list' | 5 lines with window, run, URL, 'N min', '-' for no URL; PASS | yes |
+| P3-05 | 2 | check 'harness desk --close <run>' | 'closed desk desky', window gone; 'no desk for parkn' exit 0; PASS | yes |
+| P3-05 | 3 | check 'harness gc closes idle desks' | 25 h strict closed ('closed idle desk strict'), fresh parky stays; PASS | yes |
+| P3-05 | 4 | check 'harness desk --all' | all closed, has-session fails, trap tolerant; PASS | yes |
+| P3-05 | 5 | harness help grep in the --list check; bash -n desk.sh bin/harness; suite | usage lists --list, --close|--all, --debrief; clean; 168/168 | yes |
+| P3-06 | 1 | read docs/plans/2026-10-19-P3-review.md; base 8f17332 resolves | findings table with severity, file, resolution; three questions answered No/No/No | yes |
+| P3-06 | 2 | read review header and finding rows | each Important/Critical names its red-before-fix check (suite 163/167 then 168/168; R rows) | yes |
+| P3-06 | 3 | grep journal/decisions.md | '### D-H31' with Finding, Choice, Rejected (server mode; answers through ntfy) | yes |
+| P3-06 | 4 | grep docs/architecture.md | §3 desk.sh/prompts, §4 desk/ and queue/desk, §7 guard text, §10 DESK/DESK_MODEL/DESK_URL, §17; table says 168 checks, run.sh has 168 | yes |
+| P3-06 | 5 | grep README.md, templates/user/config.sh | desk paragraph with DESK=1, --list/--close; template has DESK, DESK_MODEL; Tests line 168 | yes |
+| P3-06 | 6 | read end of the P3 plan | 'For Michael: turning it on' in 3 stages with checks and undo (DESK=0, desk --all) | yes |
+| P3-06 | 7 | bash -n on every .sh, node --check every .mjs; suite | all clean; 168/168 | yes |
+
 ### 2026-10-19 15:45 · P3-06 · passes
 
 - Review: `/tmp/p3.diff` (8f17332..HEAD, 642 lines) was read by an Opus reviewer, and this session's fixes by a second one. Everything is in `docs/plans/2026-10-19-P3-review.md`: 4 Important (I1, I2, R1, R2), 18 Minor, nothing Critical. The three questions are answered no, no, no. Tests 162 → 168.
