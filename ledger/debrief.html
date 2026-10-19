@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Harness debrief</title><style>
+:root{--bg:#f6f5f2;--panel:#fff;--ink:#1d1c1a;--soft:#6b6862;--line:#e3e0da;--good:#1f7a4d;--warn:#a5520f;--info:#2a5db0;--muted:#77736c;
+--merged:#1f7a4d;--verified:#5a9b78;--built:#c9a227;--partial:#e3c97a;--todo:#d9d5ce;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151514;--panel:#1f1e1c;--ink:#ecebe7;--soft:#a29e96;--line:#34322f;
+--good:#5fc790;--warn:#f0a35c;--info:#7fa8f0;--muted:#9a958c;--merged:#4fb07f;--verified:#3f7a5c;--built:#b8921c;--partial:#7d6a2c;--todo:#3a3835;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151514;--panel:#1f1e1c;--ink:#ecebe7;--soft:#a29e96;--line:#34322f;--good:#5fc790;--warn:#f0a35c;--info:#7fa8f0;
+--muted:#9a958c;--merged:#4fb07f;--verified:#3f7a5c;--built:#b8921c;--partial:#7d6a2c;--todo:#3a3835;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:24px 16px 64px}h1{font-size:22px;margin:0 0 4px}.sub{color:var(--soft);font-size:13px;margin:0 0 20px}
+.headline{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--info);border-radius:10px;padding:12px 16px;margin-bottom:20px}
+.headline p{margin:2px 0}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;margin-bottom:28px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}.card h3{margin:0;font-size:16px;overflow-wrap:anywhere}
+.proj{color:var(--soft);font-size:13px}.pill{margin-left:auto;font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid currentColor;max-width:100%;overflow-wrap:anywhere}
+.pill.good{color:var(--good)}.pill.warn{color:var(--warn)}.pill.info{color:var(--info)}.pill.muted{color:var(--muted)}
+.big{margin:10px 0 8px}.big b{font-size:22px;font-variant-numeric:tabular-nums}.big span{display:block;color:var(--soft);font-size:13px}
+.milestones{list-style:none;padding:0;margin:0 0 10px;display:flex;flex-wrap:wrap;gap:4px}
+.ms{font-size:11px;padding:2px 6px;border-radius:5px;background:var(--todo);color:var(--ink)}.ms.merged{background:var(--merged);color:#fff}
+.ms.verified{background:var(--verified);color:#fff}.ms.built{background:var(--built);color:#1d1c1a}.ms.partial{background:var(--partial)}
+dl{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 12px;margin:0}dl div{min-width:0}dt{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
+dd{margin:0;font-variant-numeric:tabular-nums;font-size:14px}.open{margin:12px 0 0;padding:10px 0 0 18px;border-top:1px solid var(--line);font-size:13px}
+.open li{margin:4px 0}.cause{font-weight:600}.detail{color:var(--soft);font-size:12px;overflow-wrap:anywhere}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 18px 14px}.note h2{font-size:17px;margin:18px 0 6px}
+.note h3{font-size:15px;margin:14px 0 4px}.note h4{font-size:14px;margin:12px 0 4px}.note li{margin:3px 0}
+code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--line) 60%,transparent);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
+pre{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}</style></head>
+<body><main>
+<h1>Debrief · 2026-10-19 18:18</h1>
+<p class="sub">3 runs · page built 2026-10-19 22:18 UTC from each run's summary.json and the debrief note</p>
+<section class="headline"><p>Landed on main: dj-crate-streaming N1–N5 (33/33, PRs #5–#13). agent-harness P1–P3 are verified but unmerged (PRs #1–#3 await you). rane-one-mixxx is stuck at 5/28 on M1-04, which needs your spec choice.</p></section>
+<section class="cards"><article class="card">
+  <header><h3>agent-harness-2026-10-19</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>15/15 passing</b><span>15 verified · 0 merged</span></div>
+  <ul class="milestones"><li class="ms verified" title="P1: 5/5 passing, verified">P1</li><li class="ms verified" title="P2: 4/4 passing, verified">P2</li><li class="ms verified" title="P3: 6/6 passing, verified">P3</li></ul>
+  <dl><div><dt>Spend</dt><dd>$54.13</dd></div><div><dt>Per feature</dt><dd>$3.61</dd></div>
+  <div><dt>Wall</dt><dd>5.84 h</dd></div><div><dt>Tests</dt><dd>–</dd></div></dl>
+  
+</article>
+<article class="card">
+  <header><h3>dj-2026-10-17</h3><span class="proj">dj-crate-streaming</span><span class="pill good">done</span></header>
+  <div class="big"><b>33/33 passing</b><span>33 verified · 33 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="N1: 5/5 passing, merged">N1</li><li class="ms merged" title="N1F: 3/3 passing, merged">N1F</li><li class="ms merged" title="H1: 4/4 passing, merged">H1</li><li class="ms merged" title="H2: 2/2 passing, merged">H2</li><li class="ms merged" title="H3: 5/5 passing, merged">H3</li><li class="ms merged" title="N2: 4/4 passing, merged">N2</li><li class="ms merged" title="N3: 3/3 passing, merged">N3</li><li class="ms merged" title="N4: 5/5 passing, merged">N4</li><li class="ms merged" title="N5: 2/2 passing, merged">N5</li></ul>
+  <dl><div><dt>Spend</dt><dd>$104.76</dd></div><div><dt>Per feature</dt><dd>$3.17</dd></div>
+  <div><dt>Wall</dt><dd>14.3 h</dd></div><div><dt>Tests</dt><dd>1120 → 1523</dd></div></dl>
+  
+</article>
+<article class="card">
+  <header><h3>rane-one-mixxx-2026-10-19</h3><span class="proj">rane-one-mixxx</span><span class="pill warn">waiting on Michael: M1-04</span></header>
+  <div class="big"><b>5/28 passing</b><span>0 verified · 0 merged</span></div>
+  <ul class="milestones"><li class="ms partial" title="M1: 4/6 passing, partial">M1</li><li class="ms todo" title="M2: 0/8 passing, todo">M2</li><li class="ms partial" title="M3: 1/6 passing, partial">M3</li><li class="ms todo" title="M4: 0/8 passing, todo">M4</li></ul>
+  <dl><div><dt>Spend</dt><dd>$33.66</dd></div><div><dt>Per feature</dt><dd>$6.73</dd></div>
+  <div><dt>Wall</dt><dd>2.34 h</dd></div><div><dt>Tests</dt><dd>8 → 202</dd></div></dl>
+  <ul class="open"><li><span class="cause">waiting on Michael</span> <code>M1-04</code><div class="detail">Michael to choose: amend M1-04 step 3 to check the version line in stdout (recommended), or drop `--controller-debug`.</div></li><li><span class="cause">failed verify</span> <code>M1-05</code><div class="detail">the verify session found a step that doesn&#39;t hold</div></li><li><span class="cause">blocked</span> <code>M2-01</code> <code>M2-02</code> <code>M2-03</code> <code>M2-04</code> <code>M2-05</code> <code>M2-06</code> <code>M2-07</code> <code>M2-08</code> +13<div class="detail">waits on M1-04, which is waiting on Michael</div></li></ul>
+</article></section>
+<section class="note"><p><em>runs since 2026-10-19 08:07:02: agent-harness-2026-10-19 dj-2026-10-17 rane-one-mixxx-2026-10-19 · claude-sonnet-5-5, $0.1898906 · context: /home/mh550/.local/state/harness/debrief/2026-10-19-181824/context.md</em></p>
+<p>Spend $192.55 across 3 runs. Usage: 5-hour window 90% (resets Mon 19:40), 7-day 31%. LIMIT_UNTIL is open.</p>
+<h3>Runs</h3>
+<h4>dj-2026-10-17 (dj-crate-streaming) · done</h4>
+<ul>
+<li>33/33 passing. All 9 milestones verified and merged (PRs #5–#13). Tests 1120 → 1523.</li>
+<li>$104.76 ($3.17 per feature), 14.3 h wall, 4 continuations.</li>
+<li>28 h was lost behind H3-04 (waiting on your &quot;gatus vars set&quot;), which held 14 unrelated features. Your 10-19 01:53 INBOX answers released it.</li>
+<li>Retro: the parked-feature skip, an explicit <code>after</code> list per milestone, and an honest <code>end_reason</code>.</li>
+</ul>
+<h4>agent-harness-2026-10-19 (agent-harness) · done</h4>
+<ul>
+<li>15/15 passing. P1, P2 and P3 verified, tagged and proposed as PRs #1–#3. None merged.</li>
+<li>$54.13 ($3.61 per feature), 5.84 h. Tests were not recorded (null in summary.json).</li>
+<li>One guard fired: a P3 verify escalation (P3-02 had 7 evidence rows against 8 steps), which passed on the re-run.</li>
+<li>Review was $15.66 (29% of spend).</li>
+</ul>
+<h4>rane-one-mixxx-2026-10-19 (rane-one-mixxx) · waiting on Michael: M1-04</h4>
+<ul>
+<li>5/28 passing, 0 verified. Tests 8 → 202. $33.66 ($6.73 per feature), 2.34 h.</li>
+<li>M1-04 step 3 can&#39;t hold: Mixxx 2.5.6 with <code>--controller-debug</code> never writes its version line to <code>mixxx.log</code>. It was parked.</li>
+<li>M1-05 failed verify: <code>stop</code> is a hard kill, so there&#39;s no <code>RaneOne: shutdown</code> log line. Its one retry never ran.</li>
+<li>M2 and M4 (16 features) and M3-02..06 (5 features) are blocked behind M1-04. Only M3-01 ran.</li>
+<li>Retro: both verify failures are spec defects that the build sessions marked as passing.</li>
+</ul>
+<h3>Needs Michael</h3>
+<ul>
+<li><strong>rane-one-mixxx, M1-04</strong> (INBOX question, 2026-10-19 18:05). Choose one:</li>
+<li>(a) Amend step 3 to require a new <code>mixxx.log</code> plus <code>Configuration file is at the current version &quot;2.5.6&quot;</code> in <code>mixxx-dev.stdout</code>. This is the run&#39;s recommendation.</li>
+<li>(b) Drop <code>--controller-debug</code>, which changes CLAUDE.md.</li>
+</ul>
+<p>  Then run <code>harness continue rane-one-mixxx-2026-10-19</code>.</p>
+<ul>
+<li><strong>rane-one-mixxx, M1-05.</strong> The step expecting <code>RaneOne: shutdown</code> conflicts with <code>stop</code> being a hard kill. Decide whether to amend the step or make <code>stop</code> graceful. This isn&#39;t in INBOX yet.</li>
+<li><strong>rane-one-mixxx, progress.md.</strong> Still open: D9 (dev Mixxx never binds the real Rane port), D10, D11/D12 (telemetry format, peak deviation), and whether <code>tools/midi-send</code> should stop honouring <code>RANE_ARM_FILE</code>.</li>
+<li><strong>dj, N5-02 / N4-05</strong> (progress.md):</li>
+<li>Lift <code>duplicate_cleanup trash</code> beyond <code>--dry-run</code>? CLAUDE.md still wants <code>lastScan</code> confirmed on live Navidrome.</li>
+<li>OK for D44, where a refused placement retries over about 4 days?</li>
+<li>The H3-03 disk-timer steps are still yours. They are in dj INBOX.md and <code>docs/monitoring.md</code> and end with <code>loginctl enable-linger mh550</code>.</li>
+<li><strong>agent-harness.</strong> Review and merge PRs #1, #2 and #3, in that order.</li>
+</ul>
+<h3>For the next interactive session</h3>
+<ul>
+<li><strong>Merge conflicts:</strong> none reported.</li>
+<li><strong>Held or refused merges:</strong> none. agent-harness P1–P3 are simply unmerged.</li>
+<li><strong>Retro proposals seen in two or more retros</strong> (candidate harness PRs):</li>
+</ul>
+<ol>
+<li><strong>Skip parked features and continue independent work.</strong> Proposed by threads-2026-10-17, dj-2026-10-17 and rane-one-mixxx-2026-10-19. This is the top priority: dj lost 28 h and rane lost 21 features to it.</li>
+<li><strong>Skip or cap review.</strong> Proposed by v2-2026-10-18, agent-harness-2026-10-19 and rane-one-mixxx-2026-10-19 (skip it for milestones that fail verify). dj&#39;s review cost was 73% of build.</li>
+<li><strong>One evidence row per step, rejected if grouped.</strong> Proposed by v2-2026-10-18 and agent-harness-2026-10-19.</li>
+<li><strong>Record test counts in summary.json.</strong> Proposed by v2-2026-10-18 and agent-harness-2026-10-19 (partly).</li>
+</ol>
+<ul>
+<li><strong>Single-retro ideas worth a look:</strong></li>
+<li>Validate feature steps against the environment at init or plan (rane).</li>
+<li>Make <code>end_reason</code> honest (dj).</li>
+</ul></section>
+</main></body></html>
