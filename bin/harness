@@ -26,7 +26,7 @@
 #                                                CLAUDE.md from the repo's docs for you to edit)
 #   harness gc <project> [--all-merged] [--dry-run]
 #                               delete merged harness branches and their clean worktrees, locally and on origin;
-#                               close the project's desks idle for 24 h
+#                               close the project's desks idle for 24 h (an open one keeps its worktree)
 #
 # Where things live:  worktree ~/worktrees/<project>/<run-id> · branch harness/<run-id>
 #   committed run record  <worktree>/.harness/runs/<run-id>/{feature_list.json,progress.md,INBOX.md,harness-log.md,
@@ -184,7 +184,7 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued] [start options]
   ( source "$st/meta.env"
     # a continuation you start gives every feature that isn't passing fresh attempts; an automatic one doesn't
     (( keep )) || { [[ -f $WT/.harness/runs/$RUN_ID/feature_list.json ]] && node "$HARNESS_HOME/lib/features.mjs" reset "$STATE/attempts.json" "$WT/.harness/runs/$RUN_ID/feature_list.json"
-      rm -f "$STATE"/needs-* "$STATE"/verify-rounds-*; }
+      rm -f "$STATE"/needs-* "$STATE"/verify-rounds-* "$STATE"/refused-*; }
     rm -f "$STATE/PAUSE" "$STATE/STOP" "$STATE/ended"
     cmd_start "$PROJECT_DIR" "$RUN_ID" ${rest[@]+"${rest[@]}"} )
 }
@@ -304,12 +304,20 @@ cmd_gc() {
     git -C "$p" diff --quiet "$base" "$r" -- . ':!.harness/runs'; }
   running() { local d r=${1#harness/}; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && alive "$d" && return 0
     compgen -G "$Q/*-continue-$r.args" > /dev/null; }   # running, or a continuation is queued
+  # a desk Michael may be talking to keeps its run's worktree (its --add-dir, the INBOX it reads); idle ones go first
+  desk_open() { local d r=${1#harness/}; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && [[ -s $d/desk/url ]] \
+    && ! grep -qxF "would close idle desk $r" <<< "$dg" \
+    && "$HARNESS_HOME/lib/desk.sh" --list 2> /dev/null | awk -v r="$r" '$1 == r && $3 ~ /^https:/ { f = 1 } END { exit !f }'; }
+  local dd=() dg; (( dry )) && dd=(--dry-run)   # a dry run counts the desks it would close as closed
+  dg=$("$HARNESS_HOME/lib/desk.sh" --gc "$(basename "$p")" "${dd[@]}") || echo "harness: could not check the desks"   # never fails gc
+  [[ -n $dg ]] && echo "$dg"
   while read -r wt; do
     [[ $wt == "$WT_ROOT"/* ]] || continue
     b=$(git -C "$wt" branch --show-current)
     [[ -n $b && -z $(git -C "$wt" status --porcelain) ]] || continue
     running "$b" && continue
     if git -C "$p" merge-base --is-ancestor "$b" "$main" || { [[ $b == harness/* ]] && record_only "$b"; }; then
+      desk_open "$b" && { echo "keeps $wt: its desk is open (harness desk --close ${b#harness/})"; continue; }
       act git -C "$p" worktree remove "$wt"
     fi
   done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p')
@@ -334,8 +342,6 @@ cmd_gc() {
     done
     (( all )) && break
   done
-  local dd=(); (( dry )) && dd=(--dry-run)
-  "$HARNESS_HOME/lib/desk.sh" --gc "$(basename "$p")" "${dd[@]}" || echo "harness: could not check the desks"   # never fails gc
   return 0
 }
 

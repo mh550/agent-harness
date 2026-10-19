@@ -10,6 +10,7 @@
 # "Answer with Claude" on a park's notification opens this: your Remote Control environment's URL from the Claude app.
 # DESK_URL=<the URL>                 # no "," or ";" in it (they split ntfy's Actions header)
 
-# The desk (P3, not built yet): a Remote Control session the harness starts when a run needs you.
-# DESK=0                             # 1 = start one on a park, a blocked or waiting run end, verify or a merge needing you
-# DESK_MODEL=opus
+# The desk: a Remote Control claude the harness starts in tmux (h-desk) when a run needs you; its notification opens it.
+# DESK=0                             # 1 = start one on a park, a blocked or waiting run end, verify or a merge needing
+#                                    #     you, and a debrief with Needs Michael. Try `harness desk <run> --why test` first.
+# DESK_MODEL=opus                    # the desk session's model: fable, opus, sonnet, haiku or a claude-… id

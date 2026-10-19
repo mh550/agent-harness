@@ -228,8 +228,12 @@ merge_one() {
     git push -q origin --delete "$head" 2>/dev/null
     touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH · $url"; notify "$m merged · $url" click="$url"
   else
+    # once per tag commit (merge_milestones runs again after every verify and at the end); `harness merge` always says so
+    [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/refused-$m" 2>/dev/null) == "$c" ]] && return 1
+    echo "$c" > "$STATE/refused-$m"
     note "$m: the merge was refused; PR left open for Michael · $url"; notify "$m needs Michael: merge refused · $url" title="[$RUN_ID] $m needs you" priority=high click="$url"
-    desk "$m: merge refused"; return 1
+    [[ ${HARNESS_MERGE_ONLY:-} ]] || desk "$m: merge refused"   # `harness merge`: Michael is at the terminal
+    return 1
   fi
 }
 

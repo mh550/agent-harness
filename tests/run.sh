@@ -459,7 +459,7 @@ check "no URL in time: no window, the plain notification" '[[ $D3 == 0 && ! -s $
   && Bn=$(curl_last "Title: [stoppy] needs you") && grep -qx "Title: \[stoppy\] needs you: x" <<< "$Bn" && grep -qx "Priority: high" <<< "$Bn" && ! grep -q "Click: https://claude.ai" <<< "$Bn" \
   && ! grep -q "Open the desk" <<< "$Bn" && grep -qx "Or by hand: harness parked stoppy" <<< "$Bn" && grep -q "; notified)$" "$T/desk3.err" \
   && [[ -z $(git -C "$T/wt/proj/stoppy" status --porcelain -- .harness/runs/stoppy/harness-log.md) ]]'   # committed (the debrief checks planted the INBOX and report edits)
-tmux kill-window -t "$(win parky)" 2> /dev/null   # the session goes with its last window
+W=$(win parky); [[ -n $W ]] && tmux kill-window -t "$W"   # the session goes with its last window (an empty -t would hit the current window)
 "$H" desk parky --why "again" > "$T/desk4.out" 2> "$T/desk4.err"; D4=$?
 check "a dead desk is replaced" 'I=$(desk_of parky | sed "s/\.args$/.in/"); [[ $D4 == 0 && $(cat "$T/desk4.out") == https://claude.ai/code/session_TEST3 && $(wins | grep -cx parky) == 1 && $I == */3-desk_parky_again.in ]] \
   && in_has "$I" "Read" && [[ $(head -1 "$I") == "Read "*" and follow it." ]] && ! grep -q "New since" "$I" && [[ $(cat "$DS/url") == https://claude.ai/code/session_TEST3 ]]'
@@ -475,7 +475,7 @@ rc() { "$@" > /dev/null 2>&1; echo $?; }
 check "harness desk: an unknown run or a bad option is an error, nothing started" '[[ $(rc "$H" desk nosuch) == 1 && $(rc "$H" desk "park*") == 1 && $(rc "$H" desk debrief) == 1 && $(rc "$H" desk desk) == 1 ]] \
   && [[ $(rc "$H" desk parky --nope) == 2 && $(rc "$H" desk --debrief parky) == 2 && $(rc "$H" start "$T/proj" desk --spec SPEC.md) == 1 ]] \
   && [[ ! -d $HARNESS_STATE/proj/nosuch && ! -d $HARNESS_STATE/proj/desk && ! -d $T/wt/proj/desk && $(wins | sort) == "$W0" ]]'
-tmux kill-window -t "$(win parky)"; tmux new-window -d -t "=$HARNESS_DESK_SESSION:" -n parky sleep 600; rm -f "$DS/url"   # a window of that name that is no desk
+W=$(win parky); [[ -n $W ]] && tmux kill-window -t "$W"; tmux new-window -d -t "=$HARNESS_DESK_SESSION:" -n parky sleep 600; rm -f "$DS/url"   # a window of that name that is no desk
 "$H" desk parky --why "stale" > "$T/desk6.out" 2> /dev/null; D6=$?
 check "a window of the run's name that never showed a URL is replaced" '[[ $D6 == 0 && $(cat "$T/desk6.out") == https://claude.ai/code/session_TEST5 && $(wins | grep -cx parky) == 1 ]] \
   && in_has "$(desk_of parky | sed "s/\.args$/.in/")" "Read" && ! tmux list-panes -a -F "#{pane_start_command}" | grep -q "sleep 600"'
@@ -514,9 +514,31 @@ ago 25 > "$HARNESS_STATE/proj/strict/desk/last-event"; ago 23 > "$DS/last-event"
 "$H" gc "$T/proj" > "$T/dgc2.out" 2>&1; DG2=$?
 check "harness gc closes idle desks" '[[ -n $DG1 && $DG2 == 0 && -z $(win strict) && -n $(win parky) && -n $(win debrief) ]] && grep -qx "would close idle desk strict" "$T/dgc1.out" \
   && grep -qx "closed idle desk strict" "$T/dgc2.out" && [[ $(grep -c "idle desk" "$T/dgc2.out") == 1 && ! -e $HARNESS_STATE/proj/strict/desk/url ]] && grep -q "desk: closed" "$HARNESS_STATE/proj/strict/run.log"'
+check "harness gc keeps the worktree of a run whose desk is open" '[[ -d $T/wt/proj/parky ]] && grep -qx "keeps $T/wt/proj/parky: its desk is open (harness desk --close parky)" "$T/dgc2.out"'
 "$H" desk --all > "$T/dall1.out" 2>&1; DA1=$?; "$H" desk --all > "$T/dall2.out" 2>&1; DA2=$?
 check "harness desk --all" '[[ $DA1 == 0 && $(cat "$T/dall1.out") == "closed every desk (3)" ]] && ! tmux has-session -t "=$HARNESS_DESK_SESSION" 2> /dev/null \
   && [[ -z $(compgen -G "$HARNESS_STATE/*/*/desk/url") && ! -e $HARNESS_STATE/queue/desk/url && $DA2 == 0 && $(cat "$T/dall2.out") == "no desks" && $("$H" desk --list) == "no desks" ]] && grep -q "desk: closed every desk (3" "$HARNESS_STATE/queue/runner.log"'
+# review (P3-06): an open desk showing a dialog gets nothing typed; the token never reaches a desk; a refused merge
+# tells Michael (and his desk) once, and `harness merge` starts no desk
+NTFY_TOKEN=tok-env-456 STUB_DESK_MENU=1 "$H" desk parky --why "menu one" > "$T/dmenu1.out" 2>&1
+IM=$(desk_of parky | sed 's/\.args$/.in/'); in_has "$IM" Read; sleep 1   # the stub draws its dialog after the Read line
+STUB_DESK_MENU=1 "$H" desk parky --why "menu two" > "$T/dmenu2.out" 2> "$T/dmenu2.err"; DM=$?; sleep 1
+check "an open desk showing a dialog gets nothing typed" '[[ $DM == 0 && -n $(cat "$T/dmenu1.out") && $(cat "$T/dmenu2.out") == "$(cat "$T/dmenu1.out")" && $(wc -l < "$IM") == 1 ]] \
+  && hlog parky | grep -qF "desk: the open desk shows a dialog; nothing typed (menu two)" && Bm=$(curl_last "Title: [parky] needs you: menu two") \
+  && grep -qx "Click: $(cat "$T/dmenu1.out")" <<< "$Bm" && grep -q "answer its dialog" <<< "$Bm" && [[ $(wins | grep -cx parky) == 1 ]]'
+check "the desk's environment has no NTFY_TOKEN" 'E=$(desk_of parky | sed "s/\.args$/.env/"); [[ -s $E ]] && grep -qx HARNESS_STATE "$E" && ! grep -qx NTFY_TOKEN "$E" \
+  && ! tmux show-environment -g 2> /dev/null | grep -q tok-env'
+"$H" desk --all > /dev/null
+STUB_REFUSE_MERGE=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" refusy --spec SPEC.md --foreground > "$T/run20.out" 2>&1
+check "a refused merge tells Michael and his desk once" '[[ $(hlog refusy | grep -c "merge was refused") == 1 && $(curl_count "Title: [refusy] M1 needs you") == 1 ]] \
+  && [[ $(hlog refusy | grep -c "M1: merge refused") == 1 && $(wins | grep -cx refusy) == 1 ]] && hlog refusy | grep -q "desk started: .* (M1: merge refused)"'
+"$H" desk --close refusy > /dev/null
+STUB_REFUSE_MERGE=1 "$H" merge refusy > "$T/run20b.out" 2>&1   # Michael retries at the terminal: still refused
+check "harness merge says it was refused again, and starts no desk" '[[ $(hlog refusy | grep -c "merge was refused") == 2 && $(curl_count "Title: [refusy] M1 needs you") == 2 ]] \
+  && [[ -z $(win refusy) && $(hlog refusy | grep -c "desk started:") == 1 ]]'
+check "the dialog guard: the CLI's dialog words, not the desk's own questions" 'DG=$(sed -n "s/^DIALOG=\x27\(.*\)\x27$/\1/p" "$HH/lib/desk.sh"); [[ -n $DG ]] \
+  && sed 1d "$HERE/fixtures/permission-menu.txt" | grep -qE "$DG" && ! printf "%s\n" "Do you want to merge M1 now?" "1. yes  2. no" "Enter the value" | grep -qE "$DG"'
+"$H" desk --all > /dev/null
 echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
 
 # ---- run 17: the 7-day window past WEEKLY_STOP_AT: the run stops before its next session; the queue starts nothing ----

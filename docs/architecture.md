@@ -61,10 +61,12 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/summary.mjs` | ~230 | Run summary, writeup, ledger rows, trends, calibration |
 | `lib/render.mjs` | ~15 | Prompt templating (`{{X}}` ← `HARNESS_X`) and titled sections |
 | `lib/page.mjs` | ~130 | The debrief page: a card per run from summary.json, then the note (escaped), one self-contained HTML file |
+| `lib/desk.sh` | ~240 | `harness desk <run> [--why …]` \| `--debrief` (§17): a Remote Control `claude` in tmux session `h-desk`, window `<run>`, in the project directory; the pane's session URL is the notification's click; one desk per run (a later event is typed into the open one); a desk that can't start is a note and the plain notification, exit 0. `--list`, `--close <run>\|--all`, `--gc` (from `harness gc`: idle for 24 h) |
+| `prompts/desk.md` | ~80 | The desk's instructions (a run block and a debrief block): read `harness parked`/status/INBOX/progress, check safely, one numbered brief, `harness answer` and the continue only after Michael's yes, the never-list |
 | `skills/harness-answer/SKILL.md` | ~45 | The answer desk's instructions for an interactive session Michael opens (§17); installed by a symlink into `~/.claude/skills/` |
 | `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
-| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md; `policy/{build-only,live-staged}.md` |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin: 140 checks |
+| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md` |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 168 checks |
 
 ## 4. Where state lives
 
@@ -87,6 +89,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Queue | `~/.local/state/harness/queue/NNNN-<verb>-<name>.args`, `done/`, `runner.log`, `runner.pid`, `STOP`, `last-debrief` (when the last note was produced, and the "since" of the next), `debrief.out` | CLI, driver (continuations), debrief | runner, debrief | no |
 | Debrief workspace | `~/.local/state/harness/debrief/<stamp>/{context.md,prompt.md,session.jsonl,final.md,body.md}`, `debrief.lock` | `harness debrief` | you (`--dry-run` prints `context.md`) | no |
 | Debrief note and page | `<harness>/ledger/debrief.md` and `debrief.html`, overwritten each time (history: `git log -p`) · `<state>/runners` marks the runs a queue runner started | `harness debrief` (flock, `git commit -- <note>` when `LEDGER_COMMIT=1`) · `harness start` | Michael, the next interactive session | yes, harness repo |
+| Desk | `~/.local/state/harness/<p>/<run>/desk/{<stamp>.md,url,last-event}` (the prompt per event, the session URL while the desk is open, the epoch of its last event) · the debrief's in `queue/desk/` · `desk.lock` (one desk start at a time) · tmux session `h-desk`, a window per run and `debrief` | `harness desk` (the driver, the debrief, you) | `harness desk` (reuse, `--list`), `harness gc` (24 h idle) | no |
 | Scratch | `/tmp/harness/<p>/<run>/` (`init.out`, `check.out`, `check-<key>.out`, `green-<key>`, dev DB, screenshots) | driver, init, check, sessions | sessions, driver | no |
 | Live-write lock | `LIVE_LOCK` (default `/tmp/harness/<p>/live.lock`; dj: `/srv/docker/crates/live.lock`, shared with the backup job) | sessions under `live-staged` (`flock -n`), the backup script (`flock -w`) | both | no |
 | Ledger | `<harness>/ledger/runs.jsonl`, `ledger/<p>/<run>/{summary.json,retro.md,…}` | driver at the end (flock, `git commit -- <paths>`) | `harness trends`, retro, calibration | yes, harness repo |
@@ -179,6 +182,7 @@ harness start ─► worktree + branch ─► driver:
 | Session budget | `--max-budget-usd`, `--max-turns` per session | the CLI stops the session | `session()` |
 | Weekly budget | the newest session reported the 7-day window ≥ `WEEKLY_STOP_AT` (default 85 %, 0 = off) | the run ends before its next coding session; the queue starts no run | `weekly_over` (config.sh), driver loop, queue.sh |
 | Parking | a not-passing session's final message has a `PARKED:` line | attempt given back; skipped until the INBOX answers change | driver loop, `features.mjs park/unpark` |
+| Desk | `DESK=1` and a park, a blocked or waiting run end, verify or a merge needing Michael | a desk failing to start never stops or fails the run: `desk()` drops the output, notes a non-zero exit and returns 0; `desk.sh` itself exits 0 with a note and the plain notification when there is no tmux, no URL in time, or the lock is held | `desk()` (driver), `plain()` (desk.sh) |
 
 ## 8. Branches, tags and PRs — and what `run/*/final` was
 
@@ -228,13 +232,14 @@ else continues.** Unverified work is never merged and never thrown away.
 ## 10. Configuration
 
 Layers, later wins (`lib/config.sh`): harness defaults → `~/.config/harness/config.sh` (yours: models, limits,
-`MERGE_POLICY`, `MAX_PARALLEL_RUNS`, `NOTIFY_CMD`, `NTFY_URL`, `NTFY_TOKEN`, `DESK_URL`) → `<project>/.harness/config.sh` (`POLICY=` and real overrides) →
+`MERGE_POLICY`, `MAX_PARALLEL_RUNS`, `NOTIFY_CMD`, `NTFY_URL`, `NTFY_TOKEN`, `DESK_URL`, `DESK`, `DESK_MODEL`) → `<project>/.harness/config.sh` (`POLICY=` and real overrides) →
 the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** for what's still unset:
 
 | Setting | Convention |
 |---|---|
 | `NTFY_URL` / `NTFY_TOKEN` | empty: notifications go to `NOTIFY_CMD` (or nowhere). Set: the harness posts to that ntfy topic itself, the token as `Authorization: Bearer` (never logged), and `NOTIFY_CMD` is not called |
 | `DESK_URL` | empty: no **Answer with Claude** action on a park's notification |
+| `DESK` / `DESK_MODEL` | `0` / `opus`: no desk starts by itself (`harness desk` by hand still works). `DESK=1`: the driver and the debrief start one whenever a run needs Michael (§17), on `DESK_MODEL` |
 | `CHECK_CMD` | `.harness/check.sh` · `npm run check` · `npm test` · `python3 -m pytest -q` · `cargo test` · `go test ./...` · `make test` |
 | `SMOKE_CMD` | `node .harness/smoke.mjs` · `bash .harness/smoke.sh` · `true` |
 | `INIT_CMD` | `.harness/init.sh` · `true` (the driver runs the suite itself, so init only starts servers) |
@@ -431,5 +436,35 @@ running, ending, queued, commands[]}`. Nothing parked: `nothing parked` (`… in
 nothing in them is run or expanded; its never-list (never edit INBOX.md, feature lists,
 policies or CLAUDE.md directly; never answer without Michael's yes; never run a project's live commands) is text
 the session follows, and Michael's yes is the gate. The harness ships the file; Michael installs it once
-(`ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`). P3 adds a desk session the harness
-starts itself (`DESK=1`), so the link opens a session that already holds the question.
+(`ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`).
+
+**The desk starts itself** (`lib/desk.sh`, D-H31). With `DESK=1` the driver calls `harness desk <run> --why …` when a
+feature parks (`<id> parked: <why>`), verify or a merge needs Michael (`<m> needs Michael: …`, `<m>: merge refused`)
+and the run ends blocked or waiting (`ended: …`); the debrief calls `harness desk --debrief` when its note's
+`## Needs Michael` isn't empty. Michael can run either by hand at any time.
+
+```
+harness desk <run> --why "<one line>"            (desk.lock: one start at a time, ≤ HARNESS_DESK_WAIT + 10 s)
+  ─► <state>/desk/<stamp>.md from prompts/desk.md (run id, why, INBOX and progress paths; no config value)
+  ─► window <run> in tmux h-desk open, its claude alive, desk/url kept?
+       yes → its screen shows a dialog (the CLI's words: "Esc to cancel", "Enter to select", …) or can't be read?
+             type nothing, note it, notify "answer its dialog first" · else type "New since your last brief: <why>.
+             Re-read <prompt>." · notify, click = the same URL · done
+  ─► tmux new-window|new-session -c ~/projects/<project> (trusted) -- env -u NTFY_TOKEN … claude --remote-control
+       "desk · <run> · <why>" --model <DESK_MODEL id> --add-dir <worktree>
+  ─► capture-pane until https://claude.ai/code/session_… (≤ HARNESS_DESK_WAIT, 60 s)
+       none / claude exited → kill the window · note "desk: …; plain notification" · the plain notification · exit 0
+  ─► desk/url · type "Read <prompt> and follow it." · note "desk started: <url> (<why>)" · notify
+     "[<run>] needs you: <why>", priority high, click = the session URL · print the URL
+```
+
+Every tmux target is exact (`=h-desk`, window ids `@N`): a name would match by prefix. tmux runs `claude` as separate
+arguments with no shell, so the `why` (session-written text) is never run; typed lines go in with `send-keys -l`
+(literal, never a key name) and Enter half a second later. The desk's note goes to `harness-log.md` through the run
+record: the driver commits it at once (`HARNESS: desk`; the retro's revert would drop it otherwise), `desk.sh` commits
+it itself when the run's driver is gone. `--debrief` uses window `debrief`, `queue/desk/`, `queue/runner.log` and the
+harness checkout as its directory. A refused merge is noted, notified and sent to the desk once per tag commit while the run goes;
+`harness merge` says it every time and starts no desk (Michael is at the terminal). Every tmux call runs under `timeout 10`: a wedged server can't hold the driver.
+Housekeeping: `harness desk --list` (window, run, URL, age), `--close <run>|--all`, and `harness gc <project>` closes
+the project's desks (and the debrief's) idle for 24 h first, then keeps the worktree of a run whose desk is still open. With `DESK=1` Michael gets two
+notifications per event: the driver's own (unchanged; it needs no desk) and the desk's.

@@ -18,8 +18,13 @@ die() { echo "harness: $*" >&2; exit 1; }
 usage() { echo 'usage: harness desk <run> [--why "<one line>"] | --debrief [--why "<one line>"] | --list | --close <run>|--all' >&2; exit 2; }
 alive() { local p; p=$(cat "$1/driver.pid" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null; }
 # the first call may start the tmux server: one that inherited a lock fd (ours, the driver's or debrief's 9) would hold
-# it forever, and one that inherited NTFY_TOKEN would hand it to every later window
-t() { env -u NTFY_TOKEN tmux "$@" 8>&- 9>&-; }
+# it forever, and one that inherited NTFY_TOKEN would hand it to every later window; timeout: a wedged server must not
+# hold the driver that called us
+t() { env -u NTFY_TOKEN timeout --foreground 10 tmux "$@" 8>&- 9>&-; }
+# A dialog on the open desk's screen (a permission prompt, a question): typed text and its Enter would answer it for
+# Michael. The CLI's own words (tests/fixtures/permission-menu.txt, from the 2.1.303 binary): a dialog's option and
+# footers, not its question ("Do you want to …" is also what the desk itself asks Michael).
+DIALOG='No, and tell Claude what to do differently|[Ee]sc to (cancel|close)|[Ee]nter to select'
 
 # ---- housekeeping (read-only but for kill-window and desk/url): --list, --close <run>|--all, --gc <project> ----
 desk_dir() {   # <window name> → that desk's state dir (a window that isn't a run's desk: nothing, status 1)
@@ -132,12 +137,13 @@ type_in() { t send-keys -t "$1" -l "$2" && sleep 0.5 && t send-keys -t "$1" Ente
 
 # The notification, with the desk's URL as the click, or (no URL) the plain one: the INBOX on GitHub, if there is one.
 tell() {
-  local url=$1 click=$1 hand="harness parked" b=()
+  local url=$1 click=$1 hand="harness parked" b=()   # $dialog: the open desk waits on a dialog
   [[ -z $url && -d $RUN_DIR ]] && click=$(cd "$WT" && gh_url ".harness/runs/$RUN_ID/INBOX.md")
   (( debrief )) || hand+=" $RUN_ID"
   [[ -n $why ]] && b+=("$why")
   (( debrief )) && b+=("Needs Michael: $LEDGER/debrief.md")
   [[ -n $url ]] && b+=("Open the desk: $url")
+  [[ -n ${dialog:-} ]] && b+=("The desk waits on you: answer its dialog, then ask it to re-read $P")
   b+=("Or by hand: $hand")
   notify "needs you${why:+: $why}" title="[$RUN_ID] needs you${why:+: $why}" priority=high tags=question click="$click" \
     body="$(printf '%s\n' "${b[@]}")"
@@ -188,8 +194,15 @@ while IFS=$'\t' read -r w dead; do
   if [[ -z $id && $dead == 0 && -n $url ]]; then id=$w; else t kill-window -t "$w" 2> /dev/null; fi
 done < <(t list-windows -t "=$S" -F '#{window_id}'$'\t''#{window_name}'$'\t''#{pane_dead}' 2> /dev/null | awk -F '\t' -v w="$RUN_ID" '$2 == w { print $1 "\t" $3 }')
 if [[ -n $id ]]; then
+  # the visible screen only (a dialog answered long ago may still be in the scrollback); no screen: type nothing
+  if ! scr=$(t capture-pane -p -J -t "$id" 2> /dev/null) || grep -qE "$DIALOG" <<< "$scr"; then
+    dialog=1 finish "$url" "desk: the open desk shows a dialog; nothing typed${why:+ ($why)}"
+  fi
   type_in "$id" "New since your last brief: ${why:-$event}. Re-read $P." \
     && finish "$url" "desk: sent to the open desk: $url${why:+ ($why)}"
+  # a slow tmux must not cost Michael his conversation: only a desk that went meanwhile is replaced
+  [[ $(t display-message -p -t "$id" '#{pane_dead}' 2> /dev/null) == 0 ]] \
+    && finish "$url" "desk: could not type into the open desk; told Michael${why:+ ($why)}"
   t kill-window -t "$id" 2> /dev/null; log "desk: could not type into the open desk; starting a new one"   # it went meanwhile
 fi
 rm -f "$D/url"
@@ -198,7 +211,7 @@ rm -f "$D/url"
 # harness overrides on, unset the ones we don't have (a server an earlier call started must not leak them), and
 # never the ntfy token (a pane's environment is visible to ps). env reads every -u before the first NAME=value.
 unset_=(-u NTFY_TOKEN) set_=()
-for v in HARNESS_STATE HARNESS_WORKTREES HARNESS_CONFIG HARNESS_LEDGER HARNESS_CLAUDE HARNESS_GH HARNESS_CURL STUB_DIR STUB_DESK_NO_URL; do
+for v in HARNESS_STATE HARNESS_WORKTREES HARNESS_CONFIG HARNESS_LEDGER HARNESS_CLAUDE HARNESS_GH HARNESS_CURL STUB_DIR STUB_DESK_NO_URL STUB_DESK_MENU; do
   if [[ -n ${!v+x} ]]; then set_+=("$v=${!v}"); else unset_+=(-u "$v"); fi
 done
 name="desk · $RUN_ID${why:+ · $why}"; (( debrief )) && name="desk · debrief"

@@ -14,6 +14,18 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 15:45 · P3-06 · passes
+
+- Review: `/tmp/p3.diff` (8f17332..HEAD, 642 lines) was read by an Opus reviewer, and this session's fixes by a second one. Everything is in `docs/plans/2026-10-19-P3-review.md`: 4 Important (I1, I2, R1, R2), 18 Minor, nothing Critical. The three questions are answered no, no, no. Tests 162 → 168.
+  - I1: an open desk showing a dialog gets nothing typed. The typed Enter would have picked "Yes" for Michael. `DIALOG` holds the CLI's words, taken from the claude 2.1.303 binary's strings, in `tests/fixtures/permission-menu.txt`. The stub gained `STUB_DESK_MENU=1`.
+  - I2/R1: a refused merge is told once per tag commit while the run goes. `harness merge` says so every time and starts no desk. `continue` clears `refused-*`.
+  - R2: the regex doesn't match the desk's own questions.
+  - gc closes idle desks first, then keeps the worktree of a run whose desk is open (P3-05's question).
+  - tmux runs under `timeout --foreground 10`. A failed type no longer kills a live desk.
+- Docs: architecture §3/§4/§7/§10/§17 (desk.sh, prompts/desk.md, state, the guard, DESK/DESK_MODEL/DESK_URL, the self-starting path, 168 checks), README Steering + Tests, `templates/user/config.sh`, D-H31 accepted/built, and the plan's "For Michael" stage 1 now tries the dialog guard.
+- Verified: the first round's 4 new checks were red (163/167). R1's check was red on a scratch copy with only its fix reverted. R2's check was run standalone: FAIL on the old regex. All green after: `check.sh` 168/168. `bash -n` on every P3 .sh and `node --check` on lib/*.mjs pass.
+- **For Michael:** the dialog guard matches the CLI's words, not a captured pane. Please do stage 1 of "turning it on" with a second event while the desk shows a permission dialog before you set DESK=1. Not changed: a by-hand desk during a retro loses its harness-log line (run.log keeps it), and real curl's bearer token is visible in `ps` (pre-P3).
+
 ### 2026-10-19 15:20 · P3-05 · passes
 
 - `lib/desk.sh` gained housekeeping (before the run path):
