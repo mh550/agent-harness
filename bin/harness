@@ -20,6 +20,7 @@
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
 #   harness parked [<run-id>] [--json]           what parked features wait on: why, the INBOX question, the next commands
+#   harness desk <run> [--why "…"]               a Remote Control session that briefs you and takes your answers (tmux h-desk)
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
 #                                                CLAUDE.md from the repo's docs for you to edit)
 #   harness gc <project> [--all-merged] [--dry-run]
@@ -151,7 +152,7 @@ cmd_start() {
   local env="WT=$(printf %q "$wt") RUN_ID=$run STATE=$(printf %q "$state") PROJECT_DIR=$(printf %q "$p") HARNESS_HOME=$(printf %q "$HARNESS_HOME")"
   # tmux starts commands in its server's environment, not this shell's: pass the harness overrides along
   local v; for v in HARNESS_CLAUDE HARNESS_GH HARNESS_SCRATCH_ROOT HARNESS_PW HARNESS_PAUSE_POLL HARNESS_CONFIG HARNESS_LEDGER \
-    HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL; do
+    HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL HARNESS_DESK_SESSION HARNESS_DESK_WAIT; do
     [[ -n ${!v:-} ]] && env+=" $v=$(printf %q "${!v}")"; done
   if (( fg )); then eval "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh")"; return; fi
 
@@ -348,5 +349,6 @@ case ${1:-help} in
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
-  *) sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//' ;;
+  desk) shift; exec "$HARNESS_HOME/lib/desk.sh" "$@" ;;
+  *) sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

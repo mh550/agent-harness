@@ -14,6 +14,14 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 17:55 · P3-02 · passes
+
+- New `lib/desk.sh` (`harness desk <run> [--why "…"]`), `prompts/desk.md` (run and debrief blocks), `tests/fixtures/remote-control-pane.txt`; stub claude's interactive mode (no `-p`/`--print` and a `--remote-control` name → the pane line with `session_TEST<n>`, `.args` with argv + `PWD=`, typed lines to `.in`); `lib/config.sh` `DESK=0 DESK_MODEL=opus`; bin/harness `desk)` dispatch, usage line, help range `2,36p`, `HARNESS_DESK_SESSION/WAIT` in the tmux env pass list. Suite: private tmux server (`unset TMUX TMUX_PANE`, `TMUX_TMPDIR=$T/tmux`), EXIT trap kills `h-desk-test-$$` (and that private server), helpers `win wins in_has desk_of`, and the desk block after run16b. Tests 140 → 147.
+- Verified: the 7 new checks were red against HEAD's code (140/147, a `git archive` copy in scratch) and green after; `check.sh` green in 192 s (147/147). Smoke on a private tmux 3.4 server: two desks in one session (both windows 250 wide), a why holding `$(id)` and `·` arrived verbatim in the stub's argv.
+- Opus review of the diff: fixed: tmux calls now close fd 9 as well as 8 (debrief.lock, the driver's ledger lock); a window added to an existing session is resized to 250×50 (a narrow client would let the TUI cut the URL); 0.5 s between the typed text and Enter (a burst reads as a paste); no push on a detached HEAD; an unknown DESK_MODEL fails; the stub only plays a desk when it gets `--remote-control`. Not done (minor): clearing HARNESS_NO_RUNNER/SCRATCH_ROOT from a server's env.
+- Next session (P3-03): today a desk with no URL kills its window, logs `desk: no session URL within <n> s; killed the window` to run.log and exits 1 with `no desk (…)` on stderr; a lock timeout or missing tmux/claude exits 1 the same way (`fail` in desk.sh). P3-03 turns these into the plain notification + note + exit 0, and adds reuse (no reuse yet: a second `harness desk parky` would open a second window). Desks so far in the suite: TEST1 = parky's.
+- Docs (architecture, README, templates/user/config.sh, D-H31 built) are P3-06's, per the feature list.
+
 ### 2026-10-19 16:50 · P3-01 · passes
 
 - New `docs/plans/2026-10-19-P3-desk.md` (Milestone base 8f17332): lib/desk.sh flow, exact tmux commands (exact `=` session match, window ids `@N`, command as separate args through `env -u NTFY_TOKEN …`), the URL wait (`capture-pane -p -J -S -`, `${HARNESS_DESK_WAIT:-60}`), send-keys input, state under `<state>/desk/` and `queue/desk/`, prompts/desk.md content, stub interactive mode + fixture, driver/debrief triggers, `DESK=0 DESK_MODEL=opus`, P3-05 housekeeping, 21 named checks in run order (140 → 147 → 152 → 157 → 161), and "For Michael: turning it on". D-H31 is in journal/decisions.md, marked *planned*. P3-06 marks it built.

@@ -192,7 +192,7 @@
         "harness-log.md of parky has a line 'desk started: https://claude.ai/code/session_TEST1 (B parked: set the gatus vars)' (the desk writes it through the run record)",
         "bash -n lib/desk.sh bin/harness tests/stub-claude.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P3-03",

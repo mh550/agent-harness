@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
 # Stand-in for `claude -p` in tests: acts out initializer / coding / verify / retro sessions from the prompt's first line,
 # including scripted misbehaviour, and prints stream-json lines like the real CLI. Usage limits replay the real
-# lines captured on 2026-10-17 (fixtures/usage-limit.jsonl): fakes mirror the live API.
+# lines captured on 2026-10-17 (fixtures/usage-limit.jsonl): fakes mirror the live API. Without -p it is a desk
+# (`claude --remote-control <name>`, no -p, in tmux): it prints the pane line of fixtures/remote-control-pane.txt with
+# session_TEST<n>, records argv and $PWD in $STUB_DIR/desk/<n>-<name>.args and each typed line in <n>-<name>.in.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
-ARGS=("$@"); prompt=""
-while (( $# )); do [[ $1 == -p && -n ${2:-} && ${2:-} != -* ]] && { prompt=$2; shift; }; shift; done
+ARGS=("$@"); prompt="" headless=0 rc=""
+while (( $# )); do
+  [[ $1 == -p || $1 == --print ]] && headless=1
+  [[ $1 == --remote-control ]] && rc=${2:-}
+  [[ $1 == -p && -n ${2:-} && ${2:-} != -* ]] && { prompt=$2; shift; }; shift; done
+if (( ! headless )) && [[ -n $rc ]]; then   # interactive (a desk): the pane line Remote Control prints, then each typed line to <name>.in
+  mkdir -p "$STUB_DIR/desk"; n=$(( $(cat "$STUB_DIR/desk/count" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$STUB_DIR/desk/count"
+  name=$n-$(printf '%s' "$rc" | LC_ALL=C tr -cs 'A-Za-z0-9._-' _); name=${name%_}
+  { printf '%s\n' "${ARGS[@]}"; echo "PWD=$PWD"; } > "$STUB_DIR/desk/$name.args"
+  [[ ${STUB_DESK_NO_URL:-} == 1 ]] || sed -n "2s/session_[^[:space:]]*/session_TEST$n/p" "$HERE/fixtures/remote-control-pane.txt"
+  while IFS= read -r line; do printf '%s\n' "$line" >> "$STUB_DIR/desk/$name.in"; done
+  exit 0
+fi
 [[ -n $prompt ]] || prompt=$(cat)   # `claude -p` with the prompt on stdin
 first=$(head -1 <<< "$prompt")
 L=${HARNESS_RUN_DIR:-.}/feature_list.json
