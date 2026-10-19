@@ -14,6 +14,13 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 12:40 · P2-01 · passes
+
+- Wrote `docs/plans/2026-10-19-P2-answer-desk.md` (Milestone base 39968f7…): the exact text block and `--json` fields of `harness parked`, the command rule (driver.pid alive → answer only; queue/runner.pid alive → answer + `queue add --continue`; else answer + `continue`), lib/parked.mjs helpers (questionFor, commandsFor, entriesFor, parkedReport) and its stdin CLI, `cmd_parked` in bin/harness (read-only; help range 2,34p → 2,35p), the skill's five sections + frontmatter, templates/user/config.sh content (all commented; DESK/DESK_MODEL as P3 placeholders), and 9 named checks (125 → 132 after P2-02 → 134 after P2-03).
+- Plan only: no code or tests changed; suite still 125 checks. Verified: `head -1` of the plan matches the session's start HEAD; `check.sh` green (189 s).
+- Next session (P2-02): add the e2e checks between `one notification per run end` and `"$H" answer parky` in tests/run.sh; parky, parkn and parkl are all parked at that point, and demo's worktree is already gc'd (a missing feature list/INBOX counts as empty).
+- Choice made in the plan (D-H30 records it in P2-04): while a run is still going, `harness parked` gives only the answer command, because the driver unparks on new answers by itself. Michael: say if you'd rather always see a continue command.
+
 ### 2026-10-19 12:03 · verify P1
 
 `check.sh` green; full suite re-run: 125/125. All 5 features hold.
