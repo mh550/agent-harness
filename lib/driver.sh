@@ -11,6 +11,9 @@
 #      (MERGE_POLICY=auto), or leave the PR for Michael (pr), or neither (off). A tag merges only if every commit in it
 #      is verified work: milestones merge in list order, and a tag that contains another milestone's unverified
 #      work, or predates main's latest commits, waits and merges with the next verified milestone.
+#      A session that can't go on without Michael ends with "PARKED: <why>": the feature is parked (no attempt spent)
+#      until INBOX.md's answers change, and work that doesn't depend on it goes on. Past WEEKLY_STOP_AT of the plan's
+#      7-day window (as sessions report it), the run ends before its next coding session.
 #   4. the end, whatever the reason: summary.json, a retro session, the harness ledger, a notification, and (after a
 #      session cap, within the run's --until) a continuation in the queue.
 # Verify and retro sessions may not change code: whatever they change outside the run record (retro: anything) is
@@ -30,8 +33,8 @@ SUM() { node "$HARNESS_HOME/lib/summary.mjs" "$@"; }
 
 BRANCH=$(git branch --show-current)
 RUN_DIR=.harness/runs/$RUN_ID LIST=.harness/runs/$RUN_ID/feature_list.json
-LOGS=$STATE/logs ATT=$STATE/attempts.json
-STATE_ROOT=$(cd "$STATE/../.." && pwd) LIMIT_FILE=$(cd "$STATE/../.." && pwd)/LIMIT_UNTIL
+LOGS=$STATE/logs ATT=$STATE/attempts.json PARKED=$STATE/parked.json
+STATE_ROOT=$(cd "$STATE/../.." && pwd) LIMIT_FILE=$(cd "$STATE/../.." && pwd)/LIMIT_UNTIL USAGE=$(cd "$STATE/../.." && pwd)/USAGE_7D
 SCRATCH=${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/$RUN_ID
 CHECK=$HARNESS_HOME/lib/check.sh
 LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
@@ -107,6 +110,9 @@ take_answers() {
   commit_all "HARNESS: answers from Michael"
 }
 
+# What unparks a feature: Michael's answers changing (INBOX.md from "## Answers" on, local answers included).
+answers_hash() { sed -n '/^## Answers/,$p' "$RUN_DIR/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12; }
+
 control() {   # → run | pause | stop
   local s; s=$(sed -n 's/^status:[[:space:]]*//p' "$RUN_DIR/INBOX.md" 2>/dev/null | head -1)
   if [[ -f $STATE/STOP || $s == stop* ]]; then echo stop
@@ -144,6 +150,7 @@ session() {   # kind model log → runs claude headless on $STATE/prompt.md; set
   timeout "$SESSION_TIMEOUT" "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" \
     --max-turns "$MAX_TURNS" --max-budget-usd "$SESSION_BUDGET_USD" --output-format stream-json --verbose > "$3" 2>&1
   S_EXIT=$? S_WALL=$(( $(date +%s) - t0 ))
+  MET usage "$3" > "$USAGE.tmp" 2> /dev/null && mv "$USAGE.tmp" "$USAGE" || rm -f "$USAGE.tmp"   # the box-wide 7-day window
   log "  $1 exit $S_EXIT · $(git log --oneline -1)"
 }
 
@@ -325,6 +332,7 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
 
 finish() {   # reason → summary, retro, ledger, notification, continuation
   END_REASON=$1
+  echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$RUN_DIR/metrics.jsonl")"
   merge_milestones
   green; node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$(node "$HARNESS_HOME/lib/treekey.mjs").out" | cut -d' ' -f1 | grep . > "$STATE/tests-end" \
@@ -337,7 +345,7 @@ finish() {   # reason → summary, retro, ledger, notification, continuation
   ledger
   # Only a session cap continues by itself (time and Michael's stops don't), within the run's --until, at most
   # AUTO_CONTINUE_MAX times, without giving given-up features new attempts.
-  local left conts; left=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" 2>/dev/null); conts=$(cat "$STATE/auto-continues" 2>/dev/null || echo 0)
+  local left conts; left=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" 2>/dev/null); conts=$(cat "$STATE/auto-continues" 2>/dev/null || echo 0)
   if [[ -n $left && $AUTO_CONTINUE == 1 && $1 == session\ cap* ]] && (( conts < ${AUTO_CONTINUE_MAX:-3} )) \
      && (( DEADLINE_AT == 0 || $(date +%s) < DEADLINE_AT - 600 )); then
     echo $(( conts + 1 )) > "$STATE/auto-continues"
@@ -400,12 +408,18 @@ if [[ ! -f $LIST ]]; then
   notify "started: $(F summary "$LIST")"
 fi
 
+if [[ ! -f $STATE/deps-noted ]]; then   # once per run: milestones that wait on everything before them
+  u=$(F undeclared "$LIST")
+  [[ -n $u ]] && note "dependencies: $u $( [[ $u == *,* ]] && echo have || echo has) no after list, so $( [[ $u == *,* ]] && echo each waits || echo it waits) on every earlier feature (one given up or parked there stops it)"
+  touch "$STATE/deps-noted"
+fi
 [[ $MAX_SESSIONS == auto ]] && MAX_SESSIONS=$(( 3 * $(jq '.features | length' "$LIST") + 5 ))
 repairs=0 n=0 limits=0
 while :; do
   (( n >= MAX_SESSIONS )) && finish "session cap ($MAX_SESSIONS)"
   (( $(date +%s) >= DEADLINE )) && { note "deadline reached"; finish "deadline"; }
   take_answers; sync
+  for id in $(F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
   c=$(control)
   if [[ $c == pause ]]; then
     log "paused (INBOX.md status or harness pause)"; notify "paused"
@@ -419,13 +433,17 @@ while :; do
   limit_wait
   (( $(date +%s) >= DEADLINE )) && continue
   verify_ready || continue   # 2 = deferred by a usage limit: wait for the window first
+  if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; notify "ended: $why"; finish "weekly budget ($why)"; fi
 
-  next=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS")
+  next=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED")
   if [[ -z $next ]]; then
     [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }
-    blocked=$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" | awk -F'\t' '{print $2}' | sort -u | paste -sd, -)
-    if [[ -n $blocked ]]; then note "blocked: the remaining features wait on $blocked (given up; needs Michael)"; notify "needs Michael: $blocked"
-      finish "blocked on $blocked"; fi
+    parked=$(F parked "$PARKED" "$LIST" | cut -f1 | paste -sd, -)
+    blocked=$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | awk -F'\t' '{print $2}' | sort -u | grep -vxF -f <(tr , '\n' <<< "$parked") | paste -sd, -)
+    ends=()
+    if [[ -n $blocked ]]; then note "blocked: the remaining features wait on $blocked (given up; needs Michael)"; ends+=("blocked on $blocked"); fi
+    if [[ -n $parked ]]; then note "waiting on Michael: $parked (parked; answer in INBOX.md, then harness continue $RUN_ID)"; ends+=("waiting on Michael: $parked"); fi
+    if (( ${#ends[@]} )); then notify "needs Michael: ${ends[*]}"; finish "$(printf '%s; ' "${ends[@]}" | sed 's/; $//')"; fi
     note "no feature left to try: $(F summary "$LIST")"; finish "no feature left to try"
   fi
   IFS=$'\t' read -r id mdl milestone <<< "$next"
@@ -467,6 +485,10 @@ while :; do
   passed=$(F passes "$LIST" "$id" && echo true || echo false)
   MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$(F kind "$LIST" "$id")"
   note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")"
+  if [[ $passed == false ]] && why=$(MET final "$slog" | sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' | head -1) && [[ -n $why ]]; then
+    F unbump "$ATT" "$id"; F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault
+    note "$id parked (waiting on Michael): $why"; notify "needs Michael: $id · $why"
+  fi
   commit_all "HARNESS: after $id (passes=$passed)"; sync
 
 done

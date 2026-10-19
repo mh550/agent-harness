@@ -33,10 +33,15 @@ Rules:
 
 - **Array order is priority and dependency order.** The harness gives a session the first feature
   that isn't passing and whose dependencies pass. Never let a feature depend on a later one.
-- **`after`** (optional) lists the ids a feature really needs. Without it, a feature waits on
-  **every** feature before it, so one failure stops everything behind it. Give `after` to work that
-  is independent (a later milestone that doesn't build on an earlier one, docs that need only the
-  plan), so a failure elsewhere doesn't block it.
+- **`after`** lists what a feature really needs: feature ids, or milestone ids (every feature of
+  that milestone). Without it, a feature waits on **every** feature before it, so one failure, or
+  one feature waiting on Michael, stops everything behind it.
+  - **Required on the first feature of every milestone after the first**: the milestones (or
+    features) it truly builds on, e.g. `"after": ["N1"]`, or `[]` if it is independent. The harness
+    notes every milestone that lacks it. On 2026-10-17 one feature waiting on Michael held back four
+    whole milestones that didn't need it.
+  - Inside a milestone, leave `after` off unless a feature is independent of the ones before it
+    (docs that need only the plan, say).
 - **One feature = one session**: aim for 15–60 minutes of agent work ending in a commit with a green
   suite. Split anything bigger; merge anything trivially small into its neighbour (for a small
   milestone, plan and build can be one feature).

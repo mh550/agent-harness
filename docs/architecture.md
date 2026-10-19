@@ -1,4 +1,4 @@
-# agent-harness — architecture (v3)
+# agent-harness — architecture (v3.1)
 
 How the harness works, at the level you need to maintain and extend it. The README is the quick start; the
 journal (`journal/`) is the history of why. This file is the system as it is.
@@ -57,8 +57,9 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/metrics.mjs` | ~100 | Per-session metrics; the "environmental?" decision (limits, API errors, $0) |
 | `lib/summary.mjs` | ~230 | Run summary, writeup, ledger rows, trends, calibration |
 | `lib/render.mjs` | ~15 | Prompt templating (`{{X}}` ← `HARNESS_X`) and titled sections |
+| `lib/page.mjs` | ~130 | The debrief page: a card per run from summary.json, then the note (escaped), one self-contained HTML file |
 | `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md; `policy/{build-only,live-staged}.md` |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude` and `gh` on a throwaway repo with a bare origin: 83 checks |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude` and `gh` on a throwaway repo with a bare origin: 98 checks |
 
 ## 4. Where state lives
 
@@ -74,11 +75,13 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Driver log | `~/.local/state/harness/<p>/<run>/run.log` | driver (`log`) | status, summary (wall times) | no |
 | Transcripts | `…/logs/NN-<id>.jsonl`, `HHMMSS-verify-<m>.jsonl`, `00-init.jsonl`, `zz-retro-*.jsonl` | `claude --output-format stream-json` | metrics, retro, you (`jq`) | no |
 | Attempts | `…/attempts.json` | driver (bump, unbump, grant, reset) | scheduler | no |
+| Parked features | `…/parked.json` (`id → {answers, why, at}`; `answers` = hash of INBOX.md from `## Answers` on) | driver (park after a `PARKED:` session; unpark when the hash changes) | scheduler, summary | no |
 | Markers | `…/{driver.pid, ended, PAUSE, STOP, verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, verify-rounds-<m>, tests-start, tests-end, waited-<t>, port, meta.env, run.env, brief.md, inbox.md}` | driver, CLI | driver, CLI, summary | no |
 | Shared limit window | `~/.local/state/harness/LIMIT_UNTIL` (epoch) | any driver hitting a limit | every driver, the queue runner, status | no |
+| 7-day window | `~/.local/state/harness/USAGE_7D` (`<utilization 0..1> <reset epoch>`, from the newest session's rate-limit event) | every session (driver) | every driver, the queue runner (`weekly_over`) | no |
 | Queue | `~/.local/state/harness/queue/NNNN-<verb>-<name>.args`, `done/`, `runner.log`, `runner.pid`, `STOP`, `last-debrief` (when the last note was produced, and the "since" of the next), `debrief.out` | CLI, driver (continuations), debrief | runner, debrief | no |
 | Debrief workspace | `~/.local/state/harness/debrief/<stamp>/{context.md,prompt.md,session.jsonl,final.md,body.md}`, `debrief.lock` | `harness debrief` | you (`--dry-run` prints `context.md`) | no |
-| Debrief note | `<harness>/ledger/debrief.md`, overwritten each time (history: `git log -p`) · `<state>/runners` marks the runs a queue runner started | `harness debrief` (flock, `git commit -- <note>` when `LEDGER_COMMIT=1`) · `harness start` | Michael, the next interactive session | yes, harness repo |
+| Debrief note and page | `<harness>/ledger/debrief.md` and `debrief.html`, overwritten each time (history: `git log -p`) · `<state>/runners` marks the runs a queue runner started | `harness debrief` (flock, `git commit -- <note>` when `LEDGER_COMMIT=1`) · `harness start` | Michael, the next interactive session | yes, harness repo |
 | Scratch | `/tmp/harness/<p>/<run>/` (`init.out`, `check.out`, `check-<key>.out`, `green-<key>`, dev DB, screenshots) | driver, init, check, sessions | sessions, driver | no |
 | Live-write lock | `LIVE_LOCK` (default `/tmp/harness/<p>/live.lock`; dj: `/srv/docker/crates/live.lock`, shared with the backup job) | sessions under `live-staged` (`flock -n`), the backup script (`flock -w`) | both | no |
 | Ledger | `<harness>/ledger/runs.jsonl`, `ledger/<p>/<run>/{summary.json,retro.md,…}` | driver at the end (flock, `git commit -- <paths>`) | `harness trends`, retro, calibration | yes, harness repo |
@@ -92,14 +95,18 @@ harness start ─► worktree + branch ─► driver:
   loop:
     stop if: session cap · deadline · STOP/"status: stop"
     pause while: PAUSE/"status: pause"
+    unpark every feature parked under different INBOX answers
     wait while: LIMIT_UNTIL is in the future (any run set it)
     verify every complete, unverified milestone (in order) ─► see below; a refused verify waits for the window
-    next = first feature: not passing, attempts < MAX_ATTEMPTS, every dependency passing
-      none → "done" (all pass) | "blocked on X" (a given-up feature) | "no feature left to try"
+    stop if: the 7-day window (USAGE_7D) is past WEEKLY_STOP_AT → "weekly budget (…)"
+    next = first feature: not passing, not parked, attempts < MAX_ATTEMPTS, every dependency passing
+      none → "done" (all pass) | "blocked on X" (a given-up feature) and/or "waiting on Michael: Y" (parked)
+             | "no feature left to try"
     init + suite (cached) ─► CODING SESSION (one feature) ─► commit leftovers
       environmental? (limit, API error, $0 one-turn) → keep its commits, revert its claims (the list, "passes"
         included), give the attempt back, set LIMIT_UNTIL; MAX_LIMIT_HITS in a row → end "usage limit"
       repair the list (only its own passes may change) · un-pass if the suite is red · metrics · push
+      not passing and the final message says "PARKED: <why>" → attempt given back, parked until the answers change
   VERIFY m: merge main in → session (its code edits are reverted) → refused? deferred, no verdict
       → a new entry with one evidence row per step? no → one re-run on the stronger model → still no → not verified
       → suite green on that tree? → tag run/<run>/<m> (v3) → merge_milestones (PR per milestone, in order)
@@ -113,7 +120,9 @@ harness start ─► worktree + branch ─► driver:
 |---|---|---|
 | `done` | every feature passes | nothing; `harness gc` cleans up once milestones are merged |
 | `blocked on X` | X was given up and the rest depend on it | needs Michael: read X's progress entries, answer in INBOX.md, `harness continue` |
+| `waiting on Michael: Y` | Y is parked (its session said `PARKED:`) and what's left depends on it (may follow `blocked on X; `) | answer in INBOX.md (phone or `harness answer`), then `harness continue`: changed answers unpark it |
 | `no feature left to try` | everything left is given up (no dependency chain) | needs Michael |
+| `weekly budget (…)` | the plan's 7-day window passed `WEEKLY_STOP_AT` | nothing automatic; the queue won't start runs either until the window resets |
 | `session cap (N)` | the session budget is spent | a continuation is queued (`AUTO_CONTINUE=1`, at most `AUTO_CONTINUE_MAX`=3, within the run's `--until`, given-up features stay given up) |
 | `deadline`, `deadline (paused)` | the run's time (`HOURS` or `--until`) is up | nothing automatic: time is your budget. `harness continue` or queue it for another night |
 | `usage limit (N sessions refused in a row)` | the plan refused `MAX_LIMIT_HITS` sessions in a row | the run ends so the queue isn't blocked; `harness continue` later |
@@ -131,7 +140,12 @@ harness start ─► worktree + branch ─► driver:
 ```
 
 - **Order** is priority. **Dependencies**: `after` if present, else *every earlier feature*. So by default one failure
-  blocks everything behind it (safe), and the initializer opts independent work out with `after`.
+  blocks everything behind it (safe), and the initializer opts independent work out with `after`. `after` may name
+  feature ids or milestone ids (every feature of that milestone before this one). The initializer must give the
+  first feature of every milestone after the first an `after` (`[]` if independent); the driver notes once per run
+  which milestones lack one (D-H25).
+- **Parked** (D-H26): a session that can't go on without Michael ends with `PARKED: <why>`. The feature is skipped
+  like a given-up one (only its dependants wait) without spending an attempt, until INBOX.md's answers change.
 - **kind** ∈ plan · build · review · check · docs. It drives cost-by-role and nothing else (inferred for v2 lists).
 - **model**: alias (`fable`, `opus`, `sonnet`, `haiku`) or a full `claude-…` id.
 - **Write rules**, enforced by `features.mjs repair` after every session: a coding session may change only its own
@@ -157,6 +171,8 @@ harness start ─► worktree + branch ─► driver:
 | v2 tags | a tag verified by harness v2 (no "(v3)" in its message) | never merged automatically; `harness merge <run>` merges it (and closes the v2 whole-run PR) | `merge_milestones` |
 | Main drift | `main` moved during the run | merged into the run branch before every verify (conflict → that milestone isn't merged) | `sync_main` |
 | Session budget | `--max-budget-usd`, `--max-turns` per session | the CLI stops the session | `session()` |
+| Weekly budget | the newest session reported the 7-day window ≥ `WEEKLY_STOP_AT` (default 85 %, 0 = off) | the run ends before its next coding session; the queue starts no run | `weekly_over` (config.sh), driver loop, queue.sh |
+| Parking | a not-passing session's final message has a `PARKED:` line | attempt given back; skipped until the INBOX answers change | driver loop, `features.mjs park/unpark` |
 
 ## 8. Branches, tags and PRs — and what `run/*/final` was
 
@@ -295,8 +311,8 @@ record and their own `passes`; make every new behaviour visible in `harness-log.
   milestone's review feature; an occasional Opus audit of verify entries would measure this.
 - The scheduler is linear-by-default; a richer `after` graph from the initializer would allow parallel sessions
   within one run (worktree per feature), which the driver doesn't do.
-- The limit window is plan-wide but the queue doesn't budget across a night (e.g. stop starting runs at 80 % of the
-  7-day window, which `rate_limit_info.unifiedWindows` reports).
+- The weekly gate reacts to the last session's figure; it doesn't forecast a night's spend (a run that starts at
+  80 % can still use most of the rest before the next reading).
 - `harness gc` deletes a run branch whose unmerged commits only touch `.harness/runs/` (the ledger keeps the whole
   run record) unless its driver is alive or a continuation is queued.
 - The suite cache (`state/green/green-<key>`) is a file a determined session could create; the key ignores
@@ -330,7 +346,9 @@ harness debrief [--dry-run]:
   git status + refs of the ledger, worktrees and projects: before vs after → a warning section in the note
   "CONTINUE: <run> :: <brief>" lines → checked → harness queue add --continue <run> --keep-attempts --brief "Suggested by
      the debrief …" (or "Not queued: why")
-  ─► ledger/debrief.md (overwritten) · last-debrief · NOTIFY_CMD: 3 lines + path
+  ─► ledger/debrief.md (overwritten) · last-debrief · ledger/debrief.html (lib/page.mjs: a card per run from its
+     summary.json and how it stands now, then the note, escaped; committed with the note) · NOTIFY_CMD: 3 lines + the
+     note's path · DEBRIEF_PAGE_CMD "$page" (optional: copy it somewhere a phone can open it)
   commit (LEDGER_COMMIT=1) only if the harness checkout is on MAIN_BRANCH with no rebase/merge/cherry-pick going, only
      that file; a failed commit is unstaged again ("written but not committed" in runner.log)
 ```

@@ -12,13 +12,14 @@
 #   3. one headless session (DEBRIEF_MODEL), prompt on stdin, in dontAsk mode with an allowlist of read-only tools and
 #      the never-list as --disallowedTools; git status and refs of the ledger, worktrees and projects compared after
 #   4. its "CONTINUE: <run> :: <brief>" lines are checked here and queued (`harness queue add --continue … --keep-attempts`);
-#      the note overwrites <ledger>/debrief.md (git history is the archive); NOTIFY_CMD gets its headline and path
+#      the note overwrites <ledger>/debrief.md (git history is the archive), and debrief.html beside it shows a card per
+#      run (from summary.json) above the note; NOTIFY_CMD gets the headline and the note's path, DEBRIEF_PAGE_CMD the page
 # --dry-run: print the context only.
 set -uo pipefail
 : "${HARNESS_HOME:?}"
 STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness} Q=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}/queue
 H=$HARNESS_HOME/bin/harness CLAUDE=${HARNESS_CLAUDE:-claude} LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
-NOTE=$LEDGER/debrief.md MAX_WAIT=$(( 5 * 3600 )) LOCK_WAIT=$(( 7 * 3600 ))
+NOTE=$LEDGER/debrief.md PAGE=$LEDGER/debrief.html MAX_WAIT=$(( 5 * 3600 )) LOCK_WAIT=$(( 7 * 3600 ))
 
 dry=0
 for a in "$@"; do case $a in --dry-run) dry=1 ;; *) echo "usage: harness debrief [--dry-run]" >&2; exit 2 ;; esac; done
@@ -287,6 +288,12 @@ mkdir -p "$LEDGER"
   echo "_runs since $SINCE: $(names) · $MODEL, \$$COST · context: ${CTX}_"
   echo; cat "$WS/body.md"; } > "$NOTE"
 printf '%s\t%s\n' "$(date +%s)" "$STARTED" > "$Q/last-debrief"   # only now: a failed or killed debrief changes nothing
+PARGS=()   # the page: each run's summary.json and how it stands now
+for d in "${RUNS[@]}"; do
+  if alive "$d"; then st=running; else st=$(sed 's/ · [0-9-]* [0-9:]*$//' "$d/ended" 2> /dev/null); fi
+  PARGS+=("$(rec_dir "$d")/summary.json|$st")
+done
+node "$HARNESS_HOME/lib/page.mjs" "$NOTE" "$PAGE" "${PARGS[@]}" 2>> "$WS/page.err" || { log "debrief: no page ($WS/page.err)"; rm -f "$PAGE"; }
 # The ledger is the harness's own checkout, where people work too: commit only on MAIN_BRANCH with no rebase, merge
 # or cherry-pick going, only this file, and never leave it staged.
 ledger_busy() {
@@ -299,13 +306,15 @@ ledger_busy() {
 }
 if [[ $LEDGER_COMMIT == 1 && -n $LTOP ]]; then
   if why=$(ledger_busy); then log "debrief: the note is written but not committed: $LTOP is on $why"
-  elif ! ( flock 9; git -C "$LEDGER" add -- "$NOTE" && git -C "$LEDGER" commit -q -m "ledger: debrief $(date '+%F %H:%M')" -- "$NOTE" ) \
+  elif CF=("$NOTE"); [[ -f $PAGE ]] && CF+=("$PAGE")
+       ! ( flock 9; git -C "$LEDGER" add -- "${CF[@]}" && git -C "$LEDGER" commit -q -m "ledger: debrief $(date '+%F %H:%M')" -- "${CF[@]}" ) \
        9> "$STATE_ROOT/ledger.lock" > "$WS/commit.out" 2>&1; then
-    git -C "$LEDGER" reset -q -- "$NOTE" 2> /dev/null
+    git -C "$LEDGER" reset -q -- "${CF[@]}" 2> /dev/null
     log "debrief: the note is written but not committed (git: $(tail -1 "$WS/commit.out"))"
   fi
 fi
 log "debrief written: $NOTE ($MODEL, \$$COST)"
+[[ -f $PAGE && -n $DEBRIEF_PAGE_CMD ]] && { bash -c "$DEBRIEF_PAGE_CMD" _ "$PAGE" > /dev/null 2>&1 9>&- || log "debrief: DEBRIEF_PAGE_CMD failed"; }
 
 mapfile -t HL < <(awk '/^## / { if (on) exit; if (tolower($0) ~ /^## headline/) { on = 1; next } } on && NF' "$WS/body.md" | head -3)
 (( ${#HL[@]} )) || mapfile -t HL < <(grep -v '^#' "$WS/body.md" | grep . | head -3)

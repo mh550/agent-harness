@@ -22,6 +22,12 @@ work in other checkouts on this machine. Your port is **{{PORT}}** and your scra
 - **Decisions.** A decision that is Michael's: take the simplest reversible default, record it where
   the project rules say decisions live (as `D<n> *default*`), and ask it as a direct question in your
   progress entry.
+- **Waiting on Michael.** Only when there is no safe default and nothing left to build without
+  him (a secret or value only he can set, a sudo step, an approval the policy requires): write the
+  exact question or steps in `{{RUN_DIR}}/INBOX.md` **above** `## Answers`, finish as below
+  without flipping `passes`, and make the last line of your final message
+  `PARKED: <what you need, in one line>`. The harness then parks the feature (no attempt spent),
+  carries on with work that doesn't depend on it, and retries it once his answers change.
 - **Plans** go in `docs/plans/<date>-<milestone>-<topic>.md` unless the project says otherwise.
 - Merging into `{{MAIN_BRANCH}}` and branch cleanup are the harness's job, not yours.
 - The project's policy (build-only or live-staged) is at the end of this prompt. It binds you.

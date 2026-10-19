@@ -15,6 +15,8 @@ harness_config() {
   DEBRIEF_MODEL=sonnet   # `harness debrief`: one read-only session after a queue (40 turns, $3 cap, like the retro)
   POLICY=build-only MERGE_POLICY=auto MAIN_BRANCH=main RETRO=1 AUTO_CONTINUE=1
   MAX_PARALLEL_RUNS=1 LEDGER_COMMIT=1 BASE_PORT=7800 DEADLINE_AT=0
+  WEEKLY_STOP_AT=85   # % of the plan's 7-day window: past it no run starts and a run ends before its next session (0 = off)
+  DEBRIEF_PAGE_CMD=""   # run with the debrief page's path as $1 after each debrief (e.g. copy it where your phone can open it)
   LIVE_LOCK=""   # live-staged: the one-writer lock (default /tmp/harness/<project>/live.lock); share it with the backup job
   CHECK_CMD="" INIT_CMD="" SMOKE_CMD="" SPEC_FILES="" NOTIFY_CMD="" AGENT_SETTINGS=.claude/settings.json PR_POLICY=""
   for f in "${HARNESS_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/harness/config.sh}" "$wt/.harness/config.sh" ${st:+"$st/run.env"}; do
@@ -48,4 +50,14 @@ detect_smoke() {
   if [[ -f $wt/.harness/smoke.mjs ]]; then echo "node .harness/smoke.mjs"
   elif [[ -f $wt/.harness/smoke.sh ]]; then echo "bash .harness/smoke.sh"
   else echo true; fi
+}
+
+# The plan's 7-day window, as the newest session reported it (<state>/USAGE_7D: "<utilization 0..1> <reset epoch>").
+# Exit 0 and print why when it is past WEEKLY_STOP_AT and that window hasn't reset yet; exit 1 otherwise.
+weekly_over() {
+  local u r pct; read -r u r < "$1" 2> /dev/null || return 1
+  (( WEEKLY_STOP_AT > 0 )) && [[ $r =~ ^[0-9]+$ ]] && (( r > $(date +%s) )) || return 1
+  pct=$(awk -v u="$u" 'BEGIN { printf "%d", u * 100 + 0.5 }')
+  (( pct >= WEEKLY_STOP_AT )) || return 1
+  echo "7-day window at $pct%, stop at $WEEKLY_STOP_AT%; resets $(date -d "@$r" '+%a %H:%M')"
 }

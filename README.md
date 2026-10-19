@@ -72,6 +72,11 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
   needs-Michael, limits, end.
 - **After a partial run:** nothing, usually: verified milestones are already merged and a continuation is queued.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
+- **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and
+  ends `PARKED: …`. The feature waits without spending attempts while independent work goes on; the run ends
+  `waiting on Michael: <ids>` when nothing else can run. Any new answer unparks it on `harness continue`.
+- **Weekly budget:** past `WEEKLY_STOP_AT` (default 85 %) of the plan's 7-day window, as sessions report it, the queue
+  starts no run and a running one stops before its next coding session.
 
 ## Debrief
 
@@ -86,6 +91,9 @@ session** (merge conflicts, retro proposals seen in two or more retros). It can 
 ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harness checks it and queues it with
 `--keep-attempts`; nothing starts.
 
+- **The page**: `ledger/debrief.html` beside the note: a card per run (passing, verified, merged, milestones,
+  spend, tests, what isn't done and why), built by `lib/page.mjs` from each run's `summary.json`, not by the model,
+  then the note. `DEBRIEF_PAGE_CMD` (user config) gets its path, e.g. to copy it where your phone can open it.
 - **The note** is one file, `ledger/debrief.md`, overwritten each time and committed with the ledger (`LEDGER_COMMIT`),
   only while the harness checkout is on `main` with no rebase or merge going: the archive is
   `git log -p ledger/debrief.md`. `NOTIFY_CMD` gets its three-line headline and the path, or one line if it failed.
@@ -100,6 +108,6 @@ ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harne
 ## Tests
 
 ```bash
-tests/run.sh    # end-to-end with stub claude/gh on a throwaway repo with a bare origin: 83 checks (~2 min)
+tests/run.sh    # end-to-end with stub claude/gh on a throwaway repo with a bare origin: 98 checks (~3 min)
 ```
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).
