@@ -14,7 +14,7 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
-### 2026-10-19 17:55 · P3-02 · passes
+### 2026-10-19 13:55 · P3-02 · passes
 
 - New `lib/desk.sh` (`harness desk <run> [--why "…"]`), `prompts/desk.md` (run and debrief blocks), `tests/fixtures/remote-control-pane.txt`; stub claude's interactive mode (no `-p`/`--print` and a `--remote-control` name → the pane line with `session_TEST<n>`, `.args` with argv + `PWD=`, typed lines to `.in`); `lib/config.sh` `DESK=0 DESK_MODEL=opus`; bin/harness `desk)` dispatch, usage line, help range `2,36p`, `HARNESS_DESK_SESSION/WAIT` in the tmux env pass list. Suite: private tmux server (`unset TMUX TMUX_PANE`, `TMUX_TMPDIR=$T/tmux`), EXIT trap kills `h-desk-test-$$` (and that private server), helpers `win wins in_has desk_of`, and the desk block after run16b. Tests 140 → 147.
 - Verified: the 7 new checks were red against HEAD's code (140/147, a `git archive` copy in scratch) and green after; `check.sh` green in 192 s (147/147). Smoke on a private tmux 3.4 server: two desks in one session (both windows 250 wide), a why holding `$(id)` and `·` arrived verbatim in the stub's argv.
