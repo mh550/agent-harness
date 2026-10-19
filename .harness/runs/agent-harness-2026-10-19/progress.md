@@ -14,6 +14,14 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 · P1-01 · passes
+
+- **What changed:** new `docs/plans/2026-10-19-P1-notifications.md` (Milestone base `a4625257b22e…` = HEAD at session start). It fixes `notify "<msg>" [title= body= click= actions= priority= tags=]` in `lib/notify.sh` (with `NOTIFY_TAG=$RUN_ID` so `$1` stays `[<run>] <msg>`), the five `HARNESS_NOTIFY_*` variables, the exact curl argv (URL last, `--data-binary` before it), the four `lib/notify.mjs` helpers + CLI, `tests/stub-curl.sh` (`===` blocks, `STUB_CURL_FAIL=1` → exit 22) and the fixture text copied from docs.ntfy.sh/publish, a 15-row call-site table (driver + debrief), and the checks for P1-02/03/04 by name. No code changed; tests 98 → 98.
+- **Verified:** check.sh green in 179 s, 98/98 checks passed. The insteadOf trick checked by hand in scratch: `git remote get-url` gives the local path, `git config --get remote.origin.url` the GitHub URL, push lands in the bare repo.
+- **Next session (P1-02) must know:** the GitHub-shaped origin goes on line 25 of tests/run.sh for the whole suite (P1-03 does it; run the suite once right after that one line). Default title is `harness`; routine notifications pass no priority. `HARNESS_CURL` must be added to bin/harness's tmux env list (not visible in the suite).
+- **Decision for Michael (default taken, D-H29 records it in P1-05):** a run that ends needing Michael today sends two notifications in the same second (`needs Michael: …` then `ended (…)`); the plan drops the first, so one high-priority `ended` goes out with click = report.md and Edit INBOX / Progress actions. Parks still notify on their own with the INBOX as click. OK?
+- **Proposed changes:** P1-02's NTFY_URL step mentions a `Priority:` line on the `started:` block; P1-04 requires routine notifications to have none. The plan resolves it: `started:` has `Title: harness` and no Priority (the step allows "or the fields the plan fixed").
+
 ### 2026-10-19 · initializer
 
 **Feature counts.** P1 (notifications carry the question and the links): 5 = plan, 3 build, review.

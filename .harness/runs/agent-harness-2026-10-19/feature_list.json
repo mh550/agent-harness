@@ -18,7 +18,7 @@
         "bash tests/run.sh ends with every check passing"
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-02",
