@@ -1,0 +1,14 @@
+- 2026-10-19 16:08 · feature list written: 0/28 passing
+- 2026-10-19 16:26 · M1-01 · claude-opus-5-5 · passes=true · 18 min · 1/28 passing
+- 2026-10-19 16:35 · M1-02 · claude-opus-5-5 · passes=true · 9 min · 2/28 passing
+- 2026-10-19 16:45 · M1-03 · claude-opus-5-5 · passes=true · 9 min · 3/28 passing
+- 2026-10-19 17:22 · M1-04 · claude-opus-5-5 · passes=true · 37 min · 4/28 passing
+- 2026-10-19 17:34 · M1-05 · claude-opus-5-5 · passes=true · 11 min · 5/28 passing
+- 2026-10-19 17:57 · M1-06 · claude-opus-5-5 · passes=true · 22 min · 6/28 passing
+- 2026-10-19 18:00 · verify M1: M1-04 failed the re-check, back in the queue (one more attempt)
+- 2026-10-19 18:00 · verify M1: M1-05 failed the re-check, back in the queue (one more attempt)
+- 2026-10-19 18:02 · M1-04 · claude-opus-5-5 · passes=false · 1 min · 4/28 passing
+- 2026-10-19 18:02 · M1-04 parked (waiting on Michael): Michael to choose: amend M1-04 step 3 to check the version line in stdout (recommended), or drop `--controller-debug`.
+- 2026-10-19 18:17 · M3-01 · claude-opus-5-5 · passes=true · 14 min · 5/28 passing
+- 2026-10-19 18:17 · waiting on Michael: M1-04 (parked; answer in INBOX.md, then harness continue rane-one-mixxx-2026-10-19)
+- 2026-10-19 18:17 · run ended (waiting on Michael: M1-04): 5/28 passing · 10 sessions (10 real) · 7 features passed · $33.54 · 2.3 h · by kind: init 1 ($4.44), coding 8 ($28.64), verify 1 ($0.46) · by model: claude-fable-5-1 1 ($4.44), claude-opus-5-5 8 ($28.64), claude-sonnet-5-5 1 ($0.46)

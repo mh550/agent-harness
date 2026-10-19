@@ -1,0 +1,3268 @@
+diff --git a/docs/decisions.md b/docs/decisions.md
+index 68647cb..b14bd61 100644
+--- a/docs/decisions.md
++++ b/docs/decisions.md
+@@ -24,3 +24,33 @@ Newest last. `*default*` = taken as the simplest reversible default, waiting for
+ - **D8 · `rea` and Serato reverse engineering are a later phase**, starting with a USB capture of Serato driving
+   the One on Michael's Windows laptop; decompiling Serato only as a last resort, and only protocol facts (never
+   code) go into this repo. (2026-10-19)
++- **D9 *default* · Dev-loop safety: null sink, routing, instance tracking, night-time port.** Mixxx's audio goes
++  to a PipeWire null sink named `mixxx-dev` (48 kHz, 2 ch, `pactl load-module module-null-sink`), created and
++  removed by `tools/null-sink`, which unloads only the module id it loaded and never changes the default sink.
++  `tools/null-sink down` refuses while a stream is on the sink (PipeWire would move it to the default sink, the
++  Rane One). Routing: `flatpak run --env=PULSE_SINK=mixxx-dev` (PortAudio ALSA `pulse` device, in a
++  `soundconfig.xml` the launcher rewrites before every start), the stream named `mixxx-dev` via
++  `PULSE_PROP_OVERRIDE`, checked after every launch with `pactl list sink-inputs`; on a mismatch the launcher
++  stops its Mixxx at once. A dev Mixxx is tracked by
++  the Flatpak instance id that `flatpak run --instance-id-fd` writes to `dev-profile/mixxx-dev.instance`, and
++  stopped with `flatpak kill <that id>`, never `flatpak kill org.mixxx.Mixxx` (this is how "stop it by its pid"
++  is met: the id maps to the wrapper pid in `flatpak ps`). The launch adds
++  `--log-flush-level debug` to the CLAUDE.md command, because the stop is a hard kill (Mixxx 2.5 has no
++  SIGTERM handler) and the log must not lose its tail. At night the dev profile binds the mapping only to
++  `Midi Through Port-0`; the real Rane ONE port stays unbound until Michael says otherwise, and the mapping
++  has no `<output>` and no `midi.send*`. Why: the system default sink is the Rane One, so unrouted audio would
++  play from the controller; an id from `--instance-id-fd` cannot be confused with a Mixxx Michael started.
++  Plan: `docs/plans/2026-10-19-M1-dev-loop.md`. (2026-10-19)
++- **D10 *default* · The dev launcher's "Mixxx started" check reads the version from Mixxx's stdout, not
++  `mixxx.log`.** Mixxx 2.5.6 logs its version only through `qDebug()` in the default category
++  (`src/util/versionstore.cpp`, `logBuildDetails`). Under `--controller-debug`, which the CLAUDE.md launch
++  command requires, `controllerDebugCategoryFilter` (`src/util/logging.cpp`) turns Debug off for every category
++  except `controller.*` and `js`, so no version line ever reaches `mixxx.log`. Seen live 2026-10-19 (M1-04): two
++  launches, one with `--log-level debug` added, and both logs held only Info and Warning lines. `tools/mixxx-dev
++  start` therefore treats Mixxx as started when two things hold: a new `mixxx.log` (new inode, non-empty), and the
++  exact line `Configuration file is at the current version "<flatpak info version>"` on this launch's stdout
++  (`dev-profile/mixxx-dev.stdout`, truncated at every launch). `src/preferences/upgrade.cpp` prints that line
++  with the running binary's `VersionStore::version()` once `mixxx.cfg`'s `Version` matches it, which the seed
++  makes sure of. Why: it is the only place the running version shows, without dropping `--controller-debug`.
++  The same session also found that a new PipeWire stream briefly reports `Sink: 4294967295` (not linked yet).
++  The routing check counts such a stream as neither routed nor misrouted. (2026-10-19)
+diff --git a/docs/plans/2026-10-19-M1-dev-loop.md b/docs/plans/2026-10-19-M1-dev-loop.md
+new file mode 100644
+index 0000000..871bd8b
+--- /dev/null
++++ b/docs/plans/2026-10-19-M1-dev-loop.md
+@@ -0,0 +1,481 @@
++# M1 plan · Dev loop (2026-10-19)
++
++Goal (spec §5 M1): a session can launch a Mixxx safely, load the mapping, feed it MIDI and read the result,
++without touching Michael's real profile, the speakers or the Rane One. This plan settles every choice M1-02..M1-05
++need; D9 in `docs/decisions.md` records the defaults. Build-only policy: the stubbed tests are what a session must
++make pass. The live steps (null sink, Mixxx start) are written out here and run only where the feature steps ask.
++
++Source facts below cite the Mixxx **2.5** branch (`https://raw.githubusercontent.com/mixxxdj/mixxx/2.5/<path>`),
++read 2026-10-19 and checked by a second reviewer the same day. Machine facts were read on Michael's desktop the
++same day (Flatpak 1.18.1, `org.mixxx.Mixxx` 2.5.6 on `org.kde.Platform` 6.11, `pactl` 16.1 on PipeWire 1.5.85,
++Node 24.21, COSMIC on Wayland). Anything marked *expected* is confirmed by the session named next to it.
++
++Paths used throughout:
++
++| Name | Path |
++|---|---|
++| `$PROFILE` | `~/.var/app/org.mixxx.Mixxx/dev-profile/` (D3). Override: `MIXXX_DEV_PROFILE` (tests point it at a temp dir). |
++| Real profile, never touched | `~/.var/app/org.mixxx.Mixxx/.mixxx/` (the Flatpak's `persistent=.mixxx`) |
++| Scratch | `/tmp/harness/rane-one-mixxx/<run>/` |
++
++**Profile guard (every tool that takes `$PROFILE`):** resolve it with `realpath -m`; **refuse with exit 3** when it
++is the real profile, inside it, or an ancestor of it (e.g. `~/.var/app/org.mixxx.Mixxx` itself), also through a
++symlink. `tools/mixxx-dev start` additionally refuses (exit 3) a live profile outside `~/.var/app/org.mixxx.Mixxx/`
++(the sandbox could not see it) unless `flatpak` is the test stub. Usage errors exit 2, like `tools/midi-send`.
++
++## Null sink
++
++D7 says unattended audio goes to a PipeWire null sink and the default sink never changes. The default sink today
++is the Rane One itself (`alsa_output.usb-Rane_Rane_ONE_A-00.analog-surround-40`), so a Mixxx stream that is not
++routed explicitly, or whose sink disappears, plays out of the controller. Routing is therefore checked, not assumed.
++
++- **Name:** `mixxx-dev`. **Rate:** 48 kHz, 2 channels (the One is 48 kHz only; one rate everywhere avoids
++  resampling surprises when M3 records the sink's monitor).
++- **Create:** `tools/null-sink up` runs
++  `pactl load-module module-null-sink sink_name=mixxx-dev rate=48000 channels=2 sink_properties=device.description=mixxx-dev`
++  and writes the module id `pactl` prints to `$PROFILE/null-sink.module`. If `pactl list short sinks` already
++  lists `mixxx-dev`, `up` does nothing (no second module) and exits 0.
++- **Remove:** `tools/null-sink down` **refuses (exit 1) while any stream is on `mixxx-dev`** (`pactl list
++  sink-inputs` shows a `Sink:` equal to its index) or while `tools/mixxx-dev status` says running: PipeWire moves
++  the streams of a removed sink to the default sink, i.e. to the Rane One. Otherwise it unloads **only** the id in
++  `null-sink.module`, and only if `pactl list short modules` still shows that id as `module-null-sink` with
++  `sink_name=mixxx-dev`; then it deletes the file. No file: exit 0, nothing unloaded. It never unloads by name.
++  Order at the end of a session: `tools/mixxx-dev stop`, then `tools/null-sink down`.
++- **Status:** `tools/null-sink status` prints `mixxx-dev` and the module id from `null-sink.module`, or
++  `mixxx-dev (not ours)` when the sink exists without that file; exit 0. Otherwise `absent`, exit 1.
++- **Never** `pactl set-default-sink`, `pactl set-default-source`, `wpctl set-default` or `pw-metadata` writes. The
++  tests' `pactl` stub exits 99 on `set-default-*`. `up` also compares `pactl info | grep 'Default Sink'` before
++  and after loading; if it changed, it unloads its module at once and exits 1.
++- **Routing method: `PULSE_SINK=mixxx-dev`, passed with `flatpak run --env=PULSE_SINK=mixxx-dev`.** Inside the
++  sandbox Mixxx plays through PortAudio's ALSA API to the ALSA `pulse` device, a libpulse client that honours
++  `PULSE_SINK`. The launch also passes `--env=PULSE_PROP_OVERRIDE=application.name=mixxx-dev` so the dev
++  Mixxx's stream can be told apart from a Mixxx Michael runs (libpulse applies `PULSE_PROP_OVERRIDE` to the
++  client's property list; *expected*, M1-04).
++- **The check (`tools/mixxx-dev start`, after launch):** poll `pactl list sink-inputs` once a second, for at most
++  30 s counted from launch, until a stream with `application.name = "mixxx-dev"` appears. PASS only if every such
++  stream has `Sink:` equal to the index of `mixxx-dev` in `pactl list short sinks`. Other Mixxx streams (not
++  `mixxx-dev`) are ignored, not counted. No stream after 30 s, a stream on any other sink, or any `pactl` error
++  is a FAIL: `start` **stops its Mixxx immediately** and exits 1. A second, independent check: the Rane ONE's
++  playback substreams in `/proc/asound/card<n>/pcm*p/sub*/status` (card resolved by name from
++  `/proc/asound/cards`, read-only) must not have an `owner_pid` belonging to the dev Mixxx (the Flatpak has
++  `devices=all`, so Mixxx could open the hardware PCM directly, which `pactl` would not see). A fresh dev Mixxx
++  has no track loaded and plays silence, so the at most 30 s before a failed check is caught carries no audio.
++- **Long runs** (M3 recordings, replays over a minute) repeat the check every 10 s and stop Mixxx on a FAIL.
++- Fallback, used only if the check fails in M1-04: the runtime's `99-pulseaudio-default.conf` makes ALSA
++  `default` a pulse PCM too, so the seed's device can become `default` with the same `PULSE_SINK` routing. The
++  `pipewire` ALSA PCM ignores `PULSE_SINK` and is not used. Whatever M1-04 ends up using goes under Evidence and
++  into D9.
++
++## Dev profile seed
++
++Mixxx blocks startup on modal dialogs on a fresh profile: the music-library chooser, the sound-device error /
++"no output" dialog, the menu-bar hint (`alwaysHideMenuBarDlg()`, shown on Linux without a global menu bar, i.e.
++COSMIC, before controllers are set up: `src/mixxxmainwindow.cpp`), and the OpenGL direct-rendering warning
++(`checkDirectRendering()`). `tools/mixxx-dev start` writes the seed before **every** launch:
++
++| File | Owner | Content | Why |
++|---|---|---|---|
++| `$PROFILE/mixxx.cfg` | Mixxx; launcher sets the keys below on every start | see below | config version, binding, no dialogs |
++| `$PROFILE/soundconfig.xml` | **launcher**: rewritten on every start | see below | 48 kHz, Main out to the `pulse` device |
++| `$PROFILE/mixxxdb.sqlite` | Mixxx; created by the launcher if missing | table `directories` with one row: the absolute path of `$PROFILE/music` | suppresses the library chooser (see below) |
++| `$PROFILE/music/` | launcher | empty directory | the library root, under the dev profile |
++| `$PROFILE/controllers/` | `tools/install-mapping` | the mapping files | user mapping path Mixxx searches |
++
++**Library directory: not a mixxx.cfg key in 2.5.** `src/coreservices.cpp` shows the chooser
++(`QFileDialog::getExistingDirectory`, "Choose music library directory") when
++`internalCollection()->loadRootDirs().isEmpty()`, and root dirs live in the database table `directories`
++(`res/schema.xml` revision 23, `CREATE TABLE IF NOT EXISTS directories (directory TEXT UNIQUE)`). So `mixxx.cfg`
++alone cannot stop the chooser. When `mixxxdb.sqlite` is missing, the launcher creates it with Node's built-in
++`node:sqlite` (zero dependencies, D5): `CREATE TABLE directories (directory TEXT UNIQUE); INSERT INTO directories
++VALUES (?)`. Mixxx's `SchemaManager` reads a missing `settings` table as version 0 and applies every revision;
++revision 1 creates `settings` with `IF NOT EXISTS`, revision 23 is `IF NOT EXISTS` and nothing later touches
++`directories`, so the seeded row survives. If M1-04 shows otherwise (schema error in the log, or the chooser),
++the fallback is a bootstrap run: start Mixxx, wait until `mixxxdb.sqlite` has `settings.mixxx.schema.version`,
++stop it, insert the row, start again. The path is the same inside and outside the sandbox (`HOME` is the real home
++inside; the initializer listed `~/.var/app/org.mixxx.Mixxx` from inside).
++
++`mixxx.cfg` (Mixxx's format: `[Group]` line, then `Key Value` lines, blank line between groups). The launcher
++creates the file if missing and, on every start, sets exactly these keys (adding or replacing them, leaving every
++other line as Mixxx wrote it):
++
++```
++[Config]
++Version 2.5.6
++show_menubar_hint 0
++
++[Controller]
++Midi_Through_Port-0 1
++
++[ControllerPreset]
++Midi_Through_Port-0 <absolute $PROFILE>/controllers/Rane-One.midi.xml
++
++[Direct Rendering]
++Warned yes
++```
++
++- `[Config] Version` must equal `VersionStore::version()`, so `src/preferences/upgrade.cpp` (line 315) skips every
++  upgrade step and the first-run path. The launcher takes it from `flatpak info org.mixxx.Mixxx` (`Version:
++  2.5.6`) and, once a log exists, from the version line Mixxx logs at startup, so a Flatpak update cannot leave
++  it stale.
++- `[Controller] <name> 1` enables a device; `[ControllerPreset] <name> <file>` binds the mapping
++  (`src/controllers/controllermanager.cpp`: group `[ControllerPreset]`, key `sanitizeDeviceName(name)`, which
++  replaces spaces, `/` and `\` with `_`; absolute mapping paths are accepted by `findMappingFile`).
++- The device name `Midi Through Port-0` is the ALSA port name PortMidi reports; *expected*, M1-05 confirms it
++  from the controller list in `mixxx.log` (if Mixxx names it differently, the key follows the log and Evidence
++  records it). PortMidi devices starting with `MIDI Through Port` are only listed with `--developer`
++  (`src/controllers/midi/portmidienumerator.cpp`, `recognizeDevice`), which the launch command passes.
++- The launcher also **removes** any `[Controller]` key whose name contains `rane` (case-insensitive) or sets it to
++  `0`: the night rule (Mapping skeleton) holds even if someone enabled it in the GUI.
++- Library rescans: the cfg is never saved on a hard kill, so Mixxx rescans the (empty) music directory on every
++  start (`coreservices.cpp`, `SupportedFileExtensions`). Harmless; not suppressed.
++
++`soundconfig.xml` (attribute names from `src/soundio/soundmanagerconfig.cpp`; the output type string is still
++`Master` for Main, per `src/soundio/soundmanagerutil.cpp`). **Launcher-owned:** rewritten before every start,
++because Mixxx saves its sound config back after setup (`mixxxmainwindow.cpp`), and if it ever falls back to
++defaults it picks **JACK** when available (the runtime ships pipewire-jack) or the first ALSA device with two
++outputs, usually a `hw:` device, possibly the Rane ONE (`SoundManagerConfig::loadDefaults`). Neither honours
++`PULSE_SINK`.
++
++```xml
++<!DOCTYPE SoundManagerConfig>
++<SoundManagerConfig api="ALSA" samplerate="48000" latency="5" sync_buffers="2"
++                    force_network_clock="0" deck_count="4">
++  <SoundDevice name="pulse" portAudioIndex="-1">
++    <output type="Master" index="0" channel="0" channel_count="2"/>
++  </SoundDevice>
++</SoundManagerConfig>
++```
++
++- `latency` is a buffer-size index, not ms; `5` is Mixxx's default (about 1024 frames at 48 kHz).
++- `name="pulse"` with `portAudioIndex="-1"` matches by name when the name is unique (the index is then filled in);
++  a name mismatch silently drops the device and leads to the modal "no output" dialog. The name `pulse` and the
++  API string `ALSA` are *expected* from PortAudio in the KDE 6.11 runtime; M1-04 confirms them from the device
++  enumeration Mixxx logs and fixes the template if needed.
++- After the routing check passes, the launcher re-reads `soundconfig.xml`: if Mixxx rewrote it with a different
++  `api` or device name, that is a FAIL (stop, exit 1), even if a stream was seen.
++- No inputs, no headphone output, no Booth. Cue (3–4 on the One) stays unrouted.
++
++## Launcher
++
++`tools/mixxx-dev start|stop|log|status` (bash). The launch command is the one in `CLAUDE.md`:
++
++```
++flatpak run org.mixxx.Mixxx --settings-path ~/.var/app/org.mixxx.Mixxx/dev-profile/ --controller-debug \
++  --controller-abort-on-warning --developer
++```
++
++As the tool actually runs it (D9 adds the routing env, the stream name, the instance fd and the log flush level):
++
++```
++setsid flatpak run --env=PULSE_SINK=mixxx-dev --env=PULSE_PROP_OVERRIDE=application.name=mixxx-dev \
++  --instance-id-fd=3 org.mixxx.Mixxx \
++  --settings-path "$PROFILE" --controller-debug --controller-abort-on-warning --developer \
++  --log-flush-level debug \
++  3>"$PROFILE/mixxx-dev.instance" >"$PROFILE/mixxx-dev.stdout" 2>&1 &
++```
++
++- **`start`:** profile guard (exit 3); refuse (exit 1) if `WAYLAND_DISPLAY` is unset, `tools/null-sink status`
++  says absent, or `aconnect -l` shows `Midi Through` port 0 connected to a client whose name contains `rane`
++  (case-insensitive; Mixxx opens Midi Through's output too, and a subscription would carry it to the controller);
++  exit 0 without a second launch if `mixxx-dev.instance` names a live `org.mixxx.Mixxx` instance. Then write the
++  seed; note the inode of `mixxx.log` (Mixxx rotates the old log to `mixxx.log.1` at startup, so the old file
++  still holds a version line); launch detached (no `--die-with-parent`, so Mixxx outlives the tool's shell);
++  wait until the instance file is non-empty and `flatpak ps --columns=instance,application` lists that id as
++  `org.mixxx.Mixxx`; wait up to 60 s from launch for a **new** `mixxx.log` (different inode) and the version
++  line (as built: on the launch's stdout, not in `mixxx.log`; see D10); run the routing check (≤ 30 s from launch) and the soundconfig re-read; print the instance id. Any failure
++  after launch: `stop`, then exit 1.
++- **Instance tracking:** `flatpak run --instance-id-fd=3` writes the new instance id to fd 3, which is redirected
++  into `$PROFILE/mixxx-dev.instance` (one line, the id). No guessing from a before/after `flatpak ps` diff, so a
++  Mixxx that Michael starts at the same moment can't be confused with ours. **That file is the only thing
++  `stop` ever acts on.** This is how CLAUDE.md's "stop every Mixxx you start (by its pid)" is met: the id maps
++  to the wrapper pid via `flatpak ps --columns=instance,pid`, and `flatpak kill` takes the id.
++- **`stop`:** no instance file, or its id not listed by `flatpak ps --columns=instance,application` as
++  `org.mixxx.Mixxx`: delete the stale file, exit 0, kill nothing. Otherwise `flatpak kill <instance id>`, poll
++  `flatpak ps` for up to 10 s until the id is gone, delete the file. **Never `flatpak kill org.mixxx.Mixxx`**
++  (that would also kill a Mixxx Michael started), never `pkill`/`killall`. The tests' `flatpak` stub exits 99 on
++  `kill org.mixxx.Mixxx`.
++- **Stopping is a hard kill.** Mixxx 2.5 installs no SIGTERM/SIGINT handler (no `signal`/`sigaction` in
++  `src/main.cpp`, `src/coreservices.cpp`, `src/mixxxapplication.cpp`), and COSMIC on Wayland has no
++  command-line way to close a window. So `stop` does **not** run the mapping's `shutdown()` and Mixxx does not
++  save `mixxx.cfg` on the way out (fine: the launcher re-applies its keys). `--log-flush-level debug` flushes
++  every Debug-and-above line, so a killed Mixxx loses nothing from `mixxx.log`. Evidence of `shutdown()` comes
++  from a script hot reload instead (see Mapping skeleton).
++- **`log [n]`:** `tail -n "${n:-50}" "$PROFILE/mixxx.log"`.
++- **`status`:** prints the instance id and `running`, exit 0; or `stopped`, exit 1. Same `org.mixxx.Mixxx` check
++  as `stop`.
++- **Session rule:** every session that starts a Mixxx runs `tools/mixxx-dev stop`, then `tools/null-sink down`
++  if it brought the sink up, before it ends, and says so in its progress entry.
++
++`tools/install-mapping` writes every file in `mapping/` into `$PROFILE/controllers/` (creating the directory),
++**always**, even if identical, each through a temp file in the same directory plus `mv` (atomic rename), so a
++running Mixxx's file watcher never reads a half-written script. Same profile guard (exit 3). It copies; it never
++symlinks (`~/projects` and the worktrees are not visible inside the Flatpak).
++
++Tests (`tests/null-sink.test.mjs`, `tests/install-mapping.test.mjs`, `tests/mixxx-dev.test.mjs`) follow
++`tests/midi-send.test.mjs`: stub `pactl`, `flatpak`, `aconnect` (and `tools/null-sink` via an env override such
++as `MIXXX_DEV_NULL_SINK`) on `PATH` in a temp dir, log every stub invocation to a file the test reads, point
++`MIXXX_DEV_PROFILE` at a temp dir and the `/proc/asound` root at a fixture dir (env override). The `flatpak`
++stub's `run` writes a fake id to fd 3 and a new `mixxx.log` with a version line; its `ps` lists that id as
++`org.mixxx.Mixxx`; the `pactl` stub reports a `mixxx-dev` sink-input. Required cases beyond the feature steps:
++`null-sink down` with a stream on `mixxx-dev` does not call `unload-module`; `start` with a sink-input on
++another sink stops the instance and exits 1; `start` with a stale `mixxx.log` does not count its version line;
++`start` with Midi Through subscribed to a Rane client refuses. No test may start a real Mixxx or load a real
++module.
++
++## Mapping skeleton
++
++M1-05 builds the smallest mapping that proves the loop. Nothing in it sends MIDI.
++
++- `mapping/Rane-One.midi.xml`: `<MixxxControllerPreset mixxxVersion="2.5.0" schemaVersion="1">`, `<info>` with
++  name `Rane One (MK1)`, author, description saying it is unfinished, `<controller id="Rane ONE">`,
++  `<scriptfiles>` listing `rane-one-platter.js` (functionprefix empty) then `Rane-One-scripts.js`
++  (functionprefix `RaneOne`), `<controls/>` empty for now. **No `<outputs>` element, no `<output>` anywhere.**
++- `mapping/rane-one-platter.js`: `var RaneOnePlatter = { ... };` (a plain script: no `import`, `export`,
++  `require`; no `engine`, `midi`, `print`, `console` reference). Node loads it with
++  `vm.runInNewContext(source, ctx)` and reads `ctx.RaneOnePlatter`.
++- `mapping/Rane-One-scripts.js`: `var RaneOne = {}; RaneOne.init = function (id, debugging) {...};
++  RaneOne.shutdown = function () {...};` each logging exactly one line with `console.log`:
++  `RaneOne: init <id>` and `RaneOne: shutdown`. A `RaneOne.guard(fn)` wrapper (try/catch, logs the error once
++  with `console.log` and returns) wraps every handler body, so nothing can throw into Mixxx (CLAUDE.md: input
++  handlers never throw). **No `midi.send*` call anywhere.**
++- **"Loads cleanly"** means: between the new log's first line and `RaneOne: init`, and up to the end of the test,
++  no line at `Warning` or `Critical` level in a `controller.*` category (Mixxx logs scripts under
++  `controller.<lower-cased device name>`, `src/controllers/controller.cpp`) or the `js` category, and no
++  "Controller Mapping Error". `--controller-abort-on-warning` turns every script warning into a JS error
++  (`ControllerScriptEngineBase::m_bAbortOnWarning` → `throwJSError`), so this is a strict test. There is no
++  `ControllerScriptEngine` category to grep for; M1-05 records the real category names it sees under Evidence.
++- **Shutdown evidence:** the legacy script engine watches its script files and reloads them when they change
++  (`controllerscriptenginelegacy.cpp`: `m_fileWatcher` → `reload`; `controllerscriptenginebase.cpp`: `reload`
++  calls `shutdown()` then `initialize()`). So M1-05 proves `RaneOne: shutdown` by running `tools/install-mapping`
++  again while Mixxx runs, then checking the log for at least one `RaneOne: shutdown` followed by `RaneOne: init`,
++  with no error after the last init (several pairs are fine: each watched file can fire). A reload may log a
++  "Failed to watch script file" warning, because it re-adds paths that are still watched; M1-05 confirms and
++  records it, and it is the only warning allowed, only after a hot reload. `tools/mixxx-dev stop` (a hard
++  kill) will not log `shutdown`; the progress entry proposes the matching change to the M1-05 step.
++- **Night rule (D9):** the dev profile binds the mapping **only to `Midi Through Port-0`**. The real Rane ONE
++  port is never enabled or bound in the dev profile until Michael says so in `INBOX.md`, even though the mapping
++  sends nothing: binding it would open the controller's port from an unattended Mixxx. Replays go through
++  `tools/midi-send play <Midi Through client>:0 <file.mid>`, the client number resolved by name from
++  `aconnect -o` (`client 14: 'Midi Through'` today).
++- **Gate hardening (M1-05, test first, the 8 existing tests stay green):** `tools/midi-send play` also refuses
++  (exit 3, unarmed) when `aconnect -l` shows the destination port connected onward to a client whose name
++  contains `rane`. Today it checks only the destination's own name, so a stray `Midi Through → Rane ONE`
++  subscription would carry a replay to the controller.
++- `tests/fixtures/three-notes.mid` (M1-05): SMF format 0, three Note-ons on channel 1 (status `90`) with Note-offs,
++  100 ms apart, written by a few lines of Node in the test helper or committed as a 60-byte file.
++
++## MIDI parser
++
++`tools/lib/midi-parse.mjs` (M1-02): a pure ES module, no I/O, shared by `tools/capture`, `tools/replay`,
++`tools/census` and the tests.
++
++```js
++export function createParser(options) // -> { feed(bytes) -> Message[], reset(), stats }
++export function describe(msg)         // -> string
++```
++
++- `feed(bytes)` accepts a `Uint8Array`, `Buffer` or array of numbers and returns the messages completed by these
++  bytes, in order. State (running status, a partial message, a partial SysEx) carries across calls, so a message
++  may be split anywhere between two feeds. The caller timestamps messages (capture stamps each feed with host
++  µs); the parser does not.
++- **Message shape:** `{ status, data }`: `status` the full status byte (running status resolved, so every message
++  carries its own), `data` an array of data bytes. SysEx: `{ status: 0xF0, data: [payload without F0/F7] }`, plus
++  `truncated: true` when it ended without `F7`.
++- **Channel messages:** 0x80 off, 0x90 on, 0xA0 poly pressure, 0xB0 CC, 0xE0 pitch bend take 2 data bytes; 0xC0
++  program, 0xD0 channel pressure take 1. Note-on with velocity 0 stays `0x9n` (no rewriting: captures must show
++  what the device sent).
++- **Running status:** a data byte with no status in front reuses the last channel status. Set by channel
++  messages; cleared by SysEx and system-common messages (0xF0–0xF7); unaffected by real-time bytes.
++- **Real-time bytes (0xF8–0xFF)** may appear anywhere, including between a status and its data bytes and inside a
++  SysEx. Each is emitted at once as `{ status, data: [] }` and does not disturb the message or SysEx around it.
++- **SysEx:** `F0` starts collecting; `F7` ends it and emits it. Any other non-real-time status byte inside an
++  unfinished SysEx emits it with `truncated: true` and is then processed normally. Payloads are capped at
++  65,536 bytes (then emitted truncated) so a stuck stream cannot grow memory without bound.
++- **System common:** 0xF1 (1 data byte), 0xF2 (2), 0xF3 (1), 0xF6 (0). 0xF4, 0xF5 (undefined) and a stray 0xF7
++  are dropped.
++- **Errors never throw.** Data bytes with no running status and the undefined bytes above are dropped and counted
++  in `stats.dropped`; `stats.messages` counts emitted messages. `reset()` clears state and stats.
++  As built (M1-02): `dropped` counts input bytes that ended up in no message (an abandoned partial message
++  adds all its buffered bytes); a non-byte element (e.g. `2.5`, `0x100`) is counted and also abandons the
++  partial message or SysEx around it, so its neighbours never join into a message that was never sent.
++- `describe(msg)`: channel shown 1-based. `cc ch1 6=92` (for `{status:0xB0,data:[6,92]}`), `on ch1 60=100`,
++  `off ch1 60=0`, `pat ch1 60=12`, `pc ch1 5`, `cp ch1 40`, `pb ch1 <0..16383>` (value `lsb | msb << 7`; centre
++  8192), `sysex 6: 00 20 7f 01 02 03` (length, then hex payload, `…` after 32 bytes, ` truncated` suffix),
++  `clock`, `start`, `continue`, `stop`, `sense`, `reset`, `mtc 0x12`, `spp 1234`, `song 3`, `tune`.
++- Tests (M1-02 steps): at least 10 cases, including the capture check. `captures/2026-10-19-quick/platter.mid`
++  decoded to bytes by a short SMF walk inside the test must parse to exactly 29,323 CC, 29,323 pitch bend and 4
++  note messages (2 on, 2 off; 29,323 + 29,323 + 4 = the 58,650 channel events in the file, recounted by the
++  reviewer).
++
++## Evidence
++
++Filled in by the sessions that run things; each entry gives the command, the date and the result. Nothing here
++yet is a measured result except the source and machine facts quoted above.
++
++- **M1-03 (null sink):** `tools/null-sink up`; `pactl list short sinks | grep mixxx-dev`;
++  `pactl info | grep 'Default Sink'` before and after (must be equal); `tools/null-sink down`;
++  `pactl list short sinks | grep -c mixxx-dev` → 0.
++  **Result 2026-10-19 16:39 (M1-03 session, Michael's desktop):** before: `status` → `absent` (exit 1), Default
++  Sink `alsa_output.usb-Rane_Rane_ONE_A-00.analog-surround-40`. `up` → `mixxx-dev up (module 536870916)`;
++  `pactl list short sinks` → `862 mixxx-dev PipeWire float32le 2ch 48000Hz SUSPENDED`; `pactl list short
++  modules` → `536870916 module-null-sink sink_name=mixxx-dev rate=48000 channels=2
++  sink_properties=device.description=mixxx-dev` (tab-separated, the format the stub copies); `status` →
++  `mixxx-dev 536870916`. Default Sink unchanged right after `up` and again 3 s later. `down` → `unloaded module
++  536870916`; `grep -c mixxx-dev` → 0; Default Sink unchanged; `status` → `absent`. Side effect: `up` created
++  the empty `dev-profile/` directory (for `null-sink.module`). Re-run 16:44 after the review fixes: same result
++  (module 536870916 again, sink index 894), Default Sink unchanged throughout, `absent` after `down`.
++  As built: the stream check uses `pactl list short sink-inputs` (column 2 is the sink index), the
++  short form of the `Sink:` check above; `down` refuses unless `tools/mixxx-dev status` (override `MIXXX_DEV_LAUNCHER`)
++  exits 1 printing exactly `stopped` (M1-04 must keep that contract); before M1-04 adds the tool, only the
++  stream check guards `down`. The stream check covers every sink named `mixxx-dev`. Any `pactl` failure in
++  `down` exits non-zero before an unload and keeps `null-sink.module`; a module file without an id is an error,
++  not "absent". `up` checks it can write the id file before loading and unloads its module if the write still
++  fails; it watches the default sink for `NULL_SINK_SETTLE` whole seconds (default 2, tests 0; anything else
++  exits 2). The guard is `tools/lib/profile.sh`: `profile_guard` sets `PROFILE`, `guard_path <path>` checks a
++  path about to be written, both comparing the path as written and resolved against the real profile as
++  written and resolved. Every dev-loop tool also refuses (exit 3) a symlinked `controllers/` or
++  `null-sink.module`, and writes through `mktemp` + `mv -T` in the same directory.
++- **M1-04 (sandbox can write the dev profile):**
++  `flatpak run --command=sh org.mixxx.Mixxx -c 'touch ~/.var/app/org.mixxx.Mixxx/dev-profile/.probe'`, then
++  `ls -l ~/.var/app/org.mixxx.Mixxx/dev-profile/.probe` on the host. Record both and delete the probe.
++  **Result 2026-10-19 16:46:56 (M1-04 session):** exit 0; inside, `HOME=/home/mh550` (the only stderr line
++  was `F: Ignoring D-Conf migrate-path setting /org/mixxx/Mixxx`). On the host: `-rw-r--r-- 1 mh550 mh550 0
++  Oct 19 16:46 /home/mh550/.var/app/org.mixxx.Mixxx/dev-profile/.probe`. Probe deleted.
++- **M1-04 (first launch):** the Mixxx version line from `mixxx.log`; the PortAudio device list Mixxx logged (to
++  confirm or correct `api="ALSA"`/`name="pulse"`); `pactl list sink-inputs` showing the `mixxx-dev` stream on the
++  `mixxx-dev` sink and none on the Rane ONE or PCI sinks (and whether `PULSE_PROP_OVERRIDE` took effect); the Rane
++  ONE substream `owner_pid` check; `soundconfig.xml` unchanged after start; no library chooser, menu-bar hint or
++  sound-device dialog; `flatpak ps` without the instance after `tools/mixxx-dev stop`.
++  **Result 2026-10-19 (M1-04 session, Michael's desktop, `WAYLAND_DISPLAY=wayland-1`):** there were three
++  launches, all with `tools/null-sink up` first (module 536870916, sink index 925).
++  1. 16:52:44: FAIL, Mixxx stopped after about 3 s. The `mixxx-dev` stream first showed `Sink: 4294967295`
++     (`PA_INVALID_INDEX`, not linked yet), and the first build of the check read that as misrouted. Fixed: such a
++     stream now counts as "not yet" (D10). The stop worked as designed.
++  2. 16:54:10: FAIL after 60 s. Routing passed, but `mixxx.log` had no version line even with `--log-level debug`
++     added. Cause: `--controller-debug` filters every non-controller Debug message
++     (`src/util/logging.cpp`), and the version is only `qDebug` (`versionstore.cpp`). Fixed: the version check
++     moved to stdout (D10) and `--log-level debug` was dropped again (`--controller-debug` already sets Debug).
++  3. 16:57:21: `running: 3984742580` at 16:57:26 (5 s). Checks:
++     - Version: `mixxx-dev.stdout` has `Configuration file is at the current version "2.5.6"`.
++     - Log: the new `mixxx.log` (rotated; `mixxx.log.1` is the previous run's) has only Info and Warning lines.
++       The Warnings are `failed to load portaudio for JACK rename`, `Could not read sampler bank file
++       …/samplers.xml`, `Engine thread not scheduled with the real-time policy SCHED_FIFO`, two
++       `underflowHappened code: 25` and `Audio API provides invalid time stamps`; none come from a controller.
++     - Routing: `pactl list sink-inputs` showed `Sink Input #1415`, `Sink: 925` (= `mixxx-dev`),
++       `application.name = "mixxx-dev"` (so **`PULSE_PROP_OVERRIDE` works**), `application.process.binary =
++       "mixxx.bin"`, `node.name = "mixxx-dev"`. The only stream on the Rane sink (779) was
++       `speech-dispatcher-dummy`, not ours; none was on the PCI sink (172). The Default Sink stayed the Rane ONE
++       throughout.
++     - Rane PCM: `/proc/asound/card2/pcm0p/sub0/status` was `closed`.
++     - Sound config: Mixxx rewrote `soundconfig.xml` with the same `api="ALSA"` and `name="pulse"`, adding
++       `alsaHwDevice=""` and `portAudioIndex="18"` (so the template's names are right).
++     - Library: `mixxxdb.sqlite` `directories` still holds `…/dev-profile/music` after Mixxx's schema upgrade
++       0 → 39, and no chooser ran. Startup went on to the engine and the controller scan (`[Controller] Scanning
++       USB HID devices`), so no modal dialog blocked it. Nobody watched the screen, so the menu-bar hint is
++       inferred, not seen.
++     - MIDI: the PortMidi device list is not in `mixxx.log` at this level (M1-05 must find the Midi Through name
++       another way, e.g. in the GUI-less controller list or with the mapping bound).
++     - Stop: `tools/null-sink down` while Mixxx ran → `refused: the dev Mixxx may be running` (exit 1).
++       `tools/mixxx-dev stop` → `stopped 3984742580`; `flatpak ps` then listed only `com.protonvpn.www`;
++       `status` → `stopped` (exit 1); the instance file was gone. Then `null-sink down` → `unloaded module
++       536870916`, `grep -c mixxx-dev` → 0, Default Sink unchanged.
++  4. 17:21:20, after the review fixes below: `running: 3315317343` in 7 s; the stream was on sink 1440
++     (`mixxx-dev`); the Rane PCM was `closed`; `status` → `3315317343 running` (not `busy`, so Mixxx did not
++     inherit the lock); `log 2` printed two lines. After `stop`, `flatpak ps` listed only `com.protonvpn.www` and
++     `status` → `stopped`. `null-sink down` → unloaded, `grep -c` → 0. The Default Sink stayed the Rane ONE.
++  As built (`tools/mixxx-dev`): readiness = new non-empty `mixxx.log` plus the stdout version line (D10).
++  After review (Opus, 4 Important, 4 Minor, all fixed test-first):
++  - From the launch on, an EXIT trap (with `INT`/`TERM`/`HUP` → exit) stops the instance on every failure,
++    including `set -e` exits and signals. Before the id is known, it names any new `org.mixxx.Mixxx` instance
++    and kills none.
++  - `is_running` returns 2 when `flatpak ps` fails. That counts as "maybe running": `status` prints nothing,
++    `stop` keeps the file, and `stop_id` keeps polling.
++  - Timeouts accept `0`–`9999` with no leading zero (bash would read `08` as octal).
++  - `start` and `stop` take `flock` on `mixxx-dev.lock`, and the launch closes fd 9. While the lock is held,
++    `status` prints `busy` (exit 0, never `stopped`). The id is written to a temp file and renamed into place.
++  - `start` refuses when a `mixxx-dev` stream already plays before the launch (an untracked dev Mixxx).
++  - `LC_ALL=C` for parsing.
++  - Not done: tying a stream to our instance by pid. Inside the sandbox `application.process.id` is the
++    sandbox pid (`"2"` live), not a host pid; the pre-launch stream refusal covers the stale-stream case. The
++  routing check runs in the same 0.25 s loop from launch, so a misrouted stream stops Mixxx at once, without
++  waiting for the log. The `owner_pid` check walks the parent chain in `/proc/<pid>/stat` up to the instance's
++  `pid`/`child-pid` from `flatpak ps`, so PipeWire holding the Rane PCM does not count. The Midi Through binding
++  is written only once `controllers/Rane-One.midi.xml` exists (M1-05 installs it). Test overrides:
++  `MIXXX_DEV_NULL_SINK`, `MIXXX_DEV_PROC`, `MIXXX_DEV_{LOG,ROUTE,STOP}_TIMEOUT`. The seed is
++  `tools/lib/dev-seed.mjs`.
++- **M1-05 (binding):** the exact `[Controller]`/`[ControllerPreset]` lines in `$PROFILE/mixxx.cfg`, the
++  controller list line from `mixxx.log` showing the Midi Through device name, the log categories script output
++  appears under, `RaneOne: init` with no warning by the "loads cleanly" rule, three `MIDI` lines with status `90`
++  after the replay, and the `RaneOne: shutdown` / `RaneOne: init` pair after the hot reload.
++  **Result 2026-10-19 17:27 (M1-05 session, Michael's desktop, `WAYLAND_DISPLAY=wayland-1`):** before: `flatpak
++  ps` listed only `com.protonvpn.www`, `tools/mixxx-dev status` → `stopped`, Midi Through had no subscriptions.
++  `tools/null-sink up` (module 536870916) → `tools/install-mapping` (3 files) → `tools/mixxx-dev start` →
++  `running: 4268681041 (stream on mixxx-dev …)` in 7 s. Log copy: `/tmp/harness/…/m105-mixxx.log` (not kept).
++  - **Binding**, as the seed wrote it in `$PROFILE/mixxx.cfg`:
++    `[Controller]` → `Midi_Through_Port-0 1`; `[ControllerPreset]` →
++    `Midi_Through_Port-0 /home/mh550/.var/app/org.mixxx.Mixxx/dev-profile/controllers/Rane-One.midi.xml`.
++  - **Device name**, confirmed from `mixxx.log`: `PortMidiController: Opening Midi Through Port-0 index 1 for
++    input` and `… index 0 for output`, so the sanitized key `Midi_Through_Port-0` is right. With Mixxx running,
++    `aconnect -l` showed `Midi Through Port-0` → `Connecting To: 128:1`, `Connected From: 128:0` (client 128 is
++    Mixxx's PortMidi client, `aconnect -o` names it `Client-128`). Nothing connected to the Rane ONE (client 24).
++  - **Log format:** `mixxx.log` lines read `HH:MM:SS.mmm <Level> [<thread>] <message>`. The bracket is the
++    **thread** name (`Main`, `Engine`, `Controller`), not the logging category, so `controller.*` categories
++    cannot be grepped. Script `console.log` output and the incoming-MIDI lines both appear as `Debug
++    [Controller]`. As applied, "loads cleanly" means no `Warning`/`Critical`/`Fatal` line on the `[Controller]`
++    thread and no "Mapping Error" anywhere.
++  - **Load:** `Applying controller mapping...`, `Loading` common-controller-scripts.js, then
++    `rane-one-platter.js`, then `Rane-One-scripts.js` (the XML's order), `Executing "RaneOne" . "init"`,
++    `RaneOne: init Midi Through Port-0` (17:27:25.695). The file's only Warnings were the six from M1-04, all on the
++    `[Main]`, `[Engine]` or an unnamed thread (JACK rename, `samplers.xml`, SCHED_FIFO, two underflows,
++    invalid time stamps). None on `[Controller]`, no "Mapping Error", and Mixxx kept running under
++    `--controller-abort-on-warning`.
++  - **Replay:** `aconnect -o` → `client 14: 'Midi Through'`; `tools/midi-send play 14:0
++    tests/fixtures/three-notes.mid` → exit 0 (the new subscription check passed: Midi Through's only onward
++    subscription was Mixxx). The log gained exactly six lines, three of them with status 90:
++    `Debug [Controller] "incoming: " "Midi Through Port-0: t:15397 ms status 0x90 (ch 1, opcode 0x9), ctrl 0x3C,
++    val 0x64"`, then `0x80 … 0x3C, val 0x40`, `0x90 … 0x40` (t:15491), `0x80`, `0x90 … 0x43` (t:15591), `0x80`.
++    So Note-offs arrive as `0x80` through ALSA seq and PortMidi.
++  - **Hot reload** (`tools/install-mapping` again while Mixxx ran): two pairs within 25 ms (17:27:50.296 and
++    .309), each `Executing "RaneOne" . "shutdown"`, `RaneOne: shutdown`, `Engine shutdown`, reload,
++    `RaneOne: init Midi Through Port-0`. The pairs carried four `Warning [Controller] Failed to watch script file
++    "…"` lines (common-controller-scripts.js, Rane-One-scripts.js, rane-one-platter.js): the reload warning
++    this plan predicted, the only one allowed. Mixxx kept running (`status` → `running`).
++  - **Stop:** `tools/mixxx-dev stop` → `stopped 4268681041`. The log gained **no** `RaneOne: shutdown` (0 lines),
++    as predicted: `flatpak kill` is a hard kill, and Mixxx 2.5 has no signal handler (re-checked on the 2.5
++    branch: no `signal`, `sigaction`, `SIGTERM` or `SIGINT` in `src/main.cpp`, `src/mixxxapplication.cpp` or
++    `src/coreservices.cpp`). `flatpak ps` then listed only `com.protonvpn.www`. `tools/null-sink down` →
++    module unloaded, `grep -c mixxx-dev` → 0, and the Default Sink stayed the Rane ONE throughout.
++  - **Gate hardening, as built:** `tools/midi-send play`, when unarmed, follows `Connecting To` subscriptions
++    from the destination port, port by port and transitively, through `aconnect -l`. It refuses (exit 3) if
++    any port it reaches belongs to a client whose name contains `rane`, and also if `aconnect -l` or the parse
++    fails. Kernel clients are followed port by port, so a subscription on Midi Through port 1 does not block a
++    replay to port 0. Reaching any port of a `type=user` client follows all of that client's ports, because a
++    bridge or Mixxx may forward between them. After review (Opus: 2 Critical, 2 Important, 4 Minor, fixed
++    test-first): `play` takes exactly one file that must not start with `-`, and runs `aplaymidi -p <dest> --
++    <file>` (before, `play 14:0 -p 24:0 x.mid` reached the Rane unarmed). The address is normalised (before,
++    `14:00` skipped the route check). A `'` inside a client name no longer cuts the name short. Not covered:
++    `raw` mode (a virmidi device subscribed onward); PipeWire's own MIDI bridge, which routes outside ALSA seq
++    subscriptions; and a subscription added while aplaymidi plays (the check runs once, before playback).
++  - **Guard:** a swallowed handler exception is logged with `console.warn`, so it is visible at Warning level.
++    Its category in `mixxx.log` is **UNVERIFIED**: no handler has failed live yet.
++  - **Rerun 17:33 with the final code** (after the review fixes): `running: 3259469061`;
++    `RaneOne: init Midi Through Port-0` at 17:33:12.867; `tools/midi-send play 14:0
++    tests/fixtures/three-notes.mid` → exit 0 and exactly 3 `status 0x90` lines (t:3319, 3419, 3519 ms) plus
++    3 `0x80`. The hot reload gave two `shutdown`/`init` pairs and four `Failed to watch script file` warnings,
++    the only Warnings on `[Controller]` in the whole file. `stop` gave 0 `RaneOne: shutdown` lines, `flatpak
++    ps` showed only `com.protonvpn.www`, the sink was removed, and the Default Sink was unchanged.
++
++### If a live step is refused or impossible
++
++The policy for this project is build-only. If a session cannot run a live step (no `WAYLAND_DISPLAY`, an auto-mode
++refusal, a dialog it cannot clear), it marks the step skipped in its progress entry and leaves Michael this
++sequence, each stage checked before the next:
++
++1. Dry run: `npm test` green (the stubbed tests are the dry run of every tool).
++2. Sink only: `tools/null-sink up && pactl list short sinks && pactl info | grep 'Default Sink'`. Undo:
++   `tools/null-sink down`.
++3. Mixxx on the null sink, mapping not yet installed: `tools/mixxx-dev start`, `pactl list sink-inputs`,
++   `tools/mixxx-dev log`. Undo: `tools/mixxx-dev stop`.
++4. Mapping on Midi Through: `tools/install-mapping`, restart, replay `tests/fixtures/three-notes.mid`, read the
++   log. Undo: `tools/mixxx-dev stop && tools/null-sink down`; `rm -r ~/.var/app/org.mixxx.Mixxx/dev-profile`
++   resets everything (it holds nothing of Michael's).
+diff --git a/mapping/Rane-One-scripts.js b/mapping/Rane-One-scripts.js
+new file mode 100644
+index 0000000..f829e64
+--- /dev/null
++++ b/mapping/Rane-One-scripts.js
+@@ -0,0 +1,36 @@
++// Rane One (MK1) glue between Mixxx and the platter core (rane-one-platter.js, loaded first).
++// M1 skeleton: no controls are mapped yet, and nothing here sends to the controller (D9: no outputs, no
++// midi.send* calls).
++
++var RaneOne = {};
++
++// Wraps a handler so it never throws into Mixxx: an exception is swallowed and logged once per handler name, at
++// Warning level so it shows in Mixxx's default log. Every function Mixxx calls (init, shutdown, input handlers)
++// is built with it. TODO(M7): platter handlers also need a fallback here (scratch off, play at the pitch
++// fader's rate), per CLAUDE.md.
++RaneOne.guard = function(name, handler) {
++    return function() {
++        try {
++            return handler.apply(this, arguments);
++        } catch (e) {
++            if (!RaneOne.guard.failed[name]) {
++                RaneOne.guard.failed[name] = true;
++                try {
++                    console.warn("RaneOne: " + name + " failed: " + e);
++                } catch (ignored) {
++                    // Logging is best effort; the handler still must not throw.
++                }
++            }
++            return undefined;
++        }
++    };
++};
++RaneOne.guard.failed = {};
++
++RaneOne.init = RaneOne.guard("init", function(id) {
++    console.log("RaneOne: init " + id);
++});
++
++RaneOne.shutdown = RaneOne.guard("shutdown", function() {
++    console.log("RaneOne: shutdown");
++});
+diff --git a/mapping/Rane-One.midi.xml b/mapping/Rane-One.midi.xml
+new file mode 100644
+index 0000000..b974e51
+--- /dev/null
++++ b/mapping/Rane-One.midi.xml
+@@ -0,0 +1,15 @@
++<?xml version="1.0" encoding="utf-8"?>
++<MixxxControllerPreset mixxxVersion="2.5.0" schemaVersion="1">
++    <info>
++        <name>Rane One (MK1)</name>
++        <author>mh550</author>
++        <description>Unfinished mapping for the Rane One (MK1) with motorized platters. M1 skeleton: it loads, maps no controls and sends nothing to the controller.</description>
++    </info>
++    <controller id="Rane ONE">
++        <scriptfiles>
++            <file filename="rane-one-platter.js" functionprefix=""/>
++            <file filename="Rane-One-scripts.js" functionprefix="RaneOne"/>
++        </scriptfiles>
++        <controls/>
++    </controller>
++</MixxxControllerPreset>
+diff --git a/mapping/rane-one-platter.js b/mapping/rane-one-platter.js
+new file mode 100644
+index 0000000..7484b52
+--- /dev/null
++++ b/mapping/rane-one-platter.js
+@@ -0,0 +1,5 @@
++// Rane One (MK1) platter core (docs/spec.md §4): decoding, wrap handling, the platter state machine and the
++// hybrid switch-over decision will live here. Pure: it uses no Mixxx global, so Node tests load this file as is.
++// Empty until M4 (hypothesis edition, UNVERIFIED) and M5 (checked against captures).
++
++var RaneOnePlatter = {};
+diff --git a/tests/dev-seed.test.mjs b/tests/dev-seed.test.mjs
+new file mode 100644
+index 0000000..35f78a3
+--- /dev/null
++++ b/tests/dev-seed.test.mjs
+@@ -0,0 +1,106 @@
++// tools/lib/dev-seed.mjs writes the files a fresh dev Mixxx needs so it starts without a modal dialog
++// (plan "Dev profile seed"): the mixxx.cfg keys, a launcher-owned soundconfig.xml and the library database.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++import { DatabaseSync } from "node:sqlite";
++import { applyCfg, SOUNDCONFIG, seed } from "../tools/lib/dev-seed.mjs";
++
++// mixxx.cfg as Mixxx writes it: `[Group]`, then `Key Value` lines, a blank line between groups.
++const parse = (text) => {
++  const out = {};
++  let group = null;
++  for (const line of text.split("\n")) {
++    const m = /^\[(.*)\]$/.exec(line);
++    if (m) { group = m[1]; out[group] ??= {}; continue; }
++    if (!line.trim()) continue;
++    const i = line.indexOf(" ");
++    out[group][i < 0 ? line : line.slice(0, i)] = i < 0 ? "" : line.slice(i + 1);
++  }
++  return out;
++};
++const MAPPING = "/home/x/.var/app/org.mixxx.Mixxx/dev-profile/controllers/Rane-One.midi.xml";
++
++test("applyCfg on an empty file sets the version, both dialog keys and the Midi Through binding", () => {
++  const cfg = parse(applyCfg("", { version: "2.5.6", mapping: MAPPING }));
++  assert.equal(cfg.Config.Version, "2.5.6");
++  assert.equal(cfg.Config.show_menubar_hint, "0");
++  assert.equal(cfg["Direct Rendering"].Warned, "yes");
++  assert.equal(cfg.Controller["Midi_Through_Port-0"], "1");
++  assert.equal(cfg.ControllerPreset["Midi_Through_Port-0"], MAPPING);
++});
++
++test("applyCfg replaces our keys in place and keeps every other line as Mixxx wrote it", () => {
++  const before = "[Config]\nVersion 2.5.0\nScaleFactor 1.25\n\n[Master]\nnum_decks 4\n\n[Controller]\nMidi_Through_Port-0 0\n";
++  const text = applyCfg(before, { version: "2.5.6", mapping: MAPPING });
++  const cfg = parse(text);
++  assert.equal(cfg.Config.Version, "2.5.6");
++  assert.equal(cfg.Config.ScaleFactor, "1.25");
++  assert.equal(cfg.Master.num_decks, "4");
++  assert.equal(cfg.Controller["Midi_Through_Port-0"], "1");
++  assert.equal(text.match(/^Version /gm).length, 1);
++  assert.ok(text.indexOf("ScaleFactor") < text.indexOf("[Master]"), "groups keep their order");
++});
++
++test("applyCfg removes every Rane controller key, enabled or bound, whatever its case (night rule, D9)", () => {
++  const before = "[Controller]\nRane_ONE_MIDI_1 1\nrane_one 1\n\n[ControllerPreset]\nRane_ONE_MIDI_1 /x/Rane-One.midi.xml\n";
++  const cfg = parse(applyCfg(before, { version: "2.5.6", mapping: MAPPING }));
++  assert.deepEqual(Object.keys(cfg.Controller), ["Midi_Through_Port-0"]);
++  assert.deepEqual(Object.keys(cfg.ControllerPreset), ["Midi_Through_Port-0"]);
++});
++
++test("applyCfg without an installed mapping binds nothing and drops a stale Midi Through binding", () => {
++  const before = "[Controller]\nMidi_Through_Port-0 1\n\n[ControllerPreset]\nMidi_Through_Port-0 /gone.xml\n";
++  const cfg = parse(applyCfg(before, { version: "2.5.6", mapping: null }));
++  assert.equal(cfg.Controller?.["Midi_Through_Port-0"], undefined);
++  assert.equal(cfg.ControllerPreset?.["Midi_Through_Port-0"], undefined);
++  assert.equal(cfg.Config.Version, "2.5.6");
++});
++
++test("applyCfg is idempotent", () => {
++  const once = applyCfg("[Config]\nFoo bar\n", { version: "2.5.6", mapping: MAPPING });
++  assert.equal(applyCfg(once, { version: "2.5.6", mapping: MAPPING }), once);
++});
++
++test("SOUNDCONFIG routes Main to the ALSA `pulse` device at 48 kHz and nothing else", () => {
++  assert.match(SOUNDCONFIG, /<SoundManagerConfig api="ALSA" samplerate="48000"/);
++  assert.match(SOUNDCONFIG, /<SoundDevice name="pulse" portAudioIndex="-1">/);
++  assert.equal(SOUNDCONFIG.match(/<output /g).length, 1);
++  assert.match(SOUNDCONFIG, /<output type="Master" index="0" channel="0" channel_count="2"\/>/);
++  assert.doesNotMatch(SOUNDCONFIG, /<input /);
++});
++
++test("seed fills a missing profile: mixxx.cfg, soundconfig.xml, controllers/, music/ and the library row", () => {
++  const profile = join(mkdtempSync(join(tmpdir(), "dev-seed-")), "dev-profile");
++  seed(profile, "2.5.6");
++  assert.equal(parse(readFileSync(join(profile, "mixxx.cfg"), "utf8")).Config.Version, "2.5.6");
++  assert.equal(readFileSync(join(profile, "soundconfig.xml"), "utf8"), SOUNDCONFIG);
++  assert.ok(existsSync(join(profile, "controllers")));
++  assert.ok(existsSync(join(profile, "music")));
++  const db = new DatabaseSync(join(profile, "mixxxdb.sqlite"), { readOnly: true });
++  assert.deepEqual(db.prepare("SELECT directory FROM directories").all().map((r) => r.directory), [join(profile, "music")]);
++  db.close();
++  assert.deepEqual(readdirSync(profile).filter((n) => n.startsWith(".")), [], "no temp files left behind");
++});
++
++test("seed binds Midi Through only once the mapping is installed in controllers/", () => {
++  const profile = join(mkdtempSync(join(tmpdir(), "dev-seed-")), "dev-profile");
++  seed(profile, "2.5.6");
++  assert.equal(parse(readFileSync(join(profile, "mixxx.cfg"), "utf8")).ControllerPreset, undefined);
++  writeFileSync(join(profile, "controllers", "Rane-One.midi.xml"), "<MixxxControllerPreset/>\n");
++  seed(profile, "2.5.6");
++  assert.equal(parse(readFileSync(join(profile, "mixxx.cfg"), "utf8")).ControllerPreset["Midi_Through_Port-0"],
++    join(profile, "controllers", "Rane-One.midi.xml"));
++});
++
++test("seed rewrites soundconfig.xml every time but leaves an existing database alone", () => {
++  const profile = join(mkdtempSync(join(tmpdir(), "dev-seed-")), "dev-profile");
++  mkdirSync(profile);
++  writeFileSync(join(profile, "soundconfig.xml"), '<SoundManagerConfig api="JACK Audio Connection Kit"/>');
++  writeFileSync(join(profile, "mixxxdb.sqlite"), "Mixxx's own database");
++  seed(profile, "2.5.6");
++  assert.equal(readFileSync(join(profile, "soundconfig.xml"), "utf8"), SOUNDCONFIG);
++  assert.equal(readFileSync(join(profile, "mixxxdb.sqlite"), "utf8"), "Mixxx's own database");
++});
+diff --git a/tests/fixtures-three-notes.test.mjs b/tests/fixtures-three-notes.test.mjs
+new file mode 100644
+index 0000000..40392b2
+--- /dev/null
++++ b/tests/fixtures-three-notes.test.mjs
+@@ -0,0 +1,53 @@
++// tests/fixtures/three-notes.mid is the M1-05 replay fixture: SMF format 0, 480 ticks per quarter at 120 bpm,
++// three Note-ons on channel 1 (status 90) 100 ms apart, each with a real Note-off (status 80) 50 ms later.
++// Real Note-offs, not Note-on velocity 0, so Mixxx's log shows exactly three status-90 lines.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { readFileSync } from "node:fs";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++
++const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "three-notes.mid");
++
++// Reads a format-0 SMF with explicit status bytes; returns its events with absolute times in ms.
++function readSmf(buf) {
++  assert.equal(buf.toString("latin1", 0, 4), "MThd");
++  assert.equal(buf.readUInt32BE(4), 6);
++  const [format, tracks, division] = [buf.readUInt16BE(8), buf.readUInt16BE(10), buf.readUInt16BE(12)];
++  assert.equal(buf.toString("latin1", 14, 18), "MTrk");
++  const end = 22 + buf.readUInt32BE(18);
++  assert.equal(end, buf.length, "track length covers the rest of the file");
++  let i = 22, ticks = 0, tempo = 500000;
++  const events = [];
++  const vlq = () => { let v = 0, b; do { b = buf[i++]; v = (v << 7) | (b & 0x7f); } while (b & 0x80); return v; };
++  while (i < end) {
++    ticks += vlq();
++    const ms = (ticks * tempo) / division / 1000;
++    const status = buf[i++];
++    if (status === 0xff) {
++      const type = buf[i++], len = vlq(), data = [...buf.subarray(i, i + len)];
++      i += len;
++      if (type === 0x51) tempo = (data[0] << 16) | (data[1] << 8) | data[2];
++      events.push({ ms, meta: type, data });
++    } else {
++      assert.ok(status >= 0x80 && status < 0xf0, `channel status at ${i - 1}`);
++      events.push({ ms, status, data: [buf[i++], buf[i++]] });
++    }
++  }
++  return { format, tracks, division, events };
++}
++
++test("three-notes.mid: three Note-ons on channel 1, 100 ms apart, each followed by its Note-off", () => {
++  const { format, tracks, division, events } = readSmf(readFileSync(FIXTURE));
++  assert.deepEqual([format, tracks, division], [0, 1, 480]);
++  const channel = events.filter((e) => e.status !== undefined);
++  assert.deepEqual(channel, [
++    { ms: 0, status: 0x90, data: [60, 100] },
++    { ms: 50, status: 0x80, data: [60, 64] },
++    { ms: 100, status: 0x90, data: [64, 100] },
++    { ms: 150, status: 0x80, data: [64, 64] },
++    { ms: 200, status: 0x90, data: [67, 100] },
++    { ms: 250, status: 0x80, data: [67, 64] },
++  ]);
++  assert.deepEqual(events.at(-1), { ms: 250, meta: 0x2f, data: [] }, "ends with End of Track");
++});
+diff --git a/tests/fixtures/three-notes.mid b/tests/fixtures/three-notes.mid
+new file mode 100644
+index 0000000..a1e7cfd
+Binary files /dev/null and b/tests/fixtures/three-notes.mid differ
+diff --git a/tests/install-mapping.test.mjs b/tests/install-mapping.test.mjs
+new file mode 100644
+index 0000000..38a337f
+--- /dev/null
++++ b/tests/install-mapping.test.mjs
+@@ -0,0 +1,164 @@
++// tools/install-mapping copies mapping/ into the dev profile's controllers/ (the Flatpak cannot see the
++// worktree, so it copies, never symlinks) and refuses Michael's real Mixxx profile.
++// Each test runs a copy of the tool in a temp repo layout (tools/ + mapping/) with HOME set to a temp dir,
++// so a broken guard could never write into the real ~/.var/app/org.mixxx.Mixxx/.mixxx.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import {
++  mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, copyFileSync, symlinkSync,
++  lstatSync, statSync, chmodSync,
++} from "node:fs";
++import { tmpdir } from "node:os";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++
++const TOOLS = join(dirname(fileURLToPath(import.meta.url)), "..", "tools");
++const FILES = {
++  "Rane-One.midi.xml": "<MixxxControllerPreset/>\n",
++  "rane-one-platter.js": "var RaneOnePlatter = {};\n",
++  "Rane-One-scripts.js": "var RaneOne = {};\n",
++};
++
++// The tool's own env, without anything the caller's shell may export (e.g. MIXXX_DEV_PROFILE).
++const BASE_ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("MIXXX_DEV_")));
++
++function setup({ files = FILES } = {}) {
++  const dir = mkdtempSync(join(tmpdir(), "install-mapping-"));
++  const repo = join(dir, "repo"), home = join(dir, "home");
++  mkdirSync(join(repo, "tools", "lib"), { recursive: true });
++  mkdirSync(join(repo, "mapping"));
++  mkdirSync(home);
++  copyFileSync(join(TOOLS, "install-mapping"), join(repo, "tools", "install-mapping"));
++  chmodSync(join(repo, "tools", "install-mapping"), 0o755);
++  copyFileSync(join(TOOLS, "lib", "profile.sh"), join(repo, "tools", "lib", "profile.sh"));
++  for (const [name, body] of Object.entries(files)) writeFileSync(join(repo, "mapping", name), body);
++  const real = join(home, ".var/app/org.mixxx.Mixxx/.mixxx");
++  mkdirSync(real, { recursive: true });
++  const run = (profile, ...args) => spawnSync(join(repo, "tools", "install-mapping"), args, {
++    encoding: "utf8",
++    env: { ...BASE_ENV, HOME: home, ...(profile === undefined ? {} : { MIXXX_DEV_PROFILE: profile }) },
++  });
++  return { dir, repo, home, real, run };
++}
++
++test("copies every file from mapping/ into <profile>/controllers/, creating it", () => {
++  const t = setup();
++  const profile = join(t.dir, "profile");
++  const r = t.run(profile);
++  assert.equal(r.status, 0, r.stderr);
++  const dest = join(profile, "controllers");
++  assert.deepEqual(readdirSync(dest).sort(), Object.keys(FILES).sort());
++  for (const [name, body] of Object.entries(FILES)) {
++    assert.equal(readFileSync(join(dest, name), "utf8"), body);
++    assert.equal(lstatSync(join(dest, name)).isSymbolicLink(), false);
++  }
++});
++
++test("overwrites a stale copy and replaces a stale symlink with a real file", () => {
++  const t = setup();
++  const profile = join(t.dir, "profile");
++  const dest = join(profile, "controllers");
++  mkdirSync(dest, { recursive: true });
++  writeFileSync(join(dest, "Rane-One-scripts.js"), "// stale\n");
++  writeFileSync(join(t.dir, "elsewhere.js"), "// elsewhere\n");
++  symlinkSync(join(t.dir, "elsewhere.js"), join(dest, "rane-one-platter.js"));
++  const r = t.run(profile);
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(readFileSync(join(dest, "Rane-One-scripts.js"), "utf8"), FILES["Rane-One-scripts.js"]);
++  assert.equal(lstatSync(join(dest, "rane-one-platter.js")).isSymbolicLink(), false);
++  assert.equal(readFileSync(join(dest, "rane-one-platter.js"), "utf8"), FILES["rane-one-platter.js"]);
++  assert.equal(readFileSync(join(t.dir, "elsewhere.js"), "utf8"), "// elsewhere\n");
++});
++
++test("replaces each file by rename (new inode), never by rewriting it in place", () => {
++  const t = setup();
++  const profile = join(t.dir, "profile");
++  const dest = join(profile, "controllers");
++  mkdirSync(dest, { recursive: true });
++  writeFileSync(join(dest, "Rane-One-scripts.js"), "// stale\n");
++  const before = statSync(join(dest, "Rane-One-scripts.js")).ino;
++  assert.equal(t.run(profile).status, 0);
++  assert.notEqual(statSync(join(dest, "Rane-One-scripts.js")).ino, before);
++  assert.equal(statSync(join(dest, "Rane-One-scripts.js")).mode & 0o777, 0o644);
++});
++
++test("refuses (exit 3) a controllers/ that is a symlink into the real profile", () => {
++  const t = setup();
++  const profile = join(t.dir, "profile");
++  mkdirSync(join(t.real, "controllers"));
++  mkdirSync(profile);
++  symlinkSync(join(t.real, "controllers"), join(profile, "controllers"));
++  const r = t.run(profile);
++  assert.equal(r.status, 3, r.stderr);
++  assert.deepEqual(readdirSync(join(t.real, "controllers")), []);
++});
++
++test("refuses (exit 3) an ancestor of the real profile when .mixxx itself is a symlink", () => {
++  const t = setup();
++  const parent = join(t.home, ".var/app/org.mixxx.Mixxx");
++  const moved = join(t.dir, "elsewhere-mixxx");
++  mkdirSync(moved);
++  spawnSync("rmdir", [t.real]);
++  symlinkSync(moved, t.real);
++  const r = t.run(parent);
++  assert.equal(r.status, 3, r.stderr);
++  assert.equal(existsSync(join(parent, "controllers")), false);
++});
++
++test("leaves no temp files behind and keeps unrelated files in controllers/", () => {
++  const t = setup();
++  const profile = join(t.dir, "profile");
++  const dest = join(profile, "controllers");
++  mkdirSync(dest, { recursive: true });
++  writeFileSync(join(dest, "Other.midi.xml"), "<other/>\n");
++  assert.equal(t.run(profile).status, 0);
++  assert.deepEqual(readdirSync(dest).sort(), [...Object.keys(FILES), "Other.midi.xml"].sort());
++});
++
++test("defaults to ~/.var/app/org.mixxx.Mixxx/dev-profile", () => {
++  const t = setup();
++  const r = t.run(undefined);
++  assert.equal(r.status, 0, r.stderr);
++  const dest = join(t.home, ".var/app/org.mixxx.Mixxx/dev-profile/controllers");
++  assert.deepEqual(readdirSync(dest).sort(), Object.keys(FILES).sort());
++});
++
++for (const [what, rel] of [
++  ["the real profile itself", ".var/app/org.mixxx.Mixxx/.mixxx"],
++  ["a directory inside it", ".var/app/org.mixxx.Mixxx/.mixxx/dev"],
++  ["a path that only lexically leaves it", ".var/app/org.mixxx.Mixxx/.mixxx/a/../b"],
++  ["an ancestor of it", ".var/app/org.mixxx.Mixxx"],
++]) {
++  test(`refuses (exit 3) ${what}`, () => {
++    const t = setup();
++    const r = t.run(join(t.home, rel));
++    assert.equal(r.status, 3, r.stderr);
++    assert.deepEqual(readdirSync(t.real), []);
++    assert.equal(existsSync(join(t.home, ".var/app/org.mixxx.Mixxx/controllers")), false);
++  });
++}
++
++test("refuses (exit 3) a symlink that resolves inside the real profile", () => {
++  const t = setup();
++  const link = join(t.dir, "sneaky");
++  symlinkSync(t.real, link);
++  const r = t.run(join(link, "dev"));
++  assert.equal(r.status, 3, r.stderr);
++  assert.deepEqual(readdirSync(t.real), []);
++});
++
++test("fails (exit 1) when mapping/ is empty, installing nothing", () => {
++  const t = setup({ files: {} });
++  const profile = join(t.dir, "profile");
++  const r = t.run(profile);
++  assert.equal(r.status, 1);
++  assert.equal(existsSync(join(profile, "controllers")), false);
++});
++
++test("usage: any argument exits 2", () => {
++  const t = setup();
++  const profile = join(t.dir, "profile");
++  assert.equal(t.run(profile, "now").status, 2);
++  assert.equal(existsSync(profile), false);
++});
+diff --git a/tests/mapping-xml.test.mjs b/tests/mapping-xml.test.mjs
+new file mode 100644
+index 0000000..8aa3d88
+--- /dev/null
++++ b/tests/mapping-xml.test.mjs
+@@ -0,0 +1,179 @@
++// The mapping as Mixxx loads it: mapping/Rane-One.midi.xml plus its plain scripts (M1 plan, Mapping skeleton).
++// The XML is checked with a small well-formedness parser (zero dependencies, D5), enough for the mapping's
++// subset: declaration, comments, elements, attributes, text. No DTD, CDATA or processing instructions.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import { readFileSync, readdirSync } from "node:fs";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++import vm from "node:vm";
++
++const MAPPING = join(dirname(fileURLToPath(import.meta.url)), "..", "mapping");
++const XML = join(MAPPING, "Rane-One.midi.xml");
++
++// Returns the root element as { name, attrs, children } (text dropped); throws on anything not well-formed.
++function parseXml(src) {
++  let i = 0;
++  const fail = (why) => { throw new Error(`${why} at offset ${i}`); };
++  const NAME = /[A-Za-z_][\w.-]*/y;
++  const name = () => { NAME.lastIndex = i; const m = NAME.exec(src) ?? fail("expected a name"); i = NAME.lastIndex; return m[0]; };
++  const ws = () => { while (/\s/.test(src[i] ?? "")) i++; };
++  const skipMisc = () => {
++    for (;;) {
++      ws();
++      if (src.startsWith("<!--", i)) {
++        const end = src.indexOf("-->", i + 4);
++        if (end < 0 || src.slice(i + 4, end).includes("--")) fail("bad comment");
++        i = end + 3;
++      } else return;
++    }
++  };
++  const text = (s) => { if (/[<&]/.test(s.replace(/&(amp|lt|gt|quot|apos|#\d+|#x[\da-fA-F]+);/g, ""))) fail("bad text"); };
++  const element = () => {
++    if (src[i++] !== "<") fail("expected <");
++    const el = { name: name(), attrs: {}, children: [] };
++    for (;;) {
++      const before = i;
++      ws();
++      if (src.startsWith("/>", i)) { i += 2; return el; }
++      if (src[i] === ">") { i++; break; }
++      if (i === before) fail("expected whitespace before an attribute");
++      const key = name();
++      ws(); if (src[i++] !== "=") fail("expected =");
++      ws(); const q = src[i++]; if (q !== '"' && q !== "'") fail("expected a quote");
++      const end = src.indexOf(q, i); if (end < 0) fail("unterminated attribute");
++      const value = src.slice(i, end); text(value);
++      if (Object.hasOwn(el.attrs, key)) fail(`duplicate attribute ${key}`);
++      el.attrs[key] = value; i = end + 1;
++    }
++    for (;;) {
++      const lt = src.indexOf("<", i); if (lt < 0) fail(`unclosed <${el.name}>`);
++      text(src.slice(i, lt)); i = lt;
++      if (src.startsWith("<!--", i)) { skipMisc(); continue; }
++      if (src.startsWith("</", i)) {
++        i += 2; if (name() !== el.name) fail(`mismatched </…> for <${el.name}>`);
++        ws(); if (src[i++] !== ">") fail("expected >");
++        return el;
++      }
++      el.children.push(element());
++    }
++  };
++  if (src.startsWith("﻿")) i = 1;
++  if (src.startsWith("<?xml", i)) { const end = src.indexOf("?>", i); if (end < 0) fail("bad declaration"); i = end + 2; }
++  skipMisc();
++  const root = element();
++  skipMisc();
++  if (i !== src.length) fail("content after the root element");
++  return root;
++}
++
++const all = (el, name) => [...(el.name === name ? [el] : []), ...el.children.flatMap((c) => all(c, name))];
++const child = (el, name) => el.children.find((c) => c.name === name);
++
++test("parseXml rejects malformed XML", () => {
++  for (const bad of ["<a>", "<a></b>", "<a><b></a></b>", "<a x='1' x='2'/>", "<a/><b/>", "<a>&</a>", "<a x=1/>", "<a><!-- -- --></a>"]) {
++    assert.throws(() => parseXml(bad), undefined, bad);
++  }
++  assert.equal(parseXml("<?xml version='1.0'?>\n<!-- c --><a x=\"1\"><b/>t&amp;<c></c></a>\n").children.length, 2);
++});
++
++test("Rane-One.midi.xml parses as a Mixxx controller mapping for the Rane ONE", () => {
++  const root = parseXml(readFileSync(XML, "utf8"));
++  assert.equal(root.name, "MixxxControllerPreset");
++  assert.equal(root.attrs.schemaVersion, "1");
++  const controller = child(root, "controller");
++  assert.equal(controller?.attrs.id, "Rane ONE");
++  assert.ok(child(root, "info") && child(child(root, "info"), "name"), "<info><name> present");
++});
++
++test("the script list is rane-one-platter.js then Rane-One-scripts.js (prefix RaneOne) and matches mapping/", () => {
++  const files = all(parseXml(readFileSync(XML, "utf8")), "file").map((f) => [f.attrs.filename, f.attrs.functionprefix ?? ""]);
++  assert.deepEqual(files, [["rane-one-platter.js", ""], ["Rane-One-scripts.js", "RaneOne"]]);
++  const onDisk = readdirSync(MAPPING).filter((f) => f.endsWith(".js")).sort();
++  assert.deepEqual(files.map(([f]) => f).sort(), onDisk);
++});
++
++test("the mapping has no output element (D9: nothing is sent to the controller)", () => {
++  const root = parseXml(readFileSync(XML, "utf8"));
++  assert.deepEqual(all(root, "outputs"), []);
++  assert.deepEqual(all(root, "output"), []);
++  assert.doesNotMatch(readFileSync(XML, "utf8"), /<\s*outputs?\b/);
++});
++
++test("node --check passes on both scripts", () => {
++  for (const f of ["rane-one-platter.js", "Rane-One-scripts.js"]) {
++    const r = spawnSync(process.execPath, ["--check", join(MAPPING, f)], { encoding: "utf8" });
++    assert.equal(r.status, 0, `${f}: ${r.stderr}`);
++  }
++});
++
++// Strips // and /* */ comments; good enough for these plain scripts, which keep no comment markers in strings.
++const code = (f) => readFileSync(join(MAPPING, f), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
++
++test("rane-one-platter.js is pure: no engine, midi, print or console reference", () => {
++  assert.doesNotMatch(code("rane-one-platter.js"), /\b(engine|midi|print|console|script|components)\b/);
++  assert.doesNotMatch(code("rane-one-platter.js"), /\b(import|export|require)\b/);
++  const ctx = vm.createContext({});
++  vm.runInContext(readFileSync(join(MAPPING, "rane-one-platter.js"), "utf8"), ctx);
++  assert.equal(typeof ctx.RaneOnePlatter, "object");
++  assert.notEqual(ctx.RaneOnePlatter, null);
++});
++
++test("no script sends MIDI (no midi.send* call)", () => {
++  for (const f of readdirSync(MAPPING).filter((f) => f.endsWith(".js"))) {
++    assert.doesNotMatch(code(f), /\bmidi\s*\.\s*send/, f);
++  }
++});
++
++// Loads both scripts into one context, in Mixxx's order. Mixxx's own objects throw on any use, so a handler that
++// reaches them unguarded would throw here.
++function load(log, warn = log) {
++  const hostile = new Proxy({}, { get() { throw new Error("Mixxx object used"); } });
++  const ctx = vm.createContext({ console: { log, warn }, engine: hostile, midi: hostile, script: hostile });
++  for (const f of ["rane-one-platter.js", "Rane-One-scripts.js"]) vm.runInContext(readFileSync(join(MAPPING, f), "utf8"), ctx);
++  return ctx;
++}
++
++test("RaneOne.init and RaneOne.shutdown each log exactly one line", () => {
++  const lines = [];
++  const { RaneOne } = load((...a) => lines.push(a.join(" ")));
++  RaneOne.init("Midi Through Port-0", true);
++  assert.deepEqual(lines, ["RaneOne: init Midi Through Port-0"]);
++  RaneOne.shutdown();
++  assert.deepEqual(lines, ["RaneOne: init Midi Through Port-0", "RaneOne: shutdown"]);
++});
++
++test("no RaneOne handler can throw, even when logging and Mixxx's objects throw", () => {
++  const { RaneOne } = load(() => { throw new Error("console broken"); });
++  // Every function reachable from RaneOne, nested objects and arrays included (later decks, components).
++  const handlers = [];
++  const walk = (obj, path, seen) => {
++    if (obj === null || typeof obj !== "object" || seen.has(obj)) return;
++    seen.add(obj);
++    for (const k of Object.keys(obj)) {
++      if (obj === RaneOne && k === "guard") continue;
++      if (typeof obj[k] === "function") handlers.push([`${path}.${k}`, obj, k]);
++      else walk(obj[k], `${path}.${k}`, seen);
++    }
++  };
++  walk(RaneOne, "RaneOne", new Set());
++  assert.ok(["RaneOne.init", "RaneOne.shutdown"].every((n) => handlers.some(([p]) => p === n)));
++  for (const [path, obj, k] of handlers) {
++    assert.doesNotThrow(() => obj[k](0, 0x90, 0x3c, 0x7f, "[Channel1]"), path);
++    assert.doesNotThrow(() => obj[k](), path);
++  }
++});
++
++// At Warning level (console.warn), so the dev loop's "loads cleanly" check and a gig's default log both show it.
++test("guard warns once about a handler's failure and returns undefined", () => {
++  const lines = [], warnings = [];
++  const { RaneOne } = load((...a) => lines.push(a.join(" ")), (...a) => warnings.push(a.join(" ")));
++  const h = RaneOne.guard("probe", () => { throw new Error("boom"); });
++  assert.equal(h(), undefined);
++  assert.equal(h(), undefined);
++  assert.deepEqual(warnings, ["RaneOne: probe failed: Error: boom"]);
++  assert.deepEqual(lines, []);
++  const self = {};
++  assert.equal(RaneOne.guard("this", function() { return this; }).call(self), self);
++});
+diff --git a/tests/midi-parse.test.mjs b/tests/midi-parse.test.mjs
+new file mode 100644
+index 0000000..c6f4559
+--- /dev/null
++++ b/tests/midi-parse.test.mjs
+@@ -0,0 +1,251 @@
++// tools/lib/midi-parse.mjs turns a raw MIDI byte stream into messages; capture, replay and census share it.
++// The last tests run it over the real quick capture (captures/2026-10-19-quick/platter.mid).
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { readFileSync } from "node:fs";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++import { createParser, describe } from "../tools/lib/midi-parse.mjs";
++
++const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
++
++const parseAll = (...feeds) => {
++  const p = createParser();
++  return feeds.flatMap((bytes) => p.feed(bytes));
++};
++
++test("three-byte channel messages: CC, note on/off, pitch bend", () => {
++  assert.deepEqual(parseAll([0xb0, 6, 92, 0x90, 60, 100, 0x80, 60, 0, 0xe0, 0x15, 0x3d]), [
++    { status: 0xb0, data: [6, 92] },
++    { status: 0x90, data: [60, 100] },
++    { status: 0x80, data: [60, 0] },
++    { status: 0xe0, data: [0x15, 0x3d] },
++  ]);
++});
++
++test("two-byte channel messages: program change and channel pressure", () => {
++  assert.deepEqual(parseAll([0xc3, 5, 0xd0, 40]), [
++    { status: 0xc3, data: [5] },
++    { status: 0xd0, data: [40] },
++  ]);
++});
++
++test("note-on with velocity 0 stays a note-on", () => {
++  assert.deepEqual(parseAll([0x90, 60, 0]), [{ status: 0x90, data: [60, 0] }]);
++});
++
++test("running status reuses the last channel status, also across a feed boundary", () => {
++  const p = createParser();
++  assert.deepEqual(p.feed([0xb0, 6, 92, 6]), [{ status: 0xb0, data: [6, 92] }]);
++  assert.deepEqual(p.feed([93, 6, 94]), [
++    { status: 0xb0, data: [6, 93] },
++    { status: 0xb0, data: [6, 94] },
++  ]);
++  assert.deepEqual(p.feed([0xc0, 1, 2]), [
++    { status: 0xc0, data: [1] },
++    { status: 0xc0, data: [2] },
++  ]);
++});
++
++test("bytes split mid-message complete on the next feed, one byte at a time", () => {
++  const bytes = [0xb0, 6, 92, 0xe0, 0x15, 0x3d, 0x90, 0, 127];
++  const p = createParser();
++  const out = bytes.flatMap((b) => p.feed(Uint8Array.of(b)));
++  assert.deepEqual(out, parseAll(bytes));
++  assert.equal(out.length, 3);
++});
++
++test("a SysEx split across two feeds is emitted once, payload without F0/F7", () => {
++  const p = createParser();
++  assert.deepEqual(p.feed([0xf0, 0x00, 0x20, 0x7f]), []);
++  assert.deepEqual(p.feed(Buffer.from([0x01, 0x02, 0x03, 0xf7, 0xb0, 6, 1])), [
++    { status: 0xf0, data: [0x00, 0x20, 0x7f, 0x01, 0x02, 0x03] },
++    { status: 0xb0, data: [6, 1] },
++  ]);
++});
++
++test("SysEx clears running status; a status byte inside SysEx truncates it", () => {
++  // Data byte 5 after the SysEx has no running status: dropped.
++  assert.deepEqual(parseAll([0xb0, 6, 1, 0xf0, 1, 0xf7, 5]), [
++    { status: 0xb0, data: [6, 1] },
++    { status: 0xf0, data: [1] },
++  ]);
++  assert.deepEqual(parseAll([0xf0, 1, 2, 0x90, 60, 1]), [
++    { status: 0xf0, data: [1, 2], truncated: true },
++    { status: 0x90, data: [60, 1] },
++  ]);
++});
++
++test("SysEx payload is capped at 65536 bytes and emitted truncated", () => {
++  const p = createParser();
++  const out = p.feed([0xf0, ...new Array(65536 + 10).fill(1), 0xf7]);
++  assert.equal(out.length, 1);
++  assert.equal(out[0].data.length, 65536);
++  assert.equal(out[0].truncated, true);
++});
++
++test("real-time 0xF8 inside running status and mid-message emits at once and does not reset status", () => {
++  assert.deepEqual(parseAll([0xb0, 6, 0xf8, 92, 6, 0xf8], [93, 0xfe, 0xf0, 1, 0xf8, 2, 0xf7]), [
++    { status: 0xf8, data: [] },
++    { status: 0xb0, data: [6, 92] },
++    { status: 0xf8, data: [] },
++    { status: 0xb0, data: [6, 93] },
++    { status: 0xfe, data: [] },
++    { status: 0xf8, data: [] },
++    { status: 0xf0, data: [1, 2] },
++  ]);
++});
++
++test("system common messages take their data bytes and clear running status", () => {
++  assert.deepEqual(parseAll([0xb0, 6, 1, 0xf2, 0x52, 0x09, 0xf1, 0x12, 0xf3, 3, 0xf6, 7, 7]), [
++    { status: 0xb0, data: [6, 1] },
++    { status: 0xf2, data: [0x52, 0x09] },
++    { status: 0xf1, data: [0x12] },
++    { status: 0xf3, data: [3] },
++    { status: 0xf6, data: [] },
++  ]);
++});
++
++test("errors never throw: stray data, undefined bytes and stray F7 are dropped and counted", () => {
++  const p = createParser();
++  assert.deepEqual(p.feed([1, 2, 0xf4, 0xf5, 0xf7, 0xb0, 6, 9]), [{ status: 0xb0, data: [6, 9] }]);
++  assert.equal(p.stats.dropped, 5);
++  assert.equal(p.stats.messages, 1);
++  // A status byte in the middle of a message abandons the partial message; dropped counts its 2 bytes.
++  assert.deepEqual(p.feed([0x90, 60, 0xb0, 7, 8]), [{ status: 0xb0, data: [7, 8] }]);
++  assert.equal(p.stats.dropped, 7);
++  // A non-byte element mid-message abandons it too, so its neighbours never form a fake CC 1=3.
++  assert.deepEqual(p.feed([0xb0, 1, 2.5, 3]), []);
++  assert.equal(p.stats.dropped, 10);
++  assert.deepEqual(p.feed([0x100, -1, NaN, undefined]), []);
++  assert.deepEqual(p.feed(42), []);
++  assert.deepEqual(p.feed(null), []);
++  const hostile = { [Symbol.iterator]: () => { throw new Error("x"); } };
++  assert.deepEqual(p.feed(hostile), []);
++  assert.deepEqual(p.feed(new Proxy({}, { get() { throw new Error("g"); } })), []);
++  p.reset();
++  assert.deepEqual(p.stats, { messages: 0, dropped: 0 });
++  assert.deepEqual(p.feed([6, 92]), []);
++});
++
++test("pitch bend decodes 14 bits to 0..16383 (lsb | msb << 7)", () => {
++  assert.equal(describe({ status: 0xe0, data: [0, 0] }), "pb ch1 0");
++  assert.equal(describe({ status: 0xe0, data: [0, 0x40] }), "pb ch1 8192");
++  assert.equal(describe({ status: 0xef, data: [0x7f, 0x7f] }), "pb ch16 16383");
++  assert.equal(describe({ status: 0xe0, data: [0x15, 0x3d] }), "pb ch1 7829");
++});
++
++test("describe renders every message kind", () => {
++  const cases = [
++    [{ status: 0xb0, data: [6, 92] }, "cc ch1 6=92"],
++    [{ status: 0x90, data: [60, 100] }, "on ch1 60=100"],
++    [{ status: 0x83, data: [60, 0] }, "off ch4 60=0"],
++    [{ status: 0xa0, data: [60, 12] }, "pat ch1 60=12"],
++    [{ status: 0xc0, data: [5] }, "pc ch1 5"],
++    [{ status: 0xd0, data: [40] }, "cp ch1 40"],
++    [{ status: 0xf0, data: [0x00, 0x20, 0x7f, 0x01, 0x02, 0x03] }, "sysex 6: 00 20 7f 01 02 03"],
++    [{ status: 0xf0, data: [1], truncated: true }, "sysex 1: 01 truncated"],
++    [{ status: 0xf1, data: [0x12] }, "mtc 0x12"],
++    [{ status: 0xf2, data: [0x52, 0x09] }, "spp 1234"],
++    [{ status: 0xf3, data: [3] }, "song 3"],
++    [{ status: 0xf6, data: [] }, "tune"],
++    [{ status: 0xf8, data: [] }, "clock"],
++    [{ status: 0xfa, data: [] }, "start"],
++    [{ status: 0xfb, data: [] }, "continue"],
++    [{ status: 0xfc, data: [] }, "stop"],
++    [{ status: 0xfe, data: [] }, "sense"],
++    [{ status: 0xff, data: [] }, "reset"],
++  ];
++  for (const [msg, text] of cases) assert.equal(describe(msg), text);
++  assert.equal(describe({ status: 0xf0, data: [] }), "sysex 0:");
++  for (const bad of [null, {}, { status: 0xb0, data: null }, { status: 0xb0, data: 5 }, { status: 0xf0, data: "ab" }]) {
++    assert.equal(describe(bad), "invalid");
++  }
++  const long = describe({ status: 0xf0, data: new Array(40).fill(0x7f) });
++  assert.equal(long, `sysex 40: ${new Array(32).fill("7f").join(" ")} …`);
++});
++
++// Minimal SMF walk: concatenates the channel-event bytes of every track, skipping delta times, meta and SysEx
++// events. This is a reconstruction: the capture went through the ALSA sequencer, so whether the Rane used
++// running status (or note-on velocity 0 for note-off) on the wire is unknown. arecordmidi writes a status byte
++// on every event.
++function smfChannelBytes(file) {
++  const out = [];
++  let pos = 14; // past MThd
++  while (pos < file.length) {
++    const end = pos + 8 + file.readUInt32BE(pos + 4);
++    pos += 8;
++    let status = 0;
++    const varLen = () => { let v = 0, b; do { b = file[pos++]; v = (v << 7) | (b & 0x7f); } while (b & 0x80); return v; };
++    while (pos < end) {
++      varLen(); // delta time
++      if (file[pos] & 0x80) status = file[pos++];
++      if (status === 0xff) { pos++; const len = varLen(); pos += len; continue; } // meta (read len first: `pos += f()` reads pos before f runs)
++      if (status === 0xf0 || status === 0xf7) { const len = varLen(); pos += len; continue; } // SysEx
++      const n = (status & 0xe0) === 0xc0 ? 1 : 2;
++      out.push(status, ...file.subarray(pos, pos + n));
++      pos += n;
++    }
++  }
++  return out;
++}
++
++const CAPTURE = "captures/2026-10-19-quick/platter.mid";
++
++function counts(messages) {
++  const c = { cc: 0, pb: 0, on: 0, off: 0, other: 0 };
++  for (const m of messages) {
++    const kind = m.status & 0xf0;
++    if (kind === 0xb0) c.cc++;
++    else if (kind === 0xe0) c.pb++;
++    else if (kind === 0x90) c.on++;
++    else if (kind === 0x80) c.off++;
++    else c.other++;
++  }
++  return c;
++}
++
++test(`the quick capture (${CAPTURE}) parses to 29323 CC, 29323 pitch bend and 4 notes`, () => {
++  const bytes = smfChannelBytes(readFileSync(join(ROOT, CAPTURE)));
++  const p = createParser();
++  const messages = p.feed(Uint8Array.from(bytes));
++  assert.equal(messages.length, 58650);
++  assert.deepEqual(counts(messages), { cc: 29323, pb: 29323, on: 2, off: 2, other: 0 });
++  assert.equal(p.stats.dropped, 0);
++  // Cross-check with the aseqdump listing (platter.txt): first events are CC 6 = 92, then pitch bend -363.
++  assert.equal(describe(messages[0]), "cc ch1 6=92");
++  assert.equal(describe(messages[1]), `pb ch1 ${8192 - 363}`);
++});
++
++// Feeds `bytes` in chunks of 1..7 bytes (deterministic LCG) and collects the messages.
++function feedInChunks(p, bytes) {
++  const got = [];
++  let seed = 1;
++  for (let i = 0; i < bytes.length; ) {
++    seed = (seed * 1103515245 + 12345) % 2 ** 31;
++    const n = 1 + (seed % 7);
++    got.push(...p.feed(bytes.slice(i, i + n)));
++    i += n;
++  }
++  return got;
++}
++
++test("the quick capture parses identically in random feed splits with clock bytes interleaved", () => {
++  const bytes = smfChannelBytes(readFileSync(join(ROOT, CAPTURE)));
++  const expected = createParser().feed(bytes);
++  const withClock = bytes.flatMap((b, i) => (i % 5 === 2 ? [0xf8, b] : [b]));
++  const got = feedInChunks(createParser(), withClock);
++  assert.equal(got.filter((m) => m.status === 0xf8).length, Math.ceil((bytes.length - 2) / 5));
++  assert.deepEqual(got.filter((m) => m.status !== 0xf8), expected);
++});
++
++test("the capture's CC 6 stream re-encoded with running status parses to the same messages", () => {
++  // CC and pitch bend alternate in the capture, so running status only shortens a single-status stream.
++  const bytes = smfChannelBytes(readFileSync(join(ROOT, CAPTURE)));
++  const cc = createParser().feed(bytes).filter((m) => m.status === 0xb0);
++  const rs = [0xb0, ...cc.flatMap((m) => m.data)];
++  const p = createParser();
++  assert.deepEqual(feedInChunks(p, rs), cc);
++  assert.equal(cc.length, 29323);
++  assert.equal(p.stats.dropped, 0);
++});
+diff --git a/tests/midi-send.test.mjs b/tests/midi-send.test.mjs
+index 0bedcce..32f3e30 100644
+--- a/tests/midi-send.test.mjs
++++ b/tests/midi-send.test.mjs
+@@ -18,20 +18,24 @@ const ACONNECT_OUT = `client 14: 'Midi Through' [type=kernel]
+ client 24: 'Rane ONE' [type=kernel,card=2]
+     0 'Rane ONE MIDI 1 '`;
+ 
+-function stubs() {
++// aconnect -l with nothing subscribed, as on Michael's desktop with no Mixxx running.
++const ACONNECT_LIST = ACONNECT_OUT;
++
++function stubs({ list = ACONNECT_LIST } = {}) {
+   const dir = mkdtempSync(join(tmpdir(), "midi-send-"));
+   const stub = (name, body) => {
+     writeFileSync(join(dir, name), `#!/usr/bin/env bash\n${body}\n`);
+     chmodSync(join(dir, name), 0o755);
+   };
+   stub("amidi", `if [[ $1 == -l ]]; then cat <<'EOF'\n${AMIDI_LIST}\nEOF\nelse echo "SENT amidi $*"; fi`);
+-  stub("aconnect", `cat <<'EOF'\n${ACONNECT_OUT}\nEOF`);
++  const listing = list === null ? "exit 1" : `cat <<'EOF'\n${list}\nEOF`;
++  stub("aconnect", `if [[ $1 == -l ]]; then\n${listing}\nelse cat <<'EOF'\n${ACONNECT_OUT}\nEOF\nfi`);
+   stub("aplaymidi", `echo "SENT aplaymidi $*"`);
+   return dir;
+ }
+ 
+-function run(args, { armed = false } = {}) {
+-  const dir = stubs();
++function run(args, { armed = false, list } = {}) {
++  const dir = stubs({ list });
+   const arm = join(dir, "armed");
+   if (armed) writeFileSync(arm, "");
+   return spawnSync(SCRIPT, args, {
+@@ -73,7 +77,7 @@ test("play: refuses the Rane One's seq client when not armed", () => {
+ test("play: sends to Midi Through without arming", () => {
+   const r = run(["play", "14:0", "x.mid"]);
+   assert.equal(r.status, 0);
+-  assert.match(r.stdout, /SENT aplaymidi -p 14:0 x.mid/);
++  assert.match(r.stdout, /SENT aplaymidi -p 14:0 -- x.mid/);
+ });
+ 
+ test("play: rejects a destination that is not client:port", () => {
+@@ -84,3 +88,94 @@ test("play: rejects a destination that is not client:port", () => {
+ test("usage: too few arguments", () => {
+   assert.equal(run(["raw", "hw:2,0,0"]).status, 2);
+ });
++
++// Gate hardening (M1 plan, Mapping skeleton): Midi Through forwards whatever it receives to every port subscribed
++// to it, so a stray subscription would carry a replay to the controller. Real `aconnect -l` lines are
++// tab-indented under the port they belong to.
++const MIXXX = `client 128: 'PortMidi' [type=user,pid=4242]
++    0 'Mixxx in        '
++	Connected From: 14:0`;
++const RANE_LIST = (connecting) => `client 14: 'Midi Through' [type=kernel]
++    0 'Midi Through Port-0'
++	Connecting To: ${connecting}
++    1 'Midi Through Port-1'
++client 24: 'Rane ONE' [type=kernel,card=2]
++    0 'Rane ONE MIDI 1 '
++${MIXXX}
++client 130: 'midi-router' [type=user,pid=77]
++    0 'out             '
++	Connecting To: 24:0[real:0]`;
++
++test("play: refuses Midi Through subscribed onward to the Rane One when not armed", () => {
++  const r = run(["play", "14:0", "x.mid"], { list: RANE_LIST("128:0, 24:0[real:0]") });
++  assert.equal(r.status, 3);
++  assert.match(r.stderr, /Rane ONE/);
++  assert.doesNotMatch(r.stdout, /SENT/);
++});
++
++test("play: refuses a destination that reaches the Rane One through another client", () => {
++  const r = run(["play", "14:0", "x.mid"], { list: RANE_LIST("130:0") });
++  assert.equal(r.status, 3);
++  assert.doesNotMatch(r.stdout, /SENT/);
++});
++
++test("play: sends through a subscription to the Rane One when armed", () => {
++  const r = run(["play", "14:0", "x.mid"], { armed: true, list: RANE_LIST("24:0") });
++  assert.equal(r.status, 0);
++  assert.match(r.stdout, /SENT aplaymidi -p 14:0 -- x.mid/);
++});
++
++test("play: sends to Midi Through subscribed only to a non-Rane client", () => {
++  const r = run(["play", "14:0", "x.mid"], { list: RANE_LIST("128:0") });
++  assert.equal(r.status, 0);
++  assert.match(r.stdout, /SENT aplaymidi -p 14:0 -- x.mid/);
++});
++
++test("play: another port's subscription to the Rane One does not block this port", () => {
++  const list = RANE_LIST("128:0").replace("    1 'Midi Through Port-1'", "    1 'Midi Through Port-1'\n\tConnecting To: 24:0");
++  const r = run(["play", "14:0", "x.mid"], { list });
++  assert.equal(r.status, 0);
++  assert.match(r.stdout, /SENT aplaymidi/);
++});
++
++test("play: refuses when the subscriptions cannot be listed", () => {
++  const r = run(["play", "14:0", "x.mid"], { list: null });
++  assert.equal(r.status, 3);
++  assert.doesNotMatch(r.stdout, /SENT/);
++});
++
++// Review findings (M1-05): ways around the route check.
++test("play: a port number with a leading zero is still checked", () => {
++  for (const dest of ["14:00", "014:0"]) {
++    const r = run(["play", dest, "x.mid"], { list: RANE_LIST("24:0") });
++    assert.equal(r.status, 3, dest);
++    assert.doesNotMatch(r.stdout, /SENT/);
++  }
++});
++
++test("play: refuses extra arguments that aplaymidi would read as more ports", () => {
++  for (const extra of [["-p", "24:0", "x.mid"], ["x.mid", "--port=24:0"], ["--port=24:0"], ["x.mid", "y.mid"]]) {
++    const r = run(["play", "14:0", ...extra], { armed: true });
++    assert.equal(r.status, 2, extra.join(" "));
++    assert.doesNotMatch(r.stdout, /SENT/);
++  }
++});
++
++test("play: passes the file after -- so it is never read as an option", () => {
++  const r = run(["play", "14:0", "x.mid"]);
++  assert.match(r.stdout, /SENT aplaymidi -p 14:0 -- x.mid/);
++});
++
++test("play: a user client that receives on one port and sends on another counts as a route", () => {
++  const list = RANE_LIST("130:0").replace("    0 'out             '", "    0 'in              '\n    1 'out             '");
++  const r = run(["play", "14:0", "x.mid"], { list });
++  assert.equal(r.status, 3);
++  assert.doesNotMatch(r.stdout, /SENT/);
++});
++
++test("play: a quote inside a client name does not hide the Rane in it", () => {
++  const list = RANE_LIST("130:0").replace("client 24: 'Rane ONE'", "client 24: 'Bob's Rane'").replace("130:0", "24:0");
++  const r = run(["play", "14:0", "x.mid"], { list });
++  assert.equal(r.status, 3);
++  assert.match(r.stderr, /Bob's Rane/);
++});
+diff --git a/tests/mixxx-dev.test.mjs b/tests/mixxx-dev.test.mjs
+new file mode 100644
+index 0000000..d5ad658
+--- /dev/null
++++ b/tests/mixxx-dev.test.mjs
+@@ -0,0 +1,598 @@
++// tools/mixxx-dev starts a Flatpak Mixxx on the dev profile routed to the mixxx-dev null sink, tracks its
++// instance id and stops only that instance (D9). `flatpak`, `pactl`, `aconnect` and tools/null-sink are stubs,
++// HOME is a temp dir and /proc is a fixture, so no test can start a real Mixxx or reach the real profile.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { spawnSync, spawn } from "node:child_process";
++import {
++  mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, chmodSync, symlinkSync, rmSync,
++} from "node:fs";
++import { tmpdir } from "node:os";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++
++const TOOLS = join(dirname(fileURLToPath(import.meta.url)), "..", "tools");
++const SCRIPT = join(TOOLS, "mixxx-dev");
++const ID = "1458203367";
++const OTHER_ID = "3141592653"; // a Mixxx Michael started himself: never touched
++// Mixxx 2.5.6 logs its own version only at Debug in the default category, which --controller-debug filters out of
++// mixxx.log (src/util/logging.cpp, controllerDebugCategoryFilter). Seen live in M1-04. Its stdout gets this line
++// from src/preferences/upgrade.cpp before logging starts, once mixxx.cfg's Version matches the binary (D10).
++const VERSION_LINE = 'Configuration file is at the current version "2.5.6"';
++const LOG_LINE = "16:54:11.100 Info [Main] SoundSourceFFmpeg - Disabling untested input formats: aa";
++
++// State under $STUB: inst/<id> (running instances: app name), next-id, inputs (long sink-inputs listing, shown
++// while one of our instances runs; inputs2 replaces it after the first listing), and flags: no-log, no-version,
++// fail-ps, stuck, jack, nodevice, die (run starts nothing), no-id (run gives no id), ps-fail-after-run,
++// inputs-always (streams listed before the launch too).
++const FLATPAK = `#!/usr/bin/env bash
++echo "flatpak $*" >> "$STUB/calls.log"
++s=$STUB
++case $1 in
++  info) printf 'Mixxx DJ Software\\n\\n            ID: org.mixxx.Mixxx\\n       Version: 2.5.6\\n' ;;
++  ps)
++    [[ -f $s/fail-ps ]] && { echo "ps failed" >&2; exit 1; }
++    for f in "$s"/inst/*; do
++      [[ -e $f ]] || continue
++      case $2 in
++        --columns=instance,application) printf '%s\\t%s\\n' "\${f##*/}" "$(cat "$f")" ;;
++        --columns=instance,pid,child-pid) printf '%s\\t%s\\t%s\\n' "\${f##*/}" "$(sed -n 2p "$f.pids")" "$(sed -n 3p "$f.pids")" ;;
++        *) exit 97 ;;
++      esac
++    done ;;
++  kill)
++    [[ $2 == org.mixxx.Mixxx ]] && exit 99
++    [[ -f $s/stuck ]] || rm -f "$s/inst/$2" ;;
++  run)
++    prof=; fd=
++    for ((i = 2; i <= $#; i++)); do
++      a=\${!i}
++      [[ $a == --instance-id-fd=* ]] && fd=\${a#*=}
++      [[ $a == --settings-path ]] && { j=$((i + 1)); prof=\${!j}; }
++    done
++    id=$(cat "$s/next-id")
++    [[ $fd == 3 && ! -f $s/no-id ]] && { printf '%s\\n' "$id" >&3; exec 3>&-; }
++    [[ -f $s/die ]] || { echo org.mixxx.Mixxx > "$s/inst/$id"; printf 'pids\\n5000\\n5001\\n' > "$s/inst/$id.pids"; }
++    [[ -f $s/ps-fail-after-run ]] && touch "$s/fail-ps"
++    # the launcher's lock must not be inherited by Mixxx (it would stay held for Mixxx's lifetime)
++    [[ -e /proc/$$/fd/9 ]] && touch "$s/inherited-fd9"
++    [[ -f $s/no-version ]] || echo '${VERSION_LINE}'
++    if [[ ! -f $s/no-log ]]; then
++      [[ -e $prof/mixxx.log ]] && mv "$prof/mixxx.log" "$prof/mixxx.log.1"
++      echo '${LOG_LINE}' > "$prof/mixxx.log"
++    fi
++    [[ -f $s/jack ]] && sed -i 's/api="ALSA"/api="JACK Audio Connection Kit"/' "$prof/soundconfig.xml"
++    [[ -f $s/nodevice ]] && echo '<SoundManagerConfig api="ALSA" samplerate="48000"/>' > "$prof/soundconfig.xml"
++    true ;;
++  *) echo "flatpak stub: unexpected: $*" >&2; exit 98 ;;
++esac
++`;
++
++const PACTL = `#!/usr/bin/env bash
++echo "pactl $*" >> "$STUB/calls.log"
++s=$STUB
++case "$*" in
++  set-default-*) exit 99 ;;
++  "list short sinks")
++    printf '172\\talsa_output.pci-0000_00_1f.3.analog-stereo\\tPipeWire\\ts32le 2ch 48000Hz\\tSUSPENDED\\n'
++    printf '779\\talsa_output.usb-Rane_Rane_ONE_A-00.analog-surround-40\\tPipeWire\\ts32le 4ch 48000Hz\\tIDLE\\n'
++    printf '901\\tmixxx-dev\\tPipeWire\\tfloat32le 2ch 48000Hz\\tRUNNING\\n' ;;
++  "list sink-inputs")
++    if [[ -f $s/inputs-always ]] || compgen -G "$s/inst/${ID}" > /dev/null; then
++      if [[ -f $s/inputs2 && -f $s/shown ]]; then cat "$s/inputs2"; elif [[ -f $s/inputs ]]; then cat "$s/inputs"; touch "$s/shown"; fi
++    fi; true ;;
++  *) echo "pactl stub: unexpected: $*" >&2; exit 98 ;;
++esac
++`;
++
++const sinkInput = (n, sink, app) => `Sink Input #${n}
++\tDriver: PipeWire
++\tOwner Module: n/a
++\tClient: 77
++\tSink: ${sink}
++\tSample Specification: float32le 2ch 48000Hz
++\tProperties:
++\t\tclient.api = "pipewire-pulse"
++\t\tapplication.name = "${app}"
++\t\tmedia.name = "ALSA Playback"
++`;
++const ON_DEV = sinkInput(88, 901, "mixxx-dev");
++
++const ACONNECT_CLEAN = `client 0: 'System' [type=kernel]
++    0 'Timer           '
++\tConnecting To: 144:0
++client 14: 'Midi Through' [type=kernel]
++    0 'Midi Through Port-0'
++client 24: 'Rane ONE' [type=kernel,card=2]
++    0 'Rane ONE MIDI 1 '
++client 144: 'PipeWire-System' [type=user,pid=1908]
++    0 'input           '
++\tConnected From: 0:1, 0:0
++`;
++const ACONNECT_RANE = ACONNECT_CLEAN.replace("    0 'Midi Through Port-0'\n",
++  "    0 'Midi Through Port-0'\n\tConnecting To: 144:0, 24:0[real:0]\n");
++
++// The tools' own env, without anything the caller's shell may export (e.g. MIXXX_DEV_PROFILE).
++const BASE_ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(MIXXX_DEV_|NULL_SINK_|WAYLAND_)/.test(k)));
++
++function exe(path, body) {
++  writeFileSync(path, body);
++  chmodSync(path, 0o755);
++}
++
++function setup({ state = {}, inputs = ON_DEV, aconnect = ACONNECT_CLEAN, sink = "mixxx-dev 536870916" } = {}) {
++  const dir = mkdtempSync(join(tmpdir(), "mixxx-dev-"));
++  const bin = join(dir, "bin"), stub = join(dir, "stub"), home = join(dir, "home"), proc = join(dir, "proc");
++  for (const d of [bin, join(stub, "inst"), home, join(proc, "asound")]) mkdirSync(d, { recursive: true });
++  exe(join(bin, "flatpak"), FLATPAK);
++  exe(join(bin, "pactl"), PACTL);
++  exe(join(bin, "aconnect"), `#!/usr/bin/env bash\necho "aconnect $*" >> "$STUB/calls.log"\ncat "$STUB/aconnect"\n`);
++  for (const tool of ["wpctl", "pw-metadata", "pkill", "killall"]) {
++    exe(join(bin, tool), `#!/usr/bin/env bash\necho "${tool} $*" >> "$STUB/calls.log"\nexit 99\n`);
++  }
++  const nullSink = join(bin, "null-sink");
++  exe(nullSink, `#!/usr/bin/env bash\necho "null-sink $*" >> "$STUB/calls.log"\n${
++    sink ? `echo "${sink}"; exit 0` : "echo absent; exit 1"}\n`);
++  writeFileSync(join(stub, "next-id"), ID);
++  writeFileSync(join(stub, "aconnect"), aconnect);
++  if (inputs !== null) writeFileSync(join(stub, "inputs"), inputs);
++  for (const [k, v] of Object.entries(state)) writeFileSync(join(stub, k), v);
++  // The Rane ONE is card 2; its playback substream is closed unless a test opens it.
++  writeFileSync(join(proc, "asound", "cards"),
++    " 0 [PCH            ]: HDA-Intel - HDA Intel PCH\n                      HDA Intel PCH at 0xdf340000 irq 138\n" +
++    " 2 [ONE            ]: USB-Audio - Rane ONE\n                      Rane Rane ONE at usb-0000:00:14.0-2, high speed\n");
++  mkdirSync(join(proc, "asound", "card2", "pcm0p", "sub0"), { recursive: true });
++  writeFileSync(join(proc, "asound", "card2", "pcm0p", "sub0", "status"), "closed\n");
++  const profile = join(home, ".var/app/org.mixxx.Mixxx/dev-profile");
++  // run("start") or run("start", { ENV: "override" }): a trailing plain object is extra env, not an argument.
++  const run = (...args) => {
++    const extra = args.find((a) => typeof a === "object") ?? {};
++    const env = { ...BASE_ENV, PATH: `${bin}:${process.env.PATH}`, HOME: home, STUB: stub,
++      WAYLAND_DISPLAY: "wayland-1", MIXXX_DEV_NULL_SINK: nullSink, MIXXX_DEV_PROC: proc,
++      MIXXX_DEV_LOG_TIMEOUT: "2", MIXXX_DEV_ROUTE_TIMEOUT: "1", MIXXX_DEV_STOP_TIMEOUT: "1", ...extra };
++    for (const [k, v] of Object.entries(env)) if (v === undefined) delete env[k];
++    return spawnSync(SCRIPT, args.filter((a) => typeof a === "string"), { encoding: "utf8", env, timeout: 30000 });
++  };
++  const calls = () => (existsSync(join(stub, "calls.log")) ? readFileSync(join(stub, "calls.log"), "utf8") : "");
++  const instanceFile = join(profile, "mixxx-dev.instance");
++  const running = (id) => existsSync(join(stub, "inst", id));
++  const launch = (id, app = "org.mixxx.Mixxx") => {
++    writeFileSync(join(stub, "inst", id), `${app}\n`);
++    writeFileSync(join(stub, "inst", `${id}.pids`), "pids\n5000\n5001\n");
++  };
++  return { dir, stub, home, proc, profile, run, calls, instanceFile, running, launch };
++}
++
++const lines = (log, prefix) => log.split("\n").filter((l) => l.startsWith(prefix));
++const kills = (log) => lines(log, "flatpak kill");
++const runs = (log) => lines(log, "flatpak run");
++const neverKillsAll = (log) => assert.doesNotMatch(log, /flatpak kill org\.mixxx\.Mixxx|pkill|killall/);
++
++test("start seeds a missing dev profile, launches with the CLAUDE.md flags on the null sink and records the id", () => {
++  const t = setup();
++  assert.equal(existsSync(t.profile), false);
++  const r = t.run("start");
++  assert.equal(r.status, 0, r.stderr);
++  for (const f of ["mixxx.cfg", "soundconfig.xml", "mixxxdb.sqlite"]) assert.ok(existsSync(join(t.profile, f)), f);
++  for (const d of ["controllers", "music"]) assert.ok(existsSync(join(t.profile, d)), d);
++  const [run] = runs(t.calls());
++  assert.ok(run, "flatpak run was called");
++  const argv = run.split(" ");
++  const app = argv.indexOf("org.mixxx.Mixxx");
++  const before = argv.slice(0, app), after = argv.slice(app + 1);
++  assert.ok(before.includes("--env=PULSE_SINK=mixxx-dev"));
++  assert.ok(before.includes("--env=PULSE_PROP_OVERRIDE=application.name=mixxx-dev"));
++  assert.ok(before.includes("--instance-id-fd=3"));
++  assert.ok(!before.includes("--die-with-parent"));
++  assert.deepEqual(after,
++    ["--settings-path", t.profile, "--controller-debug", "--controller-abort-on-warning", "--developer",
++      "--log-flush-level", "debug"]);
++  assert.equal(readFileSync(t.instanceFile, "utf8").trim(), ID);
++  assert.match(r.stdout, new RegExp(ID));
++  assert.ok(t.running(ID));
++  neverKillsAll(t.calls());
++  assert.doesNotMatch(t.calls(), /set-default/);
++});
++
++test("stop runs `flatpak kill <that id>` only, never `flatpak kill org.mixxx.Mixxx`, and forgets the id", () => {
++  const t = setup();
++  t.launch(OTHER_ID);
++  assert.equal(t.run("start").status, 0);
++  const r = t.run("stop");
++  assert.equal(r.status, 0, r.stderr);
++  assert.deepEqual(kills(t.calls()), [`flatpak kill ${ID}`]);
++  assert.equal(t.running(ID), false);
++  assert.equal(t.running(OTHER_ID), true);
++  assert.equal(existsSync(t.instanceFile), false);
++  neverKillsAll(t.calls());
++});
++
++test("stop with no instance file exits 0 and kills nothing", () => {
++  const t = setup();
++  t.launch(OTHER_ID);
++  const r = t.run("stop");
++  assert.equal(r.status, 0, r.stderr);
++  assert.deepEqual(kills(t.calls()), []);
++  assert.equal(t.running(OTHER_ID), true);
++});
++
++test("stop with a stale id (not a running org.mixxx.Mixxx) deletes the file and kills nothing", () => {
++  for (const [id, app] of [[ID, null], [ID, "com.protonvpn.www"]]) {
++    const t = setup();
++    if (app) t.launch(id, app);
++    mkdirSync(t.profile, { recursive: true });
++    writeFileSync(t.instanceFile, `${id}\n`);
++    const r = t.run("stop");
++    assert.equal(r.status, 0, r.stderr);
++    assert.deepEqual(kills(t.calls()), []);
++    assert.equal(existsSync(t.instanceFile), false);
++  }
++});
++
++test("stop refuses an instance file that holds no numeric id, and kills nothing", () => {
++  for (const content of ["org.mixxx.Mixxx\n", "\n", `${ID} ${OTHER_ID}\n`, "-1\n"]) {
++    const t = setup();
++    t.launch(OTHER_ID);
++    mkdirSync(t.profile, { recursive: true });
++    writeFileSync(t.instanceFile, content);
++    const r = t.run("stop");
++    assert.equal(r.status, 1, `${JSON.stringify(content)}: ${r.stderr}`);
++    assert.deepEqual(kills(t.calls()), []);
++    assert.equal(existsSync(t.instanceFile), true);
++  }
++});
++
++test("stop keeps the instance file and fails when `flatpak ps` fails (the instance may still run)", () => {
++  const t = setup();
++  assert.equal(t.run("start").status, 0);
++  writeFileSync(join(t.stub, "fail-ps"), "");
++  assert.notEqual(t.run("stop").status, 0);
++  assert.deepEqual(kills(t.calls()), []);
++  assert.equal(existsSync(t.instanceFile), true);
++});
++
++test("stop fails and keeps the file when the instance outlives the kill", () => {
++  const t = setup({ state: { stuck: "" } });
++  assert.equal(t.run("start").status, 0);
++  const r = t.run("stop");
++  assert.equal(r.status, 1);
++  assert.equal(existsSync(t.instanceFile), true);
++});
++
++for (const [name, profile] of [
++  ["the real profile", ".var/app/org.mixxx.Mixxx/.mixxx"],
++  ["inside the real profile", ".var/app/org.mixxx.Mixxx/.mixxx/dev"],
++  ["an ancestor of the real profile", ".var/app/org.mixxx.Mixxx"],
++  ["outside the Flatpak's data dir (the sandbox cannot see it)", "projects/dev-profile"],
++]) {
++  test(`start refuses (exit 3) a profile that is ${name}, before seeding or launching`, () => {
++    const t = setup();
++    mkdirSync(join(t.home, ".var/app/org.mixxx.Mixxx/.mixxx"), { recursive: true });
++    const r = t.run("start", { MIXXX_DEV_PROFILE: join(t.home, profile) });
++    assert.equal(r.status, 3, r.stderr);
++    assert.deepEqual(runs(t.calls()), []);
++    assert.equal(existsSync(join(t.home, profile, "mixxx.cfg")), false);
++  });
++}
++
++test("start refuses (exit 3) a profile that is a symlink into the real profile", () => {
++  const t = setup();
++  const real = join(t.home, ".var/app/org.mixxx.Mixxx/.mixxx");
++  mkdirSync(real, { recursive: true });
++  symlinkSync(real, join(t.home, ".var/app/org.mixxx.Mixxx/dev-profile"));
++  assert.equal(t.run("start").status, 3);
++  assert.deepEqual(runs(t.calls()), []);
++  assert.equal(existsSync(join(real, "mixxx.cfg")), false);
++});
++
++for (const f of ["mixxx.cfg", "soundconfig.xml", "mixxxdb.sqlite", "mixxx-dev.instance", "mixxx.log",
++  "mixxx-dev.stdout", "controllers", "music", "mixxx-dev.lock"]) {
++  test(`start refuses (exit 3) when ${f} is a symlink`, () => {
++    const t = setup();
++    mkdirSync(t.profile, { recursive: true });
++    writeFileSync(join(t.dir, "elsewhere"), "");
++    symlinkSync(join(t.dir, "elsewhere"), join(t.profile, f));
++    assert.equal(t.run("start").status, 3);
++    assert.deepEqual(runs(t.calls()), []);
++    assert.equal(readFileSync(join(t.dir, "elsewhere"), "utf8"), "");
++  });
++}
++
++for (const [name, opts, env] of [
++  ["WAYLAND_DISPLAY is unset", {}, { WAYLAND_DISPLAY: undefined }],
++  ["the null sink is absent", { sink: null }, {}],
++  ["Midi Through is subscribed to the Rane ONE", { aconnect: ACONNECT_RANE }, {}],
++  ["the Rane ONE is subscribed to Midi Through", { aconnect: ACONNECT_CLEAN.replace("    0 'Midi Through Port-0'\n",
++    "    0 'Midi Through Port-0'\n\tConnected From: 24:0\n") }, {}],
++  ["a mixxx-dev stream already plays (an untracked dev Mixxx)", { state: { "inputs-always": "" } }, {}],
++]) {
++  test(`start refuses (exit 1) when ${name}, without launching`, () => {
++    const t = setup(opts);
++    const r = t.run("start", env);
++    assert.equal(r.status, 1, r.stderr);
++    assert.deepEqual(runs(t.calls()), []);
++  });
++}
++
++test("start with our instance already running does not launch a second Mixxx", () => {
++  const t = setup();
++  assert.equal(t.run("start").status, 0);
++  const r = t.run("start");
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(runs(t.calls()).length, 1);
++  assert.match(r.stdout, /already running/);
++});
++
++test("start ignores another Mixxx's instance id; only its own file counts", () => {
++  const t = setup();
++  t.launch(OTHER_ID);
++  assert.equal(t.run("start").status, 0);
++  assert.equal(runs(t.calls()).length, 1);
++});
++
++for (const [name, inputs] of [
++  ["its stream is on the Rane ONE sink", sinkInput(88, 779, "mixxx-dev")],
++  ["one of its streams is on a PCI sink", ON_DEV + sinkInput(89, 172, "mixxx-dev")],
++  ["no mixxx-dev stream appears", sinkInput(90, 901, "Firefox")],
++  ["there is no stream at all", null],
++]) {
++  test(`start stops its Mixxx and exits 1 when ${name}`, () => {
++    const t = setup({ inputs });
++    t.launch(OTHER_ID);
++    const r = t.run("start");
++    assert.equal(r.status, 1, r.stderr);
++    assert.deepEqual(kills(t.calls()), [`flatpak kill ${ID}`]);
++    assert.equal(t.running(ID), false);
++    assert.equal(t.running(OTHER_ID), true);
++    assert.equal(existsSync(t.instanceFile), false);
++  });
++}
++
++// PipeWire lists a new stream with Sink 4294967295 (PA_INVALID_INDEX) until it is linked: seen live on the
++// first launch (M1-04). Such a stream plays nowhere, so it counts as "not yet", never as misrouted or as routed.
++test("start waits through a stream that is not linked to a sink yet (Sink: 4294967295)", () => {
++  const t = setup({ inputs: sinkInput(87, 4294967295, "mixxx-dev") + ON_DEV });
++  const r = t.run("start");
++  assert.equal(r.status, 0, r.stderr);
++  assert.deepEqual(kills(t.calls()), []);
++});
++
++test("start does not count an unlinked stream as routed: none on mixxx-dev in time stops the Mixxx", () => {
++  const t = setup({ inputs: sinkInput(87, 4294967295, "mixxx-dev") });
++  const r = t.run("start");
++  assert.equal(r.status, 1, r.stderr);
++  assert.match(r.stderr, /no stream named mixxx-dev/);
++  assert.deepEqual(kills(t.calls()), [`flatpak kill ${ID}`]);
++});
++
++test("start ignores a Mixxx stream that is not ours (application.name not mixxx-dev)", () => {
++  const t = setup({ inputs: sinkInput(70, 779, "Mixxx") + ON_DEV });
++  const r = t.run("start");
++  assert.equal(r.status, 0, r.stderr);
++  assert.deepEqual(kills(t.calls()), []);
++});
++
++test("start does not count a stale mixxx.log; no new log stops the Mixxx", () => {
++  const t = setup({ state: { "no-log": "" } });
++  mkdirSync(t.profile, { recursive: true });
++  writeFileSync(join(t.profile, "mixxx.log"), `${LOG_LINE}\n`);
++  const r = t.run("start");
++  assert.equal(r.status, 1, r.stderr);
++  assert.deepEqual(kills(t.calls()), [`flatpak kill ${ID}`]);
++  assert.match(r.stderr, /mixxx\.log/);
++});
++
++test("start stops the Mixxx when its stdout never shows the expected version (stale stdout does not count)", () => {
++  const t = setup({ state: { "no-version": "" } });
++  mkdirSync(t.profile, { recursive: true });
++  writeFileSync(join(t.profile, "mixxx-dev.stdout"), `${VERSION_LINE}\n`);
++  const r = t.run("start");
++  assert.equal(r.status, 1, r.stderr);
++  assert.deepEqual(kills(t.calls()), [`flatpak kill ${ID}`]);
++  assert.match(r.stderr, /2\.5\.6/);
++});
++
++test("start accepts a rotated log: the old one becomes mixxx.log.1, the new one has the version line", () => {
++  const t = setup();
++  mkdirSync(t.profile, { recursive: true });
++  writeFileSync(join(t.profile, "mixxx.log"), `${LOG_LINE}\nold run\n`);
++  assert.equal(t.run("start").status, 0);
++  assert.match(readFileSync(join(t.profile, "mixxx.log.1"), "utf8"), /old run/);
++});
++
++test("start stops its Mixxx and exits 1 when Mixxx rewrote soundconfig.xml to another API", () => {
++  const t = setup({ state: { jack: "" } });
++  const r = t.run("start");
++  assert.equal(r.status, 1, r.stderr);
++  assert.deepEqual(kills(t.calls()), [`flatpak kill ${ID}`]);
++  assert.match(r.stderr, /soundconfig/);
++});
++
++// /proc fixture: pid 7001 is mixxx.bin, child of 5001 (sandbox), child of 5000 (the instance's wrapper pid).
++function procTree(t, owner) {
++  for (const [pid, ppid, comm] of [[5000, 1, "bwrap"], [5001, 5000, "bwrap"], [7001, 5001, "mixxx.bin"],
++    [1908, 1, "pipewire"]]) {
++    mkdirSync(join(t.proc, String(pid)), { recursive: true });
++    writeFileSync(join(t.proc, String(pid), "stat"), `${pid} (${comm}) S ${ppid} ${pid} ${pid} 0 -1 4194560\n`);
++  }
++  writeFileSync(join(t.proc, "asound", "card2", "pcm0p", "sub0", "status"),
++    `state: RUNNING\nowner_pid   : ${owner}\ntrigger_time: 1.0\n`);
++}
++
++test("start stops its Mixxx and exits 1 when it holds the Rane ONE's playback PCM directly", () => {
++  const t = setup();
++  procTree(t, 7001);
++  const r = t.run("start");
++  assert.equal(r.status, 1, r.stderr);
++  assert.deepEqual(kills(t.calls()), [`flatpak kill ${ID}`]);
++  assert.match(r.stderr, /Rane/);
++});
++
++test("start does not blame its Mixxx for a Rane ONE PCM held by another process (PipeWire)", () => {
++  const t = setup();
++  procTree(t, 1908);
++  const r = t.run("start");
++  assert.equal(r.status, 0, r.stderr);
++});
++
++// Exits after the launch that bypassed `fail` (Opus review of M1-04): each must still stop the Mixxx.
++for (const [name, state, env] of [
++  ["Mixxx rewrites soundconfig.xml without a <SoundDevice>", { nodevice: "" }, {}],
++  ["the stream moves off mixxx-dev after the first check", { inputs2: sinkInput(88, 779, "mixxx-dev") }, {}],
++  ["Mixxx exits during startup", { die: "", "no-log": "" }, {}],
++]) {
++  test(`start exits 1 and stops (or finds stopped) its Mixxx when ${name}`, () => {
++    const t = setup({ state });
++    t.launch(OTHER_ID);
++    const r = t.run("start", env);
++    assert.equal(r.status, 1, r.stderr);
++    assert.equal(t.running(ID), false);
++    assert.equal(t.running(OTHER_ID), true);
++    assert.equal(existsSync(t.instanceFile), false);
++    neverKillsAll(t.calls());
++  });
++}
++
++test("start sends `flatpak kill <id>` when `flatpak ps` starts failing after the launch, and keeps the id", () => {
++  const t = setup({ state: { "ps-fail-after-run": "" } });
++  const r = t.run("start");
++  assert.equal(r.status, 1, r.stderr);
++  assert.deepEqual(kills(t.calls()), [`flatpak kill ${ID}`]);
++  assert.equal(readFileSync(t.instanceFile, "utf8").trim(), ID, "kept: the instance may still run");
++  neverKillsAll(t.calls());
++});
++
++test("start without an instance id reports a new org.mixxx.Mixxx instance and kills nothing", () => {
++  const t = setup({ state: { "no-id": "" } });
++  t.launch(OTHER_ID);
++  const r = t.run("start");
++  assert.equal(r.status, 1, r.stderr);
++  assert.match(r.stderr, new RegExp(ID));
++  assert.doesNotMatch(r.stderr, new RegExp(OTHER_ID));
++  assert.deepEqual(kills(t.calls()), []);
++});
++
++test("start does not leak its lock into Mixxx", () => {
++  const t = setup();
++  assert.equal(t.run("start").status, 0);
++  assert.equal(existsSync(join(t.stub, "inherited-fd9")), false);
++  assert.equal(t.run("stop").status, 0, "the lock is free again");
++});
++
++test("SIGTERM during start stops the Mixxx it launched", async () => {
++  const t = setup({ state: { "no-log": "" } });
++  const env = { ...BASE_ENV, PATH: `${join(t.dir, "bin")}:${process.env.PATH}`, HOME: t.home, STUB: t.stub,
++    WAYLAND_DISPLAY: "wayland-1", MIXXX_DEV_NULL_SINK: join(t.dir, "bin", "null-sink"), MIXXX_DEV_PROC: t.proc,
++    MIXXX_DEV_LOG_TIMEOUT: "20", MIXXX_DEV_ROUTE_TIMEOUT: "20", MIXXX_DEV_STOP_TIMEOUT: "1" };
++  const child = spawn(SCRIPT, ["start"], { env, stdio: "ignore" });
++  const exited = new Promise((res) => child.on("exit", (c, sig) => res(c ?? sig)));
++  const t0 = Date.now();
++  while (!t.running(ID) && Date.now() - t0 < 10000) await new Promise((res) => setTimeout(res, 50));
++  await new Promise((res) => setTimeout(res, 300));
++  child.kill("SIGTERM");
++  const code = await exited;
++  assert.notEqual(code, 0);
++  assert.equal(t.running(ID), false);
++  assert.deepEqual(kills(t.calls()), [`flatpak kill ${ID}`]);
++});
++
++test("while another start or stop holds the lock: start and stop refuse, status is not `stopped`", () => {
++  const t = setup();
++  mkdirSync(t.profile, { recursive: true });
++  const lock = join(t.profile, "mixxx-dev.lock"), ready = join(t.dir, "locked");
++  const holder = spawn("flock", [lock, "-c", `touch '${ready}'; sleep 20`], { stdio: "ignore" });
++  try {
++    const t0 = Date.now();
++    while (!existsSync(ready) && Date.now() - t0 < 5000) spawnSync("sleep", ["0.05"]);
++    assert.equal(t.run("start").status, 1);
++    assert.deepEqual(runs(t.calls()), []);
++    assert.equal(t.run("stop").status, 1);
++    assert.notEqual(t.run("status").stdout.trim(), "stopped");
++  } finally {
++    holder.kill("SIGKILL");
++  }
++});
++
++test("status prints `<id> running` (exit 0) or exactly `stopped` (exit 1), the contract null-sink relies on", () => {
++  const t = setup();
++  let r = t.run("status");
++  assert.equal(r.status, 1);
++  assert.equal(r.stdout, "stopped\n");
++  assert.equal(t.run("start").status, 0);
++  r = t.run("status");
++  assert.equal(r.status, 0);
++  assert.equal(r.stdout, `${ID} running\n`);
++  assert.equal(t.run("stop").status, 0);
++  r = t.run("status");
++  assert.equal(r.status, 1);
++  assert.equal(r.stdout, "stopped\n");
++});
++
++test("status never says `stopped` when `flatpak ps` fails", () => {
++  const t = setup();
++  assert.equal(t.run("start").status, 0);
++  writeFileSync(join(t.stub, "fail-ps"), "");
++  assert.notEqual(t.run("status").stdout.trim(), "stopped");
++});
++
++test("tools/null-sink down refuses while the real tools/mixxx-dev reports our Mixxx running", () => {
++  const t = setup();
++  assert.equal(t.run("start").status, 0);
++  const ns = (env = {}) => spawnSync(join(TOOLS, "null-sink"), ["down"], { encoding: "utf8",
++    env: { ...BASE_ENV, PATH: `${join(t.dir, "bin")}:${process.env.PATH}`, HOME: t.home, STUB: t.stub,
++      MIXXX_DEV_LAUNCHER: SCRIPT, ...env } });
++  mkdirSync(t.profile, { recursive: true });
++  writeFileSync(join(t.profile, "null-sink.module"), "536870916\n");
++  // our module is listed, so only the launcher check stands between `down` and the unload
++  exe(join(t.dir, "bin", "pactl"), PACTL.replace('"list short sinks")',
++    `"list short modules") printf '536870916\\tmodule-null-sink\\tsink_name=mixxx-dev\\n' ;;\n  "unload-module 536870916") echo unloaded >> "$STUB/calls.log" ;;\n  "list short sink-inputs") true ;;\n  "list short sinks")`));
++  let r = ns();
++  assert.equal(r.status, 1, r.stderr);
++  assert.match(r.stderr, /may be running/);
++  assert.equal(t.run("stop").status, 0);
++  r = ns();
++  assert.equal(r.status, 0, r.stderr);
++  assert.match(t.calls(), /^unloaded$/m);
++});
++
++test("log prints the last 50 lines of the dev profile's mixxx.log, or the last n", () => {
++  const t = setup();
++  mkdirSync(t.profile, { recursive: true });
++  writeFileSync(join(t.profile, "mixxx.log"), Array.from({ length: 80 }, (_, i) => `line ${i + 1}`).join("\n") + "\n");
++  let r = t.run("log");
++  assert.equal(r.status, 0, r.stderr);
++  const out = r.stdout.trimEnd().split("\n");
++  assert.equal(out.length, 50);
++  assert.equal(out[0], "line 31");
++  assert.equal(out.at(-1), "line 80");
++  r = t.run("log", "5");
++  assert.equal(r.stdout, "line 76\nline 77\nline 78\nline 79\nline 80\n");
++});
++
++test("log without a mixxx.log exits 1", () => {
++  const t = setup();
++  assert.equal(t.run("log").status, 1);
++});
++
++for (const args of [[], ["bogus"], ["log", "x"], ["log", "0"], ["log", "-5"], ["start", "extra"], ["stop", "1"]]) {
++  test(`usage error (exit 2): ${JSON.stringify(args)}`, () => {
++    const t = setup();
++    const r = t.run(...args);
++    assert.equal(r.status, 2, r.stderr);
++    assert.deepEqual(runs(t.calls()), []);
++    assert.deepEqual(kills(t.calls()), []);
++  });
++}
++
++for (const [k, v] of [["MIXXX_DEV_LOG_TIMEOUT", "1.5"], ["MIXXX_DEV_LOG_TIMEOUT", "08"],
++  ["MIXXX_DEV_STOP_TIMEOUT", "09"], ["MIXXX_DEV_ROUTE_TIMEOUT", "123456"], ["MIXXX_DEV_ROUTE_TIMEOUT", "a[$(touch pwned)]"],
++  ["MIXXX_DEV_STOP_TIMEOUT", "-1"]]) {
++  test(`start rejects ${k}=${v} (exit 2) before launching`, () => {
++    const t = setup();
++    const r = t.run("start", { [k]: v });
++    assert.equal(r.status, 2);
++    assert.deepEqual(runs(t.calls()), []);
++    assert.equal(existsSync(join(t.dir, "pwned")), false);
++    rmSync(t.dir, { recursive: true, force: true });
++  });
++}
+diff --git a/tests/null-sink.test.mjs b/tests/null-sink.test.mjs
+new file mode 100644
+index 0000000..2321bd1
+--- /dev/null
++++ b/tests/null-sink.test.mjs
+@@ -0,0 +1,315 @@
++// tools/null-sink creates and removes the mixxx-dev null sink that unattended Mixxx audio goes to (D9).
++// `pactl` is a stateful stub on PATH, so these tests never load a real module or touch a real sink.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, chmodSync, symlinkSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++
++const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "..", "tools", "null-sink");
++const RANE = "alsa_output.usb-Rane_Rane_ONE_A-00.analog-surround-40";
++const MODULE_ID = "536870913";
++
++// State lives in files under $STUB: `loaded` (our module id), `default` (default sink), `inputs` (short
++// sink-inputs listing), `foreign` (a mixxx-dev sink someone else loaded), `hijack` (load changes the default).
++const PACTL = `#!/usr/bin/env bash
++echo "pactl $*" >> "$STUB/pactl.log"
++s=$STUB
++[[ $1 == list && -f $s/fail-$3 ]] && { echo "Connection failure" >&2; exit 1; }
++case "$*" in
++  set-default-*) exit 99 ;;
++  "list short sinks")
++    printf '172\\talsa_output.pci-0000_00_1f.3.analog-stereo\\tPipeWire\\ts32le 2ch 48000Hz\\tSUSPENDED\\n'
++    printf '779\\t${RANE}\\tPipeWire\\ts32le 4ch 48000Hz\\tSUSPENDED\\n'
++    if [[ -f $s/second ]]; then
++      [[ -f $s/foreign ]] && printf '901\\tmixxx-dev\\tPipeWire\\tfloat32le 2ch 48000Hz\\tIDLE\\n'
++      [[ -f $s/loaded ]] && printf '903\\tmixxx-dev\\tPipeWire\\tfloat32le 2ch 48000Hz\\tIDLE\\n'; true
++    elif [[ -f $s/loaded || -f $s/foreign ]]; then printf '901\\tmixxx-dev\\tPipeWire\\tfloat32le 2ch 48000Hz\\tIDLE\\n'; fi ;;
++  "list short modules")
++    printf '536870912\\tlibpipewire-module-protocol-pulse\\t\\n'
++    if [[ -f $s/loaded ]]; then printf '%s\\tmodule-null-sink\\tsink_name=mixxx-dev rate=48000 channels=2\\n' "$(cat "$s/loaded")"; fi
++    if [[ -f $s/foreign ]]; then printf '536870999\\tmodule-null-sink\\tsink_name=mixxx-dev\\n'; fi
++    if [[ -f $s/other ]]; then printf '%s\\tmodule-null-sink\\tsink_name=something-else\\n' "$(cat "$s/other")"; fi ;;
++  "list short sink-inputs") [[ -f $s/inputs ]] && cat "$s/inputs"; true ;;
++  info) echo "Server Name: PulseAudio (on PipeWire 1.5.85)"; echo "Default Sink: $(cat "$s/default")" ;;
++  load-module*)
++    [[ -f $s/loaded ]] && { echo "already loaded" >&2; exit 1; }
++    echo ${MODULE_ID} > "$s/loaded"; echo ${MODULE_ID}
++    [[ -f $s/hijack ]] && echo mixxx-dev > "$s/default"; true ;;
++  "unload-module ${MODULE_ID}") rm -f "$s/loaded" ;;
++  unload-module*) true ;;
++  *) echo "pactl stub: unexpected: $*" >&2; exit 98 ;;
++esac
++`;
++
++// The tools' own env, without anything the caller's shell may export (e.g. MIXXX_DEV_PROFILE).
++const BASE_ENV = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(MIXXX_DEV_|NULL_SINK_)/.test(k)));
++
++const LAUNCHERS = {
++  stopped: `echo stopped; exit 1`,
++  running: `echo "abc running"; exit 0`,
++  broken: `exit 127`,
++  "says running, exits 1": `echo running; exit 1`,
++};
++
++function setup({ state = {}, launcher = "stopped", env = {} } = {}) {
++  const dir = mkdtempSync(join(tmpdir(), "null-sink-"));
++  const bin = join(dir, "bin"), stub = join(dir, "stub"), home = join(dir, "home");
++  for (const d of [bin, stub, home]) mkdirSync(d);
++  writeFileSync(join(bin, "pactl"), PACTL);
++  chmodSync(join(bin, "pactl"), 0o755);
++  // Other ways to change the default sink: stubbed so a regression logs and fails instead of running for real.
++  for (const tool of ["wpctl", "pw-metadata", "pw-cli", "pw-link"]) {
++    writeFileSync(join(bin, tool), `#!/usr/bin/env bash\necho "${tool} $*" >> "$STUB/pactl.log"\nexit 99\n`);
++    chmodSync(join(bin, tool), 0o755);
++  }
++  const devTool = join(bin, "mixxx-dev");
++  writeFileSync(devTool, `#!/usr/bin/env bash\necho "mixxx-dev $*" >> "$STUB/pactl.log"\n${LAUNCHERS[launcher]}\n`);
++  chmodSync(devTool, 0o755);
++  writeFileSync(join(stub, "default"), RANE);
++  for (const [k, v] of Object.entries(state)) writeFileSync(join(stub, k), v);
++  const profile = join(dir, "profile");
++  // run("up") or run("up", { ENV: "override" }): a trailing plain object is extra env, not an argument.
++  const run = (...args) => spawnSync(SCRIPT, args.filter((a) => typeof a === "string"), {
++    encoding: "utf8",
++    env: { ...BASE_ENV, PATH: `${bin}:${process.env.PATH}`, HOME: home, STUB: stub,
++      MIXXX_DEV_PROFILE: profile, MIXXX_DEV_LAUNCHER: devTool, NULL_SINK_SETTLE: "0", ...env,
++      ...args.find((a) => typeof a === "object") },
++  });
++  const log = () => (existsSync(join(stub, "pactl.log")) ? readFileSync(join(stub, "pactl.log"), "utf8") : "");
++  const moduleFile = join(profile, "null-sink.module");
++  return { dir, stub, home, profile, run, log, moduleFile };
++}
++
++const loads = (log) => log.split("\n").filter((l) => l.startsWith("pactl load-module")).length;
++const unloads = (log) => log.split("\n").filter((l) => l.startsWith("pactl unload-module"));
++const noDefaultChange = (log) => assert.doesNotMatch(log, /set-default|wpctl|pw-metadata/);
++
++test("up: loads module-null-sink as mixxx-dev at 48 kHz and records the module id", () => {
++  const t = setup();
++  const r = t.run("up");
++  assert.equal(r.status, 0, r.stderr);
++  const load = t.log().split("\n").find((l) => l.startsWith("pactl load-module"));
++  assert.match(load, /^pactl load-module module-null-sink /);
++  assert.match(load, / sink_name=mixxx-dev( |$)/);
++  assert.match(load, / rate=48000( |$)/);
++  assert.match(load, / channels=2( |$)/);
++  assert.equal(readFileSync(t.moduleFile, "utf8").trim(), MODULE_ID);
++  noDefaultChange(t.log());
++});
++
++test("up twice loads the module once", () => {
++  const t = setup();
++  assert.equal(t.run("up").status, 0);
++  const r = t.run("up");
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(loads(t.log()), 1);
++  assert.equal(readFileSync(t.moduleFile, "utf8").trim(), MODULE_ID);
++});
++
++test("up does not load a second sink when a mixxx-dev it did not load already exists", () => {
++  const t = setup({ state: { foreign: "" } });
++  const r = t.run("up");
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(loads(t.log()), 0);
++  assert.equal(existsSync(t.moduleFile), false);
++});
++
++test("up: if the default sink changed, unloads its own module at once and fails", () => {
++  const t = setup({ state: { hijack: "" } });
++  const r = t.run("up");
++  assert.equal(r.status, 1);
++  assert.deepEqual(unloads(t.log()), [`pactl unload-module ${MODULE_ID}`]);
++  assert.equal(existsSync(t.moduleFile), false);
++  noDefaultChange(t.log());
++});
++
++test("down unloads only the module id it loaded, then forgets it", () => {
++  const t = setup({ state: { other: "536870950" } });
++  assert.equal(t.run("up").status, 0);
++  const r = t.run("down");
++  assert.equal(r.status, 0, r.stderr);
++  assert.deepEqual(unloads(t.log()), [`pactl unload-module ${MODULE_ID}`]);
++  assert.equal(existsSync(t.moduleFile), false);
++  assert.equal(existsSync(join(t.stub, "loaded")), false);
++  noDefaultChange(t.log());
++});
++
++test("down with no module file unloads nothing, even when a mixxx-dev sink exists", () => {
++  const t = setup({ state: { foreign: "" } });
++  const r = t.run("down");
++  assert.equal(r.status, 0, r.stderr);
++  assert.deepEqual(unloads(t.log()), []);
++});
++
++test("down does not unload an id that is no longer our null sink", () => {
++  const t = setup({ state: { other: "536870950" } });
++  mkdirSync(t.profile, { recursive: true });
++  writeFileSync(t.moduleFile, "536870950\n"); // the id now belongs to someone else's null sink
++  const r = t.run("down");
++  assert.equal(r.status, 0, r.stderr);
++  assert.deepEqual(unloads(t.log()), []);
++  assert.equal(existsSync(t.moduleFile), false);
++});
++
++test("down refuses while a stream is on mixxx-dev (PipeWire would move it to the Rane One)", () => {
++  const t = setup();
++  assert.equal(t.run("up").status, 0);
++  writeFileSync(join(t.stub, "inputs"), "77\t901\t88\tPipeWire\tfloat32le 2ch 48000Hz\n");
++  const r = t.run("down");
++  assert.equal(r.status, 1);
++  assert.match(r.stderr, /stream/);
++  assert.deepEqual(unloads(t.log()), []);
++  assert.equal(existsSync(t.moduleFile), true);
++});
++
++test("down ignores streams on other sinks", () => {
++  const t = setup();
++  assert.equal(t.run("up").status, 0);
++  writeFileSync(join(t.stub, "inputs"), "77\t779\t88\tPipeWire\ts32le 4ch 48000Hz\n");
++  assert.equal(t.run("down").status, 0);
++  assert.deepEqual(unloads(t.log()), [`pactl unload-module ${MODULE_ID}`]);
++});
++
++for (const what of ["sink-inputs", "modules", "sinks"]) {
++  test(`down: a failing \`pactl list short ${what}\` unloads nothing and keeps the module id`, () => {
++    const t = setup();
++    assert.equal(t.run("up").status, 0);
++    writeFileSync(join(t.stub, `fail-${what}`), "");
++    const r = t.run("down");
++    assert.notEqual(r.status, 0);
++    assert.deepEqual(unloads(t.log()), []);
++    assert.equal(readFileSync(t.moduleFile, "utf8").trim(), MODULE_ID);
++  });
++}
++
++for (const launcher of ["broken", "says running, exits 1"]) {
++  test(`down refuses when the launcher's status is not a clean "stopped" (${launcher})`, () => {
++    const t = setup({ launcher });
++    assert.equal(t.run("up").status, 0);
++    assert.equal(t.run("down").status, 1);
++    assert.deepEqual(unloads(t.log()), []);
++  });
++}
++
++test("down refuses when MIXXX_DEV_LAUNCHER names a missing tool", () => {
++  const t = setup();
++  assert.equal(t.run("up").status, 0);
++  const r = t.run("down", { MIXXX_DEV_LAUNCHER: join(t.dir, "nope") });
++  assert.equal(r.status, 1);
++  assert.deepEqual(unloads(t.log()), []);
++});
++
++test("down refuses while a stream is on any sink named mixxx-dev, not just the first", () => {
++  // a foreign mixxx-dev at index 901, listed before ours at 903, and a stream on ours
++  const t = setup({ state: { foreign: "", second: "", loaded: MODULE_ID,
++    inputs: "77\t903\t88\tPipeWire\tfloat32le 2ch 48000Hz\n" } });
++  mkdirSync(t.profile, { recursive: true });
++  writeFileSync(t.moduleFile, `${MODULE_ID}\n`);
++  assert.equal(t.run("status").stdout.trim(), `mixxx-dev ${MODULE_ID}`);
++  const r = t.run("down");
++  assert.equal(r.status, 1);
++  assert.deepEqual(unloads(t.log()), []);
++});
++
++test("down refuses (exit 1) and keeps a module file that holds no id", () => {
++  const t = setup({ state: { loaded: MODULE_ID } });
++  mkdirSync(t.profile, { recursive: true });
++  writeFileSync(t.moduleFile, "garbage\n");
++  assert.equal(t.run("down").status, 1);
++  assert.equal(readFileSync(t.moduleFile, "utf8"), "garbage\n");
++  assert.deepEqual(unloads(t.log()), []);
++});
++
++for (const v of ["0.5", "-1", "a[$(touch pwned)]"]) {
++  test(`up rejects NULL_SINK_SETTLE=${v} (exit 2) before loading anything`, () => {
++    const t = setup({ state: { hijack: "" } });
++    const r = t.run("up", { NULL_SINK_SETTLE: v });
++    assert.equal(r.status, 2);
++    assert.equal(loads(t.log()), 0);
++    assert.equal(existsSync(join(t.dir, "pwned")), false);
++  });
++}
++
++test("up loads nothing when the profile cannot hold the module file", () => {
++  const t = setup();
++  writeFileSync(t.profile, "a file, not a directory");
++  assert.notEqual(t.run("up").status, 0);
++  assert.equal(loads(t.log()), 0);
++});
++
++test("up leaves no orphan module when writing the id fails after the load", () => {
++  const t = setup();
++  mkdirSync(t.moduleFile, { recursive: true }); // a directory where the id file goes
++  assert.notEqual(t.run("up").status, 0);
++  assert.equal(existsSync(join(t.stub, "loaded")), false);
++});
++
++test("up refuses (exit 3) a module file that is a symlink into the real profile", () => {
++  const t = setup();
++  const real = join(t.home, ".var/app/org.mixxx.Mixxx/.mixxx");
++  mkdirSync(real, { recursive: true });
++  writeFileSync(join(real, "mixxx.cfg"), "[Config]\n");
++  mkdirSync(t.profile, { recursive: true });
++  symlinkSync(join(real, "mixxx.cfg"), t.moduleFile);
++  assert.equal(t.run("up").status, 3);
++  assert.equal(readFileSync(join(real, "mixxx.cfg"), "utf8"), "[Config]\n");
++  assert.equal(loads(t.log()), 0);
++});
++
++test("down refuses while the dev Mixxx is running", () => {
++  const t = setup({ launcher: "running" });
++  assert.equal(t.run("up").status, 0);
++  const r = t.run("down");
++  assert.equal(r.status, 1);
++  assert.match(r.stderr, /Mixxx/);
++  assert.deepEqual(unloads(t.log()), []);
++});
++
++test("status prints the sink name and our module id", () => {
++  const t = setup();
++  assert.equal(t.run("up").status, 0);
++  const r = t.run("status");
++  assert.equal(r.status, 0);
++  assert.equal(r.stdout.trim(), `mixxx-dev ${MODULE_ID}`);
++});
++
++test("status reports a mixxx-dev it did not load as not ours", () => {
++  const r = setup({ state: { foreign: "" } }).run("status");
++  assert.equal(r.status, 0);
++  assert.equal(r.stdout.trim(), "mixxx-dev (not ours)");
++});
++
++test("status: absent, exit 1", () => {
++  const r = setup().run("status");
++  assert.equal(r.status, 1);
++  assert.equal(r.stdout.trim(), "absent");
++});
++
++test("no invocation ever changes the default sink or source", () => {
++  const t = setup();
++  for (const a of ["status", "up", "up", "status", "down", "down", "status"]) t.run(a);
++  noDefaultChange(t.log());
++});
++
++test("usage: bad or missing argument exits 2", () => {
++  const t = setup();
++  assert.equal(t.run().status, 2);
++  assert.equal(t.run("sideways").status, 2);
++  assert.equal(t.log(), "");
++});
++
++test("refuses (exit 3) a profile inside the real Mixxx profile", () => {
++  const t = setup();
++  const real = join(t.home, ".var/app/org.mixxx.Mixxx/.mixxx");
++  mkdirSync(real, { recursive: true });
++  const r = spawnSync(SCRIPT, ["up"], {
++    encoding: "utf8",
++    env: { ...BASE_ENV, PATH: `${join(t.dir, "bin")}:${process.env.PATH}`, HOME: t.home, STUB: t.stub,
++      MIXXX_DEV_PROFILE: join(real, "sub"), NULL_SINK_SETTLE: "0" },
++  });
++  assert.equal(r.status, 3);
++  assert.equal(t.log(), "");
++});
+diff --git a/tools/install-mapping b/tools/install-mapping
+new file mode 100755
+index 0000000..5788bde
+--- /dev/null
++++ b/tools/install-mapping
+@@ -0,0 +1,34 @@
++#!/usr/bin/env bash
++# Copies every file in mapping/ into the dev profile's controllers/ (MIXXX_DEV_PROFILE, default
++# ~/.var/app/org.mixxx.Mixxx/dev-profile). Always copies, never symlinks: the Flatpak cannot see this checkout.
++#   tools/install-mapping
++# Exit: 0 installed · 1 nothing to install · 2 usage · 3 refused (the real Mixxx profile)
++set -euo pipefail
++here=$(cd "$(dirname "$0")" && pwd)
++# shellcheck source=lib/profile.sh
++source "$here/lib/profile.sh"
++(( $# == 0 )) || { sed -n 4p "$0" >&2; exit 2; }
++profile_guard
++src=$here/../mapping
++files=()
++for f in "$src"/*; do
++  if [[ -f $f && ! -L $f ]]; then files+=("$f"); elif [[ -e $f ]]; then echo "skipped (not a file): $f" >&2; fi
++done
++(( ${#files[@]} )) || { echo "nothing to install: no files in $(realpath -m "$src")" >&2; exit 1; }
++dest=$PROFILE/controllers
++[[ ! -L $dest ]] || { echo "refused: $dest is a symlink" >&2; exit 3; }
++mkdir -p "$dest"
++guard_path "$dest"
++tmp=
++trap '[[ -n $tmp ]] && rm -f -- "$tmp"' EXIT
++for f in "${files[@]}"; do
++  name=${f##*/}
++  # A fresh temp file plus rename in the same directory, so a running Mixxx's file watcher never reads half a
++  # script and a stale symlink in controllers/ is replaced, never written through.
++  tmp=$(mktemp -- "$dest/.$name.XXXXXX")
++  cp -- "$f" "$tmp"
++  chmod 644 -- "$tmp"
++  mv -f -T -- "$tmp" "$dest/$name"
++  tmp=
++  echo "installed $dest/$name"
++done
+diff --git a/tools/lib/dev-seed.mjs b/tools/lib/dev-seed.mjs
+new file mode 100644
+index 0000000..fd5ef9d
+--- /dev/null
++++ b/tools/lib/dev-seed.mjs
+@@ -0,0 +1,109 @@
++// Seeds the dev Mixxx profile so a fresh Mixxx 2.5 starts without a modal dialog (plan "Dev profile seed", D9).
++//   node tools/lib/dev-seed.mjs <profile> <mixxx version>
++// Run by tools/mixxx-dev before every launch, after its profile guard. Every file goes through a temp file plus
++// rename in the profile, so a symlink in its place is replaced, never written through.
++import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, rmSync } from "node:fs";
++import { join } from "node:path";
++import { DatabaseSync } from "node:sqlite";
++
++const THROUGH = "Midi_Through_Port-0"; // sanitizeDeviceName("Midi Through Port-0"), controllermanager.cpp
++const CONTROLLER_GROUPS = ["Controller", "ControllerPreset"];
++
++// Launcher-owned: Main (Mixxx still calls it "Master") to the ALSA `pulse` device, which honours PULSE_SINK.
++export const SOUNDCONFIG = `<!DOCTYPE SoundManagerConfig>
++<SoundManagerConfig api="ALSA" samplerate="48000" latency="5" sync_buffers="2" force_network_clock="0" deck_count="4">
++  <SoundDevice name="pulse" portAudioIndex="-1">
++    <output type="Master" index="0" channel="0" channel_count="2"/>
++  </SoundDevice>
++</SoundManagerConfig>
++`;
++
++// Sets our keys in mixxx.cfg text, leaving every other line as Mixxx wrote it. `mapping` is the absolute path of
++// the installed Rane-One.midi.xml, or null: then Midi Through is neither enabled nor bound. Any Controller or
++// ControllerPreset key naming a Rane device is removed (D9: the real controller is never bound at night).
++export function applyCfg(text, { version, mapping }) {
++  const want = {
++    Config: { Version: version, show_menubar_hint: "0" },
++    Controller: mapping ? { [THROUGH]: "1" } : {},
++    ControllerPreset: mapping ? { [THROUGH]: mapping } : {},
++    "Direct Rendering": { Warned: "yes" },
++  };
++  const drop = (group, key) =>
++    CONTROLLER_GROUPS.includes(group) && (/rane/i.test(key) || (!mapping && key === THROUGH));
++
++  const groups = [{ name: null, lines: [] }];
++  for (const line of text.split("\n")) {
++    const m = /^\[(.*)\]\s*$/.exec(line);
++    if (m) groups.push({ name: m[1], lines: [] });
++    else groups.at(-1).lines.push(line);
++  }
++  const done = new Set();
++  for (const g of groups) {
++    const keys = want[g.name] ?? {};
++    g.lines = g.lines.flatMap((line) => {
++      const key = line.split(" ", 1)[0];
++      if (!line.trim()) return [];
++      if (drop(g.name, key)) return [];
++      if (Object.hasOwn(keys, key)) {
++        if (done.has(`${g.name}\n${key}`)) return [];
++        done.add(`${g.name}\n${key}`);
++        return [`${key} ${keys[key]}`];
++      }
++      return [line];
++    });
++  }
++  for (const [name, keys] of Object.entries(want)) {
++    let g = groups.find((x) => x.name === name);
++    const missing = Object.keys(keys).filter((k) => !done.has(`${name}\n${k}`));
++    if (!missing.length) continue;
++    if (!g) groups.push((g = { name, lines: [] }));
++    for (const k of missing) g.lines.push(`${k} ${keys[k]}`);
++  }
++  return groups
++    .filter((g) => g.name !== null || g.lines.length)
++    .map((g) => [...(g.name === null ? [] : [`[${g.name}]`]), ...g.lines].join("\n"))
++    .join("\n\n") + "\n";
++}
++
++function writeAtomic(profile, name, content) {
++  const tmp = join(profile, `.${name}.${process.pid}.tmp`);
++  try {
++    writeFileSync(tmp, content, { mode: 0o644, flag: "wx" });
++    renameSync(tmp, join(profile, name));
++  } finally {
++    rmSync(tmp, { force: true });
++  }
++}
++
++export function seed(profile, version) {
++  for (const d of [profile, join(profile, "controllers"), join(profile, "music")]) mkdirSync(d, { recursive: true });
++  const cfgPath = join(profile, "mixxx.cfg");
++  const mapping = join(profile, "controllers", "Rane-One.midi.xml");
++  const cfg = existsSync(cfgPath) ? readFileSync(cfgPath, "utf8") : "";
++  writeAtomic(profile, "mixxx.cfg", applyCfg(cfg, { version, mapping: existsSync(mapping) ? mapping : null }));
++  writeAtomic(profile, "soundconfig.xml", SOUNDCONFIG);
++  // The library chooser shows while the DB table `directories` is empty (coreservices.cpp); Mixxx's own schema
++  // migration creates it IF NOT EXISTS and keeps the row. An existing database is Mixxx's: never touched.
++  const db = join(profile, "mixxxdb.sqlite");
++  if (!existsSync(db)) {
++    const tmp = join(profile, `.mixxxdb.sqlite.${process.pid}.tmp`);
++    try {
++      const sql = new DatabaseSync(tmp);
++      sql.exec("CREATE TABLE directories (directory TEXT UNIQUE)");
++      sql.prepare("INSERT INTO directories VALUES (?)").run(join(profile, "music"));
++      sql.close();
++      renameSync(tmp, db);
++    } finally {
++      rmSync(tmp, { force: true });
++    }
++  }
++}
++
++if (import.meta.main) {
++  const [profile, version, ...rest] = process.argv.slice(2);
++  if (!profile?.startsWith("/") || !/^\d+\.\d+\.\d+/.test(version ?? "") || rest.length) {
++    console.error("usage: node tools/lib/dev-seed.mjs <absolute profile> <mixxx version>");
++    process.exit(2);
++  }
++  seed(profile, version);
++}
+diff --git a/tools/lib/midi-parse.mjs b/tools/lib/midi-parse.mjs
+new file mode 100644
+index 0000000..fe6f6bb
+--- /dev/null
++++ b/tools/lib/midi-parse.mjs
+@@ -0,0 +1,160 @@
++// Pure MIDI 1.0 byte-stream parser shared by capture, replay, census and the tests. No I/O.
++// Spec: docs/plans/2026-10-19-M1-dev-loop.md, section "MIDI parser".
++
++const SYSEX_MAX = 65536;
++
++// Data-byte count per channel-message kind (status & 0xF0).
++const CHANNEL_LEN = { 0x80: 2, 0x90: 2, 0xa0: 2, 0xb0: 2, 0xc0: 1, 0xd0: 1, 0xe0: 2 };
++// Data-byte count for system common; 0xF4, 0xF5 (undefined) and a stray 0xF7 are absent and get dropped.
++const COMMON_LEN = { 0xf1: 1, 0xf2: 2, 0xf3: 1, 0xf6: 0 };
++
++export function createParser() {
++  let running = 0; // last channel status, 0 = none
++  let status = 0; // status of the message being collected, 0 = none
++  let need = 0; // data bytes the current message takes
++  let data = [];
++  let pending = 0; // bytes buffered for the current message (its status byte too, unless running status)
++  let sysex = null; // payload array while inside F0 … F7
++  // `dropped` counts input bytes (or invalid elements) that ended up in no emitted message.
++  const stats = { messages: 0, dropped: 0 };
++
++  const abandon = () => {
++    stats.dropped += pending;
++    status = need = pending = 0;
++    data = [];
++  };
++
++  function feed(bytes) {
++    const out = [];
++    const emit = (msg) => {
++      out.push(msg);
++      stats.messages++;
++    };
++    const endSysex = (truncated) => {
++      emit(truncated ? { status: 0xf0, data: sysex, truncated: true } : { status: 0xf0, data: sysex });
++      sysex = null;
++    };
++
++    try {
++      if (bytes != null && typeof bytes[Symbol.iterator] === "function") for (const b of bytes) step(b);
++    } catch {
++      // Never throw: a hostile iterable ends the feed; what was parsed so far is returned.
++    }
++    return out;
++
++    function step(b) {
++      if (!Number.isInteger(b) || b < 0 || b > 0xff) {
++        // Not a byte: breaks whatever was in progress, so its neighbours never join into a fake message.
++        stats.dropped++;
++        abandon();
++        if (sysex) endSysex(true);
++        return;
++      }
++      if (b >= 0xf8) {
++        // Real-time: emitted at once, leaves everything around it untouched.
++        emit({ status: b, data: [] });
++        return;
++      }
++      if (sysex) {
++        if (b < 0x80) {
++          if (sysex.length < SYSEX_MAX) sysex.push(b);
++          else {
++            endSysex(true);
++            stats.dropped++; // the rest of this SysEx has no status to belong to
++          }
++          return;
++        }
++        if (b === 0xf7) {
++          endSysex(false);
++          return;
++        }
++        endSysex(true); // any other status byte ends it, then is processed below
++      }
++      if (b < 0x80) {
++        if (!status) {
++          if (!running) {
++            stats.dropped++;
++            return;
++          }
++          status = running;
++          need = CHANNEL_LEN[running & 0xf0];
++          data = [];
++        }
++        data.push(b);
++        pending++;
++        if (data.length === need) {
++          emit({ status, data });
++          status = need = pending = 0;
++          data = [];
++        }
++        return;
++      }
++      // A new status byte abandons any partial message.
++      abandon();
++      if (b < 0xf0) {
++        running = b;
++        status = b;
++        need = CHANNEL_LEN[b & 0xf0];
++        pending = 1;
++        return;
++      }
++      running = 0; // SysEx and system common clear running status
++      if (b === 0xf0) {
++        sysex = [];
++      } else if (b in COMMON_LEN) {
++        if (COMMON_LEN[b] === 0) emit({ status: b, data: [] });
++        else {
++          status = b;
++          need = COMMON_LEN[b];
++          pending = 1;
++        }
++      } else {
++        stats.dropped++; // 0xF4, 0xF5, stray 0xF7
++      }
++    }
++  }
++
++  function reset() {
++    running = status = need = pending = 0;
++    data = [];
++    sysex = null;
++    stats.messages = stats.dropped = 0;
++  }
++
++  return { feed, reset, stats };
++}
++
++const hex = (b) => b.toString(16).padStart(2, "0");
++
++const REALTIME = { 0xf8: "clock", 0xfa: "start", 0xfb: "continue", 0xfc: "stop", 0xfe: "sense", 0xff: "reset" };
++
++// One-line text for a message; channels are shown 1-based.
++export function describe(msg) {
++  const { status, data } = msg ?? {};
++  if (!Number.isInteger(status) || !Array.isArray(data)) return "invalid";
++  const [d1, d2] = data;
++  if (status < 0xf0) {
++    const ch = `ch${(status & 0x0f) + 1}`;
++    switch (status & 0xf0) {
++      case 0x80: return `off ${ch} ${d1}=${d2}`;
++      case 0x90: return `on ${ch} ${d1}=${d2}`;
++      case 0xa0: return `pat ${ch} ${d1}=${d2}`;
++      case 0xb0: return `cc ${ch} ${d1}=${d2}`;
++      case 0xc0: return `pc ${ch} ${d1}`;
++      case 0xd0: return `cp ${ch} ${d1}`;
++      case 0xe0: return `pb ${ch} ${d1 | (d2 << 7)}`;
++      default: return `status 0x${hex(status)}`;
++    }
++  }
++  switch (status) {
++    case 0xf0: {
++      const shown = data.slice(0, 32).map((b) => (Number.isInteger(b) ? hex(b) : "??")).join(" ");
++      return `sysex ${data.length}:${shown ? " " + shown : ""}${data.length > 32 ? " …" : ""}${msg.truncated ? " truncated" : ""}`;
++    }
++    case 0xf1: return `mtc 0x${hex(d1)}`;
++    case 0xf2: return `spp ${d1 | (d2 << 7)}`;
++    case 0xf3: return `song ${d1}`;
++    case 0xf6: return "tune";
++    default: return REALTIME[status] ?? `status 0x${hex(status)}`;
++  }
++}
+diff --git a/tools/lib/profile.sh b/tools/lib/profile.sh
+new file mode 100644
+index 0000000..d21683d
+--- /dev/null
++++ b/tools/lib/profile.sh
+@@ -0,0 +1,22 @@
++# Sourced by the dev-loop tools. profile_guard sets PROFILE to the dev Mixxx profile (MIXXX_DEV_PROFILE, default
++# ~/.var/app/org.mixxx.Mixxx/dev-profile), resolved through symlinks; guard_path checks a path a tool is about to
++# write. Both exit 3 when the path is Michael's real profile ~/.var/app/org.mixxx.Mixxx/.mixxx, inside it, or an
++# ancestor of it, compared both as written and with symlinks resolved (D3, plan "Profile guard").
++guard_path() {
++  local real p r
++  for real in "$(realpath -ms -- "$HOME/.var/app/org.mixxx.Mixxx/.mixxx")" \
++              "$(realpath -m -- "$HOME/.var/app/org.mixxx.Mixxx/.mixxx")"; do
++    for p in "$(realpath -ms -- "$1")" "$(realpath -m -- "$1")"; do
++      r=${p%/}
++      if [[ $p == "$real" || $p/ == "$real"/* || $real/ == "$r"/* ]]; then
++        echo "refused: $1 is (or contains) the real Mixxx profile $real" >&2
++        exit 3
++      fi
++    done
++  done
++}
++
++profile_guard() {
++  PROFILE=$(realpath -m -- "${MIXXX_DEV_PROFILE:-$HOME/.var/app/org.mixxx.Mixxx/dev-profile}")
++  guard_path "${MIXXX_DEV_PROFILE:-$HOME/.var/app/org.mixxx.Mixxx/dev-profile}"
++}
+diff --git a/tools/midi-send b/tools/midi-send
+index 9adfefa..8503af6 100755
+--- a/tools/midi-send
++++ b/tools/midi-send
+@@ -3,7 +3,8 @@
+ # (he runs `touch ~/.rane-armed` while he is at the controller and removes it when he leaves).
+ #   tools/midi-send raw  <rawmidi device, e.g. hw:3,0,0> <hex bytes…>    (amidi -S)
+ #   tools/midi-send play <seq client:port, e.g. 14:0>    <file.mid>       (aplaymidi)
+-# Exit: 0 sent · 2 usage · 3 refused (Rane One, not armed) · 4 refused (unknown destination)
++# Exit: 0 sent · 2 usage · 3 refused (Rane One or a route to it, not armed) · 4 refused (unknown destination)
++# `play` checks the subscriptions once, before playback; a subscription added while aplaymidi plays is not seen.
+ set -euo pipefail
+ ARM=${RANE_ARM_FILE:-$HOME/.rane-armed}
+ usage() { sed -n 4,5p "$0" >&2; exit 2; }
+@@ -11,15 +12,46 @@ usage() { sed -n 4,5p "$0" >&2; exit 2; }
+ mode=$1 dest=$2; shift 2
+ case $mode in
+   raw)  name=$(amidi -l | awk -v d="$dest" '$2 == d { $1 = ""; $2 = ""; sub(/^ +/, ""); print; exit }') ;;
+-  play) [[ $dest =~ ^([0-9]+):[0-9]+$ ]] || usage
+-        name=$(aconnect -o | sed -n "s/^client ${BASH_REMATCH[1]}: '\\(.*\\)'.*/\\1/p" | head -1) ;;
++  play) # One file, never an option: aplaymidi would read `-p 24:0` or `--port=24:0` anywhere as more ports.
++        (( $# == 1 )) && [[ $1 != -* ]] || usage
++        [[ $dest =~ ^([0-9]{1,3}):([0-9]{1,3})$ ]] || usage
++        # Normalised (no leading zeros), so the route check and aplaymidi see the same address.
++        dest=$((10#${BASH_REMATCH[1]})):$((10#${BASH_REMATCH[2]}))
++        name=$(aconnect -o | sed -n "s/^client ${dest%%:*}: '\\(.*\\)' \\[.*/\\1/p" | head -1) ;;
+   *)    usage ;;
+ esac
+ [[ -n $name ]] || { echo "refused: $dest is not a known MIDI destination" >&2; exit 4; }
+ if [[ ${name,,} == *rane* && ! -f $ARM ]]; then
+   echo "refused: $dest is '$name' and $ARM is absent (Michael must be at the controller)" >&2; exit 3
+ fi
++# A seq port forwards to every port subscribed to it (Midi Through does so in the kernel, port by port), so
++# follow its `Connecting To` subscriptions, transitively, and refuse if any reaches a Rane client. A user client
++# may pass what one of its ports receives out of another (a bridge, Mixxx itself), so reaching any port of a user
++# client follows all of its ports. Fails closed.
++if [[ $mode == play && ! -f $ARM ]]; then
++  conns=$(aconnect -l) || { echo "refused: aconnect -l failed, cannot rule out a route to the Rane One" >&2; exit 3; }
++  rane=$(awk -v start="$dest" '
++    /^client [0-9]+: / { c = $2; sub(":", "", c); n = $0; sub(/^client [0-9]+: \047/, "", n)
++      sub(/\047 \[[^]]*\]$/, "", n); name[c] = n; user[c] = ($0 ~ /\[type=user/); port = ""; next }
++    /^ +[0-9]+ \047/ { port = c ":" $1; ports[c] = ports[c] " " port; next }
++    /^\tConnecting To: / && port != "" {
++      l = $0; sub(/^\t[^:]*: /, "", l); k = split(l, a, /, */)
++      for (i = 1; i <= k; i++) { sub(/\[.*/, "", a[i]); to[port] = to[port] " " a[i] } }
++    END {
++      queue[1] = start; seen[start] = 1; head = 1; tail = 1
++      while (head <= tail) {
++        p = queue[head++]; split(p, cp, ":")
++        next_ports = to[p]; if (user[cp[1]]) next_ports = next_ports ports[cp[1]]
++        k = split(next_ports, a, " ")
++        for (i = 1; i <= k; i++) if (!(a[i] in seen)) { seen[a[i]] = 1; queue[++tail] = a[i] }
++      }
++      for (p in seen) { split(p, cp, ":"); if (tolower(name[cp[1]]) ~ /rane/) { print name[cp[1]]; exit } }
++    }' <<< "$conns") || { echo "refused: cannot parse aconnect -l, cannot rule out a route to the Rane One" >&2
++    exit 3; }
++  [[ -z $rane ]] || {
++    echo "refused: $dest is subscribed onward to '$rane' and $ARM is absent (aconnect -l)" >&2; exit 3; }
++fi
+ case $mode in
+   raw)  exec amidi -p "$dest" -S "$*" ;;
+-  play) exec aplaymidi -p "$dest" "$@" ;;
++  play) exec aplaymidi -p "$dest" -- "$1" ;;
+ esac
+diff --git a/tools/mixxx-dev b/tools/mixxx-dev
+new file mode 100755
+index 0000000..7f10017
+--- /dev/null
++++ b/tools/mixxx-dev
+@@ -0,0 +1,285 @@
++#!/usr/bin/env bash
++# The dev Mixxx: Flatpak org.mixxx.Mixxx on the dev profile, its audio routed to the mixxx-dev null sink (D7, D9).
++# It only ever stops the instance it started, by the id in $PROFILE/mixxx-dev.instance.
++#   tools/mixxx-dev start|stop|status|log [n]
++# start: seed the profile, launch detached, then wait for a new mixxx.log and the version line on stdout and check
++#   that every mixxx-dev stream is on the mixxx-dev sink; any failure after the launch stops that Mixxx again.
++# stop: `flatpak kill <id>`, never by app name. status: `<id> running` (exit 0) or exactly `stopped` (exit 1),
++#   which tools/null-sink relies on. log: the last n (default 50) lines of $PROFILE/mixxx.log.
++# Env: MIXXX_DEV_PROFILE, MIXXX_DEV_NULL_SINK (the null-sink tool), MIXXX_DEV_PROC (default /proc), and the
++#   whole-second timeouts MIXXX_DEV_LOG_TIMEOUT (60), MIXXX_DEV_ROUTE_TIMEOUT (30), MIXXX_DEV_STOP_TIMEOUT (10).
++# start and stop hold $PROFILE/mixxx-dev.lock; while it is held, start and stop refuse and status prints `busy`.
++# Exit: 0 ok · 1 failed, refused or stopped · 2 usage · 3 refused (the real Mixxx profile, a symlink)
++set -euo pipefail
++export LC_ALL=C # pactl and flatpak labels are parsed below
++here=$(cd "$(dirname "$0")" && pwd)
++# shellcheck source=lib/profile.sh
++source "$here/lib/profile.sh"
++APP=org.mixxx.Mixxx
++SINK=mixxx-dev
++usage() { sed -n 4p "$0" >&2; exit 2; }
++case ${1:-} in
++  start|stop|status) (( $# == 1 )) || usage ;;
++  log) (( $# <= 2 )) && [[ ${2:-50} =~ ^[1-9][0-9]*$ ]] || usage ;;
++  *) usage ;;
++esac
++for t in LOG:60 ROUTE:30 STOP:10; do
++  var=MIXXX_DEV_${t%%:*}_TIMEOUT
++  val=${!var:-${t#*:}}
++  [[ $val =~ ^(0|[1-9][0-9]{0,3})$ ]] || { echo "$var must be whole seconds, not '$val'" >&2; usage; }
++  printf -v "${t%%:*}_TIMEOUT" %s "$val"
++done
++profile_guard
++inst_file=$PROFILE/mixxx-dev.instance
++lock_file=$PROFILE/mixxx-dev.lock
++log_file=$PROFILE/mixxx.log
++proc=${MIXXX_DEV_PROC:-/proc}
++for f in "$inst_file" "$lock_file"; do
++  [[ ! -L $f ]] || { echo "refused: $f is a symlink" >&2; exit 3; }
++done
++
++now() { echo "${EPOCHREALTIME//[.,]/}"; } # µs
++# The id in the instance file, or empty when there is none. Anything but one number is an error, never guessed
++# at: `flatpak kill` also takes an app name, which would kill every Mixxx.
++read_id() {
++  [[ -e $inst_file ]] || return 0
++  local id
++  id=$(< "$inst_file") || exit 1
++  [[ $id =~ ^[0-9]+$ ]] || { echo "$inst_file holds no instance id; fix or remove it by hand" >&2; exit 1; }
++  echo "$id"
++}
++# 0 when `flatpak ps` lists instance $1 as a running org.mixxx.Mixxx, 1 when it does not, 2 when `flatpak ps`
++# failed: that is "maybe running", never "not running".
++is_running() {
++  local ps
++  ps=$(flatpak ps --columns=instance,application) || { echo "flatpak ps failed" >&2; return 2; }
++  awk -v id="$1" -v app=$APP '$1 == id && $2 == app { f = 1 } END { exit !f }' <<< "$ps"
++}
++# Takes the lock on fd 9 (start and stop), or refuses. The launch closes fd 9 so Mixxx does not inherit it.
++lock() {
++  mkdir -p -- "$PROFILE"
++  exec 9>> "$lock_file"
++  flock -n 9 || { echo "refused: another tools/mixxx-dev start or stop holds $lock_file" >&2; exit 1; }
++}
++stop_id() {
++  flatpak kill "$1" || true
++  local end=$(( $(now) + STOP_TIMEOUT * 1000000 )) rc
++  while :; do
++    rc=0; is_running "$1" || rc=$?
++    (( rc != 1 )) || break
++    (( $(now) < end )) || { echo "instance $1 may still run ${STOP_TIMEOUT}s after flatpak kill; kept $inst_file" >&2
++      return 1; }
++    sleep 0.2
++  done
++  rm -f -- "$inst_file"
++  echo "stopped $1"
++}
++
++case $1 in
++  log)
++    [[ -f $log_file ]] || { echo "no $log_file" >&2; exit 1; }
++    tail -n "${2:-50}" -- "$log_file"
++    exit 0 ;;
++
++  status)
++    if [[ -e $lock_file ]] && ! flock -n "$lock_file" true; then echo "busy (a start or stop is running)"; exit 0; fi
++    id=$(read_id)
++    rc=1
++    [[ -z $id ]] || { is_running "$id" && rc=0 || rc=$?; }
++    case $rc in
++      0) echo "$id running"; exit 0 ;;
++      1) echo stopped; exit 1 ;;
++      *) exit 1 ;;
++    esac ;;
++
++  stop)
++    [[ -d $PROFILE ]] || { echo "no $PROFILE; nothing stopped"; exit 0; }
++    lock # a start in progress has no instance file yet: wait for nothing, refuse
++    id=$(read_id)
++    [[ -n $id ]] || { echo "no $inst_file; nothing stopped"; exit 0; }
++    rc=0; is_running "$id" || rc=$?
++    (( rc != 2 )) || exit 1
++    if (( rc == 1 )); then
++      rm -f -- "$inst_file"
++      echo "instance $id is not a running $APP; forgot it, nothing stopped"
++      exit 0
++    fi
++    stop_id "$id" || exit 1
++    exit 0 ;;
++esac
++
++# --- start ---------------------------------------------------------------------------------------------------
++# The sandbox sees only its own data dir (and HOME is the real home inside), so a profile elsewhere would make
++# Mixxx fall back to a fresh profile somewhere we do not check.
++sandbox=$(realpath -m -- "$HOME/.var/app/$APP")
++[[ $PROFILE == "$sandbox"/?* ]] || { echo "refused: $PROFILE is outside $sandbox, which the Flatpak can see" >&2
++  exit 3; }
++for f in mixxx.cfg soundconfig.xml mixxxdb.sqlite mixxx.log mixxx-dev.stdout controllers music; do
++  [[ ! -L $PROFILE/$f ]] || { echo "refused: $PROFILE/$f is a symlink" >&2; exit 3; }
++done
++[[ -n ${WAYLAND_DISPLAY:-} ]] || { echo "refused: WAYLAND_DISPLAY is unset; Mixxx needs the desktop session" >&2
++  exit 1; }
++"${MIXXX_DEV_NULL_SINK:-$here/null-sink}" status > /dev/null || {
++  echo "refused: the $SINK null sink is not up (tools/null-sink up); Mixxx would play to the default sink" >&2
++  exit 1; }
++# Mixxx opens Midi Through's output too: a subscription from (or to) a Rane client would connect it to the
++# controller (D9 night rule).
++conns=$(aconnect -l) || { echo "aconnect -l failed" >&2; exit 1; }
++rane=$(awk '
++  /^client [0-9]+: / { c = $2; sub(":", "", c); n = $0; sub(/^client [0-9]+: \047/, "", n); sub(/\047.*/, "", n)
++    name[c] = n; port = ""; next }
++  /^ +[0-9]+ \047/ { port = $1; next }
++  /^\t(Connecting To|Connected From): / && name[c] == "Midi Through" && port == "0" {
++    l = $0; sub(/^\t[^:]*: /, "", l); k = split(l, a, /, */)
++    for (i = 1; i <= k; i++) { split(a[i], cp, ":"); peer[cp[1]] } }
++  END { for (p in peer) if (tolower(name[p]) ~ /rane/) print name[p] }' <<< "$conns")
++[[ -z $rane ]] || { echo "refused: Midi Through Port-0 is connected to '$rane' (aconnect -l)" >&2; exit 1; }
++
++lock
++id=$(read_id)
++if [[ -n $id ]]; then
++  rc=0; is_running "$id" || rc=$?
++  (( rc != 0 )) || { echo "already running: $id"; exit 0; }
++  (( rc == 1 )) || exit 1
++fi
++
++# ok: at least one mixxx-dev stream, all on the mixxx-dev sink · none: no such stream yet · bad <sinks>: one is
++# elsewhere · error: pactl failed. A stream not linked yet (Sink 4294967295, PA_INVALID_INDEX; seen live right
++# after launch) plays nowhere: it is neither routed nor misrouted. Streams with another application.name (a Mixxx Michael runs) are ignored.
++route() {
++  local sinks inputs
++  sinks=$(pactl list short sinks) && inputs=$(pactl list sink-inputs) || { echo error; return; }
++  awk -F'\t' -v n=$SINK '
++    function flush() {
++      if (ours && sink != "4294967295") { if (sink in dev) good++; else bad = bad " " sink }
++      ours = 0 }
++    FNR == NR { if ($2 == n) dev[$1]; next }
++    /^Sink Input #/ { flush(); sink = ""; next }
++    /^\tSink: / { sink = substr($0, 8); next }
++    $0 == "\t\tapplication.name = \"" n "\"" { ours = 1 }
++    END { flush(); if (bad != "") print "bad" bad; else print (good ? "ok" : "none") }' \
++    <(printf '%s\n' "$sinks") - <<< "$inputs"
++}
++
++# A mixxx-dev stream before the launch is a dev Mixxx we do not track: it would pass the routing check for us.
++case $(route) in
++  none) ;;
++  error) echo "pactl failed" >&2; exit 1 ;;
++  *) echo "refused: a $SINK stream already plays (pactl list sink-inputs); an untracked dev Mixxx?" >&2; exit 1 ;;
++esac
++version=$(flatpak info "$APP" | awk '$1 == "Version:" { print $2; exit }')
++[[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] || { echo "flatpak info $APP gave no version ('$version')" >&2; exit 1; }
++node "$here/lib/dev-seed.mjs" "$PROFILE" "$version"
++old_inode=$(stat -c %i -- "$log_file" 2> /dev/null || true)
++before=$(flatpak ps --columns=instance,application) || { echo "flatpak ps failed" >&2; exit 1; }
++
++# From the launch on, every exit that is not the final success (a failed check, set -e, a signal) stops the
++# instance, or, before its id is known, names any new org.mixxx.Mixxx instance for a human to check.
++id= launcher= tmp_inst= done=
++on_exit() {
++  [[ -z $done ]] || return 0
++  if [[ -n $id ]]; then
++    echo "start did not finish; stopping instance $id" >&2
++    stop_id "$id" >&2 || true
++  else
++    [[ -z $launcher ]] || kill "$launcher" 2> /dev/null || true
++    local new
++    new=$(flatpak ps --columns=instance,application | awk -v app=$APP 'NR == FNR { seen[$1]; next }
++      $2 == app && !($1 in seen) { print $1 }' <(printf '%s\n' "$before") - | paste -sd' ') || new="(flatpak ps failed)"
++    echo "flatpak run gave no instance id; new $APP instances, not stopped: ${new:-none}." \
++      "See $PROFILE/mixxx-dev.stdout" >&2
++  fi
++  [[ -z $tmp_inst ]] || rm -f -- "$tmp_inst"
++}
++trap on_exit EXIT
++trap 'exit 1' INT TERM HUP
++fail() {
++  echo "FAIL: $*" >&2
++  exit 1
++}
++
++rm -f -- "$inst_file"
++tmp_inst=$(mktemp -- "$PROFILE/.mixxx-dev.instance.XXXXXX")
++# Detached (setsid, no --die-with-parent) so Mixxx outlives this shell; fd 3 receives the instance id, fd 9 (the
++# lock) is closed so Mixxx does not hold it.
++setsid flatpak run --env=PULSE_SINK=$SINK --env=PULSE_PROP_OVERRIDE=application.name=$SINK --instance-id-fd=3 \
++  "$APP" --settings-path "$PROFILE" --controller-debug --controller-abort-on-warning --developer \
++  --log-flush-level debug \
++  3> "$tmp_inst" > "$PROFILE/mixxx-dev.stdout" 2>&1 < /dev/null 9>&- &
++launcher=$!
++t0=$(now)
++log_end=$(( t0 + LOG_TIMEOUT * 1000000 ))
++route_end=$(( t0 + ROUTE_TIMEOUT * 1000000 ))
++
++while :; do
++  got=$(< "$tmp_inst") || got=
++  if [[ $got =~ ^[0-9]+$ ]]; then
++    mv -f -T -- "$tmp_inst" "$inst_file"
++    tmp_inst= id=$got
++    break
++  fi
++  (( $(now) < log_end )) && kill -0 "$launcher" 2> /dev/null || exit 1
++  sleep 0.1
++done
++# Started: a new mixxx.log (Mixxx renames the old one to mixxx.log.1), and the version line on this launch's
++# stdout. Mixxx 2.5.6 logs its version only at Debug in the default category, which --controller-debug keeps out
++# of mixxx.log (src/util/logging.cpp); upgrade.cpp prints this line before logging starts, once mixxx.cfg's
++# Version (set by the seed) equals the running binary's (D10).
++started() {
++  local ino
++  [[ ! -L $log_file ]] || fail "$log_file is a symlink"
++  ino=$(stat -c %i -- "$log_file" 2> /dev/null) || return 1
++  [[ $ino != "$old_inode" && -s $log_file ]] &&
++    grep -qxF "Configuration file is at the current version \"$version\"" -- "$PROFILE/mixxx-dev.stdout"
++}
++log_ok= route_ok=
++while :; do
++  [[ -n $log_ok ]] || ! started || log_ok=1
++  state=$(route)
++  case $state in
++    ok) route_ok=1 ;;
++    error) fail "pactl failed" ;;
++    bad*) fail "a $SINK stream is on sink(s)${state#bad}, not on $SINK (pactl list sink-inputs)" ;;
++  esac
++  [[ -n $log_ok && -n $route_ok ]] && break
++  t=$(now)
++  [[ -n $log_ok ]] || (( t < log_end )) || fail "no new $log_file, or no Mixxx $version line in $PROFILE/mixxx-dev.stdout, in ${LOG_TIMEOUT}s"
++  [[ -n $route_ok ]] || (( t < route_end )) ||
++    fail "no stream named $SINK on the $SINK sink in ${ROUTE_TIMEOUT}s (pactl list sink-inputs)"
++  rc=0; is_running "$id" || rc=$?
++  (( rc != 1 )) || fail "Mixxx exited during startup; see $log_file and $PROFILE/mixxx-dev.stdout"
++  (( rc != 2 )) || fail "flatpak ps failed"
++  sleep 0.25
++done
++
++# Second, independent check: the sandbox has devices=all, so Mixxx could open the Rane ONE's PCM directly,
++# which pactl would not show. No Rane playback substream may be owned by a process of this instance.
++pids=$(flatpak ps --columns=instance,pid,child-pid | awk -v id="$id" '$1 == id { print $2; print $3 }') ||
++  fail "flatpak ps failed"
++[[ -n $pids ]] || fail "flatpak ps lists no pid for instance $id"
++cards=$(awk '/^ *[0-9]+ \[/ && tolower($0) ~ /rane/ { print $1 }' "$proc/asound/cards" 2> /dev/null || true)
++for card in $cards; do
++  for status in "$proc/asound/card$card"/pcm*p/sub*/status; do
++    [[ -f $status ]] || continue
++    p=$(sed -n 's/^owner_pid[[:space:]]*:[[:space:]]*\([0-9]\+\).*/\1/p' "$status")
++    # Walk up from the owner: a process of this instance descends from its wrapper or sandbox pid.
++    for (( i = 0; i < 64; i++ )); do
++      [[ $p =~ ^[0-9]+$ ]] && (( p > 1 )) || break
++      ! grep -qx -- "$p" <<< "$pids" || fail "Mixxx holds the Rane ONE playback PCM directly ($status)"
++      stat=$(cat -- "$proc/$p/stat" 2> /dev/null) || break
++      read -r _ p _ <<< "${stat##*) }"
++    done
++  done
++done
++
++# Mixxx writes its sound config back after setup; a different API or device means our routing was not used.
++sc=$PROFILE/soundconfig.xml
++api=$(sed -n 's/.*<SoundManagerConfig[^>]* api="\([^"]*\)".*/\1/p' "$sc" | sort -u | paste -sd,) || api=
++devices=$(grep -o '<SoundDevice [^>]*' "$sc" | sed -n 's/.* name="\([^"]*\)".*/\1/p' | sort -u | paste -sd,) ||
++  devices=
++[[ $api == ALSA && $devices == pulse ]] ||
++  fail "soundconfig.xml now says api '$api', devices '$devices' (written: ALSA, pulse)"
++state=$(route)
++[[ $state == ok ]] || fail "the $SINK stream moved off the $SINK sink"
++done=1
++echo "running: $id (stream on $SINK; log $log_file)"
+diff --git a/tools/null-sink b/tools/null-sink
+new file mode 100755
+index 0000000..6f5f2c9
+--- /dev/null
++++ b/tools/null-sink
+@@ -0,0 +1,110 @@
++#!/usr/bin/env bash
++# The mixxx-dev PipeWire null sink that unattended Mixxx audio goes to (D7, D9). Never changes the default sink.
++#   tools/null-sink up|down|status
++# up: load module-null-sink (48 kHz, 2 ch) unless a mixxx-dev sink exists; its id goes to $PROFILE/null-sink.module.
++# down: unload only that id; refuses while a stream is on mixxx-dev or the dev Mixxx may run (PipeWire would move
++#   the stream to the default sink, the Rane One). status: `mixxx-dev <id>`, `mixxx-dev (not ours)` or `absent`.
++# Env: NULL_SINK_SETTLE (whole seconds `up` watches the default sink, default 2), MIXXX_DEV_LAUNCHER.
++# Exit: 0 ok · 1 failed, refused or absent · 2 usage · 3 refused (the real Mixxx profile)
++set -euo pipefail
++here=$(cd "$(dirname "$0")" && pwd)
++# shellcheck source=lib/profile.sh
++source "$here/lib/profile.sh"
++SINK=mixxx-dev
++usage() { sed -n 3p "$0" >&2; exit 2; }
++(( $# == 1 )) || usage
++case $1 in up|down|status) ;; *) usage ;; esac
++settle=${NULL_SINK_SETTLE:-2}
++[[ $settle =~ ^[0-9]+$ ]] || { echo "NULL_SINK_SETTLE must be whole seconds, not '$settle'" >&2; usage; }
++profile_guard
++module_file=$PROFILE/null-sink.module
++[[ ! -L $module_file ]] || { echo "refused: $module_file is a symlink" >&2; exit 3; }
++
++# Every sink named mixxx-dev, one index per line (normally one). A pactl failure exits the tool via pipefail
++# when the caller assigns the result.
++sink_indexes() { pactl list short sinks | awk -F'\t' -v n="$SINK" '$2 == n { print $1 }'; }
++default_sink() { pactl info | sed -n 's/^Default Sink: //p'; }
++# The id in the module file, or empty when there is no file; a file without an id is an error (exit 1), never
++# silently treated as absent, so an id we may still own is not forgotten.
++our_id() {
++  [[ -e $module_file ]] || return 0
++  local id
++  id=$(sed -n '1{/^[0-9]\+$/p}' "$module_file") || exit 1
++  [[ -n $id ]] || { echo "$module_file holds no module id; fix or remove it by hand" >&2; exit 1; }
++  echo "$id"
++}
++# True when module id $1 is still a module-null-sink with sink_name=mixxx-dev (ids are reused after unload).
++# A pactl failure exits the tool (never read as "not ours", which would forget the id).
++is_our_module() {
++  local mods
++  mods=$(pactl list short modules) || exit 1
++  awk -F'\t' -v id="$1" -v n=" sink_name=$SINK " '
++    $1 == id && $2 == "module-null-sink" && index(" " $3 " ", n) { f = 1 } END { exit !f }' <<< "$mods"
++}
++# The dev Mixxx counts as stopped only when its launcher answers exactly that; any other answer, or a launcher
++# named in MIXXX_DEV_LAUNCHER that is missing, counts as possibly running. Without tools/mixxx-dev (before
++# M1-04) only the stream check guards `down`.
++mixxx_stopped() {
++  local launcher=${MIXXX_DEV_LAUNCHER:-$here/mixxx-dev} out rc=0
++  if [[ ! -x $launcher ]]; then [[ -z ${MIXXX_DEV_LAUNCHER:-} && ! -e $launcher ]]; return; fi
++  out=$("$launcher" status 2> /dev/null) || rc=$?
++  (( rc == 1 )) && [[ $out == stopped ]]
++}
++write_id() {
++  local tmp
++  tmp=$(mktemp -- "$PROFILE/.null-sink.module.XXXXXX") || return 1
++  echo "$1" > "$tmp" && mv -f -T -- "$tmp" "$module_file" || { rm -f -- "$tmp"; return 1; }
++}
++
++case $1 in
++  status)
++    idx=$(sink_indexes)
++    [[ -n $idx ]] || { echo absent; exit 1; }
++    id=$(our_id)
++    if [[ -n $id ]] && is_our_module "$id"; then echo "$SINK $id"; else echo "$SINK (not ours)"; fi ;;
++
++  up)
++    idx=$(sink_indexes)
++    if [[ -n $idx ]]; then echo "$SINK already exists; nothing loaded"; exit 0; fi
++    # Everything that can fail before the load does, so a loaded module always ends up recorded or unloaded.
++    mkdir -p -- "$PROFILE"
++    [[ -w $PROFILE && ( ! -e $module_file || -f $module_file ) ]] || {
++      echo "cannot record the module id in $module_file" >&2; exit 1; }
++    before=$(default_sink)
++    id=$(pactl load-module module-null-sink sink_name=$SINK rate=48000 channels=2 \
++      sink_properties=device.description=$SINK)
++    [[ $id =~ ^[0-9]+$ ]] || { echo "pactl load-module printed '$id', not a module id" >&2; exit 1; }
++    if ! write_id "$id"; then
++      pactl unload-module "$id"
++      echo "could not write $module_file; unloaded module $id" >&2; exit 1
++    fi
++    # WirePlumber may pick a new default asynchronously: compare now and every 0.25 s for $settle seconds.
++    for (( i = 0; i <= settle * 4; i++ )); do
++      (( i == 0 )) || sleep 0.25
++      if [[ $(default_sink) != "$before" ]]; then
++        pactl unload-module "$id" && rm -f -- "$module_file"
++        echo "the default sink changed from '$before' after loading $SINK; unloaded module $id" >&2
++        exit 1
++      fi
++    done
++    echo "$SINK up (module $id); default sink still $before" ;;
++
++  down)
++    id=$(our_id)
++    if [[ -z $id ]]; then echo "no $module_file; nothing unloaded"; exit 0; fi
++    if ! is_our_module "$id"; then
++      echo "module $id is no longer our $SINK null sink; nothing unloaded" >&2
++      rm -f -- "$module_file"; exit 0
++    fi
++    mixxx_stopped || { echo "refused: the dev Mixxx may be running; run tools/mixxx-dev stop first" >&2; exit 1; }
++    idx=$(sink_indexes)
++    inputs=$(pactl list short sink-inputs)
++    if awk -F'\t' 'NR == FNR { s[$1]; next } $2 in s { f = 1 } END { exit !f }' <(echo "$idx") - <<< "$inputs"
++    then
++      echo "refused: a stream is playing to $SINK; removing it would move that stream to the default sink" >&2
++      exit 1
++    fi
++    pactl unload-module "$id"
++    rm -f -- "$module_file"
++    echo "$SINK down (unloaded module $id)" ;;
++esac

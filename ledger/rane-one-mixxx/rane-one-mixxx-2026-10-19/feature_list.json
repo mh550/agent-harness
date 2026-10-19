@@ -1,0 +1,349 @@
+{
+  "run": "rane-one-mixxx-2026-10-19",
+  "branch": "harness/rane-one-mixxx-2026-10-19",
+  "features": [
+    {
+      "id": "M1-01", "milestone": "M1", "kind": "plan", "model": "opus",
+      "description": "The M1 plan fixes how a session starts, routes, binds and stops a dev Mixxx so M1-02..M1-05 can be built without re-deciding anything.",
+      "steps": [
+        "docs/plans/2026-10-19-M1-dev-loop.md exists with sections: Null sink, Dev profile seed, Launcher, Mapping skeleton, MIDI parser, Evidence.",
+        "The plan names the null sink `mixxx-dev` (48 kHz, module-null-sink via pactl), says the default sink is never changed, and states the routing method (PULSE_SINK=mixxx-dev passed with `flatpak run --env=`) plus the check: `pactl list sink-inputs` shows Mixxx only on mixxx-dev.",
+        "The plan lists the dev-profile seed files (mixxx.cfg with a library directory under the dev profile so the first-run chooser does not block; soundconfig.xml at 48 kHz) and the exact `flatpak run` command from CLAUDE.md.",
+        "The plan says Mixxx instances are tracked by `flatpak ps` instance id written to dev-profile/mixxx-dev.instance and stopped with `flatpak kill <instance>`, never `flatpak kill org.mixxx.Mixxx`.",
+        "The plan states that at night the mapping is bound only to `Midi Through Port-0`, never to the real Rane ONE port, and that the mapping contains no <output> block and no midi.send* calls.",
+        "The plan specifies tools/lib/midi-parse.mjs: export `createParser()` with `feed(bytes) -> messages[]` handling running status, SysEx, interleaved real-time bytes, and a `describe(msg)` helper.",
+        "docs/decisions.md gains `D9 *default*` recording the sink name, routing method, instance tracking and night-time port rule.",
+        "npm test is green."
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "M1-02", "milestone": "M1", "kind": "build", "model": "opus",
+      "description": "A pure MIDI byte-stream parser turns raw bytes into messages so capture and replay can share one decoder.",
+      "steps": [
+        "tests/midi-parse.test.mjs exists and was written before the module; `git log -p` shows the test commit precedes or equals the implementation commit.",
+        "`node --test tests/midi-parse.test.mjs` passes at least 10 tests covering: three-byte and two-byte channel messages, running status across a feed boundary, a SysEx split across two feeds, a real-time byte (0xF8) inside a running-status stream that does not reset status, 14-bit pitch bend decoded to 0..16383, and bytes split mid-message.",
+        "tools/lib/midi-parse.mjs exports `createParser()` and `describe(msg)`; `describe` renders `{status:0xB0,data:[6,92]}` as `cc ch1 6=92` and pitch bend as `pb ch1 <0..16383>`.",
+        "Feeding the parser the 58650-event byte stream decoded from captures/2026-10-19-quick/platter.mid (via a 20-line inline SMF walk in the test) yields exactly 29323 CC, 29323 pitch bend and 4 note messages.",
+        "npm test is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "M1-03", "milestone": "M1", "kind": "build", "model": "opus",
+      "description": "tools/null-sink creates and removes the mixxx-dev PipeWire null sink, and tools/install-mapping copies mapping/ into the dev profile.",
+      "steps": [
+        "tests/null-sink.test.mjs passes with a stubbed `pactl` on PATH: `up` loads module-null-sink with sink_name=mixxx-dev and rate=48000, `up` twice loads it once, `down` unloads only the module id it loaded (read from dev-profile/null-sink.module), `status` prints the sink name, and no invocation ever runs `pactl set-default-sink` (the stub exits 99 on it).",
+        "On the real machine: `tools/null-sink up` then `pactl list short sinks` lists `mixxx-dev`; `pactl info | grep 'Default Sink'` prints the same value before and after; `tools/null-sink down` removes it.",
+        "tests/install-mapping.test.mjs passes: with MIXXX_DEV_PROFILE pointing at a temp dir, `tools/install-mapping` copies every file from mapping/ into `<profile>/controllers/` and overwrites a stale copy; it refuses (exit 3) when MIXXX_DEV_PROFILE resolves inside `~/.var/app/org.mixxx.Mixxx/.mixxx`.",
+        "npm test is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "M1-04", "milestone": "M1", "kind": "build", "model": "opus",
+      "description": "tools/mixxx-dev starts a Flatpak Mixxx on the dev profile routed to the null sink, tracks its instance, shows its log and stops it.",
+      "steps": [
+        "tests/mixxx-dev.test.mjs passes with stubbed `flatpak`, `pactl` and `tools/null-sink`: `start` seeds a missing dev profile (mixxx.cfg, soundconfig.xml, controllers/), passes `--settings-path <profile> --controller-debug --controller-abort-on-warning --developer` and `--env=PULSE_SINK=mixxx-dev`, records the new `flatpak ps` instance id in `<profile>/mixxx-dev.instance`; `stop` runs `flatpak kill <that id>` and never `flatpak kill org.mixxx.Mixxx`; `stop` with no instance file exits 0 and kills nothing; `start` refuses (exit 3) when the profile path is inside `.mixxx`.",
+        "`flatpak run --command=sh org.mixxx.Mixxx -c 'touch ~/.var/app/org.mixxx.Mixxx/dev-profile/.probe'` succeeds and the file is visible from the host; the command and result are in docs/plans/2026-10-19-M1-dev-loop.md under Evidence.",
+        "With WAYLAND_DISPLAY set: `tools/null-sink up && tools/mixxx-dev start` produces `~/.var/app/org.mixxx.Mixxx/dev-profile/mixxx.log` containing the Mixxx version line within 60 s; `pactl list sink-inputs` shows a Mixxx stream on `mixxx-dev` and none on the Rane ONE or PCI sinks; `tools/mixxx-dev stop` removes the instance from `flatpak ps`. If WAYLAND_DISPLAY is unset, the progress entry says so and this step is marked skipped.",
+        "`tools/mixxx-dev log` prints the last 50 lines of the dev profile's mixxx.log.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M1-05", "milestone": "M1", "kind": "build", "model": "opus",
+      "description": "A minimal Rane One mapping loads in the dev Mixxx with no warnings, bound to Midi Through, and a replayed .mid shows up in the controller debug log.",
+      "steps": [
+        "mapping/Rane-One.midi.xml declares `<controller id=\"Rane ONE\">`, lists scripts in order rane-one-platter.js then Rane-One-scripts.js with functionprefix RaneOne, has no <output> block, and `node --check` passes on both scripts.",
+        "mapping/Rane-One-scripts.js defines `RaneOne.init` and `RaneOne.shutdown`, each logging exactly one line via console.log (`RaneOne: init ...` / `RaneOne: shutdown`), and every handler body is wrapped so it cannot throw; mapping/rane-one-platter.js is a pure object `RaneOnePlatter` with no engine/midi/print reference (a test greps for them).",
+        "tests/mapping-xml.test.mjs passes: the XML parses, its script list matches the files in mapping/, and no `<output>` element exists.",
+        "tools/install-mapping ran, the dev profile binds the mapping to `Midi Through Port-0` (the exact mixxx.cfg/controllers entries are documented in the M1 plan under Evidence), and after `tools/mixxx-dev start` the log contains `RaneOne: init` with no `ControllerScriptEngine` warning or error, under --controller-abort-on-warning.",
+        "`tools/midi-send play 14:0 tests/fixtures/three-notes.mid` (client resolved by name from `aconnect -o`) while Mixxx runs produces three `MIDI` lines with status 90 in mixxx.log; `tools/mixxx-dev stop` then logs `RaneOne: shutdown`. Skipped with a note if WAYLAND_DISPLAY is unset.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M1-06", "milestone": "M1", "kind": "review", "model": "opus",
+      "description": "The M1 diff is reviewed, Critical/Important findings fixed test-first, simplifications applied and docs updated so M1 can merge on its own.",
+      "steps": [
+        "`git diff main...HEAD -- tools tests mapping docs package.json > .harness/runs/rane-one-mixxx-2026-10-19/reviews/M1.diff` exists and the review reads it from that file.",
+        ".harness/runs/rane-one-mixxx-2026-10-19/reviews/M1-findings.md lists every finding with severity; each Critical/Important one has a failing test added first and the fixing commit named.",
+        "Every tool in tools/ prints usage and exits 2 on bad arguments, and nothing in the diff writes under `~/.var/app/org.mixxx.Mixxx/.mixxx` or calls amidi/aplaymidi outside tools/midi-send (grep evidence in the findings file).",
+        "README.md documents tools/null-sink, tools/mixxx-dev, tools/install-mapping and the dev loop in at most 15 lines; docs/spec.md §5 M1 is marked done with the date.",
+        "npm test is green."
+      ],
+      "passes": true
+    },
+
+    {
+      "id": "M2-01", "milestone": "M2", "kind": "plan", "model": "opus",
+      "description": "The M2 plan fixes the capture JSONL format, the capture backend, the replay path through the gate, the census CSV columns and the guided session script.",
+      "steps": [
+        "docs/plans/2026-10-19-M2-capture-replay.md exists with sections: JSONL format, SMF library, Capture backend, Replay, Census, Capture session, HARDWARE-TESTS outline.",
+        "The JSONL format is one object per line with exactly the keys `t_us` (integer host microseconds since capture start), `bytes` (uppercase hex, e.g. `B0065C`), `type`, `ch` (1..16), `d1`, `d2`, `value` (14-bit for pitch bend); the plan shows three example lines.",
+        "The plan records `D10 *default*` in docs/decisions.md: tools/capture reads the rawmidi device resolved by name from `amidi -l` (O_RDONLY, process.hrtime), with `--device <path>` for tests, and arecordmidi + tools/capture-convert as the manual fallback.",
+        "The plan specifies replay as JSONL -> SMF (format 0, division 1000, tempo 1000000 µs so 1 tick = 1 ms, matching arecordmidi) -> `tools/midi-send play <client:port>`; never aplaymidi directly.",
+        "The plan lists the census CSV columns: control, status, channel, number, min, max, sends_on_release, pair_14bit_msb, pair_14bit_lsb, shift, source_file.",
+        "The plan lists the capture-session steps verbatim from docs/spec.md §6 with the prompt text, file name and expected duration of each.",
+        "npm test is green."
+      ],
+      "after": ["M1"],
+      "passes": false
+    },
+    {
+      "id": "M2-02", "milestone": "M2", "kind": "build", "model": "opus",
+      "description": "An SMF read/write library and tools/capture-convert turn the existing quick capture into the M2 JSONL format so later milestones have real data.",
+      "steps": [
+        "tests/smf.test.mjs passes: a hand-made format-0 file round-trips through `readSmf`/`writeSmf` in tools/lib/smf.mjs with identical events and tick times; variable-length quantities of 1, 2 and 3 bytes are covered; tempo and division convert to microseconds correctly (division 1000 + tempo 1000000 gives 1000 µs per tick).",
+        "`tools/capture-convert captures/2026-10-19-quick/platter.mid` writes captures/2026-10-19-quick/platter.jsonl with 58650 lines, last `t_us` between 48,380,000 and 48,400,000, and 29323 lines of type `cc` with d1 6; the file is committed.",
+        "tests/capture-convert.test.mjs checks the committed JSONL against those counts and that `t_us` is non-decreasing.",
+        "captures/2026-10-19-quick/README.md gains a line naming platter.jsonl and the conversion command.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2-03", "milestone": "M2", "kind": "build", "model": "opus",
+      "description": "tools/capture records a MIDI port by name into JSONL with host microsecond timestamps, read-only.",
+      "steps": [
+        "tests/capture.test.mjs passes: with `--device <fifo>` and bytes written to the FIFO in three chunks (including a message split across chunks and a SysEx), the output JSONL has one line per message, `t_us` non-decreasing, and `bytes`/`type`/`value` as the M2 format defines; `--seconds 1` ends the capture by itself.",
+        "`tools/capture --port 'Rane ONE MIDI 1' --out x.jsonl` resolves the device via `amidi -l` to `/dev/snd/midiC<card>D<dev>` (tested with a stubbed amidi) and exits 4 with a message if the name is absent.",
+        "The source opens the device with `fs.openSync(path, 'r')` only; `grep -n 'w' tools/capture` shows no write-mode open and no amidi/aplaymidi calls.",
+        "`tools/capture --help` documents port, device, out, seconds and the Ctrl-C stop.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2-04", "milestone": "M2", "kind": "build", "model": "opus",
+      "description": "tools/replay plays a JSONL capture into Midi Through through the midi-send gate with its original timing.",
+      "steps": [
+        "tests/replay.test.mjs passes: `tools/replay --dry-run --out x.mid file.jsonl` writes an SMF whose events, read back with tools/lib/smf.mjs, match the JSONL bytes and are within 1 ms of each `t_us`; `--speed 2` halves the gaps; `--from 20 --to 37` keeps only that second range.",
+        "With a stubbed aplaymidi/aconnect/amidi on PATH (as in tests/midi-send.test.mjs), `tools/replay --to-port 'Midi Through'` resolves the client number by name and calls tools/midi-send play with `<client>:0`; it never calls aplaymidi itself (grep evidence in the test).",
+        "With Mixxx running (tools/mixxx-dev start): `tools/replay --to-port 'Midi Through' --from 19 --to 21 captures/2026-10-19-quick/platter.jsonl` produces about 2000 CC-6 lines in dev-profile/mixxx.log (counted with grep) and no script warning; then tools/mixxx-dev stop. Skipped with a note if WAYLAND_DISPLAY is unset.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2-05", "milestone": "M2", "kind": "build", "model": "opus",
+      "description": "tools/census turns a census capture into reference/rane-one-mk1-midi-map.csv and a diff against the MK2 djay map.",
+      "steps": [
+        "tests/fixtures/census-small.jsonl exists (hand-made, documented as synthetic in its first line's `note` key or a sibling README): a note on/off pair, a note with no release, a CC swept 0..127, a 14-bit pair (CC 9 and CC 41), a pitch bend, on two channels.",
+        "tests/census.test.mjs passes: the fixture yields a CSV with the columns from the M2 plan, `sends_on_release` true only for the pair, the 14-bit pair recorded on one row with pair_14bit_msb/lsb filled, min/max 0/127 for the swept CC, and values sorted by channel then number.",
+        "`tools/census --diff reference/rane-one-mk2-djay-midi-map.csv` prints rows present only in the MK1 capture, only in the MK2 map, and in both with the same channel/number; the test covers one row of each kind.",
+        "`tools/census` on captures/2026-10-19-quick/platter.jsonl produces a CSV with exactly three rows (CC 6 ch 1, pitch bend ch 1, note 0 ch 1) and the output is saved as reference/rane-one-mk1-midi-map.csv with a header comment saying it is partial until the census capture.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2-06", "milestone": "M2", "kind": "build", "model": "opus",
+      "description": "tools/capture-session walks Michael through the §6 protocol step by step, recording each step to its own file with a redo option.",
+      "steps": [
+        "tests/capture-session.test.mjs passes with scripted stdin and `--device <fifo>` (or a `--capture-cmd` stub): each §6 step produces `captures/<session>/<nn>-<step>.jsonl`, pressing `r` re-records a step and overwrites its file, `s` skips a step and writes `skipped` in README.md, and README.md gets one line per step with the operator's note.",
+        "`tools/capture-session --list` prints the 7 step groups from docs/spec.md §6 with their expected duration; the total is under 25 minutes.",
+        "The prompt for the platter steps tells Michael to align the tape marks and to count ten turns mark to mark; the prompt for the power-on step tells him to power off, press Enter, then power on.",
+        "The session directory name is `captures/<YYYY-MM-DD>-<label>/` and the tool refuses to overwrite an existing session unless `--resume` is given.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2-07", "milestone": "M2", "kind": "docs", "model": "sonnet",
+      "description": "HARDWARE-TESTS.md tells Michael exactly what to run in the morning, how long it takes, what to prepare and how to commit the result.",
+      "steps": [
+        "HARDWARE-TESTS.md exists at the repo root with sections: Before you start (tape marks, knob positions, motor off, source selectors on USB), Run (the exact `tools/capture-session` command and the `tools/capture` fallback), Time needed (per step, total under 25 min), Commit (git add captures/<session> and the commit message format), Report back (what to write in INBOX.md).",
+        "Every command in the file is copy-pasteable and was run with `--help` or `--list` to confirm it exists.",
+        "The file says nothing is sent to the controller during the session and that `~/.rane-armed` is not needed.",
+        "npm test is green."
+      ],
+      "after": ["M2-06"],
+      "passes": false
+    },
+    {
+      "id": "M2-08", "milestone": "M2", "kind": "review", "model": "opus",
+      "description": "The M2 diff is reviewed, Critical/Important findings fixed test-first, simplifications applied and docs updated.",
+      "steps": [
+        "`.harness/runs/rane-one-mixxx-2026-10-19/reviews/M2.diff` exists (git diff from the M1 merge point) and `.harness/runs/rane-one-mixxx-2026-10-19/reviews/M2-findings.md` lists findings with severity; each Critical/Important one has a failing test added first and the fixing commit named.",
+        "tools/capture, tools/replay and tools/census share tools/lib/midi-parse.mjs and tools/lib/jsonl.mjs rather than private copies (grep shows one implementation of the JSONL line format).",
+        "README.md lists the M2 tools in at most 10 added lines and links HARDWARE-TESTS.md; docs/spec.md §5 M2 is marked done with the date.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+
+    {
+      "id": "M3-01", "milestone": "M3", "kind": "plan", "model": "opus",
+      "description": "The M3 plan fixes the WAV library API, the wow-and-flutter algorithm, the telemetry log format that M7 will write, and how Mixxx output is recorded.",
+      "steps": [
+        "docs/plans/2026-10-19-M3-measurement.md exists with sections: WAV library, make-test-audio, wow-flutter algorithm, Telemetry format, drift, record-output.",
+        "The wow-flutter section names the method (zero-crossing period estimation with linear interpolation, per-cycle frequency, 0.5 Hz high-pass to remove pitch offset, then peak and RMS deviation in percent) and the tolerance tests must meet (synthetic 0.1 % FM at 4 Hz measured within ±15 % of 0.1 %).",
+        "The Telemetry format section defines one JSON object per line with keys `t_us`, `ticks` (unwrapped encoder ticks), `timer` (unwrapped timestamp counter), `playposition` (0..1), `rate_ratio`, `mode` (`clock`|`platter`), and names the file dev-profile/telemetry.jsonl; docs/decisions.md records it as `D11 *default*`.",
+        "The record-output section gives the exact command `pw-record --target mixxx-dev.monitor --rate 48000 --format s32 --channels 2 <file.wav>` and how a session confirms the target without playing audio to speakers.",
+        "npm test is green."
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "M3-02", "milestone": "M3", "kind": "build", "model": "opus",
+      "description": "tools/lib/wav.mjs and tools/make-test-audio write 48 kHz WAV test signals, including FM-modulated tones for wow-flutter tests.",
+      "steps": [
+        "tests/wav.test.mjs passes: `writeWav`/`readWav` round-trip 16-bit, 24-bit and 32-bit PCM and 32-bit float at 48000 Hz, mono and stereo; the header's byte rate and block align are checked.",
+        "`tools/make-test-audio tone --seconds 5 --out tone.wav` writes a 1 kHz sine at -6 dBFS, 48000 Hz, 32-bit, stereo; `tools/make-test-audio clicks --bpm 120 --seconds 5` writes one 1 ms click per beat; `--fm-depth 0.1 --fm-rate 4` modulates the tone frequency by ±0.1 % at 4 Hz.",
+        "tests/make-test-audio.test.mjs passes: sample count 240000 for 5 s, peak within 1 % of -6 dBFS, 10 clicks in the 120 bpm file, and the FM tone's zero-crossing count differs from the plain tone's by less than 0.2 %.",
+        "*.wav stays gitignored and the tests write only under a temp dir.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M3-03", "milestone": "M3", "kind": "build", "model": "opus",
+      "description": "tools/wow-flutter reports frequency-deviation statistics of a recorded test tone.",
+      "steps": [
+        "tests/wow-flutter.test.mjs passes: a clean 1 kHz tone reports peak and RMS deviation below 0.01 %; a 0.1 % FM at 4 Hz tone reports peak between 0.085 % and 0.115 %; a 0.5 % FM at 0.5 Hz tone reports peak between 0.42 % and 0.58 %; a tone at 1010 Hz (constant pitch offset) reports deviation below 0.01 % and mean frequency 1010 ± 0.5 Hz.",
+        "`tools/wow-flutter tone.wav` prints mean Hz, peak %, RMS %, and the worst 1-second window, and `--json` prints the same as one JSON object.",
+        "A 1 ms dropout (zeros) in the tone is reported as a `dropouts` count rather than as flutter (test included).",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M3-04", "milestone": "M3", "kind": "build", "model": "opus",
+      "description": "tools/drift computes platter-versus-playposition drift over time from a telemetry log.",
+      "steps": [
+        "tests/drift.test.mjs passes on synthetic logs written by the test: zero drift reports max |drift| below 0.1 ms; a log with 10 ms of drift accumulated linearly over 5 min reports final drift 10 ± 0.5 ms and slope 2 ± 0.1 ms/min; a log with a 50 ms jump reports the jump time within 1 s.",
+        "`tools/drift telemetry.jsonl --track-seconds <n> --ticks-per-rev 3600 --rpm 33.333` prints max, final and slope, and `--csv` writes t_us,drift_ms rows.",
+        "The tool reads the format defined in the M3 plan and rejects a line missing `ticks` or `playposition` with a line number in the error.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M3-05", "milestone": "M3", "kind": "build", "model": "opus",
+      "description": "tools/record-output records the null sink's monitor to a WAV so Mixxx output can be measured without touching speakers or the Rane One.",
+      "steps": [
+        "tests/record-output.test.mjs passes with a stubbed pw-record: `tools/record-output --seconds 3 out.wav` calls pw-record with `--target mixxx-dev.monitor --rate 48000 --format s32 --channels 2`; `--target` overrides the monitor; a target containing `Rane` is refused with exit 3.",
+        "On the real machine with `tools/null-sink up`: `tools/record-output --seconds 2 /tmp/silence.wav` produces a 2 s 48 kHz WAV and `tools/wow-flutter /tmp/silence.wav` reports `no signal` instead of crashing; `pactl info | grep 'Default Sink'` is unchanged.",
+        "README.md lists the four M3 tools in at most 8 added lines.",
+        "npm test is green."
+      ],
+      "after": ["M1-03", "M3-03"],
+      "passes": false
+    },
+    {
+      "id": "M3-06", "milestone": "M3", "kind": "review", "model": "opus",
+      "description": "The M3 diff is reviewed, Critical/Important findings fixed test-first, simplifications applied and docs updated.",
+      "steps": [
+        "`.harness/runs/rane-one-mixxx-2026-10-19/reviews/M3.diff` and `M3-findings.md` exist; each Critical/Important finding has a failing test added first and the fixing commit named.",
+        "The wow-flutter tolerance tests still pass after any algorithm simplification, and the numbers in docs/spec.md §3 reference the tool names that measure them.",
+        "docs/spec.md §5 M3 is marked done with the date.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+
+    {
+      "id": "M4-01", "milestone": "M4", "kind": "check", "model": "opus",
+      "description": "tools/analyze-platter turns the real quick capture into cited numbers so the platter core is built against the One, not the Twelve hypothesis.",
+      "steps": [
+        "`tools/analyze-platter captures/2026-10-19-quick/platter.jsonl --phases 2-8,9-15,20-36,38-41,41-44,45-49` prints per phase: message rate per second, CC-6 delta histogram (mod 128), timestamp delta histogram (mod 16384), net ticks, and inferred ticks per revolution assuming 33⅓ rpm; tests/analyze-platter.test.mjs checks it on a 200-line synthetic fixture.",
+        "docs/research/2026-10-19-quick-capture-analysis.md states, each with the phase and number: motor phase 20-36 s sends 998-999 CC-6 messages per second with CC-6 advancing 2 per message and timestamp advancing about 2822 per message (so about 1411 per tick, i.e. 2,822,400 Hz); net ticks over 16 s give about 3598 per revolution at 33⅓; by hand CC-6 advances ±1 per message; CC and pitch bend arrive as a pair in the same millisecond (29116 of 29325 pairs); note 0 channel 1 appears at 19.24 s and 44.67 s for 95 and 110 ms.",
+        "The document records the hold phase (38-41 s) anomaly: about 16 messages per second with CC-6 dithering ±1 and the timestamp changing by about -1 per message, and lists what M5 must check about it.",
+        "docs/decisions.md gains `D12` (capture wins): CC 6 is a 7-bit running tick counter (mod 128) rather than sector+position, the timestamp clock is 2,822,400 Hz and 3600 ticks/rev hold within 0.1 %, note 0 ch 1 is a button press (UNVERIFIED which) not a touch sensor, and no touch message was seen; docs/research/2026-10-19-prior-art.md §2 links to the analysis.",
+        "npm test is green."
+      ],
+      "after": ["M2-02"],
+      "passes": false
+    },
+    {
+      "id": "M4-02", "milestone": "M4", "kind": "plan", "model": "opus",
+      "description": "The M4 plan fixes the pure platter core's API, constants, state machine and switch-over rule.",
+      "steps": [
+        "docs/plans/2026-10-19-M4-platter-core.md exists with sections: Loading (plain script, global `RaneOnePlatter`, Node loads it with `vm.runInNewContext`), Constants, Decoder, Speed estimator, State machine, Switch-over, synth-platter, Real-capture check.",
+        "Constants are named with defaults: TICKS_PER_REV 3600, TIMER_HZ 2822400, TICK_MOD 128, TIMER_MOD 16384, RPM_33 100/3, RPM_45 45, MIN_TIMED_SPEED_RATIO 0.05, and each cites captures/2026-10-19-quick/platter.jsonl or is marked UNVERIFIED.",
+        "The plan gives exact signatures: `createDecoder(config)` with `feed(status, d1, d2, hostTimeUs)` returning `{ticks, timer, hostTimeUs}` samples; `createSpeedEstimator(config)` with `push(sample)` returning `{ratio, timed}`; `createStateMachine(config)` with `update({ratio, hostTimeUs, expectedRatio})` returning `{state, control}` where state is one of stopped, motor_at_speed, held, scratching, backspin, settling and control is `clock` or `platter`.",
+        "The State machine section lists every transition with its condition (tolerance in ratio, hysteresis, settle time in ms) and the Switch-over section states the invariant: on handback the reported position equals the integrated platter position, so no jump.",
+        "The Speed estimator section names the two candidate filters (1-Euro, α-β), the synthetic data used to pick one, and the acceptance: 33⅓ with ±1 tick jitter gives ratio 1.000 ± 0.002 after 50 ms; a step to 0.5 settles within 100 ms.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4-03", "milestone": "M4", "kind": "build", "model": "opus",
+      "description": "The pure decoder unwraps the CC-6 tick counter and the 14-bit timestamp and pairs messages into samples.",
+      "steps": [
+        "tests/helpers/load-platter.mjs loads mapping/rane-one-platter.js with `vm.runInNewContext` into a context with no `engine`, `midi` or `print`, and tests/platter-pure.test.mjs fails if the file contains any of those identifiers or `require`/`import`.",
+        "tests/platter-decoder.test.mjs was written first and passes: CC-6 127 -> 0 adds +1, 0 -> 127 adds -1, 126 -> 1 adds +3, 1 -> 126 adds -3; timestamp 16383 -> 0 adds +1 and 0 -> 16383 adds -1; a pitch bend without a preceding CC within 2 ms is dropped and counted; two CCs without a pitch bend produce two samples with `timer: null`.",
+        "Feeding the whole captures/2026-10-19-quick/platter.jsonl gives 29323 samples, a net tick count equal to the sum of signed CC deltas, and zero timer unwrap errors (test included).",
+        "Any malformed input (undefined, NaN, wrong status) makes `feed` return null without throwing (test included).",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4-04", "milestone": "M4", "kind": "build", "model": "opus",
+      "description": "tools/synth-platter generates capture-format JSONL from a motion script so every later test has labelled data.",
+      "steps": [
+        "`tools/synth-platter --script tests/fixtures/motion/<name>.json --out x.jsonl` writes M2-format JSONL (CC 6 then pitch bend per tick, same t_us, 1 kHz message cap collapsing ticks into one message like the real capture) from segments of the form `{kind: 'constant', ratio: 1.0, seconds: 5, jitterTicks: 1}`, `scratch` (sinusoidal back-and-forth with amplitude in ticks and period), `backspin` (negative ratio decaying to 0), `slow` (ratio 0.02), `drop` (percent of messages removed), `stall-burst` (no messages for N ms then a burst).",
+        "tests/synth-platter.test.mjs passes: a 10 s constant 33⅓ script produces 20000 ± 20 ticks, message rate 998-1000 per second with CC-6 advancing 2 per message; the slow script produces timestamp deltas that wrap (|delta| > 8192 at least once); the drop script removes the requested share ± 1 %.",
+        "tests/fixtures/motion/ holds at least six scripts (constant33, constant45, scratch, backspin, slow, drop-and-burst) and their generated JSONL is produced by a test setup step, not committed.",
+        "Running the M4-03 decoder on each generated file yields the scripted net ticks (test included).",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4-05", "milestone": "M4", "kind": "build", "model": "opus",
+      "description": "The speed estimator reports the platter's speed ratio from device timestamps, with a justified filter and a host-time fallback below the timed limit.",
+      "steps": [
+        "tests/platter-speed.test.mjs was written first and passes: on synth constant33 the ratio is 1.000 ± 0.002 for every sample after the first 50 ms; on constant45 with RPM_45 configured it is 1.000 ± 0.002; on a step from 1.0 to 0.5 the ratio is within 0.5 ± 0.02 within 100 ms; on the slow script `timed` is false and the ratio comes from hostTimeUs within ±20 %; on the backspin script the ratio goes negative.",
+        "docs/plans/2026-10-19-M4-platter-core.md gains a Filter choice subsection with the measured settle time and jitter of 1-Euro and α-β on the same scripts and the one chosen, recorded in docs/decisions.md as `D13 *default*`.",
+        "Dropped messages (drop script) change the ratio by less than 0.01 (test included).",
+        "`createSpeedEstimator` never throws on a null timer or a repeated sample (test included).",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4-06", "milestone": "M4", "kind": "build", "model": "opus",
+      "description": "The state machine and the hybrid switch-over decision are pure functions with every transition tested.",
+      "steps": [
+        "tests/platter-state.test.mjs was written first and passes one test per transition listed in the M4 plan: stopped->motor_at_speed, motor_at_speed->held (ratio below tolerance for the hold time), held->scratching, scratching->settling (ratio back within tolerance), settling->motor_at_speed (after the settle time), any->backspin (ratio below -0.5), backspin->stopped, and motor_at_speed stays put under ±1 tick jitter.",
+        "`control` is `clock` only in motor_at_speed and stopped, and `platter` otherwise; crossing the tolerance applies hysteresis (enter at ±3 %, leave at ±1 %, values from the plan) so a ratio oscillating at ±2 % does not flip control (test included).",
+        "The handback invariant holds: on settling->motor_at_speed the returned `position` equals the integrated platter position to within one tick (test included), and a `rate_ratio` change from the pitch fader while in clock mode changes expectedRatio without a transition (test included).",
+        "`update` never throws and returns the previous state on malformed input (test included).",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4-07", "milestone": "M4", "kind": "check", "model": "opus",
+      "description": "The real quick capture run through the core gives the state timeline Michael did at the controller, printed by tools/platter-run.",
+      "steps": [
+        "`tools/platter-run captures/2026-10-19-quick/platter.jsonl` prints a timeline of state changes with time in seconds and ratio, and `--json` prints one object per change.",
+        "tests/platter-run.test.mjs passes on the real capture: state is scratching during 3-7 s with positive ratio and during 10-14 s with negative ratio; motor_at_speed holds from no later than 21 s to 36 s with ratio 1.00 ± 0.01 and no control flip; held or stopped between 38.5 and 40.5 s; motor_at_speed again by 42.5 s; stopped after 46 s.",
+        "The timeline is pasted into docs/research/2026-10-19-quick-capture-analysis.md under `What the core sees`, with the two note-0 presses marked for comparison.",
+        "Any sample that produces a control flip lasting under 20 ms is listed in the document as a glitch to revisit in M5 (count given).",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4-08", "milestone": "M4", "kind": "review", "model": "opus",
+      "description": "The M4 diff is reviewed, Critical/Important findings fixed test-first, simplifications applied and docs updated so the core can merge marked UNVERIFIED where it still is.",
+      "steps": [
+        "`.harness/runs/rane-one-mixxx-2026-10-19/reviews/M4.diff` and `M4-findings.md` exist; each Critical/Important finding has a failing test added first and the fixing commit named.",
+        "mapping/rane-one-platter.js has a header comment listing every constant with its capture citation or `UNVERIFIED`, still passes tests/platter-pure.test.mjs, and `node --check` passes.",
+        "docs/spec.md §2 and §5 M4 reference the analysis document and the D12/D13 decisions; §5 M4 is marked done with the date and M5's open questions list is updated from the analysis.",
+        "npm test is green."
+      ],
+      "passes": false
+    }
+  ]
+}
