@@ -123,7 +123,7 @@
         "tests/run.sh check 'nothing parked': `harness parked demo` prints 'nothing parked'",
         "bash -n bin/harness; node --check lib/parked.mjs; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-03",

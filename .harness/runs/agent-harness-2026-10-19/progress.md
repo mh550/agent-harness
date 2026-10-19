@@ -14,6 +14,14 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 13:20 · P2-02 · passes
+
+- Built `harness parked [<run>] [--json]`: new `lib/parked.mjs` (pure questionFor, commandsFor, entriesFor, parkedReport + `report` stdin CLI, never writes), `cmd_parked` in bin/harness (usage line, `parked)` beside `status)`, help range 2,35p). Output matches the plan §2 layout exactly. Tests 125 → 132.
+- Checks added (all red first, then green): 2 units (`parked.mjs: the report names…`, `…the question is the feature's INBOX section`) and 5 e2e between `one notification per run end` and `harness answer parky` (id/why/question/both commands, read-only via `find -newer` + `git status`, `--json` jq, queue-runner → `queue add --continue`, `nothing parked in demo`). `check.sh` green: 132/132 in 191 s; `bash -n bin/harness tests/run.sh`, `node --check lib/parked.mjs` ok.
+- An Opus review found no Critical issues. I fixed these (tests extended first): runs whose worktree was gc'd are skipped (they used to show every parked id, passing ones included, with a `continue` that can't work); `### <id>` headings win over a heading that only mentions the id; one broken meta.env no longer cuts the list short (`|| true`); a second positional arg is a usage error.
+- Not done, for P2-04: D-H30, architecture §3 and the "Answer desk" section, README (per the plan). No harness-log.md note: the command is read-only by design. Possible simplification: entriesFor repeats features.mjs `parked`'s "parked minus passing" filter.
+- Michael: should a run whose worktree is gone still be listed with a "worktree gone" line? Right now it's hidden (simplest; D-H30 in P2-04 should record it).
+
 ### 2026-10-19 12:40 · P2-01 · passes
 
 - Wrote `docs/plans/2026-10-19-P2-answer-desk.md` (Milestone base 39968f7…): the exact text block and `--json` fields of `harness parked`, the command rule (driver.pid alive → answer only; queue/runner.pid alive → answer + `queue add --continue`; else answer + `continue`), lib/parked.mjs helpers (questionFor, commandsFor, entriesFor, parkedReport) and its stdin CLI, `cmd_parked` in bin/harness (read-only; help range 2,34p → 2,35p), the skill's five sections + frontmatter, templates/user/config.sh content (all commented; DESK/DESK_MODEL as P3 placeholders), and 9 named checks (125 → 132 after P2-02 → 134 after P2-03).

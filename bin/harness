@@ -19,6 +19,7 @@
 #   harness attach <run-id>                      the run's tmux session (driver · log · supervisor)
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
+#   harness parked [<run-id>] [--json]           what parked features wait on: why, the INBOX question, the next commands
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
 #                                                CLAUDE.md from the repo's docs for you to edit)
 #   harness gc <project> [--all-merged] [--dry-run]
@@ -264,6 +265,21 @@ cmd_control() {   # pause|resume|stop run-id
   esac
 }
 
+cmd_parked() {   # [<run-id>] [--json]: read-only (no harness_config, no mkdir: a phone session runs it to look)
+  local want="" json=() d runner=0
+  while (( $# )); do case $1 in --json) json=(--json) ;; -*) die "unknown option $1" ;; *) [[ -z $want ]] || die "usage: harness parked [<run-id>] [--json]"; want=$1 ;; esac; shift; done
+  [[ -n $want ]] && state_of "$want" > /dev/null
+  [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2> /dev/null && runner=1
+  for d in "$STATE_ROOT"/*/*/; do
+    [[ -f $d/meta.env ]] || continue
+    [[ -n $want && $(basename "$d") != "$want" ]] && continue
+    # shellcheck source=/dev/null
+    # a gc'd worktree: nothing left to answer or continue. One broken meta.env doesn't cut the others off
+    ( source "$d/meta.env"; [[ -d $WT ]] || exit 0
+      printf '%s\t%s\t%s\t%s\t%s\n' "$RUN_ID" "$(basename "$PROJECT_DIR")" "$STATE" "$WT/.harness/runs/$RUN_ID" "$(alive "$STATE" && echo 1 || echo 0)" ) || true
+  done | node "$HARNESS_HOME/lib/parked.mjs" report "${json[@]}" --runner "$runner" --run "$want"
+}
+
 cmd_answer() {
   local st; st=$(state_of "${1:?usage: harness answer <run-id> <text>}"); shift
   printf '%s\n' "$*" >> "$st/inbox.md"; echo "queued for the next session"
@@ -321,6 +337,7 @@ case ${1:-help} in
   merge) shift; cmd_merge "$@" ;;
   queue) shift; cmd_queue "$@" ;;
   status) shift; cmd_status "$@" ;;
+  parked) shift; cmd_parked "$@" ;;
   report) shift; cmd_report "$@" ;;
   trends) node "$HARNESS_HOME/lib/summary.mjs" trends "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/runs.jsonl" ;;
   attach) tmux attach -t "$(tmux_name "${2:?usage: harness attach <run-id>}")" ;;
@@ -328,5 +345,5 @@ case ${1:-help} in
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
-  *) sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac
