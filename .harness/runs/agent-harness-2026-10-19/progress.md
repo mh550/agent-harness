@@ -14,6 +14,38 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 16:00 · verify P2
+
+`check.sh` green (cached); suite output read: 140/140 checks passed, no FAIL line.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P2-01 | 1 | `head -5 docs/plans/2026-10-19-P2-answer-desk.md` | line 1 is `Milestone base: 39968f75…` | yes |
+| P2-01 | 2 | read plan §2 (lines 37-85) | text layout for parky (since/why/question/running/next) and `--json` fields run, project, feature, since, why, question, running, commands | yes |
+| P2-01 | 3 | read plan §2.1 (lines 86-95) | running = driver.pid alive; runner = queue/runner.pid `kill -0`; command pair per case (answer+continue, answer+queue add --continue, answer only) | yes |
+| P2-01 | 4 | read plan §5 (lines 147-181) | skill sections, order of commands, never-list, verbatim README install line | yes |
+| P2-01 | 5 | read plan §6-7 (lines 183-241) | templates/user/config.sh with NTFY_URL, NTFY_TOKEN, DESK_URL, NOTIFY_CMD, DESK, DESK_MODEL placeholders; check names for P2-02 and P2-03 | yes |
+| P2-01 | 6 | bash tests/run.sh output (check.sh run, check-*.out): 140/140 checks passed | 140/140 | yes |
+| P2-02 | 1 | ran `parkedReport` via `node --input-type=module -e` with the step's entry | text has `harness answer r "…"` and `harness continue r`; runner:true gives `harness queue add --continue r`; [] gives `nothing parked`; also asserted by test 'parked.mjs: the report names the answer and continue commands' (PASS) | yes |
+| P2-02 | 2 | `grep -n parked bin/harness`; read cmd_parked and test 'harness parked is read-only' (run.sh:387) | usage header line 22 lists it; `parked)` case line 343; read-only check uses `find -newer` on state and worktree plus git status; PASS | yes |
+| P2-02 | 3 | run.sh:385 (before the answer at :415); suite PASS 'harness parked: id, why, question, both commands' | asserts parky · proj · B, why, question '### B: set the gatus vars…', answer and continue commands | yes |
+| P2-02 | 4 | run.sh:388; suite PASS 'harness parked --json parses' | jq asserts .[0].feature=="B", running==false, commands length 2 | yes |
+| P2-02 | 5 | run.sh:390; suite PASS 'with a queue runner going, the continue command is a queue add' | runner.pid with $$; output has `queue add --continue parky`, not `continue parky` | yes |
+| P2-02 | 6 | run.sh:408; suite PASS 'nothing parked' | `harness parked demo` equals 'nothing parked in demo' (contains 'nothing parked') | yes |
+| P2-02 | 7 | `bash -n bin/harness templates/user/config.sh; node --check lib/parked.mjs`; bash tests/run.sh output (check.sh run, check-*.out): 140/140 checks passed | syntax ok; 140/140 | yes |
+| P2-03 | 1 | read skills/harness-answer/SKILL.md | frontmatter name: harness-answer; description has "answer the harness" and "what does <project> need?"; commands appear in order parked, status, answer, queue list, queue add --continue, continue | yes |
+| P2-03 | 2 | read the safe-checks and Never sections | `grep -c '^NAME=' file`, "by name only, never a value"; off limits .env, secrets, sudo; never-list has never edit INBOX.md/feature lists/policies/CLAUDE.md, never answer without his yes, never run live commands | yes |
+| P2-03 | 3 | `grep -n 'ln -s\|parked\|DESK_URL' README.md` | line 84 has the exact `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`; line 42 `harness parked` in commands table; DESK_URL in Steering (lines 82, 86) | yes |
+| P2-03 | 4 | read templates/user/config.sh; `bash -n` | all assignments commented, header as in project template; NTFY_URL, NTFY_TOKEN, DESK_URL, NOTIFY_CMD present; syntax ok; also PASS 'the user config template sets nothing' | yes |
+| P2-03 | 5 | run.sh:409; suite PASS 'the answer skill exists and names the commands and the never-list' | asserts file, name, 'harness parked', 'harness answer', 'never edit INBOX.md' (grep -i), 'sudo' | yes |
+| P2-03 | 6 | bash tests/run.sh output (check.sh run, check-*.out): 140/140 checks passed | 140/140 | yes |
+| P2-04 | 1 | read docs/plans/2026-10-19-P2-review.md; `git diff 39968f75..HEAD --stat` | review lists I1-I3, R1 Important and Minors with file:line and resolution; diff covers lib bin tests skills templates (5 files, +254) | yes |
+| P2-04 | 2 | read review rows I1, I2, I3, R1 | each names its check (ending, newest question wins, quoted heredoc, same as I2); all present in suite output and PASS. That they were red first rests on the review file and progress note (135/139, 135/140), not re-run | yes |
+| P2-04 | 3 | `grep -n D-H30 journal/decisions.md` | line 286 heading plus Finding, Choice, Rejected bullets | yes |
+| P2-04 | 4 | `grep -n` docs/architecture.md | §3 bin/harness row lists parked (line 50); lib/parked.mjs row (57); '## 17. Answer desk' with the notification → Answer with Claude → skill → answer → continue flow | yes |
+| P2-04 | 5 | README.md lines 42, 84-86, 127 | commands table, install line, DESK_URL and "140 checks"; run.sh has 140 `check` lines | yes |
+| P2-04 | 6 | bash -n bin/harness tests/run.sh templates/user/config.sh; node --check lib/parked.mjs; bash tests/run.sh output (check.sh run, check-*.out): 140/140 checks passed | all ok; 140/140 | yes |
+
 ### 2026-10-19 15:10 · P2-04 · passes
 
 - Review of the P2 diff (`/tmp/p2.diff`, 267 lines) by Opus, then a second Opus pass over the fixes: `docs/plans/2026-10-19-P2-review.md`, 4 Important (I1–I3, R1) and 7 Minor, none Critical. Fixes in c44ed3e; tests 134 → 140, each new check watched red first (135/139, then 135/140).
