@@ -39,6 +39,7 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 | `harness start` · `continue` · `merge` · `stop` · `pause` · `resume` · `answer` | one run |
 | `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue |
 | `harness status` · `report` · `trends` · `attach` | look |
+| `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
 | `harness init` · `gc` | set up a project, clean up merged runs |
 
@@ -80,6 +81,10 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
   A park's notification carries the question the session wrote in INBOX.md (body capped at 3500 bytes), the
   `harness answer` command, and Edit INBOX / Progress actions; `DESK_URL` (e.g. a Claude Code environment URL; no `,` or
   `;` in it, they split ntfy's Actions header) adds **Answer with Claude**. A non-GitHub origin sends the same without URLs.
+- **Answering from the phone:** install the skill once, `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`.
+  Ask a Claude session "answer the harness": it runs `harness parked`, checks what it safely can (variable names, never
+  values), proposes, and runs `harness answer` only after your yes. Set `DESK_URL` (above) to get **Answer with Claude**
+  on a park's notification; `templates/user/config.sh` documents every user setting.
 - **After a partial run:** nothing, usually: verified milestones are already merged and a continuation is queued.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 - **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and

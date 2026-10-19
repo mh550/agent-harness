@@ -14,6 +14,13 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 14:00 · P2-03 · passes
+
+- Added `skills/harness-answer/SKILL.md` (frontmatter + the five sections from plan §5), `templates/user/config.sh` (all assignments commented), README: `harness parked` in the commands table, a "Answering from the phone" bullet under Steering with the install line and DESK_URL. Tests 132 → 134.
+- Checks: `the answer skill exists and names the commands and the never-list`, `the user config template sets nothing` (after `nothing parked` in tests/run.sh). I wrote the files before the checks, so the checks were not watched failing. `check.sh` green in 195 s; `bash -n` on the template and run.sh ok.
+- Michael: install with `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`.
+- Next (P2-04): D-H30, architecture, README Tests count.
+
 ### 2026-10-19 13:20 · P2-02 · passes
 
 - Built `harness parked [<run>] [--json]`: new `lib/parked.mjs` (pure questionFor, commandsFor, entriesFor, parkedReport + `report` stdin CLI, never writes), `cmd_parked` in bin/harness (usage line, `parked)` beside `status)`, help range 2,35p). Output matches the plan §2 layout exactly. Tests 125 → 132.
