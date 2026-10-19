@@ -1,0 +1,261 @@
+{
+  "run": "agent-harness-2026-10-19",
+  "branch": "harness/agent-harness-2026-10-19",
+  "features": [
+    {
+      "id": "P1-01",
+      "milestone": "P1",
+      "kind": "plan",
+      "model": "opus",
+      "description": "docs/plans/2026-10-19-P1-notifications.md fixes where structured notifications live (lib/notify.sh sourced by driver.sh and debrief.sh, pure helpers in lib/notify.mjs), the tests/stub-curl.sh contract, and the exact ntfy headers and env variables, so P1-02..04 build the same thing.",
+      "steps": [
+        "docs/plans/2026-10-19-P1-notifications.md exists and starts with 'Milestone base: <sha>' where <sha> is `git rev-parse HEAD` at the start of this session (the P1 review diffs from it)",
+        "the plan names the function signature of notify (message, then fields: title, body, click, actions, priority, tags) and the five HARNESS_NOTIFY_* variables from the spec P1.1, and says $1 to NOTIFY_CMD stays '[<run>] <message>'",
+        "the plan names tests/stub-curl.sh and its record format: one block per call in $STUB_DIR/curl.log, every argument on its own line, blocks separated by a line '==='; and the fixture tests/fixtures/ntfy-publish.txt that copies the ntfy publish request shape (headers Title, Priority, Tags, Click, Actions, Authorization) from docs.ntfy.sh with the source URL in its first line",
+        "the plan lists the pure helpers of lib/notify.mjs with their signatures: githubUrls(originUrl, branch, path) -> {blob, edit} | null; trimBody(text, cap=3500) -> text ending in '…' when cut; actionsHeader([{label,url}]) -> 'view, <label>, <url>; …'; inboxQuestion(before, after) -> the lines added above '## Answers'",
+        "the plan lists every notify call site in lib/driver.sh and lib/debrief.sh with the title, priority and click URL each will get (P1.3 and P1.4 of the spec), and the config defaults to add to lib/config.sh: NTFY_URL='' NTFY_TOKEN='' DESK_URL=''",
+        "the plan lists the checks to add to tests/run.sh for P1-02, P1-03 and P1-04 by name, including the url.<local>.insteadOf trick: the throwaway project gets `git config url.$T/origin.git.insteadOf git@github.com:test/proj.git` and `remote.origin.url` = git@github.com:test/proj.git, so pushes stay local while URL derivation (which reads `git config --get remote.origin.url`) sees a GitHub origin",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "P1-02",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "notify takes a message plus optional title, body, click, actions, priority and tags; with NTFY_URL set the harness posts to ntfy itself through ${HARNESS_CURL:-curl} (NOTIFY_CMD then not called), otherwise NOTIFY_CMD gets $1 unchanged plus the fields as HARNESS_NOTIFY_* variables; the body is capped at 3500 bytes; NTFY_TOKEN goes as a bearer header and is never logged.",
+      "steps": [
+        "tests/stub-curl.sh exists, is executable, and appends one block per call to $STUB_DIR/curl.log (each argument on its own line, blocks separated by '==='); tests/run.sh exports HARNESS_CURL=$HERE/stub-curl.sh; tests/fixtures/ntfy-publish.txt exists with the docs.ntfy.sh source URL on its first line",
+        "lib/notify.sh exists with a one-line usage header, passes bash -n, and is sourced by lib/driver.sh and lib/debrief.sh (grep -n 'notify.sh' lib/driver.sh lib/debrief.sh shows one source line each)",
+        "node --input-type=module -e 'import {trimBody} from \"./lib/notify.mjs\"; const t=trimBody(\"x\".repeat(4000)); if (Buffer.byteLength(t) > 3500 || !t.endsWith(\"…\")) process.exit(1)' exits 0, and trimBody of a 100-byte text returns it unchanged",
+        "tests/run.sh check 'NOTIFY_CMD-only: $1 unchanged, fields as env': with NOTIFY_CMD set to a command that appends \"$1\" and env | grep ^HARNESS_NOTIFY_ to a file, a run's 'started:' notification shows $1 = '[<run>] started: …' and HARNESS_NOTIFY_TITLE set",
+        "tests/run.sh check 'NTFY_URL: curl posts the fields as headers, NOTIFY_CMD not called': with NTFY_URL=https://ntfy.example/t and NOTIFY_CMD both set in the user config, a run's 'started:' notification appears in curl.log as a block containing the URL, -H lines 'Title: …' and 'Priority: …' (or the fields the plan fixed), and the message as the request body; the NOTIFY_CMD file is not written",
+        "tests/run.sh check 'NTFY_TOKEN: bearer header sent, never logged': with NTFY_TOKEN=tok-secret-123, curl.log contains 'Authorization: Bearer tok-secret-123' and grep -r tok-secret-123 over the run's state dir (run.log) and run record (harness-log.md) finds nothing",
+        "tests/run.sh check 'a body over the cap is trimmed': a notification whose body is 4000 bytes reaches curl.log with a body of at most 3500 bytes ending in '…'",
+        "a failed post (stub curl exits 22 when STUB_CURL_FAIL=1) is noted in harness-log.md as 'notification failed (curl exit 22): <title>' and the run goes on; a successful post is a line in run.log only",
+        "bash -n lib/notify.sh lib/driver.sh lib/debrief.sh and node --check lib/notify.mjs pass; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-03",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "A park sends '[<run>] <feature> needs you' at priority high with tag question, a body made of the PARKED line, the lines the session added to INBOX.md and the answer command, a click URL to INBOX.md on the run branch on GitHub, and Edit INBOX / Answer with Claude (DESK_URL) / Progress actions; a non-GitHub origin sends the same without URLs.",
+      "steps": [
+        "node --input-type=module -e 'import {githubUrls as g} from \"./lib/notify.mjs\"; const a=g(\"git@github.com:o/r.git\",\"harness/x\",\".harness/runs/x/INBOX.md\"), b=g(\"https://github.com/o/r.git\",\"harness/x\",\"p\"), c=g(\"https://github.com/o/r\",\"harness/x\",\"p\"), d=g(\"/tmp/origin.git\",\"harness/x\",\"p\"); process.exit(a.blob===\"https://github.com/o/r/blob/harness/x/.harness/runs/x/INBOX.md\" && a.edit===\"https://github.com/o/r/edit/harness/x/.harness/runs/x/INBOX.md\" && b.blob.startsWith(\"https://github.com/o/r/blob/\") && c.blob===b.blob && d===null ? 0 : 1)' exits 0",
+        "node --input-type=module -e 'import {inboxQuestion as q} from \"./lib/notify.mjs\"; const b=\"status: run\\n\\n## Answers\\n\", a=\"status: run\\n### B: set the gatus vars, then answer\\n\\n## Answers\\n\"; process.exit(q(b,a).trim()===\"### B: set the gatus vars, then answer\" && q(b,b)===\"\" ? 0 : 1)' exits 0",
+        "lib/driver.sh copies INBOX.md to $STATE/inbox-before.md before every coding session (grep -n inbox-before lib/driver.sh), and the park branch builds the body as: the PARKED line, the lines added above '## Answers' (fallback: the PARKED line alone), then 'Answer: harness answer <run> \"…\"'",
+        "tests/run.sh: the parky project (run 16) gets a GitHub-shaped origin via url.<local>.insteadOf before `harness start`, and the check 'a park notification: title, question, answer command, click and Edit INBOX action' finds in curl.log a block with 'Title: [parky] B needs you', 'Priority: high', 'Tags: question', a body containing 'set the gatus vars, then answer' and 'harness answer parky', 'Click: https://github.com/test/proj/blob/harness/parky/.harness/runs/parky/INBOX.md' and an Actions header containing 'view, Edit INBOX, https://github.com/test/proj/edit/harness/parky/.harness/runs/parky/INBOX.md' and 'view, Progress, https://github.com/test/proj/blob/harness/parky/.harness/runs/parky/progress.md'",
+        "tests/run.sh check 'Answer with Claude only when DESK_URL is set': with DESK_URL=https://claude.ai/code/env-test in the user config the parky Actions header contains 'view, Answer with Claude, https://claude.ai/code/env-test'; a second parked run without DESK_URL has no 'Answer with Claude' action",
+        "tests/run.sh check 'no URLs for a non-GitHub origin': a park in a project whose remote.origin.url is the local bare path produces a block with the title and body but no Click and no Actions header",
+        "lib/config.sh defaults DESK_URL='' and the three new settings appear in the harness_config defaults line (grep -n 'NTFY_URL\\|DESK_URL' lib/config.sh)",
+        "bash -n lib/driver.sh lib/notify.sh, node --check lib/notify.mjs; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-04",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "Every other 'needs Michael' notification (blocked or waiting run end, verify needs Michael, merge refused or conflicted, a run's end) goes out at priority high where Michael must act and carries a click URL: the INBOX for blocks and parks, the PR for merges, report.md on the run branch for a run's end; routine notifications (started, merged, paused) keep the default priority.",
+      "steps": [
+        "grep -n 'notify ' lib/driver.sh shows every call that says 'needs Michael' or 'ended' passing a priority and a click field (the plan's call-site table is the checklist; each row is done)",
+        "tests/run.sh check 'a waiting-on-Michael run end: priority high, click = report.md': the parky run's 'ended (waiting on Michael: B)' block in curl.log has 'Priority: high' and 'Click: https://github.com/test/proj/blob/harness/parky/.harness/runs/parky/report.md'",
+        "tests/run.sh check 'a refused merge: priority high, click = the PR': run 10 (later) has a block with 'needs Michael: merge refused', 'Priority: high' and 'Click: https://example.test/pr/1'",
+        "tests/run.sh check 'verify needs Michael: priority high, click = progress.md': run 3 (strict) has a block with 'M1 needs Michael', 'Priority: high' and a Click URL ending in '/progress.md' when the origin is GitHub-shaped (or no Click for the local origin, whichever that run uses; the check says which)",
+        "tests/run.sh check 'routine notifications keep the default priority': the demo run's 'started:' and 'M1 merged' blocks have no 'Priority:' line",
+        "lib/debrief.sh's tell() uses the shared notify so '[debrief] refused' and the headline still reach NOTIFY_CMD as before (the existing debrief checks stay green) and go to NTFY_URL when set (one check: with NTFY_URL set, a debrief's headline is a curl.log block whose Click is the note's debrief.html path only if it is a URL, else no Click)",
+        "bash -n lib/driver.sh lib/debrief.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-05",
+      "milestone": "P1",
+      "kind": "review",
+      "model": "opus",
+      "description": "An Opus reviewer reads the P1 diff from a file, fixes Critical and Important findings test-first, applies simplifications, and brings README.md, docs/architecture.md and journal/decisions.md (D-H29) up to date with P1.",
+      "steps": [
+        "git diff <Milestone base from docs/plans/2026-10-19-P1-notifications.md>..HEAD -- lib bin tests prompts > /tmp/p1.diff was written and read; docs/plans/2026-10-19-P1-review.md lists each finding with severity (Critical/Important/Minor), file:line, and resolution (fixed in <commit> / skipped because …)",
+        "every Critical and Important finding has a check in tests/run.sh that was red before its fix (the review file names the check)",
+        "journal/decisions.md has '### D-H29' (finding · choice · rejected) for built-in ntfy and structured notifications",
+        "README.md Steering/Notifications names NTFY_URL, NTFY_TOKEN, DESK_URL, HARNESS_NOTIFY_* and says NTFY_URL wins over NOTIFY_CMD; the Tests line's check count matches tests/run.sh's final 'N/N checks passed'",
+        "docs/architecture.md §3 lists lib/notify.sh and lib/notify.mjs, §10 lists NTFY_URL, NTFY_TOKEN and DESK_URL, §13's notifications row names the stub curl and the fixture",
+        "bash -n on every .sh touched in P1 and node --check on every .mjs pass; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+
+    {
+      "id": "P2-01",
+      "milestone": "P2",
+      "kind": "plan",
+      "model": "opus",
+      "description": "docs/plans/2026-10-19-P2-answer-desk.md fixes the output of `harness parked` (text and JSON), where its code lives (lib/parked.mjs pure report builder, called from bin/harness with the gathered state dirs), the skill file's sections, and the user config template.",
+      "steps": [
+        "docs/plans/2026-10-19-P2-answer-desk.md exists and starts with 'Milestone base: <sha>' (git rev-parse HEAD at the start of this session)",
+        "the plan shows the exact text layout of `harness parked` for one parked feature (run, project, feature, since, why, the INBOX question, running yes/no, then the two next commands) and the JSON field names of --json (run, project, feature, since, why, question, running, commands[])",
+        "the plan states how 'running' and 'a queue runner is going' are read (driver.pid alive; queue/runner.pid alive) and which command pair is printed in each case",
+        "the plan lists the sections of skills/harness-answer/SKILL.md (frontmatter name/description; what to run; what may be checked, with the names-never-values rule; proposing; acting only after a yes; the never-list) and the install one-liner for README",
+        "the plan names templates/user/config.sh as the documented example of ~/.config/harness/config.sh (NTFY_URL, NTFY_TOKEN, DESK_URL, NOTIFY_CMD, and placeholders for P3's DESK, DESK_MODEL) and the checks to add to tests/run.sh for P2-02 and P2-03",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "after": ["P1"],
+      "passes": true
+    },
+    {
+      "id": "P2-02",
+      "milestone": "P2",
+      "kind": "build",
+      "model": "opus",
+      "description": "`harness parked [<run>] [--json]` lists every parked feature across runs (or one run) with run, project, feature, since, why, the INBOX question, whether the run is still going, and the exact next commands; a run with nothing parked prints 'nothing parked'. Read-only.",
+      "steps": [
+        "lib/parked.mjs exists with a usage header and exports a pure function (e.g. parkedReport(entries, {json})) that node --input-type=module -e can call with one entry {run:'r',project:'p',feature:'B',since:'2026-10-19T01:00:00Z',why:'w',question:'q',running:false,runner:false} and get text containing 'harness answer r \"…\"' and 'harness continue r'; with runner:true the text says 'harness queue add --continue r' instead",
+        "bin/harness has a 'parked' case and its usage header lists `harness parked [<run>] [--json]`; the command reads <state>/parked.json, the run record's feature_list.json and INBOX.md (lines above '## Answers'), driver.pid and queue/runner.pid, and writes nothing (no file under the state dir or worktree changes: the check compares `find -newer` before and after)",
+        "tests/run.sh check 'harness parked: id, why, question, both commands' runs after parky ends waiting on Michael and before `harness answer parky`: the output contains 'parky', 'B', 'set the gatus vars', 'harness answer parky', and 'harness continue parky'",
+        "tests/run.sh check 'harness parked --json parses': `harness parked parky --json | jq -e '.[0].feature == \"B\" and .[0].running == false and (.[0].commands | length) == 2'` exits 0",
+        "tests/run.sh check 'with a queue runner going, the continue command is a queue add': with a live pid written to $HARNESS_STATE/queue/runner.pid (echo $$), `harness parked parky` prints 'harness queue add --continue parky'",
+        "tests/run.sh check 'nothing parked': `harness parked demo` prints 'nothing parked'",
+        "bash -n bin/harness; node --check lib/parked.mjs; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P2-03",
+      "milestone": "P2",
+      "kind": "docs",
+      "model": "sonnet",
+      "description": "skills/harness-answer/SKILL.md tells a session Michael opened from his phone how to answer the harness (run harness parked and harness status, read INBOX.md and progress.md, check safely, propose, act only on his yes, never-list); README gets the one install command and DESK_URL; templates/user/config.sh documents the user settings.",
+      "steps": [
+        "skills/harness-answer/SKILL.md exists with YAML frontmatter (name: harness-answer; a description that mentions 'answer the harness' and 'what does <project> need') and names `harness parked`, `harness status <run>`, `harness answer <run> \"<text>\"`, `harness queue list`, `harness queue add --continue <run>` and `harness continue <run>` in that order of use",
+        "the skill's safe-checks section says a variable's name may be checked (`grep -c '^NAME=' file`) and never a value, and names .env contents, secrets and sudo as off limits; its never-list has: never edit INBOX.md, feature lists, policies or CLAUDE.md directly; never answer without Michael's yes; never run a project's live commands",
+        "README.md has the install line `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`, documents `harness parked` in the commands table, and documents DESK_URL under Steering",
+        "templates/user/config.sh exists, is commented like templates/project/config.sh, and sets NTFY_URL, NTFY_TOKEN, DESK_URL and NOTIFY_CMD examples (all commented out or empty); `bash -n templates/user/config.sh` passes",
+        "tests/run.sh check 'the answer skill exists and names the commands and the never-list': the file exists, contains 'harness parked', 'harness answer', 'never edit INBOX.md' and 'sudo'",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "after": ["P2-01"],
+      "passes": true
+    },
+    {
+      "id": "P2-04",
+      "milestone": "P2",
+      "kind": "review",
+      "model": "opus",
+      "description": "An Opus reviewer reads the P2 diff from a file, fixes Critical and Important findings test-first, applies simplifications, and updates docs/architecture.md (CLI row, a new 'Answer desk' section), README.md and journal/decisions.md (D-H30).",
+      "steps": [
+        "git diff <Milestone base from docs/plans/2026-10-19-P2-answer-desk.md>..HEAD -- lib bin tests skills templates > /tmp/p2.diff was written and read; docs/plans/2026-10-19-P2-review.md lists each finding with severity, file:line and resolution",
+        "every Critical and Important finding has a check in tests/run.sh that was red before its fix (named in the review file)",
+        "journal/decisions.md has '### D-H30' for the answer desk (harness parked, the skill, DESK_URL): finding · choice · rejected",
+        "docs/architecture.md §3's bin/harness row lists parked, §3 lists lib/parked.mjs, and a new numbered section 'Answer desk' describes the phone path: notification → Answer with Claude → the skill → harness answer → continue",
+        "README.md's commands table and Steering section match what P2 built (parked, the skill install line, DESK_URL); the Tests line's check count matches tests/run.sh",
+        "bash -n on every .sh touched in P2 and node --check on every .mjs pass; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+
+    {
+      "id": "P3-01",
+      "milestone": "P3",
+      "kind": "plan",
+      "model": "opus",
+      "description": "docs/plans/2026-10-19-P3-desk.md fixes lib/desk.sh's design (tmux session, window naming, the URL wait, the input protocol, state files under <state>/desk/), the interactive mode of tests/stub-claude.sh, the test-only overrides (HARNESS_DESK_SESSION, HARNESS_DESK_WAIT) and the driver's trigger points.",
+      "steps": [
+        "docs/plans/2026-10-19-P3-desk.md exists and starts with 'Milestone base: <sha>' (git rev-parse HEAD at the start of this session)",
+        "the plan gives the exact tmux commands: new-session -d -s ${HARNESS_DESK_SESSION:-h-desk} -n <run> -c <project dir> running `claude --remote-control \"desk · <run> · <why>\" --model <id> --add-dir <worktree>`; the URL wait as a loop over `tmux capture-pane -p` matching https://claude.ai/code/session_[A-Za-z0-9]+ up to ${HARNESS_DESK_WAIT:-60} s; input as `tmux send-keys -t <session>:<window> -l \"<text>\"` then `send-keys … Enter`; and that a run's window is reused when it exists and its pane's claude is alive (tmux list-panes -F '#{pane_dead}' or the pane pid)",
+        "the plan states the state files: <state>/desk/<stamp>.md (the prompt), <state>/desk/url, <state>/desk/last-event (an epoch for gc's 24 h rule), and that --debrief uses the queue dir's desk/ and window 'debrief' in ~/projects/agent-harness (HARNESS_HOME)",
+        "the plan defines the stub's interactive mode in tests/stub-claude.sh: no -p → print the fixture line tests/fixtures/remote-control-pane.txt (copied from the spec's verified pane line, with session_TEST<n> where n counts stub desks via $STUB_DIR/desk/count), then read stdin line by line appending to $STUB_DIR/desk/<remote-control name>.in until EOF; STUB_DESK_NO_URL=1 prints nothing and reads stdin; and lists the tests/run.sh checks for P3-02..05 and the EXIT trap that kills $HARNESS_DESK_SESSION",
+        "the plan lists the driver's trigger points with the --why text each passes (park: '<id> parked: <why>'; run end blocked/waiting; verify needs Michael; merge refused/conflict) and that each is `[[ $DESK == 1 ]] && desk … || note …` so a failing desk never changes the run's course; and lib/config.sh defaults DESK=0 DESK_MODEL=opus",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "after": ["P2"],
+      "passes": true
+    },
+    {
+      "id": "P3-02",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "`harness desk <run> [--why \"<one line>\"]` writes a desk prompt from prompts/desk.md to <state>/desk/<stamp>.md, starts tmux window <run> in the desk session running claude with Remote Control in the project directory (--add-dir the worktree), waits for the session URL in the pane, sends 'Read <prompt> and follow it.', notifies with click = the URL, keeps the URL in <state>/desk/url and prints it; tests drive it with the stub claude's interactive mode in a throwaway tmux session.",
+      "steps": [
+        "tests/stub-claude.sh without -p prints the line from tests/fixtures/remote-control-pane.txt (its first line names the source: the pane of claude 2.1.303 on 2026-10-19) with session_TEST<n>, then appends each stdin line to $STUB_DIR/desk/<name>.in; tests/run.sh exports HARNESS_DESK_SESSION=h-desk-test-$$ and its EXIT trap runs `tmux kill-session -t $HARNESS_DESK_SESSION`",
+        "lib/desk.sh exists with a usage header, bin/harness dispatches `desk` to it and its usage header lists `harness desk <run> [--why \"…\"]`; lib/config.sh defaults DESK=0 DESK_MODEL=opus",
+        "prompts/desk.md exists and, rendered for a run, names the run id, `harness parked <run>`, `harness status <run>`, the run's INBOX.md path, the newest progress.md entries, the safe-checks rules (names never values, no .env, no sudo, no live commands), the numbered one-brief format, `harness answer <run>`, the continue/queue rule and the never-list (never answer an undecided item, never edit INBOX.md, feature lists, policies, CLAUDE.md or settings, never start other runs)",
+        "tests/run.sh check 'harness desk: one window, the Read line, the prompt, the notification click': after parky ends, `harness desk parky --why \"B parked: set the gatus vars\"` exits 0 and prints https://claude.ai/code/session_TEST1; `tmux list-windows -t $HARNESS_DESK_SESSION -F '#W'` prints exactly one line 'parky'; $STUB_DIR/desk/*.in contains 'Read <state>/desk/<stamp>.md and follow it.' and that file names parky, .harness/runs/parky/INBOX.md and 'harness answer parky'; <state>/desk/url holds the URL",
+        "tests/run.sh check 'the desk notification': curl.log's newest block has 'Title: [parky] needs you: B parked: set the gatus vars', 'Priority: high' and 'Click: https://claude.ai/code/session_TEST1'",
+        "the stub recorded that claude was started with --remote-control, --model claude-opus-5-5 and --add-dir <parky worktree> (the stub writes its argv to $STUB_DIR/desk/<name>.args) and in the project directory (the stub writes $PWD there too)",
+        "harness-log.md of parky has a line 'desk started: https://claude.ai/code/session_TEST1 (B parked: set the gatus vars)' (the desk writes it through the run record)",
+        "bash -n lib/desk.sh bin/harness tests/stub-claude.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-03",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "One desk per run: a second event for a run whose desk is alive is typed into the same window ('New since your last brief: <why>. Re-read <new prompt path>.') and notified with the same URL; no URL within the wait kills the window, notes it and falls back to the plain P1 notification; `harness desk --debrief` opens window 'debrief' with a prompt that reads the newest ledger/debrief.md.",
+      "steps": [
+        "tests/run.sh check 'a second event reuses the desk window': `harness desk parky --why \"C parked: db url\"` exits 0, `tmux list-windows -t $HARNESS_DESK_SESSION -F '#W'` still prints one 'parky', the .in file's last line is 'New since your last brief: C parked: db url. Re-read <state>/desk/<new stamp>.md.', and curl.log's newest block has 'Click: https://claude.ai/code/session_TEST1' (the same URL)",
+        "tests/run.sh check 'no URL in time: no window, the plain notification': `STUB_DESK_NO_URL=1 HARNESS_DESK_WAIT=2 harness desk stoppy --why \"x\"` exits 0, no window 'stoppy' exists, harness-log.md of stoppy has 'desk: no session URL within 2 s; killed the window; plain notification', and curl.log's newest block has 'Title: [stoppy] needs you: x' with no claude.ai Click",
+        "tests/run.sh check 'a dead desk is replaced': after `tmux kill-window -t $HARNESS_DESK_SESSION:parky`, `harness desk parky --why \"again\"` starts a fresh window and the new .in file has a 'Read …' line (not 'New since')",
+        "tests/run.sh check 'harness desk --debrief': exits 0, a window 'debrief' exists in $HARNESS_DESK_SESSION, its prompt file (under $HARNESS_STATE/queue/desk/) names ledger/debrief.md and its 'Needs Michael' section, and the notification title is '[debrief] needs you'",
+        "bash -n lib/desk.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-04",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "With DESK=1 the driver starts a desk when a feature parks, when a run ends blocked or waiting on Michael, and when verify or a merge needs Michael; the debrief starts `harness desk --debrief` when its note's 'Needs Michael' section is non-empty; a desk that fails never stops or fails the run; DESK=0 (default) starts nothing.",
+      "steps": [
+        "tests/run.sh: a new run 'desky' (STUB_PARK=B STUB_INDEPENDENT_M2=1, user config DESK=1, GitHub-shaped origin) ends 'waiting on Michael: B'; check 'DESK=1: a park starts one desk, the run end reuses it': `tmux list-windows -t $HARNESS_DESK_SESSION -F '#W'` lists 'desky' once, its .in file has a 'Read …' line followed by a 'New since your last brief: ' line mentioning 'waiting on Michael', and harness-log.md has 'desk started:' once",
+        "tests/run.sh check 'DESK=0: no desk': the parky run (default DESK) produced no window named 'parky' before the by-hand `harness desk` checks ran (order the checks so this is observable, or use a fresh run)",
+        "tests/run.sh check 'a desk that cannot start never changes the run': with DESK=1 and STUB_DESK_NO_URL=1 HARNESS_DESK_WAIT=2 a run that parks still ends 'waiting on Michael: B' with the plain park notification in curl.log and 'no session URL' in its harness-log.md",
+        "tests/run.sh check 'verify needs Michael starts a desk': run 3 (strict) with DESK=1 gets a window 'strict' whose .in has 'Read …' and whose prompt names 'M1' (the --why is the note's text)",
+        "tests/run.sh check 'the debrief starts a desk when Needs Michael is non-empty': the stub debrief with STUB_DEBRIEF_NEEDS=1 writes a note whose '## Needs Michael' section has a line; with DESK=1 a window 'debrief' appears; without the flag ('Nothing.' or no section) none does",
+        "harness-log.md shows each trigger as 'desk started: <url> (<why>)' or 'desk: … plain notification'; bash -n lib/driver.sh lib/debrief.sh lib/desk.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-05",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "Housekeeping: `harness desk --list` prints window, run, URL and age; `harness desk --close <run>|--all` kills desk windows; `harness gc <project>` closes desks whose last event is older than 24 h.",
+      "steps": [
+        "tests/run.sh check 'harness desk --list': after the P3-02..04 desks exist, the output has one line per window with the window name, the run id, the https://claude.ai/code/session_TEST… URL and an age like '0 min' (a window without a URL shows '-')",
+        "tests/run.sh check 'harness desk --close <run>': `harness desk --close desky` exits 0 and `tmux list-windows` no longer lists 'desky'; closing a run with no desk prints 'no desk for <run>' and exits 0",
+        "tests/run.sh check 'harness gc closes idle desks': with <state>/desk/last-event of strict set to 25 h ago (`touch -d '25 hours ago'` or an epoch), `harness gc $T/proj` prints 'closed idle desk strict' and its window is gone; a desk with a fresh last-event stays",
+        "tests/run.sh check 'harness desk --all': kills every remaining window; `tmux has-session -t $HARNESS_DESK_SESSION` fails afterwards (the session goes with its last window) and the EXIT trap tolerates that",
+        "bin/harness's usage header lists --list, --close <run>|--all and --debrief; bash -n lib/desk.sh bin/harness; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-06",
+      "milestone": "P3",
+      "kind": "review",
+      "model": "opus",
+      "description": "An Opus reviewer reads the P3 diff from a file, fixes Critical and Important findings test-first (tmux leaks, a desk that could stop a run, secrets in prompts), applies simplifications, and updates docs/architecture.md, README.md, templates/user/config.sh and journal/decisions.md (D-H31).",
+      "steps": [
+        "git diff <Milestone base from docs/plans/2026-10-19-P3-desk.md>..HEAD -- lib bin tests prompts templates > /tmp/p3.diff was written and read; docs/plans/2026-10-19-P3-review.md lists each finding with severity, file:line and resolution, and explicitly answers: can any path start a real claude from tests (must be no), can a desk failure change a run's end reason (must be no), does any prompt or log carry NTFY_TOKEN (must be no)",
+        "every Critical and Important finding has a check in tests/run.sh that was red before its fix (named in the review file)",
+        "journal/decisions.md has '### D-H31' for the self-starting desk: finding · choice (claude --remote-control in a tmux window, the pane URL as the click, one desk per run, DESK=0 until tried) · rejected (claude remote-control server mode; answers through ntfy)",
+        "docs/architecture.md §3 lists lib/desk.sh and prompts/desk.md, §4 lists <state>/desk/ and queue/desk/, §7 Guards has 'a desk failing to start never stops or fails the run', §10 lists DESK, DESK_MODEL, DESK_URL, and the Answer desk section describes the self-starting path; the components table's check count matches tests/run.sh",
+        "README.md Steering describes the desk (what Michael sees on the phone, DESK=1 to turn it on, `harness desk --list|--close`), and templates/user/config.sh has DESK and DESK_MODEL; the Tests line's check count matches",
+        "docs/plans/2026-10-19-P3-desk.md ends with a 'For Michael: turning it on' section: the exact commands in stages (DESK=0 by hand `harness desk <run> --why test` once → DESK=1 for one night → always), what to check after each stage (the phone opens the session; the brief reads the INBOX; the answer lands), and how to undo (DESK=0; `harness desk --all`)",
+        "bash -n on every .sh touched in P3 and node --check on every .mjs pass; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": true
+    }
+  ]
+}

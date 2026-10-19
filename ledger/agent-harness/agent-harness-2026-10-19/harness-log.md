@@ -1,0 +1,25 @@
+- 2026-10-19 10:16 · feature list written: 0/15 passing
+- 2026-10-19 10:25 · P1-01 · claude-opus-5-5 · passes=true · 8 min · 1/15 passing
+- 2026-10-19 10:41 · P1-02 · claude-opus-5-5 · passes=true · 15 min · 2/15 passing
+- 2026-10-19 11:07 · P1-03 · claude-opus-5-5 · passes=true · 26 min · 3/15 passing
+- 2026-10-19 11:24 · P1-04 · claude-opus-5-5 · passes=true · 17 min · 4/15 passing
+- 2026-10-19 11:57 · P1-05 · claude-opus-5-5 · passes=true · 33 min · 5/15 passing
+- 2026-10-19 12:03 · P1 verified and tagged run/agent-harness-2026-10-19/P1
+- 2026-10-19 12:03 · P1 proposed for merging · https://github.com/mh550/agent-harness/pull/1
+- 2026-10-19 12:10 · P2-01 · claude-opus-5-5 · passes=true · 6 min · 6/15 passing
+- 2026-10-19 12:22 · P2-02 · claude-opus-5-5 · passes=true · 11 min · 7/15 passing
+- 2026-10-19 12:41 · P2-03 · claude-sonnet-5-5 · passes=true · 19 min · 8/15 passing
+- 2026-10-19 13:14 · P2-04 · claude-opus-5-5 · passes=true · 29 min · 9/15 passing
+- 2026-10-19 13:15 · P2 verified and tagged run/agent-harness-2026-10-19/P2
+- 2026-10-19 13:15 · P2 proposed for merging · https://github.com/mh550/agent-harness/pull/2
+- 2026-10-19 13:37 · P3-01 · claude-opus-5-5 · passes=true · 22 min · 10/15 passing
+- 2026-10-19 14:01 · P3-02 · claude-opus-5-5 · passes=true · 23 min · 11/15 passing
+- 2026-10-19 14:30 · P3-03 · claude-opus-5-5 · passes=true · 28 min · 12/15 passing
+- 2026-10-19 14:48 · P3-04 · claude-opus-5-5 · passes=true · 18 min · 13/15 passing
+- 2026-10-19 15:05 · P3-05 · claude-opus-5-5 · passes=true · 16 min · 14/15 passing
+- 2026-10-19 15:41 · P3-06 · claude-opus-5-5 · passes=true · 36 min · 15/15 passing
+- 2026-10-19 15:46 · verify P3: evidence short of the steps (P3-02 7/8); re-running on opus
+- 2026-10-19 15:56 · P3 verified and tagged run/agent-harness-2026-10-19/P3
+- 2026-10-19 15:57 · P3 proposed for merging · https://github.com/mh550/agent-harness/pull/3
+- 2026-10-19 15:57 · every feature passes
+- 2026-10-19 15:57 · run ended (done): 15/15 passing · 20 sessions (20 real) · 15 features passed · $54.04 · 5.7 h · by kind: init 1 ($4.57), coding 15 ($46.58), verify 4 ($2.90) · by model: claude-fable-5-1 1 ($4.57), claude-opus-5-5 15 ($48.33), claude-sonnet-5-5 4 ($1.14)
