@@ -33,6 +33,9 @@ JSON
     fi
     ok 1.5 ;;
   "# Coding session"*)
+    if [[ ${STUB_WEEKLY:-} ]]; then   # the rate-limit event every real session carries: this one reports the 7-day window
+      now=$(date +%s); echo "{\"type\":\"rate_limit_event\",\"rate_limit_info\":{\"status\":\"allowed\",\"resetsAt\":$(( now + 3600 )),\"rateLimitType\":\"five_hour\",\"unifiedWindows\":{\"five_hour\":{\"utilization\":0.2,\"resetsAt\":$(( now + 3600 ))},\"seven_day\":{\"utilization\":$STUB_WEEKLY,\"resetsAt\":$(( now + 259200 ))}}}}"
+    fi
     if [[ ${STUB_LIMIT_HITS:-} ]] && (( $(count limit) <= STUB_LIMIT_HITS )); then   # the real 2026-10-17 limit, nothing done
       cat "$HERE/fixtures/usage-limit.jsonl"; exit 1
     fi
@@ -41,6 +44,11 @@ JSON
     fi
     id=$(sed -n 's/^# Coding session — `\([^`]*\)`.*/\1/p' <<< "$first"); n=$(count "$id")
     echo "$id attempt $n" >> "$HARNESS_SCRATCH/sessions.log"
+    if [[ ${STUB_PARK:-} == "$id" && $n == 1 ]]; then   # can't go on without Michael: asks in INBOX.md, parks
+      sed -i '/^## Answers/i ### '"$id"': set the gatus vars, then answer\n' "$HARNESS_RUN_DIR/INBOX.md"
+      git add -A && git commit -qm "$id: question for Michael" && git push -q origin "$HARNESS_BRANCH"
+      ok 0.3 "Not done: needs two values only Michael can set.\\nPARKED: set the gatus vars"; exit 0
+    fi
     if [[ ${STUB_LIMIT_MIDWAY:-} ]] && (( $(count midway) == 1 )); then   # real work, then the limit cuts the session off
       echo "half of $id" > "half-$id.txt"; git add -A && git commit -qm "$id: half"
       ok 1.4 "working"; sed -n 2p "$HERE/fixtures/usage-limit.jsonl" | sed 's/"total_cost_usd":0/"total_cost_usd":1.4/'
@@ -84,7 +92,7 @@ JSON
     [[ ${STUB_DEBRIEF_DEAD:-} ]] && { echo "Error: unknown option '--whatever'" >&2; exit 1; }   # dies at startup
     [[ ${STUB_DEBRIEF_TOUCH:-} ]] && echo x > "$STUB_DEBRIEF_TOUCH"   # writes a file while it runs
     echo "debrief" >> "$STUB_DIR/debriefs.log"
-    note=$'## Headline\nLanded: proj M1, M2 on main.\nBlocked: nothing.\nSpend $1.20; window open.\nFOURTH headline line\n\n## Runs\nstub runs\n'
+    note=$'## Headline\nLanded: proj M1, M2 on main.\nBlocked: nothing.\nSpend $1.20; window open.\nFOURTH headline line\n\n## Runs\nstub runs <i>raw</i>\n'
     lead="- "; for r in ${STUB_DEBRIEF_CONTINUE:-}; do note+=$'\n'"${lead}CONTINUE: $r :: do C next"; lead=""; done
     jq -cn --arg r "$note" '{type:"result",subtype:"success",is_error:false,total_cost_usd:0.3,duration_ms:1000,num_turns:5,result:$r}' ;;
 esac

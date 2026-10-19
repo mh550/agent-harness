@@ -2,7 +2,8 @@
 # The queue runner (`harness queue start`, tmux session h-queue). Starts queued runs in order: at most
 # MAX_PARALLEL_RUNS at a time (user config; 1 = one after another), never while the box-wide usage-limit window is
 # closed, and none after the --until time. Exits when the queue is empty and nothing it started is still running,
-# when it is past --until with nothing running, or on `harness queue stop`. Every run it starts is marked with its id
+# when it is past --until with nothing running, on `harness queue stop`, or when the plan's 7-day window is past
+# WEEKLY_STOP_AT (as the newest session reported it; what is queued stays queued). Every run it starts is marked with its id
 # (<state>/runners, by `harness start`). Whichever way it exits, if it started a run it starts `harness debrief`
 # detached (setsid: a new runner replacing tmux h-queue doesn't kill it). The debrief covers every run since the last
 # successful one, so a debrief that fails or is killed is caught up by the next one (or `harness debrief` by hand).
@@ -33,6 +34,9 @@ while :; do
   if (( upto > now )); then
     log "usage-limit window closed until $(date -d "@$upto" '+%H:%M'); waiting"
     w=$(( upto - now )); (( w > 600 )) && w=600; sleep "${HARNESS_LIMIT_SLEEP:-$w}"; continue
+  fi
+  if why=$(weekly_over "$STATE_ROOT/USAGE_7D"); then   # days, not minutes: stop, leaving the queue for another night
+    log "not starting runs: $why; $(ls "$Q"/*.args | wc -l) left queued"; break
   fi
   mapfile -t args < "$next"; mv "$next" "$Q/done/$(date +%Y%m%d-%H%M%S)-$(basename "$next")"
   extra=(--now); [[ ${HARNESS_QUEUE_FOREGROUND:-} ]] && extra=(--foreground) || extra+=(--no-supervisor)

@@ -215,3 +215,42 @@ agents are driven*.
     spends the budget).
 - **Proposed:** after about a week of reliable notes, widen `ALLOW` to run-branch writes (conflict resolution,
   inbox answers), test-first. Revisit if a note is ever wrong about what happened.
+
+### D-H25 · Milestones declare what they build on *(accepted 2026-10-19, built in v3.1)*
+- **Finding:** three retros in a row asked to "block only on declared dependencies". On 10-17 dj's H3-04 waited on
+  Michael, and N2–N5 (14 features) never ran behind it although none of them needed it. With no `after`, a feature
+  depends on every feature before it, and the initializer had left `after` off.
+- **Choice:** keep the safe default (unlisted means "everything before me"), but make the boundary explicit: the
+  initializer must give the first feature of every milestone after the first an `after`, and `after` may name
+  milestones (`"after": ["N1"]`). The driver notes once per run which milestones still have none.
+- **Rejected:** "same milestone only" as the default (it would build M2 on an M1 that failed, with nothing saying so).
+
+### D-H26 · A feature waiting on Michael parks; it doesn't spend attempts or stop independent work *(accepted 2026-10-19, built in v3.1)*
+- **Finding:** H3-04 spent two sessions ($2.43) re-checking an INBOX answer that hadn't come, then counted as given
+  up. Both 10-17 retros proposed parking.
+- **Choice:** a session that can't go on without Michael ends its final message with `PARKED: <what it needs>`. The
+  driver gives the attempt back and parks the feature (`state/parked.json`, keyed to a hash of INBOX.md from
+  `## Answers` on). Parked features are skipped like given-up ones, so only what depends on them waits. Any change
+  to the answers (the phone, `harness answer`) unparks them. When nothing else can run, the run ends
+  `waiting on Michael: <ids>` (with `blocked on …` if a given-up feature is also in the way).
+- **Rejected:** pausing the run until an answer arrives (it would hold the queue all night).
+
+### D-H27 · The summary reads how the run ended, not guesses *(accepted 2026-10-19, built in v3.1)*
+- **Finding:** both 10-17 summaries had the wrong end reason (pathways "session cap" for done; dj "no feature left
+  to try" for blocked), and dj's N2–N5 were labelled "usage limit" from refusals two segments earlier. Cause:
+  `finish` built summary.json before the exit trap wrote `state/ended`, so the summary fell back to fixed regexes
+  over every segment's log lines.
+- **Choice:** `finish` writes `ended` first. The fallback (older runs) is the log's last "run ended (…)" line. A
+  refusal from an earlier segment is not the cause of a later ending unless that ending was the limit too.
+
+### D-H28 · Budget the plan's 7-day window; the debrief is also a page *(accepted 2026-10-19, built in v3.1)*
+- **Finding:** after 10-17 the 7-day window stood at 97%, leaving nothing for interactive work until it reset. Every
+  session's stream carries `rate_limit_event.unifiedWindows.seven_day.utilization` (checked on the 10-18 run).
+  jcode's overnight mode (evaluated 2026-10-19, not adopted) showed two ideas worth taking: a usage preflight and a
+  generated review page.
+- **Choice:** the driver records the newest session's 7-day figure box-wide (`state/USAGE_7D`). Past
+  `WEEKLY_STOP_AT` (default 85%), the queue starts no run and a run ends `weekly budget (…)` before its next coding
+  session (verifies of finished milestones still run). The debrief also writes `ledger/debrief.html`: one card per
+  run built from summary.json (the numbers are the harness's, not the model's) above the note, committed with it;
+  `DEBRIEF_PAGE_CMD` gets its path.
+- **Rejected:** waiting for the 7-day reset inside a run (days, not minutes); the model writing the page's numbers.
