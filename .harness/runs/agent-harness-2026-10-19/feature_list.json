@@ -174,7 +174,7 @@
         "bash tests/run.sh ends with every check passing"
       ],
       "after": ["P2"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P3-02",

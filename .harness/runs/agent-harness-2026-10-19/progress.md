@@ -14,6 +14,14 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 16:50 · P3-01 · passes
+
+- New `docs/plans/2026-10-19-P3-desk.md` (Milestone base 8f17332): lib/desk.sh flow, exact tmux commands (exact `=` session match, window ids `@N`, command as separate args through `env -u NTFY_TOKEN …`), the URL wait (`capture-pane -p -J -S -`, `${HARNESS_DESK_WAIT:-60}`), send-keys input, state under `<state>/desk/` and `queue/desk/`, prompts/desk.md content, stub interactive mode + fixture, driver/debrief triggers, `DESK=0 DESK_MODEL=opus`, P3-05 housekeeping, 21 named checks in run order (140 → 147 → 152 → 157 → 161), and "For Michael: turning it on". D-H31 is in journal/decisions.md, marked *planned*. P3-06 marks it built.
+- Verified: tried on a private tmux 3.4 server under scratch. `-t h-desk` prefix-matches `h-desk-x` (hence `=`). send-keys reaches a cooked-tty reader as one line. A multi-arg command runs without a shell. An Opus review of the plan had 1 Important finding (the stub's `printf | grep -q` under pipefail misreads big prompts) and 9 Minor ones; all are folded in. check.sh green (140/140, 190 s).
+- Next session (P3-02): no desk may start before the new desk block after run16b, because parky's must be `session_TEST1`. Tests must `unset TMUX TMUX_PANE` and set `TMUX_TMPDIR=$T/tmux`, or they talk to Michael's tmux server.
+- Michael (D-H31 *default*, plan §12): with DESK=1 each event sends two notifications, the driver's own and the desk's with the session link. Want the driver's dropped when a desk starts? The desk starts in `~/projects/<project>` (trusted), not `~/projects` itself. OK?
+- Proposed changes: P3-04 step 4 says "run 3 (strict) with DESK=1". Plan check 16 does it as a `continue strict` inside the desk block, so TEST1 stays parky's. P3-04 step 6 should also allow the reuse line `desk: sent to the open desk: <url> (<why>)`. The step's literal `[[ $DESK == 1 ]] && desk … || note …` would note on every DESK=0 event. The plan's helper puts the guard first.
+
 ### 2026-10-19 16:00 · verify P2
 
 `check.sh` green (cached); suite output read: 140/140 checks passed, no FAIL line.

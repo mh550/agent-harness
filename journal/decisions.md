@@ -306,3 +306,24 @@ agents are driven*.
   confuse); listing gc'd runs with a "worktree gone" line (nothing can be done there; *default*, Michael may want it
   back); a skill that edits INBOX.md itself (the driver's merge of `harness answer` is the one writer besides the
   GitHub app); installing the skill into `~/.claude` from the harness (Michael's directory, CLAUDE.md rules).
+
+### D-H31 · The desk starts itself: a Remote Control claude in tmux, one per run, the pane's URL as the click *(planned 2026-10-19 in P3-01 of run agent-harness-2026-10-19; P3 builds it, DESK=0 until Michael has tried it)*
+- **Finding:** after D-H30 answering from the phone still meant Michael opening a session himself (Answer with Claude
+  → `DESK_URL`) and asking it what the harness needs; the session started cold. By hand on 2026-10-19 (CLI 2.1.303),
+  `claude --remote-control "<name>"` in a tmux window prints `/remote-control is active · … at
+  https://claude.ai/code/session_…` within seconds, that URL opens the session on the phone, and text typed with
+  `tmux send-keys -l` + `Enter` is submitted like input. A fresh worktree isn't trusted (its prompt blocks); the
+  project directory is.
+- **Choice:** `harness desk <run> [--why …]` (`lib/desk.sh`) writes a prompt (`prompts/desk.md`: read `harness parked`,
+  status, INBOX, progress; check safely; one numbered brief; `harness answer` and the continue only after his reply),
+  starts window `<run>` in tmux session `h-desk` running `claude --remote-control "desk · <run> · <why>" --model
+  $DESK_MODEL --add-dir <worktree>` in the project directory, waits ≤ 60 s for the session URL in the pane, types
+  `Read <prompt> and follow it.`, and notifies with the URL as the click. One desk per run: a later event is typed into
+  the live window. No URL in time: the window is killed and a plain notification goes out. The driver starts one on a
+  park, a blocked or waiting run end, verify or a merge needing Michael; the debrief when its note needs him. `DESK=0`
+  by default. A desk never changes a run: the driver's helper notes a failure and returns 0. *Defaults* (plan §12):
+  the driver's own notification still goes out, so DESK=1 means two per event; the start is synchronous.
+- **Rejected:** `claude remote-control` server mode (no initial prompt, no per-session URL); answers through ntfy (an
+  answer is an instruction to agents: it must come through GitHub or a session signed in as Michael); starting in the
+  worktree (the trust prompt blocks); matching tmux targets by name (`-t h-desk` matches `h-desk-x` by prefix: exact
+  `=` and window ids instead).
