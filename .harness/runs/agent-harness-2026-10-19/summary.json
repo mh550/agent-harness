@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-10-19",
   "started": "2026-10-19T14:06:54.000Z",
-  "ended_at": "2026-10-19T19:57:05.000Z",
+  "ended_at": "2026-10-19T19:57:24.000Z",
   "end_reason": "done",
   "continuations": 0,
   "features": {
@@ -40,20 +40,21 @@
     "end": null
   },
   "cost": {
-    "total": 54.04,
-    "per_passing_feature": 3.6,
+    "total": 54.13,
+    "per_passing_feature": 3.61,
     "by_role": {
       "init": 4.57,
       "plan": 8.35,
       "build": 22.34,
       "review": 15.66,
       "verify": 2.9,
-      "docs": 0.23
+      "docs": 0.23,
+      "retro": 0.1
     },
     "by_model": {
       "claude-fable-5-1": 4.57,
       "claude-opus-5-5": 48.34,
-      "claude-sonnet-5-5": 1.14
+      "claude-sonnet-5-5": 1.24
     },
     "manager": 0
   },
@@ -67,12 +68,13 @@
       "build": 2.65,
       "review": 1.65,
       "verify": 0.35,
-      "docs": 0.32
+      "docs": 0.32,
+      "retro": 0
     }
   },
   "sessions": {
-    "total": 20,
-    "real": 20,
+    "total": 21,
+    "real": 21,
     "environmental": 0
   },
   "guards": {
