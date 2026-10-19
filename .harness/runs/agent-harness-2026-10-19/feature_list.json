@@ -223,7 +223,7 @@
         "tests/run.sh check 'the debrief starts a desk when Needs Michael is non-empty': the stub debrief with STUB_DEBRIEF_NEEDS=1 writes a note whose '## Needs Michael' section has a line; with DESK=1 a window 'debrief' appears; without the flag ('Nothing.' or no section) none does",
         "harness-log.md shows each trigger as 'desk started: <url> (<why>)' or 'desk: … plain notification'; bash -n lib/driver.sh lib/debrief.sh lib/desk.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P3-05",
