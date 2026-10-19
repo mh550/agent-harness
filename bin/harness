@@ -44,12 +44,14 @@ source "$HARNESS_HOME/lib/config.sh"
 die() { echo "harness: $*" >&2; exit 1; }
 toplevel() { git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "$1 is not a git repository"; }
 state_of() {   # run-id → state dir
+  [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "no run '$1' (run-id: letters, digits, . _ - only)"   # compgen globs
   local d; d=$(compgen -G "$STATE_ROOT/*/$1" | head -1 || true)
   [[ -n $d && -f $d/meta.env ]] || die "no run '$1' (see: harness status)"; echo "$d"
 }
 tmux_name() { echo "h-${1//./-}"; }
 port_taken() { (echo > "/dev/tcp/127.0.0.1/$1") 2>/dev/null || grep -qsx "$1" "$STATE_ROOT"/*/*/port; }
 alive() { local p; p=$(cat "$1/driver.pid" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null; }
+runner_up() { [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null; }
 alive_count() { local d n=0; for d in "$STATE_ROOT"/*/*/; do alive "$d" && n=$(( n + 1 )); done; echo "$n"; }
 to_epoch() { [[ $1 =~ ^[0-9]{9,}$ ]] && { echo "$1"; return; }   # HH:MM → the next such time
   local e; e=$(date -d "$1" +%s) || die "bad time '$1'"; (( e <= $(date +%s) )) && e=$(( e + 86400 )); echo "$e"; }
@@ -87,7 +89,7 @@ queue_add() {   # verb args… → a queue entry (one argument per line)
 
 queue_ensure_runner() {
   [[ ${HARNESS_NO_RUNNER:-} ]] && return 0   # tests
-  [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null && return 0
+  runner_up && return 0
   tmux has-session -t h-queue 2>/dev/null && tmux kill-session -t h-queue
   tmux new-session -d -s h-queue -n runner "env HARNESS_HOME=$(printf %q "$HARNESS_HOME") HARNESS_STATE=$(printf %q "$STATE_ROOT") $(printf %q "$HARNESS_HOME/lib/queue.sh") ${1:-0}; echo '[queue runner exited]'; exec bash"
   echo "queue runner started (tmux h-queue)"
@@ -234,7 +236,7 @@ cmd_queue() {
   case $sub in
     list)
       local f n=0
-      echo "queue ($( [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null && echo "runner going" || echo "runner not running: harness queue start"); MAX_PARALLEL_RUNS=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")):"
+      echo "queue ($( runner_up && echo "runner going" || echo "runner not running: harness queue start"); MAX_PARALLEL_RUNS=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")):"
       for f in "$Q"/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g")"; done
       (( n )) || echo "  (empty)"
       echo "running: $(for d in "$STATE_ROOT"/*/*/; do alive "$d" && basename "$d"; done | paste -sd' ' -)"
@@ -269,14 +271,15 @@ cmd_parked() {   # [<run-id>] [--json]: read-only (no harness_config, no mkdir: 
   local want="" json=() d runner=0
   while (( $# )); do case $1 in --json) json=(--json) ;; -*) die "unknown option $1" ;; *) [[ -z $want ]] || die "usage: harness parked [<run-id>] [--json]"; want=$1 ;; esac; shift; done
   [[ -n $want ]] && state_of "$want" > /dev/null
-  [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2> /dev/null && runner=1
+  runner_up && runner=1
   for d in "$STATE_ROOT"/*/*/; do
     [[ -f $d/meta.env ]] || continue
     [[ -n $want && $(basename "$d") != "$want" ]] && continue
     # shellcheck source=/dev/null
     # a gc'd worktree: nothing left to answer or continue. One broken meta.env doesn't cut the others off
     ( source "$d/meta.env"; [[ -d $WT ]] || exit 0
-      printf '%s\t%s\t%s\t%s\t%s\n' "$RUN_ID" "$(basename "$PROJECT_DIR")" "$STATE" "$WT/.harness/runs/$RUN_ID" "$(alive "$STATE" && echo 1 || echo 0)" ) || true
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$RUN_ID" "$(basename "$PROJECT_DIR")" "$STATE" "$WT/.harness/runs/$RUN_ID" "$(alive "$STATE" && { [[ -f $STATE/ended ]] && echo 2 || echo 1; } || echo 0)" \
+        "$(compgen -G "$Q/*-continue-$RUN_ID.args" > /dev/null && echo 1 || echo 0)" ) || true   # 2: ending (finish)
   done | node "$HARNESS_HOME/lib/parked.mjs" report "${json[@]}" --runner "$runner" --run "$want"
 }
 

@@ -47,21 +47,24 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 
 | Component | Lines | Responsibility |
 |---|---|---|
-| `bin/harness` | ~330 | CLI: start/continue/merge/queue/status/report/trends/attach/pause/resume/stop/answer/init/gc/debrief. Creates worktrees, ports, state dirs, tmux sessions |
+| `bin/harness` | ~350 | CLI: start/continue/merge/queue/status/parked/report/trends/attach/pause/resume/stop/answer/init/gc/debrief. Creates worktrees, ports, state dirs, tmux sessions |
 | `lib/driver.sh` | ~370 | The run loop (§5). The only component that runs sessions, commits on the run's behalf, tags and merges |
 | `lib/queue.sh` | ~45 | Starts queued runs within the parallel limit, the `--until` time and the usage-limit window; starts `harness debrief`, detached, as it exits (§16) |
 | `lib/debrief.sh` | ~280 | `harness debrief`: gathers the context in bash, waits out the limit window, one read-only session, the note, checked continuations, the notification (§16) |
 | `lib/config.sh` | ~60 | Config layers and conventions (§10) |
 | `lib/notify.sh` | ~50 | `notify "<message>" [title= body= click= actions= priority= tags=]` for the driver and the debrief: posts to `NTFY_URL` through `${HARNESS_CURL:-curl}` (bearer `NTFY_TOKEN`), else runs `NOTIFY_CMD` with `$1` + `HARNESS_NOTIFY_*`; always returns 0, a failed post is a note. `gh_url <path> [blob\|edit]`: that file on the run branch on GitHub, or nothing |
 | `lib/notify.mjs` | ~75 | Pure helpers for it: `githubUrls` (GitHub origins only), `trimBody` (3500 bytes, `…`), `actionsHeader` (ntfy `view, <label>, <url>; …`), `inboxQuestion` (the lines a session added above `## Answers`) |
+| `lib/parked.mjs` | ~95 | `harness parked` (§17): pure `questionFor`, `commandsFor`, `entriesFor`, `parkedReport`, and a `report` CLI over the state dirs bash names on stdin. Never writes |
 | `lib/check.sh` + `treekey.mjs` | ~40 | The suite, cached per content of the code tree. One command for the driver and every session |
 | `lib/features.mjs` | ~200 | The feature-list contract: scheduling, gating, repair, kinds, evidence counting |
 | `lib/metrics.mjs` | ~100 | Per-session metrics; the "environmental?" decision (limits, API errors, $0) |
 | `lib/summary.mjs` | ~230 | Run summary, writeup, ledger rows, trends, calibration |
 | `lib/render.mjs` | ~15 | Prompt templating (`{{X}}` ← `HARNESS_X`) and titled sections |
 | `lib/page.mjs` | ~130 | The debrief page: a card per run from summary.json, then the note (escaped), one self-contained HTML file |
+| `skills/harness-answer/SKILL.md` | ~45 | The answer desk's instructions for an interactive session Michael opens (§17); installed by a symlink into `~/.claude/skills/` |
+| `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
 | `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md; `policy/{build-only,live-staged}.md` |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin: 125 checks |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin: 140 checks |
 
 ## 4. Where state lives
 
@@ -77,7 +80,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Driver log | `~/.local/state/harness/<p>/<run>/run.log` | driver (`log`) | status, summary (wall times) | no |
 | Transcripts | `…/logs/NN-<id>.jsonl`, `HHMMSS-verify-<m>.jsonl`, `00-init.jsonl`, `zz-retro-*.jsonl` | `claude --output-format stream-json` | metrics, retro, you (`jq`) | no |
 | Attempts | `…/attempts.json` | driver (bump, unbump, grant, reset) | scheduler | no |
-| Parked features | `…/parked.json` (`id → {answers, why, at}`; `answers` = hash of INBOX.md from `## Answers` on) | driver (park after a `PARKED:` session; unpark when the hash changes) | scheduler, summary | no |
+| Parked features | `…/parked.json` (`id → {answers, why, at}`; `answers` = hash of INBOX.md from `## Answers` on) | driver (park after a `PARKED:` session; unpark when the hash changes) | scheduler, summary, `harness parked` | no |
 | Markers | `…/{driver.pid, ended, PAUSE, STOP, verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, verify-rounds-<m>, tests-start, tests-end, waited-<t>, port, meta.env, run.env, brief.md, inbox.md}` | driver, CLI | driver, CLI, summary | no |
 | Shared limit window | `~/.local/state/harness/LIMIT_UNTIL` (epoch) | any driver hitting a limit | every driver, the queue runner, status | no |
 | 7-day window | `~/.local/state/harness/USAGE_7D` (`<utilization 0..1> <reset epoch>`, from the newest session's rate-limit event) | every session (driver) | every driver, the queue runner (`weekly_over`) | no |
@@ -303,6 +306,7 @@ record and their own `passes`; make every new behaviour visible in `harness-log.
 
 | Situation | Do |
 |---|---|
+| What is waiting on me? | `harness parked` (every run) or `harness parked <run>`: the question and the two commands that answer it |
 | Driver died (machine reboot, kill) | `harness continue <run>`: worktree, list, attempts and markers are on disk |
 | Paused after limit hits | `harness status` shows the window; `harness resume <run>` after it, or let the queue continuation run |
 | Merge refused (branch protection) or conflicted | fix on GitHub or in the worktree; `harness merge <run>` |
@@ -389,3 +393,43 @@ commits, or runs anything live. Enforced in layers:
 **Cost.** One Sonnet session per queue that started a run, at most 40 turns and $3 (the retro's caps); the context is
 capped at a few tens of KB, so expect well under $1. With nothing to cover there is no session. The note's second line
 records the model and the session's cost.
+
+## 17. Answer desk
+
+A parked feature waits on a question only Michael can answer, usually while he is away from the box. The answer desk
+is the path from the notification to an answer the driver takes, without a branch switch in the GitHub app.
+
+```
+session ends "PARKED: <why>", question above ## Answers in INBOX.md
+  ─► driver: parked.json[id] = {answers: hash, why, at}; the park notification (§10 NTFY_URL): question, the
+     harness answer command, Edit INBOX / Progress, and Answer with Claude when DESK_URL is set
+  ─► Answer with Claude opens DESK_URL (Michael's Remote Control environment) → an interactive session on the box
+  ─► the harness-answer skill (Michael: "answer the harness" / "what does <project> need?"):
+       harness parked · harness status <run> · the run's INBOX.md and newest progress.md entries
+       checks what is safe (files, git, a variable's name with grep -c, never a value, no .env, no sudo)
+       proposes the answer in one or two sentences; nothing is done before Michael's yes
+  ─► harness answer <run> "<text>"  (state/inbox.md; the driver appends it under ## Answers before the next session)
+  ─► the run takes it: still going → its next loop unparks (the answers hash changed), nothing else to run
+     ended (or ending, once it has) → harness queue add --continue <run> when a queue runner is going, else
+     harness continue <run>
+```
+
+**`harness parked [<run>] [--json]`** (`cmd_parked` gathers, `lib/parked.mjs` reports): one block per parked feature
+that isn't passing (`parked.json` minus passing ids), oldest first: `<run> · <project> · <feature>`, since (local
+time and age), why, the question (`questionFor`: the newest `### <id>` section of INBOX.md above `## Answers`, then the
+newest heading that mentions the id, else everything sessions wrote there), running, and the next commands
+(`commandsFor`). Running is `yes` while `driver.pid` is alive and `ended` isn't written (only the answer: the driver
+takes it before its next session), `ending` when both are (the driver is in `finish`: merge, suite, retro; no next
+session, so answer now and continue once it has ended), else `no`; a queue runner is `queue/runner.pid` alive. A
+queued continuation (`queue/*-continue-<run>.args`; a session-cap end queues its own) gets only the answer command:
+it takes the answer when it starts. Headings inside ``` fences don't end a question. A run whose worktree is gone (gc'd) is skipped: there is nothing
+to answer or continue there. `--json`: the same as an array of `{run, project, feature, since, why, question,
+running, ending, queued, commands[]}`. Nothing parked: `nothing parked` (`… in <run>`). It never writes: no `harness_config`, no
+`mkdir`; a broken `meta.env` skips that run only.
+
+**The skill only asks.** It runs commands that already exist, Michael's words passed through a quoted heredoc so
+nothing in them is run or expanded; its never-list (never edit INBOX.md, feature lists,
+policies or CLAUDE.md directly; never answer without Michael's yes; never run a project's live commands) is text
+the session follows, and Michael's yes is the gate. The harness ships the file; Michael installs it once
+(`ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`). P3 adds a desk session the harness
+starts itself (`DESK=1`), so the link opens a session that already holds the question.

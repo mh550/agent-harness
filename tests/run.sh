@@ -62,7 +62,7 @@ PREP='import { parkedReport as r } from "'$HERE'/../lib/parked.mjs"; const e = {
   const a = r([e]), b = r([{ ...e, runner: true }]), c = r([{ ...e, running: true }]), j = JSON.parse(r([e, { ...e, run: "s", since: "2026-10-18T01:00:00Z" }], { json: true }));
   process.exit(a.includes("harness answer r \"…\"") && a.includes("harness continue r") && b.includes("harness queue add --continue r") && !b.includes("harness continue r")
     && c.includes("running:  yes") && c.includes("harness answer r \"…\"") && !c.includes("continue r") && r([], {}) === "nothing parked\n" && r([], { run: "x" }) === "nothing parked in x\n"
-    && JSON.parse(r([], { json: true })).length === 0 && j.map(x => x.run).join() === "s,r" && Object.keys(j[0]).join() === "run,project,feature,since,why,question,running,commands" ? 0 : 1);'
+    && JSON.parse(r([], { json: true })).length === 0 && j.map(x => x.run).join() === "s,r" && Object.keys(j[0]).join() === "run,project,feature,since,why,question,running,ending,queued,commands" ? 0 : 1);'
 check "parked.mjs: the report names the answer and continue commands" 'node --input-type=module -e "$PREP"'
 QFOR='import { questionFor as q, parkedReport as r } from "'$HERE'/../lib/parked.mjs";
   const i = "status: run\n<!-- Steer this run\n     from the app -->\n\n### A: db url\nwhich db?\n### B: set the gatus vars, then answer\n\n## Answers\n### B: an old answer\n";
@@ -71,6 +71,14 @@ QFOR='import { questionFor as q, parkedReport as r } from "'$HERE'/../lib/parked
     && q("status: run\n\n## Answers\n", "B") === "" && q("### Bx: q\n## Answers\n", "B") === "### Bx: q" && q("", "B") === "" && q("### A: needs B first\n### B: the vars\n", "B") === "### B: the vars"
     && t === "parky · proj · B\n  since:    2026-10-19 01:00 (2 h ago)\n  why:      set the gatus vars\n  question: ### A: db url\n            which db?\n  running:  no\n  next:     harness answer parky \"…\"\n            harness continue parky\n" ? 0 : 1);'
 check "parked.mjs: the question is the feature's INBOX section" 'TZ=UTC node --input-type=module -e "$QFOR"'
+QNEW='import { questionFor as q, commandsFor as c } from "'$HERE'/../lib/parked.mjs";
+  process.exit(q("status: run\n\n### B: set the gatus vars\nold, answered\n\n### B: now the token too\nnew one\n\n## Answers\n", "B") === "### B: now the token too\nnew one"
+    && q("### 1.2: y\n### 1.2.3: x\n## Answers\n", "1.2") === "### 1.2: y" && q("### B: q\nthe text\n## Notes\nnot it\n## Answers\n", "B") === "### B: q\nthe text"
+    && q("status: run\n### B: q\n### 2026-10-19 10:00 (local)\nmy answer\n", "C") === "### B: q"
+    && q("status: run\n### B: q1\n### 2026-10-19 10:00 (local)\nans\n### B: q2 new\n", "B") === "### B: q2 new"
+    && q("### B: set vars\n```bash\n# put these in .env\nFOO=1\n```\nthen answer\n## Answers\n", "B") === "### B: set vars\n```bash\n# put these in .env\nFOO=1\n```\nthen answer"
+    && JSON.stringify(c("r", { queued: true })) === JSON.stringify(["harness answer r \"…\""]) ? 0 : 1);'
+check "parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers" 'node --input-type=module -e "$QNEW"'
 ( NTFY_URL=https://ntfy.example/t NTFY_TOKEN="" NOTIFY_CMD=""; log() { :; }; source "$HERE/../lib/notify.sh"; notify "long one" title="long one" body="$(head -c 4000 /dev/zero | tr '\0' x)" )
 check "a body over the cap is trimmed"    'Bd=$(curl_body "Title: long one"); (( $(printf %s "$Bd" | wc -c) <= 3500 && $(printf %s "$Bd" | wc -c) > 3000 )) && [[ $Bd == *… ]]'
 
@@ -381,10 +389,25 @@ check "harness parked --json parses" 'jq -e ".[0].feature == \"B\" and .[0].runn
 RP=$HARNESS_STATE/queue/runner.pid; mkdir -p "$HARNESS_STATE/queue"; [[ -f $RP ]] && mv "$RP" "$RP.keep"; echo $$ > "$RP"
 check "with a queue runner going, the continue command is a queue add" 'P=$("$H" parked parky); [[ $P == *"harness queue add --continue parky"* && $P != *"harness continue parky"* ]]'
 rm -f "$RP"; [[ -f $RP.keep ]] && mv "$RP.keep" "$RP"
+# parky's driver still alive (our pid): wrapping up after "ended" (finish: merge, suite, retro), then mid-run
+DP=$HARNESS_STATE/proj/parky/driver.pid; echo $$ > "$DP"
+check "a run still ending: answer now, continue once it has ended" 'P=$("$H" parked parky); [[ $P == *"running:  ending"* && $P == *"harness continue parky"* ]] \
+  && "$H" parked parky --json | jq -e ".[0].running == false and .[0].ending == true and (.[0].commands | length) == 2" > /dev/null'
+mv "$HARNESS_STATE/proj/parky/ended" "$T/parky.ended"
+check "a run still going: only the answer command" 'P=$("$H" parked parky); [[ $P == *"running:  yes"* && $P == *"harness answer parky"* && $P != *"continue parky"* ]]'
+mv "$T/parky.ended" "$HARNESS_STATE/proj/parky/ended"; rm -f "$DP"
+check "harness parked: an unknown or glob run id is an error" '! "$H" parked nosuch 2> /dev/null && ! "$H" parked "parky*" > /dev/null 2>&1 \
+  && ! "$H" answer "park*" "a glob answers no run" > /dev/null 2>&1 && ! grep -rqs "a glob answers" "$HARNESS_STATE"/proj/park*/inbox.md'
+# a session-cap end queues its own continuation (finish): a second one would restart the run twice
+touch "$HARNESS_STATE/queue/9999-continue-parky.args"
+check "a queued continuation: only the answer command" 'P=$("$H" parked parky); [[ $P == *"continuation queued"* && $P == *"harness answer parky"* && $P != *"continue parky"* ]] \
+  && "$H" parked parky --json | jq -e ".[0].queued == true and (.[0].commands | length) == 1" > /dev/null'
+rm -f "$HARNESS_STATE/queue/9999-continue-parky.args"
 # demo's worktree is gc'd: a parked.json left in its state dir names nothing that can be answered or continued
 echo '{"Z":{"answers":"x","why":"stale","at":"2026-10-19T01:00:00.000Z"}}' > "$HARNESS_STATE/proj/demo/parked.json"
 check "nothing parked"                    '[[ $("$H" parked demo) == "nothing parked in demo" ]] && ! "$H" parked | grep -q "^demo "'
 check "the answer skill exists and names the commands and the never-list" 'S=$HH/skills/harness-answer/SKILL.md; [[ $(head -1 "$S") == --- ]] && grep -q "^name: harness-answer$" "$S" && grep -q "harness parked" "$S" && grep -q "harness answer" "$S" && grep -qi "never edit INBOX.md" "$S" && grep -q sudo "$S"'
+check "the answer skill passes Michael's words through a quoted heredoc" 'S=$HH/skills/harness-answer/SKILL.md; grep -qF "\"\$(cat <<'"'"'HARNESS_ANSWER_END'"'"'" "$S" && grep -qi "never let his words reach the shell" "$S"'
 check "the user config template sets nothing" 'bash -n "$HH/templates/user/config.sh" && ( unset NTFY_URL NTFY_TOKEN DESK_URL NOTIFY_CMD; source "$HH/templates/user/config.sh"; [[ -z ${NTFY_URL:-}${NTFY_TOKEN:-}${DESK_URL:-}${NOTIFY_CMD:-} ]] )'
 rm -f "$HARNESS_STATE/proj/demo/parked.json"
 "$H" answer parky "gatus vars set" > /dev/null

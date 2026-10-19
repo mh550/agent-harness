@@ -124,6 +124,6 @@ ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harne
 ## Tests
 
 ```bash
-tests/run.sh    # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 125 checks (~3 min)
+tests/run.sh    # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 140 checks (~3 min)
 ```
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

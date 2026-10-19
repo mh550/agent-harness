@@ -18,7 +18,8 @@ Michael is likely on his phone: keep every message short, numbered, and easy to 
 
 Read-only, and say what you checked:
 - files, `git log` and `git status` in the run's worktree; `docker ps`.
-- whether a variable is set, **by name only**: `grep -c '^NAME=' file`. Never print or look at a value.
+- whether a variable is set, **by name only**: `grep -c '^NAME=' file` (`grep -cE '^(export )?NAME=' file` for shell
+  files). Never print or look at a value.
 
 Off limits: `.env` contents, tokens, keys and any other secret; anything with `sudo`; the project's live commands
 (deploys, migrations, writes to a service).
@@ -30,14 +31,26 @@ recommendation in one or two sentences. Michael answers by number.
 
 ## Acting, only after his yes
 
-For each item he decided: `harness answer <run> "<his decision in his words, naming the item it answers>"`, then read it
-back to him. Then continue the run once: `harness queue list`; with a runner going, `harness queue add --continue <run>`,
-otherwise `harness continue <run>`. A run still going needs no continue (`harness parked` says so). An ambiguous reply
-gets a follow-up question, not a guess.
+For each item he decided, pass his words on through a quoted heredoc, so no backtick, `$` or quote in them is run or
+expanded:
+
+```bash
+harness answer <run> "$(cat <<'HARNESS_ANSWER_END'
+<his decision in his words, naming the item it answers>
+HARNESS_ANSWER_END
+)"
+```
+
+(If a line of his text is exactly `HARNESS_ANSWER_END`, pick another end word.)
+
+Then read it back to him. Then continue the run once: `harness queue list`; with a runner going,
+`harness queue add --continue <run>`, otherwise `harness continue <run>`. A run still going needs no continue; one
+`ending` (its driver is wrapping up) needs it once `harness status <run>` shows it ended (`harness parked` says
+which). An ambiguous reply gets a follow-up question, not a guess.
 
 ## Never
 
 - Never edit INBOX.md, feature lists, policies or CLAUDE.md directly.
-- Never answer without Michael's yes, or an item he didn't decide.
+- Never answer without Michael's yes, or an item he didn't decide; never let his words reach the shell unquoted.
 - Never run a project's live commands, and never `sudo`.
 - Never start, stop or merge runs; the one `continue` above is the only run command besides `answer`.
