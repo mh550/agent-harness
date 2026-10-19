@@ -90,6 +90,7 @@
       ],
       "passes": false
     },
+
     {
       "id": "P2-01",
       "milestone": "P2",
@@ -104,9 +105,7 @@
         "the plan names templates/user/config.sh as the documented example of ~/.config/harness/config.sh (NTFY_URL, NTFY_TOKEN, DESK_URL, NOTIFY_CMD, and placeholders for P3's DESK, DESK_MODEL) and the checks to add to tests/run.sh for P2-02 and P2-03",
         "bash tests/run.sh ends with every check passing"
       ],
-      "after": [
-        "P1"
-      ],
+      "after": ["P1"],
       "passes": false
     },
     {
@@ -140,9 +139,7 @@
         "tests/run.sh check 'the answer skill exists and names the commands and the never-list': the file exists, contains 'harness parked', 'harness answer', 'never edit INBOX.md' and 'sudo'",
         "bash tests/run.sh ends with every check passing"
       ],
-      "after": [
-        "P2-01"
-      ],
+      "after": ["P2-01"],
       "passes": false
     },
     {
@@ -161,6 +158,7 @@
       ],
       "passes": false
     },
+
     {
       "id": "P3-01",
       "milestone": "P3",
@@ -175,9 +173,7 @@
         "the plan lists the driver's trigger points with the --why text each passes (park: '<id> parked: <why>'; run end blocked/waiting; verify needs Michael; merge refused/conflict) and that each is `[[ $DESK == 1 ]] && desk … || note …` so a failing desk never changes the run's course; and lib/config.sh defaults DESK=0 DESK_MODEL=opus",
         "bash tests/run.sh ends with every check passing"
       ],
-      "after": [
-        "P2"
-      ],
+      "after": ["P2"],
       "passes": false
     },
     {
