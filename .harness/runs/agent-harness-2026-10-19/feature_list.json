@@ -156,7 +156,7 @@
         "README.md's commands table and Steering section match what P2 built (parked, the skill install line, DESK_URL); the Tests line's check count matches tests/run.sh",
         "bash -n on every .sh touched in P2 and node --check on every .mjs pass; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
 
     {

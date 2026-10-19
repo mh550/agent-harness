@@ -54,7 +54,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/config.sh` | ~60 | Config layers and conventions (§10) |
 | `lib/notify.sh` | ~50 | `notify "<message>" [title= body= click= actions= priority= tags=]` for the driver and the debrief: posts to `NTFY_URL` through `${HARNESS_CURL:-curl}` (bearer `NTFY_TOKEN`), else runs `NOTIFY_CMD` with `$1` + `HARNESS_NOTIFY_*`; always returns 0, a failed post is a note. `gh_url <path> [blob\|edit]`: that file on the run branch on GitHub, or nothing |
 | `lib/notify.mjs` | ~75 | Pure helpers for it: `githubUrls` (GitHub origins only), `trimBody` (3500 bytes, `…`), `actionsHeader` (ntfy `view, <label>, <url>; …`), `inboxQuestion` (the lines a session added above `## Answers`) |
-| `lib/parked.mjs` | ~95 | `harness parked` (§17): pure `questionFor`, `commandsFor`, `entriesFor`, `parkedReport`, and a `report` CLI over the state dirs bash names on stdin. Never writes |
+| `lib/parked.mjs` | ~110 | `harness parked` (§17): pure `questionFor`, `commandsFor`, `entriesFor`, `parkedReport`, and a `report` CLI over the state dirs bash names on stdin. Never writes |
 | `lib/check.sh` + `treekey.mjs` | ~40 | The suite, cached per content of the code tree. One command for the driver and every session |
 | `lib/features.mjs` | ~200 | The feature-list contract: scheduling, gating, repair, kinds, evidence counting |
 | `lib/metrics.mjs` | ~100 | Per-session metrics; the "environmental?" decision (limits, API errors, $0) |

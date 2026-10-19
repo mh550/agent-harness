@@ -14,6 +14,16 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 15:10 · P2-04 · passes
+
+- Review of the P2 diff (`/tmp/p2.diff`, 267 lines) by Opus, then a second Opus pass over the fixes: `docs/plans/2026-10-19-P2-review.md`, 4 Important (I1–I3, R1) and 7 Minor, none Critical. Fixes in c44ed3e; tests 134 → 140, each new check watched red first (135/139, then 135/140).
+- Important fixes: `harness parked` showed a run in `finish` (driver alive, `ended` written, retro running) as "running", with the answer command only, so the answer sat unused after a park. It now shows `ending`. A re-park quoted the old answered question; the newest `### <id>` now wins. The skill passed Michael's words in double quotes, where backticks and `$(…)` run; it now uses a quoted heredoc. A `# comment` in a code fence cut the question short; fences now count.
+- Also: `queue/*-continue-<run>.args` → answer only (a session-cap end already queued a continue); `state_of` rejects globs (`harness answer 'park*'` answered a random run); `runner_up()` helper.
+- Docs: D-H30 in journal/decisions.md; architecture §3 rows (bin/harness parked, lib/parked.mjs, the skill, the template), §14 runbook row, new §17 "Answer desk"; README Tests count 140. `check.sh` green in 189 s; `bash -n` bin/harness, tests/run.sh, templates/user/config.sh; `node --check lib/parked.mjs`.
+- Left open (in the review file): store the park-time question in parked.json (P3 touches the park path); stale-pid reuse in `alive` (M1); no "already answered" marker (M2).
+- Michael: runs whose worktree was gc'd stay hidden from `harness parked` (D-H30 *default*). Should they show a "worktree gone" line instead?
+- Proposed change: the JSON of `harness parked` gained `ending` and `queued` fields, which the plan's exact field list didn't have. P3's desk prompt should read them.
+
 ### 2026-10-19 14:00 · P2-03 · passes
 
 - Added `skills/harness-answer/SKILL.md` (frontmatter + the five sections from plan §5), `templates/user/config.sh` (all assignments commented), README: `harness parked` in the commands table, a "Answering from the phone" bullet under Steering with the install line and DESK_URL. Tests 132 → 134.
