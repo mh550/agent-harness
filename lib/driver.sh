@@ -111,6 +111,16 @@ take_answers() {
   commit_all "HARNESS: answers from Michael"
 }
 
+# The park's notification: the question the session wrote in INBOX.md and how to answer, with the INBOX one tap away.
+notify_park() {
+  local id=$1 why=$2 q body
+  q=$(node "$NOTIFY_MJS" question "$STATE/inbox-before.md" "$RUN_DIR/INBOX.md" 2> /dev/null)
+  body="PARKED: $why"$'\n\n'"${q:+$q$'\n\n'}Answer: harness answer $RUN_ID \"…\""
+  notify "needs Michael: $id · $why" title="[$RUN_ID] $id needs you" priority=high tags=question body="$body" \
+    click="$(gh_url "$RUN_DIR/INBOX.md")" actions="$(node "$NOTIFY_MJS" actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" \
+      "Answer with Claude" "$DESK_URL" Progress "$(gh_url "$RUN_DIR/progress.md")")"
+}
+
 # What unparks a feature: Michael's answers changing (INBOX.md from "## Answers" on, local answers included).
 answers_hash() { sed -n '/^## Answers/,$p' "$RUN_DIR/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12; }
 
@@ -456,6 +466,7 @@ while :; do
   HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
   log "session $n · $id · $mdl"
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
+  cp "$RUN_DIR/INBOX.md" "$STATE/inbox-before.md" 2> /dev/null || : > "$STATE/inbox-before.md"   # what the session adds is the park's question
   session coding "$mdl" "$slog"
   commit_all "WIP: $id — uncommitted at session end (harness)"
 
@@ -490,8 +501,11 @@ while :; do
   note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")"
   if [[ $passed == false ]] && why=$(MET final "$slog" | sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' | head -1) && [[ -n $why ]]; then
     F unbump "$ATT" "$id"; F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault
-    note "$id parked (waiting on Michael): $why"; notify "needs Michael: $id · $why"
-  fi
+    note "$id parked (waiting on Michael): $why"
+  else why=""; fi
   commit_all "HARNESS: after $id (passes=$passed)"; sync
+  if [[ -n $why ]]; then   # after the push, so its links show the question; a failed post's note is committed too
+    notify_park "$id" "$why"; [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: park notification failed"; sync; }
+  fi
 
 done

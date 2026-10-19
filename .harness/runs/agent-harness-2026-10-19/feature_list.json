@@ -55,7 +55,7 @@
         "lib/config.sh defaults DESK_URL='' and the three new settings appear in the harness_config defaults line (grep -n 'NTFY_URL\\|DESK_URL' lib/config.sh)",
         "bash -n lib/driver.sh lib/notify.sh, node --check lib/notify.mjs; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-04",

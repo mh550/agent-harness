@@ -1,5 +1,6 @@
 # shellcheck shell=bash
 # Usage: source lib/notify.sh; notify "<message>" [title=…] [body=…] [click=…] [actions=…] [priority=…] [tags=…]
+#        gh_url <path in the repo> [blob|edit]   (the GitHub URL of that file on $BRANCH or the current one, or nothing)
 # Structured notifications (plan: docs/plans/2026-10-19-P1-notifications.md). With NTFY_URL set the harness posts to
 # ntfy itself through ${HARNESS_CURL:-curl} and NOTIFY_CMD is not called; otherwise NOTIFY_CMD gets "$1" as it always
 # has ("[<NOTIFY_TAG>] <message>") plus the fields as HARNESS_NOTIFY_*. Always returns 0: a notification never stops
@@ -38,4 +39,10 @@ notify() {
       HARNESS_NOTIFY_PRIORITY=$priority bash -c "$NOTIFY_CMD" _ "$msg" > /dev/null 2>&1 9>&-
   fi
   return 0
+}
+
+# remote.origin.url, not `git remote get-url`: that one returns the url.<…>.insteadOf rewrite (the suite's local origin).
+gh_url() {
+  local u; u=$(node "$NOTIFY_MJS" urls "$(git config --get remote.origin.url)" "${BRANCH:-$(git branch --show-current)}" "$1" 2> /dev/null) || return 0
+  [[ ${2:-blob} == edit ]] && echo "${u#*$'\t'}" || echo "${u%%$'\t'*}"
 }

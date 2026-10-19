@@ -14,6 +14,15 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 11:15 · P1-03 · passes
+
+- **What changed:** `lib/notify.mjs` gains `githubUrls` (ssh/https/ssh:// GitHub forms; null for anything else or an empty branch) and `inboxQuestion` + `urls`/`question` CLI; `lib/notify.sh` gains `gh_url <path> [blob|edit]` (reads `remote.origin.url` and `$BRANCH`); `lib/driver.sh` copies INBOX.md to `$STATE/inbox-before.md` before every coding session and has `notify_park`: title `[<run>] <id> needs you`, high, tag question, body = PARKED line + the session's INBOX lines + `Answer: harness answer <run> "…"`, click = INBOX blob, actions Edit INBOX / Answer with Claude (DESK_URL) / Progress. `tests/stub-curl.sh` gains `STUB_CURL_SPY`. The suite's origin is now GitHub-shaped (`url.<local>.insteadOf`). Tests 107 → 114.
+- **Verified:** check.sh green in 188 s, 114/114. The GitHub-shaped origin alone was 107/107 (separate run first). Each new check was watched red on a scratch copy without its code (3 park checks, githubUrls empty-branch, notify-after-push, failed-post commit). In a kept dir I read the parky/parkn/parkl curl.log blocks: they match the plan to the character.
+- **Review (Opus), fixed:** the park notification now goes out *after* `commit_all … ; sync`, so its links show the question (check: `the park goes out after the run branch is pushed`). A failed park post's note is committed and synced at once instead of riding in the next `WIP:` commit (check: `a failed park post is noted and committed at once`). A stale inbox-before.md is emptied if the copy fails, and `gh_url` uses `$BRANCH` (a detached HEAD gave `blob//`).
+- **Minors left for P1-05:** a `,` or `;` in a branch name or DESK_URL would split ntfy's Actions header (quote or drop such URLs). The `inboxQuestion` unit doesn't cover a `before` without `## Answers`. parkn and parkl stay behind as ended runs in the throwaway env.
+- **Next session (P1-04):** the run 16 config is base + DESK_URL; it goes back to plain `LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1` after the unpark check. For parky's `ended (waiting on Michael: B)` block, `curl_with` finds it. Under `pipefail`, `git log | grep -q` fails with SIGPIPE: use `grep … > /dev/null`. `grep` here is ugrep (`$` in a pattern is an anchor: use `-F`).
+- **Questions / proposed changes:** none.
+
 ### 2026-10-19 10:45 · P1-02 · passes
 
 - **What changed:** new `lib/notify.sh` (`notify "<msg>" [title= body= click= actions= priority= tags=]`; NTFY_URL → stub-able `${HARNESS_CURL:-curl}` post with Title/Priority/Tags/Click/Actions/Bearer headers, NOTIFY_CMD skipped; else NOTIFY_CMD with `$1` unchanged + five `HARNESS_NOTIFY_*`), `lib/notify.mjs` (`trimBody`, `actionsHeader` + `trim`/`actions` CLI), `tests/stub-curl.sh`, `tests/fixtures/ntfy-publish.txt`. driver.sh sources it with `NOTIFY_TAG=$RUN_ID`; debrief.sh sources it (its `tell()` stays on NOTIFY_CMD until P1-04). config.sh defaults `NTFY_URL NTFY_TOKEN DESK_URL`; `HARNESS_CURL` is in bin/harness's tmux env list. Tests 98 → 107.
