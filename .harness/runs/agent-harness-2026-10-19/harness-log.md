@@ -18,3 +18,4 @@
 - 2026-10-19 14:48 · P3-04 · claude-opus-5-5 · passes=true · 18 min · 13/15 passing
 - 2026-10-19 15:05 · P3-05 · claude-opus-5-5 · passes=true · 16 min · 14/15 passing
 - 2026-10-19 15:41 · P3-06 · claude-opus-5-5 · passes=true · 36 min · 15/15 passing
+- 2026-10-19 15:46 · verify P3: evidence short of the steps (P3-02 7/8); re-running on opus
