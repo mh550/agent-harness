@@ -30,8 +30,7 @@ say() { echo "harness debrief: $*"; }                            # why it did no
 source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # defaults + the user's config (NOTIFY_CMD, models)
 # shellcheck source=lib/notify.sh
 source "$HARNESS_HOME/lib/notify.sh"   # no NOTIFY_TAG: the debrief's messages start "[debrief]" themselves
-tell() { [[ -n $NOTIFY_CMD ]] && bash -c "$NOTIFY_CMD" _ "$*" > /dev/null 2>&1 9>&-; return 0; }
-fail() { log "debrief: $1"; tell "[debrief] ${2:-failed}: $1"; exit 1; }   # one line to Michael, and the next debrief covers these runs
+fail() { log "debrief: $1"; notify "[debrief] ${2:-failed}: $1" title="harness debrief"; exit 1; }   # one line to Michael, and the next debrief covers these runs
 
 # A detached start may not have Michael's PATH (node comes from nvm, claude from ~/.local/bin).
 missing() { local c m=(); for c in node jq git flock "$CLAUDE"; do command -v "$c" > /dev/null 2>&1 || m+=("$c"); done; echo "${m[*]}"; }
@@ -321,5 +320,7 @@ log "debrief written: $NOTE ($MODEL, \$$COST)"
 mapfile -t HL < <(awk '/^## / { if (on) exit; if (tolower($0) ~ /^## headline/) { on = 1; next } } on && NF' "$WS/body.md" | head -3)
 (( ${#HL[@]} )) || mapfile -t HL < <(grep -v '^#' "$WS/body.md" | grep . | head -3)
 HL[0]="[debrief] ${HL[0]:-}"
-tell "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")"
+# high when the note's "Needs Michael" section holds anything but "Nothing." (no click: the note is a local path)
+NM=$(awk '/^## / { on = tolower($0) ~ /^## needs michael/; next } on && NF' "$WS/body.md" | grep -Evix '[-*_ ]*(nothing|none)\.?[*_[:space:]]*')
+notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}"
 exit 0

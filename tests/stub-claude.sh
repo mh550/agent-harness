@@ -92,7 +92,8 @@ JSON
     [[ ${STUB_DEBRIEF_DEAD:-} ]] && { echo "Error: unknown option '--whatever'" >&2; exit 1; }   # dies at startup
     [[ ${STUB_DEBRIEF_TOUCH:-} ]] && echo x > "$STUB_DEBRIEF_TOUCH"   # writes a file while it runs
     echo "debrief" >> "$STUB_DIR/debriefs.log"
-    note=$'## Headline\nLanded: proj M1, M2 on main.\nBlocked: nothing.\nSpend $1.20; window open.\nFOURTH headline line\n\n## Runs\nstub runs <i>raw</i>\n'
+    note=$'## Headline\nLanded: proj M1, M2 on main.\nBlocked: nothing.\nSpend $1.20; window open.\nFOURTH headline line\n\n## Runs\nstub runs <i>raw</i>\n\n## Needs Michael\n_Nothing._\n'
+    [[ ${STUB_DEBRIEF_NEEDS:-} ]] && note=${note/Blocked: nothing./Blocked: parky B waits on Michael.} note=${note/_Nothing._/parky B: set the gatus vars (progress.md)}
     lead="- "; for r in ${STUB_DEBRIEF_CONTINUE:-}; do note+=$'\n'"${lead}CONTINUE: $r :: do C next"; lead=""; done
     jq -cn --arg r "$note" '{type:"result",subtype:"success",is_error:false,total_cost_usd:0.3,duration_ms:1000,num_turns:5,result:$r}' ;;
 esac

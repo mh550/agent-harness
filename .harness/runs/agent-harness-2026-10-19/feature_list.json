@@ -72,7 +72,7 @@
         "lib/debrief.sh's tell() uses the shared notify so '[debrief] refused' and the headline still reach NOTIFY_CMD as before (the existing debrief checks stay green) and go to NTFY_URL when set (one check: with NTFY_URL set, a debrief's headline is a curl.log block whose Click is the note's debrief.html path only if it is a URL, else no Click)",
         "bash -n lib/driver.sh lib/debrief.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-05",
