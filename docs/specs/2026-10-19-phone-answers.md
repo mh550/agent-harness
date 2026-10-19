@@ -1,8 +1,9 @@
 # Answering the harness from a phone (2026-10-19)
 
 **Goal.** When a run needs Michael, he understands what it needs from the notification alone, and answers in a minute
-from his phone: by editing INBOX.md, or by asking a Claude session on the box (Remote Control) to look into it and
-answer for him once he says yes. Two milestones, in order. Background: D-H26 (parking) and the 2026-10-19 research
+from his phone: by editing INBOX.md, or (the main path) in a chat with a Claude session on the box that the harness
+starts for him (Remote Control), which briefs him, takes his decision as a chat message and passes it on. Three
+milestones, in order: P1, P2, P3. Background: D-H26 (parking) and the 2026-10-19 research
 note (`~/research/reports/Coding agent supervision layers.md`, not in this repo).
 
 What exists: `notify "<text>"` in lib/driver.sh calls `NOTIFY_CMD` with the text as `$1` (Michael's is a `curl` to
@@ -63,7 +64,61 @@ app he can start a session on the box whose working directory sees every project
    both commands; `--json` parses; a run with nothing parked prints "nothing parked"; the skill file exists and
    names `harness parked`, `harness answer` and the never-list.
 
+## P3 · A desk session starts itself when Michael is needed
+
+When a run needs Michael, the harness starts an interactive Remote Control session on the box, gives it a brief to
+prepare, and notifies him with a link that opens that session. He reads the brief there and answers in the chat; the
+session turns his decision into an INBOX answer and continues the run.
+
+**Verified by hand on 2026-10-19 (CLI 2.1.303), so build on exactly this:**
+- `claude --remote-control "<name>"` inside a tmux window starts an interactive session with Remote Control on. Within
+  a few seconds its pane shows a line like
+  `/remote-control is active · Continue here, on your phone, or at https://claude.ai/code/session_01YSDT…`.
+  That URL opens this session in the Claude app or on claude.ai: it is the notification's click URL.
+- A prompt typed into the pane with `tmux send-keys -t <target> -l "<text>"`, then `tmux send-keys -t <target> Enter`,
+  is submitted like typed input, and the reply appears in the pane and on the phone.
+- The working directory must be one Michael has trusted (`~/projects/<project>` is; a fresh `~/worktrees/…` is not,
+  and the trust prompt would block). Start in the project directory and pass the run's worktree with `--add-dir`.
+- The session runs in auto mode (Michael's default). The documented alternative (`claude remote-control` server mode)
+  takes no initial prompt and gives no per-session URL; don't use it.
+
+1. **`harness desk <run> [--why "<one line>"]`** and **`harness desk --debrief`**: write a desk prompt to
+   `<state>/desk/<stamp>.md` (template `prompts/desk.md`), start tmux session `h-desk`, window `<run>` (or `debrief`),
+   running `claude --remote-control "desk · <run> · <why>" --model $DESK_MODEL --add-dir <worktree>` in the project
+   directory; wait up to 60 s for the session URL in the pane; send `Read <prompt path> and follow it.` + Enter; then
+   notify (P1) with title `[<run>] needs you: <why>`, a short body, and click = the session URL. Print the URL.
+   - One desk per run: if that window exists and its claude is alive, send the new event into it instead
+     (`New since your last brief: <why>. Re-read <new prompt path>.`) and notify with the same URL (kept in
+     `<state>/desk/url`).
+   - No URL within 60 s: kill the window, log it, and fall back to the P1 notification (nothing is lost).
+2. **`prompts/desk.md`**, the desk's job, in this order:
+   - Read what the run says it needs: `harness parked <run>`, `harness status <run>`, the run's INBOX.md (questions
+     above `## Answers`), the newest progress.md entries, and for `--debrief` the newest `ledger/debrief.md`.
+   - Check what can be checked safely, and say what was checked (P2.2's rules: names never values, no `.env`, no
+     `sudo`, no live commands).
+   - Write Michael **one brief**: a headline (what is waiting, since when, what it holds up); then each open item
+     numbered, with the context needed to decide, the options, a recommendation and why. Short enough for a phone;
+     the item numbers are what he answers to ("1 yes, 2 the later edit, 3 skip").
+   - Wait for his reply. Ask follow-ups if an answer is ambiguous. Then record each decision with
+     `harness answer <run> "<his decision, in his words, with the item it answers>"`, read it back to him, and on his
+     go continue the run (`harness queue add --continue <run>` when a queue runner is going, else
+     `harness continue <run>`). Never answer an item he didn't decide; never edit INBOX.md, feature lists, policies,
+     CLAUDE.md or settings directly; never start other runs.
+3. **When the driver starts a desk** (`DESK=1`, a new user setting, default 0 until Michael has tried it): when a
+   feature parks; when a run ends `blocked on …` or `waiting on Michael: …`; when verify or a merge needs Michael.
+   The debrief starts `harness desk --debrief` when its note has a non-empty "Needs Michael" section.
+   `DESK_MODEL` defaults to `opus`. A desk failing to start never stops or fails the run.
+4. **Housekeeping**: `harness desk --list` (window, run, URL, age) and `harness desk --close <run>|--all`;
+   `harness gc` closes desks idle more than 24 h.
+5. Tests: tmux is available in tests; use a stub `claude` (`HARNESS_CLAUDE`) that, in interactive mode, prints the
+   `/remote-control is active · … https://claude.ai/code/session_TEST<n>` line, then records each line typed into it
+   to a file. Check: a park with `DESK=1` starts one desk window, the stub received `Read <prompt> and follow it.`, the
+   prompt names the run, its INBOX path and `harness answer`, and the notification's click is the session URL; a
+   second event for the same run reuses the window; a stub that never prints a URL leads to the plain notification
+   and no window; `--close` kills it. Kill every tmux session the tests create.
+
 ## Out of scope
 
 Answers arriving through ntfy (an answer becomes an instruction to agents, so it must come through GitHub or a
-session signed in as Michael); a Telegram channel; anything under `~/.claude`; changing how parking itself works.
+session signed in as Michael); a Telegram channel; anything under `~/.claude` (Michael turns on the Claude app's
+"Push when Claude decides" himself); changing how parking itself works. Tests never start a real `claude`.
