@@ -1,0 +1,2 @@
+## 2026-10-19 10:06
+P1, P2, then P3 from the spec. Give each later milestone's first feature an after list naming only what it needs. Keep each milestone to a plan, 2-4 build features and a review. Tests use stub curl, stub claude and throwaway tmux sessions. For blockers and key design decisions that have been deferred for Michael to get input: update the harness so these send start a real claude instance from the ~/projects directory that's remote controlled, and post a message to notify with a brief blurb on what the blocker is, and a link to the Claude session.
