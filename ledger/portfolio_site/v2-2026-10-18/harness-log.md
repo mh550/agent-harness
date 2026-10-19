@@ -1,0 +1,75 @@
+- 2026-10-18 18:19 · feature list written: 0/46 passing
+- 2026-10-18 18:24 · M0-01 · claude-opus-5-5 · passes=true · 4 min · 1/46 passing
+- 2026-10-18 18:29 · M0-02 · claude-opus-5-5 · passes=true · 4 min · 2/46 passing
+- 2026-10-18 18:30 · M0 verified and tagged run/v2-2026-10-18/M0
+- 2026-10-18 18:30 · M0 proposed for merging · https://github.com/mh550/portfolio_site/pull/1
+- 2026-10-18 18:38 · M1-01 · claude-opus-5-5 · passes=true · 7 min · 3/46 passing
+- 2026-10-18 18:42 · M1-02 · claude-opus-5-5 · passes=true · 4 min · 4/46 passing
+- 2026-10-18 18:46 · M1-03 · claude-opus-5-5 · passes=true · 4 min · 5/46 passing
+- 2026-10-18 18:51 · M1-04 · claude-opus-5-5 · passes=true · 5 min · 6/46 passing
+- 2026-10-18 18:58 · M1-05 · claude-opus-5-5 · passes=true · 6 min · 7/46 passing
+- 2026-10-18 19:02 · M1-06 · claude-opus-5-5 · passes=true · 3 min · 8/46 passing
+- 2026-10-18 19:18 · M1-07 · claude-opus-5-5 · passes=true · 16 min · 9/46 passing
+- 2026-10-18 19:20 · M1 verified and tagged run/v2-2026-10-18/M1
+- 2026-10-18 19:20 · M1 proposed for merging · https://github.com/mh550/portfolio_site/pull/2
+- 2026-10-18 19:23 · M3-01 · claude-opus-5-5 · passes=true · 3 min · 10/46 passing
+- 2026-10-18 19:26 · M3-02 · claude-opus-5-5 · passes=true · 3 min · 11/46 passing
+- 2026-10-18 19:32 · M3-03 · claude-opus-5-5 · passes=true · 5 min · 12/46 passing
+- 2026-10-18 19:48 · M3-04 · claude-opus-5-5 · passes=true · 15 min · 13/46 passing
+- 2026-10-18 19:56 · M3-05 · claude-opus-5-5 · passes=true · 8 min · 14/46 passing
+- 2026-10-18 19:59 · M3 verified and tagged run/v2-2026-10-18/M3
+- 2026-10-18 19:59 · M3 proposed for merging · https://github.com/mh550/portfolio_site/pull/3
+- 2026-10-18 20:09 · M4-01 · claude-opus-5-5 · passes=true · 9 min · 15/46 passing
+- 2026-10-18 20:16 · M4-02 · claude-opus-5-5 · passes=true · 7 min · 16/46 passing
+- 2026-10-18 20:24 · M4-03 · claude-opus-5-5 · passes=true · 7 min · 17/46 passing
+- 2026-10-18 20:36 · M4-04 · claude-opus-5-5 · passes=true · 12 min · 18/46 passing
+- 2026-10-18 20:49 · M4-05 · claude-opus-5-5 · passes=true · 12 min · 19/46 passing
+- 2026-10-18 20:51 · M4 verified and tagged run/v2-2026-10-18/M4
+- 2026-10-18 20:51 · M4 proposed for merging · https://github.com/mh550/portfolio_site/pull/4
+- 2026-10-18 21:08 · M5-01 · claude-opus-5-5 · passes=true · 17 min · 20/46 passing
+- 2026-10-18 21:18 · M5-02 · claude-opus-5-5 · passes=true · 9 min · 21/46 passing
+- 2026-10-18 21:27 · M5-03 · claude-opus-5-5 · passes=true · 8 min · 22/46 passing
+- 2026-10-18 21:35 · M5-04 · claude-opus-5-5 · passes=true · 8 min · 23/46 passing
+- 2026-10-18 21:48 · M5-05 · claude-opus-5-5 · passes=true · 12 min · 24/46 passing
+- 2026-10-18 21:50 · M5 verified and tagged run/v2-2026-10-18/M5
+- 2026-10-18 21:51 · M5 proposed for merging · https://github.com/mh550/portfolio_site/pull/5
+- 2026-10-18 22:06 · M6-01 · claude-opus-5-5 · passes=true · 15 min · 25/46 passing
+- 2026-10-18 22:12 · M6-02 · claude-opus-5-5 · passes=true · 5 min · 26/46 passing
+- 2026-10-18 22:18 · M6-03 · claude-opus-5-5 · passes=true · 5 min · 27/46 passing
+- 2026-10-18 22:25 · M6-04 · claude-opus-5-5 · passes=true · 6 min · 28/46 passing
+- 2026-10-18 22:38 · M6-05 · claude-opus-5-5 · passes=true · 12 min · 29/46 passing
+- 2026-10-18 22:39 · M6 verified and tagged run/v2-2026-10-18/M6
+- 2026-10-18 22:40 · M6 proposed for merging · https://github.com/mh550/portfolio_site/pull/6
+- 2026-10-18 22:55 · M2-01 · claude-opus-5-5 · passes=true · 15 min · 30/46 passing
+- 2026-10-18 23:06 · M2-02 · claude-opus-5-5 · passes=true · 10 min · 31/46 passing
+- 2026-10-18 23:10 · M2-03 · claude-opus-5-5 · passes=true · 4 min · 32/46 passing
+- 2026-10-18 23:17 · M2-04 · claude-opus-5-5 · passes=true · 6 min · 33/46 passing
+- 2026-10-18 23:30 · M2-05 · claude-opus-5-5 · passes=true · 12 min · 34/46 passing
+- 2026-10-18 23:50 · M2-06 · claude-opus-5-5 · passes=true · 19 min · 35/46 passing
+- 2026-10-18 23:51 · M2 verified and tagged run/v2-2026-10-18/M2
+- 2026-10-18 23:52 · M2 proposed for merging · https://github.com/mh550/portfolio_site/pull/7
+- 2026-10-19 00:02 · M7-01 · claude-opus-5-5 · passes=true · 10 min · 36/46 passing
+- 2026-10-19 00:12 · M7-02 · claude-opus-5-5 · passes=true · 9 min · 37/46 passing
+- 2026-10-19 00:20 · M7-03 · claude-opus-5-5 · passes=true · 8 min · 38/46 passing
+- 2026-10-19 00:28 · M7-04 · claude-opus-5-5 · passes=true · 7 min · 39/46 passing
+- 2026-10-19 00:43 · M7-05 · claude-opus-5-5 · passes=true · 15 min · 40/46 passing
+- 2026-10-19 00:46 · M7 verified and tagged run/v2-2026-10-18/M7
+- 2026-10-19 00:46 · M7 proposed for merging · https://github.com/mh550/portfolio_site/pull/8
+- 2026-10-19 00:52 · M8-01 · claude-opus-5-5 · passes=true · 6 min · 41/46 passing
+- 2026-10-19 01:06 · M8-02 · claude-opus-5-5 · passes=true · 13 min · 42/46 passing
+- 2026-10-19 01:09 · M8 verified and tagged run/v2-2026-10-18/M8
+- 2026-10-19 01:09 · M8 proposed for merging · https://github.com/mh550/portfolio_site/pull/9
+- 2026-10-19 01:12 · M9-01 · claude-sonnet-5-5 · passes=true · 2 min · 43/46 passing
+- 2026-10-19 01:15 · M9 verified and tagged run/v2-2026-10-18/M9
+- 2026-10-19 01:15 · M9 proposed for merging · https://github.com/mh550/portfolio_site/pull/10
+- 2026-10-19 01:25 · S1-01 · claude-opus-5-5 · passes=true · 10 min · 44/46 passing
+- 2026-10-19 01:27 · S1 verified and tagged run/v2-2026-10-18/S1
+- 2026-10-19 01:27 · S1 proposed for merging · https://github.com/mh550/portfolio_site/pull/11
+- 2026-10-19 01:35 · S2-01 · claude-opus-5-5 · passes=true · 8 min · 45/46 passing
+- 2026-10-19 01:37 · S2 verified and tagged run/v2-2026-10-18/S2
+- 2026-10-19 01:37 · S2 proposed for merging · https://github.com/mh550/portfolio_site/pull/12
+- 2026-10-19 01:50 · S3-01 · claude-opus-5-5 · passes=true · 12 min · 46/46 passing
+- 2026-10-19 01:52 · S3 verified and tagged run/v2-2026-10-18/S3
+- 2026-10-19 01:52 · S3 proposed for merging · https://github.com/mh550/portfolio_site/pull/13
+- 2026-10-19 01:52 · every feature passes
+- 2026-10-19 01:52 · run ended (done): 46/46 passing · 60 sessions (60 real) · 46 features passed · $113.95 · 7.7 h · by kind: init 1 ($6.70), coding 46 ($104.31), verify 13 ($2.93) · by model: claude-fable-5-1 1 ($6.70), claude-opus-5-5 45 ($103.97), claude-sonnet-5-5 14 ($3.28)

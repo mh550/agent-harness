@@ -1,0 +1,2 @@
+## 2026-10-18 18:05
+The whole spec, M0-M9 then Stretch, in its priority order (M0, M1, M3, M4, M5, M6, M2, M7, M8, M9). M1 (/card) is needed Monday morning: get M0+M1 verified first. Emit the spec's dependencies as after lists (M3 needs only M0; M4, M5, M6, M7 each need only M3) so nothing independent waits on a blocked milestone. Keep M0, M8 and M9 lean (no separate plan feature needed). Nothing in this run needs Michael: choose conservative defaults, record them as D-n default in the spec, and never park a feature waiting for an answer.

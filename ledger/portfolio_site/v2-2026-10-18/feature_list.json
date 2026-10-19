@@ -1,0 +1,608 @@
+{
+  "run": "v2-2026-10-18",
+  "branch": "harness/v2-2026-10-18",
+  "features": [
+    {
+      "id": "M0-01", "milestone": "M0", "kind": "build", "model": "opus",
+      "description": "profile.ts is the single source of contact/positioning facts, and a content-guard test fails the suite on any never-publish pattern in src/ or public/.",
+      "steps": [
+        "src/lib/data/profile.ts exports `profile: Profile` with exactly: name 'Michael Herron', positioning 'Systems & Process Engineer', tagline 'I build simple, elegant systems that fit the humans who run them.', subline 'I find where work breaks down, design the system that fixes it, then build it, run it, and measure it.', location 'Durham, NC', email 'mherron734@gmail.com', linkedin 'https://www.linkedin.com/in/mherron734/', github 'https://github.com/mh550', siteUrl 'https://michael-herron.vercel.app', headshot '/photos/headshot.png'; it is re-exported from src/lib/data/index.ts; src/__tests__/lib/profile.test.ts asserts each of those values",
+        "src/__tests__/lib/content-guard.test.ts walks src/ and public/ (extensions ts tsx js mjs json md svg txt vcf html css; skips itself) and fails naming file:line on each of the 12 spec M0 patterns: `.ts.net`, CGNAT 100.64–127.x.x, `ntfy.sh/`, US phone number, `open.spotify.com/playlist`, `claude.ai/(code/)?artifact`, `github.com/mh550/(pathways|projects)`, `[X]`, `TODO`, `lorem ipsum` (case-insensitive), api key/token/secret assignment",
+        "The same test file checks the guard function in memory: 12 samples (one per pattern) are each caught with the right pattern name, and one clean sample passes; `npx jest src/__tests__/lib/content-guard.test.ts` is green with at least 14 tests",
+        "The guard is green on the current tree with no content edits (if a file had to change, the commit message names it and the guard itself was not loosened)",
+        ".harness/check.sh is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M0-02", "milestone": "M0", "kind": "build", "model": "opus",
+      "description": "Projects carry a required `order`, getTopProjects(n) returns featured projects by order, and approach.ts exports the five method steps; M0's diff is self-reviewed.",
+      "steps": [
+        "`Project` has a required `order: number`; orders are linear-ai-workflow 2, ghl-jobtread-integration 5, paint-estimator 6, ringcentral-jobtread-integration 7, mirrored-google-calendars 8, cherished 9; cherished and mirrored-google-calendars are `featured: false` (D12, D25); `npx tsc --noEmit` passes",
+        "`getTopProjects(n)` is exported from src/lib/data/projects.ts and the barrel; src/__tests__/lib/data.test.ts asserts getTopProjects(3) slugs equal ['linear-ai-workflow','ghl-jobtread-integration','paint-estimator'], getTopProjects(10) excludes cherished, and all `order` values are unique",
+        "src/lib/data/approach.ts exports `methodSteps: MethodStep[]` ({ id, label, line }) with exactly five entries in the order diagnose, decide, build, verify, simplify, labels 'Diagnose' 'Decide' 'Build' 'Verify' 'Simplify', each `line` 20–90 characters in brand voice (first person, plain); re-exported from the barrel; src/__tests__/lib/approach.test.ts asserts ids, labels, order and line lengths",
+        "`git diff f86ad9f..HEAD --stat` shows changes only under src/lib/data, src/__tests__, .harness/runs and docs (no component edits); the content guard test file is unchanged since M0-01",
+        ".harness/check.sh is green"
+      ],
+      "passes": true
+    },
+
+    {
+      "id": "M1-01", "milestone": "M1", "kind": "plan", "model": "opus",
+      "description": "A plan file for the conference card (/card, /card/qr, the vCard route and the QR script) that the M1 build sessions can follow without re-deriving anything.",
+      "steps": [
+        "docs/plans/2026-10-18-M1-card.md exists with sections: 'Layout at 390' (the element order top to bottom, sizes: headshot 112 px round, button min height 44 px, the fold line at 844 px), 'Chrome' (how SiteChrome hides Navbar, the 64 px top offset and Footer for /card and /card/*, per D15), 'vCard' (the exact expected output, CRLF marked), 'QR' (script options and how the script reads profile.ts, per D21), 'Tests' (each test file with named cases), 'What Michael will see' (an empty 3-row table for M1-06), 'Review' (empty, for M1-07)",
+        "The plan names the three selected-work slugs the card will show on the current data (linear-ai-workflow, ghl-jobtread-integration, paint-estimator) and states they change automatically as case studies merge",
+        "`git diff --stat HEAD~1` touches only docs/plans/ and .harness/runs/ (no code)",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M0-02"],
+      "passes": true
+    },
+    {
+      "id": "M1-02", "milestone": "M1", "kind": "build", "model": "opus",
+      "description": "buildVCard(profile) produces an RFC-escaped vCard 3.0 with no phone line, served at /michael-herron.vcf with the right headers.",
+      "steps": [
+        "src/lib/vcard.ts exports `buildVCard(profile: Profile): string`; src/__tests__/lib/vcard.test.ts asserts the exact output for the real profile: the lines BEGIN:VCARD, VERSION:3.0, N:Herron;Michael;;;, FN:Michael Herron, TITLE:Systems & Process Engineer, EMAIL;TYPE=INTERNET:mherron734@gmail.com, URL:https://michael-herron.vercel.app, X-SOCIALPROFILE;TYPE=linkedin:https://www.linkedin.com/in/mherron734/, ADR;TYPE=WORK:;;;Durham;NC;;USA, END:VCARD joined by \\r\\n with a trailing \\r\\n",
+        "An escaping test: a profile whose name contains a comma, a semicolon and a newline yields the RFC 6350 escapes (backslash-comma, backslash-semicolon, backslash-n) in FN and N, and a backslash in the location is doubled",
+        "A test asserts no line of the real output starts with `TEL` (D5)",
+        "src/app/michael-herron.vcf/route.ts exports `dynamic = 'force-static'` and `GET()`; src/__tests__/app/vcf-route.test.ts (docblock `@jest-environment node`) asserts status 200, header content-type `text/vcard; charset=utf-8`, content-disposition `inline; filename=\"michael-herron.vcf\"`, and body === buildVCard(profile)",
+        "`curl -si http://localhost:$HARNESS_PORT/michael-herron.vcf` shows those two headers and a body starting with BEGIN:VCARD",
+        ".harness/check.sh is green (the build prerenders the route)"
+      ],
+      "after": ["M1-01"],
+      "passes": true
+    },
+    {
+      "id": "M1-03", "milestone": "M1", "kind": "build", "model": "opus",
+      "description": "scripts/make-qr.mjs generates the committed QR SVG and 1024 px PNG for `${siteUrl}/card?src=qr`, and a test pins the SVG to profile.siteUrl so it can never drift.",
+      "steps": [
+        "package.json devDependencies contain `qrcode` and `@types/qrcode` (no new entry under dependencies), scripts contain `\"qr\": \"node scripts/make-qr.mjs\"`, and package-lock.json is updated so .harness/init.sh reinstalls",
+        "scripts/make-qr.mjs imports `profile` from src/lib/data/profile.ts (D21; Node 24 strips types) and writes public/card/qr.svg and public/card/qr.png encoding `https://michael-herron.vercel.app/card?src=qr` with margin 2, errorCorrectionLevel 'M', color dark '#0a0a0f' light '#ffffff', PNG width 1024; `npm run qr` exits 0 and leaves `git status` clean when run twice",
+        "src/__tests__/lib/qr.test.ts regenerates the SVG string with `QRCode.toString(url, { type: 'svg', margin: 2, errorCorrectionLevel: 'M', color: {...} })` using `${profile.siteUrl}/card?src=qr` and asserts it equals the committed public/card/qr.svg exactly; it also asserts public/card/qr.png exists and its IHDR width and height bytes read 1024",
+        "Both generated files are committed (`git ls-files public/card` lists qr.svg and qr.png)",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M1-01"],
+      "passes": true
+    },
+    {
+      "id": "M1-04", "milestone": "M1", "kind": "build", "model": "opus",
+      "description": "/card renders Michael's contact card without Navbar or Footer: headshot, name, positioning, Save contact, LinkedIn/Email/GitHub, the top 3 featured projects, and links to the portfolio and the QR page.",
+      "steps": [
+        "src/components/SiteChrome.tsx (`\"use client\"`, D15) wraps children in src/app/layout.tsx and, by pathname, hides Navbar, the 64 px top offset and Footer on `/card` and any `/card/*`, keeps the existing no-footer rule on `/`, and renders all three elsewhere; ConditionalFooter is removed or reduced to a re-export; src/__tests__/components/SiteChrome.test.tsx covers pathnames '/card', '/card/qr', '/', '/about' by mocking next/navigation",
+        "src/app/card/page.tsx is a static server component rendering, top to bottom: a round 112 px next/image of profile.headshot, h1 'Michael Herron', 'Systems & Process Engineer', the subline, a primary link 'Save contact' href '/michael-herron.vcf', secondary links 'LinkedIn' (profile.linkedin), 'Email' (`mailto:mherron734@gmail.com`), 'GitHub' (profile.github), an h2 'Selected work' with the title and shortDescription of each of getTopProjects(3) linking to /projects/<slug> (D22), a 'Full portfolio →' link to '/', and a 'Show QR' link to '/card/qr'; every link styled as a button has `min-h-[44px]`",
+        "`export const metadata` has title 'Michael Herron — Systems & Process Engineer', description profile.subline, openGraph.images and twitter.images containing profile.headshot, twitter.card 'summary'; src/__tests__/pages/card.test.tsx asserts title and description",
+        "src/__tests__/pages/card.test.tsx asserts: the name and positioning text, the Save contact href, the three social hrefs read from `profile`, exactly 3 links matching /^\\/projects\\// whose slugs all exist in `projects` and equal getTopProjects(3) in order, the Full portfolio and Show QR hrefs; `render(<CardPage/>)` output contains no `<nav>`",
+        ".harness/smoke-routes.txt is created containing `/card`; `node .harness/smoke.mjs http://localhost:$HARNESS_PORT /card` prints PASS at 1280 and 390; `curl -s http://localhost:$HARNESS_PORT/card | grep -c '<nav'` prints 0",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M1-01"],
+      "passes": true
+    },
+    {
+      "id": "M1-05", "milestone": "M1", "kind": "build", "model": "opus",
+      "description": "/card/qr shows the QR code black-on-white for scanning in a dim room, and docs/conference-kit.md tells Michael how to use the card on Monday.",
+      "steps": [
+        "src/app/card/qr/page.tsx renders a full-viewport white page (`bg-white text-black min-h-screen`) with `<img src=\"/card/qr.svg\" alt=\"QR code linking to michael-herron.vercel.app/card\">` sized `width: min(80vw, 420px)`, the text 'Michael Herron' and 'Systems & Process Engineer' below it, and a '← Back' link to '/card'; `metadata.robots.index === false`",
+        "src/__tests__/pages/card-qr.test.tsx asserts the img src and alt, the back link href, both text lines, and `metadata.robots` has index false; the rendered output contains no `<nav>`",
+        ".harness/smoke-routes.txt contains `/card` and `/card/qr`; `node .harness/smoke.mjs http://localhost:$HARNESS_PORT /card /card/qr` prints PASS for both at both widths",
+        "docs/conference-kit.md exists, under 60 lines, with three headed sections: using it Monday (open /card/qr on his phone, add to home screen, the other person scans, Save contact adds him in one tap, LinkedIn's in-app QR as the no-signal fallback), checking it after the merge (scan the PNG from a second device, open the vCard on an iPhone), and that the page updates as case studies merge; it contains no phone number and passes the content guard",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M1-03", "M1-04"],
+      "passes": true
+    },
+    {
+      "id": "M1-06", "milestone": "M1", "kind": "check", "model": "opus",
+      "description": "What Michael will see: screenshots of /card and /card/qr at the project's widths, with the fold and tap-target measurements recorded in the plan.",
+      "steps": [
+        "docs/screenshots/v2/M1-card-390.png, M1-card-1280.png and M1-card-qr-390.png exist, each under 400 KB (`ls -l docs/screenshots/v2`), captured from http://localhost:$HARNESS_PORT",
+        "A 390×844 viewport-only capture (not fullPage) is checked with Playwright from $HARNESS_PW: the h1 'Michael Herron' and the 'Save contact' link both have boundingBox bottom ≤ 844; the two numbers are written into the plan's table",
+        "At 390 px every link styled as a button on /card (Save contact, LinkedIn, Email, GitHub, Full portfolio, Show QR) has a boundingBox height ≥ 44; the heights are listed in the plan",
+        "The plan's 'What Michael will see' table has three rows (page · what is on screen · anything that looks wrong); anything wrong is fixed in this feature with a test where one applies, or listed with a reason",
+        "At 1280 px the card content column is centered and no wider than 520 px (measured boundingBox of the main container, written in the table)",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M1-02", "M1-05"],
+      "passes": true
+    },
+    {
+      "id": "M1-07", "milestone": "M1", "kind": "review", "model": "opus",
+      "description": "An independent review of the M1 diff; Critical/Important findings fixed test-first, simplifications applied, docs updated so M1 is safe to merge on its own.",
+      "steps": [
+        "The M1 diff is written to $HARNESS_SCRATCH/M1.diff (`git diff <last M0 commit>..HEAD -- . ':!.harness/runs'`) and reviewed from that file; findings are appended to docs/plans/2026-10-18-M1-card.md under '## Review' with severity Critical / Important / Minor, one line each",
+        "Every Critical and Important finding is fixed in this session, each with a failing test first where it is testable (the plan names the test); Minor findings are fixed or listed as left",
+        "The `web-design-guidelines` skill is run over /card and /card/qr: visible focus styles on every link, heading order h1 → h2 only, link text that makes sense out of context, AA contrast on both the dark card and the white QR page; results and fixes are in the Review section",
+        "A simplification pass: no duplicated profile strings outside src/lib/data/profile.ts (`grep -rn 'mherron734\\|Systems & Process Engineer' src --include=*.tsx` hits only components reading `profile`, plus tests), no dead props or unused exports introduced by M1",
+        "CLAUDE.md's routes table lists /card, /card/qr and /michael-herron.vcf; the plan's Review section ends with 'Ready to merge: yes'",
+        "`node .harness/smoke.mjs` (all routes) and .harness/check.sh are green"
+      ],
+      "after": ["M1-06"],
+      "passes": true
+    },
+
+    {
+      "id": "M3-01", "milestone": "M3", "kind": "plan", "model": "opus",
+      "description": "A plan for the case-study template: the type additions, the five components' props and anchors, the page order, the test fixture and how the async page is tested.",
+      "steps": [
+        "docs/plans/2026-10-18-M3-case-study-template.md exists with sections: 'Types' (the spec's Decision/Iteration/Lesson/ProjectLink/CaseStudy interfaces verbatim plus `extraDiagrams?: DiagramKey[]` per D17), 'Components' (MethodSteps, DecisionLog, IterationTimeline, LessonList, ProjectLinks: props, rendered anchors #diagnose … #simplify, #decisions, #iterations, #lessons, empty-state behaviour), 'Page order' (the 13-step order from the spec with D16 and D17 applied), 'Testing' (a `ProjectDetail` body component that takes `project`, a fixture project literal with a full caseStudy, the unchanged-page proof for ghl-jobtread-integration), 'What Michael will see' (empty table), 'Review' (empty)",
+        "The plan lists the exact test files to create and the existing tests to update (ProjectsGrid filter count, data.test if touched)",
+        "`git diff --stat HEAD~1` touches only docs/plans/ and .harness/runs/",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M0-02"],
+      "passes": true
+    },
+    {
+      "id": "M3-02", "milestone": "M3", "kind": "build", "model": "opus",
+      "description": "The Project type gains the optional caseStudy shape and the two new categories, and the /projects filter offers Systems and Process.",
+      "steps": [
+        "src/lib/data/projects.ts exports `Decision`, `Iteration`, `Lesson`, `ProjectLink`, `CaseStudy` with exactly the spec's fields (plus `extraDiagrams?: DiagramKey[]` on CaseStudy, D17) and `Project.caseStudy?: CaseStudy`; `ProjectCategory` includes 'systems' and 'process'; `npx tsc --noEmit` passes and no existing project entry changed",
+        "src/components/projects/ProjectsGrid.tsx FILTERS include { label: 'Systems', value: 'systems' } and { label: 'Process', value: 'process' } after 'AI'; src/__tests__/components/ProjectsGrid.test.tsx asserts six filter buttons in the order All, Integration, Full-Stack, AI, Systems, Process, and that clicking Systems on the current data shows 'No projects in this category yet.'",
+        "A type-level test (src/__tests__/lib/case-study-types.test.ts) builds a `Project` literal with a full `caseStudy` and one with none, and asserts both type-check (it compiles under ts-jest) and that `getProjectsByCategory('systems')` returns [] on the current data",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M3-01"],
+      "passes": true
+    },
+    {
+      "id": "M3-03", "milestone": "M3", "kind": "build", "model": "opus",
+      "description": "The five case-study components render a project's method, decisions, iterations, lessons and links with stable anchor ids, and each handles its empty case.",
+      "steps": [
+        "src/components/projects/case-study/MethodSteps.tsx renders an ordered list of the five steps using labels from `methodSteps` (approach.ts) and text from `method`, each `<li id=\"diagnose\">` … `id=\"simplify\"`; src/__tests__/components/case-study/MethodSteps.test.tsx asserts the five ids in order and the project's text under each label",
+        "DecisionLog.tsx renders `<section id=\"decisions\">` with, per decision, the id chip, title, 'Chose {chose} over {over} because {because}' (the 'over' clause omitted when absent) and a 'Cost: …' line only when `cost` is set; returns null for an empty array; its test covers a decision with and without `over`/`cost` and the empty case",
+        "IterationTimeline.tsx renders `<section id=\"iterations\">` with when · label · what · why per row and returns null when `iterations` is undefined or empty; LessonList.tsx renders `<section id=\"lessons\">` with 'What broke' → 'The rule' pairs; tests cover both plus the empty case",
+        "ProjectLinks.tsx renders one link per ProjectLink with a visible label and a kind glyph (inline SVG or text, no new dependency); external hrefs get `target=\"_blank\" rel=\"noopener noreferrer\"`, hrefs starting with '/' use next/link without target; its test covers one link of each of the four kinds and an internal link",
+        "None of the five files contains `\"use client\"`; ESLint passes; .harness/check.sh is green"
+      ],
+      "after": ["M3-02"],
+      "passes": true
+    },
+    {
+      "id": "M3-04", "milestone": "M3", "kind": "build", "model": "opus",
+      "description": "/projects/[slug] renders the full case-study order when caseStudy exists and renders exactly as today when it does not.",
+      "steps": [
+        "src/components/projects/ProjectDetail.tsx (server) takes `{ project }` and holds the page body; src/app/projects/[slug]/page.tsx only resolves the slug, calls notFound, and renders ProjectDetail; generateMetadata and generateStaticParams are unchanged",
+        "With `caseStudy`, ProjectDetail renders in this order: header (company, title, role · timeframe) → MetricStrip → h2 'The Problem' → architectureDiagram → MethodSteps → DecisionLog → IterationTimeline → extraDiagrams → LessonList → h2 'Outcome' → code snippets and media → ProjectLinks → the builtWith note; it does not render detail.approach or detail.challenges (D16)",
+        "src/__tests__/components/ProjectDetail.test.tsx renders a fixture project with a full caseStudy and asserts the h2 heading texts in order, the presence of ids diagnose, decide, build, verify, simplify, decisions, iterations, lessons, the builtWith text, and the absence of headings 'The Approach' and 'Challenges'",
+        "The same file renders `getProjectBySlug('ghl-jobtread-integration')` and asserts the h2 order is exactly ['The Problem', 'The Approach', 'Challenges', 'Outcome', 'In the Code'] and none of the case-study ids exist",
+        "src/__tests__/app/project-metadata.test.ts asserts `await generateMetadata({ params: Promise.resolve({ slug: 'ghl-jobtread-integration' }) })` returns title 'GoHighLevel ↔ JobTread Integration — Michael Herron' and description equal to that project's shortDescription",
+        "`node .harness/smoke.mjs` is green for every /projects/<slug>; .harness/check.sh is green"
+      ],
+      "after": ["M3-03"],
+      "passes": true
+    },
+    {
+      "id": "M3-05", "milestone": "M3", "kind": "review", "model": "opus",
+      "description": "Review and simplify the M3 template diff, prove an existing project page is visually unchanged, and leave the template documented for M4–M6.",
+      "steps": [
+        "The M3 diff (`git diff <last M0 or M1 commit on the branch>..HEAD -- src ':!src/__tests__'`) is written to $HARNESS_SCRATCH/M3.diff and reviewed from it; findings go under '## Review' in docs/plans/2026-10-18-M3-case-study-template.md with severities; every Critical/Important is fixed test-first in this session",
+        "docs/screenshots/v2/M3-ghl-jobtread-integration-390.png and -1280.png exist (under 400 KB each) and the plan's 'What Michael will see' table says what is on them: back link, company eyebrow, title, metric strip, four sections and the diagram, nothing added or missing versus before M3",
+        "Simplification pass applied: the five components share no copy-pasted section wrapper (one shared `CaseStudySection` or equivalent, or a written reason why not), no unused props, the `vercel-react-best-practices` skill was consulted and its applicable findings fixed",
+        "The plan's 'Components' section is updated to match the shipped props exactly, so M4–M6 sessions can author data against it without reading the code; CLAUDE.md's Architecture list names src/components/projects/case-study/ and ProjectDetail",
+        ".harness/check.sh is green and `node .harness/smoke.mjs` is green"
+      ],
+      "after": ["M3-04"],
+      "passes": true
+    },
+
+    {
+      "id": "M4-01", "milestone": "M4", "kind": "plan", "model": "opus",
+      "description": "A plan with the complete agent-harness case-study copy, every number traced to the evidence brief, the exact code excerpt, and the two diagrams' node lists.",
+      "steps": [
+        "docs/plans/2026-10-18-M4-agent-harness.md exists with: the project entry field by field (slug agent-harness, title, company 'Personal · open source', categories ['systems','process','ai'], order 1, featured true, githubUrl https://github.com/mh550/agent-harness, techStack, 4 metrics), the five method texts, the six decisions D-H1 D-H2 D-H4 D-H5 D-H11 D-H17 (chose/over/because/cost), the iterations rows (6 or 7, D27), the five lessons, the two links, the builtWith line, and the one-sentence detail.approach / detail.challenges summaries (D16)",
+        "A 'Traceability' table maps every number and date in the copy to a line of docs/notes/evidence-agent-harness.md or a named file under /home/mh550/projects/agent-harness/ (never journal/raw/)",
+        "The 'Code excerpt' section quotes ≤ 25 lines verbatim with path and line numbers from /home/mh550/projects/agent-harness/lib/ (the verified-tree merge check in lib/driver.sh around `merge_milestone`, or the limit detection in lib/metrics.mjs) and states the snippet title the page will show",
+        "The 'Diagrams' section lists nodes and arrows for `agent-harness` (CLI → driver → initializer → per-feature sessions → suite gate → verify → tag/PR → main, with INBOX, notifications and the limit marker around it) and `harness-evolution` (iterations 0–5 with 'why it changed'), each with its aria-label and caption text, and how the evolution stacks vertically at 390",
+        "The copy passes a brand check written into the plan: first person, past tense, no buzzwords from brand.md, agent credit stated plainly (D10); `git diff --stat HEAD~1` touches only docs/ and .harness/runs/",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M3-05"],
+      "passes": true
+    },
+    {
+      "id": "M4-02", "milestone": "M4", "kind": "build", "model": "opus",
+      "description": "The agent-harness project entry with its full caseStudy, metrics, links and code excerpt exists in the data and every number in it is proven to come from the evidence brief.",
+      "steps": [
+        "`getProjectBySlug('agent-harness')` returns an entry with title starting 'Agent Harness', company 'Personal · open source', categories ['systems','process','ai'], order 1, featured true, githubUrl 'https://github.com/mh550/agent-harness', and exactly 4 metrics whose values contain 55, 52, 374 and 2.53",
+        "Its caseStudy has five non-empty method strings; decisions with ids exactly ['D-H1','D-H2','D-H4','D-H5','D-H11','D-H17']; 6 or 7 iterations (D27) whose `when` strings start with 'Sep' or 'Oct'; exactly 5 lessons each with non-empty broke and rule; links containing the repo and 'https://github.com/mh550/portfolio_site/pulls?q=is%3Apr+harness' labelled 'This site update, built by the harness'; a builtWith string that names Claude Code agents and Michael's role in designing the process",
+        "detail.codeSnippets has one snippet of ≤ 25 lines whose title includes its repo path (lib/driver.sh or lib/metrics.mjs); src/__tests__/lib/case-study-agent-harness.test.ts asserts the snippet text appears verbatim in that file under /home/mh550/projects/agent-harness/ when that directory exists (and is skipped with a console note when it does not)",
+        "The same test reads docs/notes/evidence-agent-harness.md and asserts every digit run in every metric value (55, 52, 374, 2.53) and every decision id appears in it, and that the entry text contains none of: '.ts.net', 'ntfy', 'journal/raw'",
+        "src/__tests__/lib/data.test.ts expects 7 projects; `getTopProjects(3)[0].slug === 'agent-harness'`; /projects/agent-harness returns 200 at http://localhost:$HARNESS_PORT and shows the h2 'Decisions' (or the DecisionLog heading the template uses)",
+        ".harness/check.sh is green (content guard included)"
+      ],
+      "after": ["M4-01"],
+      "passes": true
+    },
+    {
+      "id": "M4-03", "milestone": "M4", "kind": "build", "model": "opus",
+      "description": "Two accessible authored diagrams, the harness architecture and its six-iteration evolution, render on the agent-harness page and stack vertically at 390 px.",
+      "steps": [
+        "`DiagramKey` gains 'agent-harness' and 'harness-evolution'; both components live under src/components/projects/diagrams/ in the style of the existing ones (Node/Arrow/Panel primitives, no SVG assets, no new dependency)",
+        "`ProjectDiagram` now sets `role=\"img\"` and an `aria-label` from a `LABELS: Record<DiagramKey, string>` map on its figure for every key, existing ones included; src/__tests__/components/ProjectDiagram.test.tsx asserts each DiagramKey renders a `role=\"img\"` element with a non-empty aria-label and a figcaption",
+        "The agent-harness entry sets detail.architectureDiagram 'agent-harness' and caseStudy.extraDiagrams ['harness-evolution']; the evolution diagram shows the six stage labels (long sessions, runbook + loop, orchestrator + subagents, harness v1, v2, v3) with a 'why it changed' line each, laid out as a horizontal row at `md:` and stacked at 390 (a grid with `grid-cols-1 md:grid-cols-6` or equivalent)",
+        "The architecture diagram's text includes CLI, driver, initializer, session, suite, verify, PR, main, INBOX; its test asserts those words are present",
+        "`node .harness/smoke.mjs http://localhost:$HARNESS_PORT /projects/agent-harness` prints PASS at 1280 and at 390 (no horizontal scroll)",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M4-02"],
+      "passes": true
+    },
+    {
+      "id": "M4-04", "milestone": "M4", "kind": "check", "model": "opus",
+      "description": "What Michael will see: the agent-harness case study at 390 and 1280, the projects index and the card now leading with it.",
+      "steps": [
+        "docs/screenshots/v2/M4-agent-harness-390.png, M4-agent-harness-1280.png, M4-projects-390.png and M4-card-390.png exist, each under 400 KB (if a full-page capture is larger, capture the top 3000 px instead and say so in the table)",
+        "The plan's 'What Michael will see' table has one row per screenshot naming what is visible: at 390 the metric strip is a single column, the evolution diagram is stacked, the code block scrolls inside itself (document.documentElement.scrollWidth − innerWidth is 0), the decision log reads 'Chose … over … because …'",
+        "On /card at 390 the first Selected work item is the agent-harness title (M1 ships before M4 in this run; if /card is absent on the branch, the table says so instead)",
+        "Anything that looks wrong (clipped text, overlapping nodes, orphaned headings, a metric value wrapping mid-number) is fixed in this feature or listed with a reason",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M4-03"],
+      "passes": true
+    },
+    {
+      "id": "M4-05", "milestone": "M4", "kind": "review", "model": "opus",
+      "description": "Review of the M4 diff for facts, voice and code quality; findings fixed test-first and the plan closed out.",
+      "steps": [
+        "The M4 diff is written to $HARNESS_SCRATCH/M4.diff and reviewed from it; the Review section of docs/plans/2026-10-18-M4-agent-harness.md lists findings with severity, including a fact check: each metric, date and decision id in the entry is ticked against the brief (a row per claim) and the code excerpt is re-diffed against the source file",
+        "Voice check per docs/notes/brand.md: first person, past tense, no term from the never-publish list, agent credit stated in the builtWith line; any sentence that overclaims (hand-written code, invented outcomes) is rewritten",
+        "Every Critical/Important finding is fixed in this session with a failing test first where testable; simplification pass applied (no duplicated diagram primitives, no data strings repeated in components)",
+        "The `web-design-guidelines` skill is run over /projects/agent-harness and findings on heading order, link text and reduced motion are fixed or recorded",
+        "The plan's Review section ends with 'Ready to merge: yes'; `node .harness/smoke.mjs` and .harness/check.sh are green"
+      ],
+      "after": ["M4-04"],
+      "passes": true
+    },
+
+    {
+      "id": "M5-01", "milestone": "M5", "kind": "plan", "model": "opus",
+      "description": "A plan with the complete home-media-server case-study copy, every number traced, the sanitised verify excerpt, the three demo screenshots and the diagram node list.",
+      "steps": [
+        "docs/plans/2026-10-18-M5-home-media-server.md exists with the project entry field by field (slug home-media-server, title 'Self-hosted music library & DJ crate pipeline', company 'Personal · home server', categories ['systems','full-stack'], order 3, featured, githubUrl https://github.com/mh550/dj-crate-streaming, techStack, 4 metrics: 831 songs · 1,405 playlist entries kept intact · 1,359 tests · nothing deleted, every removal reversible per D18), the five method texts, decisions D7, D3, D24, D27, D18, D38/39, the five timeline iterations, 6–8 lessons including '859 = 859 = 859' and 'a guessed fake hid 3 critical bugs', the repo link, builtWith, and D16 summaries",
+        "A 'Traceability' table maps every number to a line of docs/notes/evidence-media-server.md or to a named file in /home/mh550/projects/dj-crate-streaming/docs/ (read via `git -C … show origin/main:<path>` where the local checkout is behind)",
+        "The 'Terminal excerpt' section holds the verify output block from docs/download-validation.md ('Reading the result') with `/srv/incoming/…` replaced by `incoming/…` (D18) and nothing else changed; it contains no hostname, IP, token or username",
+        "The 'Media' section names the three files to copy (01-playlists.png, 02-crate-toggled.png, 03-wanted.png), their captions (each saying they show demo data), and states m6-*.png are never used; the 'Diagram' section lists the media-server nodes (phone → private network (HTTPS) → Navidrome ↔ crates service ↔ worker (VPN, verify, beets) → library; nightly snapshot + backup to a second disk) with aria-label and caption",
+        "The copy names the download source once as 'a peer-to-peer network, Soulseek' and leads with self-hosting, verification and safe automation; `git diff --stat HEAD~1` touches only docs/ and .harness/runs/",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M3-05"],
+      "passes": true
+    },
+    {
+      "id": "M5-02", "milestone": "M5", "kind": "build", "model": "opus",
+      "description": "The home-media-server entry with its caseStudy, demo screenshots and the verify terminal excerpt exists in the data, with every number traced to the brief and no private detail.",
+      "steps": [
+        "`getProjectBySlug('home-media-server')` returns an entry with company 'Personal · home server', categories ['systems','full-stack'], order 3, featured true, githubUrl 'https://github.com/mh550/dj-crate-streaming', exactly 4 metrics whose values or labels contain '831', '1,405', '1,359' and 'reversible'",
+        "Its caseStudy has five method strings, decision ids exactly ['D7','D3','D24','D27','D18','D38/39'], 5 iterations, 6–8 lessons including one whose `broke` contains '859 = 859 = 859' and one containing 'guessed fake', exactly one link (the repo), and a builtWith line",
+        "public/projects/home-media-server/01-playlists.png, 02-crate-toggled.png and 03-wanted.png are copied from /home/mh550/projects/dj-crate-streaming/docs/screenshots/ (byte-identical; each under 120 KB) and referenced in detail.media with captions containing 'demo data'; src/__tests__/lib/case-study-home-media-server.test.ts asserts each media src exists under public/ and that no file in that folder starts with 'm6'",
+        "detail.codeSnippets has one snippet (language 'text') titled with 'verify' whose code contains 'cutoff ≈16 kHz' and 'BAD' and does not contain '/srv'; the test asserts this and that the whole entry's JSON contains none of '.ts.net', '100.', 'ntfy', '/srv', 'm6-'",
+        "The test reads docs/notes/evidence-media-server.md and asserts every digit run in every metric value and every decision id appears in it; src/__tests__/lib/data.test.ts expects 8 projects; getTopProjects(3) slugs are ['agent-harness','linear-ai-workflow','home-media-server'] when agent-harness exists, else ['linear-ai-workflow','home-media-server','ghl-jobtread-integration']",
+        ".harness/check.sh is green (content guard included)"
+      ],
+      "after": ["M5-01"],
+      "passes": true
+    },
+    {
+      "id": "M5-03", "milestone": "M5", "kind": "build", "model": "opus",
+      "description": "The media-server architecture diagram renders accessibly on the home-media-server page with no hostnames, IPs or server paths.",
+      "steps": [
+        "`DiagramKey` gains 'media-server'; the component lives under src/components/projects/diagrams/ using the existing primitives; `LABELS` and `CAPTIONS` have an entry for it (if `LABELS` does not exist yet because M4 has not landed, add it here as in M4-03 step 2)",
+        "The diagram's text includes Phone, HTTPS, Navidrome, crates service, worker, verify, beets, library, snapshot, backup; its test asserts those words, `role=\"img\"`, a non-empty aria-label, and that the rendered text contains no '.ts.net', '100.', '/srv' or 'http://'",
+        "The home-media-server entry sets detail.architectureDiagram 'media-server'; the page shows it after 'The Problem'",
+        "`node .harness/smoke.mjs http://localhost:$HARNESS_PORT /projects/home-media-server` prints PASS at 1280 and 390",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M5-02"],
+      "passes": true
+    },
+    {
+      "id": "M5-04", "milestone": "M5", "kind": "check", "model": "opus",
+      "description": "What Michael will see: the home-media-server case study at 390 and 1280, including the gallery and the terminal block.",
+      "steps": [
+        "docs/screenshots/v2/M5-home-media-server-390.png and M5-home-media-server-1280.png exist, each under 400 KB (top 3000 px if a full page is larger, noted in the table)",
+        "The plan's 'What Michael will see' table says what is on each: metric strip, diagram, method steps, decision log, iterations, lessons, the three demo screenshots with their 'demo data' captions, the verify block with 'BAD' and 'cutoff ≈16 kHz' visible, the repo link",
+        "At 390 the terminal block scrolls inside itself and the page has no horizontal scroll (scrollWidth − innerWidth = 0, written in the table); the gallery is one column",
+        "Anything that looks wrong is fixed in this feature or listed with a reason",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M5-03"],
+      "passes": true
+    },
+    {
+      "id": "M5-05", "milestone": "M5", "kind": "review", "model": "opus",
+      "description": "Review of the M5 diff for facts, privacy, voice and code quality; findings fixed test-first and the plan closed out.",
+      "steps": [
+        "The M5 diff is written to $HARNESS_SCRATCH/M5.diff and reviewed from it; the Review section of docs/plans/2026-10-18-M5-home-media-server.md lists findings with severity and a fact-check row per metric, date and decision id against the brief",
+        "A privacy pass written into the Review: `grep -rn 'ts.net\\|100\\.\\|/srv\\|ntfy\\|m6-' src/lib/data/projects.ts src/components/projects/diagrams public/projects/home-media-server` returns nothing; the download source is named at most once",
+        "Every Critical/Important finding is fixed with a failing test first where testable; simplification pass applied; the `web-design-guidelines` skill is run over /projects/home-media-server (image alt text, caption association, heading order) and findings fixed or recorded",
+        "The plan's Review section ends with 'Ready to merge: yes'; `node .harness/smoke.mjs` and .harness/check.sh are green"
+      ],
+      "after": ["M5-04"],
+      "passes": true
+    },
+
+    {
+      "id": "M6-01", "milestone": "M6", "kind": "plan", "model": "opus",
+      "description": "A plan with the complete HitList case-study copy, every number traced, and the two diagrams' node lists including the 5-step speed scale.",
+      "steps": [
+        "docs/plans/2026-10-18-M6-hit-list.md exists with the project entry field by field (slug hit-list, title 'HitList: offline-first street-spot scouting app', company 'Personal · iOS (Expo)', categories ['full-stack','process'], order 4, featured, githubUrl https://github.com/mh550/hit-list, techStack, 3 metrics: 374 tests · 20+ fields → 7 · SDK 54 → 57 in one-version hops), the five method texts, decisions D1 D2 D3 D12 D21 D22, six iterations (Feb sprints → Oct revival → overnight loop → orchestrator session → device crash → simplification spec, stating plainly the simplification is specified, not yet built), five lessons (374 tests crash, foreign keys, '7679.1 mi', flexGrow, silent data loss in Edit), the single repo-root link, builtWith, D16 summaries",
+        "A 'Traceability' table maps every number to a line of docs/notes/evidence-hit-list.md or a named file in /home/mh550/projects/hit_list/ (README.md, APP_SPECIFICATIONS.md, OVERNIGHT.md, docs/specs/)",
+        "The 'Diagrams' section lists nodes for `hit-list` (screens → zustand stores → SQLite + photo files → maps / geocoder; capture → review → details later) and `form-simplification` (before: 20+ fields in five sections; after: name, location, photos, feature types, stopped, natural speed, notes, with the scale 'None · Little · Some · Enough · Too much' drawn as it would appear), each with aria-label and caption",
+        "The plan states no screenshots exist and none will be faked, and lists the docs/asset-checklist.md entries M6-02 will add; `git diff --stat HEAD~1` touches only docs/ and .harness/runs/",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M3-05"],
+      "passes": true
+    },
+    {
+      "id": "M6-02", "milestone": "M6", "kind": "build", "model": "opus",
+      "description": "The hit-list entry with its caseStudy exists in the data with every number traced to the brief, no media, and the phone shots listed in the asset checklist.",
+      "steps": [
+        "`getProjectBySlug('hit-list')` returns an entry with company 'Personal · iOS (Expo)', categories ['full-stack','process'], order 4, featured true, githubUrl exactly 'https://github.com/mh550/hit-list', exactly 3 metrics whose values contain '374', '7' and '57'",
+        "Its caseStudy has five method strings, decision ids exactly ['D1','D2','D3','D12','D21','D22'], 6 iterations whose last `what` or `why` contains 'specified' and 'not yet built', 5 lessons including ones containing '7679.1 mi', 'flexGrow' and 'crypto.getRandomValues' (or 'Hermes'), exactly one link whose href is 'https://github.com/mh550/hit-list', and a builtWith line",
+        "detail.media is undefined, no public/projects/hit-list directory exists, and no demoUrl is set; src/__tests__/lib/case-study-hit-list.test.ts asserts all of this",
+        "The test reads docs/notes/evidence-hit-list.md and asserts every digit run in every metric value and every decision id appears in it; src/__tests__/lib/data.test.ts expects 9 projects (or the count on the branch, stated in the commit message if M4/M5 have not landed)",
+        "docs/asset-checklist.md exists (created if missing) with a 'HitList' section listing phone screenshots of List, Map, Quick Add and a spot detail, or a 15 s screen recording, their destination public/projects/hit-list/ and the `media` entry shape to add",
+        ".harness/check.sh is green (content guard included)"
+      ],
+      "after": ["M6-01"],
+      "passes": true
+    },
+    {
+      "id": "M6-03", "milestone": "M6", "kind": "build", "model": "opus",
+      "description": "Two accessible diagrams, the HitList architecture and the 20+ → 7 form simplification with the five-step speed scale, render on the hit-list page.",
+      "steps": [
+        "`DiagramKey` gains 'hit-list' and 'form-simplification'; both components live under src/components/projects/diagrams/ with `LABELS`/`CAPTIONS` entries (add `LABELS` as in M4-03 step 2 if it does not exist yet)",
+        "The hit-list diagram's text includes Spots, Quick Add, Import, zustand, SQLite, photos, Apple Maps, geocoder; the form-simplification diagram shows a 'Before' panel with five section names and '20+ fields' and an 'After' panel listing exactly seven fields with the scale labels 'None', 'Little', 'Some', 'Enough', 'Too much' in order; tests assert those words, `role=\"img\"` and non-empty aria-labels",
+        "The hit-list entry sets detail.architectureDiagram 'hit-list' and caseStudy.extraDiagrams ['form-simplification']; at 390 the before/after panels stack (grid-cols-1 md:grid-cols-2)",
+        "`node .harness/smoke.mjs http://localhost:$HARNESS_PORT /projects/hit-list` prints PASS at 1280 and 390",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M6-02"],
+      "passes": true
+    },
+    {
+      "id": "M6-04", "milestone": "M6", "kind": "check", "model": "opus",
+      "description": "What Michael will see: the HitList case study at 390 and 1280.",
+      "steps": [
+        "docs/screenshots/v2/M6-hit-list-390.png and M6-hit-list-1280.png exist, each under 400 KB (top 3000 px if a full page is larger, noted in the table)",
+        "The plan's 'What Michael will see' table says what is on each: metric strip with '374', '20+ → 7', 'SDK 54 → 57', the architecture diagram, method steps, decision log, iterations ending with the simplification spec, the form before/after with the five-step scale, lessons, the single repo link, and no image gallery",
+        "At 390 the page has no horizontal scroll (scrollWidth − innerWidth = 0, written in the table) and the scale labels are readable (not truncated)",
+        "Anything that looks wrong is fixed in this feature or listed with a reason",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M6-03"],
+      "passes": true
+    },
+    {
+      "id": "M6-05", "milestone": "M6", "kind": "review", "model": "opus",
+      "description": "Review of the M6 diff for facts, voice and code quality; findings fixed test-first and the plan closed out.",
+      "steps": [
+        "The M6 diff is written to $HARNESS_SCRATCH/M6.diff and reviewed from it; the Review section of docs/plans/2026-10-18-M6-hit-list.md lists findings with severity and a fact-check row per metric, date and decision id against the brief; the sentence saying the simplification is specified, not built, is present",
+        "Every Critical/Important finding is fixed with a failing test first where testable; simplification pass applied; the `web-design-guidelines` skill is run over /projects/hit-list and findings fixed or recorded",
+        "The plan's Review section ends with 'Ready to merge: yes'; `node .harness/smoke.mjs` and .harness/check.sh are green"
+      ],
+      "after": ["M6-04"],
+      "passes": true
+    },
+
+    {
+      "id": "M2-01", "milestone": "M2", "kind": "plan", "model": "opus",
+      "description": "A plan for the positioning pass: root metadata, hero, home recent-work, experience and about fixes, and the skills regroup, with the exact strings tests will assert.",
+      "steps": [
+        "docs/plans/2026-10-18-M2-positioning.md exists with sections: 'Metadata' (title, description, openGraph, metadataBase per D24), 'Hero' (eyebrow, tagline, subline, the MethodStrip per D23 and its 390 px layout, what stays: buttons, NodeGraph, FloatingLogos), 'Recent work' (getTopProjects(3), ProjectCard, link to /projects, Footer on home per D19), 'Experience' (the new MAXX and Builder Clarity bullets word for word, each with its brand.md line; GPA removal; the exact D9 bullet), 'About' (the D13 intro, ≤ 3 sentences, word for word), 'Skills' (the four groups and which existing skill goes where: a table proving every current skill string survives; featured group per D20), 'Tests', 'What Michael will see' (empty 8-row table), 'Review' (empty)",
+        "Every number in the planned bullets is found in docs/notes/brand.md (a traceability list in the plan); '7+ sources' becomes '4+ sources'",
+        "`git diff --stat HEAD~1` touches only docs/ and .harness/runs/",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M1-07"],
+      "passes": true
+    },
+    {
+      "id": "M2-02", "milestone": "M2", "kind": "build", "model": "opus",
+      "description": "Root metadata, the hero (positioning eyebrow, subline, method strip) and a home Recent work section all read from profile, methodSteps and getTopProjects.",
+      "steps": [
+        "src/app/layout.tsx metadata reads from `profile`: title 'Michael Herron — Systems & Process Engineer', description = profile.subline, `metadataBase: new URL(profile.siteUrl)` (D24), openGraph.siteName 'Michael Herron' and openGraph.images containing profile.headshot; src/__tests__/app/layout-metadata.test.ts asserts title, description and the image path",
+        "src/components/MethodStrip.tsx (D23; created here unless M7 already shipped it) renders the five `methodSteps` labels with arrows between them and each step's `line`; HeroSection shows the eyebrow `profile.positioning`, the unchanged tagline, the subline under it, then the MethodStrip, then the two existing buttons; NodeGraph and FloatingLogos remain; src/__tests__/components/HeroSection.test.tsx asserts eyebrow text 'Systems & Process Engineer', the subline, and the five labels Diagnose, Decide, Build, Verify, Simplify in document order",
+        "src/app/page.tsx renders HeroSection then a section with h2 'Recent work', one ProjectCard per getTopProjects(3) in order, and a link 'See all projects' to /projects; src/__tests__/pages/home.test.tsx asserts the three card titles in order and the link href; SiteChrome shows the Footer on '/' (D19) and its test is updated",
+        "The hero no longer uses a fixed `h-screen` if the strip overflows at 390×844: a Playwright check at 390×844 (from $HARNESS_PW) confirms the 'About Me' button's boundingBox bottom is ≤ 844 or that the hero is `min-h-screen` and scrolls cleanly; the measurement is written into the plan",
+        "`node .harness/smoke.mjs http://localhost:$HARNESS_PORT /` prints PASS at both widths; .harness/check.sh is green"
+      ],
+      "after": ["M2-01"],
+      "passes": true
+    },
+    {
+      "id": "M2-03", "milestone": "M2", "kind": "build", "model": "opus",
+      "description": "Experience bullets match the metrics bank with titles untouched, GPA is gone, the High Cascade bullet is corrected, and About opens with a three-sentence What I do intro.",
+      "steps": [
+        "src/lib/data/experience.ts MAXX Potential bullets cover: Linear + an AI agent workflow with '2×' throughput and '~80%' less bug-filing time; de facto project manager on a client engagement; Foundational Capability Patterns for AI-assisted rapid prototyping; git-tracked DB migrations and team onboarding; Builder Clarity bullets contain '3 clients', '~2 days' and '~6 hours', '~8 hrs/week', '4+ sources', 'Agile/Scrum in Linear'; the string '7+' no longer appears in the file",
+        "src/__tests__/pages/experience.test.tsx (or data.test.ts) asserts the exact titles 'Full-Stack Software Engineer' for MAXX Potential, 'Founding Full-Stack Software Engineer' for Builder Clarity and 'AI Workflow Engineer' for Tahoma Films, and that the High Cascade role has a bullet starting 'Mentored 12–18-year-old snowboarders' (D9)",
+        "`Education` has no `gpa` field, src/app/experience/page.tsx renders no 'GPA' text, and the page test asserts `screen.queryByText(/GPA/)` is null (D8)",
+        "src/app/about/page.tsx renders, before the 'My Story' heading's body, an intro of at most three sentences that contains profile.subline and names the five method steps or the method line; the intro copy lives in src/lib/data/profile.ts (e.g. `profile.intro`) or approach.ts, not in the component; src/__tests__/pages/about.test.tsx asserts it renders and that the existing story paragraphs are unchanged (spot-check 'Duke University' and 'Colorado'); the About metadata description no longer says 'full-stack and integration engineer'",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M2-01"],
+      "passes": true
+    },
+    {
+      "id": "M2-04", "milestone": "M2", "kind": "build", "model": "opus",
+      "description": "Skills are regrouped by capability into four groups with tools as evidence, keeping every currently listed skill.",
+      "steps": [
+        "src/lib/data/skills.ts exports exactly four categories with ids process, systems, build, operate and names 'Process & delivery', 'Systems & architecture', 'Build', 'Operate & verify'; 'Process & delivery' is the single `featured: true` (D20); each category has ≥ 4 skills",
+        "The union of all skill strings is a superset of the 39 skills listed today (the test hard-codes that list from the pre-M2 file: Pipedream, n8n, Zapier, Multi-tenant architecture, RESTful APIs, OAuth 2.0, Webhooks, TypeScript, JavaScript, Python, PowerShell, Java, C/C++, Ruby, R, React, React Native, Next.js, Tailwind CSS, Framer Motion, Node.js, Flask, Ruby on Rails, PostgreSQL, Supabase Edge Functions, ETL pipelines, MongoDB, Supabase, Vercel, Git, Linear, Linux CLI, WSL, Claude Code, AGILE/Scrum, Agentic AI, User-driven design, AI-assisted development, Test-driven development) and also contains 'Docker', 'restic', 'SQLite', 'Expo', 'Agent orchestration', 'Specs and decision ledgers'",
+        "src/app/skills/page.tsx renders the featured group in the existing highlighted panel and the other three as headed sections; src/__tests__/pages/skills.test.tsx asserts the four group headings, that 'Process & delivery' sits in the featured panel, and spot-checks 'TypeScript', 'Docker' and 'Linear'; src/__tests__/lib/data.test.ts skills assertions are updated to 4 categories",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M2-01"],
+      "passes": true
+    },
+    {
+      "id": "M2-05", "milestone": "M2", "kind": "check", "model": "opus",
+      "description": "What Michael will see: home, about, skills and experience at 390 and 1280 after the positioning pass.",
+      "steps": [
+        "docs/screenshots/v2/M2-home-390.png, M2-home-1280.png, M2-about-390.png, M2-about-1280.png, M2-skills-390.png, M2-skills-1280.png, M2-experience-390.png, M2-experience-1280.png exist, each under 400 KB (top 3000 px if a full page is larger, noted)",
+        "A 390×844 viewport capture of / shows the eyebrow 'Systems & Process Engineer', the name, tagline, subline, the five method labels and both buttons without overlap; the boundingBox bottom of the 'About Me' button is written into the plan's table",
+        "The plan's 'What Michael will see' table has eight rows: for about, the intro sits above the story and the headshot float is intact; for skills, four groups with 'Process & delivery' highlighted; for experience, no 'GPA' line and the MAXX bullets show '2×' and '~80%'",
+        "Anything that looks wrong is fixed in this feature or listed with a reason",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M2-02", "M2-03", "M2-04"],
+      "passes": true
+    },
+    {
+      "id": "M2-06", "milestone": "M2", "kind": "review", "model": "opus",
+      "description": "Review of the M2 diff: titles untouched, every number from brand.md, no regressions in hero behaviour; findings fixed test-first and the plan closed out.",
+      "steps": [
+        "The M2 diff is written to $HARNESS_SCRATCH/M2.diff and reviewed from it; the Review section of docs/plans/2026-10-18-M2-positioning.md lists findings with severity, a fact-check row per number in experience.ts against docs/notes/brand.md, and a confirmation that the three job titles and 'Snowboard Coach' are byte-identical to before M2 (`git diff <pre-M2>..HEAD -- src/lib/data/experience.ts | grep '^[-+].*title:'` prints nothing)",
+        "Every Critical/Important finding is fixed with a failing test first where testable; simplification pass applied (no positioning string outside profile.ts; `grep -rn 'Full-Stack & Integration Engineer' src` prints nothing)",
+        "The `web-design-guidelines` skill is run over /, /about, /skills, /experience: reduced motion still honoured by the hero (useReducedMotion or ScrollReveal), heading order, contrast of the method strip; fixes applied or recorded",
+        "The plan's Review section ends with 'Ready to merge: yes'; `node .harness/smoke.mjs` and .harness/check.sh are green"
+      ],
+      "after": ["M2-05"],
+      "passes": true
+    },
+
+    {
+      "id": "M7-01", "milestone": "M7", "kind": "plan", "model": "opus",
+      "description": "A plan for /approach and /evidence: the six principles with their real examples and anchors, the six competencies with their evidence items, and the link-resolution tests.",
+      "steps": [
+        "docs/plans/2026-10-18-M7-approach-evidence.md exists with: 'Principles' (the six from the spec, each with summary and 1–3 examples as { projectSlug, anchor, text } naming only slugs agent-harness, home-media-server, hit-list, linear-ai-workflow, ghl-jobtread-integration and anchors among diagnose, decide, build, verify, simplify, decisions, iterations, lessons, or none; the D14 'chose not to build' example has no link), 'Approach page' (intro 2 sentences, MethodStrip per D23, closing line to /projects/agent-harness when it exists else /projects), 'Competencies' (the six, each with 2–4 items { text, href, context } and which brand.md or brief line each comes from; at least one 'MAXX Potential' item wherever the bank supports it), 'Evidence page' (header 'Evidence of practice — Michael Herron', the one-sentence reading note, the D7 note, noindex), 'Tests', 'What Michael will see' (empty 4-row table), 'Review' (empty)",
+        "The plan lists which examples will be filtered out at render time if their project has not landed on the branch yet, and states the pages must still render with zero broken links in that case",
+        "`git diff --stat HEAD~1` touches only docs/ and .harness/runs/",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M3-05"],
+      "passes": true
+    },
+    {
+      "id": "M7-02", "milestone": "M7", "kind": "build", "model": "opus",
+      "description": "/approach explains the method with six principles whose examples link into existing case-study anchors, and a test proves every rendered link resolves.",
+      "steps": [
+        "src/lib/data/approach.ts exports `principles: Principle[]` with ids diagnose-first, decisions-explicit, fakes-mirror-reality, verify-what-the-human-sees, simplify-after-use, automate-bookkeeping and titles 'Diagnose before building', 'Make decisions explicit', 'Fakes mirror reality', 'Verify what the human will see', 'Simplify after use', 'Automate the bookkeeping, keep judgment human'; each has a summary and 1–3 examples { projectSlug, anchor?, text }; a helper `resolvedExamples(p)` keeps only examples whose slug exists in `projects` and drops the anchor when that project has no caseStudy",
+        "src/app/approach/page.tsx (server, static, metadata title 'Approach — Michael Herron') renders an intro of two sentences, the MethodStrip (src/components/MethodStrip.tsx, created here per D23 if M2 has not shipped it), the six principles with their resolved examples as links `/projects/<slug>` or `/projects/<slug>#<anchor>`, and a closing line linking to /projects/agent-harness when that slug exists, otherwise to /projects",
+        "src/__tests__/lib/approach-links.test.ts asserts: every example anchor is one of diagnose, decide, build, verify, simplify, decisions, iterations, lessons; every example slug is one of the five slugs named in the plan; for every resolved example the slug exists in `projects` and, if an anchor is present, that project has a caseStudy; and that a principle whose example points at a missing slug renders without that link",
+        "src/__tests__/pages/approach.test.tsx asserts the six principle headings, the five method labels, and that every link with href starting /projects/ has a slug in `projects`",
+        ".harness/smoke-routes.txt contains `/approach`; `node .harness/smoke.mjs http://localhost:$HARNESS_PORT /approach` prints PASS at both widths; .harness/check.sh is green"
+      ],
+      "after": ["M7-01"],
+      "passes": true
+    },
+    {
+      "id": "M7-03", "milestone": "M7", "kind": "build", "model": "opus",
+      "description": "/evidence maps six general competencies to real evidence items with resolving links, is noindex and off the nav, and a stub tells Michael where the level-4 rubric goes.",
+      "steps": [
+        "src/lib/data/competencies.ts exports `competencies: Competency[]` with the six titles 'Diagnose problems in real processes', 'Design systems and make decisions explicit', 'Deliver working, verified software', 'Lead process and delivery', 'Communicate and teach', 'Use AI with guardrails'; each has 2–4 items { text, href, context: 'MAXX Potential' | 'Builder Clarity' | 'Personal' }; at least 4 of the 6 competencies include a 'MAXX Potential' item and every MAXX item's claim is found in docs/notes/brand.md (the test greps a key phrase per item listed in the data as `source`)",
+        "src/app/evidence/page.tsx (server, static) renders h1 'Evidence of practice — Michael Herron', one sentence on how to read it, a note that it maps to general competencies until the level-4 rubric is pasted (D7), and the six competencies with their items as links; `metadata.robots.index === false`; src/components/Navbar.tsx does not link to it",
+        "src/__tests__/lib/competencies-links.test.ts asserts every href is either an internal route among /, /about, /skills, /projects, /experience, /contact, /approach, /card, /projects/<existing slug> with an optional anchor among the eight case-study anchors (only when that project has a caseStudy), or an https URL in the public-repo list from brand.md (github.com/mh550/agent-harness, hit-list, dj-crate-streaming, portfolio_site)",
+        "docs/notes/maxx-level-4.md exists and says where to paste the rubric and that remapping means editing src/lib/data/competencies.ts only",
+        ".harness/smoke-routes.txt contains `/evidence`; `node .harness/smoke.mjs http://localhost:$HARNESS_PORT /evidence` prints PASS at both widths; .harness/check.sh is green"
+      ],
+      "after": ["M7-02"],
+      "passes": true
+    },
+    {
+      "id": "M7-04", "milestone": "M7", "kind": "check", "model": "opus",
+      "description": "What Michael will see: /approach and /evidence at 390 and 1280.",
+      "steps": [
+        "docs/screenshots/v2/M7-approach-390.png, M7-approach-1280.png, M7-evidence-390.png, M7-evidence-1280.png exist, each under 400 KB (top 3000 px if larger, noted)",
+        "The plan's 'What Michael will see' table has four rows: approach shows the method strip, six principles with at least one example link each on the current data, and the closing line; evidence shows the header, the reading note, the D7 note and six competencies with 2–4 linked items each",
+        "Clicking (via Playwright `page.goto`) each of three example links from /approach lands on a page where the anchor element exists (`document.getElementById(hash)` non-null), the three results written into the table",
+        "At 390 neither page has horizontal scroll; anything that looks wrong is fixed in this feature or listed with a reason",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M7-03"],
+      "passes": true
+    },
+    {
+      "id": "M7-05", "milestone": "M7", "kind": "review", "model": "opus",
+      "description": "Review of the M7 diff: every example and evidence claim traced, links resolve, voice right; findings fixed test-first and the plan closed out.",
+      "steps": [
+        "The M7 diff is written to $HARNESS_SCRATCH/M7.diff and reviewed from it; the Review section of docs/plans/2026-10-18-M7-approach-evidence.md lists findings with severity and a fact-check row per principle example and per evidence item (claim → brand.md or brief line)",
+        "Every Critical/Important finding is fixed with a failing test first where testable; simplification pass applied (MethodStrip used by both hero and /approach if both exist; no duplicated principle copy)",
+        "The `web-design-guidelines` skill is run over /approach and /evidence (heading order, link text, focus states, reduced motion); fixes applied or recorded",
+        "The plan's Review section ends with 'Ready to merge: yes'; `node .harness/smoke.mjs` and .harness/check.sh are green"
+      ],
+      "after": ["M7-04"],
+      "passes": true
+    },
+
+    {
+      "id": "M8-01", "milestone": "M8", "kind": "build", "model": "opus",
+      "description": "The Navbar gains Approach, the projects index is ordered by `order` with the new filters and metric badges, and sitemap and robots are generated from the data.",
+      "steps": [
+        "src/components/Navbar.tsx links are Home, About, Skills, Projects, Approach, Experience, Contact in that order in both the desktop list and the mobile menu; src/__tests__/components/Navbar.test.tsx asserts the seven labels in order and href '/approach'; neither 'Evidence' nor 'Card' appears",
+        "src/components/projects/ProjectsGrid.tsx renders `projects` sorted by `order` ascending; src/__tests__/components/ProjectsGrid.test.tsx asserts the rendered card titles equal the titles sorted by order, and that each case-study project without a thumbnail shows its first metric value in the card's preview band",
+        "src/app/sitemap.ts returns entries for /, /about, /skills, /projects, /experience, /contact, /approach, /card (where those pages exist on the branch) and every /projects/<slug>, built from profile.siteUrl, and excludes /evidence and /card/qr; src/app/robots.ts disallows /evidence and /card/qr and points to `${profile.siteUrl}/sitemap.xml`; src/__tests__/app/sitemap-robots.test.ts asserts both",
+        "`curl -s http://localhost:$HARNESS_PORT/sitemap.xml | grep -c '<loc>'` is at least 7 + the number of projects, and `curl -s http://localhost:$HARNESS_PORT/robots.txt` contains 'Disallow: /evidence'",
+        "`node .harness/smoke.mjs` (every route) and .harness/check.sh are green"
+      ],
+      "after": ["M2-06", "M7-05"],
+      "passes": true
+    },
+    {
+      "id": "M8-02", "milestone": "M8", "kind": "review", "model": "opus",
+      "description": "An accessibility and quality pass over every new page with the web-design-guidelines skill, plus the review of the M8 diff; findings fixed test-first.",
+      "steps": [
+        "The `web-design-guidelines` skill is run over /card, /card/qr, /approach, /evidence and the three case-study pages; findings are recorded in docs/plans/2026-10-18-M8-polish.md (created here) as a table page · finding · severity · fix or `D<n> *default*` reference",
+        "Fixed in this session with a test where testable: every interactive element has a visible `focus-visible` style; each page has exactly one h1 and no skipped heading levels (a test renders each new page and asserts the heading-level sequence); no link text is only 'here', 'click' or '→'; text contrast on the dark theme is AA (muted text on background ≥ 4.5:1 or the colour is adjusted); framer-motion entrances skip under prefers-reduced-motion (ScrollReveal used, or useReducedMotion checked, in every new client component)",
+        "The M8 diff is written to $HARNESS_SCRATCH/M8.diff and reviewed from it; Critical/Important findings fixed; anything deliberately left is appended to the spec's Decisions as `D<n> *default*`",
+        "`node .harness/smoke.mjs` prints PASS for every route at both widths and .harness/check.sh is green; the plan ends with 'Ready to merge: yes'"
+      ],
+      "after": ["M8-01"],
+      "passes": true
+    },
+
+    {
+      "id": "M9-01", "milestone": "M9", "kind": "docs", "model": "sonnet",
+      "description": "Hand-off docs for Michael: the asset checklist, the per-milestone review guide with merge order, and CLAUDE.md and README that describe the site as it now is.",
+      "steps": [
+        "docs/asset-checklist.md has a section per project that lacks real media (at least HitList: phone screens or a 15 s recording; home-media-server: Amperfy on the phone; agent-harness: `harness attach` in tmux, a phone INBOX.md edit; MAXX projects: any screenshots he is allowed to share), each naming the destination public/projects/<slug>/ and the `media` entry to add",
+        "docs/review-guide.md lists, per milestone that landed on the branch (`ls docs/plans`), what changed, what to look at on the Vercel preview at phone width, and the merge order with M1 first and the note that merging M1 also ships M0 and the harness setup",
+        "CLAUDE.md: the routes table lists every route that exists under src/app on the branch (including /card, /card/qr, /approach, /evidence, /michael-herron.vcf where present), the test count matches `npx jest --silent 2>&1 | grep -E '^Tests:'`, the data modules list includes profile, approach and competencies where present, the content guard is described, the Spec/Plan pointers name docs/specs/2026-10-18-portfolio-v2.md and docs/plans/, and the build is described as prerendered, not a static export",
+        "README.md no longer contains 'create-next-app' or 'Getting Started' boilerplate; it says what the site is, how to run it (npm run dev / test / build), the data-driven content rule, and how v2 was built with a link to /projects/agent-harness",
+        "All four files pass the content guard; `git diff --stat HEAD~1` touches only docs/, CLAUDE.md, README.md and .harness/runs/; .harness/check.sh is green"
+      ],
+      "after": ["M1-07"],
+      "passes": true
+    },
+
+    {
+      "id": "S1-01", "milestone": "S1", "kind": "build", "model": "opus",
+      "description": "Each project page gets a generated Open Graph image with its title and top metric via next/og, with no external fonts.",
+      "steps": [
+        "src/app/projects/[slug]/opengraph-image.tsx exports `size` 1200×630, `contentType` 'image/png', `generateStaticParams` over `projects`, and a default function returning an `ImageResponse` with the dark background #0a0a0f, the project title, its first metric value and label, and 'Michael Herron'; no `fetch` of fonts",
+        "src/__tests__/app/opengraph-image.test.ts asserts the exports exist, size is { width: 1200, height: 630 } and generateStaticParams returns every slug",
+        "`curl -s -o /tmp/og.png -w '%{http_code} %{content_type}' http://localhost:$HARNESS_PORT/projects/agent-harness/opengraph-image` (or the first project slug on the branch) prints 200 and image/png; docs/screenshots/v2/S1-og-agent-harness.png is that file",
+        ".harness/check.sh is green (the build renders the images)"
+      ],
+      "after": ["M3-05"],
+      "passes": true
+    },
+    {
+      "id": "S2-01", "milestone": "S2", "kind": "build", "model": "opus",
+      "description": "/card can show a one-line 'Met me at a conference?' note above Selected work, empty by default so nothing renders until Michael fills it in.",
+      "steps": [
+        "src/lib/data/profile.ts gains `conferenceNote: ''` (typed string) and src/app/card/page.tsx renders a `<p>` with it above the 'Selected work' heading only when it is non-empty; the rendering lives in a small component that takes the note as a prop",
+        "src/__tests__/pages/card.test.tsx asserts no note element renders with the default empty value, and the component test asserts the text renders when given 'Met me at a conference? Say hi.'",
+        "docs/conference-kit.md gains one line telling Michael where to type the note",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M1-07"],
+      "passes": true
+    },
+    {
+      "id": "S3-01", "milestone": "S3", "kind": "build", "model": "opus",
+      "description": "Case-study pages print cleanly in black on white without navigation, hero canvas or clipped code blocks.",
+      "steps": [
+        "src/app/globals.css has an `@media print` block: white background and black text, Navbar, Footer, FloatingLogos and NodeGraph hidden, `pre` blocks `white-space: pre-wrap` with no max-height, links underlined; the rules target existing class names or a `print:hidden` utility",
+        "A Playwright check from $HARNESS_PW with `page.emulateMedia({ media: 'print' })` on /projects/<first case-study slug on the branch> reports `getComputedStyle(document.body).backgroundColor` as white and no `<nav>` visible; the full-page capture is saved as docs/screenshots/v2/S3-print-<slug>.png under 400 KB",
+        "src/__tests__/lib/print-styles.test.ts reads globals.css and asserts the `@media print` block exists and mentions `pre` and `nav`",
+        ".harness/check.sh is green"
+      ],
+      "after": ["M3-05"],
+      "passes": true
+    }
+  ]
+}
