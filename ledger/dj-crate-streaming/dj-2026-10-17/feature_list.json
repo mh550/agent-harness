@@ -262,7 +262,7 @@
         "No other container was recreated (`docker ps` uptimes for navidrome, crates, worker, slskd, gluetun unchanged)",
         "INBOX lists Michael's one-time steps from the spec, verbatim"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "H3-05",
@@ -275,7 +275,7 @@
         "docs/monitoring.md exists and matches deploy/gatus/config.yaml",
         "`.harness/check.sh` is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N2-01",
@@ -290,7 +290,7 @@
         "Commit `N2-01: plan for the imported marker in crates.db`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N2-02",
@@ -305,7 +305,7 @@
         "Run .harness/check.sh tests/test_import_playlist.py tests/test_app_owner.py tests/test_crates.py tests/test_migrate_attrs.py tests/test_sourcing_cli.py; commit `N2-02: import-playlist records its playlists in crates.db`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N2-03",
@@ -320,7 +320,7 @@
         "Commit `N2-03: imported migrate and list`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N2-04",
@@ -334,7 +334,7 @@
         "Commit `N2-04: review and simplify the imported marker move`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N3-01",
@@ -348,7 +348,7 @@
         "Commit `N3-01: plan for dropping a vanished playlist's rows`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N3-02",
@@ -362,7 +362,7 @@
         "Run .harness/check.sh tests/test_crates.py tests/test_app_owner.py tests/test_service.py tests/test_worker.py; commit `N3-02: reconcile drops a vanished playlist's rows`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N3-03",
@@ -376,7 +376,7 @@
         "Commit `N3-03: review and simplify the vanished-playlist cleanup`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N4-01",
@@ -391,7 +391,7 @@
         "Commit `N4-01: plan for placing downloads at their Spotify position`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N4-02",
@@ -405,7 +405,7 @@
         "Run .harness/check.sh tests/test_import_playlist.py tests/test_crates.py tests/test_app_owner.py; commit `N4-02: import_order records the Spotify order`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N4-03",
@@ -419,7 +419,7 @@
         "Commit `N4-03: placement rule and place()`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N4-04",
@@ -434,7 +434,7 @@
         "Run .harness/check.sh tests/test_worker.py tests/test_placement.py tests/test_play_now.py tests/test_replace.py tests/test_fetch.py; commit `N4-04: worker places filed tracks at their Spotify position`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N4-05",
@@ -448,7 +448,7 @@
         "Commit `N4-05: review and simplify placement`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N5-01",
@@ -464,7 +464,7 @@
         "Commit `N5-01: docs for the dj-2026-10-17 run`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N5-02",
@@ -479,7 +479,7 @@
         "Commit `N5-02: whole-run review and simplify`.",
         ".harness/check.sh is green"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

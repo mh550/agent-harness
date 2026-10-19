@@ -49,11 +49,17 @@ Written and tested, not enabled. As mh550, from a checkout of main (no sudo):
     install -D -m 0755 deploy/health-push.sh ~/.local/lib/dj-crates/health-push.sh
     install -m 0600 /dev/null ~/.config/dj-health-push.env
     printf 'GATUS_BACKUP_URL=http://127.0.0.1:4590\nGATUS_BACKUP_TOKEN=<same token as /srv/docker/.env>\n' >> ~/.config/dj-health-push.env
-    systemctl --user link $PWD/deploy/systemd/dj-health-push.service $PWD/deploy/systemd/dj-health-push.timer
+    install -D -m 0644 -t ~/.config/systemd/user deploy/systemd/dj-health-push.service deploy/systemd/dj-health-push.timer
+    systemctl --user daemon-reload
     systemctl --user enable --now dj-health-push.timer
     systemctl --user start dj-health-push.service; journalctl --user -u dj-health-push -n 5
+    loginctl enable-linger mh550     # added by H3-05: without it the user timer stops whenever mh550 has no session (Linger=no today)
 
-Rollback: `systemctl --user disable --now dj-health-push.timer`.
+Rollback: `systemctl --user disable --now dj-health-push.timer` (and `loginctl disable-linger mh550`).
+
+H3-05 (2026-10-19): the timer now also reports the nightly backup from systemd to `backup` (your I3 answer, D42), so
+a failed or missing backup alerts within 10 min. The units are copied now, not linked from the checkout (a branch
+switch there would remove them), and `enable-linger` is new. Same lines: `docs/monitoring.md` → "Michael's one-time steps".
 
 ### H3-04 (2026-10-17): Michael's one-time steps for monitoring (docs/specs/2026-10-17-backup-lock-and-monitoring.md, verbatim)
 H3-04 deploys Gatus only after you write "gatus vars set" under Answers (step 1): without the two values Gatus
@@ -71,4 +77,21 @@ H3-05's). Gatus' config now lives in `/srv/docker/gatus/config/config.yaml`, cop
 Start Gatus only that way, never with a plain `docker compose up` from /srv/docker: deploy.sh creates
 `/srv/docker/gatus` as you, and Docker would create it as root (deploy.sh then refuses and prints the `chown`).
 
+**Done 2026-10-19 01:54:** Gatus runs (`dj-gatus-1`, http://127.0.0.1:4590), and navidrome, crates and slskd are green.
+Step 1 is done, so step 3 (the H3-03 timer) can run now. Until H3 is merged and `~/projects/dj-crate-streaming` is
+pulled, `/srv/docker/compose.yml` doesn't define gatus, so compose there calls `dj-gatus-1` an orphan.
+**Don't pass `--remove-orphans`** from /srv/docker before that, or it deletes Gatus.
+
 ## Answers
+
+### 2026-10-19 01:53 (local)
+- 2026-10-19 · D35 (two lossless copies): trash the extras. These are Soulseek files from a
+  Spotify-playlist download script, so the duplication is just the script re-fetching; the copies
+  are effectively identical. Override the hold default — apply D31 literally. (Low risk: trash is
+  a move to /srv/_trash with MOVES.txt, reversible, not a hard delete.)
+- 2026-10-19 · D36 (trash runs with worker stopped): approved, keep the default.
+- 2026-10-19 · D38 (one failing DB keeps both at last good pair): keep the default.
+- 2026-10-19 · D39 (failed DB snapshot fails the nightly run): keep the default.
+- 2026-10-19 · D41 (Gatus config copied from git): keep the default. (Confirmed: Gatus not yet deployed.)
+- 2026-10-19 · I3 (backup heartbeat resets on Gatus restart): approved — have the disk-pusher also
+  report real backup status from systemctl so a missed backup alerts reliably.
