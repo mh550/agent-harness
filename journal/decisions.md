@@ -254,3 +254,31 @@ agents are driven*.
   run built from summary.json (the numbers are the harness's, not the model's) above the note, committed with it;
   `DEBRIEF_PAGE_CMD` gets its path.
 - **Rejected:** waiting for the 7-day reset inside a run (days, not minutes); the model writing the page's numbers.
+
+### D-H29 · Notifications carry the question and the links; the harness posts to ntfy itself *(accepted 2026-10-19, built in P1 of run agent-harness-2026-10-19)*
+- **Finding:** a park or a block reached Michael's phone as one line (`[<run>] needs Michael: B · <why>`). The
+  question was in INBOX.md on the run branch, three taps and a branch switch away in the GitHub app, so answering
+  from the phone meant finding the file first. `NOTIFY_CMD` got only `$1`, so it couldn't add a title, a priority or
+  a link even when the driver knew them. A blocked run end also sent two notifications (`needs Michael: …` at
+  once, then `ended (…)` after the merge, the suite and the retro).
+- **Choice:** `lib/notify.sh`: `notify "<message>" [title= body= click= actions= priority= tags=]`, shared by the
+  driver and the debrief. With `NTFY_URL` (and optional `NTFY_TOKEN`, a bearer header that is never logged) the
+  harness posts to ntfy itself through `${HARNESS_CURL:-curl}` and `NOTIFY_CMD` is not called; otherwise
+  `NOTIFY_CMD` gets `$1` exactly as before plus `HARNESS_NOTIFY_{TITLE,BODY,CLICK,ACTIONS,PRIORITY}`, so existing
+  commands keep working. Pure helpers in `lib/notify.mjs` (`githubUrls`, `trimBody` at 3500 bytes, `actionsHeader`,
+  `inboxQuestion`). A park is `[<run>] <id> needs you` at priority high: the PARKED line, the lines the session added
+  to INBOX.md (the driver copies it before each coding session) and the `harness answer` command, with INBOX.md on
+  GitHub as click and Edit INBOX / Answer with Claude (`DESK_URL`) / Progress as actions. Every other needs-Michael
+  notification is high with a click (progress.md, harness-log.md or the PR). A run sends one end notification,
+  `[<run>] ended: <reason>` with report.md as click, high plus Edit INBOX / Progress when Michael must act; the
+  separate `needs Michael: blocked …` line is gone. Routine ones (started, merged, paused) keep the default
+  priority. A non-GitHub origin gives no URLs; a failed post is a `notification failed (curl exit <n>)` note and the
+  run goes on.
+- **When the end notification goes:** `finish` writes report.md from the first summary, pushes it with
+  `HARNESS: run ended (…)` and notifies right then, before the retro (minutes, and a crash there would lose it).
+  The retro's summary rewrites report.md at the same URL. Verify and merge-conflict notifications likewise go out
+  after the entry they link to is pushed.
+- **Rejected:** keeping NOTIFY_CMD the only path and documenting an ntfy recipe (every user would rebuild header
+  quoting, the token and the cap); calling both NTFY_URL and NOTIFY_CMD (two notifications for one event); the
+  question in the title (a phone shows one line of it; the body holds 3500 bytes before ntfy.sh makes it an
+  attachment).

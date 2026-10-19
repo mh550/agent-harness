@@ -14,21 +14,22 @@ notify() {
   for kv; do
     [[ $kv == *=* ]] || continue
     k=${kv%%=*} v=${kv#*=}
-    [[ $k == body ]] || v=${v//[$'\r\n']/ }   # a why or a reason must not be able to add a header
+    [[ $k == body ]] || v=${v//[[:cntrl:]]/ }   # a why must not add a header, nor carry a byte ntfy refuses (400)
     case $k in
       title) [[ -n $v ]] && title=$v ;; body) body=$v ;; click) click=$v ;; actions) actions=$v ;;
       priority) priority=$v ;; tags) tags=$v ;;
     esac
   done
-  [[ -n $body ]] && body=$(printf '%s' "$body" | node "$NOTIFY_MJS" trim 9>&-)
+  [[ -n $body ]] && body=$(notify_trim "$body")
   if [[ -n ${NTFY_URL:-} ]]; then
-    a=(-sS --fail --max-time 15 -o /dev/null -H "Title: $title")
+    # retries a 429/5xx; --retry-max-time keeps a hung ntfy from holding the run for minutes
+    a=(-sS --fail --max-time 15 --retry 2 --retry-delay 3 --retry-max-time 20 -o /dev/null -H "Title: $title")
     [[ -n $priority ]] && a+=(-H "Priority: $priority")
     [[ -n $tags ]] && a+=(-H "Tags: $tags")
     [[ -n $click ]] && a+=(-H "Click: $click")
     [[ -n $actions ]] && a+=(-H "Actions: $actions")
     [[ -n ${NTFY_TOKEN:-} ]] && a+=(-H "Authorization: Bearer $NTFY_TOKEN")
-    v=${body:-$msg}; [[ $v == @* ]] && v=" $v"   # curl reads "@<file>" as a file to send
+    v=${body:-$(notify_trim "$msg")}; [[ $v == @* ]] && v=" $v"   # curl reads "@<file>" as a file to send
     "${HARNESS_CURL:-curl}" "${a[@]}" --data-binary "$v" "$NTFY_URL" < /dev/null > /dev/null 2>&1 9>&-; rc=$?
     # neither line may carry the token, the URL or the body
     if (( rc == 0 )); then log "notified: $title"
@@ -39,6 +40,13 @@ notify() {
       HARNESS_NOTIFY_PRIORITY=$priority bash -c "$NOTIFY_CMD" _ "$msg" > /dev/null 2>&1 9>&-
   fi
   return 0
+}
+
+# The 3500-byte cap (trimBody), without a node per post when the text already fits (text that fits is sent as-is:
+# invalid UTF-8, which nothing the harness writes has, would reach ntfy unreplaced).
+notify_trim() {
+  local n; n=$(LC_ALL=C; echo "${#1}")
+  if (( n <= 3500 )); then printf '%s' "$1"; else printf '%s' "$1" | node "$NOTIFY_MJS" trim 9>&-; fi
 }
 
 # remote.origin.url, not `git remote get-url`: that one returns the url.<…>.insteadOf rewrite (the suite's local origin).

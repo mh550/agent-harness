@@ -14,8 +14,8 @@
 #      A session that can't go on without Michael ends with "PARKED: <why>": the feature is parked (no attempt spent)
 #      until INBOX.md's answers change, and work that doesn't depend on it goes on. Past WEEKLY_STOP_AT of the plan's
 #      7-day window (as sessions report it), the run ends before its next coding session.
-#   4. the end, whatever the reason: summary.json, a retro session, the harness ledger, a notification, and (after a
-#      session cap, within the run's --until) a continuation in the queue.
+#   4. the end, whatever the reason: summary.json and report.md, a notification, a retro session, the harness ledger,
+#      and (after a session cap, within the run's --until) a continuation in the queue.
 # Verify and retro sessions may not change code: whatever they change outside the run record (retro: anything) is
 # reverted. A session that ends on a usage limit or API error keeps its commits but not its "passes".
 # Environment (set by bin/harness): WT RUN_ID STATE PROJECT_DIR HARNESS_HOME
@@ -111,6 +111,11 @@ take_answers() {
   commit_all "HARNESS: answers from Michael"
 }
 
+# A milestone Michael must act on (verify, a conflict): high, one tap from the run-record file that explains it.
+needs_you() {   # <milestone> <why> <file in the run record>
+  notify "$1 needs Michael: $2" title="[$RUN_ID] $1 needs you" priority=high click="$(gh_url "$RUN_DIR/$3")"
+}
+
 # The park's notification: the question the session wrote in INBOX.md and how to answer, with the INBOX one tap away.
 notify_park() {
   local id=$1 why=$2 q body acts
@@ -194,7 +199,11 @@ merge_one() {
   git fetch -q origin "$MAIN_BRANCH" || return 1
   if git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; then touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (already there)"; return 0; fi
   if ! tree=$(git merge-tree --write-tree "origin/$MAIN_BRANCH" "$c" 2>/dev/null | head -1); then
-    note "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)"; notify "$m needs Michael: conflicts with $MAIN_BRANCH" title="[$RUN_ID] $m needs you" priority=high click="$(gh_url "$RUN_DIR/harness-log.md")"; return 1
+    # once per main: merge_milestones runs again after every verify and at the end
+    [[ $(cat "$STATE/conflict-$m" 2>/dev/null) == "$(git rev-parse "origin/$MAIN_BRANCH")" ]] && return 1
+    git rev-parse "origin/$MAIN_BRANCH" > "$STATE/conflict-$m"
+    note "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)"; commit_all "HARNESS: $m conflicts with $MAIN_BRANCH"; sync
+    needs_you "$m" "conflicts with $MAIN_BRANCH" harness-log.md; return 1
   fi
   [[ $tree == "$(git rev-parse "$c^{tree}")" ]] || return 3
   git push -q -f origin "$c:refs/heads/$head" 2>> "$STATE/run.log" || { note "$m: push of $head failed (see run.log)"; return 1; }
@@ -240,7 +249,7 @@ merge_milestones() {
 
 # Independently re-check milestone m. 0 = verified (tagged) · 1 = not verified · 2 = deferred (a usage limit: retry)
 verify() {
-  local m=$1 out vlog rounds model short before vstart reverted result=fail
+  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=()
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
   sync_main || touch "$STATE/nomerge-$m"
   run_init
@@ -283,9 +292,9 @@ verify() {
       [[ -f $STATE/nomerge-$m ]] || merge_milestones
       return 0 ;;
     thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $VERIFY_ESCALATE_MODEL; not verified (needs Michael)"
-      notify "$m needs Michael: verify evidence too thin" title="[$RUN_ID] $m needs you" priority=high click="$(gh_url "$RUN_DIR/progress.md")" ;;
+      need="verify evidence too thin" ;;
     red) touch "$STATE/needs-$m"; note "verify $m: the suite is red on the verified tree (main merged in); not verified (needs Michael)"
-      notify "$m needs Michael: suite red after merging main" title="[$RUN_ID] $m needs you" priority=high click="$(gh_url "$RUN_DIR/progress.md")" ;;
+      need="suite red after merging main" ;;
     fail)
       for id in $(F ids "$LIST" "$m"); do
         F passes "$LIST" "$id" && continue
@@ -293,11 +302,14 @@ verify() {
           note "verify $m: $id failed the re-check, back in the queue (one more attempt)"; F grant "$ATT" "$id" "$MAX_ATTEMPTS"
         else
           touch "$STATE/needs-$m"; note "verify $m: $id failed the re-check in round $rounds of $MAX_VERIFY_ROUNDS; $m needs Michael (see progress.md)"
-          notify "$m needs Michael: $id fails verification" title="[$RUN_ID] $m needs you" priority=high click="$(gh_url "$RUN_DIR/progress.md")"
+          failed+=("$id")
         fi
-      done ;;
+      done
+      if (( ${#failed[@]} == 1 )); then need="${failed[0]} fails verification"
+      elif (( ${#failed[@]} )); then need=$(printf '%s, ' "${failed[@]}"); need="${need%, } fail verification"; fi ;;
   esac
   commit_all "HARNESS: verify $m"; sync
+  [[ -n $need ]] && needs_you "$m" "$need" progress.md   # after the push: the click shows the verify entry
   return 1
 }
 
@@ -340,7 +352,7 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   ) 9> "$STATE_ROOT/ledger.lock"
 }
 
-finish() {   # reason → summary, retro, ledger, notification, continuation
+finish() {   # reason → summary, notification, retro, ledger, continuation
   END_REASON=$1
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$RUN_DIR/metrics.jsonl")"
@@ -348,7 +360,18 @@ finish() {   # reason → summary, retro, ledger, notification, continuation
   green; node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$(node "$HARNESS_HOME/lib/treekey.mjs").out" | cut -d' ' -f1 | grep . > "$STATE/tests-end" \
     || rm -f "$STATE/tests-end"
   SUM build "$WT" "$RUN_ID" "$STATE" > "$RUN_DIR/summary.json"
+  SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"   # the end notification's click; rewritten after the retro
   commit_all "HARNESS: run ended ($1)"; sync
+  # the run's one end notification goes out now, not after the retro (minutes, and a crash there would lose it).
+  # The reasons below are Michael's to act on: the report, the INBOX one tap away
+  local pri="" acts="" sum
+  case $1 in "blocked on"* | "waiting on Michael"* | "feature-list edits"* | "initializer failed"*)
+    pri=high acts=$(node "$NOTIFY_MJS" actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" Progress "$(gh_url "$RUN_DIR/progress.md")") ;;
+  esac
+  sum="$(F summary "$LIST" 2>/dev/null) · $(jq -r '"$\(.cost.total) · $\(.cost.per_passing_feature) per passing feature"' "$RUN_DIR/summary.json" 2>/dev/null)"
+  notify "ended ($1): $sum" title="[$RUN_ID] ended: $1" priority=$pri click="$(gh_url "$RUN_DIR/report.md")" actions="$acts"
+  # a failed post notes it in harness-log.md: commit it now, before a retro that may never finish
+  [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: run-end notification failed"; sync; }
   if [[ $RETRO == 1 && -f $LIST ]]; then retro; SUM build "$WT" "$RUN_ID" "$STATE" > "$RUN_DIR/summary.json"; fi
   SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"
   commit_all "HARNESS: summary and retro"; sync
@@ -362,15 +385,8 @@ finish() {   # reason → summary, retro, ledger, notification, continuation
     "$HARNESS_HOME/bin/harness" queue add --continue "$RUN_ID" --keep-attempts $( (( DEADLINE_AT )) && echo "--until-epoch $DEADLINE_AT") > /dev/null 2>&1 \
       && note "continuation queued ($(( conts + 1 )) of ${AUTO_CONTINUE_MAX:-3}; it starts when the queue runs)"
   fi
-  # the run's one end notification (the reasons below are Michael's to act on): the report, the INBOX one tap away
-  local pri="" acts="" sum
-  case $1 in "blocked on"* | "waiting on Michael"* | "feature-list edits"* | "initializer failed"*)
-    pri=high acts=$(node "$NOTIFY_MJS" actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" Progress "$(gh_url "$RUN_DIR/progress.md")") ;;
-  esac
-  sum="$(F summary "$LIST" 2>/dev/null) · $(jq -r '"$\(.cost.total) · $\(.cost.per_passing_feature) per passing feature"' "$RUN_DIR/summary.json" 2>/dev/null)"
-  notify "ended ($1): $sum" title="[$RUN_ID] ended: $1" priority=$pri click="$(gh_url "$RUN_DIR/report.md")" actions="$acts"
-  # a failed post notes it in harness-log.md: commit that too, or the worktree stays dirty and gc skips it
-  [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: run-end notification failed"; sync; }
+  # a note after the last commit (the continuation): commit it too, or the worktree stays dirty and gc skips it
+  [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: run end notes"; sync; }
   log "run kept in $WT on $BRANCH · report: harness report $RUN_ID · continue: harness continue $RUN_ID"
   exit 0
 }

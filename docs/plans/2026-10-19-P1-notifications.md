@@ -150,7 +150,8 @@ Message (`$1`) text stays as today except where the row says "dropped". Rows mar
 | 15 | debrief headline: `[debrief] <headline>` + 2 lines + note path | `harness debrief` | high when the note's `## Needs Michael` section is not `Nothing.` / empty | — (the note is a local path, not a URL) | — | P1-04 |
 
 Rows 3–4 are a choice this plan makes (D-H29 records it): today a run that ends needing Michael sends two
-notifications in the same second; after P1 it sends one, high, whose click is the report and whose actions reach
+notifications (one at once, one after the merge, suite and retro; P1-05 corrected "in the same second"); after P1 it
+sends one, right after `run ended` is pushed and before the retro (P1-05), high, whose click is the report and whose actions reach
 the INBOX. The park itself (row 1) already went out with the INBOX as its click.
 
 ## 6. The park body (P1-03)

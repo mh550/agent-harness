@@ -320,7 +320,9 @@ log "debrief written: $NOTE ($MODEL, \$$COST)"
 mapfile -t HL < <(awk '/^## / { if (on) exit; if (tolower($0) ~ /^## headline/) { on = 1; next } } on && NF' "$WS/body.md" | head -3)
 (( ${#HL[@]} )) || mapfile -t HL < <(grep -v '^#' "$WS/body.md" | grep . | head -3)
 HL[0]="[debrief] ${HL[0]:-}"
-# high when the note's "Needs Michael" section holds anything but "Nothing." (no click: the note is a local path)
-NM=$(awk '/^## / { on = tolower($0) ~ /^## needs michael/; next } on && NF' "$WS/body.md" | grep -Evix '[-*_ ]*(nothing|none)\.?[*_[:space:]]*')
+# high when the note's "Needs Michael" section holds anything but "Nothing." or the harness's own Queued/Not queued
+# lines (CONTINUE: answers, wherever the model put them). No click: the note is a local path.
+NM=$(awk '/^## / { on = tolower($0) ~ /^## needs michael/; next } on && NF' "$WS/body.md" | grep -Evix '[-*_ ]*(nothing|none)\.?[*_[:space:]]*' \
+  | grep -Ev '^- (Queued|Not queued): ')
 notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}"
 exit 0

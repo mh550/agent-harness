@@ -36,7 +36,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
                    supervisor (interactive)    │  claude -p <prompt>             │  summary.mjs build/report
                                                │   initializer | coding |        │  retro session
                                                │   verify | retro                │  ledger (harness repo)
-                                               │ libs: config.sh check.sh        │  notify, queue continuation
+                                               │ libs: config.sh check.sh notify │  notify, queue continuation
                                                │  features.mjs metrics.mjs       │
                                                │  treekey.mjs testcount.mjs      │
                                                ▼                                 ▼
@@ -52,6 +52,8 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/queue.sh` | ~45 | Starts queued runs within the parallel limit, the `--until` time and the usage-limit window; starts `harness debrief`, detached, as it exits (§16) |
 | `lib/debrief.sh` | ~280 | `harness debrief`: gathers the context in bash, waits out the limit window, one read-only session, the note, checked continuations, the notification (§16) |
 | `lib/config.sh` | ~60 | Config layers and conventions (§10) |
+| `lib/notify.sh` | ~50 | `notify "<message>" [title= body= click= actions= priority= tags=]` for the driver and the debrief: posts to `NTFY_URL` through `${HARNESS_CURL:-curl}` (bearer `NTFY_TOKEN`), else runs `NOTIFY_CMD` with `$1` + `HARNESS_NOTIFY_*`; always returns 0, a failed post is a note. `gh_url <path> [blob\|edit]`: that file on the run branch on GitHub, or nothing |
+| `lib/notify.mjs` | ~75 | Pure helpers for it: `githubUrls` (GitHub origins only), `trimBody` (3500 bytes, `…`), `actionsHeader` (ntfy `view, <label>, <url>; …`), `inboxQuestion` (the lines a session added above `## Answers`) |
 | `lib/check.sh` + `treekey.mjs` | ~40 | The suite, cached per content of the code tree. One command for the driver and every session |
 | `lib/features.mjs` | ~200 | The feature-list contract: scheduling, gating, repair, kinds, evidence counting |
 | `lib/metrics.mjs` | ~100 | Per-session metrics; the "environmental?" decision (limits, API errors, $0) |
@@ -59,7 +61,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/render.mjs` | ~15 | Prompt templating (`{{X}}` ← `HARNESS_X`) and titled sections |
 | `lib/page.mjs` | ~130 | The debrief page: a card per run from summary.json, then the note (escaped), one self-contained HTML file |
 | `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md; `policy/{build-only,live-staged}.md` |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude` and `gh` on a throwaway repo with a bare origin: 98 checks |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin: 125 checks |
 
 ## 4. Where state lives
 
@@ -111,7 +113,8 @@ harness start ─► worktree + branch ─► driver:
       → a new entry with one evidence row per step? no → one re-run on the stronger model → still no → not verified
       → suite green on that tree? → tag run/<run>/<m> (v3) → merge_milestones (PR per milestone, in order)
       a step fails → one more attempt for the feature, then "needs Michael"
-  finish: merge what's verified · tests-end · summary.json · RETRO · report.md · ledger · notify · queue a continuation
+  finish: merge what's verified · tests-end · summary.json · report.md, pushed · notify · RETRO · report.md again · ledger ·
+          queue a continuation
 ```
 
 **End reasons** (written to `state/ended`, shown by `harness status`, recorded in the summary):
@@ -222,11 +225,13 @@ else continues.** Unverified work is never merged and never thrown away.
 ## 10. Configuration
 
 Layers, later wins (`lib/config.sh`): harness defaults → `~/.config/harness/config.sh` (yours: models, limits,
-`MERGE_POLICY`, `MAX_PARALLEL_RUNS`, `NOTIFY_CMD`) → `<project>/.harness/config.sh` (`POLICY=` and real overrides) →
+`MERGE_POLICY`, `MAX_PARALLEL_RUNS`, `NOTIFY_CMD`, `NTFY_URL`, `NTFY_TOKEN`, `DESK_URL`) → `<project>/.harness/config.sh` (`POLICY=` and real overrides) →
 the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** for what's still unset:
 
 | Setting | Convention |
 |---|---|
+| `NTFY_URL` / `NTFY_TOKEN` | empty: notifications go to `NOTIFY_CMD` (or nowhere). Set: the harness posts to that ntfy topic itself, the token as `Authorization: Bearer` (never logged), and `NOTIFY_CMD` is not called |
+| `DESK_URL` | empty: no **Answer with Claude** action on a park's notification |
 | `CHECK_CMD` | `.harness/check.sh` · `npm run check` · `npm test` · `python3 -m pytest -q` · `cargo test` · `go test ./...` · `make test` |
 | `SMOKE_CMD` | `node .harness/smoke.mjs` · `bash .harness/smoke.sh` · `true` |
 | `INIT_CMD` | `.harness/init.sh` · `true` (the driver runs the suite itself, so init only starts servers) |
@@ -288,7 +293,7 @@ or on `harness queue stop`; whichever, if it started at least one run (marked in
 | a new session kind | a template in `prompts/`, a `session <kind>` call, a `MET append … <role>`; extend `parseRunLog` for `"<kind> · model"` lines | stub branch on the prompt's first line |
 | scheduling rules | `features.mjs schedule()` (pure; unit-testable with node) | a feature list in the stub initializer |
 | a new stack | `detect_check` / `detect_smoke` in `config.sh` | `harness init` on a sample repo prints the detection |
-| notifications | `NOTIFY_CMD` (gets the message as `$1`), e.g. ntfy.sh | — |
+| notifications | a call site: `notify "<msg>" title=… priority=high click="$(gh_url …)"` in the driver (the plan's call-site table in `docs/plans/2026-10-19-P1-notifications.md`); a delivery path: `lib/notify.sh` (`NTFY_URL` built in; `NOTIFY_CMD` gets `$1` + `HARNESS_NOTIFY_*`) | `tests/stub-curl.sh` records each call as a block in `$STUB_DIR/curl.log` (`STUB_CURL_FAIL=1` → exit 22); the request shape is `tests/fixtures/ntfy-publish.txt` (from docs.ntfy.sh); `curl_with`/`curl_body` in `tests/run.sh` |
 | a new failure signal from the CLI | `metrics.mjs environmental()`; capture the real transcript lines as a fixture | stub replays the fixture |
 
 Rules of thumb: keep the driver the only writer of refs and merges; keep agents' write surface to code, the run
@@ -342,12 +347,12 @@ harness debrief [--dry-run]:
   DEBRIEF SESSION (DEBRIEF_MODEL=sonnet, 40 turns, $3, SESSION_TIMEOUT; prompt on stdin; --permission-mode dontAsk,
      --allowedTools ALLOW, --disallowedTools DENY; --add-dir ledger, queue/, each run's state dir, worktree and project)
   refused by a usage limit → LIMIT_UNTIL updated; died at startup, not "success", no text → failed (no window):
-     exit 1, one line to NOTIFY_CMD, last-debrief untouched: the next one covers these runs
+     exit 1, one notification line, last-debrief untouched: the next one covers these runs
   git status + refs of the ledger, worktrees and projects: before vs after → a warning section in the note
   "CONTINUE: <run> :: <brief>" lines → checked → harness queue add --continue <run> --keep-attempts --brief "Suggested by
      the debrief …" (or "Not queued: why")
   ─► ledger/debrief.md (overwritten) · last-debrief · ledger/debrief.html (lib/page.mjs: a card per run from its
-     summary.json and how it stands now, then the note, escaped; committed with the note) · NOTIFY_CMD: 3 lines + the
+     summary.json and how it stands now, then the note, escaped; committed with the note) · notify (title `harness debrief`, high when Needs Michael has anything): 3 lines + the
      note's path · DEBRIEF_PAGE_CMD "$page" (optional: copy it somewhere a phone can open it)
   commit (LEDGER_COMMIT=1) only if the harness checkout is on MAIN_BRANCH with no rebase/merge/cherry-pick going, only
      that file; a failed commit is unstaged again ("written but not committed" in runner.log)
