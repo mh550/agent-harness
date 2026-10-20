@@ -1,0 +1,243 @@
+{
+  "run": "portfolio_site-2026-10-20",
+  "branch": "harness/portfolio_site-2026-10-20",
+  "features": [
+    {
+      "id": "VC1-01",
+      "milestone": "VC1",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The three LiveKit packages are installed at exact pins and the VC1 plan quotes the token API from the installed types.",
+      "steps": [
+        "package.json lists livekit-client, @livekit/components-react and livekit-server-sdk under dependencies at exact versions (no ^ or ~; the latest of each as of the session, checked with `npm view <pkg> version`), package-lock.json is updated, `npm ci` is clean, and @livekit/components-styles is absent (the plan says why it is not needed: the panels are Tailwind, RoomAudioRenderer renders no visible UI).",
+        "docs/specs/2026-10-18-portfolio-v2.md Decisions gains `D41 *default*` naming the three packages with their pinned versions and the reason (voice-concierge page spec §3, approved by Michael 10-19).",
+        "docs/plans/2026-10-20-VC1-token-route.md exists and quotes, from node_modules/livekit-server-sdk/dist/AccessToken.d.ts and node_modules/@livekit/protocol/dist/gen/livekit_room_pb.d.ts, the signatures it relies on: AccessToken constructor and options (identity, ttl), addGrant/VideoGrant fields, the roomConfig setter, toJwt; RoomConfiguration (agents, emptyTimeout) and RoomAgentDispatch (agentName, metadata). It pastes the decoded payload of one token minted in a 10-line node script with a throwaway key and secret, so the claim keys (sub, video.room, roomConfig.agents[0].agentName, exp, iat/nbf) are known, not guessed.",
+        "The plan fixes the route's behaviour table: POST JSON {visitor_id}; 503 {\"offline\":true} when any of LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET is missing or LIVEKIT_URL does not start with wss://; 400 on a non-UUID-v4 id or an unreadable body; 200 {url, token} only; room `concierge-<12 hex>`; identity `visitor-<id>`; ttl 600 s; grants roomJoin, canPublish, canSubscribe, canPublishData; dispatch metadata {visitor_id, channel_hint:'web'}; emptyTimeout 30; `runtime = 'nodejs'`, `dynamic = 'force-dynamic'`; env read per request. It lists the spec §5 tests and the content-guard-safe way to set a fake secret in a test (`'x'.repeat(32)`, never a quoted literal of 12+ characters after `secret =`).",
+        ".harness/check.sh is green after the install (lint, jest and `next build` all pass with the new packages present)."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC1-02",
+      "milestone": "VC1",
+      "kind": "build",
+      "model": "opus",
+      "description": "POST /api/concierge/token answers 503 offline without env, 400 on a bad visitor id, and otherwise a 10-minute LiveKit token that dispatches agent `concierge` with the visitor metadata.",
+      "steps": [
+        "src/__tests__/app/concierge-token-route.test.ts (`@jest-environment node`) was written before the route: with none of the three LIVEKIT_* env vars set, POST with a valid UUID v4 returns status 503 and body exactly {\"offline\":true}; with only two of the three set, also 503.",
+        "With the three env vars set in the test (url wss://example.livekit.cloud, a fake key, secret built as 'x'.repeat(32)), a visitor_id of 'not-a-uuid', a UUID v1, a 37-character string, a missing body and a non-JSON body each return 400 with a JSON error body and no `token` key.",
+        "With env and a valid v4 id: status 200, JSON with exactly the keys url and token; url equals LIVEKIT_URL; decoding the JWT payload in the test (base64url of the second segment): sub is `visitor-<id>`, video.room matches /^concierge-[0-9a-f]{12}$/, video.roomJoin is true, exp - iat (or nbf) is 600, roomConfig.agents[0].agentName is 'concierge', JSON.parse(roomConfig.agents[0].metadata) deep-equals {visitor_id: <id>, channel_hint: 'web'}, roomConfig.emptyTimeout is 30; two calls yield two different room names; the response text contains neither the fake key nor the secret. The real livekit-server-sdk signs the token (no network); nothing is mocked in this file.",
+        "src/lib/concierge/visitorId.ts exports isUuidV4(s: unknown): boolean (lower- or upper-case v4 accepted; v1, empty, undefined, a 37-char string rejected) with its own tests in src/__tests__/lib/concierge-visitor-id.test.ts; the route imports it.",
+        "src/app/api/concierge/token/route.ts exports runtime = 'nodejs' and dynamic = 'force-dynamic', reads process.env inside the handler, and on the harness dev server `curl -s -X POST http://localhost:$HARNESS_PORT/api/concierge/token -H 'content-type: application/json' -d '{\"visitor_id\":\"123e4567-e89b-42d3-a456-426614174000\"}'` prints {\"offline\":true} with HTTP 503.",
+        ".harness/check.sh is green and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC1-03",
+      "milestone": "VC1",
+      "kind": "review",
+      "model": "opus",
+      "description": "The VC1 diff is reviewed for leaks and simplified, and CLAUDE.md knows the route and the packages.",
+      "steps": [
+        "`git diff <parent of the VC1-01 commit>..HEAD -- . ':!package-lock.json' > $HARNESS_SCRATCH/VC1.diff` and the reviewer reads that file; docs/plans/2026-10-20-VC1-token-route.md gains a § Review table (file · finding · severity · outcome); every Critical or Important finding is fixed with a failing test first, and simplification passes are applied.",
+        "The review table records these checks with their evidence: no LIVEKIT_* value can reach the client (`grep -rn LIVEKIT src/components src/app --include=*.tsx` is empty and `grep -rl LIVEKIT_API .next-check/static` is empty after a build); error bodies carry no stack, env names or secret; identity and room name derive only from the validated id and server randomness; a visitor_id longer than 36 characters is rejected before any SDK call.",
+        "`npx jest src/__tests__/lib/content-guard.test.ts` is green on the tree, including the route test's fake credentials.",
+        "CLAUDE.md: the Routes table gains `/api/concierge/token` (503 offline without env; a 10-minute token with agent dispatch), the Code rules line names the three LiveKit packages as approved (D41), and the test and suite counts match `npx jest --silent 2>&1 | tail -5`.",
+        ".harness/check.sh is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC2-01",
+      "milestone": "VC2",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The /talk plan fixes the component tree, the session state machine, the Jest mocks and every LiveKit call, quoted from the installed types.",
+      "after": [
+        "VC1"
+      ],
+      "steps": [
+        "docs/plans/2026-10-20-VC2-talk-page.md exists with: a file table (src/app/talk/page.tsx, src/components/talk/TalkSession.tsx, MemoryPanel, LatencyPanel, Transcript, ForgetMeButton, src/lib/concierge/{contract,latency,visitorId}.ts, src/lib/data/concierge.ts, src/__mocks__/livekit-client.ts, src/__mocks__/livekit-components-react.tsx, the tests), the session state machine (idle → connecting → waiting for agent → live → ended; offline from a 503, a fetch failure or the 10 s timeout; mic-blocked keeps the session), and the layout at 390 and 1280 (order: header and Connect, transcript with the text box, memory panel, latency panel, Forget me, privacy note; what is above 844 px at 390).",
+        "The plan quotes, from node_modules/livekit-client/dist/src/**/*.d.ts and node_modules/@livekit/components-react/dist/index.d.ts, the exact signatures it will call: Room constructor and connect(url, token, opts?), disconnect, registerTextStreamHandler/unregisterTextStreamHandler with TextStreamHandler and TextStreamReader.readAll and reader.info.attributes, LocalParticipant.sendText(text, {topic}), performRpc(PerformRpcParams: destinationIdentity, method, payload, responseTimeout), setMicrophoneEnabled, RoomEvent.ParticipantConnected / Disconnected, Participant.kind and ParticipantKind.AGENT, room.remoteParticipants, room.startAudio and canPlaybackAudio, and the components-react exports it uses (RoomContext, RoomAudioRenderer, any hook). It states that a second registerTextStreamHandler on the same topic throws, so the page never also mounts useChat/useTranscriptions for lk.chat or lk.transcription, and names the lk.transcription attributes it reads (lk.segment_id, lk.transcription_final, lk.transcribed_track_id).",
+        "The plan fixes the Jest approach: jest.config.ts moduleNameMapper entries for `^livekit-client$` and `^@livekit/components-react$`; the mock Room's surface (on/off/emit, state, remoteParticipants Map, localParticipant with jest.fn sendText / performRpc / setMicrophoneEnabled, registered-topic map, a test helper that pushes a text body to a registered topic and one that adds an agent participant); fake timers for the 10 s timeout; global.fetch mocking; and the rule that no test opens a connection.",
+        "The plan lists the copy that goes in src/lib/data/concierge.ts in brand voice (first person, plain): page title and intro, the exact offline sentence 'The concierge is offline right now', button labels (Connect, Leave, Send, Forget me, Erase, Cancel), the six privacy-note points from spec W2, the latency labels, and the empty states.",
+        "The plan names the defaults to record in the v2 spec when built: D42 (the token test uses the real SDK with fake env and decodes the JWT; livekit-client and components-react are mocked in Jest), D43 (/talk keeps the site chrome, is indexable and in the sitemap, and stays off the Navbar), the visitor id read at Connect time rather than in a mount effect, and no @livekit/components-styles.",
+        ".harness/check.sh is green (no code change is expected in this feature)."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC2-02",
+      "milestone": "VC2",
+      "kind": "build",
+      "model": "opus",
+      "description": "The contract parsers, latency statistics, visitor id and page copy work without LiveKit and survive bad input.",
+      "steps": [
+        "src/lib/concierge/contract.ts: parseMemory(text) and parseMetrics(text) return typed objects for the fixtures in src/__tests__/fixtures/concierge.ts (a §4 memory body with 3 facts across voice and text channels, a null name and a summary; a metrics body with every field set; one with every nullable field null) and return null, never throw, for non-JSON, a body over 15 KiB, a missing facts array, a fact without id or slot, or a non-integer turn; tests in src/__tests__/lib/concierge-contract.test.ts.",
+        "src/lib/concierge/latency.ts: summarise(turns) gives, per numeric field, the last value and the running median ignoring nulls (median of [120, 80, 200] is 120; of [120, 80] is 100; of all nulls is null), and cachedShare(turn) is cached_tokens / prompt_tokens rounded to 2 decimals, null when either is null or prompt_tokens is 0; tests.",
+        "src/lib/concierge/visitorId.ts gains getOrCreateVisitorId(storage?: Pick<Storage,'getItem'|'setItem'>): returns the stored v4 under key `concierge.visitor_id`, replaces a malformed stored value, creates and stores a new one when absent, and returns a fresh valid id without throwing when getItem or setItem throw or storage is undefined; newUuidV4() uses crypto.randomUUID with a getRandomValues fallback and always passes isUuidV4; tests cover persistence across two calls, the malformed case and the throwing storage.",
+        "src/lib/data/concierge.ts exports talkPage (title, intro, offlineMessage exactly 'The concierge is offline right now', deepDiveHref '/projects/voice-concierge', labels) and privacyNote: string[] with six entries that cover, in order: what is stored (facts, visit summary, transcript events), where (Michael's server), how long (30 days after the last visit), that the id is this browser and not a login, that Forget me erases everything about you on Michael's server while anonymous timing numbers with no text or id are kept, and that LiveKit's observability keeps the transcript and timing traces but no audio for 30 days and Forget me cannot erase those; exported from src/lib/data/index.ts; a test asserts each of the six by keyword and that no entry contains 'http', '.net' or a digit other than 30.",
+        ".harness/check.sh is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC2-03",
+      "milestone": "VC2",
+      "kind": "build",
+      "model": "opus",
+      "description": "The memory, latency and transcript panels and the Forget me button render from fixture JSON.",
+      "steps": [
+        "src/components/talk/MemoryPanel.tsx renders a parsed memory: the name or 'a new visitor', the visit count, one row per fact with slot, value, channel, source, learned_at formatted as a local date and time, and confidence, the summary when present, and 'Nothing remembered yet' when facts is empty; tests in src/__tests__/components/talk/MemoryPanel.test.tsx use the VC2-02 fixtures and the empty case.",
+        "src/components/talk/LatencyPanel.tsx renders the last turn's total_ms, eou_ms, stt_ms, llm_ttft_ms, tts_ttfb_ms and memory_on_turn_path_ms with the running median of each from summarise(), the cached share as a percentage, preload_ms once, extraction_ms when present and a 'compacted' flag; a null renders as an en dash and never as 'NaN' or 'null'; tests with the three fixtures.",
+        "src/components/talk/Transcript.tsx renders lines {who: 'visitor' | 'agent', text, final} oldest first inside an aria-live='polite' region, with a non-final line visibly marked; test.",
+        "src/components/talk/ForgetMeButton.tsx: the first click shows a confirm step ('Erase everything the concierge remembers about you?' with Erase and Cancel); Erase calls the onForget prop exactly once; Cancel returns to the single button; the control is disabled while busy; tests with userEvent.",
+        "Every button and link in these components carries focusRing, the panels' headings are h2, the components are Server-Component-safe except ForgetMeButton (the one with state) and the Transcript (if it scrolls), and `npx jest src/__tests__/components/talk` plus .harness/check.sh are green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC2-04",
+      "milestone": "VC2",
+      "kind": "build",
+      "model": "opus",
+      "description": "/talk connects through the token route, shows the offline state on a 503 or when no agent joins in 10 s, and feeds the memory and latency panels from the text streams.",
+      "steps": [
+        "src/app/talk/page.tsx is a Server Component with metadata title 'Talk to my concierge — Michael Herron' and description from talkPage; it renders one h1, the intro, <TalkSession /> and the privacy note from src/lib/data/concierge.ts; `/talk` is appended to .harness/smoke-routes.txt and added to the route list in src/app/sitemap.ts (sitemap-robots.test.ts route list and both counts updated to 9); a11y-new-pages.test.tsx gains '/talk'.",
+        "src/components/talk/TalkSession.tsx ('use client'): Connect reads the visitor id with getOrCreateVisitorId(window.localStorage) inside the click handler (no state set from a mount effect) and POSTs it to /api/concierge/token; a 503, a non-OK status or a rejected fetch shows exactly 'The concierge is offline right now' and a link to /projects/voice-concierge; src/__tests__/components/talk/TalkSession.test.tsx mocks global.fetch and proves the 503 and the rejection, and that the id sent is the one stored in localStorage on a second Connect.",
+        "On a 200 the component creates one Room and registers handlers for concierge.memory, concierge.metrics and lk.transcription before room.connect(url, token); on unmount or Leave it unregisters all three and disconnects; the test asserts with the mock that every registerTextStreamHandler call precedes connect, and that unmount yields three unregisterTextStreamHandler calls and one disconnect (so a StrictMode double mount leaves one set).",
+        "If no participant with kind === ParticipantKind.AGENT is already in room.remoteParticipants or joins within 10 s of connect resolving, the room is disconnected and the offline state shows; a fake-timer test proves the timeout at 10 000 ms, and another proves that an agent joining at 3 000 ms cancels it and the state is live.",
+        "A §4 memory body pushed to concierge.memory renders in MemoryPanel and a metrics body renders in LatencyPanel; a malformed body (bad JSON) changes nothing and the test asserts console.error was not called.",
+        "jest.config.ts maps livekit-client and @livekit/components-react to the mocks in src/__mocks__/; no Server Component imports livekit-client (`grep -rl livekit-client src/app` is empty); the server render of /talk and the client render match (no hydration warning in the dev server log after loading /talk).",
+        "`node .harness/smoke.mjs` passes /talk at 1280 and 390; `curl -s -o /dev/null -w '%{http_code}' http://localhost:$HARNESS_PORT/talk` prints 200; .harness/check.sh is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC2-05",
+      "milestone": "VC2",
+      "kind": "build",
+      "model": "opus",
+      "description": "In a live session the visitor can speak, type, read the transcript, hear the agent and erase their memory with Forget me.",
+      "steps": [
+        "A microphone toggle calls room.localParticipant.setMicrophoneEnabled(true | false); a rejected promise (a NotAllowedError) shows 'Microphone blocked. You can still type.' and keeps the session live; tests with the mock cover both.",
+        "The text box sends on Enter or the Send button through room.localParticipant.sendText(text, { topic: 'lk.chat' }), appends the line to the transcript as the visitor's, clears the box, and ignores whitespace-only input; test.",
+        "lk.transcription streams append to the transcript: the sender identity decides visitor versus agent, lk.segment_id updates an existing line instead of adding one, lk.transcription_final marks it final; a test pushes two chunks of one segment and sees exactly one line with the final text.",
+        "Forget me, once confirmed, calls performRpc({ destinationIdentity: <the agent's identity>, method: 'concierge.forget_me', payload: '', responseTimeout: 10000 }) exactly once; on a response parsing to {ok: true} the memory panel clears and a 'Forgotten' status shows; on a rejected RPC the button re-enables and an error line shows; tests for both.",
+        "Agent audio plays through RoomAudioRenderer inside a RoomContext.Provider for the connected room; room.startAudio() is called when canPlaybackAudio is false after connecting; Leave disconnects and returns to the idle state with the panels cleared; any animation added honours prefers-reduced-motion (none is required).",
+        ".harness/check.sh is green and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC2-06",
+      "milestone": "VC2",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see on /talk at 390 and 1280, including the offline state he will get until the env is set.",
+      "steps": [
+        "Against the harness dev server (no LiveKit env), a Playwright script using $HARNESS_PW/node_modules/playwright saves docs/screenshots/v2/VC2-talk-390.png and VC2-talk-1280.png (idle, full page) and VC2-talk-offline-390.png (after clicking Connect: the offline sentence and the deep-dive link visible), each under 400 KB.",
+        "Measured at 390×844: the h1 and the Connect button both end above 844 px (boundingBox y + height written in the plan), document.documentElement.scrollWidth is 390 in the idle and offline states, and 0 console errors and 0 page errors were logged in either state.",
+        "Keyboard: Tab from the top of /talk reaches Skip to content, then the Navbar links, then Connect; each focused control shows the accent outline (computed outline-color on focus-visible is rgb(0, 212, 255)).",
+        "docs/plans/2026-10-20-VC2-talk-page.md § What Michael will see has one row per screenshot: page and state · what is on screen · anything that looks wrong; any layout bug found is fixed in this feature with a test first and the screenshot retaken.",
+        ".harness/check.sh is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC2-07",
+      "milestone": "VC2",
+      "kind": "review",
+      "model": "opus",
+      "description": "The VC2 diff is reviewed and simplified, and Michael has a written morning checklist for the first live call.",
+      "steps": [
+        "`git diff <parent of the VC2-01 commit>..HEAD > $HARNESS_SCRATCH/VC2.diff`; the reviewer reads that file with the vercel-react-best-practices and web-design-guidelines skills; docs/plans/2026-10-20-VC2-talk-page.md gains a § Review table (file · finding · severity · outcome); every Critical or Important finding is fixed with a failing test first; simplification passes are applied (one Room per connect, handlers registered in one place, no duplicated session state, no dead props).",
+        "The table records, with evidence: a StrictMode double mount leaves one set of handlers and one timer; every timer, handler and Room is released on unmount and on Leave; no Server Component imports livekit-client or @livekit/components-react; the offline path renders with the dev server's console clean; `grep -rniE 'ts\\.net|100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\.|ntfy' src/components/talk src/lib/concierge src/lib/data/concierge.ts` is empty.",
+        "docs/review-guide.md gains a 'VC1–VC3: Voice Concierge' section: merge order VC1 → VC2 → VC3, what to look at on the preview at 390, and 'Morning: the live check' for Michael (the harness never runs it, build-only policy): add LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET in the Vercel project settings for Preview and Production, redeploy the preview, open /talk, Connect, say your name and what you are working on, Leave, Connect again and expect the greeting by name, type a line and see it answered, press Forget me and reconnect as a stranger; what the latency panel should show (memory_on_turn_path_ms near 0, a cached share above 0 after the first turn); how to undo (remove the three env vars and redeploy: the page is offline again; or the worker's kill switch, per the agent repo's MORNING.md).",
+        "CLAUDE.md: the Routes table gains /talk, Components gains src/components/talk/ and src/lib/concierge/ (one line each), Testing names the two LiveKit mocks and the moduleNameMapper entries, and the test and suite counts match `npx jest --silent 2>&1 | tail -5`.",
+        ".harness/check.sh is green and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC3-01",
+      "milestone": "VC3",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The deep-dive plan and the evidence note every sentence of the deep-dive traces to.",
+      "after": [
+        "VC1"
+      ],
+      "steps": [
+        "docs/notes/evidence-voice-concierge.md exists: the facts the page may state, each with its section number in /home/mh550/projects/voice-concierge/docs/spec.md (read-only; quote its 'Status' header line with the revision time), covering the problem, the six memory practices (preload at connect, background extraction with delta merge, heard-text-only, write gate, invalidate vs delete, one thread per visitor), the Agents 2.0 mapping (thread, lane state, journal, channels, version fence vs lease, TTL and returning visits), providers (STT/TTS via LiveKit Inference, LLM via OpenRouter), hosting (worker on Michael's home box, outbound only, SQLite), the privacy facts, and the 10-minute and 30-day limits. It says plainly that no latency numbers are measured yet and that the agent runs on livekit-agents 1.8 and only maps onto 2.0.",
+        "docs/plans/2026-10-20-VC3-voice-concierge-deep-dive.md drafts the whole projects.ts entry: slug voice-concierge, title (Latin glyphs only, under 70 characters), company, categories ['ai','systems'], techStack, featured true, order from INBOX.md § Answers or the D44 default (5, shifting ghl-jobtread-integration and later by one), no metrics, detail.problem/approach/challenges/outcome in brand voice with the outcome honest about 'built overnight for a demo on 10-20, numbers to be measured', caseStudy (role, timeframe 'Oct 2026', the five method lines, six decisions each with chose/over/because/cost, lessons [], no iterations, links: /talk as kind 'demo' first and https://github.com/mh550/voice-concierge as 'repo' only if `gh repo view mh550/voice-concierge --json visibility` prints PUBLIC at plan time, builtWith crediting the spec and design to Michael and the code to Claude Code agents under his harness).",
+        "The plan draws the diagram as a node list with arrows and labels (visitor's browser → /api/concierge/token → LiveKit Cloud room ↔ agent worker on the home box ↔ SQLite thread store; audio and text streams between browser and room; dispatch from room to worker), its aria-label sentence and caption, the /card link placement (a full-width secondary button 'Talk to my concierge' under the LinkedIn/Email/GitHub row), the Navbar decision (unchanged), and the tests that change: data.test.ts (10 projects, the order map), ProjectDiagram.test.tsx KEYS, a11y-new-pages, opengraph-image (every title and shortDescription glyph in the bundled font), card.test.tsx.",
+        "Every digit in the drafted copy appears in docs/notes/evidence-voice-concierge.md; the draft contains no env file path, kill-switch file name, hostname or key from the agent spec, and no 'TODO' or '[X]'.",
+        ".harness/check.sh is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC3-02",
+      "milestone": "VC3",
+      "kind": "build",
+      "model": "opus",
+      "description": "/projects/voice-concierge tells the memory design as a case study with six decisions, no metrics, and a link to /talk.",
+      "steps": [
+        "src/lib/data/projects.ts gains the voice-concierge entry from the plan; src/__tests__/lib/data.test.ts expects 10 projects and the new order map; src/__tests__/lib/case-study-voice-concierge.test.ts asserts: metrics is undefined, the six decision titles name the six practices (preload, extraction/delta, heard, gate, invalidate, thread), caseStudy.links has '/talk' with kind 'demo' and the GitHub link only when the plan recorded PUBLIC, lessons is [] and iterations is undefined, and every sentence of the entry containing a digit appears in docs/notes/evidence-voice-concierge.md.",
+        "docs/notes/voice-concierge-todo.md tells Michael where the measured numbers go (the `metrics` array on the voice-concierge entry, four at most, from the agent repo's scripts/latency_report.py p50/p95 and cached share), that each must also be written into docs/notes/evidence-voice-concierge.md, and that the opengraph-image test must stay green (Latin glyphs only).",
+        "`npx jest src/__tests__/app/opengraph-image.test.ts src/__tests__/app/project-metadata.test.ts src/__tests__/lib/case-study-data.test.ts src/__tests__/lib/claims-on-linked-page.test.ts src/__tests__/pages/card.test.tsx src/__tests__/pages/home.test.tsx src/__tests__/app/project-page-unchanged.test.tsx` is green; getTopProjects(3) still returns agent-harness, linear-ai-workflow, home-media-server unless INBOX.md changed the order.",
+        "`curl -s http://localhost:$HARNESS_PORT/projects/voice-concierge` returns 200 and the HTML contains the five method step labels, a Key Decisions section with six entries, Outcome, Links with 'Talk to my concierge' and the How it was built note; a11y-new-pages.test.tsx gains '/projects/voice-concierge'.",
+        "docs/specs/2026-10-18-portfolio-v2.md gains `D44 *default*` recording the order choice and its effect on /card and the home Recent work (none with the default), unless INBOX.md answered, in which case D44 records the answer.",
+        ".harness/check.sh is green and `node .harness/smoke.mjs` passes every route, including the new slug it discovers from /projects."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC3-03",
+      "milestone": "VC3",
+      "kind": "build",
+      "model": "opus",
+      "description": "The voice-concierge diagram renders on the deep-dive and /card links to Talk to my concierge; the Navbar stays as it is.",
+      "steps": [
+        "DiagramKey gains 'voice-concierge'; src/components/projects/diagrams/index.tsx gains the component with the shared Node/Arrow/Panel primitives (panels: the visitor's browser, LiveKit Cloud, Michael's home box; nodes: /talk page, /api/concierge/token, the room, the agent worker, the SQLite thread store; labelled arrows for token, audio and text streams, dispatch, facts and journal; stacked at 390 and side by side from md), plus its LABELS sentence and CAPTIONS line; the entry sets detail.architectureDiagram: 'voice-concierge'; ProjectDiagram.test.tsx KEYS gains it and a describe asserts the diagram text names browser, token, LiveKit, worker and SQLite and that no opacity class wraps muted text.",
+        "src/app/card/page.tsx gains a full-width secondary button 'Talk to my concierge' linking to /talk directly under the LinkedIn / Email / GitHub row; card.test.tsx asserts the link's href and that there are still exactly 3 /projects/ links and 2 target=_blank links; the v2 spec gains `D45 *default*` for the placement.",
+        "Navbar.tsx is unchanged (seven links; Navbar.test.tsx green) and the v2 spec gains `D43 *default*`: /talk stays off the Navbar and is reached from /card, the deep-dive and the sitemap; adding it later is one line in the links array plus the test.",
+        "sitemap() lists /talk and /projects/voice-concierge and robots() does not disallow either (sitemap-robots.test.ts green); `grep -n talk src/app/sitemap.ts .harness/smoke-routes.txt` shows both entries.",
+        ".harness/check.sh is green and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC3-04",
+      "milestone": "VC3",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see on the deep-dive at 390 and 1280 and on the card with its new link.",
+      "steps": [
+        "A Playwright script using $HARNESS_PW/node_modules/playwright against the harness dev server saves docs/screenshots/v2/VC3-voice-concierge-390.png, VC3-voice-concierge-1280.png and VC3-card-390.png (full page), each under 400 KB.",
+        "Measured: on /projects/voice-concierge at 390 document.documentElement.scrollWidth is 390 and the diagram's panels are stacked (each panel's boundingBox width above 300 px); at 1280 they sit side by side; on /card at 390×844 the h1 and Save contact end above 844 px with the new button present (y + height written in the plan); 0 console errors and 0 page errors on both pages at both widths.",
+        "`node .harness/print-check.mjs http://localhost:$HARNESS_PORT /projects/voice-concierge $HARNESS_SCRATCH/print-voice-concierge.png` exits 0.",
+        "docs/plans/2026-10-20-VC3-voice-concierge-deep-dive.md § What Michael will see has one row per screenshot: page · what is on screen · anything that looks wrong; a layout bug found here is fixed with a test first and the screenshot retaken.",
+        ".harness/check.sh is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC3-05",
+      "milestone": "VC3",
+      "kind": "review",
+      "model": "opus",
+      "description": "The VC3 diff is fact-checked, reviewed and simplified, and the hand-off docs cover the run.",
+      "steps": [
+        "`git diff <parent of the VC3-01 commit>..HEAD > $HARNESS_SCRATCH/VC3.diff`; the reviewer reads that file; the VC3 plan gains a § Fact-check table with one row per claim on the deep-dive (claim · source section in docs/notes/evidence-voice-concierge.md or the agent spec · holds?) and anything unsupported is cut or softened (write less, not more); and a § Review table (file · finding · severity · outcome) with every Critical or Important finding fixed with a failing test first and simplification passes applied.",
+        "A web-design-guidelines pass over /projects/voice-concierge and the changed /card is recorded in the plan: heading order (h1 then h2, h3 only under Method and Key Decisions), focus rings on every link and button, no vague link text, diagram muted text at AA; fixes test first.",
+        "docs/review-guide.md VC3 entry (what changed, what to look at on the preview at 390, that the numbers arrive via docs/notes/voice-concierge-todo.md); docs/asset-checklist.md gains a Voice Concierge section (a 20 s screen recording of a live /talk session showing the memory panel updating, destination public/projects/voice-concierge/, the media entry to add); CLAUDE.md Routes table gains /projects/voice-concierge's diagram key and Data Layer names concierge.ts; README gains one line on /talk; the test and suite counts match `npx jest --silent 2>&1 | tail -5`.",
+        "`npx jest src/__tests__/lib/content-guard.test.ts src/__tests__/lib/claims-on-linked-page.test.ts src/__tests__/app/opengraph-image.test.ts` is green.",
+        ".harness/check.sh is green and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    }
+  ]
+}
