@@ -1,0 +1,27 @@
+- 2026-10-20 13:20 · feature list written: 0/13 passing
+- 2026-10-20 13:27 · VC4-01 · claude-opus-5-5 · passes=true · 7 min · 1/13 passing
+- 2026-10-20 13:35 · VC4-02 · claude-opus-5-5 · passes=true · 7 min · 2/13 passing
+- 2026-10-20 13:45 · VC4-03 · claude-opus-5-5 · passes=true · 10 min · 3/13 passing
+- 2026-10-20 13:52 · VC4-04 · claude-opus-5-5 · passes=true · 6 min · 4/13 passing
+- 2026-10-20 13:57 · VC4-05 · claude-opus-5-5 · passes=true · 4 min · 5/13 passing
+- 2026-10-20 14:06 · VC4-06 · claude-opus-5-5 · passes=true · 9 min · 6/13 passing
+- 2026-10-20 14:06 · merged main into harness/portfolio_site-2026-10-20-vc4
+- 2026-10-20 14:09 · VC4 verified and tagged run/portfolio_site-2026-10-20-vc4/VC4
+- 2026-10-20 14:09 · VC4 proposed for merging · https://github.com/mh550/portfolio_site/pull/19
+- 2026-10-20 14:23 · VC5-01 · claude-opus-5-5 · passes=true · 14 min · 7/13 passing
+- 2026-10-20 14:34 · VC5-02 · claude-opus-5-5 · passes=true · 10 min · 8/13 passing
+- 2026-10-20 14:45 · VC5-03 · claude-opus-5-5 · passes=true · 9 min · 9/13 passing
+- 2026-10-20 14:55 · VC5-04 · claude-opus-5-5 · passes=true · 10 min · 10/13 passing
+- 2026-10-20 15:07 · VC5-05 · claude-opus-5-5 · passes=true · 11 min · 11/13 passing
+- 2026-10-20 15:20 · VC5-06 · claude-opus-5-5 · passes=true · 13 min · 12/13 passing
+- 2026-10-20 15:33 · VC5-07 · claude-opus-5-5 · passes=true · 12 min · 13/13 passing
+- 2026-10-20 15:38 · verify VC5: VC5-01 failed the re-check, back in the queue (one more attempt)
+- 2026-10-20 15:38 · verify VC5: VC5-03 failed the re-check, back in the queue (one more attempt)
+- 2026-10-20 15:38 · verify VC5: VC5-04 failed the re-check, back in the queue (one more attempt)
+- 2026-10-20 15:45 · VC5-01 · claude-opus-5-5 · passes=true · 6 min · 11/13 passing
+- 2026-10-20 15:50 · VC5-03 · claude-opus-5-5 · passes=true · 5 min · 12/13 passing
+- 2026-10-20 15:55 · VC5-04 · claude-opus-5-5 · passes=true · 4 min · 13/13 passing
+- 2026-10-20 16:00 · verify VC5: evidence short of the steps (VC5-01 7/8); re-running on opus
+- 2026-10-20 16:16 · verify VC5: evidence still short of the steps (VC5-01 7/8) after opus; not verified (needs Michael)
+- 2026-10-20 16:16 · every feature passes
+- 2026-10-20 16:16 · run ended (done): 13/13 passing · 21 sessions (21 real) · 13 features passed · $38.13 · 3.0 h · by kind: init 1 ($4.58), coding 16 ($28.94), verify 4 ($4.61) · by model: claude-fable-5-1 1 ($4.58), claude-opus-5-5 17 ($32.24), claude-sonnet-5-5 3 ($1.31)

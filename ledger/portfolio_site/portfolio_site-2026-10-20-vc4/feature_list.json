@@ -1,0 +1,216 @@
+{
+  "run": "portfolio_site-2026-10-20-vc4",
+  "branch": "harness/portfolio_site-2026-10-20-vc4",
+  "features": [
+    {
+      "id": "VC4-01",
+      "milestone": "VC4",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The VC4 plan fixes the new project order and its effect on /card and /, the Navbar's eighth link, the voice widget's design and the harness-framed intro wording, and records the decisions.",
+      "steps": [
+        "docs/plans/2026-10-20-VC4-order-widget-nav.md exists with sections Order, Navbar, Voice widget, Intro wording, Tests, What Michael will see (empty table), Review (empty table), Decisions. § Order lists every slug with its old and new `order` (agent-harness 1, voice-concierge 2, ghl-jobtread-integration 3, ringcentral-jobtread-integration 4, home-media-server 5, linear-ai-workflow 6, hit-list 7, paint-estimator 8, mirrored-google-calendars 9, cherished 10) and states that getTopProjects(3), so /card's Selected work and the home page's Recent work, becomes agent-harness, voice-concierge, ghl-jobtread-integration.",
+        "§ Voice widget specifies: file src/components/VoiceWidget.tsx, rendered by SiteChrome on every chrome page except pathname '/talk' (and never on /card*), an `<a href=\"/talk\">` via next/link with aria-label 'Talk to my voice concierge', an inline SVG microphone (aria-hidden, no new dependency), fixed bottom right with `bottom: max(1rem, env(safe-area-inset-bottom))`, at least 44×44 px, z-index below the Navbar's z-50, the shared focusRing class, `print:hidden`, and a pulse only under `motion-safe:` (none when prefers-reduced-motion is reduce); and how it keeps clear of the Footer's links at 390 (the chosen default, e.g. extra bottom padding on the Footer below sm, with the exact classes).",
+        "§ Intro wording quotes the new talkPage.intro first sentence word for word ('A voice agent I designed on LiveKit and built with my agent harness: specs in, verified milestones out. It remembers you between visits.' or a variant with no digit), how the words 'my agent harness' become a link to /projects/agent-harness on /talk (the data shape in src/lib/data/concierge.ts and the render in src/app/talk/page.tsx), and the deep-dive's replacement `builtWith` sentence, which names the harness, links /projects/agent-harness (or says the harness case study is linked from the Links section if builtWith stays a plain string) and keeps the words 'Claude Code agents' (brand.md § Voice: the harness ran the build sessions; no claim of hand-written code).",
+        "§ Decisions: docs/specs/2026-10-19-voice-concierge-page.md gains `## 7. Decisions` (numbering starts at D59, above every D in the v2 and booth specs, never renumbered) with D59 project order (supersedes D47 and the D44 order), D60 Talk in the Navbar as the eighth link between Projects and Approach (supersedes D44 and D49), D61 the voice widget, D62 the intro wording (supersedes the VC2 copy); the v2 spec's D44 and D49 each gain one trailing line 'Superseded by D60 (VC4).'",
+        "§ Tests lists every existing test the order and Navbar changes break, by file and test name: src/__tests__/lib/data.test.ts ('carries the D12 order on every project', 'returns the first n featured projects by order', 'returns every featured project, sorted by order…'), src/__tests__/lib/case-study-voice-concierge.test.ts (expects order 5), src/__tests__/components/Navbar.test.tsx (the seven-link list and order), plus the SiteChrome and a11y tests the widget touches; `npx jest --silent 2>&1 | tail -5` still shows 992 tests, 75 suites (no code changed in this feature).",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "VC4-02",
+      "milestone": "VC4",
+      "kind": "build",
+      "model": "opus",
+      "description": "Projects carry the new order (voice-concierge second, the two Builder Clarity integrations together) and the Navbar lists Talk as its eighth link between Projects and Approach.",
+      "steps": [
+        "src/lib/data/projects.ts: `order` is 1 agent-harness, 2 voice-concierge, 3 ghl-jobtread-integration, 4 ringcentral-jobtread-integration, 5 home-media-server, 6 linear-ai-workflow, 7 hit-list, 8 paint-estimator, 9 mirrored-google-calendars, 10 cherished; `node -e \"require('ts-node/register'); …\"` is not needed: `npx jest src/__tests__/lib/data.test.ts` proves the map test pins exactly that object, that orders are unique, and that getTopProjects(3) returns ['agent-harness','voice-concierge','ghl-jobtread-integration'].",
+        "src/__tests__/lib/case-study-voice-concierge.test.ts expects order 2; src/__tests__/pages/card.test.tsx and home.test.tsx stay green (they derive from getTopProjects) and each gains one assertion that the second rendered project link is /projects/voice-concierge; the snapshot file src/__tests__/app/__snapshots__/project-page-unchanged.test.tsx.snap is unchanged (`git diff --stat` shows no .snap).",
+        "src/components/Navbar.tsx's links array has eight entries in the order Home, About, Skills, Projects, Talk (/talk), Approach, Experience, Contact; Navbar.test.tsx's two link lists name all eight in that order and the current-page test with usePathname '/talk' marks only Talk (desktop list and mobile menu); `grep -c \"'/talk'\" src/components/Navbar.tsx` prints 1.",
+        "docs/specs/2026-10-18-portfolio-v2.md no longer says the Navbar holds seven links as a current fact: every 'seven' wording in D44 and D49 is followed by 'Superseded by D60 (VC4)', and the Routes table in CLAUDE.md says /talk is on the Navbar (D60) instead of 'off the Navbar'; the plan's § Order and § Navbar match the code.",
+        "docs/review-guide.md's VC3 bullet 'order 5 … top 3, /card and home unchanged' and its 'Question open: is order 5 right' line are updated to say the order changed in VC4 (D59), with the new top 3.",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC4-03",
+      "milestone": "VC4",
+      "kind": "build",
+      "model": "opus",
+      "description": "A floating microphone link to /talk sits bottom right on every chrome page except /talk and /card*, is keyboard-focusable with the accent outline, and does not pulse under reduced motion.",
+      "steps": [
+        "src/components/VoiceWidget.tsx renders one next/link `<a href=\"/talk\">` with aria-label 'Talk to my voice concierge', an inline `<svg aria-hidden=\"true\">` microphone, classes containing `fixed`, `right-4`, `print:hidden`, the focusRing string, a min size of 44×44 (`min-h-11 min-w-11` or `h-14 w-14`), a bottom offset using `env(safe-area-inset-bottom)` and a pulse element whose animation class is prefixed `motion-safe:`; src/__tests__/components/VoiceWidget.test.tsx asserts the href, the accessible name, that the svg is aria-hidden, that the class list contains `print:hidden`, `motion-safe:animate-` and every focusRing token, and that no class begins with `animate-` without the `motion-safe:` prefix.",
+        "src/components/SiteChrome.tsx renders <VoiceWidget /> after the Footer when the pathname is not '/talk' and is not a /card path; src/__tests__/components/SiteChrome.test.tsx gains tests with usePathname mocked to '/', '/about' and '/projects/agent-harness' (link 'Talk to my voice concierge' present), '/talk' (absent, Navbar present), '/card' and '/card/qr' (absent).",
+        "src/__tests__/pages/a11y-new-pages.test.tsx (or the page tests) keeps the heading order and landmark checks green with the widget mounted: the widget adds no landmark and no heading (`screen.queryAllByRole('navigation')` count unchanged).",
+        "The Footer keeps its links clear of the widget at 390 by the plan's default (e.g. `pb-24 sm:pb-8` on the footer); Footer.test.tsx asserts the class if one was added; the smoke run at 390 reports no horizontal scroll on /, /about and /projects.",
+        "The plan's § Voice widget matches the code (classes, aria-label, the pathname rule) and the voice-concierge spec's D61 names the component and its exclusions.",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC4-04",
+      "milestone": "VC4",
+      "kind": "build",
+      "model": "opus",
+      "description": "/talk's intro and the deep-dive credit line use the harness-engineering framing and link the agent-harness case study, with no claim of hand-written code.",
+      "steps": [
+        "src/lib/data/concierge.ts: talkPage.intro no longer contains 'Claude Code agents writing much of the code'; its first sentence is the plan's wording (default: 'A voice agent I designed on LiveKit and built with my agent harness: specs in, verified milestones out. It remembers you between visits.') and the data carries the link target /projects/agent-harness for the words 'my agent harness' (the plan's shape, e.g. `intro: [{ before, link: { label, href }, after }, …]` or a `harnessLink` field); `grep -rn 'writing much of the code' src/` is empty.",
+        "src/app/talk/page.tsx renders the first intro sentence with an `<a href=\"/projects/agent-harness\">my agent harness</a>` (next/link, focusRing) inside the paragraph; src/__tests__/pages/talk.test.tsx asserts the link's name and href and that each intro sentence's full text is in the document; src/__tests__/lib/concierge-data.test.ts asserts the intro has no digit and no 'Claude Code agents writing' phrase.",
+        "src/lib/data/projects.ts voice-concierge `builtWith` is the plan's sentence: it names the agent harness, keeps the words 'Claude Code agents' (case-study-voice-concierge.test.ts 'credits Claude Code agents under the harness (D10)' stays green or is updated to the new wording in the same commit) and says the harness ran the build sessions; the Links section already links /talk and the repo and gains `{ label: 'The agent harness that built it', href: '/projects/agent-harness', kind: 'docs' }` (or the plan's kind) so the harness case study is one click away; every sentence of the entry with a digit is still verbatim in docs/notes/evidence-voice-concierge.md (the test 'every sentence with a digit appears verbatim in the evidence brief' is green).",
+        "docs/notes/evidence-voice-concierge.md records the wording change under a dated § VC4 note (source: the VC4 spec, Michael's answers of 2026-10-20); docs/specs/2026-10-19-voice-concierge-page.md D62 quotes the final intro sentence.",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC4-05",
+      "milestone": "VC4",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see at 390 and 1280: the widget on the home page and about page, the new top three on /card, the eight-link menu, and /talk without the widget.",
+      "steps": [
+        "Against the harness dev server a Playwright script using $HARNESS_PW/node_modules/playwright saves, each under 400 KB, docs/screenshots/v2/VC4-home-390.png (viewport 390×844, widget visible bottom right), VC4-home-1280.png (viewport), VC4-about-footer-390.png (scrolled to the bottom: footer links and widget both visible), VC4-card-390.png (full page: Selected work shows agent-harness, voice-concierge, ghl-jobtread-integration in that order), VC4-menu-390.png (hamburger open: eight links with Talk fifth) and VC4-talk-390.png (viewport: the intro with the 'my agent harness' link, no widget).",
+        "Measured at 390×844 on /about scrolled to the bottom: the widget's boundingBox does not intersect the boundingBox of any footer link (GitHub, LinkedIn, Email), and its bottom edge is at or above 844 − 16; document.documentElement.scrollWidth is 390 on /, /about, /projects, /talk and /card; 0 console errors and 0 page errors on each page; the numbers go in the plan's § What Michael will see.",
+        "With `page.emulateMedia({ reducedMotion: 'reduce' })` the widget's pulse element has computed animation-name 'none'; with 'no-preference' it does not; both values recorded in the plan.",
+        "Keyboard on /: Tab from the top reaches Skip to content, the MH logo, the eight Navbar links (Talk fifth) and, after the page's own links and the footer, the widget; the widget's focus-visible outline-color is rgb(0, 212, 255).",
+        "`node .harness/print-check.mjs http://localhost:$HARNESS_PORT / $HARNESS_SCRATCH/VC4-print-home.png` exits 0 and the capture shows no widget (print:hidden).",
+        "docs/plans/2026-10-20-VC4-order-widget-nav.md § What Michael will see has one row per screenshot: page and state · what is on screen · anything that looks wrong; any layout bug found is fixed in this feature with a test first and the screenshot retaken.",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC4-06",
+      "milestone": "VC4",
+      "kind": "review",
+      "model": "opus",
+      "description": "The VC4 diff is reviewed and simplified, and the hand-off docs describe the new order, the Navbar and the widget.",
+      "steps": [
+        "`git diff <parent of the VC4-01 commit>..HEAD > $HARNESS_SCRATCH/VC4.diff`; an Opus reviewer reads that file with the vercel-react-best-practices and web-design-guidelines skills; docs/plans/2026-10-20-VC4-order-widget-nav.md § Review is a table (file · finding · severity · outcome) with at least the widget's accessible name, its z-index against the Navbar and the mobile menu, the Footer clearance, the reduced-motion rule, the Navbar's eight links at 390 (nothing wraps or overflows in the open menu) and the honesty of the intro wording against brand.md § Voice; every Critical or Important finding is fixed with a failing test first; simplification passes are applied (no duplicated pathname logic between SiteChrome and the widget, no inline styles the Tailwind classes can express, no dead props).",
+        "`grep -rniE 'ts\\.net|100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\.|ntfy' src/components/VoiceWidget.tsx src/lib/data/concierge.ts` is empty and the content-guard test is green.",
+        "CLAUDE.md: Navbar line lists the eight links with Talk, Components gains one line for components/VoiceWidget.tsx (where it shows and where not), the /talk Routes row says it is on the Navbar (D60) and has the widget, and the test and suite counts match `npx jest --silent 2>&1 | tail -5`.",
+        "docs/review-guide.md gains a 'VC4: order, Navbar, widget' section: what changed, what to look at on the preview at 390 (the widget on /, the Talk link, /card's three cards, /talk's intro link), the capture names, and how to undo each piece (the order map, one Navbar entry, one SiteChrome line).",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC5-01",
+      "milestone": "VC5",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The VC5 plan fixes the token route's ordered checks and status codes, the origin allowlist, the address hash and room name, the busy states on /talk, the mic timing, the server-only rule, and Michael's staged live check.",
+      "steps": [
+        "docs/plans/2026-10-20-VC5-mic-limits-server-only.md exists with sections Mic timing, Route behaviour (a table in check order: Origin missing or not allowed → 403 {error:'forbidden'}; env missing → 503 {offline:true}; bad body → 400 {error:'bad_request'}; listRooms rejects → 503 {offline:true}; a live room named concierge-<addr10>-* → 429 {error:'busy', reason:'visitor'}; CONCIERGE_MAX_ROOMS (default 2, invalid values fall back to 2) or more live concierge-* rooms → 429 {error:'busy', reason:'site'}; else 200 {url, token} with room concierge-<addr10>-<12 hex>), Origin rules, Address hash, Modules, /talk busy states, server-only, Tests, Live check (Michael), What Michael will see (empty), Review (empty), Decisions.",
+        "§ Origin rules: allowed origins are exactly profile.siteUrl's origin (https://michael-herron.vercel.app), any https host matching the Vercel preview pattern written as a regex in the plan and derived from the real preview host `portfolio-site-git-harness-merg-e67481-mh550s-projects-e64e7e0b.vercel.app` (PR #16's Vercel comment; pattern `^portfolio-site-[a-z0-9-]+-mh550s-projects(-[a-z0-9]+)?\\.vercel\\.app$`), and in development only (process.env.NODE_ENV !== 'production') http://localhost:<any port> and http://127.0.0.1:<any port>; a request with no Origin header is forbidden; the comparison is on the whole origin string parsed with `new URL`, never a substring test.",
+        "§ Address hash: the address is the first comma-separated entry of x-forwarded-for, trimmed, or the literal 'unknown' when the header is absent (so every local tab shares one bucket); addr10 = the first 10 hex characters of HMAC-SHA256(key = LIVEKIT_API_SECRET, message = address); the address and addr10 never appear in any response body, header or console line; the room name is concierge-<addr10>-<randomBytes(6) hex>; a room is 'this address's' when its name starts with `concierge-<addr10>-`.",
+        "§ Modules names: src/lib/concierge/origin.ts (pure `isAllowedOrigin(origin: string | null, opts: { siteUrl: string; dev: boolean }): boolean`), src/lib/concierge/limits.ts (pure `addressOf(headers)`, `addressBucket(address, secret)`, `roomNameFor(bucket)`, `roomsVerdict(rooms: { name: string }[], bucket, max): 'visitor' | 'site' | null`, `maxRooms(env)`), src/lib/concierge/rooms.ts (`import 'server-only'`; `listLiveRooms(env): Promise<{ name: string }[]>` wrapping `new RoomServiceClient(url, apiKey, apiSecret).listRooms()`), and the test strategy: the limit tests live in a new file src/__tests__/app/concierge-token-route-limits.test.ts that `jest.mock('@/lib/concierge/rooms')` (next/jest's SWC output makes jest.spyOn on a module export unreliable), while concierge-token-route.test.ts keeps mocking nothing (D42) and only gains an allowed Origin header plus the 403 cases.",
+        "§ Mic timing: setMicrophoneEnabled(true) moves from after room.connect() into agentArrived; the mic toggle shows only in the live phase (default, recorded as a decision), so nothing asks for the microphone before the agent is there. § /talk busy states: reducer action `{ type: 'busy', reason: 'visitor' | 'site' }` → phase 'busy' with the reason kept in state, Connect shown again, no automatic retry; copy in talkPage.status: busyVisitor 'You already have a conversation open in another tab.' and busySite 'The concierge is busy right now. Try again in a few minutes.'; any other non-OK stays offline.",
+        "§ Live check (Michael) is staged and build-only: (1) `curl -s -o /dev/null -w '%{http_code}' -X POST <preview>/api/concierge/token -H 'content-type: application/json' -d '{\"visitor_id\":\"123e4567-e89b-42d3-a456-426614174000\"}'` with no Origin → 403, with `-H 'Origin: https://evil.example'` → 403, with the preview's own Origin → 503 until the env is set; (2) with the env set, one tab Connects and a second tab in the same browser gets 'You already have a conversation open in another tab.'; (3) a second device on another network while two conversations are live gets the busy line (CONCIERGE_MAX_ROOMS unset = 2); what to check in the LiveKit Cloud room list after each stage; how to undo (remove CONCIERGE_MAX_ROOMS or set it higher; revert the route commit). It also states that the agent repo's concierge/*.py could not be checked for room-name parsing in this run if its code is not available locally (`ls ~/projects/voice-concierge` has only docs on 2026-10-20) and that Michael confirms it against `mh550/voice-concierge`.",
+        "§ Decisions in the plan and `## 7. Decisions` of docs/specs/2026-10-19-voice-concierge-page.md gain D63 Origin is checked before the env (a shell POST gets 403 even offline; nothing about the env leaks), D64 the 'unknown' bucket and the preview regex, D65 mic toggle only when live, D66 the busy phase with no retry, D67 server-only at 0.0.1 exact pin and which modules import it; the CLAUDE.md route row text to be written is drafted in the plan.",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "VC4"
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC5-02",
+      "milestone": "VC5",
+      "kind": "build",
+      "model": "opus",
+      "description": "The microphone is requested only once the agent has joined: an offline or busy Connect never asks for it.",
+      "steps": [
+        "src/components/talk/TalkSession.tsx: `setMic(session, true)` is called inside agentArrived (both for an agent already present after connect() and for one that joins later) and nowhere else on connect; `grep -n 'setMic(session, true)' src/components/talk/TalkSession.tsx` shows exactly one line, inside agentArrived.",
+        "src/__tests__/components/talk/TalkSession-live.test.tsx: a test proves `room.localParticipant.setMicrophoneEnabled` has zero calls after connect() resolves with no agent present, exactly one call `[true]` after `addAgent(room)`, and the existing toggle tests still pass; TalkSession.test.tsx proves zero calls on the 10 s offline path (fake timers, AGENT_JOIN_TIMEOUT_MS) and on the configured=false path.",
+        "The mic toggle button renders only in the live phase (D65): a test asserts no button named 'Mute microphone' or 'Unmute microphone' while waiting and one once the agent joined; talk.test.tsx and the a11y test stay green.",
+        "docs/plans/2026-10-20-VC5-mic-limits-server-only.md § Mic timing matches the code and docs/review-guide.md's morning check step 2 says the browser asks for the microphone once the concierge has joined (not before).",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC5-03",
+      "milestone": "VC5",
+      "kind": "build",
+      "model": "opus",
+      "description": "The origin and room-limit rules are pure, tested functions, and every module that reads the LiveKit secret is server-only.",
+      "steps": [
+        "src/lib/concierge/origin.ts exports isAllowedOrigin; src/__tests__/lib/concierge-origin.test.ts proves: null → false; 'https://michael-herron.vercel.app' → true; 'https://michael-herron.vercel.app.evil.example' → false; 'http://michael-herron.vercel.app' → false; 'https://portfolio-site-git-harness-merg-e67481-mh550s-projects-e64e7e0b.vercel.app' → true; 'https://portfolio-site-abc123-mh550s-projects.vercel.app' → true; 'https://evil-mh550s-projects-e64e7e0b.vercel.app' → false; 'https://portfolio-site-x-mh550s-projects.vercel.app.evil.example' → false; 'http://localhost:7834' → true with dev true and false with dev false; 'http://127.0.0.1:3000' likewise; 'null' (the literal string) → false; a non-URL string → false (no throw).",
+        "src/lib/concierge/limits.ts exports addressOf, addressBucket, roomNameFor, roomsVerdict and maxRooms; src/__tests__/lib/concierge-limits.test.ts proves: addressOf picks the first trimmed x-forwarded-for entry and 'unknown' without the header; addressBucket('203.0.113.9', secret) is 10 lowercase hex chars equal to the first 10 of `createHmac('sha256', secret).update('203.0.113.9').digest('hex')` computed in the test, differs for another secret, and does not contain the address; roomNameFor(bucket) matches /^concierge-[0-9a-f]{10}-[0-9a-f]{12}$/ and two calls differ; roomsVerdict([], b, 2) → null, with one room `concierge-<b>-x` → 'visitor', with two rooms of other buckets → 'site', with three others and max 5 → null, with one other and one of b → 'visitor' (visitor wins over site), rooms not starting with 'concierge-' are ignored; maxRooms({CONCIERGE_MAX_ROOMS:'3'}) → 3, '0', '-1', 'abc', undefined → 2.",
+        "package.json has `\"server-only\": \"0.0.1\"` under dependencies (exact, no caret; `npm ls server-only` shows it) and package-lock.json is updated; src/lib/concierge/env.ts and the new src/lib/concierge/rooms.ts start with `import 'server-only';`; `grep -L \"import 'server-only'\" src/lib/concierge/env.ts src/lib/concierge/rooms.ts` prints nothing; rooms.ts exports listLiveRooms(env) returning `{ name }[]` from RoomServiceClient.listRooms() (the SDK turns the wss:// url into https:// itself) and is not yet called by the route.",
+        "src/__tests__/components/talk/TalkSession.test.tsx gains a test that with configured={false} a Connect click never evaluates the livekit-client module: `jest.doMock('livekit-client', factory)` inside jest.isolateModules (or an equivalent module-registry spy) proves the factory ran 0 times, while the configured path's existing tests still create a Room; src/app/talk/page.tsx imports nothing from livekit-client (`grep -rl livekit-client src/app` is empty).",
+        "The v2 spec's Code rules line in CLAUDE.md names server-only as approved (D67) and the plan § server-only lists the modules that import it.",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC5-04",
+      "milestone": "VC5",
+      "kind": "build",
+      "model": "opus",
+      "description": "POST /api/concierge/token refuses foreign origins (403), one live room per address and more than CONCIERGE_MAX_ROOMS live rooms (429), fails closed when the room list is unavailable (503), and names rooms concierge-<addr10>-<random>.",
+      "steps": [
+        "src/app/api/concierge/token/route.ts checks in the plan's order: Origin via isAllowedOrigin(request.headers.get('origin'), { siteUrl: profile.siteUrl, dev: process.env.NODE_ENV !== 'production' }) → 403 {error:'forbidden'} first; then conciergeEnv → 503; then the body → 400; then `listLiveRooms(env)` → on rejection 503 {offline:true}; then roomsVerdict → 429 {error:'busy', reason:'visitor'|'site'}; then it signs for room roomNameFor(addressBucket(addressOf(request.headers), apiSecret)); every reply keeps Cache-Control: no-store; the route has no console.log/console.error that could carry the address or bucket (`grep -n console src/app/api/concierge/token/route.ts` is empty).",
+        "src/__tests__/app/concierge-token-route.test.ts (still mocking nothing, D42) sends `Origin: https://michael-herron.vercel.app` on every existing case and adds: no Origin → 403 {error:'forbidden'} with no env set (Origin before env, D63); `Origin: https://evil.example` → 403 with the env set; `Origin: http://localhost:7834` → 503 offline with NODE_ENV test (dev) and 403 when the test sets a production flag through the route's seam (an injectable `dev` or NODE_ENV override described in the plan); with the env set and no rooms module mock the listRooms call would hit the network, so this file's 200 cases move to the limits file or the file mocks `@/lib/concierge/rooms` in a separate describe only if D42's note in the plan allows it (the plan decides; the decision is recorded).",
+        "src/__tests__/app/concierge-token-route-limits.test.ts (node environment, `jest.mock('@/lib/concierge/rooms')`, real livekit-server-sdk for signing) proves: rooms [] → 200 and the decoded JWT's `video.room` matches /^concierge-[0-9a-f]{10}-[0-9a-f]{12}$/ with the bucket equal to the HMAC the test computes from x-forwarded-for '203.0.113.9, 10.0.0.1' and the secret, and the identity and agent dispatch metadata unchanged from VC1; a live room of that bucket → 429 {error:'busy', reason:'visitor'}; two live concierge-* rooms of other buckets → 429 {error:'busy', reason:'site'}; three others with CONCIERGE_MAX_ROOMS=4 → 200; listLiveRooms rejecting → 503 {offline:true}; no x-forwarded-for → the 'unknown' bucket; the response body text and every console.* spy call contain neither '203.0.113.9' nor the 10-char bucket.",
+        "src/__tests__/app/concierge-token-route-sdk.test.ts still proves that a bad visitor id reaches no SDK call, now also that it reaches no listLiveRooms call, and that a 403 reaches neither.",
+        "docs/plans/2026-10-20-VC5-mic-limits-server-only.md § Route behaviour matches the code line by line and the CLAUDE.md /api/concierge/token row names the 403, 429 and room-name behaviour in one sentence.",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC5-05",
+      "milestone": "VC5",
+      "kind": "build",
+      "model": "opus",
+      "description": "/talk tells a visitor why Connect was refused (another tab, or the site is busy) without retrying, and the deep-dive and todo note say how the concierge is protected.",
+      "steps": [
+        "src/lib/data/concierge.ts talkPage.status gains busyVisitor 'You already have a conversation open in another tab.' and busySite 'The concierge is busy right now. Try again in a few minutes.'; src/components/talk/sessionReducer.ts gains the 'busy' action and phase per the plan (from connecting only; Leave/Connect reset it; inRoom('busy') is false); sessionReducer.test.ts covers busy from connecting, ignored from live, and connect from busy.",
+        "src/components/talk/TalkSession.tsx: fetchCredentials returns the 429 body's reason for status 429 with a JSON body {error:'busy', reason:'visitor'|'site'} (anything else stays offline); the status line shows the matching sentence, the Connect button is shown again, no timer or fetch is scheduled (`fetchMock` call count stays 1 over 15 s of fake timers); TalkSession.test.tsx proves both reasons, that a 429 with an unknown reason reads as offline, that no Room is created, and that the mic was never requested.",
+        "src/lib/data/projects.ts voice-concierge entry gains one 'how it's protected' sentence in the place the plan names (default: appended to caseStudy.method.build) saying the token route accepts only this site's origin and allows one live conversation per network address and two across the site, the agent caps each visitor at 5 sessions a day and each session at 10 minutes, and the provider accounts are capped at about $45 a week; every sentence with a digit is copied verbatim into docs/notes/evidence-voice-concierge.md § Sentences with digits with a source row (VC4 spec, Michael 2026-10-20; agent repo concierge/limits.py), so case-study-voice-concierge.test.ts stays green; the content-guard test is green.",
+        "docs/notes/voice-concierge-todo.md gains a § Cost protection naming the three layers (route limits with CONCIERGE_MAX_ROOMS default 2, the agent's 5 sessions a day and 10 minutes, the provider caps of about $45 a week) and what to change where.",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC5-06",
+      "milestone": "VC5",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see on /talk when the route refuses: the two busy lines and the offline line at 390, the mic not requested, and a shell POST without Origin getting 403.",
+      "steps": [
+        "Against the harness dev server a Playwright script using $HARNESS_PW/node_modules/playwright intercepts POST /api/concierge/token with page.route and saves, each under 400 KB: docs/screenshots/v2/VC5-talk-busy-visitor-390.png (429 {error:'busy',reason:'visitor'}: 'You already have a conversation open in another tab.' and Connect visible), VC5-talk-busy-site-390.png (reason 'site') and VC5-talk-busy-visitor-1280.png; the status text, the Connect button's boundingBox bottom (below 844 or not) and scrollWidth 390 are written in the plan's § What Michael will see.",
+        "In the same script, with the route intercepted to return 429 and then to return 503, `page.on('request')` shows exactly one token request per Connect click over 15 s (no retry), the browser's microphone permission was never prompted (`context.grantPermissions` not needed: the script records that no getUserMedia call happened via `page.evaluate` overriding navigator.mediaDevices.getUserMedia with a counter before Connect), and 0 console errors and 0 page errors except the browser's own 429/503 line for the POST.",
+        "`curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:$HARNESS_PORT/api/concierge/token -H 'content-type: application/json' -d '{\"visitor_id\":\"123e4567-e89b-42d3-a456-426614174000\"}'` prints 403; the same with `-H 'Origin: https://evil.example'` prints 403; with `-H \"Origin: http://localhost:$HARNESS_PORT\"` it prints 503 (dev origin allowed, no env); all three lines and outputs go in the plan.",
+        "Keyboard: after a busy reply, focus is still on the Connect button (document.activeElement's text is 'Connect') and its focus-visible outline-color is rgb(0, 212, 255).",
+        "docs/plans/2026-10-20-VC5-mic-limits-server-only.md § What Michael will see has one row per screenshot and one per curl line: state · what is on screen or printed · anything that looks wrong; any bug found is fixed in this feature with a test first and the capture retaken.",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    },
+    {
+      "id": "VC5-07",
+      "milestone": "VC5",
+      "kind": "review",
+      "model": "opus",
+      "description": "The VC5 diff is reviewed for leaks and fail-open paths and simplified, and Michael has the staged live check and the updated hand-off docs.",
+      "steps": [
+        "`git diff <parent of the VC5-01 commit>..HEAD > $HARNESS_SCRATCH/VC5.diff`; an Opus reviewer reads that file (vercel-react-best-practices skill for the client side) and docs/plans/2026-10-20-VC5-mic-limits-server-only.md § Review is a table (file · finding · severity · outcome) that at least answers: can any path sign a token without passing isAllowedOrigin and roomsVerdict; can the address, the bucket or the secret reach a response, a header, a log line or the client bundle (`grep -rn 'LIVEKIT_\\|server-only' src/components src/lib/data` is empty); does a listRooms timeout hang the request (the SDK call has a bounded wait or the plan records the Vercel function timeout as the bound); is the Origin comparison exact; is the busy phase unreachable from live; is the mic requested exactly once per agent arrival (a reconnect does not re-request); every Critical or Important finding is fixed with a failing test first; simplification passes are applied (one place decides the status code order, no duplicated UUID or origin parsing, no dead reducer branches).",
+        "docs/review-guide.md gains a 'VC5: mic timing and cost protection' section: what changed, the staged live check copied from the plan (curl without Origin → 403; two tabs → the another-tab line; CONCIERGE_MAX_ROOMS), what the LiveKit Cloud room list should show, and how to undo each piece; the 'Morning: the live check' step about the microphone says it is asked for once the concierge joins.",
+        "CLAUDE.md: the /api/concierge/token row and the lib/concierge/ line name origin.ts, limits.ts and rooms.ts and the 403/429/503 order; Code rules name server-only (exact pin, D67); Testing names concierge-token-route-limits.test.ts and its rooms mock; the test and suite counts match `npx jest --silent 2>&1 | tail -5`.",
+        "docs/specs/2026-10-19-voice-concierge-page.md `## 7. Decisions` holds D59–D67 (plus any added during VC5) each naming what it supersedes, and docs/specs/2026-10-20-vc4-order-widget-limits.md gains a dated 'Built' note at its end listing the defaults taken (D59–D67) and the two things Michael must confirm (the agent does not parse room names; the preview-host regex matches his current previews).",
+        "The suite is green: .harness/check.sh prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "passes": true
+    }
+  ]
+}
