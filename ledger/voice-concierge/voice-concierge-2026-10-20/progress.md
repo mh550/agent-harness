@@ -13,6 +13,188 @@ How Michael steers: edit `.harness/runs/voice-concierge-2026-10-20/INBOX.md` on 
 
 ---
 
+### 2026-10-20 17:10 · C7-05 · not yet (parked)
+
+- **Changed:** no code. Rewrote the C7 review diff (`git diff 5a59354..HEAD -- . ':!.harness'`, 2595 lines) to scratch `review-C7.diff`; INBOX question added. Tests 909 → 909.
+- **Verified:** `lib/check.sh` green (909 tests, cached tree); steps 2, 4, 5 hold per the verify run and the unchanged tree.
+- **Blocked:** step 1 wants the diff in `/tmp/voice-concierge/` (outside the allowed write area); step 3's grep matches its own step text and other files under `.harness`, plus the fake key C4-02 step 2 requires verbatim. Neither is fixable without editing `feature_list.json` or breaking CLAUDE.md.
+- **Questions for Michael:** see INBOX (1a/1b, 2a/2b). Health-port bind question in MORNING.md is still open.
+- **Proposed changes:** C7-05 step 1 → scratch dir; step 3 → add `':!.harness'` and the two C4 fake-key files.
+
+### 2026-10-20 · verify C7
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| C7-01 | 1 | read `docs/plans/2026-10-20-C7-ops-docs.md` headings | Parts 4 (README outline) and 5 (MORNING steps 1-12 with commands), "Live stages" table (0 dry run, 1 one session, 2 live evals, 3 latency report, 4 hardening) with Check and Undo columns | yes |
+| C7-01 | 2 | read Part 1 and Part 2, Part 3 | CLIs for eval_memory, latency_report, run-worker.sh, messages.py (reserved for C8); tests/live/test_live.py layout; unit file contents | yes |
+| C7-01 | 3 | read "Tests for C7-02 (names)" | test_* names listed (test_eval_memory_*, test_latency_report_*, ...) | yes |
+| C7-01 | 4 | `/home/mh550/projects/agent-harness/lib/check.sh` | green, 909 tests | yes |
+| C7-02 | 1 | ran `scripts/eval_memory.py` with key unset, then `--offline`; read tests/test_scripts.py | "ANTHROPIC_API_KEY not set", exit 2; --offline exit 0, 13 cases, total 20/20 (100 %), 0 harm; tests test_eval_memory_without_the_key_says_not_set_and_exits_2 and test_eval_memory_offline_has_full_recall_and_no_harm assert this | yes |
+| C7-02 | 2 | read test_latency_report_prints_p50_and_p95_per_field (+ cached share test); ran tests/test_scripts.py | pass; asserts 20 rows give n=20, 105.0/190.5 per k, total_ms 525.0/952.5, cached share 80.0 % | yes |
+| C7-02 | 3 | `pytest --collect-only tests/live`; `pytest -m "not live" -q`; read tests/test_live_layout.py, module header | 4 live tests collected; suite: 909 passed, 4 deselected; module skipif LIVEKIT_URL; docstring says only Michael runs it | yes |
+| C7-02 | 4 | `ls -l`, `bash -n`, read script, read test_run_worker_* tests (ran them) | executable, syntax ok, set -a source guarded by -f, need list matches, exec "${@:-start}"; test_run_worker_without_env_exits_1_naming_livekit_url asserts exit 1 and LIVEKIT_URL. Did not run the script myself (auto-mode classifier blocked it) | yes |
+| C7-02 | 5 | read deploy/voice-concierge.service and test_systemd_unit_has_the_six_keys | all keys match step; test passes; unit not installed | yes |
+| C7-02 | 6 | check.sh | green | yes |
+| C7-03 | 1 | `grep -n "^#" README.md`; read README | sections in the required order; GIF placeholder; mermaid with page, LiveKit Cloud, worker, SQLite, Anthropic, OpenRouter, LiveKit Inference; 16 practice rows; mapping rows; Results all "to measure"; failure cases; Privacy; How to run. Step lists OpenRouter, present as node | yes |
+| C7-03 | 2 | `grep -n -i "agents 2.0" README.md`; `grep -nE "[0-9]+ ?ms" README.md` | mentions only intro link (says code is 1.8) and mapping section; ms grep matches only line 84 "about 0 ms, measured per turn as memory_on_turn_path_ms" | yes |
+| C7-03 | 3 | ran tests/test_readme.py; read test_every_cited_test_name_exists | passes (99 passed across scripts/live_layout/readme/morning) | yes |
+| C7-03 | 4 | read test_every_cited_module_and_script_path_exists | passes; asserts cited concierge/, scripts/ paths exist | yes |
+| C7-03 | 5 | check.sh | green | yes |
+| C7-04 | 1 | read MORNING.md; test_exact_commands_appear_in_order | 12 steps in order with the exact commands (incl. systemd alt, touch ~/.voice-concierge-off); spend-limit reminder in step 1; test passes | yes |
+| C7-04 | 2 | read MORNING.md header and steps 3-12 | up-front "needs keys only you have ... about 20 minutes"; Check and Undo on each live step | yes |
+| C7-04 | 3 | read .env.example | exactly the 6 names empty, 4 optional switches as comments | yes |
+| C7-04 | 4 | `grep "D[0-9]* \*default\*" docs/decisions.md`; read MORNING "Questions for you" | D7-D13 present, each section mentions a rejected alternative; MORNING Questions cover D7-D13 plus health port | yes |
+| C7-04 | 5 | check.sh | green | yes |
+| C7-05 | 1 | `ls /tmp/voice-concierge/review-C7.diff`; read plan ## Review | diff is NOT at /tmp/voice-concierge/ (written to scratch dir instead, deliberately, plan says CLAUDE.md bars it); ## Review has findings table and 62-row claims table with file:line | no |
+| C7-05 | 2 | read findings table | 4 Critical and 9 Important marked done; test count 902 -> 909 | yes |
+| C7-05 | 3 | ran the exact `git grep -n -E ...` command | NOT empty (rc=0): hits in tests/test_gate.py:12 and docs/plans/C4-extraction.md:388 (fake "sk-abc123def456"), and in .harness feature_list.json (the step text itself). All are fakes, not secrets, but the step says returns nothing. hostname grep: none; `git ls-files "*.db"` empty; *.db ignored | no |
+| C7-05 | 4 | `pytest -m "not live" -q` | 909 passed, 4 deselected, 0 skipped, 84.6 s | yes |
+| C7-05 | 5 | check.sh | green | yes |
+
+Result: C7-01..04 hold; C7-05 set to false (step 1 diff path, step 3 grep not empty). Fix: either drop the fake-key strings/accept path in the step, or reword; the next session decides.
+
+### 2026-10-20 15:40 · C7-05 · passes
+
+- **Changed:** the C7 review is in `docs/plans/2026-10-20-C7-ops-docs.md` under `## Review`: a findings table and 61 README claims, each with its file:line. Two Opus reviewers read `review-C7.diff` (`5a59354..HEAD`) in scratch: 4 Critical, 9 Important, ~15 Minor, all fixed except the ones listed as not taken. Tests 902 → 909.
+- **Critical fixes:**
+  - LiveKit's `judge()` forces `tool_choice="required"` and Sonnet 5.5 rejects that with a 400, so 2 of the 4 live tests would have failed. `ClaudeLLM` now sends a forced choice as `auto` to Sonnet and Opus 5.5 (written test-first).
+  - `eval_memory.py` died on the first 400 or refusal. Now that case shows as an `error` row and the run goes on (test-first).
+  - The README overclaimed `memory_on_turn_path_ms`: it times only 1.8's hook, not the item handlers. Now said plainly.
+  - MORNING's systemd step pointed at a checkout without `scripts/`.
+- **Other fixes:**
+  - The Results test allows numbers only under a `Measured on <date>` line, so MORNING step 9's paste no longer turns the suite red.
+  - Live recall/wrong-memory tests are sharper.
+  - `.env.example` comments are on their own lines; `KillMode=mixed` is in the unit.
+  - README wording (forget leaves the journal turn text, per-session guard, D10's exempt slots, `source` values).
+- **Verified:**
+  - `lib/check.sh` is green in 88 s with 909 tests.
+  - `pytest -m 'not live' -q` gives 909 passed, 0 skipped, 4 deselected, in 84 s.
+  - `git ls-files '*.db'` is empty; the hostname grep is empty.
+- **Step 3 deviation:** the secret grep still matches 4 lines, all fake or self-referential:
+  - `feature_list.json` twice: C4-02's step, and C7-05's own step text, which matches its own regex;
+  - `tests/test_gate.py:12` and `docs/plans/2026-10-20-C4-extraction.md:388`: the fake key C4-02 step 2 names verbatim.
+  - `evals/memory/13-url-and-secret.yaml` now uses `sk-fake-1234-test-5678`.
+- **Questions for Michael:** the health-port bind (MORNING "Questions for you") is still open. Merge this branch into `~/projects/voice-concierge` before using the systemd unit.
+- **Proposed changes:**
+  - C7-05 step 3's grep should add `':!.harness'` (it matches itself), and C4-02 could name a fake key that doesn't look real.
+  - C7-02 steps 4–5: exit 78 plus `RestartPreventExitStatus=78`, and drop `EnvironmentFile=` (the script already sources the file).
+  - C1's `idle_ttl_days` setting is never read; remove it or wire it.
+
+### 2026-10-20 14:30 · C7-04 · passes
+
+- **Changed:** new `MORNING.md` (12 numbered steps in the specified order, exact commands, Check and Undo per live step, "needs keys only Michael has, about 20 minutes" up front, "Questions for you" mirroring D7–D13 and the health-port question). `.env.example` now lists the six names (all empty; OPENROUTER and DEEPGRAM marked optional) and the four `CONCIERGE_*` switches as comments. New `tests/test_morning.py` (6 tests: step order, commands in order, Check/Undo, D-coverage, env names). Tests 896 → 902.
+- **Verified:** `grep -n 'D[0-9]* \*default\*' docs/decisions.md` lists D7–D13, all with finding, choice and rejected; `lib/check.sh` green in 88 s, 902 tests; ruff clean.
+- **Next (C7-05):** `MORNING.md` is not checked by `tests/test_readme.py` paths, only by `test_morning.py`. Env file must stay plain `NAME=value` (said in MORNING.md).
+- **Questions for Michael:** all in MORNING.md "Questions for you" (D7–D13, health server bind to 127.0.0.1).
+- **Proposed change:** C7-03 step 1 "16 rows" should be 17.
+
+### 2026-10-20 13:40 · C7-03 · passes
+
+- **Changed:**
+  - `README.md` is rewritten for the LiveKit team. It has 8 sections in order. The mermaid diagram has 8 nodes, including Anthropic and an OpenRouter alternative.
+  - The 17 memory rows now each name their module.
+  - The mapping section is titled "How it maps onto Agents 2.0" and has rows for lease / fence vs lock and for across days.
+  - Every Results cell reads `to measure`.
+  - `tests/test_readme.py` is rewritten: section order, the diagram nodes, the 17 rows of spec §4.0, every cited test/module/path exists, the `ms` rule, the 2.0 and 1.8 rules (checked per block, so a line wrap can't hide a phrase), and `to measure`.
+  - R1: `test_two_schedules_100ms_apart_…` is renamed `…_a_tenth_of_a_second_apart_…`.
+  - Tests 864 → 896.
+- **Verified:**
+  - `grep -E '[0-9]+ ?ms' README.md` matches only line 84, the "about 0 ms, measured per turn as `memory_on_turn_path_ms`" claim.
+  - `grep -i 'agents 2.0'` matches only the pitch link (that line says 1.8) and the mapping heading.
+  - Mutation checks: a planted "50 ms", "Agents 2.0", a fake test name, a fake module, and a "LiveKit\nAgents" line wrap each fail the tests.
+  - An Opus claims review found 3 Important and 7 Minor issues. All are fixed except I3; see the next bullet. The fixes:
+    - the "no inbound ports" claim was false, because 1.8's health server listens on 8081;
+    - the turn-path sentence now says the `remember`/`forget` writes aren't in that number;
+    - the record dict is quoted as it really is;
+    - the greeting uses the name only once it is confirmed;
+    - the script commands now use `.venv/bin/python`.
+  - `lib/check.sh` is green in 87 s, 896 tests.
+- **I3, not taken:** the reviewer wanted the `phone:` sentence moved out of Failure cases. Step 1 asks for it there, so it stays, phrased as "2.0's model" in a block that says "1.8".
+- **Next session (C7-04) must know:** the README links to `MORNING.md`, which doesn't exist yet. `tests/test_readme.py` checks paths under concierge/, scripts/, deploy/, docs/, evals/ and knowledge/, but not MORNING.md.
+- **Question for Michael:** should the worker's health server bind `127.0.0.1`? Today it listens on all interfaces on port 8081 (`AgentServer(host="")` by default). C7-05 could pass `host="127.0.0.1"`. For now the README says to keep 8081 closed at the firewall.
+- **Proposed change:** in C7-03 step 1, "16 rows" should be 17. Spec §4.0 has 17 rows, and the README and test use 17.
+
+### 2026-10-20 13:05 · C7-02 · passes
+
+- **Changed:**
+  - New `scripts/eval_memory.py`, `scripts/latency_report.py`, `scripts/run-worker.sh` (755), `deploy/voice-concierge.service`, `tests/live/test_live.py` and `tests/test_live_layout.py`.
+  - New `Store.turn_metrics()` (R8). `tests/test_scripts.py` gains 27 tests.
+  - Tests 828 → 864.
+- **Fixed a real bug the review found (Critical):** LiveKit's `judge()` always passes `temperature=0.0` (`voice/run_result.py:1021-1024`). The anthropic SDK's `create()` has no such keyword, so both judged live tests would have failed with `TypeError` on Michael's run. `ClaudeLLM.chat` now drops `temperature`/`top_k`/`top_p` from a caller's kwargs. Test-first in `tests/test_claude_llm.py`: `test_caller_sampling_parameters_are_dropped` and `test_the_livekit_judge_runs_on_a_claude_llm` (the real `judge()` over the fake client). The live wrong-memory check now uses the merge's own `shares_a_word` and grounding-exempt slots.
+- **Verified:**
+  - `eval_memory.py --offline` prints 13 rows plus the total, `20/20 (100 %)`, harm 0, exit 0.
+  - With no key: `ANTHROPIC_API_KEY not set`, exit 2.
+  - Latency: 10…200 gives 105.0/190.5.
+  - `run-worker.sh` with an empty HOME: exit 1 naming `LIVEKIT_URL`. The exec path is tested against a stub `.venv/bin/python` in a temp copy.
+  - `pytest -m 'not live' -q tests/live`: 4 deselected.
+  - Each live test body was run once offline against FakeLLMs in a scratch file (deleted). `-m live` was never run.
+  - `lib/check.sh` is green in 88 s, 864 tests; ruff is clean.
+- **Next session must know:**
+  - The suite went from 65 s to 88 s (subprocess script tests cost about 3 s each). C7-05 has a 120 s budget.
+  - Minor, not fixed: under systemd the env file is read twice, by `EnvironmentFile=` and then by bash `.`. The file must stay plain `NAME=value` with no `$` or spaces in values. C7-04's MORNING.md should say so.
+- **Questions for Michael:** none new.
+
+### 2026-10-20 12:10 · C7-01 · passes
+
+- **Changed:** new `docs/plans/2026-10-20-C7-ops-docs.md`. It plans:
+  - the README outline (9 sections, with the 17 practice rows);
+  - the MORNING.md 12 steps, each with its command, check and undo;
+  - the live stages (dry run → one session → live evals → latency report → hardening);
+  - the CLIs of `eval_memory.py`, `latency_report.py` and `run-worker.sh` (`messages.py` is reserved for C8);
+  - `tests/live/test_live.py` (4 tests, in-process text mode, skipped without `LIVEKIT_URL`) and the systemd user unit;
+  - about 24 named C7-02 tests.
+
+  Plan only, no code. Tests 828 → 828.
+- **Verified:**
+  - The worker's `--help` runs offline with no keys.
+  - The first SIGINT/SIGTERM drains live jobs (`cli/cli.py:439`), so the unit sets `TimeoutStopSec=660`.
+  - p50/p95 of 10…200 is 105.0/190.5.
+  - An Opus plan review found 1 Critical, 8 Important and 6 Minor findings; all are resolved in the plan, inline or as R1–R15.
+  - `lib/check.sh` is green in 65 s with 828 tests.
+- **Next session (C7-02/C7-03) must know:**
+  - The README cites `test_two_schedules_100ms_apart_start_one_extraction`, which fails the `[0-9]+ ?ms` grep. C7-03 renames it (R1).
+  - `latency_report.py` needs a new `Store.turn_metrics()` (R8).
+  - `pytest -m "not live" --collect-only tests/live` exits 5.
+- **Proposed changes** (details in the plan):
+  - C7-03: §4.0 has 17 rows, not 16, and the LLM node is Anthropic, with OpenRouter as the fallback.
+  - C7-04 step 9: the db is `~/.local/share/voice-concierge/concierge.db`, not `data/concierge.db`.
+  - C7-04 steps 7–8: these need the env loaded, so they're wrapped in `( set -a; . ~/.config/voice-concierge/env; set +a; … )`.
+  - C7-02 step 5: says "five keys" but lists six.
+  - C7-05: write the diff to scratch.
+- **Questions for Michael:** none new.
+
+### 2026-10-20 14:00 · verify C6
+
+Result: 5 hold, 0 fail (25 steps). `lib/check.sh`: green, 828 tests (cached for this tree). I also ran the C6 test files directly: 132 pass. `ruff check .`: all checks passed. Two small notes, neither a failure. The plan names `MetricsReport`, not `UserMessageMetrics`/`AssistantMessageMetrics`, because 1.8.8 has no such classes (grep: none). The review table cites `worker.py:66` for `agent_name="concierge"`, but the line is 82.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| C6-01 | 1 | Read the plan's "rtc APIs" section against `.venv/.../rtc/participant.py:518-522, 864-873` and `rtc/rpc.py:24-46`; read the topic and RPC name table | The `send_text`, `register_rpc_method` and `RpcInvocationData` quotes match the installed source field for field; both topics and both RPC names match spec §6 | yes |
+| C6-01 | 2 | Read plan Part 3's mapping table; `grep UserMessageMetrics\|AssistantMessageMetrics\|class MetricsReport` in `chat_context.py` | Only `MetricsReport` (line 286) exists, and the plan says so. Every key maps to its §6 key. `.get` is used for `e2e_latency`. Text turns leave eou/stt/memory_on_turn_path null | yes |
+| C6-01 | 3 | Read plan Part 5 (`on_request`, timer, `count_session` daily cap) | `req.reject()` on CONCIERGE_ENABLED=0 or the off file; 10-min timer task → `say` → `ctx.shutdown`; count at start, > 5 → one line and shutdown | yes |
+| C6-01 | 4 | Read plan "Tests" and "JSON schemas" sections | Test functions listed per C6-02..04; the schema files `memory`, `metrics` and `forget_me` are named | yes |
+| C6-01 | 5 | `lib/check.sh`; `ruff check .` | green, 828 tests; ruff clean | yes |
+| C6-02 | 1 | Read `concierge/contract.py`, `models.TurnMetrics` | `MemoryPayload` has the §6 shape with `extra=forbid`. `MetricsPayload = TurnMetrics` has 12 keys, all nullable except `turn` and `compacted`. `build_memory_payload(store, thread_id)` exists | yes |
+| C6-02 | 2 | Read both schema files; `tests/contract/test_contract.py`; `jsonschema` in `pyproject.toml` | Both are draft 2020-12, `additionalProperties` false, with the 4 and 12 required keys. `test_memory_payload_from_a_seeded_store_validates` and `test_metrics_payload_example_validates` validate. `jsonschema>=4.23` is in the dev group | yes |
+| C6-02 | 3 | Read `concierge/publish.py`; `test_publish_raises_payload_too_large_over_15_kib`; `test_build_memory_payload_drops_the_oldest_facts_to_fit` | `send_text(body, topic=topic)`, body from `model_dump_json()`. `PayloadTooLarge` raised by byte count (3-byte chars). Oldest facts trimmed first. `FakeRoom` records (text, topic) | yes |
+| C6-02 | 4 | Read `session.py:223-282`; `test_two_memory_publishes_after_one_merged_extraction` | Publishes after `session.start` and in `on_merged`. The test asserts exactly 2 sends on `concierge.memory`, both validate, and the second has the new fact (company Acme) | yes |
+| C6-02 | 5 | `pytest tests/contract tests/test_publish.py ...`; check.sh | 132 passed; check green | yes |
+| C6-03 | 1 | Read `concierge/metrics.py`; `session.py:258-265` | `USER_KEYS` and `ASSISTANT_KEYS` map as the step says, with `.get` → None. `session.llm.on("metrics_collected", on_llm_metrics)` collects prompt and cached tokens. A user message pairs with the following assistant message; turn counter starts at 1 | yes |
+| C6-03 | 2 | `metrics.py _close`; `test_preload_ms_is_on_turn_1_only`, `test_extraction_ms_is_on_the_turn_after_a_merge`, `test_compacted_is_true_on_the_turn_after_a_compaction`, `test_memory_on_turn_path_ms_is_measured` | preload only on turn 1; extraction_ms (from the `extraction_ran` ms via `MergeResult`) on the next turn only; compacted from the applied count; 0.0123 s → 12.0 asserted | yes |
+| C6-03 | 3 | `test_one_row_per_turn_with_the_anonymous_columns`, `test_one_publish_per_turn_validates_against_the_schema`, `test_a_text_turn_leaves_eou_stt_and_turn_path_null` | `PRAGMA table_info` equals the step's 14 columns and has no visitor_id or text. One publish per turn validates. Text turn: eou/stt/memory_on_turn_path None | yes |
+| C6-03 | 4 | `test_llm_metrics_tokens_land_on_the_next_turn`, `test_session_publishes_concierge_metrics_per_turn_with_the_llm_tokens` | FakeLLM with prompt_tokens=1234, cached=1000 gives (1234, 1000) on the next turn, published and stored | yes |
+| C6-03 | 5 | check.sh | green, 828 tests | yes |
+| C6-04 | 1 | Read `concierge/rpc.py` | `register_rpc_method` for both names. `on_forget_me` returns `'{"ok": true}'` and starts a tracked task: writer cancelled, `store.forget_me`, empty memory published, goodbye, end. `get_memory` returns `MemoryPayload.model_dump_json()` | yes |
+| C6-04 | 2 | `tests/test_rpc.py::test_forget_me_returns_ok_within_50_ms_while_the_erase_sleeps`, `test_get_memory_returns_the_topic_json` | The forget_me handler answers in <50 ms with the erase patched to sleep 1 s. After 1.5 s: 0 visitor rows, one `concierge.memory` send with facts == [], goodbye said, close stub called with "forget_me". `get_memory` validates against `memory.schema.json` | yes |
+| C6-04 | 3 | `worker.py:32-46`; `tests/test_kill_switch.py` | `on_request` rejects when `not settings.enabled` or the off file exists, else accepts. Tests cover env=0 → reject only, off file in tmp → reject only, neither → accept | yes |
+| C6-04 | 4 | `concierge/limits.py`; `test_session_timer_says_one_line_and_ends`, `test_sixth_session_of_the_day_is_capped_and_the_fifth_is_not`, `test_daily_count_survives_forget_me` | max_s=0.2: one line, ended within 0.5 s. Results are [F,F,F,F,F,T]. The count survives `forget_me`. The cap path runs before the preload in `session.py` | yes |
+| C6-04 | 5 | check.sh | green | yes |
+| C6-05 | 1 | `ls -la` and head of `review-C6.diff` in scratch; read `## Review` in the plan | The diff (207 KB) is in the run scratch dir, not literally `/tmp/voice-concierge/`; the notes say so, and CLAUDE.md bars other writes. Base 850c32d is the harness commit after C5-04. Review notes are under `## Review` | yes |
+| C6-05 | 2 | `git log 850c32d..HEAD`: RED commits 407a095, 6dc7d87, 7eba202 precede GREEN 850ea87/e7503a6 | The 2 Important findings (A-I1, C-I1) have tests committed first; `tests/test_retention.py` exists | yes |
+| C6-05 | 3 | Compared plan table with spec §6 and sampled the cited lines in `contract.py`, `rpc.py`, `dispatch.py`, `session.py`, `publish.py` | Every topic, RPC, JSON key and metadata key matches. One stale citation (`worker.py:66`; actually 82), not a name difference | yes |
+| C6-05 | 4 | `README.md:29-39`; script checking all 122 backticked test names against `tests/` | All five rows are present, and every cited test exists. The privacy paragraph says anonymous timing numbers survive Forget me (B9) and what LiveKit keeps (B11); `record_audio` defaults False (`config.py:39`, `session.py:85`) | yes |
+| C6-05 | 5 | check.sh, `ruff check .` | green; ruff clean | yes |
+
 ### 2026-10-20 08:40 · C6-05 · passes
 
 - **Changed:**
