@@ -1,0 +1,2 @@
+## 2026-10-20 09:19
+TOP PRIORITY, small run: build the booth harness bundle (B1, B2) exactly as the spec says, nothing else. Michael needs the PR merged and live before 4:30 pm ET today (Tue 10-20), so keep it to two milestones and finish fast. Don't touch the Voice Concierge work (PRs #14-16 open). Proceed on sensible defaults and record them in the spec rather than stopping; Michael is at a conference.

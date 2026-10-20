@@ -1,0 +1,169 @@
+{
+  "run": "portfolio_site-2026-10-20-2",
+  "branch": "harness/portfolio_site-2026-10-20-2",
+  "features": [
+    {
+      "id": "B1-01",
+      "milestone": "B1",
+      "kind": "plan",
+      "model": "opus",
+      "description": "A plan file for the booth harness plus the spec-fixed content (PROMPTS.md verbatim, configs/round1.json, .gitignore) so the B1 build sessions share one module layout, one results schema and one set of test names.",
+      "steps": [
+        "`docs/plans/2026-10-20-B1-booth-harness.md` exists with sections: 'Files' (one line per file in public/b/mh_harness: run_one.py, sweep.py, report.py, adapter.py, fake_game.py, configs/round1.json, configs/fake-round.json, PROMPTS.md, README.md, tests/test_telemetry.py, tests/test_run_one.py, tests/test_sweep.py, tests/test_report.py), 'Shared functions' (the exact signatures in run_one.py that sweep.py and report.py import: `parse_telemetry(log_text) -> dict`, `exit_reason(returncode, timed_out, words_found, expected_words) -> str`, `kill_tree(proc)`, `start_detached(argv, cwd, env, log_file) -> Popen`), 'results.jsonl row' (all 16 fields of spec §3 with type and example), 'Process control' (POSIX start_new_session + os.killpg SIGTERM then SIGKILL after 2 s; Windows CREATE_NEW_PROCESS_GROUP + `taskkill /T /F /PID`; run_one handles SIGTERM/SIGINT by killing the game tree and exiting 130 without a results line; sweep starts each run_one with the same primitive), 'Python 3.8 rules' (`from __future__ import annotations`, typing.List/Dict/Optional, no `|` unions, no str.removeprefix, no match, stdlib only, every print to a pipe uses flush=True), 'Tests' (each test file with named cases from spec §4), 'Fake round' (the exact commands of the B1-06 check), 'Review' (empty, for B1-07)",
+        "`public/b/mh_harness/PROMPTS.md` is spec §5 verbatim (the fenced block's contents, from `# Booth playbook` to the last terse-prompt line); `diff <(sed -n '/^````markdown$/,/^````$/p' docs/specs/2026-10-20-booth-harness-bundle.md | sed '1d;$d') public/b/mh_harness/PROMPTS.md` is empty, or the plan's 'Files' section names the one file name that was fixed and why",
+        "`public/b/mh_harness/configs/round1.json` is a JSON array of exactly six objects named base, base_ctl, terse, terse_trim, terse_trim2, terse_mcpB in that order; every object has `expected_words: 2`, `cities: 6`, `timeout_s: 450`; `mcps` is `[\"<current set>\"]` except terse_mcpB's `[\"<set B>\"]`; base and base_ctl have `env: {}` and base_ctl has `control_of: \"base\"`, every other `control_of` is null; terse has env `{\"AGENT_PROMPT\": \"terse\"}`; terse_trim, terse_trim2 and terse_mcpB have env `{\"AGENT_PROMPT\": \"terse\", \"MAX_TOOL_CHARS\": \"2000\"}`; `python3 -c 'import json;json.load(open(\"public/b/mh_harness/configs/round1.json\"))'` exits 0",
+        "`public/b/mh_harness/configs/fake-round.json` is a JSON array of four objects base, base_ctl (control_of base), terse, terse_trim with no `<`/`>` anywhere, each `expected_words: 2`, `cities: 6`, `timeout_s: 60`, and env `FAKE_SLEEP_S` `\"2\"`, `FAKE_WORDS` `\"2\"`, `FAKE_LLM_CALLS` `\"3\"` (terse_trim: `FAKE_LLM_CALLS` `\"2\"`) so the adapter's default fake_game command solves every run",
+        "`.gitignore` ends with a block ignoring `public/b/mh_harness/__pycache__/`, `public/b/mh_harness/**/__pycache__/`, `public/b/mh_harness/results.jsonl`, `public/b/mh_harness/logs/`, `public/b/mh_harness/work/`; `git check-ignore -q public/b/mh_harness/tests/__pycache__/x.pyc public/b/mh_harness/logs/a.log public/b/mh_harness/work/b-0/c public/b/mh_harness/results.jsonl` exits 0 and `git check-ignore -q public/b/h.tgz` exits 1",
+        "`docs/specs/2026-10-20-booth-harness-bundle.md` gains a final section `## 7. Decisions` listing D41–D50 as `- **D<n>** *default* …` (the defaults in progress.md's initializer entry, continuing the v2 spec's numbering), each with its alternative in one clause",
+        "`npx jest src/__tests__/lib/content-guard.test.ts` is green (PROMPTS.md and both configs are scanned because they are .md/.json under public/)",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "B1-02",
+      "milestone": "B1",
+      "kind": "build",
+      "model": "opus",
+      "description": "fake_game.py emits HARNESS_LLM/HARNESS_TOOL/RESULT lines from env vars, and run_one.py's pure parsing turns a log into the metrics fields (LLM calls, token sums, median ms, tool calls, repeated tool calls) with tests first.",
+      "steps": [
+        "`public/b/mh_harness/fake_game.py` (stdlib, 3.8-safe) reads FAKE_SLEEP_S (float, default 0), FAKE_WORDS (int, default 2), FAKE_LLM_CALLS (int, default 3), FAKE_EXIT (int, default 0), FAKE_ALARM (string, default empty); for each LLM call i it sleeps FAKE_SLEEP_S/FAKE_LLM_CALLS then prints `HARNESS_LLM {\"in\": …, \"out\": …, \"ms\": …}` and `HARNESS_TOOL {\"name\": \"visit_city\", \"args\": {\"city\": \"city-<i>\"}}` (flush=True); when FAKE_ALARM is set it prints one line containing that text after the first call; it ends with `RESULT {\"words_found\": <FAKE_WORDS>, \"score\": <int>}` and exits FAKE_EXIT; `FAKE_LLM_CALLS=2 python3 public/b/mh_harness/fake_game.py | grep -c HARNESS_TOOL` prints 2 and `FAKE_EXIT=3 python3 public/b/mh_harness/fake_game.py; echo $?` ends in 3",
+        "`public/b/mh_harness/run_one.py` exports `parse_telemetry(log_text)` returning `llm_calls`, `input_tokens`, `output_tokens`, `llm_ms_median` (None without calls), `tool_calls`, `repeated_tool_calls` (a call whose name and args JSON-equal an earlier call in the same text); the marker may be anywhere on the line (a timestamp prefix is fine), malformed JSON after a marker is skipped, and `exit_reason(returncode, timed_out, words_found, expected_words)` returns solved / incomplete / timeout / error per spec §3; the module runs nothing on import (`python3 -c 'import sys; sys.path.insert(0, \"public/b/mh_harness\"); import run_one'` prints nothing)",
+        "`public/b/mh_harness/tests/test_telemetry.py` has cases: a 3-call log gives llm_calls 3, input_tokens and output_tokens as the sums, llm_ms_median the middle value; 4 tool lines with two identical name+args give tool_calls 4 and repeated_tool_calls 1 (same name, different args is not a repeat); a prefixed line and a malformed JSON line; exit_reason for the four cases (returncode 0 and words >= expected is solved, 0 and fewer is incomplete, timed_out wins over returncode, non-zero is error); fake_game via subprocess with FAKE_LLM_CALLS=2 prints 2 LLM lines, 2 tool lines and a parseable RESULT line, and FAKE_ALARM=429 puts `429` in its output; `cd public/b/mh_harness && python3 -m unittest discover -s tests` is green and `python3 -m unittest discover -s tests -v 2>&1 | grep -c ' ... ok'` is at least 8",
+        "After running the tests, `git status --short` shows no `__pycache__` entry (the .gitignore from B1-01 holds)",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "passes": true
+    },
+    {
+      "id": "B1-03",
+      "milestone": "B1",
+      "kind": "build",
+      "model": "opus",
+      "description": "run_one.py starts one run through adapter.py, streams its output to a log, enforces timeout_s by killing the whole process tree, and appends one results.jsonl row; adapter.py's defaults run fake_game.py.",
+      "steps": [
+        "`public/b/mh_harness/adapter.py` has exactly two functions each under a comment starting `# ADAPT:` that says what to fill in: `build_command(config, workdir)` returns `([sys.executable, <abs path of fake_game.py>], workdir)` by default, and `parse_result(log_text)` returns `{\"words_found\": n, \"score\": s}` from the last `RESULT {…}` line (words_found 0 and score None when there is none); `grep -c '# ADAPT:' public/b/mh_harness/adapter.py` prints 2 and the file has no other game-specific code",
+        "`python3 public/b/mh_harness/run_one.py CONFIG.json [--index K] [--round NAME]` (CONFIG.json holds one config object) creates `public/b/mh_harness/work/<name>-<K>/` (paths are relative to run_one.py's own directory, not the cwd, D46), starts the adapter's command with env = os.environ + config env + `HARNESS_WORKDIR` (absolute) + `PYTHONUNBUFFERED=1`, with stdout and stderr redirected to `public/b/mh_harness/logs/<name>-<K>.log`, detached (POSIX `start_new_session=True`; Windows `CREATE_NEW_PROCESS_GROUP`), waits up to `timeout_s` (float allowed), on expiry calls `kill_tree` (POSIX os.killpg SIGTERM, SIGKILL after 2 s; Windows `taskkill /T /F /PID`), then appends one JSON line to `public/b/mh_harness/results.jsonl` with exactly the 16 fields name, index, round, config, words_found, score, wall_s, llm_calls, input_tokens, output_tokens, llm_ms_median, tool_calls, repeated_tool_calls, exit_reason, error_tail, started_at (ISO 8601 UTC); `error_tail` is the last 20 log lines for `error`, else null; exit code 0 for solved/incomplete, 1 for timeout/error",
+        "SIGTERM or SIGINT to run_one kills the game tree and exits 130 without appending a row; `kill_tree`, `start_detached` and the main entry are the functions the plan names, so sweep.py can import them",
+        "`public/b/mh_harness/tests/test_run_one.py` cases (each in a tempdir via a `HARNESS_HOME` env override or a patched base dir, so the real results.jsonl is untouched): a run with FAKE_SLEEP_S=0.2 and FAKE_WORDS=2, expected_words 2 ends `solved` with wall_s > 0, llm_calls 3, tool_calls 3, and the log file contains the RESULT line; FAKE_WORDS=1 ends `incomplete`; FAKE_EXIT=2 ends `error` with error_tail a list of at most 20 strings whose last element is the RESULT line; FAKE_SLEEP_S=30 with timeout_s 1 ends `timeout` within 5 s and the child's pid is gone (`os.kill(pid, 0)` raises or, on POSIX, the process is a zombie reaped by wait); config env `FAKE_WORDS` reaches the child; the row has exactly the 16 field names; `cd public/b/mh_harness && python3 -m unittest discover -s tests` is green",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "passes": true
+    },
+    {
+      "id": "B1-04",
+      "milestone": "B1",
+      "kind": "build",
+      "model": "opus",
+      "description": "sweep.py refuses unfilled placeholders, runs every config K times N at a time as run_one.py subprocesses, prints status lines with alarms, honours --dry-run and Ctrl-C, and prints the round's report table at the end.",
+      "steps": [
+        "`python3 public/b/mh_harness/sweep.py public/b/mh_harness/configs/round1.json` exits 2 before starting any run with a message that names the config and the field, e.g. `refusing to start: config \"base\" field mcps[0] still has a placeholder: \"<current set>\"`; `ls public/b/mh_harness/logs public/b/mh_harness/work 2>/dev/null | grep -c base` prints 0 and results.jsonl is unchanged",
+        "`python3 public/b/mh_harness/sweep.py public/b/mh_harness/configs/fake-round.json --dry-run` prints one line per run with the argv and cwd (`cmd: … fake_game.py  cwd: …/work/base-0`) and runs nothing (no logs/ entries, no results.jsonl line)",
+        "`sweep.py CONFIGS.json [--parallel N] [--repeat K] [--interval S] [--alarm-after S] [--dry-run]` (defaults 4, 1, 15, 60): for each config and repeat index it writes the single config to `work/<name>-<K>/config.json` and starts `run_one.py` on it with `--index K --round <configs file stem>` via `start_detached` from run_one.py; at most N run at once; every `--interval` seconds it prints one line per live run `[<name>-<K>] <elapsed>s llm=<n> tools=<n>` by reading the run's log, appending ` ALARM: <reason>` when the log contains `429`, `rate limit`, `connection refused`, `address already in use` (case-insensitive) or `Traceback`, or `ALARM: no tool call after <alarm-after> s`; on KeyboardInterrupt it `kill_tree`s every live run_one and exits 130; when every run has ended it prints `report.py`'s table for this round (via `import report`; until B1-05 lands, a one-line `report: <n> runs ended` placeholder is acceptable and B1-05 replaces it)",
+        "`public/b/mh_harness/tests/test_sweep.py` cases: four configs with FAKE_SLEEP_S=2 and `--parallel 4` finish in under 5 s wall and leave 4 rows in the tempdir's results.jsonl; the placeholder refusal exits 2 with the config name and field in stderr and creates no work/ or logs/ entry; `--dry-run` prints 4 `cmd:` lines and writes nothing; FAKE_ALARM=429 with `--interval 0.5` makes the status output contain `ALARM: 429`; FAKE_SLEEP_S=3, FAKE_LLM_CALLS=1 with `--alarm-after 0.5 --interval 0.5` prints `ALARM: no tool call`; `--repeat 2` on one config leaves rows with index 0 and 1; `cd public/b/mh_harness && python3 -m unittest discover -s tests` is green",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "passes": true
+    },
+    {
+      "id": "B1-05",
+      "milestone": "B1",
+      "kind": "build",
+      "model": "opus",
+      "description": "report.py summarises results.jsonl per config (medians across repeats), sorted by words found then wall time, with the noise, prod projection and pick sections in aligned text or markdown; sweep.py prints it after a round.",
+      "steps": [
+        "`public/b/mh_harness/report.py` exports `load_rows(path, round_name=None)` (default round = the `round` of the last line), `summarise(rows, prod_cities=21) -> dict` (per name: words_found, wall_s, llm_calls, output_tokens, input_tokens, tool_calls, repeated_tool_calls as medians, exit reasons as `solved:2` style counts, plus noise, projection and pick) and `render(summary, md=False) -> str`; the CLI is `report.py [--round NAME] [--prod-cities 21] [--md]`; with no results.jsonl it prints `no results yet` and exits 0",
+        "Rows sort by words found desc then median wall s asc; under the table a `noise` section prints, per `control_of` pair, `base vs base_ctl: <gap> %` with ` NOISY` appended above 20 %; a `prod projection` section prints per config `<name>: ~<llm_calls / cities × prod_cities> LLM calls at <llm_ms_median> ms median`; a `pick` line names the top row whose every repeat is `solved`, or `pick: none solved every repeat`",
+        "`public/b/mh_harness/tests/test_report.py` builds rows in memory (no files) and checks: medians across three repeats (wall 10, 20, 90 gives 20); a config with 2 words beats one with 1 regardless of wall s and ties break by wall s; control gap 10 % is not NOISY and 25 % is; the projection for llm_calls 12, cities 6, prod_cities 21 is 42; the pick skips a config with one `incomplete` repeat; `--md` output starts with a `|` header row; `load_rows` picks the latest round by default; `cd public/b/mh_harness && python3 -m unittest discover -s tests` is green",
+        "`python3 public/b/mh_harness/sweep.py public/b/mh_harness/configs/fake-round.json --parallel 4 --interval 1` ends by printing the report table with four rows and `pick: base` (or whichever solved row has the lowest wall s), and `python3 public/b/mh_harness/report.py --md` prints the same round as a markdown table",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "passes": true
+    },
+    {
+      "id": "B1-06",
+      "milestone": "B1",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see at the booth: README.md on one screen, a fake round end to end from a clean checkout state, the placeholder refusal, and the content guard green on the bundle's text files.",
+      "steps": [
+        "`public/b/mh_harness/README.md` is under 60 lines: what each of the files does (one line each, including configs/fake-round.json and tests/), the four commands (`python3 -m unittest discover -s tests` from mh_harness/; `sweep.py … --dry-run`; `sweep.py configs/round1.json --parallel 6`; `report.py`), a note that Windows uses `python` for `python3`, and that results.jsonl, logs/ and work/ are created next to the scripts; it contains no `<`-placeholders, TODO or `[X]`",
+        "From a state with no `public/b/mh_harness/results.jsonl`, `logs/` or `work/` (`rm -rf` them first), `cd public/b/mh_harness && python3 -m unittest discover -s tests` is green in under 60 s; `python3 sweep.py configs/round1.json` prints the refusal and exits 2; `python3 sweep.py configs/fake-round.json --parallel 4 --interval 1` prints status lines for all four runs, ends in under 15 s, and prints the table with four `solved:1` rows and a pick; `python3 report.py --md` prints the markdown table; the evidence (the commands and their output, trimmed to 40 lines) goes in the plan's 'Fake round' section",
+        "`cd public/b/mh_harness && python3 sweep.py configs/fake-round.json --parallel 2 --repeat 2` then `python3 report.py` shows `solved:2` on every row and a non-empty noise line for base vs base_ctl",
+        "3.8 rules hold: every .py file in public/b/mh_harness and public/b/mh_harness/tests that uses type annotations starts with `from __future__ import annotations`; `grep -rnE 'removeprefix|removesuffix|^\\s*match ' public/b/mh_harness/*.py public/b/mh_harness/tests/*.py` prints nothing; `python3 -W error -c \"import ast,glob; [ast.parse(open(f).read(), f, feature_version=(3,8)) for f in glob.glob('public/b/mh_harness/*.py')+glob.glob('public/b/mh_harness/tests/*.py')]\"` exits 0 (ast refuses 3.9+ syntax)",
+        "`rm -rf public/b/mh_harness/results.jsonl public/b/mh_harness/logs public/b/mh_harness/work` and `find public/b/mh_harness -name __pycache__ -exec rm -rf {} +` leave `git status --short` clean apart from the session's own commits; `npx jest src/__tests__/lib/content-guard.test.ts` is green",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "passes": true
+    },
+    {
+      "id": "B1-07",
+      "milestone": "B1",
+      "kind": "review",
+      "model": "opus",
+      "description": "An Opus review of the B1 diff with Critical/Important findings fixed RED→GREEN, simplification passes applied, and the plan's Review section filled.",
+      "steps": [
+        "`git diff d1f2a62..HEAD -- public/b docs .gitignore > /tmp/b1.diff`; the reviewer reads the diff from that file and writes findings (Critical / Important / Minor, each with file:line) into the 'Review' section of `docs/plans/2026-10-20-B1-booth-harness.md`",
+        "Every Critical and Important finding is fixed with a failing test first (the test file and case name are noted next to the finding), or recorded as a `D<n>` default in the booth spec's §7 with the reason it is left",
+        "Simplification pass applied: no duplicated kill/start logic between run_one.py and sweep.py, no dead parameters, `wc -l public/b/mh_harness/*.py` totals under 900 lines; `cd public/b/mh_harness && python3 -m unittest discover -s tests` is green and `rm -rf public/b/mh_harness/results.jsonl public/b/mh_harness/logs public/b/mh_harness/work` + removing `__pycache__` leaves `git status --short` clean",
+        "The anti-goals hold and are checked: `grep -rniE 'secret|answer' public/b/mh_harness/*.py` matches only comments saying nothing reads them (or nothing); no harness file writes outside its own directory (grep for `open(` and `Path(` targets); `grep -rn '/b/' src/ public/ --include=*.ts --include=*.tsx --include=*.md | grep -v mh_harness` is empty",
+        "CLAUDE.md's 'Content guard' and 'Code rules' sections are unchanged; the B1 plan's 'Review' section ends with the counts (n Critical, n Important, n Minor, fixed/left)",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "passes": true
+    },
+    {
+      "id": "B2-01",
+      "milestone": "B2",
+      "kind": "build",
+      "model": "opus",
+      "description": "scripts/build-booth-bundle.mjs writes a reproducible public/b/h.tgz of mh_harness/, a jest test proves the committed tarball matches the folder and its unit tests pass from the extracted copy, and docs/notes/booth-bundle.md tells Michael how to use and rebuild it.",
+      "steps": [
+        "`scripts/build-booth-bundle.mjs` (node stdlib + system `tar`, no new dependency) runs GNU tar with `--sort=name --owner=0 --group=0 --numeric-owner --mtime='2026-10-20 00:00Z' --mode=go-w,a+rX --format=ustar -C public/b --exclude=__pycache__ --exclude='*.pyc' --exclude=results.jsonl --exclude=logs --exclude=work -cf - mh_harness` and gzips the stream with `zlib.gzipSync` (level 9), writes `public/b/h.tgz`, then prints `wrote public/b/h.tgz (<n> files, <bytes> bytes)`; `package.json` has `\"booth-bundle\": \"node scripts/build-booth-bundle.mjs\"`; running `npm run booth-bundle` twice in a row leaves `git status --short public/b/h.tgz` clean the second time (reproducible bytes, D41)",
+        "`tar -tzf public/b/h.tgz` lists only paths starting `mh_harness/`, none containing `__pycache__`, `.pyc`, `results.jsonl`, `logs/` or `work/`, and includes mh_harness/PROMPTS.md, mh_harness/README.md, mh_harness/adapter.py, mh_harness/run_one.py, mh_harness/sweep.py, mh_harness/report.py, mh_harness/fake_game.py, mh_harness/configs/round1.json, mh_harness/configs/fake-round.json and the four tests/ files; `public/b/h.tgz` is committed",
+        "`src/__tests__/lib/booth-bundle.test.ts` (`/** @jest-environment node */`, jest timeout 180 s on the python case) asserts: the tarball exists and starts with bytes 1f 8b; extracted with the system `tar` into `fs.mkdtempSync`, the sorted relative file list equals that of `public/b/mh_harness/` filtered of `__pycache__`, `*.pyc`, `results.jsonl`, `logs/`, `work/`, and every file's bytes are equal (`Buffer.equals`); the only top-level entry is `mh_harness`; when `python3` (or `python` on win32) is on PATH, `python3 -m unittest discover -s tests` run with cwd = the extracted `mh_harness/` and `PYTHONDONTWRITEBYTECODE=1` exits 0, otherwise the case logs `python3 not on PATH: skipping the bundle's unit tests` and passes; `npx jest src/__tests__/lib/booth-bundle.test.ts` is green with at least 4 tests",
+        "A mutation check recorded in the plan: appending one byte to `public/b/mh_harness/README.md` without rebuilding turns the bytes-equal test red; rebuilding turns it green; the file is restored",
+        "`docs/notes/booth-bundle.md` has: the two curl lines from spec §1 (bash and PowerShell), the per-file fallback `curl -sLO https://michael-herron.vercel.app/b/mh_harness/PROMPTS.md` (and the same for adapter.py), the booth's first command for the assistant (`Read mh_harness/PROMPTS.md and do Step 1`), how to rebuild (`npm run booth-bundle`, then commit `public/b/h.tgz`), that the jest test fails when the tarball drifts from the folder, and that the bundle is unlinked on purpose (no page, nav, sitemap entry or robots rule)",
+        "CLAUDE.md: the routes table gains a row `/b/h.tgz` (served file, not a page: the booth harness bundle, unlinked, rebuilt by `npm run booth-bundle`), the Commands block gains `npm run booth-bundle`, and the test count in Commands is updated to the number `npx jest --silent 2>&1 | grep Tests:` prints",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "after": [
+        "B1"
+      ],
+      "passes": true
+    },
+    {
+      "id": "B2-02",
+      "milestone": "B2",
+      "kind": "check",
+      "model": "sonnet",
+      "description": "What Michael will see from the demo laptop: the curl | tar line against the init server yields mh_harness/, its tests pass there, round1.json is refused, a fake round runs from the extracted copy, and nothing on the site points at /b/.",
+      "steps": [
+        "In a fresh temp dir, `curl -sL http://localhost:$HARNESS_PORT/b/h.tgz | tar xz` (the server from `.harness/init.sh`) creates exactly one entry `mh_harness/` with the same file list as `tar -tzf public/b/h.tgz`; `curl -sI http://localhost:$HARNESS_PORT/b/h.tgz | head -1` is `HTTP/1.1 200 OK`; `curl -sLO http://localhost:$HARNESS_PORT/b/mh_harness/PROMPTS.md` fetches a file identical to `public/b/mh_harness/PROMPTS.md` (the per-file fallback works)",
+        "In the extracted `mh_harness/`: `python3 -m unittest discover -s tests` is green; `python3 sweep.py configs/round1.json` prints the refusal naming `base` and `mcps[0]` and exits 2; `python3 sweep.py configs/fake-round.json --parallel 4 --interval 1` prints status lines and the report table with four solved rows; `python3 report.py --md` prints the markdown table; the commands and trimmed output go in a 'What Michael will see' section of `docs/plans/2026-10-20-B2-booth-bundle.md` (create the file: it is B2's plan, with 'Files', 'What Michael will see' and 'Review' sections)",
+        "`curl.exe`-style extraction is covered by `tar -xzf h.tgz` (bsdtar-compatible ustar format): `bsdtar --version` or `tar --format=ustar` noted; `python3 -c \"import tarfile; t=tarfile.open('public/b/h.tgz'); print(t.format if hasattr(t,'format') else 'ok'); print(len(t.getmembers()))\"` opens it from Python's stdlib (the fallback extractor on Windows) and the member count matches `tar -tzf | wc -l`",
+        "`grep -rn '/b/' src/ .harness/smoke-routes.txt` is empty; `curl -s http://localhost:$HARNESS_PORT/sitemap.xml | grep -c '/b/'` prints 0; `curl -s http://localhost:$HARNESS_PORT/robots.txt` has no `/b/` line; `node .harness/smoke.mjs` is green (no route changed)",
+        "`git status --short` is clean after the check apart from the plan file and any fix; if a fix was needed it is named in the plan with the test that covers it",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "passes": true
+    },
+    {
+      "id": "B2-03",
+      "milestone": "B2",
+      "kind": "review",
+      "model": "opus",
+      "description": "An Opus review of the B2 diff (build script, jest test, note, CLAUDE.md) with Critical/Important findings fixed RED→GREEN, the simplification pass applied, and the hand-off note for Michael final.",
+      "steps": [
+        "`git diff <B1 closing commit>..HEAD > /tmp/b2.diff` (the B1-07 commit hash from `git log --oneline`); the reviewer reads the diff from that file and writes findings (Critical / Important / Minor, file:line) into the 'Review' section of `docs/plans/2026-10-20-B2-booth-bundle.md`",
+        "Every Critical and Important finding is fixed with a failing test first, or recorded as a `D<n>` default in the booth spec's §7; `npm run booth-bundle` is re-run after any change under public/b/mh_harness and `git status --short public/b/h.tgz` is clean afterwards",
+        "Simplification pass applied to scripts/build-booth-bundle.mjs and the jest test (one shared exclusion list in the test, no duplicated tar invocation, no unused imports); `npx eslint scripts src/__tests__/lib/booth-bundle.test.ts` prints nothing",
+        "The anti-goals are re-checked and the result written in the plan: no link to `/b/` anywhere in `src/`, no new runtime dependency in `package.json` (`git diff d1f2a62..HEAD -- package.json` touches only the `scripts` block), no change under `src/app/talk` or any Voice Concierge file (`git diff d1f2a62..HEAD --stat` lists no path containing `talk` or `concierge`)",
+        "`docs/notes/booth-bundle.md` and CLAUDE.md agree on the commands; `.harness/runs/portfolio_site-2026-10-20-2/progress.md` gets the B2-03 entry with the exact merge order for Michael (B1 PR, then B2 PR) and the one-line curl check to run against the Vercel preview before merging",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`"
+      ],
+      "passes": true
+    }
+  ]
+}

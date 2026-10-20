@@ -1,0 +1,17 @@
+- 2026-10-20 09:27 · feature list written: 0/10 passing
+- 2026-10-20 09:32 · B1-01 · claude-opus-5-5 · passes=true · 4 min · 1/10 passing
+- 2026-10-20 09:34 · B1-02 · claude-opus-5-5 · passes=true · 2 min · 2/10 passing
+- 2026-10-20 09:59 · B1-03 · claude-opus-5-5 · passes=true · 24 min · 3/10 passing
+- 2026-10-20 10:11 · B1-04 · claude-opus-5-5 · passes=true · 11 min · 4/10 passing
+- 2026-10-20 10:23 · B1-05 · claude-opus-5-5 · passes=true · 11 min · 5/10 passing
+- 2026-10-20 10:26 · B1-06 · claude-opus-5-5 · passes=true · 3 min · 6/10 passing
+- 2026-10-20 10:36 · B1-07 · claude-opus-5-5 · passes=true · 10 min · 7/10 passing
+- 2026-10-20 10:39 · B1 verified and tagged run/portfolio_site-2026-10-20-2/B1
+- 2026-10-20 10:39 · B1 proposed for merging · https://github.com/mh550/portfolio_site/pull/17
+- 2026-10-20 10:45 · B2-01 · claude-opus-5-5 · passes=true · 5 min · 8/10 passing
+- 2026-10-20 10:49 · B2-02 · claude-sonnet-5-5 · passes=true · 3 min · 9/10 passing
+- 2026-10-20 11:13 · B2-03 · claude-opus-5-5 · passes=true · 23 min · 10/10 passing
+- 2026-10-20 11:18 · B2 verified and tagged run/portfolio_site-2026-10-20-2/B2
+- 2026-10-20 11:18 · B2 proposed for merging · https://github.com/mh550/portfolio_site/pull/18
+- 2026-10-20 11:18 · every feature passes
+- 2026-10-20 11:18 · run ended (done): 10/10 passing · 13 sessions (13 real) · 10 features passed · $21.33 · 2.0 h · by kind: init 1 ($3.47), coding 10 ($17.31), verify 2 ($0.55) · by model: claude-fable-5-1 1 ($3.47), claude-opus-5-5 9 ($17.11), claude-sonnet-5-5 3 ($0.75)
