@@ -12,6 +12,75 @@ How Michael steers: edit `.harness/runs/voice-concierge-2026-10-20/INBOX.md` on 
 `status: run | pause | stop`; answers go under `## Answers`. Every session reads it at startup.
 
 ---
+### 2026-10-20 22:00 · verify C8
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| C8-01 | 1 | `ls docs/plans`; read `2026-10-20-C8-messages.md` | exists; sections: tool, gate exception, script, erasure (tests named) | yes |
+| C8-01 | 2 | `agent.py:49` signature; ran `pytest tests/test_messages.py tests/test_scripts.py tests/test_erasure.py` (87 pass); read `test_an_email_or_phone_contact_passes_the_gate`, `test_an_email_in_a_name_fact_is_still_rejected`, cap tests (500/120) | tool is `leave_message_for_michael(text, contact=None)`; row asserted; email contact passes; email in name fact rejected as `email`; caps tested; plan says write is `Store.add_message` under thread fence | yes |
+| C8-01 | 3 | read `test_messages_lists_newest_first` (tests/test_scripts.py:479) | seeds two messages; asserts exact order newest first, tab-separated created_at, contact or `-`, text | yes |
+| C8-01 | 4 | read `test_forget_me_deletes_the_visitors_messages`; grep README.md/MORNING.md | other visitor's message survives, mine gone; README:26 mentions tool and script; MORNING:59 and :118 mention both | yes |
+| C8-01 | 5 | `lib/check.sh` | green, 940 tests | yes |
+| C8-02 | 1 | scratch `review-C8.diff` (776 lines) vs fresh `git diff 7f5cb5c..HEAD`; plan `## Review` | diff in scratch dir per Michael's 1b; it predates the final MORNING D14/D15 lines (slightly stale snapshot, differs from fresh diff); `## Review` present | yes (stale snapshot noted) |
+| C8-02 | 2 | read `## Review`: 0 Critical/Important, 7 Minor | nothing required fixing; the per-reason reply and off-loop tests exist in test_messages | yes |
+| C8-02 | 3 | `wc -l concierge/*.py` | max 250 (memory_writer.py), session.py 246 | yes |
+| C8-02 | 4 | `lib/check.sh` | green, 940 tests | yes |
+
+### 2026-10-20 21:30 · C8-02 · passes
+
+- **Changed:** review of `git diff 7f5cb5c..HEAD -- . ':!.harness'` (776 lines) in `$HARNESS_SCRATCH/review-C8.diff`, notes under `## Review` in `docs/plans/2026-10-20-C8-messages.md`. An Opus reviewer found 0 Critical, 0 Important and 7 Minor. Fixed: a rejected message text now gets a reply for its reason (`CONTACT_IN_TEXT` vs `CANT_TAKE`), and a new off-loop test for the message write (it fails when the write is forced onto the loop). `session.py` was 282 lines, now 246: `preload_or_none` → `preload.py`, `agent_or_memoryless` → `agent.py`, `recording_options` → `config.py`. Tests 935 → 940.
+- **Verified:** `wc -l concierge/*.py` max is 250 (`memory_writer.py`). `tests/test_messages.py` 25 passed, `tests/test_critical_path.py` 6 passed. `lib/check.sh` green, 940 tests, 90 s.
+- **Step 1 path:** I wrote the diff to the scratch dir, not `/tmp/voice-concierge/`, which is outside where I may write. This applies your C7-05 answer 1b to C8. The step text is unchanged.
+- **Questions for Michael:** D14 *default*: the message text still runs the full gate, so a link, "act as …" or a date with a time is refused. Should links be allowed? D15 *default*: messages are deleted with the thread at the 30-day idle purge, and MORNING now says to read them within 30 days. Should messages outlive the purge?
+- **Proposed changes:** amend C8-02 step 1 to `$HARNESS_SCRATCH/review-C8.diff`, as you did for C7-05.
+
+### 2026-10-20 20:40 · C8-01 · passes
+
+- **Changed:** `ConciergeAgent.leave_message_for_michael(text, contact=None)` → `concierge/message_tool.py` (caps 500/120, rejects rather than truncates; contact gated with `purpose="contact"`, text with the full gate; `gate_rejected` journals field + reason only); `Store.add_message` (one fenced `write`) and `Store.messages()` (newest first), `models.Message`; `scripts/messages.py <db>`; one prompt line; README "What it does" + turn-path lines; MORNING steps 5 and 11. Plan `docs/plans/2026-10-20-C8-messages.md`. Tests 909 → 935.
+- **Also (INBOX answer):** health port bound to 127.0.0.1 (`AgentServer(host="127.0.0.1")`, test-first in `test_import_needs_no_keys`); MORNING's firewall question dropped, README says 127.0.0.1:8081; recorded in `docs/decisions.md` ("Health port: loopback only").
+- **Verified:** `tests/test_messages.py` 21 passed (row + fence bump, email/spoken-email/phone contact pass, instruction/URL/secret contact rejected, email in text rejected, `name` email rejected by `check_value` and `remember`, caps 500/501 and 120/121, NULL contact, no memory and post-`forget_me` write nothing and recreate nothing); `test_messages_lists_newest_first` + 3 more in test_scripts; `test_forget_me_deletes_the_visitors_messages`; manual `scripts/messages.py` run on a scratch db; `lib/check.sh` green, 935 tests, 90 s.
+- **Next:** C8-02 (review). `concierge/store.py` is 235 lines, `memory_writer.py` 250: close to C8-02's 250-line cap.
+- **Proposed changes:** C8-02 step 1 still writes to `/tmp/voice-concierge/review-C8.diff`, outside the allowed dirs (same as C7-05 step 1, answered 1b); suggest `$HARNESS_SCRATCH/review-C8.diff`.
+
+### 2026-10-20 17:00 · verify C7
+
+All 25 steps of C7-01..05 re-run; none flipped. Notes: spec §4.0 has 17 rows (C7-03 step 1 says 16; the README has all 17). C7-04 step 9 writes `data/concierge.db`; MORNING uses the real `db_path` default (`~/.local/share/voice-concierge/concierge.db`), a documented deviation (plan "Proposed changes", progress C7-04).
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| C7-01 | 1 | read docs/plans/2026-10-20-C7-ops-docs.md Parts 4, 5 and "Live stages" | README outline (GIF line, mermaid nodes, practice table, 2.0 mapping, results 'to measure', failure cases, run), 12 MORNING steps with commands, 5 stages (dry run, one session, live evals, latency report, hardening) each with check and undo | yes |
+| C7-01 | 2 | read Parts 1–3 | CLIs of eval_memory.py, latency_report.py, run-worker.sh, memory_history.py; messages.py reserved for C8; tests/live layout, `live` marker, LIVEKIT_URL skipif; full unit text | yes |
+| C7-01 | 3 | read "Tests for C7-02 (names)" | test functions listed per script, the unit and tests/test_live_layout.py | yes |
+| C7-01 | 4 | `lib/check.sh`, `.harness/check.sh` | green, 909 passed, 4 deselected | yes |
+| C7-02 | 1 | `env -u ANTHROPIC_API_KEY scripts/eval_memory.py`; `--offline`; read test_eval_memory_without_the_key_says_not_set_and_exits_2, test_eval_memory_offline_has_full_recall_and_no_harm | "ANTHROPIC_API_KEY not set", rc=2; offline table of 13 cases, total 20/20 (100 %), harm 0, rc=0; tests assert the same | yes |
+| C7-02 | 2 | `pytest tests/test_scripts.py`; read test_latency_report_prints_p50_and_p95_per_field, test_latency_report_prints_the_cached_token_share | 39 passed (with test_live_layout); 20 seeded rows assert p50 105.0 / p95 190.5 per field scaled, n=20, cached share 80.0 % | yes |
+| C7-02 | 3 | read tests/live/test_live.py and test_live_layout.py; `pytest -m 'not live' --collect-only` | pytestmark has live + skipif(not LIVEKIT_URL); 4 async tests; docstring says only Michael runs; "909/913 collected (4 deselected)"; test_not_live_deselects_all_four asserts "4 deselected" | yes |
+| C7-02 | 4 | read scripts/run-worker.sh; `bash -n`; read test_run_worker_without_env_exits_1_naming_livekit_url, test_run_worker_is_executable_and_parses | -rwxr-xr-x; sources env only if file exists with set -a; names missing key, provider variants, exec `.venv/bin/python -m concierge.worker "${@:-start}"`; bash -n ok; tests pass (exit 1, LIVEKIT_URL in output, empty HOME) | yes |
+| C7-02 | 5 | read deploy/voice-concierge.service; test_systemd_unit_has_the_six_keys | all six keys with the stated values (plus TimeoutStopSec, KillMode); test asserts them; systemd not invoked | yes |
+| C7-02 | 6 | `.harness/check.sh` | green, 909 passed | yes |
+| C7-03 | 1 | read README headings, sections, tables; `pytest tests/test_readme.py` | sections in the required order; mermaid has all named nodes; 17 practice rows (= spec 17) with module and tests; 6 mapping rows; Results cells all 'to measure'; limits and privacy present; 54 passed | yes |
+| C7-03 | 2 | `grep -n -i 'agents 2.0'`; `grep -E '[0-9]+ ?ms' README.md` | only the section heading and a link saying "the code is 1.8"; ms grep matches only the "about 0 ms, measured per turn as memory_on_turn_path_ms" row | yes |
+| C7-03 | 3 | read test_every_cited_test_name_exists | extracts `test_\w+` from README and asserts subset of defined tests; passes | yes |
+| C7-03 | 4 | read test_every_cited_module_and_script_path_exists | checks concierge/ scripts/ deploy/ docs/ evals/ knowledge/ paths exist; passes | yes |
+| C7-03 | 5 | `.harness/check.sh` | green | yes |
+| C7-04 | 1 | read MORNING.md steps 1–12 | numbered in the required order with the exact commands (step 9 path: see note above), spend-limit reminder, systemd alternative, kill switch | yes |
+| C7-04 | 2 | read MORNING.md | intro says keys only Michael has, about 20 minutes; every step from 3 has Check and Undo | yes |
+| C7-04 | 3 | read .env.example | the six names empty (last two marked optional) plus the four commented switch lines | yes |
+| C7-04 | 4 | `grep -n 'D[0-9]+ \*default\*' docs/decisions.md`; read MORNING "Questions for you" vs progress log questions | D7–D13 each with Finding, Choice, Rejected; questions D7–D13 plus health port mirrored | yes |
+| C7-04 | 5 | `.harness/check.sh` | green | yes |
+| C7-05 | 1 | `ls -l`, `git diff 5a59354..HEAD -- . ':!.harness'` vs scratch file; read plan "## Review" | review-C7.diff in scratch (2595 lines, equals current diff except the review note's own wording); Review section with findings and a 63-line claim table with file:line | yes |
+| C7-05 | 2 | read findings table Done column | every Critical/Important marked fixed, B-C1 and A-C3/B-I1 test-first with named tests | yes |
+| C7-05 | 3 | the `git grep` from the step; `git grep -i hostname README.md MORNING.md`; `git check-ignore`; `git ls-files '*.db'` | both greps empty; `*.db` and `data/` ignored; 0 tracked .db | yes |
+| C7-05 | 4 | `pytest -m 'not live' -q` | 909 passed, 4 deselected, no skips, 84.5 s | yes |
+| C7-05 | 5 | `.harness/check.sh` | green | yes |
+
+
+### 2026-10-20 16:30 · C7-05 · passes
+
+- **Changed:** with Michael's answers (1b, 2a), no code change was needed. I rewrote `$HARNESS_SCRATCH/review-C7.diff` (`git diff 5a59354..HEAD -- . ':!.harness'`, 2595 lines) and updated the `## Review` intro in `docs/plans/2026-10-20-C7-ops-docs.md` to cite the amended step 1. Tests 909 → 909.
+- **Verified:** step 3's amended `git grep` rc=1 (empty); the `hostname` grep on README/MORNING is empty; `*.db` and `data/` are ignored and `git ls-files '*.db'` is empty. `.venv/bin/pytest -m 'not live' -q` gives 909 passed, 4 deselected, 0 skipped, in 85 s. `lib/check.sh` is green (909 tests, 92 s). Steps 2 and 4 are unchanged since the verify run.
+- **Next:** C7 is done. Per the brief, C8 is next.
+- **Questions for Michael:** the health-port bind question in MORNING.md is still open.
 
 ### 2026-10-20 17:10 · C7-05 · not yet (parked)
 
