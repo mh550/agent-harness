@@ -12,3 +12,14 @@
 - 2026-10-19 18:17 · M3-01 · claude-opus-5-5 · passes=true · 14 min · 5/28 passing
 - 2026-10-19 18:17 · waiting on Michael: M1-04 (parked; answer in INBOX.md, then harness continue rane-one-mixxx-2026-10-19)
 - 2026-10-19 18:17 · run ended (waiting on Michael: M1-04): 5/28 passing · 10 sessions (10 real) · 7 features passed · $33.54 · 2.3 h · by kind: init 1 ($4.44), coding 8 ($28.64), verify 1 ($0.46) · by model: claude-fable-5-1 1 ($4.44), claude-opus-5-5 8 ($28.64), claude-sonnet-5-5 1 ($0.46)
+- 2026-10-20 08:14 · M1-04 unparked: INBOX.md has new answers
+- 2026-10-20 08:16 · M1-04 · claude-opus-5-5 · passes=true · 2 min · 6/28 passing
+- 2026-10-20 08:19 · M1-05 · claude-opus-5-5 · passes=true · 2 min · 7/28 passing
+- 2026-10-20 08:21 · M1 verified and tagged run/rane-one-mixxx-2026-10-19/M1 (contains unverified work of M3-01: held until that is verified)
+- 2026-10-20 08:21 · held: M1 (its tag contains another milestone's unverified work, or main has changes it wasn't verified with); it merges with the next verified milestone
+- 2026-10-20 08:41 · M2-01 · claude-opus-5-5 · passes=true · 19 min · 8/28 passing
+- 2026-10-20 08:53 · M2-02 · claude-opus-5-5 · passes=true · 12 min · 9/28 passing
+- 2026-10-20 09:08 · M2-03 · claude-opus-5-5 · passes=true · 14 min · 10/28 passing
+- 2026-10-20 09:18 · M2-04 · claude-opus-5-5 · passes=true · 10 min · 11/28 passing
+- 2026-10-20 09:18 · stopped by Michael
+- 2026-10-20 09:18 · run ended (stopped by Michael): 11/28 passing · 18 sessions (18 real) · 11 features passed · $49.29 · 3.4 h · by kind: init 1 ($4.44), coding 14 ($43.89), verify 2 ($0.84), retro 1 ($0.12) · by model: claude-fable-5-1 1 ($4.44), claude-opus-5-5 14 ($43.89), claude-sonnet-5-5 3 ($0.96)

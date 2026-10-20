@@ -14,6 +14,104 @@ Every session reads it at startup.
 
 ---
 
+### 2026-10-20 09:40 · M2-04 · passes
+
+- **Changed:** new `tools/replay` (JSONL → SMF at 1 tick = 1 ms → `tools/midi-send play <client>:0`; never starts a player itself). It drops non-channel messages and counts them, has `--from/--to/--speed`, `--dry-run [--out [--force]] [--to-port]`, and exits 4 when two clients have the same name. The gate's route walk moved byte-identical into `tools/lib/rane-route.awk`; replay runs it armed or not. New `tests/replay.test.mjs` (22), 2 midi-send tests and 17 usage cases. Tests 274 → 315; `check.sh` green.
+- **Verified:** the tests check SMF bytes and ticks within 0.5 ms of the scaled `t_us`, `--speed 2`, `--from 20 --to 37` and the quick capture's 3396/1697. The stub call log shows exactly one `aplaymidi -p 14:0 -- <tmp>` (from midi-send), the source grep finds no `aplaymidi`, and Rane names and routes exit 3. Mutation checks: 9 of 10 sabotages caught. **Live twice** (dev Mixxx, null sink): `--from 19 --to 21` gave 3396 log lines, **1697 CC 6** (the plan's predicted count; the step's "about 2000"), 0 `[Controller]` warnings and 0 mapping errors. Mixxx was stopped by its id, the default sink was unchanged and the temp SMF was removed.
+- **Sent:** twice, `tools/midi-send play 14:0 /tmp/replay-{tka3Fk,h1YK8v}/replay.mid` (3396 channel messages each, Midi Through → Mixxx only; the route walk passed). Nothing went to the Rane One.
+- **Review:** an Opus reviewer found 0 Critical, 1 Important and 7 Minor issues. The Important one: `--dry-run --out` could overwrite the input capture. It is now refused unless `--force`. Also fixed test-first: early signal handlers with temp cleanup, exit 128+n, midi-send codes other than 3/4 → 1, and midi-send's `here` via `readlink -f` with `CDPATH` cleared. Left as documented: port 0 only, and the route is checked once, before sending.
+- **Next session:** `tools/replay` is ready for M3 replays. Run the dry run first, and use a fresh `--out` (it now refuses to overwrite).
+- **Questions for Michael:** none new. D9–D12 and D14–D16 are still open.
+- **Proposed change:** M2-04 step 3: "about 2000" → "1697" (or use `--from 20 --to 22` for 1996), as M2-01 proposed.
+
+### 2026-10-20 09:20 · M2-03 · passes
+
+- **Changed:** new `tools/capture`, the read-only rawmidi capture to M2 JSONL. A `--reader` child does the only open, `fs.openSync(path, "r")`, and sends hrtime-stamped frames; the parent writes JSONL through `jsonl.mjs`. New `tests/capture.test.mjs` (15 tests) and 13 capture cases in `tools-usage`. The plan's Capture backend section now matches the build: 4 frame kinds, `CAPTURE_SND_DIR` for tests, exit-4 text, `--force` and stop semantics. Tests 246 → 274; `check.sh` green.
+- **Verified:** the FIFO tests cover 3 chunks (a split pitch bend, a SysEx, running status) with strict `readJsonl`, `--seconds 1`, SIGINT/SIGTERM/SIGHUP, and Ctrl-C to the process group. They also cover the stubbed `amidi -l` (exact name, input-only, subdevice ≠ 0 refused), `--wait`, exit 4, and ENOSPC on /dev/full ending the reader. Stable: 5 runs in a row, then 3 in parallel. The step-3 grep shows one open line (54). **Live, read-only:** `--port 'Rane ONE MIDI 1'` gave hw:2,0,0 → `/dev/snd/midiC2D0`, 0 messages in 2.0 s, exit 0. With my own aseqdump holding the port: exit 5 in 2.14 s, no file. aseqdump was killed by pid.
+- **Review:** an Opus reviewer found 1 Important issue: a parent dying outside `finish` (an output write error, SIGHUP) left the reader blocked, holding the device. I reproduced it as a hanging test and fixed it test-first (try/catch, an exit handler, SIGHUP). I also fixed 5 Minors (busy/opened race, subdevice, a lost partial frame reported, `--force` not deleting, wider test timing). Two stay documented, not fixed: a stop before the open exits 1, and the microsecond loss window at a stop.
+- **Sent:** nothing to any MIDI port. No Mixxx was started.
+- **Next session (M2-04+):** a capture of the One needs Mixxx closed (the port is exclusive; exit 5 otherwise). The busy path is not in the suite (a FIFO can't be busy), only live-checked.
+- **Questions for Michael:** none new. D9–D12 and D14–D16 are still open.
+
+### 2026-10-20 09:45 · M2-02 · passes
+
+- **Changed:** new `tools/lib/smf.mjs` (SMF read/write, tempo map → µs), `tools/lib/jsonl.mjs` (the only implementation of the M2 line format), `tools/capture-convert`, and the parser's new `flush()` in `midi-parse.mjs`. Committed `captures/2026-10-19-quick/platter.jsonl` (58650 lines, 4.8 MB) and a README line. New tests: `smf` 14, `jsonl` 7, `capture-convert` 14, plus usage cases. Tests 202 → 246; `check.sh` green.
+- **Verified:** `tools/capture-convert captures/2026-10-19-quick/platter.mid` on a fresh tree wrote 58650 lines (cc 29323, all `d1` 6; pb 29323; on 2; off 2). The last `t_us` is 48390000 and nothing was dropped. A second conversion was byte-identical to the committed file. Its type/d1/value sequence also matches aseqdump's `platter.txt` line for line (`cmp`: all 58650 messages identical). The plan's 3 example lines are the file's first 3 (asserted).
+- **Review:** an Opus reviewer found 10 issues (1 Important, 9 Minor), and I fixed all of them test-first. The Important one: SysEx divided across an F0 packet and F7 continuations was rejected. That fix is recorded as **D16 *default*** and in the plan. The other fixes: an open SysEx at EOF is now written truncated, dropped bytes fail unless `--allow-dropped`, F7 events are flagged `escape`, `parseLine` accepts only the canonical form, `--out` parsing is stricter, `--force` goes through a temp file and rename, `.midi` is accepted, and there are rounding and SysEx running-status tests.
+- **Step 2 re-runs:** without `--force`, converting onto an identical existing file is a no-op (exit 0, "already up to date"), so the verifier can run step 2 literally on the committed file. A file that differs is still refused.
+- **Sent:** nothing to any MIDI port. No Mixxx was started.
+- **Next session (M2-03+):** use `createJsonlWriter`, `readJsonl` and `parser.flush()` (at the end of a capture) from `tools/lib`, and `writeSmf` for replay (it rejects F7 escapes, real-time, system common and truncated SysEx).
+- **Questions for Michael:** D16: is it OK that capture-convert refuses dropped bytes by default (`--allow-dropped` overrides)? D9–D12, D14 and D15 are still open.
+
+### 2026-10-20 08:50 · M2-01 · passes
+
+- **Changed:** new `docs/plans/2026-10-19-M2-capture-replay.md` with the sections JSONL format, SMF library, Capture backend, Replay, Census, Capture session, HARDWARE-TESTS outline and Evidence. New `D14 *default*` (capture backend) and `D15 *default*` (session timing) in `docs/decisions.md`. Tests 202 → 202; `check.sh` green.
+- **Verified:** I checked each step against the plan with grep. The 3 example JSONL lines are decoded from `platter.mid`'s hex (CC 6 = 92 at 2651 ms, pitch bend 7829 = aseqdump's −363). Read-only probes of `/dev/snd/midiC2D0`: an `O_RDONLY` open takes 42 µs. A blocking open waits indefinitely while aseqdump holds the port (so capture times out after 2 s and exits 5). `process.exit()` hangs while a worker is blocked in `readSync`, so the reader runs in a child process; I prototyped that on a FIFO. When motor-on, the One sends ≈ 1998 messages/s. An Opus review returned 15 findings (8 Important), and I applied all of them.
+- **Sent:** nothing to any MIDI port. All my probe processes were stopped.
+- **Next session (M2-02+):** build from the plan. M2-04 step 3's `--from 19 --to 21` gives **1697** CC 6, not 2000 (the motor starts at 19.236 s). Replay drops non-channel messages and runs midi-send's route walk via a new `tools/lib/rane-route.awk`. Close Mixxx before any capture (the port is exclusive).
+- **Questions for Michael:** (1) D15: honest estimates put the §6 session at ≈ 28 min of steps plus 5 min setup, over the 25 min in M2-06/M2-07. Raise the cap to 30, or cut (pads with Shift in one mode only, the 45 step at 30 s)? (2) D14: is reading the rawmidi device OK as the backend (arecordmidi as fallback)? D9–D12 are still open.
+- **Proposed changes:** M2-01 step 3 says `D10 *default*`, but D10 was already the launcher check, so the backend is **D14**; amend the step to D14. M2-06 step 2 and M2-07 step 1: "under 25 minutes" → "under 30 minutes" (D15). M2-04 step 3: "about 2000" → "about 1700", or use `--from 20 --to 22` (1996).
+
+### 2026-10-20 08:30 · verify M1
+
+All 6 features hold; I changed no `passes`. Live run: WAYLAND_DISPLAY=wayland-1, own Mixxx instance 4244755264 started and stopped, null sink up/down, default sink unchanged throughout. `npm test` 202/202. Note: `reviews/M1.diff` no longer equals a fresh `git diff main...HEAD` (779 differing lines, later commits); the file exists, which is all the step needs.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M1-01 | 1 | `grep '^## ' docs/plans/2026-10-19-M1-dev-loop.md` | sections Null sink (l.26), Dev profile seed (72), Launcher (161), Mapping skeleton (229), MIDI parser (271), Evidence (314) | yes |
+| M1-01 | 2 | read plan l.26-60 | sink `mixxx-dev`, 48 kHz, module-null-sink via pactl; default never changed; `PULSE_SINK=mixxx-dev` via `flatpak run --env=`; check via `pactl list sink-inputs` | yes |
+| M1-01 | 3 | read plan l.72-100, 163-175 | seed table (mixxx.cfg, soundconfig.xml 48 kHz, library dir under dev profile, via mixxxdb.sqlite because 2.5 has no cfg key; reasoned) and the flatpak run command with the CLAUDE.md flags | yes |
+| M1-01 | 4 | read plan l.173-198 | instance id via `--instance-id-fd` into `dev-profile/mixxx-dev.instance`; stop = `flatpak kill <id>`; "Never `flatpak kill org.mixxx.Mixxx`" | yes |
+| M1-01 | 5 | read plan l.259-263, grep output | night rule: bound only to `Midi Through Port-0`; no `<output>`, no `midi.send*` | yes |
+| M1-01 | 6 | read plan l.271-312 | `createParser()` with `feed`, running status, SysEx, real-time bytes, `describe(msg)` | yes |
+| M1-01 | 7 | `grep -n D9 docs/decisions.md`, read l.27-36 | `D9 *default*` with sink name, routing, instance tracking, night port | yes |
+| M1-01 | 8 | `npm test` | 202 pass, 0 fail | yes |
+| M1-02 | 1 | `git log --reverse -- tests/midi-parse.test.mjs tools/lib/midi-parse.mjs` | one commit fc3c032 holds both (test and impl equal, as the step allows) | yes |
+| M1-02 | 2 | `node --test tests/midi-parse.test.mjs`; read asserts | 16/16 pass; cases for 3- and 2-byte messages, running status across feeds, split SysEx, 0xF8 inside running status, pb 0..16383, mid-message splits | yes |
+| M1-02 | 3 | node import of module | exports `createParser`, `describe`; `cc ch1 6=92`; `pb ch1 16383`, `pb ch1 8192` | yes |
+| M1-02 | 4 | read test l.208-217 | capture test asserts 58650 messages = {cc 29323, pb 29323, on 2, off 2}, dropped 0; test passes | yes |
+| M1-02 | 5 | `npm test` | 202/202 | yes |
+| M1-03 | 1 | `node --test tests/null-sink.test.mjs`; read stub l.26 | 52/52 pass; stub exits 99 on `set-default-*`; up/up-twice/down-by-recorded-id/status tests present and green | yes |
+| M1-03 | 2 | real `tools/null-sink up`, `pactl list short sinks`, `pactl info`, `status`, `down` | sink 2207 `mixxx-dev` 48000Hz listed; Default Sink `alsa_output.usb-Rane_Rane_ONE_A-00...` before, after up and after down; down removed it (count 0) | yes |
+| M1-03 | 3 | `node --test tests/install-mapping.test.mjs` | 14/14 pass: copies all, overwrites stale, refuses (exit 3) inside `.mixxx` | yes |
+| M1-03 | 4 | `npm test` | 202/202 | yes |
+| M1-04 | 1 | `node --test tests/mixxx-dev.test.mjs` | all pass (seed, flags, instance file, stop by id never by app name, stop without file exit 0, exit 3 guards) | yes |
+| M1-04 | 2 | `flatpak run --command=sh org.mixxx.Mixxx -c 'touch ~/.var/app/org.mixxx.Mixxx/dev-profile/.probe'`; evidence in plan | exit 0; file visible on host (removed after); evidence present in plan | yes |
+| M1-04 | 3 | `tools/null-sink up && tools/mixxx-dev start`; `ls mixxx.log`; grep stdout; `pactl list sink-inputs`; `stop` | start OK in 4 s; mixxx.log new (08:20:24 vs 08:18:01); stdout line 9 `Configuration file is at the current version "2.5.6"`; Mixxx stream `mixxx-dev` on Sink 2235 = mixxx-dev, only other input on sink 779 is speech-dispatcher, not Mixxx; stop printed `stopped 4244755264`, no Mixxx in `flatpak ps` | yes |
+| M1-04 | 4 | `tools/mixxx-dev log \| wc -l` | 50 lines | yes |
+| M1-04 | 5 | `npm test` | 202/202 | yes |
+| M1-05 | 1 | read xml, `tests/mapping-xml.test.mjs`, `node --check` test | controller id `Rane ONE`, scripts platter then scripts, prefix RaneOne, no output; check test passes | yes |
+| M1-05 | 2 | mapping-xml tests: init/shutdown one line, no throw, purity grep | all pass (11/11) | yes |
+| M1-05 | 3 | `node --test tests/mapping-xml.test.mjs` | 11/11 pass incl. XML parses, list matches files, no output | yes |
+| M1-05 | 4 | `tools/install-mapping`, `tools/mixxx-dev start`, read mixxx.log | `RaneOne: init Midi Through Port-0` at 08:20:24; no ControllerScriptEngine warning/error; run was under --controller-abort-on-warning and survived | yes |
+| M1-05 | 5 | `tools/midi-send play 14:0 tests/fixtures/three-notes.mid`; `tools/install-mapping` while running | 3 incoming lines status 0x90 (ch 1) at 08:20:29; reload logged `RaneOne: shutdown` then `RaneOne: init` (twice, one per watched file; plus the documented "Failed to watch script file" warnings, which the plan expects) | yes |
+| M1-05 | 6 | `npm test` | 202/202 | yes |
+| M1-06 | 1 | `ls reviews/M1.diff` | exists, 3268 lines (stale vs current tree, see note) | yes |
+| M1-06 | 2 | read `reviews/M1-findings.md`; `git show --stat` of 680b5f2 2eb7c11 5002172 e27284d 737053e 1059b30 | every Important (#1-5) has a fixing commit and a test file in that commit; "failed first" claims not independently replayed | yes |
+| M1-06 | 3 | ran each tool with a bad arg; `git grep` amidi/aplaymidi and `.mixxx` | null-sink, mixxx-dev, install-mapping, midi-send all exit 2; no amidi/aplaymidi outside midi-send; `.mixxx` appears only in `tools/lib/profile.sh` (the guard); tools-usage tests 20/20 | yes |
+| M1-06 | 4 | read README.md; spec l.52 | Dev loop section 15 lines incl. heading and a blank, covers all four tools; spec M1 "Done 2026-10-19" | yes |
+| M1-06 | 5 | `npm test` | 202/202 | yes |
+
+### 2026-10-20 08:19 · M1-05 · passes
+
+- **Changed:** no code. I re-verified every step live and added the 08:17 evidence to `docs/plans/2026-10-19-M1-dev-loop.md` (M1-05 binding). Tests 202 → 202; `check.sh` green.
+- **Steps 1–3:** `node --check` OK on both scripts. The XML has controller id `Rane ONE`, the scripts in order (prefix `RaneOne`) and no `<output>`. `tests/mapping-xml.test.mjs` 11/11, including the purity grep.
+- **Step 4 (live, `WAYLAND_DISPLAY=wayland-1`):** `null-sink up && install-mapping && mixxx-dev start` → `running: 3019912654` in 6 s, stream on sink 2120 `mixxx-dev`. `mixxx.cfg` binds `Midi_Through_Port-0` to the dev-profile mapping. The log has `RaneOne: init Midi Through Port-0` and 0 Warning/Critical/Fatal/Mapping Error lines on `[Controller]`.
+- **Step 5 (as amended):** `tools/midi-send play 14:0 tests/fixtures/three-notes.mid` → exit 0 and exactly 3 `status 0x90` lines (+3 `0x80`). Re-running `tools/install-mapping` → 2 `RaneOne: shutdown` → `RaneOne: init` pairs, with only the predicted `Failed to watch script file` warnings. Then stop, `flatpak ps` with no Mixxx, sink down, Default Sink unchanged (Rane ONE), no `mixxx` process left.
+- **Sent to the Rane:** nothing. The only MIDI sent was the fixture, to Midi Through 14:0, whose only onward subscription was Mixxx (128:1).
+- **Next session:** all of M1 passes now.
+- **Questions for Michael:** D9–D12 defaults are still open (see earlier entries).
+- **Proposed changes:** M1-05 step 4: "no `ControllerScriptEngine` warning" → "no Warning/Critical on the `[Controller]` thread". That category doesn't exist; the 17:36 entry has the details.
+
+### 2026-10-20 08:17 · M1-04 · passes
+
+- **Changed:** no code. The launcher already used option (a) for readiness (D10), so step 3 as amended only needed a live re-check. Added launch 5's evidence to `docs/plans/2026-10-19-M1-dev-loop.md`. Tests 202 → 202; `check.sh` green.
+- **Verified (live, `WAYLAND_DISPLAY=wayland-1`, 08:14:50):** `tools/null-sink up && tools/mixxx-dev start` → `running: 3013574568`, rc 0 in 8 s. New `mixxx.log` (inode 49306080 → 49310666). This launch's `mixxx-dev.stdout` line 9 is `Configuration file is at the current version "2.5.6"`. The Mixxx stream (`mixxx.bin`) was on sink 2029 `mixxx-dev`. The only stream on the Rane was `speech-dispatcher-dummy` (not ours) and none was on the PCI sink. `tools/mixxx-dev log` printed 50 lines, identical to `tail -n 50`. After `stop`, `flatpak ps` showed no Mixxx. Sink down; Default Sink/Source unchanged; no `mixxx.bin` left running. Step 1: `tests/mixxx-dev.test.mjs` 67/67. Step 2: probe re-run, exit 0, file visible on the host, then deleted.
+- **Sent to the Rane:** nothing.
+- **Next session:** M1-05 step 5 is amended (shutdown is proven by a hot reload via `tools/install-mapping`). Re-verify it live. The other M1-05 steps held in verify-M1.
+- **Questions for Michael:** D9–D12 defaults are still open (see earlier entries).
+- **Proposed changes:** none.
+
 ### 2026-10-19 18:17 · M3-01 · passes
 
 - **Changed:** new `docs/plans/2026-10-19-M3-measurement.md` (WAV library, make-test-audio, wow-flutter algorithm, Telemetry format, drift, record-output, Evidence); `D11 *default*` (telemetry JSONL) and `D12 *default*` (how §3's wow & flutter is measured) in `docs/decisions.md`. **Suite fix first:** the init check was red on a rare race in `tools/mixxx-dev start`. It read the id file, then checked whether the launcher was alive, so a launcher that wrote its id and exited in between looked dead. Liveness is now sampled before the read. Not reproduced in 60 stressed runs; the fix is correct by construction (reviewer agreed). Tests 202 → 202; `check.sh` green.

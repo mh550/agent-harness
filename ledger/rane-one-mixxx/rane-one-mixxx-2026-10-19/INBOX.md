@@ -19,3 +19,6 @@ I won't write a line into Mixxx's log myself, because that would be faking it.
 - **b)** Drop `--controller-debug` from the dev launch. That changes CLAUDE.md, and it hides the mapping's debug output.
 
 ## Answers
+
+### 2026-10-20 08:14 (local)
+M1-04: option (a). I amended step 3 in feature_list.json (new mixxx.log within 60 s + this launch's mixxx-dev.stdout has the 'Configuration file is at the current version "2.5.6"' line). Keep --controller-debug. M1-05: step 5 amended too: shutdown() is proven by a hot reload (re-run tools/install-mapping), not by stop.

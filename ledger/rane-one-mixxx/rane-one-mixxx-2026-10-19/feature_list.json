@@ -47,11 +47,11 @@
       "steps": [
         "tests/mixxx-dev.test.mjs passes with stubbed `flatpak`, `pactl` and `tools/null-sink`: `start` seeds a missing dev profile (mixxx.cfg, soundconfig.xml, controllers/), passes `--settings-path <profile> --controller-debug --controller-abort-on-warning --developer` and `--env=PULSE_SINK=mixxx-dev`, records the new `flatpak ps` instance id in `<profile>/mixxx-dev.instance`; `stop` runs `flatpak kill <that id>` and never `flatpak kill org.mixxx.Mixxx`; `stop` with no instance file exits 0 and kills nothing; `start` refuses (exit 3) when the profile path is inside `.mixxx`.",
         "`flatpak run --command=sh org.mixxx.Mixxx -c 'touch ~/.var/app/org.mixxx.Mixxx/dev-profile/.probe'` succeeds and the file is visible from the host; the command and result are in docs/plans/2026-10-19-M1-dev-loop.md under Evidence.",
-        "With WAYLAND_DISPLAY set: `tools/null-sink up && tools/mixxx-dev start` produces `~/.var/app/org.mixxx.Mixxx/dev-profile/mixxx.log` containing the Mixxx version line within 60 s; `pactl list sink-inputs` shows a Mixxx stream on `mixxx-dev` and none on the Rane ONE or PCI sinks; `tools/mixxx-dev stop` removes the instance from `flatpak ps`. If WAYLAND_DISPLAY is unset, the progress entry says so and this step is marked skipped.",
+        "With WAYLAND_DISPLAY set: `tools/null-sink up && tools/mixxx-dev start` produces a **new** `~/.var/app/org.mixxx.Mixxx/dev-profile/mixxx.log` within 60 s and this launch's `dev-profile/mixxx-dev.stdout` contains `Configuration file is at the current version \"2.5.6\"` (Mixxx 2.5.6 filters its version line out of mixxx.log under --controller-debug; amended by Michael 2026-10-20, option a); `pactl list sink-inputs` shows a Mixxx stream on `mixxx-dev` and none on the Rane ONE or PCI sinks; `tools/mixxx-dev stop` removes the instance from `flatpak ps`. If WAYLAND_DISPLAY is unset, the progress entry says so and this step is marked skipped.",
         "`tools/mixxx-dev log` prints the last 50 lines of the dev profile's mixxx.log.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-05", "milestone": "M1", "kind": "build", "model": "opus",
@@ -61,10 +61,10 @@
         "mapping/Rane-One-scripts.js defines `RaneOne.init` and `RaneOne.shutdown`, each logging exactly one line via console.log (`RaneOne: init ...` / `RaneOne: shutdown`), and every handler body is wrapped so it cannot throw; mapping/rane-one-platter.js is a pure object `RaneOnePlatter` with no engine/midi/print reference (a test greps for them).",
         "tests/mapping-xml.test.mjs passes: the XML parses, its script list matches the files in mapping/, and no `<output>` element exists.",
         "tools/install-mapping ran, the dev profile binds the mapping to `Midi Through Port-0` (the exact mixxx.cfg/controllers entries are documented in the M1 plan under Evidence), and after `tools/mixxx-dev start` the log contains `RaneOne: init` with no `ControllerScriptEngine` warning or error, under --controller-abort-on-warning.",
-        "`tools/midi-send play 14:0 tests/fixtures/three-notes.mid` (client resolved by name from `aconnect -o`) while Mixxx runs produces three `MIDI` lines with status 90 in mixxx.log; `tools/mixxx-dev stop` then logs `RaneOne: shutdown`. Skipped with a note if WAYLAND_DISPLAY is unset.",
+        "`tools/midi-send play 14:0 tests/fixtures/three-notes.mid` (client resolved by name from `aconnect -o`) while Mixxx runs produces three `MIDI` lines with status 90 in mixxx.log; then re-running `tools/install-mapping` while Mixxx runs (a script hot reload) logs `RaneOne: shutdown` followed by `RaneOne: init` (`tools/mixxx-dev stop` is a hard kill and Mixxx 2.5 has no SIGTERM handler, so stop cannot log it; amended by Michael 2026-10-20). Skipped with a note if WAYLAND_DISPLAY is unset.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-06", "milestone": "M1", "kind": "review", "model": "opus",
@@ -92,7 +92,7 @@
         "npm test is green."
       ],
       "after": ["M1"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-02", "milestone": "M2", "kind": "build", "model": "opus",
@@ -104,7 +104,7 @@
         "captures/2026-10-19-quick/README.md gains a line naming platter.jsonl and the conversion command.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-03", "milestone": "M2", "kind": "build", "model": "opus",
@@ -116,7 +116,7 @@
         "`tools/capture --help` documents port, device, out, seconds and the Ctrl-C stop.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-04", "milestone": "M2", "kind": "build", "model": "opus",
@@ -127,7 +127,7 @@
         "With Mixxx running (tools/mixxx-dev start): `tools/replay --to-port 'Midi Through' --from 19 --to 21 captures/2026-10-19-quick/platter.jsonl` produces about 2000 CC-6 lines in dev-profile/mixxx.log (counted with grep) and no script warning; then tools/mixxx-dev stop. Skipped with a note if WAYLAND_DISPLAY is unset.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-05", "milestone": "M2", "kind": "build", "model": "opus",
