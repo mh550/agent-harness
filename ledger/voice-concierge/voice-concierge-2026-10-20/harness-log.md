@@ -1,0 +1,51 @@
+- 2026-10-20 00:20 · feature list written: 0/37 passing
+- 2026-10-20 00:23 · C1-01 · claude-opus-5-5 · passes=true · 3 min · 1/37 passing
+- 2026-10-20 00:26 · C1-02 · claude-opus-5-5 · passes=true · 3 min · 2/37 passing
+- 2026-10-20 00:33 · C1-03 · claude-opus-5-5 · passes=true · 6 min · 3/37 passing
+- 2026-10-20 00:40 · C1-04 · claude-opus-5-5 · passes=true · 7 min · 4/37 passing
+- 2026-10-20 00:47 · C1-05 · claude-opus-5-5 · passes=true · 6 min · 5/37 passing
+- 2026-10-20 00:57 · C1-06 · claude-opus-5-5 · passes=true · 10 min · 6/37 passing
+- 2026-10-20 00:58 · C1 verified and tagged run/voice-concierge-2026-10-20/C1
+- 2026-10-20 00:59 · C1 merged into main · https://github.com/mh550/voice-concierge/pull/1
+- 2026-10-20 01:11 · C2-01 · claude-opus-5-5 · passes=true · 12 min · 7/37 passing
+- 2026-10-20 01:26 · P1-01 · claude-opus-5-5 · passes=true · 14 min · 8/38 passing
+- 2026-10-20 01:26 · merged main into harness/voice-concierge-2026-10-20
+- 2026-10-20 01:27 · P1 verified and tagged run/voice-concierge-2026-10-20/P1 (contains unverified work of C2-01: held until that is verified)
+- 2026-10-20 01:27 · held: P1 (its tag contains another milestone's unverified work, or main has changes it wasn't verified with); it merges with the next verified milestone
+- 2026-10-20 01:37 · C2-02 · claude-opus-5-5 · passes=true · 10 min · 9/38 passing
+- 2026-10-20 01:52 · C2-03 · claude-opus-5-5 · passes=true · 14 min · 10/38 passing
+- 2026-10-20 02:04 · C2-04 · claude-opus-5-5 · passes=true · 12 min · 11/38 passing
+- 2026-10-20 02:16 · C2-05 · claude-opus-5-5 · passes=true · 11 min · 12/38 passing
+- 2026-10-20 02:18 · C2 verified and tagged run/voice-concierge-2026-10-20/C2
+- 2026-10-20 02:18 · C2 merged into main · https://github.com/mh550/voice-concierge/pull/2
+- 2026-10-20 02:33 · C3-01 · claude-opus-5-5 · passes=true · 14 min · 13/38 passing
+- 2026-10-20 02:43 · C3-02 · claude-opus-5-5 · passes=true · 10 min · 14/38 passing
+- 2026-10-20 02:57 · C3-03 · claude-opus-5-5 · passes=true · 13 min · 15/38 passing
+- 2026-10-20 03:06 · C3-04 · claude-opus-5-5 · passes=true · 8 min · 16/38 passing
+- 2026-10-20 03:06 · merged main into harness/voice-concierge-2026-10-20
+- 2026-10-20 03:08 · C3 verified and tagged run/voice-concierge-2026-10-20/C3
+- 2026-10-20 03:08 · C3 merged into main · https://github.com/mh550/voice-concierge/pull/3
+- 2026-10-20 03:08 · P1 merged into main with C3
+- 2026-10-20 03:29 · C4-01 · claude-opus-5-5 · passes=true · 21 min · 17/38 passing
+- 2026-10-20 03:45 · C4-02 · claude-opus-5-5 · passes=true · 16 min · 18/38 passing
+- 2026-10-20 03:54 · C4-03 · claude-opus-5-5 · passes=true · 8 min · 19/38 passing
+- 2026-10-20 04:41 · C4-04 · claude-opus-5-5 · passes=true · 46 min · 20/38 passing
+- 2026-10-20 04:56 · C4-05 · claude-opus-5-5 · passes=true · 14 min · 21/38 passing
+- 2026-10-20 05:12 · C4-06 · claude-opus-5-5 · passes=true · 15 min · 22/38 passing
+- 2026-10-20 05:12 · merged main into harness/voice-concierge-2026-10-20
+- 2026-10-20 05:14 · C4 verified and tagged run/voice-concierge-2026-10-20/C4
+- 2026-10-20 05:14 · C4 merged into main · https://github.com/mh550/voice-concierge/pull/4
+- 2026-10-20 05:27 · C5-01 · claude-opus-5-5 · passes=true · 12 min · 23/38 passing
+- 2026-10-20 05:44 · C5-02 · claude-opus-5-5 · passes=true · 17 min · 24/38 passing
+- 2026-10-20 06:13 · C5-03 · claude-opus-5-5 · passes=true · 28 min · 25/38 passing
+- 2026-10-20 06:34 · C5-04 · claude-opus-5-5 · passes=true · 20 min · 26/38 passing
+- 2026-10-20 06:34 · merged main into harness/voice-concierge-2026-10-20
+- 2026-10-20 06:36 · C5 verified and tagged run/voice-concierge-2026-10-20/C5
+- 2026-10-20 06:36 · C5 merged into main · https://github.com/mh550/voice-concierge/pull/5
+- 2026-10-20 06:58 · C6-01 · claude-opus-5-5 · passes=true · 21 min · 27/38 passing
+- 2026-10-20 07:09 · C6-02 · claude-opus-5-5 · passes=true · 11 min · 28/38 passing
+- 2026-10-20 07:33 · C6-03 · claude-opus-5-5 · passes=true · 24 min · 29/38 passing
+- 2026-10-20 07:55 · C6-04 · claude-opus-5-5 · passes=true · 21 min · 30/38 passing
+- 2026-10-20 08:13 · C6-05 · claude-opus-5-5 · passes=true · 16 min · 31/38 passing
+- 2026-10-20 08:13 · deadline reached
+- 2026-10-20 08:13 · run ended (deadline): 31/38 passing · 38 sessions (38 real) · 31 features passed · $131.59 · 8.0 h · by kind: init 1 ($6.04), coding 31 ($123.88), verify 6 ($1.66) · by model: claude-fable-5-1 1 ($6.04), claude-opus-5-5 31 ($123.88), claude-sonnet-5-5 6 ($1.66)
