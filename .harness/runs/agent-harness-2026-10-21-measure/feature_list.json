@@ -175,7 +175,7 @@
         "git diff --stat shows only the plan file changed; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E1"],
-      "passes": false },
+      "passes": true },
     { "id": "E3-02", "milestone": "E3", "kind": "build", "model": "opus",
       "description": "Worktree sessions no longer get CLAUDE.md pasted (one line names it), and the Init output section is the last 40 lines plus the path to the full log.",
       "steps": [
