@@ -61,7 +61,7 @@
         "prompts/retro.md names summary.json's tokens, orientation, rework and first-attempt keys as inputs",
         "Both checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E1-07", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "The ledger row carries harness_version and harness_dirty, and `harness trends --by version` groups the new metrics by harness version.",
       "steps": [

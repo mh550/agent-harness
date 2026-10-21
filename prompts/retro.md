@@ -6,6 +6,8 @@ You review how **the harness** did on this run, so the harness can improve. You 
 
 Read (with `jq`/`grep` for large files; never read a `.jsonl` transcript whole):
 - `{{SUMMARY}}`: the run's numbers (features, causes of non-passing features, cost by role, time, guards).
+  Its `tokens` (cache hit rate, context peak), `orientation`, `rework` and `first_attempt_pass_rate` (with
+  `verify_fail_rate`) say where the run spent tokens and which features needed rework; use them before guessing.
 - `{{RUN_DIR}}/harness-log.md` (driver events) and the newest ~15 entries of `{{RUN_DIR}}/progress.md`.
 - `{{RUN_DIR}}/feature_list.json` and `{{RUN_DIR}}/brief.md` if present.
 - Session transcripts in `{{STATE}}/logs/` only to confirm a specific claim (final `result` events).

@@ -418,6 +418,16 @@ agents are driven*.
   real capture, so every stub session would show none and the demo check (`orient_tokens > 0`) could not hold without
   a hand-made orientation event in the stub. It adds one request per session to both numbers, the same for every run,
   so comparisons across harness versions are unaffected.
+- **The run's numbers (E1-06):** `summary.mjs build` adds `tokens` (the four sums over every row, null as 0;
+  `cache_hit_rate` over the whole input; the highest `context_peak`; `by_role`), `per_verified_feature` { cost, tokens }
+  (over `features.verified`, null at 0), `orientation` (the `median` of real coding rows' `orient_*`, nulls skipped;
+  even counts take the mean of the two middles, rounded: integers for tokens and turns, 2 decimals for seconds),
+  `rework` (ids in list order: harness-log `<id> un-passed: suite red` or `: <id> failed the re-check`, or more than
+  one real coding session), `first_attempt_pass_rate` (passing and not rework / features with a real coding session)
+  and `verify_fail_rate` (`failed the re-check` lines / those + verified features). `report` gains a `Tokens` and a
+  `Quality` row after `Spend by role`, only for summaries that have the keys (older ledger summaries keep their
+  rows); `prompts/retro.md` names the keys as inputs. Demo: rework A, C; first-attempt 0.33; verify-fail 0.25.
+  *Rejected:* rework from `attempts.json` (local state only; the committed harness-log and metrics carry it).
 - **Known limit:** `context_peak` and orientation count every assistant event, a subagent's (`parent_tool_use_id`
   set) too, if the CLI streams them (a subagent's edit would end orientation). Assistant `output_tokens` are the
   streamed partial (see above), so orientation's output share is understated.

@@ -6,6 +6,14 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 17:20 · E1-06 · passes
+
+- **What changed:** `lib/summary.mjs`: `median` and `tokenTotals` exported (pure); `build` adds `tokens` (+ `by_role`), `per_verified_feature` { cost, tokens }, `orientation` { tokens, turns, seconds } (medians of real coding rows), `rework`, `first_attempt_pass_rate`, `verify_fail_rate` as plan §7; `report` gains `Tokens` and `Quality` rows after `Spend by role` (only for summaries that have the keys, so older ledger summaries print as before). `prompts/retro.md` names the keys as inputs. D-H34 gains "The run's numbers (E1-06)". Tests 181 → 183.
+- **Watched failing** on a scratch copy: `FAIL summary: tokens, per verified feature, first-attempt rate, rework`, `FAIL report shows tokens and quality` (181/183).
+- **Verified:** the new `build` on the saved demo state: tokens in 40 / cache_read 357680 / cache_write 136510 / out 2190, hit 0.724, peak 24881, per verified feature $1.08 / 165473 tokens, orientation 24547 / 1 / 0.23 s, rework [A, C], first-attempt 0.33, verify-fail 0.25 (= plan §7). `node --check`, `bash -n`; `check.sh` green in 276 s, 183/183. Opus review: no bugs; its `1000.0k` rounding note fixed.
+- **Next session (E1-07) must know:** a run whose metrics rows predate E1-04 sums its tokens as 0, not null (plan: "null tokens count as 0"), so a ledger row for such a run would carry `tokens.in` 0; E1-07 may want to treat 0 input as "not recorded".
+- **Proposed change:** `cause()` in `summary.mjs` (older code) builds its `un-passed: suite red` / `failed` regexes from an unescaped, unanchored id (`A` matches `BA un-passed`); the new `rework` code escapes and anchors. A one-line fix for E1-09's simplify pass.
+
 ### 2026-10-21 16:45 · E1-05 · passes
 
 - **What changed:** `lib/metrics.mjs` `orientation(evs)` exported → `{ tokens, turns, seconds }`; `outcome()` and `append` write `orient_tokens orient_turns orient_s` after `context_peak`; 2 checks in `tests/run.sh`; D-H34 gains an "Orientation (E1-05)" paragraph and a widened known limit. Tests 179 → 181.
