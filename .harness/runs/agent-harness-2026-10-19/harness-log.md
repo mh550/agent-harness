@@ -10,3 +10,12 @@
 - 2026-10-19 12:22 · P2-02 · claude-opus-5-5 · passes=true · 11 min · 7/15 passing
 - 2026-10-19 12:41 · P2-03 · claude-sonnet-5-5 · passes=true · 19 min · 8/15 passing
 - 2026-10-19 13:14 · P2-04 · claude-opus-5-5 · passes=true · 29 min · 9/15 passing
+- 2026-10-19 13:15 · P2 verified and tagged run/agent-harness-2026-10-19/P2
+- 2026-10-19 13:15 · P2 proposed for merging · https://github.com/mh550/agent-harness/pull/2
+- 2026-10-19 13:37 · P3-01 · claude-opus-5-5 · passes=true · 22 min · 10/15 passing
+- 2026-10-19 14:01 · P3-02 · claude-opus-5-5 · passes=true · 23 min · 11/15 passing
+- 2026-10-19 14:30 · P3-03 · claude-opus-5-5 · passes=true · 28 min · 12/15 passing
+- 2026-10-19 14:48 · P3-04 · claude-opus-5-5 · passes=true · 18 min · 13/15 passing
+- 2026-10-19 15:05 · P3-05 · claude-opus-5-5 · passes=true · 16 min · 14/15 passing
+- 2026-10-19 15:41 · P3-06 · claude-opus-5-5 · passes=true · 36 min · 15/15 passing
+- 2026-10-19 15:46 · verify P3: evidence short of the steps (P3-02 7/8); re-running on opus

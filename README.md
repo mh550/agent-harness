@@ -85,6 +85,17 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
   Ask a Claude session "answer the harness": it runs `harness parked`, checks what it safely can (variable names, never
   values), proposes, and runs `harness answer` only after your yes. Set `DESK_URL` (above) to get **Answer with Claude**
   on a park's notification; `templates/user/config.sh` documents every user setting.
+- **The desk:** with `DESK=1` in `~/.config/harness/config.sh` (off by default) the harness starts the session for you
+  whenever a run needs you (a park, a blocked or waiting end, verify or a merge needing you, a debrief with something
+  under Needs Michael): a Remote Control `claude` in tmux session `h-desk`, one window per run, on `DESK_MODEL` (opus).
+  On the phone you get a second notification, `[<run>] needs you: <why>`; tapping it opens that session in the Claude
+  app, already briefed: it has read `harness parked`, the INBOX and the progress log and sends one numbered brief. Answer
+  there; it runs `harness answer` and the continue only after your yes. A later event for the same run is typed into the
+  same session. By hand: `harness desk <run> [--why "…"]`, `harness desk --debrief`; `harness desk --list` (window, run,
+  URL, age), `harness desk --close <run>|--all`; `harness gc <project>` closes desks idle for 24 h (and keeps the
+  worktree of a run whose desk is open). A desk showing a dialog gets nothing typed in: answer it first. A desk that can't
+  start (no tmux, no URL within a minute) is a line in `harness-log.md` and the plain notification; it never changes
+  the run. Turning it on in stages: `docs/plans/2026-10-19-P3-desk.md`, "For Michael: turning it on".
 - **After a partial run:** nothing, usually: verified milestones are already merged and a continuation is queued.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 - **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and
@@ -124,6 +135,6 @@ ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harne
 ## Tests
 
 ```bash
-tests/run.sh    # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 140 checks (~3 min)
+tests/run.sh    # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 168 checks (~4 min)
 ```
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

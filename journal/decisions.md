@@ -306,3 +306,33 @@ agents are driven*.
   confuse); listing gc'd runs with a "worktree gone" line (nothing can be done there; *default*, Michael may want it
   back); a skill that edits INBOX.md itself (the driver's merge of `harness answer` is the one writer besides the
   GitHub app); installing the skill into `~/.claude` from the harness (Michael's directory, CLAUDE.md rules).
+
+### D-H31 · The desk starts itself: a Remote Control claude in tmux, one per run, the pane's URL as the click *(accepted 2026-10-19, built in P3 of run agent-harness-2026-10-19; DESK=0 until Michael has tried it)*
+- **Finding:** after D-H30 answering from the phone still meant Michael opening a session himself (Answer with Claude
+  → `DESK_URL`) and asking it what the harness needs; the session started cold. By hand on 2026-10-19 (CLI 2.1.303),
+  `claude --remote-control "<name>"` in a tmux window prints `/remote-control is active · … at
+  https://claude.ai/code/session_…` within seconds, that URL opens the session on the phone, and text typed with
+  `tmux send-keys -l` + `Enter` is submitted like input. A fresh worktree isn't trusted (its prompt blocks); the
+  project directory is.
+- **Choice:** `harness desk <run> [--why …]` (`lib/desk.sh`) writes a prompt (`prompts/desk.md`: read `harness parked`,
+  status, INBOX, progress; check safely; one numbered brief; `harness answer` and the continue only after his reply),
+  starts window `<run>` in tmux session `h-desk` running `claude --remote-control "desk · <run> · <why>" --model
+  $DESK_MODEL --add-dir <worktree>` in the project directory, waits ≤ 60 s for the session URL in the pane, types
+  `Read <prompt> and follow it.`, and notifies with the URL as the click. One desk per run: a later event is typed into
+  the live window. No URL in time: the window is killed and a plain notification goes out. The driver starts one on a
+  park, a blocked or waiting run end, verify or a merge needing Michael; the debrief when its note needs him. `DESK=0`
+  by default. A desk never changes a run: the driver's helper notes a failure and returns 0, and commits the desk's note
+  at once (the retro's revert would drop it). Built with the P3 review (`docs/plans/2026-10-19-P3-review.md`): an open
+  desk whose screen shows a dialog (the CLI's own words: `No, and tell Claude what to do differently`, `Esc to cancel`,
+  `Enter to select`, `Esc to close`; not `Do you want to`, which the desk itself asks) gets nothing typed, since the
+  typed Enter would answer it for Michael; the notification says to answer it first. A refused merge tells Michael and
+  his desk once per tag commit while the run goes; `harness merge` says it every time and starts no desk (he is at
+  the terminal). `harness gc` keeps the worktree of a run whose desk is open. `harness desk --list|--close <run>|--all`;
+  gc closes desks idle for 24 h. The `why` a desk is typed is session-written text (a park's `PARKED:` line): one line,
+  control characters gone, 200 chars, typed with `send-keys -l` after a fixed prefix and never run; it is no new trust
+  boundary (a session can already write INBOX.md, which the desk reads). *Defaults* (plan §12): the driver's own
+  notification still goes out, so DESK=1 means two per event; the start is synchronous.
+- **Rejected:** `claude remote-control` server mode (no initial prompt, no per-session URL); answers through ntfy (an
+  answer is an instruction to agents: it must come through GitHub or a session signed in as Michael); starting in the
+  worktree (the trust prompt blocks); matching tmux targets by name (`-t h-desk` matches `h-desk-x` by prefix: exact
+  `=` and window ids instead).

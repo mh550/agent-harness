@@ -14,8 +14,9 @@
 #      A session that can't go on without Michael ends with "PARKED: <why>": the feature is parked (no attempt spent)
 #      until INBOX.md's answers change, and work that doesn't depend on it goes on. Past WEEKLY_STOP_AT of the plan's
 #      7-day window (as sessions report it), the run ends before its next coding session.
-#   4. the end, whatever the reason: summary.json and report.md, a notification, a retro session, the harness ledger,
-#      and (after a session cap, within the run's --until) a continuation in the queue.
+#      DESK=1: whatever needs Michael (a park, verify, a refused merge or conflict) also starts his desk (lib/desk.sh).
+#   4. the end, whatever the reason: summary.json and report.md, a notification (blocked or waiting: the desk too), a
+#      retro session, the harness ledger, and (after a session cap, within the run's --until) a continuation in the queue.
 # Verify and retro sessions may not change code: whatever they change outside the run record (retro: anything) is
 # reverted. A session that ends on a usage limit or API error keeps its commits but not its "passes".
 # Environment (set by bin/harness): WT RUN_ID STATE PROJECT_DIR HARNESS_HOME
@@ -114,6 +115,17 @@ take_answers() {
 # A milestone Michael must act on (verify, a conflict): high, one tap from the run-record file that explains it.
 needs_you() {   # <milestone> <why> <file in the run record>
   notify "$1 needs Michael: $2" title="[$RUN_ID] $1 needs you" priority=high click="$(gh_url "$RUN_DIR/$3")"
+  desk "$1 needs Michael: $2"
+}
+
+# DESK=1: a Remote Control session briefs Michael (lib/desk.sh). It never changes the run: a failure is a note.
+# Its note is committed at once: left over, the retro's revert would drop it, or a session's "WIP" commit take it.
+# 9>&-: no lock fd may reach a tmux server it starts.
+desk() {
+  [[ $DESK == 1 ]] || return 0
+  "$HARNESS_HOME/bin/harness" desk "$RUN_ID" --why "$1" > /dev/null 2>&1 9>&- || note "desk: could not start (exit $?): $1"
+  [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: desk"; sync; }
+  return 0
 }
 
 # The park's notification: the question the session wrote in INBOX.md and how to answer, with the INBOX one tap away.
@@ -216,7 +228,12 @@ merge_one() {
     git push -q origin --delete "$head" 2>/dev/null
     touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH · $url"; notify "$m merged · $url" click="$url"
   else
-    note "$m: the merge was refused; PR left open for Michael · $url"; notify "$m needs Michael: merge refused · $url" title="[$RUN_ID] $m needs you" priority=high click="$url"; return 1
+    # once per tag commit (merge_milestones runs again after every verify and at the end); `harness merge` always says so
+    [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/refused-$m" 2>/dev/null) == "$c" ]] && return 1
+    echo "$c" > "$STATE/refused-$m"
+    note "$m: the merge was refused; PR left open for Michael · $url"; notify "$m needs Michael: merge refused · $url" title="[$RUN_ID] $m needs you" priority=high click="$url"
+    [[ ${HARNESS_MERGE_ONLY:-} ]] || desk "$m: merge refused"   # `harness merge`: Michael is at the terminal
+    return 1
   fi
 }
 
@@ -372,6 +389,7 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
   notify "ended ($1): $sum" title="[$RUN_ID] ended: $1" priority=$pri click="$(gh_url "$RUN_DIR/report.md")" actions="$acts"
   # a failed post notes it in harness-log.md: commit it now, before a retro that may never finish
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: run-end notification failed"; sync; }
+  case $1 in "blocked on"* | "waiting on Michael"*) desk "ended: $1" ;; esac   # after that commit: its note is no failed post
   if [[ $RETRO == 1 && -f $LIST ]]; then retro; SUM build "$WT" "$RUN_ID" "$STATE" > "$RUN_DIR/summary.json"; fi
   SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"
   commit_all "HARNESS: summary and retro"; sync
@@ -527,6 +545,7 @@ while :; do
   commit_all "HARNESS: after $id (passes=$passed)"; sync
   if [[ -n $why ]]; then   # after the push, so its links show the question; a failed post's note is committed too
     notify_park "$id" "$why"; [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: park notification failed"; sync; }
+    desk "$id parked: $why"
   fi
 
 done

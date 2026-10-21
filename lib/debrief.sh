@@ -14,6 +14,7 @@
 #   4. its "CONTINUE: <run> :: <brief>" lines are checked here and queued (`harness queue add --continue … --keep-attempts`);
 #      the note overwrites <ledger>/debrief.md (git history is the archive), and debrief.html beside it shows a card per
 #      run (from summary.json) above the note; NOTIFY_CMD gets the headline and the note's path, DEBRIEF_PAGE_CMD the page
+#   5. DESK=1 and a non-empty "Needs Michael": `harness desk --debrief` (a Remote Control session briefs him on the note)
 # --dry-run: print the context only.
 set -uo pipefail
 : "${HARNESS_HOME:?}"
@@ -325,4 +326,6 @@ HL[0]="[debrief] ${HL[0]:-}"
 NM=$(awk '/^## / { on = tolower($0) ~ /^## needs michael/; next } on && NF' "$WS/body.md" | grep -Evix '[-*_ ]*(nothing|none)\.?[*_[:space:]]*' \
   | grep -Ev '^- (Queued|Not queued): ')
 notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}"
+# DESK=1 and something needs Michael: a Remote Control session briefs him on the note (9>&-: debrief.lock stays ours)
+[[ -n $NM && $DESK == 1 ]] && { "$H" desk --debrief > /dev/null 2>&1 9>&- || log "debrief: desk could not start (exit $?)"; }
 exit 0

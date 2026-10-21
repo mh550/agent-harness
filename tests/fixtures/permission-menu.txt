@@ -1,0 +1,5 @@
+# source: the strings of the claude 2.1.303 binary (~/.local/share/claude/versions/2.1.303), read 2026-10-19: the permission dialog's question and option labels and a select's footer, verbatim; no pane capture yet, so the line layout is ours, the words are the CLI's
+Do you want to proceed?
+1. Yes
+2. No, and tell Claude what to do differently (esc)
+Esc to cancel

@@ -20,10 +20,13 @@
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
 #   harness parked [<run-id>] [--json]           what parked features wait on: why, the INBOX question, the next commands
+#   harness desk <run> [--why "…"] | --debrief   a Remote Control session that briefs you and takes your answers (tmux h-desk)
+#   harness desk --list | --close <run>|--all    the open desks: window, run, URL, age · close them
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
 #                                                CLAUDE.md from the repo's docs for you to edit)
 #   harness gc <project> [--all-merged] [--dry-run]
-#                               delete merged harness branches and their clean worktrees, locally and on origin
+#                               delete merged harness branches and their clean worktrees, locally and on origin;
+#                               close the project's desks idle for 24 h (an open one keeps its worktree)
 #
 # Where things live:  worktree ~/worktrees/<project>/<run-id> · branch harness/<run-id>
 #   committed run record  <worktree>/.harness/runs/<run-id>/{feature_list.json,progress.md,INBOX.md,harness-log.md,
@@ -114,6 +117,7 @@ cmd_start() {
   fi
   run=${run:-$(auto_id "$p")}
   [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
+  [[ $run == desk || $run == debrief ]] && die "run-id '$run' is taken by the desk (tmux h-desk, <state>/queue/desk)"
   local proj branch=harness/$run wt state
   proj=$(basename "$p"); wt=$WT_ROOT/$proj/$run; state=$STATE_ROOT/$proj/$run
   if alive "$state"; then die "run $run is already running (harness attach $run)"; fi
@@ -151,7 +155,7 @@ cmd_start() {
   local env="WT=$(printf %q "$wt") RUN_ID=$run STATE=$(printf %q "$state") PROJECT_DIR=$(printf %q "$p") HARNESS_HOME=$(printf %q "$HARNESS_HOME")"
   # tmux starts commands in its server's environment, not this shell's: pass the harness overrides along
   local v; for v in HARNESS_CLAUDE HARNESS_GH HARNESS_SCRATCH_ROOT HARNESS_PW HARNESS_PAUSE_POLL HARNESS_CONFIG HARNESS_LEDGER \
-    HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL; do
+    HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL HARNESS_DESK_SESSION HARNESS_DESK_WAIT; do
     [[ -n ${!v:-} ]] && env+=" $v=$(printf %q "${!v}")"; done
   if (( fg )); then eval "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh")"; return; fi
 
@@ -180,7 +184,7 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued] [start options]
   ( source "$st/meta.env"
     # a continuation you start gives every feature that isn't passing fresh attempts; an automatic one doesn't
     (( keep )) || { [[ -f $WT/.harness/runs/$RUN_ID/feature_list.json ]] && node "$HARNESS_HOME/lib/features.mjs" reset "$STATE/attempts.json" "$WT/.harness/runs/$RUN_ID/feature_list.json"
-      rm -f "$STATE"/needs-* "$STATE"/verify-rounds-*; }
+      rm -f "$STATE"/needs-* "$STATE"/verify-rounds-* "$STATE"/refused-*; }
     rm -f "$STATE/PAUSE" "$STATE/STOP" "$STATE/ended"
     cmd_start "$PROJECT_DIR" "$RUN_ID" ${rest[@]+"${rest[@]}"} )
 }
@@ -300,12 +304,20 @@ cmd_gc() {
     git -C "$p" diff --quiet "$base" "$r" -- . ':!.harness/runs'; }
   running() { local d r=${1#harness/}; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && alive "$d" && return 0
     compgen -G "$Q/*-continue-$r.args" > /dev/null; }   # running, or a continuation is queued
+  # a desk Michael may be talking to keeps its run's worktree (its --add-dir, the INBOX it reads); idle ones go first
+  desk_open() { local d r=${1#harness/}; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && [[ -s $d/desk/url ]] \
+    && ! grep -qxF "would close idle desk $r" <<< "$dg" \
+    && "$HARNESS_HOME/lib/desk.sh" --list 2> /dev/null | awk -v r="$r" '$1 == r && $3 ~ /^https:/ { f = 1 } END { exit !f }'; }
+  local dd=() dg; (( dry )) && dd=(--dry-run)   # a dry run counts the desks it would close as closed
+  dg=$("$HARNESS_HOME/lib/desk.sh" --gc "$(basename "$p")" "${dd[@]}") || echo "harness: could not check the desks"   # never fails gc
+  [[ -n $dg ]] && echo "$dg"
   while read -r wt; do
     [[ $wt == "$WT_ROOT"/* ]] || continue
     b=$(git -C "$wt" branch --show-current)
     [[ -n $b && -z $(git -C "$wt" status --porcelain) ]] || continue
     running "$b" && continue
     if git -C "$p" merge-base --is-ancestor "$b" "$main" || { [[ $b == harness/* ]] && record_only "$b"; }; then
+      desk_open "$b" && { echo "keeps $wt: its desk is open (harness desk --close ${b#harness/})"; continue; }
       act git -C "$p" worktree remove "$wt"
     fi
   done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p')
@@ -348,5 +360,6 @@ case ${1:-help} in
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
-  *) sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//' ;;
+  desk) shift; exec "$HARNESS_HOME/lib/desk.sh" "$@" ;;
+  *) sed -n '2,38p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

@@ -14,6 +14,154 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 15:56 · verify P3
+
+Re-ran independently: `lib/check.sh` green; `bash tests/run.sh` **168/168** (all 29 desk checks PASS); a scratch copy
+(`git archive HEAD`) with the I1 dialog guard and the I2 refused-once guard taken out: **165/168**, red on exactly the
+three review checks named for them. No stub desk or test tmux server left afterwards. 37 steps, 37 hold.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P3-01 | 1 | `head -1 docs/plans/2026-10-19-P3-desk.md`; `git log` | `Milestone base: 8f1733211c96…` = `HARNESS: P2 verified`, the commit just before P3-01's c163ee9 | yes |
+| P3-01 | 2 | read plan §2.2–§3 | `new-session -d -s "$S" -n "$W" -c "$PROJECT_DIR"` with `S=${HARNESS_DESK_SESSION:-h-desk}` running `claude --remote-control "desk · <run> · <why>" --model <id> --add-dir <worktree>`; loop `capture-pane -p -J -S -` grepping `https://claude\.ai/code/session_[A-Za-z0-9]+` up to `${HARNESS_DESK_WAIT:-60}`; `send-keys -t <id> -l "…"` then `send-keys … Enter` (target = the session:window resolved once to `@N`, reasoned in §3); reuse when the window exists and `#{pane_dead}` is 0 | yes |
+| P3-01 | 3 | read plan §4, §2.7 | `<state>/desk/<stamp>.md`, `desk/url`, `desk/last-event` (epoch, content); `--debrief`: `$STATE_ROOT/queue/desk`, window `debrief`, cwd `$HARNESS_HOME` | yes |
+| P3-01 | 4 | read plan §6, §9 | no `-p` → fixture line with `session_TEST<n>`, n from `$STUB_DIR/desk/count`; stdin lines appended to `<name>.in` until EOF; `STUB_DESK_NO_URL=1` prints nothing, reads stdin; 21 checks listed per feature P3-02..05; EXIT trap `tmux kill-session -t "=$HARNESS_DESK_SESSION"` | yes |
+| P3-01 | 5 | read plan §7, §8 | table: park `$id parked: $why`, finish `blocked on*`/`waiting on Michael*` → `ended: $1`, `needs_you` → `$1 needs Michael: $2`, refused merge `$m: merge refused`; the `[[ $DESK == 1 ]] && desk … \|\| note …` shape with the guard split out (explained); config `DESK=0 DESK_MODEL=opus` | yes |
+| P3-01 | 6 | `bash tests/run.sh` | 168/168 checks passed, exit 0 | yes |
+| P3-02 | 1 | read `tests/stub-claude.sh:16-27`, fixture, `tests/run.sh:7-9`; ran the stub by hand in scratch with 2 stdin lines | printed `/remote-control is active · … https://claude.ai/code/session_TEST1`; `1-desk_parky_B_parked_a_b.in` held both lines, `.args` argv + `PWD=`; `STUB_DESK_NO_URL=1` printed nothing; fixture line 1 names claude 2.1.303 pane 2026-10-19 and matches spec line 76; suite exports `HARNESS_DESK_SESSION=h-desk-test-$$`, trap kills it | yes |
+| P3-02 | 2 | read `lib/desk.sh:1-3`, `bin/harness:23-24,363`, `lib/config.sh:23` | usage header present; `desk) shift; exec …/lib/desk.sh`; header lists `harness desk <run> [--why "…"]`; `DESK=0 DESK_MODEL=opus`; check `DESK=0 by default, DESK_MODEL=opus` PASS | yes |
+| P3-02 | 3 | rendered `prompts/desk.md` by hand for parky (render.mjs + desk.sh's sed); check `the desk prompt names the run, its commands and the never-list` | run id, `harness parked parky`, `harness status parky`, INBOX.md path, progress.md newest entries, by name only/.env/sudo/no live commands, numbered brief `1 yes, 2 …`, `harness answer parky`, queue add --continue/continue rule, never-list (undecided item, INBOX.md/feature lists/policies/CLAUDE.md/settings, start/stop/merge runs); 0 `{{` | yes |
+| P3-02 | 4 | check `harness desk: one window, the Read line, the prompt, the notification click` (run.sh:438) | asserts exit 0, stdout `…session_TEST1`, `$(wins) == parky`, `.in` = `Read $DP1 and follow it.`, DP1 names parky, INBOX.md path, `harness answer parky`, `desk/url` = URL; PASS | yes |
+| P3-02 | 5 | check `the desk notification` (run.sh:442) | `curl_last` block: `Title: [parky] needs you: B parked: set the gatus vars`, `Priority: high`, `Click: …session_TEST1`; PASS | yes |
+| P3-02 | 6 | check `the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory` (run.sh:444) | `.args` has `--remote-control`, the name, `--model` `claude-opus-5-5` (`$F model opus`), `--add-dir $T/wt/proj/parky`, last line `PWD=$T/proj`; PASS | yes |
+| P3-02 | 7 | check `harness desk notes 'desk started:' in the run record` (run.sh:449); `lib/desk.sh:132,248` | hlog has `desk started: https://claude.ai/code/session_TEST1 (B parked: set the gatus vars)`, worktree clean; PASS | yes |
+| P3-02 | 8 | `bash -n lib/desk.sh bin/harness tests/stub-claude.sh`; suite | all ok; 168/168 | yes |
+| P3-03 | 1 | check `a second event reuses the desk window` (run.sh:452) | exit 0, one `parky` window, `.in` last line `New since your last brief: C parked: db url. Re-read $DP2.` (DP2 ≠ DP1), Click same TEST1, one `desk started:`; PASS | yes |
+| P3-03 | 2 | check `no URL in time: no window, the plain notification` (run.sh:457) | exit 0, no stdout, no `stoppy` window, hlog `desk: no session URL within 2 s; killed the window; plain notification`, `Title: [stoppy] needs you: x`, no `Click: https://claude.ai`; PASS | yes |
+| P3-03 | 3 | check `a dead desk is replaced` (run.sh:464) | after `tmux kill-window` (by window id), new desk prints TEST3, one `parky`, new `.in` starts `Read … and follow it.`, no `New since`; PASS | yes |
+| P3-03 | 4 | check `harness desk --debrief` (run.sh:468) | exit 0, window `debrief`, newest `queue/desk/*.md` names `ledger/debrief.md` and `Needs Michael`, `Title: [debrief] needs you`; PASS | yes |
+| P3-03 | 5 | `bash -n lib/desk.sh`; suite | ok; 168/168 | yes |
+| P3-04 | 1 | check `DESK=1: a park starts one desk, the run end reuses it` (run.sh:485); origin is `git@github.com:test/proj.git` (run.sh:368) | desky ends `waiting on Michael: B`, `desky` once, `.in` = `Read …` then `New since your last brief: ended: waiting on Michael: B. Re-read …`, `desk started:` once; PASS | yes |
+| P3-04 | 2 | check `DESK=0: no desk` (run.sh:427), placed before any desk | no `*/desk` dirs, no windows, no stub desk counter, no desk lines in any harness-log.md after parky parked and ended; PASS | yes |
+| P3-04 | 3 | check `a desk that cannot start never changes the run` (run.sh:491) | deskno (DESK=1, NO_URL, WAIT=2) ends `waiting on Michael: B`, `[deskno] B needs you` in curl.log, `no session URL…plain notification` ×2, no window, 2/3 passing, clean worktree; PASS | yes |
+| P3-04 | 4 | check `verify needs Michael starts a desk` (run.sh:495) | strict (continue, DESK=1, strict verifier) gets window `strict`, `.in` `Read <prompt>`, prompt contains `M1 needs Michael: A fails verification`; PASS (as a `continue`, per plan §9) | yes |
+| P3-04 | 5 | check `the debrief starts a desk when Needs Michael is non-empty` (run.sh:500); `lib/debrief.sh:330` | `_Nothing._` → no `debrief` window; `STUB_DEBRIEF_NEEDS=1` → window; 2 `desk started:` in runner.log; PASS | yes |
+| P3-04 | 6 | read `lib/driver.sh:121-129` desk(); hlogs via checks above; `bash -n lib/driver.sh lib/debrief.sh lib/desk.sh` | triggers note `desk started: <url> (<why>)` / `desk: … plain notification`; desk() returns 0 always, no `set -e`; syntax ok; 168/168 | yes |
+| P3-05 | 1 | check `harness desk --list` (run.sh:505) | 5 lines for 5 windows: `parky parky <url> N min`, desky/strict same, `debrief (debrief) <url> N min`, `odd - - -`; PASS | yes |
+| P3-05 | 2 | check `harness desk --close <run>` (run.sh:509) | `closed desk desky`, exit 0, window gone; `no desk for parkn` exit 0; PASS | yes |
+| P3-05 | 3 | check `harness gc closes idle desks` (run.sh:515) | strict last-event 25 h ago → `closed idle desk strict`, window gone; parky (23 h) and debrief stay; dry run says `would close`; PASS | yes |
+| P3-05 | 4 | check `harness desk --all` (run.sh:519) | `closed every desk (3)`, `tmux has-session` fails, second `--all` says `no desks`; suite exit 0 (trap tolerant); PASS | yes |
+| P3-05 | 5 | `bin/harness:23-24`; `bash -n lib/desk.sh bin/harness` | header lists `--debrief`, `--list \| --close <run>\|--all`; ok | yes |
+| P3-06 | 1 | `git diff 8f17332..HEAD -- lib bin tests prompts templates > /tmp/p3.diff` (734 lines, 11 files) read; `docs/plans/2026-10-19-P3-review.md` | findings I1, I2, M3–M10, R1–R8 each with severity, file:line, resolution; three questions answered no / no / no with reasons | yes |
+| P3-06 | 2 | review names checks for I1, I2, R1, R2; scratch copy with I1+I2 guards removed → suite; R2 old regex tried standalone | 165/168: FAIL exactly `an open desk showing a dialog gets nothing typed`, `a refused merge tells Michael and his desk once`, `harness merge says it was refused again, and starts no desk`; `Do you want to` matches the desk's own question (R2 check red) | yes |
+| P3-06 | 3 | `journal/decisions.md:310` | `### D-H31`: finding (by-hand 2.1.303 facts) · choice (claude --remote-control in tmux window, pane URL as click, one desk per run, DESK=0 until tried) · rejected (`claude remote-control` server mode; answers through ntfy) | yes |
+| P3-06 | 4 | `docs/architecture.md` §3/§4/§7/§10/§17 | §3 lib/desk.sh, prompts/desk.md, tests "168 checks"; §4 `<state>/desk/` + `queue/desk/`; §7 "a desk failing to start never stops or fails the run"; §10 DESK_URL, DESK/DESK_MODEL; §17 "The desk starts itself" path; 168 = suite total | yes |
+| P3-06 | 5 | `README.md:88-98,138`; `templates/user/config.sh:14-16` | Steering: phone notification, DESK=1, `harness desk --list`, `--close <run>\|--all`; Tests line 168 checks; template has `# DESK=0`, `# DESK_MODEL=opus` | yes |
+| P3-06 | 6 | plan §"For Michael: turning it on" (lines 461-483) | stages by hand `harness desk <run> --why test` (DESK=0) → DESK=1 one night → always; checks per stage (phone opens session, brief reads INBOX, answer lands); undo `DESK=0`, `harness desk --all` | yes |
+| P3-06 | 7 | `bash -n` on the 8 shell files changed since base; `node --check lib/*.mjs` (none changed in P3); suite | all ok; 168/168 | yes |
+
+### 2026-10-19 16:20 · verify P3
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P3-01 | 1 | read docs/plans/2026-10-19-P3-desk.md line 1 | 'Milestone base: 8f17332…', git rev-parse resolves it | yes |
+| P3-01 | 2 | read plan §2: tmux new-session -s/-n/-c, claude --remote-control, capture-pane loop with the URL regex and HARNESS_DESK_WAIT:-60, send-keys -l then Enter, reuse via pane_dead | all present (lines 103-133, 183-184) | yes |
+| P3-01 | 3 | read plan state-files table and §2.7 | desk/<stamp>.md, desk/url, desk/last-event, queue/desk/ and window 'debrief' in HARNESS_HOME described | yes |
+| P3-01 | 4 | read plan stub section and §9 check list; tests/stub-claude.sh | no -p mode, fixture line, count, .in files, STUB_DESK_NO_URL, EXIT trap all specified and built | yes |
+| P3-01 | 5 | read plan §7 and §8 | trigger points with why texts, desk() helper that never changes the run, DESK=0 DESK_MODEL=opus defaults | yes |
+| P3-01 | 6 | `bash tests/run.sh` | full suite: 168/168 checks passed (my own run); no FAIL lines | yes |
+| P3-02 | 1 | read tests/stub-claude.sh, tests/fixtures/remote-control-pane.txt, tests/run.sh:8-9; check 'the stub claude's interactive mode…' | fixture line 1 names source (claude 2.1.303, 2026-10-19); stub prints session_TEST<n>, appends stdin; trap kills session; PASS | yes |
+| P3-02 | 2 | grep bin/harness, lib/config.sh; check 'DESK=0 by default, DESK_MODEL=opus' | desk) dispatches to lib/desk.sh, usage lists desk <run> [--why], defaults DESK=0 DESK_MODEL=opus; PASS | yes |
+| P3-02 | 3 | read prompts/desk.md and check 'the desk prompt names the run, its commands and the never-list' | asserts each named item, no {{ placeholders; PASS | yes |
+| P3-02 | 4 | check 'harness desk: one window, the Read line, the prompt, the notification click' | asserts exit 0, session_TEST1 output, one window 'parky', Read line, INBOX path, url file; PASS | yes |
+| P3-02 | 5 | check 'the desk notification' | asserts Title, Priority: high, Click: session_TEST1; PASS | yes |
+| P3-02 | 6 | check "the desk's claude: --remote-control, the model id, --add-dir…" | asserts argv --remote-control, opus model id, --add-dir worktree, PWD=project dir; PASS | yes |
+| P3-02 | 7 | check "harness desk notes 'desk started:'…"; bash -n on all shell files; suite | line asserted exactly; bash -n clean; 168/168 | yes |
+| P3-03 | 1 | check 'a second event reuses the desk window' | one 'parky' window, last .in line 'New since your last brief: C parked: db url. Re-read …', same click URL; PASS | yes |
+| P3-03 | 2 | check 'no URL in time: no window, the plain notification' | exit 0, no window, log line with '2 s', plain title, no claude.ai Click; PASS | yes |
+| P3-03 | 3 | check 'a dead desk is replaced' | fresh window, Read line, no 'New since'; PASS | yes |
+| P3-03 | 4 | check 'harness desk --debrief' | window 'debrief', prompt in queue/desk names ledger/debrief.md and Needs Michael, title '[debrief] needs you'; PASS | yes |
+| P3-03 | 5 | bash -n lib/desk.sh; suite | clean; 168/168 | yes |
+| P3-04 | 1 | check 'DESK=1: a park starts one desk, the run end reuses it' | desky ends 'waiting on Michael: B', one window, Read then 'New since…ended: waiting on Michael: B', one 'desk started:'; PASS | yes |
+| P3-04 | 2 | check 'DESK=0: no desk' (placed before the by-hand desk checks) | no desk dirs/windows/log lines; PASS | yes |
+| P3-04 | 3 | check 'a desk that cannot start never changes the run' | still 'waiting on Michael: B', plain park notification, 'no session URL' logged; PASS | yes |
+| P3-04 | 4 | check 'verify needs Michael starts a desk' | window 'strict', Read line, prompt names 'M1 needs Michael: A fails verification'; PASS | yes |
+| P3-04 | 5 | check 'the debrief starts a desk when Needs Michael is non-empty' | no window without the flag, window with STUB_DEBRIEF_NEEDS=1; PASS | yes |
+| P3-04 | 6 | grep harness-log assertions in the checks; bash -n driver/debrief/desk; suite | 'desk started:' and 'desk: … plain notification' asserted; bash -n clean; 168/168 | yes |
+| P3-05 | 1 | check 'harness desk --list' | 5 lines with window, run, URL, 'N min', '-' for no URL; PASS | yes |
+| P3-05 | 2 | check 'harness desk --close <run>' | 'closed desk desky', window gone; 'no desk for parkn' exit 0; PASS | yes |
+| P3-05 | 3 | check 'harness gc closes idle desks' | 25 h strict closed ('closed idle desk strict'), fresh parky stays; PASS | yes |
+| P3-05 | 4 | check 'harness desk --all' | all closed, has-session fails, trap tolerant; PASS | yes |
+| P3-05 | 5 | harness help grep in the --list check; bash -n desk.sh bin/harness; suite | usage lists --list, --close|--all, --debrief; clean; 168/168 | yes |
+| P3-06 | 1 | read docs/plans/2026-10-19-P3-review.md; base 8f17332 resolves | findings table with severity, file, resolution; three questions answered No/No/No | yes |
+| P3-06 | 2 | read review header and finding rows | each Important/Critical names its red-before-fix check (suite 163/167 then 168/168; R rows) | yes |
+| P3-06 | 3 | grep journal/decisions.md | '### D-H31' with Finding, Choice, Rejected (server mode; answers through ntfy) | yes |
+| P3-06 | 4 | grep docs/architecture.md | §3 desk.sh/prompts, §4 desk/ and queue/desk, §7 guard text, §10 DESK/DESK_MODEL/DESK_URL, §17; table says 168 checks, run.sh has 168 | yes |
+| P3-06 | 5 | grep README.md, templates/user/config.sh | desk paragraph with DESK=1, --list/--close; template has DESK, DESK_MODEL; Tests line 168 | yes |
+| P3-06 | 6 | read end of the P3 plan | 'For Michael: turning it on' in 3 stages with checks and undo (DESK=0, desk --all) | yes |
+| P3-06 | 7 | bash -n on every .sh, node --check every .mjs; suite | all clean; 168/168 | yes |
+
+### 2026-10-19 15:45 · P3-06 · passes
+
+- Review: `/tmp/p3.diff` (8f17332..HEAD, 642 lines) was read by an Opus reviewer, and this session's fixes by a second one. Everything is in `docs/plans/2026-10-19-P3-review.md`: 4 Important (I1, I2, R1, R2), 18 Minor, nothing Critical. The three questions are answered no, no, no. Tests 162 → 168.
+  - I1: an open desk showing a dialog gets nothing typed. The typed Enter would have picked "Yes" for Michael. `DIALOG` holds the CLI's words, taken from the claude 2.1.303 binary's strings, in `tests/fixtures/permission-menu.txt`. The stub gained `STUB_DESK_MENU=1`.
+  - I2/R1: a refused merge is told once per tag commit while the run goes. `harness merge` says so every time and starts no desk. `continue` clears `refused-*`.
+  - R2: the regex doesn't match the desk's own questions.
+  - gc closes idle desks first, then keeps the worktree of a run whose desk is open (P3-05's question).
+  - tmux runs under `timeout --foreground 10`. A failed type no longer kills a live desk.
+- Docs: architecture §3/§4/§7/§10/§17 (desk.sh, prompts/desk.md, state, the guard, DESK/DESK_MODEL/DESK_URL, the self-starting path, 168 checks), README Steering + Tests, `templates/user/config.sh`, D-H31 accepted/built, and the plan's "For Michael" stage 1 now tries the dialog guard.
+- Verified: the first round's 4 new checks were red (163/167). R1's check was red on a scratch copy with only its fix reverted. R2's check was run standalone: FAIL on the old regex. All green after: `check.sh` 168/168. `bash -n` on every P3 .sh and `node --check` on lib/*.mjs pass.
+- **For Michael:** the dialog guard matches the CLI's words, not a captured pane. Please do stage 1 of "turning it on" with a second event while the desk shows a permission dialog before you set DESK=1. Not changed: a by-hand desk during a retro loses its harness-log line (run.log keeps it), and real curl's bearer token is visible in `ps` (pre-P3).
+
+### 2026-10-19 15:20 · P3-05 · passes
+
+- `lib/desk.sh` gained housekeeping (before the run path):
+  - `--list` prints one `printf '%-12s %-26s %-50s %s'` line per window: window, run (`(debrief)` for the debrief, `-` for a window that isn't a desk), URL (or `-`), age from `desk/last-event` (`<n> min|h|d`, or `-`). With no windows it prints `no desks`.
+  - `--close <run>` kills the windows of that name by id and removes `desk/url`. It prints `closed desk <run>`, or `no desk for <run>`, and exits 0.
+  - `--all` runs `kill-session` and prints `closed every desk (n)` (`no desks` when there are none).
+  - `--gc <project> [--dry-run]` closes desks idle for over 24 h that still have a window open, the debrief's included. It prints `closed idle desk <run>`, or `would close …` on a dry run.
+  - `bin/harness`: `cmd_gc` runs `desk.sh --gc` after its branch work, under `|| echo …`, so gc never fails on it. New usage line `harness desk --list | --close <run>|--all`; the help range is now `2,38p`.
+  - Tests 158 → 162.
+- Verified: the 4 new checks were red first (158/162) and green after. `check.sh` green in 238 s (162/162). In the kept state, `--list` showed parky/debrief/desky/strict with session_TEST5/10/6/9 at `0 min` and `odd - - -`. gc printed `closed idle desk strict` only; parky (23 h) stayed and stoppy (25 h, no window) was skipped. No tmux server was left after the suite.
+- Opus review: no Critical or Important findings. Fixed:
+  - `--close`, `--all` and non-dry `--gc` take `desk.lock`, so they can't kill a window a desk start is using.
+  - `--close` matches the window name through `ENVIRON`, not `awk -v` (backslashes).
+  - `--gc` exits 0 quietly on project names that run ids can't have.
+  - `--all` logs `desk: closed every desk (n, …)` to `queue/runner.log`.
+- Closes are logged only to run.log and runner.log, not to harness-log.md: a commit there would re-dirty the worktree gc just cleaned. Recorded as built in plan §10. **For P3-06:** gc can remove a finished run's worktree while that run's desk is still open (parky in the suite); the desk then loses its `--add-dir`. Should gc skip worktrees with an open desk, or close the desk with them? Docs (architecture, README, D-H31 built) are still P3-06's.
+
+### 2026-10-19 14:48 · P3-04 · passes
+
+- `lib/driver.sh`: a `desk "<why>"` helper (DESK=1 only; `harness desk <run> --why …`, output dropped, `9>&-`, a non-zero exit becomes the note `desk: could not start (exit n): …`, always returns 0). Called after a park's notification (`B parked: …`), in `needs_you` (`M1 needs Michael: A fails verification`, `… conflicts with main`), on a refused merge (`M1: merge refused`), and in `finish` for `blocked on…`/`waiting on Michael…` (`ended: …`, typed into the park's open desk). `lib/debrief.sh`: with DESK=1 and a non-empty "Needs Michael", it runs `harness desk --debrief` (failure → runner.log line). Usage headers updated. Tests 153 → 158 (the plan said 157; P3-03 added one more).
+- **Deviation from plan §7:** the helper commits its own note at once (`HARNESS: desk` + sync). In `finish` the retro's `restrict` comes next. It commits leftovers as WIP and reverts everything since its base, which would drop the run-end desk note. Check 14 asserts that note.
+- Verified: the 4 new driver/debrief checks were red before the code (154/158) and green after. `check.sh` green in 236 s (158/158). In kept state: desky's `.in` = `Read …` then `New since your last brief: ended: waiting on Michael: B. Re-read …`. deskno has 2 × `desk: no session URL within 2 s; killed the window; plain notification`, ended `waiting on Michael: B`, worktree clean. The debrief with `_Nothing._` started no desk. "DESK=0: no desk" can't go red on today's code, but its predicate is false on the kept post-desk state.
+- Check 16 ("verify needs Michael") is a `continue strict` with DESK=1 inside the desk block, as P3-01 proposed, so parky's desk stays TEST1. Desks after P3-04: TEST6 desky, TEST7/8 deskno (no URL), TEST9 strict, TEST10 debrief.
+- Opus review: no Critical/Important. Fixed: an empty `kill-window -t`, and a vacuous no-desk debrief check. **For P3-06 (Minor, not fixed):** (1) a refused merge re-notifies, and now re-briefs the desk, on every `merge_milestones` pass, and also under `harness merge` while Michael is at the terminal. Suggest a `refused-$m` once-guard and no desk when `HARNESS_MERGE_ONLY`. (2) The park `why` is session-written text typed into Michael's desk (sanitised, literal); say so in D-H31. (3) Plan §7's `desk()` snippet should show the commit (above). (4) `feature-list edits`/`initializer failed` ends start no desk (plan §7 as written). Should they, Michael?
+
+### 2026-10-19 14:35 · P3-03 · passes
+
+- `lib/desk.sh`: one desk per run. An open window (named the run, pane alive, `<state>/desk/url` kept) gets `New since your last brief: <why>. Re-read <new prompt>.` typed in, the same URL as the click, and the note `desk: sent to the open desk: <url> (<why>)`; if typing fails it starts a new desk. Any other window of that name is killed and replaced. No URL in time, claude exiting early, no tmux/claude, the lock or a tmux failure → `desk: <reason>; plain notification` (click = INBOX on GitHub), exit 0. `--debrief` → window `debrief`, cwd `$HARNESS_HOME`, state `queue/desk/`, log `queue/runner.log`, `--add-dir` worktrees + ledger. The run record is committed (3 tries) when the driver is gone. tmux runs under `env -u NTFY_TOKEN`. `bin/harness`: the usage line has `--debrief`, and `start` refuses run ids `desk`/`debrief`. Tests 147 → 153.
+- Verified: checks 9–12 were red before the code (148/152). `check.sh` is green in 203 s (153/153). A smoke with `HARNESS_CLAUDE=false` printed `claude exited before it showed a session URL; …; notified`, exit 0. Desks in the suite: TEST1 parky, TEST2 stoppy (no URL, killed), TEST3 parky again, TEST4 debrief, TEST5 parky after a stale `sleep` window.
+- Opus review: fixed: send-keys failure, NTFY_TOKEN in the tmux server's env, `desk` run-id collision, a clearer reason when claude exits early, `--add-dir` only for existing dirs, commit retry, "notified" only when a channel is set, and stronger checks (exit codes 1/2, plain body, stale window, `--add-dir` ledger, `ls -t`).
+- **Open (Important, not fixed), for Michael / P3-06:** typing into an open desk is blind. If the desk is showing a permission menu (say, waiting on his approval of `harness continue`), the typed line and its Enter could pick "1. Yes" for him. A safe guard needs a real pane capture of Claude Code's permission menu as a fixture (we don't invent formats). Can you capture one (`tmux capture-pane -p -J -t h-desk:<run>` while a desk asks for permission) into `tests/fixtures/`? Until then the default (D-H31 as planned) types blind, and DESK stays 0.
+- Next session (P3-04): the debrief desk prompt defaults its event to `the debrief names what needs you`. A second `harness desk --debrief` reuses window `debrief` the same way. Window ids in checks after P3-03: parky's live desk is TEST5.
+
+### 2026-10-19 13:55 · P3-02 · passes
+
+- New `lib/desk.sh` (`harness desk <run> [--why "…"]`), `prompts/desk.md` (run and debrief blocks), `tests/fixtures/remote-control-pane.txt`; stub claude's interactive mode (no `-p`/`--print` and a `--remote-control` name → the pane line with `session_TEST<n>`, `.args` with argv + `PWD=`, typed lines to `.in`); `lib/config.sh` `DESK=0 DESK_MODEL=opus`; bin/harness `desk)` dispatch, usage line, help range `2,36p`, `HARNESS_DESK_SESSION/WAIT` in the tmux env pass list. Suite: private tmux server (`unset TMUX TMUX_PANE`, `TMUX_TMPDIR=$T/tmux`), EXIT trap kills `h-desk-test-$$` (and that private server), helpers `win wins in_has desk_of`, and the desk block after run16b. Tests 140 → 147.
+- Verified: the 7 new checks were red against HEAD's code (140/147, a `git archive` copy in scratch) and green after; `check.sh` green in 192 s (147/147). Smoke on a private tmux 3.4 server: two desks in one session (both windows 250 wide), a why holding `$(id)` and `·` arrived verbatim in the stub's argv.
+- Opus review of the diff: fixed: tmux calls now close fd 9 as well as 8 (debrief.lock, the driver's ledger lock); a window added to an existing session is resized to 250×50 (a narrow client would let the TUI cut the URL); 0.5 s between the typed text and Enter (a burst reads as a paste); no push on a detached HEAD; an unknown DESK_MODEL fails; the stub only plays a desk when it gets `--remote-control`. Not done (minor): clearing HARNESS_NO_RUNNER/SCRATCH_ROOT from a server's env.
+- Next session (P3-03): today a desk with no URL kills its window, logs `desk: no session URL within <n> s; killed the window` to run.log and exits 1 with `no desk (…)` on stderr; a lock timeout or missing tmux/claude exits 1 the same way (`fail` in desk.sh). P3-03 turns these into the plain notification + note + exit 0, and adds reuse (no reuse yet: a second `harness desk parky` would open a second window). Desks so far in the suite: TEST1 = parky's.
+- Docs (architecture, README, templates/user/config.sh, D-H31 built) are P3-06's, per the feature list.
+
+### 2026-10-19 16:50 · P3-01 · passes
+
+- New `docs/plans/2026-10-19-P3-desk.md` (Milestone base 8f17332): lib/desk.sh flow, exact tmux commands (exact `=` session match, window ids `@N`, command as separate args through `env -u NTFY_TOKEN …`), the URL wait (`capture-pane -p -J -S -`, `${HARNESS_DESK_WAIT:-60}`), send-keys input, state under `<state>/desk/` and `queue/desk/`, prompts/desk.md content, stub interactive mode + fixture, driver/debrief triggers, `DESK=0 DESK_MODEL=opus`, P3-05 housekeeping, 21 named checks in run order (140 → 147 → 152 → 157 → 161), and "For Michael: turning it on". D-H31 is in journal/decisions.md, marked *planned*. P3-06 marks it built.
+- Verified: tried on a private tmux 3.4 server under scratch. `-t h-desk` prefix-matches `h-desk-x` (hence `=`). send-keys reaches a cooked-tty reader as one line. A multi-arg command runs without a shell. An Opus review of the plan had 1 Important finding (the stub's `printf | grep -q` under pipefail misreads big prompts) and 9 Minor ones; all are folded in. check.sh green (140/140, 190 s).
+- Next session (P3-02): no desk may start before the new desk block after run16b, because parky's must be `session_TEST1`. Tests must `unset TMUX TMUX_PANE` and set `TMUX_TMPDIR=$T/tmux`, or they talk to Michael's tmux server.
+- Michael (D-H31 *default*, plan §12): with DESK=1 each event sends two notifications, the driver's own and the desk's with the session link. Want the driver's dropped when a desk starts? The desk starts in `~/projects/<project>` (trusted), not `~/projects` itself. OK?
+- Proposed changes: P3-04 step 4 says "run 3 (strict) with DESK=1". Plan check 16 does it as a `continue strict` inside the desk block, so TEST1 stays parky's. P3-04 step 6 should also allow the reuse line `desk: sent to the open desk: <url> (<why>)`. The step's literal `[[ $DESK == 1 ]] && desk … || note …` would note on every DESK=0 event. The plan's helper puts the guard first.
+
 ### 2026-10-19 16:00 · verify P2
 
 `check.sh` green (cached); suite output read: 140/140 checks passed, no FAIL line.
