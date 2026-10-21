@@ -456,3 +456,23 @@ agents are driven*.
 - **Rejected:** summing tokens over result events (modelUsage is cumulative: a session with background subagents would
   count its first segment twice); context peak from the result's `usage.iterations` (only the last request's);
   a hand-written stub `usage` (fakes mirror the live API).
+
+### D-H35 · The eval set: replay tasks from real runs, validated, build-only *(accepted 2026-10-21, built in E2 of run agent-harness-2026-10-21-measure; E2-02 writes the task set, E2-03 … E2-06 add their parts)*
+- **Finding:** nothing re-runs fixed tasks, so no harness change can be judged against the one before it.
+- **Choice (the set, E2-02):** `evals/tasks/<id>/task.json` holds 1–3 features copied verbatim from a source run's
+  `feature_list.json` as of `base`, the commit that run's session started from (the parent of its first commit, named
+  in `why`), plus the run's spec and brief as of `base`. `lib/eval.mjs validateTask` returns one error per problem,
+  each starting with its field (`features: required`, `policy: must be build-only`, `base: a full commit sha`, an
+  unknown key); `node lib/eval.mjs validate evals/tasks` also requires the id to equal its directory and at least one
+  task. Policy is always `build-only`, and no task text matches `grep -ril 'live\|secret\|\.env'`: features can't be
+  reworded, so a feature that hits it is left out. The source run's record stays in `base` (its session saw it).
+  Check: `eval: every task.json validates and a bad one is rejected`.
+  *Default (E2-02):* the first four tasks come from agent-harness's own runs (`agent-harness-2026-10-19`,
+  `agent-harness-2026-10-21-measure`), all first-time passes. The spec names pathways, dj-crate-streaming,
+  portfolio_site and hit_list as the sources, but this session's permission classifier refused reads of their git
+  history (a mirror clone in scratch included), and agent-harness's runs have no retried feature and no in-task
+  `after` that passes the grep. The retried and depends-on tasks wait on that access (evals/README.md § Still to add).
+- **Rejected:** an LLM judge (v1 is deterministic); synthetic tasks (no real failures in them); rewording a feature to
+  pass the grep (the replay would no longer be the source's task); `git -C` in project checkouts for the records (a
+  read-only mirror in scratch is the route for the remaining sources, once its reads are allowed); stripping the
+  source run's record from `base` (its session saw it).

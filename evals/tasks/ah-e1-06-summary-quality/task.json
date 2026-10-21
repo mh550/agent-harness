@@ -1,0 +1,27 @@
+{
+  "id": "ah-e1-06-summary-quality",
+  "project": "agent-harness",
+  "repo": "~/projects/agent-harness",
+  "base": "9480d7278c74c971907a79032ebae1fe0a3e8435",
+  "features": [
+    {
+      "id": "E1-06",
+      "milestone": "E1",
+      "kind": "build",
+      "model": "opus",
+      "description": "summary.json and report.md carry token totals, per-verified-feature cost and tokens, median orientation, first-attempt pass rate, rework and verify-fail rate; the retro prompt points at them.",
+      "steps": [
+        "lib/summary.mjs `build` adds the keys the plan named: token totals and per-role sums (in, cache_read, cache_write, out, cache_hit_rate, context_peak), `per_verified_feature` { cost, tokens }, median orientation { tokens, turns }, `first_attempt_pass_rate`, `rework` (ids un-passed by verify or a red suite, or with more than one coding session) and `verify_fail_rate`",
+        "tests/run.sh check `summary: tokens, per verified feature, first-attempt rate, rework`: on run demo `jq -e` shows tokens in > 0, per_verified_feature.cost > 0, rework contains A and C, first_attempt_pass_rate == 0.33 (only B passed first time) and verify_fail_rate > 0",
+        "report.md shows a `Tokens` row (in, cache hit rate, context peak, per verified feature) and a `Quality` row (first-attempt pass rate, rework, verify-fail rate); tests/run.sh check `report shows tokens and quality` greps both rows in `harness report demo`",
+        "prompts/retro.md names summary.json's tokens, orientation, rework and first-attempt keys as inputs",
+        "Both checks watched failing first; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false
+    }
+  ],
+  "policy": "build-only",
+  "spec": "docs/specs/2026-10-20-measure-then-memory.md",
+  "brief": "## 2026-10-21 14:11\nBuild docs/specs/2026-10-20-measure-then-memory.md: E0 and E0b first (inside E1), then E1 → E2 → E3 → E4 in its order. The phone-answers PRs are merged and main is the base. The research notes it cites under ~/projects/career are Michael's and may be unreadable to you: the spec is self-contained, proceed from it. Evals cost money: build them and write evals/NEXT.md with the commands; never run them. MERGE_POLICY=pr: open PRs, never merge. Proceed on defaults, record D-H<n>, never park.\n",
+  "why": "first-time pass. Source run agent-harness-2026-10-21-measure, E1-06 (one session, 15 min, $1.59; E1 held verify). Base 9480d7278c74c971907a79032ebae1fe0a3e8435 = HARNESS: after E1-05, the parent of the session's first commit c3cb415. Builds on the two features before it, which are in base: does the session find and reuse what E1-04 and E1-05 left (metrics fields, fixture) without being told where?"
+}

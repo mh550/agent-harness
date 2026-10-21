@@ -1,0 +1,28 @@
+{
+  "id": "ah-e1-02-resume-merge",
+  "project": "agent-harness",
+  "repo": "~/projects/agent-harness",
+  "base": "87d751a57d3200a9b60b00eb9fbb38cefe1522a0",
+  "features": [
+    {
+      "id": "E1-02",
+      "milestone": "E1",
+      "kind": "build",
+      "model": "opus",
+      "description": "A resumed run merges main into the run branch before any session, the initializer included, so an initializer re-run after a no-list end plans from the current spec (E0).",
+      "steps": [
+        "tests/stub-claude.sh: STUB_INIT_LIMIT=1 makes the initializer branch replay tests/fixtures/usage-limit.jsonl and exit 1 (no feature list written)",
+        "tests/run.sh has a check named `continue after a no-list end merges main first` that: starts a run with STUB_INIT_LIMIT=1 and sees `$HARNESS_STATE/proj/<run>/ended` start with `usage limit before the feature list`; commits a revised SPEC.md (containing the word `revised`) to $T/proj main and pushes it; runs `harness continue <run> --foreground` without the flag; then asserts `grep -q revised $T/wt/proj/<run>/SPEC.md` and that harness-log.md has `merged main into harness/<run>` on a line before `feature list written`",
+        "That check was watched failing before the driver change (the session's entry says so with the FAIL line)",
+        "lib/driver.sh: sync_main runs on every resumed run (a run whose $STATE/run.log already holds an earlier `run <id> on` line, or whose feature list exists) before the initializer or any session; the configuration reload after merging main keeps working (the existing check `run 15` still passes)",
+        "journal/decisions.md has the E0 entry (the number the plan reserved) with finding · choice · rejected",
+        "bash -n lib/driver.sh tests/stub-claude.sh tests/run.sh pass; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false
+    }
+  ],
+  "policy": "build-only",
+  "spec": "docs/specs/2026-10-20-measure-then-memory.md",
+  "brief": "## 2026-10-21 14:11\nBuild docs/specs/2026-10-20-measure-then-memory.md: E0 and E0b first (inside E1), then E1 → E2 → E3 → E4 in its order. The phone-answers PRs are merged and main is the base. The research notes it cites under ~/projects/career are Michael's and may be unreadable to you: the spec is self-contained, proceed from it. Evals cost money: build them and write evals/NEXT.md with the commands; never run them. MERGE_POLICY=pr: open PRs, never merge. Proceed on defaults, record D-H<n>, never park.\n",
+  "why": "first-time pass. Source run agent-harness-2026-10-21-measure, E1-02 (one session, 20 min, $1.03; E1 held verify). Base 87d751a57d3200a9b60b00eb9fbb38cefe1522a0 = HARNESS: after E1-01, the parent of the session's first commit 9f4599f. A driver change that must be watched failing first through a new stub mode: does a change keep a small, well-specified driver fix cheap?"
+}

@@ -1,0 +1,27 @@
+{
+  "id": "ah-p3-05-desk-housekeeping",
+  "project": "agent-harness",
+  "repo": "~/projects/agent-harness",
+  "base": "6152051645662b3f3f1a49fc26a3c52d5533a6c6",
+  "features": [
+    {
+      "id": "P3-05",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "Housekeeping: `harness desk --list` prints window, run, URL and age; `harness desk --close <run>|--all` kills desk windows; `harness gc <project>` closes desks whose last event is older than 24 h.",
+      "steps": [
+        "tests/run.sh check 'harness desk --list': after the P3-02..04 desks exist, the output has one line per window with the window name, the run id, the https://claude.ai/code/session_TEST… URL and an age like '0 min' (a window without a URL shows '-')",
+        "tests/run.sh check 'harness desk --close <run>': `harness desk --close desky` exits 0 and `tmux list-windows` no longer lists 'desky'; closing a run with no desk prints 'no desk for <run>' and exits 0",
+        "tests/run.sh check 'harness gc closes idle desks': with <state>/desk/last-event of strict set to 25 h ago (`touch -d '25 hours ago'` or an epoch), `harness gc $T/proj` prints 'closed idle desk strict' and its window is gone; a desk with a fresh last-event stays",
+        "tests/run.sh check 'harness desk --all': kills every remaining window; `tmux has-session -t $HARNESS_DESK_SESSION` fails afterwards (the session goes with its last window) and the EXIT trap tolerates that",
+        "bin/harness's usage header lists --list, --close <run>|--all and --debrief; bash -n lib/desk.sh bin/harness; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false
+    }
+  ],
+  "policy": "build-only",
+  "spec": "docs/specs/2026-10-19-phone-answers.md",
+  "brief": "## 2026-10-19 10:06\nP1, P2, then P3 from the spec. Give each later milestone's first feature an after list naming only what it needs. Keep each milestone to a plan, 2-4 build features and a review. Tests use stub curl, stub claude and throwaway tmux sessions. For blockers and key design decisions that have been deferred for Michael to get input: update the harness so these send start a real claude instance from the ~/projects directory that's remote controlled, and post a message to notify with a brief blurb on what the blocker is, and a link to the Claude session.\n",
+  "why": "first-time pass. Source run agent-harness-2026-10-19, P3-05 (one session, 17 min, $2.06; P3 held verify). Base 6152051645662b3f3f1a49fc26a3c52d5533a6c6 = HARNESS: after P3-04, the parent of the session's first commit bf6c42f. CLI housekeeping over tmux in the suite's throwaway server, from an older harness version and spec: keeps the set from being only E1-era telemetry."
+}

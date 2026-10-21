@@ -103,6 +103,17 @@ ORNT='import { orientation as or, events } from "'$HERE'/../lib/metrics.mjs"; co
     && eq(or(noTs), { tokens: 24547, turns: 1, seconds: null }) && eq(or(evs.map((e, i) => i === 1 ? noTs[1] : e)), { tokens: 24547, turns: 1, seconds: 0 }) && eq(or([{ type: "result" }]), { tokens: null, turns: null, seconds: null }) ? 0 : 1);'
 check "metrics.mjs: orientation stops at the first Write" 'node --input-type=module -e "$ORNT"'
 
+# ---- the replay set (E2): every committed task validates; each error names its field ----
+EVTK='import { validateTask as v } from "'$HERE'/../lib/eval.mjs"; const has = (e, f) => e.some(x => x.startsWith(f + ":"));
+  const ok = { id: "x1", project: "p", repo: "~/projects/p", base: "a".repeat(40), policy: "build-only", why: "w",
+    features: [{ id: "X1", milestone: "X", description: "d", steps: ["s"] }] }, { features, ...nofeat } = ok;
+  process.exit(v(ok).length === 0 && v(nofeat).length === 1 && has(v(nofeat), "features") && has(v({ ...ok, policy: "live-staged" }), "policy")
+    && has(v({ ...ok, base: "abc123" }), "base") && has(v({ ...ok, features: Array(4).fill(features[0]) }), "features")
+    && has(v({ ...ok, features: [{ ...features[0], steps: [] }] }), "features[0].steps") && has(v({ ...ok, chek_cmd: "x" }), "chek_cmd") ? 0 : 1);'
+mkdir -p "$T/evbad/nofeat" && jq -n '{id:"nofeat",project:"p",repo:"/r",base:("a"*40),policy:"build-only",why:"w"}' > "$T/evbad/nofeat/task.json"
+check "eval: every task.json validates and a bad one is rejected" 'node --input-type=module -e "$EVTK" && node "$HERE/../lib/eval.mjs" validate "$HERE/../evals/tasks" 2> /dev/null \
+  && ! node "$HERE/../lib/eval.mjs" validate "$T/evbad" > "$T/evbad.out" 2>&1 && grep -q "nofeat/task.json: features: required" "$T/evbad.out"'
+
 # ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
 DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";
   import { readFileSync } from "node:fs"; const dep = readFileSync("'$HERE'/fixtures/gh-deployments.json", "utf8");
