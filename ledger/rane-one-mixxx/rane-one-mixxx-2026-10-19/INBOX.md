@@ -22,3 +22,11 @@ I won't write a line into Mixxx's log myself, because that would be faking it.
 
 ### 2026-10-20 08:14 (local)
 M1-04: option (a). I amended step 3 in feature_list.json (new mixxx.log within 60 s + this launch's mixxx-dev.stdout has the 'Configuration file is at the current version "2.5.6"' line). Keep --controller-debug. M1-05: step 5 amended too: shutdown() is proven by a hot reload (re-run tools/install-mapping), not by stop.
+
+### 2026-10-21 14:56 (local)
+Michael, 2026-10-21 ~13:40, answers to progress.md 'Questions for Michael'.
+Q1: Yes, note 0 on channel 1 was the Play button. My hand was on the record during the 3 s hold. I did not press Play to turn the motor on or off. If note 0 still lines up with motor start/stop in the capture, record what you conclude as a D-default and carry on; don't stop for it.
+Q2: 33⅓. I re-measured today and the decks spin at 33⅓.
+Q3: D13 stands; D9's night-time port rule is superseded. D9 in docs/decisions.md gets an in-place update on main (current rule only, one superseded-by line). Drop Q3 from progress.md; don't re-ask it.
+Q4: I'll run HARDWARE-TESTS.md later today.
+Note: around 13:00-13:40 I was turning deck 2 by hand to check its speed. Any live MIDI from the One in that window was me, not a test: discard it.

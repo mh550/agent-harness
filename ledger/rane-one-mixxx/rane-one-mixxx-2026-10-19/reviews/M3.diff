@@ -1,0 +1,3311 @@
+# M3 diff. Part 1: M3-01 (9451137, the plan, committed before M2) docs and tools/mixxx-dev
+commit 945113721100667f4ec8dcf015c6cd4ef79eeb11
+Author: mh550 <mherron734@gmail.com>
+Date:   Mon Oct 19 18:17:16 2026 -0400
+
+    M3-01: M3 measurement plan (WAV lib, make-test-audio, wow-flutter, telemetry, drift, record-output), D11/D12 defaults, mixxx-dev instance-id race fix, progress
+
+diff --git a/docs/decisions.md b/docs/decisions.md
+index 2cbc55f..429e6c9 100644
+--- a/docs/decisions.md
++++ b/docs/decisions.md
+@@ -55,3 +55,20 @@ Newest last. `*default*` = taken as the simplest reversible default, waiting for
+   `initializeSettings()` (the upgrade) before `initializeLogging()` (re-checked on the `2.5.6` tag, M1-04 retry). Why: it is the only place the running version shows, without dropping `--controller-debug`.
+   The same session also found that a new PipeWire stream briefly reports `Sink: 4294967295` (not linked yet).
+   The routing check counts such a stream as neither routed nor misrouted. (2026-10-19)
++- **D11 *default* · Telemetry format for drift.** One JSON object per line in `dev-profile/telemetry.jsonl`, with
++  the required keys `t_us` (host µs, non-decreasing), `ticks` (unwrapped encoder ticks), `timer` (unwrapped
++  controller timestamp counter), `playposition` (Mixxx's, nominally 0..1), `rate_ratio` (the platter speed
++  ratio the core estimated) and `mode` (`clock`|`platter`), plus the optional `deck` (1|2, default 1) and
++  `duration` (track seconds). Readers ignore unknown keys, reject a missing key naming the line, and clamp a
++  backward `t_us` (wall clock) with a warning. Mixxx scripts can't write
++  files (no file API in the 2.5 `engine-api.d.ts`), so M7 logs `RaneOne telemetry <json>` through
++  `console.log`, at most 20 Hz per deck, and a host step extracts those lines from `mixxx.log` into the file.
++  Why: `tools/drift` (M3) and the mapping (M7) can then be built independently; JSONL matches the M2 capture
++  files. Plan: `docs/plans/2026-10-19-M3-measurement.md` § Telemetry format. (2026-10-19)
++- **D12 *default* · How "wow & flutter" in spec §3 is measured.** Unweighted, in percent of the mean frequency, by
++  `tools/wow-flutter`: rising zero crossings with linear interpolation, per-cycle frequency, then a high-pass
++  with its passband from 0.5 Hz (a 2nd-order Butterworth with its corner at 0.2 Hz, run zero-phase; net gain 0.975
++  at 0.5 Hz). The target (≤ 0.1 %) applies to the **peak** deviation; RMS and the worst 1-s window are reported
++  too. Dropouts are counted separately, not as flutter. Why: a corner at 0.5 Hz itself halves a 0.5 Hz wow when
++  run zero-phase (prototype: 0.252 % for a 0.5 % tone), which would let slow motor wobble pass unseen and fails
++  M3-03's 0.5 Hz test. Plan: `docs/plans/2026-10-19-M3-measurement.md` § wow-flutter algorithm. (2026-10-19)
+diff --git a/docs/plans/2026-10-19-M3-measurement.md b/docs/plans/2026-10-19-M3-measurement.md
+new file mode 100644
+index 0000000..75009f4
+--- /dev/null
++++ b/docs/plans/2026-10-19-M3-measurement.md
+@@ -0,0 +1,309 @@
++# M3 plan · Measurement tools (2026-10-19)
++
++Goal (spec §5 M3): objective numbers for the later milestones, all testable without hardware. This plan settles
++every choice M3-02..M3-05 need: the WAV library API, the test signals, the wow-and-flutter algorithm, the telemetry
++log M7 will write (D11), drift, and how Mixxx's output is recorded. Build-only policy: the stubbed and synthetic
++tests are what a session must make pass; the one live step (M3-05 step 2) is written out under record-output.
++
++Machine facts were read on Michael's desktop on 2026-10-19 (read-only queries): `pw-record` 1.6.8 (libpipewire
++1.6.8), WirePlumber 0.5.12, `/usr/bin/ffmpeg`, Default Sink `alsa_output.usb-Rane_Rane_ONE_A-00.analog-surround-40`,
++**Default Source `alsa_input.usb-Rane_Rane_ONE_A-00.analog-surround-21`** (the Rane One's capture). The algorithm
++numbers below come from a scratch prototype run the same day (see Evidence). Nothing here is a MIDI fact; the
++telemetry fields that depend on the platter format (`ticks`, `timer`) inherit M4's UNVERIFIED status.
++
++All tools follow the M1 conventions: `usage: tools/<name> …` and exit 2 on bad arguments (add the cases to
++`tests/tools-usage.test.mjs`), exit 1 on a failed measurement or bad input, Node 24 with zero dependencies,
++tests write only under a temp dir, `*.wav` stays gitignored.
++
++## WAV library
++
++`tools/lib/wav.mjs`, pure ESM, no I/O except the two file wrappers. Samples are floats in [-1, 1], one typed
++array per channel (not interleaved), so analysis code never deals with byte layouts.
++
++```js
++export const FORMATS = ["pcm16", "pcm24", "pcm32", "float32"];
++// channels: array of Float32Array|Float64Array, equal lengths, values in [-1, 1].
++export function encodeWav({ sampleRate, format, channels }) // → Buffer
++export function decodeWav(buffer, { channel } = {})          // → { sampleRate, format, channels, frames, sizeFromEof }
++export function writeWav(path, opts)                         // encodeWav + writeFileSync (tmp + rename)
++export function readWav(path, opts)                          // readFileSync + decodeWav
++```
++
++- **Header written:** `RIFF`/`WAVE`, `fmt `, then `data`. Format tag 1 (PCM, 16-byte `fmt `) for `pcm16|24|32`;
++  tag 3 (IEEE float) for `float32` with an 18-byte `fmt ` (`cbSize` 0) and a `fact` chunk holding the frame
++  count, as the WAVE spec requires for non-PCM data. `byteRate = sampleRate · nChannels · bytesPerSample`, `blockAlign = nChannels ·
++  bytesPerSample`, little-endian, 24-bit packed in 3 bytes. Odd-sized data gets the RIFF pad byte.
++- **PCM scaling, both ways `2^(bits-1)`:** encode `round(x · 2^(bits-1))` clamped to `[-2^(bits-1),
++  2^(bits-1)-1]`; decode `v / 2^(bits-1)` into a `Float64Array` (exact for every format). A round trip is exact to
++  1 LSB, and full-scale negative decodes to exactly -1. Float32 is stored as is (NaN/±Inf rejected by `encodeWav`).
++- **Header read:** format tags 1, 3 and 0xFFFE (`WAVE_FORMAT_EXTENSIBLE`; the sub-format GUID's first two bytes
++  give 1 or 3), PCM 16/24/32-bit, float 32-bit. Unknown chunks (`LIST`, `fact`, `PEAK`, which libsndfile and so
++  `pw-record` may write) are skipped, honouring the pad byte. `byteRate` and `blockAlign` must match the formula
++  above; a mismatch is an error, never guessed past.
++- **Streamed headers:** a `data` size of 0 or 0xFFFFFFFF, or one that runs past the end of the file (a
++  `pw-record` killed before it rewrote its header), is read up to EOF in whole frames, and `sizeFromEof: true`
++  says so. Callers print it as a warning.
++- **`{ channel }`:** decode only that channel (0-based), so a 5-minute stereo recording (14.4 M frames) costs one
++  `Float64Array` of about 115 MB, not two. Channels are always `Float64Array`, never `Float32Array`: float32 can't
++  hold a 32-bit PCM sample exactly (up to 128 LSB off above 2^24), which would break the pcm32 round trip.
++- Errors are thrown as `Error` with a message naming the file offset (`wav: fmt chunk at byte 12: …`); tools catch
++  them and exit 1.
++- Tests (`tests/wav.test.mjs`, M3-02 step 1): round trip of all four formats × mono/stereo at 48000 Hz on a ramp
++  that includes ±1; `byteRate`/`blockAlign` read back from the header bytes; an extensible header and an extra
++  `LIST` chunk built by hand in the test; a streamed header (size 0xFFFFFFFF); truncated and bad-tag files rejected.
++
++## make-test-audio
++
++`tools/make-test-audio <tone|clicks> [options]`, writing through `wav.mjs`. Defaults match M3-02: 48000 Hz,
++`pcm32`, stereo (both channels identical), 5 s.
++
++| Option | Default | Meaning |
++|---|---|---|
++| `--seconds <s>` | 5 | Length; frames = `round(s · rate)` (5 s → 240000). |
++| `--out <file>` | `./<kind>.wav` | Output path; `-` writes the WAV to stdout. |
++| `--rate <hz>` | 48000 | Sample rate (the Rane One and the null sink are 48 kHz only). |
++| `--format <f>` | `pcm32` | One of `FORMATS`. |
++| `--channels <n>` | 2 | 1 or 2. |
++| `--level-db <dBFS>` | -6 | Peak level: amplitude `10^(dB/20)` (−6 → 0.5012). |
++| `--freq <hz>` | 1000 | `tone` only. |
++| `--fm-depth <percent>` `--fm-rate <hz>` | 0, 4 | `tone` only: frequency modulation, peak deviation in percent of `--freq`. |
++| `--bpm <n>` | 120 | `clicks` only. |
++
++- **tone:** `x(t) = A · sin(φ(t))` with the phase integrated, never `sin(2π f(t) t)` (that form's deviation grows
++  with t): `φ(t) = 2π f0 (t − D/(2π fm) · cos(2π fm t))`, `D = depth/100`. The instantaneous frequency is then
++  exactly `f0 (1 + D sin(2π fm t))`, so `--fm-depth 0.1 --fm-rate 4` is ±0.1 % at 4 Hz.
++- **clicks:** a 1 ms rectangular pulse (`round(rate/1000)` = 48 samples) at the peak level, starting at sample
++  `round(k · 60/bpm · rate)` for every beat that fits; silence elsewhere. 120 bpm × 5 s → 10 clicks (t = 0 … 4.5 s).
++  It is for latency and timing checks in M7/M8 and for testing click detection.
++- Prints one line to stderr: `wrote tone.wav: 240000 frames, 48000 Hz, pcm32, 2 ch`.
++- Tests (`tests/make-test-audio.test.mjs`, M3-02 step 3): frames 240000 for 5 s; peak within 1 % of 0.5012; 10
++  clicks counted as rising edges at 120 bpm, with an implicit `x[-1] = 0` (the first click starts at sample 0,
++  so a count that ignores it finds 9); the FM tone's rising zero-crossing count within 0.2 % of the plain
++  tone's.
++
++## wow-flutter algorithm
++
++`tools/wow-flutter <file.wav> [--channel 0] [--json] [--expect-hz <f>]`. Method: **zero-crossing period
++estimation with linear interpolation, per-cycle frequency, a 0.5 Hz high-pass to remove the pitch offset, then
++peak and RMS deviation in percent.** Steps:
++
++1. **Read** one channel (`--channel`, default 0) with `readWav`. If its RMS is below -60 dBFS, or it has fewer
++   than 3 s of good cycles (step 5; 1 s is skipped at each end and one full 1 s window must remain), print `no signal` (`{"signal": false}` with `--json`) and **exit 1**. Silence from the
++   null sink must give this, never a crash or a division by zero (M3-05 step 2).
++2. **DC:** subtract the channel mean.
++3. **Zero crossings:** every rising crossing `x[i] < 0 ≤ x[i+1]` at time `t = (i + x[i]/(x[i] − x[i+1])) / rate`
++   (linear interpolation between the two samples). One crossing per cycle.
++4. **Per-cycle frequency:** `f_k = 1 / (t_{k+1} − t_k)`, and the cycle's peak `|x|` between its crossings.
++5. **Dropouts:** a cycle is bad when its period differs from the median period by more than 5 % or its peak is
++   below half the median cycle peak. Each run of consecutive bad cycles counts as one **dropout**. Bad cycles
++   and the 2 cycles on each side of them are excluded from every statistic. For the filter, their deviation is
++   bridged by linear interpolation between the neighbouring good cycles. A 1 ms run of zeros therefore shows up
++   as `dropouts: 1`, not as flutter (M3-03 step 3).
++6. **Mean frequency** `f̄ = (number of good cycles) / (sum of their periods)`. This is the reported "mean Hz" (1010
++   Hz tone → 1010.000). `--expect-hz f` fails (exit 1) if `f̄` is more than 5 % off `f`, which catches the wrong
++   file or a 45/33 mix-up.
++7. **Deviation series** `d_k = f_k / f̄ − 1`, treated as uniformly sampled at `f̄` (cycles are within 1 % of
++   uniform, so the error is far below the tolerances).
++8. **0.5 Hz high-pass (removes the pitch offset and slow drift):** the passband starts at 0.5 Hz. It is a
++   2nd-order Butterworth biquad (RBJ cookbook, Q = 1/√2) with its −3 dB corner at **0.2 Hz**, run forward then
++   backward (zero phase, net gain = |H|²). Both ends are padded with 3 s of odd reflection (`2·d_0 − d_k`, as
++   scipy's `filtfilt` does). Net gain: 0.975 at 0.5 Hz, 1.000 at 4 Hz, 0.059 at 0.1 Hz, 0 at DC.
++   *Why not a −3 dB corner at 0.5 Hz:* run zero-phase, it halves a 0.5 Hz wow. The prototype measured 0.252 %
++   for a 0.5 % @ 0.5 Hz tone, which fails M3-03's 0.42–0.58 % window. "0.5 Hz high-pass" in this project means
++   the band edge (≥ 97 % passed). D12 records it.
++9. **Statistics** over the filtered series, skipping the first and last 1 s (filter edges) and excluded cycles:
++   **peak %** = `100 · max |d|`, **RMS %** = `100 · sqrt(mean d²)`. Unweighted. The upper band edge is half the
++   cycle rate (500 Hz for 1 kHz), and per-cycle averaging costs −0.0002 dB at 4 Hz.
++10. **Worst 1-second window:** windows of 1 s at a 0.1 s hop. The window with the largest RMS is reported with
++    its start time, peak and RMS.
++
++Output (text): `mean 1000.000 Hz  peak 0.1008 %  rms 0.0707 %  worst 1 s @ 2.30 s: peak 0.1008 % rms 0.0707 %
++dropouts 0  cycles 4999`. `--json`: `{"signal":true,"mean_hz":…,"peak_pct":…,"rms_pct":…,"worst":{"start_s":…,
++"peak_pct":…,"rms_pct":…},"dropouts":…,"cycles":…,"size_from_eof":false}`.
++
++**Tolerances the tests must meet** (M3-03 step 1; feature step: synthetic 0.1 % FM at 4 Hz measured within ±15 %
++of 0.1 %, i.e. peak 0.085–0.115 %). Prototype results with the algorithm above on 48 kHz tones:
++
++| Synthetic tone | Must report | Prototype |
++|---|---|---|
++| 1 kHz clean, 5 s (float and 16-bit) | peak and RMS < 0.01 % | 0.0000 % / 0.0000 % |
++| 1 kHz, 0.1 % FM at 4 Hz, 5 s | peak 0.085–0.115 % | peak 0.1008 %, RMS 0.0707 % |
++| 1 kHz, 0.5 % FM at 0.5 Hz, **10 s** | peak 0.42–0.58 % | peak 0.4913 % |
++| 1010 Hz clean, 5 s (pitch offset) | deviation < 0.01 %, mean 1010 ± 0.5 Hz | peak 0.0013 %, mean 1010.000 Hz |
++| 1 kHz clean + 1 ms of zeros at 2.5 s | `dropouts: 1`, deviation < 0.01 % | dropouts 1, peak 0.0000 % |
++
++Notes for M3-03: give the 0.5 Hz FM test ≥ 10 s (a whole number of FM cycles). At 5 s the mean is biased (the
++prototype got 1000.637 Hz), though the peak still passed. The 0.0013 % on the 1010 Hz tone is linear
++interpolation error (crossings drift across the sample grid). It is 8× under the tolerance, so don't "fix" it with
++a fancier interpolator. Weighting (IEC 60386's 4 Hz-centred curve), which spec §5 calls "if feasible", is
++deferred: a `--weighted` flag could be added later without changing these numbers.
++
++## Telemetry format
++
++M7 adds a debug setting to the mapping that writes platter telemetry; `tools/drift` (M3-04) reads it. The format
++is fixed now (D11 *default*) so the tool and the mapping can be built independently.
++
++- **File:** `dev-profile/telemetry.jsonl` (`~/.var/app/org.mixxx.Mixxx/dev-profile/telemetry.jsonl`), one JSON
++  object per line, UTF-8, `\n`-terminated, in time order.
++- **Keys (all required):**
++
++| Key | Type | Meaning |
++|---|---|---|
++| `t_us` | integer | Host time in µs when the platter message was handled (M7: `Date.now() * 1000`, so ms resolution in practice; no finer clock is known in QJSEngine, M7 checks). It is wall-clock time, so it can step back (NTP). |
++| `ticks` | integer | Unwrapped encoder position from the platter core (M4 decoder), in encoder ticks since the deck's telemetry started. Signed: backward motion lowers it. |
++| `timer` | integer | Unwrapped controller timestamp counter (M4 decoder; hypothesis 2,822,400 Hz, UNVERIFIED until M5). |
++| `playposition` | number | Mixxx's `[ChannelN],playposition` at that moment, nominally 0..1 (Mixxx can report slightly outside it before the track start; accepted). |
++| `rate_ratio` | number | The platter speed ratio the core's estimator reported (1.0 = nominal RPM). |
++| `mode` | string | `clock` (Mixxx plays at the pitch fader's rate) or `platter` (the platter drives `scratch_position`). |
++
++- **Optional:** `deck` (1 or 2; absent means 1) and `duration` (the track length in s, Mixxx's
++  `[ChannelN],duration` at full precision). Readers ignore unknown keys, so M7 may add more without breaking
++  `tools/drift`. A missing required key or a wrong type is an error naming the line number
++  (`telemetry.jsonl:12: missing "ticks"`). A `t_us` lower than the line before is a warning, not an error:
++  the reader clamps it to the previous value and counts it (`t_backsteps`), so one clock step doesn't throw away
++  a session.
++- **Rate:** M7 writes one line per deck at most every 50 ms (20 Hz, configurable), so 5 minutes is about 6,000
++  lines per deck. `playposition` only changes once per audio buffer, so every sample, the first one included,
++  lags by 0 to 1 buffer. The seed's `soundconfig.xml` has `latency="5"`: the buffer's length in ms is
++  UNVERIFIED (perhaps about 21 ms; M7 reads it from the log). `tools/drift` smooths for this (below).
++- **M7 must keep the sampling jitter small; smoothing can't fix it.** The scratch prototype (Evidence) added a
++  random 0–21 ms lag to every `playposition` of a zero-drift 5-minute log at 20 Hz. After the 1 s running median,
++  max |drift| was still 7.7–10.2 ms (3 seeds); with 2 s, 5.0–7.2 ms; with 5 s, 3.3–4.4 ms. That is the whole
++  10 ms budget of spec §3. So M7 writes a line from an `engine.makeConnection(group, "playposition", …)`
++  callback, i.e. when the engine publishes a new position. It pairs that with the platter position the core
++  extrapolates to the same `t_us`, rather than reading `playposition` at an arbitrary MIDI message. How tight
++  that callback's timing is stays UNVERIFIED until M7 measures it with `noise_ms` (below).
++- **How it gets to the file (M7):** controller scripts can't write files: `res/controllers/engine-api.d.ts` and `console-api.d.ts`
++  on the `2.5` branch (read 2026-10-19) offer settings, controls, connections, timers, scratch and logging, and no
++  file API. So the mapping logs each object as
++  `console.log("RaneOne telemetry " + JSON.stringify(obj))`. Under `--controller-debug` that reaches
++  `mixxx.log` as `HH:MM:SS.mmm Debug [Controller] RaneOne telemetry {…}` (the same path as `RaneOne: init`, seen
++  in M1-05). A host-side step extracts lines matching `^\S+ Debug \[Controller\] RaneOne telemetry (\{.*\})$`
++  into `dev-profile/telemetry.jsonl`. Proposed owner: a `tools/mixxx-dev telemetry` subcommand in M7. Every
++  line is flushed (`--log-flush-level debug`, D9), so a hard stop loses nothing.
++
++## drift
++
++`tools/drift <telemetry.jsonl> --track-seconds <n> [--ticks-per-rev 3600] [--rpm 33.333] [--deck 1]
++[--jump-ms 20] [--smooth-ms 1000] [--csv] [--json]`. Spec §3: drift with the motor on, 5 min, target < 10 ms.
++
++- **`--rpm`:** `33`, `33.3`, `33.33`, `33.333` and `100/3` all mean exactly 100/3; `45` means 45; any other
++  positive number is taken as given. A literal 33.333 is 1.0e-5 low, which alone would be 3 ms of fake drift over
++  5 min, 30 % of the budget.
++- **`--track-seconds`:** must be the exact duration (frames / rate). A value rounded to 0.5 s on a 6-minute
++  track fakes about 0.4 s of drift over 5 min. When the lines carry `duration` (D11), a command-line value that
++  differs from it by more than 1 ms is a warning, and the command-line value is used.
++- **Definition:** for each line `i` of the chosen deck, relative to the first line:
++  - `platter_s = (ticks_i − ticks_0) / ticks_per_rev · 60 / rpm`: track seconds the platter has turned through.
++    One revolution at the nominal RPM is 60/rpm seconds of record, whatever the motor's actual speed.
++  - `mixxx_s = (playposition_i − playposition_0) · track_seconds`
++  - `raw_ms = 1000 · (mixxx_s − platter_s)`. Positive means Mixxx is ahead of the platter.
++  - **Smoothing against the per-buffer lag of `playposition`:** `drift_ms` = the centred running median of
++    `raw_ms` over `--smooth-ms` (default 1000; 0 turns it off), minus the median of `raw_ms` over the first
++    `--smooth-ms`. One lagged first sample therefore can't offset the whole series.
++- **Reported:** `max` = max |drift_ms|, `final` = the last drift_ms, `slope` = least-squares slope of `raw_ms`
++  against t in **ms/min**. `jumps`: at every sample, the median of `raw_ms` over the `--smooth-ms` after it minus
++  the median over the `--smooth-ms` before it. Each run of samples where that exceeds `--jump-ms` (default 20 ms)
++  is one jump, reported at the sample with the largest change, with its time in s from the start and its size.
++  Comparing medians keeps buffer jitter from looking like jumps: with 0–21 ms random lag, a 50 ms step at 120 s
++  came back as exactly one jump within 0.3 s in 5 of 5 seeds. **`noise_ms`** = 1.4826 · median |raw_ms −
++  drift_ms|, the robust spread of the samples around the smoothed curve. It's printed next to `max` so a reader
++  can see when `max` is mostly sampling noise (see Telemetry format). Also: sample count, span in s, mean
++  `rate_ratio`, number of `mode` changes, `t_backsteps`.
++- **`--csv`:** prints `t_us,drift_ms` (header, then one row per sample, smoothed) to stdout instead of the
++  summary.
++  `--json`: the summary as one object.
++- Assumption to confirm in M5/M8: the drift is meaningful only if the One's motor speed follows the pitch fader,
++  since Mixxx plays at the fader's rate. If the motor ignores the fader, drift grows by design whenever the fader
++  isn't at 0, and M7 has to handle that.
++- Not handled by the tool: a 33/45 switch inside one log (use one `--rpm` per log) and track loops or cue jumps,
++  which show up as jumps, correctly.
++- Tests (M3-04 step 1), synthetic logs written by the test at 20 Hz: zero drift → max < 0.1 ms; 10 ms accumulated
++  linearly over 300 s → final 10 ± 0.5 ms and slope 2 ± 0.1 ms/min; a 50 ms step at t = 120 s → one jump
++  reported within 1 s of 120 s. Also: the jump log with a seeded random 0–21 ms lag added to `playposition`
++  still reports exactly one jump within 1 s, and the zero-drift log with that lag reports `noise_ms` > 1; `--rpm 33.333` on a log made with 100/3
++  gives max < 0.1 ms; a bad line → exit 1 naming its line number; a backward `t_us` → a warning and
++  `t_backsteps: 1`.
++
++## record-output
++
++`tools/record-output [--seconds 10] [--target mixxx-dev.monitor] <out.wav>` records the null sink's monitor, so
++Mixxx's output is measured without speakers or the Rane One. Recording is capture only: `pw-record` creates an
++input stream and plays nothing.
++
++- **The exact command:**
++  `pw-record --target mixxx-dev.monitor --rate 48000 --format s32 --channels 2 <file.wav>`.
++  The tool runs that command with two additions:
++  - `--sample-count <seconds · 48000>`: pw-record 1.6.8's `-n`, "Stop after COUNT samples". M3-05's live 2 s
++    check confirms that COUNT means frames (expect 96000 frames).
++  - `-P node.dont-fallback=true`: if the target doesn't resolve, WirePlumber doesn't link the stream to the
++    default source, which is the **Rane One's capture**. It sends "defined target not found" and **destroys the
++    node** (`find-defined-target.lua` lines 116–123, unless `node.linger` is set), so `pw-record` most likely
++    exits early with a header-only WAV.
++  So whenever `pw-record` exits, the tool reads the WAV back and requires exactly `seconds · 48000` frames at
++  48000 Hz, 2 ch. Otherwise it exits 1 with "pw-record recorded N of M frames: target not found or not linked?"
++  and deletes the short file, so an empty file can never pass for measured silence. A timeout of `seconds + 5` s
++  kills `pw-record` and fails the same way.
++- **Refusals (exit 3):** a `--target` containing `Rane` (case-insensitive), `alsa_input`, `alsa_output`, or one
++  that doesn't end in `.monitor`. A missing `mixxx-dev` sink (`tools/null-sink status` exits 1) also exits 1
++  with "run tools/null-sink up". The tool never loads or unloads a sink itself and never touches defaults.
++- **Expected problem with the target name, for M3-05 to settle live:** WirePlumber 0.5.12 resolves
++  `target.object` against `node.name` or `object.path` only
++  (`/usr/share/wireplumber/scripts/linking/find-defined-target.lua`, lines 82–91). The null sink's node is named
++  `mixxx-dev`, and `mixxx-dev.monitor` is a name only `pipewire-pulse` gives to Pulse clients. So
++  `--target mixxx-dev.monitor` is expected **not** to resolve for the native `pw-record`. Its monitor is reached
++  natively with `--target mixxx-dev -P stream.capture.sink=true` (`common-utils.lua`, `getTargetDirection`:
++  with `stream.capture.sink` a capture stream targets a sink's monitor). If the live check below shows the
++  `.monitor` name unlinked, M3-05 keeps `--target mixxx-dev.monitor` as the user-facing default and translates a
++  `<sink>.monitor` target to `--target <sink> -P stream.capture.sink=true`. It records that as a decision and
++  adjusts its stub test, which is a step change for Michael (see the M3-01 progress entry). A second option, which
++  needs no policy lookup: `pw-record --target 0` (never auto-linked), then `pw-link mixxx-dev:monitor_FL
++  <record node>:input_FL` and the same for FR.
++- **Confirming the target without playing audio** (M3-05 step 2, read-only checks around a recording of
++  silence):
++  1. `tools/null-sink status` prints `mixxx-dev <module>`, and `pactl list short sources | grep -F
++     mixxx-dev.monitor` shows the monitor source. Note `pactl info | grep -E 'Default (Sink|Source)'`.
++  2. Run `tools/record-output --seconds 10 /tmp/harness/…/silence.wav` in the background. Within 2 s run
++     `pw-link -l`. It must show `mixxx-dev:monitor_FL` and `monitor_FR` linked to the `pw-record` node's
++     `input_FL`/`input_FR`, and **no** link from any `alsa_input.*` (Rane or PCI) to it. If it shows the wrong
++     link or none, kill the recording, record the output in the plan's Evidence and apply the fallback above.
++     Cross-check: `pactl list source-outputs` shows the stream's `Source:` equal to the `mixxx-dev.monitor`
++     index from step 1.
++  3. `pactl list short sink-inputs` gains no stream during the recording (proof that nothing plays). Default
++     Sink and Default Source are unchanged afterwards.
++  4. The WAV reads back as 48000 Hz, 2 ch, `pcm32`, `seconds · 48000` frames, all zero, and
++     `tools/wow-flutter` on it prints `no signal` (exit 1).
++  5. Optional end-to-end check, still without speakers: play a test tone **into the null sink** while recording.
++     Start it **unlinked**: `pw-play --target 0 -P node.name=m3-tone -P node.dont-reconnect=true tone.wav`
++     (`--target 0` means "don't link", per `pw-record --help`), so WirePlumber never links it anywhere. Then link it
++     by hand: `pw-link m3-tone:output_FL mixxx-dev:playback_FL` and the same for FR. `pw-link -l` must show
++     `m3-tone` linked to `mixxx-dev` only. Nothing can reach another sink at any moment, so there's no "kill it
++     if misrouted" window. `tools/wow-flutter` on the recording must then report the tone's numbers from the
++     table above (mean 1000 Hz, < 0.01 %).
++  Undo: `kill` any leftover `pw-record`/`pw-play` this session started (by pid), then remove the WAVs. The null
++  sink is left as `tools/null-sink` found it.
++- Through Mixxx (M7/M8, not M3): copy `tone.wav` into `dev-profile/music/` (the Flatpak can't see the
++  worktree), load and play it on a deck, record 60 s, run `tools/wow-flutter`. That is spec §3's "1 kHz test
++  tone through Mixxx, recorded, analyzed".
++- Tests (`tests/record-output.test.mjs`, M3-05 step 1): a stubbed `pw-record` and `null-sink` on `PATH` log
++  their argv. Checks: the argv contains `--target mixxx-dev.monitor --rate 48000 --format s32 --channels 2`,
++  `--sample-count 144000` for `--seconds 3`, and `-P node.dont-fallback=true`; `--target other.monitor`
++  overrides; a target containing `Rane` → exit 3 and no `pw-record` call; an absent sink → exit 1 and no call;
++  the timeout path with a stub that never exits; a stub that exits at once after writing a header-only WAV →
++  exit 1 ("recorded 0 of 144000 frames") and no WAV left behind.
++
++## Evidence
++
++- **2026-10-19, M3-01 session (scratch prototype, not committed; read-only machine queries only):**
++  `pw-record --help` (1.6.8): `--target` "node target serial or name", `-n, --sample-count COUNT`, `--format`
++  lists `s32`. `wireplumber --version`: 0.5.12. `pw-dump` audio nodes: `alsa_output.pci-…`,
++  `alsa_input.pci-…`, `alsa_output.usb-Rane_…-40`, `alsa_input.usb-Rane_…-21`. No null sink was up and none
++  was created. `pactl info`: Default Source is the Rane One's capture. The prototype implemented steps 1–9 of
++  the wow-flutter algorithm on synthetic float64 tones (and 16-bit quantised ones) and gave the "Prototype"
++  column above. With the corner at 0.5 Hz instead of 0.2 Hz, the 0.5 % @ 0.5 Hz tone measured 0.2520 %.
++  A second prototype applied the drift smoothing and jump detection to synthetic 5-minute 20 Hz logs with random
++  0–21 ms `playposition` lag. The numbers are quoted under Telemetry format and drift.
++- **2026-10-19, M3-01 review (Opus, findings applied to this plan):** `find-defined-target.lua` lines 116–123
++  confirmed: with `node.dont-fallback` and an unfound target, WirePlumber destroys the node. That is why
++  record-output checks the frame count. The `pw-play --target 0` + `pw-link` pattern, the float64 decode, the
++  `--rpm` parsing, `duration`, the smoothing and the backward-`t_us` clamp come from the same review.
+diff --git a/tools/mixxx-dev b/tools/mixxx-dev
+index 73afa38..56218f3 100755
+--- a/tools/mixxx-dev
++++ b/tools/mixxx-dev
+@@ -215,7 +215,11 @@ t0=$(now)
+ log_end=$(( t0 + LOG_TIMEOUT * 1000000 ))
+ route_end=$(( t0 + ROUTE_TIMEOUT * 1000000 ))
+ 
++# Liveness is sampled before the read: a launcher that writes the id and exits between a read and a later
++# kill -0 would otherwise look as if it died without one.
+ while :; do
++  alive=
++  ! kill -0 "$launcher" 2> /dev/null || alive=1
+   got=$(< "$tmp_inst") || got=
+   if [[ $got =~ ^[0-9]+$ ]]; then
+     id=$got
+@@ -223,7 +227,7 @@ while :; do
+     tmp_inst=
+     break
+   fi
+-  (( $(now) < log_end )) && kill -0 "$launcher" 2> /dev/null || exit 1
++  [[ -n $alive ]] && (( $(now) < log_end )) || exit 1
+   sleep 0.1
+ done
+ # Started: a new mixxx.log (Mixxx renames the old one to mixxx.log.1), and the version line on this launch's
+
+# Part 2: git diff cadb770..2b59a39 (cadb770 = 'HARNESS: M2 verified') -- tools tests docs README.md package.json
+diff --git a/README.md b/README.md
+index 6ac12b3..b0f3775 100644
+--- a/README.md
++++ b/README.md
+@@ -34,3 +34,10 @@ Recording the One is read-only; Michael's morning session is in [`HARDWARE-TESTS
+ - `tools/capture-convert <file.mid>`: an `arecordmidi` SMF (the fallback) → M2 JSONL.
+ - `tools/replay --to-port 'Midi Through' <file.jsonl>`: plays a capture through `tools/midi-send`, original timing.
+ - `tools/census <file.jsonl>… [--diff <mk2.csv>]`: one CSV row per control, and a diff against the MK2 djay map.
++
++## Measurement (M3)
++
++- `tools/make-test-audio tone|clicks --out x.wav`: 48 kHz test signals (1 kHz tone, `--fm-depth`/`--fm-rate` wow).
++- `tools/wow-flutter <file.wav>`: mean Hz, peak and RMS deviation %, the worst 1 s window and dropouts.
++- `tools/drift telemetry.jsonl --track-seconds <n>`: platter versus playposition drift (max, final, slope, jumps).
++- `tools/record-output [--seconds 10] <out.wav>`: records a null sink's monitor (default `mixxx-dev`); refuses real devices.
+diff --git a/docs/decisions.md b/docs/decisions.md
+index 1a953ce..e53b8c1 100644
+--- a/docs/decisions.md
++++ b/docs/decisions.md
+@@ -121,3 +121,18 @@ Newest last. `*default*` = taken as the simplest reversible default, waiting for
+   prints the 7 groups (24.75 min), then the extras (4.40 min). To undo it: set `extra: false` on those steps in
+   `tools/lib/capture-session.mjs` (the total goes to 29.15 min) and change the cap in the two steps. Plan:
+   `docs/plans/2026-10-19-M2-capture-replay.md` § Capture session. (2026-10-21)
++- **D18 *default* · `tools/record-output` translates `<sink>.monitor` to `--target <sink> -P stream.capture.sink=true`.**
++  The user-facing target stays `mixxx-dev.monitor`, but `pw-record` never gets that name: WirePlumber 0.5.12
++  resolves a named target by `node.name` or `object.path`, and `mixxx-dev.monitor` exists for Pulse clients alone.
++  Seen live 2026-10-21: `pw-record --target mixxx-dev.monitor … -P node.dont-fallback=true` printed "defined target
++  not found", exited 1 and left a 44-byte header-only WAV; `--target mixxx-dev -P stream.capture.sink=true` linked
++  `mixxx-dev:monitor_FL/FR` to it (nothing from any `alsa_input`) and wrote 96000 frames for `--sample-count 96000`,
++  so COUNT is frames. `pw-record` 1.6.8 also exits 1 after a complete recording, so the tool judges the WAV it
++  wrote (exact frame count, 48000 Hz, 2 ch, pcm32), never the exit code. Because pw-record also reads `auto` as the
++  default sink, a number as an `object.serial` (looked up with no sink check) and a name as an `object.path`
++  (`alsa:acp:ONE:0:playback`, no "rane" in it), the sink name must be plain (`[A-Za-z][A-Za-z0-9_-]*`, not `auto`,
++  no `rane`/`alsa_`/`bluez_`) and `pactl -f json list sinks` must show it as `support.null-audio-sink`; the
++  stream also gets `node.dont-move=true`, so a later move can't relink it. M3-05 step 1 names the untranslated
++  argv; its intent (that monitor, 48000 Hz, s32, 2 ch) holds. To undo: pass `--target` through unchanged in
++  `tools/record-output` (it will then record nothing). Plan: `docs/plans/2026-10-19-M3-measurement.md`
++  § record-output. (2026-10-21)
+diff --git a/docs/plans/2026-10-19-M3-measurement.md b/docs/plans/2026-10-19-M3-measurement.md
+index 75009f4..c749831 100644
+--- a/docs/plans/2026-10-19-M3-measurement.md
++++ b/docs/plans/2026-10-19-M3-measurement.md
+@@ -81,6 +81,21 @@ export function readWav(path, opts)                          // readFileSync + d
+   so a count that ignores it finds 9); the FM tone's rising zero-crossing count within 0.2 % of the plain
+   tone's.
+ 
++**As built (M3-02, 2026-10-21):**
++- `decodeWav` also returns `channelCount` (the file's, even with `{ channel }`). A data size of 0 counts as streamed
++  only when bytes follow it that the RIFF size doesn't cover (RIFF size 0, 0xFFFFFFFF or ending at the data chunk);
++  a genuinely empty data chunk is 0 frames with `sizeFromEof: false`, and a chunk after it is never read as audio.
++- `encodeWav` also refuses a byte rate over 32 bits and, for `float32`, values beyond float32's range (they would
++  be written as ±Inf).
++- The signals live in `tools/lib/test-audio.mjs` (`tone`, `clicks`, `dbToAmplitude`), so M3-03's tests can make
++  their tones without spawning the tool. The tone's phase is offset so φ(0) = 0 (`+ (f0 D/fm)(1 − cos …)`): same
++  instantaneous frequency as above, and the file starts at a zero crossing.
++- Limits (usage error, exit 2): `--seconds` ≤ 600, `--rate` 8000..384000, `--level-db` ≤ 0, `--fm-depth` < 100,
++  `--fm-rate` ≤ 200 (flutter's upper band edge), `--bpm` ≤ 1000, and `--freq · (1 + depth)` below half the rate.
++  `--out` replaces an existing file (temp file + rename). Options for the other signal are refused.
++- Measured on the built files: tone and FM tone peak -6.0000 dBFS, 4999 rising crossings each in 5 s; the FM
++  tone's per-cycle frequency spans +0.1002 % / -0.1002 %; clicks: 10 pulses of 48 samples at 0, 0.5 … 4.5 s.
++
+ ## wow-flutter algorithm
+ 
+ `tools/wow-flutter <file.wav> [--channel 0] [--json] [--expect-hz <f>]`. Method: **zero-crossing period
+@@ -138,6 +153,33 @@ interpolation error (crossings drift across the sample grid). It is 8× under th
+ a fancier interpolator. Weighting (IEC 60386's 4 Hz-centred curve), which spec §5 calls "if feasible", is
+ deferred: a `--weighted` flag could be added later without changing these numbers.
+ 
++**As built (M3-03, 2026-10-21):**
++- `tools/lib/wow-flutter.mjs` exports `analyze(x, rate)` (pure, never throws on samples) and `highPass(d, fs)`;
++  `tools/wow-flutter` reads the file and prints.
++- **Changed from step 8 (review #1):** the pad is an **even** (mirror) reflection, not scipy's odd one. Odd
++  reflection shifts the pad's mean by 2·(d0 − mean) when the file starts mid-wow, and the filter rang past the 1 s
++  edge: 0.1180 % for a 0.1 % @ 4 Hz tone starting at maximum deviation, 0.584 % for 0.5 % @ 0.5 Hz (both outside
++  M3-03's windows). With mirror padding, across start phases: 0.1015–0.1021 % and 0.494–0.528 %. Each pass also
++  starts in the steady state for its first sample (like scipy's `lfilter_zi`), so a constant gives exactly 0.
++- **The tone is found by level (review #2, #3):** the reference is the quietest of the loudest cycles that together
++  last 1 s; cycles 20 dB below it before the first and after the last loud cycle are trimmed (noise floor, silence
++  around a recording), not dropouts. The medians of step 5 use the loud cycles only, so a noise floor (about 12×
++  more crossings than the tone) can't outvote the tone. The 1 s edges, the windows and the 3 s minimum count from
++  the tone's first and last crossing; window starts stay on the file's 0.1 s grid.
++- The -60 dBFS gate uses the RMS without DC. A mean frequency below 20 Hz, non-finite samples or a non-finite
++  result are `no signal`, never NaN.
++- `cycles` counts every cycle of the tone between two rising crossings, bad ones included.
++- No signal: stdout `no signal` (or `{"signal":false,"reason":…,"size_from_eof":…}`), the reason on stderr, exit
++  1. `--expect-hz` prints the result first, then fails.
++- Known limit: flutter above 5 % makes cycles "bad" (step 5), so it reads as many dropouts and an under-reported
++  peak (6 % @ 4 Hz: peak 5.13 %, `dropouts 40`, mean 1010.5 Hz). A `dropouts` count far above 0 on a test tone means "don't trust
++  the peak". At these levels the platter is plainly broken anyway.
++- Measured with the tool on `make-test-audio` files (pcm32): clean 1 kHz peak 0.0000 %; 0.1 % @ 4 Hz peak 0.1021 %,
++  RMS 0.0707 %; 0.5 % @ 0.5 Hz (10 s) peak 0.5279 %; 1010 Hz peak 0.0012 %, mean 1010.000 Hz. A 1 ms gap (at,
++  after or before a zero crossing) and a 3 ms dip to 30 % are each `dropouts 1` with deviation < 0.01 %. A 5-minute
++  stereo pcm32 0.1 % @ 4 Hz file: peak 0.1019 % (the window just after the 1 s edge; mid-file ≈ 0.1008 %), 0.56 s,
++  302 MB peak memory.
++
+ ## Telemetry format
+ 
+ M7 adds a debug setting to the mapping that writes platter telemetry; `tools/drift` (M3-04) reads it. The format
+@@ -225,6 +267,25 @@ is fixed now (D11 *default*) so the tool and the mapping can be built independen
+   gives max < 0.1 ms; a bad line → exit 1 naming its line number; a backward `t_us` → a warning and
+   `t_backsteps: 1`.
+ 
++**As built (M3-04, 2026-10-21):** `tools/lib/drift.mjs` (`parseTelemetry`, `parseRpm`, `analyzeDrift`) and
++`tools/drift`; tests in `tests/drift.test.mjs`. Where it differs from the text above, and why:
++- **Jump time** is the midpoint of the run of over-threshold samples, not "the sample with the largest change": on
++  a clean step the change is a plateau about `--smooth-ms` wide, so the first largest sample reads 0.5 s early.
++  The size is the run's largest change. Two same-sign steps closer than `--smooth-ms` merge into one jump.
++- **Jumps need `--smooth-ms/2` of log on each side.** Otherwise one lagged first or last line is a "jump" (the
++  window there holds one sample). A jump in the first or last half window isn't reported; it still shows in `final`.
++- **`noise_ms`** is the spread around the smoothed curve before the baseline is taken off (`raw_ms − median`);
++  "`raw_ms − drift_ms`" would add the baseline as an offset.
++- **A backward `t_us`** is clamped to the line before, and the step is carried into every later line. One clock
++  step is one warning and `t_backsteps: 1`, and the spacing after it is kept, so jump times aren't shifted by it.
++- **`--rpm`** also takes `33.30`, `33.330` … as 100/3. **Input:** a UTF-8 BOM and CRLF are accepted; `timer` must be an
++  integer (D11). If M7 has samples with `timer: null` (M4-03), D11 and this reader change together.
++- **Limits, measured on synthetic logs:** an excursion shorter than `--smooth-ms/2` (for example +60 ms for 0.4 s)
++  shows in neither `max` nor `jumps`; `--help` says so. With a 0–43 ms lag (a 2048-frame buffer), the 1 s window
++  gives false 20 ms jumps mid-log (seed 5: at 99.8 s and 290 s), so M7 must keep the lag near 21 ms or raise
++  `--smooth-ms`. The baseline (the first second's median) offsets a linear drift by its rate × 0.5 s, and the
++  centred median at the end lags 0.25 s: 10 ms over 300 s still reads 9.976 ms.
++
+ ## record-output
+ 
+ `tools/record-output [--seconds 10] [--target mixxx-dev.monitor] <out.wav>` records the null sink's monitor, so
+@@ -282,6 +343,27 @@ input stream and plays nothing.
+      table above (mean 1000 Hz, < 0.01 %).
+   Undo: `kill` any leftover `pw-record`/`pw-play` this session started (by pid), then remove the WAVs. The null
+   sink is left as `tools/null-sink` found it.
++**As built (M3-05, 2026-10-21):** `tools/record-output`; tests in `tests/record-output.test.mjs` (stubbed
++`pw-record` and `pactl` on `PATH`). Where it differs from the text above, and why:
++- **The `.monitor` name is translated (D18):** the live check showed it unlinked, as expected, so `pw-record` gets
++  `--target <sink> -P stream.capture.sink=true --rate 48000 --format s32 --channels 2 --sample-count N
++  -P node.dont-fallback=true -P node.dont-move=true <temp>`.
++- **Refusals are an allowlist (exit 3), not the blocklist above** (M3-05 review): the sink name must match
++  `[A-Za-z][A-Za-z0-9_-]*`, not be `auto` (pw-record: the default sink), and have no `rane`, `alsa_` or `bluez_`;
++  numbers (object serials, looked up with no sink check) and object paths (`alsa:acp:ONE:0:playback`) can't pass.
++  Then `pactl -f json list sinks` (read-only) must list exactly one sink by that name with `factory.name`
++  `support.null-audio-sink`; a real card is exit 3, a missing name exit 1 (`mixxx-dev`: "run tools/null-sink up").
++  That replaces the `tools/null-sink status` call.
++- **pw-record exits 1 even after a full recording** (1.6.8), so its exit code is ignored; only the WAV counts.
++- **A temp file next to the output** (`.<name>.<pid>.tmp.wav`) is renamed into place only once it checks out, so a
++  failed recording leaves neither an empty file nor a damaged older one.
++- **The grace** past `--seconds` is 5 s (`RECORD_OUTPUT_GRACE_MS`, for tests). `--seconds` is at most 600, to
++  the millisecond: the check decodes the whole file (≈ 1 GB of memory at 600 s, 4.6 GB at an hour). On success it
++  prints frames, format and the peak in dBFS (`-inf` for digital silence).
++- **SIGINT/SIGTERM/SIGHUP** stop pw-record like the timeout (SIGTERM, SIGKILL after 1 s), and the tool exits 1 only
++  once it has gone, with the temp file removed. An existing directory as `<out.wav>`, or an unwritable output
++  directory, exits 1 before pw-record runs.
++
+ - Through Mixxx (M7/M8, not M3): copy `tone.wav` into `dev-profile/music/` (the Flatpak can't see the
+   worktree), load and play it on a deck, record 60 s, run `tools/wow-flutter`. That is spec §3's "1 kHz test
+   tone through Mixxx, recorded, analyzed".
+@@ -307,3 +389,14 @@ input stream and plays nothing.
+   confirmed: with `node.dont-fallback` and an unfound target, WirePlumber destroys the node. That is why
+   record-output checks the frame count. The `pw-play --target 0` + `pw-link` pattern, the float64 decode, the
+   `--rpm` parsing, `duration`, the smoothing and the backward-`t_us` clamp come from the same review.
++- **2026-10-21, M3-05 session (live, capture only, null sink up then down, defaults unchanged):** the plan's
++  steps 1–5 above. (1) `null-sink status` → `mixxx-dev 536870916`; source `2580 mixxx-dev.monitor`. (2) Raw
++  `pw-record --target mixxx-dev.monitor … -P node.dont-fallback=true` → "defined target not found", 44-byte WAV;
++  `tools/record-output --seconds 10`: `pw-link -l` showed `mixxx-dev:monitor_FL/FR -> pw-record:input_FL/FR`, no
++  `alsa_input` link, `pactl list source-outputs` `Source: 2580`. (3) `pactl list short sink-inputs` unchanged
++  (one pre-existing `speech-dispatcher-dummy` on the Rane sink, not ours). (4) `--seconds 2` → 96000 frames,
++  48000 Hz, 2 ch, pcm32, all zero; `tools/wow-flutter` → `no signal`, exit 1. `--target nosuch.monitor` → exit 1
++  "recorded 0 of 96000 frames" in 50 ms, no file. (5) Instead of `--target 0` + `pw-link`, the tone went in with
++  `pw-play --target mixxx-dev -P node.dont-fallback=true -P node.dont-reconnect=true` (it can't fall back
++  either; `pw-link -l` showed `m3-tone` linked to `mixxx-dev:playback_FL/FR` only). An 8 s recording measured
++  `mean 1000.000 Hz  peak 0.0000 %`, peak -6.00 dBFS.
+diff --git a/tests/drift.test.mjs b/tests/drift.test.mjs
+new file mode 100644
+index 0000000..570e8b8
+--- /dev/null
++++ b/tests/drift.test.mjs
+@@ -0,0 +1,345 @@
++// tools/drift measures how far Mixxx's play position drifts from the platter over time (spec §3: < 10 ms over 5 min
++// with the motor on). The logs are synthetic, written by these tests in the D11 telemetry format to a temp dir.
++// Spec: docs/plans/2026-10-19-M3-measurement.md, sections "Telemetry format" and "drift".
++import { test, after } from "node:test";
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++import { parseTelemetry, parseRpm, analyzeDrift } from "../tools/lib/drift.mjs";
++
++const dirs = [];
++const tempDir = () => {
++  const d = mkdtempSync(join(tmpdir(), "drift-"));
++  dirs.push(d);
++  return d;
++};
++after(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })));
++
++const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
++const TOOL = join(ROOT, "tools", "drift");
++const TRACK_S = 360.123456; // exact track length in s (frames / rate)
++const T0_US = 1_792_000_000_000_000; // a Date.now() * 1000 host time
++const RPM = 100 / 3;
++const TPR = 3600;
++
++// mulberry32: a seeded PRNG so a lagged log is the same on every run.
++function rng(seed) {
++  let a = seed >>> 0;
++  return () => {
++    a = (a + 0x6d2b79f5) >>> 0;
++    let t = a;
++    t = Math.imul(t ^ (t >>> 15), t | 1);
++    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
++    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
++  };
++}
++
++// D11 lines at `hz` for `seconds`: the platter turns at exactly the nominal RPM, and Mixxx's position is the platter's
++// plus driftMs(t) (positive = Mixxx ahead), minus a lag in ms (the per-buffer lag of playposition).
++function makeLog({ seconds = 300, hz = 20, driftMs = () => 0, lagMs = () => 0, start_s = 12.5, extra = () => ({}) } = {}) {
++  const lines = [];
++  const n = Math.round(seconds * hz);
++  for (let i = 0; i <= n; i++) {
++    const t = i / hz;
++    const ticks = Math.round((t * RPM * TPR) / 60);
++    const trackS = start_s + (ticks / TPR) * (60 / RPM) + (driftMs(t) - lagMs(t)) / 1000;
++    lines.push({
++      t_us: T0_US + Math.round(t * 1e6), ticks: 1000 + ticks, timer: 5000 + Math.round(t * 2822400),
++      playposition: trackS / TRACK_S, rate_ratio: 1, mode: "clock", ...extra(i, t),
++    });
++  }
++  return lines;
++}
++const toText = (lines) => lines.map((l) => (typeof l === "string" ? l : JSON.stringify(l)) + "\n").join("");
++
++function writeLog(lines, name = "telemetry.jsonl") {
++  const path = join(tempDir(), name);
++  writeFileSync(path, toText(lines));
++  return path;
++}
++const run = (args) => spawnSync(TOOL, args, { encoding: "utf8" });
++const runJson = (path, more = []) => {
++  const r = run([path, "--track-seconds", String(TRACK_S), "--json", ...more]);
++  assert.equal(r.status, 0, r.stderr);
++  return JSON.parse(r.stdout);
++};
++const analyzeLines = (lines, opts = {}) =>
++  analyzeDrift(parseTelemetry(toText(lines), "t.jsonl").samples, { trackSeconds: TRACK_S, ticksPerRev: TPR, rpm: RPM, ...opts });
++
++// Step 1 of M3-04: the three synthetic logs.
++test("zero drift reports max |drift| below 0.1 ms and no jumps", () => {
++  const s = runJson(writeLog(makeLog()), ["--ticks-per-rev", "3600", "--rpm", "33.333"]);
++  assert.ok(s.max_ms < 0.1, `max ${s.max_ms}`);
++  assert.ok(Math.abs(s.final_ms) < 0.1, `final ${s.final_ms}`);
++  assert.ok(Math.abs(s.slope_ms_per_min) < 0.01, `slope ${s.slope_ms_per_min}`);
++  assert.equal(s.jumps.length, 0);
++  assert.equal(s.samples, 6001);
++  assert.equal(s.span_s, 300);
++});
++
++test("10 ms accumulated linearly over 5 min reports final 10 ± 0.5 ms and slope 2 ± 0.1 ms/min", () => {
++  const s = runJson(writeLog(makeLog({ driftMs: (t) => (10 * t) / 300 })));
++  assert.ok(Math.abs(s.final_ms - 10) <= 0.5, `final ${s.final_ms}`);
++  assert.ok(Math.abs(s.slope_ms_per_min - 2) <= 0.1, `slope ${s.slope_ms_per_min}`);
++  assert.ok(Math.abs(s.max_ms - 10) <= 0.5, `max ${s.max_ms}`);
++  assert.equal(s.jumps.length, 0);
++});
++
++test("a 50 ms jump at 120 s is one jump reported within 1 s of 120 s", () => {
++  const s = runJson(writeLog(makeLog({ driftMs: (t) => (t >= 120 ? 50 : 0) })));
++  assert.equal(s.jumps.length, 1, JSON.stringify(s.jumps));
++  assert.ok(Math.abs(s.jumps[0].t_s - 120) <= 1, `jump at ${s.jumps[0].t_s}`);
++  assert.ok(Math.abs(s.jumps[0].size_ms - 50) <= 1, `size ${s.jumps[0].size_ms}`);
++  assert.ok(Math.abs(s.final_ms - 50) <= 0.5, `final ${s.final_ms}`);
++});
++
++test("Mixxx behind the platter gives negative drift and a negative jump", () => {
++  const s = analyzeLines(makeLog({ driftMs: (t) => (t >= 100 ? -30 : 0) }));
++  assert.ok(Math.abs(s.final_ms + 30) <= 0.5, `final ${s.final_ms}`);
++  assert.equal(s.jumps.length, 1);
++  assert.ok(s.jumps[0].size_ms < -29, `size ${s.jumps[0].size_ms}`);
++});
++
++// Sampling lag (plan § Telemetry format): playposition lags its sample by 0 to 1 buffer.
++for (const seed of [1, 2, 3, 4, 5]) {
++  test(`the jump log with a random 0–21 ms playposition lag still gives exactly one jump within 1 s (seed ${seed})`, () => {
++    const r = rng(seed);
++    const s = analyzeLines(makeLog({ driftMs: (t) => (t >= 120 ? 50 : 0), lagMs: () => 21 * r() }));
++    assert.equal(s.jumps.length, 1, JSON.stringify(s.jumps));
++    assert.ok(Math.abs(s.jumps[0].t_s - 120) <= 1, `jump at ${s.jumps[0].t_s}`);
++  });
++}
++
++test("the zero-drift log with that lag reports noise_ms > 1, and without it noise_ms is about 0", () => {
++  const r = rng(7);
++  const lagged = analyzeLines(makeLog({ lagMs: () => 21 * r() }));
++  assert.ok(lagged.noise_ms > 1, `noise ${lagged.noise_ms}`);
++  assert.equal(lagged.jumps.length, 0);
++  // A lagged first sample doesn't offset the whole series: drift starts near 0.
++  assert.ok(Math.abs(lagged.series[0].drift_ms) < 3, `first ${lagged.series[0].drift_ms}`);
++  assert.ok(analyzeLines(makeLog()).noise_ms < 0.01);
++});
++
++test("--rpm 33.333 on a log made with 100/3 gives max < 0.1 ms (it means exactly 100/3)", () => {
++  const path = writeLog(makeLog());
++  for (const rpm of ["33", "33.3", "33.33", "33.333", "100/3"]) {
++    const s = runJson(path, ["--rpm", rpm]);
++    assert.ok(s.max_ms < 0.1, `--rpm ${rpm}: max ${s.max_ms}`);
++  }
++  // A literal 1.0e-5-low RPM would read as 3 ms of fake drift over 5 min.
++  const literal = analyzeLines(makeLog(), { rpm: 33.333 });
++  assert.ok(literal.max_ms > 2.5 && literal.max_ms < 3.5, `literal max ${literal.max_ms}`);
++});
++
++test("parseRpm: the 33⅓ spellings are exactly 100/3, 45 is 45, other positive numbers are taken as given", () => {
++  for (const s of ["33", "33.3", "33.33", "33.333", "33.3333", "33.30", "33.330", "100/3"]) assert.equal(parseRpm(s), 100 / 3, s);
++  assert.equal(parseRpm("45"), 45);
++  assert.equal(parseRpm("78.26"), 78.26);
++  for (const s of ["0", "-33", "x", "", "1e2", "33.34/1", "33.", "Infinity"]) assert.equal(parseRpm(s), null, s);
++});
++
++test("--smooth-ms 0 turns smoothing off: drift is raw_ms relative to the first sample", () => {
++  const lines = makeLog({ seconds: 10, driftMs: (t) => (t >= 5 ? 50 : 0) });
++  const s = analyzeLines(lines, { smoothMs: 0 });
++  assert.equal(s.series[0].drift_ms, 0);
++  assert.ok(Math.abs(s.series.at(-1).drift_ms - 50) < 0.1);
++  assert.equal(s.jumps.length, 1);
++  assert.ok(Math.abs(s.jumps[0].t_s - 5) <= 0.05, `jump at ${s.jumps[0].t_s}`);
++});
++
++test("the summary reports samples, span, mean rate_ratio, mode changes and the options used", () => {
++  const lines = makeLog({ seconds: 10, extra: (i) => ({ mode: i >= 50 && i < 80 ? "platter" : "clock", rate_ratio: i % 2 ? 1.01 : 0.99 }) });
++  const s = analyzeLines(lines);
++  assert.equal(s.samples, 201);
++  assert.equal(s.span_s, 10);
++  assert.ok(Math.abs(s.mean_rate_ratio - 1) < 1e-3, `${s.mean_rate_ratio}`);
++  assert.equal(s.mode_changes, 2);
++  assert.equal(s.t_backsteps, 0);
++});
++
++// Step 2: the command line.
++test("the text summary prints max, final and slope (and noise, jumps, samples)", () => {
++  const r = run([writeLog(makeLog({ driftMs: (t) => (t >= 120 ? 50 : 0) })), "--track-seconds", String(TRACK_S),
++    "--ticks-per-rev", "3600", "--rpm", "33.333"]);
++  assert.equal(r.status, 0, r.stderr);
++  assert.match(r.stdout, /^max 50\.\d{3} ms {2}final 50\.\d{3} ms {2}slope -?\d+\.\d{3} ms\/min {2}noise \d+\.\d{3} ms {2}jumps 1$/m);
++  assert.match(r.stdout, /^samples 6001 {2}span 300\.00 s {2}mean rate_ratio 1\.0000 {2}mode changes 0 {2}t_backsteps 0$/m);
++  assert.match(r.stdout, /^jump @ 1[12]\d\.\d{2} s: \+50\.\d ms$/m);
++  assert.equal(r.stderr, "");
++});
++
++test("--csv writes a t_us,drift_ms header and one smoothed row per sample", () => {
++  const lines = makeLog({ seconds: 5, driftMs: (t) => 2 * t });
++  const r = run([writeLog(lines), "--track-seconds", String(TRACK_S), "--csv"]);
++  assert.equal(r.status, 0, r.stderr);
++  const rows = r.stdout.trimEnd().split("\n");
++  assert.equal(rows[0], "t_us,drift_ms");
++  assert.equal(rows.length, lines.length + 1);
++  for (const [i, row] of rows.slice(1).entries()) assert.match(row, /^\d+,-?\d+\.\d{3}$/, `row ${i + 1}: ${row}`);
++  assert.equal(rows[1].split(",")[0], String(T0_US));
++  const last = Number(rows.at(-1).split(",")[1]);
++  // 10 ms at 5 s, less 0.5 ms (the centred median at the end looks back 0.25 s) and the 1 ms baseline (the first
++  // second's median, at 0.5 s).
++  assert.ok(Math.abs(last - 8.5) < 0.1, `last ${last}`);
++});
++
++// Step 3: the D11 format, and the errors that name a line.
++for (const key of ["ticks", "playposition", "t_us", "timer", "rate_ratio", "mode"]) {
++  test(`a line missing "${key}" is rejected with its line number, exit 1`, () => {
++    const lines = makeLog({ seconds: 2 });
++    delete lines[11][key];
++    const path = writeLog(lines);
++    const r = run([path, "--track-seconds", String(TRACK_S)]);
++    assert.equal(r.status, 1);
++    assert.equal(r.stdout, "");
++    assert.match(r.stderr, new RegExp(`^drift: ${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:12: missing "${key}"$`, "m"), r.stderr);
++  });
++}
++
++test("wrong types, non-JSON, blank lines and bad optional keys name their line", () => {
++  const bad = [
++    [{ ticks: 1.5 }, /:3: "ticks" must be an integer/],
++    [{ ticks: "12" }, /:3: "ticks" must be an integer/],
++    [{ timer: null }, /:3: "timer" must be an integer/],
++    [{ t_us: -1 }, /:3: "t_us" must be an integer ≥ 0/],
++    [{ playposition: null }, /:3: "playposition" must be a finite number/],
++    [{ rate_ratio: "1" }, /:3: "rate_ratio" must be a finite number/],
++    [{ mode: "scratch" }, /:3: "mode" must be "clock" or "platter"/],
++    [{ deck: 3 }, /:3: "deck" must be 1 or 2/],
++    [{ duration: 0 }, /:3: "duration" must be a positive number/],
++  ];
++  for (const [patch, re] of bad) {
++    const lines = makeLog({ seconds: 1 });
++    Object.assign(lines[2], patch);
++    assert.throws(() => parseTelemetry(toText(lines), "t.jsonl"), re, JSON.stringify(patch));
++  }
++  const lines = makeLog({ seconds: 1 });
++  assert.throws(() => parseTelemetry(toText([...lines.slice(0, 4), "{not json", ...lines.slice(4)]), "t.jsonl"), /^Error: t\.jsonl:5: not JSON$/);
++  assert.throws(() => parseTelemetry(toText([...lines.slice(0, 4), "[1]"]), "t.jsonl"), /t\.jsonl:5: not a JSON object/);
++  assert.throws(() => parseTelemetry(toText(lines.slice(0, 4)) + "\n" + toText(lines.slice(4)), "t.jsonl"), /t\.jsonl:5: blank line/);
++  assert.throws(() => parseTelemetry(toText(lines.slice(0, 4)) + " \r\n" + toText(lines.slice(4)), "t.jsonl"), /t\.jsonl:5: blank line/);
++});
++
++test("unknown keys are ignored, a last line without its newline is read, and a UTF-8 BOM or CRLF is accepted", () => {
++  const lines = makeLog({ seconds: 1, extra: () => ({ buffer_ms: 21.3, note: "x" }) });
++  const { samples } = parseTelemetry(toText(lines).slice(0, -1), "t.jsonl");
++  assert.equal(samples.length, lines.length);
++  assert.equal(parseTelemetry("\ufeff" + toText(lines).replaceAll("\n", "\r\n"), "t.jsonl").samples.length, lines.length);
++});
++
++test("a backward clock step is one warning and t_backsteps 1: later lines keep their spacing", () => {
++  const lines = makeLog({ seconds: 10 });
++  for (const l of lines.slice(100)) l.t_us -= 400_000; // the wall clock steps back 400 ms at 5 s (NTP)
++  const path = writeLog(lines);
++  const s = runJson(path);
++  assert.equal(s.t_backsteps, 1);
++  assert.equal(s.span_s, 9.95); // line 101 is clamped onto line 100, so one 50 ms interval is lost
++  assert.ok(s.max_ms < 0.1, `max ${s.max_ms}`);
++  const r = run([path, "--track-seconds", String(TRACK_S)]);
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(r.stderr, "drift: warning: " + path + ":101: t_us goes back 350000 µs; clamped to the line before\n");
++  const csv = run([path, "--track-seconds", String(TRACK_S), "--csv"]).stdout.trimEnd().split("\n").map((row) => Number(row.split(",")[0]));
++  assert.equal(csv[101], csv[100]);
++  assert.equal(csv.at(-1) - csv[101], lines.at(-1).t_us - lines[100].t_us);
++});
++
++test("a jump after a clock step is reported at its time since the start, not shifted by the step", () => {
++  const lines = makeLog({ driftMs: (t) => (t >= 120 ? 50 : 0) });
++  for (const l of lines.slice(2000)) l.t_us -= 400_000; // at 100 s
++  const s = analyzeLines(lines);
++  assert.equal(s.t_backsteps, 1);
++  assert.equal(s.jumps.length, 1);
++  assert.ok(Math.abs(s.jumps[0].t_s - 120) <= 0.1, `jump at ${s.jumps[0].t_s}`);
++});
++
++test("a stale first or last line (25 ms lag) is not a jump: the ends need half a window each side", () => {
++  for (const i of [0, 6000]) {
++    const s = analyzeLines(makeLog({ lagMs: (t) => (Math.round(t * 20) === i ? 25 : 0) }));
++    assert.deepEqual(s.jumps, [], `line ${i + 1}`);
++  }
++  // Nor is the lag the plan expects (0–21 ms), anywhere in the log. (A 0–43 ms lag also gives false jumps mid-log
++  // with the 1 s window: that needs a larger --smooth-ms, see the plan's "As built".)
++  for (let seed = 1; seed <= 10; seed++) {
++    const r = rng(100 + seed);
++    const s = analyzeLines(makeLog({ lagMs: () => 21 * r() }));
++    assert.deepEqual(s.jumps, [], `seed ${100 + seed}`);
++  }
++});
++
++test("the running medians match a brute-force median on uneven spacing and repeated t_us", () => {
++  const med = (a) => {
++    const x = [...a].sort((p, q) => p - q);
++    const m = x.length >> 1;
++    return x.length % 2 ? x[m] : (x[m - 1] + x[m]) / 2;
++  };
++  for (const [seed, smoothMs] of [[11, 1000], [12, 250], [13, 100]]) {
++    const r = rng(seed);
++    const samples = [];
++    let t_us = T0_US, ticks = 0;
++    for (let i = 0; i < 400; i++) {
++      t_us += r() < 0.1 ? 0 : Math.round(1000 + 80000 * r());
++      ticks += Math.round(200 * r());
++      samples.push({ line: i + 1, t_us, ticks, playposition: 0.1 + r() * 1e-4 + ticks / 1e6, rate_ratio: 1, mode: "clock", deck: 1, backstep: false });
++    }
++    const s = analyzeDrift(samples, { trackSeconds: 100, ticksPerRev: 3600, rpm: RPM, smoothMs });
++    const t = samples.map((x) => x.t_us - samples[0].t_us);
++    const raw = samples.map((x) => 1000 * ((x.playposition - samples[0].playposition) * 100 - ((x.ticks - samples[0].ticks) / 3600) * 1.8));
++    const S = smoothMs * 1000;
++    const base = med(raw.filter((_, j) => t[j] < S || j === 0));
++    for (let i = 0; i < samples.length; i++) {
++      const want = med(raw.filter((_, j) => t[j] >= t[i] - S / 2 && t[j] <= t[i] + S / 2)) - base;
++      assert.ok(Math.abs(s.series[i].drift_ms - want) < 1e-9, `seed ${seed} i ${i}: ${s.series[i].drift_ms} vs ${want}`);
++    }
++  }
++});
++
++test("--deck picks that deck's lines (no deck key means deck 1)", () => {
++  const d1 = makeLog({ seconds: 10 });
++  const d2 = makeLog({ seconds: 10, driftMs: (t) => 3 * t, extra: () => ({ deck: 2 }) });
++  const mixed = d1.flatMap((l, i) => [l, d2[i]]);
++  const path = writeLog(mixed);
++  const s1 = runJson(path);
++  const s2 = runJson(path, ["--deck", "2"]);
++  assert.equal(s1.samples, d1.length);
++  assert.ok(s1.max_ms < 0.1);
++  // 30 ms at 10 s, less 0.75 ms (the end's centred median) and the 1.5 ms baseline (as in the --csv test).
++  assert.ok(Math.abs(s2.final_ms - 27.75) < 0.2, `deck 2 final ${s2.final_ms}`);
++});
++
++test("a duration more than 1 ms off --track-seconds is a warning, and --track-seconds is used", () => {
++  const path = writeLog(makeLog({ seconds: 10, extra: () => ({ duration: TRACK_S + 0.5 }) }));
++  const r = run([path, "--track-seconds", String(TRACK_S), "--json"]);
++  assert.equal(r.status, 0, r.stderr);
++  assert.match(r.stderr, /^drift: warning: .*:1: duration 360\.623456 s differs from --track-seconds 360\.123456 s by 500\.000 ms; using --track-seconds$/m);
++  assert.ok(JSON.parse(r.stdout).max_ms < 0.1);
++  const ok = run([writeLog(makeLog({ seconds: 10, extra: () => ({ duration: TRACK_S + 0.0005 }) })), "--track-seconds", String(TRACK_S)]);
++  assert.equal(ok.stderr, "");
++});
++
++test("fewer than 2 lines for the deck, an empty file or a missing file is exit 1", () => {
++  const one = run([writeLog(makeLog({ seconds: 1 }).slice(0, 1)), "--track-seconds", "100"]);
++  assert.equal(one.status, 1);
++  assert.match(one.stderr, /1 line for deck 1; drift needs at least 2/);
++  const none = run([writeLog(makeLog({ seconds: 1 })), "--track-seconds", "100", "--deck", "2"]);
++  assert.equal(none.status, 1);
++  assert.match(none.stderr, /0 lines for deck 2/);
++  const empty = run([writeLog([]), "--track-seconds", "100"]);
++  assert.equal(empty.status, 1);
++  const missing = run([join(tempDir(), "nope.jsonl"), "--track-seconds", "100"]);
++  assert.equal(missing.status, 1);
++  assert.match(missing.stderr, /^drift: .*nope\.jsonl: ENOENT/m);
++});
++
++test("analyzeDrift handles a 1 kHz log quickly (sorted sliding windows)", () => {
++  const lines = makeLog({ seconds: 300, hz: 1000, driftMs: (t) => (t >= 120 ? 50 : 0) });
++  const samples = parseTelemetry(toText(lines), "t.jsonl").samples;
++  const t0 = performance.now();
++  const s = analyzeDrift(samples, { trackSeconds: TRACK_S, ticksPerRev: TPR, rpm: RPM });
++  const ms = performance.now() - t0;
++  assert.equal(s.jumps.length, 1);
++  assert.ok(Math.abs(s.jumps[0].t_s - 120) <= 1);
++  assert.ok(ms < 5000, `${ms.toFixed(0)} ms`);
++});
+diff --git a/tests/make-test-audio.test.mjs b/tests/make-test-audio.test.mjs
+new file mode 100644
+index 0000000..406dcf7
+--- /dev/null
++++ b/tests/make-test-audio.test.mjs
+@@ -0,0 +1,173 @@
++// tools/make-test-audio writes the 48 kHz WAV test signals M3 measures: a 1 kHz tone (optionally FM-modulated, for
++// wow-and-flutter) and a click track. Every file goes to a temp dir; *.wav is gitignored.
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "make-test-audio".
++import { test, after } from "node:test";
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import { mkdtempSync, rmSync, readFileSync, readdirSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++import { readWav, decodeWav } from "../tools/lib/wav.mjs";
++import { tone, clicks, dbToAmplitude } from "../tools/lib/test-audio.mjs";
++
++// Every file the tests write goes under a temp dir, removed when the file's tests end.
++const dirs = [];
++const tempDir = () => {
++  const d = mkdtempSync(join(tmpdir(), "make-test-audio-"));
++  dirs.push(d);
++  return d;
++};
++after(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })));
++
++const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
++const TOOL = join(ROOT, "tools", "make-test-audio");
++const MINUS_6_DB = 10 ** (-6 / 20); // 0.50119
++
++function run(args) {
++  const dir = tempDir();
++  const r = spawnSync(TOOL, args, { cwd: dir, encoding: args.includes("-") ? "buffer" : "utf8" });
++  return { ...r, dir };
++}
++
++// Rising zero crossings x[i] < 0 ≤ x[i+1], at linearly interpolated times in samples.
++function risingCrossings(x) {
++  const t = [];
++  for (let i = 0; i + 1 < x.length; i++) if (x[i] < 0 && x[i + 1] >= 0) t.push(i + x[i] / (x[i] - x[i + 1]));
++  return t;
++}
++const peak = (x) => x.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
++
++test("tone --seconds 5 --out tone.wav: 1 kHz sine at -6 dBFS, 48000 Hz, pcm32, stereo, 240000 frames", () => {
++  const r = run(["tone", "--seconds", "5", "--out", "tone.wav"]);
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(r.stdout, "");
++  assert.equal(r.stderr, "wrote tone.wav: 240000 frames, 48000 Hz, pcm32, 2 ch\n");
++  assert.deepEqual(readdirSync(r.dir), ["tone.wav"]);
++  const w = readWav(join(r.dir, "tone.wav"));
++  assert.equal(w.sampleRate, 48000);
++  assert.equal(w.format, "pcm32");
++  assert.equal(w.channelCount, 2);
++  assert.equal(w.frames, 240000);
++  assert.deepEqual(w.channels[1], w.channels[0], "both channels identical");
++  const p = peak(w.channels[0]);
++  assert.ok(Math.abs(p / MINUS_6_DB - 1) < 0.01, `peak ${p} not within 1 % of ${MINUS_6_DB}`);
++  const z = risingCrossings(w.channels[0]);
++  assert.ok(Math.abs(z.length - 4999) <= 1, `${z.length} rising crossings in 5 s, expected 1 per ms`);
++  const hz = (48000 * (z.length - 1)) / (z[z.length - 1] - z[0]);
++  assert.ok(Math.abs(hz - 1000) < 0.01, `${hz} Hz`);
++});
++
++test("clicks --bpm 120 --seconds 5: one 1 ms click per beat, 10 in the file, at the peak level", () => {
++  const r = run(["clicks", "--bpm", "120", "--seconds", "5"]);
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(r.stderr, "wrote ./clicks.wav: 240000 frames, 48000 Hz, pcm32, 2 ch\n");
++  const w = readWav(join(r.dir, "clicks.wav"));
++  assert.equal(w.frames, 240000);
++  const x = w.channels[0];
++  // Rising edges with x[-1] = 0: the first click starts at sample 0.
++  const starts = [];
++  const lengths = [];
++  for (let i = 0; i < x.length; i++) {
++    if (x[i] > 0 && (i === 0 || x[i - 1] <= 0)) starts.push(i);
++    if (x[i] > 0 && (i + 1 === x.length || x[i + 1] <= 0)) lengths.push(i + 1 - starts[starts.length - 1]);
++  }
++  assert.equal(starts.length, 10);
++  assert.deepEqual(starts, [...Array(10).keys()].map((k) => k * 24000), "a beat every 0.5 s from t = 0");
++  assert.deepEqual(lengths, Array(10).fill(48), "each click is 1 ms = 48 samples");
++  assert.ok(Math.abs(peak(x) / MINUS_6_DB - 1) < 0.01);
++  assert.equal(x.filter((v) => v !== 0 && Math.abs(v / MINUS_6_DB - 1) > 1e-6).length, 0, "only silence and clicks");
++  assert.deepEqual(w.channels[1], x);
++});
++
++test("--fm-depth 0.1 --fm-rate 4 modulates the tone frequency by ±0.1 % at 4 Hz", () => {
++  const plain = run(["tone", "--seconds", "5", "--out", "plain.wav"]);
++  const fm = run(["tone", "--seconds", "5", "--fm-depth", "0.1", "--fm-rate", "4", "--out", "fm.wav"]);
++  assert.equal(fm.status, 0, fm.stderr);
++  const zp = risingCrossings(readWav(join(plain.dir, "plain.wav")).channels[0]);
++  const w = readWav(join(fm.dir, "fm.wav"));
++  assert.equal(w.frames, 240000);
++  const x = w.channels[0];
++  const zf = risingCrossings(x);
++  const diff = Math.abs(zf.length - zp.length) / zp.length;
++  assert.ok(diff < 0.002, `FM tone has ${zf.length} crossings, plain ${zp.length}: ${(diff * 100).toFixed(3)} %`);
++  assert.ok(Math.abs(peak(x) / MINUS_6_DB - 1) < 0.01, "FM keeps the level");
++
++  // Per-cycle frequency swings ±0.1 % around 1 kHz, and its highest point recurs every 0.25 s (4 Hz).
++  const f = [];
++  for (let k = 0; k + 1 < zf.length; k++) f.push({ t: zf[k] / 48000, hz: 48000 / (zf[k + 1] - zf[k]) });
++  const dev = f.map((c) => c.hz / 1000 - 1);
++  const hi = Math.max(...dev);
++  const lo = Math.min(...dev);
++  assert.ok(hi > 0.00095 && hi < 0.00105, `max deviation ${(hi * 100).toFixed(4)} %`);
++  assert.ok(lo < -0.00095 && lo > -0.00105, `min deviation ${(lo * 100).toFixed(4)} %`);
++  const peaks = f.filter((c, k) => k > 0 && k + 1 < f.length && dev[k] > 0.00099).map((c) => c.t % 0.25);
++  assert.ok(peaks.length >= 15, `${peaks.length} cycles near the top`);
++  for (const ph of peaks) assert.ok(Math.abs(ph - 0.0625) < 0.01, `a frequency peak at phase ${ph} s of 0.25 s`);
++});
++
++test("the tone starts at phase 0, so the file begins without a click", () => {
++  const x = tone({ rate: 48000, frames: 48, freq: 1000, amplitude: 0.5, fmDepth: 0.1, fmRate: 4 });
++  assert.equal(x[0], 0);
++  assert.ok(x[1] > 0 && x[1] < 0.07);
++});
++
++test("--out - writes the WAV to stdout and nothing to the directory", () => {
++  const r = run(["tone", "--seconds", "0.5", "--out", "-"]);
++  assert.equal(r.status, 0, String(r.stderr));
++  assert.deepEqual(readdirSync(r.dir), []);
++  const w = decodeWav(r.stdout);
++  assert.equal(w.frames, 24000);
++  assert.equal(w.sizeFromEof, false);
++});
++
++test("--rate, --format, --channels, --freq and --level-db are honoured", () => {
++  const r = run(["tone", "--seconds", "1", "--rate", "44100", "--format", "pcm16", "--channels", "1", "--freq", "441",
++    "--level-db", "-12", "--out", "x.wav"]);
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(r.stderr, "wrote x.wav: 44100 frames, 44100 Hz, pcm16, 1 ch\n");
++  const w = readWav(join(r.dir, "x.wav"));
++  assert.equal(w.channelCount, 1);
++  assert.equal(w.format, "pcm16");
++  assert.ok(Math.abs(peak(w.channels[0]) / dbToAmplitude(-12) - 1) < 0.01);
++  assert.ok(Math.abs(risingCrossings(w.channels[0]).length - 440) <= 1);
++  for (const format of ["pcm24", "float32"]) {
++    const rf = run(["clicks", "--seconds", "1", "--format", format, "--out", "c.wav"]);
++    assert.equal(rf.status, 0, rf.stderr);
++    assert.equal(readWav(join(rf.dir, "c.wav")).format, format);
++  }
++});
++
++test("frames are round(seconds · rate), and a click that would run past the end is left out", () => {
++  const r = run(["clicks", "--seconds", "0.50001", "--bpm", "120", "--out", "c.wav"]);
++  assert.equal(r.status, 0, r.stderr);
++  const w = readWav(join(r.dir, "c.wav"));
++  assert.equal(w.frames, 24000);
++  const x = clicks({ rate: 48000, frames: 24040, bpm: 120, amplitude: 1 });
++  assert.equal(x.filter((v) => v > 0).length, 48, "the click at 0.5 s would be 40 of 48 samples: not written");
++});
++
++test("--out - into a pipe that closes early fails with one line, and doesn't claim it wrote", () => {
++  const r = spawnSync("sh", ["-c", `"${TOOL}" tone --seconds 1 --out - | head -c 100 > /dev/null`], { encoding: "utf8" });
++  assert.match(r.stderr, /^make-test-audio: writing -: .*EPIPE/);
++  assert.doesNotMatch(r.stderr, /wrote|\n {4}at /);
++});
++
++test("a failed write exits 1 with the reason", () => {
++  const r = run(["tone", "--seconds", "1", "--out", "no/such/dir/x.wav"]);
++  assert.equal(r.status, 1);
++  assert.match(r.stderr, /^make-test-audio: writing no\/such\/dir\/x\.wav: /);
++});
++
++test("--help prints the options on stdout and exits 0", () => {
++  const r = spawnSync(TOOL, ["--help"], { encoding: "utf8" });
++  assert.equal(r.status, 0);
++  assert.match(r.stdout, /^usage: tools\/make-test-audio /);
++  for (const opt of ["--seconds", "--out", "--rate", "--format", "--channels", "--level-db", "--freq", "--fm-depth", "--fm-rate", "--bpm"]) {
++    assert.ok(r.stdout.includes(opt), opt);
++  }
++});
++
++test("*.wav stays gitignored", () => {
++  assert.match(readFileSync(join(ROOT, ".gitignore"), "utf8"), /^\*\.wav$/m);
++});
+diff --git a/tests/record-output.test.mjs b/tests/record-output.test.mjs
+new file mode 100644
+index 0000000..5784040
+--- /dev/null
++++ b/tests/record-output.test.mjs
+@@ -0,0 +1,383 @@
++// tools/record-output records the mixxx-dev null sink's monitor with pw-record (D18). `pw-record` and `pactl` are
++// stubs on PATH, so these tests never open a real stream or read the real sink list.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync, chmodSync, symlinkSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++import { readWav, writeWav } from "../tools/lib/wav.mjs";
++
++const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
++const SCRIPT = join(ROOT, "tools", "record-output");
++const WAV_LIB = join(ROOT, "tools", "lib", "wav.mjs");
++
++// The stub logs its argv as one JSON line to $STUB/pw-record.log, then acts on $STUB_MODE:
++// ok (the frames --sample-count asks for, exit 1 like the real pw-record 1.6.8), header (a header-only WAV, as
++// when the target isn't found), short (one frame less), mono, rate44 (44.1 kHz), float (float32), hang (never exits),
++// stubborn (never exits and ignores SIGTERM).
++const PW_RECORD = `#!/usr/bin/env node
++import { appendFileSync, writeFileSync } from "node:fs";
++import { encodeWav } from ${JSON.stringify(WAV_LIB)};
++const argv = process.argv.slice(2);
++appendFileSync(process.env.STUB + "/pw-record.log", JSON.stringify(argv) + "\\n");
++writeFileSync(process.env.STUB + "/pw-record.pid", String(process.pid));
++const file = argv.at(-1);
++const n = Number(argv[argv.indexOf("--sample-count") + 1]);
++const mode = process.env.STUB_MODE ?? "ok";
++const wav = (frames, { sampleRate = 48000, format = "pcm32", count = 2 } = {}) =>
++  writeFileSync(file, encodeWav({ sampleRate, format, channels: Array.from({ length: count }, () => new Float64Array(frames)) }));
++if (mode === "stubborn") process.on("SIGTERM", () => {});
++if (mode === "hang" || mode === "stubborn") setInterval(() => {}, 1000);
++else {
++  if (mode === "ok") wav(n);
++  else if (mode === "header") wav(0);
++  else if (mode === "short") wav(n - 1);
++  else if (mode === "mono") wav(n, { count: 1 });
++  else if (mode === "rate44") wav(n, { sampleRate: 44100 });
++  else if (mode === "float") wav(n, { format: "float32" });
++  process.exit(1);
++}
++`;
++
++// \`pactl -f json list sinks\` prints $STUB/sinks.json; anything else is logged as forbidden and fails.
++const PACTL = `#!/usr/bin/env bash
++if [[ "$*" == "-f json list sinks" ]]; then echo "pactl $*" >> "$STUB/pactl.log"; cat "$STUB/sinks.json"; exit 0; fi
++echo "pactl $*" >> "$STUB/forbidden.log"; exit 99
++`;
++const sinkJson = (name, factory) => ({ index: 1, name, driver: "PipeWire", properties: { "factory.name": factory } });
++const NULL_FACTORY = "support.null-audio-sink";
++const SINKS = [
++  sinkJson("alsa_output.pci-0000_00_1f.3.analog-stereo", "api.alsa.pcm.sink"),
++  sinkJson("alsa_output.usb-Rane_Rane_ONE_A-00.analog-surround-40", "api.alsa.pcm.sink"),
++  sinkJson("mixxx-dev", NULL_FACTORY), sinkJson("other", NULL_FACTORY), sinkJson("realcard", "api.alsa.pcm.sink"),
++  { index: 2, name: "virt-eq", driver: "PipeWire", properties: { "media.class": "Audio/Sink" } },
++];
++
++function setup({ absent = false } = {}) {
++  const dir = mkdtempSync(join(tmpdir(), "record-output-"));
++  const bin = join(dir, "bin"), stub = join(dir, "stub"), out = join(dir, "out");
++  for (const d of [bin, stub, out]) mkdirSync(d);
++  writeFileSync(join(bin, "pw-record"), PW_RECORD, { mode: 0o755 });
++  writeFileSync(join(bin, "pactl"), PACTL, { mode: 0o755 });
++  writeFileSync(join(stub, "sinks.json"), JSON.stringify(absent ? SINKS.filter((x) => x.name !== "mixxx-dev") : SINKS));
++  // Anything that could play, link or change a default: logged and failed, so a regression shows.
++  for (const tool of ["pw-play", "pw-cat", "pw-link", "pw-metadata", "wpctl", "paplay", "aplay"]) {
++    writeFileSync(join(bin, tool), `#!/usr/bin/env bash\necho "${tool} $*" >> "$STUB/forbidden.log"\nexit 99\n`, { mode: 0o755 });
++  }
++  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(RECORD_OUTPUT_|STUB)/.test(k)));
++  Object.assign(env, { PATH: `${bin}:${process.env.PATH}`, STUB: stub });
++  const run = (args, extraEnv = {}) =>
++    spawnSync(SCRIPT, args, { encoding: "utf8", env: { ...env, ...extraEnv }, cwd: dir, timeout: 20000 });
++  const log = (name) => {
++    const p = join(stub, `${name}.log`);
++    return existsSync(p) ? readFileSync(p, "utf8").trim().split("\n") : [];
++  };
++  const calls = () => log("pw-record").map((l) => JSON.parse(l));
++  return { dir, out, stub, run, log, calls, done: () => rmSync(dir, { recursive: true, force: true }) };
++}
++
++// True when `want` appears in `argv` as one contiguous run.
++function hasRun(argv, want) {
++  return argv.some((_, i) => want.every((w, j) => argv[i + j] === w));
++}
++
++test("the default records mixxx-dev.monitor: the sink's monitor at 48000 Hz, s32, 2 ch, for --seconds of frames", () => {
++  const t = setup();
++  try {
++    const file = join(t.out, "out.wav");
++    const r = t.run(["--seconds", "3", file]);
++    assert.equal(r.status, 0, r.stderr);
++    const [argv] = t.calls();
++    assert.equal(t.calls().length, 1);
++    // D18: the .monitor name is Pulse-only, so the native stream targets the sink with stream.capture.sink.
++    assert.ok(hasRun(argv, ["--target", "mixxx-dev", "-P", "stream.capture.sink=true",
++      "--rate", "48000", "--format", "s32", "--channels", "2"]), JSON.stringify(argv));
++    assert.ok(hasRun(argv, ["--sample-count", "144000"]), JSON.stringify(argv));
++    assert.ok(hasRun(argv, ["-P", "node.dont-fallback=true"]), JSON.stringify(argv));
++    // A move (pavucontrol, metadata) could otherwise relink it to the Rane One's capture mid-recording.
++    assert.ok(hasRun(argv, ["-P", "node.dont-move=true"]), JSON.stringify(argv));
++    assert.equal(argv.filter((a) => a === "--target").length, 1);
++    assert.ok(!argv.some((a) => /monitor$/.test(a)), "the Pulse-only .monitor name reached pw-record");
++    // pw-record writes a temp file next to the output, renamed into place once it checks out.
++    assert.equal(dirname(argv.at(-1)), t.out);
++    assert.notEqual(argv.at(-1), file);
++    const wav = readWav(file);
++    assert.equal(wav.sampleRate, 48000);
++    assert.equal(wav.channels.length, 2);
++    assert.equal(wav.format, "pcm32");
++    assert.equal(wav.channels[0].length, 144000);
++    assert.deepEqual(readdirSync(t.out), ["out.wav"]);
++    assert.match(r.stdout, /mixxx-dev\.monitor/);
++    assert.match(r.stdout, /144000 frames/);
++    assert.match(r.stdout, /peak -inf dBFS/);
++    assert.deepEqual(t.log("pactl"), ["pactl -f json list sinks"]);
++    assert.deepEqual(t.log("forbidden"), []);
++  } finally {
++    t.done();
++  }
++});
++
++test("--seconds defaults to 10 and may be fractional to the millisecond", () => {
++  const t = setup();
++  try {
++    assert.equal(t.run([join(t.out, "a.wav")]).status, 0);
++    assert.equal(t.run(["--seconds", "0.5", join(t.out, "b.wav")]).status, 0);
++    const counts = t.calls().map((a) => a[a.indexOf("--sample-count") + 1]);
++    assert.deepEqual(counts, ["480000", "24000"]);
++  } finally {
++    t.done();
++  }
++});
++
++test("--target overrides the monitor with another null sink's", () => {
++  const t = setup({ absent: true });
++  try {
++    const r = t.run(["--seconds", "1", "--target", "other.monitor", join(t.out, "x.wav")]);
++    assert.equal(r.status, 0, r.stderr);
++    const [argv] = t.calls();
++    assert.ok(hasRun(argv, ["--target", "other", "-P", "stream.capture.sink=true"]), JSON.stringify(argv));
++    assert.match(r.stdout, /other\.monitor/);
++  } finally {
++    t.done();
++  }
++});
++
++for (const target of [
++  "alsa_output.usb-Rane_Rane_ONE_A-00.analog-surround-40.monitor", "my-RANE.monitor", "rane.monitor",
++  "alsa_input.pci-0000_00_1f.3.analog-stereo.monitor", "alsa_output.pci-0000_00_1f.3.analog-stereo.monitor",
++  "mixxx-dev", "mixxx-dev.monitor.x", ".monitor", "0", "-1",
++  // pw-record's "auto" (the default sink's monitor), object serials and object paths (the One's card id is ONE).
++  "auto.monitor", "AUTO.monitor", "57.monitor", "0.monitor", "alsa:acp:ONE:0:playback.monitor", "@DEFAULT_SINK@.monitor",
++  "bluez_output.00_11_22_33_44_55.1.monitor", "a b.monitor", "-x.monitor",
++]) {
++  test(`--target ${target} is refused with exit 3 before anything runs`, () => {
++    const t = setup();
++    try {
++      const r = t.run(["--seconds", "1", "--target", target, join(t.out, "x.wav")]);
++      assert.equal(r.status, 3, r.stderr);
++      assert.match(r.stderr, /refused/);
++      assert.equal(r.stdout, "");
++      assert.deepEqual(t.calls(), []);
++      assert.deepEqual(t.log("pactl"), []);
++      assert.deepEqual(readdirSync(t.out), []);
++    } finally {
++      t.done();
++    }
++  });
++}
++
++test("a sink that isn't a null sink is refused with exit 3 after the read-only sink list", () => {
++  const t = setup();
++  try {
++    const r = t.run(["--seconds", "1", "--target", "realcard.monitor", join(t.out, "x.wav")]);
++    assert.equal(r.status, 3, r.stderr);
++    assert.match(r.stderr, /refused: realcard is not a null sink \(api\.alsa\.pcm\.sink\)/);
++    assert.deepEqual(t.calls(), []);
++    assert.deepEqual(t.log("pactl"), ["pactl -f json list sinks"]);
++  } finally {
++    t.done();
++  }
++});
++
++test("a sink without a factory.name (a filter or loopback) is refused with exit 3", () => {
++  const t = setup();
++  try {
++    const r = t.run(["--seconds", "1", "--target", "virt-eq.monitor", join(t.out, "x.wav")]);
++    assert.equal(r.status, 3, r.stderr);
++    assert.match(r.stderr, /refused: virt-eq is not a null sink \(no factory\.name\)/);
++    assert.deepEqual(t.calls(), []);
++  } finally {
++    t.done();
++  }
++});
++
++test("two sinks by the same name are refused with exit 3", () => {
++  const t = setup();
++  try {
++    writeFileSync(join(t.stub, "sinks.json"), JSON.stringify([...SINKS, sinkJson("other", "api.alsa.pcm.sink")]));
++    const r = t.run(["--seconds", "1", "--target", "other.monitor", join(t.out, "x.wav")]);
++    assert.equal(r.status, 3, r.stderr);
++    assert.match(r.stderr, /refused: 2 sinks are named other/);
++    assert.deepEqual(t.calls(), []);
++  } finally {
++    t.done();
++  }
++});
++
++test("a null sink that doesn't exist exits 1 before pw-record runs", () => {
++  const t = setup();
++  try {
++    const r = t.run(["--seconds", "1", "--target", "nosuch.monitor", join(t.out, "x.wav")]);
++    assert.equal(r.status, 1);
++    assert.match(r.stderr, /no sink named nosuch/);
++    assert.deepEqual(t.calls(), []);
++  } finally {
++    t.done();
++  }
++});
++
++test("a missing mixxx-dev sink exits 1, says to run tools/null-sink up, and records nothing", () => {
++  const t = setup({ absent: true });
++  try {
++    const r = t.run(["--seconds", "1", join(t.out, "x.wav")]);
++    assert.equal(r.status, 1);
++    assert.match(r.stderr, /tools\/null-sink up/);
++    assert.deepEqual(t.calls(), []);
++    assert.deepEqual(readdirSync(t.out), []);
++  } finally {
++    t.done();
++  }
++});
++
++test("a header-only WAV (target not found) exits 1 with the frame count and leaves no file", () => {
++  const t = setup();
++  try {
++    const r = t.run(["--seconds", "3", join(t.out, "x.wav")], { STUB_MODE: "header" });
++    assert.equal(r.status, 1);
++    assert.match(r.stderr, /pw-record recorded 0 of 144000 frames: target not found or not linked\?/);
++    assert.equal(r.stdout, "");
++    assert.deepEqual(readdirSync(t.out), []);
++  } finally {
++    t.done();
++  }
++});
++
++for (const [mode, why] of [["short", /recorded 143999 of 144000 frames/], ["mono", /1 ch/], ["rate44", /44100 Hz/],
++  ["float", /float32/]]) {
++  test(`a recording that isn't ${mode === "short" ? "complete" : "48000 Hz, 2 ch, pcm32"} (${mode}) exits 1 and leaves no file`, () => {
++    const t = setup();
++    try {
++      const r = t.run(["--seconds", "3", join(t.out, "x.wav")], { STUB_MODE: mode });
++      assert.equal(r.status, 1);
++      assert.match(r.stderr, why);
++      assert.deepEqual(readdirSync(t.out), []);
++    } finally {
++      t.done();
++    }
++  });
++}
++
++test("a pw-record that never exits is killed after --seconds plus the grace and nothing is left behind", () => {
++  const t = setup();
++  try {
++    const started = Date.now();
++    const r = t.run(["--seconds", "0.1", join(t.out, "x.wav")], { STUB_MODE: "hang", RECORD_OUTPUT_GRACE_MS: "300" });
++    assert.equal(r.status, 1);
++    assert.match(r.stderr, /pw-record did not finish within 0\.4 s; stopped it/);
++    assert.ok(Date.now() - started < 5000);
++    const pid = Number(readFileSync(join(t.stub, "pw-record.pid"), "utf8"));
++    assert.throws(() => process.kill(pid, 0), { code: "ESRCH" });
++    assert.deepEqual(readdirSync(t.out), []);
++  } finally {
++    t.done();
++  }
++});
++
++test("an existing output survives a failed recording and is replaced by a good one", () => {
++  const t = setup();
++  try {
++    const file = join(t.out, "x.wav");
++    writeWav(file, { sampleRate: 44100, format: "pcm16", channels: [new Float64Array(10)] });
++    const before = readFileSync(file);
++    assert.equal(t.run(["--seconds", "1", file], { STUB_MODE: "header" }).status, 1);
++    assert.deepEqual(readFileSync(file), before);
++    assert.equal(t.run(["--seconds", "1", file]).status, 0);
++    assert.equal(readWav(file).channels[0].length, 48000);
++    assert.deepEqual(readdirSync(t.out), ["x.wav"]);
++  } finally {
++    t.done();
++  }
++});
++
++test("SIGTERM to the tool stops a stubborn pw-record (SIGKILL after 1 s) and leaves nothing behind", async () => {
++  const t = setup();
++  let p;
++  try {
++    const { spawn } = await import("node:child_process");
++    const env = { ...process.env, PATH: `${join(t.dir, "bin")}:${process.env.PATH}`, STUB: t.stub, STUB_MODE: "stubborn" };
++    p = spawn(SCRIPT, ["--seconds", "30", join(t.out, "x.wav")], { env, cwd: t.dir, stdio: "ignore" });
++    const pidFile = join(t.stub, "pw-record.pid");
++    for (let i = 0; i < 100 && !existsSync(pidFile); i++) await new Promise((res) => setTimeout(res, 50));
++    await new Promise((res) => setTimeout(res, 100));
++    p.kill("SIGTERM");
++    // Bounded, so a tool that never exits fails here instead of hanging the runner.
++    const code = await new Promise((res) => {
++      p.on("exit", (c) => res(c));
++      setTimeout(() => res("still running 5 s after SIGTERM"), 5000).unref();
++    });
++    assert.equal(code, 1);
++    const pid = Number(readFileSync(pidFile, "utf8"));
++    assert.throws(() => process.kill(pid, 0), { code: "ESRCH" }, "pw-record outlived the tool");
++    assert.deepEqual(readdirSync(t.out), []);
++  } finally {
++    for (const pid of [p?.pid, existsSync(join(t.stub, "pw-record.pid")) && Number(readFileSync(join(t.stub, "pw-record.pid"), "utf8"))]) {
++      try {
++        if (pid) process.kill(pid, "SIGKILL");
++      } catch {}
++    }
++    t.done();
++  }
++});
++
++test("an output path that is a directory exits 1 before pw-record runs", () => {
++  const t = setup();
++  try {
++    mkdirSync(join(t.out, "d.wav"));
++    const r = t.run(["--seconds", "1", join(t.out, "d.wav")]);
++    assert.equal(r.status, 1);
++    assert.match(r.stderr, /d\.wav is a directory/);
++    assert.deepEqual(t.calls(), []);
++    assert.deepEqual(readdirSync(t.out), ["d.wav"]);
++  } finally {
++    t.done();
++  }
++});
++
++test("an output directory that isn't writable exits 1 before pw-record runs", { skip: process.getuid?.() === 0 }, () => {
++  const t = setup();
++  try {
++    chmodSync(t.out, 0o555);
++    const r = t.run(["--seconds", "1", join(t.out, "x.wav")]);
++    assert.equal(r.status, 1);
++    assert.match(r.stderr, /cannot write to/);
++    assert.deepEqual(t.calls(), []);
++  } finally {
++    chmodSync(t.out, 0o755);
++    t.done();
++  }
++});
++
++test("an output directory that doesn't exist exits 1 before pw-record runs", () => {
++  const t = setup();
++  try {
++    const r = t.run(["--seconds", "1", join(t.out, "nope", "x.wav")]);
++    assert.equal(r.status, 1);
++    assert.match(r.stderr, /nope/);
++    assert.deepEqual(t.calls(), []);
++  } finally {
++    t.done();
++  }
++});
++
++test("without pw-record on PATH it exits 1 and says so", () => {
++  const t = setup();
++  try {
++    rmSync(join(t.dir, "bin", "pw-record"));
++    // node runs by its own path, and PATH holds only the stubs plus bash and cat for the pactl stub (the real
++    // pw-record is in /usr/bin).
++    const sys = join(t.dir, "sys");
++    mkdirSync(sys);
++    for (const cmd of ["bash", "cat"]) {
++      symlinkSync(spawnSync("bash", ["-c", `command -v ${cmd}`], { encoding: "utf8" }).stdout.trim(), join(sys, cmd));
++    }
++    const r = spawnSync(process.execPath, [SCRIPT, "--seconds", "1", "--target", "other.monitor", join(t.out, "x.wav")],
++      { encoding: "utf8", env: { PATH: `${join(t.dir, "bin")}:${sys}`, STUB: t.stub }, cwd: t.dir, timeout: 20000 });
++    assert.equal(r.status, 1);
++    assert.match(r.stderr, /cannot run pw-record: spawn pw-record ENOENT/);
++    assert.deepEqual(readdirSync(t.out), []);
++  } finally {
++    t.done();
++  }
++});
+diff --git a/tests/tools-usage.test.mjs b/tests/tools-usage.test.mjs
+index 59fd900..ce931d9 100644
+--- a/tests/tools-usage.test.mjs
++++ b/tests/tools-usage.test.mjs
+@@ -4,13 +4,13 @@
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+ import { spawnSync } from "node:child_process";
+-import { mkdtempSync, mkdirSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
++import { mkdtempSync, mkdirSync, writeFileSync, readdirSync, statSync, existsSync, rmSync } from "node:fs";
+ import { tmpdir } from "node:os";
+ import { join, dirname } from "node:path";
+ import { fileURLToPath } from "node:url";
+ 
+ const TOOLS = join(dirname(fileURLToPath(import.meta.url)), "..", "tools");
+-const STUBBED = ["flatpak", "pactl", "aplaymidi", "amidi", "aconnect", "pw-cli", "pw-dump", "aseqdump", "arecordmidi"];
++const STUBBED = ["flatpak", "pactl", "aplaymidi", "amidi", "aconnect", "pw-cli", "pw-dump", "aseqdump", "arecordmidi", "pw-record"];
+ 
+ const BAD_ARGS = {
+   "capture": [[], ["--out", "x.jsonl"], ["--port", "Rane ONE MIDI 1"], ["--port", "a", "--device", "b", "--out", "x.jsonl"],
+@@ -26,17 +26,42 @@ const BAD_ARGS = {
+     ["--diff"], ["--diff", "m.csv", "a.jsonl", "--out", "x.csv"], ["--diff", "m.csv", "a.jsonl", "--shift", "16:50"],
+     ["a.jsonl", "--shift", "17:50"], ["a.jsonl", "--shift", "1:128"], ["a.jsonl", "--shift", "x"], ["a.jsonl", "--comment", ""],
+     ["a.jsonl", "--bogus"], ["--help", "a.jsonl"]],
++  "drift": [[], ["a.jsonl"], ["--track-seconds", "100"], ["a.jsonl", "b.jsonl", "--track-seconds", "100"],
++    ["a.jsonl", "--track-seconds"], ["a.jsonl", "--track-seconds", "0"], ["a.jsonl", "--track-seconds", "x"],
++    ["a.jsonl", "--track-seconds", "1e3"], ["a.jsonl", "--track-seconds", "100", "--track-seconds", "100"],
++    ["a.jsonl", "--track-seconds", "100", "--rpm", "0"], ["a.jsonl", "--track-seconds", "100", "--rpm", "fast"],
++    ["a.jsonl", "--track-seconds", "100", "--ticks-per-rev", "0"], ["a.jsonl", "--track-seconds", "100", "--ticks-per-rev", "1.5"],
++    ["a.jsonl", "--track-seconds", "100", "--deck", "3"], ["a.jsonl", "--track-seconds", "100", "--jump-ms", "0"],
++    ["a.jsonl", "--track-seconds", "100", "--smooth-ms", "-1"], ["a.jsonl", "--track-seconds", "100", "--smooth-ms", "x"],
++    ["a.jsonl", "--track-seconds", "100", "--csv", "--json"], ["a.jsonl", "--track-seconds", "100", "--csv", "--csv"],
++    ["a.jsonl", "--track-seconds", "100", "--bogus"], ["-", "--track-seconds", "100"], ["--help", "a.jsonl"]],
+   "install-mapping": [["now"], ["--force"]],
++  "make-test-audio": [[], ["sine"], ["--seconds", "5"], ["tone", "extra"], ["tone", "--seconds"], ["tone", "--seconds", "0"],
++    ["tone", "--seconds", "ten"], ["tone", "--seconds", "1e1"], ["tone", "--seconds", "601"], ["tone", "--seconds", "0.00001"],
++    ["tone", "--seconds", "1", "--seconds", "2"], ["tone", "--bpm", "120"], ["clicks", "--freq", "440"],
++    ["clicks", "--fm-depth", "0.1"], ["clicks", "--fm-rate", "4"], ["tone", "--level-db", "1"], ["tone", "--freq", "24000"],
++    ["tone", "--freq", "23990", "--fm-depth", "0.1"], ["tone", "--format", "pcm8"], ["tone", "--channels", "3"],
++    ["tone", "--rate", "0"], ["tone", "--rate", "44100.5"], ["tone", "--out"], ["tone", "--out", ""], ["tone", "--out", "--seconds"],
++    ["tone", "--fm-rate", "0"], ["tone", "--fm-rate", "201"], ["tone", "--fm-depth", "-1"], ["tone", "--fm-depth", "100"], ["clicks", "--bpm", "0"],
++    ["clicks", "--bpm", "1001"], ["tone", "--bogus", "1"], ["tone", "-"], ["--help", "tone"], ["tone", "--help"]],
+   "midi-send": [[], ["play", "14:0"], ["send", "14:0", "x.mid"], ["play", "14:0", "-p", "24:0"],
+     ["play", "fourteen", "x.mid"], ["play", "14:0", "a.mid", "b.mid"]],
+   "mixxx-dev": [[], ["restart"], ["start", "now"], ["stop", "x"], ["log", "0"], ["log", "ten"], ["log", "5", "6"]],
+   "null-sink": [[], ["sideways"], ["up", "now"], ["--help"]],
++  "record-output": [[], ["a.wav", "b.wav"], ["--seconds", "3"], ["a.wav", "--seconds"], ["a.wav", "--seconds", "0"],
++    ["a.wav", "--seconds", "x"], ["a.wav", "--seconds", "-1"], ["a.wav", "--seconds", "1e3"], ["a.wav", "--seconds", "601"],
++    ["a.wav", "--seconds", "0.0001"], ["a.wav", "--seconds", "1", "--seconds", "2"], ["a.wav", "--target"],
++    ["a.wav", "--target", ""], ["a.wav", "--target", "a.monitor", "--target", "b.monitor"], ["a.txt"], ["a.wav", "--bogus", "1"],
++    ["a.wav", "-"], ["--help", "a.wav"]],
+   "replay": [[], ["x.jsonl"], ["--dry-run"], ["--dry-run", "a.jsonl", "b.jsonl"], ["--out", "x.mid", "x.jsonl"],
+     ["--to-port"], ["--to-port", "", "x.jsonl"], ["--to-port", "Midi Through", "--to-port", "x", "x.jsonl"],
+     ["--dry-run", "--from", "ten", "x.jsonl"], ["--dry-run", "--from", "5", "--to", "5", "x.jsonl"],
+     ["--dry-run", "--speed", "0", "x.jsonl"], ["--dry-run", "--speed", "-1", "x.jsonl"], ["--dry-run", "--to", "1e3", "x.jsonl"],
+     ["--dry-run", "--bogus", "x.jsonl"], ["--help", "x.jsonl"], ["--dry-run", "--out", "--from", "1", "x.jsonl"],
+     ["--dry-run", "--force", "x.jsonl"]],
++  "wow-flutter": [[], ["a.wav", "b.wav"], ["--json"], ["a.wav", "--channel"], ["a.wav", "--channel", "-1"],
++    ["a.wav", "--channel", "x"], ["a.wav", "--channel", "1.5"], ["a.wav", "--expect-hz", "0"], ["a.wav", "--expect-hz", "1e3"],
++    ["a.wav", "--expect-hz", "-1000"], ["a.wav", "--json", "--json"], ["a.wav", "--bogus"], ["a.wav", "-"], ["--help", "a.wav"]],
+ };
+ 
+ function setup() {
+@@ -66,12 +91,16 @@ for (const tool of tools) {
+   for (const args of BAD_ARGS[tool] ?? []) {
+     test(`${tool} ${JSON.stringify(args)} prints usage and exits 2, running nothing`, () => {
+       const t = setup();
+-      const r = spawnSync(join(TOOLS, tool), args, { encoding: "utf8", env: t.env, cwd: t.dir });
+-      assert.equal(r.status, 2, r.stderr);
+-      assert.match(r.stderr, new RegExp(`^usage: tools/${tool}( |$)`, "m"), r.stderr);
+-      assert.equal(r.stdout, "");
+-      assert.equal(existsSync(t.calls), false, "an external command ran");
+-      assert.equal(existsSync(join(t.dir, "profile")), false, "the dev profile was touched");
++      try {
++        const r = spawnSync(join(TOOLS, tool), args, { encoding: "utf8", env: t.env, cwd: t.dir });
++        assert.equal(r.status, 2, r.stderr);
++        assert.match(r.stderr, new RegExp(`^usage: tools/${tool}( |$)`, "m"), r.stderr);
++        assert.equal(r.stdout, "");
++        assert.equal(existsSync(t.calls), false, "an external command ran");
++        assert.equal(existsSync(join(t.dir, "profile")), false, "the dev profile was touched");
++      } finally {
++        rmSync(t.dir, { recursive: true, force: true });
++      }
+     });
+   }
+ }
+diff --git a/tests/wav.test.mjs b/tests/wav.test.mjs
+new file mode 100644
+index 0000000..1612a54
+--- /dev/null
++++ b/tests/wav.test.mjs
+@@ -0,0 +1,253 @@
++// tools/lib/wav.mjs reads and writes WAV files: test signals out (make-test-audio), recordings in (wow-flutter).
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "WAV library".
++import { test, after } from "node:test";
++import assert from "node:assert/strict";
++import { mkdtempSync, rmSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++import { FORMATS, encodeWav, decodeWav, writeWav, readWav } from "../tools/lib/wav.mjs";
++
++// Every file the tests write goes under a temp dir, removed when the file's tests end.
++const dirs = [];
++const tempDir = () => {
++  const d = mkdtempSync(join(tmpdir(), "wav-"));
++  dirs.push(d);
++  return d;
++};
++after(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })));
++
++const BITS = { pcm16: 16, pcm24: 24, pcm32: 32, float32: 32 };
++
++// -1 … +1 in 1001 steps, so both ends and 0 are in it, plus values between the PCM steps.
++function ramp(n = 1001) {
++  const a = new Float64Array(n);
++  for (let i = 0; i < n; i++) a[i] = -1 + (2 * i) / (n - 1);
++  return a;
++}
++
++const chunk = (id, body) => {
++  const head = Buffer.alloc(8);
++  head.write(id, 0, "latin1");
++  head.writeUInt32LE(body.length, 4);
++  const pad = body.length & 1 ? Buffer.alloc(1) : Buffer.alloc(0);
++  return Buffer.concat([head, body, pad]);
++};
++const riff = (...chunks) => {
++  const body = Buffer.concat([Buffer.from("WAVE", "latin1"), ...chunks]);
++  const head = Buffer.alloc(8);
++  head.write("RIFF", 0, "latin1");
++  head.writeUInt32LE(body.length, 4);
++  return Buffer.concat([head, body]);
++};
++function fmtBody({ tag = 1, nch = 2, rate = 48000, bits = 16, byteRate, blockAlign, ext }) {
++  const b = Buffer.alloc(ext ? 40 : 16);
++  b.writeUInt16LE(tag, 0);
++  b.writeUInt16LE(nch, 2);
++  b.writeUInt32LE(rate, 4);
++  b.writeUInt32LE(byteRate ?? rate * nch * (bits / 8), 8);
++  b.writeUInt16LE(blockAlign ?? nch * (bits / 8), 12);
++  b.writeUInt16LE(bits, 14);
++  if (ext) {
++    b.writeUInt16LE(22, 16); // cbSize
++    b.writeUInt16LE(bits, 18); // valid bits
++    b.writeUInt32LE(3, 20); // channel mask FL|FR
++    Buffer.from([ext, 0, 0, 0, 0, 0, 0x10, 0, 0x80, 0, 0, 0xaa, 0, 0x38, 0x9b, 0x71]).copy(b, 24);
++  }
++  return b;
++}
++// Two stereo 16-bit frames: (0.5, -0.5), (-1, 0.25).
++const DATA16 = Buffer.alloc(8);
++[16384, -16384, -32768, 8192].forEach((v, i) => DATA16.writeInt16LE(v, i * 2));
++
++for (const format of FORMATS) {
++  for (const nch of [1, 2]) {
++    test(`${format} ${nch === 1 ? "mono" : "stereo"} at 48000 Hz round-trips through writeWav/readWav`, () => {
++      const dir = tempDir();
++      const a = ramp();
++      const channels = nch === 1 ? [a] : [a, a.slice().reverse().map((x) => x * 0.5)];
++      const file = join(dir, "x.wav");
++      writeWav(file, { sampleRate: 48000, format, channels });
++      assert.deepEqual(readdirSync(dir), ["x.wav"], "no temp file left behind");
++
++      const buf = readFileSync(file);
++      const bytes = BITS[format] / 8;
++      assert.equal(buf.readUInt32LE(24), 48000, "sample rate in the header");
++      assert.equal(buf.readUInt16LE(22), nch, "channels in the header");
++      assert.equal(buf.readUInt32LE(28), 48000 * nch * bytes, "byte rate = rate · channels · bytes per sample");
++      assert.equal(buf.readUInt16LE(32), nch * bytes, "block align = channels · bytes per sample");
++      assert.equal(buf.readUInt16LE(34), BITS[format], "bits per sample");
++      assert.equal(buf.readUInt32LE(4), buf.length - 8, "RIFF size");
++
++      const w = readWav(file);
++      assert.equal(w.sampleRate, 48000);
++      assert.equal(w.format, format);
++      assert.equal(w.frames, a.length);
++      assert.equal(w.channelCount, nch);
++      assert.equal(w.sizeFromEof, false);
++      assert.equal(w.channels.length, nch);
++      const lsb = format === "float32" ? 0 : 2 ** -(BITS[format] - 1);
++      for (let c = 0; c < nch; c++) {
++        assert.ok(w.channels[c] instanceof Float64Array);
++        // Rounding, not truncation: within half an LSB, except +1, which is clamped (checked below).
++        let worst = 0;
++        for (let i = 0; i < a.length - (c === 0 ? 1 : 0); i++) {
++          const want = format === "float32" ? Math.fround(channels[c][i]) : channels[c][i];
++          worst = Math.max(worst, Math.abs(w.channels[c][i] - want));
++        }
++        assert.ok(worst <= lsb / 2 + 1e-15, `channel ${c}: worst error ${worst} > half an LSB ${lsb / 2}`);
++      }
++      assert.equal(w.channels[0][0], -1, "full-scale negative decodes to exactly -1");
++      if (format !== "float32") assert.equal(w.channels[0][a.length - 1], 1 - lsb, "+1 is clamped to the largest code");
++      assert.equal(w.channels[0][500], 0);
++    });
++  }
++}
++
++test("pcm32 round trip is exact to the code (no float32 loss above 2^24)", () => {
++  const x = new Float64Array([(2 ** 30 + 1) / 2 ** 31, -(2 ** 31 - 3) / 2 ** 31]);
++  const w = decodeWav(encodeWav({ sampleRate: 48000, format: "pcm32", channels: [x] }));
++  assert.deepEqual([...w.channels[0]], [...x]);
++});
++
++test("float32 writes an 18-byte fmt chunk (tag 3, cbSize 0) and a fact chunk with the frame count", () => {
++  const buf = encodeWav({ sampleRate: 48000, format: "float32", channels: [ramp(7), ramp(7)] });
++  assert.equal(buf.toString("latin1", 12, 16), "fmt ");
++  assert.equal(buf.readUInt32LE(16), 18);
++  assert.equal(buf.readUInt16LE(20), 3);
++  assert.equal(buf.readUInt16LE(36), 0, "cbSize");
++  assert.equal(buf.toString("latin1", 38, 42), "fact");
++  assert.equal(buf.readUInt32LE(42), 4);
++  assert.equal(buf.readUInt32LE(46), 7);
++  assert.equal(buf.toString("latin1", 50, 54), "data");
++  assert.equal(buf.readUInt32LE(54), 7 * 2 * 4);
++  assert.equal(buf.length, 58 + 56);
++});
++
++test("PCM writes a 16-byte fmt chunk with tag 1 and the data chunk right after it", () => {
++  const buf = encodeWav({ sampleRate: 48000, format: "pcm16", channels: [ramp(4)] });
++  assert.equal(buf.readUInt32LE(16), 16);
++  assert.equal(buf.readUInt16LE(20), 1);
++  assert.equal(buf.toString("latin1", 36, 40), "data");
++  assert.equal(buf.readUInt32LE(40), 8);
++  assert.equal(buf.length, 44 + 8);
++});
++
++test("an odd-sized data chunk gets the RIFF pad byte, and reads back", () => {
++  const x = new Float64Array([0.5, -0.25, 0.125]);
++  const buf = encodeWav({ sampleRate: 48000, format: "pcm24", channels: [x] });
++  assert.equal(buf.readUInt32LE(40), 9, "data size excludes the pad");
++  assert.equal(buf.length, 44 + 10);
++  assert.equal(buf[buf.length - 1], 0);
++  assert.equal(buf.readUInt32LE(4), buf.length - 8, "RIFF size includes the pad");
++  assert.deepEqual([...decodeWav(buf).channels[0]], [...x]);
++});
++
++test("WAVE_FORMAT_EXTENSIBLE headers and unknown chunks (LIST, PEAK) are read, honouring the pad byte", () => {
++  const list = chunk("LIST", Buffer.from("INFOISFT\x05\x00\x00\x00test\x00", "latin1")); // 21 bytes: padded
++  const peak = chunk("PEAK", Buffer.alloc(16));
++  const buf = riff(chunk("fmt ", fmtBody({ tag: 0xfffe, ext: 1 })), list, peak, chunk("data", DATA16));
++  const w = decodeWav(buf);
++  assert.equal(w.format, "pcm16");
++  assert.deepEqual([...w.channels[0]], [0.5, -1]);
++  assert.deepEqual([...w.channels[1]], [-0.5, 0.25]);
++
++  const f = Buffer.alloc(8);
++  f.writeFloatLE(0.25, 0);
++  f.writeFloatLE(-0.75, 4);
++  const wf = decodeWav(riff(chunk("fmt ", fmtBody({ tag: 0xfffe, bits: 32, nch: 1, ext: 3 })), chunk("data", f)));
++  assert.equal(wf.format, "float32");
++  assert.deepEqual([...wf.channels[0]], [0.25, -0.75]);
++});
++
++test("{ channel } decodes only that channel", () => {
++  const buf = riff(chunk("fmt ", fmtBody({})), chunk("data", DATA16));
++  const w = decodeWav(buf, { channel: 1 });
++  assert.equal(w.channels.length, 1);
++  assert.equal(w.channelCount, 2);
++  assert.deepEqual([...w.channels[0]], [-0.5, 0.25]);
++  assert.throws(() => decodeWav(buf, { channel: 2 }), /channel 2/);
++  assert.throws(() => decodeWav(buf, { channel: -1 }), /channel -1/);
++});
++
++test("a streamed header (data size 0xFFFFFFFF or 0, or past EOF) is read to EOF in whole frames, sizeFromEof", () => {
++  for (const size of [0xffffffff, 0, 1000]) {
++    const data = chunk("data", DATA16);
++    data.writeUInt32LE(size, 4);
++    const buf = Buffer.concat([riff(chunk("fmt ", fmtBody({}))), data, Buffer.from([1, 2, 3])]); // 3 stray bytes
++    buf.writeUInt32LE(size === 0 ? 0 : 0xffffffff, 4); // the RIFF size is just as wrong
++    const w = decodeWav(buf);
++    assert.equal(w.sizeFromEof, true, `size ${size}`);
++    assert.equal(w.frames, 2, "the partial third frame is dropped");
++    assert.deepEqual([...w.channels[0]], [0.5, -1]);
++  }
++});
++
++test("an empty data chunk is 0 frames, not streamed; one followed by another chunk doesn't read that chunk as audio", () => {
++  const empty = decodeWav(encodeWav({ sampleRate: 48000, format: "pcm32", channels: [new Float64Array(0)] }));
++  assert.equal(empty.frames, 0);
++  assert.equal(empty.sizeFromEof, false);
++  const list = chunk("LIST", Buffer.from("INFOISFT\x00\x00\x00\x00", "latin1"));
++  const w = decodeWav(riff(chunk("fmt ", fmtBody({})), chunk("data", Buffer.alloc(0)), list));
++  assert.equal(w.frames, 0);
++  assert.equal(w.sizeFromEof, false);
++});
++
++test("bad and truncated files are rejected with the byte offset in the message", () => {
++  const good = riff(chunk("fmt ", fmtBody({})), chunk("data", DATA16));
++  const cases = [
++    [Buffer.from("RIFX"), /not a RIFF/],
++    [Buffer.concat([Buffer.from("RIFF\0\0\0\0AVI "), good.subarray(12)]), /WAVE/],
++    [good.subarray(0, 30), /fmt chunk at byte 12/], // cut inside fmt
++    [good.subarray(0, 12), /no data chunk/],
++    [riff(chunk("data", DATA16)), /data chunk at byte 12.*before fmt/],
++    [riff(chunk("fmt ", fmtBody({ tag: 2 })), chunk("data", DATA16)), /fmt chunk at byte 12: format tag 2/],
++    [riff(chunk("fmt ", fmtBody({ bits: 8 })), chunk("data", DATA16)), /8-bit/],
++    [riff(chunk("fmt ", fmtBody({ tag: 3, bits: 64 })), chunk("data", Buffer.alloc(32))), /64-bit/],
++    [riff(chunk("fmt ", fmtBody({ byteRate: 1234 })), chunk("data", DATA16)), /byte rate 1234/],
++    [riff(chunk("fmt ", fmtBody({ blockAlign: 6 })), chunk("data", DATA16)), /block align 6/],
++    [riff(chunk("fmt ", fmtBody({ nch: 0 })), chunk("data", DATA16)), /0 channels/],
++    [riff(chunk("fmt ", fmtBody({ rate: 0 })), chunk("data", DATA16)), /sample rate 0/],
++    [riff(chunk("fmt ", fmtBody({ tag: 0xfffe, ext: 2 })), chunk("data", DATA16)), /sub-format/],
++    [riff(chunk("fmt ", fmtBody({})), chunk("data", DATA16.subarray(0, 6))), /data chunk at byte 36: 6 bytes is not a whole number of 4-byte frames/],
++    [riff(chunk("fmt ", Buffer.alloc(14))), /fmt chunk at byte 12: 14 bytes/],
++  ];
++  for (const [buf, re] of cases) assert.throws(() => decodeWav(buf), (e) => /^wav: /.test(e.message) && re.test(e.message), String(re));
++  // An unknown chunk that runs past EOF before any data is a truncated file, not a streamed one.
++  const list = chunk("LIST", Buffer.alloc(4));
++  list.writeUInt32LE(100, 4);
++  assert.throws(() => decodeWav(riff(chunk("fmt ", fmtBody({})), list)), /LIST chunk at byte 36/);
++});
++
++test("encodeWav refuses bad input instead of writing a broken file", () => {
++  const ok = { sampleRate: 48000, format: "pcm16", channels: [ramp(3)] };
++  assert.throws(() => encodeWav({ ...ok, format: "pcm8" }), /format/);
++  assert.throws(() => encodeWav({ ...ok, sampleRate: 0 }), /sample rate/);
++  assert.throws(() => encodeWav({ ...ok, sampleRate: 44100.5 }), /sample rate/);
++  assert.throws(() => encodeWav({ ...ok, channels: [] }), /channel/);
++  assert.throws(() => encodeWav({ ...ok, channels: [ramp(3), ramp(4)] }), /equal length/);
++  assert.throws(() => encodeWav({ ...ok, sampleRate: 2 ** 31, channels: [ramp(3), ramp(3)] }), /^Error: wav: .*byte rate/);
++  assert.throws(() => encodeWav({ ...ok, format: "float32", channels: [new Float64Array([0, 1e39])] }), /sample 1/,
++    "a value float32 can't hold would be written as Infinity");
++  for (const bad of [NaN, Infinity, -Infinity]) {
++    for (const format of FORMATS) {
++      assert.throws(() => encodeWav({ ...ok, format, channels: [new Float64Array([0, bad])] }), /sample 1/);
++    }
++  }
++});
++
++test("PCM clamps values beyond ±1; float32 stores them as is", () => {
++  const x = new Float64Array([1.5, -1.5]);
++  assert.deepEqual([...decodeWav(encodeWav({ sampleRate: 48000, format: "pcm16", channels: [x] })).channels[0]],
++    [32767 / 32768, -1]);
++  assert.deepEqual([...decodeWav(encodeWav({ sampleRate: 48000, format: "float32", channels: [x] })).channels[0]],
++    [1.5, -1.5]);
++});
++
++test("writeWav leaves an existing file alone when encoding fails", () => {
++  const dir = tempDir();
++  const file = join(dir, "keep.wav");
++  writeFileSync(file, "old");
++  assert.throws(() => writeWav(file, { sampleRate: 48000, format: "pcm16", channels: [new Float64Array([NaN])] }));
++  assert.equal(readFileSync(file, "utf8"), "old");
++  assert.deepEqual(readdirSync(dir), ["keep.wav"]);
++});
+diff --git a/tests/wow-flutter.test.mjs b/tests/wow-flutter.test.mjs
+new file mode 100644
+index 0000000..fa58686
+--- /dev/null
++++ b/tests/wow-flutter.test.mjs
+@@ -0,0 +1,313 @@
++// tools/wow-flutter measures the frequency deviation of a recorded test tone (spec §3: wow & flutter ≤ 0.1 %, D12).
++// The tolerances are M3-03's; the signals come from tools/lib/test-audio.mjs, and every file goes to a temp dir.
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "wow-flutter algorithm".
++import { test, after } from "node:test";
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join, dirname } from "node:path";
++import { fileURLToPath } from "node:url";
++import { writeWav, encodeWav, decodeWav } from "../tools/lib/wav.mjs";
++import { tone, dbToAmplitude } from "../tools/lib/test-audio.mjs";
++import { analyze, highPass } from "../tools/lib/wow-flutter.mjs";
++
++const dirs = [];
++const tempDir = () => {
++  const d = mkdtempSync(join(tmpdir(), "wow-flutter-"));
++  dirs.push(d);
++  return d;
++};
++after(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })));
++
++const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
++const TOOL = join(ROOT, "tools", "wow-flutter");
++const RATE = 48000;
++const A = dbToAmplitude(-6);
++
++const sine = (opts) => tone({ rate: RATE, frames: Math.round((opts.seconds ?? 5) * RATE), freq: 1000, amplitude: A, ...opts });
++
++// A tone whose instantaneous frequency is f(t) Hz, phase accumulated sample by sample.
++function fromFreq(seconds, f) {
++  const x = new Float64Array(Math.round(seconds * RATE));
++  let phi = 0;
++  for (let n = 0; n < x.length; n++) {
++    x[n] = A * Math.sin(phi);
++    phi += (2 * Math.PI * f(n / RATE)) / RATE;
++  }
++  return x;
++}
++
++function writeTone(x, { format = "pcm32", name = "tone.wav", channels = [x, x] } = {}) {
++  const file = join(tempDir(), name);
++  writeWav(file, { sampleRate: RATE, format, channels });
++  return file;
++}
++
++const run = (args) => spawnSync(TOOL, args, { encoding: "utf8" });
++
++const between = (v, lo, hi, what) => assert.ok(v >= lo && v <= hi, `${what} ${v} not in [${lo}, ${hi}]`);
++
++// --- The algorithm on synthetic tones (M3-03 step 1) ---
++
++test("a clean 1 kHz tone: peak and RMS deviation below 0.01 %, mean 1000 Hz", () => {
++  const r = analyze(sine({}), RATE);
++  assert.equal(r.signal, true);
++  assert.ok(r.peak_pct < 0.01, `peak ${r.peak_pct} %`);
++  assert.ok(r.rms_pct < 0.01, `rms ${r.rms_pct} %`);
++  assert.ok(Math.abs(r.mean_hz - 1000) < 0.01, `mean ${r.mean_hz} Hz`);
++  assert.equal(r.dropouts, 0);
++  // Crossings at 1 … 4999 ms, and at 0 when the DC removal leaves sample 0 just below zero: 4998 or 4999 cycles.
++  between(r.cycles, 4998, 4999, "cycles");
++});
++
++test("a clean 1 kHz tone through 16-bit PCM: still below 0.01 %", () => {
++  const w = decodeWav(encodeWav({ sampleRate: RATE, format: "pcm16", channels: [sine({})] }));
++  const r = analyze(w.channels[0], RATE);
++  assert.ok(r.peak_pct < 0.01 && r.rms_pct < 0.01, `peak ${r.peak_pct} %, rms ${r.rms_pct} %`);
++});
++
++test("0.1 % FM at 4 Hz: peak 0.085–0.115 %, RMS near 0.1/√2", () => {
++  const r = analyze(sine({ fmDepth: 0.1, fmRate: 4 }), RATE);
++  between(r.peak_pct, 0.085, 0.115, "peak %");
++  between(r.rms_pct, 0.0707 * 0.95, 0.0707 * 1.05, "rms %");
++  assert.ok(Math.abs(r.mean_hz - 1000) < 0.05, `mean ${r.mean_hz} Hz`);
++  assert.equal(r.dropouts, 0);
++});
++
++test("0.5 % FM at 0.5 Hz over 10 s (slow wow, inside the 0.5 Hz band edge): peak 0.42–0.58 %", () => {
++  const r = analyze(sine({ seconds: 10, fmDepth: 0.5, fmRate: 0.5 }), RATE);
++  between(r.peak_pct, 0.42, 0.58, "peak %");
++  assert.ok(Math.abs(r.mean_hz - 1000) < 0.5, `mean ${r.mean_hz} Hz`);
++});
++
++test("a 1010 Hz tone (constant pitch offset): deviation below 0.01 %, mean 1010 ± 0.5 Hz", () => {
++  const r = analyze(sine({ freq: 1010 }), RATE);
++  assert.ok(r.peak_pct < 0.01 && r.rms_pct < 0.01, `peak ${r.peak_pct} %, rms ${r.rms_pct} %`);
++  assert.ok(Math.abs(r.mean_hz - 1010) <= 0.5, `mean ${r.mean_hz} Hz`);
++});
++
++test("a slow drift of the pitch (0.05 Hz, below the band) is removed, a 4 Hz flutter on top is kept", () => {
++  const x = fromFreq(10, (t) => 1000 * (1 + 0.003 * Math.sin(2 * Math.PI * 0.05 * t) + 0.001 * Math.sin(2 * Math.PI * 4 * t)));
++  const r = analyze(x, RATE);
++  between(r.peak_pct, 0.085, 0.13, "peak %");
++});
++
++// Review M3-03 #1: a recording starts at any phase of the wow; the filter's edge padding must not add to the peak.
++for (const [name, ph] of [["π/2", Math.PI / 2], ["π", Math.PI], ["3π/2", (3 * Math.PI) / 2]]) {
++  test(`FM starting at phase ${name} (deviation not zero at t = 0): the same tolerances hold`, () => {
++    const fast = analyze(fromFreq(5, (t) => 1000 * (1 + 0.001 * Math.sin(2 * Math.PI * 4 * t + ph))), RATE);
++    between(fast.peak_pct, 0.085, 0.115, "0.1 % @ 4 Hz peak %");
++    const slow = analyze(fromFreq(10, (t) => 1000 * (1 + 0.005 * Math.sin(2 * Math.PI * 0.5 * t + ph))), RATE);
++    between(slow.peak_pct, 0.42, 0.58, "0.5 % @ 0.5 Hz peak %");
++  });
++}
++
++test("the high-pass passes 4 Hz, keeps ≥ 97 % at 0.5 Hz and removes DC (zero phase, net gain |H|²)", () => {
++  const fs = 1000;
++  const amp = (f) => {
++    const d = Float64Array.from({ length: 20 * fs }, (_, k) => 0.01 + Math.sin((2 * Math.PI * f * k) / fs));
++    const y = highPass(d, fs);
++    let m = 0;
++    for (let k = 5 * fs; k < 15 * fs; k++) m = Math.max(m, Math.abs(y[k]));
++    return m;
++  };
++  between(amp(4), 0.999, 1.001, "gain at 4 Hz");
++  between(amp(0.5), 0.97, 0.98, "gain at 0.5 Hz");
++  const flat = highPass(new Float64Array(5000).fill(0.02), fs);
++  assert.ok(flat.every((v) => Math.abs(v) < 1e-12), "a constant comes out as 0, edges included");
++});
++
++// --- Dropouts (M3-03 step 3) ---
++
++for (const [where, start] of [["at a zero crossing", 120000], ["in a positive half-cycle", 120007], ["in a negative half-cycle", 120030]]) {
++  test(`1 ms of zeros at 2.5 s, ${where}: dropouts 1, not flutter`, () => {
++    const x = sine({});
++    x.fill(0, start, start + 48);
++    const r = analyze(x, RATE);
++    assert.equal(r.signal, true);
++    assert.equal(r.dropouts, 1);
++    assert.ok(r.peak_pct < 0.01 && r.rms_pct < 0.01, `peak ${r.peak_pct} %, rms ${r.rms_pct} %`);
++    assert.ok(Math.abs(r.mean_hz - 1000) < 0.01, `mean ${r.mean_hz} Hz`);
++  });
++}
++
++test("a level dip to 30 % for 3 ms is one dropout; two separate 1 ms gaps are two", () => {
++  const dip = sine({});
++  for (let n = 96000; n < 96144; n++) dip[n] *= 0.3;
++  const r1 = analyze(dip, RATE);
++  assert.equal(r1.dropouts, 1);
++  assert.ok(r1.peak_pct < 0.01, `peak ${r1.peak_pct} %`);
++  const two = sine({});
++  two.fill(0, 100000, 100048);
++  two.fill(0, 150000, 150048);
++  assert.equal(analyze(two, RATE).dropouts, 2);
++});
++
++test("a dropout inside an FM tone is bridged, not flattened: 1 ms and 200 ms gaps keep the 0.1 % peak", () => {
++  for (const len of [48, 9600]) {
++    const x = sine({ fmDepth: 0.1, fmRate: 4 });
++    x.fill(0, 120000, 120000 + len);
++    const r = analyze(x, RATE);
++    assert.equal(r.dropouts, 1, `${len} samples`);
++    between(r.peak_pct, 0.085, 0.115, `peak % with a ${len}-sample gap`);
++  }
++});
++
++// Review M3-03 #2, #3: a real recording has a noise floor or silence before and after the tone.
++test("2 s of ±1 LSB 16-bit noise before the tone: trimmed, not a dropout, and not `no signal`", () => {
++  let seed = 1;
++  const lsb = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) % 3) - 1;
++  const x = new Float64Array(7 * RATE);
++  for (let n = 0; n < 2 * RATE; n++) x[n] = lsb() / 32768;
++  x.set(sine({}), 2 * RATE);
++  const w = decodeWav(encodeWav({ sampleRate: RATE, format: "pcm16", channels: [x] }));
++  const r = analyze(w.channels[0], RATE);
++  assert.equal(r.signal, true, r.reason);
++  assert.equal(r.dropouts, 0);
++  assert.ok(r.peak_pct < 0.01, `peak ${r.peak_pct} %`);
++  between(r.cycles, 4997, 5000, "cycles of the tone only");
++});
++
++test("3 s of silence on both sides: the 1 s edge skip counts from the tone, so the peak doesn't grow", () => {
++  const fm = sine({ seconds: 10, fmDepth: 0.1, fmRate: 4 });
++  const x = new Float64Array(16 * RATE);
++  x.set(fm, 3 * RATE);
++  const alone = analyze(fm, RATE);
++  const padded = analyze(x, RATE);
++  assert.equal(padded.dropouts, 0);
++  assert.ok(Math.abs(padded.peak_pct / alone.peak_pct - 1) < 0.002, `${padded.peak_pct} vs ${alone.peak_pct} %`);
++  between(padded.worst.start_s, 4, 11, "worst window start, in file time");
++});
++
++// --- Worst window, no signal ---
++
++test("worst 1-second window: flutter only after 3 s is found there, with its own peak and RMS", () => {
++  const x = fromFreq(7, (t) => 1000 * (1 + (t < 3 ? 0 : 0.002 * Math.sin(2 * Math.PI * 4 * (t - 3)))));
++  const r = analyze(x, RATE);
++  between(r.worst.start_s, 3, 5, "worst window start s");
++  assert.equal(Math.round(r.worst.start_s * 10), r.worst.start_s * 10, "on the 0.1 s hop");
++  between(r.worst.peak_pct, 0.17, 0.23, "worst peak %");
++  between(r.worst.rms_pct, 0.1414 * 0.9, 0.1414 * 1.1, "worst rms %");
++  assert.ok(r.worst.rms_pct >= r.rms_pct);
++});
++
++test("silence, a -70 dBFS tone and a 2.5 s tone are no signal, never a crash", () => {
++  for (const [what, x] of [
++    ["silence", new Float64Array(5 * RATE)],
++    ["empty", new Float64Array(0)],
++    ["-70 dBFS", sine({}).map((v) => (v / A) * dbToAmplitude(-70))],
++    ["2.5 s", sine({ seconds: 2.5 })],
++  ]) {
++    const r = analyze(x, RATE);
++    assert.equal(r.signal, false, what);
++    assert.equal(typeof r.reason, "string", what);
++  }
++});
++
++test("the level gate ignores DC; a rate or tone too low to filter is no signal, never NaN", () => {
++  const dcTone = sine({}).map((v) => 0.01 + (v / A) * dbToAmplitude(-75));
++  const r1 = analyze(dcTone, RATE);
++  assert.equal(r1.signal, false, "a -75 dBFS tone on 0.01 DC");
++  assert.match(r1.reason, /dBFS, below -60/);
++  assert.equal(analyze(sine({}), 1).signal, false, "rate 1 Hz");
++  const low = tone({ rate: RATE, frames: 20 * RATE, freq: 10, amplitude: A });
++  const r3 = analyze(low, RATE);
++  assert.equal(r3.signal, false, "10 Hz tone");
++  assert.match(r3.reason, /below 20 Hz/);
++});
++
++test("the reason for too little tone doesn't round 2.998 s up to the 3 s it needs", () => {
++  const r = analyze(sine({ seconds: 3 }), RATE);
++  assert.equal(r.signal, false);
++  assert.match(r.reason, /^2\.99\d s of good cycles, need 3$/);
++});
++
++// --- The tool (M3-03 step 2) ---
++
++test("tools/wow-flutter tone.wav prints mean Hz, peak %, RMS %, the worst 1 s window, dropouts and cycles", () => {
++  const r = run([writeTone(sine({ fmDepth: 0.1, fmRate: 4 }))]);
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(r.stderr, "");
++  assert.match(r.stdout,
++    /^mean 1000\.\d{3} Hz {2}peak 0\.(09|10|11)\d{2} % {2}rms 0\.0\d{3} % {2}worst 1 s @ \d+\.\d{2} s: peak 0\.\d{4} % rms 0\.\d{4} % {2}dropouts 0 {2}cycles 499[89]\n$/);
++});
++
++test("--json prints the same numbers as one JSON object", () => {
++  const file = writeTone(sine({ fmDepth: 0.1, fmRate: 4 }));
++  const r = run([file, "--json"]);
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(r.stdout.trim().split("\n").length, 1, "one line");
++  const j = JSON.parse(r.stdout);
++  assert.deepEqual(Object.keys(j), ["signal", "mean_hz", "peak_pct", "rms_pct", "worst", "dropouts", "cycles", "size_from_eof"]);
++  assert.deepEqual(Object.keys(j.worst), ["start_s", "peak_pct", "rms_pct"]);
++  assert.equal(j.signal, true);
++  assert.equal(j.size_from_eof, false);
++  between(j.peak_pct, 0.085, 0.115, "peak %");
++  const text = run([file]).stdout;
++  assert.ok(text.includes(`peak ${j.peak_pct.toFixed(4)} %`), text);
++  assert.ok(text.includes(`mean ${j.mean_hz.toFixed(3)} Hz`), text);
++  assert.ok(text.includes(`@ ${j.worst.start_s.toFixed(2)} s`), text);
++});
++
++test("--channel picks the channel; the dropout file reports dropouts 1 from the tool", () => {
++  const gap = sine({});
++  gap.fill(0, 120000, 120048);
++  const file = writeTone(gap, { channels: [new Float64Array(gap.length), gap] });
++  const r0 = run([file]);
++  assert.equal(r0.status, 1);
++  assert.equal(r0.stdout, "no signal\n");
++  const r1 = JSON.parse(run([file, "--channel", "1", "--json"]).stdout);
++  assert.equal(r1.dropouts, 1);
++  assert.ok(r1.peak_pct < 0.01);
++  const bad = run([file, "--channel", "2"]);
++  assert.equal(bad.status, 1);
++  assert.match(bad.stderr, /channel 2: the file has 2/);
++});
++
++test("silence: prints `no signal` (JSON: signal false) and exits 1", () => {
++  const file = writeTone(new Float64Array(2 * RATE), { name: "silence.wav" });
++  const t = run([file]);
++  assert.equal(t.status, 1);
++  assert.equal(t.stdout, "no signal\n");
++  assert.match(t.stderr, /^wow-flutter: .*silence\.wav: /);
++  const j = run([file, "--json"]);
++  assert.equal(j.status, 1);
++  assert.equal(JSON.parse(j.stdout).signal, false);
++});
++
++test("--expect-hz fails (exit 1) when the mean is more than 5 % off, after printing the result", () => {
++  const file = writeTone(sine({ freq: 1010 }));
++  assert.equal(run([file, "--expect-hz", "1000"]).status, 0);
++  const off = run([file, "--expect-hz", "1350"]);
++  assert.equal(off.status, 1);
++  assert.match(off.stdout, /^mean 1010\.000 Hz/);
++  assert.match(off.stderr, /mean 1010\.000 Hz is more than 5 % off --expect-hz 1350/);
++});
++
++test("a streamed header (size from EOF) is measured and warned about; a missing or broken file exits 1", () => {
++  const buf = encodeWav({ sampleRate: RATE, format: "pcm16", channels: [sine({})] });
++  const data = buf.indexOf("data");
++  buf.writeUInt32LE(0xffffffff, data + 4);
++  const dir = tempDir();
++  writeFileSync(join(dir, "streamed.wav"), buf);
++  const r = run([join(dir, "streamed.wav"), "--json"]);
++  assert.equal(r.status, 0, r.stderr);
++  assert.equal(JSON.parse(r.stdout).size_from_eof, true);
++  assert.match(r.stderr, /size read from the end of the file/);
++  const missing = run([join(dir, "nope.wav")]);
++  assert.equal(missing.status, 1);
++  assert.match(missing.stderr, /^wow-flutter: /);
++  writeFileSync(join(dir, "junk.wav"), "not a wav");
++  const junk = run([join(dir, "junk.wav")]);
++  assert.equal(junk.status, 1);
++  assert.match(junk.stderr, /not a RIFF file/);
++  assert.equal(junk.stdout, "");
++});
++
++test("--help prints the options and exits 0", () => {
++  const r = run(["--help"]);
++  assert.equal(r.status, 0);
++  assert.match(r.stdout, /^usage: tools\/wow-flutter /);
++  for (const o of ["--channel", "--json", "--expect-hz"]) assert.ok(r.stdout.includes(o), o);
++});
+diff --git a/tools/drift b/tools/drift
+new file mode 100755
+index 0000000..0df8ff1
+--- /dev/null
++++ b/tools/drift
+@@ -0,0 +1,129 @@
++#!/usr/bin/env node
++// Reports how far Mixxx's play position drifts from the platter over a telemetry log (D11): max, final and slope,
++// noise, jumps. Spec §3: drift with the motor on, 5 min, target < 10 ms.
++// Exit: 0 measured · 1 unreadable file, a line that breaks D11 or fewer than 2 lines for the deck · 2 usage
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "drift"; the analysis is tools/lib/drift.mjs.
++import { readFileSync } from "node:fs";
++import { parseTelemetry, parseRpm, analyzeDrift } from "./lib/drift.mjs";
++
++const USAGE = "usage: tools/drift <telemetry.jsonl> --track-seconds <n> [--ticks-per-rev 3600] [--rpm 33.333] " +
++  "[--deck 1] [--jump-ms 20] [--smooth-ms 1000] [--csv | --json]";
++const HELP = `${USAGE}
++Measures platter-versus-playposition drift from a D11 telemetry log (dev-profile/telemetry.jsonl):
++  --track-seconds <n>  the track's exact length in s (frames / rate); required
++  --ticks-per-rev <n>  encoder ticks per platter revolution (default 3600, UNVERIFIED until M4/M5)
++  --rpm <n>            nominal platter speed; 33, 33.3, 33.33, 33.333 and 100/3 all mean exactly 100/3 (default)
++  --deck <1|2>         the deck whose lines are read (a line without "deck" is deck 1; default 1)
++  --jump-ms <ms>       a change of the median over --smooth-ms larger than this is a jump (default 20)
++  --smooth-ms <ms>     running-median window against the per-buffer lag of playposition (default 1000; 0 = off)
++  --csv                print t_us,drift_ms rows (smoothed) instead of the summary
++  --json               print the summary as one JSON object
++Drift is (Mixxx's track time - the platter's) since the first line, in ms: positive means Mixxx is ahead.
++Prints max |drift|, final drift, the least-squares slope in ms/min, noise (robust spread around the smoothed
++curve), the jumps, and the sample count, span, mean rate_ratio, mode changes and backward t_us steps.
++An excursion shorter than --smooth-ms/2 is smoothed away and shows in neither max nor jumps; look for one with a
++smaller --smooth-ms (noise grows with it). Jumps need --smooth-ms/2 of log on each side.
++Exit: 0 measured · 1 unreadable file, a line that breaks D11 or fewer than 2 lines for the deck · 2 usage
++`;
++
++function usage(why) {
++  if (why) process.stderr.write(`drift: ${why}\n`);
++  process.stderr.write(USAGE + "\n");
++  process.exit(2);
++}
++const fail = (why) => {
++  process.stderr.write(`drift: ${why}\n`);
++  process.exit(1);
++};
++
++const DECIMAL = /^(\d+(\.\d*)?|\.\d+)$/;
++const args = process.argv.slice(2);
++if (args.length === 1 && args[0] === "--help") {
++  process.stdout.write(HELP);
++  process.exit(0);
++}
++let file = null;
++const opt = { trackSeconds: null, ticksPerRev: 3600, rpm: 100 / 3, smoothMs: 1000, jumpMs: 20 };
++let deck = 1;
++let output = "text";
++const seen = new Set();
++for (let i = 0; i < args.length; i++) {
++  const a = args[i];
++  if (!a.startsWith("-") || a === "-") {
++    if (a === "-") usage("reading stdin is not supported");
++    if (file !== null) usage(`unexpected argument ${a}`);
++    file = a;
++    continue;
++  }
++  if (seen.has(a)) usage(`${a} given twice`);
++  seen.add(a);
++  if (a === "--csv" || a === "--json") {
++    if (output !== "text") usage("--csv and --json can't be used together");
++    output = a.slice(2);
++    continue;
++  }
++  const v = args[++i];
++  if (v === undefined) usage(`${a} needs a value`);
++  if (a === "--track-seconds") {
++    if (!DECIMAL.test(v) || !(Number(v) > 0)) usage(`bad --track-seconds ${v}`);
++    opt.trackSeconds = Number(v);
++  } else if (a === "--ticks-per-rev") {
++    if (!/^\d{1,9}$/.test(v) || !(Number(v) > 0)) usage(`bad --ticks-per-rev ${v}`);
++    opt.ticksPerRev = Number(v);
++  } else if (a === "--rpm") {
++    const rpm = parseRpm(v);
++    if (rpm === null) usage(`bad --rpm ${v}`);
++    opt.rpm = rpm;
++  } else if (a === "--deck") {
++    if (v !== "1" && v !== "2") usage(`bad --deck ${v}`);
++    deck = Number(v);
++  } else if (a === "--jump-ms") {
++    if (!DECIMAL.test(v) || !(Number(v) > 0)) usage(`bad --jump-ms ${v}`);
++    opt.jumpMs = Number(v);
++  } else if (a === "--smooth-ms") {
++    if (!DECIMAL.test(v)) usage(`bad --smooth-ms ${v}`);
++    opt.smoothMs = Number(v);
++  } else usage(`unknown option ${a}`);
++}
++if (file === null) usage();
++if (opt.trackSeconds === null) usage("--track-seconds is required");
++
++let parsed;
++try {
++  parsed = parseTelemetry(readFileSync(file, "utf8"), file);
++} catch (err) {
++  fail(err.code ? `${file}: ${err.message}` : err.message);
++}
++const MAX_WARNINGS = 10;
++const warn = (w) => process.stderr.write(`drift: warning: ${w}\n`);
++parsed.warnings.slice(0, MAX_WARNINGS).forEach(warn);
++if (parsed.warnings.length > MAX_WARNINGS) warn(`${parsed.warnings.length - MAX_WARNINGS} more backward t_us steps`);
++
++const samples = parsed.samples.filter((s) => s.deck === deck);
++if (samples.length < 2) {
++  fail(`${file}: ${samples.length} line${samples.length === 1 ? "" : "s"} for deck ${deck}; drift needs at least 2`);
++}
++const off = samples.find((s) => s.duration !== undefined && Math.abs(s.duration - opt.trackSeconds) > 0.001);
++if (off) {
++  warn(`${file}:${off.line}: duration ${off.duration.toFixed(6)} s differs from --track-seconds ` +
++    `${opt.trackSeconds.toFixed(6)} s by ${(1000 * Math.abs(off.duration - opt.trackSeconds)).toFixed(3)} ms; using --track-seconds`);
++}
++
++const { series, ...r } = analyzeDrift(samples, opt);
++if (output === "csv") {
++  process.stdout.write("t_us,drift_ms\n" + series.map((p) => `${p.t_us},${p.drift_ms.toFixed(3)}\n`).join(""));
++} else if (output === "json") {
++  process.stdout.write(JSON.stringify({
++    ...r, deck, track_seconds: opt.trackSeconds, ticks_per_rev: opt.ticksPerRev, rpm: opt.rpm,
++    smooth_ms: opt.smoothMs, jump_ms: opt.jumpMs,
++  }) + "\n");
++} else {
++  const ms = (v) => `${v.toFixed(3)} ms`;
++  const sign = (v) => (v >= 0 ? "+" : "");
++  process.stdout.write(
++    `max ${ms(r.max_ms)}  final ${ms(r.final_ms)}  slope ${r.slope_ms_per_min.toFixed(3)} ms/min  ` +
++    `noise ${ms(r.noise_ms)}  jumps ${r.jumps.length}\n` +
++    `samples ${r.samples}  span ${r.span_s.toFixed(2)} s  mean rate_ratio ${r.mean_rate_ratio.toFixed(4)}  ` +
++    `mode changes ${r.mode_changes}  t_backsteps ${r.t_backsteps}\n` +
++    r.jumps.map((j) => `jump @ ${j.t_s.toFixed(2)} s: ${sign(j.size_ms)}${j.size_ms.toFixed(1)} ms\n`).join(""));
++}
+diff --git a/tools/lib/drift.mjs b/tools/lib/drift.mjs
+new file mode 100644
+index 0000000..1c85ec8
+--- /dev/null
++++ b/tools/lib/drift.mjs
+@@ -0,0 +1,214 @@
++// Platter-versus-playposition drift from a telemetry log (D11): how far Mixxx's play position has moved away from
++// the track time the platter turned through, smoothed against the per-buffer lag of playposition, with jumps.
++// Pure: text in, numbers out; tools/drift does the file, the deck choice and the printing.
++// Spec: docs/plans/2026-10-19-M3-measurement.md, sections "Telemetry format" and "drift".
++
++const REQUIRED = ["t_us", "ticks", "timer", "playposition", "rate_ratio", "mode"];
++const isNumber = (v) => typeof v === "number" && Number.isFinite(v);
++
++// One line's object → the reason it breaks D11, or null.
++function invalid(obj) {
++  for (const k of REQUIRED) if (!(k in obj)) return `missing "${k}"`;
++  const { t_us, ticks, timer, playposition, rate_ratio, mode, deck, duration } = obj;
++  const got = (v) => ` (got ${JSON.stringify(v)})`;
++  if (!Number.isSafeInteger(t_us) || t_us < 0) return `"t_us" must be an integer ≥ 0${got(t_us)}`;
++  if (!Number.isSafeInteger(ticks)) return `"ticks" must be an integer${got(ticks)}`;
++  if (!Number.isSafeInteger(timer)) return `"timer" must be an integer${got(timer)}`;
++  if (!isNumber(playposition)) return `"playposition" must be a finite number${got(playposition)}`;
++  if (!isNumber(rate_ratio)) return `"rate_ratio" must be a finite number${got(rate_ratio)}`;
++  if (mode !== "clock" && mode !== "platter") return `"mode" must be "clock" or "platter"${got(mode)}`;
++  if (deck !== undefined && deck !== 1 && deck !== 2) return `"deck" must be 1 or 2${got(deck)}`;
++  if (duration !== undefined && !(isNumber(duration) && duration > 0)) return `"duration" must be a positive number${got(duration)}`;
++  return null;
++}
++
++// Telemetry text → { samples, warnings }. A sample is { line, t_us, ticks, playposition, rate_ratio, mode, deck,
++// duration, backstep }. Throws Error("<path>:<line>: …") on a line that breaks D11. A t_us lower than the line
++// before (the wall clock stepped back, NTP) is clamped to it with a warning, the sample gets backstep: true, and
++// the step is carried into every later line, so one clock step is one warning and the spacing after it is kept.
++// Unknown keys are ignored; a UTF-8 BOM, CRLF and a last line without its \n are accepted.
++export function parseTelemetry(text, path) {
++  const lines = text.replace(/^\ufeff/, "").split("\n");
++  if (lines[lines.length - 1] === "") lines.pop();
++  const samples = [];
++  const warnings = [];
++  let last = -Infinity;
++  let shift = 0; // µs added to every line since the clock stepped back
++  for (let i = 0; i < lines.length; i++) {
++    const where = `${path}:${i + 1}`;
++    if (lines[i].trim() === "") throw new Error(`${where}: blank line`);
++    let obj;
++    try {
++      obj = JSON.parse(lines[i]);
++    } catch {
++      throw new Error(`${where}: not JSON`);
++    }
++    if (obj === null || typeof obj !== "object" || Array.isArray(obj)) throw new Error(`${where}: not a JSON object`);
++    const why = invalid(obj);
++    if (why) throw new Error(`${where}: ${why}`);
++    let t_us = obj.t_us + shift;
++    const backstep = t_us < last;
++    if (backstep) {
++      warnings.push(`${where}: t_us goes back ${last - t_us} µs; clamped to the line before`);
++      shift += last - t_us;
++      t_us = last;
++    }
++    last = t_us;
++    samples.push({
++      line: i + 1, t_us, ticks: obj.ticks, playposition: obj.playposition, rate_ratio: obj.rate_ratio, mode: obj.mode,
++      deck: obj.deck ?? 1, duration: obj.duration, backstep,
++    });
++  }
++  return { samples, warnings };
++}
++
++// "33", "33.3", "33.33", "33.333", … (trailing zeros too: "33.30") and "100/3" are exactly 100/3 (a literal 33.333 is 1.0e-5 low: 3 ms of fake
++// drift over 5 min); any other positive decimal is taken as given. → number, or null if it isn't one.
++export function parseRpm(s) {
++  if (s === "100/3" || /^33(\.3+0*)?$/.test(s)) return 100 / 3;
++  if (!/^(\d+(\.\d+)?|\.\d+)$/.test(s)) return null;
++  const v = Number(s);
++  return v > 0 ? v : null;
++}
++
++const median = (a) => {
++  const s = Float64Array.from(a).sort();
++  const m = s.length >> 1;
++  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
++};
++
++// Medians of v over the index windows [lo[i], hi[i]), both non-decreasing in i; NaN for an empty window. One sorted
++// window slides along, so a 1 kHz log costs n · window, not n · window · log(window).
++function windowMedians(v, lo, hi) {
++  const out = new Float64Array(lo.length);
++  const sorted = [];
++  const find = (x) => {
++    let a = 0, b = sorted.length;
++    while (a < b) {
++      const m = (a + b) >> 1;
++      if (sorted[m] < x) a = m + 1;
++      else b = m;
++    }
++    return a;
++  };
++  let from = 0, to = 0; // the window held in `sorted`
++  for (let i = 0; i < lo.length; i++) {
++    if (lo[i] >= to) {
++      sorted.length = 0;
++      from = to = lo[i];
++    }
++    while (to < hi[i]) sorted.splice(find(v[to]), 0, v[to++]);
++    while (from < lo[i]) sorted.splice(find(v[from++]), 1);
++    const n = sorted.length, m = n >> 1;
++    out[i] = n === 0 ? NaN : n % 2 ? sorted[m] : (sorted[m - 1] + sorted[m]) / 2;
++  }
++  return out;
++}
++
++// For each i, the first index j with t[j] ≥ t[i] + d (strict: t[j] > t[i] + d), as an Int32Array.
++function bound(t, d, strict) {
++  const out = new Int32Array(t.length);
++  let j = 0;
++  for (let i = 0; i < t.length; i++) {
++    while (j < t.length && (strict ? t[j] <= t[i] + d : t[j] < t[i] + d)) j++;
++    out[i] = j;
++  }
++  return out;
++}
++
++// samples (one deck, in time order, ≥ 2) → { max_ms, final_ms, slope_ms_per_min, noise_ms, jumps: [{ t_s, size_ms }],
++// samples, span_s, mean_rate_ratio, mode_changes, t_backsteps, series: [{ t_us, drift_ms }] }.
++// raw_ms = 1000 · (mixxx_s − platter_s): positive means Mixxx is ahead of the platter.
++export function analyzeDrift(samples, { trackSeconds, ticksPerRev = 3600, rpm = 100 / 3, smoothMs = 1000, jumpMs = 20 }) {
++  const n = samples.length;
++  if (n < 2) throw new Error(`drift needs at least 2 samples (got ${n})`);
++  const s0 = samples[0];
++  const secondsPerTick = 60 / rpm / ticksPerRev;
++  const t = new Float64Array(n); // µs since the first sample
++  const raw = new Float64Array(n);
++  for (let i = 0; i < n; i++) {
++    const s = samples[i];
++    t[i] = s.t_us - s0.t_us;
++    const platter_s = (s.ticks - s0.ticks) * secondsPerTick;
++    const mixxx_s = (s.playposition - s0.playposition) * trackSeconds;
++    raw[i] = 1000 * (mixxx_s - platter_s);
++  }
++
++  // Centred running median over smoothMs, minus the median over the first smoothMs.
++  const S = smoothMs * 1000;
++  let smooth, baseline;
++  if (S === 0) {
++    smooth = raw;
++    baseline = raw[0];
++  } else {
++    const lo = bound(t, -S / 2, false), hi = bound(t, S / 2, true);
++    smooth = windowMedians(raw, lo, hi);
++    let k = 1;
++    while (k < n && t[k] < S) k++;
++    baseline = median(raw.subarray(0, k));
++  }
++  const drift = smooth.map((v) => v - baseline);
++
++  // Jumps: the median over the smoothMs after a sample minus the median over the smoothMs before it. A run of
++  // samples over jumpMs (one sign) is one jump; a clean step gives a plateau about smoothMs wide, so the jump's time
++  // is the run's midpoint and its size the run's largest change. Only samples with at least smoothMs/2 of log on
++  // each side count, so one lagged first or last line can't be a jump on its own. Two same-sign steps closer than
++  // smoothMs merge into one jump, sized by the larger change.
++  let before, after;
++  if (S === 0) {
++    before = raw.map((_, i) => (i === 0 ? NaN : raw[i - 1]));
++    after = raw;
++  } else {
++    before = windowMedians(raw, bound(t, -S, false), Int32Array.from({ length: n }, (_, i) => i));
++    after = windowMedians(raw, Int32Array.from({ length: n }, (_, i) => i), bound(t, S, false));
++  }
++  const jumps = [];
++  let run = null;
++  const close = () => {
++    if (run) jumps.push({ t_s: (t[run.first] + t[run.last]) / 2e6, size_ms: run.size });
++    run = null;
++  };
++  const edge = S / 2;
++  for (let i = 0; i < n; i++) {
++    const d = t[i] >= edge && t[n - 1] - t[i] >= edge ? after[i] - before[i] : NaN;
++    if (!(Math.abs(d) > jumpMs)) {
++      close();
++      continue;
++    }
++    if (run && Math.sign(d) !== Math.sign(run.size)) close();
++    if (!run) run = { first: i, last: i, size: d };
++    run.last = i;
++    if (Math.abs(d) > Math.abs(run.size)) run.size = d;
++  }
++  close();
++
++  // Least-squares slope of raw_ms against t in minutes.
++  let mt = 0, mr = 0;
++  for (let i = 0; i < n; i++) {
++    mt += t[i];
++    mr += raw[i];
++  }
++  mt /= n;
++  mr /= n;
++  let sxy = 0, sxx = 0;
++  for (let i = 0; i < n; i++) {
++    sxy += (t[i] - mt) * (raw[i] - mr);
++    sxx += (t[i] - mt) ** 2;
++  }
++  const slope = sxx > 0 ? (sxy / sxx) * 60e6 : 0;
++
++  let max = 0, rate = 0, modeChanges = 0, backsteps = 0;
++  const resid = new Float64Array(n);
++  for (let i = 0; i < n; i++) {
++    max = Math.max(max, Math.abs(drift[i]));
++    resid[i] = Math.abs(raw[i] - smooth[i]); // around the smoothed curve, before the baseline is taken off
++    rate += samples[i].rate_ratio;
++    if (i > 0 && samples[i].mode !== samples[i - 1].mode) modeChanges++;
++    if (samples[i].backstep) backsteps++;
++  }
++  return {
++    max_ms: max, final_ms: drift[n - 1], slope_ms_per_min: slope, noise_ms: 1.4826 * median(resid), jumps,
++    samples: n, span_s: t[n - 1] / 1e6, mean_rate_ratio: rate / n, mode_changes: modeChanges, t_backsteps: backsteps,
++    series: samples.map((s, i) => ({ t_us: s.t_us, drift_ms: drift[i] })),
++  };
++}
+diff --git a/tools/lib/test-audio.mjs b/tools/lib/test-audio.mjs
+new file mode 100644
+index 0000000..c02e105
+--- /dev/null
++++ b/tools/lib/test-audio.mjs
+@@ -0,0 +1,32 @@
++// Test signals for M3's measurements, as Float64Array samples in [-1, 1] (tools/lib/wav.mjs writes them).
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "make-test-audio".
++
++export const dbToAmplitude = (db) => 10 ** (db / 20);
++
++// A sine of `freq` Hz, optionally frequency-modulated: the instantaneous frequency is exactly
++// freq · (1 + D · sin(2π fmRate t)) with D = fmDepth / 100, so fmDepth is the peak deviation in percent.
++// The phase is the integral of that, φ(t) = 2π freq t + (freq D / fmRate)(1 − cos(2π fmRate t)), never
++// sin(2π f(t) t), whose deviation grows with t. φ(0) = 0: the tone starts at a zero crossing.
++export function tone({ rate, frames, freq, amplitude, fmDepth = 0, fmRate = 4 }) {
++  const x = new Float64Array(frames);
++  const d = fmDepth / 100;
++  const k = d ? (freq * d) / fmRate : 0;
++  for (let n = 0; n < frames; n++) {
++    const t = n / rate;
++    x[n] = amplitude * Math.sin(2 * Math.PI * freq * t + k * (1 - Math.cos(2 * Math.PI * fmRate * t)));
++  }
++  return x;
++}
++
++// A 1 ms rectangular click (round(rate / 1000) samples) at `amplitude`, starting at sample round(k · 60/bpm · rate)
++// for every beat k whose whole click fits; silence elsewhere.
++export function clicks({ rate, frames, bpm, amplitude }) {
++  const x = new Float64Array(frames);
++  const width = Math.round(rate / 1000);
++  for (let k = 0; ; k++) {
++    const start = Math.round(((k * 60) / bpm) * rate);
++    if (start + width > frames) break;
++    x.fill(amplitude, start, start + width);
++  }
++  return x;
++}
+diff --git a/tools/lib/wav.mjs b/tools/lib/wav.mjs
+new file mode 100644
+index 0000000..6757278
+--- /dev/null
++++ b/tools/lib/wav.mjs
+@@ -0,0 +1,190 @@
++// WAV files: test signals out (tools/make-test-audio), recordings in (M3's wow-flutter and record-output).
++// Samples are numbers in [-1, 1], one array per channel (never interleaved). Decoded channels are Float64Array,
++// which holds every format exactly (float32 can't hold a 32-bit PCM sample).
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "WAV library".
++import { readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
++import { dirname, basename, join } from "node:path";
++
++export const FORMATS = ["pcm16", "pcm24", "pcm32", "float32"];
++const BYTES = { pcm16: 2, pcm24: 3, pcm32: 4, float32: 4 };
++const TAG_PCM = 1;
++const TAG_FLOAT = 3;
++const TAG_EXTENSIBLE = 0xfffe;
++// KSDATAFORMAT_SUBTYPE_PCM / _IEEE_FLOAT after their first two bytes (the format tag).
++const SUBFORMAT_TAIL = Buffer.from([0, 0, 0, 0, 0x10, 0, 0x80, 0, 0, 0xaa, 0, 0x38, 0x9b, 0x71]);
++
++const fail = (msg) => {
++  throw new Error(`wav: ${msg}`);
++};
++
++// → Buffer holding a whole WAV file: RIFF/WAVE, fmt (16 bytes, tag 1; 18 bytes, tag 3 for float32), fact (float32
++// only: the frame count), data, and the pad byte if the data size is odd.
++export function encodeWav({ sampleRate, format, channels }) {
++  if (!FORMATS.includes(format)) fail(`format ${format}: not one of ${FORMATS.join(", ")}`);
++  if (!Number.isInteger(sampleRate) || sampleRate < 1 || sampleRate > 0xffffffff) fail(`sample rate ${sampleRate}: not a positive integer`);
++  if (!Array.isArray(channels) || channels.length < 1 || channels.length > 0xffff) fail("channels: need 1 to 65535 channel arrays");
++  const frames = channels[0].length;
++  if (channels.some((c) => c.length !== frames)) fail("channels: all channels must have equal length");
++  const nch = channels.length;
++  const bytes = BYTES[format];
++  const blockAlign = nch * bytes;
++  if (sampleRate * blockAlign > 0xffffffff) fail(`sample rate ${sampleRate}: byte rate ${sampleRate * blockAlign} does not fit a WAV header`);
++  const dataSize = frames * blockAlign;
++  const isFloat = format === "float32";
++  const fmtSize = isFloat ? 18 : 16;
++  const headerSize = 12 + 8 + fmtSize + (isFloat ? 12 : 0) + 8;
++  const pad = dataSize & 1;
++  if (headerSize + dataSize + pad - 8 > 0xffffffff) fail(`${frames} frames of ${blockAlign} bytes: too long for a WAV file`);
++
++  const buf = Buffer.alloc(headerSize + dataSize + pad);
++  let o = 0;
++  const id = (s) => {
++    buf.write(s, o, "latin1");
++    o += 4;
++  };
++  id("RIFF");
++  buf.writeUInt32LE(buf.length - 8, o);
++  o += 4;
++  id("WAVE");
++  id("fmt ");
++  buf.writeUInt32LE(fmtSize, o);
++  buf.writeUInt16LE(isFloat ? TAG_FLOAT : TAG_PCM, o + 4);
++  buf.writeUInt16LE(nch, o + 6);
++  buf.writeUInt32LE(sampleRate, o + 8);
++  buf.writeUInt32LE(sampleRate * blockAlign, o + 12);
++  buf.writeUInt16LE(blockAlign, o + 16);
++  buf.writeUInt16LE(bytes * 8, o + 18);
++  o += 4 + fmtSize; // an 18-byte fmt ends with cbSize 0, already zero
++  if (isFloat) {
++    id("fact");
++    buf.writeUInt32LE(4, o);
++    buf.writeUInt32LE(frames, o + 4);
++    o += 8;
++  }
++  id("data");
++  buf.writeUInt32LE(dataSize, o);
++  o += 4;
++
++  const full = 2 ** (bytes * 8 - 1);
++  for (let c = 0; c < nch; c++) {
++    const ch = channels[c];
++    let p = o + c * bytes;
++    for (let i = 0; i < frames; i++, p += blockAlign) {
++      const x = ch[i];
++      if (!Number.isFinite(isFloat ? Math.fround(x) : x)) fail(`channel ${c} sample ${i}: ${x} is not a finite ${isFloat ? "float32" : "number"}`);
++      if (isFloat) {
++        buf.writeFloatLE(x, p);
++        continue;
++      }
++      const v = Math.min(full - 1, Math.max(-full, Math.round(x * full)));
++      if (bytes === 2) buf.writeInt16LE(v, p);
++      else if (bytes === 3) buf.writeIntLE(v, p, 3);
++      else buf.writeInt32LE(v, p);
++    }
++  }
++  return buf;
++}
++
++// → { sampleRate, format, channels, frames, channelCount, sizeFromEof }. `channel` (0-based) decodes that channel
++// only; channelCount is always the file's. A streamed header (a recorder stopped before it rewrote it) is read to
++// EOF in whole frames and sets sizeFromEof: a data size of 0xFFFFFFFF or one past the end of the file, or a size
++// of 0 with bytes after it that the RIFF size doesn't cover (that size is 0, 0xFFFFFFFF or ends before them).
++export function decodeWav(buffer, { channel } = {}) {
++  const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
++  if (buf.length < 12 || buf.toString("latin1", 0, 4) !== "RIFF") fail("byte 0: not a RIFF file");
++  if (buf.toString("latin1", 8, 12) !== "WAVE") fail("byte 8: RIFF form is not WAVE");
++
++  let fmt = null;
++  let o = 12;
++  for (;;) {
++    if (o + 8 > buf.length) fail(`byte ${o}: no data chunk`);
++    const cid = buf.toString("latin1", o, o + 4);
++    const size = buf.readUInt32LE(o + 4);
++    const body = o + 8;
++    const where = `${cid.trimEnd()} chunk at byte ${o}`;
++    if (cid === "data") {
++      if (!fmt) fail(`${where}: comes before fmt`);
++      const { blockAlign } = fmt;
++      const riffSize = buf.readUInt32LE(4);
++      const streamed = size === 0xffffffff || body + size > buf.length ||
++        (size === 0 && buf.length > body && (riffSize === 0 || riffSize === 0xffffffff || riffSize + 8 <= body));
++      if (!streamed && size % blockAlign) fail(`${where}: ${size} bytes is not a whole number of ${blockAlign}-byte frames`);
++      const frames = Math.floor((streamed ? buf.length - body : size) / blockAlign);
++      return { ...decodeData(buf, body, frames, fmt, channel), sizeFromEof: streamed };
++    }
++    if (body + size > buf.length) fail(`${where}: ${size} bytes run past the end of the file (${buf.length} bytes)`);
++    if (cid === "fmt ") fmt = parseFmt(buf, body, size, where);
++    o = body + size + (size & 1);
++  }
++}
++
++function parseFmt(buf, p, size, where) {
++  if (size < 16) fail(`${where}: ${size} bytes, need at least 16`);
++  let tag = buf.readUInt16LE(p);
++  const nch = buf.readUInt16LE(p + 2);
++  const sampleRate = buf.readUInt32LE(p + 4);
++  const byteRate = buf.readUInt32LE(p + 8);
++  const blockAlign = buf.readUInt16LE(p + 12);
++  const bits = buf.readUInt16LE(p + 14);
++  if (tag === TAG_EXTENSIBLE) {
++    if (size < 40) fail(`${where}: extensible format needs 40 bytes, has ${size}`);
++    const sub = buf.readUInt16LE(p + 24);
++    if (![TAG_PCM, TAG_FLOAT].includes(sub) || !buf.subarray(p + 26, p + 40).equals(SUBFORMAT_TAIL)) {
++      fail(`${where}: extensible sub-format ${buf.toString("hex", p + 24, p + 40)} is neither PCM nor IEEE float`);
++    }
++    tag = sub;
++  }
++  let format;
++  if (tag === TAG_PCM) {
++    format = { 16: "pcm16", 24: "pcm24", 32: "pcm32" }[bits];
++    if (!format) fail(`${where}: ${bits}-bit PCM is not supported (16, 24 or 32)`);
++  } else if (tag === TAG_FLOAT) {
++    if (bits !== 32) fail(`${where}: ${bits}-bit float is not supported (32)`);
++    format = "float32";
++  } else fail(`${where}: format tag ${tag} is not supported (1 PCM, 3 float, 0xFFFE extensible)`);
++  if (nch < 1) fail(`${where}: 0 channels`);
++  if (sampleRate < 1) fail(`${where}: sample rate 0`);
++  const wantAlign = nch * BYTES[format];
++  if (blockAlign !== wantAlign) fail(`${where}: block align ${blockAlign}, expected ${wantAlign} (${nch} ch × ${BYTES[format]} bytes)`);
++  if (byteRate !== sampleRate * wantAlign) fail(`${where}: byte rate ${byteRate}, expected ${sampleRate * wantAlign} (rate × block align)`);
++  return { format, nch, sampleRate, blockAlign };
++}
++
++function decodeData(buf, start, frames, { format, nch, sampleRate, blockAlign }, channel) {
++  let wanted = [...Array(nch).keys()];
++  if (channel !== undefined) {
++    if (!Number.isInteger(channel) || channel < 0 || channel >= nch) fail(`channel ${channel}: the file has ${nch} (0-based)`);
++    wanted = [channel];
++  }
++  const bytes = BYTES[format];
++  const scale = 2 ** -(bytes * 8 - 1);
++  const channels = wanted.map((c) => {
++    const out = new Float64Array(frames);
++    let p = start + c * bytes;
++    for (let i = 0; i < frames; i++, p += blockAlign) {
++      if (format === "float32") out[i] = buf.readFloatLE(p);
++      else if (bytes === 2) out[i] = buf.readInt16LE(p) * scale;
++      else if (bytes === 3) out[i] = buf.readIntLE(p, 3) * scale;
++      else out[i] = buf.readInt32LE(p) * scale;
++    }
++    return out;
++  });
++  return { sampleRate, format, channels, frames, channelCount: nch };
++}
++
++// Writes to a temp file in the same directory, then renames it over `path`, so a failure leaves the old file.
++export function writeWav(path, opts) {
++  const buf = encodeWav(opts);
++  const tmp = join(dirname(path), `.${basename(path)}.${process.pid}.tmp`);
++  try {
++    writeFileSync(tmp, buf, { flag: "wx" });
++    renameSync(tmp, path);
++  } catch (err) {
++    rmSync(tmp, { force: true });
++    throw err;
++  }
++}
++
++export function readWav(path, opts) {
++  return decodeWav(readFileSync(path), opts);
++}
+diff --git a/tools/lib/wow-flutter.mjs b/tools/lib/wow-flutter.mjs
+new file mode 100644
+index 0000000..e0a34d1
+--- /dev/null
++++ b/tools/lib/wow-flutter.mjs
+@@ -0,0 +1,212 @@
++// Wow and flutter of a recorded test tone: rising zero crossings with linear interpolation, per-cycle frequency,
++// a high-pass whose passband starts at 0.5 Hz (removes the pitch offset), then peak and RMS deviation in percent.
++// Unweighted (D12). Pure: samples in, numbers out; tools/wow-flutter does the file and the printing.
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "wow-flutter algorithm" (steps 1–10 are numbered there).
++
++const MIN_RMS = 1e-3; // -60 dBFS
++const BAD_PERIOD = 0.05; // a cycle more than 5 % off the median period is bad
++const BAD_PEAK = 0.5; // … or one whose peak is below half the median cycle peak
++const GUARD = 2; // cycles excluded on each side of a bad one
++const EDGE_S = 1; // skipped at each end of the tone (filter edges)
++const MIN_GOOD_S = 3;
++const LOUD_S = 1; // the tone's level: the quietest of the loudest cycles that together last this long
++const GATE = 0.1; // cycles 20 dB below that are not the tone (noise floor, silence): trimmed at the ends
++const MIN_HZ = 20; // below this the cycles are too slow for the 0.2 Hz filter and too few to measure
++const WINDOW_S = 1;
++const HOP_S = 0.1;
++const HP_CORNER_HZ = 0.2; // -3 dB corner of one pass; run twice, 0.5 Hz keeps 97.5 % (D12)
++const PAD_S = 3;
++
++const median = (a) => {
++  const s = Float64Array.from(a).sort();
++  const m = s.length >> 1;
++  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
++};
++
++const noSignal = (reason) => ({ signal: false, reason });
++
++// x: one channel's samples in [-1, 1]; rate in Hz. → { signal: true, mean_hz, peak_pct, rms_pct,
++// worst: { start_s, peak_pct, rms_pct }, dropouts, cycles } or { signal: false, reason }. Never throws on samples.
++export function analyze(x, rate) {
++  const n = x.length;
++  // 1. Level (of the signal without its DC). 2. DC, subtracted on the fly so a long recording isn't copied.
++  let sum = 0;
++  let sum2 = 0;
++  for (let i = 0; i < n; i++) {
++    sum += x[i];
++    sum2 += x[i] * x[i];
++  }
++  const dc = n ? sum / n : 0;
++  const level = n ? Math.sqrt(Math.max(0, sum2 / n - dc * dc)) : 0;
++  if (!Number.isFinite(level)) return noSignal("the samples are not all finite");
++  if (level < MIN_RMS) return noSignal(`rms ${level ? (20 * Math.log10(level)).toFixed(1) : "-inf"} dBFS, below -60`);
++
++  // 3. Rising crossings y[i] < 0 ≤ y[i+1], in samples. 4. Each cycle's peak |y| between its two crossings.
++  const cross = [];
++  const peaks = [];
++  let peak = 0;
++  for (let i = 0; i + 1 < n; i++) {
++    const a = x[i] - dc;
++    const b = x[i + 1] - dc;
++    peak = Math.max(peak, Math.abs(a));
++    if (a < 0 && b >= 0) {
++      if (cross.length) peaks.push(peak);
++      cross.push(i + a / (a - b));
++      peak = 0;
++    }
++  }
++  if (cross.length < 4) return noSignal(`${Math.max(cross.length - 1, 0)} cycles`);
++
++  // The tone is the cycles above GATE times its level; before its first and after its last such cycle is
++  // something else (a noise floor makes many more crossings than the tone), so it is cut off, not a dropout.
++  const byPeak = [...peaks.keys()].sort((a, b) => peaks[b] - peaks[a]);
++  let ref = 0;
++  for (let j = 0, s = 0; j < byPeak.length && s < LOUD_S * rate; j++) {
++    ref = peaks[byPeak[j]];
++    s += cross[byPeak[j] + 1] - cross[byPeak[j]];
++  }
++  const loud = (k) => peaks[k] >= GATE * ref;
++  let first = 0;
++  while (!loud(first)) first++;
++  let last = peaks.length - 1;
++  while (!loud(last)) last--;
++  cross.splice(last + 2);
++  cross.splice(0, first);
++  peaks.splice(last + 1);
++  peaks.splice(0, first);
++  const cycles = peaks.length;
++  if (cycles < 3) return noSignal(`${cycles} cycles above the noise`);
++  const period = new Float64Array(cycles);
++  for (let k = 0; k < cycles; k++) period[k] = (cross[k + 1] - cross[k]) / rate;
++
++  // 5. Bad cycles; each run of them is one dropout. They and GUARD cycles each side are excluded. The medians
++  // are the tone's: quiet cycles inside it (a long gap) mustn't outvote it.
++  const medPeriod = median(period.filter((_, k) => loud(k)));
++  const medPeak = median(peaks.filter((_, k) => loud(k)));
++  const bad = new Uint8Array(cycles);
++  let dropouts = 0;
++  for (let k = 0; k < cycles; k++) {
++    bad[k] = Math.abs(period[k] / medPeriod - 1) > BAD_PERIOD || peaks[k] < BAD_PEAK * medPeak ? 1 : 0;
++    if (bad[k] && (k === 0 || !bad[k - 1])) dropouts++;
++  }
++  const excluded = new Uint8Array(cycles);
++  for (let k = 0; k < cycles; k++) {
++    if (bad[k]) excluded.fill(1, Math.max(0, k - GUARD), Math.min(cycles, k + GUARD + 1));
++  }
++
++  // 6. Mean frequency over the good cycles.
++  let good = 0;
++  let goodS = 0;
++  for (let k = 0; k < cycles; k++) {
++    if (!excluded[k]) {
++      good++;
++      goodS += period[k];
++    }
++  }
++  if (goodS < MIN_GOOD_S) return noSignal(`${goodS.toFixed(3)} s of good cycles, need ${MIN_GOOD_S}`);
++  const meanHz = good / goodS;
++  if (!(meanHz >= MIN_HZ)) return noSignal(`mean ${meanHz.toFixed(3)} Hz is below ${MIN_HZ} Hz`);
++
++  // 7. Deviation per cycle, excluded cycles bridged linearly between their good neighbours (held at the ends).
++  const d = new Float64Array(cycles);
++  let prev = -1;
++  for (let k = 0; k <= cycles; k++) {
++    if (k < cycles && excluded[k]) continue;
++    if (k < cycles) d[k] = 1 / period[k] / meanHz - 1;
++    for (let j = prev + 1; j < k; j++) {
++      d[j] = prev < 0 ? d[k] : k === cycles ? d[prev] : d[prev] + ((d[k] - d[prev]) * (j - prev)) / (k - prev);
++    }
++    prev = k;
++  }
++
++  // 8. High-pass, treating the cycles as uniformly sampled at the mean frequency.
++  const f = highPass(d, meanHz);
++
++  // 9. Statistics over whole good cycles at least EDGE_S from either end of the tone. Times are in the file's.
++  const start = (k) => cross[k] / rate;
++  const from = start(0) + EDGE_S;
++  const to = start(cycles) - EDGE_S;
++  const used = (k) => !excluded[k] && start(k) >= from && start(k + 1) <= to;
++  const firstFrom = (s) => { // the first cycle starting at or after s (cycle starts increase)
++    let lo = 0;
++    let hi = cycles;
++    while (lo < hi) {
++      const mid = (lo + hi) >> 1;
++      if (start(mid) < s) lo = mid + 1;
++      else hi = mid;
++    }
++    return lo;
++  };
++  const stats = (from, to) => {
++    let m = 0;
++    let s2 = 0;
++    let c = 0;
++    for (let k = firstFrom(from); k < cycles && start(k) < to; k++) {
++      if (!used(k)) continue;
++      m = Math.max(m, Math.abs(f[k]));
++      s2 += f[k] * f[k];
++      c++;
++    }
++    return c ? { peak_pct: 100 * m, rms_pct: 100 * Math.sqrt(s2 / c) } : null;
++  };
++  const all = stats(from, to);
++  if (!all) return noSignal(`no good cycles more than ${EDGE_S} s from the ends of the tone`);
++
++  // 10. Worst 1 s window by RMS, starting on the file's 0.1 s grid, inside the same bounds.
++  let worst = null;
++  for (let j = Math.ceil(from / HOP_S - 1e-9); ; j++) {
++    const s = Math.round(j * HOP_S * 10) / 10;
++    if (s + WINDOW_S > to + 1e-9) break;
++    const w = stats(s, s + WINDOW_S);
++    if (w && (!worst || w.rms_pct > worst.rms_pct)) worst = { start_s: s, ...w };
++  }
++  if (!worst) return noSignal(`no whole ${WINDOW_S} s window between the ${EDGE_S} s edges`);
++
++  const result = { signal: true, mean_hz: meanHz, ...all, worst, dropouts, cycles };
++  if (![meanHz, all.peak_pct, all.rms_pct, worst.peak_pct, worst.rms_pct].every(Number.isFinite)) {
++    return noSignal("the measurement is not finite");
++  }
++  return result;
++}
++
++// 2nd-order Butterworth high-pass (RBJ cookbook, Q = 1/√2, corner `corner` Hz) on a series sampled at `fs` Hz,
++// run forward then backward (zero phase, net gain |H|²). Both ends get PAD_S of even (mirror) reflection, and each
++// pass starts in the steady state for its first sample, so a constant comes out as 0. Not scipy's odd reflection
++// (2·d0 − d_k): that moves the pad's mean by 2·(d0 − mean) when the series starts mid-wow, and the filter's
++// ringing from that step reached 0.118 % on a 0.1 % tone (review M3-03 #1).
++export function highPass(d, fs, corner = HP_CORNER_HZ) {
++  const n = d.length;
++  if (n === 0) return new Float64Array(0);
++  const w0 = (2 * Math.PI * corner) / fs;
++  const cos = Math.cos(w0);
++  const alpha = Math.sin(w0) / Math.SQRT2; // sin(w0) / (2Q)
++  const a0 = 1 + alpha;
++  const b0 = (1 + cos) / 2 / a0;
++  const b1 = -(1 + cos) / a0;
++  const b2 = b0;
++  const a1 = (-2 * cos) / a0;
++  const a2 = (1 - alpha) / a0;
++
++  const pad = Math.min(Math.round(PAD_S * fs), n - 1);
++  const ext = new Float64Array(n + 2 * pad);
++  for (let j = 0; j < pad; j++) ext[j] = d[pad - j];
++  ext.set(d, pad);
++  for (let j = 0; j < pad; j++) ext[pad + n + j] = d[n - 2 - j];
++
++  // Transposed direct form II, its state set so that a constant input ext[first] gives output 0 from the start.
++  const pass = (from, step) => {
++    const x0 = ext[from];
++    let z1 = (b1 + b2) * x0;
++    let z2 = b2 * x0;
++    for (let i = from; i >= 0 && i < ext.length; i += step) {
++      const x = ext[i];
++      const y = b0 * x + z1;
++      z1 = b1 * x - a1 * y + z2;
++      z2 = b2 * x - a2 * y;
++      ext[i] = y;
++    }
++  };
++  pass(0, 1);
++  pass(ext.length - 1, -1);
++  return ext.slice(pad, pad + n);
++}
+diff --git a/tools/make-test-audio b/tools/make-test-audio
+new file mode 100755
+index 0000000..aecdcee
+--- /dev/null
++++ b/tools/make-test-audio
+@@ -0,0 +1,105 @@
++#!/usr/bin/env node
++// Writes a WAV test signal: a sine tone (optionally FM-modulated, for wow-and-flutter) or a click track.
++// Exit: 0 written · 1 I/O failure · 2 usage
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "make-test-audio"; signals in tools/lib/test-audio.mjs.
++import { FORMATS, encodeWav, writeWav } from "./lib/wav.mjs";
++import { tone, clicks, dbToAmplitude } from "./lib/test-audio.mjs";
++
++const USAGE = "usage: tools/make-test-audio <tone|clicks> [--seconds <s>] [--out <file.wav>|-] [options]";
++const HELP = `${USAGE}
++Both:
++  --seconds <s>        length, frames = round(s · rate), at most 600 s (default 5)
++  --out <file>|-       output (default ./<kind>.wav; - writes the WAV to stdout); replaced if it exists
++  --rate <hz>          sample rate, 8000..384000 (default 48000: the Rane One and the null sink)
++  --format <f>         ${FORMATS.join(", ")} (default pcm32)
++  --channels <n>       1 or 2, both channels identical (default 2)
++  --level-db <dBFS>    peak level, at most 0 (default -6, amplitude 0.5012)
++tone:
++  --freq <hz>          tone frequency (default 1000)
++  --fm-depth <percent> frequency modulation, peak deviation in percent of --freq (default 0)
++  --fm-rate <hz>       modulation rate, at most 200 (flutter's upper band edge; default 4)
++clicks:
++  --bpm <n>            one 1 ms click per beat from t = 0, 1..1000 (default 120)
++Exit: 0 written · 1 I/O failure · 2 usage
++`;
++
++function usage(why) {
++  if (why) process.stderr.write(`make-test-audio: ${why}\n`);
++  process.stderr.write(USAGE + "\n");
++  process.exit(2);
++}
++
++const args = process.argv.slice(2);
++if (args.length === 1 && args[0] === "--help") {
++  process.stdout.write(HELP);
++  process.exit(0);
++}
++const kind = args[0];
++if (kind !== "tone" && kind !== "clicks") usage(kind === undefined ? undefined : `unknown signal ${kind}`);
++
++const NUMBER = /^-?(\d+(\.\d*)?|\.\d+)$/;
++// Option → [signal it belongs to (null: both), check]. Values are parsed as plain decimals.
++const OPTIONS = {
++  "--seconds": [null, (v) => v > 0 && v <= 600],
++  "--rate": [null, (v) => Number.isInteger(v) && v >= 8000 && v <= 384000],
++  "--channels": [null, (v) => v === 1 || v === 2],
++  "--level-db": [null, (v) => v <= 0],
++  "--freq": ["tone", (v) => v > 0],
++  "--fm-depth": ["tone", (v) => v >= 0 && v < 100],
++  "--fm-rate": ["tone", (v) => v > 0 && v <= 200],
++  "--bpm": ["clicks", (v) => v > 0 && v <= 1000],
++};
++const opt = { "--seconds": 5, "--rate": 48000, "--channels": 2, "--level-db": -6, "--freq": 1000, "--fm-depth": 0, "--fm-rate": 4, "--bpm": 120 };
++let format = "pcm32";
++let out = null;
++const seen = new Set();
++for (let i = 1; i < args.length; i++) {
++  const a = args[i];
++  if (!a.startsWith("-") || a === "-") usage(`unexpected argument ${a}`);
++  if (seen.has(a)) usage(`${a} given twice`);
++  seen.add(a);
++  const v = args[++i];
++  if (v === undefined) usage(`${a} needs a value`);
++  if (a === "--out") {
++    if (v === "" || (v.startsWith("-") && v !== "-")) usage("--out needs a file or -");
++    out = v;
++  } else if (a === "--format") {
++    if (!FORMATS.includes(v)) usage(`--format must be one of ${FORMATS.join(", ")}`);
++    format = v;
++  } else if (Object.hasOwn(OPTIONS, a)) {
++    const [only, ok] = OPTIONS[a];
++    if (only && only !== kind) usage(`${a} is for ${only} only`);
++    if (!NUMBER.test(v) || !ok(Number(v))) usage(`bad ${a} ${v}`);
++    opt[a] = Number(v);
++  } else usage(`unknown option ${a}`);
++}
++const rate = opt["--rate"];
++const frames = Math.round(opt["--seconds"] * rate);
++if (frames < 1) usage(`--seconds ${opt["--seconds"]} is less than one frame`);
++if (kind === "tone" && opt["--freq"] * (1 + opt["--fm-depth"] / 100) >= rate / 2) {
++  usage(`--freq ${opt["--freq"]} (with --fm-depth) must stay below half of --rate ${rate}`);
++}
++if (out === null) out = `./${kind}.wav`;
++
++const amplitude = dbToAmplitude(opt["--level-db"]);
++const x = kind === "tone"
++  ? tone({ rate, frames, freq: opt["--freq"], amplitude, fmDepth: opt["--fm-depth"], fmRate: opt["--fm-rate"] })
++  : clicks({ rate, frames, bpm: opt["--bpm"], amplitude });
++const wav = { sampleRate: rate, format, channels: Array(opt["--channels"]).fill(x) };
++
++const failed = (err) => {
++  process.stderr.write(`make-test-audio: writing ${out}: ${err.message}\n`);
++  process.exit(1);
++};
++const wrote = () => process.stderr.write(`wrote ${out}: ${frames} frames, ${rate} Hz, ${format}, ${opt["--channels"]} ch\n`);
++if (out === "-") {
++  process.stdout.on("error", failed); // a reader that goes away early: EPIPE
++  process.stdout.write(encodeWav(wav), (err) => (err ? failed(err) : wrote()));
++} else {
++  try {
++    writeWav(out, wav);
++  } catch (err) {
++    failed(err);
++  }
++  wrote();
++}
+diff --git a/tools/record-output b/tools/record-output
+new file mode 100755
+index 0000000..df1dbf7
+--- /dev/null
++++ b/tools/record-output
+@@ -0,0 +1,168 @@
++#!/usr/bin/env node
++// Records a null sink's monitor (default mixxx-dev.monitor) to a 48 kHz, 2 ch, s32 WAV with pw-record, so Mixxx's
++// output is measured without speakers or the Rane One. Capture only: it plays nothing and never touches defaults.
++// Exit: 0 recorded · 1 failed (no sink, short or wrong recording, timeout) · 2 usage · 3 refused target
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "record-output"; why the target is translated: D18.
++// Env: RECORD_OUTPUT_GRACE_MS (how long past --seconds pw-record may take, default 5000).
++import { spawn, spawnSync } from "node:child_process";
++import { accessSync, constants, renameSync, rmSync, statSync } from "node:fs";
++import { basename, dirname, join } from "node:path";
++import { readWav } from "./lib/wav.mjs";
++
++const RATE = 48000;
++const CHANNELS = 2;
++const FORMAT = "pcm32";
++const USAGE = "usage: tools/record-output [--seconds <s>] [--target <sink>.monitor] <out.wav>";
++const HELP = `${USAGE}
++Records <sink>'s monitor for --seconds (default 10, at most 600, to the millisecond) into <out.wav>:
++  pw-record --target <sink> -P stream.capture.sink=true --rate 48000 --format s32 --channels 2
++            --sample-count <seconds * 48000> -P node.dont-fallback=true -P node.dont-move=true <temp file>
++--target defaults to mixxx-dev.monitor (the tools/null-sink sink, which must be up). Refused (exit 3): anything
++but <name>.monitor with a plain name (letters, digits, _ and -; not auto, a number or a path), a name with rane,
++alsa_ or bluez_ in it, and a sink that pactl doesn't list as a null sink (support.null-audio-sink).
++The recording must be exactly seconds * 48000 frames of 48000 Hz, 2 ch, pcm32, or nothing is written (exit 1).
++Exit: 0 recorded · 1 failed · 2 usage · 3 refused target
++`;
++
++function usage(why) {
++  if (why) process.stderr.write(`record-output: ${why}\n`);
++  process.stderr.write(USAGE + "\n");
++  process.exit(2);
++}
++function fail(why, code = 1) {
++  process.stderr.write(`record-output: ${why}\n`);
++  process.exit(code);
++}
++
++const args = process.argv.slice(2);
++if (args.length === 1 && args[0] === "--help") {
++  process.stdout.write(HELP);
++  process.exit(0);
++}
++let out = null;
++let seconds = 10;
++let target = "mixxx-dev.monitor";
++const seen = new Set();
++for (let i = 0; i < args.length; i++) {
++  const a = args[i];
++  if (!a.startsWith("-")) {
++    if (out !== null) usage(`unexpected argument ${a}`);
++    out = a;
++    continue;
++  }
++  if (seen.has(a)) usage(`${a} given twice`);
++  seen.add(a);
++  const v = args[++i];
++  if (v === undefined) usage(`${a} needs a value`);
++  if (a === "--seconds") {
++    if (!/^(\d{1,3}(\.\d{0,3})?|\.\d{1,3})$/.test(v) || !(Number(v) > 0) || Number(v) > 600) usage(`bad --seconds ${v}`);
++    seconds = Number(v);
++  } else if (a === "--target") {
++    if (v === "") usage("--target needs a value");
++    target = v;
++  } else usage(`unknown option ${a}`);
++}
++if (out === null) usage();
++if (!/\.wav$/i.test(out)) usage(`${out} is not a .wav file`);
++
++// A capture stream on real hardware, or on the default source (the Rane One's capture) by a fallback, would
++// record the wrong thing; only a null sink's monitor is measured. pw-record also reads `auto` as "the default",
++// a number as an object serial and a WirePlumber target as an object.path (`alsa:acp:ONE:…`), so the name must be
++// plain, and pactl must list it as a null sink.
++const sink = target.endsWith(".monitor") ? target.slice(0, -".monitor".length) : "";
++if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(sink) || /^auto$/i.test(sink)) {
++  fail(`refused: --target ${target} is not <name>.monitor with a plain sink name`, 3);
++}
++if (/rane|alsa_|bluez_/i.test(sink)) {
++  fail(`refused: --target ${target} names the Rane One or real hardware; record a null sink's monitor`, 3);
++}
++
++const frames = Math.round(seconds * RATE);
++const graceMs = Number(process.env.RECORD_OUTPUT_GRACE_MS ?? 5000);
++if (!(graceMs >= 0)) fail(`RECORD_OUTPUT_GRACE_MS must be milliseconds, not '${process.env.RECORD_OUTPUT_GRACE_MS}'`);
++const outDir = dirname(out);
++let outStat = null;
++try {
++  if (!statSync(outDir).isDirectory()) fail(`${outDir} is not a directory`);
++  outStat = statSync(out, { throwIfNoEntry: false });
++} catch {
++  fail(`${outDir} does not exist`);
++}
++if (outStat?.isDirectory()) fail(`${out} is a directory`);
++try {
++  accessSync(outDir, constants.W_OK);
++} catch {
++  fail(`cannot write to ${outDir}`);
++}
++
++// Read-only: the sink list, to see that the name is a null sink that exists.
++const ls = spawnSync("pactl", ["-f", "json", "list", "sinks"], {
++  encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], timeout: 5000, env: { ...process.env, LC_ALL: "C" },
++});
++let sinks;
++try {
++  if (ls.status !== 0) throw new Error(ls.error?.message ?? `exit ${ls.status}`);
++  sinks = JSON.parse(ls.stdout);
++  if (!Array.isArray(sinks)) throw new Error("not a list");
++} catch (err) {
++  fail(`cannot list sinks with pactl -f json list sinks: ${err.message}`);
++}
++const found = sinks.filter((s) => s?.name === sink);
++if (found.length === 0) {
++  fail(sink === "mixxx-dev" ? "the mixxx-dev null sink is not up; run tools/null-sink up" : `no sink named ${sink}`);
++}
++if (found.length !== 1) fail(`refused: ${found.length} sinks are named ${sink}`, 3);
++const factory = found[0].properties?.["factory.name"];
++if (factory !== "support.null-audio-sink") fail(`refused: ${sink} is not a null sink (${factory ?? "no factory.name"})`, 3);
++
++// pw-record writes a temp file beside the output; it replaces <out.wav> only once it reads back complete, so a
++// failed recording never leaves an empty file that could pass for measured silence, nor eats an older one.
++const tmp = join(outDir, `.${basename(out)}.${process.pid}.tmp.wav`);
++const pwArgs = ["--target", sink, "-P", "stream.capture.sink=true", "--rate", String(RATE), "--format", "s32",
++  "--channels", String(CHANNELS), "--sample-count", String(frames), "-P", "node.dont-fallback=true",
++  "-P", "node.dont-move=true", tmp];
++const child = spawn("pw-record", pwArgs, { stdio: ["ignore", "ignore", "inherit"] });
++let stopped = null; // why the tool stopped pw-record, if it did
++function stop(why) {
++  if (stopped) return;
++  stopped = why;
++  child.kill("SIGTERM");
++  setTimeout(() => child.kill("SIGKILL"), 1000).unref();
++}
++const limitS = seconds + graceMs / 1000;
++const timer = setTimeout(() => stop(`pw-record did not finish within ${limitS} s; stopped it. Target not linked?`),
++  limitS * 1000);
++for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"]) process.on(sig, () => stop(`stopped by ${sig}; nothing recorded`));
++child.on("error", (err) => {
++  clearTimeout(timer);
++  rmSync(tmp, { force: true });
++  fail(`cannot run pw-record: ${err.message}`);
++});
++// pw-record 1.6.8 exits 1 even after --sample-count frames, so only the file it wrote counts.
++child.on("exit", () => {
++  clearTimeout(timer);
++  try {
++    if (stopped) throw new Error(stopped);
++    let wav = null;
++    try {
++      wav = readWav(tmp);
++    } catch (err) {
++      if (err.code !== "ENOENT") process.stderr.write(`record-output: ${err.message}\n`);
++    }
++    const got = wav ? wav.channels[0]?.length ?? 0 : 0;
++    if (got !== frames) throw new Error(`pw-record recorded ${got} of ${frames} frames: target not found or not linked?`);
++    if (wav.sampleRate !== RATE || wav.channels.length !== CHANNELS || wav.format !== FORMAT) {
++      throw new Error(`pw-record wrote ${wav.sampleRate} Hz, ${wav.channels.length} ch, ${wav.format}, ` +
++        `not ${RATE} Hz, ${CHANNELS} ch, ${FORMAT}`);
++    }
++    renameSync(tmp, out);
++    let peak = 0;
++    for (const ch of wav.channels) for (const v of ch) peak = Math.max(peak, Math.abs(v));
++    const peakDb = peak > 0 ? (20 * Math.log10(peak)).toFixed(2) : "-inf";
++    process.stdout.write(`recorded ${seconds.toFixed(3)} s of ${target} to ${out} ` +
++      `(${frames} frames, ${RATE} Hz, ${CHANNELS} ch, ${FORMAT}, peak ${peakDb} dBFS)\n`);
++  } catch (err) {
++    rmSync(tmp, { force: true });
++    fail(err.message);
++  }
++});
+diff --git a/tools/wow-flutter b/tools/wow-flutter
+new file mode 100755
+index 0000000..ffea75c
+--- /dev/null
++++ b/tools/wow-flutter
+@@ -0,0 +1,89 @@
++#!/usr/bin/env node
++// Reports the wow and flutter of a recorded test tone: mean frequency, peak and RMS deviation, the worst 1 s window
++// and the dropouts (D12: unweighted, passband from 0.5 Hz; the spec §3 target ≤ 0.1 % is the peak).
++// Exit: 0 measured · 1 no signal, unreadable file or --expect-hz missed · 2 usage
++// Spec: docs/plans/2026-10-19-M3-measurement.md, section "wow-flutter algorithm"; the analysis is tools/lib/wow-flutter.mjs.
++import { readWav } from "./lib/wav.mjs";
++import { analyze } from "./lib/wow-flutter.mjs";
++
++const USAGE = "usage: tools/wow-flutter <file.wav> [--channel <n>] [--json] [--expect-hz <hz>]";
++const HELP = `${USAGE}
++Measures a recorded test tone (e.g. tools/make-test-audio tone, played and recorded):
++  --channel <n>      channel to measure, 0-based (default 0)
++  --json             print the result as one JSON object instead of a line of text
++  --expect-hz <hz>   fail (exit 1) if the mean frequency is more than 5 % off (wrong file, 33/45 mix-up)
++Prints mean Hz, peak %, RMS %, the worst 1 s window (largest RMS, 0.1 s hop), dropouts and cycles measured.
++Statistics skip 1 s at each end, and dropouts (cycles 5 % off the median period or below half its level) with two
++cycles each side. Under -60 dBFS or less than 3 s of good tone: prints "no signal" and exits 1.
++Exit: 0 measured · 1 no signal, unreadable file or --expect-hz missed · 2 usage
++`;
++
++function usage(why) {
++  if (why) process.stderr.write(`wow-flutter: ${why}\n`);
++  process.stderr.write(USAGE + "\n");
++  process.exit(2);
++}
++
++const args = process.argv.slice(2);
++if (args.length === 1 && args[0] === "--help") {
++  process.stdout.write(HELP);
++  process.exit(0);
++}
++let file = null;
++let channel = 0;
++let json = false;
++let expectHz = null;
++const seen = new Set();
++for (let i = 0; i < args.length; i++) {
++  const a = args[i];
++  if (!a.startsWith("-") || a === "-") {
++    if (file !== null) usage(`unexpected argument ${a}`);
++    file = a;
++    continue;
++  }
++  if (seen.has(a)) usage(`${a} given twice`);
++  seen.add(a);
++  if (a === "--json") {
++    json = true;
++    continue;
++  }
++  const v = args[++i];
++  if (v === undefined) usage(`${a} needs a value`);
++  if (a === "--channel") {
++    if (!/^\d{1,5}$/.test(v)) usage(`bad --channel ${v}`);
++    channel = Number(v);
++  } else if (a === "--expect-hz") {
++    if (!/^(\d+(\.\d*)?|\.\d+)$/.test(v) || !(Number(v) > 0)) usage(`bad --expect-hz ${v}`);
++    expectHz = Number(v);
++  } else usage(`unknown option ${a}`);
++}
++if (file === null) usage();
++
++let wav;
++try {
++  wav = readWav(file, { channel });
++} catch (err) {
++  process.stderr.write(`wow-flutter: ${file}: ${err.message}\n`);
++  process.exit(1);
++}
++if (wav.sizeFromEof) {
++  process.stderr.write(`wow-flutter: ${file}: warning: streamed header, data size read from the end of the file\n`);
++}
++
++const r = analyze(wav.channels[0], wav.sampleRate);
++if (!r.signal) {
++  process.stdout.write(json ? JSON.stringify({ ...r, size_from_eof: wav.sizeFromEof }) + "\n" : "no signal\n");
++  process.stderr.write(`wow-flutter: ${file}: ${r.reason}\n`);
++  process.exit(1);
++}
++const pct = (v) => `${v.toFixed(4)} %`;
++const meanText = `${r.mean_hz.toFixed(3)} Hz`;
++process.stdout.write(json
++  ? JSON.stringify({ ...r, size_from_eof: wav.sizeFromEof }) + "\n"
++  : `mean ${meanText}  peak ${pct(r.peak_pct)}  rms ${pct(r.rms_pct)}  ` +
++    `worst 1 s @ ${r.worst.start_s.toFixed(2)} s: peak ${pct(r.worst.peak_pct)} rms ${pct(r.worst.rms_pct)}  ` +
++    `dropouts ${r.dropouts}  cycles ${r.cycles}\n`);
++if (expectHz !== null && Math.abs(r.mean_hz / expectHz - 1) > 0.05) {
++  process.stderr.write(`wow-flutter: mean ${meanText} is more than 5 % off --expect-hz ${expectHz}\n`);
++  process.exit(1);
++}
