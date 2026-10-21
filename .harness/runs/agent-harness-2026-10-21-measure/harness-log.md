@@ -9,3 +9,4 @@
 - 2026-10-21 16:53 · E1-08 · claude-sonnet-5-5 · passes=true · 5 min · 8/29 passing
 - 2026-10-21 17:22 · E1-09 · claude-opus-5-5 · passes=true · 28 min · 9/29 passing
 - 2026-10-21 17:22 · main conflicts with harness/agent-harness-2026-10-21-measure; carrying on without it (merges into main need Michael)
+- 2026-10-21 17:28 · E1 verified and tagged run/agent-harness-2026-10-21-measure/E1
