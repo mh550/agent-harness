@@ -13,7 +13,7 @@ a milestone passes, an independent **verify** session re-runs every step. A veri
 proposes harness changes, and records the run in the harness's own **ledger**. Runs are queued, and they share one
 view of the plan's usage limit. When a queue ends, one read-only **debrief** session writes Michael a triage note.
 
-## 2. Principles (each one is a decision in `journal/decisions.md`)
+## 2. Principles (each one is a decision in `journal/decisions.md` or `journal/decisions/`)
 
 | Principle | Consequence in the code |
 |---|---|
@@ -277,7 +277,7 @@ worktree is untrusted). The harness never writes either, and agents can't (the a
 4. **Back into runs**: the initializer gets a calibration line from the ledger (median and p90 minutes per passing
    feature, this project and all) to size features against reality.
 5. **Into the harness**: you read the retros/trends (or ask a session to), turn a repeated proposal into a decision
-   (`journal/decisions.md`), implement it test-first, and **turn the failing transcript into a stub fixture** (as
+   (a file in `journal/decisions/`), implement it test-first, and **turn the failing transcript into a stub fixture** (as
    `tests/fixtures/usage-limit.jsonl` was), so the fake never drifts from the real API again.
 
 ## 12. Queue and parallelism
@@ -288,7 +288,7 @@ skipped if you stopped the run; `harness continue` refuses a run whose driver is
 `harness queue start --until 07:30` runs the queue and gives every run it starts that deadline. The runner never
 starts a run while `LIMIT_UNTIL` is in the future, and starts **one run per project at a time**: an entry whose
 project has a live driver is held in its place (logged once, `holding <entry> (<project>)`) and the next entry for a
-free project starts instead (`journal/decisions-pending.md`, PR #4); `harness start --now` still bypasses. With 1, nights are serial: each run gets
+free project starts instead (`decisions/2026-10-21-queue-one-run-per-project`); `harness start --now` still bypasses. With 1, nights are serial: each run gets
 the whole plan window.
 The runner exits when the queue is empty and nothing it started runs, when it is past `--until` with nothing running,
 or on `harness queue stop`; whichever, if it started at least one run (marked in `<state>/runners`), it then starts
