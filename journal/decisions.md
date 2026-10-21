@@ -4,6 +4,10 @@ One entry per non-obvious choice: options considered, the choice, why, and how t
 Pathways' product decisions (D1–D24) live in that repo's specs. These are the decisions about *how
 agents are driven*.
 
+**Closed at D-H34 (2026-10-21).** New decisions are one file each in `journal/decisions/`
+(`decisions/2026-10-21-one-file-per-decision`). Don't add entries below and don't edit the end of this file: runs
+still in flight may append to it, and an edit there would conflict with them.
+
 ### D-H1 · Fresh session per feature, not one long session (iteration 3)
 - **Options:** one `/loop` session with compaction and handoff files (iterations 1–2) · an
   orchestrator plus subagents in one session (iteration 2) · **a new headless session per feature,

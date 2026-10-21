@@ -2,7 +2,7 @@
 
 A harness for long-running coding agents: a deterministic bash driver around headless Claude Code sessions (one
 fresh session per feature, independent verify, verified milestones merged through PRs, usage-limit handling, a
-queue, per-run retros and a debrief). `docs/architecture.md` is the system as it is; `journal/decisions.md` is why.
+queue, per-run retros and a debrief). `docs/architecture.md` is the system as it is; `journal/decisions.md` (D-H1 to D-H34) and `journal/decisions/` are why.
 
 ## This repo runs Michael's nights: what that means for a session working on it
 
@@ -35,7 +35,9 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 
 ## Where decisions and docs live
 
-- A behaviour change gets a decision entry `D-H<n>` in `journal/decisions.md` (finding · choice · rejected), the
-  next free number.
+- A behaviour change gets a decision file `journal/decisions/<YYYY-MM-DD>-<slug>.md` (title, provenance, then
+  finding · choice · rejected), cited as `decisions/<date>-<slug>`. Never number it and never append to
+  `journal/decisions.md` (D-H1 to D-H34, closed): see `decisions/2026-10-21-one-file-per-decision`. Where a spec asks
+  for "a `D-H<n>` entry", this file is what it means.
 - Update `docs/architecture.md` (components, state, guards, end reasons as they apply) and `README.md` in the same
   milestone as the code.
