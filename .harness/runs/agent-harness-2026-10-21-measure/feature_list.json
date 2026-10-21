@@ -102,8 +102,8 @@
     { "id": "E2-02", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "evals/README.md proposes 8–12 replay tasks from real past runs, each as evals/tasks/<id>/task.json that lib/eval.mjs validates.",
       "steps": [
-        "evals/tasks/<id>/task.json exists for every proposed task (8 to 12 of them): `jq -e '.id and .project and .repo and .base and (.features | length >= 1 and length <= 3) and (.features[0].steps | length >= 1) and .why and .policy == \"build-only\"'` passes on each; features are copied verbatim from the source run's feature_list.json; base is the commit the source session started from (named in the task's why)",
-        "evals/README.md lists the tasks in a table with columns id, project, source run, category (first-time pass · retried or given up · depends on an earlier feature), why; at least two tasks per category and at least one task with a feature whose `after` names another feature of the same task",
+        "evals/tasks/<id>/task.json exists for every proposed task (5 to 12 of them; sources may be agent-harness's own runs): `jq -e '.id and .project and .repo and .base and (.features | length >= 1 and length <= 3) and (.features[0].steps | length >= 1) and .why and .policy == \"build-only\"'` passes on each; features are copied verbatim from the source run's feature_list.json; base is the commit the source session started from (named in the task's why)",
+        "evals/README.md lists the tasks in a table with columns id, project, source run, category (first-time pass · retried or given up · depends on an earlier feature), why; each category that agent-harness's records can supply (and a task with a feature whose `after` names another feature of the same task, if they can supply one); the README lists the missing categories as 'to add when other projects' records are readable'",
         "No task names a live system, a secret, a `.env` value or a POLICY other than build-only (README says so and `grep -ril 'live\\|secret\\|\\.env' evals/tasks` returns nothing)",
         "lib/eval.mjs exports `validateTask(obj)` → a list of errors (empty when valid) and `node lib/eval.mjs validate evals/tasks` exits 0; tests/run.sh check `eval: every task.json validates and a bad one is rejected` (a task without features fails with its field named), watched failing first",
         "bash tests/run.sh ends with every check passing"
@@ -184,6 +184,7 @@
         "HARNESS_INIT_OUTPUT is the last 40 lines of $SCRATCH/init.out followed by `full output: <path>`; tests/run.sh check `init output is capped at 40 lines with the log path`: with INIT_CMD printing 100 numbered lines, the prompt's Init output block has at most 41 lines, ends with the path, and holds line 100 but not line 1",
         "Both checks watched failing first; journal/decisions.md has D-H36 and D-H38's init-output half; bash tests/run.sh ends with every check passing"
       ],
+      "after": ["E3-01"],
       "passes": false },
     { "id": "E3-03", "milestone": "E3", "kind": "build", "model": "opus",
       "description": "Every template is split into a static part first and a volatile part last, with a fixed per-kind first line, so two sessions of a run share a byte-identical prompt prefix that includes the policy.",
@@ -193,6 +194,7 @@
         "lib/driver.sh copies each session's prompt to $STATE/logs/NN-<id>.prompt.md (verify: HHMMSS-verify-<m>.prompt.md) next to its transcript; tests/run.sh check `two coding prompts share a byte-identical prefix that includes the policy`: for run demo's A and B prompts, the length of the common prefix (`cmp` or node) is greater than the offset of `Policy: build-only` in either file",
         "The check watched failing first; journal/decisions.md has D-H37; bash tests/run.sh ends with every check passing"
       ],
+      "after": ["E3-01", "E3-02"],
       "passes": false },
     { "id": "E3-04", "milestone": "E3", "kind": "build", "model": "opus",
       "description": "Each coding and verify prompt carries one volatile line with the clock, the run deadline, the session's budget and turn cap, and the attempt number.",
@@ -201,6 +203,7 @@
         "tests/run.sh check `the prompt says the time, the budget and the attempt`: the prompt saved for C's second session in run demo contains `attempt 2 of 2`, `$20` (the default SESSION_BUDGET_USD), `250 turns` and a deadline time in HH:MM; the verify prompt for M1's second round contains `round 2 of 2`",
         "The check watched failing first; journal/decisions.md D-H38 covers the line; bash tests/run.sh ends with every check passing"
       ],
+      "after": ["E3-01", "E3-02", "E3-03"],
       "passes": false },
     { "id": "E3-05", "milestone": "E3", "kind": "review", "model": "opus",
       "description": "An Opus review of the E3 diff with findings fixed RED→GREEN, simplifications applied, architecture §10 prompt assembly and README updated, docs/plans/2026-10-21-E3-review.md written.",
@@ -210,6 +213,7 @@
         "journal/decisions.md has D-H36, D-H37 and D-H38 once each",
         "bash -n and node --check on everything touched; bash tests/run.sh ends with every check passing"
       ],
+      "after": ["E3-01", "E3-02", "E3-03", "E3-04"],
       "passes": false },
 
     { "id": "E4-01", "milestone": "E4", "kind": "plan", "model": "opus",
@@ -228,6 +232,7 @@
         "tests/run.sh check `entries.mjs: progress renders 15 in full and the rest as archive lines`: 20 entries render 15 `### ` headers newest first, then 5 one-line items each linking `progress-archive.md`; a verify entry renders the `| Feature | Step | ... | Holds |` table so that features.mjs `evidence` counts its rows; the archive holds all 20 in full",
         "Both checks watched failing first; node --check lib/entries.mjs; no driver change in this feature; bash tests/run.sh ends with every check passing"
       ],
+      "after": ["E4-01"],
       "passes": false },
     { "id": "E4-03", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "Sessions write entry.json; the driver, the single writer, validates it, stamps it, appends it to entries.jsonl and deletes it, recording a minimal entry when it is missing or malformed.",
@@ -238,6 +243,7 @@
         "tests/run.sh check `entries: the driver appends each session's entry`: run demo's entries.jsonl has one line per coding and verify session, each with at, session, model and feature, and no entry.json is left in the run dir; check `a malformed entry is recorded as minimal and the run goes on`: with STUB_BAD_ENTRY=B harness-log.md has the note and B's first entry has outcome from its passes and files from git, and the run still ends `done`",
         "Both checks watched failing first; journal/decisions.md has D-H39; bash tests/run.sh ends with every check passing"
       ],
+      "after": ["E4-01", "E4-02"],
       "passes": false },
     { "id": "E4-04", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "progress.md and progress-archive.md are rendered by the driver from entries.jsonl after every session; sessions stop writing progress.md; legacy runs are untouched until continued.",
@@ -247,6 +253,7 @@
         "Legacy: a run whose feature list exists without entries.jsonl is neither rendered nor ingested (its sessions' progress.md edits stand); `harness continue` on it copies progress.md to progress-archive.md, starts entries.jsonl and notes `journal started; progress.md kept as progress-archive.md`. tests/run.sh check `a legacy run is untouched, then continued into a journal`: run 14's record (legacy) before continue has no entries.jsonl and its progress.md is unchanged by the start-up; after `harness continue legacy` progress-archive.md equals the old progress.md byte for byte and entries.jsonl exists",
         "Both checks watched failing first; journal/decisions.md has D-H40; bash tests/run.sh ends with every check passing"
       ],
+      "after": ["E4-01", "E4-02", "E4-03"],
       "passes": false },
     { "id": "E4-05", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "Before each session the driver writes <run>/context.md, a deterministic context pack capped by CONTEXT_PACK_BYTES in a fixed priority order, and the prompts say to read it first.",
@@ -256,6 +263,7 @@
         "lib/driver.sh writes <run>/context.md before every coding and verify session (committed with the run record); prompts/coding.md and verify.md open their bearings section with `Read context.md first; the full record is entries.jsonl / progress-archive.md`; tests/run.sh check `context.md carries the earlier attempt's dead end`: the context.md saved before C's second session in run demo contains `left BROKEN in the tree` and prompt-coding.md names context.md",
         "Both checks watched failing first; journal/decisions.md has D-H41; bash tests/run.sh ends with every check passing"
       ],
+      "after": ["E4-01", "E4-02", "E4-03", "E4-04"],
       "passes": false },
     { "id": "E4-06", "milestone": "E4", "kind": "docs", "model": "sonnet",
       "description": "architecture.md, README.md and evals/NEXT.md describe the journal, the rendered progress.md, the context pack and what the E4 comparison should move.",
