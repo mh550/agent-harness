@@ -1,12 +1,6 @@
-{
-  "run": "agent-harness-2026-10-21-measure",
-  "branch": "harness/agent-harness-2026-10-21-measure",
+{ "run": "agent-harness-2026-10-21-measure", "branch": "harness/agent-harness-2026-10-21-measure",
   "features": [
-    {
-      "id": "E1-01",
-      "milestone": "E1",
-      "kind": "plan",
-      "model": "opus",
+    { "id": "E1-01", "milestone": "E1", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-21-E1-telemetry.md fixes the interfaces of E0, E0b and the telemetry so E1-02…E1-09 build one thing.",
       "steps": [
         "docs/plans/2026-10-21-E1-telemetry.md exists, its first line is `Milestone base: <sha>` (git rev-parse HEAD when the plan was written), and it has numbered sections: files and owners per feature E1-02…E1-09; E0 (where sync_main moves in lib/driver.sh so a resumed run merges main before the initializer); E0b (vercel.json JSON merge, reading origin/main's vercel.json at run start, the netlify.toml guard, the stub-gh `api repos/<o>/<r>/deployments` answer); the fixture capture command and the exact fields read (result `usage.input_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`, `output_tokens`, `modelUsage`; assistant `message.usage`); the metrics.jsonl keys by name; the summary.json keys with their formulas; the ledger row and `harness trends --by version`; the check names each feature adds to tests/run.sh; the D-H numbers reserved (the next free ones in journal/decisions.md, expected D-H32 for E0, D-H33 for E0b, D-H34 for the telemetry)",
@@ -14,13 +8,8 @@
         "git diff --stat shows only docs/plans/2026-10-21-E1-telemetry.md changed (a plan feature writes no code)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": true
-    },
-    {
-      "id": "E1-02",
-      "milestone": "E1",
-      "kind": "build",
-      "model": "opus",
+      "passes": true },
+    { "id": "E1-02", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "A resumed run merges main into the run branch before any session, the initializer included, so an initializer re-run after a no-list end plans from the current spec (E0).",
       "steps": [
         "tests/stub-claude.sh: STUB_INIT_LIMIT=1 makes the initializer branch replay tests/fixtures/usage-limit.jsonl and exit 1 (no feature list written)",
@@ -30,13 +19,8 @@
         "journal/decisions.md has the E0 entry (the number the plan reserved) with finding · choice · rejected",
         "bash -n lib/driver.sh tests/stub-claude.sh tests/run.sh pass; bash tests/run.sh ends with every check passing"
       ],
-      "passes": true
-    },
-    {
-      "id": "E1-03",
-      "milestone": "E1",
-      "kind": "build",
-      "model": "opus",
+      "passes": true },
+    { "id": "E1-03", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "Deploy-aware pushes: `harness init` writes the Vercel/Netlify run-branch deploy guard, and a run start without it notes and notifies once (E0b).",
       "steps": [
         "tests/run.sh check `init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept`: on a throwaway repo with vercel.json `{\"framework\":\"nextjs\"}`, after `harness init` jq shows `.framework == \"nextjs\"` and `.git.deploymentEnabled[\"harness/**\"] == false`, and init's stdout says it added the guard",
@@ -48,13 +32,8 @@
         "docs/architecture.md §10 `What a project provides` gains the line: projects deployed by a Git-connected host disable run-branch deploys; journal/decisions.md has the E0b entry",
         "bash -n on every shell file touched; bash tests/run.sh ends with every check passing"
       ],
-      "passes": true
-    },
-    {
-      "id": "E1-04",
-      "milestone": "E1",
-      "kind": "build",
-      "model": "opus",
+      "passes": true },
+    { "id": "E1-04", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "metrics.jsonl rows carry token totals, cache_hit_rate and context_peak read from a real stream-json fixture that the stub replays.",
       "steps": [
         "tests/fixtures/usage-tokens.jsonl is a real transcript: `claude -p \"<a prompt that writes one small file>\" --model haiku --output-format stream-json --verbose --permission-mode auto` run in an empty temp directory (about a cent; the one-time capture the spec asks for, recorded in the D-H34 entry as the exception to build-only). It has at least one `assistant` event with `message.usage` and a `tool_use` block named `Write`, and a `result` event with `usage` and `modelUsage`. Session ids and the temp path may be replaced; no field is invented",
@@ -63,13 +42,8 @@
         "tests/stub-claude.sh `ok()` emits the fixture's assistant and result events (usage kept, cost and result text substituted) so every stub session carries tokens; tests/run.sh check `metrics: coding rows carry tokens, cache rate and context peak` on run demo: `jq -e 'select(.kind==\"coding\") | .tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0'`",
         "Both checks were watched failing first (FAIL lines quoted in the entry); bash tests/run.sh ends with every check passing"
       ],
-      "passes": true
-    },
-    {
-      "id": "E1-05",
-      "milestone": "E1",
-      "kind": "build",
-      "model": "opus",
+      "passes": true },
+    { "id": "E1-05", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "metrics.jsonl rows carry the orientation cost: tokens, turns and seconds before a session's first Edit, Write or NotebookEdit call.",
       "steps": [
         "lib/metrics.mjs exports `orientation(evs)` → { tokens, turns, seconds }: assistant messages before the first assistant `tool_use` named Edit, Write or NotebookEdit (the whole session if none); tokens = their input + cache_read + cache_creation + output; turns = their count; seconds from event timestamps when the fixture carries them, else null as the plan says",
@@ -77,13 +51,8 @@
         "metrics rows gain orient_tokens, orient_turns, orient_s; tests/run.sh check `metrics: orientation recorded per session`: run demo's coding rows have `orient_tokens > 0` and `orient_turns >= 1`",
         "Both checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": true
-    },
-    {
-      "id": "E1-06",
-      "milestone": "E1",
-      "kind": "build",
-      "model": "opus",
+      "passes": true },
+    { "id": "E1-06", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "summary.json and report.md carry token totals, per-verified-feature cost and tokens, median orientation, first-attempt pass rate, rework and verify-fail rate; the retro prompt points at them.",
       "steps": [
         "lib/summary.mjs `build` adds the keys the plan named: token totals and per-role sums (in, cache_read, cache_write, out, cache_hit_rate, context_peak), `per_verified_feature` { cost, tokens }, median orientation { tokens, turns }, `first_attempt_pass_rate`, `rework` (ids un-passed by verify or a red suite, or with more than one coding session) and `verify_fail_rate`",
@@ -92,13 +61,8 @@
         "prompts/retro.md names summary.json's tokens, orientation, rework and first-attempt keys as inputs",
         "Both checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": true
-    },
-    {
-      "id": "E1-07",
-      "milestone": "E1",
-      "kind": "build",
-      "model": "opus",
+      "passes": true },
+    { "id": "E1-07", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "The ledger row carries harness_version and harness_dirty, and `harness trends --by version` groups the new metrics by harness version.",
       "steps": [
         "lib/driver.sh at run start writes `$STATE/harness-version` from `git -C $HARNESS_HOME rev-parse --short HEAD` and `$STATE/harness-dirty` (1 when `git status --porcelain` in $HARNESS_HOME is non-empty), and logs them on the `run <id> on` line; summary.json gains `harness: { version, dirty }`; `ledger-line` writes `harness_version` and `harness_dirty`",
@@ -106,13 +70,8 @@
         "`harness trends --by version` prints one row per harness version: runs, passing/total, $ per passing feature, median cache hit rate, median orientation tokens, first-attempt pass rate; plain `harness trends` is unchanged. tests/run.sh check `trends --by version groups the runs`: the output has a row starting with that version and the existing `trends lists every run` check still passes",
         "Both checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": true
-    },
-    {
-      "id": "E1-08",
-      "milestone": "E1",
-      "kind": "docs",
-      "model": "sonnet",
+      "passes": true },
+    { "id": "E1-08", "milestone": "E1", "kind": "docs", "model": "sonnet",
       "description": "architecture.md, README.md and decisions.md describe E0, E0b and the telemetry as built.",
       "steps": [
         "docs/architecture.md §4 lists the new metrics row keys and the harness-version marker; §5 says a resumed run merges main before any session; §11 point 1 names tokens, cache and orientation, point 2 the new summary keys, point 3 `harness trends --by version`",
@@ -120,13 +79,8 @@
         "journal/decisions.md has the three E1 entries (E0, E0b, telemetry) in finding · choice · rejected form, numbered as the plan reserved, with no number used twice in the file (`grep -c '^### D-H32'` is 1, likewise the others)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": true
-    },
-    {
-      "id": "E1-09",
-      "milestone": "E1",
-      "kind": "review",
-      "model": "opus",
+      "passes": true },
+    { "id": "E1-09", "milestone": "E1", "kind": "review", "model": "opus",
       "description": "An Opus review of the E1 diff with Critical/Important findings fixed RED→GREEN, simplifications applied, and docs/plans/2026-10-21-E1-review.md written.",
       "steps": [
         "`git diff <milestone base from the plan>..HEAD > $HARNESS_SCRATCH/E1.diff` was reviewed by an Opus subagent that read the file and returned findings only; docs/plans/2026-10-21-E1-review.md lists every finding with severity and what was done (fixed, simplified, or left with a reason)",
@@ -134,29 +88,18 @@
         "Simplification passes are applied; `bash -n` on every shell file and `node --check` on every .mjs file touched by E1 pass",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E2-01",
-      "milestone": "E2",
-      "kind": "plan",
-      "model": "opus",
+      "passes": false },
+
+    { "id": "E2-01", "milestone": "E2", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-21-E2-evals.md fixes the task schema, the eval run layout, compare and probes so E2-02…E2-08 build one thing.",
       "steps": [
         "docs/plans/2026-10-21-E2-evals.md exists, first line `Milestone base: <sha>`, with sections: the task.json schema (id, project, repo, base, features, check_cmd?, policy, model?, why) and its validator in lib/eval.mjs; where source run records are (`~/projects/<p>/.harness/runs/*` for dj-crate-streaming and portfolio_site; `git -C ~/projects/<p> log --all -- .harness/runs` for pathways and hit_list; read-only, never checked out); the files (lib/eval.sh, lib/eval.mjs pure, `eval` dispatch in bin/harness, evals/{README.md,tasks/,sets/,results/,NEXT.md}); how one task runs (harness worktree of `--harness <ref>` under /tmp/harness-eval/<stamp>/harness; clone at base with a local bare origin; branch harness/<task-run> pre-seeded with feature_list.json and pushed so cmd_start takes `origin/<branch>` and the driver skips the initializer; HARNESS_STATE, HARNESS_WORKTREES, HARNESS_SCRATCH_ROOT, HARNESS_LEDGER and HARNESS_CONFIG under the eval dir; MERGE_POLICY=off RETRO=0 AUTO_CONTINUE=0 DESK=0 NTFY_URL='' NOTIFY_CMD='' POLICY=build-only; HARNESS_GH=false); the results layout `evals/results/<stamp>-<sha>-<label>/<task>[/rN]/{summary.json,metrics.jsonl,harness-log.md,feature_list.json}` plus eval.json; EVAL_BUDGET_USD and the WEEKLY_STOP_AT refusal; the compare metrics, the noise rule and the `one sample` wording; the probe questions and their answer sources; the two stub tasks under tests/ and every check name; D-H35",
         "The plan names the project POLICY of each candidate source (dj-crate-streaming may be live-staged) and rules that eval tasks always run build-only and never need a live system or a secret",
         "git diff --stat shows only the plan file changed; bash tests/run.sh ends with every check passing"
       ],
-      "after": [
-        "E1"
-      ],
-      "passes": false
-    },
-    {
-      "id": "E2-02",
-      "milestone": "E2",
-      "kind": "build",
-      "model": "opus",
+      "after": ["E1"],
+      "passes": false },
+    { "id": "E2-02", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "evals/README.md proposes 8–12 replay tasks from real past runs, each as evals/tasks/<id>/task.json that lib/eval.mjs validates.",
       "steps": [
         "evals/tasks/<id>/task.json exists for every proposed task (8 to 12 of them): `jq -e '.id and .project and .repo and .base and (.features | length >= 1 and length <= 3) and (.features[0].steps | length >= 1) and .why and .policy == \"build-only\"'` passes on each; features are copied verbatim from the source run's feature_list.json; base is the commit the source session started from (named in the task's why)",
@@ -165,13 +108,8 @@
         "lib/eval.mjs exports `validateTask(obj)` → a list of errors (empty when valid) and `node lib/eval.mjs validate evals/tasks` exits 0; tests/run.sh check `eval: every task.json validates and a bad one is rejected` (a task without features fails with its field named), watched failing first",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E2-03",
-      "milestone": "E2",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "E2-03", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "`harness eval run [--set S] [--harness REF] [--label L]` runs each task of a set with that harness version's driver on a clone with a local bare origin and writes the results under evals/results/.",
       "steps": [
         "`harness eval run --set <name or path> --harness <ref> --label <L>` (bin/harness dispatches `eval` to lib/eval.sh): checks the harness repo out at <ref> (default HEAD) into /tmp/harness-eval/<stamp>/harness with `git worktree add`, clones each task's repo at its base into /tmp/harness-eval/<stamp>/<task> with a local bare origin, seeds branch harness/<task-run> with the task's features as feature_list.json, and runs that worktree's bin/harness start --foreground with MERGE_POLICY=off, RETRO=0, no notifications and HARNESS_GH=false",
@@ -181,13 +119,8 @@
         "tests/run.sh check `eval run: nothing reaches a remote`: the task clones' `git remote get-url origin` paths are under the eval directory, $T/gh.log gained no line during the eval and $T/curl.log gained no post",
         "All three checks watched failing first; bash -n lib/eval.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E2-04",
-      "milestone": "E2",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "E2-04", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "The eval respects EVAL_BUDGET_USD, refuses to start past WEEKLY_STOP_AT, and `--repeat N` runs each task N times.",
       "steps": [
         "lib/config.sh has `EVAL_BUDGET_USD=10` among the defaults; after each task the eval sums the tasks' summary.json costs and starts no further task once the sum is at or over the cap, printing and writing in eval.json `budget: $<spent> of $<cap>; <n> tasks not started`",
@@ -196,13 +129,8 @@
         "`--repeat N` runs each task N times into <task>/r1 … <task>/rN with fresh clones; tests/run.sh check `eval: --repeat 2 runs each task twice`: both r1 and r2 summary.json files exist for each task",
         "All three checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E2-05",
-      "milestone": "E2",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "E2-05", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "`harness eval compare <A> <B>` prints a per-task and total table of pass rate, $ and tokens per verified feature, cache hit rate, orientation, context peak, wall time and rework with a verdict per metric.",
       "steps": [
         "lib/eval.mjs exports pure `compare(a, b)` taking two loaded result sets and returning rows { task, metric, a, b, verdict } where verdict is `better`, `worse`, `within noise` or `one sample`; noise is the spread (max − min) across a task's repeats, pass rate is pass^N over the repeats, and the totals row aggregates every task",
@@ -210,13 +138,8 @@
         "`harness eval compare <resultA> <resultB>` prints a markdown table with one line per task and metric and a totals block, then one line per metric with its verdict; tests/run.sh check `eval compare prints the table`: comparing the two test results shows a `pass rate` line and a verdict for each of the eight metrics",
         "Both checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E2-06",
-      "milestone": "E2",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "E2-06", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "`harness eval probes <task-result>` derives handoff questions from a finished task's record, asks one Haiku session that sees only the next coding session's prompt, and scores the answers by match.",
       "steps": [
         "lib/eval.sh `probes <task result dir>` derives at least three question kinds from the record with their answers from git and the feature list: which files <feature> changed (paths of the commits whose subject starts `<feature>:` in the task's clone, named in eval.json), what <feature> depends on (its `after` or the features before it), and what the last attempt at <feature> failed on (the final text of its last non-passing metrics row); questions and answers are written to probes.json",
@@ -225,13 +148,8 @@
         "tests/stub-claude.sh answers a `# Probe session` prompt with a fixed result text that gets one question right and one wrong; tests/run.sh check `eval probes: questions derived, answers scored` runs probes on a test result and sees `score 1/2` and at least two questions in probes.json, watched failing first",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E2-07",
-      "milestone": "E2",
-      "kind": "docs",
-      "model": "sonnet",
+      "passes": false },
+    { "id": "E2-07", "milestone": "E2", "kind": "docs", "model": "sonnet",
       "description": "evals/NEXT.md gives Michael the baseline and comparison commands with expected cost; README.md and architecture.md describe the eval loop.",
       "steps": [
         "evals/NEXT.md has, in order: the baseline command `harness eval run --set default --harness run/agent-harness-2026-10-21-measure/E2 --label baseline`, the E3 and E4 commands on tags run/agent-harness-2026-10-21-measure/E3 and /E4 with labels e3 and e4, the `harness eval compare` and `harness eval probes` commands for each pair, the expected cost per eval computed from the task count × feature count × a stated per-session estimate, and the sentence that the overnight run never runs these",
@@ -239,13 +157,8 @@
         "docs/architecture.md §3 lists lib/eval.sh and lib/eval.mjs; §4 adds the evals/results and /tmp/harness-eval rows; §11 gains points for the replay set, compare and probes; journal/decisions.md has D-H35 (the eval set and its rules) once, finding · choice · rejected",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E2-08",
-      "milestone": "E2",
-      "kind": "review",
-      "model": "opus",
+      "passes": false },
+    { "id": "E2-08", "milestone": "E2", "kind": "review", "model": "opus",
       "description": "An Opus review of the E2 diff with Critical/Important findings fixed RED→GREEN, simplifications applied, and docs/plans/2026-10-21-E2-review.md written.",
       "steps": [
         "`git diff <milestone base from the E2 plan>..HEAD -- lib bin tests evals docs > $HARNESS_SCRATCH/E2.diff` was reviewed by an Opus subagent that read the file and returned findings only; docs/plans/2026-10-21-E2-review.md lists every finding with severity and what was done",
@@ -253,28 +166,17 @@
         "The review confirms, with the command it ran, that no path under lib/eval.sh can reach a GitHub remote or ntfy (grep for `gh `, `curl`, `NTFY`, `push` and what each hit does)",
         "Simplification passes applied; bash -n and node --check on everything touched; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E3-01",
-      "milestone": "E3",
-      "kind": "plan",
-      "model": "opus",
+      "passes": false },
+
+    { "id": "E3-01", "milestone": "E3", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-21-E3-prompts.md fixes the static/volatile split of every template, the fixed first lines, the stub's new keys and the checks that change.",
       "steps": [
         "docs/plans/2026-10-21-E3-prompts.md exists, first line `Milestone base: <sha>`, with: the exact section order of the assembled prompt (static template part, policy, run-level part: spec list, brief, the one line naming CLAUDE.md; per-session part: feature, milestone, time and budget line, init output); the fixed first line per kind (`# Coding session`, `# Verify session`, `# Initializer session`, `# Retro`) and the lines the stub reads the id and milestone from instead (e.g. `Feature: \\`<id>\\`` and `Milestone: <m>`); the debrief finding (lib/debrief.sh runs in its workspace, no CLAUDE.md is auto-loaded there, and it pastes none today, so nothing changes); which existing checks change (`brief, rules and policy in the prompt` at least); where the driver keeps each session's prompt (`$STATE/logs/NN-<id>.prompt.md`) for the shared-prefix check; the time and budget line's exact wording; the 40-line init output rule; D-H36 (no double CLAUDE.md), D-H37 (static first), D-H38 (time and budget line, bounded init output), or the next free numbers",
         "git diff --stat shows only the plan file changed; bash tests/run.sh ends with every check passing"
       ],
-      "after": [
-        "E1"
-      ],
-      "passes": false
-    },
-    {
-      "id": "E3-02",
-      "milestone": "E3",
-      "kind": "build",
-      "model": "opus",
+      "after": ["E1"],
+      "passes": false },
+    { "id": "E3-02", "milestone": "E3", "kind": "build", "model": "opus",
       "description": "Worktree sessions no longer get CLAUDE.md pasted (one line names it), and the Init output section is the last 40 lines plus the path to the full log.",
       "steps": [
         "lib/driver.sh prompt(): for initializer, coding, verify and retro the `Project rules (CLAUDE.md)` section is gone and one line says the rules are in CLAUDE.md, which Claude Code loads; `.harness/project.md` is still pasted when present; the debrief is unchanged (it pastes nothing and runs outside a worktree)",
@@ -282,13 +184,8 @@
         "HARNESS_INIT_OUTPUT is the last 40 lines of $SCRATCH/init.out followed by `full output: <path>`; tests/run.sh check `init output is capped at 40 lines with the log path`: with INIT_CMD printing 100 numbered lines, the prompt's Init output block has at most 41 lines, ends with the path, and holds line 100 but not line 1",
         "Both checks watched failing first; journal/decisions.md has D-H36 and D-H38's init-output half; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E3-03",
-      "milestone": "E3",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "E3-03", "milestone": "E3", "kind": "build", "model": "opus",
       "description": "Every template is split into a static part first and a volatile part last, with a fixed per-kind first line, so two sessions of a run share a byte-identical prompt prefix that includes the policy.",
       "steps": [
         "prompts/coding.md, verify.md, initializer.md and retro.md start with the fixed heading the plan fixed (no id on the first line); the role, ground rules and finish sections come first; feature id, milestone, brief, run id, port, scratch and init output come after the policy in the order the plan fixed (render.mjs or prompt() places the policy before the run-level and per-session parts)",
@@ -296,26 +193,16 @@
         "lib/driver.sh copies each session's prompt to $STATE/logs/NN-<id>.prompt.md (verify: HHMMSS-verify-<m>.prompt.md) next to its transcript; tests/run.sh check `two coding prompts share a byte-identical prefix that includes the policy`: for run demo's A and B prompts, the length of the common prefix (`cmp` or node) is greater than the offset of `Policy: build-only` in either file",
         "The check watched failing first; journal/decisions.md has D-H37; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E3-04",
-      "milestone": "E3",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "E3-04", "milestone": "E3", "kind": "build", "model": "opus",
       "description": "Each coding and verify prompt carries one volatile line with the clock, the run deadline, the session's budget and turn cap, and the attempt number.",
       "steps": [
         "lib/driver.sh passes HARNESS_CLOCK (the plan's wording: now, run elapsed of HOURS with the deadline time, SESSION_BUDGET_USD, MAX_TURNS, SESSION_TIMEOUT, `attempt N of MAX_ATTEMPTS` for coding and `verify round N of MAX_VERIFY_ROUNDS` for verify) and the templates place it in the volatile part",
         "tests/run.sh check `the prompt says the time, the budget and the attempt`: the prompt saved for C's second session in run demo contains `attempt 2 of 2`, `$20` (the default SESSION_BUDGET_USD), `250 turns` and a deadline time in HH:MM; the verify prompt for M1's second round contains `round 2 of 2`",
         "The check watched failing first; journal/decisions.md D-H38 covers the line; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E3-05",
-      "milestone": "E3",
-      "kind": "review",
-      "model": "opus",
+      "passes": false },
+    { "id": "E3-05", "milestone": "E3", "kind": "review", "model": "opus",
       "description": "An Opus review of the E3 diff with findings fixed RED→GREEN, simplifications applied, architecture §10 prompt assembly and README updated, docs/plans/2026-10-21-E3-review.md written.",
       "steps": [
         "`git diff <E3 milestone base>..HEAD > $HARNESS_SCRATCH/E3.diff` reviewed by an Opus subagent reading the file; docs/plans/2026-10-21-E3-review.md lists each finding, its severity and what was done; Critical/Important ones fixed with a check watched failing first",
@@ -323,28 +210,17 @@
         "journal/decisions.md has D-H36, D-H37 and D-H38 once each",
         "bash -n and node --check on everything touched; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E4-01",
-      "milestone": "E4",
-      "kind": "plan",
-      "model": "opus",
+      "passes": false },
+
+    { "id": "E4-01", "milestone": "E4", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-21-E4-memory.md fixes the entry schema, the driver's single-writer flow, the rendering of progress.md, the context pack and the legacy rule.",
       "steps": [
         "docs/plans/2026-10-21-E4-memory.md exists, first line `Milestone base: <sha>`, with: the entry JSON schema (feature, kind, outcome, summary ≤ 400 chars, files, verified_how, tests_before, tests_after, dead_ends, discoveries with affects, questions, proposed_changes, evidence rows for verify) and the stamped fields (at, session, model); the lib/entries.mjs API (validate, minimal, render, pack, CLI verbs); the exact driver points (after the `WIP` commit of a coding session and before `F repair`; in verify() after `restrict` and before the `before` count and `F evidence`, which keep reading the rendered progress.md); how the initializer's entry works (it writes entry.json too; the driver renders the header); the rendered shapes (progress.md: header, 15 newest in full with the verify table in the five-column shape features.mjs counts, then one line per older entry linking to progress-archive.md; the archive complete); the context pack algorithm (priority order, CONTEXT_PACK_BYTES default 8192 in lib/config.sh, the `→ entries.jsonl:<line>` reference per item); the legacy rule (a run whose feature list exists and has no entries.jsonl is left alone by the renderer; `harness continue` on it moves progress.md to progress-archive.md and starts the journal, noting it); the stub changes (entry.json per coding and verify session, STUB_BAD_ENTRY, a dead end for C's first attempt); the checks per feature; D-H39 (journal, single writer), D-H40 (rendered progress), D-H41 (context pack) or the next free numbers",
         "git diff --stat shows only the plan file changed; bash tests/run.sh ends with every check passing"
       ],
-      "after": [
-        "E3"
-      ],
-      "passes": false
-    },
-    {
-      "id": "E4-02",
-      "milestone": "E4",
-      "kind": "build",
-      "model": "opus",
+      "after": ["E3"],
+      "passes": false },
+    { "id": "E4-02", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "lib/entries.mjs holds the pure rules: validating an entry, building a minimal one, and rendering progress.md and progress-archive.md from a list of entries.",
       "steps": [
         "lib/entries.mjs (one-line usage header, exported functions, no dependencies) has `validate(obj)` → errors (empty when valid), `minimal({ feature, kind, outcome, files, final })`, `renderProgress(entries, { full: 15, header })` and `renderArchive(entries, header)`",
@@ -352,13 +228,8 @@
         "tests/run.sh check `entries.mjs: progress renders 15 in full and the rest as archive lines`: 20 entries render 15 `### ` headers newest first, then 5 one-line items each linking `progress-archive.md`; a verify entry renders the `| Feature | Step | ... | Holds |` table so that features.mjs `evidence` counts its rows; the archive holds all 20 in full",
         "Both checks watched failing first; node --check lib/entries.mjs; no driver change in this feature; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E4-03",
-      "milestone": "E4",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "E4-03", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "Sessions write entry.json; the driver, the single writer, validates it, stamps it, appends it to entries.jsonl and deletes it, recording a minimal entry when it is missing or malformed.",
       "steps": [
         "After every coding, verify and initializer session lib/driver.sh reads <run>/entry.json, validates it with lib/entries.mjs, stamps at, session (the transcript name) and model, appends one line to <run>/entries.jsonl and deletes entry.json; a missing or invalid file gets a `note` (`<id>: entry.json missing|invalid (<first error>); recorded a minimal entry`) and a minimal entry built from the files changed since the session's start commit and the session's final message",
@@ -367,13 +238,8 @@
         "tests/run.sh check `entries: the driver appends each session's entry`: run demo's entries.jsonl has one line per coding and verify session, each with at, session, model and feature, and no entry.json is left in the run dir; check `a malformed entry is recorded as minimal and the run goes on`: with STUB_BAD_ENTRY=B harness-log.md has the note and B's first entry has outcome from its passes and files from git, and the run still ends `done`",
         "Both checks watched failing first; journal/decisions.md has D-H39; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E4-04",
-      "milestone": "E4",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "E4-04", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "progress.md and progress-archive.md are rendered by the driver from entries.jsonl after every session; sessions stop writing progress.md; legacy runs are untouched until continued.",
       "steps": [
         "lib/driver.sh regenerates <run>/progress.md and <run>/progress-archive.md from entries.jsonl right after each append (initializer, coding, verify), and verify's `before` count and `F evidence` read the rendered file; prompts/coding.md, verify.md and initializer.md no longer ask for a progress.md entry (the initializer writes its header text into its entry); the stub stops writing progress.md",
@@ -381,13 +247,8 @@
         "Legacy: a run whose feature list exists without entries.jsonl is neither rendered nor ingested (its sessions' progress.md edits stand); `harness continue` on it copies progress.md to progress-archive.md, starts entries.jsonl and notes `journal started; progress.md kept as progress-archive.md`. tests/run.sh check `a legacy run is untouched, then continued into a journal`: run 14's record (legacy) before continue has no entries.jsonl and its progress.md is unchanged by the start-up; after `harness continue legacy` progress-archive.md equals the old progress.md byte for byte and entries.jsonl exists",
         "Both checks watched failing first; journal/decisions.md has D-H40; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E4-05",
-      "milestone": "E4",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "E4-05", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "Before each session the driver writes <run>/context.md, a deterministic context pack capped by CONTEXT_PACK_BYTES in a fixed priority order, and the prompts say to read it first.",
       "steps": [
         "lib/entries.mjs exports pure `pack(entries, { feature, list, answers, cap })` returning markdown ≤ cap bytes built in this order: this feature's earlier attempts, dead ends and questions; the INBOX answers; discoveries whose affects names this feature or `run`; the latest entry of each feature in its `after`; the last 3 entries of the run; each item ends with `→ entries.jsonl:<line>`; lib/config.sh has `CONTEXT_PACK_BYTES=8192`",
@@ -395,13 +256,8 @@
         "lib/driver.sh writes <run>/context.md before every coding and verify session (committed with the run record); prompts/coding.md and verify.md open their bearings section with `Read context.md first; the full record is entries.jsonl / progress-archive.md`; tests/run.sh check `context.md carries the earlier attempt's dead end`: the context.md saved before C's second session in run demo contains `left BROKEN in the tree` and prompt-coding.md names context.md",
         "Both checks watched failing first; journal/decisions.md has D-H41; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "E4-06",
-      "milestone": "E4",
-      "kind": "docs",
-      "model": "sonnet",
+      "passes": false },
+    { "id": "E4-06", "milestone": "E4", "kind": "docs", "model": "sonnet",
       "description": "architecture.md, README.md and evals/NEXT.md describe the journal, the rendered progress.md, the context pack and what the E4 comparison should move.",
       "steps": [
         "docs/architecture.md §3 lists lib/entries.mjs; §4 adds rows for entries.jsonl, entry.json, context.md and progress-archive.md (who writes, who reads, committed); §5 says the driver ingests the entry and renders progress.md after each session and writes context.md before it; §10 lists CONTEXT_PACK_BYTES; the prompt-assembly paragraph names context.md",
@@ -409,24 +265,14 @@
         "evals/NEXT.md's E4 section says what the comparison should show (orientation cost and context peak down, probe score and pass rate not worse) and the probes command runs with context.md",
         "journal/decisions.md has D-H39, D-H40 and D-H41 once each; bash tests/run.sh ends with every check passing"
       ],
-      "after": [
-        "E2",
-        "E4-05"
-      ],
-      "passes": false
-    },
-    {
-      "id": "E4-07",
-      "milestone": "E4",
-      "kind": "review",
-      "model": "opus",
+      "after": ["E2", "E4-05"],
+      "passes": false },
+    { "id": "E4-07", "milestone": "E4", "kind": "review", "model": "opus",
       "description": "An Opus review of the E4 diff with findings fixed RED→GREEN, simplifications applied, and docs/plans/2026-10-21-E4-review.md written.",
       "steps": [
         "`git diff <E4 milestone base>..HEAD > $HARNESS_SCRATCH/E4.diff` reviewed by an Opus subagent reading the file; docs/plans/2026-10-21-E4-review.md lists each finding, its severity and what was done; Critical/Important ones fixed with a check watched failing first",
         "The review confirms with commands that a legacy run record (one without entries.jsonl) is byte-identical after a driver start-up that ends at once, and that `harness report` and `pr_body` still read a v3 run's progress.md",
         "Simplification passes applied; bash -n and node --check on everything touched; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
-    }
-  ]
-}
+      "passes": false }
+  ] }
