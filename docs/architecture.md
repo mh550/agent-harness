@@ -288,7 +288,7 @@ skipped if you stopped the run; `harness continue` refuses a run whose driver is
 `harness queue start --until 07:30` runs the queue and gives every run it starts that deadline. The runner never
 starts a run while `LIMIT_UNTIL` is in the future, and starts **one run per project at a time**: an entry whose
 project has a live driver is held in its place (logged once, `holding <entry> (<project>)`) and the next entry for a
-free project starts instead (D-H32); `harness start --now` still bypasses. With 1, nights are serial: each run gets
+free project starts instead (`journal/decisions-pending.md`, PR #4); `harness start --now` still bypasses. With 1, nights are serial: each run gets
 the whole plan window.
 The runner exits when the queue is empty and nothing it started runs, when it is past `--until` with nothing running,
 or on `harness queue stop`; whichever, if it started at least one run (marked in `<state>/runners`), it then starts
