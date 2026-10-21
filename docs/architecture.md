@@ -13,7 +13,7 @@ a milestone passes, an independent **verify** session re-runs every step. A veri
 proposes harness changes, and records the run in the harness's own **ledger**. Runs are queued, and they share one
 view of the plan's usage limit. When a queue ends, one read-only **debrief** session writes Michael a triage note.
 
-## 2. Principles (each one is a decision in `journal/decisions.md`)
+## 2. Principles (each one is a decision in `journal/decisions.md` or `journal/decisions/`)
 
 | Principle | Consequence in the code |
 |---|---|
@@ -49,7 +49,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 |---|---|---|
 | `bin/harness` | ~350 | CLI: start/continue/merge/queue/status/parked/report/trends/attach/pause/resume/stop/answer/init/gc/debrief. Creates worktrees, ports, state dirs, tmux sessions |
 | `lib/driver.sh` | ~370 | The run loop (§5). The only component that runs sessions, commits on the run's behalf, tags and merges |
-| `lib/queue.sh` | ~45 | Starts queued runs within the parallel limit, the `--until` time and the usage-limit window; starts `harness debrief`, detached, as it exits (§16) |
+| `lib/queue.sh` | ~45 | Starts queued runs within the parallel limit (one per project), the `--until` time and the usage-limit window; starts `harness debrief`, detached, as it exits (§16) |
 | `lib/debrief.sh` | ~280 | `harness debrief`: gathers the context in bash, waits out the limit window, one read-only session, the note, checked continuations, the notification (§16) |
 | `lib/config.sh` | ~60 | Config layers and conventions (§10) |
 | `lib/notify.sh` | ~50 | `notify "<message>" [title= body= click= actions= priority= tags=]` for the driver and the debrief: posts to `NTFY_URL` through `${HARNESS_CURL:-curl}` (bearer `NTFY_TOKEN`), else runs `NOTIFY_CMD` with `$1` + `HARNESS_NOTIFY_*`; always returns 0, a failed post is a note. `gh_url <path> [blob\|edit]`: that file on the run branch on GitHub, or nothing |
@@ -284,7 +284,7 @@ worktree is untrusted). The harness never writes either, and agents can't (the a
 4. **Back into runs**: the initializer gets a calibration line from the ledger (median and p90 minutes per passing
    feature, this project and all) to size features against reality.
 5. **Into the harness**: you read the retros/trends (or ask a session to), turn a repeated proposal into a decision
-   (`journal/decisions.md`), implement it test-first, and **turn the failing transcript into a stub fixture** (as
+   (a file in `journal/decisions/`), implement it test-first, and **turn the failing transcript into a stub fixture** (as
    `tests/fixtures/usage-limit.jsonl` was), so the fake never drifts from the real API again.
 
 ## 12. Queue and parallelism
@@ -293,7 +293,10 @@ worktree is untrusted). The harness never writes either, and agents can't (the a
 id is chosen when it starts) and ensures the runner (tmux `h-queue`); `--now` bypasses. A queued continuation is
 skipped if you stopped the run; `harness continue` refuses a run whose driver is alive. `harness queue add …` queues without starting;
 `harness queue start --until 07:30` runs the queue and gives every run it starts that deadline. The runner never
-starts a run while `LIMIT_UNTIL` is in the future. With 1, nights are serial: each run gets the whole plan window.
+starts a run while `LIMIT_UNTIL` is in the future, and starts **one run per project at a time**: an entry whose
+project has a live driver is held in its place (logged once, `holding <entry> (<project>)`) and the next entry for a
+free project starts instead (`decisions/2026-10-21-queue-one-run-per-project`); `harness start --now` still bypasses. With 1, nights are serial: each run gets
+the whole plan window.
 The runner exits when the queue is empty and nothing it started runs, when it is past `--until` with nothing running,
 or on `harness queue stop`; whichever, if it started at least one run (marked in `<state>/runners`), it then starts
 `harness debrief` once, detached with `setsid`, so a new runner replacing tmux `h-queue` can't kill it (§16).
