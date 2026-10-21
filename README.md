@@ -21,7 +21,8 @@ harness status                           # every run: running / ended (why), fea
 harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes
 ```
 
-Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config):
+Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config; the queue
+never runs two runs of one project at once, so a second entry for a busy repo waits while later ones go ahead):
 
 ```bash
 harness queue add ~/projects/pathways --spec OVERNIGHT.md --brief "T5, T7, then T6"

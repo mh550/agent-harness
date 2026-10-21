@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The queue runner (`harness queue start`, tmux session h-queue). Starts queued runs in order: at most
 # MAX_PARALLEL_RUNS at a time (user config; 1 = one after another), never while the box-wide usage-limit window is
-# closed, and none after the --until time. Exits when the queue is empty and nothing it started is still running,
+# closed, none after the --until time, and one run per project at a time: an entry whose project already has a live
+# run is held (it keeps its place) and the next entry for a free project goes first. Exits when the queue is empty and nothing it started is still running,
 # when it is past --until with nothing running, on `harness queue stop`, or when the plan's 7-day window is past
 # WEEKLY_STOP_AT (as the newest session reported it; what is queued stays queued). Every run it starts is marked with its id
 # (<state>/runners, by `harness start`). Whichever way it exits, if it started a run it starts `harness debrief`
@@ -18,13 +19,22 @@ H=$HARNESS_HOME/bin/harness
 mkdir -p "$Q/done"
 log() { echo "$(date '+%F %T') $*" | tee -a "$Q/runner.log"; }
 alive_count() { local d p n=0; for d in "$STATE_ROOT"/*/*/; do p=$(cat "$d/driver.pid" 2>/dev/null) && kill -0 "$p" 2>/dev/null && n=$(( n + 1 )); done; echo "$n"; }
+busy_projects() { local d p; for d in "$STATE_ROOT"/*/*/; do p=$(cat "$d/driver.pid" 2>/dev/null) && kill -0 "$p" 2>/dev/null && basename "$(dirname "$d")"; done; }
+# An entry's project: start → the repo's directory name (what the state dir is named after); continue → its run's state dir.
+entry_project() { local verb arg d; { read -r verb; read -r arg; } < "$1"
+  if [[ $verb == start ]]; then basename "$arg"; else d=$(compgen -G "$STATE_ROOT/*/$arg" | head -1) && basename "$(dirname "$d")"; fi; }
 echo $$ > "$Q/runner.pid"; trap 'rm -f "$Q/runner.pid"' EXIT
 RID=$(date +%Y%m%d-%H%M%S)-$$ UP=$(date '+%F %T'); export HARNESS_RUNNER_ID=$RID
 echo "$UP runner up · MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS$( (( UNTIL )) && echo " · no new runs after $(date -d "@$UNTIL" '+%F %H:%M')") · id $RID" | tee -a "$Q/runner.log"
 
 while :; do
   [[ -f $Q/STOP ]] && { rm -f "$Q/STOP"; log "stopped by harness queue stop"; break; }
-  next=$(ls "$Q"/*.args 2>/dev/null | sort | head -1) a=$(alive_count) now=$(date +%s)
+  next="" held="" a=$(alive_count) now=$(date +%s) busy=$(busy_projects)
+  for f in $(ls "$Q"/*.args 2>/dev/null | sort); do   # two runs on one repo would build conflicting PRs from the same base
+    p=$(entry_project "$f"); [[ -n $p ]] && grep -qxF -- "$p" <<< "$busy" && { held+="${held:+, }$(basename "$f" .args) ($p)"; continue; }
+    next=$f; break
+  done
+  [[ $held != "${last_held:-}" ]] && { [[ -n $held ]] && log "holding $held: that project has a run going"; last_held=$held; }
   if [[ -z $next ]]; then (( a == 0 )) && { log "queue empty, nothing running: done"; break; }; sleep "$POLL"; continue; fi
   if (( UNTIL > 0 && now >= UNTIL )); then
     (( a == 0 )) && { log "past the --until time; $(ls "$Q"/*.args | wc -l) left queued"; break; }; sleep "$POLL"; continue
