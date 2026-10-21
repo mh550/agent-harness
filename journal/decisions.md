@@ -359,12 +359,14 @@ agents are driven*.
 - **Choice:** `lib/deploy.mjs` (pure: `vercelGuarded`/`addVercelGuard`, `netlifyGuarded`/`addNetlifyGuard`,
   `vercelDeployments`, `slug`, `unguarded`) and `lib/deploy.sh` (`deploy_status`, `deploy_guard`). A host deploys from
   Git when: Vercel = `vercel.json`, a `.vercel/` directory (worktree or project checkout), or a deployment on the repo
-  made by Vercel (`gh api repos/<o>/<r>/deployments?per_page=1`, read-only); Netlify = `netlify.toml`. `harness init`
+  made by Vercel (`gh api repos/<o>/<r>/deployments?per_page=20`, read-only; the newest 20, since another app may have made the newest); Netlify = `netlify.toml`. `harness init`
   merges `git.deploymentEnabled: { "harness/**": false }` into `vercel.json` (creating it; other keys and their order
   kept) and inserts `ignore = "case \"$BRANCH\" in harness/*) exit 0;; esac; exit 1"` into `netlify.toml`'s `[build]`
   (a `[build]` ignore of the project's own, or `build` set as an inline table or dotted keys, is left alone and init
   says what to add by hand), and says what it did. Vercel counts as guarded only if no `true` key also matches a run
-  branch (Vercel deploys when any matching key is `true`); a deployment counts as Vercel's by its `creator.login`
+  branch or starts with `harness/` (Vercel deploys when any matching key is `true`; init then says "by hand" rather
+  than "added"); Netlify only if no `deploy-preview`, `branch-deploy` or `"harness/…"` context has an ignore of its own (it
+  overrides `[build]`'s there; init still adds ours to `[build]` and says the rest is by hand); a deployment counts as Vercel's by its `creator.login`
   `vercel[bot]` (or the app slug `vercel`), never by a repo name. The
   driver checks once per run (`$STATE/deploy-checked`; a continue doesn't repeat it), after the start block, reading
   `origin/main` (Vercel reads the deployed commit's file, so the guard must be on main before the run branches off):
@@ -379,7 +381,10 @@ agents are driven*.
   token and a live call per project; the repo file is reviewable and travels with the branch).
 - **Known limits:** the ignore's `exit 1` replaces Netlify's own skip for an unchanged base directory (monorepos build
   on every main push after init); `netlify.toml` counts as building every branch even where branch deploys are off (a
-  harmless note); a `--base <ref>` run is still checked against `origin/main`, as the spec says.
+  harmless note); a `--base <ref>` run is still checked against `origin/main`, as the spec says; init writes
+  `vercel.json` at the repo root, which a Vercel project with another Root Directory doesn't read (the E1 review,
+  `docs/plans/2026-10-21-E1-review.md` M6); a true key like `**-preview` is matched against `harness/run` only; a context ignore written under a bare `[context]`
+  table (`deploy-preview.ignore = …`) isn't seen.
 
 ### D-H34 · Telemetry: tokens, cache hit rate and context peak per session, from a real capture *(accepted 2026-10-21, built in E1 of run agent-harness-2026-10-21-measure; E1-05 … E1-07 add their parts)*
 - **Finding:** `metrics.jsonl` had cost, turns and time but no tokens, so "did this change make sessions cheaper or

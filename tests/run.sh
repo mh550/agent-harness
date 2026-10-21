@@ -121,6 +121,18 @@ DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an,
     && !vg("{\"git\":{\"deploymentEnabled\":{\"harness/*\":true,\"harness/**\":false}}}") && vg("{\"git\":{\"deploymentEnabled\":{\"main\":true,\"feature/**\":true,\"harness/**\":false}}}")
     && !vm("[]") && !vm("null") && !vm("{\"git\":\"x\"}") && vm("{}") && vm("{\"git\":{}}") ? 0 : 1);'
 check "deploy.mjs: vercel and netlify guards merge, keep keys and detect" 'node --input-type=module -e "$DEPL"'
+DREV='import { vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, NETLIFY_IGNORE as NI } from "'$HERE'/../lib/deploy.mjs";
+  const ctx = "[build]\n" + NI + "\n\n[context.deploy-preview]\n  ignore = \"exit 1\"\n";
+  process.exit(!vg("{\"git\":{\"deploymentEnabled\":{\"harness/**\":false,\"harness/agent-*\":true}}}") && !ng(ctx) && an(ctx).how === "own-ignore"
+    && ng("[build]\n" + NI + "\n\n[context.production]\n  command = \"make\"\n") && ng("[build]\n" + NI + "\n\n[context.production]\n  ignore = \"git diff --quiet\"\n")
+    && ng("[build]\n" + NI + "\n\n[context.deploy-preview.environment]\n  ignore = \"1\"\n") && !ng("[build]\n" + NI + "\n\n[context.\"harness/x\"]\n  ignore = \"exit 1\"\n")
+    && (r => r.how === "own-ignore" && r.text.startsWith("[build]\n" + NI + "\n  command"))(an("[build]\n  command = \"make\"\n\n[context.branch-deploy]\n  ignore = \"exit 1\"\n")) ? 0 : 1);'
+check "deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)" 'node --input-type=module -e "$DREV" \
+  && echo "{\"git\":{\"deploymentEnabled\":{\"harness/**\":false,\"harness/*\":true}}}" > "$T/vover.json" && [[ $(node "$HERE/../lib/deploy.mjs" vercel-guard "$T/vover.json") == by-hand ]]'
+SREV='import { redSuite, failedRecheck } from "'$HERE'/../lib/summary.mjs";
+  const h = "- 2026-10-21 12:00 · 11 un-passed: suite red after the session\n- 2026-10-21 12:05 · verify M1: A failed the re-check, back in the queue\n";
+  process.exit(!redSuite(h, "1") && redSuite(h, "11") && !redSuite(h, "c++") && !redSuite(h, "auth(x") && failedRecheck(h, "A") && !failedRecheck(h, "c++") && !failedRecheck(h, "1") ? 0 : 1);'
+check "summary.mjs: cause and rework read the log by exact id (E1 review)" 'node --input-type=module -e "$SREV"'
 git init -q -b main "$T/vj" && echo '{"framework":"nextjs"}' > "$T/vj/vercel.json" && "$H" init "$T/vj" > "$T/init-vj.out" 2>&1 && "$H" init "$T/vj" > "$T/init-vj2.out" 2>&1
 check "init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept" 'jq -e ".framework == \"nextjs\" and .git.deploymentEnabled[\"harness/**\"] == false" "$T/vj/vercel.json" > /dev/null \
   && grep -q "added the deploy guard to vercel.json" "$T/init-vj.out" && grep -q "keep    vercel.json" "$T/init-vj2.out" && ! grep -q "added the deploy guard" "$T/init-vj2.out"'
@@ -245,7 +257,9 @@ STUB_REFUSE_MERGE=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T
 check "refused merge leaves the PR, needs Michael" 'hlog later | grep -q "merge was refused" && ! on_main run/later/M1'
 check "a refused merge: priority high, click = the PR" 'Br=$(curl_with "[later] M1 needs Michael: merge refused"); U=$(grep -o "https://example.test/pr/[0-9]*" <<< "$Br" | head -1) \
   && [[ -n $U ]] && grep -qx "Title: \[later\] M1 needs you" <<< "$Br" && grep -qx "Priority: high" <<< "$Br" && grep -qx "Click: $U" <<< "$Br"'
+echo old1234 > "$HARNESS_STATE/proj/later/harness-version"
 "$H" merge later > "$T/run10b.out" 2>&1
+check "harness merge keeps the harness version of the run (E1 review)" '[[ $(cat "$HARNESS_STATE/proj/later/harness-version") == old1234 ]]'
 check "harness merge merges verified milestones afterwards" 'on_main run/later/M2 && grep -q "^done" "$HARNESS_STATE/proj/later/ended"'
 
 # ---- queue: start queues behind a running run; the runner runs entries in order ----
@@ -339,10 +353,10 @@ dproj np netlify.toml $'[build]\n  command = "make"' && dstart np1 start "$T/np"
 check "run start without the netlify guard: one note, one notification" '[[ $(hlog np1 np | grep -c "preview deploy per session") == 1 ]] && hlog np1 np | grep -q "deploy guard: netlify.toml on origin/main has no \[build\] ignore" \
   && [[ $(curl_count "[np1] no deploy guard (netlify): this run will create a preview deploy per session") == 1 ]]'
 dproj dp && STUB_DEPLOYMENTS=vercel dstart dp1 start "$T/dp" dp1 --spec SPEC.md
-check "run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)" 'grep -q "gh api repos/test/dp/deployments?per_page=1" "$T/gh.log" && hlog dp1 dp | grep -q "deploy guard: vercel.json on origin/main" \
+check "run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)" 'grep -q "gh api repos/test/dp/deployments?per_page=20" "$T/gh.log" && hlog dp1 dp | grep -q "deploy guard: vercel.json on origin/main" \
   && [[ $(curl_count "[dp1] no deploy guard (vercel)") == 1 ]]'
 dproj gp vercel.json '{"git":{"deploymentEnabled":{"harness/**":false}}}' && dstart gp1 start "$T/gp" gp1 --spec SPEC.md
-check "run start with the guard: nothing" 'grep -q "gh api repos/test/proj/deployments?per_page=1" "$T/gh.log" && [[ -s $T/demo-hlog.md && -n $(hlog gp1 gp) ]] && ! grep -q "preview deploy" "$T/demo-hlog.md" && ! hlog gp1 gp | grep -q "preview deploy" \
+check "run start with the guard: nothing" 'grep -q "gh api repos/test/proj/deployments?per_page=20" "$T/gh.log" && [[ -s $T/demo-hlog.md && -n $(hlog gp1 gp) ]] && ! grep -q "preview deploy" "$T/demo-hlog.md" && ! hlog gp1 gp | grep -q "preview deploy" \
   && [[ $(curl_count "[demo] no deploy guard") == 0 && $(curl_count "[gp1] no deploy guard") == 0 ]]'
 mv "$T/user-config.bak" "$T/user-config.sh"
 
