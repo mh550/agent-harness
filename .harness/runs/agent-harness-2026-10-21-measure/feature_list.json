@@ -98,7 +98,7 @@
         "git diff --stat shows only the plan file changed; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E1"],
-      "passes": false },
+      "passes": true },
     { "id": "E2-02", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "evals/README.md proposes 8–12 replay tasks from real past runs, each as evals/tasks/<id>/task.json that lib/eval.mjs validates.",
       "steps": [

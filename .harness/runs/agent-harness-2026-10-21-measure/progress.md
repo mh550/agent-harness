@@ -6,6 +6,14 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 19:40 · E2-01 · passes
+
+- **What changed:** `docs/plans/2026-10-21-E2-evals.md` (new, plan only; base `7b69ed3`). It covers the task.json schema and validator, the source records and each project's POLICY (dj-crate-streaming is live-staged, the other three build-only; eval tasks always run build-only), the eval layout under `/tmp/harness-eval/<stamp>`, seeding `origin/harness/<run>` so the initializer is skipped, the isolation env plus `run.env` safety lines, the results layout plus `eval.json`, the budget and 7-day window, compare's 8 metrics and noise rule, probes (questions, `lib/prompt.sh` shared with the driver, scoring), the stub tasks t1/t2, 11 check names and D-H35. Tests 189 → 189.
+- **Verified:** `check.sh` ran green twice (275 s each, 189/189), the second time on the final plan. `git status` shows only the plan file. An Opus review of the plan found 4 Important and 9 Minor issues, all folded in. Examples: the "nothing reaches a remote" check couldn't fail with `HARNESS_GH=false` forced (now `HARNESS_EVAL_GH`); `--harness HEAD` can't tell the drivers apart without a `{{CHECK}}` path assert; probes now read `commits.json` and `probe-prompt.md` from the results, so they survive `/tmp` being cleared.
+- **Next sessions must know:** the eval checks run the **committed** driver (`--harness HEAD`), so commit before the full suite. Stub task ids avoid A/B/C (the stub misbehaves on those). Portfolio_site v3 (P1-01 → P1-02) has a same-task feature `after`; the older runs' `after` lists name milestones.
+- **Defaults taken (D-H35, E2-03 writes it), questions for Michael:** (1) `evals/results/` is gitignored, so untracked results don't make every run `+dirty`; commit one with `git add -f`. OK? (2) Eval runs use harness defaults, not your `~/.config/harness/config.sh`; they still load your `~/.claude` hooks, with `HARNESS_EVAL=1` set so a hook can skip them. OK?
+- **Proposed change:** E2-01 step 1 names `git -C ~/projects/<p> log --all -- .harness/runs` for pathways and hit_list. The ground rules forbid git commands in other checkouts, so the plan reads from a mirror clone in scratch instead (`git clone --mirror`, read-only).
+
 ### 2026-10-21 · verify E1
 
 Init green; `bash tests/run.sh` run fresh: 189/189 checks passed, no FAIL. `bash -n` on lib/*.sh tests/*.sh bin/harness and `node --check` on lib/*.mjs clean. Check names below are the PASS lines of that run.
