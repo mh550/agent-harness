@@ -8,7 +8,7 @@
         "git diff --stat shows only docs/plans/2026-10-21-E1-telemetry.md changed (a plan feature writes no code)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E1-02", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "A resumed run merges main into the run branch before any session, the initializer included, so an initializer re-run after a no-list end plans from the current spec (E0).",
       "steps": [
