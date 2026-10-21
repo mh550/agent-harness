@@ -35,6 +35,7 @@ ok() { echo "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"t
 case $first in
   "# Initializer session"*)
     [[ ${STUB_SLOW_INIT:-} ]] && sleep "$STUB_SLOW_INIT"
+    [[ ${STUB_INIT_LIMIT:-} ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before the list exists
     [[ ${STUB_QUEUE_STOP:-} ]] && touch "$HARNESS_STATE/queue/STOP"   # Michael runs `harness queue stop` meanwhile
     after=""; [[ ${STUB_INDEPENDENT_M2:-} ]] && after=', "after": []'
     cat > "$L" <<JSON

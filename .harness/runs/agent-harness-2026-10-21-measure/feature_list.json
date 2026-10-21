@@ -19,7 +19,7 @@
         "journal/decisions.md has the E0 entry (the number the plan reserved) with finding · choice · rejected",
         "bash -n lib/driver.sh tests/stub-claude.sh tests/run.sh pass; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E1-03", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "Deploy-aware pushes: `harness init` writes the Vercel/Netlify run-branch deploy guard, and a run start without it notes and notifies once (E0b).",
       "steps": [

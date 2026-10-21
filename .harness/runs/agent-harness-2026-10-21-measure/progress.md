@@ -6,6 +6,13 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 15:35 · E1-02 · passes
+
+- **What changed:** `lib/driver.sh`: `resumed` is set before this segment logs `run <id> on …` (an earlier segment's line in `$STATE/run.log`); the start block (`sync_main` + config reload) now runs `if [[ -f $LIST ]] || (( resumed ))`, `merge_milestones` still only with a list. `tests/stub-claude.sh`: `STUB_INIT_LIMIT=1` makes the initializer replay `fixtures/usage-limit.jsonl`, exit 1. `tests/run.sh`: run 15b, check `continue after a no-list end merges main first`. `journal/decisions.md`: D-H32. Tests 168 → 169.
+- **Watched failing** before the driver change: `FAIL continue after a no-list end merges main first` (168/169); the log showed `initializer` then `feature list written` with the first `merged main into harness/nolist` only after feature A. My first awk took the *last* merge line (also red after the fix); it now takes the first of each, and I re-ran it on both runs' logs: old driver exit 1, new driver exit 0.
+- **Verified:** `bash -n` on the three files; `check.sh` green in 265 s, 169/169, including `resume reloads config merged from main` (run 15).
+- **Next session must know:** the check copies `ended` to `$T/run15c.ended` before the continue (the continue rewrites it). Later checks gc the `nolist` worktree, so inspect it with `KEEP=1` and before gc. Docs (architecture/README) for E0 are E1-08's, as the plan says.
+
 ### 2026-10-21 15:10 · E1-01 · passes
 
 - **What changed:** `docs/plans/2026-10-21-E1-telemetry.md` (new, base `07c8367`), 12 numbered sections: owners per file/feature, E0 (a `resumed` flag read from run.log *before* this segment's `run <id> on` line; the start block's `sync_main` + config reload run for a resumed run with or without a list), E0b (`lib/deploy.mjs` pure guards + `lib/deploy.sh`, vercel.json JSON merge, netlify `[build] ignore` for `harness/*`, origin/main read at run start, once per run via `$STATE/deploy-checked`, stub-gh deployments fixture), fixture capture command and fields, metrics keys, summary formulas, ledger + `trends --by version`, 17 check names, D-H32/33/34. No code. Tests 168 → 168.

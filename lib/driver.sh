@@ -410,6 +410,7 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
 }
 
 # ---------------------------------------------------------------------------------------------------------------
+resumed=0; grep -q " run $RUN_ID on " "$STATE/run.log" 2> /dev/null && resumed=1   # an earlier segment logged its start
 log "run $RUN_ID on $BRANCH in $WT · port $PORT · policy $POLICY · merge $MERGE_POLICY"
 log "  suite: ${CHECK_CMD:-(none detected; nothing gates passes)} · smoke: $SMOKE_CMD · init: $INIT_CMD"
 log "  permissions: user settings$( [[ -f $AGENT_SETTINGS ]] && echo " + $AGENT_SETTINGS (--settings)" || echo " only ($AGENT_SETTINGS not found)")"
@@ -427,7 +428,9 @@ if [[ -s $STATE/brief.md ]]; then   # a brief given at start or continue: commit
 fi
 commit_all "HARNESS: start run $RUN_ID"
 sync
-if [[ -f $LIST ]]; then   # a resumed run: catch up with main (and its configuration), merge what is verified
+# A resumed run (with or without its list) catches up with main and its configuration before any session, the
+# initializer included, so a re-run initializer plans from the current spec; a fresh run already starts from main.
+if [[ -f $LIST ]] || (( resumed )); then
   before_cfg=$(git rev-parse -q HEAD:.harness/config.sh 2>/dev/null)
   sync_main
   if [[ $(git rev-parse -q HEAD:.harness/config.sh 2>/dev/null) != "$before_cfg" ]]; then
@@ -435,7 +438,7 @@ if [[ -f $LIST ]]; then   # a resumed run: catch up with main (and its configura
     [[ -f $HARNESS_HOME/prompts/policy/$POLICY.md ]] || { log "unknown POLICY '$POLICY' after merging main"; END_REASON="unknown POLICY"; exit 1; }
     note "configuration reloaded after merging $MAIN_BRANCH: policy $POLICY · suite ${CHECK_CMD:-none} · spec ${SPEC_FILES:-(none)}"
   fi
-  merge_milestones
+  [[ -f $LIST ]] && merge_milestones   # merge what is verified
 fi
 if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 whole-run PR (milestones merge through their own PRs)
   if [[ $($GH pr view "$BRANCH" --json state -q .state 2>/dev/null) == OPEN ]]; then

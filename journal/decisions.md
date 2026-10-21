@@ -336,3 +336,17 @@ agents are driven*.
   answer is an instruction to agents: it must come through GitHub or a session signed in as Michael); starting in the
   worktree (the trust prompt blocks); matching tmux targets by name (`-t h-desk` matches `h-desk-x` by prefix: exact
   `=` and window ids instead).
+
+### D-H32 · A resumed run merges main before any session, the initializer included *(accepted 2026-10-21, built in E1 of run agent-harness-2026-10-21-measure)*
+- **Finding:** `harness continue` on a run that ended before its feature list (`usage limit before the feature list`)
+  re-ran the initializer without merging `main`: `sync_main` and the configuration reload sat inside `if [[ -f $LIST ]]`.
+  The worktree kept the spec as it was at the first start, so the initializer planned from a stale spec while `main`
+  had the revised one (voice-concierge-2026-10-19, 00:06).
+- **Choice:** the driver decides `resumed` before it logs this segment's `run <id> on …` line (an earlier segment's line
+  in `$STATE/run.log`; only the driver writes it). The start block runs for a resumed run or a run with a list:
+  `sync_main` (its note `merged main into harness/<run>` lands in harness-log.md above `feature list written`) and the
+  configuration reload; `merge_milestones` still needs the list. A conflict keeps today's behaviour (note, carry on).
+  Check: `continue after a no-list end merges main first` (stub `STUB_INIT_LIMIT=1` replays the real limit capture).
+- **Rejected:** merging main on every start (a fresh run already branches from `origin/main`, and a `--base <other>` run
+  must not get main merged); merging only right before the initializer (a resumed run with a list already merges at the
+  start, and one place for both keeps the config reload in step).
