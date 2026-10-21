@@ -428,6 +428,23 @@ agents are driven*.
   `Quality` row after `Spend by role`, only for summaries that have the keys (older ledger summaries keep their
   rows); `prompts/retro.md` names the keys as inputs. Demo: rework A, C; first-attempt 0.33; verify-fail 0.25.
   *Rejected:* rework from `attempts.json` (local state only; the committed harness-log and metrics carry it).
+- **Across harness versions (E1-07):** every driver segment writes `$STATE/harness-version` and
+  `$STATE/harness-dirty` (`lib/version.sh` `harness_version`) and ends its `run <id> on` line with `· harness <sha>[+dirty]`; the latest segment's harness is the
+  summary's `harness { version, dirty }` (`dirty` null when the state has no marker: a run from before). `ledger-line`
+  adds `harness_version`, `harness_dirty` and the telemetry (`tokens`, `cache_hit_rate`, `context_peak`,
+  `per_verified`, `orient_tokens`, `first_attempt_pass_rate`, `rework` as a count, `verify_fail_rate`), each null
+  for a summary without it. `trends --by version` (pure `byVersion`) is one row per `<sha>[+dirty]` in order of first
+  appearance, older rows as `–`: runs, Σ passing / Σ total, Σ cost / Σ passing, and the medians (unrounded before
+  printing) of cache hit rate, orientation tokens and first-attempt rate over the group's non-null runs. A dirty
+  harness is its own group: its numbers are not that commit's. Plain `trends` is unchanged; other arguments exit 2.
+  *Default, a deviation from the feature's `rev-parse --short HEAD`:* the version is `git log -1 --format=%h -- .
+  ':(exclude)ledger'` (the last commit outside `ledger/`; `unknown` outside git) and dirty means `git status
+  --porcelain` over the same paths is non-empty. The driver commits `ledger/` into the harness after every run
+  (`LEDGER_COMMIT=1`) and the debrief after every queue, so HEAD moves without the code changing (15 of main's last 30
+  commits are `ledger:`), and a run's uncommitted ledger copy would mark the next run's harness dirty: with HEAD every
+  run would be its own version. Check: `harness version skips ledger commits` (a throwaway repo).
+  *Rejected:* grouping by the first segment's harness (a run continued after a merge was mostly driven by the newer
+  one); a version from `package.json`/tags (the repo has neither; the sha is what Michael pulls).
 - **Known limit:** `context_peak` and orientation count every assistant event, a subagent's (`parent_tool_use_id`
   set) too, if the CLI streams them (a subagent's edit would end orientation). Assistant `output_tokens` are the
   streamed partial (see above), so orientation's output share is understated.

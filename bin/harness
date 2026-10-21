@@ -12,7 +12,8 @@
 #   harness queue rm <n> | clear | start [--until HH:MM] | stop
 #   harness status [<run-id>]                    every run: running / ended (why), features, last log lines
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
-#   harness trends                               every recorded run in one table (the harness ledger)
+#   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
+#                                                harness version (runs, passing, $/feature, cache hit, orientation)
 #   harness debrief [--dry-run]                  after a queue: one short read-only session writes the debrief
 #                               (ledger/debrief.md; NOTIFY_CMD gets its headline). The queue runner starts it as it exits
 #   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each)
@@ -358,7 +359,7 @@ case ${1:-help} in
   status) shift; cmd_status "$@" ;;
   parked) shift; cmd_parked "$@" ;;
   report) shift; cmd_report "$@" ;;
-  trends) node "$HARNESS_HOME/lib/summary.mjs" trends "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/runs.jsonl" ;;
+  trends) node "$HARNESS_HOME/lib/summary.mjs" trends "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/runs.jsonl" "${@:2}" ;;
   attach) tmux attach -t "$(tmux_name "${2:?usage: harness attach <run-id>}")" ;;
   pause|resume|stop) cmd_control "$1" "${2:-}" ;;
   answer) shift; cmd_answer "$@" ;;

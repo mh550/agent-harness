@@ -70,7 +70,7 @@
         "`harness trends --by version` prints one row per harness version: runs, passing/total, $ per passing feature, median cache hit rate, median orientation tokens, first-attempt pass rate; plain `harness trends` is unchanged. tests/run.sh check `trends --by version groups the runs`: the output has a row starting with that version and the existing `trends lists every run` check still passes",
         "Both checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E1-08", "milestone": "E1", "kind": "docs", "model": "sonnet",
       "description": "architecture.md, README.md and decisions.md describe E0, E0b and the telemetry as built.",
       "steps": [

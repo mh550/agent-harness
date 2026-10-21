@@ -6,6 +6,15 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 17:55 · E1-07 · passes
+
+- **What changed:** `lib/version.sh` (new) `harness_version <dir>`; `lib/driver.sh` writes `$STATE/harness-version`/`harness-dirty` per segment and ends the `run <id> on` line with `· harness <sha>[+dirty]`; `lib/summary.mjs`: `harness { version, dirty }` in `build`, `ledger-line` adds `harness_version`, `harness_dirty` and the telemetry keys of plan §9 (null when absent), pure `byVersion` behind `trends <runs.jsonl> --by version` (other args exit 2); `bin/harness trends` passes its args and its usage line names `--by version`. D-H34 gains "Across harness versions (E1-07)". Tests 183 → 186.
+- **Watched failing:** `FAIL ledger row has harness_version and harness_dirty`, `FAIL trends --by version groups the runs` (183/185); `FAIL harness version skips ledger commits` against the step's `rev-parse HEAD` logic.
+- **Verified:** `trends --by version` on hand-made rows: `–` / `abc1234` / `abc1234+dirty` groups, medians 0.60 cache hit and 12.3k orientation tokens match hand math; in the suite, 32 demo rows are 1 group `<sha>+dirty | 32 | 56/84`. `bash -n`, `node --check`; `check.sh` green in 277 s, 186/186. An Opus review found one real flaw (below), fixed.
+- **Default taken (D-H34), a deviation from step 1's `rev-parse --short HEAD`:** the version is the last commit **outside `ledger/`**, and dirty ignores `ledger/` too. The driver and debrief commit the ledger into the harness checkout (15 of main's last 30 commits are `ledger:`), so HEAD would make every run its own "version". Question for Michael: fine to treat ledger commits as not-a-version?
+- **Next session (E1-08) must know:** README/architecture still lack `trends --by version`, `harness-version`/`harness-dirty` state files and `lib/version.sh` (plan §11 gives docs to E1-08).
+- **Proposed change:** step 1 of E1-07 should read "the last commit outside ledger/" rather than `rev-parse --short HEAD`.
+
 ### 2026-10-21 17:20 · E1-06 · passes
 
 - **What changed:** `lib/summary.mjs`: `median` and `tokenTotals` exported (pure); `build` adds `tokens` (+ `by_role`), `per_verified_feature` { cost, tokens }, `orientation` { tokens, turns, seconds } (medians of real coding rows), `rework`, `first_attempt_pass_rate`, `verify_fail_rate` as plan §7; `report` gains `Tokens` and `Quality` rows after `Spend by role` (only for summaries that have the keys, so older ledger summaries print as before). `prompts/retro.md` names the keys as inputs. D-H34 gains "The run's numbers (E1-06)". Tests 181 → 183.
