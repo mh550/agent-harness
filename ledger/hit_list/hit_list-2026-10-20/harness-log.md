@@ -2,3 +2,72 @@
 - 2026-10-20 13:09 · M1-01 · claude-opus-5-5 · passes=true · 3 min · 1/39 passing
 - 2026-10-20 13:10 · stopped by Michael
 - 2026-10-20 13:10 · run ended (stopped by Michael): 1/39 passing · 2 sessions (2 real) · 1 features passed · $7.07 · 0.2 h · by kind: init 1 ($5.63), coding 1 ($1.44) · by model: claude-fable-5-1 1 ($5.63), claude-opus-5-5 1 ($1.44)
+- 2026-10-21 10:58 · M1-02 · claude-opus-5-5 · passes=true · 8 min · 2/39 passing
+- 2026-10-21 11:07 · M1-03 · claude-opus-5-5 · passes=true · 8 min · 3/39 passing
+- 2026-10-21 11:13 · M1-04 · claude-opus-5-5 · passes=true · 6 min · 4/39 passing
+- 2026-10-21 11:21 · M1-05 · claude-opus-5-5 · passes=true · 7 min · 5/39 passing
+- 2026-10-21 11:23 · verify M1: M1-02 failed the re-check, back in the queue (one more attempt)
+- 2026-10-21 11:23 · verify M1: M1-04 failed the re-check, back in the queue (one more attempt)
+- 2026-10-21 11:26 · M1-02 · claude-opus-5-5 · passes=true · 2 min · 4/39 passing
+- 2026-10-21 11:29 · M1-04 · claude-opus-5-5 · passes=true · 3 min · 5/39 passing
+- 2026-10-21 11:30 · M1 verified and tagged run/hit_list-2026-10-20/M1
+- 2026-10-21 11:30 · M1 merged into main · https://github.com/mh550/hit-list/pull/1
+- 2026-10-21 11:34 · M2-01 · claude-opus-5-5 · passes=true · 3 min · 6/39 passing
+- 2026-10-21 11:37 · M2-02 · claude-opus-5-5 · passes=true · 2 min · 7/39 passing
+- 2026-10-21 11:41 · M2-03 · claude-opus-5-5 · passes=true · 4 min · 8/39 passing
+- 2026-10-21 11:47 · M2-04 · claude-opus-5-5 · passes=true · 5 min · 9/39 passing
+- 2026-10-21 11:54 · M2-05 · claude-opus-5-5 · passes=true · 7 min · 10/39 passing
+- 2026-10-21 11:56 · M2-06 · claude-sonnet-5-5 · passes=true · 1 min · 11/39 passing
+- 2026-10-21 12:07 · M2-07 · claude-opus-5-5 · passes=true · 10 min · 12/39 passing
+- 2026-10-21 12:07 · merged main into harness/hit_list-2026-10-20
+- 2026-10-21 12:08 · M2 verified and tagged run/hit_list-2026-10-20/M2
+- 2026-10-21 12:09 · M2 merged into main · https://github.com/mh550/hit-list/pull/2
+- 2026-10-21 12:13 · M3-01 · claude-opus-5-5 · passes=true · 4 min · 13/39 passing
+- 2026-10-21 12:16 · M3-02 · claude-opus-5-5 · passes=true · 3 min · 14/39 passing
+- 2026-10-21 12:18 · M3-03 · claude-sonnet-5-5 · passes=true · 1 min · 15/39 passing
+- 2026-10-21 12:23 · M3-04 · claude-opus-5-5 · passes=true · 5 min · 16/39 passing
+- 2026-10-21 12:23 · merged main into harness/hit_list-2026-10-20
+- 2026-10-21 12:25 · M3 verified and tagged run/hit_list-2026-10-20/M3
+- 2026-10-21 12:25 · M3 merged into main · https://github.com/mh550/hit-list/pull/3
+- 2026-10-21 12:29 · M4-01 · claude-opus-5-5 · passes=true · 4 min · 17/39 passing
+- 2026-10-21 12:31 · M4-02 · claude-opus-5-5 · passes=true · 1 min · 18/39 passing
+- 2026-10-21 12:36 · M4-03 · claude-opus-5-5 · passes=true · 4 min · 19/39 passing
+- 2026-10-21 12:48 · M4-04 · claude-opus-5-5 · passes=true · 12 min · 20/39 passing
+- 2026-10-21 12:59 · M4-05 · claude-opus-5-5 · passes=true · 10 min · 21/39 passing
+- 2026-10-21 13:01 · M4-06 · claude-sonnet-5-5 · passes=true · 1 min · 22/39 passing
+- 2026-10-21 13:11 · M4-07 · claude-opus-5-5 · passes=true · 10 min · 23/39 passing
+- 2026-10-21 13:11 · merged main into harness/hit_list-2026-10-20
+- 2026-10-21 13:12 · verify M4: M4-04 failed the re-check, back in the queue (one more attempt)
+- 2026-10-21 13:16 · M4-04 · claude-opus-5-5 · passes=true · 3 min · 23/39 passing
+- 2026-10-21 13:17 · M4 verified and tagged run/hit_list-2026-10-20/M4
+- 2026-10-21 13:17 · M4 merged into main · https://github.com/mh550/hit-list/pull/4
+- 2026-10-21 13:20 · M5-01 · claude-opus-5-5 · passes=true · 3 min · 24/39 passing
+- 2026-10-21 13:28 · M5-02 · claude-opus-5-5 · passes=true · 7 min · 25/39 passing
+- 2026-10-21 13:32 · M5-03 · claude-opus-5-5 · passes=true · 3 min · 26/39 passing
+- 2026-10-21 13:33 · M5-04 · claude-sonnet-5-5 · passes=true · 1 min · 27/39 passing
+- 2026-10-21 13:39 · M5-05 · claude-opus-5-5 · passes=true · 5 min · 28/39 passing
+- 2026-10-21 13:39 · merged main into harness/hit_list-2026-10-20
+- 2026-10-21 13:40 · M5 verified and tagged run/hit_list-2026-10-20/M5
+- 2026-10-21 13:40 · M5 merged into main · https://github.com/mh550/hit-list/pull/5
+- 2026-10-21 13:43 · M6-01 · claude-opus-5-5 · passes=true · 3 min · 29/39 passing
+- 2026-10-21 13:45 · M6-02 · claude-opus-5-5 · passes=true · 1 min · 30/39 passing
+- 2026-10-21 13:49 · M6-03 · claude-opus-5-5 · passes=true · 4 min · 31/39 passing
+- 2026-10-21 13:55 · M6-04 · claude-opus-5-5 · passes=true · 6 min · 32/39 passing
+- 2026-10-21 13:57 · M6-05 · claude-sonnet-5-5 · passes=true · 1 min · 33/39 passing
+- 2026-10-21 14:14 · M6-06 · claude-opus-5-5 · passes=true · 16 min · 34/39 passing
+- 2026-10-21 14:14 · merged main into harness/hit_list-2026-10-20
+- 2026-10-21 14:14 · M6 verified and tagged run/hit_list-2026-10-20/M6
+- 2026-10-21 14:15 · M6 merged into main · https://github.com/mh550/hit-list/pull/6
+- 2026-10-21 14:17 · M7-01 · claude-opus-5-5 · passes=true · 2 min · 35/39 passing
+- 2026-10-21 14:21 · M7-02 · claude-opus-5-5 · passes=true · 3 min · 36/39 passing
+- 2026-10-21 14:21 · merged main into harness/hit_list-2026-10-20
+- 2026-10-21 14:22 · M7 verified and tagged run/hit_list-2026-10-20/M7
+- 2026-10-21 14:22 · M7 merged into main · https://github.com/mh550/hit-list/pull/7
+- 2026-10-21 14:27 · M8-01 · claude-opus-5-5 · passes=true · 4 min · 37/39 passing
+- 2026-10-21 14:28 · M8-02 · claude-sonnet-5-5 · passes=true · 0 min · 38/39 passing
+- 2026-10-21 14:37 · M8-03 · claude-opus-5-5 · passes=true · 8 min · 39/39 passing
+- 2026-10-21 14:37 · merged main into harness/hit_list-2026-10-20
+- 2026-10-21 14:38 · M8 verified and tagged run/hit_list-2026-10-20/M8
+- 2026-10-21 14:39 · M8 merged into main · https://github.com/mh550/hit-list/pull/8
+- 2026-10-21 14:39 · every feature passes
+- 2026-10-21 14:39 · run ended (done): 39/39 passing · 54 sessions (54 real) · 39 features passed · $78.65 · 3.9 h · by kind: init 1 ($5.63), coding 42 ($69.82), retro 1 ($0.11), verify 10 ($3.09) · by model: claude-fable-5-1 1 ($5.63), claude-opus-5-5 36 ($68.23), claude-sonnet-5-5 17 ($4.79)

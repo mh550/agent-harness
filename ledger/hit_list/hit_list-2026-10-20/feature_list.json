@@ -31,7 +31,7 @@
         "db-init, db-foreign-keys, use-spot-actions and db-settings tests pass against schema v3 (rewritten where they inserted old columns); grep -rn \"feature_json\\|in_run_json\\|landing_json\\|metadata_json\" src app --include=*.ts --include=*.tsx | grep -v 'src/db/schema.ts' prints nothing.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-03",
@@ -50,7 +50,7 @@
         "src/__tests__/spot-list.test.tsx and src/__tests__/spot-map.test.tsx: no Draft badge text appears for any spot; every Marker gets pinColor SPOT_PIN (one colour) and a Marker's description is undefined when the spot has no feature types.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-04",
@@ -68,7 +68,7 @@
         "src/components/FilterSheet.tsx offers only the eight What's here chips (stopped and speed controls come in M5); src/components/SpotListItem.tsx has no difficulty or isDraft prop; app/(tabs)/index.tsx passes featureType={featureTypesLabel(item)}; src/__tests__/components.test.tsx has no RatingBadge/StarRating cases.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines, and npx expo export --platform ios --output-dir /tmp/hl-export exits 0."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-05",
@@ -83,7 +83,7 @@
         "CLAUDE.md Layout/Conventions and README.md Status no longer mention drafts, gear/build filters, ratings or Intensity, and describe feature_types/stopped/natural_speed/notes/legacy_json and getSpotLegacy; docs/RUNNING-ON-PHONE.md lines 33–42 no longer mention the Draft badge or yellow pins.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-01",
@@ -97,7 +97,7 @@
         "The plan states how expo-image-picker is mocked in tests (jest.mock('expo-image-picker') with launchImageLibraryAsync and requestMediaLibraryPermissionsAsync named from node_modules/expo-image-picker/build/ImagePicker.d.ts) and that importPhotoFromAsset from src/utils/exif.ts gives each pick its captured_at and location.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes (nothing but the plan changed)."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-02",
@@ -111,7 +111,7 @@
         "Filled segments use palette.blue[500] (the test reads the style of a filled cell and asserts backgroundColor equals palette.blue[500]); segment labels use numberOfLines={1} except 'Too much' may wrap (the test does not pin this).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-03",
@@ -125,7 +125,7 @@
         "Image sources resolve through resolvePhotoUri (the test checks the first Image's source.uri ends with the media file_path).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-04",
@@ -139,7 +139,7 @@
         "The rendered edit tree has no text 'Basic Info', 'Feature', 'In-Run', 'Landing', 'Details', 'Status', 'Save as Draft', 'Material', 'Shape', 'Length', 'Bustability' or 'Intensity'; the name placeholder is 'Name (optional)' and the notes placeholder is 'Anything else'; the photo grid is PhotoGrid with an accessibilityLabel 'Remove photo N' button on each tile (edit-remove-photo.test.tsx updated and passing, staged removal with Undo unchanged).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-05",
@@ -154,7 +154,7 @@
         "A permission denial (requestMediaLibraryPermissionsAsync granted false) shows Alert.alert titled 'Photo access needed' and adds nothing (jest.spyOn(Alert, 'alert')).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-06",
@@ -169,7 +169,7 @@
         "The file records the commands run and their results: npx jest --silent (count of tests, zero console.error) and npx expo export --platform ios --output-dir /tmp/hl-export (exit 0 and the bundle size).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-07",
@@ -184,7 +184,7 @@
         "CLAUDE.md Layout mentions SpeedScale, PhotoGrid and SpotTagFields in src/components and 'adding photos from edit' in use-media-actions; README.md Status mentions tagging (feature types, skate stopped, natural speed) in the edit screen.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-01",
@@ -198,7 +198,7 @@
         "src/utils/legacy-details.ts exports formatLegacyDetails(legacy: Record<string, unknown>, units: UnitSystem): { label: string; value: string }[]; src/__tests__/legacy-details.test.ts passes: { material: 'steel', length_m: 3.6576, bustability: 3, removable: true, setup_options: [{ requires: [{ item: 'bungee', category: 'gear' }] }], custom_type: 'curved rail' } with Imperial gives rows in order Custom type 'curved rail', Length '12.0 ft', Material 'steel', Removable 'Yes', Bustability '3/5', Setup options '1 option: bungee'; with Metric the length row is '3.7 m'; an unknown key is rendered with its key humanised ('stop_description' → 'Stop description'); an empty object gives [].",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-02",
@@ -213,7 +213,7 @@
         "The rendered tree has no text 'Feature', 'In-Run', 'Landing', 'Details' (as section headers), 'Draft' or 'Type'; the Edit header button still calls router.push to the edit route (existing test kept).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-03",
@@ -227,7 +227,7 @@
         "The file records npx jest --silent totals (tests, suites, zero console.error) and npx expo export --platform ios --output-dir /tmp/hl-export exit 0.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-04",
@@ -241,7 +241,7 @@
         "A 'refactor:' commit applies the simplification pass; CLAUDE.md Layout mentions legacy-details and getSpotLegacy's on-mount use; README.md Status mentions 'Older details' for data from before the simplification.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-01",
@@ -256,7 +256,7 @@
         "npx expo export --platform ios --output-dir /tmp/hl-export exits 0 after the wiring; the plan records the bundle size before and after.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-02",
@@ -269,7 +269,7 @@
         "src/__tests__/gallery-gestures.test.ts passes with at least these cases: clampScale(0.5)=1, clampScale(6)=4, clampScale(2.2)=2.2; toggleZoom(1)=2.5, toggleZoom(2.5)=1, toggleZoom(1.04)=2.5; clampPan at scale 1 returns {0,0} for any input; clampPan({x: 500, y: -900}, 2, {390, 844}) = {195, -422}; pagingEnabled(1)=true, pagingEnabled(1.06)=false; shouldClose(121, 1)=true, shouldClose(119, 1)=false, shouldClose(300, 2)=false.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-03",
@@ -283,7 +283,7 @@
         "src/__tests__/spot-detail.test.tsx gains: pressing photo-tile-3 on the detail screen calls router.push with pathname '/spot/<id>/photos' and params { index: '3' } (or the string '/spot/<id>/photos?index=3').",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines, and npx expo export --platform ios --output-dir /tmp/hl-export exits 0."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-04",
@@ -298,7 +298,7 @@
         "Android/iOS back gesture: the screen handles the hardware back/edge swipe by letting the Stack pop (no custom interception), stated in the plan.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines, and npx expo export --platform ios --output-dir /tmp/hl-export exits 0."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-05",
@@ -312,7 +312,7 @@
         "The long-press target has accessibilityHint 'Double-tap and hold for options'.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-06",
@@ -327,7 +327,7 @@
         "The file records npx jest --silent totals and npx expo export --platform ios --output-dir /tmp/hl-export exit 0 with the bundle size.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-07",
@@ -341,7 +341,7 @@
         "A 'refactor:' commit applies the simplification pass; CLAUDE.md Layout lists app/spot/[id]/photos.tsx and src/utils/gallery-gestures.ts and Testing mentions the gesture-handler jest setup; README.md Status mentions the full-screen photo viewer and docs/RUNNING-ON-PHONE.md describes opening it from the detail screen.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-01",
@@ -355,7 +355,7 @@
         "src/__tests__/stores.test.ts passes with the final filter semantics: stopped undefined keeps all, true keeps stopped only, false keeps not-stopped only; types any-of; natural_speed_min 1 and max 3 keeps speeds 1,2,3 and undefined and drops 0 and 4; selectActiveFilterCount returns 1 for { types: ['rail'] }, 1 for { stopped: false }, 1 for { natural_speed_min: 0, natural_speed_max: 2 }, 3 for all three, 0 for DEFAULT_FILTERS.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-02",
@@ -369,7 +369,7 @@
         "The Filter button badge on the Spots tab shows '3' with all three set (existing badge test in spots-sort-search or spots-view-mode updated).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-03",
@@ -383,7 +383,7 @@
         "src/components/SpotListItem.tsx props are { id, displayName, thumbnailUri?, featureType?, stopped, naturalSpeed?, distance?, onPress } and the component is still wrapped in memo.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-04",
@@ -397,7 +397,7 @@
         "The file records npx jest --silent totals and npx expo export --platform ios --output-dir /tmp/hl-export exit 0.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-05",
@@ -411,7 +411,7 @@
         "A 'refactor:' commit applies the simplification pass; CLAUDE.md Layout's stores line describes the three filters; README.md Status describes filters as feature type, skate stopped and natural speed, and sort as Distance, Date, Name; docs/RUNNING-ON-PHONE.md Spots tab text matches.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-01",
@@ -425,7 +425,7 @@
         "src/utils/nearby-spots.ts exports nearbySpots(location: GeoPoint, spots: Spot[], radiusMeters: number): Spot[]; src/__tests__/nearby-spots.test.ts passes: spots at 10 m, 40 m and 60 m from the location with radius 50 returns the 10 m and 40 m spots in that order; a spot at NO_LOCATION is never returned; a spot with deleted_at set is never returned; an unknown query location (NO_LOCATION) returns []; a spot at exactly the radius is included.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-02",
@@ -438,7 +438,7 @@
         "The name field keeps autoFocus and the Save button text is 'Save'; the 'Add details' link has accessibilityRole 'button'.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-03",
@@ -453,7 +453,7 @@
         "The Profile radius hint now reads 'Photos this close together import as one spot, and a new spot this close to one you have offers to join it.' (profile.test.tsx updated).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-04",
@@ -467,7 +467,7 @@
         "The subtitle count ('N spots from your photos') reflects only groups that will become new spots after the choice.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-05",
@@ -481,7 +481,7 @@
         "The file records npx jest --silent totals and npx expo export --platform ios --output-dir /tmp/hl-export exit 0.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-06",
@@ -495,7 +495,7 @@
         "A 'refactor:' commit applies the simplification pass; CLAUDE.md Layout mentions nearby-spots and the 'Add details' disclosure; README.md Status describes the nearby-spot offer; APP_SPECIFICATIONS.md Quick Add and Batch Import flows get a dated note about the offer.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M7-01",
@@ -511,7 +511,7 @@
         "grep -rn \"Import radius in meters\\|(meters)\\|{batchRadius}m\" app src --include=*.tsx prints nothing.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M7-02",
@@ -525,7 +525,7 @@
         "CLAUDE.md Conventions gain one line: the radius is stored in metres and converted at the edges with units.ts; README.md Status mentions the radius in the user's units; APP_SPECIFICATIONS.md User section notes it.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-01",
@@ -541,7 +541,7 @@
         "npx expo export --platform ios --output-dir /tmp/hl-export exits 0; npx expo-doctor exits 0 (or, if the sandbox has no network, the doctor output is pasted and the failing checks are only network ones, stated in the sweep doc).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines; the sweep doc records the final test and suite counts."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-02",
@@ -557,7 +557,7 @@
         "docs/RUNNING-ON-PHONE.md 'what you will see' paragraphs match the M2–M7 walkthrough files (no Draft, pins one colour, viewer, filters).",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-03",
@@ -572,7 +572,7 @@
         "progress.md's newest entry has a 'For Michael' section with: the exact phone steps in order (npm ci, npm run start:tailscale, open in Expo Go, what the first launch does to his data, then the per-milestone 'Try on the phone' lists from the walkthrough files), how to roll back (git checkout main before the merge; the DB cannot be rolled back after migration 3, said plainly), and the list of §9 questions with the defaults taken.",
         "npx expo lint && npx tsc --noEmit && npx jest --silent passes with zero console.error lines, npx expo export --platform ios --output-dir /tmp/hl-export exits 0."
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
