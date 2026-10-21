@@ -282,3 +282,27 @@ agents are driven*.
   quoting, the token and the cap); calling both NTFY_URL and NOTIFY_CMD (two notifications for one event); the
   question in the title (a phone shows one line of it; the body holds 3500 bytes before ntfy.sh makes it an
   attachment).
+
+### D-H30 · An answer desk: `harness parked`, the harness-answer skill, `DESK_URL` *(accepted 2026-10-19, built in P2 of run agent-harness-2026-10-19)*
+- **Finding:** after D-H29 a park reached the phone with its question, but answering still meant knowing which runs
+  were parked, which INBOX section belonged to which feature, and whether to `harness continue` or `harness queue add
+  --continue` (a plain continue beside a queue runner races it for `MAX_PARALLEL_RUNS`). A Claude session opened from
+  the phone had to rediscover all of that, and nothing told it what it must not do.
+- **Choice:** `harness parked [<run>] [--json]`, read-only (no `harness_config`, no `mkdir`): one block per parked,
+  not-passing feature, oldest first, with run, project, since, why, the feature's INBOX question, whether the run is
+  going, and the exact next commands. A going run (`driver.pid` alive) gets only `harness answer`: its driver takes
+  the answer before its next session and unparks by itself; a run whose driver is alive but has written `ended` (it is
+  in `finish`, retro included: no next session) is `ending`, answered now and continued once it has ended; an ended
+  run gets `harness queue add --continue` when `queue/runner.pid` is alive, else `harness continue`; a run with a
+  continuation already queued (a session-cap end queues its own) gets only the answer. The question is the feature's
+  newest `### <id>` section (a re-park asks below the answered one). Runs whose
+  worktree was gc'd are skipped (nothing left to answer or continue). The logic is pure in `lib/parked.mjs`.
+  `skills/harness-answer/SKILL.md`, shipped here and symlinked by Michael, tells an interactive session to run
+  `harness parked`, check only what is safe (a variable's name, never its value; no `.env`, no sudo), propose, and run
+  `harness answer` (his words through a quoted heredoc, never shell-expanded) and the continue only after his yes.
+  `DESK_URL` (Michael's Remote Control environment URL) puts **Answer with Claude** on a park's notification.
+  `templates/user/config.sh` documents the user settings, every line commented.
+- **Rejected:** always printing a continue command (a second driver for a going run is refused, and would only
+  confuse); listing gc'd runs with a "worktree gone" line (nothing can be done there; *default*, Michael may want it
+  back); a skill that edits INBOX.md itself (the driver's merge of `harness answer` is the one writer besides the
+  GitHub app); installing the skill into `~/.claude` from the harness (Michael's directory, CLAUDE.md rules).

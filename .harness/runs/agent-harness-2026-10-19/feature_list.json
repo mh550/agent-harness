@@ -106,7 +106,7 @@
         "bash tests/run.sh ends with every check passing"
       ],
       "after": ["P1"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-02",
@@ -123,7 +123,7 @@
         "tests/run.sh check 'nothing parked': `harness parked demo` prints 'nothing parked'",
         "bash -n bin/harness; node --check lib/parked.mjs; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-03",
@@ -140,7 +140,7 @@
         "bash tests/run.sh ends with every check passing"
       ],
       "after": ["P2-01"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-04",
@@ -156,7 +156,7 @@
         "README.md's commands table and Steering section match what P2 built (parked, the skill install line, DESK_URL); the Tests line's check count matches tests/run.sh",
         "bash -n on every .sh touched in P2 and node --check on every .mjs pass; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
 
     {

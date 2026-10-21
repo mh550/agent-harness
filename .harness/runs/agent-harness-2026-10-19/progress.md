@@ -14,6 +14,70 @@ session; every session reads INBOX.md first. Answers override earlier plans.
 
 ---
 
+### 2026-10-19 16:00 · verify P2
+
+`check.sh` green (cached); suite output read: 140/140 checks passed, no FAIL line.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P2-01 | 1 | `head -5 docs/plans/2026-10-19-P2-answer-desk.md` | line 1 is `Milestone base: 39968f75…` | yes |
+| P2-01 | 2 | read plan §2 (lines 37-85) | text layout for parky (since/why/question/running/next) and `--json` fields run, project, feature, since, why, question, running, commands | yes |
+| P2-01 | 3 | read plan §2.1 (lines 86-95) | running = driver.pid alive; runner = queue/runner.pid `kill -0`; command pair per case (answer+continue, answer+queue add --continue, answer only) | yes |
+| P2-01 | 4 | read plan §5 (lines 147-181) | skill sections, order of commands, never-list, verbatim README install line | yes |
+| P2-01 | 5 | read plan §6-7 (lines 183-241) | templates/user/config.sh with NTFY_URL, NTFY_TOKEN, DESK_URL, NOTIFY_CMD, DESK, DESK_MODEL placeholders; check names for P2-02 and P2-03 | yes |
+| P2-01 | 6 | bash tests/run.sh output (check.sh run, check-*.out): 140/140 checks passed | 140/140 | yes |
+| P2-02 | 1 | ran `parkedReport` via `node --input-type=module -e` with the step's entry | text has `harness answer r "…"` and `harness continue r`; runner:true gives `harness queue add --continue r`; [] gives `nothing parked`; also asserted by test 'parked.mjs: the report names the answer and continue commands' (PASS) | yes |
+| P2-02 | 2 | `grep -n parked bin/harness`; read cmd_parked and test 'harness parked is read-only' (run.sh:387) | usage header line 22 lists it; `parked)` case line 343; read-only check uses `find -newer` on state and worktree plus git status; PASS | yes |
+| P2-02 | 3 | run.sh:385 (before the answer at :415); suite PASS 'harness parked: id, why, question, both commands' | asserts parky · proj · B, why, question '### B: set the gatus vars…', answer and continue commands | yes |
+| P2-02 | 4 | run.sh:388; suite PASS 'harness parked --json parses' | jq asserts .[0].feature=="B", running==false, commands length 2 | yes |
+| P2-02 | 5 | run.sh:390; suite PASS 'with a queue runner going, the continue command is a queue add' | runner.pid with $$; output has `queue add --continue parky`, not `continue parky` | yes |
+| P2-02 | 6 | run.sh:408; suite PASS 'nothing parked' | `harness parked demo` equals 'nothing parked in demo' (contains 'nothing parked') | yes |
+| P2-02 | 7 | `bash -n bin/harness templates/user/config.sh; node --check lib/parked.mjs`; bash tests/run.sh output (check.sh run, check-*.out): 140/140 checks passed | syntax ok; 140/140 | yes |
+| P2-03 | 1 | read skills/harness-answer/SKILL.md | frontmatter name: harness-answer; description has "answer the harness" and "what does <project> need?"; commands appear in order parked, status, answer, queue list, queue add --continue, continue | yes |
+| P2-03 | 2 | read the safe-checks and Never sections | `grep -c '^NAME=' file`, "by name only, never a value"; off limits .env, secrets, sudo; never-list has never edit INBOX.md/feature lists/policies/CLAUDE.md, never answer without his yes, never run live commands | yes |
+| P2-03 | 3 | `grep -n 'ln -s\|parked\|DESK_URL' README.md` | line 84 has the exact `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`; line 42 `harness parked` in commands table; DESK_URL in Steering (lines 82, 86) | yes |
+| P2-03 | 4 | read templates/user/config.sh; `bash -n` | all assignments commented, header as in project template; NTFY_URL, NTFY_TOKEN, DESK_URL, NOTIFY_CMD present; syntax ok; also PASS 'the user config template sets nothing' | yes |
+| P2-03 | 5 | run.sh:409; suite PASS 'the answer skill exists and names the commands and the never-list' | asserts file, name, 'harness parked', 'harness answer', 'never edit INBOX.md' (grep -i), 'sudo' | yes |
+| P2-03 | 6 | bash tests/run.sh output (check.sh run, check-*.out): 140/140 checks passed | 140/140 | yes |
+| P2-04 | 1 | read docs/plans/2026-10-19-P2-review.md; `git diff 39968f75..HEAD --stat` | review lists I1-I3, R1 Important and Minors with file:line and resolution; diff covers lib bin tests skills templates (5 files, +254) | yes |
+| P2-04 | 2 | read review rows I1, I2, I3, R1 | each names its check (ending, newest question wins, quoted heredoc, same as I2); all present in suite output and PASS. That they were red first rests on the review file and progress note (135/139, 135/140), not re-run | yes |
+| P2-04 | 3 | `grep -n D-H30 journal/decisions.md` | line 286 heading plus Finding, Choice, Rejected bullets | yes |
+| P2-04 | 4 | `grep -n` docs/architecture.md | §3 bin/harness row lists parked (line 50); lib/parked.mjs row (57); '## 17. Answer desk' with the notification → Answer with Claude → skill → answer → continue flow | yes |
+| P2-04 | 5 | README.md lines 42, 84-86, 127 | commands table, install line, DESK_URL and "140 checks"; run.sh has 140 `check` lines | yes |
+| P2-04 | 6 | bash -n bin/harness tests/run.sh templates/user/config.sh; node --check lib/parked.mjs; bash tests/run.sh output (check.sh run, check-*.out): 140/140 checks passed | all ok; 140/140 | yes |
+
+### 2026-10-19 15:10 · P2-04 · passes
+
+- Review of the P2 diff (`/tmp/p2.diff`, 267 lines) by Opus, then a second Opus pass over the fixes: `docs/plans/2026-10-19-P2-review.md`, 4 Important (I1–I3, R1) and 7 Minor, none Critical. Fixes in c44ed3e; tests 134 → 140, each new check watched red first (135/139, then 135/140).
+- Important fixes: `harness parked` showed a run in `finish` (driver alive, `ended` written, retro running) as "running", with the answer command only, so the answer sat unused after a park. It now shows `ending`. A re-park quoted the old answered question; the newest `### <id>` now wins. The skill passed Michael's words in double quotes, where backticks and `$(…)` run; it now uses a quoted heredoc. A `# comment` in a code fence cut the question short; fences now count.
+- Also: `queue/*-continue-<run>.args` → answer only (a session-cap end already queued a continue); `state_of` rejects globs (`harness answer 'park*'` answered a random run); `runner_up()` helper.
+- Docs: D-H30 in journal/decisions.md; architecture §3 rows (bin/harness parked, lib/parked.mjs, the skill, the template), §14 runbook row, new §17 "Answer desk"; README Tests count 140. `check.sh` green in 189 s; `bash -n` bin/harness, tests/run.sh, templates/user/config.sh; `node --check lib/parked.mjs`.
+- Left open (in the review file): store the park-time question in parked.json (P3 touches the park path); stale-pid reuse in `alive` (M1); no "already answered" marker (M2).
+- Michael: runs whose worktree was gc'd stay hidden from `harness parked` (D-H30 *default*). Should they show a "worktree gone" line instead?
+- Proposed change: the JSON of `harness parked` gained `ending` and `queued` fields, which the plan's exact field list didn't have. P3's desk prompt should read them.
+
+### 2026-10-19 14:00 · P2-03 · passes
+
+- Added `skills/harness-answer/SKILL.md` (frontmatter + the five sections from plan §5), `templates/user/config.sh` (all assignments commented), README: `harness parked` in the commands table, a "Answering from the phone" bullet under Steering with the install line and DESK_URL. Tests 132 → 134.
+- Checks: `the answer skill exists and names the commands and the never-list`, `the user config template sets nothing` (after `nothing parked` in tests/run.sh). I wrote the files before the checks, so the checks were not watched failing. `check.sh` green in 195 s; `bash -n` on the template and run.sh ok.
+- Michael: install with `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`.
+- Next (P2-04): D-H30, architecture, README Tests count.
+
+### 2026-10-19 13:20 · P2-02 · passes
+
+- Built `harness parked [<run>] [--json]`: new `lib/parked.mjs` (pure questionFor, commandsFor, entriesFor, parkedReport + `report` stdin CLI, never writes), `cmd_parked` in bin/harness (usage line, `parked)` beside `status)`, help range 2,35p). Output matches the plan §2 layout exactly. Tests 125 → 132.
+- Checks added (all red first, then green): 2 units (`parked.mjs: the report names…`, `…the question is the feature's INBOX section`) and 5 e2e between `one notification per run end` and `harness answer parky` (id/why/question/both commands, read-only via `find -newer` + `git status`, `--json` jq, queue-runner → `queue add --continue`, `nothing parked in demo`). `check.sh` green: 132/132 in 191 s; `bash -n bin/harness tests/run.sh`, `node --check lib/parked.mjs` ok.
+- An Opus review found no Critical issues. I fixed these (tests extended first): runs whose worktree was gc'd are skipped (they used to show every parked id, passing ones included, with a `continue` that can't work); `### <id>` headings win over a heading that only mentions the id; one broken meta.env no longer cuts the list short (`|| true`); a second positional arg is a usage error.
+- Not done, for P2-04: D-H30, architecture §3 and the "Answer desk" section, README (per the plan). No harness-log.md note: the command is read-only by design. Possible simplification: entriesFor repeats features.mjs `parked`'s "parked minus passing" filter.
+- Michael: should a run whose worktree is gone still be listed with a "worktree gone" line? Right now it's hidden (simplest; D-H30 in P2-04 should record it).
+
+### 2026-10-19 12:40 · P2-01 · passes
+
+- Wrote `docs/plans/2026-10-19-P2-answer-desk.md` (Milestone base 39968f7…): the exact text block and `--json` fields of `harness parked`, the command rule (driver.pid alive → answer only; queue/runner.pid alive → answer + `queue add --continue`; else answer + `continue`), lib/parked.mjs helpers (questionFor, commandsFor, entriesFor, parkedReport) and its stdin CLI, `cmd_parked` in bin/harness (read-only; help range 2,34p → 2,35p), the skill's five sections + frontmatter, templates/user/config.sh content (all commented; DESK/DESK_MODEL as P3 placeholders), and 9 named checks (125 → 132 after P2-02 → 134 after P2-03).
+- Plan only: no code or tests changed; suite still 125 checks. Verified: `head -1` of the plan matches the session's start HEAD; `check.sh` green (189 s).
+- Next session (P2-02): add the e2e checks between `one notification per run end` and `"$H" answer parky` in tests/run.sh; parky, parkn and parkl are all parked at that point, and demo's worktree is already gc'd (a missing feature list/INBOX counts as empty).
+- Choice made in the plan (D-H30 records it in P2-04): while a run is still going, `harness parked` gives only the answer command, because the driver unparks on new answers by itself. Michael: say if you'd rather always see a continue command.
+
 ### 2026-10-19 12:03 · verify P1
 
 `check.sh` green; full suite re-run: 125/125. All 5 features hold.
