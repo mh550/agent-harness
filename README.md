@@ -38,10 +38,12 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 |---|---|
 | `harness start` · `continue` · `merge` · `stop` · `pause` · `resume` · `answer` | one run |
 | `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue |
-| `harness status` · `report` · `trends` · `attach` | look |
+| `harness status` · `report` · `trends [--by version]` · `attach` | look (`trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
-| `harness init` · `gc` | set up a project, clean up merged runs |
+| `harness init` · `gc` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs |
+
+`harness continue` merges `main` into the run branch before any session, so a resumed run never works on a stale base.
 
 ## What a project needs
 

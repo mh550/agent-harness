@@ -77,10 +77,11 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Steering | `…/INBOX.md` (`status: run/pause/stop`, `## Answers`) | Michael (GitHub app), `harness answer` via the driver | driver, sessions | yes |
 | Brief | `…/brief.md` | driver, from `--brief` at start/continue | every prompt | yes |
 | Driver events | `…/harness-log.md` | driver (`note`) | Michael, summary, retro | yes |
-| Metrics | `…/metrics.jsonl` (one row per session) | driver (`metrics.mjs append`) | summary | yes |
+| Metrics | `…/metrics.jsonl` (one row per session: kind, role, model, cost, wall/api seconds, turns, `tokens_in cache_read cache_write tokens_out cache_hit_rate context_peak`, `orient_tokens orient_turns orient_s`, exit, result) | driver (`metrics.mjs append`) | summary | yes |
 | Summary / writeup / retro | `…/summary.json`, `report.md`, `retro.md` | driver at the end | Michael, ledger | yes |
 | Driver log | `~/.local/state/harness/<p>/<run>/run.log` | driver (`log`) | status, summary (wall times) | no |
 | Transcripts | `…/logs/NN-<id>.jsonl`, `HHMMSS-verify-<m>.jsonl`, `00-init.jsonl`, `zz-retro-*.jsonl` | `claude --output-format stream-json` | metrics, retro, you (`jq`) | no |
+| Harness version | `~/.local/state/harness/<p>/<run>/{harness-version,harness-dirty}` (last harness commit outside `ledger/`, and whether the tree has changes outside it; `lib/version.sh`; rewritten each segment, shown on the `run <id> on` line, copied into `summary.json` and the ledger row) | driver | summary, `harness trends --by version` | no |
 | Attempts | `…/attempts.json` | driver (bump, unbump, grant, reset) | scheduler | no |
 | Parked features | `…/parked.json` (`id → {answers, why, at}`; `answers` = hash of INBOX.md from `## Answers` on) | driver (park after a `PARKED:` session; unpark when the hash changes) | scheduler, summary, `harness parked` | no |
 | Markers | `…/{driver.pid, ended, PAUSE, STOP, verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, verify-rounds-<m>, tests-start, tests-end, waited-<t>, port, meta.env, run.env, brief.md, inbox.md}` | driver, CLI | driver, CLI, summary | no |
@@ -98,7 +99,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 
 ```
 harness start ─► worktree + branch ─► driver:
-  [resume?] merge main in (and reload the config if it changed) · merge verified (v3) milestones
+  [resume?] merge main in before any session, the initializer included (and reload the config if it changed) · merge verified (v3) milestones
   [no list] init + suite ─► INITIALIZER ─► feature_list.json, progress.md
   loop:
     stop if: session cap · deadline · STOP/"status: stop"
@@ -271,13 +272,15 @@ worktree is untrusted). The harness never writes either, and agents can't (the a
 ## 11. Measurement and the improvement loop
 
 1. **Per session**: `metrics.jsonl` row: kind, role, model, cost (max of cumulative results), wall time (driver),
-   API time and turns (summed over result events), exit, `env`, final text.
+   API time and turns (summed over result events), **tokens** (in, out, cache read/write; `cache_hit_rate`),
+   `context_peak`, **orientation** (`orient_tokens/turns/s`: requests up to and including the first edit), exit, `env`, final text.
 2. **Per run**: `summary.json` (features, milestones verified/merged, tests start→end, cost by role and model, time
-   by role, sessions real/refused, guard counts, every non-passing feature with an automatic cause), `report.md`
+   by role, **tokens**, cost and tokens per verified feature, median orientation, first-attempt pass rate, rework, verify-fail rate, `harness` version and dirty flag, sessions real/refused, guard counts, every non-passing feature with an automatic cause), `report.md`
    (the writeup: `harness report <run>`), and `retro.md` (a Sonnet session classifies "not done" features into
    spec / size / dependency / permission / environment / model / harness causes and proposes ≤ 3 harness changes,
    noting repeats from earlier retros).
-3. **Across runs**: `ledger/runs.jsonl` + `harness trends` ($ per feature, causes, end reasons over time).
+3. **Across runs**: `ledger/runs.jsonl` + `harness trends` ($ per feature, causes, end reasons over time);
+   `harness trends --by version` groups runs by the harness version that ran them, to compare a change before and after.
 4. **Back into runs**: the initializer gets a calibration line from the ledger (median and p90 minutes per passing
    feature, this project and all) to size features against reality.
 5. **Into the harness**: you read the retros/trends (or ask a session to), turn a repeated proposal into a decision

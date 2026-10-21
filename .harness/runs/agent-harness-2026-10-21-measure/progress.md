@@ -6,6 +6,12 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 18:20 · E1-08 · passes
+
+- **What changed:** `docs/architecture.md` §4 (metrics row keys, harness-version/dirty state files), §5 (resumed run merges main before any session, initializer included), §11 points 1–3 (tokens/cache/orientation, new summary keys, `trends --by version`); `README.md` (`trends [--by version]`, init deploy guard, continue merges main). Tests 186 → 186 (docs only).
+- **Verified:** `grep -c '^### D-H3[234]' journal/decisions.md` is 3 (one each, already written by E1-02..07); `check.sh` green in 277 s.
+- **Next:** E1-09.
+
 ### 2026-10-21 17:55 · E1-07 · passes
 
 - **What changed:** `lib/version.sh` (new) `harness_version <dir>`; `lib/driver.sh` writes `$STATE/harness-version`/`harness-dirty` per segment and ends the `run <id> on` line with `· harness <sha>[+dirty]`; `lib/summary.mjs`: `harness { version, dirty }` in `build`, `ledger-line` adds `harness_version`, `harness_dirty` and the telemetry keys of plan §9 (null when absent), pure `byVersion` behind `trends <runs.jsonl> --by version` (other args exit 2); `bin/harness trends` passes its args and its usage line names `--by version`. D-H34 gains "Across harness versions (E1-07)". Tests 183 → 186.
