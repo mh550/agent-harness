@@ -407,8 +407,20 @@ agents are driven*.
   none), so `orient_s` can be measured rather than `null`. The CLI emits one `assistant` event per content block, the
   same `message.id` and `usage` on each (the capture's first message: a thinking block, then the `Write`). A stub
   session replays the capture's timestamps, so every stub session shows the same 0.23 s to its `Write`.
-- **Known limit:** `context_peak` counts every assistant event, a subagent's (`parent_tool_use_id` set) too, if the
-  CLI streams them.
+- **Orientation (E1-05):** `orientation(evs)` → `{ tokens, turns, seconds }`, written as `orient_tokens`,
+  `orient_turns`, `orient_s`. A request is one `message.id`; orientation is the requests **up to and including** the
+  first that calls `Edit`, `Write` or `NotebookEdit` (every request if none); tokens are their `input + cache_read +
+  cache_creation + output`, turns their count; seconds run from the first timestamped event to the last one up to and
+  including the first edit (the session's last if it never edits), `null` without timestamps; all three `null` without assistant usage. On the
+  capture: 24547 tokens, 1 turn, 0.233 s; without its `Write`: 49432, 2, 1.441. *Default, a deviation from the
+  feature's wording ("before" the first edit):* the edit request's input is everything orientation read (the last
+  file read is paid for only there), its timing is already in `orient_s`, and "before" gives 0 tokens / 0 turns on the
+  real capture, so every stub session would show none and the demo check (`orient_tokens > 0`) could not hold without
+  a hand-made orientation event in the stub. It adds one request per session to both numbers, the same for every run,
+  so comparisons across harness versions are unaffected.
+- **Known limit:** `context_peak` and orientation count every assistant event, a subagent's (`parent_tool_use_id`
+  set) too, if the CLI streams them (a subagent's edit would end orientation). Assistant `output_tokens` are the
+  streamed partial (see above), so orientation's output share is understated.
 - **Rejected:** summing tokens over result events (modelUsage is cumulative: a session with background subagents would
   count its first segment twice); context peak from the result's `usage.iterations` (only the last request's);
   a hand-written stub `usage` (fakes mirror the live API).

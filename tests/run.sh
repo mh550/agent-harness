@@ -94,6 +94,14 @@ TOKS='import { outcome, events } from "'$HERE'/../lib/metrics.mjs"; const o = ou
   process.exit(o.tokens_in === 4 && o.cache_read === 35768 && o.cache_write === 13651 && o.tokens_out === 219 && o.cache_hit_rate === 0.724 && o.context_peak === 24881
     && n.tokens_in === null && n.cache_hit_rate === null && n.context_peak === null ? 0 : 1);'
 check "metrics.mjs: tokens, cache rate and context peak from the real fixture" 'node --input-type=module -e "$TOKS"'
+# Orientation: the capture's first message (thinking, then Write, one message.id) is the first edit, so it alone counts;
+# without the Write event both messages count, timed to the last event. No usage → null; no timestamps → seconds null;
+# an edit event without one is timed by the last stamped event before it.
+ORNT='import { orientation as or, events } from "'$HERE'/../lib/metrics.mjs"; const evs = events("'$HERE'/fixtures/usage-tokens.jsonl"), eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const noEdit = evs.filter(e => !e.message?.content?.some(c => c.name === "Write")), noTs = evs.map(({ timestamp, ...e }) => e);
+  process.exit(eq(or(evs), { tokens: 24547, turns: 1, seconds: 0.233 }) && eq(or(noEdit), { tokens: 49432, turns: 2, seconds: 1.441 })
+    && eq(or(noTs), { tokens: 24547, turns: 1, seconds: null }) && eq(or(evs.map((e, i) => i === 1 ? noTs[1] : e)), { tokens: 24547, turns: 1, seconds: 0 }) && eq(or([{ type: "result" }]), { tokens: null, turns: null, seconds: null }) ? 0 : 1);'
+check "metrics.mjs: orientation stops at the first Write" 'node --input-type=module -e "$ORNT"'
 
 # ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
 DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";
@@ -140,6 +148,7 @@ check "brief committed with the run"      'grep -q "only A–C" "$RD/brief.md"'
 check "brief, rules and policy in the prompt" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q "only A–C" "$P" && grep -q "Project rules (CLAUDE.md)" "$P" && grep -q "Policy: build-only" "$P"'
 check "metrics: wall time and roles"      'jq -e "select(.kind==\"coding\") | .wall_s != null and .role == \"build\"" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0)" "$RD/metrics.jsonl" > /dev/null'
+check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'
 check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && grep -q "ended: done" <<< "$("$H" status demo)"'
 check "summary, report and retro written" '[[ $(jq .features.merged "$RD/summary.json") == 3 ]] && grep -q "per passing feature" "$RD/report.md" && grep -q "Stub retro" "$RD/retro.md"'
 check "ledger has the run"                'grep -q "\"run\":\"demo\"" "$T/ledger/runs.jsonl" && [[ -f $T/ledger/proj/demo/summary.json ]]'

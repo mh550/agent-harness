@@ -6,6 +6,15 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 16:45 · E1-05 · passes
+
+- **What changed:** `lib/metrics.mjs` `orientation(evs)` exported → `{ tokens, turns, seconds }`; `outcome()` and `append` write `orient_tokens orient_turns orient_s` after `context_peak`; 2 checks in `tests/run.sh`; D-H34 gains an "Orientation (E1-05)" paragraph and a widened known limit. Tests 179 → 181.
+- **Watched failing** on a copy with only the checks: `FAIL metrics.mjs: orientation stops at the first Write`, `FAIL metrics: orientation recorded per session` (179/181).
+- **Verified:** by hand from the fixture: full capture 24547 tokens (2+11228+13312+5) / 1 turn / 0.233 s; without its `Write` 49432 / 2 / 1.441 s; no timestamps → seconds null; no usage → all null. `node --check`, `bash -n`; `check.sh` green in 275 s, 181/181. Opus review: no bugs, two low edge cases; the timestamp-less edit event one is fixed (timed by the last stamped event before it, asserted).
+- **Default taken (D-H34), a deviation from the step's "before":** orientation counts requests **up to and including** the first edit. With "before", the real capture (its first request is the `Write`) gives 0/0, so every stub session would show none and step 3 (`orient_tokens > 0`) could only hold with a hand-made stub event; and the edit request's input is what orientation read. +1 request per session, the same for every run.
+- **Next session (E1-06) must know:** every stub coding row is 24547 / 1 / 0.233, so the median orientation on demo is those numbers. `orient_s` is a number with ms precision.
+- **Proposed change / question for Michael:** step 1 of E1-05 and plan §6 say "before the first edit" and `orient_s` null; should orientation exclude the edit request instead? It's a one-line change in `orientation()` plus a stub orientation event.
+
 ### 2026-10-21 15:55 · E1-04 · passes
 
 - **What changed:** `tests/fixtures/usage-tokens.jsonl` (new: the real capture, haiku, CLI 2.1.306, $0.0032; assistant/user/result lines, `session_TEST`, `/tmp/capture`; system lines and the rate_limit_event dropped); `lib/metrics.mjs` `tokens()`/`contextPeak()` exported, `outcome()` + `append` write `tokens_in cache_read cache_write tokens_out cache_hit_rate context_peak` after `turns`; `tests/stub-claude.sh` `ok()` replays the fixture (cost/result/turns/duration substituted, `--argjson` as plan §5.4); 2 checks; D-H34. Tests 177 → 179.

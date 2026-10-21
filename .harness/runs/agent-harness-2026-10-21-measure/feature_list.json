@@ -51,7 +51,7 @@
         "metrics rows gain orient_tokens, orient_turns, orient_s; tests/run.sh check `metrics: orientation recorded per session`: run demo's coding rows have `orient_tokens > 0` and `orient_turns >= 1`",
         "Both checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E1-06", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "summary.json and report.md carry token totals, per-verified-feature cost and tokens, median orientation, first-attempt pass rate, rework and verify-fail rate; the retro prompt points at them.",
       "steps": [
