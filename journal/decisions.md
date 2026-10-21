@@ -472,7 +472,15 @@ agents are driven*.
   portfolio_site and hit_list as the sources, but this session's permission classifier refused reads of their git
   history (a mirror clone in scratch included), and agent-harness's runs have no retried feature and no in-task
   `after` that passes the grep. The retried and depends-on tasks wait on that access (evals/README.md § Still to add).
+  *Default (E2-02, second session):* a plain `ls` of those records was refused too, so the set grows from
+  agent-harness only. A **depends-on by order** task counts in its category: the later feature has no `after`, but its
+  steps build on code the earlier one adds (the harness runs them in array order), and `why` names what is reused.
+  Two such tasks: 10-19 P1-03 → P1-04 (`gh_url`) and E1-06 → E1-07 (the summary keys in the ledger row), the second
+  replacing the single E1-06 task so no feature is replayed twice per set run. Set: 5 tasks (3 first-time, 2
+  depends-on by order).
 - **Rejected:** an LLM judge (v1 is deterministic); synthetic tasks (no real failures in them); rewording a feature to
   pass the grep (the replay would no longer be the source's task); `git -C` in project checkouts for the records (a
   read-only mirror in scratch is the route for the remaining sources, once its reads are allowed); stripping the
-  source run's record from `base` (its session saw it).
+  source run's record from `base` (its session saw it); padding the set to 8 with more agent-harness first-time
+  passes (it skews the set to easy tasks and leaves less room under 12 for the retried ones); calling a task with a
+  milestone `after` (P3-01 → P2) a depends-on task (the dependency is outside the task).

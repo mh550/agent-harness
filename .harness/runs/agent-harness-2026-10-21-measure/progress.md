@@ -6,6 +6,14 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 21:30 · E2-02 · not yet
+
+- **What changed:** `evals/tasks/`: two depends-on tasks, `ah-p1-03-04-park-then-notify` (10-19 P1-03 → P1-04, base dfd0429) and `ah-e1-06-07-summary-trends` (E1-06 → E1-07, base 9480d72). The second replaces `ah-e1-06-summary-quality`, so E1-06 isn't replayed twice. The set now has 5 tasks: 3 first-time passes and 2 depends-on. `evals/sets/default.txt`, the README table and § Still to add, and D-H35 (a second *default*: "depends-on by order") are updated. The `eval:` check also asserts that every id in default.txt has a task (watched failing with a bogus id). Tests 190 → 190.
+- **Verified:** `check.sh` green, 190/190 (277 s). `validate evals/tasks` says "5 task(s) valid". Step 1's `jq -e` passes on all 5, and the `live|secret|.env` grep prints nothing. Each base equals `git rev-parse <first commit>^`, and the features were built by `jq` straight from `git show <base>:…/feature_list.json`. The rebuilt E1-06 matches the old task's exactly.
+- **Why not passing:** steps 1–2 still need ≥8 tasks, ≥2 retried, and one in-task `after`. agent-harness has no retried feature, and its one in-task `after` (P2-01/P2-03) hits the grep. This session the classifier refused even `ls ~/projects/portfolio_site/.harness/runs` ("PII Data Handling"); I didn't work around it.
+- **Question for Michael (D-H35 *default*):** to unblock, allow reads of the source records for the next E2-02 session. For example, add Bash allow rules `ls ~/projects/*/.harness/runs*`, `jq * ~/projects/*/.harness/runs/*` and `git clone -q --mirror /home/mh550/projects/*`. Or answer "agent-harness only" in INBOX.md, and amend steps 1–2 to accept the 5-task set.
+- **Next session:** with reads allowed, add 2 retried tasks plus 1–2 with an in-task `after` (candidates in evals/README.md § Still to add) for 8–9. Otherwise E2-03…E2-06 don't need more tasks.
+
 ### 2026-10-21 20:45 · E2-02 · not yet
 
 - **What changed:** `lib/eval.mjs` (new): `validateTask` returns one error per problem, each starting with its field, and `node lib/eval.mjs validate <dir|file>…` rejects a missing task.json, an id that isn't its directory's name and an empty set. New: `evals/tasks/` with 4 tasks, `evals/sets/default.txt`, `evals/README.md` (rules, table, § Still to add), and D-H35 in `journal/decisions.md` (the set part; E2-03 extends it). The suite gains `eval: every task.json validates and a bad one is rejected`, watched failing first ("FAIL eval: …": no eval.mjs, then no evals/tasks). Tests 189 → 190.

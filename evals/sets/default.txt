@@ -1,5 +1,6 @@
 # The set `harness eval run --set default` runs: one task id (a directory under evals/tasks/) per line.
 ah-e1-02-resume-merge
 ah-e1-05-orientation
-ah-e1-06-summary-quality
+ah-e1-06-07-summary-trends
 ah-p3-05-desk-housekeeping
+ah-p1-03-04-park-then-notify

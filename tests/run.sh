@@ -112,7 +112,8 @@ EVTK='import { validateTask as v } from "'$HERE'/../lib/eval.mjs"; const has = (
     && has(v({ ...ok, features: [{ ...features[0], steps: [] }] }), "features[0].steps") && has(v({ ...ok, chek_cmd: "x" }), "chek_cmd") ? 0 : 1);'
 mkdir -p "$T/evbad/nofeat" && jq -n '{id:"nofeat",project:"p",repo:"/r",base:("a"*40),policy:"build-only",why:"w"}' > "$T/evbad/nofeat/task.json"
 check "eval: every task.json validates and a bad one is rejected" 'node --input-type=module -e "$EVTK" && node "$HERE/../lib/eval.mjs" validate "$HERE/../evals/tasks" 2> /dev/null \
-  && ! node "$HERE/../lib/eval.mjs" validate "$T/evbad" > "$T/evbad.out" 2>&1 && grep -q "nofeat/task.json: features: required" "$T/evbad.out"'
+  && ! node "$HERE/../lib/eval.mjs" validate "$T/evbad" > "$T/evbad.out" 2>&1 && grep -q "nofeat/task.json: features: required" "$T/evbad.out" \
+  && [[ -z $(grep -v "^#" "$HERE/../evals/sets/default.txt" | while read -r t; do [[ -f "$HERE/../evals/tasks/$t/task.json" ]] || echo "$t"; done) ]]'
 
 # ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
 DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";
