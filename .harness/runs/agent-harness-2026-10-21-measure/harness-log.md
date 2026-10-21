@@ -6,3 +6,4 @@
 - 2026-10-21 16:01 · E1-05 · claude-opus-5-5 · passes=true · 11 min · 5/29 passing
 - 2026-10-21 16:16 · E1-06 · claude-opus-5-5 · passes=true · 15 min · 6/29 passing
 - 2026-10-21 16:47 · E1-07 · claude-opus-5-5 · passes=true · 31 min · 7/29 passing
+- 2026-10-21 16:53 · E1-08 · claude-sonnet-5-5 · passes=true · 5 min · 8/29 passing
