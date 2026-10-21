@@ -38,6 +38,14 @@ every behaviour visible in `harness-log.md`. Proceed on the defaults below and r
   was running; their tmux sessions were killed. Record the finding as the `D-H` note under R7 (a kill should still
   leave an `ended` line: have the driver's trap write `killed` when it fires without a reason, if it doesn't already).
 
+- **R9 · gc finishes past build output** (found 2026-10-21). `harness gc portfolio_site` stopped at its first
+  `worktree remove`: the tree was clean (`status --porcelain` empty) but `.next/` (gitignored build output from the
+  run's init) made the directory non-empty, so git refused and the loop ended there; the worktree was left
+  unregistered with the directory still on disk, and nothing after it ran. Fix: when the tree is clean, remove with
+  `--force` (ignored files are build output, never work), and `rm -rf` the directory if git still leaves it; one
+  failure must not stop the rest of gc (log it, go on). Check: a worktree with an ignored directory is removed and
+  the next one is still processed.
+
 ## F2 · Initializer and verify behaviour
 
 - **R2 · Reviews sized to the milestone** [v2-2026-10-18, agent-harness-2026-10-19, rane-one-mixxx-2026-10-19,
@@ -62,7 +70,7 @@ every behaviour visible in `harness-log.md`. Proceed on the defaults below and r
 
 | M | Contents | After |
 |---|---|---|
-| F1 | R1, R4, R6, R7, R8 | — |
+| F1 | R1, R4, R6, R7, R8, R9 | — |
 | F2 | R2, R3, R5 | [] (independent of F1) |
 
 Each with its checks written first and watched failing, `D-H<n>` entries, and the docs touched in the same milestone.
