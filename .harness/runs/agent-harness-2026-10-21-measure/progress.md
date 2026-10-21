@@ -6,6 +6,57 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 · verify E1
+
+Init green; `bash tests/run.sh` run fresh: 189/189 checks passed, no FAIL. `bash -n` on lib/*.sh tests/*.sh bin/harness and `node --check` on lib/*.mjs clean. Check names below are the PASS lines of that run.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| E1-01 | 1 | read docs/plans/2026-10-21-E1-telemetry.md (line 1, headings §1–§12, §5, §10, §12) | line 1 `Milestone base: 07c8367…`; sections for files/owners per E1-02…09, E0 (§2), E0b (§3), fixture capture + fields (§5), metrics/summary keys (§6–7), ledger + trends (§9), check names (§10), D-H32/33/34 (§12) | yes |
+| E1-01 | 2 | read plan lines 169–175, 189 | tokens combine by max like cost, falls back to sum if capture says so; `orient_s` null without timestamps, recorded in D-H34 | yes |
+| E1-01 | 3 | `git show --stat ef0cca2` | plan file only plus the harness's own feature_list/progress bookkeeping; no code | yes |
+| E1-01 | 4 | `bash tests/run.sh` | 189/189 | yes |
+| E1-02 | 1 | read tests/stub-claude.sh diff | `STUB_INIT_LIMIT` in initializer branch cats fixtures/usage-limit.jsonl and `exit 1` before the list is written | yes |
+| E1-02 | 2 | read tests/run.sh:337–338; suite PASS line | check `continue after a no-list end merges main first` asserts ended starts `usage limit before the feature list`, `grep -q revised …/SPEC.md`, and awk: `merged main` line precedes `feature list written`; PASS | yes |
+| E1-02 | 3 | read progress entry line 69 | quotes `FAIL continue after a no-list end merges main first` (168/169) before the driver change | yes |
+| E1-02 | 4 | read lib/driver.sh:416,437–441; suite | `resumed` set from earlier `run <id> on` line; `if [[ -f $LIST ]] \|\| (( resumed ))` runs sync_main before initializer; `resume reloads config merged from main` PASS | yes |
+| E1-02 | 5 | `grep -c '^### D-H32' journal/decisions.md`; read entry | 1; finding · choice · rejected | yes |
+| E1-02 | 6 | `bash -n`; full suite | clean; 189/189 | yes |
+| E1-03 | 1 | read run.sh:137–138; suite | check `init: vercel.json gets …` asserts framework nextjs kept, `deploymentEnabled["harness/**"]==false`, stdout "added the deploy guard"; PASS | yes |
+| E1-03 | 2 | read run.sh:139–141; suite | `.vercel/`-only repo gets file; bare repo gets none and no output; PASS | yes |
+| E1-03 | 3 | read run.sh:350–351,352; suite | one `preview deploy per session` note in hlog (and after continue: 2 initializer-refused, still 1), exactly one curl post; PASS | yes |
+| E1-03 | 4 | read run.sh:359–360; suite | demo hlog has no `preview deploy`, curl_count 0; PASS | yes |
+| E1-03 | 5 | read tests/stub-gh.sh diff, fixtures/gh-deployments.json keys, lib/deploy.sh | stub answers `api repos/…` from fixture (id, sha, ref, environment present), `STUB_DEPLOYMENTS=0` → `[]`; detection uses vercel.json, .vercel/, read-only gh api, netlify.toml (now `per_page=20` after review, check updated) | yes |
+| E1-03 | 6 | run.sh:144–145 and :353–354; suite | init adds `[build] ignore` that exits 0 for BRANCH=harness/x, exits 1 for main, other keys kept; run start notes netlify absence once; both PASS | yes |
+| E1-03 | 7 | read architecture.md:252–255, `grep -c '^### D-H33'` | line on Git-connected hosts disabling run-branch deploys present; D-H33 count 1 | yes |
+| E1-03 | 8 | `bash -n`; suite | clean; 189/189 | yes |
+| E1-04 | 1 | `jq` on tests/fixtures/usage-tokens.jsonl; `grep -ci michael` | 3 assistant events with message.usage, one with tool_use `Write`, result with usage + modelUsage, session ids test-ised, 0 hits for michael; D-H34 records the capture exception | yes |
+| E1-04 | 2 | `node -e` import `outcome`,`orientation` on fixture | tokens_in 4, cache_read 35768, cache_write 13651, tokens_out 219, cache_hit_rate 0.724 (=35768/49423), context_peak 24881 (jq max matches); row written by append | yes |
+| E1-04 | 3 | read run.sh:93–96; suite | check asserts literals 4/35768/13651/219/0.724/24881, all match my jq numbers; PASS | yes |
+| E1-04 | 4 | read stub-claude.sh `ok()`; run.sh:162; suite | `ok()` replays fixture with cost/result substituted; check asserts tokens_in>0, rate 0..1, context_peak>0 on coding rows; PASS | yes |
+| E1-04 | 5 | read progress line 52; suite | FAIL lines quoted (177/179); 189/189 | yes |
+| E1-05 | 1 | read lib/metrics.mjs orientation; ran it on fixture | `{tokens:24547,turns:1,seconds:0.233}`; 24547 = 2+13312+11228+5 by hand; stops at the Write request; fixture does carry timestamps | yes |
+| E1-05 | 2 | read run.sh:97–104; suite | literals 24547/1/0.233, no-edit 49432/2, no-timestamps seconds null, no-usage null; PASS | yes |
+| E1-05 | 3 | read run.sh:163; metrics output; suite | rows carry orient_tokens/turns/s; check asserts >0, >=1; PASS | yes |
+| E1-05 | 4 | read progress line 43; suite | FAIL lines quoted (179/181); 189/189 | yes |
+| E1-06 | 1 | read lib/summary.mjs 28–44, 168–187 | tokens totals + by_role, cache_hit_rate, context_peak, per_verified_feature {cost,tokens}, orientation median, first_attempt_pass_rate, rework, verify_fail_rate all present | yes |
+| E1-06 | 2 | read run.sh:166; suite | asserts tokens.in>0, per_verified_feature.cost>0, rework==["A","C"], first_attempt 0.33, verify_fail>0; PASS | yes |
+| E1-06 | 3 | read summary.mjs:239–240, run.sh:167; suite | `Tokens` and `Quality` rows greped in `harness report demo`; PASS | yes |
+| E1-06 | 4 | read prompts/retro.md:9–10 | names tokens, orientation, rework, first_attempt_pass_rate, verify_fail_rate | yes |
+| E1-06 | 5 | read progress line 35; suite | FAIL lines quoted (181/183); 189/189 | yes |
+| E1-07 | 1 | read driver.sh:416–420, lib/version.sh, summary.mjs:186, ledger fields | writes harness-version/dirty (skipped for merge-only), logs on `run <id> on` line, summary `harness:{version,dirty}`; uses last non-ledger commit (refined from plain rev-parse, D-H34) | yes |
+| E1-07 | 2 | read run.sh:169–171; suite | asserts ledger row harness_version==HV and boolean harness_dirty, run.log and marker; PASS | yes |
+| E1-07 | 3 | read run.sh:278–280; suite | `trends --by version` rows per version, header; plain trends has no Harness column; `trends lists every run` PASS | yes |
+| E1-07 | 4 | read progress line 26; suite | FAIL lines quoted (183/185); 189/189 | yes |
+| E1-08 | 1 | read architecture.md §4 rows 80,84, §5 line 102, §11 lines 275–283 | metrics keys, version marker, resumed run merges main before any session, tokens/cache/orientation, summary keys, trends --by version | yes |
+| E1-08 | 2 | read README.md:41,44,46 | trends --by version, init deploy guard, continue merges main first | yes |
+| E1-08 | 3 | `grep -c '^### D-H3[234]'` | 1 each | yes |
+| E1-08 | 4 | `bash tests/run.sh` | 189/189 | yes |
+| E1-09 | 1 | read docs/plans/2026-10-21-E1-review.md | lists M1–M8, S9–S10, R1–R5 with severity and resolution; diff from plan base 07c8367; states Opus reviewer read the diff (cannot independently confirm the subagent, doc is complete) | yes |
+| E1-09 | 2 | read review table, progress line 12 | no Critical/Important; Minors fixed with quoted FAIL lines (184/189) and commits 65cf82f, 3f42aec | yes |
+| E1-09 | 3 | `bash -n` all shell files, `node --check` all lib/*.mjs | all clean | yes |
+| E1-09 | 4 | `bash tests/run.sh` | 189/189 | yes |
+
 ### 2026-10-21 18:50 · E1-09 · passes
 
 - **What changed:** `docs/plans/2026-10-21-E1-review.md` (new: 8 Minor + 2 simplifications from the Opus review of `07c8367..32fbde5`, 5 Minor from a second Opus pass on the fixes, each with its resolution). Fixes: `lib/summary.mjs` exports `redSuite`/`failedRecheck` (escaped, exact-id; `cause()` and `rework` share them, so id `c++` no longer throws and empties `summary.json`); `lib/features.mjs` escapes the id; `lib/driver.sh` doesn't rewrite `harness-version` under `harness merge`; `lib/deploy.mjs`: true `harness/…` Vercel keys and `deploy-preview`/`branch-deploy`/`"harness/…"` Netlify context ignores count as unguarded, `vercel-guard` says `by-hand` rather than a false "added"; `lib/deploy.sh` reads `per_page=20` deployments. D-H33 updated. Tests 186 → 189.
