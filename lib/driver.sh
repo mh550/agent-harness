@@ -60,6 +60,8 @@ log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
 note() { log "$*"; echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; }   # phone-readable, committed
 # shellcheck source=lib/notify.sh
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID   # notify "<message>" [title=… body=… click=… …]: "[<run>] <message>"
+# shellcheck source=lib/deploy.sh
+source "$HARNESS_HOME/lib/deploy.sh"   # deploy_status: hosts that would build every pushed run branch
 commit_all() { git add -A && ! git diff --cached --quiet && git commit -q -m "$1"; return 0; }
 green() { "$CHECK" > /dev/null 2>&1; }
 
@@ -447,6 +449,27 @@ if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 who
   fi
   commit_all "HARNESS: merge"; sync; END_REASON="merge only"; exit 0
 fi
+
+# Once per run (a continue doesn't repeat it): a host that builds every branch makes a preview per pushed session
+# unless origin/main carries the guard, since the run branch branches off main (E0b, D-H33). The run goes on.
+deploy_check() {
+  [[ -f $STATE/deploy-checked ]] && return 0
+  touch "$STATE/deploy-checked"
+  git fetch -q origin "$MAIN_BRANCH" 2> /dev/null
+  local h hosts=() j
+  while read -r h; do
+    case $h in
+      vercel) note "deploy guard: vercel.json on origin/$MAIN_BRANCH has no git.deploymentEnabled \"harness/**\": false; this run will create a preview deploy per session (harness init adds it)" ;;
+      netlify) note "deploy guard: netlify.toml on origin/$MAIN_BRANCH has no [build] ignore for harness/* refs; this run will create a preview deploy per session (harness init adds it)" ;;
+      *) continue ;;
+    esac
+    hosts+=("$h")
+  done < <(deploy_status "$WT" "origin/$MAIN_BRANCH")
+  (( ${#hosts[@]} )) || return 0
+  printf -v j '%s, ' "${hosts[@]}"; notify "no deploy guard (${j%, }): this run will create a preview deploy per session"
+  return 0
+}
+deploy_check
 
 if [[ ! -f $LIST ]]; then
   run_init

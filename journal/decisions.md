@@ -350,3 +350,33 @@ agents are driven*.
 - **Rejected:** merging main on every start (a fresh run already branches from `origin/main`, and a `--base <other>` run
   must not get main merged); merging only right before the initializer (a resumed run with a list already merges at the
   start, and one place for both keeps the config reload in step).
+
+### D-H33 · Run branches never deploy: `harness init` writes the Vercel/Netlify guard, a run start without it notes and notifies once *(accepted 2026-10-21, built in E1 of run agent-harness-2026-10-21-measure)*
+- **Finding:** the driver pushes the run branch after every session (Michael follows `progress.md` on GitHub), and
+  Vercel builds a preview for every push to every branch. portfolio_site's v2 run passed the free plan's cap
+  (`more than 100, code: "api-deployments-free-per-day"`), a cap shared with production, so a busy night can block the
+  next morning's real deploy. Netlify builds every branch the same way.
+- **Choice:** `lib/deploy.mjs` (pure: `vercelGuarded`/`addVercelGuard`, `netlifyGuarded`/`addNetlifyGuard`,
+  `vercelDeployments`, `slug`, `unguarded`) and `lib/deploy.sh` (`deploy_status`, `deploy_guard`). A host deploys from
+  Git when: Vercel = `vercel.json`, a `.vercel/` directory (worktree or project checkout), or a deployment on the repo
+  made by Vercel (`gh api repos/<o>/<r>/deployments?per_page=1`, read-only); Netlify = `netlify.toml`. `harness init`
+  merges `git.deploymentEnabled: { "harness/**": false }` into `vercel.json` (creating it; other keys and their order
+  kept) and inserts `ignore = "case \"$BRANCH\" in harness/*) exit 0;; esac; exit 1"` into `netlify.toml`'s `[build]`
+  (a `[build]` ignore of the project's own, or `build` set as an inline table or dotted keys, is left alone and init
+  says what to add by hand), and says what it did. Vercel counts as guarded only if no `true` key also matches a run
+  branch (Vercel deploys when any matching key is `true`); a deployment counts as Vercel's by its `creator.login`
+  `vercel[bot]` (or the app slug `vercel`), never by a repo name. The
+  driver checks once per run (`$STATE/deploy-checked`; a continue doesn't repeat it), after the start block, reading
+  `origin/main` (Vercel reads the deployed commit's file, so the guard must be on main before the run branches off):
+  one `note` per unguarded host (`… this run will create a preview deploy per session (harness init adds it)`) and one
+  `notify`. The run goes on. Milestone PR heads (`harness-merge/<run>-<m>`) don't match the guards: each PR keeps one
+  preview, `main` deploys as before. Stub: `tests/stub-gh.sh` answers the deployments call with GitHub's published
+  example (`tests/fixtures/gh-deployments.json`, creator `octocat`; `STUB_DEPLOYMENTS=0` → `[]`, `=vercel` → creator
+  `vercel[bot]`). Checks: `deploy.mjs: vercel and netlify guards merge, keep keys and detect`, three `init: …`, four
+  `run start …`.
+- **Rejected:** stopping the run without the guard (the work is still worth doing; the cost is preview builds);
+  pushing less often (Michael loses the phone view of progress); guarding by host config through the hosts' APIs (a
+  token and a live call per project; the repo file is reviewable and travels with the branch).
+- **Known limits:** the ignore's `exit 1` replaces Netlify's own skip for an unchanged base directory (monorepos build
+  on every main push after init); `netlify.toml` counts as building every branch even where branch deploys are off (a
+  harmless note); a `--base <ref>` run is still checked against `origin/main`, as the spec says.

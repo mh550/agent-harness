@@ -12,7 +12,7 @@ export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/sc
   HARNESS_CONFIG=$T/user-config.sh HARNESS_LIMIT_SLEEP=0 HARNESS_NO_RUNNER=1 HARNESS_QUEUE_POLL=0 HARNESS_QUEUE_SETTLE=0
 fails=0 total=0
 check() { total=$((total + 1)); if eval "$2"; then echo "PASS $1"; else echo "FAIL $1"; fails=$((fails + 1)); fi; }
-hlog() { cat "$T/wt/proj/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }
+hlog() { cat "$T/wt/${2:-proj}/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }   # <run> [<project>]
 list() { echo "$T/wt/proj/$1/.harness/runs/$1/feature_list.json"; }
 on_main() { git -C "$T/origin.git" merge-base --is-ancestor "$(git -C "$T/origin.git" rev-parse "$1^{commit}")" main; }
 curl_with() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { printf "%s", $0; exit }' "$T/curl.log" 2>/dev/null; }   # the first stub-curl call containing $1
@@ -89,9 +89,38 @@ check "parked.mjs: the newest question wins, ids with dots, code fences, never M
 ( NTFY_URL=https://ntfy.example/t NTFY_TOKEN="" NOTIFY_CMD=""; log() { :; }; source "$HERE/../lib/notify.sh"; notify "long one" title="long one" body="$(head -c 4000 /dev/zero | tr '\0' x)" )
 check "a body over the cap is trimmed"    'Bd=$(curl_body "Title: long one"); (( $(printf %s "$Bd" | wc -c) <= 3500 && $(printf %s "$Bd" | wc -c) > 3000 )) && [[ $Bd == *… ]]'
 
+# ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
+DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";
+  import { readFileSync } from "node:fs"; const dep = readFileSync("'$HERE'/fixtures/gh-deployments.json", "utf8");
+  const a = av("{\"framework\":\"nextjs\"}"), b = av(null), c = av("{\"git\":{\"deploymentEnabled\":{\"main\":true}}}"), off = "{\"git\":{\"deploymentEnabled\":false}}";
+  const toml = "[build]\n  command = \"make\"\n\n[build.environment]\n  NODE_VERSION = \"20\"\n", t = an(toml), e = an("[build.environment]\n  X = \"1\"\n"), own = an("[build]\n  ignore = \"git diff --quiet\"\n");
+  process.exit(Object.keys(JSON.parse(a)).join() === "framework,git" && JSON.parse(a).git.deploymentEnabled["harness/**"] === false && vg(a) && !vg("{\"framework\":\"nextjs\"}")
+    && b === "{\n  \"git\": {\n    \"deploymentEnabled\": {\n      \"harness/**\": false\n    }\n  }\n}\n" && JSON.parse(c).git.deploymentEnabled.main === true && vg(c) && av(off) === off && vg(off) && vg(av("{\"git\":{\"deploymentEnabled\":true}}"))
+    && t.how === "added" && t.text.startsWith("[build]\n  ignore = \"case \\\"$BRANCH\\\" in harness/*) exit 0;; esac; exit 1\"\n  command = \"make\"\n") && t.text.includes("[build.environment]\n  NODE_VERSION = \"20\"") && ng(t.text) && !ng(toml)
+    && e.how === "added" && e.text.startsWith("[build.environment]\n  X = \"1\"\n") && /\n\[build\]\n  ignore = /.test(e.text) && ng(e.text) && !ng("[build.environment]\n  ignore = \"harness/\"\n")
+    && own.how === "own-ignore" && own.text === "[build]\n  ignore = \"git diff --quiet\"\n" && an(t.text).how === "kept" && an(null).how === "added" && ng(an(null).text)
+    && !vd(dep) && vd(dep.replace("\"octocat\"", "\"vercel[bot]\"")) && !vd("[]") && !vd("not json")
+    && slug("git@github.com:o/r.git") === "o/r" && slug("https://github.com/o/r") === "o/r" && slug("/tmp/origin.git") === null
+    && an("[ build ]\n  command = \"make\"\n").text.startsWith("[ build ]\n  ignore = ") && an("build = { command = \"make\" }\n").how === "by-hand" && an("build.command = \"make\"\n").how === "by-hand"
+    && an("[build]\n  \"ignore\" = \"exit 1\"\n").how === "own-ignore" && !ng("[build]\n  ignore = \"git diff --quiet HEAD^ HEAD -- packages/harness/\"\n")
+    && !vd(dep.replaceAll("octocat/example", "octocat/vercel-clone")) && !vg("{\"git\":{\"deploymentEnabled\":{\"**\":true,\"harness/**\":false}}}")
+    && !vg("{\"git\":{\"deploymentEnabled\":{\"harness/*\":true,\"harness/**\":false}}}") && vg("{\"git\":{\"deploymentEnabled\":{\"main\":true,\"feature/**\":true,\"harness/**\":false}}}")
+    && !vm("[]") && !vm("null") && !vm("{\"git\":\"x\"}") && vm("{}") && vm("{\"git\":{}}") ? 0 : 1);'
+check "deploy.mjs: vercel and netlify guards merge, keep keys and detect" 'node --input-type=module -e "$DEPL"'
+git init -q -b main "$T/vj" && echo '{"framework":"nextjs"}' > "$T/vj/vercel.json" && "$H" init "$T/vj" > "$T/init-vj.out" 2>&1 && "$H" init "$T/vj" > "$T/init-vj2.out" 2>&1
+check "init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept" 'jq -e ".framework == \"nextjs\" and .git.deploymentEnabled[\"harness/**\"] == false" "$T/vj/vercel.json" > /dev/null \
+  && grep -q "added the deploy guard to vercel.json" "$T/init-vj.out" && grep -q "keep    vercel.json" "$T/init-vj2.out" && ! grep -q "added the deploy guard" "$T/init-vj2.out"'
+git init -q -b main "$T/vd" && mkdir "$T/vd/.vercel" && "$H" init "$T/vd" > "$T/init-vd.out" 2>&1; git init -q -b main "$T/vn" && "$H" init "$T/vn" > "$T/init-vn.out" 2>&1
+check "init: a Vercel project without vercel.json gets one" 'jq -e ".git.deploymentEnabled[\"harness/**\"] == false" "$T/vd/vercel.json" > /dev/null && grep -q "added the deploy guard to vercel.json" "$T/init-vd.out" \
+  && [[ ! -e $T/vn/vercel.json && ! -e $T/vn/netlify.toml ]] && ! grep -q "deploy guard\|vercel\|netlify" "$T/init-vn.out"'
+git init -q -b main "$T/nt" && printf '[build]\n  command = "make"\n  publish = "dist"\n\n[build.environment]\n  NODE_VERSION = "20"\n' > "$T/nt/netlify.toml" && "$H" init "$T/nt" > "$T/init-nt.out" 2>&1
+ign() { sed -n 's/^ *ignore = "\(.*\)"$/\1/p' "$1" | sed 's/\\"/"/g'; }   # the [build] ignore command, unquoted
+check "init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept" 'grep -q "added the deploy guard to netlify.toml" "$T/init-nt.out" && grep -q "command = \"make\"" "$T/nt/netlify.toml" \
+  && grep -q "NODE_VERSION = \"20\"" "$T/nt/netlify.toml" && c=$(ign "$T/nt/netlify.toml") && BRANCH=harness/x bash -c "$c" && ! BRANCH=main bash -c "$c"'
+
 # ---- run 1: misbehaving sessions, two milestones; verified milestones merge themselves ----
 "$H" start "$T/proj" demo --spec SPEC.md --brief "only A–C" --foreground > "$T/run1.out" 2>&1
-WT=$T/wt/proj/demo RD=$T/wt/proj/demo/.harness/runs/demo
+WT=$T/wt/proj/demo RD=$T/wt/proj/demo/.harness/runs/demo; hlog demo > "$T/demo-hlog.md"   # gc removes the worktree; run 15e reads it
 check "all features pass"                 '[[ $($F summary "$(list demo)") == "3/3 passing" ]]'
 check "tampered list restored"            'hlog demo | grep -q "restored the feature list after B"'
 check "tampered text reverted"            '[[ $(jq -r ".features[2].description" "$(list demo)") == c ]]'
@@ -259,6 +288,29 @@ STUB_INIT_LIMIT=1 "$H" start "$T/proj" nolist --spec SPEC.md --foreground > "$T/
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue nolist --foreground > "$T/run15d.out" 2>&1
 check "continue after a no-list end merges main first" 'grep -q "^usage limit before the feature list" "$T/run15c.ended" && grep -q revised "$T/wt/proj/nolist/SPEC.md" \
   && hlog nolist | awk "/merged main into harness\/nolist/ && !m { m = NR } /feature list written/ && !f { f = NR } END { exit !(m && f && m < f) }"'
+
+# ---- run 15e: deploy guards at the run start (E0b): once per run, read from origin/main; projects of their own ----
+dproj() {   # <name> [<file> <content>]: a project with its own bare origin behind a GitHub-style URL, <file> on its main
+  git init -q --bare -b main "$T/$1-origin.git" && git init -q -b main "$T/$1" && mkdir "$T/$1/.harness" \
+    && printf 'CHECK_CMD="true"\nINIT_CMD="true"\n' > "$T/$1/.harness/config.sh" && printf '# %s\n' "$1" > "$T/$1/CLAUDE.md" && echo spec > "$T/$1/SPEC.md" \
+    && { [[ -z ${2:-} ]] || printf '%s\n' "$3" > "$T/$1/$2"; } && git -C "$T/$1" add -A && git -C "$T/$1" commit -qm init \
+    && git -C "$T/$1" config url."$T/$1-origin.git".insteadOf "git@github.com:test/$1.git" && git -C "$T/$1" remote add origin "git@github.com:test/$1.git" && git -C "$T/$1" push -q -u origin main
+}
+cp "$T/user-config.sh" "$T/user-config.bak"; cp "$T/base-config.sh" "$T/user-config.sh"   # NTFY_URL: the checks read curl.log
+dstart() { STUB_INIT_LIMIT=1 "$H" "${@:2}" --foreground > "$T/$1.out" 2>&1; rm -f "$HARNESS_STATE/LIMIT_UNTIL"; }   # <out> <harness args>: a run that ends at once (the initializer is refused)
+dproj vp vercel.json '{"framework":"nextjs"}' && dstart vp1 start "$T/vp" vp1 --spec SPEC.md && dstart vp1b continue vp1
+check "run start without the deploy guard: one note, one notification" '[[ $(hlog vp1 vp | grep -c "initializer refused") == 2 && $(hlog vp1 vp | grep -c "preview deploy per session") == 1 ]] \
+  && hlog vp1 vp | grep -q "deploy guard: vercel.json on origin/main has no git.deploymentEnabled" && [[ $(curl_count "[vp1] no deploy guard (vercel): this run will create a preview deploy per session") == 1 ]]'
+dproj np netlify.toml $'[build]\n  command = "make"' && dstart np1 start "$T/np" np1 --spec SPEC.md
+check "run start without the netlify guard: one note, one notification" '[[ $(hlog np1 np | grep -c "preview deploy per session") == 1 ]] && hlog np1 np | grep -q "deploy guard: netlify.toml on origin/main has no \[build\] ignore" \
+  && [[ $(curl_count "[np1] no deploy guard (netlify): this run will create a preview deploy per session") == 1 ]]'
+dproj dp && STUB_DEPLOYMENTS=vercel dstart dp1 start "$T/dp" dp1 --spec SPEC.md
+check "run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)" 'grep -q "gh api repos/test/dp/deployments?per_page=1" "$T/gh.log" && hlog dp1 dp | grep -q "deploy guard: vercel.json on origin/main" \
+  && [[ $(curl_count "[dp1] no deploy guard (vercel)") == 1 ]]'
+dproj gp vercel.json '{"git":{"deploymentEnabled":{"harness/**":false}}}' && dstart gp1 start "$T/gp" gp1 --spec SPEC.md
+check "run start with the guard: nothing" 'grep -q "gh api repos/test/proj/deployments?per_page=1" "$T/gh.log" && [[ -s $T/demo-hlog.md && -n $(hlog gp1 gp) ]] && ! grep -q "preview deploy" "$T/demo-hlog.md" && ! hlog gp1 gp | grep -q "preview deploy" \
+  && [[ $(curl_count "[demo] no deploy guard") == 0 && $(curl_count "[gp1] no deploy guard") == 0 ]]'
+mv "$T/user-config.bak" "$T/user-config.sh"
 
 # ---- debrief: the runner's other exits ----
 rm -f "$HARNESS_STATE/LIMIT_UNTIL"

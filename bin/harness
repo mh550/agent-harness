@@ -23,7 +23,8 @@
 #   harness desk <run> [--why "…"] | --debrief   a Remote Control session that briefs you and takes your answers (tmux h-desk)
 #   harness desk --list | --close <run>|--all    the open desks: window, run, URL, age · close them
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
-#                                                CLAUDE.md from the repo's docs for you to edit)
+#                                                CLAUDE.md from the repo's docs for you to edit), and the Vercel/Netlify
+#                                                guard that keeps run branches from deploying
 #   harness gc <project> [--all-merged] [--dry-run]
 #                               delete merged harness branches and their clean worktrees, locally and on origin;
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
@@ -43,6 +44,8 @@ WT_ROOT=${HARNESS_WORKTREES:-$HOME/worktrees}
 Q=$STATE_ROOT/queue
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"
+# shellcheck source=lib/deploy.sh
+source "$HARNESS_HOME/lib/deploy.sh"
 
 die() { echo "harness: $*" >&2; exit 1; }
 toplevel() { git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "$1 is not a git repository"; }
@@ -71,6 +74,7 @@ cmd_init() {
       --permission-mode auto --max-turns 40 > /dev/null) && echo "drafted CLAUDE.md: read it, edit it, commit it"
   else cp "$HARNESS_HOME/templates/project/CLAUDE.md" "$p/CLAUDE.md"; echo "created CLAUDE.md (template: fill it in)"; fi
   harness_config "$p"
+  deploy_guard "$p"   # a host that builds every branch would make a preview per session (E0b)
   echo "detected: suite '${CHECK_CMD:-none — set CHECK_CMD in .harness/config.sh}' · smoke '$SMOKE_CMD' · init '$INIT_CMD'"
   echo "permissions: your user settings apply. A project needing extra allows can keep them in .claude/settings.json"
   echo "             (example: $HARNESS_HOME/templates/project/settings.example.json); the harness never writes it."

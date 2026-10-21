@@ -248,7 +248,11 @@ the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** 
 
 **What a project provides**: `CLAUDE.md` (durable rules; read by interactive sessions too, and pasted into every
 harness prompt), one `POLICY=` line, and only the scripts that are truly its own (a sandboxed `check.sh`, a dev-server
-`init.sh`, a `smoke.mjs`). **What a run provides**: `--spec` files and a `--brief` (scope for this run only).
+`init.sh`, a `smoke.mjs`). A project deployed by a Git-connected host that builds every branch (Vercel, Netlify)
+disables run-branch deploys on `main`: `harness init` writes the guard (`vercel.json` `git.deploymentEnabled`
+`"harness/**": false`; a `netlify.toml` `[build] ignore` that exits 0 for `harness/*`), and a run start without it on
+`origin/main` notes it and notifies once (`lib/deploy.sh`; milestone PR heads `harness-merge/*` still get a preview).
+**What a run provides**: `--spec` files and a `--brief` (scope for this run only).
 
 **Prompt assembly** (`prompt()` → `render.mjs`): the role template (`prompts/<kind>.md`, with `{{X}}` filled from
 `HARNESS_X`) + "Brief for this run" + "Project rules (CLAUDE.md)" + legacy `.harness/project.md` if present +
