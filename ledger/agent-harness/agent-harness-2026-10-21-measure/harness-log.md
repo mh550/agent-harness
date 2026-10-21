@@ -1,0 +1,19 @@
+- 2026-10-21 14:26 · feature list written: 0/29 passing
+- 2026-10-21 14:36 · E1-01 · claude-opus-5-5 · passes=true · 10 min · 1/29 passing
+- 2026-10-21 14:56 · E1-02 · claude-opus-5-5 · passes=true · 19 min · 2/29 passing
+- 2026-10-21 15:25 · E1-03 · claude-opus-5-5 · passes=true · 29 min · 3/29 passing
+- 2026-10-21 15:49 · E1-04 · claude-opus-5-5 · passes=true · 23 min · 4/29 passing
+- 2026-10-21 16:01 · E1-05 · claude-opus-5-5 · passes=true · 11 min · 5/29 passing
+- 2026-10-21 16:16 · E1-06 · claude-opus-5-5 · passes=true · 15 min · 6/29 passing
+- 2026-10-21 16:47 · E1-07 · claude-opus-5-5 · passes=true · 31 min · 7/29 passing
+- 2026-10-21 16:53 · E1-08 · claude-sonnet-5-5 · passes=true · 5 min · 8/29 passing
+- 2026-10-21 17:22 · E1-09 · claude-opus-5-5 · passes=true · 28 min · 9/29 passing
+- 2026-10-21 17:22 · main conflicts with harness/agent-harness-2026-10-21-measure; carrying on without it (merges into main need Michael)
+- 2026-10-21 17:28 · E1 verified and tagged run/agent-harness-2026-10-21-measure/E1
+- 2026-10-21 17:50 · E2-01 · claude-opus-5-5 · passes=true · 21 min · 10/29 passing
+- 2026-10-21 18:04 · E2-02 · claude-opus-5-5 · passes=false · 13 min · 10/29 passing
+- 2026-10-21 18:17 · E2-02 · claude-opus-5-5 · passes=false · 13 min · 10/29 passing
+- 2026-10-21 18:34 · E3-01 · claude-opus-5-5 · passes=true · 17 min · 11/29 passing
+- 2026-10-21 18:34 · blocked: the remaining features wait on E2-02 (given up; needs Michael)
+- 2026-10-21 18:34 · run ended (blocked on E2-02): 11/29 passing · 15 sessions (15 real) · 11 features passed · $37.60 · 4.3 h · by kind: init 1 ($5.69), coding 13 ($31.51), verify 1 ($0.40) · by model: claude-fable-5-1 1 ($5.69), claude-opus-5-5 12 ($31.26), claude-sonnet-5-5 2 ($0.65)
+- 2026-10-21 18:34 · held: E1 (its tag contains another milestone's unverified work, or main has changes it wasn't verified with); it merges with the next verified milestone
