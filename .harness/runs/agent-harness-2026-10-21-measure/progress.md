@@ -6,6 +6,14 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 18:50 · E1-09 · passes
+
+- **What changed:** `docs/plans/2026-10-21-E1-review.md` (new: 8 Minor + 2 simplifications from the Opus review of `07c8367..32fbde5`, 5 Minor from a second Opus pass on the fixes, each with its resolution). Fixes: `lib/summary.mjs` exports `redSuite`/`failedRecheck` (escaped, exact-id; `cause()` and `rework` share them, so id `c++` no longer throws and empties `summary.json`); `lib/features.mjs` escapes the id; `lib/driver.sh` doesn't rewrite `harness-version` under `harness merge`; `lib/deploy.mjs`: true `harness/…` Vercel keys and `deploy-preview`/`branch-deploy`/`"harness/…"` Netlify context ignores count as unguarded, `vercel-guard` says `by-hand` rather than a false "added"; `lib/deploy.sh` reads `per_page=20` deployments. D-H33 updated. Tests 186 → 189.
+- **Watched failing:** 184/189 with `FAIL deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)`, `FAIL summary.mjs: cause and rework read the log by exact id (E1 review)`, `FAIL harness merge keeps the harness version of the run (E1 review)` and the two `per_page` run-start checks; round 2's assertions `DREV FAIL` standalone.
+- **Verified:** suite 189/189 twice; `check.sh` green in 276 s; `bash -n` on `lib/*.sh bin/harness tests/*.sh`, `node --check` on every `lib/*.mjs`. Nothing Critical or Important was found.
+- **Left, with reasons (in the review file):** orientation's output share is understated (stream snapshot, already a D-H34 limit); root `vercel.json` vs a Vercel Root Directory; a context ignore under a bare `[context]` table.
+- **Next:** E1 is complete; E2 per the spec.
+
 ### 2026-10-21 18:20 · E1-08 · passes
 
 - **What changed:** `docs/architecture.md` §4 (metrics row keys, harness-version/dirty state files), §5 (resumed run merges main before any session, initializer included), §11 points 1–3 (tokens/cache/orientation, new summary keys, `trends --by version`); `README.md` (`trends [--by version]`, init deploy guard, continue merges main). Tests 186 → 186 (docs only).

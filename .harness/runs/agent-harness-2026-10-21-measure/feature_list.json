@@ -88,7 +88,7 @@
         "Simplification passes are applied; `bash -n` on every shell file and `node --check` on every .mjs file touched by E1 pass",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
 
     { "id": "E2-01", "milestone": "E2", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-21-E2-evals.md fixes the task schema, the eval run layout, compare and probes so E2-02…E2-08 build one thing.",
