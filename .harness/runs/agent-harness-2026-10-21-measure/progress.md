@@ -6,6 +6,14 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 15:55 · E1-04 · passes
+
+- **What changed:** `tests/fixtures/usage-tokens.jsonl` (new: the real capture, haiku, CLI 2.1.306, $0.0032; assistant/user/result lines, `session_TEST`, `/tmp/capture`; system lines and the rate_limit_event dropped); `lib/metrics.mjs` `tokens()`/`contextPeak()` exported, `outcome()` + `append` write `tokens_in cache_read cache_write tokens_out cache_hit_rate context_peak` after `turns`; `tests/stub-claude.sh` `ok()` replays the fixture (cost/result/turns/duration substituted, `--argjson` as plan §5.4); 2 checks; D-H34. Tests 177 → 179.
+- **Watched failing** on a copy without the code: `FAIL metrics.mjs: tokens, cache rate and context peak from the real fixture`, `FAIL metrics: coding rows carry tokens, cache rate and context peak` (177/179).
+- **Verified:** jq on the fixture gives 4 / 35768 / 13651 / 219, rate 0.724, peak 24881 (the literals in the check); `Σ modelUsage.costUSD` = `total_cost_usd` = 0.00319778 → tokens by **max**, as planned. `bash -n`, `node --check`; `check.sh` green in 275 s, 179/179. Opus review: no bugs; two doubts recorded in D-H34 (max is inferred from a single-result capture; `context_peak` counts subagent events too).
+- **Next session (E1-05) must know:** stream-json events **do** carry ISO `timestamp` on assistant and user lines (the plan expected none), so `orient_s` can be measured; the fixture's first message is two events with one `message.id` (thinking, then `Write`), 0.23 s apart. Every stub session replays those same timestamps.
+- **Proposed change:** plan §5.3/§6 says `orient_s` is null without timestamps "(expected: none)"; E1-05 should measure it instead. No change to the list.
+
 ### 2026-10-21 16:20 · E1-03 · passes
 
 - **What changed:** new `lib/deploy.mjs` (pure guards: `vercelGuarded`/`addVercelGuard`/`vercelMergeable`, `netlifyGuarded`/`addNetlifyGuard`, `vercelDeployments`, `slug`, `unguarded` + CLI) and `lib/deploy.sh` (`deploy_status`, `deploy_guard`); `bin/harness` `cmd_init` calls `deploy_guard`; `lib/driver.sh` `deploy_check` once per run (`$STATE/deploy-checked`) after the start block, reading `origin/main`, one note per host + one notify; `tests/stub-gh.sh` answers `api repos/…/deployments` with `tests/fixtures/gh-deployments.json` (GitHub's published `deployment-items` example from github/rest-api-description, unchanged; `STUB_DEPLOYMENTS=0|vercel`); `tests/run.sh` 8 checks (plan §10) and `hlog <run> [<project>]`; D-H33; architecture §10 line. Tests 169 → 177.

@@ -380,3 +380,35 @@ agents are driven*.
 - **Known limits:** the ignore's `exit 1` replaces Netlify's own skip for an unchanged base directory (monorepos build
   on every main push after init); `netlify.toml` counts as building every branch even where branch deploys are off (a
   harmless note); a `--base <ref>` run is still checked against `origin/main`, as the spec says.
+
+### D-H34 · Telemetry: tokens, cache hit rate and context peak per session, from a real capture *(accepted 2026-10-21, built in E1 of run agent-harness-2026-10-21-measure; E1-05 … E1-07 add their parts)*
+- **Finding:** `metrics.jsonl` had cost, turns and time but no tokens, so "did this change make sessions cheaper or
+  more focused?" had no answer. The stub's result line was hand-written, with no `usage` at all.
+- **Choice:** `lib/metrics.mjs` `tokens(evs)` and `contextPeak(evs)` (exported, used by `outcome()`); `append` writes
+  `tokens_in`, `cache_read`, `cache_write`, `tokens_out`, `cache_hit_rate` (`cache_read / (tokens_in + cache_read +
+  cache_write)`, 3 decimals) and `context_peak` (the largest `input + cache_read + cache_creation` of one assistant
+  request) after `turns`; `null` when the session carries no usage. Per result event the four numbers are the sums
+  over `modelUsage`'s models (`inputTokens`, `cacheReadInputTokens`, `cacheCreationInputTokens`, `outputTokens`), else
+  `usage`'s snake_case four; the session takes the event with the largest total (**max, like cost**): on the capture
+  `Σ modelUsage[*].costUSD` = `total_cost_usd` = 0.00319778, so modelUsage tracks what cost tracks. The capture has a
+  single result event, so that it stays cumulative across background-subagent segments is inferred, not seen; a
+  multi-result transcript would settle it. Every field name was confirmed in the capture. `tokens_out` comes from the result, not the assistant events: theirs is the streamed
+  partial (5 and 4 vs 219).
+- **The one live call (the exception to build-only, as the spec asks):** on 2026-10-21, in an empty temp git repo,
+  `claude -p "Write a file named ok.txt containing the word ok, then reply ok." --model haiku --output-format
+  stream-json --verbose --permission-mode auto --max-turns 4 --max-budget-usd 0.25` (CLI 2.1.306, $0.0032). Its
+  `assistant`, `user` and `result` lines are `tests/fixtures/usage-tokens.jsonl`, in order, with `session_id` →
+  `session_TEST` and the temp path → `/tmp/capture`; `system` lines (hooks, cwd, tool and plugin lists) and the
+  `rate_limit_event` (Michael's real utilization) dropped. `tests/stub-claude.sh` `ok()` replays it with cost, result
+  text, `num_turns` 12 and `duration_ms` 60000 substituted, so every stub session carries tokens. Checks: `metrics.mjs:
+  tokens, cache rate and context peak from the real fixture` (4 / 35768 / 13651 / 219, 0.724, 24881, computed with jq)
+  and `metrics: coding rows carry tokens, cache rate and context peak`.
+- **For E1-05:** stream-json events **do** carry `timestamp` (ISO, on `assistant` and `user` lines; the plan expected
+  none), so `orient_s` can be measured rather than `null`. The CLI emits one `assistant` event per content block, the
+  same `message.id` and `usage` on each (the capture's first message: a thinking block, then the `Write`). A stub
+  session replays the capture's timestamps, so every stub session shows the same 0.23 s to its `Write`.
+- **Known limit:** `context_peak` counts every assistant event, a subagent's (`parent_tool_use_id` set) too, if the
+  CLI streams them.
+- **Rejected:** summing tokens over result events (modelUsage is cumulative: a session with background subagents would
+  count its first segment twice); context peak from the result's `usage.iterations` (only the last request's);
+  a hand-written stub `usage` (fakes mirror the live API).

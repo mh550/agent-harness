@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Stand-in for `claude -p` in tests: acts out initializer / coding / verify / retro sessions from the prompt's first line,
 # including scripted misbehaviour, and prints stream-json lines like the real CLI. Usage limits replay the real
-# lines captured on 2026-10-17 (fixtures/usage-limit.jsonl): fakes mirror the live API. Without -p it is a desk
+# lines captured on 2026-10-17 (fixtures/usage-limit.jsonl), finished sessions the 2026-10-21 capture
+# (fixtures/usage-tokens.jsonl): fakes mirror the live API. Without -p it is a desk
 # (`claude --remote-control <name>`, no -p, in tmux): it prints the pane line of fixtures/remote-control-pane.txt with
 # session_TEST<n>, records argv and $PWD in $STUB_DIR/desk/<n>-<name>.args, its environment's names in <n>-<name>.env
 # and each typed line in <n>-<name>.in. STUB_DESK_MENU=1: after the first typed line it shows the permission dialog of
@@ -30,7 +31,9 @@ first=$(head -1 <<< "$prompt")
 L=${HARNESS_RUN_DIR:-.}/feature_list.json
 count() { local f=$HARNESS_SCRATCH/count-$1 n; n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$f"; echo "$n"; }
 set_passes() { node -e 'const fs=require("fs"),[f,id,v]=process.argv.slice(1),l=JSON.parse(fs.readFileSync(f));for(const x of l.features)if(x.id===id)x.passes=v==="true";fs.writeFileSync(f,JSON.stringify(l,null,2))' "$L" "$1" "$2"; }
-ok() { echo "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"total_cost_usd\":${1:-0.25},\"duration_ms\":60000,\"num_turns\":12,\"result\":\"${2:-done}\"}"; }
+# A finished session: the real capture's assistant, tool-result and result events (fixtures/usage-tokens.jsonl, so every
+# session carries tokens), with cost, final text, turns and duration substituted. --argjson: callers' \\n become newlines.
+ok() { jq -c --argjson c "${1:-0.25}" --argjson r "\"${2:-done}\"" 'if .type == "result" then .total_cost_usd = $c | .result = $r | .num_turns = 12 | .duration_ms = 60000 else . end' "$HERE/fixtures/usage-tokens.jsonl"; }
 
 case $first in
   "# Initializer session"*)

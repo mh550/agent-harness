@@ -42,7 +42,7 @@
         "tests/stub-claude.sh `ok()` emits the fixture's assistant and result events (usage kept, cost and result text substituted) so every stub session carries tokens; tests/run.sh check `metrics: coding rows carry tokens, cache rate and context peak` on run demo: `jq -e 'select(.kind==\"coding\") | .tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0'`",
         "Both checks were watched failing first (FAIL lines quoted in the entry); bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E1-05", "milestone": "E1", "kind": "build", "model": "opus",
       "description": "metrics.jsonl rows carry the orientation cost: tokens, turns and seconds before a session's first Edit, Write or NotebookEdit call.",
       "steps": [
