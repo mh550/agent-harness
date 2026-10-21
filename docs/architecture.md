@@ -191,7 +191,7 @@ harness start ─► worktree + branch ─► driver:
 | `harness/<run>` | `harness start` | until `harness gc` | everything the run did, verified or not, plus its run record |
 | `run/<run>/<m>` (annotated tag) | driver, after verify holds | permanent | "this commit is milestone `<m>` verified": the exact merge point |
 | `harness-merge/<run>-<m>` | driver, `merge_one` | deleted after the merge | a branch at the tag commit, so the PR contains exactly that prefix of the run |
-| PR "`<run>: <m> (verified)`" | driver | merged by the driver (`auto`) or left for you (`pr`) | the audit record: features, verify evidence table, cost so far |
+| PR "`<run>: <m> (verified)`" | driver | merged by the driver (`auto`) or left for you (`pr`, the default) | the audit record: features, verify evidence table, cost so far |
 
 **Why merge "to the T3 tag".** A run branch is linear: T0's commits, then T1's, T3's, then T4's. A tag marks a point
 on that line. Merging the T3 tag merges T0+T1+T3 and nothing after, so the unreviewed T4 commits stay on the
@@ -237,6 +237,7 @@ the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** 
 
 | Setting | Convention |
 |---|---|
+| `MERGE_POLICY` | `pr` (default): a verified milestone opens its PR and waits for you. `auto`: the driver also merges each one (`gh pr merge --match-head-commit`, so the verified tree lands); set it in `<project>/.harness/config.sh` only for a repo with no production, where merging `main` has no real-world effect. `off`: no PR. `harness merge <run>` lands verified milestones whatever this is set to |
 | `NTFY_URL` / `NTFY_TOKEN` | empty: notifications go to `NOTIFY_CMD` (or nowhere). Set: the harness posts to that ntfy topic itself, the token as `Authorization: Bearer` (never logged), and `NOTIFY_CMD` is not called |
 | `DESK_URL` | empty: no **Answer with Claude** action on a park's notification |
 | `DESK` / `DESK_MODEL` | `0` / `opus`: no desk starts by itself (`harness desk` by hand still works). `DESK=1`: the driver and the debrief start one whenever a run needs Michael (§17), on `DESK_MODEL` |
