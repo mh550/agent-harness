@@ -4,10 +4,10 @@
 |---|---|
 | Passing | **11/29** · verified 9 (E1) · merged 0 (none) |
 | Tests | not recorded |
-| Spend | **$37.60** total · **$3.42** per passing feature |
-| Spend by role | init $5.69 · plan $11.40 · build $16.40 · review $3.45 · docs $0.25 · verify $0.40 · manager (the bash driver) $0.00 |
-| Time | 4.39 h wall: sessions 4.3 h (init 0.18, plan 0.83, build 2.62, docs 0.1, review 0.48, verify 0.1), driver 0.09 h |
-| Sessions | 15 (15 real, 0 refused by limits/API errors) |
+| Spend | **$37.74** total · **$3.43** per passing feature |
+| Spend by role | init $5.69 · plan $11.40 · build $16.40 · review $3.45 · docs $0.25 · verify $0.40 · retro $0.14 · manager (the bash driver) $0.00 |
+| Time | 4.4 h wall: sessions 4.31 h (init 0.18, plan 0.83, build 2.62, docs 0.1, review 0.48, verify 0.1, retro 0.01), driver 0.09 h |
+| Sessions | 16 (16 real, 0 refused by limits/API errors) |
 | Ended | blocked on E2-02 |
 | Not passing | not done 1 · blocked 17 |
 
