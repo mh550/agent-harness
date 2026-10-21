@@ -32,7 +32,7 @@ harness queue start --until 07:30        # tmux h-queue; no run starts after 07:
 
 When the runner exits (queue empty, past `--until`, or `harness queue stop`) and it started at least one run, it runs
 **`harness debrief`**, detached: one short read-only Sonnet session that reads what happened and overwrites
-`ledger/debrief.md`. `NOTIFY_CMD` gets its three-line headline and the note's path (see [Debrief](#debrief)).
+`ledger/debrief.md`. The notification (ntfy or `NOTIFY_CMD`) carries its three-line headline and the note's path (see [Debrief](#debrief)).
 
 | Command | What |
 |---|---|
@@ -68,8 +68,18 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
 - **Phone:** edit `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
   `status: stop`; answers under `## Answers`. The driver pulls before every session.
 - **Box:** `harness pause|resume|stop|answer <run>`, `harness attach <run>` (tmux: driver · log · supervisor).
-- **Notifications:** `NOTIFY_CMD` in `~/.config/harness/config.sh` (e.g. a private ntfy.sh topic): start, merges,
-  needs-Michael, limits, end.
+- **Notifications:** start, merges, needs-Michael, parks, limits, end. In `~/.config/harness/config.sh` either
+  - `NTFY_URL` (an ntfy topic URL, e.g. a private ntfy.sh topic) and optionally `NTFY_TOKEN` (sent as
+    `Authorization: Bearer`, never logged): the harness posts itself, with a title, priority high where you must
+    act, a click URL (INBOX.md, progress.md, report.md on the run branch on GitHub, or the PR) and view actions.
+    **`NTFY_URL` wins: `NOTIFY_CMD` is then not called.**
+  - or `NOTIFY_CMD`: it gets the one-line message as `$1` as always, plus `HARNESS_NOTIFY_TITLE`,
+    `HARNESS_NOTIFY_BODY`, `HARNESS_NOTIFY_CLICK`, `HARNESS_NOTIFY_ACTIONS` (ntfy's `view, <label>, <url>; …`) and
+    `HARNESS_NOTIFY_PRIORITY` (`high` or empty) in its environment.
+
+  A park's notification carries the question the session wrote in INBOX.md (body capped at 3500 bytes), the
+  `harness answer` command, and Edit INBOX / Progress actions; `DESK_URL` (e.g. a Claude Code environment URL; no `,` or
+  `;` in it, they split ntfy's Actions header) adds **Answer with Claude**. A non-GitHub origin sends the same without URLs.
 - **After a partial run:** nothing, usually: verified milestones are already merged and a continuation is queued.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 - **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and
@@ -96,7 +106,8 @@ ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harne
   then the note. `DEBRIEF_PAGE_CMD` (user config) gets its path, e.g. to copy it where your phone can open it.
 - **The note** is one file, `ledger/debrief.md`, overwritten each time and committed with the ledger (`LEDGER_COMMIT`),
   only while the harness checkout is on `main` with no rebase or merge going: the archive is
-  `git log -p ledger/debrief.md`. `NOTIFY_CMD` gets its three-line headline and the path, or one line if it failed.
+  `git log -p ledger/debrief.md`. The notification (title `harness debrief`; high when the note's Needs Michael
+  isn't empty) carries its three-line headline and the path, or one line if it failed.
 - **Read-only**: the session runs in `dontAsk` mode with an allowlist of read-only tools (one commented array in
   `lib/debrief.sh`, where the scope can be widened) plus the never-list as `--disallowedTools`; anything that still
   changes in the ledger, run worktrees or projects while it runs is flagged in the note. See `docs/architecture.md` §16.
@@ -108,6 +119,6 @@ ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harne
 ## Tests
 
 ```bash
-tests/run.sh    # end-to-end with stub claude/gh on a throwaway repo with a bare origin: 98 checks (~3 min)
+tests/run.sh    # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 125 checks (~3 min)
 ```
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

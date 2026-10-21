@@ -1,0 +1,11 @@
+https://docs.ntfy.sh/publish/
+# Title, priority, tags (docs example):
+curl -H "Title: Unauthorized access detected" -H "Priority: urgent" -H "Tags: warning,skull" -d "Remote access to phils-laptop detected. Act right away." ntfy.sh/phil_alerts
+# Click action:
+curl -H "Click: https://www.reddit.com/message/messages" ntfy.sh/reddit_alerts
+# Action buttons, simple format:
+curl -H "Actions: view, Open Twitter, https://twitter.com/binwiederhier/status/1467633927951163392" ntfy.sh/myhome
+# Access token:
+curl -H "Authorization: Bearer tk_AgQdq7mVBoFD37zQVN29RhuMzNIz2" -d "Look ma, with auth" https://ntfy.example.com/mysecrets
+# Priorities: 5 max|urgent, 4 high, 3 default (when none is set), 2 low, 1 min.
+# Messages over 4,096 bytes (or not UTF-8) are sent as an attachment; the harness caps bodies at 3,500 bytes.

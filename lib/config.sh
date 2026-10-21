@@ -19,6 +19,7 @@ harness_config() {
   DEBRIEF_PAGE_CMD=""   # run with the debrief page's path as $1 after each debrief (e.g. copy it where your phone can open it)
   LIVE_LOCK=""   # live-staged: the one-writer lock (default /tmp/harness/<project>/live.lock); share it with the backup job
   CHECK_CMD="" INIT_CMD="" SMOKE_CMD="" SPEC_FILES="" NOTIFY_CMD="" AGENT_SETTINGS=.claude/settings.json PR_POLICY=""
+  NTFY_URL="" NTFY_TOKEN="" DESK_URL=""   # NTFY_URL set: the harness posts to ntfy itself (NOTIFY_CMD is then not called)
   for f in "${HARNESS_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/harness/config.sh}" "$wt/.harness/config.sh" ${st:+"$st/run.env"}; do
     # shellcheck source=/dev/null
     [[ -f $f ]] && source "$f"
