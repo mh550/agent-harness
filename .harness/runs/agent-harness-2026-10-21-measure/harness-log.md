@@ -33,3 +33,4 @@
 - 2026-10-22 00:09 · E3-04 · claude-opus-5-5 · passes=true · 19 min · 21/29 passing
 - 2026-10-22 00:40 · E3-05 · claude-opus-5-5 · passes=true · 31 min · 22/29 passing
 - 2026-10-22 00:49 · E3 verified and tagged run/agent-harness-2026-10-21-measure/E3
+- 2026-10-22 00:49 · held: E1 E2 E3 (its tag contains another milestone's unverified work, or main has changes it wasn't verified with); it merges with the next verified milestone
