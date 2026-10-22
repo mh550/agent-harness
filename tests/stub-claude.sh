@@ -93,6 +93,8 @@ JSON
     fi
     if [[ $id == C ]]; then [[ $n == 1 && ! ${STUB_NO_RED:-} ]] && touch BROKEN || rm -f BROKEN; fi   # first try leaves the suite red
     echo "$id $n" > "work-$id.txt"
+    # main may already have work-<id>.txt as written here (run demo merged it): a file only this run adds, for the minimal entry's files
+    [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
     entry "$id" "$n" --arg id "$id" --arg n "$n" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
       outcome: "passes", summary: "\($id): stub work (\($n))", files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
       + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end'
