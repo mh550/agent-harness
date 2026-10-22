@@ -584,7 +584,7 @@ check "run start with the guard: nothing" 'grep -q "gh api repos/test/proj/deplo
 dproj ip .harness/config.sh $'CHECK_CMD="true"\nINIT_CMD="seq 1 100"' && dstart ip1 start "$T/ip" ip1 --spec SPEC.md --brief 'keep {{RUN_ID}} as written'
 IB=$(awk '/^## Init output$/ { s = 1; next } s && /^```$/ { if (f) exit; f = 1; next } f' "$HARNESS_STATE/ip/ip1/prompt-initializer.md" 2> /dev/null)
 check "init output is capped at 40 lines with the log path" '[[ -n $IB ]] && (( $(wc -l <<< "$IB") == 41 )) && [[ $(tail -1 <<< "$IB") == "full output: $T/scratch/ip/ip1/init.out" ]] \
-  && grep -qx 62 <<< "$IB" && ! grep -qx 61 <<< "$IB" && grep -qx 100 <<< "$IB"'
+  && cmp -s <(head -n 40 <<< "$IB") <(tail -n 40 "$T/scratch/ip/ip1/init.out") && grep -qx 100 <<< "$IB" && ! grep -qx 1 <<< "$IB"'
 check "a brief is pasted as written: its {{X}} isn't filled (E3 review F7)" 'grep -qx "keep {{RUN_ID}} as written" "$HARNESS_STATE/ip/ip1/prompt-initializer.md"'
 mv "$T/user-config.bak" "$T/user-config.sh"
 
