@@ -11,5 +11,10 @@ amends `decisions/2026-10-21-eval-compare-verdicts`)*
   `features.verified`; in total, the same over every complete repeat of every task. The per-repeat ratios stay the
   side's values, so the noise and the one-sample and no-data rules are unchanged. Also: an empty feature list
   (`features.total` 0) is no pass. Checked by `eval.mjs: per verified feature counts every repeat's cost`.
+  compare's notes name every repeat that verified nothing and what it spent (`B: x r3 verified nothing ($20.00
+  spent): …`). With `--repeat 2`, one such repeat leaves a single ratio, so its verdict reads "one sample"; a side
+  where no repeat verified anything reads "no data", and its pass rate row shows the failures.
+  *Known limit:* a crashed repeat (no `summary.json`, `{ missing }`) adds $0, because its spend is unknown. compare
+  names it as a failed run.
 - **Rejected:** counting a zero-verified repeat as an infinite ratio (every verdict "within noise"); counting it as
   its cost over one feature (an invented number).

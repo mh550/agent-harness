@@ -68,10 +68,13 @@ run_env() {   # <command…> with the eval's roots: what the runs' drivers (and 
 
 # A local clone has every object of its source (so a base on any of its refs resolves) and its tags, among them the
 # source's later milestones (run/<run>/<M>): the finished answer a replayed session could `git show`. Only main = base
-# stays; the rest, refs, reflogs and the objects only they reached, goes.
+# stays; the rest, refs, reflogs and the objects only they reached, goes: the copied .keep marks and alternates too,
+# or repack would leave those packs and borrowed objects as they are.
 seal() {
+  local o; o=$(git -C "$1" rev-parse --path-format=absolute --git-path objects) || return 1
   git -C "$1" for-each-ref --format='delete %(refname)' | sed '\|^delete refs/heads/main$|d' | git -C "$1" update-ref --stdin \
-    && git -C "$1" reflog expire --expire=now --all && git -C "$1" gc -q --prune=now
+    && git -C "$1" reflog expire --expire=now --all && rm -f "$o"/pack/*.keep && git -C "$1" repack -qad \
+    && rm -f "$o/info/alternates" && git -C "$1" prune --expire=now
 }
 
 unit() {   # <task.json> <repeat> → the unit's name: its result dir under $R and its dir under $E (<id>, or <id>/r<N>)
@@ -99,12 +102,12 @@ run_task() {   # <task.json> <repeat> → one replay; its record in $R/<unit>/ a
     # driver skips the initializer; the clone itself goes back to main (cmd_start adds the run's worktree on the branch)
     mkdir -p "$clone/.harness/runs/$run"
     if git -C "$clone" checkout -q -b "harness/$run" && EV seed "$tf" "$run" > "$clone/.harness/runs/$run/feature_list.json" \
-       && printf '# Progress — eval task %s\n\nReplayed by `harness eval run` (harness %s), from %s at %s.\n' "$id" "$SHA" "$repo" "$base" \
+       && printf '# Progress — eval task %s\n\nReplayed by `harness eval run` (harness %s), from %s at %s.\n' "$id" "$SHA" "$project" "$base" \
           > "$clone/.harness/runs/$run/progress.md" \
        && git -C "$clone" add ".harness/runs/$run" && git -C "$clone" commit -q -m "EVAL: seed $id" \
        && git -C "$clone" push -q -u origin "harness/$run" && git -C "$clone" checkout -q main; then
-      # the port is chosen here, not by cmd_start: there a project's BASE_PORT wins, and the ports real runs hold
-      # (in the real state root) can't be seen, so eval runs keep to 7900 and up
+      # the port is chosen here, not by cmd_start: there a project's BASE_PORT wins and the ports real runs hold (in
+      # the real state root) aren't seen; eval runs keep to 7900 and up, past every port either state root holds
       local port=7900; mkdir -p "$st"
       while (echo > "/dev/tcp/127.0.0.1/$port") 2> /dev/null || grep -qsx "$port" "$E"/state/*/*/port "$STATE_REAL"/*/*/port; do
         port=$(( port + 1 )); done
@@ -163,7 +166,7 @@ cmd_run() {
   dup=$(for tf in "${tasks[@]}"; do jq -r .id "$tf"; done | sort | uniq -d | head -1)
   [[ -z $dup ]] || die "task '$dup' is in set '$SET' twice; nothing started"
   for tf in "${tasks[@]}"; do
-    read -r id repo base < <(jq -r '[.id, .repo, .base] | join(" ")' "$tf"); repo=${repo/#\~/$HOME}
+    IFS=$'\t' read -r id repo base < <(jq -r '[.id, .repo, .base] | @tsv' "$tf"); repo=${repo/#\~/$HOME}
     case $id in harness|state|wt|scratch|ledger) die "task id '$id' is one of the eval's own dirs; nothing started" ;; esac
     [[ -d $repo ]] || die "$id: no repo $repo; nothing started"
     git -C "$repo" cat-file -e "$base^{commit}" 2> /dev/null || die "$id: $repo has no commit $base; nothing started"
@@ -181,7 +184,9 @@ cmd_run() {
   git -C "$HARNESS_HOME" worktree add -q --detach "$E/harness" "$REF" || die "can't check $REF out into $E/harness"
   # the worktree is registered in the harness repo: remove it whatever happens (INT/TERM exit, so EXIT runs)
   trap '[[ -d $E/harness ]] && git -C "$HARNESS_HOME" worktree remove --force "$E/harness"' EXIT
-  trap 'exit 130' INT TERM; trap 'exit 129' HUP   # trapped, a hangup waits for the running task like TERM does
+  # trapped, a hangup sent to the eval alone waits for the running task as TERM does (one sent to the whole group
+  # stops the driver, but not the session under its `timeout`: docs/plans/2026-10-21-E2-review.md R2)
+  trap 'exit 130' INT TERM; trap 'exit 129' HUP
   harness_version "$E/harness"; SHA=$HARNESS_VERSION
   R=$(realpath -m "${HARNESS_EVAL_RESULTS:-$HARNESS_HOME/evals/results}/$STAMP-$SHA-$LABEL")
   mkdir -p "$R" "$E/state" && : > "$E/tasks.jsonl" && safety > "$E/config.sh" && write_json || die "can't write $R"

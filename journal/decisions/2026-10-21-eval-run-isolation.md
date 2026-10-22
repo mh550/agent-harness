@@ -34,3 +34,6 @@ set itself is D-H35 in `journal/decisions.md`)*
   suite's EXIT trap (it prunes every stale worktree of the shared repo; the trap removes only its own eval
   worktrees); `BASE_PORT` in the safety lines (`cmd_start` picks the port before `run.env` is read, and a
   project's `BASE_PORT` beats the user config); committing results by default (dirties the harness version).
+- *Amended 2026-10-21 (E2-08 review):* the clone is sealed at base, a missing repo is refused up front, and real runs'
+  port files are skipped (`decisions/2026-10-21-eval-clone-sealed-at-base`). An interrupted eval removes its harness
+  worktree, but the running session lives on under the driver's `timeout` (`docs/plans/2026-10-21-E2-review.md` R2).

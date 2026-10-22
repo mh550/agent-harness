@@ -291,13 +291,15 @@ worktree is untrusted). The harness never writes either, and agents can't (the a
 5. **Into the harness**: you read the retros/trends (or ask a session to), turn a repeated proposal into a decision
    (a file in `journal/decisions/`), implement it test-first, and **turn the failing transcript into a stub fixture** (as
    `tests/fixtures/usage-limit.jsonl` was), so the fake never drifts from the real API again.
-6. **Replay evals**: `evals/tasks/*` are real past features with their `base` commit; `harness eval run` replays a set with a
-   chosen harness ref's own driver, on clones with no real remote, config, state or notification
-   (`decisions/2026-10-21-eval-run-isolation`), capped by `EVAL_BUDGET_USD` and the 7-day window
-   (`decisions/2026-10-21-eval-budget-window-repeat`). `harness eval compare` sets two results side by side; a verdict
-   is "within noise" inside the spread of `--repeat` runs, "one sample" without (`decisions/2026-10-21-eval-compare-verdicts`).
-   `harness eval probes` asks one tool-less Haiku turn what a task's handoff should answer, scored by match
-   (`decisions/2026-10-21-eval-probes`). Evals cost money and are Michael's to run (`evals/NEXT.md`); D-H35.
+6. **Replay evals**: `evals/tasks/*` are real past features with their `base` commit; `harness eval run` replays a set
+   with a chosen harness ref's own driver, on clones with no real remote, config, state or notification, sealed at `base`
+   (`decisions/2026-10-21-eval-run-isolation`, `decisions/2026-10-21-eval-clone-sealed-at-base`), capped by
+   `EVAL_BUDGET_USD` and the 7-day window (`decisions/2026-10-21-eval-budget-window-repeat`). `harness eval compare` sets
+   two results side by side; a verdict is "within noise" inside the spread of `--repeat` runs, "one sample" without
+   (`decisions/2026-10-21-eval-compare-verdicts`); per verified feature is pooled over every repeat
+   (`decisions/2026-10-21-eval-per-verified-pooled`). `harness eval probes` asks one tool-less Haiku turn what a task's
+   handoff should answer, scored by match (`decisions/2026-10-21-eval-probes`). Evals cost money and are Michael's to run
+   (`evals/NEXT.md`); D-H35.
 
 ## 12. Queue and parallelism
 
