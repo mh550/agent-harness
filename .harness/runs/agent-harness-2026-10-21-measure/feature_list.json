@@ -166,7 +166,7 @@
         "The review confirms, with the command it ran, that no path under lib/eval.sh can reach a GitHub remote or ntfy (grep for `gh `, `curl`, `NTFY`, `push` and what each hit does)",
         "Simplification passes applied; bash -n and node --check on everything touched; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
 
     { "id": "E3-01", "milestone": "E3", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-21-E3-prompts.md fixes the static/volatile split of every template, the fixed first lines, the stub's new keys and the checks that change.",

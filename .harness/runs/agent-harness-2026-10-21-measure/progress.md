@@ -6,6 +6,21 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-22 00:50 · E2-08 · passes
+
+- **What changed:** two Opus reviews (E2's diff, then my fixes), recorded in `docs/plans/2026-10-21-E2-review.md`. Tests 201 → 205. Fixes are in `lib/eval.sh`, `lib/eval.mjs`, `tests/run.sh`, `tests/stub-claude.sh`, README, architecture §4/§11, two new decision files (`eval-clone-sealed-at-base`, `eval-per-verified-pooled`) and an amendment line in `eval-run-isolation`. Commits `18aae96` and `8dbe359`.
+- **Important, fixed:**
+  - F1: replay clones kept the source's `run/*` tags and later objects, i.e. the finished answers. They are now sealed at base (refs, reflogs, `.keep` packs and alternates gone).
+  - R1: the seeded progress.md named the source path; it no longer does.
+  - F2/R3: `$`/tokens per verified feature dropped repeats that verified nothing. They are now Σ/Σ over every repeat, and compare names each such repeat.
+  - Plus 9 Minor fixes, among them a missing repo refused before any spend, `*.txt` sets, real-run ports, `HARNESS_EVAL=1` on probes, and HUP.
+- **Verified:** the new checks failed first (198/205, then 202/205 against `18aae96`), then passed. `check.sh` green, 205/205 (310 s). The grep `gh |curl|NTFY|push` on `lib/eval.sh` gives 4 hits, all local or neutralised (review §Confirmations). The `queue holds an entry…` timing check flaked once more (it is outside E2) and then passed twice.
+- **Next session:** E2 is done. Every replay leaves its clones in `/tmp/harness-eval/<stamp>/`, kept for probes (`rm -rf` by hand).
+- **Questions for Michael (defaults taken):**
+  - (1) compare's pass-rate verdict keeps the spec's spread rule, so [1,1,1] → [1,1,0] reads "within noise" while the row shows `pass^3 1` vs `pass^3 0`. Should pass^N alone decide instead?
+  - (2) A replayed session can still read `~/projects/<project>` and `$HARNESS_HOME`, both of which have the answer tags. I recorded this as a known limit rather than sandboxing. OK?
+- **Proposed change:** the driver should trap INT/TERM/HUP and pass the signal to its `timeout` pid (`lib/driver.sh:166`). Today a Ctrl-C or hangup on a `--foreground` run or an eval kills the driver but leaves the claude session running unsupervised (review R2).
+
 ### 2026-10-21 23:59 · E2-07 · passes
 
 - **What changed:** new `evals/NEXT.md` (baseline, e3, e4 commands with `EVAL_BUDGET_USD=35`; compare baseline→e3, e3→e4, baseline→e4; probes per task result; cost; "the overnight run never runs these"); README `Evals` section and a command-table row; architecture §3 (`lib/prompt.sh`, `lib/eval.sh`, `lib/eval.mjs`), §4 (results and `/tmp/harness-eval` rows), §11 point 6. Tests 201 → 201 (docs only).
