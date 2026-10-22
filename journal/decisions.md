@@ -482,6 +482,9 @@ still in flight may append to it, and an edit there would conflict with them.
   Two such tasks: 10-19 P1-03 → P1-04 (`gh_url`) and E1-06 → E1-07 (the summary keys in the ledger row), the second
   replacing the single E1-06 task so no feature is replayed twice per set run. Set: 5 tasks (3 first-time, 2
   depends-on by order).
+  *Michael's answer (2026-10-21, INBOX, commit f02a5a4):* E2-02 is agent-harness only, 5 to 12 tasks, "widen the
+  eval set later by hand". The 5-task set stands. evals/README.md § To add when other projects' records are readable
+  names the missing categories (retried or given up; depends-on with an in-task `after`) and the candidates.
 - **Rejected:** an LLM judge (v1 is deterministic); synthetic tasks (no real failures in them); rewording a feature to
   pass the grep (the replay would no longer be the source's task); `git -C` in project checkouts for the records (a
   read-only mirror in scratch is the route for the remaining sources, once its reads are allowed); stripping the

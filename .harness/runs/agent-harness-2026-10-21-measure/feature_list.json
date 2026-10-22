@@ -108,7 +108,7 @@
         "lib/eval.mjs exports `validateTask(obj)` → a list of errors (empty when valid) and `node lib/eval.mjs validate evals/tasks` exits 0; tests/run.sh check `eval: every task.json validates and a bad one is rejected` (a task without features fails with its field named), watched failing first",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E2-03", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "`harness eval run [--set S] [--harness REF] [--label L]` runs each task of a set with that harness version's driver on a clone with a local bare origin and writes the results under evals/results/.",
       "steps": [

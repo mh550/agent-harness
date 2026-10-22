@@ -39,19 +39,29 @@ How a task is categorised:
   no `after` whose steps build on code the earlier one adds, the harness running them in array order; its `why` names
   what it reuses. Both agent-harness depends-on tasks are of this kind.
 
-## Still to add
+## To add when other projects' records are readable
 
-The spec asks for 8–12 tasks with at least two **retried or given up** and at least one **depends-on** task whose
-`after` names a feature of the same task by id. agent-harness's own runs can't supply either: every feature there
-passed on its first session (`metrics.jsonl`; no un-pass or re-check failure in `harness-log.md`), and the one in-task
-`after` (10-19 P2-03 → P2-01) hits the grep ("alive", `.env`, secrets). The spec's sources are pathways,
-dj-crate-streaming, portfolio_site and hit_list. Both E2-02 sessions had their reads refused by the permission
-classifier: a mirror clone and `git` reads in the first, a plain `ls` of `~/projects/<p>/.harness/runs` in the second
-(D-H35). The candidates the E2-01 survey found, to check against the rules above:
+The set is agent-harness only for now (Michael, 2026-10-21: "widen the eval set later by hand"). It covers the
+categories agent-harness's records can supply: three first-time passes and two depends-on tasks *by order*. Missing,
+to add when other projects' records are readable:
+
+- **retried or given up** (none yet; the spec wants at least two). Every agent-harness feature passed on its first
+  real session (`metrics.jsonl`; no un-pass or re-check failure in `harness-log.md`). The one exception, E2-02 of
+  `agent-harness-2026-10-21-measure`, took three sessions because its reads of other projects were refused, not
+  because the build was hard, and it builds this set, so it stays out.
+- **depends-on with an in-task `after`** (none yet; the spec wants at least one): the only one in agent-harness's runs,
+  10-19 P2-03 → P2-01, hits the grep ("alive", `.env`, secrets).
+
+The spec's sources are pathways, dj-crate-streaming, portfolio_site and hit_list. Both E2-02 sessions that tried to
+read them were refused by the permission classifier: a mirror clone and `git` reads in the first, a plain `ls` of
+`~/projects/<p>/.harness/runs` in the second (D-H35). Check these candidates from the E2-01 survey against the rules
+above:
 
 - retried: portfolio_site `portfolio_site-2026-10-20` VC2-01 and VC2-06, `…-vc4` VC5-01/03/04 (each passed on a
   second session); dj-crate-streaming `dj-2026-10-17` has 14 two-session features, most with live steps (likely out);
 - depends-on with an in-task `after`: portfolio_site `v2-2026-10-18` M1-01 → M1-02; `…-2026-10-21-v3` P1-01 → P1-02
   → P1-03, though P1-01 and P1-03 name LiveKit, so the grep rules them out; pathways and hit_list run branches, unread.
 
-Two retried tasks and one or two depends-on tasks from these bring the set to 8–9.
+Two retried tasks and one or two depends-on tasks from these would bring the set to 8–9 (the spec's 8–12). To add one,
+follow the rules above, add its id to `evals/sets/default.txt` and a row to the table, and run
+`node lib/eval.mjs validate evals/tasks`.
