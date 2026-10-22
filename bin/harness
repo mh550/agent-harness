@@ -33,6 +33,9 @@
 #                               replay a task set (evals/) with that harness version's driver on throwaway clones,
 #                               nothing posted or merged; results in evals/results/. Real sessions: it costs money,
 #                               so no task starts past EVAL_BUDGET_USD (default $10) or the 7-day WEEKLY_STOP_AT
+#   harness eval compare <A> <B>  two results (paths, or names under evals/results/): per task and in total, pass
+#                               rate, $ and tokens per verified feature, cache, orientation, context peak, wall time,
+#                               rework, each with B's verdict against A (better · worse · within noise · one sample)
 #
 # Where things live:  worktree ~/worktrees/<project>/<run-id> · branch harness/<run-id>
 #   committed run record  <worktree>/.harness/runs/<run-id>/{feature_list.json,progress.md,INBOX.md,harness-log.md,

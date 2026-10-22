@@ -6,6 +6,25 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 23:20 · E2-05 · passes
+
+- **What changed:**
+  - `lib/eval.mjs` gains `loadResult(dir)` (`spent` uses it too) and the exported `METRICS` (eight, with paths confirmed in `summary.mjs build`). It also gains `completeRepeats`, the pure `compare(A, B)` → rows `{task, metric, a, b, verdict, a_values, b_values}` with a `total` row per metric, `compareText` and a `compare` CLI.
+  - `lib/eval.sh compare <A> <B>` takes a path or a name under `evals/results/`. `bin/harness` help gains the command.
+  - `journal/decisions/2026-10-21-eval-compare-verdicts.md` records the decision.
+  - Tests 197 → 199: `eval.mjs: compare verdicts` and `eval compare prints the table`.
+- **Verified:**
+  - Both checks failed first (`FAIL eval.mjs: compare verdicts`: no export named compare; `FAIL eval compare prints the table`), then passed on an eval-only subset (20/20).
+  - Five mutations of `eval.mjs` were each caught by the unit check: verdict direction, the noise test, one sample, pass^N becoming a mean, and the totals over incomplete repeats.
+  - `check.sh` green, 199/199 (302 s), on the final tree.
+- **Review:** an Opus review found 2 Important and 5 Minor issues; I fixed all 7.
+  - Important 1: a run that started but wrote no `summary.json` was silently dropped. Its unit dir now loads as `{missing}`, counts as not passing and is named in the output.
+  - Important 2: the partial-repeat totals and the Σcost/Σverified totals were untested. Both have checks now, and the fixture's numbers are consistent.
+  - Minor: the total pass rate uses only complete repeats; an empty id list is guarded; a note says when A and B have different N; a missing sha/label prints `?`; `realpath --` is used and an empty argument is refused. The simplification (each metric carries its own format and sum) is applied.
+- **Next session (E2-06):** compare reads `{missing}` markers; probes don't need them. The README Evals section and architecture §3/§4/§11 are E2-07's job.
+- **Questions for Michael (defaults taken):** (1) `no data` is a fifth verdict, used when a side has no value, for example $ per verified feature when nothing verified. OK? (2) "one sample" counts a side's non-null values, not its repeats. OK?
+- **Proposed change:** none.
+
 ### 2026-10-21 21:55 · E2-04 · passes
 
 - **What changed:** `lib/config.sh` gets `EVAL_BUDGET_USD=10`. `lib/eval.sh run` also changes:

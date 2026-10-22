@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]
+# Usage: harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]  ·  harness eval compare <A> <B>
 # Replays a set of tasks (evals/tasks/<id>/task.json) with one harness version's driver: the ref is checked out into a
 # temporary worktree, and each task runs on a fresh clone of its repo at its base, with a local bare origin, its own
 # state, worktree, scratch, ledger and config roots, and nothing that can post or merge (plan:
@@ -8,6 +8,9 @@
 # Money and time: no task starts once the tasks have spent EVAL_BUDGET_USD, or while the plan's 7-day window (the real
 # state root's USAGE_7D, or the eval's own) is past WEEKLY_STOP_AT; past it at the start, nothing is created at all.
 # --repeat N runs every task N times (r1 of each task, then r2 …), each on a fresh clone, into <task>/r<N>/.
+# compare reads two results dirs (a path, or a name under evals/results/) and prints, per task and in total, pass rate,
+# $ and tokens per verified feature, cache hit rate, orientation, context peak, wall time and rework, each with B's
+# verdict against A: better, worse, within noise (the spread across repeats), one sample or no data. It spends nothing.
 set -uo pipefail
 HARNESS_HOME=${HARNESS_HOME:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}
 # shellcheck source=lib/version.sh
@@ -184,7 +187,21 @@ cmd_run() {
   (( ${#NOT_STARTED[@]} == 0 )) || exit 1   # an incomplete eval isn't a result to compare
 }
 
+cmd_compare() {
+  (( $# == 2 )) || die "usage: harness eval compare <result dir A> <result dir B> (a path, or a name under evals/results/)"
+  local d dirs=() root=${HARNESS_EVAL_RESULTS:-$HARNESS_HOME/evals/results}
+  for d in "$@"; do
+    if [[ -z $d ]]; then die "an empty results dir name"
+    elif [[ -d $d ]]; then dirs+=("$(realpath -- "$d")")
+    elif [[ $d != */* && -d $root/$d ]]; then dirs+=("$(realpath -- "$root/$d")")
+    else die "no results dir '$d' (a path, or a name under $root)"; fi
+  done
+  EV compare "${dirs[@]}"
+}
+
 case ${1:-} in
   run) shift; cmd_run "$@" ;;
-  *) echo "usage: harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]" >&2; exit 2 ;;
+  compare) shift; cmd_compare "$@" ;;
+  *) printf '%s\n' "usage: harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]" \
+       "       harness eval compare <result dir A> <result dir B>" >&2; exit 2 ;;
 esac

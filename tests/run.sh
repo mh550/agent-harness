@@ -115,6 +115,27 @@ mkdir -p "$T/evbad/nofeat" && jq -n '{id:"nofeat",project:"p",repo:"/r",base:("a
 check "eval: every task.json validates and a bad one is rejected" 'node --input-type=module -e "$EVTK" && node "$HERE/../lib/eval.mjs" validate "$HERE/../evals/tasks" 2> /dev/null \
   && ! node "$HERE/../lib/eval.mjs" validate "$T/evbad" > "$T/evbad.out" 2>&1 && grep -q "nofeat/task.json: features: required" "$T/evbad.out" \
   && [[ -z $(grep -v "^#" "$HERE/../evals/sets/default.txt" | while read -r t; do [[ -f "$HERE/../evals/tasks/$t/task.json" ]] || echo "$t"; done) ]]'
+# compare (E2-05): noise is the spread across a task's repeats; B is judged against A, in each metric's direction;
+# pass rate is pass^N (w passed once in two: 0), a started run without a summary ({ missing }) a failed one; the totals
+# use only the repeats every task has, and per verified feature is the sums over tasks / their verified features
+EVCMP='import { compare as c, completeRepeats as cr } from "'$HERE'/../lib/eval.mjs";
+  const s = (pass, cost, hit = 0.5) => { const ver = pass ? 2 : 1; return { features: { total: 2, verified: ver }, cost: { total: cost * ver }, per_verified_feature: { cost, tokens: 1000 / ver },
+    tokens: { in: 900, cache_read: 50, cache_write: 50, out: 0, cache_hit_rate: hit, context_peak: 100 }, orientation: { tokens: 10 }, time: { wall_h: 1 }, rework: [] }; };
+  const A = { tasks: { x: [s(1, 1.0), s(1, 1.4)], y: [s(0, 2.0), s(0, 2.1)], z: [s(1, 1.0, 0.5), s(1, 1.1, 0.5)], w: [s(1, 1), s(0, 1)], a: [s(1, 1)] } };
+  const B = { tasks: { x: [s(1, 1.2), s(1, 1.3)], y: [s(1, 1.0), s(1, 1.1)], z: [s(0, 2.0, 0.8), s(0, 2.1, 0.8)], w: [s(1, 1), s(1, 1)], b: [s(1, 1)] } };
+  const get = (rows, t, m) => rows.find(x => x.task === t && x.metric === m), r = c(A, B), v = (t, m) => get(r, t, m)?.verdict, one = c({ tasks: { x: [s(1, 1)] } }, B);
+  const nul = { ...s(1, 1), per_verified_feature: { cost: null, tokens: null } }, pv = (a) => get(c({ tasks: { x: a } }, B), "x", "$ per verified feature").verdict, tot = get(r, "total", "pass rate");
+  const sums = { tasks: { p: [s(1, 1), s(1, 1)], q: [s(0, 4), s(0, 4)] } }, P = { tasks: { x: [s(1, 1), s(0, 1)], y: [s(1, 1)] } }, pp = c(P, P), crash = get(c({ tasks: { x: [s(1, 1), { missing: true }] } }, B), "x", "pass rate");
+  process.exit(v("x", "$ per verified feature") === "within noise" && v("x", "pass rate") === "within noise"
+    && v("y", "$ per verified feature") === "better" && v("y", "pass rate") === "better" && v("z", "$ per verified feature") === "worse" && v("z", "pass rate") === "worse"
+    && v("z", "cache hit rate") === "better" && r.filter(x => x.task === "x").length === 8 && !r.some(x => x.task === "a" || x.task === "b")
+    && v("x", "rework") === "within noise" && one.every(x => x.verdict === "one sample") && pv([nul, s(1, 1)]) === "one sample" && pv([nul, nul]) === "no data"
+    && get(r, "w", "pass rate").a === 0 && v("w", "pass rate") === "within noise"
+    && tot.a === 0.5 && tot.b === 0.75 && tot.verdict === "within noise" && r.filter(x => x.task === "total").length === 8
+    && get(c(sums, sums), "total", "$ per verified feature").a === 2 && get(c(sums, sums), "total", "tokens per verified feature").a === 2000 / 3
+    && JSON.stringify(cr(P, ["x", "y"])) === "[0]" && JSON.stringify(cr(P, [])) === "[]" && get(pp, "total", "pass rate").a === 1 && get(pp, "total", "pass rate").verdict === "one sample"
+    && crash.a === 0 && JSON.stringify(crash.a_values) === "[1,0]" ? 0 : 1);'
+check "eval.mjs: compare verdicts" 'node --input-type=module -e "$EVCMP"'
 
 # ---- harness eval run (E2-03): two stub tasks replayed by the committed driver (--harness HEAD), in isolation ----
 # The task repo's own config would merge through gh and post to ntfy: the eval's run.env must beat it.
@@ -167,6 +188,19 @@ ERD=$(compgen -G "$T/results/*-rep" | head -1)
 ev_reps() { local t r; for t in t1 t2; do for r in r1 r2; do jq -e "all(.features_detail[]; .passes)" "$ERD/$t/$r/summary.json" > /dev/null || return 1; done; done; }
 check "eval: --repeat 2 runs each task twice" '(( ERR == 0 )) && [[ -n $ERD ]] && ev_reps && jq -e ".repeat == 2 and ([.tasks[].result] == [\"t1/r1\", \"t2/r1\", \"t1/r2\", \"t2/r2\"])
     and ([.tasks[].repeat] == [1, 1, 2, 2]) and ([.tasks[].clone] | unique | length) == 4 and ([.tasks[].run] | unique | length) == 4" "$ERD/eval.json" > /dev/null'
+# compare (E2-05): the one-repeat eval against the two-repeat one (one sample), and the two-repeat one against itself
+"$H" eval compare "$ED" "$ERD" > "$T/evcmp.out" 2>&1; ECR=$?
+"$H" eval compare "$ERD" "$ERD" > "$T/evcmp2.out" 2>&1; ECR2=$?
+HARNESS_EVAL_RESULTS=$T/results "$H" eval compare "${ED##*/}" "${ERD##*/}" > "$T/evcmp3.out" 2>&1   # a bare name is a dir under the results root
+cp -r "$ERD" "$T/evcrash" && rm "$T/evcrash/t2/r2/summary.json"   # a repeat that started and wrote no summary failed
+"$H" eval compare "$ERD" "$T/evcrash" > "$T/evcmp4.out" 2>&1
+ev_cmp() { local m; (( ECR == 0 && ECR2 == 0 )) || return 1
+  for m in 'pass rate' '\$ per verified feature' 'tokens per verified feature' 'cache hit rate' 'orientation tokens' 'context peak' 'wall time (h)' 'rework'; do
+    grep -q "^$m: one sample (A " "$T/evcmp.out" && grep -q "^$m: within noise (A " "$T/evcmp2.out" || return 1; done; }
+check "eval compare prints the table" 'ev_cmp && grep -q "^| t1 | pass rate | pass^1 1 (1/1) | pass^2 1 (2/2) | one sample |$" "$T/evcmp.out" \
+  && [[ $(grep -c "^| t[12] | " "$T/evcmp.out") == 16 ]] && grep -q "^## Totals" "$T/evcmp.out" && [[ $(grep -c "^| total | " "$T/evcmp.out") == 8 ]] \
+  && cmp -s "$T/evcmp.out" "$T/evcmp3.out" && ! "$H" eval compare "$T/results" "$ED" > /dev/null 2>&1 && grep -q "^A: 1 repeat, B: 2: pass^N" "$T/evcmp.out" \
+  && grep -q "^| t2 | pass rate | pass^2 1 (2/2) | pass^2 0 (1/2) | " "$T/evcmp4.out" && grep -q "^B: t2 r2: no summary" "$T/evcmp4.out"'
 
 # ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
 DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";

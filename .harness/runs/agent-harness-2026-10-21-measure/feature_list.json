@@ -138,7 +138,7 @@
         "`harness eval compare <resultA> <resultB>` prints a markdown table with one line per task and metric and a totals block, then one line per metric with its verdict; tests/run.sh check `eval compare prints the table`: comparing the two test results shows a `pass rate` line and a verdict for each of the eight metrics",
         "Both checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E2-06", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "`harness eval probes <task-result>` derives handoff questions from a finished task's record, asks one Haiku session that sees only the next coding session's prompt, and scores the answers by match.",
       "steps": [
