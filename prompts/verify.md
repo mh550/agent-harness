@@ -8,6 +8,9 @@ You are in a git worktree of the project; main's latest commits have just been m
 worktree, branch, port, scratch directory and suite are under *This run* below. The harness already
 ran the init and the suite (output at the end).
 
+Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory).
+It says what the milestone's sessions tried. It is not evidence: re-run every step yourself.
+
 1. Run the suite and the smoke check (both under *This run*).
 2. For each feature of the milestone in the run directory's `feature_list.json`: perform **every
    step exactly as written**. Run the commands, call the API, load the pages at the stated widths

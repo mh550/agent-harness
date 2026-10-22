@@ -296,6 +296,9 @@ check "eval probes: the probe prompt is the driver's coding prompt" '[[ -s $ED/t
   && cmp -s <(noinit "$ED/t2/probe-prompt.md") <(noinit "$(jq -r ".tasks[1].state" "$EJ")/prompt-coding.md") && cmp -s <(sed -n "3,$(( $(awk 1 "$ED/t2/probe-prompt.md" | wc -l) + 2 ))p" "$T/probe-prompt1") <(awk 1 "$ED/t2/probe-prompt.md") \
   && (( EPG == 0 )) && grep -q "probes: run worktree gone; CLAUDE.md not auto-loaded" "$T/evgone.out" && jq -e ".note | test(\"worktree gone\")" "$T/evgone/t2/probes.json" > /dev/null && [[ -z $(ls -A "$T/ptmp") ]] \
   && ! grep -qx "PWD=$(jq -r ".tasks[1].worktree" "$EJ")" "$STUB_DIR/probe-args" && (( EPN == 1 )) && grep -q "no probe-prompt.md" "$T/evnop.out"'
+# the probe reads the run's context pack as the next session would (E4-05 / plan §9), pasted after the prompt
+check "eval probes: the probe reads the run's context pack" '[[ $(head -1 "$ED/t2/context.md" 2> /dev/null) == "# Context pack for \`T2b\`" ]] \
+  && grep -qx "# context.md (the run directory'"'"'s context pack, as the next session reads it)" "$T/probe-prompt1" && grep -qx "# Context pack for \`T2b\`" "$T/probe-prompt1"'
 
 # ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
 DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";
@@ -361,6 +364,30 @@ mkdir -p "$T/jr/legacy" "$T/jr/new" && echo '# old progress' > "$T/jr/legacy/pro
 check "entries.mjs: progress renders 15 in full and the rest as archive lines" 'node --input-type=module -e "$ENRE" \
   && node "$HERE/../lib/entries.mjs" render "$T/jr/legacy" && [[ $(ls "$T/jr/legacy") == progress.md && $(cat "$T/jr/legacy/progress.md") == "# old progress" ]] \
   && node "$HERE/../lib/entries.mjs" render "$T/jr/new" && grep -qx "### 2026-10-22 02:00 · A · passes" "$T/jr/new/progress.md" && grep -qx "### 2026-10-22 02:00 · A · passes" "$T/jr/new/progress-archive.md" && grep -q "^# Progress — run \`new\`" "$T/jr/new/progress.md"'
+# the context pack (E4-05): 200 unrelated entries of ~300 bytes (every other one with a long run-wide discovery) around X's earlier
+# attempt (line 51, a dead end) and a verify of X's milestone (line 122, step 2 failed): X's dead end leads, the
+# verify's finding follows, Michael's answers come before any discovery, every item names its line, and the cap holds
+ENPK='import { pack } from "'$HERE'/../lib/entries.mjs"; const st = i => ({ at: "2026-10-22 01:00", session: "s" + i, model: "m" });
+  const e = Array.from({ length: 200 }, (_, i) => ({ feature: "F" + i, kind: "coding", outcome: "passes", summary: "entry " + i + " " + "x".repeat(270), files: ["f"], ...st(i),
+    ...(i % 2 ? {} : { discoveries: [{ text: "run-wide " + i + " " + "y".repeat(200), affects: ["run"] }] }) }));
+  e.splice(50, 0, { feature: "X", kind: "coding", outcome: "not yet", summary: "X first try", dead_ends: [{ tried: "the old parser", why: "it drops blank lines" }], ...st("-x") });
+  e.splice(121, 0, { feature: "MX", kind: "verify", outcome: "not yet", summary: "X step 2 fails", ...st("-v"),
+    evidence: [{ feature: "X", step: 1, ran: "a", saw: "ok", holds: true }, { feature: "X", step: 2, ran: "curl :7900/x", saw: "500", holds: false }] });
+  const list = { features: [{ id: "F3", milestone: "M0", steps: ["s"] }, { id: "X", milestone: "MX", after: ["F3"], steps: ["a", "b"] }] };
+  const p = pack(e, { feature: "X", list, answers: "### a\nuse port 7900", cap: 8192 }), ls = p.split("\n"), at = re => ls.findIndex(l => re.test(l));
+  const big = pack([], { feature: "X", list, answers: "old ".repeat(3000) + "newest answer", cap: 4096 }), small = pack(e, { feature: "X", list, answers: "", cap: 2048 });
+  process.exit(Buffer.byteLength(p) <= 8192 && ls[0] === "# Context pack for `X`" && ls.find(l => l.startsWith("- ")) === "- Dead end (X, s-x): the old parser — it drops blank lines → entries.jsonl:51"
+    && at(/^- Verify MX found \(X step 2\): ran curl :7900\/x; saw 500 → entries\.jsonl:122$/) > at(/^- Dead end/) && at(/^- Verify MX/) < at(/use port 7900 → INBOX\.md$/)
+    && at(/use port 7900/) < at(/^- Discovery/) && at(/^- Discovery \(F\d+, affects run\): run-wide/) > 0 && ls.filter(l => l.startsWith("- ")).every(l => / → (entries\.jsonl:\d+|INBOX\.md)$/.test(l))
+    && /^_\d+ items left out at 8192 bytes: entries\.jsonl has them all\._$/.test(ls.at(-2)) && Buffer.byteLength(big) <= 4096 && big.includes("- …") && big.includes("newest answer → INBOX.md")
+    && Buffer.byteLength(small) <= 2048 && small.split("\n").find(l => l.startsWith("- ")).startsWith("- Dead end (X") ? 0 : 1);'
+mkdir -p "$T/pk" && printf '%s\n' '{"feature":"A","kind":"coding","outcome":"not yet","summary":"a1","dead_ends":[{"tried":"t","why":"w"}],"at":"x","session":"01-A","model":"m"}' '{oops' \
+  '{"feature":"A","kind":"coding","outcome":"passes","summary":"a2","at":"x","session":"02-A","model":"m"}' > "$T/pk/entries.jsonl" \
+  && echo '{"features":[{"id":"A","milestone":"M1","steps":["s"]}]}' > "$T/pk/feature_list.json" && printf 'status: run\n## Answers\nuse 7900\n' > "$T/pk/INBOX.md"
+check "entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap" 'node --input-type=module -e "$ENPK" \
+  && node "$HERE/../lib/entries.mjs" pack "$T/pk" A > "$T/pk.md" && grep -qx -- "- Dead end (A, 01-A): t — w → entries.jsonl:1" "$T/pk.md" \
+  && grep -q -- "^- x · A · passes: a2 → entries.jsonl:3$" "$T/pk.md" && grep -qx -- "- use 7900 → INBOX.md" "$T/pk.md" \
+  && [[ $(node "$HERE/../lib/entries.mjs" pack "$T/jr/legacy" Z | head -1) == "# Context pack for \`Z\`" ]]'
 git init -q -b main "$T/vj" && echo '{"framework":"nextjs"}' > "$T/vj/vercel.json" && "$H" init "$T/vj" > "$T/init-vj.out" 2>&1 && "$H" init "$T/vj" > "$T/init-vj2.out" 2>&1
 check "init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept" 'jq -e ".framework == \"nextjs\" and .git.deploymentEnabled[\"harness/**\"] == false" "$T/vj/vercel.json" > /dev/null \
   && grep -q "added the deploy guard to vercel.json" "$T/init-vj.out" && grep -q "keep    vercel.json" "$T/init-vj2.out" && ! grep -q "added the deploy guard" "$T/init-vj2.out"'
@@ -417,6 +444,13 @@ check "progress.md is rendered from the journal" 'head -1 "$RD/progress.md" | gr
   && awk "index(\$0, \"### \") == 1 { if (on) exit; if (index(\$0, \"verify M1\")) on = 1 } on" "$RD/progress.md" | grep -q "^| A | 1 |" \
   && [[ $(grep -c "^### " "$RD/progress-archive.md") == $(wc -l < "$RD/entries.jsonl") ]] \
   && grep -q "^### .* · verify M2 · passes$" "$HARNESS_STATE/proj/demo/pr-body.md" && grep -q "^| C | 1 |" "$HARNESS_STATE/proj/demo/pr-body.md"'
+# the context pack before each coding and verify session (E4-05): C's second attempt got its first attempt's dead end,
+# both prompts send the session there first, and the pack is committed with the run record (so it merges)
+check "context.md carries the earlier attempt's dead end" 'C5=$HARNESS_STATE/proj/demo/logs/05-C.context.md; grep -q "left BROKEN in the tree" "$C5" && (( $(wc -c < "$C5") <= 8192 )) \
+  && grep -q "^# Context pack for \`M1\`" "$(ls "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.context.md | head -1)" \
+  && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-coding.md" \
+  && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-verify.md" \
+  && git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo/context.md && hlog demo | grep -q "context.md for C: [0-9]* bytes"'
 check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && grep -q "ended: done" <<< "$("$H" status demo)"'
 check "summary, report and retro written" '[[ $(jq .features.merged "$RD/summary.json") == 3 ]] && grep -q "per passing feature" "$RD/report.md" && grep -q "Stub retro" "$RD/retro.md"'
 check "summary: tokens, per verified feature, first-attempt rate, rework" 'jq -e ".tokens.in > 0 and .per_verified_feature.cost > 0 and .rework == [\"A\", \"C\"] and .first_attempt_pass_rate == 0.33 and .verify_fail_rate > 0" "$RD/summary.json" > /dev/null'

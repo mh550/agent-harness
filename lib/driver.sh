@@ -174,6 +174,7 @@ session() {   # kind model log → runs claude headless on $STATE/prompt.md; set
   # an entry.json no ingest took (the driver died after its session) would pass for this session's own
   [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
   cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
+  [[ $1 == coding || $1 == verify ]] && cp "$RUN_DIR/context.md" "${3%.jsonl}.context.md" 2> /dev/null   # and the pack it read first
   [[ -f $AGENT_SETTINGS ]] && settings=(--settings "$WT/$AGENT_SETTINGS")
   timeout "$SESSION_TIMEOUT" "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" \
     --max-turns "$MAX_TURNS" --max-budget-usd "$SESSION_BUDGET_USD" --output-format stream-json --verbose > "$3" 2>&1
@@ -209,6 +210,18 @@ journal() {
 vcount() {
   if [[ -f $RUN_DIR/entries.jsonl ]]; then jq -cR --arg m "$1" 'fromjson? | select(.kind == "verify" and .feature == $m)' "$RUN_DIR/entries.jsonl" | wc -l
   else local n; n=$(grep -c "^### .*verify $1\b" "$RUN_DIR/progress.md" 2> /dev/null); echo "${n:-0}"; fi
+}
+
+# <feature or milestone> → <run>/context.md, the bounded pack of the journal the next coding or verify session reads first
+# (lib/entries.mjs pack, at most CONTEXT_PACK_BYTES; decisions/2026-10-22-context-pack). Committed with the run record.
+context() {
+  if node "$HARNESS_HOME/lib/entries.mjs" pack "$RUN_DIR" "$1" "$CONTEXT_PACK_BYTES" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
+    mv -f "$SCRATCH/context.md" "$RUN_DIR/context.md"
+    note "context.md for $1: $(wc -c < "$RUN_DIR/context.md") bytes$(sed -n 's/^_\([0-9]*\) items left out at .*/, \1 items left out/p' "$RUN_DIR/context.md")"
+  else   # never a stale pack: the session is sent to the full record instead
+    printf '# Context pack for `%s`\n\nThe harness could not build it this time; read entries.jsonl / progress-archive.md.\n' "$1" > "$RUN_DIR/context.md"
+    note "context.md for $1: the pack failed ($(head -c 200 "$SCRATCH/context.err" | tr '\n' ' ')); it points at the full record"
+  fi
 }
 
 run_init() {   # the project's init, then the suite (cached per code tree); both go into the next prompt
@@ -303,6 +316,7 @@ verify() {
   run_init
   for model in "$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"; do
     F snapshot "$LIST" > "$STATE/before.json"
+    context "$m"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
     HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
@@ -574,7 +588,7 @@ while :; do
   IFS=$'\t' read -r id mdl milestone <<< "$next"
   n=$(( n + 1 ))
   F bump "$ATT" "$id"; F snapshot "$LIST" > "$STATE/before.json"
-  run_init
+  run_init; context "$id"
   HARNESS_CLOCK=$(clock "attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
   log "session $n · $id · $mdl"
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"

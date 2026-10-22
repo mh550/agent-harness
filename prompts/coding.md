@@ -34,10 +34,12 @@ checkouts on this machine.
 
 ## 1. Get your bearings (always, in this order)
 
+Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory).
+
 1. `pwd`, `git status`, `git log --oneline -20`. If the harness committed `WIP: …` work from an
    interrupted session, read it before building on it.
 2. `INBOX.md` in the run directory: Michael's answers override earlier plans. Then the run's brief
-   (if any, below) and the newest entries in the run directory's `progress.md`.
+   (if any, below).
 3. The project rules (`CLAUDE.md`, already loaded; `.harness/project.md` below if present), the
    parts of the spec (under *This run*) your feature touches, the milestone's plan file if there is
    one, and **your feature** in the run directory's `feature_list.json`.

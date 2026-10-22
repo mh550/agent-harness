@@ -13,8 +13,9 @@
 # $ and tokens per verified feature, cache hit rate, orientation, context peak, wall time and rework, each with B's
 # verdict against A: better, worse, within noise (the spread across repeats), one sample or no data. It spends nothing.
 # probes asks one tool-less PROBE_MODEL session (default haiku, one turn, ≤ $0.50), given only the coding prompt the task's
-# next session would get, the questions the task's record answers (the files a feature changed, what the next feature
-# depends on, what a failed attempt failed on), and scores each answer exact, contains or miss into probes.json.
+# next session would get (and, from E4, the context.md it would read first), the questions the task's record answers
+# (the files a feature changed, what the next feature depends on, what a failed attempt failed on), and scores each
+# answer exact, contains or miss into probes.json.
 set -uo pipefail
 HARNESS_HOME=${HARNESS_HOME:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}
 # shellcheck source=lib/version.sh
@@ -121,13 +122,16 @@ run_task() {   # <task.json> <repeat> → one replay; its record in $R/<unit>/ a
       say "task $u: run $run on $clone (base ${base:0:12})"
       run_env "$E/harness/bin/harness" start "$clone" "$run" "${args[@]}" > "$res/start.log" 2>&1
       rc=$?   # logged, never fatal: the next task goes on
-      for f in summary.json metrics.jsonl harness-log.md feature_list.json progress.md; do
+      for f in summary.json metrics.jsonl harness-log.md feature_list.json progress.md entries.jsonl; do
         [[ -f $wt/.harness/runs/$run/$f ]] && cp "$wt/.harness/runs/$run/$f" "$res/"; done
       # what probes need, kept while the clone and the ref's worktree exist (/tmp may lose them): the run's commits,
       # and the coding prompt of the task's next feature as the ref's own lib/prompt.sh renders it (older refs: none)
       git -C "$clone" log --reverse --name-only --format='%x00%H%x09%s' "$base..harness/$run" 2> /dev/null | EV commits > "$res/commits.json"
       if [[ -x $E/harness/lib/prompt.sh ]] && v=$(EV target "$res/feature_list.json" 2> /dev/null); then
         run_env "$E/harness/lib/prompt.sh" "$st" coding "$v" > "$res/probe-prompt.md" 2>> "$res/start.log" || rm -f "$res/probe-prompt.md"
+        # and the context pack that session would read first, from refs that build one (E4: lib/entries.mjs has pack)
+        grep -q '^export function pack' "$E/harness/lib/entries.mjs" 2> /dev/null && { node "$E/harness/lib/entries.mjs" pack "$wt/.harness/runs/$run" "$v" \
+          "${CONTEXT_PACK_BYTES:-8192}" > "$res/context.md" 2>> "$res/start.log" || rm -f "$res/context.md"; }
       fi
       cost=$(jq '.cost.total // null' "$res/summary.json" 2> /dev/null) || cost=null
       end=$(jq -r '.end_reason // ""' "$res/summary.json" 2> /dev/null)
@@ -249,8 +253,10 @@ cmd_probes() {
   if [[ -n $wt && -d $wt ]]; then dir=$wt
   else dir=$(mktemp -d "${TMPDIR:-/tmp}/harness-probe.XXXXXX") || die "no temp dir"; note="probes: run worktree gone; CLAUDE.md not auto-loaded"
     trap "rm -rf $(printf %q "$dir")" EXIT; echo "$note"; fi   # expanded now: a local is gone when EXIT runs
-  p=$(printf '# Probe session\n\n%s\n\n---\n\nAnswer from what is above only. One line per question: `Q<n>: <answer>`.\n\n%s\n' \
-    "$(cat "$d/probe-prompt.md")" "$(jq -r '.questions | to_entries[] | "Q\(.key + 1): \(.value.q)"' "$q")")
+  # the run's context pack (refs from E4 on), pasted as the next session would read it: the probe has no tools to open it
+  p=$(printf '# Probe session\n\n%s\n\n' "$(cat "$d/probe-prompt.md")"
+    [[ -s $d/context.md ]] && printf -- "---\n\n# context.md (the run directory's context pack, as the next session reads it)\n\n%s\n\n" "$(cat "$d/context.md")"
+    printf -- '---\n\nAnswer from what is above only. One line per question: `Q<n>: <answer>`.\n\n%s\n' "$(jq -r '.questions | to_entries[] | "Q\(.key + 1): \(.value.q)"' "$q")")
   # no tools and nothing to allow: the answers can come only from the prompt; one turn, capped in dollars and time
   ( cd "$dir" && HARNESS_EVAL=1 timeout 10m "${HARNESS_CLAUDE:-claude}" -p "$p" --model "$model" --max-turns 1 --tools "" --allowedTools "" \
       --permission-mode dontAsk --strict-mcp-config --max-budget-usd 0.5 --output-format stream-json --verbose ) > "$d/probe-session.jsonl" 2>&1
