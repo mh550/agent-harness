@@ -204,7 +204,7 @@
         "The check watched failing first; journal/decisions.md D-H38 covers the line; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E3-01", "E3-02", "E3-03"],
-      "passes": false },
+      "passes": true },
     { "id": "E3-05", "milestone": "E3", "kind": "review", "model": "opus",
       "description": "An Opus review of the E3 diff with findings fixed RED→GREEN, simplifications applied, architecture §10 prompt assembly and README updated, docs/plans/2026-10-21-E3-review.md written.",
       "steps": [
