@@ -73,6 +73,9 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
 - **Phone:** edit `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
   `status: stop`; answers under `## Answers`. The driver pulls before every session.
 - **Box:** `harness pause|resume|stop|answer <run>`, `harness attach <run>` (tmux: driver · log · supervisor).
+- **What a session reads:** the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
+  Claude Code itself (the prompt names it in one line, it doesn't paste it), so a rule edited on the run branch reaches
+  the next session. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 - **Notifications:** start, merges, needs-Michael, parks, limits, end. In `~/.config/harness/config.sh` either
   - `NTFY_URL` (an ntfy topic URL, e.g. a private ntfy.sh topic) and optionally `NTFY_TOKEN` (sent as
     `Authorization: Bearer`, never logged): the harness posts itself, with a title, priority high where you must

@@ -10,8 +10,8 @@ lives) and the rest are under *This run* below.
 
 ## Read first
 
-- The spec (under *This run*), in full, and the **brief for this run** (under *This run*, if
-  there is one): the brief wins on scope. The project rules (`CLAUDE.md`, which Claude Code loads in
+- The spec (under *This run*), in full, and the **brief for this run** (its own section after
+  *This run*, if there is one): the brief wins on scope. The project rules (`CLAUDE.md`, which Claude Code loads in
   every session) bind every session.
 - Enough of the code to plan realistically: the entry points, the modules the spec names, and the
   list of tests.

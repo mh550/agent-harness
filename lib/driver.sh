@@ -164,7 +164,7 @@ prompt() {   # template name → $STATE/prompt.md (lib/prompt.sh, which `harness
 # time, budget or attempt otherwise. The run is this driver's segment (T0 to DEADLINE). decisions/2026-10-21-clock-and-bounded-init-output
 clock() {
   local now el tot; now=$(date +%s); el=$(( (now - T0) / 60 )); tot=$(( (DEADLINE - T0) / 60 ))
-  printf 'Clock: %s · run %dh%02dm of %s, ends %s · this session: $%s budget, %s turns, %s timeout · %s\n' "$(date -d "@$now" '+%F %H:%M')" \
+  printf 'Clock: %s · run %dh%02dm of %s, ends %s · this session: $%s budget, %s turns, %s timeout · %s\n' "$(date '+%F %H:%M')" \
     $(( el / 60 )) $(( el % 60 )) "$( (( tot % 60 )) && printf '%dh%02dm' $(( tot / 60 )) $(( tot % 60 )) || echo "$(( tot / 60 ))h")" \
     "$(date -d "@$DEADLINE" +%H:%M)" "$SESSION_BUDGET_USD" "$MAX_TURNS" "$SESSION_TIMEOUT" "$1"
 }

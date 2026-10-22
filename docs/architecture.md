@@ -68,7 +68,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `prompts/desk.md` | ~80 | The desk's instructions (a run block and a debrief block): read `harness parked`/status/INBOX/progress, check safely, one numbered brief, `harness answer` and the continue only after Michael's yes, the never-list |
 | `skills/harness-answer/SKILL.md` | ~45 | The answer desk's instructions for an interactive session Michael opens (§17); installed by a symlink into `~/.claude/skills/` |
 | `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
-| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md` |
+| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*) and `parts/rules.md` (the line naming `CLAUDE.md`) |
 | `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 168 checks |
 
 ## 4. Where state lives
@@ -262,19 +262,22 @@ disables run-branch deploys on `main`: `harness init` writes the guard (`vercel.
 `origin/main` notes it and notifies once (`lib/deploy.sh`; milestone PR heads `harness-merge/*` still get a preview).
 **What a run provides**: `--spec` files and a `--brief` (scope for this run only).
 
-**Prompt assembly** (`prompt()` → `prompt_render` → `render.mjs`, decisions/2026-10-21-static-first-prompts): the
-static part of `prompts/<kind>.md` (a fixed first line, `# Coding session`, `# Verify session` or `# Initializer
-session`, then the role, rules and finish, no placeholders), then at its `{{SECTIONS}}` line the policy
-(`prompts/policy/<POLICY>.md`), *This run* (`prompts/parts/run.md`: run id, worktree, branch, run directory, port,
-scratch, suite, spec), "Brief for this run", `prompts/parts/rules.md` (one line naming `CLAUDE.md`, which Claude Code
-loads itself, when the worktree has one) and legacy `.harness/project.md` if present, then the template's *This
-session* part (`` Feature: `<id>` `` / `Milestone: <m>`, or `Milestone:` / `Features:`; the clock line; the init
-output). Two sessions of a run share every byte up to *This session*. The clock line (`{{CLOCK}}`, driver `clock`,
-coding and verify only) is `Clock: <now> · run <elapsed> of <total>, ends <HH:MM> · this session: $<budget> budget,
-<turns> turns, <timeout> timeout · attempt N of MAX_ATTEMPTS` (or `verify round N of MAX_VERIFY_ROUNDS`); the run
-is this driver's segment, `T0` to `DEADLINE`. A probe rendered by `lib/prompt.sh` says it is outside a run. The retro (`# Retro`, its run on line 3) gets the template
-and the rules line. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output) and then
-`full output: <path>`. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
+**Prompt assembly** (`prompt()` → `prompt_render` → `render.mjs`, decisions/2026-10-21-static-first-prompts), in
+this order: (1) the static part of `prompts/<kind>.md`: a fixed first line (`# Coding session`, `# Verify session` or
+`# Initializer session`), then the role, rules and finish, with no placeholders; (2) at its `{{SECTIONS}}` line the
+policy (`prompts/policy/<POLICY>.md`); (3) the run-level parts: *This run* (`prompts/parts/run.md`: run id,
+worktree, branch, run directory, port, scratch, suite, init, smoke, spec), "Brief for this run" (pasted as written,
+so a `{{X}}` in it stays text), `prompts/parts/rules.md` (one line naming `CLAUDE.md`, which Claude Code loads
+itself, when the worktree has one; decisions/2026-10-21-no-double-claude-md) and legacy `.harness/project.md` if
+present; (4) the template's *This session* part: `` Feature: `<id>` `` / `Milestone: <m>` (coding), `Milestone:` /
+`Features:` (verify) or `Earlier runs' feature sizes:` (initializer), the clock line, the init output. Sections are
+one blank line apart. Two sessions of a run share every byte up to *This session*. The clock line (`{{CLOCK}}`,
+driver `clock`, coding and verify only; decisions/2026-10-21-clock-and-bounded-init-output) is `Clock: <now> · run
+<elapsed> of <total>, ends <HH:MM> · this session: $<budget> budget, <turns> turns, <timeout> timeout · attempt N of
+MAX_ATTEMPTS` (or `verify round N of MAX_VERIFY_ROUNDS`); the run is this driver's segment, `T0` to `DEADLINE`. A
+probe rendered by `lib/prompt.sh` says it is outside a run. The retro (`# Retro`, its run on line 3) gets the
+template and the rules line. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output)
+and then `full output: <path>`. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 
 **Policies**: `build-only` (default: never operate anything live; write live steps down) and `live-staged` (operate
 live through the protocol: preflight, stages, stop-and-revert, one writer via `flock`, deploy only from the run's

@@ -93,8 +93,11 @@ check "a body over the cap is trimmed"    'Bd=$(curl_body "Title: long one"); ((
 # ---- render, pure: the sections go at the {{SECTIONS}} line, or at the end without one (E3-03) ----
 ASM='import { assemble } from "'$HERE'/../lib/render.mjs"; const env = { HARNESS_X: "x" }, s = [{ title: "T", body: "b {{X}}", raw: false }, { title: null, body: "u {{X}}", raw: true }];
   const a = assemble("top\n\n{{SECTIONS}}\n\nend {{X}}\n", s, env), b = assemble("top {{X}}\n", s, env);
-  process.exit(a === "top\n\n---\n\n# T\n\nb x\n\n\nu {{X}}\n\nend x\n" && b === "top x\n\n\n---\n\n# T\n\nb x\n\n\nu {{X}}" ? 0 : 1);'
-check "render.mjs: assemble puts the sections at the {{SECTIONS}} line" 'node --input-type=module -e "$ASM"'
+  process.exit(a === "top\n\n---\n\n# T\n\nb x\n\nu {{X}}\n\nend x\n" && b === "top x\n\n---\n\n# T\n\nb x\n\nu {{X}}\n" ? 0 : 1);'
+check "render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart" 'node --input-type=module -e "$ASM"'
+# --raw pastes the one file after it as written, so a brief with "{{X}}" in it stays out of the fill (E3 review F7)
+printf 'b {{X}}\n' > "$T/rb1" && cp "$T/rb1" "$T/rb2" && printf 'top\n' > "$T/rtpl"
+RW=$'top\n\nb {{X}}\n\nb x'; check "render.mjs: --raw applies to the next file only" '[[ $(HARNESS_X=x node "$HERE/../lib/render.mjs" "$T/rtpl" --raw "$T/rb1" "$T/rb2") == "$RW" ]]'
 # ---- metrics, pure: tokens, cache and context peak from the real capture (fixtures/usage-tokens.jsonl, E1) ----
 TOKS='import { outcome, events } from "'$HERE'/../lib/metrics.mjs"; const o = outcome(events("'$HERE'/fixtures/usage-tokens.jsonl")), n = outcome([{ type: "result", total_cost_usd: 0 }]);
   process.exit(o.tokens_in === 4 && o.cache_read === 35768 && o.cache_write === 13651 && o.tokens_out === 219 && o.cache_hit_rate === 0.724 && o.context_peak === 24881
@@ -356,11 +359,12 @@ PA=$(ls "$HARNESS_STATE"/proj/demo/logs/*-A.prompt.md 2> /dev/null | head -1) PB
 CB=$(cmp "$PA" "$PB" 2> /dev/null | sed -n 's/.* differ: \(byte\|char\) \([0-9]*\),.*/\2/p')
 check "two coding prompts share a byte-identical prefix that includes the policy" '[[ -s $PA && -s $PB && -n $CB && -n $(off "Policy: build-only" "$PA") ]] \
   && (( CB - 1 > $(off "Policy: build-only" "$PA") && CB - 1 > $(off "Policy: build-only" "$PB") )) \
-  && (( $(off "Policy: build-only" "$PA") < $(off "only A–C" "$PA") && $(off "only A–C" "$PA") < $(off "# This session" "$PA") ))'
+  && (( $(off "Policy: build-only" "$PA") < $(off "only A–C" "$PA") && $(off "only A–C" "$PA") < $(off "# This session" "$PA") )) \
+  && (( CB - 1 > $(off "# This session" "$PA") && $(off "Clock:" "$PA") > $(off "# This session" "$PA") ))'
 # the clock line: time, deadline, budget, turns, attempt or verify round (E3-04); C's later prompt is its second attempt
 PC=$(ls "$HARNESS_STATE"/proj/demo/logs/*-C.prompt.md 2> /dev/null | tail -1)
-check "the prompt says the time, the budget and the attempt" '[[ -s $PC ]] && grep -q "attempt 2 of 2" "$PC" && grep -qF "\$20 budget" "$PC" && grep -q "250 turns" "$PC" \
-  && grep -q "ends [0-9][0-9]:[0-9][0-9]" "$PC" && [[ $(grep -l "verify round 2 of 2" "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.prompt.md 2> /dev/null | wc -l) == 1 ]]'
+check "the prompt says the time, the budget and the attempt" '[[ -s $PC ]] && grep -Eqx "Clock: [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} · run [0-9]+h[0-9]{2}m of [0-9]+h([0-9]{2}m)?, ends [0-9]{2}:[0-9]{2} · this session: \\\$20 budget, 250 turns, 100m timeout · attempt 2 of 2" "$PC" \
+  && [[ $(grep -l "verify round 2 of 2" "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.prompt.md 2> /dev/null | wc -l) == 1 ]]'
 check "metrics: wall time and roles"      'jq -e "select(.kind==\"coding\") | .wall_s != null and .role == \"build\"" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0)" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'
@@ -577,10 +581,11 @@ dproj gp vercel.json '{"git":{"deploymentEnabled":{"harness/**":false}}}' && dst
 check "run start with the guard: nothing" 'grep -q "gh api repos/test/proj/deployments?per_page=20" "$T/gh.log" && [[ -s $T/demo-hlog.md && -n $(hlog gp1 gp) ]] && ! grep -q "preview deploy" "$T/demo-hlog.md" && ! hlog gp1 gp | grep -q "preview deploy" \
   && [[ $(curl_count "[demo] no deploy guard") == 0 && $(curl_count "[gp1] no deploy guard") == 0 ]]'
 # the init output a session sees: the last 40 lines and the full log's path (E3-02)
-dproj ip .harness/config.sh $'CHECK_CMD="true"\nINIT_CMD="seq 1 100"' && dstart ip1 start "$T/ip" ip1 --spec SPEC.md
+dproj ip .harness/config.sh $'CHECK_CMD="true"\nINIT_CMD="seq 1 100"' && dstart ip1 start "$T/ip" ip1 --spec SPEC.md --brief 'keep {{RUN_ID}} as written'
 IB=$(awk '/^## Init output$/ { s = 1; next } s && /^```$/ { if (f) exit; f = 1; next } f' "$HARNESS_STATE/ip/ip1/prompt-initializer.md" 2> /dev/null)
-check "init output is capped at 40 lines with the log path" '[[ -n $IB ]] && (( $(wc -l <<< "$IB") <= 41 )) && [[ $(tail -1 <<< "$IB") == "full output: $T/scratch/ip/ip1/init.out" ]] \
-  && grep -qx 100 <<< "$IB" && ! grep -qx 1 <<< "$IB"'
+check "init output is capped at 40 lines with the log path" '[[ -n $IB ]] && (( $(wc -l <<< "$IB") == 41 )) && [[ $(tail -1 <<< "$IB") == "full output: $T/scratch/ip/ip1/init.out" ]] \
+  && grep -qx 62 <<< "$IB" && ! grep -qx 61 <<< "$IB" && grep -qx 100 <<< "$IB"'
+check "a brief is pasted as written: its {{X}} isn't filled (E3 review F7)" 'grep -qx "keep {{RUN_ID}} as written" "$HARNESS_STATE/ip/ip1/prompt-initializer.md"'
 mv "$T/user-config.bak" "$T/user-config.sh"
 
 # ---- debrief: the runner's other exits ----

@@ -27,7 +27,8 @@ prompt_render() {   # template name → stdout: the static template, the policy,
   if [[ $1 == retro ]]; then extra=("${rules[@]}")
   else   # these go at the template's {{SECTIONS}} line: nothing run-specific before the policy (decisions/2026-10-21-static-first-prompts)
     extra=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md" "$HARNESS_HOME/prompts/parts/run.md")
-    [[ -s $RUN_DIR/brief.md ]] && extra+=("Brief for this run, from Michael (it wins over the spec on scope)=$RUN_DIR/brief.md")
+    # the brief as written: a "{{X}}" in it would put session values into the shared prefix (E3 review F7)
+    [[ -s $RUN_DIR/brief.md ]] && extra+=(--raw "Brief for this run, from Michael (it wins over the spec on scope)=$RUN_DIR/brief.md")
     extra+=("${rules[@]}")
     [[ -f .harness/project.md ]] && extra+=("Project rules (.harness/project.md)=.harness/project.md")
   fi

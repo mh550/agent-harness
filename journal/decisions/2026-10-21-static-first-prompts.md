@@ -25,3 +25,6 @@
   prompt as one block, so a byte-identical prefix inside it may not be a cache hit by itself. It makes the prompts
   diffable and is the precondition for any split that would hit; E2's eval (first-turn `cache_read` of session 2
   against session 1, from E1's telemetry) says which.
+- **Amended (E3-05, the E3 review):** the brief is pasted as written (`render.mjs --raw`, which now covers only the
+  file after it): a brief quoting `{{FEATURE}}` or `{{CLOCK}}` had session values filled into the run-level part, so
+  two sessions differed before *This session*. Sections are one blank line apart (they were two).
