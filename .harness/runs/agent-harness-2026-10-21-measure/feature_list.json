@@ -223,7 +223,7 @@
         "git diff --stat shows only the plan file changed; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E3"],
-      "passes": false },
+      "passes": true },
     { "id": "E4-02", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "lib/entries.mjs holds the pure rules: validating an entry, building a minimal one, and rendering progress.md and progress-archive.md from a list of entries.",
       "steps": [

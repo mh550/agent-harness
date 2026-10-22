@@ -6,6 +6,15 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-22 03:20 · E4-01 · passes
+
+- **What changed:** `docs/plans/2026-10-21-E4-memory.md` (only file; first line `Milestone base: 0e2cc33…`). It covers the entry schema (§1: session fields, stamped `at`/`session`/`model`, the minimal entry), the `lib/entries.mjs` API and CLI verbs `validate`/`ingest`/`render`/`pack` (§2), and `journal()` with its exact driver points: coding after the `WIP` commit and before `F repair`; verify after `restrict`; the initializer after its `WIP` commit (§3). It also has the rendered shapes (§4), the pack algorithm (§5, `CONTEXT_PACK_BYTES=8192`, `→ entries.jsonl:<n>`), the legacy rule (§6), prompts, stub, checks 213 → 222 (§10) and D-H39/40/41 (§13).
+- **Verified:** every item of step 1 checked by grep against the plan. An Opus review against the code found 4 Important and 6 Minor problems, all fixed in the plan. The main ones: the verify count now comes from `entries.jsonl`, `pr_body` reads the archive, and the pack scans verify rows. `check.sh` green, 213/213.
+- **Next session (E4-02):** builds §1, §2 (pure functions plus `validate`/`render`) and §4. No driver change.
+- **Proposed change (E4-04 step 1):** verify's `before`/after count should read `entries.jsonl`, not the rendered progress.md (plan §3.5). Otherwise an earlier verify entry dropping out of the 15, or a just-continued legacy run, looks like "no new verify entry" and wastes an escalated verify. Also, `pr_body` should read `progress-archive.md`.
+- **Proposed change (E4-07 step 2):** "a start-up that ends at once" can only mean `harness merge`. E4-04 needs `harness continue` on a finished legacy run to start the journal (plan §14).
+- **Questions for Michael (defaults in plan §15):** refused sessions get a journal entry; an entry's outcome is the session's claim; the eval probe gets context.md pasted in (§9, needed for E4's probe score to move at all). Overrule in INBOX.md if any is wrong.
+
 ### 2026-10-22 · verify E3
 
 check.sh: green. `bash tests/run.sh` re-run by me: 213/213, 0 FAIL; `bash -n` on lib/*.sh tests/*.sh bin/*, `node --check` on lib/*.mjs clean. Note: the specs' "journal/decisions.md has D-H36/37/38" is satisfied by the decision files CLAUDE.md prescribes (that file is closed at D-H34).
