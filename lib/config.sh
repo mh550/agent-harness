@@ -17,6 +17,7 @@ harness_config() {
   MAX_PARALLEL_RUNS=1 LEDGER_COMMIT=1 BASE_PORT=7800 DEADLINE_AT=0
   WEEKLY_STOP_AT=85   # % of the plan's 7-day window: past it no run starts and a run ends before its next session (0 = off)
   EVAL_BUDGET_USD=10   # `harness eval run`: no further task starts once its tasks have spent this much (a safety cap)
+  PROBE_MODEL=haiku   # `harness eval probes`: the one tool-less session that answers the handoff questions
   DEBRIEF_PAGE_CMD=""   # run with the debrief page's path as $1 after each debrief (e.g. copy it where your phone can open it)
   LIVE_LOCK=""   # live-staged: the one-writer lock (default /tmp/harness/<project>/live.lock); share it with the backup job
   CHECK_CMD="" INIT_CMD="" SMOKE_CMD="" SPEC_FILES="" NOTIFY_CMD="" AGENT_SETTINGS=.claude/settings.json PR_POLICY=""

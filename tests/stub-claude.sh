@@ -106,6 +106,11 @@ JSON
     echo "retro" >> "$HARNESS_SCRATCH/sessions.log"
     [[ ${STUB_RETRO_EDITS:-} ]] && { echo "retro was here" > retro-hack.txt; echo x >> "$HARNESS_RUN_DIR/progress.md"; }
     ok 0.2 "## Outcome\\nStub retro.\\n\\n## Proposed harness changes\\n1. none" ;;
+  "# Probe session"*)   # records its command line, $PWD and prompt; for t2, Q1 (T2a's files) is right and Q2 (T2b's deps) wrong
+    { printf '%s\n' "${ARGS[@]}"; echo "PWD=$PWD"; } > "$STUB_DIR/probe-args"; printf '%s\n' "$prompt" > "$STUB_DIR/probe-prompt"
+    [[ ${STUB_PROBE_ERROR:-} ]] && { echo "warning: noise on stderr" >&2
+      echo '{"type":"result","subtype":"success","is_error":true,"total_cost_usd":0,"num_turns":1,"duration_ms":300,"result":"API Error: 500 Internal server error"}'; exit 1; }
+    ok 0.01 "Q1: work-T2a.txt\\nQ2: nothing" ;;
   "# Debrief"*)   # records its command line and prompt; STUB_DEBRIEF_CONTINUE="<run>…": asks to continue each
     printf '%s\n' "${ARGS[@]}" > "$STUB_DIR/debrief-args"; printf '%s\n' "$prompt" > "$STUB_DIR/debrief-prompt"
     [[ ${STUB_DEBRIEF_LIMIT:-} ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }

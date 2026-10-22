@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Usage: harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]  ·  harness eval compare <A> <B>
+#        harness eval probes <task result dir>
 # Replays a set of tasks (evals/tasks/<id>/task.json) with one harness version's driver: the ref is checked out into a
 # temporary worktree, and each task runs on a fresh clone of its repo at its base, with a local bare origin, its own
 # state, worktree, scratch, ledger and config roots, and nothing that can post or merge (plan:
@@ -11,6 +12,9 @@
 # compare reads two results dirs (a path, or a name under evals/results/) and prints, per task and in total, pass rate,
 # $ and tokens per verified feature, cache hit rate, orientation, context peak, wall time and rework, each with B's
 # verdict against A: better, worse, within noise (the spread across repeats), one sample or no data. It spends nothing.
+# probes asks one tool-less PROBE_MODEL session (default haiku, one turn, ≤ $0.50), given only the coding prompt the task's
+# next session would get, the questions the task's record answers (the files a feature changed, what the next feature
+# depends on, what a failed attempt failed on), and scores each answer exact, contains or miss into probes.json.
 set -uo pipefail
 HARNESS_HOME=${HARNESS_HOME:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}
 # shellcheck source=lib/version.sh
@@ -54,6 +58,14 @@ write_json() {   # eval.json, rewritten after every task so an interrupted eval 
     > "$R/eval.json"
 }
 
+run_env() {   # <command…> with the eval's roots: what the runs' drivers (and the prompt they render) see
+  # HARNESS_EVAL_GH/CURL: the suite's logging stubs; otherwise any call that slipped through fails instead of posting
+  env -u TMUX -u TMUX_PANE -u HARNESS_MERGE_ONLY -u HARNESS_RUNNER_ID \
+    HARNESS_STATE="$E/state" HARNESS_WORKTREES="$E/wt" HARNESS_SCRATCH_ROOT="$E/scratch" HARNESS_LEDGER="$E/ledger" \
+    HARNESS_CONFIG="$E/config.sh" HARNESS_GH="${HARNESS_EVAL_GH:-false}" HARNESS_CURL="${HARNESS_EVAL_CURL:-false}" \
+    HARNESS_NO_RUNNER=1 HARNESS_EVAL=1 "$@"
+}
+
 unit() {   # <task.json> <repeat> → the unit's name: its result dir under $R and its dir under $E (<id>, or <id>/r<N>)
   local id; id=$(jq -r .id "$1"); (( REPEAT > 1 )) && echo "$id/r$2" || echo "$id"
 }
@@ -95,15 +107,16 @@ run_task() {   # <task.json> <repeat> → one replay; its record in $R/<unit>/ a
       [[ -n $spec ]] && args+=(--spec "$spec"); [[ -n $brief ]] && args+=(--brief "$brief")
       [[ -n $spec || -n $brief ]] || args+=(--brief "Eval task $id: build the features in feature_list.json.")
       say "task $u: run $run on $clone (base ${base:0:12})"
-      # HARNESS_EVAL_GH/CURL: the suite's logging stubs; otherwise any call that slipped through fails instead of posting
-      env -u TMUX -u TMUX_PANE -u HARNESS_MERGE_ONLY -u HARNESS_RUNNER_ID \
-        HARNESS_STATE="$E/state" HARNESS_WORKTREES="$E/wt" HARNESS_SCRATCH_ROOT="$E/scratch" HARNESS_LEDGER="$E/ledger" \
-        HARNESS_CONFIG="$E/config.sh" HARNESS_GH="${HARNESS_EVAL_GH:-false}" HARNESS_CURL="${HARNESS_EVAL_CURL:-false}" \
-        HARNESS_NO_RUNNER=1 HARNESS_EVAL=1 \
-        "$E/harness/bin/harness" start "$clone" "$run" "${args[@]}" > "$res/start.log" 2>&1
+      run_env "$E/harness/bin/harness" start "$clone" "$run" "${args[@]}" > "$res/start.log" 2>&1
       rc=$?   # logged, never fatal: the next task goes on
       for f in summary.json metrics.jsonl harness-log.md feature_list.json progress.md; do
         [[ -f $wt/.harness/runs/$run/$f ]] && cp "$wt/.harness/runs/$run/$f" "$res/"; done
+      # what probes need, kept while the clone and the ref's worktree exist (/tmp may lose them): the run's commits,
+      # and the coding prompt of the task's next feature as the ref's own lib/prompt.sh renders it (older refs: none)
+      git -C "$clone" log --reverse --name-only --format='%x00%H%x09%s' "$base..harness/$run" 2> /dev/null | EV commits > "$res/commits.json"
+      if [[ -x $E/harness/lib/prompt.sh ]] && v=$(EV target "$res/feature_list.json" 2> /dev/null); then
+        run_env "$E/harness/lib/prompt.sh" "$st" coding "$v" > "$res/probe-prompt.md" 2>> "$res/start.log" || rm -f "$res/probe-prompt.md"
+      fi
       cost=$(jq '.cost.total // null' "$res/summary.json" 2> /dev/null) || cost=null
       end=$(jq -r '.end_reason // ""' "$res/summary.json" 2> /dev/null)
       say "task $u: exit $rc · $(node "$HARNESS_HOME/lib/features.mjs" summary "$res/feature_list.json" 2> /dev/null) · \$$cost · ended: ${end:-?}"
@@ -199,9 +212,50 @@ cmd_compare() {
   EV compare "${dirs[@]}"
 }
 
+# probes: the handoff questions a task's record answers (plan §5), asked of one tool-less session that sees only the
+# prompt the task's next coding session would get (probe-prompt.md, saved by run), scored by match. One cheap turn.
+cmd_probes() {
+  (( $# == 1 )) && [[ -n $1 && -d $1 ]] || die "usage: harness eval probes <task result dir> (<results>/<task> or <task>/r<N>)"
+  local d u R wt="" dir note="" p model cost rc q
+  d=$(realpath -- "$1")
+  [[ -f $d/feature_list.json ]] || die "$d: no feature_list.json (not a task result dir)"
+  [[ -s $d/probe-prompt.md ]] || die "$d: no probe-prompt.md (the run's harness version renders none: it predates lib/prompt.sh)"
+  [[ -f $d/commits.json ]] || die "$d: no commits.json"
+  # the run's worktree, from eval.json one or two levels up (<task> or <task>/r<N>): there CLAUDE.md auto-loads
+  for R in "${d%/*}" "${d%/*/*}"; do
+    [[ -f $R/eval.json ]] || continue
+    u=${d#"$R"/}; wt=$(jq -r --arg u "$u" '.tasks[] | select(.result == $u) | .worktree // empty' "$R/eval.json" | tail -1); break
+  done
+  model=${PROBE_MODEL:-}   # set in the environment it wins, as EVAL_BUDGET_USD does for run
+  [[ -n $model ]] || read -r model < <(harness_config /dev/null; echo "$PROBE_MODEL")
+  # probes.json is replaced only once the answers are scored: a failed probe keeps the last result
+  q=$d/probes.json.new
+  EV questions "$d/feature_list.json" "$d/metrics.jsonl" "$d/commits.json" > "$q" || { rm -f "$q"; die "can't derive the questions"; }
+  (( $(jq '.questions | length' "$q") )) || { rm -f "$q"; die "$d: the record answers no question (no commits, deps or failed attempts)"; }
+  if [[ -n $wt && -d $wt ]]; then dir=$wt
+  else dir=$(mktemp -d "${TMPDIR:-/tmp}/harness-probe.XXXXXX") || die "no temp dir"; note="probes: run worktree gone; CLAUDE.md not auto-loaded"
+    trap "rm -rf $(printf %q "$dir")" EXIT; echo "$note"; fi   # expanded now: a local is gone when EXIT runs
+  p=$(printf '# Probe session\n\n%s\n\n---\n\nAnswer from what is above only. One line per question: `Q<n>: <answer>`.\n\n%s\n' \
+    "$(cat "$d/probe-prompt.md")" "$(jq -r '.questions | to_entries[] | "Q\(.key + 1): \(.value.q)"' "$q")")
+  # no tools and nothing to allow: the answers can come only from the prompt; one turn, capped in dollars and time
+  ( cd "$dir" && timeout 10m "${HARNESS_CLAUDE:-claude}" -p "$p" --model "$model" --max-turns 1 --tools "" --allowedTools "" \
+      --permission-mode dontAsk --strict-mcp-config --max-budget-usd 0.5 --output-format stream-json --verbose ) > "$d/probe-session.jsonl" 2>&1
+  rc=$?
+  node "$HARNESS_HOME/lib/metrics.mjs" final "$d/probe-session.jsonl" > "$d/probe-answers.txt" 2> /dev/null || : > "$d/probe-answers.txt"
+  cost=$(jq -nR '[inputs | fromjson? | select(.type? == "result") | .total_cost_usd // 0] | max // 0' "$d/probe-session.jsonl" 2> /dev/null) || cost=0
+  # a limit, an API error or a dead CLI is no answer at all, not a score of 0: nothing is scored
+  if (( rc != 0 )) || jq -enR '[inputs | fromjson? | select(.type? == "result")] | length == 0 or (last | .is_error)' "$d/probe-session.jsonl" > /dev/null 2>&1 \
+     || ! grep -q '[^[:space:]]' "$d/probe-answers.txt"; then
+    rm -f "$q"; die "probes: the probe session failed (exit $rc, \$${cost:-0}): $(head -c 200 "$d/probe-answers.txt" | tr '\n' ' ') (see $d/probe-session.jsonl); probes.json not changed"
+  fi
+  EV score "$q" "$d/probe-answers.txt" "model=$model" "cost=${cost:-0}" ${note:+"note=$note"} > "$q.scored" \
+    && mv "$q.scored" "$d/probes.json" && rm -f "$q" || { rm -f "$q" "$q.scored"; die "can't score the answers"; }
+}
+
 case ${1:-} in
   run) shift; cmd_run "$@" ;;
   compare) shift; cmd_compare "$@" ;;
+  probes) shift; cmd_probes "$@" ;;
   *) printf '%s\n' "usage: harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]" \
-       "       harness eval compare <result dir A> <result dir B>" >&2; exit 2 ;;
+       "       harness eval compare <result dir A> <result dir B>" "       harness eval probes <task result dir>" >&2; exit 2 ;;
 esac

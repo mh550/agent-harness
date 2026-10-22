@@ -36,6 +36,9 @@
 #   harness eval compare <A> <B>  two results (paths, or names under evals/results/): per task and in total, pass
 #                               rate, $ and tokens per verified feature, cache, orientation, context peak, wall time,
 #                               rework, each with B's verdict against A (better · worse · within noise · one sample)
+#   harness eval probes <task result dir>
+#                               ask one tool-less PROBE_MODEL session (haiku, one turn) the handoff questions the task's
+#                               record answers, given only the prompt its next session would get; prints score <n>/<m>
 #
 # Where things live:  worktree ~/worktrees/<project>/<run-id> · branch harness/<run-id>
 #   committed run record  <worktree>/.harness/runs/<run-id>/{feature_list.json,progress.md,INBOX.md,harness-log.md,

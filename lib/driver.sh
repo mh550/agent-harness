@@ -25,31 +25,25 @@ set -uo pipefail
 cd "$WT" || exit 1
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"
+# shellcheck source=lib/prompt.sh
+source "$HARNESS_HOME/lib/prompt.sh"
 
-PROJECT_NAME=$(basename "$PROJECT_DIR")
+prompt_vars   # PROJECT_NAME BRANCH RUN_DIR SCRATCH CHECK PORT
 CLAUDE=${HARNESS_CLAUDE:-claude} GH=${HARNESS_GH:-gh}
 F() { node "$HARNESS_HOME/lib/features.mjs" "$@"; }
 MET() { node "$HARNESS_HOME/lib/metrics.mjs" "$@"; }
 SUM() { node "$HARNESS_HOME/lib/summary.mjs" "$@"; }
 
-BRANCH=$(git branch --show-current)
-RUN_DIR=.harness/runs/$RUN_ID LIST=.harness/runs/$RUN_ID/feature_list.json
+LIST=$RUN_DIR/feature_list.json
 LOGS=$STATE/logs ATT=$STATE/attempts.json PARKED=$STATE/parked.json
 STATE_ROOT=$(cd "$STATE/../.." && pwd) LIMIT_FILE=$(cd "$STATE/../.." && pwd)/LIMIT_UNTIL USAGE=$(cd "$STATE/../.." && pwd)/USAGE_7D
-SCRATCH=${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/$RUN_ID
-CHECK=$HARNESS_HOME/lib/check.sh
 LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
-PORT=$(cat "$STATE/port")
 mkdir -p "$LOGS" "$RUN_DIR" "$SCRATCH"
 # The configuration comes from the worktree, so it is loaded again after a resumed run merges main (which may have
 # changed .harness/config.sh, e.g. a new POLICY).
 load_config() {
   harness_config "$WT" "$STATE"
-  LIVE_LOCK=${LIVE_LOCK:-${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/live.lock}
-  export HARNESS_RUN_ID=$RUN_ID HARNESS_RUN_DIR=$RUN_DIR HARNESS_BRANCH=$BRANCH HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH \
-    HARNESS_CHECK="$CHECK" HARNESS_CHECK_CMD=$CHECK_CMD HARNESS_SMOKE_CMD=$SMOKE_CMD HARNESS_INIT_CMD=$INIT_CMD \
-    HARNESS_SPEC_FILES=$SPEC_FILES HARNESS_MAIN_BRANCH=$MAIN_BRANCH HARNESS_PROJECT=$PROJECT_NAME HARNESS_WT=$WT \
-    HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green
+  prompt_env   # the exports every session and template sees (lib/prompt.sh)
 }
 load_config
 echo "$MAX_ATTEMPTS" > "$STATE/max-attempts"
@@ -161,16 +155,8 @@ limit_wait() {
   sleep "${HARNESS_LIMIT_SLEEP:-$w}"
 }
 
-prompt() {   # template name → $STATE/prompt.md: generic prompt, the run's brief, the project's rules, the policy
-  local extra=()
-  if [[ $1 != retro ]]; then
-    [[ -s $RUN_DIR/brief.md ]] && extra+=("Brief for this run, from Michael (it wins over the spec on scope)=$RUN_DIR/brief.md")
-    [[ -f CLAUDE.md ]] && extra+=("Project rules (CLAUDE.md)=CLAUDE.md")
-    [[ -f .harness/project.md ]] && extra+=("Project rules (.harness/project.md)=.harness/project.md")
-    extra+=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md")
-  fi
-  HARNESS_INIT_OUTPUT=$(tail -c 4000 "$SCRATCH/init.out" 2>/dev/null) HARNESS_CHECK="$CHECK" \
-    node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/$1.md" "${extra[@]}" > "$STATE/prompt.md"
+prompt() {   # template name → $STATE/prompt.md (lib/prompt.sh, which `harness eval probes` renders the same way)
+  prompt_render "$1" > "$STATE/prompt.md"
   cp "$STATE/prompt.md" "$STATE/prompt-$1.md"   # the last prompt of each kind, for debugging
 }
 
