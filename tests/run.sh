@@ -26,7 +26,7 @@ desk_of() { grep -lx "desk · $1\( · .*\)\?" "$T"/desk/*.args 2> /dev/null | so
 GHP=https://github.com/test/proj
 
 # the base user config posts through the stub curl; NOTIFY_CMD is set too, and must not be called (NTFY_URL wins)
-printf '%s\n' 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 NTFY_URL=https://ntfy.example/t NTFY_TOKEN=tok-secret-123' \
+printf '%s\n' 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=auto NTFY_URL=https://ntfy.example/t NTFY_TOKEN=tok-secret-123' \
   "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify-cmd.log\"'" > "$T/base-config.sh"
 cp "$T/base-config.sh" "$T/user-config.sh"
 git init -q --bare -b main "$T/origin.git"
@@ -238,6 +238,12 @@ cp "$T/base-config.sh" "$T/user-config.sh"
 check "a limit-cut session's passes is reverted, A retried" 'grep -q "A attempt 2" "$T/scratch/proj/claim/sessions.log" && grep -qx "HARNESS: usage limit" <<< "$(git -C "$T/wt/proj/claim" log --format=%s -- .harness/runs/claim/feature_list.json)"'
 check "a proposed merge: ready to merge, click = the PR, default priority" 'Bp=$(curl_with "[claim] M1 verified · review:"); U=$(grep -o "https://example.test/pr/[0-9]*" <<< "$Bp" | head -1) \
   && [[ -n $U ]] && grep -qx "Title: \[claim\] M1 ready to merge" <<< "$Bp" && grep -qx "Click: $U" <<< "$Bp" && ! grep -q "^Priority:" <<< "$Bp"'
+
+# ---- run 12b: nothing sets MERGE_POLICY → the default is pr, so a verified milestone is proposed, never merged ----
+echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"   # no MERGE_POLICY in any layer: the harness default decides
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" defpr --spec SPEC.md --foreground > "$T/run12b.out" 2>&1
+cp "$T/base-config.sh" "$T/user-config.sh"
+check "default MERGE_POLICY proposes a verified milestone, never merges it" 'hlog defpr | grep -q "M1 proposed for merging" && ! on_main run/defpr/M1'
 
 # ---- run 13: verify and retro may not change code ----
 STUB_VERIFY_EDITS=1 STUB_RETRO_EDITS=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" meddle --spec SPEC.md --foreground > "$T/run13.out" 2>&1
