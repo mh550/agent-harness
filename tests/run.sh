@@ -562,7 +562,8 @@ rm -rf "$HARNESS_STATE/proj/busy3" "$HARNESS_STATE/other" "$Q"/*.args; mv "$T/us
 
 # ---- run 11: a verify refused by the usage limit is deferred, never a "holds" ----
 STUB_VERIFY_LIMIT=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" vlimit --spec SPEC.md --foreground > "$T/run11.out" 2>&1
-check "refused verify: deferred, then verified, then merged" 'hlog vlimit | grep -q "verify M1 refused" && [[ $(hlog vlimit | grep -n "verify M1 refused" | cut -d: -f1) -lt $(hlog vlimit | grep -n "M1 verified and tagged" | cut -d: -f1) ]] && on_main run/vlimit/M1'
+check "refused verify: deferred, then verified, then merged" 'hlog vlimit | grep -q "verify M1 refused" && [[ $(hlog vlimit | grep -n "verify M1 refused" | cut -d: -f1) -lt $(hlog vlimit | grep -n "M1 verified and tagged" | cut -d: -f1) ]] && on_main run/vlimit/M1 \
+  && jq -se "map(select(.kind == \"verify\" and .minimal == \"missing\")) | length == 1 and .[0].outcome == \"not yet\"" "$T/wt/proj/vlimit/.harness/runs/vlimit/entries.jsonl" > /dev/null'
 
 # ---- run 12: a session claims its feature, then the limit cuts it off: the claim is reverted ----
 { cat "$T/base-config.sh"; echo 'MERGE_POLICY=pr'; } > "$T/user-config.sh"   # its milestones are proposed, not merged
@@ -607,7 +608,11 @@ mkdir -p "$T/prs" && touch "$T/prs/branch-harness_legacy"   # its v2 whole-run P
 "$H" continue legacy --foreground > "$T/run14b.out" 2>&1
 check "a legacy run is untouched, then continued into a journal" '[[ $LJ0 == no ]] && cmp -s "$LR/progress-archive.md" "$T/legacy-progress.md" \
   && cmp -s "$LR/progress.md" "$T/legacy-progress.md" && [[ -f $LR/entries.jsonl ]] && hlog legacy | grep -q "journal started; progress.md kept as progress-archive.md$" \
-  && git -C "$T/origin.git" cat-file -e harness/legacy:.harness/runs/legacy/entries.jsonl'
+  && git -C "$T/origin.git" cat-file -e harness/legacy:.harness/runs/legacy/entries.jsonl \
+  && cp -r "$LR" "$T/lr2" && echo "{\"feature\":\"A\",\"kind\":\"coding\",\"outcome\":\"passes\",\"summary\":\"s\",\"at\":\"2026-10-22 03:00\"}" >> "$T/lr2/entries.jsonl" \
+  && node "$HERE/../lib/entries.mjs" render "$T/lr2" && [[ $(sed -n 2p "$T/lr2/progress.md") == "# progress" ]] && ! grep -q hand-written "$T/lr2/progress.md" \
+  && grep -qx "### 2026-10-22 03:00 · A · passes" "$T/lr2/progress-archive.md" && grep -qx "<!-- harness: progress.md before the journal, kept as it was -->" "$T/lr2/progress-archive.md" \
+  && tail -c "$(wc -c < "$T/legacy-progress.md")" "$T/lr2/progress-archive.md" | cmp -s - "$T/legacy-progress.md"'
 check "v2 tags don't merge on resume"     'hlog legacy | grep -q "verified by harness v2" && ! on_main run/legacy/M1 && [[ -f $T/prs/branch-harness_legacy ]]'
 "$H" merge legacy > "$T/run14c.out" 2>&1
 check "harness merge merges v2 tags, closes the v2 PR" 'on_main run/legacy/M2 && [[ ! -f $T/prs/branch-harness_legacy ]]'

@@ -193,7 +193,7 @@ journal() {
   case $kind in
     coding) if F passes "$LIST" "$id"; then outcome=passes
             elif sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' "$SCRATCH/entry-final" | grep -q .; then outcome=parked; fi ;;
-    verify) who="verify $id"; F milestone-done "$LIST" "$id" && outcome=passes ;;
+    verify) who="verify $id" ;;   # a verify without its entry has no evidence rows, so it never holds: not yet
     init)   F summary "$LIST" > /dev/null 2>&1 && outcome=passes ;;
   esac
   out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$RUN_DIR" "$kind" "$id" "$name" "$4" "$outcome" "$SCRATCH/entry-files" "$SCRATCH/entry-final"); rc=$?
@@ -208,7 +208,7 @@ journal() {
 # newest in full), or on a legacy run without a journal the `### … verify <m>` headers its sessions wrote
 vcount() {
   if [[ -f $RUN_DIR/entries.jsonl ]]; then jq -cR --arg m "$1" 'fromjson? | select(.kind == "verify" and .feature == $m)' "$RUN_DIR/entries.jsonl" | wc -l
-  else grep -c "^### .*verify $1\b" "$RUN_DIR/progress.md" 2> /dev/null; fi
+  else local n; n=$(grep -c "^### .*verify $1\b" "$RUN_DIR/progress.md" 2> /dev/null); echo "${n:-0}"; fi
 }
 
 run_init() {   # the project's init, then the suite (cached per code tree); both go into the next prompt
@@ -226,7 +226,7 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
   echo; echo "**Features:**"; for id in $(F ids "$LIST" "$1"); do echo "- \`$id\` · $(jq -r --arg id "$id" '.features[]|select(.id==$id)|.description' "$LIST" 2>/dev/null)"; done
   echo; echo "**Run so far:** $(F summary "$LIST") · $(MET summary "$RUN_DIR/metrics.jsonl")"
   echo; echo "**Verify entry:**"; echo
-  awk -v m="verify $1" 'index($0, "### ") == 1 { if (on) exit; if (index($0, m)) on = 1 } on' "$p" | head -60
+  awk -v m="verify $1 " 'index($0, "### ") == 1 { if (on) exit; if (index($0 " ", m)) on = 1 } on' "$p" | head -60
   echo; echo "Run record: \`$RUN_DIR/\` (progress.md, harness-log.md, feature_list.json, metrics.jsonl)."
 }
 

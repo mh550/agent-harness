@@ -14,7 +14,11 @@
   progress.md is the harness's to write. `F evidence` reads the rendered file, where the verify entry just appended is
   the newest. Verify's `before`/after count is the number of `verify` lines for the milestone in `entries.jsonl`, not
   `### … verify <m>` headers in the rendered file: an earlier verify entry leaving the 15, or a just-continued legacy
-  run, would otherwise read as "no new verify entry" and waste an escalated verify. `pr_body` quotes the verify entry
+  run, would otherwise read as "no new verify entry" and waste an escalated verify. Every verify is journaled (a
+  minimal entry when it wrote none), so "no new verify entry" now means the append itself failed; a verify without
+  its `entry.json` shows as `evidence short (A 0/2 …)` beside journal's `entry.json missing` note. A minimal verify
+  entry's outcome is `not yet` (amending D-H39's "what the list says"): without evidence rows it can't hold, and a
+  refused verify must not head the phone view as `verify M1 · passes`. `pr_body` quotes the verify entry
   from `progress-archive.md` when it exists (a milestone merged later may have left progress.md's 15). **Legacy runs**
   (a feature list, no `entries.jsonl`): nothing renders or ingests there until a start-up that drives sessions
   (`harness continue`, a queued continuation) runs past `harness merge`'s exit; that start-up copies `progress.md` to
