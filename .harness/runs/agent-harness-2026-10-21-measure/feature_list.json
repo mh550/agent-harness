@@ -129,7 +129,7 @@
         "`--repeat N` runs each task N times into <task>/r1 … <task>/rN with fresh clones; tests/run.sh check `eval: --repeat 2 runs each task twice`: both r1 and r2 summary.json files exist for each task",
         "All three checks watched failing first; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E2-05", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "`harness eval compare <A> <B>` prints a per-task and total table of pass rate, $ and tokens per verified feature, cache hit rate, orientation, context peak, wall time and rework with a verdict per metric.",
       "steps": [

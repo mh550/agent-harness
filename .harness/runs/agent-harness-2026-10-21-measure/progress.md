@@ -6,6 +6,22 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 21:55 · E2-04 · passes
+
+- **What changed:** `lib/config.sh` gets `EVAL_BUDGET_USD=10`. `lib/eval.sh run` also changes:
+  - Before each task it sums the results' `summary.json` costs with the new `eval.mjs spent` (`<task>/` and `<task>/r<N>/`). At or over the cap it starts nothing more; if the sum fails, it also stops.
+  - Before anything is created, it refuses if `$HARNESS_STATE/USAGE_7D` is past `WEEKLY_STOP_AT`. Between tasks it checks that file and the eval's own `USAGE_7D`, and copies a later real `LIMIT_UNTIL` into the eval's state.
+  - `--repeat N` runs repeat-major into `<task>/r<N>`, as runs `eval-<task>-r<N>` on fresh clones.
+  - `eval.json` gains `repeat`, `budget {cap, spent, not_started, text}` and `weekly`. Any task not started makes the eval exit 1.
+  - The runs' safety lines carry the eval's `WEEKLY_STOP_AT`. The user config is read in a subshell, so its exports don't reach the runs. Task ids `harness|state|wt|scratch|ledger` are refused.
+  - `weekly_over` no longer prints "No such file" for a missing `USAGE_7D` (the redirect order was wrong).
+  - Also: `bin/harness` help, and `journal/decisions/2026-10-21-eval-budget-window-repeat.md`. Tests 194 → 197.
+- **Verified:** the three new checks failed first (3/6 on an eval-only subset), then passed. The full suite (`check.sh`) is green, 197/197 (301 s), on the final tree.
+  - By hand: a user config with `WEEKLY_STOP_AT=95` and `USAGE_7D` at 0.96 is refused with "stop at 95%"; a task id `state` dies before anything is created.
+  - An Opus review found 0 Critical and 1 Important issue: the eval and its runs used different `WEEKLY_STOP_AT` values; fixed. Of its Minor findings I fixed 2, 5, 6, 7, 8 and 9. Not fixed: 3, the cap counts only tasks whose `summary.json` was copied (a driver that died before `finish` spends unseen); 4, a far-future real `LIMIT_UNTIL` makes each remaining task idle until its deadline.
+- **Next session (E2-05):** a results dir holds `<task>/summary.json` (one repeat) or `<task>/r<N>/summary.json`. After a budget or weekly stop the last repeat can be partial, so per-repeat totals must allow for that. `eval.mjs` has `spent()` and a private `summaries(dir)` walker that `loadResult` can reuse. The docs (README Evals section, architecture §3/§4) are E2-07's job.
+- **Question for Michael (default taken):** `EVAL_BUDGET_USD=0` starts no task: it is a cap, not an off switch like `WEEKLY_STOP_AT=0`. OK?
+
 ### 2026-10-21 20:45 · E2-03 · passes
 
 - **What changed:** new `lib/eval.sh run` (`harness eval run [--set] [--harness] [--label]`; dispatched and listed in `bin/harness`, whose help now prints the whole header). It adds a detached worktree of the ref, which is removed at the end. Each task runs on a fresh clone at `base` with a local bare origin and a pushed `harness/eval-<task>` branch seeded by the new `eval.mjs seed`, so the initializer is skipped. The ref's `bin/harness start --foreground` runs with every root under the eval dir, gh/curl set to `false`, and the safety lines in both the user config and `run.env`. Results go to `evals/results/<stamp>-<sha>-<label>/` (gitignored) along with `eval.json`. Also new: `tests/fixtures/eval-tasks/{t1,t2}` and `journal/decisions/2026-10-21-eval-run-isolation.md` (a file, not a D-H entry). Tests 191 → 194.
