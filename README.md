@@ -42,6 +42,7 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 | `harness status` · `report` · `trends [--by version]` · `attach` | look (`trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
+| `harness eval run` · `compare` · `probes` | replay a fixed task set under a harness version and compare two results (see [Evals](#evals); costs money) |
 | `harness init` · `gc` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs |
 
 `harness continue` merges `main` into the run branch before any session, so a resumed run never works on a stale base.
@@ -134,6 +135,23 @@ ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harne
   capped at a few tens of KB, so a typical debrief is well under $1. Nothing to cover: no session, $0. A closed
   usage-limit window is waited out up to 5 h; past that, the next debrief (or yours, by hand) covers these runs.
 - `harness debrief --dry-run` prints the gathered context and launches nothing.
+
+## Evals
+
+A **task** is 1–3 features copied from a real past run, with the commit they started from (`evals/tasks/<id>/task.json`);
+`evals/sets/default.txt` lists the ones `--set default` runs (5 tasks, all agent-harness so far; the categories
+still to add are in `evals/README.md`). Two harness versions run the same tasks and are compared.
+
+```bash
+harness eval run [--set default] [--harness <ref>] [--label <L>] [--repeat <N>]   # replay on throwaway clones; nothing posted or merged
+harness eval compare <A> <B>       # pass rate, $ and tokens per verified feature, cache, orientation, context peak, wall time, rework; B's verdict against A
+harness eval probes <task result>  # one tool-less Haiku turn answers the handoff questions; prints score <n>/<m>
+```
+
+Results go to `evals/results/<stamp>-<sha>-<label>/` (git-ignored); the throwaway clones and the ref's worktree live
+in `/tmp/harness-eval/<stamp>/` and are removed at the end. **Evals are real sessions and cost money** (about $28 per
+eval of the default set); they are Michael's to run, the overnight run never does. The commands, in order, with the
+cost: `evals/NEXT.md`.
 
 ## Tests
 
