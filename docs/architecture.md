@@ -56,6 +56,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/notify.mjs` | ~75 | Pure helpers for it: `githubUrls` (GitHub origins only), `trimBody` (3500 bytes, `…`), `actionsHeader` (ntfy `view, <label>, <url>; …`), `inboxQuestion` (the lines a session added above `## Answers`) |
 | `lib/parked.mjs` | ~110 | `harness parked` (§17): pure `questionFor`, `commandsFor`, `entriesFor`, `parkedReport`, and a `report` CLI over the state dirs bash names on stdin. Never writes |
 | `lib/check.sh` + `treekey.mjs` | ~40 | The suite, cached per content of the code tree. One command for the driver and every session |
+| `lib/entries.mjs` | ~330 | The journal (decisions/2026-10-22-journal-single-writer, -rendered-progress, -context-pack): pure `journalEntry`, `stamp`, `render`, `pack`; verbs `ingest` (validate `entry.json`, stamp, append to `entries.jsonl`), `render` (progress.md, progress-archive.md) and `pack` (context.md within `CONTEXT_PACK_BYTES`) |
 | `lib/features.mjs` | ~200 | The feature-list contract: scheduling, gating, repair, kinds, evidence counting |
 | `lib/metrics.mjs` | ~100 | Per-session metrics; the "environmental?" decision (limits, API errors, $0) |
 | `lib/summary.mjs` | ~230 | Run summary, writeup, ledger rows, trends, calibration |
@@ -69,13 +70,16 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `skills/harness-answer/SKILL.md` | ~45 | The answer desk's instructions for an interactive session Michael opens (§17); installed by a symlink into `~/.claude/skills/` |
 | `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
 | `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*) and `parts/rules.md` (the line naming `CLAUDE.md`) |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 168 checks |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 222 checks |
 
 ## 4. Where state lives
 
 | What | Path | Written by | Read by | Committed? |
 |---|---|---|---|---|
 | Feature list | `<wt>/.harness/runs/<run>/feature_list.json` | initializer; sessions (own `passes` only); verifier (un-pass only); driver (repair, un-pass) | everyone | yes, run branch |
+| Session entry | `<wt>/entry.json` (repo root, transient) | each session, once, at the end | driver (`entries.mjs ingest`), which validates, stamps `at`/`session`/`model`, appends to `entries.jsonl` and deletes it; a missing or invalid one becomes a minimal entry built from git, with a note | no (removed on ingest) |
+| Journal | `…/entries.jsonl` (one line per session: feature, outcome, what changed, evidence, dead ends, discoveries) | driver only (`ingest`) | `render`, `pack`, retro, evals | yes |
+| Context pack | `…/context.md` (at most `CONTEXT_PACK_BYTES`; five parts in priority order: Michael's answers, this feature's earlier attempts and dead ends, what it builds on, discoveries, recent entries; each item ends `→ entries.jsonl:<line>`); a copy in `logs/*.context.md` | driver (`entries.mjs pack`) before every coding and verify session, committed `HARNESS: context pack for <id>` | the session, first (prompts say `Read context.md first`); `eval probes` | yes |
 | Progress log | `…/progress.md` (newest first: 15 in full, then one line each) and `…/progress-archive.md` (every entry in full; a continued legacy run's old progress.md at its end) | driver (`entries.mjs render` after every journal append, decisions/2026-10-22-rendered-progress); a legacy run's sessions until it is continued | sessions, Michael (phone), retro, PR bodies (the archive), verify's `F evidence` | yes |
 | Steering | `…/INBOX.md` (`status: run/pause/stop`, `## Answers`) | Michael (GitHub app), `harness answer` via the driver | driver, sessions | yes |
 | Brief | `…/brief.md` | driver, from `--brief` at start/continue | every prompt | yes |
@@ -116,12 +120,13 @@ harness start ─► worktree + branch ─► driver:
     next = first feature: not passing, not parked, attempts < MAX_ATTEMPTS, every dependency passing
       none → "done" (all pass) | "blocked on X" (a given-up feature) and/or "waiting on Michael: Y" (parked)
              | "no feature left to try"
-    init + suite (cached) ─► CODING SESSION (one feature) ─► commit leftovers
+    init + suite (cached) ─► context.md (pack for this feature) ─► CODING SESSION (one feature) ─► commit leftovers
+      ingest entry.json ─► entries.jsonl ─► render progress.md + progress-archive.md (after every session, verify included)
       environmental? (limit, API error, $0 one-turn) → keep its commits, revert its claims (the list, "passes"
         included), give the attempt back, set LIMIT_UNTIL; MAX_LIMIT_HITS in a row → end "usage limit"
       repair the list (only its own passes may change) · un-pass if the suite is red · metrics · push
       not passing and the final message says "PARKED: <why>" → attempt given back, parked until the answers change
-  VERIFY m: merge main in → session (its code edits are reverted) → refused? deferred, no verdict
+  VERIFY m: merge main in → context.md → session (its code edits are reverted) → refused? deferred, no verdict
       → a new entry with one evidence row per step? no → one re-run on the stronger model → still no → not verified
       → suite green on that tree? → tag run/<run>/<m> (v3) → merge_milestones (PR per milestone, in order)
       a step fails → one more attempt for the feature, then "needs Michael"
@@ -238,7 +243,7 @@ else continues.** Unverified work is never merged and never thrown away.
 ## 10. Configuration
 
 Layers, later wins (`lib/config.sh`): harness defaults → `~/.config/harness/config.sh` (yours: models, limits,
-`MERGE_POLICY`, `MAX_PARALLEL_RUNS`, `NOTIFY_CMD`, `NTFY_URL`, `NTFY_TOKEN`, `DESK_URL`, `DESK`, `DESK_MODEL`) → `<project>/.harness/config.sh` (`POLICY=` and real overrides) →
+`MERGE_POLICY`, `CONTEXT_PACK_BYTES`, `MAX_PARALLEL_RUNS`, `NOTIFY_CMD`, `NTFY_URL`, `NTFY_TOKEN`, `DESK_URL`, `DESK`, `DESK_MODEL`) → `<project>/.harness/config.sh` (`POLICY=` and real overrides) →
 the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** for what's still unset:
 
 | Setting | Convention |
@@ -247,6 +252,7 @@ the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** 
 | `NTFY_URL` / `NTFY_TOKEN` | empty: notifications go to `NOTIFY_CMD` (or nowhere). Set: the harness posts to that ntfy topic itself, the token as `Authorization: Bearer` (never logged), and `NOTIFY_CMD` is not called |
 | `DESK_URL` | empty: no **Answer with Claude** action on a park's notification |
 | `DESK` / `DESK_MODEL` | `0` / `opus`: no desk starts by itself (`harness desk` by hand still works). `DESK=1`: the driver and the debrief start one whenever a run needs Michael (§17), on `DESK_MODEL` |
+| `CONTEXT_PACK_BYTES` | `8192`: the cap on `context.md`; lower-priority items are cut whole, counted in `_<k> items left out_`. The CLI refuses a value that isn't a whole number ≥ 1024, and the driver then points the session at the full record |
 | `CHECK_CMD` | `.harness/check.sh` · `npm run check` · `npm test` · `python3 -m pytest -q` · `cargo test` · `go test ./...` · `make test` |
 | `SMOKE_CMD` | `node .harness/smoke.mjs` · `bash .harness/smoke.sh` · `true` |
 | `INIT_CMD` | `.harness/init.sh` · `true` (the driver runs the suite itself, so init only starts servers) |
@@ -277,7 +283,7 @@ driver `clock`, coding and verify only; decisions/2026-10-21-clock-and-bounded-i
 MAX_ATTEMPTS` (or `verify round N of MAX_VERIFY_ROUNDS`); the run is this driver's segment, `T0` to `DEADLINE`. A
 probe rendered by `lib/prompt.sh` says it is outside a run. The retro (`# Retro`, its run on line 3) gets the
 template and the rules line. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output)
-and then `full output: <path>`. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
+and then `full output: <path>`. The coding and verify templates open their bearings with `Read context.md first` (the pack in the run directory, written by the driver just before the session, §4), so it is not pasted into the prompt. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 
 **Policies**: `build-only` (default: never operate anything live; write live steps down) and `live-staged` (operate
 live through the protocol: preflight, stages, stop-and-revert, one writer via `flock`, deploy only from the run's

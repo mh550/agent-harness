@@ -6,6 +6,14 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-22 09:00 · E4-06 · passes
+
+- **What changed:** docs only. `docs/architecture.md`: §3 lists `lib/entries.mjs` (and the suite count is 222); §4 has rows for entry.json, entries.jsonl and context.md; §5's flow shows context.md before coding and verify and the ingest/render after each session; §10 lists `CONTEXT_PACK_BYTES` and the prompt-assembly paragraph names context.md. `README.md` steering: progress.md is rendered from the journal and is still the phone view; sessions write entry.json; context.md read first. `evals/NEXT.md`: what the E4 comparison should show (orientation and context peak down, probe score up, pass rate not worse) and that probes paste the pack.
+- **Tests 222 → 222:** no code change; `check.sh` green in 363 s.
+- **Step 4 note:** D-H39, D-H40 and D-H41 exist once each as decision files (`decisions/2026-10-22-journal-single-writer`, `-rendered-progress`, `-context-pack`), not in `journal/decisions.md`, which CLAUDE.md closes at D-H34. **Proposed change:** reword that step to say "decision files".
+- **Not covered:** architecture §4 still has no `progress-archive.md` row of its own (it sits in the progress-log row, which was already there).
+- **Questions:** none.
+
 ### 2026-10-22 08:10 · E4-05 · passes
 
 - **What changed:** `lib/entries.mjs` has a pure `pack(entries, { feature, list, answers, cap })` and the `pack <run dir> <feature> [<cap>]` verb (plan §5). It has five parts in strict priority order, items of at most 1024 bytes each ending `→ entries.jsonl:<line>` (real file lines, even past a bad line) or `→ INBOX.md`, and a `_<k> items left out_` line. `lib/config.sh`: `CONTEXT_PACK_BYTES=8192`. New `context()` in `lib/driver.sh`: it runs before every coding session (after the init) and every verify round, notes `context.md for C: N bytes[, k items left out]` and commits `HARNESS: context pack for <id>`. `session()` copies the pack to `logs/*.context.md`. If the pack fails, context.md points at the full record instead. `prompts/coding.md` and `verify.md` open their bearings with `Read context.md first; …`; coding step 2 no longer mentions progress.md; parts/run.md lists context.md. `lib/eval.sh` (plan §9): `eval run` saves the pack of the task's next feature and copies entries.jsonl, and `eval probes` pastes the pack after the probe prompt. New decision file: `decisions/2026-10-22-context-pack` (D-H41).

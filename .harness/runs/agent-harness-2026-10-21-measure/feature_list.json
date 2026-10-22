@@ -274,7 +274,7 @@
         "journal/decisions.md has D-H39, D-H40 and D-H41 once each; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E2", "E4-05"],
-      "passes": false },
+      "passes": true },
     { "id": "E4-07", "milestone": "E4", "kind": "review", "model": "opus",
       "description": "An Opus review of the E4 diff with findings fixed RED→GREEN, simplifications applied, and docs/plans/2026-10-21-E4-review.md written.",
       "steps": [

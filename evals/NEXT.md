@@ -54,4 +54,6 @@ for d in evals/results/*-e4/ah-*;       do harness eval probes "$d"; done
 ```
 
 Each prints `score <n>/<m>` and writes `probes.json` beside the result. Expect baseline and E3 near 0: the probe
-sees the coding prompt but not `progress.md`. E4's `context.md` is what should raise the score.
+sees the coding prompt but not `progress.md`. E4's `context.md` is what should raise the score: for E4 results `harness eval probes` pastes the saved pack after the probe prompt.
+
+**What the E4 comparison should show** (`harness eval compare e3 e4`, and `baseline e4`): orientation cost (`orient_tokens`, `orient_turns`, `orient_s`) and `context_peak` down, since the session reads one bounded file instead of the whole progress log; probe score up; pass rate and cost per pass not worse. A worse pass rate with lower orientation cost means the pack cut something it needed: read `context.md` in that task's result.

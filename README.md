@@ -70,10 +70,10 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
 
 ## Steering
 
-- **Phone:** edit `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
+- **Phone:** `progress.md` is rendered from the journal (`entries.jsonl`) after every session and is still the phone view; sessions write `entry.json`, the driver appends it. Steer by editing `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
   `status: stop`; answers under `## Answers`. The driver pulls before every session.
 - **Box:** `harness pause|resume|stop|answer <run>`, `harness attach <run>` (tmux: driver · log · supervisor).
-- **What a session reads:** the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
+- **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends, recent entries); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
   Claude Code itself (the prompt names it in one line, it doesn't paste it), so a rule edited on the run branch reaches
   the next session. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 - **Notifications:** start, merges, needs-Michael, parks, limits, end. In `~/.config/harness/config.sh` either
