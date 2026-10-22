@@ -298,7 +298,10 @@ check "eval probes: the probe prompt is the driver's coding prompt" '[[ -s $ED/t
   && ! grep -qx "PWD=$(jq -r ".tasks[1].worktree" "$EJ")" "$STUB_DIR/probe-args" && (( EPN == 1 )) && grep -q "no probe-prompt.md" "$T/evnop.out"'
 # the probe reads the run's context pack as the next session would (E4-05 / plan §9), pasted after the prompt
 check "eval probes: the probe reads the run's context pack" '[[ $(head -1 "$ED/t2/context.md" 2> /dev/null) == "# Context pack for \`T2b\`" ]] \
-  && grep -qx "# context.md (the run directory'"'"'s context pack, as the next session reads it)" "$T/probe-prompt1" && grep -qx "# Context pack for \`T2b\`" "$T/probe-prompt1"'
+  && grep -q " → entries.jsonl:[0-9]*$" "$ED/t2/context.md" && at() { grep -nx -- "$1" "$T/probe-prompt1" | head -1 | cut -d: -f1; } \
+  && (( $(at "Feature: \`T2b\`") < $(at "# context.md (the run directory'"'"'s context pack, as the next session reads it)") \
+     && $(at "# context.md (the run directory'"'"'s context pack, as the next session reads it)") < $(at "# Context pack for \`T2b\`") \
+     && $(at "# Context pack for \`T2b\`") < $(grep -n "^Answer from what is above only" "$T/probe-prompt1" | cut -d: -f1) ))'
 
 # ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
 DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";
@@ -381,10 +384,26 @@ ENPK='import { pack } from "'$HERE'/../lib/entries.mjs"; const st = i => ({ at: 
     && at(/use port 7900/) < at(/^- Discovery/) && at(/^- Discovery \(F\d+, affects run\): run-wide/) > 0 && ls.filter(l => l.startsWith("- ")).every(l => / → (entries\.jsonl:\d+|INBOX\.md)$/.test(l))
     && /^_\d+ items left out at 8192 bytes: entries\.jsonl has them all\._$/.test(ls.at(-2)) && Buffer.byteLength(big) <= 4096 && big.includes("- …") && big.includes("newest answer → INBOX.md")
     && Buffer.byteLength(small) <= 2048 && small.split("\n").find(l => l.startsWith("- ")).startsWith("- Dead end (X") ? 0 : 1);'
+# tight cases (E4-05 review): an after milestone expands to its features, an entry shows once, the cut is strict (a short
+# part-5 entry doesn't jump a cut discovery), a milestone pack has its features' dead ends and failed rows, a discovery
+# may name the feature's milestone, and 4-byte characters never break the cap
+ENPK2='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (feature, x = {}) => ({ feature, kind: "coding", outcome: "passes", summary: feature + " done", session: "s-" + feature, at: "t", ...x });
+  const list = { features: [{ id: "P", milestone: "M0" }, { id: "Q", milestone: "M0" }, { id: "X", milestone: "M9", after: ["M0"] }] };
+  const e = [c("P", { dead_ends: [{ tried: "p1", why: "w" }] }), c("Q"), c("X", { outcome: "not yet", dead_ends: [{ tried: "x1", why: "w" }] }), c("Z", { discoveries: [{ text: "for M9", affects: ["M9"] }] }),
+    { feature: "M0", kind: "verify", outcome: "not yet", summary: "P fails", session: "v", at: "t", evidence: [{ feature: "P", step: 1, ran: "r", saw: "s", holds: false }] }];
+  const p = pack(e.slice(0, 4), { feature: "X", list, cap: 8192 }), sec = t => (p.split("## " + t)[1] ?? "").split("\n## ")[0], n = re => p.split("\n").filter(l => re.test(l)).length;
+  const big = [c("X", { dead_ends: [{ tried: "x1", why: "w" }] }), c("Y", { discoveries: [{ text: "d".repeat(900), affects: ["run"] }] }), c("W")];
+  const cut = pack(big, { feature: "X", list, cap: 1024 }), m = pack(e, { feature: "M0", list, cap: 8192 });
+  const emo = Array.from({ length: 60 }, (_, i) => c("E" + i, { summary: "😀".repeat(399), discoveries: [{ text: "😀".repeat(400), affects: ["run"] }] }));
+  process.exit(/· P ·/.test(sec("What it builds on")) && /· Q ·/.test(sec("What it builds on")) && !/· [PQX] ·/.test(sec("Lately in the run")) && /· Z ·/.test(sec("Lately in the run"))
+    && n(/→ entries\.jsonl:3$/) === 2 && n(/→ entries\.jsonl:2$/) === 1 && /^- Discovery \(Z, affects M9\): for M9/m.test(p)
+    && cut.includes("- Dead end (X") && !cut.includes("## Lately") && !cut.includes("## Discoveries") && /^_3 items left out at 1024 bytes/m.test(cut) && Buffer.byteLength(cut) <= 1024
+    && /^- Dead end \(P, s-P\): p1/m.test(m) && /^- Verify M0 found \(P step 1\)/m.test(m) && [1024, 2000, 4096, 8192].every(k => Buffer.byteLength(pack(emo, { feature: "E0", list, answers: "😀".repeat(3000), cap: k })) <= k) ? 0 : 1);'
 mkdir -p "$T/pk" && printf '%s\n' '{"feature":"A","kind":"coding","outcome":"not yet","summary":"a1","dead_ends":[{"tried":"t","why":"w"}],"at":"x","session":"01-A","model":"m"}' '{oops' \
   '{"feature":"A","kind":"coding","outcome":"passes","summary":"a2","at":"x","session":"02-A","model":"m"}' > "$T/pk/entries.jsonl" \
   && echo '{"features":[{"id":"A","milestone":"M1","steps":["s"]}]}' > "$T/pk/feature_list.json" && printf 'status: run\n## Answers\nuse 7900\n' > "$T/pk/INBOX.md"
-check "entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap" 'node --input-type=module -e "$ENPK" \
+check "entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap" 'node --input-type=module -e "$ENPK" && node --input-type=module -e "$ENPK2" \
+  && ! node "$HERE/../lib/entries.mjs" pack "$T/pk" A 8k 2> /dev/null && ! node "$HERE/../lib/entries.mjs" pack "$T/pk" A 100 2> /dev/null \
   && node "$HERE/../lib/entries.mjs" pack "$T/pk" A > "$T/pk.md" && grep -qx -- "- Dead end (A, 01-A): t — w → entries.jsonl:1" "$T/pk.md" \
   && grep -q -- "^- x · A · passes: a2 → entries.jsonl:3$" "$T/pk.md" && grep -qx -- "- use 7900 → INBOX.md" "$T/pk.md" \
   && [[ $(node "$HERE/../lib/entries.mjs" pack "$T/jr/legacy" Z | head -1) == "# Context pack for \`Z\`" ]]'

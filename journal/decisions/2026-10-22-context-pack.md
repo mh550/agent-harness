@@ -15,15 +15,19 @@
   1. this feature's earlier attempts: dead ends, then failed evidence rows for it from any verify, then questions,
      then the entries themselves;
   2. Michael's INBOX answers;
-  3. discoveries whose `affects` names the feature (or the milestone and its features) or `run`;
+  3. discoveries whose `affects` names the feature, its milestone or `run` (for a verify: the milestone and its
+     features);
   4. the newest entry of each feature in its `after`;
   5. the run's last 3 entries.
   Each item is one bullet, at most 1024 bytes, ending `→ entries.jsonl:<line>` (`→ INBOX.md` for the answers), so a
   session can open the full entry. An entry shown once isn't repeated. Items are added while the total stays within
   the cap minus 160 bytes. The first item that doesn't fit ends the pack, so a lower part never pushes out a higher
   one. The answers are the exception: when at least 256 bytes are left they are cut to fit, keeping their newest
-  (last) bytes. A last line counts what was left out. If the pack fails, context.md says so and points at the full
-  record, so the session never reads a stale one. `prompts/coding.md` and `verify.md` open their bearings with
+  (last) bytes, and they aren't held to 1024 bytes (Michael's word outranks every discovery). A last line counts
+  what was left out, each entry once. If the pack fails, context.md says so and points at the full
+  record, so the session never reads a stale one; a cap that isn't a whole number ≥ 1024 fails it (a typo'd
+  `8k` would otherwise lift the cap). The driver commits the pack at once (`HARNESS: context pack for <id>`), so a
+  session that commits only its own files doesn't leave a `WIP:` commit behind. `prompts/coding.md` and `verify.md` open their bearings with
   `Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory).`
   Verify is told the pack is not evidence. `harness eval run` saves the pack of the task's next feature (refs that
   have `pack`), and `harness eval probes` pastes it after the probe prompt, because a tool-less probe can't open the

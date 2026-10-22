@@ -222,6 +222,7 @@ context() {
     printf '# Context pack for `%s`\n\nThe harness could not build it this time; read entries.jsonl / progress-archive.md.\n' "$1" > "$RUN_DIR/context.md"
     note "context.md for $1: the pack failed ($(head -c 200 "$SCRATCH/context.err" | tr '\n' ' ')); it points at the full record"
   fi
+  commit_all "HARNESS: context pack for $1"   # committed now: a session that commits only its own files leaves no WIP behind
 }
 
 run_init() {   # the project's init, then the suite (cached per code tree); both go into the next prompt
