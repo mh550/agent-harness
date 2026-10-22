@@ -18,3 +18,4 @@
 - 2026-10-21 18:34 · run ended (blocked on E2-02): 11/29 passing · 15 sessions (15 real) · 11 features passed · $37.60 · 4.3 h · by kind: init 1 ($5.69), coding 13 ($31.51), verify 1 ($0.40) · by model: claude-fable-5-1 1 ($5.69), claude-opus-5-5 12 ($31.26), claude-sonnet-5-5 2 ($0.65)
 - 2026-10-21 18:34 · held: E1 (its tag contains another milestone's unverified work, or main has changes it wasn't verified with); it merges with the next verified milestone
 - 2026-10-21 19:57 · merged main into harness/agent-harness-2026-10-21-measure
+- 2026-10-21 20:08 · E2-02 · claude-opus-5-5 · passes=true · 6 min · 12/29 passing
