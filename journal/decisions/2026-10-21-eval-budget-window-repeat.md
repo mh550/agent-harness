@@ -14,10 +14,13 @@ builds on `decisions/2026-10-21-eval-run-isolation`)*
   `WEEKLY_STOP_AT` it prints the window's message and exits 1 with no tmp or results dir. Before each further task it
   checks that file and the eval's own `$E/state/USAGE_7D` (its sessions write it), and copies a later real
   `LIMIT_UNTIL` into `$E/state/` so the eval's driver waits out a limit a real run hit. `eval.json` gains
-  `repeat`, `budget {cap, spent, not_started, text}` and `weekly` (the message, when the window stopped it), and the
-  last line printed is `budget: $<spent> of $<cap>; <n> tasks not started`. Not starting a task exits 1 (an
-  incomplete eval isn't a result to compare). `--repeat N` (N > 1) runs repeat-major (r1 of every task, then r2 …) so a
-  stop leaves whole repeats; each repeat is a fresh clone and run `eval-<task>-r<N>` into `<task>/r<N>/`.
+  `repeat`, `budget {cap, spent, not_started, text}` and `weekly` (the message, when the window stopped it), and
+  `eval.log` ends with `budget: $<spent> of $<cap>; <n> tasks not started` (then the results path).
+  The eval reads `EVAL_BUDGET_USD` and `WEEKLY_STOP_AT` from the defaults and the user config in a subshell (nothing
+  that config exports reaches the runs) and writes its `WEEKLY_STOP_AT` into the runs' safety lines, so a task's driver
+  stops at the threshold the eval checks. A cap that can't be summed stops the eval (it fails closed). Not starting a task exits 1 (an
+  incomplete eval isn't a result to compare). `--repeat N` (N > 1) runs repeat-major (r1 of every task, then r2 …) so after a
+  stop no task has more than one sample more than another (compare must allow a partial last repeat); each repeat is a fresh clone and run `eval-<task>-r<N>` into `<task>/r<N>/`.
   *Default for Michael:* `EVAL_BUDGET_USD=0` starts nothing (it is a cap, not an on/off switch like
   `WEEKLY_STOP_AT=0`).
 - **Rejected:** cutting a running task at the cap (kills a session mid-commit and leaves a half-run task that compare

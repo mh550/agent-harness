@@ -37,6 +37,7 @@ safety() {
   echo "POLICY=build-only MERGE_POLICY=off PR_POLICY=off RETRO=0 AUTO_CONTINUE=0 DESK=0 LEDGER_COMMIT=0"
   echo "NTFY_URL='' NTFY_TOKEN='' NOTIFY_CMD='' DESK_URL='' DEBRIEF_PAGE_CMD=''"
   printf 'LIVE_LOCK=%q\n' "$E/live.lock"
+  echo "WEEKLY_STOP_AT=$WEEKLY_STOP_AT"   # the eval's own threshold, so a task's driver stops where the eval would
 }
 
 write_json() {   # eval.json, rewritten after every task so an interrupted eval still has its record
@@ -120,10 +121,13 @@ cmd_run() {
     *) die "unknown option $1 (usage: harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>])" ;; esac; done
   [[ $LABEL =~ ^[A-Za-z0-9._-]+$ ]] || die "label: letters, digits, . _ - only"
   [[ $REPEAT =~ ^[1-9][0-9]*$ ]] || die "--repeat: a whole number from 1"
-  # the eval command's own config: the harness defaults and Michael's user config (no project); a cap in the
-  # environment wins, so a command line can set it from the cost estimate
-  local cap=${EVAL_BUDGET_USD:-}; harness_config /dev/null; [[ -n $cap ]] && EVAL_BUDGET_USD=$cap
+  # the eval command's own config: the harness defaults and Michael's user config (no project), read in a subshell so
+  # nothing it exports reaches the runs; a cap in the environment wins, so a command line can set it from the estimate
+  local cap=${EVAL_BUDGET_USD:-}
+  read -r EVAL_BUDGET_USD WEEKLY_STOP_AT < <(harness_config /dev/null; echo "$EVAL_BUDGET_USD $WEEKLY_STOP_AT")
+  [[ -n $cap ]] && EVAL_BUDGET_USD=$cap
   [[ $EVAL_BUDGET_USD =~ ^[0-9]+(\.[0-9]+)?$ ]] || die "EVAL_BUDGET_USD: dollars, e.g. 10 or 2.5 (not '$EVAL_BUDGET_USD')"
+  [[ $WEEKLY_STOP_AT =~ ^[0-9]+$ ]] || die "WEEKLY_STOP_AT: a percentage (not '$WEEKLY_STOP_AT')"
   local sf=$SET tasks=() tf repo dup why rp spent stopped=""
   [[ $SET == */* ]] || sf=$HARNESS_HOME/evals/sets/$SET.txt   # a bare name is a set under evals/sets/, a path a file
   [[ -f $sf ]] || die "no set '$SET' (a file, or evals/sets/<name>.txt)"
@@ -134,6 +138,7 @@ cmd_run() {
   dup=$(for tf in "${tasks[@]}"; do jq -r .id "$tf"; done | sort | uniq -d | head -1)
   [[ -z $dup ]] || die "task '$dup' is in set '$SET' twice; nothing started"
   for tf in "${tasks[@]}"; do
+    case $(jq -r .id "$tf") in harness|state|wt|scratch|ledger) die "task id '$(jq -r .id "$tf")' is one of the eval's own dirs; nothing started" ;; esac
     repo=$(jq -r .repo "$tf"); repo=${repo/#\~/$HOME}
     [[ ! -d $repo ]] || git -C "$repo" cat-file -e "$(jq -r .base "$tf")^{commit}" 2> /dev/null \
       || die "$(jq -r .id "$tf"): $repo has no commit $(jq -r .base "$tf"); nothing started"
@@ -157,19 +162,21 @@ cmd_run() {
   mkdir -p "$R" "$E/state" && : > "$E/tasks.jsonl" && safety > "$E/config.sh" && write_json || die "can't write $R"
   say "eval $STAMP · set $SET (${#tasks[@]} tasks × $REPEAT) · label $LABEL · budget \$$EVAL_BUDGET_USD"
   say "harness $REF ($SHA) in $E/harness"
-  # repeat-major, so a stop leaves whole repeats of the set; a running task is never cut (each session has its own cap)
+  # repeat-major, so a stop leaves each task with as many samples as the others, or one fewer; a running task is
+  # never cut (each session has its own cap)
   for (( rp = 1; rp <= REPEAT; rp++ )); do for tf in "${tasks[@]}"; do
     if [[ -z $stopped ]]; then
       if WEEKLY=$(weekly_over "$STATE_REAL/USAGE_7D") || WEEKLY=$(weekly_over "$E/state/USAGE_7D"); then
         stopped=weekly; say "starting no further task: $WEEKLY"
-      elif spent=$(EV spent "$R") && awk -v s="$spent" -v c="$EVAL_BUDGET_USD" 'BEGIN { exit !(s >= c) }'; then
+      elif ! spent=$(EV spent "$R"); then stopped=budget; say "starting no further task: can't sum what the tasks spent"
+      elif awk -v s="$spent" -v c="$EVAL_BUDGET_USD" 'BEGIN { exit !(s >= c) }'; then   # a cap fails closed
         stopped=budget; say "starting no further task: \$$spent spent, the cap is \$$EVAL_BUDGET_USD"
       fi
     fi
     if [[ -n $stopped ]]; then NOT_STARTED+=("$(unit "$tf" "$rp")"); continue; fi
     share_limit; run_task "$tf" "$rp"
   done; done
-  BUDGET_TEXT="budget: \$$(printf %.2f "$(EV spent "$R")") of \$$EVAL_BUDGET_USD; ${#NOT_STARTED[@]} tasks not started"
+  BUDGET_TEXT="budget: \$$(LC_ALL=C printf %.2f "$(EV spent "$R")") of \$$EVAL_BUDGET_USD; ${#NOT_STARTED[@]} tasks not started"
   say "$BUDGET_TEXT"; write_json
   git -C "$HARNESS_HOME" worktree remove --force "$E/harness" && say "removed the harness worktree $E/harness"
   say "results: $R"
