@@ -6,6 +6,30 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-22 · verify E3
+
+check.sh: green. `bash tests/run.sh` re-run by me: 213/213, 0 FAIL; `bash -n` on lib/*.sh tests/*.sh bin/*, `node --check` on lib/*.mjs clean. Note: the specs' "journal/decisions.md has D-H36/37/38" is satisfied by the decision files CLAUDE.md prescribes (that file is closed at D-H34).
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| E3-01 | 1 | read docs/plans/2026-10-21-E3-prompts.md | line 1 `Milestone base: 29b3d67…` (valid commit); §1 section order, §3 fixed first lines + `Feature:`/`Milestone:` stub lines, §0 debrief finding (nothing changes), §8 changed check `brief, rules and policy in the prompt`, §5 `logs/NN-<id>.prompt.md`, §7 exact clock wording, §6 40-line rule, §11 D-H36/37/38 | yes |
+| E3-01 | 2 | `git show --stat f1a350a`; full suite | plan file is the only non-bookkeeping file (plus feature_list/progress the harness edits); suite 213/213 | yes |
+| E3-02 | 1 | read lib/prompt.sh `prompt_render`, prompts/parts/rules.md, rendered prompt of this session | no `Project rules (CLAUDE.md)` paste; `# Project rules` + one line naming `CLAUDE.md`; `.harness/project.md` still passed when present; lib/debrief.sh untouched by the E3 diff | yes |
+| E3-02 | 2 | tests/run.sh:354-355; suite output | `coding prompt names CLAUDE.md but doesn't paste it` asserts `grep -q CLAUDE.md` and `! grep -qx rules` on proj/demo/prompt-coding.md; PASS. `brief, rules and policy in the prompt` updated to `# Project rules` + `` `CLAUDE.md` ``; PASS | yes |
+| E3-02 | 3 | prompt.sh `tail -n 40` + `full output:`; tests/run.sh:586 | check `init output is capped at 40 lines with the log path` (INIT_CMD `seq 1 100`): exactly 41 lines, last = `full output: …/init.out`, the 40 equal tail of init.out, has 100, lacks 1; PASS | yes |
+| E3-02 | 4 | `ls journal/decisions`; read no-double-claude-md and clock-and-bounded-init-output; commit 49fb29d | both checks added with the change (commit 49fb29d, 206→208); D-H36 and D-H38's init-output half exist as decision files (journal/decisions.md is closed per CLAUDE.md); suite 213/213 | yes |
+| E3-03 | 1 | head -3 of prompts/{coding,verify,initializer,retro}.md; grep `{{`; prompts/parts/run.md | first lines `# Coding session`, `# Verify session`, `# Initializer session`, `# Retro`; no placeholders before `{{SECTIONS}}`; run values in parts/run.md after policy; session ids/clock/init output after `# This session` | yes |
+| E3-03 | 2 | read tests/stub-claude.sh:32-107 | `case $first` matches exact first lines; id/milestone read by awk only below `# This session` from `Feature: \`` / `Milestone:`; full suite 213/213 | yes |
+| E3-03 | 3 | lib/driver.sh `session()` line 174; tests/run.sh:356-364; suite | `cp prompt.md ${3%.jsonl}.prompt.md`; check `two coding prompts share a byte-identical prefix that includes the policy`: cmp offset of A vs B > offset of `Policy: build-only` (and > `# This session`); PASS | yes |
+| E3-03 | 4 | `ls journal/decisions`; read static-first-prompts.md; suite | decision file for D-H37 exists; suite ends 213/213 | yes |
+| E3-04 | 1 | lib/driver.sh `clock()` and call sites (lines 275, 531) | HARNESS_CLOCK set for coding (`attempt N of MAX_ATTEMPTS`) and verify (`verify round N of MAX_VERIFY_ROUNDS`) with now, run elapsed/total, deadline, budget, turns, timeout; templates place `{{CLOCK}}` in the This session part | yes |
+| E3-04 | 2 | tests/run.sh:366-368; suite | check `the prompt says the time, the budget and the attempt`: C's later prompt matches the full line incl. `$20 budget, 250 turns`, `ends HH:MM`, `attempt 2 of 2`; exactly one `*-verify-M1.prompt.md` has `verify round 2 of 2`; PASS | yes |
+| E3-04 | 3 | read clock-and-bounded-init-output.md (clock half); suite | D-H38 clock half documented; suite 213/213 | yes |
+| E3-05 | 1 | read docs/plans/2026-10-21-E3-review.md | F1–F10 each with severity and resolution; no Critical/Important; minors fixed with RED→GREEN mutations recorded (207/213 then 213/213). Reviewer being an Opus subagent is stated there; I can't re-observe it | yes |
+| E3-05 | 2 | read docs/architecture.md §10 (lines 254-280) and README.md:54,76 | Prompt assembly lists static → policy → run-level → per-session, fixed first lines, one CLAUDE.md line, clock line, 40-line init output; What a project provides says loaded by Claude Code, named once; README row and steering section match | yes |
+| E3-05 | 3 | `ls journal/decisions`; grep D-H3[6-8] | one file each for D-H36, D-H37, D-H38 (clock-and-bounded-init-output covers 38); journal/decisions.md itself has none by CLAUDE.md's rule | yes |
+| E3-05 | 4 | `bash -n` on lib/*.sh tests/*.sh bin/*; `node --check lib/*.mjs`; `bash tests/run.sh` | no errors; 213/213 checks passed | yes |
+
 ### 2026-10-22 00:40 · E3-05 · passes
 
 - **What changed:** an Opus review of `E3.diff` (29b3d67..HEAD) found no Critical or Important issues and ten Minor ones, recorded in `docs/plans/2026-10-21-E3-review.md`. Fixes: the brief is pasted as written (`render.mjs --raw` now covers only the next file, so a `{{X}}` in a brief no longer fills session values into the shared prefix); sections are one blank line apart; `clock` is simpler; the initializer's wording on where the brief is; architecture §3 row and §10 **Prompt assembly** rewritten as the numbered order; README steering gets **What a session reads**. The prefix, clock and init-output checks are tightened. `decisions/2026-10-21-static-first-prompts` amended.
