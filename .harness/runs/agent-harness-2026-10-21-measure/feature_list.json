@@ -244,7 +244,7 @@
         "Both checks watched failing first; journal/decisions.md has D-H39; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E4-01", "E4-02"],
-      "passes": false },
+      "passes": true },
     { "id": "E4-04", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "progress.md and progress-archive.md are rendered by the driver from entries.jsonl after every session; sessions stop writing progress.md; legacy runs are untouched until continued.",
       "steps": [
