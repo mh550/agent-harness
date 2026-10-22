@@ -162,6 +162,7 @@ prompt() {   # template name → $STATE/prompt.md (lib/prompt.sh, which `harness
 
 session() {   # kind model log → runs claude headless on $STATE/prompt.md; sets S_EXIT and S_WALL
   local settings=() t0; t0=$(date +%s)
+  cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
   [[ -f $AGENT_SETTINGS ]] && settings=(--settings "$WT/$AGENT_SETTINGS")
   timeout "$SESSION_TIMEOUT" "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" \
     --max-turns "$MAX_TURNS" --max-budget-usd "$SESSION_BUDGET_USD" --output-format stream-json --verbose > "$3" 2>&1

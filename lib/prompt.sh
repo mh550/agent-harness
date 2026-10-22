@@ -16,20 +16,20 @@ prompt_env() {
   LIVE_LOCK=${LIVE_LOCK:-${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/live.lock}
   export HARNESS_RUN_ID=$RUN_ID HARNESS_RUN_DIR=$RUN_DIR HARNESS_BRANCH=$BRANCH HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH \
     HARNESS_CHECK="$CHECK" HARNESS_CHECK_CMD=$CHECK_CMD HARNESS_SMOKE_CMD=$SMOKE_CMD HARNESS_INIT_CMD=$INIT_CMD \
-    HARNESS_SPEC_FILES=$SPEC_FILES HARNESS_MAIN_BRANCH=$MAIN_BRANCH HARNESS_PROJECT=$PROJECT_NAME HARNESS_WT=$WT \
+    HARNESS_SPEC_FILES=${SPEC_FILES:-none} HARNESS_MAIN_BRANCH=$MAIN_BRANCH HARNESS_PROJECT=$PROJECT_NAME HARNESS_WT=$WT \
     HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green
 }
 
-prompt_render() {   # template name → stdout: generic prompt, the run's brief, the line naming CLAUDE.md, the policy
+prompt_render() {   # template name → stdout: the static template, the policy, this run (its lines, the brief, the line naming CLAUDE.md), this session
   local extra=() rules=()
   # Claude Code loads CLAUDE.md in the worktree itself: one line names it, the file isn't pasted (decisions/2026-10-21-no-double-claude-md)
   [[ -f CLAUDE.md ]] && rules=("$HARNESS_HOME/prompts/parts/rules.md")
   if [[ $1 == retro ]]; then extra=("${rules[@]}")
-  else
+  else   # these go at the template's {{SECTIONS}} line: nothing run-specific before the policy (decisions/2026-10-21-static-first-prompts)
+    extra=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md" "$HARNESS_HOME/prompts/parts/run.md")
     [[ -s $RUN_DIR/brief.md ]] && extra+=("Brief for this run, from Michael (it wins over the spec on scope)=$RUN_DIR/brief.md")
     extra+=("${rules[@]}")
     [[ -f .harness/project.md ]] && extra+=("Project rules (.harness/project.md)=.harness/project.md")
-    extra+=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md")
   fi
   # the last 40 whole lines and where the rest is (decisions/2026-10-21-clock-and-bounded-init-output)
   HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \

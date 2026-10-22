@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Stand-in for `claude -p` in tests: acts out initializer / coding / verify / retro sessions from the prompt's first line,
-# including scripted misbehaviour, and prints stream-json lines like the real CLI. Usage limits replay the real
+# Stand-in for `claude -p` in tests: acts out initializer / coding / verify / retro sessions keyed on the prompt's exact
+# first line (the feature id and milestone are read from the `Feature:`/`Milestone:` lines under `# This session`), including scripted misbehaviour, and prints stream-json lines like the real CLI. Usage limits replay the real
 # lines captured on 2026-10-17 (fixtures/usage-limit.jsonl), finished sessions the 2026-10-21 capture
 # (fixtures/usage-tokens.jsonl): fakes mirror the live API. Without -p it is a desk
 # (`claude --remote-control <name>`, no -p, in tmux): it prints the pane line of fixtures/remote-control-pane.txt with
@@ -29,6 +29,7 @@ fi
 [[ -n $prompt ]] || prompt=$(cat)   # `claude -p` with the prompt on stdin
 first=$(head -1 <<< "$prompt")
 L=${HARNESS_RUN_DIR:-.}/feature_list.json
+after_session() { awk '/^# This session$/ { s = 1 } s && '"$1" <<< "$prompt"; }   # an awk rule, applied below `# This session` only (a brief can't fake an id)
 count() { local f=$HARNESS_SCRATCH/count-$1 n; n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$f"; echo "$n"; }
 set_passes() { node -e 'const fs=require("fs"),[f,id,v]=process.argv.slice(1),l=JSON.parse(fs.readFileSync(f));for(const x of l.features)if(x.id===id)x.passes=v==="true";fs.writeFileSync(f,JSON.stringify(l,null,2))' "$L" "$1" "$2"; }
 # A finished session: the real capture's assistant, tool-result and result events (fixtures/usage-tokens.jsonl, so every
@@ -36,7 +37,7 @@ set_passes() { node -e 'const fs=require("fs"),[f,id,v]=process.argv.slice(1),l=
 ok() { jq -c --argjson c "${1:-0.25}" --argjson r "\"${2:-done}\"" 'if .type == "result" then .total_cost_usd = $c | .result = $r | .num_turns = 12 | .duration_ms = 60000 else . end' "$HERE/fixtures/usage-tokens.jsonl"; }
 
 case $first in
-  "# Initializer session"*)
+  "# Initializer session")
     [[ ${STUB_SLOW_INIT:-} ]] && sleep "$STUB_SLOW_INIT"
     [[ ${STUB_INIT_LIMIT:-} ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before the list exists
     [[ ${STUB_QUEUE_STOP:-} ]] && touch "$HARNESS_STATE/queue/STOP"   # Michael runs `harness queue stop` meanwhile
@@ -55,7 +56,7 @@ JSON
       git -C "$tmp" commit -qam "phone: stop" && git -C "$tmp" push -q origin "$HARNESS_BRANCH"
     fi
     ok 1.5 ;;
-  "# Coding session"*)
+  "# Coding session")
     [[ ${STUB_SLOW_CODING:-} ]] && { touch "$STUB_DIR/slow-coding"; sleep "$STUB_SLOW_CODING"; }   # a session to interrupt
     if [[ ${STUB_WEEKLY:-} ]]; then   # the rate-limit event every real session carries: this one reports the 7-day window
       now=$(date +%s); echo "{\"type\":\"rate_limit_event\",\"rate_limit_info\":{\"status\":\"allowed\",\"resetsAt\":$(( now + 3600 )),\"rateLimitType\":\"five_hour\",\"unifiedWindows\":{\"five_hour\":{\"utilization\":0.2,\"resetsAt\":$(( now + 3600 ))},\"seven_day\":{\"utilization\":$STUB_WEEKLY,\"resetsAt\":$(( now + 259200 ))}}}}"
@@ -66,7 +67,7 @@ JSON
     if [[ ${STUB_NOWORK:-} ]] && (( $(count nowork) == 1 )); then   # an error that isn't a limit: $0, one turn
       echo '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":0,"num_turns":1,"duration_ms":400,"result":""}'; exit 0
     fi
-    id=$(sed -n 's/^# Coding session — `\([^`]*\)`.*/\1/p' <<< "$first"); n=$(count "$id")
+    id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
     echo "$id attempt $n" >> "$HARNESS_SCRATCH/sessions.log"
     if [[ ${STUB_PARK:-} == "$id" && $n == 1 ]]; then   # can't go on without Michael: asks in INBOX.md, parks
       sed -i '/^## Answers/i ### '"$id"': set the gatus vars, then answer\n' "$HARNESS_RUN_DIR/INBOX.md"
@@ -90,8 +91,8 @@ JSON
     echo "$id $n" > "work-$id.txt"
     git add -A && git commit -qm "$id: stub work ($n)" && git push -q origin "$HARNESS_BRANCH"
     ok ;;
-  "# Verify session"*)
-    m=$(sed -n 's/^# Verify session — milestone \([^ ]*\).*/\1/p' <<< "$first"); n=$(count "verify-$m")
+  "# Verify session")
+    m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "verify-$m")
     echo "verify $m $n" >> "$HARNESS_SCRATCH/sessions.log"
     if [[ ${STUB_VERIFY_LIMIT:-} && $m == M1 && $n == 1 ]]; then cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; fi   # refused
     if [[ ${STUB_VERIFY_EDITS:-} && $n == 1 ]]; then echo hack > "hack-$m.txt"; echo "edited" >> CLAUDE.md; fi   # a verifier "fixing" code
@@ -103,7 +104,7 @@ JSON
       fi; echo; sed -n '3,$p' "$HARNESS_RUN_DIR/progress.md"; } > "$HARNESS_SCRATCH/p.md" && mv "$HARNESS_SCRATCH/p.md" "$HARNESS_RUN_DIR/progress.md"
     git add -A && git commit -qm "verify $m ($n)" --allow-empty && git push -q origin "$HARNESS_BRANCH"
     ok 0.1 ;;
-  "# Retro"*)
+  "# Retro")
     echo "retro" >> "$HARNESS_SCRATCH/sessions.log"
     [[ ${STUB_RETRO_EDITS:-} ]] && { echo "retro was here" > retro-hack.txt; echo x >> "$HARNESS_RUN_DIR/progress.md"; }
     ok 0.2 "## Outcome\\nStub retro.\\n\\n## Proposed harness changes\\n1. none" ;;

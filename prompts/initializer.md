@@ -1,26 +1,27 @@
-# Initializer session — run `{{RUN_ID}}` of {{PROJECT}}
+# Initializer session
 
 You are the **initializer** of a long-running agent harness, after Anthropic's "Effective harnesses
 for long-running agents". You run once. After you, the harness starts one **fresh coding session
 per feature**, each with an empty context window. They know only what you and earlier sessions
 leave on disk. Your job is to make that enough. **Write no feature code.**
 
-You are in a git worktree on branch `{{BRANCH}}`. The run record lives in `{{RUN_DIR}}/`.
+You are in a git worktree of the project. Its branch, the run directory (where the run record
+lives) and the rest are under *This run* below.
 
 ## Read first
 
-- The spec: {{SPEC_FILES}}, in full, and the **brief for this run** (at the end of this prompt, if
+- The spec (under *This run*), in full, and the **brief for this run** (under *This run*, if
   there is one): the brief wins on scope. The project rules (`CLAUDE.md`, which Claude Code loads in
   every session) bind every session.
 - Enough of the code to plan realistically: the entry points, the modules the spec names, and the
   list of tests.
 - The harness has already run the project's init and the suite; their output is at the end.
-- How big features turned out in earlier runs: {{CALIBRATION}}
+- How big features turned out in earlier runs: under *This session* at the end.
 
-## Write `{{RUN_DIR}}/feature_list.json`
+## Write `feature_list.json` in the run directory
 
 ```json
-{ "run": "{{RUN_ID}}", "branch": "{{BRANCH}}",
+{ "run": "<run id>", "branch": "<branch>",
   "features": [
     { "id": "T1-03", "milestone": "T1", "kind": "build", "model": "opus",
       "description": "one sentence: the behaviour a user or a test can observe",
@@ -60,7 +61,7 @@ Rules:
      file; Critical/Important findings are fixed RED→GREEN; simplification passes are applied;
      docs touched by the milestone are updated.
   When every feature of a milestone passes, the harness verifies it independently and **merges it
-  into `{{MAIN_BRANCH}}`**. So a milestone must be a coherent unit that is safe to ship on its own.
+  into the main branch**. So a milestone must be a coherent unit that is safe to ship on its own.
 - **`model`**: `"opus"` for plans, code, UI and reviews; `"sonnet"` for docs-only,
   verification-only and mechanical features; `"fable"` only where the project rules say so.
 - Every `passes` starts `false`. From now on, a session may change only its own feature's
@@ -68,17 +69,27 @@ Rules:
 
 ## Also write
 
-- `{{RUN_DIR}}/progress.md`: a short header (what this file is, newest entry first, how to read the
+- `progress.md` in the run directory: a short header (what this file is, newest entry first, how to read the
   feature list and steer via `INBOX.md`), then your entry: feature counts per milestone,
   everything a worker must know about the code (where things live, gotchas), and questions for
   Michael (decisions that are his get the simplest reversible default).
-- Leave `{{RUN_DIR}}/INBOX.md` as the harness created it.
+- Leave the run directory's `INBOX.md` as the harness created it.
 
-Commit `HARNESS: feature list (<n> features) and progress log for {{RUN_ID}}` and push
-`git push -u origin {{BRANCH}}`.
+Commit `HARNESS: feature list (<n> features) and progress log for <run id>` and push
+`git push -u origin <branch>`.
+
+The project's policy comes right after these instructions. It binds you.
 
 Final message: at most 150 words. Give the feature count per milestone, the first three ids, and
 any question for Michael.
+
+{{SECTIONS}}
+
+---
+
+# This session
+
+Earlier runs' feature sizes: {{CALIBRATION}}
 
 ## Init output
 

@@ -90,6 +90,11 @@ check "parked.mjs: the newest question wins, ids with dots, code fences, never M
 ( NTFY_URL=https://ntfy.example/t NTFY_TOKEN="" NOTIFY_CMD=""; log() { :; }; source "$HERE/../lib/notify.sh"; notify "long one" title="long one" body="$(head -c 4000 /dev/zero | tr '\0' x)" )
 check "a body over the cap is trimmed"    'Bd=$(curl_body "Title: long one"); (( $(printf %s "$Bd" | wc -c) <= 3500 && $(printf %s "$Bd" | wc -c) > 3000 )) && [[ $Bd == *… ]]'
 
+# ---- render, pure: the sections go at the {{SECTIONS}} line, or at the end without one (E3-03) ----
+ASM='import { assemble } from "'$HERE'/../lib/render.mjs"; const env = { HARNESS_X: "x" }, s = [{ title: "T", body: "b {{X}}", raw: false }, { title: null, body: "u {{X}}", raw: true }];
+  const a = assemble("top\n\n{{SECTIONS}}\n\nend {{X}}\n", s, env), b = assemble("top {{X}}\n", s, env);
+  process.exit(a === "top\n\n---\n\n# T\n\nb x\n\n\nu {{X}}\n\nend x\n" && b === "top x\n\n\n---\n\n# T\n\nb x\n\n\nu {{X}}" ? 0 : 1);'
+check "render.mjs: assemble puts the sections at the {{SECTIONS}} line" 'node --input-type=module -e "$ASM"'
 # ---- metrics, pure: tokens, cache and context peak from the real capture (fixtures/usage-tokens.jsonl, E1) ----
 TOKS='import { outcome, events } from "'$HERE'/../lib/metrics.mjs"; const o = outcome(events("'$HERE'/fixtures/usage-tokens.jsonl")), n = outcome([{ type: "result", total_cost_usd: 0 }]);
   process.exit(o.tokens_in === 4 && o.cache_read === 35768 && o.cache_write === 13651 && o.tokens_out === 219 && o.cache_hit_rate === 0.724 && o.context_peak === 24881
@@ -284,7 +289,7 @@ cp -r "$ED" "$T/evgone" && jq '.tasks[].worktree = "/nonexistent"' "$ED/eval.jso
 mkdir -p "$T/ptmp"; TMPDIR=$T/ptmp "$H" eval probes "$T/evgone/t2" > "$T/evgone.out" 2>&1; EPG=$?
 cp -r "$ED" "$T/evnop" && rm "$T/evnop/t2/probe-prompt.md"; "$H" eval probes "$T/evnop/t2" > "$T/evnop.out" 2>&1; EPN=$?
 noinit() { sed '/^## Init output/,/^---$/d' "$1"; }
-check "eval probes: the probe prompt is the driver's coding prompt" '[[ -s $ED/t2/probe-prompt.md ]] && grep -q "^# Coding session — \`T2b\`" "$ED/t2/probe-prompt.md" \
+check "eval probes: the probe prompt is the driver's coding prompt" '[[ -s $ED/t2/probe-prompt.md ]] && [[ $(head -1 "$ED/t2/probe-prompt.md") == "# Coding session" ]] && grep -qx "Feature: \`T2b\`" "$ED/t2/probe-prompt.md" \
   && cmp -s <(noinit "$ED/t2/probe-prompt.md") <(noinit "$(jq -r ".tasks[1].state" "$EJ")/prompt-coding.md") && cmp -s <(sed -n "3,$(( $(awk 1 "$ED/t2/probe-prompt.md" | wc -l) + 2 ))p" "$T/probe-prompt1") <(awk 1 "$ED/t2/probe-prompt.md") \
   && (( EPG == 0 )) && grep -q "probes: run worktree gone; CLAUDE.md not auto-loaded" "$T/evgone.out" && jq -e ".note | test(\"worktree gone\")" "$T/evgone/t2/probes.json" > /dev/null && [[ -z $(ls -A "$T/ptmp") ]] \
   && ! grep -qx "PWD=$(jq -r ".tasks[1].worktree" "$EJ")" "$STUB_DIR/probe-args" && (( EPN == 1 )) && grep -q "no probe-prompt.md" "$T/evnop.out"'
@@ -345,6 +350,13 @@ check "no final tag, no false 'verified'" '! git -C "$T/origin.git" tag | grep -
 check "brief committed with the run"      'grep -q "only A–C" "$RD/brief.md"'
 check "brief, rules and policy in the prompt" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q "only A–C" "$P" && grep -qx "# Project rules" "$P" && grep -q "\`CLAUDE.md\`" "$P" && grep -q "Policy: build-only" "$P"'
 check "coding prompt names CLAUDE.md but doesn't paste it" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q CLAUDE.md "$P" && ! grep -qx rules "$P"'
+# each session's prompt is kept beside its transcript; two coding sessions share everything up to and past the policy (E3-03)
+off() { grep -bo "$1" "$2" 2> /dev/null | head -1 | cut -d: -f1; }   # the 0-based byte offset of the first $1 in $2
+PA=$(ls "$HARNESS_STATE"/proj/demo/logs/*-A.prompt.md 2> /dev/null | head -1) PB=$(ls "$HARNESS_STATE"/proj/demo/logs/*-B.prompt.md 2> /dev/null | head -1)
+CB=$(cmp "$PA" "$PB" 2> /dev/null | sed -n 's/.* differ: \(byte\|char\) \([0-9]*\),.*/\2/p')
+check "two coding prompts share a byte-identical prefix that includes the policy" '[[ -s $PA && -s $PB && -n $CB && -n $(off "Policy: build-only" "$PA") ]] \
+  && (( CB - 1 > $(off "Policy: build-only" "$PA") && CB - 1 > $(off "Policy: build-only" "$PB") )) \
+  && (( $(off "Policy: build-only" "$PA") < $(off "only A–C" "$PA") && $(off "only A–C" "$PA") < $(off "# This session" "$PA") ))'
 check "metrics: wall time and roles"      'jq -e "select(.kind==\"coding\") | .wall_s != null and .role == \"build\"" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0)" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'
