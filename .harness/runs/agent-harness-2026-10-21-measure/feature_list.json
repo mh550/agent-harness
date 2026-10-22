@@ -254,7 +254,7 @@
         "Both checks watched failing first; journal/decisions.md has D-H40; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E4-01", "E4-02", "E4-03"],
-      "passes": false },
+      "passes": true },
     { "id": "E4-05", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "Before each session the driver writes <run>/context.md, a deterministic context pack capped by CONTEXT_PACK_BYTES in a fixed priority order, and the prompts say to read it first.",
       "steps": [
