@@ -268,8 +268,11 @@ session`, then the role, rules and finish, no placeholders), then at its `{{SECT
 (`prompts/policy/<POLICY>.md`), *This run* (`prompts/parts/run.md`: run id, worktree, branch, run directory, port,
 scratch, suite, spec), "Brief for this run", `prompts/parts/rules.md` (one line naming `CLAUDE.md`, which Claude Code
 loads itself, when the worktree has one) and legacy `.harness/project.md` if present, then the template's *This
-session* part (`` Feature: `<id>` `` / `Milestone: <m>`, or `Milestone:` / `Features:`; the init output). Two
-sessions of a run share every byte up to *This session*. The retro (`# Retro`, its run on line 3) gets the template
+session* part (`` Feature: `<id>` `` / `Milestone: <m>`, or `Milestone:` / `Features:`; the clock line; the init
+output). Two sessions of a run share every byte up to *This session*. The clock line (`{{CLOCK}}`, driver `clock`,
+coding and verify only) is `Clock: <now> · run <elapsed> of <total>, ends <HH:MM> · this session: $<budget> budget,
+<turns> turns, <timeout> timeout · attempt N of MAX_ATTEMPTS` (or `verify round N of MAX_VERIFY_ROUNDS`); the run
+is this driver's segment, `T0` to `DEADLINE`. A probe rendered by `lib/prompt.sh` says it is outside a run. The retro (`# Retro`, its run on line 3) gets the template
 and the rules line. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output) and then
 `full output: <path>`. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 
