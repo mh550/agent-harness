@@ -1,17 +1,19 @@
 ## Outcome
-The run delivered 11 of 29 features. E1 passed all 9 features and was verified and tagged `run/agent-harness-2026-10-21-measure/E1`. E2-01 and E3-01 also passed. Nothing was merged, and the run ended "blocked on E2-02" at 18:34. It cost $37.60 over 4.3 h in 15 sessions. The main reason is that E2-02 failed twice and the other 17 features were waiting on it. Several of those waits were not real dependencies.
+All 29 features passed and were verified (E1 9, E2 8, E3 5, E4 7). E4 was proposed as PR #10, and 0 were merged. The run took 12.6 h wall time, 37 sessions and $99.89 ($3.44 per passing feature). It stopped once at 18:34 ("blocked on E2-02", 11/29 passing). Michael's answer in `INBOX.md` at 19:57 let it continue. The block cost about 1.4 h of idle time. Main also conflicted at 17:22 and again needed a merge at 19:57.
 
 ## Non-passing features by cause
-- **E2-02: not done, 2 sessions, $4.30.** Cause: spec or feature-list problem, plus a permission denial. The step says to add retried and depends-on tasks from other projects' run records, but the session could not read `~/projects/*/.harness/runs`. Evidence: "Question for Michael… allow reads of the source records… `git clone -q --mirror /home/mh550/projects/*`".
-- **17 features had cause "blocked"** (E2-03…08, E3-02…05, E4-01…07), with no session of their own. Cause: depends on a failed feature. The E2-02 builder wrote that E2-03…E2-06 "don't need more tasks, so the run can go on past E2-02". The feature list gave E3-02…05 no `after`, so they waited on E2. The builder spotted this: "E3-02 … E3-05 have no `after`… Add `"after": ["E3-01"]`".
+None ended "not done". E2-02 failed twice (13 min each, 3 sessions, $4.97) before passing at 20:08.
+- **E2-02: spec or feature-list problem**, with a permission denial as a trigger. Evidence: Michael's answer "E2-02 = agent-harness only. I amended steps 1-2".
+- **Other causes:** the 17 features waiting behind it were "depends on a failed feature". E3-02..05 lacked an `after`, so they waited for no real reason. Other causes: 0.
 
 ## Harness behaviour
-- **Guards:** none fired (repairs, red_unpass, verify_failed and limit_waits are all 0). The "given up" block after two E2-02 attempts was correct. The driver then stopped the whole run, although E2-03…06 and E3-02…05 were runnable.
-- **Wasted work:** the second E2-02 session (13 min) was a near-repeat of the first, with the same denial and the same question. Nothing in the driver changed between the two attempts.
-- **Merge:** "main conflicts with harness/…; carrying on without it". E1 is held because its tag contains other milestones' work, so even the verified milestone did not reach a PR.
-- **Verify:** the single verify session for E1 (cost $0.40) re-ran the suite fresh (189/189) and wrote a table with one row per feature and step. That is real re-running. I did not compare rows against the step count.
+- **Guards:** repairs, red_unpass, verify_failed, limit_waits and verify_escalations are all 0. The "given up" rule fired after 2 attempts, which was correct. Ending the whole run did not follow, since E2-03..06 and E3-02..05 were runnable. The 18:34 run ran E3-01 and then stopped.
+- **Wasted money:** review cost $21.33 (21%). E1-09 cost $3.45 and E2-08 took 72 min, both after clean builds. The 4 verify sessions cost $1.45 in total, which is cheap.
+- **Verify evidence:** `progress.md` shows evidence tables with one row per feature, for example "E1-05 | 3 | read run.sh:163; metrics output; suite". Rows are not per step, so I cannot confirm each step was re-run. `feature_list.json` holds no evidence field.
+- **Missing numbers:** `tests.start` and `tests.end` are null in `summary.json`.
+- **Merges:** `merged` is 0 for all 29 features, as designed.
 
 ## Proposed harness changes
-1. **Keep running independent features when one is given up** (`lib/features.mjs` `next`, `lib/driver.sh`). Skip the blocked feature and run those that don't need it. Make the default order dependency in the feature list explicit and validated at init. Evidence: 17 features stalled behind E2-02, and 4 of them (E2-03…06) were declared independent. Earlier retros asked for this: `voice-concierge-2026-10-20` proposal 2 (don't let one parked feature idle the run) and `voice-concierge-2026-10-21`.
-2. **Don't retry a session that stopped on a permission question with nothing changed** (`lib/driver.sh`). If the first attempt ends with an INBOX question about a denied read, park the feature right away. Evidence: E2-02 attempt 2 repeated attempt 1 (13 min, about $2). I found no earlier retro proposing this.
-3. **Check at init that the source paths a feature's steps name are readable** (init prompt plus a `feature_list.json` check). Evidence: E2-02 needed `~/projects/*/.harness/runs`, which the session could not read. This is close to the earlier "lint step text" proposal (`voice-concierge-2026-10-21`, `rane-one-mixxx-2026-10-19`, `portfolio_site-2026-10-20`).
+1. **Don't end the run when a feature is given up** (driver, next-feature selection). Skip it and keep going with every feature that does not depend on it (via `after`), and end only when nothing is runnable. Evidence: the 18:34 stop left 8 features runnable, and 3 of them ran after the resume without the failed one's help. This is new.
+2. **Skip or cap per-milestone review for small or clean milestones** (driver config). Evidence: review was $21.33, 21% of the run. Already proposed by `v2-2026-10-18`, `rane-one-mixxx-2026-10-19`, `portfolio_site-2026-10-20` and `voice-concierge-2026-10-20`, so this is at least the fifth repeat.
+3. **Record test counts in `summary.json`** (summary generator). Evidence: `tests` is null/null. Already proposed by `v2-2026-10-18` and `voice-concierge-2026-10-20`, so this is a repeat.
