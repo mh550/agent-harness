@@ -68,7 +68,26 @@ checkouts on this machine.
    (never inside it): `### <date time> · <feature id> · passes|not yet`, then 3–8 lines: what
    changed (files, test count before → after), how you verified it (real names and numbers), what
    the next session must know, questions for Michael, proposed changes.
-4. Commit `<feature id>: <what changed>` and run `git push -u origin <branch>`.
+4. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object. The
+   harness validates it, adds it to `entries.jsonl` and deletes it; a missing or invalid one leaves
+   only a minimal entry (your final message and the files git saw change). For example:
+
+   ```json
+   { "feature": "C", "kind": "coding", "outcome": "not yet",
+     "summary": "Added the parser and its check; the suite is red on the fixture's trailing blank line.",
+     "files": ["lib/parse.mjs", "tests/run.sh"], "verified_how": "tests: 211/212, the new check fails on …",
+     "tests_before": 211, "tests_after": 212,
+     "dead_ends": [{ "tried": "trimming in render.mjs", "why": "the prompt prefix check then fails" }],
+     "discoveries": [{ "text": "render.mjs keeps trailing blank lines", "affects": ["D", "run"] }],
+     "questions": ["Should X default to off?"], "proposed_changes": ["C step 2 should name tests/run.sh"] }
+   ```
+
+   Required: `feature` (your feature id), `kind` (`"coding"`), `outcome` (`passes` · `not yet` ·
+   `parked`) and `summary` (at most 400 characters). The rest may be left out: `dead_ends` is what
+   you tried that failed and why (the next attempt reads it), `discoveries` what changes other
+   features or the whole run (`affects`: feature ids, milestone ids or `"run"`), `questions` are for
+   Michael.
+5. Commit `<feature id>: <what changed>` and run `git push -u origin <branch>`.
 
 Final message: at most 100 words. Say whether the feature passes, the commit, and the test count.
 

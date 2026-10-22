@@ -73,6 +73,17 @@ Rules:
   feature list and steer via `INBOX.md`), then your entry: feature counts per milestone,
   everything a worker must know about the code (where things live, gotchas), and questions for
   Michael (decisions that are his get the simplest reversible default).
+- `entry.json` in the run directory, your entry in the run's journal: one JSON object. The harness
+  validates it, adds it to `entries.jsonl` and deletes it; a missing or invalid one leaves only a
+  minimal entry. Required: `feature` (`"init"`), `kind` (`"init"`), `outcome` (`passes` once the list
+  is written) and `summary` (at most 400 characters: the counts per milestone). `header` is the
+  progress.md header text; gotchas every session must know go in `discoveries` affecting `"run"`:
+
+  ```json
+  { "feature": "init", "kind": "init", "outcome": "passes", "summary": "12 features: E1 4, E2 5, E3 3.",
+    "header": "# Progress — run `x` (project)\n\nWhat this file is: …",
+    "discoveries": [{ "text": "the suite needs port 7804 free", "affects": ["run"] }] }
+  ```
 - Leave the run directory's `INBOX.md` as the harness created it.
 
 Commit `HARNESS: feature list (<n> features) and progress log for <run id>` and push

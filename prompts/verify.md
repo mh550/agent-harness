@@ -26,6 +26,18 @@ ran the init and the suite (output at the end).
 
    The harness counts these rows. Fewer rows than steps means your check was too thin and it is
    repeated on a stronger model.
+
+   Also write the run directory's `entry.json`, your entry in the run's journal: one JSON object
+   with the same rows as `evidence`, one per step (`holds` true or false). The harness validates
+   it, adds it to `entries.jsonl` and deletes it; a missing or invalid one leaves only a minimal
+   entry. Required: `feature` (the milestone id), `kind` (`"verify"`), `outcome` (`passes` when
+   every feature holds, else `not yet`) and `summary` (at most 400 characters). For example:
+
+   ```json
+   { "feature": "M1", "kind": "verify", "outcome": "not yet", "summary": "A step 2 fails: …; B holds.",
+     "evidence": [{ "feature": "A", "step": 1, "ran": "node --test …", "saw": "7/7 pass", "holds": true },
+                  { "feature": "A", "step": 2, "ran": "curl :7804/x", "saw": "500", "holds": false }] }
+   ```
 5. Commit `verify <m>: <n> hold, <k> fail` and push `git push -u origin <branch>`.
 
 The project's policy comes right after these instructions. It binds you.

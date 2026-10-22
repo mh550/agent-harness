@@ -180,6 +180,26 @@ session() {   # kind model log → runs claude headless on $STATE/prompt.md; set
   log "  $1 exit $S_EXIT · $(git log --oneline -1)"
 }
 
+# <kind> <feature> <transcript> <model> <start commit> → the session's entry.json into entries.jsonl: the driver is its
+# only writer (decisions/2026-10-22-journal-single-writer). Missing or invalid: a note and a minimal entry from git and
+# the final message, whose outcome is what the list says now (the session's claim, before the driver's checks).
+journal() {
+  local kind=$1 id=$2 who=$2 outcome="not yet" name out rc; name=$(basename "$3" .jsonl)
+  git diff --name-only --no-renames "$5" HEAD -- . ":!$RUN_DIR" > "$SCRATCH/entry-files"
+  MET final "$3" > "$SCRATCH/entry-final" 2> /dev/null
+  case $kind in
+    coding) if F passes "$LIST" "$id"; then outcome=passes
+            elif sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' "$SCRATCH/entry-final" | grep -q .; then outcome=parked; fi ;;
+    verify) who="verify $id"; F milestone-done "$LIST" "$id" && outcome=passes ;;
+    init)   F summary "$LIST" > /dev/null 2>&1 && outcome=passes ;;
+  esac
+  out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$RUN_DIR" "$kind" "$id" "$name" "$4" "$outcome" "$SCRATCH/entry-files" "$SCRATCH/entry-final"); rc=$?
+  (( rc == 3 )) && note "$who: entry.json $out; recorded a minimal entry"
+  (( rc == 0 || rc == 3 )) || { note "$who: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
+    mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-failed-$name.json" 2> /dev/null; }
+  return 0
+}
+
 run_init() {   # the project's init, then the suite (cached per code tree); both go into the next prompt
   HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH bash -c "$INIT_CMD" > "$SCRATCH/init.out" 2>&1
   local rc=$?; echo "(init exit $rc)" >> "$SCRATCH/init.out"
@@ -278,6 +298,7 @@ verify() {
     session verify "$(F model "$model")" "$vlog"
     reverted=$(restrict "$vstart" record verify | paste -sd' ')
     [[ -n $reverted ]] && note "verify $m: reverted code edits the verifier may not make: $reverted"
+    journal verify "$m" "$vlog" "$(F model "$model")" "$vstart"   # before the limit branch: a refused verify is journaled too
     if why=$(MET limit "$vlog" "$S_WALL" "$S_EXIT"); then   # refused: no verdict, and no "holds" by default
       cp "$STATE/before.json" "$LIST"; node -e 'const f=process.argv[1],fs=require("fs");fs.writeFileSync(f,JSON.stringify(JSON.parse(fs.readFileSync(f)),null,2)+"\n")' "$LIST"
       MET append "$vlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" false "$S_WALL" "$S_EXIT" true verify
@@ -475,8 +496,10 @@ if [[ ! -f $LIST ]]; then
   run_init
   HARNESS_CALIBRATION=$(SUM calibration "$LEDGER" "$PROJECT_NAME" 2>/dev/null) prompt initializer
   log "initializer · $(F model "$INIT_MODEL")"
+  istart=$(git rev-parse HEAD)
   session init "$(F model "$INIT_MODEL")" "$LOGS/00-init.jsonl"
   commit_all "WIP: initializer — uncommitted at session end (harness)"
+  journal init init "$LOGS/00-init.jsonl" "$(F model "$INIT_MODEL")" "$istart"   # a failed or refused initializer too
   if ! F summary "$LIST" > /dev/null 2>&1; then
     if why=$(MET limit "$LOGS/00-init.jsonl" "$S_WALL" "$S_EXIT"); then note "initializer refused: ${why%%$'\t'*}"; finish "usage limit before the feature list"; fi
     note "initializer did not produce a valid $LIST; stopping"; finish "initializer failed"
@@ -532,8 +555,10 @@ while :; do
   log "session $n · $id · $mdl"
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   cp "$RUN_DIR/INBOX.md" "$STATE/inbox-before.md" 2> /dev/null || : > "$STATE/inbox-before.md"   # what the session adds is the park's question
+  sstart=$(git rev-parse HEAD)
   session coding "$mdl" "$slog"
   commit_all "WIP: $id — uncommitted at session end (harness)"
+  journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
 
   # A usage/rate limit, an API error or a session that did no work is not the feature's fault: give the attempt back.
   if why=$(MET limit "$slog" "$S_WALL" "$S_EXIT"); then

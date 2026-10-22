@@ -32,6 +32,9 @@ L=${HARNESS_RUN_DIR:-.}/feature_list.json
 after_session() { awk '/^# This session$/ { s = 1 } s && '"$1" <<< "$prompt"; }   # an awk rule, applied below `# This session` only (a brief can't fake an id)
 count() { local f=$HARNESS_SCRATCH/count-$1 n; n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$f"; echo "$n"; }
 set_passes() { node -e 'const fs=require("fs"),[f,id,v]=process.argv.slice(1),l=JSON.parse(fs.readFileSync(f));for(const x of l.features)if(x.id===id)x.passes=v==="true";fs.writeFileSync(f,JSON.stringify(l,null,2))' "$L" "$1" "$2"; }
+# <id> <n> <jq args…> → the session's journal entry, built by jq (E4-03); STUB_BAD_ENTRY=<id>: that id's first session writes `{not json`
+entry() { local id=$1 n=$2; shift 2
+  if [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]]; then printf '{not json' > "$HARNESS_RUN_DIR/entry.json"; else jq -n "$@" > "$HARNESS_RUN_DIR/entry.json"; fi; }
 # A finished session: the real capture's assistant, tool-result and result events (fixtures/usage-tokens.jsonl, so every
 # session carries tokens), with cost, final text, turns and duration substituted. --argjson: callers' \\n become newlines.
 ok() { jq -c --argjson c "${1:-0.25}" --argjson r "\"${2:-done}\"" 'if .type == "result" then .total_cost_usd = $c | .result = $r | .num_turns = 12 | .duration_ms = 60000 else . end' "$HERE/fixtures/usage-tokens.jsonl"; }
@@ -49,6 +52,7 @@ case $first in
   { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"]$after, "passes": false } ] }
 JSON
     printf '# progress\n\n' > "$HARNESS_RUN_DIR/progress.md"
+    entry init 1 '{feature: "init", kind: "init", outcome: "passes", summary: "3 features: M1 2, M2 1", header: "# progress"}'
     git add -A && git commit -qm "HARNESS: feature list" && git push -q -u origin "$HARNESS_BRANCH"
     if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop
       tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "$HARNESS_BRANCH"
@@ -89,6 +93,9 @@ JSON
     fi
     if [[ $id == C ]]; then [[ $n == 1 && ! ${STUB_NO_RED:-} ]] && touch BROKEN || rm -f BROKEN; fi   # first try leaves the suite red
     echo "$id $n" > "work-$id.txt"
+    entry "$id" "$n" --arg id "$id" --arg n "$n" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
+      outcome: "passes", summary: "\($id): stub work (\($n))", files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
+      + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end'
     git add -A && git commit -qm "$id: stub work ($n)" && git push -q origin "$HARNESS_BRANCH"
     ok ;;
   "# Verify session")
@@ -102,6 +109,11 @@ JSON
       if [[ ! ${STUB_THIN_VERIFY:-} || $n -gt 1 ]]; then
         node -e 'const l=JSON.parse(require("fs").readFileSync(process.argv[1]));for(const f of l.features.filter(f=>f.milestone===process.argv[2]))f.steps.forEach((s,i)=>console.log(`| ${f.id} | ${i+1} | check | ok | yes |`))' "$L" "$m"
       fi; echo; sed -n '3,$p' "$HARNESS_RUN_DIR/progress.md"; } > "$HARNESS_SCRATCH/p.md" && mv "$HARNESS_SCRATCH/p.md" "$HARNESS_RUN_DIR/progress.md"
+    # the same rows as evidence (none in a thin round 1); passes when every feature of m still passes
+    ev=$(node -e 'const [f,m,full]=process.argv.slice(1),fs=JSON.parse(require("fs").readFileSync(f)).features.filter(x=>x.milestone===m);console.log(JSON.stringify({done:fs.every(x=>x.passes),
+      rows:full==="1"?fs.flatMap(x=>x.steps.map((s,i)=>({feature:x.id,step:i+1,ran:"check",saw:"ok",holds:true}))):[]}))' "$L" "$m" "$([[ ! ${STUB_THIN_VERIFY:-} || $n -gt 1 ]] && echo 1)")
+    entry "$m" "$n" --arg m "$m" --arg n "$n" --argjson ev "$ev" '{feature: $m, kind: "verify", outcome: (if $ev.done then "passes" else "not yet" end),
+      summary: "verify \($m) (\($n))", evidence: $ev.rows}'
     git add -A && git commit -qm "verify $m ($n)" --allow-empty && git push -q origin "$HARNESS_BRANCH"
     ok 0.1 ;;
   "# Retro")
