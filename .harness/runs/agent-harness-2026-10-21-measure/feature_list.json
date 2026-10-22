@@ -264,7 +264,7 @@
         "Both checks watched failing first; journal/decisions.md has D-H41; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E4-01", "E4-02", "E4-03", "E4-04"],
-      "passes": false },
+      "passes": true },
     { "id": "E4-06", "milestone": "E4", "kind": "docs", "model": "sonnet",
       "description": "architecture.md, README.md and evals/NEXT.md describe the journal, the rendered progress.md, the context pack and what the E4 comparison should move.",
       "steps": [
