@@ -136,6 +136,17 @@ EVCMP='import { compare as c, completeRepeats as cr } from "'$HERE'/../lib/eval.
     && JSON.stringify(cr(P, ["x", "y"])) === "[0]" && JSON.stringify(cr(P, [])) === "[]" && get(pp, "total", "pass rate").a === 1 && get(pp, "total", "pass rate").verdict === "one sample"
     && crash.a === 0 && JSON.stringify(crash.a_values) === "[1,0]" ? 0 : 1);'
 check "eval.mjs: compare verdicts" 'node --input-type=module -e "$EVCMP"'
+# a repeat that verified nothing still spent: per verified feature is Σ / Σ verified over every repeat, not a mean that
+# drops it; an empty feature list is no pass (E2 review)
+EVPV='import { compare as c } from "'$HERE'/../lib/eval.mjs";
+  const s = (cost, ver) => ({ features: { total: 1, verified: ver }, cost: { total: cost }, per_verified_feature: { cost: ver ? cost / ver : null, tokens: ver ? 1000 / ver : null },
+    tokens: { in: 1000, cache_read: 0, cache_write: 0, out: 0 } });
+  const r = c({ tasks: { x: [s(2, 1), s(2, 1), s(2, 1)] } }, { tasks: { x: [s(1, 1), s(1.1, 1), s(20, 0)] } }), get = (t, m) => r.find(x => x.task === t && x.metric === m);
+  const near = (row, v) => Math.abs(row.b - v) < 1e-9 && row.verdict === "worse";
+  const e = c({ tasks: { x: [{ features: { total: 0, verified: 0 } }] } }, { tasks: { x: [s(1, 1)] } }).find(x => x.task === "x" && x.metric === "pass rate");
+  process.exit(near(get("x", "$ per verified feature"), 11.05) && near(get("total", "$ per verified feature"), 11.05)
+    && near(get("x", "tokens per verified feature"), 1500) && near(get("total", "tokens per verified feature"), 1500) && e.a === 0 ? 0 : 1);'
+check "eval.mjs: per verified feature counts every repeat's cost (E2 review)" 'node --input-type=module -e "$EVPV"'
 
 # ---- harness eval run (E2-03): two stub tasks replayed by the committed driver (--harness HEAD), in isolation ----
 # The task repo's own config would merge through gh and post to ntfy: the eval's run.env must beat it.
@@ -144,6 +155,9 @@ ER=$T/evrepo; git init -q --bare -b main "$T/evorigin.git" && git init -q -b mai
   && printf '# evproj\nrules\n' > "$ER/CLAUDE.md" && echo spec > "$ER/SPEC.md" && git -C "$ER" add -A && git -C "$ER" commit -qm init \
   && git -C "$ER" remote add origin "$T/evorigin.git" && git -C "$ER" push -q -u origin main
 EB=$(git -C "$ER" rev-parse HEAD); mkdir -p "$T/tasks"
+# the source's later work (a branch, and a run tag on it, as real milestones leave): no replay may see it (E2 review)
+git -C "$ER" checkout -qb later && echo answer > "$ER/later.txt" && git -C "$ER" add later.txt && git -C "$ER" commit -qm "later: the answer" \
+  && git -C "$ER" tag run/src/M1 && git -C "$ER" checkout -q main; EF=$(git -C "$ER" rev-parse later)
 for t in t1 t2; do mkdir -p "$T/tasks/$t" && jq --arg r "$ER" --arg b "$EB" '.repo = $r | .base = $b' "$HERE/fixtures/eval-tasks/$t/task.json" > "$T/tasks/$t/task.json"
   echo "$T/tasks/$t/task.json"; done > "$T/set.txt"
 src_refs() { git -C "$ER" for-each-ref; git -C "$ER" status --porcelain; git -C "$T/evorigin.git" for-each-ref; }   # the source repo and its origin
@@ -167,6 +181,9 @@ check "eval run: --harness <ref> runs that ref's driver" '[[ -f $EJ && $(jq -r .
 check "eval run: nothing reaches a remote" '[[ -f $EJ ]] && ev_local && [[ $(lines "$T/gh.log") == "$GH0" && $(lines "$T/curl.log") == "$CU0" ]] \
   && [[ $(compgen -G "$T/evaltmp/*/state/*/*/run.log" | wc -l) == 2 ]] && ! cat "$T"/evaltmp/*/state/*/*/run.log | grep -q "notified:\|notification failed" \
   && (( $(cat "$T"/evaltmp/*/state/*/*/port | sort -u | wc -l) == 2 && $(cat "$T"/evaltmp/*/state/*/*/port | sort -n | head -1) >= 7900 ))'
+ev_sealed() { local c; for c in $(jq -r '.tasks[].clone' "$EJ"); do ! git -C "$c" rev-parse -q --verify refs/tags/run/src/M1 > /dev/null \
+  && ! git -C "$c" cat-file -e "$EF" 2> /dev/null || return 1; done; }
+check "eval run: a clone holds nothing of its source past base (E2 review)" '[[ -f $EJ && -n $EF ]] && ev_sealed && git -C "$ER" cat-file -e "$EF"'
 
 # ---- eval money and time (E2-04): the budget cap, the 7-day window, --repeat ----
 evrun() { HARNESS_EVAL_TMP=$T/evaltmp HARNESS_EVAL_RESULTS=$T/results HARNESS_EVAL_GH=$HERE/stub-gh.sh HARNESS_EVAL_CURL=$HERE/stub-curl.sh \
@@ -183,11 +200,27 @@ check "eval: the budget cap stops starting tasks" '(( EBR == 1 )) && [[ -n $EBD 
 mkdir -p "$T/evstate" && echo "0.9 $(( $(date +%s) + 3600 ))" > "$T/evstate/USAGE_7D"
 HARNESS_STATE=$T/evstate HARNESS_EVAL_TMP=$T/evaltmp-w HARNESS_EVAL_RESULTS=$T/results-w "$H" eval run --set "$T/set.txt" --label weekly > "$T/eval-weekly.out" 2>&1; EWR=$?
 check "eval: refuses past WEEKLY_STOP_AT" '(( EWR == 1 )) && grep -q "7-day window at 90%" "$T/eval-weekly.out" && [[ ! -e $T/results-w && ! -e $T/evaltmp-w ]]'
-evrun --label rep --repeat 2 > "$T/eval-rep.out" 2>&1; ERR=$?
+# a real run holds port 7900 (its port file in the real state root): the eval's runs keep off it (E2 review)
+mkdir -p "$T/evstate-p/proj/run" && echo 7900 > "$T/evstate-p/proj/run/port"
+HARNESS_STATE=$T/evstate-p evrun --label rep --repeat 2 > "$T/eval-rep.out" 2>&1; ERR=$?
 ERD=$(compgen -G "$T/results/*-rep" | head -1)
 ev_reps() { local t r; for t in t1 t2; do for r in r1 r2; do jq -e "all(.features_detail[]; .passes)" "$ERD/$t/$r/summary.json" > /dev/null || return 1; done; done; }
 check "eval: --repeat 2 runs each task twice" '(( ERR == 0 )) && [[ -n $ERD ]] && ev_reps && jq -e ".repeat == 2 and ([.tasks[].result] == [\"t1/r1\", \"t2/r1\", \"t1/r2\", \"t2/r2\"])
-    and ([.tasks[].repeat] == [1, 1, 2, 2]) and ([.tasks[].clone] | unique | length) == 4 and ([.tasks[].run] | unique | length) == 4" "$ERD/eval.json" > /dev/null'
+    and ([.tasks[].repeat] == [1, 1, 2, 2]) and ([.tasks[].clone] | unique | length) == 4 and ([.tasks[].run] | unique | length) == 4" "$ERD/eval.json" > /dev/null \
+  && ! cat $(jq -r ".tasks[].state + \"/port\"" "$ERD/eval.json") | grep -qx 7900'
+# refused before anything is created (E2 review): a task whose repo isn't there; a set named as a file in the cwd
+mkdir -p "$T/evnorepo/t1" && jq '.repo = "/nonexistent/evrepo"' "$T/tasks/t1/task.json" > "$T/evnorepo/t1/task.json" && echo "$T/evnorepo/t1/task.json" > "$T/set-norepo.txt"
+HARNESS_EVAL_TMP=$T/evaltmp-n HARNESS_EVAL_RESULTS=$T/results-n "$H" eval run --set "$T/set-norepo.txt" > "$T/eval-norepo.out" 2>&1; ENR=$?
+(cd "$T" && HARNESS_EVAL_TMP=$T/evaltmp-n HARNESS_EVAL_RESULTS=$T/results-n "$H" eval run --set set-norepo.txt > "$T/eval-norepo2.out" 2>&1); ENR2=$?
+check "eval: a missing repo is refused before any spend, a set file in the cwd is read (E2 review)" '(( ENR == 1 && ENR2 == 1 )) \
+  && grep -q "t1: no repo /nonexistent/evrepo; nothing started" "$T/eval-norepo.out" && cmp -s "$T/eval-norepo.out" "$T/eval-norepo2.out" && [[ ! -e $T/evaltmp-n && ! -e $T/results-n ]]'
+# an eval killed mid-task (its process group TERMed, as a closed terminal or kill does) removes its harness worktree
+(STUB_SLOW_CODING=8 HARNESS_EVAL_TMP=$T/evaltmp-i HARNESS_EVAL_RESULTS=$T/results-i HARNESS_EVAL_GH=$HERE/stub-gh.sh HARNESS_EVAL_CURL=$HERE/stub-curl.sh \
+  exec setsid "$H" eval run --set "$T/set.txt" --harness HEAD --label int > "$T/eval-int.out" 2>&1) & EIP=$!
+for _ in $(seq 150); do [[ -e $T/slow-coding ]] && break; sleep 0.2; done
+EIH=$(compgen -G "$T/evaltmp-i/*/harness" | head -1); kill -TERM -- "-$EIP" 2> /dev/null; wait "$EIP"; EIR=$?
+check "eval: an interrupted eval removes its harness worktree (E2 review)" '[[ -n $EIH ]] && (( EIR == 130 )) && [[ ! -e $EIH ]] \
+  && ! git -C "$HERE/.." worktree list | grep -qF "$T/evaltmp-i" && [[ -f $(compgen -G "$T/results-i/*-int" | head -1)/eval.json ]]'
 # compare (E2-05): the one-repeat eval against the two-repeat one (one sample), and the two-repeat one against itself
 "$H" eval compare "$ED" "$ERD" > "$T/evcmp.out" 2>&1; ECR=$?
 "$H" eval compare "$ERD" "$ERD" > "$T/evcmp2.out" 2>&1; ECR2=$?
@@ -199,7 +232,7 @@ ev_cmp() { local m; (( ECR == 0 && ECR2 == 0 )) || return 1
     grep -q "^$m: one sample (A " "$T/evcmp.out" && grep -q "^$m: within noise (A " "$T/evcmp2.out" || return 1; done; }
 check "eval compare prints the table" 'ev_cmp && grep -q "^| t1 | pass rate | pass^1 1 (1/1) | pass^2 1 (2/2) | one sample |$" "$T/evcmp.out" \
   && [[ $(grep -c "^| t[12] | " "$T/evcmp.out") == 16 ]] && grep -q "^## Totals" "$T/evcmp.out" && [[ $(grep -c "^| total | " "$T/evcmp.out") == 8 ]] \
-  && cmp -s "$T/evcmp.out" "$T/evcmp3.out" && ! "$H" eval compare "$T/results" "$ED" > /dev/null 2>&1 && grep -q "^A: 1 repeat, B: 2: pass^N" "$T/evcmp.out" \
+  && cmp -s "$T/evcmp.out" "$T/evcmp3.out" && ! "$H" eval compare "$T/results" "$ED" > /dev/null 2>&1 && grep -q "^A: 1 repeat, B: 2 repeats: pass^N" "$T/evcmp.out" \
   && grep -q "^| t2 | pass rate | pass^2 1 (2/2) | pass^2 0 (1/2) | " "$T/evcmp4.out" && grep -q "^B: t2 r2: no summary" "$T/evcmp4.out"'
 # probes (E2-06): questions from the record, one tool-less session on the next session's prompt, scored by match
 EVPQ='import { questions as q, score as s, target as tg } from "'$HERE'/../lib/eval.mjs";
@@ -237,7 +270,7 @@ ev_probe() { local wt; wt=$(jq -r '.tasks[1].worktree' "$EJ")
   && sed -n '/^--allowedTools$/{n;p}' "$T/probe-args1" | grep -qx "" && sed -n '/^--model$/{n;p}' "$T/probe-args1" | grep -qx haiku \
   && grep -qx -- "--strict-mcp-config" "$T/probe-args1" && sed -n '/^--max-budget-usd$/{n;p}' "$T/probe-args1" | grep -qx 0.5 \
   && (( EPE == 1 )) && grep -q "probes: the probe session failed" "$T/evperr.out" && cmp -s "$ED/t2/probes.json" "$T/probes-kept.json" \
-  && grep -qx "PWD=$wt" "$T/probe-args1" && [[ $(head -1 "$T/probe-prompt1") == "# Probe session" ]] && grep -qx "Q1: Which files did T2a change?" "$T/probe-prompt1"; }
+  && grep -qx "PWD=$wt" "$T/probe-args1" && grep -qx "HARNESS_EVAL=1" "$T/probe-args1" && [[ $(head -1 "$T/probe-prompt1") == "# Probe session" ]] && grep -qx "Q1: Which files did T2a change?" "$T/probe-prompt1"; }
 check "eval probes: questions derived, answers scored" 'node --input-type=module -e "$EVPQ" && ev_probe'
 # the prompt the probe sees is the one T2b's coding session got (the init output differs: verify re-ran init after it);
 # a result without its run worktree runs the probe elsewhere and says so; one without a probe prompt is refused

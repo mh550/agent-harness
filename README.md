@@ -148,8 +148,10 @@ harness eval compare <A> <B>       # pass rate, $ and tokens per verified featur
 harness eval probes <task result>  # one tool-less Haiku turn answers the handoff questions; prints score <n>/<m>
 ```
 
-Results go to `evals/results/<stamp>-<sha>-<label>/` (git-ignored); the throwaway clones and the ref's worktree live
-in `/tmp/harness-eval/<stamp>/` and are removed at the end. **Evals are real sessions and cost money** (about $28 per
+Results go to `evals/results/<stamp>-<sha>-<label>/` (git-ignored). The ref's worktree lives in
+`/tmp/harness-eval/<stamp>/harness` and is removed at the end. The throwaway clones (each sealed at its base: no tag
+or later commit of the source) and the runs' worktrees stay beside it for `eval probes`; `rm -rf
+/tmp/harness-eval/<stamp>` once you're done with them. **Evals are real sessions and cost money** (about $28 per
 eval of the default set); they are Michael's to run, the overnight run never does. The commands, in order, with the
 cost: `evals/NEXT.md`.
 

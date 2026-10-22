@@ -66,6 +66,14 @@ run_env() {   # <command…> with the eval's roots: what the runs' drivers (and 
     HARNESS_NO_RUNNER=1 HARNESS_EVAL=1 "$@"
 }
 
+# A local clone has every object of its source (so a base on any of its refs resolves) and its tags, among them the
+# source's later milestones (run/<run>/<M>): the finished answer a replayed session could `git show`. Only main = base
+# stays; the rest, refs, reflogs and the objects only they reached, goes.
+seal() {
+  git -C "$1" for-each-ref --format='delete %(refname)' | sed '\|^delete refs/heads/main$|d' | git -C "$1" update-ref --stdin \
+    && git -C "$1" reflog expire --expire=now --all && git -C "$1" gc -q --prune=now
+}
+
 unit() {   # <task.json> <repeat> → the unit's name: its result dir under $R and its dir under $E (<id>, or <id>/r<N>)
   local id; id=$(jq -r .id "$1"); (( REPEAT > 1 )) && echo "$id/r$2" || echo "$id"
 }
@@ -84,9 +92,9 @@ run_task() {   # <task.json> <repeat> → one replay; its record in $R/<unit>/ a
   o=$d/origin.git clone=$d/$project st=$E/state/$project/$run res=$R/$u
   local wt=$E/wt/$project/$run
   mkdir -p "$d" "$res"
-  # the clone reads <repo> and never writes it; dropping its origin drops every ref of the source but main = base
+  # the clone reads <repo> and never writes it; it is sealed at base (seal) before the run sees it
   if git init -q --bare -b main "$o" && git clone -q --no-checkout "$repo" "$clone" && git -C "$clone" checkout -q -B main "$base" \
-     && git -C "$clone" remote remove origin && git -C "$clone" remote add origin "$o" && git -C "$clone" push -q -u origin main; then
+     && git -C "$clone" remote remove origin && seal "$clone" && git -C "$clone" remote add origin "$o" && git -C "$clone" push -q -u origin main; then
     # the run branch carries the task's feature list already, so cmd_start takes origin/harness/<run> and the
     # driver skips the initializer; the clone itself goes back to main (cmd_start adds the run's worktree on the branch)
     mkdir -p "$clone/.harness/runs/$run"
@@ -98,7 +106,8 @@ run_task() {   # <task.json> <repeat> → one replay; its record in $R/<unit>/ a
       # the port is chosen here, not by cmd_start: there a project's BASE_PORT wins, and the ports real runs hold
       # (in the real state root) can't be seen, so eval runs keep to 7900 and up
       local port=7900; mkdir -p "$st"
-      while (echo > "/dev/tcp/127.0.0.1/$port") 2> /dev/null || grep -qsx "$port" "$E"/state/*/*/port; do port=$(( port + 1 )); done
+      while (echo > "/dev/tcp/127.0.0.1/$port") 2> /dev/null || grep -qsx "$port" "$E"/state/*/*/port "$STATE_REAL"/*/*/port; do
+        port=$(( port + 1 )); done
       echo "$port" > "$st/port"
       { safety; v=$(jq -r '.check_cmd // empty' "$tf"); [[ -n $v ]] && printf 'CHECK_CMD=%q\n' "$v"
         v=$(jq -r '.model // empty' "$tf"); [[ -n $v ]] && printf 'WORKER_MODEL=%q\n' "$v"; } > "$st/run.env"
@@ -144,8 +153,8 @@ cmd_run() {
   [[ -n $cap ]] && EVAL_BUDGET_USD=$cap
   [[ $EVAL_BUDGET_USD =~ ^[0-9]+(\.[0-9]+)?$ ]] || die "EVAL_BUDGET_USD: dollars, e.g. 10 or 2.5 (not '$EVAL_BUDGET_USD')"
   [[ $WEEKLY_STOP_AT =~ ^[0-9]+$ ]] || die "WEEKLY_STOP_AT: a percentage (not '$WEEKLY_STOP_AT')"
-  local sf=$SET tasks=() tf repo dup why rp spent stopped=""
-  [[ $SET == */* ]] || sf=$HARNESS_HOME/evals/sets/$SET.txt   # a bare name is a set under evals/sets/, a path a file
+  local sf=$SET tasks=() tf id repo base dup why rp spent stopped=""
+  [[ $SET == */* || $SET == *.txt ]] || sf=$HARNESS_HOME/evals/sets/$SET.txt   # a bare name is a set under evals/sets/, a path or *.txt a file
   [[ -f $sf ]] || die "no set '$SET' (a file, or evals/sets/<name>.txt)"
   mapfile -t tasks < <(set_tasks "$sf")
   (( ${#tasks[@]} )) || die "set '$SET' names no task"
@@ -154,10 +163,10 @@ cmd_run() {
   dup=$(for tf in "${tasks[@]}"; do jq -r .id "$tf"; done | sort | uniq -d | head -1)
   [[ -z $dup ]] || die "task '$dup' is in set '$SET' twice; nothing started"
   for tf in "${tasks[@]}"; do
-    case $(jq -r .id "$tf") in harness|state|wt|scratch|ledger) die "task id '$(jq -r .id "$tf")' is one of the eval's own dirs; nothing started" ;; esac
-    repo=$(jq -r .repo "$tf"); repo=${repo/#\~/$HOME}
-    [[ ! -d $repo ]] || git -C "$repo" cat-file -e "$(jq -r .base "$tf")^{commit}" 2> /dev/null \
-      || die "$(jq -r .id "$tf"): $repo has no commit $(jq -r .base "$tf"); nothing started"
+    read -r id repo base < <(jq -r '[.id, .repo, .base] | join(" ")' "$tf"); repo=${repo/#\~/$HOME}
+    case $id in harness|state|wt|scratch|ledger) die "task id '$id' is one of the eval's own dirs; nothing started" ;; esac
+    [[ -d $repo ]] || die "$id: no repo $repo; nothing started"
+    git -C "$repo" cat-file -e "$base^{commit}" 2> /dev/null || die "$id: $repo has no commit $base; nothing started"
   done
   git -C "$HARNESS_HOME" rev-parse -q --verify "$REF^{commit}" > /dev/null || die "no commit '$REF' in $HARNESS_HOME"
   # older drivers read neither HARNESS_CONFIG nor run.env nor HARNESS_CURL (P1-02): the safety lines wouldn't hold
@@ -172,7 +181,7 @@ cmd_run() {
   git -C "$HARNESS_HOME" worktree add -q --detach "$E/harness" "$REF" || die "can't check $REF out into $E/harness"
   # the worktree is registered in the harness repo: remove it whatever happens (INT/TERM exit, so EXIT runs)
   trap '[[ -d $E/harness ]] && git -C "$HARNESS_HOME" worktree remove --force "$E/harness"' EXIT
-  trap 'exit 130' INT TERM
+  trap 'exit 130' INT TERM; trap 'exit 129' HUP   # trapped, a hangup waits for the running task like TERM does
   harness_version "$E/harness"; SHA=$HARNESS_VERSION
   R=$(realpath -m "${HARNESS_EVAL_RESULTS:-$HARNESS_HOME/evals/results}/$STAMP-$SHA-$LABEL")
   mkdir -p "$R" "$E/state" && : > "$E/tasks.jsonl" && safety > "$E/config.sh" && write_json || die "can't write $R"
@@ -238,7 +247,7 @@ cmd_probes() {
   p=$(printf '# Probe session\n\n%s\n\n---\n\nAnswer from what is above only. One line per question: `Q<n>: <answer>`.\n\n%s\n' \
     "$(cat "$d/probe-prompt.md")" "$(jq -r '.questions | to_entries[] | "Q\(.key + 1): \(.value.q)"' "$q")")
   # no tools and nothing to allow: the answers can come only from the prompt; one turn, capped in dollars and time
-  ( cd "$dir" && timeout 10m "${HARNESS_CLAUDE:-claude}" -p "$p" --model "$model" --max-turns 1 --tools "" --allowedTools "" \
+  ( cd "$dir" && HARNESS_EVAL=1 timeout 10m "${HARNESS_CLAUDE:-claude}" -p "$p" --model "$model" --max-turns 1 --tools "" --allowedTools "" \
       --permission-mode dontAsk --strict-mcp-config --max-budget-usd 0.5 --output-format stream-json --verbose ) > "$d/probe-session.jsonl" 2>&1
   rc=$?
   node "$HARNESS_HOME/lib/metrics.mjs" final "$d/probe-session.jsonl" > "$d/probe-answers.txt" 2> /dev/null || : > "$d/probe-answers.txt"
