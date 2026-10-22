@@ -19,3 +19,4 @@
 - 2026-10-21 18:34 · held: E1 (its tag contains another milestone's unverified work, or main has changes it wasn't verified with); it merges with the next verified milestone
 - 2026-10-21 19:57 · merged main into harness/agent-harness-2026-10-21-measure
 - 2026-10-21 20:08 · E2-02 · claude-opus-5-5 · passes=true · 6 min · 12/29 passing
+- 2026-10-21 20:30 · E2-03 · claude-opus-5-5 · passes=true · 21 min · 13/29 passing
