@@ -28,3 +28,4 @@
 - 2026-10-21 22:59 · merged main into harness/agent-harness-2026-10-21-measure
 - 2026-10-21 23:11 · E2 verified and tagged run/agent-harness-2026-10-21-measure/E2 (contains unverified work of E3-01: held until that is verified)
 - 2026-10-21 23:11 · held: E1 E2 (its tag contains another milestone's unverified work, or main has changes it wasn't verified with); it merges with the next verified milestone
+- 2026-10-21 23:29 · E3-02 · claude-opus-5-5 · passes=true · 18 min · 19/29 passing
