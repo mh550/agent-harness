@@ -29,9 +29,10 @@
 #   harness gc <project> [--all-merged] [--dry-run]
 #                               delete merged harness branches and their clean worktrees, locally and on origin;
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
-#   harness eval run [--set <name|file>] [--harness <ref>] [--label <L>]
+#   harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]
 #                               replay a task set (evals/) with that harness version's driver on throwaway clones,
-#                               nothing posted or merged; results in evals/results/. Real sessions: it costs money
+#                               nothing posted or merged; results in evals/results/. Real sessions: it costs money,
+#                               so no task starts past EVAL_BUDGET_USD (default $10) or the 7-day WEEKLY_STOP_AT
 #
 # Where things live:  worktree ~/worktrees/<project>/<run-id> · branch harness/<run-id>
 #   committed run record  <worktree>/.harness/runs/<run-id>/{feature_list.json,progress.md,INBOX.md,harness-log.md,

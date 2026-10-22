@@ -147,6 +147,25 @@ check "eval run: nothing reaches a remote" '[[ -f $EJ ]] && ev_local && [[ $(lin
   && [[ $(compgen -G "$T/evaltmp/*/state/*/*/run.log" | wc -l) == 2 ]] && ! cat "$T"/evaltmp/*/state/*/*/run.log | grep -q "notified:\|notification failed" \
   && (( $(cat "$T"/evaltmp/*/state/*/*/port | sort -u | wc -l) == 2 && $(cat "$T"/evaltmp/*/state/*/*/port | sort -n | head -1) >= 7900 ))'
 
+# ---- eval money and time (E2-04): the budget cap, the 7-day window, --repeat ----
+evrun() { HARNESS_EVAL_TMP=$T/evaltmp HARNESS_EVAL_RESULTS=$T/results HARNESS_EVAL_GH=$HERE/stub-gh.sh HARNESS_EVAL_CURL=$HERE/stub-curl.sh \
+  "$H" eval run --set "$T/set.txt" --harness HEAD "$@"; }
+# a stub task spends $0.35 (coding $0.25, verify $0.10): a $0.30 cap lets t1 run and starts nothing after it
+EVAL_BUDGET_USD=0.3 evrun --label budget > "$T/eval-budget.out" 2>&1
+EBD=$(compgen -G "$T/results/*-budget" | head -1)
+check "eval: the budget cap stops starting tasks" '[[ -n $EBD ]] && grep -q "^budget: \$0.35 of \$0.3; 1 tasks not started$" "$T/eval-budget.out" \
+  && jq -e "[.tasks[].id] == [\"t1\"] and .budget.cap == 0.3 and .budget.spent == 0.35 and .budget.not_started == [\"t2\"]
+    and .budget.text == \"budget: \$0.35 of \$0.3; 1 tasks not started\"" "$EBD/eval.json" > /dev/null && [[ -s $EBD/t1/summary.json && ! -e $EBD/t2 ]]'
+# the real state root's USAGE_7D (here $HARNESS_STATE) past WEEKLY_STOP_AT (85): nothing is created, not even the tmp dir
+mkdir -p "$T/evstate" && echo "0.9 $(( $(date +%s) + 3600 ))" > "$T/evstate/USAGE_7D"
+HARNESS_STATE=$T/evstate HARNESS_EVAL_TMP=$T/evaltmp-w HARNESS_EVAL_RESULTS=$T/results-w "$H" eval run --set "$T/set.txt" --label weekly > "$T/eval-weekly.out" 2>&1; EWR=$?
+check "eval: refuses past WEEKLY_STOP_AT" '(( EWR == 1 )) && grep -q "7-day window at 90%" "$T/eval-weekly.out" && [[ ! -e $T/results-w && ! -e $T/evaltmp-w ]]'
+evrun --label rep --repeat 2 > "$T/eval-rep.out" 2>&1
+ERD=$(compgen -G "$T/results/*-rep" | head -1)
+ev_reps() { local t r; for t in t1 t2; do for r in r1 r2; do jq -e "all(.features_detail[]; .passes)" "$ERD/$t/$r/summary.json" > /dev/null || return 1; done; done; }
+check "eval: --repeat 2 runs each task twice" '[[ -n $ERD ]] && ev_reps && jq -e ".repeat == 2 and ([.tasks[].result] == [\"t1/r1\", \"t2/r1\", \"t1/r2\", \"t2/r2\"])
+    and ([.tasks[].repeat] == [1, 1, 2, 2]) and ([.tasks[].clone] | unique | length) == 4 and ([.tasks[].run] | unique | length) == 4" "$ERD/eval.json" > /dev/null'
+
 # ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
 DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";
   import { readFileSync } from "node:fs"; const dep = readFileSync("'$HERE'/fixtures/gh-deployments.json", "utf8");
