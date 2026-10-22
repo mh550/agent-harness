@@ -119,7 +119,7 @@
         "tests/run.sh check `eval run: nothing reaches a remote`: the task clones' `git remote get-url origin` paths are under the eval directory, $T/gh.log gained no line during the eval and $T/curl.log gained no post",
         "All three checks watched failing first; bash -n lib/eval.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E2-04", "milestone": "E2", "kind": "build", "model": "opus",
       "description": "The eval respects EVAL_BUDGET_USD, refuses to start past WEEKLY_STOP_AT, and `--repeat N` runs each task N times.",
       "steps": [

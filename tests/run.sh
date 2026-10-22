@@ -6,7 +6,8 @@ HERE=$(cd "$(dirname "$0")" && pwd); H=$HERE/../bin/harness F="node $HERE/../lib
 T=$(mktemp -d); echo "tmp: $T"
 unset TMUX TMUX_PANE   # inside Michael's tmux, plain `tmux` talks to his server: the suite must never
 export TMUX_TMPDIR=$T/tmux HARNESS_DESK_SESSION=h-desk-test-$$; mkdir -p "$TMUX_TMPDIR"   # a private tmux server
-trap 'tmux kill-session -t "=$HARNESS_DESK_SESSION" 2> /dev/null; [[ $TMUX_TMPDIR == "$T/tmux" ]] && tmux kill-server 2> /dev/null; [[ ${KEEP:-} ]] || rm -rf "$T"' EXIT   # the server is ours alone
+trap 'for w in "$T"/evaltmp/*/harness; do [[ -d $w ]] && git -C "$HERE/.." worktree remove --force "$w"; done 2> /dev/null   # the harness worktree of a killed eval
+  tmux kill-session -t "=$HARNESS_DESK_SESSION" 2> /dev/null; [[ $TMUX_TMPDIR == "$T/tmux" ]] && tmux kill-server 2> /dev/null; [[ ${KEEP:-} ]] || rm -rf "$T"' EXIT   # the server is ours alone
 export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/scratch HARNESS_PAUSE_POLL=1 \
   HARNESS_CLAUDE=$HERE/stub-claude.sh HARNESS_GH=$HERE/stub-gh.sh HARNESS_CURL=$HERE/stub-curl.sh STUB_DIR=$T HARNESS_LEDGER=$T/ledger \
   HARNESS_CONFIG=$T/user-config.sh HARNESS_LIMIT_SLEEP=0 HARNESS_NO_RUNNER=1 HARNESS_QUEUE_POLL=0 HARNESS_QUEUE_SETTLE=0
@@ -114,6 +115,37 @@ mkdir -p "$T/evbad/nofeat" && jq -n '{id:"nofeat",project:"p",repo:"/r",base:("a
 check "eval: every task.json validates and a bad one is rejected" 'node --input-type=module -e "$EVTK" && node "$HERE/../lib/eval.mjs" validate "$HERE/../evals/tasks" 2> /dev/null \
   && ! node "$HERE/../lib/eval.mjs" validate "$T/evbad" > "$T/evbad.out" 2>&1 && grep -q "nofeat/task.json: features: required" "$T/evbad.out" \
   && [[ -z $(grep -v "^#" "$HERE/../evals/sets/default.txt" | while read -r t; do [[ -f "$HERE/../evals/tasks/$t/task.json" ]] || echo "$t"; done) ]]'
+
+# ---- harness eval run (E2-03): two stub tasks replayed by the committed driver (--harness HEAD), in isolation ----
+# The task repo's own config would merge through gh and post to ntfy: the eval's run.env must beat it.
+ER=$T/evrepo; git init -q --bare -b main "$T/evorigin.git" && git init -q -b main "$ER" && mkdir "$ER/.harness" \
+  && printf '%s\n' 'CHECK_CMD="test ! -f BROKEN"' 'MERGE_POLICY=auto NTFY_URL=https://ntfy.example/evproj BASE_PORT=7831' > "$ER/.harness/config.sh" \
+  && printf '# evproj\nrules\n' > "$ER/CLAUDE.md" && echo spec > "$ER/SPEC.md" && git -C "$ER" add -A && git -C "$ER" commit -qm init \
+  && git -C "$ER" remote add origin "$T/evorigin.git" && git -C "$ER" push -q -u origin main
+EB=$(git -C "$ER" rev-parse HEAD); mkdir -p "$T/tasks"
+for t in t1 t2; do mkdir -p "$T/tasks/$t" && jq --arg r "$ER" --arg b "$EB" '.repo = $r | .base = $b' "$HERE/fixtures/eval-tasks/$t/task.json" > "$T/tasks/$t/task.json"
+  echo "$T/tasks/$t/task.json"; done > "$T/set.txt"
+src_refs() { git -C "$ER" for-each-ref; git -C "$ER" status --porcelain; git -C "$T/evorigin.git" for-each-ref; }   # the source repo and its origin
+lines() { cat "$1" 2> /dev/null | wc -l; }; GH0=$(lines "$T/gh.log") CU0=$(lines "$T/curl.log") SR0=$(src_refs)
+HARNESS_EVAL_TMP=$T/evaltmp HARNESS_EVAL_RESULTS=$T/results HARNESS_EVAL_GH=$HERE/stub-gh.sh HARNESS_EVAL_CURL=$HERE/stub-curl.sh \
+  "$H" eval run --set "$T/set.txt" --harness HEAD --label test > "$T/eval1.out" 2>&1
+# the short sha of HEAD, as harness_version names it (a ledger-only commit on top of main isn't a new version)
+ED=$(compgen -G "$T/results/*-test" | head -1); EJ=$ED/eval.json HS=$(git -C "$HERE/.." log -1 --format=%h -- . ":(exclude)ledger")
+ev_files() { local t; for t in t1 t2; do for f in summary.json metrics.jsonl harness-log.md feature_list.json; do [[ -s $ED/$t/$f ]] || return 1; done; done; }
+ev_local() { local c; [[ $(jq '.tasks | length' "$EJ") == 2 ]] || return 1   # each task clone's origin is a path in the eval dir
+  for c in $(jq -r '.tasks[].clone' "$EJ"); do [[ $(git -C "$c" remote get-url origin) == "$(jq -r .eval_dir "$EJ")"/* ]] || return 1; done; }
+ev_driver() { local s; jq -e --arg v "$HS" '.harness.version == $v' "$ED/t1/summary.json" > /dev/null && jq -e --arg v "$HS" '.harness.version == $v' "$ED/t2/summary.json" > /dev/null \
+  && for s in $(jq -r '.tasks[].state' "$EJ"); do grep -qF "$1/lib/check.sh" "$s/prompt-coding.md" || return 1; done; }   # the {{CHECK}} of the ref's driver
+check "eval run: two stub tasks end to end, results in place" '[[ -n $ED && $ED == *-$HS-test ]] && ev_files \
+  && jq -e "(.features_detail | length) == 1 and all(.features_detail[]; .passes)" "$ED/t1/summary.json" > /dev/null \
+  && jq -e "(.features_detail | length) == 2 and all(.features_detail[]; .passes)" "$ED/t2/summary.json" > /dev/null \
+  && jq -e ".stamp and .ref == \"HEAD\" and .sha == \"$HS\" and .label == \"test\" and ([.tasks[].id] == [\"t1\", \"t2\"]) and all(.tasks[]; .clone and .worktree)" "$EJ" > /dev/null \
+  && ! git -C "$HERE/.." worktree list | grep -q "$T/evaltmp" && [[ $(src_refs) == "$SR0" ]]'
+check "eval run: --harness <ref> runs that ref's driver" '[[ -f $EJ && $(jq -r .sha "$EJ") == "$HS" ]] && HD=$(jq -r .harness_dir "$EJ") && [[ $HD == "$T/evaltmp/"* ]] \
+  && grep -qF "$HD" "$ED/eval.log" && ev_driver "$HD"'
+check "eval run: nothing reaches a remote" '[[ -f $EJ ]] && ev_local && [[ $(lines "$T/gh.log") == "$GH0" && $(lines "$T/curl.log") == "$CU0" ]] \
+  && [[ $(compgen -G "$T/evaltmp/*/state/*/*/run.log" | wc -l) == 2 ]] && ! cat "$T"/evaltmp/*/state/*/*/run.log | grep -q "notified:\|notification failed" \
+  && (( $(cat "$T"/evaltmp/*/state/*/*/port | sort -u | wc -l) == 2 && $(cat "$T"/evaltmp/*/state/*/*/port | sort -n | head -1) >= 7900 ))'
 
 # ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
 DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";

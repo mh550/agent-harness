@@ -29,6 +29,9 @@
 #   harness gc <project> [--all-merged] [--dry-run]
 #                               delete merged harness branches and their clean worktrees, locally and on origin;
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
+#   harness eval run [--set <name|file>] [--harness <ref>] [--label <L>]
+#                               replay a task set (evals/) with that harness version's driver on throwaway clones,
+#                               nothing posted or merged; results in evals/results/. Real sessions: it costs money
 #
 # Where things live:  worktree ~/worktrees/<project>/<run-id> · branch harness/<run-id>
 #   committed run record  <worktree>/.harness/runs/<run-id>/{feature_list.json,progress.md,INBOX.md,harness-log.md,
@@ -366,5 +369,6 @@ case ${1:-help} in
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
   desk) shift; exec "$HARNESS_HOME/lib/desk.sh" "$@" ;;
-  *) sed -n '2,38p' "$0" | sed 's/^# \{0,1\}//' ;;
+  eval) shift; exec "$HARNESS_HOME/lib/eval.sh" "$@" ;;
+  *) sed -n '2,/^set -/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;   # the header, whatever its length
 esac
