@@ -4,8 +4,9 @@ A small, reusable harness for **long-running coding agents**, after Anthropic's
 ["Effective harnesses for long-running agents"](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents).
 An initializer session turns a spec into a feature list; then **one fresh Claude Code session per feature** does the
 work, test-first. A deterministic bash driver does the bookkeeping around them: it verifies each finished milestone
-independently, **merges verified milestones into `main` through their own PRs**, waits out usage limits, and records
-every run in a ledger that the next runs learn from.
+independently, **opens a PR into `main` for each verified milestone, and merges it itself only in projects that
+opt in with `MERGE_POLICY=auto`**, waits out usage limits, and records every run in a ledger that the next runs
+learn from.
 
 Zero dependencies beyond `bash`, `git` (≥ 2.38), `node`, `jq`, `tmux`, `flock`, `claude` and `gh`.
 **How it works, in depth: [`docs/architecture.md`](docs/architecture.md).** Why it is the way it is: [`journal/`](journal/README.md).
