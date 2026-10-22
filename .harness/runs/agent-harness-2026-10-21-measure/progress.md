@@ -6,6 +6,39 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-22 04:30 · verify E4
+
+Suite re-run by me: 226/226 PASS, 0 FAIL; `check.sh` green. Decision files stand in for `D-H<n>` entries per CLAUDE.md (journal/decisions.md is closed). "Watched failing first" cannot be replayed after the fact; I checked only that each named check exists, passes and its assertion matches.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| E4-01 | 1 | `head -1` and read docs/plans/2026-10-21-E4-memory.md (503 lines) | `Milestone base: 0e2cc33…`; has entry schema §1, entries.mjs API §2, driver points §3, rendered shapes, pack, legacy rule, stub changes, checks §10, decisions §13 | yes |
+| E4-01 | 2 | `git diff --stat` at E4-01 commit; suite | plan was the only non-run-record change in 8f19ad9; final suite 226/226 | yes |
+| E4-02 | 1 | `grep -n ^export lib/entries.mjs`; `node --check`; read header | one-line usage header, no deps, exports validate, minimal, renderProgress, renderArchive | yes |
+| E4-02 | 2 | tests/run.sh:349 read (ENVA), plus my own `node -e`: 401-char summary, missing outcome, outcome "done" | errors `summary: 401 characters (at most 400)`, `outcome: missing`, `outcome: "done" is not passes · not yet · parked`; valid entry gives [] ; check PASS | yes |
+| E4-02 | 3 | tests/run.sh:367 (ENRE) read; my own render of 20 entries | 15 `### ` headers, 5 archive lines linking progress-archive.md, archive has 20; verify table five-column; assertion `evidence(...)` rows "2,1"; PASS | yes |
+| E4-02 | 4 | `node --check lib/entries.mjs`; `git diff` for driver at that commit; suite | check ok; no driver change in f-commit of E4-02 per log order; RED not replayable (logged in progress); 226/226 | yes |
+| E4-03 | 1 | read `journal()` lib/driver.sh:191-215 and tests/run.sh:469 | ingest via `entries.mjs ingest`, note on missing/invalid, minimal entry from files+final; check asserts one line per session, at/session/model, no entry.json | yes |
+| E4-03 | 2 | grep prompts/coding.md, verify.md, initializer.md | each tells the session to write `entry.json` with the schema and examples | yes |
+| E4-03 | 3 | read tests/stub-claude.sh:35-99 | stub writes entry.json per session, verify with evidence rows, C first attempt dead end `left BROKEN in the tree`, STUB_BAD_ENTRY writes `{not json` | yes |
+| E4-03 | 4 | suite lines `entries: the driver appends each session's entry`, `a malformed entry is recorded as minimal and the run goes on`; read assertions (run.sh:469, 662) | both PASS; assertions match the step (sessions order, B's note, outcome/files, done) | yes |
+| E4-03 | 5 | `ls journal/decisions`; grep D-H39 | decisions/2026-10-22-journal-single-writer.md carries D-H39 (decision file per CLAUDE.md); suite 226/226 | yes |
+| E4-04 | 1 | read driver `journal()` render call (:211), prompts, stub | render after each append; prompts no longer ask for progress.md; stub does not write it | yes |
+| E4-04 | 2 | suite `progress.md is rendered from the journal` (run.sh:477 read) | PASS; headers equal journal newest first, verify M1 table, archive count, PR body | yes |
+| E4-04 | 3 | suite `a legacy run is untouched, then continued into a journal` (run.sh:682 read) | PASS; no entries.jsonl before continue, archive equals old progress.md byte for byte after | yes |
+| E4-04 | 4 | suite; decisions/2026-10-22-rendered-progress.md | PASS 226/226; D-H40 present in the decision file | yes |
+| E4-05 | 1 | read `pack` in lib/entries.mjs; `grep CONTEXT_PACK_BYTES lib/config.sh` | pack(entries,{feature,list,answers,cap}), five parts, `→ entries.jsonl:<n>`; `CONTEXT_PACK_BYTES=8192` | yes |
+| E4-05 | 2 | suite `entries.mjs: the pack keeps a feature's dead end under a flood…` (run.sh:405 read) | PASS; 200 flood entries, dead end first, answers before discoveries, cap held | yes |
+| E4-05 | 3 | driver `context()` :223; grep prompts; suite `context.md carries the earlier attempt's dead end` | written before coding/verify, committed; both prompts have `Read context.md first; the full record…`; check PASS (05-C.context.md has `left BROKEN in the tree`) | yes |
+| E4-05 | 4 | suite; decisions/2026-10-22-context-pack.md | 226/226; D-H41 present | yes |
+| E4-06 | 1 | grep docs/architecture.md | §3 lists entries.mjs (:59); §4 rows entry.json, journal, context pack, progress log (:80-83); §5 flow (:112-129); §10 CONTEXT_PACK_BYTES (:247,256); prompt assembly names context.md (:287) | yes |
+| E4-06 | 2 | read README.md:67,74 | progress.md rendered from the journal, still the phone view; sessions write entry.json; command list unchanged | yes |
+| E4-06 | 3 | read evals/NEXT.md E4 section | states orientation cost and context_peak down, probe score up, pass rate not worse; probes paste context.md | yes |
+| E4-06 | 4 | `grep -c D-H39\|40\|41` over journal/decisions.md and decisions/ | journal/decisions.md has 0 (closed per CLAUDE.md); each number is once-or-more in its decision file; suite 226/226. Literal wording unmet by design | yes |
+| E4-07 | 1 | read docs/plans/2026-10-21-E4-review.md | 12 findings with severity and resolution; Important F1, F2 fixed RED→GREEN (222/226 listed FAIL lines); Opus reviewer is recorded, not replayable | yes |
+| E4-07 | 2 | read review "Step 2" and suite `harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry` + `a legacy run is untouched…` | PASS; cmp byte-identical on merge; pr_body quotes legacy verify entry; `harness report` reads summary.json | yes |
+| E4-07 | 3 | `bash -n` on driver/eval/config/tests, `node --check lib/entries.mjs`; `bash tests/run.sh` | all clean; 226/226 checks passed | yes |
+
 ### 2026-10-22 03:58 · E4-07 · passes
 
 - **What changed:** `docs/plans/2026-10-21-E4-review.md` (12 findings, 2 Important). Fixes: `lib/entries.mjs` has one reader, `readEntries`, which gives null for any line that isn't a valid entry and keeps line numbers, so render and pack never crash on a damaged line. `ingest` adds a missing final newline before appending. A summary can't open a code fence or HTML block, and the pack's title is capped. `lib/driver.sh` `journal()` restores `entries.jsonl` and `progress-archive.md` when a session edited them (note `<id>: <file> edited by the session; restored`), and a refused coding session's minimal entry is `not yet`. `context()` commits context.md alone. `pr_body` matches `verify <m>` on a word boundary. `vcount` lost its dead progress.md fallback. `prompts/retro.md` points at the archive and entries.jsonl. Also updated: the decision file `journal-single-writer` (amended), architecture §3/§4/§7 and README.
