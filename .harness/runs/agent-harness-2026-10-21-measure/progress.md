@@ -6,6 +6,14 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 23:59 · E2-07 · passes
+
+- **What changed:** new `evals/NEXT.md` (baseline, e3, e4 commands with `EVAL_BUDGET_USD=35`; compare baseline→e3, e3→e4, baseline→e4; probes per task result; cost; "the overnight run never runs these"); README `Evals` section and a command-table row; architecture §3 (`lib/prompt.sh`, `lib/eval.sh`, `lib/eval.mjs`), §4 (results and `/tmp/harness-eval` rows), §11 point 6. Tests 201 → 201 (docs only).
+- **Cost:** 7 features × $2.50 × 1.3 + 5 tasks × $1.00 ≈ $28 per eval, ≈ $83 for three; probes ≈ $0.05 each.
+- **Verified:** `check.sh` green (305 s) on the committed tree. `bin/harness` help already named `eval run|compare|probes` (printed from the header). D-H35 already exists once in `journal/decisions.md` (E2-02), so I did not touch that closed file.
+- **Next session (E2-08):** review `git diff 7b69ed3..HEAD`. Run NEXT.md's evals only when no harness run is going.
+- **Question for Michael:** none. **Proposed change:** none.
+
 ### 2026-10-21 21:40 · E2-06 · passes
 
 - **What changed:**
