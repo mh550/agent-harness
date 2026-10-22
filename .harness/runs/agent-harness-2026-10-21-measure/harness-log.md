@@ -32,3 +32,4 @@
 - 2026-10-21 23:50 · E3-03 · claude-opus-5-5 · passes=true · 20 min · 20/29 passing
 - 2026-10-22 00:09 · E3-04 · claude-opus-5-5 · passes=true · 19 min · 21/29 passing
 - 2026-10-22 00:40 · E3-05 · claude-opus-5-5 · passes=true · 31 min · 22/29 passing
+- 2026-10-22 00:49 · E3 verified and tagged run/agent-harness-2026-10-21-measure/E3
