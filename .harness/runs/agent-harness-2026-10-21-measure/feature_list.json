@@ -282,5 +282,5 @@
         "The review confirms with commands that a legacy run record (one without entries.jsonl) is byte-identical after a driver start-up that ends at once, and that `harness report` and `pr_body` still read a v3 run's progress.md",
         "Simplification passes applied; bash -n and node --check on everything touched; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false }
+      "passes": true }
   ] }

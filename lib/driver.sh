@@ -185,18 +185,25 @@ session() {   # kind model log → runs claude headless on $STATE/prompt.md; set
 
 # <kind> <feature> <transcript> <model> <start commit> → the session's entry.json into entries.jsonl: the driver is its
 # only writer (decisions/2026-10-22-journal-single-writer). Missing or invalid: a note and a minimal entry from git and
-# the final message, whose outcome is what the list says now (the session's claim, before the driver's checks).
+# the final message, whose outcome is what the list says now (the session's claim, before the driver's checks; a
+# refused session's claim is reverted, so not yet). A session's own edits to the journal are undone first.
 # Then progress.md and progress-archive.md are rendered from the journal (decisions/2026-10-22-rendered-progress).
 journal() {
-  local kind=$1 id=$2 who=$2 outcome="not yet" name out rc; name=$(basename "$3" .jsonl)
+  local kind=$1 id=$2 who=$2 outcome="not yet" name out rc f; name=$(basename "$3" .jsonl)
   git -c core.quotePath=false diff --name-only --no-renames "$5" HEAD -- . ":!$RUN_DIR" > "$SCRATCH/entry-files"
   MET final "$3" > "$SCRATCH/entry-final" 2> /dev/null
   case $kind in
-    coding) if F passes "$LIST" "$id"; then outcome=passes
+    coding) if MET limit "$3" "$S_WALL" "$S_EXIT" > /dev/null; then :   # refused: the driver reverts its claim below
+            elif F passes "$LIST" "$id"; then outcome=passes
             elif sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' "$SCRATCH/entry-final" | grep -q .; then outcome=parked; fi ;;
     verify) who="verify $id" ;;   # a verify without its entry has no evidence rows, so it never holds: not yet
     init)   F summary "$LIST" > /dev/null 2>&1 && outcome=passes ;;
   esac
+  for f in entries.jsonl progress-archive.md; do   # committed by the WIP/restrict commit, so a diff from the start sees it
+    git diff --quiet "$5" -- "$RUN_DIR/$f" 2> /dev/null && continue
+    if git cat-file -e "$5:$RUN_DIR/$f" 2> /dev/null; then git show "$5:$RUN_DIR/$f" > "$RUN_DIR/$f"; else rm -f "$RUN_DIR/$f"; fi
+    note "$who: $f edited by the session; restored (the driver is its only writer)"
+  done
   out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$RUN_DIR" "$kind" "$id" "$name" "$4" "$outcome" "$SCRATCH/entry-files" "$SCRATCH/entry-final"); rc=$?
   (( rc == 3 )) && note "$who: entry.json $out; recorded a minimal entry"
   (( rc == 0 || rc == 3 )) || { note "$who: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
@@ -205,11 +212,10 @@ journal() {
   return 0
 }
 
-# <m> → how many verify entries the milestone has: entries.jsonl's lines (the rendered progress.md shows only the 15
-# newest in full), or on a legacy run without a journal the `### … verify <m>` headers its sessions wrote
+# <m> → how many verify entries the milestone has in entries.jsonl (the rendered progress.md shows only the 15 newest in
+# full). A run with a list always has the file by its first verify: the start-up or the initializer's append creates it
 vcount() {
-  if [[ -f $RUN_DIR/entries.jsonl ]]; then jq -cR --arg m "$1" 'fromjson? | select(.kind == "verify" and .feature == $m)' "$RUN_DIR/entries.jsonl" | wc -l
-  else local n; n=$(grep -c "^### .*verify $1\b" "$RUN_DIR/progress.md" 2> /dev/null); echo "${n:-0}"; fi
+  jq -cR --arg m "$1" 'fromjson? | objects | select(.kind == "verify" and .feature == $m)' "$RUN_DIR/entries.jsonl" 2> /dev/null | wc -l
 }
 
 # <feature or milestone> → <run>/context.md, the bounded pack of the journal the next coding or verify session reads first
@@ -222,7 +228,9 @@ context() {
     printf '# Context pack for `%s`\n\nThe harness could not build it this time; read entries.jsonl / progress-archive.md.\n' "$1" > "$RUN_DIR/context.md"
     note "context.md for $1: the pack failed ($(head -c 200 "$SCRATCH/context.err" | tr '\n' ' ')); it points at the full record"
   fi
-  commit_all "HARNESS: context pack for $1"   # committed now: a session that commits only its own files leaves no WIP behind
+  # committed now (a session that commits only its own files leaves no WIP behind), alone: anything else uncommitted
+  # stays for the session's WIP or restrict to judge (E4 review F4)
+  git add -- "$RUN_DIR/context.md" && { git diff --cached --quiet -- "$RUN_DIR/context.md" || git commit -q -m "HARNESS: context pack for $1" -- "$RUN_DIR/context.md"; }
 }
 
 run_init() {   # the project's init, then the suite (cached per code tree); both go into the next prompt
@@ -240,7 +248,8 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
   echo; echo "**Features:**"; for id in $(F ids "$LIST" "$1"); do echo "- \`$id\` · $(jq -r --arg id "$id" '.features[]|select(.id==$id)|.description' "$LIST" 2>/dev/null)"; done
   echo; echo "**Run so far:** $(F summary "$LIST") · $(MET summary "$RUN_DIR/metrics.jsonl")"
   echo; echo "**Verify entry:**"; echo
-  awk -v m="verify $1 " 'index($0, "### ") == 1 { if (on) exit; if (index($0 " ", m)) on = 1 } on' "$p" | head -60
+  # `verify M1` followed by anything but a letter, digit, _ or - (M1 never matches M10; a legacy `verify M1: …` does)
+  awk -v m="verify $1" 'index($0, "### ") == 1 { if (on) exit; i = index($0, m); if (i && substr($0, i + length(m), 1) !~ /[[:alnum:]_-]/) on = 1 } on' "$p" | head -60
   echo; echo "Run record: \`$RUN_DIR/\` (progress.md, harness-log.md, feature_list.json, metrics.jsonl)."
 }
 

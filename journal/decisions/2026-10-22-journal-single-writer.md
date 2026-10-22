@@ -28,3 +28,10 @@
   reader); an LLM summarizing the run into memory (out of the spec's scope, and not deterministic); journaling only
   sessions that finish (the refused and cut-off ones are exactly what the next attempt needs to know about); writing
   the driver's verdict into the entry (it would make an entry two writers' text again).
+- **Amended (E4-07 review, `docs/plans/2026-10-21-E4-review.md`):** the driver holds the single writer to it. A
+  session's edits to `entries.jsonl` or `progress-archive.md` are restored from its start commit before the append,
+  with the note `<id>: <file> edited by the session; restored (the driver is its only writer)`. Every reader
+  (`render`, `pack`) skips a line that isn't a valid entry (a `null`, a wrong type, a blank line) and keeps the real line
+  numbers, so a damaged line can't stop the render and freeze the progress.md that verify's evidence count reads. An
+  append onto a last line without its newline adds the newline first. A refused coding session's minimal entry is
+  `not yet`: the driver reverts its claim, so `passes` would head the phone view with a pass that didn't happen.

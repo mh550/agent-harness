@@ -407,6 +407,22 @@ check "entries.mjs: the pack keeps a feature's dead end under a flood and respec
   && node "$HERE/../lib/entries.mjs" pack "$T/pk" A > "$T/pk.md" && grep -qx -- "- Dead end (A, 01-A): t — w → entries.jsonl:1" "$T/pk.md" \
   && grep -q -- "^- x · A · passes: a2 → entries.jsonl:3$" "$T/pk.md" && grep -qx -- "- use 7900 → INBOX.md" "$T/pk.md" \
   && [[ $(node "$HERE/../lib/entries.mjs" pack "$T/jr/legacy" Z | head -1) == "# Context pack for \`Z\`" ]]'
+# a journal a session or an editor damaged (E4 review F1, F2): a null line, wrongly typed fields and a blank line are
+# skipped, never fatal; a last line without its newline doesn't swallow the next append; references stay real lines.
+# A summary can't open a code fence or an HTML block, and a long id doesn't break the cap (F5, F9)
+mkdir -p "$T/jb" && printf '%s\n' '{"feature":"A","kind":"coding","outcome":"not yet","summary":"a1","dead_ends":[{"tried":"t","why":"w"}],"at":"x","session":"01-A","model":"m"}' null \
+  '{"feature":"B","kind":"coding","outcome":"passes","summary":"b","dead_ends":"x","files":"y","discoveries":[{"text":"t","affects":"run"}]}' '' > "$T/jb/entries.jsonl" \
+  && printf '%s' '{"feature":"A","kind":"coding","outcome":"not yet","summary":"a2","at":"x","session":"02-A","model":"m"}' >> "$T/jb/entries.jsonl" \
+  && echo '{"features":[{"id":"A","milestone":"M1","steps":["s"]}]}' > "$T/jb/feature_list.json" && printf 'status: run\n## Answers\n' > "$T/jb/INBOX.md" \
+  && echo '{"feature":"A","kind":"coding","outcome":"passes","summary":"a3"}' > "$T/jb/entry.json" && printf 'a3 done\n' > "$T/jb-final"
+ENGD='import { renderEntry as r, pack } from "'$HERE'/../lib/entries.mjs"; const e = s => r({ feature: "A", kind: "coding", outcome: "passes", summary: s });
+  process.exit(e("```js").includes("\n\\```js\n") && e("~~~").includes("\n\\~~~\n") && e("<!-- hide").includes("\n\\<!-- hide\n") && e("<div>").includes("\n\\<div>\n")
+    && Buffer.byteLength(pack([], { feature: "X".repeat(2000), cap: 1024 })) <= 1024 ? 0 : 1);'
+check "entries.mjs: a damaged journal line is skipped, never fused or fatal" 'node --input-type=module -e "$ENGD" \
+  && node "$HERE/../lib/entries.mjs" render "$T/jb" && [[ $(grep -c "^### " "$T/jb/progress.md") == 2 ]] \
+  && node "$HERE/../lib/entries.mjs" pack "$T/jb" A > "$T/jb.md" && grep -qx -- "- Dead end (A, 01-A): t — w → entries.jsonl:1" "$T/jb.md" && grep -q -- "a2 → entries.jsonl:5$" "$T/jb.md" \
+  && node "$HERE/../lib/entries.mjs" ingest "$T/jb" coding A 03-A m passes /dev/null "$T/jb-final" && [[ $(wc -l < "$T/jb/entries.jsonl") == 6 ]] \
+  && node "$HERE/../lib/entries.mjs" pack "$T/jb" A | grep -q -- "a3 → entries.jsonl:6$" && node "$HERE/../lib/entries.mjs" pack "$T/jb" A | grep -q -- "a2 → entries.jsonl:5$"'
 git init -q -b main "$T/vj" && echo '{"framework":"nextjs"}' > "$T/vj/vercel.json" && "$H" init "$T/vj" > "$T/init-vj.out" 2>&1 && "$H" init "$T/vj" > "$T/init-vj2.out" 2>&1
 check "init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept" 'jq -e ".framework == \"nextjs\" and .git.deploymentEnabled[\"harness/**\"] == false" "$T/vj/vercel.json" > /dev/null \
   && grep -q "added the deploy guard to vercel.json" "$T/init-vj.out" && grep -q "keep    vercel.json" "$T/init-vj2.out" && ! grep -q "added the deploy guard" "$T/init-vj2.out"'
@@ -623,6 +639,8 @@ check "refused verify: deferred, then verified, then merged" 'hlog vlimit | grep
 STUB_PASS_THEN_LIMIT=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" claim --spec SPEC.md --foreground > "$T/run12.out" 2>&1
 cp "$T/base-config.sh" "$T/user-config.sh"
 check "a limit-cut session's passes is reverted, A retried" 'grep -q "A attempt 2" "$T/scratch/proj/claim/sessions.log" && grep -qx "HARNESS: usage limit" <<< "$(git -C "$T/wt/proj/claim" log --format=%s -- .harness/runs/claim/feature_list.json)"'
+check "a refused session's minimal entry is not yet, not its reverted claim (E4 review F3)" 'jq -se "map(select(.feature == \"A\")) | .[0].outcome == \"not yet\" and .[0].minimal == \"missing\" and .[-1].outcome == \"passes\"" \
+  "$T/wt/proj/claim/.harness/runs/claim/entries.jsonl" > /dev/null'
 check "a proposed merge: ready to merge, click = the PR, default priority" 'Bp=$(curl_with "[claim] M1 verified · review:"); U=$(grep -o "https://example.test/pr/[0-9]*" <<< "$Bp" | head -1) \
   && [[ -n $U ]] && grep -qx "Title: \[claim\] M1 ready to merge" <<< "$Bp" && grep -qx "Click: $U" <<< "$Bp" && ! grep -q "^Priority:" <<< "$Bp"'
 
@@ -636,6 +654,8 @@ check "default MERGE_POLICY proposes a verified milestone, never merges it" 'hlo
 STUB_VERIFY_EDITS=1 STUB_RETRO_EDITS=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" meddle --spec SPEC.md --foreground > "$T/run13.out" 2>&1
 check "verifier code edits reverted, never merged" 'hlog meddle | grep -q "reverted code edits the verifier may not make" && ! git -C "$T/origin.git" show main:hack-M1.txt > /dev/null 2>&1 && ! git -C "$T/origin.git" show main:CLAUDE.md | grep -q edited'
 check "retro edits reverted"              'hlog meddle | grep -q "retro: reverted" && [[ ! -f $T/wt/proj/meddle/retro-hack.txt ]]'
+check "a session's edits to the journal are restored (E4 review F1)" 'hlog meddle | grep -q " · verify M1: entries.jsonl edited by the session; restored (the driver is its only writer)$" \
+  && ! grep -qx null "$T/wt/proj/meddle/.harness/runs/meddle/entries.jsonl" && hlog meddle | grep -q "M1 verified and tagged"'
 
 # ---- run 13b: B's entry.json isn't JSON: the driver records a minimal entry from git and B's final message (E4-03) ----
 STUB_BAD_ENTRY=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" badentry --spec SPEC.md --foreground > "$T/run13b.out" 2>&1
@@ -669,6 +689,20 @@ check "a legacy run is untouched, then continued into a journal" '[[ $LJ0 == no 
 check "v2 tags don't merge on resume"     'hlog legacy | grep -q "verified by harness v2" && ! on_main run/legacy/M1 && [[ -f $T/prs/branch-harness_legacy ]]'
 "$H" merge legacy > "$T/run14c.out" 2>&1
 check "harness merge merges v2 tags, closes the v2 PR" 'on_main run/legacy/M2 && [[ ! -f $T/prs/branch-harness_legacy ]]'
+
+# ---- run 14d: `harness merge` on a legacy record (no journal, plan §14 a): it stays byte for byte; its PR quotes its own verify entry ----
+echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lgm --spec SPEC.md --foreground > "$T/run14d.out" 2>&1
+echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+MW=$T/wt/proj/lgm MR=$T/wt/proj/lgm/.harness/runs/lgm
+git -C "$MW" rm -q --ignore-unmatch "$MR/entries.jsonl" "$MR/progress-archive.md"
+printf '# progress\n\n### 2026-10-20 11:00 · verify M2\n\n| Feature | Step | Ran | Saw | Holds |\n|---|---|---|---|---|\n| C | 1 | check | legacy-M2-row | yes |\n\n### 2026-10-20 10:00 · verify M1\n\nold\n' > "$MR/progress.md"
+git -C "$MW" add -A && git -C "$MW" commit -qm "a pre-E4 record" && git -C "$MW" push -q origin harness/lgm
+cp "$MR/progress.md" "$T/lgm-progress.md"
+"$H" merge lgm > "$T/run14e.out" 2>&1
+check "harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry" 'cmp -s "$MR/progress.md" "$T/lgm-progress.md" && [[ ! -e $MR/entries.jsonl && ! -e $MR/progress-archive.md ]] \
+  && ! git -C "$T/origin.git" cat-file -e harness/lgm:.harness/runs/lgm/entries.jsonl 2> /dev/null && on_main run/lgm/M2 \
+  && grep -q "^Milestone \*\*M2\*\* of harness run .lgm." "$HARNESS_STATE/proj/lgm/pr-body.md" && grep -qx "| C | 1 | check | legacy-M2-row | yes |" "$HARNESS_STATE/proj/lgm/pr-body.md"'
 
 # ---- run 15: a resumed run reloads its configuration after merging main (here: a new POLICY) ----
 STUB_PHONE_STOP=1 "$H" start "$T/proj" flip --spec SPEC.md --foreground > "$T/run15.out" 2>&1

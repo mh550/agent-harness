@@ -6,6 +6,15 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-22 03:58 · E4-07 · passes
+
+- **What changed:** `docs/plans/2026-10-21-E4-review.md` (12 findings, 2 Important). Fixes: `lib/entries.mjs` has one reader, `readEntries`, which gives null for any line that isn't a valid entry and keeps line numbers, so render and pack never crash on a damaged line. `ingest` adds a missing final newline before appending. A summary can't open a code fence or HTML block, and the pack's title is capped. `lib/driver.sh` `journal()` restores `entries.jsonl` and `progress-archive.md` when a session edited them (note `<id>: <file> edited by the session; restored`), and a refused coding session's minimal entry is `not yet`. `context()` commits context.md alone. `pr_body` matches `verify <m>` on a word boundary. `vcount` lost its dead progress.md fallback. `prompts/retro.md` points at the archive and entries.jsonl. Also updated: the decision file `journal-single-writer` (amended), architecture §3/§4/§7 and README.
+- **Tests 222 → 226:** `entries.mjs: a damaged journal line is skipped, never fused or fatal`, `a refused session's minimal entry is not yet…`, `a session's edits to the journal are restored`, `harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry` (new run `lgm`). RED 222/226 (the last one under a temporary mutation), then 226/226. `check.sh` green in 421 s.
+- **Step 2 by command** (scratch `step2/legacy.sh`): `harness merge` on a legacy record leaves progress.md byte-identical with no entries.jsonl; a `status: stop` continue leaves progress.md byte-identical (the journal starts, per plan §14); `pr_body` quotes the legacy verify M2 entry; `harness report` works (it reads summary.json).
+- **Proposed changes:** (F10) verify's evidence count should count distinct steps from the newest verify entry and refuse a hold on any `holds: false` row; this predates E4 and is Michael's call. (F8) `eval run` should build the probe pack with the run's own `CONTEXT_PACK_BYTES` if a project ever sets it.
+- **Not covered:** `pr_body` reading the archive past 15 entries; the stale-entry.json and append-failure paths (by hand only).
+- **Questions:** none.
+
 ### 2026-10-22 09:00 · E4-06 · passes
 
 - **What changed:** docs only. `docs/architecture.md`: §3 lists `lib/entries.mjs` (and the suite count is 222); §4 has rows for entry.json, entries.jsonl and context.md; §5's flow shows context.md before coding and verify and the ingest/render after each session; §10 lists `CONTEXT_PACK_BYTES` and the prompt-assembly paragraph names context.md. `README.md` steering: progress.md is rendered from the journal and is still the phone view; sessions write entry.json; context.md read first. `evals/NEXT.md`: what the E4 comparison should show (orientation and context peak down, probe score up, pass rate not worse) and that probes paste the pack.

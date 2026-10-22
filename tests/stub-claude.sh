@@ -103,7 +103,7 @@ JSON
     m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "verify-$m")
     echo "verify $m $n" >> "$HARNESS_SCRATCH/sessions.log"
     if [[ ${STUB_VERIFY_LIMIT:-} && $m == M1 && $n == 1 ]]; then cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; fi   # refused
-    if [[ ${STUB_VERIFY_EDITS:-} && $n == 1 ]]; then echo hack > "hack-$m.txt"; echo "edited" >> CLAUDE.md; fi   # a verifier "fixing" code
+    if [[ ${STUB_VERIFY_EDITS:-} && $n == 1 ]]; then echo hack > "hack-$m.txt"; echo "edited" >> CLAUDE.md; echo null >> "$HARNESS_RUN_DIR/entries.jsonl"; fi   # a verifier "fixing" code and the journal
     [[ $m == M1 && ( $n == 1 || ${STUB_STRICT_VERIFIER:-} ) && ! ${STUB_LENIENT:-} ]] && set_passes A false   # catches a false pass
     # one evidence row per step of every feature of m (none in a thin round 1); passes when every feature of m still passes
     ev=$(node -e 'const [f,m,full]=process.argv.slice(1),fs=JSON.parse(require("fs").readFileSync(f)).features.filter(x=>x.milestone===m);console.log(JSON.stringify({done:fs.every(x=>x.passes),

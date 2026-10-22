@@ -70,16 +70,16 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `skills/harness-answer/SKILL.md` | ~45 | The answer desk's instructions for an interactive session Michael opens (§17); installed by a symlink into `~/.claude/skills/` |
 | `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
 | `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*) and `parts/rules.md` (the line naming `CLAUDE.md`) |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 222 checks |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 226 checks |
 
 ## 4. Where state lives
 
 | What | Path | Written by | Read by | Committed? |
 |---|---|---|---|---|
 | Feature list | `<wt>/.harness/runs/<run>/feature_list.json` | initializer; sessions (own `passes` only); verifier (un-pass only); driver (repair, un-pass) | everyone | yes, run branch |
-| Session entry | `<wt>/entry.json` (repo root, transient) | each session, once, at the end | driver (`entries.mjs ingest`), which validates, stamps `at`/`session`/`model`, appends to `entries.jsonl` and deletes it; a missing or invalid one becomes a minimal entry built from git, with a note | no (removed on ingest) |
+| Session entry | `…/entry.json` (the run directory, transient) | each session, once, at the end | driver (`entries.mjs ingest`), which validates, stamps `at`/`session`/`model`, appends to `entries.jsonl` and deletes it; a missing or invalid one becomes a minimal entry built from git, with a note | no (removed on ingest) |
 | Journal | `…/entries.jsonl` (one line per session: feature, outcome, what changed, evidence, dead ends, discoveries) | driver only (`ingest`) | `render`, `pack`, retro, evals | yes |
-| Context pack | `…/context.md` (at most `CONTEXT_PACK_BYTES`; five parts in priority order: Michael's answers, this feature's earlier attempts and dead ends, what it builds on, discoveries, recent entries; each item ends `→ entries.jsonl:<line>`); a copy in `logs/*.context.md` | driver (`entries.mjs pack`) before every coding and verify session, committed `HARNESS: context pack for <id>` | the session, first (prompts say `Read context.md first`); `eval probes` | yes |
+| Context pack | `…/context.md` (at most `CONTEXT_PACK_BYTES`; five parts in priority order: this feature's earlier attempts, dead ends, failed verify rows and questions; Michael's answers; discoveries that name it, its milestone or the run; the latest entry of each feature in its `after`; the last 3 entries; each item ends `→ entries.jsonl:<line>`); a copy in `logs/*.context.md` | driver (`entries.mjs pack`) before every coding and verify session, committed `HARNESS: context pack for <id>` | the session, first (prompts say `Read context.md first`); `eval probes` | yes |
 | Progress log | `…/progress.md` (newest first: 15 in full, then one line each) and `…/progress-archive.md` (every entry in full; a continued legacy run's old progress.md at its end) | driver (`entries.mjs render` after every journal append, decisions/2026-10-22-rendered-progress); a legacy run's sessions until it is continued | sessions, Michael (phone), retro, PR bodies (the archive), verify's `F evidence` | yes |
 | Steering | `…/INBOX.md` (`status: run/pause/stop`, `## Answers`) | Michael (GitHub app), `harness answer` via the driver | driver, sessions | yes |
 | Brief | `…/brief.md` | driver, from `--brief` at start/continue | every prompt | yes |
@@ -185,6 +185,7 @@ harness start ─► worktree + branch ─► driver:
 | Timeout | `SESSION_TIMEOUT` (exit 124) | counts as a real attempt (the feature is too big) | `metrics.mjs` |
 | Verify | milestone complete | independent session; must write a **new** entry with ≥ one row per step, else one re-run on `VERIFY_ESCALATE_MODEL`, else not verified ("needs Michael"); refused by a limit → deferred, never "holds"; suite must be green on the verified tree; a step fails → one more attempt, then "needs Michael" (`MAX_VERIFY_ROUNDS`) | `verify()`, `verify_ready()` |
 | Read-only sessions | a verify session changes code, a retro changes anything | reverted by a new commit (`restrict`), logged | `restrict()` |
+| Journal writer | a session edits `entries.jsonl` or `progress-archive.md` | restored from the session's start commit before its entry is appended, note `<id>: <file> edited by the session; restored`; readers skip any line that isn't a valid entry and keep line numbers | `journal()`, `entries.mjs readEntries` |
 | Merge order | a later milestone is verified before an earlier one | not merged until the earlier one is (its tag contains the earlier commits) | `merge_milestones` |
 | Tainted tag | a milestone's tag contains commits of features in milestones not yet verified (possible with `after`) | held; it is merged by the next verified milestone's merge, which contains it | `tainted-<m>`, `merge_milestones` |
 | Verified tree | the merge of the tag into `main` wouldn't produce exactly the tag's tree (main has content it wasn't verified with) | held (the next milestone's verify merges main in first); conflict → "needs Michael" | `merge_one` |
