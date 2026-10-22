@@ -26,3 +26,4 @@
 - 2026-10-21 21:42 · E2-07 · claude-sonnet-5-5 · passes=true · 6 min · 17/29 passing
 - 2026-10-21 22:59 · E2-08 · claude-opus-5-5 · passes=true · 72 min · 18/29 passing
 - 2026-10-21 22:59 · merged main into harness/agent-harness-2026-10-21-measure
+- 2026-10-21 23:11 · E2 verified and tagged run/agent-harness-2026-10-21-measure/E2 (contains unverified work of E3-01: held until that is verified)
