@@ -214,7 +214,7 @@
         "bash -n and node --check on everything touched; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E3-01", "E3-02", "E3-03", "E3-04"],
-      "passes": false },
+      "passes": true },
 
     { "id": "E4-01", "milestone": "E4", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-21-E4-memory.md fixes the entry schema, the driver's single-writer flow, the rendering of progress.md, the context pack and the legacy rule.",

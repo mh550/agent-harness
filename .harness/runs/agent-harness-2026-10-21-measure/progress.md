@@ -6,6 +6,15 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-22 00:40 · E3-05 · passes
+
+- **What changed:** an Opus review of `E3.diff` (29b3d67..HEAD) found no Critical or Important issues and ten Minor ones, recorded in `docs/plans/2026-10-21-E3-review.md`. Fixes: the brief is pasted as written (`render.mjs --raw` now covers only the next file, so a `{{X}}` in a brief no longer fills session values into the shared prefix); sections are one blank line apart; `clock` is simpler; the initializer's wording on where the brief is; architecture §3 row and §10 **Prompt assembly** rewritten as the numbered order; README steering gets **What a session reads**. The prefix, clock and init-output checks are tightened. `decisions/2026-10-21-static-first-prompts` amended.
+- **Tests 211 → 213:** `render.mjs: --raw applies to the next file only` and `a brief is pasted as written: its {{X}} isn't filled` are new.
+- **Verified:** one RED run with three temporary mutations (`{{CLOCK}}` in parts/run.md, ` timeout` dropped, `tail -n 5`) went 207/213 with exactly the six expected FAIL lines. The first green run failed the reviewer's `grep -qx 62` (off by one: the tail starts at 63), so the check now compares with `init.out`'s tail. By hand on a kept run: tail 40 passes, 5 and 39 fail. After: `check.sh` green in 325 s, 213/213.
+- **D-H36/37/38:** each is the title of exactly one file in `journal/decisions/`; `journal/decisions.md` is closed at D-H34 (CLAUDE.md). **Proposed change:** E3-05 step 3 should say `journal/decisions/`, not `journal/decisions.md`.
+- **Proposed change (F4, again):** a probe that falls back outside the worktree sees no CLAUDE.md, so it isn't comparable with a pre-E3 baseline. `eval run` should save CLAUDE.md into the result, `probes` should paste it in that fallback, and `compare` should print probe notes.
+- **Next:** E3 is ready for verify; E4 comes next.
+
 ### 2026-10-22 00:15 · E3-04 · passes
 
 - **What changed:** `lib/driver.sh` gains `clock <tail>` (and `T0`, so `DEADLINE = T0 + HOURS*3600`); coding and verify prompts get `HARNESS_CLOCK`, placed by a `{{CLOCK}}` line after the id lines of *This session* in `prompts/coding.md`/`verify.md`: `Clock: 2026-10-21 23:58 · run 0h00m of 8h, ends 07:58 · this session: $20 budget, 250 turns, 100m timeout · attempt 2 of 2` (verify: `verify round 2 of 2`). Initializer and retro get none. `lib/prompt.sh` run as a command (eval probes) writes `Clock: <now> · outside a run (no deadline, budget or attempt)` rather than a blank line. Decision: clock half appended to `decisions/2026-10-21-clock-and-bounded-init-output` (D-H38); architecture §10 names the line.
