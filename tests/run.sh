@@ -403,11 +403,13 @@ check "metrics: wall time and roles"      'jq -e "select(.kind==\"coding\") | .w
 check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0)" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'
 # the journal (E4-03): one line per session in session order, stamped by the driver, and no entry.json left behind;
-# C's first attempt (it left the suite red) carries its dead end
+# C's first attempt (it left the suite red) carries its dead end; the tree a milestone is tagged (and merged) with has its verify's line
 check "entries: the driver appends each session's entry" '[[ $(jq -r .feature "$RD/entries.jsonl" 2> /dev/null | paste -sd" ") == "init A B M1 A M1 C C M2" ]] \
   && [[ $(jq -r .session "$RD/entries.jsonl" | sed "s/^[0-9]\{6\}-verify-/verify-/" | paste -sd" ") == "00-init 01-A 02-B verify-M1 03-A verify-M1 04-C 05-C verify-M2" ]] \
   && jq -se "all(.at | test(\"^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}$\")) and all(.model | startswith(\"claude-\")) and all(has(\"minimal\") | not) \
-    and (map(select(.session == \"04-C\"))[0].dead_ends[0].tried == \"left BROKEN in the tree\")" "$RD/entries.jsonl" > /dev/null && [[ ! -e $RD/entry.json ]]'
+    and (map(select(.session == \"04-C\"))[0].dead_ends[0].tried == \"left BROKEN in the tree\")" "$RD/entries.jsonl" > /dev/null && [[ ! -e $RD/entry.json ]] \
+  && ! git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo/entry.json 2> /dev/null \
+  && [[ $(git -C "$T/origin.git" show run/demo/M2:.harness/runs/demo/entries.jsonl 2> /dev/null | tail -1 | jq -r .feature) == M2 ]]'
 check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && grep -q "ended: done" <<< "$("$H" status demo)"'
 check "summary, report and retro written" '[[ $(jq .features.merged "$RD/summary.json") == 3 ]] && grep -q "per passing feature" "$RD/report.md" && grep -q "Stub retro" "$RD/retro.md"'
 check "summary: tokens, per verified feature, first-attempt rate, rework" 'jq -e ".tokens.in > 0 and .per_verified_feature.cost > 0 and .rework == [\"A\", \"C\"] and .first_attempt_pass_rate == 0.33 and .verify_fail_rate > 0" "$RD/summary.json" > /dev/null'
@@ -578,7 +580,8 @@ check "retro edits reverted"              'hlog meddle | grep -q "retro: reverte
 STUB_BAD_ENTRY=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" badentry --spec SPEC.md --foreground > "$T/run13b.out" 2>&1
 check "a malformed entry is recorded as minimal and the run goes on" 'hlog badentry | grep -q " · B: entry.json invalid (not JSON: .*); recorded a minimal entry$" \
   && jq -se "map(select(.feature == \"B\"))[0] | .outcome == \"passes\" and any(.files[]; . == \"B-badentry.txt\") and all(.files[]; startswith(\".harness\") | not) and .summary == \"done\" and (.minimal | startswith(\"invalid: not JSON\"))" \
-    "$T/wt/proj/badentry/.harness/runs/badentry/entries.jsonl" > /dev/null && grep -q "^done" "$HARNESS_STATE/proj/badentry/ended"'
+    "$T/wt/proj/badentry/.harness/runs/badentry/entries.jsonl" > /dev/null && [[ ! -e $T/wt/proj/badentry/.harness/runs/badentry/entry.json ]] \
+  && grep -q "^done" "$HARNESS_STATE/proj/badentry/ended"'
 
 # ---- run 14: v2-style tags don't merge on a resume; `harness merge` merges them ----
 echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"

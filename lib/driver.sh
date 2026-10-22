@@ -171,6 +171,8 @@ clock() {
 
 session() {   # kind model log → runs claude headless on $STATE/prompt.md; sets S_EXIT and S_WALL
   local settings=() t0; t0=$(date +%s)
+  # an entry.json no ingest took (the driver died after its session) would pass for this session's own
+  [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
   cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
   [[ -f $AGENT_SETTINGS ]] && settings=(--settings "$WT/$AGENT_SETTINGS")
   timeout "$SESSION_TIMEOUT" "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" \
@@ -185,7 +187,7 @@ session() {   # kind model log → runs claude headless on $STATE/prompt.md; set
 # the final message, whose outcome is what the list says now (the session's claim, before the driver's checks).
 journal() {
   local kind=$1 id=$2 who=$2 outcome="not yet" name out rc; name=$(basename "$3" .jsonl)
-  git diff --name-only --no-renames "$5" HEAD -- . ":!$RUN_DIR" > "$SCRATCH/entry-files"
+  git -c core.quotePath=false diff --name-only --no-renames "$5" HEAD -- . ":!$RUN_DIR" > "$SCRATCH/entry-files"
   MET final "$3" > "$SCRATCH/entry-final" 2> /dev/null
   case $kind in
     coding) if F passes "$LIST" "$id"; then outcome=passes
@@ -299,6 +301,7 @@ verify() {
     reverted=$(restrict "$vstart" record verify | paste -sd' ')
     [[ -n $reverted ]] && note "verify $m: reverted code edits the verifier may not make: $reverted"
     journal verify "$m" "$vlog" "$(F model "$model")" "$vstart"   # before the limit branch: a refused verify is journaled too
+    commit_all "HARNESS: journal verify $m"   # the tree tagged and merged below has its line, and no entry.json
     if why=$(MET limit "$vlog" "$S_WALL" "$S_EXIT"); then   # refused: no verdict, and no "holds" by default
       cp "$STATE/before.json" "$LIST"; node -e 'const f=process.argv[1],fs=require("fs");fs.writeFileSync(f,JSON.stringify(JSON.parse(fs.readFileSync(f)),null,2)+"\n")' "$LIST"
       MET append "$vlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" false "$S_WALL" "$S_EXIT" true verify

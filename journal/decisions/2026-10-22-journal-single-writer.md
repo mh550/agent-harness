@@ -19,8 +19,11 @@
   journal is the complete record. An entry's `outcome` is the session's claim (a minimal entry's: what the list says
   when the session ends, or `parked` on a `PARKED:` line); the driver's verdicts (list restored, un-passed on a red
   suite, given back after a limit) stay notes in `harness-log.md`. If the append itself fails, `entry.json` moves to
-  the scratch directory so the next session's ingest can't take it for its own. No extra commit: the next
-  `HARNESS: …` commit records the deletion and the appended line. Until E4-04, sessions also still write progress.md.
+  the scratch directory so the next session's ingest can't take it for its own. The next `HARNESS: …` commit
+  records the deletion and the appended line; verify commits at once (`HARNESS: journal verify <m>`), because a
+  milestone that holds is tagged, and merged, from the tree before its `HARNESS: <m> verified` commit. An
+  `entry.json` still there when a session starts (the driver died before ingesting it) is moved to the scratch
+  directory with a note, so it can't pass for the new session's own. Until E4-04, sessions also still write progress.md.
 - **Rejected:** sessions appending to `entries.jsonl` themselves (two writers, and one malformed line breaks every
   reader); an LLM summarizing the run into memory (out of the spec's scope, and not deterministic); journaling only
   sessions that finish (the refused and cut-off ones are exactly what the next attempt needs to know about); writing
