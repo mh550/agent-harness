@@ -283,12 +283,12 @@ ev_probe() { local wt; wt=$(jq -r '.tasks[1].worktree' "$EJ")
   && (( EPE == 1 )) && grep -q "probes: the probe session failed.*session limit" "$T/evperr.out" && cmp -s "$ED/t2/probes.json" "$T/probes-kept.json" \
   && grep -qx "PWD=$wt" "$T/probe-args1" && grep -qx "HARNESS_EVAL=1" "$T/probe-args1" && [[ $(head -1 "$T/probe-prompt1") == "# Probe session" ]] && grep -qx "Q1: Which files did T2a change?" "$T/probe-prompt1"; }
 check "eval probes: questions derived, answers scored" 'node --input-type=module -e "$EVPQ" && ev_probe'
-# the prompt the probe sees is the one T2b's coding session got (the init output differs: verify re-ran init after it);
+# the prompt the probe sees is the one T2b's coding session got (the init output differs: verify re-ran init after it; the clock too);
 # a result without its run worktree runs the probe elsewhere and says so; one without a probe prompt is refused
 cp -r "$ED" "$T/evgone" && jq '.tasks[].worktree = "/nonexistent"' "$ED/eval.json" > "$T/evgone/eval.json"
 mkdir -p "$T/ptmp"; TMPDIR=$T/ptmp "$H" eval probes "$T/evgone/t2" > "$T/evgone.out" 2>&1; EPG=$?
 cp -r "$ED" "$T/evnop" && rm "$T/evnop/t2/probe-prompt.md"; "$H" eval probes "$T/evnop/t2" > "$T/evnop.out" 2>&1; EPN=$?
-noinit() { sed '/^## Init output/,/^---$/d' "$1"; }
+noinit() { sed '/^Clock: /d; /^## Init output/,/^---$/d' "$1"; }   # the clock and init output are the session's own
 check "eval probes: the probe prompt is the driver's coding prompt" '[[ -s $ED/t2/probe-prompt.md ]] && [[ $(head -1 "$ED/t2/probe-prompt.md") == "# Coding session" ]] && grep -qx "Feature: \`T2b\`" "$ED/t2/probe-prompt.md" \
   && cmp -s <(noinit "$ED/t2/probe-prompt.md") <(noinit "$(jq -r ".tasks[1].state" "$EJ")/prompt-coding.md") && cmp -s <(sed -n "3,$(( $(awk 1 "$ED/t2/probe-prompt.md" | wc -l) + 2 ))p" "$T/probe-prompt1") <(awk 1 "$ED/t2/probe-prompt.md") \
   && (( EPG == 0 )) && grep -q "probes: run worktree gone; CLAUDE.md not auto-loaded" "$T/evgone.out" && jq -e ".note | test(\"worktree gone\")" "$T/evgone/t2/probes.json" > /dev/null && [[ -z $(ls -A "$T/ptmp") ]] \
@@ -357,6 +357,10 @@ CB=$(cmp "$PA" "$PB" 2> /dev/null | sed -n 's/.* differ: \(byte\|char\) \([0-9]*
 check "two coding prompts share a byte-identical prefix that includes the policy" '[[ -s $PA && -s $PB && -n $CB && -n $(off "Policy: build-only" "$PA") ]] \
   && (( CB - 1 > $(off "Policy: build-only" "$PA") && CB - 1 > $(off "Policy: build-only" "$PB") )) \
   && (( $(off "Policy: build-only" "$PA") < $(off "only A–C" "$PA") && $(off "only A–C" "$PA") < $(off "# This session" "$PA") ))'
+# the clock line: time, deadline, budget, turns, attempt or verify round (E3-04); C's later prompt is its second attempt
+PC=$(ls "$HARNESS_STATE"/proj/demo/logs/*-C.prompt.md 2> /dev/null | tail -1)
+check "the prompt says the time, the budget and the attempt" '[[ -s $PC ]] && grep -q "attempt 2 of 2" "$PC" && grep -qF "\$20 budget" "$PC" && grep -q "250 turns" "$PC" \
+  && grep -q "ends [0-9][0-9]:[0-9][0-9]" "$PC" && [[ $(grep -l "verify round 2 of 2" "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.prompt.md 2> /dev/null | wc -l) == 1 ]]'
 check "metrics: wall time and roles"      'jq -e "select(.kind==\"coding\") | .wall_s != null and .role == \"build\"" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0)" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'

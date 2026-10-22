@@ -40,6 +40,7 @@ Final message: at most 80 words.
 
 Milestone: {{MILESTONE}}
 Features: {{FEATURES}}
+{{CLOCK}}
 
 ## Init output
 

@@ -47,7 +47,7 @@ load_config() {
 }
 load_config
 echo "$MAX_ATTEMPTS" > "$STATE/max-attempts"
-DEADLINE=$(( $(date +%s) + HOURS * 3600 )); (( DEADLINE_AT > 0 && DEADLINE_AT < DEADLINE )) && DEADLINE=$DEADLINE_AT
+T0=$(date +%s); DEADLINE=$(( T0 + HOURS * 3600 )); (( DEADLINE_AT > 0 && DEADLINE_AT < DEADLINE )) && DEADLINE=$DEADLINE_AT
 rm -f "$STATE"/waited-*   # a restart inside a usage-limit window waits for it again
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
@@ -160,6 +160,15 @@ prompt() {   # template name → $STATE/prompt.md (lib/prompt.sh, which `harness
   cp "$STATE/prompt.md" "$STATE/prompt-$1.md"   # the last prompt of each kind, for debugging
 }
 
+# <attempt N of M | verify round N of M> → the clock line of a coding or verify prompt ({{CLOCK}}): sessions can't tell
+# time, budget or attempt otherwise. The run is this driver's segment (T0 to DEADLINE). decisions/2026-10-21-clock-and-bounded-init-output
+clock() {
+  local now el tot; now=$(date +%s); el=$(( (now - T0) / 60 )); tot=$(( (DEADLINE - T0) / 60 ))
+  printf 'Clock: %s · run %dh%02dm of %s, ends %s · this session: $%s budget, %s turns, %s timeout · %s\n' "$(date -d "@$now" '+%F %H:%M')" \
+    $(( el / 60 )) $(( el % 60 )) "$( (( tot % 60 )) && printf '%dh%02dm' $(( tot / 60 )) $(( tot % 60 )) || echo "$(( tot / 60 ))h")" \
+    "$(date -d "@$DEADLINE" +%H:%M)" "$SESSION_BUDGET_USD" "$MAX_TURNS" "$SESSION_TIMEOUT" "$1"
+}
+
 session() {   # kind model log → runs claude headless on $STATE/prompt.md; sets S_EXIT and S_WALL
   local settings=() t0; t0=$(date +%s)
   cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
@@ -263,7 +272,7 @@ verify() {
   for model in "$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"; do
     F snapshot "$LIST" > "$STATE/before.json"
     before=$(grep -c "^### .*verify $m\b" "$RUN_DIR/progress.md" 2>/dev/null); vstart=$(git rev-parse HEAD)
-    HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
+    HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
     session verify "$(F model "$model")" "$vlog"
@@ -519,7 +528,7 @@ while :; do
   n=$(( n + 1 ))
   F bump "$ATT" "$id"; F snapshot "$LIST" > "$STATE/before.json"
   run_init
-  HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
+  HARNESS_CLOCK=$(clock "attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
   log "session $n · $id · $mdl"
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   cp "$RUN_DIR/INBOX.md" "$STATE/inbox-before.md" 2> /dev/null || : > "$STATE/inbox-before.md"   # what the session adds is the park's question
