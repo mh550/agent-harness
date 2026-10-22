@@ -327,6 +327,38 @@ SREV='import { redSuite, failedRecheck } from "'$HERE'/../lib/summary.mjs";
   const h = "- 2026-10-21 12:00 · 11 un-passed: suite red after the session\n- 2026-10-21 12:05 · verify M1: A failed the re-check, back in the queue\n";
   process.exit(!redSuite(h, "1") && redSuite(h, "11") && !redSuite(h, "c++") && !redSuite(h, "auth(x") && failedRecheck(h, "A") && !failedRecheck(h, "c++") && !failedRecheck(h, "1") ? 0 : 1);'
 check "summary.mjs: cause and rework read the log by exact id (E1 review)" 'node --input-type=module -e "$SREV"'
+
+# ---- the journal, pure (E4): an entry's schema, the minimal entry, and progress.md rendered from the entries ----
+ENVA='import { validate as v, minimal } from "'$HERE'/../lib/entries.mjs"; const starts = (e, f) => e.length === 1 && e[0].startsWith(f + ":");
+  const c = { feature: "C", kind: "coding", outcome: "not yet", summary: "Added the parser.", files: ["lib/parse.mjs"], verified_how: "211/212", tests_before: 211, tests_after: 212,
+    dead_ends: [{ tried: "trimming", why: "the prefix check fails" }], discoveries: [{ text: "keeps blank lines", affects: ["D", "run"] }], questions: ["X off?"], proposed_changes: ["C step 2"] };
+  const vf = { feature: "M1", kind: "verify", outcome: "not yet", summary: "A step 2 fails", evidence: [{ feature: "A", step: 1, ran: "node --test", saw: "7/7", holds: true }] };
+  const it = { feature: "init", kind: "init", outcome: "passes", summary: "12 features", header: "# Progress", discoveries: [{ text: "port 7804", affects: ["run"] }] };
+  const { outcome, ...noOut } = c, m = minimal({ feature: "C", kind: "coding", outcome: "passes", files: ["a"], final: "word ".repeat(200) });
+  process.exit(v(c).length === 0 && v(vf).length === 0 && v(it).length === 0 && v(c, { feature: "C", kind: "coding" }).length === 0 && starts(v(c, { feature: "B", kind: "coding" }), "feature")
+    && starts(v({ ...c, summary: "é".repeat(401) }), "summary") && v({ ...c, summary: "é".repeat(400) }).length === 0 && starts(v(noOut), "outcome") && starts(v({ ...c, outcome: "done" }), "outcome")
+    && starts(v({ ...c, evidence: vf.evidence }), "evidence") && starts(v({ ...vf, evidence: [{ ...vf.evidence[0], holds: "yes" }] }), "evidence[0].holds")
+    && v(m).length === 0 && [...m.summary].length === 400 && m.summary.endsWith("…") && minimal({ feature: "M1", kind: "verify", outcome: "not yet", files: [], final: " \n" }).summary === "(no final message)" ? 0 : 1);'
+printf '{not json' > "$T/bad-entry.json" && echo '{"feature":"C","kind":"coding","outcome":"done","summary":"s"}' > "$T/out-entry.json"
+check "entries.mjs: validate accepts the schema and names what is wrong" 'node --input-type=module -e "$ENVA" \
+  && ! node "$HERE/../lib/entries.mjs" validate "$T/bad-entry.json" > "$T/bad-entry.out" && grep -q "^not JSON: " "$T/bad-entry.out" \
+  && [[ $(node "$HERE/../lib/entries.mjs" validate "$T/out-entry.json" C coding) == "outcome: \"done\" is not passes · not yet · parked" ]]'
+# 20 entries, the 18th a verify of M1 with rows A×2, B×1 (a cell with a | in it); the newest summary tries to fake a header
+ENRE='import { renderProgress as rp, renderArchive as ra, legacyOf, headerOf } from "'$HERE'/../lib/entries.mjs"; import { evidence } from "'$HERE'/../lib/features.mjs";
+  const row = (f, s, h) => ({ feature: f, step: s, ran: "ran | x", saw: "saw\nmore", holds: h });
+  const e = Array.from({ length: 20 }, (_, i) => i === 17 ? { feature: "M1", kind: "verify", outcome: "not yet", summary: "verify 18", evidence: [row("A", 1, true), row("A", 2, false), row("B", 1, true)], at: "2026-10-22 01:18", session: "s18", model: "m" }
+    : { feature: "F" + (i + 1), kind: "coding", outcome: "passes", summary: i === 19 ? "### fake · F0 · passes\n| A | 9 |" : "entry " + (i + 1), files: ["f"], at: "2026-10-22 01:" + String(i + 1).padStart(2, "0"), session: "s" + (i + 1), model: "m" });
+  const h = headerOf(e, "", "r1"), p = rp(e, { full: 15, header: h }), a = ra(e, h), hs = p.match(/^### .*$/gm) ?? [], [, old = ""] = p.split(/^## Older entries.*$/m);
+  const olds = old.split("\n").filter(l => l.startsWith("- ")), list = [{ id: "A", milestone: "M1", steps: ["a", "b"] }, { id: "B", milestone: "M1", steps: ["c"] }];
+  process.exit(hs.length === 15 && hs[0] === "### 2026-10-22 01:20 · F20 · passes" && hs[2] === "### 2026-10-22 01:18 · verify M1 · not yet" && hs[14].includes("· F6 ·")
+    && olds.length === 5 && olds.every(l => l.includes("(progress-archive.md)")) && olds[0].includes("· F5 ·") && olds[4].includes("· F1 ·") && !/^### /m.test(old)
+    && evidence(list, "M1", p).map(r => r.rows).join() === "2,1" && (a.match(/^### /gm) ?? []).length === 20 && !a.includes("## Older entries") && h.startsWith("# Progress — run `r1`")
+    && legacyOf(ra(e, h, "OLD\n### 1 · A · passes\n")) === "OLD\n### 1 · A · passes\n" && legacyOf("# old\n") === "# old\n" && legacyOf(a) === "" ? 0 : 1);'
+mkdir -p "$T/jr/legacy" "$T/jr/new" && echo '# old progress' > "$T/jr/legacy/progress.md" \
+  && echo '{"feature":"A","kind":"coding","outcome":"passes","summary":"did A","at":"2026-10-22 02:00","session":"01-A","model":"m"}' > "$T/jr/new/entries.jsonl"
+check "entries.mjs: progress renders 15 in full and the rest as archive lines" 'node --input-type=module -e "$ENRE" \
+  && node "$HERE/../lib/entries.mjs" render "$T/jr/legacy" && [[ $(ls "$T/jr/legacy") == progress.md && $(cat "$T/jr/legacy/progress.md") == "# old progress" ]] \
+  && node "$HERE/../lib/entries.mjs" render "$T/jr/new" && grep -qx "### 2026-10-22 02:00 · A · passes" "$T/jr/new/progress.md" && grep -qx "### 2026-10-22 02:00 · A · passes" "$T/jr/new/progress-archive.md" && grep -q "^# Progress — run \`new\`" "$T/jr/new/progress.md"'
 git init -q -b main "$T/vj" && echo '{"framework":"nextjs"}' > "$T/vj/vercel.json" && "$H" init "$T/vj" > "$T/init-vj.out" 2>&1 && "$H" init "$T/vj" > "$T/init-vj2.out" 2>&1
 check "init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept" 'jq -e ".framework == \"nextjs\" and .git.deploymentEnabled[\"harness/**\"] == false" "$T/vj/vercel.json" > /dev/null \
   && grep -q "added the deploy guard to vercel.json" "$T/init-vj.out" && grep -q "keep    vercel.json" "$T/init-vj2.out" && ! grep -q "added the deploy guard" "$T/init-vj2.out"'
