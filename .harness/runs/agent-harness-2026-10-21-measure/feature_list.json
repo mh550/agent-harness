@@ -233,7 +233,7 @@
         "Both checks watched failing first; node --check lib/entries.mjs; no driver change in this feature; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E4-01"],
-      "passes": false },
+      "passes": true },
     { "id": "E4-03", "milestone": "E4", "kind": "build", "model": "opus",
       "description": "Sessions write entry.json; the driver, the single writer, validates it, stamps it, appends it to entries.jsonl and deletes it, recording a minimal entry when it is missing or malformed.",
       "steps": [
