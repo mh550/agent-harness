@@ -2,32 +2,11 @@
 
 | | |
 |---|---|
-| Passing | **11/29** · verified 9 (E1) · merged 0 (none) |
+| Passing | **29/29** · verified 29 (E1, E2, E3, E4) · merged 0 (none) |
 | Tests | not recorded |
-| Spend | **$37.74** total · **$3.43** per passing feature |
-| Spend by role | init $5.69 · plan $11.40 · build $16.40 · review $3.45 · docs $0.25 · verify $0.40 · retro $0.14 · manager (the bash driver) $0.00 |
-| Time | 4.4 h wall: sessions 4.31 h (init 0.18, plan 0.83, build 2.62, docs 0.1, review 0.48, verify 0.1, retro 0.01), driver 0.09 h |
-| Sessions | 16 (16 real, 0 refused by limits/API errors) |
-| Ended | blocked on E2-02 |
-| Not passing | not done 1 · blocked 17 |
-
-| Feature | Cause | Detail | Sessions | $ |
-|---|---|---|---|---|
-| E2-02 | not done | E2-02 does **not pass** yet. Commit `cec9d50` is pushed, and the suite passes 190/190 (190 before, 190 after). I added two tasks where a later feature builds on code an earlier one added in the same t | 2 | $4.30 |
-| E2-03 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E2-04 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E2-05 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E2-06 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E2-07 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E2-08 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E3-02 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E3-03 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E3-04 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E3-05 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E4-01 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E4-02 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E4-03 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E4-04 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E4-05 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E4-06 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
-| E4-07 | blocked | waits on E2-02, which was given up | 0 | $0.00 |
+| Spend | **$99.89** total · **$3.44** per passing feature |
+| Spend by role | init $5.69 · plan $16.61 · build $53.83 · review $21.33 · docs $0.82 · verify $1.45 · retro $0.14 · manager (the bash driver) $0.00 |
+| Time | 12.59 h wall: sessions 12.12 h (init 0.18, plan 1.2, build 7.07, docs 0.32, review 2.87, verify 0.47, retro 0.01), driver 0.48 h |
+| Sessions | 37 (37 real, 0 refused by limits/API errors) |
+| Ended | done (after 1 continuation) |
+| Not passing | none |

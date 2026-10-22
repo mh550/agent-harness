@@ -43,3 +43,6 @@
 - 2026-10-22 03:55 · E4-07 · claude-opus-5-5 · passes=true · 39 min · 29/29 passing
 - 2026-10-22 03:55 · merged main into harness/agent-harness-2026-10-21-measure
 - 2026-10-22 04:08 · E4 verified and tagged run/agent-harness-2026-10-21-measure/E4
+- 2026-10-22 04:08 · E4 proposed for merging · https://github.com/mh550/agent-harness/pull/10
+- 2026-10-22 04:08 · every feature passes
+- 2026-10-22 04:08 · run ended (done): 29/29 passing · 37 sessions (37 real) · 29 features passed · $99.89 · 12.1 h · by kind: init 1 ($5.69), coding 31 ($92.62), verify 4 ($1.45), retro 1 ($0.14) · by model: claude-fable-5-1 1 ($5.69), claude-opus-5-5 28 ($91.80), claude-sonnet-5-5 8 ($2.41)
