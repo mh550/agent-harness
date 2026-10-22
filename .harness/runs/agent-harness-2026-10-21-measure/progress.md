@@ -6,6 +6,27 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 21:40 · E2-06 · passes
+
+- **What changed:**
+  - New `lib/prompt.sh`: the driver's prompt assembly (`prompt_vars`, `prompt_env`, `prompt_render`), now sourced by `lib/driver.sh`; no prompt byte changed. Run as `lib/prompt.sh <state dir> <template> <feature>`, it renders a run's prompt the way its driver would.
+  - `eval run` now saves `commits.json` and `probe-prompt.md` (rendered by the **ref's** `lib/prompt.sh`) for each task.
+  - New `harness eval probes <task result dir>`. It asks three kinds of question: which files each other feature changed, what the target depends on, and what the last failed attempt failed on. It sends them to one `PROBE_MODEL=haiku` session with no tools, one turn and a $0.50 cap. The answers are scored exact/contains/miss into `probes.json`, and it prints `score <n>/<m>`.
+  - `eval.mjs` gains `target`, `parseCommits`, `questions`, `score` and their CLI.
+  - Also: the stub's `# Probe session` branch, `bin/harness` help, and `journal/decisions/2026-10-21-eval-probes.md`. Tests 199 → 201.
+- **Verified:**
+  - Both checks failed first (no `questions` export; no probe prompt), then passed.
+  - A mutation that renders the probe prompt without the eval's roots fails the prompt-equality check.
+  - `check.sh` green, 201/201 (304 s), on the final tree. One earlier full run failed `queue holds an entry…` once, a timing check unrelated to this diff (queue code untouched); it passed on the re-run.
+- **Review:** an Opus review found 3 Important issues, all fixed with tests written first:
+  - prefix false matches (`F1` was found in `F10`);
+  - the fails key was a markdown or status line;
+  - a failed probe session was recorded as a real 0/m. It now exits 1 and keeps the old probes.json.
+  - Of the Minor findings I fixed: the timeout, writing probes.json only once scored, the temp-dir trap, `Q01` and restated questions, an unknown feature, and asserting every flag. Documented, not fixed: init output, `--settings`, rename paths.
+- **Next session (E2-07):** the docs should list `lib/prompt.sh` in architecture §3 (plan §8). They should also say that today's probes will score near 0: the probe sees the prompt but not progress.md. E4's context.md is what should raise the score.
+- **Question for Michael (default taken):** a failed probe session (limit or API error) is no score (exit 1) rather than 0/m. OK?
+- **Proposed change:** none.
+
 ### 2026-10-21 23:20 · E2-05 · passes
 
 - **What changed:**

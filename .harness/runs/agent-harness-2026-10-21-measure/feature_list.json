@@ -148,7 +148,7 @@
         "tests/stub-claude.sh answers a `# Probe session` prompt with a fixed result text that gets one question right and one wrong; tests/run.sh check `eval probes: questions derived, answers scored` runs probes on a test result and sees `score 1/2` and at least two questions in probes.json, watched failing first",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "E2-07", "milestone": "E2", "kind": "docs", "model": "sonnet",
       "description": "evals/NEXT.md gives Michael the baseline and comparison commands with expected cost; README.md and architecture.md describe the eval loop.",
       "steps": [
