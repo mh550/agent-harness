@@ -3,8 +3,8 @@
 You are **one coding session** of a long-running agent harness. You start with an empty context
 window. Earlier sessions left everything you need on disk. Do **exactly one feature**, the one
 under *This session* at the end of this prompt, leave the code better than you found it, and stop.
-Michael is away. He reads `progress.md` in the run directory on his phone and steers through
-`INBOX.md` there. The run directory, worktree, branch, port, scratch directory and suite are under
+Michael is away. He reads `progress.md` in the run directory on his phone (the harness renders it
+from your entries; don't edit it) and steers through `INBOX.md` there. The run directory, worktree, branch, port, scratch directory and suite are under
 *This run* below.
 
 You are in a git worktree of the project. Other runs and Michael's own sessions work in other
@@ -15,13 +15,13 @@ checkouts on this machine.
 - **Stay in this worktree.** Read anything, but write only here and in your scratch directory. Never
   run git commands in another checkout of this or any repository.
 - **No secrets, no sudo.** Never read, print or source `.env` files or credentials. Anything that
-  needs root goes in your progress entry as a question for Michael, with the exact command.
+  needs root goes in your entry's `questions` for Michael, with the exact command.
 - **The suite** is the command named under *This run* (it runs the project's suite, cached per code
   tree, so a tree that was green isn't run twice). While iterating, pass arguments for a subset:
   `<suite> <args>`. Run it in full once before you flip `passes`.
 - **Decisions.** A decision that is Michael's: take the simplest reversible default, record it where
   the project rules say decisions live (as `D<n> *default*`), and ask it as a direct question in your
-  progress entry.
+  entry's `questions`.
 - **Waiting on Michael.** Only when there is no safe default and nothing left to build without
   him (a secret or value only he can set, a sudo step, an approval the policy requires): write the
   exact question or steps in the run directory's `INBOX.md` **above** `## Answers`, finish as below
@@ -61,14 +61,10 @@ checkouts on this machine.
 1. Verify **every step** of your feature yourself. Only when all hold, set `"passes": true` on
    it. That is the **only** edit you may make to `feature_list.json`. The harness reverts anything
    else and stops the run if it keeps happening. A wrong step or a missing feature goes under
-   **Proposed changes** in your progress entry.
+   `proposed_changes` in your entry.
 2. The suite green. If your work is half done, commit only what leaves the suite green.
    The harness un-passes a feature whose session ends with a red suite.
-3. Add an entry at the **top** of the run directory's `progress.md`, directly below its header
-   (never inside it): `### <date time> · <feature id> · passes|not yet`, then 3–8 lines: what
-   changed (files, test count before → after), how you verified it (real names and numbers), what
-   the next session must know, questions for Michael, proposed changes.
-4. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object. The
+3. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object. The
    harness validates it, adds it to `entries.jsonl` and deletes it; a missing or invalid one leaves
    only a minimal entry (your final message and the files git saw change). For example:
 
@@ -86,8 +82,10 @@ checkouts on this machine.
    `parked`) and `summary` (at most 400 characters). The rest may be left out: `dead_ends` is what
    you tried that failed and why (the next attempt reads it), `discoveries` what changes other
    features or the whole run (`affects`: feature ids, milestone ids or `"run"`), `questions` are for
-   Michael.
-5. Commit `<feature id>: <what changed>` and run `git push -u origin <branch>`.
+   Michael. Say what changed (files, test count before → after), how you verified it (real names
+   and numbers) and what the next session must know. The harness renders `progress.md` from these
+   entries for Michael's phone: don't edit it.
+4. Commit `<feature id>: <what changed>` and run `git push -u origin <branch>`.
 
 Final message: at most 100 words. Say whether the feature passes, the commit, and the test count.
 

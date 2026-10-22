@@ -76,7 +76,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | What | Path | Written by | Read by | Committed? |
 |---|---|---|---|---|
 | Feature list | `<wt>/.harness/runs/<run>/feature_list.json` | initializer; sessions (own `passes` only); verifier (un-pass only); driver (repair, un-pass) | everyone | yes, run branch |
-| Progress log | `…/progress.md` (newest first) | sessions, verifier | sessions, Michael (phone), retro, PR bodies | yes |
+| Progress log | `…/progress.md` (newest first: 15 in full, then one line each) and `…/progress-archive.md` (every entry in full; a continued legacy run's old progress.md at its end) | driver (`entries.mjs render` after every journal append, decisions/2026-10-22-rendered-progress); a legacy run's sessions until it is continued | sessions, Michael (phone), retro, PR bodies (the archive), verify's `F evidence` | yes |
 | Steering | `…/INBOX.md` (`status: run/pause/stop`, `## Answers`) | Michael (GitHub app), `harness answer` via the driver | driver, sessions | yes |
 | Brief | `…/brief.md` | driver, from `--brief` at start/continue | every prompt | yes |
 | Driver events | `…/harness-log.md` | driver (`note`) | Michael, summary, retro | yes |
@@ -105,7 +105,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 ```
 harness start ─► worktree + branch ─► driver:
   [resume?] merge main in before any session, the initializer included (and reload the config if it changed) · merge verified (v3) milestones
-  [no list] init + suite ─► INITIALIZER ─► feature_list.json, progress.md
+  [no list] init + suite ─► INITIALIZER ─► feature_list.json, entry.json ─► entries.jsonl ─► progress.md (rendered)
   loop:
     stop if: session cap · deadline · STOP/"status: stop"
     pause while: PAUSE/"status: pause"

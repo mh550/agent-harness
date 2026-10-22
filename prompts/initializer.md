@@ -69,15 +69,15 @@ Rules:
 
 ## Also write
 
-- `progress.md` in the run directory: a short header (what this file is, newest entry first, how to read the
-  feature list and steer via `INBOX.md`), then your entry: feature counts per milestone,
-  everything a worker must know about the code (where things live, gotchas), and questions for
-  Michael (decisions that are his get the simplest reversible default).
 - `entry.json` in the run directory, your entry in the run's journal: one JSON object. The harness
   validates it, adds it to `entries.jsonl` and deletes it; a missing or invalid one leaves only a
   minimal entry. Required: `feature` (`"init"`), `kind` (`"init"`), `outcome` (`passes` once the list
   is written) and `summary` (at most 400 characters: the counts per milestone). `header` is the
-  progress.md header text (at most 2000 characters); gotchas every session must know go in `discoveries` affecting `"run"`:
+  header of the run's `progress.md` (at most 2000 characters: what this file is, newest entry first,
+  how to read the feature list and steer via `INBOX.md`); the harness renders progress.md from the
+  journal for Michael's phone, so don't write it yourself. Everything a worker must know about the
+  code (where things live, gotchas) goes in `discoveries` affecting `"run"`, and questions for
+  Michael in `questions` (decisions that are his get the simplest reversible default):
 
   ```json
   { "feature": "init", "kind": "init", "outcome": "passes", "summary": "12 features: E1 4, E2 5, E3 3.",
@@ -86,7 +86,7 @@ Rules:
   ```
 - Leave the run directory's `INBOX.md` as the harness created it.
 
-Commit `HARNESS: feature list (<n> features) and progress log for <run id>` and push
+Commit `HARNESS: feature list (<n> features) for <run id>` and push
 `git push -u origin <branch>`.
 
 The project's policy comes right after these instructions. It binds you.

@@ -185,6 +185,7 @@ session() {   # kind model log → runs claude headless on $STATE/prompt.md; set
 # <kind> <feature> <transcript> <model> <start commit> → the session's entry.json into entries.jsonl: the driver is its
 # only writer (decisions/2026-10-22-journal-single-writer). Missing or invalid: a note and a minimal entry from git and
 # the final message, whose outcome is what the list says now (the session's claim, before the driver's checks).
+# Then progress.md and progress-archive.md are rendered from the journal (decisions/2026-10-22-rendered-progress).
 journal() {
   local kind=$1 id=$2 who=$2 outcome="not yet" name out rc; name=$(basename "$3" .jsonl)
   git -c core.quotePath=false diff --name-only --no-renames "$5" HEAD -- . ":!$RUN_DIR" > "$SCRATCH/entry-files"
@@ -199,7 +200,15 @@ journal() {
   (( rc == 3 )) && note "$who: entry.json $out; recorded a minimal entry"
   (( rc == 0 || rc == 3 )) || { note "$who: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
     mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-failed-$name.json" 2> /dev/null; }
+  out=$(node "$HARNESS_HOME/lib/entries.mjs" render "$RUN_DIR" 2>&1) || note "$who: rendering progress.md failed: $out"
   return 0
+}
+
+# <m> → how many verify entries the milestone has: entries.jsonl's lines (the rendered progress.md shows only the 15
+# newest in full), or on a legacy run without a journal the `### … verify <m>` headers its sessions wrote
+vcount() {
+  if [[ -f $RUN_DIR/entries.jsonl ]]; then jq -cR --arg m "$1" 'fromjson? | select(.kind == "verify" and .feature == $m)' "$RUN_DIR/entries.jsonl" | wc -l
+  else grep -c "^### .*verify $1\b" "$RUN_DIR/progress.md" 2> /dev/null; fi
 }
 
 run_init() {   # the project's init, then the suite (cached per code tree); both go into the next prompt
@@ -211,12 +220,13 @@ run_init() {   # the project's init, then the suite (cached per code tree); both
     || rm -f "$STATE/tests-start"
 }
 
-pr_body() {   # milestone → the evidence a reviewer (or the record) needs
+pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the archive has every entry in full
+  local p=$RUN_DIR/progress-archive.md; [[ -f $p ]] || p=$RUN_DIR/progress.md
   echo "Milestone **$1** of harness run \`$RUN_ID\` (branch \`$BRANCH\`), verified by an independent session."
   echo; echo "**Features:**"; for id in $(F ids "$LIST" "$1"); do echo "- \`$id\` · $(jq -r --arg id "$id" '.features[]|select(.id==$id)|.description' "$LIST" 2>/dev/null)"; done
   echo; echo "**Run so far:** $(F summary "$LIST") · $(MET summary "$RUN_DIR/metrics.jsonl")"
   echo; echo "**Verify entry:**"; echo
-  awk -v m="verify $1" 'index($0, "### ") == 1 { if (on) exit; if (index($0, m)) on = 1 } on' "$RUN_DIR/progress.md" | head -60
+  awk -v m="verify $1" 'index($0, "### ") == 1 { if (on) exit; if (index($0, m)) on = 1 } on' "$p" | head -60
   echo; echo "Run record: \`$RUN_DIR/\` (progress.md, harness-log.md, feature_list.json, metrics.jsonl)."
 }
 
@@ -293,7 +303,7 @@ verify() {
   run_init
   for model in "$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"; do
     F snapshot "$LIST" > "$STATE/before.json"
-    before=$(grep -c "^### .*verify $m\b" "$RUN_DIR/progress.md" 2>/dev/null); vstart=$(git rev-parse HEAD)
+    before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
     HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
@@ -314,7 +324,7 @@ verify() {
     MET append "$vlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" \
       "$(F milestone-done "$LIST" "$m" && echo true || echo false)" "$S_WALL" "$S_EXIT" false verify
     F milestone-done "$LIST" "$m" || { result=fail; break; }
-    if (( $(grep -c "^### .*verify $m\b" "$RUN_DIR/progress.md" 2>/dev/null) <= before )); then short="no new verify entry in progress.md"
+    if (( $(vcount "$m") <= before )); then short="no new verify entry"
     elif short=$(F evidence "$LIST" "$m" "$RUN_DIR/progress.md"); then result=hold; break; fi
     [[ $model == "$VERIFY_ESCALATE_MODEL" ]] && { result=thin; break; }
     note "verify $m: evidence short of the steps ($short); re-running on $VERIFY_ESCALATE_MODEL"
@@ -472,6 +482,17 @@ if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 who
       && note "closed the whole-run PR for $BRANCH (milestones merge through their own PRs now)"
   fi
   commit_all "HARNESS: merge"; sync; END_REASON="merge only"; exit 0
+fi
+
+# A run from before the journal (a feature list, no entries.jsonl): its progress.md is kept, byte for byte, as
+# progress-archive.md and the journal starts here (decisions/2026-10-22-rendered-progress). Nothing is rendered until
+# the first entry, so progress.md stays as it was until a session ends; `harness merge` exited above, untouched.
+if [[ -f $LIST && ! -f $RUN_DIR/entries.jsonl ]]; then
+  : > "$RUN_DIR/entries.jsonl"
+  if [[ -f $RUN_DIR/progress.md ]]; then cp "$RUN_DIR/progress.md" "$RUN_DIR/progress-archive.md"
+    note "journal started; progress.md kept as progress-archive.md"
+  else note "journal started (no progress.md to keep)"; fi   # then the default header, and no legacy part
+  commit_all "HARNESS: journal started"; sync
 fi
 
 # Once per run (a continue doesn't repeat it): a host that builds every branch makes a preview per pushed session

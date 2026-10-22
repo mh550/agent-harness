@@ -51,7 +51,6 @@ case $first in
   { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false },
   { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"]$after, "passes": false } ] }
 JSON
-    printf '# progress\n\n' > "$HARNESS_RUN_DIR/progress.md"
     entry init 1 '{feature: "init", kind: "init", outcome: "passes", summary: "3 features: M1 2, M2 1", header: "# progress"}'
     git add -A && git commit -qm "HARNESS: feature list" && git push -q -u origin "$HARNESS_BRANCH"
     if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop
@@ -106,12 +105,7 @@ JSON
     if [[ ${STUB_VERIFY_LIMIT:-} && $m == M1 && $n == 1 ]]; then cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; fi   # refused
     if [[ ${STUB_VERIFY_EDITS:-} && $n == 1 ]]; then echo hack > "hack-$m.txt"; echo "edited" >> CLAUDE.md; fi   # a verifier "fixing" code
     [[ $m == M1 && ( $n == 1 || ${STUB_STRICT_VERIFIER:-} ) && ! ${STUB_LENIENT:-} ]] && set_passes A false   # catches a false pass
-    { sed -n '1,2p' "$HARNESS_RUN_DIR/progress.md"; echo "### $(date '+%F %H:%M') · verify $m"; echo
-      echo "| Feature | Step | Ran | Saw | Holds |"; echo "|---|---|---|---|---|"
-      if [[ ! ${STUB_THIN_VERIFY:-} || $n -gt 1 ]]; then
-        node -e 'const l=JSON.parse(require("fs").readFileSync(process.argv[1]));for(const f of l.features.filter(f=>f.milestone===process.argv[2]))f.steps.forEach((s,i)=>console.log(`| ${f.id} | ${i+1} | check | ok | yes |`))' "$L" "$m"
-      fi; echo; sed -n '3,$p' "$HARNESS_RUN_DIR/progress.md"; } > "$HARNESS_SCRATCH/p.md" && mv "$HARNESS_SCRATCH/p.md" "$HARNESS_RUN_DIR/progress.md"
-    # the same rows as evidence (none in a thin round 1); passes when every feature of m still passes
+    # one evidence row per step of every feature of m (none in a thin round 1); passes when every feature of m still passes
     ev=$(node -e 'const [f,m,full]=process.argv.slice(1),fs=JSON.parse(require("fs").readFileSync(f)).features.filter(x=>x.milestone===m);console.log(JSON.stringify({done:fs.every(x=>x.passes),
       rows:full==="1"?fs.flatMap(x=>x.steps.map((s,i)=>({feature:x.id,step:i+1,ran:"check",saw:"ok",holds:true}))):[]}))' "$L" "$m" "$([[ ! ${STUB_THIN_VERIFY:-} || $n -gt 1 ]] && echo 1)")
     entry "$m" "$n" --arg m "$m" --arg n "$n" --argjson ev "$ev" '{feature: $m, kind: "verify", outcome: (if $ev.done then "passes" else "not yet" end),
