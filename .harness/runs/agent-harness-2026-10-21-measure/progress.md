@@ -6,6 +6,49 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-21 verify E2
+
+Suite re-run: 206/206. No step failed.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| E2-01 | 1 | read docs/plans/2026-10-21-E2-evals.md head and `grep -c` of required terms | line 1 `Milestone base: 7b69ed3…`; sections task.json/validateTask, source records, lib/eval.sh, HARNESS_STATE, MERGE_POLICY=off, HARNESS_GH=false, EVAL_BUDGET_USD, WEEKLY_STOP_AT, one sample, probes, D-H35 all present | yes |
+| E2-01 | 2 | grep POLICY/build-only in the plan | §2.3 table lists each source's POLICY; §2.4 policy rule: eval tasks always build-only, no live system or secret; §3.3 forces POLICY=build-only | yes |
+| E2-01 | 3 | `git show --stat 4e3ef4d`; full suite | commit changed the plan plus harness bookkeeping (feature_list, progress); no code touched; suite 206/206 | yes |
+| E2-02 | 1 | jq -e from the step on each of 5 tasks | all 5 ok; 5 within 5–12; bases are commits; spot-checked E1-05 feature ids/after | yes |
+| E2-02 | 2 | read evals/README.md | table has id, project, source run, category, why; missing categories listed under 'To add when other projects' records are readable' | yes |
+| E2-02 | 3 | `grep -ril 'live\|secret\|\.env' evals/tasks` | no output (rc 1); README states the rule | yes |
+| E2-02 | 4 | `node lib/eval.mjs validate evals/tasks`; read check at tests/run.sh:115 | `5 task(s) valid` rc 0; check `eval: every task.json validates and a bad one is rejected` PASS in suite | yes |
+| E2-02 | 5 | `bash tests/run.sh` | 206/206 checks passed | yes |
+| E2-03 | 1 | read bin/harness eval dispatch, check at run.sh:177–184; `git worktree list` | eval dispatched to lib/eval.sh; stub run covers worktree, clone, seeded branch, flags | yes |
+| E2-03 | 2 | check `eval run: two stub tasks end to end` (ev_files) and `git worktree list | grep -c harness-eval` | result files asserted; 0 harness-eval worktrees left | yes |
+| E2-03 | 3 | suite PASS line `eval run: two stub tasks end to end, results in place` | PASS; asserts dir ends `-$HS-test` | yes |
+| E2-03 | 4 | suite PASS line `eval run: --harness <ref> runs that ref's driver` | PASS; asserts eval.json sha, harness_dir under $T/evaltmp | yes |
+| E2-03 | 5 | suite PASS line `eval run: nothing reaches a remote` | PASS; ev_local plus gh.log/curl.log line counts unchanged | yes |
+| E2-03 | 6 | `bash -n lib/eval.sh`; suite | syntax ok; 206/206 (failing-first per progress not re-run) | yes |
+| E2-04 | 1 | `grep EVAL_BUDGET_USD lib/config.sh`; check at run.sh:198 | `EVAL_BUDGET_USD=10` present; asserts `budget: $0.35 of $0.3; 1 tasks not started` | yes |
+| E2-04 | 2 | suite PASS `eval: the budget cap stops starting tasks` | PASS | yes |
+| E2-04 | 3 | suite PASS `eval: refuses past WEEKLY_STOP_AT` (run.sh:206) | PASS; asserts exit 1, `7-day window at 90%`, no results dir | yes |
+| E2-04 | 4 | suite PASS `eval: --repeat 2 runs each task twice` | PASS; result list t1/r1,t2/r1,t1/r2,t2/r2 | yes |
+| E2-04 | 5 | suite | 206/206 | yes |
+| E2-05 | 1 | read EVCMP in run.sh:120–137, lib/eval.mjs compare | compare exports rows with verdicts incl. one sample; spread noise; pass^N; totals row | yes |
+| E2-05 | 2 | suite PASS `eval.mjs: compare verdicts` | PASS; asserts within noise/better/worse directions and one sample | yes |
+| E2-05 | 3 | suite PASS `eval compare prints the table` (run.sh:239) | PASS; `pass rate` line and verdict lines | yes |
+| E2-05 | 4 | suite | 206/206 | yes |
+| E2-06 | 1 | read probes questions in docs/eval.mjs; suite PASS `eval probes: questions derived, answers scored` | PASS; ≥2 questions in probes.json | yes |
+| E2-06 | 2 | suite PASS `eval probes: the probe prompt is the driver's coding prompt` | PASS; asserts `# Coding session — \`T2b\`` | yes |
+| E2-06 | 3 | same check ev_probe | score line asserted | yes |
+| E2-06 | 4 | stub-claude `# Probe session` handler via the probes check | `score 1/2` PASS | yes |
+| E2-06 | 5 | suite | 206/206 | yes |
+| E2-07 | 1 | read evals/NEXT.md | baseline, e3, e4 run commands, compare, probes, cost ≈$28 per eval with stated estimate, 'overnight run never runs these' sentence | yes |
+| E2-07 | 2 | grep README.md and bin/harness | `## Evals` section at README:139; command list names `harness eval run|compare|probes` | yes |
+| E2-07 | 3 | grep docs/architecture.md; grep D-H35 journal/decisions.md | §3, §4 rows, §11 point 6 present; D-H35 appears once (line 464) | yes |
+| E2-07 | 4 | suite | 206/206 | yes |
+| E2-08 | 1 | read docs/plans/2026-10-21-E2-review.md | findings F1–F15 with severity and action listed | yes |
+| E2-08 | 2 | read review FAIL lines | 198/205 then 202/205 FAIL lines quoted, fixes committed | yes |
+| E2-08 | 3 | `grep -nE '(gh |curl|NTFY|push)' lib/eval.sh` | hits are NTFY blanking, stub logging, local pushes to the bare origin; review §Confirmations matches | yes |
+| E2-08 | 4 | `bash -n` on 5 shell files, `node --check lib/eval.mjs`, suite | all ok; 206/206 | yes |
+
 ### 2026-10-22 00:50 · E2-08 · passes
 
 - **What changed:** two Opus reviews (E2's diff, then my fixes), recorded in `docs/plans/2026-10-21-E2-review.md`. Tests 201 → 205. Fixes are in `lib/eval.sh`, `lib/eval.mjs`, `tests/run.sh`, `tests/stub-claude.sh`, README, architecture §4/§11, two new decision files (`eval-clone-sealed-at-base`, `eval-per-verified-pooled`) and an amendment line in `eval-run-isolation`. Commits `18aae96` and `8dbe359`.
