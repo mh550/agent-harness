@@ -185,7 +185,7 @@
         "Both checks watched failing first; journal/decisions.md has D-H36 and D-H38's init-output half; bash tests/run.sh ends with every check passing"
       ],
       "after": ["E3-01"],
-      "passes": false },
+      "passes": true },
     { "id": "E3-03", "milestone": "E3", "kind": "build", "model": "opus",
       "description": "Every template is split into a static part first and a volatile part last, with a fixed per-kind first line, so two sessions of a run share a byte-identical prompt prefix that includes the policy.",
       "steps": [

@@ -20,15 +20,19 @@ prompt_env() {
     HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green
 }
 
-prompt_render() {   # template name → stdout: generic prompt, the run's brief, the project's rules, the policy
-  local extra=()
-  if [[ $1 != retro ]]; then
+prompt_render() {   # template name → stdout: generic prompt, the run's brief, the line naming CLAUDE.md, the policy
+  local extra=() rules=()
+  # Claude Code loads CLAUDE.md in the worktree itself: one line names it, the file isn't pasted (decisions/2026-10-21-no-double-claude-md)
+  [[ -f CLAUDE.md ]] && rules=("$HARNESS_HOME/prompts/parts/rules.md")
+  if [[ $1 == retro ]]; then extra=("${rules[@]}")
+  else
     [[ -s $RUN_DIR/brief.md ]] && extra+=("Brief for this run, from Michael (it wins over the spec on scope)=$RUN_DIR/brief.md")
-    [[ -f CLAUDE.md ]] && extra+=("Project rules (CLAUDE.md)=CLAUDE.md")
+    extra+=("${rules[@]}")
     [[ -f .harness/project.md ]] && extra+=("Project rules (.harness/project.md)=.harness/project.md")
     extra+=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md")
   fi
-  HARNESS_INIT_OUTPUT=$(tail -c 4000 "$SCRATCH/init.out" 2>/dev/null) HARNESS_CHECK="$CHECK" \
+  # the last 40 whole lines and where the rest is (decisions/2026-10-21-clock-and-bounded-init-output)
+  HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
     node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
 }
 

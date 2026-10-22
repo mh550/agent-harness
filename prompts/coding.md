@@ -38,9 +38,9 @@ work in other checkouts on this machine. Your port is **{{PORT}}** and your scra
    interrupted session, read it before building on it.
 2. `{{RUN_DIR}}/INBOX.md`: Michael's answers override earlier plans. Then the run's brief (if any)
    and the newest entries in `{{RUN_DIR}}/progress.md`.
-3. The project rules at the end of this prompt, the parts of the spec ({{SPEC_FILES}}) your feature
-   touches, the milestone's plan file if there is one, and **your feature** in
-   `{{RUN_DIR}}/feature_list.json`.
+3. The project rules (`CLAUDE.md`, already loaded; `.harness/project.md` below if present), the
+   parts of the spec ({{SPEC_FILES}}) your feature touches, the milestone's plan file if there is one,
+   and **your feature** in `{{RUN_DIR}}/feature_list.json`.
 4. The harness already ran the init (`{{INIT_CMD}}`) and the suite; their output is under "Init
    output" below. Run `{{SMOKE_CMD}}`. **If init failed, the suite is red, or the smoke check
    fails, fixing that comes first** (log what broke), even if it uses up the session.

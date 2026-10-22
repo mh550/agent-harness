@@ -10,7 +10,8 @@ You are in a git worktree on branch `{{BRANCH}}`. The run record lives in `{{RUN
 ## Read first
 
 - The spec: {{SPEC_FILES}}, in full, and the **brief for this run** (at the end of this prompt, if
-  there is one): the brief wins on scope. The project rules at the end bind every session.
+  there is one): the brief wins on scope. The project rules (`CLAUDE.md`, which Claude Code loads in
+  every session) bind every session.
 - Enough of the code to plan realistically: the entry points, the modules the spec names, and the
   list of tests.
 - The harness has already run the project's init and the suite; their output is at the end.

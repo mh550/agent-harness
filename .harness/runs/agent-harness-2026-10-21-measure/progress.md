@@ -6,6 +6,14 @@ and the harness gives each session the first feature that isn't passing whose de
 `INBOX.md` on this branch (first line `status: run|pause|stop`; answers under `## Answers`; the harness pulls it
 before every session). The brief for this run is `brief.md`; the spec is `docs/specs/2026-10-20-measure-then-memory.md`.
 
+### 2026-10-22 01:40 · E3-02 · passes
+
+- **What changed:** `lib/prompt.sh` `prompt_render` no longer pastes CLAUDE.md. When the worktree has one, it passes the new `prompts/parts/rules.md` (`# Project rules` and one line saying Claude Code loads `CLAUDE.md`), for the retro too. `.harness/project.md` is still pasted, and the debrief is unchanged. `{{INIT_OUTPUT}}` is now `tail -n 40` of init.out followed by `full output: <path>` (it was `tail -c 4000`). The coding.md and initializer.md wording points at the loaded file. Decisions: `decisions/2026-10-21-no-double-claude-md` (D-H36) and `decisions/2026-10-21-clock-and-bounded-init-output` (the init-output half of D-H38; E3-04 adds the clock half to the same file). I also corrected the two architecture §10 sentences and the README `CLAUDE.md` row so they stay true; E3-05 still rewrites §10.
+- **Tests 206 → 208:** 2 new checks (`coding prompt names CLAUDE.md but doesn't paste it`, `init output is capped at 40 lines with the log path`, which uses a `dproj ip` project with `INIT_CMD="seq 1 100"`) and 1 updated check (`brief, rules and policy in the prompt`, which now looks for a `# Project rules` line and `` `CLAUDE.md` ``).
+- **Verified:** all 3 checks failed first (205/208). After the change: `bash tests/run.sh` 208/208, and `check.sh` green in 314 s (208/208). I rendered a coding and a retro prompt in scratch: the 40 init lines (21–60 of 60) plus the path, the rules line, and no pasted `rules` line.
+- **Next session (E3-03):** the edits go in `lib/prompt.sh`'s `prompt_render` (E2-06 moved `prompt()` there), not in driver.sh.
+- **Proposed change (for E3-05):** plan §12 asked E2-06 to paste CLAUDE.md into the probe prompt when the run's worktree is gone. It doesn't do that; it only notes `CLAUDE.md not auto-loaded`. After E3-02, such a probe sees no rules at all, while a baseline probe saw them pasted, so the two scores aren't comparable in that fallback. Fix: `eval run` saves the worktree's CLAUDE.md into the result dir, and `probes` pastes it in the fallback.
+
 ### 2026-10-21 verify E2
 
 Suite re-run: 206/206. No step failed.
