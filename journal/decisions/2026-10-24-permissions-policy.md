@@ -43,3 +43,16 @@
   - **Keeping `git reset --hard` and `git tag -d` denied.** The policy's deny list is closed, and both are local:
     the reflog gets back the commits a reset moves off. The cost is uncommitted edits a reset discards, a session's
     own and in its own worktree.
+- **Revised the same day, after Michael applied it:**
+  - **`scripts/deploy.sh` was dj-crate-streaming's production deploy, not n8n-home's.** Dropping the user allow
+    stopped pre-approving dj deploys.
+  - **dj-crate-streaming goes live again** (`POLICY=live-staged`, `MERGE_POLICY=auto`), at Michael's request. Its
+    deploy allow and the rest of the live protocol's commands go in **its own** `.claude/settings.json`, beside the
+    denies from its **Never** list. They don't go back into the user file, where `scripts/deploy.sh` would
+    pre-approve every repo's script of that name (n8n-home will have one). So the policy's production projects are
+    three: portfolio_site and n8n-home (gated), dj-crate-streaming (live).
+  - **agent-harness drops its `MERGE_POLICY=pr`.** A project file wins over the user config, so the harness's own runs
+    would still have waited for Michael, and chunk 4's three queued runs wouldn't build on each other.
+  - **Project-repo changes ride chunk 3, not a separate pass.** n8n-home's `MERGE_POLICY=pr` and `.mcp.json`, and
+    dj's live settings, go to each project's catch-up worker, which already edits that project's settings and merges
+    there. Only agent-harness's own line changed at once, because chunks 4–5 depend on it.
