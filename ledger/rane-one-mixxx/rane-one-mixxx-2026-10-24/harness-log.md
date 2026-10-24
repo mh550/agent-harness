@@ -1,0 +1,18 @@
+- 2026-10-24 00:39 · feature list written: 0/19 passing
+- 2026-10-24 00:45 · M5-01 · claude-opus-5-5 · passes=true · 6 min · 1/19 passing
+- 2026-10-24 00:53 · M5-02 · claude-opus-5-5 · passes=true · 8 min · 2/19 passing
+- 2026-10-24 01:12 · M5-03 · claude-opus-5-5 · passes=true · 18 min · 3/19 passing
+- 2026-10-24 01:39 · M5-04 · claude-opus-5-5 · passes=true · 26 min · 4/19 passing
+- 2026-10-24 02:07 · M5-05 · claude-opus-5-5 · passes=true · 28 min · 5/19 passing
+- 2026-10-24 02:41 · M5-06 · claude-opus-5-5 · passes=true · 33 min · 6/19 passing
+- 2026-10-24 03:02 · M5-07 · claude-opus-5-5 · passes=true · 21 min · 7/19 passing
+- 2026-10-24 03:35 · M5-08 · claude-opus-5-5 · passes=true · 33 min · 8/19 passing
+- 2026-10-24 03:38 · M5-09 · claude-sonnet-5-5 · passes=true · 2 min · 9/19 passing
+- 2026-10-24 03:57 · M5-10 · claude-opus-5-5 · passes=false · 18 min · 9/19 passing
+- 2026-10-24 05:28 · M5-10 · claude-opus-5-5 · passes=true · 89 min · 10/19 passing
+- 2026-10-24 05:28 · merged main into harness/rane-one-mixxx-2026-10-24
+- 2026-10-24 05:33 · verify M5: M5-06 failed the re-check, back in the queue (one more attempt)
+- 2026-10-24 05:37 · M5-06 · claude-opus-5-5 · passes=false · 4 min · 9/19 passing
+- 2026-10-24 05:37 · M5-06 parked (waiting on Michael): Michael to reword M5-06 step 4 (deck 2 bottom pinned as a sag) or wait for the round 2 torque-HIGH take
+- 2026-10-24 05:37 · waiting on Michael: M5-06 (parked; answer in INBOX.md, then harness continue rane-one-mixxx-2026-10-24)
+- 2026-10-24 05:37 · run ended (waiting on Michael: M5-06): 9/19 passing · 14 sessions (14 real) · 10 features passed · $72.37 · 5.1 h · by kind: init 1 ($5.24), coding 12 ($65.98), verify 1 ($1.15) · by model: claude-fable-5-1 1 ($5.24), claude-opus-5-5 11 ($65.40), claude-sonnet-5-5 2 ($1.72)

@@ -1,0 +1,308 @@
+{
+  "run": "rane-one-mixxx-2026-10-24",
+  "branch": "harness/rane-one-mixxx-2026-10-24",
+  "features": [
+    {
+      "id": "M5-01",
+      "milestone": "M5",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The M5 plan maps every spec §5 M5 question and every item of the run brief to its census takes, the command that answers it and where the answer lands, settles D1 in place, records the configurable switch-over decision and adds the M7 settings line to the spec.",
+      "steps": [
+        "docs/plans/2026-10-24-M5-truth.md exists with the sections `Questions`, `Tool changes`, `Constants to re-check`, `Hardware round 2 candidates` and `Done when`. `Questions` is a table: question → take file(s) in captures/2026-10-23-census/ → command (tools/analyze-platter, tools/platter-run, tools/census, or a one-off node script kept under tools/) → where the answer lands (section of docs/research/2026-10-24-census-analysis.md, decision, constant in RaneOnePlatter.DEFAULTS).",
+        "The `Questions` table covers spec §5 M5 items 1–7 and the brief's items, each with its takes: ticks per revolution (09, 13); deck 2's channel and format (12, 13, 21); the hold pattern (17, 31); saturation of the timestamp (07, 12, 29); the stopped dither (tails of 19, 20, 33, 34); note 0 and the touch taps (10, 14, and the motor starts in 15, 21, 23, 24); direction with deck 1's reverse pad on (15, 17 against 18, 21); the pitch fader against motor speed and the Range button (23, 24); Shift+Slip (25); strip search (26); the power-on dump (01); takes 16 and 22 marked `not data` with Michael's reason (no hardware 33/45 switch on the MK1).",
+        "`Constants to re-check` lists every key of RaneOnePlatter.DEFAULTS in mapping/rane-one-platter.js (TICKS_PER_REV through RETARGET_MS) with the take that can verify it or `no take (round 2)`.",
+        "docs/decisions.md: D1 is rewritten in place as settled (no `*default*`, with an `(Updated in place 2026-10-24: Michael settled hybrid)` line), and a new `D25 · Configurable switch-over` (or the next free number if D25 is taken; the number used is named in the plan) says that at least TAKEOVER_TOL, HANDBACK_TOL, TAKEOVER_MS, SETTLE_MS, HELD_RATIO, HELD_EXIT_RATIO, STALL_MS, STOP_MS, SPINUP_MS, HELD_START_MS and BACKSPIN_RATIO are user-tunable config overrides of DEFAULTS, and that M7 exposes them as Mixxx controller settings. A further `D<n> *default*` records that 45 rpm would need a host motor command no capture shows, so the mapping targets 33⅓ only, RPM_45 stays UNVERIFIED and unused, and nothing is sent to the One to find out (D13 rules).",
+        "docs/spec.md §5 M7 gains a bullet: expose the switch-over tolerances and timers as user settings in Mixxx's controller preferences via `<settings>` in the mapping XML, noting that 13 mappings shipped with Flatpak Mixxx 2.5.6 use it (for example `DJ TechTools MIDI Fighter Spectra.midi.xml` under `flatpak info --show-location org.mixxx.Mixxx`/files/share/mixxx/controllers/). §7 drops the two questions Michael answered (D1 and Serato) and the spec header's status line names this run.",
+        "`Tool changes` names the exact option M5-02 adds to tools/analyze-platter and tools/platter-run (`--deck 1|2`: CC 6 and pitch bend on MIDI channel 1 or 2, Play as note 0 on that channel), and the plan says the analysis document for this milestone is docs/research/2026-10-24-census-analysis.md.",
+        "npm test is green."
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "M5-02",
+      "milestone": "M5",
+      "kind": "build",
+      "model": "opus",
+      "description": "tools/analyze-platter and tools/platter-run take `--deck 1|2` and read that deck's CC 6, pitch bend and Play note on MIDI channel 1 or 2, so every deck 2 take can be analysed.",
+      "steps": [
+        "Tests first: tests/analyze-platter.test.mjs and tests/platter-run.test.mjs each gain a case where a synthetic capture (tools/synth-platter output with its channel rewritten to 2, or a fixture under tests/fixtures/) gives the same numbers under `--deck 2` as its channel 1 twin under `--deck 1`, and `--deck 3` exits 2 with the usage text.",
+        "`tools/analyze-platter captures/2026-10-23-census/12-hand-d2-slow.jsonl --deck 2` prints a CC 6 delta histogram dominated by ±1 and a non-zero net tick count; the same command without `--deck 2` reports 0 CC 6 messages, and both tools' `--help` say the default is deck 1.",
+        "`tools/platter-run captures/2026-10-23-census/21-motor-d2-33.jsonl --deck 2` runs to the end, prints the glitch line, and reports 0 timer unwrap errors (in the text summary or under `--json`).",
+        "Both tools' `--help` document `--deck`, name the channel and Play note per deck, and cite takes 12 and 21 for deck 2's channel; tests/tools-usage.test.mjs still passes.",
+        "npm test is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "M5-03",
+      "milestone": "M5",
+      "kind": "check",
+      "model": "opus",
+      "description": "tools/census over the seven census takes writes the full reference/rane-one-mk1-midi-map.csv with the Shift column filled and a saved MK2 diff, and every row gets a control name with its evidence and confidence.",
+      "steps": [
+        "reference/rane-one-mk1-midi-map.csv is regenerated by the command in its first comment line (tools/census over captures/2026-10-23-census/02-census-mixer.jsonl, 03-census-d1-controls.jsonl, 04-census-d1-pads.jsonl, 05-census-d2-controls.jsonl, 06-census-d2-pads.jsonl, 27-census-d1-pads-shift.jsonl, 28-census-d2-pads-shift.jsonl with `--shift 16:50 --out reference/rane-one-mk1-midi-map.csv --force`); its row count is stated in the commit message (the tool printed 134 rows without --shift on 2026-10-24); `tools/census --diff reference/rane-one-mk2-djay-midi-map.csv` is saved as reference/rane-one-mk1-vs-mk2.csv with its command in a comment line.",
+        "reference/rane-one-mk1-controls.csv (new, hand-written, committed) names every MK1 row with the columns `status,channel,number,name,evidence,confidence`: evidence is a take file plus a time range in seconds, or the MK2 djay keypath; confidence is `capture` (the message arrived when the prompt asked for that control, or it is pinned by a dedicated take: Play before each motor start in 15/21/23/24, Range note 43 between the sweeps of 23/24, Slip and Shift in 25, the strip CCs in 26, the 14-bit pitch fader CC 9/41 in 23/24), `mk2` (the channel/number matches the MK2 map only) or `unknown`.",
+        "The Shift button is confirmed as note 50 on channel 16 from the census takes (held while deck buttons repeat), and the pad-mode buttons, the pad notes and their Shift layers from takes 04, 06, 27 and 28 are listed with the mode names in the order of the capture-session prompt (tools/lib/capture-session.mjs) or the MK2 names, each marked `capture` or `mk2`.",
+        "docs/research/2026-10-24-census-analysis.md has a `Census` section with: distinct controls per channel, which notes send no release, the 14-bit pair (CC 9/41 on channels 1 and 2), the power-on dump of take 01 (message count, channels, whether it matches the CLAUDE.md note-off burst), and the FX controls Michael described in take 02's note matched to rows.",
+        "tests/census.test.mjs (or a new test file) asserts that the committed map CSV reproduces from the takes byte for byte except the date in its first comment line, and that every data row of the map has exactly one row in reference/rane-one-mk1-controls.csv.",
+        "npm test is green."
+      ],
+      "after": ["M5-01"],
+      "passes": true
+    },
+    {
+      "id": "M5-04",
+      "milestone": "M5",
+      "kind": "check",
+      "model": "opus",
+      "description": "The hand takes settle the platter format: ticks per revolution, deck 2's channel and format, the timestamp saturation marker, the touch taps and the alt-jog takes, each a cited number in the analysis document and pinned by a test on the real take.",
+      "steps": [
+        "`tools/analyze-platter captures/2026-10-23-census/09-hand-d1-ten.jsonl` and `… 13-hand-d2-ten.jsonl --deck 2` give net ticks of about +36,008 and +35,987 (the tool's exact numbers quoted); docs/research/2026-10-24-census-analysis.md states ticks per revolution from them (expected 3600 ± 2), the mark error implied by Michael's note on take 09, and whether 3598 and 3584 are excluded.",
+        "Saturation (spec §5 M5 check 2): over takes 07, 12 and 29 the document gives the count of unsigned timestamp deltas in 16,304–16,381 and the count of −1 markers whose neighbouring messages put them under 5.8 ms apart (expected 0 for both), states `saturation confirmed` or `refuted`, and D23 and D24's dependency on it is marked VERIFIED or amended in docs/decisions.md.",
+        "Takes 10 and 14 (12 and 6 messages): every message is listed by type, channel and number with its time; the document says whether any is a touch message, and spec §2's `no touch message` is marked VERIFIED or amended.",
+        "Takes 11 and 30 (alt jog): the document states what they contain (hand turns only, or anything new, with counts).",
+        "tests/platter-decoder.test.mjs pins the real takes: take 09 decodes with 0 timer unwrap errors and net ticks within ±8 of the tool's number; take 13 under channel 2 likewise; take 12 decodes with 0 unwrap errors.",
+        "The header of mapping/rane-one-platter.js: TICKS_PER_REV, TICK_MOD, TIMER_MOD, TIMER_MARKER_MIN and the deck 2 channel line cite the census takes instead of `UNVERIFIED` where the takes settle them (values themselves change only in M5-07).",
+        "npm test is green."
+      ],
+      "after": ["M5-02"],
+      "passes": true
+    },
+    {
+      "id": "M5-05",
+      "milestone": "M5",
+      "kind": "check",
+      "model": "opus",
+      "description": "The motor takes settle the motion questions: timer rate and speed on both decks, the hold pattern, the stopped dither, direction with reverse on, spin-up and spin-down times, backspin ratios and what Shift+Slip sends, each cited in the analysis document.",
+      "steps": [
+        "Takes 15 (deck 1, reverse ON) and 21 (deck 2): timer counts per host second, ticks per second, the ratio against 33⅓ at 3600 ticks/rev and the per-message ratio range are in docs/research/2026-10-24-census-analysis.md; 15 reads negative (about −126,082 ticks in 65 s) and is used as mirrored data; the document states each deck's actual rpm at pitch centre and whether TIMER_HZ 2,822,400 holds on deck 2 within 0.01 %.",
+        "Hold (check 1): takes 17 and 31 give messages/s, the CC 6 delta histogram and the share of timestamp markers over the held seconds, compared with the quick capture's 16/s ±1 pattern, and HELD_RATIO's 200 ms window reading is quoted.",
+        "Stopped dither (check 3): the stopped tails of 19, 20, 33 and 34 give max |ratio| over 200 ms windows and whether the net tick count drifts (motion) or returns (noise); STOPPED_RATIO's margin is stated.",
+        "Spin-up after the Play press in 15, 21, 23 and 24 (time to pass ratio 0.1 and to reach 0.99, torque LOW) and spin-down in 19/33 (Stop Time minimum) and 20/34 (maximum) are tabulated with duration and shape; SPINUP_MS, HELD_START_MS and the T8 question get numbers.",
+        "Backspin takes 18 and 32: minimum ratio reached, time spent under −0.5 and under −0.4, and the re-acceleration; BACKSPIN_RATIO and BACKSPIN_EXIT_RATIO are judged against them.",
+        "Take 25: the message sequence around each Shift+Slip press (Shift note 50 ch 16, the Slip note on ch 5/6, and the `cc ch15 96` seen in the census of that take, or whatever appears) with times, and what the platter messages did afterwards; the document states what the One sends for `motor off` mode, and says nothing was sent to the One. The reverse pad is identified from takes 04/06 if a note matches the MK2 reverse (ch 1/2 note 16) and otherwise marked UNVERIFIED for round 2.",
+        "Note 0 on channel 1/2 precedes each motor start and stop in 15, 21, 23 and 24 (times quoted); reference/rane-one-mk1-controls.csv names it Play with confidence `capture`.",
+        "tests/platter-speed.test.mjs or tests/platter-run.test.mjs pins: take 21 under deck 2 holds a motor-phase ratio of 1.00 ± 0.01 (or the measured rpm, stated), and take 15 holds −1.00 ± 0.01 mirrored.",
+        "npm test is green."
+      ],
+      "after": ["M5-02"],
+      "passes": true
+    },
+    {
+      "id": "M5-06",
+      "milestone": "M5",
+      "kind": "check",
+      "model": "opus",
+      "description": "Takes 23 and 24 give the platter speed at each end of the pitch fader for each Range setting, whether Range sends MIDI, and the motor's lag behind the fader, and the core gets a pure fader-to-expected-ratio function pinned on those numbers.",
+      "steps": [
+        "For each of the three sweeps per take, docs/research/2026-10-24-census-analysis.md tabulates the 14-bit fader value (CC 9 MSB / CC 41 LSB) at each end and the platter ratio there (1-Euro estimator over 200 ms windows), with the Range press (note 43) times between sweeps; the range per sweep and per deck is stated as a percentage (for example ±8 %, ±16 %, ±50 %, or whatever the numbers say).",
+        "The document states whether the Range button sends any MIDI other than note 43 and whether the fader value to motor speed mapping changed between sweeps (Michael saw no platter difference).",
+        "The motor's lag: time from a fader step to the platter ratio reaching 90 % of its new value, from the sweeps' steepest sections, or stated as unmeasurable with the reason; RETARGET_MS gets a recommendation.",
+        "mapping/rane-one-platter.js gains a pure function (the plan's name, for example `RaneOnePlatter.expectedRatioFromFader(value14, rangeFraction)`) with tests in tests/platter-speed.test.mjs or a new tests/platter-fader.test.mjs pinned on the takes: the fader's top, centre and bottom values from 23 and 24 give the measured ratios within ±0.5 %, and the direction (whether 0 is the top) is stated from the takes.",
+        "docs/decisions.md gets a `D<n> *default*` naming the Mixxx rate range the mapping will set so `rate_ratio` matches the motor, and how M7 derives `expectedRatio` (from `rate_ratio` or from the raw fader), with the alternative named and the undo.",
+        "npm test is green."
+      ],
+      "after": ["M5-02"],
+      "passes": false
+    },
+    {
+      "id": "M5-07",
+      "milestone": "M5",
+      "kind": "build",
+      "model": "opus",
+      "description": "Every RaneOnePlatter.DEFAULTS constant the census takes settle is corrected test-first and cited to its take in the header, and the switch-over thresholds and timers are proven to be config overrides (the configurable switch-over decision).",
+      "steps": [
+        "For each constant whose value changes (listed in the commit message as old → new with the take), a test in tests/platter-*.test.mjs failed before the change and passes after; constants the takes confirm keep their value with the header citation moved from `UNVERIFIED` to the take; constants no take covers stay `UNVERIFIED` with `round 2` in the header.",
+        "tests/platter-state.test.mjs has a test named for the configurable switch-over decision: `createStateMachine({TAKEOVER_TOL: 0.06, HANDBACK_TOL: 0.02, TAKEOVER_MS: 40, SETTLE_MS: 400})` changes the takeover and handback timing on a synthetic step script as those numbers predict, and an invalid override (negative or non-number) falls back to DEFAULTS without throwing.",
+        "The header of mapping/rane-one-platter.js names the user-tunable set from that decision, and tests/platter-pure.test.mjs still passes.",
+        "The `Constants to re-check` table in docs/plans/2026-10-24-M5-truth.md is filled in with the outcome per key: confirmed, changed (old → new), or UNVERIFIED round 2.",
+        "npm test is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "M5-08",
+      "milestone": "M5",
+      "kind": "check",
+      "model": "opus",
+      "description": "tools/platter-run over every platter take on both decks gives the timelines Michael played, with the glitch count (control flips under 20 ms) per take, recorded in the analysis document and pinned by tests.",
+      "steps": [
+        "docs/research/2026-10-24-census-analysis.md has a table with one row per take 07–15, 17–21, 23–26 and 29–34 (16 and 22 excluded as not data): the command (`--deck`, `--expected` if used), the state sequence in words, and the glitch count; the commands are in a script tools/platter-run-all (or a documented loop in the document) that the verifier can re-run.",
+        "The glitch count is 0 on every take, or each non-zero take is listed with the time, the states and the cause, and a decision whether a constant change (test-first, in this feature) or a round 2 hardware test is the fix.",
+        "tests/platter-run.test.mjs pins: 18 and 32 reach `backspin`; 17 and 31 reach `held` while the motor runs; 19, 20, 33 and 34 end in `stopped`; 15 and 21 hold `motor_at_speed` with no control flip across their 60 s (15 with the expected ratio the plan gives for reverse); 25 ends in a stated state.",
+        "WRAP_JUMP 1.8 (M4-08 review #1) is checked on the fast takes 08 and 29: the document gives the largest per-tick interval shrink seen and 0 unwrap errors, or the amended value with its test.",
+        "npm test is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "M5-09",
+      "milestone": "M5",
+      "kind": "docs",
+      "model": "sonnet",
+      "description": "HARDWARE-TESTS.md gains a `Round 2` session under 15 minutes with every gap M5 found, and spec §5 M5 lists each answer or UNVERIFIED reason with its take.",
+      "steps": [
+        "HARDWARE-TESTS.md has a `## Round 2` section after the existing session: numbered steps with exact actions and timings totalling under 15 minutes, including at least: the FX section with Shift held; Play press, hold 1 s, release in a census take per deck; the deck contour section (slow–fast knob and both reverse switches); the reverse pad per deck; a motor take at torque HIGH (Play, 20 s, Play); five taps on the vinyl top and five on the platter edge with the time of each tap noted; every row reference/rane-one-mk1-controls.csv marks `unknown` or `mk2`; and what to write in INBOX.md afterwards.",
+        "The round 2 steps are given as tools/capture-session steps (an `--extras` or a new group, with the tool's `--list` output quoted) or the section says why they are run with `tools/capture --port 'Rane ONE MIDI 1' --seconds N --out captures/<date>-round2/<nn>-<step>.jsonl` by hand instead, with the commands written out.",
+        "docs/spec.md §5 M5 has an `Answers` list: the platter format and resolution, host motor command (UNVERIFIED, nothing sent, the decision number), Shift+Slip, the Stop Time knob, 33/45 (no hardware switch), the power-on dump, and items 1–7 each with a take citation or `UNVERIFIED` plus the round 2 step that covers it; §2 is updated for deck 2, 45 rpm, torque LOW and the touch finding.",
+        "The progress entry asks Michael for round 2 as a question, with the time it needs.",
+        "npm test is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "M5-10",
+      "milestone": "M5",
+      "kind": "review",
+      "model": "opus",
+      "description": "The M5 diff is reviewed, Critical/Important findings fixed test-first, simplifications applied and docs updated so M5 ships with every number traceable to a take.",
+      "steps": [
+        ".harness/runs/rane-one-mixxx-2026-10-24/reviews/M5.diff (the diff from the run's start commit to the M5-09 commit, harness files left out) and M5-findings.md exist; an Opus reviewer read the diff from the file; each Critical/Important finding has a failing test added first and the fixing commit named; simplification passes applied are listed.",
+        "Ten numbers sampled by the reviewer from docs/research/2026-10-24-census-analysis.md (at least one per take group: hand, motor, pitch, census) are re-derived with the stated commands and match; any mismatch is fixed in the document.",
+        "mapping/rane-one-platter.js's header has every constant cited to a take or marked `UNVERIFIED` with the round 2 step; `node --check` passes on it and tests/platter-pure.test.mjs passes.",
+        "docs/spec.md §5 M5 is marked done with the date and links the plan, the analysis document and M5-findings.md; docs/decisions.md's new entries from this milestone each have a `To undo` line.",
+        "npm test is green."
+      ],
+      "passes": true
+    },
+    {
+      "id": "M6-01",
+      "milestone": "M6",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The M6 plan fixes the control-by-control table (MK1 row → Mixxx control, Shift layer, soft takeover), the Components structure of Rane-One-scripts.js, the Node test harness for the glue, and the dev-Mixxx replay check.",
+      "steps": [
+        "docs/plans/2026-10-24-M6-mapping.md exists with the sections `Control table`, `Script structure`, `Test harness`, `Replay check` and `Out of scope` (the platter CC 6 and pitch bend are M7's: the XML routes them to a handler that only counts; no `midi.send*` anywhere).",
+        "`Control table` has one row per row of reference/rane-one-mk1-controls.csv except the platter pair: the Mixxx group and control by its 2.5 name (for example `[Channel1],play`, `[Channel1],rate`, `[EqualizerRack1_[Channel1]_Effect1],parameter3`, `[QuickEffectRack1_[Channel1]],super1`, `[EffectRack1_EffectUnit1],group_[Channel1]_enable`, hotcue/beatloop/roll/sampler controls per pad mode), the Component type (Button, PlayButton, CueButton, SyncButton, HotcueButton, SamplerButton, LoopToggleButton, Pot, Encoder, EffectUnit or a RaneOne class), the Shift behaviour, `soft takeover` for every Pot, and `no-op (counted)` for `unknown` rows.",
+        "`Script structure` fixes: `RaneOne.Deck` (two instances on channels 1/2 with pads on 5/6), `RaneOne.Mixer`, `RaneOne.Fx`; how Shift (note 50 ch 16) reaches every container; how CC 9 (MSB) and CC 41 (LSB) combine into the 14-bit pitch fader in the order take 23 shows; how `rate` direction and range follow M5-06's decision; that every function Mixxx calls is wrapped by `RaneOne.guard` or is a Components input; and the XML naming convention (`RaneOne.deck1.play.input` style).",
+        "`Test harness` designs tests/helpers/fake-mixxx.mjs: it loads Mixxx 2.5.6's midi-components-0.0.js and common-controller-scripts.js from `$(flatpak info --show-location org.mixxx.Mixxx)/files/share/mixxx/controllers/` (skipping with a message when absent), then the mapping scripts, into a vm with a fake `engine` that records setValue/setParameter/softTakeover calls and a fake `midi` whose send functions throw; and dispatches a JSONL capture through the XML's `<control>` table.",
+        "`Replay check` gives the dev-Mixxx command sequence (tools/install-mapping, tools/mixxx-dev start, tools/replay --to-port 'Midi Through' per census take, tools/mixxx-dev log grep patterns, tools/mixxx-dev stop) and what counts as pass.",
+        "docs/decisions.md gets a `D<n> *default*` for each choice Michael would care about: the pad-mode assignment, what Shift+Play and Shift+Cue do, the FX paddle semantics, the browse encoder and load buttons; each with the MK2 djay layout as the hint and an undo line.",
+        "npm test is green."
+      ],
+      "after": ["M5-03", "M5-06"],
+      "passes": false
+    },
+    {
+      "id": "M6-02",
+      "milestone": "M6",
+      "kind": "build",
+      "model": "opus",
+      "description": "A Node harness loads the mapping scripts with Mixxx 2.5.6's Components library and a fake engine, dispatches capture messages through the XML control table, and records what the mapping does, so the rest of M6 is test-first.",
+      "steps": [
+        "tests/helpers/fake-mixxx.mjs exists and tests/mapping-harness.test.mjs passes: the harness loads mapping/Rane-One.midi.xml plus its `<scriptfiles>` in order, calls `RaneOne.init`, dispatches a 3-message fixture to the functions named by `<control>` entries, and records `engine.setValue` calls as `[group, control, value]`; `midi.sendShortMsg` and `midi.sendSysexMsg` throw in the fake, proven by a test.",
+        "The fake implements what midi-components-0.0.js needs (engine.getValue, setValue, getParameter, setParameter, softTakeover, softTakeoverIgnoreNextValue, makeConnection, beginTimer, stopTimer, script.midiDebug, console) and a test proves `components.Button` and `components.Pot` work inside it (a Pot with soft takeover sets `[Channel1],volume` and `engine.softTakeover` was called).",
+        "When the Flatpak Mixxx resources are missing the harness skips its tests with an explicit message rather than failing, and the test file's header comment says so.",
+        "tests/mapping-xml.test.mjs is extended: every `<control>` in the XML names a function that exists after loading, and every status/channel/number row in reference/rane-one-mk1-midi-map.csv except the platter CC 6 and pitch bend rows has a `<control>` entry; the second assertion is marked `todo` until M6-06 and the test says so.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M6-03",
+      "milestone": "M6",
+      "kind": "build",
+      "model": "opus",
+      "description": "Deck 1 and 2 transport and deck buttons (Play, Cue, Sync, keylock, pitch bend ±, Range, Slip, reverse, loop buttons, load and the other deck notes in the controls CSV) drive the right Mixxx controls with their Shift layer, test-first.",
+      "steps": [
+        "tests/mapping-deck.test.mjs (on the harness): for each deck button row in reference/rane-one-mk1-controls.csv on channels 1 and 2 (plus the Slip and reverse pads on channels 5/6 if the CSV names them), a note on/off pair records the plan's control (for example ch 1 note 0 → `[Channel1],play` toggled; ch 2 note 1 → `[Channel2],cue_default` 1 then 0), and with Shift held (ch 16 note 50) the plan's Shift control is recorded instead.",
+        "mapping/Rane-One.midi.xml has a `<control>` entry with `<script-binding/>` per such button and mapping/Rane-One-scripts.js builds them as components inside `RaneOne.Deck`; a test makes the fake engine throw inside a handler and the dispatch does not propagate the exception (guard or Components input).",
+        "Replaying takes 03 and 05 through the harness records at least one setValue per mapped deck button and lists as unhandled only CC 9/41 (the pitch fader, M6-04), the deck knobs (M6-04) and the platter rows.",
+        "`node --check mapping/Rane-One-scripts.js` passes and `grep -c 'midi.send' mapping/Rane-One-scripts.js` prints 0.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M6-04",
+      "milestone": "M6",
+      "kind": "build",
+      "model": "opus",
+      "description": "The 14-bit pitch fader, the deck knobs, the mixer section (gain, EQ, filter, channel faders, crossfader, master and cue knobs) and the browse encoder with its press and the load buttons drive Mixxx with soft takeover, test-first.",
+      "steps": [
+        "tests/mapping-mixer.test.mjs (on the harness): a CC 9 + CC 41 pair on channel 1 at the top, centre and bottom values seen in take 23 sets `[Channel1],rate` to the values M5-06's decision gives (direction stated in the test); a lone CC 9 without its CC 41 within the pair window still yields a rate within 1/128 of the full value, or the plan's stated rule.",
+        "Every mixer CC in the controls CSV (channels 1/2 CC 22–28, channel 15 CC 35/36, channel 16 CC 4/8 and any others) maps to the plan's control as a `components.Pot` with soft takeover, and the test asserts `engine.softTakeover(group, control, true)` was called for each; the endless encoders (channels 1/2 CC 0 sending 63/65, channel 16 CC 3) move `[Library],MoveVertical` or the plan's control by ±1 per tick, and their presses (channel 16 note 4 and the deck notes the plan names) load or select per the plan.",
+        "Replaying take 02 through the harness touches every mixer row and records a sweep reaching both the minimum and the maximum for each Pot.",
+        "The XML has `<control>` entries for both bytes of the 14-bit fader and for every Pot and encoder, and a test asserts the XML has no duplicate (status, channel, number) entry.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M6-05",
+      "milestone": "M6",
+      "kind": "build",
+      "model": "opus",
+      "description": "The eight performance pads per deck with their pad-mode buttons and Shift layers drive hotcues, loops, rolls and samplers per the plan, test-first.",
+      "steps": [
+        "tests/mapping-pads.test.mjs (on the harness): pressing each mode button (channels 5/6 notes 0, 7, 11, 12, 13 and any other mode note the controls CSV names) and then the pad notes 20–27 (and 28–35 if takes 04/06/27/28 show them as the second bank or the Shift layer) records the plan's control per mode (for example hotcue mode: `[Channel1],hotcue_N_activate`; Shift+pad: `hotcue_N_clear`; roll mode: `beatlooproll_X_activate` with the plan's sizes; sampler mode: `[SamplerN],cue_gotoandplay`).",
+        "Pad mode is per deck and a replay of takes 04 and 06 through the harness finishes with zero thrown handler errors and every pad note handled (the harness's unhandled list is empty for channels 5 and 6).",
+        "Pads use Components (`HotcueButton`, `SamplerButton`, or a `RaneOne.Pad` container that swaps its `input` on mode change) and the XML names one input per pad note; no LED output exists (`grep -c 'midi.send' mapping/Rane-One-scripts.js` prints 0).",
+        "The pad-mode decision from the M6 plan is cited in a comment at the pad code with the mode-button to function table.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M6-06",
+      "milestone": "M6",
+      "kind": "build",
+      "model": "opus",
+      "description": "The FX section (paddles, FX1–6 buttons, depth knob, beat knob, Tap) and every remaining MK1 row (unknown rows as counted no-ops, platter messages routed to an M7 placeholder) are mapped, so no census message is unhandled.",
+      "steps": [
+        "tests/mapping-fx.test.mjs (on the harness): the paddle notes (channel 9 notes 0–2 and channel 10 notes 3–5 per the controls CSV) enable and disable the plan's effect unit for their deck (`[EffectRack1_EffectUnitN],group_[ChannelM]_enable`), a paddle locked up stays enabled; the FX1–6 buttons select effects or units per the plan; the depth knob is a Pot with soft takeover on the unit's `mix` or `super1`; the beat knob encoder changes the plan's control; Tap sets `[ChannelN],bpm_tap`.",
+        "The platter CC 6 and pitch bend on channels 1 and 2 have `<control>` entries to `RaneOne.deck1.platter.input` and `RaneOne.deck2.platter.input`, which only count messages, with a comment saying M7 replaces them; `unknown` rows go to `RaneOne.noop` with the row name in an XML comment.",
+        "The M6-02 `todo` assertion (every census row has a `<control>` entry) now passes, and replaying the seven census takes plus takes 25 and 26 through the harness reports zero unhandled messages and zero handler exceptions, in a table the test prints or the plan records.",
+        "Every XML entry for a control the controls CSV marks `mk2` or `unknown` carries `UNVERIFIED` in its XML comment.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M6-07",
+      "milestone": "M6",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see: the census takes replayed through Midi Through into the dev Mixxx drive the mapped controls, as shown by the Mixxx log, with no mapping warnings under --controller-abort-on-warning.",
+      "steps": [
+        "`tools/install-mapping` then `tools/mixxx-dev start` succeed on the dev profile (WAYLAND_DISPLAY set); `tools/mixxx-dev log` shows `RaneOne: init` and no warning line from the controller mapping. If the desktop session is absent (`WAYLAND_DISPLAY` empty), the feature records that in progress and steps 2–3 are written down as skipped with the reason, not faked.",
+        "`tools/replay --to-port 'Midi Through' captures/2026-10-23-census/03-census-d1-controls.jsonl` and the same for 02, 04, 05, 06, 27 and 28 (at `--speed 4` if the log keeps up) exit 0, and the log shows each control change (Mixxx's `--controller-debug` lines, or `console.log` lines the mapping writes behind a `RaneOne.DEBUG` flag that the dev profile turns on).",
+        ".harness/runs/rane-one-mixxx-2026-10-24/checks/M6-replay.md has a table per take: messages sent, the count of distinct Mixxx controls that changed (a grep of the log), ten sample log lines, and the control rows that produced no log line (expected: the platter CC 6 / pitch bend rows and the no-op rows only).",
+        "The Mixxx this feature started is stopped (`tools/mixxx-dev stop`, then `tools/mixxx-dev status` prints `stopped`), and the route check output from `tools/mixxx-dev start` quoted in the check file shows the mixxx-dev null sink only.",
+        "npm test is green."
+      ],
+      "passes": false
+    },
+    {
+      "id": "M6-08",
+      "milestone": "M6",
+      "kind": "docs",
+      "model": "sonnet",
+      "description": "docs/mapping-reference.md tells Michael what every physical control does in Mixxx, with Shift layers and pad modes, and the round 2 hardware list gains the controls M6 could not name.",
+      "steps": [
+        "docs/mapping-reference.md exists with one table per section (deck, pads per mode, mixer, FX, Shift layer) listing the physical control, the MIDI row (status, channel, number), the Mixxx control, and `UNVERIFIED` where reference/rane-one-mk1-controls.csv has confidence `mk2` or `unknown`; it says the platters are not wired yet (M7).",
+        "HARDWARE-TESTS.md `## Round 2` lists every `mk2`/`unknown` control M6 mapped by guess, as a step that presses each one with a note of its name, and the section's total time is restated and still under 15 minutes (or the overflow is split into a named round 3 list).",
+        "README.md links docs/mapping-reference.md and states the mapping's status (M6: every non-platter control mapped, nothing sent to the controller).",
+        "npm test is green."
+      ],
+      "after": ["M6-06"],
+      "passes": false
+    },
+    {
+      "id": "M6-09",
+      "milestone": "M6",
+      "kind": "review",
+      "model": "opus",
+      "description": "The M6 diff is reviewed, Critical/Important findings fixed test-first, simplifications applied and docs updated so the non-platter mapping ships safe: no outputs, no throwing handlers, soft takeover on every Pot.",
+      "steps": [
+        ".harness/runs/rane-one-mixxx-2026-10-24/reviews/M6.diff (from the M5-10 commit to the M6-08 commit, harness files left out) and M6-findings.md exist; an Opus reviewer read the diff from the file; each Critical/Important finding has a failing test added first and the fixing commit named; simplification passes applied are listed.",
+        "The reviewer checked and the findings file states: `grep -c 'midi.send' mapping/Rane-One-scripts.js` is 0; every XML `<control>` function exists; every Pot has soft takeover; every handler path is guarded; the mapping XML's `<info>` description no longer says `M1 skeleton`.",
+        "docs/spec.md §5 M6 is marked done with the date and links the plan, M6-findings.md and the replay check file; docs/decisions.md's M6 entries each have a `To undo` line.",
+        "npm test is green."
+      ],
+      "passes": false
+    }
+  ]
+}
