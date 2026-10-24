@@ -20,6 +20,8 @@ live state before you act on it.
     check, then wait for Michael's go before merging anything into `main`.
   - **n8n-home:** never run `scripts/deploy.sh`, write under `/srv`, or touch container `n8n-n8n-1` or the live n8n
     MCP write tools. Merging code is fine.
+  - **dj-crate-streaming:** a live project (live-staged). This catch-up deploys nothing and writes nothing live;
+    it sets up the live permissions as the handoff's "dj-crate-streaming goes live" section says.
   - Every other project has no gate.
 - **Harness:** only `harness status`, `harness report`, `harness parked` and `harness gc <project>`. Never
   `start/continue/queue/answer/merge`. A run that is waiting on Michael gets its question quoted in your report.
@@ -48,7 +50,10 @@ live state before you act on it.
    - Stop any service a run left up (dev servers, `npx supabase stop`, test containers).
 4. **Settings.** Reduce `.claude/settings.json` to the project's deploy gates, as the handoff's Policy section says:
    - portfolio_site and n8n-home keep a short deny list;
+   - dj-crate-streaming gets exactly the file in the handoff's "dj-crate-streaming goes live" section;
    - every other project's file is deleted, or left empty if a tool needs it.
+
+   Set `MERGE_POLICY` in `.harness/config.sh` as the Policy section's "Harness merges" says.
 
    Commit, push and merge this as its own PR.
 5. **Pull** the local checkout `~/projects/<project>` to `main` (fast-forward), unless it has uncommitted work. In that

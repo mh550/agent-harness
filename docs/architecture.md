@@ -252,7 +252,7 @@ the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** 
 
 | Setting | Convention |
 |---|---|
-| `MERGE_POLICY` | `pr` (default): a verified milestone opens its PR and waits for you. `auto`: the driver also merges each one (`gh pr merge --match-head-commit`, so the verified tree lands); set it in `<project>/.harness/config.sh` only for a repo with no production, where merging `main` has no real-world effect. `off`: no PR. `harness merge <run>` lands verified milestones under `auto` or `pr`, and does nothing under `off` |
+| `MERGE_POLICY` | `pr` (default): a verified milestone opens its PR and waits for you. `auto`: the driver also merges each one (`gh pr merge --match-head-commit`, so the verified tree lands); Michael's user config sets it (`decisions/2026-10-24-permissions-policy`), and a project whose `main` reaches production without a gate sets `pr` in `<project>/.harness/config.sh` (portfolio_site, n8n-home). `off`: no PR. `harness merge <run>` lands verified milestones under `auto` or `pr`, and does nothing under `off` |
 | `NTFY_URL` / `NTFY_TOKEN` | empty: notifications go to `NOTIFY_CMD` (or nowhere). Set: the harness posts to that ntfy topic itself, the token as `Authorization: Bearer` (never logged), and `NOTIFY_CMD` is not called |
 | `DESK_URL` | empty: no **Answer with Claude** action on a park's notification |
 | `DESK` / `DESK_MODEL` | `0` / `opus`: no desk starts by itself (`harness desk` by hand still works). `DESK=1`: the driver and the debrief start one whenever a run needs Michael (§17), on `DESK_MODEL` |

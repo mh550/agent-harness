@@ -1,3 +1,3 @@
-# The harness working on itself. Changes to the harness wait for Michael: PRs are opened, never merged by the driver.
+# The harness working on itself. Verified milestones merge themselves (MERGE_POLICY from ~/.config/harness/config.sh,
+# auto since decisions/2026-10-24-permissions-policy), so each queued run builds on the last.
 CHECK_CMD="bash tests/run.sh"
-MERGE_POLICY=pr
