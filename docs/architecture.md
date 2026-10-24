@@ -56,31 +56,39 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/notify.mjs` | ~75 | Pure helpers for it: `githubUrls` (GitHub origins only), `trimBody` (3500 bytes, `…`), `actionsHeader` (ntfy `view, <label>, <url>; …`), `inboxQuestion` (the lines a session added above `## Answers`) |
 | `lib/parked.mjs` | ~110 | `harness parked` (§17): pure `questionFor`, `commandsFor`, `entriesFor`, `parkedReport`, and a `report` CLI over the state dirs bash names on stdin. Never writes |
 | `lib/check.sh` + `treekey.mjs` | ~40 | The suite, cached per content of the code tree. One command for the driver and every session |
+| `lib/entries.mjs` | ~330 | The journal (decisions/2026-10-22-journal-single-writer, -rendered-progress, -context-pack): pure `journalEntry`, `stamp`, `render`, `pack`; verbs `ingest` (validate `entry.json`, stamp, append to `entries.jsonl`), `render` (progress.md, progress-archive.md) and `pack` (context.md within `CONTEXT_PACK_BYTES`) |
 | `lib/features.mjs` | ~200 | The feature-list contract: scheduling, gating, repair, kinds, evidence counting |
 | `lib/metrics.mjs` | ~100 | Per-session metrics; the "environmental?" decision (limits, API errors, $0) |
 | `lib/summary.mjs` | ~230 | Run summary, writeup, ledger rows, trends, calibration |
-| `lib/render.mjs` | ~15 | Prompt templating (`{{X}}` ← `HARNESS_X`) and titled sections |
+| `lib/prompt.sh` | ~50 | The driver's prompt assembly (`prompt_vars`, `prompt_env`, `prompt_render`), sourced by the driver; run as `prompt.sh <state dir> <template> <feature>` it renders a run's prompt the way its driver would (eval probes use it) |
+| `lib/eval.sh` | ~260 | `harness eval run\|compare\|probes` (§11): replays `evals/` tasks with a ref's own driver on throwaway clones in `/tmp/harness-eval/<stamp>/`, under `EVAL_BUDGET_USD` and the 7-day window; compare; probes |
+| `lib/eval.mjs` | ~335 | Pure helpers: task validation, `spent`, `loadResult`, `METRICS`, `compare`/`compareText` (verdicts with the repeat spread as noise), probe `questions`/`score` |
+| `lib/render.mjs` | ~35 | Prompt templating (`{{X}}` ← `HARNESS_X`), titled sections placed at a `{{SECTIONS}}` line (`assemble`) |
 | `lib/page.mjs` | ~130 | The debrief page: a card per run from summary.json, then the note (escaped), one self-contained HTML file |
 | `lib/desk.sh` | ~240 | `harness desk <run> [--why …]` \| `--debrief` (§17): a Remote Control `claude` in tmux session `h-desk`, window `<run>`, in the project directory; the pane's session URL is the notification's click; one desk per run (a later event is typed into the open one); a desk that can't start is a note and the plain notification, exit 0. `--list`, `--close <run>\|--all`, `--gc` (from `harness gc`: idle for 24 h) |
 | `prompts/desk.md` | ~80 | The desk's instructions (a run block and a debrief block): read `harness parked`/status/INBOX/progress, check safely, one numbered brief, `harness answer` and the continue only after Michael's yes, the never-list |
 | `skills/harness-answer/SKILL.md` | ~45 | The answer desk's instructions for an interactive session Michael opens (§17); installed by a symlink into `~/.claude/skills/` |
 | `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
-| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md` |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 168 checks |
+| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*) and `parts/rules.md` (the line naming `CLAUDE.md`) |
+| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 226 checks |
 
 ## 4. Where state lives
 
 | What | Path | Written by | Read by | Committed? |
 |---|---|---|---|---|
 | Feature list | `<wt>/.harness/runs/<run>/feature_list.json` | initializer; sessions (own `passes` only); verifier (un-pass only); driver (repair, un-pass) | everyone | yes, run branch |
-| Progress log | `…/progress.md` (newest first) | sessions, verifier | sessions, Michael (phone), retro, PR bodies | yes |
+| Session entry | `…/entry.json` (the run directory, transient) | each session, once, at the end | driver (`entries.mjs ingest`), which validates, stamps `at`/`session`/`model`, appends to `entries.jsonl` and deletes it; a missing or invalid one becomes a minimal entry built from git, with a note | no (removed on ingest) |
+| Journal | `…/entries.jsonl` (one line per session: feature, outcome, what changed, evidence, dead ends, discoveries) | driver only (`ingest`) | `render`, `pack`, retro, evals | yes |
+| Context pack | `…/context.md` (at most `CONTEXT_PACK_BYTES`; five parts in priority order: this feature's earlier attempts, dead ends, failed verify rows and questions; Michael's answers; discoveries that name it, its milestone or the run; the latest entry of each feature in its `after`; the last 3 entries; each item ends `→ entries.jsonl:<line>`); a copy in `logs/*.context.md` | driver (`entries.mjs pack`) before every coding and verify session, committed `HARNESS: context pack for <id>` | the session, first (prompts say `Read context.md first`); `eval probes` | yes |
+| Progress log | `…/progress.md` (newest first: 15 in full, then one line each) and `…/progress-archive.md` (every entry in full; a continued legacy run's old progress.md at its end) | driver (`entries.mjs render` after every journal append, decisions/2026-10-22-rendered-progress); a legacy run's sessions until it is continued | sessions, Michael (phone), retro, PR bodies (the archive), verify's `F evidence` | yes |
 | Steering | `…/INBOX.md` (`status: run/pause/stop`, `## Answers`) | Michael (GitHub app), `harness answer` via the driver | driver, sessions | yes |
 | Brief | `…/brief.md` | driver, from `--brief` at start/continue | every prompt | yes |
 | Driver events | `…/harness-log.md` | driver (`note`) | Michael, summary, retro | yes |
-| Metrics | `…/metrics.jsonl` (one row per session) | driver (`metrics.mjs append`) | summary | yes |
+| Metrics | `…/metrics.jsonl` (one row per session: kind, role, model, cost, wall/api seconds, turns, `tokens_in cache_read cache_write tokens_out cache_hit_rate context_peak`, `orient_tokens orient_turns orient_s`, exit, result) | driver (`metrics.mjs append`) | summary | yes |
 | Summary / writeup / retro | `…/summary.json`, `report.md`, `retro.md` | driver at the end | Michael, ledger | yes |
 | Driver log | `~/.local/state/harness/<p>/<run>/run.log` | driver (`log`) | status, summary (wall times) | no |
-| Transcripts | `…/logs/NN-<id>.jsonl`, `HHMMSS-verify-<m>.jsonl`, `00-init.jsonl`, `zz-retro-*.jsonl` | `claude --output-format stream-json` | metrics, retro, you (`jq`) | no |
+| Transcripts | `…/logs/NN-<id>.jsonl`, `HHMMSS-verify-<m>.jsonl`, `00-init.jsonl`, `zz-retro-*.jsonl`, each with its prompt beside it (`*.prompt.md`) | `claude --output-format stream-json`; the driver copies the prompt | metrics, retro, you (`jq`) | no |
+| Harness version | `~/.local/state/harness/<p>/<run>/{harness-version,harness-dirty}` (last harness commit outside `ledger/`, and whether the tree has changes outside it; `lib/version.sh`; rewritten each segment, shown on the `run <id> on` line, copied into `summary.json` and the ledger row) | driver | summary, `harness trends --by version` | no |
 | Attempts | `…/attempts.json` | driver (bump, unbump, grant, reset) | scheduler | no |
 | Parked features | `…/parked.json` (`id → {answers, why, at}`; `answers` = hash of INBOX.md from `## Answers` on) | driver (park after a `PARKED:` session; unpark when the hash changes) | scheduler, summary, `harness parked` | no |
 | Markers | `…/{driver.pid, ended, PAUSE, STOP, verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, verify-rounds-<m>, tests-start, tests-end, waited-<t>, port, meta.env, run.env, brief.md, inbox.md}` | driver, CLI | driver, CLI, summary | no |
@@ -90,6 +98,8 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Debrief workspace | `~/.local/state/harness/debrief/<stamp>/{context.md,prompt.md,session.jsonl,final.md,body.md}`, `debrief.lock` | `harness debrief` | you (`--dry-run` prints `context.md`) | no |
 | Debrief note and page | `<harness>/ledger/debrief.md` and `debrief.html`, overwritten each time (history: `git log -p`) · `<state>/runners` marks the runs a queue runner started | `harness debrief` (flock, `git commit -- <note>` when `LEDGER_COMMIT=1`) · `harness start` | Michael, the next interactive session | yes, harness repo |
 | Desk | `~/.local/state/harness/<p>/<run>/desk/{<stamp>.md,url,last-event}` (the prompt per event, the session URL while the desk is open, the epoch of its last event) · the debrief's in `queue/desk/` · `desk.lock` (one desk start at a time) · tmux session `h-desk`, a window per run and `debrief` | `harness desk` (the driver, the debrief, you) | `harness desk` (reuse, `--list`), `harness gc` (24 h idle) | no |
+| Eval results | `<harness>/evals/results/<stamp>-<sha>-<label>/<task>[/r<N>]/{summary.json,commits.json,probe-prompt.md,probes.json,…}` (git-ignored) | `harness eval run`, `eval probes` | `eval compare`, Michael | no |
+| Eval workspace | `/tmp/harness-eval/<stamp>/{harness,<task clones>}` (the ref's worktree, a clone per task sealed at `base`: only `main`, no source tag or later object; a private state dir) | `harness eval run` (`harness` removed at the end and by an EXIT trap; the clones and run worktrees stay for `eval probes`) | `harness eval run`, `eval probes`, Michael (`rm -rf`) | no |
 | Scratch | `/tmp/harness/<p>/<run>/` (`init.out`, `check.out`, `check-<key>.out`, `green-<key>`, dev DB, screenshots) | driver, init, check, sessions | sessions, driver | no |
 | Live-write lock | `LIVE_LOCK` (default `/tmp/harness/<p>/live.lock`; dj: `/srv/docker/crates/live.lock`, shared with the backup job) | sessions under `live-staged` (`flock -n`), the backup script (`flock -w`) | both | no |
 | Ledger | `<harness>/ledger/runs.jsonl`, `ledger/<p>/<run>/{summary.json,retro.md,…}` | driver at the end (flock, `git commit -- <paths>`) | `harness trends`, retro, calibration | yes, harness repo |
@@ -98,8 +108,8 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 
 ```
 harness start ─► worktree + branch ─► driver:
-  [resume?] merge main in (and reload the config if it changed) · merge verified (v3) milestones
-  [no list] init + suite ─► INITIALIZER ─► feature_list.json, progress.md
+  [resume?] merge main in before any session, the initializer included (and reload the config if it changed) · merge verified (v3) milestones
+  [no list] init + suite ─► INITIALIZER ─► feature_list.json, entry.json ─► entries.jsonl ─► progress.md (rendered)
   loop:
     stop if: session cap · deadline · STOP/"status: stop"
     pause while: PAUSE/"status: pause"
@@ -110,12 +120,13 @@ harness start ─► worktree + branch ─► driver:
     next = first feature: not passing, not parked, attempts < MAX_ATTEMPTS, every dependency passing
       none → "done" (all pass) | "blocked on X" (a given-up feature) and/or "waiting on Michael: Y" (parked)
              | "no feature left to try"
-    init + suite (cached) ─► CODING SESSION (one feature) ─► commit leftovers
+    init + suite (cached) ─► context.md (pack for this feature) ─► CODING SESSION (one feature) ─► commit leftovers
+      ingest entry.json ─► entries.jsonl ─► render progress.md + progress-archive.md (after every session, verify included)
       environmental? (limit, API error, $0 one-turn) → keep its commits, revert its claims (the list, "passes"
         included), give the attempt back, set LIMIT_UNTIL; MAX_LIMIT_HITS in a row → end "usage limit"
       repair the list (only its own passes may change) · un-pass if the suite is red · metrics · push
       not passing and the final message says "PARKED: <why>" → attempt given back, parked until the answers change
-  VERIFY m: merge main in → session (its code edits are reverted) → refused? deferred, no verdict
+  VERIFY m: merge main in → context.md → session (its code edits are reverted) → refused? deferred, no verdict
       → a new entry with one evidence row per step? no → one re-run on the stronger model → still no → not verified
       → suite green on that tree? → tag run/<run>/<m> (v3) → merge_milestones (PR per milestone, in order)
       a step fails → one more attempt for the feature, then "needs Michael"
@@ -174,6 +185,7 @@ harness start ─► worktree + branch ─► driver:
 | Timeout | `SESSION_TIMEOUT` (exit 124) | counts as a real attempt (the feature is too big) | `metrics.mjs` |
 | Verify | milestone complete | independent session; must write a **new** entry with ≥ one row per step, else one re-run on `VERIFY_ESCALATE_MODEL`, else not verified ("needs Michael"); refused by a limit → deferred, never "holds"; suite must be green on the verified tree; a step fails → one more attempt, then "needs Michael" (`MAX_VERIFY_ROUNDS`) | `verify()`, `verify_ready()` |
 | Read-only sessions | a verify session changes code, a retro changes anything | reverted by a new commit (`restrict`), logged | `restrict()` |
+| Journal writer | a session edits `entries.jsonl` or `progress-archive.md` | restored from the session's start commit before its entry is appended, note `<id>: <file> edited by the session; restored`; readers skip any line that isn't a valid entry and keep line numbers | `journal()`, `entries.mjs readEntries` |
 | Merge order | a later milestone is verified before an earlier one | not merged until the earlier one is (its tag contains the earlier commits) | `merge_milestones` |
 | Tainted tag | a milestone's tag contains commits of features in milestones not yet verified (possible with `after`) | held; it is merged by the next verified milestone's merge, which contains it | `tainted-<m>`, `merge_milestones` |
 | Verified tree | the merge of the tag into `main` wouldn't produce exactly the tag's tree (main has content it wasn't verified with) | held (the next milestone's verify merges main in first); conflict → "needs Michael" | `merge_one` |
@@ -232,7 +244,7 @@ else continues.** Unverified work is never merged and never thrown away.
 ## 10. Configuration
 
 Layers, later wins (`lib/config.sh`): harness defaults → `~/.config/harness/config.sh` (yours: models, limits,
-`MERGE_POLICY`, `MAX_PARALLEL_RUNS`, `NOTIFY_CMD`, `NTFY_URL`, `NTFY_TOKEN`, `DESK_URL`, `DESK`, `DESK_MODEL`) → `<project>/.harness/config.sh` (`POLICY=` and real overrides) →
+`MERGE_POLICY`, `CONTEXT_PACK_BYTES`, `MAX_PARALLEL_RUNS`, `NOTIFY_CMD`, `NTFY_URL`, `NTFY_TOKEN`, `DESK_URL`, `DESK`, `DESK_MODEL`) → `<project>/.harness/config.sh` (`POLICY=` and real overrides) →
 the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** for what's still unset:
 
 | Setting | Convention |
@@ -241,19 +253,38 @@ the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** 
 | `NTFY_URL` / `NTFY_TOKEN` | empty: notifications go to `NOTIFY_CMD` (or nowhere). Set: the harness posts to that ntfy topic itself, the token as `Authorization: Bearer` (never logged), and `NOTIFY_CMD` is not called |
 | `DESK_URL` | empty: no **Answer with Claude** action on a park's notification |
 | `DESK` / `DESK_MODEL` | `0` / `opus`: no desk starts by itself (`harness desk` by hand still works). `DESK=1`: the driver and the debrief start one whenever a run needs Michael (§17), on `DESK_MODEL` |
+| `CONTEXT_PACK_BYTES` | `8192`: the cap on `context.md`; lower-priority items are cut whole, counted in `_<k> items left out_`. The CLI refuses a value that isn't a whole number ≥ 1024, and the driver then points the session at the full record |
 | `CHECK_CMD` | `.harness/check.sh` · `npm run check` · `npm test` · `python3 -m pytest -q` · `cargo test` · `go test ./...` · `make test` |
 | `SMOKE_CMD` | `node .harness/smoke.mjs` · `bash .harness/smoke.sh` · `true` |
 | `INIT_CMD` | `.harness/init.sh` · `true` (the driver runs the suite itself, so init only starts servers) |
 | port | first free from `BASE_PORT` (7800) |
 | run id | `<project>-<date>[-n]` |
 
-**What a project provides**: `CLAUDE.md` (durable rules; read by interactive sessions too, and pasted into every
-harness prompt), one `POLICY=` line, and only the scripts that are truly its own (a sandboxed `check.sh`, a dev-server
-`init.sh`, a `smoke.mjs`). **What a run provides**: `--spec` files and a `--brief` (scope for this run only).
+**What a project provides**: `CLAUDE.md` (durable rules; read by interactive sessions too, and loaded by Claude Code
+in every session, which runs in the worktree; the prompt names it once), one `POLICY=` line, and only the scripts that
+are truly its own (a sandboxed `check.sh`, a dev-server `init.sh`, a `smoke.mjs`).
+A project deployed by a Git-connected host that builds every branch (Vercel, Netlify)
+disables run-branch deploys on `main`: `harness init` writes the guard (`vercel.json` `git.deploymentEnabled`
+`"harness/**": false`; a `netlify.toml` `[build] ignore` that exits 0 for `harness/*`), and a run start without it on
+`origin/main` notes it and notifies once (`lib/deploy.sh`; milestone PR heads `harness-merge/*` still get a preview).
+**What a run provides**: `--spec` files and a `--brief` (scope for this run only).
 
-**Prompt assembly** (`prompt()` → `render.mjs`): the role template (`prompts/<kind>.md`, with `{{X}}` filled from
-`HARNESS_X`) + "Brief for this run" + "Project rules (CLAUDE.md)" + legacy `.harness/project.md` if present +
-`prompts/policy/<POLICY>.md`. The retro gets the template only.
+**Prompt assembly** (`prompt()` → `prompt_render` → `render.mjs`, decisions/2026-10-21-static-first-prompts), in
+this order: (1) the static part of `prompts/<kind>.md`: a fixed first line (`# Coding session`, `# Verify session` or
+`# Initializer session`), then the role, rules and finish, with no placeholders; (2) at its `{{SECTIONS}}` line the
+policy (`prompts/policy/<POLICY>.md`); (3) the run-level parts: *This run* (`prompts/parts/run.md`: run id,
+worktree, branch, run directory, port, scratch, suite, init, smoke, spec), "Brief for this run" (pasted as written,
+so a `{{X}}` in it stays text), `prompts/parts/rules.md` (one line naming `CLAUDE.md`, which Claude Code loads
+itself, when the worktree has one; decisions/2026-10-21-no-double-claude-md) and legacy `.harness/project.md` if
+present; (4) the template's *This session* part: `` Feature: `<id>` `` / `Milestone: <m>` (coding), `Milestone:` /
+`Features:` (verify) or `Earlier runs' feature sizes:` (initializer), the clock line, the init output. Sections are
+one blank line apart. Two sessions of a run share every byte up to *This session*. The clock line (`{{CLOCK}}`,
+driver `clock`, coding and verify only; decisions/2026-10-21-clock-and-bounded-init-output) is `Clock: <now> · run
+<elapsed> of <total>, ends <HH:MM> · this session: $<budget> budget, <turns> turns, <timeout> timeout · attempt N of
+MAX_ATTEMPTS` (or `verify round N of MAX_VERIFY_ROUNDS`); the run is this driver's segment, `T0` to `DEADLINE`. A
+probe rendered by `lib/prompt.sh` says it is outside a run. The retro (`# Retro`, its run on line 3) gets the
+template and the rules line. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output)
+and then `full output: <path>`. The coding and verify templates open their bearings with `Read context.md first` (the pack in the run directory, written by the driver just before the session, §4), so it is not pasted into the prompt. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 
 **Policies**: `build-only` (default: never operate anything live; write live steps down) and `live-staged` (operate
 live through the protocol: preflight, stages, stop-and-revert, one writer via `flock`, deploy only from the run's
@@ -268,18 +299,29 @@ worktree is untrusted). The harness never writes either, and agents can't (the a
 ## 11. Measurement and the improvement loop
 
 1. **Per session**: `metrics.jsonl` row: kind, role, model, cost (max of cumulative results), wall time (driver),
-   API time and turns (summed over result events), exit, `env`, final text.
+   API time and turns (summed over result events), **tokens** (in, out, cache read/write; `cache_hit_rate`),
+   `context_peak`, **orientation** (`orient_tokens/turns/s`: requests up to and including the first edit), exit, `env`, final text.
 2. **Per run**: `summary.json` (features, milestones verified/merged, tests start→end, cost by role and model, time
-   by role, sessions real/refused, guard counts, every non-passing feature with an automatic cause), `report.md`
+   by role, **tokens**, cost and tokens per verified feature, median orientation, first-attempt pass rate, rework, verify-fail rate, `harness` version and dirty flag, sessions real/refused, guard counts, every non-passing feature with an automatic cause), `report.md`
    (the writeup: `harness report <run>`), and `retro.md` (a Sonnet session classifies "not done" features into
    spec / size / dependency / permission / environment / model / harness causes and proposes ≤ 3 harness changes,
    noting repeats from earlier retros).
-3. **Across runs**: `ledger/runs.jsonl` + `harness trends` ($ per feature, causes, end reasons over time).
+3. **Across runs**: `ledger/runs.jsonl` + `harness trends` ($ per feature, causes, end reasons over time);
+   `harness trends --by version` groups runs by the harness version that ran them, to compare a change before and after.
 4. **Back into runs**: the initializer gets a calibration line from the ledger (median and p90 minutes per passing
    feature, this project and all) to size features against reality.
 5. **Into the harness**: you read the retros/trends (or ask a session to), turn a repeated proposal into a decision
    (a file in `journal/decisions/`), implement it test-first, and **turn the failing transcript into a stub fixture** (as
    `tests/fixtures/usage-limit.jsonl` was), so the fake never drifts from the real API again.
+6. **Replay evals**: `evals/tasks/*` are real past features with their `base` commit; `harness eval run` replays a set
+   with a chosen harness ref's own driver, on clones with no real remote, config, state or notification, sealed at `base`
+   (`decisions/2026-10-21-eval-run-isolation`, `decisions/2026-10-21-eval-clone-sealed-at-base`), capped by
+   `EVAL_BUDGET_USD` and the 7-day window (`decisions/2026-10-21-eval-budget-window-repeat`). `harness eval compare` sets
+   two results side by side; a verdict is "within noise" inside the spread of `--repeat` runs, "one sample" without
+   (`decisions/2026-10-21-eval-compare-verdicts`); per verified feature is pooled over every repeat
+   (`decisions/2026-10-21-eval-per-verified-pooled`). `harness eval probes` asks one tool-less Haiku turn what a task's
+   handoff should answer, scored by match (`decisions/2026-10-21-eval-probes`). Evals cost money and are Michael's to run
+   (`evals/NEXT.md`); D-H35.
 
 ## 12. Queue and parallelism
 
@@ -302,7 +344,7 @@ or on `harness queue stop`; whichever, if it started at least one run (marked in
 | a new policy | `prompts/policy/<name>.md`; projects opt in with `POLICY=<name>` | a run with `POLICY=<name>` checks the prompt contains it |
 | a new guard | the driver loop after `repair`/`green`; log with `note` (phone-visible); count it in `summary.mjs` guards | a stub misbehaviour flag + a check in `tests/run.sh` |
 | a new end reason | `finish "<reason>"`; teach `summary.mjs` cause/auto-continue if it should continue | a run that ends that way |
-| a new session kind | a template in `prompts/`, a `session <kind>` call, a `MET append … <role>`; extend `parseRunLog` for `"<kind> · model"` lines | stub branch on the prompt's first line |
+| a new session kind | a template in `prompts/`, a `session <kind>` call, a `MET append … <role>`; extend `parseRunLog` for `"<kind> · model"` lines | stub branch on the prompt's exact first line |
 | scheduling rules | `features.mjs schedule()` (pure; unit-testable with node) | a feature list in the stub initializer |
 | a new stack | `detect_check` / `detect_smoke` in `config.sh` | `harness init` on a sample repo prints the detection |
 | notifications | a call site: `notify "<msg>" title=… priority=high click="$(gh_url …)"` in the driver (the plan's call-site table in `docs/plans/2026-10-19-P1-notifications.md`); a delivery path: `lib/notify.sh` (`NTFY_URL` built in; `NOTIFY_CMD` gets `$1` + `HARNESS_NOTIFY_*`) | `tests/stub-curl.sh` records each call as a block in `$STUB_DIR/curl.log` (`STUB_CURL_FAIL=1` → exit 22); the request shape is `tests/fixtures/ntfy-publish.txt` (from docs.ntfy.sh); `curl_with`/`curl_body` in `tests/run.sh` |

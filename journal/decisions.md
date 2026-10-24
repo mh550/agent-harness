@@ -340,3 +340,154 @@ still in flight may append to it, and an edit there would conflict with them.
   answer is an instruction to agents: it must come through GitHub or a session signed in as Michael); starting in the
   worktree (the trust prompt blocks); matching tmux targets by name (`-t h-desk` matches `h-desk-x` by prefix: exact
   `=` and window ids instead).
+
+### D-H32 · A resumed run merges main before any session, the initializer included *(accepted 2026-10-21, built in E1 of run agent-harness-2026-10-21-measure)*
+- **Finding:** `harness continue` on a run that ended before its feature list (`usage limit before the feature list`)
+  re-ran the initializer without merging `main`: `sync_main` and the configuration reload sat inside `if [[ -f $LIST ]]`.
+  The worktree kept the spec as it was at the first start, so the initializer planned from a stale spec while `main`
+  had the revised one (voice-concierge-2026-10-19, 00:06).
+- **Choice:** the driver decides `resumed` before it logs this segment's `run <id> on …` line (an earlier segment's line
+  in `$STATE/run.log`; only the driver writes it). The start block runs for a resumed run or a run with a list:
+  `sync_main` (its note `merged main into harness/<run>` lands in harness-log.md above `feature list written`) and the
+  configuration reload; `merge_milestones` still needs the list. A conflict keeps today's behaviour (note, carry on).
+  Check: `continue after a no-list end merges main first` (stub `STUB_INIT_LIMIT=1` replays the real limit capture).
+- **Rejected:** merging main on every start (a fresh run already branches from `origin/main`, and a `--base <other>` run
+  must not get main merged); merging only right before the initializer (a resumed run with a list already merges at the
+  start, and one place for both keeps the config reload in step).
+
+### D-H33 · Run branches never deploy: `harness init` writes the Vercel/Netlify guard, a run start without it notes and notifies once *(accepted 2026-10-21, built in E1 of run agent-harness-2026-10-21-measure)*
+- **Finding:** the driver pushes the run branch after every session (Michael follows `progress.md` on GitHub), and
+  Vercel builds a preview for every push to every branch. portfolio_site's v2 run passed the free plan's cap
+  (`more than 100, code: "api-deployments-free-per-day"`), a cap shared with production, so a busy night can block the
+  next morning's real deploy. Netlify builds every branch the same way.
+- **Choice:** `lib/deploy.mjs` (pure: `vercelGuarded`/`addVercelGuard`, `netlifyGuarded`/`addNetlifyGuard`,
+  `vercelDeployments`, `slug`, `unguarded`) and `lib/deploy.sh` (`deploy_status`, `deploy_guard`). A host deploys from
+  Git when: Vercel = `vercel.json`, a `.vercel/` directory (worktree or project checkout), or a deployment on the repo
+  made by Vercel (`gh api repos/<o>/<r>/deployments?per_page=20`, read-only; the newest 20, since another app may have made the newest); Netlify = `netlify.toml`. `harness init`
+  merges `git.deploymentEnabled: { "harness/**": false }` into `vercel.json` (creating it; other keys and their order
+  kept) and inserts `ignore = "case \"$BRANCH\" in harness/*) exit 0;; esac; exit 1"` into `netlify.toml`'s `[build]`
+  (a `[build]` ignore of the project's own, or `build` set as an inline table or dotted keys, is left alone and init
+  says what to add by hand), and says what it did. Vercel counts as guarded only if no `true` key also matches a run
+  branch or starts with `harness/` (Vercel deploys when any matching key is `true`; init then says "by hand" rather
+  than "added"); Netlify only if no `deploy-preview`, `branch-deploy` or `"harness/…"` context has an ignore of its own (it
+  overrides `[build]`'s there; init still adds ours to `[build]` and says the rest is by hand); a deployment counts as Vercel's by its `creator.login`
+  `vercel[bot]` (or the app slug `vercel`), never by a repo name. The
+  driver checks once per run (`$STATE/deploy-checked`; a continue doesn't repeat it), after the start block, reading
+  `origin/main` (Vercel reads the deployed commit's file, so the guard must be on main before the run branches off):
+  one `note` per unguarded host (`… this run will create a preview deploy per session (harness init adds it)`) and one
+  `notify`. The run goes on. Milestone PR heads (`harness-merge/<run>-<m>`) don't match the guards: each PR keeps one
+  preview, `main` deploys as before. Stub: `tests/stub-gh.sh` answers the deployments call with GitHub's published
+  example (`tests/fixtures/gh-deployments.json`, creator `octocat`; `STUB_DEPLOYMENTS=0` → `[]`, `=vercel` → creator
+  `vercel[bot]`). Checks: `deploy.mjs: vercel and netlify guards merge, keep keys and detect`, three `init: …`, four
+  `run start …`.
+- **Rejected:** stopping the run without the guard (the work is still worth doing; the cost is preview builds);
+  pushing less often (Michael loses the phone view of progress); guarding by host config through the hosts' APIs (a
+  token and a live call per project; the repo file is reviewable and travels with the branch).
+- **Known limits:** the ignore's `exit 1` replaces Netlify's own skip for an unchanged base directory (monorepos build
+  on every main push after init); `netlify.toml` counts as building every branch even where branch deploys are off (a
+  harmless note); a `--base <ref>` run is still checked against `origin/main`, as the spec says; init writes
+  `vercel.json` at the repo root, which a Vercel project with another Root Directory doesn't read (the E1 review,
+  `docs/plans/2026-10-21-E1-review.md` M6); a true key like `**-preview` is matched against `harness/run` only; a context ignore written under a bare `[context]`
+  table (`deploy-preview.ignore = …`) isn't seen.
+
+### D-H34 · Telemetry: tokens, cache hit rate and context peak per session, from a real capture *(accepted 2026-10-21, built in E1 of run agent-harness-2026-10-21-measure; E1-05 … E1-07 add their parts)*
+- **Finding:** `metrics.jsonl` had cost, turns and time but no tokens, so "did this change make sessions cheaper or
+  more focused?" had no answer. The stub's result line was hand-written, with no `usage` at all.
+- **Choice:** `lib/metrics.mjs` `tokens(evs)` and `contextPeak(evs)` (exported, used by `outcome()`); `append` writes
+  `tokens_in`, `cache_read`, `cache_write`, `tokens_out`, `cache_hit_rate` (`cache_read / (tokens_in + cache_read +
+  cache_write)`, 3 decimals) and `context_peak` (the largest `input + cache_read + cache_creation` of one assistant
+  request) after `turns`; `null` when the session carries no usage. Per result event the four numbers are the sums
+  over `modelUsage`'s models (`inputTokens`, `cacheReadInputTokens`, `cacheCreationInputTokens`, `outputTokens`), else
+  `usage`'s snake_case four; the session takes the event with the largest total (**max, like cost**): on the capture
+  `Σ modelUsage[*].costUSD` = `total_cost_usd` = 0.00319778, so modelUsage tracks what cost tracks. The capture has a
+  single result event, so that it stays cumulative across background-subagent segments is inferred, not seen; a
+  multi-result transcript would settle it. Every field name was confirmed in the capture. `tokens_out` comes from the result, not the assistant events: theirs is the streamed
+  partial (5 and 4 vs 219).
+- **The one live call (the exception to build-only, as the spec asks):** on 2026-10-21, in an empty temp git repo,
+  `claude -p "Write a file named ok.txt containing the word ok, then reply ok." --model haiku --output-format
+  stream-json --verbose --permission-mode auto --max-turns 4 --max-budget-usd 0.25` (CLI 2.1.306, $0.0032). Its
+  `assistant`, `user` and `result` lines are `tests/fixtures/usage-tokens.jsonl`, in order, with `session_id` →
+  `session_TEST` and the temp path → `/tmp/capture`; `system` lines (hooks, cwd, tool and plugin lists) and the
+  `rate_limit_event` (Michael's real utilization) dropped. `tests/stub-claude.sh` `ok()` replays it with cost, result
+  text, `num_turns` 12 and `duration_ms` 60000 substituted, so every stub session carries tokens. Checks: `metrics.mjs:
+  tokens, cache rate and context peak from the real fixture` (4 / 35768 / 13651 / 219, 0.724, 24881, computed with jq)
+  and `metrics: coding rows carry tokens, cache rate and context peak`.
+- **For E1-05:** stream-json events **do** carry `timestamp` (ISO, on `assistant` and `user` lines; the plan expected
+  none), so `orient_s` can be measured rather than `null`. The CLI emits one `assistant` event per content block, the
+  same `message.id` and `usage` on each (the capture's first message: a thinking block, then the `Write`). A stub
+  session replays the capture's timestamps, so every stub session shows the same 0.23 s to its `Write`.
+- **Orientation (E1-05):** `orientation(evs)` → `{ tokens, turns, seconds }`, written as `orient_tokens`,
+  `orient_turns`, `orient_s`. A request is one `message.id`; orientation is the requests **up to and including** the
+  first that calls `Edit`, `Write` or `NotebookEdit` (every request if none); tokens are their `input + cache_read +
+  cache_creation + output`, turns their count; seconds run from the first timestamped event to the last one up to and
+  including the first edit (the session's last if it never edits), `null` without timestamps; all three `null` without assistant usage. On the
+  capture: 24547 tokens, 1 turn, 0.233 s; without its `Write`: 49432, 2, 1.441. *Default, a deviation from the
+  feature's wording ("before" the first edit):* the edit request's input is everything orientation read (the last
+  file read is paid for only there), its timing is already in `orient_s`, and "before" gives 0 tokens / 0 turns on the
+  real capture, so every stub session would show none and the demo check (`orient_tokens > 0`) could not hold without
+  a hand-made orientation event in the stub. It adds one request per session to both numbers, the same for every run,
+  so comparisons across harness versions are unaffected.
+- **The run's numbers (E1-06):** `summary.mjs build` adds `tokens` (the four sums over every row, null as 0;
+  `cache_hit_rate` over the whole input; the highest `context_peak`; `by_role`), `per_verified_feature` { cost, tokens }
+  (over `features.verified`, null at 0), `orientation` (the `median` of real coding rows' `orient_*`, nulls skipped;
+  even counts take the mean of the two middles, rounded: integers for tokens and turns, 2 decimals for seconds),
+  `rework` (ids in list order: harness-log `<id> un-passed: suite red` or `: <id> failed the re-check`, or more than
+  one real coding session), `first_attempt_pass_rate` (passing and not rework / features with a real coding session)
+  and `verify_fail_rate` (`failed the re-check` lines / those + verified features). `report` gains a `Tokens` and a
+  `Quality` row after `Spend by role`, only for summaries that have the keys (older ledger summaries keep their
+  rows); `prompts/retro.md` names the keys as inputs. Demo: rework A, C; first-attempt 0.33; verify-fail 0.25.
+  *Rejected:* rework from `attempts.json` (local state only; the committed harness-log and metrics carry it).
+- **Across harness versions (E1-07):** every driver segment writes `$STATE/harness-version` and
+  `$STATE/harness-dirty` (`lib/version.sh` `harness_version`) and ends its `run <id> on` line with `· harness <sha>[+dirty]`; the latest segment's harness is the
+  summary's `harness { version, dirty }` (`dirty` null when the state has no marker: a run from before). `ledger-line`
+  adds `harness_version`, `harness_dirty` and the telemetry (`tokens`, `cache_hit_rate`, `context_peak`,
+  `per_verified`, `orient_tokens`, `first_attempt_pass_rate`, `rework` as a count, `verify_fail_rate`), each null
+  for a summary without it. `trends --by version` (pure `byVersion`) is one row per `<sha>[+dirty]` in order of first
+  appearance, older rows as `–`: runs, Σ passing / Σ total, Σ cost / Σ passing, and the medians (unrounded before
+  printing) of cache hit rate, orientation tokens and first-attempt rate over the group's non-null runs. A dirty
+  harness is its own group: its numbers are not that commit's. Plain `trends` is unchanged; other arguments exit 2.
+  *Default, a deviation from the feature's `rev-parse --short HEAD`:* the version is `git log -1 --format=%h -- .
+  ':(exclude)ledger'` (the last commit outside `ledger/`; `unknown` outside git) and dirty means `git status
+  --porcelain` over the same paths is non-empty. The driver commits `ledger/` into the harness after every run
+  (`LEDGER_COMMIT=1`) and the debrief after every queue, so HEAD moves without the code changing (15 of main's last 30
+  commits are `ledger:`), and a run's uncommitted ledger copy would mark the next run's harness dirty: with HEAD every
+  run would be its own version. Check: `harness version skips ledger commits` (a throwaway repo).
+  *Rejected:* grouping by the first segment's harness (a run continued after a merge was mostly driven by the newer
+  one); a version from `package.json`/tags (the repo has neither; the sha is what Michael pulls).
+- **Known limit:** `context_peak` and orientation count every assistant event, a subagent's (`parent_tool_use_id`
+  set) too, if the CLI streams them (a subagent's edit would end orientation). Assistant `output_tokens` are the
+  streamed partial (see above), so orientation's output share is understated.
+- **Rejected:** summing tokens over result events (modelUsage is cumulative: a session with background subagents would
+  count its first segment twice); context peak from the result's `usage.iterations` (only the last request's);
+  a hand-written stub `usage` (fakes mirror the live API).
+
+### D-H35 · The eval set: replay tasks from real runs, validated, build-only *(accepted 2026-10-21, built in E2 of run agent-harness-2026-10-21-measure; E2-02 writes the task set, E2-03 … E2-06 add their parts)*
+- **Finding:** nothing re-runs fixed tasks, so no harness change can be judged against the one before it.
+- **Choice (the set, E2-02):** `evals/tasks/<id>/task.json` holds 1–3 features copied verbatim from a source run's
+  `feature_list.json` as of `base`, the commit that run's session started from (the parent of its first commit, named
+  in `why`), plus the run's spec and brief as of `base`. `lib/eval.mjs validateTask` returns one error per problem,
+  each starting with its field (`features: required`, `policy: must be build-only`, `base: a full commit sha`, an
+  unknown key); `node lib/eval.mjs validate evals/tasks` also requires the id to equal its directory and at least one
+  task. Policy is always `build-only`, and no task text matches `grep -ril 'live\|secret\|\.env'`: features can't be
+  reworded, so a feature that hits it is left out. The source run's record stays in `base` (its session saw it).
+  Check: `eval: every task.json validates and a bad one is rejected`.
+  *Default (E2-02):* the first four tasks come from agent-harness's own runs (`agent-harness-2026-10-19`,
+  `agent-harness-2026-10-21-measure`), all first-time passes. The spec names pathways, dj-crate-streaming,
+  portfolio_site and hit_list as the sources, but this session's permission classifier refused reads of their git
+  history (a mirror clone in scratch included), and agent-harness's runs have no retried feature and no in-task
+  `after` that passes the grep. The retried and depends-on tasks wait on that access (evals/README.md § Still to add).
+  *Default (E2-02, second session):* a plain `ls` of those records was refused too, so the set grows from
+  agent-harness only. A **depends-on by order** task counts in its category: the later feature has no `after`, but its
+  steps build on code the earlier one adds (the harness runs them in array order), and `why` names what is reused.
+  Two such tasks: 10-19 P1-03 → P1-04 (`gh_url`) and E1-06 → E1-07 (the summary keys in the ledger row), the second
+  replacing the single E1-06 task so no feature is replayed twice per set run. Set: 5 tasks (3 first-time, 2
+  depends-on by order).
+  *Michael's answer (2026-10-21, INBOX, commit f02a5a4):* E2-02 is agent-harness only, 5 to 12 tasks, "widen the
+  eval set later by hand". The 5-task set stands. evals/README.md § To add when other projects' records are readable
+  names the missing categories (retried or given up; depends-on with an in-task `after`) and the candidates.
+- **Rejected:** an LLM judge (v1 is deterministic); synthetic tasks (no real failures in them); rewording a feature to
+  pass the grep (the replay would no longer be the source's task); `git -C` in project checkouts for the records (a
+  read-only mirror in scratch is the route for the remaining sources, once its reads are allowed); stripping the
+  source run's record from `base` (its session saw it); padding the set to 8 with more agent-harness first-time
+  passes (it skews the set to easy tasks and leaves less room under 12 for the retried ones); calling a task with a
+  milestone `after` (P3-01 → P2) a depends-on task (the dependency is outside the task).

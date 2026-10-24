@@ -6,13 +6,14 @@ HERE=$(cd "$(dirname "$0")" && pwd); H=$HERE/../bin/harness F="node $HERE/../lib
 T=$(mktemp -d); echo "tmp: $T"
 unset TMUX TMUX_PANE   # inside Michael's tmux, plain `tmux` talks to his server: the suite must never
 export TMUX_TMPDIR=$T/tmux HARNESS_DESK_SESSION=h-desk-test-$$; mkdir -p "$TMUX_TMPDIR"   # a private tmux server
-trap 'tmux kill-session -t "=$HARNESS_DESK_SESSION" 2> /dev/null; [[ $TMUX_TMPDIR == "$T/tmux" ]] && tmux kill-server 2> /dev/null; [[ ${KEEP:-} ]] || rm -rf "$T"' EXIT   # the server is ours alone
+trap 'for w in "$T"/evaltmp/*/harness; do [[ -d $w ]] && git -C "$HERE/.." worktree remove --force "$w"; done 2> /dev/null   # the harness worktree of a killed eval
+  tmux kill-session -t "=$HARNESS_DESK_SESSION" 2> /dev/null; [[ $TMUX_TMPDIR == "$T/tmux" ]] && tmux kill-server 2> /dev/null; [[ ${KEEP:-} ]] || rm -rf "$T"' EXIT   # the server is ours alone
 export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/scratch HARNESS_PAUSE_POLL=1 \
   HARNESS_CLAUDE=$HERE/stub-claude.sh HARNESS_GH=$HERE/stub-gh.sh HARNESS_CURL=$HERE/stub-curl.sh STUB_DIR=$T HARNESS_LEDGER=$T/ledger \
   HARNESS_CONFIG=$T/user-config.sh HARNESS_LIMIT_SLEEP=0 HARNESS_NO_RUNNER=1 HARNESS_QUEUE_POLL=0 HARNESS_QUEUE_SETTLE=0
 fails=0 total=0
 check() { total=$((total + 1)); if eval "$2"; then echo "PASS $1"; else echo "FAIL $1"; fails=$((fails + 1)); fi; }
-hlog() { cat "$T/wt/proj/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }
+hlog() { cat "$T/wt/${2:-proj}/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }   # <run> [<project>]
 list() { echo "$T/wt/proj/$1/.harness/runs/$1/feature_list.json"; }
 on_main() { git -C "$T/origin.git" merge-base --is-ancestor "$(git -C "$T/origin.git" rev-parse "$1^{commit}")" main; }
 curl_with() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { printf "%s", $0; exit }' "$T/curl.log" 2>/dev/null; }   # the first stub-curl call containing $1
@@ -89,9 +90,353 @@ check "parked.mjs: the newest question wins, ids with dots, code fences, never M
 ( NTFY_URL=https://ntfy.example/t NTFY_TOKEN="" NOTIFY_CMD=""; log() { :; }; source "$HERE/../lib/notify.sh"; notify "long one" title="long one" body="$(head -c 4000 /dev/zero | tr '\0' x)" )
 check "a body over the cap is trimmed"    'Bd=$(curl_body "Title: long one"); (( $(printf %s "$Bd" | wc -c) <= 3500 && $(printf %s "$Bd" | wc -c) > 3000 )) && [[ $Bd == *… ]]'
 
+# ---- render, pure: the sections go at the {{SECTIONS}} line, or at the end without one (E3-03) ----
+ASM='import { assemble } from "'$HERE'/../lib/render.mjs"; const env = { HARNESS_X: "x" }, s = [{ title: "T", body: "b {{X}}", raw: false }, { title: null, body: "u {{X}}", raw: true }];
+  const a = assemble("top\n\n{{SECTIONS}}\n\nend {{X}}\n", s, env), b = assemble("top {{X}}\n", s, env);
+  process.exit(a === "top\n\n---\n\n# T\n\nb x\n\nu {{X}}\n\nend x\n" && b === "top x\n\n---\n\n# T\n\nb x\n\nu {{X}}\n" ? 0 : 1);'
+check "render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart" 'node --input-type=module -e "$ASM"'
+# --raw pastes the one file after it as written, so a brief with "{{X}}" in it stays out of the fill (E3 review F7)
+printf 'b {{X}}\n' > "$T/rb1" && cp "$T/rb1" "$T/rb2" && printf 'top\n' > "$T/rtpl"
+RW=$'top\n\nb {{X}}\n\nb x'; check "render.mjs: --raw applies to the next file only" '[[ $(HARNESS_X=x node "$HERE/../lib/render.mjs" "$T/rtpl" --raw "$T/rb1" "$T/rb2") == "$RW" ]]'
+# ---- metrics, pure: tokens, cache and context peak from the real capture (fixtures/usage-tokens.jsonl, E1) ----
+TOKS='import { outcome, events } from "'$HERE'/../lib/metrics.mjs"; const o = outcome(events("'$HERE'/fixtures/usage-tokens.jsonl")), n = outcome([{ type: "result", total_cost_usd: 0 }]);
+  process.exit(o.tokens_in === 4 && o.cache_read === 35768 && o.cache_write === 13651 && o.tokens_out === 219 && o.cache_hit_rate === 0.724 && o.context_peak === 24881
+    && n.tokens_in === null && n.cache_hit_rate === null && n.context_peak === null ? 0 : 1);'
+check "metrics.mjs: tokens, cache rate and context peak from the real fixture" 'node --input-type=module -e "$TOKS"'
+# Orientation: the capture's first message (thinking, then Write, one message.id) is the first edit, so it alone counts;
+# without the Write event both messages count, timed to the last event. No usage → null; no timestamps → seconds null;
+# an edit event without one is timed by the last stamped event before it.
+ORNT='import { orientation as or, events } from "'$HERE'/../lib/metrics.mjs"; const evs = events("'$HERE'/fixtures/usage-tokens.jsonl"), eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const noEdit = evs.filter(e => !e.message?.content?.some(c => c.name === "Write")), noTs = evs.map(({ timestamp, ...e }) => e);
+  process.exit(eq(or(evs), { tokens: 24547, turns: 1, seconds: 0.233 }) && eq(or(noEdit), { tokens: 49432, turns: 2, seconds: 1.441 })
+    && eq(or(noTs), { tokens: 24547, turns: 1, seconds: null }) && eq(or(evs.map((e, i) => i === 1 ? noTs[1] : e)), { tokens: 24547, turns: 1, seconds: 0 }) && eq(or([{ type: "result" }]), { tokens: null, turns: null, seconds: null }) ? 0 : 1);'
+check "metrics.mjs: orientation stops at the first Write" 'node --input-type=module -e "$ORNT"'
+
+# ---- the replay set (E2): every committed task validates; each error names its field ----
+EVTK='import { validateTask as v } from "'$HERE'/../lib/eval.mjs"; const has = (e, f) => e.some(x => x.startsWith(f + ":"));
+  const ok = { id: "x1", project: "p", repo: "~/projects/p", base: "a".repeat(40), policy: "build-only", why: "w",
+    features: [{ id: "X1", milestone: "X", description: "d", steps: ["s"] }] }, { features, ...nofeat } = ok;
+  process.exit(v(ok).length === 0 && v(nofeat).length === 1 && has(v(nofeat), "features") && has(v({ ...ok, policy: "live-staged" }), "policy")
+    && has(v({ ...ok, base: "abc123" }), "base") && has(v({ ...ok, features: Array(4).fill(features[0]) }), "features")
+    && has(v({ ...ok, features: [{ ...features[0], steps: [] }] }), "features[0].steps") && has(v({ ...ok, chek_cmd: "x" }), "chek_cmd") ? 0 : 1);'
+mkdir -p "$T/evbad/nofeat" && jq -n '{id:"nofeat",project:"p",repo:"/r",base:("a"*40),policy:"build-only",why:"w"}' > "$T/evbad/nofeat/task.json"
+check "eval: every task.json validates and a bad one is rejected" 'node --input-type=module -e "$EVTK" && node "$HERE/../lib/eval.mjs" validate "$HERE/../evals/tasks" 2> /dev/null \
+  && ! node "$HERE/../lib/eval.mjs" validate "$T/evbad" > "$T/evbad.out" 2>&1 && grep -q "nofeat/task.json: features: required" "$T/evbad.out" \
+  && [[ -z $(grep -v "^#" "$HERE/../evals/sets/default.txt" | while read -r t; do [[ -f "$HERE/../evals/tasks/$t/task.json" ]] || echo "$t"; done) ]]'
+# compare (E2-05): noise is the spread across a task's repeats; B is judged against A, in each metric's direction;
+# pass rate is pass^N (w passed once in two: 0), a started run without a summary ({ missing }) a failed one; the totals
+# use only the repeats every task has, and per verified feature is the sums over tasks / their verified features
+EVCMP='import { compare as c, completeRepeats as cr } from "'$HERE'/../lib/eval.mjs";
+  const s = (pass, cost, hit = 0.5) => { const ver = pass ? 2 : 1; return { features: { total: 2, verified: ver }, cost: { total: cost * ver }, per_verified_feature: { cost, tokens: 1000 / ver },
+    tokens: { in: 900, cache_read: 50, cache_write: 50, out: 0, cache_hit_rate: hit, context_peak: 100 }, orientation: { tokens: 10 }, time: { wall_h: 1 }, rework: [] }; };
+  const A = { tasks: { x: [s(1, 1.0), s(1, 1.4)], y: [s(0, 2.0), s(0, 2.1)], z: [s(1, 1.0, 0.5), s(1, 1.1, 0.5)], w: [s(1, 1), s(0, 1)], a: [s(1, 1)] } };
+  const B = { tasks: { x: [s(1, 1.2), s(1, 1.3)], y: [s(1, 1.0), s(1, 1.1)], z: [s(0, 2.0, 0.8), s(0, 2.1, 0.8)], w: [s(1, 1), s(1, 1)], b: [s(1, 1)] } };
+  const get = (rows, t, m) => rows.find(x => x.task === t && x.metric === m), r = c(A, B), v = (t, m) => get(r, t, m)?.verdict, one = c({ tasks: { x: [s(1, 1)] } }, B);
+  const nul = { ...s(1, 1), per_verified_feature: { cost: null, tokens: null } }, pv = (a) => get(c({ tasks: { x: a } }, B), "x", "$ per verified feature").verdict, tot = get(r, "total", "pass rate");
+  const sums = { tasks: { p: [s(1, 1), s(1, 1)], q: [s(0, 4), s(0, 4)] } }, P = { tasks: { x: [s(1, 1), s(0, 1)], y: [s(1, 1)] } }, pp = c(P, P), crash = get(c({ tasks: { x: [s(1, 1), { missing: true }] } }, B), "x", "pass rate");
+  process.exit(v("x", "$ per verified feature") === "within noise" && v("x", "pass rate") === "within noise"
+    && v("y", "$ per verified feature") === "better" && v("y", "pass rate") === "better" && v("z", "$ per verified feature") === "worse" && v("z", "pass rate") === "worse"
+    && v("z", "cache hit rate") === "better" && r.filter(x => x.task === "x").length === 8 && !r.some(x => x.task === "a" || x.task === "b")
+    && v("x", "rework") === "within noise" && one.every(x => x.verdict === "one sample") && pv([nul, s(1, 1)]) === "one sample" && pv([nul, nul]) === "no data"
+    && get(r, "w", "pass rate").a === 0 && v("w", "pass rate") === "within noise"
+    && tot.a === 0.5 && tot.b === 0.75 && tot.verdict === "within noise" && r.filter(x => x.task === "total").length === 8
+    && get(c(sums, sums), "total", "$ per verified feature").a === 2 && get(c(sums, sums), "total", "tokens per verified feature").a === 2000 / 3
+    && JSON.stringify(cr(P, ["x", "y"])) === "[0]" && JSON.stringify(cr(P, [])) === "[]" && get(pp, "total", "pass rate").a === 1 && get(pp, "total", "pass rate").verdict === "one sample"
+    && crash.a === 0 && JSON.stringify(crash.a_values) === "[1,0]" ? 0 : 1);'
+check "eval.mjs: compare verdicts" 'node --input-type=module -e "$EVCMP"'
+# a repeat that verified nothing still spent: per verified feature is Σ / Σ verified over every repeat, not a mean that
+# drops it; an empty feature list is no pass (E2 review)
+EVPV='import { compare as c, compareText as ct } from "'$HERE'/../lib/eval.mjs";
+  const s = (cost, ver) => ({ features: { total: 1, verified: ver }, cost: { total: cost }, per_verified_feature: { cost: ver ? cost / ver : null, tokens: ver ? 1000 / ver : null },
+    tokens: { in: 1000, cache_read: 0, cache_write: 0, out: 0 } });
+  const r = c({ tasks: { x: [s(2, 1), s(2, 1), s(2, 1)] } }, { tasks: { x: [s(1, 1), s(1.1, 1), s(20, 0)] } }), get = (t, m) => r.find(x => x.task === t && x.metric === m);
+  const t = ct({ tasks: { x: [s(2, 1), s(2, 1), s(2, 1)] } }, { tasks: { x: [s(1, 1), s(1.1, 1), s(20, 0)] } }).text;
+  const near = (row, v) => Math.abs(row.b - v) < 1e-9 && row.verdict === "worse";
+  const e = c({ tasks: { x: [{ features: { total: 0, verified: 0 } }] } }, { tasks: { x: [s(1, 1)] } }).find(x => x.task === "x" && x.metric === "pass rate");
+  process.exit(near(get("x", "$ per verified feature"), 11.05) && near(get("total", "$ per verified feature"), 11.05)
+    && near(get("x", "tokens per verified feature"), 1500) && near(get("total", "tokens per verified feature"), 1500) && e.a === 0
+    && t.split("\n").includes("B: x r3 verified nothing ($20.00 spent): counted in per verified feature, not in its noise") ? 0 : 1);'
+check "eval.mjs: per verified feature counts every repeat's cost (E2 review)" 'node --input-type=module -e "$EVPV"'
+
+# ---- harness eval run (E2-03): two stub tasks replayed by the committed driver (--harness HEAD), in isolation ----
+# The task repo's own config would merge through gh and post to ntfy: the eval's run.env must beat it.
+ER=$T/evrepo; git init -q --bare -b main "$T/evorigin.git" && git init -q -b main "$ER" && mkdir "$ER/.harness" \
+  && printf '%s\n' 'CHECK_CMD="test ! -f BROKEN"' 'MERGE_POLICY=auto NTFY_URL=https://ntfy.example/evproj BASE_PORT=7831' > "$ER/.harness/config.sh" \
+  && printf '# evproj\nrules\n' > "$ER/CLAUDE.md" && echo spec > "$ER/SPEC.md" && git -C "$ER" add -A && git -C "$ER" commit -qm init \
+  && git -C "$ER" remote add origin "$T/evorigin.git" && git -C "$ER" push -q -u origin main
+EB=$(git -C "$ER" rev-parse HEAD); mkdir -p "$T/tasks"
+# the source's later work (a branch, and a run tag on it, as real milestones leave): no replay may see it (E2 review)
+git -C "$ER" checkout -qb later && echo answer > "$ER/later.txt" && git -C "$ER" add later.txt && git -C "$ER" commit -qm "later: the answer" \
+  && git -C "$ER" tag run/src/M1 && git -C "$ER" checkout -q main && git -C "$ER" repack -qad \
+  && for p in "$ER"/.git/objects/pack/*.pack; do touch "${p%.pack}.keep"; done; EF=$(git -C "$ER" rev-parse later)   # a kept pack gc won't touch
+for t in t1 t2; do mkdir -p "$T/tasks/$t" && jq --arg r "$ER" --arg b "$EB" '.repo = $r | .base = $b' "$HERE/fixtures/eval-tasks/$t/task.json" > "$T/tasks/$t/task.json"
+  echo "$T/tasks/$t/task.json"; done > "$T/set.txt"
+src_refs() { git -C "$ER" for-each-ref; git -C "$ER" status --porcelain; git -C "$T/evorigin.git" for-each-ref; }   # the source repo and its origin
+lines() { cat "$1" 2> /dev/null | wc -l; }; GH0=$(lines "$T/gh.log") CU0=$(lines "$T/curl.log") SR0=$(src_refs)
+HARNESS_EVAL_TMP=$T/evaltmp HARNESS_EVAL_RESULTS=$T/results HARNESS_EVAL_GH=$HERE/stub-gh.sh HARNESS_EVAL_CURL=$HERE/stub-curl.sh \
+  "$H" eval run --set "$T/set.txt" --harness HEAD --label test > "$T/eval1.out" 2>&1
+# the short sha of HEAD, as harness_version names it (a ledger-only commit on top of main isn't a new version)
+ED=$(compgen -G "$T/results/*-test" | head -1); EJ=$ED/eval.json HS=$(git -C "$HERE/.." log -1 --format=%h -- . ":(exclude)ledger")
+ev_files() { local t; for t in t1 t2; do for f in summary.json metrics.jsonl harness-log.md feature_list.json; do [[ -s $ED/$t/$f ]] || return 1; done; done; }
+ev_local() { local c; [[ $(jq '.tasks | length' "$EJ") == 2 ]] || return 1   # each task clone's origin is a path in the eval dir
+  for c in $(jq -r '.tasks[].clone' "$EJ"); do [[ $(git -C "$c" remote get-url origin) == "$(jq -r .eval_dir "$EJ")"/* ]] || return 1; done; }
+ev_driver() { local s; jq -e --arg v "$HS" '.harness.version == $v' "$ED/t1/summary.json" > /dev/null && jq -e --arg v "$HS" '.harness.version == $v' "$ED/t2/summary.json" > /dev/null \
+  && for s in $(jq -r '.tasks[].state' "$EJ"); do grep -qF "$1/lib/check.sh" "$s/prompt-coding.md" || return 1; done; }   # the {{CHECK}} of the ref's driver
+check "eval run: two stub tasks end to end, results in place" '[[ -n $ED && $ED == *-$HS-test ]] && ev_files \
+  && jq -e "(.features_detail | length) == 1 and all(.features_detail[]; .passes)" "$ED/t1/summary.json" > /dev/null \
+  && jq -e "(.features_detail | length) == 2 and all(.features_detail[]; .passes)" "$ED/t2/summary.json" > /dev/null \
+  && jq -e ".stamp and .ref == \"HEAD\" and .sha == \"$HS\" and .label == \"test\" and ([.tasks[].id] == [\"t1\", \"t2\"]) and all(.tasks[]; .clone and .worktree)" "$EJ" > /dev/null \
+  && ! git -C "$HERE/.." worktree list | grep -q "$T/evaltmp" && [[ $(src_refs) == "$SR0" ]]'
+check "eval run: --harness <ref> runs that ref's driver" '[[ -f $EJ && $(jq -r .sha "$EJ") == "$HS" ]] && HD=$(jq -r .harness_dir "$EJ") && [[ $HD == "$T/evaltmp/"* ]] \
+  && grep -qF "$HD" "$ED/eval.log" && ev_driver "$HD"'
+check "eval run: nothing reaches a remote" '[[ -f $EJ ]] && ev_local && [[ $(lines "$T/gh.log") == "$GH0" && $(lines "$T/curl.log") == "$CU0" ]] \
+  && [[ $(compgen -G "$T/evaltmp/*/state/*/*/run.log" | wc -l) == 2 ]] && ! cat "$T"/evaltmp/*/state/*/*/run.log | grep -q "notified:\|notification failed" \
+  && (( $(cat "$T"/evaltmp/*/state/*/*/port | sort -u | wc -l) == 2 && $(cat "$T"/evaltmp/*/state/*/*/port | sort -n | head -1) >= 7900 ))'
+ev_sealed() { local c r; for c in $(jq -r '.tasks[].clone' "$EJ"); do r=$(jq -r --arg c "$c" '.tasks[] | select(.clone == $c) | .run' "$EJ")
+  [[ $(git -C "$c" rev-parse main) == "$EB" ]] && ! git -C "$c" rev-parse -q --verify refs/tags/run/src/M1 > /dev/null && ! git -C "$c" cat-file -e "$EF" 2> /dev/null \
+  && ! git -C "$c" show "harness/$r:.harness/runs/$r/progress.md" | grep -qF "$ER" || return 1; done; }   # nor the source's path
+check "eval run: a clone holds nothing of its source past base (E2 review)" '[[ -f $EJ && -n $EF ]] && ev_sealed && git -C "$ER" cat-file -e "$EF"'
+
+# ---- eval money and time (E2-04): the budget cap, the 7-day window, --repeat ----
+evrun() { HARNESS_EVAL_TMP=$T/evaltmp HARNESS_EVAL_RESULTS=$T/results HARNESS_EVAL_GH=$HERE/stub-gh.sh HARNESS_EVAL_CURL=$HERE/stub-curl.sh \
+  "$H" eval run --set "$T/set.txt" --harness HEAD "$@"; }
+# a stub task spends $0.35 (coding $0.25, verify $0.10): a $0.30 cap lets t1 run and starts nothing after it
+EVAL_BUDGET_USD=0.3 evrun --label budget > "$T/eval-budget.out" 2>&1; EBR=$?   # not starting a task exits 1
+EBD=$(compgen -G "$T/results/*-budget" | head -1)
+check "eval: the budget cap stops starting tasks" '(( EBR == 1 )) && [[ -n $EBD ]] && grep -q "^budget: \$0.35 of \$0.3; 1 tasks not started$" "$T/eval-budget.out" \
+  && grep -q "starting no further task: \$0.35 spent, the cap is \$0.3" "$T/eval-budget.out" \
+  && jq -e "[.tasks[].id] == [\"t1\"] and .budget.cap == 0.3 and .budget.spent == 0.35 and .budget.not_started == [\"t2\"] and .weekly == null
+    and .budget.text == \"budget: \$0.35 of \$0.3; 1 tasks not started\"" "$EBD/eval.json" > /dev/null && [[ -s $EBD/t1/summary.json && ! -e $EBD/t2 ]] \
+  && grep -qx "WEEKLY_STOP_AT=85" "$(jq -r ".tasks[0].state" "$EBD/eval.json")/run.env"'   # the runs stop where the eval does
+# the real state root's USAGE_7D (here $HARNESS_STATE) past WEEKLY_STOP_AT (85): nothing is created, not even the tmp dir
+mkdir -p "$T/evstate" && echo "0.9 $(( $(date +%s) + 3600 ))" > "$T/evstate/USAGE_7D"
+HARNESS_STATE=$T/evstate HARNESS_EVAL_TMP=$T/evaltmp-w HARNESS_EVAL_RESULTS=$T/results-w "$H" eval run --set "$T/set.txt" --label weekly > "$T/eval-weekly.out" 2>&1; EWR=$?
+check "eval: refuses past WEEKLY_STOP_AT" '(( EWR == 1 )) && grep -q "7-day window at 90%" "$T/eval-weekly.out" && [[ ! -e $T/results-w && ! -e $T/evaltmp-w ]]'
+# a real run holds port 7900 (its port file in the real state root): the eval's runs keep off it (E2 review)
+mkdir -p "$T/evstate-p/proj/run" && echo 7900 > "$T/evstate-p/proj/run/port"
+HARNESS_STATE=$T/evstate-p evrun --label rep --repeat 2 > "$T/eval-rep.out" 2>&1; ERR=$?
+ERD=$(compgen -G "$T/results/*-rep" | head -1)
+ev_reps() { local t r; for t in t1 t2; do for r in r1 r2; do jq -e "all(.features_detail[]; .passes)" "$ERD/$t/$r/summary.json" > /dev/null || return 1; done; done; }
+check "eval: --repeat 2 runs each task twice" '(( ERR == 0 )) && [[ -n $ERD ]] && ev_reps && jq -e ".repeat == 2 and ([.tasks[].result] == [\"t1/r1\", \"t2/r1\", \"t1/r2\", \"t2/r2\"])
+    and ([.tasks[].repeat] == [1, 1, 2, 2]) and ([.tasks[].clone] | unique | length) == 4 and ([.tasks[].run] | unique | length) == 4" "$ERD/eval.json" > /dev/null \
+  && ! cat $(jq -r ".tasks[].state + \"/port\"" "$ERD/eval.json") | grep -qx 7900'
+# refused before anything is created (E2 review): a task whose repo isn't there; a set named as a file in the cwd
+mkdir -p "$T/evnorepo/t1" && jq '.repo = "/nonexistent/ev repo"' "$T/tasks/t1/task.json" > "$T/evnorepo/t1/task.json" && echo "$T/evnorepo/t1/task.json" > "$T/set-norepo.txt"
+HARNESS_EVAL_TMP=$T/evaltmp-n HARNESS_EVAL_RESULTS=$T/results-n "$H" eval run --set "$T/set-norepo.txt" > "$T/eval-norepo.out" 2>&1; ENR=$?
+(cd "$T" && HARNESS_EVAL_TMP=$T/evaltmp-n HARNESS_EVAL_RESULTS=$T/results-n "$H" eval run --set set-norepo.txt > "$T/eval-norepo2.out" 2>&1); ENR2=$?
+check "eval: a missing repo is refused before any spend, a set file in the cwd is read (E2 review)" '(( ENR == 1 && ENR2 == 1 )) \
+  && grep -q "t1: no repo /nonexistent/ev repo; nothing started" "$T/eval-norepo.out" && cmp -s "$T/eval-norepo.out" "$T/eval-norepo2.out" && [[ ! -e $T/evaltmp-n && ! -e $T/results-n ]]'
+# an eval killed mid-task (its process group TERMed) removes its harness worktree. The session itself runs on: the
+# driver's `timeout` has a process group of its own (a known limit, docs/plans/2026-10-21-E2-review.md R2)
+STUB_SLOW_CODING=8 HARNESS_EVAL_TMP=$T/evaltmp-i HARNESS_EVAL_RESULTS=$T/results-i HARNESS_EVAL_GH=$HERE/stub-gh.sh HARNESS_EVAL_CURL=$HERE/stub-curl.sh \
+  setsid bash -c 'echo $$ > "$1"; shift; exec "$@"' _ "$T/eval-int.pid" "$H" eval run --set "$T/set.txt" --harness HEAD --label int > "$T/eval-int.out" 2>&1 & EIJ=$!
+for _ in $(seq 150); do [[ -e $T/slow-coding ]] && break; sleep 0.2; done
+EIH=$(compgen -G "$T/evaltmp-i/*/harness" | head -1) EIP=$(cat "$T/eval-int.pid"); kill -TERM -- "-$EIP" 2> /dev/null
+wait "$EIJ"; EIR=$?   # setsid didn't fork (EIJ == EIP), so this is the eval's own exit
+check "eval: an interrupted eval removes its harness worktree (E2 review)" '[[ -n $EIH && $EIJ == "$EIP" ]] && (( EIR == 130 )) && [[ ! -e $EIH ]] \
+  && ! git -C "$HERE/.." worktree list | grep -qF "$T/evaltmp-i" && [[ -f $(compgen -G "$T/results-i/*-int" | head -1)/eval.json ]]'
+# compare (E2-05): the one-repeat eval against the two-repeat one (one sample), and the two-repeat one against itself
+"$H" eval compare "$ED" "$ERD" > "$T/evcmp.out" 2>&1; ECR=$?
+"$H" eval compare "$ERD" "$ERD" > "$T/evcmp2.out" 2>&1; ECR2=$?
+HARNESS_EVAL_RESULTS=$T/results "$H" eval compare "${ED##*/}" "${ERD##*/}" > "$T/evcmp3.out" 2>&1   # a bare name is a dir under the results root
+cp -r "$ERD" "$T/evcrash" && rm "$T/evcrash/t2/r2/summary.json"   # a repeat that started and wrote no summary failed
+"$H" eval compare "$ERD" "$T/evcrash" > "$T/evcmp4.out" 2>&1
+ev_cmp() { local m; (( ECR == 0 && ECR2 == 0 )) || return 1
+  for m in 'pass rate' '\$ per verified feature' 'tokens per verified feature' 'cache hit rate' 'orientation tokens' 'context peak' 'wall time (h)' 'rework'; do
+    grep -q "^$m: one sample (A " "$T/evcmp.out" && grep -q "^$m: within noise (A " "$T/evcmp2.out" || return 1; done; }
+check "eval compare prints the table" 'ev_cmp && grep -q "^| t1 | pass rate | pass^1 1 (1/1) | pass^2 1 (2/2) | one sample |$" "$T/evcmp.out" \
+  && [[ $(grep -c "^| t[12] | " "$T/evcmp.out") == 16 ]] && grep -q "^## Totals" "$T/evcmp.out" && [[ $(grep -c "^| total | " "$T/evcmp.out") == 8 ]] \
+  && cmp -s "$T/evcmp.out" "$T/evcmp3.out" && ! "$H" eval compare "$T/results" "$ED" > /dev/null 2>&1 && grep -q "^A: 1 repeat, B: 2 repeats: pass^N" "$T/evcmp.out" \
+  && grep -q "^| t2 | pass rate | pass^2 1 (2/2) | pass^2 0 (1/2) | " "$T/evcmp4.out" && grep -q "^B: t2 r2: no summary" "$T/evcmp4.out"'
+# probes (E2-06): questions from the record, one tool-less session on the next session's prompt, scored by match
+EVPQ='import { questions as q, score as s, target as tg } from "'$HERE'/../lib/eval.mjs";
+  const list = { features: [ { id: "X1", milestone: "M", passes: true }, { id: "X2", milestone: "M", passes: false, after: ["X1"] }, { id: "X3", milestone: "M", passes: false } ] };
+  const rows = [ { kind: "coding", feature: "X2", passes: false, env: false, final: "The suite was red: test foo failed. Then I stopped." },
+    { kind: "coding", feature: "X2", passes: false, env: true, final: "usage limit" }, { kind: "verify", feature: null, passes: false, env: false, final: "M not verified." } ];
+  const commits = [ { subject: "X1: work", files: ["a.txt", ".harness/runs/r/feature_list.json"] }, { subject: "X1: more", files: ["b.txt"] },
+    { subject: "X10: other", files: ["c.txt"] }, { subject: "HARNESS: x", files: ["d.txt"] } ];
+  const p = q(list, rows, commits), k = p.questions.map(x => x.kind).join();
+  const r = s(p, "Q1: `b.txt`, a.txt.\nQ2: it depends on X1 only\nQ3: no idea"), m = r.questions.map(x => x.match).join();
+  const all = { features: [ { id: "Y1", passes: true }, { id: "Y2", passes: true } ] };
+  // a markdown final, an abbreviation; the last real attempt passed (X2: no question); a park is not a failure (X3)
+  const f2 = q({ features: [ { id: "X1", passes: false }, { id: "X2", passes: true }, { id: "X3", passes: false } ] }, [
+    { kind: "coding", feature: "X1", passes: false, env: false, final: "## Summary\n\n**X1 is not done: the suite fails on e.g. foo.** More text." },
+    { kind: "coding", feature: "X2", passes: false, env: false, final: "Red suite." }, { kind: "coding", feature: "X2", passes: true, env: false, final: "Done." },
+    { kind: "coding", feature: "X3", passes: false, env: false, final: "Needs a token.\nPARKED: set the token" } ], []);
+  process.exit(p.target === "X2" && tg(all) === "Y2" && k === "files,depends,fails" && JSON.stringify(p.questions[0].key) === "[\"a.txt\",\"b.txt\"]"
+    && p.questions[0].q === "Which files did X1 change?" && p.questions[2].key === "The suite was red: test foo failed" && p.questions[2].feature === "X2"
+    && m === "exact,contains,miss" && r.points === 2 && r.score === "2/3" && q(all, [], []).questions.map(x => x.key.join()).join() === "Y1"
+    && s(p, "Q2: X1").questions[0].match === "miss" && s(p, "Q01: a.txt b.txt\nQ2: X10").questions.map(x => x.match).join() === "exact,miss,miss"
+    && s(p, "Q1: Which files did X1 change?\nQ1: data.txt, b.txt").questions[0].match === "miss" && s(p, "Q1: the files a.txt and b.txt").questions[0].match === "contains"
+    && f2.questions.filter(x => x.kind === "fails").map(x => x.feature + "=" + x.key).join("|") === "X1=X1 is not done: the suite fails on e.g. foo"
+    && !f2.questions.some(x => x.kind === "fails" && x.feature === "X2") ? 0 : 1);'
+"$H" eval probes "$ED/t2" > "$T/evprobe.out" 2>&1; EPR=$?
+cp "$STUB_DIR/probe-args" "$T/probe-args1" 2> /dev/null; cp "$STUB_DIR/probe-prompt" "$T/probe-prompt1" 2> /dev/null
+# a session that fails (an API error) is no score: exit 1, and the last scored probes.json is kept
+cp "$ED/t2/probes.json" "$T/probes-kept.json" 2> /dev/null; STUB_PROBE_ERROR=1 "$H" eval probes "$ED/t2" > "$T/evperr.out" 2>&1; EPE=$?
+ev_probe() { local wt; wt=$(jq -r '.tasks[1].worktree' "$EJ")
+  (( EPR == 0 )) && grep -qx "score 1/2" "$T/evprobe.out" && grep -q "^Q1 exact · Which files did T2a change? · work-T2a.txt" "$T/evprobe.out" \
+  && jq -e '(.questions | length) >= 2 and .target == "T2b" and .score == "1/2" and .points == 1 and .model == "haiku" and .cost == 0.01
+    and .questions[0].kind == "files" and .questions[0].key == ["work-T2a.txt"] and .questions[0].match == "exact" and .questions[0].score == 1
+    and .questions[1].kind == "depends" and .questions[1].key == ["T2a"] and .questions[1].match == "miss" and .questions[1].score == 0' "$ED/t2/probes.json" > /dev/null \
+  && grep -qx -- "--max-turns 1" <(paste -d" " - - < <(sed -n '/^--max-turns$/,+1p' "$T/probe-args1")) \
+  && sed -n '/^--permission-mode$/{n;p}' "$T/probe-args1" | grep -qx dontAsk && sed -n '/^--tools$/{n;p}' "$T/probe-args1" | grep -qx "" \
+  && sed -n '/^--allowedTools$/{n;p}' "$T/probe-args1" | grep -qx "" && sed -n '/^--model$/{n;p}' "$T/probe-args1" | grep -qx haiku \
+  && grep -qx -- "--strict-mcp-config" "$T/probe-args1" && sed -n '/^--max-budget-usd$/{n;p}' "$T/probe-args1" | grep -qx 0.5 \
+  && (( EPE == 1 )) && grep -q "probes: the probe session failed.*session limit" "$T/evperr.out" && cmp -s "$ED/t2/probes.json" "$T/probes-kept.json" \
+  && grep -qx "PWD=$wt" "$T/probe-args1" && grep -qx "HARNESS_EVAL=1" "$T/probe-args1" && [[ $(head -1 "$T/probe-prompt1") == "# Probe session" ]] && grep -qx "Q1: Which files did T2a change?" "$T/probe-prompt1"; }
+check "eval probes: questions derived, answers scored" 'node --input-type=module -e "$EVPQ" && ev_probe'
+# the prompt the probe sees is the one T2b's coding session got (the init output differs: verify re-ran init after it; the clock too);
+# a result without its run worktree runs the probe elsewhere and says so; one without a probe prompt is refused
+cp -r "$ED" "$T/evgone" && jq '.tasks[].worktree = "/nonexistent"' "$ED/eval.json" > "$T/evgone/eval.json"
+mkdir -p "$T/ptmp"; TMPDIR=$T/ptmp "$H" eval probes "$T/evgone/t2" > "$T/evgone.out" 2>&1; EPG=$?
+cp -r "$ED" "$T/evnop" && rm "$T/evnop/t2/probe-prompt.md"; "$H" eval probes "$T/evnop/t2" > "$T/evnop.out" 2>&1; EPN=$?
+noinit() { sed '/^Clock: /d; /^## Init output/,/^---$/d' "$1"; }   # the clock and init output are the session's own
+check "eval probes: the probe prompt is the driver's coding prompt" '[[ -s $ED/t2/probe-prompt.md ]] && [[ $(head -1 "$ED/t2/probe-prompt.md") == "# Coding session" ]] && grep -qx "Feature: \`T2b\`" "$ED/t2/probe-prompt.md" \
+  && cmp -s <(noinit "$ED/t2/probe-prompt.md") <(noinit "$(jq -r ".tasks[1].state" "$EJ")/prompt-coding.md") && cmp -s <(sed -n "3,$(( $(awk 1 "$ED/t2/probe-prompt.md" | wc -l) + 2 ))p" "$T/probe-prompt1") <(awk 1 "$ED/t2/probe-prompt.md") \
+  && (( EPG == 0 )) && grep -q "probes: run worktree gone; CLAUDE.md not auto-loaded" "$T/evgone.out" && jq -e ".note | test(\"worktree gone\")" "$T/evgone/t2/probes.json" > /dev/null && [[ -z $(ls -A "$T/ptmp") ]] \
+  && ! grep -qx "PWD=$(jq -r ".tasks[1].worktree" "$EJ")" "$STUB_DIR/probe-args" && (( EPN == 1 )) && grep -q "no probe-prompt.md" "$T/evnop.out"'
+# the probe reads the run's context pack as the next session would (E4-05 / plan §9), pasted after the prompt
+check "eval probes: the probe reads the run's context pack" '[[ $(head -1 "$ED/t2/context.md" 2> /dev/null) == "# Context pack for \`T2b\`" ]] \
+  && grep -q " → entries.jsonl:[0-9]*$" "$ED/t2/context.md" && at() { grep -nx -- "$1" "$T/probe-prompt1" | head -1 | cut -d: -f1; } \
+  && (( $(at "Feature: \`T2b\`") < $(at "# context.md (the run directory'"'"'s context pack, as the next session reads it)") \
+     && $(at "# context.md (the run directory'"'"'s context pack, as the next session reads it)") < $(at "# Context pack for \`T2b\`") \
+     && $(at "# Context pack for \`T2b\`") < $(grep -n "^Answer from what is above only" "$T/probe-prompt1" | cut -d: -f1) ))'
+
+# ---- deploy guards, pure and `harness init` (E0b): run branches never build on Vercel or Netlify ----
+DEPL='import { addVercelGuard as av, vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, vercelDeployments as vd, vercelMergeable as vm, slug } from "'$HERE'/../lib/deploy.mjs";
+  import { readFileSync } from "node:fs"; const dep = readFileSync("'$HERE'/fixtures/gh-deployments.json", "utf8");
+  const a = av("{\"framework\":\"nextjs\"}"), b = av(null), c = av("{\"git\":{\"deploymentEnabled\":{\"main\":true}}}"), off = "{\"git\":{\"deploymentEnabled\":false}}";
+  const toml = "[build]\n  command = \"make\"\n\n[build.environment]\n  NODE_VERSION = \"20\"\n", t = an(toml), e = an("[build.environment]\n  X = \"1\"\n"), own = an("[build]\n  ignore = \"git diff --quiet\"\n");
+  process.exit(Object.keys(JSON.parse(a)).join() === "framework,git" && JSON.parse(a).git.deploymentEnabled["harness/**"] === false && vg(a) && !vg("{\"framework\":\"nextjs\"}")
+    && b === "{\n  \"git\": {\n    \"deploymentEnabled\": {\n      \"harness/**\": false\n    }\n  }\n}\n" && JSON.parse(c).git.deploymentEnabled.main === true && vg(c) && av(off) === off && vg(off) && vg(av("{\"git\":{\"deploymentEnabled\":true}}"))
+    && t.how === "added" && t.text.startsWith("[build]\n  ignore = \"case \\\"$BRANCH\\\" in harness/*) exit 0;; esac; exit 1\"\n  command = \"make\"\n") && t.text.includes("[build.environment]\n  NODE_VERSION = \"20\"") && ng(t.text) && !ng(toml)
+    && e.how === "added" && e.text.startsWith("[build.environment]\n  X = \"1\"\n") && /\n\[build\]\n  ignore = /.test(e.text) && ng(e.text) && !ng("[build.environment]\n  ignore = \"harness/\"\n")
+    && own.how === "own-ignore" && own.text === "[build]\n  ignore = \"git diff --quiet\"\n" && an(t.text).how === "kept" && an(null).how === "added" && ng(an(null).text)
+    && !vd(dep) && vd(dep.replace("\"octocat\"", "\"vercel[bot]\"")) && !vd("[]") && !vd("not json")
+    && slug("git@github.com:o/r.git") === "o/r" && slug("https://github.com/o/r") === "o/r" && slug("/tmp/origin.git") === null
+    && an("[ build ]\n  command = \"make\"\n").text.startsWith("[ build ]\n  ignore = ") && an("build = { command = \"make\" }\n").how === "by-hand" && an("build.command = \"make\"\n").how === "by-hand"
+    && an("[build]\n  \"ignore\" = \"exit 1\"\n").how === "own-ignore" && !ng("[build]\n  ignore = \"git diff --quiet HEAD^ HEAD -- packages/harness/\"\n")
+    && !vd(dep.replaceAll("octocat/example", "octocat/vercel-clone")) && !vg("{\"git\":{\"deploymentEnabled\":{\"**\":true,\"harness/**\":false}}}")
+    && !vg("{\"git\":{\"deploymentEnabled\":{\"harness/*\":true,\"harness/**\":false}}}") && vg("{\"git\":{\"deploymentEnabled\":{\"main\":true,\"feature/**\":true,\"harness/**\":false}}}")
+    && !vm("[]") && !vm("null") && !vm("{\"git\":\"x\"}") && vm("{}") && vm("{\"git\":{}}") ? 0 : 1);'
+check "deploy.mjs: vercel and netlify guards merge, keep keys and detect" 'node --input-type=module -e "$DEPL"'
+DREV='import { vercelGuarded as vg, addNetlifyGuard as an, netlifyGuarded as ng, NETLIFY_IGNORE as NI } from "'$HERE'/../lib/deploy.mjs";
+  const ctx = "[build]\n" + NI + "\n\n[context.deploy-preview]\n  ignore = \"exit 1\"\n";
+  process.exit(!vg("{\"git\":{\"deploymentEnabled\":{\"harness/**\":false,\"harness/agent-*\":true}}}") && !ng(ctx) && an(ctx).how === "own-ignore"
+    && ng("[build]\n" + NI + "\n\n[context.production]\n  command = \"make\"\n") && ng("[build]\n" + NI + "\n\n[context.production]\n  ignore = \"git diff --quiet\"\n")
+    && ng("[build]\n" + NI + "\n\n[context.deploy-preview.environment]\n  ignore = \"1\"\n") && !ng("[build]\n" + NI + "\n\n[context.\"harness/x\"]\n  ignore = \"exit 1\"\n")
+    && (r => r.how === "own-ignore" && r.text.startsWith("[build]\n" + NI + "\n  command"))(an("[build]\n  command = \"make\"\n\n[context.branch-deploy]\n  ignore = \"exit 1\"\n")) ? 0 : 1);'
+check "deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)" 'node --input-type=module -e "$DREV" \
+  && echo "{\"git\":{\"deploymentEnabled\":{\"harness/**\":false,\"harness/*\":true}}}" > "$T/vover.json" && [[ $(node "$HERE/../lib/deploy.mjs" vercel-guard "$T/vover.json") == by-hand ]]'
+SREV='import { redSuite, failedRecheck } from "'$HERE'/../lib/summary.mjs";
+  const h = "- 2026-10-21 12:00 · 11 un-passed: suite red after the session\n- 2026-10-21 12:05 · verify M1: A failed the re-check, back in the queue\n";
+  process.exit(!redSuite(h, "1") && redSuite(h, "11") && !redSuite(h, "c++") && !redSuite(h, "auth(x") && failedRecheck(h, "A") && !failedRecheck(h, "c++") && !failedRecheck(h, "1") ? 0 : 1);'
+check "summary.mjs: cause and rework read the log by exact id (E1 review)" 'node --input-type=module -e "$SREV"'
+
+# ---- the journal, pure (E4): an entry's schema, the minimal entry, and progress.md rendered from the entries ----
+ENVA='import { validate as v, minimal } from "'$HERE'/../lib/entries.mjs"; const starts = (e, f) => e.length === 1 && e[0].startsWith(f + ":");
+  const c = { feature: "C", kind: "coding", outcome: "not yet", summary: "Added the parser.", files: ["lib/parse.mjs"], verified_how: "211/212", tests_before: 211, tests_after: 212,
+    dead_ends: [{ tried: "trimming", why: "the prefix check fails" }], discoveries: [{ text: "keeps blank lines", affects: ["D", "run"] }], questions: ["X off?"], proposed_changes: ["C step 2"] };
+  const vf = { feature: "M1", kind: "verify", outcome: "not yet", summary: "A step 2 fails", evidence: [{ feature: "A", step: 1, ran: "node --test", saw: "7/7", holds: true }] };
+  const it = { feature: "init", kind: "init", outcome: "passes", summary: "12 features", header: "# Progress", discoveries: [{ text: "port 7804", affects: ["run"] }] };
+  const { outcome, ...noOut } = c, m = minimal({ feature: "C", kind: "coding", outcome: "passes", files: ["a"], final: "word ".repeat(200) });
+  process.exit(v(c).length === 0 && v(vf).length === 0 && v(it).length === 0 && v(c, { feature: "C", kind: "coding" }).length === 0 && starts(v(c, { feature: "B", kind: "coding" }), "feature")
+    && starts(v({ ...c, summary: "é".repeat(401) }), "summary") && v({ ...c, summary: "é".repeat(400) }).length === 0 && starts(v(noOut), "outcome") && starts(v({ ...c, outcome: "done" }), "outcome")
+    && starts(v({ ...c, evidence: vf.evidence }), "evidence") && starts(v({ ...vf, evidence: [{ ...vf.evidence[0], holds: "yes" }] }), "evidence[0].holds")
+    && v(m).length === 0 && [...m.summary].length === 400 && m.summary.endsWith("…") && minimal({ feature: "M1", kind: "verify", outcome: "not yet", files: [], final: " \n" }).summary === "(no final message)" ? 0 : 1);'
+printf '{not json' > "$T/bad-entry.json" && echo '{"feature":"C","kind":"coding","outcome":"done","summary":"s"}' > "$T/out-entry.json"
+check "entries.mjs: validate accepts the schema and names what is wrong" 'node --input-type=module -e "$ENVA" \
+  && ! node "$HERE/../lib/entries.mjs" validate "$T/bad-entry.json" > "$T/bad-entry.out" && grep -q "^not JSON: " "$T/bad-entry.out" \
+  && [[ $(node "$HERE/../lib/entries.mjs" validate "$T/out-entry.json" C coding) == "outcome: \"done\" is not passes · not yet · parked" ]]'
+# 20 entries, the 18th a verify of M1 with rows A×2, B×1 (cells with | and newlines) whose summary tries to fake rows; the newest
+# summary tries to fake a header, and an init header one through \r and U+2028 (line breaks to features.mjs's /^### /m)
+ENRE='import { renderProgress as rp, renderArchive as ra, legacyOf, headerOf } from "'$HERE'/../lib/entries.mjs"; import { evidence } from "'$HERE'/../lib/features.mjs";
+  const row = (f, s, h) => ({ feature: f, step: s, ran: "ran | x", saw: "saw\nmore", holds: h });
+  const e = Array.from({ length: 20 }, (_, i) => i === 17 ? { feature: "M1", kind: "verify", outcome: "not yet", summary: "| A | 9 |\n| B | 3 |", evidence: [row("A", 1, true), row("A", 2, false), row("B", 1, true)], at: "2026-10-22 01:18", session: "s18", model: "m" }
+    : { feature: "F" + (i + 1), kind: "coding", outcome: "passes", summary: i === 19 ? "### fake · F0 · passes\n| A | 9 |" : "entry " + (i + 1), files: ["f"], at: "2026-10-22 01:" + String(i + 1).padStart(2, "0"), session: "s" + (i + 1), model: "m" });
+  const h = headerOf(e, "", "r1"), p = rp(e, { full: 15, header: h }), a = ra(e, h), hs = p.match(/^### .*$/gm) ?? [], [, old = ""] = p.split(/^## Older entries.*$/m);
+  const olds = old.split("\n").filter(l => l.startsWith("- ")), list = [{ id: "A", milestone: "M1", steps: ["a", "b"] }, { id: "B", milestone: "M1", steps: ["c"] }];
+  process.exit(hs.length === 15 && hs[0] === "### 2026-10-22 01:20 · F20 · passes" && hs[2] === "### 2026-10-22 01:18 · verify M1 · not yet" && hs[14].includes("· F6 ·")
+    && olds.length === 5 && olds.every(l => l.includes("(progress-archive.md)")) && olds[0].includes("· F5 ·") && olds[4].includes("· F1 ·") && !/^### /m.test(old)
+    && evidence(list, "M1", p).map(r => r.rows).join() === "2,1" && p.includes("\n| A | 2 | ran \\| x | saw more | no |\n")
+    && !/^(### |\|)/m.test(headerOf([{ kind: "init", header: "# P\r### x verify M1 y\u2028| A | 1 |" }])) && (a.match(/^### /gm) ?? []).length === 20 && !a.includes("## Older entries") && h.startsWith("# Progress — run `r1`")
+    && legacyOf(ra(e, h, "OLD\n### 1 · A · passes\n")) === "OLD\n### 1 · A · passes\n" && legacyOf("# old\n") === "# old\n" && legacyOf(a) === "" ? 0 : 1);'
+mkdir -p "$T/jr/legacy" "$T/jr/new" && echo '# old progress' > "$T/jr/legacy/progress.md" \
+  && echo '{"feature":"A","kind":"coding","outcome":"passes","summary":"did A","at":"2026-10-22 02:00","session":"01-A","model":"m"}' > "$T/jr/new/entries.jsonl"
+check "entries.mjs: progress renders 15 in full and the rest as archive lines" 'node --input-type=module -e "$ENRE" \
+  && node "$HERE/../lib/entries.mjs" render "$T/jr/legacy" && [[ $(ls "$T/jr/legacy") == progress.md && $(cat "$T/jr/legacy/progress.md") == "# old progress" ]] \
+  && node "$HERE/../lib/entries.mjs" render "$T/jr/new" && grep -qx "### 2026-10-22 02:00 · A · passes" "$T/jr/new/progress.md" && grep -qx "### 2026-10-22 02:00 · A · passes" "$T/jr/new/progress-archive.md" && grep -q "^# Progress — run \`new\`" "$T/jr/new/progress.md"'
+# the context pack (E4-05): 200 unrelated entries of ~300 bytes (every other one with a long run-wide discovery) around X's earlier
+# attempt (line 51, a dead end) and a verify of X's milestone (line 122, step 2 failed): X's dead end leads, the
+# verify's finding follows, Michael's answers come before any discovery, every item names its line, and the cap holds
+ENPK='import { pack } from "'$HERE'/../lib/entries.mjs"; const st = i => ({ at: "2026-10-22 01:00", session: "s" + i, model: "m" });
+  const e = Array.from({ length: 200 }, (_, i) => ({ feature: "F" + i, kind: "coding", outcome: "passes", summary: "entry " + i + " " + "x".repeat(270), files: ["f"], ...st(i),
+    ...(i % 2 ? {} : { discoveries: [{ text: "run-wide " + i + " " + "y".repeat(200), affects: ["run"] }] }) }));
+  e.splice(50, 0, { feature: "X", kind: "coding", outcome: "not yet", summary: "X first try", dead_ends: [{ tried: "the old parser", why: "it drops blank lines" }], ...st("-x") });
+  e.splice(121, 0, { feature: "MX", kind: "verify", outcome: "not yet", summary: "X step 2 fails", ...st("-v"),
+    evidence: [{ feature: "X", step: 1, ran: "a", saw: "ok", holds: true }, { feature: "X", step: 2, ran: "curl :7900/x", saw: "500", holds: false }] });
+  const list = { features: [{ id: "F3", milestone: "M0", steps: ["s"] }, { id: "X", milestone: "MX", after: ["F3"], steps: ["a", "b"] }] };
+  const p = pack(e, { feature: "X", list, answers: "### a\nuse port 7900", cap: 8192 }), ls = p.split("\n"), at = re => ls.findIndex(l => re.test(l));
+  const big = pack([], { feature: "X", list, answers: "old ".repeat(3000) + "newest answer", cap: 4096 }), small = pack(e, { feature: "X", list, answers: "", cap: 2048 });
+  process.exit(Buffer.byteLength(p) <= 8192 && ls[0] === "# Context pack for `X`" && ls.find(l => l.startsWith("- ")) === "- Dead end (X, s-x): the old parser — it drops blank lines → entries.jsonl:51"
+    && at(/^- Verify MX found \(X step 2\): ran curl :7900\/x; saw 500 → entries\.jsonl:122$/) > at(/^- Dead end/) && at(/^- Verify MX/) < at(/use port 7900 → INBOX\.md$/)
+    && at(/use port 7900/) < at(/^- Discovery/) && at(/^- Discovery \(F\d+, affects run\): run-wide/) > 0 && ls.filter(l => l.startsWith("- ")).every(l => / → (entries\.jsonl:\d+|INBOX\.md)$/.test(l))
+    && /^_\d+ items left out at 8192 bytes: entries\.jsonl has them all\._$/.test(ls.at(-2)) && Buffer.byteLength(big) <= 4096 && big.includes("- …") && big.includes("newest answer → INBOX.md")
+    && Buffer.byteLength(small) <= 2048 && small.split("\n").find(l => l.startsWith("- ")).startsWith("- Dead end (X") ? 0 : 1);'
+# tight cases (E4-05 review): an after milestone expands to its features, an entry shows once, the cut is strict (a short
+# part-5 entry doesn't jump a cut discovery), a milestone pack has its features' dead ends and failed rows, a discovery
+# may name the feature's milestone, and 4-byte characters never break the cap
+ENPK2='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (feature, x = {}) => ({ feature, kind: "coding", outcome: "passes", summary: feature + " done", session: "s-" + feature, at: "t", ...x });
+  const list = { features: [{ id: "P", milestone: "M0" }, { id: "Q", milestone: "M0" }, { id: "X", milestone: "M9", after: ["M0"] }] };
+  const e = [c("P", { dead_ends: [{ tried: "p1", why: "w" }] }), c("Q"), c("X", { outcome: "not yet", dead_ends: [{ tried: "x1", why: "w" }] }), c("Z", { discoveries: [{ text: "for M9", affects: ["M9"] }] }),
+    { feature: "M0", kind: "verify", outcome: "not yet", summary: "P fails", session: "v", at: "t", evidence: [{ feature: "P", step: 1, ran: "r", saw: "s", holds: false }] }];
+  const p = pack(e.slice(0, 4), { feature: "X", list, cap: 8192 }), sec = t => (p.split("## " + t)[1] ?? "").split("\n## ")[0], n = re => p.split("\n").filter(l => re.test(l)).length;
+  const big = [c("X", { dead_ends: [{ tried: "x1", why: "w" }] }), c("Y", { discoveries: [{ text: "d".repeat(900), affects: ["run"] }] }), c("W")];
+  const cut = pack(big, { feature: "X", list, cap: 1024 }), m = pack(e, { feature: "M0", list, cap: 8192 });
+  const emo = Array.from({ length: 60 }, (_, i) => c("E" + i, { summary: "😀".repeat(399), discoveries: [{ text: "😀".repeat(400), affects: ["run"] }] }));
+  process.exit(/· P ·/.test(sec("What it builds on")) && /· Q ·/.test(sec("What it builds on")) && !/· [PQX] ·/.test(sec("Lately in the run")) && /· Z ·/.test(sec("Lately in the run"))
+    && n(/→ entries\.jsonl:3$/) === 2 && n(/→ entries\.jsonl:2$/) === 1 && /^- Discovery \(Z, affects M9\): for M9/m.test(p)
+    && cut.includes("- Dead end (X") && !cut.includes("## Lately") && !cut.includes("## Discoveries") && /^_3 items left out at 1024 bytes/m.test(cut) && Buffer.byteLength(cut) <= 1024
+    && /^- Dead end \(P, s-P\): p1/m.test(m) && /^- Verify M0 found \(P step 1\)/m.test(m) && [1024, 2000, 4096, 8192].every(k => Buffer.byteLength(pack(emo, { feature: "E0", list, answers: "😀".repeat(3000), cap: k })) <= k) ? 0 : 1);'
+mkdir -p "$T/pk" && printf '%s\n' '{"feature":"A","kind":"coding","outcome":"not yet","summary":"a1","dead_ends":[{"tried":"t","why":"w"}],"at":"x","session":"01-A","model":"m"}' '{oops' \
+  '{"feature":"A","kind":"coding","outcome":"passes","summary":"a2","at":"x","session":"02-A","model":"m"}' > "$T/pk/entries.jsonl" \
+  && echo '{"features":[{"id":"A","milestone":"M1","steps":["s"]}]}' > "$T/pk/feature_list.json" && printf 'status: run\n## Answers\nuse 7900\n' > "$T/pk/INBOX.md"
+check "entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap" 'node --input-type=module -e "$ENPK" && node --input-type=module -e "$ENPK2" \
+  && ! node "$HERE/../lib/entries.mjs" pack "$T/pk" A 8k 2> /dev/null && ! node "$HERE/../lib/entries.mjs" pack "$T/pk" A 100 2> /dev/null \
+  && node "$HERE/../lib/entries.mjs" pack "$T/pk" A > "$T/pk.md" && grep -qx -- "- Dead end (A, 01-A): t — w → entries.jsonl:1" "$T/pk.md" \
+  && grep -q -- "^- x · A · passes: a2 → entries.jsonl:3$" "$T/pk.md" && grep -qx -- "- use 7900 → INBOX.md" "$T/pk.md" \
+  && [[ $(node "$HERE/../lib/entries.mjs" pack "$T/jr/legacy" Z | head -1) == "# Context pack for \`Z\`" ]]'
+# a journal a session or an editor damaged (E4 review F1, F2): a null line, wrongly typed fields and a blank line are
+# skipped, never fatal; a last line without its newline doesn't swallow the next append; references stay real lines.
+# A summary can't open a code fence or an HTML block, and a long id doesn't break the cap (F5, F9)
+mkdir -p "$T/jb" && printf '%s\n' '{"feature":"A","kind":"coding","outcome":"not yet","summary":"a1","dead_ends":[{"tried":"t","why":"w"}],"at":"x","session":"01-A","model":"m"}' null \
+  '{"feature":"B","kind":"coding","outcome":"passes","summary":"b","dead_ends":"x","files":"y","discoveries":[{"text":"t","affects":"run"}]}' '' > "$T/jb/entries.jsonl" \
+  && printf '%s' '{"feature":"A","kind":"coding","outcome":"not yet","summary":"a2","at":"x","session":"02-A","model":"m"}' >> "$T/jb/entries.jsonl" \
+  && echo '{"features":[{"id":"A","milestone":"M1","steps":["s"]}]}' > "$T/jb/feature_list.json" && printf 'status: run\n## Answers\n' > "$T/jb/INBOX.md" \
+  && echo '{"feature":"A","kind":"coding","outcome":"passes","summary":"a3"}' > "$T/jb/entry.json" && printf 'a3 done\n' > "$T/jb-final"
+ENGD='import { renderEntry as r, pack } from "'$HERE'/../lib/entries.mjs"; const e = s => r({ feature: "A", kind: "coding", outcome: "passes", summary: s });
+  process.exit(e("```js").includes("\n\\```js\n") && e("~~~").includes("\n\\~~~\n") && e("<!-- hide").includes("\n\\<!-- hide\n") && e("<div>").includes("\n\\<div>\n")
+    && Buffer.byteLength(pack([], { feature: "X".repeat(2000), cap: 1024 })) <= 1024 ? 0 : 1);'
+check "entries.mjs: a damaged journal line is skipped, never fused or fatal" 'node --input-type=module -e "$ENGD" \
+  && node "$HERE/../lib/entries.mjs" render "$T/jb" && [[ $(grep -c "^### " "$T/jb/progress.md") == 2 ]] \
+  && node "$HERE/../lib/entries.mjs" pack "$T/jb" A > "$T/jb.md" && grep -qx -- "- Dead end (A, 01-A): t — w → entries.jsonl:1" "$T/jb.md" && grep -q -- "a2 → entries.jsonl:5$" "$T/jb.md" \
+  && node "$HERE/../lib/entries.mjs" ingest "$T/jb" coding A 03-A m passes /dev/null "$T/jb-final" && [[ $(wc -l < "$T/jb/entries.jsonl") == 6 ]] \
+  && node "$HERE/../lib/entries.mjs" pack "$T/jb" A | grep -q -- "a3 → entries.jsonl:6$" && node "$HERE/../lib/entries.mjs" pack "$T/jb" A | grep -q -- "a2 → entries.jsonl:5$"'
+git init -q -b main "$T/vj" && echo '{"framework":"nextjs"}' > "$T/vj/vercel.json" && "$H" init "$T/vj" > "$T/init-vj.out" 2>&1 && "$H" init "$T/vj" > "$T/init-vj2.out" 2>&1
+check "init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept" 'jq -e ".framework == \"nextjs\" and .git.deploymentEnabled[\"harness/**\"] == false" "$T/vj/vercel.json" > /dev/null \
+  && grep -q "added the deploy guard to vercel.json" "$T/init-vj.out" && grep -q "keep    vercel.json" "$T/init-vj2.out" && ! grep -q "added the deploy guard" "$T/init-vj2.out"'
+git init -q -b main "$T/vd" && mkdir "$T/vd/.vercel" && "$H" init "$T/vd" > "$T/init-vd.out" 2>&1; git init -q -b main "$T/vn" && "$H" init "$T/vn" > "$T/init-vn.out" 2>&1
+check "init: a Vercel project without vercel.json gets one" 'jq -e ".git.deploymentEnabled[\"harness/**\"] == false" "$T/vd/vercel.json" > /dev/null && grep -q "added the deploy guard to vercel.json" "$T/init-vd.out" \
+  && [[ ! -e $T/vn/vercel.json && ! -e $T/vn/netlify.toml ]] && ! grep -q "deploy guard\|vercel\|netlify" "$T/init-vn.out"'
+git init -q -b main "$T/nt" && printf '[build]\n  command = "make"\n  publish = "dist"\n\n[build.environment]\n  NODE_VERSION = "20"\n' > "$T/nt/netlify.toml" && "$H" init "$T/nt" > "$T/init-nt.out" 2>&1
+ign() { sed -n 's/^ *ignore = "\(.*\)"$/\1/p' "$1" | sed 's/\\"/"/g'; }   # the [build] ignore command, unquoted
+check "init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept" 'grep -q "added the deploy guard to netlify.toml" "$T/init-nt.out" && grep -q "command = \"make\"" "$T/nt/netlify.toml" \
+  && grep -q "NODE_VERSION = \"20\"" "$T/nt/netlify.toml" && c=$(ign "$T/nt/netlify.toml") && BRANCH=harness/x bash -c "$c" && ! BRANCH=main bash -c "$c"'
+
 # ---- run 1: misbehaving sessions, two milestones; verified milestones merge themselves ----
 "$H" start "$T/proj" demo --spec SPEC.md --brief "only A–C" --foreground > "$T/run1.out" 2>&1
-WT=$T/wt/proj/demo RD=$T/wt/proj/demo/.harness/runs/demo
+WT=$T/wt/proj/demo RD=$T/wt/proj/demo/.harness/runs/demo; hlog demo > "$T/demo-hlog.md"   # gc removes the worktree; run 15e reads it
 check "all features pass"                 '[[ $($F summary "$(list demo)") == "3/3 passing" ]]'
 check "tampered list restored"            'hlog demo | grep -q "restored the feature list after B"'
 check "tampered text reverted"            '[[ $(jq -r ".features[2].description" "$(list demo)") == c ]]'
@@ -102,11 +447,60 @@ check "M1 and M2 tagged"                  'git -C "$T/origin.git" tag | grep -qx
 check "M1 and M2 merged into main by PRs" '[[ $(grep -c "pr merge" "$T/gh.log") == 2 ]] && on_main run/demo/M2 && hlog demo | grep -q "M2 merged into main"'
 check "no final tag, no false 'verified'" '! git -C "$T/origin.git" tag | grep -q final && ! hlog demo | grep -q "final verified"'
 check "brief committed with the run"      'grep -q "only A–C" "$RD/brief.md"'
-check "brief, rules and policy in the prompt" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q "only A–C" "$P" && grep -q "Project rules (CLAUDE.md)" "$P" && grep -q "Policy: build-only" "$P"'
+check "brief, rules and policy in the prompt" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q "only A–C" "$P" && grep -qx "# Project rules" "$P" && grep -q "\`CLAUDE.md\`" "$P" && grep -q "Policy: build-only" "$P"'
+check "coding prompt names CLAUDE.md but doesn't paste it" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q CLAUDE.md "$P" && ! grep -qx rules "$P"'
+# each session's prompt is kept beside its transcript; two coding sessions share everything up to and past the policy (E3-03)
+off() { grep -bo "$1" "$2" 2> /dev/null | head -1 | cut -d: -f1; }   # the 0-based byte offset of the first $1 in $2
+PA=$(ls "$HARNESS_STATE"/proj/demo/logs/*-A.prompt.md 2> /dev/null | head -1) PB=$(ls "$HARNESS_STATE"/proj/demo/logs/*-B.prompt.md 2> /dev/null | head -1)
+CB=$(cmp "$PA" "$PB" 2> /dev/null | sed -n 's/.* differ: \(byte\|char\) \([0-9]*\),.*/\2/p')
+check "two coding prompts share a byte-identical prefix that includes the policy" '[[ -s $PA && -s $PB && -n $CB && -n $(off "Policy: build-only" "$PA") ]] \
+  && (( CB - 1 > $(off "Policy: build-only" "$PA") && CB - 1 > $(off "Policy: build-only" "$PB") )) \
+  && (( $(off "Policy: build-only" "$PA") < $(off "only A–C" "$PA") && $(off "only A–C" "$PA") < $(off "# This session" "$PA") )) \
+  && (( CB - 1 > $(off "# This session" "$PA") && $(off "Clock:" "$PA") > $(off "# This session" "$PA") ))'
+# the clock line: time, deadline, budget, turns, attempt or verify round (E3-04); C's later prompt is its second attempt
+PC=$(ls "$HARNESS_STATE"/proj/demo/logs/*-C.prompt.md 2> /dev/null | tail -1)
+check "the prompt says the time, the budget and the attempt" '[[ -s $PC ]] && grep -Eqx "Clock: [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} · run [0-9]+h[0-9]{2}m of [0-9]+h([0-9]{2}m)?, ends [0-9]{2}:[0-9]{2} · this session: \\\$20 budget, 250 turns, 100m timeout · attempt 2 of 2" "$PC" \
+  && [[ $(grep -l "verify round 2 of 2" "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.prompt.md 2> /dev/null | wc -l) == 1 ]]'
 check "metrics: wall time and roles"      'jq -e "select(.kind==\"coding\") | .wall_s != null and .role == \"build\"" "$RD/metrics.jsonl" > /dev/null'
+check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0)" "$RD/metrics.jsonl" > /dev/null'
+check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'
+# the journal (E4-03): one line per session in session order, stamped by the driver, and no entry.json left behind;
+# C's first attempt (it left the suite red) carries its dead end; the tree a milestone is tagged (and merged) with has its verify's line
+check "entries: the driver appends each session's entry" '[[ $(jq -r .feature "$RD/entries.jsonl" 2> /dev/null | paste -sd" ") == "init A B M1 A M1 C C M2" ]] \
+  && [[ $(jq -r .session "$RD/entries.jsonl" | sed "s/^[0-9]\{6\}-verify-/verify-/" | paste -sd" ") == "00-init 01-A 02-B verify-M1 03-A verify-M1 04-C 05-C verify-M2" ]] \
+  && jq -se "all(.at | test(\"^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}$\")) and all(.model | startswith(\"claude-\")) and all(has(\"minimal\") | not) \
+    and (map(select(.session == \"04-C\"))[0].dead_ends[0].tried == \"left BROKEN in the tree\")" "$RD/entries.jsonl" > /dev/null && [[ ! -e $RD/entry.json ]] \
+  && ! git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo/entry.json 2> /dev/null \
+  && [[ $(git -C "$T/origin.git" show run/demo/M2:.harness/runs/demo/entries.jsonl 2> /dev/null | tail -1 | jq -r .feature) == M2 ]]'
+# progress.md is rendered from the journal (E4-04): its entry headers are entries.jsonl's, newest first; the newest verify
+# M1 entry carries its evidence table; the archive has every entry; the M2 PR quotes its verify entry with its rows
+check "progress.md is rendered from the journal" 'head -1 "$RD/progress.md" | grep -q "^<!-- harness: rendered from entries.jsonl" \
+  && [[ $(grep "^### " "$RD/progress.md") == "$(jq -r "\"### \" + .at + \" · \" + (if .kind == \"verify\" then \"verify \" else \"\" end) + .feature + \" · \" + .outcome" "$RD/entries.jsonl" | tac)" ]] \
+  && awk "index(\$0, \"### \") == 1 { if (on) exit; if (index(\$0, \"verify M1\")) on = 1 } on" "$RD/progress.md" | grep -q "^| A | 1 |" \
+  && [[ $(grep -c "^### " "$RD/progress-archive.md") == $(wc -l < "$RD/entries.jsonl") ]] \
+  && grep -q "^### .* · verify M2 · passes$" "$HARNESS_STATE/proj/demo/pr-body.md" && grep -q "^| C | 1 |" "$HARNESS_STATE/proj/demo/pr-body.md"'
+# the context pack before each coding and verify session (E4-05): C's second attempt got its first attempt's dead end,
+# both prompts send the session there first, and the pack is committed with the run record (so it merges)
+check "context.md carries the earlier attempt's dead end" 'C5=$HARNESS_STATE/proj/demo/logs/05-C.context.md; grep -q "left BROKEN in the tree" "$C5" && (( $(wc -c < "$C5") <= 8192 )) \
+  && grep -q "^# Context pack for \`M1\`" "$(ls "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.context.md | head -1)" \
+  && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-coding.md" \
+  && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-verify.md" \
+  && git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo/context.md && hlog demo | grep -q "context.md for C: [0-9]* bytes"'
 check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && grep -q "ended: done" <<< "$("$H" status demo)"'
 check "summary, report and retro written" '[[ $(jq .features.merged "$RD/summary.json") == 3 ]] && grep -q "per passing feature" "$RD/report.md" && grep -q "Stub retro" "$RD/retro.md"'
+check "summary: tokens, per verified feature, first-attempt rate, rework" 'jq -e ".tokens.in > 0 and .per_verified_feature.cost > 0 and .rework == [\"A\", \"C\"] and .first_attempt_pass_rate == 0.33 and .verify_fail_rate > 0" "$RD/summary.json" > /dev/null'
+check "report shows tokens and quality"   'R=$("$H" report demo); grep -q "^| Tokens | .* in (cache hit .*context peak .*per verified feature " <<< "$R" && grep -q "^| Quality | first-attempt pass rate 0.33 · rework A, C · verify-fail rate " <<< "$R"'
 check "ledger has the run"                'grep -q "\"run\":\"demo\"" "$T/ledger/runs.jsonl" && [[ -f $T/ledger/proj/demo/summary.json ]]'
+HV=$(git -C "$HERE/.." log -1 --format=%h -- . ":(exclude)ledger")   # the demo run's harness is this checkout; its own ledger commits don't count
+check "ledger row has harness_version and harness_dirty" 'jq -se --arg v "$HV" "map(select(.run == \"demo\"))[0] | .harness_version == \$v and (.harness_dirty | type == \"boolean\")" "$T/ledger/runs.jsonl" > /dev/null \
+  && grep -q " run demo on .* · harness $HV\(+dirty\)\?$" "$HARNESS_STATE/proj/demo/run.log" && [[ $(cat "$HARNESS_STATE/proj/demo/harness-version") == "$HV" ]]'
+# the live harness commits its ledger/ after every run: such a commit is not a new version, nor ledger files dirt
+VR=$T/vrepo; mkdir -p "$VR/lib" "$VR/ledger"; vg() { git -C "$VR" -c user.name=t -c user.email=t@t "$@"; }
+vg init -q -b main; echo a > "$VR/lib/x"; vg add -A; vg commit -qm code; VC=$(vg rev-parse --short HEAD)
+echo r > "$VR/ledger/runs.jsonl"; vg add -A; vg commit -qm ledger; echo r2 >> "$VR/ledger/runs.jsonl"; echo n > "$VR/ledger/new"
+check "harness version skips ledger commits" 'V1=$(source "$HERE/../lib/version.sh"; harness_version "$VR"; echo "$HARNESS_VERSION $HARNESS_DIRTY") \
+  && echo b >> "$VR/lib/x" && V2=$(source "$HERE/../lib/version.sh"; harness_version "$VR"; echo "$HARNESS_VERSION $HARNESS_DIRTY") \
+  && V3=$(source "$HERE/../lib/version.sh"; harness_version "$T/nonexistent"; echo "$HARNESS_VERSION $HARNESS_DIRTY") && [[ $V1 == "$VC 0" && $V2 == "$VC 1" && $V3 == "unknown 0" ]]'
 check "harness report prints the writeup" 'grep -q "Spend by role" <<< "$("$H" report demo)"'
 check "init model resolved to fable"      'grep -q "initializer · claude-fable-5-1" "$HARNESS_STATE/proj/demo/run.log"'
 check "summary end reason is how the run ended" '[[ $(jq -r .end_reason "$RD/summary.json") == done ]]'
@@ -188,7 +582,9 @@ STUB_REFUSE_MERGE=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T
 check "refused merge leaves the PR, needs Michael" 'hlog later | grep -q "merge was refused" && ! on_main run/later/M1'
 check "a refused merge: priority high, click = the PR" 'Br=$(curl_with "[later] M1 needs Michael: merge refused"); U=$(grep -o "https://example.test/pr/[0-9]*" <<< "$Br" | head -1) \
   && [[ -n $U ]] && grep -qx "Title: \[later\] M1 needs you" <<< "$Br" && grep -qx "Priority: high" <<< "$Br" && grep -qx "Click: $U" <<< "$Br"'
+echo old1234 > "$HARNESS_STATE/proj/later/harness-version"
 "$H" merge later > "$T/run10b.out" 2>&1
+check "harness merge keeps the harness version of the run (E1 review)" '[[ $(cat "$HARNESS_STATE/proj/later/harness-version") == old1234 ]]'
 check "harness merge merges verified milestones afterwards" 'on_main run/later/M2 && grep -q "^done" "$HARNESS_STATE/proj/later/ended"'
 
 # ---- queue: start queues behind a running run; the runner runs entries in order ----
@@ -201,6 +597,12 @@ STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS
 D=$(date +%F)
 check "queue ran both entries, distinct run ids" '[[ $($F summary "$(list proj-$D)") == "3/3 passing" && $($F summary "$(list proj-$D-2)") == "3/3 passing" ]] && grep -q "queue empty" "$HARNESS_STATE/queue/runner.log"'
 check "trends lists every run"            'grep -q "| proj-$D-2 | proj |" <<< "$("$H" trends)"'
+# one row per harness version (this checkout, +dirty while it has uncommitted changes); a row from before E1-07 groups as –
+printf '%s\n' '{"run":"old","passing":1,"total":2,"cost":3}' '{"run":"v1","harness_version":"abc1234","harness_dirty":false,"passing":2,"total":2,"cost":4,"cache_hit_rate":0.5,"orient_tokens":100,"first_attempt_pass_rate":1}' \
+  '{"run":"v1d","harness_version":"abc1234","harness_dirty":true,"passing":1,"total":3,"cost":2,"cache_hit_rate":0.9,"orient_tokens":null,"first_attempt_pass_rate":0}' > "$T/bv.jsonl"
+check "trends --by version groups the runs" 'BV=$("$H" trends --by version) && grep -qE "^\| $HV(\+dirty)? \| [0-9]+ \| [0-9]+/[0-9]+ \| " <<< "$BV" && grep -q "^| Harness | Runs | Passing |" <<< "$BV" && ! grep -q "Harness" <<< "$("$H" trends)" \
+  && P=$(node "$HERE/../lib/summary.mjs" trends "$T/bv.jsonl" --by version) && grep -qxF "| – | 1 | 1/2 | \$3.00 | – | – | – |" <<< "$P" \
+  && grep -qxF "| abc1234 | 1 | 2/2 | \$2.00 | 0.50 | 100 | 1.00 |" <<< "$P" && grep -qxF "| abc1234+dirty | 1 | 1/3 | \$2.00 | 0.90 | – | 0.00 |" <<< "$P" && [[ $(wc -l <<< "$P") == 5 ]]'
 DB=$T/debriefs.log Q=$HARNESS_STATE/queue NOTE=$T/ledger/debrief.md
 ndb() { cat "$DB" 2>/dev/null | grep -c .; }
 settle() {   # the runner's debrief is detached: wait until no debrief process is left
@@ -229,13 +631,16 @@ rm -rf "$HARNESS_STATE/proj/busy3" "$HARNESS_STATE/other" "$Q"/*.args; mv "$T/us
 
 # ---- run 11: a verify refused by the usage limit is deferred, never a "holds" ----
 STUB_VERIFY_LIMIT=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" vlimit --spec SPEC.md --foreground > "$T/run11.out" 2>&1
-check "refused verify: deferred, then verified, then merged" 'hlog vlimit | grep -q "verify M1 refused" && [[ $(hlog vlimit | grep -n "verify M1 refused" | cut -d: -f1) -lt $(hlog vlimit | grep -n "M1 verified and tagged" | cut -d: -f1) ]] && on_main run/vlimit/M1'
+check "refused verify: deferred, then verified, then merged" 'hlog vlimit | grep -q "verify M1 refused" && [[ $(hlog vlimit | grep -n "verify M1 refused" | cut -d: -f1) -lt $(hlog vlimit | grep -n "M1 verified and tagged" | cut -d: -f1) ]] && on_main run/vlimit/M1 \
+  && jq -se "map(select(.kind == \"verify\" and .minimal == \"missing\")) | length == 1 and .[0].outcome == \"not yet\"" "$T/wt/proj/vlimit/.harness/runs/vlimit/entries.jsonl" > /dev/null'
 
 # ---- run 12: a session claims its feature, then the limit cuts it off: the claim is reverted ----
 { cat "$T/base-config.sh"; echo 'MERGE_POLICY=pr'; } > "$T/user-config.sh"   # its milestones are proposed, not merged
 STUB_PASS_THEN_LIMIT=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" claim --spec SPEC.md --foreground > "$T/run12.out" 2>&1
 cp "$T/base-config.sh" "$T/user-config.sh"
 check "a limit-cut session's passes is reverted, A retried" 'grep -q "A attempt 2" "$T/scratch/proj/claim/sessions.log" && grep -qx "HARNESS: usage limit" <<< "$(git -C "$T/wt/proj/claim" log --format=%s -- .harness/runs/claim/feature_list.json)"'
+check "a refused session's minimal entry is not yet, not its reverted claim (E4 review F3)" 'jq -se "map(select(.feature == \"A\")) | .[0].outcome == \"not yet\" and .[0].minimal == \"missing\" and .[-1].outcome == \"passes\"" \
+  "$T/wt/proj/claim/.harness/runs/claim/entries.jsonl" > /dev/null'
 check "a proposed merge: ready to merge, click = the PR, default priority" 'Bp=$(curl_with "[claim] M1 verified · review:"); U=$(grep -o "https://example.test/pr/[0-9]*" <<< "$Bp" | head -1) \
   && [[ -n $U ]] && grep -qx "Title: \[claim\] M1 ready to merge" <<< "$Bp" && grep -qx "Click: $U" <<< "$Bp" && ! grep -q "^Priority:" <<< "$Bp"'
 
@@ -249,24 +654,97 @@ check "default MERGE_POLICY proposes a verified milestone, never merges it" 'hlo
 STUB_VERIFY_EDITS=1 STUB_RETRO_EDITS=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" meddle --spec SPEC.md --foreground > "$T/run13.out" 2>&1
 check "verifier code edits reverted, never merged" 'hlog meddle | grep -q "reverted code edits the verifier may not make" && ! git -C "$T/origin.git" show main:hack-M1.txt > /dev/null 2>&1 && ! git -C "$T/origin.git" show main:CLAUDE.md | grep -q edited'
 check "retro edits reverted"              'hlog meddle | grep -q "retro: reverted" && [[ ! -f $T/wt/proj/meddle/retro-hack.txt ]]'
+check "a session's edits to the journal are restored (E4 review F1)" 'hlog meddle | grep -q " · verify M1: entries.jsonl edited by the session; restored (the driver is its only writer)$" \
+  && ! grep -qx null "$T/wt/proj/meddle/.harness/runs/meddle/entries.jsonl" && hlog meddle | grep -q "M1 verified and tagged"'
+
+# ---- run 13b: B's entry.json isn't JSON: the driver records a minimal entry from git and B's final message (E4-03) ----
+STUB_BAD_ENTRY=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" badentry --spec SPEC.md --foreground > "$T/run13b.out" 2>&1
+check "a malformed entry is recorded as minimal and the run goes on" 'hlog badentry | grep -q " · B: entry.json invalid (not JSON: .*); recorded a minimal entry$" \
+  && jq -se "map(select(.feature == \"B\"))[0] | .outcome == \"passes\" and any(.files[]; . == \"B-badentry.txt\") and all(.files[]; startswith(\".harness\") | not) and .summary == \"done\" and (.minimal | startswith(\"invalid: not JSON\"))" \
+    "$T/wt/proj/badentry/.harness/runs/badentry/entries.jsonl" > /dev/null && [[ ! -e $T/wt/proj/badentry/.harness/runs/badentry/entry.json ]] \
+  && grep -q "^done" "$HARNESS_STATE/proj/badentry/ended"'
 
 # ---- run 14: v2-style tags don't merge on a resume; `harness merge` merges them ----
 echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" legacy --spec SPEC.md --foreground > "$T/run14.out" 2>&1
 echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+# its record made pre-E4 (E4-04): no journal, a progress.md the sessions wrote; `harness continue` keeps it as the archive
+LW=$T/wt/proj/legacy LR=$T/wt/proj/legacy/.harness/runs/legacy
+git -C "$LW" rm -q --ignore-unmatch "$LR/entries.jsonl" "$LR/progress-archive.md"
+printf '# progress\n\n### 2026-10-20 10:00 · verify M1\n\n| Feature | Step | Ran | Saw | Holds |\n|---|---|---|---|---|\n| A | 1 | check | ok | yes |\n\n### 2026-10-20 09:00 · A · passes\n\nhand-written  \n' > "$LR/progress.md"
+git -C "$LW" add -A && git -C "$LW" commit -qm "a pre-E4 record" && git -C "$LW" push -q origin harness/legacy
+cp "$LR/progress.md" "$T/legacy-progress.md"
+LJ0=$(git -C "$T/origin.git" cat-file -e harness/legacy:.harness/runs/legacy/entries.jsonl 2> /dev/null && echo yes || echo no)
 for m in M1 M2; do git -C "$T/wt/proj/legacy" tag -f -a "run/legacy/$m" "run/legacy/$m^{commit}" -m "harness run legacy: $m verified" > /dev/null
   git -C "$T/wt/proj/legacy" push -q -f origin "run/legacy/$m"; done
 mkdir -p "$T/prs" && touch "$T/prs/branch-harness_legacy"   # its v2 whole-run PR
 "$H" continue legacy --foreground > "$T/run14b.out" 2>&1
+check "a legacy run is untouched, then continued into a journal" '[[ $LJ0 == no ]] && cmp -s "$LR/progress-archive.md" "$T/legacy-progress.md" \
+  && cmp -s "$LR/progress.md" "$T/legacy-progress.md" && [[ -f $LR/entries.jsonl ]] && hlog legacy | grep -q "journal started; progress.md kept as progress-archive.md$" \
+  && git -C "$T/origin.git" cat-file -e harness/legacy:.harness/runs/legacy/entries.jsonl \
+  && cp -r "$LR" "$T/lr2" && echo "{\"feature\":\"A\",\"kind\":\"coding\",\"outcome\":\"passes\",\"summary\":\"s\",\"at\":\"2026-10-22 03:00\"}" >> "$T/lr2/entries.jsonl" \
+  && node "$HERE/../lib/entries.mjs" render "$T/lr2" && [[ $(sed -n 2p "$T/lr2/progress.md") == "# progress" ]] && ! grep -q hand-written "$T/lr2/progress.md" \
+  && grep -qx "### 2026-10-22 03:00 · A · passes" "$T/lr2/progress-archive.md" && grep -qx "<!-- harness: progress.md before the journal, kept as it was -->" "$T/lr2/progress-archive.md" \
+  && tail -c "$(wc -c < "$T/legacy-progress.md")" "$T/lr2/progress-archive.md" | cmp -s - "$T/legacy-progress.md"'
 check "v2 tags don't merge on resume"     'hlog legacy | grep -q "verified by harness v2" && ! on_main run/legacy/M1 && [[ -f $T/prs/branch-harness_legacy ]]'
 "$H" merge legacy > "$T/run14c.out" 2>&1
 check "harness merge merges v2 tags, closes the v2 PR" 'on_main run/legacy/M2 && [[ ! -f $T/prs/branch-harness_legacy ]]'
+
+# ---- run 14d: `harness merge` on a legacy record (no journal, plan §14 a): it stays byte for byte; its PR quotes its own verify entry ----
+echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lgm --spec SPEC.md --foreground > "$T/run14d.out" 2>&1
+echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+MW=$T/wt/proj/lgm MR=$T/wt/proj/lgm/.harness/runs/lgm
+git -C "$MW" rm -q --ignore-unmatch "$MR/entries.jsonl" "$MR/progress-archive.md"
+printf '# progress\n\n### 2026-10-20 11:00 · verify M2\n\n| Feature | Step | Ran | Saw | Holds |\n|---|---|---|---|---|\n| C | 1 | check | legacy-M2-row | yes |\n\n### 2026-10-20 10:00 · verify M1\n\nold\n' > "$MR/progress.md"
+git -C "$MW" add -A && git -C "$MW" commit -qm "a pre-E4 record" && git -C "$MW" push -q origin harness/lgm
+cp "$MR/progress.md" "$T/lgm-progress.md"
+"$H" merge lgm > "$T/run14e.out" 2>&1
+check "harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry" 'cmp -s "$MR/progress.md" "$T/lgm-progress.md" && [[ ! -e $MR/entries.jsonl && ! -e $MR/progress-archive.md ]] \
+  && ! git -C "$T/origin.git" cat-file -e harness/lgm:.harness/runs/lgm/entries.jsonl 2> /dev/null && on_main run/lgm/M2 \
+  && grep -q "^Milestone \*\*M2\*\* of harness run .lgm." "$HARNESS_STATE/proj/lgm/pr-body.md" && grep -qx "| C | 1 | check | legacy-M2-row | yes |" "$HARNESS_STATE/proj/lgm/pr-body.md"'
 
 # ---- run 15: a resumed run reloads its configuration after merging main (here: a new POLICY) ----
 STUB_PHONE_STOP=1 "$H" start "$T/proj" flip --spec SPEC.md --foreground > "$T/run15.out" 2>&1
 (cd "$T/proj" && git pull -q origin main && echo "POLICY=live-staged" >> .harness/config.sh && git commit -qam "policy: live-staged" && git push -q origin main)
 "$H" continue flip --foreground > "$T/run15b.out" 2>&1
 check "resume reloads config merged from main" 'hlog flip | grep -q "configuration reloaded after merging main: policy live-staged"'
+
+# ---- run 15b: a run that ended before its feature list merges main before the initializer re-runs (E0) ----
+STUB_INIT_LIMIT=1 "$H" start "$T/proj" nolist --spec SPEC.md --foreground > "$T/run15c.out" 2>&1; cp "$HARNESS_STATE/proj/nolist/ended" "$T/run15c.ended"; rm -f "$HARNESS_STATE/LIMIT_UNTIL"   # continue rewrites ended
+(cd "$T/proj" && git pull -q origin main && echo "revised spec" > SPEC.md && git commit -qam "spec: revised" && git push -q origin main)
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue nolist --foreground > "$T/run15d.out" 2>&1
+check "continue after a no-list end merges main first" 'grep -q "^usage limit before the feature list" "$T/run15c.ended" && grep -q revised "$T/wt/proj/nolist/SPEC.md" \
+  && hlog nolist | awk "/merged main into harness\/nolist/ && !m { m = NR } /feature list written/ && !f { f = NR } END { exit !(m && f && m < f) }"'
+
+# ---- run 15e: deploy guards at the run start (E0b): once per run, read from origin/main; projects of their own ----
+dproj() {   # <name> [<file> <content>]: a project with its own bare origin behind a GitHub-style URL, <file> on its main
+  git init -q --bare -b main "$T/$1-origin.git" && git init -q -b main "$T/$1" && mkdir "$T/$1/.harness" \
+    && printf 'CHECK_CMD="true"\nINIT_CMD="true"\n' > "$T/$1/.harness/config.sh" && printf '# %s\n' "$1" > "$T/$1/CLAUDE.md" && echo spec > "$T/$1/SPEC.md" \
+    && { [[ -z ${2:-} ]] || printf '%s\n' "$3" > "$T/$1/$2"; } && git -C "$T/$1" add -A && git -C "$T/$1" commit -qm init \
+    && git -C "$T/$1" config url."$T/$1-origin.git".insteadOf "git@github.com:test/$1.git" && git -C "$T/$1" remote add origin "git@github.com:test/$1.git" && git -C "$T/$1" push -q -u origin main
+}
+cp "$T/user-config.sh" "$T/user-config.bak"; cp "$T/base-config.sh" "$T/user-config.sh"   # NTFY_URL: the checks read curl.log
+dstart() { STUB_INIT_LIMIT=1 "$H" "${@:2}" --foreground > "$T/$1.out" 2>&1; rm -f "$HARNESS_STATE/LIMIT_UNTIL"; }   # <out> <harness args>: a run that ends at once (the initializer is refused)
+dproj vp vercel.json '{"framework":"nextjs"}' && dstart vp1 start "$T/vp" vp1 --spec SPEC.md && dstart vp1b continue vp1
+check "run start without the deploy guard: one note, one notification" '[[ $(hlog vp1 vp | grep -c "initializer refused") == 2 && $(hlog vp1 vp | grep -c "preview deploy per session") == 1 ]] \
+  && hlog vp1 vp | grep -q "deploy guard: vercel.json on origin/main has no git.deploymentEnabled" && [[ $(curl_count "[vp1] no deploy guard (vercel): this run will create a preview deploy per session") == 1 ]]'
+dproj np netlify.toml $'[build]\n  command = "make"' && dstart np1 start "$T/np" np1 --spec SPEC.md
+check "run start without the netlify guard: one note, one notification" '[[ $(hlog np1 np | grep -c "preview deploy per session") == 1 ]] && hlog np1 np | grep -q "deploy guard: netlify.toml on origin/main has no \[build\] ignore" \
+  && [[ $(curl_count "[np1] no deploy guard (netlify): this run will create a preview deploy per session") == 1 ]]'
+dproj dp && STUB_DEPLOYMENTS=vercel dstart dp1 start "$T/dp" dp1 --spec SPEC.md
+check "run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)" 'grep -q "gh api repos/test/dp/deployments?per_page=20" "$T/gh.log" && hlog dp1 dp | grep -q "deploy guard: vercel.json on origin/main" \
+  && [[ $(curl_count "[dp1] no deploy guard (vercel)") == 1 ]]'
+dproj gp vercel.json '{"git":{"deploymentEnabled":{"harness/**":false}}}' && dstart gp1 start "$T/gp" gp1 --spec SPEC.md
+check "run start with the guard: nothing" 'grep -q "gh api repos/test/proj/deployments?per_page=20" "$T/gh.log" && [[ -s $T/demo-hlog.md && -n $(hlog gp1 gp) ]] && ! grep -q "preview deploy" "$T/demo-hlog.md" && ! hlog gp1 gp | grep -q "preview deploy" \
+  && [[ $(curl_count "[demo] no deploy guard") == 0 && $(curl_count "[gp1] no deploy guard") == 0 ]]'
+# the init output a session sees: the last 40 lines and the full log's path (E3-02)
+dproj ip .harness/config.sh $'CHECK_CMD="true"\nINIT_CMD="seq 1 100"' && dstart ip1 start "$T/ip" ip1 --spec SPEC.md --brief 'keep {{RUN_ID}} as written'
+IB=$(awk '/^## Init output$/ { s = 1; next } s && /^```$/ { if (f) exit; f = 1; next } f' "$HARNESS_STATE/ip/ip1/prompt-initializer.md" 2> /dev/null)
+check "init output is capped at 40 lines with the log path" '[[ -n $IB ]] && (( $(wc -l <<< "$IB") == 41 )) && [[ $(tail -1 <<< "$IB") == "full output: $T/scratch/ip/ip1/init.out" ]] \
+  && cmp -s <(head -n 40 <<< "$IB") <(tail -n 40 "$T/scratch/ip/ip1/init.out") && grep -qx 100 <<< "$IB" && ! grep -qx 1 <<< "$IB"'
+check "a brief is pasted as written: its {{X}} isn't filled (E3 review F7)" 'grep -qx "keep {{RUN_ID}} as written" "$HARNESS_STATE/ip/ip1/prompt-initializer.md"'
+mv "$T/user-config.bak" "$T/user-config.sh"
 
 # ---- debrief: the runner's other exits ----
 rm -f "$HARNESS_STATE/LIMIT_UNTIL"
