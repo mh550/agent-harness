@@ -8,6 +8,8 @@
 # (<state>/runners, by `harness start`). Whichever way it exits, if it started a run it starts `harness debrief`
 # detached (setsid: a new runner replacing tmux h-queue doesn't kill it). The debrief covers every run since the last
 # successful one, so a debrief that fails or is killed is caught up by the next one (or `harness debrief` by hand).
+# Before each start with no run alive it runs lib/sync.sh (the live checkout level with origin, ledger pushed). Entries
+# in queue/held/ (`harness queue park`) are skipped until unparked; the runner says how many at start-up.
 #   queue.sh [<until epoch, 0 = none>]
 set -uo pipefail
 : "${HARNESS_HOME:?}"
@@ -23,9 +25,13 @@ busy_projects() { local d p; for d in "$STATE_ROOT"/*/*/; do p=$(cat "$d/driver.
 # An entry's project: start → the repo's directory name (what the state dir is named after); continue → its run's state dir.
 entry_project() { local verb arg d; { read -r verb; read -r arg; } < "$1"
   if [[ $verb == start ]]; then basename "$arg"; else d=$(compgen -G "$STATE_ROOT/*/$arg" | head -1) && basename "$(dirname "$d")"; fi; }
+# One block, parsed whole before it runs: lib/sync.sh may rewrite this file under the running loop.
+{
 echo $$ > "$Q/runner.pid"; trap 'rm -f "$Q/runner.pid"' EXIT
 RID=$(date +%Y%m%d-%H%M%S)-$$ UP=$(date '+%F %T'); export HARNESS_RUNNER_ID=$RID
 echo "$UP runner up · MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS$( (( UNTIL )) && echo " · no new runs after $(date -d "@$UNTIL" '+%F %H:%M')") · id $RID" | tee -a "$Q/runner.log"
+n=$(ls "$Q"/held/*.args 2> /dev/null | wc -l)
+(( n )) && log "$n parked entr$( (( n == 1 )) && echo y || echo ies) skipped until unparked (harness queue list)"
 
 while :; do
   [[ -f $Q/STOP ]] && { rm -f "$Q/STOP"; log "stopped by harness queue stop"; break; }
@@ -48,6 +54,7 @@ while :; do
   if why=$(weekly_over "$STATE_ROOT/USAGE_7D"); then   # days, not minutes: stop, leaving the queue for another night
     log "not starting runs: $why; $(ls "$Q"/*.args | wc -l) left queued"; break
   fi
+  (( a == 0 )) && log "$("$HARNESS_HOME/lib/sync.sh")"   # no driver alive: the live checkout may move under none
   mapfile -t args < "$next"; mv "$next" "$Q/done/$(date +%Y%m%d-%H%M%S)-$(basename "$next")"
   extra=(--now); [[ ${HARNESS_QUEUE_FOREGROUND:-} ]] && extra=(--foreground) || extra+=(--no-supervisor)
   (( UNTIL )) && extra+=(--until-epoch "$UNTIL")
@@ -61,3 +68,5 @@ if (( started )); then
   log "runner down after starting $started run(s): harness debrief (detached; output in queue/debrief.out)"
   setsid -f "$H" debrief >> "$Q/debrief.out" 2>&1 < /dev/null
 fi
+exit
+}

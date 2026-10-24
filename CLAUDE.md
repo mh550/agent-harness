@@ -7,8 +7,10 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 ## This repo runs Michael's nights: what that means for a session working on it
 
 - **The live harness is `~/projects/agent-harness` on `main`.** It drives real runs on this box right now. Never
-  edit, check out, merge or pull in that checkout; work only in your worktree. Your changes reach the live harness
-  only when Michael merges your PR and pulls.
+  edit or check out anything in that checkout; work only in your worktree. **Finish what you start:** when the suite
+  is green, push your branch, open a PR and merge it yourself (`gh pr merge --merge`; never force-push or rewrite
+  `main`). A finding or spec is finished the same way, not left on a branch. The queue runner levels the live checkout
+  with origin whenever no run is alive (`lib/sync.sh`); `harness sync` does it by hand, and only when no run is alive.
 - **Never touch real runs or real state.** No `harness start/continue/queue/stop/pause/answer/merge/gc/debrief`
   except inside `tests/run.sh`'s throwaway environment. Never read or write `~/.local/state/harness`,
   `~/worktrees/*` (other than your own), `~/.config/harness`, or `ledger/` and `journal/raw/` in this repo.

@@ -49,7 +49,8 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 |---|---|---|
 | `bin/harness` | ~350 | CLI: start/continue/merge/queue/status/parked/report/trends/attach/pause/resume/stop/answer/init/gc/debrief. Creates worktrees, ports, state dirs, tmux sessions |
 | `lib/driver.sh` | ~370 | The run loop (§5). The only component that runs sessions, commits on the run's behalf, tags and merges |
-| `lib/queue.sh` | ~45 | Starts queued runs within the parallel limit (one per project), the `--until` time and the usage-limit window; starts `harness debrief`, detached, as it exits (§16) |
+| `lib/queue.sh` | ~50 | Starts queued runs within the parallel limit (one per project), the `--until` time and the usage-limit window; skips parked entries; syncs the live checkout when no run is alive; starts `harness debrief`, detached, as it exits (§12, §16) |
+| `lib/sync.sh` | ~40 | The live checkout level with origin: merged PRs in, the driver's ledger commits out, only when safe (§12) |
 | `lib/debrief.sh` | ~280 | `harness debrief`: gathers the context in bash, waits out the limit window, one read-only session, the note, checked continuations, the notification (§16) |
 | `lib/config.sh` | ~60 | Config layers and conventions (§10) |
 | `lib/notify.sh` | ~50 | `notify "<message>" [title= body= click= actions= priority= tags=]` for the driver and the debrief: posts to `NTFY_URL` through `${HARNESS_CURL:-curl}` (bearer `NTFY_TOKEN`), else runs `NOTIFY_CMD` with `$1` + `HARNESS_NOTIFY_*`; always returns 0, a failed post is a note. `gh_url <path> [blob\|edit]`: that file on the run branch on GitHub, or nothing |
@@ -94,7 +95,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Markers | `…/{driver.pid, ended, PAUSE, STOP, verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, verify-rounds-<m>, tests-start, tests-end, waited-<t>, port, meta.env, run.env, brief.md, inbox.md}` | driver, CLI | driver, CLI, summary | no |
 | Shared limit window | `~/.local/state/harness/LIMIT_UNTIL` (epoch) | any driver hitting a limit | every driver, the queue runner, status | no |
 | 7-day window | `~/.local/state/harness/USAGE_7D` (`<utilization 0..1> <reset epoch>`, from the newest session's rate-limit event) | every session (driver) | every driver, the queue runner (`weekly_over`) | no |
-| Queue | `~/.local/state/harness/queue/NNNN-<verb>-<name>.args`, `done/`, `runner.log`, `runner.pid`, `STOP`, `last-debrief` (when the last note was produced, and the "since" of the next), `debrief.out` | CLI, driver (continuations), debrief | runner, debrief | no |
+| Queue | `~/.local/state/harness/queue/NNNN-<verb>-<name>.args`, `held/` (parked entries and their `.why`), `done/`, `runner.log`, `runner.pid`, `STOP`, `last-debrief` (when the last note was produced, and the "since" of the next), `debrief.out` | CLI, driver (continuations), debrief | runner, debrief | no |
 | Debrief workspace | `~/.local/state/harness/debrief/<stamp>/{context.md,prompt.md,session.jsonl,final.md,body.md}`, `debrief.lock` | `harness debrief` | you (`--dry-run` prints `context.md`) | no |
 | Debrief note and page | `<harness>/ledger/debrief.md` and `debrief.html`, overwritten each time (history: `git log -p`) · `<state>/runners` marks the runs a queue runner started | `harness debrief` (flock, `git commit -- <note>` when `LEDGER_COMMIT=1`) · `harness start` | Michael, the next interactive session | yes, harness repo |
 | Desk | `~/.local/state/harness/<p>/<run>/desk/{<stamp>.md,url,last-event}` (the prompt per event, the session URL while the desk is open, the epoch of its last event) · the debrief's in `queue/desk/` · `desk.lock` (one desk start at a time) · tmux session `h-desk`, a window per run and `debrief` | `harness desk` (the driver, the debrief, you) | `harness desk` (reuse, `--list`), `harness gc` (24 h idle) | no |
@@ -336,6 +337,18 @@ the whole plan window.
 The runner exits when the queue is empty and nothing it started runs, when it is past `--until` with nothing running,
 or on `harness queue stop`; whichever, if it started at least one run (marked in `<state>/runners`), it then starts
 `harness debrief` once, detached with `setsid`, so a new runner replacing tmux `h-queue` can't kill it (§16).
+
+**Parked entries** (`harness queue park <n> [<why>]`) move to `queue/held/` with a `.why` file: the runner skips them
+and says how many at start-up, `harness queue list` shows each with its reason, and `unpark <n>` puts one back at the
+end of the queue, renumbered.
+
+**Live sync** (`lib/sync.sh`, `LIVE_SYNC=1`): before each start with **no driver alive**, the runner levels the
+checkout that holds the ledger (the live harness) with origin: it fetches, rebases the driver's unpushed ledger
+commits onto `origin/main` and pushes them (never forced), or fast-forwards. It acts only on `MAIN_BRANCH` with no
+rebase/merge going, no modified tracked file, and no local commit outside `ledger/`; otherwise it logs why and changes
+nothing. Only with nothing alive, because a driver reads its scripts as it runs; the runner's own body is one `{ … }`
+block, parsed before it runs, for the same reason. `harness sync` does the same by hand
+(`decisions/2026-10-24-close-the-loop`).
 
 ## 13. Extending it
 

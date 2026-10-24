@@ -629,6 +629,35 @@ check "queue holds an entry whose project has a live run, starts the next one" '
   && ! grep -q "starting: harness start $T/proj" "$T/queue2b.out" && grep -q "1 left queued" "$T/queue2b.out" && grep -qx start "$(ls "$Q"/*.args)"'
 rm -rf "$HARNESS_STATE/proj/busy3" "$HARNESS_STATE/other" "$Q"/*.args; mv "$T/user-config.keep" "$T/user-config.sh"
 
+# ---- parked entries: listed with their reason, skipped by the runner, back at the end when unparked ----
+check "the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)" 'grep -q "sync: .* is not in a git checkout; skipped" "$Q/runner.log"'
+"$H" queue add "$T/proj" --spec SPEC.md > /dev/null
+check "queue park sets an entry aside with its reason" 'grep -q "^parked 0" <<< "$("$H" queue park 1 waiting on the measure PRs)" && ! compgen -G "$Q/*.args" > /dev/null \
+  && L=$("$H" queue list) && grep -q "^parked (the runner skips" <<< "$L" && grep -q "why: waiting on the measure PRs" <<< "$L" && grep -q "  (empty)" <<< "$L"'
+HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2c.out" 2>&1
+check "the runner skips a parked entry and says so" 'grep -q "1 parked entry skipped until unparked" "$T/queue2c.out" && ! grep -q "starting:" "$T/queue2c.out" && grep -q "queue empty" "$T/queue2c.out"'
+check "queue unpark puts it back at the end, its reason gone" 'grep -q "^unparked .* as 0" <<< "$("$H" queue unpark 1)" && [[ $(ls "$Q"/*.args | wc -l) == 1 ]] && ! compgen -G "$Q/held/*" > /dev/null && grep -qx start "$(ls "$Q"/*.args)"'
+rm -f "$Q"/*.args
+
+# ---- sync: the live checkout level with origin (merged PRs in, ledger commits out), only when that is safe ----
+git init -q --bare -b main "$T/live.git"; git init -q -b main "$T/live"; mkdir -p "$T/live/ledger"; echo a > "$T/live/code.sh"; echo '{}' > "$T/live/ledger/runs.jsonl"
+git -C "$T/live" add -A && git -C "$T/live" commit -qm init && git -C "$T/live" remote add origin "$T/live.git" && git -C "$T/live" push -q -u origin main
+git clone -q "$T/live.git" "$T/dev"
+sy() { HARNESS_HOME=$HERE/.. "$HERE/../lib/sync.sh" "$T/live/ledger"; }
+echo b >> "$T/dev/code.sh"; git -C "$T/dev" commit -qam "a merged PR"; git -C "$T/dev" push -q origin main
+echo '{"run":"x"}' >> "$T/live/ledger/runs.jsonl"; git -C "$T/live" commit -qam "ledger: x"
+check "sync: pulls the merged PR and pushes the ledger commit, no merge commit" 'O=$(sy) && grep -q "pulled 1, pushed 1 ledger commit" <<< "$O" && [[ $(git -C "$T/live" rev-parse HEAD) == $(git -C "$T/live.git" rev-parse main) ]] \
+  && [[ $(sed -n 2p "$T/live/code.sh") == b ]] && [[ $(git -C "$T/live" rev-list --merges --count HEAD) == 0 ]]'
+check "sync: level says so" 'grep -q "level with origin/main" <<< "$(sy)"'
+echo c >> "$T/live/code.sh"; git -C "$T/live" commit -qam "someone's own work"; H0=$(git -C "$T/live.git" rev-parse main)
+check "sync: a local commit outside ledger/ is left alone, nothing pushed" 'grep -q "touch files outside ledger/; not syncing" <<< "$(sy)" && [[ $(git -C "$T/live.git" rev-parse main) == "$H0" ]]'
+git -C "$T/live" reset -q --hard origin/main; echo d >> "$T/live/code.sh"
+check "sync: a modified tracked file: skipped" 'grep -q "modified tracked files; skipped" <<< "$(sy)"'
+git -C "$T/live" checkout -q -- code.sh; git -C "$T/dev" pull -q --ff-only; echo e >> "$T/dev/code.sh"; git -C "$T/dev" commit -qam "another PR"; git -C "$T/dev" push -q origin main
+check "sync: nothing local: fast-forward" 'grep -q "^sync: pulled 1; main at" <<< "$(sy)" && [[ $(tail -1 "$T/live/code.sh") == e ]]'
+git -C "$T/live" checkout -q -b side; echo 'LIVE_SYNC=0' > "$T/nosync.sh"
+check "sync: another branch checked out: skipped; LIVE_SYNC=0: off" 'grep -q "on side, not main; skipped" <<< "$(sy)" && grep -q "off (LIVE_SYNC=0)" <<< "$(HARNESS_CONFIG=$T/nosync.sh sy)"'
+
 # ---- run 11: a verify refused by the usage limit is deferred, never a "holds" ----
 STUB_VERIFY_LIMIT=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" vlimit --spec SPEC.md --foreground > "$T/run11.out" 2>&1
 check "refused verify: deferred, then verified, then merged" 'hlog vlimit | grep -q "verify M1 refused" && [[ $(hlog vlimit | grep -n "verify M1 refused" | cut -d: -f1) -lt $(hlog vlimit | grep -n "M1 verified and tagged" | cut -d: -f1) ]] && on_main run/vlimit/M1 \
