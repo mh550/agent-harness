@@ -1,0 +1,679 @@
+{
+  "run": "portfolio_site-2026-10-21-v3",
+  "branch": "harness/portfolio_site-2026-10-21-v3",
+  "features": [
+    {
+      "id": "P0-01",
+      "milestone": "P0",
+      "kind": "build",
+      "model": "sonnet",
+      "description": "The booth artifacts are gone, the card no longer says 'Glad we met!', and the suite is green again because the agent-harness code excerpt matches the current lib/driver.sh.",
+      "steps": [
+        "`git ls-files public/b scripts/build-booth-bundle.mjs src/__tests__/lib/booth-bundle.test.ts docs/notes/booth-bundle.md` prints nothing; package.json has no `booth-bundle` script; `grep -n 'booth\\|/b/h.tgz' CLAUDE.md` prints nothing (the Routes row and the Commands line are gone; the Commands comment says 80 suites).",
+        "`head -1 docs/specs/2026-10-20-booth-harness-bundle.md docs/plans/2026-10-20-B1-booth-harness.md docs/plans/2026-10-20-B2-booth-bundle.md` shows each file starting with a one-line 'Removed 2026-10-21 (P0-01): …' note above its old content.",
+        "src/lib/data/profile.ts has `conferenceNote: ''`; `npx jest src/__tests__/pages/card.test.tsx src/__tests__/components/card` is green and card.test.tsx asserts the text 'Glad we met' is absent from /card.",
+        "The agent-harness entry's `codeSnippets[0].code` in src/lib/data/projects.ts is the current `merge_one` block of /home/mh550/projects/agent-harness/lib/driver.sh, verbatim, from the comment line '# Merge one verified milestone' through the line ending `|| return 3` (at most 25 lines); `npx jest src/__tests__/lib/case-study-agent-harness.test.ts` passes with no skipped test; docs/notes/evidence-agent-harness.md § Corrections gains one dated line saying the excerpt was re-copied because driver.sh changed.",
+        "docs/specs/2026-10-18-portfolio-v2.md ends with a new section '## v3 decisions (2026-10-21, from D75)' whose first entry, **D75** *default*, records the booth removal and `conferenceNote: ''` (reversible: `git revert` the P0-01 commit), naming D50 and D39 as what it supersedes.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` (80 suites) and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "P1-01",
+      "milestone": "P1",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The P1 plan fixes the positioning strings, the loop strip's data shape and its one example link per step, the 12 logos and their generator, the About changes, the /approach redirect, and every test the milestone changes.",
+      "steps": [
+        "docs/plans/2026-10-21-P1-angle.md exists with sections Positioning, Loop strip, Logos, About, Approach fold, Site-wide strings, Tests, What Michael will see (empty table), Review (empty table), Decisions. § Positioning is a table of every file that renders profile.positioning or profile.subline or the method words (profile.ts, layout.tsx, card/page.tsx, card/qr/page.tsx, vcard.ts TITLE, hero/HeroSection.tsx eyebrow, about/page.tsx metadata, skills/page.tsx metadata, projects/[slug]/opengraph-image.tsx, docs/notes/brand.md) with the before and after string for each.",
+        "§ Loop strip gives the `LoopStep` type (`{ id: 'spec'|'context'|'build'|'verify'|'learn', label, line, principle: Principle['id'] }`), the five rows word for word from the v3 spec § 2, the step→principle mapping used for the one example link per step (default: spec→decisions-explicit, context→automate-bookkeeping, build→simplify-after-use, verify→verify-what-the-human-sees, learn→fakes-mirror-reality) and the rule 'the first example of that principle with a page, via resolvedExamples'; `methodSteps` and `MethodStepId` stay for the case studies.",
+        "§ Logos lists the 12 marks with their simple-icons export names (siClaude as 'Claude Code', siLivekit, siPython, siTypescript, siGnubash as 'Bash', siSqlite, siPostgresql, siDocker, siLinux, siNextdotjs, siN8n, siGithub), the generator `scripts/logos.mjs` → `src/components/logos/paths.ts` (an `ICONS` array in the script that later milestones extend; the generated header names simple-icons 16.9.0, its CC0 licence and that each brand's own guidelines apply), `simple-icons` moving from dependencies to devDependencies at exactly 16.9.0, a `Logo` component, and 12 hero positions at 1280 that keep clear of the h1, tagline and strip (measured against docs/screenshots/v2/M2-home-1280.png).",
+        "§ Approach fold names the mechanism (next.config.ts `redirects()` → `/about#how-i-work`, permanent; fallback if the hash is dropped: a stub page calling `permanentRedirect`) and every file that references /approach: Navbar.tsx, sitemap.ts, .harness/smoke-routes.txt, CLAUDE.md, and the tests Navbar.test.tsx, approach.test.tsx (deleted), a11y-new-pages.test.tsx, sitemap-robots.test.ts, competencies-links.test.ts (ROUTES), MethodStrip.test.tsx, home.test.tsx, HeroSection.test.tsx, about.test.tsx, profile.test.ts, vcard.test.ts, vcf-route.test.ts, layout-metadata.test.ts, FloatingLogos.test.tsx and the project-page-unchanged snapshot; § Tests lists what each changes to.",
+        "§ Decisions allocates the numbers after D75 in docs/specs/2026-10-18-portfolio-v2.md § v3 decisions (positioning strings, loopSteps, logos + simple-icons as a devDependency, the /approach redirect and the Navbar at seven links, About's How I work), each naming what it supersedes (D33 stays; D23/D31 for the strip; D49/D60 for the Navbar).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` (no code changed)."
+      ],
+      "after": [
+        "P0"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-02",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The hero eyebrow reads 'Agentic Systems Engineer', the subline is the v3 one, and the strip on the home page and the About intro read the five-step loop Spec → Context → Build → Verify → Learn.",
+      "steps": [
+        "src/lib/data/profile.ts has `positioning: 'Agentic Systems Engineer'`, the tagline unchanged, and `subline: 'I build the harnesses, memory and verification around AI agents, and the integrations they run on.'`; `npx jest src/__tests__/lib/profile.test.ts src/__tests__/lib/vcard.test.ts src/__tests__/app/vcf-route.test.ts src/__tests__/app/layout-metadata.test.ts src/__tests__/pages/card.test.tsx src/__tests__/components/HeroSection.test.tsx` is green with those tests pinning the new strings (the vCard line is `TITLE:Agentic Systems Engineer`).",
+        "src/lib/data/approach.ts exports `loopSteps: LoopStep[]` with ids spec, context, build, verify, learn and the labels and lines verbatim from docs/specs/2026-10-21-portfolio-v3.md § 2, each with a `principle` id per the plan; `methodSteps` is unchanged (`npx jest src/__tests__/lib/case-study-anchors.test.ts src/__tests__/components/case-study` green with no edits to those files).",
+        "src/components/MethodStrip.tsx renders `loopSteps`: MethodStrip.test.tsx, home.test.tsx and HeroSection.test.tsx assert five list items labelled Spec, Context, Build, Verify, Learn in that order, and that no 'Diagnose' text is on the home page; `approachIntro` is deleted if nothing reads it.",
+        "`aboutIntro` reads the new subline and names the five loop labels in order; about.test.tsx asserts both; `src/__tests__/lib/approach.test.ts` covers loopSteps (five ids, unique, each principle id exists in `principles`).",
+        "The D for the strings and the loop is recorded in the v2 spec § v3 decisions and the plan § Decisions as built.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P1-01"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-03",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The hero's floating logos are the 12 marks of the stack Michael wants seen, drawn from a generated paths file, with simple-icons a devDependency used only by the generator.",
+      "steps": [
+        "`node scripts/logos.mjs` rewrites src/components/logos/paths.ts; running it twice leaves `git status --porcelain src/components/logos` empty; the file's header names simple-icons 16.9.0, CC0, and that each brand's guidelines apply; it exports `logoPaths` with exactly the keys claude, livekit, python, typescript, bash, sqlite, postgresql, docker, linux, nextjs, n8n, github, each `{ title, path }`; package.json has `\"logos\": \"node scripts/logos.mjs\"` under scripts.",
+        "package.json lists `simple-icons` under devDependencies at exactly `16.9.0` and not under dependencies; `grep -rn \"from 'simple-icons'\" src` prints nothing; `npm ls simple-icons` shows 16.9.0.",
+        "src/components/logos/Logo.tsx (Server-Component-safe) renders an `<svg viewBox='0 0 24 24'>` with a `<title>` from the key's title, or `aria-hidden` when `decorative`; src/__tests__/components/logos/paths.test.ts asserts the 12 keys, a non-empty path starting with 'M' and a title for each; Logo.test.tsx covers both modes.",
+        "src/components/hero/FloatingLogos.tsx renders exactly 12 marks from `logoPaths` with aria-labels Claude Code, LiveKit, Python, TypeScript, Bash, SQLite, PostgreSQL, Docker, Linux, Next.js, n8n, GitHub and none of Zapier, Supabase, Linear, Pipedream, React, Vercel (the `pipedreamPath` constant is gone); FloatingLogos.test.tsx pins the 12 names, hidden below xl (D33) and the reduced-motion behaviour.",
+        "At 1280 no logo's bounding box intersects the h1, the tagline or the strip: a small Playwright script (`node .harness/logos-check.mjs`, kept in .harness/) prints the 12 boxes and `overlaps: 0` against the harness dev server; `node .harness/smoke.mjs` passes.",
+        "CLAUDE.md § Commands lists `npm run logos`; § Components says FloatingLogos reads `components/logos/paths.ts`; § Code rules says simple-icons is a devDependency at 16.9.0 (D<n>).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P1-02"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-04",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "/about opens with the new positioning and loop, has a 'How I work' section (#how-i-work) with the loop strip and one case-study link per step, and docs/notes/about-narrative-bullets.md gives Michael 10–15 sourced bullets to write his story from.",
+      "steps": [
+        "src/app/about/page.tsx renders a `<section id=\"how-i-work\" aria-labelledby=…>` with an h2 'How I work' between the story and Philosophy, containing `MethodStrip showLines` (five loop steps, lines visible at every width) and, under each step, exactly one link whose href starts with `/projects/` (the step's principle's first example with a page, via `resolvedExamples` and `exampleHref`); about.test.tsx asserts the section id, the h2, five links, and that each href resolves with `resolveProjectLink`.",
+        "The intro paragraph on /about is `aboutIntro` (new subline + the loop); the Philosophy blockquote text is unchanged (about.test.tsx pins its first sentence 'I build and connect things'); the metadata description no longer carries the old subline.",
+        "docs/notes/about-narrative-bullets.md: between 10 and 15 top-level bullets (`grep -c '^- '`), no prose paragraphs (every non-empty non-heading line starts with `- ` or `  - `), ordered Duke → Builder Clarity → MAXX → the harness and the concierge → what he wants next, each ending with its source in parentheses (v3 spec § 8, an evidence note under docs/notes/, or brand.md's metrics bank), at least two marked '(failure story)'; no phone number.",
+        "`npx jest src/__tests__/lib/content-guard.test.ts src/__tests__/pages/about.test.tsx src/__tests__/pages/a11y-new-pages.test.tsx src/__tests__/lib/claims-on-linked-page.test.ts` is green.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P1-03"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-05",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "/approach is a permanent redirect to /about#how-i-work, the Approach page and its test are gone, and the Navbar, sitemap and smoke routes no longer list it.",
+      "steps": [
+        "`curl -sI http://localhost:$HARNESS_PORT/approach` shows status 308 and `location: /about#how-i-work` (next.config.ts `redirects()`; if Next drops the hash, src/app/approach/page.tsx is a stub calling `permanentRedirect('/about#how-i-work')` and the plan § Approach fold says which was built).",
+        "src/app/approach/page.tsx (unless it is the stub) and src/__tests__/pages/approach.test.tsx are deleted; src/__tests__/app/approach-redirect.test.ts asserts the entry (source '/approach', destination '/about#how-i-work', permanent true) from the exported config, or the stub's call.",
+        "src/components/Navbar.tsx lists seven links in the order Home, About, Skills, Projects, Talk, Experience, Contact; Navbar.test.tsx pins that list for the desktop list and the mobile menu; `grep -c \"'/approach'\" src/components/Navbar.tsx` prints 0.",
+        "src/app/sitemap.ts, .harness/smoke-routes.txt, sitemap-robots.test.ts, competencies-links.test.ts ROUTES and a11y-new-pages.test.tsx have no '/approach'; src/lib/data/approach.ts keeps `principles`, `resolvedExamples` and `exampleHref` (approach-links.test.ts, evidence.test.tsx and competencies-links.test.ts green); `approachClosing` is removed if nothing reads it.",
+        "CLAUDE.md: the `/approach` row says 'permanent redirect to /about#how-i-work (D<n>)', the `/about` row mentions How I work, and § Components' MethodStrip line names its two users (hero, /about); docs/review-guide.md gains a '## P0–P1 (v3)' section with the merge note and how to undo the redirect.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P1-04"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-06",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "Every site-wide string carries the agentic-systems positioning (titles, metadata, /card, the vCard, Open Graph, brand.md), and the snapshots match.",
+      "steps": [
+        "`grep -rni 'Systems & Process\\|systems and process\\|process engineer' src public` prints nothing; `grep -rn 'Agentic Systems Engineer' src/lib/data/profile.ts` prints one line.",
+        "Every page's metadata description was read and any that carried the old angle rewritten (layout.tsx uses profile.subline; about, skills, projects, experience, contact, talk reviewed; the plan § Site-wide strings lists before/after); layout-metadata.test.ts pins `Michael Herron — Agentic Systems Engineer`.",
+        "/card and /card/qr show 'Agentic Systems Engineer' (card.test.tsx, card-qr.test.tsx); the vCard route body contains `TITLE:Agentic Systems Engineer` (vcf-route.test.ts); the OG image test is green.",
+        "docs/notes/brand.md § Positioning gains a dated subsection 'v3 (2026-10-21)' with the three strings and the loop, keeping the 10-18 text as history under it.",
+        "`git diff --stat` for the milestone shows src/__tests__/app/__snapshots__/project-page-unchanged.test.tsx.snap changed only where the positioning or an /approach link changed, and the plan § Tests explains every hunk of that diff; `npx jest --silent 2>&1 | tail -5` shows every suite green.",
+        "CLAUDE.md: Routes rows for `/` and `/about`, § Data Layer (`loopSteps` next to `methodSteps`, approach.ts), § Components (MethodStrip reads loopSteps), § Project Overview spec line names docs/specs/2026-10-21-portfolio-v3.md as the current spec.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P1-05"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-07",
+      "milestone": "P1",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see for P1: full-page captures of /, /about and /card at 390 and 1280 are in docs/screenshots/v3/ and the plan lists what is on each.",
+      "steps": [
+        "docs/screenshots/v3/P1-home-1280.png, P1-home-390.png, P1-about-1280.png, P1-about-390.png, P1-card-1280.png, P1-card-390.png exist, each under 400 KB (reduce with PIL `quantize` if a capture is larger), taken from the harness dev server after `.harness/init.sh`.",
+        "docs/plans/2026-10-21-P1-angle.md § What Michael will see is a table with one row per capture naming what is on it: the eyebrow 'AGENTIC SYSTEMS ENGINEER', the strip 'Spec → Context → Build → Verify → Learn' (and that at 390 it fits in at most two rows: bounding-box check printed), the 12 logos at 1280 and `overlaps: 0` from .harness/logos-check.mjs, /about's intro, 'How I work' with its five links and their hrefs, /card with no 'Glad we met' line and the new eyebrow.",
+        "`curl -sI http://localhost:$HARNESS_PORT/approach | grep -i '^location'` prints `/about#how-i-work` and the row is in the table; `node .harness/print-check.mjs http://localhost:$HARNESS_PORT /about $HARNESS_SCRATCH/print-about.png` exits 0.",
+        "`node .harness/smoke.mjs` passes every route (no horizontal scroll at 390 on /, /about, /card).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P1-06"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P1-08",
+      "milestone": "P1",
+      "kind": "review",
+      "model": "opus",
+      "description": "An independent Opus review of the P0+P1 diff is recorded in the plan; Critical and Important findings are fixed test-first, simplifications applied, and the docs the milestone touched are current.",
+      "steps": [
+        "The milestone diff is written to a file first: `git diff $(git log -1 --format=%H --grep='HARNESS: after P0-01')..HEAD -- . ':!docs/screenshots' > $HARNESS_SCRATCH/P1.diff` (P0-01's diff reviewed from `git show` of its commit); the reviewer reads the file, not the working tree, and the plan § Review table has one row per finding with severity (Critical/Important/Minor/Nit), file:line, and the resolution.",
+        "Every Critical and Important finding is fixed with a failing test first, then the fix, each in its own commit named after the finding; Minor findings are fixed or carry a one-line reason to leave them.",
+        "A simplification pass is recorded (dead code from the Approach page, unused exports in approach.ts, duplicated strings) with what was removed; `npx eslint` reports no unused exports or imports.",
+        "CLAUDE.md, docs/review-guide.md § P0–P1 (v3) and docs/asset-checklist.md match the code as merged; docs/specs/2026-10-18-portfolio-v2.md § v3 decisions holds every D the milestone used, numbered consecutively from D75.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P1-07"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P2-01",
+      "milestone": "P2",
+      "kind": "build",
+      "model": "opus",
+      "description": "experience.ts carries the resume v4 text exactly, with typed links inside bullets rendered by BulletWithLinks, and the P2 plan records the data shape.",
+      "steps": [
+        "docs/plans/2026-10-21-P2-experience.md exists with sections Data, Links, Layout, Tests, What Michael will see (empty table), Review (empty table), Decisions (the 'Earlier' list for Tahoma Films and High Cascade as the next D, reversible).",
+        "src/lib/data/experience.ts: `type Bullet = string | { text: string; links: { text: string; href: string }[] }`; the MAXX Potential and Builder Clarity roles each carry exactly the three § 8 bullets verbatim (titles, companies and periods unchanged); `resumeProjects` holds Long-Running Agent Harness (href /projects/agent-harness, repo https://github.com/mh550/agent-harness, period 'October 2026 - present') and Self-Hosted Music Server & DJ Pipeline (href /projects/home-media-server, repo https://github.com/mh550/dj-crate-streaming, 'November 2025 - present'), two § 8 bullets each; `earlierRoles` holds Tahoma Films and High Cascade Snowboard Camp with title, company, period and no bullets; `education.coursework` is the six § 8 items and honors are unchanged.",
+        "The four bullet links are exactly the v3 spec § 3 table: 'agentic bug-fix workflow' → /projects/linear-ai-workflow, 'contractor estimating app' → /projects/paint-estimator, 'JobTread ↔ GoHighLevel integration platform' → /projects/ghl-jobtread-integration, 'unified per-job communications log' → /projects/ringcentral-jobtread-integration.",
+        "src/__tests__/lib/experience-data.test.ts: every `link.text` occurs exactly once in its bullet's text; every `/projects/<slug>` href resolves with `getProjectBySlug`; every external href is one of brand.md's four public repos; the six resume bullets and four project bullets appear verbatim (the test holds the § 8 strings); the three real titles are unchanged (brand.md: never retitle).",
+        "src/components/experience/BulletWithLinks.tsx (Server Component) renders a string bullet as text and a linked bullet with `next/link` for internal hrefs and `<a target=\"_blank\" rel=\"noopener noreferrer\">` for external ones, both with `focusRing`; BulletWithLinks.test.tsx covers a plain bullet, one internal link, one external link, and a link text that appears mid-sentence.",
+        "`npx jest src/__tests__/lib/content-guard.test.ts src/__tests__/pages/experience.test.tsx` is green (experience.test.tsx updated to the new bullets; the page still renders).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P1"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P2-02",
+      "milestone": "P2",
+      "kind": "build",
+      "model": "opus",
+      "description": "/experience shows the two roles with linked bullets, a Projects group with the two resume projects, a compact Earlier list, then Education with the resume coursework.",
+      "steps": [
+        "src/app/experience/page.tsx renders in order: h1, the work roles (MAXX Potential, Builder Clarity) with BulletWithLinks, an h2 'Projects' with each resume project's name linked to its deep-dive, its repo line linked to GitHub, its period and two bullets, an h2 'Earlier' with one line per earlier role (title · company · period, no bullet list), then h2 'Education'; experience.test.tsx asserts the h2 order (Projects after the roles and before Earlier and Education), the four bullet links by href, the two deep-dive links and two repo links, Earlier's two lines with no `<ul>` inside the section, and the six coursework items.",
+        "src/__tests__/pages/a11y-new-pages.test.tsx includes /experience (one h1, no skipped heading levels, focus styles on every link) and is green; the 'Projects' h2 does not collide with the Navbar link text in any test's `getByRole('link', { name: 'Projects' })` (use `within`).",
+        "/card's Selected work is unchanged: `git diff --stat` shows no change under src/app/card and card.test.tsx is untouched and green.",
+        "CLAUDE.md § Data Layer line for experience.ts names `Bullet`, `resumeProjects`, `earlierRoles`; the `/experience` Routes row says 'roles with linked bullets, resume projects, Earlier, education'.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P2-01"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P2-03",
+      "milestone": "P2",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see for P2: /experience at 390 and 1280 captured and described, links visible as links, print view checked.",
+      "steps": [
+        "docs/screenshots/v3/P2-experience-1280.png and P2-experience-390.png exist, each under 400 KB, taken from the harness dev server.",
+        "docs/plans/2026-10-21-P2-experience.md § What Michael will see lists per capture: the four linked phrases and how a link looks (accent colour, underline), the Projects group with its two entries, the Earlier list, the coursework; the 390 capture has no horizontal scroll (smoke) and the longest bullet wraps without overflow (bounding box within 390).",
+        "`node .harness/print-check.mjs http://localhost:$HARNESS_PORT /experience $HARNESS_SCRATCH/print-experience.png` exits 0 and the links print underlined.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P2-02"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P2-04",
+      "milestone": "P2",
+      "kind": "review",
+      "model": "opus",
+      "description": "An independent Opus review of the P2 diff is recorded, Critical and Important findings fixed test-first, simplifications applied, docs current.",
+      "steps": [
+        "`git diff $(git log -1 --format=%H --grep='HARNESS: after P1-08')..HEAD -- . ':!docs/screenshots' > $HARNESS_SCRATCH/P2.diff`; the reviewer reads the file; docs/plans/2026-10-21-P2-experience.md § Review has one row per finding with severity, file:line and resolution; every claim with a digit in the new bullets traces to the v3 spec § 8 (the table says so).",
+        "Every Critical and Important finding is fixed with a failing test first, each in its own commit; Minor findings fixed or given a one-line reason.",
+        "A simplification pass is recorded (the old Role.type field if unused, duplicated period formatting); `npx eslint` is clean.",
+        "docs/review-guide.md gains '## P2 (v3)' (what to look at on the preview, undo = revert the milestone's commits); CLAUDE.md matches the code; the v2 spec § v3 decisions holds P2's D.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P2-03"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-01",
+      "milestone": "P3",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The P3 plan fixes who owns the call, the contract v2 parsing table, the drawer and widget layouts, the memory view's kinds and colours, the cache, the busy retry, the usher, every copy change and every test that moves.",
+      "steps": [
+        "docs/plans/2026-10-21-P3-concierge-in-site.md exists with sections Ownership, Contract v2, Panel, Widget, Callout, Memory view, Cache, Busy retry, Usher, Copy, Tests, What Michael will see (empty table), Review (empty table), Decisions. § Ownership gives the `ConciergeProvider` context value (state from sessionReducer plus room, agentSpeaking, panel, guideMe, cachedMemory, and the actions connect, leave, toggleMic, startAudio, sendMessage, forgetMe, openPanel, minimizePanel, setGuideMe), what moves out of TalkSession.tsx function by function, how `configured` reaches a client provider from layout.tsx without importing env.ts into a client file, the `pagehide` disconnect, and StrictMode.",
+        "§ Contract v2 is a table of every v2 field from the v3 spec § 7 (v, about_visitor.profile/episodes/events, about_agent.knowledge/instructions_est_tokens/memory_block_chars/working/cache, retention_days, concierge.navigate's href/reason/at) with: v1 value when absent, what the page renders then ('not reported by this agent version'), and the parser's rule (optional, never rejects the body); plus `concierge.get_memory` and the 1 KiB cap on navigate.",
+        "§ Panel has an ASCII layout at ≥ 1024 px (420 px right drawer: header, transcript, message box, memory strip, tabs) and at 390 px (full-height bottom sheet), the focus order, Esc, `role=\"dialog\"` with `aria-modal=\"false\"`, z-index relative to the Navbar (z-50) and the widget (z-40), and how the Footer padding changes; § Widget gives the pill's three states (idle, live listening, live speaking) with each accessible name, the ≤ 390 px collapse rule, the sound-bars glyph and its motion-safe animation; § Callout gives the storage key, the exact text and dismissal rules.",
+        "§ Memory view lists the six kinds (Profile, Episodes, Events, Knowledge, Working, Cache) with the new globals.css tokens (`--color-mem-profile`, `--color-mem-episode`, `--color-mem-event`, `--color-mem-event-rejected`, `--color-mem-knowledge`, `--color-mem-working`), each hex and its computed contrast ratio ≥ 4.5 against #12121a and #0a0a0f; § Cache gives the localStorage key per visitor id and the stored shape; § Busy retry gives the new reducer phase `closing` (5 s period, 60 s limit, one request in flight, Leave cancels) and the transition table; § Usher the allowlist function, the 8 s rate limit, the notice line text, the Guide me storage key and the never-on-/talk rule.",
+        "§ Copy lists every string that changes before/after (talkPage.intro[0], the deep-dive builtWith and any 'pack' or 'specs in, verified milestones out' wording, talkWidget → the pill's copy, the closing line, the forget-me hint); § Tests lists per feature the existing tests that change (TalkSession*.test.tsx via a provider render helper, talk.test.tsx, SiteChrome.test.tsx, VoiceWidget.test.tsx, Navbar.test.tsx, a11y-new-pages.test.tsx, Footer.test.tsx, concierge-contract.test.ts, sessionReducer.test.ts, case-study-voice-concierge.test.ts) and the new test files; § Decisions allocates the next D numbers in the v2 spec § v3 decisions, naming what each supersedes (D61 widget, D66 busy without retry, D62 intro, D60 Talk on the Navbar, D44/D45 as they still hold).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` (no code changed)."
+      ],
+      "after": [
+        "P1"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-02",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "The contract module parses v1 and v2 memory bodies and concierge.navigate bodies without throwing, and a pure memory cache keeps the last body per visitor id in storage.",
+      "steps": [
+        "src/lib/concierge/contract.ts: `MemoryBody` gains optional `v`, `about_visitor` (`profile: MemoryFact[]`, `episodes: Episode[]`, `events: MemoryEvent[]`), `about_agent` (knowledge, instructions_est_tokens, memory_block_chars, working, cache) and `retention_days`, typed per the v3 spec § 7; `parseMemory` on every existing v1 fixture returns the same object as before (concierge-contract.test.ts's existing cases unchanged and green) and on the new `memoryV2` fixture in src/__tests__/fixtures/concierge.ts returns the typed v2 fields; a v2 body with `about_agent` missing or malformed parses with `about_agent: null`; a body with `v: 2` but no `about_visitor` parses; an `events` type outside the seven named ones is kept as a string.",
+        "`TOPIC.navigate` is 'concierge.navigate' and `RPC_GET_MEMORY` is 'concierge.get_memory'; `parseNavigate(text)` returns `{ href, reason, at }` or null, rejects bodies over 1 KiB; `isAllowedHref(href, slugs)` is true only for exactly '/', '/about', '/skills', '/experience', '/contact' or '/projects/<slug>' with slug in `slugs`, and false for '//evil', 'https://…', '/projects/unknown', '/about?x', '/about#y', '' (tests).",
+        "src/lib/concierge/memoryCache.ts: `saveMemory(storage, visitorId, body, savedAt)`, `loadMemory(storage, visitorId)` → `{ body, savedAt } | null`, `clearMemory(storage, visitorId)`; every storage call is inside try/catch (a storage whose methods throw never throws out); a different visitor id loads null; corrupt JSON loads null; the saved body round-trips through `parseMemory` (tests in src/__tests__/lib/concierge-memory-cache.test.ts).",
+        "CLAUDE.md § Components `lib/concierge/` line names contract v2, `parseNavigate`, `isAllowedHref` and memoryCache.ts; the plan § Contract v2 is marked as built.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P3-01"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-03",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "ConciergeProvider in SiteChrome owns the one Room above the pages, so a call survives client-side navigation; /talk is a consumer of the same state and every existing session test still passes.",
+      "steps": [
+        "src/components/concierge/ConciergeProvider.tsx ('use client') holds the reducer state, the session ref, the Room, and the actions (connect, leave, toggleMic, startAudio, sendMessage, forgetMe) moved from TalkSession.tsx; `useConcierge()` throws outside the provider; `grep -c 'new lk.Room' src/components/talk/TalkSession.tsx` prints 0 and `grep -c 'new lk.Room' src/components/concierge/ConciergeProvider.tsx` prints 1; TalkSession keeps its markup and reads the context.",
+        "src/components/SiteChrome.tsx wraps the chrome in `<ConciergeProvider configured={…}>` on every chrome page and not on /card*; `configured` comes from src/app/layout.tsx (a Server Component calling `conciergeEnv() !== null`) as a prop; `grep -rln 'concierge/env' src/components` prints nothing; src/app/talk/page.tsx no longer passes `configured` to TalkSession (or passes nothing).",
+        "src/__tests__/components/concierge/ConciergeProvider.test.tsx: with the LiveKit mock, a live call (MockRoom.setup + addAgent) survives TalkSession unmounting and remounting under the same provider (`room.disconnect` not called, phase still 'live'); `leave()` calls disconnect; `window.dispatchEvent(new Event('pagehide'))` calls disconnect; two Connects in a row never leave two Rooms connected.",
+        "Every test in src/__tests__/components/talk/ (TalkSession.test.tsx, -live, -review, -import), talk.test.tsx, SiteChrome.test.tsx and a11y-new-pages.test.tsx passes, rendering through `renderTalk()` in src/__tests__/helpers/concierge.tsx that wraps in the provider; `npx jest --silent 2>&1 | tail -5` shows no failing suite.",
+        "The D for the ownership move is recorded in the v2 spec § v3 decisions; CLAUDE.md § Components describes `concierge/ConciergeProvider.tsx` and updates the TalkSession and SiteChrome lines.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P3-02"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-04",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "Clicking the widget opens a non-modal drawer (right side at ≥ 1024 px, bottom sheet at 390) with the call controls, the transcript and the message box; minimize and Esc collapse it without ending the call.",
+      "steps": [
+        "src/components/concierge/ConciergePanel.tsx renders `role=\"dialog\" aria-modal=\"false\"` labelled by its header title, with a header (title, the one Connect/Leave button, the mic toggle only in the live phase, a button `aria-label=\"Minimize\"`), then Transcript (`role=\"log\"`, the flex-1 region), then MessageBox; the panel's classes give a fixed right drawer `lg:w-[420px]` full height and below lg a bottom sheet (`inset-x-0 bottom-0`, `h-dvh` or `max-h-dvh`), z-index 45 (under the Navbar's z-50); ConciergePanel.test.tsx asserts the roles, labels and the lg/bottom-sheet classes.",
+        "The provider holds `panel: 'closed' | 'open'`; opening moves focus to the header title (`tabIndex={-1}`); Esc (keydown on the dialog) and Minimize set 'closed' and return focus to the widget; while live, minimize does not call `room.disconnect` and the phase stays 'live' (tests with the LiveKit mock).",
+        "src/components/VoiceWidget.tsx is now a `<button aria-expanded>` that toggles the panel (the pill comes in P3-05), still absent on /talk and /card*; VoiceWidget.test.tsx and SiteChrome.test.tsx are updated; the page behind stays usable: no `inert`, no focus trap, `document.body.classList` gains no overflow class while open (tests).",
+        "The panel is in SiteChrome after the Footer and before the widget, never rendered on /talk (TalkSession is the full-page view) and never on /card*; a11y-new-pages.test.tsx passes with the panel open (one dialog, focusable controls styled).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route (the panel is closed by default, so no horizontal scroll at 390)."
+      ],
+      "after": [
+        "P3-03"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-05",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "The widget is the 'Ask my site' pill with a sound-bars glyph and live state, a first-visit callout invites the visitor once per browser, and Talk leaves the Navbar.",
+      "steps": [
+        "src/components/VoiceWidget.tsx renders a `<button>` whose visible label is 'Ask my site' with an inline SVG of three `<rect>` bars (aria-hidden), `motion-safe:` animation classes present only while `agentSpeaking`; while live it shows a live dot and its accessible name is 'Ask my site: listening' or 'Ask my site: speaking'; the provider sets `agentSpeaking` from `RoomEvent.ActiveSpeakersChanged` when the agent identity is among the speakers (the mock emits it; tests).",
+        "At ≤ 390 px once the visitor has scrolled (`matchMedia('(max-width: 390px)')` matches and `scrollY > 0`) the pill collapses to the glyph alone (`data-collapsed=\"true\"`, the label `sr-only`); a test mocks matchMedia and fires a scroll; above 390 it never collapses.",
+        "src/components/concierge/Callout.tsx: on first visit (localStorage key `concierge.callout_seen` absent) a bubble next to the widget with exactly 'This site talks. Ask it about my work, by voice or text.' and a close button `aria-label=\"Close\"`; closing or opening the panel sets the key; with the key present it never renders; a storage that throws shows it without an error; it renders only after mount (the server HTML has no callout: a test renders with `renderToString` or checks the first client render); never on /card*; its entrance animation is `motion-safe:` only (tests).",
+        "src/components/Navbar.tsx lists six links: Home, About, Skills, Projects, Experience, Contact (the v3 spec's 'seven' counted Approach, removed in P1); Navbar.test.tsx pins the six for desktop and mobile; `/talk` stays in sitemap.ts, .harness/smoke-routes.txt and sitemap-robots.test.ts.",
+        "src/lib/data/concierge.ts `talkWidget` carries the pill's label, the state names and the callout text (no string hardcoded in the components); the Footer's bottom padding still clears the pill at 390 (Footer.test.tsx); CLAUDE.md § Components VoiceWidget and Navbar lines updated; the Ds for the pill and the Navbar recorded.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P3-04"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-06",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "The drawer and /talk show a coloured memory strip with counts and Memory, Latency and Privacy tabs; the Memory tab shows the six kinds of memory from a v2 body (profile and summary only from v1) and always shows Forget me.",
+      "steps": [
+        "src/app/globals.css `@theme inline` defines `--color-mem-profile`, `--color-mem-episode`, `--color-mem-event`, `--color-mem-event-rejected`, `--color-mem-knowledge`, `--color-mem-working`; src/__tests__/lib/design-tokens.test.ts reads the file and asserts each hex has a contrast ratio ≥ 4.5 against #12121a (reuse the ratio function from a11y-new-pages.test.tsx); CLAUDE.md § Design System lists them.",
+        "src/components/concierge/MemoryStrip.tsx renders five chips Profile · Episodes · Events · Knowledge · Working, each with its count (v1 body: Profile = facts.length, the other four '–' with `title`/sr text 'not reported by this agent version'), coloured by its token; a chip whose count changed since the previous body carries a one-time `motion-safe:animate-pulse` class, an unchanged chip does not (tests with rerender).",
+        "src/components/concierge/PanelTabs.tsx: a `role=\"tablist\"` with tabs Memory, Latency, Privacy (`aria-selected`, arrow keys move between them, `aria-controls` panels); Latency renders the existing LatencyPanel(turns); Privacy renders `privacyNote`; /talk keeps its own privacy section too (talk.test.tsx).",
+        "src/components/concierge/MemoryView.tsx: About you → Profile chips (slot, value, a channel glyph, learned-at in `title`), Episodes rows 'visit n · date · summary' with the current one marked 'in progress', Events newest first and at most 12 with `gate_rejected` in the rejected token; About the agent → Knowledge (words, est. tokens, sections, the source commit short), Working (items, est. tokens, compacted Yes/No, compactions), Cache (cached share as a percentage); nulls render '–' via format.ts; a v1 body renders Profile and the summary plus one line 'not reported by this agent version' for the rest; MemoryView.test.tsx covers the v1 and v2 fixtures.",
+        "The Forget me control is always in the Memory tab: enabled (ForgetMeButton with its confirm step) while live, otherwise a disabled button with the exact hint 'Connect to erase what it remembers'; the only mentions of the control in src/lib/data/concierge.ts use the words 'Forget me' (a test greps every string for 'forget' case-insensitively and asserts 'Forget me' spelling).",
+        "ConciergePanel and TalkSession both render MemoryStrip + PanelTabs under the message box; the old MemoryPanel is removed or reduced to what MemoryView reuses (MemoryPanel.test.tsx updated or replaced); a11y-new-pages.test.tsx passes on /talk and with the panel open.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P3-05"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-07",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "A returning visitor sees the memory the site kept (greyed, 'as of' a time) before connecting, a 429 busy/visitor shows 'Closing your earlier conversation…' and retries for a minute, and the concierge copy drops 'specs in, verified milestones out'.",
+      "steps": [
+        "The provider saves every parsed `concierge.memory` body with `saveMemory` under the visitor id and loads it after mount; before a call the Memory tab renders the cached body with `data-stale=\"true\"` (muted styling) and the line 'as of <time>' from savedAt; a new live body replaces it; after Forget me succeeds `clearMemory` runs and 'Forgotten' replaces the view; a visitor id change loads nothing (tests with a fake storage in ConciergeProvider.test.tsx).",
+        "sessionReducer.ts has a `closing` phase: a 429 busy/visitor from 'connecting' enters it with the exact status line 'Closing your earlier conversation…'; the provider re-POSTs /api/concierge/token every 5 s (fake timers: after 5000 ms a second request, never two in flight) until a 200 continues the connect or 60 s pass, when the phase becomes 'busy' with the v1 `busyVisitor` line and no further requests; Leave during closing cancels the timer and makes no further request; `reason: 'site'` and offline are unchanged (D66 kept for them); sessionReducer.test.ts and TalkSession-live.test.tsx cover each transition.",
+        "src/lib/data/concierge.ts `talkPage.intro[0]` reads 'A voice agent I designed on LiveKit and built with my agent harness. It remembers you between visits, shows you what it remembers and where each thing came from, and can take you to the work it's talking about.' with 'my agent harness' still the link; `grep -rn 'specs in, verified milestones out' src docs/notes/evidence-voice-concierge.md` prints nothing in src (the deep-dive `builtWith` in projects.ts rewritten without it); `grep -rniw 'pack' src/lib/data/concierge.ts src/lib/data/projects.ts src/components/talk src/components/concierge` prints nothing; case-study-voice-concierge.test.ts and evidence-voice-concierge.md § Sentences with digits are updated (the new sentences carry no digit); the D superseding D62 is recorded.",
+        ".harness/talk-busy-check.mjs covers the closing state: 429 visitor → the closing line, exactly one POST per 5 s, and after 60 s the busy line; run against a dev server started with dummy env (`LIVEKIT_URL=wss://livekit.invalid LIVEKIT_API_KEY=x LIVEKIT_API_SECRET=y npx next dev -p $HARNESS_PORT`), report written to $HARNESS_SCRATCH, then `.harness/init.sh` restarts the plain server.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P3-06"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-08",
+      "milestone": "P3",
+      "kind": "build",
+      "model": "opus",
+      "description": "With Guide me on, a concierge.navigate body from the agent takes the visitor to an allowlisted page with a one-line notice in the transcript, at most once per 8 s and never away from /talk.",
+      "steps": [
+        "The provider registers a `concierge.navigate` text-stream handler before `connect()` (four topics unregistered at teardown) and, on a parsed body, calls `router.push(href)` (next/navigation `useRouter`, mocked in tests) only when `guideMe` is on, `isAllowedHref(href, every project slug)` is true, at least 8 s passed since the last follow, and `usePathname()` is not '/talk'; it then appends a transcript line `{ who: 'notice', text: 'Taking you to <title>' }` where title is the project's title or the page's name (Home, About, Skills, Experience, Contact).",
+        "src/__tests__/components/concierge/usher.test.tsx with `pushText(room, 'concierge.navigate', …)`: allowed href → one push and one notice line; a second body 3 s later → no push; one 9 s later → push; '/projects/unknown' or 'https://x' → no push and no line; on pathname '/talk' → no push; with Guide me off → no push; a body over 1 KiB → nothing.",
+        "The panel header has a Guide me `role=\"switch\"` with `aria-checked`, default on, persisted in localStorage `concierge.guide_me` inside try/catch and read after mount (a stored 'off' renders unchecked; a storage that throws defaults to on).",
+        "Transcript.tsx renders `who: 'notice'` lines as muted, unattributed lines (Transcript.test.tsx); TranscriptLine's `who` type includes 'notice'.",
+        "CLAUDE.md § Components describes the usher in the provider line; the plan § Usher is marked as built; the D recorded.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P3-07"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-09",
+      "milestone": "P3",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see for P3: captures of the closed widget with its callout, the open drawer, the minimized state over /projects, the cached memory tab, the closing state and /talk, at 390 and 1280, against a dummy-env dev server.",
+      "steps": [
+        ".harness/concierge-check.mjs (Playwright, in the style of talk-busy-check.mjs) runs against the harness dev server restarted with dummy env (`LIVEKIT_URL=wss://livekit.invalid`, any key and secret), with every token POST fulfilled by `page.route`; afterwards `.harness/init.sh` restarts the plain server and `node .harness/smoke.mjs` passes.",
+        "docs/screenshots/v3/ holds, each under 400 KB: P3-home-callout-390.png and P3-home-callout-1280.png (fresh context: the pill and the callout), P3-projects-open-1280.png and P3-projects-open-390.png (panel open, idle phase, Memory tab), P3-projects-minimized-1280.png (after Esc: the pill, no callout), P3-memory-cached-390.png (localStorage seeded with the memoryV2 fixture under the cache key for a seeded visitor id → the greyed view with 'as of'), P3-closing-1280.png (route answers 429 visitor → 'Closing your earlier conversation…'), P3-talk-1280.png and P3-talk-390.png.",
+        "The script asserts and the report in $HARNESS_SCRATCH/p3/report.txt shows: no horizontal page scroll at 390 with the panel open; focus on the header title after opening and on the pill after Esc; no console errors other than the 429 line; the callout absent on a second load; exit 0.",
+        "docs/plans/2026-10-21-P3-concierge-in-site.md § What Michael will see has one row per capture naming what is on it, and states that the live state (agent speaking, chips pulsing) cannot be captured without an agent and is covered by the Jest tests named there.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P3-08"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P3-10",
+      "milestone": "P3",
+      "kind": "review",
+      "model": "opus",
+      "description": "An independent Opus review of the P3 diff is recorded, Critical and Important findings fixed test-first, simplifications applied, and the concierge docs are current.",
+      "steps": [
+        "`git diff $(git log -1 --format=%H --grep='HARNESS: after P1-08')..HEAD -- . ':!docs/screenshots' ':!src/lib/data/experience.ts' > $HARNESS_SCRATCH/P3.diff` (if P2 merged first, diff from 'HARNESS: after P2-04' instead); the reviewer reads the file and looks hardest at: teardown and listener leaks in the provider, StrictMode double mount, the retry timer, storage try/catch, the navigate allowlist, focus handling, and anything that could import server-only code into a client bundle; the plan § Review has one row per finding with severity, file:line and resolution.",
+        "Every Critical and Important finding is fixed with a failing test first, each in its own commit; Minor findings fixed or given a one-line reason.",
+        "A simplification pass is recorded: TalkSession.tsx is only markup over the context (line count noted before/after), dead reducer actions removed, duplicated copy removed; `npx eslint` is clean.",
+        "docs/review-guide.md gains '## P3 (v3)' with the morning check for Michael (a real call on a preview: pill → drawer → say your name → navigate to a project from the agent → Forget me), what to look at, and the undo; CLAUDE.md, docs/plans/2026-10-20-VC2-talk-page.md (an 'As of P3' note) and the v2 spec § v3 decisions match the code.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P3-09"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P4-01",
+      "milestone": "P4",
+      "kind": "build",
+      "model": "opus",
+      "description": "/contact is one screen: the h1, one location line, and three equal icon tiles (mail, LinkedIn, GitHub) that are each one link; the subheader and the closing note are gone.",
+      "steps": [
+        "docs/plans/2026-10-21-P4-contact.md exists with sections Layout (ASCII at 1280×800 and 390×844 with the height budget per element under the 64 px Navbar), Glyphs, Tests, What Michael will see (empty table), Review (empty table), Decisions (the hand-drawn LinkedIn glyph: simple-icons 16.9.0 has no `siLinkedin`, so src/components/logos/extra.ts holds an authored 'in' path with a note; the mail glyph is authored too).",
+        "src/app/contact/page.tsx renders h1 'Let's Talk', exactly one paragraph under it reading 'Durham, NC · open to remote, hybrid or relocation.' (from `profile.location` and a new `profile.availability`), then a `grid sm:grid-cols-3` of three tiles, each a single `<a>` with an inline SVG glyph (mail authored, GitHub from `logoPaths.github` via `Logo`, LinkedIn from extra.ts), the label and the value; `grep -c 'Whether you have\\|Currently based\\|always up for' src/app/contact/page.tsx` prints 0.",
+        "contact.test.tsx asserts the h1, the one line, three links with hrefs `mailto:mherron734@gmail.com`, the LinkedIn and GitHub URLs from profile, their accessible names ('Email: mherron734@gmail.com' style), external links with `rel=\"noopener noreferrer\"`, each tile containing one `<svg>`, and that the removed texts are absent; profile.test.ts covers `availability`.",
+        "a11y-new-pages.test.tsx includes /contact and is green (one h1, focus styles on the three links, AA contrast on the muted line); the metadata description is reviewed against the new angle.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P1"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P4-02",
+      "milestone": "P4",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see for P4: /contact fits one screen at 390×844 and 1280×800 with no vertical scroll, captured and described.",
+      "steps": [
+        ".harness/contact-check.mjs loads /contact at 390×844 and 1280×800 on the harness dev server and prints `scrollHeight <= innerHeight: true` for both (asserting `document.documentElement.scrollHeight <= window.innerHeight`), exit 0; the panel stays closed and the pill does not cover a tile at 390 (bounding boxes printed, no intersection).",
+        "docs/screenshots/v3/P4-contact-390.png and P4-contact-1280.png are viewport captures (not full page), each under 400 KB; docs/plans/2026-10-21-P4-contact.md § What Michael will see describes each (the three tiles, their glyphs, the one line, the pill's position).",
+        "`node .harness/smoke.mjs` passes every route; `node .harness/print-check.mjs http://localhost:$HARNESS_PORT /contact $HARNESS_SCRATCH/print-contact.png` exits 0.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P4-01"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P4-03",
+      "milestone": "P4",
+      "kind": "review",
+      "model": "opus",
+      "description": "An independent Opus review of the P4 diff is recorded, findings fixed test-first, simplifications applied, docs current.",
+      "steps": [
+        "`git diff $(git log -1 --format=%H --grep='HARNESS: after P4-01')^..HEAD -- src/app/contact src/components/logos/extra.ts src/lib/data/profile.ts src/__tests__/pages/contact.test.tsx .harness/contact-check.mjs docs/plans/2026-10-21-P4-contact.md > $HARNESS_SCRATCH/P4.diff`; the reviewer reads the file; the plan § Review has one row per finding with severity, file:line and resolution.",
+        "Every Critical and Important finding is fixed with a failing test first; Minor findings fixed or given a one-line reason; a simplification pass is recorded; `npx eslint` is clean.",
+        "docs/review-guide.md gains '## P4 (v3)'; CLAUDE.md's `/contact` row says 'one screen, three tiles'; the v2 spec § v3 decisions holds P4's D.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P4-02"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P5-01",
+      "milestone": "P5",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The P5 plan designs the /skills graph: the data model, an ASCII layout per width, the pure layout math API, the interaction table, accessibility, the list view, and every test.",
+      "steps": [
+        "docs/plans/2026-10-21-P5-skills-graph.md exists with sections Data, Layout (ASCII sketch at 1280 and at 390 with cluster coordinates in viewBox units), Math (src/lib/graph/ API), Render, Interaction, Accessibility and list view, Tests, What Michael will see (empty table), Review (empty table), Decisions.",
+        "§ Data lists the six clusters (Agentic systems, Languages, Web & mobile, Data & integration, Infra & operations, Process & delivery) and every node with cluster, weight 1–3, logo key or none, optional since; every item on the v3 spec § 8 TECHNICAL SKILLS lines is a node; Ruby, R, Rails, Flask, MongoDB, PowerShell, WSL are dropped, Zapier kept at weight 1 (ringcentral-jobtread-integration); the edges list includes at least two `project:<slug>` edges per featured project; the extra simple-icons keys to add to scripts/logos.mjs's ICONS (react, nodedotjs, vercel, tailscale, supabase, openjdk, cplusplus, linear, zapier, tailwindcss; Pipedream has none).",
+        "§ Math names pure functions with signatures: `layoutGraph(data, width)` → deterministic cluster rects and node points, `viewBoxFor(view)` string, `clampView`, `zoomAt(view, factor, point)`, `panBy`, `fitCluster(clusterId)`, `curvePath(a, b)`; no d3-force (D recorded: the hand layout fits 390 by zooming to the first cluster), and the fallback condition under which d3-force would be reconsidered.",
+        "§ Interaction is a table: wheel (zoom only while the graph has focus or with ctrl/meta, so page scroll is never hijacked), + / − buttons, Reset view, arrow keys when the graph container is focused, pointer drag, the 390 px cluster chip row, project chips (`aria-pressed`), hover showing cross-cluster edges, Esc clearing the selection, reduced motion = no viewBox transition; § Accessibility: every node an `<a>` with its name linking to its row in the list view (`#skill-<id>`), the SVG's `<title>`, the 'List view' toggle, the list as the print view.",
+        "§ Tests lists the new files (skills-data.test.ts, graph-math.test.ts, SkillGraph.test.tsx, skills.test.tsx rewritten) and what each asserts; § Decisions allocates the next D numbers (skills.ts restructure superseding D20's featured group, no d3-force, wheel rule, node link target).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` (no code changed)."
+      ],
+      "after": [
+        "P1"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P5-02",
+      "milestone": "P5",
+      "kind": "build",
+      "model": "opus",
+      "description": "skills.ts is a graph (clusters, nodes, edges to nodes and projects) validated by tests, and the pan/zoom/layout math lives in src/lib/graph/ as pure functions with unit tests.",
+      "steps": [
+        "src/lib/data/skills.ts exports `clusters`, `nodes`, `edges` per the plan (and no longer `skillCategories`, or keeps it derived from nodes if a test outside /skills still reads it: data.test.ts checked); src/__tests__/lib/skills-data.test.ts asserts every edge endpoint is a node id or `project:<slug>` with the slug in `projects`, every logo key exists in `logoPaths`, every node's cluster exists, ids are unique, weights are 1–3, and every § 8 skills-line item (the test holds the list) is a node name.",
+        "scripts/logos.mjs's ICONS gains the plan's extra keys; `node scripts/logos.mjs` leaves `git status` clean after commit; paths.test.ts updated to the new key list.",
+        "src/lib/graph/layout.ts and view.ts export the plan's functions; src/__tests__/lib/graph-math.test.ts: `layoutGraph` is deterministic (same input → deep-equal output), no two nodes in a cluster overlap at weight-3 size, `clampView` never shows beyond the drawing's bounds plus padding, `zoomAt` keeps the point under the cursor fixed, `fitCluster` of the first cluster at width 390 gives a viewBox no wider than that cluster plus padding, `curvePath` returns an 'M … C …' string.",
+        "The /skills page still renders and its test is green (temporarily reading the new data as a list if the graph is not yet built); `npx jest --silent 2>&1 | tail -5` shows no failing suite.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P5-01"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P5-03",
+      "milestone": "P5",
+      "kind": "build",
+      "model": "opus",
+      "description": "/skills renders the graph as SVG (clusters as titled rounded containers, nodes as logo + label links, intra-cluster curved edges) with a List view toggle whose definition list is also the print view.",
+      "steps": [
+        "src/components/skills/SkillGraph.tsx ('use client') renders one `<svg role=\"img\">` with a `<title>`, a `<g>` per cluster with a rounded rect and its title text, each node as an `<a href=\"#skill-<id>\">` with `aria-label` = its name, its logo (from `logoPaths`, or a dot when none) and label, and a `<path>` per intra-cluster edge; cross-cluster edges are not in the DOM unless `data-hover` or a selection applies (SkillGraph.test.tsx counts paths).",
+        "A 'List view' `<button aria-pressed>` toggles a `<dl>` listing every node under its cluster heading with `id=\"skill-<id>\"`, weight as a word, since, and the projects it is linked to (as links to /projects/<slug>); skills.test.tsx asserts every node name appears in the list view; the list is `print:block` and the SVG `print:hidden` (classes asserted).",
+        "src/app/skills/page.tsx keeps h1 'Tech Stack' and renders `SkillGraph` from the data; its metadata description reads the new angle; the old featured 'Differentiator' block is gone; a11y-new-pages.test.tsx covers /skills (one h1, focus styles on every node link and button).",
+        "Reduced motion: with `useReducedMotion()` true no `transition` style or class is applied to the viewBox group (test via the framer-motion mock override).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route (no horizontal scroll at 390)."
+      ],
+      "after": [
+        "P5-02"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P5-04",
+      "milestone": "P5",
+      "kind": "build",
+      "model": "opus",
+      "description": "The graph pans by drag and arrow keys, zooms by wheel and ± buttons, resets, and at 390 px starts on the first cluster with a chip row that pans to each cluster.",
+      "steps": [
+        "SkillGraph has buttons `aria-label=\"Zoom in\"`, `\"Zoom out\"`, `\"Reset view\"`; clicking them changes the svg's `viewBox` attribute via `zoomAt`/the initial view (tests read the attribute); wheel zooms only while the container has focus or `ctrlKey`/`metaKey` is held (a plain wheel leaves the viewBox unchanged and is not `preventDefault`ed).",
+        "The graph container is focusable (`tabIndex={0}`, `role=\"application\"` or `group` with an `aria-label` and an `aria-describedby` instructions line 'Arrow keys pan, plus and minus zoom'); ArrowRight/Left/Up/Down change the viewBox by `panBy`; pointer down + move + up pans by the same amount (tests with fireEvent.pointerDown/Move/Up).",
+        "At ≤ 390 px (matchMedia mocked) the initial viewBox equals `fitCluster(first cluster)` and a horizontal chip row of cluster buttons (`aria-pressed` on the current one) pans to each cluster on click; above 390 the whole drawing is the initial view and the row is hidden (`hidden sm:…` classes asserted).",
+        "The pan/zoom math is called only from this component (`grep -rl 'lib/graph' src/components` prints only SkillGraph.tsx); `npx jest src/__tests__/components/skills` is green.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P5-03"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P5-05",
+      "milestone": "P5",
+      "kind": "build",
+      "model": "opus",
+      "description": "Selecting a project chip highlights the stack it used and dims the rest, draws its cross-cluster edges and offers 'Open case study'; hovering a node shows its own cross-cluster edges.",
+      "steps": [
+        "Above the graph a chip per featured project (from `projects.ts`, in `order`) is a `<button aria-pressed>`; selecting one sets `data-active=\"true\"` on every node reachable by that project's edges and `data-dim=\"true\"` on every other node and edge, adds the project's cross-cluster `<path>`s with `data-active`, and shows a link 'Open case study' to /projects/<slug>; clicking the chip again or pressing Esc clears everything (SkillGraph.test.tsx).",
+        "Hovering or focusing a node sets `data-hover` on it and renders its cross-cluster edges; leaving removes them; with a project selected the hover does not undo the selection.",
+        "skills.test.tsx asserts that selecting 'Agent Harness' (slug agent-harness) marks at least three nodes active and that the 'Open case study' link points at /projects/agent-harness; transitions on data-active changes are `motion-safe:` only.",
+        "CLAUDE.md § Routes `/skills` row and § Data Layer skills.ts line describe the graph; the plan § Interaction is marked as built with any deviation noted.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P5-04"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P5-06",
+      "milestone": "P5",
+      "kind": "check",
+      "model": "opus",
+      "description": "What Michael will see for P5: /skills default and with a project selected at 1280, default and list view at 390, keyboard reach and print checked.",
+      "steps": [
+        "docs/screenshots/v3/P5-skills-1280.png, P5-skills-selected-1280.png (agent-harness selected), P5-skills-390.png (zoomed to the first cluster with the chip row), P5-skills-list-390.png exist, each under 400 KB, from the harness dev server via .harness/skills-check.mjs.",
+        "The script prints and the plan § What Michael will see records: no horizontal page scroll at 390; pressing Tab from the h1 reaches the controls and then the first node link (its accessible name printed); ArrowRight changes the viewBox; selecting the agent-harness chip marks N nodes active (N printed, ≥ 3); every node label at 1280 is fully inside its cluster rect (bounding boxes); exit 0.",
+        "`node .harness/print-check.mjs http://localhost:$HARNESS_PORT /skills $HARNESS_SCRATCH/print-skills.png` exits 0 and the capture shows the list, not the SVG.",
+        "`node .harness/smoke.mjs` passes every route.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok`."
+      ],
+      "after": [
+        "P5-05"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P5-07",
+      "milestone": "P5",
+      "kind": "review",
+      "model": "opus",
+      "description": "An independent Opus review of the P5 diff is recorded, findings fixed test-first, simplifications applied, docs current.",
+      "steps": [
+        "`git diff $(git log -1 --format=%H --grep='HARNESS: after P5-01')^..HEAD -- src/lib/data/skills.ts src/lib/graph src/components/skills src/app/skills src/components/logos scripts/logos.mjs src/__tests__ .harness docs/plans/2026-10-21-P5-skills-graph.md > $HARNESS_SCRATCH/P5.diff`; the reviewer reads the file and looks hardest at: wheel/scroll hijacking, pointer handlers leaking listeners, keyboard reachability of every node, the SVG's text alternative, 390 px fit, and honesty of the data (nothing on the graph Michael has not used, per the resume lines); the plan § Review has one row per finding with severity, file:line and resolution.",
+        "Every Critical and Important finding is fixed with a failing test first; Minor findings fixed or given a one-line reason; a simplification pass is recorded (math functions unused by the component removed); `npx eslint` is clean.",
+        "docs/review-guide.md gains '## P5 (v3)'; CLAUDE.md matches the code; the v2 spec § v3 decisions holds P5's Ds.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` and `node .harness/smoke.mjs` passes every route."
+      ],
+      "after": [
+        "P5-06"
+      ],
+      "passes": true
+    },
+    {
+      "id": "P6-01",
+      "milestone": "P6",
+      "kind": "docs",
+      "model": "opus",
+      "description": "docs/design/2026-10-21-projects-showcase-options.html shows three options for the projects section (graph view, case-file grid, timeline/log) with 1280 and 390 mockups, costs, real references and a recommendation.",
+      "steps": [
+        "docs/design/2026-10-21-projects-showcase-options.html exists, is self-contained (`grep -c '<script src\\|<link [^>]*href=\"http' …` prints 0; inline CSS only; no JS needed), and opens in headless Chromium at 1280 and 390 with 0 console errors and no horizontal scroll at 390 (a one-off Playwright command recorded in the file's own footer or the progress entry).",
+        "For each of options A (shared graph view), B (case-file grid) and C (timeline/log) the file has: a 1280 mockup and a 390 mockup drawn in HTML/CSS using the site's tokens (#0a0a0f, #12121a, #00d4ff, #8888a0) and real project titles from src/lib/data/projects.ts, a 'What a hiring manager sees in 10 s' paragraph, 'Cost to build on the current data' naming the data fields it reuses and the new components, 3–5 references with URLs, and risks.",
+        "Every reference URL answers 200 or a 3xx to 200 (`curl -sIL -o /dev/null -w '%{http_code}'` run and the codes listed in a comment at the end of the file); every number in the file traces to docs/notes/ or the data files (a 'Sources' list at the end).",
+        "The file ends with a recommendation and why, and says what P6 option A would share with the P5 graph.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` (no code changed)."
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "P6-02",
+      "milestone": "P6",
+      "kind": "docs",
+      "model": "opus",
+      "description": "docs/design/2026-10-21-design-directions.html presents three retro directions (terminal/Linux, vintage console/CRT, analog hardware) with mockups, palettes with AA checks, type pairings, motion rules, how the concierge panel and memory colours fit, best practices, a comparison and a recommendation.",
+      "steps": [
+        "docs/design/2026-10-21-design-directions.html exists, is self-contained (no external script or stylesheet; fonts named, loaded by name with a system fallback, never fetched), opens in headless Chromium at 1280 and 390 with 0 console errors and no horizontal scroll at 390; the frontend-design skill was used if available (said in the progress entry).",
+        "For each direction (1 terminal/Linux, 2 vintage console/CRT, 3 analog hardware) the file has: a 1280 and a 390 mockup of the home hero and one project card drawn in HTML/CSS, a palette of 6–8 tokens with hex values and a contrast table (each text/background pair's ratio computed and ≥ 4.5 for body text, ≥ 3 for large text), a type pairing of free fonts named with their licence source, motion rules (what moves, what does not under reduced motion; scanlines off under reduced motion in direction 2), and a section on how the concierge panel and the six memory colours (v3 spec § 5) fit the direction (the latency panel as a VU meter in direction 3).",
+        "A section 'Best practices for a site with character' covers: one motif per page, legibility first, motion as feedback not decoration, a real type scale, textures at low opacity, reduced motion and AA; a comparison table of the three; a recommendation with how it would ship as a token-only pass first (colours, type, radii in globals.css) before component work.",
+        "Every URL in the file answers 200 or 3xx→200 (codes listed in a trailing comment); the file has no screenshot or stock image (brand.md: no fake screenshots).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` (no code changed)."
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "P6-03",
+      "milestone": "P6",
+      "kind": "docs",
+      "model": "opus",
+      "description": "docs/notes/2026-10-21-framework-options.md lists 4–6 real open-source vintage-OS, console or CRT portfolio/UI foundations with licences and porting cost, and recommends fork, borrow or stay.",
+      "steps": [
+        "docs/notes/2026-10-21-framework-options.md exists with a table of 4–6 projects, each with URL, licence (as read from the repo), stack, last activity date, and what it gives (OS windows, retro UI kit, terminal portfolio); every URL answers 200 (`curl -sIL -o /dev/null -w '%{http_code}'` codes listed under the table).",
+        "For each: what porting this site's data layer (src/lib/data, 10 projects, the case-study template, the concierge provider) would take, in concrete steps and an hour estimate with the assumption behind it.",
+        "A recommendation section chooses fork, borrow (the look as tokens and components) or stay, with the reasoning against the cost of the current site (the test count is read from `npx jest --silent 2>&1 | tail -5` and quoted), and names which P6-02 direction it pairs with.",
+        "No number without a source; no private repo link; the content guard patterns are respected (`npx jest src/__tests__/lib/content-guard.test.ts` green; the guard walks src and public only, but the note follows the same rules).",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` (no code changed)."
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "P6-04",
+      "milestone": "P6",
+      "kind": "review",
+      "model": "sonnet",
+      "description": "A short review of the three P6 documents: every URL resolves, every number traces, the HTML files are self-contained and render cleanly at both widths.",
+      "steps": [
+        "A script run (`grep -oE 'https?://[^\" )<>]+'` over the three files, then `curl -sIL -o /dev/null -w '%{http_code}'` each) is recorded in docs/notes/2026-10-21-framework-options.md § Review or a sibling docs/design/README.md: every URL answers 200 or 3xx ending in 200; any that does not is fixed or removed.",
+        "Every sentence with a digit in the three files is listed with its source (docs/notes/*, src/lib/data/*, the v3 spec § 8, or 'illustrative, labelled as such' for mockup placeholder numbers, which must be visibly labelled in the mockup); each HTML file has no `<script src`, no external `<link href=http`, no `<img src=http`.",
+        "Both HTML files load in headless Chromium at 1280 and 390 with 0 console errors and `scrollWidth <= innerWidth` at 390 (the command and output recorded).",
+        "Findings are fixed in place and listed in the review note with before/after; docs/review-guide.md gains '## P6 (v3): recommendations' pointing Michael at the three files.",
+        "The suite is green: `.harness/check.sh` prints `check: lint ok · jest ok · build ok` (no code changed)."
+      ],
+      "after": [
+        "P6-01",
+        "P6-02",
+        "P6-03"
+      ],
+      "passes": true
+    }
+  ]
+}

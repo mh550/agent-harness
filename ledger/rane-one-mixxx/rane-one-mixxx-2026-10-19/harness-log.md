@@ -23,3 +23,33 @@
 - 2026-10-20 09:18 · M2-04 · claude-opus-5-5 · passes=true · 10 min · 11/28 passing
 - 2026-10-20 09:18 · stopped by Michael
 - 2026-10-20 09:18 · run ended (stopped by Michael): 11/28 passing · 18 sessions (18 real) · 11 features passed · $49.29 · 3.4 h · by kind: init 1 ($4.44), coding 14 ($43.89), verify 2 ($0.84), retro 1 ($0.12) · by model: claude-fable-5-1 1 ($4.44), claude-opus-5-5 14 ($43.89), claude-sonnet-5-5 3 ($0.96)
+- 2026-10-21 09:11 · M2-05 · claude-opus-5-5 · passes=true · 12 min · 12/28 passing
+- 2026-10-21 09:36 · M2-06 · claude-opus-5-5 · passes=true · 25 min · 13/28 passing
+- 2026-10-21 09:38 · M2-07 · claude-sonnet-5-5 · passes=true · 1 min · 14/28 passing
+- 2026-10-21 09:52 · M2-08 · claude-opus-5-5 · passes=true · 14 min · 15/28 passing
+- 2026-10-21 09:56 · M2 verified and tagged run/rane-one-mixxx-2026-10-19/M2 (contains unverified work of M3-01: held until that is verified)
+- 2026-10-21 09:56 · held: M1 M2 (its tag contains another milestone's unverified work, or main has changes it wasn't verified with); it merges with the next verified milestone
+- 2026-10-21 10:06 · M3-02 · claude-opus-5-5 · passes=true · 10 min · 16/28 passing
+- 2026-10-21 10:18 · M3-03 · claude-opus-5-5 · passes=true · 11 min · 17/28 passing
+- 2026-10-21 10:28 · M3-04 · claude-opus-5-5 · passes=true · 10 min · 18/28 passing
+- 2026-10-21 10:49 · M3-05 · claude-opus-5-5 · passes=true · 20 min · 19/28 passing
+- 2026-10-21 11:01 · M3-06 · claude-opus-5-5 · passes=true · 11 min · 20/28 passing
+- 2026-10-21 11:03 · verify M3: M3-05 failed the re-check, back in the queue (one more attempt)
+- 2026-10-21 11:15 · M3-05 · claude-opus-5-5 · passes=true · 11 min · 20/28 passing
+- 2026-10-21 11:17 · M3 verified and tagged run/rane-one-mixxx-2026-10-19/M3
+- 2026-10-21 11:18 · M3 merged into main · https://github.com/mh550/rane-one-mixxx/pull/2
+- 2026-10-21 11:32 · M4-01 · claude-opus-5-5 · passes=true · 14 min · 21/28 passing
+- 2026-10-21 11:48 · M4-02 · claude-opus-5-5 · passes=true · 15 min · 22/28 passing
+- 2026-10-21 11:58 · M4-03 · claude-opus-5-5 · passes=true · 9 min · 23/28 passing
+- 2026-10-21 12:19 · M4-04 · claude-opus-5-5 · passes=true · 20 min · 24/28 passing
+- 2026-10-21 12:52 · M4-05 · claude-opus-5-5 · passes=true · 33 min · 25/28 passing
+- 2026-10-21 13:19 · M4-06 · claude-opus-5-5 · passes=true · 26 min · 26/28 passing
+- 2026-10-21 13:34 · M4-07 · claude-opus-5-5 · passes=true · 15 min · 27/28 passing
+- 2026-10-21 14:56 · M4-08 · claude-opus-5-5 · passes=true · 81 min · 28/28 passing
+- 2026-10-21 14:56 · merged main into harness/rane-one-mixxx-2026-10-19
+- 2026-10-21 14:58 · M4 verified and tagged run/rane-one-mixxx-2026-10-19/M4
+- 2026-10-21 14:58 · M4 merged into main · https://github.com/mh550/rane-one-mixxx/pull/3
+- 2026-10-21 14:58 · M1 merged into main with M4
+- 2026-10-21 14:58 · M2 merged into main with M4
+- 2026-10-21 14:58 · every feature passes
+- 2026-10-21 14:58 · run ended (done): 28/28 passing · 41 sessions (41 real) · 28 features passed · $130.50 · 9.3 h · by kind: init 1 ($4.44), coding 32 ($123.36), verify 6 ($2.44), retro 2 ($0.26) · by model: claude-fable-5-1 1 ($4.44), claude-opus-5-5 31 ($123.12), claude-sonnet-5-5 9 ($2.95)

@@ -1,22 +1,23 @@
 ## Outcome
-Not delivered. 11 of 28 features pass, 6 are verified (all of M1) and 0 are merged. Michael stopped the run at 09:18 on 2026-10-20. It had used 18 sessions, 3.4 h and $49.29 ($4.48 per passing feature). The main reason is a stall in the first segment. M1-04 was parked on a step that could not be satisfied, and the run sat until Michael answered at 08:14 the next morning. About 14 hours of wall time passed with no work done. M2 then ran 4 features in 52 minutes. M1's tag is held because it contains M3-01's unverified work, so nothing has merged.
+All 28 features passed, were verified and were merged (M1–M4, PRs #2 and #3) at $130.50 and 9.4 h wall, with 41 sessions and tests going from 8 to 868. The run ended `done`. It was stopped twice along the way (parked at 18:17 on 10-19 waiting on M1-04, and stopped by Michael at 09:18 on 10-20), and it needed 2 continuations. The M1–M4 merges were delayed until M4, because the M1 and M2 tags each contained unverified M3-01 work.
 
 ## Non-passing features by cause
-All 17 non-passing features have cause "not reached" and 0 sessions: M2-05..08, M3-02..06 and M4-01..08. Each carries the detail "run ended: stopped by Michael". None failed.
-- Stopped by Michael, not by a defect: 17.
-- M2-05..08 were next in the queue when the run stopped, and the log has no blocker for them.
-- M3-02..06 and M4-01..08 are the same, but I did not confirm that nothing else gated them.
-- Cause counts for the other categories: spec 0, too big 0, dependency 0 (apart from M3-02..06 and M4, which never started), denial 0, environment 0, model quality 0, harness bug 0.
+No feature ended as "not done". Three were bounced by verify and later passed:
+- **M1-04** (3 sessions, 41 min, $7.41): spec problem. It was parked with "Michael to choose: amend M1-04 step 3 to check the version line in stdout… or drop `--controller-debug`". This stalled the run for about 14 h.
+- **M1-05** (2 sessions): failed the re-check and was fixed in a retry. I did not check the cause.
+- **M3-05** (2 sessions, 32 min, $7.85): failed the re-check once. I did not trace the cause.
 
 ## Harness behaviour
-- **Guards:** `verify_failed` fired twice, on M1-04 and M1-05 at 18:00. Both were correct. The log shows both steps could not be satisfied as written (M1-04 step 3 and M1-05 step 5). The cost was one Sonnet session at $0.46. Other guards were 0.
-- **Blocked scheduling:** M3-01 ran at 18:17 while M1-04 was parked. Everything else, including M2, waited for Michael, so the stall cost about 14 h.
-- **Re-verify:** it ran 15 turns in 146 s and re-ran every step, including a live Mixxx start and replay, a hot reload, a clean stop and `npm test` 202/202. It also flagged two caveats it did not check. One was that `reviews/M1.diff` had drifted by 779 lines. The other was that it did not replay the "failing test first" step.
-- **Wasted work:** the M1-06 review ($5.70) ran before M1 had been verified, and verify then failed two of its features. M1-05's verify retry waited 14 h.
-- **Merge hold:** M1 verified at 08:21 but its tag was held because M3-01's unverified work came before it in history. M3-01 ran out of order, which caused this.
-- **Evidence rows:** the first verify session appears to have run steps (22 turns, 201 s). I did not count its rows against the steps.
+- **Guards:** 3 `verify_failed`, 0 repairs, 0 `red_unpass`, 0 limit waits. The re-check guard fired and the retries passed, so it looks correct.
+- **Failure reasons:** the `verify_failed` log lines carry no reason.
+- **Verify cost:** verify was cheap, $2.44 across 6 sessions on Sonnet.
+- **Evidence rows vs steps:** I did not compare these. `summary.json` has no per-step counts, so I can't confirm the verifies re-ran every step. Failing 3 features suggests they did real work.
+- **Review cost:** review was $23.27, 18% of spend and 2.16 h. The review role is billed on Opus (`by_model`: Opus $123.08).
+- **Held merges:** M1 and M2 were held until M4, so M1 and M2 sat unmerged for about 1.5 days.
+- **Long M4-08:** this session ran 81 min for $9.23. The cause is not examined here.
+- **Retro and docs:** retro and docs were negligible.
 
 ## Proposed harness changes
-1. **Skip parked features and run independent ones** (driver scheduler). Evidence: after M1-04 parked at 18:02, only M3-01 ran. M2 and M4 waited about 14 h. This is a repeat of `pathways/threads-2026-10-17`, `dj-2026-10-17` and the first-segment retro of this run. It is the fourth time, so it is the top priority.
-2. **Run a smoke check of each feature's steps before building** (init and plan prompt). Alternatively, let a build session mark a step "unsatisfiable" and park the feature immediately instead of passing it. Evidence: both verify failures were steps the build could not literally satisfy. The first-segment retro of this run proposed this, and `portfolio_site-2026-10-20` repeated it (VC2-06).
-3. **Skip the per-milestone review when verify has failed or the milestone is small** (driver config). Evidence: review cost $5.70 for M1-06 and 12% of spend this run. The proposal first appeared in `v2-2026-10-18`, and every later run has repeated it.
+1. **Cap or skip per-milestone review on small milestones, or route it to Sonnet** (driver config). Evidence: review was $23.27 of $130.50 here, and Sonnet verify costs about $0.40 per session. This is a repeat, proposed in `v2-2026-10-18`, `agent-harness-2026-10-19`, `rane-one-mixxx-2026-10-19`, `portfolio_site-2026-10-20`, `-2` and `-v3`, and `voice-concierge-2026-10-20` and `-10-21`. It is still unfixed.
+2. **Lint steps at plan time by dry-running them** (init and plan prompts). Evidence: M1-04 needed a spec amendment and a 14 h human wait over a step about `--controller-debug` stdout. M1-05 and M3-05 also failed verify. Repeat of the dry-run-steps idea first proposed in this run's own earlier retro, then in `voice-concierge-2026-10-20` and `hit_list-2026-10-20`.
+3. **Let a parked feature not block unrelated milestones, and put the failure reason in the `verify_failed` log line** (driver). Evidence: after M1-04 parked, the run ended waiting for 14 h. Held-milestone merging also delayed M1 and M2. The reason-in-log half was proposed in `hit_list-2026-10-20`. The parked-feature half was proposed in `voice-concierge-2026-10-20`.

@@ -1,0 +1,2 @@
+## 2026-10-21 14:11
+Build docs/specs/2026-10-20-measure-then-memory.md: E0 and E0b first (inside E1), then E1 → E2 → E3 → E4 in its order. The phone-answers PRs are merged and main is the base. The research notes it cites under ~/projects/career are Michael's and may be unreadable to you: the spec is self-contained, proceed from it. Evals cost money: build them and write evals/NEXT.md with the commands; never run them. MERGE_POLICY=pr: open PRs, never merge. Proceed on defaults, record D-H<n>, never park.

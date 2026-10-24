@@ -139,7 +139,7 @@
         "`tools/census` on captures/2026-10-19-quick/platter.jsonl produces a CSV with exactly three rows (CC 6 ch 1, pitch bend ch 1, note 0 ch 1) and the output is saved as reference/rane-one-mk1-midi-map.csv with a header comment saying it is partial until the census capture.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-06", "milestone": "M2", "kind": "build", "model": "opus",
@@ -151,7 +151,7 @@
         "The session directory name is `captures/<YYYY-MM-DD>-<label>/` and the tool refuses to overwrite an existing session unless `--resume` is given.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-07", "milestone": "M2", "kind": "docs", "model": "sonnet",
@@ -163,7 +163,7 @@
         "npm test is green."
       ],
       "after": ["M2-06"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2-08", "milestone": "M2", "kind": "review", "model": "opus",
@@ -174,7 +174,7 @@
         "README.md lists the M2 tools in at most 10 added lines and links HARDWARE-TESTS.md; docs/spec.md §5 M2 is marked done with the date.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
 
     {
@@ -200,7 +200,7 @@
         "*.wav stays gitignored and the tests write only under a temp dir.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-03", "milestone": "M3", "kind": "build", "model": "opus",
@@ -211,7 +211,7 @@
         "A 1 ms dropout (zeros) in the tone is reported as a `dropouts` count rather than as flutter (test included).",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-04", "milestone": "M3", "kind": "build", "model": "opus",
@@ -222,7 +222,7 @@
         "The tool reads the format defined in the M3 plan and rejects a line missing `ticks` or `playposition` with a line number in the error.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-05", "milestone": "M3", "kind": "build", "model": "opus",
@@ -234,7 +234,7 @@
         "npm test is green."
       ],
       "after": ["M1-03", "M3-03"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-06", "milestone": "M3", "kind": "review", "model": "opus",
@@ -245,7 +245,7 @@
         "docs/spec.md §5 M3 is marked done with the date.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
 
     {
@@ -259,7 +259,7 @@
         "npm test is green."
       ],
       "after": ["M2-02"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-02", "milestone": "M4", "kind": "plan", "model": "opus",
@@ -272,7 +272,7 @@
         "The Speed estimator section names the two candidate filters (1-Euro, α-β), the synthetic data used to pick one, and the acceptance: 33⅓ with ±1 tick jitter gives ratio 1.000 ± 0.002 after 50 ms; a step to 0.5 settles within 100 ms.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-03", "milestone": "M4", "kind": "build", "model": "opus",
@@ -284,7 +284,7 @@
         "Any malformed input (undefined, NaN, wrong status) makes `feed` return null without throwing (test included).",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-04", "milestone": "M4", "kind": "build", "model": "opus",
@@ -296,7 +296,7 @@
         "Running the M4-03 decoder on each generated file yields the scripted net ticks (test included).",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-05", "milestone": "M4", "kind": "build", "model": "opus",
@@ -308,7 +308,7 @@
         "`createSpeedEstimator` never throws on a null timer or a repeated sample (test included).",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-06", "milestone": "M4", "kind": "build", "model": "opus",
@@ -320,7 +320,7 @@
         "`update` never throws and returns the previous state on malformed input (test included).",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-07", "milestone": "M4", "kind": "check", "model": "opus",
@@ -332,7 +332,7 @@
         "Any sample that produces a control flip lasting under 20 ms is listed in the document as a glitch to revisit in M5 (count given).",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-08", "milestone": "M4", "kind": "review", "model": "opus",
@@ -343,7 +343,7 @@
         "docs/spec.md §2 and §5 M4 reference the analysis document and the D12/D13 decisions; §5 M4 is marked done with the date and M5's open questions list is updated from the analysis.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
