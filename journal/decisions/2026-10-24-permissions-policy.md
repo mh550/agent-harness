@@ -1,0 +1,45 @@
+# One permissions policy, in ~/.claude: agents merge and clean up, only the irreversible is denied, production is gated per project
+
+*(2026-10-24, chunk 1 of `docs/plans/2026-10-24-handoff.md`, an agent session; the policy itself is the plan's
+"Policy" section, agreed with Michael the same day)*
+
+- **Finding:**
+  - Every handoff waited on Michael because the user settings denied what finishing takes: `git branch -D`,
+    `git push origin --delete`, `git push --delete`.
+  - Project files denied more (n8n-home: `git worktree remove/prune`), and the n8n run died at 0/32 on a project-level
+    `docker compose` deny.
+  - The rules lived in several places that disagreed, and no file every session loads said what an agent may do.
+  - The n8n MCP servers sat in user scope, so the live n8n write tools loaded in every project, gated nowhere but
+    n8n-home.
+- **Choice:**
+  - **Files.** `templates/user/` holds the three user files:
+    - `settings.permissions.json`: a copy of `~/.claude/settings.json` with the policy's `permissions` block;
+    - `CLAUDE.md`: the § "Git, merges and permissions" section;
+    - `config.merge-policy.sh`: the harness's merge policy.
+  - **`setup/apply-2026-10-24.sh` installs them**, and `--dry-run` shows every diff first. Michael runs it; agents
+    don't edit `~/.claude` or `~/.config`. The script takes only `permissions` (and `enabledMcpjsonServers`) from the
+    template, over the live file's other keys, so a setting changed after the template was cut survives.
+  - **Allowed:** merges, pushes, deleting merged branches and worktrees, `harness gc`, `docker compose`. Each has an
+    explicit allow, since auto mode's classifier otherwise blocks merging an unapproved PR and deleting remote
+    branches.
+  - **Denied:** only what can't be undone. That is force-push and any push that rewrites or deletes `main`,
+    `filter-branch`/`filter-repo`, `reflog expire/delete`, `gc --prune`, `gh repo delete`, `sudo`, and reads of `.env`
+    and `/etc/restic`.
+    - **Two existing denies are kept**, `Bash(*fetch*--approve*)` and `Edit(//srv/incoming/**)`. They gate live
+      actions of a project with no settings file of its own, and dropping a gate is Michael's call.
+    - **`Bash(scripts/deploy.sh:*)` leaves the user allow list.** A production deploy is gated in its project and
+      isn't pre-approved for every project.
+  - **The n8n MCP servers move to n8n-home's `.mcp.json`.** n8n drops its static `Authorization` header: the server
+    offers OAuth (its `/.well-known/oauth-protected-resource` answers), so the token stays in Claude Code's store and
+    out of the repo. `enabledMcpjsonServers` in the user settings approves both names, so headless runs in n8n-home
+    worktrees load them without a prompt.
+  - **`MERGE_POLICY=auto`, not the plan's `merge`.** `lib/config.sh` and `lib/driver.sh` know `auto`, `pr` and `off`,
+    and `merge` would silently behave as `pr`.
+- **Rejected:**
+  - **Copying the template over `~/.claude/settings.json` whole.** It would revert any setting Michael changed
+    between the template and the apply.
+  - **Keeping the bearer token in `.mcp.json`, or behind `${VAR}` expansion.** The first commits a secret. The
+    second needs the variable in every environment a run starts from.
+  - **Keeping `git reset --hard` and `git tag -d` denied.** The policy's deny list is closed, and both are local:
+    the reflog gets back the commits a reset moves off. The cost is uncommitted edits a reset discards, a session's
+    own and in its own worktree.

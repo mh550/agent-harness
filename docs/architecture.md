@@ -70,6 +70,8 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `prompts/desk.md` | ~80 | The desk's instructions (a run block and a debrief block): read `harness parked`/status/INBOX/progress, check safely, one numbered brief, `harness answer` and the continue only after Michael's yes, the never-list |
 | `skills/harness-answer/SKILL.md` | ~45 | The answer desk's instructions for an interactive session Michael opens (§17); installed by a symlink into `~/.claude/skills/` |
 | `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
+| `templates/user/{settings.permissions.json,CLAUDE.md,config.merge-policy.sh}` | | The permissions policy (`decisions/2026-10-24-permissions-policy`): the user settings, the `~/.claude/CLAUDE.md` section that is its one home, and `MERGE_POLICY=auto` |
+| `setup/apply-2026-10-24.sh` | ~110 | Installs those three (`--dry-run` shows every diff; backs up to `~/projects/backups/`) and moves the n8n MCP servers to n8n-home's `.mcp.json`; Michael runs it, the harness never does |
 | `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*) and `parts/rules.md` (the line naming `CLAUDE.md`) |
 | `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 226 checks |
 
@@ -295,7 +297,10 @@ what the permission rules allow; the harness owns the first, Michael the second.
 **Permissions.** Headless sessions run in auto mode under your user settings (`~/.claude/settings.json`, where the
 history-destroying denies live). A project may add `.claude/settings.json` (passed with `--settings`, because a fresh
 worktree is untrusted). The harness never writes either, and agents can't (the auto-mode classifier blocks
-"Self-Modification"). The driver logs which applied at start.
+"Self-Modification"). The driver logs which applied at start. What agents may do (merge, push, delete merged branches
+and worktrees, `docker compose`) and the closed deny list live in `~/.claude/CLAUDE.md` § "Git, merges and
+permissions" and the user settings, installed from `templates/user/` by `setup/apply-2026-10-24.sh`; production
+gates are the only project settings (portfolio_site, n8n-home).
 
 ## 11. Measurement and the improvement loop
 
