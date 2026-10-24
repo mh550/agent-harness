@@ -10,6 +10,9 @@
 #   harness queue [list]                         what is queued, running and done
 #   harness queue add <project> [<run-id>] [start options] | add --continue <run-id> [options]
 #   harness queue rm <n> | clear | start [--until HH:MM] | stop
+#   harness queue park <n> [<why>] | unpark <n> set an entry aside (listed with its reason, skipped) · back at the end
+#   harness sync                                 the live checkout level with origin: pull merged PRs, push ledger
+#                                                commits (the queue runner does it whenever no run is alive)
 #   harness status [<run-id>]                    every run: running / ended (why), features, last log lines
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
 #   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
@@ -258,7 +261,10 @@ cmd_queue() {
       echo "queue ($( runner_up && echo "runner going" || echo "runner not running: harness queue start"); MAX_PARALLEL_RUNS=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")):"
       for f in "$Q"/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g")"; done
       (( n )) || echo "  (empty)"
-      echo "running: $(for d in "$STATE_ROOT"/*/*/; do alive "$d" && basename "$d"; done | paste -sd' ' -)"
+      n=0   # parked entries are listed, never silent: a parked run nobody remembers is a run that never happens
+      for f in "$Q"/held/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); (( n == 1 )) && echo "parked (the runner skips these; harness queue unpark <n>):"
+        echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g" | cut -c1-200)"; echo "     why: $(cat "${f%.args}.why" 2> /dev/null || echo "no reason recorded")"; done
+      echo "running:$(for d in "$STATE_ROOT"/*/*/; do alive "$d" && basename "$d"; done | paste -sd' ' -)"
       if [[ -f $Q/runner.log ]]; then echo "recent:"; tail -n 5 "$Q/runner.log" | sed 's/^/  /'; fi ;;
     add)
       if [[ ${1:-} == --continue ]]; then
@@ -270,10 +276,18 @@ cmd_queue() {
         echo "queued: $(basename "$(queue_add start "$p" "$@")")"
       fi ;;
     rm) local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue rm <n>}p"); [[ -n $f ]] || die "no entry $1"; rm "$f"; echo "removed $(basename "$f")" ;;
+    park)
+      local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue park <n> [<why>]}p"); [[ -n $f ]] || die "no entry $1"; shift
+      mkdir -p "$Q/held"; mv "$f" "$Q/held/"
+      echo "${*:-no reason given} ($(date '+%F %H:%M'))" > "$Q/held/$(basename "$f" .args).why"
+      echo "parked $(basename "$f"): the runner skips it until harness queue unpark" ;;
+    unpark)   # back at the end of the queue, renumbered so it can't collide with what was added meanwhile
+      local f a; f=$(ls "$Q"/held/*.args 2>/dev/null | sed -n "${1:?usage: harness queue unpark <n>}p"); [[ -n $f ]] || die "no parked entry $1"
+      mapfile -t a < "$f"; echo "unparked $(basename "$f") as $(basename "$(queue_add "${a[@]}")")"; rm -f "$f" "${f%.args}.why" ;;
     clear) rm -f "$Q"/*.args; echo "queue cleared" ;;
     start) local until=0; [[ ${1:-} == --until ]] && until=$(to_epoch "$2"); queue_ensure_runner "$until" ;;
     stop) touch "$Q/STOP"; echo "the runner stops after its current start (running runs carry on)" ;;
-    *) die "usage: harness queue [list|add|rm|clear|start|stop]" ;;
+    *) die "usage: harness queue [list|add|rm|park|unpark|clear|start|stop]" ;;
   esac
 }
 
@@ -375,6 +389,7 @@ case ${1:-help} in
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
+  sync) shift; exec "$HARNESS_HOME/lib/sync.sh" "$@" ;;
   desk) shift; exec "$HARNESS_HOME/lib/desk.sh" "$@" ;;
   eval) shift; exec "$HARNESS_HOME/lib/eval.sh" "$@" ;;
   *) sed -n '2,/^set -/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;   # the header, whatever its length

@@ -40,6 +40,8 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 |---|---|
 | `harness start` · `continue` · `merge` · `stop` · `pause` · `resume` · `answer` | one run |
 | `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue |
+| `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end |
+| `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
 | `harness status` · `report` · `trends [--by version]` · `attach` | look (`trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
