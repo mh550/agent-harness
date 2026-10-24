@@ -1,0 +1,13 @@
+{
+  "id": "t2",
+  "project": "evproj",
+  "repo": "",
+  "base": "",
+  "features": [
+    { "id": "T2a", "milestone": "E", "kind": "build", "description": "t2 first", "steps": ["work-T2a.txt exists"], "passes": false },
+    { "id": "T2b", "milestone": "E", "kind": "build", "description": "t2 second", "steps": ["work-T2b.txt exists"], "after": ["T2a"], "passes": false }
+  ],
+  "policy": "build-only",
+  "spec": "SPEC.md",
+  "why": "stub task for tests/run.sh (repo and base filled in by the test): two features, T2b after T2a"
+}

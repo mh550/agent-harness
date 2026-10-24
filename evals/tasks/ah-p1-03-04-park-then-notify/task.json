@@ -1,0 +1,47 @@
+{
+  "id": "ah-p1-03-04-park-then-notify",
+  "project": "agent-harness",
+  "repo": "~/projects/agent-harness",
+  "base": "dfd0429eb60c467da627a759a68c54b9f4bcfd11",
+  "features": [
+    {
+      "id": "P1-03",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "A park sends '[<run>] <feature> needs you' at priority high with tag question, a body made of the PARKED line, the lines the session added to INBOX.md and the answer command, a click URL to INBOX.md on the run branch on GitHub, and Edit INBOX / Answer with Claude (DESK_URL) / Progress actions; a non-GitHub origin sends the same without URLs.",
+      "steps": [
+        "node --input-type=module -e 'import {githubUrls as g} from \"./lib/notify.mjs\"; const a=g(\"git@github.com:o/r.git\",\"harness/x\",\".harness/runs/x/INBOX.md\"), b=g(\"https://github.com/o/r.git\",\"harness/x\",\"p\"), c=g(\"https://github.com/o/r\",\"harness/x\",\"p\"), d=g(\"/tmp/origin.git\",\"harness/x\",\"p\"); process.exit(a.blob===\"https://github.com/o/r/blob/harness/x/.harness/runs/x/INBOX.md\" && a.edit===\"https://github.com/o/r/edit/harness/x/.harness/runs/x/INBOX.md\" && b.blob.startsWith(\"https://github.com/o/r/blob/\") && c.blob===b.blob && d===null ? 0 : 1)' exits 0",
+        "node --input-type=module -e 'import {inboxQuestion as q} from \"./lib/notify.mjs\"; const b=\"status: run\\n\\n## Answers\\n\", a=\"status: run\\n### B: set the gatus vars, then answer\\n\\n## Answers\\n\"; process.exit(q(b,a).trim()===\"### B: set the gatus vars, then answer\" && q(b,b)===\"\" ? 0 : 1)' exits 0",
+        "lib/driver.sh copies INBOX.md to $STATE/inbox-before.md before every coding session (grep -n inbox-before lib/driver.sh), and the park branch builds the body as: the PARKED line, the lines added above '## Answers' (fallback: the PARKED line alone), then 'Answer: harness answer <run> \"…\"'",
+        "tests/run.sh: the parky project (run 16) gets a GitHub-shaped origin via url.<local>.insteadOf before `harness start`, and the check 'a park notification: title, question, answer command, click and Edit INBOX action' finds in curl.log a block with 'Title: [parky] B needs you', 'Priority: high', 'Tags: question', a body containing 'set the gatus vars, then answer' and 'harness answer parky', 'Click: https://github.com/test/proj/blob/harness/parky/.harness/runs/parky/INBOX.md' and an Actions header containing 'view, Edit INBOX, https://github.com/test/proj/edit/harness/parky/.harness/runs/parky/INBOX.md' and 'view, Progress, https://github.com/test/proj/blob/harness/parky/.harness/runs/parky/progress.md'",
+        "tests/run.sh check 'Answer with Claude only when DESK_URL is set': with DESK_URL=https://claude.ai/code/env-test in the user config the parky Actions header contains 'view, Answer with Claude, https://claude.ai/code/env-test'; a second parked run without DESK_URL has no 'Answer with Claude' action",
+        "tests/run.sh check 'no URLs for a non-GitHub origin': a park in a project whose remote.origin.url is the local bare path produces a block with the title and body but no Click and no Actions header",
+        "lib/config.sh defaults DESK_URL='' and the three new settings appear in the harness_config defaults line (grep -n 'NTFY_URL\\|DESK_URL' lib/config.sh)",
+        "bash -n lib/driver.sh lib/notify.sh, node --check lib/notify.mjs; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false
+    },
+    {
+      "id": "P1-04",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "description": "Every other 'needs Michael' notification (blocked or waiting run end, verify needs Michael, merge refused or conflicted, a run's end) goes out at priority high where Michael must act and carries a click URL: the INBOX for blocks and parks, the PR for merges, report.md on the run branch for a run's end; routine notifications (started, merged, paused) keep the default priority.",
+      "steps": [
+        "grep -n 'notify ' lib/driver.sh shows every call that says 'needs Michael' or 'ended' passing a priority and a click field (the plan's call-site table is the checklist; each row is done)",
+        "tests/run.sh check 'a waiting-on-Michael run end: priority high, click = report.md': the parky run's 'ended (waiting on Michael: B)' block in curl.log has 'Priority: high' and 'Click: https://github.com/test/proj/blob/harness/parky/.harness/runs/parky/report.md'",
+        "tests/run.sh check 'a refused merge: priority high, click = the PR': run 10 (later) has a block with 'needs Michael: merge refused', 'Priority: high' and 'Click: https://example.test/pr/1'",
+        "tests/run.sh check 'verify needs Michael: priority high, click = progress.md': run 3 (strict) has a block with 'M1 needs Michael', 'Priority: high' and a Click URL ending in '/progress.md' when the origin is GitHub-shaped (or no Click for the local origin, whichever that run uses; the check says which)",
+        "tests/run.sh check 'routine notifications keep the default priority': the demo run's 'started:' and 'M1 merged' blocks have no 'Priority:' line",
+        "lib/debrief.sh's tell() uses the shared notify so '[debrief] refused' and the headline still reach NOTIFY_CMD as before (the existing debrief checks stay green) and go to NTFY_URL when set (one check: with NTFY_URL set, a debrief's headline is a curl.log block whose Click is the note's debrief.html path only if it is a URL, else no Click)",
+        "bash -n lib/driver.sh lib/debrief.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false
+    }
+  ],
+  "policy": "build-only",
+  "spec": "docs/specs/2026-10-19-phone-answers.md",
+  "brief": "## 2026-10-19 10:06\nP1, P2, then P3 from the spec. Give each later milestone's first feature an after list naming only what it needs. Keep each milestone to a plan, 2-4 build features and a review. Tests use stub curl, stub claude and throwaway tmux sessions. For blockers and key design decisions that have been deferred for Michael to get input: update the harness so these send start a real claude instance from the ~/projects directory that's remote controlled, and post a message to notify with a brief blurb on what the blocker is, and a link to the Claude session.\n",
+  "why": "depends on an earlier feature, by order: P1-04 has no after, but its click URLs and actions reuse the gh_url helper and notify fields P1-03 adds. Source run agent-harness-2026-10-19, P1-03 then P1-04 (one session each: 26 min, $2.88 and 17 min, $2.66; P1 held verify). Base dfd0429eb60c467da627a759a68c54b9f4bcfd11 = HARNESS: after P1-02, the parent of P1-03's first commit e4d64d8. Does the second session find and reuse what the first one built?"
+}

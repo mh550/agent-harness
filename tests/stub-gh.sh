@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # Stand-in for `gh` in tests: records calls; PRs are files (prs/pr-N holds the head branch; pr-N.merged once merged);
 # "pr merge" really merges into the bare origin's main. prs/branch-<name> stands for an old v2 whole-run PR.
+# "api repos/<o>/<r>/deployments…" answers GitHub's published example (fixtures/gh-deployments.json, creator octocat).
+HERE=$(cd "$(dirname "$0")" && pwd)
 echo "gh $*" >> "$STUB_DIR/gh.log"
 P=$STUB_DIR/prs; mkdir -p "$P"
 open_pr() { local f; for f in "$P"/pr-*; do [[ $f == *.merged || ! -f $f ]] && continue; [[ $(cat "$f") == "$1" && ! -f $f.merged ]] && { echo "${f##*-}"; return 0; }; done; return 1; }
 case "$1 $2" in
+  "api repos/"*)   # the repo's deployments (read-only): STUB_DEPLOYMENTS=0 → none, =vercel → made by Vercel's app
+    case ${STUB_DEPLOYMENTS:-} in 0) echo '[]' ;; vercel) sed 's/"octocat"/"vercel[bot]"/' "$HERE/fixtures/gh-deployments.json" ;;
+      *) cat "$HERE/fixtures/gh-deployments.json" ;; esac ;;
   "pr view")
     if [[ -f $P/branch-${3//\//_} ]]; then [[ $* == *" .state"* ]] && echo OPEN || echo "https://example.test/pr/old"; exit 0; fi
     n=$(open_pr "$3") && echo "https://example.test/pr/$n" || exit 1 ;;

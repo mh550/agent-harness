@@ -12,7 +12,8 @@
 #   harness queue rm <n> | clear | start [--until HH:MM] | stop
 #   harness status [<run-id>]                    every run: running / ended (why), features, last log lines
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
-#   harness trends                               every recorded run in one table (the harness ledger)
+#   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
+#                                                harness version (runs, passing, $/feature, cache hit, orientation)
 #   harness debrief [--dry-run]                  after a queue: one short read-only session writes the debrief
 #                               (ledger/debrief.md; NOTIFY_CMD gets its headline). The queue runner starts it as it exits
 #   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each)
@@ -23,10 +24,21 @@
 #   harness desk <run> [--why "…"] | --debrief   a Remote Control session that briefs you and takes your answers (tmux h-desk)
 #   harness desk --list | --close <run>|--all    the open desks: window, run, URL, age · close them
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
-#                                                CLAUDE.md from the repo's docs for you to edit)
+#                                                CLAUDE.md from the repo's docs for you to edit), and the Vercel/Netlify
+#                                                guard that keeps run branches from deploying
 #   harness gc <project> [--all-merged] [--dry-run]
 #                               delete merged harness branches and their clean worktrees, locally and on origin;
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
+#   harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]
+#                               replay a task set (evals/) with that harness version's driver on throwaway clones,
+#                               nothing posted or merged; results in evals/results/. Real sessions: it costs money,
+#                               so no task starts past EVAL_BUDGET_USD (default $10) or the 7-day WEEKLY_STOP_AT
+#   harness eval compare <A> <B>  two results (paths, or names under evals/results/): per task and in total, pass
+#                               rate, $ and tokens per verified feature, cache, orientation, context peak, wall time,
+#                               rework, each with B's verdict against A (better · worse · within noise · one sample)
+#   harness eval probes <task result dir>
+#                               ask one tool-less PROBE_MODEL session (haiku, one turn) the handoff questions the task's
+#                               record answers, given only the prompt its next session would get; prints score <n>/<m>
 #
 # Where things live:  worktree ~/worktrees/<project>/<run-id> · branch harness/<run-id>
 #   committed run record  <worktree>/.harness/runs/<run-id>/{feature_list.json,progress.md,INBOX.md,harness-log.md,
@@ -43,6 +55,8 @@ WT_ROOT=${HARNESS_WORKTREES:-$HOME/worktrees}
 Q=$STATE_ROOT/queue
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"
+# shellcheck source=lib/deploy.sh
+source "$HARNESS_HOME/lib/deploy.sh"
 
 die() { echo "harness: $*" >&2; exit 1; }
 toplevel() { git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "$1 is not a git repository"; }
@@ -71,6 +85,7 @@ cmd_init() {
       --permission-mode auto --max-turns 40 > /dev/null) && echo "drafted CLAUDE.md: read it, edit it, commit it"
   else cp "$HARNESS_HOME/templates/project/CLAUDE.md" "$p/CLAUDE.md"; echo "created CLAUDE.md (template: fill it in)"; fi
   harness_config "$p"
+  deploy_guard "$p"   # a host that builds every branch would make a preview per session (E0b)
   echo "detected: suite '${CHECK_CMD:-none — set CHECK_CMD in .harness/config.sh}' · smoke '$SMOKE_CMD' · init '$INIT_CMD'"
   echo "permissions: your user settings apply. A project needing extra allows can keep them in .claude/settings.json"
   echo "             (example: $HARNESS_HOME/templates/project/settings.example.json); the harness never writes it."
@@ -354,12 +369,13 @@ case ${1:-help} in
   status) shift; cmd_status "$@" ;;
   parked) shift; cmd_parked "$@" ;;
   report) shift; cmd_report "$@" ;;
-  trends) node "$HARNESS_HOME/lib/summary.mjs" trends "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/runs.jsonl" ;;
+  trends) node "$HARNESS_HOME/lib/summary.mjs" trends "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/runs.jsonl" "${@:2}" ;;
   attach) tmux attach -t "$(tmux_name "${2:?usage: harness attach <run-id>}")" ;;
   pause|resume|stop) cmd_control "$1" "${2:-}" ;;
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
   desk) shift; exec "$HARNESS_HOME/lib/desk.sh" "$@" ;;
-  *) sed -n '2,38p' "$0" | sed 's/^# \{0,1\}//' ;;
+  eval) shift; exec "$HARNESS_HOME/lib/eval.sh" "$@" ;;
+  *) sed -n '2,/^set -/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;   # the header, whatever its length
 esac

@@ -1,0 +1,11 @@
+{
+  "id": "t1",
+  "project": "evproj",
+  "repo": "",
+  "base": "",
+  "features": [
+    { "id": "T1", "milestone": "E", "kind": "build", "description": "t1 one", "steps": ["work-T1.txt exists"], "passes": false }
+  ],
+  "policy": "build-only",
+  "why": "stub task for tests/run.sh (repo and base filled in by the test): one feature"
+}

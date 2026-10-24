@@ -19,8 +19,8 @@ instead. The backup takes the same lock you do (below), so a stage holding it de
 3. Take the **Snapshots** the project lists, named with this run's id (`{{RUN_ID}}`) so the nightly backup or the
    next run can't overwrite your restore point.
 4. Read the **Backups** status: the last backup must have succeeded within the age the project states. If it
-   didn't, stop: no live writes this session; say so in your progress entry.
-5. Note in your progress entry: the backup status, the running version/image, and the snapshot paths.
+   didn't, stop: no live writes this session; say so in your journal entry (`entry.json`).
+5. Note in your journal entry (`entry.json`'s `verified_how`): the backup status, the running version/image, and the snapshot paths.
 
 ### Deploying
 - Only as the project's **Deploy and rollback** says, from **this worktree** (`{{WT}}`), on a pushed commit.
@@ -30,11 +30,12 @@ instead. The backup takes the same lock you do (below), so a stage holding it de
 ### Stages (every live write)
 dry run → `--limit 5` → `--limit 50` → all. After **each** stage: the tool's exit code and report, then the
 project's **Check**. Read every refusal or warning before the next stage. A flow without a dry run, a limit and a
-reverse log is **not** run live; write its live steps in your progress entry instead.
+reverse log is **not** run live; write its live steps in your journal entry (`entry.json`) instead.
 
 ### On the first problem
 Stop. Undo with the flow's reverse log, run the **Check** until it is green, roll back a deploy, and log what
-happened at the top of `progress.md` with the exact commands you ran. Don't flip `passes`. Don't retry live in
+happened in your journal entry (`entry.json`: `dead_ends` for what failed, `verified_how` with the exact commands you
+ran). Don't flip `passes`. Don't retry live in
 the same session.
 
 ### One live writer at a time
@@ -42,7 +43,7 @@ Wrap every live write and every deploy in `flock -n {{LIVE_LOCK}} <command>`. If
 Michael or the backup job is working: don't wait. Log it and do only build work this session.
 
 ### Always
-- Every live command you ran goes into your progress entry, verbatim, with its result.
+- Every live command you ran goes into your journal entry's `verified_how`, verbatim, with its result.
 - The project's **Never** list holds, and so does this one: no secrets printed or read beyond what a command
   needs, no `sudo`, no backup-tool writes (restore, forget, prune), no rewriting git history, no deploys from
   any checkout but this worktree.

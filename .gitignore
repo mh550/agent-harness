@@ -1,2 +1,4 @@
 journal/raw/
 node_modules/
+evals/results/*
+!evals/results/.gitkeep

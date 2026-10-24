@@ -25,41 +25,38 @@ set -uo pipefail
 cd "$WT" || exit 1
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"
+# shellcheck source=lib/prompt.sh
+source "$HARNESS_HOME/lib/prompt.sh"
 
-PROJECT_NAME=$(basename "$PROJECT_DIR")
+prompt_vars   # PROJECT_NAME BRANCH RUN_DIR SCRATCH CHECK PORT
 CLAUDE=${HARNESS_CLAUDE:-claude} GH=${HARNESS_GH:-gh}
 F() { node "$HARNESS_HOME/lib/features.mjs" "$@"; }
 MET() { node "$HARNESS_HOME/lib/metrics.mjs" "$@"; }
 SUM() { node "$HARNESS_HOME/lib/summary.mjs" "$@"; }
 
-BRANCH=$(git branch --show-current)
-RUN_DIR=.harness/runs/$RUN_ID LIST=.harness/runs/$RUN_ID/feature_list.json
+LIST=$RUN_DIR/feature_list.json
 LOGS=$STATE/logs ATT=$STATE/attempts.json PARKED=$STATE/parked.json
 STATE_ROOT=$(cd "$STATE/../.." && pwd) LIMIT_FILE=$(cd "$STATE/../.." && pwd)/LIMIT_UNTIL USAGE=$(cd "$STATE/../.." && pwd)/USAGE_7D
-SCRATCH=${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/$RUN_ID
-CHECK=$HARNESS_HOME/lib/check.sh
 LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
-PORT=$(cat "$STATE/port")
 mkdir -p "$LOGS" "$RUN_DIR" "$SCRATCH"
 # The configuration comes from the worktree, so it is loaded again after a resumed run merges main (which may have
 # changed .harness/config.sh, e.g. a new POLICY).
 load_config() {
   harness_config "$WT" "$STATE"
-  LIVE_LOCK=${LIVE_LOCK:-${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/live.lock}
-  export HARNESS_RUN_ID=$RUN_ID HARNESS_RUN_DIR=$RUN_DIR HARNESS_BRANCH=$BRANCH HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH \
-    HARNESS_CHECK="$CHECK" HARNESS_CHECK_CMD=$CHECK_CMD HARNESS_SMOKE_CMD=$SMOKE_CMD HARNESS_INIT_CMD=$INIT_CMD \
-    HARNESS_SPEC_FILES=$SPEC_FILES HARNESS_MAIN_BRANCH=$MAIN_BRANCH HARNESS_PROJECT=$PROJECT_NAME HARNESS_WT=$WT \
-    HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green
+  prompt_env   # the exports every session and template sees (lib/prompt.sh)
 }
 load_config
 echo "$MAX_ATTEMPTS" > "$STATE/max-attempts"
-DEADLINE=$(( $(date +%s) + HOURS * 3600 )); (( DEADLINE_AT > 0 && DEADLINE_AT < DEADLINE )) && DEADLINE=$DEADLINE_AT
+T0=$(date +%s); DEADLINE=$(( T0 + HOURS * 3600 )); (( DEADLINE_AT > 0 && DEADLINE_AT < DEADLINE )) && DEADLINE=$DEADLINE_AT
 rm -f "$STATE"/waited-*   # a restart inside a usage-limit window waits for it again
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
 note() { log "$*"; echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; }   # phone-readable, committed
 # shellcheck source=lib/notify.sh
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID   # notify "<message>" [title=… body=… click=… …]: "[<run>] <message>"
+# shellcheck source=lib/deploy.sh
+source "$HARNESS_HOME/lib/deploy.sh"   # deploy_status: hosts that would build every pushed run branch
+source "$HARNESS_HOME/lib/version.sh"  # harness_version: the harness commit driving this segment, and whether it is dirty
 commit_all() { git add -A && ! git diff --cached --quiet && git commit -q -m "$1"; return 0; }
 green() { "$CHECK" > /dev/null 2>&1; }
 
@@ -158,27 +155,82 @@ limit_wait() {
   sleep "${HARNESS_LIMIT_SLEEP:-$w}"
 }
 
-prompt() {   # template name → $STATE/prompt.md: generic prompt, the run's brief, the project's rules, the policy
-  local extra=()
-  if [[ $1 != retro ]]; then
-    [[ -s $RUN_DIR/brief.md ]] && extra+=("Brief for this run, from Michael (it wins over the spec on scope)=$RUN_DIR/brief.md")
-    [[ -f CLAUDE.md ]] && extra+=("Project rules (CLAUDE.md)=CLAUDE.md")
-    [[ -f .harness/project.md ]] && extra+=("Project rules (.harness/project.md)=.harness/project.md")
-    extra+=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md")
-  fi
-  HARNESS_INIT_OUTPUT=$(tail -c 4000 "$SCRATCH/init.out" 2>/dev/null) HARNESS_CHECK="$CHECK" \
-    node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/$1.md" "${extra[@]}" > "$STATE/prompt.md"
+prompt() {   # template name → $STATE/prompt.md (lib/prompt.sh, which `harness eval probes` renders the same way)
+  prompt_render "$1" > "$STATE/prompt.md"
   cp "$STATE/prompt.md" "$STATE/prompt-$1.md"   # the last prompt of each kind, for debugging
+}
+
+# <attempt N of M | verify round N of M> → the clock line of a coding or verify prompt ({{CLOCK}}): sessions can't tell
+# time, budget or attempt otherwise. The run is this driver's segment (T0 to DEADLINE). decisions/2026-10-21-clock-and-bounded-init-output
+clock() {
+  local now el tot; now=$(date +%s); el=$(( (now - T0) / 60 )); tot=$(( (DEADLINE - T0) / 60 ))
+  printf 'Clock: %s · run %dh%02dm of %s, ends %s · this session: $%s budget, %s turns, %s timeout · %s\n' "$(date '+%F %H:%M')" \
+    $(( el / 60 )) $(( el % 60 )) "$( (( tot % 60 )) && printf '%dh%02dm' $(( tot / 60 )) $(( tot % 60 )) || echo "$(( tot / 60 ))h")" \
+    "$(date -d "@$DEADLINE" +%H:%M)" "$SESSION_BUDGET_USD" "$MAX_TURNS" "$SESSION_TIMEOUT" "$1"
 }
 
 session() {   # kind model log → runs claude headless on $STATE/prompt.md; sets S_EXIT and S_WALL
   local settings=() t0; t0=$(date +%s)
+  # an entry.json no ingest took (the driver died after its session) would pass for this session's own
+  [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
+  cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
+  [[ $1 == coding || $1 == verify ]] && cp "$RUN_DIR/context.md" "${3%.jsonl}.context.md" 2> /dev/null   # and the pack it read first
   [[ -f $AGENT_SETTINGS ]] && settings=(--settings "$WT/$AGENT_SETTINGS")
   timeout "$SESSION_TIMEOUT" "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" \
     --max-turns "$MAX_TURNS" --max-budget-usd "$SESSION_BUDGET_USD" --output-format stream-json --verbose > "$3" 2>&1
   S_EXIT=$? S_WALL=$(( $(date +%s) - t0 ))
   MET usage "$3" > "$USAGE.tmp" 2> /dev/null && mv "$USAGE.tmp" "$USAGE" || rm -f "$USAGE.tmp"   # the box-wide 7-day window
   log "  $1 exit $S_EXIT · $(git log --oneline -1)"
+}
+
+# <kind> <feature> <transcript> <model> <start commit> → the session's entry.json into entries.jsonl: the driver is its
+# only writer (decisions/2026-10-22-journal-single-writer). Missing or invalid: a note and a minimal entry from git and
+# the final message, whose outcome is what the list says now (the session's claim, before the driver's checks; a
+# refused session's claim is reverted, so not yet). A session's own edits to the journal are undone first.
+# Then progress.md and progress-archive.md are rendered from the journal (decisions/2026-10-22-rendered-progress).
+journal() {
+  local kind=$1 id=$2 who=$2 outcome="not yet" name out rc f; name=$(basename "$3" .jsonl)
+  git -c core.quotePath=false diff --name-only --no-renames "$5" HEAD -- . ":!$RUN_DIR" > "$SCRATCH/entry-files"
+  MET final "$3" > "$SCRATCH/entry-final" 2> /dev/null
+  case $kind in
+    coding) if MET limit "$3" "$S_WALL" "$S_EXIT" > /dev/null; then :   # refused: the driver reverts its claim below
+            elif F passes "$LIST" "$id"; then outcome=passes
+            elif sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' "$SCRATCH/entry-final" | grep -q .; then outcome=parked; fi ;;
+    verify) who="verify $id" ;;   # a verify without its entry has no evidence rows, so it never holds: not yet
+    init)   F summary "$LIST" > /dev/null 2>&1 && outcome=passes ;;
+  esac
+  for f in entries.jsonl progress-archive.md; do   # committed by the WIP/restrict commit, so a diff from the start sees it
+    git diff --quiet "$5" -- "$RUN_DIR/$f" 2> /dev/null && continue
+    if git cat-file -e "$5:$RUN_DIR/$f" 2> /dev/null; then git show "$5:$RUN_DIR/$f" > "$RUN_DIR/$f"; else rm -f "$RUN_DIR/$f"; fi
+    note "$who: $f edited by the session; restored (the driver is its only writer)"
+  done
+  out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$RUN_DIR" "$kind" "$id" "$name" "$4" "$outcome" "$SCRATCH/entry-files" "$SCRATCH/entry-final"); rc=$?
+  (( rc == 3 )) && note "$who: entry.json $out; recorded a minimal entry"
+  (( rc == 0 || rc == 3 )) || { note "$who: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
+    mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-failed-$name.json" 2> /dev/null; }
+  out=$(node "$HARNESS_HOME/lib/entries.mjs" render "$RUN_DIR" 2>&1) || note "$who: rendering progress.md failed: $out"
+  return 0
+}
+
+# <m> → how many verify entries the milestone has in entries.jsonl (the rendered progress.md shows only the 15 newest in
+# full). A run with a list always has the file by its first verify: the start-up or the initializer's append creates it
+vcount() {
+  jq -cR --arg m "$1" 'fromjson? | objects | select(.kind == "verify" and .feature == $m)' "$RUN_DIR/entries.jsonl" 2> /dev/null | wc -l
+}
+
+# <feature or milestone> → <run>/context.md, the bounded pack of the journal the next coding or verify session reads first
+# (lib/entries.mjs pack, at most CONTEXT_PACK_BYTES; decisions/2026-10-22-context-pack). Committed with the run record.
+context() {
+  if node "$HARNESS_HOME/lib/entries.mjs" pack "$RUN_DIR" "$1" "$CONTEXT_PACK_BYTES" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
+    mv -f "$SCRATCH/context.md" "$RUN_DIR/context.md"
+    note "context.md for $1: $(wc -c < "$RUN_DIR/context.md") bytes$(sed -n 's/^_\([0-9]*\) items left out at .*/, \1 items left out/p' "$RUN_DIR/context.md")"
+  else   # never a stale pack: the session is sent to the full record instead
+    printf '# Context pack for `%s`\n\nThe harness could not build it this time; read entries.jsonl / progress-archive.md.\n' "$1" > "$RUN_DIR/context.md"
+    note "context.md for $1: the pack failed ($(head -c 200 "$SCRATCH/context.err" | tr '\n' ' ')); it points at the full record"
+  fi
+  # committed now (a session that commits only its own files leaves no WIP behind), alone: anything else uncommitted
+  # stays for the session's WIP or restrict to judge (E4 review F4)
+  git add -- "$RUN_DIR/context.md" && { git diff --cached --quiet -- "$RUN_DIR/context.md" || git commit -q -m "HARNESS: context pack for $1" -- "$RUN_DIR/context.md"; }
 }
 
 run_init() {   # the project's init, then the suite (cached per code tree); both go into the next prompt
@@ -190,12 +242,14 @@ run_init() {   # the project's init, then the suite (cached per code tree); both
     || rm -f "$STATE/tests-start"
 }
 
-pr_body() {   # milestone → the evidence a reviewer (or the record) needs
+pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the archive has every entry in full
+  local p=$RUN_DIR/progress-archive.md; [[ -f $p ]] || p=$RUN_DIR/progress.md
   echo "Milestone **$1** of harness run \`$RUN_ID\` (branch \`$BRANCH\`), verified by an independent session."
   echo; echo "**Features:**"; for id in $(F ids "$LIST" "$1"); do echo "- \`$id\` · $(jq -r --arg id "$id" '.features[]|select(.id==$id)|.description' "$LIST" 2>/dev/null)"; done
   echo; echo "**Run so far:** $(F summary "$LIST") · $(MET summary "$RUN_DIR/metrics.jsonl")"
   echo; echo "**Verify entry:**"; echo
-  awk -v m="verify $1" 'index($0, "### ") == 1 { if (on) exit; if (index($0, m)) on = 1 } on' "$RUN_DIR/progress.md" | head -60
+  # `verify M1` followed by anything but a letter, digit, _ or - (M1 never matches M10; a legacy `verify M1: …` does)
+  awk -v m="verify $1" 'index($0, "### ") == 1 { if (on) exit; i = index($0, m); if (i && substr($0, i + length(m), 1) !~ /[[:alnum:]_-]/) on = 1 } on' "$p" | head -60
   echo; echo "Run record: \`$RUN_DIR/\` (progress.md, harness-log.md, feature_list.json, metrics.jsonl)."
 }
 
@@ -272,13 +326,16 @@ verify() {
   run_init
   for model in "$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"; do
     F snapshot "$LIST" > "$STATE/before.json"
-    before=$(grep -c "^### .*verify $m\b" "$RUN_DIR/progress.md" 2>/dev/null); vstart=$(git rev-parse HEAD)
-    HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
+    context "$m"   # each round: an escalated verify's pack has the first round's entry
+    before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
+    HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
     session verify "$(F model "$model")" "$vlog"
     reverted=$(restrict "$vstart" record verify | paste -sd' ')
     [[ -n $reverted ]] && note "verify $m: reverted code edits the verifier may not make: $reverted"
+    journal verify "$m" "$vlog" "$(F model "$model")" "$vstart"   # before the limit branch: a refused verify is journaled too
+    commit_all "HARNESS: journal verify $m"   # the tree tagged and merged below has its line, and no entry.json
     if why=$(MET limit "$vlog" "$S_WALL" "$S_EXIT"); then   # refused: no verdict, and no "holds" by default
       cp "$STATE/before.json" "$LIST"; node -e 'const f=process.argv[1],fs=require("fs");fs.writeFileSync(f,JSON.stringify(JSON.parse(fs.readFileSync(f)),null,2)+"\n")' "$LIST"
       MET append "$vlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" false "$S_WALL" "$S_EXIT" true verify
@@ -291,7 +348,7 @@ verify() {
     MET append "$vlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" \
       "$(F milestone-done "$LIST" "$m" && echo true || echo false)" "$S_WALL" "$S_EXIT" false verify
     F milestone-done "$LIST" "$m" || { result=fail; break; }
-    if (( $(grep -c "^### .*verify $m\b" "$RUN_DIR/progress.md" 2>/dev/null) <= before )); then short="no new verify entry in progress.md"
+    if (( $(vcount "$m") <= before )); then short="no new verify entry"
     elif short=$(F evidence "$LIST" "$m" "$RUN_DIR/progress.md"); then result=hold; break; fi
     [[ $model == "$VERIFY_ESCALATE_MODEL" ]] && { result=thin; break; }
     note "verify $m: evidence short of the steps ($short); re-running on $VERIFY_ESCALATE_MODEL"
@@ -410,7 +467,11 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
 }
 
 # ---------------------------------------------------------------------------------------------------------------
-log "run $RUN_ID on $BRANCH in $WT · port $PORT · policy $POLICY · merge $MERGE_POLICY"
+resumed=0; grep -q " run $RUN_ID on " "$STATE/run.log" 2> /dev/null && resumed=1   # an earlier segment logged its start
+# which harness drove this segment (the latest segment's wins in the summary; run.log keeps each), for trends --by version
+harness_version "$HARNESS_HOME"
+[[ ${HARNESS_MERGE_ONLY:-} ]] || { echo "$HARNESS_VERSION" > "$STATE/harness-version"; echo "$HARNESS_DIRTY" > "$STATE/harness-dirty"; }   # `harness merge` drives no sessions
+log "run $RUN_ID on $BRANCH in $WT · port $PORT · policy $POLICY · merge $MERGE_POLICY · harness $HARNESS_VERSION$( (( HARNESS_DIRTY )) && echo +dirty)"
 log "  suite: ${CHECK_CMD:-(none detected; nothing gates passes)} · smoke: $SMOKE_CMD · init: $INIT_CMD"
 log "  permissions: user settings$( [[ -f $AGENT_SETTINGS ]] && echo " + $AGENT_SETTINGS (--settings)" || echo " only ($AGENT_SETTINGS not found)")"
 [[ -f $RUN_DIR/INBOX.md ]] || cat > "$RUN_DIR/INBOX.md" <<EOF
@@ -427,7 +488,9 @@ if [[ -s $STATE/brief.md ]]; then   # a brief given at start or continue: commit
 fi
 commit_all "HARNESS: start run $RUN_ID"
 sync
-if [[ -f $LIST ]]; then   # a resumed run: catch up with main (and its configuration), merge what is verified
+# A resumed run (with or without its list) catches up with main and its configuration before any session, the
+# initializer included, so a re-run initializer plans from the current spec; a fresh run already starts from main.
+if [[ -f $LIST ]] || (( resumed )); then
   before_cfg=$(git rev-parse -q HEAD:.harness/config.sh 2>/dev/null)
   sync_main
   if [[ $(git rev-parse -q HEAD:.harness/config.sh 2>/dev/null) != "$before_cfg" ]]; then
@@ -435,7 +498,7 @@ if [[ -f $LIST ]]; then   # a resumed run: catch up with main (and its configura
     [[ -f $HARNESS_HOME/prompts/policy/$POLICY.md ]] || { log "unknown POLICY '$POLICY' after merging main"; END_REASON="unknown POLICY"; exit 1; }
     note "configuration reloaded after merging $MAIN_BRANCH: policy $POLICY · suite ${CHECK_CMD:-none} · spec ${SPEC_FILES:-(none)}"
   fi
-  merge_milestones
+  [[ -f $LIST ]] && merge_milestones   # merge what is verified
 fi
 if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 whole-run PR (milestones merge through their own PRs)
   if [[ $($GH pr view "$BRANCH" --json state -q .state 2>/dev/null) == OPEN ]]; then
@@ -445,12 +508,46 @@ if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 who
   commit_all "HARNESS: merge"; sync; END_REASON="merge only"; exit 0
 fi
 
+# A run from before the journal (a feature list, no entries.jsonl): its progress.md is kept, byte for byte, as
+# progress-archive.md and the journal starts here (decisions/2026-10-22-rendered-progress). Nothing is rendered until
+# the first entry, so progress.md stays as it was until a session ends; `harness merge` exited above, untouched.
+if [[ -f $LIST && ! -f $RUN_DIR/entries.jsonl ]]; then
+  : > "$RUN_DIR/entries.jsonl"
+  if [[ -f $RUN_DIR/progress.md ]]; then cp "$RUN_DIR/progress.md" "$RUN_DIR/progress-archive.md"
+    note "journal started; progress.md kept as progress-archive.md"
+  else note "journal started (no progress.md to keep)"; fi   # then the default header, and no legacy part
+  commit_all "HARNESS: journal started"; sync
+fi
+
+# Once per run (a continue doesn't repeat it): a host that builds every branch makes a preview per pushed session
+# unless origin/main carries the guard, since the run branch branches off main (E0b, D-H33). The run goes on.
+deploy_check() {
+  [[ -f $STATE/deploy-checked ]] && return 0
+  touch "$STATE/deploy-checked"
+  git fetch -q origin "$MAIN_BRANCH" 2> /dev/null
+  local h hosts=() j
+  while read -r h; do
+    case $h in
+      vercel) note "deploy guard: vercel.json on origin/$MAIN_BRANCH has no git.deploymentEnabled \"harness/**\": false; this run will create a preview deploy per session (harness init adds it)" ;;
+      netlify) note "deploy guard: netlify.toml on origin/$MAIN_BRANCH has no [build] ignore for harness/* refs; this run will create a preview deploy per session (harness init adds it)" ;;
+      *) continue ;;
+    esac
+    hosts+=("$h")
+  done < <(deploy_status "$WT" "origin/$MAIN_BRANCH")
+  (( ${#hosts[@]} )) || return 0
+  printf -v j '%s, ' "${hosts[@]}"; notify "no deploy guard (${j%, }): this run will create a preview deploy per session"
+  return 0
+}
+deploy_check
+
 if [[ ! -f $LIST ]]; then
   run_init
   HARNESS_CALIBRATION=$(SUM calibration "$LEDGER" "$PROJECT_NAME" 2>/dev/null) prompt initializer
   log "initializer · $(F model "$INIT_MODEL")"
+  istart=$(git rev-parse HEAD)
   session init "$(F model "$INIT_MODEL")" "$LOGS/00-init.jsonl"
   commit_all "WIP: initializer — uncommitted at session end (harness)"
+  journal init init "$LOGS/00-init.jsonl" "$(F model "$INIT_MODEL")" "$istart"   # a failed or refused initializer too
   if ! F summary "$LIST" > /dev/null 2>&1; then
     if why=$(MET limit "$LOGS/00-init.jsonl" "$S_WALL" "$S_EXIT"); then note "initializer refused: ${why%%$'\t'*}"; finish "usage limit before the feature list"; fi
     note "initializer did not produce a valid $LIST; stopping"; finish "initializer failed"
@@ -501,13 +598,15 @@ while :; do
   IFS=$'\t' read -r id mdl milestone <<< "$next"
   n=$(( n + 1 ))
   F bump "$ATT" "$id"; F snapshot "$LIST" > "$STATE/before.json"
-  run_init
-  HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
+  run_init; context "$id"
+  HARNESS_CLOCK=$(clock "attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
   log "session $n · $id · $mdl"
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   cp "$RUN_DIR/INBOX.md" "$STATE/inbox-before.md" 2> /dev/null || : > "$STATE/inbox-before.md"   # what the session adds is the park's question
+  sstart=$(git rev-parse HEAD)
   session coding "$mdl" "$slog"
   commit_all "WIP: $id — uncommitted at session end (harness)"
+  journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
 
   # A usage/rate limit, an API error or a session that did no work is not the feature's fault: give the attempt back.
   if why=$(MET limit "$slog" "$S_WALL" "$S_EXIT"); then

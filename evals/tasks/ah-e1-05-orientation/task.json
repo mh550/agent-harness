@@ -1,0 +1,26 @@
+{
+  "id": "ah-e1-05-orientation",
+  "project": "agent-harness",
+  "repo": "~/projects/agent-harness",
+  "base": "049e9736d5f2b54cbdfb0d253c2829dd58285370",
+  "features": [
+    {
+      "id": "E1-05",
+      "milestone": "E1",
+      "kind": "build",
+      "model": "opus",
+      "description": "metrics.jsonl rows carry the orientation cost: tokens, turns and seconds before a session's first Edit, Write or NotebookEdit call.",
+      "steps": [
+        "lib/metrics.mjs exports `orientation(evs)` → { tokens, turns, seconds }: assistant messages before the first assistant `tool_use` named Edit, Write or NotebookEdit (the whole session if none); tokens = their input + cache_read + cache_creation + output; turns = their count; seconds from event timestamps when the fixture carries them, else null as the plan says",
+        "tests/run.sh check `metrics.mjs: orientation stops at the first Write`: `node --input-type=module -e` on tests/fixtures/usage-tokens.jsonl equals the literal numbers computed by hand from the fixture, and a transcript without edits counts everything",
+        "metrics rows gain orient_tokens, orient_turns, orient_s; tests/run.sh check `metrics: orientation recorded per session`: run demo's coding rows have `orient_tokens > 0` and `orient_turns >= 1`",
+        "Both checks watched failing first; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false
+    }
+  ],
+  "policy": "build-only",
+  "spec": "docs/specs/2026-10-20-measure-then-memory.md",
+  "brief": "## 2026-10-21 14:11\nBuild docs/specs/2026-10-20-measure-then-memory.md: E0 and E0b first (inside E1), then E1 → E2 → E3 → E4 in its order. The phone-answers PRs are merged and main is the base. The research notes it cites under ~/projects/career are Michael's and may be unreadable to you: the spec is self-contained, proceed from it. Evals cost money: build them and write evals/NEXT.md with the commands; never run them. MERGE_POLICY=pr: open PRs, never merge. Proceed on defaults, record D-H<n>, never park.\n",
+  "why": "first-time pass. Source run agent-harness-2026-10-21-measure, E1-05 (one session, 12 min, $1.59; E1 held verify). Base 049e9736d5f2b54cbdfb0d253c2829dd58285370 = HARNESS: after E1-04, the parent of the session's first commit 1cfa5eb. A pure function over a committed fixture with exact numbers to hit: the cheapest kind of task, the one a change must not make dearer."
+}
