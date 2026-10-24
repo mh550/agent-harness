@@ -91,6 +91,9 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
   A park's notification carries the question the session wrote in INBOX.md (body capped at 3500 bytes), the
   `harness answer` command, and Edit INBOX / Progress actions; `DESK_URL` (e.g. a Claude Code environment URL; no `,` or
   `;` in it, they split ntfy's Actions header) adds **Answer with Claude**. A non-GitHub origin sends the same without URLs.
+- **Permissions:** the policy (agents merge, push and clean up; only the irreversible is denied; production is gated
+  per project) lives in `~/.claude/CLAUDE.md` § "Git, merges and permissions" and the user settings. Install or
+  refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`.
 - **Answering from the phone:** install the skill once, `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`.
   Ask a Claude session "answer the harness": it runs `harness parked`, checks what it safely can (variable names, never
   values), proposes, and runs `harness answer` only after your yes. Set `DESK_URL` (above) to get **Answer with Claude**
