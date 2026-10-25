@@ -9,6 +9,16 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 15:06 · L1-07 · passes
+
+session() always passes --strict-mcp-config, plus --mcp-config <wt>/.mcp.json when the worktree has one; run.log gets an 'MCP servers:' line at run start. prompts/parts/rules.md gains the deepEqual / bounded-rerun-after-137 rule. Decision file quotes the real claude --help lines (2.1.310). Docs: architecture §3 driver row, README .mcp.json row. Tests 264 → 267.
+
+- **Files:** lib/driver.sh, prompts/parts/rules.md, tests/run.sh, journal/decisions/2026-10-25-strict-mcp-and-deepequal-rule.md, docs/architecture.md, README.md
+- **Verified:** 3 new checks failed first (264/267), then lib/check.sh full: 267/267 checks passed. Checks: every demo session's systemd-run argv has --strict-mcp-config and none --mcp-config; run mp1 on a project committing .mcp.json gets --mcp-config $T/wt/mp/mp1/.mcp.json; lib/prompt.sh renders demo's coding prompt for A with deepEqual, exit 137, --test-name-pattern.
+- **Tests:** 264 → 267
+- **Discovery** (affects run): prompts/parts/rules.md is only included when the worktree has a CLAUDE.md (lib/prompt.sh prompt_render), so the deepEqual rule reaches only projects with one (all of them today). The MCP line is logged to run.log beside the permissions line, not noted in harness-log.md (same for every session).
+- *07-L1-07 · claude-opus-5-5*
+
 ### 2026-10-25 14:48 · L1-06 · passes
 
 Memory gate: mem_available_gb and mem_gate in lib/scope.sh; session() calls mem_gate for init/coding/verify (not retro) before t0. Under MEM_MIN_AVAILABLE_GB=5 it notes, calls services_down memory (no-op in driver until L2), checks at once then every HARNESS_MEM_POLL s up to MEM_WAIT_MAX=30m, then starts anyway. Config, template, docs, decision. Tests 260 → 264.
