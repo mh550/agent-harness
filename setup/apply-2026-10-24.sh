@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Usage: setup/apply-2026-10-24.sh [--dry-run]   (the permissions policy: docs/plans/2026-10-24-handoff.md, chunk 2)
+# Re-run it after any change to templates/user/ (2026-10-25: secrets denies for .env.*local, voice-concierge, lk).
 # Installs templates/user/{settings.permissions.json,CLAUDE.md,config.merge-policy.sh} and moves the n8n MCP servers
 # from user scope to ~/projects/n8n-home's .mcp.json. --dry-run prints every change and writes nothing. Safe to re-run:
 # a step already applied says "unchanged". Every file it changes is copied to ~/projects/backups/ first.

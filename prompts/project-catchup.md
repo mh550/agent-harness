@@ -23,8 +23,8 @@ live state before you act on it.
   - **dj-crate-streaming:** a live project (live-staged). This catch-up deploys nothing and writes nothing live;
     it sets up the live permissions as the handoff's "dj-crate-streaming goes live" section says.
   - Every other project has no gate.
-- **Harness:** only `harness status`, `harness report`, `harness parked` and `harness gc <project>`. Never
-  `start/continue/queue/answer/merge`. A run that is waiting on Michael gets its question quoted in your report.
+- **Harness:** what `~/.claude/CLAUDE.md` allows (the read commands, `sync`, and `gc` on this project), never
+  starting or steering a run. A run that is waiting on Michael gets its question quoted in your report.
 - **Questions:** ask Michael only when a choice is genuinely his: a production merge, deleting unmerged work, an
   ID collision with no obvious answer. Otherwise take the conservative default and say which one you took.
 
@@ -48,18 +48,39 @@ live state before you act on it.
    - Delete merged branches, locally and on origin.
    - Kill stale `h-<run>` tmux sessions of ended runs.
    - Stop any service a run left up (dev servers, `npx supabase stop`, test containers).
-4. **Settings.** Reduce `.claude/settings.json` to what `~/.claude/settings.json` and auto mode don't already give,
-   as the handoff's Policy section says: drop rules the user file repeats or covers (`Bash(git:*)` covers every
-   narrower git allow), allows for read-only commands and repo edits, and `defaultMode`. Keep only gates and the
-   narrow allows a run needs. `.claude/` is a protected path, so auto mode may refuse the write: if it does, put the
-   proposed file in your report for Michael to apply.
-   - portfolio_site keeps a short deny list; n8n-home keeps its live-staged allows and a few denies (PR #4 there);
-   - dj-crate-streaming gets exactly the file in the handoff's "dj-crate-streaming goes live" section;
-   - every other project's file is deleted, or left empty if a tool needs it.
+4. **Policy trim: settings and prose.** This project states only what is its own. Everything else lives in
+   `~/.claude/settings.json` and `~/.claude/CLAUDE.md` § "Git, merges and permissions". The handoff row's
+   "Policy trim" gives the target; check it against the live files and the run logs, then apply it.
+   - **How the rules combine** (Claude Code docs, checked 2026-10-24):
+     - Denies from every scope merge, and a deny anywhere beats an allow anywhere. A project deny of something the
+       user file allows (`git branch -D`, `git worktree remove`, `docker compose`) silently overrides it.
+     - In auto mode an allow skips the classifier, whatever its specificity: `Bash(git:*)` and `Bash(gh pr:*)` already
+       cover every narrower git and PR allow. Wildcarded interpreter allows (`Bash(python3:*)`) are dropped.
+     - Auto mode approves edits in the working directory and read-only commands with no rule, and ignores
+       `defaultMode` in a project file.
+     - A `Read(...)` deny also blocks `cat` and `sed` on that file, and an `Edit(...)` rule also covers `Write`.
+   - **A deny stays only if** the action can't be undone, reaches production or a live system, or touches hardware,
+     and the user file doesn't already deny it. Spending API credit, restarting a service or changing a reversible
+     setting is one `CLAUDE.md` line at most.
+   - **An allow stays only if** the command acts outside the repo or the classifier could block it, and a run
+     needed it. What runs were actually refused:
 
-   Set `MERGE_POLICY` in `.harness/config.sh` as the Policy section's "Harness merges" says.
+         cat ~/.local/state/harness/<project>/*/logs/*.jsonl | jq -rR 'fromjson? | select(.type=="result")
+           | .permission_denials[]? | "\(.tool_name) \((.tool_input.command // .tool_input.file_path // "")[0:100])"'
+           | sort | uniq -c | sort -rn
 
-   Commit, push and merge this as its own PR.
+   - **Prose.** In `CLAUDE.md` (`## Off-limits`, ground rules) and `.harness/project.md`, keep the project's own gates:
+     the live protocol, hardware, production deploys, public-repo rules. Delete lines that restate the user policy
+     (secrets, `sudo`, force-push, merging), "other checkouts are off-limits" and "never run `harness` commands" (the
+     user `CLAUDE.md` says both now), and bans tied to a night or a run that has ended.
+   - **Files.** A project left with no rules loses `.claude/settings.json` (`git rm`), plus an `AGENT_SETTINGS=` line
+     in `.harness/config.sh` that only repeats the default; the driver then runs on user settings alone. `.claude/` is
+     a protected path, so auto mode may refuse the change: if it does, put the exact change in your report for Michael.
+   - Set `MERGE_POLICY` in `.harness/config.sh` as the Policy section's "Harness merges" says.
+   - Report it as a table, `Rule | Why it stays`, then the dropped rules grouped by reason, then any change you'd
+     recommend to the user files (don't edit `~/.claude` yourself).
+
+   Commit, push and merge this as its own PR (portfolio_site: open it, and Michael merges).
 5. **Pull** the local checkout `~/projects/<project>` to `main` (fast-forward), unless it has uncommitted work. In that
    case, say so and leave it.
 6. **Report** in under 25 lines:
@@ -89,6 +110,8 @@ and merge one PR.
    becomes one line under `## Gotchas` (15 lines at most, each ending `(<run> <date>)`).
 5. **CLAUDE.md** gets the spec's `## Where things go` block (K1 §1, in this project's terms; set `DECISIONS=` in
    `.harness/config.sh` if the decisions file isn't `docs/decisions.md`). Cut detail that the code already states.
+   Apply Part 1 step 4's **Prose** rule too: n8n-home's and rane-one-mixxx's Part 1 ran before it, and their rows
+   list what's left.
 6. **This project's leak fixes** from the handoff row (temp dirs that tests never remove, `browser.close()` in a
    `finally`, idle worker counts, an init that leaves a server behind). Test-first where the project has a suite.
 7. **Report** in under 20 lines, as in Part 1. Then stop.
