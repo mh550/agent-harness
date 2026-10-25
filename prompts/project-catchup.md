@@ -18,8 +18,8 @@ live state before you act on it.
 - **Production gates:**
   - **portfolio_site:** `main` deploys to production through Vercel. List each PR with its preview URL and what to
     check, then wait for Michael's go before merging anything into `main`.
-  - **n8n-home:** never run `scripts/deploy.sh`, write under `/srv`, or touch container `n8n-n8n-1` or the live n8n
-    MCP write tools. Merging code is fine.
+  - **n8n-home:** a live project (live-staged since 2026-10-24). This catch-up deploys nothing and writes nothing
+    under `/srv`; merging code is fine.
   - **dj-crate-streaming:** a live project (live-staged). This catch-up deploys nothing and writes nothing live;
     it sets up the live permissions as the handoff's "dj-crate-streaming goes live" section says.
   - Every other project has no gate.
@@ -48,8 +48,12 @@ live state before you act on it.
    - Delete merged branches, locally and on origin.
    - Kill stale `h-<run>` tmux sessions of ended runs.
    - Stop any service a run left up (dev servers, `npx supabase stop`, test containers).
-4. **Settings.** Reduce `.claude/settings.json` to the project's deploy gates, as the handoff's Policy section says:
-   - portfolio_site and n8n-home keep a short deny list;
+4. **Settings.** Reduce `.claude/settings.json` to what `~/.claude/settings.json` and auto mode don't already give,
+   as the handoff's Policy section says: drop rules the user file repeats or covers (`Bash(git:*)` covers every
+   narrower git allow), allows for read-only commands and repo edits, and `defaultMode`. Keep only gates and the
+   narrow allows a run needs. `.claude/` is a protected path, so auto mode may refuse the write: if it does, put the
+   proposed file in your report for Michael to apply.
+   - portfolio_site keeps a short deny list; n8n-home keeps its live-staged allows and a few denies (PR #4 there);
    - dj-crate-streaming gets exactly the file in the handoff's "dj-crate-streaming goes live" section;
    - every other project's file is deleted, or left empty if a tool needs it.
 
