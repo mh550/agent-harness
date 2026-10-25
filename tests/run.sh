@@ -37,9 +37,18 @@ git init -q --bare -b main "$T/origin.git"
 git init -q -b main "$T/proj" && cd "$T/proj"
 mkdir .harness && cat > .harness/config.sh <<'EOF'
 CHECK_CMD="test ! -f BROKEN"
-INIT_CMD="echo init ok"
+INIT_CMD='echo init ok; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "$HARNESS_SCRATCH/init-begin"; sleep "$STUB_SLOW_INITCMD"; }'
 BASE_PORT=7950
 EOF
+# its teardown hook (L2-03): one marker per why, and the call in the stubs' own timeline (systemd.log)
+cat > .harness/teardown.sh <<'EOF'
+#!/usr/bin/env bash
+w=$(printf %s "$HARNESS_TEARDOWN_WHY" | tr -cs 'A-Za-z0-9' -)
+touch "$HARNESS_SCRATCH/teardown-$w.marker"
+[[ -z ${STUB_SLOW_TEARDOWN:-} ]] || { touch "$HARNESS_SCRATCH/teardown-begin"; sleep "$STUB_SLOW_TEARDOWN"; }
+printf 'teardown\n%s\n%s\n===\n' "$HARNESS_RUN_ID" "$HARNESS_TEARDOWN_WHY" >> "$STUB_DIR/systemd.log"
+EOF
+chmod +x .harness/teardown.sh
 printf '# proj\nrules\n' > CLAUDE.md; echo spec > SPEC.md
 git add -A && git commit -qm init && git config url."$T/origin.git".insteadOf git@github.com:test/proj.git && git remote add origin git@github.com:test/proj.git && git push -q -u origin main
 
@@ -133,6 +142,9 @@ check "scope.sh: scope_stop stops <unit>.scope; scope_peak and scope_left read t
   '[[ $sc_out == $'"'"'stop=0 peak=2 left=0\nleft2=1 units=harness-x-s2.scope\nstop2=0 units2=0'"'"' ]] && sd_with $'"'"'stop\nharness-x-s1.scope'"'"' | grep -qx -- --user && gone "$(cat "$T/scope/harness-x-s2.pids" 2> /dev/null || echo 0)"'
 check "scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]" \
   '( source "$SC"; [[ $(scope_unit "a.b/c d" s1) == harness-a-b-c-d-s1 && $(scope_unit demo "") == harness-demo && $(scope_bytes 6G) == 6442450944 && $(scope_bytes 64M) == 67108864 && $(scope_bytes 4096) == 4096 ]] )'
+check "scope.sh: scope_owns matches a unit to a run by its rebuilt prefix and a role the harness starts" \
+  '( source "$SC"; scope_owns demo harness-demo-svc.scope && scope_owns a.b harness-a-b-s12.scope && scope_owns demo harness-demo-check-4711.scope \
+    && ! scope_owns demo harness-demo-x-svc.scope && ! scope_owns demo harness-demo-svc && ! scope_owns test harness-test-1-probe.scope && ! scope_owns demo harness-demo-s.scope )'
 sc_bare=$( export STUB_NO_SYSTEMD=1 HARNESS_SCRATCH=$T/sc; source "$SC"; scope_available; echo "avail=$?"
   scope_run harness-x-bare "" 64M bash -c 'echo ran > "$0"; exit 4' "$T/sc-bare.out"; echo "rc=$?"; scope_stop harness-x-bare; echo "stop=$?"; scope_peak harness-x-bare; echo "peak=$?" )
 check "scope.sh: mem_available_gb reads the real meminfo fixture" '( source "$SC"; [[ $(mem_available_gb) == 9 && $(mem_available_gb "$HERE/fixtures/meminfo.txt") == 9 ]] && ! mem_available_gb /dev/null )'
@@ -143,11 +155,11 @@ mg=$( source "$SC"; note() { echo "note: $*"; }; MEM_MIN_AVAILABLE_GB=5 MEM_WAIT
   services_down() { echo "down: $*"; cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-mg.txt"; }; cp "$T/meminfo-2g.txt" "$T/meminfo-mg.txt"; MEM_WAIT_MAX=30m HARNESS_MEMINFO=$T/meminfo-mg.txt mem_gate; echo ===
   HARNESS_MEMINFO=$HERE/fixtures/meminfo.txt mem_gate; echo end )
 MGOUT='note: memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 2s
-down: memory
+down: memory wait
 note: memory still at 2 GB after 2s; starting the session anyway (its cap protects the box)
 ===
 note: memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 30m
-down: memory
+down: memory wait
 note: memory: 9 GB available after 0 s; starting the session
 ===
 end'
@@ -168,6 +180,13 @@ mkdir -p "$T/ro/scopes" && chmod 555 "$T/ro/scopes"
 sc_ro=$( export HARNESS_SCRATCH=$T/ro; source "$SC"; scope_run harness-x-ro "" 64M bash -c 'echo ran >> "$0"' "$T/sc-ro.out" 2>&1; echo "rc=$?" ); chmod 755 "$T/ro/scopes"
 check "scope.sh: a scratch dir it can't write runs the command once, bare" \
   '[[ $sc_ro == "scope_run: $T/ro/scopes is not writable; running bare"$'"'"'\nrc=0'"'"' && $(wc -l < "$T/sc-ro.out") == 1 ]]'
+# a unit name still loaded: the real systemd-run refuses it (fixtures/systemd-run-unit-exists.txt, exit 1), so the
+# command runs bare; stopped first, the same name starts again (L2-02: run_init stops the old svc scope before its init)
+sc_dup=$( export HARNESS_SCRATCH=$T/sc; source "$SC"; scope_run harness-x-dup "" 64M bash -c 'sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"'
+  scope_run harness-x-dup "" 64M bash -c 'echo "in=${STUB_SCOPE_UNIT:-none}"' 2>&1; echo "bare=$SCOPE_BARE"
+  scope_stop harness-x-dup; scope_run harness-x-dup "" 64M bash -c 'echo "in=${STUB_SCOPE_UNIT:-none}"'; echo "bare=$SCOPE_BARE" )
+check "scope.sh: a unit still loaded is refused as systemd refuses it; stopped first, it starts" \
+  '[[ $sc_dup == $'"'"'Failed to start transient scope unit: Unit harness-x-dup.scope was already loaded or has a fragment file.\nscope_run: systemd-run failed (exit 1); running bare\nin=none\nbare=systemd-run failed (exit 1)\nin=harness-x-dup\nbare='"'"' ]]'
 # The one real scope (spec Rules): harness-test-<suite pid>-oom, MemoryMax 64M, no MemoryHigh (it throttles instead of
 # killing), no swap, under an outer timeout; stopped whatever happens, and no harness-test-<pid>-* unit is left.
 if systemd-run --user --scope --quiet true > /dev/null 2>&1; then
@@ -613,7 +632,61 @@ check "a session killed at its memory cap is noted and spends the attempt (STUB_
 STUB_NO_SYSTEMD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" bare --spec SPEC.md --foreground > "$T/run-bare.out" 2>&1
 check "no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)" '[[ $(sd_count --unit=harness-bare) == 0 && $($F summary "$(list bare)") == "3/3 passing" ]] \
   && [[ $(hlog bare | grep -c "· no user systemd: sessions and suites run uncapped$") == 1 ]] && grep -q "  coding exit 0 · " "$HARNESS_STATE/proj/bare/run.log"'
+# ---- the services scope (L2-02): run_init stops harness-<run>-svc, then runs the init in it under timeout -k 10s ----
+sd_at() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { print NR; exit }' "$T/systemd.log" 2>/dev/null; }   # the index of the first stub call containing $1
+check "run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m" 'S=$(sd_at $'"'"'stop\nharness-demo-svc.scope\n'"'"'); R=$(sd_at $'"'"'--unit=harness-demo-svc\n'"'"')
+  C=$(sd_with $'"'"'--unit=harness-demo-svc\n'"'"'); [[ -n $S && -n $R ]] && (( S < R )) && [[ $(head -1 <<< "$C") == systemd-run ]] && grep -qxF MemoryMax=3G <<< "$C" && ! grep -q MemoryHigh <<< "$C" \
+  && grep -A6 -x timeout <<< "$C" | paste -sd" " | grep -q "^timeout -k 10s 10m bash -c echo init ok;"'
+check "no user systemd: the init runs bare, and the run's one uncapped note stays the only one" 'grep -qx "(init exit 0)" "$T/scratch/proj/bare/init.out" && [[ $(sd_count harness-bare-svc) == 0 ]] \
+  && ! hlog bare | grep -q "init ran uncapped" && [[ $(hlog bare | grep -c "uncapped") == 1 ]]'
 check "metrics.jsonl: mem_peak_mb is null when uncapped" 'jq -se "length >= 5 and all(has(\"mem_peak_mb\") and .mem_peak_mb == null)" "$T/wt/proj/bare/.harness/runs/bare/metrics.jsonl" > /dev/null'
+# ---- services_down (L2-03): the project's teardown, then the svc scope, then one note; on finish and in the EXIT trap ----
+sd_last() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { n = NR } END { print n + 0 }' "$T/systemd.log" 2>/dev/null; }   # the index of the last stub call containing $1
+check "finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)" '[[ -f $T/scratch/proj/demo/teardown-done.marker ]] \
+  && D=$(sd_at $'"'"'teardown\ndemo\ndone\n'"'"') && [[ -n $D ]] && (( D < $(sd_last $'"'"'stop\nharness-demo-svc.scope\n'"'"') )) && [[ $(grep -c "· services stopped (done)$" "$T/demo-hlog.md") == 1 ]] \
+  && [[ $(grep -c "services stopped" "$HARNESS_STATE/proj/demo/run.log") == 1 && $(sd_count $'"'"'teardown\ndemo\n'"'"') == 1 ]]'
+# a TERM to the driver mid-session: bash runs the EXIT trap at once and the session would live on, so the trap stops
+# the session's scope first (killing the slow stub claude), then the teardown and the svc scope
+rm -f "$T/slow-coding"
+STUB_SLOW_CODING=30 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" termed --spec SPEC.md --foreground > "$T/run-termed.out" 2>&1 & TP=$!
+t_mid=0; for _ in $(seq 300); do [[ -e $T/slow-coding ]] && { t_mid=1; break; }; sleep 0.1; done
+STUB_MEM_CURRENT=52428800 "$H" status termed > "$T/status-termed.out" 2>&1; TSR=$?   # the slow session's scope is live (L2-05)
+kill -TERM "$(cat "$HARNESS_STATE/proj/termed/driver.pid")"; wait "$TP"
+touch "$T/scope/harness-termed-s99".{alive,running}; TSL=$(sd_count list-units)   # a unit left behind: an ended run still lists none
+"$H" status termed > "$T/status-termed2.out" 2>&1; TSR2=$?; TSL2=$(sd_count list-units); rm -f "$T/scope/harness-termed-s99".*
+check "harness status lists a running run's units with MemoryCurrent; an ended run's none" '[[ $TSR == 0 && $TSR2 == 0 ]] && grep -q "^termed (proj) · running" "$T/status-termed.out" \
+  && grep -Eqx "    harness-termed-s[0-9]+ · MemoryCurrent 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
+  && grep -q "^termed (proj) · ended: driver exited" "$T/status-termed2.out" && ! grep -q MemoryCurrent "$T/status-termed2.out" && [[ $TSL2 == "$TSL" ]]'
+termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* ]] && echo "$p"; done; }
+check "the EXIT trap commits its services note: harness-log.md is clean after a TERM" '[[ -z $(git -C "$T/wt/proj/termed" status --porcelain -- .harness/runs/termed/harness-log.md) ]] \
+  && git -C "$T/wt/proj/termed" show HEAD:.harness/runs/termed/harness-log.md | grep -q "· services stopped (driver exited)$"'
+check "a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it" 'U=$(grep -x -- "--unit=harness-termed-s[0-9]*" "$T/systemd.log" | tail -1 | sed "s/^--unit=//")
+  D=$(sd_at $'"'"'teardown\ntermed\ndriver exited\n'"'"'); SS=$(sd_last "stop"$'"'"'\n'"'"'"$U.scope"$'"'"'\n'"'"'); [[ $t_mid == 1 && -n $U && -n $D && -f $T/scratch/proj/termed/teardown-driver-exited.marker ]] \
+  && (( SS > 0 && SS < D && D < $(sd_last $'"'"'stop\nharness-termed-svc.scope\n'"'"') )) && sleep 1 && [[ -z $(termed_left) ]] \
+  && grep -q " services stopped (driver exited)$" "$HARNESS_STATE/proj/termed/run.log" && grep -q "^driver exited unexpectedly" "$HARNESS_STATE/proj/termed/ended" && [[ ! -e $HARNESS_STATE/proj/termed/driver.pid ]]'
+# a TERM during an init (L2-06): the trap stops the init (the svc scope) before the teardown, or the init goes on
+# starting what the teardown just stopped; a TERM during finish's own teardown waits for it, never runs a second
+sd_before() { awk -v k="$1" -v n="$2" 'BEGIN { RS = "===\n" } NR < n && index($0, k) { c++ } END { print c + 0 }' "$T/systemd.log"; }   # calls containing $1 before index $2
+STUB_SLOW_INITCMD=31 STUB_PHONE_STOP=1 "$H" start "$T/proj" initterm --spec SPEC.md --foreground > "$T/run-initterm.out" 2>&1 & TP=$!
+for _ in $(seq 300); do [[ -e $T/scratch/proj/initterm/init-begin ]] && break; sleep 0.1; done
+kill -TERM "$(cat "$HARNESS_STATE/proj/initterm/driver.pid")"; wait "$TP"
+check "a TERM during an init stops the init's scope before the teardown runs" 'D=$(sd_at $'"'"'teardown\ninitterm\ndriver exited\n'"'"') \
+  && [[ -e $T/scratch/proj/initterm/init-begin && -n $D ]] && [[ $(sd_before $'"'"'stop\nharness-initterm-svc.scope\n'"'"' "$D") == 2 ]] \
+  && ! pgrep -fx "sleep 31" > /dev/null && [[ $(grep -c "services stopped" "$HARNESS_STATE/proj/initterm/run.log") == 1 ]]'
+STUB_SLOW_TEARDOWN=3 STUB_PHONE_STOP=1 "$H" start "$T/proj" tdterm --spec SPEC.md --foreground > "$T/run-tdterm.out" 2>&1 & TP=$!
+for _ in $(seq 300); do [[ -e $T/scratch/proj/tdterm/teardown-begin ]] && break; sleep 0.1; done
+kill -TERM "$(cat "$HARNESS_STATE/proj/tdterm/driver.pid")"; wait "$TP"
+check "a TERM during finish's teardown runs no second teardown: the trap waits for it, then stops the svc scope, one note" 'D=$(sd_at $'"'"'teardown\ntdterm\n'"'"') \
+  && [[ -e $T/scratch/proj/tdterm/teardown-begin && -n $D && $(sd_count $'"'"'teardown\ntdterm\n'"'"') == 1 ]] && (( D < $(sd_last $'"'"'stop\nharness-tdterm-svc.scope\n'"'"') )) \
+  && [[ $(grep -c "services stopped" "$HARNESS_STATE/proj/tdterm/run.log") == 1 ]]'
+# PAUSE mid-run (L2-04): A's first session touches PAUSE as `harness pause` would; the pause stops the services before
+# its poll, and the init after `harness resume` starts them again
+STUB_PAUSE=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" paused --spec SPEC.md --foreground > "$T/run-paused.out" 2>&1 & PP=$!
+p_seen=0; for _ in $(seq 600); do hlog paused | grep -q "· services stopped (paused)$" && { p_seen=1; break; }; sleep 0.1; done
+"$H" resume paused > /dev/null; wait "$PP"
+check "PAUSE stops the services before its poll, and the next init starts them again" 'D=$(sd_at $'"'"'teardown\npaused\npaused\n'"'"') \
+  && [[ $p_seen == 1 && -n $D && -f $T/scratch/proj/paused/teardown-paused.marker && $(hlog paused | grep -c "· services stopped (paused)$") == 1 ]] \
+  && (( $(sd_last $'"'"'--unit=harness-paused-svc\n'"'"') > D )) && grep -q "^paused (INBOX.md" <(cut -d" " -f3- "$HARNESS_STATE/proj/paused/run.log") && [[ $($F summary "$(list paused)") == "3/3 passing" ]]'
 # systemd refusing the scope after the probe passed (a MemoryMax it can't parse): each session runs bare, and says so
 { cat "$T/base-config.sh"; echo SESSION_MEMORY_MAX=bogus; } > "$T/user-config.sh"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" refused --spec SPEC.md --foreground > "$T/run-refused.out" 2>&1
@@ -628,6 +701,12 @@ cp "$T/base-config.sh" "$T/user-config.sh"
 check "memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)" 'S=$(grep -cE "^[0-9-]+ [0-9:]+   (init|coding|verify) exit " "$HARNESS_STATE/proj/lowmem/run.log") \
   && (( S >= 5 )) && [[ $(hlog lowmem | grep -c "· memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 2s$") == "$S" \
   && $(hlog lowmem | grep -c "· memory still at 2 GB after 2s; starting the session anyway (its cap protects the box)$") == "$S" && $($F summary "$(list lowmem)") == "3/3 passing" ]]'
+check "memory gate: the wait stops the services (services stopped (memory wait))" 'hlog lowmem | grep -q "· services stopped (memory wait)$"'
+# the memory wait stops the services (L2-03 made services_down real): every session before finish's teardown starts
+# with harness-<run>-svc up, verify's included (its gate came after its run_init: now `mem_gate || run_init`)
+svc_gaps() { awk -v r="$1" 'BEGIN { RS = "===\n" } index($0, "teardown\n" r "\ndone\n") { exit } index($0, "stop\nharness-" r "-svc.scope\n") { up = 0 }
+  index($0, "--unit=harness-" r "-svc\n") { up = 1 } $0 ~ "--unit=harness-" r "-s[0-9]+\n" { n++; if (!up) bad++ } END { print n + 0, bad + 0 }' "$T/systemd.log"; }
+check "memory gate: every session starts with the services up, a verify after its wait included" 'read -r n bad <<< "$(svc_gaps lowmem)"; (( n >= 5 && bad == 0 ))'
 # the gate comes before the feature is picked, not inside session(): a status: stop set during the wait is seen before
 # any coding session, no attempt is spent, and the prompt's clock comes after the wait (the L1 review's Important finding)
 cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-gate.txt"; { cat "$T/base-config.sh"; echo MEM_WAIT_MAX=60s; } > "$T/user-config.sh"
@@ -673,6 +752,29 @@ check "check.sh: a TERM stops the suite's scope with it" '[[ $ckt_rc == 143 && $
 check "gc removed the finished worktree"  '[[ ! -d $WT ]]'
 check "gc deleted the run branch"         '! git -C "$T/origin.git" rev-parse -q --verify harness/demo >/dev/null'
 check "gc kept the tags"                  'git -C "$T/origin.git" tag | grep -qx run/demo/M2'
+# gc's unit step (L2-05): units a SIGKILLed driver left. demo ended; killed's driver.pid is dead and it wrote no ended;
+# gclive and demo-x have a live driver (demo-x also shows demo's prefix can't claim it); oth is another project's
+# c.d (proj, ended) and c-d (other, live) share harness-c-d-: the live one keeps the unit. 999999999 is over any pid_max
+sleep 60 & GL1=$!; sleep 60 & GL2=$!; sleep 60 & GL3=$!; GLD=999999999
+for r in gclive:$GL1 demo-x:$GL2 killed:$GLD other/oth: c.d: other/c-d:$GL3; do d=$HARNESS_STATE/${r%%:*}; [[ $d == */other/* ]] || d=$HARNESS_STATE/proj/${r%%:*}
+  mkdir -p "$d"; cp "$HARNESS_STATE/proj/demo/meta.env" "$d/"; [[ -n ${r#*:} ]] && echo "${r#*:}" > "$d/driver.pid"; done
+echo done > "$HARNESS_STATE/other/oth/ended"; echo done > "$HARNESS_STATE/proj/c.d/ended"
+GCU="harness-demo-svc harness-demo-s99 harness-killed-svc harness-gclive-svc harness-demo-x-svc harness-oth-svc harness-nosuch-svc harness-c-d-svc"
+for u in $GCU; do touch "$T/scope/$u".{alive,running}; done
+gc_stops() { awk 'BEGIN { RS = "===\n" } /^systemctl\n--user\nstop\n/ { sub(/^systemctl\n--user\nstop\n/, ""); printf "%s", $0 }' "$T/systemd.log" 2>/dev/null | sort; }
+GS0=$(gc_stops); "$H" gc "$T/proj" --dry-run > "$T/gcu1.out" 2>&1; GS1=$(gc_stops)
+"$H" gc "$T/proj" > "$T/gcu2.out" 2>&1; GS2=$(comm -13 <(echo "$GS1") <(gc_stops) | paste -sd" ")
+GCL=$("$HARNESS_SYSTEMCTL" --user list-units 'harness-*' --plain --no-legend | cut -d" " -f1 | sort | paste -sd" ")
+check "harness gc stops the units of this project's runs with no live driver; --dry-run stops none" '[[ $GS1 == "$GS0" ]] \
+  && grep -qx "would: systemctl --user stop harness-demo-svc.scope (demo ended)" "$T/gcu1.out" && grep -qx "would: systemctl --user stop harness-demo-s99.scope (demo ended)" "$T/gcu1.out" \
+  && grep -qx "would: systemctl --user stop harness-killed-svc.scope (killed: driver gone)" "$T/gcu1.out" && [[ $(grep -c "^would: systemctl" "$T/gcu1.out") == 3 ]] \
+  && grep -qx "? harness-nosuch-svc.scope (no run of this project)" "$T/gcu1.out" && grep -qx "? harness-oth-svc.scope (no run of this project)" "$T/gcu1.out" \
+  && grep -qx "+ stopped harness-demo-svc.scope (demo ended)" "$T/gcu2.out" && grep -qx "+ stopped harness-demo-s99.scope (demo ended)" "$T/gcu2.out" \
+  && grep -qx "+ stopped harness-killed-svc.scope (killed: driver gone)" "$T/gcu2.out" && [[ $(grep -c "^+ stopped" "$T/gcu2.out") == 3 ]] \
+  && [[ $GS2 == "harness-demo-s99.scope harness-demo-svc.scope harness-killed-svc.scope" ]] \
+  && ! grep -q harness-c-d-svc "$T/gcu1.out" "$T/gcu2.out" && ( for u in harness-demo-x-svc harness-gclive-svc harness-nosuch-svc harness-oth-svc harness-c-d-svc; do [[ " $GCL " == *" $u.scope "* ]] || exit 1; done )'
+kill "$GL1" "$GL2" "$GL3" 2> /dev/null; wait "$GL1" "$GL2" "$GL3" 2> /dev/null
+rm -rf "$HARNESS_STATE"/proj/{gclive,demo-x,killed,c.d} "$HARNESS_STATE/other"; for u in $GCU; do rm -f "$T/scope/$u".*; done   # a live fake driver.pid counts against MAX_PARALLEL_RUNS
 
 # ---- run 2: Michael sets "status: stop" in INBOX.md from the phone (and only NOTIFY_CMD is configured) ----
 printf '%s\n' 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"
@@ -680,6 +782,7 @@ STUB_PHONE_STOP=1 "$H" start "$T/proj" stoppy --spec SPEC.md --foreground > "$T/
 cp "$T/base-config.sh" "$T/user-config.sh"
 check "NOTIFY_CMD-only: \$1 unchanged, fields as env" 'grep -q "^\[stoppy\] started: 0/3 passing$" "$T/notify-env.log" && grep -qx "HARNESS_NOTIFY_TITLE=harness" "$T/notify-env.log" && grep -qx "HARNESS_NOTIFY_PRIORITY=" "$T/notify-env.log" && [[ -s $T/curl.log ]] && ! grep -q "\[stoppy\]" "$T/curl.log"'
 check "phone stop honoured before any coding session" 'hlog stoppy | grep -q "stopped by Michael" && ! grep -q attempt "$T/scratch/proj/stoppy/sessions.log"'
+check "a stop from the phone stops the services through finish" 'hlog stoppy | grep -q "· services stopped (stopped by Michael)$" && [[ -f $T/scratch/proj/stoppy/teardown-stopped-by-Michael.marker ]]'
 check "second run got its own port"       '[[ $(cat "$HARNESS_STATE/proj/stoppy/port") != $(cat "$HARNESS_STATE/proj/demo/port") ]]'
 
 # ---- run 3: a verifier that always rejects; C is independent of M1 ----
@@ -710,9 +813,16 @@ STUB_LIMIT_MIDWAY=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T
 check "mid-session limit: attempt given back, work kept" 'hlog midway | grep -q "hit a limit" && [[ $(jq -r .A "$HARNESS_STATE/proj/midway/attempts.json") == 1 ]] && [[ -f $T/wt/proj/midway/half-A.txt ]]'
 
 # ---- run 7: a future window set by another run makes this one wait first ----
-echo $(( $(date +%s) + 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
+# an 11-minute window: over SVC_IDLE_STOP_MIN=10, so the services stop first; a 9-minute one keeps them (L2-04)
+echo $(( $(date +%s) + 660 )) > "$HARNESS_STATE/LIMIT_UNTIL"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" waiter --spec SPEC.md --foreground > "$T/run7.out" 2>&1
 check "waits for another run's limit window" 'hlog waiter | grep -q "usage-limit window (shared by all runs): waiting"'
+check "a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first" 'hlog waiter | grep -B1 "· usage-limit window (shared by all runs): waiting" | head -1 | grep -q "· services stopped (usage-limit wait)$" \
+  && [[ -f $T/scratch/proj/waiter/teardown-usage-limit-wait.marker ]]'
+echo $(( $(date +%s) + 540 )) > "$HARNESS_STATE/LIMIT_UNTIL"
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" waiter9 --spec SPEC.md --foreground > "$T/run7b.out" 2>&1
+check "a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services" 'hlog waiter9 | grep -q "usage-limit window (shared by all runs): waiting" && ! hlog waiter9 | grep -q "(usage-limit wait)" \
+  && hlog waiter9 | grep -q "· services stopped (done)$"'
 rm -f "$HARNESS_STATE/LIMIT_UNTIL"
 
 # ---- run 8: thin verify evidence → one more verify on the stronger model ----
@@ -911,6 +1021,9 @@ dproj() {   # <name> [<file> <content>]: a project with its own bare origin behi
     && git -C "$T/$1" config url."$T/$1-origin.git".insteadOf "git@github.com:test/$1.git" && git -C "$T/$1" remote add origin "git@github.com:test/$1.git" && git -C "$T/$1" push -q -u origin main
 }
 cp "$T/user-config.sh" "$T/user-config.bak"; cp "$T/base-config.sh" "$T/user-config.sh"   # NTFY_URL: the checks read curl.log
+# a teardown hook added mid-run (L2-06): services_down looks for .harness/teardown.sh when it runs, not at load_config
+dproj lt && STUB_ADD_TEARDOWN=1 STUB_PHONE_STOP=1 "$H" start "$T/lt" lt1 --spec SPEC.md --foreground > "$T/run-lt1.out" 2>&1
+check "a .harness/teardown.sh added after the run started is run at its stop points" '[[ -f $T/scratch/lt/lt1/teardown-late.marker ]] && hlog lt1 lt | grep -q "· services stopped (stopped by Michael)$"'
 dstart() { STUB_INIT_LIMIT=1 "$H" "${@:2}" --foreground > "$T/$1.out" 2>&1; rm -f "$HARNESS_STATE/LIMIT_UNTIL"; }   # <out> <harness args>: a run that ends at once (the initializer is refused)
 dproj vp vercel.json '{"framework":"nextjs"}' && dstart vp1 start "$T/vp" vp1 --spec SPEC.md && dstart vp1b continue vp1
 check "run start without the deploy guard: one note, one notification" '[[ $(hlog vp1 vp | grep -c "initializer refused") == 2 && $(hlog vp1 vp | grep -c "preview deploy per session") == 1 ]] \
@@ -933,6 +1046,18 @@ IB=$(awk '/^## Init output$/ { s = 1; next } s && /^```$/ { if (f) exit; f = 1; 
 check "init output is capped at 40 lines with the log path" '[[ -n $IB ]] && (( $(wc -l <<< "$IB") == 41 )) && [[ $(tail -1 <<< "$IB") == "full output: $T/scratch/ip/ip1/init.out" ]] \
   && cmp -s <(head -n 40 <<< "$IB") <(tail -n 40 "$T/scratch/ip/ip1/init.out") && grep -qx 100 <<< "$IB" && ! grep -qx 1 <<< "$IB"'
 check "a brief is pasted as written: its {{X}} isn't filled (E3 review F7)" 'grep -qx "keep {{RUN_ID}} as written" "$HARNESS_STATE/ip/ip1/prompt-initializer.md"'
+# an init that backgrounds a server (L2-02): the foreground returns at once, the server stays in harness-<run>-svc,
+# and the next run_init's stop of that scope is what ends it (a server the init lost would run on)
+BPCFG=$(cat <<'EOF'
+CHECK_CMD="true"
+INIT_CMD='date +%s > "$STUB_DIR/svcbg.t0"; sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"; echo $! >> "$STUB_DIR/svcbg.pids"; exit 0'
+EOF
+)
+rm -f "$T/svcbg.pids"; dproj bp .harness/config.sh "$BPCFG" && dstart bp1 start "$T/bp" bp1 --spec SPEC.md
+bp_dt=$(( $(stat -c %Y "$T/scratch/bp/bp1/init.out" 2> /dev/null || echo 999) - $(cat "$T/svcbg.t0" 2> /dev/null || echo 0) )); dstart bp1b continue bp1
+check "an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it" 'grep -qx "(init exit 0)" "$T/scratch/bp/bp1/init.out" && (( bp_dt <= 2 )) \
+  && [[ $(wc -l < "$T/svcbg.pids") == 2 ]] && gone "$(head -1 "$T/svcbg.pids")" && (( $(sd_count $'"'"'stop\nharness-bp1-svc.scope'"'"') >= 2 )) && [[ $(sd_count --unit=harness-bp1-svc) == 2 ]]'
+for p in $(cat "$T/svcbg.pids" 2> /dev/null); do kill "$p" 2> /dev/null; done
 mv "$T/user-config.bak" "$T/user-config.sh"
 
 # ---- debrief: the runner's other exits ----

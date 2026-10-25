@@ -102,7 +102,7 @@
         "The plan lists templates/project/teardown.sh's commented example (npx supabase stop; docker compose down) and the README paragraph telling projects to add their own",
         "bash tests/run.sh ends with every check passing (the fixture capture leaves no harness-test-* unit behind)"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L2-02", "milestone": "L2", "kind": "build", "model": "opus",
       "description": "run_init stops the run's old services scope, then runs INIT_CMD inside harness-<run>-svc under timeout -k 10s INIT_TIMEOUT with SVC_MEMORY_MAX, so what the init backgrounds stays in the scope.",
       "steps": [
@@ -113,7 +113,7 @@
         "journal/decisions/2026-10-25-services-scope.md exists (finding: portfolio_site's next dev; choice; rejected: killing the init's pid)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L2-03", "milestone": "L2", "kind": "build", "model": "opus",
       "description": "services_down runs the project's teardown hook, stops the services scope and notes it, on finish and in the driver's EXIT trap, so a crash or a kill of the driver still stops what the init started.",
       "steps": [
@@ -125,7 +125,7 @@
         "journal/decisions/2026-10-25-teardown-hook.md exists (finding: docker lives under dockerd; choice; rejected: parsing docker ps)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L2-04", "milestone": "L2", "kind": "build", "model": "opus",
       "description": "Services also stop on PAUSE, on STOP, before a usage-limit wait longer than SVC_IDLE_STOP_MIN minutes and before L1's memory wait, and the next run_init starts them again.",
       "steps": [
@@ -137,7 +137,7 @@
         "docs/architecture.md §5 (the life of a run) and §7 guards list every stop point; journal/decisions/2026-10-25-services-stop-points.md exists (default 10 minutes; rejected: stopping on every wait)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L2-05", "milestone": "L2", "kind": "build", "model": "opus",
       "description": "harness gc stops every harness-<run>-* unit of a run that has ended with no live driver (--dry-run prints would:), and harness status lists a live run's units with their MemoryCurrent.",
       "steps": [
@@ -147,7 +147,7 @@
         "docs/architecture.md §3 (harness gc, harness status) and §4 state list the orphan-unit step; README's gc row names it; journal/decisions/2026-10-25-gc-orphan-units.md exists (finding: SIGKILL has no trap; rejected: a systemd timer)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L2-06", "milestone": "L2", "kind": "review", "model": "opus",
       "description": "An Opus review of the L2 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, the EXIT trap and services_down proven idempotent, and the L2 docs complete.",
       "steps": [
@@ -157,7 +157,7 @@
         "Every L2 decision file reads finding · choice · rejected and cites the spec; bash -n and node --check pass on every file L2 touched",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
 
     { "id": "L3-01", "milestone": "L3", "kind": "plan", "model": "opus", "after": [],
       "description": "docs/plans/2026-10-25-L3-scratch-and-tmux.md fixes the scratch cleanup, HARNESS_CACHE, the tmpfiles template and the tmux reaper (H1a/b/c), including how the suite drives a real driver window on its private tmux server.",

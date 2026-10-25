@@ -9,6 +9,145 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 19:37 · verify L2 · passes
+
+Suite 289/289 green. All six L2 features hold: scope+timeout init, teardown hook and services_down on every stop point, gc orphan units, status MemoryCurrent, review fixes and docs checked against named tests.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L2-01 | 1 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green | yes |
+| L2-01 | 2 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green | yes |
+| L2-01 | 3 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green | yes |
+| L2-01 | 4 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green | yes |
+| L2-01 | 5 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green | yes |
+| L2-02 | 1 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists | yes |
+| L2-02 | 2 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists | yes |
+| L2-02 | 3 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists | yes |
+| L2-02 | 4 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists | yes |
+| L2-02 | 5 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists | yes |
+| L2-02 | 6 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists | yes |
+| L2-03 | 1 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file | yes |
+| L2-03 | 2 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file | yes |
+| L2-03 | 3 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file | yes |
+| L2-03 | 4 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file | yes |
+| L2-03 | 5 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file | yes |
+| L2-03 | 6 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file | yes |
+| L2-03 | 7 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file | yes |
+| L2-04 | 1 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file | yes |
+| L2-04 | 2 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file | yes |
+| L2-04 | 3 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file | yes |
+| L2-04 | 4 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file | yes |
+| L2-04 | 5 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file | yes |
+| L2-04 | 6 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file | yes |
+| L2-04 | 7 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file | yes |
+| L2-05 | 1 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file | yes |
+| L2-05 | 2 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file | yes |
+| L2-05 | 3 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file | yes |
+| L2-05 | 4 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file | yes |
+| L2-05 | 5 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file | yes |
+| L2-06 | 1 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok | yes |
+| L2-06 | 2 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok | yes |
+| L2-06 | 3 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok | yes |
+| L2-06 | 4 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok | yes |
+| L2-06 | 5 | read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files | review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok | yes |
+
+- *192902-verify-L2 · claude-sonnet-5-5*
+
+### 2026-10-25 19:28 · L2-06 · passes
+
+Opus review of the L2 diff (docs/plans/2026-10-25-L2-review.md: 2 Important, 8 Minor). Fixed: a TERM mid-init stops the init before the teardown; a TERM mid-teardown waits for it, no second; .harness/teardown.sh looked up at each stop point, not at load_config; the trap commits its note; template runnable by hand; docs. 4 new checks RED→GREEN.
+
+- **Files:** lib/driver.sh, lib/config.sh, tests/run.sh, tests/stub-claude.sh, templates/project/teardown.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-teardown-hook.md, docs/plans/2026-10-25-L2-review.md
+- **Verified:** lib/check.sh green twice (289/289); RED runs: 285/289 (the 4 new checks failing), the hook-lookup check re-proved alone 288/289 with HEAD's config.sh; bash -n on every touched shell file, node --check lib/*.mjs; template run by hand (My.Run → harness-my-run, unset id → message, exit 1)
+- **Tests:** 285 → 289
+- **Dead end:** STUB_SLOW_INIT as the init command's knob — stub-claude.sh already uses it to slow the initializer session; renamed STUB_SLOW_INITCMD
+- **Dead end:** sd_at (first stop) to prove a stop before the trap's teardown — run_init's own stop-first matched; the check counts svc stops before the hook (sd_before == 2)
+- **Discovery** (affects L4, run): Deferred L2 review Minors: two projects' runs of one id share harness-<id>-svc (refuse in cmd_start); SVC_UP is shell-only, so a continue segment with no init leaves a SIGKILLed segment's svc scope to gc ($STATE/svc-up sketch); without user systemd the note says services stopped while bare init children run on.
+- **Discovery** (affects L3, L4, L5): The suite project's INIT_CMD now takes STUB_SLOW_INITCMD=<s> (touches $HARNESS_SCRATCH/init-begin, sleeps) and its teardown.sh STUB_SLOW_TEARDOWN=<s> (touches teardown-begin); stub-claude STUB_ADD_TEARDOWN=1 makes the initializer write an executable .harness/teardown.sh. tests/run.sh has sd_before <key> <index>.
+- **Discovery** (affects L4, run): TEARDOWN_CMD defaults to empty now; services_down picks .harness/teardown.sh when executable at call time.
+- **Discovery** (affects run): The known 'queue holds an entry whose project has a live run' flake (busy3 sleep 3) failed once more in a KEEP=1 run under load.
+- *14-L2-06 · claude-opus-5-5*
+
+### 2026-10-25 18:21 · L2-05 · passes
+
+harness gc first stops the units of this project's runs with no live driver (+ stopped <u> (<run> ended|: driver gone), --dry-run would:, ? for no run of this project); harness status lists a running run's units with MemoryCurrent. scope_owns in lib/scope.sh is the shared match; stub systemctl answers MemoryCurrent and the described list-units shape.
+
+- **Files:** bin/harness, lib/scope.sh, tests/run.sh, tests/stub-systemctl.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-gc-orphan-units.md
+- **Verified:** tests/run.sh 282 → 285/285 (scope_owns unit check, gc unit check with a.b/a-b collision decoy, status check in the termed block); the three failed before the code; lib/check.sh green in 493 s; Opus review of the diff, findings 1-3 and 5 fixed
+- **Tests:** 282 → 285
+- **Dead end:** a waited `sleep 0` pid as the dead driver.pid — a reused pid would count as live (review): 999999999 is over any pid_max
+- **Discovery** (affects L4, L2-06): gc's unit step runs first in cmd_gc, before the fetch: a review found an offline fetch or a prunable worktree ends gc under set -e before a later step, and a worktree could be removed while a SIGKILLed run's session still ran in it. L4's per-worktree error handling should keep that order.
+- **Discovery** (affects L3, L2-06): scope_owns <run> <unit>.scope (lib/scope.sh) is the one unit→run match (roles s<n>, check-<pid>, svc); bin/harness now sources lib/scope.sh. L3's gc of tmux sessions can follow the same candidates-over-every-project pattern.
+- **Discovery** (affects L2-06): Not fixed (display only): two running runs whose ids reduce to one prefix (a.b, a-b) each list both runs' units in harness status.
+- **Discovery** (affects run): One full-suite run failed 'queue holds an entry whose project has a live run' (its busy3 driver is a `sleep 3`); the next two runs passed unchanged: a timing flake under load.
+- **Question for Michael:** D1 default (decisions/2026-10-25-gc-orphan-units): harness status calls list-units without a scope_available probe first (a failing list-units gives nothing; the probe would start a transient scope per status). Keep it?
+- **Proposed change:** L2-05 step 1: the unit step runs first in cmd_gc, not after the branch passes (review finding); its lines are gc's own, not act's; a run with no live driver qualifies with or without ended (plan §11).
+- *13-L2-05 · claude-opus-5-5*
+
+### 2026-10-25 17:36 · L2-04 · passes
+
+Services now also stop on pause (services_down paused, then commit+push), before a usage-limit wait over SVC_IDLE_STOP_MIN=10 min, and on the memory wait (renamed `memory wait`); STOP already went through finish. New key in config.sh/template/architecture §10; §5/§7, README and decisions/2026-10-25-services-stop-points updated.
+
+- **Files:** lib/driver.sh, lib/scope.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, tests/stub-claude.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-services-stop-points.md
+- **Verified:** Wrote 5 checks + the mg unit-check rename first: 4 failed (mg block, PAUSE, memory wait, usage-limit wait 11 min); stoppy and the 9-minute check passed already as the plan predicted (check-only). After the change bash tests/run.sh 282/282; lib/check.sh green in 492 s.
+- **Tests:** 277 → 282
+- **Discovery** (affects L2-05, L2-06): stub-claude.sh has STUB_PAUSE=<id>: that id's first coding session touches $HARNESS_STATE/*/<run>/PAUSE. Run `paused` in tests/run.sh drives it in the background and resumes with `harness resume paused` once hlog has `services stopped (paused)`.
+- **Discovery** (affects run): Run waiter's window is now +660 s (11 min) and waiter9 (+540 s) is new; the suite has two more full runs (about +20 s).
+- **Question for Michael:** D1 default: SVC_IDLE_STOP_MIN=10 (a usage-limit wait of more than 10 minutes stops the services; shorter keeps them). Keep 10?
+- *12-L2-04 · claude-opus-5-5*
+
+### 2026-10-25 17:08 · L2-03 · passes
+
+services_down runs .harness/teardown.sh (TEARDOWN_CMD) under timeout -k 10s 2m, stops harness-<run>-svc, notes once per started init; on finish and in the EXIT trap, which first ignores TERM/INT/HUP and stops the running session's scope. verify re-inits after a memory wait. Stubs kill a stopped scope's tree. Template, README, arch, decision. Tests 274 → 277.
+
+- **Files:** lib/driver.sh, lib/config.sh, templates/user/config.sh, templates/project/teardown.sh, tests/run.sh, tests/stub-systemd-run.sh, tests/stub-systemctl.sh, README.md, docs/architecture.md, journal/decisions/2026-10-25-teardown-hook.md
+- **Verified:** 3 new checks, each seen RED on a snapshot (finish teardown→stop→one note on demo; a TERM to run termed's driver mid-session: session scope stop < teardown < svc stop, no stub claude left, ended/driver.pid; lowmem: every session before finish starts with svc up). bash tests/run.sh 277/277; lib/check.sh green in 470 s; no harness-test-* unit left.
+- **Tests:** 274 → 277
+- **Discovery** (affects L2-04): verify() now does `mem_gate || run_init` (pulled forward from L2-04: with a real services_down the gate after verify's run_init stopped the services before the verify session). L2-04 only needs to rename mem_gate's `services_down memory` to `memory wait` and add its checks; the lowmem run notes `services stopped (memory)` until then.
+- **Discovery** (affects L2-04, L2-05, L2-06): The suite's project now has an executable .harness/teardown.sh writing $HARNESS_SCRATCH/teardown-<why-safe>.marker and a `teardown\n<run>\n<why>` record into systemd.log; helpers sd_last (last record index) and svc_gaps <run> (sessions started with svc down) are in tests/run.sh. Every run in proj now notes `services stopped (<finish reason>)`.
+- **Discovery** (affects L2-05): stub-systemd-run.sh runs its command in the background (<&0 keeps stdin) with the pid in <unit>.cmd; stub-systemctl stop TERMs that pid and its descendants (parents first) plus .pids. Run termed (TERMed mid-session, STUB_SLOW_CODING=30) is left ended in state with an uncommitted `services stopped (driver exited)` in its harness-log.md, which L2-05's status/gc checks can use.
+- **Discovery** (affects L2-06): Review findings left for L2-06: a TERM during run_init runs the teardown while the init may still be starting containers; a TERM during finish's own teardown runs a second teardown concurrently; TEARDOWN_CMD is picked at load_config, so a teardown.sh added mid-run is seen only after a config reload; the trap's note stays uncommitted after a kill.
+- **Proposed change:** L2-03 step 3 names one teardown.marker; the plan's hook writes one per why (teardown-done.marker here) and orders teardown and stop in systemd.log rather than by mtime (plan §11).
+- **Proposed change:** L2-04 step 1's verify `mem_gate || run_init` is done in L2-03.
+- *11-L2-03 · claude-opus-5-5*
+
+### 2026-10-25 16:30 · L2-02 · passes
+
+run_init now stops harness-<run>-svc, then runs INIT_CMD in it (MemoryMax=SVC_MEMORY_MAX 3G, timeout -k 10s INIT_TIMEOUT 10m, stdin /dev/null); a refused unit notes `init ran uncapped`. Stub systemd-run refuses a still-loaded unit like real systemd. 4 checks (3 seen RED), decision file, arch/README/config docs. Tests 270 → 274.
+
+- **Files:** lib/driver.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, tests/stub-systemd-run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-services-scope.md
+- **Verified:** RED on a git copy with the old driver: the dup-unit, the stop-then-scope order and the backgrounded-init checks failed (bare check passed, as a regression guard). GREEN: lib/check.sh green in 473 s, 274/274; no harness-test-* unit or sleep 300 left. Opus review: 0 Critical/Important, 3 Minor (2 fixed).
+- **Tests:** 270 → 274
+- **Dead end:** running the RED suite on a tar copy of the tree without git — the eval checks need a git repo; git init + commit in the copy works
+- **Discovery** (affects L2-03, L2-04, L2-05): stub-systemd-run.sh now refuses a unit whose .alive is set and that is .running or holds a live pid (fixtures/systemd-run-unit-exists.txt, exit 1, command not run). Any new code that reuses a unit name must scope_stop it first.
+- **Discovery** (affects L2-03): run_init sets SVC_UP=1 before the start (plan §1); services_down (L2-03) can key on it. The bp1 check (tests/run.sh ~960) counts `stop harness-bp1-svc.scope` >= 2, so finish's stop in L2-03 keeps it green.
+- **Discovery** (affects L2-06): GNU timeout (no --foreground) kills its whole process group on expiry, so an init that times out takes the servers it already backgrounded with it; docs say so. Plan's `timeout -k 10s 10m` kept as the step names it.
+- **Discovery** (affects L2-05, L2-06): Review Minor not fixed: run ids are unique per project only, and scope_unit maps . to -, so two projects' runs with the same id share harness-<id>-svc and run_init's stop-first would kill the other's services (was: refused, bare). gc's unit match (L2-05) has the same ambiguity; consider the project in the unit name or refusing a duplicate id.
+- **Question for Michael:** D *default* (decisions/2026-10-25-services-scope): the init's stdin is now /dev/null instead of the tmux pane, so an interactive init prompt fails fast instead of waiting for you in the window. OK?
+- *10-L2-02 · claude-opus-5-5*
+
+### 2026-10-25 16:02 · L2-01 · passes
+
+Wrote docs/plans/2026-10-25-L2-run-services.md: svc scope in run_init (stop first), services_down/SVC_UP, the trap (session scope too), six stop points, suite observation per stop point, gc's unit match rule and status lines. Captured 4 real fixtures. An Opus review found 1 Critical and 4 Important plan bugs; all fixed in the plan. Tests 270 → 270.
+
+- **Files:** docs/plans/2026-10-25-L2-run-services.md, tests/fixtures/systemctl-show-current.txt, tests/fixtures/systemctl-show-current-gone.txt, tests/fixtures/systemctl-list-units-described.txt, tests/fixtures/systemd-run-unit-exists.txt
+- **Verified:** check.sh: green in 454 s, 270/270; fixtures captured from real 64M harness-test-<pid>-cur/-dup scopes, each stopped; list-units 'harness-test-*' printed nothing afterwards; bash TERM probe: EXIT trap ran in 13 ms, child lived on
+- **Tests:** 270 → 270
+- **Dead end:** stub-systemd-run recording the command pid in <unit>.pids — pids count in the stub's TasksCurrent, so every clean session would 'leave 1 process'; plan uses <unit>.cmd plus a tree kill
+- **Dead end:** INIT_CMD for check 6.9 in the user config — the project's .harness/config.sh is sourced after it and wins (lib/config.sh:31); use a dproj project
+- **Discovery** (affects L2-03): Bash runs the EXIT trap at once on SIGTERM while a foreground child runs, and the child lives on: a TERM to the driver mid-session leaves claude running in harness-<run>-s<n>. Plan §4: the trap stops S_UNIT first, then services_down.
+- **Discovery** (affects L2-05): A SIGKILLed driver leaves no `ended` (the driver removes it at start; only finish and the trap write it), so gc stops units of runs with no live driver.pid, ended or not (plan §7.1).
+- **Discovery** (affects L2-02): systemd-run with a unit name still loaded exits 1: 'Failed to start transient scope unit: Unit <u>.scope was already loaded or has a fragment file.' (fixtures/systemd-run-unit-exists.txt). run_init must stop the old svc scope first.
+- **Discovery** (affects L2-03, L2-04, L2-05): verify() runs run_init before its mem_gate, so a memory wait leaves the verify without services: L2-04 makes it `mem_gate || run_init`. bin/harness is set -euo pipefail: TEARDOWN_CMD's default line and cmd_status's systemctl calls must always succeed (plan §2, §7.2).
+- **Question for Michael:** D2 default: the driver's EXIT trap also stops the running session's scope, not only the services. OK?
+- **Question for Michael:** gc stops a run's units when its driver is dead even without `ended` (a SIGKILL writes none), not only for ended runs as the spec says. OK?
+- **Proposed change:** L2-03 step 3: one marker per why (teardown-done.marker), and the order is read from systemd.log (the teardown logs a record there), not from the marker's mtime
+- **Proposed change:** L2-03 step 4: the TERM goes to driver.pid (--foreground runs the driver as a child of bin/harness); the trap also stops the session's scope
+- **Proposed change:** L2-04 step 2: the stub sets PAUSE ($STATE/PAUSE) and the suite resumes with harness resume (no session runs during a pause); the pause branch commits its note
+- **Proposed change:** L2-04: verify() needs `mem_gate || run_init`
+- **Proposed change:** L2-05 step 1: units qualify with no live driver.pid, `ended` or not; gc prints its own `+ stopped <unit> (<run> ended|: driver gone)` lines rather than act's raw argv
+- *09-L2-01 · claude-opus-5-5*
+
 ### 2026-10-25 15:34 · verify L1 · passes
 
 All 8 L1 features hold: suite re-run 270/270, artifacts, stubs, fixtures, docs and decision files checked against each step; no leftover harness-test units.
@@ -163,48 +302,7 @@ lib/scope.sh (scope_available/unit/bytes/run/stop/peak/left/capped; peak read by
 - **Proposed change:** L1-02 step 3: the logged argv also carries -p OOMPolicy=continue and the wrapper (bash -c <wrap> _ <unit> <dir> <systemctl>) before the command; the check compares the first 16 lines exactly and the command's last 3.
 - *02-L1-02 · claude-opus-5-5*
 
-### 2026-10-25 12:23 · L1-01 · passes
+## Older entries (in full in progress-archive.md)
 
-Wrote docs/plans/2026-10-25-L1-capped-sessions.md (scope.sh API, unit names, in-scope wrapper and timeout placement, stub contract, config keys, exact notes, 24 named checks) and captured 8 real fixtures (systemctl show/list-units/stop, no-bus, meminfo). Probes found three things the spec missed: an emptied scope vanishes, OOMPolicy=stop kills the wrapper, MemoryHigh near MemoryMax stalls.
-
-- **Files:** docs/plans/2026-10-25-L1-capped-sessions.md, tests/fixtures/systemctl-show-scope.txt, tests/fixtures/systemctl-show-scope-clean.txt, tests/fixtures/systemctl-show-scope-oom.txt, tests/fixtures/systemctl-show-gone.txt, tests/fixtures/systemctl-list-units.txt, tests/fixtures/systemctl-stop-missing.txt, tests/fixtures/systemd-no-bus.txt, tests/fixtures/meminfo.txt
-- **Verified:** check.sh full run: 236/236 green in 376 s (tests/run.sh untouched). Real probes on harness-test-<pid>-* scopes (64M), each stopped; `systemctl --user list-units 'harness-*' --plain --no-legend` prints nothing afterwards. claude --help (2.1.310) has both MCP flags.
-- **Tests:** 236 → 236
-- **Dead end:** a real scope with MemoryHigh=48M MemoryMax=64M MemorySwapMax=0 around a 256 MB node allocation — it stalled for over 2 minutes under memory.high throttling (high events 1821, oom_kill 0) and had to be stopped by hand; MemoryMax alone kills it with 137 in ~80 ms
-- **Dead end:** reading MemoryPeak with systemctl show after the command returns — a --collect scope with no processes left is gone at once: show prints MemoryPeak=[not set]; the plan reads it from a wrapper inside the scope
-- **Dead end:** the in-scope wrapper with systemd's default OOMPolicy=stop — an OOM kill stops the whole scope, the wrapper dies with 143 and records nothing; -p OOMPolicy=continue keeps it and passes 137 on
-- **Discovery** (affects L1-02, L1-03, L1-04): scope_run must pass -p OOMPolicy=continue and run the command under an in-scope wrapper that writes `systemctl --user show -p MemoryPeak,ControlGroup,TasksCurrent` to <scratch>/scopes/<unit>.show before exiting; leftovers = TasksCurrent - 2 (the wrapper's bash and its systemctl). Plan §2.
-- **Discovery** (affects L1-02): The L1-02 real-scope check must not set MemoryHigh (it stalls instead of killing) and needs SESSION_SWAP_MAX=0 (with 1G swap a 256 MB allocation survives) and an outer timeout 30s. Plan §10, §13.
-- **Discovery** (affects L1-03, L1-05): timeout -k 30s goes inside the scope, around claude or the suite: outside it would signal the wrapper's bash and leave claude alive. GNU timeout exits 137 (not 124) when -k had to KILL, so check.sh calls 137 after >= CHECK_TIMEOUT a timeout, not the cap.
-- **Discovery** (affects L1-03): metrics.mjs environmental() treats an exit 137 with no result under 120 s as environmental (attempt given back); L1-03 must return null for 137 like 124 so a cap kill spends the attempt.
-- **Discovery** (affects L1-02, L1-06): tests/run.sh must export HARNESS_MEMINFO to the real fixture (9 GB) and HARNESS_MEM_POLL=1 globally, or the box's real memory could gate every suite session for 30 min; and unset HARNESS_SCOPE_PREFIX inherited from the outer session.
-- **Discovery** (affects L1-02, L1-03, L2): systemctl --user stop of a unit already gone exits 5 ('Unit … not loaded.'); scope_stop treats 5 as done, and the stub mirrors it (exit 0 only for a live unit).
-- **Question for Michael:** D5 default: the deepEqual line goes in prompts/parts/rules.md as the spec says, but that part renders only when a project has CLAUDE.md. Move it to prompts/coding.md §2 next to Test-driven instead?
-- **Question for Michael:** D6 default: suites get no MemoryHigh (only CHECK_MEMORY_MAX=3G) so a runaway test dies at once; sessions keep MemoryHigh=5G under MemoryMax=6G, which throttles (can stall up to SESSION_TIMEOUT) before killing. Keep the session gap?
-- **Proposed change:** L1-02 step 6: drop MemoryHigh=48M from the real-scope check; run it with SESSION_SWAP_MAX=0 under timeout 30s (plan §10, §13)
-- **Proposed change:** L1-02 step 3: -p OOMPolicy=continue and the wrapper (bash -c <wrap> _ <unit> <dir> <systemctl>) sit between -p MemorySwapMax and the command; check parts, not adjacency
-- **Proposed change:** L1-03 step 5 needs environmental() in lib/metrics.mjs to return null for exit 137
-- **Proposed change:** L1-04 step 3: report() needs metrics.jsonl beside summary.json as its second input
-- **Proposed change:** L1-01 step 2 says stub-systemctl exits 0 for stop; the plan's stub exits 5 for a unit already gone, as the real command does
-- *01-L1-01 · claude-opus-5-5*
-
-### 2026-10-25 12:05 · init · passes
-
-25 features: L1 8 (plan, scope.sh, scoped sessions, peaks, capped suites, memory gate, strict MCP + prompt line, review), L2 6 (plan, svc scope, teardown + trap, stop points, gc units + status, review), L3 5 (plan, scratch, tmux window, reaper, review), L4 5 (all-merged, removal, --deps, runner gc, review), L5 1 (config reload, optional). L2 after L1; L3, L4, L5 independent.
-
-- **Discovery** (affects run): Real-command shapes to copy into fixtures (captured 2026-10-25 on this box, systemd 255): `systemctl --user show -p MemoryPeak,ControlGroup harness-test-<pid>-probe.scope` printed `ControlGroup=/user.slice/user-1000.slice/user@1000.service/app.slice/harness-test-<pid>-probe.scope` then `MemoryPeak=262144`: systemd prints properties in its own order, not the asked order, so parse by key, never by line number. `systemctl --user list-units 'harness-*' --plain --no-legend` prints nothing when none exist. The probe `systemd-run --user --scope --collect --quiet --unit=harness-test-<pid>-probe -p MemoryMax=64M true` exits 0 here.
-- **Discovery** (affects L1-07, L1-01): `claude --help` (installed CLI, 2026-10-25) has both flags: `--mcp-config <configs...> Load MCP servers from JSON files or ...` and `--strict-mcp-config Only use MCP servers from --mcp-config, ...`. Quote the real lines in the L1-07 decision file.
-- **Discovery** (affects run): bin/harness passes HARNESS_* overrides to the tmux-started driver window from an explicit list (bin/harness, cmd_start, the `for v in HARNESS_CLAUDE HARNESS_GH ...` loop). Every new override the suite relies on (HARNESS_SYSTEMD_RUN, HARNESS_SYSTEMCTL, HARNESS_MEMINFO, HARNESS_MEM_POLL) must be added there, or a tmux-started run silently uses the real commands.
-- **Discovery** (affects L3): The supervisor window runs bare `claude` (bin/harness, cmd_start, `tmux new-window ... -n supervisor`), not $HARNESS_CLAUDE. An L3 check that needs a supervisor window on the private tmux server must put a `claude` shim on PATH pointing at tests/stub-claude.sh (the stub's interactive mode already handles no `-p`). Every existing suite run uses --foreground, so no test starts a tmux session for a run yet.
-- **Discovery** (affects L2): lib/driver.sh: the one EXIT trap (near `echo $$ > "$STATE/driver.pid"`) writes `ended` and removes driver.pid; finish() ends with `exit 0`, so the trap runs after finish too: services_down must be idempotent (finish's call and the trap's call must give one `services stopped` note). `note` writes harness-log.md (committed), `log` only run.log.
-- **Discovery** (affects L1-05, L3-02): lib/check.sh is called both by the driver (run_init, green) and by sessions ({{CHECK}} in prompts); it reads only HARNESS_* env vars (HARNESS_CHECK_CMD, HARNESS_SCRATCH, HARNESS_CHECK_CACHE) exported by prompt_env in lib/prompt.sh. New inputs for it (scope prefix, cap, timeout) go through prompt_env the same way.
-- **Discovery** (affects run): tests/run.sh: `check "<name>" '<bash expr>'` evals its second argument; stubs log calls to $STUB_DIR (= $T) files with `===` separators (see curl_with/curl_last helpers for the parsing pattern); the suite already runs on a private tmux server (TMUX_TMPDIR=$T/tmux, HARNESS_DESK_SESSION=h-desk-test-$$) and kills it in its EXIT trap. 235 checks today; the full suite takes about 6 minutes here. Run a single new check while iterating by copying its lines into a scratch script, not by editing the suite's flow.
-- **Discovery** (affects L2-05, L3-04, L4): cmd_gc in bin/harness already has `act` (dry-run prints `would: ...`, else `+ ...` and runs it), `running` (live driver or queued continuation) and `desk_open` helpers: reuse them for the unit stop (L2-05), the tmux reap (L3-04) and --deps (L4-03). The existing gc test (run 1, `harness gc proj` after demo) is the place new gc checks follow.
-- **Discovery** (affects run): Config keys: defaults live in harness_config in lib/config.sh (one assignment block), the user's commented copy in templates/user/config.sh, and docs/architecture.md §10 lists every key with its default. Add every new key in all three places in the feature that introduces it.
-- **Discovery** (affects L3-04, L4-04, L5-01): lib/queue.sh's exit path (after the while loop: `started=$(grep -lsx -- "$RID" "$STATE_ROOT"/*/*/runners | wc -l)`) is where L3-04's reap and L4-04's gc go, before `setsid -f "$H" debrief`. The runner's whole body is one `{ ... }` block parsed before it runs, because lib/sync.sh may rewrite the file underneath; keep new code inside that block.
-- **Discovery** (affects L4-01): git 2.43 here: `git for-each-ref 'refs/heads/*'` lists only branches without a `/`; the trailing-slash prefix `refs/heads/` lists all. The suite's fake origin is $T/origin.git (bare), reached through an insteadOf rewrite of git@github.com:test/proj.git.
-- **Discovery** (affects L1-02, L1-06, L2-01): Never start a real scope in the suite other than harness-test-<pid>-* with MemoryMax 64M or less, stopped in the check's own cleanup; the memory-gate fixture is a real /proc/meminfo copy with only its MemAvailable line rewritten for the low case (say so in the decision file).
-- **Question for Michael:** L5 (runner config reload) is the last feature and optional per the brief; it is dropped by not being reached. Say in INBOX.md if it should be skipped outright.
-- **Question for Michael:** HARNESS_CACHE defaults to ${XDG_CACHE_HOME:-~/.cache}/harness/<project>, kept across runs and boots; the spec's ~/.cache/harness/<project> is the same with XDG_CACHE_HOME unset. Change it in config if another place is wanted.
-- **Question for Michael:** The memory-gate fixture is a copy of this box's /proc/meminfo with only MemAvailable edited to 2 GB for the low case (the box can't be made low during the suite); the unedited copy covers the high case. Say if a different fixture is wanted.
-- *00-init · claude-fable-5-1*
+- 2026-10-25 12:23 · L1-01 · passes · Wrote docs/plans/2026-10-25-L1-capped-sessions.md (scope.sh API, unit names, in-scope wrapper and ti… ([in full](progress-archive.md))
+- 2026-10-25 12:05 · init · passes · 25 features: L1 8 (plan, scope.sh, scoped sessions, peaks, capped suites, memory gate, strict MCP + … ([in full](progress-archive.md))

@@ -16,3 +16,19 @@
 - 2026-10-25 15:06 · context.md for L1-08: 6241 bytes
 - 2026-10-25 15:25 · L1-08 · claude-opus-5-5 · passes=true · 19 min · 8/25 passing
 - 2026-10-25 15:25 · context.md for L1: 8033 bytes, 25 items left out
+- 2026-10-25 15:34 · L1 verified and tagged run/agent-harness-2026-10-25-lifecycle/L1
+- 2026-10-25 15:34 · L1 merged into main · https://github.com/mh550/agent-harness/pull/19
+- 2026-10-25 15:34 · context.md for L2-01: 7690 bytes, 7 items left out
+- 2026-10-25 16:02 · L2-01 · claude-opus-5-5 · passes=true · 28 min · 9/25 passing
+- 2026-10-25 16:02 · context.md for L2-02: 7775 bytes
+- 2026-10-25 16:30 · L2-02 · claude-opus-5-5 · passes=true · 28 min · 10/25 passing
+- 2026-10-25 16:30 · context.md for L2-03: 7826 bytes, 2 items left out
+- 2026-10-25 17:08 · L2-03 · claude-opus-5-5 · passes=true · 37 min · 11/25 passing
+- 2026-10-25 17:08 · context.md for L2-04: 7538 bytes, 3 items left out
+- 2026-10-25 17:36 · L2-04 · claude-opus-5-5 · passes=true · 28 min · 12/25 passing
+- 2026-10-25 17:37 · context.md for L2-05: 7821 bytes, 6 items left out
+- 2026-10-25 18:21 · L2-05 · claude-opus-5-5 · passes=true · 44 min · 13/25 passing
+- 2026-10-25 18:22 · context.md for L2-06: 7845 bytes, 6 items left out
+- 2026-10-25 19:28 · L2-06 · claude-opus-5-5 · passes=true · 66 min · 14/25 passing
+- 2026-10-25 19:29 · merged main into harness/agent-harness-2026-10-25-lifecycle
+- 2026-10-25 19:29 · context.md for L2: 8063 bytes, 29 items left out

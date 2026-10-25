@@ -42,11 +42,11 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 | `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue |
 | `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end |
 | `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
-| `harness status` · `report` · `trends [--by version]` · `attach` | look (`trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
+| `harness status` · `report` · `trends [--by version]` · `attach` | look (`status`: under a running run, each of its systemd units with its `MemoryCurrent`; `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
 | `harness eval run` · `compare` · `probes` | replay a fixed task set under a harness version and compare two results (see [Evals](#evals); costs money) |
-| `harness init` · `gc` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs |
+| `harness init` · `gc [--dry-run]` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs and stop the systemd units a killed driver left (`harness-<run>-*` of runs with no live driver) |
 
 `harness continue` merges `main` into the run branch before any session, so a resumed run never works on a stale base.
 
@@ -58,11 +58,26 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 | `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only | recommended |
 | `.mcp.json` | the MCP servers runs may use. Sessions run with `--strict-mcp-config`, so a committed `.mcp.json` (passed as `--mcp-config <worktree>/.mcp.json`) is what run worktrees load; without one they get none, whatever your user config holds | no |
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
+| `.harness/teardown.sh` (executable) | what stopping the run's services scope can't reach, e.g. `npx supabase stop` or `docker compose down` (containers live under `dockerd`): see below | no |
 
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
-its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`), smoke, init, port, models, limits
+its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`), smoke, init (run in the run's
+services scope `harness-<run>-svc`, capped at 3G, under a 10m timeout; what it leaves running when it returns stays in the
+scope until the run's services stop (below) or the next init stops it: `SVC_MEMORY_MAX`, `INIT_TIMEOUT`), port, models, limits
 (a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
 `MEM_WAIT_MAX`). Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
+
+**Teardown.** When a run ends (a `status: stop` included), when its driver is killed (a TERM, or an error that ends
+it), when it pauses, before a usage-limit wait of more than `SVC_IDLE_STOP_MIN` minutes (10) and before a memory wait,
+the harness stops the run's services (the next session's init starts them again): it runs the project's `.harness/teardown.sh` if that file is executable then (or `TEARDOWN_CMD`), in the
+worktree under `timeout 2m` (KILL 10 s later) with `HARNESS_PORT`, `HARNESS_SCRATCH`, `HARNESS_RUN_ID` and `HARNESS_TEARDOWN_WHY` set,
+then stops `harness-<run>-svc`, and notes `services stopped (<why>)` in `harness-log.md`. The scope stop alone takes
+everything the init started itself; a project whose init starts containers (Supabase, `docker compose`) adds its own
+hook to stop them (template: `templates/project/teardown.sh`). It runs only when the segment ran an init, its output
+goes to `teardown.out` in the scratch directory, and a failing hook is noted, never fatal. A TERM during an init stops
+the init first; a TERM during a teardown waits for it rather than starting a second. A SIGKILLed driver runs no
+hook: `harness gc <project>` stops the units it left (run the teardown by hand for its containers:
+`HARNESS_RUN_ID=<run> .harness/teardown.sh` in the worktree).
 
 ## What a run is
 

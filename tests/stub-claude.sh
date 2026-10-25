@@ -53,6 +53,7 @@ case $first in
   { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"]$after, "passes": false } ] }
 JSON
     entry init 1 '{feature: "init", kind: "init", outcome: "passes", summary: "3 features: M1 2, M2 1", header: "# progress"}'
+    [[ ${STUB_ADD_TEARDOWN:-} ]] && printf '#!/usr/bin/env bash\ntouch "$HARNESS_SCRATCH/teardown-late.marker"\n' > .harness/teardown.sh && chmod +x .harness/teardown.sh   # a hook added mid-run
     git add -A && git commit -qm "HARNESS: feature list" && git push -q -u origin "$HARNESS_BRANCH"
     if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop
       tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "$HARNESS_BRANCH"
@@ -73,6 +74,9 @@ JSON
     fi
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
     echo "$id attempt $n" >> "$HARNESS_SCRATCH/sessions.log"
+    if [[ ${STUB_PAUSE:-} == "$id" && $n == 1 ]]; then   # `harness pause` mid-session: the driver pauses after it
+      st=$(compgen -G "$HARNESS_STATE/*/$HARNESS_RUN_ID") && touch "$st/PAUSE"
+    fi
     if [[ ${STUB_OOM:-} == "$id" && $n == 1 ]]; then   # killed at its memory cap: the stream cut off before its result, exit 137
       [[ -n ${STUB_SCOPE_UNIT:-} ]] && touch "$STUB_DIR/scope/$STUB_SCOPE_UNIT.oom"   # the stub systemctl then reports the cap as its peak
       jq -c 'select(.type != "result")' "$HERE/fixtures/usage-tokens.jsonl"; exit 137

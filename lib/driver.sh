@@ -54,7 +54,25 @@ rm -f "$STATE"/waited-*   # a restart inside a usage-limit window waits for it a
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
 note() { log "$*"; echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; }   # phone-readable, committed
-declare -F services_down > /dev/null || services_down() { :; }   # <why>: stops the run's services (L2); mem_gate calls it
+# <why>: the project's teardown, then the services scope, then one note (decisions/2026-10-25-teardown-hook). Only after
+# an init started something (SVC_UP): finish's call and the EXIT trap's after it give one note, and a segment that never
+# ran an init is silent. SVC_UP clears after the stop, so a TERM during a teardown still stops the scope; the hook runs
+# in the background (SVC_TD) so the trap, which bash runs at once, waits for it instead of starting a second. A TERM
+# during an init (SVC_INIT) stops the init first, or it would start what the hook just stopped (L2-06 review).
+services_down() {
+  (( ${SVC_UP:-0} )) || return 0
+  local rc=0 unit cmd=${TEARDOWN_CMD:-}; unit=$(scope_unit "$RUN_ID" svc)
+  [[ -n $cmd || ! -x .harness/teardown.sh ]] || cmd=.harness/teardown.sh   # looked up now: a hook added mid-run counts
+  (( ${SVC_INIT:-0} )) && scope_stop "$unit"
+  if [[ -n ${SVC_TD:-} ]]; then wait "$SVC_TD"; rc=$?
+  elif [[ -n $cmd ]]; then
+    HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH HARNESS_TEARDOWN_WHY=$1 timeout -k 10s 2m bash -c "$cmd" < /dev/null >> "$SCRATCH/teardown.out" 2>&1 &
+    SVC_TD=$!; wait "$SVC_TD"; rc=$?
+  fi
+  scope_stop "$unit"; SVC_UP=0 SVC_TD=""
+  if (( rc )); then note "services stopped ($1; teardown exit $rc, see $SCRATCH/teardown.out)"
+  else note "services stopped ($1)"; fi
+}
 # shellcheck source=lib/notify.sh
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID   # notify "<message>" [title=… body=… click=… …]: "[<run>] <message>"
 # shellcheck source=lib/deploy.sh
@@ -83,7 +101,10 @@ restrict() {   # base record|nothing who
 # `harness status` reads these: alive while driver.pid names a live process; why it ended in "ended".
 echo $$ > "$STATE/driver.pid"; rm -f "$STATE/ended"
 END_REASON="driver exited unexpectedly (see run.log)"
-trap 'echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
+# A TERM runs this at once while the session goes on: its scope stops first, so claude can't work on unread meanwhile.
+# It may now take minutes (the teardown): a second TERM/HUP (tmux closing) must not cut it short. Its note is committed
+# (that file only, not pushed): a dirty worktree would keep gc from removing it
+trap 'trap "" TERM INT HUP; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; git commit -q -m "HARNESS: driver exited" -- "$RUN_DIR/harness-log.md" > /dev/null 2>&1; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
 
 # Pull edits made on GitHub (INBOX.md from the phone), push local commits. Never rewrites history.
 sync() {
@@ -153,6 +174,7 @@ limit_wait() {
   (( upto > now )) && [[ ! -f $STATE/waited-$upto ]] || return 0
   w=$(( upto - now )); (( w > DEADLINE - now )) && w=$(( DEADLINE - now )); (( w > 0 )) || return 0
   touch "$STATE/waited-$upto"
+  (( w > SVC_IDLE_STOP_MIN * 60 )) && services_down "usage-limit wait"   # a short wait keeps them (decisions/2026-10-25-services-stop-points)
   note "usage-limit window (shared by all runs): waiting until $(date -d "@$upto" '+%H:%M') ($(( w / 60 )) min)"
   commit_all "HARNESS: waiting for the usage limit"; sync
   sleep "${HARNESS_LIMIT_SLEEP:-$w}"
@@ -188,12 +210,13 @@ session() {
   # s<n> is per run, never per segment: a crashed segment's scope may still hold its name
   seq=$(( $(cat "$STATE/scope-seq" 2> /dev/null || echo 0) + 1 )); echo "$seq" > "$STATE/scope-seq"; unit=$(scope_unit "$RUN_ID" "s$seq")
   # timeout inside the scope: outside it would signal the wrapper and leave claude running; -k: claude ignoring TERM
+  S_UNIT=$unit   # the EXIT trap stops it when the driver dies mid-session
   scope_run "$unit" "$SESSION_MEMORY_HIGH" "$SESSION_MEMORY_MAX" timeout -k 30s "$SESSION_TIMEOUT" \
     "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" "${mcp[@]}" \
     --max-turns "$MAX_TURNS" --max-budget-usd "$SESSION_BUDGET_USD" --output-format stream-json --verbose > "$3" 2>&1
   S_EXIT=$? S_WALL=$(( $(date +%s) - t0 ))
   # read what the wrapper recorded, then stop the scope: whatever the session left running goes with it
-  S_PEAK=$(scope_peak "$unit") left=$(scope_left "$unit"); scope_stop "$unit"
+  S_PEAK=$(scope_peak "$unit") left=$(scope_left "$unit"); scope_stop "$unit"; S_UNIT=""
   (( left > 0 )) && S_NOTES+=("$1 session left $left process(es) running; stopped with its scope")
   [[ -n ${SCOPE_BARE:-} ]] && S_NOTES+=("$1 session ran uncapped: $SCOPE_BARE")   # its error is in the transcript
   # the peak alone could be page cache: a cap kill is the kernel's 137 with the peak at the cap
@@ -253,9 +276,18 @@ context() {
   git add -- "$RUN_DIR/context.md" && { git diff --cached --quiet -- "$RUN_DIR/context.md" || git commit -q -m "HARNESS: context pack for $1" -- "$RUN_DIR/context.md"; }
 }
 
-run_init() {   # the project's init, then the suite (cached per code tree); both go into the next prompt
-  HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH bash -c "$INIT_CMD" > "$SCRATCH/init.out" 2>&1
-  local rc=$?; echo "(init exit $rc)" >> "$SCRATCH/init.out"
+# The project's init, then the suite (cached per code tree); both go into the next prompt. The init runs in
+# harness-<run>-svc (decisions/2026-10-25-services-scope): what it backgrounds (a dev server) stays there, capped at
+# SVC_MEMORY_MAX. timeout bounds the init, not the servers it left once it returned (a timeout takes its process group
+# too); stdin is /dev/null, so no tool waits on the tmux pane. The last init's scope is stopped first: systemd refuses
+# a unit name still loaded (tests/fixtures/systemd-run-unit-exists.txt), and its services would live on beside the new.
+run_init() {
+  local unit; unit=$(scope_unit "$RUN_ID" svc)
+  scope_stop "$unit"
+  SVC_UP=1 SVC_INIT=1   # before the start: a TERM during the init must still stop what it began (services_down, L2-03)
+  HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH scope_run "$unit" "" "$SVC_MEMORY_MAX" timeout -k 10s "$INIT_TIMEOUT" bash -c "$INIT_CMD" < /dev/null > "$SCRATCH/init.out" 2>&1
+  local rc=$?; SVC_INIT=0; echo "(init exit $rc)" >> "$SCRATCH/init.out"
+  [[ -n ${SCOPE_BARE:-} ]] && note "init ran uncapped: $SCOPE_BARE"   # systemd refused the unit; its line is in init.out
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
   [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \
@@ -348,7 +380,7 @@ verify() {
     F snapshot "$LIST" > "$STATE/before.json"
     context "$m"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
-    mem_gate   # before the clock, so the prompt's time is the session's
+    mem_gate || run_init   # before the clock, so the prompt's time is the session's; a wait stopped the services
     HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
@@ -455,6 +487,7 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
   merge_milestones
   green; node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$(node "$HARNESS_HOME/lib/treekey.mjs").out" | cut -d' ' -f1 | grep . > "$STATE/tests-end" \
     || rm -f "$STATE/tests-end"
+  services_down "$1"   # after the last suite run, which may need them
   SUM build "$WT" "$RUN_ID" "$STATE" > "$RUN_DIR/summary.json"
   SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"   # the end notification's click; rewritten after the retro
   commit_all "HARNESS: run ended ($1)"; sync
@@ -599,6 +632,7 @@ while :; do
   c=$(control)
   if [[ $c == pause ]]; then
     log "paused (INBOX.md status or harness pause)"; notify "paused"
+    services_down paused; commit_all "HARNESS: paused"; sync   # nothing else commits during a pause: the note reaches the phone now
     while [[ $(control) == pause ]]; do
       (( $(date +%s) >= DEADLINE )) && { note "deadline reached while paused"; finish "deadline (paused)"; }
       sleep "${HARNESS_PAUSE_POLL:-60}"; take_answers; sync
