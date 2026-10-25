@@ -1,0 +1,253 @@
+{
+  "feature": "L2",
+  "kind": "verify",
+  "outcome": "passes",
+  "summary": "Suite 289/289 green. All six L2 features hold: scope+timeout init, teardown hook and services_down on every stop point, gc orphan units, status MemoryCurrent, review fixes and docs checked against named tests.",
+  "evidence": [
+    {
+      "feature": "L2-01",
+      "step": 1,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green",
+      "holds": true
+    },
+    {
+      "feature": "L2-01",
+      "step": 2,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green",
+      "holds": true
+    },
+    {
+      "feature": "L2-01",
+      "step": 3,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green",
+      "holds": true
+    },
+    {
+      "feature": "L2-01",
+      "step": 4,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green",
+      "holds": true
+    },
+    {
+      "feature": "L2-01",
+      "step": 5,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "plan docs/plans/2026-10-25-L2-run-services.md present; fixtures present; suite green",
+      "holds": true
+    },
+    {
+      "feature": "L2-02",
+      "step": 1,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists",
+      "holds": true
+    },
+    {
+      "feature": "L2-02",
+      "step": 2,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists",
+      "holds": true
+    },
+    {
+      "feature": "L2-02",
+      "step": 3,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists",
+      "holds": true
+    },
+    {
+      "feature": "L2-02",
+      "step": 4,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists",
+      "holds": true
+    },
+    {
+      "feature": "L2-02",
+      "step": 5,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists",
+      "holds": true
+    },
+    {
+      "feature": "L2-02",
+      "step": 6,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "config defaults, check at run_init stop-then-systemd-run at tests/run.sh:637, STUB_NO_SYSTEMD bare check :633, decision file exists",
+      "holds": true
+    },
+    {
+      "feature": "L2-03",
+      "step": 1,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-03",
+      "step": 2,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-03",
+      "step": 3,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-03",
+      "step": 4,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-03",
+      "step": 5,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-03",
+      "step": 6,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-03",
+      "step": 7,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "services_down in driver.sh:62; checks :646 (marker, stop after, one note), :662-666 (TERM -> driver exited, ended), template+README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-04",
+      "step": 1,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-04",
+      "step": 2,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-04",
+      "step": 3,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-04",
+      "step": 4,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-04",
+      "step": 5,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-04",
+      "step": 6,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-04",
+      "step": 7,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "SVC_IDLE_STOP_MIN default; checks paused :688, stoppy :785, 11/9 min :820-825, memory wait :704; architecture §5/§7 + decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-05",
+      "step": 1,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-05",
+      "step": 2,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-05",
+      "step": 3,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-05",
+      "step": 4,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-05",
+      "step": 5,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "gc checks :765-771 (would:, ? unmatched, stops), status MemoryCurrent :657; docs, README, decision file",
+      "holds": true
+    },
+    {
+      "feature": "L2-06",
+      "step": 1,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok",
+      "holds": true
+    },
+    {
+      "feature": "L2-06",
+      "step": 2,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok",
+      "holds": true
+    },
+    {
+      "feature": "L2-06",
+      "step": 3,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok",
+      "holds": true
+    },
+    {
+      "feature": "L2-06",
+      "step": 4,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok",
+      "holds": true
+    },
+    {
+      "feature": "L2-06",
+      "step": 5,
+      "ran": "read step, ran bash tests/run.sh (289/289), grepped named checks/docs/files",
+      "saw": "review doc has severities; RED->GREEN checks for Important findings; one-note check :646; §10/§14 docs; bash -n ok",
+      "holds": true
+    }
+  ]
+}
