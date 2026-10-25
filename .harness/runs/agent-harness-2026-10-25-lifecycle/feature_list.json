@@ -1,0 +1,279 @@
+{ "run": "agent-harness-2026-10-25-lifecycle", "branch": "harness/agent-harness-2026-10-25-lifecycle",
+  "features": [
+    { "id": "L1-01", "milestone": "L1", "kind": "plan", "model": "opus",
+      "description": "docs/plans/2026-10-25-L1-capped-sessions.md fixes lib/scope.sh's API, the systemd stubs and their fixtures, the unit names and the notes, so L1-02..L1-07 build one thing.",
+      "steps": [
+        "docs/plans/2026-10-25-L1-capped-sessions.md exists with sections: scope.sh API (scope_run <unit> <mem-high> <mem-max> <cmd...>, scope_stop <unit>, scope_peak <unit> in MB, the probe and its once-per-segment note), unit naming (harness-<run>-<role>[-<n>], run id reduced to [A-Za-z0-9_-]), where timeout -k 30s sits relative to systemd-run, the stub contract, the fixtures, the new config keys with defaults (SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m), and the exact note texts of L1-03..L1-06",
+        "The stub contract in the plan: tests/stub-systemd-run.sh and tests/stub-systemctl.sh, reached through HARNESS_SYSTEMD_RUN and HARNESS_SYSTEMCTL (exported by tests/run.sh and passed through bin/harness's tmux env list); each call appends its argv and a === separator to $STUB_DIR/systemd.log; stub-systemd-run runs the command after its options (so stub claude still runs) and answers the probe `--user --scope --quiet true` with exit 0, or exit 1 when STUB_NO_SYSTEMD=1; stub-systemctl prints the fixture for `show -p ...` and `list-units`, exit 0 for `stop`",
+        "Fixtures captured from real commands on this box into tests/fixtures/ with the capturing command named in the plan: systemctl-show-scope.txt (`systemctl --user show -p MemoryPeak,ControlGroup,TasksCurrent <unit>.scope` of a live harness-test-<pid>-* scope with MemoryMax=64M that holds a background sleep; note the real output lists properties in systemd's order, not the asked order), systemctl-list-units.txt (`systemctl --user list-units 'harness-*' --plain --no-legend` with that scope alive), meminfo.txt (a copy of /proc/meminfo); the test scope is stopped before the session ends and `systemctl --user list-units 'harness-test-*'` is empty afterwards",
+        "The plan names the check for each L1 behaviour from the spec's 'Checks (written first)' list, with its check name as it will appear in tests/run.sh, and which stub variable (STUB_NO_SYSTEMD, STUB_LEAVE_PROCESS, HARNESS_MEMINFO, HARNESS_MEM_POLL) drives it",
+        "The plan records the real `claude --help` text for --strict-mcp-config and --mcp-config (both exist in the installed CLI as of 2026-10-25)",
+        "bash tests/run.sh ends with every check passing (nothing built yet: the count is unchanged)"
+      ],
+      "passes": false },
+    { "id": "L1-02", "milestone": "L1", "kind": "build", "model": "opus",
+      "description": "lib/scope.sh runs a command in a capped transient systemd user scope (scope_run), stops it (scope_stop) and reads its peak (scope_peak), falling back to running bare when the user bus is missing; the two stubs and fixtures exist.",
+      "steps": [
+        "lib/scope.sh has a one-line usage header, sources clean under bash -n, and exports scope_run, scope_stop, scope_peak and scope_available (the probe, cached per process), calling ${HARNESS_SYSTEMD_RUN:-systemd-run} and ${HARNESS_SYSTEMCTL:-systemctl}",
+        "tests/stub-systemd-run.sh and tests/stub-systemctl.sh exist as the plan fixed them, tests/fixtures/systemctl-show-scope.txt, systemctl-list-units.txt and meminfo.txt are the real captures, and tests/run.sh exports HARNESS_SYSTEMD_RUN and HARNESS_SYSTEMCTL to the stubs",
+        "A check with the stubs: `scope_run harness-x-s1 5G 6G true` logs argv `--user --scope --collect --quiet --unit=harness-x-s1 -p MemoryHigh=5G -p MemoryMax=6G -p MemorySwapMax=<SESSION_SWAP_MAX>` followed by the command, and scope_run returns the command's exit (a command exiting 3 gives 3)",
+        "A check: `scope_stop harness-x-s1` logs `--user stop harness-x-s1.scope`; `scope_peak harness-x-s1` prints the fixture's MemoryPeak in whole MB; a run id `a.b/c d` becomes unit `harness-a-b-c-d-s1` (every character outside [A-Za-z0-9_-] replaced by -)",
+        "A check with STUB_NO_SYSTEMD=1: scope_available returns 1 and scope_run runs the command bare (no systemd-run line in systemd.log)",
+        "A real-scope check (its name says 'skipped: no user systemd' and passes trivially when `systemd-run --user --scope --quiet true` fails): scope_run of unit harness-test-$$-oom with MemoryHigh=48M MemoryMax=64M around a node one-liner that keeps allocating 1 MB Buffers up to 256 MB exits 137, `systemctl --user list-units 'harness-test-*'` is empty afterwards, and the suite's shell goes on to the next check",
+        "journal/decisions/2026-10-25-scoped-sessions.md exists (title, provenance, finding · choice · rejected) covering the helper, the probe fallback and the unit naming",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L1-03", "milestone": "L1", "kind": "build", "model": "opus",
+      "description": "Every claude session runs in scope harness-<run>-s<n> under timeout -k 30s with the three memory caps, the scope is stopped when claude returns, and leftover processes and a cap kill are noted in harness-log.md; without user systemd the run goes bare with one note per segment.",
+      "steps": [
+        "lib/config.sh defaults SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G and templates/user/config.sh lists them commented with one line each",
+        "A check on run demo: $STUB_DIR/systemd.log has a systemd-run call whose argv contains --unit=harness-demo-s1, -p MemoryHigh=5G, -p MemoryMax=6G, -p MemorySwapMax=1G, and the stub claude's argv; the driver's command line uses `timeout -k 30s` with SESSION_TIMEOUT (seen in the systemd.log line or in the stub claude's parent argv as the plan fixed)",
+        "A check: after each session the stub systemctl saw `stop harness-demo-s<n>.scope` for that session number, and the session's log line in run.log still shows its exit code",
+        "A check with STUB_LEAVE_PROCESS=1 (the stub claude backgrounds `sleep 300` before exiting; the stub systemctl's fixture then reports TasksCurrent>0 as the plan fixed): harness-log.md has `coding session left 1 process(es) running; stopped with its scope`, and no such note on a run where nothing was left",
+        "A check: a stub session that exits 137 with the fixture peak at the cap notes `<feature>: the session hit its memory cap (6G)` in harness-log.md, and the attempt counts as the feature's",
+        "A check with STUB_NO_SYSTEMD=1 on a whole run: no systemd-run call is logged, the sessions still run (feature list passes as before), and harness-log.md has exactly one `no user systemd: sessions and suites run uncapped` note for the segment",
+        "bin/harness passes HARNESS_SYSTEMD_RUN and HARNESS_SYSTEMCTL to the tmux-started driver (its env pass-through list) and docs/architecture.md §7 guards gains the session scope line",
+        "journal/decisions/2026-10-25-scoped-sessions.md is extended (or a sibling file written) with the stop-after-return choice and what was rejected (killing by pid)",
+        "bash -n lib/driver.sh lib/config.sh bin/harness pass; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L1-04", "milestone": "L1", "kind": "build", "model": "opus",
+      "description": "Each session's metrics.jsonl line records mem_peak_mb from its scope (null when uncapped) and report.md lists the features whose sessions peaked over 2 GB.",
+      "steps": [
+        "lib/metrics.mjs append takes a 12th argument <mem_peak_mb> (empty or `null` → null) and writes `mem_peak_mb` as a number on every line; `node --check lib/metrics.mjs` passes and a pure check with node --input-type=module covers both cases",
+        "lib/driver.sh passes the session's scope_peak to every MET append call (coding, verify, retro, init); a check on run demo: every metrics.jsonl line has mem_peak_mb equal to the fixture's MemoryPeak in MB, and with STUB_NO_SYSTEMD=1 it is null",
+        "lib/summary.mjs report prints a section `Memory peaks over 2 GB` listing `<feature> · <model> · <peak> MB` for sessions over 2048 MB, or omits the section when none; a pure check feeds metrics lines with peaks 1500 and 2500 and sees only the second; summary.json gains no field",
+        "docs/architecture.md §11 (measurement) names mem_peak_mb; README's report line mentions the peaks section",
+        "journal/decisions/2026-10-25-session-memory-peaks.md exists (finding · choice · rejected: a summary.json field)",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L1-05", "milestone": "L1", "kind": "build", "model": "opus",
+      "description": "lib/check.sh runs the suite (full and subset) in scope harness-<run>-check-<pid> capped at CHECK_MEMORY_MAX under timeout -k 30s CHECK_TIMEOUT, and a kill shows as its own RED line naming the cap or the timeout.",
+      "steps": [
+        "lib/config.sh defaults CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m (templates/user/config.sh commented); lib/prompt.sh prompt_env exports HARNESS_SCOPE_PREFIX=harness-<sanitised run> plus HARNESS_CHECK_MEMORY_MAX and HARNESS_CHECK_TIMEOUT so a session's call of check.sh caps the same way",
+        "lib/check.sh sources lib/scope.sh and runs both the full and the subset command through scope_run with unit $HARNESS_SCOPE_PREFIX-check-$$ (bare when HARNESS_SCOPE_PREFIX is unset or the probe fails) under `timeout -k 30s $HARNESS_CHECK_TIMEOUT`; a check on run demo finds a systemd-run line with --unit=harness-demo-check-<pid> and -p MemoryMax=3G around the project's CHECK_CMD",
+        "A check: with a CHECK_CMD that exits 137, check.sh prints `check: RED (killed at its 3G memory cap, exit 137 after <n> s)` plus the last lines; with one that exits 124 it prints `check: RED (timed out after 15m, exit 124 after <n> s)`; any other failure keeps today's `check: RED (exit <rc> after <n> s)` line",
+        "A check: a subset call `check.sh -k foo` is also scoped (a second systemd-run line with a check unit) and is never cached",
+        "docs/architecture.md §3 (lib/check.sh) and §7 guards gain the check scope and its two RED lines; README's check line mentions the 3G/15m defaults",
+        "journal/decisions/2026-10-25-capped-suites.md exists (finding: the 2026-10-24 deepEqual OOM; choice; rejected: ulimit -v)",
+        "bash -n lib/check.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L1-06", "milestone": "L1", "kind": "build", "model": "opus",
+      "description": "Before a session, when MemAvailable is under MEM_MIN_AVAILABLE_GB the driver notes it, waits up to MEM_WAIT_MAX polling every 5 minutes, then starts the session anyway with a note.",
+      "steps": [
+        "lib/config.sh defaults MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m (templates/user/config.sh commented); the driver reads MemAvailable from ${HARNESS_MEMINFO:-/proc/meminfo} with a function mem_available_gb in lib/scope.sh (pure, checked with the real fixture tests/fixtures/meminfo.txt: it prints that file's MemAvailable in whole GB)",
+        "lib/driver.sh calls mem_gate before every coding, verify and init session: under the threshold it notes `memory: <n> GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 30m`, calls services_down (a no-op hook until L2 defines it), polls every ${HARNESS_MEM_POLL:-300} s up to MEM_WAIT_MAX, then notes `memory still at <n> GB after 30m; starting the session anyway (its cap protects the box)`",
+        "A check: a run with HARNESS_MEMINFO pointing at a copy of the real fixture whose MemAvailable line is rewritten to 2 GB (the only edited line), MEM_WAIT_MAX=2s and HARNESS_MEM_POLL=1 shows both notes in harness-log.md and the sessions still ran (the feature list passes as before); a run with the unedited fixture shows neither note",
+        "bin/harness passes HARNESS_MEMINFO and HARNESS_MEM_POLL to the tmux-started driver; docs/architecture.md §7 guards gains the memory gate",
+        "journal/decisions/2026-10-25-memory-gate.md exists (default 5 GB from the audit; rejected: refusing to start)",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L1-07", "milestone": "L1", "kind": "build", "model": "opus",
+      "description": "Headless sessions load only their project's MCP servers (--strict-mcp-config, plus --mcp-config <wt>/.mcp.json when it exists), and the coding prompt's rules tell sessions never to deepEqual large values and to bound a rerun after exit 137 or a hang.",
+      "steps": [
+        "session() in lib/driver.sh always passes --strict-mcp-config and passes `--mcp-config $WT/.mcp.json` only when that file exists; a check on run demo finds --strict-mcp-config in the stub claude's recorded argv and no --mcp-config; a run on a project with a committed .mcp.json finds `--mcp-config <wt>/.mcp.json`",
+        "prompts/parts/rules.md gains one line: a red-phase test never compares large values with deepEqual (compare a length, a hash or the first mismatch), and after an exit 137 or a hang the same command is not rerun but bounded (a check.sh subset, --test-name-pattern); a check renders the coding prompt with lib/prompt.sh for a demo feature and greps `deepEqual`",
+        "journal/decisions/2026-10-25-strict-mcp-and-deepequal-rule.md exists and quotes the two `claude --help` lines the flags were checked against",
+        "docs/architecture.md §3 (the session command line) names both flags; README's project-setup section says a committed .mcp.json is what run worktrees load",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L1-08", "milestone": "L1", "kind": "review", "model": "opus",
+      "description": "An Opus review of the L1 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, and the L1 docs (architecture §3/§4/§7/§10, README, templates) complete.",
+      "steps": [
+        "`git diff origin/main...HEAD -- lib bin tests prompts templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-25-lifecycle/L1-review.diff` is read by an Opus subagent; its findings are written to docs/plans/2026-10-25-L1-review.md with a severity each",
+        "Every Critical or Important finding has a check in tests/run.sh that failed before the fix and passes after (the commit messages say which)",
+        "docs/architecture.md §4 (state) lists what a scope is and that nothing of it persists; §10 configuration lists every new key with its default (SESSION_MEMORY_HIGH/MAX, SESSION_SWAP_MAX, CHECK_MEMORY_MAX, CHECK_TIMEOUT, MEM_MIN_AVAILABLE_GB, MEM_WAIT_MAX); README's 'After the run' lines for Michael exist: systemd-oomd with ManagedOOMMemoryPressure=kill is a box setting, and `systemctl --user list-units 'harness-*'` shows what a run holds",
+        "Every L1 decision file cites the spec and reads finding · choice · rejected; none numbers itself D-H<n>",
+        "bash -n on every shell file touched by L1 and node --check on every .mjs pass; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+
+    { "id": "L2-01", "milestone": "L2", "kind": "plan", "model": "opus", "after": ["L1"],
+      "description": "docs/plans/2026-10-25-L2-run-services.md fixes the services scope, the teardown hook, services_down's order and every stop point, plus the gc and status additions, so L2-02..L2-05 build one thing.",
+      "steps": [
+        "docs/plans/2026-10-25-L2-run-services.md exists with: run_init's sequence (scope_stop harness-<run>-svc, then INIT_CMD in that scope under timeout -k 10s INIT_TIMEOUT=10m with SVC_MEMORY_MAX=3G), TEARDOWN_CMD's contract (default .harness/teardown.sh when executable; HARNESS_PORT and HARNESS_SCRATCH set; timeout 2m), services_down <why> = teardown → scope_stop → note `services stopped (<why>)`, and the stop points: finish, the EXIT trap (idempotent, nothing started = silent), PAUSE before its poll, STOP, limit_wait over SVC_IDLE_STOP_MIN=10 minutes, L1's memory wait",
+        "The plan fixes how the suite observes each stop point: a test project with an executable .harness/teardown.sh that touches $HARNESS_SCRATCH/teardown-<why-safe>.marker, STUB variables for a SIGTERM to the foreground driver, PAUSE then resume, STOP, and a usage-limit wait of 11 minutes versus 9 (HARNESS_LIMIT_SLEEP=0 keeps it instant)",
+        "The plan fixes gc's orphan-unit step: `systemctl --user list-units 'harness-*' --plain --no-legend` parsed from the fixture, unit → run matched by rebuilding `harness-<sanitised run id>-` for each run state dir (never parsed loosely), stopped only when that run has `ended` and no live driver.pid, logged `+ stopped <unit> (<run> ended)` / `would:`; and harness status's lines under a live run: `  <unit> · MemoryCurrent <n> MB` from `show -p MemoryCurrent` (a new fixture tests/fixtures/systemctl-show-current.txt captured from a real harness-test-<pid>-* scope, then stopped)",
+        "The plan lists templates/project/teardown.sh's commented example (npx supabase stop; docker compose down) and the README paragraph telling projects to add their own",
+        "bash tests/run.sh ends with every check passing (the fixture capture leaves no harness-test-* unit behind)"
+      ],
+      "passes": false },
+    { "id": "L2-02", "milestone": "L2", "kind": "build", "model": "opus",
+      "description": "run_init stops the run's old services scope, then runs INIT_CMD inside harness-<run>-svc under timeout -k 10s INIT_TIMEOUT with SVC_MEMORY_MAX, so what the init backgrounds stays in the scope.",
+      "steps": [
+        "lib/config.sh defaults INIT_TIMEOUT=10m SVC_MEMORY_MAX=3G (templates/user/config.sh commented)",
+        "A check on run demo: systemd.log shows, in order, a systemctl `stop harness-demo-svc.scope` and then a systemd-run with --unit=harness-demo-svc, -p MemoryMax=3G and the INIT_CMD, with `timeout -k 10s 10m` in the command as the plan fixed",
+        "A check: an INIT_CMD that backgrounds `sleep 300` and exits 0 still gives `(init exit 0)` in init.out within 2 s (the foreground is bounded, the background stays in the scope)",
+        "A check with STUB_NO_SYSTEMD=1: the init runs bare as today and the uncapped note of L1 is still the only one",
+        "journal/decisions/2026-10-25-services-scope.md exists (finding: portfolio_site's next dev; choice; rejected: killing the init's pid)",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L2-03", "milestone": "L2", "kind": "build", "model": "opus",
+      "description": "services_down runs the project's teardown hook, stops the services scope and notes it, on finish and in the driver's EXIT trap, so a crash or a kill of the driver still stops what the init started.",
+      "steps": [
+        "lib/driver.sh defines services_down <why> (teardown under `timeout 2m` with HARNESS_PORT and HARNESS_SCRATCH, then scope_stop harness-<run>-svc, then note `services stopped (<why>)`), idempotent per why and silent when no init ran; TEARDOWN_CMD in lib/config.sh defaults to .harness/teardown.sh when that file is executable, else empty",
+        "finish() calls services_down \"$1\" before the summary; the EXIT trap calls services_down `driver exited` and still writes `ended` and removes driver.pid when nothing was started",
+        "A check: the test project gets an executable .harness/teardown.sh that touches $HARNESS_SCRATCH/teardown.marker; on run demo's finish the marker exists, systemd.log shows `stop harness-demo-svc.scope` after the marker's mtime, and harness-log.md has `services stopped (done)` (or finish's reason)",
+        "A check: a foreground driver started in the background and sent SIGTERM during its first session leaves the marker, the stop line and `services stopped (driver exited)` in run.log, plus `ended`",
+        "templates/project/teardown.sh exists, commented, with the supabase stop and docker compose down examples; README says a project adds its own .harness/teardown.sh and when it runs",
+        "journal/decisions/2026-10-25-teardown-hook.md exists (finding: docker lives under dockerd; choice; rejected: parsing docker ps)",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L2-04", "milestone": "L2", "kind": "build", "model": "opus",
+      "description": "Services also stop on PAUSE, on STOP, before a usage-limit wait longer than SVC_IDLE_STOP_MIN minutes and before L1's memory wait, and the next run_init starts them again.",
+      "steps": [
+        "lib/config.sh defaults SVC_IDLE_STOP_MIN=10 (templates/user/config.sh commented); limit_wait calls services_down `usage-limit wait` only when the wait is over SVC_IDLE_STOP_MIN minutes; the pause branch calls services_down `paused` before its poll; the stop branch's finish carries `stopped by Michael`; mem_gate's hook now calls services_down `memory wait`",
+        "A check: a run paused through INBOX.md (status: pause, then resumed by the stub) has `services stopped (paused)` in harness-log.md, and the following run_init started the svc scope again (a second systemd-run --unit=harness-<run>-svc line after the stop)",
+        "A check: run stoppy (status: stop) has `services stopped (stopped by Michael)` and the marker",
+        "A check: a stubbed usage-limit window of 11 minutes gives `services stopped (usage-limit wait)` before the `usage-limit window` note; one of 9 minutes gives no services note",
+        "A check: the L1-06 memory-wait run now also has `services stopped (memory wait)`",
+        "docs/architecture.md §5 (the life of a run) and §7 guards list every stop point; journal/decisions/2026-10-25-services-stop-points.md exists (default 10 minutes; rejected: stopping on every wait)",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L2-05", "milestone": "L2", "kind": "build", "model": "opus",
+      "description": "harness gc stops every harness-<run>-* unit of a run that has ended with no live driver (--dry-run prints would:), and harness status lists a live run's units with their MemoryCurrent.",
+      "steps": [
+        "cmd_gc gains a step after the branch passes: `systemctl --user list-units 'harness-*' --plain --no-legend` through HARNESS_SYSTEMCTL, each unit matched to a run by rebuilding `harness-<sanitised run id>-` from this project's state dirs; units of a run with `ended` and no live driver.pid are stopped through act (`+ stopped <unit> (<run> ended)`), the rest left alone; an unmatched unit is listed as `? <unit> (no run of this project)` and never stopped",
+        "A check: with the stub systemctl's list-units fixture naming units of run demo (ended) and of a run with a live driver.pid, `harness gc proj` logs the stop of demo's units only and systemd.log shows the stop calls; `--dry-run` prints `would: ... stop` and systemd.log shows no stop",
+        "cmd_status prints under a running run one indented line per unit from `systemctl --user show -p MemoryCurrent <unit>` (fixture tests/fixtures/systemctl-show-current.txt): `    harness-<run>-svc · MemoryCurrent <n> MB`; a check on a run alive in the suite (one started in the background with a slow stub session) shows the line and an ended run shows none",
+        "docs/architecture.md §3 (harness gc, harness status) and §4 state list the orphan-unit step; README's gc row names it; journal/decisions/2026-10-25-gc-orphan-units.md exists (finding: SIGKILL has no trap; rejected: a systemd timer)",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L2-06", "milestone": "L2", "kind": "review", "model": "opus",
+      "description": "An Opus review of the L2 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, the EXIT trap and services_down proven idempotent, and the L2 docs complete.",
+      "steps": [
+        "`git diff run/agent-harness-2026-10-25-lifecycle/L1...HEAD -- lib bin tests templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-25-lifecycle/L2-review.diff` (or from the L1 merge commit when the tag is absent) is read by an Opus subagent; findings go to docs/plans/2026-10-25-L2-review.md with a severity each",
+        "Every Critical or Important finding has a check in tests/run.sh that failed before the fix and passes after; a check proves finish followed by the EXIT trap produces exactly one `services stopped` note per run",
+        "docs/architecture.md §10 configuration lists INIT_TIMEOUT, SVC_MEMORY_MAX, SVC_IDLE_STOP_MIN and TEARDOWN_CMD with defaults; §14 recovery runbook says how to list and stop a run's units by hand",
+        "Every L2 decision file reads finding · choice · rejected and cites the spec; bash -n and node --check pass on every file L2 touched",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+
+    { "id": "L3-01", "milestone": "L3", "kind": "plan", "model": "opus", "after": [],
+      "description": "docs/plans/2026-10-25-L3-scratch-and-tmux.md fixes the scratch cleanup, HARNESS_CACHE, the tmpfiles template and the tmux reaper (H1a/b/c), including how the suite drives a real driver window on its private tmux server.",
+      "steps": [
+        "docs/plans/2026-10-25-L3-scratch-and-tmux.md exists with: finish's scratch step (copy check-last.out and init.out into $STATE, rm -rf $SCRATCH only, never its parent; KEEP_SCRATCH=1 keeps it), check.sh keeping only the newest check-<key>.out, HARNESS_CACHE=${XDG_CACHE_HOME:-~/.cache}/harness/<project> exported by prompt_env, templates/user/harness-tmpfiles.conf (`e /tmp/harness - - - 3d`) and its one install command for the README",
+        "The plan fixes H1a's driver window command (capture-pane -p -S - to <state>/tmux-driver.txt, kill the supervisor window, the printed line, sleep TMUX_KEEP_HOURS*3600 with 0 = at once, kill-session -t =<s>), TMUX_KEEP_HOURS as a config default of 24, and the reap helper shared by cmd_gc and lib/queue.sh (one function in a sourced lib file or an internal `harness _reap-tmux [<project>]`: run → tmux_name, ended + no live driver.pid + no PAUSE, driver re-checked just before the kill, never h-queue or the desk session)",
+        "The plan fixes how the suite starts a real tmux-backed run: `harness start` without --foreground on the private server (TMUX_TMPDIR=$T/tmux), the stub claude reached through HARNESS_CLAUDE for the driver, and a PATH shim directory ($T/bin/claude → tests/stub-claude.sh) for the supervisor window, which runs bare `claude`; how the test waits for the driver to exit (its driver.pid gone), and the decoy sessions for the gc check (h-queue, $HARNESS_DESK_SESSION, a live-driver run, a paused run)",
+        "The plan names each L3 check from the spec's list with its tests/run.sh name",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L3-02", "milestone": "L3", "kind": "build", "model": "opus",
+      "description": "finish keeps check-last.out and init.out in the run's state dir and deletes the run's scratch directory (KEEP_SCRATCH=1 keeps it), check.sh keeps one check-<key>.out, and sessions see HARNESS_CACHE.",
+      "steps": [
+        "A check on run demo: $STATE/check-last.out and $STATE/init.out exist, $SCRATCH (the run's directory) is gone, the project's scratch directory $T/scratch/proj still exists and a live.lock placed there before the run is still there",
+        "A check: a run with KEEP_SCRATCH=1 keeps its scratch directory; lib/config.sh defaults KEEP_SCRATCH=0 (templates/user/config.sh commented)",
+        "A check: after a second code tree's full check, exactly one check-*.out is left in the scratch directory and the green markers in $STATE/green are untouched",
+        "A check: the init (INIT_CMD echoes $HARNESS_CACHE) and a stub session's environment see HARNESS_CACHE=$T/cache/harness/proj (the suite sets XDG_CACHE_HOME=$T/cache); the directory exists after the run",
+        "templates/user/harness-tmpfiles.conf exists with `e /tmp/harness - - - 3d` and a comment; README has the one install command (copy to ~/.config/user-tmpfiles.d/ and `systemd-tmpfiles --user --create`) and tells projects to put Playwright browsers and similar installs under HARNESS_CACHE",
+        "docs/architecture.md §4 state lists what scratch holds and that finish deletes it, and HARNESS_CACHE; journal/decisions/2026-10-25-scratch-cleanup.md exists (finding: 1 M leaked files; rejected: a tmpfiles rule alone)",
+        "bash -n lib/driver.sh lib/check.sh lib/prompt.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L3-03", "milestone": "L3", "kind": "build", "model": "opus",
+      "description": "When the driver exits, its tmux window saves its scrollback to <state>/tmux-driver.txt, kills the supervisor window, and after TMUX_KEEP_HOURS kills its own session (0 = at once).",
+      "steps": [
+        "lib/config.sh defaults TMUX_KEEP_HOURS=24 (templates/user/config.sh commented); bin/harness's driver window command does, after the driver exits: `tmux capture-pane -p -S - > <state>/tmux-driver.txt`, `tmux kill-window -t =<s>:supervisor` (ignored when absent), prints `[driver exited — scrollback saved to <state>/tmux-driver.txt; this session self-destructs in <h> h, or sooner on harness gc]`, sleeps TMUX_KEEP_HOURS hours, then `tmux kill-session -t =<s>`",
+        "A check on the private tmux server with TMUX_KEEP_HOURS=0 and a PATH shim for the supervisor's claude: a tmux-started run (the stub ends it in seconds) leaves no h-<run> session within 10 s of driver.pid disappearing, and <state>/tmux-driver.txt is non-empty",
+        "A check with TMUX_KEEP_HOURS=1: right after the driver exits the session h-<run> still exists, its window list has no `supervisor`, and tmux-driver.txt is written; the suite's EXIT trap kills the server, so no timer outlives the suite",
+        "A check: a run id with a dot (`dot.run`) gets session h-dot-run and the keep-0 behaviour holds",
+        "journal/decisions/2026-10-25-tmux-driver-window.md exists (finding: exec bash forever; choice: 24 h keep; rejected: counting supervisors against MAX_PARALLEL_RUNS); docs/architecture.md §3 (harness start) and §10 (TMUX_KEEP_HOURS) updated",
+        "bash -n bin/harness; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L3-04", "milestone": "L3", "kind": "build", "model": "opus",
+      "description": "harness gc reaps the tmux sessions of ended, dead-driver, unpaused runs of its project and the queue runner does the same across projects before the debrief, through one shared helper that never touches h-queue, the desk or a live run.",
+      "steps": [
+        "One helper (as the plan fixed) reaps run → tmux_name sessions where <state>/ended exists, driver.pid is not alive (re-checked just before the kill) and PAUSE is absent, logging `+ reaped tmux session <s> (<run> ended)`; cmd_gc calls it for its project through act (`would:` on --dry-run) and goes on after a failed kill",
+        "A check on the private server: sessions h-<ended run>, h-queue, $HARNESS_DESK_SESSION, h-<live-driver run> (a run whose driver.pid names the suite's own shell) and h-<paused run> (PAUSE marker, no ended) exist; `harness gc proj` kills only the ended run's session and the other four survive; a second ended run's session is also reaped in the same gc (one reap doesn't stop the rest)",
+        "A check: `harness gc proj --dry-run` prints `would: ... kill-session` and every session still exists",
+        "lib/queue.sh calls the same helper for every project as it exits, before the debrief line; a check on the existing queue-runner test: no h-<run> session remains for a run the runner started that has ended, and h-queue and the desk session are untouched",
+        "journal/decisions/2026-10-25-tmux-reaper.md exists (run → session never session → run; rejected: parsing tmux list-sessions); docs/architecture.md §3 (gc) and §12 (queue) and README's gc row updated",
+        "bash -n bin/harness lib/queue.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L3-05", "milestone": "L3", "kind": "review", "model": "opus",
+      "description": "An Opus review of the L3 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, and the L3 docs complete.",
+      "steps": [
+        "`git diff <the commit before L3-02's first commit>...HEAD -- lib bin tests templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-25-lifecycle/L3-review.diff` is read by an Opus subagent; findings go to docs/plans/2026-10-25-L3-review.md with a severity each",
+        "Every Critical or Important finding has a check in tests/run.sh that failed before the fix and passes after; the reviewer confirms no code path can rm -rf anything but $SCRATCH itself (a check feeds SCRATCH=/ -shaped values to the guard and sees a refusal)",
+        "docs/architecture.md §4 state, §10 configuration (KEEP_SCRATCH, TMUX_KEEP_HOURS, HARNESS_CACHE) and §14 recovery (where the scrollback went) are complete; README's box section names tmux-driver.txt",
+        "Every L3 decision file reads finding · choice · rejected; bash -n and node --check pass on every file L3 touched",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+
+    { "id": "L4-01", "milestone": "L4", "kind": "build", "model": "opus", "after": [],
+      "description": "harness gc --all-merged deletes every merged branch whatever its name (prefix listings, every pass runs), and plain gc still deletes only merged harness/ and harness-merge/ branches; a short plan for L4 comes first.",
+      "steps": [
+        "docs/plans/2026-10-25-L4-gc.md exists (one page): the new loop shape of cmd_gc's branch passes, the --deps step's guards, the runner's gc call, and the test repo's branch and worktree fixtures each L4 check uses",
+        "cmd_gc lists branches with `git for-each-ref refs/heads/` and `refs/remotes/origin/` prefixes (plain gc: refs/heads/harness/ and refs/heads/harness-merge/ and the same under refs/remotes/origin/), never a `*` pattern, and runs every pass under --all-merged; merged still means an ancestor of origin/main, local deletes stay `-d`, the current branch and main are skipped",
+        "A check in the suite's throwaway repo and fake origin: merged branches spec/x, docs/y, harness/z, harness-merge/w and flat, pushed to the origin, are all deleted locally and on the origin by `harness gc proj --all-merged`, and an unmerged spec/u survives in both places",
+        "A check: plain `harness gc proj` on the same setup deletes only harness/z and harness-merge/w (spec/x, docs/y and flat survive)",
+        "journal/decisions/2026-10-25-gc-all-merged.md exists (finding: `*` does not cross `/` on git 2.43 and `(( all )) && break`; rejected: a `**` pattern)",
+        "bash -n bin/harness; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L4-02", "milestone": "L4", "kind": "build", "model": "opus",
+      "description": "gc's worktree removal finishes: a clean tree with ignored build output is removed with --force then rm -rf, a failure is logged as `! could not remove <wt>: <why>` and the next worktree is still processed.",
+      "steps": [
+        "cmd_gc removes a clean, merged worktree with `git worktree remove --force`, then `rm -rf` if the directory remains, then `git worktree prune`; a failure prints `! could not remove <wt>: <why>` and the loop continues",
+        "A check: two merged, clean worktrees in list order, the first holding a gitignored .next/ directory with a file in it; `harness gc proj` removes both and prints `+` lines for both",
+        "A check: a worktree whose removal fails (its directory made read-only by its parent's mode, restored after) prints the `! could not remove` line and the worktree after it is still removed; `--dry-run` removes nothing and prints `would:` for each",
+        "journal/decisions/2026-10-25-gc-removal-finishes.md exists (finding: R9, portfolio_site's .next; choice: --force on a clean tree; rejected: git clean -fdx first)",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L4-03", "milestone": "L4", "kind": "build", "model": "opus",
+      "description": "harness gc --deps deletes DEPS_DIRS (node_modules .next .next-check .venv) inside the worktrees of ended runs, even unmerged ones, logging the space freed, and never inside a live run's worktree or the project's own checkout.",
+      "steps": [
+        "lib/config.sh defaults DEPS_DIRS=\"node_modules .next .next-check .venv\" (templates/user/config.sh commented); cmd_gc takes --deps and, for each worktree under $WT_ROOT/<project>/ whose run has ended, has no live driver.pid, no queued continuation and no open desk, deletes each named directory that exists and prints `+ freed <n> MB in <wt>: <dirs>` (du -sm before deleting)",
+        "A check: an ended, unmerged run's worktree holding node_modules/x.js and .venv/y is emptied of both by `harness gc proj --deps` while its branch and every committed file remain; a live run's worktree (driver.pid naming the suite's shell) keeps its node_modules; the project checkout $T/proj keeps a node_modules placed there; `--dry-run --deps` deletes nothing and prints `would: freed`",
+        "A check: a run with a queued continuation (an entry in $HARNESS_STATE/queue/*-continue-<run>.args) keeps its directories",
+        "journal/decisions/2026-10-25-gc-deps.md exists (finding: B8, 90% of 7.3 GB; choice: ended runs only; rejected: deleting in the project checkout)",
+        "docs/architecture.md §3 (gc) and README's gc row list --deps and DEPS_DIRS; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L4-04", "milestone": "L4", "kind": "build", "model": "opus",
+      "description": "The queue runner runs `harness gc <project> --all-merged --deps` for every project it started a run in, before the debrief, its output in runner.log, and a gc failure never stops the debrief.",
+      "steps": [
+        "lib/queue.sh, on its exit path when it started runs, collects the distinct projects of those runs (from <state>/runners matching its id) and runs `harness gc <project> --all-merged --deps` for each, with `gc <project>:` prefixed lines in runner.log, before the debrief line; a non-zero gc exit logs `gc <project> failed (exit <n>)` and the debrief still starts",
+        "A check on the existing queue-runner test: runner.log has a `gc proj` line before the `harness debrief (detached` line, and the gc's `--all-merged --deps` argv is what ran (seen in runner.log's echoed command)",
+        "A check: with STUB_GC_FAIL=1 (or a project path made to fail gc, as the plan fixed) the runner logs the failure and the debrief count still rises by one",
+        "docs/architecture.md §12 (queue) and README's queue line say the runner collects as it drains; journal/decisions/2026-10-25-runner-gc.md exists (rejected: gc from the debrief, which stays read-only)",
+        "bash -n lib/queue.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+    { "id": "L4-05", "milestone": "L4", "kind": "review", "model": "opus",
+      "description": "An Opus review of the L4 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied (cmd_gc's passes as one loop over prefixes), and the L4 docs complete.",
+      "steps": [
+        "`git diff <the commit before L4-01's first commit>...HEAD -- lib bin tests templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-25-lifecycle/L4-review.diff` is read by an Opus subagent; findings go to docs/plans/2026-10-25-L4-review.md with a severity each, with special attention to anything that could delete an unmerged branch or a live worktree",
+        "Every Critical or Important finding has a check in tests/run.sh that failed before the fix and passes after",
+        "docs/architecture.md §3 gc paragraph describes the passes, --all-merged, --deps and the removal fallback in order; §10 lists DEPS_DIRS; README's gc row is current; docs/specs/2026-10-21-retro-fixes.md's R9 line says it landed here",
+        "Every L4 decision file reads finding · choice · rejected; bash -n passes on bin/harness and lib/queue.sh",
+        "bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false },
+
+    { "id": "L5-01", "milestone": "L5", "kind": "build", "model": "opus", "after": [],
+      "description": "The queue runner re-reads its configuration at the top of every loop and logs a MAX_PARALLEL_RUNS change, so widening or narrowing parallelism needs no runner restart; lowering never stops a running run (optional milestone: dropped first if time runs short).",
+      "steps": [
+        "lib/queue.sh re-runs `harness_config /nonexistent` at the top of each while iteration and logs `MAX_PARALLEL_RUNS <old> → <new> (config reloaded)` when it changed; POLL stays as set at start",
+        "A check: with MAX_PARALLEL_RUNS=1 and two startable entries for two different projects (a second throwaway project in the suite), the runner has started one when $T/user-config.sh is rewritten to 2 (a stub-held slow first session), and within two polls it starts the second and runner.log has the `1 → 2` line",
+        "A check: lowering 2 → 1 while two runs are alive logs the change, both runs finish (their feature lists pass as before) and a third entry waits until one has ended",
+        "journal/decisions/2026-10-25-runner-config-reload.md exists (rejected: a SIGHUP handler; re-reading in harness start only); docs/architecture.md §12 and README's queue line say the runner reloads its config each poll",
+        "bash -n lib/queue.sh; bash tests/run.sh ends with every check passing"
+      ],
+      "passes": false }
+  ] }
