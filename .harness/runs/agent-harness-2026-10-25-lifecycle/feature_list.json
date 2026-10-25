@@ -168,7 +168,7 @@
         "The plan names each L3 check from the spec's list with its tests/run.sh name",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L3-02", "milestone": "L3", "kind": "build", "model": "opus",
       "description": "finish keeps check-last.out and init.out in the run's state dir and deletes the run's scratch directory (KEEP_SCRATCH=1 keeps it), check.sh keeps one check-<key>.out, and sessions see HARNESS_CACHE.",
       "steps": [
