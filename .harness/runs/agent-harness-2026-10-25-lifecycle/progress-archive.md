@@ -9,6 +9,31 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 12:23 · L1-01 · passes
+
+Wrote docs/plans/2026-10-25-L1-capped-sessions.md (scope.sh API, unit names, in-scope wrapper and timeout placement, stub contract, config keys, exact notes, 24 named checks) and captured 8 real fixtures (systemctl show/list-units/stop, no-bus, meminfo). Probes found three things the spec missed: an emptied scope vanishes, OOMPolicy=stop kills the wrapper, MemoryHigh near MemoryMax stalls.
+
+- **Files:** docs/plans/2026-10-25-L1-capped-sessions.md, tests/fixtures/systemctl-show-scope.txt, tests/fixtures/systemctl-show-scope-clean.txt, tests/fixtures/systemctl-show-scope-oom.txt, tests/fixtures/systemctl-show-gone.txt, tests/fixtures/systemctl-list-units.txt, tests/fixtures/systemctl-stop-missing.txt, tests/fixtures/systemd-no-bus.txt, tests/fixtures/meminfo.txt
+- **Verified:** check.sh full run: 236/236 green in 376 s (tests/run.sh untouched). Real probes on harness-test-<pid>-* scopes (64M), each stopped; `systemctl --user list-units 'harness-*' --plain --no-legend` prints nothing afterwards. claude --help (2.1.310) has both MCP flags.
+- **Tests:** 236 → 236
+- **Dead end:** a real scope with MemoryHigh=48M MemoryMax=64M MemorySwapMax=0 around a 256 MB node allocation — it stalled for over 2 minutes under memory.high throttling (high events 1821, oom_kill 0) and had to be stopped by hand; MemoryMax alone kills it with 137 in ~80 ms
+- **Dead end:** reading MemoryPeak with systemctl show after the command returns — a --collect scope with no processes left is gone at once: show prints MemoryPeak=[not set]; the plan reads it from a wrapper inside the scope
+- **Dead end:** the in-scope wrapper with systemd's default OOMPolicy=stop — an OOM kill stops the whole scope, the wrapper dies with 143 and records nothing; -p OOMPolicy=continue keeps it and passes 137 on
+- **Discovery** (affects L1-02, L1-03, L1-04): scope_run must pass -p OOMPolicy=continue and run the command under an in-scope wrapper that writes `systemctl --user show -p MemoryPeak,ControlGroup,TasksCurrent` to <scratch>/scopes/<unit>.show before exiting; leftovers = TasksCurrent - 2 (the wrapper's bash and its systemctl). Plan §2.
+- **Discovery** (affects L1-02): The L1-02 real-scope check must not set MemoryHigh (it stalls instead of killing) and needs SESSION_SWAP_MAX=0 (with 1G swap a 256 MB allocation survives) and an outer timeout 30s. Plan §10, §13.
+- **Discovery** (affects L1-03, L1-05): timeout -k 30s goes inside the scope, around claude or the suite: outside it would signal the wrapper's bash and leave claude alive. GNU timeout exits 137 (not 124) when -k had to KILL, so check.sh calls 137 after >= CHECK_TIMEOUT a timeout, not the cap.
+- **Discovery** (affects L1-03): metrics.mjs environmental() treats an exit 137 with no result under 120 s as environmental (attempt given back); L1-03 must return null for 137 like 124 so a cap kill spends the attempt.
+- **Discovery** (affects L1-02, L1-06): tests/run.sh must export HARNESS_MEMINFO to the real fixture (9 GB) and HARNESS_MEM_POLL=1 globally, or the box's real memory could gate every suite session for 30 min; and unset HARNESS_SCOPE_PREFIX inherited from the outer session.
+- **Discovery** (affects L1-02, L1-03, L2): systemctl --user stop of a unit already gone exits 5 ('Unit … not loaded.'); scope_stop treats 5 as done, and the stub mirrors it (exit 0 only for a live unit).
+- **Question for Michael:** D5 default: the deepEqual line goes in prompts/parts/rules.md as the spec says, but that part renders only when a project has CLAUDE.md. Move it to prompts/coding.md §2 next to Test-driven instead?
+- **Question for Michael:** D6 default: suites get no MemoryHigh (only CHECK_MEMORY_MAX=3G) so a runaway test dies at once; sessions keep MemoryHigh=5G under MemoryMax=6G, which throttles (can stall up to SESSION_TIMEOUT) before killing. Keep the session gap?
+- **Proposed change:** L1-02 step 6: drop MemoryHigh=48M from the real-scope check; run it with SESSION_SWAP_MAX=0 under timeout 30s (plan §10, §13)
+- **Proposed change:** L1-02 step 3: -p OOMPolicy=continue and the wrapper (bash -c <wrap> _ <unit> <dir> <systemctl>) sit between -p MemorySwapMax and the command; check parts, not adjacency
+- **Proposed change:** L1-03 step 5 needs environmental() in lib/metrics.mjs to return null for exit 137
+- **Proposed change:** L1-04 step 3: report() needs metrics.jsonl beside summary.json as its second input
+- **Proposed change:** L1-01 step 2 says stub-systemctl exits 0 for stop; the plan's stub exits 5 for a unit already gone, as the real command does
+- *01-L1-01 · claude-opus-5-5*
+
 ### 2026-10-25 12:05 · init · passes
 
 25 features: L1 8 (plan, scope.sh, scoped sessions, peaks, capped suites, memory gate, strict MCP + prompt line, review), L2 6 (plan, svc scope, teardown + trap, stop points, gc units + status, review), L3 5 (plan, scratch, tmux window, reaper, review), L4 5 (all-merged, removal, --deps, runner gc, review), L5 1 (config reload, optional). L2 after L1; L3, L4, L5 independent.
