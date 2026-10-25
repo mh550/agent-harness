@@ -16,3 +16,4 @@
 - 2026-10-25 15:06 · context.md for L1-08: 6241 bytes
 - 2026-10-25 15:25 · L1-08 · claude-opus-5-5 · passes=true · 19 min · 8/25 passing
 - 2026-10-25 15:25 · context.md for L1: 8033 bytes, 25 items left out
+- 2026-10-25 15:34 · L1 verified and tagged run/agent-harness-2026-10-25-lifecycle/L1
