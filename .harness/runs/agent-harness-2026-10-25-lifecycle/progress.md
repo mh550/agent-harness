@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 14:02 · L1-04 · passes
+
+metrics.mjs append takes a 12th arg (mem_peak_mb: number, null when uncapped) via exported metricsRow; every MET append passes $S_PEAK; report(s, metrics) adds '### Memory peaks over 2 GB' (- <feature> · <model> · <peak> MB) from metrics.jsonl beside summary.json; harness report copies metrics.jsonl into the state dir. Docs, decision file. Tests 249 → 254.
+
+- **Files:** lib/metrics.mjs, lib/summary.mjs, lib/driver.sh, bin/harness, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-session-memory-peaks.md
+- **Verified:** lib/check.sh: 254/254 checks passed (406 s). New checks: metrics.mjs pure append (2048/''/null/undefined), summary.mjs pure report (1500 vs 2500, no section when none, no summary.json key), demo every row mem_peak_mb == 2, bare run all null, leftover run's report.md and `harness report leftover` list `- A · claude-sonnet-5-5 · 6144 MB` once. Pure checks watched failing first.
+- **Tests:** 249 → 254
+- **Dead end:** `grep -qxF "- A · …"` in a check — a pattern starting with '-' is read as an option: use -e
+- **Dead end:** `"$H" report leftover | grep -q …` in a check — under pipefail grep -q's early exit SIGPIPEs the producer and the pipeline fails; capture into a variable first
+- **Dead end:** editing tests/run.sh while a suite run was going — bash reads the script as it runs: the run goes wrong; stop it and rerun
+- **Discovery** (affects L1-08): report.md's peaks section is `### Memory peaks over 2 GB` (not the plan's `##`): it nests under the run's `## <run> · <project>` heading. `harness report` now also writes $STATE/metrics.jsonl (a copy) beside $STATE/summary.json.
+- *04-L1-04 · claude-opus-5-5*
+
 ### 2026-10-25 13:35 · L1-03 · passes
 
 session() runs every claude session (init, coding, verify, retro) as timeout -k 30s SESSION_TIMEOUT inside scope harness-<run>-s<n> (5G/6G/1G, n from state/scope-seq), stops the scope after it returns, notes leftovers and cap kills; one probe per segment notes 'no user systemd'; exit 137 now spends the attempt. Tests 243 → 249.
