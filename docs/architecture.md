@@ -299,8 +299,9 @@ history-destroying denies live). A project may add `.claude/settings.json` (pass
 worktree is untrusted). The harness never writes either, and agents can't (the auto-mode classifier blocks
 "Self-Modification"). The driver logs which applied at start. What agents may do (merge, push, delete merged branches
 and worktrees, `docker compose`) and the closed deny list live in `~/.claude/CLAUDE.md` § "Git, merges and
-permissions" and the user settings, installed from `templates/user/` by `setup/apply-2026-10-24.sh`; production
-gates are the only project settings (portfolio_site, n8n-home).
+permissions" and the user settings, installed from `templates/user/` by `setup/apply-2026-10-24.sh`. A project file
+holds only its own gates and the narrow allows its runs need (portfolio_site's deploy gate, n8n-home's and
+dj-crate-streaming's live protocols, rane-one-mixxx's hardware); the others have none.
 
 ## 11. Measurement and the improvement loop
 

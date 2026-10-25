@@ -56,3 +56,21 @@
   - **Project-repo changes ride chunk 3, not a separate pass.** n8n-home's `MERGE_POLICY=pr` and `.mcp.json`, and
     dj's live settings, go to each project's catch-up worker, which already edits that project's settings and merges
     there. Only agent-harness's own line changed at once, because chunks 4–5 depend on it.
+- **Revised 2026-10-25, after the n8n-home and rane-one-mixxx catch-ups** (both needed a second prompt to trim):
+  - **Finding:** the policy was also restated in project prose: `## Off-limits` sections and `.harness/project.md`
+    held "never run `harness` commands", "other checkouts are off-limits" and the secrets list. The "other checkouts"
+    line is why the rane worker left dj's duplicate rules alone. In every harness run's `permission_denials`, no
+    denial fell on a command the project allow lists covered.
+  - **Choice:**
+    - Catch-up Part 1 step 4 is now "Policy trim: settings and prose". It sets a test for a deny (can't be undone,
+      reaches production or a live system, or touches hardware) and for an allow (acts outside the repo or the
+      classifier could block it, and a run needed it), and gives the `jq` query over run logs as the evidence.
+    - Each project's target is written in its handoff row, so workers check it rather than work it out again.
+    - The user `CLAUDE.md` gains two bullets, "Other projects" and "Harness commands", so no project restates
+      them.
+    - Every secrets read is a user-level deny (`.env.*local`, `~/.config/voice-concierge/**`, `~/.livekit/**`),
+      since secrets are box-wide.
+    - voice-concierge's live tests, worker and `lk` become one `CLAUDE.md` line (Michael: they spend API credit but
+      can be undone).
+  - **Rejected:** a separate follow-up session per project. Part 1 already edits the settings, so a complete step 4
+    costs nothing extra.

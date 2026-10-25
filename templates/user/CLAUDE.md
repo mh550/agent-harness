@@ -14,7 +14,7 @@ The one home of this policy: project files and prompts point here and don't rest
     reflog, the net that makes `reset --hard`, `branch -D` and bad rebases recoverable);
   - `gh repo delete`; `sudo`;
   - `rm -r` under `/srv`, `docker system prune`, `docker volume rm` / `prune` (live data and rollback images);
-  - reading `.env` files or `/etc/restic`.
+  - reading secrets: `.env` and `.env.*local` files, `/etc/restic`, `~/.config/voice-concierge`, `~/.livekit`.
 
   Claude Code itself never auto-approves `rm` of `/`, a top-level directory, your home directory, or the working
   directory and its parents, in any mode, so no rule repeats that.
@@ -35,6 +35,10 @@ The one home of this policy: project files and prompts point here and don't rest
   - rane-one-mixxx: hardware. No raw MIDI sends (`amidi -s`, `aplaymidi`, `sendmidi`): `tools/midi-send` is the
     only way out, and only Michael creates or removes `~/.rane-armed`.
   - Every other project has no project settings file.
+- **Other projects:** read any of them. Change one only from a session in that project's directory or one of its
+  worktrees, since another session may own its checkout.
+- **Harness commands:** any session may run `harness status`, `report`, `parked` and `sync`, and `harness gc` on its
+  own project. Starting, continuing, queueing, answering or merging runs is for Michael, the queue or a desk.
 - **A deny is a gate, not an obstacle.** Don't reach the same end through another command, script or tool. Stop
   that step, write down what you need and why, and carry on with whatever doesn't depend on it.
 - **Harness runs** merge their verified milestones (`MERGE_POLICY=auto` in `~/.config/harness/config.sh`); the

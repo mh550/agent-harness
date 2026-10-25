@@ -14,7 +14,8 @@
 - Plans: `docs/plans/<date>-<milestone>-<topic>.md`.
 
 ## Off-limits
-- <read-only inputs, secrets, other checkouts>
+- <only this project's own gates: read-only inputs, hardware, production deploys. Secrets, other projects, git safety
+  and harness commands are in `~/.claude/CLAUDE.md`; don't restate them.>
 
 <!-- For POLICY=live-staged, add:
 ## Live system
