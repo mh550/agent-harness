@@ -91,7 +91,7 @@
         "Every L1 decision file cites the spec and reads finding · choice · rejected; none numbers itself D-H<n>",
         "bash -n on every shell file touched by L1 and node --check on every .mjs pass; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
 
     { "id": "L2-01", "milestone": "L2", "kind": "plan", "model": "opus", "after": ["L1"],
       "description": "docs/plans/2026-10-25-L2-run-services.md fixes the services scope, the teardown hook, services_down's order and every stop point, plus the gc and status additions, so L2-02..L2-05 build one thing.",
