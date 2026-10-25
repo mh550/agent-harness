@@ -1,5 +1,7 @@
 # Memory exhaustion during run rane-one-mixxx-2026-10-24 (M5-02)
 
+**Specced 2026-10-25:** steps 1–4 are `docs/specs/2026-10-25-resource-lifecycle.md` §L1.
+
 Date: 2026-10-24, 00:49–00:51 EDT. Host: pop-os (15 GB RAM). Status: investigated, nothing changed yet.
 
 ## What was observed

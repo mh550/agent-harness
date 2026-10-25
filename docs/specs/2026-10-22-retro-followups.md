@@ -1,5 +1,8 @@
 # Retro follow-ups: test counts, review cost, a retro backlog, semantic memory (2026-10-22)
 
+**Superseded 2026-10-25** by `docs/specs/2026-10-25-memory.md`: §E is its M1, §F its M2 and M3, §C its M5 and §D its
+M6. This file stays for the findings and evidence the new spec cites. Build from the new spec.
+
 **Goal.** Four changes that pick up where the in-flight runs stop: a reliable test-count *source* and fix for
 continued runs (beyond R1), a measured decision about the milestone review's cost (beyond R2), a tracked backlog so
 retros stop re-proposing the same fix, and semantic memory (decisions and answers edited in place) on top of E4.

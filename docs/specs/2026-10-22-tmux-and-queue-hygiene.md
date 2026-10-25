@@ -1,5 +1,8 @@
 # tmux session hygiene and live-config parallelism (2026-10-22)
 
+**Superseded 2026-10-25** by `docs/specs/2026-10-25-resource-lifecycle.md`: H1 is its §L3 and H2 its §L5. This file
+stays for the findings and the detailed checks the new spec cites. Build from the new spec.
+
 **Goal.** Stop ended runs' tmux sessions from piling up, and let `MAX_PARALLEL_RUNS` change without restarting the
 queue runner. Two small, independent changes to the CLI (`cmd_start`, `cmd_gc`) and the queue runner (`lib/queue.sh`),
 each test-first with a check in `tests/run.sh`, a `D-H<n>` entry, and its `architecture.md`/`README.md` lines.

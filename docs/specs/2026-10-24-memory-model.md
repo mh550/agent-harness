@@ -1,5 +1,9 @@
 # One memory model for the harness and its projects (2026-10-24)
 
+**Superseded 2026-10-25** by `docs/specs/2026-10-25-memory.md`: K1 is its M2, K2 its M3 and K3 its M4. K4 was done
+by hand in handoff chunk 3 Part 2 (`prompts/project-catchup.md`). This file stays for the model, the audit and the
+detailed checks the new spec cites. Build from the new spec.
+
 **Goal.** Every fact a session (harness-run or interactive) writes goes to the one store whose type fits it, and the
 projects' existing files are brought into line once and then kept there by a cheap deterministic lint. The model is
 CoALA's four memory types as the field guide applies them (`findings-and-research/Agent Memory Field Guide.md` ch. 1,
