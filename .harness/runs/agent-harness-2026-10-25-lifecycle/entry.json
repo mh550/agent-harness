@@ -1,0 +1,10 @@
+{ "feature": "L1-06", "kind": "coding", "outcome": "passes",
+  "summary": "Memory gate: mem_available_gb and mem_gate in lib/scope.sh; session() calls mem_gate for init/coding/verify (not retro) before t0. Under MEM_MIN_AVAILABLE_GB=5 it notes, calls services_down memory (no-op in driver until L2), checks at once then every HARNESS_MEM_POLL s up to MEM_WAIT_MAX=30m, then starts anyway. Config, template, docs, decision. Tests 260 → 264.",
+  "files": ["lib/scope.sh", "lib/driver.sh", "lib/config.sh", "templates/user/config.sh", "tests/run.sh", "docs/architecture.md", "README.md", "journal/decisions/2026-10-25-memory-gate.md"],
+  "verified_how": "bash tests/run.sh 264/264; lib/check.sh green in 453 s; new checks: mem_available_gb on the real fixture (9), mem_gate unit (still-low and freed-by-services_down paths), run lowmem (2 GB copy, MEM_WAIT_MAX=2s: both notes once per init/coding/verify session, 3/3 passing), demo has no memory note; bash -n on every touched shell file",
+  "tests_before": 260, "tests_after": 264,
+  "discoveries": [
+    { "text": "mem_gate lives in lib/scope.sh (not the driver as the plan said) and calls services_down only when declared; driver.sh defines a no-op services_down() unless one exists. L2 should define the real one before or instead of it (driver.sh:57: `declare -F services_down || services_down() { :; }`).", "affects": ["L2"] },
+    { "text": "mem_gate checks right after services_down before its first sleep, so a teardown that frees memory starts the session at once (note 'memory: <n> GB available after 0 s; starting the session').", "affects": ["L2"] }
+  ],
+  "questions": ["D default: MEM_MIN_AVAILABLE_GB=5 and MEM_WAIT_MAX=30m (the audit's figures), starting the session anyway after the wait rather than parking. Keep?"] }
