@@ -113,7 +113,7 @@
         "journal/decisions/2026-10-25-services-scope.md exists (finding: portfolio_site's next dev; choice; rejected: killing the init's pid)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L2-03", "milestone": "L2", "kind": "build", "model": "opus",
       "description": "services_down runs the project's teardown hook, stops the services scope and notes it, on finish and in the driver's EXIT trap, so a crash or a kill of the driver still stops what the init started.",
       "steps": [
