@@ -1,0 +1,14 @@
+{ "feature": "L1-04", "kind": "coding", "outcome": "passes",
+  "summary": "metrics.mjs append takes a 12th arg (mem_peak_mb: number, null when uncapped) via exported metricsRow; every MET append passes $S_PEAK; report(s, metrics) adds '### Memory peaks over 2 GB' (- <feature> · <model> · <peak> MB) from metrics.jsonl beside summary.json; harness report copies metrics.jsonl into the state dir. Docs, decision file. Tests 249 → 254.",
+  "files": ["lib/metrics.mjs", "lib/summary.mjs", "lib/driver.sh", "bin/harness", "tests/run.sh", "docs/architecture.md", "README.md", "journal/decisions/2026-10-25-session-memory-peaks.md"],
+  "verified_how": "lib/check.sh: 254/254 checks passed (406 s). New checks: metrics.mjs pure append (2048/''/null/undefined), summary.mjs pure report (1500 vs 2500, no section when none, no summary.json key), demo every row mem_peak_mb == 2, bare run all null, leftover run's report.md and `harness report leftover` list `- A · claude-sonnet-5-5 · 6144 MB` once. Pure checks watched failing first.",
+  "tests_before": 249, "tests_after": 254,
+  "dead_ends": [
+    { "tried": "`grep -qxF \"- A · …\"` in a check", "why": "a pattern starting with '-' is read as an option: use -e" },
+    { "tried": "`\"$H\" report leftover | grep -q …` in a check", "why": "under pipefail grep -q's early exit SIGPIPEs the producer and the pipeline fails; capture into a variable first" },
+    { "tried": "editing tests/run.sh while a suite run was going", "why": "bash reads the script as it runs: the run goes wrong; stop it and rerun" }
+  ],
+  "discoveries": [
+    { "text": "report.md's peaks section is `### Memory peaks over 2 GB` (not the plan's `##`): it nests under the run's `## <run> · <project>` heading. `harness report` now also writes $STATE/metrics.jsonl (a copy) beside $STATE/summary.json.", "affects": ["L1-08"] }
+  ]
+}
