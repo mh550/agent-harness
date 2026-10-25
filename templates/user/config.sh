@@ -22,3 +22,6 @@
 # Each check.sh run (full or subset, the driver's or a session's) runs in its own scope, harness-<run>-check-<pid>.
 # CHECK_MEMORY_MAX=3G                # killed at this: "check: RED (killed at its 3G memory cap, …)"
 # CHECK_TIMEOUT=15m                  # then TERM, KILL 30 s later: "check: RED (timed out after 15m, …)"
+# Before each init, coding and verify session, the driver checks MemAvailable; under the minimum it waits, then starts anyway.
+# MEM_MIN_AVAILABLE_GB=5             # whole GB; under it: note, stop the run's services, poll every 5 minutes
+# MEM_WAIT_MAX=30m                   # then the session starts anyway, with a note (its cap protects the box)

@@ -54,6 +54,7 @@ rm -f "$STATE"/waited-*   # a restart inside a usage-limit window waits for it a
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
 note() { log "$*"; echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; }   # phone-readable, committed
+declare -F services_down > /dev/null || services_down() { :; }   # <why>: stops the run's services (L2); mem_gate calls it
 # shellcheck source=lib/notify.sh
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID   # notify "<message>" [title=… body=… click=… …]: "[<run>] <message>"
 # shellcheck source=lib/deploy.sh
@@ -175,7 +176,9 @@ clock() {
 # sets S_EXIT, S_WALL, S_PEAK (MB, empty when uncapped) and S_NOTES (what the scope showed; noted here, except for the
 # read-only retro, whose caller notes them after restrict, which would revert them)
 session() {
-  local settings=() t0 seq unit left x; t0=$(date +%s) S_NOTES=()
+  local settings=() t0 seq unit left x
+  [[ $1 == retro ]] || mem_gate   # not the retro: the run is ending; before t0, so the wait isn't the session's wall time
+  t0=$(date +%s) S_NOTES=()
   # an entry.json no ingest took (the driver died after its session) would pass for this session's own
   [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
   cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)

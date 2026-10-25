@@ -1,5 +1,6 @@
 # Usage: source lib/scope.sh; scope_run <unit> <mem-high> <mem-max> <cmd…> · scope_stop <unit> · scope_peak <unit> ·
-#   scope_left <unit> · scope_capped <unit> <mem-max> · scope_unit <run> <role> · scope_bytes <size> · dur_s <duration> · scope_available
+#   scope_left <unit> · scope_capped <unit> <mem-max> · scope_unit <run> <role> · scope_bytes <size> · dur_s <duration> · scope_available ·
+#   mem_available_gb [<meminfo>] · mem_gate (notes through the caller's note)
 # Capped transient systemd user scopes (docs/plans/2026-10-25-L1-capped-sessions.md §1-§2): bare when the user bus is
 # missing. systemd-run and systemctl are ${HARNESS_SYSTEMD_RUN:-systemd-run} and ${HARNESS_SYSTEMCTL:-systemctl}, read
 # at call time (the suite points them at its stubs).
@@ -75,4 +76,28 @@ scope_left() {
 scope_capped() {
   scope_available || return 1
   local b m; b=$(scope_prop "$1" MemoryPeak) m=$(scope_bytes "$2"); [[ $b =~ ^[0-9]+$ && $m =~ ^[0-9]+$ ]] && (( b >= m ))
+}
+
+# MemAvailable of <meminfo> (default ${HARNESS_MEMINFO:-/proc/meminfo}) in whole GB, floored; exit 1 without the line
+mem_available_gb() {
+  local kb; kb=$(awk '$1 == "MemAvailable:" { print $2; exit }' "${1:-${HARNESS_MEMINFO:-/proc/meminfo}}" 2> /dev/null)
+  [[ $kb =~ ^[0-9]+$ ]] || return 1; echo $(( kb / 1048576 ))
+}
+
+# Before a session (decisions/2026-10-25-memory-gate): under MEM_MIN_AVAILABLE_GB, note it, stop the run's services
+# (services_down, when the caller has one), poll every ${HARNESS_MEM_POLL:-300} s up to MEM_WAIT_MAX, then start
+# anyway: the session's cap protects the box, and a run that never starts helps nobody. Unreadable → no gate.
+mem_gate() {
+  local gb waited=0 max poll=${HARNESS_MEM_POLL:-300} s
+  gb=$(mem_available_gb) && (( gb < MEM_MIN_AVAILABLE_GB )) || return 0
+  note "memory: $gb GB available, under MEM_MIN_AVAILABLE_GB=$MEM_MIN_AVAILABLE_GB; waiting up to $MEM_WAIT_MAX"
+  declare -F services_down > /dev/null && services_down memory
+  max=$(dur_s "$MEM_WAIT_MAX") || max=1800
+  while :; do   # first right after services_down: what it freed may be enough
+    gb=$(mem_available_gb) || return 0
+    (( gb >= MEM_MIN_AVAILABLE_GB )) && { note "memory: $gb GB available after $waited s; starting the session"; return 0; }
+    (( waited < max )) || break
+    s=$(( poll < max - waited ? poll : max - waited )); sleep "$s"; waited=$(( waited + s ))
+  done
+  note "memory still at $gb GB after $MEM_WAIT_MAX; starting the session anyway (its cap protects the box)"
 }

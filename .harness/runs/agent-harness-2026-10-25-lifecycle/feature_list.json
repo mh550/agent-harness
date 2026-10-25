@@ -71,7 +71,7 @@
         "journal/decisions/2026-10-25-memory-gate.md exists (default 5 GB from the audit; rejected: refusing to start)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L1-07", "milestone": "L1", "kind": "build", "model": "opus",
       "description": "Headless sessions load only their project's MCP servers (--strict-mcp-config, plus --mcp-config <wt>/.mcp.json when it exists), and the coding prompt's rules tell sessions never to deepEqual large values and to bound a rerun after exit 137 or a hang.",
       "steps": [
