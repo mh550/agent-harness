@@ -51,7 +51,15 @@ Michael's review of the evaluation, verbatim in substance:
 - `harness report` rebuilt both v2 runs' writeups from their records (numbers match the evaluation).
 
 ## What worked / what broke
-*(after the first v3 night)*
+*(after a week of v3 nights, 2026-10-17 → 10-24; the detail is in iteration 6's Context)*
+- **Worked:** the builder. There were 22 runs, 520 passing features and 5,595 tests added, for $1,941.70
+  (`ledger/runs.jsonl`). Verified milestones landed as verified trees.
+- **Broke:** everything around it.
+  - Only 224 features were merged.
+  - The harness's own improvement runs were parked out of sight, and the live checkout fell 109 commits behind.
+  - Retros repeated the same proposal 9 times without it becoming work.
+  - Nothing stopped what a run started, which meant 10 OOM kills and ~1 M leaked `/tmp` files.
+  - A project deny killed n8n-home's run at 0/32.
 
 ## Led to
-*(after the first v3 night)*
+[Iteration 6 — the harness maintains itself](06-the-harness-maintains-itself.md).

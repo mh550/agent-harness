@@ -1,4 +1,4 @@
-# Timeline: how Michael drove agents, 2026-02 → 2026-10-16
+# Timeline: how Michael drove agents, 2026-02 → 2026-10-25
 
 Built only from git history and committed docs in `~/projects` (umbrella), `pathways`,
 `dj-crate-streaming`, `hit_list`. Times are commit times (EDT) unless a runbook's Status log is quoted.
@@ -73,3 +73,38 @@ Abbreviations: **dj** = dj-crate-streaming · **umb** = `~/projects` · **ON1** 
    from merging."
 10. **Iteration 2 in Pathways was overtaken in 11.5 h.** ON3 `cd3eacb` (09:44) → `889f5fe` (21:11): "**Driver
     (changed 2026-10-16): the long-running harness in `harness/`**… replaces the self-paced `/loop`."
+
+## 2026-10-17 → 10-25: harness v3 nights, then the harness maintains itself (iterations 5–6)
+
+Added 2026-10-25 from `ledger/runs.jsonl`, `gh pr list` in every repo (merge times converted to EDT) and the session
+transcripts quoted in `sessions/2026-10-24-harness-catchup.md`. The v3 nights themselves have no rows of their own
+yet; their totals head this section.
+
+| Date (EDT) | Project | Driver | Model(s) if stated | What was asked (one line) | Outcome (real numbers) | Notable problems |
+|---|---|---|---|---|---|---|
+| **2026-10-17 → 10-24** | all seven | **harness v3** (queue, driver, verify, self-merge) | per role, in `ledger/` | the queued nights | **22 runs, $1,941.70, 520 features passing, 5,595 tests added; 224 merged** | the harness's own follow-on runs parked in `queue/held/` and never ran; the live checkout fell 109 commits behind; 10 OOM kills; n8n-home 0/32 on a deny |
+| 10-23 21:43–22:28 | n8n-home | interactive | — | "What are my todos now?" → "relax the denylist… sessions… deploy too" | n8n-home PR #1 (allow `docker compose`), #2 (live-staged) | a project deny overrode the user allow |
+| 10-24 00:42 | hit_list | interactive | — | "how do I handle the 10 open pull requests… Maybe we just allow merges" | PR #18 merged with all ten milestones stacked; #9–#17 closed with it | one PR per milestone on a project with no production |
+| 10-24 00:52 → 11:57 | rane-one-mixxx run | interactive, during the run | — | "a 6gb node instance was spawning up… Why?" | `findings-and-research/2026-10-24-oom-from-unbounded-test-diff.md` | four ~7 GB `assert.deepEqual` diffs; no memory cap per session; the finding ended up on a branch |
+| 10-24 11:52 → 13:40 | agent-harness | interactive, then step 1 and step 3 | Sonnet 5.5 (transcript banner) | state of the harness runs → [four meta issues](prompts/2026-10-24-four-meta-issues.md) → [chunk it](prompts/2026-10-24-chunked-handoff.md) | PR #11 (stranded work, 13:12), PR #12 (sync, park, self-merge; suite **236/236**, 13:39); the five-chunk handoff | — |
+| 10-24 12:30 | box | interactive background job | — | the boot hang, "6 python instances", "a bunch of `2.1.310` instances" | `2026-10-24-system-resource-audit.md`: ~1.07 M leaked `/tmp` files, 8 idle voice-concierge workers, `bg-spare` sessions, 7.3 GB of worktrees | couldn't write to the live checkout; left uncommitted in a worktree |
+| 10-24 12:39 | agent-harness | interactive | — | procedurize the memory field guide "without adding bloat" | `docs/specs/2026-10-24-memory-model.md` (K1–K4) | on a branch until PR #11 |
+| 10-24 15:31 → 16:44 | agent-harness | handoff chunk 1 | — | "do Chunk 1 only, within its limits" | PR #13 (templates + apply script, 15:44), PR #14 (dj live, 16:35) | — |
+| 10-24 15:50–16:51 | box | **Michael** (chunk 2) | — | apply the policy; free the box | apply script run at 15:50 and 16:44 (backups in `backups/apply-2026-10-24-*`); voice-concierge stopped; zram 50 %; reboot 16:51 | `bg-spare` sessions back within a day |
+| 10-24 16:57 → 23:32 | n8n-home, rane-one-mixxx | catch-up workers, prompt **v1** (6,156 chars) | — | Part 1, then [a redundancy sweep](prompts/2026-10-24-redundancy-sweep.md) as a second prompt | n8n-home #3, #4 (52/82 → 22/5); rane-one-mixxx #6, #7 (37/43 → 3/7); harness PR #15 (templates from the sweep) | two rounds each: "reduce" had no test |
+| 10-24 23:50 → 10-25 00:14 | agent-harness | interactive background job | Opus 5.5 | [fix the prompt, not the output](prompts/2026-10-25-fix-the-prompt.md) | PR #16: catch-up prompt **v2** (8,746 chars), targets per project | — |
+| **10-25 00:21 → 00:59** | voice-concierge, dj, hit_list, pathways, portfolio_site | five catch-up workers, prompt v2 | — | Part 1 | voice-concierge #15–16, dj #23–#32, hit_list #19–20, pathways #14–15, portfolio_site #29; project rules **404 → 51** in total; 35 stale remote branches deleted in portfolio_site alone | no second prompt about settings; pathways paused for memory (four workers at once, one over the limit of three); dj's `--all-merged` skipped `harness/*` |
+
+### Turning points
+
+11. **A week of good runs hid a stalled system.** 520 features passed but only 224 were merged. The harness's own
+    improvement runs sat in a folder the runner never reads, and the live checkout was 109 commits behind (decision
+    `2026-10-24-close-the-loop`).
+12. **Four symptoms, one cause.** Retros in run folders, worktrees "blocking" writes, permission sprawl and memory
+    sprawl all came from one pattern: "almost nothing reaches main, or the running harness, unless you carry it there
+    by hand" ([prompt](prompts/2026-10-24-four-meta-issues.md)).
+13. **The safety policy caused the mess.** Denies on `git branch -D`, `worktree remove` and `push --delete` were
+    meant to be safe, and they are why branches and worktrees piled up. One `docker compose` deny cost a whole run.
+    The new rule: deny only what can't be undone (`decisions/2026-10-24-permissions-policy`).
+14. **The prompt is the product.** Two workers needed a second round; the fix went into the shared prompt (a test, a
+    query, a target per project), and the next five finished in 40 minutes without one.
