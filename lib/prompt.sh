@@ -5,7 +5,7 @@
 # meta.env, worktree, config and run.env, with the caller's HARNESS_CONFIG and HARNESS_SCRATCH_ROOT), so
 # `harness eval probes` judges the exact handoff (plan: docs/plans/2026-10-21-E2-evals.md §5.2).
 
-# Needs PROJECT_DIR RUN_ID STATE HARNESS_HOME, and the worktree as the working directory.
+# Needs PROJECT_DIR RUN_ID STATE HARNESS_HOME, lib/scope.sh sourced (prompt_env), and the worktree as the working directory.
 prompt_vars() {
   PROJECT_NAME=$(basename "$PROJECT_DIR") BRANCH=$(git branch --show-current) RUN_DIR=.harness/runs/$RUN_ID
   SCRATCH=${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/$RUN_ID CHECK=$HARNESS_HOME/lib/check.sh PORT=$(cat "$STATE/port")
@@ -17,7 +17,8 @@ prompt_env() {
   export HARNESS_RUN_ID=$RUN_ID HARNESS_RUN_DIR=$RUN_DIR HARNESS_BRANCH=$BRANCH HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH \
     HARNESS_CHECK="$CHECK" HARNESS_CHECK_CMD=$CHECK_CMD HARNESS_SMOKE_CMD=$SMOKE_CMD HARNESS_INIT_CMD=$INIT_CMD \
     HARNESS_SPEC_FILES=${SPEC_FILES:-none} HARNESS_MAIN_BRANCH=$MAIN_BRANCH HARNESS_PROJECT=$PROJECT_NAME HARNESS_WT=$WT \
-    HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green
+    HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green \
+    HARNESS_SCOPE_PREFIX="$(scope_unit "$RUN_ID" "")" HARNESS_CHECK_MEMORY_MAX=$CHECK_MEMORY_MAX HARNESS_CHECK_TIMEOUT=$CHECK_TIMEOUT   # check.sh caps the same way for both
 }
 
 prompt_render() {   # template name → stdout: the static template, the policy, this run (its lines, the brief, the line naming CLAUDE.md), this session
@@ -44,6 +45,8 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
   HARNESS_HOME=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)   # this version's templates, whatever the caller's
   # shellcheck source=lib/config.sh
   source "$HARNESS_HOME/lib/config.sh"
+  # shellcheck source=lib/scope.sh
+  source "$HARNESS_HOME/lib/scope.sh"   # scope_unit, for prompt_env's HARNESS_SCOPE_PREFIX
   # shellcheck source=/dev/null
   source "$STATE/meta.env"
   cd "$WT" || exit 1

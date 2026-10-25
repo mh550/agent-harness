@@ -60,7 +60,7 @@
         "journal/decisions/2026-10-25-capped-suites.md exists (finding: the 2026-10-24 deepEqual OOM; choice; rejected: ulimit -v)",
         "bash -n lib/check.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L1-06", "milestone": "L1", "kind": "build", "model": "opus",
       "description": "Before a session, when MemAvailable is under MEM_MIN_AVAILABLE_GB the driver notes it, waits up to MEM_WAIT_MAX polling every 5 minutes, then starts the session anyway with a note.",
       "steps": [

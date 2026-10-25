@@ -13,7 +13,7 @@ export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/sc
   HARNESS_CLAUDE=$HERE/stub-claude.sh HARNESS_GH=$HERE/stub-gh.sh HARNESS_CURL=$HERE/stub-curl.sh STUB_DIR=$T HARNESS_LEDGER=$T/ledger \
   HARNESS_CONFIG=$T/user-config.sh HARNESS_LIMIT_SLEEP=0 HARNESS_NO_RUNNER=1 HARNESS_QUEUE_POLL=0 HARNESS_QUEUE_SETTLE=0
 export HARNESS_SYSTEMD_RUN=$HERE/stub-systemd-run.sh HARNESS_SYSTEMCTL=$HERE/stub-systemctl.sh HARNESS_MEMINFO=$HERE/fixtures/meminfo.txt HARNESS_MEM_POLL=1
-unset HARNESS_SCOPE_PREFIX SCOPE_OK   # a session running the suite inherits its own run's prefix
+unset HARNESS_SCOPE_PREFIX HARNESS_CHECK_MEMORY_MAX HARNESS_CHECK_TIMEOUT SCOPE_OK   # a session running the suite inherits its own run's
 fails=0 total=0
 check() { total=$((total + 1)); if eval "$2"; then echo "PASS $1"; else echo "FAIL $1"; fails=$((fails + 1)); fi; }
 hlog() { cat "$T/wt/${2:-proj}/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }   # <run> [<project>]
@@ -135,6 +135,7 @@ check "scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]" \
   '( source "$SC"; [[ $(scope_unit "a.b/c d" s1) == harness-a-b-c-d-s1 && $(scope_unit demo "") == harness-demo && $(scope_bytes 6G) == 6442450944 && $(scope_bytes 64M) == 67108864 && $(scope_bytes 4096) == 4096 ]] )'
 sc_bare=$( export STUB_NO_SYSTEMD=1 HARNESS_SCRATCH=$T/sc; source "$SC"; scope_available; echo "avail=$?"
   scope_run harness-x-bare "" 64M bash -c 'echo ran > "$0"; exit 4' "$T/sc-bare.out"; echo "rc=$?"; scope_stop harness-x-bare; echo "stop=$?"; scope_peak harness-x-bare; echo "peak=$?" )
+check "scope.sh: dur_s reads timeout(1) durations as seconds" '( source "$SC"; [[ $(dur_s 15m) == 900 && $(dur_s 2s) == 2 && $(dur_s 1h) == 3600 && $(dur_s 90) == 90 && $(dur_s 1d) == 86400 ]] && ! dur_s 1.5m && ! dur_s "" )'
 check "scope.sh: without user systemd scope_run runs bare (STUB_NO_SYSTEMD=1)" \
   '[[ $sc_bare == $'"'"'avail=1\nrc=4\nstop=0\npeak=1'"'"' && $(cat "$T/sc-bare.out") == ran && $(sd_count --unit=harness-x-bare) == 0 ]]'
 # the bus goes away after a good probe: systemd-run fails (its own line on stderr), the wrapper never ran, so the
@@ -593,6 +594,29 @@ check "metrics.jsonl: mem_peak_mb is null when uncapped" 'jq -se "length >= 5 an
 check "report.md lists the session that peaked at its cap among the peaks over 2 GB" 'L=$T/wt/proj/leftover/.harness/runs/leftover; M=$(jq -r "select(.feature==\"A\" and .exit==137) | .model" "$L/metrics.jsonl") \
   && [[ -n $M ]] && grep -qxFe "- A · $M · 6144 MB" "$L/report.md" && [[ $(grep -c " MB$" <<< "$(sed -n "/^### Memory peaks over 2 GB/,\$p" "$L/report.md")") == 1 ]] \
   && HR=$("$H" report leftover) && grep -qxFe "- A · $M · 6144 MB" <<< "$HR"'
+
+# ---- capped suites (L1-05): check.sh runs full and subset in harness-<run>-check-<pid> at 3G under timeout -k 30s ----
+check "check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s" 'C=$(sd_with --unit=harness-demo-check-); U=$(grep -x -- "--unit=harness-demo-check-[0-9]*" <<< "$C" | sed "s/^--unit=//") \
+  && [[ -n $U ]] && grep -qxF MemoryMax=3G <<< "$C" && ! grep -q MemoryHigh <<< "$C" && grep -A6 -x timeout <<< "$C" | paste -sd" " | grep -qxF "timeout -k 30s 15m bash -c test ! -f BROKEN" \
+  && [[ $(sd_count $'"'"'stop\n'"'"'"$U.scope") == 1 ]]'
+ck() { ( cd "$T/proj" && HARNESS_SCRATCH=$T/ck HARNESS_CHECK_CACHE=$T/ck-cache HARNESS_SCOPE_PREFIX=${CKP:-harness-ck} HARNESS_CHECK_CMD=$1 "$HERE/../lib/check.sh" "${@:2}" ); }   # check.sh called directly, as a session would
+ck_137=$(ck 'echo started; touch "$STUB_DIR/scope/$STUB_SCOPE_UNIT.oom"; exit 137'; echo "rc=$?")   # .oom: the stub's MemoryPeak is the cap
+check "check.sh: exit 137 prints the memory-cap RED line" 'grep -qx "check: RED (killed at its 3G memory cap, exit 137 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_137" \
+  && grep -qx started <<< "$ck_137" && [[ $(tail -1 <<< "$ck_137") == rc=137 && $(sd_count --unit=harness-ck-check-) == 1 ]] && ! ls "$T"/ck/scopes/harness-ck-check-* 2> /dev/null'
+ck_124=$(ck 'exit 124') ck_3=$(ck 'exit 3') ck_hung=$(HARNESS_CHECK_TIMEOUT=1s ck 'trap "" TERM; sleep 2; kill -9 $$') ck_bare=$(STUB_NO_SYSTEMD=1 ck 'exit 137') ck_own=$(ck 'exit 137')
+check "check.sh: exit 124 prints the timed-out RED line" 'grep -qx "check: RED (timed out after 15m, exit 124 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_124" \
+  && grep -qx "check: RED (timed out after 1s, exit 137 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_hung" \
+  && grep -qx "check: RED (exit 3 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_3" && grep -qx "check: RED (exit 137 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_bare" \
+  && grep -qx "check: RED (exit 137 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_own"'   # a 137 short of the cap is the suite's own
+ck_sub=$(CKP=harness-cks ck 'echo sub' -k foo; CKP=harness-cks ck 'echo sub' -k foo; echo "rc=$?"; CKP=harness-cks ck 'touch "$STUB_DIR/scope/$STUB_SCOPE_UNIT.oom"; sh -c "exit 137"' -k foo; echo "rc=$?")
+check "check.sh: a subset call is scoped too and never cached" '[[ $(sed 3q <<< "$ck_sub") == $'"'"'sub -k foo\nsub -k foo\nrc=0'"'"' && $(sd_count --unit=harness-cks-check-) == 3 ]] \
+  && [[ $(sed 1,3d <<< "$ck_sub" | sed "s/after [0-9]* s/after <n> s/") == $'"'"'check: RED (killed at its 3G memory cap, exit 137 after <n> s)\nrc=137'"'"' ]] \
+  && sd_with --unit=harness-cks-check- | grep -A9 -x timeout | paste -sd" " | grep -qxF "timeout -k 30s 15m bash -c echo sub \"\$@\" _ -k foo" && ! ls "$T"/ck-cache/green-* 2> /dev/null'
+# the calling session's scope is stopped (systemctl sends TERM) while its check.sh runs: the suite's scope goes with it
+( cd "$T/proj" && HARNESS_SCRATCH=$T/ck HARNESS_CHECK_CACHE=$T/ck-cache HARNESS_SCOPE_PREFIX=harness-ckt HARNESS_CHECK_CMD='echo $$ >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"; exec sleep 60' exec "$HERE/../lib/check.sh" > "$T/ckt.out" 2>&1 ) & ckt=$!
+for i in $(seq 50); do [[ -s $T/scope/harness-ckt-check-$ckt.pids ]] && break; sleep 0.1; done; ckt_sleep=$(cat "$T/scope/harness-ckt-check-$ckt.pids" 2> /dev/null)
+SECONDS=0; kill -TERM "$ckt"; wait "$ckt"; ckt_rc=$? ckt_s=$SECONDS
+check "check.sh: a TERM stops the suite's scope with it" '[[ $ckt_rc == 143 && $ckt_s -le 3 && -n $ckt_sleep ]] && gone "$ckt_sleep" && [[ $(sd_count $'"'"'stop\nharness-ckt-check-'"'"'"$ckt.scope") == 1 ]]'
 
 # ---- gc: main has every milestone; only run-record commits are left on the branch ----
 "$H" gc "$T/proj" > "$T/gc.out" 2>&1

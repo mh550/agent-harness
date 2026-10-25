@@ -1,5 +1,5 @@
 # Usage: source lib/scope.sh; scope_run <unit> <mem-high> <mem-max> <cmd…> · scope_stop <unit> · scope_peak <unit> ·
-#   scope_left <unit> · scope_capped <unit> <mem-max> · scope_unit <run> <role> · scope_bytes <size> · scope_available
+#   scope_left <unit> · scope_capped <unit> <mem-max> · scope_unit <run> <role> · scope_bytes <size> · dur_s <duration> · scope_available
 # Capped transient systemd user scopes (docs/plans/2026-10-25-L1-capped-sessions.md §1-§2): bare when the user bus is
 # missing. systemd-run and systemctl are ${HARNESS_SYSTEMD_RUN:-systemd-run} and ${HARNESS_SYSTEMCTL:-systemctl}, read
 # at call time (the suite points them at its stubs).
@@ -22,6 +22,9 @@ scope_unit() { local r=${1//[^A-Za-z0-9_-]/-}; echo "harness-$r${2:+-$2}"; }
 
 # 6G → bytes, 1024-based as systemd reads K/M/G/T; a bare number is bytes
 scope_bytes() { local n=${1%[KMGTkmgt]}; case ${1##*[0-9]} in [Kk]) echo $(( n << 10 )) ;; [Mm]) echo $(( n << 20 )) ;; [Gg]) echo $(( n << 30 )) ;; [Tt]) echo $(( n << 40 )) ;; *) echo "$n" ;; esac; }
+
+# 15m → 900: the whole-number durations timeout(1) takes (s m h d; bare = seconds); nothing and exit 1 for any other
+dur_s() { [[ $1 =~ ^([0-9]+)([smhd]?)$ ]] || return 1; local n=${BASH_REMATCH[1]}; case ${BASH_REMATCH[2]} in m) echo $(( n * 60 )) ;; h) echo $(( n * 3600 )) ;; d) echo $(( n * 86400 )) ;; *) echo "$n" ;; esac; }
 
 # The command's exit code. An empty <mem-high> leaves MemoryHigh out (it throttles near the cap instead of killing).
 # OOMPolicy=continue: a cap kill takes only its victim, so the wrapper lives to record the peak and pass the 137 on.

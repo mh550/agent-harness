@@ -58,8 +58,8 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 | `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only | recommended |
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
 
-Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…), smoke, init, port,
-models, limits. Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
+Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
+its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`), smoke, init, port, models, limits. Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
 
 ## What a run is
 
