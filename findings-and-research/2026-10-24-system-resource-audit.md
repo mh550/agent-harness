@@ -1,5 +1,7 @@
 # System resource audit: a week of harness runs, the boot "hang", and what is still running
 
+**Specced 2026-10-25:** §3B is `docs/specs/2026-10-25-resource-lifecycle.md`. B10 was done by `lib/sync.sh`.
+
 Date: 2026-10-24, 12:30 EDT, about 20 minutes after the reboot. Host: pop-os, 15.5 GB RAM, 8 cores, 15.5 GB zram plus
 4 GB disk swap.
 
