@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 14:48 · L1-06 · passes
+
+Memory gate: mem_available_gb and mem_gate in lib/scope.sh; session() calls mem_gate for init/coding/verify (not retro) before t0. Under MEM_MIN_AVAILABLE_GB=5 it notes, calls services_down memory (no-op in driver until L2), checks at once then every HARNESS_MEM_POLL s up to MEM_WAIT_MAX=30m, then starts anyway. Config, template, docs, decision. Tests 260 → 264.
+
+- **Files:** lib/scope.sh, lib/driver.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-memory-gate.md
+- **Verified:** bash tests/run.sh 264/264; lib/check.sh green in 453 s; new checks: mem_available_gb on the real fixture (9), mem_gate unit (still-low and freed-by-services_down paths), run lowmem (2 GB copy, MEM_WAIT_MAX=2s: both notes once per init/coding/verify session, 3/3 passing), demo has no memory note; bash -n on every touched shell file
+- **Tests:** 260 → 264
+- **Discovery** (affects L2): mem_gate lives in lib/scope.sh (not the driver as the plan said) and calls services_down only when declared; driver.sh defines a no-op services_down() unless one exists. L2 should define the real one before or instead of it (driver.sh:57: `declare -F services_down || services_down() { :; }`).
+- **Discovery** (affects L2): mem_gate checks right after services_down before its first sleep, so a teardown that frees memory starts the session at once (note 'memory: <n> GB available after 0 s; starting the session').
+- **Question for Michael:** D default: MEM_MIN_AVAILABLE_GB=5 and MEM_WAIT_MAX=30m (the audit's figures), starting the session anyway after the wait rather than parking. Keep?
+- *06-L1-06 · claude-opus-5-5*
+
 ### 2026-10-25 14:30 · L1-05 · passes
 
 check.sh runs full and subset suites in harness-<run>-check-<pid> (MemoryMax=CHECK_MEMORY_MAX 3G, no MemoryHigh) under timeout -k 30s CHECK_TIMEOUT 15m, stopped after; RED lines for the cap (scope_capped) and the timeout; a TERM/INT/HUP stops the check scope; prompt_env exports prefix/cap/timeout; dur_s in scope.sh. Tests 254 → 260.
