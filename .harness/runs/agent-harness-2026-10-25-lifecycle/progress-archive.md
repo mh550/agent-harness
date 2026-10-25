@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 19:28 · L2-06 · passes
+
+Opus review of the L2 diff (docs/plans/2026-10-25-L2-review.md: 2 Important, 8 Minor). Fixed: a TERM mid-init stops the init before the teardown; a TERM mid-teardown waits for it, no second; .harness/teardown.sh looked up at each stop point, not at load_config; the trap commits its note; template runnable by hand; docs. 4 new checks RED→GREEN.
+
+- **Files:** lib/driver.sh, lib/config.sh, tests/run.sh, tests/stub-claude.sh, templates/project/teardown.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-teardown-hook.md, docs/plans/2026-10-25-L2-review.md
+- **Verified:** lib/check.sh green twice (289/289); RED runs: 285/289 (the 4 new checks failing), the hook-lookup check re-proved alone 288/289 with HEAD's config.sh; bash -n on every touched shell file, node --check lib/*.mjs; template run by hand (My.Run → harness-my-run, unset id → message, exit 1)
+- **Tests:** 285 → 289
+- **Dead end:** STUB_SLOW_INIT as the init command's knob — stub-claude.sh already uses it to slow the initializer session; renamed STUB_SLOW_INITCMD
+- **Dead end:** sd_at (first stop) to prove a stop before the trap's teardown — run_init's own stop-first matched; the check counts svc stops before the hook (sd_before == 2)
+- **Discovery** (affects L4, run): Deferred L2 review Minors: two projects' runs of one id share harness-<id>-svc (refuse in cmd_start); SVC_UP is shell-only, so a continue segment with no init leaves a SIGKILLed segment's svc scope to gc ($STATE/svc-up sketch); without user systemd the note says services stopped while bare init children run on.
+- **Discovery** (affects L3, L4, L5): The suite project's INIT_CMD now takes STUB_SLOW_INITCMD=<s> (touches $HARNESS_SCRATCH/init-begin, sleeps) and its teardown.sh STUB_SLOW_TEARDOWN=<s> (touches teardown-begin); stub-claude STUB_ADD_TEARDOWN=1 makes the initializer write an executable .harness/teardown.sh. tests/run.sh has sd_before <key> <index>.
+- **Discovery** (affects L4, run): TEARDOWN_CMD defaults to empty now; services_down picks .harness/teardown.sh when executable at call time.
+- **Discovery** (affects run): The known 'queue holds an entry whose project has a live run' flake (busy3 sleep 3) failed once more in a KEEP=1 run under load.
+- *14-L2-06 · claude-opus-5-5*
+
 ### 2026-10-25 18:21 · L2-05 · passes
 
 harness gc first stops the units of this project's runs with no live driver (+ stopped <u> (<run> ended|: driver gone), --dry-run would:, ? for no run of this project); harness status lists a running run's units with MemoryCurrent. scope_owns in lib/scope.sh is the shared match; stub systemctl answers MemoryCurrent and the described list-units shape.

@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 19:28 · L2-06 · passes
+
+Opus review of the L2 diff (docs/plans/2026-10-25-L2-review.md: 2 Important, 8 Minor). Fixed: a TERM mid-init stops the init before the teardown; a TERM mid-teardown waits for it, no second; .harness/teardown.sh looked up at each stop point, not at load_config; the trap commits its note; template runnable by hand; docs. 4 new checks RED→GREEN.
+
+- **Files:** lib/driver.sh, lib/config.sh, tests/run.sh, tests/stub-claude.sh, templates/project/teardown.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-teardown-hook.md, docs/plans/2026-10-25-L2-review.md
+- **Verified:** lib/check.sh green twice (289/289); RED runs: 285/289 (the 4 new checks failing), the hook-lookup check re-proved alone 288/289 with HEAD's config.sh; bash -n on every touched shell file, node --check lib/*.mjs; template run by hand (My.Run → harness-my-run, unset id → message, exit 1)
+- **Tests:** 285 → 289
+- **Dead end:** STUB_SLOW_INIT as the init command's knob — stub-claude.sh already uses it to slow the initializer session; renamed STUB_SLOW_INITCMD
+- **Dead end:** sd_at (first stop) to prove a stop before the trap's teardown — run_init's own stop-first matched; the check counts svc stops before the hook (sd_before == 2)
+- **Discovery** (affects L4, run): Deferred L2 review Minors: two projects' runs of one id share harness-<id>-svc (refuse in cmd_start); SVC_UP is shell-only, so a continue segment with no init leaves a SIGKILLed segment's svc scope to gc ($STATE/svc-up sketch); without user systemd the note says services stopped while bare init children run on.
+- **Discovery** (affects L3, L4, L5): The suite project's INIT_CMD now takes STUB_SLOW_INITCMD=<s> (touches $HARNESS_SCRATCH/init-begin, sleeps) and its teardown.sh STUB_SLOW_TEARDOWN=<s> (touches teardown-begin); stub-claude STUB_ADD_TEARDOWN=1 makes the initializer write an executable .harness/teardown.sh. tests/run.sh has sd_before <key> <index>.
+- **Discovery** (affects L4, run): TEARDOWN_CMD defaults to empty now; services_down picks .harness/teardown.sh when executable at call time.
+- **Discovery** (affects run): The known 'queue holds an entry whose project has a live run' flake (busy3 sleep 3) failed once more in a KEEP=1 run under load.
+- *14-L2-06 · claude-opus-5-5*
+
 ### 2026-10-25 18:21 · L2-05 · passes
 
 harness gc first stops the units of this project's runs with no live driver (+ stopped <u> (<run> ended|: driver gone), --dry-run would:, ? for no run of this project); harness status lists a running run's units with MemoryCurrent. scope_owns in lib/scope.sh is the shared match; stub systemctl answers MemoryCurrent and the described list-units shape.
@@ -268,23 +283,6 @@ Wrote docs/plans/2026-10-25-L1-capped-sessions.md (scope.sh API, unit names, in-
 - **Proposed change:** L1-01 step 2 says stub-systemctl exits 0 for stop; the plan's stub exits 5 for a unit already gone, as the real command does
 - *01-L1-01 · claude-opus-5-5*
 
-### 2026-10-25 12:05 · init · passes
+## Older entries (in full in progress-archive.md)
 
-25 features: L1 8 (plan, scope.sh, scoped sessions, peaks, capped suites, memory gate, strict MCP + prompt line, review), L2 6 (plan, svc scope, teardown + trap, stop points, gc units + status, review), L3 5 (plan, scratch, tmux window, reaper, review), L4 5 (all-merged, removal, --deps, runner gc, review), L5 1 (config reload, optional). L2 after L1; L3, L4, L5 independent.
-
-- **Discovery** (affects run): Real-command shapes to copy into fixtures (captured 2026-10-25 on this box, systemd 255): `systemctl --user show -p MemoryPeak,ControlGroup harness-test-<pid>-probe.scope` printed `ControlGroup=/user.slice/user-1000.slice/user@1000.service/app.slice/harness-test-<pid>-probe.scope` then `MemoryPeak=262144`: systemd prints properties in its own order, not the asked order, so parse by key, never by line number. `systemctl --user list-units 'harness-*' --plain --no-legend` prints nothing when none exist. The probe `systemd-run --user --scope --collect --quiet --unit=harness-test-<pid>-probe -p MemoryMax=64M true` exits 0 here.
-- **Discovery** (affects L1-07, L1-01): `claude --help` (installed CLI, 2026-10-25) has both flags: `--mcp-config <configs...> Load MCP servers from JSON files or ...` and `--strict-mcp-config Only use MCP servers from --mcp-config, ...`. Quote the real lines in the L1-07 decision file.
-- **Discovery** (affects run): bin/harness passes HARNESS_* overrides to the tmux-started driver window from an explicit list (bin/harness, cmd_start, the `for v in HARNESS_CLAUDE HARNESS_GH ...` loop). Every new override the suite relies on (HARNESS_SYSTEMD_RUN, HARNESS_SYSTEMCTL, HARNESS_MEMINFO, HARNESS_MEM_POLL) must be added there, or a tmux-started run silently uses the real commands.
-- **Discovery** (affects L3): The supervisor window runs bare `claude` (bin/harness, cmd_start, `tmux new-window ... -n supervisor`), not $HARNESS_CLAUDE. An L3 check that needs a supervisor window on the private tmux server must put a `claude` shim on PATH pointing at tests/stub-claude.sh (the stub's interactive mode already handles no `-p`). Every existing suite run uses --foreground, so no test starts a tmux session for a run yet.
-- **Discovery** (affects L2): lib/driver.sh: the one EXIT trap (near `echo $$ > "$STATE/driver.pid"`) writes `ended` and removes driver.pid; finish() ends with `exit 0`, so the trap runs after finish too: services_down must be idempotent (finish's call and the trap's call must give one `services stopped` note). `note` writes harness-log.md (committed), `log` only run.log.
-- **Discovery** (affects L1-05, L3-02): lib/check.sh is called both by the driver (run_init, green) and by sessions ({{CHECK}} in prompts); it reads only HARNESS_* env vars (HARNESS_CHECK_CMD, HARNESS_SCRATCH, HARNESS_CHECK_CACHE) exported by prompt_env in lib/prompt.sh. New inputs for it (scope prefix, cap, timeout) go through prompt_env the same way.
-- **Discovery** (affects run): tests/run.sh: `check "<name>" '<bash expr>'` evals its second argument; stubs log calls to $STUB_DIR (= $T) files with `===` separators (see curl_with/curl_last helpers for the parsing pattern); the suite already runs on a private tmux server (TMUX_TMPDIR=$T/tmux, HARNESS_DESK_SESSION=h-desk-test-$$) and kills it in its EXIT trap. 235 checks today; the full suite takes about 6 minutes here. Run a single new check while iterating by copying its lines into a scratch script, not by editing the suite's flow.
-- **Discovery** (affects L2-05, L3-04, L4): cmd_gc in bin/harness already has `act` (dry-run prints `would: ...`, else `+ ...` and runs it), `running` (live driver or queued continuation) and `desk_open` helpers: reuse them for the unit stop (L2-05), the tmux reap (L3-04) and --deps (L4-03). The existing gc test (run 1, `harness gc proj` after demo) is the place new gc checks follow.
-- **Discovery** (affects run): Config keys: defaults live in harness_config in lib/config.sh (one assignment block), the user's commented copy in templates/user/config.sh, and docs/architecture.md §10 lists every key with its default. Add every new key in all three places in the feature that introduces it.
-- **Discovery** (affects L3-04, L4-04, L5-01): lib/queue.sh's exit path (after the while loop: `started=$(grep -lsx -- "$RID" "$STATE_ROOT"/*/*/runners | wc -l)`) is where L3-04's reap and L4-04's gc go, before `setsid -f "$H" debrief`. The runner's whole body is one `{ ... }` block parsed before it runs, because lib/sync.sh may rewrite the file underneath; keep new code inside that block.
-- **Discovery** (affects L4-01): git 2.43 here: `git for-each-ref 'refs/heads/*'` lists only branches without a `/`; the trailing-slash prefix `refs/heads/` lists all. The suite's fake origin is $T/origin.git (bare), reached through an insteadOf rewrite of git@github.com:test/proj.git.
-- **Discovery** (affects L1-02, L1-06, L2-01): Never start a real scope in the suite other than harness-test-<pid>-* with MemoryMax 64M or less, stopped in the check's own cleanup; the memory-gate fixture is a real /proc/meminfo copy with only its MemAvailable line rewritten for the low case (say so in the decision file).
-- **Question for Michael:** L5 (runner config reload) is the last feature and optional per the brief; it is dropped by not being reached. Say in INBOX.md if it should be skipped outright.
-- **Question for Michael:** HARNESS_CACHE defaults to ${XDG_CACHE_HOME:-~/.cache}/harness/<project>, kept across runs and boots; the spec's ~/.cache/harness/<project> is the same with XDG_CACHE_HOME unset. Change it in config if another place is wanted.
-- **Question for Michael:** The memory-gate fixture is a copy of this box's /proc/meminfo with only MemAvailable edited to 2 GB for the low case (the box can't be made low during the suite); the unedited copy covers the high case. Say if a different fixture is wanted.
-- *00-init · claude-fable-5-1*
+- 2026-10-25 12:05 · init · passes · 25 features: L1 8 (plan, scope.sh, scoped sessions, peaks, capped suites, memory gate, strict MCP + … ([in full](progress-archive.md))
