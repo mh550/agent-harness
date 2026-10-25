@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 17:36 · L2-04 · passes
+
+Services now also stop on pause (services_down paused, then commit+push), before a usage-limit wait over SVC_IDLE_STOP_MIN=10 min, and on the memory wait (renamed `memory wait`); STOP already went through finish. New key in config.sh/template/architecture §10; §5/§7, README and decisions/2026-10-25-services-stop-points updated.
+
+- **Files:** lib/driver.sh, lib/scope.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, tests/stub-claude.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-services-stop-points.md
+- **Verified:** Wrote 5 checks + the mg unit-check rename first: 4 failed (mg block, PAUSE, memory wait, usage-limit wait 11 min); stoppy and the 9-minute check passed already as the plan predicted (check-only). After the change bash tests/run.sh 282/282; lib/check.sh green in 492 s.
+- **Tests:** 277 → 282
+- **Discovery** (affects L2-05, L2-06): stub-claude.sh has STUB_PAUSE=<id>: that id's first coding session touches $HARNESS_STATE/*/<run>/PAUSE. Run `paused` in tests/run.sh drives it in the background and resumes with `harness resume paused` once hlog has `services stopped (paused)`.
+- **Discovery** (affects run): Run waiter's window is now +660 s (11 min) and waiter9 (+540 s) is new; the suite has two more full runs (about +20 s).
+- **Question for Michael:** D1 default: SVC_IDLE_STOP_MIN=10 (a usage-limit wait of more than 10 minutes stops the services; shorter keeps them). Keep 10?
+- *12-L2-04 · claude-opus-5-5*
+
 ### 2026-10-25 17:08 · L2-03 · passes
 
 services_down runs .harness/teardown.sh (TEARDOWN_CMD) under timeout -k 10s 2m, stops harness-<run>-svc, notes once per started init; on finish and in the EXIT trap, which first ignores TERM/INT/HUP and stops the running session's scope. verify re-inits after a memory wait. Stubs kill a stopped scope's tree. Template, README, arch, decision. Tests 274 → 277.
