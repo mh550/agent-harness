@@ -10,7 +10,7 @@
         "The plan records the real `claude --help` text for --strict-mcp-config and --mcp-config (both exist in the installed CLI as of 2026-10-25)",
         "bash tests/run.sh ends with every check passing (nothing built yet: the count is unchanged)"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L1-02", "milestone": "L1", "kind": "build", "model": "opus",
       "description": "lib/scope.sh runs a command in a capped transient systemd user scope (scope_run), stops it (scope_stop) and reads its peak (scope_peak), falling back to running bare when the user bus is missing; the two stubs and fixtures exist.",
       "steps": [

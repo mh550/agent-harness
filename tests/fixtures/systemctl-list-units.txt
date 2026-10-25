@@ -1,0 +1,1 @@
+harness-test-1320299-left.scope loaded active running /usr/bin/bash -c "\"\${@:3}\"; rc=\$?; systemctl --user show -p MemoryPeak,ControlGroup,TasksCurrent \"\$1.scope\" > \"\$2\"; exit \$rc" _ harness-test-1320299-left left.txt bash -c "sleep 300 > /dev/null 2>&1 & exit 0"
