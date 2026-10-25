@@ -173,7 +173,8 @@ cmd_start() {
   local env="WT=$(printf %q "$wt") RUN_ID=$run STATE=$(printf %q "$state") PROJECT_DIR=$(printf %q "$p") HARNESS_HOME=$(printf %q "$HARNESS_HOME")"
   # tmux starts commands in its server's environment, not this shell's: pass the harness overrides along
   local v; for v in HARNESS_CLAUDE HARNESS_GH HARNESS_SCRATCH_ROOT HARNESS_PW HARNESS_PAUSE_POLL HARNESS_CONFIG HARNESS_LEDGER \
-    HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL HARNESS_DESK_SESSION HARNESS_DESK_WAIT; do
+    HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL HARNESS_DESK_SESSION HARNESS_DESK_WAIT \
+    HARNESS_SYSTEMD_RUN HARNESS_SYSTEMCTL HARNESS_MEMINFO HARNESS_MEM_POLL; do
     [[ -n ${!v:-} ]] && env+=" $v=$(printf %q "${!v}")"; done
   if (( fg )); then eval "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh")"; return; fi
 

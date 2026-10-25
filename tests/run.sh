@@ -7,10 +7,13 @@ T=$(mktemp -d); echo "tmp: $T"
 unset TMUX TMUX_PANE   # inside Michael's tmux, plain `tmux` talks to his server: the suite must never
 export TMUX_TMPDIR=$T/tmux HARNESS_DESK_SESSION=h-desk-test-$$; mkdir -p "$TMUX_TMPDIR"   # a private tmux server
 trap 'for w in "$T"/evaltmp/*/harness; do [[ -d $w ]] && git -C "$HERE/.." worktree remove --force "$w"; done 2> /dev/null   # the harness worktree of a killed eval
+  for p in $(cat "$T"/scope/*.pids 2> /dev/null); do kill "$p"; done 2> /dev/null   # sleeps a stub session left
   tmux kill-session -t "=$HARNESS_DESK_SESSION" 2> /dev/null; [[ $TMUX_TMPDIR == "$T/tmux" ]] && tmux kill-server 2> /dev/null; [[ ${KEEP:-} ]] || rm -rf "$T"' EXIT   # the server is ours alone
 export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/scratch HARNESS_PAUSE_POLL=1 \
   HARNESS_CLAUDE=$HERE/stub-claude.sh HARNESS_GH=$HERE/stub-gh.sh HARNESS_CURL=$HERE/stub-curl.sh STUB_DIR=$T HARNESS_LEDGER=$T/ledger \
   HARNESS_CONFIG=$T/user-config.sh HARNESS_LIMIT_SLEEP=0 HARNESS_NO_RUNNER=1 HARNESS_QUEUE_POLL=0 HARNESS_QUEUE_SETTLE=0
+export HARNESS_SYSTEMD_RUN=$HERE/stub-systemd-run.sh HARNESS_SYSTEMCTL=$HERE/stub-systemctl.sh HARNESS_MEMINFO=$HERE/fixtures/meminfo.txt HARNESS_MEM_POLL=1
+unset HARNESS_SCOPE_PREFIX SCOPE_OK   # a session running the suite inherits its own run's prefix
 fails=0 total=0
 check() { total=$((total + 1)); if eval "$2"; then echo "PASS $1"; else echo "FAIL $1"; fails=$((fails + 1)); fi; }
 hlog() { cat "$T/wt/${2:-proj}/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }   # <run> [<project>]
@@ -112,6 +115,48 @@ ORNT='import { orientation as or, events } from "'$HERE'/../lib/metrics.mjs"; co
     && eq(or(noTs), { tokens: 24547, turns: 1, seconds: null }) && eq(or(evs.map((e, i) => i === 1 ? noTs[1] : e)), { tokens: 24547, turns: 1, seconds: 0 }) && eq(or([{ type: "result" }]), { tokens: null, turns: null, seconds: null }) ? 0 : 1);'
 check "metrics.mjs: orientation stops at the first Write" 'node --input-type=module -e "$ORNT"'
 
+# ---- scope.sh (L1-02): capped transient user scopes, through the stub systemd-run/systemctl; one real 64M scope ----
+SC=$HERE/../lib/scope.sh
+sd_with() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { printf "%s", $0; exit }' "$T/systemd.log" 2>/dev/null; }   # the first stub systemd call containing $1
+gone() { local i; for i in $(seq 20); do [[ $(ps -o stat= -p "$1" 2> /dev/null) == [^Z]* ]] || return 0; sleep 0.1; done; return 1; }   # dead or a zombie, within 2 s
+sd_count() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { n++ } END { print n + 0 }' "$T/systemd.log" 2>/dev/null; }   # how many calls contain $1
+( unset SESSION_SWAP_MAX; source "$SC"; HARNESS_SCRATCH=$T/sc scope_run harness-x-s1 5G 6G bash -c 'exit 3' ); sc_rc=$?
+SCARGV=$'systemd-run\n--user\n--scope\n--collect\n--quiet\n--unit=harness-x-s1\n-p\nMemoryHigh=5G\n-p\nMemoryMax=6G\n-p\nMemorySwapMax=1G\n-p\nOOMPolicy=continue\nbash\n-c'
+check "scope.sh: scope_run wraps the command in systemd-run with the caps and returns its exit" \
+  '[[ $sc_rc == 3 && $(sd_with --unit=harness-x-s1 | head -16) == "$SCARGV" && $(sd_with --unit=harness-x-s1 | tail -3) == $'"'"'bash\n-c\nexit 3'"'"' ]]'
+sc_out=$( source "$SC"; export HARNESS_SCRATCH=$T/sc; scope_stop harness-x-s1; echo "stop=$? peak=$(scope_peak harness-x-s1) left=$(scope_left harness-x-s1)"
+  scope_capped harness-x-s1 6G && echo capped
+  scope_run harness-x-s2 "" 64M bash -c 'sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"'
+  echo "left2=$(scope_left harness-x-s2) units=$("$HARNESS_SYSTEMCTL" --user list-units 'harness-x-*' --plain --no-legend | cut -d" " -f1)"
+  scope_stop harness-x-s2; echo "stop2=$? units2=$("$HARNESS_SYSTEMCTL" --user list-units 'harness-x-*' --plain --no-legend | wc -l)" )
+check "scope.sh: scope_stop stops <unit>.scope; scope_peak and scope_left read the fixture" \
+  '[[ $sc_out == $'"'"'stop=0 peak=2 left=0\nleft2=1 units=harness-x-s2.scope\nstop2=0 units2=0'"'"' ]] && sd_with $'"'"'stop\nharness-x-s1.scope'"'"' | grep -qx -- --user && gone "$(cat "$T/scope/harness-x-s2.pids" 2> /dev/null || echo 0)"'
+check "scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]" \
+  '( source "$SC"; [[ $(scope_unit "a.b/c d" s1) == harness-a-b-c-d-s1 && $(scope_unit demo "") == harness-demo && $(scope_bytes 6G) == 6442450944 && $(scope_bytes 64M) == 67108864 && $(scope_bytes 4096) == 4096 ]] )'
+sc_bare=$( export STUB_NO_SYSTEMD=1 HARNESS_SCRATCH=$T/sc; source "$SC"; scope_available; echo "avail=$?"
+  scope_run harness-x-bare "" 64M bash -c 'echo ran > "$0"; exit 4' "$T/sc-bare.out"; echo "rc=$?"; scope_stop harness-x-bare; echo "stop=$?"; scope_peak harness-x-bare; echo "peak=$?" )
+check "scope.sh: without user systemd scope_run runs bare (STUB_NO_SYSTEMD=1)" \
+  '[[ $sc_bare == $'"'"'avail=1\nrc=4\nstop=0\npeak=1'"'"' && $(cat "$T/sc-bare.out") == ran && $(sd_count --unit=harness-x-bare) == 0 ]]'
+# the bus goes away after a good probe: systemd-run fails (its own line on stderr), the wrapper never ran, so the
+# command runs bare, with a line of its own
+sc_late=$( export STUB_NO_SYSTEMD=1 HARNESS_SCRATCH=$T/sc SCOPE_OK=1; source "$SC"; scope_run harness-x-late "" 64M bash -c 'exit 6' 2>&1; echo "rc=$?" )
+check "scope.sh: systemd-run failing after a good probe runs the command bare, with a line" \
+  '[[ $sc_late == $'"'"'Failed to connect to bus: No medium found\nscope_run: systemd-run failed (exit 1); running bare\nrc=6'"'"' && $(sd_count --unit=harness-x-late) == 1 ]]'
+# a scratch dir it can't write: the wrapper runs nothing, so the command runs once, bare, never a second time in the scope
+mkdir -p "$T/ro/scopes" && chmod 555 "$T/ro/scopes"
+sc_ro=$( export HARNESS_SCRATCH=$T/ro; source "$SC"; scope_run harness-x-ro "" 64M bash -c 'echo ran >> "$0"' "$T/sc-ro.out" 2>&1; echo "rc=$?" ); chmod 755 "$T/ro/scopes"
+check "scope.sh: a scratch dir it can't write runs the command once, bare" \
+  '[[ $sc_ro == "scope_run: $T/ro/scopes is not writable; running bare"$'"'"'\nrc=0'"'"' && $(wc -l < "$T/sc-ro.out") == 1 ]]'
+# The one real scope (spec Rules): harness-test-<suite pid>-oom, MemoryMax 64M, no MemoryHigh (it throttles instead of
+# killing), no swap, under an outer timeout; stopped whatever happens, and no harness-test-<pid>-* unit is left.
+if systemd-run --user --scope --quiet true > /dev/null 2>&1; then
+  SU=harness-test-$$-oom
+  sc_real=$( cd "$T" && HARNESS_SYSTEMD_RUN=systemd-run HARNESS_SYSTEMCTL=systemctl HARNESS_SCRATCH=$T/sc SESSION_SWAP_MAX=0 timeout 30s bash -c 'source "$1"
+    scope_run "$2" "" 64M node -e "const a = []; for (let i = 0; i < 256; i++) a.push(Buffer.alloc(1 << 20, 1))"; echo "rc=$? peak=$(scope_peak "$2")"; scope_capped "$2" 64M && echo capped' _ "$SC" "$SU" 2> "$T/sc-real.err" )   # its stderr (bash's "Killed") kept for a failure
+  systemctl --user stop "$SU.scope" 2> /dev/null
+  check "scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit" \
+    '[[ $sc_real == $'"'"'rc=137 peak=64\ncapped'"'"' && -z $(systemctl --user list-units "harness-test-$$-*" --plain --no-legend) ]]'
+else check "scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit (skipped: no user systemd)" true; fi
 # ---- the replay set (E2): every committed task validates; each error names its field ----
 EVTK='import { validateTask as v } from "'$HERE'/../lib/eval.mjs"; const has = (e, f) => e.some(x => x.startsWith(f + ":"));
   const ok = { id: "x1", project: "p", repo: "~/projects/p", base: "a".repeat(40), policy: "build-only", why: "w",

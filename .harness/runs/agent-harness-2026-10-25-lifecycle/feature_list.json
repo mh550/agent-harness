@@ -23,7 +23,7 @@
         "journal/decisions/2026-10-25-scoped-sessions.md exists (title, provenance, finding · choice · rejected) covering the helper, the probe fallback and the unit naming",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L1-03", "milestone": "L1", "kind": "build", "model": "opus",
       "description": "Every claude session runs in scope harness-<run>-s<n> under timeout -k 30s with the three memory caps, the scope is stopped when claude returns, and leftover processes and a cap kill are noted in harness-log.md; without user systemd the run goes bare with one note per segment.",
       "steps": [
