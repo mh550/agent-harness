@@ -378,6 +378,19 @@ SREV='import { redSuite, failedRecheck } from "'$HERE'/../lib/summary.mjs";
   const h = "- 2026-10-21 12:00 · 11 un-passed: suite red after the session\n- 2026-10-21 12:05 · verify M1: A failed the re-check, back in the queue\n";
   process.exit(!redSuite(h, "1") && redSuite(h, "11") && !redSuite(h, "c++") && !redSuite(h, "auth(x") && failedRecheck(h, "A") && !failedRecheck(h, "c++") && !failedRecheck(h, "1") ? 0 : 1);'
 check "summary.mjs: cause and rework read the log by exact id (E1 review)" 'node --input-type=module -e "$SREV"'
+# memory peaks (L1-04): a 12th append argument, and report's section from the metrics rows beside summary.json
+MPEAK='import { metricsRow, outcome } from "'$HERE'/../lib/metrics.mjs";
+  const r = p => metricsRow(outcome([]), ["s", "o", "run", "coding", "A", "opus", "true", "10", "0", "false", "build", p]).mem_peak_mb;
+  process.exit(r("2048") === 2048 && r("") === null && r("null") === null && r(undefined) === null ? 0 : 1);'
+check "metrics.mjs: append writes mem_peak_mb as a number or null" 'node --input-type=module -e "$MPEAK"'
+RPEAK='import { build, report } from "'$HERE'/../lib/summary.mjs";
+  const s = build("/nonexistent/p/w", "r", "/nonexistent/s"), keys = JSON.stringify(Object.keys(s));
+  const rows = [{ kind: "coding", feature: "A", model: "opus", mem_peak_mb: 1500 }, { kind: "coding", feature: "B", model: "sonnet", mem_peak_mb: 2500 },
+    { kind: "init", role: "init", feature: null, model: "opus", mem_peak_mb: null }];
+  const R = report(s, rows), none = report(s, rows.slice(0, 1)) + report(s);
+  process.exit(R.includes("\n### Memory peaks over 2 GB\n\n- B · sonnet · 2500 MB") && !R.includes("1500") && !/Memory peaks/.test(none)
+    && JSON.stringify(Object.keys(build("/nonexistent/p/w", "r", "/nonexistent/s"))) === keys && !/mem|peak_mb/.test(keys) ? 0 : 1);'
+check "summary.mjs: report lists only the sessions over 2 GB" 'node --input-type=module -e "$RPEAK"'
 
 # ---- the journal, pure (E4): an entry's schema, the minimal entry, and progress.md rendered from the entries ----
 ENVA='import { validate as v, minimal } from "'$HERE'/../lib/entries.mjs"; const starts = (e, f) => e.length === 1 && e[0].startsWith(f + ":");
@@ -508,6 +521,7 @@ check "the prompt says the time, the budget and the attempt" '[[ -s $PC ]] && gr
   && [[ $(grep -l "verify round 2 of 2" "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.prompt.md 2> /dev/null | wc -l) == 1 ]]'
 check "metrics: wall time and roles"      'jq -e "select(.kind==\"coding\") | .wall_s != null and .role == \"build\"" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0)" "$RD/metrics.jsonl" > /dev/null'
+check "metrics.jsonl: every session line has mem_peak_mb from its scope" 'jq -se "length >= 9 and all(.mem_peak_mb == 2)" "$RD/metrics.jsonl" > /dev/null && ! grep -q "Memory peaks" "$RD/report.md"'
 check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'
 # the journal (E4-03): one line per session in session order, stamped by the driver, and no entry.json left behind;
 # C's first attempt (it left the suite red) carries its dead end; the tree a milestone is tagged (and merged) with has its verify's line
@@ -574,6 +588,11 @@ check "a session killed at its memory cap is noted and spends the attempt (STUB_
 STUB_NO_SYSTEMD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" bare --spec SPEC.md --foreground > "$T/run-bare.out" 2>&1
 check "no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)" '[[ $(sd_count --unit=harness-bare) == 0 && $($F summary "$(list bare)") == "3/3 passing" ]] \
   && [[ $(hlog bare | grep -c "· no user systemd: sessions and suites run uncapped$") == 1 ]] && grep -q "  coding exit 0 · " "$HARNESS_STATE/proj/bare/run.log"'
+check "metrics.jsonl: mem_peak_mb is null when uncapped" 'jq -se "length >= 5 and all(has(\"mem_peak_mb\") and .mem_peak_mb == null)" "$T/wt/proj/bare/.harness/runs/bare/metrics.jsonl" > /dev/null'
+# A's cap kill peaks at the cap (6G): report.md beside it, and harness report's rebuild in the state dir, list it
+check "report.md lists the session that peaked at its cap among the peaks over 2 GB" 'L=$T/wt/proj/leftover/.harness/runs/leftover; M=$(jq -r "select(.feature==\"A\" and .exit==137) | .model" "$L/metrics.jsonl") \
+  && [[ -n $M ]] && grep -qxFe "- A · $M · 6144 MB" "$L/report.md" && [[ $(grep -c " MB$" <<< "$(sed -n "/^### Memory peaks over 2 GB/,\$p" "$L/report.md")") == 1 ]] \
+  && HR=$("$H" report leftover) && grep -qxFe "- A · $M · 6144 MB" <<< "$HR"'
 
 # ---- gc: main has every milestone; only run-record commits are left on the branch ----
 "$H" gc "$T/proj" > "$T/gc.out" 2>&1

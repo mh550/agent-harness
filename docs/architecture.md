@@ -88,8 +88,8 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Steering | `…/INBOX.md` (`status: run/pause/stop`, `## Answers`) | Michael (GitHub app), `harness answer` via the driver | driver, sessions | yes |
 | Brief | `…/brief.md` | driver, from `--brief` at start/continue | every prompt | yes |
 | Driver events | `…/harness-log.md` | driver (`note`) | Michael, summary, retro | yes |
-| Metrics | `…/metrics.jsonl` (one row per session: kind, role, model, cost, wall/api seconds, turns, `tokens_in cache_read cache_write tokens_out cache_hit_rate context_peak`, `orient_tokens orient_turns orient_s`, exit, result) | driver (`metrics.mjs append`) | summary | yes |
-| Summary / writeup / retro | `…/summary.json`, `report.md`, `retro.md` | driver at the end | Michael, ledger | yes |
+| Metrics | `…/metrics.jsonl` (one row per session: kind, role, model, cost, wall/api seconds, turns, `tokens_in cache_read cache_write tokens_out cache_hit_rate context_peak`, `orient_tokens orient_turns orient_s`, exit, result, `mem_peak_mb`) | driver (`metrics.mjs append`) | summary, report (memory peaks) | yes |
+| Summary / writeup / retro | `…/summary.json`, `report.md`, `retro.md` | driver at the end; `harness report` rebuilds `summary.json` into the state dir with a copy of `metrics.jsonl` beside it | Michael, ledger | yes |
 | Driver log | `~/.local/state/harness/<p>/<run>/run.log` | driver (`log`) | status, summary (wall times) | no |
 | Transcripts | `…/logs/NN-<id>.jsonl`, `HHMMSS-verify-<m>.jsonl`, `00-init.jsonl`, `zz-retro-*.jsonl`, each with its prompt beside it (`*.prompt.md`) | `claude --output-format stream-json`; the driver copies the prompt | metrics, retro, you (`jq`) | no |
 | Harness version | `~/.local/state/harness/<p>/<run>/{harness-version,harness-dirty}` (last harness commit outside `ledger/`, and whether the tree has changes outside it; `lib/version.sh`; rewritten each segment, shown on the `run <id> on` line, copied into `summary.json` and the ledger row) | driver | summary, `harness trends --by version` | no |
@@ -310,10 +310,13 @@ dj-crate-streaming's live protocols, rane-one-mixxx's hardware); the others have
 
 1. **Per session**: `metrics.jsonl` row: kind, role, model, cost (max of cumulative results), wall time (driver),
    API time and turns (summed over result events), **tokens** (in, out, cache read/write; `cache_hit_rate`),
-   `context_peak`, **orientation** (`orient_tokens/turns/s`: requests up to and including the first edit), exit, `env`, final text.
+   `context_peak`, **orientation** (`orient_tokens/turns/s`: requests up to and including the first edit), exit, `env`, final text,
+   and **`mem_peak_mb`**: the session scope's `MemoryPeak` in MB, null when it ran uncapped
+   (`decisions/2026-10-25-session-memory-peaks`).
 2. **Per run**: `summary.json` (features, milestones verified/merged, tests start→end, cost by role and model, time
    by role, **tokens**, cost and tokens per verified feature, median orientation, first-attempt pass rate, rework, verify-fail rate, `harness` version and dirty flag, sessions real/refused, guard counts, every non-passing feature with an automatic cause), `report.md`
-   (the writeup: `harness report <run>`), and `retro.md` (a Sonnet session classifies "not done" features into
+   (the writeup: `harness report <run>`; its `Memory peaks over 2 GB` section lists `<feature> · <model> · <peak> MB`
+   per session over 2048 MB, read from the `metrics.jsonl` beside `summary.json`, which carries no peak), and `retro.md` (a Sonnet session classifies "not done" features into
    spec / size / dependency / permission / environment / model / harness causes and proposes ≤ 3 harness changes,
    noting repeats from earlier retros).
 3. **Across runs**: `ledger/runs.jsonl` + `harness trends` ($ per feature, causes, end reasons over time);

@@ -247,7 +247,9 @@ cmd_report() {
     d=$(state_of "$run")
     # shellcheck source=/dev/null
     ( source "$d/meta.env"
-      if [[ -d $WT ]]; then node "$HARNESS_HOME/lib/summary.mjs" build "$WT" "$RUN_ID" "$STATE" > "$STATE/summary.json"; fi
+      # metrics.jsonl beside it: report's memory peaks read it from there, also once gc has removed the worktree
+      if [[ -d $WT ]]; then node "$HARNESS_HOME/lib/summary.mjs" build "$WT" "$RUN_ID" "$STATE" > "$STATE/summary.json"
+        cp "$WT/.harness/runs/$RUN_ID/metrics.jsonl" "$STATE/metrics.jsonl" 2> /dev/null; fi
       [[ -f $STATE/summary.json ]] && node "$HARNESS_HOME/lib/summary.mjs" report "$STATE/summary.json" || echo "## $RUN_ID: no record" )
     echo
   done

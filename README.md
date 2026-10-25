@@ -19,7 +19,7 @@ harness init ~/projects/myapp            # CLAUDE.md template + .harness/config.
 # fill in CLAUDE.md, commit to main, then:
 harness start ~/projects/myapp --spec docs/todo.md --brief "items 1–3 only"
 harness status                           # every run: running / ended (why), features, last log lines
-harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes
+harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes, memory peaks over 2 GB
 ```
 
 Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config; the queue
