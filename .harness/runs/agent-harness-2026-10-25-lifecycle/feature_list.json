@@ -147,7 +147,7 @@
         "docs/architecture.md §3 (harness gc, harness status) and §4 state list the orphan-unit step; README's gc row names it; journal/decisions/2026-10-25-gc-orphan-units.md exists (finding: SIGKILL has no trap; rejected: a systemd timer)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L2-06", "milestone": "L2", "kind": "review", "model": "opus",
       "description": "An Opus review of the L2 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, the EXIT trap and services_down proven idempotent, and the L2 docs complete.",
       "steps": [

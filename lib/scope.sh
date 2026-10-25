@@ -1,5 +1,5 @@
 # Usage: source lib/scope.sh; scope_run <unit> <mem-high> <mem-max> <cmd…> · scope_stop <unit> · scope_peak <unit> ·
-#   scope_left <unit> · scope_capped <unit> <mem-max> · scope_unit <run> <role> · scope_bytes <size> · dur_s <duration> · scope_available ·
+#   scope_left <unit> · scope_capped <unit> <mem-max> · scope_unit <run> <role> · scope_owns <run> <unit>.scope · scope_bytes <size> · dur_s <duration> · scope_available ·
 #   mem_available_gb [<meminfo>] · mem_gate (notes through the caller's note)
 # Capped transient systemd user scopes (docs/plans/2026-10-25-L1-capped-sessions.md §1-§2): bare when the user bus is
 # missing. systemd-run and systemctl are ${HARNESS_SYSTEMD_RUN:-systemd-run} and ${HARNESS_SYSTEMCTL:-systemctl}, read
@@ -20,6 +20,11 @@ scope_available() {
 
 # harness-<run>-<role>, the run id reduced to [A-Za-z0-9_-]: "." is legal in a unit name but would blur harness-<run>-* globs
 scope_unit() { local r=${1//[^A-Za-z0-9_-]/-}; echo "harness-$r${2:+-$2}"; }
+
+# <run> <unit>.scope: the unit is that run's when it is harness-<run>-<role>.scope with a role the harness starts (s<n>,
+# check-<pid>, svc). Rebuilt from the id, never parsed from the name: so run demo never claims demo-x's harness-demo-x-svc
+scope_owns() { local role=${2%.scope}; role=${role#"$(scope_unit "$1")-"}
+  [[ $2 == *.scope && $role != "${2%.scope}" && $role =~ ^(s[0-9]+|check-[0-9]+|svc)$ ]]; }
 
 # 6G → bytes, 1024-based as systemd reads K/M/G/T; a bare number is bytes
 scope_bytes() { local n=${1%[KMGTkmgt]}; case ${1##*[0-9]} in [Kk]) echo $(( n << 10 )) ;; [Mm]) echo $(( n << 20 )) ;; [Gg]) echo $(( n << 30 )) ;; [Tt]) echo $(( n << 40 )) ;; *) echo "$n" ;; esac; }

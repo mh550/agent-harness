@@ -42,11 +42,11 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 | `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue |
 | `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end |
 | `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
-| `harness status` · `report` · `trends [--by version]` · `attach` | look (`trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
+| `harness status` · `report` · `trends [--by version]` · `attach` | look (`status`: under a running run, each of its systemd units with its `MemoryCurrent`; `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
 | `harness eval run` · `compare` · `probes` | replay a fixed task set under a harness version and compare two results (see [Evals](#evals); costs money) |
-| `harness init` · `gc` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs |
+| `harness init` · `gc [--dry-run]` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs and stop the systemd units a killed driver left (`harness-<run>-*` of runs with no live driver) |
 
 `harness continue` merges `main` into the run branch before any session, so a resumed run never works on a stale base.
 
@@ -75,7 +75,7 @@ then stops `harness-<run>-svc`, and notes `services stopped (<why>)` in `harness
 everything the init started itself; a project whose init starts containers (Supabase, `docker compose`) adds its own
 hook to stop them (template: `templates/project/teardown.sh`). It runs only when the segment ran an init, its output
 goes to `teardown.out` in the scratch directory, and a failing hook is noted, never fatal. A SIGKILLed driver runs no
-hook.
+hook: `harness gc <project>` stops the units it left (run the project's teardown by hand for its containers).
 
 ## What a run is
 

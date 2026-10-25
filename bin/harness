@@ -60,6 +60,8 @@ Q=$STATE_ROOT/queue
 source "$HARNESS_HOME/lib/config.sh"
 # shellcheck source=lib/deploy.sh
 source "$HARNESS_HOME/lib/deploy.sh"
+# shellcheck source=lib/scope.sh
+source "$HARNESS_HOME/lib/scope.sh"   # scope_unit, scope_owns, scope_stop: gc's unit step and status's unit lines
 
 die() { echo "harness: $*" >&2; exit 1; }
 toplevel() { git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "$1 is not a git repository"; }
@@ -233,6 +235,14 @@ cmd_status() {
       elif [[ -f $STATE/ended ]]; then state="ended: $(cat "$STATE/ended")"
       else state="not running"; fi
       echo "$RUN_ID ($(basename "$PROJECT_DIR")) · $state · port $(cat "$STATE/port") · $( [[ -f $list ]] && node "$HARNESS_HOME/lib/features.mjs" summary "$list" || echo 'no feature list yet')"
+      if [[ $state == running* ]]; then   # what it holds: one line per unit; a missing bus or a unit gone just now shows nothing
+        local u b
+        while read -r u _; do
+          scope_owns "$RUN_ID" "$u" || continue
+          b=$("${HARNESS_SYSTEMCTL:-systemctl}" --user show -p MemoryCurrent "$u" 2> /dev/null | sed -n 's/^MemoryCurrent=//p' || true)
+          [[ $b =~ ^[0-9]+$ ]] && echo "    ${u%.scope} · MemoryCurrent $(( (b + 524288) / 1048576 )) MB"
+        done < <("${HARNESS_SYSTEMCTL:-systemctl}" --user list-units "$(scope_unit "$RUN_ID")-*" --plain --no-legend 2> /dev/null || true)
+      fi
       [[ -f $STATE/run.log ]] && tail -n "${N:-3}" "$STATE/run.log" | sed 's/^/    /'
     )
   done
@@ -328,6 +338,26 @@ cmd_gc() {
   local p all=0 dry=0 b pattern; p=$(toplevel "${1:?usage: harness gc <project>}"); shift
   while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; *) die "unknown option $1" ;; esac; shift; done
   act() { if (( dry )); then echo "would: $*"; else echo "+ $*"; "$@"; fi; }
+  # A SIGKILLed driver ran no trap and left its units (decisions/2026-10-25-gc-orphan-units): stop those of this
+  # project's runs with no live driver, first (before a fetch that may fail, before their worktree goes). A dead
+  # driver.pid is enough: the driver removes ended at start, only finish and the trap write it. Two ids may reduce to
+  # one prefix (a.b, a-b), so every project's runs are candidates and a live one keeps the unit.
+  local u d r mine busy why
+  while read -r u _; do
+    [[ $u == harness-*.scope ]] || continue
+    mine="" busy=0
+    for d in "$STATE_ROOT"/*/*/; do
+      [[ -f $d/meta.env ]] && scope_owns "$(basename "$d")" "$u" || continue
+      alive "$d" && busy=1
+      [[ -z $mine && $d == "$STATE_ROOT/$(basename "$p")/"* ]] && mine=$d
+    done
+    [[ -n $mine ]] || { echo "? $u (no run of this project)"; continue; }
+    (( busy )) && continue
+    r=$(basename "$mine"); why="$r ended"; [[ -f $mine/ended ]] || why="$r: driver gone"
+    if (( dry )); then echo "would: systemctl --user stop $u ($why)"
+    elif scope_stop "${u%.scope}"; then echo "+ stopped $u ($why)"
+    else echo "! could not stop $u ($why)"; fi
+  done < <("${HARNESS_SYSTEMCTL:-systemctl}" --user list-units 'harness-*' --plain --no-legend 2> /dev/null || true)
   git -C "$p" fetch -q --prune origin
   local main=origin/main
   # A run branch is done when main has all of it except run-record bookkeeping (.harness/runs/, which the ledger
