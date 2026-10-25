@@ -2,7 +2,7 @@
 # Stand-in for `systemd-run --user --scope` in tests: appends each call to $STUB_DIR/systemd.log (the program name, each
 # argument cut to its first line, then "==="). The probe (`--user --scope --quiet true`) exits 0; any other call reads
 # the options up to the command, marks the unit alive in $STUB_DIR/scope/ (<unit>.alive, its MemoryMax in <unit>.max),
-# runs the command with STUB_SCOPE_UNIT=<unit> (<unit>.running meanwhile) and exits with its code, the unit gone
+# runs the command with STUB_SCOPE_UNIT=<unit> (<unit>.running and its pid in <unit>.cmd meanwhile) and exits with its code, the unit gone
 # afterwards unless a pid in <unit>.pids lives on (as a real scope goes when empty). STUB_NO_SYSTEMD=1: every call fails the way it does without a
 # user bus (fixtures/systemd-no-bus.txt, exit 1). A MemoryMax systemd can't parse fails the way the real one does
 # (fixtures/systemd-run-bad-property.txt, exit 1, no unit made); so does a unit name still alive
@@ -26,7 +26,10 @@ live() { local p; for p in $(cat "$S/$1.pids" 2> /dev/null); do [[ $(ps -o stat=
 [[ -f $S/$unit.alive ]] && { [[ -f $S/$unit.running ]] || live "$unit"; } \
   && { sed "s/harness-test-[0-9]*-dup/$unit/" "$HERE/fixtures/systemd-run-unit-exists.txt" >&2; exit 1; }   # still loaded: refused, nothing run
 rm -f "$S/$unit".*; touch "$S/$unit.alive" "$S/$unit.running"; [[ -n $max ]] && scope_bytes "$max" > "$S/$unit.max"
-STUB_SCOPE_UNIT=$unit "$@"; rc=$?   # forked, not exec'd as the real one: the stub must clean up after it
-rm -f "$S/$unit.running"
+# forked, not exec'd as the real one: the stub must clean up after it. In the background (<&0 keeps stdin) with its pid
+# in <unit>.cmd, so the stub systemctl's stop kills its whole tree as a real stop kills the cgroup; gone after the wait,
+# as the pid could name another process by then (not in .pids: those count in TasksCurrent)
+STUB_SCOPE_UNIT=$unit "$@" <&0 & echo $! > "$S/$unit.cmd"; wait $!; rc=$?
+rm -f "$S/$unit.running" "$S/$unit.cmd"
 for p in $(cat "$S/$unit.pids" 2> /dev/null); do kill -0 "$p" 2> /dev/null && exit $rc; done
 rm -f "$S/$unit.alive"; exit $rc

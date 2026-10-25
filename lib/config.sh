@@ -14,6 +14,7 @@ harness_config() {
   SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G   # each session's scope (lib/scope.sh): throttle, kill, swap
   CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m   # each check.sh run's scope (no MemoryHigh: a runaway test dies, not crawls) and its timeout -k 30s
   INIT_TIMEOUT=10m SVC_MEMORY_MAX=3G   # run_init: timeout -k 10s around the init's foreground; its services scope's MemoryMax
+  TEARDOWN_CMD=""   # services_down runs it before stopping the services scope (default below: .harness/teardown.sh)
   MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m   # mem_gate before each session: under this much MemAvailable, wait up to this long, then start anyway
   INIT_MODEL=fable WORKER_MODEL=opus VERIFY_MODEL=sonnet VERIFY_ESCALATE_MODEL=opus RETRO_MODEL=sonnet SUPERVISOR_MODEL=opus
   DEBRIEF_MODEL=sonnet   # `harness debrief`: one read-only session after a queue (40 turns, $3 cap, like the retro)
@@ -37,6 +38,8 @@ harness_config() {
   [[ -n $CHECK_CMD ]] || CHECK_CMD=$(detect_check "$wt")
   [[ -n $SMOKE_CMD ]] || SMOKE_CMD=$(detect_smoke "$wt")
   [[ -n $INIT_CMD ]] || { [[ -f $wt/.harness/init.sh ]] && INIT_CMD=.harness/init.sh || INIT_CMD=true; }
+  # this form always succeeds: as the last line it is harness_config's exit, and bin/harness runs under set -e
+  [[ -n $TEARDOWN_CMD || ! -x $wt/.harness/teardown.sh ]] || TEARDOWN_CMD=.harness/teardown.sh
 }
 
 # The project's suite, by convention. Empty when nothing is found (the driver warns; nothing can be gated on it).

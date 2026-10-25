@@ -125,7 +125,7 @@
         "journal/decisions/2026-10-25-teardown-hook.md exists (finding: docker lives under dockerd; choice; rejected: parsing docker ps)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L2-04", "milestone": "L2", "kind": "build", "model": "opus",
       "description": "Services also stop on PAUSE, on STOP, before a usage-limit wait longer than SVC_IDLE_STOP_MIN minutes and before L1's memory wait, and the next run_init starts them again.",
       "steps": [

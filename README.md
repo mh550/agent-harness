@@ -58,6 +58,7 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 | `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only | recommended |
 | `.mcp.json` | the MCP servers runs may use. Sessions run with `--strict-mcp-config`, so a committed `.mcp.json` (passed as `--mcp-config <worktree>/.mcp.json`) is what run worktrees load; without one they get none, whatever your user config holds | no |
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
+| `.harness/teardown.sh` (executable) | what stopping the run's services scope can't reach, e.g. `npx supabase stop` or `docker compose down` (containers live under `dockerd`): see below | no |
 
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`), smoke, init (run in the run's
@@ -65,6 +66,15 @@ services scope `harness-<run>-svc`, capped at 3G, under a 10m timeout; what it l
 scope until the next init stops it: `SVC_MEMORY_MAX`, `INIT_TIMEOUT`), port, models, limits
 (a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
 `MEM_WAIT_MAX`). Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
+
+**Teardown.** When a run ends, and when its driver is killed (a TERM, or an error that ends it), the harness stops the
+run's services: it runs the project's `.harness/teardown.sh` if that file is executable (or `TEARDOWN_CMD`), in the
+worktree under `timeout 2m` (KILL 10 s later) with `HARNESS_PORT`, `HARNESS_SCRATCH`, `HARNESS_RUN_ID` and `HARNESS_TEARDOWN_WHY` set,
+then stops `harness-<run>-svc`, and notes `services stopped (<why>)` in `harness-log.md`. The scope stop alone takes
+everything the init started itself; a project whose init starts containers (Supabase, `docker compose`) adds its own
+hook to stop them (template: `templates/project/teardown.sh`). It runs only when the segment ran an init, its output
+goes to `teardown.out` in the scratch directory, and a failing hook is noted, never fatal. A SIGKILLed driver runs no
+hook.
 
 ## What a run is
 
