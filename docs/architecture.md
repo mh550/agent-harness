@@ -48,7 +48,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Component | Lines | Responsibility |
 |---|---|---|
 | `bin/harness` | ~350 | CLI: start/continue/merge/queue/status/parked/report/trends/attach/pause/resume/stop/answer/init/gc/debrief. Creates worktrees, ports, state dirs, tmux sessions |
-| `lib/driver.sh` | ~370 | The run loop (§5). The only component that runs sessions, commits on the run's behalf, tags and merges |
+| `lib/driver.sh` | ~370 | The run loop (§5). The only component that runs sessions, commits on the run's behalf, tags and merges. The session command line (`session()`): `claude -p <prompt> --model <m> --permission-mode auto [--settings <wt>/.claude/settings.json] --strict-mcp-config [--mcp-config <wt>/.mcp.json] --max-turns … --max-budget-usd … --output-format stream-json --verbose`, under `timeout -k 30s SESSION_TIMEOUT` in its scope. `--strict-mcp-config` always, `--mcp-config` only when the worktree has a `.mcp.json`: a session loads its project's committed MCP servers and no others (run.log's `MCP servers:` line at the run start; decisions/2026-10-25-strict-mcp-and-deepequal-rule) |
 | `lib/queue.sh` | ~50 | Starts queued runs within the parallel limit (one per project), the `--until` time and the usage-limit window; skips parked entries; syncs the live checkout when no run is alive; starts `harness debrief`, detached, as it exits (§12, §16) |
 | `lib/sync.sh` | ~40 | The live checkout level with origin: merged PRs in, the driver's ledger commits out, only when safe (§12) |
 | `lib/debrief.sh` | ~280 | `harness debrief`: gathers the context in bash, waits out the limit window, one read-only session, the note, checked continuations, the notification (§16) |

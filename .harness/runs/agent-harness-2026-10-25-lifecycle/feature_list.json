@@ -1,6 +1,12 @@
-{ "run": "agent-harness-2026-10-25-lifecycle", "branch": "harness/agent-harness-2026-10-25-lifecycle",
+{
+  "run": "agent-harness-2026-10-25-lifecycle",
+  "branch": "harness/agent-harness-2026-10-25-lifecycle",
   "features": [
-    { "id": "L1-01", "milestone": "L1", "kind": "plan", "model": "opus",
+    {
+      "id": "L1-01",
+      "milestone": "L1",
+      "kind": "plan",
+      "model": "opus",
       "description": "docs/plans/2026-10-25-L1-capped-sessions.md fixes lib/scope.sh's API, the systemd stubs and their fixtures, the unit names and the notes, so L1-02..L1-07 build one thing.",
       "steps": [
         "docs/plans/2026-10-25-L1-capped-sessions.md exists with sections: scope.sh API (scope_run <unit> <mem-high> <mem-max> <cmd...>, scope_stop <unit>, scope_peak <unit> in MB, the probe and its once-per-segment note), unit naming (harness-<run>-<role>[-<n>], run id reduced to [A-Za-z0-9_-]), where timeout -k 30s sits relative to systemd-run, the stub contract, the fixtures, the new config keys with defaults (SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m), and the exact note texts of L1-03..L1-06",
@@ -10,8 +16,13 @@
         "The plan records the real `claude --help` text for --strict-mcp-config and --mcp-config (both exist in the installed CLI as of 2026-10-25)",
         "bash tests/run.sh ends with every check passing (nothing built yet: the count is unchanged)"
       ],
-      "passes": true },
-    { "id": "L1-02", "milestone": "L1", "kind": "build", "model": "opus",
+      "passes": true
+    },
+    {
+      "id": "L1-02",
+      "milestone": "L1",
+      "kind": "build",
+      "model": "opus",
       "description": "lib/scope.sh runs a command in a capped transient systemd user scope (scope_run), stops it (scope_stop) and reads its peak (scope_peak), falling back to running bare when the user bus is missing; the two stubs and fixtures exist.",
       "steps": [
         "lib/scope.sh has a one-line usage header, sources clean under bash -n, and exports scope_run, scope_stop, scope_peak and scope_available (the probe, cached per process), calling ${HARNESS_SYSTEMD_RUN:-systemd-run} and ${HARNESS_SYSTEMCTL:-systemctl}",
@@ -23,8 +34,13 @@
         "journal/decisions/2026-10-25-scoped-sessions.md exists (title, provenance, finding · choice · rejected) covering the helper, the probe fallback and the unit naming",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": true },
-    { "id": "L1-03", "milestone": "L1", "kind": "build", "model": "opus",
+      "passes": true
+    },
+    {
+      "id": "L1-03",
+      "milestone": "L1",
+      "kind": "build",
+      "model": "opus",
       "description": "Every claude session runs in scope harness-<run>-s<n> under timeout -k 30s with the three memory caps, the scope is stopped when claude returns, and leftover processes and a cap kill are noted in harness-log.md; without user systemd the run goes bare with one note per segment.",
       "steps": [
         "lib/config.sh defaults SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G and templates/user/config.sh lists them commented with one line each",
@@ -37,8 +53,13 @@
         "journal/decisions/2026-10-25-scoped-sessions.md is extended (or a sibling file written) with the stop-after-return choice and what was rejected (killing by pid)",
         "bash -n lib/driver.sh lib/config.sh bin/harness pass; bash tests/run.sh ends with every check passing"
       ],
-      "passes": true },
-    { "id": "L1-04", "milestone": "L1", "kind": "build", "model": "opus",
+      "passes": true
+    },
+    {
+      "id": "L1-04",
+      "milestone": "L1",
+      "kind": "build",
+      "model": "opus",
       "description": "Each session's metrics.jsonl line records mem_peak_mb from its scope (null when uncapped) and report.md lists the features whose sessions peaked over 2 GB.",
       "steps": [
         "lib/metrics.mjs append takes a 12th argument <mem_peak_mb> (empty or `null` → null) and writes `mem_peak_mb` as a number on every line; `node --check lib/metrics.mjs` passes and a pure check with node --input-type=module covers both cases",
@@ -48,8 +69,13 @@
         "journal/decisions/2026-10-25-session-memory-peaks.md exists (finding · choice · rejected: a summary.json field)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": true },
-    { "id": "L1-05", "milestone": "L1", "kind": "build", "model": "opus",
+      "passes": true
+    },
+    {
+      "id": "L1-05",
+      "milestone": "L1",
+      "kind": "build",
+      "model": "opus",
       "description": "lib/check.sh runs the suite (full and subset) in scope harness-<run>-check-<pid> capped at CHECK_MEMORY_MAX under timeout -k 30s CHECK_TIMEOUT, and a kill shows as its own RED line naming the cap or the timeout.",
       "steps": [
         "lib/config.sh defaults CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m (templates/user/config.sh commented); lib/prompt.sh prompt_env exports HARNESS_SCOPE_PREFIX=harness-<sanitised run> plus HARNESS_CHECK_MEMORY_MAX and HARNESS_CHECK_TIMEOUT so a session's call of check.sh caps the same way",
@@ -60,8 +86,13 @@
         "journal/decisions/2026-10-25-capped-suites.md exists (finding: the 2026-10-24 deepEqual OOM; choice; rejected: ulimit -v)",
         "bash -n lib/check.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": true },
-    { "id": "L1-06", "milestone": "L1", "kind": "build", "model": "opus",
+      "passes": true
+    },
+    {
+      "id": "L1-06",
+      "milestone": "L1",
+      "kind": "build",
+      "model": "opus",
       "description": "Before a session, when MemAvailable is under MEM_MIN_AVAILABLE_GB the driver notes it, waits up to MEM_WAIT_MAX polling every 5 minutes, then starts the session anyway with a note.",
       "steps": [
         "lib/config.sh defaults MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m (templates/user/config.sh commented); the driver reads MemAvailable from ${HARNESS_MEMINFO:-/proc/meminfo} with a function mem_available_gb in lib/scope.sh (pure, checked with the real fixture tests/fixtures/meminfo.txt: it prints that file's MemAvailable in whole GB)",
@@ -71,8 +102,13 @@
         "journal/decisions/2026-10-25-memory-gate.md exists (default 5 GB from the audit; rejected: refusing to start)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": true },
-    { "id": "L1-07", "milestone": "L1", "kind": "build", "model": "opus",
+      "passes": true
+    },
+    {
+      "id": "L1-07",
+      "milestone": "L1",
+      "kind": "build",
+      "model": "opus",
       "description": "Headless sessions load only their project's MCP servers (--strict-mcp-config, plus --mcp-config <wt>/.mcp.json when it exists), and the coding prompt's rules tell sessions never to deepEqual large values and to bound a rerun after exit 137 or a hang.",
       "steps": [
         "session() in lib/driver.sh always passes --strict-mcp-config and passes `--mcp-config $WT/.mcp.json` only when that file exists; a check on run demo finds --strict-mcp-config in the stub claude's recorded argv and no --mcp-config; a run on a project with a committed .mcp.json finds `--mcp-config <wt>/.mcp.json`",
@@ -81,8 +117,13 @@
         "docs/architecture.md §3 (the session command line) names both flags; README's project-setup section says a committed .mcp.json is what run worktrees load",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L1-08", "milestone": "L1", "kind": "review", "model": "opus",
+      "passes": true
+    },
+    {
+      "id": "L1-08",
+      "milestone": "L1",
+      "kind": "review",
+      "model": "opus",
       "description": "An Opus review of the L1 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, and the L1 docs (architecture §3/§4/§7/§10, README, templates) complete.",
       "steps": [
         "`git diff origin/main...HEAD -- lib bin tests prompts templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-25-lifecycle/L1-review.diff` is read by an Opus subagent; its findings are written to docs/plans/2026-10-25-L1-review.md with a severity each",
@@ -91,9 +132,16 @@
         "Every L1 decision file cites the spec and reads finding · choice · rejected; none numbers itself D-H<n>",
         "bash -n on every shell file touched by L1 and node --check on every .mjs pass; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-
-    { "id": "L2-01", "milestone": "L2", "kind": "plan", "model": "opus", "after": ["L1"],
+      "passes": false
+    },
+    {
+      "id": "L2-01",
+      "milestone": "L2",
+      "kind": "plan",
+      "model": "opus",
+      "after": [
+        "L1"
+      ],
       "description": "docs/plans/2026-10-25-L2-run-services.md fixes the services scope, the teardown hook, services_down's order and every stop point, plus the gc and status additions, so L2-02..L2-05 build one thing.",
       "steps": [
         "docs/plans/2026-10-25-L2-run-services.md exists with: run_init's sequence (scope_stop harness-<run>-svc, then INIT_CMD in that scope under timeout -k 10s INIT_TIMEOUT=10m with SVC_MEMORY_MAX=3G), TEARDOWN_CMD's contract (default .harness/teardown.sh when executable; HARNESS_PORT and HARNESS_SCRATCH set; timeout 2m), services_down <why> = teardown → scope_stop → note `services stopped (<why>)`, and the stop points: finish, the EXIT trap (idempotent, nothing started = silent), PAUSE before its poll, STOP, limit_wait over SVC_IDLE_STOP_MIN=10 minutes, L1's memory wait",
@@ -102,8 +150,13 @@
         "The plan lists templates/project/teardown.sh's commented example (npx supabase stop; docker compose down) and the README paragraph telling projects to add their own",
         "bash tests/run.sh ends with every check passing (the fixture capture leaves no harness-test-* unit behind)"
       ],
-      "passes": false },
-    { "id": "L2-02", "milestone": "L2", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L2-02",
+      "milestone": "L2",
+      "kind": "build",
+      "model": "opus",
       "description": "run_init stops the run's old services scope, then runs INIT_CMD inside harness-<run>-svc under timeout -k 10s INIT_TIMEOUT with SVC_MEMORY_MAX, so what the init backgrounds stays in the scope.",
       "steps": [
         "lib/config.sh defaults INIT_TIMEOUT=10m SVC_MEMORY_MAX=3G (templates/user/config.sh commented)",
@@ -113,8 +166,13 @@
         "journal/decisions/2026-10-25-services-scope.md exists (finding: portfolio_site's next dev; choice; rejected: killing the init's pid)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L2-03", "milestone": "L2", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L2-03",
+      "milestone": "L2",
+      "kind": "build",
+      "model": "opus",
       "description": "services_down runs the project's teardown hook, stops the services scope and notes it, on finish and in the driver's EXIT trap, so a crash or a kill of the driver still stops what the init started.",
       "steps": [
         "lib/driver.sh defines services_down <why> (teardown under `timeout 2m` with HARNESS_PORT and HARNESS_SCRATCH, then scope_stop harness-<run>-svc, then note `services stopped (<why>)`), idempotent per why and silent when no init ran; TEARDOWN_CMD in lib/config.sh defaults to .harness/teardown.sh when that file is executable, else empty",
@@ -125,8 +183,13 @@
         "journal/decisions/2026-10-25-teardown-hook.md exists (finding: docker lives under dockerd; choice; rejected: parsing docker ps)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L2-04", "milestone": "L2", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L2-04",
+      "milestone": "L2",
+      "kind": "build",
+      "model": "opus",
       "description": "Services also stop on PAUSE, on STOP, before a usage-limit wait longer than SVC_IDLE_STOP_MIN minutes and before L1's memory wait, and the next run_init starts them again.",
       "steps": [
         "lib/config.sh defaults SVC_IDLE_STOP_MIN=10 (templates/user/config.sh commented); limit_wait calls services_down `usage-limit wait` only when the wait is over SVC_IDLE_STOP_MIN minutes; the pause branch calls services_down `paused` before its poll; the stop branch's finish carries `stopped by Michael`; mem_gate's hook now calls services_down `memory wait`",
@@ -137,8 +200,13 @@
         "docs/architecture.md §5 (the life of a run) and §7 guards list every stop point; journal/decisions/2026-10-25-services-stop-points.md exists (default 10 minutes; rejected: stopping on every wait)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L2-05", "milestone": "L2", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L2-05",
+      "milestone": "L2",
+      "kind": "build",
+      "model": "opus",
       "description": "harness gc stops every harness-<run>-* unit of a run that has ended with no live driver (--dry-run prints would:), and harness status lists a live run's units with their MemoryCurrent.",
       "steps": [
         "cmd_gc gains a step after the branch passes: `systemctl --user list-units 'harness-*' --plain --no-legend` through HARNESS_SYSTEMCTL, each unit matched to a run by rebuilding `harness-<sanitised run id>-` from this project's state dirs; units of a run with `ended` and no live driver.pid are stopped through act (`+ stopped <unit> (<run> ended)`), the rest left alone; an unmatched unit is listed as `? <unit> (no run of this project)` and never stopped",
@@ -147,8 +215,13 @@
         "docs/architecture.md §3 (harness gc, harness status) and §4 state list the orphan-unit step; README's gc row names it; journal/decisions/2026-10-25-gc-orphan-units.md exists (finding: SIGKILL has no trap; rejected: a systemd timer)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L2-06", "milestone": "L2", "kind": "review", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L2-06",
+      "milestone": "L2",
+      "kind": "review",
+      "model": "opus",
       "description": "An Opus review of the L2 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, the EXIT trap and services_down proven idempotent, and the L2 docs complete.",
       "steps": [
         "`git diff run/agent-harness-2026-10-25-lifecycle/L1...HEAD -- lib bin tests templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-25-lifecycle/L2-review.diff` (or from the L1 merge commit when the tag is absent) is read by an Opus subagent; findings go to docs/plans/2026-10-25-L2-review.md with a severity each",
@@ -157,9 +230,14 @@
         "Every L2 decision file reads finding · choice · rejected and cites the spec; bash -n and node --check pass on every file L2 touched",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-
-    { "id": "L3-01", "milestone": "L3", "kind": "plan", "model": "opus", "after": [],
+      "passes": false
+    },
+    {
+      "id": "L3-01",
+      "milestone": "L3",
+      "kind": "plan",
+      "model": "opus",
+      "after": [],
       "description": "docs/plans/2026-10-25-L3-scratch-and-tmux.md fixes the scratch cleanup, HARNESS_CACHE, the tmpfiles template and the tmux reaper (H1a/b/c), including how the suite drives a real driver window on its private tmux server.",
       "steps": [
         "docs/plans/2026-10-25-L3-scratch-and-tmux.md exists with: finish's scratch step (copy check-last.out and init.out into $STATE, rm -rf $SCRATCH only, never its parent; KEEP_SCRATCH=1 keeps it), check.sh keeping only the newest check-<key>.out, HARNESS_CACHE=${XDG_CACHE_HOME:-~/.cache}/harness/<project> exported by prompt_env, templates/user/harness-tmpfiles.conf (`e /tmp/harness - - - 3d`) and its one install command for the README",
@@ -168,8 +246,13 @@
         "The plan names each L3 check from the spec's list with its tests/run.sh name",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L3-02", "milestone": "L3", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L3-02",
+      "milestone": "L3",
+      "kind": "build",
+      "model": "opus",
       "description": "finish keeps check-last.out and init.out in the run's state dir and deletes the run's scratch directory (KEEP_SCRATCH=1 keeps it), check.sh keeps one check-<key>.out, and sessions see HARNESS_CACHE.",
       "steps": [
         "A check on run demo: $STATE/check-last.out and $STATE/init.out exist, $SCRATCH (the run's directory) is gone, the project's scratch directory $T/scratch/proj still exists and a live.lock placed there before the run is still there",
@@ -180,8 +263,13 @@
         "docs/architecture.md §4 state lists what scratch holds and that finish deletes it, and HARNESS_CACHE; journal/decisions/2026-10-25-scratch-cleanup.md exists (finding: 1 M leaked files; rejected: a tmpfiles rule alone)",
         "bash -n lib/driver.sh lib/check.sh lib/prompt.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L3-03", "milestone": "L3", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L3-03",
+      "milestone": "L3",
+      "kind": "build",
+      "model": "opus",
       "description": "When the driver exits, its tmux window saves its scrollback to <state>/tmux-driver.txt, kills the supervisor window, and after TMUX_KEEP_HOURS kills its own session (0 = at once).",
       "steps": [
         "lib/config.sh defaults TMUX_KEEP_HOURS=24 (templates/user/config.sh commented); bin/harness's driver window command does, after the driver exits: `tmux capture-pane -p -S - > <state>/tmux-driver.txt`, `tmux kill-window -t =<s>:supervisor` (ignored when absent), prints `[driver exited — scrollback saved to <state>/tmux-driver.txt; this session self-destructs in <h> h, or sooner on harness gc]`, sleeps TMUX_KEEP_HOURS hours, then `tmux kill-session -t =<s>`",
@@ -191,8 +279,13 @@
         "journal/decisions/2026-10-25-tmux-driver-window.md exists (finding: exec bash forever; choice: 24 h keep; rejected: counting supervisors against MAX_PARALLEL_RUNS); docs/architecture.md §3 (harness start) and §10 (TMUX_KEEP_HOURS) updated",
         "bash -n bin/harness; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L3-04", "milestone": "L3", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L3-04",
+      "milestone": "L3",
+      "kind": "build",
+      "model": "opus",
       "description": "harness gc reaps the tmux sessions of ended, dead-driver, unpaused runs of its project and the queue runner does the same across projects before the debrief, through one shared helper that never touches h-queue, the desk or a live run.",
       "steps": [
         "One helper (as the plan fixed) reaps run → tmux_name sessions where <state>/ended exists, driver.pid is not alive (re-checked just before the kill) and PAUSE is absent, logging `+ reaped tmux session <s> (<run> ended)`; cmd_gc calls it for its project through act (`would:` on --dry-run) and goes on after a failed kill",
@@ -202,8 +295,13 @@
         "journal/decisions/2026-10-25-tmux-reaper.md exists (run → session never session → run; rejected: parsing tmux list-sessions); docs/architecture.md §3 (gc) and §12 (queue) and README's gc row updated",
         "bash -n bin/harness lib/queue.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L3-05", "milestone": "L3", "kind": "review", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L3-05",
+      "milestone": "L3",
+      "kind": "review",
+      "model": "opus",
       "description": "An Opus review of the L3 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, and the L3 docs complete.",
       "steps": [
         "`git diff <the commit before L3-02's first commit>...HEAD -- lib bin tests templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-25-lifecycle/L3-review.diff` is read by an Opus subagent; findings go to docs/plans/2026-10-25-L3-review.md with a severity each",
@@ -212,9 +310,14 @@
         "Every L3 decision file reads finding · choice · rejected; bash -n and node --check pass on every file L3 touched",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-
-    { "id": "L4-01", "milestone": "L4", "kind": "build", "model": "opus", "after": [],
+      "passes": false
+    },
+    {
+      "id": "L4-01",
+      "milestone": "L4",
+      "kind": "build",
+      "model": "opus",
+      "after": [],
       "description": "harness gc --all-merged deletes every merged branch whatever its name (prefix listings, every pass runs), and plain gc still deletes only merged harness/ and harness-merge/ branches; a short plan for L4 comes first.",
       "steps": [
         "docs/plans/2026-10-25-L4-gc.md exists (one page): the new loop shape of cmd_gc's branch passes, the --deps step's guards, the runner's gc call, and the test repo's branch and worktree fixtures each L4 check uses",
@@ -224,8 +327,13 @@
         "journal/decisions/2026-10-25-gc-all-merged.md exists (finding: `*` does not cross `/` on git 2.43 and `(( all )) && break`; rejected: a `**` pattern)",
         "bash -n bin/harness; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L4-02", "milestone": "L4", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L4-02",
+      "milestone": "L4",
+      "kind": "build",
+      "model": "opus",
       "description": "gc's worktree removal finishes: a clean tree with ignored build output is removed with --force then rm -rf, a failure is logged as `! could not remove <wt>: <why>` and the next worktree is still processed.",
       "steps": [
         "cmd_gc removes a clean, merged worktree with `git worktree remove --force`, then `rm -rf` if the directory remains, then `git worktree prune`; a failure prints `! could not remove <wt>: <why>` and the loop continues",
@@ -234,8 +342,13 @@
         "journal/decisions/2026-10-25-gc-removal-finishes.md exists (finding: R9, portfolio_site's .next; choice: --force on a clean tree; rejected: git clean -fdx first)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L4-03", "milestone": "L4", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L4-03",
+      "milestone": "L4",
+      "kind": "build",
+      "model": "opus",
       "description": "harness gc --deps deletes DEPS_DIRS (node_modules .next .next-check .venv) inside the worktrees of ended runs, even unmerged ones, logging the space freed, and never inside a live run's worktree or the project's own checkout.",
       "steps": [
         "lib/config.sh defaults DEPS_DIRS=\"node_modules .next .next-check .venv\" (templates/user/config.sh commented); cmd_gc takes --deps and, for each worktree under $WT_ROOT/<project>/ whose run has ended, has no live driver.pid, no queued continuation and no open desk, deletes each named directory that exists and prints `+ freed <n> MB in <wt>: <dirs>` (du -sm before deleting)",
@@ -244,8 +357,13 @@
         "journal/decisions/2026-10-25-gc-deps.md exists (finding: B8, 90% of 7.3 GB; choice: ended runs only; rejected: deleting in the project checkout)",
         "docs/architecture.md §3 (gc) and README's gc row list --deps and DEPS_DIRS; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L4-04", "milestone": "L4", "kind": "build", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L4-04",
+      "milestone": "L4",
+      "kind": "build",
+      "model": "opus",
       "description": "The queue runner runs `harness gc <project> --all-merged --deps` for every project it started a run in, before the debrief, its output in runner.log, and a gc failure never stops the debrief.",
       "steps": [
         "lib/queue.sh, on its exit path when it started runs, collects the distinct projects of those runs (from <state>/runners matching its id) and runs `harness gc <project> --all-merged --deps` for each, with `gc <project>:` prefixed lines in runner.log, before the debrief line; a non-zero gc exit logs `gc <project> failed (exit <n>)` and the debrief still starts",
@@ -254,8 +372,13 @@
         "docs/architecture.md §12 (queue) and README's queue line say the runner collects as it drains; journal/decisions/2026-10-25-runner-gc.md exists (rejected: gc from the debrief, which stays read-only)",
         "bash -n lib/queue.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-    { "id": "L4-05", "milestone": "L4", "kind": "review", "model": "opus",
+      "passes": false
+    },
+    {
+      "id": "L4-05",
+      "milestone": "L4",
+      "kind": "review",
+      "model": "opus",
       "description": "An Opus review of the L4 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied (cmd_gc's passes as one loop over prefixes), and the L4 docs complete.",
       "steps": [
         "`git diff <the commit before L4-01's first commit>...HEAD -- lib bin tests templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-25-lifecycle/L4-review.diff` is read by an Opus subagent; findings go to docs/plans/2026-10-25-L4-review.md with a severity each, with special attention to anything that could delete an unmerged branch or a live worktree",
@@ -264,9 +387,14 @@
         "Every L4 decision file reads finding · choice · rejected; bash -n passes on bin/harness and lib/queue.sh",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
-
-    { "id": "L5-01", "milestone": "L5", "kind": "build", "model": "opus", "after": [],
+      "passes": false
+    },
+    {
+      "id": "L5-01",
+      "milestone": "L5",
+      "kind": "build",
+      "model": "opus",
+      "after": [],
       "description": "The queue runner re-reads its configuration at the top of every loop and logs a MAX_PARALLEL_RUNS change, so widening or narrowing parallelism needs no runner restart; lowering never stops a running run (optional milestone: dropped first if time runs short).",
       "steps": [
         "lib/queue.sh re-runs `harness_config /nonexistent` at the top of each while iteration and logs `MAX_PARALLEL_RUNS <old> → <new> (config reloaded)` when it changed; POLL stays as set at start",
@@ -275,5 +403,7 @@
         "journal/decisions/2026-10-25-runner-config-reload.md exists (rejected: a SIGHUP handler; re-reading in harness start only); docs/architecture.md §12 and README's queue line say the runner reloads its config each poll",
         "bash -n lib/queue.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false }
-  ] }
+      "passes": false
+    }
+  ]
+}
