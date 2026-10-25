@@ -31,6 +31,7 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 | 3 | [Harness v1](iterations/03-harness-v1.md) | 16 Oct | After Anthropic's "effective harnesses": initializer + one fresh session per feature, inside the app repo |
 | 4 | [Harness v2](iterations/04-harness-v2.md) | 16 Oct | A reusable tool: worktrees, a deterministic driver, repair not stop, verify gates, PRs, phone steering, metrics |
 | 5 | [Harness v3](iterations/05-harness-v3.md) | 17 Oct | Merges verified milestones itself, waits out limits box-wide, queues nights, measures and retros every run into a ledger |
+| 6 | [The harness maintains itself](iterations/06-the-harness-maintains-itself.md) | 23–25 Oct | A week of v3 nights silted up (224 of 520 passing features merged, 10 OOM kills, 404 permission rules): discovery → one root cause → clean up once by hand *and* change the harness so it stays clean |
 
 ## How to keep it (the habit)
 
@@ -51,7 +52,8 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 
 - **Interview (10–15 min):** a story with a clear arc:
   1. The problem: building a real app with agents, and the limits I hit (context, usage, permissions).
-  2. Four iterations, each with its trigger and a metric.
+  2. The iterations, each with its trigger and a metric. Iteration 6 ends with a ready two-minute version: a
+     system that silted up, one root cause, and a cleanup that also fixed the harness.
   3. A live look at a run: `harness status`, the PR, `metrics.jsonl`.
   4. What I'd do next.
   Source: the iteration files' "Trigger" and "Evidence" sections.
