@@ -9,6 +9,22 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 13:05 · L1-02 · passes
+
+lib/scope.sh (scope_available/unit/bytes/run/stop/peak/left/capped; peak read by a wrapper inside the scope, OOMPolicy=continue, bare fallback that never runs a command twice), stubs tests/stub-systemd-run.sh + stub-systemctl.sh over the real fixtures, 7 checks incl. one real 64M scope (137, peak 64, no unit left), decision file. Tests 236 → 243.
+
+- **Files:** lib/scope.sh, tests/stub-systemd-run.sh, tests/stub-systemctl.sh, tests/run.sh, bin/harness, docs/architecture.md, journal/decisions/2026-10-25-scoped-sessions.md
+- **Verified:** 7 new checks watched failing (0/6, then the not-writable one against the old wrapper), then passing; full suite via lib/check.sh 243/243 green in 376 s; systemctl --user list-units 'harness-test-*' empty after; bash -n on every touched shell file. An Opus review of the diff found 1 Important (a command could run twice when scratch is unwritable), fixed with a check, plus stub fidelity fixes.
+- **Tests:** 236 → 243
+- **Dead end:** running the full suite in the background while still editing tests/run.sh — bash reads the script as it runs it: the run died on a syntax error at the edit point; rerun on the final tree
+- **Discovery** (affects L1-03, L1-04, L2): Stub state: stub-systemd-run.sh clears $STUB_DIR/scope/<unit>.* at each start and holds <unit>.running while the command runs; stub-systemctl.sh treats a unit as alive only while .running exists or a pid in <unit>.pids is alive and not a zombie (a real scope is collected once empty). stub claude's STUB_OOM must touch <unit>.oom from inside the command (after the start), and STUB_LEAVE_PROCESS appends to <unit>.pids.
+- **Discovery** (affects L1-03, L1-05, L1-06): sd_with/sd_count (tests/run.sh, in the scope.sh block) parse $T/systemd.log; the suite exports HARNESS_SYSTEMD_RUN/SYSTEMCTL/MEMINFO/MEM_POLL and unsets HARNESS_SCOPE_PREFIX and SCOPE_OK; bin/harness already passes all four overrides to the tmux-started driver (done here, ahead of L1-03 step 7).
+- **Discovery** (affects L1-03, L1-08): scope_capped is peak >= cap only; page cache counts in MemoryPeak, so L1-03 must pair it with exit 137 before noting a cap kill. The probe can pass on a box whose user manager has no memory controller delegated (caps silently ignored); this box has it (the real check sees 137 at 64M).
+- **Discovery** (affects L1-03, L1-05): scope_run's bare fallback covers any systemd-run failure, including a unit name still held by a crashed segment's scope: L1-03's per-run scope-seq avoids reuse; L1-05's check-<pid> could collide only on pid reuse while an old scope still holds leftovers.
+- **Proposed change:** L1-02 step 6 should read 'MemoryMax=64M, no MemoryHigh, SESSION_SWAP_MAX=0, outer timeout 30s' (plan §13: 48M/64M throttles for minutes instead of killing); the check is built that way and also asserts scope_peak = 64 and scope_capped.
+- **Proposed change:** L1-02 step 3: the logged argv also carries -p OOMPolicy=continue and the wrapper (bash -c <wrap> _ <unit> <dir> <systemctl>) before the command; the check compares the first 16 lines exactly and the command's last 3.
+- *02-L1-02 · claude-opus-5-5*
+
 ### 2026-10-25 12:23 · L1-01 · passes
 
 Wrote docs/plans/2026-10-25-L1-capped-sessions.md (scope.sh API, unit names, in-scope wrapper and timeout placement, stub contract, config keys, exact notes, 24 named checks) and captured 8 real fixtures (systemctl show/list-units/stop, no-bus, meminfo). Probes found three things the spec missed: an emptied scope vanishes, OOMPolicy=stop kills the wrapper, MemoryHigh near MemoryMax stalls.
