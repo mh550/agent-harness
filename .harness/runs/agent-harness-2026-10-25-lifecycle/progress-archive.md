@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 14:30 · L1-05 · passes
+
+check.sh runs full and subset suites in harness-<run>-check-<pid> (MemoryMax=CHECK_MEMORY_MAX 3G, no MemoryHigh) under timeout -k 30s CHECK_TIMEOUT 15m, stopped after; RED lines for the cap (scope_capped) and the timeout; a TERM/INT/HUP stops the check scope; prompt_env exports prefix/cap/timeout; dur_s in scope.sh. Tests 254 → 260.
+
+- **Files:** lib/check.sh, lib/scope.sh, lib/prompt.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-capped-suites.md
+- **Verified:** bash tests/run.sh 260/260; harness check.sh green in 421 s; new checks watched failing first (old RED lines, no scope; TERM check fails with the traps removed); by hand with real systemd-run under harness-test-<pid>-*, 64M, swap 0: a 256 MB node allocation → check: RED (killed at its 64M memory cap, exit 137 …), a TERM to check.sh → 143, no unit, sleep or scope file left
+- **Tests:** 254 → 260
+- **Dead end:** a real 64M check scope with the default 1G swap — the 256 MB allocation swapped and passed: check scopes always get scope_run's 1G MemorySwapMax (SESSION_SWAP_MAX is not exported to check.sh)
+- **Discovery** (affects L1-08, L2): Only systemd-run's child moves into the check scope; check.sh stays in its caller's. Without the TERM trap, stopping a session's scope orphaned its suite in harness-<run>-check-<pid> for up to 15m. check.sh now runs the suite in the background, waits, and stops the check scope on TERM/INT/HUP (SIGKILL still can't be caught).
+- **Discovery** (affects L3): check.sh leaves no scopes/<unit>.started/.show (EXIT trap); session scopes still do, one pair per session, until L3 deletes scratch.
+- **Discovery** (affects L1-08): Check scopes get MemorySwapMax=1G always (template comment corrected); a suite can reach 4G before the kill.
+- **Question for Michael:** CHECK_MEMORY_MAX=3G and CHECK_TIMEOUT=15m are the spec's defaults (this repo's own suite runs ~7 min, well under). D6 default: suites get no MemoryHigh. Keep both?
+- **Proposed change:** L1-05 step 3: the cap line needs scope_capped (peak reached the cap), not just exit 137 in a scope, so a suite's own 137 keeps the plain RED line; the plan §7 says any scoped 137
+- *05-L1-05 · claude-opus-5-5*
+
 ### 2026-10-25 14:02 · L1-04 · passes
 
 metrics.mjs append takes a 12th arg (mem_peak_mb: number, null when uncapped) via exported metricsRow; every MET append passes $S_PEAK; report(s, metrics) adds '### Memory peaks over 2 GB' (- <feature> · <model> · <peak> MB) from metrics.jsonl beside summary.json; harness report copies metrics.jsonl into the state dir. Docs, decision file. Tests 249 → 254.
