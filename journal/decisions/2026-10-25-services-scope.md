@@ -17,9 +17,12 @@
     (`Failed to start transient scope unit: Unit <u>.scope was already loaded or has a fragment file.`,
     `tests/fixtures/systemd-run-unit-exists.txt`), and `scope_run` would then run the init bare beside the old
     servers. The stub `systemd-run` now refuses a live unit the same way, so a missing stop shows in the suite.
-  - **`timeout -k 10s INIT_TIMEOUT` (default `10m`) inside the scope, around the init's foreground only**: an init
-    that backgrounds its server and exits 0 returns at once; one that hangs is TERMed, then KILLed 10 s later. The
-    servers it started live on in the scope.
+  - **`timeout -k 10s INIT_TIMEOUT` (default `10m`) inside the scope, around the init itself**: an init that
+    backgrounds its server and exits 0 returns at once and the server lives on in the scope; one that hangs is TERMed,
+    then KILLed 10 s later, with its whole process group (`timeout` makes one; a server it had already started goes
+    too, which a session told `init exit 124` must fix anyway). Its stdin is `/dev/null` (the review's finding): under
+    `timeout` the init is no longer the tmux pane's foreground group, so a tool reading the tty would stop on SIGTTIN
+    until the timeout instead of taking its non-interactive path.
   - When systemd refuses the unit after a good probe, the init runs bare and the run notes `init ran uncapped: <why>`;
     without user systemd it runs bare silently (the run's one `no user systemd` note covers it).
   - `SVC_UP=1` is set before the start, for L2-03's `services_down` (a TERM during the init must still stop it).

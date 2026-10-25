@@ -23,7 +23,7 @@
 # CHECK_MEMORY_MAX=3G                # killed at this: "check: RED (killed at its 3G memory cap, …)"
 # CHECK_TIMEOUT=15m                  # then TERM, KILL 30 s later: "check: RED (timed out after 15m, …)"
 # The project's init runs in the run's services scope, harness-<run>-svc: what it backgrounds (a dev server) stays there.
-# INIT_TIMEOUT=10m                   # the init's foreground only, then TERM, KILL 10 s later; its servers keep running
+# INIT_TIMEOUT=10m                   # the init itself, then TERM, KILL 10 s later; servers it left when it returned keep running
 # SVC_MEMORY_MAX=3G                  # the services scope is killed at this (no MemoryHigh: a runaway server dies, not crawls)
 # Before each init, coding and verify session, the driver checks MemAvailable; under the minimum it waits, then starts anyway.
 # MEM_MIN_AVAILABLE_GB=5             # whole GB; under it: note, stop the run's services, poll every 5 minutes
