@@ -67,8 +67,9 @@ scope until the next init stops it: `SVC_MEMORY_MAX`, `INIT_TIMEOUT`), port, mod
 (a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
 `MEM_WAIT_MAX`). Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
 
-**Teardown.** When a run ends, and when its driver is killed (a TERM, or an error that ends it), the harness stops the
-run's services: it runs the project's `.harness/teardown.sh` if that file is executable (or `TEARDOWN_CMD`), in the
+**Teardown.** When a run ends (a `status: stop` included), when its driver is killed (a TERM, or an error that ends
+it), when it pauses, before a usage-limit wait of more than `SVC_IDLE_STOP_MIN` minutes (10) and before a memory wait,
+the harness stops the run's services (the next session's init starts them again): it runs the project's `.harness/teardown.sh` if that file is executable (or `TEARDOWN_CMD`), in the
 worktree under `timeout 2m` (KILL 10 s later) with `HARNESS_PORT`, `HARNESS_SCRATCH`, `HARNESS_RUN_ID` and `HARNESS_TEARDOWN_WHY` set,
 then stops `harness-<run>-svc`, and notes `services stopped (<why>)` in `harness-log.md`. The scope stop alone takes
 everything the init started itself; a project whose init starts containers (Supabase, `docker compose`) adds its own

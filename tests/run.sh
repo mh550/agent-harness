@@ -151,11 +151,11 @@ mg=$( source "$SC"; note() { echo "note: $*"; }; MEM_MIN_AVAILABLE_GB=5 MEM_WAIT
   services_down() { echo "down: $*"; cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-mg.txt"; }; cp "$T/meminfo-2g.txt" "$T/meminfo-mg.txt"; MEM_WAIT_MAX=30m HARNESS_MEMINFO=$T/meminfo-mg.txt mem_gate; echo ===
   HARNESS_MEMINFO=$HERE/fixtures/meminfo.txt mem_gate; echo end )
 MGOUT='note: memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 2s
-down: memory
+down: memory wait
 note: memory still at 2 GB after 2s; starting the session anyway (its cap protects the box)
 ===
 note: memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 30m
-down: memory
+down: memory wait
 note: memory: 9 GB available after 0 s; starting the session
 ===
 end'
@@ -652,6 +652,14 @@ check "a TERM to the driver mid-session stops the session's scope, runs the tear
   D=$(sd_at $'"'"'teardown\ntermed\ndriver exited\n'"'"'); SS=$(sd_last "stop"$'"'"'\n'"'"'"$U.scope"$'"'"'\n'"'"'); [[ $t_mid == 1 && -n $U && -n $D && -f $T/scratch/proj/termed/teardown-driver-exited.marker ]] \
   && (( SS > 0 && SS < D && D < $(sd_last $'"'"'stop\nharness-termed-svc.scope\n'"'"') )) && sleep 1 && [[ -z $(termed_left) ]] \
   && grep -q " services stopped (driver exited)$" "$HARNESS_STATE/proj/termed/run.log" && grep -q "^driver exited unexpectedly" "$HARNESS_STATE/proj/termed/ended" && [[ ! -e $HARNESS_STATE/proj/termed/driver.pid ]]'
+# PAUSE mid-run (L2-04): A's first session touches PAUSE as `harness pause` would; the pause stops the services before
+# its poll, and the init after `harness resume` starts them again
+STUB_PAUSE=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" paused --spec SPEC.md --foreground > "$T/run-paused.out" 2>&1 & PP=$!
+p_seen=0; for _ in $(seq 600); do hlog paused | grep -q "· services stopped (paused)$" && { p_seen=1; break; }; sleep 0.1; done
+"$H" resume paused > /dev/null; wait "$PP"
+check "PAUSE stops the services before its poll, and the next init starts them again" 'D=$(sd_at $'"'"'teardown\npaused\npaused\n'"'"') \
+  && [[ $p_seen == 1 && -n $D && -f $T/scratch/proj/paused/teardown-paused.marker && $(hlog paused | grep -c "· services stopped (paused)$") == 1 ]] \
+  && (( $(sd_last $'"'"'--unit=harness-paused-svc\n'"'"') > D )) && grep -q "^paused (INBOX.md" <(cut -d" " -f3- "$HARNESS_STATE/proj/paused/run.log") && [[ $($F summary "$(list paused)") == "3/3 passing" ]]'
 # systemd refusing the scope after the probe passed (a MemoryMax it can't parse): each session runs bare, and says so
 { cat "$T/base-config.sh"; echo SESSION_MEMORY_MAX=bogus; } > "$T/user-config.sh"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" refused --spec SPEC.md --foreground > "$T/run-refused.out" 2>&1
@@ -666,6 +674,7 @@ cp "$T/base-config.sh" "$T/user-config.sh"
 check "memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)" 'S=$(grep -cE "^[0-9-]+ [0-9:]+   (init|coding|verify) exit " "$HARNESS_STATE/proj/lowmem/run.log") \
   && (( S >= 5 )) && [[ $(hlog lowmem | grep -c "· memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 2s$") == "$S" \
   && $(hlog lowmem | grep -c "· memory still at 2 GB after 2s; starting the session anyway (its cap protects the box)$") == "$S" && $($F summary "$(list lowmem)") == "3/3 passing" ]]'
+check "memory gate: the wait stops the services (services stopped (memory wait))" 'hlog lowmem | grep -q "· services stopped (memory wait)$"'
 # the memory wait stops the services (L2-03 made services_down real): every session before finish's teardown starts
 # with harness-<run>-svc up, verify's included (its gate came after its run_init: now `mem_gate || run_init`)
 svc_gaps() { awk -v r="$1" 'BEGIN { RS = "===\n" } index($0, "teardown\n" r "\ndone\n") { exit } index($0, "stop\nharness-" r "-svc.scope\n") { up = 0 }
@@ -723,6 +732,7 @@ STUB_PHONE_STOP=1 "$H" start "$T/proj" stoppy --spec SPEC.md --foreground > "$T/
 cp "$T/base-config.sh" "$T/user-config.sh"
 check "NOTIFY_CMD-only: \$1 unchanged, fields as env" 'grep -q "^\[stoppy\] started: 0/3 passing$" "$T/notify-env.log" && grep -qx "HARNESS_NOTIFY_TITLE=harness" "$T/notify-env.log" && grep -qx "HARNESS_NOTIFY_PRIORITY=" "$T/notify-env.log" && [[ -s $T/curl.log ]] && ! grep -q "\[stoppy\]" "$T/curl.log"'
 check "phone stop honoured before any coding session" 'hlog stoppy | grep -q "stopped by Michael" && ! grep -q attempt "$T/scratch/proj/stoppy/sessions.log"'
+check "a stop from the phone stops the services through finish" 'hlog stoppy | grep -q "· services stopped (stopped by Michael)$" && [[ -f $T/scratch/proj/stoppy/teardown-stopped-by-Michael.marker ]]'
 check "second run got its own port"       '[[ $(cat "$HARNESS_STATE/proj/stoppy/port") != $(cat "$HARNESS_STATE/proj/demo/port") ]]'
 
 # ---- run 3: a verifier that always rejects; C is independent of M1 ----
@@ -753,9 +763,16 @@ STUB_LIMIT_MIDWAY=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T
 check "mid-session limit: attempt given back, work kept" 'hlog midway | grep -q "hit a limit" && [[ $(jq -r .A "$HARNESS_STATE/proj/midway/attempts.json") == 1 ]] && [[ -f $T/wt/proj/midway/half-A.txt ]]'
 
 # ---- run 7: a future window set by another run makes this one wait first ----
-echo $(( $(date +%s) + 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
+# an 11-minute window: over SVC_IDLE_STOP_MIN=10, so the services stop first; a 9-minute one keeps them (L2-04)
+echo $(( $(date +%s) + 660 )) > "$HARNESS_STATE/LIMIT_UNTIL"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" waiter --spec SPEC.md --foreground > "$T/run7.out" 2>&1
 check "waits for another run's limit window" 'hlog waiter | grep -q "usage-limit window (shared by all runs): waiting"'
+check "a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first" 'hlog waiter | grep -B1 "· usage-limit window (shared by all runs): waiting" | head -1 | grep -q "· services stopped (usage-limit wait)$" \
+  && [[ -f $T/scratch/proj/waiter/teardown-usage-limit-wait.marker ]]'
+echo $(( $(date +%s) + 540 )) > "$HARNESS_STATE/LIMIT_UNTIL"
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" waiter9 --spec SPEC.md --foreground > "$T/run7b.out" 2>&1
+check "a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services" 'hlog waiter9 | grep -q "usage-limit window (shared by all runs): waiting" && ! hlog waiter9 | grep -q "(usage-limit wait)" \
+  && hlog waiter9 | grep -q "· services stopped (done)$"'
 rm -f "$HARNESS_STATE/LIMIT_UNTIL"
 
 # ---- run 8: thin verify evidence → one more verify on the stronger model ----

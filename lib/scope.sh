@@ -94,7 +94,7 @@ mem_gate() {
   local gb waited=0 max poll=${HARNESS_MEM_POLL:-300} s; (( poll > 0 )) || poll=1   # 0 would never advance the wait
   gb=$(mem_available_gb) && (( gb < MEM_MIN_AVAILABLE_GB )) || return 0
   note "memory: $gb GB available, under MEM_MIN_AVAILABLE_GB=$MEM_MIN_AVAILABLE_GB; waiting up to $MEM_WAIT_MAX"
-  declare -F services_down > /dev/null && services_down memory
+  declare -F services_down > /dev/null && services_down "memory wait"
   max=$(dur_s "$MEM_WAIT_MAX") || max=1800
   while :; do   # first right after services_down: what it freed may be enough
     gb=$(mem_available_gb) || return 0

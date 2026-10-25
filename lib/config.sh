@@ -15,6 +15,7 @@ harness_config() {
   CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m   # each check.sh run's scope (no MemoryHigh: a runaway test dies, not crawls) and its timeout -k 30s
   INIT_TIMEOUT=10m SVC_MEMORY_MAX=3G   # run_init: timeout -k 10s around the init's foreground; its services scope's MemoryMax
   TEARDOWN_CMD=""   # services_down runs it before stopping the services scope (default below: .harness/teardown.sh)
+  SVC_IDLE_STOP_MIN=10   # limit_wait stops the services before a usage-limit wait of more than this many minutes
   MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m   # mem_gate before each session: under this much MemAvailable, wait up to this long, then start anyway
   INIT_MODEL=fable WORKER_MODEL=opus VERIFY_MODEL=sonnet VERIFY_ESCALATE_MODEL=opus RETRO_MODEL=sonnet SUPERVISOR_MODEL=opus
   DEBRIEF_MODEL=sonnet   # `harness debrief`: one read-only session after a queue (40 turns, $3 cap, like the retro)

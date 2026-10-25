@@ -73,6 +73,9 @@ JSON
     fi
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
     echo "$id attempt $n" >> "$HARNESS_SCRATCH/sessions.log"
+    if [[ ${STUB_PAUSE:-} == "$id" && $n == 1 ]]; then   # `harness pause` mid-session: the driver pauses after it
+      st=$(compgen -G "$HARNESS_STATE/*/$HARNESS_RUN_ID") && touch "$st/PAUSE"
+    fi
     if [[ ${STUB_OOM:-} == "$id" && $n == 1 ]]; then   # killed at its memory cap: the stream cut off before its result, exit 137
       [[ -n ${STUB_SCOPE_UNIT:-} ]] && touch "$STUB_DIR/scope/$STUB_SCOPE_UNIT.oom"   # the stub systemctl then reports the cap as its peak
       jq -c 'select(.type != "result")' "$HERE/fixtures/usage-tokens.jsonl"; exit 137

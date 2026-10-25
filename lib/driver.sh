@@ -167,6 +167,7 @@ limit_wait() {
   (( upto > now )) && [[ ! -f $STATE/waited-$upto ]] || return 0
   w=$(( upto - now )); (( w > DEADLINE - now )) && w=$(( DEADLINE - now )); (( w > 0 )) || return 0
   touch "$STATE/waited-$upto"
+  (( w > SVC_IDLE_STOP_MIN * 60 )) && services_down "usage-limit wait"   # a short wait keeps them (decisions/2026-10-25-services-stop-points)
   note "usage-limit window (shared by all runs): waiting until $(date -d "@$upto" '+%H:%M') ($(( w / 60 )) min)"
   commit_all "HARNESS: waiting for the usage limit"; sync
   sleep "${HARNESS_LIMIT_SLEEP:-$w}"
@@ -624,6 +625,7 @@ while :; do
   c=$(control)
   if [[ $c == pause ]]; then
     log "paused (INBOX.md status or harness pause)"; notify "paused"
+    services_down paused; commit_all "HARNESS: paused"; sync   # nothing else commits during a pause: the note reaches the phone now
     while [[ $(control) == pause ]]; do
       (( $(date +%s) >= DEADLINE )) && { note "deadline reached while paused"; finish "deadline (paused)"; }
       sleep "${HARNESS_PAUSE_POLL:-60}"; take_answers; sync
