@@ -33,3 +33,5 @@
 - 2026-10-25 19:29 · merged main into harness/agent-harness-2026-10-25-lifecycle
 - 2026-10-25 19:29 · context.md for L2: 8063 bytes, 29 items left out
 - 2026-10-25 19:37 · L2 verified and tagged run/agent-harness-2026-10-25-lifecycle/L2
+- 2026-10-25 19:38 · L2 merged into main · https://github.com/mh550/agent-harness/pull/20
+- 2026-10-25 19:38 · context.md for L3-01: 6679 bytes
