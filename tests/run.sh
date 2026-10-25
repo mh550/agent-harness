@@ -168,6 +168,13 @@ mkdir -p "$T/ro/scopes" && chmod 555 "$T/ro/scopes"
 sc_ro=$( export HARNESS_SCRATCH=$T/ro; source "$SC"; scope_run harness-x-ro "" 64M bash -c 'echo ran >> "$0"' "$T/sc-ro.out" 2>&1; echo "rc=$?" ); chmod 755 "$T/ro/scopes"
 check "scope.sh: a scratch dir it can't write runs the command once, bare" \
   '[[ $sc_ro == "scope_run: $T/ro/scopes is not writable; running bare"$'"'"'\nrc=0'"'"' && $(wc -l < "$T/sc-ro.out") == 1 ]]'
+# a unit name still loaded: the real systemd-run refuses it (fixtures/systemd-run-unit-exists.txt, exit 1), so the
+# command runs bare; stopped first, the same name starts again (L2-02: run_init stops the old svc scope before its init)
+sc_dup=$( export HARNESS_SCRATCH=$T/sc; source "$SC"; scope_run harness-x-dup "" 64M bash -c 'sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"'
+  scope_run harness-x-dup "" 64M bash -c 'echo "in=${STUB_SCOPE_UNIT:-none}"' 2>&1; echo "bare=$SCOPE_BARE"
+  scope_stop harness-x-dup; scope_run harness-x-dup "" 64M bash -c 'echo "in=${STUB_SCOPE_UNIT:-none}"'; echo "bare=$SCOPE_BARE" )
+check "scope.sh: a unit still loaded is refused as systemd refuses it; stopped first, it starts" \
+  '[[ $sc_dup == $'"'"'Failed to start transient scope unit: Unit harness-x-dup.scope was already loaded or has a fragment file.\nscope_run: systemd-run failed (exit 1); running bare\nin=none\nbare=systemd-run failed (exit 1)\nin=harness-x-dup\nbare='"'"' ]]'
 # The one real scope (spec Rules): harness-test-<suite pid>-oom, MemoryMax 64M, no MemoryHigh (it throttles instead of
 # killing), no swap, under an outer timeout; stopped whatever happens, and no harness-test-<pid>-* unit is left.
 if systemd-run --user --scope --quiet true > /dev/null 2>&1; then
@@ -613,6 +620,13 @@ check "a session killed at its memory cap is noted and spends the attempt (STUB_
 STUB_NO_SYSTEMD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" bare --spec SPEC.md --foreground > "$T/run-bare.out" 2>&1
 check "no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)" '[[ $(sd_count --unit=harness-bare) == 0 && $($F summary "$(list bare)") == "3/3 passing" ]] \
   && [[ $(hlog bare | grep -c "· no user systemd: sessions and suites run uncapped$") == 1 ]] && grep -q "  coding exit 0 · " "$HARNESS_STATE/proj/bare/run.log"'
+# ---- the services scope (L2-02): run_init stops harness-<run>-svc, then runs the init in it under timeout -k 10s ----
+sd_at() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { print NR; exit }' "$T/systemd.log" 2>/dev/null; }   # the index of the first stub call containing $1
+check "run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m" 'S=$(sd_at $'"'"'stop\nharness-demo-svc.scope\n'"'"'); R=$(sd_at $'"'"'--unit=harness-demo-svc\n'"'"')
+  C=$(sd_with $'"'"'--unit=harness-demo-svc\n'"'"'); [[ -n $S && -n $R ]] && (( S < R )) && [[ $(head -1 <<< "$C") == systemd-run ]] && grep -qxF MemoryMax=3G <<< "$C" && ! grep -q MemoryHigh <<< "$C" \
+  && grep -A6 -x timeout <<< "$C" | paste -sd" " | grep -qxF "timeout -k 10s 10m bash -c echo init ok"'
+check "no user systemd: the init runs bare, and the run's one uncapped note stays the only one" 'grep -qx "(init exit 0)" "$T/scratch/proj/bare/init.out" && [[ $(sd_count harness-bare-svc) == 0 ]] \
+  && ! hlog bare | grep -q "init ran uncapped" && [[ $(hlog bare | grep -c "uncapped") == 1 ]]'
 check "metrics.jsonl: mem_peak_mb is null when uncapped" 'jq -se "length >= 5 and all(has(\"mem_peak_mb\") and .mem_peak_mb == null)" "$T/wt/proj/bare/.harness/runs/bare/metrics.jsonl" > /dev/null'
 # systemd refusing the scope after the probe passed (a MemoryMax it can't parse): each session runs bare, and says so
 { cat "$T/base-config.sh"; echo SESSION_MEMORY_MAX=bogus; } > "$T/user-config.sh"
@@ -933,6 +947,18 @@ IB=$(awk '/^## Init output$/ { s = 1; next } s && /^```$/ { if (f) exit; f = 1; 
 check "init output is capped at 40 lines with the log path" '[[ -n $IB ]] && (( $(wc -l <<< "$IB") == 41 )) && [[ $(tail -1 <<< "$IB") == "full output: $T/scratch/ip/ip1/init.out" ]] \
   && cmp -s <(head -n 40 <<< "$IB") <(tail -n 40 "$T/scratch/ip/ip1/init.out") && grep -qx 100 <<< "$IB" && ! grep -qx 1 <<< "$IB"'
 check "a brief is pasted as written: its {{X}} isn't filled (E3 review F7)" 'grep -qx "keep {{RUN_ID}} as written" "$HARNESS_STATE/ip/ip1/prompt-initializer.md"'
+# an init that backgrounds a server (L2-02): the foreground returns at once, the server stays in harness-<run>-svc,
+# and the next run_init's stop of that scope is what ends it (a server the init lost would run on)
+BPCFG=$(cat <<'EOF'
+CHECK_CMD="true"
+INIT_CMD='date +%s > "$STUB_DIR/svcbg.t0"; sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"; echo $! >> "$STUB_DIR/svcbg.pids"; exit 0'
+EOF
+)
+rm -f "$T/svcbg.pids"; dproj bp .harness/config.sh "$BPCFG" && dstart bp1 start "$T/bp" bp1 --spec SPEC.md
+bp_dt=$(( $(stat -c %Y "$T/scratch/bp/bp1/init.out" 2> /dev/null || echo 999) - $(cat "$T/svcbg.t0" 2> /dev/null || echo 0) )); dstart bp1b continue bp1
+check "an init that backgrounds a server returns at once; the next init stops the scope that kept the server" 'grep -qx "(init exit 0)" "$T/scratch/bp/bp1/init.out" && (( bp_dt <= 2 )) \
+  && [[ $(wc -l < "$T/svcbg.pids") == 2 ]] && gone "$(head -1 "$T/svcbg.pids")" && [[ $(sd_count $'"'"'stop\nharness-bp1-svc.scope'"'"') == 2 && $(sd_count --unit=harness-bp1-svc) == 2 ]]'
+for p in $(cat "$T/svcbg.pids" 2> /dev/null); do kill "$p" 2> /dev/null; done
 mv "$T/user-config.bak" "$T/user-config.sh"
 
 # ---- debrief: the runner's other exits ----

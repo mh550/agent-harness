@@ -253,9 +253,17 @@ context() {
   git add -- "$RUN_DIR/context.md" && { git diff --cached --quiet -- "$RUN_DIR/context.md" || git commit -q -m "HARNESS: context pack for $1" -- "$RUN_DIR/context.md"; }
 }
 
-run_init() {   # the project's init, then the suite (cached per code tree); both go into the next prompt
-  HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH bash -c "$INIT_CMD" > "$SCRATCH/init.out" 2>&1
+# The project's init, then the suite (cached per code tree); both go into the next prompt. The init runs in
+# harness-<run>-svc (decisions/2026-10-25-services-scope): what it backgrounds (a dev server) stays there, capped at
+# SVC_MEMORY_MAX, and timeout bounds only its foreground. The last init's scope is stopped first: systemd refuses a
+# unit name still loaded (tests/fixtures/systemd-run-unit-exists.txt), and its services would live on beside the new.
+run_init() {
+  local unit; unit=$(scope_unit "$RUN_ID" svc)
+  scope_stop "$unit"
+  SVC_UP=1   # before the start: a TERM during the init must still stop what it began (services_down, L2-03)
+  HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH scope_run "$unit" "" "$SVC_MEMORY_MAX" timeout -k 10s "$INIT_TIMEOUT" bash -c "$INIT_CMD" > "$SCRATCH/init.out" 2>&1
   local rc=$?; echo "(init exit $rc)" >> "$SCRATCH/init.out"
+  [[ -n ${SCOPE_BARE:-} ]] && note "init ran uncapped: $SCOPE_BARE"   # systemd refused the unit; its line is in init.out
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
   [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \

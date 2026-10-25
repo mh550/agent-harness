@@ -5,7 +5,8 @@
 # runs the command with STUB_SCOPE_UNIT=<unit> (<unit>.running meanwhile) and exits with its code, the unit gone
 # afterwards unless a pid in <unit>.pids lives on (as a real scope goes when empty). STUB_NO_SYSTEMD=1: every call fails the way it does without a
 # user bus (fixtures/systemd-no-bus.txt, exit 1). A MemoryMax systemd can't parse fails the way the real one does
-# (fixtures/systemd-run-bad-property.txt, exit 1, no unit made).
+# (fixtures/systemd-run-bad-property.txt, exit 1, no unit made); so does a unit name still alive
+# (fixtures/systemd-run-unit-exists.txt, exit 1, the command not run).
 HERE=$(cd "$(dirname "$0")" && pwd)
 { echo systemd-run; for a in "$@"; do printf '%s\n' "${a%%$'\n'*}"; done; echo ===; } >> "$STUB_DIR/systemd.log"
 [[ ${STUB_NO_SYSTEMD:-} == 1 ]] && { cat "$HERE/fixtures/systemd-no-bus.txt" >&2; exit 1; }
@@ -21,6 +22,9 @@ while (( $# )); do
 done
 [[ -z $max || $max =~ ^[0-9]+[KMGTkmgt]?$ ]] || { sed "s/=bogus:/=$max:/" "$HERE/fixtures/systemd-run-bad-property.txt" >&2; exit 1; }
 source "$HERE/../lib/scope.sh"   # scope_bytes: the stub reads sizes as the code does
+live() { local p; for p in $(cat "$S/$1.pids" 2> /dev/null); do [[ $(ps -o stat= -p "$p" 2> /dev/null) == [^Z]* ]] && return 0; done; return 1; }
+[[ -f $S/$unit.alive ]] && { [[ -f $S/$unit.running ]] || live "$unit"; } \
+  && { sed "s/harness-test-[0-9]*-dup/$unit/" "$HERE/fixtures/systemd-run-unit-exists.txt" >&2; exit 1; }   # still loaded: refused, nothing run
 rm -f "$S/$unit".*; touch "$S/$unit.alive" "$S/$unit.running"; [[ -n $max ]] && scope_bytes "$max" > "$S/$unit.max"
 STUB_SCOPE_UNIT=$unit "$@"; rc=$?   # forked, not exec'd as the real one: the stub must clean up after it
 rm -f "$S/$unit.running"
