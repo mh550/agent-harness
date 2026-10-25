@@ -1,0 +1,3 @@
+ControlGroup=/user.slice/user-1000.slice/user@1000.service/app.slice/harness-test-1320462-oomc.scope
+MemoryPeak=67108864
+TasksCurrent=2

@@ -11,6 +11,9 @@ harness_config() {
   local wt=$1 st=${2:-} f
   HOURS=8 MAX_SESSIONS=auto MAX_ATTEMPTS=2 MAX_REPAIRS=3 MAX_VERIFY_ROUNDS=2 MAX_LIMIT_HITS=6
   LIMIT_WAITS="900 1800 3600" SESSION_TIMEOUT=100m MAX_TURNS=250 SESSION_BUDGET_USD=20
+  SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G   # each session's scope (lib/scope.sh): throttle, kill, swap
+  CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m   # each check.sh run's scope (no MemoryHigh: a runaway test dies, not crawls) and its timeout -k 30s
+  MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m   # mem_gate before each session: under this much MemAvailable, wait up to this long, then start anyway
   INIT_MODEL=fable WORKER_MODEL=opus VERIFY_MODEL=sonnet VERIFY_ESCALATE_MODEL=opus RETRO_MODEL=sonnet SUPERVISOR_MODEL=opus
   DEBRIEF_MODEL=sonnet   # `harness debrief`: one read-only session after a queue (40 turns, $3 cap, like the retro)
   POLICY=build-only MERGE_POLICY=pr MAIN_BRANCH=main RETRO=1 AUTO_CONTINUE=1   # MERGE_POLICY=pr: a project self-merges only by setting auto

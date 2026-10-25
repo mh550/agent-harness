@@ -4,26 +4,63 @@
 #   check.sh <args…>     → the suite with these arguments (a subset while iterating); never cached.
 # Needs HARNESS_CHECK_CMD and HARNESS_SCRATCH (the driver exports both). The last full run's output is
 # $HARNESS_SCRATCH/check.out; each tree's output is kept as check-<key>.out.
+# Both forms run under timeout -k 30s HARNESS_CHECK_TIMEOUT (15m), in the scope $HARNESS_SCOPE_PREFIX-check-<pid> capped
+# at HARNESS_CHECK_MEMORY_MAX (3G); bare without a prefix or user systemd (decisions/2026-10-25-capped-suites).
 set -uo pipefail
 cmd=${HARNESS_CHECK_CMD:-} scratch=${HARNESS_SCRATCH:?HARNESS_SCRATCH is not set}
 cache=${HARNESS_CHECK_CACHE:-$scratch}   # green-<key> markers (the driver keeps them in its state dir, not in scratch)
+max=${HARNESS_CHECK_MEMORY_MAX:-3G} to=${HARNESS_CHECK_TIMEOUT:-15m}
 here=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=lib/scope.sh
+source "$here/scope.sh"
 cd "$(git rev-parse --show-toplevel)" || exit 2
 mkdir -p "$scratch" "$cache"
 [[ -n $cmd ]] || { echo "check: no suite configured or detected (CHECK_CMD); nothing to run"; exit 0; }
-if (( $# )); then bash -c "$cmd \"\$@\"" _ "$@"; exit; fi
+unit=${HARNESS_SCOPE_PREFIX:+$HARNESS_SCOPE_PREFIX-check-$$} scoped=0 pid=""
+[[ -n $unit ]] && scope_available && scoped=1
+trap '[[ -n $unit ]] && rm -f "$(scope_dir)/$unit".{started,show}' EXIT   # one pair per call otherwise, never reused
+
+# A TERM, INT or HUP (the calling session's scope stopped, a Ctrl-C) takes the suite down with check.sh: a scoped suite
+# isn't in the caller's scope, and timeout gives it a process group of its own, so neither gets the caller's signals.
+# Hence the suite runs in the background and check.sh waits, which a trapped signal interrupts.
+stop() { if (( scoped )); then scope_stop "$unit"; elif [[ -n $pid ]]; then kill -TERM "$pid" 2> /dev/null; wait "$pid"; fi; exit $(( 128 + $1 )); }
+trap 'stop 15' TERM; trap 'stop 2' INT; trap 'stop 1' HUP
+
+# bash -c <args…> under the timeout, in the check scope when scoped (stopped after, so nothing it started lives on)
+run() {
+  local rc
+  if (( scoped )); then scope_run "$unit" "" "$max" timeout -k 30s "$to" bash -c "$@" &
+  else timeout -k 30s "$to" bash -c "$@" & fi
+  pid=$!; wait "$pid"; rc=$? pid=""
+  (( scoped )) && scope_stop "$unit"; return $rc
+}
+
+# <rc> <seconds>: what the RED line says. GNU timeout exits 137, not 124, when it had to KILL, so a 137 that took the
+# whole CHECK_TIMEOUT is the timeout; a 137 whose scope peaked at its cap is the kernel's kill there.
+why() {
+  local lim; lim=$(dur_s "$to") || lim=0
+  if (( $1 == 124 )) || (( $1 == 137 && lim > 0 && $2 >= lim )); then echo "timed out after $to, exit $1 after $2 s"
+  elif (( $1 == 137 && scoped )) && scope_capped "$unit" "$max"; then echo "killed at its $max memory cap, exit 137 after $2 s"
+  else echo "exit $1 after $2 s"; fi
+}
+
+start=$(date +%s)
+if (( $# )); then   # a subset: its output is the caller's; only a kill gets a line of its own
+  run "$cmd \"\$@\"" _ "$@"; rc=$?
+  [[ $rc == 124 || $rc == 137 ]] && echo "check: RED ($(why $rc $(( $(date +%s) - start ))))"
+  exit $rc
+fi
 
 key=$(node "$here/treekey.mjs" 2>/dev/null) || key=""
 if [[ -n $key && -f $cache/green-$key ]]; then
   echo "check: green (cached for this code tree$(node "$here/testcount.mjs" "$scratch/check-$key.out" | sed 's/^/, /'))"; exit 0
 fi
-start=$(date +%s)
-bash -c "$cmd" > "$scratch/check.out" 2>&1; rc=$?
+run "$cmd" > "$scratch/check.out" 2>&1; rc=$?
 [[ -n $key ]] && cp "$scratch/check.out" "$scratch/check-$key.out"
 if (( rc == 0 )); then
   [[ -n $key ]] && touch "$cache/green-$key"
   echo "check: green in $(( $(date +%s) - start )) s$(node "$here/testcount.mjs" "$scratch/check.out" | sed 's/^/, /')"
 else
-  echo "check: RED (exit $rc after $(( $(date +%s) - start )) s) — last lines of $scratch/check.out:"; tail -25 "$scratch/check.out"
+  echo "check: RED ($(why $rc $(( $(date +%s) - start )))) — last lines of $scratch/check.out:"; tail -25 "$scratch/check.out"
 fi
 exit $rc

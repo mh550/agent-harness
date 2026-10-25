@@ -19,7 +19,7 @@ harness init ~/projects/myapp            # CLAUDE.md template + .harness/config.
 # fill in CLAUDE.md, commit to main, then:
 harness start ~/projects/myapp --spec docs/todo.md --brief "items 1–3 only"
 harness status                           # every run: running / ended (why), features, last log lines
-harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes
+harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes, memory peaks over 2 GB
 ```
 
 Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config; the queue
@@ -56,10 +56,13 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 |---|---|---|
 | `CLAUDE.md` | durable rules: code rules, how to verify, where decisions live, off-limits; `## Live system` for live projects. Claude Code loads it in every session; the harness prompt names it, it doesn't paste it | yes (template: `harness init`, or `harness init --draft` to have Claude draft it) |
 | `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only | recommended |
+| `.mcp.json` | the MCP servers runs may use. Sessions run with `--strict-mcp-config`, so a committed `.mcp.json` (passed as `--mcp-config <worktree>/.mcp.json`) is what run worktrees load; without one they get none, whatever your user config holds | no |
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
 
-Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…), smoke, init, port,
-models, limits. Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
+Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
+its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`), smoke, init, port, models, limits
+(a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
+`MEM_WAIT_MAX`). Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
 
 ## What a run is
 
@@ -70,6 +73,13 @@ models, limits. Run scope is never committed: it's `--spec` and `--brief` on `st
 | Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) |
 | Local state | `~/.local/state/harness/<project>/<run-id>/`: `run.log`, transcripts, attempts, `driver.pid`, `ended` |
 | Ledger | `ledger/runs.jsonl` and `ledger/<project>/<run-id>/` in this repo · `harness trends` |
+| Memory | each session in the transient user scope `harness-<run-id>-s<n>` (throttled at 5G, killed at 6G, 1G swap: `SESSION_MEMORY_HIGH`, `SESSION_MEMORY_MAX`, `SESSION_SWAP_MAX`), each suite in `harness-<run-id>-check-<pid>`; stopped when they return, so nothing a session started outlives it. Peaks go in `metrics.jsonl` (`mem_peak_mb`) and `report.md` (over 2 GB). No user systemd: uncapped, with a note |
+
+### After the run (box settings, yours)
+
+- With the scopes in, `systemd-oomd` can kill the offending `harness-*` scope instead of the desktop: enabling it with
+  `ManagedOOMMemoryPressure=kill` on the user slice is a box setting, your call (`findings-and-research/2026-10-24-system-resource-audit.md` §3C.2).
+- `systemctl --user list-units 'harness-*'` shows what each run holds right now (nothing when no run is alive).
 
 ## Steering
 

@@ -173,7 +173,8 @@ cmd_start() {
   local env="WT=$(printf %q "$wt") RUN_ID=$run STATE=$(printf %q "$state") PROJECT_DIR=$(printf %q "$p") HARNESS_HOME=$(printf %q "$HARNESS_HOME")"
   # tmux starts commands in its server's environment, not this shell's: pass the harness overrides along
   local v; for v in HARNESS_CLAUDE HARNESS_GH HARNESS_SCRATCH_ROOT HARNESS_PW HARNESS_PAUSE_POLL HARNESS_CONFIG HARNESS_LEDGER \
-    HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL HARNESS_DESK_SESSION HARNESS_DESK_WAIT; do
+    HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL HARNESS_DESK_SESSION HARNESS_DESK_WAIT \
+    HARNESS_SYSTEMD_RUN HARNESS_SYSTEMCTL HARNESS_MEMINFO HARNESS_MEM_POLL; do
     [[ -n ${!v:-} ]] && env+=" $v=$(printf %q "${!v}")"; done
   if (( fg )); then eval "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh")"; return; fi
 
@@ -246,7 +247,9 @@ cmd_report() {
     d=$(state_of "$run")
     # shellcheck source=/dev/null
     ( source "$d/meta.env"
-      if [[ -d $WT ]]; then node "$HARNESS_HOME/lib/summary.mjs" build "$WT" "$RUN_ID" "$STATE" > "$STATE/summary.json"; fi
+      # metrics.jsonl beside it: report's memory peaks read it from there, also once gc has removed the worktree
+      if [[ -d $WT ]]; then node "$HARNESS_HOME/lib/summary.mjs" build "$WT" "$RUN_ID" "$STATE" > "$STATE/summary.json"
+        cp "$WT/.harness/runs/$RUN_ID/metrics.jsonl" "$STATE/metrics.jsonl" 2> /dev/null; fi
       [[ -f $STATE/summary.json ]] && node "$HARNESS_HOME/lib/summary.mjs" report "$STATE/summary.json" || echo "## $RUN_ID: no record" )
     echo
   done

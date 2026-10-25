@@ -27,6 +27,8 @@ cd "$WT" || exit 1
 source "$HARNESS_HOME/lib/config.sh"
 # shellcheck source=lib/prompt.sh
 source "$HARNESS_HOME/lib/prompt.sh"
+# shellcheck source=lib/scope.sh
+source "$HARNESS_HOME/lib/scope.sh"   # scope_run/stop/peak/left/capped: each session in its capped user scope
 
 prompt_vars   # PROJECT_NAME BRANCH RUN_DIR SCRATCH CHECK PORT
 CLAUDE=${HARNESS_CLAUDE:-claude} GH=${HARNESS_GH:-gh}
@@ -52,6 +54,7 @@ rm -f "$STATE"/waited-*   # a restart inside a usage-limit window waits for it a
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
 note() { log "$*"; echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; }   # phone-readable, committed
+declare -F services_down > /dev/null || services_down() { :; }   # <why>: stops the run's services (L2); mem_gate calls it
 # shellcheck source=lib/notify.sh
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID   # notify "<message>" [title=… body=… click=… …]: "[<run>] <message>"
 # shellcheck source=lib/deploy.sh
@@ -169,16 +172,33 @@ clock() {
     "$(date -d "@$DEADLINE" +%H:%M)" "$SESSION_BUDGET_USD" "$MAX_TURNS" "$SESSION_TIMEOUT" "$1"
 }
 
-session() {   # kind model log → runs claude headless on $STATE/prompt.md; sets S_EXIT and S_WALL
-  local settings=() t0; t0=$(date +%s)
+# kind model log who → runs claude headless on $STATE/prompt.md in its own capped scope (decisions/2026-10-25-scoped-sessions);
+# sets S_EXIT, S_WALL, S_PEAK (MB, empty when uncapped) and S_NOTES (what the scope showed; noted here, except for the
+# read-only retro, whose caller notes them after restrict, which would revert them)
+session() {
+  local settings=() mcp=(--strict-mcp-config) t0 seq unit left x
+  t0=$(date +%s) S_NOTES=()
   # an entry.json no ingest took (the driver died after its session) would pass for this session's own
   [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
   cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
   [[ $1 == coding || $1 == verify ]] && cp "$RUN_DIR/context.md" "${3%.jsonl}.context.md" 2> /dev/null   # and the pack it read first
   [[ -f $AGENT_SETTINGS ]] && settings=(--settings "$WT/$AGENT_SETTINGS")
-  timeout "$SESSION_TIMEOUT" "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" \
+  # only the project's committed MCP servers, never the user's or another project's (decisions/2026-10-25-strict-mcp-and-deepequal-rule)
+  [[ -f $WT/.mcp.json ]] && mcp+=(--mcp-config "$WT/.mcp.json")
+  # s<n> is per run, never per segment: a crashed segment's scope may still hold its name
+  seq=$(( $(cat "$STATE/scope-seq" 2> /dev/null || echo 0) + 1 )); echo "$seq" > "$STATE/scope-seq"; unit=$(scope_unit "$RUN_ID" "s$seq")
+  # timeout inside the scope: outside it would signal the wrapper and leave claude running; -k: claude ignoring TERM
+  scope_run "$unit" "$SESSION_MEMORY_HIGH" "$SESSION_MEMORY_MAX" timeout -k 30s "$SESSION_TIMEOUT" \
+    "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" "${mcp[@]}" \
     --max-turns "$MAX_TURNS" --max-budget-usd "$SESSION_BUDGET_USD" --output-format stream-json --verbose > "$3" 2>&1
   S_EXIT=$? S_WALL=$(( $(date +%s) - t0 ))
+  # read what the wrapper recorded, then stop the scope: whatever the session left running goes with it
+  S_PEAK=$(scope_peak "$unit") left=$(scope_left "$unit"); scope_stop "$unit"
+  (( left > 0 )) && S_NOTES+=("$1 session left $left process(es) running; stopped with its scope")
+  [[ -n ${SCOPE_BARE:-} ]] && S_NOTES+=("$1 session ran uncapped: $SCOPE_BARE")   # its error is in the transcript
+  # the peak alone could be page cache: a cap kill is the kernel's 137 with the peak at the cap
+  (( S_EXIT == 137 )) && scope_capped "$unit" "$SESSION_MEMORY_MAX" && S_NOTES+=("${4:-$1}: the session hit its memory cap ($SESSION_MEMORY_MAX)")
+  [[ $1 == retro ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
   MET usage "$3" > "$USAGE.tmp" 2> /dev/null && mv "$USAGE.tmp" "$USAGE" || rm -f "$USAGE.tmp"   # the box-wide 7-day window
   log "  $1 exit $S_EXIT · $(git log --oneline -1)"
 }
@@ -328,17 +348,18 @@ verify() {
     F snapshot "$LIST" > "$STATE/before.json"
     context "$m"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
+    mem_gate   # before the clock, so the prompt's time is the session's
     HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
-    session verify "$(F model "$model")" "$vlog"
+    session verify "$(F model "$model")" "$vlog" "verify $m"
     reverted=$(restrict "$vstart" record verify | paste -sd' ')
     [[ -n $reverted ]] && note "verify $m: reverted code edits the verifier may not make: $reverted"
     journal verify "$m" "$vlog" "$(F model "$model")" "$vstart"   # before the limit branch: a refused verify is journaled too
     commit_all "HARNESS: journal verify $m"   # the tree tagged and merged below has its line, and no entry.json
     if why=$(MET limit "$vlog" "$S_WALL" "$S_EXIT"); then   # refused: no verdict, and no "holds" by default
       cp "$STATE/before.json" "$LIST"; node -e 'const f=process.argv[1],fs=require("fs");fs.writeFileSync(f,JSON.stringify(JSON.parse(fs.readFileSync(f)),null,2)+"\n")' "$LIST"
-      MET append "$vlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" false "$S_WALL" "$S_EXIT" true verify
+      MET append "$vlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" false "$S_WALL" "$S_EXIT" true verify "$S_PEAK"
       local upto; upto=$(( ${why##*$'\t'} > 0 ? ${why##*$'\t'} + 120 : $(date +%s) + 900 ))
       (( upto > $(cat "$LIMIT_FILE" 2>/dev/null || echo 0) )) && echo "$upto" > "$LIMIT_FILE"
       note "verify $m refused (${why%%$'\t'*}); deferred until $(date -d "@$upto" '+%H:%M')"
@@ -346,7 +367,7 @@ verify() {
     fi
     out=$(F repair-verify "$LIST" "$STATE/before.json" "$m") || note "verify $m: reverted list edits beyond un-passing: $out"
     MET append "$vlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" \
-      "$(F milestone-done "$LIST" "$m" && echo true || echo false)" "$S_WALL" "$S_EXIT" false verify
+      "$(F milestone-done "$LIST" "$m" && echo true || echo false)" "$S_WALL" "$S_EXIT" false verify "$S_PEAK"
     F milestone-done "$LIST" "$m" || { result=fail; break; }
     if (( $(vcount "$m") <= before )); then short="no new verify entry"
     elif short=$(F evidence "$LIST" "$m" "$RUN_DIR/progress.md"); then result=hold; break; fi
@@ -400,16 +421,17 @@ verify_ready() {
 }
 
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
-  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted
+  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x
   rstart=$(git rev-parse HEAD)
   HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
-  MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog"
+  MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
   reverted=$(restrict "$rstart" nothing retro | paste -sd' ')
+  for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict: the driver's notes, not the retro's edits
   [[ -n $reverted ]] && note "retro: reverted edits (it is read-only): $reverted"
   MET final "$rlog" > "$SCRATCH/retro.md"
   [[ -s $SCRATCH/retro.md ]] && ! MET limit "$rlog" "$S_WALL" "$S_EXIT" > /dev/null && cp "$SCRATCH/retro.md" "$RUN_DIR/retro.md"
-  MET append "$rlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" retro "" "$(F model "$RETRO_MODEL")" true "$S_WALL" "$S_EXIT" false retro
+  MET append "$rlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" retro "" "$(F model "$RETRO_MODEL")" true "$S_WALL" "$S_EXIT" false retro "$S_PEAK"
 }
 
 ledger() {   # the whole run record into the harness's own record, for `harness trends`, retros and calibration
@@ -474,6 +496,7 @@ harness_version "$HARNESS_HOME"
 log "run $RUN_ID on $BRANCH in $WT · port $PORT · policy $POLICY · merge $MERGE_POLICY · harness $HARNESS_VERSION$( (( HARNESS_DIRTY )) && echo +dirty)"
 log "  suite: ${CHECK_CMD:-(none detected; nothing gates passes)} · smoke: $SMOKE_CMD · init: $INIT_CMD"
 log "  permissions: user settings$( [[ -f $AGENT_SETTINGS ]] && echo " + $AGENT_SETTINGS (--settings)" || echo " only ($AGENT_SETTINGS not found)")"
+log "  MCP servers: $( [[ -f $WT/.mcp.json ]] && echo ".mcp.json (--strict-mcp-config --mcp-config)" || echo "none (--strict-mcp-config; no .mcp.json)")"
 [[ -f $RUN_DIR/INBOX.md ]] || cat > "$RUN_DIR/INBOX.md" <<EOF
 status: run
 <!-- Steer this run from the GitHub app: edit this file on branch $BRANCH.
@@ -540,19 +563,23 @@ deploy_check() {
 }
 deploy_check
 
+# One probe per segment (this driver process): without a user bus every session runs bare, said once
+unset SCOPE_OK; scope_available || note "no user systemd: sessions and suites run uncapped"
+
 if [[ ! -f $LIST ]]; then
+  mem_gate
   run_init
   HARNESS_CALIBRATION=$(SUM calibration "$LEDGER" "$PROJECT_NAME" 2>/dev/null) prompt initializer
   log "initializer · $(F model "$INIT_MODEL")"
   istart=$(git rev-parse HEAD)
-  session init "$(F model "$INIT_MODEL")" "$LOGS/00-init.jsonl"
+  session init "$(F model "$INIT_MODEL")" "$LOGS/00-init.jsonl" initializer
   commit_all "WIP: initializer — uncommitted at session end (harness)"
   journal init init "$LOGS/00-init.jsonl" "$(F model "$INIT_MODEL")" "$istart"   # a failed or refused initializer too
   if ! F summary "$LIST" > /dev/null 2>&1; then
     if why=$(MET limit "$LOGS/00-init.jsonl" "$S_WALL" "$S_EXIT"); then note "initializer refused: ${why%%$'\t'*}"; finish "usage limit before the feature list"; fi
     note "initializer did not produce a valid $LIST; stopping"; finish "initializer failed"
   fi
-  MET append "$LOGS/00-init.jsonl" "$RUN_DIR/metrics.jsonl" "$RUN_ID" init "" "$(F model "$INIT_MODEL")" true "$S_WALL" "$S_EXIT" false init
+  MET append "$LOGS/00-init.jsonl" "$RUN_DIR/metrics.jsonl" "$RUN_ID" init "" "$(F model "$INIT_MODEL")" true "$S_WALL" "$S_EXIT" false init "$S_PEAK"
   note "feature list written: $(F summary "$LIST")"; commit_all "HARNESS: initializer done"; sync
   notify "started: $(F summary "$LIST")" click="$(gh_url "$RUN_DIR/progress.md")"
 fi
@@ -563,7 +590,7 @@ if [[ ! -f $STATE/deps-noted ]]; then   # once per run: milestones that wait on 
   touch "$STATE/deps-noted"
 fi
 [[ $MAX_SESSIONS == auto ]] && MAX_SESSIONS=$(( 3 * $(jq '.features | length' "$LIST") + 5 ))
-repairs=0 n=0 limits=0
+repairs=0 n=0 limits=0 gated=0
 while :; do
   (( n >= MAX_SESSIONS )) && finish "session cap ($MAX_SESSIONS)"
   (( $(date +%s) >= DEADLINE )) && { note "deadline reached"; finish "deadline"; }
@@ -596,6 +623,9 @@ while :; do
     note "no feature left to try: $(F summary "$LIST")"; finish "no feature left to try"
   fi
   IFS=$'\t' read -r id mdl milestone <<< "$next"
+  # the memory gate before the attempt and its prompt; after a wait, the checks above (deadline, stop, pause, the pick)
+  # run again, and the gate doesn't: once is enough, then the session starts anyway (decisions/2026-10-25-memory-gate)
+  if (( ! gated )) && ! mem_gate; then gated=1; continue; fi; gated=0
   n=$(( n + 1 ))
   F bump "$ATT" "$id"; F snapshot "$LIST" > "$STATE/before.json"
   run_init; context "$id"
@@ -604,7 +634,7 @@ while :; do
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   cp "$RUN_DIR/INBOX.md" "$STATE/inbox-before.md" 2> /dev/null || : > "$STATE/inbox-before.md"   # what the session adds is the park's question
   sstart=$(git rev-parse HEAD)
-  session coding "$mdl" "$slog"
+  session coding "$mdl" "$slog" "$id"
   commit_all "WIP: $id — uncommitted at session end (harness)"
   journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
 
@@ -614,7 +644,7 @@ while :; do
     F unbump "$ATT" "$id"; n=$(( n - 1 )); limits=$(( limits + 1 ))
     # its work stays (committed above); its claims don't: the list goes back to the snapshot, "passes" included
     F repair "$LIST" "$STATE/before.json" "$id" > /dev/null; F passes "$STATE/before.json" "$id" || F unpass "$LIST" "$id"
-    MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" false "$S_WALL" "$S_EXIT" true
+    MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" false "$S_WALL" "$S_EXIT" true "" "$S_PEAK"
     if (( limits >= MAX_LIMIT_HITS )); then
       note "$limits sessions in a row refused ($reason)"
       finish "usage limit ($limits sessions refused in a row)"
@@ -635,7 +665,7 @@ while :; do
   fi
   if F passes "$LIST" "$id" && ! green; then F unpass "$LIST" "$id"; note "$id un-passed: suite red after the session"; fi
   passed=$(F passes "$LIST" "$id" && echo true || echo false)
-  MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$(F kind "$LIST" "$id")"
+  MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$(F kind "$LIST" "$id")" "$S_PEAK"
   note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")"
   if [[ $passed == false ]] && why=$(MET final "$slog" | sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' | head -1) && [[ -n $why ]]; then
     F unbump "$ATT" "$id"; F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault

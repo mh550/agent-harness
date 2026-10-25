@@ -7,10 +7,13 @@ T=$(mktemp -d); echo "tmp: $T"
 unset TMUX TMUX_PANE   # inside Michael's tmux, plain `tmux` talks to his server: the suite must never
 export TMUX_TMPDIR=$T/tmux HARNESS_DESK_SESSION=h-desk-test-$$; mkdir -p "$TMUX_TMPDIR"   # a private tmux server
 trap 'for w in "$T"/evaltmp/*/harness; do [[ -d $w ]] && git -C "$HERE/.." worktree remove --force "$w"; done 2> /dev/null   # the harness worktree of a killed eval
+  for p in $(cat "$T"/scope/*.pids "$T"/left.pids 2> /dev/null); do kill "$p"; done 2> /dev/null   # sleeps a stub session left
   tmux kill-session -t "=$HARNESS_DESK_SESSION" 2> /dev/null; [[ $TMUX_TMPDIR == "$T/tmux" ]] && tmux kill-server 2> /dev/null; [[ ${KEEP:-} ]] || rm -rf "$T"' EXIT   # the server is ours alone
 export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/scratch HARNESS_PAUSE_POLL=1 \
   HARNESS_CLAUDE=$HERE/stub-claude.sh HARNESS_GH=$HERE/stub-gh.sh HARNESS_CURL=$HERE/stub-curl.sh STUB_DIR=$T HARNESS_LEDGER=$T/ledger \
   HARNESS_CONFIG=$T/user-config.sh HARNESS_LIMIT_SLEEP=0 HARNESS_NO_RUNNER=1 HARNESS_QUEUE_POLL=0 HARNESS_QUEUE_SETTLE=0
+export HARNESS_SYSTEMD_RUN=$HERE/stub-systemd-run.sh HARNESS_SYSTEMCTL=$HERE/stub-systemctl.sh HARNESS_MEMINFO=$HERE/fixtures/meminfo.txt HARNESS_MEM_POLL=1
+unset HARNESS_SCOPE_PREFIX HARNESS_CHECK_MEMORY_MAX HARNESS_CHECK_TIMEOUT SCOPE_OK   # a session running the suite inherits its own run's
 fails=0 total=0
 check() { total=$((total + 1)); if eval "$2"; then echo "PASS $1"; else echo "FAIL $1"; fails=$((fails + 1)); fi; }
 hlog() { cat "$T/wt/${2:-proj}/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }   # <run> [<project>]
@@ -112,6 +115,69 @@ ORNT='import { orientation as or, events } from "'$HERE'/../lib/metrics.mjs"; co
     && eq(or(noTs), { tokens: 24547, turns: 1, seconds: null }) && eq(or(evs.map((e, i) => i === 1 ? noTs[1] : e)), { tokens: 24547, turns: 1, seconds: 0 }) && eq(or([{ type: "result" }]), { tokens: null, turns: null, seconds: null }) ? 0 : 1);'
 check "metrics.mjs: orientation stops at the first Write" 'node --input-type=module -e "$ORNT"'
 
+# ---- scope.sh (L1-02): capped transient user scopes, through the stub systemd-run/systemctl; one real 64M scope ----
+SC=$HERE/../lib/scope.sh
+sd_with() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { printf "%s", $0; exit }' "$T/systemd.log" 2>/dev/null; }   # the first stub systemd call containing $1
+gone() { local i; for i in $(seq 20); do [[ $(ps -o stat= -p "$1" 2> /dev/null) == [^Z]* ]] || return 0; sleep 0.1; done; return 1; }   # dead or a zombie, within 2 s
+sd_count() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { n++ } END { print n + 0 }' "$T/systemd.log" 2>/dev/null; }   # how many calls contain $1
+( unset SESSION_SWAP_MAX; source "$SC"; HARNESS_SCRATCH=$T/sc scope_run harness-x-s1 5G 6G bash -c 'exit 3' ); sc_rc=$?
+SCARGV=$'systemd-run\n--user\n--scope\n--collect\n--quiet\n--unit=harness-x-s1\n--description=harness-x-s1\n-p\nMemoryHigh=5G\n-p\nMemoryMax=6G\n-p\nMemorySwapMax=1G\n-p\nOOMPolicy=continue\nbash\n-c'
+check "scope.sh: scope_run wraps the command in systemd-run with the caps and returns its exit" \
+  '[[ $sc_rc == 3 && $(sd_with --unit=harness-x-s1 | head -17) == "$SCARGV" && $(sd_with --unit=harness-x-s1 | tail -3) == $'"'"'bash\n-c\nexit 3'"'"' ]]'
+sc_out=$( source "$SC"; export HARNESS_SCRATCH=$T/sc; scope_stop harness-x-s1; echo "stop=$? peak=$(scope_peak harness-x-s1) left=$(scope_left harness-x-s1)"
+  scope_capped harness-x-s1 6G && echo capped
+  scope_run harness-x-s2 "" 64M bash -c 'sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"'
+  echo "left2=$(scope_left harness-x-s2) units=$("$HARNESS_SYSTEMCTL" --user list-units 'harness-x-*' --plain --no-legend | cut -d" " -f1)"
+  scope_stop harness-x-s2; echo "stop2=$? units2=$("$HARNESS_SYSTEMCTL" --user list-units 'harness-x-*' --plain --no-legend | wc -l)" )
+check "scope.sh: scope_stop stops <unit>.scope; scope_peak and scope_left read the fixture" \
+  '[[ $sc_out == $'"'"'stop=0 peak=2 left=0\nleft2=1 units=harness-x-s2.scope\nstop2=0 units2=0'"'"' ]] && sd_with $'"'"'stop\nharness-x-s1.scope'"'"' | grep -qx -- --user && gone "$(cat "$T/scope/harness-x-s2.pids" 2> /dev/null || echo 0)"'
+check "scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]" \
+  '( source "$SC"; [[ $(scope_unit "a.b/c d" s1) == harness-a-b-c-d-s1 && $(scope_unit demo "") == harness-demo && $(scope_bytes 6G) == 6442450944 && $(scope_bytes 64M) == 67108864 && $(scope_bytes 4096) == 4096 ]] )'
+sc_bare=$( export STUB_NO_SYSTEMD=1 HARNESS_SCRATCH=$T/sc; source "$SC"; scope_available; echo "avail=$?"
+  scope_run harness-x-bare "" 64M bash -c 'echo ran > "$0"; exit 4' "$T/sc-bare.out"; echo "rc=$?"; scope_stop harness-x-bare; echo "stop=$?"; scope_peak harness-x-bare; echo "peak=$?" )
+check "scope.sh: mem_available_gb reads the real meminfo fixture" '( source "$SC"; [[ $(mem_available_gb) == 9 && $(mem_available_gb "$HERE/fixtures/meminfo.txt") == 9 ]] && ! mem_available_gb /dev/null )'
+# the memory gate (L1-06): the real fixture with only its MemAvailable line rewritten to 2 GB; services_down frees it in one run
+sed 's/^MemAvailable: .*/MemAvailable:    2097152 kB/' "$HERE/fixtures/meminfo.txt" > "$T/meminfo-2g.txt"
+mg=$( source "$SC"; note() { echo "note: $*"; }; MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=2s; export HARNESS_MEMINFO=$T/meminfo-2g.txt
+  services_down() { echo "down: $*"; }; mem_gate; echo ===
+  services_down() { echo "down: $*"; cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-mg.txt"; }; cp "$T/meminfo-2g.txt" "$T/meminfo-mg.txt"; MEM_WAIT_MAX=30m HARNESS_MEMINFO=$T/meminfo-mg.txt mem_gate; echo ===
+  HARNESS_MEMINFO=$HERE/fixtures/meminfo.txt mem_gate; echo end )
+MGOUT='note: memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 2s
+down: memory
+note: memory still at 2 GB after 2s; starting the session anyway (its cap protects the box)
+===
+note: memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 30m
+down: memory
+note: memory: 9 GB available after 0 s; starting the session
+===
+end'
+check "scope.sh: mem_gate notes, frees, waits, then starts anyway or once memory is back" '[[ $(diff "$HERE/fixtures/meminfo.txt" "$T/meminfo-2g.txt" | grep -c "^[<>]") == 2 && $mg == "$MGOUT" ]]'
+# HARNESS_MEM_POLL=0 (as the suite sets HARNESS_QUEUE_POLL=0) must still end at MEM_WAIT_MAX; exit 0 at once, 1 after a wait
+mg0() { timeout 5 bash -c 'source "$1"; note() { :; }; MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=1s HARNESS_MEM_POLL=0 HARNESS_MEMINFO=$2 mem_gate' _ "$SC" "$1"; }
+check "scope.sh: mem_gate ends with HARNESS_MEM_POLL=0, exit 1 after a wait and 0 when it passed at once" 'mg0 "$T/meminfo-2g.txt"; [[ $? == 1 ]] && mg0 "$HERE/fixtures/meminfo.txt"'
+check "scope.sh: dur_s reads timeout(1) durations as seconds" '( source "$SC"; [[ $(dur_s 15m) == 900 && $(dur_s 2s) == 2 && $(dur_s 1h) == 3600 && $(dur_s 90) == 90 && $(dur_s 1d) == 86400 ]] && ! dur_s 1.5m && ! dur_s "" )'
+check "scope.sh: without user systemd scope_run runs bare (STUB_NO_SYSTEMD=1)" \
+  '[[ $sc_bare == $'"'"'avail=1\nrc=4\nstop=0\npeak=1'"'"' && $(cat "$T/sc-bare.out") == ran && $(sd_count --unit=harness-x-bare) == 0 ]]'
+# the bus goes away after a good probe: systemd-run fails (its own line on stderr), the wrapper never ran, so the
+# command runs bare, with a line of its own
+sc_late=$( export STUB_NO_SYSTEMD=1 HARNESS_SCRATCH=$T/sc SCOPE_OK=1; source "$SC"; scope_run harness-x-late "" 64M bash -c 'exit 6' 2>&1; echo "rc=$?" )
+check "scope.sh: systemd-run failing after a good probe runs the command bare, with a line" \
+  '[[ $sc_late == $'"'"'Failed to connect to bus: No medium found\nscope_run: systemd-run failed (exit 1); running bare\nrc=6'"'"' && $(sd_count --unit=harness-x-late) == 1 ]]'
+# a scratch dir it can't write: the wrapper runs nothing, so the command runs once, bare, never a second time in the scope
+mkdir -p "$T/ro/scopes" && chmod 555 "$T/ro/scopes"
+sc_ro=$( export HARNESS_SCRATCH=$T/ro; source "$SC"; scope_run harness-x-ro "" 64M bash -c 'echo ran >> "$0"' "$T/sc-ro.out" 2>&1; echo "rc=$?" ); chmod 755 "$T/ro/scopes"
+check "scope.sh: a scratch dir it can't write runs the command once, bare" \
+  '[[ $sc_ro == "scope_run: $T/ro/scopes is not writable; running bare"$'"'"'\nrc=0'"'"' && $(wc -l < "$T/sc-ro.out") == 1 ]]'
+# The one real scope (spec Rules): harness-test-<suite pid>-oom, MemoryMax 64M, no MemoryHigh (it throttles instead of
+# killing), no swap, under an outer timeout; stopped whatever happens, and no harness-test-<pid>-* unit is left.
+if systemd-run --user --scope --quiet true > /dev/null 2>&1; then
+  SU=harness-test-$$-oom
+  sc_real=$( cd "$T" && HARNESS_SYSTEMD_RUN=systemd-run HARNESS_SYSTEMCTL=systemctl HARNESS_SCRATCH=$T/sc SESSION_SWAP_MAX=0 timeout 30s bash -c 'source "$1"
+    scope_run "$2" "" 64M node -e "const a = []; for (let i = 0; i < 256; i++) a.push(Buffer.alloc(1 << 20, 1))"; echo "rc=$? peak=$(scope_peak "$2")"; scope_capped "$2" 64M && echo capped' _ "$SC" "$SU" 2> "$T/sc-real.err" )   # its stderr (bash's "Killed") kept for a failure
+  systemctl --user stop "$SU.scope" 2> /dev/null
+  check "scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit" \
+    '[[ $sc_real == $'"'"'rc=137 peak=64\ncapped'"'"' && -z $(systemctl --user list-units "harness-test-$$-*" --plain --no-legend) ]]'
+else check "scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit (skipped: no user systemd)" true; fi
 # ---- the replay set (E2): every committed task validates; each error names its field ----
 EVTK='import { validateTask as v } from "'$HERE'/../lib/eval.mjs"; const has = (e, f) => e.some(x => x.startsWith(f + ":"));
   const ok = { id: "x1", project: "p", repo: "~/projects/p", base: "a".repeat(40), policy: "build-only", why: "w",
@@ -333,6 +399,19 @@ SREV='import { redSuite, failedRecheck } from "'$HERE'/../lib/summary.mjs";
   const h = "- 2026-10-21 12:00 · 11 un-passed: suite red after the session\n- 2026-10-21 12:05 · verify M1: A failed the re-check, back in the queue\n";
   process.exit(!redSuite(h, "1") && redSuite(h, "11") && !redSuite(h, "c++") && !redSuite(h, "auth(x") && failedRecheck(h, "A") && !failedRecheck(h, "c++") && !failedRecheck(h, "1") ? 0 : 1);'
 check "summary.mjs: cause and rework read the log by exact id (E1 review)" 'node --input-type=module -e "$SREV"'
+# memory peaks (L1-04): a 12th append argument, and report's section from the metrics rows beside summary.json
+MPEAK='import { metricsRow, outcome } from "'$HERE'/../lib/metrics.mjs";
+  const r = p => metricsRow(outcome([]), ["s", "o", "run", "coding", "A", "opus", "true", "10", "0", "false", "build", p]).mem_peak_mb;
+  process.exit(r("2048") === 2048 && r("") === null && r("null") === null && r(undefined) === null ? 0 : 1);'
+check "metrics.mjs: append writes mem_peak_mb as a number or null" 'node --input-type=module -e "$MPEAK"'
+RPEAK='import { build, report } from "'$HERE'/../lib/summary.mjs";
+  const s = build("/nonexistent/p/w", "r", "/nonexistent/s"), keys = JSON.stringify(Object.keys(s));
+  const rows = [{ kind: "coding", feature: "A", model: "opus", mem_peak_mb: 1500 }, { kind: "coding", feature: "B", model: "sonnet", mem_peak_mb: 2500 },
+    { kind: "init", role: "init", feature: null, model: "opus", mem_peak_mb: null }];
+  const R = report(s, rows), none = report(s, rows.slice(0, 1)) + report(s);
+  process.exit(R.includes("\n### Memory peaks over 2 GB\n\n- B · sonnet · 2500 MB") && !R.includes("1500") && !/Memory peaks/.test(none)
+    && JSON.stringify(Object.keys(build("/nonexistent/p/w", "r", "/nonexistent/s"))) === keys && !/mem|peak_mb/.test(keys) ? 0 : 1);'
+check "summary.mjs: report lists only the sessions over 2 GB" 'node --input-type=module -e "$RPEAK"'
 
 # ---- the journal, pure (E4): an entry's schema, the minimal entry, and progress.md rendered from the entries ----
 ENVA='import { validate as v, minimal } from "'$HERE'/../lib/entries.mjs"; const starts = (e, f) => e.length === 1 && e[0].startsWith(f + ":");
@@ -449,6 +528,7 @@ check "no final tag, no false 'verified'" '! git -C "$T/origin.git" tag | grep -
 check "brief committed with the run"      'grep -q "only A–C" "$RD/brief.md"'
 check "brief, rules and policy in the prompt" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q "only A–C" "$P" && grep -qx "# Project rules" "$P" && grep -q "\`CLAUDE.md\`" "$P" && grep -q "Policy: build-only" "$P"'
 check "coding prompt names CLAUDE.md but doesn't paste it" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q CLAUDE.md "$P" && ! grep -qx rules "$P"'
+check "the rendered coding prompt has the deepEqual and bounded-rerun rule" 'P=$(bash "$HERE/../lib/prompt.sh" "$HARNESS_STATE/proj/demo" coding A 2> /dev/null) && grep -q "deepEqual" <<< "$P" && grep -q "exit 137" <<< "$P" && grep -q -- "--test-name-pattern" <<< "$P"'
 # each session's prompt is kept beside its transcript; two coding sessions share everything up to and past the policy (E3-03)
 off() { grep -bo "$1" "$2" 2> /dev/null | head -1 | cut -d: -f1; }   # the 0-based byte offset of the first $1 in $2
 PA=$(ls "$HARNESS_STATE"/proj/demo/logs/*-A.prompt.md 2> /dev/null | head -1) PB=$(ls "$HARNESS_STATE"/proj/demo/logs/*-B.prompt.md 2> /dev/null | head -1)
@@ -463,6 +543,7 @@ check "the prompt says the time, the budget and the attempt" '[[ -s $PC ]] && gr
   && [[ $(grep -l "verify round 2 of 2" "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.prompt.md 2> /dev/null | wc -l) == 1 ]]'
 check "metrics: wall time and roles"      'jq -e "select(.kind==\"coding\") | .wall_s != null and .role == \"build\"" "$RD/metrics.jsonl" > /dev/null'
 check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.tokens_in > 0 and .cache_hit_rate >= 0 and .cache_hit_rate <= 1 and .context_peak > 0)" "$RD/metrics.jsonl" > /dev/null'
+check "metrics.jsonl: every session line has mem_peak_mb from its scope" 'jq -se "length >= 9 and all(.mem_peak_mb == 2)" "$RD/metrics.jsonl" > /dev/null && ! grep -q "Memory peaks" "$RD/report.md"'
 check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'
 # the journal (E4-03): one line per session in session order, stamped by the driver, and no entry.json left behind;
 # C's first attempt (it left the suite red) carries its dead end; the tree a milestone is tagged (and merged) with has its verify's line
@@ -510,6 +591,82 @@ check "NTFY_TOKEN: bearer header sent, never logged" 'grep -qx "Authorization: B
 check "a successful post: a line in run.log only" 'grep -q "notified: harness" "$HARNESS_STATE/proj/demo/run.log" && ! hlog demo | grep -q "notified\|notification failed"'
 check "routine notifications keep the default priority" 'Bs=$(curl_with "[demo] started:") Bm=$(curl_with "[demo] M1 merged") && [[ -n $Bs && -n $Bm ]] && ! grep -q "^Priority:" <<< "$Bs$Bm" \
   && grep -qx "Click: $GHP/blob/harness/demo/.harness/runs/demo/progress.md" <<< "$Bs" && U=$(grep -o "https://example.test/pr/[0-9]*" <<< "$Bm" | head -1) && [[ -n $U ]] && grep -qx "Click: $U" <<< "$Bm"'
+
+# ---- capped sessions (L1-03): every claude session in harness-<run>-s<n> under timeout -k 30s, stopped after it returns ----
+sd_units() { grep -x -- "--unit=harness-$1-s[0-9]*" "$T/systemd.log" | sed 's/^--unit=//' | sort; }   # the session scopes run <run> started
+sd_stops() { grep -A1 -x stop "$T/systemd.log" | grep -x "harness-$1-s[0-9]*\.scope" | sed 's/\.scope$//' | sort; }   # and the ones it stopped
+check "sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s" 'C1=$(sd_with --unit=harness-demo-s1); ( for a in --user --scope -p MemoryHigh=5G MemoryMax=6G MemorySwapMax=1G \
+  timeout -k 30s 100m "$HERE/stub-claude.sh" "# Initializer session"; do grep -qxF -- "$a" <<< "$C1" || exit 1; done ) && grep -A4 -x timeout <<< "$C1" | paste -sd" " | grep -qxF "timeout -k 30s 100m $HERE/stub-claude.sh"'
+check "each session's scope is stopped after it returns" 'U=$(sd_units demo); [[ $(wc -l <<< "$U") -ge 9 && $U == "$(sd_stops demo)" ]] \
+  && [[ $(grep -cE "^[0-9-]+ [0-9:]+   (init|coding|verify|retro) exit [0-9]+ · " "$HARNESS_STATE/proj/demo/run.log") == $(wc -l <<< "$U") ]]'
+check "a run whose sessions leave nothing gets no leftover or cap note" '[[ -s $T/demo-hlog.md ]] && ! grep -q "process(es) running\|hit its memory cap\|no user systemd" "$T/demo-hlog.md"'
+# L1-07: headless sessions load only the project's MCP servers; demo commits no .mcp.json, so no --mcp-config (run mp1 below has one)
+check "every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config" 'awk "BEGIN { RS = \"===\\n\" } /--unit=harness-demo-s[0-9]+\\n/ { n++; if (/\\n--strict-mcp-config\\n/) s++; if (/\\n--mcp-config\\n/) m++ } END { exit !(n >= 9 && s == n && !m) }" "$T/systemd.log" \
+  && grep -q "  MCP servers: none (--strict-mcp-config; no .mcp.json)" "$HARNESS_STATE/proj/demo/run.log"'
+STUB_LEAVE_PROCESS=1 STUB_LEAVE_RETRO=1 STUB_OOM=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" leftover --spec SPEC.md --foreground > "$T/run-left.out" 2>&1
+check "a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)" '[[ $(hlog leftover | grep -c "coding session left 1 process(es) running; stopped with its scope") -ge 3 ]] \
+  && ! hlog leftover | grep -q "\(init\|verify\) session left" && [[ -s $T/left.pids ]] \
+  && hlog leftover | grep -q "retro session left 1 process(es) running; stopped with its scope$" && ! hlog leftover | grep -q "retro: reverted edits" && ( for p in $(cat "$T/left.pids"); do gone "$p" || exit 1; done )'
+check "a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)" '[[ $(hlog leftover | grep -c "· A: the session hit its memory cap (6G)$") == 1 ]] \
+  && [[ $(jq .A "$HARNESS_STATE/proj/leftover/attempts.json") == 2 ]] && grep -q "A attempt 2" "$T/scratch/proj/leftover/sessions.log" && [[ $($F summary "$(list leftover)") == "3/3 passing" ]] \
+  && grep -q "  coding exit 137 · " "$HARNESS_STATE/proj/leftover/run.log"'
+STUB_NO_SYSTEMD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" bare --spec SPEC.md --foreground > "$T/run-bare.out" 2>&1
+check "no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)" '[[ $(sd_count --unit=harness-bare) == 0 && $($F summary "$(list bare)") == "3/3 passing" ]] \
+  && [[ $(hlog bare | grep -c "· no user systemd: sessions and suites run uncapped$") == 1 ]] && grep -q "  coding exit 0 · " "$HARNESS_STATE/proj/bare/run.log"'
+check "metrics.jsonl: mem_peak_mb is null when uncapped" 'jq -se "length >= 5 and all(has(\"mem_peak_mb\") and .mem_peak_mb == null)" "$T/wt/proj/bare/.harness/runs/bare/metrics.jsonl" > /dev/null'
+# systemd refusing the scope after the probe passed (a MemoryMax it can't parse): each session runs bare, and says so
+{ cat "$T/base-config.sh"; echo SESSION_MEMORY_MAX=bogus; } > "$T/user-config.sh"
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" refused --spec SPEC.md --foreground > "$T/run-refused.out" 2>&1
+cp "$T/base-config.sh" "$T/user-config.sh"
+check "a scope systemd refuses after the probe: the session runs bare and harness-log.md says so" 'S=$(grep -cE "^[0-9-]+ [0-9:]+   (init|coding|verify|retro) exit " "$HARNESS_STATE/proj/refused/run.log") \
+  && (( S >= 5 )) && [[ $(hlog refused | grep -cE "· (init|coding|verify|retro) session ran uncapped: systemd-run failed \(exit 1\)$") == "$S" && $($F summary "$(list refused)") == "3/3 passing" ]] \
+  && grep -q "^Failed to parse MemoryMax=bogus: Invalid argument$" "$HARNESS_STATE/proj/refused/logs/00-init.jsonl"'
+# the memory gate on a whole run: 2 GB available, MEM_WAIT_MAX=2s, polls every second; every non-retro session waits first
+{ cat "$T/base-config.sh"; echo MEM_WAIT_MAX=2s; } > "$T/user-config.sh"
+HARNESS_MEMINFO=$T/meminfo-2g.txt STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lowmem --spec SPEC.md --foreground > "$T/run-lowmem.out" 2>&1
+cp "$T/base-config.sh" "$T/user-config.sh"
+check "memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)" 'S=$(grep -cE "^[0-9-]+ [0-9:]+   (init|coding|verify) exit " "$HARNESS_STATE/proj/lowmem/run.log") \
+  && (( S >= 5 )) && [[ $(hlog lowmem | grep -c "· memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 2s$") == "$S" \
+  && $(hlog lowmem | grep -c "· memory still at 2 GB after 2s; starting the session anyway (its cap protects the box)$") == "$S" && $($F summary "$(list lowmem)") == "3/3 passing" ]]'
+# the gate comes before the feature is picked, not inside session(): a status: stop set during the wait is seen before
+# any coding session, no attempt is spent, and the prompt's clock comes after the wait (the L1 review's Important finding)
+cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-gate.txt"; { cat "$T/base-config.sh"; echo MEM_WAIT_MAX=60s; } > "$T/user-config.sh"
+HARNESS_MEMINFO=$T/meminfo-gate.txt STUB_MEM_DROP=$T/meminfo-gate.txt STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 \
+  "$H" start "$T/proj" gatestop --spec SPEC.md --foreground > "$T/run-gatestop.out" 2>&1 & GP=$!
+for _ in $(seq 300); do hlog gatestop | grep -q "waiting up to 60s$" && break; sleep 0.1; done
+touch "$HARNESS_STATE/proj/gatestop/STOP"; cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-gate.txt"; wait "$GP"
+cp "$T/base-config.sh" "$T/user-config.sh"
+check "memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt" '[[ $(hlog gatestop | grep -c "· memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 60s$") == 1 ]] \
+  && hlog gatestop | grep -q "· memory: 9 GB available after [0-9]* s; starting the session$" && hlog gatestop | grep -q "· stopped by Michael$" \
+  && ! grep -q "coding exit" "$HARNESS_STATE/proj/gatestop/run.log" && [[ $(jq "[.[]] | add // 0" "$HARNESS_STATE/proj/gatestop/attempts.json" 2> /dev/null || echo 0) == 0 ]]'
+check "memory gate: the real fixture's 9 GB passes without a note" '[[ -s $T/demo-hlog.md ]] && ! grep -q "· memory" "$T/demo-hlog.md"'
+# A's cap kill peaks at the cap (6G): report.md beside it, and harness report's rebuild in the state dir, list it
+check "report.md lists the session that peaked at its cap among the peaks over 2 GB" 'L=$T/wt/proj/leftover/.harness/runs/leftover; M=$(jq -r "select(.feature==\"A\" and .exit==137) | .model" "$L/metrics.jsonl") \
+  && [[ -n $M ]] && grep -qxFe "- A · $M · 6144 MB" "$L/report.md" && [[ $(grep -c " MB$" <<< "$(sed -n "/^### Memory peaks over 2 GB/,\$p" "$L/report.md")") == 1 ]] \
+  && HR=$("$H" report leftover) && grep -qxFe "- A · $M · 6144 MB" <<< "$HR"'
+
+# ---- capped suites (L1-05): check.sh runs full and subset in harness-<run>-check-<pid> at 3G under timeout -k 30s ----
+check "check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s" 'C=$(sd_with --unit=harness-demo-check-); U=$(grep -x -- "--unit=harness-demo-check-[0-9]*" <<< "$C" | sed "s/^--unit=//") \
+  && [[ -n $U ]] && grep -qxF MemoryMax=3G <<< "$C" && ! grep -q MemoryHigh <<< "$C" && grep -A6 -x timeout <<< "$C" | paste -sd" " | grep -qxF "timeout -k 30s 15m bash -c test ! -f BROKEN" \
+  && [[ $(sd_count $'"'"'stop\n'"'"'"$U.scope") == 1 ]]'
+ck() { ( cd "$T/proj" && HARNESS_SCRATCH=$T/ck HARNESS_CHECK_CACHE=$T/ck-cache HARNESS_SCOPE_PREFIX=${CKP:-harness-ck} HARNESS_CHECK_CMD=$1 "$HERE/../lib/check.sh" "${@:2}" ); }   # check.sh called directly, as a session would
+ck_137=$(ck 'echo started; touch "$STUB_DIR/scope/$STUB_SCOPE_UNIT.oom"; exit 137'; echo "rc=$?")   # .oom: the stub's MemoryPeak is the cap
+check "check.sh: exit 137 prints the memory-cap RED line" 'grep -qx "check: RED (killed at its 3G memory cap, exit 137 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_137" \
+  && grep -qx started <<< "$ck_137" && [[ $(tail -1 <<< "$ck_137") == rc=137 && $(sd_count --unit=harness-ck-check-) == 1 ]] && ! ls "$T"/ck/scopes/harness-ck-check-* 2> /dev/null'
+ck_124=$(ck 'exit 124') ck_3=$(ck 'exit 3') ck_hung=$(HARNESS_CHECK_TIMEOUT=1s ck 'trap "" TERM; sleep 2; kill -9 $$') ck_bare=$(STUB_NO_SYSTEMD=1 ck 'exit 137') ck_own=$(ck 'exit 137')
+check "check.sh: exit 124 prints the timed-out RED line" 'grep -qx "check: RED (timed out after 15m, exit 124 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_124" \
+  && grep -qx "check: RED (timed out after 1s, exit 137 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_hung" \
+  && grep -qx "check: RED (exit 3 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_3" && grep -qx "check: RED (exit 137 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_bare" \
+  && grep -qx "check: RED (exit 137 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_own"'   # a 137 short of the cap is the suite's own
+ck_sub=$(CKP=harness-cks ck 'echo sub' -k foo; CKP=harness-cks ck 'echo sub' -k foo; echo "rc=$?"; CKP=harness-cks ck 'touch "$STUB_DIR/scope/$STUB_SCOPE_UNIT.oom"; sh -c "exit 137"' -k foo; echo "rc=$?")
+check "check.sh: a subset call is scoped too and never cached" '[[ $(sed 3q <<< "$ck_sub") == $'"'"'sub -k foo\nsub -k foo\nrc=0'"'"' && $(sd_count --unit=harness-cks-check-) == 3 ]] \
+  && [[ $(sed 1,3d <<< "$ck_sub" | sed "s/after [0-9]* s/after <n> s/") == $'"'"'check: RED (killed at its 3G memory cap, exit 137 after <n> s)\nrc=137'"'"' ]] \
+  && sd_with --unit=harness-cks-check- | grep -A9 -x timeout | paste -sd" " | grep -qxF "timeout -k 30s 15m bash -c echo sub \"\$@\" _ -k foo" && ! ls "$T"/ck-cache/green-* 2> /dev/null'
+# the calling session's scope is stopped (systemctl sends TERM) while its check.sh runs: the suite's scope goes with it
+( cd "$T/proj" && HARNESS_SCRATCH=$T/ck HARNESS_CHECK_CACHE=$T/ck-cache HARNESS_SCOPE_PREFIX=harness-ckt HARNESS_CHECK_CMD='echo $$ >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"; exec sleep 60' exec "$HERE/../lib/check.sh" > "$T/ckt.out" 2>&1 ) & ckt=$!
+for i in $(seq 50); do [[ -s $T/scope/harness-ckt-check-$ckt.pids ]] && break; sleep 0.1; done; ckt_sleep=$(cat "$T/scope/harness-ckt-check-$ckt.pids" 2> /dev/null)
+SECONDS=0; kill -TERM "$ckt"; wait "$ckt"; ckt_rc=$? ckt_s=$SECONDS
+check "check.sh: a TERM stops the suite's scope with it" '[[ $ckt_rc == 143 && $ckt_s -le 3 && -n $ckt_sleep ]] && gone "$ckt_sleep" && [[ $(sd_count $'"'"'stop\nharness-ckt-check-'"'"'"$ckt.scope") == 1 ]]'
 
 # ---- gc: main has every milestone; only run-record commits are left on the branch ----
 "$H" gc "$T/proj" > "$T/gc.out" 2>&1
@@ -758,6 +915,9 @@ dstart() { STUB_INIT_LIMIT=1 "$H" "${@:2}" --foreground > "$T/$1.out" 2>&1; rm -
 dproj vp vercel.json '{"framework":"nextjs"}' && dstart vp1 start "$T/vp" vp1 --spec SPEC.md && dstart vp1b continue vp1
 check "run start without the deploy guard: one note, one notification" '[[ $(hlog vp1 vp | grep -c "initializer refused") == 2 && $(hlog vp1 vp | grep -c "preview deploy per session") == 1 ]] \
   && hlog vp1 vp | grep -q "deploy guard: vercel.json on origin/main has no git.deploymentEnabled" && [[ $(curl_count "[vp1] no deploy guard (vercel): this run will create a preview deploy per session") == 1 ]]'
+dproj mp .mcp.json '{"mcpServers":{}}' && dstart mp1 start "$T/mp" mp1 --spec SPEC.md   # L1-07: a committed .mcp.json is what run worktrees load
+check "a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json" 'C=$(sd_with --unit=harness-mp1-s1); grep -qx -- --strict-mcp-config <<< "$C" \
+  && [[ $(grep -A1 -x -- --mcp-config <<< "$C" | tail -1) == "$T/wt/mp/mp1/.mcp.json" ]] && grep -q "  MCP servers: .mcp.json (--strict-mcp-config --mcp-config)" "$HARNESS_STATE/mp/mp1/run.log"'
 dproj np netlify.toml $'[build]\n  command = "make"' && dstart np1 start "$T/np" np1 --spec SPEC.md
 check "run start without the netlify guard: one note, one notification" '[[ $(hlog np1 np | grep -c "preview deploy per session") == 1 ]] && hlog np1 np | grep -q "deploy guard: netlify.toml on origin/main has no \[build\] ignore" \
   && [[ $(curl_count "[np1] no deploy guard (netlify): this run will create a preview deploy per session") == 1 ]]'

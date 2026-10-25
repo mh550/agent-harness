@@ -14,3 +14,14 @@
 # DESK=0                             # 1 = start one on a park, a blocked or waiting run end, verify or a merge needing
 #                                    #     you, and a debrief with Needs Michael. Try `harness desk <run> --why test` first.
 # DESK_MODEL=opus                    # the desk session's model: fable, opus, sonnet, haiku or a claude-… id
+
+# Each claude session runs in its own systemd user scope (harness-<run>-s<n>); without user systemd, uncapped.
+# SESSION_MEMORY_HIGH=5G             # throttled above this
+# SESSION_MEMORY_MAX=6G              # killed at this (exit 137; the attempt counts)
+# SESSION_SWAP_MAX=1G                # swap the scope may use (check.sh's scopes always get 1G)
+# Each check.sh run (full or subset, the driver's or a session's) runs in its own scope, harness-<run>-check-<pid>.
+# CHECK_MEMORY_MAX=3G                # killed at this: "check: RED (killed at its 3G memory cap, …)"
+# CHECK_TIMEOUT=15m                  # then TERM, KILL 30 s later: "check: RED (timed out after 15m, …)"
+# Before each init, coding and verify session, the driver checks MemAvailable; under the minimum it waits, then starts anyway.
+# MEM_MIN_AVAILABLE_GB=5             # whole GB; under it: note, stop the run's services, poll every 5 minutes
+# MEM_WAIT_MAX=30m                   # then the session starts anyway, with a note (its cap protects the box)
