@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 13:35 · L1-03 · passes
+
+session() runs every claude session (init, coding, verify, retro) as timeout -k 30s SESSION_TIMEOUT inside scope harness-<run>-s<n> (5G/6G/1G, n from state/scope-seq), stops the scope after it returns, notes leftovers and cap kills; one probe per segment notes 'no user systemd'; exit 137 now spends the attempt. Tests 243 → 249.
+
+- **Files:** lib/driver.sh, lib/config.sh, lib/scope.sh, lib/metrics.mjs, tests/run.sh, tests/stub-claude.sh, templates/user/config.sh, docs/architecture.md, journal/decisions/2026-10-25-scoped-sessions.md
+- **Verified:** 6 new checks written first and seen failing (5 red, the no-note one trivially green), then lib/check.sh green: 249/249 in 405 s. Real check: systemd-run --description works on this box (Description=harness-test-<pid>-desc), no harness-test-* unit left.
+- **Tests:** 243 → 249
+- **Dead end:** noting the retro's leftovers inside session() — restrict nothing reverts harness-log.md after a retro; its notes are deferred (S_NOTES) until after restrict
+- **Discovery** (affects L1-04): session() sets S_PEAK (scope_peak MB, empty when uncapped) and S_NOTES; who is its 4th argument (initializer, <id>, verify <m>, retro). L1-04 passes $S_PEAK to MET append.
+- **Discovery** (affects L1-05, L2): scope_run now passes --description=<unit>: without it systemd made each session's whole prompt the unit's Description (user journal, systemctl status, list-units). The list-units fixture was captured without it, so its description column is the old command-line shape.
+- **Discovery** (affects L1-08): Review leftovers (Minor/Important, not built): the cap note needs exit 137, so an OOM kill of a child (a build the agent ran) with claude exiting 0 goes unnoted, memory.events oom_kill would catch it; a 137 under the cap and under SESSION_TIMEOUT (oomd, global OOM) spends the attempt silently; summary.mjs labels only 124 as timeout; TasksCurrent counts threads, so one node leftover reads as ~10 'process(es)'; scope_bytes rejects decimal sizes like 6.5G; a leftover note on a fully committed session makes a WIP commit holding only harness-log.md.
+- **Discovery** (affects L1-05, L1-08): A check.sh run inside a session starts its own scope (L1-05) in app.slice, i.e. outside the session's scope: the suite's memory won't count against the session's 6G cap.
+- **Proposed change:** L1-08 should take the review leftovers in discoveries (cap note via memory.events oom_kill, a note for 137 below the cap, summary.mjs 137 label, decimal sizes, WIP commit for a note-only change)
+- *03-L1-03 · claude-opus-5-5*
+
 ### 2026-10-25 13:05 · L1-02 · passes
 
 lib/scope.sh (scope_available/unit/bytes/run/stop/peak/left/capped; peak read by a wrapper inside the scope, OOMPolicy=continue, bare fallback that never runs a command twice), stubs tests/stub-systemd-run.sh + stub-systemctl.sh over the real fixtures, 7 checks incl. one real 64M scope (137, peak 64, no unit left), decision file. Tests 236 → 243.
