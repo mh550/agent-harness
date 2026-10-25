@@ -1,10 +1,13 @@
-# Context pack for `L2-02`
+# Context pack for `L2-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (L2-01, affects L2-02): systemd-run with a unit name still loaded exits 1: 'Failed to start transient scope unit: Unit <u>.scope was already loaded or has a fragment file.' (fixtures/systemd-run-unit-exists.txt). run_init must stop the old svc scope first. → entries.jsonl:11
+- Discovery (L2-02, affects L2-03, L2-04, L2-05): stub-systemd-run.sh now refuses a unit whose .alive is set and that is .running or holds a live pid (fixtures/systemd-run-unit-exists.txt, exit 1, command not run). Any new code that reuses a unit name must scope_stop it first. → entries.jsonl:12
+- Discovery (L2-02, affects L2-03): run_init sets SVC_UP=1 before the start (plan §1); services_down (L2-03) can key on it. The bp1 check (tests/run.sh ~960) counts `stop harness-bp1-svc.scope` >= 2, so finish's stop in L2-03 keeps it green. → entries.jsonl:12
+- Discovery (L2-01, affects L2-03): Bash runs the EXIT trap at once on SIGTERM while a foreground child runs, and the child lives on: a TERM to the driver mid-session leaves claude running in harness-<run>-s<n>. Plan §4: the trap stops S_UNIT first, then services_down. → entries.jsonl:11
+- Discovery (L2-01, affects L2-03, L2-04, L2-05): verify() runs run_init before its mem_gate, so a memory wait leaves the verify without services: L2-04 makes it `mem_gate || run_init`. bin/harness is set -euo pipefail: TEARDOWN_CMD's default line and cmd_status's systemctl calls must always succeed (plan §2, §7.2). → entries.jsonl:11
 - Discovery (L1-08, affects L2, run): mem_gate now exits 1 after any wait and is called by the driver loop (after the pick, before F bump; the loop starts over once, gated=1), verify() before each round clock, and the init before run_init; session() no longer gates. L2 services_down hooks into the same place. → entries.jsonl:9
 - Discovery (L1-08, affects L2): scope_run sets SCOPE_BARE when systemd-run fails after the probe passed; session() notes <kind> session ran uncapped: <why>. Real systemd-run on an unparseable MemoryMax: `Failed to parse MemoryMax=bogus: Invalid argument`, exit 1, no unit (tests/fixtures/systemd-run-bad-property.txt). → entries.jsonl:9
 - Discovery (L1-08, affects L2): Deferred review findings for L2: check.sh stop() misses a TERM before the scope registers or on the bare fallback (orphaned suite up to CHECK_TIMEOUT); systemctl-list-units.txt fixture predates --description (recapture before parsing its DESCRIPTION column); check.sh probes a real scope every call (pass the driver SCOPE_OK down). → entries.jsonl:9
@@ -23,6 +26,6 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Lately in the run
 
-- 2026-10-25 16:02 · L2-01 · passes: Wrote docs/plans/2026-10-25-L2-run-services.md: svc scope in run_init (stop first), services_down/SVC_UP, the trap (session scope too), six stop points, suite observation per stop point, gc's unit match rule and status lines. Captured 4 real fixtures. An Opus review found 1 Critical and 4 Important plan bugs; all fixed in the plan. Tests 270 → 270.; tests 270 → 270; files docs/plans/2026-10-25-L2-run-services.md, tests/fixtures/systemctl-show-current.txt, tests/fixtures/systemctl-show-current-gone.txt, tests/fixtures/systemctl-list-units-described.txt, tests/fixtures/systemd-run-unit-exists.txt → entries.jsonl:11
-- 2026-10-25 15:34 · verify L1 · passes: All 8 L1 features hold: suite re-run 270/270, artifacts, stubs, fixtures, docs and decision files checked against each step; no leftover harness-test units. → entries.jsonl:10
-- 2026-10-25 15:25 · L1-08 · passes: Opus review of the L1 diff in docs/plans/2026-10-25-L1-review.md: 7 findings (1 Important, 4 Minor, 2 Simpl.). Fixed RED→GREEN: mem_gate moved out of session() to before the attempt bump/prompt (stop and deadline seen after a wait), refused scope noted, HARNESS_MEM_POLL=0 ends. Docs: arch §4 Scopes row, §7; README Memory row and After the run. Tests 267 → 270.; tests 267 → 270; files lib/driver.sh, lib/scope.sh, tests/run.sh, tests/stub-claude.sh, tests/stub-systemd-run.sh, … → entries.jsonl:9
+- 2026-10-25 16:30 · L2-02 · passes: run_init now stops harness-<run>-svc, then runs INIT_CMD in it (MemoryMax=SVC_MEMORY_MAX 3G, timeout -k 10s INIT_TIMEOUT 10m, stdin /dev/null); a refused unit notes `init ran uncapped`. Stub systemd-run refuses a still-loaded unit like real systemd. 4 checks (3 seen RED), decision file, arch/README/config docs. Tests 270 → 274.; tests 270 → 274; files lib/driver.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, tests/stub-systemd-run.sh, … → entries.jsonl:12
+
+_2 items left out at 8192 bytes: entries.jsonl has them all._
