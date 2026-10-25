@@ -48,3 +48,32 @@
     killed with it if it ran long.
   - **A note from every call:** finish followed by the trap would note twice, and a fresh segment's first memory wait
     would note services it never started.
+
+## A TERM mid-init or mid-teardown, and a hook added mid-run (L2-06)
+
+*(2026-10-25, same run, feature L2-06: the L2 review's findings #1–#4, `docs/plans/2026-10-25-L2-review.md`; spec
+`docs/specs/2026-10-25-resource-lifecycle.md` §L2 items 2–3)*
+
+- **Finding:** bash runs the EXIT trap at once on a TERM, while its foreground child runs on. A TERM during
+  `run_init` ran the hook beside a still-running init (a `supabase start` two minutes in goes on creating containers
+  the `supabase stop` beside it has already passed; the scope stop after the hook kills only the CLI). A TERM during
+  any teardown (finish, pause, a long limit wait, a memory wait) started a second hook beside the first, orphaned one.
+  `TEARDOWN_CMD` was settled at `load_config`, before `sync_main` merges main, so a `.harness/teardown.sh` Michael added
+  on main and brought in with `harness continue` (or a session wrote) never ran that segment. And the trap's note
+  stayed uncommitted, a dirty worktree `harness gc` then keeps.
+- **Choice:**
+  - `run_init` sets `SVC_INIT` around the init's `scope_run`; `services_down` with it set stops the svc scope
+    (the init) first, then runs the hook, then stops the scope again (exit 5, nothing left, counts as done).
+  - The hook runs in the background with its pid in `SVC_TD` and `services_down` waits for it; the trap, finding
+    `SVC_TD` set, waits for that one instead of starting another, then stops the scope and notes once (with the
+    trap's why, `driver exited`, as that is what ended it).
+  - `TEARDOWN_CMD` is only an explicit override (default empty); `services_down` looks for an executable
+    `.harness/teardown.sh` each time it runs.
+  - The trap commits `harness-log.md` alone (`git commit -- <file>`, not pushed: no network in a dying driver);
+    failure is silent.
+- **Rejected:**
+  - **Stopping the svc scope before the hook always:** L2-03's order (hook, then scope) leaves the hook able to reach
+    services that are up; only an init still starting them is stopped first.
+  - **A lock file around the hook:** two driver processes never share a run; the race is one shell and its trap.
+  - **Re-running `harness_config` before each teardown:** it re-derives every key mid-run; the hook is one file test.
+  - **The trap's line as `log`, not `note`:** the phone should see why the services stopped.

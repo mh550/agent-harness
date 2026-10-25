@@ -53,6 +53,7 @@ case $first in
   { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"]$after, "passes": false } ] }
 JSON
     entry init 1 '{feature: "init", kind: "init", outcome: "passes", summary: "3 features: M1 2, M2 1", header: "# progress"}'
+    [[ ${STUB_ADD_TEARDOWN:-} ]] && printf '#!/usr/bin/env bash\ntouch "$HARNESS_SCRATCH/teardown-late.marker"\n' > .harness/teardown.sh && chmod +x .harness/teardown.sh   # a hook added mid-run
     git add -A && git commit -qm "HARNESS: feature list" && git push -q -u origin "$HARNESS_BRANCH"
     if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop
       tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "$HARNESS_BRANCH"

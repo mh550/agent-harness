@@ -37,7 +37,7 @@ git init -q --bare -b main "$T/origin.git"
 git init -q -b main "$T/proj" && cd "$T/proj"
 mkdir .harness && cat > .harness/config.sh <<'EOF'
 CHECK_CMD="test ! -f BROKEN"
-INIT_CMD="echo init ok"
+INIT_CMD='echo init ok; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "$HARNESS_SCRATCH/init-begin"; sleep "$STUB_SLOW_INITCMD"; }'
 BASE_PORT=7950
 EOF
 # its teardown hook (L2-03): one marker per why, and the call in the stubs' own timeline (systemd.log)
@@ -45,6 +45,7 @@ cat > .harness/teardown.sh <<'EOF'
 #!/usr/bin/env bash
 w=$(printf %s "$HARNESS_TEARDOWN_WHY" | tr -cs 'A-Za-z0-9' -)
 touch "$HARNESS_SCRATCH/teardown-$w.marker"
+[[ -z ${STUB_SLOW_TEARDOWN:-} ]] || { touch "$HARNESS_SCRATCH/teardown-begin"; sleep "$STUB_SLOW_TEARDOWN"; }
 printf 'teardown\n%s\n%s\n===\n' "$HARNESS_RUN_ID" "$HARNESS_TEARDOWN_WHY" >> "$STUB_DIR/systemd.log"
 EOF
 chmod +x .harness/teardown.sh
@@ -635,7 +636,7 @@ check "no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEM
 sd_at() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { print NR; exit }' "$T/systemd.log" 2>/dev/null; }   # the index of the first stub call containing $1
 check "run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m" 'S=$(sd_at $'"'"'stop\nharness-demo-svc.scope\n'"'"'); R=$(sd_at $'"'"'--unit=harness-demo-svc\n'"'"')
   C=$(sd_with $'"'"'--unit=harness-demo-svc\n'"'"'); [[ -n $S && -n $R ]] && (( S < R )) && [[ $(head -1 <<< "$C") == systemd-run ]] && grep -qxF MemoryMax=3G <<< "$C" && ! grep -q MemoryHigh <<< "$C" \
-  && grep -A6 -x timeout <<< "$C" | paste -sd" " | grep -qxF "timeout -k 10s 10m bash -c echo init ok"'
+  && grep -A6 -x timeout <<< "$C" | paste -sd" " | grep -q "^timeout -k 10s 10m bash -c echo init ok;"'
 check "no user systemd: the init runs bare, and the run's one uncapped note stays the only one" 'grep -qx "(init exit 0)" "$T/scratch/proj/bare/init.out" && [[ $(sd_count harness-bare-svc) == 0 ]] \
   && ! hlog bare | grep -q "init ran uncapped" && [[ $(hlog bare | grep -c "uncapped") == 1 ]]'
 check "metrics.jsonl: mem_peak_mb is null when uncapped" 'jq -se "length >= 5 and all(has(\"mem_peak_mb\") and .mem_peak_mb == null)" "$T/wt/proj/bare/.harness/runs/bare/metrics.jsonl" > /dev/null'
@@ -657,10 +658,27 @@ check "harness status lists a running run's units with MemoryCurrent; an ended r
   && grep -Eqx "    harness-termed-s[0-9]+ · MemoryCurrent 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
   && grep -q "^termed (proj) · ended: driver exited" "$T/status-termed2.out" && ! grep -q MemoryCurrent "$T/status-termed2.out" && [[ $TSL2 == "$TSL" ]]'
 termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* ]] && echo "$p"; done; }
+check "the EXIT trap commits its services note: harness-log.md is clean after a TERM" '[[ -z $(git -C "$T/wt/proj/termed" status --porcelain -- .harness/runs/termed/harness-log.md) ]] \
+  && git -C "$T/wt/proj/termed" show HEAD:.harness/runs/termed/harness-log.md | grep -q "· services stopped (driver exited)$"'
 check "a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it" 'U=$(grep -x -- "--unit=harness-termed-s[0-9]*" "$T/systemd.log" | tail -1 | sed "s/^--unit=//")
   D=$(sd_at $'"'"'teardown\ntermed\ndriver exited\n'"'"'); SS=$(sd_last "stop"$'"'"'\n'"'"'"$U.scope"$'"'"'\n'"'"'); [[ $t_mid == 1 && -n $U && -n $D && -f $T/scratch/proj/termed/teardown-driver-exited.marker ]] \
   && (( SS > 0 && SS < D && D < $(sd_last $'"'"'stop\nharness-termed-svc.scope\n'"'"') )) && sleep 1 && [[ -z $(termed_left) ]] \
   && grep -q " services stopped (driver exited)$" "$HARNESS_STATE/proj/termed/run.log" && grep -q "^driver exited unexpectedly" "$HARNESS_STATE/proj/termed/ended" && [[ ! -e $HARNESS_STATE/proj/termed/driver.pid ]]'
+# a TERM during an init (L2-06): the trap stops the init (the svc scope) before the teardown, or the init goes on
+# starting what the teardown just stopped; a TERM during finish's own teardown waits for it, never runs a second
+sd_before() { awk -v k="$1" -v n="$2" 'BEGIN { RS = "===\n" } NR < n && index($0, k) { c++ } END { print c + 0 }' "$T/systemd.log"; }   # calls containing $1 before index $2
+STUB_SLOW_INITCMD=31 STUB_PHONE_STOP=1 "$H" start "$T/proj" initterm --spec SPEC.md --foreground > "$T/run-initterm.out" 2>&1 & TP=$!
+for _ in $(seq 300); do [[ -e $T/scratch/proj/initterm/init-begin ]] && break; sleep 0.1; done
+kill -TERM "$(cat "$HARNESS_STATE/proj/initterm/driver.pid")"; wait "$TP"
+check "a TERM during an init stops the init's scope before the teardown runs" 'D=$(sd_at $'"'"'teardown\ninitterm\ndriver exited\n'"'"') \
+  && [[ -e $T/scratch/proj/initterm/init-begin && -n $D ]] && [[ $(sd_before $'"'"'stop\nharness-initterm-svc.scope\n'"'"' "$D") == 2 ]] \
+  && ! pgrep -fx "sleep 31" > /dev/null && [[ $(grep -c "services stopped" "$HARNESS_STATE/proj/initterm/run.log") == 1 ]]'
+STUB_SLOW_TEARDOWN=3 STUB_PHONE_STOP=1 "$H" start "$T/proj" tdterm --spec SPEC.md --foreground > "$T/run-tdterm.out" 2>&1 & TP=$!
+for _ in $(seq 300); do [[ -e $T/scratch/proj/tdterm/teardown-begin ]] && break; sleep 0.1; done
+kill -TERM "$(cat "$HARNESS_STATE/proj/tdterm/driver.pid")"; wait "$TP"
+check "a TERM during finish's teardown runs no second teardown: the trap waits for it, then stops the svc scope, one note" 'D=$(sd_at $'"'"'teardown\ntdterm\n'"'"') \
+  && [[ -e $T/scratch/proj/tdterm/teardown-begin && -n $D && $(sd_count $'"'"'teardown\ntdterm\n'"'"') == 1 ]] && (( D < $(sd_last $'"'"'stop\nharness-tdterm-svc.scope\n'"'"') )) \
+  && [[ $(grep -c "services stopped" "$HARNESS_STATE/proj/tdterm/run.log") == 1 ]]'
 # PAUSE mid-run (L2-04): A's first session touches PAUSE as `harness pause` would; the pause stops the services before
 # its poll, and the init after `harness resume` starts them again
 STUB_PAUSE=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" paused --spec SPEC.md --foreground > "$T/run-paused.out" 2>&1 & PP=$!
@@ -1003,6 +1021,9 @@ dproj() {   # <name> [<file> <content>]: a project with its own bare origin behi
     && git -C "$T/$1" config url."$T/$1-origin.git".insteadOf "git@github.com:test/$1.git" && git -C "$T/$1" remote add origin "git@github.com:test/$1.git" && git -C "$T/$1" push -q -u origin main
 }
 cp "$T/user-config.sh" "$T/user-config.bak"; cp "$T/base-config.sh" "$T/user-config.sh"   # NTFY_URL: the checks read curl.log
+# a teardown hook added mid-run (L2-06): services_down looks for .harness/teardown.sh when it runs, not at load_config
+dproj lt && STUB_ADD_TEARDOWN=1 STUB_PHONE_STOP=1 "$H" start "$T/lt" lt1 --spec SPEC.md --foreground > "$T/run-lt1.out" 2>&1
+check "a .harness/teardown.sh added after the run started is run at its stop points" '[[ -f $T/scratch/lt/lt1/teardown-late.marker ]] && hlog lt1 lt | grep -q "· services stopped (stopped by Michael)$"'
 dstart() { STUB_INIT_LIMIT=1 "$H" "${@:2}" --foreground > "$T/$1.out" 2>&1; rm -f "$HARNESS_STATE/LIMIT_UNTIL"; }   # <out> <harness args>: a run that ends at once (the initializer is refused)
 dproj vp vercel.json '{"framework":"nextjs"}' && dstart vp1 start "$T/vp" vp1 --spec SPEC.md && dstart vp1b continue vp1
 check "run start without the deploy guard: one note, one notification" '[[ $(hlog vp1 vp | grep -c "initializer refused") == 2 && $(hlog vp1 vp | grep -c "preview deploy per session") == 1 ]] \
@@ -1034,7 +1055,7 @@ EOF
 )
 rm -f "$T/svcbg.pids"; dproj bp .harness/config.sh "$BPCFG" && dstart bp1 start "$T/bp" bp1 --spec SPEC.md
 bp_dt=$(( $(stat -c %Y "$T/scratch/bp/bp1/init.out" 2> /dev/null || echo 999) - $(cat "$T/svcbg.t0" 2> /dev/null || echo 0) )); dstart bp1b continue bp1
-check "an init that backgrounds a server returns at once; the next init stops the scope that kept the server" 'grep -qx "(init exit 0)" "$T/scratch/bp/bp1/init.out" && (( bp_dt <= 2 )) \
+check "an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it" 'grep -qx "(init exit 0)" "$T/scratch/bp/bp1/init.out" && (( bp_dt <= 2 )) \
   && [[ $(wc -l < "$T/svcbg.pids") == 2 ]] && gone "$(head -1 "$T/svcbg.pids")" && (( $(sd_count $'"'"'stop\nharness-bp1-svc.scope'"'"') >= 2 )) && [[ $(sd_count --unit=harness-bp1-svc) == 2 ]]'
 for p in $(cat "$T/svcbg.pids" 2> /dev/null); do kill "$p" 2> /dev/null; done
 mv "$T/user-config.bak" "$T/user-config.sh"

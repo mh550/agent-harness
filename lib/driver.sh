@@ -56,14 +56,20 @@ log() { echo "$(date '+%F %T') $*" | tee -a "$STATE/run.log"; }
 note() { log "$*"; echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; }   # phone-readable, committed
 # <why>: the project's teardown, then the services scope, then one note (decisions/2026-10-25-teardown-hook). Only after
 # an init started something (SVC_UP): finish's call and the EXIT trap's after it give one note, and a segment that never
-# ran an init is silent. SVC_UP clears after the stop, so a TERM during finish's teardown still stops the scope.
+# ran an init is silent. SVC_UP clears after the stop, so a TERM during a teardown still stops the scope; the hook runs
+# in the background (SVC_TD) so the trap, which bash runs at once, waits for it instead of starting a second. A TERM
+# during an init (SVC_INIT) stops the init first, or it would start what the hook just stopped (L2-06 review).
 services_down() {
   (( ${SVC_UP:-0} )) || return 0
-  local rc=0
-  if [[ -n $TEARDOWN_CMD ]]; then
-    HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH HARNESS_TEARDOWN_WHY=$1 timeout -k 10s 2m bash -c "$TEARDOWN_CMD" < /dev/null >> "$SCRATCH/teardown.out" 2>&1; rc=$?
+  local rc=0 unit cmd=${TEARDOWN_CMD:-}; unit=$(scope_unit "$RUN_ID" svc)
+  [[ -n $cmd || ! -x .harness/teardown.sh ]] || cmd=.harness/teardown.sh   # looked up now: a hook added mid-run counts
+  (( ${SVC_INIT:-0} )) && scope_stop "$unit"
+  if [[ -n ${SVC_TD:-} ]]; then wait "$SVC_TD"; rc=$?
+  elif [[ -n $cmd ]]; then
+    HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH HARNESS_TEARDOWN_WHY=$1 timeout -k 10s 2m bash -c "$cmd" < /dev/null >> "$SCRATCH/teardown.out" 2>&1 &
+    SVC_TD=$!; wait "$SVC_TD"; rc=$?
   fi
-  scope_stop "$(scope_unit "$RUN_ID" svc)"; SVC_UP=0
+  scope_stop "$unit"; SVC_UP=0 SVC_TD=""
   if (( rc )); then note "services stopped ($1; teardown exit $rc, see $SCRATCH/teardown.out)"
   else note "services stopped ($1)"; fi
 }
@@ -96,8 +102,9 @@ restrict() {   # base record|nothing who
 echo $$ > "$STATE/driver.pid"; rm -f "$STATE/ended"
 END_REASON="driver exited unexpectedly (see run.log)"
 # A TERM runs this at once while the session goes on: its scope stops first, so claude can't work on unread meanwhile.
-# It may now take minutes (the teardown): a second TERM/HUP (tmux closing) must not cut it short
-trap 'trap "" TERM INT HUP; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
+# It may now take minutes (the teardown): a second TERM/HUP (tmux closing) must not cut it short. Its note is committed
+# (that file only, not pushed): a dirty worktree would keep gc from removing it
+trap 'trap "" TERM INT HUP; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; git commit -q -m "HARNESS: driver exited" -- "$RUN_DIR/harness-log.md" > /dev/null 2>&1; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
 
 # Pull edits made on GitHub (INBOX.md from the phone), push local commits. Never rewrites history.
 sync() {
@@ -277,9 +284,9 @@ context() {
 run_init() {
   local unit; unit=$(scope_unit "$RUN_ID" svc)
   scope_stop "$unit"
-  SVC_UP=1   # before the start: a TERM during the init must still stop what it began (services_down, L2-03)
+  SVC_UP=1 SVC_INIT=1   # before the start: a TERM during the init must still stop what it began (services_down, L2-03)
   HARNESS_PORT=$PORT HARNESS_SCRATCH=$SCRATCH scope_run "$unit" "" "$SVC_MEMORY_MAX" timeout -k 10s "$INIT_TIMEOUT" bash -c "$INIT_CMD" < /dev/null > "$SCRATCH/init.out" 2>&1
-  local rc=$?; echo "(init exit $rc)" >> "$SCRATCH/init.out"
+  local rc=$?; SVC_INIT=0; echo "(init exit $rc)" >> "$SCRATCH/init.out"
   [[ -n ${SCOPE_BARE:-} ]] && note "init ran uncapped: $SCOPE_BARE"   # systemd refused the unit; its line is in init.out
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"

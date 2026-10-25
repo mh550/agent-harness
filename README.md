@@ -63,19 +63,21 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`), smoke, init (run in the run's
 services scope `harness-<run>-svc`, capped at 3G, under a 10m timeout; what it leaves running when it returns stays in the
-scope until the next init stops it: `SVC_MEMORY_MAX`, `INIT_TIMEOUT`), port, models, limits
+scope until the run's services stop (below) or the next init stops it: `SVC_MEMORY_MAX`, `INIT_TIMEOUT`), port, models, limits
 (a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
 `MEM_WAIT_MAX`). Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
 
 **Teardown.** When a run ends (a `status: stop` included), when its driver is killed (a TERM, or an error that ends
 it), when it pauses, before a usage-limit wait of more than `SVC_IDLE_STOP_MIN` minutes (10) and before a memory wait,
-the harness stops the run's services (the next session's init starts them again): it runs the project's `.harness/teardown.sh` if that file is executable (or `TEARDOWN_CMD`), in the
+the harness stops the run's services (the next session's init starts them again): it runs the project's `.harness/teardown.sh` if that file is executable then (or `TEARDOWN_CMD`), in the
 worktree under `timeout 2m` (KILL 10 s later) with `HARNESS_PORT`, `HARNESS_SCRATCH`, `HARNESS_RUN_ID` and `HARNESS_TEARDOWN_WHY` set,
 then stops `harness-<run>-svc`, and notes `services stopped (<why>)` in `harness-log.md`. The scope stop alone takes
 everything the init started itself; a project whose init starts containers (Supabase, `docker compose`) adds its own
 hook to stop them (template: `templates/project/teardown.sh`). It runs only when the segment ran an init, its output
-goes to `teardown.out` in the scratch directory, and a failing hook is noted, never fatal. A SIGKILLed driver runs no
-hook: `harness gc <project>` stops the units it left (run the project's teardown by hand for its containers).
+goes to `teardown.out` in the scratch directory, and a failing hook is noted, never fatal. A TERM during an init stops
+the init first; a TERM during a teardown waits for it rather than starting a second. A SIGKILLed driver runs no
+hook: `harness gc <project>` stops the units it left (run the teardown by hand for its containers:
+`HARNESS_RUN_ID=<run> .harness/teardown.sh` in the worktree).
 
 ## What a run is
 

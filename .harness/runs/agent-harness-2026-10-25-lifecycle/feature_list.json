@@ -157,7 +157,7 @@
         "Every L2 decision file reads finding · choice · rejected and cites the spec; bash -n and node --check pass on every file L2 touched",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
 
     { "id": "L3-01", "milestone": "L3", "kind": "plan", "model": "opus", "after": [],
       "description": "docs/plans/2026-10-25-L3-scratch-and-tmux.md fixes the scratch cleanup, HARNESS_CACHE, the tmpfiles template and the tmux reaper (H1a/b/c), including how the suite drives a real driver window on its private tmux server.",
