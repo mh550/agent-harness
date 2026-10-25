@@ -177,7 +177,6 @@ clock() {
 # read-only retro, whose caller notes them after restrict, which would revert them)
 session() {
   local settings=() mcp=(--strict-mcp-config) t0 seq unit left x
-  [[ $1 == retro ]] || mem_gate   # not the retro: the run is ending; before t0, so the wait isn't the session's wall time
   t0=$(date +%s) S_NOTES=()
   # an entry.json no ingest took (the driver died after its session) would pass for this session's own
   [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
@@ -196,6 +195,7 @@ session() {
   # read what the wrapper recorded, then stop the scope: whatever the session left running goes with it
   S_PEAK=$(scope_peak "$unit") left=$(scope_left "$unit"); scope_stop "$unit"
   (( left > 0 )) && S_NOTES+=("$1 session left $left process(es) running; stopped with its scope")
+  [[ -n ${SCOPE_BARE:-} ]] && S_NOTES+=("$1 session ran uncapped: $SCOPE_BARE")   # its error is in the transcript
   # the peak alone could be page cache: a cap kill is the kernel's 137 with the peak at the cap
   (( S_EXIT == 137 )) && scope_capped "$unit" "$SESSION_MEMORY_MAX" && S_NOTES+=("${4:-$1}: the session hit its memory cap ($SESSION_MEMORY_MAX)")
   [[ $1 == retro ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
@@ -348,6 +348,7 @@ verify() {
     F snapshot "$LIST" > "$STATE/before.json"
     context "$m"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
+    mem_gate   # before the clock, so the prompt's time is the session's
     HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
@@ -566,6 +567,7 @@ deploy_check
 unset SCOPE_OK; scope_available || note "no user systemd: sessions and suites run uncapped"
 
 if [[ ! -f $LIST ]]; then
+  mem_gate
   run_init
   HARNESS_CALIBRATION=$(SUM calibration "$LEDGER" "$PROJECT_NAME" 2>/dev/null) prompt initializer
   log "initializer · $(F model "$INIT_MODEL")"
@@ -588,7 +590,7 @@ if [[ ! -f $STATE/deps-noted ]]; then   # once per run: milestones that wait on 
   touch "$STATE/deps-noted"
 fi
 [[ $MAX_SESSIONS == auto ]] && MAX_SESSIONS=$(( 3 * $(jq '.features | length' "$LIST") + 5 ))
-repairs=0 n=0 limits=0
+repairs=0 n=0 limits=0 gated=0
 while :; do
   (( n >= MAX_SESSIONS )) && finish "session cap ($MAX_SESSIONS)"
   (( $(date +%s) >= DEADLINE )) && { note "deadline reached"; finish "deadline"; }
@@ -621,6 +623,9 @@ while :; do
     note "no feature left to try: $(F summary "$LIST")"; finish "no feature left to try"
   fi
   IFS=$'\t' read -r id mdl milestone <<< "$next"
+  # the memory gate before the attempt and its prompt; after a wait, the checks above (deadline, stop, pause, the pick)
+  # run again, and the gate doesn't: once is enough, then the session starts anyway (decisions/2026-10-25-memory-gate)
+  if (( ! gated )) && ! mem_gate; then gated=1; continue; fi; gated=0
   n=$(( n + 1 ))
   F bump "$ATT" "$id"; F snapshot "$LIST" > "$STATE/before.json"
   run_init; context "$id"

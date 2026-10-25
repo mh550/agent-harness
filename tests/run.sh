@@ -152,6 +152,9 @@ note: memory: 9 GB available after 0 s; starting the session
 ===
 end'
 check "scope.sh: mem_gate notes, frees, waits, then starts anyway or once memory is back" '[[ $(diff "$HERE/fixtures/meminfo.txt" "$T/meminfo-2g.txt" | grep -c "^[<>]") == 2 && $mg == "$MGOUT" ]]'
+# HARNESS_MEM_POLL=0 (as the suite sets HARNESS_QUEUE_POLL=0) must still end at MEM_WAIT_MAX; exit 0 at once, 1 after a wait
+mg0() { timeout 5 bash -c 'source "$1"; note() { :; }; MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=1s HARNESS_MEM_POLL=0 HARNESS_MEMINFO=$2 mem_gate' _ "$SC" "$1"; }
+check "scope.sh: mem_gate ends with HARNESS_MEM_POLL=0, exit 1 after a wait and 0 when it passed at once" 'mg0 "$T/meminfo-2g.txt"; [[ $? == 1 ]] && mg0 "$HERE/fixtures/meminfo.txt"'
 check "scope.sh: dur_s reads timeout(1) durations as seconds" '( source "$SC"; [[ $(dur_s 15m) == 900 && $(dur_s 2s) == 2 && $(dur_s 1h) == 3600 && $(dur_s 90) == 90 && $(dur_s 1d) == 86400 ]] && ! dur_s 1.5m && ! dur_s "" )'
 check "scope.sh: without user systemd scope_run runs bare (STUB_NO_SYSTEMD=1)" \
   '[[ $sc_bare == $'"'"'avail=1\nrc=4\nstop=0\npeak=1'"'"' && $(cat "$T/sc-bare.out") == ran && $(sd_count --unit=harness-x-bare) == 0 ]]'
@@ -611,6 +614,13 @@ STUB_NO_SYSTEMD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/p
 check "no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)" '[[ $(sd_count --unit=harness-bare) == 0 && $($F summary "$(list bare)") == "3/3 passing" ]] \
   && [[ $(hlog bare | grep -c "· no user systemd: sessions and suites run uncapped$") == 1 ]] && grep -q "  coding exit 0 · " "$HARNESS_STATE/proj/bare/run.log"'
 check "metrics.jsonl: mem_peak_mb is null when uncapped" 'jq -se "length >= 5 and all(has(\"mem_peak_mb\") and .mem_peak_mb == null)" "$T/wt/proj/bare/.harness/runs/bare/metrics.jsonl" > /dev/null'
+# systemd refusing the scope after the probe passed (a MemoryMax it can't parse): each session runs bare, and says so
+{ cat "$T/base-config.sh"; echo SESSION_MEMORY_MAX=bogus; } > "$T/user-config.sh"
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" refused --spec SPEC.md --foreground > "$T/run-refused.out" 2>&1
+cp "$T/base-config.sh" "$T/user-config.sh"
+check "a scope systemd refuses after the probe: the session runs bare and harness-log.md says so" 'S=$(grep -cE "^[0-9-]+ [0-9:]+   (init|coding|verify|retro) exit " "$HARNESS_STATE/proj/refused/run.log") \
+  && (( S >= 5 )) && [[ $(hlog refused | grep -cE "· (init|coding|verify|retro) session ran uncapped: systemd-run failed \(exit 1\)$") == "$S" && $($F summary "$(list refused)") == "3/3 passing" ]] \
+  && grep -q "^Failed to parse MemoryMax=bogus: Invalid argument$" "$HARNESS_STATE/proj/refused/logs/00-init.jsonl"'
 # the memory gate on a whole run: 2 GB available, MEM_WAIT_MAX=2s, polls every second; every non-retro session waits first
 { cat "$T/base-config.sh"; echo MEM_WAIT_MAX=2s; } > "$T/user-config.sh"
 HARNESS_MEMINFO=$T/meminfo-2g.txt STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lowmem --spec SPEC.md --foreground > "$T/run-lowmem.out" 2>&1
@@ -618,6 +628,17 @@ cp "$T/base-config.sh" "$T/user-config.sh"
 check "memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)" 'S=$(grep -cE "^[0-9-]+ [0-9:]+   (init|coding|verify) exit " "$HARNESS_STATE/proj/lowmem/run.log") \
   && (( S >= 5 )) && [[ $(hlog lowmem | grep -c "· memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 2s$") == "$S" \
   && $(hlog lowmem | grep -c "· memory still at 2 GB after 2s; starting the session anyway (its cap protects the box)$") == "$S" && $($F summary "$(list lowmem)") == "3/3 passing" ]]'
+# the gate comes before the feature is picked, not inside session(): a status: stop set during the wait is seen before
+# any coding session, no attempt is spent, and the prompt's clock comes after the wait (the L1 review's Important finding)
+cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-gate.txt"; { cat "$T/base-config.sh"; echo MEM_WAIT_MAX=60s; } > "$T/user-config.sh"
+HARNESS_MEMINFO=$T/meminfo-gate.txt STUB_MEM_DROP=$T/meminfo-gate.txt STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 \
+  "$H" start "$T/proj" gatestop --spec SPEC.md --foreground > "$T/run-gatestop.out" 2>&1 & GP=$!
+for _ in $(seq 300); do hlog gatestop | grep -q "waiting up to 60s$" && break; sleep 0.1; done
+touch "$HARNESS_STATE/proj/gatestop/STOP"; cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-gate.txt"; wait "$GP"
+cp "$T/base-config.sh" "$T/user-config.sh"
+check "memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt" '[[ $(hlog gatestop | grep -c "· memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 60s$") == 1 ]] \
+  && hlog gatestop | grep -q "· memory: 9 GB available after [0-9]* s; starting the session$" && hlog gatestop | grep -q "· stopped by Michael$" \
+  && ! grep -q "coding exit" "$HARNESS_STATE/proj/gatestop/run.log" && [[ $(jq "[.[]] | add // 0" "$HARNESS_STATE/proj/gatestop/attempts.json" 2> /dev/null || echo 0) == 0 ]]'
 check "memory gate: the real fixture's 9 GB passes without a note" '[[ -s $T/demo-hlog.md ]] && ! grep -q "· memory" "$T/demo-hlog.md"'
 # A's cap kill peaks at the cap (6G): report.md beside it, and harness report's rebuild in the state dir, list it
 check "report.md lists the session that peaked at its cap among the peaks over 2 GB" 'L=$T/wt/proj/leftover/.harness/runs/leftover; M=$(jq -r "select(.feature==\"A\" and .exit==137) | .model" "$L/metrics.jsonl") \

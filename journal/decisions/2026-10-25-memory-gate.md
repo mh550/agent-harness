@@ -30,3 +30,23 @@
     that never starts helps nobody: Michael would come back to nothing done, for a box that was merely busy.
   - **A gate on the retro.** It runs read-only at the end of a run; waiting 30 minutes to write a retro buys nothing.
   - **Counting the wait in `S_WALL`.** It would read as a slow session in `metrics.jsonl` and the report.
+
+## The gate moves out of `session()`, before the attempt and its prompt (L1-08)
+
+*(2026-10-25, same run, feature L1-08: the L1 review's one Important finding, `docs/plans/2026-10-25-L1-review.md` #1;
+spec §L1 item 4)*
+
+- **Finding:** `session()` ran `mem_gate` after everything the driver decides before a session: the deadline and
+  `status: stop`/pause checks, the attempt bump and the prompt with its `Clock:` line. A 30-minute wait then started a
+  session past the deadline, under a clock 30 minutes stale, and after a stop Michael set during the wait; the suite's
+  check (a stop set during the wait) saw the coding session run and its attempt spent.
+- **Choice:** the callers gate. The run loop calls `mem_gate` once the feature is picked and before `F bump` and
+  `prompt coding`; after a wait (`mem_gate` now exits 1 when it waited, either way) the loop starts over, so the
+  deadline, `control` and the pick run again, and the gate is skipped once (`gated`), so a box that stays low still
+  starts the session after one `MEM_WAIT_MAX`. `verify()` gates each round before its clock and prompt; the initializer
+  before `run_init`. `HARNESS_MEM_POLL=0` is read as 1 (0 never advanced the wait).
+- **Rejected:**
+  - **Re-rendering the prompt after the gate inside `session()`:** the clock would be right, but the deadline and a stop
+    would still be ignored, and the attempt already spent.
+  - **Re-gating after the loop starts over:** a box that stays under the bar would wait forever, which the gate's
+    first choice (start anyway) rules out.

@@ -4,7 +4,8 @@
 # the options up to the command, marks the unit alive in $STUB_DIR/scope/ (<unit>.alive, its MemoryMax in <unit>.max),
 # runs the command with STUB_SCOPE_UNIT=<unit> (<unit>.running meanwhile) and exits with its code, the unit gone
 # afterwards unless a pid in <unit>.pids lives on (as a real scope goes when empty). STUB_NO_SYSTEMD=1: every call fails the way it does without a
-# user bus (fixtures/systemd-no-bus.txt, exit 1).
+# user bus (fixtures/systemd-no-bus.txt, exit 1). A MemoryMax systemd can't parse fails the way the real one does
+# (fixtures/systemd-run-bad-property.txt, exit 1, no unit made).
 HERE=$(cd "$(dirname "$0")" && pwd)
 { echo systemd-run; for a in "$@"; do printf '%s\n' "${a%%$'\n'*}"; done; echo ===; } >> "$STUB_DIR/systemd.log"
 [[ ${STUB_NO_SYSTEMD:-} == 1 ]] && { cat "$HERE/fixtures/systemd-no-bus.txt" >&2; exit 1; }
@@ -18,8 +19,9 @@ while (( $# )); do
     *) break ;;
   esac; shift
 done
-bytes() { local n=${1%[KMGTkmgt]}; case ${1##*[0-9]} in [Kk]) echo $(( n << 10 )) ;; [Mm]) echo $(( n << 20 )) ;; [Gg]) echo $(( n << 30 )) ;; [Tt]) echo $(( n << 40 )) ;; *) echo "$n" ;; esac; }
-rm -f "$S/$unit".*; touch "$S/$unit.alive" "$S/$unit.running"; [[ -n $max ]] && bytes "$max" > "$S/$unit.max"
+[[ -z $max || $max =~ ^[0-9]+[KMGTkmgt]?$ ]] || { sed "s/=bogus:/=$max:/" "$HERE/fixtures/systemd-run-bad-property.txt" >&2; exit 1; }
+source "$HERE/../lib/scope.sh"   # scope_bytes: the stub reads sizes as the code does
+rm -f "$S/$unit".*; touch "$S/$unit.alive" "$S/$unit.running"; [[ -n $max ]] && scope_bytes "$max" > "$S/$unit.max"
 STUB_SCOPE_UNIT=$unit "$@"; rc=$?   # forked, not exec'd as the real one: the stub must clean up after it
 rm -f "$S/$unit.running"
 for p in $(cat "$S/$unit.pids" 2> /dev/null); do kill -0 "$p" 2> /dev/null && exit $rc; done

@@ -44,6 +44,7 @@ case $first in
     [[ ${STUB_SLOW_INIT:-} ]] && sleep "$STUB_SLOW_INIT"
     [[ ${STUB_INIT_LIMIT:-} ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before the list exists
     [[ ${STUB_QUEUE_STOP:-} ]] && touch "$HARNESS_STATE/queue/STOP"   # Michael runs `harness queue stop` meanwhile
+    [[ ${STUB_MEM_DROP:-} ]] && sed -i 's/^MemAvailable: .*/MemAvailable:    2097152 kB/' "$STUB_MEM_DROP"   # the box runs low on memory meanwhile (2 GB)
     after=""; [[ ${STUB_INDEPENDENT_M2:-} ]] && after=', "after": []'
     cat > "$L" <<JSON
 { "run": "test", "features": [

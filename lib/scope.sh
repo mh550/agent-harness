@@ -28,10 +28,11 @@ scope_bytes() { local n=${1%[KMGTkmgt]}; case ${1##*[0-9]} in [Kk]) echo $(( n <
 dur_s() { [[ $1 =~ ^([0-9]+)([smhd]?)$ ]] || return 1; local n=${BASH_REMATCH[1]}; case ${BASH_REMATCH[2]} in m) echo $(( n * 60 )) ;; h) echo $(( n * 3600 )) ;; d) echo $(( n * 86400 )) ;; *) echo "$n" ;; esac; }
 
 # The command's exit code. An empty <mem-high> leaves MemoryHigh out (it throttles near the cap instead of killing).
+# SCOPE_BARE says why a call with the probe passed still ran bare (empty when scoped), for the caller's note.
 # OOMPolicy=continue: a cap kill takes only its victim, so the wrapper lives to record the peak and pass the 137 on.
 # --description: otherwise systemd describes the unit by its whole command line (a session's prompt) in the journal.
 scope_run() {
-  local unit=$1 high=$2 max=$3 dir rc; shift 3
+  local unit=$1 high=$2 max=$3 dir rc; shift 3; SCOPE_BARE=""
   scope_available || { "$@"; return; }
   dir=$(scope_dir); mkdir -p "$dir"; rm -f "$dir/$unit.started" "$dir/$unit.show"
   local props=(-p "MemoryMax=$max" -p "MemorySwapMax=${SESSION_SWAP_MAX:-1G}" -p OOMPolicy=continue)
@@ -40,8 +41,9 @@ scope_run() {
     bash -c "$SCOPE_WRAP" _ "$unit" "$dir" "${HARNESS_SYSTEMCTL:-systemctl}" "$@"
   rc=$?
   [[ -f $dir/$unit.started ]] && return $rc
-  if (( rc == 254 )); then echo "scope_run: $dir is not writable; running bare" >&2
-  else echo "scope_run: systemd-run failed (exit $rc); running bare" >&2; fi   # the bus went away, or systemd refused the unit
+  if (( rc == 254 )); then SCOPE_BARE="$dir is not writable"
+  else SCOPE_BARE="systemd-run failed (exit $rc)"; fi   # the bus went away, or systemd refused the unit
+  echo "scope_run: $SCOPE_BARE; running bare" >&2
   "$@"
 }
 
@@ -87,17 +89,18 @@ mem_available_gb() {
 # Before a session (decisions/2026-10-25-memory-gate): under MEM_MIN_AVAILABLE_GB, note it, stop the run's services
 # (services_down, when the caller has one), poll every ${HARNESS_MEM_POLL:-300} s up to MEM_WAIT_MAX, then start
 # anyway: the session's cap protects the box, and a run that never starts helps nobody. Unreadable → no gate.
+# Exit 0 when it passed at once, 1 after a wait: the caller re-checks what the wait made stale (deadline, stop, clock).
 mem_gate() {
-  local gb waited=0 max poll=${HARNESS_MEM_POLL:-300} s
+  local gb waited=0 max poll=${HARNESS_MEM_POLL:-300} s; (( poll > 0 )) || poll=1   # 0 would never advance the wait
   gb=$(mem_available_gb) && (( gb < MEM_MIN_AVAILABLE_GB )) || return 0
   note "memory: $gb GB available, under MEM_MIN_AVAILABLE_GB=$MEM_MIN_AVAILABLE_GB; waiting up to $MEM_WAIT_MAX"
   declare -F services_down > /dev/null && services_down memory
   max=$(dur_s "$MEM_WAIT_MAX") || max=1800
   while :; do   # first right after services_down: what it freed may be enough
     gb=$(mem_available_gb) || return 0
-    (( gb >= MEM_MIN_AVAILABLE_GB )) && { note "memory: $gb GB available after $waited s; starting the session"; return 0; }
+    (( gb >= MEM_MIN_AVAILABLE_GB )) && { note "memory: $gb GB available after $waited s; starting the session"; return 1; }
     (( waited < max )) || break
     s=$(( poll < max - waited ? poll : max - waited )); sleep "$s"; waited=$(( waited + s ))
   done
-  note "memory still at $gb GB after $MEM_WAIT_MAX; starting the session anyway (its cap protects the box)"
+  note "memory still at $gb GB after $MEM_WAIT_MAX; starting the session anyway (its cap protects the box)"; return 1
 }

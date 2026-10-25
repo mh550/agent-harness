@@ -82,3 +82,22 @@
     the session started, and stopping the scope kills it whole.
   - **Stopping the scope before reading it:** the record (peak, tasks left) would go with it.
   - **Keeping 137 environmental:** a feature too big for 6G would never spend an attempt.
+
+## A scope refused after the probe passed is noted (L1-08)
+
+*(2026-10-25, same run, feature L1-08: the L1 review's finding #2, `docs/plans/2026-10-25-L1-review.md`; spec §L1
+items 1–2)*
+
+- **Finding:** when the probe passed but `systemd-run` then failed for one session (a `MemoryMax` it can't parse:
+  `Failed to parse MemoryMax=bogus: Invalid argument`, exit 1, captured on this box; or the bus gone mid-run),
+  `scope_run` ran the session bare and said so only on stderr, which `session()` sends into the transcript. The run
+  went uncapped with nothing in `harness-log.md` but `mem_peak_mb: null`.
+- **Choice:** `scope_run` sets `SCOPE_BARE` to why it went bare (empty when scoped) and still prints it on stderr;
+  `session()` adds `<kind> session ran uncapped: <why>` to its notes. The stub `systemd-run` refuses an unparseable
+  `MemoryMax` with the real message (`tests/fixtures/systemd-run-bad-property.txt`) and reads sizes with
+  `scope_bytes` itself instead of a copy.
+- **Rejected:**
+  - **Stopping the run on a refused scope:** the probe already decided this box can cap; one refusal is a bad value
+    or a passing fault, and a session uncapped (and said so) beats no session.
+  - **Validating the sizes in `lib/config.sh`:** systemd is the authority on what it parses; the note covers every
+    cause, not only a bad value.
