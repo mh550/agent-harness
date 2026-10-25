@@ -14,3 +14,8 @@
 # DESK=0                             # 1 = start one on a park, a blocked or waiting run end, verify or a merge needing
 #                                    #     you, and a debrief with Needs Michael. Try `harness desk <run> --why test` first.
 # DESK_MODEL=opus                    # the desk session's model: fable, opus, sonnet, haiku or a claude-… id
+
+# Each claude session runs in its own systemd user scope (harness-<run>-s<n>); without user systemd, uncapped.
+# SESSION_MEMORY_HIGH=5G             # throttled above this
+# SESSION_MEMORY_MAX=6G              # killed at this (exit 137; the attempt counts)
+# SESSION_SWAP_MAX=1G                # swap the scope may use (suites' scopes too)

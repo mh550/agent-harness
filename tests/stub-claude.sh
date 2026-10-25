@@ -72,6 +72,14 @@ JSON
     fi
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
     echo "$id attempt $n" >> "$HARNESS_SCRATCH/sessions.log"
+    if [[ ${STUB_OOM:-} == "$id" && $n == 1 ]]; then   # killed at its memory cap: the stream cut off before its result, exit 137
+      [[ -n ${STUB_SCOPE_UNIT:-} ]] && touch "$STUB_DIR/scope/$STUB_SCOPE_UNIT.oom"   # the stub systemctl then reports the cap as its peak
+      jq -c 'select(.type != "result")' "$HERE/fixtures/usage-tokens.jsonl"; exit 137
+    fi
+    if [[ ${STUB_LEAVE_PROCESS:-} == 1 ]]; then   # backgrounds a process it never stops: its scope holds it (and $STUB_DIR/left.pids remembers it)
+      sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/left.pids"
+      [[ -n ${STUB_SCOPE_UNIT:-} ]] && echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"
+    fi
     if [[ ${STUB_PARK:-} == "$id" && $n == 1 ]]; then   # can't go on without Michael: asks in INBOX.md, parks
       sed -i '/^## Answers/i ### '"$id"': set the gatus vars, then answer\n' "$HARNESS_RUN_DIR/INBOX.md"
       git add -A && git commit -qm "$id: question for Michael" && git push -q origin "$HARNESS_BRANCH"
@@ -114,6 +122,8 @@ JSON
     ok 0.1 ;;
   "# Retro")
     echo "retro" >> "$HARNESS_SCRATCH/sessions.log"
+    if [[ ${STUB_LEAVE_RETRO:-} == 1 ]]; then sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/left.pids"   # as STUB_LEAVE_PROCESS, for the read-only retro
+      [[ -n ${STUB_SCOPE_UNIT:-} ]] && echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"; fi
     [[ ${STUB_RETRO_EDITS:-} ]] && { echo "retro was here" > retro-hack.txt; echo x >> "$HARNESS_RUN_DIR/progress.md"; }
     ok 0.2 "## Outcome\\nStub retro.\\n\\n## Proposed harness changes\\n1. none" ;;
   "# Probe session"*)   # records its command line, $PWD and prompt; for t2, Q1 (T2a's files) is right and Q2 (T2b's deps) wrong

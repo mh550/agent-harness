@@ -25,13 +25,14 @@ scope_bytes() { local n=${1%[KMGTkmgt]}; case ${1##*[0-9]} in [Kk]) echo $(( n <
 
 # The command's exit code. An empty <mem-high> leaves MemoryHigh out (it throttles near the cap instead of killing).
 # OOMPolicy=continue: a cap kill takes only its victim, so the wrapper lives to record the peak and pass the 137 on.
+# --description: otherwise systemd describes the unit by its whole command line (a session's prompt) in the journal.
 scope_run() {
   local unit=$1 high=$2 max=$3 dir rc; shift 3
   scope_available || { "$@"; return; }
   dir=$(scope_dir); mkdir -p "$dir"; rm -f "$dir/$unit.started" "$dir/$unit.show"
   local props=(-p "MemoryMax=$max" -p "MemorySwapMax=${SESSION_SWAP_MAX:-1G}" -p OOMPolicy=continue)
   [[ -n $high ]] && props=(-p "MemoryHigh=$high" "${props[@]}")
-  "${HARNESS_SYSTEMD_RUN:-systemd-run}" --user --scope --collect --quiet --unit="$unit" "${props[@]}" \
+  "${HARNESS_SYSTEMD_RUN:-systemd-run}" --user --scope --collect --quiet --unit="$unit" --description="$unit" "${props[@]}" \
     bash -c "$SCOPE_WRAP" _ "$unit" "$dir" "${HARNESS_SYSTEMCTL:-systemctl}" "$@"
   rc=$?
   [[ -f $dir/$unit.started ]] && return $rc

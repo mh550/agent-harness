@@ -49,3 +49,36 @@
   - **`ulimit -v`** for the cap: it limits address space, not memory (node reserves far more than it uses), and covers
     only one process tree, not what a session backgrounds.
   - **Keeping `.` in unit names**: legal, but it blurs the per-run globs that L2's `gc` and status rely on.
+
+## Sessions in their scopes, stopped after they return (L1-03)
+
+*(2026-10-25, same run, feature L1-03; plan §3, §7, §8.1, §12 D3–D4)*
+
+- **Finding:** a session's `timeout "$SESSION_TIMEOUT" claude …` sends SIGTERM to claude alone; a dev server, a
+  watcher or a `sleep` it backgrounded lives on after the session, holding memory and ports into the next one. And an
+  exit 137 with no result under 120 s read as environmental (`no result after <n> s`), so a session killed at its
+  cap would have given its attempt back and the feature retried for ever at the same size.
+- **Choice:**
+  - `session()` (all four kinds) runs `scope_run harness-<run>-s<n> $SESSION_MEMORY_HIGH $SESSION_MEMORY_MAX timeout
+    -k 30s $SESSION_TIMEOUT claude …`; `<n>` comes from `state/scope-seq`, bumped per session of any kind, so a resumed
+    segment never reuses a unit a crashed one left. Defaults `SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G
+    SESSION_SWAP_MAX=1G` (the spec's). **D3 *default*:** `timeout -k 30s` sits inside the scope, around claude (outside
+    it would signal the wrapper, not claude).
+  - **Stop after return.** When claude returns, the driver reads the peak and the task count the wrapper recorded, then
+    `systemctl --user stop`s the scope: whatever the session left running is killed with it, and noted
+    `<kind> session left <n> process(es) running; stopped with its scope` when there was any.
+  - **D4 *default*: exit 137 is the feature's attempt**, like 124 (`environmental()` returns null for both). A 137 whose
+    peak reached `SESSION_MEMORY_MAX` is noted `<who>: the session hit its memory cap (<SESSION_MEMORY_MAX>)`; the peak
+    alone isn't enough (page cache counts in `MemoryPeak`), so the note needs both.
+  - The probe runs once per driver process (one segment), right after the configuration loads; when it fails the
+    segment notes `no user systemd: sessions and suites run uncapped` once and every session runs the same `timeout -k
+    30s …` line bare.
+  - **`--description=<unit>`** on every scope (found by the L1-03 review, checked on this box): without it systemd
+    describes the unit by its whole command line, so each session's full prompt went to the user journal and into
+    every `systemctl status` and `list-units` line.
+- **Rejected:**
+  - **Killing by pid** (claude's process group, or the pids the session started): a session's children can leave the
+    group (`setsid`, a daemonising server, tmux), and pids are reused; the cgroup is the one set that holds everything
+    the session started, and stopping the scope kills it whole.
+  - **Stopping the scope before reading it:** the record (peak, tasks left) would go with it.
+  - **Keeping 137 environmental:** a feature too big for 6G would never spend an attempt.

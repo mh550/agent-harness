@@ -27,6 +27,8 @@ cd "$WT" || exit 1
 source "$HARNESS_HOME/lib/config.sh"
 # shellcheck source=lib/prompt.sh
 source "$HARNESS_HOME/lib/prompt.sh"
+# shellcheck source=lib/scope.sh
+source "$HARNESS_HOME/lib/scope.sh"   # scope_run/stop/peak/left/capped: each session in its capped user scope
 
 prompt_vars   # PROJECT_NAME BRANCH RUN_DIR SCRATCH CHECK PORT
 CLAUDE=${HARNESS_CLAUDE:-claude} GH=${HARNESS_GH:-gh}
@@ -169,16 +171,29 @@ clock() {
     "$(date -d "@$DEADLINE" +%H:%M)" "$SESSION_BUDGET_USD" "$MAX_TURNS" "$SESSION_TIMEOUT" "$1"
 }
 
-session() {   # kind model log → runs claude headless on $STATE/prompt.md; sets S_EXIT and S_WALL
-  local settings=() t0; t0=$(date +%s)
+# kind model log who → runs claude headless on $STATE/prompt.md in its own capped scope (decisions/2026-10-25-scoped-sessions);
+# sets S_EXIT, S_WALL, S_PEAK (MB, empty when uncapped) and S_NOTES (what the scope showed; noted here, except for the
+# read-only retro, whose caller notes them after restrict, which would revert them)
+session() {
+  local settings=() t0 seq unit left x; t0=$(date +%s) S_NOTES=()
   # an entry.json no ingest took (the driver died after its session) would pass for this session's own
   [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
   cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
   [[ $1 == coding || $1 == verify ]] && cp "$RUN_DIR/context.md" "${3%.jsonl}.context.md" 2> /dev/null   # and the pack it read first
   [[ -f $AGENT_SETTINGS ]] && settings=(--settings "$WT/$AGENT_SETTINGS")
-  timeout "$SESSION_TIMEOUT" "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" \
+  # s<n> is per run, never per segment: a crashed segment's scope may still hold its name
+  seq=$(( $(cat "$STATE/scope-seq" 2> /dev/null || echo 0) + 1 )); echo "$seq" > "$STATE/scope-seq"; unit=$(scope_unit "$RUN_ID" "s$seq")
+  # timeout inside the scope: outside it would signal the wrapper and leave claude running; -k: claude ignoring TERM
+  scope_run "$unit" "$SESSION_MEMORY_HIGH" "$SESSION_MEMORY_MAX" timeout -k 30s "$SESSION_TIMEOUT" \
+    "$CLAUDE" -p "$(cat "$STATE/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" \
     --max-turns "$MAX_TURNS" --max-budget-usd "$SESSION_BUDGET_USD" --output-format stream-json --verbose > "$3" 2>&1
   S_EXIT=$? S_WALL=$(( $(date +%s) - t0 ))
+  # read what the wrapper recorded, then stop the scope: whatever the session left running goes with it
+  S_PEAK=$(scope_peak "$unit") left=$(scope_left "$unit"); scope_stop "$unit"
+  (( left > 0 )) && S_NOTES+=("$1 session left $left process(es) running; stopped with its scope")
+  # the peak alone could be page cache: a cap kill is the kernel's 137 with the peak at the cap
+  (( S_EXIT == 137 )) && scope_capped "$unit" "$SESSION_MEMORY_MAX" && S_NOTES+=("${4:-$1}: the session hit its memory cap ($SESSION_MEMORY_MAX)")
+  [[ $1 == retro ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
   MET usage "$3" > "$USAGE.tmp" 2> /dev/null && mv "$USAGE.tmp" "$USAGE" || rm -f "$USAGE.tmp"   # the box-wide 7-day window
   log "  $1 exit $S_EXIT · $(git log --oneline -1)"
 }
@@ -331,7 +346,7 @@ verify() {
     HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
-    session verify "$(F model "$model")" "$vlog"
+    session verify "$(F model "$model")" "$vlog" "verify $m"
     reverted=$(restrict "$vstart" record verify | paste -sd' ')
     [[ -n $reverted ]] && note "verify $m: reverted code edits the verifier may not make: $reverted"
     journal verify "$m" "$vlog" "$(F model "$model")" "$vstart"   # before the limit branch: a refused verify is journaled too
@@ -400,12 +415,13 @@ verify_ready() {
 }
 
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
-  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted
+  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x
   rstart=$(git rev-parse HEAD)
   HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
-  MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog"
+  MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
   reverted=$(restrict "$rstart" nothing retro | paste -sd' ')
+  for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict: the driver's notes, not the retro's edits
   [[ -n $reverted ]] && note "retro: reverted edits (it is read-only): $reverted"
   MET final "$rlog" > "$SCRATCH/retro.md"
   [[ -s $SCRATCH/retro.md ]] && ! MET limit "$rlog" "$S_WALL" "$S_EXIT" > /dev/null && cp "$SCRATCH/retro.md" "$RUN_DIR/retro.md"
@@ -540,12 +556,15 @@ deploy_check() {
 }
 deploy_check
 
+# One probe per segment (this driver process): without a user bus every session runs bare, said once
+unset SCOPE_OK; scope_available || note "no user systemd: sessions and suites run uncapped"
+
 if [[ ! -f $LIST ]]; then
   run_init
   HARNESS_CALIBRATION=$(SUM calibration "$LEDGER" "$PROJECT_NAME" 2>/dev/null) prompt initializer
   log "initializer · $(F model "$INIT_MODEL")"
   istart=$(git rev-parse HEAD)
-  session init "$(F model "$INIT_MODEL")" "$LOGS/00-init.jsonl"
+  session init "$(F model "$INIT_MODEL")" "$LOGS/00-init.jsonl" initializer
   commit_all "WIP: initializer — uncommitted at session end (harness)"
   journal init init "$LOGS/00-init.jsonl" "$(F model "$INIT_MODEL")" "$istart"   # a failed or refused initializer too
   if ! F summary "$LIST" > /dev/null 2>&1; then
@@ -604,7 +623,7 @@ while :; do
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   cp "$RUN_DIR/INBOX.md" "$STATE/inbox-before.md" 2> /dev/null || : > "$STATE/inbox-before.md"   # what the session adds is the park's question
   sstart=$(git rev-parse HEAD)
-  session coding "$mdl" "$slog"
+  session coding "$mdl" "$slog" "$id"
   commit_all "WIP: $id — uncommitted at session end (harness)"
   journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
 

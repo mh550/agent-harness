@@ -37,7 +37,7 @@
         "journal/decisions/2026-10-25-scoped-sessions.md is extended (or a sibling file written) with the stop-after-return choice and what was rejected (killing by pid)",
         "bash -n lib/driver.sh lib/config.sh bin/harness pass; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L1-04", "milestone": "L1", "kind": "build", "model": "opus",
       "description": "Each session's metrics.jsonl line records mem_peak_mb from its scope (null when uncapped) and report.md lists the features whose sessions peaked over 2 GB.",
       "steps": [
