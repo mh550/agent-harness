@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-26 08:30 · P0-03 · passes
+
+CHECK_KEY_IGNORE (default .harness/runs docs/plans; this repo adds docs/specs journal findings-and-research ledger) leaves literal path prefixes out of treekey's key; prompt_env exports it; check.sh's cached line names a non-default list. New tests/checks/29-check-key.sh (7 checks, 2 stub runs via STUB_EDIT). 335 → 342 green in 168 s.
+
+- **Files:** lib/treekey.mjs, lib/check.sh, lib/config.sh, lib/prompt.sh, .harness/config.sh, templates/project/config.sh, tests/checks/29-check-key.sh, tests/stub-claude.sh, tests/lib.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, +1 more
+- **Verified:** 29-check-key.sh red first (2/6: docs/plans run got 'green in 0 s'), then 7/7; bash tests/run.sh 342/342 (wall 170 s), again 342/342 with the repo's list exported as a real run would; live lib/check.sh: 'check: green in 168 s'; bash -n and node --check on every touched file; Opus review of the diff.
+- **Tests:** 335 → 342
+- **Dead end:** asserting with `git log --name-only | grep -qx` — pipefail + grep -q's early exit SIGPIPEs git log: the check fails although the file is there; use git cat-file -e
+- **Discovery** (affects run): tests/lib.sh must unset every HARNESS_* variable prompt_env exports that changes check.sh's output (now HARNESS_CHECK_KEY_IGNORE too): a session's suite inherits its run's, and this repo's wide list turned the 'unset' checks red inside a real run (found by review, reproduced, fixed).
+- **Discovery** (affects P1, P2, run): Once this merges, a session that only adds a plan, spec, decision or ledger file in this repo gets 'check: green (cached …; key ignores: docs/plans docs/specs journal findings-and-research ledger)' instead of a 3 min suite run. .harness/config.sh itself stays in the key.
+- **Discovery** (affects P1, P2): STUB_EDIT=<path> in tests/stub-claude.sh: a coding session edits only that path, passes nothing, and copies the init.out it was started with to $STUB_DIR/init-<run>-<n>.out (what the pre-session suite said).
+- **Question for Michael:** treekey always leaves out .harness/runs, even when CHECK_KEY_IGNORE omits it, and drops '.' entries; entries are literal (:(exclude,literal)), not globs. Keep that, or follow the spec's plain ':!<prefix>' to the letter?
+- **Proposed change:** P0-03 step 2 says lib/driver.sh exports HARNESS_CHECK_KEY_IGNORE; HARNESS_CHECK_CMD is exported by prompt_env in lib/prompt.sh (driver.sh's load_config calls it), so it is exported there.
+- *04-P0-03 · claude-opus-5-5*
+
 ### 2026-10-26 08:15 · P0-02 · not yet
 
 Steps 1-4, 6, 7 hold; step 5 (<150 s) can't be met inside a suite split. Measured: per-file slot times add up to 636 s (547 s CPU), so 4 jobs can't finish under 159 s; the suite ran 335/335 in 165 s. Node startup (30 ms × ~2,200 per big file) is half the CPU. Decision file updated (D2 default: report it as not met); no code changed.
