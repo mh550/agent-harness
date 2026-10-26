@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 11:36 · F1-06 · passes
+
+Opus review of the F1 diff: 4 Important fixed RED→GREEN (request after a stop demoted; a request kept an automatic entry's stale --until-epoch; a phone stop re-stopped every continuation; a | in a reason dropped its debrief card), 2 Minor fixed, 4 Minor left with why. Table in docs/plans/2026-10-26-F1-driver-cli.md § Review; docs and decision files updated.
+
+- **Files:** lib/driver.sh, bin/harness, lib/page.mjs, lib/summary.mjs, tests/run.sh, tests/stub-claude.sh, docs/architecture.md, README.md, docs/plans/2026-10-26-F1-driver-cli.md, journal/decisions/2026-10-26-requested-continuations.md, journal/decisions/2026-10-26-stop-reason.md, journal/decisions/2026-10-26-verify-runs-the-suite.md, +1 more
+- **Verified:** 5 new checks written first, all FAIL on the old code for the intended reason (whylate demoted; rework [A]; INBOX still stop; options kept; page/report/trends via HEAD's lib), then PASS; full suite 354/354 (check: green in 671 s); bash -n on lib/bin/tests shell files and node --check on lib/*.mjs clean; tests/fixtures diff vs main: 5 added files only; each noted line grep -F'd in lib and docs.
+- **Tests:** 349 → 354
+- **Discovery** (affects run): harness continue of a run Michael stopped now sets INBOX.md's first `status: stop …` line back to `status: run` (via $STATE/inbox-unstopped, noted by the driver at start). Before, a phone stop ended every later segment at once.
+- **Discovery** (affects run): A queue request over an existing continuation entry now replaces it with the request's own args; demote_requests only touches entries no newer than STOP (else INBOX.md). New stub flag STUB_CLI_REQUEST=<brief>.
+- **Discovery** (affects run): run_init takes `fresh` (verify uses it): the green marker is cleared after INIT_CMD, just before the suite.
+- **Question for Michael:** D *default*: a request over a queued automatic continuation replaces its options entirely (no --keep-attempts, no --until-epoch unless you pass them), as if nothing had been queued. Keep that, or merge the two?
+- *06-F1-06 · claude-opus-5-5*
+
 ### 2026-10-26 11:02 · F1-05 · passes
 
 R7: `harness stop <run> --why "<text>"` writes the reason into STOP; `status: stop <text>` carries one too. stop_why() in lib/driver.sh (STOP's line first, then INBOX, cut at 200) makes the note, ended, end_reason and the services note `stopped by Michael: <why>`; prompts/retro.md shows {{END_REASON}}. summary.mjs and page.mjs no longer read the reason's words as keywords.
