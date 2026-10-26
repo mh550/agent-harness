@@ -15,6 +15,10 @@ export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/sc
 export HARNESS_SYSTEMD_RUN=$HERE/stub-systemd-run.sh HARNESS_SYSTEMCTL=$HERE/stub-systemctl.sh HARNESS_MEMINFO=$HERE/fixtures/meminfo.txt HARNESS_MEM_POLL=1
 unset HARNESS_SCOPE_PREFIX HARNESS_CHECK_MEMORY_MAX HARNESS_CHECK_TIMEOUT SCOPE_OK   # a session running the suite inherits its own run's
 export XDG_CACHE_HOME=$T/cache   # every run's HARNESS_CACHE ($T/cache/harness/<project>) stays in $T
+# tmux windows get the private server's environment from when it started, not the caller's: a supervisor window's bare
+# `claude` must be the stub (a wrapper, not a symlink: the stub finds its fixtures through dirname $0)
+mkdir -p "$T/bin" && printf '#!/usr/bin/env bash\nexec %q "$@"\n' "$HERE/stub-claude.sh" > "$T/bin/claude" && chmod +x "$T/bin/claude"
+export PATH=$T/bin:$PATH
 fails=0 total=0
 check() { total=$((total + 1)); if eval "$2"; then echo "PASS $1"; else echo "FAIL $1"; fails=$((fails + 1)); fi; }
 hlog() { cat "$T/wt/${2:-proj}/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }   # <run> [<project>]
@@ -1390,6 +1394,31 @@ check "scratch_rm refuses anything but the run's own scratch directory" '! grep 
   && [[ -f $T/guard/marker && -f $T/guard/proj/marker && -f $T/guard/proj/r1/marker && -f $T/guard/proj/x/marker && $(guard "$T/guard/proj/r1") == removed && ! -e $T/guard/proj/r1 && -f $T/guard/proj/marker ]]'
 check "the tmpfiles template holds the 3-day age rule; README has its install command" 'grep -qx "e /tmp/harness - - - 3d" "$HERE/../templates/user/harness-tmpfiles.conf" \
   && grep -qx "x /tmp/harness/\*/live.lock" "$HERE/../templates/user/harness-tmpfiles.conf" && grep -q "user-tmpfiles.d" "$HERE/../README.md" && grep -q "HARNESS_CACHE" "$HERE/../README.md"'
+
+# ---- tmux (L3-03): when the driver exits, its window saves the scrollback, closes the supervisor and, after TMUX_KEEP_HOURS, the session ----
+{ cat "$T/base-config.sh"; echo TMUX_KEEP_HOURS=0; } > "$T/keep0.sh"; { cat "$T/base-config.sh"; echo TMUX_KEEP_HOURS=1; } > "$T/keep1.sh"
+tended() { local i; for i in $(seq 600); do [[ -f $1/ended && ! -f $1/driver.pid ]] && return 0; sleep 0.1; done; return 1; }   # ≤ 60 s; finish writes ended before the retro
+tgone() { local i; for i in $(seq 100); do tmux has-session -t "=$1" 2> /dev/null || return 0; sleep 0.1; done; return 1; }   # ≤ 10 s
+PAST=$(( $(date +%s) - 1 ))   # the tmux runs take no STUB_* flags (they don't reach a window): the initializer, then the deadline
+HARNESS_CONFIG=$T/keep0.sh "$H" start "$T/proj" tmux0 --spec SPEC.md --until-epoch "$PAST" --now > "$T/tmux0.out" 2>&1
+HARNESS_CONFIG=$T/keep0.sh "$H" start "$T/proj" dot.run --spec SPEC.md --until-epoch "$PAST" --now --no-supervisor > "$T/tmuxdot.out" 2>&1
+tdot_s=$(tmux list-sessions -F '#S' 2> /dev/null | grep -x 'h-dot-run')
+HARNESS_CONFIG=$T/keep1.sh "$H" start "$T/proj" tmux1 --spec SPEC.md --until-epoch "$PAST" --now > "$T/tmux1.out" 2>&1
+tmux1_w=$(tmux list-windows -t =h-tmux1 -F '#W' 2> /dev/null | tr '\n' ' ')
+tended "$HARNESS_STATE/proj/tmux0"; tmux0_gone=$(tgone h-tmux0 && echo yes)
+tended "$HARNESS_STATE/proj/dot.run"; tdot_gone=$(tgone h-dot-run && echo yes)
+tended "$HARNESS_STATE/proj/tmux1"
+for i in $(seq 100); do tmux capture-pane -pJ -t =h-tmux1:driver 2> /dev/null | grep -q "self-destructs in 1 h" && break; sleep 0.1; done   # the line comes after the capture and the kill
+tmux1_after=$(tmux list-windows -t =h-tmux1 -F '#W' 2> /dev/null | tr '\n' ' '); tmux1_pane=$(tmux capture-pane -pJ -t =h-tmux1:driver 2> /dev/null)
+tmux send-keys -t =h-tmux1:driver C-c; tmux1_cc=$(tgone h-tmux1 && echo yes)   # a Ctrl-C in the keep window ends the wait, not the cleanup
+tmux kill-session -t =h-tmux1 2> /dev/null   # (if it failed) its keep-1 timer goes with it; the EXIT trap kills the server anyway
+tdrv() { grep -q "deadline reached" "$HARNESS_STATE/proj/$1/tmux-driver.txt" 2> /dev/null; }   # the driver's own output, not a blank pane
+check "tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits" '[[ $tmux0_gone == yes ]] \
+  && grep -q "started tmux session h-tmux0 (windows: driver, log, supervisor)" "$T/tmux0.out" && tdrv tmux0'
+check "tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it" '[[ $tmux1_w == *supervisor* && -n $tmux1_after && $tmux1_after != *supervisor* ]] \
+  && tdrv tmux1 && [[ $tmux1_cc == yes ]] && grep -qF "[driver exited — scrollback saved to $HARNESS_STATE/proj/tmux1/tmux-driver.txt; this session self-destructs in 1 h, or sooner on harness gc]" <<< "$tmux1_pane" \
+  && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ $TMUX_KEEP_HOURS == 24 ]] ) && grep -q "^# TMUX_KEEP_HOURS=24 " "$HERE/../templates/user/config.sh"'
+check "tmux: run id dot.run gets session h-dot-run, gone at keep 0" '[[ $tdot_s == h-dot-run && $tdot_gone == yes ]] && tdrv dot.run'
 
 (( fails )) && { echo "--- run1 output"; tail -30 "$T/run1.out"; echo "--- harness-log"; hlog demo; }
 echo "$(( total - fails ))/$total checks passed"

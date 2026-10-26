@@ -181,15 +181,24 @@ cmd_start() {
   if (( fg )); then eval "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh")"; return; fi
 
   local s; s=$(tmux_name "$run")
-  tmux has-session -t "$s" 2> /dev/null && tmux kill-session -t "$s"   # a finished run's windows (its driver is gone)
-  tmux new-session -d -s "$s" -n driver -c "$wt" "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh"); echo; echo '[driver exited — this window stays open]'; exec bash"
-  tmux new-window -d -t "$s" -n log "touch $(printf %q "$state/run.log"); tail -n 100 -F $(printf %q "$state/run.log")"
+  tmux has-session -t "=$s" 2> /dev/null && tmux kill-session -t "=$s"   # a finished run's windows (its driver is gone)
+  local model=""   # rendered before the session starts: only tmux calls stand between the driver's start and its windows
   if (( supervisor )); then
     HARNESS_RUN_ID=$run HARNESS_STATE=$state HARNESS_WT=$wt HARNESS_BRANCH=$branch HARNESS_PROJECT_DIR=$p \
       node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/supervisor.md" > "$state/supervisor-prompt.md"
-    tmux new-window -d -t "$s" -n supervisor -c "$p" \
-      "claude --model $(printf %q "$(node "$HARNESS_HOME/lib/features.mjs" model "$SUPERVISOR_MODEL")") \"\$(cat $(printf %q "$state/supervisor-prompt.md"))\"; exec bash"
+    model=$(node "$HARNESS_HOME/lib/features.mjs" model "$SUPERVISOR_MODEL")
   fi
+  # when the driver exits: its scrollback to the state dir, the supervisor goes, then the session after the keep window
+  # (whole hours, baked in at start: a resume picks up a change; decisions/2026-10-25-tmux-driver-window). `trap : INT`:
+  # a Ctrl-C in the window ends the driver or the wait, never the cleanup (a handler, not an ignore: the driver keeps INT)
+  local keep=$TMUX_KEEP_HOURS out=$state/tmux-driver.txt after; [[ $keep =~ ^[0-9]{1,4}$ ]] && keep=$(( 10#$keep )) || keep=24
+  after="tmux capture-pane -pJ -S - -t \"\$TMUX_PANE\" > $(printf %q "$out") 2> /dev/null; tmux kill-window -t $(printf %q "=$s:supervisor") 2> /dev/null; echo"
+  after+="; echo '[driver exited — scrollback saved to '$(printf %q "$out")'; this session self-destructs in $keep h, or sooner on harness gc]'"   # %q on the path only: a C locale's %q makes the dash $'…', bash-only
+  after+="; sleep $(( keep * 3600 )); tmux kill-session -t $(printf %q "=$s")"
+  tmux new-session -d -s "$s" -n driver -c "$wt" "trap : INT; env $env $(printf %q "$HARNESS_HOME/lib/driver.sh"); $after"
+  tmux new-window -d -t "=$s:" -n log "touch $(printf %q "$state/run.log"); tail -n 100 -F $(printf %q "$state/run.log")"
+  (( supervisor )) && tmux new-window -d -t "=$s:" -n supervisor -c "$p" \
+    "claude --model $(printf %q "$model") \"\$(cat $(printf %q "$state/supervisor-prompt.md"))\"; exec bash"
   echo "started tmux session $s (windows: driver, log$( (( supervisor )) && echo ', supervisor'))"
   echo "  watch:   harness attach $run      (Ctrl-b n = next window, Ctrl-b d = detach)"
   echo "  status:  harness status $run      steer from the phone: $branch → .harness/runs/$run/INBOX.md"

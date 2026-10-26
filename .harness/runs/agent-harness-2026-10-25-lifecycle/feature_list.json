@@ -191,7 +191,7 @@
         "journal/decisions/2026-10-25-tmux-driver-window.md exists (finding: exec bash forever; choice: 24 h keep; rejected: counting supervisors against MAX_PARALLEL_RUNS); docs/architecture.md §3 (harness start) and §10 (TMUX_KEEP_HOURS) updated",
         "bash -n bin/harness; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L3-04", "milestone": "L3", "kind": "build", "model": "opus",
       "description": "harness gc reaps the tmux sessions of ended, dead-driver, unpaused runs of its project and the queue runner does the same across projects before the debrief, through one shared helper that never touches h-queue, the desk or a live run.",
       "steps": [

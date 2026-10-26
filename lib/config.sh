@@ -14,6 +14,7 @@ harness_config() {
   SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G   # each session's scope (lib/scope.sh): throttle, kill, swap
   CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m   # each check.sh run's scope (no MemoryHigh: a runaway test dies, not crawls) and its timeout -k 30s
   INIT_TIMEOUT=10m SVC_MEMORY_MAX=3G   # run_init: timeout -k 10s around the init's foreground; its services scope's MemoryMax
+  TMUX_KEEP_HOURS=24   # a tmux-started run's session stays this many whole hours after its driver exits (0: closes at once)
   KEEP_SCRATCH=0   # 1: finish keeps the run's scratch directory (debugging); 0: it goes, check-last.out and init.out kept in the state dir
   TEARDOWN_CMD=""   # services_down runs it before stopping the services scope (empty: .harness/teardown.sh when executable)
   SVC_IDLE_STOP_MIN=10   # limit_wait stops the services before a usage-limit wait of more than this many minutes
