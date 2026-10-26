@@ -9,6 +9,16 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-26 16:24 · P0-02 · passes
+
+Runner code was already in place; under the new rule (a time is measured and recorded, not a gate) I measured it and wrote it down. TEST_JOBS=4: 207 s wall, 392/392, slowest file 156 s, floor 203 s (811 s of slot time / 4), peak 254 MB. TEST_JOBS=1: 758 s. Same per-file counts and PASS names at 1 and 4 jobs. Decision file, CLAUDE.md, README and architecture updated.
+
+- **Files:** journal/decisions/2026-10-26-suite-split.md, CLAUDE.md, README.md, docs/architecture.md
+- **Verified:** TEST_JOBS=4 bash tests/run.sh in a 3G user scope: rc 0, 392/392, wall 207 s, memory.peak 266801152 B; TEST_JOBS=1: 392/392, 758 s, per-file counts and C-sorted PASS names cmp-equal; bash -n on run.sh, lib.sh and every tests/checks/*.sh; lib/check.sh green in 205 s (392/392)
+- **Tests:** 392 → 392
+- **Discovery** (affects run): The suite is now work-bound, not chain-bound: the 4-job floor (811 s / 4 = 203 s) is above the slowest file (156 s), so reordering files gains nothing. Only cutting CPU (fewer node starts in the driver) would make it shorter. Four jobs' contention adds about 56 s of slot time over TEST_JOBS=1's 755 s.
+- *01-P0-02 · claude-opus-5-5*
+
 ### 2026-10-26 08:30 · P0-03 · passes
 
 CHECK_KEY_IGNORE (default .harness/runs docs/plans; this repo adds docs/specs journal findings-and-research ledger) leaves literal path prefixes out of treekey's key; prompt_env exports it; check.sh's cached line names a non-default list. New tests/checks/29-check-key.sh (7 checks, 2 stub runs via STUB_EDIT). 335 → 342 green in 168 s.
