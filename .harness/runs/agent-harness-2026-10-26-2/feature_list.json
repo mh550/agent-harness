@@ -64,7 +64,7 @@
         "journal/decisions/2026-10-26-requested-continuations.md and journal/decisions/2026-10-26-queue-numbering-and-park.md exist (finding · choice · rejected); docs/architecture.md §12 and README.md's queue lines say requested vs automatic continuations and the park refusal",
         "`bash -n bin/harness lib/driver.sh` passes; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F1-05",

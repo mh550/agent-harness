@@ -8,7 +8,9 @@
 #   harness continue <run-id> [--brief …] [--until HH:MM] [--now]
 #                               resume a run with fresh attempts for every feature that isn't passing
 #   harness queue [list]                         what is queued, running and done
-#   harness queue add <project> [<run-id>] [start options] | add --continue <run-id> [options]
+#   harness queue add <project> [<run-id>] [start options] | add --continue <run-id> [--automatic] [options]
+#                                                a continuation queued here is a request (--requested: it starts even
+#                                                after a stop); --automatic (the driver's, the debrief's) is skipped then
 #   harness queue rm <n> | clear | start [--until HH:MM] | stop
 #   harness queue park <n> [<why>] | unpark <n> set an entry aside (listed with its reason, skipped) · back at the end
 #   harness sync                                 the live checkout level with origin: pull merged PRs, push ledger
@@ -105,11 +107,16 @@ auto_id() {   # project → <project>-<date>[-n], not used before
   echo "$id"
 }
 
-queue_add() {   # verb args… → a queue entry (one argument per line)
-  mkdir -p "$Q/done"
-  local n; n=$(( $(ls "$Q" | sed -n 's/^\([0-9]\{4\}\)-.*\.args$/\1/p' | sort -n | tail -1 | sed 's/^0*//' || true) + 1 ))
+queue_add() {   # verb args… → a queue entry (one argument per line), numbered past the parked ones too
+  mkdir -p "$Q/done" "$Q/held"
+  local n; n=$(( $(ls "$Q" "$Q/held" | sed -n 's/^\([0-9]\{4\}\)-.*\.args$/\1/p' | sort -n | tail -1 | sed 's/^0*//' || true) + 1 ))
   local f; f=$Q/$(printf '%04d' "$n")-$1-${2##*/}.args
   printf '%s\n' "$@" > "$f"; echo "$f"
+}
+
+entry_kind() {   # a queue entry → " (requested)" / " (automatic)" for a continuation, nothing for a start
+  [[ $(head -1 "$1") == continue ]] || return 0
+  grep -qx -- --requested "$1" && echo " (requested)" || echo " (automatic)"
 }
 
 queue_ensure_runner() {
@@ -209,12 +216,13 @@ cmd_start() {
   echo "  status:  harness status $run      steer from the phone: $branch → .harness/runs/$run/INBOX.md"
 }
 
-cmd_continue() {   # run-id [--keep-attempts] [--queued] [start options]
-  local run=${1:?usage: harness continue <run-id> [options]} st keep=0 queued=0 rest=(); shift
-  while (( $# )); do case $1 in --keep-attempts) keep=1 ;; --queued) queued=1 ;; *) rest+=("$1") ;; esac; shift; done
+cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start options]
+  local run=${1:?usage: harness continue <run-id> [options]} st keep=0 queued=0 requested=0 rest=(); shift
+  while (( $# )); do case $1 in --keep-attempts) keep=1 ;; --queued) queued=1 ;; --requested) requested=1 ;; *) rest+=("$1") ;; esac; shift; done
   st=$(state_of "$run")
   alive "$st" && die "$run is running; continue it after it ends (or harness stop $run)"
-  if (( queued )) && grep -qs '^stopped by Michael' "$st/ended"; then echo "skipping queued continuation of $run: Michael stopped it"; return 0; fi
+  # an automatic continuation never undoes Michael's stop; one queued by request does (decisions/2026-10-26-requested-continuations)
+  if (( queued && ! requested )) && grep -qs '^stopped by Michael' "$st/ended"; then echo "skipping queued continuation of $run: Michael stopped it"; return 0; fi
   # shellcheck source=/dev/null
   ( source "$st/meta.env"
     # a continuation you start gives every feature that isn't passing fresh attempts; an automatic one doesn't
@@ -286,18 +294,21 @@ cmd_queue() {
     list)
       local f n=0
       echo "queue ($( runner_up && echo "runner going" || echo "runner not running: harness queue start"); MAX_PARALLEL_RUNS=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")):"
-      for f in "$Q"/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g")"; done
+      for f in "$Q"/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g")$(entry_kind "$f")"; done
       (( n )) || echo "  (empty)"
       n=0   # parked entries are listed, never silent: a parked run nobody remembers is a run that never happens
       for f in "$Q"/held/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); (( n == 1 )) && echo "parked (the runner skips these; harness queue unpark <n>):"
-        echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g" | cut -c1-200)"; echo "     why: $(cat "${f%.args}.why" 2> /dev/null || echo "no reason recorded")"; done
+        echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g" | cut -c1-200)$(entry_kind "$f")"; echo "     why: $(cat "${f%.args}.why" 2> /dev/null || echo "no reason recorded")"; done
       echo "running:$(for d in "$STATE_ROOT"/*/*/; do alive "$d" && basename "$d"; done | paste -sd' ' -)"
       if [[ -f $Q/runner.log ]]; then echo "recent:"; tail -n 5 "$Q/runner.log" | sed 's/^/  /'; fi ;;
     add)
       if [[ ${1:-} == --continue ]]; then
         local run=${2:?usage: harness queue add --continue <run-id>}; shift 2; state_of "$run" > /dev/null
-        compgen -G "$Q/*-continue-$run.args" > /dev/null && { echo "already queued: continue $run"; return; }
-        echo "queued: $(basename "$(queue_add continue "$run" --queued "$@")")"
+        local mark=(--requested) o=() a; for a in "$@"; do [[ $a == --automatic ]] && mark=() || o+=("$a"); done
+        local q; q=$(compgen -G "$Q/*-continue-$run.args" | head -1) && {   # a request makes an automatic one requested
+          if (( ${#mark[@]} )) && ! grep -qx -- --requested "$q"; then sed -i 's/^--queued$/&\n--requested/' "$q"; echo "already queued: continue $run (now requested)"
+          else echo "already queued: continue $run"; fi; return; }
+        echo "queued: $(basename "$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"})")"
       else
         local p; p=$(toplevel "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
         echo "queued: $(basename "$(queue_add start "$p" "$@")")"
@@ -305,6 +316,7 @@ cmd_queue() {
     rm) local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue rm <n>}p"); [[ -n $f ]] || die "no entry $1"; rm "$f"; echo "removed $(basename "$f")" ;;
     park)
       local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue park <n> [<why>]}p"); [[ -n $f ]] || die "no entry $1"; shift
+      [[ -e $Q/held/$(basename "$f") ]] && die "$(basename "$f") already parked (harness queue unpark it or rm queue/held/$(basename "$f"))"
       mkdir -p "$Q/held"; mv "$f" "$Q/held/"
       echo "${*:-no reason given} ($(date '+%F %H:%M'))" > "$Q/held/$(basename "$f" .args).why"
       echo "parked $(basename "$f"): the runner skips it until harness queue unpark" ;;

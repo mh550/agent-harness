@@ -169,6 +169,13 @@ control() {   # → run | pause | stop
   else echo run; fi
 }
 
+demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
+  local f; for f in "$STATE_ROOT"/queue/*-continue-"$RUN_ID".args "$STATE_ROOT"/queue/held/*-continue-"$RUN_ID".args; do
+    [[ -f $f ]] && grep -qx -- --requested "$f" || continue
+    sed -i '/^--requested$/d' "$f" && note "stop: the queued continuation ${f##*/} is automatic now (the stop came after the request)"
+  done
+}
+
 # One usage limit covers every run on the box: wait until the window that refused a session (any run's) is over.
 limit_wait() {
   local upto now w; upto=$(cat "$LIMIT_FILE" 2>/dev/null || echo 0); now=$(date +%s)
@@ -523,8 +530,8 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
   if [[ -n $left && $AUTO_CONTINUE == 1 && $1 == session\ cap* ]] && (( conts < ${AUTO_CONTINUE_MAX:-3} )) \
      && (( DEADLINE_AT == 0 || $(date +%s) < DEADLINE_AT - 600 )); then
     echo $(( conts + 1 )) > "$STATE/auto-continues"
-    "$HARNESS_HOME/bin/harness" queue add --continue "$RUN_ID" --keep-attempts $( (( DEADLINE_AT )) && echo "--until-epoch $DEADLINE_AT") > /dev/null 2>&1 \
-      && note "continuation queued ($(( conts + 1 )) of ${AUTO_CONTINUE_MAX:-3}; it starts when the queue runs)"
+    "$HARNESS_HOME/bin/harness" queue add --continue "$RUN_ID" --automatic --keep-attempts $( (( DEADLINE_AT )) && echo "--until-epoch $DEADLINE_AT") > /dev/null 2>&1 \
+      && note "continuation queued ($(( conts + 1 )) of ${AUTO_CONTINUE_MAX:-3}, automatic; it starts when the queue runs)"
   fi
   # a note after the last commit (the continuation): commit it too, or the worktree stays dirty and gc skips it
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: run end notes"; sync; }
@@ -651,6 +658,7 @@ while :; do
     done
     log "resumed"; continue
   fi
+  [[ $c == stop ]] && demote_requests
   [[ $c == stop ]] && { note "stopped by Michael"; finish "stopped by Michael"; }
   limit_wait
   (( $(date +%s) >= DEADLINE )) && continue

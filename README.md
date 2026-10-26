@@ -30,7 +30,7 @@ never runs two runs of one project at once, so a second entry for a busy repo wa
 ```bash
 harness queue add ~/projects/pathways --spec OVERNIGHT.md --brief "T5, T7, then T6"
 harness queue add ~/projects/hit_list --spec docs/next.md
-harness queue add --continue dj-2026-10-17
+harness queue add --continue dj-2026-10-17   # a request: it starts even if you stopped the run (a stop after it wins)
 harness queue start --until 07:30        # tmux h-queue; no run starts after 07:30, and each one stops by then
 ```
 
@@ -43,8 +43,8 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | Command | What |
 |---|---|
 | `harness start` · `continue` · `merge` · `stop` · `pause` · `resume` · `answer` | one run |
-| `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue |
-| `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end |
+| `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue (`list` marks each continuation `(requested)`, yours, or `(automatic)`, the driver's or the debrief's: an automatic one is skipped for a run you stopped) |
+| `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end; new entries are numbered past parked ones, and a park never overwrites one of the same name |
 | `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
 | `harness status` · `report` · `trends [--by version]` · `attach` | look (`status`: under a running run, each of its systemd units with its `MemoryCurrent`; `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
@@ -171,7 +171,7 @@ note: a headline (what landed on main, what's blocked, spend against the usage w
 Michael**, draft answers the project's docs support (it never writes to INBOX.md), and **For the next interactive
 session** (merge conflicts, retro proposals seen in two or more retros). It can ask for a continuation of a run that
 ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harness checks it and queues it with
-`--keep-attempts`; nothing starts.
+`--automatic --keep-attempts` (an automatic continuation: skipped if you stop the run first); nothing starts.
 
 - **The page**: `ledger/debrief.html` beside the note: a card per run (passing, verified, merged, milestones,
   spend, tests, what isn't done and why), built by `lib/page.mjs` from each run's `summary.json`, not by the model,

@@ -256,8 +256,8 @@ A run ends partial for one of three reasons, and each has one answer:
 
 | Why it's partial | What's already done | What the harness does | What you do |
 |---|---|---|---|
-| Out of sessions | verified milestones are already **in main** | queues a continuation (same branch, main merged in first; given-up features stay given up) | nothing, if a queue runner is going; else `harness queue start` |
-| Out of time, or the plan refused 6 sessions in a row | same | nothing automatic | `harness continue <run>` or `harness queue add --continue <run>` |
+| Out of sessions | verified milestones are already **in main** | queues an automatic continuation (same branch, main merged in first; given-up features stay given up) | nothing, if a queue runner is going; else `harness queue start` |
+| Out of time, or the plan refused 6 sessions in a row | same | nothing automatic | `harness continue <run>` or `harness queue add --continue <run>` (a request: it starts even after a stop) |
 | Blocked: a feature was given up | same | ends with "blocked on X" and notifies; nothing is queued | read X's last progress entry; answer in INBOX.md or give a `--brief`; `harness continue <run>` |
 | Verify failed twice, or a merge was refused/conflicted | verified milestones before it are in main | "needs Michael" note + notification; later milestones wait | fix or answer; `harness continue` (or `harness merge` once a refused merge is fixed) |
 
@@ -367,7 +367,13 @@ dj-crate-streaming's live protocols, rane-one-mixxx's hardware); the others have
 
 `MAX_PARALLEL_RUNS` (user config, default 1) bounds live drivers. `harness start` beyond it **queues** the run (its
 id is chosen when it starts) and ensures the runner (tmux `h-queue`); `--now` bypasses. A queued continuation is
-skipped if you stopped the run; `harness continue` refuses a run whose driver is alive. `harness queue add …` queues without starting;
+**requested** or **automatic**: `harness queue add --continue <run>` (Michael, the desk) writes `--queued --requested`,
+and starts even a run Michael stopped; the driver's after a session cap and the debrief's pass `--automatic` and write
+`--queued` alone, which `harness continue` skips for a run whose `ended` starts with `stopped by Michael` (`skipping
+queued continuation of <run>: Michael stopped it` in `runner.log`). `harness queue list` ends each continuation
+`(requested)` or `(automatic)`, parked ones too. A request for a run whose automatic continuation is queued turns that
+entry requested; a stop the driver honours turns its run's queued requests automatic and notes it (`stop: the queued
+continuation <entry> is automatic now …`): the later word wins (decisions/2026-10-26-requested-continuations). `harness continue` refuses a run whose driver is alive. `harness queue add …` queues without starting;
 `harness queue start --until 07:30` runs the queue and gives every run it starts that deadline. The runner never
 starts a run while `LIMIT_UNTIL` is in the future, and starts **one run per project at a time**: an entry whose
 project has a live driver is held in its place (logged once, `holding <entry> (<project>)`) and the next entry for a
@@ -386,7 +392,9 @@ or on `harness queue stop`; whichever, if it started at least one run (marked in
 
 **Parked entries** (`harness queue park <n> [<why>]`) move to `queue/held/` with a `.why` file: the runner skips them
 and says how many at start-up, `harness queue list` shows each with its reason, and `unpark <n>` puts one back at the
-end of the queue, renumbered.
+end of the queue, renumbered. New entries are numbered past the parked ones too, and a park whose name is already in
+`held/` is refused (`harness: <name> already parked (…)`, exit 1; both files stay) rather than overwrite it
+(decisions/2026-10-26-queue-numbering-and-park).
 
 **Live sync** (`lib/sync.sh`, `LIVE_SYNC=1`): before each start with **no driver alive**, the runner levels the
 checkout that holds the ledger (the live harness) with origin: it fetches, rebases the driver's unpushed ledger
@@ -472,7 +480,7 @@ harness debrief [--dry-run]:
   refused by a usage limit → LIMIT_UNTIL updated; died at startup, not "success", no text → failed (no window):
      exit 1, one notification line, last-debrief untouched: the next one covers these runs
   git status + refs of the ledger, worktrees and projects: before vs after → a warning section in the note
-  "CONTINUE: <run> :: <brief>" lines → checked → harness queue add --continue <run> --keep-attempts --brief "Suggested by
+  "CONTINUE: <run> :: <brief>" lines → checked → harness queue add --continue <run> --automatic --keep-attempts --brief "Suggested by
      the debrief …" (or "Not queued: why")
   ─► ledger/debrief.md (overwritten) · last-debrief · ledger/debrief.html (lib/page.mjs: a card per run from its
      summary.json and how it stands now, then the note, escaped; committed with the note) · notify (title `harness debrief`, high when Needs Michael has anything): 3 lines + the
