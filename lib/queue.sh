@@ -5,7 +5,8 @@
 # run is held (it keeps its place) and the next entry for a free project goes first. Exits when the queue is empty and nothing it started is still running,
 # when it is past --until with nothing running, on `harness queue stop`, or when the plan's 7-day window is past
 # WEEKLY_STOP_AT (as the newest session reported it; what is queued stays queued). Every run it starts is marked with its id
-# (<state>/runners, by `harness start`). Whichever way it exits, if it started a run it starts `harness debrief`
+# (<state>/runners, by `harness start`). Whichever way it exits, if it started a run it runs `harness gc <project>
+# --all-merged --deps` for each project it started one in (output in runner.log), then starts `harness debrief`
 # detached (setsid: a new runner replacing tmux h-queue doesn't kill it). The debrief covers every run since the last
 # successful one, so a debrief that fails or is killed is caught up by the next one (or `harness debrief` by hand).
 # Before each start with no run alive it runs lib/sync.sh (the live checkout level with origin, ledger pushed). Entries
@@ -69,6 +70,14 @@ rm -f "$Q/runner.pid"; trap - EXIT
 while IFS= read -r l; do log "$l"; done < <(tmux_reap 0 "$STATE_ROOT"/*/*/)
 started=$(grep -lsx -- "$RID" "$STATE_ROOT"/*/*/runners | wc -l)
 if (( started )); then
+  # collect as it drains: each project it started a run in, before the debrief reads what is left; a gc that fails is
+  # said and the debrief starts anyway. Nobody watches it: no git prompt, and a hang ends at HARNESS_GC_TIMEOUT (10m;
+  # timeout kills the whole group, git's children too) (decisions/2026-10-25-runner-gc)
+  while IFS= read -r pd; do
+    nm=$(basename "$pd"); log "gc $nm: harness gc $pd --all-merged --deps"
+    GIT_TERMINAL_PROMPT=0 timeout -k 10s "${HARNESS_GC_TIMEOUT:-10m}" "$H" gc "$pd" --all-merged --deps 2>&1 < /dev/null | while IFS= read -r l; do log "gc $nm: $l"; done
+    rc=${PIPESTATUS[0]}; (( rc )) && log "gc $nm failed (exit $rc)"
+  done < <(for f in $(grep -lsx -- "$RID" "$STATE_ROOT"/*/*/runners); do (unset PROJECT_DIR; source "$(dirname "$f")/meta.env" && echo "$PROJECT_DIR") 2> /dev/null; done | grep . | sort -u)
   log "runner down after starting $started run(s): harness debrief (detached; output in queue/debrief.out)"
   setsid -f "$H" debrief >> "$Q/debrief.out" 2>&1 < /dev/null
 fi

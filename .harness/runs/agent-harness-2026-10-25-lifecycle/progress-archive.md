@@ -9,6 +9,105 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 02:08 · verify L4 · passes
+
+All five L4 features hold: check.sh green (322 checks, 0 FAIL), bash -n clean, named checks read and match each step, docs/decisions/plan present.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L4-01 | 1 | ls docs/plans; wc -l | L4-gc.md, 65 lines | yes |
+| L4-01 | 2 | grep for-each-ref bin/harness | per-prefix refs/heads/ and refs/remotes/origin/ loop, no * pattern, lstrip | yes |
+| L4-01 | 3 | read tests/run.sh:803 check | spec/x docs/y harness/z harness-merge/w flat deleted both places; spec/u survives | yes |
+| L4-01 | 4 | read tests/run.sh:795 check | plain gc deletes only harness/z, harness-merge/w; others survive | yes |
+| L4-01 | 5 | ls journal/decisions; grep | gc-all-merged.md has finding/choice/rejected | yes |
+| L4-01 | 6 | bash -n bin/harness; check.sh | syntax ok; suite green, 0 FAIL | yes |
+| L4-02 | 1 | read bin/harness gc loop via architecture §3 and tests | remove --force, prune, rm -rf only when unlisted; ! could not remove line | yes |
+| L4-02 | 2 | read tests/run.sh:817 | gcw-a (.next) and gcw-b removed with + lines | yes |
+| L4-02 | 3 | read tests/run.sh:821 check | read-only parent prints ! could not remove, gcw-d still removed, dry-run 4 would lines | yes |
+| L4-02 | 4 | ls decisions | gc-removal-finishes.md present | yes |
+| L4-02 | 5 | check.sh | green | yes |
+| L4-03 | 1 | grep DEPS_DIRS lib/config.sh templates | default set, template commented; --deps in gc | yes |
+| L4-03 | 2 | read tests/run.sh:864,868 | ended run emptied, live/checkout kept, dry-run would: freed | yes |
+| L4-03 | 3 | read tests/run.sh:870 | queued continuation keeps dirs | yes |
+| L4-03 | 4 | ls decisions | gc-deps.md present | yes |
+| L4-03 | 5 | grep architecture/README | §3 and README gc row list --deps, DEPS_DIRS; suite green | yes |
+| L4-04 | 1 | read lib/queue.sh:73-79; bash -n | per-project gc --all-merged --deps with gc <name>: prefix, failure logged, before debrief | yes |
+| L4-04 | 2 | read tests/run.sh:980 | gc line precedes harness debrief line, argv matches | yes |
+| L4-04 | 3 | read tests/run.sh:1016 | failed/hung gc logged, debrief still starts | yes |
+| L4-04 | 4 | ls decisions; grep docs | runner-gc.md present; docs mention runner gc | yes |
+| L4-04 | 5 | check.sh | green | yes |
+| L4-05 | 1 | ls docs/plans | L4-review.md with severities (Critical/Important) | yes |
+| L4-05 | 2 | read tests/run.sh:839-845 | checks for non-run worktree, locked, untracked-hidden, default branch/live branch | yes |
+| L4-05 | 3 | grep architecture §3/§10, README, retro-fixes R9 | all current; R9 says Landed | yes |
+| L4-05 | 4 | grep finding/choice/rejected in 5 decision files; bash -n | 3 each; syntax ok | yes |
+| L4-05 | 5 | lib/check.sh | green (cached for this tree), 0 FAIL | yes |
+
+- *020716-verify-L4 · claude-sonnet-5-5*
+
+### 2026-10-26 01:58 · L4-05 · passes
+
+Opus review of the L4 diff: 3 Critical, 4 Important fixed RED→GREEN. gc now removes only harness/<run> worktrees, never rm -rfs one git refused (locked), sees hidden untracked files, survives a gone dir or du error, keeps main/origin's default/running branches; runner gc has a timeout and no git prompt. Prefix loop simplified, L4 docs done. 316→322 checks.
+
+- **Files:** bin/harness, lib/queue.sh, tests/run.sh, docs/plans/2026-10-25-L4-review.md, journal/decisions/2026-10-26-gc-unattended-guards.md, journal/decisions/2026-10-25-gc-removal-finishes.md, journal/decisions/2026-10-25-gc-all-merged.md, journal/decisions/2026-10-25-runner-gc.md, docs/architecture.md, README.md, docs/specs/2026-10-21-retro-fixes.md
+- **Verified:** check.sh: 322/322 (green in 548 s). RED first: 316/317 then 5 new FAILs; the untracked-file and default/live-branch checks passed vacuously in the suite (gc died at the gone dir first), so scratch repro.sh ran old bin/harness (git archive HEAD) vs new: old deleted the hidden untracked file, local trunk and origin harness/live, new kept all. bash -n on bin/harness, lib/queue.sh, tests/run.sh.
+- **Tests:** 316 → 322
+- **Dead end:** printing git's last stderr line in '! could not remove' — for a locked tree it is 'use remove -f -f … or unlock first', not the cause; the first line is
+- **Discovery** (affects run): The full suite takes ~9-10 min under load now (548 s): a Bash background waiter needs a timeout over 600 s or it is killed.
+- **Discovery** (affects L5, run): gc's worktree loop now only removes harness/<run> worktrees; a merged clean one on another branch prints 'keeps <wt>: not a run worktree (branch <b>)'. The local branch pass skips branches checked out in any worktree (no more 'cannot delete branch … used by worktree' noise).
+- **Discovery** (affects L5, run): HARNESS_GC_TIMEOUT (env, default 10m) bounds the runner's gc; the suite's runner-gc failure check uses 2s with a fetch that sleeps 60.
+- **Question for Michael:** Should a project be able to name branches gc never deletes (GC_KEEP_BRANCHES, e.g. 'production release/*')? Default taken: no setting; main and the origin's default branch are kept, every other branch merged into origin/main goes under the runner's nightly --all-merged.
+- *24-L4-05 · claude-opus-5-5*
+
+### 2026-10-26 01:05 · L4-04 · passes
+
+lib/queue.sh: as it exits having started runs, runs `harness gc <dir> --all-merged --deps` once per distinct PROJECT_DIR of its runs, lines `gc <name>: …` in runner.log before the debrief line; a non-zero exit logs `gc <name> failed (exit <n>)` and the debrief still starts. Two checks; docs, README, decision file.
+
+- **Files:** lib/queue.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-runner-gc.md
+- **Verified:** tests: 314 → 316, red first (only the two new checks failed), then 316/316 via lib/check.sh (green in 541 s); runner.log in a KEEP=1 run showed the gc line, its removals and branch deletes before 'harness debrief (detached'; the gcfail runner logged 'gc proj failed (exit 1)' and the debrief count rose by one; bash -n lib/queue.sh tests/run.sh
+- **Tests:** 314 → 316
+- **Dead end:** letting the suite's runners gc proj as is — they removed stoppy, demo, walled and other merged fixture worktrees that later debrief and desk checks read (5 FAILs): tests/run.sh now keeps them dirty with an untracked marker (keep_wts/unkeep_wts) around the three runners that start runs
+- **Discovery** (affects L4-05, L5, run): Every queue runner in tests/run.sh that starts a run now gcs $T/proj: a new runner test that starts runs must wrap itself in keep_wts … settle; unkeep_wts if later checks read existing worktrees. The queue's own runs' worktrees are gone afterwards; their records are read from $T/ledger/proj/<run>/.
+- **Discovery** (affects L4-05, run): A meta.env without PROJECT_DIR inherits the caller's PROJECT_DIR when sourced (sessions export one): queue.sh unsets it before sourcing. debrief.sh rec_dir and other `source meta.env` sites may have the same leak.
+- **Discovery** (affects run): The 'queue holds an entry whose project has a live run' flake: busy3 now sleeps 5 and the runner's --until is +3 s (was 3 and +1), so a slow runner start-up no longer misses starting stoppy-o.
+- *23-L4-04 · claude-opus-5-5*
+
+### 2026-10-26 00:14 · L4-03 · passes
+
+harness gc --deps deletes DEPS_DIRS (default node_modules .next .next-check .venv) in worktrees of ended runs, merged or not: meta.env WT= must name the worktree; no live driver, queued continuation or open desk; never the checkout, a symlink, a path out of the tree or tracked files. Prints '+ freed <n> MB in <wt>: <dirs>' / 'would: freed'. 3 checks; decision, README, architecture §3/§10.
+
+- **Files:** bin/harness, lib/config.sh, templates/user/config.sh, tests/run.sh, journal/decisions/2026-10-25-gc-deps.md, docs/architecture.md, README.md
+- **Verified:** RED first: 312/314 (two new --deps checks failed on 'unknown option'); then lib/check.sh green, 314/314. KEEP=1 run: gcd1/gcd2 output read by hand (one freed line, deps-end only).
+- **Tests:** 311 → 314
+- **Dead end:** the queued-continuation check as `! grep -q deps-q` — the branch pass prints '! failed: branch -d harness/deps-q' (merged branch checked out in a worktree); narrowed to the freed line
+- **Discovery** (affects L4-05, L4-04): cmd_gc's branch passes try `branch -d` on merged branches checked out in a worktree (a live or queued run's, a dirty one gc kept): git refuses, gc prints 'error: cannot delete branch … used by worktree' and '! failed: …'. Harmless but noisy; the passes could skip branches `running` or listed in `git worktree list`.
+- **Discovery** (affects L4-04, L4-05): --deps runs after the worktree removal loop and reads DEPS_DIRS via harness_config "$p" in a subshell (user config, then the checkout's .harness/config.sh). tests/run.sh has gd_run <run> [<wt>] (state dir with ended + meta.env, worktree on harness/<run> at origin/main, node_modules/x.js).
+- *22-L4-03 · claude-opus-5-5*
+
+### 2026-10-25 23:27 · L4-02 · passes
+
+gc removes a clean, merged worktree with `worktree remove --force`, then `rm -rf` if it stays, then `worktree prune`; a failure prints `! could not remove <wt>: <why>` and the loop goes on; --dry-run prints `would: … --force` for each. Two new checks (watched red first); the loop never touches the project's own checkout. 309 → 311 checks.
+
+- **Files:** bin/harness, tests/run.sh, journal/decisions/2026-10-25-gc-removal-finishes.md, docs/architecture.md, README.md
+- **Verified:** bash tests/run.sh before the fix: 309/311 (both new checks FAIL); after: 311/311 via lib/check.sh (green in 526 s); bash -n bin/harness and tests/run.sh
+- **Tests:** 309 → 311
+- **Discovery** (affects L4-03, L4-05): A worktree whose parent is read-only: `git worktree remove --force` empties it, removes its .git file and fails with `error: failed to delete '<wt>': Permission denied`; rm -rf then fails too; after `worktree prune` git no longer lists it, so the branch pass can still delete its branch. gc's worktree loop now skips the project checkout ($wt == $p) explicitly, since rm -rf follows a failed remove.
+- **Discovery** (affects L4-03): tests/run.sh has gw_add/gw_listed helpers and $T/proj/.git/info/exclude now lists .next/ (L4-02 block after the L4-01 branch checks); the gcw-* worktrees and branches are cleaned up after.
+- *21-L4-02 · claude-opus-5-5*
+
+### 2026-10-25 22:58 · L4-01 · passes
+
+gc --all-merged now lists branches by prefix (refs/heads/, refs/remotes/origin/; plain gc harness/ and harness-merge/) and runs every pass, deleting merged spec/x, docs/y, flat etc. A second bug found by the check: a refused `branch -d` (no upstream, HEAD behind origin/main) ended gc under set -e; act now prints `! failed: <argv>` and gc goes on. L4 plan written.
+
+- **Files:** bin/harness, tests/run.sh, docs/plans/2026-10-25-L4-gc.md, journal/decisions/2026-10-25-gc-all-merged.md, docs/architecture.md, README.md
+- **Verified:** RED first: 306/308 (both new checks failed: --all-merged deleted only flat; plain gc died on harness/z's refused -d). GREEN: bash tests/run.sh 309/309 and lib/check.sh 309/309; bash -n bin/harness tests/run.sh; scratch repro in the scratch dir shows dry-run prints each would: once.
+- **Tests:** 306 → 309
+- **Dead end:** fixture branches pushed without -u — branch -d measures against upstream or HEAD; the suite's $T/proj main is behind origin/main, so -d refused every fixture branch
+- **Discovery** (affects L4-02): git 2.43 here: `git worktree remove` (no --force) removes a clean worktree whose only extra files are ignored (.next/ via .gitignore or info/exclude). R9's refusal had another cause (an undeletable file, or the loop dying under set -e); the fallback chain is the fix. `git worktree list` sorts worktrees by path (main first), so fixtures can fix the order by name.
+- **Discovery** (affects L4-02, L4-03, L4-05): cmd_gc's act no longer exits non-zero on a failed command: it prints `! failed: <argv>` and returns 0, so `act git worktree remove` failures no longer end gc either (L4-02 replaces that call with its own fallback and `! could not remove` line). $T/proj's local main is behind origin/main in the suite, so `branch -d` of a branch with no upstream is refused there.
+- **Discovery** (affects L4-04): Plan fixes L4-04's failure fixture: a `git` wrapper first on PATH for one runner that fails `-C <dir> fetch -q --prune origin` (only gc runs that argv); no STUB_GC_FAIL in production code.
+- **Question for Michael:** D1 default (decisions/2026-10-25-gc-all-merged): gc keeps `branch -d`, so a merged branch with no upstream in a checkout whose main is behind origin/main stays locally (`! failed:` line; its origin copy goes). Would you rather gc delete it with `git update-ref -d refs/heads/<b> <sha>` after its origin/main check (as safe, never refused)?
+- *20-L4-01 · claude-opus-5-5*
+
 ### 2026-10-25 22:19 · verify L3 · passes
 
 L3-01..05 hold: suite re-run 306/306, syntax checks clean, each named check PASS, docs/plan/template/decisions read against the steps.

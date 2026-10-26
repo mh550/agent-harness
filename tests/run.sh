@@ -780,6 +780,105 @@ check "harness gc stops the units of this project's runs with no live driver; --
   && ! grep -q harness-c-d-svc "$T/gcu1.out" "$T/gcu2.out" && ( for u in harness-demo-x-svc harness-gclive-svc harness-nosuch-svc harness-oth-svc harness-c-d-svc; do [[ " $GCL " == *" $u.scope "* ]] || exit 1; done )'
 kill "$GL1" "$GL2" "$GL3" 2> /dev/null; wait "$GL1" "$GL2" "$GL3" 2> /dev/null
 rm -rf "$HARNESS_STATE"/proj/{gclive,demo-x,killed,c.d} "$HARNESS_STATE/other"; for u in $GCU; do rm -f "$T/scope/$u".*; done   # a live fake driver.pid counts against MAX_PARALLEL_RUNS
+# gc's branch passes (L4-01): a `*` doesn't cross a `/` in for-each-ref, so --all-merged must list by prefix and run
+# every pass. Five merged branches (at origin/main) and an unmerged spec/u, each pushed to the origin with -u, as runs
+# push. harness/noup has no upstream and this checkout's main is behind origin/main, so its `branch -d` is refused:
+# gc says so and goes on (it used to end under set -e, before harness-merge/w).
+git -C "$T/proj" fetch -q origin; GB=$(git -C "$T/proj" rev-parse origin/main)
+gb_make() { local b; for b; do git -C "$T/proj" branch -f "$b" "$GB"; done; git -C "$T/proj" push -q -u origin "$@" 2> /dev/null; }
+gb_has() { git -C "$1" rev-parse -q --verify "refs/heads/$2" > /dev/null; }   # gb_has <repo> <branch>
+gb_both() { gb_has "$T/proj" "$1" && gb_has "$T/origin.git" "$1"; }; gb_none() { ! gb_has "$T/proj" "$1" && ! gb_has "$T/origin.git" "$1"; }
+gb_make spec/x docs/y harness/z harness-merge/w flat
+git -C "$T/proj" branch -f spec/u "$(git -C "$T/proj" commit-tree "$GB^{tree}" -p "$GB" -m unmerged)" && git -C "$T/proj" push -q -u origin spec/u 2> /dev/null
+git -C "$T/proj" branch -f harness/noup "$GB" && git -C "$T/proj" push -q origin harness/noup
+"$H" gc "$T/proj" > "$T/gcb1.out" 2>&1; GBR=$?
+check "plain gc deletes only the merged harness/ and harness-merge/ branches, locally and on the origin" '[[ $GBR == 0 ]] && gb_none harness/z && gb_none harness-merge/w \
+  && gb_both spec/x && gb_both docs/y && gb_both flat && gb_both spec/u && grep -qx "+ git -C $T/proj push -q origin --delete harness/z" "$T/gcb1.out"'
+check "a refused branch -d (merged into origin/main, not into HEAD, no upstream) is logged and gc goes on" '! git -C "$T/proj" merge-base --is-ancestor origin/main main \
+  && gb_has "$T/proj" harness/noup && ! gb_has "$T/origin.git" harness/noup && grep -qx "! failed: git -C $T/proj branch -d harness/noup" "$T/gcb1.out"'
+git -C "$T/proj" branch -qD harness/noup
+gb_make harness/z harness-merge/w
+"$H" gc "$T/proj" --all-merged --dry-run > "$T/gcb2.out" 2>&1; GBD=$(for b in spec/x docs/y harness/z harness-merge/w flat; do gb_both "$b" || echo "$b"; done)
+"$H" gc "$T/proj" --all-merged > "$T/gcb3.out" 2>&1
+check "gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives" '[[ -z $GBD ]] \
+  && [[ $(grep -c "^would: git -C $T/proj branch -d " "$T/gcb2.out") == 5 && $(grep -c "^would: git -C $T/proj push -q origin --delete " "$T/gcb2.out") == 5 ]] \
+  && gb_none spec/x && gb_none docs/y && gb_none harness/z && gb_none harness-merge/w && gb_none flat && gb_both spec/u && gb_both main \
+  && grep -qx "+ git -C $T/proj branch -d docs/y" "$T/gcb3.out" && grep -qx "+ git -C $T/proj push -q origin --delete spec/x" "$T/gcb3.out"'
+git -C "$T/proj" branch -qD spec/u; git -C "$T/proj" push -q origin --delete spec/u
+# gc's worktree removal finishes (L4-02, R9): merged, clean worktrees in path order (git worktree list sorts by path).
+# gcw-a holds gitignored build output; gcw-c-ro/wt can't go (its parent is read-only) and gcw-d after it still must
+gw_add() { local w; for w; do gb_make "harness/${w##*/}"; git -C "$T/proj" worktree add -q "$HARNESS_WORKTREES/proj/$w" "harness/${w##*/}"; done; }
+gw_listed() { git -C "$T/proj" worktree list --porcelain | grep -qx "worktree $HARNESS_WORKTREES/proj/$1"; }
+echo .next/ >> "$T/proj/.git/info/exclude"; mkdir -p "$HARNESS_WORKTREES/proj/gcw-c-ro"
+gw_add gcw-a gcw-b gcw-c-ro/wt gcw-d; mkdir "$HARNESS_WORKTREES/proj/gcw-a/.next"; echo built > "$HARNESS_WORKTREES/proj/gcw-a/.next/f"
+"$H" gc "$T/proj" --dry-run > "$T/gcw1.out" 2>&1
+GWD=$(for w in gcw-a gcw-b gcw-c-ro/wt gcw-d; do gw_listed "$w" && [[ -d $HARNESS_WORKTREES/proj/$w ]] || echo "$w"; done)
+chmod a-w "$HARNESS_WORKTREES/proj/gcw-c-ro"; "$H" gc "$T/proj" > "$T/gcw2.out" 2>&1; GWR=$?; chmod u+w "$HARNESS_WORKTREES/proj/gcw-c-ro"
+check "gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)" '! gw_listed gcw-a && ! gw_listed gcw-b \
+  && [[ ! -e $HARNESS_WORKTREES/proj/gcw-a && ! -e $HARNESS_WORKTREES/proj/gcw-b ]] \
+  && grep -qx "+ git -C $T/proj worktree remove --force $HARNESS_WORKTREES/proj/gcw-a" "$T/gcw2.out" \
+  && grep -qx "+ git -C $T/proj worktree remove --force $HARNESS_WORKTREES/proj/gcw-b" "$T/gcw2.out"'
+check "a worktree gc can't remove is logged and the next one still goes; --dry-run removes none" '[[ -z $GWD && $GWR == 0 ]] \
+  && [[ $(grep -c "^would: git -C $T/proj worktree remove --force $HARNESS_WORKTREES/proj/gcw-" "$T/gcw1.out") == 4 ]] \
+  && grep -qx "! could not remove $HARNESS_WORKTREES/proj/gcw-c-ro/wt: .*Permission denied" "$T/gcw2.out" \
+  && ! gw_listed gcw-d && [[ ! -e $HARNESS_WORKTREES/proj/gcw-d ]] && grep -qx "+ git -C $T/proj worktree remove --force $HARNESS_WORKTREES/proj/gcw-d" "$T/gcw2.out"'
+rm -rf "$HARNESS_WORKTREES/proj/gcw-c-ro"; git -C "$T/proj" worktree prune
+for w in gcw-a gcw-b wt gcw-d; do git -C "$T/proj" branch -qD "harness/$w" 2> /dev/null; git -C "$T/proj" push -q origin --delete "harness/$w" 2> /dev/null; done
+# what gc must never remove, from the L4 review (L4-05), in one unattended --all-merged run: a worktree that is no run's
+# (Michael's own session's: its branch isn't harness/<run>); a locked one (git refuses: no rm -rf after); one holding
+# an untracked file that status.showUntrackedFiles=no hides; a locked one whose directory is gone (gc goes on past it);
+# the origin's default branch (trunk here); a live run's merged branch
+GWM=$HARNESS_WORKTREES/proj/mine; git -C "$T/proj" worktree add -q -b mine "$GWM" "$GB"
+gw_add gcw-lk gcw-u gcw-gone; git -C "$T/proj" worktree lock "$HARNESS_WORKTREES/proj/gcw-lk"; echo note > "$HARNESS_WORKTREES/proj/gcw-u/notes.txt"
+git -C "$T/proj" worktree lock "$HARNESS_WORKTREES/proj/gcw-gone"; rm -rf "$HARNESS_WORKTREES/proj/gcw-gone"
+gb_make trunk harness/gcw-live harness/gcw-tail; git -C "$T/origin.git" symbolic-ref HEAD refs/heads/trunk; git -C "$T/proj" remote set-head origin trunk > /dev/null
+mkdir -p "$HARNESS_STATE/proj/gcw-live"; echo $$ > "$HARNESS_STATE/proj/gcw-live/driver.pid"
+git -C "$T/proj" config status.showUntrackedFiles no
+"$H" gc "$T/proj" --all-merged > "$T/gcw3.out" 2>&1; GW3=$?
+git -C "$T/proj" config --unset status.showUntrackedFiles
+check "gc never removes a worktree that is no run's (its branch isn't harness/<run>), even merged and clean" '[[ -d $GWM ]] && gw_listed mine && gb_has "$T/proj" mine \
+  && grep -qx "keeps $GWM: not a run worktree (branch mine)" "$T/gcw3.out"'
+check "gc never rm -rfs a worktree git refused to remove (locked): it is said and stays" '[[ -f $HARNESS_WORKTREES/proj/gcw-lk/.git ]] && gw_listed gcw-lk \
+  && grep -qx "! could not remove $HARNESS_WORKTREES/proj/gcw-lk: .*locked.*" "$T/gcw3.out" && ! grep -qx "+ rm -rf $HARNESS_WORKTREES/proj/gcw-lk" "$T/gcw3.out"'
+check "gc keeps a worktree with an untracked file even when status.showUntrackedFiles=no hides it" '[[ $(cat "$HARNESS_WORKTREES/proj/gcw-u/notes.txt" 2> /dev/null) == note ]] && gw_listed gcw-u'
+check "a listed worktree whose directory is gone never ends gc: every later step still runs" '[[ $GW3 == 0 ]] && gb_none harness/gcw-tail'
+check "gc --all-merged keeps the origin default branch and a live run branch, merged or not" 'gb_both trunk && gb_both harness/gcw-live'
+git -C "$T/origin.git" symbolic-ref HEAD refs/heads/main; git -C "$T/proj" remote set-head origin main > /dev/null; rm -rf "$HARNESS_STATE/proj/gcw-live"
+for w in gcw-lk gcw-gone; do git -C "$T/proj" worktree unlock "$HARNESS_WORKTREES/proj/$w"; done
+git -C "$T/proj" worktree remove --force "$GWM"; git -C "$T/proj" worktree remove --force --force "$HARNESS_WORKTREES/proj/gcw-lk" 2> /dev/null
+git -C "$T/proj" worktree remove --force "$HARNESS_WORKTREES/proj/gcw-u" 2> /dev/null; git -C "$T/proj" worktree prune
+for b in mine trunk harness/gcw-lk harness/gcw-u harness/gcw-gone harness/gcw-live harness/gcw-tail; do
+  git -C "$T/proj" branch -qD "$b" 2> /dev/null; git -C "$T/proj" push -q origin --delete "$b" 2> /dev/null; done
+# gc --deps (L4-03, B8): the dependency directories in the worktrees of ended runs go, merged or not (the branch keeps
+# the work); a live run's (driver.pid = this shell), one with a queued continuation and the project checkout keep theirs
+gd_run() { local r=$1 wt=${2:-$HARNESS_WORKTREES/proj/$1} d=$HARNESS_STATE/proj/$1; mkdir -p "$d"; touch "$d/ended"
+  printf 'PROJECT_DIR=%q\nWT=%q\nRUN_ID=%q\nSTATE=%q\n' "$T/proj" "$wt" "$r" "$d" > "$d/meta.env"
+  [[ $wt == "$T/proj" ]] || git -C "$T/proj" worktree add -q -b "harness/$r" "$wt" "$GB"; mkdir -p "$wt/node_modules"; echo x > "$wt/node_modules/x.js"; }
+gd_run deps-end; gd_run deps-live; gd_run deps-q; gd_run deps-co "$T/proj"
+GDE=$HARNESS_WORKTREES/proj/deps-end; mkdir "$GDE/.venv"; echo y > "$GDE/.venv/y"
+echo kept > "$GDE/work.txt"; git -C "$GDE" add work.txt; git -C "$GDE" commit -qm "unmerged work"; GDH=$(git -C "$GDE" rev-parse HEAD)
+echo $$ > "$HARNESS_STATE/proj/deps-live/driver.pid"; mkdir -p "$HARNESS_STATE/queue"; : > "$HARNESS_STATE/queue/x-continue-deps-q.args"
+"$H" gc "$T/proj" --dry-run --deps > "$T/gcd1.out" 2>&1
+GDD=$(for w in deps-end deps-live deps-q; do [[ -f $HARNESS_WORKTREES/proj/$w/node_modules/x.js ]] || echo "$w"; done; [[ -f $GDE/.venv/y ]] || echo venv)
+"$H" gc "$T/proj" --deps > "$T/gcd2.out" 2>&1; GDR=$?
+check "gc --deps empties an ended, unmerged run's worktree of its DEPS_DIRS; its branch and committed files stay; --dry-run deletes none" '[[ -z $GDD && $GDR == 0 ]] \
+  && grep -qx "would: freed [0-9]* MB in $GDE: node_modules .venv" "$T/gcd1.out" && [[ $(grep -c "freed" "$T/gcd1.out") == 1 ]] \
+  && [[ ! -e $GDE/node_modules && ! -e $GDE/.venv ]] && grep -qx "+ freed [0-9]* MB in $GDE: node_modules .venv" "$T/gcd2.out" \
+  && [[ $(git -C "$T/proj" rev-parse harness/deps-end) == "$GDH" && $(cat "$GDE/work.txt") == kept && -z $(git -C "$GDE" status --porcelain) ]]'
+check "gc --deps keeps the worktree of a live run and the project checkout" '[[ -f $HARNESS_WORKTREES/proj/deps-live/node_modules/x.js && -f $T/proj/node_modules/x.js ]] \
+  && [[ $(grep -c "freed" "$T/gcd2.out") == 1 ]]'
+check "gc --deps keeps the worktree of a run with a queued continuation" '[[ -f $HARNESS_WORKTREES/proj/deps-q/node_modules/x.js ]] && ! grep -q "freed .* in $HARNESS_WORKTREES/proj/deps-q:" "$T/gcd1.out" "$T/gcd2.out"'
+# a deps dir gc can't read or delete (root-owned in real life: a mode-000 subdirectory here) is said and gc goes on; a
+# symlinked .next pointing out of the tree is never followed (L4-05 review)
+gd_run deps-ro; GDO=$HARNESS_WORKTREES/proj/deps-ro; mkdir -p "$GDO/node_modules/sub" "$T/outside"; echo k > "$GDO/node_modules/sub/f"; echo keep > "$T/outside/f"
+ln -s "$T/outside" "$GDO/.next"; chmod 000 "$GDO/node_modules/sub"
+"$H" gc "$T/proj" --deps > "$T/gcd3.out" 2>&1; GD3=$?; chmod 755 "$GDO/node_modules/sub"
+check "a deps dir gc can't measure or delete is said and gc goes on; a symlinked deps dir is never followed" '[[ $GD3 == 0 ]] && grep -qx "! could not free $GDO: .*" "$T/gcd3.out" \
+  && [[ $(cat "$T/outside/f") == keep && -L $GDO/.next ]]'
+rm -f "$GDO/.next"; rm -rf "$T/outside"
+rm -f "$HARNESS_STATE/queue/x-continue-deps-q.args"; rm -rf "$T/proj/node_modules"
+for w in deps-end deps-live deps-q deps-ro; do git -C "$T/proj" worktree remove --force "$HARNESS_WORKTREES/proj/$w"; git -C "$T/proj" branch -qD "harness/$w"; done
+rm -rf "$HARNESS_STATE"/proj/deps-{end,live,q,co,ro}   # a live fake driver.pid counts against MAX_PARALLEL_RUNS
 
 # ---- run 2: Michael sets "status: stop" in INBOX.md from the phone (and only NOTIFY_CMD is configured) ----
 printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"
@@ -868,13 +967,22 @@ rm -rf "$HARNESS_STATE/proj/busy"
 D=$(date +%F)
 # the sessions a tmux start would have left for the runner's two runs (their ended comes later), and two it must spare
 for s in "h-proj-$D" "h-proj-$D-2" h-queue "$HARNESS_DESK_SESSION"; do tmux new-session -d -s "$s" sleep 600; done
+# a runner's gc (L4-04) collects what it can: the worktrees later checks read are kept dirty (untracked) until its debrief is done
+keep_wts() { local w; for w in "$T"/wt/proj/*/; do : > "$w/.keep-for-later-checks"; done; }
+unkeep_wts() { rm -f "$T"/wt/proj/*/.keep-for-later-checks; }
+keep_wts
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue.out" 2>&1
 has_s() { tmux has-session -t "=$1" 2> /dev/null; }
 check "the queue runner reaps its ended runs' tmux sessions before the debrief; h-queue and the desk untouched" '! has_s "h-proj-$D" && ! has_s "h-proj-$D-2" \
   && has_s h-queue && has_s "$HARNESS_DESK_SESSION" && grep -qF "+ reaped tmux session h-proj-$D-2 (proj-$D-2 ended)" "$HARNESS_STATE/queue/runner.log" \
   && awk -v r="+ reaped tmux session h-proj-$D (proj-$D ended)" "index(\$0, r) && !a { a = NR } /harness debrief \\(detached/ && !b { b = NR } END { exit !(a && b && a < b) }" "$HARNESS_STATE/queue/runner.log"'
+# the runner collects as it drains (L4-04): one gc per project it started a run in, its lines prefixed, before the debrief
+check "the queue runner runs harness gc <project> --all-merged --deps once per project, before the debrief" 'RL=$HARNESS_STATE/queue/runner.log; [[ $(grep -c "gc proj: harness gc .* --all-merged --deps$" "$RL") == 1 ]] \
+  && grep -qE "gc proj: harness gc ([^ ]*/)?proj --all-merged --deps$" "$RL" && grep -qE "gc proj: \+ (git -C .* (branch -d|push -q origin --delete|worktree remove --force)|freed)" "$RL" \
+  && awk "/gc proj: harness gc / && !a { a = NR } /harness debrief \\(detached/ && !b { b = NR } END { exit !(a && b && a < b) }" "$RL" && ! grep -q "gc proj failed" "$RL"'
 for s in "h-proj-$D" "h-proj-$D-2" h-queue "$HARNESS_DESK_SESSION"; do tmux kill-session -t "=$s" 2> /dev/null; done   # the desk checks start with no desk session and no sleep 600
-check "queue ran both entries, distinct run ids" '[[ $($F summary "$(list proj-$D)") == "3/3 passing" && $($F summary "$(list proj-$D-2)") == "3/3 passing" ]] && grep -q "queue empty" "$HARNESS_STATE/queue/runner.log"'
+check "queue ran both entries, distinct run ids (their merged worktrees gone with the runner's gc: the ledger has the records)" 'LR=$T/ledger/proj; [[ $($F summary "$LR/proj-$D/feature_list.json") == "3/3 passing" && $($F summary "$LR/proj-$D-2/feature_list.json") == "3/3 passing" ]] \
+  && [[ ! -e $T/wt/proj/proj-$D && ! -e $T/wt/proj/proj-$D-2 ]] && grep -q "queue empty" "$HARNESS_STATE/queue/runner.log"'
 check "trends lists every run"            'grep -q "| proj-$D-2 | proj |" <<< "$("$H" trends)"'
 # one row per harness version (this checkout, +dirty while it has uncommitted changes); a row from before E1-07 groups as –
 printf '%s\n' '{"run":"old","passing":1,"total":2,"cost":3}' '{"run":"v1","harness_version":"abc1234","harness_dirty":false,"passing":2,"total":2,"cost":4,"cache_hit_rate":0.5,"orient_tokens":100,"first_attempt_pass_rate":1}' \
@@ -888,7 +996,7 @@ settle() {   # the runner's debrief is detached: wait until no debrief process i
   local i; sleep 0.5
   for i in $(seq 150); do pgrep -f "$HH/lib/debrief\.sh|$HH/bin/harness debrief" > /dev/null || return 0; sleep 0.2; done; return 1
 }
-HH=$(cd "$HERE/.." && pwd); settle
+HH=$(cd "$HERE/.." && pwd); settle; unkeep_wts
 check "queue end triggers one debrief, detached" '[[ $(ndb) == 1 && -s $NOTE && -s $Q/last-debrief ]] && grep -q "debrief written" "$Q/runner.log" && grep -q "harness debrief (detached" "$Q/runner.log"'
 check "the debrief saw the queue's runs"  'grep -q "### proj-$D-2 (proj)" "$T/debrief-prompt" && grep -q "### proj-$D (proj)" "$T/debrief-prompt"'
 PAGE=$T/ledger/debrief.html
@@ -898,12 +1006,21 @@ check "by hand right after: nothing new, no session" '[[ $(ndb) == 1 ]] && grep 
 "$H" queue add --continue stoppy > /dev/null   # Michael stopped stoppy: the runner skips it, so it starts nothing
 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2.out" 2>&1; settle
 check "a runner that started nothing (a skipped continuation): no debrief" '[[ $(ndb) == 1 ]] && grep -q "skipping queued continuation of stoppy" "$Q/runner.log" && ! grep -q "harness debrief (detached" "$T/queue2.out"'
+# a gc that fails and hangs (a git whose fetch waits on a prompt, for this runner only: only gc runs that argv) is
+# killed at HARNESS_GC_TIMEOUT and logged; the debrief starts anyway (L4-05 review)
+mkdir -p "$T/gcfail"; printf '%s\n' '#!/usr/bin/env bash' '[[ $1 == -C && $3 == fetch && "${*:4}" == "-q --prune origin" ]] && { echo "fatal: stub fetch failure" >&2; sleep 60; exit 1; }' \
+  "exec $(command -v git) \"\$@\"" > "$T/gcfail/git"; chmod +x "$T/gcfail/git"
+"$H" queue add "$T/proj" --spec SPEC.md > /dev/null
+B=$(ndb); SECONDS=0; STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 PATH=$T/gcfail:$PATH HARNESS_GC_TIMEOUT=2s HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue-gcfail.out" 2>&1; settle
+GFS=$SECONDS
+check "a failed or hung runner gc is logged (killed at HARNESS_GC_TIMEOUT) and never stops the debrief" '[[ $GFS -lt 55 ]] && grep -q "starting: harness start" "$T/queue-gcfail.out" && grep -qx "[0-9-]* [0-9:]* gc proj failed (exit 124)" "$T/queue-gcfail.out" \
+  && grep -q "gc proj: fatal: stub fetch failure" "$T/queue-gcfail.out" && grep -q "harness debrief (detached" "$T/queue-gcfail.out" && [[ $(ndb) == $(( B + 1 )) ]]'
 # one run per project at a time: proj has a live run, so its entry is held and the next entry (another project) goes first
 cp "$T/user-config.sh" "$T/user-config.keep"; echo 'MAX_PARALLEL_RUNS=2' >> "$T/user-config.sh"
 mkdir -p "$HARNESS_STATE/proj/busy3" "$HARNESS_STATE/other/stoppy-o" && echo 'stopped by Michael' > "$HARNESS_STATE/other/stoppy-o/ended" && : > "$HARNESS_STATE/other/stoppy-o/meta.env"
-sleep 3 & echo $! > "$HARNESS_STATE/proj/busy3/driver.pid"
+sleep 5 & echo $! > "$HARNESS_STATE/proj/busy3/driver.pid"   # outlives the --until below, which gives the runner 3 s to start stoppy-o
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null; "$H" queue add --continue stoppy-o > /dev/null
-HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" $(( $(date +%s) + 1 )) > "$T/queue2b.out" 2>&1
+HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" $(( $(date +%s) + 3 )) > "$T/queue2b.out" 2>&1
 check "queue holds an entry whose project has a live run, starts the next one" '[[ $(grep -c "holding .*(proj)" "$T/queue2b.out") == 1 ]] && grep -q "starting: harness continue stoppy-o" "$T/queue2b.out" \
   && ! grep -q "starting: harness start $T/proj" "$T/queue2b.out" && grep -q "1 left queued" "$T/queue2b.out" && grep -qx start "$(ls "$Q"/*.args)"'
 rm -rf "$HARNESS_STATE/proj/busy3" "$HARNESS_STATE/other" "$Q"/*.args; mv "$T/user-config.keep" "$T/user-config.sh"
@@ -1075,10 +1192,10 @@ mv "$T/user-config.bak" "$T/user-config.sh"
 # ---- debrief: the runner's other exits ----
 rm -f "$HARNESS_STATE/LIMIT_UNTIL"
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null; "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
-B=$(ndb); STUB_QUEUE_STOP=1 STUB_PHONE_STOP=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue3.out" 2>&1; settle
+keep_wts; B=$(ndb); STUB_QUEUE_STOP=1 STUB_PHONE_STOP=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue3.out" 2>&1; settle
 check "queue stop after a run: one debrief" '[[ $(ndb) == $((B + 1)) ]] && grep -q "stopped by harness queue stop" "$T/queue3.out" && [[ $(ls "$Q"/*.args | wc -l) == 1 ]]'
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
-B=$(ndb); STUB_SLOW_INIT=3 STUB_PHONE_STOP=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" $(( $(date +%s) + 2 )) > "$T/queue4.out" 2>&1; settle
+B=$(ndb); STUB_SLOW_INIT=3 STUB_PHONE_STOP=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" $(( $(date +%s) + 2 )) > "$T/queue4.out" 2>&1; settle; unkeep_wts
 check "past --until after a run: one debrief" '[[ $(ndb) == $((B + 1)) ]] && grep -q "past the --until time" "$T/queue4.out"'
 rm -f "$Q"/*.args
 

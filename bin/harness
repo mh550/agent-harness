@@ -29,8 +29,9 @@
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
 #                                                CLAUDE.md from the repo's docs for you to edit), and the Vercel/Netlify
 #                                                guard that keeps run branches from deploying
-#   harness gc <project> [--all-merged] [--dry-run]
-#                               delete merged harness branches and their clean worktrees, locally and on origin;
+#   harness gc <project> [--all-merged] [--deps] [--dry-run]
+#                               delete merged harness branches and their clean worktrees, locally and on origin
+#                               (--all-merged: every merged branch, whatever its name; --deps: DEPS_DIRS in ended runs' worktrees);
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
 #   harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]
 #                               replay a task set (evals/) with that harness version's driver on throwaway clones,
@@ -348,14 +349,16 @@ cmd_answer() {
 }
 
 cmd_gc() {
-  local p all=0 dry=0 b pattern; p=$(toplevel "${1:?usage: harness gc <project>}"); shift
-  while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; *) die "unknown option $1" ;; esac; shift; done
-  act() { if (( dry )); then echo "would: $*"; else echo "+ $*"; "$@"; fi; }
+  local p all=0 dry=0 deps=0 b pattern; p=$(toplevel "${1:?usage: harness gc <project>}"); shift
+  while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; --deps) deps=1 ;; *) die "unknown option $1" ;; esac; shift; done
+  # a refusal (branch -d of a branch merged into origin/main but not into HEAD, with no upstream) is said, never the
+  # end of gc under set -e: every later step still runs (decisions/2026-10-25-gc-all-merged)
+  act() { if (( dry )); then echo "would: $*"; else echo "+ $*"; "$@" || echo "! failed: $*"; fi; }
   # A SIGKILLed driver ran no trap and left its units (decisions/2026-10-25-gc-orphan-units): stop those of this
   # project's runs with no live driver, first (before a fetch that may fail, before their worktree goes). A dead
   # driver.pid is enough: the driver removes ended at start, only finish and the trap write it. Two ids may reduce to
   # one prefix (a.b, a-b), so every project's runs are candidates and a live one keeps the unit.
-  local u d r mine busy why
+  local u d r mine busy why err
   while read -r u _; do
     [[ $u == harness-*.scope ]] || continue
     mine="" busy=0
@@ -389,36 +392,81 @@ cmd_gc() {
   local dd=() dg; (( dry )) && dd=(--dry-run)   # a dry run counts the desks it would close as closed
   dg=$("$HARNESS_HOME/lib/desk.sh" --gc "$(basename "$p")" "${dd[@]}") || echo "harness: could not check the desks"   # never fails gc
   [[ -n $dg ]] && echo "$dg"
+  listed() { git -C "$p" worktree list --porcelain | grep -qxF "worktree $1"; }
+  local st
   while read -r wt; do
-    [[ $wt == "$WT_ROOT"/* ]] || continue
-    b=$(git -C "$wt" branch --show-current)
-    [[ -n $b && -z $(git -C "$wt" status --porcelain) ]] || continue
+    # never the checkout itself (rm -rf below); a listed worktree whose directory is gone (a locked one) is skipped
+    [[ $wt == "$WT_ROOT"/* && $wt != "$p" && -d $wt ]] || continue
+    b=$(git -C "$wt" branch --show-current 2> /dev/null) || continue
+    # clean means nothing untracked either, whatever status.showUntrackedFiles says; a status that fails isn't clean
+    st=$(git -C "$wt" status --porcelain --untracked-files=normal 2> /dev/null) || continue
+    [[ -n $b && -z $st ]] || continue
     running "$b" && continue
     if git -C "$p" merge-base --is-ancestor "$b" "$main" || { [[ $b == harness/* ]] && record_only "$b"; }; then
+      # the harness makes its worktrees on harness/<run>: one on any other branch is a session's of Michael's
+      [[ $b == harness/* ]] || { echo "keeps $wt: not a run worktree (branch $b)"; continue; }
       desk_open "$b" && { echo "keeps $wt: its desk is open (harness desk --close ${b#harness/})"; continue; }
-      act git -C "$p" worktree remove "$wt"
+      # --force loses only ignored files (the tree is clean): build output, never work. A directory git let go of
+      # goes with rm -rf; one git refused (locked) is never rm -rf'd; one that stays is said and gc goes on to the
+      # next (decisions/2026-10-25-gc-removal-finishes)
+      (( dry )) && { echo "would: git -C $p worktree remove --force $wt"; continue; }
+      echo "+ git -C $p worktree remove --force $wt"
+      err=$(git -C "$p" worktree remove --force "$wt" 2>&1) || true
+      git -C "$p" worktree prune || true
+      if [[ -e $wt ]] && ! listed "$wt"; then echo "+ rm -rf $wt"; err=$(rm -rf "$wt" 2>&1) || true; fi
+      if [[ -e $wt ]] || listed "$wt"; then echo "! could not remove $wt: $(head -1 <<< "${err:-still listed}")"; fi   # git's first line is the why
     fi
   done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p')
-  for b in $(git -C "$p" for-each-ref --format='%(refname:short)' 'refs/heads/harness/*'); do   # record-only tails
+  # --deps: an ended run's dependency directories, merged or not (the branch keeps the work; the next init reinstalls).
+  # Only a worktree of this project under WT_ROOT whose run says so (its meta.env names it), never the checkout, never
+  # a live, queued or desk-open run's; never a symlink, a path out of the tree or anything git tracks (decisions/2026-10-25-gc-deps)
+  (( deps )) && { local proj wr x n got rp ds=(); proj=$(basename "$p")
+    read -ra ds <<< "$(harness_config "$p" > /dev/null; echo "$DEPS_DIRS")"
+    while read -r wt; do
+      [[ $wt == "$WT_ROOT/$proj/"* && $wt != "$p" && -d $wt ]] || continue
+      r=$(basename "$wt") d=$STATE_ROOT/$proj/$(basename "$wt")
+      [[ -f $d/ended && $( ( source "$d/meta.env"; echo "$WT" ) 2> /dev/null ) == "$wt" ]] || continue
+      alive "$d" || compgen -G "$Q/*-continue-$r.args" > /dev/null && continue
+      desk_open "harness/$r" && { echo "keeps the deps of $wt: its desk is open"; continue; }
+      got=() wr=$(realpath -e "$wt")
+      for x in "${ds[@]}"; do
+        [[ -d $wt/$x && ! -L $wt/$x ]] && rp=$(realpath -e "$wt/$x") && [[ $rp == "$wr/"* ]] || continue
+        [[ -z $(git -C "$wt" ls-files -- "$x" | head -1) ]] && got+=("$x")
+      done
+      (( ${#got[@]} )) || continue
+      n=$( (cd "$wt" && du -smc -- "${got[@]}" 2> /dev/null) | tail -1 | cut -f1) || true   # an unreadable dir: a partial count
+      (( dry )) && { echo "would: freed $n MB in $wt: ${got[*]}"; continue; }
+      if err=$( (cd "$wt" && rm -rf -- "${got[@]}") 2>&1); then echo "+ freed $n MB in $wt: ${got[*]}"
+      else echo "! could not free $wt: $(tail -1 <<< "$err")"; fi
+    done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p'); }
+  for b in $(git -C "$p" for-each-ref --format='%(refname:short)' refs/heads/harness/); do   # record-only tails
     [[ $b == "$(git -C "$p" branch --show-current)" ]] && continue
     running "$b" && continue
     git -C "$p" merge-base --is-ancestor "$b" "$main" && continue
     record_only "$b" && ! git -C "$p" worktree list --porcelain | grep -qx "branch refs/heads/$b" \
       && { act git -C "$p" branch -D "$b"; git -C "$p" rev-parse -q --verify "origin/$b" > /dev/null && act git -C "$p" push -q origin --delete "$b"; }
   done
-  for pattern in 'harness/*' 'harness-merge/*'; do
-    (( all )) && pattern='*'
-    # local branches: -d refuses anything unmerged, so this can never drop work
-    for b in $(git -C "$p" for-each-ref --format='%(refname:short)' "refs/heads/$pattern"); do
-      [[ $b == main || $b == "$(git -C "$p" branch --show-current)" ]] && continue
-      git -C "$p" merge-base --is-ancestor "$b" "$main" && act git -C "$p" branch -d "$b"
+  # One pass per prefix, harness/ and harness-merge/; --all-merged's is the bare prefix, every branch. Prefixes, never
+  # a `*`: in a for-each-ref pattern it doesn't cross a `/` (decisions/2026-10-25-gc-all-merged). main, the origin's
+  # default branch and a running run's branch are never candidates; full ref names, so a tag of the same name can't stand in.
+  local pre prefixes=(harness/ harness-merge/) keep
+  keep=$(git -C "$p" symbolic-ref -q --short refs/remotes/origin/HEAD 2> /dev/null) || keep=origin/main; keep=${keep#origin/}
+  (( all )) && prefixes=('')
+  for pre in "${prefixes[@]}"; do
+    # local branches: -d refuses anything unmerged, so this can never drop work; one checked out in a worktree (kept,
+    # live, the checkout's) -d refuses too, so it isn't tried
+    for b in $(git -C "$p" for-each-ref --format='%(refname:lstrip=2)' "refs/heads/$pre"); do
+      [[ $b == main || $b == "$keep" ]] && continue
+      git -C "$p" worktree list --porcelain | grep -qxF "branch refs/heads/$b" && continue
+      running "$b" && continue
+      git -C "$p" merge-base --is-ancestor "refs/heads/$b" "$main" && act git -C "$p" branch -d "$b"
     done
     # remote branches fully contained in origin/main
-    for b in $(git -C "$p" for-each-ref --format='%(refname:lstrip=3)' "refs/remotes/origin/$pattern"); do
-      [[ $b == main || $b == HEAD ]] && continue
-      git -C "$p" merge-base --is-ancestor "origin/$b" "$main" && act git -C "$p" push -q origin --delete "$b"
+    for b in $(git -C "$p" for-each-ref --format='%(refname:lstrip=3)' "refs/remotes/origin/$pre"); do
+      [[ $b == main || $b == HEAD || $b == "$keep" ]] && continue
+      running "$b" && continue
+      git -C "$p" merge-base --is-ancestor "refs/remotes/origin/$b" "$main" && act git -C "$p" push -q origin --delete "$b"
     done
-    (( all )) && break
   done
   return 0
 }

@@ -9,6 +9,105 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 02:08 · verify L4 · passes
+
+All five L4 features hold: check.sh green (322 checks, 0 FAIL), bash -n clean, named checks read and match each step, docs/decisions/plan present.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L4-01 | 1 | ls docs/plans; wc -l | L4-gc.md, 65 lines | yes |
+| L4-01 | 2 | grep for-each-ref bin/harness | per-prefix refs/heads/ and refs/remotes/origin/ loop, no * pattern, lstrip | yes |
+| L4-01 | 3 | read tests/run.sh:803 check | spec/x docs/y harness/z harness-merge/w flat deleted both places; spec/u survives | yes |
+| L4-01 | 4 | read tests/run.sh:795 check | plain gc deletes only harness/z, harness-merge/w; others survive | yes |
+| L4-01 | 5 | ls journal/decisions; grep | gc-all-merged.md has finding/choice/rejected | yes |
+| L4-01 | 6 | bash -n bin/harness; check.sh | syntax ok; suite green, 0 FAIL | yes |
+| L4-02 | 1 | read bin/harness gc loop via architecture §3 and tests | remove --force, prune, rm -rf only when unlisted; ! could not remove line | yes |
+| L4-02 | 2 | read tests/run.sh:817 | gcw-a (.next) and gcw-b removed with + lines | yes |
+| L4-02 | 3 | read tests/run.sh:821 check | read-only parent prints ! could not remove, gcw-d still removed, dry-run 4 would lines | yes |
+| L4-02 | 4 | ls decisions | gc-removal-finishes.md present | yes |
+| L4-02 | 5 | check.sh | green | yes |
+| L4-03 | 1 | grep DEPS_DIRS lib/config.sh templates | default set, template commented; --deps in gc | yes |
+| L4-03 | 2 | read tests/run.sh:864,868 | ended run emptied, live/checkout kept, dry-run would: freed | yes |
+| L4-03 | 3 | read tests/run.sh:870 | queued continuation keeps dirs | yes |
+| L4-03 | 4 | ls decisions | gc-deps.md present | yes |
+| L4-03 | 5 | grep architecture/README | §3 and README gc row list --deps, DEPS_DIRS; suite green | yes |
+| L4-04 | 1 | read lib/queue.sh:73-79; bash -n | per-project gc --all-merged --deps with gc <name>: prefix, failure logged, before debrief | yes |
+| L4-04 | 2 | read tests/run.sh:980 | gc line precedes harness debrief line, argv matches | yes |
+| L4-04 | 3 | read tests/run.sh:1016 | failed/hung gc logged, debrief still starts | yes |
+| L4-04 | 4 | ls decisions; grep docs | runner-gc.md present; docs mention runner gc | yes |
+| L4-04 | 5 | check.sh | green | yes |
+| L4-05 | 1 | ls docs/plans | L4-review.md with severities (Critical/Important) | yes |
+| L4-05 | 2 | read tests/run.sh:839-845 | checks for non-run worktree, locked, untracked-hidden, default branch/live branch | yes |
+| L4-05 | 3 | grep architecture §3/§10, README, retro-fixes R9 | all current; R9 says Landed | yes |
+| L4-05 | 4 | grep finding/choice/rejected in 5 decision files; bash -n | 3 each; syntax ok | yes |
+| L4-05 | 5 | lib/check.sh | green (cached for this tree), 0 FAIL | yes |
+
+- *020716-verify-L4 · claude-sonnet-5-5*
+
+### 2026-10-26 01:58 · L4-05 · passes
+
+Opus review of the L4 diff: 3 Critical, 4 Important fixed RED→GREEN. gc now removes only harness/<run> worktrees, never rm -rfs one git refused (locked), sees hidden untracked files, survives a gone dir or du error, keeps main/origin's default/running branches; runner gc has a timeout and no git prompt. Prefix loop simplified, L4 docs done. 316→322 checks.
+
+- **Files:** bin/harness, lib/queue.sh, tests/run.sh, docs/plans/2026-10-25-L4-review.md, journal/decisions/2026-10-26-gc-unattended-guards.md, journal/decisions/2026-10-25-gc-removal-finishes.md, journal/decisions/2026-10-25-gc-all-merged.md, journal/decisions/2026-10-25-runner-gc.md, docs/architecture.md, README.md, docs/specs/2026-10-21-retro-fixes.md
+- **Verified:** check.sh: 322/322 (green in 548 s). RED first: 316/317 then 5 new FAILs; the untracked-file and default/live-branch checks passed vacuously in the suite (gc died at the gone dir first), so scratch repro.sh ran old bin/harness (git archive HEAD) vs new: old deleted the hidden untracked file, local trunk and origin harness/live, new kept all. bash -n on bin/harness, lib/queue.sh, tests/run.sh.
+- **Tests:** 316 → 322
+- **Dead end:** printing git's last stderr line in '! could not remove' — for a locked tree it is 'use remove -f -f … or unlock first', not the cause; the first line is
+- **Discovery** (affects run): The full suite takes ~9-10 min under load now (548 s): a Bash background waiter needs a timeout over 600 s or it is killed.
+- **Discovery** (affects L5, run): gc's worktree loop now only removes harness/<run> worktrees; a merged clean one on another branch prints 'keeps <wt>: not a run worktree (branch <b>)'. The local branch pass skips branches checked out in any worktree (no more 'cannot delete branch … used by worktree' noise).
+- **Discovery** (affects L5, run): HARNESS_GC_TIMEOUT (env, default 10m) bounds the runner's gc; the suite's runner-gc failure check uses 2s with a fetch that sleeps 60.
+- **Question for Michael:** Should a project be able to name branches gc never deletes (GC_KEEP_BRANCHES, e.g. 'production release/*')? Default taken: no setting; main and the origin's default branch are kept, every other branch merged into origin/main goes under the runner's nightly --all-merged.
+- *24-L4-05 · claude-opus-5-5*
+
+### 2026-10-26 01:05 · L4-04 · passes
+
+lib/queue.sh: as it exits having started runs, runs `harness gc <dir> --all-merged --deps` once per distinct PROJECT_DIR of its runs, lines `gc <name>: …` in runner.log before the debrief line; a non-zero exit logs `gc <name> failed (exit <n>)` and the debrief still starts. Two checks; docs, README, decision file.
+
+- **Files:** lib/queue.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-runner-gc.md
+- **Verified:** tests: 314 → 316, red first (only the two new checks failed), then 316/316 via lib/check.sh (green in 541 s); runner.log in a KEEP=1 run showed the gc line, its removals and branch deletes before 'harness debrief (detached'; the gcfail runner logged 'gc proj failed (exit 1)' and the debrief count rose by one; bash -n lib/queue.sh tests/run.sh
+- **Tests:** 314 → 316
+- **Dead end:** letting the suite's runners gc proj as is — they removed stoppy, demo, walled and other merged fixture worktrees that later debrief and desk checks read (5 FAILs): tests/run.sh now keeps them dirty with an untracked marker (keep_wts/unkeep_wts) around the three runners that start runs
+- **Discovery** (affects L4-05, L5, run): Every queue runner in tests/run.sh that starts a run now gcs $T/proj: a new runner test that starts runs must wrap itself in keep_wts … settle; unkeep_wts if later checks read existing worktrees. The queue's own runs' worktrees are gone afterwards; their records are read from $T/ledger/proj/<run>/.
+- **Discovery** (affects L4-05, run): A meta.env without PROJECT_DIR inherits the caller's PROJECT_DIR when sourced (sessions export one): queue.sh unsets it before sourcing. debrief.sh rec_dir and other `source meta.env` sites may have the same leak.
+- **Discovery** (affects run): The 'queue holds an entry whose project has a live run' flake: busy3 now sleeps 5 and the runner's --until is +3 s (was 3 and +1), so a slow runner start-up no longer misses starting stoppy-o.
+- *23-L4-04 · claude-opus-5-5*
+
+### 2026-10-26 00:14 · L4-03 · passes
+
+harness gc --deps deletes DEPS_DIRS (default node_modules .next .next-check .venv) in worktrees of ended runs, merged or not: meta.env WT= must name the worktree; no live driver, queued continuation or open desk; never the checkout, a symlink, a path out of the tree or tracked files. Prints '+ freed <n> MB in <wt>: <dirs>' / 'would: freed'. 3 checks; decision, README, architecture §3/§10.
+
+- **Files:** bin/harness, lib/config.sh, templates/user/config.sh, tests/run.sh, journal/decisions/2026-10-25-gc-deps.md, docs/architecture.md, README.md
+- **Verified:** RED first: 312/314 (two new --deps checks failed on 'unknown option'); then lib/check.sh green, 314/314. KEEP=1 run: gcd1/gcd2 output read by hand (one freed line, deps-end only).
+- **Tests:** 311 → 314
+- **Dead end:** the queued-continuation check as `! grep -q deps-q` — the branch pass prints '! failed: branch -d harness/deps-q' (merged branch checked out in a worktree); narrowed to the freed line
+- **Discovery** (affects L4-05, L4-04): cmd_gc's branch passes try `branch -d` on merged branches checked out in a worktree (a live or queued run's, a dirty one gc kept): git refuses, gc prints 'error: cannot delete branch … used by worktree' and '! failed: …'. Harmless but noisy; the passes could skip branches `running` or listed in `git worktree list`.
+- **Discovery** (affects L4-04, L4-05): --deps runs after the worktree removal loop and reads DEPS_DIRS via harness_config "$p" in a subshell (user config, then the checkout's .harness/config.sh). tests/run.sh has gd_run <run> [<wt>] (state dir with ended + meta.env, worktree on harness/<run> at origin/main, node_modules/x.js).
+- *22-L4-03 · claude-opus-5-5*
+
+### 2026-10-25 23:27 · L4-02 · passes
+
+gc removes a clean, merged worktree with `worktree remove --force`, then `rm -rf` if it stays, then `worktree prune`; a failure prints `! could not remove <wt>: <why>` and the loop goes on; --dry-run prints `would: … --force` for each. Two new checks (watched red first); the loop never touches the project's own checkout. 309 → 311 checks.
+
+- **Files:** bin/harness, tests/run.sh, journal/decisions/2026-10-25-gc-removal-finishes.md, docs/architecture.md, README.md
+- **Verified:** bash tests/run.sh before the fix: 309/311 (both new checks FAIL); after: 311/311 via lib/check.sh (green in 526 s); bash -n bin/harness and tests/run.sh
+- **Tests:** 309 → 311
+- **Discovery** (affects L4-03, L4-05): A worktree whose parent is read-only: `git worktree remove --force` empties it, removes its .git file and fails with `error: failed to delete '<wt>': Permission denied`; rm -rf then fails too; after `worktree prune` git no longer lists it, so the branch pass can still delete its branch. gc's worktree loop now skips the project checkout ($wt == $p) explicitly, since rm -rf follows a failed remove.
+- **Discovery** (affects L4-03): tests/run.sh has gw_add/gw_listed helpers and $T/proj/.git/info/exclude now lists .next/ (L4-02 block after the L4-01 branch checks); the gcw-* worktrees and branches are cleaned up after.
+- *21-L4-02 · claude-opus-5-5*
+
+### 2026-10-25 22:58 · L4-01 · passes
+
+gc --all-merged now lists branches by prefix (refs/heads/, refs/remotes/origin/; plain gc harness/ and harness-merge/) and runs every pass, deleting merged spec/x, docs/y, flat etc. A second bug found by the check: a refused `branch -d` (no upstream, HEAD behind origin/main) ended gc under set -e; act now prints `! failed: <argv>` and gc goes on. L4 plan written.
+
+- **Files:** bin/harness, tests/run.sh, docs/plans/2026-10-25-L4-gc.md, journal/decisions/2026-10-25-gc-all-merged.md, docs/architecture.md, README.md
+- **Verified:** RED first: 306/308 (both new checks failed: --all-merged deleted only flat; plain gc died on harness/z's refused -d). GREEN: bash tests/run.sh 309/309 and lib/check.sh 309/309; bash -n bin/harness tests/run.sh; scratch repro in the scratch dir shows dry-run prints each would: once.
+- **Tests:** 306 → 309
+- **Dead end:** fixture branches pushed without -u — branch -d measures against upstream or HEAD; the suite's $T/proj main is behind origin/main, so -d refused every fixture branch
+- **Discovery** (affects L4-02): git 2.43 here: `git worktree remove` (no --force) removes a clean worktree whose only extra files are ignored (.next/ via .gitignore or info/exclude). R9's refusal had another cause (an undeletable file, or the loop dying under set -e); the fallback chain is the fix. `git worktree list` sorts worktrees by path (main first), so fixtures can fix the order by name.
+- **Discovery** (affects L4-02, L4-03, L4-05): cmd_gc's act no longer exits non-zero on a failed command: it prints `! failed: <argv>` and returns 0, so `act git worktree remove` failures no longer end gc either (L4-02 replaces that call with its own fallback and `! could not remove` line). $T/proj's local main is behind origin/main in the suite, so `branch -d` of a branch with no upstream is refused there.
+- **Discovery** (affects L4-04): Plan fixes L4-04's failure fixture: a `git` wrapper first on PATH for one runner that fails `-C <dir> fetch -q --prune origin` (only gc runs that argv); no STUB_GC_FAIL in production code.
+- **Question for Michael:** D1 default (decisions/2026-10-25-gc-all-merged): gc keeps `branch -d`, so a merged branch with no upstream in a checkout whose main is behind origin/main stays locally (`! failed:` line; its origin copy goes). Would you rather gc delete it with `git update-ref -d refs/heads/<b> <sha>` after its origin/main check (as safe, never refused)?
+- *20-L4-01 · claude-opus-5-5*
+
 ### 2026-10-25 22:19 · verify L3 · passes
 
 L3-01..05 hold: suite re-run 306/306, syntax checks clean, each named check PASS, docs/plan/template/decisions read against the steps.
@@ -198,145 +297,14 @@ harness gc first stops the units of this project's runs with no live driver (+ s
 - **Proposed change:** L2-05 step 1: the unit step runs first in cmd_gc, not after the branch passes (review finding); its lines are gc's own, not act's; a run with no live driver qualifies with or without ended (plan §11).
 - *13-L2-05 · claude-opus-5-5*
 
-### 2026-10-25 17:36 · L2-04 · passes
-
-Services now also stop on pause (services_down paused, then commit+push), before a usage-limit wait over SVC_IDLE_STOP_MIN=10 min, and on the memory wait (renamed `memory wait`); STOP already went through finish. New key in config.sh/template/architecture §10; §5/§7, README and decisions/2026-10-25-services-stop-points updated.
-
-- **Files:** lib/driver.sh, lib/scope.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, tests/stub-claude.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-services-stop-points.md
-- **Verified:** Wrote 5 checks + the mg unit-check rename first: 4 failed (mg block, PAUSE, memory wait, usage-limit wait 11 min); stoppy and the 9-minute check passed already as the plan predicted (check-only). After the change bash tests/run.sh 282/282; lib/check.sh green in 492 s.
-- **Tests:** 277 → 282
-- **Discovery** (affects L2-05, L2-06): stub-claude.sh has STUB_PAUSE=<id>: that id's first coding session touches $HARNESS_STATE/*/<run>/PAUSE. Run `paused` in tests/run.sh drives it in the background and resumes with `harness resume paused` once hlog has `services stopped (paused)`.
-- **Discovery** (affects run): Run waiter's window is now +660 s (11 min) and waiter9 (+540 s) is new; the suite has two more full runs (about +20 s).
-- **Question for Michael:** D1 default: SVC_IDLE_STOP_MIN=10 (a usage-limit wait of more than 10 minutes stops the services; shorter keeps them). Keep 10?
-- *12-L2-04 · claude-opus-5-5*
-
-### 2026-10-25 17:08 · L2-03 · passes
-
-services_down runs .harness/teardown.sh (TEARDOWN_CMD) under timeout -k 10s 2m, stops harness-<run>-svc, notes once per started init; on finish and in the EXIT trap, which first ignores TERM/INT/HUP and stops the running session's scope. verify re-inits after a memory wait. Stubs kill a stopped scope's tree. Template, README, arch, decision. Tests 274 → 277.
-
-- **Files:** lib/driver.sh, lib/config.sh, templates/user/config.sh, templates/project/teardown.sh, tests/run.sh, tests/stub-systemd-run.sh, tests/stub-systemctl.sh, README.md, docs/architecture.md, journal/decisions/2026-10-25-teardown-hook.md
-- **Verified:** 3 new checks, each seen RED on a snapshot (finish teardown→stop→one note on demo; a TERM to run termed's driver mid-session: session scope stop < teardown < svc stop, no stub claude left, ended/driver.pid; lowmem: every session before finish starts with svc up). bash tests/run.sh 277/277; lib/check.sh green in 470 s; no harness-test-* unit left.
-- **Tests:** 274 → 277
-- **Discovery** (affects L2-04): verify() now does `mem_gate || run_init` (pulled forward from L2-04: with a real services_down the gate after verify's run_init stopped the services before the verify session). L2-04 only needs to rename mem_gate's `services_down memory` to `memory wait` and add its checks; the lowmem run notes `services stopped (memory)` until then.
-- **Discovery** (affects L2-04, L2-05, L2-06): The suite's project now has an executable .harness/teardown.sh writing $HARNESS_SCRATCH/teardown-<why-safe>.marker and a `teardown\n<run>\n<why>` record into systemd.log; helpers sd_last (last record index) and svc_gaps <run> (sessions started with svc down) are in tests/run.sh. Every run in proj now notes `services stopped (<finish reason>)`.
-- **Discovery** (affects L2-05): stub-systemd-run.sh runs its command in the background (<&0 keeps stdin) with the pid in <unit>.cmd; stub-systemctl stop TERMs that pid and its descendants (parents first) plus .pids. Run termed (TERMed mid-session, STUB_SLOW_CODING=30) is left ended in state with an uncommitted `services stopped (driver exited)` in its harness-log.md, which L2-05's status/gc checks can use.
-- **Discovery** (affects L2-06): Review findings left for L2-06: a TERM during run_init runs the teardown while the init may still be starting containers; a TERM during finish's own teardown runs a second teardown concurrently; TEARDOWN_CMD is picked at load_config, so a teardown.sh added mid-run is seen only after a config reload; the trap's note stays uncommitted after a kill.
-- **Proposed change:** L2-03 step 3 names one teardown.marker; the plan's hook writes one per why (teardown-done.marker here) and orders teardown and stop in systemd.log rather than by mtime (plan §11).
-- **Proposed change:** L2-04 step 1's verify `mem_gate || run_init` is done in L2-03.
-- *11-L2-03 · claude-opus-5-5*
-
-### 2026-10-25 16:30 · L2-02 · passes
-
-run_init now stops harness-<run>-svc, then runs INIT_CMD in it (MemoryMax=SVC_MEMORY_MAX 3G, timeout -k 10s INIT_TIMEOUT 10m, stdin /dev/null); a refused unit notes `init ran uncapped`. Stub systemd-run refuses a still-loaded unit like real systemd. 4 checks (3 seen RED), decision file, arch/README/config docs. Tests 270 → 274.
-
-- **Files:** lib/driver.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, tests/stub-systemd-run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-services-scope.md
-- **Verified:** RED on a git copy with the old driver: the dup-unit, the stop-then-scope order and the backgrounded-init checks failed (bare check passed, as a regression guard). GREEN: lib/check.sh green in 473 s, 274/274; no harness-test-* unit or sleep 300 left. Opus review: 0 Critical/Important, 3 Minor (2 fixed).
-- **Tests:** 270 → 274
-- **Dead end:** running the RED suite on a tar copy of the tree without git — the eval checks need a git repo; git init + commit in the copy works
-- **Discovery** (affects L2-03, L2-04, L2-05): stub-systemd-run.sh now refuses a unit whose .alive is set and that is .running or holds a live pid (fixtures/systemd-run-unit-exists.txt, exit 1, command not run). Any new code that reuses a unit name must scope_stop it first.
-- **Discovery** (affects L2-03): run_init sets SVC_UP=1 before the start (plan §1); services_down (L2-03) can key on it. The bp1 check (tests/run.sh ~960) counts `stop harness-bp1-svc.scope` >= 2, so finish's stop in L2-03 keeps it green.
-- **Discovery** (affects L2-06): GNU timeout (no --foreground) kills its whole process group on expiry, so an init that times out takes the servers it already backgrounded with it; docs say so. Plan's `timeout -k 10s 10m` kept as the step names it.
-- **Discovery** (affects L2-05, L2-06): Review Minor not fixed: run ids are unique per project only, and scope_unit maps . to -, so two projects' runs with the same id share harness-<id>-svc and run_init's stop-first would kill the other's services (was: refused, bare). gc's unit match (L2-05) has the same ambiguity; consider the project in the unit name or refusing a duplicate id.
-- **Question for Michael:** D *default* (decisions/2026-10-25-services-scope): the init's stdin is now /dev/null instead of the tmux pane, so an interactive init prompt fails fast instead of waiting for you in the window. OK?
-- *10-L2-02 · claude-opus-5-5*
-
-### 2026-10-25 16:02 · L2-01 · passes
-
-Wrote docs/plans/2026-10-25-L2-run-services.md: svc scope in run_init (stop first), services_down/SVC_UP, the trap (session scope too), six stop points, suite observation per stop point, gc's unit match rule and status lines. Captured 4 real fixtures. An Opus review found 1 Critical and 4 Important plan bugs; all fixed in the plan. Tests 270 → 270.
-
-- **Files:** docs/plans/2026-10-25-L2-run-services.md, tests/fixtures/systemctl-show-current.txt, tests/fixtures/systemctl-show-current-gone.txt, tests/fixtures/systemctl-list-units-described.txt, tests/fixtures/systemd-run-unit-exists.txt
-- **Verified:** check.sh: green in 454 s, 270/270; fixtures captured from real 64M harness-test-<pid>-cur/-dup scopes, each stopped; list-units 'harness-test-*' printed nothing afterwards; bash TERM probe: EXIT trap ran in 13 ms, child lived on
-- **Tests:** 270 → 270
-- **Dead end:** stub-systemd-run recording the command pid in <unit>.pids — pids count in the stub's TasksCurrent, so every clean session would 'leave 1 process'; plan uses <unit>.cmd plus a tree kill
-- **Dead end:** INIT_CMD for check 6.9 in the user config — the project's .harness/config.sh is sourced after it and wins (lib/config.sh:31); use a dproj project
-- **Discovery** (affects L2-03): Bash runs the EXIT trap at once on SIGTERM while a foreground child runs, and the child lives on: a TERM to the driver mid-session leaves claude running in harness-<run>-s<n>. Plan §4: the trap stops S_UNIT first, then services_down.
-- **Discovery** (affects L2-05): A SIGKILLed driver leaves no `ended` (the driver removes it at start; only finish and the trap write it), so gc stops units of runs with no live driver.pid, ended or not (plan §7.1).
-- **Discovery** (affects L2-02): systemd-run with a unit name still loaded exits 1: 'Failed to start transient scope unit: Unit <u>.scope was already loaded or has a fragment file.' (fixtures/systemd-run-unit-exists.txt). run_init must stop the old svc scope first.
-- **Discovery** (affects L2-03, L2-04, L2-05): verify() runs run_init before its mem_gate, so a memory wait leaves the verify without services: L2-04 makes it `mem_gate || run_init`. bin/harness is set -euo pipefail: TEARDOWN_CMD's default line and cmd_status's systemctl calls must always succeed (plan §2, §7.2).
-- **Question for Michael:** D2 default: the driver's EXIT trap also stops the running session's scope, not only the services. OK?
-- **Question for Michael:** gc stops a run's units when its driver is dead even without `ended` (a SIGKILL writes none), not only for ended runs as the spec says. OK?
-- **Proposed change:** L2-03 step 3: one marker per why (teardown-done.marker), and the order is read from systemd.log (the teardown logs a record there), not from the marker's mtime
-- **Proposed change:** L2-03 step 4: the TERM goes to driver.pid (--foreground runs the driver as a child of bin/harness); the trap also stops the session's scope
-- **Proposed change:** L2-04 step 2: the stub sets PAUSE ($STATE/PAUSE) and the suite resumes with harness resume (no session runs during a pause); the pause branch commits its note
-- **Proposed change:** L2-04: verify() needs `mem_gate || run_init`
-- **Proposed change:** L2-05 step 1: units qualify with no live driver.pid, `ended` or not; gc prints its own `+ stopped <unit> (<run> ended|: driver gone)` lines rather than act's raw argv
-- *09-L2-01 · claude-opus-5-5*
-
-### 2026-10-25 15:34 · verify L1 · passes
-
-All 8 L1 features hold: suite re-run 270/270, artifacts, stubs, fixtures, docs and decision files checked against each step; no leftover harness-test units.
-
-| Feature | Step | What you ran or read | What you saw | Holds |
-|---|---|---|---|---|
-| L1-01 | 1 | re-ran bash tests/run.sh and inspected files/greps for this step | read docs/plans/2026-10-25-L1-capped-sessions.md and listed fixtures; files present, real captures, config keys in plan; suite 270/270 | yes |
-| L1-01 | 2 | re-ran bash tests/run.sh and inspected files/greps for this step | read docs/plans/2026-10-25-L1-capped-sessions.md and listed fixtures; files present, real captures, config keys in plan; suite 270/270 | yes |
-| L1-01 | 3 | re-ran bash tests/run.sh and inspected files/greps for this step | read docs/plans/2026-10-25-L1-capped-sessions.md and listed fixtures; files present, real captures, config keys in plan; suite 270/270 | yes |
-| L1-01 | 4 | re-ran bash tests/run.sh and inspected files/greps for this step | read docs/plans/2026-10-25-L1-capped-sessions.md and listed fixtures; files present, real captures, config keys in plan; suite 270/270 | yes |
-| L1-01 | 5 | re-ran bash tests/run.sh and inspected files/greps for this step | read docs/plans/2026-10-25-L1-capped-sessions.md and listed fixtures; files present, real captures, config keys in plan; suite 270/270 | yes |
-| L1-01 | 6 | re-ran bash tests/run.sh and inspected files/greps for this step | read docs/plans/2026-10-25-L1-capped-sessions.md and listed fixtures; files present, real captures, config keys in plan; suite 270/270 | yes |
-| L1-02 | 1 | re-ran bash tests/run.sh and inspected files/greps for this step | read lib/scope.sh + stubs; suite checks 'scope.sh: scope_run wraps…', 'scope_stop…', 'run id becomes a unit name', 'STUB_NO_SYSTEMD', 'a real 64M scope kills… exit 137 and leaves no unit' PASS; list-units harness-test-* empty; decision file present | yes |
-| L1-02 | 2 | re-ran bash tests/run.sh and inspected files/greps for this step | read lib/scope.sh + stubs; suite checks 'scope.sh: scope_run wraps…', 'scope_stop…', 'run id becomes a unit name', 'STUB_NO_SYSTEMD', 'a real 64M scope kills… exit 137 and leaves no unit' PASS; list-units harness-test-* empty; decision file present | yes |
-| L1-02 | 3 | re-ran bash tests/run.sh and inspected files/greps for this step | read lib/scope.sh + stubs; suite checks 'scope.sh: scope_run wraps…', 'scope_stop…', 'run id becomes a unit name', 'STUB_NO_SYSTEMD', 'a real 64M scope kills… exit 137 and leaves no unit' PASS; list-units harness-test-* empty; decision file present | yes |
-| L1-02 | 4 | re-ran bash tests/run.sh and inspected files/greps for this step | read lib/scope.sh + stubs; suite checks 'scope.sh: scope_run wraps…', 'scope_stop…', 'run id becomes a unit name', 'STUB_NO_SYSTEMD', 'a real 64M scope kills… exit 137 and leaves no unit' PASS; list-units harness-test-* empty; decision file present | yes |
-| L1-02 | 5 | re-ran bash tests/run.sh and inspected files/greps for this step | read lib/scope.sh + stubs; suite checks 'scope.sh: scope_run wraps…', 'scope_stop…', 'run id becomes a unit name', 'STUB_NO_SYSTEMD', 'a real 64M scope kills… exit 137 and leaves no unit' PASS; list-units harness-test-* empty; decision file present | yes |
-| L1-02 | 6 | re-ran bash tests/run.sh and inspected files/greps for this step | read lib/scope.sh + stubs; suite checks 'scope.sh: scope_run wraps…', 'scope_stop…', 'run id becomes a unit name', 'STUB_NO_SYSTEMD', 'a real 64M scope kills… exit 137 and leaves no unit' PASS; list-units harness-test-* empty; decision file present | yes |
-| L1-02 | 7 | re-ran bash tests/run.sh and inspected files/greps for this step | read lib/scope.sh + stubs; suite checks 'scope.sh: scope_run wraps…', 'scope_stop…', 'run id becomes a unit name', 'STUB_NO_SYSTEMD', 'a real 64M scope kills… exit 137 and leaves no unit' PASS; list-units harness-test-* empty; decision file present | yes |
-| L1-02 | 8 | re-ran bash tests/run.sh and inspected files/greps for this step | read lib/scope.sh + stubs; suite checks 'scope.sh: scope_run wraps…', 'scope_stop…', 'run id becomes a unit name', 'STUB_NO_SYSTEMD', 'a real 64M scope kills… exit 137 and leaves no unit' PASS; list-units harness-test-* empty; decision file present | yes |
-| L1-03 | 1 | re-ran bash tests/run.sh and inspected files/greps for this step | config.sh/template keys grep; checks 'sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s', 'scope is stopped after it returns', 'no user systemd…', 'killed at its memory cap (STUB_OOM)', leftover note check PASS; bin/harness line 177 passes stubs; arch §7 row; bash -n ok | yes |
-| L1-03 | 2 | re-ran bash tests/run.sh and inspected files/greps for this step | config.sh/template keys grep; checks 'sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s', 'scope is stopped after it returns', 'no user systemd…', 'killed at its memory cap (STUB_OOM)', leftover note check PASS; bin/harness line 177 passes stubs; arch §7 row; bash -n ok | yes |
-| L1-03 | 3 | re-ran bash tests/run.sh and inspected files/greps for this step | config.sh/template keys grep; checks 'sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s', 'scope is stopped after it returns', 'no user systemd…', 'killed at its memory cap (STUB_OOM)', leftover note check PASS; bin/harness line 177 passes stubs; arch §7 row; bash -n ok | yes |
-| L1-03 | 4 | re-ran bash tests/run.sh and inspected files/greps for this step | config.sh/template keys grep; checks 'sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s', 'scope is stopped after it returns', 'no user systemd…', 'killed at its memory cap (STUB_OOM)', leftover note check PASS; bin/harness line 177 passes stubs; arch §7 row; bash -n ok | yes |
-| L1-03 | 5 | re-ran bash tests/run.sh and inspected files/greps for this step | config.sh/template keys grep; checks 'sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s', 'scope is stopped after it returns', 'no user systemd…', 'killed at its memory cap (STUB_OOM)', leftover note check PASS; bin/harness line 177 passes stubs; arch §7 row; bash -n ok | yes |
-| L1-03 | 6 | re-ran bash tests/run.sh and inspected files/greps for this step | config.sh/template keys grep; checks 'sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s', 'scope is stopped after it returns', 'no user systemd…', 'killed at its memory cap (STUB_OOM)', leftover note check PASS; bin/harness line 177 passes stubs; arch §7 row; bash -n ok | yes |
-| L1-03 | 7 | re-ran bash tests/run.sh and inspected files/greps for this step | config.sh/template keys grep; checks 'sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s', 'scope is stopped after it returns', 'no user systemd…', 'killed at its memory cap (STUB_OOM)', leftover note check PASS; bin/harness line 177 passes stubs; arch §7 row; bash -n ok | yes |
-| L1-03 | 8 | re-ran bash tests/run.sh and inspected files/greps for this step | config.sh/template keys grep; checks 'sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s', 'scope is stopped after it returns', 'no user systemd…', 'killed at its memory cap (STUB_OOM)', leftover note check PASS; bin/harness line 177 passes stubs; arch §7 row; bash -n ok | yes |
-| L1-03 | 9 | re-ran bash tests/run.sh and inspected files/greps for this step | config.sh/template keys grep; checks 'sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s', 'scope is stopped after it returns', 'no user systemd…', 'killed at its memory cap (STUB_OOM)', leftover note check PASS; bin/harness line 177 passes stubs; arch §7 row; bash -n ok | yes |
-| L1-04 | 1 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'metrics.mjs: append writes mem_peak_mb', 'metrics.jsonl: every session line has mem_peak_mb', 'null when uncapped', 'report.md lists… peaks over 2 GB' PASS; arch §11 line 319, README Memory row; decision file; node --check ok | yes |
-| L1-04 | 2 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'metrics.mjs: append writes mem_peak_mb', 'metrics.jsonl: every session line has mem_peak_mb', 'null when uncapped', 'report.md lists… peaks over 2 GB' PASS; arch §11 line 319, README Memory row; decision file; node --check ok | yes |
-| L1-04 | 3 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'metrics.mjs: append writes mem_peak_mb', 'metrics.jsonl: every session line has mem_peak_mb', 'null when uncapped', 'report.md lists… peaks over 2 GB' PASS; arch §11 line 319, README Memory row; decision file; node --check ok | yes |
-| L1-04 | 4 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'metrics.mjs: append writes mem_peak_mb', 'metrics.jsonl: every session line has mem_peak_mb', 'null when uncapped', 'report.md lists… peaks over 2 GB' PASS; arch §11 line 319, README Memory row; decision file; node --check ok | yes |
-| L1-04 | 5 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'metrics.mjs: append writes mem_peak_mb', 'metrics.jsonl: every session line has mem_peak_mb', 'null when uncapped', 'report.md lists… peaks over 2 GB' PASS; arch §11 line 319, README Memory row; decision file; node --check ok | yes |
-| L1-04 | 6 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'metrics.mjs: append writes mem_peak_mb', 'metrics.jsonl: every session line has mem_peak_mb', 'null when uncapped', 'report.md lists… peaks over 2 GB' PASS; arch §11 line 319, README Memory row; decision file; node --check ok | yes |
-| L1-05 | 1 | re-ran bash tests/run.sh and inspected files/greps for this step | check.sh sources scope.sh, scope_run+timeout -k 30s; checks 'exit 137 prints the memory-cap RED line', 'subset call is scoped too and never cached', TERM stops scope PASS; arch/README rows; capped-suites decision | yes |
-| L1-05 | 2 | re-ran bash tests/run.sh and inspected files/greps for this step | check.sh sources scope.sh, scope_run+timeout -k 30s; checks 'exit 137 prints the memory-cap RED line', 'subset call is scoped too and never cached', TERM stops scope PASS; arch/README rows; capped-suites decision | yes |
-| L1-05 | 3 | re-ran bash tests/run.sh and inspected files/greps for this step | check.sh sources scope.sh, scope_run+timeout -k 30s; checks 'exit 137 prints the memory-cap RED line', 'subset call is scoped too and never cached', TERM stops scope PASS; arch/README rows; capped-suites decision | yes |
-| L1-05 | 4 | re-ran bash tests/run.sh and inspected files/greps for this step | check.sh sources scope.sh, scope_run+timeout -k 30s; checks 'exit 137 prints the memory-cap RED line', 'subset call is scoped too and never cached', TERM stops scope PASS; arch/README rows; capped-suites decision | yes |
-| L1-05 | 5 | re-ran bash tests/run.sh and inspected files/greps for this step | check.sh sources scope.sh, scope_run+timeout -k 30s; checks 'exit 137 prints the memory-cap RED line', 'subset call is scoped too and never cached', TERM stops scope PASS; arch/README rows; capped-suites decision | yes |
-| L1-05 | 6 | re-ran bash tests/run.sh and inspected files/greps for this step | check.sh sources scope.sh, scope_run+timeout -k 30s; checks 'exit 137 prints the memory-cap RED line', 'subset call is scoped too and never cached', TERM stops scope PASS; arch/README rows; capped-suites decision | yes |
-| L1-05 | 7 | re-ran bash tests/run.sh and inspected files/greps for this step | check.sh sources scope.sh, scope_run+timeout -k 30s; checks 'exit 137 prints the memory-cap RED line', 'subset call is scoped too and never cached', TERM stops scope PASS; arch/README rows; capped-suites decision | yes |
-| L1-06 | 1 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'mem_available_gb reads the real meminfo fixture', 'memory gate: under 5 GB…', '9 GB passes without a note' PASS; bin/harness passes HARNESS_MEMINFO/MEM_POLL; arch gate row; memory-gate decision | yes |
-| L1-06 | 2 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'mem_available_gb reads the real meminfo fixture', 'memory gate: under 5 GB…', '9 GB passes without a note' PASS; bin/harness passes HARNESS_MEMINFO/MEM_POLL; arch gate row; memory-gate decision | yes |
-| L1-06 | 3 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'mem_available_gb reads the real meminfo fixture', 'memory gate: under 5 GB…', '9 GB passes without a note' PASS; bin/harness passes HARNESS_MEMINFO/MEM_POLL; arch gate row; memory-gate decision | yes |
-| L1-06 | 4 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'mem_available_gb reads the real meminfo fixture', 'memory gate: under 5 GB…', '9 GB passes without a note' PASS; bin/harness passes HARNESS_MEMINFO/MEM_POLL; arch gate row; memory-gate decision | yes |
-| L1-06 | 5 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'mem_available_gb reads the real meminfo fixture', 'memory gate: under 5 GB…', '9 GB passes without a note' PASS; bin/harness passes HARNESS_MEMINFO/MEM_POLL; arch gate row; memory-gate decision | yes |
-| L1-06 | 6 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'mem_available_gb reads the real meminfo fixture', 'memory gate: under 5 GB…', '9 GB passes without a note' PASS; bin/harness passes HARNESS_MEMINFO/MEM_POLL; arch gate row; memory-gate decision | yes |
-| L1-07 | 1 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'every session passes --strict-mcp-config…', 'worktree with .mcp.json…', 'rendered coding prompt has the deepEqual rule' PASS; decision file; arch line 51; README line 59 | yes |
-| L1-07 | 2 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'every session passes --strict-mcp-config…', 'worktree with .mcp.json…', 'rendered coding prompt has the deepEqual rule' PASS; decision file; arch line 51; README line 59 | yes |
-| L1-07 | 3 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'every session passes --strict-mcp-config…', 'worktree with .mcp.json…', 'rendered coding prompt has the deepEqual rule' PASS; decision file; arch line 51; README line 59 | yes |
-| L1-07 | 4 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'every session passes --strict-mcp-config…', 'worktree with .mcp.json…', 'rendered coding prompt has the deepEqual rule' PASS; decision file; arch line 51; README line 59 | yes |
-| L1-07 | 5 | re-ran bash tests/run.sh and inspected files/greps for this step | checks 'every session passes --strict-mcp-config…', 'worktree with .mcp.json…', 'rendered coding prompt has the deepEqual rule' PASS; decision file; arch line 51; README line 59 | yes |
-| L1-08 | 1 | re-ran bash tests/run.sh and inspected files/greps for this step | review doc with severities (1 Important, fixed RED→GREEN by named check); arch §4 Scopes row + §10 keys; README oomd/list-units lines; no decision file numbers D-H; bash -n/node --check ok; suite 270/270 | yes |
-| L1-08 | 2 | re-ran bash tests/run.sh and inspected files/greps for this step | review doc with severities (1 Important, fixed RED→GREEN by named check); arch §4 Scopes row + §10 keys; README oomd/list-units lines; no decision file numbers D-H; bash -n/node --check ok; suite 270/270 | yes |
-| L1-08 | 3 | re-ran bash tests/run.sh and inspected files/greps for this step | review doc with severities (1 Important, fixed RED→GREEN by named check); arch §4 Scopes row + §10 keys; README oomd/list-units lines; no decision file numbers D-H; bash -n/node --check ok; suite 270/270 | yes |
-| L1-08 | 4 | re-ran bash tests/run.sh and inspected files/greps for this step | review doc with severities (1 Important, fixed RED→GREEN by named check); arch §4 Scopes row + §10 keys; README oomd/list-units lines; no decision file numbers D-H; bash -n/node --check ok; suite 270/270 | yes |
-| L1-08 | 5 | re-ran bash tests/run.sh and inspected files/greps for this step | review doc with severities (1 Important, fixed RED→GREEN by named check); arch §4 Scopes row + §10 keys; README oomd/list-units lines; no decision file numbers D-H; bash -n/node --check ok; suite 270/270 | yes |
-
-- *152548-verify-L1 · claude-sonnet-5-5*
-
-### 2026-10-25 15:25 · L1-08 · passes
-
-Opus review of the L1 diff in docs/plans/2026-10-25-L1-review.md: 7 findings (1 Important, 4 Minor, 2 Simpl.). Fixed RED→GREEN: mem_gate moved out of session() to before the attempt bump/prompt (stop and deadline seen after a wait), refused scope noted, HARNESS_MEM_POLL=0 ends. Docs: arch §4 Scopes row, §7; README Memory row and After the run. Tests 267 → 270.
-
-- **Files:** lib/driver.sh, lib/scope.sh, tests/run.sh, tests/stub-claude.sh, tests/stub-systemd-run.sh, tests/fixtures/systemd-run-bad-property.txt, docs/plans/2026-10-25-L1-review.md, docs/architecture.md, README.md, journal/decisions/2026-10-25-memory-gate.md, journal/decisions/2026-10-25-scoped-sessions.md
-- **Verified:** full suite 270/270 (check: green in 459 s); each new check run alone failed before its fix (gate-stop: coding session ran; refused scope: no note; poll 0: timeout 124); bash -n on lib/*.sh, bin/harness, tests/*.sh and node --check on lib/*.mjs clean; decision files all cite the spec, finding·choice·rejected, no D-H<n>
-- **Tests:** 267 → 270
-- **Discovery** (affects L2, run): mem_gate now exits 1 after any wait and is called by the driver loop (after the pick, before F bump; the loop starts over once, gated=1), verify() before each round clock, and the init before run_init; session() no longer gates. L2 services_down hooks into the same place.
-- **Discovery** (affects L2): scope_run sets SCOPE_BARE when systemd-run fails after the probe passed; session() notes <kind> session ran uncapped: <why>. Real systemd-run on an unparseable MemoryMax: `Failed to parse MemoryMax=bogus: Invalid argument`, exit 1, no unit (tests/fixtures/systemd-run-bad-property.txt).
-- **Discovery** (affects L2): Deferred review findings for L2: check.sh stop() misses a TERM before the scope registers or on the bare fallback (orphaned suite up to CHECK_TIMEOUT); systemctl-list-units.txt fixture predates --description (recapture before parsing its DESCRIPTION column); check.sh probes a real scope every call (pass the driver SCOPE_OK down).
-- *08-L1-08 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-25 17:36 · L2-04 · passes · Services now also stop on pause (services_down paused, then commit+push), before a usage-limit wait … ([in full](progress-archive.md))
+- 2026-10-25 17:08 · L2-03 · passes · services_down runs .harness/teardown.sh (TEARDOWN_CMD) under timeout -k 10s 2m, stops harness-<run>-… ([in full](progress-archive.md))
+- 2026-10-25 16:30 · L2-02 · passes · run_init now stops harness-<run>-svc, then runs INIT_CMD in it (MemoryMax=SVC_MEMORY_MAX 3G, timeout… ([in full](progress-archive.md))
+- 2026-10-25 16:02 · L2-01 · passes · Wrote docs/plans/2026-10-25-L2-run-services.md: svc scope in run_init (stop first), services_down/SV… ([in full](progress-archive.md))
+- 2026-10-25 15:34 · verify L1 · passes · All 8 L1 features hold: suite re-run 270/270, artifacts, stubs, fixtures, docs and decision files ch… ([in full](progress-archive.md))
+- 2026-10-25 15:25 · L1-08 · passes · Opus review of the L1 diff in docs/plans/2026-10-25-L1-review.md: 7 findings (1 Important, 4 Minor, … ([in full](progress-archive.md))
 - 2026-10-25 15:06 · L1-07 · passes · session() always passes --strict-mcp-config, plus --mcp-config <wt>/.mcp.json when the worktree has … ([in full](progress-archive.md))
 - 2026-10-25 14:48 · L1-06 · passes · Memory gate: mem_available_gb and mem_gate in lib/scope.sh; session() calls mem_gate for init/coding… ([in full](progress-archive.md))
 - 2026-10-25 14:30 · L1-05 · passes · check.sh runs full and subset suites in harness-<run>-check-<pid> (MemoryMax=CHECK_MEMORY_MAX 3G, no… ([in full](progress-archive.md))
