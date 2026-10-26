@@ -394,19 +394,21 @@ merge_milestones() {
 }
 
 # Independently re-check milestone m. 0 = verified (tagged) · 1 = not verified · 2 = deferred (a usage limit: retry)
+# `once` (at the deadline): one session, no escalation, and this round is the last (decisions/2026-10-26-verify-before-deadline)
 verify() {
-  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=()
+  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS models
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
+  models=("$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"); [[ ${2:-} == once ]] && { models=("$VERIFY_MODEL"); maxr=$rounds; }
   sync_main || touch "$STATE/nomerge-$m"
   # the verified tree's suite runs in full: a session can leave a stale green marker (decisions/2026-10-26-verify-runs-the-suite)
   note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
   run_init fresh
-  for model in "$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"; do
+  for model in "${models[@]}"; do
     F snapshot "$LIST" > "$STATE/before.json"
     context "$m"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
     mem_gate || run_init   # before the clock, so the prompt's time is the session's; a wait stopped the services
-    HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
+    HARNESS_CLOCK=$(clock "verify round $rounds of $maxr") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
     session verify "$(F model "$model")" "$vlog" "verify $m"
@@ -428,7 +430,7 @@ verify() {
     F milestone-done "$LIST" "$m" || { result=fail; break; }
     if (( $(vcount "$m") <= before )); then short="no new verify entry"
     elif short=$(F evidence "$LIST" "$m" "$RUN_DIR/progress.md"); then result=hold; break; fi
-    [[ $model == "$VERIFY_ESCALATE_MODEL" ]] && { result=thin; break; }
+    [[ $model == "$VERIFY_ESCALATE_MODEL" || ${2:-} == once ]] && { result=thin; break; }
     note "verify $m: evidence short of the steps ($short); re-running on $VERIFY_ESCALATE_MODEL"
   done
   echo "$rounds" > "$STATE/verify-rounds-$m"
@@ -443,17 +445,17 @@ verify() {
       commit_all "HARNESS: $m verified"; sync
       [[ -f $STATE/nomerge-$m ]] || merge_milestones
       return 0 ;;
-    thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $VERIFY_ESCALATE_MODEL; not verified (needs Michael)"
+    thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $( [[ ${2:-} == once ]] && echo "one verify at the deadline" || echo "$VERIFY_ESCALATE_MODEL"); not verified (needs Michael)"
       need="verify evidence too thin" ;;
     red) touch "$STATE/needs-$m"; note "verify $m: the suite is red on the verified tree (main merged in); not verified (needs Michael)"
       need="suite red after merging main" ;;
     fail)
       for id in $(F ids "$LIST" "$m"); do
         F passes "$LIST" "$id" && continue
-        if (( rounds < MAX_VERIFY_ROUNDS )); then
+        if (( rounds < maxr )); then
           note "verify $m: $id failed the re-check, back in the queue (one more attempt)"; F grant "$ATT" "$id" "$MAX_ATTEMPTS"
         else
-          touch "$STATE/needs-$m"; note "verify $m: $id failed the re-check in round $rounds of $MAX_VERIFY_ROUNDS; $m needs Michael (see progress.md)"
+          touch "$STATE/needs-$m"; note "verify $m: $id failed the re-check in round $rounds of $maxr; $m needs Michael (see progress.md)"
           failed+=("$id")
         fi
       done
@@ -466,12 +468,14 @@ verify() {
 }
 
 # Verify every milestone that is complete and not yet verified, in order. 2 = a verify was deferred by a limit.
+# `once`: the deadline's last look, one session per milestone (verify's once mode)
 verify_ready() {
   local m rc
   for m in $(F milestones "$LIST"); do
     [[ -f $STATE/verified-$m || -f $STATE/needs-$m ]] && continue
     F milestone-done "$LIST" "$m" || continue
-    verify "$m"; rc=$?
+    [[ ${1:-} == once ]] && note "deadline reached: $m complete but unverified; one verify before the end"
+    verify "$m" "${1:-}"; rc=$?
     (( rc == 2 )) && return 2
   done
   return 0
@@ -661,7 +665,7 @@ fi
 repairs=0 n=0 limits=0 gated=0
 while :; do
   (( n >= MAX_SESSIONS )) && finish "session cap ($MAX_SESSIONS)"
-  (( $(date +%s) >= DEADLINE )) && { note "deadline reached"; finish "deadline"; }
+  (( $(date +%s) >= DEADLINE )) && { note "deadline reached"; verify_ready once; finish "deadline"; }
   take_answers; sync
   for id in $(F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
   c=$(control)
@@ -669,7 +673,7 @@ while :; do
     log "paused (INBOX.md status or harness pause)"; notify "paused"
     services_down paused; commit_all "HARNESS: paused"; sync   # nothing else commits during a pause: the note reaches the phone now
     while [[ $(control) == pause ]]; do
-      (( $(date +%s) >= DEADLINE )) && { note "deadline reached while paused"; finish "deadline (paused)"; }
+      (( $(date +%s) >= DEADLINE )) && { note "deadline reached while paused"; verify_ready once; finish "deadline (paused)"; }
       sleep "${HARNESS_PAUSE_POLL:-60}"; take_answers; sync
     done
     log "resumed"; continue

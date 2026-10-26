@@ -183,7 +183,7 @@
         "journal/decisions/2026-10-26-verify-before-deadline.md exists (finding · choice · rejected: the voice-concierge runs it cites, why one session and not MAX_VERIFY_ROUNDS); docs/architecture.md §5 and §7 (Verify row) and README.md § After a partial run say it",
         "`bash -n lib/driver.sh` passes; the suite is green"
       ],
-      "passes": false,
+      "passes": true,
       "after": [
         "F2-04"
       ]

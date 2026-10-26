@@ -159,6 +159,8 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
   start (no tmux, no URL within a minute) is a line in `harness-log.md` and the plain notification; it never changes
   the run. Turning it on in stages: `docs/plans/2026-10-19-P3-desk.md`, "For Michael: turning it on".
 - **After a partial run:** nothing, usually: verified milestones are already merged and a continuation is queued.
+  A run that hits its deadline first gives each complete, unverified milestone one verify session, so finished work
+  merges that night; one that fails it needs Michael.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 - **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and
   ends `PARKED: …`. The feature waits without spending attempts while independent work goes on; the run ends

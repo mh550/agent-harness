@@ -1064,6 +1064,27 @@ check "a limit ending: the cause is the usage limit" '[[ $(jq -r ".features_deta
 "$H" continue stale --until-epoch $(( $(date +%s) - 60 )) --foreground > "$T/run9d.out" 2>&1
 check "a later deadline: the earlier refusals aren't the cause" '[[ $(jq -r .end_reason "$S9") == deadline && $(jq -r ".features_detail[0].cause" "$S9") == "not reached" ]]'
 
+# ---- run 9e: the deadline verifies a complete milestone once (R5) ----
+# MAX_SESSIONS=2 ends the first segment at the cap with M1 complete and unverified; a continue past its deadline verifies it once
+dl() {   # <run> <stub env for the deadline segment...>
+  mkdir -p "$HARNESS_STATE/proj/$1" && echo MAX_SESSIONS=2 > "$HARNESS_STATE/proj/$1/run.env"
+  STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" "$1" --spec SPEC.md --foreground > "$T/$1-a.out" 2>&1
+  { head -1 "$HARNESS_STATE/proj/$1/ended"; $F summary "$(list "$1")"; git -C "$T/origin.git" tag -l "run/$1/*"; } > "$T/$1-a.end"   # cap, 2/3, no tag
+  env "${@:2}" "$H" continue "$1" --until-epoch $(( $(date +%s) - 1 )) --foreground > "$T/$1-b.out" 2>&1; }
+vcount_dl() { grep -c '^verify M1' "$T/scratch/proj/$1/sessions.log"; }
+dl dlok STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1
+check "the deadline verifies a complete milestone once and merges it" 'hlog dlok | grep -q "deadline reached: M1 complete but unverified; one verify before the end" \
+  && hlog dlok | grep -q "M1 verified and tagged run/dlok/M1" && hlog dlok | grep -q "M1 merged into main" && on_main run/dlok/M1 \
+  && grep -q "^deadline" "$HARNESS_STATE/proj/dlok/ended" && [[ $(vcount_dl dlok) == 1 ]] \
+  && [[ $(sed 1s/\ ·.*// "$T/dlok-a.end") == "session cap (2)"$'"'"'\n'"'"'"2/3 passing" ]]'
+dl dlstrict STUB_STRICT_VERIFIER=1 STUB_NO_TAMPER=1 STUB_NO_RED=1
+check "a failed verify at the deadline is not retried: M1 needs Michael" 'hlog dlstrict | grep -q "verify M1: A failed the re-check in round 1 of 1; M1 needs Michael" \
+  && grep -q "^deadline" "$HARNESS_STATE/proj/dlstrict/ended" && [[ $(vcount_dl dlstrict) == 1 ]] && ! git -C "$T/origin.git" rev-parse -q --verify refs/tags/run/dlstrict/M1 > /dev/null'
+dl dlthin STUB_THIN_VERIFY=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1
+check "thin evidence at the deadline is not escalated: one verify, M1 not verified" 'hlog dlthin | grep -q "after one verify at the deadline; not verified" \
+  && grep -q "^deadline" "$HARNESS_STATE/proj/dlthin/ended" && [[ $(vcount_dl dlthin) == 1 ]] && ! git -C "$T/origin.git" rev-parse -q --verify refs/tags/run/dlthin/M1 > /dev/null'
+rm -f "$HARNESS_STATE"/queue/*-continue-dl*.args   # the first segments' caps queued automatic continuations
+
 # ---- run 10: merges refused (MERGE_POLICY=auto but GitHub says no) → `harness merge` later ----
 STUB_REFUSE_MERGE=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" later --spec SPEC.md --foreground > "$T/run10.out" 2>&1
 check "refused merge leaves the PR, needs Michael" 'hlog later | grep -q "merge was refused" && ! on_main run/later/M1'
