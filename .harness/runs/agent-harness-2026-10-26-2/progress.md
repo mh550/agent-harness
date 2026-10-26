@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 09:32 · F1-02 · passes
+
+R1: testCount now sums cargo's test result lines, reads jest's Tests: line and counts go -v's --- PASS lines (node:test and generic as before); five runner fixtures in tests/fixtures/check-*.txt; run_init notes `test count: no match in the suite's output (tests start/end stay unknown)` once per run. Decision file, architecture.md and README updated.
+
+- **Files:** lib/testcount.mjs, lib/driver.sh, tests/run.sh, tests/fixtures/check-node-test.txt, tests/fixtures/check-pytest.txt, tests/fixtures/check-jest.txt, tests/fixtures/check-cargo.txt, tests/fixtures/check-go.txt, journal/decisions/2026-10-26-real-test-counts.md, docs/architecture.md, README.md
+- **Verified:** Fixtures generated in scratch: `node --test` (v24.21.0, 3 tests), `~/.local/bin/pytest -p no:cacheprovider` (9.1.1, 4 tests), `cargo test --offline` (1.99.0, 2 unit + 1 doc-test); jest and go copied from getSummary.ts / testing.go (fetched, formats confirmed). Red first: on main's testcount the 5 unit checks gave node 3, pytest 4, jest 7 PASS, cargo `1 tests` and go nothing FAIL; the no-match check FAILed on main's driver (run-1 + scratch subset, 39/40). After: subset 40/40; with the once-per-run marker removed the check FAILs (nocount noted twice). Full suite through check.sh: green in 615 s, 331/331 checks passed.
+- **Tests:** 325 → 331
+- **Dead end:** nocount's second segment as `continue --until-epoch <past>` (like scrub) — a continue with a list and a past deadline runs no run_init, so it can't show once-per-run across segments; the second segment now runs the stub features to the end
+- **Discovery** (affects run): This repo's own suite prints `N/M checks passed`, which no rule matches (`checks` isn't `tests`), so agent-harness runs will get the `test count: no match` note and `? → ?` until tests/run.sh prints e.g. `N tests passed` or a rule for it is added
+- **Discovery** (affects F1-03, F1-04, F1-05, F2): Every stub run now has one `test count: no match` line in harness-log.md (the stub suite `test ! -f BROKEN` prints nothing); no existing check counted harness-log lines exactly
+- **Question for Michael:** D2/D3 defaults (in decisions/2026-10-26-real-test-counts): empty suite output also gets the no-match note, and go is counted only from `go test -v`'s --- PASS lines. Keep both?
+- **Question for Michael:** Should tests/run.sh's last line say `N tests passed` so this repo's own runs get a real count?
+- *02-F1-02 · claude-opus-5-5*
+
 ### 2026-10-26 09:07 · F1-01 · passes
 
 Wrote docs/plans/2026-10-26-F1-driver-cli.md: per item (R1, R4, R6, R7, R11) the files, harness-log.md lines, check names and tests/run.sh sections, the five fixtures and their sources, the five decision files, and what main already has (R8 done at lib/driver.sh:104/108). No code changed.
