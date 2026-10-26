@@ -16,7 +16,7 @@
         "the plan names the five decision files to write: journal/decisions/2026-10-26-real-test-counts.md, -verify-runs-the-suite.md, -requested-continuations.md, -stop-reason.md, -queue-numbering-and-park.md for F1 (one per behaviour; R6 and R11 separate)",
         "the suite is green (`bash tests/run.sh` or the cached `check.sh` line ends with every check passing)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F1-02",
