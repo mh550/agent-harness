@@ -23,3 +23,4 @@
 - 2026-10-26 16:51 · P0 merged into main · https://github.com/mh550/agent-harness/pull/30
 - 2026-10-26 16:51 · context.md for P1-01: 8007 bytes, 3 items left out
 - 2026-10-26 17:29 · P1-01 · claude-opus-5-5 · passes=true · 34 min · 5/17 passing
+- 2026-10-26 17:29 · context.md for P1-02: 7923 bytes, 2 items left out
