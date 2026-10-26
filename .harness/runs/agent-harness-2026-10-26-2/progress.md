@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 13:32 · F2-06 · passes
+
+Opus review of F2 (904-line diff, origin/main...HEAD): 1 Important (deadline verify ignored a stop) fixed via deadline_verify, which also skips the verify in a usage-limit window; selfMatch parsing fixed; paused-deadline check added; verify() once mode simplified; routes/live paths under system roots documented. Tests 371 → 375.
+
+- **Files:** lib/driver.sh, lib/features.mjs, tests/run.sh, prompts/initializer.md, docs/architecture.md, README.md, docs/plans/2026-10-26-F2-initializer-verify.md, journal/decisions/2026-10-26-verify-before-deadline.md, journal/decisions/2026-10-26-step-lint.md
+- **Verified:** check.sh: 375/375 green in 742 s. Red before the fix on a scratch run of run 9e (4/6) and of the step-lint section (8/9); green after. Checks: 'a stop at the deadline comes first: no verify, M1 left for a continue', 'a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue', 'lint: self-match ends the command at a closing backtick or a glued |, and reads --regexp=' (each red before), and 'a deadline while paused verifies a complete milestone once too' (green from the start: coverage). bash -n on lib/*.sh bin/* tests/*.sh and node --check on lib/*.mjs pass. Lint of this run's list: 'lint: 6 findings (no-anchor: 3, outside-repo: 2, self-match: 1); the list is not edited — first: F1-01 step 2 outside-repo' (F1-01 s2, F1-03 s3, F1-06 s2, F2-02 s2 x2, F2-06 s2).
+- **Tests:** 371 → 375
+- **Dead end:** git diff main...HEAD as the step says — the local main ref is behind origin/main (F1 merged there), so it repeated F1's diff; reviewed origin/main...HEAD (F2 alone) and wrote that to F2-review.diff
+- **Discovery** (affects run): At the deadline the driver now calls deadline_verify: no verify (and a note '…; stopped by Michael, so no verify before the end' or '…; the usage limit holds until HH:MM, so no verify before the end') when STOP/status: stop or LIMIT_UNTIL holds; else verify_ready once. The end reason stays 'deadline'.
+- **Discovery** (affects run): tests/run.sh run 9e's dl() takes DL_BEFORE=<command> (run between the segments) and DL_UNTIL=<s>; dl_status <run> <status> commits INBOX.md's first line in the run's worktree.
+- **Discovery** (affects run): outside-repo still trips routes and live paths under /home /root /srv /etc /var /opt /usr /mnt /media (GET /media/x, /srv/n8n/live.lock); the initializer prompt now lets a step that is right as written stay.
+- **Question for Michael:** Should a stop reached together with the deadline end the run as 'stopped by Michael: <why>' rather than 'deadline'? Kept 'deadline' (the order before F2).
+- **Proposed change:** F2-06 step 1 should diff against origin/main (the local main ref can be behind)
+- *12-F2-06 · claude-opus-5-5*
+
 ### 2026-10-26 13:07 · F2-05 · passes
 
 R5: both deadline branches run `verify_ready once` before finish: note `deadline reached: <m> complete but unverified; one verify before the end`, then `verify <m> once` (one session, no escalation, this round the last: no granted attempt). Section run 9e (dlok, dlstrict, dlthin), 3 checks; decision file, architecture §5/§7, README.
