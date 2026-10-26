@@ -244,7 +244,7 @@
         "journal/decisions/2026-10-25-gc-deps.md exists (finding: B8, 90% of 7.3 GB; choice: ended runs only; rejected: deleting in the project checkout)",
         "docs/architecture.md §3 (gc) and README's gc row list --deps and DEPS_DIRS; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L4-04", "milestone": "L4", "kind": "build", "model": "opus",
       "description": "The queue runner runs `harness gc <project> --all-merged --deps` for every project it started a run in, before the debrief, its output in runner.log, and a gc failure never stops the debrief.",
       "steps": [

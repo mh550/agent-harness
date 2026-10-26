@@ -824,6 +824,28 @@ check "a worktree gc can't remove is logged and the next one still goes; --dry-r
   && ! gw_listed gcw-d && [[ ! -e $HARNESS_WORKTREES/proj/gcw-d ]] && grep -qx "+ git -C $T/proj worktree remove --force $HARNESS_WORKTREES/proj/gcw-d" "$T/gcw2.out"'
 rm -rf "$HARNESS_WORKTREES/proj/gcw-c-ro"; git -C "$T/proj" worktree prune
 for w in gcw-a gcw-b wt gcw-d; do git -C "$T/proj" branch -qD "harness/$w" 2> /dev/null; git -C "$T/proj" push -q origin --delete "harness/$w" 2> /dev/null; done
+# gc --deps (L4-03, B8): the dependency directories in the worktrees of ended runs go, merged or not (the branch keeps
+# the work); a live run's (driver.pid = this shell), one with a queued continuation and the project checkout keep theirs
+gd_run() { local r=$1 wt=${2:-$HARNESS_WORKTREES/proj/$1} d=$HARNESS_STATE/proj/$1; mkdir -p "$d"; touch "$d/ended"
+  printf 'PROJECT_DIR=%q\nWT=%q\nRUN_ID=%q\nSTATE=%q\n' "$T/proj" "$wt" "$r" "$d" > "$d/meta.env"
+  [[ $wt == "$T/proj" ]] || git -C "$T/proj" worktree add -q -b "harness/$r" "$wt" "$GB"; mkdir -p "$wt/node_modules"; echo x > "$wt/node_modules/x.js"; }
+gd_run deps-end; gd_run deps-live; gd_run deps-q; gd_run deps-co "$T/proj"
+GDE=$HARNESS_WORKTREES/proj/deps-end; mkdir "$GDE/.venv"; echo y > "$GDE/.venv/y"
+echo kept > "$GDE/work.txt"; git -C "$GDE" add work.txt; git -C "$GDE" commit -qm "unmerged work"; GDH=$(git -C "$GDE" rev-parse HEAD)
+echo $$ > "$HARNESS_STATE/proj/deps-live/driver.pid"; mkdir -p "$HARNESS_STATE/queue"; : > "$HARNESS_STATE/queue/x-continue-deps-q.args"
+"$H" gc "$T/proj" --dry-run --deps > "$T/gcd1.out" 2>&1
+GDD=$(for w in deps-end deps-live deps-q; do [[ -f $HARNESS_WORKTREES/proj/$w/node_modules/x.js ]] || echo "$w"; done; [[ -f $GDE/.venv/y ]] || echo venv)
+"$H" gc "$T/proj" --deps > "$T/gcd2.out" 2>&1; GDR=$?
+check "gc --deps empties an ended, unmerged run's worktree of its DEPS_DIRS; its branch and committed files stay; --dry-run deletes none" '[[ -z $GDD && $GDR == 0 ]] \
+  && grep -qx "would: freed [0-9]* MB in $GDE: node_modules .venv" "$T/gcd1.out" && [[ $(grep -c "freed" "$T/gcd1.out") == 1 ]] \
+  && [[ ! -e $GDE/node_modules && ! -e $GDE/.venv ]] && grep -qx "+ freed [0-9]* MB in $GDE: node_modules .venv" "$T/gcd2.out" \
+  && [[ $(git -C "$T/proj" rev-parse harness/deps-end) == "$GDH" && $(cat "$GDE/work.txt") == kept && -z $(git -C "$GDE" status --porcelain) ]]'
+check "gc --deps keeps the worktree of a live run and the project checkout" '[[ -f $HARNESS_WORKTREES/proj/deps-live/node_modules/x.js && -f $T/proj/node_modules/x.js ]] \
+  && [[ $(grep -c "freed" "$T/gcd2.out") == 1 ]]'
+check "gc --deps keeps the worktree of a run with a queued continuation" '[[ -f $HARNESS_WORKTREES/proj/deps-q/node_modules/x.js ]] && ! grep -q "freed .* in $HARNESS_WORKTREES/proj/deps-q:" "$T/gcd1.out" "$T/gcd2.out"'
+rm -f "$HARNESS_STATE/queue/x-continue-deps-q.args"; rm -rf "$T/proj/node_modules"
+for w in deps-end deps-live deps-q; do git -C "$T/proj" worktree remove --force "$HARNESS_WORKTREES/proj/$w"; git -C "$T/proj" branch -qD "harness/$w"; done
+rm -rf "$HARNESS_STATE"/proj/deps-{end,live,q,co}   # a live fake driver.pid counts against MAX_PARALLEL_RUNS
 
 # ---- run 2: Michael sets "status: stop" in INBOX.md from the phone (and only NOTIFY_CMD is configured) ----
 printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"

@@ -29,9 +29,9 @@
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
 #                                                CLAUDE.md from the repo's docs for you to edit), and the Vercel/Netlify
 #                                                guard that keeps run branches from deploying
-#   harness gc <project> [--all-merged] [--dry-run]
+#   harness gc <project> [--all-merged] [--deps] [--dry-run]
 #                               delete merged harness branches and their clean worktrees, locally and on origin
-#                               (--all-merged: every merged branch, whatever its name);
+#                               (--all-merged: every merged branch, whatever its name; --deps: DEPS_DIRS in ended runs' worktrees);
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
 #   harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]
 #                               replay a task set (evals/) with that harness version's driver on throwaway clones,
@@ -349,8 +349,8 @@ cmd_answer() {
 }
 
 cmd_gc() {
-  local p all=0 dry=0 b pattern; p=$(toplevel "${1:?usage: harness gc <project>}"); shift
-  while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; *) die "unknown option $1" ;; esac; shift; done
+  local p all=0 dry=0 deps=0 b pattern; p=$(toplevel "${1:?usage: harness gc <project>}"); shift
+  while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; --deps) deps=1 ;; *) die "unknown option $1" ;; esac; shift; done
   # a refusal (branch -d of a branch merged into origin/main but not into HEAD, with no upstream) is said, never the
   # end of gc under set -e: every later step still runs (decisions/2026-10-25-gc-all-merged)
   act() { if (( dry )); then echo "would: $*"; else echo "+ $*"; "$@" || echo "! failed: $*"; fi; }
@@ -411,6 +411,28 @@ cmd_gc() {
       fi
     fi
   done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p')
+  # --deps: an ended run's dependency directories, merged or not (the branch keeps the work; the next init reinstalls).
+  # Only a worktree of this project under WT_ROOT whose run says so (its meta.env names it), never the checkout, never
+  # a live, queued or desk-open run's; never a symlink, a path out of the tree or anything git tracks (decisions/2026-10-25-gc-deps)
+  (( deps )) && { local proj wr x n got rp ds=(); proj=$(basename "$p")
+    read -ra ds <<< "$(harness_config "$p" > /dev/null; echo "$DEPS_DIRS")"
+    while read -r wt; do
+      [[ $wt == "$WT_ROOT/$proj/"* && $wt != "$p" && -d $wt ]] || continue
+      r=$(basename "$wt") d=$STATE_ROOT/$proj/$(basename "$wt")
+      [[ -f $d/ended && $( ( source "$d/meta.env"; echo "$WT" ) 2> /dev/null ) == "$wt" ]] || continue
+      alive "$d" || compgen -G "$Q/*-continue-$r.args" > /dev/null && continue
+      desk_open "harness/$r" && { echo "keeps the deps of $wt: its desk is open"; continue; }
+      got=() wr=$(realpath -e "$wt")
+      for x in "${ds[@]}"; do
+        [[ -d $wt/$x && ! -L $wt/$x ]] && rp=$(realpath -e "$wt/$x") && [[ $rp == "$wr/"* ]] || continue
+        [[ -z $(git -C "$wt" ls-files -- "$x" | head -1) ]] && got+=("$x")
+      done
+      (( ${#got[@]} )) || continue
+      n=$( (cd "$wt" && du -smc -- "${got[@]}") | tail -1 | cut -f1)
+      (( dry )) && { echo "would: freed $n MB in $wt: ${got[*]}"; continue; }
+      if err=$( (cd "$wt" && rm -rf -- "${got[@]}") 2>&1); then echo "+ freed $n MB in $wt: ${got[*]}"
+      else echo "! could not free $wt: $(tail -1 <<< "$err")"; fi
+    done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p'); }
   for b in $(git -C "$p" for-each-ref --format='%(refname:short)' refs/heads/harness/); do   # record-only tails
     [[ $b == "$(git -C "$p" branch --show-current)" ]] && continue
     running "$b" && continue
