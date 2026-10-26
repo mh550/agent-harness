@@ -293,6 +293,10 @@ run_init() {
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
   [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \
     || rm -f "$STATE/tests-start"
+  # once per run: a suite whose output has no count leaves the report's tests at `?` (a cached green wrote no check.out)
+  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-nomatch && -z $(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out") ]]; then
+    note "test count: no match in the suite's output (tests start/end stay unknown)"; touch "$STATE/testcount-nomatch"
+  fi
 }
 
 pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the archive has every entry in full

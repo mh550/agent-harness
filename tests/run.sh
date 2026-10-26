@@ -129,6 +129,14 @@ ORNT='import { orientation as or, events } from "'$HERE'/../lib/metrics.mjs"; co
     && eq(or(noTs), { tokens: 24547, turns: 1, seconds: null }) && eq(or(evs.map((e, i) => i === 1 ? noTs[1] : e)), { tokens: 24547, turns: 1, seconds: 0 }) && eq(or([{ type: "result" }]), { tokens: null, turns: null, seconds: null }) ? 0 : 1);'
 check "metrics.mjs: orientation stops at the first Write" 'node --input-type=module -e "$ORNT"'
 
+# ---- test counts, pure (R1): one fixture per runner (tests/fixtures/check-*.txt, line 1 says where its text came from) ----
+tc() { node "$HERE/../lib/testcount.mjs" "$HERE/fixtures/check-$1.txt"; }
+check "testCount: node:test fixture gives 3" '[[ $(tc node-test) == "3 tests" ]]'
+check "testCount: pytest fixture gives 4" '[[ $(tc pytest) == "4 tests" ]]'
+check "testCount: jest fixture gives the Tests: count (7), not Test Suites:" '[[ $(tc jest) == "7 tests" ]] && grep -q "^Test Suites: 2 passed, 2 total" "$HERE/fixtures/check-jest.txt"'
+check "testCount: cargo fixture gives the sum of its test result lines (3)" '[[ $(tc cargo) == "3 tests" && $(grep -c "^test result: ok" "$HERE/fixtures/check-cargo.txt") == 2 ]]'
+check "testCount: go fixture gives its --- PASS count (3)" '[[ $(tc go) == "3 tests" ]]'
+
 # ---- scope.sh (L1-02): capped transient user scopes, through the stub systemd-run/systemctl; one real 64M scope ----
 SC=$HERE/../lib/scope.sh
 sd_with() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { printf "%s", $0; exit }' "$T/systemd.log" 2>/dev/null; }   # the first stub systemd call containing $1
@@ -1499,6 +1507,15 @@ check "finish keeps check-last.out and init.out in the state dir and deletes the
   && hlog scrub | grep -qF "scratch removed: $T/scratch/proj/scrub" && grep -qx "# pass 7" "$HARNESS_STATE/proj/scrub/check-last.out"'
 check "a continued run whose suite is cached green keeps its test count (the green marker holds it, not scratch)" '[[ $scrub_end1 == 7 && $(cat "$HARNESS_STATE/proj/scrub/tests-end" 2> /dev/null) == 7 ]] \
   && [[ $(hlog scrub | grep -c "scratch removed: ") == 2 && ! -e $T/scratch/proj/scrub ]]'   # the second segment ran no init: its scratch held no suite output
+# R1: a suite that prints text with no count, over two segments: the first ends at its deadline after the initializer,
+# the second runs the features (an init and a suite before each session) to the end
+mkdir -p "$HARNESS_STATE/proj/nocount" && echo "CHECK_CMD='echo \"lint: clean\"'" > "$HARNESS_STATE/proj/nocount/run.env"
+"$H" start "$T/proj" nocount --spec SPEC.md --until-epoch $(( $(date +%s) - 1 )) --foreground > "$T/nocount.out" 2>&1
+"$H" continue nocount --foreground > "$T/nocount2.out" 2>&1
+check "test count: no match is noted once per run (demo: no output; nocount: text with no count), never for a counted or cached suite (scrub)" \
+  '[[ $(grep -c "test count: no match in the suite'"'"'s output (tests start/end stay unknown)" "$T/demo-hlog.md") == 1 ]] \
+  && [[ $(hlog nocount | grep -c "test count: no match") == 1 && $(hlog nocount | grep -c "run ended") == 2 ]] \
+  && hlog nocount | grep -m1 -e "test count: no match" -e "run ended" | grep -q "test count" && hlog nocount | grep -q "run ended (done)" && ! hlog scrub | grep -q "test count: no match"'
 check "KEEP_SCRATCH=1 keeps the run's scratch; the default is 0" '[[ -d $T/scratch/proj/demo ]] && grep -qF "scratch kept (KEEP_SCRATCH=1): $T/scratch/proj/demo" "$T/demo-hlog.md" \
   && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ $KEEP_SCRATCH == 0 ]] ) && grep -q "^# KEEP_SCRATCH=0 " "$HERE/../templates/user/config.sh"'
 git init -q "$T/ck2" && ( cd "$T/ck2" && echo a > f && git add f && git -c user.name=t -c user.email=t@t commit -qm a )

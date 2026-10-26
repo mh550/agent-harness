@@ -32,7 +32,7 @@
         "journal/decisions/2026-10-26-real-test-counts.md exists (title, provenance, finding · choice · rejected), docs/architecture.md's testcount.mjs line and README.md's test-count mention say the runners covered",
         "`bash -n` on every shell file touched and `node --check lib/testcount.mjs` pass; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F1-03",

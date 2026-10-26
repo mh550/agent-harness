@@ -20,6 +20,7 @@ harness init ~/projects/myapp            # CLAUDE.md template + .harness/config.
 harness start ~/projects/myapp --spec docs/todo.md --brief "items 1–3 only"
 harness status                           # every run: running / ended (why), features, last log lines
 harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes, memory peaks over 2 GB
+                                         # (tests: counted for node:test, pytest, jest/vitest, cargo and go test -v; a suite with no count is said once in harness-log.md)
 ```
 
 Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config, which the
