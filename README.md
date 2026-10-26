@@ -32,7 +32,9 @@ harness queue add --continue dj-2026-10-17
 harness queue start --until 07:30        # tmux h-queue; no run starts after 07:30, and each one stops by then
 ```
 
-When the runner exits (queue empty, past `--until`, or `harness queue stop`) and it started at least one run, it runs
+When the runner exits (queue empty, past `--until`, or `harness queue stop`) and it started at least one run, it
+collects as it drains: `harness gc <project> --all-merged --deps` for each project it started a run in (its lines
+in `queue/runner.log`, prefixed `gc <project>:`; a failed gc is logged and never stops what follows). Then it runs
 **`harness debrief`**, detached: one short read-only Sonnet session that reads what happened and overwrites
 `ledger/debrief.md`. The notification (ntfy or `NOTIFY_CMD`) carries its three-line headline and the note's path (see [Debrief](#debrief)).
 

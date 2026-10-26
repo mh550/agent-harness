@@ -254,7 +254,7 @@
         "docs/architecture.md §12 (queue) and README's queue line say the runner collects as it drains; journal/decisions/2026-10-25-runner-gc.md exists (rejected: gc from the debrief, which stays read-only)",
         "bash -n lib/queue.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L4-05", "milestone": "L4", "kind": "review", "model": "opus",
       "description": "An Opus review of the L4 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied (cmd_gc's passes as one loop over prefixes), and the L4 docs complete.",
       "steps": [
