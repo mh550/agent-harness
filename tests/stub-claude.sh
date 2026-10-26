@@ -63,7 +63,6 @@ case $first in
   { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"]$after, "passes": false } ] }
 JSON
     entry init 1 '{feature: "init", kind: "init", outcome: "passes", summary: "3 features: M1 2, M2 1", header: "# progress"}'
-    [[ ${STUB_ADD_TEARDOWN:-} ]] && printf '#!/usr/bin/env bash\ntouch "$HARNESS_SCRATCH/teardown-late.marker"\n' > .harness/teardown.sh && chmod +x .harness/teardown.sh   # a hook added mid-run
     git add -A && git commit -qm "HARNESS: feature list" && git push -q -u origin "$HARNESS_BRANCH"
     if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop [<why>]
       tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "$HARNESS_BRANCH"
@@ -106,6 +105,22 @@ JSON
     if [[ ${STUB_LEAVE_PROCESS:-} == 1 ]]; then   # backgrounds a process it never stops: its scope holds it (and $STUB_DIR/left.pids remembers it)
       sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/left.pids"
       [[ -n ${STUB_SCOPE_UNIT:-} ]] && echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"
+    fi
+    if [[ ${STUB_ADD_TEARDOWN:-} && ! -f $HARNESS_SCRATCH/teardown-added ]]; then   # the first coding session adds a hook mid-run (a lane commit)
+      printf '#!/usr/bin/env bash\ntouch "$HARNESS_SCRATCH/teardown-late.marker"\n' > .harness/teardown.sh && chmod +x .harness/teardown.sh; touch "$HARNESS_SCRATCH/teardown-added"
+      git add -A && git commit -qm "$id: a teardown hook" && git push -q origin "$HARNESS_BRANCH"
+      if [[ ${STUB_PHONE_STOP_CODING:-} ]]; then   # then Michael stops the run from his phone, as STUB_PHONE_STOP does
+        tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "harness/$HARNESS_RUN_ID"
+        sed -i "1s/.*/status: stop/" "$tmp/$HARNESS_RUN_DIR/INBOX.md"; git -C "$tmp" commit -qam "phone: stop" && git -C "$tmp" push -q origin "harness/$HARNESS_RUN_ID"; rm -rf "$tmp"
+      fi
+    fi
+    if [[ ${STUB_COMMIT_RECORD:-} == "$id" && $n == 1 ]]; then   # beats the slot's exclude: commits a file into the run record
+      echo x > "$HARNESS_RUN_DIR/x"; git add -f "$HARNESS_RUN_DIR/x" && git commit -qm "$id: into the record" && git push -q origin "$HARNESS_BRANCH"
+    fi
+    if [[ ${STUB_RECORD_MOVE:-} == "$id" && $n == 1 ]]; then   # Michael edits INBOX.md on GitHub meanwhile: the record moves under the session
+      tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "harness/$HARNESS_RUN_ID"
+      sed -i '2s/$/ (phone edit)/' "$tmp/$HARNESS_RUN_DIR/INBOX.md"
+      git -C "$tmp" commit -qam "phone: comment" && git -C "$tmp" push -q origin "harness/$HARNESS_RUN_ID"; rm -rf "$tmp"
     fi
     if [[ ${STUB_PARK:-} == "$id" && $n == 1 ]]; then   # can't go on without Michael: asks in INBOX.md, parks
       sed -i '/^## Answers/i ### '"$id"': set the gatus vars, then answer\n' "$HARNESS_RUN_DIR/INBOX.md"

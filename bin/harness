@@ -149,6 +149,7 @@ cmd_start() {
   [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
   [[ $run == desk || $run == debrief ]] && die "run-id '$run' is taken by the desk (tmux h-desk, <state>/queue/desk)"
   [[ $run == queue ]] && die "run-id 'queue' is taken by the queue runner (tmux h-queue)"
+  [[ $run == lanes ]] && die "run-id 'lanes' is taken by the lane slots (<worktrees>/<project>/lanes)"
   local proj branch=harness/$run wt state
   proj=$(basename "$p"); wt=$WT_ROOT/$proj/$run; state=$STATE_ROOT/$proj/$run
   if alive "$state"; then die "run $run is already running (harness attach $run)"; fi
@@ -181,15 +182,17 @@ cmd_start() {
   [[ -n ${HARNESS_RUNNER_ID:-} ]] && echo "$HARNESS_RUNNER_ID" >> "$state/runners"   # started by that queue runner (its debrief covers it)
   # the run's own settings: --spec persists across resumes; --until applies to this start only
   local kept=() l; [[ -f $state/run.env ]] && mapfile -t kept < "$state/run.env"
-  { for l in "${kept[@]}"; do [[ $l == DEADLINE_AT=* || ( -n $spec && $l == SPEC_FILES=* ) ]] || echo "$l"; done
-    [[ -z $spec ]] || printf 'SPEC_FILES=%q\n' "$spec"; [[ -z $until ]] || printf 'DEADLINE_AT=%q\n' "$until"; } > "$state/run.env"
+  # --base persists too: it replaces origin/main for the record branch and every lane (lib/record.sh slot_open)
+  { for l in "${kept[@]}"; do [[ $l == DEADLINE_AT=* || ( -n $spec && $l == SPEC_FILES=* ) || ( -n $base && $l == BASE_REF=* ) ]] || echo "$l"; done
+    [[ -z $spec ]] || printf 'SPEC_FILES=%q\n' "$spec"; [[ -z $until ]] || printf 'DEADLINE_AT=%q\n' "$until"
+    [[ -z $base ]] || printf 'BASE_REF=%q\n' "$base"; } > "$state/run.env"
   [[ -n $brief ]] && printf '%s\n' "$brief" >> "$state/brief.md"
   rm -f "$state/STOP"
   local env="WT=$(printf %q "$wt") RUN_ID=$run STATE=$(printf %q "$state") PROJECT_DIR=$(printf %q "$p") HARNESS_HOME=$(printf %q "$HARNESS_HOME")"
   # tmux starts commands in its server's environment, not this shell's: pass the harness overrides along
   local v; for v in HARNESS_CLAUDE HARNESS_GH HARNESS_SCRATCH_ROOT HARNESS_PW HARNESS_PAUSE_POLL HARNESS_CONFIG HARNESS_LEDGER \
     HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL HARNESS_DESK_SESSION HARNESS_DESK_WAIT \
-    HARNESS_SYSTEMD_RUN HARNESS_SYSTEMCTL HARNESS_MEMINFO HARNESS_MEM_POLL; do
+    HARNESS_SYSTEMD_RUN HARNESS_SYSTEMCTL HARNESS_MEMINFO HARNESS_MEM_POLL HARNESS_LANE_POLL HARNESS_RECORD_DELAY; do
     [[ -n ${!v:-} ]] && env+=" $v=$(printf %q "${!v}")"; done
   if (( fg )); then eval "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh")"; return; fi
 

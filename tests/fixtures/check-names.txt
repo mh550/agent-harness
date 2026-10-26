@@ -40,6 +40,7 @@ a failed verify at the deadline is not retried: M1 needs Michael
 a given-up feature blocks what depends on it
 a held index.lock: written, not committed, nothing left staged
 a killed debrief changes nothing
+a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
 a later deadline: the earlier refusals aren't the cause
 a ledger checkout on another branch: the note is written, not committed
 a legacy run is untouched, then continued into a journal
@@ -184,12 +185,14 @@ harness parked is read-only
 harness parked: an unknown or glob run id is an error
 harness parked: id, why, question, both commands
 harness report prints the writeup
+harness start --base: persisted, and the record branch and every lane start from it
 harness start refuses a run id whose tmux session another live run holds; its session lives
+harness start refuses the run id lanes (the slots' directory)
 harness status lists a running run's units with MemoryCurrent; an ended run's none
 harness stop --why: the note and ended say stopped by Michael: <why>
 harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
-independent M2 verified, not merged (M1 isn't)
+independent M2 verified and merged alone (its tag carries no M1 work)
 independent work goes on past a parked feature
 init model resolved to fable
 init output is capped at 40 lines with the log path
@@ -197,6 +200,10 @@ init: a Vercel project without vercel.json gets one
 init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
 lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end by default; commented in the user template; HARNESS_LANE_POLL in the driver's usage
+lanes record: a lane commit touching .harness/runs/ is reverted with a note, and harness/<run> never gets it
+lanes record: a session's question above ## Answers lands in the record's INBOX.md above that line
+lanes record: the slot is gone at the end, the run keeps one worktree, the merged lane's branch is deleted
+lanes record: two sessions' passes flips both land while the record moved between them
 lanes: a complete unverified milestone is a candidate (to be verified); a given-up one with nothing to try is not
 lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)
 lanes: a milestone whose first feature has after: [] opens at once, beside the first
@@ -218,6 +225,7 @@ lint: self-match trips a grep of progress.md for the step's own words, not of ha
 lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
+materialize: a record tracked at the slot's base is skip-worktree, so the session's commit carries none of the copy
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
@@ -235,6 +243,7 @@ mid-session limit: attempt given back, work kept
 next <m>: a feature without after waits on its own milestone's earlier features only
 no URL in time: no window, the plain notification
 no URLs for a non-GitHub origin
+no code PR touches the run record, and the record branch holds every entry
 no dependency note when every milestone has after
 no final tag, no false 'verified'
 no user systemd: the init runs bare, and the run's one uncapped note stays the only one
@@ -273,6 +282,7 @@ queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old value, s
 queue stop after a run: one debrief
 queue unpark puts it back at the end, its reason gone
 real limit message: not counted, run completes
+record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
 red suite un-passes C
 refused merge leaves the PR, needs Michael
 refused sessions recorded as env
@@ -308,6 +318,7 @@ scratch_done: the final tree's output is check-last.out, the note names what it 
 scratch_rm refuses anything but the run's own scratch directory (symlinks in its path too)
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
+slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
 start queues when MAX_PARALLEL_RUNS are going
 status: stop <why> from the phone: the same note, ended and services note
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
@@ -403,4 +414,5 @@ verify needs Michael starts a desk
 verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
 waits for another run's limit window
+what lands on main is byte for byte what was verified
 with a queue runner going, the continue command is a queue add

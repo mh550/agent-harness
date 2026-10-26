@@ -127,7 +127,9 @@ run_task() {   # <task.json> <repeat> → one replay; its record in $R/<unit>/ a
         [[ -f $wt/.harness/runs/$run/$f ]] && cp "$wt/.harness/runs/$run/$f" "$res/"; done
       # what probes need, kept while the clone and the ref's worktree exist (/tmp may lose them): the run's commits,
       # and the coding prompt of the task's next feature as the ref's own lib/prompt.sh renders it (older refs: none)
-      git -C "$clone" log --reverse --name-only --format='%x00%H%x09%s' "$base..harness/$run" 2> /dev/null | EV commits > "$res/commits.json"
+      # (lanes: the record on harness/<run>, the code on its lane branches and tags)
+      git -C "$clone" log --reverse --name-only --format='%x00%H%x09%s' "harness/$run" \
+        $(git -C "$clone" for-each-ref --format='%(refname)' "refs/heads/harness-lane/$run/" "refs/tags/run/$run/") --not "$base" 2> /dev/null | EV commits > "$res/commits.json"
       if [[ -x $E/harness/lib/prompt.sh ]] && v=$(EV target "$res/feature_list.json" 2> /dev/null); then
         run_env "$E/harness/lib/prompt.sh" "$st" coding "$v" > "$res/probe-prompt.md" 2>> "$res/start.log" || rm -f "$res/probe-prompt.md"
         # and the context pack that session would read first, from refs that build one (E4: lib/entries.mjs has pack)
