@@ -1,0 +1,38 @@
+# Context pack for `L5`
+
+Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
+
+## This feature's earlier attempts
+
+- Dead end (L5-01, 25-L5-01): an empty MAX_PARALLEL_RUNS= as the bad-value case — bash arithmetic reads empty as 0, so starts are held anyway and the check didn't show the danger; 2x and 08 (octal) make `(( a >= x ))` fail and fall through to a start → entries.jsonl:30
+- Question (L5-01): MAX_PARALLEL_RUNS=0 is now accepted on reload and holds every start, a quiet way to pause the queue without stopping it. Keep that, or reject 0 like 2x? (default: kept, undocumented) → entries.jsonl:30
+- 2026-10-26 02:39 · L5-01 · passes: lib/queue.sh re-runs harness_config at the top of each poll and logs `MAX_PARALLEL_RUNS <old> → <new> (config reloaded)`; lowering only gates starts. A value that is no plain whole number (2x, 08) keeps the old, logged once. 3 checks (two parallel tmux-started runs in proj/proj2, held by a stub file switch), decision file, §12, README, template line. 322 → 325.; tests 322 → 325; files lib/queue.sh, tests/run.sh, tests/stub-claude.sh, journal/decisions/2026-10-25-runner-config-reload.md, docs/architecture.md, … → entries.jsonl:30
+
+## Discoveries for this feature
+
+- Discovery (L5-01, affects run): tests/stub-claude.sh: with $STUB_DIR/hold-coding present, a run's coding sessions touch $STUB_DIR/held-<run> and wait (≤180 s) for $STUB_DIR/release-<run>. It is a file switch, so it reaches tmux-started runs. STUB_* flags reach those runs through `tmux set-environment -g` on the private server (unset afterwards). → entries.jsonl:30
+- Discovery (L5-01, affects run): The suite now has a second throwaway project, $T/proj2: a clone with its own bare origin $T/origin2.git, reached through url.insteadOf git@github.com:test/proj2.git. It is created in the L5 block at the end of tests/run.sh. → entries.jsonl:30
+- Discovery (L5-01, affects run): The full suite took 600 s under check.sh this session, right at a 600 s Bash foreground limit: run it in the background. → entries.jsonl:30
+- Discovery (L4-05, affects run): The full suite takes ~9-10 min under load now (548 s): a Bash background waiter needs a timeout over 600 s or it is killed. → entries.jsonl:28
+- Discovery (L4-05, affects L5, run): gc's worktree loop now only removes harness/<run> worktrees; a merged clean one on another branch prints 'keeps <wt>: not a run worktree (branch <b>)'. The local branch pass skips branches checked out in any worktree (no more 'cannot delete branch … used by worktree' noise). → entries.jsonl:28
+- Discovery (L4-05, affects L5, run): HARNESS_GC_TIMEOUT (env, default 10m) bounds the runner's gc; the suite's runner-gc failure check uses 2s with a fetch that sleeps 60. → entries.jsonl:28
+- Discovery (L4-04, affects L4-05, L5, run): Every queue runner in tests/run.sh that starts a run now gcs $T/proj: a new runner test that starts runs must wrap itself in keep_wts … settle; unkeep_wts if later checks read existing worktrees. The queue's own runs' worktrees are gone afterwards; their records are read from $T/ledger/proj/<run>/. → entries.jsonl:27
+- Discovery (L4-04, affects L4-05, run): A meta.env without PROJECT_DIR inherits the caller's PROJECT_DIR when sourced (sessions export one): queue.sh unsets it before sourcing. debrief.sh rec_dir and other `source meta.env` sites may have the same leak. → entries.jsonl:27
+- Discovery (L4-04, affects run): The 'queue holds an entry whose project has a live run' flake: busy3 now sleeps 5 and the runner's --until is +3 s (was 3 and +1), so a slow runner start-up no longer misses starting stoppy-o. → entries.jsonl:27
+- Discovery (L3-05, affects L4, run): harness start now refuses a run id whose h-<run> another run that isn't done holds (any project, a.b vs a-b): this also closes L2 review #5 (shared harness-<id>-* units). A crashed run of another project with the same id blocks the id until it is continued or ended. → entries.jsonl:22
+- Discovery (L3-05, affects L4, L5): scratch_done <key> and scratch_rm live in lib/prompt.sh; scratch_rm returns 2 on refusal. entry-stale-*/entry-failed-* now go to the state dir. → entries.jsonl:22
+- Discovery (L3-05, affects run): Deferred from the L3 review: queue runner reap spares no attached session (#11); kill re-check and '! could not kill' path unexercised (#14). → entries.jsonl:22
+- Discovery (L3-04, affects L3-05, run): tmux_name is lossy (a.b and a-b of any project are both h-a-b): tmux_reap checks every state dir of the root for a same-name run that is live, paused or not ended and keeps the session then. cmd_start's resume kill-session still kills a same-name session of another run (pre-existing, like L2-06's svc note). → entries.jsonl:21
+- Discovery (L3-03, affects run): The known flake 'queue holds an entry whose project has a live run' failed once more while two tmux iteration runs loaded the box; the clean rerun passed. → entries.jsonl:20
+- Discovery (L3-02, affects run): systemctl --user is-enabled systemd-tmpfiles-clean.timer prints `disabled` on this box: the tmpfiles install command in README also runs `systemctl --user enable --now systemd-tmpfiles-clean.timer`. → entries.jsonl:19
+- Discovery (L3-02, affects L3-05, run): green-<key> markers in $STATE/green now hold `<n> tests` (empty when the output has none); check.sh's cached line and finish's tests-end read the marker first. → entries.jsonl:19
+- Discovery (L2-06, affects L4, run): Deferred L2 review Minors: two projects' runs of one id share harness-<id>-svc (refuse in cmd_start); SVC_UP is shell-only, so a continue segment with no init leaves a SIGKILLed segment's svc scope to gc ($STATE/svc-up sketch); without user systemd the note says services stopped while bare init children run on. → entries.jsonl:16
+- Discovery (L2-06, affects L3, L4, L5): The suite project's INIT_CMD now takes STUB_SLOW_INITCMD=<s> (touches $HARNESS_SCRATCH/init-begin, sleeps) and its teardown.sh STUB_SLOW_TEARDOWN=<s> (touches teardown-begin); stub-claude STUB_ADD_TEARDOWN=1 makes the initializer write an executable .harness/teardown.sh. tests/run.sh has sd_before <key> <index>. → entries.jsonl:16
+- Discovery (L2-06, affects L4, run): TEARDOWN_CMD defaults to empty now; services_down picks .harness/teardown.sh when executable at call time. → entries.jsonl:16
+- Discovery (L2-06, affects run): The known 'queue holds an entry whose project has a live run' flake (busy3 sleep 3) failed once more in a KEEP=1 run under load. → entries.jsonl:16
+- Discovery (L2-05, affects run): One full-suite run failed 'queue holds an entry whose project has a live run' (its busy3 driver is a `sleep 3`); the next two runs passed unchanged: a timing flake under load. → entries.jsonl:15
+- Discovery (L2-04, affects run): Run waiter's window is now +660 s (11 min) and waiter9 (+540 s) is new; the suite has two more full runs (about +20 s). → entries.jsonl:14
+- Discovery (L1-08, affects L2, run): mem_gate now exits 1 after any wait and is called by the driver loop (after the pick, before F bump; the loop starts over once, gated=1), verify() before each round clock, and the init before run_init; session() no longer gates. L2 services_down hooks into the same place. → entries.jsonl:9
+- Discovery (L1-07, affects run): prompts/parts/rules.md is only included when the worktree has a CLAUDE.md (lib/prompt.sh prompt_render), so the deepEqual rule reaches only projects with one (all of them today). The MCP line is logged to run.log beside the permissions line, not noted in harness-log.md (same for every session). → entries.jsonl:8
+
+_7 items left out at 8192 bytes: entries.jsonl has them all._
