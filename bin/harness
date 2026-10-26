@@ -62,6 +62,8 @@ source "$HARNESS_HOME/lib/config.sh"
 source "$HARNESS_HOME/lib/deploy.sh"
 # shellcheck source=lib/scope.sh
 source "$HARNESS_HOME/lib/scope.sh"   # scope_unit, scope_owns, scope_stop: gc's unit step and status's unit lines
+# shellcheck source=lib/tmux.sh
+source "$HARNESS_HOME/lib/tmux.sh"   # tmux_name, tmux_reap: start's session and gc's reaper
 
 die() { echo "harness: $*" >&2; exit 1; }
 toplevel() { git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "$1 is not a git repository"; }
@@ -70,7 +72,6 @@ state_of() {   # run-id → state dir
   local d; d=$(compgen -G "$STATE_ROOT/*/$1" | head -1 || true)
   [[ -n $d && -f $d/meta.env ]] || die "no run '$1' (see: harness status)"; echo "$d"
 }
-tmux_name() { echo "h-${1//./-}"; }
 port_taken() { (echo > "/dev/tcp/127.0.0.1/$1") 2>/dev/null || grep -qsx "$1" "$STATE_ROOT"/*/*/port; }
 alive() { local p; p=$(cat "$1/driver.pid" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null; }
 runner_up() { [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null; }
@@ -138,6 +139,7 @@ cmd_start() {
   run=${run:-$(auto_id "$p")}
   [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
   [[ $run == desk || $run == debrief ]] && die "run-id '$run' is taken by the desk (tmux h-desk, <state>/queue/desk)"
+  [[ $run == queue ]] && die "run-id 'queue' is taken by the queue runner (tmux h-queue)"
   local proj branch=harness/$run wt state
   proj=$(basename "$p"); wt=$WT_ROOT/$proj/$run; state=$STATE_ROOT/$proj/$run
   if alive "$state"; then die "run $run is already running (harness attach $run)"; fi
@@ -367,6 +369,9 @@ cmd_gc() {
     elif scope_stop "${u%.scope}"; then echo "+ stopped $u ($why)"
     else echo "! could not stop $u ($why)"; fi
   done < <("${HARNESS_SYSTEMCTL:-systemctl}" --user list-units 'harness-*' --plain --no-legend 2> /dev/null || true)
+  # the tmux sessions of this project's ended runs (a window kept for TMUX_KEEP_HOURS, a driver that died): before the
+  # fetch, which has nothing to do with them; h-queue and the desk are no run's name (decisions/2026-10-25-tmux-reaper)
+  tmux_reap "$dry" "$STATE_ROOT/$(basename "$p")"/*/
   git -C "$p" fetch -q --prune origin
   local main=origin/main
   # A run branch is done when main has all of it except run-record bookkeeping (.harness/runs/, which the ledger

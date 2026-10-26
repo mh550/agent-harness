@@ -17,6 +17,8 @@ STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness} Q=${H
 UNTIL=${1:-0} POLL=${HARNESS_QUEUE_POLL:-30}
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # defaults + the user's config
+# shellcheck source=lib/tmux.sh
+source "$HARNESS_HOME/lib/tmux.sh"   # tmux_reap, as the runner exits
 H=$HARNESS_HOME/bin/harness
 mkdir -p "$Q/done"
 log() { echo "$(date '+%F %T') $*" | tee -a "$Q/runner.log"; }
@@ -63,6 +65,8 @@ while :; do
   sleep "${HARNESS_QUEUE_SETTLE:-10}"   # let the new driver write its pid before counting again
 done
 rm -f "$Q/runner.pid"; trap - EXIT
+# the sessions its runs (and any other project's) left once ended, before the debrief reads them (decisions/2026-10-25-tmux-reaper)
+while IFS= read -r l; do log "$l"; done < <(tmux_reap 0 "$STATE_ROOT"/*/*/)
 started=$(grep -lsx -- "$RID" "$STATE_ROOT"/*/*/runners | wc -l)
 if (( started )); then
   log "runner down after starting $started run(s): harness debrief (detached; output in queue/debrief.out)"

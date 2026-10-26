@@ -202,7 +202,7 @@
         "journal/decisions/2026-10-25-tmux-reaper.md exists (run → session never session → run; rejected: parsing tmux list-sessions); docs/architecture.md §3 (gc) and §12 (queue) and README's gc row updated",
         "bash -n bin/harness lib/queue.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L3-05", "milestone": "L3", "kind": "review", "model": "opus",
       "description": "An Opus review of the L3 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, and the L3 docs complete.",
       "steps": [

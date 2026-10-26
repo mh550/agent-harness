@@ -46,7 +46,7 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
 | `harness eval run` · `compare` · `probes` | replay a fixed task set under a harness version and compare two results (see [Evals](#evals); costs money) |
-| `harness init` · `gc [--dry-run]` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs and stop the systemd units a killed driver left (`harness-<run>-*` of runs with no live driver) |
+| `harness init` · `gc [--dry-run]` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs, stop the systemd units a killed driver left (`harness-<run>-*` of runs with no live driver) and kill the tmux sessions `h-<run>` of its ended runs (never `h-queue`, the desk, a live or paused run's) |
 
 `harness continue` merges `main` into the run branch before any session, so a resumed run never works on a stale base.
 
@@ -111,7 +111,8 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
   `status: stop`; answers under `## Answers`. The driver pulls before every session.
 - **Box:** `harness pause|resume|stop|answer <run>`, `harness attach <run>` (tmux: driver · log · supervisor). When the driver exits, the
   supervisor window closes, the driver window's scrollback goes to `<state>/tmux-driver.txt`, and the session `h-<run>`
-  closes after `TMUX_KEEP_HOURS` (24; `0` = at once).
+  closes after `TMUX_KEEP_HOURS` (24; `0` = at once), or sooner: `harness gc <project>` and the queue runner, as it
+  exits, kill the sessions of ended runs.
 - **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends, recent entries); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
   Claude Code itself (the prompt names it in one line, it doesn't paste it), so a rule edited on the run branch reaches
   the next session. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
