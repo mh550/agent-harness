@@ -2,8 +2,17 @@
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- Dead end (P0-02, 02-P0-02): debrief file replaying run 2 without run 1 — the debrief 'since' section runs `ran demo` (demo's run.log) and reads run 1's HV → entries.jsonl:3
+- Dead end (P0-02, 02-P0-02): desk in its own file with runs 3/10/16 only — it briefs stoppy (run 2) and calls the debrief section's `ran`; run 16's 'nothing parked' needs gc to have collected demo → entries.jsonl:3
+- Question (P0-02): The spec's '<150 s with TEST_JOBS=4' can't be met (measured 165 s; floor about 159 s from 637 s of work on 4 jobs, and 150 s for the debrief chain alone). Accept 165 s (step 5 → 'under 180 s, measured and recorded'), or should a later feature rewrite the debrief chain's checks so it can be split? → entries.jsonl:3
+- 2026-10-26 07:35 · P0-02 · not yet: Runner runs TEST_JOBS files (default 4 here) as background jobs, largest first; output whole per file, timing lines, slowest three. split.sh REPLAYS_ cut the 400 s file in three. 335/335 green in 165 s (was 589 s), peak 390 MB. Not passed: step 5 wants <150 s, but the file times sum to 637 s (≥159 s on 4 jobs) and the debrief chain is 150 s alone.; tests 327 → 335; files tests/run.sh, tests/lib.sh, tests/split.sh, tests/checks/, tests/checks/28-suite-runner.sh, … → entries.jsonl:3
+
 ## Discoveries for this feature
 
+- Discovery (P0-02, affects P0-02, P0): A 150 s suite is out of reach at TEST_JOBS=4 without rewriting checks: the work is CPU-bound (4 cores/8 threads); the file times sum to 637 s; the debrief chain (queue → runner → since → big, plus runs 1, 2, 4, 5, 9) is 146-151 s on its own whatever TEST_JOBS is. → entries.jsonl:3
+- Discovery (P0-02, affects run): scope.sh's real 64M-scope check is flaky: in 1 of 5 full runs the cgroup OOM kill also took the bash -c wrapper, leaving an empty .show (rc/peak unread). Not the split. → entries.jsonl:3
 - Discovery (P0-01, affects P0-02, P0-04): Most of the suite reads run 1's demo state (its systemd.log scopes, worktree, tags, demo-hlog.md, state dir), and the debriefs read runs 2/4/5/9 and the queue. Grouping therefore yields one file of 25 sections and 253 checks (06-scope-sh-...-l5.sh) that takes ~400 s alone, more than half of the 589 s sequential total. Under S2 that file alone exceeds 150 s. Splitting it means re-running run 1's start in a second file: lines not in the monolith (the spec forbids patching). P0-02 must choose and record that. → entries.jsonl:2
 - Discovery (P0-01, affects P0-02, run): split.sh writes only into an empty $SPLIT_OUT (default tests/checks), so it can never delete files added since the split. To re-verify the split: SPLIT_OUT=$(mktemp -d)/o bash tests/split.sh, then cmp against tests/checks. → entries.jsonl:2
 - Discovery (P0-01, affects P0-02, P0-03, P1, P2): tests/checks/25-suite-runner.sh is the runner's own check file (it holds the testcount check). P0-02's runner checks belong there. Every new check name needs a line in tests/fixtures/check-names.txt (C-sorted): the full run's conformance check fails on new names too. → entries.jsonl:2
