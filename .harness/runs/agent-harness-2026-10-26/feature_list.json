@@ -88,7 +88,7 @@
         "it orders P1-02..P1-05, says what the suite looks like after each (green, with the record checks rewritten from P1-03 on), and writes Michael's after-run step (MAX_LANES=2 in ~/.config/harness/config.sh; nothing live to run during the run)",
         "`bash tests/run.sh` ends with every check passing (unchanged by this feature)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-02",
