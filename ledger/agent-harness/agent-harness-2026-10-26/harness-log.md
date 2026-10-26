@@ -10,3 +10,27 @@
 - 2026-10-26 08:30 · blocked: the remaining features wait on P0-02 (given up; needs Michael)
 - 2026-10-26 08:30 · run ended (blocked on P0-02): 2/17 passing · 5 sessions (5 real) · 2 features passed · $22.76 · 2.8 h · by kind: init 1 ($4.71), coding 4 ($18.05) · by model: claude-fable-5-1 1 ($4.71), claude-opus-5-5 4 ($18.05)
 - 2026-10-26 08:30 · services stopped (blocked on P0-02)
+- 2026-10-26 08:30 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-26 (in the state dir: init.out check-last.out)
+- 2026-10-26 15:59 · merged main into harness/agent-harness-2026-10-26
+- 2026-10-26 16:03 · test count: no match in the suite's output (tests start/end stay unknown)
+- 2026-10-26 16:03 · context.md for P0-02: 7833 bytes, 5 items left out
+- 2026-10-26 16:24 · P0-02 · claude-opus-5-5 · passes=true · 21 min · 3/17 passing
+- 2026-10-26 16:24 · context.md for P0-04: 7723 bytes, 1 items left out
+- 2026-10-26 16:44 · P0-04 · claude-opus-5-5 · passes=true · 19 min · 4/17 passing
+- 2026-10-26 16:44 · verify P0: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-26 16:48 · context.md for P0: 7788 bytes, 16 items left out
+- 2026-10-26 16:51 · P0 verified and tagged run/agent-harness-2026-10-26/P0
+- 2026-10-26 16:51 · P0 merged into main · https://github.com/mh550/agent-harness/pull/30
+- 2026-10-26 16:51 · context.md for P1-01: 8007 bytes, 3 items left out
+- 2026-10-26 17:29 · P1-01 · claude-opus-5-5 · passes=true · 34 min · 5/17 passing
+- 2026-10-26 17:29 · context.md for P1-02: 7923 bytes, 2 items left out
+- 2026-10-26 17:58 · P1-02 · claude-opus-5-5 · passes=true · 28 min · 6/17 passing
+- 2026-10-26 17:58 · context.md for P1-03: 7813 bytes, 3 items left out
+- 2026-10-26 18:38 · P1-03: entry.json missing; recorded a minimal entry
+- 2026-10-26 18:38 · P1-03 · claude-opus-5-5 · passes=false · 39 min · 6/17 passing
+- 2026-10-26 18:41 · context.md for P1-03: 7894 bytes, 3 items left out
+- 2026-10-26 18:53 · P1-03: entry.json missing; recorded a minimal entry
+- 2026-10-26 18:53 · P1-03 · claude-opus-5-5 · passes=false · 11 min · 6/17 passing
+- 2026-10-26 18:53 · blocked: the remaining features wait on P1-03 (given up; needs Michael)
+- 2026-10-26 18:53 · run ended (blocked on P1-03): 6/17 passing · 13 sessions (13 real) · 6 features passed · $52.81 · 5.4 h · by kind: init 1 ($4.71), coding 10 ($47.75), retro 1 ($0.11), verify 1 ($0.24) · by model: claude-fable-5-1 1 ($4.71), claude-opus-5-5 10 ($47.75), claude-sonnet-5-5 2 ($0.35)
+- 2026-10-26 18:53 · services stopped (blocked on P1-03)

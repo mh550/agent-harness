@@ -1,12 +1,29 @@
-# Context pack for `P0-03`
+# Context pack for `P1-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- 2026-10-26 18:38 · P1-03 · not yet: The Opus review of the P1-03 diff is still running. I'll wait for its findings before I fix anything, rerun the suite, write `entry.json` and flip `passes`.; files bin/harness, docs/architecture.md, journal/decisions/2026-10-26-lanes.md, lib/desk.sh, lib/driver.sh, … → entries.jsonl:11
+
+## Michael's answers
+
+- ### 2026-10-26 15:59 (local) P0-02: accepted. Main (retro F1, F2) is merged into this branch and tests/checks/ re-cut from it; the suite is 392/392 green in 208 s with TEST_JOBS=4. Step 5 now reads 'measured and recorded, not a gate' and steps 2 and 4 are reworded as you proposed. Rule from here: a performance number in a step is measured and recorded, never a gate, unless the step says it protects the box. Proceed: P0-04, then P1, P2. → INBOX.md
+
 ## Discoveries for this feature
 
+- Discovery (P1-02, affects P1-03, P1-04): F lanes reads the run id from <state>/meta.env's RUN_ID (else the state dir's name) for its run/<run>/<dep> tags; F next/blocked take an optional 5th arg <m> (blocked too), unchanged without it. → entries.jsonl:10
+- Discovery (P1-01, affects P1-03, P1-05): Reopening a lane from origin/harness-lane/<run>/<m> is needed from P1-03 on (a segment that ends at a session cap mid-milestone, the dl runs), not only in P1-05. → entries.jsonl:9
+- Discovery (P1-01, affects P1-03): lib/eval.sh:130 reads base..harness/$run for commits.json; with a record-only run branch it must read the run's tags and lane branches (10:130). → entries.jsonl:9
+- Discovery (P1-01, affects run): The live check.sh still runs the suite in full for a docs/plans-only change (209-234 s twice this session): the live checkout hasn't synced P0-03's key ignores while this run lives. → entries.jsonl:9
+- Discovery (P0-04, affects run): A check file that exits non-zero with no FAIL line now adds 'FAIL <file>: exited <rc> before its end, with no FAIL line' to the total, so a subset run can no longer read as all passed while a file crashed. → entries.jsonl:7
+- Discovery (P0-02, affects run): The suite is now work-bound, not chain-bound: the 4-job floor (811 s / 4 = 203 s) is above the slowest file (156 s), so reordering files gains nothing. Only cutting CPU (fewer node starts in the driver) would make it shorter. Four jobs' contention adds about 56 s of slot time over TEST_JOBS=1's 755 s. → entries.jsonl:6
+- Discovery (P0-03, affects run): tests/lib.sh must unset every HARNESS_* variable prompt_env exports that changes check.sh's output (now HARNESS_CHECK_KEY_IGNORE too): a session's suite inherits its run's, and this repo's wide list turned the 'unset' checks red inside a real run (found by review, reproduced, fixed). → entries.jsonl:5
+- Discovery (P0-03, affects P1, P2, run): Once this merges, a session that only adds a plan, spec, decision or ledger file in this repo gets 'check: green (cached …; key ignores: docs/plans docs/specs journal findings-and-research ledger)' instead of a 3 min suite run. .harness/config.sh itself stays in the key. → entries.jsonl:5
+- Discovery (P0-03, affects P1, P2): STUB_EDIT=<path> in tests/stub-claude.sh: a coding session edits only that path, passes nothing, and copies the init.out it was started with to $STUB_DIR/init-<run>-<n>.out (what the pre-session suite said). → entries.jsonl:5
 - Discovery (P0-02, affects P0-02, run): The suite's CPU is mostly the harness's own process starts: lib/driver.sh calls node 1,684 times in file 12 (30 ms each). Caching F model (pure) and the read-only list queries keyed on the list's content would cut about 8% of that file's CPU. That is the only lever left short of rewriting checks. → entries.jsonl:4
-- Discovery (P0-02, affects P0-02, P0): A 150 s suite is out of reach at TEST_JOBS=4 without rewriting checks: the work is CPU-bound (4 cores/8 threads); the file times sum to 637 s; the debrief chain (queue → runner → since → big, plus runs 1, 2, 4, 5, 9) is 146-151 s on its own whatever TEST_JOBS is. → entries.jsonl:3
 - Discovery (P0-02, affects run): scope.sh's real 64M-scope check is flaky: in 1 of 5 full runs the cgroup OOM kill also took the bash -c wrapper, leaving an empty .show (rc/peak unread). Not the split. → entries.jsonl:3
+- Discovery (P0-02, affects P1, P2): lib.sh now has copies of ran, settle and HH (the debrief section's helpers) and a REPLAY mode for check (silent, uncounted). A new check file by topic needs no split.sh: split.sh only regenerates 01-27 into an empty SPLIT_OUT. → entries.jsonl:3
 - Discovery (P0-01, affects P0-02, run): split.sh writes only into an empty $SPLIT_OUT (default tests/checks), so it can never delete files added since the split. To re-verify the split: SPLIT_OUT=$(mktemp -d)/o bash tests/split.sh, then cmp against tests/checks. → entries.jsonl:2
 - Discovery (P0-01, affects P0-02, P0-03, P1, P2): tests/checks/25-suite-runner.sh is the runner's own check file (it holds the testcount check). P0-02's runner checks belong there. Every new check name needs a line in tests/fixtures/check-names.txt (C-sorted): the full run's conformance check fails on new names too. → entries.jsonl:2
 - Discovery (P0-01, affects run): The harness runs the live checkout's lib/check.sh/testcount.mjs, so its green line shows no test count until this merges to main. The worktree's lib/check.sh prints 'check: green (cached for this code tree, 327 tests)'. → entries.jsonl:2
@@ -16,13 +33,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): The driver loop is lib/driver.sh:567-719 (counters n, limits, repairs, gated as shell variables; verify_ready before each pick); verify is at 375, merge_one 314, merge_milestones 351, finish 484, restrict 87 (the revert pattern for a commit touching the record). bin/harness: cmd_continue 212, cmd_merge 227, cmd_status 236, cmd_gc 351 with record_only at 384 and the harness/ + harness-merge/ prefix passes at 449. → entries.jsonl:1
 - Discovery (init, affects run): Helpers that already exist for the lanes work: `notify.mjs question <before> <after>` computes the INBOX lines a session added; `features.mjs` has unpass, repair, snapshot, milestone-done, touched-outside; scope.sh has mem_available_gb's reader (HARNESS_MEMINFO), scope_unit and scope_owns (role regex at line 27); metrics.mjs `usage` reads unifiedWindows from the real capture tests/fixtures/usage-limit.jsonl, which carries five_hour beside seven_day. → entries.jsonl:1
 - Discovery (init, affects run): The stubs: tests/stub-claude.sh acts on the prompt's first line and STUB_* flags (set with `tmux set-environment -g` for sessions started in tmux, plain env otherwise); tests/stub-gh.sh keeps PRs as files under $STUB_DIR/prs and really merges into the bare origin; the record of git pushes is the bare origin itself. New stub behaviour must copy a real shape (fakes mirror the live API). → entries.jsonl:1
-- Discovery (init, affects run): S4 of the suite-split spec (`--for` selection by `# covers:`) is deliberately not in the list: P1 and P2 are the run's bulk and a feature a milestone can't ship without would hold P0. It is a one-session interactive change if wanted. → entries.jsonl:1
 
-## What it builds on
-
-- 2026-10-26 06:44 · P0-01 · passes: tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for byte from the single file by tests/split.sh with 27 grouping pairs, plus 25-suite-runner.sh. tests/lib.sh holds the preamble. A conformance check runs against tests/fixtures/check-names.txt (325 names from init's check.out). testcount.mjs now reads N/M checks passed. 327/327 green in 589 s.; tests 325 → 327; files tests/lib.sh, tests/split.sh, tests/run.sh, tests/checks/, tests/fixtures/check-names.txt, … → entries.jsonl:2
-
-## Lately in the run
-
-- 2026-10-26 08:15 · P0-02 · not yet: Steps 1-4, 6, 7 hold; step 5 (<150 s) can't be met inside a suite split. Measured: per-file slot times add up to 636 s (547 s CPU), so 4 jobs can't finish under 159 s; the suite ran 335/335 in 165 s. Node startup (30 ms × ~2,200 per big file) is half the CPU. Decision file updated (D2 default: report it as not met); no code changed.; tests 335 → 335; files journal/decisions/2026-10-26-suite-split.md → entries.jsonl:4
-- 2026-10-26 07:35 · P0-02 · not yet: Runner runs TEST_JOBS files (default 4 here) as background jobs, largest first; output whole per file, timing lines, slowest three. split.sh REPLAYS_ cut the 400 s file in three. 335/335 green in 165 s (was 589 s), peak 390 MB. Not passed: step 5 wants <150 s, but the file times sum to 637 s (≥159 s on 4 jobs) and the debrief chain is 150 s alone.; tests 327 → 335; files tests/run.sh, tests/lib.sh, tests/split.sh, tests/checks/, tests/checks/28-suite-runner.sh, … → entries.jsonl:3
+_3 items left out at 8192 bytes: entries.jsonl has them all._
