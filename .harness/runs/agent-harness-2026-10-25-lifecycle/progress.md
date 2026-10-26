@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 02:39 · L5-01 · passes
+
+lib/queue.sh re-runs harness_config at the top of each poll and logs `MAX_PARALLEL_RUNS <old> → <new> (config reloaded)`; lowering only gates starts. A value that is no plain whole number (2x, 08) keeps the old, logged once. 3 checks (two parallel tmux-started runs in proj/proj2, held by a stub file switch), decision file, §12, README, template line. 322 → 325.
+
+- **Files:** lib/queue.sh, tests/run.sh, tests/stub-claude.sh, journal/decisions/2026-10-25-runner-config-reload.md, docs/architecture.md, README.md, templates/user/config.sh
+- **Verified:** Red first: on the old runner l5b started only after l5a ended (no reload line); the guard check failed on a reload-only copy, which started a run past a full slot. Then the L5 block 3/3 in a scratch copy of the suite (41 s), and the full suite via check.sh 325/325 in 600 s.
+- **Tests:** 322 → 325
+- **Dead end:** an empty MAX_PARALLEL_RUNS= as the bad-value case — bash arithmetic reads empty as 0, so starts are held anyway and the check didn't show the danger; 2x and 08 (octal) make `(( a >= x ))` fail and fall through to a start
+- **Discovery** (affects run): tests/stub-claude.sh: with $STUB_DIR/hold-coding present, a run's coding sessions touch $STUB_DIR/held-<run> and wait (≤180 s) for $STUB_DIR/release-<run>. It is a file switch, so it reaches tmux-started runs. STUB_* flags reach those runs through `tmux set-environment -g` on the private server (unset afterwards).
+- **Discovery** (affects run): The suite now has a second throwaway project, $T/proj2: a clone with its own bare origin $T/origin2.git, reached through url.insteadOf git@github.com:test/proj2.git. It is created in the L5 block at the end of tests/run.sh.
+- **Discovery** (affects run): The full suite took 600 s under check.sh this session, right at a 600 s Bash foreground limit: run it in the background.
+- **Question for Michael:** MAX_PARALLEL_RUNS=0 is now accepted on reload and holds every start, a quiet way to pause the queue without stopping it. Keep that, or reject 0 like 2x? (default: kept, undocumented)
+- *25-L5-01 · claude-opus-5-5*
+
 ### 2026-10-26 02:08 · verify L4 · passes
 
 All five L4 features hold: check.sh green (322 checks, 0 FAIL), bash -n clean, named checks read and match each step, docs/decisions/plan present.
@@ -281,24 +295,9 @@ Opus review of the L2 diff (docs/plans/2026-10-25-L2-review.md: 2 Important, 8 M
 - **Discovery** (affects run): The known 'queue holds an entry whose project has a live run' flake (busy3 sleep 3) failed once more in a KEEP=1 run under load.
 - *14-L2-06 · claude-opus-5-5*
 
-### 2026-10-25 18:21 · L2-05 · passes
-
-harness gc first stops the units of this project's runs with no live driver (+ stopped <u> (<run> ended|: driver gone), --dry-run would:, ? for no run of this project); harness status lists a running run's units with MemoryCurrent. scope_owns in lib/scope.sh is the shared match; stub systemctl answers MemoryCurrent and the described list-units shape.
-
-- **Files:** bin/harness, lib/scope.sh, tests/run.sh, tests/stub-systemctl.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-gc-orphan-units.md
-- **Verified:** tests/run.sh 282 → 285/285 (scope_owns unit check, gc unit check with a.b/a-b collision decoy, status check in the termed block); the three failed before the code; lib/check.sh green in 493 s; Opus review of the diff, findings 1-3 and 5 fixed
-- **Tests:** 282 → 285
-- **Dead end:** a waited `sleep 0` pid as the dead driver.pid — a reused pid would count as live (review): 999999999 is over any pid_max
-- **Discovery** (affects L4, L2-06): gc's unit step runs first in cmd_gc, before the fetch: a review found an offline fetch or a prunable worktree ends gc under set -e before a later step, and a worktree could be removed while a SIGKILLed run's session still ran in it. L4's per-worktree error handling should keep that order.
-- **Discovery** (affects L3, L2-06): scope_owns <run> <unit>.scope (lib/scope.sh) is the one unit→run match (roles s<n>, check-<pid>, svc); bin/harness now sources lib/scope.sh. L3's gc of tmux sessions can follow the same candidates-over-every-project pattern.
-- **Discovery** (affects L2-06): Not fixed (display only): two running runs whose ids reduce to one prefix (a.b, a-b) each list both runs' units in harness status.
-- **Discovery** (affects run): One full-suite run failed 'queue holds an entry whose project has a live run' (its busy3 driver is a `sleep 3`); the next two runs passed unchanged: a timing flake under load.
-- **Question for Michael:** D1 default (decisions/2026-10-25-gc-orphan-units): harness status calls list-units without a scope_available probe first (a failing list-units gives nothing; the probe would start a transient scope per status). Keep it?
-- **Proposed change:** L2-05 step 1: the unit step runs first in cmd_gc, not after the branch passes (review finding); its lines are gc's own, not act's; a run with no live driver qualifies with or without ended (plan §11).
-- *13-L2-05 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-25 18:21 · L2-05 · passes · harness gc first stops the units of this project's runs with no live driver (+ stopped <u> (<run> en… ([in full](progress-archive.md))
 - 2026-10-25 17:36 · L2-04 · passes · Services now also stop on pause (services_down paused, then commit+push), before a usage-limit wait … ([in full](progress-archive.md))
 - 2026-10-25 17:08 · L2-03 · passes · services_down runs .harness/teardown.sh (TEARDOWN_CMD) under timeout -k 10s 2m, stops harness-<run>-… ([in full](progress-archive.md))
 - 2026-10-25 16:30 · L2-02 · passes · run_init now stops harness-<run>-svc, then runs INIT_CMD in it (MemoryMax=SVC_MEMORY_MAX 3G, timeout… ([in full](progress-archive.md))
