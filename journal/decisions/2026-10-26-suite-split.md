@@ -144,3 +144,34 @@
 - **D2 *default*:** the suite stays as measured (165 s with `TEST_JOBS=4`, 599 s with `TEST_JOBS=1`, peak 390 MB),
   and step 5's "under 150 s" is reported as not met rather than claimed. A question for Michael: accept "under
   180 s, measured and recorded" for S2, or queue (a), the driver's `node` calls, as a feature of its own.
+
+## S3: the suite cache key leaves out what the suite never reads (P0-03)
+
+*(2026-10-26, run agent-harness-2026-10-26, feature P0-03; spec S3)*
+
+- **Finding:** `lib/treekey.mjs` hashed every tracked and untracked file but `.harness/runs`, so a plan feature (a
+  new `docs/plans/*.md`) or a decision file changed the key and the next session's pre-suite ran in full: about
+  10 min of a session before the split, 2 min 45 s after it, for a tree whose code hadn't changed.
+- **Choice:**
+  - `CHECK_KEY_IGNORE` (space-separated path prefixes; harness default `.harness/runs docs/plans`) is exported by
+    `prompt_env` beside `HARNESS_CHECK_CMD` as `HARNESS_CHECK_KEY_IGNORE`, so the driver's `check.sh`, a session's
+    and `finish`'s `treekey.mjs` all compute one key. `treekey.mjs` adds one `:(exclude,literal)<prefix>` pathspec per
+    entry (the spec's `:!<prefix>`, made literal: git matches by path component, so `docs/plans` leaves out
+    `docs/plans/x.md`, not `docs/plansx/`; with glob magic `*.md` would have left out `README.md`, which checks read).
+    An entry that names the whole tree (`.`, `./`) is dropped: it would give every tree one key, a stale green.
+  - `.harness/runs` is left out whatever the list says (unset included): every session and the driver commit there,
+    so a list without it would make every key new. That goes one step beyond the spec, which leaves the default to
+    the config.
+  - This repo's `.harness/config.sh` sets `.harness/runs docs/plans docs/specs journal findings-and-research ledger`:
+    the suite reads none of them (its checks read `tests/`, `lib/`, `bin/`, `prompts/`, `templates/` and the docs it
+    names: `docs/architecture.md` is not under an ignored prefix).
+  - `check.sh`'s cached line names the list only when it isn't the default (`.harness/runs` aside, the rest is not
+    just `docs/plans`): `check: green (cached for this code tree, N tests; key ignores: docs/plans docs/specs …)`.
+    Unset prints the plain line too: outside the driver there is no configured list to explain.
+  - Checked in `tests/checks/29-check-key.sh`: keys of two trees differing only under an ignored prefix, a `lib/`
+    change, the cached line, and two stub runs whose sessions (`STUB_EDIT=<path>`, which keeps the init output each
+    session got) edit only `docs/plans/x.md` (the next session's suite is cached) or `lib/a.sh` (it runs).
+  - `tests/lib.sh` unsets `HARNESS_CHECK_KEY_IGNORE` with the other variables a session's suite inherits from its run
+    (found by the review: this repo's wide list made the checks that run without it red inside a real run).
+- **Rejected:** ignoring every `*.md` (README and `docs/architecture.md` are read by checks); a list of paths the suite
+  *does* read (a new directory would be left out of the key silently, and a stale green is worse than a slow one).

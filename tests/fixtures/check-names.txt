@@ -1,6 +1,7 @@
 --dry-run prints the context, launches nothing
 Answer with Claude only when DESK_URL is set
 C retried and passed
+CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
 DEBRIEF_PAGE_CMD gets the page
 DESK=0 by default, DESK_MODEL=opus
 DESK=0: no desk
@@ -91,6 +92,7 @@ check.sh: a TERM stops the suite's scope with it
 check.sh: a subset call is scoped too and never cached
 check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
+check.sh: the cached line names the key's ignore list only when it isn't the default
 coding prompt names CLAUDE.md but doesn't paste it
 context.md carries the earlier attempt's dead end
 continuation queued: keeps attempts, brief marked as the debrief's
@@ -264,6 +266,8 @@ scratch_rm refuses anything but the run's own scratch directory (symlinks in its
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
 start queues when MAX_PARALLEL_RUNS are going
+suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
+suite cache: a session that edits lib/ (tracked) makes the next session's suite run
 suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1
 suite runner: TEST_JOBS=1 and 4 end with the same N/M and PASS names, exit 1 and name the red file
 suite runner: TEST_JOBS=4 replays each file whole in completion order; the largest file starts first
@@ -320,6 +324,9 @@ thin evidence escalates the verify
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
 tmux: run id dot.run gets session h-dot-run, gone at keep 0
+treekey: entries are literal path prefixes (. and globs leave nothing out; ./docs/plans/ is docs/plans)
+treekey: two trees that differ only under an ignored prefix have the same 16-hex key; a change under lib/ changes it
+treekey: unset, HARNESS_CHECK_KEY_IGNORE leaves out .harness/runs alone (docs/plans changes the key)
 trends --by version groups the runs
 trends lists every run
 two coding prompts share a byte-identical prefix that includes the policy

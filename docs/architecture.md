@@ -100,7 +100,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Markers | `…/{driver.pid, ended, PAUSE, STOP, verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, verify-rounds-<m>, tests-start, tests-end, waited-<t>, port, meta.env, run.env, brief.md, inbox.md}` | driver, CLI | driver, CLI, summary | no |
 | Driver scrollback | `…/tmux-driver.txt`: a tmux-started run's driver window, captured when the driver exits (its last `history-limit` lines, tmux's default 2000; the whole record is `run.log`) | the driver window (`bin/harness`) | you, after `h-<run>` closes | no |
 | Last outputs | `…/{check-last.out, init.out, teardown.out}`: the last full suite's, the init's and the teardown's output, copied from scratch by `finish` before it deletes scratch (`check-last.out` is the final tree's `check-<key>.out` when scratch has it, else the last `check.out`; a failed copy keeps scratch; the note lists what was kept) | driver (`scratch_done`, `lib/prompt.sh`) | you, after the run | no |
-| Suite cache | `…/green/green-<key>`: one marker per code tree that went green, holding its test count; outlives scratch | `lib/check.sh` | `check.sh` (a cached green), `finish` (`tests-end`) | no |
+| Suite cache | `…/green/green-<key>`: one marker per code tree that went green, holding its test count; outlives scratch. The key (`treekey.mjs`) hashes every tracked and untracked file except `.harness/runs` and the prefixes in `CHECK_KEY_IGNORE` (default `.harness/runs docs/plans`; read as `HARNESS_CHECK_KEY_IGNORE`, exported by `prompt_env`), so a plan alone leaves the tree cached green; a cached line names a non-default list (`check: green (cached for this code tree, N tests; key ignores: docs/plans …)`) (decisions/2026-10-26-suite-split) | `lib/check.sh` | `check.sh` (a cached green), `finish` (`tests-end`) | no |
 | Set-aside entries | `…/entry-stale-<epoch>.json` (an earlier session's `entry.json` no ingest took), `…/entry-failed-<session>.json` (one whose journal append failed): in the state dir, so they outlive scratch | driver (`session`) | you | no |
 | Shared limit window | `~/.local/state/harness/LIMIT_UNTIL` (epoch) | any driver hitting a limit | every driver, the queue runner, status | no |
 | 7-day window | `~/.local/state/harness/USAGE_7D` (`<utilization 0..1> <reset epoch>`, from the newest session's rate-limit event) | every session (driver) | every driver, the queue runner (`weekly_over`) | no |
@@ -277,6 +277,7 @@ the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** 
 | `DESK_URL` | empty: no **Answer with Claude** action on a park's notification |
 | `DESK` / `DESK_MODEL` | `0` / `opus`: no desk starts by itself (`harness desk` by hand still works). `DESK=1`: the driver and the debrief start one whenever a run needs Michael (§17), on `DESK_MODEL` |
 | `SESSION_MEMORY_HIGH` / `SESSION_MEMORY_MAX` / `SESSION_SWAP_MAX` | `5G` / `6G` / `1G`: each session's scope (§7): throttled above the first, killed at the second, at most the third in swap |
+| `CHECK_KEY_IGNORE` | `.harness/runs docs/plans`: path prefixes (space-separated) left out of the suite cache key (§4), paths the suite never reads; `.harness/runs` is left out whatever the list says. This repo's `.harness/config.sh` adds `docs/specs journal findings-and-research ledger` |
 | `CHECK_MEMORY_MAX` / `CHECK_TIMEOUT` | `3G` / `15m`: each `check.sh` run's scope (§7): killed at the first, TERM after the second and KILL 30 s later; `check.sh` reads them as `HARNESS_CHECK_MEMORY_MAX` / `HARNESS_CHECK_TIMEOUT` |
 | `INIT_TIMEOUT` / `SVC_MEMORY_MAX` | `10m` / `3G`: `run_init`'s `timeout -k 10s` around the init's foreground, and the `MemoryMax` of the services scope `harness-<run>-svc` its servers stay in (§7) |
 | `TEARDOWN_CMD` | `.harness/teardown.sh` when that file is executable in the worktree, else empty: looked up by `services_down` each time it runs (a hook merged or written mid-run counts), run under `timeout -k 10s 2m` before the services scope stops (§7; template `templates/project/teardown.sh`) |
@@ -439,7 +440,7 @@ record and their own `passes`; make every new behaviour visible in `harness-log.
 - `harness gc` deletes a run branch whose unmerged commits only touch `.harness/runs/` (the ledger keeps the whole
   run record) unless its driver is alive or a continuation is queued.
 - The suite cache (`state/green/green-<key>`) is a file a determined session could create; the key ignores
-  gitignored files. Verify and review are the backstop.
+  gitignored files and the `CHECK_KEY_IGNORE` prefixes, so a suite that does read a file there must not list it. Verify and review are the backstop.
 - A milestone held because main moved, with no later milestone to carry it, waits for you (`harness merge` after a
   `harness continue` that adds a milestone, or a manual PR).
 - A run without user systemd, or whose dev server escaped the svc scope with no teardown hook, can leave that server

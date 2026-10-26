@@ -79,6 +79,13 @@ JSON
     fi
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
     echo "$id attempt $n" >> "$HARNESS_SCRATCH/sessions.log"
+    if [[ ${STUB_EDIT:-} ]]; then   # edits only that path, passes nothing; keeps the init output it was started with (the suite cache, S3)
+      cp "$HARNESS_SCRATCH/init.out" "$STUB_DIR/init-$HARNESS_RUN_ID-$n.out"
+      mkdir -p "$(dirname "$STUB_EDIT")" && echo "$id $n" >> "$STUB_EDIT"
+      entry "$id" "$n" --arg id "$id" --arg f "$STUB_EDIT" '{feature: $id, kind: "coding", outcome: "not yet", summary: "\($id): edited \($f)", files: [$f]}'
+      git add -A && git commit -qm "$id: edit $STUB_EDIT ($n)" && git push -q origin "$HARNESS_BRANCH"
+      ok; exit 0
+    fi
     if [[ ${STUB_PAUSE:-} == "$id" && $n == 1 ]]; then   # `harness pause` mid-session: the driver pauses after it
       st=$(compgen -G "$HARNESS_STATE/*/$HARNESS_RUN_ID") && touch "$st/PAUSE"
     fi
