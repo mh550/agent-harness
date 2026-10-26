@@ -12,3 +12,4 @@
 - 2026-10-26 11:02 · context.md for F1-06: 6199 bytes
 - 2026-10-26 11:36 · F1-06 · claude-opus-5-5 · passes=true · 34 min · 6/12 passing
 - 2026-10-26 11:36 · context.md for F1: 7938 bytes, 17 items left out
+- 2026-10-26 11:37 · F1 verified and tagged run/agent-harness-2026-10-26-2/F1
