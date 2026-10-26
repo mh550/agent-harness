@@ -234,7 +234,7 @@
         "journal/decisions/2026-10-25-gc-removal-finishes.md exists (finding: R9, portfolio_site's .next; choice: --force on a clean tree; rejected: git clean -fdx first)",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L4-03", "milestone": "L4", "kind": "build", "model": "opus",
       "description": "harness gc --deps deletes DEPS_DIRS (node_modules .next .next-check .venv) inside the worktrees of ended runs, even unmerged ones, logging the space freed, and never inside a live run's worktree or the project's own checkout.",
       "steps": [

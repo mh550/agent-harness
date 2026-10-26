@@ -358,7 +358,7 @@ cmd_gc() {
   # project's runs with no live driver, first (before a fetch that may fail, before their worktree goes). A dead
   # driver.pid is enough: the driver removes ended at start, only finish and the trap write it. Two ids may reduce to
   # one prefix (a.b, a-b), so every project's runs are candidates and a live one keeps the unit.
-  local u d r mine busy why
+  local u d r mine busy why err
   while read -r u _; do
     [[ $u == harness-*.scope ]] || continue
     mine="" busy=0
@@ -393,13 +393,22 @@ cmd_gc() {
   dg=$("$HARNESS_HOME/lib/desk.sh" --gc "$(basename "$p")" "${dd[@]}") || echo "harness: could not check the desks"   # never fails gc
   [[ -n $dg ]] && echo "$dg"
   while read -r wt; do
-    [[ $wt == "$WT_ROOT"/* ]] || continue
+    [[ $wt == "$WT_ROOT"/* && $wt != "$p" ]] || continue   # never the checkout itself: rm -rf below
     b=$(git -C "$wt" branch --show-current)
     [[ -n $b && -z $(git -C "$wt" status --porcelain) ]] || continue
     running "$b" && continue
     if git -C "$p" merge-base --is-ancestor "$b" "$main" || { [[ $b == harness/* ]] && record_only "$b"; }; then
       desk_open "$b" && { echo "keeps $wt: its desk is open (harness desk --close ${b#harness/})"; continue; }
-      act git -C "$p" worktree remove "$wt"
+      # --force loses only ignored files (the tree is clean): build output, never work. A directory git leaves goes
+      # with rm -rf; one that stays is said and gc goes on to the next (decisions/2026-10-25-gc-removal-finishes)
+      (( dry )) && { echo "would: git -C $p worktree remove --force $wt"; continue; }
+      echo "+ git -C $p worktree remove --force $wt"
+      err=$(git -C "$p" worktree remove --force "$wt" 2>&1) || true
+      if [[ -e $wt ]]; then echo "+ rm -rf $wt"; err=$(rm -rf "$wt" 2>&1) || true; fi
+      git -C "$p" worktree prune || true
+      if [[ -e $wt ]] || git -C "$p" worktree list --porcelain | grep -qxF "worktree $wt"; then
+        echo "! could not remove $wt: $(tail -1 <<< "${err:-still listed}")"
+      fi
     fi
   done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p')
   for b in $(git -C "$p" for-each-ref --format='%(refname:short)' refs/heads/harness/); do   # record-only tails

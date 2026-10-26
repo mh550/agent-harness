@@ -805,6 +805,25 @@ check "gc --all-merged deletes every merged branch whatever its name, locally an
   && gb_none spec/x && gb_none docs/y && gb_none harness/z && gb_none harness-merge/w && gb_none flat && gb_both spec/u && gb_both main \
   && grep -qx "+ git -C $T/proj branch -d docs/y" "$T/gcb3.out" && grep -qx "+ git -C $T/proj push -q origin --delete spec/x" "$T/gcb3.out"'
 git -C "$T/proj" branch -qD spec/u; git -C "$T/proj" push -q origin --delete spec/u
+# gc's worktree removal finishes (L4-02, R9): merged, clean worktrees in path order (git worktree list sorts by path).
+# gcw-a holds gitignored build output; gcw-c-ro/wt can't go (its parent is read-only) and gcw-d after it still must
+gw_add() { local w; for w; do gb_make "harness/${w##*/}"; git -C "$T/proj" worktree add -q "$HARNESS_WORKTREES/proj/$w" "harness/${w##*/}"; done; }
+gw_listed() { git -C "$T/proj" worktree list --porcelain | grep -qx "worktree $HARNESS_WORKTREES/proj/$1"; }
+echo .next/ >> "$T/proj/.git/info/exclude"; mkdir -p "$HARNESS_WORKTREES/proj/gcw-c-ro"
+gw_add gcw-a gcw-b gcw-c-ro/wt gcw-d; mkdir "$HARNESS_WORKTREES/proj/gcw-a/.next"; echo built > "$HARNESS_WORKTREES/proj/gcw-a/.next/f"
+"$H" gc "$T/proj" --dry-run > "$T/gcw1.out" 2>&1
+GWD=$(for w in gcw-a gcw-b gcw-c-ro/wt gcw-d; do gw_listed "$w" && [[ -d $HARNESS_WORKTREES/proj/$w ]] || echo "$w"; done)
+chmod a-w "$HARNESS_WORKTREES/proj/gcw-c-ro"; "$H" gc "$T/proj" > "$T/gcw2.out" 2>&1; GWR=$?; chmod u+w "$HARNESS_WORKTREES/proj/gcw-c-ro"
+check "gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)" '! gw_listed gcw-a && ! gw_listed gcw-b \
+  && [[ ! -e $HARNESS_WORKTREES/proj/gcw-a && ! -e $HARNESS_WORKTREES/proj/gcw-b ]] \
+  && grep -qx "+ git -C $T/proj worktree remove --force $HARNESS_WORKTREES/proj/gcw-a" "$T/gcw2.out" \
+  && grep -qx "+ git -C $T/proj worktree remove --force $HARNESS_WORKTREES/proj/gcw-b" "$T/gcw2.out"'
+check "a worktree gc can't remove is logged and the next one still goes; --dry-run removes none" '[[ -z $GWD && $GWR == 0 ]] \
+  && [[ $(grep -c "^would: git -C $T/proj worktree remove --force $HARNESS_WORKTREES/proj/gcw-" "$T/gcw1.out") == 4 ]] \
+  && grep -qx "! could not remove $HARNESS_WORKTREES/proj/gcw-c-ro/wt: .*Permission denied" "$T/gcw2.out" \
+  && ! gw_listed gcw-d && [[ ! -e $HARNESS_WORKTREES/proj/gcw-d ]] && grep -qx "+ git -C $T/proj worktree remove --force $HARNESS_WORKTREES/proj/gcw-d" "$T/gcw2.out"'
+rm -rf "$HARNESS_WORKTREES/proj/gcw-c-ro"; git -C "$T/proj" worktree prune
+for w in gcw-a gcw-b wt gcw-d; do git -C "$T/proj" branch -qD "harness/$w" 2> /dev/null; git -C "$T/proj" push -q origin --delete "harness/$w" 2> /dev/null; done
 
 # ---- run 2: Michael sets "status: stop" in INBOX.md from the phone (and only NOTIFY_CMD is configured) ----
 printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"
