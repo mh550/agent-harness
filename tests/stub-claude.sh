@@ -28,6 +28,7 @@ if (( ! headless )) && [[ -n $rc ]]; then   # interactive (a desk): the pane lin
 fi
 [[ -n $prompt ]] || prompt=$(cat)   # `claude -p` with the prompt on stdin
 first=$(head -1 <<< "$prompt")
+[[ -n ${STUB_DIR:-} ]] && echo "${HARNESS_RUN_ID:-} ${HARNESS_CACHE:-unset}" >> "$STUB_DIR/cache.log"   # what each headless session sees (L3-02); not in scratch, which finish deletes
 L=${HARNESS_RUN_DIR:-.}/feature_list.json
 after_session() { awk '/^# This session$/ { s = 1 } s && '"$1" <<< "$prompt"; }   # an awk rule, applied below `# This session` only (a brief can't fake an id)
 count() { local f=$HARNESS_SCRATCH/count-$1 n; n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$f"; echo "$n"; }

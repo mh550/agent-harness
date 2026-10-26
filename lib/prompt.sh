@@ -11,6 +11,14 @@ prompt_vars() {
   SCRATCH=${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/$RUN_ID CHECK=$HARNESS_HOME/lib/check.sh PORT=$(cat "$STATE/port")
 }
 
+# <dir>: rm -rf it only when it is this run's scratch directory as prompt_vars builds it, never its parent (live.lock)
+scratch_rm() {
+  local root=${HARNESS_SCRATCH_ROOT:-/tmp/harness}
+  [[ $root == /?* && ${PROJECT_NAME:-} =~ ^[A-Za-z0-9._-]+$ && $PROJECT_NAME != . && $PROJECT_NAME != .. \
+     && ${RUN_ID:-} =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ && $1 == "$root/$PROJECT_NAME/$RUN_ID" ]] || return 1
+  rm -rf -- "$1"
+}
+
 # After harness_config: what sessions (and their {{NAME}}s) see.
 prompt_env() {
   LIVE_LOCK=${LIVE_LOCK:-${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/live.lock}
@@ -18,6 +26,7 @@ prompt_env() {
     HARNESS_CHECK="$CHECK" HARNESS_CHECK_CMD=$CHECK_CMD HARNESS_SMOKE_CMD=$SMOKE_CMD HARNESS_INIT_CMD=$INIT_CMD \
     HARNESS_SPEC_FILES=${SPEC_FILES:-none} HARNESS_MAIN_BRANCH=$MAIN_BRANCH HARNESS_PROJECT=$PROJECT_NAME HARNESS_WT=$WT \
     HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green \
+    HARNESS_CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/harness/$PROJECT_NAME \
     HARNESS_SCOPE_PREFIX="$(scope_unit "$RUN_ID" "")" HARNESS_CHECK_MEMORY_MAX=$CHECK_MEMORY_MAX HARNESS_CHECK_TIMEOUT=$CHECK_TIMEOUT   # check.sh caps the same way for both
 }
 

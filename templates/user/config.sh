@@ -26,6 +26,7 @@
 # INIT_TIMEOUT=10m                   # the init itself, then TERM, KILL 10 s later; servers it left when it returned keep running
 # SVC_MEMORY_MAX=3G                  # the services scope is killed at this (no MemoryHigh: a runaway server dies, not crawls)
 # SVC_IDLE_STOP_MIN=10               # a usage-limit wait longer than this (minutes) stops the services first; the next init starts them
+# KEEP_SCRATCH=0                     # 1 = a finished run keeps /tmp/harness/<project>/<run> (debugging); 0 = finish deletes it
 # TEARDOWN_CMD=.harness/teardown.sh # per project (its .harness/config.sh), not here: run before the services scope stops; the default when executable
 # Before each init, coding and verify session, the driver checks MemAvailable; under the minimum it waits, then starts anyway.
 # MEM_MIN_AVAILABLE_GB=5             # whole GB; under it: note, stop the run's services, poll every 5 minutes

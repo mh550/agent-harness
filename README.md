@@ -67,6 +67,12 @@ scope until the run's services stop (below) or the next init stops it: `SVC_MEMO
 (a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
 `MEM_WAIT_MAX`). Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
 
+**Scratch and cache.** Each run gets `HARNESS_SCRATCH` (`/tmp/harness/<project>/<run>`) for its outputs, sandboxes,
+logs and screenshots; a run that finishes deletes it (`KEEP_SCRATCH=1` keeps it), after copying `init.out`,
+`teardown.out` and the last suite output (`check-last.out`) into its state dir. Installs that should outlive a run
+and a reboot go under `HARNESS_CACHE` (`~/.cache/harness/<project>`, never deleted): put Playwright browsers there
+(`PLAYWRIGHT_BROWSERS_PATH=$HARNESS_CACHE/ms-playwright` in the init) and anything similar, not in scratch.
+
 **Teardown.** When a run ends (a `status: stop` included), when its driver is killed (a TERM, or an error that ends
 it), when it pauses, before a usage-limit wait of more than `SVC_IDLE_STOP_MIN` minutes (10) and before a memory wait,
 the harness stops the run's services (the next session's init starts them again): it runs the project's `.harness/teardown.sh` if that file is executable then (or `TEARDOWN_CMD`), in the
@@ -95,6 +101,9 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 - With the scopes in, `systemd-oomd` can kill the offending `harness-*` scope instead of the desktop: enabling it with
   `ManagedOOMMemoryPressure=kill` on the user slice is a box setting, your call (`findings-and-research/2026-10-24-system-resource-audit.md` §3C.2).
 - `systemctl --user list-units 'harness-*'` shows what each run holds right now (nothing when no run is alive).
+- A crashed or stopped run leaves its scratch in `/tmp/harness`. The optional age rule removes it after 3 days
+  untouched (never `live.lock`); the user tmpfiles timer it needs is off by default, so the one command enables it:
+  `mkdir -p ~/.config/user-tmpfiles.d && cp templates/user/harness-tmpfiles.conf ~/.config/user-tmpfiles.d/harness.conf && systemd-tmpfiles --user --create && systemctl --user enable --now systemd-tmpfiles-clean.timer`
 
 ## Steering
 
