@@ -44,3 +44,5 @@
 - 2026-10-25 21:17 · L3-04 · claude-opus-5-5 · passes=true · 30 min · 18/25 passing
 - 2026-10-25 21:17 · context.md for L3-05: 7955 bytes, 3 items left out
 - 2026-10-25 22:10 · L3-05 · claude-opus-5-5 · passes=true · 52 min · 19/25 passing
+- 2026-10-25 22:10 · merged main into harness/agent-harness-2026-10-25-lifecycle
+- 2026-10-25 22:10 · context.md for L3: 7924 bytes, 22 items left out
