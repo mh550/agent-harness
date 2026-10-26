@@ -110,7 +110,7 @@
         "the suite is green (`bash tests/run.sh` or the cached `check.sh` line ends with every check passing)"
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F2-02",
