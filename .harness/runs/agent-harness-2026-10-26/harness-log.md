@@ -1,0 +1,21 @@
+- 2026-10-26 05:50 · feature list written: 0/17 passing
+- 2026-10-26 05:50 · context.md for P0-01: 3377 bytes
+- 2026-10-26 06:44 · P0-01 · claude-opus-5-5 · passes=true · 54 min · 1/17 passing
+- 2026-10-26 06:44 · context.md for P0-02: 5669 bytes
+- 2026-10-26 07:35 · P0-02 · claude-opus-5-5 · passes=false · 50 min · 1/17 passing
+- 2026-10-26 07:37 · context.md for P0-02: 7532 bytes
+- 2026-10-26 08:15 · P0-02 · claude-opus-5-5 · passes=false · 37 min · 1/17 passing
+- 2026-10-26 08:15 · context.md for P0-03: 6436 bytes
+- 2026-10-26 08:30 · P0-03 · claude-opus-5-5 · passes=true · 14 min · 2/17 passing
+- 2026-10-26 08:30 · blocked: the remaining features wait on P0-02 (given up; needs Michael)
+- 2026-10-26 08:30 · run ended (blocked on P0-02): 2/17 passing · 5 sessions (5 real) · 2 features passed · $22.76 · 2.8 h · by kind: init 1 ($4.71), coding 4 ($18.05) · by model: claude-fable-5-1 1 ($4.71), claude-opus-5-5 4 ($18.05)
+- 2026-10-26 08:30 · services stopped (blocked on P0-02)
+- 2026-10-26 08:30 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-26 (in the state dir: init.out check-last.out)
+- 2026-10-26 15:59 · merged main into harness/agent-harness-2026-10-26
+- 2026-10-26 16:03 · test count: no match in the suite's output (tests start/end stay unknown)
+- 2026-10-26 16:03 · context.md for P0-02: 7833 bytes, 5 items left out
+- 2026-10-26 16:24 · P0-02 · claude-opus-5-5 · passes=true · 21 min · 3/17 passing
+- 2026-10-26 16:24 · context.md for P0-04: 7723 bytes, 1 items left out
+- 2026-10-26 16:44 · P0-04 · claude-opus-5-5 · passes=true · 19 min · 4/17 passing
+- 2026-10-26 16:44 · verify P0: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-26 16:48 · context.md for P0: 7788 bytes, 16 items left out

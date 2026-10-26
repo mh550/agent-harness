@@ -66,8 +66,9 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | `.harness/teardown.sh` (executable) | what stopping the run's services scope can't reach, e.g. `npx supabase stop` or `docker compose down` (containers live under `dockerd`): see below | no |
 
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
-its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; cached per code tree, except that
-each verify clears its tree's cached green so the suite runs in full on what it judges), smoke, init (run in the run's
+its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; cached per code tree, whose key
+leaves out `CHECK_KEY_IGNORE`, default `.harness/runs docs/plans`, so a plan alone doesn't rerun it, and each verify
+clears its tree's cached green so the suite runs in full on what it judges), smoke, init (run in the run's
 services scope `harness-<run>-svc`, capped at 3G, under a 10m timeout; what it leaves running when it returns stays in the
 scope until the run's services stop (below) or the next init stops it: `SVC_MEMORY_MAX`, `INIT_TIMEOUT`), port, models, limits
 (a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
@@ -219,6 +220,14 @@ cost: `evals/NEXT.md`.
 ## Tests
 
 ```bash
-tests/run.sh    # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 168 checks (~4 min)
+tests/run.sh          # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 395 checks (~3 min 30 s)
+tests/run.sh gc       # only the tests/checks/ files whose names contain "gc"
+TEST_JOBS=1 tests/run.sh   # one file at a time (default: half the cores, 1 to 4)
 ```
+Each `tests/checks/*.sh` sources `tests/lib.sh` (a fresh `$T`, private tmux server, stub environment and throwaway
+project) and runs alone; `tests/fixtures/check-names.txt` lists every check name and a full run fails on one missing,
+new or doubled. The runner starts the files `TEST_JOBS` at a time, largest first, as plain background jobs inside the
+caller's check scope, prints each file's output whole when it finishes with a `<file>: <n> checks, <s> s` line, and
+ends with the slowest three, the wall time and the total. A file that exits non-zero with no `FAIL` line counts as one
+failed check; stopped by a signal (check.sh's timeout), the runner prints each unfinished file's output so far and names it.
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

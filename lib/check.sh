@@ -2,7 +2,7 @@
 # The project's suite, cached per code tree. The driver and every session use this one command ({{CHECK}}).
 #   check.sh             → the full suite. A tree that was green before is not run again ("green (cached …)").
 #   check.sh <args…>     → the suite with these arguments (a subset while iterating); never cached.
-# Needs HARNESS_CHECK_CMD and HARNESS_SCRATCH (the driver exports both). The last full run's output is
+# Needs HARNESS_CHECK_CMD and HARNESS_SCRATCH (the driver exports both, and HARNESS_CHECK_KEY_IGNORE for the key). The last full run's output is
 # $HARNESS_SCRATCH/check.out; the newest tree's is kept as check-<key>.out. A green tree's marker, green-<key> in the
 # cache, holds its test count, so a cached green still has it after scratch is gone (a continued run).
 # Both forms run under timeout -k 30s HARNESS_CHECK_TIMEOUT (15m), in the scope $HARNESS_SCOPE_PREFIX-check-<pid> capped
@@ -55,7 +55,9 @@ fi
 key=$(node "$here/treekey.mjs" 2>/dev/null) || key=""
 if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's test count (older markers are empty: its output's)
   n=$(cat "$cache/green-$key"); [[ -n $n ]] || n=$(node "$here/testcount.mjs" "$scratch/check-$key.out")
-  echo "check: green (cached for this code tree${n:+, $n})"; exit 0
+  # a key ignore list beyond the default (CHECK_KEY_IGNORE, the run record aside) is named, so a docs change's skip is explained
+  ki=$(tr -s ' \t' '\n' <<< "${HARNESS_CHECK_KEY_IGNORE:-}" | grep -vx -e '' -e '\.harness/runs' | paste -sd' '); [[ $ki == docs/plans ]] && ki=""
+  echo "check: green (cached for this code tree${n:+, $n}${ki:+; key ignores: $ki})"; exit 0
 fi
 run "$cmd" > "$scratch/check.out" 2>&1; rc=$?
 [[ -n $key ]] && cp "$scratch/check.out" "$scratch/check-$key.out" \

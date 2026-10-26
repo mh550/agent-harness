@@ -1,0 +1,147 @@
+<!-- harness: rendered from entries.jsonl after every session; edits here are overwritten -->
+# Progress — run `agent-harness-2026-10-26` (agent-harness)
+
+What this file is: the run's journal, rendered from `entries.jsonl` after every session, newest entry first (the driver's own notes are `harness-log.md`). Each entry says what one session did, what passed, what it found (discoveries) and what it needs from you (questions).
+
+The spec is `docs/specs/2026-10-26-lanes.md` with `docs/specs/2026-10-26-suite-split.md` as its P0. Milestones: P0 the suite split (tests/lib.sh, tests/checks/ one file per section, a parallel runner, the conformance fixture, CHECK_KEY_IGNORE) · P1 lanes at MAX_LANES=1 (the record on its own branch harness/<run>, code on harness-lane/<run>/<m> in a slot, lib/lane.sh as the milestone process, the coordinator) · P2 two lanes (admission by memory and five-hour headroom, the re-base rule, slots and gc, the record PR, status and summary). P1 waits for P0, P2 for P1. Each verified milestone merges into `main` by itself.
+
+How to read the feature list: `feature_list.json` lists features in priority order; `passes` is the session's claim, the verify entry for a milestone is what counts. Steps are the checks a verifier re-runs; the last is always a green suite. From P1 on every new check goes in a `tests/checks/` file by topic and its name into `tests/fixtures/check-names.txt`.
+
+To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
+
+### 2026-10-26 16:51 · verify P0 · passes
+
+All four P0 features hold: init full suite 395/395 (206 s), subset runs work, split/runner/key/docs/decision/review artefacts read and match each step. Check names and counts reconcile with the fixture.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P0-01 | 1 | read tests/lib.sh, tests/checks/, tests/fixtures; ran suite | 34 check files + lib.sh + split.sh + run.sh present; usage header on lib.sh | yes |
+| P0-01 | 2 | read tests/lib.sh, tests/checks/, tests/fixtures; ran suite | 34 check files + lib.sh + split.sh + run.sh present; usage header on lib.sh | yes |
+| P0-01 | 3 | cat tests/checks/*.sh \| grep check lines vs pre-split run.sh | split multiset equals pre-split except the later-added retro checks and runner/key checks (diff reviewed) | yes |
+| P0-01 | 4 | bash tests/run.sh sync | subset run prints 6/6 and ends with that file count | yes |
+| P0-01 | 5 | LC_ALL=C sort -c fixture; wc -l | fixture C-sorted, 394 names + conformance check = 395; conformance check PASS in init | yes |
+| P0-01 | 6 | bash -n on all tests/*.sh, checks, lib/*.sh; bash tests/run.sh sync | no bash -n failures; sync file alone 6/6 | yes |
+| P0-01 | 7 | init full run | init full suite: 395/395 PASS, 0 FAIL, wall 205.7 s, 4 jobs | yes |
+| P0-02 | 1 | read tests/checks/33-suite-runner.sh, init output | 33-suite-runner checks PASS in init (TEST_JOBS 1 vs 4 same N/M and names, timing lines, slowest-three line, no systemd-run call) | yes |
+| P0-02 | 2 | read tests/checks/33-suite-runner.sh, init output | 33-suite-runner checks PASS in init (TEST_JOBS 1 vs 4 same N/M and names, timing lines, slowest-three line, no systemd-run call) | yes |
+| P0-02 | 3 | read tests/checks/33-suite-runner.sh, init output | 33-suite-runner checks PASS in init (TEST_JOBS 1 vs 4 same N/M and names, timing lines, slowest-three line, no systemd-run call) | yes |
+| P0-02 | 4 | read check 28 + init out | 33-suite-runner checks PASS in init (TEST_JOBS 1 vs 4 same N/M and names, timing lines, slowest-three line, no systemd-run call) | yes |
+| P0-02 | 5 | read journal/decisions/2026-10-26-suite-split.md | decision file has S2 section with measured times (207 s, floor, peak) per context; init wall 205.7 s | yes |
+| P0-02 | 6 | grep CLAUDE.md | CLAUDE.md:34-39 states 208 s, TEST_JOBS=4, bash tests/run.sh gc | yes |
+| P0-02 | 7 | bash -n; init full run | init full suite: 395/395 PASS, 0 FAIL, wall 205.7 s, 4 jobs | yes |
+| P0-03 | 1 | grep CHECK_KEY_IGNORE lib/config.sh .harness/config.sh templates/project/config.sh | defaults match spec in lib/config.sh:15, .harness/config.sh:5, template commented | yes |
+| P0-03 | 2 | grep lib/prompt.sh; node --check lib/treekey.mjs | prompt.sh:48 exports HARNESS_CHECK_KEY_IGNORE; node --check ok | yes |
+| P0-03 | 3 | read tests/checks/34-check-key.sh; grep config files | 34-check-key checks PASS in init (same key under ignored prefix, lib/ change differs, cached line, stub-run docs/plans cached vs lib/ edit runs) | yes |
+| P0-03 | 4 | read tests/checks/34-check-key.sh; grep config files | 34-check-key checks PASS in init (same key under ignored prefix, lib/ change differs, cached line, stub-run docs/plans cached vs lib/ edit runs) | yes |
+| P0-03 | 5 | read tests/checks/34-check-key.sh; grep config files | 34-check-key checks PASS in init (same key under ignored prefix, lib/ change differs, cached line, stub-run docs/plans cached vs lib/ edit runs) | yes |
+| P0-03 | 6 | grep docs/architecture.md README.md | architecture.md:103,296 and README.md:70 name it and default | yes |
+| P0-03 | 7 | init full run | init full suite: 395/395 PASS, 0 FAIL, wall 205.7 s, 4 jobs | yes |
+| P0-04 | 1 | read docs/plans/2026-10-26-P0-review.md, decision file, docs | review file lists 2 Important, 4 Minor with severities; Important fixes have checks in 33-suite-runner (killed job/no-FAIL exit/signal) PASS | yes |
+| P0-04 | 2 | read docs/plans/2026-10-26-P0-review.md, decision file, docs | review file lists 2 Important, 4 Minor with severities; Important fixes have checks in 33-suite-runner (killed job/no-FAIL exit/signal) PASS | yes |
+| P0-04 | 3 | read docs/plans/2026-10-26-P0-review.md, decision file, docs | decision file has finding·choice·rejected, wall time; no D-H number | yes |
+| P0-04 | 4 | read docs/plans/2026-10-26-P0-review.md, decision file, docs | architecture/README/CLAUDE.md mention runner, subset, TEST_JOBS, CHECK_KEY_IGNORE | yes |
+| P0-04 | 5 | bash -n all shell files; node --check; init full run | no syntax errors; init full suite: 395/395 PASS, 0 FAIL, wall 205.7 s, 4 jobs | yes |
+
+- *164801-verify-P0 · claude-sonnet-5-5*
+
+### 2026-10-26 16:44 · P0-04 · passes
+
+Opus review of the P0 diff: 0 Critical, 2 Important, 4 Minor (docs/plans/2026-10-26-P0-review.md). Fixed RED->GREEN: the runner now prints a hung file's output on TERM and names it; a file exiting non-zero with no FAIL line counts as one failed check; treekey drops absolute/.. ignore entries. SPLIT_FROM corrected. Decision file and docs completed.
+
+- **Files:** tests/run.sh, lib/treekey.mjs, tests/split.sh, tests/checks/33-suite-runner.sh, tests/checks/34-check-key.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-suite-split.md, docs/plans/2026-10-26-P0-review.md, docs/architecture.md, README.md, CLAUDE.md
+- **Verified:** 3 new checks watched red (suite-runner 9/11, check-key 7/8), then green; suite-runner file 5x 11/11; full suite through lib/check.sh 395/395 in 208 s (slowest 15-run-4 157.5 s); SPLIT_OUT=tmp split.sh matches tests/checks 01-32 byte for byte; bash -n on 43 P0 shell files, node --check treekey/testcount.
+- **Tests:** 392 → 395
+- **Discovery** (affects P2): tests/run.sh now traps TERM/INT/HUP: a file still running when check.sh's timeout fires prints its output so far and '<file>: unfinished when the suite was stopped'. P2's TEST_FILE_TIMEOUT per file should reuse that line shape (one FAIL per hung file).
+- **Discovery** (affects run): A check file that exits non-zero with no FAIL line now adds 'FAIL <file>: exited <rc> before its end, with no FAIL line' to the total, so a subset run can no longer read as all passed while a file crashed.
+- *02-P0-04 · claude-opus-5-5*
+
+### 2026-10-26 16:24 · P0-02 · passes
+
+Runner code was already in place; under the new rule (a time is measured and recorded, not a gate) I measured it and wrote it down. TEST_JOBS=4: 207 s wall, 392/392, slowest file 156 s, floor 203 s (811 s of slot time / 4), peak 254 MB. TEST_JOBS=1: 758 s. Same per-file counts and PASS names at 1 and 4 jobs. Decision file, CLAUDE.md, README and architecture updated.
+
+- **Files:** journal/decisions/2026-10-26-suite-split.md, CLAUDE.md, README.md, docs/architecture.md
+- **Verified:** TEST_JOBS=4 bash tests/run.sh in a 3G user scope: rc 0, 392/392, wall 207 s, memory.peak 266801152 B; TEST_JOBS=1: 392/392, 758 s, per-file counts and C-sorted PASS names cmp-equal; bash -n on run.sh, lib.sh and every tests/checks/*.sh; lib/check.sh green in 205 s (392/392)
+- **Tests:** 392 → 392
+- **Discovery** (affects run): The suite is now work-bound, not chain-bound: the 4-job floor (811 s / 4 = 203 s) is above the slowest file (156 s), so reordering files gains nothing. Only cutting CPU (fewer node starts in the driver) would make it shorter. Four jobs' contention adds about 56 s of slot time over TEST_JOBS=1's 755 s.
+- *01-P0-02 · claude-opus-5-5*
+
+### 2026-10-26 08:30 · P0-03 · passes
+
+CHECK_KEY_IGNORE (default .harness/runs docs/plans; this repo adds docs/specs journal findings-and-research ledger) leaves literal path prefixes out of treekey's key; prompt_env exports it; check.sh's cached line names a non-default list. New tests/checks/29-check-key.sh (7 checks, 2 stub runs via STUB_EDIT). 335 → 342 green in 168 s.
+
+- **Files:** lib/treekey.mjs, lib/check.sh, lib/config.sh, lib/prompt.sh, .harness/config.sh, templates/project/config.sh, tests/checks/29-check-key.sh, tests/stub-claude.sh, tests/lib.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, +1 more
+- **Verified:** 29-check-key.sh red first (2/6: docs/plans run got 'green in 0 s'), then 7/7; bash tests/run.sh 342/342 (wall 170 s), again 342/342 with the repo's list exported as a real run would; live lib/check.sh: 'check: green in 168 s'; bash -n and node --check on every touched file; Opus review of the diff.
+- **Tests:** 335 → 342
+- **Dead end:** asserting with `git log --name-only | grep -qx` — pipefail + grep -q's early exit SIGPIPEs git log: the check fails although the file is there; use git cat-file -e
+- **Discovery** (affects run): tests/lib.sh must unset every HARNESS_* variable prompt_env exports that changes check.sh's output (now HARNESS_CHECK_KEY_IGNORE too): a session's suite inherits its run's, and this repo's wide list turned the 'unset' checks red inside a real run (found by review, reproduced, fixed).
+- **Discovery** (affects P1, P2, run): Once this merges, a session that only adds a plan, spec, decision or ledger file in this repo gets 'check: green (cached …; key ignores: docs/plans docs/specs journal findings-and-research ledger)' instead of a 3 min suite run. .harness/config.sh itself stays in the key.
+- **Discovery** (affects P1, P2): STUB_EDIT=<path> in tests/stub-claude.sh: a coding session edits only that path, passes nothing, and copies the init.out it was started with to $STUB_DIR/init-<run>-<n>.out (what the pre-session suite said).
+- **Question for Michael:** treekey always leaves out .harness/runs, even when CHECK_KEY_IGNORE omits it, and drops '.' entries; entries are literal (:(exclude,literal)), not globs. Keep that, or follow the spec's plain ':!<prefix>' to the letter?
+- **Proposed change:** P0-03 step 2 says lib/driver.sh exports HARNESS_CHECK_KEY_IGNORE; HARNESS_CHECK_CMD is exported by prompt_env in lib/prompt.sh (driver.sh's load_config calls it), so it is exported there.
+- *04-P0-03 · claude-opus-5-5*
+
+### 2026-10-26 08:15 · P0-02 · not yet
+
+Steps 1-4, 6, 7 hold; step 5 (<150 s) can't be met inside a suite split. Measured: per-file slot times add up to 636 s (547 s CPU), so 4 jobs can't finish under 159 s; the suite ran 335/335 in 165 s. Node startup (30 ms × ~2,200 per big file) is half the CPU. Decision file updated (D2 default: report it as not met); no code changed.
+
+- **Files:** journal/decisions/2026-10-26-suite-split.md
+- **Verified:** lib/check.sh: green in 165 s, 335/335 (slowest 12-… 146.7 s); per-file /usr/bin/time at 4 jobs: wall 166 s, sum 636 s; strace -f of file 12: 28,325 execs (5,461 git, 2,239 node)
+- **Tests:** 335 → 335
+- **Dead end:** skipping replayed checks (REPLAY returns at once) — run 1 went from 12.9 to 12.6 s: the cost is harness start, not the checks
+- **Dead end:** NODE_COMPILE_CACHE, --v8-pool-size=0, --jitless, --no-opt, --single-threaded — node startup stays 30 ms or gets slower
+- **Dead end:** splitting or reordering files further — slot times add up to 636 s, so 4 jobs need at least 159 s, and every replay adds more
+- **Discovery** (affects P0-02, run): The suite's CPU is mostly the harness's own process starts: lib/driver.sh calls node 1,684 times in file 12 (30 ms each). Caching F model (pure) and the read-only list queries keyed on the list's content would cut about 8% of that file's CPU. That is the only lever left short of rewriting checks.
+- **Question for Michael:** S2's '<150 s with TEST_JOBS=4' is out of reach for a split: 636 s of slot time on 4 jobs is ≥159 s, and the measured time is 165 s. Do you accept 'under 180 s, measured and recorded' for step 5, or should a new feature cut the driver's node calls (or rewrite the debrief/desk chains) first?
+- **Proposed change:** P0-02 step 5: 'under 180 s (measured 165 s), with the per-file times and the 636 s / 4-job floor in the decision file' instead of 'under 150 s'
+- *03-P0-02 · claude-opus-5-5*
+
+### 2026-10-26 07:35 · P0-02 · not yet
+
+Runner runs TEST_JOBS files (default 4 here) as background jobs, largest first; output whole per file, timing lines, slowest three. split.sh REPLAYS_ cut the 400 s file in three. 335/335 green in 165 s (was 589 s), peak 390 MB. Not passed: step 5 wants <150 s, but the file times sum to 637 s (≥159 s on 4 jobs) and the debrief chain is 150 s alone.
+
+- **Files:** tests/run.sh, tests/lib.sh, tests/split.sh, tests/checks/, tests/checks/28-suite-runner.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-suite-split.md, CLAUDE.md, README.md, docs/architecture.md
+- **Verified:** lib/check.sh: 'check: green in 165 s', 335/335 (slowest 12-…-debrief 146 s). KEEP=1 TEST_JOBS=4 in a 3G scope: 165 s, 333/333, memory.peak 369/390/381 MB in three runs. TEST_JOBS=1: 599 s, per-file stub systemd-run counts identical to TEST_JOBS=4. split.sh reproduces tests/checks/01-27 byte for byte. New runner checks watched failing first. bash -n on all.
+- **Tests:** 327 → 335
+- **Dead end:** debrief file replaying run 2 without run 1 — the debrief 'since' section runs `ran demo` (demo's run.log) and reads run 1's HV
+- **Dead end:** desk in its own file with runs 3/10/16 only — it briefs stoppy (run 2) and calls the debrief section's `ran`; run 16's 'nothing parked' needs gc to have collected demo
+- **Discovery** (affects P0-02, P0): A 150 s suite is out of reach at TEST_JOBS=4 without rewriting checks: the work is CPU-bound (4 cores/8 threads); the file times sum to 637 s; the debrief chain (queue → runner → since → big, plus runs 1, 2, 4, 5, 9) is 146-151 s on its own whatever TEST_JOBS is.
+- **Discovery** (affects run): scope.sh's real 64M-scope check is flaky: in 1 of 5 full runs the cgroup OOM kill also took the bash -c wrapper, leaving an empty .show (rc/peak unread). Not the split.
+- **Discovery** (affects P1, P2): lib.sh now has copies of ran, settle and HH (the debrief section's helpers) and a REPLAY mode for check (silent, uncounted). A new check file by topic needs no split.sh: split.sh only regenerates 01-27 into an empty SPLIT_OUT.
+- **Question for Michael:** The spec's '<150 s with TEST_JOBS=4' can't be met (measured 165 s; floor about 159 s from 637 s of work on 4 jobs, and 150 s for the debrief chain alone). Accept 165 s (step 5 → 'under 180 s, measured and recorded'), or should a later feature rewrite the debrief chain's checks so it can be split?
+- **Proposed change:** P0-02 step 5: 'under 150 s' → 'under 180 s with TEST_JOBS=4 (measured 165 s), written into the decision file'. Everything else in the step is done: the slowest file, peak memory (390 MB, CHECK_MEMORY_MAX unchanged) and why the 151 s debrief file isn't split further.
+- **Proposed change:** P0-02 step 4: every file that starts a harness run logs stub systemd-run calls (the harness's own session scopes), so 'only the scope.sh and capped-suites files' logs' is false as worded. What holds and was verified: the runner makes no systemd-run call (a check with a spy on PATH), and the per-file counts match between TEST_JOBS=1 and 4.
+- **Proposed change:** P0-02 step 2: the slowest/wall line is the second-to-last line; the total `N/M checks passed` stays last for testcount.mjs.
+- *02-P0-02 · claude-opus-5-5*
+
+### 2026-10-26 06:44 · P0-01 · passes
+
+tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for byte from the single file by tests/split.sh with 27 grouping pairs, plus 25-suite-runner.sh. tests/lib.sh holds the preamble. A conformance check runs against tests/fixtures/check-names.txt (325 names from init's check.out). testcount.mjs now reads N/M checks passed. 327/327 green in 589 s.
+
+- **Files:** tests/lib.sh, tests/split.sh, tests/run.sh, tests/checks/, tests/fixtures/check-names.txt, lib/testcount.mjs, journal/decisions/2026-10-26-suite-split.md, CLAUDE.md, README.md, docs/architecture.md
+- **Verified:** Full suite through check.sh: green in 589 s, 327/327 (325 + the testcount check + conformance). All 25 files pass alone, run from fresh shells 4 at a time. bash -n passes on every file. A Python comparison shows all 50 sections and the lib.sh preamble byte-identical to 3aa98b5:tests/run.sh. The check-line multiset diff is empty. Re-running split.sh into a temp dir reproduces tests/checks exactly. KEEP=1 tests/run.sh gc kept one $T and named it. Runner cases were tested on a throwaway copy: subset, no match, missing, new, doubled, skipped name, crashed file, a leftover background process.
+- **Tests:** 325 → 327
+- **Dead end:** hoisting shared helpers (sd_with, gone, has_s, keep_wts, HH, HV) into lib.sh so files that only call them need no grouping — once the state pairs were in, every such file was in the run-1 group anyway except a 1-second tmux file; dropped
+- **Dead end:** export LC_ALL=C in the runner for sort/comm — it reached each file's tmux server, which mangled the UTF-8 desk window names: 12 desk checks failed. Now set only on sort/comm
+- **Discovery** (affects P0-02, P0-04): Most of the suite reads run 1's demo state (its systemd.log scopes, worktree, tags, demo-hlog.md, state dir), and the debriefs read runs 2/4/5/9 and the queue. Grouping therefore yields one file of 25 sections and 253 checks (06-scope-sh-...-l5.sh) that takes ~400 s alone, more than half of the 589 s sequential total. Under S2 that file alone exceeds 150 s. Splitting it means re-running run 1's start in a second file: lines not in the monolith (the spec forbids patching). P0-02 must choose and record that.
+- **Discovery** (affects P0-02, run): split.sh writes only into an empty $SPLIT_OUT (default tests/checks), so it can never delete files added since the split. To re-verify the split: SPLIT_OUT=$(mktemp -d)/o bash tests/split.sh, then cmp against tests/checks.
+- **Discovery** (affects P0-02, P0-03, P1, P2): tests/checks/25-suite-runner.sh is the runner's own check file (it holds the testcount check). P0-02's runner checks belong there. Every new check name needs a line in tests/fixtures/check-names.txt (C-sorted): the full run's conformance check fails on new names too.
+- **Discovery** (affects run): The harness runs the live checkout's lib/check.sh/testcount.mjs, so its green line shows no test count until this merges to main. The worktree's lib/check.sh prints 'check: green (cached for this code tree, 327 tests)'.
+- **Discovery** (affects P0-02): A subset by name can match a group: `tests/run.sh parked` runs 03-harness-parked-pure-report and the big 06 file, because a group's file name adds its sections' first words (gc, queue, parked, debrief, desk, ...).
+- **Question for Michael:** D1 default: the conformance check fails on a check name not in tests/fixtures/check-names.txt, not only on missing or doubled names (the spec says the runner 'says' which names are new). This keeps the fixture complete, so a check deleted later is caught. Keep it strict?
+- **Proposed change:** P0-01 step 3 (multiset equal) and step 7 (N = 325 + conformance) describe the split alone. After the testcount fix, the full run is 327 (325 + 'testcount.mjs: the runner's last N/M checks passed is the count' + conformance). The split files' check lines still equal the monolith's exactly.
+- *01-P0-01 · claude-opus-5-5*
+
+### 2026-10-26 05:50 · init · passes
+
+17 features: P0 4 (suite split S1-S3 + review; S4 left out), P1 6 (plan, pure scheduler, record branch + slot, lane process + coordinator, continue/legacy/pr-held, review), P2 7 (plan, admission, re-base, slots + gc, record PR, status + summary + prompts, review).
+
+- **Discovery** (affects run): The suite is one file, tests/run.sh (1634 lines, 50 `# ---- <title> ----` sections, 325 checks, all names unique and environment-independent) and takes about 10 min single-threaded on this box (init measured 597 s), so every session spends 10 min per full run until P0-02 lands; iterate on a subset (`bash lib/check.sh <args>` is never cached) and run the full suite once before flipping passes.
+- **Discovery** (affects run): The pre-split suite output of this run's init is at /tmp/harness/agent-harness/agent-harness-2026-10-26/check.out (325 PASS lines): P0-01 generates tests/fixtures/check-names.txt from it instead of re-running the monolith.
+- **Discovery** (affects run): Sections known to read an earlier section's state: run 15e (line 1145) reads $T/demo-hlog.md from run 1 (line 540); the gc section (755) and runs 2-14 reuse run 1's demo repo and tags; the eval sections share $ED; the debrief sections share a runner log. split.sh's grouping pairs are found by running each file alone, never by patching a check.
+- **Discovery** (affects run): The driver loop is lib/driver.sh:567-719 (counters n, limits, repairs, gated as shell variables; verify_ready before each pick); verify is at 375, merge_one 314, merge_milestones 351, finish 484, restrict 87 (the revert pattern for a commit touching the record). bin/harness: cmd_continue 212, cmd_merge 227, cmd_status 236, cmd_gc 351 with record_only at 384 and the harness/ + harness-merge/ prefix passes at 449.
+- **Discovery** (affects run): Helpers that already exist for the lanes work: `notify.mjs question <before> <after>` computes the INBOX lines a session added; `features.mjs` has unpass, repair, snapshot, milestone-done, touched-outside; scope.sh has mem_available_gb's reader (HARNESS_MEMINFO), scope_unit and scope_owns (role regex at line 27); metrics.mjs `usage` reads unifiedWindows from the real capture tests/fixtures/usage-limit.jsonl, which carries five_hour beside seven_day.
+- **Discovery** (affects run): The stubs: tests/stub-claude.sh acts on the prompt's first line and STUB_* flags (set with `tmux set-environment -g` for sessions started in tmux, plain env otherwise); tests/stub-gh.sh keeps PRs as files under $STUB_DIR/prs and really merges into the bare origin; the record of git pushes is the bare origin itself. New stub behaviour must copy a real shape (fakes mirror the live API).
+- **Discovery** (affects run): S4 of the suite-split spec (`--for` selection by `# covers:`) is deliberately not in the list: P1 and P2 are the run's bulk and a feature a milestone can't ship without would hold P0. It is a one-session interactive change if wanted.
+- **Question for Michael:** S4 (`tests/run.sh --for <paths>` by `# covers:` lines) was left out of P0 so the split ships first; default taken: skip it this run, do it interactively if the two-minute suite still feels slow to iterate on.
+- **Question for Michael:** P1 keeps the lane port equal to the run port (one lane); distinct per-lane ports arrive with admission in P2-02. Default taken: no port change until two lanes exist.
+- *00-init · claude-fable-5-1*
