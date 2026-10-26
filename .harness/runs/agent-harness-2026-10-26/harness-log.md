@@ -28,3 +28,4 @@
 - 2026-10-26 17:58 · context.md for P1-03: 7813 bytes, 3 items left out
 - 2026-10-26 18:38 · P1-03: entry.json missing; recorded a minimal entry
 - 2026-10-26 18:38 · P1-03 · claude-opus-5-5 · passes=false · 39 min · 6/17 passing
+- 2026-10-26 18:41 · context.md for P1-03: 7894 bytes, 3 items left out
