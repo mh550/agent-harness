@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 12:53 · F2-04 · passes
+
+R2: prompts/initializer.md item 4 sizes reviews (1–2 build features fold the review into the last one's steps; 3+ keep one review, one Opus round, a second only after a Critical); the lint line names it. lint() gains review-small and review-missing (milestone-level, step -, kinds via kindOf). Decision file, architecture §6, README.
+
+- **Files:** lib/features.mjs, prompts/initializer.md, tests/run.sh, journal/decisions/2026-10-26-reviews-sized-to-milestone.md, docs/architecture.md, README.md
+- **Verified:** tests: 365 → 368 (check.sh green in 678 s, 368/368). The new pure check and the header check failed first on the step-lint subset (6/8) before lint() had the rules; the prompt check failed once on a grep spanning a line break, fixed to grep `folds its review`. `features.mjs lint` on this run's list: 6 findings (no-anchor 3, outside-repo 2, self-match 1), no review-small/review-missing. summary.mjs's roles line is identical to main's.
+- **Tests:** 365 → 368
+- **Dead end:** grepping `folds its review into the last` in the rendered prompt — the prompt wraps after `folds its review`; grep is per line
+- **Discovery** (affects F2-06): The demo stub list (M1 two builds, M2 one, no reviews) gets no R2 finding: run 1's note stays `lint: 5 findings (no-anchor: 4, undeclared: 1)…`.
+- **Discovery** (affects F2-06): review-small texts pluralise (`M1 has 1 build feature`, `2 build features`); RULES is no-anchor, outside-repo, self-match, undeclared, review-small, review-missing. New run 1 checks: `the report lists the review role when a review ran` (jq sets cost.by_role.review on a copy of the demo summary, then summary.mjs report) and `the initializer prompt sizes reviews to the milestone`.
+- *10-F2-04 · claude-opus-5-5*
+
 ### 2026-10-26 12:26 · F2-03 · passes
 
 Lint wired: prompt_env exports HARNESS_LINT (node $HARNESS_HOME/lib/features.mjs lint); prompts/initializer.md asks to run {{LINT}} on the list before committing and has R10's after sentence; the driver notes `lint: …` once after the initializer, never editing the list. 4 checks in run 1; docs §5, §6, README, decision file.
