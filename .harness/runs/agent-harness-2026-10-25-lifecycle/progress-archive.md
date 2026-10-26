@@ -9,6 +9,44 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 22:19 · verify L3 · passes
+
+L3-01..05 hold: suite re-run 306/306, syntax checks clean, each named check PASS, docs/plan/template/decisions read against the steps.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L3-01 | 1 | read plan, templates/user/harness-tmpfiles.conf, README | plan §1 covers scratch_done, newest check-out, HARNESS_CACHE, tmpfiles; template has `e /tmp/harness - - - 3d` plus x live.lock; README has install command | yes |
+| L3-01 | 2 | read plan driver-window and reaper sections | capture-pane -S -, TMUX_KEEP_HOURS=24, shared tmux_reap in lib/tmux.sh, matches step | yes |
+| L3-01 | 3 | read plan test-driving section | private tmux server, PATH shim, decoy sessions described and implemented in tests/run.sh | yes |
+| L3-01 | 4 | read plan check list | checks named; all present as PASS in suite | yes |
+| L3-01 | 5 | bash tests/run.sh | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-02 | 1 | check 'finish keeps check-last.out and init.out…' | PASS: state files, scratch gone, live.lock intact | yes |
+| L3-02 | 2 | check KEEP_SCRATCH=1; grep config files | PASS; default 0, template commented | yes |
+| L3-02 | 3 | check 'check.sh keeps one check-<key>.out' | PASS | yes |
+| L3-02 | 4 | check 'init and sessions see HARNESS_CACHE' | PASS | yes |
+| L3-02 | 5 | cat tmpfiles template; grep README | rule and install command; Playwright guidance | yes |
+| L3-02 | 6 | grep architecture §4; read decision | Scratch/Cache rows; decision has Finding/Choice/Rejected | yes |
+| L3-02 | 7 | bash -n lib/*.sh; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-03 | 1 | grep lib/config.sh, template, bin/harness:199-201 | default 24; command captures pane, kills supervisor window, prints, sleeps, kill-session | yes |
+| L3-03 | 2 | check 'tmux: TMUX_KEEP_HOURS=0…' | PASS | yes |
+| L3-03 | 3 | check 'tmux: a keep window keeps h-<run>…' | PASS | yes |
+| L3-03 | 4 | check 'tmux: run id dot.run…' | PASS | yes |
+| L3-03 | 5 | read decision, architecture §3/§10 | present, Finding/Choice/Rejected | yes |
+| L3-03 | 6 | bash -n bin/harness; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-04 | 1 | read lib/tmux.sh, bin/harness:376 | log line, dry-run via act flag, continues after failed kill | yes |
+| L3-04 | 2 | check 'harness gc reaps only the ended runs…' | PASS; decoys survive, second ended run reaped | yes |
+| L3-04 | 3 | check 'harness gc --dry-run kills no tmux session' | PASS | yes |
+| L3-04 | 4 | check 'queue runner reaps…'; lib/queue.sh:69 | PASS; reap before debrief | yes |
+| L3-04 | 5 | read decision, architecture, README | present | yes |
+| L3-04 | 6 | bash -n bin/harness lib/queue.sh; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-05 | 1 | read docs/plans/2026-10-25-L3-review.md | findings with severities | yes |
+| L3-05 | 2 | checks scratch_rm refuses…, start refuses…, exact targets | PASS; 17 refusals; RED→GREEN checks per Important finding | yes |
+| L3-05 | 3 | grep architecture §4/§10/§14, README | complete, tmux-driver.txt named | yes |
+| L3-05 | 4 | read decisions; bash -n; node --check | three-part decisions; syntax clean | yes |
+| L3-05 | 5 | bash tests/run.sh | bash tests/run.sh: 306/306 checks passed | yes |
+
+- *221005-verify-L3 · claude-sonnet-5-5*
+
 ### 2026-10-25 22:10 · L3-05 · passes
 
 Opus review of the L3 diff: no Critical; 2 Important fixed RED→GREEN (start killed another run's same-name tmux session; h-queue/attach prefix targets). Guard now refuses symlinked paths; scratch_done moved to lib/prompt.sh, keeps scratch on a failed copy, honest notes, final tree's check-last.out. Docs §4/§14/§15, README, decisions.

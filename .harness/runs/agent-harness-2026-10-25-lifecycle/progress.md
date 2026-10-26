@@ -9,6 +9,44 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 22:19 · verify L3 · passes
+
+L3-01..05 hold: suite re-run 306/306, syntax checks clean, each named check PASS, docs/plan/template/decisions read against the steps.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L3-01 | 1 | read plan, templates/user/harness-tmpfiles.conf, README | plan §1 covers scratch_done, newest check-out, HARNESS_CACHE, tmpfiles; template has `e /tmp/harness - - - 3d` plus x live.lock; README has install command | yes |
+| L3-01 | 2 | read plan driver-window and reaper sections | capture-pane -S -, TMUX_KEEP_HOURS=24, shared tmux_reap in lib/tmux.sh, matches step | yes |
+| L3-01 | 3 | read plan test-driving section | private tmux server, PATH shim, decoy sessions described and implemented in tests/run.sh | yes |
+| L3-01 | 4 | read plan check list | checks named; all present as PASS in suite | yes |
+| L3-01 | 5 | bash tests/run.sh | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-02 | 1 | check 'finish keeps check-last.out and init.out…' | PASS: state files, scratch gone, live.lock intact | yes |
+| L3-02 | 2 | check KEEP_SCRATCH=1; grep config files | PASS; default 0, template commented | yes |
+| L3-02 | 3 | check 'check.sh keeps one check-<key>.out' | PASS | yes |
+| L3-02 | 4 | check 'init and sessions see HARNESS_CACHE' | PASS | yes |
+| L3-02 | 5 | cat tmpfiles template; grep README | rule and install command; Playwright guidance | yes |
+| L3-02 | 6 | grep architecture §4; read decision | Scratch/Cache rows; decision has Finding/Choice/Rejected | yes |
+| L3-02 | 7 | bash -n lib/*.sh; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-03 | 1 | grep lib/config.sh, template, bin/harness:199-201 | default 24; command captures pane, kills supervisor window, prints, sleeps, kill-session | yes |
+| L3-03 | 2 | check 'tmux: TMUX_KEEP_HOURS=0…' | PASS | yes |
+| L3-03 | 3 | check 'tmux: a keep window keeps h-<run>…' | PASS | yes |
+| L3-03 | 4 | check 'tmux: run id dot.run…' | PASS | yes |
+| L3-03 | 5 | read decision, architecture §3/§10 | present, Finding/Choice/Rejected | yes |
+| L3-03 | 6 | bash -n bin/harness; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-04 | 1 | read lib/tmux.sh, bin/harness:376 | log line, dry-run via act flag, continues after failed kill | yes |
+| L3-04 | 2 | check 'harness gc reaps only the ended runs…' | PASS; decoys survive, second ended run reaped | yes |
+| L3-04 | 3 | check 'harness gc --dry-run kills no tmux session' | PASS | yes |
+| L3-04 | 4 | check 'queue runner reaps…'; lib/queue.sh:69 | PASS; reap before debrief | yes |
+| L3-04 | 5 | read decision, architecture, README | present | yes |
+| L3-04 | 6 | bash -n bin/harness lib/queue.sh; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-05 | 1 | read docs/plans/2026-10-25-L3-review.md | findings with severities | yes |
+| L3-05 | 2 | checks scratch_rm refuses…, start refuses…, exact targets | PASS; 17 refusals; RED→GREEN checks per Important finding | yes |
+| L3-05 | 3 | grep architecture §4/§10/§14, README | complete, tmux-driver.txt named | yes |
+| L3-05 | 4 | read decisions; bash -n; node --check | three-part decisions; syntax clean | yes |
+| L3-05 | 5 | bash tests/run.sh | bash tests/run.sh: 306/306 checks passed | yes |
+
+- *221005-verify-L3 · claude-sonnet-5-5*
+
 ### 2026-10-25 22:10 · L3-05 · passes
 
 Opus review of the L3 diff: no Critical; 2 Important fixed RED→GREEN (start killed another run's same-name tmux session; h-queue/attach prefix targets). Guard now refuses symlinked paths; scratch_done moved to lib/prompt.sh, keeps scratch on a failed copy, honest notes, final tree's check-last.out. Docs §4/§14/§15, README, decisions.
@@ -297,18 +335,9 @@ Opus review of the L1 diff in docs/plans/2026-10-25-L1-review.md: 7 findings (1 
 - **Discovery** (affects L2): Deferred review findings for L2: check.sh stop() misses a TERM before the scope registers or on the bare fallback (orphaned suite up to CHECK_TIMEOUT); systemctl-list-units.txt fixture predates --description (recapture before parsing its DESCRIPTION column); check.sh probes a real scope every call (pass the driver SCOPE_OK down).
 - *08-L1-08 · claude-opus-5-5*
 
-### 2026-10-25 15:06 · L1-07 · passes
-
-session() always passes --strict-mcp-config, plus --mcp-config <wt>/.mcp.json when the worktree has one; run.log gets an 'MCP servers:' line at run start. prompts/parts/rules.md gains the deepEqual / bounded-rerun-after-137 rule. Decision file quotes the real claude --help lines (2.1.310). Docs: architecture §3 driver row, README .mcp.json row. Tests 264 → 267.
-
-- **Files:** lib/driver.sh, prompts/parts/rules.md, tests/run.sh, journal/decisions/2026-10-25-strict-mcp-and-deepequal-rule.md, docs/architecture.md, README.md
-- **Verified:** 3 new checks failed first (264/267), then lib/check.sh full: 267/267 checks passed. Checks: every demo session's systemd-run argv has --strict-mcp-config and none --mcp-config; run mp1 on a project committing .mcp.json gets --mcp-config $T/wt/mp/mp1/.mcp.json; lib/prompt.sh renders demo's coding prompt for A with deepEqual, exit 137, --test-name-pattern.
-- **Tests:** 264 → 267
-- **Discovery** (affects run): prompts/parts/rules.md is only included when the worktree has a CLAUDE.md (lib/prompt.sh prompt_render), so the deepEqual rule reaches only projects with one (all of them today). The MCP line is logged to run.log beside the permissions line, not noted in harness-log.md (same for every session).
-- *07-L1-07 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-25 15:06 · L1-07 · passes · session() always passes --strict-mcp-config, plus --mcp-config <wt>/.mcp.json when the worktree has … ([in full](progress-archive.md))
 - 2026-10-25 14:48 · L1-06 · passes · Memory gate: mem_available_gb and mem_gate in lib/scope.sh; session() calls mem_gate for init/coding… ([in full](progress-archive.md))
 - 2026-10-25 14:30 · L1-05 · passes · check.sh runs full and subset suites in harness-<run>-check-<pid> (MemoryMax=CHECK_MEMORY_MAX 3G, no… ([in full](progress-archive.md))
 - 2026-10-25 14:02 · L1-04 · passes · metrics.mjs append takes a 12th arg (mem_peak_mb: number, null when uncapped) via exported metricsRo… ([in full](progress-archive.md))
