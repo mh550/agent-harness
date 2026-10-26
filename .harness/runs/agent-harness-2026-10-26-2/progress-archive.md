@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 11:02 · F1-05 · passes
+
+R7: `harness stop <run> --why "<text>"` writes the reason into STOP; `status: stop <text>` carries one too. stop_why() in lib/driver.sh (STOP's line first, then INBOX, cut at 200) makes the note, ended, end_reason and the services note `stopped by Michael: <why>`; prompts/retro.md shows {{END_REASON}}. summary.mjs and page.mjs no longer read the reason's words as keywords.
+
+- **Files:** bin/harness, lib/driver.sh, lib/summary.mjs, lib/page.mjs, prompts/retro.md, tests/stub-claude.sh, tests/run.sh, journal/decisions/2026-10-26-stop-reason.md, docs/architecture.md, README.md
+- **Verified:** full suite via check.sh: 349/349 (341 before) on the final tree; run 2b's 8 checks watched failing first (5/10 on a scratch copy of runs 2 and 2b), the page tone check failing on the old page.mjs; bash -n and node --check on every touched file; an Opus review of the diff (5 low findings, 4 fixed)
+- **Tests:** 341 → 349
+- **Dead end:** a summary.json cause check on a run stopped after the initializer — no feature is blocked there, so it passes with or without the keyword fix; the page.mjs card check covers that instead
+- **Discovery** (affects run): New stub flags: STUB_CLI_STOP=-|<why> (the initializer runs harness stop [--why]) and STUB_PHONE_STOP=<why> (status: stop <why>; 1 keeps the bare line). Both are in the stub's header.
+- **Discovery** (affects run): summary.mjs used to strip ended's date with / · \d{4}-.*$/, which cut any reason holding ' · 2026-'. It is now anchored to the full timestamp. Its cause keywords (usage limit, blocked) are matched on `stopped by Michael` alone.
+- **Discovery** (affects run): Left alone: ${w:0:200} counts bytes in a non-UTF-8 locale, so a long non-ASCII reason may be split inside a character.
+- *05-F1-05 · claude-opus-5-5*
+
 ### 2026-10-26 10:14 · F1-04 · passes
 
 R6: queue add --continue writes --queued --requested (starts even after a stop); --automatic (finish() after a session cap, the debrief) omits it and is skipped after a stop; queue list marks (requested)/(automatic), parked too. A request upgrades a queued automatic entry; a stop the driver honours demotes its run's queued requests. R11: numbers past held/, park refuses to overwrite.
