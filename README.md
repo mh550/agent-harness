@@ -22,7 +22,8 @@ harness status                           # every run: running / ended (why), fea
 harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes, memory peaks over 2 GB
 ```
 
-Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config; the queue
+Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config, which the
+runner re-reads every poll, so an edit applies without a restart and lowering it stops no running run; the queue
 never runs two runs of one project at once, so a second entry for a busy repo waits while later ones go ahead):
 
 ```bash

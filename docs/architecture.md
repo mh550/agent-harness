@@ -373,6 +373,13 @@ starts a run while `LIMIT_UNTIL` is in the future, and starts **one run per proj
 project has a live driver is held in its place (logged once, `holding <entry> (<project>)`) and the next entry for a
 free project starts instead (`decisions/2026-10-21-queue-one-run-per-project`); `harness start --now` still bypasses. With 1, nights are serial: each run gets
 the whole plan window.
+The runner **re-reads the config at the top of every poll** (`harness_config /nonexistent`: the defaults, then the
+user's file), so a `MAX_PARALLEL_RUNS` edit applies without a restart: it logs `MAX_PARALLEL_RUNS <old> → <new>
+(config reloaded)` and the next poll starts more, or fewer. Lowering it only gates the next start; it never stops a
+running run, so an entry waits until fewer than the new value are alive. A value that is no plain whole number (`2x`,
+or `08`, octal to bash) keeps the old one, logged once (`… is not a whole number: keeping <n>`); a file read half
+written falls back to the default for one poll (both changes logged). `HARNESS_QUEUE_POLL` is an
+env var, read once at start-up (decisions/2026-10-25-runner-config-reload).
 The runner exits when the queue is empty and nothing it started runs, when it is past `--until` with nothing running,
 or on `harness queue stop`; whichever, if it started at least one run (marked in `<state>/runners`), it then starts
 `harness debrief` once, detached with `setsid`, so a new runner replacing tmux `h-queue` can't kill it (§16). Before that, on every exit it lives through (a runner killed with its `h-queue` session doesn't), it reaps the tmux sessions of every project's ended runs (`tmux_reap`, the same helper as `harness gc`; a `+ reaped tmux session <s> (<run> ended)` line each in `runner.log`); `h-queue` and the desk are no run's session, so they stay (decisions/2026-10-25-tmux-reaper). Then, if it started a run, it **collects as it drains**: `harness gc <project> --all-merged --deps` once for each distinct project (`PROJECT_DIR` in `meta.env`) of the runs it started, logged as `gc <name>: harness gc <dir> --all-merged --deps` and each output line as `gc <name>: <line>` in `runner.log`; a gc that exits non-zero logs `gc <name> failed (exit <n>)` and the debrief starts anyway. Nobody watches it, so it runs with `GIT_TERMINAL_PROMPT=0` under `timeout -k 10s ${HARNESS_GC_TIMEOUT:-10m}` (a hang is `failed (exit 124)`; decisions/2026-10-26-gc-unattended-guards). The gc runs first so the debrief sees what is left; a removed worktree's run record is read from the ledger's copy, and the debrief itself stays read-only (decisions/2026-10-25-runner-gc).

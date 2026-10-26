@@ -9,6 +9,34 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 02:49 · verify L5 · passes
+
+L5-01 holds: queue.sh reloads config each loop and logs the change; 1→2 and 2→1 checks pass; decision file, architecture §12 and README present; suite 325/325.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L5-01 | 1 | read lib/queue.sh:44-51; grep POLL lib/config.sh | harness_config /nonexistent at top of each iteration, logs 'MAX_PARALLEL_RUNS old → new (config reloaded)'; POLL set only at line 18, config doesn't touch it | yes |
+| L5-01 | 2 | bash tests/run.sh; read check 'MAX_PARALLEL_RUNS 1 → 2 ... starts the second entry' | PASS; asserts no early start, one '1 → 2' line, both runs alive, one 'runner up' | yes |
+| L5-01 | 3 | bash tests/run.sh; check 'MAX_PARALLEL_RUNS 2 → 1 stops no running run; third entry waits' | PASS; asserts low gating, third starts after drop under limit | yes |
+| L5-01 | 4 | ls decision file; grep architecture.md, README.md | decision file exists with SIGHUP rejected; architecture.md:378 and README:26 say it reloads each poll | yes |
+| L5-01 | 5 | bash -n lib/queue.sh; bash tests/run.sh | ok; 325/325 checks passed, 0 FAIL | yes |
+
+- *023915-verify-L5 · claude-sonnet-5-5*
+
+### 2026-10-26 02:39 · L5-01 · passes
+
+lib/queue.sh re-runs harness_config at the top of each poll and logs `MAX_PARALLEL_RUNS <old> → <new> (config reloaded)`; lowering only gates starts. A value that is no plain whole number (2x, 08) keeps the old, logged once. 3 checks (two parallel tmux-started runs in proj/proj2, held by a stub file switch), decision file, §12, README, template line. 322 → 325.
+
+- **Files:** lib/queue.sh, tests/run.sh, tests/stub-claude.sh, journal/decisions/2026-10-25-runner-config-reload.md, docs/architecture.md, README.md, templates/user/config.sh
+- **Verified:** Red first: on the old runner l5b started only after l5a ended (no reload line); the guard check failed on a reload-only copy, which started a run past a full slot. Then the L5 block 3/3 in a scratch copy of the suite (41 s), and the full suite via check.sh 325/325 in 600 s.
+- **Tests:** 322 → 325
+- **Dead end:** an empty MAX_PARALLEL_RUNS= as the bad-value case — bash arithmetic reads empty as 0, so starts are held anyway and the check didn't show the danger; 2x and 08 (octal) make `(( a >= x ))` fail and fall through to a start
+- **Discovery** (affects run): tests/stub-claude.sh: with $STUB_DIR/hold-coding present, a run's coding sessions touch $STUB_DIR/held-<run> and wait (≤180 s) for $STUB_DIR/release-<run>. It is a file switch, so it reaches tmux-started runs. STUB_* flags reach those runs through `tmux set-environment -g` on the private server (unset afterwards).
+- **Discovery** (affects run): The suite now has a second throwaway project, $T/proj2: a clone with its own bare origin $T/origin2.git, reached through url.insteadOf git@github.com:test/proj2.git. It is created in the L5 block at the end of tests/run.sh.
+- **Discovery** (affects run): The full suite took 600 s under check.sh this session, right at a 600 s Bash foreground limit: run it in the background.
+- **Question for Michael:** MAX_PARALLEL_RUNS=0 is now accepted on reload and holds every start, a quiet way to pause the queue without stopping it. Keep that, or reject 0 like 2x? (default: kept, undocumented)
+- *25-L5-01 · claude-opus-5-5*
+
 ### 2026-10-26 02:08 · verify L4 · passes
 
 All five L4 features hold: check.sh green (322 checks, 0 FAIL), bash -n clean, named checks read and match each step, docs/decisions/plan present.

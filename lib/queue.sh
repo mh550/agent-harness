@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The queue runner (`harness queue start`, tmux session h-queue). Starts queued runs in order: at most
-# MAX_PARALLEL_RUNS at a time (user config; 1 = one after another), never while the box-wide usage-limit window is
+# MAX_PARALLEL_RUNS at a time (user config, re-read each poll; 1 = one after another), never while the box-wide usage-limit window is
 # closed, none after the --until time, and one run per project at a time: an entry whose project already has a live
 # run is held (it keeps its place) and the next entry for a free project goes first. Exits when the queue is empty and nothing it started is still running,
 # when it is past --until with nothing running, on `harness queue stop`, or when the plan's 7-day window is past
@@ -37,6 +37,18 @@ n=$(ls "$Q"/held/*.args 2> /dev/null | wc -l)
 (( n )) && log "$n parked entr$( (( n == 1 )) && echo y || echo ies) skipped until unparked (harness queue list)"
 
 while :; do
+  # the config again each poll (it resets every key, then re-sources): a MAX_PARALLEL_RUNS edit applies without a
+  # restart; lowering it only gates the next start, never a running run (decisions/2026-10-25-runner-config-reload)
+  # One that is no plain whole number (2x, or 08: bash reads octal) keeps the old: `(( a >= 2x ))` fails, the loop
+  # would fall through and start a run past the limit
+  was=${MAX_PARALLEL_RUNS-}; harness_config /nonexistent
+  if [[ ! ${MAX_PARALLEL_RUNS-} =~ ^(0|[1-9][0-9]*)$ ]]; then
+    [[ $was =~ ^(0|[1-9][0-9]*)$ ]] || was=1   # bad since start-up too: the default
+    [[ ${bad_max+set} && ${MAX_PARALLEL_RUNS-} == "$bad_max" ]] || log "MAX_PARALLEL_RUNS=${MAX_PARALLEL_RUNS-} in the config is not a whole number: keeping $was"
+    bad_max=${MAX_PARALLEL_RUNS-} MAX_PARALLEL_RUNS=$was
+  else
+    unset bad_max; [[ $MAX_PARALLEL_RUNS != "$was" ]] && log "MAX_PARALLEL_RUNS $was → $MAX_PARALLEL_RUNS (config reloaded)"
+  fi
   [[ -f $Q/STOP ]] && { rm -f "$Q/STOP"; log "stopped by harness queue stop"; break; }
   next="" held="" a=$(alive_count) now=$(date +%s) busy=$(busy_projects)
   for f in $(ls "$Q"/*.args 2>/dev/null | sort); do   # two runs on one repo would build conflicting PRs from the same base

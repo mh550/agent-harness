@@ -15,6 +15,9 @@
 #                                    #     you, and a debrief with Needs Michael. Try `harness desk <run> --why test` first.
 # DESK_MODEL=opus                    # the desk session's model: fable, opus, sonnet, haiku or a claude-… id
 
+# MAX_PARALLEL_RUNS=1                # runs alive at once (1 = one after another); the queue runner re-reads it each poll,
+#                                    #     and lowering it stops no running run (an entry waits until fewer are alive)
+
 # Each claude session runs in its own systemd user scope (harness-<run>-s<n>); without user systemd, uncapped.
 # SESSION_MEMORY_HIGH=5G             # throttled above this
 # SESSION_MEMORY_MAX=6G              # killed at this (exit 137; the attempt counts)

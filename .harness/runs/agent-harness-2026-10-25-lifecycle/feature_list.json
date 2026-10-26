@@ -275,5 +275,5 @@
         "journal/decisions/2026-10-25-runner-config-reload.md exists (rejected: a SIGHUP handler; re-reading in harness start only); docs/architecture.md §12 and README's queue line say the runner reloads its config each poll",
         "bash -n lib/queue.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false }
+      "passes": true }
   ] }
