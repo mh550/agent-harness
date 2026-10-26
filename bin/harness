@@ -30,7 +30,8 @@
 #                                                CLAUDE.md from the repo's docs for you to edit), and the Vercel/Netlify
 #                                                guard that keeps run branches from deploying
 #   harness gc <project> [--all-merged] [--dry-run]
-#                               delete merged harness branches and their clean worktrees, locally and on origin;
+#                               delete merged harness branches and their clean worktrees, locally and on origin
+#                               (--all-merged: every merged branch, whatever its name);
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
 #   harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]
 #                               replay a task set (evals/) with that harness version's driver on throwaway clones,
@@ -350,7 +351,9 @@ cmd_answer() {
 cmd_gc() {
   local p all=0 dry=0 b pattern; p=$(toplevel "${1:?usage: harness gc <project>}"); shift
   while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; *) die "unknown option $1" ;; esac; shift; done
-  act() { if (( dry )); then echo "would: $*"; else echo "+ $*"; "$@"; fi; }
+  # a refusal (branch -d of a branch merged into origin/main but not into HEAD, with no upstream) is said, never the
+  # end of gc under set -e: every later step still runs (decisions/2026-10-25-gc-all-merged)
+  act() { if (( dry )); then echo "would: $*"; else echo "+ $*"; "$@" || echo "! failed: $*"; fi; }
   # A SIGKILLed driver ran no trap and left its units (decisions/2026-10-25-gc-orphan-units): stop those of this
   # project's runs with no live driver, first (before a fetch that may fail, before their worktree goes). A dead
   # driver.pid is enough: the driver removes ended at start, only finish and the trap write it. Two ids may reduce to
@@ -399,26 +402,30 @@ cmd_gc() {
       act git -C "$p" worktree remove "$wt"
     fi
   done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p')
-  for b in $(git -C "$p" for-each-ref --format='%(refname:short)' 'refs/heads/harness/*'); do   # record-only tails
+  for b in $(git -C "$p" for-each-ref --format='%(refname:short)' refs/heads/harness/); do   # record-only tails
     [[ $b == "$(git -C "$p" branch --show-current)" ]] && continue
     running "$b" && continue
     git -C "$p" merge-base --is-ancestor "$b" "$main" && continue
     record_only "$b" && ! git -C "$p" worktree list --porcelain | grep -qx "branch refs/heads/$b" \
       && { act git -C "$p" branch -D "$b"; git -C "$p" rev-parse -q --verify "origin/$b" > /dev/null && act git -C "$p" push -q origin --delete "$b"; }
   done
-  for pattern in 'harness/*' 'harness-merge/*'; do
-    (( all )) && pattern='*'
+  # One pass per prefix, every pass runs; --all-merged adds the bare prefix, every branch. Prefixes, never a `*`: in a
+  # for-each-ref pattern it doesn't cross a `/` (decisions/2026-10-25-gc-all-merged). A branch an earlier pass had is
+  # skipped, so a dry run says each once.
+  local pre prefixes=(harness/ harness-merge/) seen=" "; (( all )) && prefixes+=('')
+  for pre in "${prefixes[@]}"; do
     # local branches: -d refuses anything unmerged, so this can never drop work
-    for b in $(git -C "$p" for-each-ref --format='%(refname:short)' "refs/heads/$pattern"); do
-      [[ $b == main || $b == "$(git -C "$p" branch --show-current)" ]] && continue
+    for b in $(git -C "$p" for-each-ref --format='%(refname:short)' "refs/heads/$pre"); do
+      [[ $b == main || $b == "$(git -C "$p" branch --show-current)" || $seen == *" l:$b "* ]] && continue
+      seen+="l:$b "
       git -C "$p" merge-base --is-ancestor "$b" "$main" && act git -C "$p" branch -d "$b"
     done
     # remote branches fully contained in origin/main
-    for b in $(git -C "$p" for-each-ref --format='%(refname:lstrip=3)' "refs/remotes/origin/$pattern"); do
-      [[ $b == main || $b == HEAD ]] && continue
+    for b in $(git -C "$p" for-each-ref --format='%(refname:lstrip=3)' "refs/remotes/origin/$pre"); do
+      [[ $b == main || $b == HEAD || $seen == *" r:$b "* ]] && continue
+      seen+="r:$b "
       git -C "$p" merge-base --is-ancestor "origin/$b" "$main" && act git -C "$p" push -q origin --delete "$b"
     done
-    (( all )) && break
   done
   return 0
 }

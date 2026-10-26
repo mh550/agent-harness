@@ -780,6 +780,31 @@ check "harness gc stops the units of this project's runs with no live driver; --
   && ! grep -q harness-c-d-svc "$T/gcu1.out" "$T/gcu2.out" && ( for u in harness-demo-x-svc harness-gclive-svc harness-nosuch-svc harness-oth-svc harness-c-d-svc; do [[ " $GCL " == *" $u.scope "* ]] || exit 1; done )'
 kill "$GL1" "$GL2" "$GL3" 2> /dev/null; wait "$GL1" "$GL2" "$GL3" 2> /dev/null
 rm -rf "$HARNESS_STATE"/proj/{gclive,demo-x,killed,c.d} "$HARNESS_STATE/other"; for u in $GCU; do rm -f "$T/scope/$u".*; done   # a live fake driver.pid counts against MAX_PARALLEL_RUNS
+# gc's branch passes (L4-01): a `*` doesn't cross a `/` in for-each-ref, so --all-merged must list by prefix and run
+# every pass. Five merged branches (at origin/main) and an unmerged spec/u, each pushed to the origin with -u, as runs
+# push. harness/noup has no upstream and this checkout's main is behind origin/main, so its `branch -d` is refused:
+# gc says so and goes on (it used to end under set -e, before harness-merge/w).
+git -C "$T/proj" fetch -q origin; GB=$(git -C "$T/proj" rev-parse origin/main)
+gb_make() { local b; for b; do git -C "$T/proj" branch -f "$b" "$GB"; done; git -C "$T/proj" push -q -u origin "$@" 2> /dev/null; }
+gb_has() { git -C "$1" rev-parse -q --verify "refs/heads/$2" > /dev/null; }   # gb_has <repo> <branch>
+gb_both() { gb_has "$T/proj" "$1" && gb_has "$T/origin.git" "$1"; }; gb_none() { ! gb_has "$T/proj" "$1" && ! gb_has "$T/origin.git" "$1"; }
+gb_make spec/x docs/y harness/z harness-merge/w flat
+git -C "$T/proj" branch -f spec/u "$(git -C "$T/proj" commit-tree "$GB^{tree}" -p "$GB" -m unmerged)" && git -C "$T/proj" push -q -u origin spec/u 2> /dev/null
+git -C "$T/proj" branch -f harness/noup "$GB" && git -C "$T/proj" push -q origin harness/noup
+"$H" gc "$T/proj" > "$T/gcb1.out" 2>&1; GBR=$?
+check "plain gc deletes only the merged harness/ and harness-merge/ branches, locally and on the origin" '[[ $GBR == 0 ]] && gb_none harness/z && gb_none harness-merge/w \
+  && gb_both spec/x && gb_both docs/y && gb_both flat && gb_both spec/u && grep -qx "+ git -C $T/proj push -q origin --delete harness/z" "$T/gcb1.out"'
+check "a refused branch -d (merged into origin/main, not into HEAD, no upstream) is logged and gc goes on" '! git -C "$T/proj" merge-base --is-ancestor origin/main main \
+  && gb_has "$T/proj" harness/noup && ! gb_has "$T/origin.git" harness/noup && grep -qx "! failed: git -C $T/proj branch -d harness/noup" "$T/gcb1.out"'
+git -C "$T/proj" branch -qD harness/noup
+gb_make harness/z harness-merge/w
+"$H" gc "$T/proj" --all-merged --dry-run > "$T/gcb2.out" 2>&1; GBD=$(for b in spec/x docs/y harness/z harness-merge/w flat; do gb_both "$b" || echo "$b"; done)
+"$H" gc "$T/proj" --all-merged > "$T/gcb3.out" 2>&1
+check "gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives" '[[ -z $GBD ]] \
+  && [[ $(grep -c "^would: git -C $T/proj branch -d " "$T/gcb2.out") == 5 && $(grep -c "^would: git -C $T/proj push -q origin --delete " "$T/gcb2.out") == 5 ]] \
+  && gb_none spec/x && gb_none docs/y && gb_none harness/z && gb_none harness-merge/w && gb_none flat && gb_both spec/u && gb_both main \
+  && grep -qx "+ git -C $T/proj branch -d docs/y" "$T/gcb3.out" && grep -qx "+ git -C $T/proj push -q origin --delete spec/x" "$T/gcb3.out"'
+git -C "$T/proj" branch -qD spec/u; git -C "$T/proj" push -q origin --delete spec/u
 
 # ---- run 2: Michael sets "status: stop" in INBOX.md from the phone (and only NOTIFY_CMD is configured) ----
 printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"

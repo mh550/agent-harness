@@ -224,7 +224,7 @@
         "journal/decisions/2026-10-25-gc-all-merged.md exists (finding: `*` does not cross `/` on git 2.43 and `(( all )) && break`; rejected: a `**` pattern)",
         "bash -n bin/harness; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L4-02", "milestone": "L4", "kind": "build", "model": "opus",
       "description": "gc's worktree removal finishes: a clean tree with ignored build output is removed with --force then rm -rf, a failure is logged as `! could not remove <wt>: <why>` and the next worktree is still processed.",
       "steps": [
