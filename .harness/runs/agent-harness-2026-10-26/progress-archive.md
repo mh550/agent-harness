@@ -9,6 +9,24 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-26 07:35 · P0-02 · not yet
+
+Runner runs TEST_JOBS files (default 4 here) as background jobs, largest first; output whole per file, timing lines, slowest three. split.sh REPLAYS_ cut the 400 s file in three. 335/335 green in 165 s (was 589 s), peak 390 MB. Not passed: step 5 wants <150 s, but the file times sum to 637 s (≥159 s on 4 jobs) and the debrief chain is 150 s alone.
+
+- **Files:** tests/run.sh, tests/lib.sh, tests/split.sh, tests/checks/, tests/checks/28-suite-runner.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-suite-split.md, CLAUDE.md, README.md, docs/architecture.md
+- **Verified:** lib/check.sh: 'check: green in 165 s', 335/335 (slowest 12-…-debrief 146 s). KEEP=1 TEST_JOBS=4 in a 3G scope: 165 s, 333/333, memory.peak 369/390/381 MB in three runs. TEST_JOBS=1: 599 s, per-file stub systemd-run counts identical to TEST_JOBS=4. split.sh reproduces tests/checks/01-27 byte for byte. New runner checks watched failing first. bash -n on all.
+- **Tests:** 327 → 335
+- **Dead end:** debrief file replaying run 2 without run 1 — the debrief 'since' section runs `ran demo` (demo's run.log) and reads run 1's HV
+- **Dead end:** desk in its own file with runs 3/10/16 only — it briefs stoppy (run 2) and calls the debrief section's `ran`; run 16's 'nothing parked' needs gc to have collected demo
+- **Discovery** (affects P0-02, P0): A 150 s suite is out of reach at TEST_JOBS=4 without rewriting checks: the work is CPU-bound (4 cores/8 threads); the file times sum to 637 s; the debrief chain (queue → runner → since → big, plus runs 1, 2, 4, 5, 9) is 146-151 s on its own whatever TEST_JOBS is.
+- **Discovery** (affects run): scope.sh's real 64M-scope check is flaky: in 1 of 5 full runs the cgroup OOM kill also took the bash -c wrapper, leaving an empty .show (rc/peak unread). Not the split.
+- **Discovery** (affects P1, P2): lib.sh now has copies of ran, settle and HH (the debrief section's helpers) and a REPLAY mode for check (silent, uncounted). A new check file by topic needs no split.sh: split.sh only regenerates 01-27 into an empty SPLIT_OUT.
+- **Question for Michael:** The spec's '<150 s with TEST_JOBS=4' can't be met (measured 165 s; floor about 159 s from 637 s of work on 4 jobs, and 150 s for the debrief chain alone). Accept 165 s (step 5 → 'under 180 s, measured and recorded'), or should a later feature rewrite the debrief chain's checks so it can be split?
+- **Proposed change:** P0-02 step 5: 'under 150 s' → 'under 180 s with TEST_JOBS=4 (measured 165 s), written into the decision file'. Everything else in the step is done: the slowest file, peak memory (390 MB, CHECK_MEMORY_MAX unchanged) and why the 151 s debrief file isn't split further.
+- **Proposed change:** P0-02 step 4: every file that starts a harness run logs stub systemd-run calls (the harness's own session scopes), so 'only the scope.sh and capped-suites files' logs' is false as worded. What holds and was verified: the runner makes no systemd-run call (a check with a spy on PATH), and the per-file counts match between TEST_JOBS=1 and 4.
+- **Proposed change:** P0-02 step 2: the slowest/wall line is the second-to-last line; the total `N/M checks passed` stays last for testcount.mjs.
+- *02-P0-02 · claude-opus-5-5*
+
 ### 2026-10-26 06:44 · P0-01 · passes
 
 tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for byte from the single file by tests/split.sh with 27 grouping pairs, plus 25-suite-runner.sh. tests/lib.sh holds the preamble. A conformance check runs against tests/fixtures/check-names.txt (325 names from init's check.out). testcount.mjs now reads N/M checks passed. 327/327 green in 589 s.
