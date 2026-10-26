@@ -9,6 +9,24 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-26 06:44 · P0-01 · passes
+
+tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for byte from the single file by tests/split.sh with 27 grouping pairs, plus 25-suite-runner.sh. tests/lib.sh holds the preamble. A conformance check runs against tests/fixtures/check-names.txt (325 names from init's check.out). testcount.mjs now reads N/M checks passed. 327/327 green in 589 s.
+
+- **Files:** tests/lib.sh, tests/split.sh, tests/run.sh, tests/checks/, tests/fixtures/check-names.txt, lib/testcount.mjs, journal/decisions/2026-10-26-suite-split.md, CLAUDE.md, README.md, docs/architecture.md
+- **Verified:** Full suite through check.sh: green in 589 s, 327/327 (325 + the testcount check + conformance). All 25 files pass alone, run from fresh shells 4 at a time. bash -n passes on every file. A Python comparison shows all 50 sections and the lib.sh preamble byte-identical to 3aa98b5:tests/run.sh. The check-line multiset diff is empty. Re-running split.sh into a temp dir reproduces tests/checks exactly. KEEP=1 tests/run.sh gc kept one $T and named it. Runner cases were tested on a throwaway copy: subset, no match, missing, new, doubled, skipped name, crashed file, a leftover background process.
+- **Tests:** 325 → 327
+- **Dead end:** hoisting shared helpers (sd_with, gone, has_s, keep_wts, HH, HV) into lib.sh so files that only call them need no grouping — once the state pairs were in, every such file was in the run-1 group anyway except a 1-second tmux file; dropped
+- **Dead end:** export LC_ALL=C in the runner for sort/comm — it reached each file's tmux server, which mangled the UTF-8 desk window names: 12 desk checks failed. Now set only on sort/comm
+- **Discovery** (affects P0-02, P0-04): Most of the suite reads run 1's demo state (its systemd.log scopes, worktree, tags, demo-hlog.md, state dir), and the debriefs read runs 2/4/5/9 and the queue. Grouping therefore yields one file of 25 sections and 253 checks (06-scope-sh-...-l5.sh) that takes ~400 s alone, more than half of the 589 s sequential total. Under S2 that file alone exceeds 150 s. Splitting it means re-running run 1's start in a second file: lines not in the monolith (the spec forbids patching). P0-02 must choose and record that.
+- **Discovery** (affects P0-02, run): split.sh writes only into an empty $SPLIT_OUT (default tests/checks), so it can never delete files added since the split. To re-verify the split: SPLIT_OUT=$(mktemp -d)/o bash tests/split.sh, then cmp against tests/checks.
+- **Discovery** (affects P0-02, P0-03, P1, P2): tests/checks/25-suite-runner.sh is the runner's own check file (it holds the testcount check). P0-02's runner checks belong there. Every new check name needs a line in tests/fixtures/check-names.txt (C-sorted): the full run's conformance check fails on new names too.
+- **Discovery** (affects run): The harness runs the live checkout's lib/check.sh/testcount.mjs, so its green line shows no test count until this merges to main. The worktree's lib/check.sh prints 'check: green (cached for this code tree, 327 tests)'.
+- **Discovery** (affects P0-02): A subset by name can match a group: `tests/run.sh parked` runs 03-harness-parked-pure-report and the big 06 file, because a group's file name adds its sections' first words (gc, queue, parked, debrief, desk, ...).
+- **Question for Michael:** D1 default: the conformance check fails on a check name not in tests/fixtures/check-names.txt, not only on missing or doubled names (the spec says the runner 'says' which names are new). This keeps the fixture complete, so a check deleted later is caught. Keep it strict?
+- **Proposed change:** P0-01 step 3 (multiset equal) and step 7 (N = 325 + conformance) describe the split alone. After the testcount fix, the full run is 327 (325 + 'testcount.mjs: the runner's last N/M checks passed is the count' + conformance). The split files' check lines still equal the monolith's exactly.
+- *01-P0-01 · claude-opus-5-5*
+
 ### 2026-10-26 05:50 · init · passes
 
 17 features: P0 4 (suite split S1-S3 + review; S4 left out), P1 6 (plan, pure scheduler, record branch + slot, lane process + coordinator, continue/legacy/pr-held, review), P2 7 (plan, admission, re-base, slots + gc, record PR, status + summary + prompts, review).
