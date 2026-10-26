@@ -1,0 +1,213 @@
+{
+  "run": "agent-harness-2026-10-26-2",
+  "branch": "harness/agent-harness-2026-10-26-2",
+  "features": [
+    {
+      "id": "F1-01",
+      "milestone": "F1",
+      "kind": "plan",
+      "model": "opus",
+      "description": "docs/plans/2026-10-26-F1-driver-cli.md fixes, per item R1, R4, R6, R7 and R11 of docs/specs/2026-10-21-retro-fixes.md, the files touched, the exact harness-log.md lines, the check names and the tests/run.sh section (or tests/checks/ file) each goes in, the fixture sources and the decision-file slugs, after checking each item against main as it stands.",
+      "steps": [
+        "docs/plans/2026-10-26-F1-driver-cli.md exists with one section per item (R1, R4, R6, R7, R11) that names the files to change (lib/testcount.mjs, lib/driver.sh, bin/harness, prompts/verify.md, prompts/retro.md as they apply), the exact `note` line each behaviour writes to harness-log.md, and the new check names with the `# ---- <title> ----` section of tests/run.sh (or the tests/checks/ file, if that directory exists in the worktree) each goes in",
+        "the plan's R1 section lists one fixture file per runner under tests/fixtures/ (node:test, pytest, jest with both the `Test Suites:` and `Tests:` lines, cargo, go) and says for each where its text comes from: generated on this box with the installed runner (node 24, ~/.local/bin/pytest, cargo) or, for a runner that is not installed (go, jest), copied from that runner's documented output with the source URL in the fixture's first line",
+        "the plan records what main already has: R8's EXIT trap (`driver exited unexpectedly` is not there; lib/driver.sh:108 writes `$END_REASON` from the trap) and testCount's current node:test and `N passed` matching (lib/testcount.mjs:5-9), and says R8 is cited in R7's decision file, not rebuilt",
+        "the plan's R6 section says how the driver's own continuation in finish() (lib/driver.sh:519, `queue add --continue … --keep-attempts`) stays automatic while `harness queue add --continue` marks its entry `--requested`, and names the existing check `a runner that started nothing (a skipped continuation): no debrief` (tests/run.sh, the queue section) as the one to adapt",
+        "the plan names the five decision files to write: journal/decisions/2026-10-26-real-test-counts.md, -verify-runs-the-suite.md, -requested-continuations.md, -stop-reason.md, -queue-numbering-and-park.md for F1 (one per behaviour; R6 and R11 separate)",
+        "the suite is green (`bash tests/run.sh` or the cached `check.sh` line ends with every check passing)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F1-02",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "description": "R1: lib/testcount.mjs reports the real test count for node:test, pytest, jest, cargo and go output, proven on one fixture per runner under tests/fixtures/, and the driver notes `test count: no match` in harness-log.md once per run when the full suite's output matches nothing.",
+      "steps": [
+        "tests/fixtures/ has five suite outputs, one per runner (names like check-node-test.txt, check-pytest.txt, check-jest.txt, check-cargo.txt, check-go.txt; the jest one has a `Test Suites: N passed, N total` line before its `Tests: M passed, M total` line with M != N), each with a first-line comment saying where its text came from",
+        "`node lib/testcount.mjs tests/fixtures/<fixture>` prints `<n> tests` with the right n for each of the five fixtures: the jest fixture gives the `Tests:` count, not the `Test Suites:` count; the cargo fixture (two `test result: ok. N passed; …` lines) gives their sum; the go fixture gives its `--- PASS` count",
+        "the unit checks for testCount (one per runner, under a `# ---- test counts` section of tests/run.sh, or the tests/checks/ file of that topic) pass; they were written before the code and failed on main's testcount.mjs for cargo and go (the entry's verified_how says so)",
+        "a stub run whose suite prints output with no recognizable count has exactly one `test count: no match` line in its harness-log.md, and the demo run of the `run 1` section (CHECK_CMD `test ! -f BROKEN`, no output) and the scrub run (`# pass 7`) are handled as the plan says (the check asserts both cases)",
+        "journal/decisions/2026-10-26-real-test-counts.md exists (title, provenance, finding · choice · rejected), docs/architecture.md's testcount.mjs line and README.md's test-count mention say the runners covered",
+        "`bash -n` on every shell file touched and `node --check lib/testcount.mjs` pass; the suite is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F1-03",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "description": "R4: before every verify session the driver removes the tree's `green-<key>` marker, so the verifier's check.sh runs the suite in full on the tree it judges, and prompts/verify.md says the suite runs in full.",
+      "steps": [
+        "lib/driver.sh's verify() removes `$STATE/green/green-<key>` (key from lib/treekey.mjs) after sync_main and before run_init, and notes `verify <m>: suite cache cleared; the suite runs in full on the verified tree` once per verify",
+        "a new stub flag (tests/stub-claude.sh, documented in its header) makes a coding session leave the suite red (BROKEN present) while writing a green marker for that tree into $HARNESS_CHECK_CACHE; a stub run with it ends with `verify M1: the suite is red on the verified tree` in harness-log.md and no `run/<run>/M1` tag in the bare origin",
+        "the same check, run against main's driver (the marker not removed), fails: the entry's verified_how records the red run",
+        "prompts/verify.md step 1 says the harness cleared the cached result so the suite runs in full, and the rendered `$HARNESS_STATE/proj/demo/prompt-verify.md` of the run 1 section contains that sentence (one check)",
+        "journal/decisions/2026-10-26-verify-runs-the-suite.md exists (finding · choice · rejected); docs/architecture.md §7's Verify row says the cache is cleared before each verify",
+        "`bash -n lib/driver.sh` passes; the suite is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F1-04",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "description": "R6 and R11: `harness queue add --continue` marks its entry `--requested` so a stopped run Michael re-queues starts while the driver's automatic continuations are still skipped and `queue list` shows which is which; queue_add numbers past queue/held/ and `queue park` refuses to overwrite a parked entry.",
+      "steps": [
+        "`harness queue add --continue <run>` writes an entry whose lines include `--queued` and `--requested`; finish()'s automatic continuation (lib/driver.sh) writes one with `--queued` and no `--requested`",
+        "in the suite: a run whose `ended` starts with `stopped by Michael` is started by the runner from a requested continuation (`starting: harness continue <run>` in runner.log) and skipped from an automatic one (`skipping queued continuation of <run>: Michael stopped it`), both checked; the existing check `a runner that started nothing (a skipped continuation): no debrief` is adapted to the automatic form and still passes",
+        "`harness queue list` prints `(requested)` after a requested continuation entry and `(automatic)` after an automatic one (one check)",
+        "with `queue/held/0004-start-proj.args` parked and the queue empty, `harness queue add` creates `0005-…`, not `0004-…` (one check); with `queue/held/<name>.args` already present, `harness queue park <n>` of an entry of the same name exits non-zero with `harness: … already parked`, and both files still exist afterwards (one check)",
+        "journal/decisions/2026-10-26-requested-continuations.md and journal/decisions/2026-10-26-queue-numbering-and-park.md exist (finding · choice · rejected); docs/architecture.md §12 and README.md's queue lines say requested vs automatic continuations and the park refusal",
+        "`bash -n bin/harness lib/driver.sh` passes; the suite is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F1-05",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "description": "R7: `harness stop <run> --why \"<text>\"` and `status: stop <text>` in INBOX.md record why: harness-log.md and `ended` say `stopped by Michael: <text>`, and the retro prompt carries the end reason.",
+      "steps": [
+        "`harness stop <run> --why \"the spec changed\"` writes the reason into the run's STOP marker; the driver then notes `stopped by Michael: the spec changed` in harness-log.md and `ended` starts with `stopped by Michael: the spec changed`; without `--why` both say `stopped by Michael` as before (checks for both)",
+        "INBOX.md line 1 `status: stop the spec changed` (set from the phone, through the stub's STUB_PHONE_STOP taking a reason text) gives the same `stopped by Michael: the spec changed` note and `ended` (one check; the existing `phone stop honoured before any coding session` check still passes)",
+        "the rendered retro prompt of that stopped run (`$HARNESS_STATE/<p>/<run>/prompt-retro.md`) contains `stopped by Michael: the spec changed`, and prompts/retro.md has the line that carries the end reason (one check)",
+        "`harness queue add --continue` of a run stopped with a reason still works as F1-04 built it (the `^stopped by Michael` guard matches the longer string), and summary.json's end_reason is the full `stopped by Michael: the spec changed` (one check)",
+        "journal/decisions/2026-10-26-stop-reason.md exists (finding · choice · rejected) and cites R8 as already done (lib/driver.sh's EXIT trap writes `$END_REASON`); docs/architecture.md §4's markers row and README.md § Steering say the optional reason for both paths",
+        "`bash -n bin/harness lib/driver.sh` passes; the suite is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F1-06",
+      "milestone": "F1",
+      "kind": "review",
+      "model": "opus",
+      "description": "An Opus review of the F1 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, and docs/architecture.md, README.md and the five F1 decision files checked against what landed.",
+      "steps": [
+        "`git diff main...HEAD -- lib bin prompts tests docs README.md journal/decisions > /tmp/harness/agent-harness/agent-harness-2026-10-26-2/F1-review.diff` was reviewed by an Opus subagent reading that file; the review's findings (severity, file:line, one line each) are in the entry's summary or in docs/plans/2026-10-26-F1-driver-cli.md § Review",
+        "every Critical or Important finding has a check that failed before its fix and passes after (named in the entry); findings not fixed are listed with why",
+        "no check lost its name and no fixture was hand-edited after generation (`git diff main...HEAD --stat -- tests/fixtures` shows only added files)",
+        "docs/architecture.md (§4 state, §7 guards, §12 queue), README.md and the five F1 decision files match the code as merged (each behaviour's harness-log.md line in the docs is the one the code writes: `grep -rF` of each noted line in lib/ and docs/)",
+        "`bash -n` on every shell file in lib/ bin/ tests/ and `node --check` on every lib/*.mjs pass; the suite is green"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F2-01",
+      "milestone": "F2",
+      "kind": "plan",
+      "model": "opus",
+      "description": "docs/plans/2026-10-26-F2-initializer-verify.md fixes the lint rules (R3 plus R2's review rules), the initializer prompt lines (R2, R3, R10 change 2), where the driver runs lint and what it notes, and R5's deadline verify, after checking each against main as it stands.",
+      "steps": [
+        "docs/plans/2026-10-26-F2-initializer-verify.md exists with sections for R3 (each lint rule: name, the regex or test, examples that trip it and that pass, the `the suite is green` exemption for the anchor rule), R2 (the prompt wording and the `review-small` / `review-missing` rules), R10 change 2 (the `after` sentence for prompts/initializer.md), the lint wiring (the `{{LINT}}` prompt variable or its equivalent, the driver's `lint:` note and where it runs) and R5 (the deadline branches of lib/driver.sh's loop, the one-session bound, the notes)",
+        "the plan names the check names and the tests/run.sh section (or tests/checks/ file) for each, and fixes R5's deterministic scenario: a stub run under MAX_SESSIONS=2 ends `session cap (2)` with M1 complete and unverified, then `harness continue <run> --until-epoch <past> --foreground` reaches the deadline at once",
+        "the plan names the decision files: journal/decisions/2026-10-26-step-lint.md, -reviews-sized-to-milestone.md, -verify-before-deadline.md, and the architecture.md sections to update (§5 life of a run, §6 feature-list contract, §7 guards)",
+        "the suite is green (`bash tests/run.sh` or the cached `check.sh` line ends with every check passing)"
+      ],
+      "after": [],
+      "passes": false
+    },
+    {
+      "id": "F2-02",
+      "milestone": "F2",
+      "kind": "build",
+      "model": "opus",
+      "description": "R3, the pure part: `node lib/features.mjs lint <list>` prints one line per finding (`<id>\\tstep <n>\\t<rule>\\t<text>`) for a step with no concrete anchor, a step naming a path outside the repo or in ~, a grep-shaped step whose pattern matches its own text in the run record, and a milestone after the first without `after`; exit 1 with findings, 0 clean.",
+      "steps": [
+        "lib/features.mjs exports a pure `lint(list)` and the CLI `lint <list>`; its usage header lists the command and the four rule names (no-anchor, outside-repo, self-match, undeclared)",
+        "unit checks (node --input-type=module, under a `# ---- step lint` section of tests/run.sh or the tests/checks/ file of that topic) cover each rule with one tripping and one passing step: `works correctly` trips no-anchor while `the suite is green` and `curl :7814/x returns 200` don't; `read ~/projects/x/.harness/runs/…` and `/home/mh550/…` trip outside-repo while `lib/driver.sh` and `/tmp/harness/…` don't; `grep -q \"M2 verified\" .harness/runs/<run>/progress.md` trips self-match while a grep over harness-log.md for a line the step doesn't quote verbatim, or over lib/, doesn't; a second milestone whose first feature lacks `after` trips undeclared",
+        "the checks were written first and failed with `features.mjs: unknown command` on main's features.mjs (the entry's verified_how says so)",
+        "`node lib/features.mjs lint .harness/runs/agent-harness-2026-10-26-2/feature_list.json` runs on this run's own list and the entry records how many lines it printed and which rules",
+        "journal/decisions/2026-10-26-step-lint.md exists (finding · choice · rejected, naming the C7-05 park and the measure run's E2-02 as the evidence); docs/architecture.md §6 lists the lint rules",
+        "`node --check lib/features.mjs` passes; the suite is green"
+      ],
+      "passes": false,
+      "after": [
+        "F2-01"
+      ]
+    },
+    {
+      "id": "F2-03",
+      "milestone": "F2",
+      "kind": "build",
+      "model": "opus",
+      "description": "R3 wiring and R10 change 2: prompts/initializer.md tells the initializer to run the lint before committing and fix what it flags, and asks for `after` on any feature that doesn't need its predecessor in the same milestone and on every milestone's first feature; the driver runs the lint once after the initializer and notes what is left, never editing the list.",
+      "steps": [
+        "prompts/initializer.md has a line telling the initializer to run `node <harness>/lib/features.mjs lint <list>` (rendered through a prompt variable so the path is the live harness's) before its commit and to fix every line it prints; the rendered `$HARNESS_STATE/proj/demo/prompt-initializer.md` of the run 1 section has the resolved command (one check)",
+        "prompts/initializer.md's `after` rule says: `after` on any feature that doesn't need its predecessor in the same milestone, and on every milestone's first feature (`[]` when independent); one check greps the sentence in the rendered initializer prompt",
+        "after the initializer session, lib/driver.sh runs `F lint` once and notes `lint: <n> findings (<rule>: <count>, …); the list is not edited — first: <id> step <n> <rule>` or `lint: clean`; the demo run's harness-log.md has the `lint:` line with the count the stub list produces (its steps are `x`, `y`, `z`), and the existing `dependencies: M2 has no after list` note still appears (one check)",
+        "the driver never edits the list: the demo run's feature_list.json after the initializer is byte for byte the stub's (`git show <initializer commit>:…/feature_list.json | cmp`) (one check)",
+        "docs/architecture.md §5 (the life of a run) has the lint step after the initializer and §6 says the initializer runs it; README.md mentions the lint in one line",
+        "`bash -n lib/driver.sh lib/prompt.sh` passes; the suite is green"
+      ],
+      "passes": false,
+      "after": [
+        "F2-02"
+      ]
+    },
+    {
+      "id": "F2-04",
+      "milestone": "F2",
+      "kind": "build",
+      "model": "opus",
+      "description": "R2: prompts/initializer.md sizes reviews to the milestone (one or two build features fold the review into the last build feature's steps; larger milestones keep one review feature, one Opus round by default) and the lint flags a review feature in a small milestone (`review-small`) and a milestone of three or more build features without one (`review-missing`).",
+      "steps": [
+        "prompts/initializer.md item 4 of the milestone pattern says a milestone with one or two build features folds its review into the last build feature's steps (`an Opus subagent reviews the diff; Critical/Important findings fixed`) and that larger milestones keep one review feature with one Opus round by default and a second only when the first found something Critical; one check greps `folds its review` in the rendered initializer prompt",
+        "unit checks: a list whose milestone has two build features and a `review` feature gets a `review-small` line; one with five build features and one review is clean; one with five build features and no review gets `review-missing`; a milestone of only docs features gets neither",
+        "`features.mjs lint` on this run's own list prints no `review-small` or `review-missing` line (both milestones have four build features and one review)",
+        "`harness report` on the run 1 demo still prints `Spend by role` with the review role listed when a review feature ran (summary.mjs's role list is unchanged; one check greps the existing line)",
+        "journal/decisions/2026-10-26-reviews-sized-to-milestone.md exists (finding · choice · rejected, with the review-cost figures the spec cites); docs/architecture.md §6 and README.md say the rule",
+        "`node --check lib/features.mjs` passes; the suite is green"
+      ],
+      "passes": false,
+      "after": [
+        "F2-03"
+      ]
+    },
+    {
+      "id": "F2-05",
+      "milestone": "F2",
+      "kind": "build",
+      "model": "opus",
+      "description": "R5: when the deadline or --until ends a run, every milestone whose features all pass but that is not yet verified gets exactly one verify session (bounded by SESSION_TIMEOUT) before finish and is merged if it holds; harness-log.md says so.",
+      "steps": [
+        "lib/driver.sh's deadline branches (`deadline reached` and `deadline reached while paused`) first run a verify for each complete, unverified milestone with the note `deadline reached: <m> complete but unverified; one verify before the end`, then finish `deadline`",
+        "a stub run under MAX_SESSIONS=2 (STUB_NO_TAMPER, STUB_NO_RED, STUB_LENIENT) ends `session cap (2)` with M1 complete and no `run/<run>/M1` tag; `harness continue <run> --until-epoch $(( $(date +%s) - 1 )) --foreground` then logs the note above, `M1 verified and tagged run/<run>/M1`, `M1 merged into main` (on_main holds) and ends `deadline` (one check)",
+        "exactly one verify session runs on that path: with STUB_STRICT_VERIFIER the run ends `deadline` with `verify M1: A failed the re-check in round 1 of 1; M1 needs Michael` and `grep -c '^verify M1' sessions.log` is 1; with STUB_THIN_VERIFY it is also 1 and M1 is `not verified` (two checks)",
+        "the existing checks that end on a deadline (run 9c's `a later deadline`, the scrub run, the tmux runs) still pass unchanged",
+        "journal/decisions/2026-10-26-verify-before-deadline.md exists (finding · choice · rejected: the voice-concierge runs it cites, why one session and not MAX_VERIFY_ROUNDS); docs/architecture.md §5 and §7 (Verify row) and README.md § After a partial run say it",
+        "`bash -n lib/driver.sh` passes; the suite is green"
+      ],
+      "passes": false,
+      "after": [
+        "F2-04"
+      ]
+    },
+    {
+      "id": "F2-06",
+      "milestone": "F2",
+      "kind": "review",
+      "model": "opus",
+      "description": "An Opus review of the F2 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, and docs/architecture.md, README.md and the three F2 decision files checked against what landed.",
+      "steps": [
+        "`git diff main...HEAD -- lib bin prompts tests docs README.md journal/decisions > /tmp/harness/agent-harness/agent-harness-2026-10-26-2/F2-review.diff` was reviewed by an Opus subagent reading that file; the review's findings (severity, file:line, one line each) are in the entry's summary or in docs/plans/2026-10-26-F2-initializer-verify.md § Review",
+        "every Critical or Important finding has a check that failed before its fix and passes after (named in the entry); findings not fixed are listed with why",
+        "`node lib/features.mjs lint .harness/runs/agent-harness-2026-10-26-2/feature_list.json` output is recorded in the entry, and prompts/initializer.md, docs/architecture.md §5–§7 and README.md match the code as merged (each noted harness-log.md line in the docs is the one lib/driver.sh writes)",
+        "`bash -n` on every shell file in lib/ bin/ tests/ and `node --check` on every lib/*.mjs pass; the suite is green"
+      ],
+      "passes": false,
+      "after": [
+        "F2-01",
+        "F2-02",
+        "F2-03",
+        "F2-04",
+        "F2-05"
+      ]
+    }
+  ]
+}
