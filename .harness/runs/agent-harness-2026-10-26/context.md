@@ -1,4 +1,4 @@
-# Context pack for `P1-01`
+# Context pack for `P1-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
@@ -8,6 +8,8 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Discoveries for this feature
 
+- Discovery (P1-01, affects P1-02): The spec's scope_owns regex makes `harness-demo-x-svc` a lane unit of run demo: 08:21's negative assertion must change (P1-02), and run proj-<date> owns proj-<date>-2's units (gc's live-owner rule covers it). → entries.jsonl:9
+- Discovery (P1-01, affects run): The live check.sh still runs the suite in full for a docs/plans-only change (209-234 s twice this session): the live checkout hasn't synced P0-03's key ignores while this run lives. → entries.jsonl:9
 - Discovery (P0-04, affects run): A check file that exits non-zero with no FAIL line now adds 'FAIL <file>: exited <rc> before its end, with no FAIL line' to the total, so a subset run can no longer read as all passed while a file crashed. → entries.jsonl:7
 - Discovery (P0-02, affects run): The suite is now work-bound, not chain-bound: the 4-job floor (811 s / 4 = 203 s) is above the slowest file (156 s), so reordering files gains nothing. Only cutting CPU (fewer node starts in the driver) would make it shorter. Four jobs' contention adds about 56 s of slot time over TEST_JOBS=1's 755 s. → entries.jsonl:6
 - Discovery (P0-03, affects run): tests/lib.sh must unset every HARNESS_* variable prompt_env exports that changes check.sh's output (now HARNESS_CHECK_KEY_IGNORE too): a session's suite inherits its run's, and this repo's wide list turned the 'unset' checks red inside a real run (found by review, reproduced, fixed). → entries.jsonl:5
@@ -27,9 +29,8 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): The stubs: tests/stub-claude.sh acts on the prompt's first line and STUB_* flags (set with `tmux set-environment -g` for sessions started in tmux, plain env otherwise); tests/stub-gh.sh keeps PRs as files under $STUB_DIR/prs and really merges into the bare origin; the record of git pushes is the bare origin itself. New stub behaviour must copy a real shape (fakes mirror the live API). → entries.jsonl:1
 - Discovery (init, affects run): S4 of the suite-split spec (`--for` selection by `# covers:`) is deliberately not in the list: P1 and P2 are the run's bulk and a feature a milestone can't ship without would hold P0. It is a one-session interactive change if wanted. → entries.jsonl:1
 
-## What it builds on
+## Lately in the run
 
-- 2026-10-26 06:44 · P0-01 · passes: tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for byte from the single file by tests/split.sh with 27 grouping pairs, plus 25-suite-runner.sh. tests/lib.sh holds the preamble. A conformance check runs against tests/fixtures/check-names.txt (325 names from init's check.out). testcount.mjs now reads N/M checks passed. 327/327 green in 589 s.; tests 325 → 327; files tests/lib.sh, tests/split.sh, tests/run.sh, tests/checks/, tests/fixtures/check-names.txt, … → entries.jsonl:2
-- 2026-10-26 16:24 · P0-02 · passes: Runner code was already in place; under the new rule (a time is measured and recorded, not a gate) I measured it and wrote it down. TEST_JOBS=4: 207 s wall, 392/392, slowest file 156 s, floor 203 s (811 s of slot time / 4), peak 254 MB. TEST_JOBS=1: 758 s. Same per-file counts and PASS names at 1 and 4 jobs. Decision file, CLAUDE.md, README and architecture updated.; tests 392 → 392; files journal/decisions/2026-10-26-suite-split.md, CLAUDE.md, README.md, docs/architecture.md → entries.jsonl:6
+- 2026-10-26 17:25 · P1-01 · passes: Wrote docs/plans/2026-10-26-P1-lanes-serial.md: every driver.sh function mapped to lib/record.sh, lib/lane.sh or the coordinator; the record lock and what it wraps; names, state, exit codes 0/10-15; slot open and materialization; record and other checks to rewrite (file:line); new files 35-38; stub flags; P1-02..05 order. An Opus review found 14 problems, all fixed in the plan.; tests 395 → 395; files docs/plans/2026-10-26-P1-lanes-serial.md → entries.jsonl:9
 
-_3 items left out at 8192 bytes: entries.jsonl has them all._
+_2 items left out at 8192 bytes: entries.jsonl has them all._
