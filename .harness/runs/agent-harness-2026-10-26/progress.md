@@ -9,6 +9,41 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-26 16:51 · verify P0 · passes
+
+All four P0 features hold: init full suite 395/395 (206 s), subset runs work, split/runner/key/docs/decision/review artefacts read and match each step. Check names and counts reconcile with the fixture.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P0-01 | 1 | read tests/lib.sh, tests/checks/, tests/fixtures; ran suite | 34 check files + lib.sh + split.sh + run.sh present; usage header on lib.sh | yes |
+| P0-01 | 2 | read tests/lib.sh, tests/checks/, tests/fixtures; ran suite | 34 check files + lib.sh + split.sh + run.sh present; usage header on lib.sh | yes |
+| P0-01 | 3 | cat tests/checks/*.sh \| grep check lines vs pre-split run.sh | split multiset equals pre-split except the later-added retro checks and runner/key checks (diff reviewed) | yes |
+| P0-01 | 4 | bash tests/run.sh sync | subset run prints 6/6 and ends with that file count | yes |
+| P0-01 | 5 | LC_ALL=C sort -c fixture; wc -l | fixture C-sorted, 394 names + conformance check = 395; conformance check PASS in init | yes |
+| P0-01 | 6 | bash -n on all tests/*.sh, checks, lib/*.sh; bash tests/run.sh sync | no bash -n failures; sync file alone 6/6 | yes |
+| P0-01 | 7 | init full run | init full suite: 395/395 PASS, 0 FAIL, wall 205.7 s, 4 jobs | yes |
+| P0-02 | 1 | read tests/checks/33-suite-runner.sh, init output | 33-suite-runner checks PASS in init (TEST_JOBS 1 vs 4 same N/M and names, timing lines, slowest-three line, no systemd-run call) | yes |
+| P0-02 | 2 | read tests/checks/33-suite-runner.sh, init output | 33-suite-runner checks PASS in init (TEST_JOBS 1 vs 4 same N/M and names, timing lines, slowest-three line, no systemd-run call) | yes |
+| P0-02 | 3 | read tests/checks/33-suite-runner.sh, init output | 33-suite-runner checks PASS in init (TEST_JOBS 1 vs 4 same N/M and names, timing lines, slowest-three line, no systemd-run call) | yes |
+| P0-02 | 4 | read check 28 + init out | 33-suite-runner checks PASS in init (TEST_JOBS 1 vs 4 same N/M and names, timing lines, slowest-three line, no systemd-run call) | yes |
+| P0-02 | 5 | read journal/decisions/2026-10-26-suite-split.md | decision file has S2 section with measured times (207 s, floor, peak) per context; init wall 205.7 s | yes |
+| P0-02 | 6 | grep CLAUDE.md | CLAUDE.md:34-39 states 208 s, TEST_JOBS=4, bash tests/run.sh gc | yes |
+| P0-02 | 7 | bash -n; init full run | init full suite: 395/395 PASS, 0 FAIL, wall 205.7 s, 4 jobs | yes |
+| P0-03 | 1 | grep CHECK_KEY_IGNORE lib/config.sh .harness/config.sh templates/project/config.sh | defaults match spec in lib/config.sh:15, .harness/config.sh:5, template commented | yes |
+| P0-03 | 2 | grep lib/prompt.sh; node --check lib/treekey.mjs | prompt.sh:48 exports HARNESS_CHECK_KEY_IGNORE; node --check ok | yes |
+| P0-03 | 3 | read tests/checks/34-check-key.sh; grep config files | 34-check-key checks PASS in init (same key under ignored prefix, lib/ change differs, cached line, stub-run docs/plans cached vs lib/ edit runs) | yes |
+| P0-03 | 4 | read tests/checks/34-check-key.sh; grep config files | 34-check-key checks PASS in init (same key under ignored prefix, lib/ change differs, cached line, stub-run docs/plans cached vs lib/ edit runs) | yes |
+| P0-03 | 5 | read tests/checks/34-check-key.sh; grep config files | 34-check-key checks PASS in init (same key under ignored prefix, lib/ change differs, cached line, stub-run docs/plans cached vs lib/ edit runs) | yes |
+| P0-03 | 6 | grep docs/architecture.md README.md | architecture.md:103,296 and README.md:70 name it and default | yes |
+| P0-03 | 7 | init full run | init full suite: 395/395 PASS, 0 FAIL, wall 205.7 s, 4 jobs | yes |
+| P0-04 | 1 | read docs/plans/2026-10-26-P0-review.md, decision file, docs | review file lists 2 Important, 4 Minor with severities; Important fixes have checks in 33-suite-runner (killed job/no-FAIL exit/signal) PASS | yes |
+| P0-04 | 2 | read docs/plans/2026-10-26-P0-review.md, decision file, docs | review file lists 2 Important, 4 Minor with severities; Important fixes have checks in 33-suite-runner (killed job/no-FAIL exit/signal) PASS | yes |
+| P0-04 | 3 | read docs/plans/2026-10-26-P0-review.md, decision file, docs | decision file has finding·choice·rejected, wall time; no D-H number | yes |
+| P0-04 | 4 | read docs/plans/2026-10-26-P0-review.md, decision file, docs | architecture/README/CLAUDE.md mention runner, subset, TEST_JOBS, CHECK_KEY_IGNORE | yes |
+| P0-04 | 5 | bash -n all shell files; node --check; init full run | no syntax errors; init full suite: 395/395 PASS, 0 FAIL, wall 205.7 s, 4 jobs | yes |
+
+- *164801-verify-P0 · claude-sonnet-5-5*
+
 ### 2026-10-26 16:44 · P0-04 · passes
 
 Opus review of the P0 diff: 0 Critical, 2 Important, 4 Minor (docs/plans/2026-10-26-P0-review.md). Fixed RED->GREEN: the runner now prints a hung file's output on TERM and names it; a file exiting non-zero with no FAIL line counts as one failed check; treekey drops absolute/.. ignore entries. SPLIT_FROM corrected. Decision file and docs completed.
