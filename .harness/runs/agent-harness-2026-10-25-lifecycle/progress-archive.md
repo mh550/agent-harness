@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 02:49 · verify L5 · passes
+
+L5-01 holds: queue.sh reloads config each loop and logs the change; 1→2 and 2→1 checks pass; decision file, architecture §12 and README present; suite 325/325.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L5-01 | 1 | read lib/queue.sh:44-51; grep POLL lib/config.sh | harness_config /nonexistent at top of each iteration, logs 'MAX_PARALLEL_RUNS old → new (config reloaded)'; POLL set only at line 18, config doesn't touch it | yes |
+| L5-01 | 2 | bash tests/run.sh; read check 'MAX_PARALLEL_RUNS 1 → 2 ... starts the second entry' | PASS; asserts no early start, one '1 → 2' line, both runs alive, one 'runner up' | yes |
+| L5-01 | 3 | bash tests/run.sh; check 'MAX_PARALLEL_RUNS 2 → 1 stops no running run; third entry waits' | PASS; asserts low gating, third starts after drop under limit | yes |
+| L5-01 | 4 | ls decision file; grep architecture.md, README.md | decision file exists with SIGHUP rejected; architecture.md:378 and README:26 say it reloads each poll | yes |
+| L5-01 | 5 | bash -n lib/queue.sh; bash tests/run.sh | ok; 325/325 checks passed, 0 FAIL | yes |
+
+- *023915-verify-L5 · claude-sonnet-5-5*
+
 ### 2026-10-26 02:39 · L5-01 · passes
 
 lib/queue.sh re-runs harness_config at the top of each poll and logs `MAX_PARALLEL_RUNS <old> → <new> (config reloaded)`; lowering only gates starts. A value that is no plain whole number (2x, 08) keeps the old, logged once. 3 checks (two parallel tmux-started runs in proj/proj2, held by a stub file switch), decision file, §12, README, template line. 322 → 325.

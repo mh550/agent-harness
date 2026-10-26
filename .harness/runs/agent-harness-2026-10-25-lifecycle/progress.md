@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 02:49 · verify L5 · passes
+
+L5-01 holds: queue.sh reloads config each loop and logs the change; 1→2 and 2→1 checks pass; decision file, architecture §12 and README present; suite 325/325.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L5-01 | 1 | read lib/queue.sh:44-51; grep POLL lib/config.sh | harness_config /nonexistent at top of each iteration, logs 'MAX_PARALLEL_RUNS old → new (config reloaded)'; POLL set only at line 18, config doesn't touch it | yes |
+| L5-01 | 2 | bash tests/run.sh; read check 'MAX_PARALLEL_RUNS 1 → 2 ... starts the second entry' | PASS; asserts no early start, one '1 → 2' line, both runs alive, one 'runner up' | yes |
+| L5-01 | 3 | bash tests/run.sh; check 'MAX_PARALLEL_RUNS 2 → 1 stops no running run; third entry waits' | PASS; asserts low gating, third starts after drop under limit | yes |
+| L5-01 | 4 | ls decision file; grep architecture.md, README.md | decision file exists with SIGHUP rejected; architecture.md:378 and README:26 say it reloads each poll | yes |
+| L5-01 | 5 | bash -n lib/queue.sh; bash tests/run.sh | ok; 325/325 checks passed, 0 FAIL | yes |
+
+- *023915-verify-L5 · claude-sonnet-5-5*
+
 ### 2026-10-26 02:39 · L5-01 · passes
 
 lib/queue.sh re-runs harness_config at the top of each poll and logs `MAX_PARALLEL_RUNS <old> → <new> (config reloaded)`; lowering only gates starts. A value that is no plain whole number (2x, 08) keeps the old, logged once. 3 checks (two parallel tmux-started runs in proj/proj2, held by a stub file switch), decision file, §12, README, template line. 322 → 325.
@@ -280,23 +294,9 @@ Suite 289/289 green. All six L2 features hold: scope+timeout init, teardown hook
 
 - *192902-verify-L2 · claude-sonnet-5-5*
 
-### 2026-10-25 19:28 · L2-06 · passes
-
-Opus review of the L2 diff (docs/plans/2026-10-25-L2-review.md: 2 Important, 8 Minor). Fixed: a TERM mid-init stops the init before the teardown; a TERM mid-teardown waits for it, no second; .harness/teardown.sh looked up at each stop point, not at load_config; the trap commits its note; template runnable by hand; docs. 4 new checks RED→GREEN.
-
-- **Files:** lib/driver.sh, lib/config.sh, tests/run.sh, tests/stub-claude.sh, templates/project/teardown.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-teardown-hook.md, docs/plans/2026-10-25-L2-review.md
-- **Verified:** lib/check.sh green twice (289/289); RED runs: 285/289 (the 4 new checks failing), the hook-lookup check re-proved alone 288/289 with HEAD's config.sh; bash -n on every touched shell file, node --check lib/*.mjs; template run by hand (My.Run → harness-my-run, unset id → message, exit 1)
-- **Tests:** 285 → 289
-- **Dead end:** STUB_SLOW_INIT as the init command's knob — stub-claude.sh already uses it to slow the initializer session; renamed STUB_SLOW_INITCMD
-- **Dead end:** sd_at (first stop) to prove a stop before the trap's teardown — run_init's own stop-first matched; the check counts svc stops before the hook (sd_before == 2)
-- **Discovery** (affects L4, run): Deferred L2 review Minors: two projects' runs of one id share harness-<id>-svc (refuse in cmd_start); SVC_UP is shell-only, so a continue segment with no init leaves a SIGKILLed segment's svc scope to gc ($STATE/svc-up sketch); without user systemd the note says services stopped while bare init children run on.
-- **Discovery** (affects L3, L4, L5): The suite project's INIT_CMD now takes STUB_SLOW_INITCMD=<s> (touches $HARNESS_SCRATCH/init-begin, sleeps) and its teardown.sh STUB_SLOW_TEARDOWN=<s> (touches teardown-begin); stub-claude STUB_ADD_TEARDOWN=1 makes the initializer write an executable .harness/teardown.sh. tests/run.sh has sd_before <key> <index>.
-- **Discovery** (affects L4, run): TEARDOWN_CMD defaults to empty now; services_down picks .harness/teardown.sh when executable at call time.
-- **Discovery** (affects run): The known 'queue holds an entry whose project has a live run' flake (busy3 sleep 3) failed once more in a KEEP=1 run under load.
-- *14-L2-06 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-25 19:28 · L2-06 · passes · Opus review of the L2 diff (docs/plans/2026-10-25-L2-review.md: 2 Important, 8 Minor). Fixed: a TERM… ([in full](progress-archive.md))
 - 2026-10-25 18:21 · L2-05 · passes · harness gc first stops the units of this project's runs with no live driver (+ stopped <u> (<run> en… ([in full](progress-archive.md))
 - 2026-10-25 17:36 · L2-04 · passes · Services now also stop on pause (services_down paused, then commit+push), before a usage-limit wait … ([in full](progress-archive.md))
 - 2026-10-25 17:08 · L2-03 · passes · services_down runs .harness/teardown.sh (TEARDOWN_CMD) under timeout -k 10s 2m, stops harness-<run>-… ([in full](progress-archive.md))
