@@ -1,0 +1,374 @@
+{
+  "run": "agent-harness-2026-10-26",
+  "project": "agent-harness",
+  "branch": "harness/agent-harness-2026-10-26",
+  "started": "2026-10-26T09:29:44.000Z",
+  "ended_at": "2026-10-26T12:30:08.000Z",
+  "end_reason": "blocked on P0-02",
+  "continuations": 0,
+  "features": {
+    "total": 17,
+    "passing": 2,
+    "verified": 0,
+    "merged": 0
+  },
+  "milestones": [
+    {
+      "id": "P0",
+      "features": 4,
+      "passing": 2,
+      "verified": false,
+      "merged": false
+    },
+    {
+      "id": "P1",
+      "features": 6,
+      "passing": 0,
+      "verified": false,
+      "merged": false
+    },
+    {
+      "id": "P2",
+      "features": 7,
+      "passing": 0,
+      "verified": false,
+      "merged": false
+    }
+  ],
+  "tests": {
+    "start": null,
+    "end": null
+  },
+  "cost": {
+    "total": 22.76,
+    "per_passing_feature": 11.38,
+    "by_role": {
+      "init": 4.71,
+      "build": 18.05
+    },
+    "by_model": {
+      "claude-fable-5-1": 4.71,
+      "claude-opus-5-5": 18.05
+    },
+    "manager": 0
+  },
+  "time": {
+    "wall_h": 3.01,
+    "sessions_h": 2.79,
+    "driver_h": 0.22,
+    "by_role_h": {
+      "init": 0.17,
+      "build": 2.62
+    }
+  },
+  "tokens": {
+    "in": 1146,
+    "cache_read": 33584226,
+    "cache_write": 912499,
+    "out": 333044,
+    "cache_hit_rate": 0.974,
+    "context_peak": 206361,
+    "by_role": {
+      "init": {
+        "in": 482,
+        "cache_read": 1228029,
+        "cache_write": 112267,
+        "out": 43068
+      },
+      "build": {
+        "in": 664,
+        "cache_read": 32356197,
+        "cache_write": 800232,
+        "out": 289976
+      }
+    }
+  },
+  "per_verified_feature": {
+    "cost": null,
+    "tokens": null
+  },
+  "orientation": {
+    "tokens": 843550,
+    "turns": 15,
+    "seconds": 186.08
+  },
+  "rework": [
+    "P0-02"
+  ],
+  "first_attempt_pass_rate": 0.67,
+  "verify_fail_rate": null,
+  "harness": {
+    "version": "0b9b2a9",
+    "dirty": false
+  },
+  "sessions": {
+    "total": 5,
+    "real": 5,
+    "environmental": 0
+  },
+  "guards": {
+    "repairs": 0,
+    "red_unpass": 0,
+    "verify_failed": 0,
+    "limit_waits": 0,
+    "verify_escalations": 0,
+    "merges": 0
+  },
+  "features_detail": [
+    {
+      "id": "P0-01",
+      "milestone": "P0",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": false,
+      "merged": false,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 54,
+      "cost": 4.92,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "P0-02",
+      "milestone": "P0",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 2,
+      "refused": 0,
+      "minutes": 89,
+      "cost": 10.44,
+      "cause": "not done",
+      "detail": "P0-02 does **not** pass. I left `passes` false because step 5, a full suite under 150 s with `TEST_JOBS=4`, isn't met. Steps 1–4, 6 and 7 hold, and the suite is green: 335/335 in 165 s. - **Why splitt"
+    },
+    {
+      "id": "P0-03",
+      "milestone": "P0",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": false,
+      "merged": false,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 15,
+      "cost": 2.69,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "P0-04",
+      "milestone": "P0",
+      "kind": "review",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P1-01",
+      "milestone": "P1",
+      "kind": "plan",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P1-02",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P1-03",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P1-04",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P1-05",
+      "milestone": "P1",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P1-06",
+      "milestone": "P1",
+      "kind": "review",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P2-01",
+      "milestone": "P2",
+      "kind": "plan",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P2-02",
+      "milestone": "P2",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P2-03",
+      "milestone": "P2",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P2-04",
+      "milestone": "P2",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P2-05",
+      "milestone": "P2",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P2-06",
+      "milestone": "P2",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    },
+    {
+      "id": "P2-07",
+      "milestone": "P2",
+      "kind": "review",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on P0-02, which was given up"
+    }
+  ]
+}
