@@ -18,6 +18,15 @@
 # MAX_PARALLEL_RUNS=1                # runs alive at once (1 = one after another); the queue runner re-reads it each poll,
 #                                    #     and lowering it stops no running run (an entry waits until fewer are alive)
 
+# Lanes: a run builds each open milestone in its own process and slot worktree (~/worktrees/<p>/lanes/<run>/slot-<k>).
+# MAX_LANES=1                        # milestones built at once in one run (2 once a night at 1 shows the memory for it)
+# LANE_RESERVE_GB=4                  # a further lane opens only with MEM_MIN_AVAILABLE_GB + this many GB per open lane
+# LANE_OPEN_BELOW_5H=70              # % of the 5-hour window: past it no further lane opens
+# LANE_REBASE=suite                  # main moved under a verified lane: suite = disjoint files re-tag on a green suite;
+#                                    #     verify = a verify session every time
+# MAX_REBASE_ROUNDS=1                # verify rounds a re-based lane gets before it needs you
+# RECORD_PR=end                      # the run record's own PR, opened when the run ends; off = none
+
 # Each claude session runs in its own systemd user scope (harness-<run>-s<n>); without user systemd, uncapped.
 # SESSION_MEMORY_HIGH=5G             # throttled above this
 # SESSION_MEMORY_MAX=6G              # killed at this (exit 137; the attempt counts)

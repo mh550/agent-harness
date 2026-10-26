@@ -196,6 +196,15 @@ init output is capped at 40 lines with the log path
 init: a Vercel project without vercel.json gets one
 init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
+lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end by default; commented in the user template; HARNESS_LANE_POLL in the driver's usage
+lanes: a complete unverified milestone is a candidate (to be verified); a given-up one with nothing to try is not
+lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)
+lanes: a milestone whose first feature has after: [] opens at once, beside the first
+lanes: a milestone whose first feature has no after waits on every earlier milestone (tags of each as its base)
+lanes: a needs-<m> milestone never opens
+lanes: an after into a later milestone (a name or its feature) never makes a lane wait on a later one (no cycle)
+lanes: an open milestone (lanes/<m>/pid alive) is not a candidate; a dead pid's is
+lanes: features with no milestone form lane default, listed first; without meta.env the tags name the state dir
 ledger has the run
 ledger row has harness_version and harness_dirty
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
@@ -223,6 +232,7 @@ metrics: coding rows carry tokens, cache rate and context peak
 metrics: orientation recorded per session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
+next <m>: a feature without after waits on its own milestone's earlier features only
 no URL in time: no window, the plain notification
 no URLs for a non-GitHub origin
 no dependency note when every milestone has after
@@ -242,6 +252,7 @@ parked.mjs: the newest question wins, ids with dots, code fences, never Michael'
 parked.mjs: the question is the feature's INBOX section
 parked.mjs: the report names the answer and continue commands
 parked: not an attempt, not retried
+pass: F pass <list> <id> flips passes to true and nothing else (the mirror of unpass)
 past --until after a run: one debrief
 phone stop honoured before any coding session
 placeholders inside the context are not filled
@@ -286,6 +297,7 @@ scope.sh: dur_s reads timeout(1) durations as seconds
 scope.sh: mem_available_gb reads the real meminfo fixture
 scope.sh: mem_gate ends with HARNESS_MEM_POLL=0, exit 1 after a wait and 0 when it passed at once
 scope.sh: mem_gate notes, frees, waits, then starts anyway or once memory is back
+scope.sh: scope_owns accepts a <m>- role prefix (s<n>, check-<pid>, svc) and nothing else after it
 scope.sh: scope_owns matches a unit to a run by its rebuilt prefix and a role the harness starts
 scope.sh: scope_run wraps the command in systemd-run with the caps and returns its exit
 scope.sh: scope_stop stops <unit>.scope; scope_peak and scope_left read the fixture

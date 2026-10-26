@@ -20,6 +20,7 @@
 # Verify and retro sessions may not change code: whatever they change outside the run record (retro: anything) is
 # reverted. A session that ends on a usage limit or API error keeps its commits but not its "passes".
 # Environment (set by bin/harness): WT RUN_ID STATE PROJECT_DIR HARNESS_HOME
+# HARNESS_LANE_POLL: seconds between the lane coordinator's polls (default 10; the suite sets 1)
 set -uo pipefail
 : "${WT:?}" "${RUN_ID:?}" "${STATE:?}" "${PROJECT_DIR:?}" "${HARNESS_HOME:?}"
 cd "$WT" || exit 1

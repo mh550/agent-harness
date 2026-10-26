@@ -20,7 +20,7 @@ check "scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]" \
   '( source "$SC"; [[ $(scope_unit "a.b/c d" s1) == harness-a-b-c-d-s1 && $(scope_unit demo "") == harness-demo && $(scope_bytes 6G) == 6442450944 && $(scope_bytes 64M) == 67108864 && $(scope_bytes 4096) == 4096 ]] )'
 check "scope.sh: scope_owns matches a unit to a run by its rebuilt prefix and a role the harness starts" \
   '( source "$SC"; scope_owns demo harness-demo-svc.scope && scope_owns a.b harness-a-b-s12.scope && scope_owns demo harness-demo-check-4711.scope \
-    && ! scope_owns demo harness-demo-x-svc.scope && ! scope_owns demo harness-demo-svc && ! scope_owns test harness-test-1-probe.scope && ! scope_owns demo harness-demo-s.scope )'
+    && ! scope_owns demo harness-demo-x-y-svc.scope && ! scope_owns demo harness-demo-svc && ! scope_owns test harness-test-1-probe.scope && ! scope_owns demo harness-demo-s.scope )'
 sc_bare=$( export STUB_NO_SYSTEMD=1 HARNESS_SCRATCH=$T/sc; source "$SC"; scope_available; echo "avail=$?"
   scope_run harness-x-bare "" 64M bash -c 'echo ran > "$0"; exit 4' "$T/sc-bare.out"; echo "rc=$?"; scope_stop harness-x-bare; echo "stop=$?"; scope_peak harness-x-bare; echo "peak=$?" )
 check "scope.sh: mem_available_gb reads the real meminfo fixture" '( source "$SC"; [[ $(mem_available_gb) == 9 && $(mem_available_gb "$HERE/fixtures/meminfo.txt") == 9 ]] && ! mem_available_gb /dev/null )'
@@ -309,7 +309,7 @@ check "gc removed the finished worktree"  '[[ ! -d $WT ]]'
 check "gc deleted the run branch"         '! git -C "$T/origin.git" rev-parse -q --verify harness/demo >/dev/null'
 check "gc kept the tags"                  'git -C "$T/origin.git" tag | grep -qx run/demo/M2'
 # gc's unit step (L2-05): units a SIGKILLed driver left. demo ended; killed's driver.pid is dead and it wrote no ended;
-# gclive and demo-x have a live driver (demo-x also shows demo's prefix can't claim it); oth is another project's
+# gclive and demo-x have a live driver (demo's prefix also claims demo-x's unit, as lane x's: the live owner keeps it); oth is another project's
 # c.d (proj, ended) and c-d (other, live) share harness-c-d-: the live one keeps the unit. 999999999 is over any pid_max
 sleep 60 & GL1=$!; sleep 60 & GL2=$!; sleep 60 & GL3=$!; GLD=999999999
 for r in gclive:$GL1 demo-x:$GL2 killed:$GLD other/oth: c.d: other/c-d:$GL3; do d=$HARNESS_STATE/${r%%:*}; [[ $d == */other/* ]] || d=$HARNESS_STATE/proj/${r%%:*}

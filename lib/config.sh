@@ -25,6 +25,13 @@ harness_config() {
   DEBRIEF_MODEL=sonnet   # `harness debrief`: one read-only session after a queue (40 turns, $3 cap, like the retro)
   POLICY=build-only MERGE_POLICY=pr MAIN_BRANCH=main RETRO=1 AUTO_CONTINUE=1   # MERGE_POLICY=pr: a project self-merges only by setting auto
   MAX_PARALLEL_RUNS=1 LEDGER_COMMIT=1 BASE_PORT=7800 DEADLINE_AT=0
+  # Lanes (docs/specs/2026-10-26-lanes.md): one process per open milestone, each in its own slot worktree
+  MAX_LANES=1   # milestones built at once in one run; 1 = one after another (the box's memory decides any more)
+  LANE_RESERVE_GB=4   # a further lane opens only with MEM_MIN_AVAILABLE_GB + this many GB per lane already open
+  LANE_OPEN_BELOW_5H=70   # % of the 5-hour window: past it no further lane opens (the open ones would hit the limit sooner)
+  LANE_REBASE=suite   # main moved under a verified lane: disjoint files re-tag on a green suite; verify = a verify session every time
+  MAX_REBASE_ROUNDS=1   # verify rounds a re-based lane gets before it needs Michael
+  RECORD_PR=end   # the run record's own PR, opened at finish (off = none: the record stays on harness/<run>)
   LIVE_SYNC=1   # the queue runner keeps the live checkout level with origin while no run is alive (lib/sync.sh; 0 = off)
   CONTEXT_PACK_BYTES=8192   # context.md's cap (E4): the pack of the journal a coding or verify session reads first
   WEEKLY_STOP_AT=85   # % of the plan's 7-day window: past it no run starts and a run ends before its next session (0 = off)

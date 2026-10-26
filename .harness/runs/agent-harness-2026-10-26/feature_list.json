@@ -104,7 +104,7 @@
         "lib/config.sh defaults MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end, each with a short why; templates/user/config.sh has them commented; HARNESS_LANE_POLL (default 10, the suite sets 1) is documented in the driver's usage header",
         "`node --check lib/features.mjs`, `bash -n lib/scope.sh lib/config.sh`; the new names are in tests/fixtures/check-names.txt; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-03",
