@@ -1,0 +1,323 @@
+{
+  "run": "agent-harness-2026-10-26-2",
+  "project": "agent-harness",
+  "branch": "harness/agent-harness-2026-10-26-2",
+  "started": "2026-10-26T12:30:59.000Z",
+  "ended_at": "2026-10-26T17:34:27.000Z",
+  "end_reason": "done",
+  "continuations": 0,
+  "features": {
+    "total": 12,
+    "passing": 12,
+    "verified": 12,
+    "merged": 12
+  },
+  "milestones": [
+    {
+      "id": "F1",
+      "features": 6,
+      "passing": 6,
+      "verified": true,
+      "merged": true
+    },
+    {
+      "id": "F2",
+      "features": 6,
+      "passing": 6,
+      "verified": true,
+      "merged": true
+    }
+  ],
+  "tests": {
+    "start": null,
+    "end": null
+  },
+  "cost": {
+    "total": 35.55,
+    "per_passing_feature": 2.96,
+    "by_role": {
+      "init": 5.81,
+      "plan": 4.34,
+      "build": 16.15,
+      "review": 8.76,
+      "verify": 0.39,
+      "retro": 0.1
+    },
+    "by_model": {
+      "claude-fable-5-1": 5.81,
+      "claude-opus-5-5": 29.25,
+      "claude-sonnet-5-5": 0.49
+    },
+    "manager": 0
+  },
+  "time": {
+    "wall_h": 5.06,
+    "sessions_h": 4.86,
+    "driver_h": 0.19,
+    "by_role_h": {
+      "init": 0.18,
+      "plan": 0.54,
+      "build": 3.12,
+      "review": 0.99,
+      "verify": 0.03,
+      "retro": 0.01
+    }
+  },
+  "tokens": {
+    "in": 44756,
+    "cache_read": 48522443,
+    "cache_write": 1880533,
+    "out": 466063,
+    "cache_hit_rate": 0.962,
+    "context_peak": 181115,
+    "by_role": {
+      "init": {
+        "in": 450,
+        "cache_read": 1591954,
+        "cache_write": 169865,
+        "out": 40119
+      },
+      "plan": {
+        "in": 128,
+        "cache_read": 5707791,
+        "cache_write": 233496,
+        "out": 66632
+      },
+      "build": {
+        "in": 43820,
+        "cache_read": 25999199,
+        "cache_write": 895937,
+        "out": 217454
+      },
+      "review": {
+        "in": 318,
+        "cache_read": 14568805,
+        "cache_write": 493895,
+        "out": 134413
+      },
+      "verify": {
+        "in": 34,
+        "cache_read": 584979,
+        "cache_write": 67178,
+        "out": 5900
+      },
+      "retro": {
+        "in": 6,
+        "cache_read": 69715,
+        "cache_write": 20162,
+        "out": 1545
+      }
+    }
+  },
+  "per_verified_feature": {
+    "cost": 2.96,
+    "tokens": 4242816
+  },
+  "orientation": {
+    "tokens": 1606882,
+    "turns": 22,
+    "seconds": 583.98
+  },
+  "rework": [],
+  "first_attempt_pass_rate": 1,
+  "verify_fail_rate": 0,
+  "harness": {
+    "version": "0b9b2a9",
+    "dirty": false
+  },
+  "sessions": {
+    "total": 16,
+    "real": 16,
+    "environmental": 0
+  },
+  "guards": {
+    "repairs": 0,
+    "red_unpass": 0,
+    "verify_failed": 0,
+    "limit_waits": 0,
+    "verify_escalations": 0,
+    "merges": 2
+  },
+  "features_detail": [
+    {
+      "id": "F1-01",
+      "milestone": "F1",
+      "kind": "plan",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 16,
+      "cost": 1.99,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F1-02",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 25,
+      "cost": 1.87,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F1-03",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 15,
+      "cost": 1.27,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F1-04",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 27,
+      "cost": 3.51,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F1-05",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 47,
+      "cost": 2.93,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F1-06",
+      "milestone": "F1",
+      "kind": "review",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 35,
+      "cost": 5.05,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F2-01",
+      "milestone": "F2",
+      "kind": "plan",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 17,
+      "cost": 2.35,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F2-02",
+      "milestone": "F2",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 18,
+      "cost": 2.5,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F2-03",
+      "milestone": "F2",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 14,
+      "cost": 1.28,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F2-04",
+      "milestone": "F2",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 27,
+      "cost": 1.67,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F2-05",
+      "milestone": "F2",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 15,
+      "cost": 1.12,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "F2-06",
+      "milestone": "F2",
+      "kind": "review",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 25,
+      "cost": 3.71,
+      "cause": null,
+      "detail": null
+    }
+  ]
+}
