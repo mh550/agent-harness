@@ -1,21 +1,20 @@
 ## Outcome
-Not delivered. 2 of 17 features passed (P0-01, P0-03). Nothing was verified or merged. The run ended "blocked on P0-02" after 5 sessions, 2.8 h and $22.76 ($11.38 per passing feature). The 14 other features waited on P0-02 and never started. The cause is a measured-performance step in P0-02 that the box could not meet.
+The run delivered 6 of 17 features, and only P0 (4 features) was verified and merged (PR #30). P1-01 and P1-02 pass but are unverified. It ended "blocked on P1-03" after 13 sessions, $52.81 and 5.4 h of session time. P1-03 (the record moves to its own branch, with lane branches) is a large cross-cutting change: 19 files, a new decision file and rewritten record checks. Both P1-03 sessions ended while an Opus review subagent was still running. The 10 features after P1-03 were blocked behind it, so P1-04 to P2-07 never started.
 
 ## Non-passing features by cause
-- **P0-02 (not done): spec or feature-list problem.** Step 5 required a wall time under 150 s with `TEST_JOBS=4`. The suite was green (335/335) in 165 s, and the session wrote "I left `passes` false because step 5… isn't met". Two sessions (87 min, $10.44) went to a step that is a measurement, not a behaviour.
-- **P0-04, P1-01 to P1-06, P2-01 to P2-07 (12 features): depends on a failed feature.** The detail reads "waits on P0-02, which was given up". I checked 4 of them. The `summary.json` listing I printed was cut off, so I did not check the rest. P0-04, P1-01 and P1-02 were also not touched.
-- I only read the end of P0-02's last progress entry, not its final result event.
+- **P1-03: too big for one session.** It took 2 sessions and $11.67. Evidence: the 18:38 entry reads "The Opus review of the P1-03 diff is still running. I'll wait for its findings…". The 19-file diff made the review long enough to outlast the session. Both transcripts end with `[Request interrupted by user]` on the "Review P1-03 lanes record diff" subagent. The agent never wrote `entry.json` (the log says "entry.json missing; recorded a minimal entry" twice). Session 05 cost $8.77 and session 06 cost $2.90. Session 06 only added the decision file. It never fixed anything or ran the suite.
+- P1-04 to P1-06 and P2-01 to P2-07 (10 features): depends on a failed feature. The log says "blocked: the remaining features wait on P1-03 (given up; needs Michael)".
 
 ## Harness behaviour
-- All guard counters were 0: repairs, red_unpass, verify_failed, limit_waits, verify_escalations and merges. Nothing misfired.
-- **Dependency blocking cost the whole run.** The driver treats "given up" on P0-02 as blocking every later feature. That includes P1 and P2 features that cannot plausibly depend on suite speed, such as P1-02 to P1-04.
-- **Verify never ran, so I can't say whether verify re-ran steps.** `verified` is 0 and `verify_fail_rate` is null. Milestone verification only happens when a milestone completes.
-- **Orientation was costly.** It took 843k tokens over 15 turns (186 s). Context peaked at 206k, and the cache hit rate was 97.4%.
-- **P0-01 took 54 min.** P0-03 took 14 min and cost $2.69.
-- **A session ended with uncommitted work.** `f382a3c WIP: P0-03 — uncommitted at session end` means a session ended without committing, and the driver rescued it. The cause of that is unconfirmed.
-- The init session ran on fable ($4.71). The init progress entry records two open questions for Michael with defaults taken (S4 skipped; lane port unchanged).
+- The blocked guard fired after P1-03 failed twice with no progress. That was correct, and it stopped further spend. `repairs`, `red_unpass`, `verify_failed` and `verify_escalations` were all 0. `first_attempt_pass_rate` was 0.71 (P0-02 and P1-03 needed rework).
+- P0-02 also ended "given up" at 08:30 after 3 sessions. The run then sat idle until 15:59, when Michael answered. The idle gap is wall time, not spend.
+- Waste:
+  - P1-03 session 06 started with a fresh 7.9 KB context. It spent $2.90 and produced nothing but a decision file, because the driver restarted the same too-big task instead of splitting it.
+  - Orientation cost 1.05M tokens over 16 turns (278 s).
+  - "test count: no match in the suite's output" means `tests.start` and `tests.end` are null.
+- Verify: only one verify session ran (P0, $0.24, 24 turns). That is too few to judge whether it re-ran steps. I did not compare evidence rows with steps.
 
 ## Proposed harness changes
-1. **Give a feature a measured-target escape.** In `lib/features.mjs` and the init prompt, a step that is a threshold on a measurement (wall time, memory) needs a fallback: record the measurement in the decision file and pass if every behavioural step holds. Alternatively, init splits the measurement into a separate `review` feature. Evidence: P0-02 held steps 1–4, 6 and 7 and was blocked on 165 s against a 150 s target. I did not check earlier retros for this proposal.
-2. **Block only on real dependencies.** In the driver's blocked logic, add `depends_on` to the feature list and block only a feature's declared dependents. When a feature is given up, continue with the independent features. Evidence: 12 features were blocked at $0 spend after 2 sessions on P0-02. I did not check earlier retros for this proposal.
-3. **Cap sessions on a feature that is only missing a measurement.** Add a guard in the driver that gives up a feature after one session in which every step except a threshold step holds. Evidence: the second P0-02 session ran 37 min and cost about $5 without changing the outcome. I did not check earlier retros for this proposal.
+1. **Driver/prompt: stop sessions from ending on a background review subagent** (`lib/prompt.sh`, `lib/driver.sh`). The prompt should say: don't end the turn while a review subagent runs; run the review in the foreground, or write `entry.json` first with the state so far. The driver should also write a partial `entry.json` if a subagent is running when the session exits. Evidence: both P1-03 sessions ended on an interrupted review subagent, and both lost their `entry.json`. No earlier retro proposed this (I did not read the ledger).
+2. **Split a feature automatically after a session with no pass** (`lib/driver.sh`, `lib/features.mjs`). After the first non-passing session on a feature whose diff exceeds roughly 10 files, the driver should have the next session spend its effort on a smaller slice. Alternatively, plan-kind features should cap the number of steps per build feature. Evidence: P1-03 had 7 steps over 19 files and was given up after $11.67.
+3. **Fix the test-count parser** (`lib/record.sh`/`lib/eval.sh`) so it recognises `N/M checks passed`. Evidence: "test count: no match in the suite's output". This is minor.
