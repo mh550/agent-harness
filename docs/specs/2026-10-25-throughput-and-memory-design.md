@@ -1,6 +1,6 @@
 # Throughput and memory: parallel milestone lanes, a split suite, and one memory model with scopes (2026-10-25)
 
-**Status: design, awaiting Michael's approval.** Nothing here is built. The rollout order and his steps are in
+**Status: approved by Michael on 2026-10-26 00:05 (chat), on the defaults in §10.** Build specs: `docs/specs/2026-10-26-suite-split.md` and `docs/specs/2026-10-26-lanes.md`. Nothing is built yet. The rollout order and his steps are in
 `docs/plans/2026-10-25-throughput-rollout.md`. Once approved, the build specs are extracted from §4, §5 and §6 of
 this file (one spec per run); the queued retro-fixes and memory specs are amended as §8 says.
 

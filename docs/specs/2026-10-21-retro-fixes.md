@@ -4,6 +4,13 @@
 `docs/specs/2026-10-25-resource-lifecycle.md` §L4 (the same `cmd_gc` loop), R1 is partly built, R10 is new (F3), and R11 is a queue bug found while queueing this run.
 The run starts after the resource-lifecycle run, from `main` as it stands.*
 
+*Updated in place 2026-10-26 (throughput design, approved): **F3 is dropped from this run.** R10's changes 1 and 3
+(the intra-milestone dependency default and carrying on past a given-up feature) are subsumed by lanes
+(`docs/specs/2026-10-26-lanes.md` P1 items 4 and 7: a given-up feature stops its own lane and its dependants
+only). R10's change 2 (the initializer asks for `after` on independent features) moves into F2 beside R3. This
+run now starts after the lanes run, and F1 and F2 are independent: with `MAX_LANES=2` they run side by side. New
+checks go in `tests/checks/` files by topic, never a monolith.*
+
 **Goal.** Land the small harness changes that the 10-17 → 10-21 retros and the debriefs kept proposing, each one
 test-first with a check in `tests/run.sh`, a decision file, and its `architecture.md`/`README.md` lines. The run
 numbers in brackets say where each was seen.
@@ -108,8 +115,8 @@ never park.
 | M | Contents | After |
 |---|---|---|
 | F1 | R1, R4, R6, R7, R11 | — |
-| F2 | R2, R3, R5 | [] (independent of F1) |
-| F3 | R10 | [] (independent; R3's milestone lint is in F2, so F3's initializer line refers to `after` only) |
+| F2 | R2, R3, R5, and R10's change 2 (the initializer's `after` line) | [] (independent of F1) |
+| ~~F3~~ | ~~R10~~ dropped 2026-10-26: subsumed by lanes | — |
 
 Each with its checks written first and watched failing, its decision file (`journal/decisions/<date>-<slug>.md`), and
 the docs touched in the same milestone. The suite must end green.
