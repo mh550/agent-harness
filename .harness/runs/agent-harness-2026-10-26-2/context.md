@@ -1,9 +1,10 @@
-# Context pack for `F2-01`
+# Context pack for `F2-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (F2-01, affects F2-02, F2-06): This run's own list will report outside-repo findings: F2-02 step 2 quotes `~/projects/x/…` and `/home/mh550/…` as examples. Expected; record, don't edit. → entries.jsonl:9
 - Discovery (F1-06, affects run): harness continue of a run Michael stopped now sets INBOX.md's first `status: stop …` line back to `status: run` (via $STATE/inbox-unstopped, noted by the driver at start). Before, a phone stop ended every later segment at once. → entries.jsonl:7
 - Discovery (F1-06, affects run): A queue request over an existing continuation entry now replaces it with the request's own args; demote_requests only touches entries no newer than STOP (else INBOX.md). New stub flag STUB_CLI_REQUEST=<brief>. → entries.jsonl:7
 - Discovery (F1-06, affects run): run_init takes `fresh` (verify uses it): the green marker is cleared after INIT_CMD, just before the suite. → entries.jsonl:7
@@ -20,8 +21,11 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): lib/features.mjs is pure functions plus a main() dispatch; a new command goes in the usage header comment at the top and in the `default:` usage line. Unit checks in tests/run.sh use `node --input-type=module -e` importing from lib/features.mjs (see the `the scheduler, pure` section). Prompt variables are rendered by lib/prompt.sh (prompt_vars/prompt_env); bin/harness passes HARNESS_* overrides to tmux-started drivers from an explicit list in cmd_start: add any new HARNESS_* variable there. → entries.jsonl:1
 - Discovery (init, affects run): The lanes/suite-split work may land on main during this run; sync_main merges main before every verify. If tests/run.sh then conflicts (the split moves sections into tests/checks/), the verify is marked `needs Michael` rather than merged: keep each check addition small and inside one section so such a conflict is trivial to resolve. → entries.jsonl:1
 
+## What it builds on
+
+- 2026-10-26 11:54 · F2-01 · passes: Wrote docs/plans/2026-10-26-F2-initializer-verify.md: R3's four lint rules (regexes, trip/pass examples, the suite-is-green exemption), R2's review-small/review-missing and prompt item 4, R10's `after` sentence, {{LINT}} via prompt_env and the driver's `lint:` note, R5's `verify <m> once` at both deadline branches with the MAX_SESSIONS=2 scenario; check names, sections, decision files.; tests 354 → 354; files docs/plans/2026-10-26-F2-initializer-verify.md → entries.jsonl:9
+
 ## Lately in the run
 
 - 2026-10-26 11:37 · verify F1 · passes: All six F1 features hold: five fixtures give 3/4/7/3/3 via testcount.mjs, only added fixtures, notes/docs/decision files present and match lib/ and bin/, named checks exist, syntax checks pass, check.sh green on this tree. → entries.jsonl:8
 - 2026-10-26 11:36 · F1-06 · passes: Opus review of the F1 diff: 4 Important fixed RED→GREEN (request after a stop demoted; a request kept an automatic entry's stale --until-epoch; a phone stop re-stopped every continuation; a | in a reason dropped its debrief card), 2 Minor fixed, 4 Minor left with why. Table in docs/plans/2026-10-26-F1-driver-cli.md § Review; docs and decision files updated.; tests 349 → 354; files lib/driver.sh, bin/harness, lib/page.mjs, lib/summary.mjs, tests/run.sh, … → entries.jsonl:7
-- 2026-10-26 11:02 · F1-05 · passes: R7: `harness stop <run> --why "<text>"` writes the reason into STOP; `status: stop <text>` carries one too. stop_why() in lib/driver.sh (STOP's line first, then INBOX, cut at 200) makes the note, ended, end_reason and the services note `stopped by Michael: <why>`; prompts/retro.md shows {{END_REASON}}. summary.mjs and page.mjs no longer read the reason's words as keywords.; tests 341 → 349; files bin/harness, lib/driver.sh, lib/summary.mjs, lib/page.mjs, prompts/retro.md, … → entries.jsonl:6
