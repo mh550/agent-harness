@@ -49,3 +49,65 @@
     except tmux (L3-04), a one-second file. Two definitions of each helper for that is not worth it.
   - **Patching a section to build the state it reads:** the spec's rule; it would edit lines the conformance check
     can't see.
+
+## S2: parallel inside the one check scope (P0-02)
+
+*(2026-10-26, run agent-harness-2026-10-26, feature P0-02; spec S2)*
+
+- **Finding:** the P0-01 split left one file of 25 sections and 253 checks that took about 400 s, more than half
+  the 589 s total. Timed section by section: services_down 52 s, the desk 70 s, L5 49 s, queue 38 s, debrief "a
+  big record" 22 s, run 16 20 s, capped sessions 18 s, runs 5 and 9 16 s each, run 1 13 s. This box has 4 cores
+  and 8 threads. The checks are CPU work (git, node, bash), not sleeps: the 400 s file used 318 s of CPU.
+- **Choice:**
+  - `tests/run.sh` starts the files `TEST_JOBS` at a time (default half the cores, 1 to 4; 4 here) as plain background
+    jobs with `wait -n`, never through systemd-run: scopes don't nest, and one started from inside the check scope
+    would sit outside its cap. Each file writes to its own `.out`, which is printed whole when the file ends, with
+    `<file>: <n> checks, <s> s`. Before the total: `files that exited non-zero: …`, then `slowest: <three>; wall
+    <s> s, <jobs> jobs`. The `N/M checks passed` total stays the last line (`testcount.mjs` reads the last one).
+    `TEST_CHECKS` points it at another directory: the runner's own checks use three tiny files.
+  - **Largest file first** (`ls -S`): a file's size is a fair guess at its time. In name order, L5 (43 s) started
+    last and the wall was 182 s.
+  - **The big file is cut in three** by `tests/split.sh` with a second list, `REPLAYS_`: a file can replay an
+    earlier section for its state. The replayed lines go in byte for byte between `REPLAY=1` and `REPLAY=`, and
+    `lib.sh`'s `check` runs them silently without counting them; they count in their own file. A replay costs that
+    section's time again (run 1 is 13 s), but it breaks a chain that grouping would turn into one file.
+    `06-…-gc-scratch` (scope.sh, run 1, the capped and services sections, gc, run 15e, scratch: 122 s),
+    `11-run-2-…-desk` (replays run 1 and gc; runs 2, 3, 10, 16 and the desk: 135 s) and
+    `12-run-4-…-debrief-tmux` (replays runs 1 and 2; runs 4, 5, 9, queue, parked, the three debriefs, run 17,
+    tmux: 151 s). L5 is a file of its own (44 s).
+  - The parallel run exposed dependencies that sharing one file had hidden: run 16's "nothing parked" needs demo's
+    worktree gc'd (a replay of gc), the desk briefs stoppy (run 2 grouped with the desk), the desk calls the debrief
+    section's `ran`, L5 its `settle`, and the debrief section calls `ran demo` (run 1 replayed there). `ran`, `settle`
+    and `HH` are copied into `lib.sh` (the same lines; the debrief section still defines them), the only helpers
+    hoisted: 20 s and 44 s off the longest chain.
+  - **Measured** (`time KEEP=1 TEST_JOBS=4 bash tests/run.sh` in a 3G user scope): **165 s wall**, 333/333 checks at the time. The
+    slowest file is `12-run-4-same-but-queue-parked-debrief-tmux` at 151 s, then the desk file at 135 s and
+    scope/run 1 at 122 s. The file times add up to 637 s: the 589 s of single-file work, about 33 s of replays, and some contention.
+    The suite through `lib/check.sh` after review: `check: green in 165 s`, 335/335 (slowest 146 s). `TEST_JOBS=1`:
+    599 s. Its one red check was scope.sh's real 64M scope, which went red once out of five runs: the cgroup OOM kill
+    also took the `bash -c` wrapper, so the scope's `.show` was empty. That is a flaky L1 check, not the split.
+  - **Memory:** the whole suite's scope peaked at 369, 390 and 381 MB in three parallel runs (`memory.peak`). That
+    is far from the 3 GB cap and there was no kill, so `.harness/config.sh` keeps the default `CHECK_MEMORY_MAX`.
+  - **The 150 s target is not reached, and with these checks it can't be.** Four jobs can't finish 637 s of work in
+    under 159 s. The debrief file is one chain by state: queue (38 s), then the runner, then since, then a big
+    record, plus runs 4, 5 and 9, whose state "since" reads, plus runs 1 and 2 replayed. So no number of jobs gets
+    it under about 150 s. The remaining cuts are small: run 17 and tmux (L3-04) read only the queue section's `$Q`
+    and `has_s` (6 s). It runs longer than half the wall time and is not split further: every section in it reads
+    the one before, and the only way to shorten it is to rewrite checks.
+  - **The runner after review:** a file's `.end` (its exit status and time) is written to a temp file and renamed into
+    place, so the runner never reads half of one. A file whose job dies before writing `.end` still has its output
+    printed, and it counts as broken. `suite_setup` unsets `REPLAY`. Conformance compares the checks directory by its
+    real path.
+  - **Known and left:** `settle` (the debrief sections' copy and `lib.sh`'s) waits for any debrief process on the
+    host. Files 12 and 27 now overlap, so each may wait out the other's detached debrief, up to its 30 s cap, which
+    it ignores. That can't be fixed without editing the section, and it never showed in four parallel runs. A
+    replay pulls in only the sections it names: file 12 replays runs 1 and 2 without the gc between them, and file 11
+    lists run 1 and gc for run 16 separately. `REPLAYS_` is an explicit list, checked by the file's own checks.
+- **Rejected:**
+  - **Per-file scopes** (`systemd-run` per job): siblings outside the check scope's cap and outside `scope_stop`.
+  - **A higher default `TEST_JOBS`:** two lanes may each run a suite at once (MAX_LANES 2 in Michael's config), and
+    half the cores each fills the box. It also wouldn't help: the debrief chain still takes about 150 s.
+  - **Grouping instead of replaying:** that was P0-01's single 400 s file.
+  - **Printing replayed failures:** the replayed check is counted in its own file, and state that is wrong fails
+    this file's own checks. A replay that leaves out a section can fail a check by design (run 2 without run 1 fails
+    its curl.log check), so a line on every run that means nothing would teach readers to ignore the line.

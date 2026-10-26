@@ -178,6 +178,8 @@ init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
 ledger has the run
 ledger row has harness_version and harness_dirty
+lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
+lib.sh: a check replayed for its state (REPLAY=1) runs silent and uncounted
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
@@ -262,6 +264,12 @@ scratch_rm refuses anything but the run's own scratch directory (symlinks in its
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
 start queues when MAX_PARALLEL_RUNS are going
+suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1
+suite runner: TEST_JOBS=1 and 4 end with the same N/M and PASS names, exit 1 and name the red file
+suite runner: TEST_JOBS=4 replays each file whole in completion order; the largest file starts first
+suite runner: a file whose job was killed shows its output and makes the runner exit 1
+suite runner: a timing line per file, then the slowest three, the wall time and the jobs
+suite runner: the parallel runner starts no scope of its own (no systemd-run call)
 summary end reason is how the run ended
 summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)

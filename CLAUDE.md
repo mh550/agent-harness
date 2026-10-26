@@ -31,10 +31,12 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 
 ## How to verify
 
-- The suite: `bash tests/run.sh` (~11 min, one file after another; end-to-end with stub `claude`/`gh` on a throwaway
-  repo; prints `PASS`/`FAIL` per check and `N/M checks passed`). It must end with every check passing. It runs the
-  files in `tests/checks/` (one per topic, each from a fresh throwaway state built by `tests/lib.sh`); while
-  iterating, run a subset by file name: `bash tests/run.sh parked` runs every file whose name contains `parked`. A new
+- The suite: `bash tests/run.sh` (~2 min 45 s on this box: 165 s measured with `TEST_JOBS=4`, the default here; end-to-end
+  with stub `claude`/`gh` on a throwaway repo; prints `PASS`/`FAIL` per check, a `<file>: <n> checks, <s> s` line per
+  file, the slowest three with the wall time, and `N/M checks passed`). It must end with every check passing. It runs
+  the files in `tests/checks/` (one per topic, each from a fresh throwaway state built by `tests/lib.sh`), `TEST_JOBS`
+  at a time (default half the cores, 1 to 4; `TEST_JOBS=1` runs one after another); while iterating, run a subset by
+  file name: `bash tests/run.sh gc` runs every file whose name contains `gc`. A new
   check goes in a `tests/checks/` file by topic, and its name gets one line in `tests/fixtures/check-names.txt` (the
   full run's conformance check fails on a name it doesn't list).
 - `bash -n` on every shell file you touch; `node --check` on every `.mjs`.

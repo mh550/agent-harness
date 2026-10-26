@@ -1,29 +1,60 @@
 #!/usr/bin/env bash
-# The suite: every tests/checks/*.sh (each from its own fresh throwaway state, tests/lib.sh), added up.
-#   tests/run.sh [<name>…]   → all check files, or those whose names contain any <name>; PASS/FAIL per check, then the
-#                              total `N/M checks passed`, exit 1 on any failure (KEEP=1 keeps each file's $T and names it)
-# A full run also checks conformance: its check names are tests/fixtures/check-names.txt, none missing, new or doubled.
+# The suite: every tests/checks/*.sh (each from its own fresh throwaway state, tests/lib.sh), TEST_JOBS at a time, added up.
+#   tests/run.sh [<name>…]   → all check files, or those whose names contain any <name>; each file's PASS/FAIL lines whole
+#                              with a timing line, then the slowest three and the wall time, then the total
+#                              `N/M checks passed`, exit 1 on any failure (KEEP=1 keeps each file's $T and names it)
+# TEST_JOBS (default half the cores, 1 to 4) files run at once as plain background jobs: inside the caller's check scope,
+# never a scope of their own (scopes don't nest; one would escape the cap). TEST_CHECKS: another checks directory.
+# A full run of tests/checks also checks conformance: its check names are tests/fixtures/check-names.txt, none missing, new or doubled.
 set -uo pipefail
-HERE=$(cd "$(dirname "$0")" && pwd)
+HERE=$(cd "$(dirname "$0")" && pwd); dir=${TEST_CHECKS:-$HERE/checks}
+jobs=${TEST_JOBS:-}
+[[ $jobs =~ ^[1-9][0-9]*$ ]] || { jobs=$(( $(nproc) / 2 )); (( jobs > 4 )) && jobs=4; (( jobs < 1 )) && jobs=1; }
 files=()
-for f in "$HERE"/checks/*.sh; do
+for f in "$dir"/*.sh; do
   (( $# )) || { files+=("$f"); continue; }
   for a; do [[ $(basename "$f") == *"$a"* ]] && { files+=("$f"); break; }; done
 done
-(( ${#files[@]} )) || { echo "no check file matches: $*"; echo "0/0 checks passed"; exit 1; }
+[[ -e ${files[0]:-} ]] || { echo "no check file matches: $*"; echo "0/0 checks passed"; exit 1; }
+mapfile -t files < <(ls -S "${files[@]}")   # largest first: its size is a fair guess at its time, and a long file started last sets the wall time
 out=$(mktemp -d); trap 'rm -rf "$out"' EXIT
-broken=()
+us() { echo "${EPOCHREALTIME/[.,]/}"; }   # microseconds, whatever the locale's decimal point
+s1() { printf '%d.%d' $(( $1 / 1000000 )) $(( $1 % 1000000 / 100000 )); }   # microseconds as seconds, one decimal
+t0=$(us)
+
+# one file: its output to a file, not a pipe (a process a check leaves can't hold the runner), then "<rc> <µs>" beside it
+# (written whole: replay may list it the moment it appears)
+one() { local b s rc; b=$(basename "$1" .sh) s=$(us); bash "$1" > "$out/$b.out" 2>&1; rc=$?
+  echo "$rc $(( $(us) - s ))" > "$out/$b.end.tmp" && mv "$out/$b.end.tmp" "$out/$b.end"; }
+broken=() done_=() timing=()
+# print every finished file not printed yet, whole, in the order they finished (.end's mtime)
+replay() {
+  local e b rc t
+  for e in $(ls -tr "$out"/*.end 2> /dev/null); do
+    b=$(basename "$e" .end); [[ " ${done_[*]} " == *" $b "* ]] && continue
+    done_+=("$b"); read -r rc t < "$e"
+    cat "$out/$b.out"
+    [[ ${KEEP:-} ]] && echo "kept: $(sed -n '1s/^tmp: //p' "$out/$b.out") ($b)"
+    echo "$b: $(grep -cE '^(PASS|FAIL) ' "$out/$b.out") checks, $(s1 "$t") s"; timing+=("$t $b")
+    (( rc )) && broken+=("$b")
+  done
+}
+running=0
 for f in "${files[@]}"; do
-  b=$(basename "$f" .sh)
-  bash "$f" > "$out/$b.out" 2>&1 || broken+=("$b")   # a file, not a pipe: a process a check leaves can't hold the runner
-  cat "$out/$b.out"
-  [[ ${KEEP:-} ]] && echo "kept: $(sed -n '1s/^tmp: //p' "$out/$b.out") ($b)"
+  (( running >= jobs )) && { wait -n; running=$((running - 1)); replay; }
+  one "$f" & running=$((running + 1))
 done
+while (( running )); do wait -n; running=$((running - 1)); replay; done
+for f in "${files[@]}"; do   # a job that died before its .end (killed): its output so far, and it counts as broken
+  b=$(basename "$f" .sh); [[ " ${done_[*]} " == *" $b "* ]] && continue
+  cat "$out/$b.out" 2> /dev/null; echo "$b: ended without its exit status (killed?)"; broken+=("$b")
+done
+
 cat "$out"/*.out | sed -n 's/^\(PASS\|FAIL\) //p' > "$out/names"
 total=$(grep -c '' "$out/names") fails=$(cat "$out"/*.out | grep -c '^FAIL ')
 
 # conformance: the names this run produced against the fixture (a subset run produces only its own)
-if (( ! $# )); then
+if (( ! $# )) && [[ $(cd "$dir" && pwd -P) == "$(cd "$HERE/checks" && pwd -P)" ]]; then
   sed -i 's/ (skipped: [^)]*)$//' "$out/names"   # a check skipped where its tool is missing (no user systemd) keeps its name
   fx=$HERE/fixtures/check-names.txt; LC_ALL=C sort -u "$out/names" > "$out/uniq"   # C order, as the fixture (never exported: tmux needs UTF-8)
   missing=$(LC_ALL=C comm -23 "$fx" "$out/uniq") new=$(LC_ALL=C comm -13 "$fx" "$out/uniq") doubled=$(LC_ALL=C sort "$out/names" | uniq -d)
@@ -35,5 +66,6 @@ if (( ! $# )); then
 fi
 
 (( ${#broken[@]} )) && echo "files that exited non-zero: ${broken[*]}"
+echo "slowest: $(printf '%s\n' "${timing[@]}" | sort -rn | head -3 | while read -r t b; do printf '%s %s s, ' "$b" "$(s1 "$t")"; done | sed 's/, $//'); wall $(s1 $(( $(us) - t0 ))) s, $jobs jobs"
 echo "$(( total - fails ))/$total checks passed"
 (( fails == 0 && ${#broken[@]} == 0 ))
