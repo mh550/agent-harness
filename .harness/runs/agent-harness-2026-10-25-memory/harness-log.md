@@ -9,3 +9,5 @@
 - 2026-10-26 19:29 · context.md for M1-04: 7651 bytes
 - 2026-10-26 19:39 · M1-04 · claude-opus-5-5 · passes=true · 9 min · 4/23 passing
 - 2026-10-26 19:39 · context.md for M1-05: 7770 bytes, 2 items left out
+- 2026-10-26 19:47 · M1-05: entry.json invalid (summary: 411 characters (at most 400)); recorded a minimal entry
+- 2026-10-26 19:47 · M1-05 · claude-opus-5-5 · passes=true · 8 min · 5/23 passing

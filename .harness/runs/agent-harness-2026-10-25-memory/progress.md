@@ -9,6 +9,13 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 19:47 · M1-05 · passes
+
+M1-05 passes, in commit `8623944`, pushed to the run branch. - **Retro:** its prompt now has a `## Backlog` section with the current backlog list and three rules: reuse an existing id, cite the status of an item already specced, queued or merged instead of re-arguing it, and make up a new id only for a new proposal. - **Debrief:** it now gets the backlog instead of the list of old `retro.md` file…
+
+- **Files:** README.md, docs/architecture.md, journal/decisions/2026-10-26-retro-backlog.md, lib/debrief.sh, lib/driver.sh, prompts/debrief.md, prompts/retro.md, tests/checks/36-run-16-retro-backlog.sh, tests/fixtures/check-names.txt
+- *05-M1-05 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 411 characters (at most 400)*
+
 ### 2026-10-26 19:39 · M1-04 · passes
 
 retro() copies the retro's retro-proposals.json to scratch before restrict (skipped from the reverted note, put back in the run record); ledger() merges it under flock 9 and commits the store with the ledger. Retro prompt allows that one file; stub gains STUB_RETRO_PROPOSALS and a ledger/ edit under STUB_RETRO_EDITS; decision file. Tests 407 → 411.
