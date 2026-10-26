@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 12:12 · F2-02 · passes
+
+lib/features.mjs: pure lint(list)/lintNote/selfMatch/RULES and CLI `lint <list> [--note]` (no-anchor, outside-repo, self-match, undeclared). 7 checks under `# ---- step lint, pure` in tests/run.sh; Opus review's 2 Important self-match false positives (prose grep, option values) fixed RED→GREEN. Decision file and architecture §6.
+
+- **Files:** lib/features.mjs, tests/run.sh, journal/decisions/2026-10-26-step-lint.md, docs/architecture.md
+- **Verified:** Written first: the 6 plan checks failed on main's features.mjs (0/6: the import has no `lint`; the CLI printed the usage line, exit 2 = unknown command). A 7th check for the review's cases failed before the selfMatch rewrite, then 7/7. `node lib/features.mjs lint .harness/runs/agent-harness-2026-10-26-2/feature_list.json` printed 6 lines, exit 1: no-anchor 3 (F1-03 s3, F1-06 s2, F2-06 s2), outside-repo 2 (F1-01 s2 `~/.local/bin/pytest`, F2-02 s2), self-match 1 (F2-02 s2, its quoted example). check.sh full run: green in 674 s, 361/361 checks passed.
+- **Tests:** 354 → 361
+- **Dead end:** QUOTING = any path under .harness/runs/ — matched harness-log.md, which the plan (D2) exempts; now basename list, or .harness/runs/ minus harness-log.md
+- **Dead end:** running check.sh while editing tests/run.sh — bash reads the script as it runs: a mid-run insert gave a bogus syntax error at line 948
+- **Discovery** (affects F2-03): features.mjs lint --note already exists (prints `lint: <n> findings (…); the list is not edited — first: <id> step <n> <rule>` or `lint: clean`, exit 0); the stub list gives exactly `lint: 5 findings (no-anchor: 4, undeclared: 1); … first: A step 1 no-anchor` (a pure check asserts it). F2-03 only wires it.
+- **Discovery** (affects F2-04, F2-06): RULES is the 4-rule order used by lintNote's counts; F2-04 appends review-small, review-missing to it and to the usage header. self-match only sees a grep in command position (start, after a backtick, |, ;, &, ( or !).
+- **Proposed change:** F1-03 step 3, F1-06 step 2 and F2-06 step 2 have no concrete anchor per the lint (they name no file, command or count)
+- *08-F2-02 · claude-opus-5-5*
+
 ### 2026-10-26 11:54 · F2-01 · passes
 
 Wrote docs/plans/2026-10-26-F2-initializer-verify.md: R3's four lint rules (regexes, trip/pass examples, the suite-is-green exemption), R2's review-small/review-missing and prompt item 4, R10's `after` sentence, {{LINT}} via prompt_env and the driver's `lint:` note, R5's `verify <m> once` at both deadline branches with the MAX_SESSIONS=2 scenario; check names, sections, decision files.
