@@ -1,0 +1,12 @@
+# generated on this box: node --test (node v24.21.0) on a scratch dir with three passing tests, output as printed
+✔ adds (0.737822ms)
+✔ joins (0.119974ms)
+✔ splits (0.117435ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 63.33689

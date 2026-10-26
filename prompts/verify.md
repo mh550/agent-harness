@@ -11,7 +11,9 @@ ran the init and the suite (output at the end).
 Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory).
 It says what the milestone's sessions tried. It is not evidence: re-run every step yourself.
 
-1. Run the suite and the smoke check (both under *This run*).
+1. Run the suite and the smoke check (both under *This run*). The harness
+   cleared the suite's cached result for this tree before this session, so the suite runs in full:
+   the init output below is a full run, not a cached one.
 2. For each feature of the milestone in the run directory's `feature_list.json`: perform **every
    step exactly as written**. Run the commands, call the API, load the pages at the stated widths
    (a Sonnet subagent with a headless browser for UI steps keeps your context small). "A test

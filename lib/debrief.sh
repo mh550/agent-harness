@@ -11,7 +11,7 @@
 #      summary.json, report.md, retro.md, INBOX.md, open questions, each capped
 #   3. one headless session (DEBRIEF_MODEL), prompt on stdin, in dontAsk mode with an allowlist of read-only tools and
 #      the never-list as --disallowedTools; git status and refs of the ledger, worktrees and projects compared after
-#   4. its "CONTINUE: <run> :: <brief>" lines are checked here and queued (`harness queue add --continue … --keep-attempts`);
+#   4. its "CONTINUE: <run> :: <brief>" lines are checked here and queued (`harness queue add --continue … --automatic --keep-attempts`);
 #      the note overwrites <ledger>/debrief.md (git history is the archive), and debrief.html beside it shows a card per
 #      run (from summary.json) above the note; NOTIFY_CMD gets the headline and the note's path, DEBRIEF_PAGE_CMD the page
 #   5. DESK=1 and a non-empty "Needs Michael": `harness desk --debrief` (a Remote Control session briefs him on the note)
@@ -272,7 +272,7 @@ while IFS= read -r line || [[ -n $line ]]; do
     run=${BASH_REMATCH[1]} brief=$(sed 's/[`[:space:]]*$//' <<< "${BASH_REMATCH[3]}")
     # attempts are kept (a given-up feature stays given up, Michael's holds stay); the brief says whose it is
     args=(--keep-attempts --brief "Suggested by the debrief of $(date '+%F %H:%M') (not Michael's words): ${brief:-continue where it stopped}")
-    if why=$(continue_check "$run") && "$H" queue add --continue "$run" "${args[@]}" > /dev/null 2>&1 9>&-; then
+    if why=$(continue_check "$run") && "$H" queue add --continue "$run" --automatic "${args[@]}" > /dev/null 2>&1 9>&-; then
       echo "- Queued: \`harness continue $run --keep-attempts\`${brief:+ with the brief \"$brief\"} (it starts when the queue runs)"
       log "debrief: queued a continuation of $run" >&2   # stdout is the note
     else echo "- Not queued: $run (${why:-harness queue add failed})"; fi

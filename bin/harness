@@ -8,7 +8,9 @@
 #   harness continue <run-id> [--brief …] [--until HH:MM] [--now]
 #                               resume a run with fresh attempts for every feature that isn't passing
 #   harness queue [list]                         what is queued, running and done
-#   harness queue add <project> [<run-id>] [start options] | add --continue <run-id> [options]
+#   harness queue add <project> [<run-id>] [start options] | add --continue <run-id> [--automatic] [options]
+#                                                a continuation queued here is a request (--requested: it starts even
+#                                                after a stop); --automatic (the driver's, the debrief's) is skipped then
 #   harness queue rm <n> | clear | start [--until HH:MM] | stop
 #   harness queue park <n> [<why>] | unpark <n> set an entry aside (listed with its reason, skipped) · back at the end
 #   harness sync                                 the live checkout level with origin: pull merged PRs, push ledger
@@ -22,6 +24,7 @@
 #   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each)
 #   harness attach <run-id>                      the run's tmux session (driver · log · supervisor)
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
+#   harness stop <run-id> --why "<text>"         the same, and harness-log.md and ended say "stopped by Michael: <text>"
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
 #   harness parked [<run-id>] [--json]           what parked features wait on: why, the INBOX question, the next commands
 #   harness desk <run> [--why "…"] | --debrief   a Remote Control session that briefs you and takes your answers (tmux h-desk)
@@ -105,11 +108,16 @@ auto_id() {   # project → <project>-<date>[-n], not used before
   echo "$id"
 }
 
-queue_add() {   # verb args… → a queue entry (one argument per line)
-  mkdir -p "$Q/done"
-  local n; n=$(( $(ls "$Q" | sed -n 's/^\([0-9]\{4\}\)-.*\.args$/\1/p' | sort -n | tail -1 | sed 's/^0*//' || true) + 1 ))
+queue_add() {   # verb args… → a queue entry (one argument per line), numbered past the parked ones too
+  mkdir -p "$Q/done" "$Q/held"
+  local n; n=$(( $(ls "$Q" "$Q/held" | sed -n 's/^\([0-9]\{4\}\)-.*\.args$/\1/p' | sort -n | tail -1 | sed 's/^0*//' || true) + 1 ))
   local f; f=$Q/$(printf '%04d' "$n")-$1-${2##*/}.args
   printf '%s\n' "$@" > "$f"; echo "$f"
+}
+
+entry_kind() {   # a queue entry → " (requested)" / " (automatic)" for a continuation, nothing for a start
+  [[ $(head -1 "$1") == continue ]] || return 0
+  grep -qx -- --requested "$1" && echo " (requested)" || echo " (automatic)"
 }
 
 queue_ensure_runner() {
@@ -209,17 +217,22 @@ cmd_start() {
   echo "  status:  harness status $run      steer from the phone: $branch → .harness/runs/$run/INBOX.md"
 }
 
-cmd_continue() {   # run-id [--keep-attempts] [--queued] [start options]
-  local run=${1:?usage: harness continue <run-id> [options]} st keep=0 queued=0 rest=(); shift
-  while (( $# )); do case $1 in --keep-attempts) keep=1 ;; --queued) queued=1 ;; *) rest+=("$1") ;; esac; shift; done
+cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start options]
+  local run=${1:?usage: harness continue <run-id> [options]} st keep=0 queued=0 requested=0 rest=(); shift
+  while (( $# )); do case $1 in --keep-attempts) keep=1 ;; --queued) queued=1 ;; --requested) requested=1 ;; *) rest+=("$1") ;; esac; shift; done
   st=$(state_of "$run")
   alive "$st" && die "$run is running; continue it after it ends (or harness stop $run)"
-  if (( queued )) && grep -qs '^stopped by Michael' "$st/ended"; then echo "skipping queued continuation of $run: Michael stopped it"; return 0; fi
+  # an automatic continuation never undoes Michael's stop; one queued by request does (decisions/2026-10-26-requested-continuations)
+  if (( queued && ! requested )) && grep -qs '^stopped by Michael' "$st/ended"; then echo "skipping queued continuation of $run: Michael stopped it"; return 0; fi
   # shellcheck source=/dev/null
   ( source "$st/meta.env"
     # a continuation you start gives every feature that isn't passing fresh attempts; an automatic one doesn't
     (( keep )) || { [[ -f $WT/.harness/runs/$RUN_ID/feature_list.json ]] && node "$HARNESS_HOME/lib/features.mjs" reset "$STATE/attempts.json" "$WT/.harness/runs/$RUN_ID/feature_list.json"
       rm -f "$STATE"/needs-* "$STATE"/verify-rounds-* "$STATE"/refused-*; }
+    # a phone stop that ended the last segment would end this one at once: its line goes back to run (the driver notes it)
+    local inbox=$WT/.harness/runs/$RUN_ID/INBOX.md s n
+    if grep -qs '^stopped by Michael' "$STATE/ended" && s=$(grep -n -m1 '^status:' "$inbox" 2> /dev/null) && [[ ${s#*:} =~ ^status:[[:space:]]*stop ]]; then
+      n=${s%%:*}; sed -i "${n}s/.*/status: run/" "$inbox" && echo "${s#*:}" > "$STATE/inbox-unstopped"; fi
     rm -f "$STATE/PAUSE" "$STATE/STOP" "$STATE/ended"
     cmd_start "$PROJECT_DIR" "$RUN_ID" ${rest[@]+"${rest[@]}"} )
 }
@@ -286,18 +299,24 @@ cmd_queue() {
     list)
       local f n=0
       echo "queue ($( runner_up && echo "runner going" || echo "runner not running: harness queue start"); MAX_PARALLEL_RUNS=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")):"
-      for f in "$Q"/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g")"; done
+      for f in "$Q"/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g")$(entry_kind "$f")"; done
       (( n )) || echo "  (empty)"
       n=0   # parked entries are listed, never silent: a parked run nobody remembers is a run that never happens
       for f in "$Q"/held/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); (( n == 1 )) && echo "parked (the runner skips these; harness queue unpark <n>):"
-        echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g" | cut -c1-200)"; echo "     why: $(cat "${f%.args}.why" 2> /dev/null || echo "no reason recorded")"; done
+        echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g" | cut -c1-200)$(entry_kind "$f")"; echo "     why: $(cat "${f%.args}.why" 2> /dev/null || echo "no reason recorded")"; done
       echo "running:$(for d in "$STATE_ROOT"/*/*/; do alive "$d" && basename "$d"; done | paste -sd' ' -)"
       if [[ -f $Q/runner.log ]]; then echo "recent:"; tail -n 5 "$Q/runner.log" | sed 's/^/  /'; fi ;;
     add)
       if [[ ${1:-} == --continue ]]; then
         local run=${2:?usage: harness queue add --continue <run-id>}; shift 2; state_of "$run" > /dev/null
-        compgen -G "$Q/*-continue-$run.args" > /dev/null && { echo "already queued: continue $run"; return; }
-        echo "queued: $(basename "$(queue_add continue "$run" --queued "$@")")"
+        local mark=(--requested) o=() a; for a in "$@"; do [[ $a == --automatic ]] && mark=() || o+=("$a"); done
+        # a request is the later word: a queued entry becomes this request, its options included (an automatic one's
+        # --until-epoch is a past night's deadline); an automatic add leaves what is queued alone
+        local q; q=$(compgen -G "$Q/*-continue-$run.args" | head -1) && {
+          if (( ${#mark[@]} )); then local was; grep -qx -- --requested "$q" && was="replaced by this request" || was="now requested, with this request's options"
+            printf '%s\n' continue "$run" --queued --requested ${o[@]+"${o[@]}"} > "$q" && echo "already queued: continue $run ($was)"
+          else echo "already queued: continue $run"; fi; return; }
+        echo "queued: $(basename "$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"})")"
       else
         local p; p=$(toplevel "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
         echo "queued: $(basename "$(queue_add start "$p" "$@")")"
@@ -305,6 +324,7 @@ cmd_queue() {
     rm) local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue rm <n>}p"); [[ -n $f ]] || die "no entry $1"; rm "$f"; echo "removed $(basename "$f")" ;;
     park)
       local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue park <n> [<why>]}p"); [[ -n $f ]] || die "no entry $1"; shift
+      [[ -e $Q/held/$(basename "$f") ]] && die "$(basename "$f") already parked (harness queue unpark it or rm queue/held/$(basename "$f"))"
       mkdir -p "$Q/held"; mv "$f" "$Q/held/"
       echo "${*:-no reason given} ($(date '+%F %H:%M'))" > "$Q/held/$(basename "$f" .args).why"
       echo "parked $(basename "$f"): the runner skips it until harness queue unpark" ;;
@@ -318,12 +338,20 @@ cmd_queue() {
   esac
 }
 
-cmd_control() {   # pause|resume|stop run-id
+cmd_control() {   # pause|resume|stop run-id [--why "<text>"] (stop only)
   local st; st=$(state_of "${2:?usage: harness $1 <run-id>}")
+  [[ $1 == stop ]] || (( $# <= 2 )) || die "usage: harness $1 <run-id>"
   case $1 in
     pause) touch "$st/PAUSE"; echo "pausing $2 after the current session" ;;
     resume) rm -f "$st/PAUSE"; echo "resuming $2 (within a minute)" ;;
-    stop) touch "$st/STOP"; echo "stopping $2 after the current session" ;;
+    stop)   # the reason goes in STOP, on one line: the driver ends with "stopped by Michael: <why>" (decisions/2026-10-26-stop-reason)
+      local why=""
+      if (( $# > 2 )); then
+        [[ $3 == --why && $# == 4 ]] || die "usage: harness stop <run-id> [--why \"<text>\"]"
+        why=$(tr -s '\n\t\r' '   ' <<< "$4" | sed 's/^ *//; s/ *$//'); [[ -n $why ]] || die "harness stop: --why needs a reason"
+      fi
+      if [[ -n $why ]]; then printf '%s\n' "$why" > "$st/STOP"; else touch "$st/STOP"; fi
+      echo "stopping $2 after the current session" ;;
   esac
 }
 
@@ -482,7 +510,7 @@ case ${1:-help} in
   report) shift; cmd_report "$@" ;;
   trends) node "$HARNESS_HOME/lib/summary.mjs" trends "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/runs.jsonl" "${@:2}" ;;
   attach) tmux attach -t "=$(tmux_name "${2:?usage: harness attach <run-id>}")" ;;
-  pause|resume|stop) cmd_control "$1" "${2:-}" ;;
+  pause|resume|stop) cmd_control "$1" "${2:-}" "${@:3}" ;;
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
