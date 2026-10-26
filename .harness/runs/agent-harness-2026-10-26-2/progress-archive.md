@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 12:26 · F2-03 · passes
+
+Lint wired: prompt_env exports HARNESS_LINT (node $HARNESS_HOME/lib/features.mjs lint); prompts/initializer.md asks to run {{LINT}} on the list before committing and has R10's after sentence; the driver notes `lint: …` once after the initializer, never editing the list. 4 checks in run 1; docs §5, §6, README, decision file.
+
+- **Files:** lib/prompt.sh, lib/driver.sh, prompts/initializer.md, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-26-step-lint.md
+- **Verified:** Run-1 section copied to a scratch script: 3 new checks FAIL on the old code (prompt command, after sentence, lint note), the cmp guard passes (the driver never edited the list), then 42/42. Full check.sh: 365/365 checks passed, green in 672 s. bash -n lib/driver.sh lib/prompt.sh tests/run.sh ok.
+- **Tests:** 361 → 365
+- **Discovery** (affects F2-04): Demo run 1's harness-log.md has exactly `lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor`. F2-04's review rules add nothing for the stub list (M1 two builds, no review), so that line must stay unchanged.
+- **Discovery** (affects F2-04): The initializer's lint line ends `…, a milestone without \`after\`). No output means clean.`: F2-04 adds `, a review the milestone's size doesn't call for` before the `)`.
+- **Discovery** (affects run): This run's own list lints as `lint: 6 findings (no-anchor: 3, outside-repo: 2, self-match: 1) — first: F1-01 step 2 outside-repo` (not edited).
+- *09-F2-03 · claude-opus-5-5*
+
 ### 2026-10-26 12:12 · F2-02 · passes
 
 lib/features.mjs: pure lint(list)/lintNote/selfMatch/RULES and CLI `lint <list> [--note]` (no-anchor, outside-repo, self-match, undeclared). 7 checks under `# ---- step lint, pure` in tests/run.sh; Opus review's 2 Important self-match false positives (prose grep, option values) fixed RED→GREEN. Decision file and architecture §6.
