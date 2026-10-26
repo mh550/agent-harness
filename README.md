@@ -179,7 +179,9 @@ Every retro proposal across runs, deduplicated by id, with a status: `ledger/ret
 run's `retro-proposals.json`; at the run's end the driver merges them in, under the ledger lock and in the ledger
 commit: a new id is a `proposed` row, a known id gains the run in `runs_seen`, and a malformed file is noted in
 harness-log.md (`backlog: retro-proposals.json invalid: …`) and skipped whole. Mark what became work with `harness backlog set <id> specced --spec <path>` (or
-`queued`, `merged --pr <url>`, `dropped --note "<why>"`); `harness backlog` lists it, open proposals first.
+`queued`, `merged --pr <url>`, `dropped --note "<why>"`); `harness backlog` lists it, open proposals first. Each retro
+is shown that list, so it reuses an id and cites a specced or queued item's status instead of re-arguing it; the
+debrief reads it to rank the open proposals.
 
 **Seed it once, by hand, on the live checkout** (the build that added the backlog never ran this; it writes the real
 ledger): `harness backlog import docs/specs/2026-10-25-memory.backlog-seed.jsonl`. It prints `backlog: imported 8
@@ -193,10 +195,11 @@ After a queue, `harness debrief` replaces the "morning session". The queue runne
 (queue empty, past `--until`, or `harness queue stop`), if it started a run; run it by hand any time. It covers every
 run whose driver started since the last debrief that produced a note, so a debrief that was refused, failed or killed
 is caught up by the next one. Bash gathers the context (status, trends, the queue, the runner's log, and per run: end
-reason, summary, report, retro, INBOX.md, open questions, the usage-limit window), then one Sonnet session writes the
+reason, summary, report, retro, INBOX.md, open questions, the usage-limit window; and the retro backlog), then one Sonnet session writes the
 note: a headline (what landed on main, what's blocked, spend against the usage window), 3–6 lines per run, **Needs
 Michael**, draft answers the project's docs support (it never writes to INBOX.md), and **For the next interactive
-session** (merge conflicts, retro proposals seen in two or more retros). It can ask for a continuation of a run that
+session** (merge conflicts, the retro backlog's open `proposed` items most seen first, and items re-raised though
+already `specced` or `queued`). It can ask for a continuation of a run that
 ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harness checks it and queues it with
 `--automatic --keep-attempts` (an automatic continuation: skipped if you stop the run first); nothing starts.
 

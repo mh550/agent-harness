@@ -105,6 +105,7 @@ backlog merge: a new id becomes one proposed row first seen in its run
 backlog run: a malformed retro-proposals.json is noted, the run finishes, the backlog unchanged
 backlog run: a retro proposal lands as a proposed row, noted 1 new, 0 seen again
 backlog run: restrict reverts a retro's edit to the backlog, and the merge still lands
+backlog run: the rendered retro prompt carries test-counts · specced
 backlog run: the same id from a second run adds it to runs_seen, noted 0 new, 1 seen again
 backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1
 backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
@@ -125,6 +126,7 @@ continuation queued: keeps attempts, brief marked as the debrief's
 continue after a no-list end merges main first
 continue finishes a paused run
 continue refuses a running run
+debrief --dry-run gathers the retro backlog, not Earlier retros
 debrief notifications go to NTFY_URL when set
 debrief waits for the usage-limit window, then runs
 default MERGE_POLICY proposes a verified milestone, never merges it

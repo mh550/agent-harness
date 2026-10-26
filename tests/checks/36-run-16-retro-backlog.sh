@@ -44,9 +44,18 @@ check "backlog run: the same id from a second run adds it to runs_seen, noted 0 
 check "backlog run: restrict reverts a retro's edit to the backlog, and the merge still lands" '
   hlog bk2 | grep "retro: reverted edits" | grep -q " ledger/retro-backlog.jsonl" && ! hlog bk2 | grep "retro: reverted edits" | grep -q retro-proposals.json &&
   [[ ! -e $T/wt/proj/bk2/ledger/retro-backlog.jsonl ]] && jq -e "select(.id == \"no-retry-on-denial\") | .runs_seen | index(\"bk2\")" "$ST" > /dev/null'
+# the retro's prompt carries the backlog as the list prints it (bk3's run, a specced row beside bk1's proposal)
+printf '%s\n' '{"id":"test-counts","title":"real test counts per runner","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"specced","spec":"docs/specs/2026-10-21-retro-fixes.md","pr":null,"note":null}' >> "$ST"
 sum0=$(sha256sum < "$ST")
 STUB_RETRO_PROPOSALS=bad "$H" start "$T/proj" bk3 --spec SPEC.md --foreground > "$T/bk3.out" 2>&1
 check "backlog run: a malformed retro-proposals.json is noted, the run finishes, the backlog unchanged" '
   hlog bk3 | grep -q " · backlog: retro-proposals.json invalid" && grep -q "\"run\":\"bk3\"" "$T/ledger/runs.jsonl" &&
   [[ $(sha256sum < "$ST") == "$sum0" ]] && grep -q "run kept in" "$T/bk3.out"'
+check "backlog run: the rendered retro prompt carries test-counts · specced" '
+  P=$HARNESS_STATE/proj/bk3/prompt-retro.md; grep -q "^## Backlog" "$P" && grep -q "^test-counts · specced · seen 0" "$P" &&
+  grep -q "^no-retry-on-denial · proposed · seen 2" "$P" && ! grep -q "{{BACKLOG}}" "$P"'
+"$H" debrief --dry-run > "$T/bk-dry.out" 2>&1
+check "debrief --dry-run gathers the retro backlog, not Earlier retros" '
+  grep -qxF "## Retro backlog (ledger/retro-backlog.jsonl)" "$T/bk-dry.out" && ! grep -q "Earlier retros" "$T/bk-dry.out" &&
+  grep -q "^{\"id\":\"no-retry-on-denial\",.*\"runs_seen\":\[\"bk1\",\"bk2\"\]" "$T/bk-dry.out" && ! grep -q "/retro\.md$" "$T/bk-dry.out"'
 suite_end

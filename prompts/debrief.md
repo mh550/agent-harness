@@ -61,6 +61,7 @@ Only for questions the project's docs already answer: the question, the answer, 
 short quote. Michael pastes them into the run's `INBOX.md` himself. Leave this section out if there are none.
 
 ## For the next interactive session
-Merge conflicts on run branches (run, milestone, with what); held or refused merges; retro proposals that
-appear in **two or more** retros (this queue's and the ledger's earlier ones): each a candidate harness PR,
-with the retros that proposed it. A list, not fixes.
+Merge conflicts on run branches (run, milestone, with what); held or refused merges; then, from the Retro backlog,
+the open `proposed` items, most `runs_seen` first (id, title, times seen): each a candidate harness PR; and any item a
+run of this debrief re-raised (its run in `runs_seen`) though it is already `specced` or `queued` (with its spec).
+A list, not fixes.

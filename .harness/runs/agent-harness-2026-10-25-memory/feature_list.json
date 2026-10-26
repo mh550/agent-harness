@@ -54,7 +54,7 @@
         "prompts/debrief.md's `## For the next interactive session` asks for open `proposed` items ordered by times seen and for items re-raised though already `specced` or `queued`, and no longer asks to scan earlier retros for proposals seen in two or more",
         "docs/architecture.md §4 gains the backlog row (path `<harness>/ledger/retro-backlog.jsonl`, writers: driver finish() and `harness backlog`, readers: retro prompt and debrief) and §16 says the debrief reads the backlog; README.md's `## Debrief` section says the same",
         "the suite is green" ],
-      "after": ["M1-04"], "passes": false },
+      "after": ["M1-04"], "passes": true },
 
     { "id": "M1-06", "milestone": "M1", "kind": "review", "model": "opus",
       "description": "An Opus review of the M1 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, docs touched by M1 brought in line.",

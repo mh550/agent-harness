@@ -114,6 +114,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Cache | `${XDG_CACHE_HOME:-~/.cache}/harness/<p>/` (`HARNESS_CACHE`, created by the driver): what a project installs once and keeps across runs and boots, Playwright browsers (`PLAYWRIGHT_BROWSERS_PATH=$HARNESS_CACHE/ms-playwright`) and the like; never deleted by the harness | the project's init and sessions | the same | no |
 | Live-write lock | `LIVE_LOCK` (default `/tmp/harness/<p>/live.lock`; dj: `/srv/docker/crates/live.lock`, shared with the backup job) | sessions under `live-staged` (`flock -n`), the backup script (`flock -w`) | both | no |
 | Ledger | `<harness>/ledger/runs.jsonl`, `ledger/<p>/<run>/{summary.json,retro.md,…}` | driver at the end (flock, `git commit -- <paths>`; the retro's proposals merged into `retro-backlog.jsonl` in the same lock and commit) | `harness trends`, retro, calibration | yes, harness repo |
+| Retro backlog | `<harness>/ledger/retro-backlog.jsonl` (one row per retro proposal id across runs: `id`, `title`, `first_seen`, `runs_seen`, `status` proposed · specced · queued · merged · dropped, `spec`, `pr`, `note`; decisions/2026-10-26-retro-backlog) | the driver's `finish()` (`ledger()`, merging the retro's `retro-proposals.json` under the ledger flock) and `harness backlog` (set, import), never a session | the retro prompt (`{{BACKLOG}}`, the text list), the debrief (its gathered context, the rows as JSONL) | yes, harness repo |
 
 ## 5. The life of a run
 
@@ -333,7 +334,9 @@ driver `clock`, coding and verify only; decisions/2026-10-21-clock-and-bounded-i
 <elapsed> of <total>, ends <HH:MM> · this session: $<budget> budget, <turns> turns, <timeout> timeout · attempt N of
 MAX_ATTEMPTS` (or `verify round N of MAX_VERIFY_ROUNDS`); the run is this driver's segment, `T0` to `DEADLINE`. A
 probe rendered by `lib/prompt.sh` says it is outside a run. The retro (`# Retro`, its run on line 3) gets the
-template and the rules line. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output)
+template and the rules line; its `{{BACKLOG}}` is `backlog.mjs list` of the ledger's backlog (≤ 6000 bytes, `(empty)`
+without one), so it reuses an id, cites a specced/queued/merged item's status and coins a slug only for a new
+proposal. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output)
 and then `full output: <path>`. The coding and verify templates open their bearings with `Read context.md first` (the pack in the run directory, written by the driver just before the session, §4), so it is not pasted into the prompt. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 
 **Policies**: `build-only` (default: never operate anything live; write live steps down) and `live-staged` (operate
@@ -362,7 +365,7 @@ dj-crate-streaming's live protocols, rane-one-mixxx's hardware); the others have
    (the writeup: `harness report <run>`; its `Memory peaks over 2 GB` section lists `<feature> · <model> · <peak> MB`
    per session over 2048 MB, read from the `metrics.jsonl` beside `summary.json`, which carries no peak), and `retro.md` (a Sonnet session classifies "not done" features into
    spec / size / dependency / permission / environment / model / harness causes and proposes ≤ 3 harness changes,
-   noting repeats from earlier retros), with the same proposals as data in `retro-proposals.json`
+   each with its backlog id, reusing the id of an item already in the backlog it is shown), with the same proposals as data in `retro-proposals.json`
    (`[{id, title, evidence}]`), which the driver merges into `ledger/retro-backlog.jsonl` in `ledger()`: a new id is a
    `proposed` row, a known one gains the run in `runs_seen`, a malformed file is one note and skipped.
 3. **Across runs**: `ledger/runs.jsonl` + `harness trends` ($ per feature, causes, end reasons over time);
@@ -499,6 +502,7 @@ harness debrief [--dry-run]:
   LIMIT_UNTIL in the future: wait (≤ 5 h; HARNESS_LIMIT_SLEEP in tests), else exit (the next debrief covers it)
   context.md (bash, $0, each part capped): status · trends · queue · runner.log since · per run: ended · summary.json
      · report.md · retro.md · INBOX.md · progress.md questions · needs-Michael lines · limit window · rate-limit info
+     · the retro backlog (ledger/retro-backlog.jsonl as JSONL rows, proposed first, ≤ 6000 bytes)
      · the whole capped at 150 KB; pasted into the prompt with render.mjs --raw ({{X}} in it stays literal)
      (--dry-run: print it and stop)
   DEBRIEF SESSION (DEBRIEF_MODEL=sonnet, 40 turns, $3, SESSION_TIMEOUT; prompt on stdin; --permission-mode dontAsk,
@@ -523,7 +527,9 @@ produced, so a refused, failed or killed debrief changes nothing and the next on
 the usage window. **Runs**: 3–6 lines each. **Needs Michael**: policy, permission and product questions, sudo steps,
 inbox questions the docs can't answer. **Draft answers**: only where the project's docs answer, quoting the doc path;
 Michael pastes them into INBOX.md himself. **For the next interactive session**: merge conflicts on run branches,
-held or refused merges, retro proposals seen in two or more retros (candidate harness PRs). v1 lists; it resolves
+held or refused merges, the retro backlog's open `proposed` items, most seen first (candidate harness PRs), and items a
+run of this debrief re-raised though already `specced` or `queued`; the debrief reads the backlog, not earlier
+`retro.md` files. v1 lists; it resolves
 nothing and opens no PR. One file, overwritten; `git log -p ledger/debrief.md` is the archive.
 
 **Continuations.** The session may only *ask*; bash queues, and only a run of this debrief that ended on its
