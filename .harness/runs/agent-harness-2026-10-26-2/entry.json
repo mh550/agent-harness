@@ -1,0 +1,10 @@
+{ "feature": "F2-05", "kind": "coding", "outcome": "passes",
+  "summary": "R5: both deadline branches run `verify_ready once` before finish: note `deadline reached: <m> complete but unverified; one verify before the end`, then `verify <m> once` (one session, no escalation, this round the last: no granted attempt). Section run 9e (dlok, dlstrict, dlthin), 3 checks; decision file, architecture §5/§7, README.",
+  "files": ["lib/driver.sh", "tests/run.sh", "journal/decisions/2026-10-26-verify-before-deadline.md", "docs/architecture.md", "README.md"],
+  "verified_how": "Run 9e alone on the old driver: 3/3 FAIL (no note, no tag); first segment `session cap (2)`, 2/3 passing, no tag. After: 3/3 PASS. Full suite via check.sh: 371/371 checks passed (702 s), incl. run 9c's `a later deadline`, scrub, tmux. bash -n lib/driver.sh ok.",
+  "tests_before": 368, "tests_after": 371,
+  "discoveries": [
+    { "text": "A deadline verify doesn't wait for LIMIT_UNTIL: if a usage-limit window is open at the deadline, the one verify is refused (deferred, noted) and the run finishes; the continuation verifies it.", "affects": ["F2-06"] },
+    { "text": "verify() takes an optional 2nd arg `once`; verify_ready passes its 1st arg on. The thin note in once mode reads `after one verify at the deadline` instead of `after <escalate model>`.", "affects": ["F2-06"] }
+  ],
+  "questions": ["D3 default: the paused deadline branch (`deadline (paused)`) also runs the one verify, as F2-05 step 1 says. Keep it, or should a paused run finish without any session?"] }
