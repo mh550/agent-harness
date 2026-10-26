@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 01:05 · L4-04 · passes
+
+lib/queue.sh: as it exits having started runs, runs `harness gc <dir> --all-merged --deps` once per distinct PROJECT_DIR of its runs, lines `gc <name>: …` in runner.log before the debrief line; a non-zero exit logs `gc <name> failed (exit <n>)` and the debrief still starts. Two checks; docs, README, decision file.
+
+- **Files:** lib/queue.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-runner-gc.md
+- **Verified:** tests: 314 → 316, red first (only the two new checks failed), then 316/316 via lib/check.sh (green in 541 s); runner.log in a KEEP=1 run showed the gc line, its removals and branch deletes before 'harness debrief (detached'; the gcfail runner logged 'gc proj failed (exit 1)' and the debrief count rose by one; bash -n lib/queue.sh tests/run.sh
+- **Tests:** 314 → 316
+- **Dead end:** letting the suite's runners gc proj as is — they removed stoppy, demo, walled and other merged fixture worktrees that later debrief and desk checks read (5 FAILs): tests/run.sh now keeps them dirty with an untracked marker (keep_wts/unkeep_wts) around the three runners that start runs
+- **Discovery** (affects L4-05, L5, run): Every queue runner in tests/run.sh that starts a run now gcs $T/proj: a new runner test that starts runs must wrap itself in keep_wts … settle; unkeep_wts if later checks read existing worktrees. The queue's own runs' worktrees are gone afterwards; their records are read from $T/ledger/proj/<run>/.
+- **Discovery** (affects L4-05, run): A meta.env without PROJECT_DIR inherits the caller's PROJECT_DIR when sourced (sessions export one): queue.sh unsets it before sourcing. debrief.sh rec_dir and other `source meta.env` sites may have the same leak.
+- **Discovery** (affects run): The 'queue holds an entry whose project has a live run' flake: busy3 now sleeps 5 and the runner's --until is +3 s (was 3 and +1), so a slow runner start-up no longer misses starting stoppy-o.
+- *23-L4-04 · claude-opus-5-5*
+
 ### 2026-10-26 00:14 · L4-03 · passes
 
 harness gc --deps deletes DEPS_DIRS (default node_modules .next .next-check .venv) in worktrees of ended runs, merged or not: meta.env WT= must name the worktree; no live driver, queued continuation or open desk; never the checkout, a symlink, a path out of the tree or tracked files. Prints '+ freed <n> MB in <wt>: <dirs>' / 'would: freed'. 3 checks; decision, README, architecture §3/§10.

@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 01:05 · L4-04 · passes
+
+lib/queue.sh: as it exits having started runs, runs `harness gc <dir> --all-merged --deps` once per distinct PROJECT_DIR of its runs, lines `gc <name>: …` in runner.log before the debrief line; a non-zero exit logs `gc <name> failed (exit <n>)` and the debrief still starts. Two checks; docs, README, decision file.
+
+- **Files:** lib/queue.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-runner-gc.md
+- **Verified:** tests: 314 → 316, red first (only the two new checks failed), then 316/316 via lib/check.sh (green in 541 s); runner.log in a KEEP=1 run showed the gc line, its removals and branch deletes before 'harness debrief (detached'; the gcfail runner logged 'gc proj failed (exit 1)' and the debrief count rose by one; bash -n lib/queue.sh tests/run.sh
+- **Tests:** 314 → 316
+- **Dead end:** letting the suite's runners gc proj as is — they removed stoppy, demo, walled and other merged fixture worktrees that later debrief and desk checks read (5 FAILs): tests/run.sh now keeps them dirty with an untracked marker (keep_wts/unkeep_wts) around the three runners that start runs
+- **Discovery** (affects L4-05, L5, run): Every queue runner in tests/run.sh that starts a run now gcs $T/proj: a new runner test that starts runs must wrap itself in keep_wts … settle; unkeep_wts if later checks read existing worktrees. The queue's own runs' worktrees are gone afterwards; their records are read from $T/ledger/proj/<run>/.
+- **Discovery** (affects L4-05, run): A meta.env without PROJECT_DIR inherits the caller's PROJECT_DIR when sourced (sessions export one): queue.sh unsets it before sourcing. debrief.sh rec_dir and other `source meta.env` sites may have the same leak.
+- **Discovery** (affects run): The 'queue holds an entry whose project has a live run' flake: busy3 now sleeps 5 and the runner's --until is +3 s (was 3 and +1), so a slow runner start-up no longer misses starting stoppy-o.
+- *23-L4-04 · claude-opus-5-5*
+
 ### 2026-10-26 00:14 · L4-03 · passes
 
 harness gc --deps deletes DEPS_DIRS (default node_modules .next .next-check .venv) in worktrees of ended runs, merged or not: meta.env WT= must name the worktree; no live driver, queued continuation or open desk; never the checkout, a symlink, a path out of the tree or tracked files. Prints '+ freed <n> MB in <wt>: <dirs>' / 'would: freed'. 3 checks; decision, README, architecture §3/§10.
@@ -262,23 +275,9 @@ services_down runs .harness/teardown.sh (TEARDOWN_CMD) under timeout -k 10s 2m, 
 - **Proposed change:** L2-04 step 1's verify `mem_gate || run_init` is done in L2-03.
 - *11-L2-03 · claude-opus-5-5*
 
-### 2026-10-25 16:30 · L2-02 · passes
-
-run_init now stops harness-<run>-svc, then runs INIT_CMD in it (MemoryMax=SVC_MEMORY_MAX 3G, timeout -k 10s INIT_TIMEOUT 10m, stdin /dev/null); a refused unit notes `init ran uncapped`. Stub systemd-run refuses a still-loaded unit like real systemd. 4 checks (3 seen RED), decision file, arch/README/config docs. Tests 270 → 274.
-
-- **Files:** lib/driver.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, tests/stub-systemd-run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-services-scope.md
-- **Verified:** RED on a git copy with the old driver: the dup-unit, the stop-then-scope order and the backgrounded-init checks failed (bare check passed, as a regression guard). GREEN: lib/check.sh green in 473 s, 274/274; no harness-test-* unit or sleep 300 left. Opus review: 0 Critical/Important, 3 Minor (2 fixed).
-- **Tests:** 270 → 274
-- **Dead end:** running the RED suite on a tar copy of the tree without git — the eval checks need a git repo; git init + commit in the copy works
-- **Discovery** (affects L2-03, L2-04, L2-05): stub-systemd-run.sh now refuses a unit whose .alive is set and that is .running or holds a live pid (fixtures/systemd-run-unit-exists.txt, exit 1, command not run). Any new code that reuses a unit name must scope_stop it first.
-- **Discovery** (affects L2-03): run_init sets SVC_UP=1 before the start (plan §1); services_down (L2-03) can key on it. The bp1 check (tests/run.sh ~960) counts `stop harness-bp1-svc.scope` >= 2, so finish's stop in L2-03 keeps it green.
-- **Discovery** (affects L2-06): GNU timeout (no --foreground) kills its whole process group on expiry, so an init that times out takes the servers it already backgrounded with it; docs say so. Plan's `timeout -k 10s 10m` kept as the step names it.
-- **Discovery** (affects L2-05, L2-06): Review Minor not fixed: run ids are unique per project only, and scope_unit maps . to -, so two projects' runs with the same id share harness-<id>-svc and run_init's stop-first would kill the other's services (was: refused, bare). gc's unit match (L2-05) has the same ambiguity; consider the project in the unit name or refusing a duplicate id.
-- **Question for Michael:** D *default* (decisions/2026-10-25-services-scope): the init's stdin is now /dev/null instead of the tmux pane, so an interactive init prompt fails fast instead of waiting for you in the window. OK?
-- *10-L2-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-25 16:30 · L2-02 · passes · run_init now stops harness-<run>-svc, then runs INIT_CMD in it (MemoryMax=SVC_MEMORY_MAX 3G, timeout… ([in full](progress-archive.md))
 - 2026-10-25 16:02 · L2-01 · passes · Wrote docs/plans/2026-10-25-L2-run-services.md: svc scope in run_init (stop first), services_down/SV… ([in full](progress-archive.md))
 - 2026-10-25 15:34 · verify L1 · passes · All 8 L1 features hold: suite re-run 270/270, artifacts, stubs, fixtures, docs and decision files ch… ([in full](progress-archive.md))
 - 2026-10-25 15:25 · L1-08 · passes · Opus review of the L1 diff in docs/plans/2026-10-25-L1-review.md: 7 findings (1 Important, 4 Minor, … ([in full](progress-archive.md))
