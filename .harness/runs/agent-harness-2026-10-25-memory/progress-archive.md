@@ -9,6 +9,18 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 19:29 · M1-03 · passes
+
+Added lib/backlog.sh (harness backlog [list] | set | import, writes under flock on $STATE_ROOT/ledger.lock, one `ledger: backlog …` commit of retro-backlog.jsonl alone when LEDGER_COMMIT=1 and the ledger is a git checkout), bin/harness dispatch + header, the 8-row seed file, README row and ## Retro backlog section with Michael's import command. Tests 402 → 407.
+
+- **Files:** lib/backlog.sh, bin/harness, docs/specs/2026-10-25-memory.backlog-seed.jsonl, README.md, tests/checks/36-run-16-retro-backlog.sh, tests/fixtures/check-names.txt
+- **Verified:** 5 new checks in tests/checks/36-run-16-retro-backlog.sh written first and watched failing (0/5), then 5/5; full suite via check.sh green, 407 tests in 207 s; bash -n lib/backlog.sh bin/harness; git status --porcelain -- ledger/ empty; by hand: a held ledger.lock makes set wait
+- **Tests:** 402 → 407
+- **Discovery** (affects M1-04, M1-06): harness backlog errors go to stderr as one line, exit 1: set's are `backlog: <why> · usage: harness backlog set …` (unknown id, bad status, missing argument or option value), an unknown subcommand or extra list argument a usage line. Import resolves the file against the caller's cwd before taking the lock; the commit message is `ledger: backlog import <basename>` / `ledger: backlog set <id> <status>`.
+- **Discovery** (affects M1-04, M1-05): Seed rows carry note `proposed in N retros` for test-counts (6), review-cost (8), carry-on-past-given-up (4), null otherwise; spec is the table's text verbatim (e.g. `retro-fixes R1, this spec M5`), null for no-retry-on-denial. 36-run-16-retro-backlog.sh has one $T; M1-04's `backlog run` checks append there and its file's store already holds the 8 seed rows by its end (ST=$HARNESS_LEDGER/retro-backlog.jsonl), so they should rm or reseed it first.
+- **Discovery** (affects M1-04, M1-05): README's new ## Retro backlog section already says the driver writes the backlog (M1-04's merge); docs/architecture.md §4 row and the Debrief paragraph are still M1-05's.
+- *03-M1-03 · claude-opus-5-5*
+
 ### 2026-10-26 19:23 · M1-02 · passes
 
 Added lib/backlog.mjs (pure exports STATUSES, parseRows, formatRows, validateProposals, mergeProposals, setStatus, orderRows, importRows, listLines; CLI merge/set/list/import/validate, atomic tmp+rename writes) and tests/checks/35-backlog-pure-m1.sh, 7 checks written first. Tests 395 → 402.
