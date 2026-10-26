@@ -1,10 +1,12 @@
-# Context pack for `M1-02`
+# Context pack for `M1-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (M1-01, affects M1-02, M1-05): The debrief gatherer needs run ids to flag re-raised items, so it uses `backlog.mjs list --jsonl --max-bytes 6000` (ordered rows); the retro prompt uses the text list (`<id> · <status> · seen <n> · <title>…`), which carries the `test-counts · specced` prefix M1-05 greps → entries.jsonl:2
+- Discovery (M1-02, affects M1-03, M1-04): CLI output channels: merge's ok and invalid lines and validate's why line go to stdout (the driver notes `$(node lib/backlog.mjs merge …)`); set/import/usage errors go to stderr as one `backlog: <why>` line, exit 1 (usage: exit 2 for an unknown command). set on a missing store exits 1 (unknown id) and writes nothing. → entries.jsonl:3
+- Discovery (M1-02, affects M1-03, M1-05): list --max-bytes is a hard cap including the `… (<n> more rows)` line; list --jsonl --max-bytes stops at whole rows with no trailer. import of a known id sets spec/pr/note to the import row's values (null when absent), keeps title and first_seen; a new import row needs a title, a slug id and one of the five statuses. → entries.jsonl:3
+- Discovery (M1-01, affects M1-03, M1-04, M1-05): `run 16` is already the parking run's label (tests/checks/13-run-2-michael-sets-desk.sh:261); the plan's checks in 36-run-16-retro-backlog.sh say `backlog run` instead → entries.jsonl:2
 - Discovery (init, affects run): R1 (decisions/2026-10-26-real-test-counts) and R2 (decisions/2026-10-26-reviews-sized-to-milestone) are both on main, so M5 and M6 keep their bases; nothing is dropped. The lanes run (P1/P2) is NOT on main: the driver is serial, so the array order is the build order (M1, M2, M3, M4, M5, M6) and `after` only keeps a stuck milestone from blocking the independent ones. → entries.jsonl:1
 - Discovery (init, affects run): The suite is split: a new check goes in a tests/checks/NN-<slug>.sh file by topic (sourcing tests/lib.sh, suite_setup … suite_end) and its name must be added to tests/fixtures/check-names.txt in C sort order (`LC_ALL=C sort -u`), or the full run's conformance check fails. Run a subset by file-name fragment: `bash tests/run.sh backlog`. Full suite ~206 s with TEST_JOBS=4, 395 checks at init. → entries.jsonl:1
 - Discovery (init, affects M1): restrict() in lib/driver.sh (line 87) with `nothing` (the retro) reverts EVERY file the retro changed or created, the run directory included: an added file is `git rm`'d. So retro-proposals.json must be copied from $RUN_DIR to $SCRATCH in retro() (lib/driver.sh:499-511) before `restrict "$rstart" nothing retro`, and finish() merges from the scratch copy. ledger() (line 513) holds `flock 9` on $STATE_ROOT/ledger.lock and commits only when LEDGER_COMMIT=1 and $LEDGER is a git checkout; the suite sets HARNESS_LEDGER=$T/ledger (not a git repo) and LEDGER_COMMIT=0. → entries.jsonl:1
@@ -15,8 +17,9 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-26 19:16 · M1-01 · passes: Wrote docs/plans/2026-10-26-M1-retro-backlog.md: row schema and defaults, lib/backlog.mjs's exported API and CLI, harness backlog forms, retro()/finish() handling of retro-proposals.json via scratch past restrict, retro prompt Backlog section, the two debrief changes, STUB_RETRO_PROPOSALS, check names for files 35/36, the 8 seed rows, the live import steps.; tests 395 → 395; files docs/plans/2026-10-26-M1-retro-backlog.md → entries.jsonl:2
+- 2026-10-26 19:23 · M1-02 · passes: Added lib/backlog.mjs (pure exports STATUSES, parseRows, formatRows, validateProposals, mergeProposals, setStatus, orderRows, importRows, listLines; CLI merge/set/list/import/validate, atomic tmp+rename writes) and tests/checks/35-backlog-pure-m1.sh, 7 checks written first. Tests 395 → 402.; tests 395 → 402; files lib/backlog.mjs, tests/checks/35-backlog-pure-m1.sh, tests/fixtures/check-names.txt → entries.jsonl:3
 
 ## Lately in the run
 
+- 2026-10-26 19:16 · M1-01 · passes: Wrote docs/plans/2026-10-26-M1-retro-backlog.md: row schema and defaults, lib/backlog.mjs's exported API and CLI, harness backlog forms, retro()/finish() handling of retro-proposals.json via scratch past restrict, retro prompt Backlog section, the two debrief changes, STUB_RETRO_PROPOSALS, check names for files 35/36, the 8 seed rows, the live import steps.; tests 395 → 395; files docs/plans/2026-10-26-M1-retro-backlog.md → entries.jsonl:2
 - 2026-10-26 19:12 · init · passes: 23 features: M1 6 (plan, backlog.mjs, CLI + seed, retro emits and driver merges, retro prompt + debrief, review), M2 3 (block + decisionsStore, prompts and templates with folded review, docs), M3 5 (plan, Gotchas note, resolved questions, current rules, review), M4 2 (memlint, run-start notes + CLI), M5 2 (contract, tests-end per session), M6 5 (plan, gate, escalation, summary, review).; tests 395 → 395; files .harness/runs/agent-harness-2026-10-25-memory/feature_list.json → entries.jsonl:1
