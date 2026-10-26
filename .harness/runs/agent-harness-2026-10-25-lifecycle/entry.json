@@ -1,0 +1,9 @@
+{ "feature": "L4-02", "kind": "coding", "outcome": "passes",
+  "summary": "gc removes a clean, merged worktree with `worktree remove --force`, then `rm -rf` if it stays, then `worktree prune`; a failure prints `! could not remove <wt>: <why>` and the loop goes on; --dry-run prints `would: … --force` for each. Two new checks (watched red first); the loop never touches the project's own checkout. 309 → 311 checks.",
+  "files": ["bin/harness", "tests/run.sh", "journal/decisions/2026-10-25-gc-removal-finishes.md", "docs/architecture.md", "README.md"],
+  "verified_how": "bash tests/run.sh before the fix: 309/311 (both new checks FAIL); after: 311/311 via lib/check.sh (green in 526 s); bash -n bin/harness and tests/run.sh",
+  "tests_before": 309, "tests_after": 311,
+  "discoveries": [
+    { "text": "A worktree whose parent is read-only: `git worktree remove --force` empties it, removes its .git file and fails with `error: failed to delete '<wt>': Permission denied`; rm -rf then fails too; after `worktree prune` git no longer lists it, so the branch pass can still delete its branch. gc's worktree loop now skips the project checkout ($wt == $p) explicitly, since rm -rf follows a failed remove.", "affects": ["L4-03", "L4-05"] },
+    { "text": "tests/run.sh has gw_add/gw_listed helpers and $T/proj/.git/info/exclude now lists .next/ (L4-02 block after the L4-01 branch checks); the gcw-* worktrees and branches are cleaned up after.", "affects": ["L4-03"] }
+  ] }
