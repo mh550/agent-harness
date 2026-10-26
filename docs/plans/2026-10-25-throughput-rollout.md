@@ -21,11 +21,11 @@ run is live, and Michael's commands. Tick steps here, on `main`, as they land.
 | 0 | ~~**Hold the queue** so nothing starts after the lifecycle run (step 0 below)~~ done 2026-10-26 00:05 | Michael | tonight, before ~02:00 | — |
 | 1 | Design and this plan on `main` (new files: no conflict with the live run) | this session | tonight | — |
 | 2 | On approval: the two build specs (`suite-split`, `lanes`), the amendments to the retro-fixes and memory specs (§8 of the design), the superseding decision for D-H18, the queue brief texts | a harness session | tonight or first thing 10-26; about 40 min | Michael's yes |
-| 3 | **Suite split** (§5.1–§5.2), interactive in a worktree, PR, merged | a harness session | right after the lifecycle run ends; about 1.5 h | the lifecycle run merged (its L4/L5 checks are in `tests/run.sh`); step 2's spec |
-| 4 | **Queue**: lanes run → retro run (F1, F2) → memory run; start the runner | Michael | after step 3 merges; 2 min | step 3 |
+| 3 | ~~**Suite split**, interactive~~ superseded 2026-10-26: it is **P0 of the lanes run** | the harness | first milestone of step 5 | — |
+| 4 | **Queue now** (the runner is up and starts the first entry when the lifecycle run ends): rane continuation → lanes run → retro run (F1, F2) → memory run; `MAX_LANES=2` and `MAX_PARALLEL_RUNS=2` in the user config | Michael | tonight, 5 min; commands in the master todo | step 2 (done) |
 | 4b | If rane-one-mixxx-2026-10-24 should finish on today's driver: answer M5-06 and `harness continue` it in the daytime window of 10-26 (decision 4 below) | Michael | before step 5 merges | — |
-| 5 | **Lanes run** (§4), serial, on the current driver | the harness | night of 10-26, about 7 h | step 4 |
-| 6 | `MAX_LANES=2` in `~/.config/harness/config.sh`; the retro run opens F1 and F2 side by side | Michael, then the harness | after step 5 merges, before the retro run starts (the runner syncs before each start; the config is read at run start) | step 5 |
+| 5 | **Lanes run** (P0 split, P1, P2), serial, on the current driver | the harness | from the lifecycle run's end, about 9 h | step 4 |
+| 6 | `MAX_LANES=2` is set in step 4 (today's driver ignores it; the lanes driver reads it at run start), so the retro run opens F1 and F2 side by side with no one awake | the harness | after step 5 | step 5 |
 | 7 | **Memory run** with four lanes (M1, M2, M5, M6; then M3, M4) | the harness | after the retro run, same night if the window allows | step 6 |
 | 8 | `MAX_PARALLEL_RUNS=2` so other projects' runs go beside agent-harness work | Michael | after one night at two lanes shows the memory headroom (`mem_peak_mb`, `lanes` in the summary) | step 7 |
 
@@ -129,7 +129,13 @@ and no `harness-*` units after the run (`systemctl --user list-units 'harness-*'
 two lanes each, two runs can mean four sessions and four suites; the admission gate is per box, so the second run's
 lanes wait when the first's hold the headroom, but the floor is one session per run.
 
-## Decisions that are Michael's (asked 2026-10-25; the design proceeds on the first option of each until he says otherwise)
+## Decisions that are Michael's (asked 2026-10-25; **answered 2026-10-26 00:40**)
+
+Answers: 1 A · 2 the run · 3 the record PR, merged, and the stale branch removed by the runner's gc (lanes spec P2
+item 4) · 4 answer M5-06 and continue the rane run, queued ahead of the lanes run · 5 the default · 6 two lanes.
+One change after the answers: the suite split is **P0 of the lanes run** instead of an interactive step, so the
+chain runs unattended from the lifecycle run's end (steps 3 and 4 below are superseded by the master todo in
+`~/Downloads/harness-master-todo-2026-10-26.md`, which has the exact commands).
 
 1. **Order:** A (lanes run before the retro and memory runs, one extra night) or B (retro and memory first on the
    serial driver, lanes after).

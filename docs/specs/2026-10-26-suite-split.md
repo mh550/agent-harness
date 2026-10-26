@@ -5,9 +5,10 @@ independent files under `tests/checks/`, in parallel inside the one check scope,
 with the same check names and the same `N/M checks passed` ending. A session iterates on one file and runs
 everything once. The move is a script with a conformance check, not a rewrite of any test.
 
-**Source.** `docs/specs/2026-10-25-throughput-and-memory-design.md` §5 (approved 2026-10-26). Built
-interactively by one session, right after the lifecycle run has merged (its L4 and L5 checks are in the file), and
-before the lanes run is queued. Milestones S1–S3; S4 is optional.
+**Source.** `docs/specs/2026-10-25-throughput-and-memory-design.md` §5 (approved 2026-10-26). Built as **P0 of the
+lanes run** (`docs/specs/2026-10-26-lanes.md`), which the queue starts right after the lifecycle run, so the split
+lands first thing with no one at the keyboard; an interactive session is the fallback if that run doesn't happen.
+Milestones S1–S3; S4 is optional.
 
 **Rules.** `CLAUDE.md` binds: worktree only; never touch real runs or state; `bash -n` on every shell file;
 every check keeps its name; the suite must end green before the PR merges. No LLM judgement is part of the running
@@ -120,7 +121,7 @@ uncovered files only; `--for` never changes the `PASS` names a full run would pr
 | S3 | `CHECK_KEY_IGNORE` in `treekey.mjs`, `check.sh`, config, templates, docs | [] (independent) |
 | S4 | `--for` selection by `# covers:` (optional) | S1 |
 
-One interactive session, one PR, merged by the session when the suite is green. Its decision file:
+As P0 of the lanes run, two or three features and one verified milestone PR; interactively, one session and one PR. Its decision file:
 `journal/decisions/2026-10-26-suite-split.md` (finding · choice · rejected: per-file scopes, a test framework
 rewrite, LLM-driven selection).
 
