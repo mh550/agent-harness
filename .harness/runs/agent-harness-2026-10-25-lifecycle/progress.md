@@ -9,6 +9,41 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 02:08 · verify L4 · passes
+
+All five L4 features hold: check.sh green (322 checks, 0 FAIL), bash -n clean, named checks read and match each step, docs/decisions/plan present.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L4-01 | 1 | ls docs/plans; wc -l | L4-gc.md, 65 lines | yes |
+| L4-01 | 2 | grep for-each-ref bin/harness | per-prefix refs/heads/ and refs/remotes/origin/ loop, no * pattern, lstrip | yes |
+| L4-01 | 3 | read tests/run.sh:803 check | spec/x docs/y harness/z harness-merge/w flat deleted both places; spec/u survives | yes |
+| L4-01 | 4 | read tests/run.sh:795 check | plain gc deletes only harness/z, harness-merge/w; others survive | yes |
+| L4-01 | 5 | ls journal/decisions; grep | gc-all-merged.md has finding/choice/rejected | yes |
+| L4-01 | 6 | bash -n bin/harness; check.sh | syntax ok; suite green, 0 FAIL | yes |
+| L4-02 | 1 | read bin/harness gc loop via architecture §3 and tests | remove --force, prune, rm -rf only when unlisted; ! could not remove line | yes |
+| L4-02 | 2 | read tests/run.sh:817 | gcw-a (.next) and gcw-b removed with + lines | yes |
+| L4-02 | 3 | read tests/run.sh:821 check | read-only parent prints ! could not remove, gcw-d still removed, dry-run 4 would lines | yes |
+| L4-02 | 4 | ls decisions | gc-removal-finishes.md present | yes |
+| L4-02 | 5 | check.sh | green | yes |
+| L4-03 | 1 | grep DEPS_DIRS lib/config.sh templates | default set, template commented; --deps in gc | yes |
+| L4-03 | 2 | read tests/run.sh:864,868 | ended run emptied, live/checkout kept, dry-run would: freed | yes |
+| L4-03 | 3 | read tests/run.sh:870 | queued continuation keeps dirs | yes |
+| L4-03 | 4 | ls decisions | gc-deps.md present | yes |
+| L4-03 | 5 | grep architecture/README | §3 and README gc row list --deps, DEPS_DIRS; suite green | yes |
+| L4-04 | 1 | read lib/queue.sh:73-79; bash -n | per-project gc --all-merged --deps with gc <name>: prefix, failure logged, before debrief | yes |
+| L4-04 | 2 | read tests/run.sh:980 | gc line precedes harness debrief line, argv matches | yes |
+| L4-04 | 3 | read tests/run.sh:1016 | failed/hung gc logged, debrief still starts | yes |
+| L4-04 | 4 | ls decisions; grep docs | runner-gc.md present; docs mention runner gc | yes |
+| L4-04 | 5 | check.sh | green | yes |
+| L4-05 | 1 | ls docs/plans | L4-review.md with severities (Critical/Important) | yes |
+| L4-05 | 2 | read tests/run.sh:839-845 | checks for non-run worktree, locked, untracked-hidden, default branch/live branch | yes |
+| L4-05 | 3 | grep architecture §3/§10, README, retro-fixes R9 | all current; R9 says Landed | yes |
+| L4-05 | 4 | grep finding/choice/rejected in 5 decision files; bash -n | 3 each; syntax ok | yes |
+| L4-05 | 5 | lib/check.sh | green (cached for this tree), 0 FAIL | yes |
+
+- *020716-verify-L4 · claude-sonnet-5-5*
+
 ### 2026-10-26 01:58 · L4-05 · passes
 
 Opus review of the L4 diff: 3 Critical, 4 Important fixed RED→GREEN. gc now removes only harness/<run> worktrees, never rm -rfs one git refused (locked), sees hidden untracked files, survives a gone dir or du error, keeps main/origin's default/running branches; runner gc has a timeout and no git prompt. Prefix loop simplified, L4 docs done. 316→322 checks.
@@ -262,20 +297,9 @@ harness gc first stops the units of this project's runs with no live driver (+ s
 - **Proposed change:** L2-05 step 1: the unit step runs first in cmd_gc, not after the branch passes (review finding); its lines are gc's own, not act's; a run with no live driver qualifies with or without ended (plan §11).
 - *13-L2-05 · claude-opus-5-5*
 
-### 2026-10-25 17:36 · L2-04 · passes
-
-Services now also stop on pause (services_down paused, then commit+push), before a usage-limit wait over SVC_IDLE_STOP_MIN=10 min, and on the memory wait (renamed `memory wait`); STOP already went through finish. New key in config.sh/template/architecture §10; §5/§7, README and decisions/2026-10-25-services-stop-points updated.
-
-- **Files:** lib/driver.sh, lib/scope.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, tests/stub-claude.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-services-stop-points.md
-- **Verified:** Wrote 5 checks + the mg unit-check rename first: 4 failed (mg block, PAUSE, memory wait, usage-limit wait 11 min); stoppy and the 9-minute check passed already as the plan predicted (check-only). After the change bash tests/run.sh 282/282; lib/check.sh green in 492 s.
-- **Tests:** 277 → 282
-- **Discovery** (affects L2-05, L2-06): stub-claude.sh has STUB_PAUSE=<id>: that id's first coding session touches $HARNESS_STATE/*/<run>/PAUSE. Run `paused` in tests/run.sh drives it in the background and resumes with `harness resume paused` once hlog has `services stopped (paused)`.
-- **Discovery** (affects run): Run waiter's window is now +660 s (11 min) and waiter9 (+540 s) is new; the suite has two more full runs (about +20 s).
-- **Question for Michael:** D1 default: SVC_IDLE_STOP_MIN=10 (a usage-limit wait of more than 10 minutes stops the services; shorter keeps them). Keep 10?
-- *12-L2-04 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-25 17:36 · L2-04 · passes · Services now also stop on pause (services_down paused, then commit+push), before a usage-limit wait … ([in full](progress-archive.md))
 - 2026-10-25 17:08 · L2-03 · passes · services_down runs .harness/teardown.sh (TEARDOWN_CMD) under timeout -k 10s 2m, stops harness-<run>-… ([in full](progress-archive.md))
 - 2026-10-25 16:30 · L2-02 · passes · run_init now stops harness-<run>-svc, then runs INIT_CMD in it (MemoryMax=SVC_MEMORY_MAX 3G, timeout… ([in full](progress-archive.md))
 - 2026-10-25 16:02 · L2-01 · passes · Wrote docs/plans/2026-10-25-L2-run-services.md: svc scope in run_init (stop first), services_down/SV… ([in full](progress-archive.md))
