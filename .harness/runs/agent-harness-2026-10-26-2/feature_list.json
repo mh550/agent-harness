@@ -110,7 +110,7 @@
         "the suite is green (`bash tests/run.sh` or the cached `check.sh` line ends with every check passing)"
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F2-02",
@@ -126,7 +126,7 @@
         "journal/decisions/2026-10-26-step-lint.md exists (finding · choice · rejected, naming the C7-05 park and the measure run's E2-02 as the evidence); docs/architecture.md §6 lists the lint rules",
         "`node --check lib/features.mjs` passes; the suite is green"
       ],
-      "passes": false,
+      "passes": true,
       "after": [
         "F2-01"
       ]
@@ -145,7 +145,7 @@
         "docs/architecture.md §5 (the life of a run) has the lint step after the initializer and §6 says the initializer runs it; README.md mentions the lint in one line",
         "`bash -n lib/driver.sh lib/prompt.sh` passes; the suite is green"
       ],
-      "passes": false,
+      "passes": true,
       "after": [
         "F2-02"
       ]
@@ -164,7 +164,7 @@
         "journal/decisions/2026-10-26-reviews-sized-to-milestone.md exists (finding · choice · rejected, with the review-cost figures the spec cites); docs/architecture.md §6 and README.md say the rule",
         "`node --check lib/features.mjs` passes; the suite is green"
       ],
-      "passes": false,
+      "passes": true,
       "after": [
         "F2-03"
       ]
@@ -183,7 +183,7 @@
         "journal/decisions/2026-10-26-verify-before-deadline.md exists (finding · choice · rejected: the voice-concierge runs it cites, why one session and not MAX_VERIFY_ROUNDS); docs/architecture.md §5 and §7 (Verify row) and README.md § After a partial run say it",
         "`bash -n lib/driver.sh` passes; the suite is green"
       ],
-      "passes": false,
+      "passes": true,
       "after": [
         "F2-04"
       ]
@@ -200,7 +200,7 @@
         "`node lib/features.mjs lint .harness/runs/agent-harness-2026-10-26-2/feature_list.json` output is recorded in the entry, and prompts/initializer.md, docs/architecture.md §5–§7 and README.md match the code as merged (each noted harness-log.md line in the docs is the one lib/driver.sh writes)",
         "`bash -n` on every shell file in lib/ bin/ tests/ and `node --check` on every lib/*.mjs pass; the suite is green"
       ],
-      "passes": false,
+      "passes": true,
       "after": [
         "F2-01",
         "F2-02",

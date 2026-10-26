@@ -137,6 +137,53 @@ check "testCount: jest fixture gives the Tests: count (7), not Test Suites:" '[[
 check "testCount: cargo fixture gives the sum of its test result lines (3)" '[[ $(tc cargo) == "3 tests" && $(grep -c "^test result: ok" "$HERE/fixtures/check-cargo.txt") == 2 ]]'
 check "testCount: go fixture gives its --- PASS count (3)" '[[ $(tc go) == "3 tests" ]]'
 
+# ---- step lint, pure (R3, R2): features.mjs lint, one tripping and one passing step per rule ----
+LINT='import { lint, lintNote } from "'$HERE'/../lib/features.mjs";
+  const got = (...steps) => lint([{ id: "A", milestone: "M1", steps }]).map(f => `${f.step}:${f.rule}`).join();'
+check "lint: no-anchor trips \"works correctly\", not \"the suite is green\" or \"curl :7814/x returns 200\"" 'node --input-type=module -e "$LINT"'\''
+  process.exit(got("works correctly", "the suite is green", "curl :7814/x returns 200", "`harness queue list` prints (requested)", "README.md mentions it") === "1:no-anchor" ? 0 : 1);'\'
+check "lint: outside-repo trips ~ and /home/ paths, not lib/driver.sh or /tmp/harness/" 'node --input-type=module -e "$LINT"'\''
+  process.exit(got("read ~/projects/x/.harness/runs/…", "/home/mh550/…", "cat ../other/x", "lib/driver.sh", "/tmp/harness/…", "> /dev/null", "GET /api/health returns 200")
+    === "1:outside-repo,2:outside-repo,3:outside-repo" ? 0 : 1);'\'
+check "lint: self-match trips a grep of progress.md for the step's own words, not of harness-log.md or lib/" 'node --input-type=module -e "$LINT"'\''
+  process.exit(got(`grep -q "M2 verified" .harness/runs/<run>/progress.md`, `grep -q "M1 verified" .harness/runs/<run>/harness-log.md`,
+    "grep -c \x27^verify M1\x27 .harness/runs/<run>/progress.md", `grep -rn "note" lib/`, `grep -qF "lint: clean" .harness/runs/<run>/entries.jsonl`)
+    === "1:self-match,5:self-match" ? 0 : 1);'\'
+check "lint: self-match reads grep as a command: prose, option values, -x, redirects, egrep and BRE escapes" 'node --input-type=module -e "$LINT"'\''
+  process.exit(got("running grep on progress.md shows M2", "rg -t md \x27^## M2\x27 progress.md", "grep --max-count 1 \x27^x\x27 progress.md",
+    "grep -Fx \x27M2 verified\x27 progress.md", "grep -q \x27a\\{2\\}\x27 progress.md",
+    "grep -q M2 2>/dev/null .harness/runs/r/progress.md", "egrep -q \x27M2|x\x27 progress.md", "grep -q \x27\\<M2\\>\x27 progress.md",
+    " the suite is green") === "6:self-match,7:self-match,8:self-match" ? 0 : 1);'\'
+check "lint: self-match ends the command at a closing backtick or a glued |, and reads --regexp=" 'node --input-type=module -e "$LINT"'\''
+  process.exit(got("`rg` finds no TODO in progress.md", "grep -q M2 progress.md|wc -l", "grep --regexp=M2 progress.md", "`grep -c x lib/a.sh`; progress.md has x")
+    === "2:self-match,3:self-match" ? 0 : 1);'\'
+check "lint: undeclared trips a later milestone's first feature without after, not the first milestone's" 'node --input-type=module -e "$LINT"'\''
+  const l = (after) => [{ id: "A", milestone: "M1" }, { id: "B", milestone: "M1" }, { id: "C", milestone: "M2", ...after }, { id: "D", milestone: "M2" }];
+  const r = lint(l({})), ok = lint(l({ after: [] }));
+  process.exit(r.length === 1 && r[0].id === "C" && r[0].step === "-" && r[0].rule === "undeclared" && r[0].text.startsWith("M2") && ok.length === 0 ? 0 : 1);'\'
+check "lint: review-small for a review in a two-build milestone; review-missing for five builds without one; neither for five with one or docs only" 'node --input-type=module -e "$LINT"'\''
+  const ms = (m, kinds) => kinds.map((kind, i) => ({ id: `${m}-${i + 1}`, milestone: m, kind, ...(m === "M1" ? {} : { after: [] }) }));
+  const r = l => lint(l).map(f => `${f.id}:${f.step}:${f.rule}:${f.text}`).join("|");
+  const small = r(ms("M1", ["plan", "build", "build", "review"])), one = r(ms("M1", ["build", "review"]));
+  const inferred = r([{ id: "A", milestone: "M1" }, { id: "B", milestone: "M1", description: "Review + simplify of M1" }]);
+  const five = r([...ms("M1", ["build", "build", "build", "build", "build", "review"]), ...ms("M2", ["plan", "build", "build", "build", "build", "build", "docs"])]);
+  const docs = r(ms("M1", ["plan", "docs", "docs", "check", "review"]));
+  process.exit(small === "M1-4:-:review-small:M1 has 2 build features: fold the review into M1-3\x27s steps"
+    && one === "M1-2:-:review-small:M1 has 1 build feature: fold the review into M1-1\x27s steps"
+    && inferred === "B:-:review-small:M1 has 1 build feature: fold the review into A\x27s steps"
+    && five === "M2-7:-:review-missing:M2 has 5 build features and no review feature" && docs === "" ? 0 : 1);'\'
+check "lint: the note counts by rule and names the first finding; clean says clean" 'node --input-type=module -e "$LINT"'\''
+  const stub = [{ id: "A", milestone: "M1", steps: ["x", "y"] }, { id: "B", milestone: "M1", steps: ["y"] }, { id: "C", milestone: "M2", steps: ["z"] }];
+  process.exit(lintNote(lint(stub)) === "lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor"
+    && lintNote([]) === "lint: clean" ? 0 : 1);'\'
+printf '%s\n' '{"features":[{"id":"A","milestone":"M1","steps":["works correctly","`lib/x.mjs` exists"]},{"id":"B","milestone":"M2","steps":["the suite is green"]}]}' > "$T/lint-list.json"
+printf '%s\n' '{"features":[{"id":"A","milestone":"M1","steps":["`lib/x.mjs` exists"]},{"id":"B","milestone":"M2","after":[],"steps":["the suite is green"]}]}' > "$T/lint-clean.json"
+check "lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean" '
+  out=$($F lint "$T/lint-list.json"); rc=$?; clean=$($F lint "$T/lint-clean.json"); crc=$?
+  [[ $rc == 1 && $out == "$(printf "A\tstep 1\tno-anchor\tworks correctly\nB\tstep -\tundeclared\tM2%s" "'\''s first feature has no \"after\": it waits on every earlier feature")" && $crc == 0 && -z $clean ]] \
+    && [[ $($F lint "$T/lint-list.json" --note; echo "rc=$?") == "lint: 2 findings (no-anchor: 1, undeclared: 1); the list is not edited — first: A step 1 no-anchor"$'\''\n'\''"rc=0" ]] \
+    && h=$(sed -n "1,/^import/p" "$HERE/../lib/features.mjs") && [[ $h == *"lint <list>"* && $h == *no-anchor* && $h == *outside-repo* && $h == *self-match* && $h == *undeclared* && $h == *review-small* && $h == *review-missing* ]]'
+
 # ---- scope.sh (L1-02): capped transient user scopes, through the stub systemd-run/systemctl; one real 64M scope ----
 SC=$HERE/../lib/scope.sh
 sd_with() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { printf "%s", $0; exit }' "$T/systemd.log" 2>/dev/null; }   # the first stub systemd call containing $1
@@ -616,9 +663,23 @@ check "harness version skips ledger commits" 'V1=$(source "$HERE/../lib/version.
   && echo b >> "$VR/lib/x" && V2=$(source "$HERE/../lib/version.sh"; harness_version "$VR"; echo "$HARNESS_VERSION $HARNESS_DIRTY") \
   && V3=$(source "$HERE/../lib/version.sh"; harness_version "$T/nonexistent"; echo "$HARNESS_VERSION $HARNESS_DIRTY") && [[ $V1 == "$VC 0" && $V2 == "$VC 1" && $V3 == "unknown 0" ]]'
 check "harness report prints the writeup" 'grep -q "Spend by role" <<< "$("$H" report demo)"'
+# reviews sized to the milestone (R2): the demo has no review feature, so a copy of its summary gets a review cost
+check "the report lists the review role when a review ran" 'jq ".cost.by_role.review = 1.25" "$RD/summary.json" > "$T/summary-review.json" \
+  && grep -q "^| Spend by role | .*build \$[0-9.]* · review \$1.25 · .*manager (the bash driver) \$0.00 |$" <<< "$(node "$HERE/../lib/summary.mjs" report "$T/summary-review.json")"'
 check "init model resolved to fable"      'grep -q "initializer · claude-fable-5-1" "$HARNESS_STATE/proj/demo/run.log"'
 check "summary end reason is how the run ended" '[[ $(jq -r .end_reason "$RD/summary.json") == done ]]'
 check "a milestone without an after list is noted" 'hlog demo | grep -q "dependencies: M2 has no after list"'
+# the step lint (R3) and the after rule (R10): the initializer runs the live harness's lint; the driver notes what is left, once
+check "the initializer prompt has the resolved lint command" 'grep -qF "\`node $(readlink -f "$HERE/..")/lib/features.mjs lint <run directory>/feature_list.json\`" "$HARNESS_STATE/proj/demo/prompt-initializer.md"'
+check "the initializer prompt sizes reviews to the milestone" 'grep -q "folds its review" "$HARNESS_STATE/proj/demo/prompt-initializer.md" \
+  && grep -q "milestone'\''s size doesn'\''t call for). No output means clean." "$HARNESS_STATE/proj/demo/prompt-initializer.md"'
+check "the initializer prompt asks for after on independent features and on every milestone's first" 'grep -qF "Give \`after\` on any feature that doesn'\''t need its predecessor in the same milestone, and on every milestone'\''s first feature (\`[]\` when independent)" "$HARNESS_STATE/proj/demo/prompt-initializer.md"'
+check "the driver notes the lint once after the initializer" '[[ $(hlog demo | grep -c "lint: ") == 1 ]] \
+  && hlog demo | grep -q "lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor$" && hlog demo | grep -q "dependencies: M2 has no after list"'
+LF=$(git -C "$T/origin.git" log harness/demo --format=%H --grep="^HARNESS: feature list" -1) LI=$(git -C "$T/origin.git" log harness/demo --format=%H --grep="^HARNESS: initializer done" -1)
+check "the driver never edits the list: the initializer's feature_list.json is byte for byte the stub's" '[[ -n $LF && -n $LI ]] \
+  && git -C "$T/origin.git" show "$LF:.harness/runs/demo/feature_list.json" > "$T/list-stub.json" && git -C "$T/origin.git" show "$LI:.harness/runs/demo/feature_list.json" > "$T/list-init.json" \
+  && [[ -s $T/list-stub.json ]] && cmp -s "$T/list-stub.json" "$T/list-init.json"'
 check "NTFY_URL: curl posts the fields as headers, NOTIFY_CMD not called" 'B=$(curl_with "[demo] started:"); [[ $(tail -1 <<< "$B") == https://ntfy.example/t ]] && grep -A1 -x -- -H <<< "$B" | grep -qx "Title: harness" && grep -A1 -x -- --data-binary <<< "$B" | grep -qx "\[demo\] started: 0/3 passing" && [[ ! -e $T/notify-cmd.log ]]'
 check "NTFY_TOKEN: bearer header sent, never logged" 'grep -qx "Authorization: Bearer tok-secret-123" "$T/curl.log" && [[ -d $HARNESS_STATE/proj/demo && -d $RD ]] && ! grep -rq tok-secret-123 "$HARNESS_STATE/proj/demo" "$RD"'
 check "a successful post: a line in run.log only" 'grep -q "notified: harness" "$HARNESS_STATE/proj/demo/run.log" && ! hlog demo | grep -q "notified\|notification failed"'
@@ -1005,6 +1066,41 @@ S9=$T/wt/proj/stale/.harness/runs/stale/summary.json
 check "a limit ending: the cause is the usage limit" '[[ $(jq -r ".features_detail[0].cause" "$S9") == "usage limit" ]]'
 "$H" continue stale --until-epoch $(( $(date +%s) - 60 )) --foreground > "$T/run9d.out" 2>&1
 check "a later deadline: the earlier refusals aren't the cause" '[[ $(jq -r .end_reason "$S9") == deadline && $(jq -r ".features_detail[0].cause" "$S9") == "not reached" ]]'
+
+# ---- run 9e: the deadline verifies a complete milestone once (R5) ----
+# MAX_SESSIONS=2 ends the first segment at the cap with M1 complete and unverified; a continue past its deadline verifies it once
+dl() {   # <run> <stub env for the deadline segment...>; DL_BEFORE=<command> runs between the segments, DL_UNTIL=<s> sets the deadline that far ahead
+  mkdir -p "$HARNESS_STATE/proj/$1" && echo MAX_SESSIONS=2 > "$HARNESS_STATE/proj/$1/run.env"
+  STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" "$1" --spec SPEC.md --foreground > "$T/$1-a.out" 2>&1
+  { head -1 "$HARNESS_STATE/proj/$1/ended"; $F summary "$(list "$1")"; git -C "$T/origin.git" tag -l "run/$1/*"; } > "$T/$1-a.end"   # cap, 2/3, no tag
+  eval "${DL_BEFORE:-}"
+  env "${@:2}" "$H" continue "$1" --until-epoch $(( $(date +%s) + ${DL_UNTIL:--1} )) --foreground > "$T/$1-b.out" 2>&1; }
+dl_status() {   # <run> <status line>: INBOX.md's first line, committed in the run's worktree as a pull from the phone leaves it
+  sed -i "1s/.*/status: $2/" "$T/wt/proj/$1/.harness/runs/$1/INBOX.md" && git -C "$T/wt/proj/$1" commit -qam "phone: status: $2"; }
+vcount_dl() { grep -c '^verify M1' "$T/scratch/proj/$1/sessions.log"; }
+dl dlok STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1
+check "the deadline verifies a complete milestone once and merges it" 'hlog dlok | grep -q "deadline reached: M1 complete but unverified; one verify before the end" \
+  && hlog dlok | grep -q "M1 verified and tagged run/dlok/M1" && hlog dlok | grep -q "M1 merged into main" && on_main run/dlok/M1 \
+  && grep -q "^deadline" "$HARNESS_STATE/proj/dlok/ended" && [[ $(vcount_dl dlok) == 1 ]] \
+  && [[ $(sed 1s/\ ·.*// "$T/dlok-a.end") == "session cap (2)"$'"'"'\n'"'"'"2/3 passing" ]]'
+dl dlstrict STUB_STRICT_VERIFIER=1 STUB_NO_TAMPER=1 STUB_NO_RED=1
+check "a failed verify at the deadline is not retried: M1 needs Michael" 'hlog dlstrict | grep -q "verify M1: A failed the re-check in round 1 of 1; M1 needs Michael" \
+  && grep -q "^deadline" "$HARNESS_STATE/proj/dlstrict/ended" && [[ $(vcount_dl dlstrict) == 1 ]] && ! git -C "$T/origin.git" rev-parse -q --verify refs/tags/run/dlstrict/M1 > /dev/null'
+dl dlthin STUB_THIN_VERIFY=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1
+check "thin evidence at the deadline is not escalated: one verify, M1 not verified" 'hlog dlthin | grep -q "after one verify at the deadline; not verified" \
+  && grep -q "^deadline" "$HARNESS_STATE/proj/dlthin/ended" && [[ $(vcount_dl dlthin) == 1 ]] && ! git -C "$T/origin.git" rev-parse -q --verify refs/tags/run/dlthin/M1 > /dev/null'
+DL_BEFORE='dl_status dlstop "stop going home"' dl dlstop STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1
+check "a stop at the deadline comes first: no verify, M1 left for a continue" 'hlog dlstop | grep -q "deadline reached: M1 complete but unverified; stopped by Michael, so no verify before the end" \
+  && ! hlog dlstop | grep -q "one verify before the end" && [[ $(vcount_dl dlstop) == 0 ]] && grep -q "^deadline" "$HARNESS_STATE/proj/dlstop/ended"'
+DL_BEFORE='echo $(( $(date +%s) + 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"' dl dllimit STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1
+rm -f "$HARNESS_STATE/LIMIT_UNTIL"
+check "a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue" 'hlog dllimit | grep -q "deadline reached: M1 complete but unverified; the usage limit holds until [0-9:]*, so no verify before the end" \
+  && [[ $(vcount_dl dllimit) == 0 ]] && ! hlog dllimit | grep -q "refused" && grep -q "^deadline" "$HARNESS_STATE/proj/dllimit/ended"'
+DL_BEFORE='dl_status dlpause pause' DL_UNTIL=20 dl dlpause STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1
+check "a deadline while paused verifies a complete milestone once too" 'hlog dlpause | grep -q "deadline reached while paused" \
+  && hlog dlpause | grep -q "deadline reached: M1 complete but unverified; one verify before the end" && on_main run/dlpause/M1 \
+  && grep -q "^deadline (paused)" "$HARNESS_STATE/proj/dlpause/ended" && [[ $(vcount_dl dlpause) == 1 ]]'
+rm -f "$HARNESS_STATE"/queue/*-continue-dl*.args   # the first segments' caps queued automatic continuations
 
 # ---- run 10: merges refused (MERGE_POLICY=auto but GitHub says no) → `harness merge` later ----
 STUB_REFUSE_MERGE=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" later --spec SPEC.md --foreground > "$T/run10.out" 2>&1
