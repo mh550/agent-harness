@@ -1,0 +1,7 @@
+{"feature":"L5","kind":"verify","outcome":"passes","summary":"L5-01 holds: queue.sh reloads config each loop and logs the change; 1→2 and 2→1 checks pass; decision file, architecture §12 and README present; suite 325/325.",
+"evidence":[
+{"feature":"L5-01","step":1,"ran":"read lib/queue.sh:44-51; grep POLL lib/config.sh","saw":"harness_config /nonexistent at top of each iteration, logs 'MAX_PARALLEL_RUNS old → new (config reloaded)'; POLL set only at line 18, config doesn't touch it","holds":true},
+{"feature":"L5-01","step":2,"ran":"bash tests/run.sh; read check 'MAX_PARALLEL_RUNS 1 → 2 ... starts the second entry'","saw":"PASS; asserts no early start, one '1 → 2' line, both runs alive, one 'runner up'","holds":true},
+{"feature":"L5-01","step":3,"ran":"bash tests/run.sh; check 'MAX_PARALLEL_RUNS 2 → 1 stops no running run; third entry waits'","saw":"PASS; asserts low gating, third starts after drop under limit","holds":true},
+{"feature":"L5-01","step":4,"ran":"ls decision file; grep architecture.md, README.md","saw":"decision file exists with SIGHUP rejected; architecture.md:378 and README:26 say it reloads each poll","holds":true},
+{"feature":"L5-01","step":5,"ran":"bash -n lib/queue.sh; bash tests/run.sh","saw":"ok; 325/325 checks passed, 0 FAIL","holds":true}]}
