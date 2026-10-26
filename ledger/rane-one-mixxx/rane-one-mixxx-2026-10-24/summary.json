@@ -3,73 +3,150 @@
   "project": "rane-one-mixxx",
   "branch": "harness/rane-one-mixxx-2026-10-24",
   "started": "2026-10-24T04:27:28.000Z",
-  "ended_at": "2026-10-24T09:37:45.000Z",
-  "end_reason": "waiting on Michael: M5-06",
-  "continuations": 0,
+  "ended_at": "2026-10-26T09:29:19.000Z",
+  "end_reason": "done",
+  "continuations": 1,
   "features": {
     "total": 19,
-    "passing": 9,
-    "verified": 0,
-    "merged": 0
+    "passing": 19,
+    "verified": 19,
+    "merged": 19
   },
   "milestones": [
     {
       "id": "M5",
       "features": 10,
-      "passing": 9,
-      "verified": false,
-      "merged": false
+      "passing": 10,
+      "verified": true,
+      "merged": true
     },
     {
       "id": "M6",
       "features": 9,
-      "passing": 0,
-      "verified": false,
-      "merged": false
+      "passing": 9,
+      "verified": true,
+      "merged": true
     }
   ],
   "tests": {
     "start": 868,
-    "end": 1057
+    "end": 1262
   },
   "cost": {
-    "total": 72.51,
-    "per_passing_feature": 8.06,
+    "total": 111.08,
+    "per_passing_feature": 5.85,
     "by_role": {
       "init": 5.24,
-      "plan": 1.83,
-      "build": 8.35,
-      "check": 41.52,
-      "docs": 0.58,
-      "review": 13.7,
-      "verify": 1.15,
-      "retro": 0.14
+      "plan": 4.98,
+      "build": 32.49,
+      "check": 45.87,
+      "docs": 1.03,
+      "review": 19.08,
+      "verify": 2.1,
+      "retro": 0.28
     },
     "by_model": {
       "claude-fable-5-1": 5.24,
-      "claude-opus-5-5": 65.4,
-      "claude-sonnet-5-5": 1.87
+      "claude-opus-5-5": 102.42,
+      "claude-sonnet-5-5": 3.41
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 5.17,
-    "sessions_h": 5.13,
-    "driver_h": 0.04,
+    "wall_h": 7.81,
+    "sessions_h": 7.72,
+    "driver_h": 0.09,
     "by_role_h": {
       "init": 0.19,
-      "plan": 0.1,
-      "build": 0.49,
-      "check": 2.4,
-      "docs": 0.05,
-      "review": 1.81,
-      "verify": 0.08,
-      "retro": 0.01
+      "plan": 0.3,
+      "build": 2.12,
+      "check": 2.66,
+      "docs": 0.11,
+      "review": 2.12,
+      "verify": 0.22,
+      "retro": 0.02
     }
   },
+  "tokens": {
+    "in": 1226,
+    "cache_read": 56932327,
+    "cache_write": 2154444,
+    "out": 680777,
+    "cache_hit_rate": 0.964,
+    "context_peak": 184887,
+    "by_role": {
+      "init": {
+        "in": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "out": 0
+      },
+      "plan": {
+        "in": 70,
+        "cache_read": 3642510,
+        "cache_write": 152046,
+        "out": 60372
+      },
+      "build": {
+        "in": 684,
+        "cache_read": 33602693,
+        "cache_write": 1291519,
+        "out": 441391
+      },
+      "check": {
+        "in": 206,
+        "cache_read": 8902301,
+        "cache_write": 193480,
+        "out": 51251
+      },
+      "docs": {
+        "in": 26,
+        "cache_read": 684502,
+        "cache_write": 65364,
+        "out": 12092
+      },
+      "review": {
+        "in": 168,
+        "cache_read": 7902271,
+        "cache_write": 277461,
+        "out": 98385
+      },
+      "verify": {
+        "in": 62,
+        "cache_read": 2052959,
+        "cache_write": 149063,
+        "out": 15262
+      },
+      "retro": {
+        "in": 10,
+        "cache_read": 145091,
+        "cache_write": 25511,
+        "out": 2024
+      }
+    }
+  },
+  "per_verified_feature": {
+    "cost": 5.85,
+    "tokens": 3145725
+  },
+  "orientation": {
+    "tokens": 1259125,
+    "turns": 21,
+    "seconds": 219.5
+  },
+  "rework": [
+    "M5-06",
+    "M5-10"
+  ],
+  "first_attempt_pass_rate": 0.89,
+  "verify_fail_rate": 0.05,
+  "harness": {
+    "version": "0b9b2a9",
+    "dirty": false
+  },
   "sessions": {
-    "total": 15,
-    "real": 15,
+    "total": 28,
+    "real": 28,
     "environmental": 0
   },
   "guards": {
@@ -78,7 +155,7 @@
     "verify_failed": 1,
     "limit_waits": 0,
     "verify_escalations": 0,
-    "merges": 0
+    "merges": 2
   },
   "features_detail": [
     {
@@ -87,8 +164,8 @@
       "kind": "plan",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 6,
@@ -102,8 +179,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 8,
@@ -117,8 +194,8 @@
       "kind": "check",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 19,
@@ -132,8 +209,8 @@
       "kind": "check",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 26,
@@ -147,8 +224,8 @@
       "kind": "check",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 28,
@@ -161,15 +238,15 @@
       "milestone": "M5",
       "kind": "check",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 2,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 3,
       "refused": 0,
-      "minutes": 38,
-      "cost": 10.15,
-      "cause": "waiting on Michael",
-      "detail": "Michael to reword M5-06 step 4 (deck 2 bottom pinned as a sag) or wait for the round 2 torque-HIGH take"
+      "minutes": 42,
+      "cost": 11.05,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "M5-07",
@@ -177,8 +254,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 21,
@@ -192,8 +269,8 @@
       "kind": "check",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 33,
@@ -207,8 +284,8 @@
       "kind": "docs",
       "model": "sonnet",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 3,
@@ -222,8 +299,8 @@
       "kind": "review",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 2,
       "refused": 0,
       "minutes": 108,
@@ -236,135 +313,135 @@
       "milestone": "M6",
       "kind": "plan",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on M5-06, which is waiting on Michael"
+      "minutes": 12,
+      "cost": 3.15,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "M6-02",
       "milestone": "M6",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on M5-06, which is waiting on Michael"
+      "minutes": 16,
+      "cost": 2.9,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "M6-03",
       "milestone": "M6",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on M5-06, which is waiting on Michael"
+      "minutes": 21,
+      "cost": 5.67,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "M6-04",
       "milestone": "M6",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on M5-06, which is waiting on Michael"
+      "minutes": 19,
+      "cost": 5.07,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "M6-05",
       "milestone": "M6",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on M5-06, which is waiting on Michael"
+      "minutes": 13,
+      "cost": 3.92,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "M6-06",
       "milestone": "M6",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on M5-06, which is waiting on Michael"
+      "minutes": 29,
+      "cost": 6.58,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "M6-07",
       "milestone": "M6",
       "kind": "check",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on M5-06, which is waiting on Michael"
+      "minutes": 11,
+      "cost": 3.45,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "M6-08",
       "milestone": "M6",
       "kind": "docs",
       "model": "sonnet",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on M5-06, which is waiting on Michael"
+      "minutes": 3,
+      "cost": 0.45,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "M6-09",
       "milestone": "M6",
       "kind": "review",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on M5-06, which is waiting on Michael"
+      "minutes": 19,
+      "cost": 5.38,
+      "cause": null,
+      "detail": null
     }
   ]
 }

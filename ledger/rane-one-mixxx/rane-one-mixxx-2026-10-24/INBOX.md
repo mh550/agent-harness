@@ -15,3 +15,6 @@ Pick one and write it under `## Answers`:
   (`HARDWARE-TESTS.md` Round 2) to show whether deck 2 holds 0.5× there.
 
 ## Answers
+
+### 2026-10-26 02:51 (local)
+(a): reword M5-06 step 4 as you proposed: deck 1 top/centre/bottom and deck 2 top/centre within ±0.5 %; deck 2 bottom pinned as a sag (0.8–7.3 % under 0.5×), reaching 0.5× ±0.5 % in a 250 ms window in sweeps 2 and 3.

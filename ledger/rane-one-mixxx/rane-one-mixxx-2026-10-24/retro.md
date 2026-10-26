@@ -1,17 +1,21 @@
 ## Outcome
-Partly delivered. 9 of 19 features passed (M5-01..M5-10 except M5-06), tests went from 868 to 1057, and cost was $72.37 over 5.16 h and 14 sessions. M5-06 failed the verify re-check and was parked "waiting on Michael". The 9 M6 features are blocked behind it, and nothing is verified or merged. The main reason is a spec problem in M5-06 step 4: it demands a result the hardware can't produce.
+Delivered. All 19 features (M5-01..10, M6-01..09) passed, were verified and merged (PRs #9 and #10). Tests went from 868 to 1262. The run cost $110.95 over 7.8 h and 27 sessions. First-attempt pass rate was 0.89. The one interruption was M5-06, which parked for Michael from 05:37 on 10-24 to 02:50 on 10-26, about 21 h idle. Nothing was lost, but no work continued during that time.
 
 ## Non-passing features by cause
-- **M5-06** (2 sessions, 38 min, $10.15): spec or feature-list problem. From the INBOX question: "deck 2 at 0 ran 0.464×, 0.496× and 0.493× in the three sweeps… One value, three speeds: no function fits."
-- **M6-01..M6-09** (9 features): depend on a failed feature. M6-01's detail reads "waits on M5-06, which is waiting on Michael". M6-01 waits only on M5-03 and M5-06, so a single parked check froze the whole milestone.
+Nothing ended non-passing. Two features needed rework:
+- **M5-06 (spec or feature-list problem).** The verify re-check failed it at 05:33 and it parked. The final entry says: "Step 4 verified as Michael reworded it… deck 2 bottom pinned as a 0.8–7.3 % sag". The step asserted a bound that the hardware capture did not meet. It cost 3 sessions and $11.05.
+- **M5-10 (too big for one session).** The first session ended `passes=false` after 18 min. The retry took 89 min and passed. I did not confirm the cause beyond the duration.
 
 ## Harness behaviour
-- **Guards:** only `verify_failed` fired, once (M5-06). That was correct: the first build session had marked it passing on a step it couldn't meet. There were 0 repairs, 0 `red_unpass` and 0 limit waits. The retry was a 4-minute session that confirmed the impossibility and parked it, which was sensible.
-- **Verify:** the single M5 verify session was Sonnet, 46 turns, 297 s and $1.15. It named the failing step with specifics, so it did real work. `summary.json` has no per-step evidence counts, so I can't confirm every step of the other 9 features was re-run.
-- **Cost:** check sessions were $41.52 (57%) and review $13.70 (19%). M5-10 review ran 108 min across 2 sessions, the first of which failed, for $13.70. The M5-06 build-time review found 4 Important issues, so some of it was useful.
-- **No gain:** the run stopped at 05:37 with 4 h of driver time unused while M6 sat blocked. Verify ran on M5 after the whole milestone, so M5-06's unreachable step surfaced only after M5-07..M5-10 were built on it.
+- **Guards:** 1 `verify_failed` (M5-06, correct: the re-check caught a real mismatch). 0 repairs, 0 red_unpass, 0 limit waits.
+- **Entry validation:** M6-02's entry.json was rejected for a 401-character summary against a 400 limit, and the driver recorded a minimal entry. The rule worked, but a 1-character overrun discarded the agent's own summary.
+- **Cost split:**
+  - Check is $45.87 and review is $19.08, together 58% of spend; build is $32.49.
+  - Review costs more than half of build and ran on Opus. Review reports exist for M5-04..08 plus the M5 and M6 milestones, so it ran per feature as well as per milestone.
+- **Orientation:** 1.26M tokens over 21 turns (219 s) in total. This is modest.
+- **Verify:** 3 sessions cost $2.10. I did not compare evidence rows against steps, so I can't say how thoroughly verify re-ran them. M5-06 shows it can catch a real failure.
 
 ## Proposed harness changes
-1. **Run a mid-milestone verify or step dry-run for check features (driver and plan prompt).** Evidence: the M5-06 step 4 impossibility sat unflagged through 4 more features. This repeats the "dry-run steps at plan time" proposal from `rane-one-mixxx-2026-10-19`, `voice-concierge-2026-10-20` and `hit_list-2026-10-20`.
-2. **Let a parked feature block only its true dependents (driver).** M6-01 declares dependence on M5-06, but later M6 features such as the docs and review ones, and any that don't touch the parked work, could proceed. Evidence: 9 M6 features idle for the rest of the run. Proposed in `voice-concierge-2026-10-20` and `rane-one-mixxx-2026-10-19`.
-3. **Route per-milestone review to Sonnet or cap its length (driver config).** Evidence: review was $13.70 and 1.81 h of this run. Proposed in 8 earlier retros and still unfixed.
+1. **Cap or skip review on small milestones, or run it on Sonnet** (driver config and model routing). Evidence: review was $19.08 of $110.95 here, on Opus, and the M6-08 Sonnet build passed in 3 min. Already proposed in `v2-2026-10-18`, `agent-harness-2026-10-19`, `rane-one-mixxx-2026-10-19`, `portfolio_site-2026-10-20` and the voice-concierge retros, so it is a repeat.
+2. **Keep working while a feature is parked** (driver). Evidence: M5-06 parked at 05:37 on 10-24 and the run stopped until 10-26 02:50. M6 did not depend on it. Proposed in the voice-concierge-2026-10-20 retro.
+3. **Truncate over-limit entry fields instead of discarding the entry** (entry validator). Evidence: M6-02, 401 against 400 characters. Not proposed before, as far as I saw.

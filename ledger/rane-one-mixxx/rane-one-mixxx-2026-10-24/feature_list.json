@@ -105,7 +105,7 @@
         "npm test is green."
       ],
       "after": ["M5-02"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-07",
@@ -183,7 +183,7 @@
         "npm test is green."
       ],
       "after": ["M5-03", "M5-06"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-02",
@@ -198,7 +198,7 @@
         "tests/mapping-xml.test.mjs is extended: every `<control>` in the XML names a function that exists after loading, and every status/channel/number row in reference/rane-one-mk1-midi-map.csv except the platter CC 6 and pitch bend rows has a `<control>` entry; the second assertion is marked `todo` until M6-06 and the test says so.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-03",
@@ -213,7 +213,7 @@
         "`node --check mapping/Rane-One-scripts.js` passes and `grep -c 'midi.send' mapping/Rane-One-scripts.js` prints 0.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-04",
@@ -228,7 +228,7 @@
         "The XML has `<control>` entries for both bytes of the 14-bit fader and for every Pot and encoder, and a test asserts the XML has no duplicate (status, channel, number) entry.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-05",
@@ -243,7 +243,7 @@
         "The pad-mode decision from the M6 plan is cited in a comment at the pad code with the mode-button to function table.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-06",
@@ -258,7 +258,7 @@
         "Every XML entry for a control the controls CSV marks `mk2` or `unknown` carries `UNVERIFIED` in its XML comment.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-07",
@@ -273,7 +273,7 @@
         "The Mixxx this feature started is stopped (`tools/mixxx-dev stop`, then `tools/mixxx-dev status` prints `stopped`), and the route check output from `tools/mixxx-dev start` quoted in the check file shows the mixxx-dev null sink only.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-08",
@@ -288,7 +288,7 @@
         "npm test is green."
       ],
       "after": ["M6-06"],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-09",
@@ -302,7 +302,7 @@
         "docs/spec.md §5 M6 is marked done with the date and links the plan, M6-findings.md and the replay check file; docs/decisions.md's M6 entries each have a `To undo` line.",
         "npm test is green."
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
