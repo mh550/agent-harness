@@ -64,6 +64,10 @@ JSON
     ok 1.5 ;;
   "# Coding session")
     [[ ${STUB_SLOW_CODING:-} ]] && { touch "$STUB_DIR/slow-coding"; sleep "$STUB_SLOW_CODING"; }   # a session to interrupt
+    # a file, not an env flag: it reaches tmux-started runs. With $STUB_DIR/hold-coding, a run's coding sessions say
+    # held-<run> and wait (≤ 180 s) for release-<run>: the suite decides when each run of a parallel queue ends (L5)
+    if [[ -f $STUB_DIR/hold-coding ]]; then touch "$STUB_DIR/held-$HARNESS_RUN_ID"
+      for _ in $(seq 900); do [[ -f $STUB_DIR/release-$HARNESS_RUN_ID ]] && break; sleep 0.2; done; fi
     if [[ ${STUB_WEEKLY:-} ]]; then   # the rate-limit event every real session carries: this one reports the 7-day window
       now=$(date +%s); echo "{\"type\":\"rate_limit_event\",\"rate_limit_info\":{\"status\":\"allowed\",\"resetsAt\":$(( now + 3600 )),\"rateLimitType\":\"five_hour\",\"unifiedWindows\":{\"five_hour\":{\"utilization\":0.2,\"resetsAt\":$(( now + 3600 ))},\"seven_day\":{\"utilization\":$STUB_WEEKLY,\"resetsAt\":$(( now + 259200 ))}}}}"
     fi
