@@ -8,7 +8,7 @@
         "the plan names the stub flag the retro branch of tests/stub-claude.sh gains to write retro-proposals.json (`STUB_RETRO_PROPOSALS`), the new check files tests/checks/35-backlog-pure-m1.sh and tests/checks/36-run-16-retro-backlog.sh, and the eight seed rows of docs/specs/2026-10-25-memory.backlog-seed.jsonl exactly as the spec's M1 table gives them (ids, titles, statuses, spec fields)",
         "the plan lists the only debrief lines it changes: lib/debrief.sh's `## Earlier retros` gatherer block (lines 164-165 on main) and prompts/debrief.md's `## For the next interactive session` section",
         "the suite is green" ],
-      "after": [], "passes": false },
+      "after": [], "passes": true },
 
     { "id": "M1-02", "milestone": "M1", "kind": "build", "model": "opus",
       "description": "lib/backlog.mjs (pure, exported, node standard library only) merges a run's proposals into backlog rows, sets a status with its links, orders a listing and imports rows by id, each proven by a check in tests/checks/35-backlog-pure-m1.sh written first.",
