@@ -1,9 +1,10 @@
-# Context pack for `F1-01`
+# Context pack for `F1-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (F1-01, affects F1-02): The new `test count: no match` note will appear in every stub run whose suite prints nothing (demo uses `test ! -f BROKEN`); check no existing check counts harness-log.md lines exactly. → entries.jsonl:2
 - Discovery (init, affects run): The suite split (docs/specs/2026-10-26-suite-split.md) has NOT landed on main: tests/run.sh is still one 1634-line file and tests/checks/ does not exist; the split lives unmerged on origin/harness/agent-harness-2026-10-26 (the lanes run, 2/17 passing). The brief says build on main as it stands, so each new check goes under the matching `# ---- <title> ----` section of tests/run.sh (a new marker line for a new topic, so the split script makes it a file later); use tests/checks/<topic>.sh only if that directory exists in your worktree when you start. → entries.jsonl:1
 - Discovery (init, affects F1-01, F1-02): Never read ~/.local/state/harness, ledger/ or journal/raw/ (CLAUDE.md), so R1's fixtures cannot be copied from real runs' check.out. Generate them on this box: node 24 (`node --test` for node:test), ~/.local/bin/pytest (python3 -m pytest is not installed; call the binary), cargo (a two-test crate in /tmp). go and jest are not installed: copy their documented summary lines (go: `--- PASS: TestX (0.00s)` and `ok pkg 0.01s`; jest: `Test Suites: N passed, N total` then `Tests: M passed, M total`) and cite the source URL on the fixture's first line. → entries.jsonl:1
 - Discovery (init, affects run): The stub claude (tests/stub-claude.sh) acts on the prompt's first line and STUB_* env flags (STUB_PHONE_STOP=1 writes `status: stop` to INBOX.md through a clone of the origin; STUB_STRICT_VERIFIER, STUB_THIN_VERIFY, STUB_LENIENT, STUB_NO_TAMPER, STUB_NO_RED). Its initializer writes a fixed list A, B (M1) and C (M2; STUB_INDEPENDENT_M2=1 gives C `after: []`) with steps x, y, z, so lint will report findings in every stub run: assert counts, not clean. Every new flag goes in the stub's header comment. → entries.jsonl:1
@@ -13,4 +14,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Lately in the run
 
+- 2026-10-26 09:07 · F1-01 · passes: Wrote docs/plans/2026-10-26-F1-driver-cli.md: per item (R1, R4, R6, R7, R11) the files, harness-log.md lines, check names and tests/run.sh sections, the five fixtures and their sources, the five decision files, and what main already has (R8 done at lib/driver.sh:104/108). No code changed.; tests 325 → 325; files docs/plans/2026-10-26-F1-driver-cli.md → entries.jsonl:2
 - 2026-10-26 08:51 · init · passes: 12 features: F1 6 (plan, R1 test counts, R4 verify clears the suite cache, R6+R11 queue continuations and numbering, R7 stop reason, review), F2 6 (plan, R3 lint pure, lint wiring + R10 after line, R2 review sizing, R5 verify before the deadline, review). F1 and F2 independent (F2-01 after []; F2 chained inside). F3 dropped per the brief.; files .harness/runs/agent-harness-2026-10-26-2/feature_list.json → entries.jsonl:1
