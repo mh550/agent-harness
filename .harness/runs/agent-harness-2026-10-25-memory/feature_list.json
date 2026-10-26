@@ -31,7 +31,7 @@
         "`harness backlog set` with an unknown id, a bad status or a missing argument exits 1 with one usage line and leaves the file byte-identical (a check); `harness backlog` with no store prints `(empty)` and exits 0",
         "README.md gives Michael the one command to run on the live checkout, `harness backlog import docs/specs/2026-10-25-memory.backlog-seed.jsonl`, and says the build never ran it; after the suite `git status --porcelain -- ledger/` in this worktree is empty (the real ledger untouched); `bash -n lib/backlog.sh bin/harness` passes",
         "the suite is green" ],
-      "after": ["M1-02"], "passes": false },
+      "after": ["M1-02"], "passes": true },
 
     { "id": "M1-04", "milestone": "M1", "kind": "build", "model": "opus",
       "description": "The retro writes `<run dir>/retro-proposals.json` beside retro.md and the driver merges it into the ledger's retro-backlog.jsonl in finish() inside the ledger commit: a new id becomes a `proposed` row, a known id gains the run in runs_seen, bad JSON is noted and skipped, and restrict still reverts a retro's own edit to the backlog.",

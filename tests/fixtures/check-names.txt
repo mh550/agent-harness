@@ -168,6 +168,11 @@ gc never removes a worktree that is no run's (its branch isn't harness/<run>), e
 gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
 gc removed the finished worktree
 gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+harness backlog import of the seed file gives 8 rows, and 8 again on a second import
+harness backlog set flips test-counts to specced and list shows the spec
+harness backlog set with an unknown id, a bad status or a missing argument exits 1, store byte-identical
+harness backlog with LEDGER_COMMIT=1 commits retro-backlog.jsonl alone, one ledger commit per write
+harness backlog with no store prints (empty)
 harness continue of a run stopped from the phone: INBOX.md's status: stop goes back to run, so it doesn't stop again
 harness desk --all
 harness desk --close <run>

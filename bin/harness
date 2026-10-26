@@ -15,6 +15,10 @@
 #   harness queue park <n> [<why>] | unpark <n> set an entry aside (listed with its reason, skipped) · back at the end
 #   harness sync                                 the live checkout level with origin: pull merged PRs, push ledger
 #                                                commits (the queue runner does it whenever no run is alive)
+#   harness backlog [list]                       the retro backlog (ledger/retro-backlog.jsonl): proposed first, most seen first
+#   harness backlog set <id> <status> [--spec <path>] [--pr <url>] [--note <text>]
+#                                                move an item: proposed|specced|queued|merged|dropped (a ledger commit)
+#   harness backlog import <file.jsonl>          merge rows by id (the seed: docs/specs/2026-10-25-memory.backlog-seed.jsonl)
 #   harness status [<run-id>]                    every run: running / ended (why), features, last log lines
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
 #   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
@@ -515,6 +519,7 @@ case ${1:-help} in
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
   sync) shift; exec "$HARNESS_HOME/lib/sync.sh" "$@" ;;
+  backlog) shift; exec "$HARNESS_HOME/lib/backlog.sh" "$@" ;;
   desk) shift; exec "$HARNESS_HOME/lib/desk.sh" "$@" ;;
   eval) shift; exec "$HARNESS_HOME/lib/eval.sh" "$@" ;;
   *) sed -n '2,/^set -/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;   # the header, whatever its length
