@@ -265,3 +265,24 @@ Each: title, provenance (run, feature, spec item), then finding · choice · rej
   one. Rejected: staying silent on empty output (then `? → ?` in a report has no explanation).
 - D3 *default*: go is counted from `--- PASS` lines only, so it needs `go test -v`; plain `go test` is a no-match
   (noted). Rejected: counting `ok <pkg>` lines (packages, not tests).
+
+## Review (F1-06)
+
+An Opus subagent read `git diff main...HEAD -- lib bin prompts tests docs README.md journal/decisions` (1283 lines,
+from `/tmp/harness/agent-harness/agent-harness-2026-10-26-2/F1-review.diff`). Each finding was confirmed against the code
+before it was fixed; each Important one has a check that failed on the old code and passes now (all in `tests/run.sh`).
+
+| Severity | Where | Finding | Done |
+|---|---|---|---|
+| Important | `lib/driver.sh` `demote_requests` | The order was when the driver acted on the stop (between sessions), not when Michael gave it: a request queued after `harness stop` was demoted too and never started | demote only entries no newer than `STOP` (else INBOX.md); check `a request queued after the stop (before the driver acts on it) stays requested` (new stub flag `STUB_CLI_REQUEST`) |
+| Important | `bin/harness` `queue add --continue` | A request over a queued automatic entry only added `--requested`: it kept the driver's `--until-epoch` (a past deadline: the run ends at once) or the debrief's options and dropped the request's own | the request replaces the entry, options included; check `a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)` |
+| Important | `bin/harness` `cmd_continue` | A phone stop's `status: stop` stayed in INBOX.md, so any continuation (requested or by hand) stopped again at its first `control()` | `harness continue` of a run Michael stopped sets that line back to `status: run`; the driver notes it; check `harness continue of a run stopped from the phone: INBOX.md's status: stop goes back to run, so it doesn't stop again` |
+| Important | `lib/page.mjs` main, `lib/summary.mjs` report/trends | A `\|` in a stop reason: page.mjs split `<summary.json>\|<state>` at the last `\|`, so the card vanished; the table rows broke | split at the first `\|`; table cells escape it; check `a stop reason with \| keeps its card on the debrief page and is one cell in report.md and trends` |
+| Minor | `lib/summary.mjs` | The stop note in harness-log.md still fed the cause regexes: `status: stop B failed the re-check` made B rework | harness-log.md is read with each reason cut; check `a stop reason's words are never read as a feature's cause (A failed the re-check)` |
+| Minor | `lib/driver.sh` `verify` | The cache marker was keyed before the init; an init that rewrites a file leaves the session's marker in place | `run_init fresh` clears it after the init, just before the suite; run 13c still catches a stale marker |
+| Minor | docs, decision | vitest prints `Tests  N passed (N)` with no colon: counted by the last rule, not the jest one | docs and the decision file say so; no rule change without a real vitest fixture |
+| Minor | `lib/driver.sh:311` | The no-match note fires once, also on a red suite that crashed before any test; a later green run then sets tests-start | not fixed: the note says what was seen then; the report's numbers come from tests-start/end, which stay right |
+| Minor | `lib/driver.sh` `stop_why` | Trailing punctuation stays (`status: stop "spec changed"` → `spec changed"`) | not fixed: it is Michael's text, shown as typed |
+| Minor | `bin/harness` `queue add` | The upgrade races the runner moving the entry to done/; parked (`held/`) automatic entries aren't upgraded, so a request adds a second entry | not fixed: the race is a second wide; a parked entry is set aside by Michael, a new request beside it is what he asked for |
+| Simplification | `lib/driver.sh` loop | `[[ $c == stop ]]` tested twice | one block |
+| Simplification | `lib/page.mjs`, `lib/summary.mjs` | the same `stopped by Michael` strip in both | not done: two one-line regexes in files that share no module today |

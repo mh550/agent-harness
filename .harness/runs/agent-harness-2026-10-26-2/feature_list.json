@@ -95,7 +95,7 @@
         "docs/architecture.md (§4 state, §7 guards, §12 queue), README.md and the five F1 decision files match the code as merged (each behaviour's harness-log.md line in the docs is the one the code writes: `grep -rF` of each noted line in lib/ and docs/)",
         "`bash -n` on every shell file in lib/ bin/ tests/ and `node --check` on every lib/*.mjs pass; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F2-01",

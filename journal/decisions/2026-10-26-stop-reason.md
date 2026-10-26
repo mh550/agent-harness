@@ -24,7 +24,11 @@ plan `docs/plans/2026-10-26-F1-driver-cli.md` § R7)*
   - The reason is Michael's free text, so nothing reads its words as the end's kind: `lib/summary.mjs` strips only
     the trailing ` · YYYY-MM-DD HH:MM:SS` from `ended` (a reason may hold ` · 2026-11`) and matches its causes'
     keywords (`usage limit`, `blocked`, …) on `stopped by Michael` alone; `lib/page.mjs`'s card tone does the same
-    (`stopped by Michael: blocked, failed` is muted, not a warning). `harness pause|resume` refuse extra arguments.
+    (`stopped by Michael: blocked, failed` is muted, not a warning). summary.mjs reads harness-log.md with each
+    `stopped by Michael: <why>` cut to `stopped by Michael`, so `status: stop B failed the re-check` makes no cause or
+    rework of B; a `|` in a reason is escaped in report.md's and trends' table cells, and page.mjs splits its
+    `<summary.json>|<state>` arguments at the first `|` (F1-06 review: the card vanished). `harness pause|resume`
+    refuse extra arguments.
     Left alone: the reason is cut at 200 characters by bash, which counts bytes in a non-UTF-8 locale, so a long
     non-ASCII reason may be split inside a character there.
   - `retro()` renders with `HARNESS_END_REASON=$END_REASON`, and `prompts/retro.md` says `It ended: {{END_REASON}}`,

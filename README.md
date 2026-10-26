@@ -30,7 +30,7 @@ never runs two runs of one project at once, so a second entry for a busy repo wa
 ```bash
 harness queue add ~/projects/pathways --spec OVERNIGHT.md --brief "T5, T7, then T6"
 harness queue add ~/projects/hit_list --spec docs/next.md
-harness queue add --continue dj-2026-10-17   # a request: it starts even if you stopped the run (a stop after it wins)
+harness queue add --continue dj-2026-10-17   # a request: it starts even if you stopped the run (a stop after it wins; it replaces a queued one)
 harness queue start --until 07:30        # tmux h-queue; no run starts after 07:30, and each one stops by then
 ```
 
@@ -116,6 +116,8 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
   `status: stop`, optionally with why (`status: stop the spec changed`); answers under `## Answers`. The driver pulls before every session.
 - **Why a stop:** either reason ends up in harness-log.md, `ended`, summary.json's `end_reason` and the retro prompt as
   `stopped by Michael: <why>` (the `--why` one wins when both are set); without one, `stopped by Michael` as before.
+  `harness continue` (or a queued request) of a run stopped from the phone sets its `status: stop` line back to
+  `status: run`, so the continuation doesn't stop again at once.
 - **Box:** `harness pause|resume|stop|answer <run>` (`harness stop <run> --why "<text>"` records why), `harness attach <run>` (tmux: driver · log · supervisor). When the driver exits, the
   supervisor window closes, the driver window's scrollback goes to `<state>/tmux-driver.txt` (its last 2000 lines, tmux's `history-limit`;
   `run.log` beside it has everything), and the session `h-<run>`

@@ -926,6 +926,26 @@ check "a stop with a reason: an automatic continuation is still skipped; summary
   && [[ $(jq -r .end_reason "$T/wt/proj/whycli/.harness/runs/whycli/summary.json") == "stopped by Michael: the spec changed" ]] \
   && "$H" queue add --continue whycli > /dev/null && grep -qx -- --requested "$(compgen -G "$HARNESS_STATE/queue/*-continue-whycli.args")"'
 rm -f "$HARNESS_STATE"/queue/*-continue-whycli.args
+# F1-06 review: the order is when Michael spoke, the INBOX stop belongs to its segment, a reason's | is text
+STUB_CLI_STOP=- STUB_CLI_REQUEST="from Michael, after the stop" "$H" start "$T/proj" whylate --spec SPEC.md --foreground > "$T/run2b-late.out" 2>&1
+check "a request queued after the stop (before the driver acts on it) stays requested" 'f=$(compgen -G "$HARNESS_STATE/queue/*-continue-whylate.args") \
+  && grep -qx -- --requested "$f" && grep -qx "from Michael, after the stop" "$f" && hlog whylate | grep -q "· stopped by Michael$" && ! hlog whylate | grep -q "is automatic now"'
+rm -f "$HARNESS_STATE"/queue/*-continue-whylate.args
+STUB_PHONE_STOP="A failed the re-check" "$H" start "$T/proj" whyback --spec SPEC.md --foreground > "$T/run2b-back.out" 2>&1
+check "a stop reason's words are never read as a feature's cause (A failed the re-check)" 'S=$T/wt/proj/whyback/.harness/runs/whyback/summary.json \
+  && [[ $(jq -r .end_reason "$S") == "stopped by Michael: A failed the re-check" ]] && [[ $(jq -c .rework "$S") == "[]" ]] && [[ $(jq -r "[.features_detail[] | select(.cause == \"failed verify\")] | length" "$S") == 0 ]]'
+echo MAX_SESSIONS=1 > "$HARNESS_STATE/proj/whyback/run.env"
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue whyback --foreground > "$T/run2b-back2.out" 2>&1
+check "harness continue of a run stopped from the phone: INBOX.md's status: stop goes back to run, so it doesn't stop again" 'I=$T/wt/proj/whyback/.harness/runs/whyback/INBOX.md \
+  && ! grep -q "^stopped by Michael" "$HARNESS_STATE/proj/whyback/ended" && [[ $(head -1 "$I") == "status: run" ]] \
+  && hlog whyback | grep -qF "INBOX.md: \`status: stop A failed the re-check\` set back to \`status: run\` (that stop ended the last segment; harness continue started this one)" \
+  && [[ $(git -C "$T/origin.git" show harness/whyback:.harness/runs/whyback/INBOX.md | head -1) == "status: run" ]]'
+rm -f "$HARNESS_STATE"/queue/*-continue-whyback.args
+check "a stop reason with | keeps its card on the debrief page and is one cell in report.md and trends" 'S=$T/wt/proj/whyback/.harness/runs/whyback/summary.json \
+  && echo note > "$T/pipe-note.md" && node "$HERE/../lib/page.mjs" "$T/pipe-note.md" "$T/pipe.html" "$S|stopped by Michael: a|b" && grep -q "whyback" "$T/pipe.html" \
+  && jq ".end_reason = \"stopped by Michael: a|b\"" "$S" > "$T/pipe.json" && node "$HERE/../lib/summary.mjs" report "$T/pipe.json" | grep -qF "| Ended | stopped by Michael: a\|b " \
+  && jq -nc "{run: \"r\", project: \"p\", passing: 0, total: 1, merged: 0, cost: 0, per_passing: null, wall_h: 0, end_reason: \"stopped by Michael: a|b\", causes: {}}" > "$T/pipe.jsonl" \
+  && node "$HERE/../lib/summary.mjs" trends "$T/pipe.jsonl" | grep -qF "| stopped by Michael: a\|b |"'
 
 # ---- run 3: a verifier that always rejects; C is independent of M1 ----
 SPY3='printf "%s · %s\n" "$(printf "%s\n" "$@" | sed -n "s/^Title: //p")" "$(git -C "$STUB_DIR/origin.git" log -1 --format=%s harness/strict)" >> "$STUB_DIR/spy-strict.log"'
@@ -1056,8 +1076,11 @@ B=$(ndb); HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.s
 check "a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)" 'grep -q "starting: harness continue stopreq" "$Q/runner.log" && ! grep -q "skipping queued continuation of stopreq" "$Q/runner.log" \
   && grep -q "skipping queued continuation of stopauto: Michael stopped it" "$Q/runner.log" && grep -q "no-checkout is not a git repository" "$Q/runner.log" && [[ $(ndb) == "$B" ]]'
 "$H" queue add --continue stopauto --automatic > /dev/null
-check "a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too" '[[ $("$H" queue add --continue stopauto) == "already queued: continue stopauto (now requested)" ]] \
+check "a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too" '[[ $("$H" queue add --continue stopauto) == "already queued: continue stopauto (now requested, with this request'"'"'s options)" ]] \
   && grep -qx -- --requested "$(compgen -G "$Q/*-continue-stopauto.args")" && "$H" queue park 1 > /dev/null && grep -q "^  1\. continue stopauto .*(requested)$" <<< "$("$H" queue list | sed -n "/^parked/,\$p")"'
+"$H" queue add --continue stopreq --automatic --keep-attempts --until-epoch 1 > /dev/null
+check "a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)" '[[ $("$H" queue add --continue stopreq --brief "from Michael") == "already queued: continue stopreq (now requested, with this request'"'"'s options)" ]] \
+  && [[ $(cat "$(compgen -G "$Q/*-continue-stopreq.args")") == "$(printf "%s\n" continue stopreq --queued --requested --brief "from Michael")" ]]'
 rm -rf "$HARNESS_STATE/other" "$Q"/*.args "$Q"/held/*
 # the driver's own continuation, after a session cap (run.env outlasts start: MAX_SESSIONS=1 is the initializer alone)
 mkdir -p "$HARNESS_STATE/proj/capped" && echo MAX_SESSIONS=1 > "$HARNESS_STATE/proj/capped/run.env"

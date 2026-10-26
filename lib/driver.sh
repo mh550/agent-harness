@@ -177,8 +177,11 @@ stop_why() {   # → "stopped by Michael[: <why>]": STOP's line (harness stop --
 }
 
 demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
-  local f; for f in "$STATE_ROOT"/queue/*-continue-"$RUN_ID".args "$STATE_ROOT"/queue/held/*-continue-"$RUN_ID".args; do
-    [[ -f $f ]] && grep -qx -- --requested "$f" || continue
+  # the stop's time is when it reached this box (STOP, else INBOX.md pulled), not when the driver got to it: a request
+  # queued after it stays requested
+  local f at=$STATE/STOP; [[ -f $at ]] || at=$RUN_DIR/INBOX.md
+  for f in "$STATE_ROOT"/queue/*-continue-"$RUN_ID".args "$STATE_ROOT"/queue/held/*-continue-"$RUN_ID".args; do
+    [[ -f $f && ! $f -nt $at ]] && grep -qx -- --requested "$f" || continue
     sed -i '/^--requested$/d' "$f" && note "stop: the queued continuation ${f##*/} is automatic now (the stop came after the request)"
   done
 }
@@ -296,7 +299,7 @@ context() {
 # SVC_MEMORY_MAX. timeout bounds the init, not the servers it left once it returned (a timeout takes its process group
 # too); stdin is /dev/null, so no tool waits on the tmux pane. The last init's scope is stopped first: systemd refuses
 # a unit name still loaded (tests/fixtures/systemd-run-unit-exists.txt), and its services would live on beside the new.
-run_init() {
+run_init() {   # [fresh: clear the suite cache's marker for the tree as the init left it, so the suite runs in full]
   local unit; unit=$(scope_unit "$RUN_ID" svc)
   scope_stop "$unit"
   SVC_UP=1 SVC_INIT=1   # before the start: a TERM during the init must still stop what it began (services_down, L2-03)
@@ -304,6 +307,7 @@ run_init() {
   local rc=$?; SVC_INIT=0; echo "(init exit $rc)" >> "$SCRATCH/init.out"
   [[ -n ${SCOPE_BARE:-} ]] && note "init ran uncapped: $SCOPE_BARE"   # systemd refused the unit; its line is in init.out
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")"
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
   [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \
     || rm -f "$STATE/tests-start"
@@ -395,9 +399,8 @@ verify() {
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
   sync_main || touch "$STATE/nomerge-$m"
   # the verified tree's suite runs in full: a session can leave a stale green marker (decisions/2026-10-26-verify-runs-the-suite)
-  rm -f "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")"
   note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
-  run_init
+  run_init fresh
   for model in "$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"; do
     F snapshot "$LIST" > "$STATE/before.json"
     context "$m"   # each round: an escalated verify's pack has the first round's entry
@@ -567,6 +570,10 @@ if [[ -s $STATE/brief.md ]]; then   # a brief given at start or continue: commit
   { [[ -s $RUN_DIR/brief.md ]] && echo; echo "## $(date '+%F %H:%M')"; cat "$STATE/brief.md"; } >> "$RUN_DIR/brief.md"
   : > "$STATE/brief.md"
 fi
+if [[ -s $STATE/inbox-unstopped ]]; then   # harness continue reset a phone stop that ended the last segment
+  note "INBOX.md: \`$(cat "$STATE/inbox-unstopped")\` set back to \`status: run\` (that stop ended the last segment; harness continue started this one)"
+  rm -f "$STATE/inbox-unstopped"
+fi
 commit_all "HARNESS: start run $RUN_ID"
 sync
 # A resumed run (with or without its list) catches up with main and its configuration before any session, the
@@ -665,8 +672,7 @@ while :; do
     done
     log "resumed"; continue
   fi
-  [[ $c == stop ]] && demote_requests
-  [[ $c == stop ]] && { why=$(stop_why); note "$why"; finish "$why"; }
+  [[ $c == stop ]] && { demote_requests; why=$(stop_why); note "$why"; finish "$why"; }
   limit_wait
   (( $(date +%s) >= DEADLINE )) && continue
   verify_ready || continue   # 2 = deferred by a usage limit: wait for the window first

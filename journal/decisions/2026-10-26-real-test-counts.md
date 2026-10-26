@@ -10,8 +10,8 @@
 - **Choice:**
   - **The first rule that matches wins**, in this order: node:test `^(ℹ|#) pass N`; cargo, the **sum** of every
     `test result: <word>. N passed;` line (one per test binary, doc-tests included; before the generic rule, whose
-    `N passed` would take the last); jest/vitest, the `Tests:` line's `N passed` (never `Test Suites:`, whatever the
-    order); go, the count of `--- PASS: ` lines (subtests, indented, count too); then the last `N passed` /
+    `N passed` would take the last); jest, the `Tests:` line's `N passed` (never `Test Suites:`, whatever the
+    order; vitest's `Tests  N passed (N)` has no colon and falls to the last rule, which takes it); go, the count of `--- PASS: ` lines (subtests, indented, count too); then the last `N passed` /
     `N tests passed` (pytest, mocha and the like).
   - **One fixture per runner** in `tests/fixtures/check-{node-test,pytest,jest,cargo,go}.txt`, line 1 a `#` comment
     saying where the text came from. node:test (node 24), pytest (9.1.1) and cargo (1.99.0) were run on this box on

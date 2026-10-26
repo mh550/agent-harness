@@ -10,9 +10,10 @@
   init, the verifier's own `check` and the driver's `green` after a "holds": a red tree was tagged and merged into main.
   The suite reproduces it: on main's driver, run 13c's stale marker gets M1 tagged and merged with `BROKEN` in it.
 - **Choice:**
-  - `verify()` removes `$STATE/green/green-<key>` (key from `lib/treekey.mjs`) **after `sync_main` and before
-    `run_init`**, so the key is the tree being verified (main merged in), and notes `verify <m>: suite cache cleared;
-    the suite runs in full on the verified tree` once per verify.
+  - `verify()` notes `verify <m>: suite cache cleared; the suite runs in full on the verified tree` once per verify
+    and calls `run_init fresh`, which removes `$STATE/green/green-<key>` (key from `lib/treekey.mjs`) **after the
+    init and just before the suite**, so the key is the tree being verified (main merged in, and whatever the init
+    wrote: keyed before it, a regenerated file would leave the session's marker in place; F1-06 review).
   - `run_init`'s check then runs in full and writes a fresh marker only if green; the verifier's `check` may be
     answered from that fresh marker (same tree, just run), and the driver's `green` after a "holds" is the existing
     guard that turns a red tree into `verify <m>: the suite is red on the verified tree (main merged in); not verified

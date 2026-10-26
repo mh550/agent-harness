@@ -229,6 +229,10 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start op
     # a continuation you start gives every feature that isn't passing fresh attempts; an automatic one doesn't
     (( keep )) || { [[ -f $WT/.harness/runs/$RUN_ID/feature_list.json ]] && node "$HARNESS_HOME/lib/features.mjs" reset "$STATE/attempts.json" "$WT/.harness/runs/$RUN_ID/feature_list.json"
       rm -f "$STATE"/needs-* "$STATE"/verify-rounds-* "$STATE"/refused-*; }
+    # a phone stop that ended the last segment would end this one at once: its line goes back to run (the driver notes it)
+    local inbox=$WT/.harness/runs/$RUN_ID/INBOX.md s n
+    if grep -qs '^stopped by Michael' "$STATE/ended" && s=$(grep -n -m1 '^status:' "$inbox" 2> /dev/null) && [[ ${s#*:} =~ ^status:[[:space:]]*stop ]]; then
+      n=${s%%:*}; sed -i "${n}s/.*/status: run/" "$inbox" && echo "${s#*:}" > "$STATE/inbox-unstopped"; fi
     rm -f "$STATE/PAUSE" "$STATE/STOP" "$STATE/ended"
     cmd_start "$PROJECT_DIR" "$RUN_ID" ${rest[@]+"${rest[@]}"} )
 }
@@ -306,8 +310,11 @@ cmd_queue() {
       if [[ ${1:-} == --continue ]]; then
         local run=${2:?usage: harness queue add --continue <run-id>}; shift 2; state_of "$run" > /dev/null
         local mark=(--requested) o=() a; for a in "$@"; do [[ $a == --automatic ]] && mark=() || o+=("$a"); done
-        local q; q=$(compgen -G "$Q/*-continue-$run.args" | head -1) && {   # a request makes an automatic one requested
-          if (( ${#mark[@]} )) && ! grep -qx -- --requested "$q"; then sed -i 's/^--queued$/&\n--requested/' "$q"; echo "already queued: continue $run (now requested)"
+        # a request is the later word: a queued entry becomes this request, its options included (an automatic one's
+        # --until-epoch is a past night's deadline); an automatic add leaves what is queued alone
+        local q; q=$(compgen -G "$Q/*-continue-$run.args" | head -1) && {
+          if (( ${#mark[@]} )); then local was; grep -qx -- --requested "$q" && was="replaced by this request" || was="now requested, with this request's options"
+            printf '%s\n' continue "$run" --queued --requested ${o[@]+"${o[@]}"} > "$q" && echo "already queued: continue $run ($was)"
           else echo "already queued: continue $run"; fi; return; }
         echo "queued: $(basename "$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"})")"
       else

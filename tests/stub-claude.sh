@@ -11,7 +11,8 @@
 # marker for that tree into $HARNESS_CHECK_CACHE (a stale cached green, R4), then marks the feature passing.
 # STUB_PHONE_STOP=1|<why>: the initializer pushes INBOX.md line 1 `status: stop` (1) or `status: stop <why>` from a
 # clone of the origin, as Michael's phone would. STUB_CLI_STOP=-|<why>: it runs `harness stop <run>` (-) or
-# `harness stop <run> --why "<why>"` (R7).
+# `harness stop <run> --why "<why>"` (R7). STUB_CLI_REQUEST=<brief>: then `harness queue add --continue <run> --brief
+# "<brief>"`, a request made after the stop and before the driver acts on it.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -51,6 +52,7 @@ case $first in
     [[ ${STUB_INIT_LIMIT:-} ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before the list exists
     case ${STUB_CLI_STOP:-} in "") ;; -) "$HERE/../bin/harness" stop "$HARNESS_RUN_ID" > /dev/null ;;   # Michael runs `harness stop` meanwhile
       *) "$HERE/../bin/harness" stop "$HARNESS_RUN_ID" --why "$STUB_CLI_STOP" > /dev/null ;; esac
+    [[ ${STUB_CLI_REQUEST:-} ]] && "$HERE/../bin/harness" queue add --continue "$HARNESS_RUN_ID" --brief "$STUB_CLI_REQUEST" > /dev/null
     [[ ${STUB_QUEUE_STOP:-} ]] && touch "$HARNESS_STATE/queue/STOP"   # Michael runs `harness queue stop` meanwhile
     [[ ${STUB_MEM_DROP:-} ]] && sed -i 's/^MemAvailable: .*/MemAvailable:    2097152 kB/' "$STUB_MEM_DROP"   # the box runs low on memory meanwhile (2 GB)
     after=""; [[ ${STUB_INDEPENDENT_M2:-} ]] && after=', "after": []'

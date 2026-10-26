@@ -15,12 +15,20 @@
     writers pass it: `finish()` after a session cap (its note now reads `continuation queued (<n> of <max>, automatic;
     it starts when the queue runs)`) and the debrief's checked `CONTINUE:` lines.
   - `harness queue list` ends a continuation entry ` (requested)` or ` (automatic)`; start entries get neither.
-  - A request for a run whose automatic continuation is already queued turns that entry requested (`already queued:
-    continue <run> (now requested)`), so the run starts as asked rather than one entry silently swallowing the other.
+  - A request for a run whose continuation is already queued **becomes** that entry, options included (`already
+    queued: continue <run> (now requested, with this request's options)`, or `(replaced by this request)` over an
+    earlier request), so the run starts as asked rather than one entry silently swallowing the other. Keeping the
+    automatic entry's options would start it with the driver's `--until-epoch` (a past night's deadline: it ends at
+    once) or the debrief's `--keep-attempts` and brief, and drop Michael's `--brief` (F1-06 review).
   - **The later word wins:** when the driver honours a stop (`harness stop` or the phone), it removes `--requested`
     from any queued or parked continuation of its run and notes `stop: the queued continuation <entry> is automatic
     now (the stop came after the request)`. A request queued while the run was still going, then a stop, so starts
-    nothing; a request queued after the stop starts the run.
+    nothing; a request queued after the stop starts the run. "After" is by the clock, not by when the driver gets to
+    the stop (between sessions): only entries no newer than `STOP` (else INBOX.md, as last pulled) are demoted.
+  - **A phone stop belongs to the segment it ended:** `harness continue` of a run whose `ended` starts with `stopped
+    by Michael` sets INBOX.md's first `status: stop …` line back to `status: run`, and the driver notes
+    ``INBOX.md: `status: stop <why>` set back to `status: run` (that stop ended the last segment; harness continue started this one)``. Without it the continuation's first `control()` stops it again with the old reason, so a
+    request (or `harness continue` by hand) never got past a phone stop (F1-06 review).
   - Parked continuations are marked in `queue list` too: whether one would start is what decides an unpark.
   - Entries queued before this change carry no mark and list as `(automatic)`: they are skipped after a stop, as
     before. A driver started before this change still calls `queue add --continue` without `--automatic` at its
@@ -31,7 +39,11 @@
     (run `capped`, `MAX_SESSIONS=1`), `a request for a run with an automatic continuation queued makes that one
     requested; parked entries are marked too`, and in run 2 `a stop makes a queued requested continuation of its run
     automatic (the later word wins)`; the debrief's `continuation queued: keeps attempts, …` asserts no `--requested`.
-    The existing skipped-continuation setups (`stoppy`, `stoppy-o` twice) queue `--automatic`.
+    The existing skipped-continuation setups (`stoppy`, `stoppy-o` twice) queue `--automatic`. From the F1-06 review:
+    `a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)`; run 2b
+    (`STUB_CLI_REQUEST=<brief>`: a request right after the stub's `harness stop`) `a request queued after the stop
+    (before the driver acts on it) stays requested`, and `harness continue of a run stopped from the phone: INBOX.md's
+    status: stop goes back to run, so it doesn't stop again`.
 - **Rejected:**
   - **Dropping the guard:** the driver's and the debrief's continuations would undo Michael's stop the next time the
     queue runs.
