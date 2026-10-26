@@ -14,11 +14,12 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 |---|---|---|
 | `iterations/NN-<name>.md` | One file per iteration of *how agents were driven*: context, trigger, design, prompts, evidence, what broke, what it led to | me + Claude, after each change of approach |
 | `iterations/NN-*-files/` | Snapshot of an iteration's actual artifacts (runbooks, prompts, scripts) when they no longer exist in the repo | copied at the moment they are replaced |
-| `decisions.md` | Decision log: one entry per non-obvious choice (options, choice, why, how to undo) | whenever a design choice is made |
+| `decisions.md` | Decision log D-H1 to D-H34 (closed 2026-10-21): one entry per non-obvious choice (options, choice, why, how to undo) | read only |
+| `decisions/<date>-<slug>.md` | One file per decision since 2026-10-21 (finding · choice · rejected), written by harness runs for each behaviour change and by me for process calls | whenever a design choice is made |
 | `evidence/timeline.md` | Dated table of every session or run, with real numbers | refreshed by an agent from git and docs |
 | `evidence/prompts/` | The prompts that changed the outcome, verbatim, each with its "why it matters" | added as they happen |
 | `sessions/` | Verbatim transcript excerpts of design conversations (my messages, the key answers) | after a design conversation |
-| `runs/` | One evaluation per harness run (delivery, failures by cause, guards, cost) plus a cross-run evaluation per night | after each run (the harness writes the metrics) |
+| `runs/` | One evaluation per harness run (delivery, failures by cause, guards, cost) plus a cross-run evaluation per night (`<date>-evaluation.md`) | after each run or night (the harness writes the metrics; `harness report <run>` has the numbers) |
 | `raw/` | Local, git-ignored raw material (transcript copies, screenshots) | never published as is |
 
 ## The iterations so far
@@ -32,6 +33,7 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 | 4 | [Harness v2](iterations/04-harness-v2.md) | 16 Oct | A reusable tool: worktrees, a deterministic driver, repair not stop, verify gates, PRs, phone steering, metrics |
 | 5 | [Harness v3](iterations/05-harness-v3.md) | 17 Oct | Merges verified milestones itself, waits out limits box-wide, queues nights, measures and retros every run into a ledger |
 | 6 | [The harness maintains itself](iterations/06-the-harness-maintains-itself.md) | 23–25 Oct | A week of v3 nights silted up (224 of 520 passing features merged, 10 OOM kills, 404 permission rules): discovery → one root cause → clean up once by hand *and* change the harness so it stays clean |
+| 7 | [Throughput: lanes, a split suite, memory with scopes](iterations/07-throughput-lanes-and-memory-scopes.md) | 25 Oct → | The harness is now safe (25/25 verified, 0 real OOM kills) but slow (25 features in 15 h). Measuring showed the harness's own 8-min suite and a serial driver were the bottleneck, not usage limits. Design: parallel milestone lanes with no new cleanup work, a split suite (589 s → 165 s), and one CoALA bucket × scope memory model, built by the harness itself. In progress |
 
 ## How to keep it (the habit)
 
@@ -52,8 +54,9 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 
 - **Interview (10–15 min):** a story with a clear arc:
   1. The problem: building a real app with agents, and the limits I hit (context, usage, permissions).
-  2. The iterations, each with its trigger and a metric. Iteration 6 ends with a ready two-minute version: a
-     system that silted up, one root cause, and a cleanup that also fixed the harness.
+  2. The iterations, each with its trigger and a metric. Iterations 6 and 7 end with ready two-minute versions:
+     a system that silted up, one root cause, and a cleanup that also fixed the harness (6); then measuring before
+     parallelizing, designing against anti-goals, and the harness building its own parallelism (7).
   3. A live look at a run: `harness status`, the PR, `metrics.jsonl`.
   4. What I'd do next.
   Source: the iteration files' "Trigger" and "Evidence" sections.

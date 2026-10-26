@@ -71,10 +71,10 @@ denies are what produced the branch and worktree sprawl.
 | Live harness 109 commits behind | fast-forwarded by hand | `lib/sync.sh`: the queue runner levels the checkout with origin before each start, only when no run is alive (bash reads scripts while running them) | done (PR #12, `decisions/2026-10-24-close-the-loop`) |
 | Runs parked where nothing shows them | the three held entries listed | `harness queue park/unpark`, parked entries and their reasons in `queue list` | done (PR #12) |
 | Permission sprawl | one catch-up session per project trimmed its settings and prose: **404 → 51 project rules**, four repos with no settings file at all | One policy home (`~/.claude/CLAUDE.md` § "Git, merges and permissions"); deny only what can't be undone; templates + `setup/apply-2026-10-24.sh`; the project templates no longer ask for restated policy | done (PRs #13–#16; every project's catch-up PR) |
-| Resource leaks | stopped voice-concierge's 8 idle workers, deleted finished background jobs, zram 50 %, reboot | `docs/specs/2026-10-25-resource-lifecycle.md`: one memory-capped systemd scope per session and per run's services, stopped on any end; scratch cleanup; `gc --deps` | **planned** (handoff chunk 4) |
-| Retros live in run folders | none | Memory spec §E: the driver promotes each retro proposal into **one deduplicated, status-tracked backlog in the harness repo**, and the debrief and new specs read that, not 20 raw retros | **planned** (chunk 4) |
-| One given-up feature ends a run | — | R10: skip to every feature that doesn't depend on it; R3: lint feature steps against the settings at init (it would have caught n8n in its first minute) | **planned** (chunk 4) |
-| Project memory sprawl | catch-up Part 2 per project (one decisions file, night scope out, gotchas promoted) | memory-model K1–K3: one routing block, gotchas in place, `memlint` | **planned** (Part 2, chunk 4) |
+| Resource leaks | stopped voice-concierge's 8 idle workers, deleted finished background jobs, zram 50 %, reboot | `docs/specs/2026-10-25-resource-lifecycle.md`: one memory-capped systemd scope per session and per run's services, stopped on any end; scratch cleanup; `gc --deps` | **done** (lifecycle run L1–L5, 10-25/26: PRs #19–#21, #25, #26) |
+| Retros live in run folders | none | Memory spec §E: the driver promotes each retro proposal into **one deduplicated, status-tracked backlog in the harness repo**, and the debrief and new specs read that, not 20 raw retros | **planned** (memory run M1, queued after the lanes run) |
+| One given-up feature ends a run | — | R10: skip to every feature that doesn't depend on it; R3: lint feature steps against the settings at init (it would have caught n8n in its first minute) | R10 **subsumed by lanes** (iteration 7); R3 **built** in retro F2 (10-26, verify pending) |
+| Project memory sprawl | catch-up Part 2 per project (one decisions file, night scope out, gotchas promoted) | memory-model K1–K3: one routing block, gotchas in place, `memlint` | **planned** (memory run M2–M4, with the scope table from iteration 7) |
 
 **Order mattered.** Step 1 saved the stranded work and synced the live checkout, so every later fix built on real
 current code. The permissions policy came before the per-project cleanup, because the old denies would have blocked
@@ -160,14 +160,19 @@ the cleanup itself. Resource caps come before longer and more permissive runs.
     round.
   - The worktree guard refused a script that only *mentioned* `git` in a heredoc. The fix was writing the script to
     a file first.
-- **Still open:** the resource scopes, the harness-level retro backlog and R10 are specs (chunk 4), not code yet.
-  Part 2 (memory tidy) hasn't run in any project.
+- **Still open (as of 10-25):** the resource scopes, the harness-level retro backlog and R10 are specs (chunk 4), not
+  code yet. Part 2 (memory tidy) hasn't run in any project.
+- **Update 10-26:** chunk 4 merged as PR #18 (02:04) and chunk 5 started the queue at 11:50. The lifecycle run built
+  the resource scopes and ended 25/25, all verified and merged by the harness ($83.17, 15 h), and the next night had
+  **no real OOM kill**. Its slowness started [iteration 7](07-throughput-lanes-and-memory-scopes.md).
 
 ## Led to
 - Chunk 4: three specs queued in order. First resource lifecycle, then the retro fixes plus R10, then memory: the
   harness's own backlog, so retros' proposals land in the harness repo, not in run folders.
 - Chunk 5: start the queue. The runner syncs the live checkout before each start, and verified milestones
   self-merge (`MERGE_POLICY=auto`) everywhere except portfolio_site.
+- [Iteration 7](07-throughput-lanes-and-memory-scopes.md): the first queued run proved the harness safe but slow (25
+  features in 15 h), which led to parallel lanes, a split suite and the memory scope model.
 
 ## How to tell it (2 minutes)
 1. **Problem:** a week of agent runs passed 520 features, but fewer than half reached `main`, the box ran out of

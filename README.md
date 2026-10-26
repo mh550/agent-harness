@@ -2,7 +2,8 @@
 
 A small, reusable harness for **long-running coding agents**, after Anthropic's
 ["Effective harnesses for long-running agents"](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents).
-An initializer session turns a spec into a feature list; then **one fresh Claude Code session per feature** does the
+An initializer session turns a spec into a feature list (and runs the step lint over it: steps with nothing to check,
+paths outside the repo, greps that match their own words, reviews out of size with their milestone; the driver notes what is left); then **one fresh Claude Code session per feature** does the
 work, test-first. A deterministic bash driver does the bookkeeping around them: it verifies each finished milestone
 independently, **opens a PR into `main` for each verified milestone, and merges it itself only in projects that
 opt in with `MERGE_POLICY=auto`**, waits out usage limits, and records every run in a ledger that the next runs
@@ -20,6 +21,7 @@ harness init ~/projects/myapp            # CLAUDE.md template + .harness/config.
 harness start ~/projects/myapp --spec docs/todo.md --brief "items 1–3 only"
 harness status                           # every run: running / ended (why), features, last log lines
 harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes, memory peaks over 2 GB
+                                         # (tests: counted for node:test, pytest, jest/vitest, cargo and go test -v; a suite with no count is said once in harness-log.md)
 ```
 
 Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config, which the
@@ -29,7 +31,7 @@ never runs two runs of one project at once, so a second entry for a busy repo wa
 ```bash
 harness queue add ~/projects/pathways --spec OVERNIGHT.md --brief "T5, T7, then T6"
 harness queue add ~/projects/hit_list --spec docs/next.md
-harness queue add --continue dj-2026-10-17
+harness queue add --continue dj-2026-10-17   # a request: it starts even if you stopped the run (a stop after it wins; it replaces a queued one)
 harness queue start --until 07:30        # tmux h-queue; no run starts after 07:30, and each one stops by then
 ```
 
@@ -42,8 +44,8 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | Command | What |
 |---|---|
 | `harness start` · `continue` · `merge` · `stop` · `pause` · `resume` · `answer` | one run |
-| `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue |
-| `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end |
+| `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue (`list` marks each continuation `(requested)`, yours, or `(automatic)`, the driver's or the debrief's: an automatic one is skipped for a run you stopped) |
+| `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end; new entries are numbered past parked ones, and a park never overwrites one of the same name |
 | `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
 | `harness status` · `report` · `trends [--by version]` · `attach` | look (`status`: under a running run, each of its systemd units with its `MemoryCurrent`; `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
@@ -65,7 +67,8 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; cached per code tree, whose key
-leaves out `CHECK_KEY_IGNORE`, default `.harness/runs docs/plans`, so a plan alone doesn't rerun it), smoke, init (run in the run's
+leaves out `CHECK_KEY_IGNORE`, default `.harness/runs docs/plans`, so a plan alone doesn't rerun it, and each verify
+clears its tree's cached green so the suite runs in full on what it judges), smoke, init (run in the run's
 services scope `harness-<run>-svc`, capped at 3G, under a 10m timeout; what it leaves running when it returns stays in the
 scope until the run's services stop (below) or the next init stops it: `SVC_MEMORY_MAX`, `INIT_TIMEOUT`), port, models, limits
 (a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
@@ -95,6 +98,7 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 |---|---|
 | Worktree, branch | `~/worktrees/<project>/<run-id>`, `harness/<run-id>` from `origin/main` |
 | Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` |
+| Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, one Opus round (a second only after a Critical finding). The lint flags `review-small` and `review-missing` |
 | Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) |
 | Local state | `~/.local/state/harness/<project>/<run-id>/`: `run.log`, transcripts, attempts, `driver.pid`, `ended` |
 | Ledger | `ledger/runs.jsonl` and `ledger/<project>/<run-id>/` in this repo · `harness trends` |
@@ -112,8 +116,12 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 ## Steering
 
 - **Phone:** `progress.md` is rendered from the journal (`entries.jsonl`) after every session and is still the phone view; sessions write `entry.json`, the driver appends it. Steer by editing `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
-  `status: stop`; answers under `## Answers`. The driver pulls before every session.
-- **Box:** `harness pause|resume|stop|answer <run>`, `harness attach <run>` (tmux: driver · log · supervisor). When the driver exits, the
+  `status: stop`, optionally with why (`status: stop the spec changed`); answers under `## Answers`. The driver pulls before every session.
+- **Why a stop:** either reason ends up in harness-log.md, `ended`, summary.json's `end_reason` and the retro prompt as
+  `stopped by Michael: <why>` (the `--why` one wins when both are set); without one, `stopped by Michael` as before.
+  `harness continue` (or a queued request) of a run stopped from the phone sets its `status: stop` line back to
+  `status: run`, so the continuation doesn't stop again at once.
+- **Box:** `harness pause|resume|stop|answer <run>` (`harness stop <run> --why "<text>"` records why), `harness attach <run>` (tmux: driver · log · supervisor). When the driver exits, the
   supervisor window closes, the driver window's scrollback goes to `<state>/tmux-driver.txt` (its last 2000 lines, tmux's `history-limit`;
   `run.log` beside it has everything), and the session `h-<run>`
   closes after `TMUX_KEEP_HOURS` (24; `0` = at once), or sooner: `harness gc <project>` and the queue runner, as it
@@ -152,6 +160,9 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
   start (no tmux, no URL within a minute) is a line in `harness-log.md` and the plain notification; it never changes
   the run. Turning it on in stages: `docs/plans/2026-10-19-P3-desk.md`, "For Michael: turning it on".
 - **After a partial run:** nothing, usually: verified milestones are already merged and a continuation is queued.
+  A run that hits its deadline first gives each complete, unverified milestone one verify session, so finished work
+  merges that night (not when you stopped it or a usage-limit window holds: the continuation verifies it); one that
+  fails it needs Michael.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 - **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and
   ends `PARKED: …`. The feature waits without spending attempts while independent work goes on; the run ends
@@ -170,7 +181,7 @@ note: a headline (what landed on main, what's blocked, spend against the usage w
 Michael**, draft answers the project's docs support (it never writes to INBOX.md), and **For the next interactive
 session** (merge conflicts, retro proposals seen in two or more retros). It can ask for a continuation of a run that
 ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harness checks it and queues it with
-`--keep-attempts`; nothing starts.
+`--automatic --keep-attempts` (an automatic continuation: skipped if you stop the run first); nothing starts.
 
 - **The page**: `ledger/debrief.html` beside the note: a card per run (passing, verified, merged, milestones,
   spend, tests, what isn't done and why), built by `lib/page.mjs` from each run's `summary.json`, not by the model,

@@ -38,12 +38,10 @@ Rules:
 - **`after`** lists what a feature really needs: feature ids, or milestone ids (every feature of
   that milestone). Without it, a feature waits on **every** feature before it, so one failure, or
   one feature waiting on Michael, stops everything behind it.
-  - **Required on the first feature of every milestone after the first**: the milestones (or
-    features) it truly builds on, e.g. `"after": ["N1"]`, or `[]` if it is independent. The harness
-    notes every milestone that lacks it. On 2026-10-17 one feature waiting on Michael held back four
-    whole milestones that didn't need it.
-  - Inside a milestone, leave `after` off unless a feature is independent of the ones before it
-    (docs that need only the plan, say).
+  Give `after` on any feature that doesn't need its predecessor in the same milestone, and on every milestone's first feature (`[]` when independent):
+  e.g. `"after": ["N1"]`, or `"after": []`. The harness notes every milestone after the first that
+  lacks it, and the lint flags it. On 2026-10-17 one feature waiting on Michael held back four whole
+  milestones that didn't need it.
 - **One feature = one session**: aim for 15–60 minutes of agent work ending in a commit with a green
   suite. Split anything bigger; merge anything trivially small into its neighbour (for a small
   milestone, plan and build can be one feature).
@@ -57,8 +55,12 @@ Rules:
   2. implementation features, test-first, pure rules before wiring;
   3. for a milestone with UI, a `check` feature ("What Michael will see": screenshots at the
      project's widths and what is on them);
-  4. a closing **review + simplify** feature: an Opus reviewer reads the milestone diff from a
-     file; Critical/Important findings are fixed RED→GREEN; simplification passes are applied;
+  4. the review, sized to the milestone. A milestone with one or two build features folds its review
+     into the last build feature's steps (`an Opus subagent reviews the diff; Critical/Important
+     findings fixed`) instead of a separate review feature. A milestone of three or more build
+     features keeps one closing **review + simplify** feature: an Opus reviewer reads the milestone
+     diff from a file, one round by default and a second only when the first found something
+     Critical; Critical/Important findings are fixed RED→GREEN; simplification passes are applied;
      docs touched by the milestone are updated.
   When every feature of a milestone passes, the harness verifies it independently and **merges it
   into the main branch**. So a milestone must be a coherent unit that is safe to ship on its own.
@@ -85,6 +87,12 @@ Rules:
     "discoveries": [{ "text": "the suite needs port 7804 free", "affects": ["run"] }] }
   ```
 - Leave the run directory's `INBOX.md` as the harness created it.
+
+Before you commit, run `{{LINT}} <run directory>/feature_list.json` and fix every line it prints
+(`<id> step <n> <rule> <text>`: a step with no concrete anchor, a path outside the repo or in `~`,
+a grep that matches its own words in the run record, a milestone without `after`, a review the
+milestone's size doesn't call for). No output means clean.
+A step that is right as written (a live path the project's rules name, a route) may stay.
 
 Commit `HARNESS: feature list (<n> features) for <run id>` and push
 `git push -u origin <branch>`.

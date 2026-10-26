@@ -38,6 +38,8 @@ GROUPS_=(   # "<later title prefix> -> <earlier title prefix>"   why
 )
 REPLAYS_=(  # "<later title prefix> <= <earlier title prefix>"   why
   "run 2: <= run 1:"                         # reads demo's port
+  "run 2b <= run 1:"                         # stoppy is started by run 2, whose start reads demo's port (2026-10-26, the retro run's R7 section)
+  "run 2b <= run 2:"                         # reads stoppy's harness-log.md and ended
   "run 16 <= run 1:"                         # writes a parked.json into demo's state dir
   "run 16 <= gc:"                            # demo's worktree gc'd: its parked.json names nothing (found by P0-02's parallel run)
   "debrief: since <= run 1:"                 # appends to demo's run.log (ran demo); a check reads run 1's HV

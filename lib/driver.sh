@@ -169,6 +169,23 @@ control() {   # → run | pause | stop
   else echo run; fi
 }
 
+stop_why() {   # → "stopped by Michael[: <why>]": STOP's line (harness stop --why), else the text after control()'s `status: stop`
+  local w s; w=$(head -1 "$STATE/STOP" 2> /dev/null)
+  s=$(sed -n 's/^status:[[:space:]]*//p' "$RUN_DIR/INBOX.md" 2> /dev/null | head -1 | tr -d '\r')
+  [[ -z $w && $s =~ ^stop[^[:alnum:]]+([[:alnum:]](.*[^[:space:]])?) ]] && w=${BASH_REMATCH[1]}   # "stopped", "stop" or "stop -" give none
+  echo "stopped by Michael${w:+: ${w:0:200}}"
+}
+
+demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
+  # the stop's time is when it reached this box (STOP, else INBOX.md pulled), not when the driver got to it: a request
+  # queued after it stays requested
+  local f at=$STATE/STOP; [[ -f $at ]] || at=$RUN_DIR/INBOX.md
+  for f in "$STATE_ROOT"/queue/*-continue-"$RUN_ID".args "$STATE_ROOT"/queue/held/*-continue-"$RUN_ID".args; do
+    [[ -f $f && ! $f -nt $at ]] && grep -qx -- --requested "$f" || continue
+    sed -i '/^--requested$/d' "$f" && note "stop: the queued continuation ${f##*/} is automatic now (the stop came after the request)"
+  done
+}
+
 # One usage limit covers every run on the box: wait until the window that refused a session (any run's) is over.
 limit_wait() {
   local upto now w; upto=$(cat "$LIMIT_FILE" 2>/dev/null || echo 0); now=$(date +%s)
@@ -282,7 +299,7 @@ context() {
 # SVC_MEMORY_MAX. timeout bounds the init, not the servers it left once it returned (a timeout takes its process group
 # too); stdin is /dev/null, so no tool waits on the tmux pane. The last init's scope is stopped first: systemd refuses
 # a unit name still loaded (tests/fixtures/systemd-run-unit-exists.txt), and its services would live on beside the new.
-run_init() {
+run_init() {   # [fresh: clear the suite cache's marker for the tree as the init left it, so the suite runs in full]
   local unit; unit=$(scope_unit "$RUN_ID" svc)
   scope_stop "$unit"
   SVC_UP=1 SVC_INIT=1   # before the start: a TERM during the init must still stop what it began (services_down, L2-03)
@@ -290,9 +307,14 @@ run_init() {
   local rc=$?; SVC_INIT=0; echo "(init exit $rc)" >> "$SCRATCH/init.out"
   [[ -n ${SCOPE_BARE:-} ]] && note "init ran uncapped: $SCOPE_BARE"   # systemd refused the unit; its line is in init.out
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")"
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
   [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \
     || rm -f "$STATE/tests-start"
+  # once per run: a suite whose output has no count leaves the report's tests at `?` (a cached green wrote no check.out)
+  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-nomatch && -z $(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out") ]]; then
+    note "test count: no match in the suite's output (tests start/end stay unknown)"; touch "$STATE/testcount-nomatch"
+  fi
 }
 
 pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the archive has every entry in full
@@ -372,17 +394,22 @@ merge_milestones() {
 }
 
 # Independently re-check milestone m. 0 = verified (tagged) · 1 = not verified · 2 = deferred (a usage limit: retry)
+# `once` (at the deadline): one session, no escalation, and this round is the last (decisions/2026-10-26-verify-before-deadline)
 verify() {
-  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=()
+  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS
+  local models=("$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL") last=$VERIFY_ESCALATE_MODEL
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
+  [[ ${2:-} == once ]] && { models=("$VERIFY_MODEL"); maxr=$rounds last="one verify at the deadline"; }
   sync_main || touch "$STATE/nomerge-$m"
-  run_init
-  for model in "$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"; do
+  # the verified tree's suite runs in full: a session can leave a stale green marker (decisions/2026-10-26-verify-runs-the-suite)
+  note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
+  run_init fresh
+  for model in "${models[@]}"; do
     F snapshot "$LIST" > "$STATE/before.json"
     context "$m"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
     mem_gate || run_init   # before the clock, so the prompt's time is the session's; a wait stopped the services
-    HARNESS_CLOCK=$(clock "verify round $rounds of $MAX_VERIFY_ROUNDS") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
+    HARNESS_CLOCK=$(clock "verify round $rounds of $maxr") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
     session verify "$(F model "$model")" "$vlog" "verify $m"
@@ -404,7 +431,7 @@ verify() {
     F milestone-done "$LIST" "$m" || { result=fail; break; }
     if (( $(vcount "$m") <= before )); then short="no new verify entry"
     elif short=$(F evidence "$LIST" "$m" "$RUN_DIR/progress.md"); then result=hold; break; fi
-    [[ $model == "$VERIFY_ESCALATE_MODEL" ]] && { result=thin; break; }
+    [[ $model == "${models[-1]}" ]] && { result=thin; break; }   # the last model (the only one in once mode)
     note "verify $m: evidence short of the steps ($short); re-running on $VERIFY_ESCALATE_MODEL"
   done
   echo "$rounds" > "$STATE/verify-rounds-$m"
@@ -419,17 +446,17 @@ verify() {
       commit_all "HARNESS: $m verified"; sync
       [[ -f $STATE/nomerge-$m ]] || merge_milestones
       return 0 ;;
-    thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $VERIFY_ESCALATE_MODEL; not verified (needs Michael)"
+    thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $last; not verified (needs Michael)"
       need="verify evidence too thin" ;;
     red) touch "$STATE/needs-$m"; note "verify $m: the suite is red on the verified tree (main merged in); not verified (needs Michael)"
       need="suite red after merging main" ;;
     fail)
       for id in $(F ids "$LIST" "$m"); do
         F passes "$LIST" "$id" && continue
-        if (( rounds < MAX_VERIFY_ROUNDS )); then
+        if (( rounds < maxr )); then
           note "verify $m: $id failed the re-check, back in the queue (one more attempt)"; F grant "$ATT" "$id" "$MAX_ATTEMPTS"
         else
-          touch "$STATE/needs-$m"; note "verify $m: $id failed the re-check in round $rounds of $MAX_VERIFY_ROUNDS; $m needs Michael (see progress.md)"
+          touch "$STATE/needs-$m"; note "verify $m: $id failed the re-check in round $rounds of $maxr; $m needs Michael (see progress.md)"
           failed+=("$id")
         fi
       done
@@ -441,13 +468,29 @@ verify() {
   return 1
 }
 
+# The deadline's verify (decisions/2026-10-26-verify-before-deadline): verify_ready once, unless a stop came first or a
+# usage-limit window holds, when its session would only be refused (the next segment verifies first thing)
+deadline_verify() {
+  local m ms="" upto
+  for m in $(F milestones "$LIST"); do
+    [[ -f $STATE/verified-$m || -f $STATE/needs-$m ]] || ! F milestone-done "$LIST" "$m" || ms+="${ms:+, }$m"
+  done
+  [[ -n $ms ]] || return 0
+  upto=$(cat "$LIMIT_FILE" 2>/dev/null || echo 0)
+  if [[ $(control) == stop ]]; then note "deadline reached: $ms complete but unverified; stopped by Michael, so no verify before the end"
+  elif (( upto > $(date +%s) )); then note "deadline reached: $ms complete but unverified; the usage limit holds until $(date -d "@$upto" +%H:%M), so no verify before the end"
+  else verify_ready once; fi
+}
+
 # Verify every milestone that is complete and not yet verified, in order. 2 = a verify was deferred by a limit.
+# `once`: the deadline's last look, one session per milestone (verify's once mode)
 verify_ready() {
   local m rc
   for m in $(F milestones "$LIST"); do
     [[ -f $STATE/verified-$m || -f $STATE/needs-$m ]] && continue
     F milestone-done "$LIST" "$m" || continue
-    verify "$m"; rc=$?
+    [[ ${1:-} == once ]] && note "deadline reached: $m complete but unverified; one verify before the end"
+    verify "$m" "${1:-}"; rc=$?
     (( rc == 2 )) && return 2
   done
   return 0
@@ -456,7 +499,7 @@ verify_ready() {
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
   local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x
   rstart=$(git rev-parse HEAD)
-  HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER prompt retro
+  HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
   reverted=$(restrict "$rstart" nothing retro | paste -sd' ')
@@ -516,8 +559,8 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
   if [[ -n $left && $AUTO_CONTINUE == 1 && $1 == session\ cap* ]] && (( conts < ${AUTO_CONTINUE_MAX:-3} )) \
      && (( DEADLINE_AT == 0 || $(date +%s) < DEADLINE_AT - 600 )); then
     echo $(( conts + 1 )) > "$STATE/auto-continues"
-    "$HARNESS_HOME/bin/harness" queue add --continue "$RUN_ID" --keep-attempts $( (( DEADLINE_AT )) && echo "--until-epoch $DEADLINE_AT") > /dev/null 2>&1 \
-      && note "continuation queued ($(( conts + 1 )) of ${AUTO_CONTINUE_MAX:-3}; it starts when the queue runs)"
+    "$HARNESS_HOME/bin/harness" queue add --continue "$RUN_ID" --automatic --keep-attempts $( (( DEADLINE_AT )) && echo "--until-epoch $DEADLINE_AT") > /dev/null 2>&1 \
+      && note "continuation queued ($(( conts + 1 )) of ${AUTO_CONTINUE_MAX:-3}, automatic; it starts when the queue runs)"
   fi
   # a note after the last commit (the continuation): commit it too, or the worktree stays dirty and gc skips it
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: run end notes"; sync; }
@@ -545,6 +588,10 @@ EOF
 if [[ -s $STATE/brief.md ]]; then   # a brief given at start or continue: committed, so sessions and the record see it
   { [[ -s $RUN_DIR/brief.md ]] && echo; echo "## $(date '+%F %H:%M')"; cat "$STATE/brief.md"; } >> "$RUN_DIR/brief.md"
   : > "$STATE/brief.md"
+fi
+if [[ -s $STATE/inbox-unstopped ]]; then   # harness continue reset a phone stop that ended the last segment
+  note "INBOX.md: \`$(cat "$STATE/inbox-unstopped")\` set back to \`status: run\` (that stop ended the last segment; harness continue started this one)"
+  rm -f "$STATE/inbox-unstopped"
 fi
 commit_all "HARNESS: start run $RUN_ID"
 sync
@@ -618,7 +665,9 @@ if [[ ! -f $LIST ]]; then
     note "initializer did not produce a valid $LIST; stopping"; finish "initializer failed"
   fi
   MET append "$LOGS/00-init.jsonl" "$RUN_DIR/metrics.jsonl" "$RUN_ID" init "" "$(F model "$INIT_MODEL")" true "$S_WALL" "$S_EXIT" false init "$S_PEAK"
-  note "feature list written: $(F summary "$LIST")"; commit_all "HARNESS: initializer done"; sync
+  note "feature list written: $(F summary "$LIST")"
+  note "$(F lint "$LIST" --note)"   # what the initializer's own lint run left; the list stays as written (decisions/2026-10-26-step-lint)
+  commit_all "HARNESS: initializer done"; sync
   notify "started: $(F summary "$LIST")" click="$(gh_url "$RUN_DIR/progress.md")"
 fi
 
@@ -631,7 +680,7 @@ fi
 repairs=0 n=0 limits=0 gated=0
 while :; do
   (( n >= MAX_SESSIONS )) && finish "session cap ($MAX_SESSIONS)"
-  (( $(date +%s) >= DEADLINE )) && { note "deadline reached"; finish "deadline"; }
+  (( $(date +%s) >= DEADLINE )) && { note "deadline reached"; deadline_verify; finish "deadline"; }
   take_answers; sync
   for id in $(F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
   c=$(control)
@@ -639,12 +688,12 @@ while :; do
     log "paused (INBOX.md status or harness pause)"; notify "paused"
     services_down paused; commit_all "HARNESS: paused"; sync   # nothing else commits during a pause: the note reaches the phone now
     while [[ $(control) == pause ]]; do
-      (( $(date +%s) >= DEADLINE )) && { note "deadline reached while paused"; finish "deadline (paused)"; }
+      (( $(date +%s) >= DEADLINE )) && { note "deadline reached while paused"; deadline_verify; finish "deadline (paused)"; }
       sleep "${HARNESS_PAUSE_POLL:-60}"; take_answers; sync
     done
     log "resumed"; continue
   fi
-  [[ $c == stop ]] && { note "stopped by Michael"; finish "stopped by Michael"; }
+  [[ $c == stop ]] && { demote_requests; why=$(stop_why); note "$why"; finish "$why"; }
   limit_wait
   (( $(date +%s) >= DEADLINE )) && continue
   verify_ready || continue   # 2 = deferred by a usage limit: wait for the window first

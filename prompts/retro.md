@@ -2,6 +2,8 @@
 
 Run: `{{RUN_ID}}` of {{PROJECT}}
 
+It ended: {{END_REASON}}. A reason after "stopped by Michael:" is his; judge the run against it.
+
 You review how **the harness** did on this run, so the harness can improve. You are read-only:
 **do not edit, create, commit or push anything.** Your final message is saved as the run's
 `retro.md`; it is the only output.

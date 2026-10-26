@@ -24,7 +24,7 @@ check "queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old v
   && ! grep -q "starting:\|config reloaded" "$RB5" && grep -q "stopped by harness queue stop" "$RB5"'
 kill "$BP5" "$RP5" 2> /dev/null; rm -rf "$HARNESS_STATE/other/busy5" "$HARNESS_STATE"/queue/*.args
 cfg 1; : > "$T/hold-coding"; rm -f "$T"/held-l5? "$T"/release-l5?
-"$H" queue add "$T/proj" l5a --spec SPEC.md > /dev/null; "$H" queue add "$T/proj2" l5b --spec SPEC.md > /dev/null; "$H" queue add --continue stoppy-o > /dev/null
+"$H" queue add "$T/proj" l5a --spec SPEC.md > /dev/null; "$H" queue add "$T/proj2" l5b --spec SPEC.md > /dev/null; "$H" queue add --continue stoppy-o --automatic > /dev/null
 HARNESS_QUEUE_POLL=1 HARNESS_QUEUE_SETTLE=5 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$RL5" 2>&1 & RP5=$!
 waitf '[[ -f $T/held-l5a ]]' 90; sleep 3; l5_early=$(st5 "start $T/proj2" && echo started)   # three polls at 1: the second waits
 cfg 2; waitf 'st5 "start $T/proj2"' 15; l5_up=$(grep -c "MAX_PARALLEL_RUNS 1 → 2 (config reloaded)" "$RL5")

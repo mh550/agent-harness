@@ -25,6 +25,7 @@ a body over the cap is trimmed
 a brief is pasted as written: its {{X}} isn't filled (E3 review F7)
 a continued run whose suite is cached green keeps its test count (the green marker holds it, not scratch)
 a dead desk is replaced
+a deadline while paused verifies a complete milestone once too
 a debrief headline over ntfy: no Click (the note is a path), default priority when nothing needs Michael (a Not queued line isn't)
 a debrief page beside the note: a card per run, the note escaped
 a debrief whose note needs Michael: priority high
@@ -35,6 +36,7 @@ a failed park post is noted and committed at once
 a failed post is noted and the run goes on
 a failed run-end post is committed: the worktree stays clean for gc
 a failed session: its error text is never the note
+a failed verify at the deadline is not retried: M1 needs Michael
 a given-up feature blocks what depends on it
 a held index.lock: written, not committed, nothing left staged
 a killed debrief changes nothing
@@ -49,12 +51,17 @@ a milestone without an after list is noted
 a park notification: title, question, answer command, click and Edit INBOX action
 a proposed merge: ready to merge, click = the PR, default priority
 a queued continuation: only the answer command
+a reason after any separator is kept whole, " · 2026-" in it included
 a refused branch -d (merged into origin/main, not into HEAD, no upstream) is logged and gc goes on
 a refused commit: the note is unstaged again
 a refused debrief: no note, nothing marked done, LIMIT_UNTIL set, one line to NOTIFY_CMD
 a refused merge tells Michael and his desk once
 a refused merge: priority high, click = the PR
 a refused session's minimal entry is not yet, not its reverted claim (E4 review F3)
+a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too
+a request queued after the stop (before the driver acts on it) stays requested
+a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)
+a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)
 a run still ending: answer now, continue once it has ended
 a run still going is covered again next time
 a run still going: only the answer command
@@ -67,11 +74,19 @@ a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)
 a session that dies at startup: failed, and no usage-limit window for the box
 a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
 a session's edits to the journal are restored (E4 review F1)
+a stale green marker is caught at verify: M1 red, not tagged
 a still-running run changing its worktree is not flagged
+a stop at the deadline comes first: no verify, M1 left for a continue
 a stop from the phone stops the services through finish
+a stop makes a queued requested continuation of its run automatic (the later word wins)
+a stop reason with | keeps its card on the debrief page and is one cell in report.md and trends
+a stop reason's words are never read as a feature's cause (A failed the re-check)
+a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason
+a stop without a reason says just: stopped by Michael (the note and ended)
 a successful post: a line in run.log only
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
+a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
 a waiting-on-Michael run end: priority high, click = report.md
 a window of the run's name that never showed a URL is replaced
 a window past the 5 h cap: no session (the next debrief covers it)
@@ -146,6 +161,7 @@ gc never removes a worktree that is no run's (its branch isn't harness/<run>), e
 gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
 gc removed the finished worktree
 gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+harness continue of a run stopped from the phone: INBOX.md's status: stop goes back to run, so it doesn't stop again
 harness desk --all
 harness desk --close <run>
 harness desk --debrief
@@ -170,6 +186,8 @@ harness parked: id, why, question, both commands
 harness report prints the writeup
 harness start refuses a run id whose tmux session another live run holds; its session lives
 harness status lists a running run's units with MemoryCurrent; an ended run's none
+harness stop --why: the note and ended say stopped by Michael: <why>
+harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
 independent M2 verified, not merged (M1 isn't)
 independent work goes on past a parked feature
@@ -182,6 +200,15 @@ ledger has the run
 ledger row has harness_version and harness_dirty
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
 lib.sh: a check replayed for its state (REPLAY=1) runs silent and uncounted
+lint: no-anchor trips "works correctly", not "the suite is green" or "curl :7814/x returns 200"
+lint: outside-repo trips ~ and /home/ paths, not lib/driver.sh or /tmp/harness/
+lint: review-small for a review in a two-build milestone; review-missing for five builds without one; neither for five with one or docs only
+lint: self-match ends the command at a closing backtick or a glued |, and reads --regexp=
+lint: self-match reads grep as a command: prose, option values, -x, redirects, egrep and BRE escapes
+lint: self-match trips a grep of progress.md for the step's own words, not of harness-log.md or lib/
+lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
+lint: the note counts by rule and names the first finding; clean says clean
+lint: undeclared trips a later milestone's first feature without after, not the first milestone's
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
@@ -221,8 +248,12 @@ placeholders inside the context are not filled
 plain gc deletes only the merged harness/ and harness-merge/ branches, locally and on the origin
 preflight: no node anywhere, a clear failure and no session
 progress.md is rendered from the journal
+queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't
+queue add numbers past a parked entry
 queue end triggers one debrief, detached
 queue holds an entry whose project has a live run, starts the next one
+queue list marks continuations (requested) or (automatic)
+queue park refuses to overwrite a parked entry; both survive
 queue park sets an entry aside with its reason
 queue ran both entries, distinct run ids (their merged worktrees gone with the runner's gc: the ledger has the records)
 queue runner: MAX_PARALLEL_RUNS 1 → 2 in the config starts the second entry without a restart, and says so
@@ -266,6 +297,7 @@ scratch_rm refuses anything but the run's own scratch directory (symlinks in its
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
 start queues when MAX_PARALLEL_RUNS are going
+status: stop <why> from the phone: the same note, ended and services note
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
 suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1
@@ -287,11 +319,19 @@ sync: nothing local: fast-forward
 sync: pulls the merged PR and pushes the ledger commit, no merge commit
 tampered list restored
 tampered text reverted
+test count: no match is noted once per run (demo: no output; nocount: text with no count), never for a counted or cached suite (scrub)
+testCount: cargo fixture gives the sum of its test result lines (3)
+testCount: go fixture gives its --- PASS count (3)
+testCount: jest fixture gives the Tests: count (7), not Test Suites:
+testCount: node:test fixture gives 3
+testCount: pytest fixture gives 4
 testcount.mjs: the runner's last N/M checks passed is the count
 the EXIT trap commits its services note: harness-log.md is clean after a TERM
 the allowlist runs nothing that writes or executes
 the answer skill exists and names the commands and the never-list
 the answer skill passes Michael's words through a quoted heredoc
+the deadline verifies a complete milestone once and merges it
+the debrief page never reads a stop reason's words as its tone
 the debrief saw the queue's runs
 the debrief starts a desk when Needs Michael is non-empty
 the desk notification
@@ -299,7 +339,13 @@ the desk prompt names the run, its commands and the never-list
 the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory
 the desk's environment has no NTFY_TOKEN
 the dialog guard: the CLI's dialog words, not the desk's own questions
+the driver never edits the list: the initializer's feature_list.json is byte for byte the stub's
+the driver notes the lint once after the initializer
+the driver's continuation after a session cap is automatic
 the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created
+the initializer prompt asks for after on independent features and on every milestone's first
+the initializer prompt has the resolved lint command
+the initializer prompt sizes reviews to the milestone
 the limit window is shared
 the next debrief covers what the failed and killed ones missed
 the park goes out after the run branch is pushed (the link shows the question)
@@ -310,6 +356,8 @@ the queue runner reaps its ended runs' tmux sessions before the debrief; h-queue
 the queue runner runs harness gc <project> --all-merged --deps once per project, before the debrief
 the queue starts no run past the weekly budget
 the rendered coding prompt has the deepEqual and bounded-rerun rule
+the report lists the review role when a review ran
+the retro prompt carries the end reason
 the run end goes out before the retro, once report.md is pushed
 the runner skips a parked entry and says so
 the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)
@@ -318,8 +366,10 @@ the session: an allowlist (dontAsk) and the never-list
 the stub claude's interactive mode prints the pane line and records input
 the tmpfiles template holds the 3-day age rule; README has its install command
 the user config template sets nothing
+the verify prompt says the suite runs in full
 the weekly budget ends a run after the session that crossed it
 the whole context is capped too
+thin evidence at the deadline is not escalated: one verify, M1 not verified
 thin evidence escalates the verify
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
