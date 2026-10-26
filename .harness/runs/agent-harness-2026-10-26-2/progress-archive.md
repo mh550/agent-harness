@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 09:47 · F1-03 · passes
+
+R4: verify() removes the verified tree's green-<key> marker after sync_main, before run_init, and notes `verify <m>: suite cache cleared; the suite runs in full on the verified tree`; prompts/verify.md step 1 says so. New stub flag STUB_STALE_GREEN and run 13c catch a stale marker. Decision file, architecture.md (§4 cache row, §7 Verify row, limits) and README updated.
+
+- **Files:** lib/driver.sh, prompts/verify.md, tests/stub-claude.sh, tests/run.sh, journal/decisions/2026-10-26-verify-runs-the-suite.md, docs/architecture.md, README.md
+- **Verified:** Red first, on a scratch subset (preamble + run 1 + run 13c): on main's driver both new checks FAILED; the stalegreen run's log had `M1 verified and tagged run/stalegreen/M1` and `M1 merged into main` with BROKEN in the tree (origin tag run/stalegreen/M1 present). After the fix the subset was 12/12 and the log had `verify M1: suite cache cleared…` then `verify M1: the suite is red on the verified tree (main merged in); not verified (needs Michael)`, no M1 tag, main without BROKEN. Full suite under check.sh: green in 632 s, 333/333 checks passed.
+- **Tests:** 331 → 333
+- **Dead end:** run name `stale` for run 13c — run 9c already uses `stale`; it is `stalegreen`
+- **Dead end:** the prompt sentence wrapped mid-phrase — the check greps `cleared the suite's cached result` on one line; the line break is placed before it
+- **Discovery** (affects F1-06): In run 13c the M2 verify after M1's red still tags M2 but holds it as tainted (contains unverified work of A,B), and main stays clean; a stale green on main's driver merged a red tree into main.
+- *03-F1-03 · claude-opus-5-5*
+
 ### 2026-10-26 09:32 · F1-02 · passes
 
 R1: testCount now sums cargo's test result lines, reads jest's Tests: line and counts go -v's --- PASS lines (node:test and generic as before); five runner fixtures in tests/fixtures/check-*.txt; run_init notes `test count: no match in the suite's output (tests start/end stay unknown)` once per run. Decision file, architecture.md and README updated.
