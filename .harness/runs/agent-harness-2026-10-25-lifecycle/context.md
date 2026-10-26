@@ -1,9 +1,18 @@
-# Context pack for `L5-01`
+# Context pack for `L5`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- Dead end (L5-01, 25-L5-01): an empty MAX_PARALLEL_RUNS= as the bad-value case — bash arithmetic reads empty as 0, so starts are held anyway and the check didn't show the danger; 2x and 08 (octal) make `(( a >= x ))` fail and fall through to a start → entries.jsonl:30
+- Question (L5-01): MAX_PARALLEL_RUNS=0 is now accepted on reload and holds every start, a quiet way to pause the queue without stopping it. Keep that, or reject 0 like 2x? (default: kept, undocumented) → entries.jsonl:30
+- 2026-10-26 02:39 · L5-01 · passes: lib/queue.sh re-runs harness_config at the top of each poll and logs `MAX_PARALLEL_RUNS <old> → <new> (config reloaded)`; lowering only gates starts. A value that is no plain whole number (2x, 08) keeps the old, logged once. 3 checks (two parallel tmux-started runs in proj/proj2, held by a stub file switch), decision file, §12, README, template line. 322 → 325.; tests 322 → 325; files lib/queue.sh, tests/run.sh, tests/stub-claude.sh, journal/decisions/2026-10-25-runner-config-reload.md, docs/architecture.md, … → entries.jsonl:30
+
 ## Discoveries for this feature
 
+- Discovery (L5-01, affects run): tests/stub-claude.sh: with $STUB_DIR/hold-coding present, a run's coding sessions touch $STUB_DIR/held-<run> and wait (≤180 s) for $STUB_DIR/release-<run>. It is a file switch, so it reaches tmux-started runs. STUB_* flags reach those runs through `tmux set-environment -g` on the private server (unset afterwards). → entries.jsonl:30
+- Discovery (L5-01, affects run): The suite now has a second throwaway project, $T/proj2: a clone with its own bare origin $T/origin2.git, reached through url.insteadOf git@github.com:test/proj2.git. It is created in the L5 block at the end of tests/run.sh. → entries.jsonl:30
+- Discovery (L5-01, affects run): The full suite took 600 s under check.sh this session, right at a 600 s Bash foreground limit: run it in the background. → entries.jsonl:30
 - Discovery (L4-05, affects run): The full suite takes ~9-10 min under load now (548 s): a Bash background waiter needs a timeout over 600 s or it is killed. → entries.jsonl:28
 - Discovery (L4-05, affects L5, run): gc's worktree loop now only removes harness/<run> worktrees; a merged clean one on another branch prints 'keeps <wt>: not a run worktree (branch <b>)'. The local branch pass skips branches checked out in any worktree (no more 'cannot delete branch … used by worktree' noise). → entries.jsonl:28
 - Discovery (L4-05, affects L5, run): HARNESS_GC_TIMEOUT (env, default 10m) bounds the runner's gc; the suite's runner-gc failure check uses 2s with a fetch that sleeps 60. → entries.jsonl:28
@@ -25,9 +34,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (L2-04, affects run): Run waiter's window is now +660 s (11 min) and waiter9 (+540 s) is new; the suite has two more full runs (about +20 s). → entries.jsonl:14
 - Discovery (L1-08, affects L2, run): mem_gate now exits 1 after any wait and is called by the driver loop (after the pick, before F bump; the loop starts over once, gated=1), verify() before each round clock, and the init before run_init; session() no longer gates. L2 services_down hooks into the same place. → entries.jsonl:9
 - Discovery (L1-07, affects run): prompts/parts/rules.md is only included when the worktree has a CLAUDE.md (lib/prompt.sh prompt_render), so the deepEqual rule reaches only projects with one (all of them today). The MCP line is logged to run.log beside the permissions line, not noted in harness-log.md (same for every session). → entries.jsonl:8
-- Discovery (init, affects run): Real-command shapes to copy into fixtures (captured 2026-10-25 on this box, systemd 255): `systemctl --user show -p MemoryPeak,ControlGroup harness-test-<pid>-probe.scope` printed `ControlGroup=/user.slice/user-1000.slice/user@1000.service/app.slice/harness-test-<pid>-probe.scope` then `MemoryPeak=262144`: systemd prints properties in its own order, not the asked order, so parse by key, never by line number. `systemctl --user list-units 'harness-*' --plain --no-legend` prints nothing when none exist. The probe `systemd-run --user --scope --collect --quiet --unit=harness-test-<pid>-probe -p MemoryMax=64M true` exits 0 here. → entries.jsonl:1
-- Discovery (init, affects run): bin/harness passes HARNESS_* overrides to the tmux-started driver window from an explicit list (bin/harness, cmd_start, the `for v in HARNESS_CLAUDE HARNESS_GH ...` loop). Every new override the suite relies on (HARNESS_SYSTEMD_RUN, HARNESS_SYSTEMCTL, HARNESS_MEMINFO, HARNESS_MEM_POLL) must be added there, or a tmux-started run silently uses the real commands. → entries.jsonl:1
-- Discovery (init, affects run): tests/run.sh: `check "<name>" '<bash expr>'` evals its second argument; stubs log calls to $STUB_DIR (= $T) files with `===` separators (see curl_with/curl_last helpers for the parsing pattern); the suite already runs on a private tmux server (TMUX_TMPDIR=$T/tmux, HARNESS_DESK_SESSION=h-desk-test-$$) and kills it in its EXIT trap. 235 checks today; the full suite takes about 6 minutes here. Run a single new check while iterating by copying its lines into a scratch script, not by editing the suite's flow. → entries.jsonl:1
-- Discovery (init, affects run): Config keys: defaults live in harness_config in lib/config.sh (one assignment block), the user's commented copy in templates/user/config.sh, and docs/architecture.md §10 lists every key with its default. Add every new key in all three places in the feature that introduces it. → entries.jsonl:1
 
-_4 items left out at 8192 bytes: entries.jsonl has them all._
+_7 items left out at 8192 bytes: entries.jsonl has them all._
