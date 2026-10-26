@@ -1,4 +1,4 @@
-# Timeline: how Michael drove agents, 2026-02 → 2026-10-25
+# Timeline: how Michael drove agents, 2026-02 → 2026-10-26
 
 Built only from git history and committed docs in `~/projects` (umbrella), `pathways`,
 `dj-crate-streaming`, `hit_list`. Times are commit times (EDT) unless a runbook's Status log is quoted.
@@ -108,3 +108,41 @@ yet; their totals head this section.
     The new rule: deny only what can't be undone (`decisions/2026-10-24-permissions-policy`).
 14. **The prompt is the product.** Two workers needed a second round; the fix went into the shared prompt (a test, a
     query, a target per project), and the next five finished in 40 minutes without one.
+
+## 2026-10-25 → 10-26: the first queued chain, and throughput (iteration 7)
+
+Added 2026-10-26 from `harness report`/`harness status`, the run branches' commit times, `gh pr list` (merge times
+converted to EDT) and the session transcripts quoted in `sessions/2026-10-25-throughput-design.md`.
+
+| Date (EDT) | Project | Driver | Model(s) if stated | What was asked (one line) | Outcome (real numbers) | Notable problems |
+|---|---|---|---|---|---|---|
+| 10-25 01:52 → 02:04 | agent-harness | handoff chunk 4 | — | three specs and the queue, no code; gc's slash bug and parked reasons folded in | PR #18: resource lifecycle, retro fixes, memory specs; n8n-events parked with its reason | — |
+| 10-25 11:49 → 11:50 | agent-harness | chunk 5 (Michael) | — | "Give each of the commands to me in a clear, concise way" | queue tidied, `harness queue start`; lifecycle run starts 11:50 | — |
+| **10-25 11:50 → 10-26 02:50** | agent-harness | **harness v3** run `…-2026-10-25-lifecycle` | per role (Sonnet verify/retro, Opus build) | L1–L5: capped scopes, service stop points, scratch + tmux reaper, gc from the runner, config reload | **25/25, all verified and merged by the harness** (PRs #19–#21, #25, #26); **$83.17**, $3.33/feature; 15 h, 32 sessions; first-attempt 1.00 | took 15 h for 25 features |
+| 10-25 14:23 → 16:32 | agent-harness | interactive (status, then measurement) | — | "Is there any way we can improve the parallelization… avoid creating duplicate/cleanup work" ([prompt](prompts/2026-10-25-improve-parallelization.md)) | measured: usage window 12 %, the suite ~8 min = 31 % of session time, driver serial; recommended split suite → lanes → 2 runs | the session briefly ran the suite in the live lifecycle worktree (stopped in ~2 min) |
+| 10-25 22:00 → 22:27 | agent-harness | interactive design session | — | build it, with anti-goals and a CoALA bucket × scope memory model ([prompt](prompts/2026-10-25-parallel-without-new-work.md)) | PR #22: throughput-and-memory design + rollout plan; a cold builder-check agent raised 6 questions (4 settled in the design) | — |
+| 10-25 23:53 | agent-harness (live checkout) | unknown | — | — | `main` fast-forwarded by a `git pull --rebase` while the lifecycle run was alive (reflog) | breaks "never pull while a run is alive"; no harm |
+| 10-26 00:12 → 00:46 | agent-harness | design session | — | approve, with questions ([prompt](prompts/2026-10-26-approve-with-questions.md)); six decisions answered | PR #23 (suite-split + lanes specs; retro F3 dropped, memory amended); PR #24 (split folded into lanes as P0); master to-do in `~/Downloads` | — |
+| 10-26 02:50 → 05:29 | rane-one-mixxx | harness v3 continuation | — | answer M5-06 (pin deck 2's sag), continue | **19/19** (from 9/19, parked since 10-24); tests **868 → 1,262**; $111.08 for the whole run | ran alone though `MAX_PARALLEL_RUNS=2` was set *(inferred: runner predates L5's config reload)* |
+| 10-26 05:29 → 08:30 | agent-harness | harness v3 run `…-2026-10-26` (lanes) | — | P0 suite split, P1, P2 | P0-01 passes (one file → 29 files, 327 checks, conformance-checked); P0-02: **589 s → 165 s** with `TEST_JOBS=4`, 390 MB peak; **blocked at 2/17**, $22.87, nothing merged | step 5 said "under 150 s"; the floor is ~159 s; two attempts, 14 dependants blocked |
+| 10-26 08:51 → running | agent-harness | harness v3 run `…-2026-10-26-2` (retro) | Opus build | F1 (driver/CLI fixes), F2 (initializer/verify) | **12/12** by 13:30; F1 verified and merged (PR #27, 11:37); $35.25 so far; first-attempt 1.00 | ran on the old single-file suite (~10 min per run), F1 and F2 serial; its checks now conflict with the split in 4 files |
+| 10-26 10:28 | agent-harness | interactive status | — | "What's the status of the agent harness runs we queued last night?" | the 10:15 status: lanes blocked; **0 real OOM kills** (136 kernel kills, all in the suite's 64 MB test scopes) | claimed rane and lanes overlapped 05:50–08:30; commit times say they didn't |
+| 10-26 12:55 → 13:10 | agent-harness | design session | — | unblock lanes with "sensible defaults around time limits" ([prompt](prompts/2026-10-26-unblock-with-sensible-limits.md)) | park memory (driver conflict); branch fix plan (re-run `tests/split.sh` on `main`); rule: performance numbers are "measured and recorded"; master to-do "UPDATE 13:10" | — |
+
+### Turning points
+
+15. **The harness became safe before it became fast.** The lifecycle run made every session and suite memory-capped
+    and every run's leftovers cleaned by code. Iteration 6's hand cleanup became behaviour, and the next night had no
+    real OOM kill.
+16. **Measure before parallelizing.** I expected usage limits and serial runs to be the bottleneck. The measurement
+    showed the harness's own 8-minute test suite took 31 % of session time and the driver was serial by construction
+    ([prompt](prompts/2026-10-25-improve-parallelization.md)).
+17. **Anti-goals as the design brief.** "A system that doesn't create more work" became the design's anti-goals: no
+    hand-fixed conflict, no orphaned worktree, branch or data, one writer per store. Lanes keep the two invariants
+    (what merges is what was verified; the driver is the record's one writer), and memory became one CoALA bucket ×
+    scope table.
+18. **The harness builds its own parallelism, and the whole chain was queued to run unattended.** The suite split
+    became P0 of the lanes run, so no human step sat between runs (`decisions/2026-10-26-lanes-first-rollout`).
+19. **A soft target written as a gate.** "About 2.5 minutes" became "under 150 s", and an honest session that
+    wouldn't pass itself at 165 s blocked 14 features. The fix is a rule, not just an answer: performance numbers in
+    steps are "measured and recorded" unless they protect the box.
