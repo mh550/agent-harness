@@ -13,3 +13,5 @@
 - 2026-10-26 11:36 · F1-06 · claude-opus-5-5 · passes=true · 34 min · 6/12 passing
 - 2026-10-26 11:36 · context.md for F1: 7938 bytes, 17 items left out
 - 2026-10-26 11:37 · F1 verified and tagged run/agent-harness-2026-10-26-2/F1
+- 2026-10-26 11:37 · F1 merged into main · https://github.com/mh550/agent-harness/pull/27
+- 2026-10-26 11:37 · context.md for F2-01: 6541 bytes
