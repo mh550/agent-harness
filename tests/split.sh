@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Cuts the single-file suite into tests/checks/NN-<slug>.sh by its `# ---- <title> ----` markers (run once; kept as the record).
-#   tests/split.sh [<monolith>]   → default: tests/run.sh at $SPLIT_FROM, the last commit before the split, into $SPLIT_OUT
+#   tests/split.sh [<monolith>]   → default: tests/run.sh at $SPLIT_FROM, the last commit before the split (main, re-cut after F1 and F2), into $SPLIT_OUT
 #                                   (tests/checks), which must be empty: files added since the split are never overwritten
 # Every section's lines go into its file byte for byte, between the lib.sh preamble and suite_end; no check line is edited.
 # A section that fails alone but passes in the monolith reads an earlier section's state: it is grouped with that section
@@ -46,7 +46,7 @@ REPLAYS_=(  # "<later title prefix> <= <earlier title prefix>"   why
   "debrief: since <= run 2:"                 # appends to stoppy's run.log and ended
 )
 HERE=$(cd "$(dirname "$0")" && pwd); out=${SPLIT_OUT:-$HERE/checks}
-SPLIT_FROM=${SPLIT_FROM:-3aa98b5}
+SPLIT_FROM=${SPLIT_FROM:-f5ab4eb}
 src=$(mktemp); trap 'rm -f "$src"' EXIT
 if [[ -n ${1:-} ]]; then cp "$1" "$src"; else git -C "$HERE/.." show "$SPLIT_FROM:tests/run.sh" > "$src" || exit 1; fi
 

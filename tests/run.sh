@@ -26,7 +26,10 @@ t0=$(us)
 # (written whole: replay may list it the moment it appears)
 one() { local b s rc; b=$(basename "$1" .sh) s=$(us); bash "$1" > "$out/$b.out" 2>&1; rc=$?
   echo "$rc $(( $(us) - s ))" > "$out/$b.end.tmp" && mv "$out/$b.end.tmp" "$out/$b.end"; }
-broken=() done_=() timing=()
+broken=() done_=() timing=() lost=0
+# a file that exited non-zero with no FAIL line (set -u, a stray exit) stopped before its later checks: one failed check,
+# so the total never reads all passed while a file is red
+no_fail() { grep -q '^FAIL ' "$out/$1.out" 2> /dev/null || { echo "FAIL $1: $2 before its end, with no FAIL line"; lost=$((lost + 1)); }; }
 # print every finished file not printed yet, whole, in the order they finished (.end's mtime)
 replay() {
   local e b rc t
@@ -36,9 +39,20 @@ replay() {
     cat "$out/$b.out"
     [[ ${KEEP:-} ]] && echo "kept: $(sed -n '1s/^tmp: //p' "$out/$b.out") ($b)"
     echo "$b: $(grep -cE '^(PASS|FAIL) ' "$out/$b.out") checks, $(s1 "$t") s"; timing+=("$t $b")
-    (( rc )) && broken+=("$b")
+    (( rc )) && { broken+=("$b"); no_fail "$b" "exited $rc"; }
   done
 }
+# stopped by a signal (check.sh's timeout signals the whole group): each unfinished file's output so far, named, so a hung
+# file shows its last line; the EXIT trap then deletes $out
+stopped() {
+  local f b left=()
+  for f in "${files[@]}"; do
+    b=$(basename "$f" .sh); [[ " ${done_[*]} " == *" $b "* || ! -e $out/$b.out ]] && continue
+    cat "$out/$b.out"; echo "$b: unfinished when the suite was stopped"; left+=("$b")
+  done
+  (( ${#left[@]} )) && echo "files that did not finish: ${left[*]}"; exit 143
+}
+trap stopped TERM INT HUP
 running=0
 for f in "${files[@]}"; do
   (( running >= jobs )) && { wait -n; running=$((running - 1)); replay; }
@@ -47,11 +61,11 @@ done
 while (( running )); do wait -n; running=$((running - 1)); replay; done
 for f in "${files[@]}"; do   # a job that died before its .end (killed): its output so far, and it counts as broken
   b=$(basename "$f" .sh); [[ " ${done_[*]} " == *" $b "* ]] && continue
-  cat "$out/$b.out" 2> /dev/null; echo "$b: ended without its exit status (killed?)"; broken+=("$b")
+  cat "$out/$b.out" 2> /dev/null; echo "$b: ended without its exit status (killed?)"; broken+=("$b"); no_fail "$b" killed
 done
 
 cat "$out"/*.out | sed -n 's/^\(PASS\|FAIL\) //p' > "$out/names"
-total=$(grep -c '' "$out/names") fails=$(cat "$out"/*.out | grep -c '^FAIL ')
+total=$(( $(grep -c '' "$out/names") + lost )) fails=$(( $(cat "$out"/*.out | grep -c '^FAIL ') + lost ))
 
 # conformance: the names this run produced against the fixture (a subset run produces only its own)
 if (( ! $# )) && [[ $(cd "$dir" && pwd -P) == "$(cd "$HERE/checks" && pwd -P)" ]]; then

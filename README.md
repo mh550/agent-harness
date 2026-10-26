@@ -220,7 +220,7 @@ cost: `evals/NEXT.md`.
 ## Tests
 
 ```bash
-tests/run.sh          # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 392 checks (~3 min 30 s)
+tests/run.sh          # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 395 checks (~3 min 30 s)
 tests/run.sh gc       # only the tests/checks/ files whose names contain "gc"
 TEST_JOBS=1 tests/run.sh   # one file at a time (default: half the cores, 1 to 4)
 ```
@@ -228,5 +228,6 @@ Each `tests/checks/*.sh` sources `tests/lib.sh` (a fresh `$T`, private tmux serv
 project) and runs alone; `tests/fixtures/check-names.txt` lists every check name and a full run fails on one missing,
 new or doubled. The runner starts the files `TEST_JOBS` at a time, largest first, as plain background jobs inside the
 caller's check scope, prints each file's output whole when it finishes with a `<file>: <n> checks, <s> s` line, and
-ends with the slowest three, the wall time and the total.
+ends with the slowest three, the wall time and the total. A file that exits non-zero with no `FAIL` line counts as one
+failed check; stopped by a signal (check.sh's timeout), the runner prints each unfinished file's output so far and names it.
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

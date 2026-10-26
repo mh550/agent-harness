@@ -69,7 +69,7 @@
         "docs/architecture.md §3 names tests/lib.sh, tests/run.sh as the runner and tests/checks/; §4's suite cache row names CHECK_KEY_IGNORE; README.md and CLAUDE.md say how to run the suite, a subset by file name, and TEST_JOBS",
         "`bash -n` on every shell file P0 touched and `node --check lib/treekey.mjs` pass; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-01",

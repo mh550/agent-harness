@@ -17,7 +17,7 @@
 - **Choice:**
   - `tests/lib.sh` is the preamble unchanged: `suite_setup` is lines 6–22 and 36–58 as a function, the helpers and
     `GHP` stay at top level, `suite_end` prints the file's `N/M checks passed` and exits 1 on a failure.
-  - `tests/split.sh` (kept, run once from `3aa98b5:tests/run.sh`) writes `tests/checks/NN-<slug>.sh`: shebang,
+  - `tests/split.sh` (kept; run from `3aa98b5:tests/run.sh`, then re-run from main's `f5ab4eb` after F1 and F2, its default) writes `tests/checks/NN-<slug>.sh`: shebang,
     `source "$(dirname "$0")/../lib.sh" && suite_setup`, the sections' lines byte for byte, `suite_end`. A section that
     failed alone is **grouped** with the one it reads from (27 `later -> earlier` pairs at its top, one line of why
     each), never patched. A group's file name adds its other sections' first words (`06-scope-sh-l1-02-run-capped-
@@ -40,7 +40,7 @@
     too (the spec only has the runner "say" it), so the fixture stays the complete list and a check deleted later
     is caught; a session that adds a check adds its line.
   - `lib/testcount.mjs` reads `N/M checks passed` (it read only `N passed` and `N tests passed`), so `check.sh`
-    reports this suite's count; the first check of `tests/checks/25-suite-runner.sh`, the runner's own file.
+    reports this suite's count; the first check of `tests/checks/33-suite-runner.sh` (25 at the time), the runner's own file.
   - The runner sets `LC_ALL=C` only on `sort`/`comm`: exported, it reached the files' tmux server, which then
     mangled the UTF-8 desk window names (12 desk checks failed).
 - **Rejected:**
@@ -49,8 +49,17 @@
     except tmux (L3-04), a one-second file. Two definitions of each helper for that is not worth it.
   - **Patching a section to build the state it reads:** the spec's rule; it would edit lines the conformance check
     can't see.
+  - **A test framework rewrite** (bats, `node:test`): the checks are already a deterministic program over a
+    throwaway project; what was slow was one process running one file. A framework means rewriting 325 checks for the
+    same result, and every assertion rewritten is one the conformance check can no longer prove unchanged.
+  - **LLM-driven selection** (a model picking which checks a change needs): the suite is the gate a session's
+    `passes` and every merge stand on, so what runs must be a deterministic function of the tree. A subset by file
+    name (`tests/run.sh gc`) is for iterating; the full run is always every file.
 
 ## S2: parallel inside the one check scope (P0-02)
+
+*File numbers below are as they were when measured; the re-cut from main (attempt 3) renumbered them, and the files
+are found by name: `tests/run.sh debrief`, `desk`, `scope`.*
 
 *(2026-10-26, run agent-harness-2026-10-26, feature P0-02; spec S2)*
 
@@ -173,6 +182,31 @@
     jobs' contention costs about 56 s of slot time). Both runs give the same per-file check counts and the same 392
     PASS names (compared C-sorted).
 
+## The P0 review (P0-04)
+
+*(2026-10-26, run agent-harness-2026-10-26, feature P0-04; an Opus review of `git diff origin/main...HEAD`, findings in
+`docs/plans/2026-10-26-P0-review.md`)*
+
+- **Finding:** no Critical. Two Important ones in the runner: a file stopped by a signal (check.sh's timeout on a hung
+  file) lost its output, because the runner prints a file only once it ends and the EXIT trap deleted the rest, so a
+  hang named neither the file nor its last line (the single file streamed it); and a file that exited non-zero with
+  no `FAIL` line (`set -u`, a stray `exit`) left the total at `N/N checks passed`, which `testcount.mjs` read as a
+  green count. Minor: `split.sh`'s default source commit was not the one the files were cut from; an absolute or `..`
+  entry in `CHECK_KEY_IGNORE` made `treekey.mjs` fail (git rejects it), which turned the cache off silently.
+- **Choice:**
+  - On TERM, INT or HUP the runner prints each unfinished file's output so far, `<file>: unfinished when the suite was
+    stopped`, then `files that did not finish: …`, and exits 143. A per-file timeout is P2's (`TEST_FILE_TIMEOUT`).
+  - A file that exits non-zero, or is killed, with no `FAIL` line adds one failed check, `FAIL <file>: exited <rc>
+    before its end, with no FAIL line`. A file with a `FAIL` of its own adds nothing: it is red already.
+  - `treekey.mjs` drops an absolute or `..` entry like `.` (`docs/../lib` would otherwise leave out `lib`).
+  - `SPLIT_FROM` defaults to `f5ab4eb`: `SPLIT_OUT=$(mktemp -d)/o bash tests/split.sh` matches `tests/checks/01–32`
+    byte for byte.
+- **Left:** `check.sh`'s cached line names the raw list, not `treekey.mjs`'s normalised one (`docs/*` is named but
+  leaves nothing out): cosmetic, and the list is this repo's own config. A check file whose name has a space breaks
+  the runner's `ls` loops: `split.sh`'s slugs never have one.
+- **Rejected:** counting every non-zero file as a failure (a file with a FAIL would count twice); printing every
+  file's output as it streams (the reason for the per-file `.out`: four files' lines interleaved).
+
 ## S3: the suite cache key leaves out what the suite never reads (P0-03)
 
 *(2026-10-26, run agent-harness-2026-10-26, feature P0-03; spec S3)*
@@ -196,7 +230,7 @@
   - `check.sh`'s cached line names the list only when it isn't the default (`.harness/runs` aside, the rest is not
     just `docs/plans`): `check: green (cached for this code tree, N tests; key ignores: docs/plans docs/specs …)`.
     Unset prints the plain line too: outside the driver there is no configured list to explain.
-  - Checked in `tests/checks/29-check-key.sh`: keys of two trees differing only under an ignored prefix, a `lib/`
+  - Checked in `tests/checks/34-check-key.sh` (29 at the time): keys of two trees differing only under an ignored prefix, a `lib/`
     change, the cached line, and two stub runs whose sessions (`STUB_EDIT=<path>`, which keeps the init output each
     session got) edit only `docs/plans/x.md` (the next session's suite is cached) or `lib/a.sh` (it runs).
   - `tests/lib.sh` unsets `HARNESS_CHECK_KEY_IGNORE` with the other variables a session's suite inherits from its run

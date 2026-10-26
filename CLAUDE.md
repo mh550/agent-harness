@@ -24,14 +24,14 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - bash (`set -uo pipefail`), node ≥ 20 standard library only, `jq`, `git`, `gh`, `tmux`, `flock`. No npm packages.
 - Match the surrounding style: short comments that say why, one-line usage headers on every lib file, pure
   functions in the `.mjs` files where they can be (exported, unit-checkable with `node --input-type=module -e`).
-- Every behaviour the driver or CLI gains is visible in `harness-log.md` (`note`) and gets a check in
-  `tests/run.sh`, written first and watched failing.
+- Every behaviour the driver or CLI gains is visible in `harness-log.md` (`note`) and gets a check in a
+  `tests/checks/` file, written first and watched failing.
 - **Fakes mirror the live API.** Stub output copies real CLI/HTTP shapes (`tests/fixtures/`); never invent a format.
   The 2026-10-17 usage-limit miss came from a guessed stub line.
 
 ## How to verify
 
-- The suite: `bash tests/run.sh` (~3 min 30 s on this box: 207 s measured with `TEST_JOBS=4`, the default here, 392 checks; end-to-end
+- The suite: `bash tests/run.sh` (~3 min 30 s on this box: 208 s measured with `TEST_JOBS=4`, the default here, 395 checks; end-to-end
   with stub `claude`/`gh` on a throwaway repo; prints `PASS`/`FAIL` per check, a `<file>: <n> checks, <s> s` line per
   file, the slowest three with the wall time, and `N/M checks passed`). It must end with every check passing. It runs
   the files in `tests/checks/` (one per topic, each from a fresh throwaway state built by `tests/lib.sh`), `TEST_JOBS`

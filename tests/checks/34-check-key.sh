@@ -14,6 +14,8 @@ check "treekey: two trees that differ only under an ignored prefix have the same
   '[[ $ky0 =~ ^[0-9a-f]{16}$ && $ky1 == "$ky0" && $ky2 != "$ky0" && $ky3 != "$ky0" && $ky3 != "$ky2" ]]'
 ky4=$(ky); ky5=$(HARNESS_CHECK_KEY_IGNORE=". ./ * lib/* docs/pl*" ky); ky6=$(HARNESS_CHECK_KEY_IGNORE="./docs/plans/ ." ky); ky7=$(HARNESS_CHECK_KEY_IGNORE=docs/plans ky)
 check "treekey: entries are literal path prefixes (. and globs leave nothing out; ./docs/plans/ is docs/plans)" '[[ $ky5 == "$ky4" && $ky6 == "$ky7" && $ky7 != "$ky4" ]]'
+ky8=$(HARNESS_CHECK_KEY_IGNORE="/docs/plans ../x docs/../lib docs/plans" ky 2>&1)   # P0 review: git rejects a pathspec outside the repo
+check "treekey: an absolute or .. entry is dropped, not an error (the key is docs/plans' alone)" '[[ $ky8 == "$ky7" ]]'
 check "treekey: unset, HARNESS_CHECK_KEY_IGNORE leaves out .harness/runs alone (docs/plans changes the key)" \
   '[[ $ky0u =~ ^[0-9a-f]{16}$ && $ky1u != "$ky0u" ]]'
 check "CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it" \

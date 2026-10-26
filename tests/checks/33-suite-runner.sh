@@ -37,4 +37,15 @@ check "suite runner: a file whose job was killed shows its output and makes the 
   '[[ $RK == 1 ]] && grep -qx "PASS rk k1" "$T/rk.out" && grep -qx "02-k: ended without its exit status (killed?)" "$T/rk.out" && grep -qx "files that exited non-zero: 02-k" "$T/rk.out"'
 check "lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)" \
   '[[ $(REPLAY=1 bash -c '"'"'source "$1/lib.sh" > /dev/null && suite_setup > /dev/null && check "rq x" false; echo "$fails"'"'"' _ "$HERE") == $'"'"'FAIL rq x\n1'"'"' ]]'
+# P0 review: a file that stops before its end (set -u, a stray exit) with no FAIL line must not total "N/N checks passed"
+mkdir -p "$T/rx" && printf '%s\n' 'echo "PASS rx a1"; echo "1/1 checks passed"' > "$T/rx/01-a.sh" && printf '%s\n' 'set -u; echo "PASS rx x1"; echo "$undefined_rx"; echo "PASS rx x2"' > "$T/rx/02-x.sh"
+TEST_CHECKS=$T/rx TEST_JOBS=2 bash "$HERE/run.sh" > "$T/rx.out" 2>&1; RX=$?
+check "suite runner: a file that exits non-zero with no FAIL line counts as one failed check (the total isn't all passed)" \
+  '[[ $RX == 1 && $(tail -1 "$T/rx.out") == "2/3 checks passed" ]] && grep -qx "FAIL 02-x: exited 1 before its end, with no FAIL line" "$T/rx.out"'
+# P0 review: a hung file stopped by the caller's timeout (check.sh's, which signals the whole group) shows its output so far
+mkdir -p "$T/rh" && printf '%s\n' 'echo "PASS rh a1"; echo "1/1 checks passed"' > "$T/rh/01-a.sh" && printf '%s\n' 'echo "PASS rh h1"; echo "rh about to hang"; sleep 30' > "$T/rh/02-h.sh"
+TEST_CHECKS=$T/rh TEST_JOBS=2 timeout -k 5s 3s bash "$HERE/run.sh" > "$T/rh.out" 2>&1; RH=$?
+check "suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero" \
+  '[[ $RH != 0 ]] && grep -qx "rh about to hang" "$T/rh.out" && grep -qx "02-h: unfinished when the suite was stopped" "$T/rh.out" \
+  && grep -qx "files that did not finish: 02-h" "$T/rh.out"'
 suite_end
