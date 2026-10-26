@@ -9,6 +9,28 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-26 17:25 · P1-01 · passes
+
+Wrote docs/plans/2026-10-26-P1-lanes-serial.md: every driver.sh function mapped to lib/record.sh, lib/lane.sh or the coordinator; the record lock and what it wraps; names, state, exit codes 0/10-15; slot open and materialization; record and other checks to rewrite (file:line); new files 35-38; stub flags; P1-02..05 order. An Opus review found 14 problems, all fixed in the plan.
+
+- **Files:** docs/plans/2026-10-26-P1-lanes-serial.md
+- **Verified:** check.sh green in 209 s, 395/395 checks passed; per-worktree core.excludesFile and skip-worktree tried on git 2.43 in a throwaway repo; every check cited by file:line grepped; Opus review of the plan against driver.sh, bin/harness and tests/checks, findings spot-checked (scope_owns 08:21, desk.sh:152, eval.sh:130, 08:445 dstart, eval MERGE_POLICY=off)
+- **Tests:** 395 → 395
+- **Dead end:** plan v1: the lane merged with merge_one after verify, sessions/limits as plain files, a shared waited-* marker, take-back after the record-commit guard — review: merges under MERGE_POLICY=off (eval, runs 14/14d), a continued run ends at once at the stale cap (19's six dl checks), coordinator eats the lane's limit wait, guard deletes the copy take-back reads; all fixed in §2-§8
+- **Discovery** (affects P1-02): The spec's scope_owns regex makes `harness-demo-x-svc` a lane unit of run demo: 08:21's negative assertion must change (P1-02), and run proj-<date> owns proj-<date>-2's units (gc's live-owner rule covers it).
+- **Discovery** (affects P1-04): Lane units and per-lane scratch change ~10 checks' text in 08 (unit regexes, svc_gaps, termed_left); plan §10.2 lists each with its rewrite. The stub's sessions.log/count-* and the fixture teardown markers must go to ${HARNESS_SCRATCH%%/lanes/*} so their checks keep their text.
+- **Discovery** (affects P1-03, P1-05): Reopening a lane from origin/harness-lane/<run>/<m> is needed from P1-03 on (a segment that ends at a session cap mid-milestone, the dl runs), not only in P1-05.
+- **Discovery** (affects P1-03): lib/eval.sh:130 reads base..harness/$run for commits.json; with a record-only run branch it must read the run's tags and lane branches (10:130).
+- **Discovery** (affects run): The live check.sh still runs the suite in full for a docs/plans-only change (209-234 s twice this session): the live checkout hasn't synced P0-03's key ignores while this run lives.
+- **Question for Michael:** D2 default: until P2's record PR, `harness gc` deletes a finished lanes run's record branch (the ledger keeps the record). Fine, or should P1 keep record branches until the record PR exists?
+- **Question for Michael:** If this run auto-continues after P1 merges, the P1 driver's legacy refusal will stop it (this branch carries P2 code beyond main). Plan §14 gives the way out (harness merge, then a new --brief run). OK, or do you want P1-05 to exempt runs whose code is on their own branch only after a given date?
+- **Proposed change:** P1-02 step 1: a milestone also opens when every feature passes but it isn't verified (a resumed run, the dl deadline runs); and add a pure `F deps <list> <m>` for the merge rule and the base
+- **Proposed change:** P1-02: tests/checks/08 line 21's `! scope_owns demo harness-demo-x-svc.scope` becomes `harness-demo-x-y-svc.scope` (the spec's regex accepts one-segment prefixes)
+- **Proposed change:** P1-03 step 7: 'every name still present' except the rename of 'independent M2 verified, not merged (M1 isn't)' (plan §10.2): the spec deletes the rule it asserted
+- **Proposed change:** P1-04 step 1: the unit number is scope-seq (every session of the run), not $STATE/sessions (coding only), so verify and coding units never share a name (plan D7)
+- **Proposed change:** P1-04: tests/checks rows of plan §10.2 (unit names) are rewritten in P1-04; 'every other check keeps its text' is not achievable with the spec's lane unit names
+- *03-P1-01 · claude-opus-5-5*
+
 ### 2026-10-26 16:51 · verify P0 · passes
 
 All four P0 features hold: init full suite 395/395 (206 s), subset runs work, split/runner/key/docs/decision/review artefacts read and match each step. Check names and counts reconcile with the fixture.
