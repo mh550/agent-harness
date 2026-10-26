@@ -1,0 +1,9 @@
+# generated on this box: ~/.local/bin/pytest -p no:cacheprovider (pytest 9.1.1) on four passing tests in /tmp, output as printed
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /tmp/harness/agent-harness/agent-harness-2026-10-26-2/fx/py
+collected 4 items
+
+test_x.py ....                                                           [100%]
+
+============================== 4 passed in 0.01s ===============================

@@ -129,6 +129,14 @@ ORNT='import { orientation as or, events } from "'$HERE'/../lib/metrics.mjs"; co
     && eq(or(noTs), { tokens: 24547, turns: 1, seconds: null }) && eq(or(evs.map((e, i) => i === 1 ? noTs[1] : e)), { tokens: 24547, turns: 1, seconds: 0 }) && eq(or([{ type: "result" }]), { tokens: null, turns: null, seconds: null }) ? 0 : 1);'
 check "metrics.mjs: orientation stops at the first Write" 'node --input-type=module -e "$ORNT"'
 
+# ---- test counts, pure (R1): one fixture per runner (tests/fixtures/check-*.txt, line 1 says where its text came from) ----
+tc() { node "$HERE/../lib/testcount.mjs" "$HERE/fixtures/check-$1.txt"; }
+check "testCount: node:test fixture gives 3" '[[ $(tc node-test) == "3 tests" ]]'
+check "testCount: pytest fixture gives 4" '[[ $(tc pytest) == "4 tests" ]]'
+check "testCount: jest fixture gives the Tests: count (7), not Test Suites:" '[[ $(tc jest) == "7 tests" ]] && grep -q "^Test Suites: 2 passed, 2 total" "$HERE/fixtures/check-jest.txt"'
+check "testCount: cargo fixture gives the sum of its test result lines (3)" '[[ $(tc cargo) == "3 tests" && $(grep -c "^test result: ok" "$HERE/fixtures/check-cargo.txt") == 2 ]]'
+check "testCount: go fixture gives its --- PASS count (3)" '[[ $(tc go) == "3 tests" ]]'
+
 # ---- scope.sh (L1-02): capped transient user scopes, through the stub systemd-run/systemctl; one real 64M scope ----
 SC=$HERE/../lib/scope.sh
 sd_with() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { printf "%s", $0; exit }' "$T/systemd.log" 2>/dev/null; }   # the first stub systemd call containing $1
@@ -549,6 +557,7 @@ check "verifier caught A, re-queued"      'hlog demo | grep -q "verify M1: A fai
 check "M1 and M2 tagged"                  'git -C "$T/origin.git" tag | grep -qx run/demo/M1 && git -C "$T/origin.git" tag | grep -qx run/demo/M2'
 check "M1 and M2 merged into main by PRs" '[[ $(grep -c "pr merge" "$T/gh.log") == 2 ]] && on_main run/demo/M2 && hlog demo | grep -q "M2 merged into main"'
 check "no final tag, no false 'verified'" '! git -C "$T/origin.git" tag | grep -q final && ! hlog demo | grep -q "final verified"'
+check "the verify prompt says the suite runs in full" 'grep -q "cleared the suite'"'"'s cached result" "$HARNESS_STATE/proj/demo/prompt-verify.md"'
 check "brief committed with the run"      'grep -q "only A–C" "$RD/brief.md"'
 check "brief, rules and policy in the prompt" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q "only A–C" "$P" && grep -qx "# Project rules" "$P" && grep -q "\`CLAUDE.md\`" "$P" && grep -q "Policy: build-only" "$P"'
 check "coding prompt names CLAUDE.md but doesn't paste it" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q CLAUDE.md "$P" && ! grep -qx rules "$P"'
@@ -882,12 +891,61 @@ rm -rf "$HARNESS_STATE"/proj/deps-{end,live,q,co,ro}   # a live fake driver.pid 
 
 # ---- run 2: Michael sets "status: stop" in INBOX.md from the phone (and only NOTIFY_CMD is configured) ----
 printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"
+# a continuation Michael requested before this stop (state_of needs a meta.env; the start writes the real one)
+mkdir -p "$HARNESS_STATE/proj/stoppy" && printf 'RUN_ID=stoppy\n' > "$HARNESS_STATE/proj/stoppy/meta.env" && "$H" queue add --continue stoppy > /dev/null
 STUB_PHONE_STOP=1 "$H" start "$T/proj" stoppy --spec SPEC.md --foreground > "$T/run2.out" 2>&1
 cp "$T/base-config.sh" "$T/user-config.sh"
 check "NOTIFY_CMD-only: \$1 unchanged, fields as env" 'grep -q "^\[stoppy\] started: 0/3 passing$" "$T/notify-env.log" && grep -qx "HARNESS_NOTIFY_TITLE=harness" "$T/notify-env.log" && grep -qx "HARNESS_NOTIFY_PRIORITY=" "$T/notify-env.log" && [[ -s $T/curl.log ]] && ! grep -q "\[stoppy\]" "$T/curl.log"'
 check "phone stop honoured before any coding session" 'hlog stoppy | grep -q "stopped by Michael" && ! grep -q attempt "$T/scratch/proj/stoppy/sessions.log"'
 check "a stop from the phone stops the services through finish" 'hlog stoppy | grep -q "· services stopped (stopped by Michael)$" && [[ -f $T/scratch/proj/stoppy/teardown-stopped-by-Michael.marker ]]'
+check "a stop makes a queued requested continuation of its run automatic (the later word wins)" 'f=$(compgen -G "$HARNESS_STATE/queue/*-continue-stoppy.args") && grep -qx -- --queued "$f" \
+  && ! grep -qx -- --requested "$f" && hlog stoppy | grep -qF "stop: the queued continuation ${f##*/} is automatic now (the stop came after the request)"'
+rm -f "$HARNESS_STATE"/queue/*.args
 check "second run got its own port"       '[[ $(cat "$HARNESS_STATE/proj/stoppy/port") != $(cat "$HARNESS_STATE/proj/demo/port") ]]'
+
+# ---- run 2b: a stop records why (R7): `harness stop --why` and `status: stop <why>`; the retro prompt carries it ----
+check "a stop without a reason says just: stopped by Michael (the note and ended)" 'hlog stoppy | grep -q "· stopped by Michael$" && grep -q "^stopped by Michael · [0-9-]* [0-9:]*$" "$HARNESS_STATE/proj/stoppy/ended"'
+STUB_CLI_STOP="the spec changed" "$H" start "$T/proj" whycli --spec SPEC.md --foreground > "$T/run2b.out" 2>&1
+check "harness stop --why: the note and ended say stopped by Michael: <why>" 'hlog whycli | grep -q "· stopped by Michael: the spec changed$" \
+  && grep -q "^stopped by Michael: the spec changed · " "$HARNESS_STATE/proj/whycli/ended" && grep -qx "the spec changed" "$HARNESS_STATE/proj/whycli/STOP"'
+STUB_CLI_STOP=- "$H" start "$T/proj" whybare --spec SPEC.md --foreground > "$T/run2b-bare.out" 2>&1
+check "harness stop without --why: an empty STOP, and stopped by Michael as before" '[[ -f $HARNESS_STATE/proj/whybare/STOP && ! -s $HARNESS_STATE/proj/whybare/STOP ]] \
+  && hlog whybare | grep -q "· stopped by Michael$" && grep -q "^stopped by Michael · " "$HARNESS_STATE/proj/whybare/ended" \
+  && ! "$H" stop whybare --why "" 2> /dev/null && ! "$H" stop whybare --because x 2> /dev/null && [[ ! -s $HARNESS_STATE/proj/whybare/STOP ]] \
+  && ! "$H" pause whybare --why x 2> /dev/null && [[ ! -f $HARNESS_STATE/proj/whybare/PAUSE ]]'
+STUB_PHONE_STOP="the spec changed" "$H" start "$T/proj" whyphone --spec SPEC.md --foreground > "$T/run2b-phone.out" 2>&1
+check "status: stop <why> from the phone: the same note, ended and services note" 'hlog whyphone | grep -q "· stopped by Michael: the spec changed$" \
+  && grep -q "^stopped by Michael: the spec changed · " "$HARNESS_STATE/proj/whyphone/ended" && hlog whyphone | grep -q "· services stopped (stopped by Michael: the spec changed)$"'
+check "the retro prompt carries the end reason" 'grep -q "{{END_REASON}}" "$HERE/../prompts/retro.md" && grep -q "stopped by Michael: the spec changed" "$HARNESS_STATE/proj/whyphone/prompt-retro.md"'
+STUB_PHONE_STOP=", blocked · 2026-11 usage limit" "$H" start "$T/proj" whyodd --spec SPEC.md --foreground > "$T/run2b-odd.out" 2>&1
+check "a reason after any separator is kept whole, \" · 2026-\" in it included" 'S=$T/wt/proj/whyodd/.harness/runs/whyodd/summary.json \
+  && [[ $(jq -r .end_reason "$S") == "stopped by Michael: blocked · 2026-11 usage limit" ]] && hlog whyodd | grep -q "· stopped by Michael: blocked · 2026-11 usage limit$"'
+check "the debrief page never reads a stop reason's words as its tone" 'node --input-type=module -e "import { card } from \"$HERE/../lib/page.mjs\"; const c = r => card({ run: \"r\", project: \"p\", end_reason: r }, \"\");
+  process.exit(c(\"stopped by Michael: blocked, failed\").includes(\"pill muted\") && c(\"blocked on A\").includes(\"pill warn\") ? 0 : 1)"'
+check "a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason" '[[ $("$H" continue whycli --queued) == "skipping queued continuation of whycli: Michael stopped it" ]] \
+  && [[ $(jq -r .end_reason "$T/wt/proj/whycli/.harness/runs/whycli/summary.json") == "stopped by Michael: the spec changed" ]] \
+  && "$H" queue add --continue whycli > /dev/null && grep -qx -- --requested "$(compgen -G "$HARNESS_STATE/queue/*-continue-whycli.args")"'
+rm -f "$HARNESS_STATE"/queue/*-continue-whycli.args
+# F1-06 review: the order is when Michael spoke, the INBOX stop belongs to its segment, a reason's | is text
+STUB_CLI_STOP=- STUB_CLI_REQUEST="from Michael, after the stop" "$H" start "$T/proj" whylate --spec SPEC.md --foreground > "$T/run2b-late.out" 2>&1
+check "a request queued after the stop (before the driver acts on it) stays requested" 'f=$(compgen -G "$HARNESS_STATE/queue/*-continue-whylate.args") \
+  && grep -qx -- --requested "$f" && grep -qx "from Michael, after the stop" "$f" && hlog whylate | grep -q "· stopped by Michael$" && ! hlog whylate | grep -q "is automatic now"'
+rm -f "$HARNESS_STATE"/queue/*-continue-whylate.args
+STUB_PHONE_STOP="A failed the re-check" "$H" start "$T/proj" whyback --spec SPEC.md --foreground > "$T/run2b-back.out" 2>&1
+check "a stop reason's words are never read as a feature's cause (A failed the re-check)" 'S=$T/wt/proj/whyback/.harness/runs/whyback/summary.json \
+  && [[ $(jq -r .end_reason "$S") == "stopped by Michael: A failed the re-check" ]] && [[ $(jq -c .rework "$S") == "[]" ]] && [[ $(jq -r "[.features_detail[] | select(.cause == \"failed verify\")] | length" "$S") == 0 ]]'
+echo MAX_SESSIONS=1 > "$HARNESS_STATE/proj/whyback/run.env"
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue whyback --foreground > "$T/run2b-back2.out" 2>&1
+check "harness continue of a run stopped from the phone: INBOX.md's status: stop goes back to run, so it doesn't stop again" 'I=$T/wt/proj/whyback/.harness/runs/whyback/INBOX.md \
+  && ! grep -q "^stopped by Michael" "$HARNESS_STATE/proj/whyback/ended" && [[ $(head -1 "$I") == "status: run" ]] \
+  && hlog whyback | grep -qF "INBOX.md: \`status: stop A failed the re-check\` set back to \`status: run\` (that stop ended the last segment; harness continue started this one)" \
+  && [[ $(git -C "$T/origin.git" show harness/whyback:.harness/runs/whyback/INBOX.md | head -1) == "status: run" ]]'
+rm -f "$HARNESS_STATE"/queue/*-continue-whyback.args
+check "a stop reason with | keeps its card on the debrief page and is one cell in report.md and trends" 'S=$T/wt/proj/whyback/.harness/runs/whyback/summary.json \
+  && echo note > "$T/pipe-note.md" && node "$HERE/../lib/page.mjs" "$T/pipe-note.md" "$T/pipe.html" "$S|stopped by Michael: a|b" && grep -q "whyback" "$T/pipe.html" \
+  && jq ".end_reason = \"stopped by Michael: a|b\"" "$S" > "$T/pipe.json" && node "$HERE/../lib/summary.mjs" report "$T/pipe.json" | grep -qF "| Ended | stopped by Michael: a\|b " \
+  && jq -nc "{run: \"r\", project: \"p\", passing: 0, total: 1, merged: 0, cost: 0, per_passing: null, wall_h: 0, end_reason: \"stopped by Michael: a|b\", causes: {}}" > "$T/pipe.jsonl" \
+  && node "$HERE/../lib/summary.mjs" trends "$T/pipe.jsonl" | grep -qF "| stopped by Michael: a\|b |"'
 
 # ---- run 3: a verifier that always rejects; C is independent of M1 ----
 SPY3='printf "%s · %s\n" "$(printf "%s\n" "$@" | sed -n "s/^Title: //p")" "$(git -C "$STUB_DIR/origin.git" log -1 --format=%s harness/strict)" >> "$STUB_DIR/spy-strict.log"'
@@ -1003,9 +1061,33 @@ PAGE=$T/ledger/debrief.html
 check "a debrief page beside the note: a card per run, the note escaped" '[[ -s $PAGE ]] && grep -q "proj-$D-2" "$PAGE" && grep -q "3/3 passing" "$PAGE" && grep -q "Landed: proj M1, M2 on main" "$PAGE" && grep -q "&lt;i&gt;raw" "$PAGE" && ! grep -q "<i>raw" "$PAGE"'
 "$H" debrief > "$T/again.out" 2>&1
 check "by hand right after: nothing new, no session" '[[ $(ndb) == 1 ]] && grep -q "no runs started since the last debrief" "$T/again.out"'
-"$H" queue add --continue stoppy > /dev/null   # Michael stopped stoppy: the runner skips it, so it starts nothing
+"$H" queue add --continue stoppy --automatic > /dev/null   # Michael stopped stoppy: the runner skips an automatic continuation, so it starts nothing
 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2.out" 2>&1; settle
 check "a runner that started nothing (a skipped continuation): no debrief" '[[ $(ndb) == 1 ]] && grep -q "skipping queued continuation of stoppy" "$Q/runner.log" && ! grep -q "harness debrief (detached" "$T/queue2.out"'
+# R6: a continuation queued through the CLI is a request, so it starts even after Michael's stop; the driver's and the
+# debrief's are automatic and skipped after one. Both runs' PROJECT_DIR is no checkout: a start dies at once
+for r in stopreq stopauto; do mkdir -p "$HARNESS_STATE/other/$r" && echo "stopped by Michael · $(date '+%F %T')" > "$HARNESS_STATE/other/$r/ended" \
+  && printf 'WT=/x\nRUN_ID=%s\nSTATE=%s\nPROJECT_DIR=%s\n' "$r" "$HARNESS_STATE/other/$r" "$T/no-checkout" > "$HARNESS_STATE/other/$r/meta.env"; done
+"$H" queue add --continue stopreq > /dev/null; "$H" queue add --continue stopauto --automatic > /dev/null
+check "queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't" 'fr=$(compgen -G "$Q/*-continue-stopreq.args") && fa=$(compgen -G "$Q/*-continue-stopauto.args") \
+  && grep -qx -- --queued "$fr" && grep -qx -- --requested "$fr" && grep -qx -- --queued "$fa" && ! grep -qx -- --requested "$fa" && ! grep -qx -- --automatic "$fa"'
+check "queue list marks continuations (requested) or (automatic)" 'L=$("$H" queue list) && grep -q "^  [0-9]*\. continue stopreq .*(requested)$" <<< "$L" && grep -q "^  [0-9]*\. continue stopauto .*(automatic)$" <<< "$L"'
+B=$(ndb); HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2r.out" 2>&1; settle
+check "a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)" 'grep -q "starting: harness continue stopreq" "$Q/runner.log" && ! grep -q "skipping queued continuation of stopreq" "$Q/runner.log" \
+  && grep -q "skipping queued continuation of stopauto: Michael stopped it" "$Q/runner.log" && grep -q "no-checkout is not a git repository" "$Q/runner.log" && [[ $(ndb) == "$B" ]]'
+"$H" queue add --continue stopauto --automatic > /dev/null
+check "a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too" '[[ $("$H" queue add --continue stopauto) == "already queued: continue stopauto (now requested, with this request'"'"'s options)" ]] \
+  && grep -qx -- --requested "$(compgen -G "$Q/*-continue-stopauto.args")" && "$H" queue park 1 > /dev/null && grep -q "^  1\. continue stopauto .*(requested)$" <<< "$("$H" queue list | sed -n "/^parked/,\$p")"'
+"$H" queue add --continue stopreq --automatic --keep-attempts --until-epoch 1 > /dev/null
+check "a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)" '[[ $("$H" queue add --continue stopreq --brief "from Michael") == "already queued: continue stopreq (now requested, with this request'"'"'s options)" ]] \
+  && [[ $(cat "$(compgen -G "$Q/*-continue-stopreq.args")") == "$(printf "%s\n" continue stopreq --queued --requested --brief "from Michael")" ]]'
+rm -rf "$HARNESS_STATE/other" "$Q"/*.args "$Q"/held/*
+# the driver's own continuation, after a session cap (run.env outlasts start: MAX_SESSIONS=1 is the initializer alone)
+mkdir -p "$HARNESS_STATE/proj/capped" && echo MAX_SESSIONS=1 > "$HARNESS_STATE/proj/capped/run.env"
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" capped --spec SPEC.md --foreground > "$T/capped-run.out" 2>&1
+check "the driver's continuation after a session cap is automatic" 'grep -q "^session cap (1)" "$HARNESS_STATE/proj/capped/ended" && hlog capped | grep -q "continuation queued (1 of 3, automatic;" \
+  && f=$(compgen -G "$Q/*-continue-capped.args") && grep -qx -- --queued "$f" && grep -qx -- --keep-attempts "$f" && ! grep -qx -- --requested "$f" && grep -q "continue capped .*(automatic)$" <<< "$("$H" queue list)"'
+rm -rf "$HARNESS_STATE/proj/capped" "$Q"/*.args   # later debriefs cover runs by their state dir: this one is gone
 # a gc that fails and hangs (a git whose fetch waits on a prompt, for this runner only: only gc runs that argv) is
 # killed at HARNESS_GC_TIMEOUT and logged; the debrief starts anyway (L4-05 review)
 mkdir -p "$T/gcfail"; printf '%s\n' '#!/usr/bin/env bash' '[[ $1 == -C && $3 == fetch && "${*:4}" == "-q --prune origin" ]] && { echo "fatal: stub fetch failure" >&2; sleep 60; exit 1; }' \
@@ -1019,7 +1101,7 @@ check "a failed or hung runner gc is logged (killed at HARNESS_GC_TIMEOUT) and n
 cp "$T/user-config.sh" "$T/user-config.keep"; echo 'MAX_PARALLEL_RUNS=2' >> "$T/user-config.sh"
 mkdir -p "$HARNESS_STATE/proj/busy3" "$HARNESS_STATE/other/stoppy-o" && echo 'stopped by Michael' > "$HARNESS_STATE/other/stoppy-o/ended" && : > "$HARNESS_STATE/other/stoppy-o/meta.env"
 sleep 5 & echo $! > "$HARNESS_STATE/proj/busy3/driver.pid"   # outlives the --until below, which gives the runner 3 s to start stoppy-o
-"$H" queue add "$T/proj" --spec SPEC.md > /dev/null; "$H" queue add --continue stoppy-o > /dev/null
+"$H" queue add "$T/proj" --spec SPEC.md > /dev/null; "$H" queue add --continue stoppy-o --automatic > /dev/null
 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" $(( $(date +%s) + 3 )) > "$T/queue2b.out" 2>&1
 check "queue holds an entry whose project has a live run, starts the next one" '[[ $(grep -c "holding .*(proj)" "$T/queue2b.out") == 1 ]] && grep -q "starting: harness continue stoppy-o" "$T/queue2b.out" \
   && ! grep -q "starting: harness start $T/proj" "$T/queue2b.out" && grep -q "1 left queued" "$T/queue2b.out" && grep -qx start "$(ls "$Q"/*.args)"'
@@ -1034,6 +1116,14 @@ HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/q
 check "the runner skips a parked entry and says so" 'grep -q "1 parked entry skipped until unparked" "$T/queue2c.out" && ! grep -q "starting:" "$T/queue2c.out" && grep -q "queue empty" "$T/queue2c.out"'
 check "queue unpark puts it back at the end, its reason gone" 'grep -q "^unparked .* as 0" <<< "$("$H" queue unpark 1)" && [[ $(ls "$Q"/*.args | wc -l) == 1 ]] && ! compgen -G "$Q/held/*" > /dev/null && grep -qx start "$(ls "$Q"/*.args)"'
 rm -f "$Q"/*.args
+# R11: numbers count the parked entries too, and a park never overwrites one of the same name
+mkdir -p "$Q/held" && printf '%s\n' start "$T/proj" > "$Q/held/0004-start-proj.args" && echo "why · x" > "$Q/held/0004-start-proj.why"
+check "queue add numbers past a parked entry" '[[ $("$H" queue add "$T/proj" --spec SPEC.md) == "queued: 0005-start-proj.args" ]]'
+rm -f "$Q"/*.args "$Q"/held/*
+echo held-marker > "$Q/held/0006-start-proj.args"; printf '%s\n' start "$T/proj" > "$Q/0006-start-proj.args"
+check "queue park refuses to overwrite a parked entry; both survive" '! "$H" queue park 1 > /dev/null 2> "$T/park.err" && grep -q "^harness: 0006-start-proj.args already parked" "$T/park.err" \
+  && [[ -f $Q/0006-start-proj.args && $(cat "$Q/held/0006-start-proj.args") == held-marker && ! -e $Q/held/0006-start-proj.why ]]'
+rm -f "$Q"/*.args "$Q"/held/*
 
 # ---- sync: the live checkout level with origin (merged PRs in, ledger commits out), only when that is safe ----
 git init -q --bare -b main "$T/live.git"; git init -q -b main "$T/live"; mkdir -p "$T/live/ledger"; echo a > "$T/live/code.sh"; echo '{}' > "$T/live/ledger/runs.jsonl"
@@ -1088,6 +1178,12 @@ check "a malformed entry is recorded as minimal and the run goes on" 'hlog baden
   && jq -se "map(select(.feature == \"B\"))[0] | .outcome == \"passes\" and any(.files[]; . == \"B-badentry.txt\") and all(.files[]; startswith(\".harness\") | not) and .summary == \"done\" and (.minimal | startswith(\"invalid: not JSON\"))" \
     "$T/wt/proj/badentry/.harness/runs/badentry/entries.jsonl" > /dev/null && [[ ! -e $T/wt/proj/badentry/.harness/runs/badentry/entry.json ]] \
   && grep -q "^done" "$HARNESS_STATE/proj/badentry/ended"'
+
+# ---- run 13c: a stale green marker (R4): verify runs the suite in full ----
+# B leaves BROKEN with a green marker for that tree: the post-session check trusts it; verify clears it and runs in full
+STUB_STALE_GREEN=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" stalegreen --spec SPEC.md --foreground > "$T/run13c.out" 2>&1
+check "a stale green marker is caught at verify: M1 red, not tagged" 'hlog stalegreen | grep -q " · verify M1: suite cache cleared; the suite runs in full on the verified tree$" \
+  && hlog stalegreen | grep -q " · verify M1: the suite is red on the verified tree" && [[ -z $(git -C "$T/origin.git" tag -l "run/stalegreen/M1") ]]'
 
 # ---- run 14: v2-style tags don't merge on a resume; `harness merge` merges them ----
 echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"
@@ -1232,7 +1328,7 @@ check "the next debrief covers what the failed and killed ones missed" '[[ $(ndb
 check "one note, overwritten: ledger/debrief.md" '! cmp -s "$NOTE" "$T/note-before.md" && [[ $(grep -c "^# Debrief" "$NOTE") == 1 && ! -e $T/ledger/debriefs ]] && grep -q "stub runs" "$NOTE"'
 check "the session: an allowlist (dontAsk) and the never-list" 'A=$T/debrief-args; grep -qx dontAsk "$A" && ! grep -qx auto "$A" && grep -qx -- --allowedTools "$A" && grep -qx Read "$A" && grep -qxF "Bash(git log:*)" "$A" && grep -qx -- --disallowedTools "$A" && grep -qx Edit "$A" && grep -qx Write "$A" && grep -qxF "Bash(git push:*)" "$A" && grep -qxF "Bash(gh pr merge:*)" "$A" && grep -qxF "Bash(harness queue start:*)" "$A" && grep -qxF "Bash(harness merge:*)" "$A" && grep -qxF "Bash(harness continue:*)" "$A" && grep -qx "$($F model sonnet)" "$A"'
 check "the prompt goes in on stdin, not as an argument" 'grep -q "^# Debrief" "$T/debrief-prompt" && ! grep -q "# Debrief" "$T/debrief-args"'
-check "continuation queued: keeps attempts, brief marked as the debrief's" 'f=$(compgen -G "$Q/*-continue-stoppy.args") && grep -qx -- --keep-attempts "$f" && grep -q "do C next" "$f" && grep -qi "suggested by the debrief" "$f" && grep -q "Queued: .*stoppy" "$NOTE" && ! grep -q "debrief: queued" "$NOTE"'
+check "continuation queued: keeps attempts, brief marked as the debrief's" 'f=$(compgen -G "$Q/*-continue-stoppy.args") && grep -qx -- --keep-attempts "$f" && ! grep -qx -- --requested "$f" && grep -q "do C next" "$f" && grep -qi "suggested by the debrief" "$f" && grep -q "Queued: .*stoppy" "$NOTE" && ! grep -q "debrief: queued" "$NOTE"'
 check "not queued: ended done / already queued / no work left / still running" 'grep -q "Not queued: demo (it ended .done." "$NOTE" && grep -q "Not queued: walled (a continuation is already queued)" "$NOTE" && grep -q "Not queued: limited (no work left)" "$NOTE" && grep -q "Not queued: gated (still running)" "$NOTE" && ! compgen -G "$Q/*-continue-demo.args" > /dev/null && ! compgen -G "$Q/*-continue-limited.args" > /dev/null && ! compgen -G "$Q/*-continue-gated.args" > /dev/null && ! grep -q "CONTINUE:" "$NOTE"'
 msg_with() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { printf "%s", $0; exit }' "$T/notify.log"; }
 check "NOTIFY_CMD gets 3 headline lines and the note path" 'M=$(msg_with Landed); (( $(wc -l <<< "$M") <= 4 )) && grep -q "Landed: proj M1" <<< "$M" && grep -qF "$NOTE" <<< "$M" && ! grep -q FOURTH <<< "$M"'
@@ -1499,6 +1595,15 @@ check "finish keeps check-last.out and init.out in the state dir and deletes the
   && hlog scrub | grep -qF "scratch removed: $T/scratch/proj/scrub" && grep -qx "# pass 7" "$HARNESS_STATE/proj/scrub/check-last.out"'
 check "a continued run whose suite is cached green keeps its test count (the green marker holds it, not scratch)" '[[ $scrub_end1 == 7 && $(cat "$HARNESS_STATE/proj/scrub/tests-end" 2> /dev/null) == 7 ]] \
   && [[ $(hlog scrub | grep -c "scratch removed: ") == 2 && ! -e $T/scratch/proj/scrub ]]'   # the second segment ran no init: its scratch held no suite output
+# R1: a suite that prints text with no count, over two segments: the first ends at its deadline after the initializer,
+# the second runs the features (an init and a suite before each session) to the end
+mkdir -p "$HARNESS_STATE/proj/nocount" && echo "CHECK_CMD='echo \"lint: clean\"'" > "$HARNESS_STATE/proj/nocount/run.env"
+"$H" start "$T/proj" nocount --spec SPEC.md --until-epoch $(( $(date +%s) - 1 )) --foreground > "$T/nocount.out" 2>&1
+"$H" continue nocount --foreground > "$T/nocount2.out" 2>&1
+check "test count: no match is noted once per run (demo: no output; nocount: text with no count), never for a counted or cached suite (scrub)" \
+  '[[ $(grep -c "test count: no match in the suite'"'"'s output (tests start/end stay unknown)" "$T/demo-hlog.md") == 1 ]] \
+  && [[ $(hlog nocount | grep -c "test count: no match") == 1 && $(hlog nocount | grep -c "run ended") == 2 ]] \
+  && hlog nocount | grep -m1 -e "test count: no match" -e "run ended" | grep -q "test count" && hlog nocount | grep -q "run ended (done)" && ! hlog scrub | grep -q "test count: no match"'
 check "KEEP_SCRATCH=1 keeps the run's scratch; the default is 0" '[[ -d $T/scratch/proj/demo ]] && grep -qF "scratch kept (KEEP_SCRATCH=1): $T/scratch/proj/demo" "$T/demo-hlog.md" \
   && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ $KEEP_SCRATCH == 0 ]] ) && grep -q "^# KEEP_SCRATCH=0 " "$HERE/../templates/user/config.sh"'
 git init -q "$T/ck2" && ( cd "$T/ck2" && echo a > f && git add f && git -c user.name=t -c user.email=t@t commit -qm a )
@@ -1613,7 +1718,7 @@ check "queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old v
   && ! grep -q "starting:\|config reloaded" "$RB5" && grep -q "stopped by harness queue stop" "$RB5"'
 kill "$BP5" "$RP5" 2> /dev/null; rm -rf "$HARNESS_STATE/other/busy5" "$HARNESS_STATE"/queue/*.args
 cfg 1; : > "$T/hold-coding"; rm -f "$T"/held-l5? "$T"/release-l5?
-"$H" queue add "$T/proj" l5a --spec SPEC.md > /dev/null; "$H" queue add "$T/proj2" l5b --spec SPEC.md > /dev/null; "$H" queue add --continue stoppy-o > /dev/null
+"$H" queue add "$T/proj" l5a --spec SPEC.md > /dev/null; "$H" queue add "$T/proj2" l5b --spec SPEC.md > /dev/null; "$H" queue add --continue stoppy-o --automatic > /dev/null
 HARNESS_QUEUE_POLL=1 HARNESS_QUEUE_SETTLE=5 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$RL5" 2>&1 & RP5=$!
 waitf '[[ -f $T/held-l5a ]]' 90; sleep 3; l5_early=$(st5 "start $T/proj2" && echo started)   # three polls at 1: the second waits
 cfg 2; waitf 'st5 "start $T/proj2"' 15; l5_up=$(grep -c "MAX_PARALLEL_RUNS 1 → 2 (config reloaded)" "$RL5")

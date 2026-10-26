@@ -7,6 +7,12 @@
 # session_TEST<n>, records argv and $PWD in $STUB_DIR/desk/<n>-<name>.args, its environment's names in <n>-<name>.env
 # and each typed line in <n>-<name>.in. STUB_DESK_MENU=1: after the first typed line it shows the permission dialog of
 # fixtures/permission-menu.txt (the desk asks to run a command) and takes nothing more as an answer.
+# STUB_STALE_GREEN=<id>: that feature's first coding session leaves the suite red (BROKEN) and writes an empty green
+# marker for that tree into $HARNESS_CHECK_CACHE (a stale cached green, R4), then marks the feature passing.
+# STUB_PHONE_STOP=1|<why>: the initializer pushes INBOX.md line 1 `status: stop` (1) or `status: stop <why>` from a
+# clone of the origin, as Michael's phone would. STUB_CLI_STOP=-|<why>: it runs `harness stop <run>` (-) or
+# `harness stop <run> --why "<why>"` (R7). STUB_CLI_REQUEST=<brief>: then `harness queue add --continue <run> --brief
+# "<brief>"`, a request made after the stop and before the driver acts on it.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -44,6 +50,9 @@ case $first in
   "# Initializer session")
     [[ ${STUB_SLOW_INIT:-} ]] && sleep "$STUB_SLOW_INIT"
     [[ ${STUB_INIT_LIMIT:-} ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before the list exists
+    case ${STUB_CLI_STOP:-} in "") ;; -) "$HERE/../bin/harness" stop "$HARNESS_RUN_ID" > /dev/null ;;   # Michael runs `harness stop` meanwhile
+      *) "$HERE/../bin/harness" stop "$HARNESS_RUN_ID" --why "$STUB_CLI_STOP" > /dev/null ;; esac
+    [[ ${STUB_CLI_REQUEST:-} ]] && "$HERE/../bin/harness" queue add --continue "$HARNESS_RUN_ID" --brief "$STUB_CLI_REQUEST" > /dev/null
     [[ ${STUB_QUEUE_STOP:-} ]] && touch "$HARNESS_STATE/queue/STOP"   # Michael runs `harness queue stop` meanwhile
     [[ ${STUB_MEM_DROP:-} ]] && sed -i 's/^MemAvailable: .*/MemAvailable:    2097152 kB/' "$STUB_MEM_DROP"   # the box runs low on memory meanwhile (2 GB)
     after=""; [[ ${STUB_INDEPENDENT_M2:-} ]] && after=', "after": []'
@@ -56,9 +65,10 @@ JSON
     entry init 1 '{feature: "init", kind: "init", outcome: "passes", summary: "3 features: M1 2, M2 1", header: "# progress"}'
     [[ ${STUB_ADD_TEARDOWN:-} ]] && printf '#!/usr/bin/env bash\ntouch "$HARNESS_SCRATCH/teardown-late.marker"\n' > .harness/teardown.sh && chmod +x .harness/teardown.sh   # a hook added mid-run
     git add -A && git commit -qm "HARNESS: feature list" && git push -q -u origin "$HARNESS_BRANCH"
-    if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop
+    if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop [<why>]
       tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "$HARNESS_BRANCH"
-      sed -i '1s/.*/status: stop/' "$tmp/$HARNESS_RUN_DIR/INBOX.md"
+      why=""; [[ $STUB_PHONE_STOP == 1 ]] || why=" $STUB_PHONE_STOP"
+      sed -i "1s/.*/status: stop$why/" "$tmp/$HARNESS_RUN_DIR/INBOX.md"
       git -C "$tmp" commit -qam "phone: stop" && git -C "$tmp" push -q origin "$HARNESS_BRANCH"
     fi
     ok 1.5 ;;
@@ -116,6 +126,10 @@ JSON
       outcome: "passes", summary: "\($id): stub work (\($n))", files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
       + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end'
     git add -A && git commit -qm "$id: stub work ($n)" && git push -q origin "$HARNESS_BRANCH"
+    if [[ ${STUB_STALE_GREEN:-} == "$id" && $n == 1 ]]; then   # red tree, cached green: only a full run catches it
+      touch BROKEN && git add -A && git commit -qm "$id: left BROKEN" && git push -q origin "$HARNESS_BRANCH"
+      mkdir -p "$HARNESS_CHECK_CACHE" && : > "$HARNESS_CHECK_CACHE/green-$(node "$HERE/../lib/treekey.mjs")"
+    fi
     ok ;;
   "# Verify session")
     m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "verify-$m")

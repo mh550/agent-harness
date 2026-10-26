@@ -1,0 +1,9 @@
+# go is not installed here: go test -v output as documented at https://pkg.go.dev/testing and printed by https://github.com/golang/go/blob/master/src/testing/testing.go ("=== RUN   %s", "--- %s: %s (%s)", "PASS")
+=== RUN   TestAdd
+--- PASS: TestAdd (0.00s)
+=== RUN   TestJoin
+--- PASS: TestJoin (0.00s)
+=== RUN   TestSplit
+--- PASS: TestSplit (0.00s)
+PASS
+ok  	example.com/pkg	0.01s

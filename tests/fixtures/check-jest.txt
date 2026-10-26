@@ -1,0 +1,9 @@
+# jest is not installed here: its summary as printed by https://github.com/jestjs/jest/blob/main/packages/jest-reporters/src/getSummary.ts (labels padded to 13 columns, colour codes left out)
+PASS src/sum.test.js
+PASS src/format.test.js
+
+Test Suites: 2 passed, 2 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        0.512 s
+Ran all test suites.

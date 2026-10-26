@@ -169,6 +169,23 @@ control() {   # → run | pause | stop
   else echo run; fi
 }
 
+stop_why() {   # → "stopped by Michael[: <why>]": STOP's line (harness stop --why), else the text after control()'s `status: stop`
+  local w s; w=$(head -1 "$STATE/STOP" 2> /dev/null)
+  s=$(sed -n 's/^status:[[:space:]]*//p' "$RUN_DIR/INBOX.md" 2> /dev/null | head -1 | tr -d '\r')
+  [[ -z $w && $s =~ ^stop[^[:alnum:]]+([[:alnum:]](.*[^[:space:]])?) ]] && w=${BASH_REMATCH[1]}   # "stopped", "stop" or "stop -" give none
+  echo "stopped by Michael${w:+: ${w:0:200}}"
+}
+
+demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
+  # the stop's time is when it reached this box (STOP, else INBOX.md pulled), not when the driver got to it: a request
+  # queued after it stays requested
+  local f at=$STATE/STOP; [[ -f $at ]] || at=$RUN_DIR/INBOX.md
+  for f in "$STATE_ROOT"/queue/*-continue-"$RUN_ID".args "$STATE_ROOT"/queue/held/*-continue-"$RUN_ID".args; do
+    [[ -f $f && ! $f -nt $at ]] && grep -qx -- --requested "$f" || continue
+    sed -i '/^--requested$/d' "$f" && note "stop: the queued continuation ${f##*/} is automatic now (the stop came after the request)"
+  done
+}
+
 # One usage limit covers every run on the box: wait until the window that refused a session (any run's) is over.
 limit_wait() {
   local upto now w; upto=$(cat "$LIMIT_FILE" 2>/dev/null || echo 0); now=$(date +%s)
@@ -282,7 +299,7 @@ context() {
 # SVC_MEMORY_MAX. timeout bounds the init, not the servers it left once it returned (a timeout takes its process group
 # too); stdin is /dev/null, so no tool waits on the tmux pane. The last init's scope is stopped first: systemd refuses
 # a unit name still loaded (tests/fixtures/systemd-run-unit-exists.txt), and its services would live on beside the new.
-run_init() {
+run_init() {   # [fresh: clear the suite cache's marker for the tree as the init left it, so the suite runs in full]
   local unit; unit=$(scope_unit "$RUN_ID" svc)
   scope_stop "$unit"
   SVC_UP=1 SVC_INIT=1   # before the start: a TERM during the init must still stop what it began (services_down, L2-03)
@@ -290,9 +307,14 @@ run_init() {
   local rc=$?; SVC_INIT=0; echo "(init exit $rc)" >> "$SCRATCH/init.out"
   [[ -n ${SCOPE_BARE:-} ]] && note "init ran uncapped: $SCOPE_BARE"   # systemd refused the unit; its line is in init.out
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")"
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
   [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \
     || rm -f "$STATE/tests-start"
+  # once per run: a suite whose output has no count leaves the report's tests at `?` (a cached green wrote no check.out)
+  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-nomatch && -z $(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out") ]]; then
+    note "test count: no match in the suite's output (tests start/end stay unknown)"; touch "$STATE/testcount-nomatch"
+  fi
 }
 
 pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the archive has every entry in full
@@ -376,7 +398,9 @@ verify() {
   local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=()
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
   sync_main || touch "$STATE/nomerge-$m"
-  run_init
+  # the verified tree's suite runs in full: a session can leave a stale green marker (decisions/2026-10-26-verify-runs-the-suite)
+  note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
+  run_init fresh
   for model in "$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"; do
     F snapshot "$LIST" > "$STATE/before.json"
     context "$m"   # each round: an escalated verify's pack has the first round's entry
@@ -456,7 +480,7 @@ verify_ready() {
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
   local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x
   rstart=$(git rev-parse HEAD)
-  HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER prompt retro
+  HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
   reverted=$(restrict "$rstart" nothing retro | paste -sd' ')
@@ -516,8 +540,8 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
   if [[ -n $left && $AUTO_CONTINUE == 1 && $1 == session\ cap* ]] && (( conts < ${AUTO_CONTINUE_MAX:-3} )) \
      && (( DEADLINE_AT == 0 || $(date +%s) < DEADLINE_AT - 600 )); then
     echo $(( conts + 1 )) > "$STATE/auto-continues"
-    "$HARNESS_HOME/bin/harness" queue add --continue "$RUN_ID" --keep-attempts $( (( DEADLINE_AT )) && echo "--until-epoch $DEADLINE_AT") > /dev/null 2>&1 \
-      && note "continuation queued ($(( conts + 1 )) of ${AUTO_CONTINUE_MAX:-3}; it starts when the queue runs)"
+    "$HARNESS_HOME/bin/harness" queue add --continue "$RUN_ID" --automatic --keep-attempts $( (( DEADLINE_AT )) && echo "--until-epoch $DEADLINE_AT") > /dev/null 2>&1 \
+      && note "continuation queued ($(( conts + 1 )) of ${AUTO_CONTINUE_MAX:-3}, automatic; it starts when the queue runs)"
   fi
   # a note after the last commit (the continuation): commit it too, or the worktree stays dirty and gc skips it
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: run end notes"; sync; }
@@ -545,6 +569,10 @@ EOF
 if [[ -s $STATE/brief.md ]]; then   # a brief given at start or continue: committed, so sessions and the record see it
   { [[ -s $RUN_DIR/brief.md ]] && echo; echo "## $(date '+%F %H:%M')"; cat "$STATE/brief.md"; } >> "$RUN_DIR/brief.md"
   : > "$STATE/brief.md"
+fi
+if [[ -s $STATE/inbox-unstopped ]]; then   # harness continue reset a phone stop that ended the last segment
+  note "INBOX.md: \`$(cat "$STATE/inbox-unstopped")\` set back to \`status: run\` (that stop ended the last segment; harness continue started this one)"
+  rm -f "$STATE/inbox-unstopped"
 fi
 commit_all "HARNESS: start run $RUN_ID"
 sync
@@ -644,7 +672,7 @@ while :; do
     done
     log "resumed"; continue
   fi
-  [[ $c == stop ]] && { note "stopped by Michael"; finish "stopped by Michael"; }
+  [[ $c == stop ]] && { demote_requests; why=$(stop_why); note "$why"; finish "$why"; }
   limit_wait
   (( $(date +%s) >= DEADLINE )) && continue
   verify_ready || continue   # 2 = deferred by a usage limit: wait for the window first
