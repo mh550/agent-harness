@@ -220,7 +220,7 @@ cost: `evals/NEXT.md`.
 ## Tests
 
 ```bash
-tests/run.sh          # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 335 checks (~2 min 45 s)
+tests/run.sh          # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 392 checks (~3 min 30 s)
 tests/run.sh gc       # only the tests/checks/ files whose names contain "gc"
 TEST_JOBS=1 tests/run.sh   # one file at a time (default: half the cores, 1 to 4)
 ```

@@ -145,6 +145,34 @@
   and step 5's "under 150 s" is reported as not met rather than claimed. A question for Michael: accept "under
   180 s, measured and recorded" for S2, or queue (a), the driver's `node` calls, as a feature of its own.
 
+### Measured and recorded, not a gate (P0-02 attempt 3)
+
+*(2026-10-26, run agent-harness-2026-10-26, feature P0-02, third attempt; Michael, INBOX 2026-10-26 15:59)*
+
+- **Finding:** Michael accepted D2 and changed the rule: a performance number in a step is measured and recorded,
+  never a gate, unless the step says it protects the box. Main's retro run (F1, F2) has since added 57 checks, and
+  `tests/checks/` was re-cut from main: 392 checks in 34 files.
+- **Measured** (`TEST_JOBS=4 bash tests/run.sh` in a 3G user scope, `memory.peak` read from that scope at the end):
+  **207 s wall**, 392/392. Before the retro run's checks it was 165 s (335 checks); the harness's own pre-suite through
+  `lib/check.sh` for this session measured 207 s too (wall 206.0 s by the runner's line).
+  | file | checks | s |
+  |---|---|---|
+  | 15-run-4-same-but-queue-parked-debrief-tmux | 78 | 155.9 |
+  | 08-scope-sh-l1-02-run-capped-services-gc-scratch | 123 | 139.2 |
+  | 13-run-2-michael-sets-desk | 66 | 136.9 |
+  | 19-run-9e-deadline-verifies | 6 | 65.5 |
+  | 32-l5-queue-runner-re | 3 | 50.9 |
+  | 10-harness-eval-run-e2 | 13 | 39.5 |
+  | 14-run-2b-stop-records | 12 | 36.3 |
+  | 16-run-6-limit-cuts | 4 | 31.6 |
+  | the other 26 files | 86 | 155.0 |
+  - **Floor:** the slot times add up to 810.8 s, so 4 jobs can't end before 810.8 / 4 = **203 s**; the slowest file
+    (156 s) is under that, so the work, not the chain, sets the wall now. 207 s is 4 s over the floor.
+  - **Peak memory:** the scope's `memory.peak` was **254 MB** (266,801,152 bytes), far under the 3 GB cap.
+  - `TEST_JOBS=1` (same scope, right after): **758 s wall**, 392/392, the file times adding up to 755 s (so four
+    jobs' contention costs about 56 s of slot time). Both runs give the same per-file check counts and the same 392
+    PASS names (compared C-sorted).
+
 ## S3: the suite cache key leaves out what the suite never reads (P0-03)
 
 *(2026-10-26, run agent-harness-2026-10-26, feature P0-03; spec S3)*

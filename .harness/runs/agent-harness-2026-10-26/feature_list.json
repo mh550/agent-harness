@@ -34,7 +34,7 @@
         "CLAUDE.md § How to verify states the measured duration, TEST_JOBS, and the subset form by file name (`bash tests/run.sh gc`)",
         "`bash -n` on tests/run.sh and every tests/checks/*.sh; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P0-03",
