@@ -48,7 +48,7 @@
         "journal/decisions/2026-10-26-verify-runs-the-suite.md exists (finding · choice · rejected); docs/architecture.md §7's Verify row says the cache is cleared before each verify",
         "`bash -n lib/driver.sh` passes; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F1-04",

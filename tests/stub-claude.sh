@@ -7,6 +7,8 @@
 # session_TEST<n>, records argv and $PWD in $STUB_DIR/desk/<n>-<name>.args, its environment's names in <n>-<name>.env
 # and each typed line in <n>-<name>.in. STUB_DESK_MENU=1: after the first typed line it shows the permission dialog of
 # fixtures/permission-menu.txt (the desk asks to run a command) and takes nothing more as an answer.
+# STUB_STALE_GREEN=<id>: that feature's first coding session leaves the suite red (BROKEN) and writes an empty green
+# marker for that tree into $HARNESS_CHECK_CACHE (a stale cached green, R4), then marks the feature passing.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -116,6 +118,10 @@ JSON
       outcome: "passes", summary: "\($id): stub work (\($n))", files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
       + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end'
     git add -A && git commit -qm "$id: stub work ($n)" && git push -q origin "$HARNESS_BRANCH"
+    if [[ ${STUB_STALE_GREEN:-} == "$id" && $n == 1 ]]; then   # red tree, cached green: only a full run catches it
+      touch BROKEN && git add -A && git commit -qm "$id: left BROKEN" && git push -q origin "$HARNESS_BRANCH"
+      mkdir -p "$HARNESS_CHECK_CACHE" && : > "$HARNESS_CHECK_CACHE/green-$(node "$HERE/../lib/treekey.mjs")"
+    fi
     ok ;;
   "# Verify session")
     m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "verify-$m")

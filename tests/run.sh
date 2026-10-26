@@ -557,6 +557,7 @@ check "verifier caught A, re-queued"      'hlog demo | grep -q "verify M1: A fai
 check "M1 and M2 tagged"                  'git -C "$T/origin.git" tag | grep -qx run/demo/M1 && git -C "$T/origin.git" tag | grep -qx run/demo/M2'
 check "M1 and M2 merged into main by PRs" '[[ $(grep -c "pr merge" "$T/gh.log") == 2 ]] && on_main run/demo/M2 && hlog demo | grep -q "M2 merged into main"'
 check "no final tag, no false 'verified'" '! git -C "$T/origin.git" tag | grep -q final && ! hlog demo | grep -q "final verified"'
+check "the verify prompt says the suite runs in full" 'grep -q "cleared the suite'"'"'s cached result" "$HARNESS_STATE/proj/demo/prompt-verify.md"'
 check "brief committed with the run"      'grep -q "only A–C" "$RD/brief.md"'
 check "brief, rules and policy in the prompt" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q "only A–C" "$P" && grep -qx "# Project rules" "$P" && grep -q "\`CLAUDE.md\`" "$P" && grep -q "Policy: build-only" "$P"'
 check "coding prompt names CLAUDE.md but doesn't paste it" 'P=$HARNESS_STATE/proj/demo/prompt-coding.md; grep -q CLAUDE.md "$P" && ! grep -qx rules "$P"'
@@ -1096,6 +1097,12 @@ check "a malformed entry is recorded as minimal and the run goes on" 'hlog baden
   && jq -se "map(select(.feature == \"B\"))[0] | .outcome == \"passes\" and any(.files[]; . == \"B-badentry.txt\") and all(.files[]; startswith(\".harness\") | not) and .summary == \"done\" and (.minimal | startswith(\"invalid: not JSON\"))" \
     "$T/wt/proj/badentry/.harness/runs/badentry/entries.jsonl" > /dev/null && [[ ! -e $T/wt/proj/badentry/.harness/runs/badentry/entry.json ]] \
   && grep -q "^done" "$HARNESS_STATE/proj/badentry/ended"'
+
+# ---- run 13c: a stale green marker (R4): verify runs the suite in full ----
+# B leaves BROKEN with a green marker for that tree: the post-session check trusts it; verify clears it and runs in full
+STUB_STALE_GREEN=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" stalegreen --spec SPEC.md --foreground > "$T/run13c.out" 2>&1
+check "a stale green marker is caught at verify: M1 red, not tagged" 'hlog stalegreen | grep -q " · verify M1: suite cache cleared; the suite runs in full on the verified tree$" \
+  && hlog stalegreen | grep -q " · verify M1: the suite is red on the verified tree" && [[ -z $(git -C "$T/origin.git" tag -l "run/stalegreen/M1") ]]'
 
 # ---- run 14: v2-style tags don't merge on a resume; `harness merge` merges them ----
 echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"

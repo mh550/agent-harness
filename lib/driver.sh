@@ -380,6 +380,9 @@ verify() {
   local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=()
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
   sync_main || touch "$STATE/nomerge-$m"
+  # the verified tree's suite runs in full: a session can leave a stale green marker (decisions/2026-10-26-verify-runs-the-suite)
+  rm -f "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")"
+  note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
   run_init
   for model in "$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL"; do
     F snapshot "$LIST" > "$STATE/before.json"
