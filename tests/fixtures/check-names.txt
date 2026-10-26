@@ -1,0 +1,326 @@
+--dry-run prints the context, launches nothing
+Answer with Claude only when DESK_URL is set
+C retried and passed
+DEBRIEF_PAGE_CMD gets the page
+DESK=0 by default, DESK_MODEL=opus
+DESK=0: no desk
+DESK=1: a park starts one desk, the run end reuses it
+KEEP_SCRATCH=1 keeps the run's scratch; the default is 0
+M1 and M2 merged into main by PRs
+M1 and M2 tagged
+NOTIFY_CMD gets 3 headline lines and the note path
+NOTIFY_CMD-only: $1 unchanged, fields as env
+NTFY_TOKEN: bearer header sent, never logged
+NTFY_URL: curl posts the fields as headers, NOTIFY_CMD not called
+PAUSE stops the services before its poll, and the next init starts them again
+WEEKLY_STOP_AT raises the bar
+a $0 one-turn session is not counted
+a .harness/teardown.sh added after the run started is run at its stop points
+a 300 KB report: the context stays small, the session runs
+a TERM during an init stops the init's scope before the teardown runs
+a TERM during finish's teardown runs no second teardown: the trap waits for it, then stops the svc scope, one note
+a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it
+a body over the cap is trimmed
+a brief is pasted as written: its {{X}} isn't filled (E3 review F7)
+a continued run whose suite is cached green keeps its test count (the green marker holds it, not scratch)
+a dead desk is replaced
+a debrief headline over ntfy: no Click (the note is a path), default priority when nothing needs Michael (a Not queued line isn't)
+a debrief page beside the note: a card per run, the note escaped
+a debrief whose note needs Michael: priority high
+a deps dir gc can't measure or delete is said and gc goes on; a symlinked deps dir is never followed
+a desk that cannot start never changes the run
+a failed or hung runner gc is logged (killed at HARNESS_GC_TIMEOUT) and never stops the debrief
+a failed park post is noted and committed at once
+a failed post is noted and the run goes on
+a failed run-end post is committed: the worktree stays clean for gc
+a failed session: its error text is never the note
+a given-up feature blocks what depends on it
+a held index.lock: written, not committed, nothing left staged
+a killed debrief changes nothing
+a later deadline: the earlier refusals aren't the cause
+a ledger checkout on another branch: the note is written, not committed
+a legacy run is untouched, then continued into a journal
+a limit ending: the cause is the usage limit
+a limit-cut session's passes is reverted, A retried
+a listed worktree whose directory is gone never ends gc: every later step still runs
+a malformed entry is recorded as minimal and the run goes on
+a milestone without an after list is noted
+a park notification: title, question, answer command, click and Edit INBOX action
+a proposed merge: ready to merge, click = the PR, default priority
+a queued continuation: only the answer command
+a refused branch -d (merged into origin/main, not into HEAD, no upstream) is logged and gc goes on
+a refused commit: the note is unstaged again
+a refused debrief: no note, nothing marked done, LIMIT_UNTIL set, one line to NOTIFY_CMD
+a refused merge tells Michael and his desk once
+a refused merge: priority high, click = the PR
+a refused session's minimal entry is not yet, not its reverted claim (E4 review F3)
+a run still ending: answer now, continue once it has ended
+a run still going is covered again next time
+a run still going: only the answer command
+a run that starts during the wait is covered by the next debrief
+a run whose sessions leave nothing gets no leftover or cap note
+a runner that started nothing (a skipped continuation): no debrief
+a scope systemd refuses after the probe: the session runs bare and harness-log.md says so
+a second event reuses the desk window
+a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)
+a session that dies at startup: failed, and no usage-limit window for the box
+a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
+a session's edits to the journal are restored (E4 review F1)
+a still-running run changing its worktree is not flagged
+a stop from the phone stops the services through finish
+a successful post: a line in run.log only
+a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
+a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
+a waiting-on-Michael run end: priority high, click = report.md
+a window of the run's name that never showed a URL is replaced
+a window past the 5 h cap: no session (the next debrief covers it)
+a worktree gc can't remove is logged and the next one still goes; --dry-run removes none
+a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json
+after may name a milestone
+all features pass
+an INBOX answer unparks it; the run finishes
+an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
+an open desk showing a dialog gets nothing typed
+brief committed with the run
+brief, rules and policy in the prompt
+by hand right after: nothing new, no session
+by hand while another debrief runs: it says it is waiting
+check.sh keeps one check-<key>.out; the green markers stay
+check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s
+check.sh: a TERM stops the suite's scope with it
+check.sh: a subset call is scoped too and never cached
+check.sh: exit 124 prints the timed-out RED line
+check.sh: exit 137 prints the memory-cap RED line
+coding prompt names CLAUDE.md but doesn't paste it
+context.md carries the earlier attempt's dead end
+continuation queued: keeps attempts, brief marked as the debrief's
+continue after a no-list end merges main first
+continue finishes a paused run
+continue refuses a running run
+debrief notifications go to NTFY_URL when set
+debrief waits for the usage-limit window, then runs
+default MERGE_POLICY proposes a verified milestone, never merges it
+deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
+deploy.mjs: vercel and netlify guards merge, keep keys and detect
+each debrief is a commit of ledger/debrief.md
+each session's scope is stopped after it returns
+ended: done; status says so
+endless limit ends the run (frees the queue)
+ends waiting on Michael; the summary says so
+entries.mjs: a damaged journal line is skipped, never fused or fatal
+entries.mjs: progress renders 15 in full and the rest as archive lines
+entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap
+entries.mjs: validate accepts the schema and names what is wrong
+entries: the driver appends each session's entry
+eval compare prints the table
+eval probes: questions derived, answers scored
+eval probes: the probe prompt is the driver's coding prompt
+eval probes: the probe reads the run's context pack
+eval run: --harness <ref> runs that ref's driver
+eval run: a clone holds nothing of its source past base (E2 review)
+eval run: nothing reaches a remote
+eval run: two stub tasks end to end, results in place
+eval.mjs: compare verdicts
+eval.mjs: per verified feature counts every repeat's cost (E2 review)
+eval: --repeat 2 runs each task twice
+eval: a missing repo is refused before any spend, a set file in the cwd is read (E2 review)
+eval: an interrupted eval removes its harness worktree (E2 review)
+eval: every task.json validates and a bad one is rejected
+eval: refuses past WEEKLY_STOP_AT
+eval: the budget cap stops starting tasks
+every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+files changed during the session are flagged in the note
+finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
+finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
+gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives
+gc --all-merged keeps the origin default branch and a live run branch, merged or not
+gc --deps empties an ended, unmerged run's worktree of its DEPS_DIRS; its branch and committed files stay; --dry-run deletes none
+gc --deps keeps the worktree of a live run and the project checkout
+gc --deps keeps the worktree of a run with a queued continuation
+gc deleted the run branch
+gc keeps a worktree with an untracked file even when status.showUntrackedFiles=no hides it
+gc kept the tags
+gc never removes a worktree that is no run's (its branch isn't harness/<run>), even merged and clean
+gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
+gc removed the finished worktree
+gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+harness desk --all
+harness desk --close <run>
+harness desk --debrief
+harness desk --list
+harness desk notes 'desk started:' in the run record
+harness desk: an unknown run or a bad option is an error, nothing started
+harness desk: one window, the Read line, the prompt, the notification click
+harness gc --dry-run kills no tmux session
+harness gc closes idle desks
+harness gc keeps the worktree of a run whose desk is open
+harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
+harness gc stops the units of this project's runs with no live driver; --dry-run stops none
+harness merge keeps the harness version of the run (E1 review)
+harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
+harness merge merges v2 tags, closes the v2 PR
+harness merge merges verified milestones afterwards
+harness merge says it was refused again, and starts no desk
+harness parked --json parses
+harness parked is read-only
+harness parked: an unknown or glob run id is an error
+harness parked: id, why, question, both commands
+harness report prints the writeup
+harness start refuses a run id whose tmux session another live run holds; its session lives
+harness status lists a running run's units with MemoryCurrent; an ended run's none
+harness version skips ledger commits
+independent M2 verified, not merged (M1 isn't)
+independent work goes on past a parked feature
+init model resolved to fable
+init output is capped at 40 lines with the log path
+init: a Vercel project without vercel.json gets one
+init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
+init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
+ledger has the run
+ledger row has harness_version and harness_dirty
+memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
+memory gate: every session starts with the services up, a verify after its wait included
+memory gate: the real fixture's 9 GB passes without a note
+memory gate: the wait stops the services (services stopped (memory wait))
+memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+metrics.jsonl: every session line has mem_peak_mb from its scope
+metrics.jsonl: mem_peak_mb is null when uncapped
+metrics.mjs: append writes mem_peak_mb as a number or null
+metrics.mjs: orientation stops at the first Write
+metrics.mjs: tokens, cache rate and context peak from the real fixture
+metrics: coding rows carry tokens, cache rate and context peak
+metrics: orientation recorded per session
+metrics: wall time and roles
+mid-session limit: attempt given back, work kept
+no URL in time: no window, the plain notification
+no URLs for a non-GitHub origin
+no dependency note when every milestone has after
+no final tag, no false 'verified'
+no user systemd: the init runs bare, and the run's one uncapped note stays the only one
+no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
+not queued: ended done / already queued / no work left / still running
+nothing parked
+notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3
+notify.mjs: githubUrls for ssh, https and non-GitHub origins
+notify.mjs: inboxQuestion is the lines added above ## Answers (never Michael's old answers)
+notify.mjs: trimBody caps at 3500 bytes with …
+one ledger row per run
+one note, overwritten: ledger/debrief.md
+one notification per run end
+parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers
+parked.mjs: the question is the feature's INBOX section
+parked.mjs: the report names the answer and continue commands
+parked: not an attempt, not retried
+past --until after a run: one debrief
+phone stop honoured before any coding session
+placeholders inside the context are not filled
+plain gc deletes only the merged harness/ and harness-merge/ branches, locally and on the origin
+preflight: no node anywhere, a clear failure and no session
+progress.md is rendered from the journal
+queue end triggers one debrief, detached
+queue holds an entry whose project has a live run, starts the next one
+queue park sets an entry aside with its reason
+queue ran both entries, distinct run ids (their merged worktrees gone with the runner's gc: the ledger has the records)
+queue runner: MAX_PARALLEL_RUNS 1 → 2 in the config starts the second entry without a restart, and says so
+queue runner: MAX_PARALLEL_RUNS 2 → 1 stops no running run; the third entry waits until under it, then starts
+queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old value, said once; nothing starts
+queue stop after a run: one debrief
+queue unpark puts it back at the end, its reason gone
+real limit message: not counted, run completes
+red suite un-passes C
+refused merge leaves the PR, needs Michael
+refused sessions recorded as env
+refused verify: deferred, then verified, then merged
+render.mjs: --raw applies to the next file only
+render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
+report shows tokens and quality
+report.md lists the session that peaked at its cap among the peaks over 2 GB
+resume reloads config merged from main
+retro edits reverted
+routine notifications keep the default priority
+run start with the guard: nothing
+run start without the deploy guard: one note, one notification
+run start without the netlify guard: one note, one notification
+run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)
+run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m
+scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit
+scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]
+scope.sh: a scratch dir it can't write runs the command once, bare
+scope.sh: a unit still loaded is refused as systemd refuses it; stopped first, it starts
+scope.sh: dur_s reads timeout(1) durations as seconds
+scope.sh: mem_available_gb reads the real meminfo fixture
+scope.sh: mem_gate ends with HARNESS_MEM_POLL=0, exit 1 after a wait and 0 when it passed at once
+scope.sh: mem_gate notes, frees, waits, then starts anyway or once memory is back
+scope.sh: scope_owns matches a unit to a run by its rebuilt prefix and a role the harness starts
+scope.sh: scope_run wraps the command in systemd-run with the caps and returns its exit
+scope.sh: scope_stop stops <unit>.scope; scope_peak and scope_left read the fixture
+scope.sh: systemd-run failing after a good probe runs the command bare, with a line
+scope.sh: without user systemd scope_run runs bare (STUB_NO_SYSTEMD=1)
+scratch_done keeps scratch when a copy fails, and says why when rm fails or the guard refuses
+scratch_done: the final tree's output is check-last.out, the note names what it kept
+scratch_rm refuses anything but the run's own scratch directory (symlinks in its path too)
+second run got its own port
+sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
+start queues when MAX_PARALLEL_RUNS are going
+summary end reason is how the run ended
+summary, report and retro written
+summary.mjs: cause and rework read the log by exact id (E1 review)
+summary.mjs: report lists only the sessions over 2 GB
+summary: tokens, per verified feature, first-attempt rate, rework
+sync: a local commit outside ledger/ is left alone, nothing pushed
+sync: a modified tracked file: skipped
+sync: another branch checked out: skipped; LIVE_SYNC=0: off
+sync: level says so
+sync: nothing local: fast-forward
+sync: pulls the merged PR and pushes the ledger commit, no merge commit
+tampered list restored
+tampered text reverted
+testcount.mjs: the runner's last N/M checks passed is the count
+the EXIT trap commits its services note: harness-log.md is clean after a TERM
+the allowlist runs nothing that writes or executes
+the answer skill exists and names the commands and the never-list
+the answer skill passes Michael's words through a quoted heredoc
+the debrief saw the queue's runs
+the debrief starts a desk when Needs Michael is non-empty
+the desk notification
+the desk prompt names the run, its commands and the never-list
+the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory
+the desk's environment has no NTFY_TOKEN
+the dialog guard: the CLI's dialog words, not the desk's own questions
+the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created
+the limit window is shared
+the next debrief covers what the failed and killed ones missed
+the park goes out after the run branch is pushed (the link shows the question)
+the prompt goes in on stdin, not as an argument
+the prompt says the time, the budget and the attempt
+the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
+the queue runner reaps its ended runs' tmux sessions before the debrief; h-queue and the desk untouched
+the queue runner runs harness gc <project> --all-merged --deps once per project, before the debrief
+the queue starts no run past the weekly budget
+the rendered coding prompt has the deepEqual and bounded-rerun rule
+the run end goes out before the retro, once report.md is pushed
+the runner skips a parked entry and says so
+the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)
+the session may read each run's state dir and the queue
+the session: an allowlist (dontAsk) and the never-list
+the stub claude's interactive mode prints the pane line and records input
+the tmpfiles template holds the 3-day age rule; README has its install command
+the user config template sets nothing
+the weekly budget ends a run after the session that crossed it
+the whole context is capped too
+thin evidence escalates the verify
+tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
+tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
+tmux: run id dot.run gets session h-dot-run, gone at keep 0
+trends --by version groups the runs
+trends lists every run
+two coding prompts share a byte-identical prefix that includes the policy
+v2 tags don't merge on resume
+verifier caught A, re-queued
+verifier code edits reverted, never merged
+verify needs Michael goes out after the verify entry is pushed
+verify needs Michael starts a desk
+verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
+verify ping-pong capped, needs Michael
+waits for another run's limit window
+with a queue runner going, the continue command is a queue add

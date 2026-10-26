@@ -208,6 +208,10 @@ cost: `evals/NEXT.md`.
 ## Tests
 
 ```bash
-tests/run.sh    # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 168 checks (~4 min)
+tests/run.sh          # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 327 checks (~11 min)
+tests/run.sh parked   # only the tests/checks/ files whose names contain "parked"
 ```
+Each `tests/checks/*.sh` sources `tests/lib.sh` (a fresh `$T`, private tmux server, stub environment and throwaway
+project) and runs alone; `tests/fixtures/check-names.txt` lists every check name and a full run fails on one missing,
+new or doubled.
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

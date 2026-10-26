@@ -11,7 +11,7 @@
         "every tests/checks/*.sh passes alone from a fresh shell (`for f in tests/checks/*.sh; do bash \"$f\" | tail -1; done` prints only `N/N checks passed` lines); `bash -n` passes on tests/lib.sh, tests/split.sh, tests/run.sh and every tests/checks/*.sh",
         "`bash tests/run.sh` ends `N/N checks passed` with N = 325 + the conformance check, and lib/check.sh (CHECK_CMD=\"bash tests/run.sh\") still reports it green with its test count"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "P0-02", "milestone": "P0", "kind": "build", "model": "opus",
       "description": "The runner runs the check files TEST_JOBS at a time as plain background jobs inside the one check scope, replays each file's output whole, prints a timing line per file and the slowest three, and the full suite takes under 150 s on this box (suite-split spec S2).",
       "steps": [

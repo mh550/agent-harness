@@ -75,7 +75,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `templates/user/{settings.permissions.json,CLAUDE.md,config.merge-policy.sh}` | | The permissions policy (`decisions/2026-10-24-permissions-policy`): the user settings, the `~/.claude/CLAUDE.md` section that is its one home, and `MERGE_POLICY=auto` |
 | `setup/apply-2026-10-24.sh` | ~110 | Installs those three (`--dry-run` shows every diff; backs up to `~/projects/backups/`) and moves the n8n MCP servers to n8n-home's `.mcp.json`; Michael runs it, the harness never does |
 | `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*) and `parts/rules.md` (the line naming `CLAUDE.md`) |
-| `tests/run.sh` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 226 checks |
+| `tests/run.sh` + `tests/lib.sh` + `tests/checks/` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 327 checks. `run.sh` is the runner (all files, or those whose names contain an argument; one total; on a full run the conformance check against `tests/fixtures/check-names.txt`); each `checks/NN-<slug>.sh` starts from `lib.sh`'s `suite_setup` and ends with `suite_end`; `tests/split.sh` cut them from the single file by its section markers (decisions/2026-10-26-suite-split) |
 
 ## 4. Where state lives
 
