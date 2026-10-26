@@ -12,3 +12,5 @@
 - 2026-10-26 08:30 · services stopped (blocked on P0-02)
 - 2026-10-26 08:30 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-26 (in the state dir: init.out check-last.out)
 - 2026-10-26 15:59 · merged main into harness/agent-harness-2026-10-26
+- 2026-10-26 16:03 · test count: no match in the suite's output (tests start/end stay unknown)
+- 2026-10-26 16:03 · context.md for P0-02: 7833 bytes, 5 items left out
