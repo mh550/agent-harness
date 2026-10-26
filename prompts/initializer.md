@@ -92,6 +92,7 @@ Before you commit, run `{{LINT}} <run directory>/feature_list.json` and fix ever
 (`<id> step <n> <rule> <text>`: a step with no concrete anchor, a path outside the repo or in `~`,
 a grep that matches its own words in the run record, a milestone without `after`, a review the
 milestone's size doesn't call for). No output means clean.
+A step that is right as written (a live path the project's rules name, a route) may stay.
 
 Commit `HARNESS: feature list (<n> features) for <run id>` and push
 `git push -u origin <branch>`.

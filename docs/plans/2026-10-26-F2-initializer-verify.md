@@ -263,4 +263,32 @@ lines.
 
 ## Review (F2-06)
 
-Filled by F2-06: the Opus review's findings (severity, file:line, one line each) and what was done with each.
+One Opus round over `git diff origin/main...HEAD -- lib bin prompts tests docs README.md journal/decisions` (904
+lines: F2 alone; the local `main` ref was behind origin, so `main...HEAD` would have repeated F1). No Critical, so no
+second round.
+
+- **Important** · `lib/driver.sh:668,676` · the deadline verify ran before `control()`, so a STOP or `status: stop`
+  got one more (verify) session and its services back up. **Fixed**: `deadline_verify` notes `…; stopped by Michael,
+  so no verify before the end`. Check `a stop at the deadline comes first: no verify, M1 left for a continue` (red
+  before: one verify session ran).
+- **Minor** · `lib/driver.sh:668` · a usage-limit window at the deadline started a verify only to be refused, leaving a
+  `deferred until` note nothing acts on. **Fixed** in the same helper (`…; the usage limit holds until HH:MM, so no
+  verify before the end`). Check `a usage-limit window at the deadline: no verify session to be refused, …` (red
+  before).
+- **Minor** · `lib/features.mjs:81` · `outside-repo` trips routes and live paths under the system roots (`GET
+  /media/hero.jpg`, `/srv/n8n/live.lock`). **Documented, not changed**: architecture §6 and the step-lint decision now
+  say so, and the initializer prompt lets a step that is right as written stay; an exemption for routes would need a
+  route grammar the lint doesn't have.
+- **Minor** · `lib/features.mjs:92-111` · `selfMatch` misread a backtick right after `rg`, a glued `progress.md|wc`,
+  and `--regexp=M2`. **Fixed**: bare words stop at `| ; &` and backticks, `--regexp=` is read. Check `lint: self-match
+  ends the command at a closing backtick or a glued |, and reads --regexp=` (red before). Not fixed: `grep -T` (GNU's
+  takes no value, rg's `-T` does; the lint keeps rg's reading).
+- **Minor** · `tests/run.sh` · the paused deadline branch had no check. **Added** `a deadline while paused verifies a
+  complete milestone once too` (green from the start: coverage, not a fix).
+- **Minor** · `tests/run.sh:664` · `the report lists the review role when a review ran` can't fail from an R2 change.
+  **Kept**: it pins the role reports read for folded reviews; R2's behaviour is covered by the review-small /
+  review-missing checks.
+- **Minor** · `docs/architecture.md:461` · "the real quality gate is still the milestone's review feature". **Fixed**:
+  the review feature or the last build feature's review steps.
+- **Simplify** · `lib/driver.sh:401` · `${2:-} == once` tested three times in `verify()`. **Applied**: `models` and
+  `last` are set once; the thin break is `$model == ${models[-1]}`, the note `after $last`.

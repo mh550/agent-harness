@@ -13,8 +13,13 @@
   - `once` is one session, bounded by `SESSION_TIMEOUT` like every session: no re-run on `VERIFY_ESCALATE_MODEL`
     (thin evidence is `… after one verify at the deadline; not verified (needs Michael)`), and this round is the
     last (`round <r> of <r>`), so a failed step is `needs Michael`, never an attempt granted that no session would
-    use. A verify that holds merges through `merge_milestones` as always. A refused verify is deferred as always;
-    the deadline doesn't wait for the window, it finishes.
+    use. A verify that holds merges through `merge_milestones` as always. The deadline doesn't wait for a usage-limit
+    window, and doesn't start a session it would only refuse: while `LIMIT_UNTIL` holds, or when a stop came
+    first (STOP or `status: stop`, which a verify session would override), `deadline_verify` notes `deadline
+    reached: <m> complete but unverified; the usage limit holds until HH:MM, so no verify before the end` (or
+    `…; stopped by Michael, so no verify before the end`) and finishes; the continuation verifies it first
+    thing (F2-06 review: before, the stop was ignored for one more session, and a refused verify left a
+    `deferred until` note that nothing would act on).
   - **D3 *default***: the paused branch verifies too. A pause stops new feature work; this one session only makes
     work already done mergeable.
 - **Rejected:**
