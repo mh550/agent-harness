@@ -1,0 +1,13 @@
+{ "feature": "L4-05", "kind": "coding", "outcome": "passes",
+  "summary": "Opus review of the L4 diff: 3 Critical, 4 Important fixed RED→GREEN. gc now removes only harness/<run> worktrees, never rm -rfs one git refused (locked), sees hidden untracked files, survives a gone dir or du error, keeps main/origin's default/running branches; runner gc has a timeout and no git prompt. Prefix loop simplified, L4 docs done. 316→322 checks.",
+  "files": ["bin/harness", "lib/queue.sh", "tests/run.sh", "docs/plans/2026-10-25-L4-review.md", "journal/decisions/2026-10-26-gc-unattended-guards.md", "journal/decisions/2026-10-25-gc-removal-finishes.md", "journal/decisions/2026-10-25-gc-all-merged.md", "journal/decisions/2026-10-25-runner-gc.md", "docs/architecture.md", "README.md", "docs/specs/2026-10-21-retro-fixes.md"],
+  "verified_how": "check.sh: 322/322 (green in 548 s). RED first: 316/317 then 5 new FAILs; the untracked-file and default/live-branch checks passed vacuously in the suite (gc died at the gone dir first), so scratch repro.sh ran old bin/harness (git archive HEAD) vs new: old deleted the hidden untracked file, local trunk and origin harness/live, new kept all. bash -n on bin/harness, lib/queue.sh, tests/run.sh.",
+  "tests_before": 316, "tests_after": 322,
+  "dead_ends": [{ "tried": "printing git's last stderr line in '! could not remove'", "why": "for a locked tree it is 'use remove -f -f … or unlock first', not the cause; the first line is" }],
+  "discoveries": [
+    { "text": "The full suite takes ~9-10 min under load now (548 s): a Bash background waiter needs a timeout over 600 s or it is killed.", "affects": ["run"] },
+    { "text": "gc's worktree loop now only removes harness/<run> worktrees; a merged clean one on another branch prints 'keeps <wt>: not a run worktree (branch <b>)'. The local branch pass skips branches checked out in any worktree (no more 'cannot delete branch … used by worktree' noise).", "affects": ["L5", "run"] },
+    { "text": "HARNESS_GC_TIMEOUT (env, default 10m) bounds the runner's gc; the suite's runner-gc failure check uses 2s with a fetch that sleeps 60.", "affects": ["L5", "run"] }
+  ],
+  "questions": ["Should a project be able to name branches gc never deletes (GC_KEEP_BRANCHES, e.g. 'production release/*')? Default taken: no setting; main and the origin's default branch are kept, every other branch merged into origin/main goes under the runner's nightly --all-merged."],
+  "proposed_changes": [] }
