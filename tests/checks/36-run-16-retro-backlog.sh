@@ -30,4 +30,23 @@ check "harness backlog with LEDGER_COMMIT=1 commits retro-backlog.jsonl alone, o
   (cd "$HERE/.." && lc import "$SEED") > /dev/null && lc set step-lint merged --pr https://github.com/x/y/pull/1 > /dev/null &&
   [[ $(git -C "$T/live" log --format=%s -2 | paste -sd "|") == "ledger: backlog set step-lint merged|ledger: backlog import 2026-10-25-memory.backlog-seed.jsonl" ]] &&
   [[ $(git -C "$T/live" status --porcelain) == " M ledger/other" ]] && [[ $(git -C "$T/live" show HEAD:ledger/retro-backlog.jsonl | wc -l) == 8 ]]'
+# ---- backlog run: the retro writes retro-proposals.json, the driver merges it into the ledger's backlog in finish() ----
+# The seed rows above are gone first: no-retry-on-denial is one of them. bk2's retro also edits the worktree's ledger/.
+rm -f "$ST"
+STUB_RETRO_PROPOSALS=no-retry-on-denial "$H" start "$T/proj" bk1 --spec SPEC.md --foreground > "$T/bk1.out" 2>&1
+check "backlog run: a retro proposal lands as a proposed row, noted 1 new, 0 seen again" '
+  [[ $(wc -l < "$ST") == 1 ]] && [[ $(jq -r "[.id, .status, .first_seen.run, (.runs_seen | join(\",\"))] | join(\" \")" "$ST") == "no-retry-on-denial proposed bk1 bk1" ]] &&
+  hlog bk1 | grep -q " · backlog: 1 new, 0 seen again$" && [[ -f $T/ledger/proj/bk1/retro-proposals.json ]]'
+STUB_RETRO_PROPOSALS=no-retry-on-denial STUB_RETRO_EDITS=1 "$H" start "$T/proj" bk2 --spec SPEC.md --foreground > "$T/bk2.out" 2>&1
+check "backlog run: the same id from a second run adds it to runs_seen, noted 0 new, 1 seen again" '
+  [[ $(wc -l < "$ST") == 1 ]] && [[ $(jq -r "[.status, .first_seen.run, (.runs_seen | join(\",\"))] | join(\" \")" "$ST") == "proposed bk1 bk1,bk2" ]] &&
+  hlog bk2 | grep -q " · backlog: 0 new, 1 seen again$"'
+check "backlog run: restrict reverts a retro's edit to the backlog, and the merge still lands" '
+  hlog bk2 | grep "retro: reverted edits" | grep -q " ledger/retro-backlog.jsonl" && ! hlog bk2 | grep "retro: reverted edits" | grep -q retro-proposals.json &&
+  [[ ! -e $T/wt/proj/bk2/ledger/retro-backlog.jsonl ]] && jq -e "select(.id == \"no-retry-on-denial\") | .runs_seen | index(\"bk2\")" "$ST" > /dev/null'
+sum0=$(sha256sum < "$ST")
+STUB_RETRO_PROPOSALS=bad "$H" start "$T/proj" bk3 --spec SPEC.md --foreground > "$T/bk3.out" 2>&1
+check "backlog run: a malformed retro-proposals.json is noted, the run finishes, the backlog unchanged" '
+  hlog bk3 | grep -q " · backlog: retro-proposals.json invalid" && grep -q "\"run\":\"bk3\"" "$T/ledger/runs.jsonl" &&
+  [[ $(sha256sum < "$ST") == "$sum0" ]] && grep -q "run kept in" "$T/bk3.out"'
 suite_end

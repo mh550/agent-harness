@@ -43,7 +43,7 @@
         "a stub retro with `STUB_RETRO_EDITS=1` that also writes `ledger/retro-backlog.jsonl` inside the worktree has that file reverted (the `retro: reverted edits` line in harness-log.md names it, the file is gone from the worktree) while the driver's merge from the scratch copy of retro-proposals.json still lands (a check)",
         "journal/decisions/<date>-retro-backlog.md exists (finding · choice · rejected: the driver is the only writer, proposals travel as data, bad JSON is skipped as E4 skips a bad entry.json)",
         "the suite is green" ],
-      "after": ["M1-03"], "passes": false },
+      "after": ["M1-03"], "passes": true },
 
     { "id": "M1-05", "milestone": "M1", "kind": "build", "model": "opus",
       "description": "The retro prompt carries the current backlog (`HARNESS_BACKLOG` rendered as `{{BACKLOG}}`) and says to reuse an id, cite a specced/queued/merged item's status instead of re-arguing it and coin a slug only for a new proposal; the debrief's gathered context has the backlog instead of the `Earlier retros` list and its prompt's last section ranks open `proposed` items and flags re-raised ones.",

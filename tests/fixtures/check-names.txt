@@ -102,6 +102,10 @@ backlog import: a known id takes status, spec, pr and note, keeps first_seen, un
 backlog list: proposed first, then more runs_seen first within a status
 backlog merge: a known id adds its run to runs_seen once, status unchanged
 backlog merge: a new id becomes one proposed row first seen in its run
+backlog run: a malformed retro-proposals.json is noted, the run finishes, the backlog unchanged
+backlog run: a retro proposal lands as a proposed row, noted 1 new, 0 seen again
+backlog run: restrict reverts a retro's edit to the backlog, and the merge still lands
+backlog run: the same id from a second run adds it to runs_seen, noted 0 new, 1 seen again
 backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1
 backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
 brief committed with the run

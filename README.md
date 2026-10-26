@@ -98,7 +98,7 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 | | Where |
 |---|---|
 | Worktree, branch | `~/worktrees/<project>/<run-id>`, `harness/<run-id>` from `origin/main` |
-| Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` |
+| Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` · `retro-proposals.json` |
 | Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, one Opus round (a second only after a Critical finding). The lint flags `review-small` and `review-missing` |
 | Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) |
 | Local state | `~/.local/state/harness/<project>/<run-id>/`: `run.log`, transcripts, attempts, `driver.pid`, `ended` |
@@ -175,7 +175,10 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 
 Every retro proposal across runs, deduplicated by id, with a status: `ledger/retro-backlog.jsonl`, one JSON row each
 (`id`, `title`, `first_seen`, `runs_seen`, `status`, `spec`, `pr`, `note`). Only the harness writes it: the driver and
-`harness backlog`, never a session. Mark what became work with `harness backlog set <id> specced --spec <path>` (or
+`harness backlog`, never a session. Each retro writes its proposals (at most three, `{id, title, evidence}`) to the
+run's `retro-proposals.json`; at the run's end the driver merges them in, under the ledger lock and in the ledger
+commit: a new id is a `proposed` row, a known id gains the run in `runs_seen`, and a malformed file is noted in
+harness-log.md (`backlog: retro-proposals.json invalid: …`) and skipped whole. Mark what became work with `harness backlog set <id> specced --spec <path>` (or
 `queued`, `merged --pr <url>`, `dropped --note "<why>"`); `harness backlog` lists it, open proposals first.
 
 **Seed it once, by hand, on the live checkout** (the build that added the backlog never ran this; it writes the real

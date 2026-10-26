@@ -5,8 +5,8 @@ Run: `{{RUN_ID}}` of {{PROJECT}}
 It ended: {{END_REASON}}. A reason after "stopped by Michael:" is his; judge the run against it.
 
 You review how **the harness** did on this run, so the harness can improve. You are read-only:
-**do not edit, create, commit or push anything.** Your final message is saved as the run's
-`retro.md`; it is the only output.
+**do not edit, create, commit or push anything, except one file: `{{RUN_DIR}}/retro-proposals.json`.**
+Your final message is saved as the run's `retro.md`. The driver reverts every other edit.
 
 Read (with `jq`/`grep` for large files; never read a `.jsonl` transcript whole):
 - `{{SUMMARY}}`: the run's numbers (features, causes of non-passing features, cost by role, time, guards).
@@ -36,3 +36,7 @@ gain. Whether verify sessions really re-ran steps (evidence rows vs steps).
 ## Proposed harness changes
 At most three, ranked, each: the change (file and what), the evidence from this run, and whether an
 earlier retro proposed it already (say which run). Only changes to the harness, not to the project.
+
+Then write the same proposals as data to `{{RUN_DIR}}/retro-proposals.json`: a JSON list of at most three
+`{"id": "<kebab-case-slug>", "title": "<one line>", "evidence": "<one line from this run>"}`, in rank order (`[]` for
+none). The driver merges it into the harness's retro backlog (`ledger/retro-backlog.jsonl`); never write that file.

@@ -502,9 +502,16 @@ retro() {   # a short read-only session that turns this run's evidence into prop
   HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
-  reverted=$(restrict "$rstart" nothing retro | paste -sd' ')
+  # its one output file besides retro.md: restrict deletes it, so it goes to scratch first, and only when this retro
+  # wrote it (not a continued run's earlier copy); ledger() merges it into the backlog (decisions/2026-10-26-retro-backlog)
+  rm -f "$SCRATCH/retro-proposals.json"
+  [[ -f $RUN_DIR/retro-proposals.json ]] && ! git show "$rstart:$RUN_DIR/retro-proposals.json" 2> /dev/null | cmp -s - "$RUN_DIR/retro-proposals.json" \
+    && cp "$RUN_DIR/retro-proposals.json" "$SCRATCH/retro-proposals.json"
+  reverted=$(restrict "$rstart" nothing retro | grep -vxF "$RUN_DIR/retro-proposals.json" | paste -sd' ')
   for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict: the driver's notes, not the retro's edits
   [[ -n $reverted ]] && note "retro: reverted edits (it is read-only): $reverted"
+  if [[ -f $SCRATCH/retro-proposals.json ]]; then cp "$SCRATCH/retro-proposals.json" "$RUN_DIR/"   # in the run record, as retro.md
+  else note "backlog: the retro wrote no retro-proposals.json"; fi
   MET final "$rlog" > "$SCRATCH/retro.md"
   [[ -s $SCRATCH/retro.md ]] && ! MET limit "$rlog" "$S_WALL" "$S_EXIT" > /dev/null && cp "$SCRATCH/retro.md" "$RUN_DIR/retro.md"
   MET append "$rlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" retro "" "$(F model "$RETRO_MODEL")" true "$S_WALL" "$S_EXIT" false retro "$S_PEAK"
@@ -516,9 +523,15 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   (
     flock 9
     SUM ledger-line "$RUN_DIR/summary.json" "$LEDGER/runs.jsonl"
+    local out paths=("$d" "$LEDGER/runs.jsonl")   # the retro's proposals into the backlog; a bad file is noted and skipped whole
+    if [[ -f $SCRATCH/retro-proposals.json ]]; then
+      out=$(node "$HARNESS_HOME/lib/backlog.mjs" merge "$LEDGER/retro-backlog.jsonl" "$SCRATCH/retro-proposals.json" "$RUN_ID" "$(date +%F)" 2>> "$STATE/run.log")
+      note "${out:-backlog: merge failed (run.log)}"
+    fi
+    [[ -f $LEDGER/retro-backlog.jsonl ]] && paths+=("$LEDGER/retro-backlog.jsonl")
     if [[ $LEDGER_COMMIT == 1 ]] && git -C "$LEDGER" rev-parse --show-toplevel > /dev/null 2>&1; then
-      git -C "$LEDGER" add -- "$d" "$LEDGER/runs.jsonl" \
-        && git -C "$LEDGER" commit -q -m "ledger: $RUN_ID ($PROJECT_NAME): $(F summary "$LIST")" -- "$d" "$LEDGER/runs.jsonl" \
+      git -C "$LEDGER" add -- "${paths[@]}" \
+        && git -C "$LEDGER" commit -q -m "ledger: $RUN_ID ($PROJECT_NAME): $(F summary "$LIST")" -- "${paths[@]}" \
         || log "ledger commit skipped"
     fi
   ) 9> "$STATE_ROOT/ledger.lock"
