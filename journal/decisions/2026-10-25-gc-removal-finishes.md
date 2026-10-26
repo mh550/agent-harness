@@ -22,3 +22,8 @@
   - **Leaving `--force` out and relying on `rm -rf` alone:** `rm -rf` leaves the admin entry until a `prune`, and
     a `remove` that refuses for a reason git knows (a locked tree) would be silently bypassed; `--force` first keeps
     git's own path the normal one.
+
+*Amended 2026-10-26 (L4-05 review #2 to #4):* the fallback ran `rm -rf` after any refusal, the locked tree this file
+meant to respect included. Now `rm -rf` runs only once git no longer lists the worktree, the `! could not remove` line
+gives the first stderr line (git's reason), only `harness/<run>` worktrees are candidates, and clean counts untracked
+files whatever `status.showUntrackedFiles` says: decisions/2026-10-26-gc-unattended-guards.

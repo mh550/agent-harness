@@ -46,7 +46,10 @@ never park.
   entries survive.
 - **R8 · The 10-19 driver exits.** *Done:* the EXIT trap writes `driver exited unexpectedly (see run.log)` when it
   fires with no reason (`lib/driver.sh:82-83`). Nothing to build; cite it in R7's decision file.
-- **R9 · gc finishes past build output.** *Moved 2026-10-25* to the resource-lifecycle spec, §L4.
+- **R9 · gc finishes past build output.** *Moved 2026-10-25* to the resource-lifecycle spec, §L4. *Landed
+  2026-10-25* there (run agent-harness-2026-10-25-lifecycle, L4-02; reviewed in L4-05): a clean merged worktree goes
+  with `git worktree remove --force`, then `rm -rf`, then `git worktree prune`; one that stays is a
+  `! could not remove <wt>: <why>` line and gc goes on (decisions/2026-10-25-gc-removal-finishes).
 
 ## F2 · Initializer and verify behaviour
 

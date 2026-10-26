@@ -392,23 +392,29 @@ cmd_gc() {
   local dd=() dg; (( dry )) && dd=(--dry-run)   # a dry run counts the desks it would close as closed
   dg=$("$HARNESS_HOME/lib/desk.sh" --gc "$(basename "$p")" "${dd[@]}") || echo "harness: could not check the desks"   # never fails gc
   [[ -n $dg ]] && echo "$dg"
+  listed() { git -C "$p" worktree list --porcelain | grep -qxF "worktree $1"; }
+  local st
   while read -r wt; do
-    [[ $wt == "$WT_ROOT"/* && $wt != "$p" ]] || continue   # never the checkout itself: rm -rf below
-    b=$(git -C "$wt" branch --show-current)
-    [[ -n $b && -z $(git -C "$wt" status --porcelain) ]] || continue
+    # never the checkout itself (rm -rf below); a listed worktree whose directory is gone (a locked one) is skipped
+    [[ $wt == "$WT_ROOT"/* && $wt != "$p" && -d $wt ]] || continue
+    b=$(git -C "$wt" branch --show-current 2> /dev/null) || continue
+    # clean means nothing untracked either, whatever status.showUntrackedFiles says; a status that fails isn't clean
+    st=$(git -C "$wt" status --porcelain --untracked-files=normal 2> /dev/null) || continue
+    [[ -n $b && -z $st ]] || continue
     running "$b" && continue
     if git -C "$p" merge-base --is-ancestor "$b" "$main" || { [[ $b == harness/* ]] && record_only "$b"; }; then
+      # the harness makes its worktrees on harness/<run>: one on any other branch is a session's of Michael's
+      [[ $b == harness/* ]] || { echo "keeps $wt: not a run worktree (branch $b)"; continue; }
       desk_open "$b" && { echo "keeps $wt: its desk is open (harness desk --close ${b#harness/})"; continue; }
-      # --force loses only ignored files (the tree is clean): build output, never work. A directory git leaves goes
-      # with rm -rf; one that stays is said and gc goes on to the next (decisions/2026-10-25-gc-removal-finishes)
+      # --force loses only ignored files (the tree is clean): build output, never work. A directory git let go of
+      # goes with rm -rf; one git refused (locked) is never rm -rf'd; one that stays is said and gc goes on to the
+      # next (decisions/2026-10-25-gc-removal-finishes)
       (( dry )) && { echo "would: git -C $p worktree remove --force $wt"; continue; }
       echo "+ git -C $p worktree remove --force $wt"
       err=$(git -C "$p" worktree remove --force "$wt" 2>&1) || true
-      if [[ -e $wt ]]; then echo "+ rm -rf $wt"; err=$(rm -rf "$wt" 2>&1) || true; fi
       git -C "$p" worktree prune || true
-      if [[ -e $wt ]] || git -C "$p" worktree list --porcelain | grep -qxF "worktree $wt"; then
-        echo "! could not remove $wt: $(tail -1 <<< "${err:-still listed}")"
-      fi
+      if [[ -e $wt ]] && ! listed "$wt"; then echo "+ rm -rf $wt"; err=$(rm -rf "$wt" 2>&1) || true; fi
+      if [[ -e $wt ]] || listed "$wt"; then echo "! could not remove $wt: $(head -1 <<< "${err:-still listed}")"; fi   # git's first line is the why
     fi
   done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p')
   # --deps: an ended run's dependency directories, merged or not (the branch keeps the work; the next init reinstalls).
@@ -428,7 +434,7 @@ cmd_gc() {
         [[ -z $(git -C "$wt" ls-files -- "$x" | head -1) ]] && got+=("$x")
       done
       (( ${#got[@]} )) || continue
-      n=$( (cd "$wt" && du -smc -- "${got[@]}") | tail -1 | cut -f1)
+      n=$( (cd "$wt" && du -smc -- "${got[@]}" 2> /dev/null) | tail -1 | cut -f1) || true   # an unreadable dir: a partial count
       (( dry )) && { echo "would: freed $n MB in $wt: ${got[*]}"; continue; }
       if err=$( (cd "$wt" && rm -rf -- "${got[@]}") 2>&1); then echo "+ freed $n MB in $wt: ${got[*]}"
       else echo "! could not free $wt: $(tail -1 <<< "$err")"; fi
@@ -440,22 +446,26 @@ cmd_gc() {
     record_only "$b" && ! git -C "$p" worktree list --porcelain | grep -qx "branch refs/heads/$b" \
       && { act git -C "$p" branch -D "$b"; git -C "$p" rev-parse -q --verify "origin/$b" > /dev/null && act git -C "$p" push -q origin --delete "$b"; }
   done
-  # One pass per prefix, every pass runs; --all-merged adds the bare prefix, every branch. Prefixes, never a `*`: in a
-  # for-each-ref pattern it doesn't cross a `/` (decisions/2026-10-25-gc-all-merged). A branch an earlier pass had is
-  # skipped, so a dry run says each once.
-  local pre prefixes=(harness/ harness-merge/) seen=" "; (( all )) && prefixes+=('')
+  # One pass per prefix, harness/ and harness-merge/; --all-merged's is the bare prefix, every branch. Prefixes, never
+  # a `*`: in a for-each-ref pattern it doesn't cross a `/` (decisions/2026-10-25-gc-all-merged). main, the origin's
+  # default branch and a running run's branch are never candidates; full ref names, so a tag of the same name can't stand in.
+  local pre prefixes=(harness/ harness-merge/) keep
+  keep=$(git -C "$p" symbolic-ref -q --short refs/remotes/origin/HEAD 2> /dev/null) || keep=origin/main; keep=${keep#origin/}
+  (( all )) && prefixes=('')
   for pre in "${prefixes[@]}"; do
-    # local branches: -d refuses anything unmerged, so this can never drop work
-    for b in $(git -C "$p" for-each-ref --format='%(refname:short)' "refs/heads/$pre"); do
-      [[ $b == main || $b == "$(git -C "$p" branch --show-current)" || $seen == *" l:$b "* ]] && continue
-      seen+="l:$b "
-      git -C "$p" merge-base --is-ancestor "$b" "$main" && act git -C "$p" branch -d "$b"
+    # local branches: -d refuses anything unmerged, so this can never drop work; one checked out in a worktree (kept,
+    # live, the checkout's) -d refuses too, so it isn't tried
+    for b in $(git -C "$p" for-each-ref --format='%(refname:lstrip=2)' "refs/heads/$pre"); do
+      [[ $b == main || $b == "$keep" ]] && continue
+      git -C "$p" worktree list --porcelain | grep -qxF "branch refs/heads/$b" && continue
+      running "$b" && continue
+      git -C "$p" merge-base --is-ancestor "refs/heads/$b" "$main" && act git -C "$p" branch -d "$b"
     done
     # remote branches fully contained in origin/main
     for b in $(git -C "$p" for-each-ref --format='%(refname:lstrip=3)' "refs/remotes/origin/$pre"); do
-      [[ $b == main || $b == HEAD || $seen == *" r:$b "* ]] && continue
-      seen+="r:$b "
-      git -C "$p" merge-base --is-ancestor "origin/$b" "$main" && act git -C "$p" push -q origin --delete "$b"
+      [[ $b == main || $b == HEAD || $b == "$keep" ]] && continue
+      running "$b" && continue
+      git -C "$p" merge-base --is-ancestor "refs/remotes/origin/$b" "$main" && act git -C "$p" push -q origin --delete "$b"
     done
   done
   return 0

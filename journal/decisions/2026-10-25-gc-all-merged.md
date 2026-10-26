@@ -27,3 +27,7 @@
     is the documented way to list a hierarchy. A prefix can't miss a level.
   - **Keeping the `break`** with a single `''` pass under `--all-merged`: it would work, but the review asked for one
     loop where every pass runs; the extra passes cost a `for-each-ref` each and make the plain passes the same code.
+
+*Amended 2026-10-26 (L4-05 review #6, #10, #11):* under `--all-merged` the bare prefix is the only pass (the others
+are inside it, so the `seen` set went); `main`, the origin's default branch and a running run's branch are never
+deleted; names are `%(refname:lstrip=2)` and the ancestry test uses full refs: decisions/2026-10-26-gc-unattended-guards.

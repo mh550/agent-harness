@@ -71,10 +71,11 @@ while IFS= read -r l; do log "$l"; done < <(tmux_reap 0 "$STATE_ROOT"/*/*/)
 started=$(grep -lsx -- "$RID" "$STATE_ROOT"/*/*/runners | wc -l)
 if (( started )); then
   # collect as it drains: each project it started a run in, before the debrief reads what is left; a gc that fails is
-  # said and the debrief starts anyway (decisions/2026-10-25-runner-gc)
+  # said and the debrief starts anyway. Nobody watches it: no git prompt, and a hang ends at HARNESS_GC_TIMEOUT (10m;
+  # timeout kills the whole group, git's children too) (decisions/2026-10-25-runner-gc)
   while IFS= read -r pd; do
     nm=$(basename "$pd"); log "gc $nm: harness gc $pd --all-merged --deps"
-    "$H" gc "$pd" --all-merged --deps 2>&1 < /dev/null | while IFS= read -r l; do log "gc $nm: $l"; done
+    GIT_TERMINAL_PROMPT=0 timeout -k 10s "${HARNESS_GC_TIMEOUT:-10m}" "$H" gc "$pd" --all-merged --deps 2>&1 < /dev/null | while IFS= read -r l; do log "gc $nm: $l"; done
     rc=${PIPESTATUS[0]}; (( rc )) && log "gc $nm failed (exit $rc)"
   done < <(for f in $(grep -lsx -- "$RID" "$STATE_ROOT"/*/*/runners); do (unset PROJECT_DIR; source "$(dirname "$f")/meta.env" && echo "$PROJECT_DIR") 2> /dev/null; done | grep . | sort -u)
   log "runner down after starting $started run(s): harness debrief (detached; output in queue/debrief.out)"

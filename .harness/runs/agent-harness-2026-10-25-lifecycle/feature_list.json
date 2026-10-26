@@ -264,7 +264,7 @@
         "Every L4 decision file reads finding · choice · rejected; bash -n passes on bin/harness and lib/queue.sh",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
 
     { "id": "L5-01", "milestone": "L5", "kind": "build", "model": "opus", "after": [],
       "description": "The queue runner re-reads its configuration at the top of every loop and logs a MAX_PARALLEL_RUNS change, so widening or narrowing parallelism needs no runner restart; lowering never stops a running run (optional milestone: dropped first if time runs short).",
