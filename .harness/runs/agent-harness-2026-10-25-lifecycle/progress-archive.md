@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 00:14 · L4-03 · passes
+
+harness gc --deps deletes DEPS_DIRS (default node_modules .next .next-check .venv) in worktrees of ended runs, merged or not: meta.env WT= must name the worktree; no live driver, queued continuation or open desk; never the checkout, a symlink, a path out of the tree or tracked files. Prints '+ freed <n> MB in <wt>: <dirs>' / 'would: freed'. 3 checks; decision, README, architecture §3/§10.
+
+- **Files:** bin/harness, lib/config.sh, templates/user/config.sh, tests/run.sh, journal/decisions/2026-10-25-gc-deps.md, docs/architecture.md, README.md
+- **Verified:** RED first: 312/314 (two new --deps checks failed on 'unknown option'); then lib/check.sh green, 314/314. KEEP=1 run: gcd1/gcd2 output read by hand (one freed line, deps-end only).
+- **Tests:** 311 → 314
+- **Dead end:** the queued-continuation check as `! grep -q deps-q` — the branch pass prints '! failed: branch -d harness/deps-q' (merged branch checked out in a worktree); narrowed to the freed line
+- **Discovery** (affects L4-05, L4-04): cmd_gc's branch passes try `branch -d` on merged branches checked out in a worktree (a live or queued run's, a dirty one gc kept): git refuses, gc prints 'error: cannot delete branch … used by worktree' and '! failed: …'. Harmless but noisy; the passes could skip branches `running` or listed in `git worktree list`.
+- **Discovery** (affects L4-04, L4-05): --deps runs after the worktree removal loop and reads DEPS_DIRS via harness_config "$p" in a subshell (user config, then the checkout's .harness/config.sh). tests/run.sh has gd_run <run> [<wt>] (state dir with ended + meta.env, worktree on harness/<run> at origin/main, node_modules/x.js).
+- *22-L4-03 · claude-opus-5-5*
+
 ### 2026-10-25 23:27 · L4-02 · passes
 
 gc removes a clean, merged worktree with `worktree remove --force`, then `rm -rf` if it stays, then `worktree prune`; a failure prints `! could not remove <wt>: <why>` and the loop goes on; --dry-run prints `would: … --force` for each. Two new checks (watched red first); the loop never touches the project's own checkout. 309 → 311 checks.

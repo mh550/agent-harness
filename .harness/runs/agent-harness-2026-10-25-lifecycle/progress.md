@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 00:14 · L4-03 · passes
+
+harness gc --deps deletes DEPS_DIRS (default node_modules .next .next-check .venv) in worktrees of ended runs, merged or not: meta.env WT= must name the worktree; no live driver, queued continuation or open desk; never the checkout, a symlink, a path out of the tree or tracked files. Prints '+ freed <n> MB in <wt>: <dirs>' / 'would: freed'. 3 checks; decision, README, architecture §3/§10.
+
+- **Files:** bin/harness, lib/config.sh, templates/user/config.sh, tests/run.sh, journal/decisions/2026-10-25-gc-deps.md, docs/architecture.md, README.md
+- **Verified:** RED first: 312/314 (two new --deps checks failed on 'unknown option'); then lib/check.sh green, 314/314. KEEP=1 run: gcd1/gcd2 output read by hand (one freed line, deps-end only).
+- **Tests:** 311 → 314
+- **Dead end:** the queued-continuation check as `! grep -q deps-q` — the branch pass prints '! failed: branch -d harness/deps-q' (merged branch checked out in a worktree); narrowed to the freed line
+- **Discovery** (affects L4-05, L4-04): cmd_gc's branch passes try `branch -d` on merged branches checked out in a worktree (a live or queued run's, a dirty one gc kept): git refuses, gc prints 'error: cannot delete branch … used by worktree' and '! failed: …'. Harmless but noisy; the passes could skip branches `running` or listed in `git worktree list`.
+- **Discovery** (affects L4-04, L4-05): --deps runs after the worktree removal loop and reads DEPS_DIRS via harness_config "$p" in a subshell (user config, then the checkout's .harness/config.sh). tests/run.sh has gd_run <run> [<wt>] (state dir with ended + meta.env, worktree on harness/<run> at origin/main, node_modules/x.js).
+- *22-L4-03 · claude-opus-5-5*
+
 ### 2026-10-25 23:27 · L4-02 · passes
 
 gc removes a clean, merged worktree with `worktree remove --force`, then `rm -rf` if it stays, then `worktree prune`; a failure prints `! could not remove <wt>: <why>` and the loop goes on; --dry-run prints `would: … --force` for each. Two new checks (watched red first); the loop never touches the project's own checkout. 309 → 311 checks.
@@ -265,30 +277,9 @@ run_init now stops harness-<run>-svc, then runs INIT_CMD in it (MemoryMax=SVC_ME
 - **Question for Michael:** D *default* (decisions/2026-10-25-services-scope): the init's stdin is now /dev/null instead of the tmux pane, so an interactive init prompt fails fast instead of waiting for you in the window. OK?
 - *10-L2-02 · claude-opus-5-5*
 
-### 2026-10-25 16:02 · L2-01 · passes
-
-Wrote docs/plans/2026-10-25-L2-run-services.md: svc scope in run_init (stop first), services_down/SVC_UP, the trap (session scope too), six stop points, suite observation per stop point, gc's unit match rule and status lines. Captured 4 real fixtures. An Opus review found 1 Critical and 4 Important plan bugs; all fixed in the plan. Tests 270 → 270.
-
-- **Files:** docs/plans/2026-10-25-L2-run-services.md, tests/fixtures/systemctl-show-current.txt, tests/fixtures/systemctl-show-current-gone.txt, tests/fixtures/systemctl-list-units-described.txt, tests/fixtures/systemd-run-unit-exists.txt
-- **Verified:** check.sh: green in 454 s, 270/270; fixtures captured from real 64M harness-test-<pid>-cur/-dup scopes, each stopped; list-units 'harness-test-*' printed nothing afterwards; bash TERM probe: EXIT trap ran in 13 ms, child lived on
-- **Tests:** 270 → 270
-- **Dead end:** stub-systemd-run recording the command pid in <unit>.pids — pids count in the stub's TasksCurrent, so every clean session would 'leave 1 process'; plan uses <unit>.cmd plus a tree kill
-- **Dead end:** INIT_CMD for check 6.9 in the user config — the project's .harness/config.sh is sourced after it and wins (lib/config.sh:31); use a dproj project
-- **Discovery** (affects L2-03): Bash runs the EXIT trap at once on SIGTERM while a foreground child runs, and the child lives on: a TERM to the driver mid-session leaves claude running in harness-<run>-s<n>. Plan §4: the trap stops S_UNIT first, then services_down.
-- **Discovery** (affects L2-05): A SIGKILLed driver leaves no `ended` (the driver removes it at start; only finish and the trap write it), so gc stops units of runs with no live driver.pid, ended or not (plan §7.1).
-- **Discovery** (affects L2-02): systemd-run with a unit name still loaded exits 1: 'Failed to start transient scope unit: Unit <u>.scope was already loaded or has a fragment file.' (fixtures/systemd-run-unit-exists.txt). run_init must stop the old svc scope first.
-- **Discovery** (affects L2-03, L2-04, L2-05): verify() runs run_init before its mem_gate, so a memory wait leaves the verify without services: L2-04 makes it `mem_gate || run_init`. bin/harness is set -euo pipefail: TEARDOWN_CMD's default line and cmd_status's systemctl calls must always succeed (plan §2, §7.2).
-- **Question for Michael:** D2 default: the driver's EXIT trap also stops the running session's scope, not only the services. OK?
-- **Question for Michael:** gc stops a run's units when its driver is dead even without `ended` (a SIGKILL writes none), not only for ended runs as the spec says. OK?
-- **Proposed change:** L2-03 step 3: one marker per why (teardown-done.marker), and the order is read from systemd.log (the teardown logs a record there), not from the marker's mtime
-- **Proposed change:** L2-03 step 4: the TERM goes to driver.pid (--foreground runs the driver as a child of bin/harness); the trap also stops the session's scope
-- **Proposed change:** L2-04 step 2: the stub sets PAUSE ($STATE/PAUSE) and the suite resumes with harness resume (no session runs during a pause); the pause branch commits its note
-- **Proposed change:** L2-04: verify() needs `mem_gate || run_init`
-- **Proposed change:** L2-05 step 1: units qualify with no live driver.pid, `ended` or not; gc prints its own `+ stopped <unit> (<run> ended|: driver gone)` lines rather than act's raw argv
-- *09-L2-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-25 16:02 · L2-01 · passes · Wrote docs/plans/2026-10-25-L2-run-services.md: svc scope in run_init (stop first), services_down/SV… ([in full](progress-archive.md))
 - 2026-10-25 15:34 · verify L1 · passes · All 8 L1 features hold: suite re-run 270/270, artifacts, stubs, fixtures, docs and decision files ch… ([in full](progress-archive.md))
 - 2026-10-25 15:25 · L1-08 · passes · Opus review of the L1 diff in docs/plans/2026-10-25-L1-review.md: 7 findings (1 Important, 4 Minor, … ([in full](progress-archive.md))
 - 2026-10-25 15:06 · L1-07 · passes · session() always passes --strict-mcp-config, plus --mcp-config <wt>/.mcp.json when the worktree has … ([in full](progress-archive.md))
