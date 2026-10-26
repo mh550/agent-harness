@@ -1,12 +1,14 @@
-# Context pack for `F2-03`
+# Context pack for `F2-04`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (F2-02, affects F2-03): features.mjs lint --note already exists (prints `lint: <n> findings (…); the list is not edited — first: <id> step <n> <rule>` or `lint: clean`, exit 0); the stub list gives exactly `lint: 5 findings (no-anchor: 4, undeclared: 1); … first: A step 1 no-anchor` (a pure check asserts it). F2-03 only wires it. → entries.jsonl:10
-- Discovery (F2-01, affects F2-03): The stub's list has 4 steps (A: x,y; B: y; C: z), not 9: run 1's lint note is exactly `lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor`. → entries.jsonl:9
-- Discovery (F2-01, affects F2-03): {{LINT}} must hold only `node $HARNESS_HOME/lib/features.mjs lint` (export it in prompt_env): the initializer template's text above {{SECTIONS}} is the shared static prefix, so the run directory stays out of it. → entries.jsonl:9
+- Discovery (F2-03, affects F2-04): Demo run 1's harness-log.md has exactly `lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor`. F2-04's review rules add nothing for the stub list (M1 two builds, no review), so that line must stay unchanged. → entries.jsonl:11
+- Discovery (F2-03, affects F2-04): The initializer's lint line ends `…, a milestone without \`after\`). No output means clean.`: F2-04 adds `, a review the milestone's size doesn't call for` before the `)`. → entries.jsonl:11
+- Discovery (F2-03, affects run): This run's own list lints as `lint: 6 findings (no-anchor: 3, outside-repo: 2, self-match: 1) — first: F1-01 step 2 outside-repo` (not edited). → entries.jsonl:11
+- Discovery (F2-02, affects F2-04, F2-06): RULES is the 4-rule order used by lintNote's counts; F2-04 appends review-small, review-missing to it and to the usage header. self-match only sees a grep in command position (start, after a backtick, |, ;, &, ( or !). → entries.jsonl:10
+- Discovery (F2-01, affects F2-04): The `review` role only appears in `Spend by role` when a review feature ran; the demo has none, so F2-04 step 4's check needs a summary with cost.by_role.review set (or a grep of summary.mjs:235's roles array). → entries.jsonl:9
 - Discovery (F1-06, affects run): harness continue of a run Michael stopped now sets INBOX.md's first `status: stop …` line back to `status: run` (via $STATE/inbox-unstopped, noted by the driver at start). Before, a phone stop ended every later segment at once. → entries.jsonl:7
 - Discovery (F1-06, affects run): A queue request over an existing continuation entry now replaces it with the request's own args; demote_requests only touches entries no newer than STOP (else INBOX.md). New stub flag STUB_CLI_REQUEST=<brief>. → entries.jsonl:7
 - Discovery (F1-06, affects run): run_init takes `fresh` (verify uses it): the green marker is cleared after INIT_CMD, just before the suite. → entries.jsonl:7
@@ -25,9 +27,10 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-26 12:12 · F2-02 · passes: lib/features.mjs: pure lint(list)/lintNote/selfMatch/RULES and CLI `lint <list> [--note]` (no-anchor, outside-repo, self-match, undeclared). 7 checks under `# ---- step lint, pure` in tests/run.sh; Opus review's 2 Important self-match false positives (prose grep, option values) fixed RED→GREEN. Decision file and architecture §6.; tests 354 → 361; files lib/features.mjs, tests/run.sh, journal/decisions/2026-10-26-step-lint.md, docs/architecture.md → entries.jsonl:10
+- 2026-10-26 12:26 · F2-03 · passes: Lint wired: prompt_env exports HARNESS_LINT (node $HARNESS_HOME/lib/features.mjs lint); prompts/initializer.md asks to run {{LINT}} on the list before committing and has R10's after sentence; the driver notes `lint: …` once after the initializer, never editing the list. 4 checks in run 1; docs §5, §6, README, decision file.; tests 361 → 365; files lib/prompt.sh, lib/driver.sh, prompts/initializer.md, tests/run.sh, docs/architecture.md, … → entries.jsonl:11
 
 ## Lately in the run
 
-- 2026-10-26 11:54 · F2-01 · passes: Wrote docs/plans/2026-10-26-F2-initializer-verify.md: R3's four lint rules (regexes, trip/pass examples, the suite-is-green exemption), R2's review-small/review-missing and prompt item 4, R10's `after` sentence, {{LINT}} via prompt_env and the driver's `lint:` note, R5's `verify <m> once` at both deadline branches with the MAX_SESSIONS=2 scenario; check names, sections, decision files.; tests 354 → 354; files docs/plans/2026-10-26-F2-initializer-verify.md → entries.jsonl:9
-- 2026-10-26 11:37 · verify F1 · passes: All six F1 features hold: five fixtures give 3/4/7/3/3 via testcount.mjs, only added fixtures, notes/docs/decision files present and match lib/ and bin/, named checks exist, syntax checks pass, check.sh green on this tree. → entries.jsonl:8
+- 2026-10-26 12:12 · F2-02 · passes: lib/features.mjs: pure lint(list)/lintNote/selfMatch/RULES and CLI `lint <list> [--note]` (no-anchor, outside-repo, self-match, undeclared). 7 checks under `# ---- step lint, pure` in tests/run.sh; Opus review's 2 Important self-match false positives (prose grep, option values) fixed RED→GREEN. Decision file and architecture §6.; tests 354 → 361; files lib/features.mjs, tests/run.sh, journal/decisions/2026-10-26-step-lint.md, docs/architecture.md → entries.jsonl:10
+
+_1 items left out at 8192 bytes: entries.jsonl has them all._
