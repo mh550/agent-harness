@@ -1,9 +1,10 @@
-# Context pack for `M1-01`
+# Context pack for `M1-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (M1-01, affects M1-02, M1-05): The debrief gatherer needs run ids to flag re-raised items, so it uses `backlog.mjs list --jsonl --max-bytes 6000` (ordered rows); the retro prompt uses the text list (`<id> · <status> · seen <n> · <title>…`), which carries the `test-counts · specced` prefix M1-05 greps → entries.jsonl:2
 - Discovery (init, affects run): R1 (decisions/2026-10-26-real-test-counts) and R2 (decisions/2026-10-26-reviews-sized-to-milestone) are both on main, so M5 and M6 keep their bases; nothing is dropped. The lanes run (P1/P2) is NOT on main: the driver is serial, so the array order is the build order (M1, M2, M3, M4, M5, M6) and `after` only keeps a stuck milestone from blocking the independent ones. → entries.jsonl:1
 - Discovery (init, affects run): The suite is split: a new check goes in a tests/checks/NN-<slug>.sh file by topic (sourcing tests/lib.sh, suite_setup … suite_end) and its name must be added to tests/fixtures/check-names.txt in C sort order (`LC_ALL=C sort -u`), or the full run's conformance check fails. Run a subset by file-name fragment: `bash tests/run.sh backlog`. Full suite ~206 s with TEST_JOBS=4, 395 checks at init. → entries.jsonl:1
 - Discovery (init, affects M1): restrict() in lib/driver.sh (line 87) with `nothing` (the retro) reverts EVERY file the retro changed or created, the run directory included: an added file is `git rm`'d. So retro-proposals.json must be copied from $RUN_DIR to $SCRATCH in retro() (lib/driver.sh:499-511) before `restrict "$rstart" nothing retro`, and finish() merges from the scratch copy. ledger() (line 513) holds `flock 9` on $STATE_ROOT/ledger.lock and commits only when LEDGER_COMMIT=1 and $LEDGER is a git checkout; the suite sets HARNESS_LEDGER=$T/ledger (not a git repo) and LEDGER_COMMIT=0. → entries.jsonl:1
@@ -11,6 +12,10 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): tests/stub-claude.sh acts out sessions keyed on the prompt's first line; the retro branch is `"# Retro")` near line 154 (STUB_RETRO_EDITS writes retro-hack.txt and appends to progress.md), the coding branch near line 68 reads the feature id from the `Feature:` line under `# This session`; entry() writes entry.json by jq; new STUB_* flags are documented in the stub's header comment. The stub initializer writes a fixed 3-feature list (A, B in M1; C in M2): a review-gate check (M6) needs a flag for a list with a 3-build milestone plus a review feature. → entries.jsonl:1
 - Discovery (init, affects run): Decision files: journal/decisions/<YYYY-MM-DD>-<slug>.md, title line, provenance line in italics (run, feature, spec section, plan), then `- **Finding:**`, `- **Choice:**`, `- **Rejected:**` bullets (see journal/decisions/2026-10-26-real-test-counts.md). Never number one, never append to journal/decisions.md. Plans: docs/plans/<date>-<milestone>-<topic>.md, header as docs/plans/2026-10-26-F2-initializer-verify.md (`Checked against main at <sha>`, `What main already has`, one feature per item). → entries.jsonl:1
 - Discovery (init, affects run): Lint rules (features.mjs lint) flag a path in `~` or $HOME in a step (outside-repo) and a grep whose pattern matches the step's own text when the target is progress.md, entries.jsonl, context.md or feature_list.json (self-match); harness-log.md is not a quoting file. Steps here name checks by their check name instead; a session's `proposed_changes` is where a wrong step goes. → entries.jsonl:1
+
+## What it builds on
+
+- 2026-10-26 19:16 · M1-01 · passes: Wrote docs/plans/2026-10-26-M1-retro-backlog.md: row schema and defaults, lib/backlog.mjs's exported API and CLI, harness backlog forms, retro()/finish() handling of retro-proposals.json via scratch past restrict, retro prompt Backlog section, the two debrief changes, STUB_RETRO_PROPOSALS, check names for files 35/36, the 8 seed rows, the live import steps.; tests 395 → 395; files docs/plans/2026-10-26-M1-retro-backlog.md → entries.jsonl:2
 
 ## Lately in the run
 
