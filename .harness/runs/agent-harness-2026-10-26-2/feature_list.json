@@ -126,7 +126,7 @@
         "journal/decisions/2026-10-26-step-lint.md exists (finding · choice · rejected, naming the C7-05 park and the measure run's E2-02 as the evidence); docs/architecture.md §6 lists the lint rules",
         "`node --check lib/features.mjs` passes; the suite is green"
       ],
-      "passes": false,
+      "passes": true,
       "after": [
         "F2-01"
       ]

@@ -60,7 +60,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/tmux.sh` | ~25 | Run → tmux session (decisions/2026-10-25-tmux-reaper): `tmux_name <run>` (`h-<run>`, dots as dashes) and `tmux_reap <dry> <state dir>…`, which kills `h-<run>` of each given run that has `meta.env` and `ended`, no live `driver.pid` (re-checked just before the kill) and no `PAUSE`, and spares a session created after its run's `ended` (a resume's, its driver not up yet). Names come only from state dirs, never from `tmux list-sessions`, so `h-queue` and `h-desk` are never candidates (`harness start` refuses run ids `queue`, `desk`, `debrief`). The kill goes by session id, read with the creation time, so a resume's new `h-<run>` is never the one killed. `tmux_shared` (another run of the same session name that isn't done, any project; `TMUX_OTHER` names it) spares a shared session and makes `harness start` refuse such a run id. Sourced by `bin/harness` (gc) and `lib/queue.sh` (as the runner exits) |
 | `lib/scope.sh` | ~70 | Capped transient systemd user scopes (decisions/2026-10-25-scoped-sessions): `scope_run <unit> <high> <max> <cmd…>` (`systemd-run --user --scope --collect`, `MemoryHigh`/`MemoryMax`/`MemorySwapMax`, `OOMPolicy=continue`, a wrapper inside the scope that records `MemoryPeak` and `TasksCurrent` before it exits), `scope_stop`, `scope_peak` (MB), `scope_left`, `scope_capped`, `scope_unit` (`harness-<run>-<role>`, the run id reduced to `[A-Za-z0-9_-]`), `scope_owns <run> <unit>.scope` (the unit is `scope_unit <run>` plus `-s<n>`, `-check-<pid>` or `-svc`: gc's and status's match, rebuilt from the id, so run `demo` never claims `demo-x`'s), `dur_s` (`15m` → 900), `mem_available_gb` (`MemAvailable` of `${HARNESS_MEMINFO:-/proc/meminfo}`, whole GB) and `mem_gate` (§7). Bare when the probe `systemd-run --user --scope --quiet true` fails |
 | `lib/entries.mjs` | ~330 | The journal (decisions/2026-10-22-journal-single-writer, -rendered-progress, -context-pack): pure `journalEntry`, `stamp`, `render`, `pack`; verbs `ingest` (validate `entry.json`, stamp, append to `entries.jsonl`), `render` (progress.md, progress-archive.md) and `pack` (context.md within `CONTEXT_PACK_BYTES`) |
-| `lib/features.mjs` | ~200 | The feature-list contract: scheduling, gating, repair, kinds, evidence counting |
+| `lib/features.mjs` | ~300 | The feature-list contract: scheduling, gating, repair, kinds, evidence counting, the step lint |
 | `lib/metrics.mjs` | ~100 | Per-session metrics; the "environmental?" decision (limits, API errors, $0) |
 | `lib/summary.mjs` | ~230 | Run summary, writeup, ledger rows, trends, calibration |
 | `lib/prompt.sh` | ~50 | The driver's prompt assembly (`prompt_vars`, `prompt_env`, `prompt_render`), sourced by the driver; run as `prompt.sh <state dir> <template> <feature>` it renders a run's prompt the way its driver would (eval probes use it) |
@@ -182,6 +182,12 @@ harness start ─► worktree + branch ─► driver:
   feature ids or milestone ids (every feature of that milestone before this one). The initializer must give the
   first feature of every milestone after the first an `after` (`[]` if independent); the driver notes once per run
   which milestones lack one (D-H25).
+- **Step lint** (`features.mjs lint <list>`, decisions/2026-10-26-step-lint): pure, reported, never applied. One
+  `<id>\tstep <n>\t<rule>\t<text>` line per finding, exit 1 with findings. Rules: `no-anchor` (a step with no digit,
+  quote, backtick span, path or file name; `the suite is green` is exempt), `outside-repo` (`~`, `$HOME`, `../`, or an
+  absolute path under `/home /root /srv /etc /var /opt /usr /mnt /media`; `/tmp`, `/dev/null` and routes pass),
+  `self-match` (a grep command over a step-quoting run-record file, not `harness-log.md`, whose pattern matches the step's
+  own text) and `undeclared` (the milestones above, one finding on each first feature, `step -`).
 - **Parked** (D-H26): a session that can't go on without Michael ends with `PARKED: <why>`. The feature is skipped
   like a given-up one (only its dependants wait) without spending an attempt, until INBOX.md's answers change.
 - **kind** ∈ plan · build · review · check · docs. It drives cost-by-role and nothing else (inferred for v2 lists).
