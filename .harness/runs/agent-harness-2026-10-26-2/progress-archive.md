@@ -9,6 +9,23 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 11:54 · F2-01 · passes
+
+Wrote docs/plans/2026-10-26-F2-initializer-verify.md: R3's four lint rules (regexes, trip/pass examples, the suite-is-green exemption), R2's review-small/review-missing and prompt item 4, R10's `after` sentence, {{LINT}} via prompt_env and the driver's `lint:` note, R5's `verify <m> once` at both deadline branches with the MAX_SESSIONS=2 scenario; check names, sections, decision files.
+
+- **Files:** docs/plans/2026-10-26-F2-initializer-verify.md
+- **Verified:** Line refs re-read on main 9c1acfc (driver.sh 397-466, 469, 635-657, 662, 670, 677; features.mjs 55-60, 86-94, 230; initializer.md 38-46, 59-62; stub-claude.sh 59-67, 139; tests/run.sh 548, 618, 621, 1002-1007, 1086). Prototyped the no-anchor and outside-repo regexes in node: all 17 plan examples trip/pass as written. Suite: check.sh exit 0, `check: green in 673 s`, no FAIL line.
+- **Tests:** 354 → 354
+- **Discovery** (affects F2-03): The stub's list has 4 steps (A: x,y; B: y; C: z), not 9: run 1's lint note is exactly `lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor`.
+- **Discovery** (affects F2-03): {{LINT}} must hold only `node $HARNESS_HOME/lib/features.mjs lint` (export it in prompt_env): the initializer template's text above {{SECTIONS}} is the shared static prefix, so the run directory stays out of it.
+- **Discovery** (affects F2-05): R5: the session cap and deadline are checked at the loop's top before verify_ready, so MAX_SESSIONS=2 (via the state dir's run.env, as the `capped` check does) leaves M1 complete and unverified deterministically. A deadline verify must take a `once` mode: no VERIFY_ESCALATE_MODEL round and no granted attempt, else STUB_THIN_VERIFY gives 2 verify lines and STUB_STRICT_VERIFIER says `round 1 of 2`. The strict continue must not set STUB_LENIENT (it overrides strict, stub-claude.sh:139). Clean up queued continuations (`$HARNESS_STATE/queue/*-continue-dl*.args`) after the section.
+- **Discovery** (affects F2-04): The `review` role only appears in `Spend by role` when a review feature ran; the demo has none, so F2-04 step 4's check needs a summary with cost.by_role.review set (or a grep of summary.mjs:235's roles array).
+- **Discovery** (affects F2-02, F2-06): This run's own list will report outside-repo findings: F2-02 step 2 quotes `~/projects/x/…` and `/home/mh550/…` as examples. Expected; record, don't edit.
+- **Question for Michael:** D1 default: outside-repo trips `~`, `$HOME`, `../` and absolute paths under /home /root /srv /etc /var /opt /usr /mnt /media only (so web routes and /tmp pass). OK?
+- **Question for Michael:** D3 default: when the deadline passes during a pause, the one verify still runs before the end (F2-05 step 1 says both branches). Should a pause suppress it instead?
+- **Proposed change:** F2-02 step 3 says the checks fail with `features.mjs: unknown command`; main's features.mjs prints its usage line (exit 2) for an unknown command. The verified_how should quote that instead.
+- *07-F2-01 · claude-opus-5-5*
+
 ### 2026-10-26 11:37 · verify F1 · passes
 
 All six F1 features hold: five fixtures give 3/4/7/3/3 via testcount.mjs, only added fixtures, notes/docs/decision files present and match lib/ and bin/, named checks exist, syntax checks pass, check.sh green on this tree.
