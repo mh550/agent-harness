@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-10-26",
   "started": "2026-10-26T09:29:44.000Z",
-  "ended_at": "2026-10-26T12:30:08.000Z",
+  "ended_at": "2026-10-26T12:30:37.000Z",
   "end_reason": "blocked on P0-02",
   "continuations": 0,
   "features": {
@@ -40,33 +40,36 @@
     "end": null
   },
   "cost": {
-    "total": 22.76,
-    "per_passing_feature": 11.38,
+    "total": 22.87,
+    "per_passing_feature": 11.44,
     "by_role": {
       "init": 4.71,
-      "build": 18.05
+      "build": 18.05,
+      "retro": 0.11
     },
     "by_model": {
       "claude-fable-5-1": 4.71,
-      "claude-opus-5-5": 18.05
+      "claude-opus-5-5": 18.05,
+      "claude-sonnet-5-5": 0.11
     },
     "manager": 0
   },
   "time": {
     "wall_h": 3.01,
-    "sessions_h": 2.79,
+    "sessions_h": 2.8,
     "driver_h": 0.22,
     "by_role_h": {
       "init": 0.17,
-      "build": 2.62
+      "build": 2.62,
+      "retro": 0.01
     }
   },
   "tokens": {
-    "in": 1146,
-    "cache_read": 33584226,
-    "cache_write": 912499,
-    "out": 333044,
-    "cache_hit_rate": 0.974,
+    "in": 1154,
+    "cache_read": 33682850,
+    "cache_write": 933175,
+    "out": 334877,
+    "cache_hit_rate": 0.973,
     "context_peak": 206361,
     "by_role": {
       "init": {
@@ -80,6 +83,12 @@
         "cache_read": 32356197,
         "cache_write": 800232,
         "out": 289976
+      },
+      "retro": {
+        "in": 8,
+        "cache_read": 98624,
+        "cache_write": 20676,
+        "out": 1833
       }
     }
   },
@@ -102,8 +111,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 5,
-    "real": 5,
+    "total": 6,
+    "real": 6,
     "environmental": 0
   },
   "guards": {
