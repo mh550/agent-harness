@@ -9,6 +9,13 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-26 18:38 · P1-03 · not yet
+
+The Opus review of the P1-03 diff is still running. I'll wait for its findings before I fix anything, rerun the suite, write `entry.json` and flip `passes`.
+
+- **Files:** bin/harness, docs/architecture.md, journal/decisions/2026-10-26-lanes.md, lib/desk.sh, lib/driver.sh, lib/eval.sh, lib/features.mjs, lib/prompt.sh, lib/record.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/14-run-2b-stop-records.sh, +7 more
+- *05-P1-03 · claude-opus-5-5 · recorded by the harness: entry.json missing*
+
 ### 2026-10-26 17:58 · P1-02 · passes
 
 features.mjs gains lanes (openable milestones + run/<run>/<dep> base tags from meta.env), deps, next <m> (lane-local after rule) and pass; scope_owns takes an optional <m>- role prefix; config.sh and the user template carry the six lane defaults; the driver header documents HARNESS_LANE_POLL. New tests/checks/35-lanes-scheduler.sh (12 checks). Nothing calls them yet.
