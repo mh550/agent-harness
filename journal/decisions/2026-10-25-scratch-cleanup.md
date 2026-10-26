@@ -24,8 +24,16 @@
   - ***default*: `teardown.out` is kept too**, beside `init.out` and `check-last.out`: a failed teardown's note points
     at it.
   - **`check.sh` keeps one `check-<key>.out`**, the newest tree's; the `green-<key>` markers live in the state dir and
-    stay. Going back to an older green tree prints `check: green (cached for this code tree)` without a test count,
-    and `finish`'s `tests-end` is then absent (as when the file is missing today).
+    stay. **A marker now holds its tree's test count** (`<n> tests`, or empty when the output has none), and both the
+    cached line and `finish`'s `tests-end` read it first, the tree's output second (older markers are empty). Found by
+    the feature's review: a continued segment starts with an empty scratch, so a tree cached green from the last
+    segment had no output to count, and `finish` deleted the right `tests-end`. Going back to an older tree keeps its
+    count the same way.
+  - **Eval runs keep their scratch** (`KEEP_SCRATCH=1` in `lib/eval.sh`'s safety lines): `eval probes` renders the
+    next coding prompt after the task's run has ended, and that prompt carries the init output from scratch. The
+    eval's scratch is under its own throwaway directory. (Same review.)
+  - **`harness merge` removes the scratch directory the driver created for it** when it is empty (`rmdir`), since it
+    runs no init or session and never reaches `finish`. (Same review.)
   - **`HARNESS_CACHE=${XDG_CACHE_HOME:-~/.cache}/harness/<project>`**, exported by `prompt_env` (so the init, every
     session and `check.sh` see it) and created by the driver: installs a project keeps across runs and boots
     (`PLAYWRIGHT_BROWSERS_PATH=$HARNESS_CACHE/ms-playwright`). The harness never deletes it. ***default*: no prompt
