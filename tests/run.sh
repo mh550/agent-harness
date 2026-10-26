@@ -14,6 +14,11 @@ export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/sc
   HARNESS_CONFIG=$T/user-config.sh HARNESS_LIMIT_SLEEP=0 HARNESS_NO_RUNNER=1 HARNESS_QUEUE_POLL=0 HARNESS_QUEUE_SETTLE=0
 export HARNESS_SYSTEMD_RUN=$HERE/stub-systemd-run.sh HARNESS_SYSTEMCTL=$HERE/stub-systemctl.sh HARNESS_MEMINFO=$HERE/fixtures/meminfo.txt HARNESS_MEM_POLL=1
 unset HARNESS_SCOPE_PREFIX HARNESS_CHECK_MEMORY_MAX HARNESS_CHECK_TIMEOUT SCOPE_OK   # a session running the suite inherits its own run's
+export XDG_CACHE_HOME=$T/cache   # every run's HARNESS_CACHE ($T/cache/harness/<project>) stays in $T
+# tmux windows get the private server's environment from when it started, not the caller's: a supervisor window's bare
+# `claude` must be the stub (a wrapper, not a symlink: the stub finds its fixtures through dirname $0)
+mkdir -p "$T/bin" && printf '#!/usr/bin/env bash\nexec %q "$@"\n' "$HERE/stub-claude.sh" > "$T/bin/claude" && chmod +x "$T/bin/claude"
+export PATH=$T/bin:$PATH
 fails=0 total=0
 check() { total=$((total + 1)); if eval "$2"; then echo "PASS $1"; else echo "FAIL $1"; fails=$((fails + 1)); fi; }
 hlog() { cat "$T/wt/${2:-proj}/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }   # <run> [<project>]
@@ -29,15 +34,15 @@ in_has() { local i; for i in $(seq 20); do grep -q "$2" "$1" 2> /dev/null && ret
 desk_of() { grep -lx "desk · $1\( · .*\)\?" "$T"/desk/*.args 2> /dev/null | sort -V | tail -1; }   # the newest desk of run $1 (.args; .in beside it)
 GHP=https://github.com/test/proj
 
-# the base user config posts through the stub curl; NOTIFY_CMD is set too, and must not be called (NTFY_URL wins)
-printf '%s\n' 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=auto NTFY_URL=https://ntfy.example/t NTFY_TOKEN=tok-secret-123' \
+# the base user config posts through the stub curl (and keeps each run's scratch: checks read it after the run; L3's scrub run doesn't); NOTIFY_CMD is set too, and must not be called (NTFY_URL wins)
+printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=auto NTFY_URL=https://ntfy.example/t NTFY_TOKEN=tok-secret-123' \
   "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify-cmd.log\"'" > "$T/base-config.sh"
 cp "$T/base-config.sh" "$T/user-config.sh"
 git init -q --bare -b main "$T/origin.git"
 git init -q -b main "$T/proj" && cd "$T/proj"
 mkdir .harness && cat > .harness/config.sh <<'EOF'
 CHECK_CMD="test ! -f BROKEN"
-INIT_CMD='echo init ok; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "$HARNESS_SCRATCH/init-begin"; sleep "$STUB_SLOW_INITCMD"; }'
+INIT_CMD='echo init ok; echo "cache: $HARNESS_CACHE"; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "$HARNESS_SCRATCH/init-begin"; sleep "$STUB_SLOW_INITCMD"; }'
 BASE_PORT=7950
 EOF
 # its teardown hook (L2-03): one marker per why, and the call in the stubs' own timeline (systemd.log)
@@ -377,7 +382,7 @@ cp -r "$ED" "$T/evgone" && jq '.tasks[].worktree = "/nonexistent"' "$ED/eval.jso
 mkdir -p "$T/ptmp"; TMPDIR=$T/ptmp "$H" eval probes "$T/evgone/t2" > "$T/evgone.out" 2>&1; EPG=$?
 cp -r "$ED" "$T/evnop" && rm "$T/evnop/t2/probe-prompt.md"; "$H" eval probes "$T/evnop/t2" > "$T/evnop.out" 2>&1; EPN=$?
 noinit() { sed '/^Clock: /d; /^## Init output/,/^---$/d' "$1"; }   # the clock and init output are the session's own
-check "eval probes: the probe prompt is the driver's coding prompt" '[[ -s $ED/t2/probe-prompt.md ]] && [[ $(head -1 "$ED/t2/probe-prompt.md") == "# Coding session" ]] && grep -qx "Feature: \`T2b\`" "$ED/t2/probe-prompt.md" \
+check "eval probes: the probe prompt is the driver's coding prompt" '[[ -s $ED/t2/probe-prompt.md ]] && [[ $(head -1 "$ED/t2/probe-prompt.md") == "# Coding session" ]] && grep -qx "Feature: \`T2b\`" "$ED/t2/probe-prompt.md" && grep -q "^full output: .*/init.out$" "$ED/t2/probe-prompt.md" \
   && cmp -s <(noinit "$ED/t2/probe-prompt.md") <(noinit "$(jq -r ".tasks[1].state" "$EJ")/prompt-coding.md") && cmp -s <(sed -n "3,$(( $(awk 1 "$ED/t2/probe-prompt.md" | wc -l) + 2 ))p" "$T/probe-prompt1") <(awk 1 "$ED/t2/probe-prompt.md") \
   && (( EPG == 0 )) && grep -q "probes: run worktree gone; CLAUDE.md not auto-loaded" "$T/evgone.out" && jq -e ".note | test(\"worktree gone\")" "$T/evgone/t2/probes.json" > /dev/null && [[ -z $(ls -A "$T/ptmp") ]] \
   && ! grep -qx "PWD=$(jq -r ".tasks[1].worktree" "$EJ")" "$STUB_DIR/probe-args" && (( EPN == 1 )) && grep -q "no probe-prompt.md" "$T/evnop.out"'
@@ -777,7 +782,7 @@ kill "$GL1" "$GL2" "$GL3" 2> /dev/null; wait "$GL1" "$GL2" "$GL3" 2> /dev/null
 rm -rf "$HARNESS_STATE"/proj/{gclive,demo-x,killed,c.d} "$HARNESS_STATE/other"; for u in $GCU; do rm -f "$T/scope/$u".*; done   # a live fake driver.pid counts against MAX_PARALLEL_RUNS
 
 # ---- run 2: Michael sets "status: stop" in INBOX.md from the phone (and only NOTIFY_CMD is configured) ----
-printf '%s\n' 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"
+printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"
 STUB_PHONE_STOP=1 "$H" start "$T/proj" stoppy --spec SPEC.md --foreground > "$T/run2.out" 2>&1
 cp "$T/base-config.sh" "$T/user-config.sh"
 check "NOTIFY_CMD-only: \$1 unchanged, fields as env" 'grep -q "^\[stoppy\] started: 0/3 passing$" "$T/notify-env.log" && grep -qx "HARNESS_NOTIFY_TITLE=harness" "$T/notify-env.log" && grep -qx "HARNESS_NOTIFY_PRIORITY=" "$T/notify-env.log" && [[ -s $T/curl.log ]] && ! grep -q "\[stoppy\]" "$T/curl.log"'
@@ -860,8 +865,15 @@ check "start queues when MAX_PARALLEL_RUNS are going" 'grep -q "is queued" <<< "
 check "continue refuses a running run"     '! "$H" continue busy 2> "$T/busy.err" && grep -q "is running" "$T/busy.err"'
 rm -rf "$HARNESS_STATE/proj/busy"
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
-STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue.out" 2>&1
 D=$(date +%F)
+# the sessions a tmux start would have left for the runner's two runs (their ended comes later), and two it must spare
+for s in "h-proj-$D" "h-proj-$D-2" h-queue "$HARNESS_DESK_SESSION"; do tmux new-session -d -s "$s" sleep 600; done
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue.out" 2>&1
+has_s() { tmux has-session -t "=$1" 2> /dev/null; }
+check "the queue runner reaps its ended runs' tmux sessions before the debrief; h-queue and the desk untouched" '! has_s "h-proj-$D" && ! has_s "h-proj-$D-2" \
+  && has_s h-queue && has_s "$HARNESS_DESK_SESSION" && grep -qF "+ reaped tmux session h-proj-$D-2 (proj-$D-2 ended)" "$HARNESS_STATE/queue/runner.log" \
+  && awk -v r="+ reaped tmux session h-proj-$D (proj-$D ended)" "index(\$0, r) && !a { a = NR } /harness debrief \\(detached/ && !b { b = NR } END { exit !(a && b && a < b) }" "$HARNESS_STATE/queue/runner.log"'
+for s in "h-proj-$D" "h-proj-$D-2" h-queue "$HARNESS_DESK_SESSION"; do tmux kill-session -t "=$s" 2> /dev/null; done   # the desk checks start with no desk session and no sleep 600
 check "queue ran both entries, distinct run ids" '[[ $($F summary "$(list proj-$D)") == "3/3 passing" && $($F summary "$(list proj-$D-2)") == "3/3 passing" ]] && grep -q "queue empty" "$HARNESS_STATE/queue/runner.log"'
 check "trends lists every run"            'grep -q "| proj-$D-2 | proj |" <<< "$("$H" trends)"'
 # one row per harness version (this checkout, +dirty while it has uncommitted changes); a row from before E1-07 groups as –
@@ -941,7 +953,7 @@ check "a proposed merge: ready to merge, click = the PR, default priority" 'Bp=$
   && [[ -n $U ]] && grep -qx "Title: \[claim\] M1 ready to merge" <<< "$Bp" && grep -qx "Click: $U" <<< "$Bp" && ! grep -q "^Priority:" <<< "$Bp"'
 
 # ---- run 12b: nothing sets MERGE_POLICY → the default is pr, so a verified milestone is proposed, never merged ----
-echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"   # no MERGE_POLICY in any layer: the harness default decides
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"   # no MERGE_POLICY in any layer: the harness default decides
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" defpr --spec SPEC.md --foreground > "$T/run12b.out" 2>&1
 cp "$T/base-config.sh" "$T/user-config.sh"
 check "default MERGE_POLICY proposes a verified milestone, never merges it" 'hlog defpr | grep -q "M1 proposed for merging" && ! on_main run/defpr/M1'
@@ -961,9 +973,9 @@ check "a malformed entry is recorded as minimal and the run goes on" 'hlog baden
   && grep -q "^done" "$HARNESS_STATE/proj/badentry/ended"'
 
 # ---- run 14: v2-style tags don't merge on a resume; `harness merge` merges them ----
-echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" legacy --spec SPEC.md --foreground > "$T/run14.out" 2>&1
-echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
 # its record made pre-E4 (E4-04): no journal, a progress.md the sessions wrote; `harness continue` keeps it as the archive
 LW=$T/wt/proj/legacy LR=$T/wt/proj/legacy/.harness/runs/legacy
 git -C "$LW" rm -q --ignore-unmatch "$LR/entries.jsonl" "$LR/progress-archive.md"
@@ -987,9 +999,9 @@ check "v2 tags don't merge on resume"     'hlog legacy | grep -q "verified by ha
 check "harness merge merges v2 tags, closes the v2 PR" 'on_main run/legacy/M2 && [[ ! -f $T/prs/branch-harness_legacy ]]'
 
 # ---- run 14d: `harness merge` on a legacy record (no journal, plan §14 a): it stays byte for byte; its PR quotes its own verify entry ----
-echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lgm --spec SPEC.md --foreground > "$T/run14d.out" 2>&1
-echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
 MW=$T/wt/proj/lgm MR=$T/wt/proj/lgm/.harness/runs/lgm
 git -C "$MW" rm -q --ignore-unmatch "$MR/entries.jsonl" "$MR/progress-archive.md"
 printf '# progress\n\n### 2026-10-20 11:00 · verify M2\n\n| Feature | Step | Ran | Saw | Holds |\n|---|---|---|---|---|\n| C | 1 | check | legacy-M2-row | yes |\n\n### 2026-10-20 10:00 · verify M1\n\nold\n' > "$MR/progress.md"
@@ -1071,7 +1083,7 @@ check "past --until after a run: one debrief" '[[ $(ndb) == $((B + 1)) ]] && gre
 rm -f "$Q"/*.args
 
 # ---- debrief: since the last success; failed and killed debriefs; continuations; notification ----
-printf '%s\n' 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify.log\"'" \
+printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify.log\"'" \
   "DEBRIEF_PAGE_CMD='cp \"\$1\" \"$T/page-copy.html\"'" > "$T/user-config.sh"
 ran() { local r; sleep 1; for r; do echo "$(date '+%F %T') run $r on harness/$r in $T/wt/proj/$r · port 7999" >> "$HARNESS_STATE/proj/$r/run.log"; done; }   # runs since
 ran stoppy demo walled limited gated
@@ -1143,7 +1155,7 @@ check "by hand while another debrief runs: it says it is waiting" 'grep -q "wait
 ran stoppy; HARNESS_DEBRIEF_CONTEXT_MAX=8000 "$H" debrief --dry-run > "$T/capped.out" 2>&1
 check "the whole context is capped too" 'C=$(head -1 "$T/capped.out"); (( $(wc -c < "$C") <= 8000 )) && grep -q "context cut" "$C"'
 git -C "$T/ledger" init -q -b main && git -C "$T/ledger" add -A && git -C "$T/ledger" -c user.name=t -c user.email=t@t commit -qm ledger
-printf '%s\n' 'LEDGER_COMMIT=1 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=1 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
 for i in 1 2; do ran stoppy; GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t "$H" debrief > "$T/commit$i.out" 2>&1; done
 check "each debrief is a commit of ledger/debrief.md" '[[ $(git -C "$T/ledger" log --oneline -- debrief.md | grep -c "ledger: debrief") == 2 && -z $(git -C "$T/ledger" status --porcelain) ]]'
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
@@ -1156,7 +1168,7 @@ printf '#!/bin/sh\nexit 1\n' > "$T/ledger/.git/hooks/pre-commit"; chmod +x "$T/l
 ran stoppy; "$H" debrief > "$T/hook.out" 2>&1; rm -f "$T/ledger/.git/hooks/pre-commit"
 check "a refused commit: the note is unstaged again" 'grep -q "not committed" "$T/hook.out" && [[ -z $(staged) ]]'
 unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
-echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
 
 # ---- run 16: a feature waiting on Michael parks (no attempt); independent work goes on; an answer unparks it ----
 { cat "$T/base-config.sh"; echo 'DESK_URL=https://claude.ai/code/env-test'; } > "$T/user-config.sh"
@@ -1346,7 +1358,7 @@ check "harness merge says it was refused again, and starts no desk" '[[ $(hlog r
 check "the dialog guard: the CLI's dialog words, not the desk's own questions" 'DG=$(sed -n "s/^DIALOG=\x27\(.*\)\x27$/\1/p" "$HH/lib/desk.sh"); [[ -n $DG ]] \
   && sed 1d "$HERE/fixtures/permission-menu.txt" | grep -qE "$DG" && ! printf "%s\n" "Do you want to merge M1 now?" "1. yes  2. no" "Enter the value" | grep -qE "$DG"'
 "$H" desk --all > /dev/null
-echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
 
 # ---- run 17: the 7-day window past WEEKLY_STOP_AT: the run stops before its next session; the queue starts nothing ----
 STUB_WEEKLY=0.9 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" weekly --spec SPEC.md --foreground > "$T/run17.out" 2>&1
@@ -1354,9 +1366,111 @@ check "the weekly budget ends a run after the session that crossed it" 'grep -q 
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue5.out" 2>&1
 check "the queue starts no run past the weekly budget" 'grep -q "7-day window at 90%" "$T/queue5.out" && [[ $(ls "$Q"/*.args | wc -l) == 1 ]]'
-echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 WEEKLY_STOP_AT=95' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 WEEKLY_STOP_AT=95' > "$T/user-config.sh"
 check "WEEKLY_STOP_AT raises the bar"     '( source "$HERE/../lib/config.sh" && harness_config /nonexistent && [[ $WEEKLY_STOP_AT == 95 ]] && ! weekly_over "$HARNESS_STATE/USAGE_7D" > /dev/null )'
-rm -f "$Q"/*.args "$HARNESS_STATE/USAGE_7D"; echo 'LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+rm -f "$Q"/*.args "$HARNESS_STATE/USAGE_7D"; echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+
+# ---- scratch (L3-02): finish keeps the record's outputs in the state dir and deletes the run's scratch, never the project's ----
+{ cat "$T/base-config.sh"; echo KEEP_SCRATCH=0; } > "$T/scrub-config.sh"
+mkdir -p "$T/scratch/proj" "$HARNESS_STATE/proj/scrub" && echo lock > "$T/scratch/proj/live.lock"   # a live project's flock file beside the runs' scratch
+echo "CHECK_CMD='echo \"# pass 7\"'" > "$HARNESS_STATE/proj/scrub/run.env"   # a suite with a test count (run.env outlasts start and continue)
+HARNESS_CONFIG=$T/scrub-config.sh "$H" start "$T/proj" scrub --spec SPEC.md --until-epoch $(( $(date +%s) - 1 )) --foreground > "$T/scrub.out" 2>&1   # init, initializer, deadline
+scrub_end1=$(cat "$HARNESS_STATE/proj/scrub/tests-end" 2> /dev/null)
+HARNESS_CONFIG=$T/scrub-config.sh "$H" continue scrub --until-epoch $(( $(date +%s) - 1 )) --foreground > "$T/scrub2.out" 2>&1   # same tree, cached green, new empty scratch
+check "finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)" \
+  '[[ -f $HARNESS_STATE/proj/scrub/check-last.out && -s $HARNESS_STATE/proj/scrub/init.out && ! -e $T/scratch/proj/scrub && $(cat "$T/scratch/proj/live.lock") == lock ]] \
+  && hlog scrub | grep -qF "scratch removed: $T/scratch/proj/scrub" && grep -qx "# pass 7" "$HARNESS_STATE/proj/scrub/check-last.out"'
+check "a continued run whose suite is cached green keeps its test count (the green marker holds it, not scratch)" '[[ $scrub_end1 == 7 && $(cat "$HARNESS_STATE/proj/scrub/tests-end" 2> /dev/null) == 7 ]] \
+  && [[ $(hlog scrub | grep -c "scratch removed: ") == 2 && ! -e $T/scratch/proj/scrub ]]'   # the second segment ran no init: its scratch held no suite output
+check "KEEP_SCRATCH=1 keeps the run's scratch; the default is 0" '[[ -d $T/scratch/proj/demo ]] && grep -qF "scratch kept (KEEP_SCRATCH=1): $T/scratch/proj/demo" "$T/demo-hlog.md" \
+  && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ $KEEP_SCRATCH == 0 ]] ) && grep -q "^# KEEP_SCRATCH=0 " "$HERE/../templates/user/config.sh"'
+git init -q "$T/ck2" && ( cd "$T/ck2" && echo a > f && git add f && git -c user.name=t -c user.email=t@t commit -qm a )
+ck2() { ( cd "$T/ck2" && HARNESS_SCRATCH=$T/ck2s HARNESS_CHECK_CACHE=$T/ck2c HARNESS_CHECK_CMD='echo "# pass 1"' "$HERE/../lib/check.sh" ); }
+ck2 > /dev/null; ck2k1=$(cd "$T/ck2" && node "$HERE/../lib/treekey.mjs"); echo b > "$T/ck2/f"; ck2 > /dev/null; ck2k2=$(cd "$T/ck2" && node "$HERE/../lib/treekey.mjs")
+echo a > "$T/ck2/f"; ck2_back=$(ck2)   # back to the first tree: green from its marker, its output gone
+check "check.sh keeps one check-<key>.out; the green markers stay" '[[ $(ls "$T"/ck2s/check-*.out | wc -l) == 1 && -f $T/ck2s/check-$ck2k2.out && $ck2k1 != "$ck2k2" ]] \
+  && [[ $(cat "$T/ck2c/green-$ck2k1") == "1 tests" && -f $T/ck2c/green-$ck2k2 && $ck2_back == "check: green (cached for this code tree, 1 tests)" ]]'
+check "the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created" 'grep -qxF "cache: $T/cache/harness/proj" "$HARNESS_STATE/proj/scrub/init.out" \
+  && grep -qxF "scrub $T/cache/harness/proj" "$T/cache.log" && [[ -d $T/cache/harness/proj ]]'
+mkdir -p "$T/guard/proj/r1" "$T/guard/proj/x"; for g in "$T/guard" "$T/guard/proj" "$T/guard/proj/r1" "$T/guard/proj/x"; do : > "$g/marker"; done
+guard() { ( source "$HERE/../lib/prompt.sh"; HARNESS_SCRATCH_ROOT=${SR_ROOT-$T/guard} PROJECT_NAME=${SR_PROJ-proj} RUN_ID=${SR_RUN-r1} scratch_rm "$1" ) && echo removed || echo refused; }
+guard_bad=$(for d in / "" "$T/guard" "$T/guard/proj" "$T/guard/proj/" "$T/guard/proj/.." "$T/guard/proj/x/.." "$T/guard/proj/r1/" "$T/guard/proj/r1/.."; do guard "$d"; done
+  SR_RUN="" guard "$T/guard/proj/"; SR_RUN=.. guard "$T/guard/proj/.."; SR_PROJ="" guard "$T/guard//r1"; SR_PROJ=.. guard "$T/guard/../r1"; SR_PROJ=. guard "$T/guard/./r1"
+  SR_ROOT=relative guard "relative/proj/r1")
+mkdir -p "$T/groot" && ln -s "$T/guard/proj" "$T/groot/lp" && ln -s "$T/guard/proj/x" "$T/guard/proj/lx"   # a symlinked project dir, a symlinked run dir
+guard_bad+=$'\n'$(SR_ROOT=$T/groot SR_PROJ=lp guard "$T/groot/lp/r1"; SR_RUN=lx guard "$T/guard/proj/lx")
+check "scratch_rm refuses anything but the run's own scratch directory (symlinks in its path too)" '! grep -q removed <<< "$guard_bad" && [[ $(grep -c refused <<< "$guard_bad") == 17 ]] \
+  && [[ -f $T/guard/marker && -f $T/guard/proj/marker && -f $T/guard/proj/r1/marker && -f $T/guard/proj/x/marker && -L $T/guard/proj/lx ]] \
+  && [[ $(guard "$T/guard/proj/r1") == removed && ! -e $T/guard/proj/r1 && -f $T/guard/proj/marker ]]'
+# scratch_done on its own (L3-05 review): what it copied in the note, the final tree's output as check-last.out, scratch kept when a copy fails
+sd() { ( source "$HERE/../lib/prompt.sh"; note() { echo "note: $*"; }; HARNESS_SCRATCH_ROOT=$T/sdr PROJECT_NAME=proj RUN_ID=$1 SCRATCH=${SD_SCRATCH-$T/sdr/proj/$1} \
+  STATE=$T/sds/$1 KEEP_SCRATCH=0; mkdir -p "$STATE"; scratch_done "$2" ) 2>&1; }
+mkdir -p "$T"/sdr/proj/{sd1,sd2,sd3,sd4}; echo init > "$T/sdr/proj/sd1/init.out"; echo old > "$T/sdr/proj/sd1/check.out"; echo final > "$T/sdr/proj/sd1/check-k1.out"
+sd1=$(sd sd1 k1); echo x > "$T/sdr/proj/sd2/check.out"; mkdir -p "$T/sds/sd2" && chmod 555 "$T/sds/sd2"; sd2=$(sd sd2 k2); chmod 755 "$T/sds/sd2"
+mkdir -p "$T/sdr/proj/sd3/lk" && : > "$T/sdr/proj/sd3/lk/f" && chmod 555 "$T/sdr/proj/sd3/lk"; sd3=$(sd sd3 k3); chmod 755 "$T/sdr/proj/sd3/lk"
+sd4=$(SD_SCRATCH=$T/sdr/proj sd sd4 k4)
+check "scratch_done: the final tree's output is check-last.out, the note names what it kept" '[[ $(cat "$T/sds/sd1/check-last.out") == final && $(cat "$T/sds/sd1/init.out") == init && ! -e $T/sdr/proj/sd1 ]] \
+  && [[ $sd1 == "note: scratch removed: $T/sdr/proj/sd1 (in the state dir: init.out check-last.out)" ]]'
+check "scratch_done keeps scratch when a copy fails, and says why when rm fails or the guard refuses" '[[ -f $T/sdr/proj/sd2/check.out && $sd2 == "note: scratch kept: copying check-last.out into $T/sds/sd2 failed" ]] \
+  && [[ $sd3 == "note: scratch not fully removed: $T/sdr/proj/sd3 (rm exit 1)" && $sd4 == "note: scratch not removed: $T/sdr/proj is not this run'"'"'s scratch directory" && -d $T/sdr/proj ]]'
+check "the tmpfiles template holds the 3-day age rule; README has its install command" 'grep -qx "e /tmp/harness - - - 3d" "$HERE/../templates/user/harness-tmpfiles.conf" \
+  && grep -qx "x /tmp/harness/\*/live.lock" "$HERE/../templates/user/harness-tmpfiles.conf" && grep -q "user-tmpfiles.d" "$HERE/../README.md" && grep -q "HARNESS_CACHE" "$HERE/../README.md"'
+
+# ---- tmux (L3-03): when the driver exits, its window saves the scrollback, closes the supervisor and, after TMUX_KEEP_HOURS, the session ----
+{ cat "$T/base-config.sh"; echo TMUX_KEEP_HOURS=0; } > "$T/keep0.sh"; { cat "$T/base-config.sh"; echo TMUX_KEEP_HOURS=1; } > "$T/keep1.sh"
+tended() { local i; for i in $(seq 600); do [[ -f $1/ended && ! -f $1/driver.pid ]] && return 0; sleep 0.1; done; return 1; }   # ≤ 60 s; finish writes ended before the retro
+tgone() { local i; for i in $(seq 100); do tmux has-session -t "=$1" 2> /dev/null || return 0; sleep 0.1; done; return 1; }   # ≤ 10 s
+PAST=$(( $(date +%s) - 1 ))   # the tmux runs take no STUB_* flags (they don't reach a window): the initializer, then the deadline
+HARNESS_CONFIG=$T/keep0.sh "$H" start "$T/proj" tmux0 --spec SPEC.md --until-epoch "$PAST" --now > "$T/tmux0.out" 2>&1
+HARNESS_CONFIG=$T/keep0.sh "$H" start "$T/proj" dot.run --spec SPEC.md --until-epoch "$PAST" --now --no-supervisor > "$T/tmuxdot.out" 2>&1
+tdot_s=$(tmux list-sessions -F '#S' 2> /dev/null | grep -x 'h-dot-run')
+HARNESS_CONFIG=$T/keep1.sh "$H" start "$T/proj" tmux1 --spec SPEC.md --until-epoch "$PAST" --now > "$T/tmux1.out" 2>&1
+tmux1_w=$(tmux list-windows -t =h-tmux1 -F '#W' 2> /dev/null | tr '\n' ' ')
+tended "$HARNESS_STATE/proj/tmux0"; tmux0_gone=$(tgone h-tmux0 && echo yes)
+tended "$HARNESS_STATE/proj/dot.run"; tdot_gone=$(tgone h-dot-run && echo yes)
+tended "$HARNESS_STATE/proj/tmux1"
+for i in $(seq 100); do tmux capture-pane -pJ -t =h-tmux1:driver 2> /dev/null | grep -q "self-destructs in 1 h" && break; sleep 0.1; done   # the line comes after the capture and the kill
+tmux1_after=$(tmux list-windows -t =h-tmux1 -F '#W' 2> /dev/null | tr '\n' ' '); tmux1_pane=$(tmux capture-pane -pJ -t =h-tmux1:driver 2> /dev/null)
+tmux send-keys -t =h-tmux1:driver C-c; tmux1_cc=$(tgone h-tmux1 && echo yes)   # a Ctrl-C in the keep window ends the wait, not the cleanup
+tmux kill-session -t =h-tmux1 2> /dev/null   # (if it failed) its keep-1 timer goes with it; the EXIT trap kills the server anyway
+tdrv() { grep -q "deadline reached" "$HARNESS_STATE/proj/$1/tmux-driver.txt" 2> /dev/null; }   # the driver's own output, not a blank pane
+check "tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits" '[[ $tmux0_gone == yes ]] \
+  && grep -q "started tmux session h-tmux0 (windows: driver, log, supervisor)" "$T/tmux0.out" && tdrv tmux0'
+check "tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it" '[[ $tmux1_w == *supervisor* && -n $tmux1_after && $tmux1_after != *supervisor* ]] \
+  && tdrv tmux1 && [[ $tmux1_cc == yes ]] && grep -qF "[driver exited — scrollback saved to $HARNESS_STATE/proj/tmux1/tmux-driver.txt; this session self-destructs in 1 h, or sooner on harness gc]" <<< "$tmux1_pane" \
+  && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ $TMUX_KEEP_HOURS == 24 ]] ) && grep -q "^# TMUX_KEEP_HOURS=24 " "$HERE/../templates/user/config.sh"'
+check "tmux: run id dot.run gets session h-dot-run, gone at keep 0" '[[ $tdot_s == h-dot-run && $tdot_gone == yes ]] && tdrv dot.run'
+
+# ---- tmux (L3-04): harness gc reaps the sessions of its project's ended runs, run → session, never the other way ----
+# sessions first, then the markers: a session created after its run ended stands for a resume's (fresh), spared
+RS="h-gone1 h-gone2 h-livey h-pausy h-pausx h-fresh h-held-x h-queue h-odone"   # held.x (ended) shares h-held-x with held-x (live, other project); odone: another project's ended run
+for s in $RS; do tmux new-session -d -s "$s" sleep 600; done
+has_s "$HARNESS_DESK_SESSION" || tmux new-session -d -s "$HARNESS_DESK_SESSION" sleep 600
+for r in gone1 gone2 livey pausy pausx fresh held.x; do mkdir -p "$HARNESS_STATE/proj/$r" && : > "$HARNESS_STATE/proj/$r/meta.env"; done
+mkdir -p "$HARNESS_STATE/other/held-x" && : > "$HARNESS_STATE/other/held-x/meta.env" && echo $$ > "$HARNESS_STATE/other/held-x/driver.pid"
+mkdir -p "$HARNESS_STATE/other/odone" && : > "$HARNESS_STATE/other/odone/meta.env" && echo done > "$HARNESS_STATE/other/odone/ended"
+true & tp=$!; wait "$tp"; echo "$tp" > "$HARNESS_STATE/proj/gone2/driver.pid"; echo $$ > "$HARNESS_STATE/proj/livey/driver.pid"
+echo done | tee "$HARNESS_STATE/proj/"{gone1,gone2,livey,pausx,held.x}/ended > /dev/null
+touch "$HARNESS_STATE/proj/"{pausy,pausx}/PAUSE; echo done > "$HARNESS_STATE/proj/fresh/ended"; touch -d '1 hour ago' "$HARNESS_STATE/proj/fresh/ended"
+all_s() { local s; for s in $RS "$HARNESS_DESK_SESSION"; do has_s "$s" || return 1; done; }
+"$H" gc "$T/proj" --dry-run > "$T/gcr-dry.out" 2>&1; gcr_dry_all=$(all_s && echo yes)
+"$H" gc "$T/proj" > "$T/gcr.out" 2>&1
+check "harness gc --dry-run kills no tmux session" '[[ $gcr_dry_all == yes ]] && grep -qxF "would: tmux kill-session -t =h-gone1 (gone1 ended)" "$T/gcr-dry.out" \
+  && grep -qxF "would: tmux kill-session -t =h-gone2 (gone2 ended)" "$T/gcr-dry.out" && [[ $(grep -c "tmux kill-session" "$T/gcr-dry.out") == 2 ]]'
+check "harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)" '! has_s h-gone1 && ! has_s h-gone2 \
+  && grep -qxF "+ reaped tmux session h-gone1 (gone1 ended)" "$T/gcr.out" && grep -qxF "+ reaped tmux session h-gone2 (gone2 ended)" "$T/gcr.out" && [[ $(grep -c "tmux session" "$T/gcr.out") == 2 ]] \
+  && RS="h-livey h-pausy h-pausx h-fresh h-held-x h-queue h-odone" all_s \
+  && ! "$H" start "$T/proj" queue --spec SPEC.md --foreground 2> "$T/gcr-q.err" && grep -q "run-id .queue. is taken by the queue runner" "$T/gcr-q.err"'
+# L3-05 review: a start never kills another live run's session (a-b vs a.b, or one id in two projects); h-queue and attach are exact targets
+"$H" start "$T/proj" held-x --foreground > "$T/coll.out" 2>&1; coll_rc=$?
+mkdir -p "$T/tmuxlog" && printf '#!/usr/bin/env bash\necho "$*" >> %q\n' "$T/tmux-calls" > "$T/tmuxlog/tmux" && chmod +x "$T/tmuxlog/tmux"
+PATH=$T/tmuxlog:$PATH HARNESS_NO_RUNNER= "$H" queue start > /dev/null 2>&1; PATH=$T/tmuxlog:$PATH "$H" attach proj-x > /dev/null 2>&1
+check "harness start refuses a run id whose tmux session another live run holds; its session lives" '(( coll_rc )) && has_s h-held-x \
+  && grep -qF "run id held-x shares tmux session h-held-x with $HARNESS_STATE/other/held-x, which has not ended" "$T/coll.out" && [[ ! -e $HARNESS_WORKTREES/proj/held-x ]]'
+check "the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix" 'grep -qxF "has-session -t =h-queue" "$T/tmux-calls" \
+  && grep -qxF "kill-session -t =h-queue" "$T/tmux-calls" && grep -qxF "attach -t =h-proj-x" "$T/tmux-calls" && ! grep -qE -- "-t h-" "$T/tmux-calls"'
+for s in $RS; do tmux kill-session -t "=$s" 2> /dev/null; done
+rm -rf "$HARNESS_STATE/proj/"{gone1,gone2,livey,pausy,pausx,fresh,held.x} "$HARNESS_STATE/other/held-x" "$HARNESS_STATE/other/odone"   # livey and held-x name the suite's own pid: alive_count would count it
 
 (( fails )) && { echo "--- run1 output"; tail -30 "$T/run1.out"; echo "--- harness-log"; hlog demo; }
 echo "$(( total - fails ))/$total checks passed"

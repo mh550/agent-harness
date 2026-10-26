@@ -48,6 +48,7 @@ load_config() {
   prompt_env   # the exports every session and template sees (lib/prompt.sh)
 }
 load_config
+mkdir -p "$HARNESS_CACHE"   # installs a project keeps across runs and boots (Playwright browsers …); scratch goes at finish
 echo "$MAX_ATTEMPTS" > "$STATE/max-attempts"
 T0=$(date +%s); DEADLINE=$(( T0 + HOURS * 3600 )); (( DEADLINE_AT > 0 && DEADLINE_AT < DEADLINE )) && DEADLINE=$DEADLINE_AT
 rm -f "$STATE"/waited-*   # a restart inside a usage-limit window waits for it again
@@ -70,7 +71,7 @@ services_down() {
     SVC_TD=$!; wait "$SVC_TD"; rc=$?
   fi
   scope_stop "$unit"; SVC_UP=0 SVC_TD=""
-  if (( rc )); then note "services stopped ($1; teardown exit $rc, see $SCRATCH/teardown.out)"
+  if (( rc )); then note "services stopped ($1; teardown exit $rc, see $SCRATCH/teardown.out, at finish $STATE/teardown.out)"
   else note "services stopped ($1)"; fi
 }
 # shellcheck source=lib/notify.sh
@@ -201,7 +202,7 @@ session() {
   local settings=() mcp=(--strict-mcp-config) t0 seq unit left x
   t0=$(date +%s) S_NOTES=()
   # an entry.json no ingest took (the driver died after its session) would pass for this session's own
-  [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
+  [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$STATE/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
   cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
   [[ $1 == coding || $1 == verify ]] && cp "$RUN_DIR/context.md" "${3%.jsonl}.context.md" 2> /dev/null   # and the pack it read first
   [[ -f $AGENT_SETTINGS ]] && settings=(--settings "$WT/$AGENT_SETTINGS")
@@ -250,7 +251,7 @@ journal() {
   out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$RUN_DIR" "$kind" "$id" "$name" "$4" "$outcome" "$SCRATCH/entry-files" "$SCRATCH/entry-final"); rc=$?
   (( rc == 3 )) && note "$who: entry.json $out; recorded a minimal entry"
   (( rc == 0 || rc == 3 )) || { note "$who: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
-    mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-failed-$name.json" 2> /dev/null; }
+    mv -f "$RUN_DIR/entry.json" "$STATE/entry-failed-$name.json" 2> /dev/null; }
   out=$(node "$HARNESS_HOME/lib/entries.mjs" render "$RUN_DIR" 2>&1) || note "$who: rendering progress.md failed: $out"
   return 0
 }
@@ -485,8 +486,10 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$RUN_DIR/metrics.jsonl")"
   merge_milestones
-  green; node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$(node "$HARNESS_HOME/lib/treekey.mjs").out" | cut -d' ' -f1 | grep . > "$STATE/tests-end" \
-    || rm -f "$STATE/tests-end"
+  # the tree's count: its green marker's (a continued segment's scratch has no output of a tree cached green), else its output's
+  local key n; green; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
+  n=$(cat "$STATE/green/green-$key" 2> /dev/null); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out")
+  if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; else rm -f "$STATE/tests-end"; fi
   services_down "$1"   # after the last suite run, which may need them
   SUM build "$WT" "$RUN_ID" "$STATE" > "$RUN_DIR/summary.json"
   SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"   # the end notification's click; rewritten after the retro
@@ -506,6 +509,7 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
   SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"
   commit_all "HARNESS: summary and retro"; sync
   ledger
+  scratch_done "$key"   # the record keeps the last suite and init output; the run's scratch goes (decisions/2026-10-25-scratch-cleanup)
   # Only a session cap continues by itself (time and Michael's stops don't), within the run's --until, at most
   # AUTO_CONTINUE_MAX times, without giving given-up features new attempts.
   local left conts; left=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" 2>/dev/null); conts=$(cat "$STATE/auto-continues" 2>/dev/null || echo 0)
@@ -561,6 +565,7 @@ if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 who
     $GH pr close "$BRANCH" --comment "Superseded: harness v3 merges each verified milestone into $MAIN_BRANCH through its own PR (tags run/$RUN_ID/<milestone>). Unverified work stays on $BRANCH until its milestone is verified." > /dev/null 2>> "$STATE/run.log" \
       && note "closed the whole-run PR for $BRANCH (milestones merge through their own PRs now)"
   fi
+  rmdir "$SCRATCH" 2> /dev/null   # created above for nothing: `harness merge` runs no init or session (a kept scratch isn't empty)
   commit_all "HARNESS: merge"; sync; END_REASON="merge only"; exit 0
 fi
 

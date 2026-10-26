@@ -9,6 +9,120 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 22:19 · verify L3 · passes
+
+L3-01..05 hold: suite re-run 306/306, syntax checks clean, each named check PASS, docs/plan/template/decisions read against the steps.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L3-01 | 1 | read plan, templates/user/harness-tmpfiles.conf, README | plan §1 covers scratch_done, newest check-out, HARNESS_CACHE, tmpfiles; template has `e /tmp/harness - - - 3d` plus x live.lock; README has install command | yes |
+| L3-01 | 2 | read plan driver-window and reaper sections | capture-pane -S -, TMUX_KEEP_HOURS=24, shared tmux_reap in lib/tmux.sh, matches step | yes |
+| L3-01 | 3 | read plan test-driving section | private tmux server, PATH shim, decoy sessions described and implemented in tests/run.sh | yes |
+| L3-01 | 4 | read plan check list | checks named; all present as PASS in suite | yes |
+| L3-01 | 5 | bash tests/run.sh | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-02 | 1 | check 'finish keeps check-last.out and init.out…' | PASS: state files, scratch gone, live.lock intact | yes |
+| L3-02 | 2 | check KEEP_SCRATCH=1; grep config files | PASS; default 0, template commented | yes |
+| L3-02 | 3 | check 'check.sh keeps one check-<key>.out' | PASS | yes |
+| L3-02 | 4 | check 'init and sessions see HARNESS_CACHE' | PASS | yes |
+| L3-02 | 5 | cat tmpfiles template; grep README | rule and install command; Playwright guidance | yes |
+| L3-02 | 6 | grep architecture §4; read decision | Scratch/Cache rows; decision has Finding/Choice/Rejected | yes |
+| L3-02 | 7 | bash -n lib/*.sh; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-03 | 1 | grep lib/config.sh, template, bin/harness:199-201 | default 24; command captures pane, kills supervisor window, prints, sleeps, kill-session | yes |
+| L3-03 | 2 | check 'tmux: TMUX_KEEP_HOURS=0…' | PASS | yes |
+| L3-03 | 3 | check 'tmux: a keep window keeps h-<run>…' | PASS | yes |
+| L3-03 | 4 | check 'tmux: run id dot.run…' | PASS | yes |
+| L3-03 | 5 | read decision, architecture §3/§10 | present, Finding/Choice/Rejected | yes |
+| L3-03 | 6 | bash -n bin/harness; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-04 | 1 | read lib/tmux.sh, bin/harness:376 | log line, dry-run via act flag, continues after failed kill | yes |
+| L3-04 | 2 | check 'harness gc reaps only the ended runs…' | PASS; decoys survive, second ended run reaped | yes |
+| L3-04 | 3 | check 'harness gc --dry-run kills no tmux session' | PASS | yes |
+| L3-04 | 4 | check 'queue runner reaps…'; lib/queue.sh:69 | PASS; reap before debrief | yes |
+| L3-04 | 5 | read decision, architecture, README | present | yes |
+| L3-04 | 6 | bash -n bin/harness lib/queue.sh; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-05 | 1 | read docs/plans/2026-10-25-L3-review.md | findings with severities | yes |
+| L3-05 | 2 | checks scratch_rm refuses…, start refuses…, exact targets | PASS; 17 refusals; RED→GREEN checks per Important finding | yes |
+| L3-05 | 3 | grep architecture §4/§10/§14, README | complete, tmux-driver.txt named | yes |
+| L3-05 | 4 | read decisions; bash -n; node --check | three-part decisions; syntax clean | yes |
+| L3-05 | 5 | bash tests/run.sh | bash tests/run.sh: 306/306 checks passed | yes |
+
+- *221005-verify-L3 · claude-sonnet-5-5*
+
+### 2026-10-25 22:10 · L3-05 · passes
+
+Opus review of the L3 diff: no Critical; 2 Important fixed RED→GREEN (start killed another run's same-name tmux session; h-queue/attach prefix targets). Guard now refuses symlinked paths; scratch_done moved to lib/prompt.sh, keeps scratch on a failed copy, honest notes, final tree's check-last.out. Docs §4/§14/§15, README, decisions.
+
+- **Files:** bin/harness, lib/tmux.sh, lib/prompt.sh, lib/driver.sh, lib/eval.sh, templates/project/init.sh, tests/run.sh, docs/architecture.md, README.md, docs/plans/2026-10-25-L3-review.md, journal/decisions/2026-10-25-scratch-cleanup.md, journal/decisions/2026-10-25-tmux-reaper.md
+- **Verified:** bash tests/run.sh: 301/306 with the five new checks failing, then 306/306; lib/check.sh green in 526 s (306/306); bash -n on every L3 shell file, no .mjs touched
+- **Tests:** 301 → 306
+- **Dead end:** letting rm's stderr through scratch_done — it lands in the note capture; the note carries rm's exit instead
+- **Discovery** (affects L4, run): harness start now refuses a run id whose h-<run> another run that isn't done holds (any project, a.b vs a-b): this also closes L2 review #5 (shared harness-<id>-* units). A crashed run of another project with the same id blocks the id until it is continued or ended.
+- **Discovery** (affects L4, L5): scratch_done <key> and scratch_rm live in lib/prompt.sh; scratch_rm returns 2 on refusal. entry-stale-*/entry-failed-* now go to the state dir.
+- **Discovery** (affects run): Deferred from the L3 review: queue runner reap spares no attached session (#11); kill re-check and '! could not kill' path unexercised (#14).
+- *19-L3-05 · claude-opus-5-5*
+
+### 2026-10-25 21:17 · L3-04 · passes
+
+New lib/tmux.sh: tmux_name (moved from bin/harness) and tmux_reap, which kills h-<run> of runs with meta.env+ended, no live driver (re-checked), no PAUSE; spares a resume's newer session and a name a live/paused run shares (a.b vs a-b). harness gc calls it before git fetch; queue.sh as it exits, before the debrief. start refuses run id queue. 3 checks; 299 → 302.
+
+- **Files:** lib/tmux.sh, bin/harness, lib/queue.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-tmux-reaper.md
+- **Verified:** tests: 302/302 (bash tests/run.sh, then lib/check.sh green in 524 s); the three new checks watched failing first (298/302, plus one desk check cascading on the unreaped sleep 600 decoys, fixed by unconditional cleanup); mutation run on a scratch private tmux server: with the shared-name guard off h-held-x would be killed, with fresh's ended touched now h-fresh would be.
+- **Tests:** 299 → 302
+- **Discovery** (affects L3-05, run): tmux_name is lossy (a.b and a-b of any project are both h-a-b): tmux_reap checks every state dir of the root for a same-name run that is live, paused or not ended and keeps the session then. cmd_start's resume kill-session still kills a same-name session of another run (pre-existing, like L2-06's svc note).
+- **Discovery** (affects L3-05): The queue-runner reap check (tests/run.sh, first runner block) creates h-proj-$D, h-proj-$D-2, h-queue and the desk session before the runner and kills all four after, so the desk checks still start with no desk session and no 'sleep 600' pane. The gc reap block is the last before the summary and removes its decoy state dirs (livey/held-x hold the suite's pid).
+- **Proposed change:** L3-04 step 1 says gc calls the helper 'through act': gc prints the helper's own lines (+ reaped … / would: tmux kill-session -t =<s> (<run> ended) / ! could not kill …), the unit step's shape, as plan §9 says; act couldn't name the run.
+- **Proposed change:** L3-04 step 2's paused decoy has no ended, so it can't exercise the PAUSE guard: the check adds pausx (PAUSE + ended), fresh (a resume's session) and held.x/held-x (a shared name), per plan §6.3.
+- *18-L3-04 · claude-opus-5-5*
+
+### 2026-10-25 20:47 · L3-03 · passes
+
+Driver window: when the driver exits it saves scrollback to <state>/tmux-driver.txt, kills the supervisor window, prints the line, sleeps TMUX_KEEP_HOURS (default 24) and kills h-<run>; `trap : INT` so a Ctrl-C never skips it; exact =targets. Suite PATH shim for the supervisor's claude. Three tmux checks; decision, architecture §3/§4/§10, README. 296 → 299.
+
+- **Files:** bin/harness, lib/config.sh, templates/user/config.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-tmux-driver-window.md
+- **Verified:** lib/check.sh: 299/299 (check: green in 519 s); the three new tmux checks watched failing first (0/3), the Ctrl-C part watched failing without the trap; bash -n on bin/harness, tests/run.sh, lib/config.sh. An Opus review's four findings fixed (Ctrl-C, leading-zero hours, supervisor-window race, vacuous -s check).
+- **Tests:** 296 → 299
+- **Dead end:** asserting the printed line with plain capture-pane -p — the pane wraps at 80 columns; -J joins it (also used for tmux-driver.txt)
+- **Dead end:** printf %q of the whole message — under a C locale it makes the em-dash $'…', bash-only; now only the path is %q'd
+- **Discovery** (affects L3-04, L3-05): tests/run.sh now exports PATH=$T/bin:$PATH at the top with $T/bin/claude wrapping stub-claude.sh; tmux runs end through --until-epoch in the past and are waited on with tended <state> / tgone <session> (defined in the L3-03 block, reusable by L3-04's checks). Each tmux run's tmux-driver.txt holds the driver's 'deadline reached' line.
+- **Discovery** (affects L3-04): The window's message promises 'or sooner on harness gc', which holds only once L3-04's reaper lands. bin/harness's tmux new-window targets now use =<s>:, and the supervisor prompt is rendered before new-session.
+- **Discovery** (affects run): The known flake 'queue holds an entry whose project has a live run' failed once more while two tmux iteration runs loaded the box; the clean rerun passed.
+- **Proposed change:** L3-03 step 1 names `tmux capture-pane -p -S -`: built as `-pJ` (joins wrapped lines) plus `trap : INT` on the window shell, both from the review; recorded in decisions/2026-10-25-tmux-driver-window
+- *17-L3-03 · claude-opus-5-5*
+
+### 2026-10-25 20:25 · L3-02 · passes
+
+finish copies init.out, teardown.out, check-last.out to $STATE and deletes the run's scratch via a guarded scratch_rm (KEEP_SCRATCH=1 keeps it); check.sh keeps one check-<key>.out, the test count now lives in the green marker; HARNESS_CACHE exported and created; tmpfiles template, README, docs, decision. Review fixes: continued-run tests-end, eval probes' init output, merge's empty scratch.
+
+- **Files:** lib/driver.sh, lib/prompt.sh, lib/check.sh, lib/config.sh, lib/eval.sh, templates/user/config.sh, templates/user/harness-tmpfiles.conf, tests/run.sh, tests/stub-claude.sh, README.md, docs/architecture.md, journal/decisions/2026-10-25-scratch-cleanup.md
+- **Verified:** suite 296/296 (lib/check.sh, green in 514 s). The 6 planned checks plus a continued-run tests-end check failed first (0/6 on old code; the continuation check failed with only the old tests-end line restored), then passed; the eval probe check failed with HEAD's scratch deletion and passed after KEEP_SCRATCH=1 in eval safety (15/16 then 16/16).
+- **Tests:** 289 → 296
+- **Dead end:** the guard check's env vars GP/GR/GQ — GP is a pid variable earlier in the suite (gatestop); renamed SR_ROOT/SR_PROJ/SR_RUN
+- **Dead end:** hlog demo for the KEEP_SCRATCH note — gc removes demo's worktree before the end of the suite; read $T/demo-hlog.md instead
+- **Dead end:** { cat marker; testcount; } | grep -m1 . for the count — grep -m1 can SIGPIPE its producers under pipefail; plain assignments instead
+- **Discovery** (affects run): systemctl --user is-enabled systemd-tmpfiles-clean.timer prints `disabled` on this box: the tmpfiles install command in README also runs `systemctl --user enable --now systemd-tmpfiles-clean.timer`.
+- **Discovery** (affects L3-03, L3-04, L3-05): tests/run.sh: KEEP_SCRATCH=1 is in base-config.sh and every line that rewrites user-config.sh (13 lines); a new config line that starts from scratch must add it, or later checks lose the stub's scratch files. XDG_CACHE_HOME=$T/cache is exported at the top. The scrub run (KEEP_SCRATCH=0, its own HARNESS_CONFIG and a counting CHECK_CMD in its run.env) is at the end, before the summary: L3-03's tmux block can follow it.
+- **Discovery** (affects L3-05, run): green-<key> markers in $STATE/green now hold `<n> tests` (empty when the output has none); check.sh's cached line and finish's tests-end read the marker first.
+- **Discovery** (affects L3-05): Eval runs set KEEP_SCRATCH=1 (lib/eval.sh safety), since probes render the next prompt after the run ends; `harness merge` rmdirs its empty scratch.
+- **Question for Michael:** Install the optional scratch age rule (3 days, never live.lock)? `mkdir -p ~/.config/user-tmpfiles.d && cp templates/user/harness-tmpfiles.conf ~/.config/user-tmpfiles.d/harness.conf && systemd-tmpfiles --user --create && systemctl --user enable --now systemd-tmpfiles-clean.timer`
+- **Proposed change:** L3-02 step 1 names run demo: the check runs on a new run `scrub` with KEEP_SCRATCH=0 (demo's checks read its scratch after the run; plan §9), and demo shows KEEP_SCRATCH=1 instead.
+- *16-L3-02 · claude-opus-5-5*
+
+### 2026-10-25 19:55 · L3-01 · passes
+
+Wrote docs/plans/2026-10-25-L3-scratch-and-tmux.md: finish's scratch_done + scratch_rm guard, check.sh newest-only, HARNESS_CACHE, tmpfiles template, the H1a driver-window command, lib/tmux.sh (tmux_name + tmux_reap) for gc and queue.sh, how the suite drives real tmux runs, and the 12 L3 checks by name. Plan only; suite 289/289.
+
+- **Files:** docs/plans/2026-10-25-L3-scratch-and-tmux.md
+- **Verified:** check.sh full run: 289/289 green in 505 s; tmux facts probed on a throwaway private server (tmux 3.4); each plan reference checked against bin/harness, lib/driver.sh, lib/check.sh, lib/prompt.sh, lib/queue.sh, tests/run.sh
+- **Tests:** 289 → 289
+- **Discovery** (affects L3-02): 26 tests/run.sh lines read $T/scratch/<p>/<run>/ after a run ends (3 on demo); the stub's count-* files span continuations. Plan §2: KEEP_SCRATCH=1 in base-config.sh and every line that rewrites user-config.sh from scratch; the scratch checks use their own HARNESS_CONFIG on a new run `scrub`.
+- **Discovery** (affects L3-03, L3-04): The private tmux server's windows get the suite's env from when the server started, not the caller's: PATH (the $T/bin/claude wrapper, not a symlink: the stub finds fixtures by dirname $0) and XDG_CACHE_HOME=$T/cache must be exported at the top of tests/run.sh. Per-command STUB_* flags never reach a tmux window; tmux runs end through --until-epoch in the past (initializer, then deadline).
+- **Discovery** (affects L3-04): tmux display-message -p -t =<s>: '#{session_created}' needs the trailing colon (without it, nothing is printed). The reaper skips a session created after its run's ended (a resume's session before its driver writes driver.pid), so checks create decoy sessions first and write ended after.
+- **Discovery** (affects L3-04): bin/harness runs under set -e: the reaper wraps kill-session in if/else and goes before cmd_gc's git fetch.
+- **Question for Michael:** Defaults taken (plan §8): KEEP_SCRATCH=0 and teardown.out kept beside init.out/check-last.out; the tmpfiles template also excludes /tmp/harness/*/live.lock; TMUX_KEEP_HOURS whole hours (else 24); `queue` becomes a refused run id. Keep these?
+- **Proposed change:** L3-02 step 1: run the scratch check on a new run `scrub` with KEEP_SCRATCH=0, not `demo` (demo's checks read its scratch after the run); demo shows KEEP_SCRATCH=1 instead
+- **Proposed change:** L3-04 step 1: gc's reap lines come from the helper (`+ reaped tmux session …`, `would: tmux kill-session -t =<s> (<run> ended)`), the unit step's shape, not through act
+- **Proposed change:** L3-04 step 2: add a paused decoy with PAUSE and ended (pausx) and a resume decoy (fresh), so the PAUSE and session-created guards are exercised
+- *15-L3-01 · claude-opus-5-5*
+
 ### 2026-10-25 19:37 · verify L2 · passes
 
 Suite 289/289 green. All six L2 features hold: scope+timeout init, teardown hook and services_down on every stop point, gc orphan units, status MemoryCurrent, review fixes and docs checked against named tests.
@@ -221,88 +335,13 @@ Opus review of the L1 diff in docs/plans/2026-10-25-L1-review.md: 7 findings (1 
 - **Discovery** (affects L2): Deferred review findings for L2: check.sh stop() misses a TERM before the scope registers or on the bare fallback (orphaned suite up to CHECK_TIMEOUT); systemctl-list-units.txt fixture predates --description (recapture before parsing its DESCRIPTION column); check.sh probes a real scope every call (pass the driver SCOPE_OK down).
 - *08-L1-08 · claude-opus-5-5*
 
-### 2026-10-25 15:06 · L1-07 · passes
-
-session() always passes --strict-mcp-config, plus --mcp-config <wt>/.mcp.json when the worktree has one; run.log gets an 'MCP servers:' line at run start. prompts/parts/rules.md gains the deepEqual / bounded-rerun-after-137 rule. Decision file quotes the real claude --help lines (2.1.310). Docs: architecture §3 driver row, README .mcp.json row. Tests 264 → 267.
-
-- **Files:** lib/driver.sh, prompts/parts/rules.md, tests/run.sh, journal/decisions/2026-10-25-strict-mcp-and-deepequal-rule.md, docs/architecture.md, README.md
-- **Verified:** 3 new checks failed first (264/267), then lib/check.sh full: 267/267 checks passed. Checks: every demo session's systemd-run argv has --strict-mcp-config and none --mcp-config; run mp1 on a project committing .mcp.json gets --mcp-config $T/wt/mp/mp1/.mcp.json; lib/prompt.sh renders demo's coding prompt for A with deepEqual, exit 137, --test-name-pattern.
-- **Tests:** 264 → 267
-- **Discovery** (affects run): prompts/parts/rules.md is only included when the worktree has a CLAUDE.md (lib/prompt.sh prompt_render), so the deepEqual rule reaches only projects with one (all of them today). The MCP line is logged to run.log beside the permissions line, not noted in harness-log.md (same for every session).
-- *07-L1-07 · claude-opus-5-5*
-
-### 2026-10-25 14:48 · L1-06 · passes
-
-Memory gate: mem_available_gb and mem_gate in lib/scope.sh; session() calls mem_gate for init/coding/verify (not retro) before t0. Under MEM_MIN_AVAILABLE_GB=5 it notes, calls services_down memory (no-op in driver until L2), checks at once then every HARNESS_MEM_POLL s up to MEM_WAIT_MAX=30m, then starts anyway. Config, template, docs, decision. Tests 260 → 264.
-
-- **Files:** lib/scope.sh, lib/driver.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-memory-gate.md
-- **Verified:** bash tests/run.sh 264/264; lib/check.sh green in 453 s; new checks: mem_available_gb on the real fixture (9), mem_gate unit (still-low and freed-by-services_down paths), run lowmem (2 GB copy, MEM_WAIT_MAX=2s: both notes once per init/coding/verify session, 3/3 passing), demo has no memory note; bash -n on every touched shell file
-- **Tests:** 260 → 264
-- **Discovery** (affects L2): mem_gate lives in lib/scope.sh (not the driver as the plan said) and calls services_down only when declared; driver.sh defines a no-op services_down() unless one exists. L2 should define the real one before or instead of it (driver.sh:57: `declare -F services_down || services_down() { :; }`).
-- **Discovery** (affects L2): mem_gate checks right after services_down before its first sleep, so a teardown that frees memory starts the session at once (note 'memory: <n> GB available after 0 s; starting the session').
-- **Question for Michael:** D default: MEM_MIN_AVAILABLE_GB=5 and MEM_WAIT_MAX=30m (the audit's figures), starting the session anyway after the wait rather than parking. Keep?
-- *06-L1-06 · claude-opus-5-5*
-
-### 2026-10-25 14:30 · L1-05 · passes
-
-check.sh runs full and subset suites in harness-<run>-check-<pid> (MemoryMax=CHECK_MEMORY_MAX 3G, no MemoryHigh) under timeout -k 30s CHECK_TIMEOUT 15m, stopped after; RED lines for the cap (scope_capped) and the timeout; a TERM/INT/HUP stops the check scope; prompt_env exports prefix/cap/timeout; dur_s in scope.sh. Tests 254 → 260.
-
-- **Files:** lib/check.sh, lib/scope.sh, lib/prompt.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-capped-suites.md
-- **Verified:** bash tests/run.sh 260/260; harness check.sh green in 421 s; new checks watched failing first (old RED lines, no scope; TERM check fails with the traps removed); by hand with real systemd-run under harness-test-<pid>-*, 64M, swap 0: a 256 MB node allocation → check: RED (killed at its 64M memory cap, exit 137 …), a TERM to check.sh → 143, no unit, sleep or scope file left
-- **Tests:** 254 → 260
-- **Dead end:** a real 64M check scope with the default 1G swap — the 256 MB allocation swapped and passed: check scopes always get scope_run's 1G MemorySwapMax (SESSION_SWAP_MAX is not exported to check.sh)
-- **Discovery** (affects L1-08, L2): Only systemd-run's child moves into the check scope; check.sh stays in its caller's. Without the TERM trap, stopping a session's scope orphaned its suite in harness-<run>-check-<pid> for up to 15m. check.sh now runs the suite in the background, waits, and stops the check scope on TERM/INT/HUP (SIGKILL still can't be caught).
-- **Discovery** (affects L3): check.sh leaves no scopes/<unit>.started/.show (EXIT trap); session scopes still do, one pair per session, until L3 deletes scratch.
-- **Discovery** (affects L1-08): Check scopes get MemorySwapMax=1G always (template comment corrected); a suite can reach 4G before the kill.
-- **Question for Michael:** CHECK_MEMORY_MAX=3G and CHECK_TIMEOUT=15m are the spec's defaults (this repo's own suite runs ~7 min, well under). D6 default: suites get no MemoryHigh. Keep both?
-- **Proposed change:** L1-05 step 3: the cap line needs scope_capped (peak reached the cap), not just exit 137 in a scope, so a suite's own 137 keeps the plain RED line; the plan §7 says any scoped 137
-- *05-L1-05 · claude-opus-5-5*
-
-### 2026-10-25 14:02 · L1-04 · passes
-
-metrics.mjs append takes a 12th arg (mem_peak_mb: number, null when uncapped) via exported metricsRow; every MET append passes $S_PEAK; report(s, metrics) adds '### Memory peaks over 2 GB' (- <feature> · <model> · <peak> MB) from metrics.jsonl beside summary.json; harness report copies metrics.jsonl into the state dir. Docs, decision file. Tests 249 → 254.
-
-- **Files:** lib/metrics.mjs, lib/summary.mjs, lib/driver.sh, bin/harness, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-session-memory-peaks.md
-- **Verified:** lib/check.sh: 254/254 checks passed (406 s). New checks: metrics.mjs pure append (2048/''/null/undefined), summary.mjs pure report (1500 vs 2500, no section when none, no summary.json key), demo every row mem_peak_mb == 2, bare run all null, leftover run's report.md and `harness report leftover` list `- A · claude-sonnet-5-5 · 6144 MB` once. Pure checks watched failing first.
-- **Tests:** 249 → 254
-- **Dead end:** `grep -qxF "- A · …"` in a check — a pattern starting with '-' is read as an option: use -e
-- **Dead end:** `"$H" report leftover | grep -q …` in a check — under pipefail grep -q's early exit SIGPIPEs the producer and the pipeline fails; capture into a variable first
-- **Dead end:** editing tests/run.sh while a suite run was going — bash reads the script as it runs: the run goes wrong; stop it and rerun
-- **Discovery** (affects L1-08): report.md's peaks section is `### Memory peaks over 2 GB` (not the plan's `##`): it nests under the run's `## <run> · <project>` heading. `harness report` now also writes $STATE/metrics.jsonl (a copy) beside $STATE/summary.json.
-- *04-L1-04 · claude-opus-5-5*
-
-### 2026-10-25 13:35 · L1-03 · passes
-
-session() runs every claude session (init, coding, verify, retro) as timeout -k 30s SESSION_TIMEOUT inside scope harness-<run>-s<n> (5G/6G/1G, n from state/scope-seq), stops the scope after it returns, notes leftovers and cap kills; one probe per segment notes 'no user systemd'; exit 137 now spends the attempt. Tests 243 → 249.
-
-- **Files:** lib/driver.sh, lib/config.sh, lib/scope.sh, lib/metrics.mjs, tests/run.sh, tests/stub-claude.sh, templates/user/config.sh, docs/architecture.md, journal/decisions/2026-10-25-scoped-sessions.md
-- **Verified:** 6 new checks written first and seen failing (5 red, the no-note one trivially green), then lib/check.sh green: 249/249 in 405 s. Real check: systemd-run --description works on this box (Description=harness-test-<pid>-desc), no harness-test-* unit left.
-- **Tests:** 243 → 249
-- **Dead end:** noting the retro's leftovers inside session() — restrict nothing reverts harness-log.md after a retro; its notes are deferred (S_NOTES) until after restrict
-- **Discovery** (affects L1-04): session() sets S_PEAK (scope_peak MB, empty when uncapped) and S_NOTES; who is its 4th argument (initializer, <id>, verify <m>, retro). L1-04 passes $S_PEAK to MET append.
-- **Discovery** (affects L1-05, L2): scope_run now passes --description=<unit>: without it systemd made each session's whole prompt the unit's Description (user journal, systemctl status, list-units). The list-units fixture was captured without it, so its description column is the old command-line shape.
-- **Discovery** (affects L1-08): Review leftovers (Minor/Important, not built): the cap note needs exit 137, so an OOM kill of a child (a build the agent ran) with claude exiting 0 goes unnoted, memory.events oom_kill would catch it; a 137 under the cap and under SESSION_TIMEOUT (oomd, global OOM) spends the attempt silently; summary.mjs labels only 124 as timeout; TasksCurrent counts threads, so one node leftover reads as ~10 'process(es)'; scope_bytes rejects decimal sizes like 6.5G; a leftover note on a fully committed session makes a WIP commit holding only harness-log.md.
-- **Discovery** (affects L1-05, L1-08): A check.sh run inside a session starts its own scope (L1-05) in app.slice, i.e. outside the session's scope: the suite's memory won't count against the session's 6G cap.
-- **Proposed change:** L1-08 should take the review leftovers in discoveries (cap note via memory.events oom_kill, a note for 137 below the cap, summary.mjs 137 label, decimal sizes, WIP commit for a note-only change)
-- *03-L1-03 · claude-opus-5-5*
-
-### 2026-10-25 13:05 · L1-02 · passes
-
-lib/scope.sh (scope_available/unit/bytes/run/stop/peak/left/capped; peak read by a wrapper inside the scope, OOMPolicy=continue, bare fallback that never runs a command twice), stubs tests/stub-systemd-run.sh + stub-systemctl.sh over the real fixtures, 7 checks incl. one real 64M scope (137, peak 64, no unit left), decision file. Tests 236 → 243.
-
-- **Files:** lib/scope.sh, tests/stub-systemd-run.sh, tests/stub-systemctl.sh, tests/run.sh, bin/harness, docs/architecture.md, journal/decisions/2026-10-25-scoped-sessions.md
-- **Verified:** 7 new checks watched failing (0/6, then the not-writable one against the old wrapper), then passing; full suite via lib/check.sh 243/243 green in 376 s; systemctl --user list-units 'harness-test-*' empty after; bash -n on every touched shell file. An Opus review of the diff found 1 Important (a command could run twice when scratch is unwritable), fixed with a check, plus stub fidelity fixes.
-- **Tests:** 236 → 243
-- **Dead end:** running the full suite in the background while still editing tests/run.sh — bash reads the script as it runs it: the run died on a syntax error at the edit point; rerun on the final tree
-- **Discovery** (affects L1-03, L1-04, L2): Stub state: stub-systemd-run.sh clears $STUB_DIR/scope/<unit>.* at each start and holds <unit>.running while the command runs; stub-systemctl.sh treats a unit as alive only while .running exists or a pid in <unit>.pids is alive and not a zombie (a real scope is collected once empty). stub claude's STUB_OOM must touch <unit>.oom from inside the command (after the start), and STUB_LEAVE_PROCESS appends to <unit>.pids.
-- **Discovery** (affects L1-03, L1-05, L1-06): sd_with/sd_count (tests/run.sh, in the scope.sh block) parse $T/systemd.log; the suite exports HARNESS_SYSTEMD_RUN/SYSTEMCTL/MEMINFO/MEM_POLL and unsets HARNESS_SCOPE_PREFIX and SCOPE_OK; bin/harness already passes all four overrides to the tmux-started driver (done here, ahead of L1-03 step 7).
-- **Discovery** (affects L1-03, L1-08): scope_capped is peak >= cap only; page cache counts in MemoryPeak, so L1-03 must pair it with exit 137 before noting a cap kill. The probe can pass on a box whose user manager has no memory controller delegated (caps silently ignored); this box has it (the real check sees 137 at 64M).
-- **Discovery** (affects L1-03, L1-05): scope_run's bare fallback covers any systemd-run failure, including a unit name still held by a crashed segment's scope: L1-03's per-run scope-seq avoids reuse; L1-05's check-<pid> could collide only on pid reuse while an old scope still holds leftovers.
-- **Proposed change:** L1-02 step 6 should read 'MemoryMax=64M, no MemoryHigh, SESSION_SWAP_MAX=0, outer timeout 30s' (plan §13: 48M/64M throttles for minutes instead of killing); the check is built that way and also asserts scope_peak = 64 and scope_capped.
-- **Proposed change:** L1-02 step 3: the logged argv also carries -p OOMPolicy=continue and the wrapper (bash -c <wrap> _ <unit> <dir> <systemctl>) before the command; the check compares the first 16 lines exactly and the command's last 3.
-- *02-L1-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-25 15:06 · L1-07 · passes · session() always passes --strict-mcp-config, plus --mcp-config <wt>/.mcp.json when the worktree has … ([in full](progress-archive.md))
+- 2026-10-25 14:48 · L1-06 · passes · Memory gate: mem_available_gb and mem_gate in lib/scope.sh; session() calls mem_gate for init/coding… ([in full](progress-archive.md))
+- 2026-10-25 14:30 · L1-05 · passes · check.sh runs full and subset suites in harness-<run>-check-<pid> (MemoryMax=CHECK_MEMORY_MAX 3G, no… ([in full](progress-archive.md))
+- 2026-10-25 14:02 · L1-04 · passes · metrics.mjs append takes a 12th arg (mem_peak_mb: number, null when uncapped) via exported metricsRo… ([in full](progress-archive.md))
+- 2026-10-25 13:35 · L1-03 · passes · session() runs every claude session (init, coding, verify, retro) as timeout -k 30s SESSION_TIMEOUT … ([in full](progress-archive.md))
+- 2026-10-25 13:05 · L1-02 · passes · lib/scope.sh (scope_available/unit/bytes/run/stop/peak/left/capped; peak read by a wrapper inside th… ([in full](progress-archive.md))
 - 2026-10-25 12:23 · L1-01 · passes · Wrote docs/plans/2026-10-25-L1-capped-sessions.md (scope.sh API, unit names, in-scope wrapper and ti… ([in full](progress-archive.md))
 - 2026-10-25 12:05 · init · passes · 25 features: L1 8 (plan, scope.sh, scoped sessions, peaks, capped suites, memory gate, strict MCP + … ([in full](progress-archive.md))

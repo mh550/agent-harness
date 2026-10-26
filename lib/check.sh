@@ -3,7 +3,8 @@
 #   check.sh             → the full suite. A tree that was green before is not run again ("green (cached …)").
 #   check.sh <args…>     → the suite with these arguments (a subset while iterating); never cached.
 # Needs HARNESS_CHECK_CMD and HARNESS_SCRATCH (the driver exports both). The last full run's output is
-# $HARNESS_SCRATCH/check.out; each tree's output is kept as check-<key>.out.
+# $HARNESS_SCRATCH/check.out; the newest tree's is kept as check-<key>.out. A green tree's marker, green-<key> in the
+# cache, holds its test count, so a cached green still has it after scratch is gone (a continued run).
 # Both forms run under timeout -k 30s HARNESS_CHECK_TIMEOUT (15m), in the scope $HARNESS_SCOPE_PREFIX-check-<pid> capped
 # at HARNESS_CHECK_MEMORY_MAX (3G); bare without a prefix or user systemd (decisions/2026-10-25-capped-suites).
 set -uo pipefail
@@ -52,13 +53,15 @@ if (( $# )); then   # a subset: its output is the caller's; only a kill gets a l
 fi
 
 key=$(node "$here/treekey.mjs" 2>/dev/null) || key=""
-if [[ -n $key && -f $cache/green-$key ]]; then
-  echo "check: green (cached for this code tree$(node "$here/testcount.mjs" "$scratch/check-$key.out" | sed 's/^/, /'))"; exit 0
+if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's test count (older markers are empty: its output's)
+  n=$(cat "$cache/green-$key"); [[ -n $n ]] || n=$(node "$here/testcount.mjs" "$scratch/check-$key.out")
+  echo "check: green (cached for this code tree${n:+, $n})"; exit 0
 fi
 run "$cmd" > "$scratch/check.out" 2>&1; rc=$?
-[[ -n $key ]] && cp "$scratch/check.out" "$scratch/check-$key.out"
+[[ -n $key ]] && cp "$scratch/check.out" "$scratch/check-$key.out" \
+  && find "$scratch" -maxdepth 1 -name 'check-*.out' ! -name "check-$key.out" -delete   # the newest tree's only: the markers are in $cache
 if (( rc == 0 )); then
-  [[ -n $key ]] && touch "$cache/green-$key"
+  [[ -n $key ]] && node "$here/testcount.mjs" "$scratch/check.out" > "$cache/green-$key"   # "<n> tests" or empty: outlives scratch
   echo "check: green in $(( $(date +%s) - start )) s$(node "$here/testcount.mjs" "$scratch/check.out" | sed 's/^/, /')"
 else
   echo "check: RED ($(why $rc $(( $(date +%s) - start )))) — last lines of $scratch/check.out:"; tail -25 "$scratch/check.out"

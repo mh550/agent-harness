@@ -168,7 +168,7 @@
         "The plan names each L3 check from the spec's list with its tests/run.sh name",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L3-02", "milestone": "L3", "kind": "build", "model": "opus",
       "description": "finish keeps check-last.out and init.out in the run's state dir and deletes the run's scratch directory (KEEP_SCRATCH=1 keeps it), check.sh keeps one check-<key>.out, and sessions see HARNESS_CACHE.",
       "steps": [
@@ -180,7 +180,7 @@
         "docs/architecture.md §4 state lists what scratch holds and that finish deletes it, and HARNESS_CACHE; journal/decisions/2026-10-25-scratch-cleanup.md exists (finding: 1 M leaked files; rejected: a tmpfiles rule alone)",
         "bash -n lib/driver.sh lib/check.sh lib/prompt.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L3-03", "milestone": "L3", "kind": "build", "model": "opus",
       "description": "When the driver exits, its tmux window saves its scrollback to <state>/tmux-driver.txt, kills the supervisor window, and after TMUX_KEEP_HOURS kills its own session (0 = at once).",
       "steps": [
@@ -191,7 +191,7 @@
         "journal/decisions/2026-10-25-tmux-driver-window.md exists (finding: exec bash forever; choice: 24 h keep; rejected: counting supervisors against MAX_PARALLEL_RUNS); docs/architecture.md §3 (harness start) and §10 (TMUX_KEEP_HOURS) updated",
         "bash -n bin/harness; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L3-04", "milestone": "L3", "kind": "build", "model": "opus",
       "description": "harness gc reaps the tmux sessions of ended, dead-driver, unpaused runs of its project and the queue runner does the same across projects before the debrief, through one shared helper that never touches h-queue, the desk or a live run.",
       "steps": [
@@ -202,7 +202,7 @@
         "journal/decisions/2026-10-25-tmux-reaper.md exists (run → session never session → run; rejected: parsing tmux list-sessions); docs/architecture.md §3 (gc) and §12 (queue) and README's gc row updated",
         "bash -n bin/harness lib/queue.sh; bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
     { "id": "L3-05", "milestone": "L3", "kind": "review", "model": "opus",
       "description": "An Opus review of the L3 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, and the L3 docs complete.",
       "steps": [
@@ -212,7 +212,7 @@
         "Every L3 decision file reads finding · choice · rejected; bash -n and node --check pass on every file L3 touched",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
 
     { "id": "L4-01", "milestone": "L4", "kind": "build", "model": "opus", "after": [],
       "description": "harness gc --all-merged deletes every merged branch whatever its name (prefix listings, every pass runs), and plain gc still deletes only merged harness/ and harness-merge/ branches; a short plan for L4 comes first.",

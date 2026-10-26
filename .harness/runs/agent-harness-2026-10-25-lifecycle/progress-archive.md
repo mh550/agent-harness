@@ -9,6 +9,120 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 22:19 · verify L3 · passes
+
+L3-01..05 hold: suite re-run 306/306, syntax checks clean, each named check PASS, docs/plan/template/decisions read against the steps.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| L3-01 | 1 | read plan, templates/user/harness-tmpfiles.conf, README | plan §1 covers scratch_done, newest check-out, HARNESS_CACHE, tmpfiles; template has `e /tmp/harness - - - 3d` plus x live.lock; README has install command | yes |
+| L3-01 | 2 | read plan driver-window and reaper sections | capture-pane -S -, TMUX_KEEP_HOURS=24, shared tmux_reap in lib/tmux.sh, matches step | yes |
+| L3-01 | 3 | read plan test-driving section | private tmux server, PATH shim, decoy sessions described and implemented in tests/run.sh | yes |
+| L3-01 | 4 | read plan check list | checks named; all present as PASS in suite | yes |
+| L3-01 | 5 | bash tests/run.sh | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-02 | 1 | check 'finish keeps check-last.out and init.out…' | PASS: state files, scratch gone, live.lock intact | yes |
+| L3-02 | 2 | check KEEP_SCRATCH=1; grep config files | PASS; default 0, template commented | yes |
+| L3-02 | 3 | check 'check.sh keeps one check-<key>.out' | PASS | yes |
+| L3-02 | 4 | check 'init and sessions see HARNESS_CACHE' | PASS | yes |
+| L3-02 | 5 | cat tmpfiles template; grep README | rule and install command; Playwright guidance | yes |
+| L3-02 | 6 | grep architecture §4; read decision | Scratch/Cache rows; decision has Finding/Choice/Rejected | yes |
+| L3-02 | 7 | bash -n lib/*.sh; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-03 | 1 | grep lib/config.sh, template, bin/harness:199-201 | default 24; command captures pane, kills supervisor window, prints, sleeps, kill-session | yes |
+| L3-03 | 2 | check 'tmux: TMUX_KEEP_HOURS=0…' | PASS | yes |
+| L3-03 | 3 | check 'tmux: a keep window keeps h-<run>…' | PASS | yes |
+| L3-03 | 4 | check 'tmux: run id dot.run…' | PASS | yes |
+| L3-03 | 5 | read decision, architecture §3/§10 | present, Finding/Choice/Rejected | yes |
+| L3-03 | 6 | bash -n bin/harness; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-04 | 1 | read lib/tmux.sh, bin/harness:376 | log line, dry-run via act flag, continues after failed kill | yes |
+| L3-04 | 2 | check 'harness gc reaps only the ended runs…' | PASS; decoys survive, second ended run reaped | yes |
+| L3-04 | 3 | check 'harness gc --dry-run kills no tmux session' | PASS | yes |
+| L3-04 | 4 | check 'queue runner reaps…'; lib/queue.sh:69 | PASS; reap before debrief | yes |
+| L3-04 | 5 | read decision, architecture, README | present | yes |
+| L3-04 | 6 | bash -n bin/harness lib/queue.sh; suite | bash tests/run.sh: 306/306 checks passed | yes |
+| L3-05 | 1 | read docs/plans/2026-10-25-L3-review.md | findings with severities | yes |
+| L3-05 | 2 | checks scratch_rm refuses…, start refuses…, exact targets | PASS; 17 refusals; RED→GREEN checks per Important finding | yes |
+| L3-05 | 3 | grep architecture §4/§10/§14, README | complete, tmux-driver.txt named | yes |
+| L3-05 | 4 | read decisions; bash -n; node --check | three-part decisions; syntax clean | yes |
+| L3-05 | 5 | bash tests/run.sh | bash tests/run.sh: 306/306 checks passed | yes |
+
+- *221005-verify-L3 · claude-sonnet-5-5*
+
+### 2026-10-25 22:10 · L3-05 · passes
+
+Opus review of the L3 diff: no Critical; 2 Important fixed RED→GREEN (start killed another run's same-name tmux session; h-queue/attach prefix targets). Guard now refuses symlinked paths; scratch_done moved to lib/prompt.sh, keeps scratch on a failed copy, honest notes, final tree's check-last.out. Docs §4/§14/§15, README, decisions.
+
+- **Files:** bin/harness, lib/tmux.sh, lib/prompt.sh, lib/driver.sh, lib/eval.sh, templates/project/init.sh, tests/run.sh, docs/architecture.md, README.md, docs/plans/2026-10-25-L3-review.md, journal/decisions/2026-10-25-scratch-cleanup.md, journal/decisions/2026-10-25-tmux-reaper.md
+- **Verified:** bash tests/run.sh: 301/306 with the five new checks failing, then 306/306; lib/check.sh green in 526 s (306/306); bash -n on every L3 shell file, no .mjs touched
+- **Tests:** 301 → 306
+- **Dead end:** letting rm's stderr through scratch_done — it lands in the note capture; the note carries rm's exit instead
+- **Discovery** (affects L4, run): harness start now refuses a run id whose h-<run> another run that isn't done holds (any project, a.b vs a-b): this also closes L2 review #5 (shared harness-<id>-* units). A crashed run of another project with the same id blocks the id until it is continued or ended.
+- **Discovery** (affects L4, L5): scratch_done <key> and scratch_rm live in lib/prompt.sh; scratch_rm returns 2 on refusal. entry-stale-*/entry-failed-* now go to the state dir.
+- **Discovery** (affects run): Deferred from the L3 review: queue runner reap spares no attached session (#11); kill re-check and '! could not kill' path unexercised (#14).
+- *19-L3-05 · claude-opus-5-5*
+
+### 2026-10-25 21:17 · L3-04 · passes
+
+New lib/tmux.sh: tmux_name (moved from bin/harness) and tmux_reap, which kills h-<run> of runs with meta.env+ended, no live driver (re-checked), no PAUSE; spares a resume's newer session and a name a live/paused run shares (a.b vs a-b). harness gc calls it before git fetch; queue.sh as it exits, before the debrief. start refuses run id queue. 3 checks; 299 → 302.
+
+- **Files:** lib/tmux.sh, bin/harness, lib/queue.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-tmux-reaper.md
+- **Verified:** tests: 302/302 (bash tests/run.sh, then lib/check.sh green in 524 s); the three new checks watched failing first (298/302, plus one desk check cascading on the unreaped sleep 600 decoys, fixed by unconditional cleanup); mutation run on a scratch private tmux server: with the shared-name guard off h-held-x would be killed, with fresh's ended touched now h-fresh would be.
+- **Tests:** 299 → 302
+- **Discovery** (affects L3-05, run): tmux_name is lossy (a.b and a-b of any project are both h-a-b): tmux_reap checks every state dir of the root for a same-name run that is live, paused or not ended and keeps the session then. cmd_start's resume kill-session still kills a same-name session of another run (pre-existing, like L2-06's svc note).
+- **Discovery** (affects L3-05): The queue-runner reap check (tests/run.sh, first runner block) creates h-proj-$D, h-proj-$D-2, h-queue and the desk session before the runner and kills all four after, so the desk checks still start with no desk session and no 'sleep 600' pane. The gc reap block is the last before the summary and removes its decoy state dirs (livey/held-x hold the suite's pid).
+- **Proposed change:** L3-04 step 1 says gc calls the helper 'through act': gc prints the helper's own lines (+ reaped … / would: tmux kill-session -t =<s> (<run> ended) / ! could not kill …), the unit step's shape, as plan §9 says; act couldn't name the run.
+- **Proposed change:** L3-04 step 2's paused decoy has no ended, so it can't exercise the PAUSE guard: the check adds pausx (PAUSE + ended), fresh (a resume's session) and held.x/held-x (a shared name), per plan §6.3.
+- *18-L3-04 · claude-opus-5-5*
+
+### 2026-10-25 20:47 · L3-03 · passes
+
+Driver window: when the driver exits it saves scrollback to <state>/tmux-driver.txt, kills the supervisor window, prints the line, sleeps TMUX_KEEP_HOURS (default 24) and kills h-<run>; `trap : INT` so a Ctrl-C never skips it; exact =targets. Suite PATH shim for the supervisor's claude. Three tmux checks; decision, architecture §3/§4/§10, README. 296 → 299.
+
+- **Files:** bin/harness, lib/config.sh, templates/user/config.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-tmux-driver-window.md
+- **Verified:** lib/check.sh: 299/299 (check: green in 519 s); the three new tmux checks watched failing first (0/3), the Ctrl-C part watched failing without the trap; bash -n on bin/harness, tests/run.sh, lib/config.sh. An Opus review's four findings fixed (Ctrl-C, leading-zero hours, supervisor-window race, vacuous -s check).
+- **Tests:** 296 → 299
+- **Dead end:** asserting the printed line with plain capture-pane -p — the pane wraps at 80 columns; -J joins it (also used for tmux-driver.txt)
+- **Dead end:** printf %q of the whole message — under a C locale it makes the em-dash $'…', bash-only; now only the path is %q'd
+- **Discovery** (affects L3-04, L3-05): tests/run.sh now exports PATH=$T/bin:$PATH at the top with $T/bin/claude wrapping stub-claude.sh; tmux runs end through --until-epoch in the past and are waited on with tended <state> / tgone <session> (defined in the L3-03 block, reusable by L3-04's checks). Each tmux run's tmux-driver.txt holds the driver's 'deadline reached' line.
+- **Discovery** (affects L3-04): The window's message promises 'or sooner on harness gc', which holds only once L3-04's reaper lands. bin/harness's tmux new-window targets now use =<s>:, and the supervisor prompt is rendered before new-session.
+- **Discovery** (affects run): The known flake 'queue holds an entry whose project has a live run' failed once more while two tmux iteration runs loaded the box; the clean rerun passed.
+- **Proposed change:** L3-03 step 1 names `tmux capture-pane -p -S -`: built as `-pJ` (joins wrapped lines) plus `trap : INT` on the window shell, both from the review; recorded in decisions/2026-10-25-tmux-driver-window
+- *17-L3-03 · claude-opus-5-5*
+
+### 2026-10-25 20:25 · L3-02 · passes
+
+finish copies init.out, teardown.out, check-last.out to $STATE and deletes the run's scratch via a guarded scratch_rm (KEEP_SCRATCH=1 keeps it); check.sh keeps one check-<key>.out, the test count now lives in the green marker; HARNESS_CACHE exported and created; tmpfiles template, README, docs, decision. Review fixes: continued-run tests-end, eval probes' init output, merge's empty scratch.
+
+- **Files:** lib/driver.sh, lib/prompt.sh, lib/check.sh, lib/config.sh, lib/eval.sh, templates/user/config.sh, templates/user/harness-tmpfiles.conf, tests/run.sh, tests/stub-claude.sh, README.md, docs/architecture.md, journal/decisions/2026-10-25-scratch-cleanup.md
+- **Verified:** suite 296/296 (lib/check.sh, green in 514 s). The 6 planned checks plus a continued-run tests-end check failed first (0/6 on old code; the continuation check failed with only the old tests-end line restored), then passed; the eval probe check failed with HEAD's scratch deletion and passed after KEEP_SCRATCH=1 in eval safety (15/16 then 16/16).
+- **Tests:** 289 → 296
+- **Dead end:** the guard check's env vars GP/GR/GQ — GP is a pid variable earlier in the suite (gatestop); renamed SR_ROOT/SR_PROJ/SR_RUN
+- **Dead end:** hlog demo for the KEEP_SCRATCH note — gc removes demo's worktree before the end of the suite; read $T/demo-hlog.md instead
+- **Dead end:** { cat marker; testcount; } | grep -m1 . for the count — grep -m1 can SIGPIPE its producers under pipefail; plain assignments instead
+- **Discovery** (affects run): systemctl --user is-enabled systemd-tmpfiles-clean.timer prints `disabled` on this box: the tmpfiles install command in README also runs `systemctl --user enable --now systemd-tmpfiles-clean.timer`.
+- **Discovery** (affects L3-03, L3-04, L3-05): tests/run.sh: KEEP_SCRATCH=1 is in base-config.sh and every line that rewrites user-config.sh (13 lines); a new config line that starts from scratch must add it, or later checks lose the stub's scratch files. XDG_CACHE_HOME=$T/cache is exported at the top. The scrub run (KEEP_SCRATCH=0, its own HARNESS_CONFIG and a counting CHECK_CMD in its run.env) is at the end, before the summary: L3-03's tmux block can follow it.
+- **Discovery** (affects L3-05, run): green-<key> markers in $STATE/green now hold `<n> tests` (empty when the output has none); check.sh's cached line and finish's tests-end read the marker first.
+- **Discovery** (affects L3-05): Eval runs set KEEP_SCRATCH=1 (lib/eval.sh safety), since probes render the next prompt after the run ends; `harness merge` rmdirs its empty scratch.
+- **Question for Michael:** Install the optional scratch age rule (3 days, never live.lock)? `mkdir -p ~/.config/user-tmpfiles.d && cp templates/user/harness-tmpfiles.conf ~/.config/user-tmpfiles.d/harness.conf && systemd-tmpfiles --user --create && systemctl --user enable --now systemd-tmpfiles-clean.timer`
+- **Proposed change:** L3-02 step 1 names run demo: the check runs on a new run `scrub` with KEEP_SCRATCH=0 (demo's checks read its scratch after the run; plan §9), and demo shows KEEP_SCRATCH=1 instead.
+- *16-L3-02 · claude-opus-5-5*
+
+### 2026-10-25 19:55 · L3-01 · passes
+
+Wrote docs/plans/2026-10-25-L3-scratch-and-tmux.md: finish's scratch_done + scratch_rm guard, check.sh newest-only, HARNESS_CACHE, tmpfiles template, the H1a driver-window command, lib/tmux.sh (tmux_name + tmux_reap) for gc and queue.sh, how the suite drives real tmux runs, and the 12 L3 checks by name. Plan only; suite 289/289.
+
+- **Files:** docs/plans/2026-10-25-L3-scratch-and-tmux.md
+- **Verified:** check.sh full run: 289/289 green in 505 s; tmux facts probed on a throwaway private server (tmux 3.4); each plan reference checked against bin/harness, lib/driver.sh, lib/check.sh, lib/prompt.sh, lib/queue.sh, tests/run.sh
+- **Tests:** 289 → 289
+- **Discovery** (affects L3-02): 26 tests/run.sh lines read $T/scratch/<p>/<run>/ after a run ends (3 on demo); the stub's count-* files span continuations. Plan §2: KEEP_SCRATCH=1 in base-config.sh and every line that rewrites user-config.sh from scratch; the scratch checks use their own HARNESS_CONFIG on a new run `scrub`.
+- **Discovery** (affects L3-03, L3-04): The private tmux server's windows get the suite's env from when the server started, not the caller's: PATH (the $T/bin/claude wrapper, not a symlink: the stub finds fixtures by dirname $0) and XDG_CACHE_HOME=$T/cache must be exported at the top of tests/run.sh. Per-command STUB_* flags never reach a tmux window; tmux runs end through --until-epoch in the past (initializer, then deadline).
+- **Discovery** (affects L3-04): tmux display-message -p -t =<s>: '#{session_created}' needs the trailing colon (without it, nothing is printed). The reaper skips a session created after its run's ended (a resume's session before its driver writes driver.pid), so checks create decoy sessions first and write ended after.
+- **Discovery** (affects L3-04): bin/harness runs under set -e: the reaper wraps kill-session in if/else and goes before cmd_gc's git fetch.
+- **Question for Michael:** Defaults taken (plan §8): KEEP_SCRATCH=0 and teardown.out kept beside init.out/check-last.out; the tmpfiles template also excludes /tmp/harness/*/live.lock; TMUX_KEEP_HOURS whole hours (else 24); `queue` becomes a refused run id. Keep these?
+- **Proposed change:** L3-02 step 1: run the scratch check on a new run `scrub` with KEEP_SCRATCH=0, not `demo` (demo's checks read its scratch after the run); demo shows KEEP_SCRATCH=1 instead
+- **Proposed change:** L3-04 step 1: gc's reap lines come from the helper (`+ reaped tmux session …`, `would: tmux kill-session -t =<s> (<run> ended)`), the unit step's shape, not through act
+- **Proposed change:** L3-04 step 2: add a paused decoy with PAUSE and ended (pausx) and a resume decoy (fresh), so the PAUSE and session-created guards are exercised
+- *15-L3-01 · claude-opus-5-5*
+
 ### 2026-10-25 19:37 · verify L2 · passes
 
 Suite 289/289 green. All six L2 features hold: scope+timeout init, teardown hook and services_down on every stop point, gc orphan units, status MemoryCurrent, review fixes and docs checked against named tests.

@@ -46,7 +46,7 @@ When the runner exits (queue empty, past `--until`, or `harness queue stop`) and
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
 | `harness eval run` · `compare` · `probes` | replay a fixed task set under a harness version and compare two results (see [Evals](#evals); costs money) |
-| `harness init` · `gc [--dry-run]` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs and stop the systemd units a killed driver left (`harness-<run>-*` of runs with no live driver) |
+| `harness init` · `gc [--dry-run]` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs, stop the systemd units a killed driver left (`harness-<run>-*` of runs with no live driver) and kill the tmux sessions `h-<run>` of its ended runs (never `h-queue`, the desk, a live or paused run's) |
 
 `harness continue` merges `main` into the run branch before any session, so a resumed run never works on a stale base.
 
@@ -66,6 +66,12 @@ services scope `harness-<run>-svc`, capped at 3G, under a 10m timeout; what it l
 scope until the run's services stop (below) or the next init stops it: `SVC_MEMORY_MAX`, `INIT_TIMEOUT`), port, models, limits
 (a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
 `MEM_WAIT_MAX`). Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
+
+**Scratch and cache.** Each run gets `HARNESS_SCRATCH` (`/tmp/harness/<project>/<run>`) for its outputs, sandboxes,
+logs and screenshots; a run that finishes deletes it (`KEEP_SCRATCH=1` keeps it), after copying `init.out`,
+`teardown.out` and the last suite output (`check-last.out`) into its state dir. Installs that should outlive a run
+and a reboot go under `HARNESS_CACHE` (`~/.cache/harness/<project>`, never deleted): put Playwright browsers there
+(`PLAYWRIGHT_BROWSERS_PATH=$HARNESS_CACHE/ms-playwright` in the init) and anything similar, not in scratch.
 
 **Teardown.** When a run ends (a `status: stop` included), when its driver is killed (a TERM, or an error that ends
 it), when it pauses, before a usage-limit wait of more than `SVC_IDLE_STOP_MIN` minutes (10) and before a memory wait,
@@ -95,12 +101,19 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 - With the scopes in, `systemd-oomd` can kill the offending `harness-*` scope instead of the desktop: enabling it with
   `ManagedOOMMemoryPressure=kill` on the user slice is a box setting, your call (`findings-and-research/2026-10-24-system-resource-audit.md` §3C.2).
 - `systemctl --user list-units 'harness-*'` shows what each run holds right now (nothing when no run is alive).
+- A crashed or stopped run leaves its scratch in `/tmp/harness`. The optional age rule removes it after 3 days
+  untouched (never `live.lock`); the user tmpfiles timer it needs is off by default, so the one command enables it:
+  `mkdir -p ~/.config/user-tmpfiles.d && cp templates/user/harness-tmpfiles.conf ~/.config/user-tmpfiles.d/harness.conf && systemd-tmpfiles --user --create && systemctl --user enable --now systemd-tmpfiles-clean.timer`
 
 ## Steering
 
 - **Phone:** `progress.md` is rendered from the journal (`entries.jsonl`) after every session and is still the phone view; sessions write `entry.json`, the driver appends it. Steer by editing `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
   `status: stop`; answers under `## Answers`. The driver pulls before every session.
-- **Box:** `harness pause|resume|stop|answer <run>`, `harness attach <run>` (tmux: driver · log · supervisor).
+- **Box:** `harness pause|resume|stop|answer <run>`, `harness attach <run>` (tmux: driver · log · supervisor). When the driver exits, the
+  supervisor window closes, the driver window's scrollback goes to `<state>/tmux-driver.txt` (its last 2000 lines, tmux's `history-limit`;
+  `run.log` beside it has everything), and the session `h-<run>`
+  closes after `TMUX_KEEP_HOURS` (24; `0` = at once), or sooner: `harness gc <project>` and the queue runner, as it
+  exits, kill the sessions of ended runs.
 - **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends, recent entries); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
   Claude Code itself (the prompt names it in one line, it doesn't paste it), so a rule edited on the run branch reaches
   the next session. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
