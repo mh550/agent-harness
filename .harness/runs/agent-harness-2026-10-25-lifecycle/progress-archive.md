@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 20:47 · L3-03 · passes
+
+Driver window: when the driver exits it saves scrollback to <state>/tmux-driver.txt, kills the supervisor window, prints the line, sleeps TMUX_KEEP_HOURS (default 24) and kills h-<run>; `trap : INT` so a Ctrl-C never skips it; exact =targets. Suite PATH shim for the supervisor's claude. Three tmux checks; decision, architecture §3/§4/§10, README. 296 → 299.
+
+- **Files:** bin/harness, lib/config.sh, templates/user/config.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-tmux-driver-window.md
+- **Verified:** lib/check.sh: 299/299 (check: green in 519 s); the three new tmux checks watched failing first (0/3), the Ctrl-C part watched failing without the trap; bash -n on bin/harness, tests/run.sh, lib/config.sh. An Opus review's four findings fixed (Ctrl-C, leading-zero hours, supervisor-window race, vacuous -s check).
+- **Tests:** 296 → 299
+- **Dead end:** asserting the printed line with plain capture-pane -p — the pane wraps at 80 columns; -J joins it (also used for tmux-driver.txt)
+- **Dead end:** printf %q of the whole message — under a C locale it makes the em-dash $'…', bash-only; now only the path is %q'd
+- **Discovery** (affects L3-04, L3-05): tests/run.sh now exports PATH=$T/bin:$PATH at the top with $T/bin/claude wrapping stub-claude.sh; tmux runs end through --until-epoch in the past and are waited on with tended <state> / tgone <session> (defined in the L3-03 block, reusable by L3-04's checks). Each tmux run's tmux-driver.txt holds the driver's 'deadline reached' line.
+- **Discovery** (affects L3-04): The window's message promises 'or sooner on harness gc', which holds only once L3-04's reaper lands. bin/harness's tmux new-window targets now use =<s>:, and the supervisor prompt is rendered before new-session.
+- **Discovery** (affects run): The known flake 'queue holds an entry whose project has a live run' failed once more while two tmux iteration runs loaded the box; the clean rerun passed.
+- **Proposed change:** L3-03 step 1 names `tmux capture-pane -p -S -`: built as `-pJ` (joins wrapped lines) plus `trap : INT` on the window shell, both from the review; recorded in decisions/2026-10-25-tmux-driver-window
+- *17-L3-03 · claude-opus-5-5*
+
 ### 2026-10-25 20:25 · L3-02 · passes
 
 finish copies init.out, teardown.out, check-last.out to $STATE and deletes the run's scratch via a guarded scratch_rm (KEEP_SCRATCH=1 keeps it); check.sh keeps one check-<key>.out, the test count now lives in the green marker; HARNESS_CACHE exported and created; tmpfiles template, README, docs, decision. Review fixes: continued-run tests-end, eval probes' init output, merge's empty scratch.
