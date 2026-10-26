@@ -110,7 +110,8 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 - **Phone:** `progress.md` is rendered from the journal (`entries.jsonl`) after every session and is still the phone view; sessions write `entry.json`, the driver appends it. Steer by editing `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
   `status: stop`; answers under `## Answers`. The driver pulls before every session.
 - **Box:** `harness pause|resume|stop|answer <run>`, `harness attach <run>` (tmux: driver · log · supervisor). When the driver exits, the
-  supervisor window closes, the driver window's scrollback goes to `<state>/tmux-driver.txt`, and the session `h-<run>`
+  supervisor window closes, the driver window's scrollback goes to `<state>/tmux-driver.txt` (its last 2000 lines, tmux's `history-limit`;
+  `run.log` beside it has everything), and the session `h-<run>`
   closes after `TMUX_KEEP_HOURS` (24; `0` = at once), or sooner: `harness gc <project>` and the queue runner, as it
   exits, kill the sessions of ended runs.
 - **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends, recent entries); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by

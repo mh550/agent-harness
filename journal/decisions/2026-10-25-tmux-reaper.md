@@ -39,3 +39,25 @@
     through its `log`; a sourced function keeps `tmux_name` in one place for both.
   - Reaping in `finish`: the driver window already closes its session after the keep window, and Michael may want
     that window; gc and the runner's exit are the moments nobody is reading it.
+
+## L3-05: the L3 review's tmux fixes
+
+*(2026-10-25, run agent-harness-2026-10-25-lifecycle, feature L3-05; review `docs/plans/2026-10-25-L3-review.md` #1, #2, #9)*
+
+- **Finding:** `cmd_start` killed any existing `h-<run>` before creating its own, checking only that this project's
+  run wasn't alive. A start of `fix` in project B killed project A's live `fix` (or `a-b` killed `a.b`'s), and its
+  driver died on the SIGHUP. `queue_ensure_runner` targeted `h-queue` by prefix, so with no exact `h-queue` it killed
+  a run's `h-queue-x` or `h-queuefix`, and `harness attach` landed in `h-<run>-2`. The reaper killed by name, so a
+  resume between its scan and its kill could lose the new session.
+- **Choice:**
+  - **`harness start` refuses a run id whose `h-<run>` another run that isn't done holds** (`tmux_shared`, any
+    project, the reaper's own test; `TMUX_OTHER` names it in the message), in every mode, before any worktree or
+    state is made. It closes the L2 review's deferred #5 too: those two runs would also share `harness-<id>-*` units.
+  - **Exact targets** for `h-queue` (has-session and kill-session) and `attach`.
+  - **The reaper kills by session id** (`#{session_id}`, read in the same `display-message` as the creation time).
+- **Rejected:**
+  - Refusing only in tmux mode: a foreground run of a shared id still shares its systemd unit names.
+  - Refusing only a *live* other run: a paused or crashed one comes back with `harness continue` into the same names;
+    the message says which run to end or continue.
+  - Sparing sessions with a client attached in the queue runner's reap (review #11): left. The runner exits after
+    its runs ended and gc is Michael's own command; `tmux_reap` would need an attached-check per caller.

@@ -53,3 +53,27 @@
     would take the project's directory (and `live.lock`) or worse.
   - **Keeping every `check-<key>.out`**: one per tree a session checks, the same file over and over; the cache decision
     lives in the markers, not in the output.
+
+## L3-05: the L3 review's scratch fixes
+
+*(2026-10-25, run agent-harness-2026-10-25-lifecycle, feature L3-05; review `docs/plans/2026-10-25-L3-review.md` #3–#7)*
+
+- **Finding:** `scratch_rm` compared strings only, so a symlinked project or run directory under the scratch root
+  passed and `rm -rf` reached its target. `scratch_done` deleted scratch even when a copy into the state dir had
+  failed. A partial `rm` failure was noted as "not this run's scratch directory". `check-last.out` was the last suite
+  that *ran*, possibly an earlier tree's red output when the final tree was cached green. The note claimed files a
+  segment never copied. The set-aside `entry-stale-*`/`entry-failed-*` files lived in scratch, so finish deleted the
+  evidence of a failed journal append.
+- **Choice:**
+  - `scratch_rm` also requires `realpath -m` of the target to be `realpath -m <root>/<project>/<run>` (no symlink on
+    the way), runs `rm -rf --one-file-system`, and returns 2 on a refusal, else `rm`'s status.
+  - `scratch_done <tree key>` moves to `lib/prompt.sh` beside the guard (unit-checked). `check-last.out` is the final
+    tree's `check-<key>.out` when scratch has it, else `check.out`. A failed copy keeps scratch (`scratch kept:
+    copying <f> into <state> failed`). The note lists what it kept (`in the state dir: init.out check-last.out`, or
+    `nothing`), and a failed `rm` says `scratch not fully removed: … (rm exit <n>)`.
+  - The set-aside entries go to the state dir. The teardown note names both places `teardown.out` lives.
+- **Rejected:**
+  - ***default*: requiring the scratch root to be under `/tmp`**: `HARNESS_SCRATCH_ROOT` is the operator's setting,
+    and the exact `<root>/<project>/<run>` shape with a real path is what makes the delete this run's own.
+  - Removing a stale `check-last.out` when a segment copied none: it is the last suite output there is; the note now
+    says what this segment kept.

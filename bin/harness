@@ -114,7 +114,7 @@ queue_add() {   # verb args… → a queue entry (one argument per line)
 queue_ensure_runner() {
   [[ ${HARNESS_NO_RUNNER:-} ]] && return 0   # tests
   runner_up && return 0
-  tmux has-session -t h-queue 2>/dev/null && tmux kill-session -t h-queue
+  tmux has-session -t =h-queue 2>/dev/null && tmux kill-session -t =h-queue   # exact: never a run's h-queue-x
   tmux new-session -d -s h-queue -n runner "env HARNESS_HOME=$(printf %q "$HARNESS_HOME") HARNESS_STATE=$(printf %q "$STATE_ROOT") $(printf %q "$HARNESS_HOME/lib/queue.sh") ${1:-0}; echo '[queue runner exited]'; exec bash"
   echo "queue runner started (tmux h-queue)"
 }
@@ -143,6 +143,8 @@ cmd_start() {
   local proj branch=harness/$run wt state
   proj=$(basename "$p"); wt=$WT_ROOT/$proj/$run; state=$STATE_ROOT/$proj/$run
   if alive "$state"; then die "run $run is already running (harness attach $run)"; fi
+  # tmux names are lossy (a.b and a-b; one id in two projects): never take, and so kill, a session another run holds
+  tmux_shared "$state" "$STATE_ROOT" "$(tmux_name "$run")" && die "run id $run shares tmux session $(tmux_name "$run") with $TMUX_OTHER, which has not ended: pick another id"
   if (( ! now && ! fg )) && (( $(alive_count) >= MAX_PARALLEL_RUNS )); then
     local args=("$p" "$run"); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
     [[ -n $brief ]] && args+=(--brief "$brief"); [[ -n $until ]] && args+=(--until-epoch "$until")
@@ -369,7 +371,7 @@ cmd_gc() {
     elif scope_stop "${u%.scope}"; then echo "+ stopped $u ($why)"
     else echo "! could not stop $u ($why)"; fi
   done < <("${HARNESS_SYSTEMCTL:-systemctl}" --user list-units 'harness-*' --plain --no-legend 2> /dev/null || true)
-  # the tmux sessions of this project's ended runs (a window kept for TMUX_KEEP_HOURS, a driver that died): before the
+  # the tmux sessions of this project's ended runs (a window kept for TMUX_KEEP_HOURS; no ended, no reap): before the
   # fetch, which has nothing to do with them; h-queue and the desk are no run's name (decisions/2026-10-25-tmux-reaper)
   tmux_reap "$dry" "$STATE_ROOT/$(basename "$p")"/*/
   git -C "$p" fetch -q --prune origin
@@ -431,7 +433,7 @@ case ${1:-help} in
   parked) shift; cmd_parked "$@" ;;
   report) shift; cmd_report "$@" ;;
   trends) node "$HARNESS_HOME/lib/summary.mjs" trends "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/runs.jsonl" "${@:2}" ;;
-  attach) tmux attach -t "$(tmux_name "${2:?usage: harness attach <run-id>}")" ;;
+  attach) tmux attach -t "=$(tmux_name "${2:?usage: harness attach <run-id>}")" ;;
   pause|resume|stop) cmd_control "$1" "${2:-}" ;;
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;

@@ -43,7 +43,7 @@ set_tasks() {
 # in each run's run.env, which beats a project's own .harness/config.sh (a live-staged POLICY, a merge policy).
 safety() {
   echo "POLICY=build-only MERGE_POLICY=off PR_POLICY=off RETRO=0 AUTO_CONTINUE=0 DESK=0 LEDGER_COMMIT=0"
-  echo "KEEP_SCRATCH=1"   # probes render the next prompt after the run ends, with its init output; $E/scratch goes with $E
+  echo "KEEP_SCRATCH=1"   # probes render the next prompt after the run ends, with its init output; $E/scratch lives as long as $E
   echo "NTFY_URL='' NTFY_TOKEN='' NOTIFY_CMD='' DESK_URL='' DEBRIEF_PAGE_CMD=''"
   printf 'LIVE_LOCK=%q\n' "$E/live.lock"
   echo "WEEKLY_STOP_AT=$WEEKLY_STOP_AT"   # the eval's own threshold, so a task's driver stops where the eval would

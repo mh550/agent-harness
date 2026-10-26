@@ -212,7 +212,7 @@
         "Every L3 decision file reads finding · choice · rejected; bash -n and node --check pass on every file L3 touched",
         "bash tests/run.sh ends with every check passing"
       ],
-      "passes": false },
+      "passes": true },
 
     { "id": "L4-01", "milestone": "L4", "kind": "build", "model": "opus", "after": [],
       "description": "harness gc --all-merged deletes every merged branch whatever its name (prefix listings, every pass runs), and plain gc still deletes only merged harness/ and harness-merge/ branches; a short plan for L4 comes first.",

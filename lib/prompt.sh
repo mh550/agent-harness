@@ -11,12 +11,34 @@ prompt_vars() {
   SCRATCH=${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME/$RUN_ID CHECK=$HARNESS_HOME/lib/check.sh PORT=$(cat "$STATE/port")
 }
 
-# <dir>: rm -rf it only when it is this run's scratch directory as prompt_vars builds it, never its parent (live.lock)
+# <dir>: rm -rf it only when it is this run's scratch directory as prompt_vars builds it, never its parent (live.lock),
+# and only when its real path is that too (a symlinked project or run dir is refused). 2 = refused, else rm's status
 scratch_rm() {
   local root=${HARNESS_SCRATCH_ROOT:-/tmp/harness}
   [[ $root == /?* && ${PROJECT_NAME:-} =~ ^[A-Za-z0-9._-]+$ && $PROJECT_NAME != . && $PROJECT_NAME != .. \
-     && ${RUN_ID:-} =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ && $1 == "$root/$PROJECT_NAME/$RUN_ID" ]] || return 1
-  rm -rf -- "$1"
+     && ${RUN_ID:-} =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ && $1 == "$root/$PROJECT_NAME/$RUN_ID" \
+     && $(realpath -m -- "$1") == "$(realpath -m -- "$root")/$PROJECT_NAME/$RUN_ID" ]] || return 2
+  rm -rf --one-file-system -- "$1"
+}
+
+# <tree key>: finish's last word on scratch. init.out, teardown.out and the last suite output (the final tree's
+# check-<key>.out, else check.out) as check-last.out into $STATE; then $SCRATCH goes, unless KEEP_SCRATCH=1 or a copy
+# failed. Only finish deletes: a crash leaves it to read (and to the tmpfiles rule). Needs SCRATCH STATE KEEP_SCRATCH note
+scratch_done() {
+  local f src kept=() rc
+  for f in init.out teardown.out check-last.out; do
+    src=$SCRATCH/$f; [[ $f == check-last.out ]] && { src=$SCRATCH/check-${1:-}.out; [[ -n ${1:-} && -f $src ]] || src=$SCRATCH/check.out; }
+    [[ -f $src ]] || continue
+    cp -f "$src" "$STATE/$f" 2> /dev/null || { note "scratch kept: copying $f into $STATE failed"; return 0; }
+    kept+=("$f")
+  done
+  if [[ $KEEP_SCRATCH == 1 ]]; then note "scratch kept (KEEP_SCRATCH=1): $SCRATCH"; return 0; fi
+  scratch_rm "$SCRATCH" 2> /dev/null; rc=$?   # the note carries rm's exit
+  case $rc in
+    0) note "scratch removed: $SCRATCH (in the state dir: ${kept[*]:-nothing})" ;;
+    2) note "scratch not removed: $SCRATCH is not this run's scratch directory" ;;
+    *) note "scratch not fully removed: $SCRATCH (rm exit $rc)" ;;
+  esac
 }
 
 # After harness_config: what sessions (and their {{NAME}}s) see.

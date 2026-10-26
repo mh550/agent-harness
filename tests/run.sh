@@ -1397,8 +1397,22 @@ guard() { ( source "$HERE/../lib/prompt.sh"; HARNESS_SCRATCH_ROOT=${SR_ROOT-$T/g
 guard_bad=$(for d in / "" "$T/guard" "$T/guard/proj" "$T/guard/proj/" "$T/guard/proj/.." "$T/guard/proj/x/.." "$T/guard/proj/r1/" "$T/guard/proj/r1/.."; do guard "$d"; done
   SR_RUN="" guard "$T/guard/proj/"; SR_RUN=.. guard "$T/guard/proj/.."; SR_PROJ="" guard "$T/guard//r1"; SR_PROJ=.. guard "$T/guard/../r1"; SR_PROJ=. guard "$T/guard/./r1"
   SR_ROOT=relative guard "relative/proj/r1")
-check "scratch_rm refuses anything but the run's own scratch directory" '! grep -q removed <<< "$guard_bad" && [[ $(grep -c refused <<< "$guard_bad") == 15 ]] \
-  && [[ -f $T/guard/marker && -f $T/guard/proj/marker && -f $T/guard/proj/r1/marker && -f $T/guard/proj/x/marker && $(guard "$T/guard/proj/r1") == removed && ! -e $T/guard/proj/r1 && -f $T/guard/proj/marker ]]'
+mkdir -p "$T/groot" && ln -s "$T/guard/proj" "$T/groot/lp" && ln -s "$T/guard/proj/x" "$T/guard/proj/lx"   # a symlinked project dir, a symlinked run dir
+guard_bad+=$'\n'$(SR_ROOT=$T/groot SR_PROJ=lp guard "$T/groot/lp/r1"; SR_RUN=lx guard "$T/guard/proj/lx")
+check "scratch_rm refuses anything but the run's own scratch directory (symlinks in its path too)" '! grep -q removed <<< "$guard_bad" && [[ $(grep -c refused <<< "$guard_bad") == 17 ]] \
+  && [[ -f $T/guard/marker && -f $T/guard/proj/marker && -f $T/guard/proj/r1/marker && -f $T/guard/proj/x/marker && -L $T/guard/proj/lx ]] \
+  && [[ $(guard "$T/guard/proj/r1") == removed && ! -e $T/guard/proj/r1 && -f $T/guard/proj/marker ]]'
+# scratch_done on its own (L3-05 review): what it copied in the note, the final tree's output as check-last.out, scratch kept when a copy fails
+sd() { ( source "$HERE/../lib/prompt.sh"; note() { echo "note: $*"; }; HARNESS_SCRATCH_ROOT=$T/sdr PROJECT_NAME=proj RUN_ID=$1 SCRATCH=${SD_SCRATCH-$T/sdr/proj/$1} \
+  STATE=$T/sds/$1 KEEP_SCRATCH=0; mkdir -p "$STATE"; scratch_done "$2" ) 2>&1; }
+mkdir -p "$T"/sdr/proj/{sd1,sd2,sd3,sd4}; echo init > "$T/sdr/proj/sd1/init.out"; echo old > "$T/sdr/proj/sd1/check.out"; echo final > "$T/sdr/proj/sd1/check-k1.out"
+sd1=$(sd sd1 k1); echo x > "$T/sdr/proj/sd2/check.out"; mkdir -p "$T/sds/sd2" && chmod 555 "$T/sds/sd2"; sd2=$(sd sd2 k2); chmod 755 "$T/sds/sd2"
+mkdir -p "$T/sdr/proj/sd3/lk" && : > "$T/sdr/proj/sd3/lk/f" && chmod 555 "$T/sdr/proj/sd3/lk"; sd3=$(sd sd3 k3); chmod 755 "$T/sdr/proj/sd3/lk"
+sd4=$(SD_SCRATCH=$T/sdr/proj sd sd4 k4)
+check "scratch_done: the final tree's output is check-last.out, the note names what it kept" '[[ $(cat "$T/sds/sd1/check-last.out") == final && $(cat "$T/sds/sd1/init.out") == init && ! -e $T/sdr/proj/sd1 ]] \
+  && [[ $sd1 == "note: scratch removed: $T/sdr/proj/sd1 (in the state dir: init.out check-last.out)" ]]'
+check "scratch_done keeps scratch when a copy fails, and says why when rm fails or the guard refuses" '[[ -f $T/sdr/proj/sd2/check.out && $sd2 == "note: scratch kept: copying check-last.out into $T/sds/sd2 failed" ]] \
+  && [[ $sd3 == "note: scratch not fully removed: $T/sdr/proj/sd3 (rm exit 1)" && $sd4 == "note: scratch not removed: $T/sdr/proj is not this run'"'"'s scratch directory" && -d $T/sdr/proj ]]'
 check "the tmpfiles template holds the 3-day age rule; README has its install command" 'grep -qx "e /tmp/harness - - - 3d" "$HERE/../templates/user/harness-tmpfiles.conf" \
   && grep -qx "x /tmp/harness/\*/live.lock" "$HERE/../templates/user/harness-tmpfiles.conf" && grep -q "user-tmpfiles.d" "$HERE/../README.md" && grep -q "HARNESS_CACHE" "$HERE/../README.md"'
 
@@ -1429,11 +1443,12 @@ check "tmux: run id dot.run gets session h-dot-run, gone at keep 0" '[[ $tdot_s 
 
 # ---- tmux (L3-04): harness gc reaps the sessions of its project's ended runs, run → session, never the other way ----
 # sessions first, then the markers: a session created after its run ended stands for a resume's (fresh), spared
-RS="h-gone1 h-gone2 h-livey h-pausy h-pausx h-fresh h-held-x h-queue"   # held.x (ended) shares h-held-x with held-x (live, other project)
+RS="h-gone1 h-gone2 h-livey h-pausy h-pausx h-fresh h-held-x h-queue h-odone"   # held.x (ended) shares h-held-x with held-x (live, other project); odone: another project's ended run
 for s in $RS; do tmux new-session -d -s "$s" sleep 600; done
 has_s "$HARNESS_DESK_SESSION" || tmux new-session -d -s "$HARNESS_DESK_SESSION" sleep 600
 for r in gone1 gone2 livey pausy pausx fresh held.x; do mkdir -p "$HARNESS_STATE/proj/$r" && : > "$HARNESS_STATE/proj/$r/meta.env"; done
 mkdir -p "$HARNESS_STATE/other/held-x" && : > "$HARNESS_STATE/other/held-x/meta.env" && echo $$ > "$HARNESS_STATE/other/held-x/driver.pid"
+mkdir -p "$HARNESS_STATE/other/odone" && : > "$HARNESS_STATE/other/odone/meta.env" && echo done > "$HARNESS_STATE/other/odone/ended"
 true & tp=$!; wait "$tp"; echo "$tp" > "$HARNESS_STATE/proj/gone2/driver.pid"; echo $$ > "$HARNESS_STATE/proj/livey/driver.pid"
 echo done | tee "$HARNESS_STATE/proj/"{gone1,gone2,livey,pausx,held.x}/ended > /dev/null
 touch "$HARNESS_STATE/proj/"{pausy,pausx}/PAUSE; echo done > "$HARNESS_STATE/proj/fresh/ended"; touch -d '1 hour ago' "$HARNESS_STATE/proj/fresh/ended"
@@ -1444,10 +1459,18 @@ check "harness gc --dry-run kills no tmux session" '[[ $gcr_dry_all == yes ]] &&
   && grep -qxF "would: tmux kill-session -t =h-gone2 (gone2 ended)" "$T/gcr-dry.out" && [[ $(grep -c "tmux kill-session" "$T/gcr-dry.out") == 2 ]]'
 check "harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)" '! has_s h-gone1 && ! has_s h-gone2 \
   && grep -qxF "+ reaped tmux session h-gone1 (gone1 ended)" "$T/gcr.out" && grep -qxF "+ reaped tmux session h-gone2 (gone2 ended)" "$T/gcr.out" && [[ $(grep -c "tmux session" "$T/gcr.out") == 2 ]] \
-  && RS="h-livey h-pausy h-pausx h-fresh h-held-x h-queue" all_s \
+  && RS="h-livey h-pausy h-pausx h-fresh h-held-x h-queue h-odone" all_s \
   && ! "$H" start "$T/proj" queue --spec SPEC.md --foreground 2> "$T/gcr-q.err" && grep -q "run-id .queue. is taken by the queue runner" "$T/gcr-q.err"'
+# L3-05 review: a start never kills another live run's session (a-b vs a.b, or one id in two projects); h-queue and attach are exact targets
+"$H" start "$T/proj" held-x --foreground > "$T/coll.out" 2>&1; coll_rc=$?
+mkdir -p "$T/tmuxlog" && printf '#!/usr/bin/env bash\necho "$*" >> %q\n' "$T/tmux-calls" > "$T/tmuxlog/tmux" && chmod +x "$T/tmuxlog/tmux"
+PATH=$T/tmuxlog:$PATH HARNESS_NO_RUNNER= "$H" queue start > /dev/null 2>&1; PATH=$T/tmuxlog:$PATH "$H" attach proj-x > /dev/null 2>&1
+check "harness start refuses a run id whose tmux session another live run holds; its session lives" '(( coll_rc )) && has_s h-held-x \
+  && grep -qF "run id held-x shares tmux session h-held-x with $HARNESS_STATE/other/held-x, which has not ended" "$T/coll.out" && [[ ! -e $HARNESS_WORKTREES/proj/held-x ]]'
+check "the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix" 'grep -qxF "has-session -t =h-queue" "$T/tmux-calls" \
+  && grep -qxF "kill-session -t =h-queue" "$T/tmux-calls" && grep -qxF "attach -t =h-proj-x" "$T/tmux-calls" && ! grep -qE -- "-t h-" "$T/tmux-calls"'
 for s in $RS; do tmux kill-session -t "=$s" 2> /dev/null; done
-rm -rf "$HARNESS_STATE/proj/"{gone1,gone2,livey,pausy,pausx,fresh,held.x} "$HARNESS_STATE/other/held-x"   # livey and held-x name the suite's own pid: alive_count would count it
+rm -rf "$HARNESS_STATE/proj/"{gone1,gone2,livey,pausy,pausx,fresh,held.x} "$HARNESS_STATE/other/held-x" "$HARNESS_STATE/other/odone"   # livey and held-x name the suite's own pid: alive_count would count it
 
 (( fails )) && { echo "--- run1 output"; tail -30 "$T/run1.out"; echo "--- harness-log"; hlog demo; }
 echo "$(( total - fails ))/$total checks passed"

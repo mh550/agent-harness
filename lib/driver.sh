@@ -71,7 +71,7 @@ services_down() {
     SVC_TD=$!; wait "$SVC_TD"; rc=$?
   fi
   scope_stop "$unit"; SVC_UP=0 SVC_TD=""
-  if (( rc )); then note "services stopped ($1; teardown exit $rc, see $SCRATCH/teardown.out)"
+  if (( rc )); then note "services stopped ($1; teardown exit $rc, see $SCRATCH/teardown.out, at finish $STATE/teardown.out)"
   else note "services stopped ($1)"; fi
 }
 # shellcheck source=lib/notify.sh
@@ -202,7 +202,7 @@ session() {
   local settings=() mcp=(--strict-mcp-config) t0 seq unit left x
   t0=$(date +%s) S_NOTES=()
   # an entry.json no ingest took (the driver died after its session) would pass for this session's own
-  [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
+  [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$STATE/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
   cp "$STATE/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
   [[ $1 == coding || $1 == verify ]] && cp "$RUN_DIR/context.md" "${3%.jsonl}.context.md" 2> /dev/null   # and the pack it read first
   [[ -f $AGENT_SETTINGS ]] && settings=(--settings "$WT/$AGENT_SETTINGS")
@@ -251,7 +251,7 @@ journal() {
   out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$RUN_DIR" "$kind" "$id" "$name" "$4" "$outcome" "$SCRATCH/entry-files" "$SCRATCH/entry-final"); rc=$?
   (( rc == 3 )) && note "$who: entry.json $out; recorded a minimal entry"
   (( rc == 0 || rc == 3 )) || { note "$who: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
-    mv -f "$RUN_DIR/entry.json" "$SCRATCH/entry-failed-$name.json" 2> /dev/null; }
+    mv -f "$RUN_DIR/entry.json" "$STATE/entry-failed-$name.json" 2> /dev/null; }
   out=$(node "$HARNESS_HOME/lib/entries.mjs" render "$RUN_DIR" 2>&1) || note "$who: rendering progress.md failed: $out"
   return 0
 }
@@ -481,16 +481,6 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   ) 9> "$STATE_ROOT/ledger.lock"
 }
 
-# finish's last word on scratch: init.out, teardown.out and the last full suite's output (check-last.out) into $STATE,
-# then $SCRATCH itself goes unless KEEP_SCRATCH=1. Only finish deletes: a crash leaves it to read (and to the tmpfiles rule).
-scratch_done() {
-  local f; for f in init.out teardown.out; do [[ -f $SCRATCH/$f ]] && cp -f "$SCRATCH/$f" "$STATE/$f"; done
-  [[ -f $SCRATCH/check.out ]] && cp -f "$SCRATCH/check.out" "$STATE/check-last.out"
-  if [[ $KEEP_SCRATCH == 1 ]]; then note "scratch kept (KEEP_SCRATCH=1): $SCRATCH"
-  elif scratch_rm "$SCRATCH"; then note "scratch removed: $SCRATCH (check-last.out and init.out are in the state dir)"
-  else note "scratch not removed: $SCRATCH is not this run's scratch directory"; fi
-}
-
 finish() {   # reason → summary, notification, retro, ledger, continuation
   END_REASON=$1
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
@@ -519,7 +509,7 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
   SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"
   commit_all "HARNESS: summary and retro"; sync
   ledger
-  scratch_done   # the record keeps the last suite and init output; the run's scratch goes (decisions/2026-10-25-scratch-cleanup)
+  scratch_done "$key"   # the record keeps the last suite and init output; the run's scratch goes (decisions/2026-10-25-scratch-cleanup)
   # Only a session cap continues by itself (time and Michael's stops don't), within the run's --until, at most
   # AUTO_CONTINUE_MAX times, without giving given-up features new attempts.
   local left conts; left=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" 2>/dev/null); conts=$(cat "$STATE/auto-continues" 2>/dev/null || echo 0)
