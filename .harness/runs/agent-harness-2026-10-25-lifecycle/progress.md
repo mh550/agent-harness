@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-25 21:17 · L3-04 · passes
+
+New lib/tmux.sh: tmux_name (moved from bin/harness) and tmux_reap, which kills h-<run> of runs with meta.env+ended, no live driver (re-checked), no PAUSE; spares a resume's newer session and a name a live/paused run shares (a.b vs a-b). harness gc calls it before git fetch; queue.sh as it exits, before the debrief. start refuses run id queue. 3 checks; 299 → 302.
+
+- **Files:** lib/tmux.sh, bin/harness, lib/queue.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-tmux-reaper.md
+- **Verified:** tests: 302/302 (bash tests/run.sh, then lib/check.sh green in 524 s); the three new checks watched failing first (298/302, plus one desk check cascading on the unreaped sleep 600 decoys, fixed by unconditional cleanup); mutation run on a scratch private tmux server: with the shared-name guard off h-held-x would be killed, with fresh's ended touched now h-fresh would be.
+- **Tests:** 299 → 302
+- **Discovery** (affects L3-05, run): tmux_name is lossy (a.b and a-b of any project are both h-a-b): tmux_reap checks every state dir of the root for a same-name run that is live, paused or not ended and keeps the session then. cmd_start's resume kill-session still kills a same-name session of another run (pre-existing, like L2-06's svc note).
+- **Discovery** (affects L3-05): The queue-runner reap check (tests/run.sh, first runner block) creates h-proj-$D, h-proj-$D-2, h-queue and the desk session before the runner and kills all four after, so the desk checks still start with no desk session and no 'sleep 600' pane. The gc reap block is the last before the summary and removes its decoy state dirs (livey/held-x hold the suite's pid).
+- **Proposed change:** L3-04 step 1 says gc calls the helper 'through act': gc prints the helper's own lines (+ reaped … / would: tmux kill-session -t =<s> (<run> ended) / ! could not kill …), the unit step's shape, as plan §9 says; act couldn't name the run.
+- **Proposed change:** L3-04 step 2's paused decoy has no ended, so it can't exercise the PAUSE guard: the check adds pausx (PAUSE + ended), fresh (a resume's session) and held.x/held-x (a shared name), per plan §6.3.
+- *18-L3-04 · claude-opus-5-5*
+
 ### 2026-10-25 20:47 · L3-03 · passes
 
 Driver window: when the driver exits it saves scrollback to <state>/tmux-driver.txt, kills the supervisor window, prints the line, sleeps TMUX_KEEP_HOURS (default 24) and kills h-<run>; `trap : INT` so a Ctrl-C never skips it; exact =targets. Suite PATH shim for the supervisor's claude. Three tmux checks; decision, architecture §3/§4/§10, README. 296 → 299.
@@ -293,23 +306,9 @@ Memory gate: mem_available_gb and mem_gate in lib/scope.sh; session() calls mem_
 - **Question for Michael:** D default: MEM_MIN_AVAILABLE_GB=5 and MEM_WAIT_MAX=30m (the audit's figures), starting the session anyway after the wait rather than parking. Keep?
 - *06-L1-06 · claude-opus-5-5*
 
-### 2026-10-25 14:30 · L1-05 · passes
-
-check.sh runs full and subset suites in harness-<run>-check-<pid> (MemoryMax=CHECK_MEMORY_MAX 3G, no MemoryHigh) under timeout -k 30s CHECK_TIMEOUT 15m, stopped after; RED lines for the cap (scope_capped) and the timeout; a TERM/INT/HUP stops the check scope; prompt_env exports prefix/cap/timeout; dur_s in scope.sh. Tests 254 → 260.
-
-- **Files:** lib/check.sh, lib/scope.sh, lib/prompt.sh, lib/config.sh, templates/user/config.sh, tests/run.sh, docs/architecture.md, README.md, journal/decisions/2026-10-25-capped-suites.md
-- **Verified:** bash tests/run.sh 260/260; harness check.sh green in 421 s; new checks watched failing first (old RED lines, no scope; TERM check fails with the traps removed); by hand with real systemd-run under harness-test-<pid>-*, 64M, swap 0: a 256 MB node allocation → check: RED (killed at its 64M memory cap, exit 137 …), a TERM to check.sh → 143, no unit, sleep or scope file left
-- **Tests:** 254 → 260
-- **Dead end:** a real 64M check scope with the default 1G swap — the 256 MB allocation swapped and passed: check scopes always get scope_run's 1G MemorySwapMax (SESSION_SWAP_MAX is not exported to check.sh)
-- **Discovery** (affects L1-08, L2): Only systemd-run's child moves into the check scope; check.sh stays in its caller's. Without the TERM trap, stopping a session's scope orphaned its suite in harness-<run>-check-<pid> for up to 15m. check.sh now runs the suite in the background, waits, and stops the check scope on TERM/INT/HUP (SIGKILL still can't be caught).
-- **Discovery** (affects L3): check.sh leaves no scopes/<unit>.started/.show (EXIT trap); session scopes still do, one pair per session, until L3 deletes scratch.
-- **Discovery** (affects L1-08): Check scopes get MemorySwapMax=1G always (template comment corrected); a suite can reach 4G before the kill.
-- **Question for Michael:** CHECK_MEMORY_MAX=3G and CHECK_TIMEOUT=15m are the spec's defaults (this repo's own suite runs ~7 min, well under). D6 default: suites get no MemoryHigh. Keep both?
-- **Proposed change:** L1-05 step 3: the cap line needs scope_capped (peak reached the cap), not just exit 137 in a scope, so a suite's own 137 keeps the plain RED line; the plan §7 says any scoped 137
-- *05-L1-05 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-25 14:30 · L1-05 · passes · check.sh runs full and subset suites in harness-<run>-check-<pid> (MemoryMax=CHECK_MEMORY_MAX 3G, no… ([in full](progress-archive.md))
 - 2026-10-25 14:02 · L1-04 · passes · metrics.mjs append takes a 12th arg (mem_peak_mb: number, null when uncapped) via exported metricsRo… ([in full](progress-archive.md))
 - 2026-10-25 13:35 · L1-03 · passes · session() runs every claude session (init, coding, verify, retro) as timeout -k 30s SESSION_TIMEOUT … ([in full](progress-archive.md))
 - 2026-10-25 13:05 · L1-02 · passes · lib/scope.sh (scope_available/unit/bytes/run/stop/peak/left/capped; peak read by a wrapper inside th… ([in full](progress-archive.md))
