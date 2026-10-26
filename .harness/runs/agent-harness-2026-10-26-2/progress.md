@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 10:14 · F1-04 · passes
+
+R6: queue add --continue writes --queued --requested (starts even after a stop); --automatic (finish() after a session cap, the debrief) omits it and is skipped after a stop; queue list marks (requested)/(automatic), parked too. A request upgrades a queued automatic entry; a stop the driver honours demotes its run's queued requests. R11: numbers past held/, park refuses to overwrite.
+
+- **Files:** bin/harness, lib/driver.sh, lib/debrief.sh, tests/run.sh, journal/decisions/2026-10-26-requested-continuations.md, journal/decisions/2026-10-26-queue-numbering-and-park.md, docs/architecture.md, README.md
+- **Verified:** check.sh: green in 637 s, 341/341 (was 333). 8 new checks written first and watched failing (6/6 then 2/2 red on a scratch subset), then green; the adapted stoppy/stoppy-o setups and the debrief continuation check pass. bash -n on bin/harness, lib/driver.sh, lib/debrief.sh, tests/run.sh.
+- **Tests:** 333 → 341
+- **Dead end:** asserting ndb == 1 in the requested-continuation check — only true in the full suite's order; made it relative (B=$(ndb))
+- **Discovery** (affects F1-05): An Opus review found that a request queued while a run is still going would undo a later stop. Fix: demote_requests() in lib/driver.sh runs just before the stop site (`[[ $c == stop ]] && demote_requests`, on its own line). F1-05 (R7) edits the next line: keep the call.
+- **Discovery** (affects run): Drivers started before this merge still call queue add --continue without --automatic at a session cap, so their continuations read (requested) until those drivers exit; entries queued before it list as (automatic).
+- **Discovery** (affects run): The real-systemd scope check (scope.sh: a real 64M scope kills a 256 MB allocation) failed once in a full run while another agent was busy, then passed alone and in the next full run: flaky under load.
+- **Question for Michael:** D *default*: a stop after a requested continuation wins. The driver turns that request automatic, so the run doesn't restart. A request made after the stop still starts it. Keep it that way, or should a request always start the run whatever comes after it?
+- *04-F1-04 · claude-opus-5-5*
+
 ### 2026-10-26 09:47 · F1-03 · passes
 
 R4: verify() removes the verified tree's green-<key> marker after sync_main, before run_init, and notes `verify <m>: suite cache cleared; the suite runs in full on the verified tree`; prompts/verify.md step 1 says so. New stub flag STUB_STALE_GREEN and run 13c catch a stale marker. Decision file, architecture.md (§4 cache row, §7 Verify row, limits) and README updated.
