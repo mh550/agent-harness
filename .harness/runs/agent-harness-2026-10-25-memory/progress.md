@@ -9,6 +9,18 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 19:39 · M1-04 · passes
+
+retro() copies the retro's retro-proposals.json to scratch before restrict (skipped from the reverted note, put back in the run record); ledger() merges it under flock 9 and commits the store with the ledger. Retro prompt allows that one file; stub gains STUB_RETRO_PROPOSALS and a ledger/ edit under STUB_RETRO_EDITS; decision file. Tests 407 → 411.
+
+- **Files:** lib/driver.sh, prompts/retro.md, tests/stub-claude.sh, tests/checks/36-run-16-retro-backlog.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-retro-backlog.md, docs/architecture.md, README.md
+- **Verified:** 4 backlog run checks in 36-run-16-retro-backlog.sh written first, all FAIL (5/9), then 9/9; KEEP=1 run showed bk1 `backlog: 1 new, 0 seen again`, bk2 `0 new, 1 seen again` and reverted `.harness/runs/bk2/progress.md ledger/retro-backlog.jsonl retro-hack.txt`, bk3 `retro-proposals.json invalid: not JSON…`; full suite 411/411 (220 s); git status -- ledger/ empty.
+- **Tests:** 407 → 411
+- **Discovery** (affects M1-05, M1-06): Every run with RETRO=1 whose retro wrote no proposals now notes `backlog: the retro wrote no retro-proposals.json` (in retro(), not finish()). The backlog merge note is written after ledger()'s cp -r, so it is in the worktree harness-log.md (committed by `run end notes`) but not the ledger copy.
+- **Discovery** (affects M1-05): 36-run-16-retro-backlog.sh now ends with runs bk1, bk2 (STUB_RETRO_EDITS=1), bk3 (bad) on one $T; $ST then holds one row no-retry-on-denial seen in bk1,bk2. M1-05's prompt-retro check should reseed $ST (test-counts specced) before its own run; the file takes ~39 s.
+- **Discovery** (affects M1-05): prompts/retro.md `## Proposed harness changes` still says “whether an earlier retro proposed it already (say which run)” and Read still globs */*/retro.md: M1-05 swaps both for the backlog.
+- *04-M1-04 · claude-opus-5-5*
+
 ### 2026-10-26 19:29 · M1-03 · passes
 
 Added lib/backlog.sh (harness backlog [list] | set | import, writes under flock on $STATE_ROOT/ledger.lock, one `ledger: backlog …` commit of retro-backlog.jsonl alone when LEDGER_COMMIT=1 and the ledger is a git checkout), bin/harness dispatch + header, the 8-row seed file, README row and ## Retro backlog section with Michael's import command. Tests 402 → 407.
