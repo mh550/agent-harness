@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 13:07 · F2-05 · passes
+
+R5: both deadline branches run `verify_ready once` before finish: note `deadline reached: <m> complete but unverified; one verify before the end`, then `verify <m> once` (one session, no escalation, this round the last: no granted attempt). Section run 9e (dlok, dlstrict, dlthin), 3 checks; decision file, architecture §5/§7, README.
+
+- **Files:** lib/driver.sh, tests/run.sh, journal/decisions/2026-10-26-verify-before-deadline.md, docs/architecture.md, README.md
+- **Verified:** Run 9e alone on the old driver: 3/3 FAIL (no note, no tag); first segment `session cap (2)`, 2/3 passing, no tag. After: 3/3 PASS. Full suite via check.sh: 371/371 checks passed (702 s), incl. run 9c's `a later deadline`, scrub, tmux. bash -n lib/driver.sh ok.
+- **Tests:** 368 → 371
+- **Discovery** (affects F2-06): A deadline verify doesn't wait for LIMIT_UNTIL: if a usage-limit window is open at the deadline, the one verify is refused (deferred, noted) and the run finishes; the continuation verifies it.
+- **Discovery** (affects F2-06): verify() takes an optional 2nd arg `once`; verify_ready passes its 1st arg on. The thin note in once mode reads `after one verify at the deadline` instead of `after <escalate model>`.
+- **Question for Michael:** D3 default: the paused deadline branch (`deadline (paused)`) also runs the one verify, as F2-05 step 1 says. Keep it, or should a paused run finish without any session?
+- *11-F2-05 · claude-opus-5-5*
+
 ### 2026-10-26 12:53 · F2-04 · passes
 
 R2: prompts/initializer.md item 4 sizes reviews (1–2 build features fold the review into the last one's steps; 3+ keep one review, one Opus round, a second only after a Critical); the lint line names it. lint() gains review-small and review-missing (milestone-level, step -, kinds via kindOf). Decision file, architecture §6, README.
