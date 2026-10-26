@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-26 08:15 · P0-02 · not yet
+
+Steps 1-4, 6, 7 hold; step 5 (<150 s) can't be met inside a suite split. Measured: per-file slot times add up to 636 s (547 s CPU), so 4 jobs can't finish under 159 s; the suite ran 335/335 in 165 s. Node startup (30 ms × ~2,200 per big file) is half the CPU. Decision file updated (D2 default: report it as not met); no code changed.
+
+- **Files:** journal/decisions/2026-10-26-suite-split.md
+- **Verified:** lib/check.sh: green in 165 s, 335/335 (slowest 12-… 146.7 s); per-file /usr/bin/time at 4 jobs: wall 166 s, sum 636 s; strace -f of file 12: 28,325 execs (5,461 git, 2,239 node)
+- **Tests:** 335 → 335
+- **Dead end:** skipping replayed checks (REPLAY returns at once) — run 1 went from 12.9 to 12.6 s: the cost is harness start, not the checks
+- **Dead end:** NODE_COMPILE_CACHE, --v8-pool-size=0, --jitless, --no-opt, --single-threaded — node startup stays 30 ms or gets slower
+- **Dead end:** splitting or reordering files further — slot times add up to 636 s, so 4 jobs need at least 159 s, and every replay adds more
+- **Discovery** (affects P0-02, run): The suite's CPU is mostly the harness's own process starts: lib/driver.sh calls node 1,684 times in file 12 (30 ms each). Caching F model (pure) and the read-only list queries keyed on the list's content would cut about 8% of that file's CPU. That is the only lever left short of rewriting checks.
+- **Question for Michael:** S2's '<150 s with TEST_JOBS=4' is out of reach for a split: 636 s of slot time on 4 jobs is ≥159 s, and the measured time is 165 s. Do you accept 'under 180 s, measured and recorded' for step 5, or should a new feature cut the driver's node calls (or rewrite the debrief/desk chains) first?
+- **Proposed change:** P0-02 step 5: 'under 180 s (measured 165 s), with the per-file times and the 636 s / 4-job floor in the decision file' instead of 'under 150 s'
+- *03-P0-02 · claude-opus-5-5*
+
 ### 2026-10-26 07:35 · P0-02 · not yet
 
 Runner runs TEST_JOBS files (default 4 here) as background jobs, largest first; output whole per file, timing lines, slowest three. split.sh REPLAYS_ cut the 400 s file in three. 335/335 green in 165 s (was 589 s), peak 390 MB. Not passed: step 5 wants <150 s, but the file times sum to 637 s (≥159 s on 4 jobs) and the debrief chain is 150 s alone.
