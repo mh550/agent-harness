@@ -9,6 +9,18 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 19:23 · M1-02 · passes
+
+Added lib/backlog.mjs (pure exports STATUSES, parseRows, formatRows, validateProposals, mergeProposals, setStatus, orderRows, importRows, listLines; CLI merge/set/list/import/validate, atomic tmp+rename writes) and tests/checks/35-backlog-pure-m1.sh, 7 checks written first. Tests 395 → 402.
+
+- **Files:** lib/backlog.mjs, tests/checks/35-backlog-pure-m1.sh, tests/fixtures/check-names.txt
+- **Verified:** Red first, before lib/backlog.mjs existed, all 7 failed: 'backlog merge: a new id becomes one proposed row first seen in its run', 'backlog merge: a known id adds its run to runs_seen once, status unchanged', 'backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged', 'backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1', 'backlog list: proposed first, then more runs_seen first within a status', 'backlog import: 8 rows into an empty store, then again 8 (idempotent by id)', 'backlog import: a known id takes status, spec, pr and note, keeps first_seen, unions runs_seen'. Then 7/7 (bash tests/run.sh 35-backlog); full suite via lib/check.sh green, 402 tests, conformance passing; node --check lib/backlog.mjs.
+- **Tests:** 395 → 402
+- **Dead end:** the list check reading the same store the set check edited — set leaves bb-once with a spec, so the line lengths and --max-bytes cut changed; the list check now reads an untouched copy (four.jsonl)
+- **Discovery** (affects M1-03, M1-04): CLI output channels: merge's ok and invalid lines and validate's why line go to stdout (the driver notes `$(node lib/backlog.mjs merge …)`); set/import/usage errors go to stderr as one `backlog: <why>` line, exit 1 (usage: exit 2 for an unknown command). set on a missing store exits 1 (unknown id) and writes nothing.
+- **Discovery** (affects M1-03, M1-05): list --max-bytes is a hard cap including the `… (<n> more rows)` line; list --jsonl --max-bytes stops at whole rows with no trailer. import of a known id sets spec/pr/note to the import row's values (null when absent), keeps title and first_seen; a new import row needs a title, a slug id and one of the five statuses.
+- *02-M1-02 · claude-opus-5-5*
+
 ### 2026-10-26 19:16 · M1-01 · passes
 
 Wrote docs/plans/2026-10-26-M1-retro-backlog.md: row schema and defaults, lib/backlog.mjs's exported API and CLI, harness backlog forms, retro()/finish() handling of retro-proposals.json via scratch past restrict, retro prompt Backlog section, the two debrief changes, STUB_RETRO_PROPOSALS, check names for files 35/36, the 8 seed rows, the live import steps.
