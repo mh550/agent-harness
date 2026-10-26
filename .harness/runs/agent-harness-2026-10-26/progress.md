@@ -9,6 +9,17 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-26 16:44 · P0-04 · passes
+
+Opus review of the P0 diff: 0 Critical, 2 Important, 4 Minor (docs/plans/2026-10-26-P0-review.md). Fixed RED->GREEN: the runner now prints a hung file's output on TERM and names it; a file exiting non-zero with no FAIL line counts as one failed check; treekey drops absolute/.. ignore entries. SPLIT_FROM corrected. Decision file and docs completed.
+
+- **Files:** tests/run.sh, lib/treekey.mjs, tests/split.sh, tests/checks/33-suite-runner.sh, tests/checks/34-check-key.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-suite-split.md, docs/plans/2026-10-26-P0-review.md, docs/architecture.md, README.md, CLAUDE.md
+- **Verified:** 3 new checks watched red (suite-runner 9/11, check-key 7/8), then green; suite-runner file 5x 11/11; full suite through lib/check.sh 395/395 in 208 s (slowest 15-run-4 157.5 s); SPLIT_OUT=tmp split.sh matches tests/checks 01-32 byte for byte; bash -n on 43 P0 shell files, node --check treekey/testcount.
+- **Tests:** 392 → 395
+- **Discovery** (affects P2): tests/run.sh now traps TERM/INT/HUP: a file still running when check.sh's timeout fires prints its output so far and '<file>: unfinished when the suite was stopped'. P2's TEST_FILE_TIMEOUT per file should reuse that line shape (one FAIL per hung file).
+- **Discovery** (affects run): A check file that exits non-zero with no FAIL line now adds 'FAIL <file>: exited <rc> before its end, with no FAIL line' to the total, so a subset run can no longer read as all passed while a file crashed.
+- *02-P0-04 · claude-opus-5-5*
+
 ### 2026-10-26 16:24 · P0-02 · passes
 
 Runner code was already in place; under the new rule (a time is measured and recorded, not a gate) I measured it and wrote it down. TEST_JOBS=4: 207 s wall, 392/392, slowest file 156 s, floor 203 s (811 s of slot time / 4), peak 254 MB. TEST_JOBS=1: 758 s. Same per-file counts and PASS names at 1 and 4 jobs. Decision file, CLAUDE.md, README and architecture updated.
