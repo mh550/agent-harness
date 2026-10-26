@@ -1,6 +1,6 @@
 # Rollout: getting lanes and the split suite in before the retro and memory runs (2026-10-25)
 
-Design: `docs/specs/2026-10-25-throughput-and-memory-design.md` (awaiting Michael's approval). This file is the
+Design: `docs/specs/2026-10-25-throughput-and-memory-design.md` (approved 2026-10-26 00:05). This file is the
 order of operations, what each step needs from the step before, what can be prepared tonight while the lifecycle
 run is live, and Michael's commands. Tick steps here, on `main`, as they land.
 
@@ -18,7 +18,7 @@ run is live, and Michael's commands. Tick steps here, on `main`, as they land.
 
 | # | What | Who | When | Needs |
 |---|---|---|---|---|
-| 0 | **Hold the queue** so nothing starts after the lifecycle run (step 0 below) | Michael | tonight, before ~02:00 | — |
+| 0 | ~~**Hold the queue** so nothing starts after the lifecycle run (step 0 below)~~ done 2026-10-26 00:05 | Michael | tonight, before ~02:00 | — |
 | 1 | Design and this plan on `main` (new files: no conflict with the live run) | this session | tonight | — |
 | 2 | On approval: the two build specs (`suite-split`, `lanes`), the amendments to the retro-fixes and memory specs (§8 of the design), the superseding decision for D-H18, the queue brief texts | a harness session | tonight or first thing 10-26; about 40 min | Michael's yes |
 | 3 | **Suite split** (§5.1–§5.2), interactive in a worktree, PR, merged | a harness session | right after the lifecycle run ends; about 1.5 h | the lifecycle run merged (its L4/L5 checks are in `tests/run.sh`); step 2's spec |
