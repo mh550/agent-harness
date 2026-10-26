@@ -164,7 +164,7 @@
         "journal/decisions/2026-10-26-reviews-sized-to-milestone.md exists (finding · choice · rejected, with the review-cost figures the spec cites); docs/architecture.md §6 and README.md say the rule",
         "`node --check lib/features.mjs` passes; the suite is green"
       ],
-      "passes": false,
+      "passes": true,
       "after": [
         "F2-03"
       ]

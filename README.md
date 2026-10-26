@@ -3,7 +3,7 @@
 A small, reusable harness for **long-running coding agents**, after Anthropic's
 ["Effective harnesses for long-running agents"](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents).
 An initializer session turns a spec into a feature list (and runs the step lint over it: steps with nothing to check,
-paths outside the repo, greps that match their own words; the driver notes what is left); then **one fresh Claude Code session per feature** does the
+paths outside the repo, greps that match their own words, reviews out of size with their milestone; the driver notes what is left); then **one fresh Claude Code session per feature** does the
 work, test-first. A deterministic bash driver does the bookkeeping around them: it verifies each finished milestone
 independently, **opens a PR into `main` for each verified milestone, and merges it itself only in projects that
 opt in with `MERGE_POLICY=auto`**, waits out usage limits, and records every run in a ledger that the next runs
@@ -97,6 +97,7 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 |---|---|
 | Worktree, branch | `~/worktrees/<project>/<run-id>`, `harness/<run-id>` from `origin/main` |
 | Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` |
+| Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, one Opus round (a second only after a Critical finding). The lint flags `review-small` and `review-missing` |
 | Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) |
 | Local state | `~/.local/state/harness/<project>/<run-id>/`: `run.log`, transcripts, attempts, `driver.pid`, `ended` |
 | Ledger | `ledger/runs.jsonl` and `ledger/<project>/<run-id>/` in this repo · `harness trends` |

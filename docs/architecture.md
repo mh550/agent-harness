@@ -188,7 +188,10 @@ harness start ─► worktree + branch ─► driver:
   quote, backtick span, path or file name; `the suite is green` is exempt), `outside-repo` (`~`, `$HOME`, `../`, or an
   absolute path under `/home /root /srv /etc /var /opt /usr /mnt /media`; `/tmp`, `/dev/null` and routes pass),
   `self-match` (a grep command over a step-quoting run-record file, not `harness-log.md`, whose pattern matches the step's
-  own text) and `undeclared` (the milestones above, one finding on each first feature, `step -`). The initializer runs
+  own text), `undeclared` (the milestones above, one finding on each first feature, `step -`), and the review sizing
+  (decisions/2026-10-26-reviews-sized-to-milestone; kinds as `kindOf` gives them, `step -`): `review-small` (a review
+  feature in a milestone of one or two build features, whose last build feature's steps should carry the review) and
+  `review-missing` (three or more build features and no review feature, on the milestone's last). The initializer runs
   it before its commit (`{{LINT}}`, the live harness's `features.mjs lint`) and fixes what it prints; the driver runs
   it once after the initializer and notes what is left (`lint: …`), never editing the list.
 - **Parked** (D-H26): a session that can't go on without Michael ends with `PARKED: <why>`. The feature is skipped

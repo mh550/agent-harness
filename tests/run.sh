@@ -158,6 +158,17 @@ check "lint: undeclared trips a later milestone's first feature without after, n
   const l = (after) => [{ id: "A", milestone: "M1" }, { id: "B", milestone: "M1" }, { id: "C", milestone: "M2", ...after }, { id: "D", milestone: "M2" }];
   const r = lint(l({})), ok = lint(l({ after: [] }));
   process.exit(r.length === 1 && r[0].id === "C" && r[0].step === "-" && r[0].rule === "undeclared" && r[0].text.startsWith("M2") && ok.length === 0 ? 0 : 1);'\'
+check "lint: review-small for a review in a two-build milestone; review-missing for five builds without one; neither for five with one or docs only" 'node --input-type=module -e "$LINT"'\''
+  const ms = (m, kinds) => kinds.map((kind, i) => ({ id: `${m}-${i + 1}`, milestone: m, kind, ...(m === "M1" ? {} : { after: [] }) }));
+  const r = l => lint(l).map(f => `${f.id}:${f.step}:${f.rule}:${f.text}`).join("|");
+  const small = r(ms("M1", ["plan", "build", "build", "review"])), one = r(ms("M1", ["build", "review"]));
+  const inferred = r([{ id: "A", milestone: "M1" }, { id: "B", milestone: "M1", description: "Review + simplify of M1" }]);
+  const five = r([...ms("M1", ["build", "build", "build", "build", "build", "review"]), ...ms("M2", ["plan", "build", "build", "build", "build", "build", "docs"])]);
+  const docs = r(ms("M1", ["plan", "docs", "docs", "check", "review"]));
+  process.exit(small === "M1-4:-:review-small:M1 has 2 build features: fold the review into M1-3\x27s steps"
+    && one === "M1-2:-:review-small:M1 has 1 build feature: fold the review into M1-1\x27s steps"
+    && inferred === "B:-:review-small:M1 has 1 build feature: fold the review into A\x27s steps"
+    && five === "M2-7:-:review-missing:M2 has 5 build features and no review feature" && docs === "" ? 0 : 1);'\'
 check "lint: the note counts by rule and names the first finding; clean says clean" 'node --input-type=module -e "$LINT"'\''
   const stub = [{ id: "A", milestone: "M1", steps: ["x", "y"] }, { id: "B", milestone: "M1", steps: ["y"] }, { id: "C", milestone: "M2", steps: ["z"] }];
   process.exit(lintNote(lint(stub)) === "lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor"
@@ -168,7 +179,7 @@ check "lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findi
   out=$($F lint "$T/lint-list.json"); rc=$?; clean=$($F lint "$T/lint-clean.json"); crc=$?
   [[ $rc == 1 && $out == "$(printf "A\tstep 1\tno-anchor\tworks correctly\nB\tstep -\tundeclared\tM2%s" "'\''s first feature has no \"after\": it waits on every earlier feature")" && $crc == 0 && -z $clean ]] \
     && [[ $($F lint "$T/lint-list.json" --note; echo "rc=$?") == "lint: 2 findings (no-anchor: 1, undeclared: 1); the list is not edited — first: A step 1 no-anchor"$'\''\n'\''"rc=0" ]] \
-    && h=$(sed -n "1,/^import/p" "$HERE/../lib/features.mjs") && [[ $h == *"lint <list>"* && $h == *no-anchor* && $h == *outside-repo* && $h == *self-match* && $h == *undeclared* ]]'
+    && h=$(sed -n "1,/^import/p" "$HERE/../lib/features.mjs") && [[ $h == *"lint <list>"* && $h == *no-anchor* && $h == *outside-repo* && $h == *self-match* && $h == *undeclared* && $h == *review-small* && $h == *review-missing* ]]'
 
 # ---- scope.sh (L1-02): capped transient user scopes, through the stub systemd-run/systemctl; one real 64M scope ----
 SC=$HERE/../lib/scope.sh
@@ -649,11 +660,16 @@ check "harness version skips ledger commits" 'V1=$(source "$HERE/../lib/version.
   && echo b >> "$VR/lib/x" && V2=$(source "$HERE/../lib/version.sh"; harness_version "$VR"; echo "$HARNESS_VERSION $HARNESS_DIRTY") \
   && V3=$(source "$HERE/../lib/version.sh"; harness_version "$T/nonexistent"; echo "$HARNESS_VERSION $HARNESS_DIRTY") && [[ $V1 == "$VC 0" && $V2 == "$VC 1" && $V3 == "unknown 0" ]]'
 check "harness report prints the writeup" 'grep -q "Spend by role" <<< "$("$H" report demo)"'
+# reviews sized to the milestone (R2): the demo has no review feature, so a copy of its summary gets a review cost
+check "the report lists the review role when a review ran" 'jq ".cost.by_role.review = 1.25" "$RD/summary.json" > "$T/summary-review.json" \
+  && grep -q "^| Spend by role | .*build \$[0-9.]* · review \$1.25 · .*manager (the bash driver) \$0.00 |$" <<< "$(node "$HERE/../lib/summary.mjs" report "$T/summary-review.json")"'
 check "init model resolved to fable"      'grep -q "initializer · claude-fable-5-1" "$HARNESS_STATE/proj/demo/run.log"'
 check "summary end reason is how the run ended" '[[ $(jq -r .end_reason "$RD/summary.json") == done ]]'
 check "a milestone without an after list is noted" 'hlog demo | grep -q "dependencies: M2 has no after list"'
 # the step lint (R3) and the after rule (R10): the initializer runs the live harness's lint; the driver notes what is left, once
 check "the initializer prompt has the resolved lint command" 'grep -qF "\`node $(readlink -f "$HERE/..")/lib/features.mjs lint <run directory>/feature_list.json\`" "$HARNESS_STATE/proj/demo/prompt-initializer.md"'
+check "the initializer prompt sizes reviews to the milestone" 'grep -q "folds its review" "$HARNESS_STATE/proj/demo/prompt-initializer.md" \
+  && grep -q "milestone'\''s size doesn'\''t call for). No output means clean." "$HARNESS_STATE/proj/demo/prompt-initializer.md"'
 check "the initializer prompt asks for after on independent features and on every milestone's first" 'grep -qF "Give \`after\` on any feature that doesn'\''t need its predecessor in the same milestone, and on every milestone'\''s first feature (\`[]\` when independent)" "$HARNESS_STATE/proj/demo/prompt-initializer.md"'
 check "the driver notes the lint once after the initializer" '[[ $(hlog demo | grep -c "lint: ") == 1 ]] \
   && hlog demo | grep -q "lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor$" && hlog demo | grep -q "dependencies: M2 has no after list"'
