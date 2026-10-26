@@ -1,2 +1,3 @@
 - 2026-10-26 19:12 · feature list written: 0/23 passing
 - 2026-10-26 19:12 · lint: clean
+- 2026-10-26 19:12 · context.md for M1-01: 4418 bytes
