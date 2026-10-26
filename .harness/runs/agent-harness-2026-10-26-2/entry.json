@@ -1,0 +1,232 @@
+{
+  "feature": "F2",
+  "kind": "verify",
+  "outcome": "passes",
+  "summary": "All six F2 features hold: check.sh green (cached), bash -n/node --check clean, lint unit behaviour re-run by hand, own-list lint shows no review-small/-missing, named run 9e/lint/prompt checks read and match the steps, docs and decision files present.",
+  "evidence": [
+    {
+      "feature": "F2-01",
+      "step": 1,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-01",
+      "step": 2,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-01",
+      "step": 3,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-01",
+      "step": 4,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-02",
+      "step": 1,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-02",
+      "step": 2,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-02",
+      "step": 3,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-02",
+      "step": 4,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-02",
+      "step": 5,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-02",
+      "step": 6,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-03",
+      "step": 1,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-03",
+      "step": 2,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-03",
+      "step": 3,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-03",
+      "step": 4,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-03",
+      "step": 5,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-03",
+      "step": 6,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-04",
+      "step": 1,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-04",
+      "step": 2,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-04",
+      "step": 3,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-04",
+      "step": 4,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-04",
+      "step": 5,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-04",
+      "step": 6,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-05",
+      "step": 1,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-05",
+      "step": 2,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-05",
+      "step": 3,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-05",
+      "step": 4,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-05",
+      "step": 5,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-05",
+      "step": 6,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-06",
+      "step": 1,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-06",
+      "step": 2,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-06",
+      "step": 3,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    },
+    {
+      "feature": "F2-06",
+      "step": 4,
+      "ran": "read the step; re-ran check.sh, bash -n, node --check, features.mjs lint (incl. direct lint() calls); read the named tests/run.sh checks (lint section, run 1 prompt/lint checks, run 9e dl* checks); grep/ls docs, plan, decision files, prompts/initializer.md",
+      "saw": "holds: suite green; lint() results match each tripping/passing example; checks named in tests/run.sh assert the step; files and doc sections exist",
+      "holds": true
+    }
+  ]
+}
