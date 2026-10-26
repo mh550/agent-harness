@@ -38,12 +38,10 @@ Rules:
 - **`after`** lists what a feature really needs: feature ids, or milestone ids (every feature of
   that milestone). Without it, a feature waits on **every** feature before it, so one failure, or
   one feature waiting on Michael, stops everything behind it.
-  - **Required on the first feature of every milestone after the first**: the milestones (or
-    features) it truly builds on, e.g. `"after": ["N1"]`, or `[]` if it is independent. The harness
-    notes every milestone that lacks it. On 2026-10-17 one feature waiting on Michael held back four
-    whole milestones that didn't need it.
-  - Inside a milestone, leave `after` off unless a feature is independent of the ones before it
-    (docs that need only the plan, say).
+  Give `after` on any feature that doesn't need its predecessor in the same milestone, and on every milestone's first feature (`[]` when independent):
+  e.g. `"after": ["N1"]`, or `"after": []`. The harness notes every milestone after the first that
+  lacks it, and the lint flags it. On 2026-10-17 one feature waiting on Michael held back four whole
+  milestones that didn't need it.
 - **One feature = one session**: aim for 15–60 minutes of agent work ending in a commit with a green
   suite. Split anything bigger; merge anything trivially small into its neighbour (for a small
   milestone, plan and build can be one feature).
@@ -85,6 +83,11 @@ Rules:
     "discoveries": [{ "text": "the suite needs port 7804 free", "affects": ["run"] }] }
   ```
 - Leave the run directory's `INBOX.md` as the harness created it.
+
+Before you commit, run `{{LINT}} <run directory>/feature_list.json` and fix every line it prints
+(`<id> step <n> <rule> <text>`: a step with no concrete anchor, a path outside the repo or in `~`,
+a grep that matches its own words in the run record, a milestone without `after`). No output means
+clean.
 
 Commit `HARNESS: feature list (<n> features) for <run id>` and push
 `git push -u origin <branch>`.

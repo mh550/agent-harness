@@ -145,7 +145,7 @@
         "docs/architecture.md §5 (the life of a run) has the lint step after the initializer and §6 says the initializer runs it; README.md mentions the lint in one line",
         "`bash -n lib/driver.sh lib/prompt.sh` passes; the suite is green"
       ],
-      "passes": false,
+      "passes": true,
       "after": [
         "F2-02"
       ]

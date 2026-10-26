@@ -120,7 +120,8 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 ```
 harness start ─► worktree + branch ─► driver:
   [resume?] merge main in before any session, the initializer included (and reload the config if it changed) · merge verified (v3) milestones
-  [no list] init + suite ─► INITIALIZER ─► feature_list.json, entry.json ─► entries.jsonl ─► progress.md (rendered)
+  [no list] init + suite ─► INITIALIZER (runs the lint, fixes it) ─► feature_list.json, entry.json ─► entries.jsonl ─► progress.md (rendered)
+            ─► lint note ("lint: <n> findings (…); the list is not edited — first: …" or "lint: clean"; the list stays as written)
   loop:
     stop if: session cap · deadline · STOP/"status: stop [<why>]" → "stopped by Michael[: <why>]"
     pause while: PAUSE/"status: pause" (services down first, the note committed and pushed)
@@ -180,14 +181,16 @@ harness start ─► worktree + branch ─► driver:
 - **Order** is priority. **Dependencies**: `after` if present, else *every earlier feature*. So by default one failure
   blocks everything behind it (safe), and the initializer opts independent work out with `after`. `after` may name
   feature ids or milestone ids (every feature of that milestone before this one). The initializer must give the
-  first feature of every milestone after the first an `after` (`[]` if independent); the driver notes once per run
-  which milestones lack one (D-H25).
+  first feature of every milestone an `after` (`[]` if independent), and any feature that doesn't need its predecessor
+  in the same milestone; the driver notes once per run which milestones after the first lack one (D-H25).
 - **Step lint** (`features.mjs lint <list>`, decisions/2026-10-26-step-lint): pure, reported, never applied. One
   `<id>\tstep <n>\t<rule>\t<text>` line per finding, exit 1 with findings. Rules: `no-anchor` (a step with no digit,
   quote, backtick span, path or file name; `the suite is green` is exempt), `outside-repo` (`~`, `$HOME`, `../`, or an
   absolute path under `/home /root /srv /etc /var /opt /usr /mnt /media`; `/tmp`, `/dev/null` and routes pass),
   `self-match` (a grep command over a step-quoting run-record file, not `harness-log.md`, whose pattern matches the step's
-  own text) and `undeclared` (the milestones above, one finding on each first feature, `step -`).
+  own text) and `undeclared` (the milestones above, one finding on each first feature, `step -`). The initializer runs
+  it before its commit (`{{LINT}}`, the live harness's `features.mjs lint`) and fixes what it prints; the driver runs
+  it once after the initializer and notes what is left (`lint: …`), never editing the list.
 - **Parked** (D-H26): a session that can't go on without Michael ends with `PARKED: <why>`. The feature is skipped
   like a given-up one (only its dependants wait) without spending an attempt, until INBOX.md's answers change.
 - **kind** ∈ plan · build · review · check · docs. It drives cost-by-role and nothing else (inferred for v2 lists).

@@ -646,7 +646,9 @@ if [[ ! -f $LIST ]]; then
     note "initializer did not produce a valid $LIST; stopping"; finish "initializer failed"
   fi
   MET append "$LOGS/00-init.jsonl" "$RUN_DIR/metrics.jsonl" "$RUN_ID" init "" "$(F model "$INIT_MODEL")" true "$S_WALL" "$S_EXIT" false init "$S_PEAK"
-  note "feature list written: $(F summary "$LIST")"; commit_all "HARNESS: initializer done"; sync
+  note "feature list written: $(F summary "$LIST")"
+  note "$(F lint "$LIST" --note)"   # what the initializer's own lint run left; the list stays as written (decisions/2026-10-26-step-lint)
+  commit_all "HARNESS: initializer done"; sync
   notify "started: $(F summary "$LIST")" click="$(gh_url "$RUN_DIR/progress.md")"
 fi
 

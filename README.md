@@ -2,7 +2,8 @@
 
 A small, reusable harness for **long-running coding agents**, after Anthropic's
 ["Effective harnesses for long-running agents"](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents).
-An initializer session turns a spec into a feature list; then **one fresh Claude Code session per feature** does the
+An initializer session turns a spec into a feature list (and runs the step lint over it: steps with nothing to check,
+paths outside the repo, greps that match their own words; the driver notes what is left); then **one fresh Claude Code session per feature** does the
 work, test-first. A deterministic bash driver does the bookkeeping around them: it verifies each finished milestone
 independently, **opens a PR into `main` for each verified milestone, and merges it itself only in projects that
 opt in with `MERGE_POLICY=auto`**, waits out usage limits, and records every run in a ledger that the next runs
