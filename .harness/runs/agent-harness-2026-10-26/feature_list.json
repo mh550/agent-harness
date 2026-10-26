@@ -1,12 +1,6 @@
-{
-  "run": "agent-harness-2026-10-26",
-  "branch": "harness/agent-harness-2026-10-26",
+{ "run": "agent-harness-2026-10-26", "branch": "harness/agent-harness-2026-10-26",
   "features": [
-    {
-      "id": "P0-01",
-      "milestone": "P0",
-      "kind": "build",
-      "model": "opus",
+    { "id": "P0-01", "milestone": "P0", "kind": "build", "model": "opus",
       "description": "tests/run.sh becomes a runner over tests/checks/NN-<slug>.sh files cut from the monolith by its `# ---- <title> ----` markers through tests/split.sh, with tests/lib.sh as the shared preamble and a conformance check proving every one of the 325 check names survived (suite-split spec S1).",
       "steps": [
         "tests/lib.sh has a one-line usage header; `suite_setup` is the pre-split tests/run.sh lines 6-58 made a function (temp dir, private tmux socket, the exported stub environment, the base user config, the throwaway project with its bare origin) and the helpers check/hlog/list/on_main/curl_with/curl_body/curl_last/curl_count/win/wins/in_has/desk_of are unchanged; `suite_end` prints `N/M checks passed` for the file and exits 1 on a failure; HERE is tests/",
@@ -17,13 +11,8 @@
         "every tests/checks/*.sh passes alone from a fresh shell (`for f in tests/checks/*.sh; do bash \"$f\" | tail -1; done` prints only `N/N checks passed` lines); `bash -n` passes on tests/lib.sh, tests/split.sh, tests/run.sh and every tests/checks/*.sh",
         "`bash tests/run.sh` ends `N/N checks passed` with N = 325 + the conformance check, and lib/check.sh (CHECK_CMD=\"bash tests/run.sh\") still reports it green with its test count"
       ],
-      "passes": true
-    },
-    {
-      "id": "P0-02",
-      "milestone": "P0",
-      "kind": "build",
-      "model": "opus",
+      "passes": true },
+    { "id": "P0-02", "milestone": "P0", "kind": "build", "model": "opus",
       "description": "The runner runs the check files TEST_JOBS at a time as plain background jobs inside the one check scope, replays each file's output whole, prints a timing line per file and the slowest three, and the full suite takes under 150 s on this box (suite-split spec S2).",
       "steps": [
         "tests/run.sh starts files TEST_JOBS at a time (default min(nproc/2, 4), at least 1) with `wait -n`, never through systemd-run; each file's output goes to $T/<file>.out and is printed whole in completion order, so PASS/FAIL lines of two files never interleave",
@@ -34,16 +23,8 @@
         "CLAUDE.md § How to verify states the measured duration, TEST_JOBS, and the subset form by file name (`bash tests/run.sh gc`)",
         "`bash -n` on tests/run.sh and every tests/checks/*.sh; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P0-03",
-      "milestone": "P0",
-      "kind": "build",
-      "model": "opus",
-      "after": [
-        "P0-01"
-      ],
+      "passes": false },
+    { "id": "P0-03", "milestone": "P0", "kind": "build", "model": "opus", "after": ["P0-01"],
       "description": "CHECK_KEY_IGNORE leaves path prefixes the suite never reads out of the suite cache key, so a plan or decision file no longer forces a full pre-suite run (suite-split spec S3).",
       "steps": [
         "lib/config.sh defaults CHECK_KEY_IGNORE=\".harness/runs docs/plans\"; this repo's .harness/config.sh sets CHECK_KEY_IGNORE=\".harness/runs docs/plans docs/specs journal findings-and-research ledger\"; templates/project/config.sh has the line commented with one sentence on what it does",
@@ -54,13 +35,8 @@
         "docs/architecture.md §4 (the suite cache row) and README.md name CHECK_KEY_IGNORE and its default",
         "`bash tests/run.sh` ends with every check passing"
       ],
-      "passes": true
-    },
-    {
-      "id": "P0-04",
-      "milestone": "P0",
-      "kind": "review",
-      "model": "opus",
+      "passes": true },
+    { "id": "P0-04", "milestone": "P0", "kind": "review", "model": "opus",
       "description": "An Opus review of the P0 diff from a file: Critical and Important findings fixed RED->GREEN, simplifications applied, the suite-split decision file and the docs complete.",
       "steps": [
         "`git diff origin/main...HEAD -- lib bin tests prompts templates docs/architecture.md README.md CLAUDE.md .harness/config.sh > /tmp/harness/agent-harness/agent-harness-2026-10-26/P0-review.diff` is read by an Opus subagent; its findings with a severity each are in docs/plans/2026-10-26-P0-review.md",
@@ -69,16 +45,9 @@
         "docs/architecture.md §3 names tests/lib.sh, tests/run.sh as the runner and tests/checks/; §4's suite cache row names CHECK_KEY_IGNORE; README.md and CLAUDE.md say how to run the suite, a subset by file name, and TEST_JOBS",
         "`bash -n` on every shell file P0 touched and `node --check lib/treekey.mjs` pass; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P1-01",
-      "milestone": "P1",
-      "kind": "plan",
-      "model": "opus",
-      "after": [
-        "P0"
-      ],
+      "passes": false },
+
+    { "id": "P1-01", "milestone": "P1", "kind": "plan", "model": "opus", "after": ["P0"],
       "description": "docs/plans/2026-10-26-P1-lanes-serial.md: the function-by-function move of lib/driver.sh into the lane process, the coordinator and a shared record library, the state layout, the materialization sequence, and the list of existing checks whose record assertions move to the record branch.",
       "steps": [
         "the plan maps every function of lib/driver.sh (load_config .. deploy_check and the main loop) to its home: lib/lane.sh, the coordinator in lib/driver.sh, or a shared library both source (name fixed in the plan, e.g. lib/record.sh), and gives the record-lock helper's exact form `record() { flock 9; \"$@\"; } 9> \"$STATE/record.lock\"` with the list of calls it wraps (take_answers, sync, journal, note, metrics append, the passes flip, $STATE/sessions, $STATE/limits, commit_all and the push)",
@@ -88,13 +57,8 @@
         "it orders P1-02..P1-05, says what the suite looks like after each (green, with the record checks rewritten from P1-03 on), and writes Michael's after-run step (MAX_LANES=2 in ~/.config/harness/config.sh; nothing live to run during the run)",
         "`bash tests/run.sh` ends with every check passing (unchanged by this feature)"
       ],
-      "passes": false
-    },
-    {
-      "id": "P1-02",
-      "milestone": "P1",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "P1-02", "milestone": "P1", "kind": "build", "model": "opus",
       "description": "The pure pieces: features.mjs gains `lanes` (the milestones that can open now), `next` with a milestone argument and `pass`; scope_owns accepts the `<m>-` role prefix; config.sh and the user template gain the lane defaults.",
       "steps": [
         "`node lib/features.mjs lanes <list> <attempts> <max> <parked> <state dir>` prints in list order one `<m>\\t<base tags>` line per milestone that has a feature left to try, is not verified-<m>, needs-<m> or open ($STATE/lanes/<m>/pid alive), and whose every dependency has verified-<dep> in the state dir; its dependencies are the milestones named by its first feature's `after` plus any milestone another feature's `after` points into; a first feature without `after` depends on every earlier milestone; features with no milestone form lane `default`, first",
@@ -104,13 +68,8 @@
         "lib/config.sh defaults MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end, each with a short why; templates/user/config.sh has them commented; HARNESS_LANE_POLL (default 10, the suite sets 1) is documented in the driver's usage header",
         "`node --check lib/features.mjs`, `bash -n lib/scope.sh lib/config.sh`; the new names are in tests/fixtures/check-names.txt; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P1-03",
-      "milestone": "P1",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "P1-03", "milestone": "P1", "kind": "build", "model": "opus",
       "description": "The record travels on its own branch: the driver (still one loop) writes .harness/runs/<run>/ only on harness/<run> under the record lock, runs coding sessions in slot-0 on harness-lane/<run>/<m> with the record materialized and taken back, verifies on the lane tip and merges that tag; taint and held logic is gone and the record checks assert the record branch.",
       "steps": [
         "the shared record library of the plan exists with the `record()` flock helper wrapping every record write, $STATE/sessions replaces the shell counter n (MAX_SESSIONS is checked against the file) and $STATE/limits replaces limits; a check: two background writers through the helper with a stub delay (an env the library honours only in tests) appending 20 lines each lose none (40 lines, every one intact)",
@@ -121,13 +80,8 @@
         "the two invariant checks: after the demo run `git -C $T/origin.git diff --quiet run/demo/M2 main` (what lands on main is byte for byte what was verified) and no PR's diff in the stub gh's record touches a .harness/runs/ path while harness/demo holds every entry (entries.jsonl lines = sessions) and `git -C $T/origin.git ls-tree -r main --name-only | grep -c .harness/runs/` is 0",
         "the record checks listed in the plan are rewritten to assert the record on harness/<run> and that no code PR touches .harness/runs/; every other check keeps its text (every name in tests/fixtures/check-names.txt still present); `bash -n` on every shell file touched; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P1-04",
-      "milestone": "P1",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "P1-04", "milestone": "P1", "kind": "build", "model": "opus",
       "description": "lib/lane.sh runs one milestone as its own process (features, then verify and merge, exit codes 0/10-15) and lib/driver.sh becomes the coordinator that opens lanes under MAX_LANES=1 every HARNESS_LANE_POLL seconds, reaps them, computes the end reason and finishes with every slot removed.",
       "steps": [
         "lib/lane.sh <m> has a usage header, sources config.sh, prompt.sh, scope.sh, notify.sh and the record library, takes LANE, LANE_SLOT, LANE_PORT from its environment, and loops: control (pause: wait between sessions; stop: exit 14), limit_wait, the weekly gate, `F next ... <m>`, run_init in harness-<run>-<m>-svc on the lane's port, materialize, context, the clock line, the coding session in harness-<run>-<m>-s<n> (n from $STATE/sessions), the WIP commit, journal, the environmental branch (unbump, LIMIT_UNTIL), repair, the red-suite un-pass, metrics with `lane: \"<m>\"`, park; when `F milestone-done` holds it runs verify and merge_one and exits 0 (verified and merged, or proposed under pr), else 10 given up <id>, 11 parked <id>, 12 needs Michael, 13 limit ended, 14 stopped, 15 deadline; the reason is written to $STATE/lanes/<m>/exit; its EXIT trap runs services_down for the lane's scope",
@@ -137,13 +91,8 @@
         "`harness pause` makes the lane finish its session and wait (no new session, `paused` logged once by the coordinator) and `harness stop` ends with every $STATE/lanes/*/pid dead and no lanes/ directory left under $HARNESS_WORKTREES/proj",
         "the new checks live in tests/checks/NN-lanes-run.sh (or the rewritten run-1 file), names in tests/fixtures/check-names.txt; `bash -n lib/lane.sh lib/driver.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P1-05",
-      "milestone": "P1",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "P1-05", "milestone": "P1", "kind": "build", "model": "opus",
       "description": "harness continue reopens lanes from their origin branches, refuses a legacy run (code commits on the run branch) with three ways forward, continues a record-only branch, and a verified lane whose dependency is pr-held opens from the dependency's tag with its PR opened and not merged.",
       "steps": [
         "`harness continue <run>` reopens a lane whose branch origin/harness-lane/<run>/<m> exists by `checkout -B` from it instead of the base, attempts reset as today; a check: a run stopped mid-M2 and continued finishes M2 on the same lane branch with its earlier lane commits still in the merged PR",
@@ -151,13 +100,8 @@
         "under MERGE_POLICY=pr with M2 depending on M1: M1 verified is proposed (PR open, not merged, no merged-M1); M2 opens from origin/main with run/<run>/M1 merged in (`note \"lane M2 opened (... from <sha>)\"` where <sha> contains the tag), M2 verified opens its PR and `note \"M2 verified; its PR waits for M1 to merge\"` appears once; `harness merge <run>` afterwards merges both in order (the run 10 and run 14 checks keep their text and pass)",
         "the new checks live in tests/checks/NN-lanes-continue.sh, names in tests/fixtures/check-names.txt; README.md says what `harness continue` tells a legacy run; `bash -n bin/harness lib/driver.sh lib/lane.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P1-06",
-      "milestone": "P1",
-      "kind": "review",
-      "model": "opus",
+      "passes": false },
+    { "id": "P1-06", "milestone": "P1", "kind": "review", "model": "opus",
       "description": "An Opus review of the P1 diff from a file: Critical and Important findings fixed RED->GREEN, simplifications applied, the lanes decision file written and docs/architecture.md and README.md describing the serial lanes run.",
       "steps": [
         "`git diff origin/main...HEAD -- lib bin tests prompts templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-26/P1-review.diff` is read by an Opus subagent; its findings with a severity each are in docs/plans/2026-10-26-P1-review.md",
@@ -166,16 +110,9 @@
         "docs/architecture.md §3 lists lib/lane.sh, the coordinator and the record library; §4 the lane state, slots and the record lock; §5 the coordinator's loop as a diagram; §7 a record guard row replacing the tainted-tag rows; §8 the record branch and lane branches; §12 lanes beside MAX_PARALLEL_RUNS; §15's first bullet replaced; README.md names MAX_LANES, slots, and the lane exit codes' meanings in harness-log.md",
         "`bash -n` on every shell file P1 touched and `node --check` on every .mjs; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P2-01",
-      "milestone": "P2",
-      "kind": "plan",
-      "model": "opus",
-      "after": [
-        "P1"
-      ],
+      "passes": false },
+
+    { "id": "P2-01", "milestone": "P2", "kind": "plan", "model": "opus", "after": ["P1"],
       "description": "docs/plans/2026-10-26-P2-two-lanes.md: admission and ports, the re-base rule as git commands, slot reuse and cleanup, gc's lane pass, the record PR, status and summary wording, and the stub scenarios each check needs.",
       "steps": [
         "the plan gives the admission test (lanes alive < MAX_LANES; mem_available_gb >= MEM_MIN_AVAILABLE_GB + LANE_RESERVE_GB x alive via scope.sh's reader; USAGE_5H utilization < LANE_OPEN_BELOW_5H), where `MET usage` writes USAGE_5H from the real capture's unifiedWindows.five_hour (tests/fixtures/usage-limit.jsonl), and the port allocation under the record lock",
@@ -185,13 +122,8 @@
         "it orders P2-02..P2-06 and writes Michael's after-run steps from the spec (MAX_LANES=2 before the next run; the morning greps of harness-log.md, summary.json, metrics.jsonl, journalctl and systemctl; MAX_PARALLEL_RUNS=2 after a night with headroom)",
         "`bash tests/run.sh` ends with every check passing (unchanged by this feature)"
       ],
-      "passes": false
-    },
-    {
-      "id": "P2-02",
-      "milestone": "P2",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "P2-02", "milestone": "P2", "kind": "build", "model": "opus",
       "description": "Admission opens a second lane only with memory and five-hour headroom, each lane gets the first free port under the record lock, and a refused open is noted once per reason; the headroom decision supersedes D-H18.",
       "steps": [
         "before each open the coordinator checks lanes alive < MAX_LANES, mem_available_gb >= MEM_MIN_AVAILABLE_GB + LANE_RESERVE_GB x lanes alive (scope.sh's reader, HARNESS_MEMINFO in tests), and, when USAGE_5H exists, its utilization under LANE_OPEN_BELOW_5H; a refused open gives `note \"lane <m> waiting: <reason>\"` once per reason and is retried next poll",
@@ -200,13 +132,8 @@
         "checks in tests/checks/NN-lanes-two.sh: with MAX_LANES=2 and a list whose M2 is `after: []` the stub run has two `lane .* opened` notes before any `lane .* closed`, both milestones merge and the run ends `done`; with a HARNESS_MEMINFO fixture under the reserve the second lane waits with the note and opens once the fixture file is replaced; with a stub USAGE_5H at 0.80 it waits with the note",
         "journal/decisions/2026-10-26-parallel-runs-headroom.md supersedes D-H18 with the 2026-10-25 figures (five-hour at 12 %, seven-day 82 -> 83 % in 4.5 h) and the rule that admission is by headroom; names in tests/fixtures/check-names.txt; `bash -n` on the shell files touched, `node --check lib/metrics.mjs`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P2-03",
-      "milestone": "P2",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "P2-03", "milestone": "P2", "kind": "build", "model": "opus",
       "description": "The re-base rule: when main moved under a verified lane, disjoint files re-run the suite on the merged tree and re-tag, overlapping files get one verify round, LANE_REBASE=verify always verifies, and the merged tree is what lands on main.",
       "steps": [
         "when merge_one finds the merge-tree of the tag onto origin/main differs from the tag's tree, the lane merges origin/main into its branch (a conflict is today's needs-Michael path); the files main brought in (`git diff --name-only <tag>..HEAD`) and the milestone's own (`git diff --name-only <base>..<tag>`) are compared; disjoint: the suite runs on the merged tree in the lane's check scope and, green, `git tag -f -a run/<run>/<m>` at the merged commit is pushed with `--force` to that tag ref only, `note \"<m> re-based on <main>: <n> files, disjoint, suite green; re-tagged\"`, then the merge; overlapping: one more verify round on the merged tree under MAX_REBASE_ROUNDS, then tag and merge, else needs Michael; LANE_REBASE=verify makes every case the verify round",
@@ -214,13 +141,8 @@
         "under MERGE_POLICY=pr, `harness merge <run>` opens a slot from the tag and runs the same rule (a check with main moved between verify and merge)",
         "journal/decisions/2026-10-26-lane-rebase-disjoint.md (title, provenance, finding · choice · rejected: always re-verify, never re-run, merge without a check); names in tests/fixtures/check-names.txt; `bash -n` on the shell files touched; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P2-04",
-      "milestone": "P2",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "P2-04", "milestone": "P2", "kind": "build", "model": "opus",
       "description": "Slots are reused by checkout -B (ignored build directories survive across milestones), merged lane branches are deleted locally and on origin, and harness gc reaps lane branches, leftover slots and lane units of ended runs while leaving a live run alone.",
       "steps": [
         "a lane opens in the lowest free slot; a slot's worktree is created once per run and reused by `git checkout -B`; a check: the second milestone opened in slot-0 still finds an ignored directory (e.g. node_modules/marker) the first left",
@@ -228,13 +150,8 @@
         "cmd_gc: the harness-lane/ prefix joins the harness/ and harness-merge/ passes; slots under lanes/ of an ended run with a dead driver are removed by the worktree pass; --deps covers slots; a check: gc on an ended run with a leftover slot (a killed driver) removes it and stops a stub lane unit harness-<run>-M1-s2.scope, and gc of a run with a live driver touches no slot and no lane unit",
         "names in tests/fixtures/check-names.txt (tests/checks/NN-lanes-slots.sh and the gc file); `bash -n bin/harness lib/lane.sh lib/driver.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P2-05",
-      "milestone": "P2",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "P2-05", "milestone": "P2", "kind": "build", "model": "opus",
       "description": "The record PR: finish's last step pushes harness/<run> and opens `<run>: run record` against main, merged under auto, left under pr, skipped under RECORD_PR=off; the end-of-queue gc deletes a merged run's record branch and worktree, never finish itself.",
       "steps": [
         "finish, after the retro and the ledger, pushes the record branch and runs `gh pr create --base main --head harness/<run> --title \"<run>: run record\"` (or reuses the open one) with the report as body; under MERGE_POLICY=auto it runs `gh pr merge --merge` and the PR head is gone with it; under pr the PR is left with `note` saying so; RECORD_PR=off opens none",
@@ -242,13 +159,8 @@
         "cmd_gc's record_only keeps its meaning; the queue runner's end-of-queue `gc --all-merged --deps` deletes a merged run's record branch locally and on origin and its record worktree, the ledger keeping the record; a check in the gc file",
         "names in tests/fixtures/check-names.txt; `bash -n lib/driver.sh bin/harness lib/queue.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P2-06",
-      "milestone": "P2",
-      "kind": "build",
-      "model": "opus",
+      "passes": false },
+    { "id": "P2-06", "milestone": "P2", "kind": "build", "model": "opus",
       "description": "harness status prints one line per open lane, summary.json gains lanes {max_open, lane_hours, wall_hours} with a report.md line, and the initializer and run prompts say how milestones share files and slots.",
       "steps": [
         "`harness status <run>` prints, for a running run, one line per open lane `lane <m> · <feature> · session <n> · port <p> · slot <k> · <units and MemoryCurrent>`; a check reads it during a held stub run with two lanes open",
@@ -256,13 +168,8 @@
         "prompts/initializer.md says milestones that may run side by side should touch different files, shared docs (README.md, docs/architecture.md) are edited in a milestone's closing review feature, and a feature independent of its predecessors in the same milestone gets `after`; prompts/parts/run.md says other lanes of this run work in other slots; a check greps both",
         "names in tests/fixtures/check-names.txt; `node --check lib/summary.mjs`, `bash -n bin/harness`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    },
-    {
-      "id": "P2-07",
-      "milestone": "P2",
-      "kind": "review",
-      "model": "opus",
+      "passes": false },
+    { "id": "P2-07", "milestone": "P2", "kind": "review", "model": "opus",
       "description": "An Opus review of the P2 diff from a file: Critical and Important findings fixed RED->GREEN, simplifications applied, decisions and docs complete for two lanes.",
       "steps": [
         "`git diff origin/main...HEAD -- lib bin tests prompts templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-26/P2-review.diff` is read by an Opus subagent; its findings with a severity each are in docs/plans/2026-10-26-P2-review.md",
@@ -271,7 +178,5 @@
         "docs/architecture.md §4 names USAGE_5H and the slots; §5 shows admission in the coordinator diagram; §8 the record PR; §12 lanes beside MAX_PARALLEL_RUNS with the headroom rule; §15 updated; README.md names MAX_LANES, LANE_RESERVE_GB, LANE_OPEN_BELOW_5H, LANE_REBASE, RECORD_PR, slots, the record PR, and the after-run steps (MAX_LANES=2, the morning greps); templates/user/config.sh has every lane key commented",
         "`bash -n` on every shell file P2 touched and `node --check` on every .mjs; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
-    }
-  ]
-}
+      "passes": false }
+  ] }
