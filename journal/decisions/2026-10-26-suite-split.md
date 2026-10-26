@@ -111,3 +111,36 @@
   - **Printing replayed failures:** the replayed check is counted in its own file, and state that is wrong fails
     this file's own checks. A replay that leaves out a section can fail a check by design (run 2 without run 1 fails
     its curl.log check), so a line on every run that means nothing would teach readers to ignore the line.
+
+### The 150 s target, re-measured (P0-02 attempt 2)
+
+*(2026-10-26, run agent-harness-2026-10-26, feature P0-02, second attempt)*
+
+- **Finding:** each file timed under `/usr/bin/time`, four at a time, largest first (wall 166 s): the slot times add
+  up to **636 s**, of which 547 s is CPU in the files' own process trees. With four jobs no schedule ends before
+  636 / 4 = **159 s**, so splitting or reordering files can't reach 150 s. A split only adds replays.
+  | file | wall | CPU | waiting |
+  |---|---|---|---|
+  | 12-run-4-…-debrief-tmux | 147 s | 135 s | 13 s |
+  | 11-run-2-…-desk | 134 s | 113 s | 21 s |
+  | 06-scope-sh-…-scratch | 121 s | 106 s | 15 s |
+  | 27-l5-queue-runner | 44 s | 2.5 s (its runs run on the tmux server) | 41 s |
+  | 08-harness-eval-run-e2 | 39 s | 40 s | – |
+  | the other 23 files | 151 s | | |
+- **Where the CPU goes** (file 12 under `strace -f`, execs only): 28,325 programs started, among them 5,461 `git`,
+  2,239 `node`, and about 10,000 one-millisecond `cat`/`date`/`basename`/`dirname`/`sed`/`rm`. Each `node` start
+  costs 30 ms on this i7-6700K (`node -e 0` alone is 29 ms), so node startup is about 67 s of the file's 123 s of CPU when
+  run alone. 1,684 of those calls are the driver's (`features.mjs model`, `summary`, `milestone-done`, `passes`,
+  `milestones`, `metrics.mjs limit`/`final`/`usage`/`append`, …), which is the harness's design: one `node` per
+  question. Sleeps are a small part (file 12: about 25 s, mostly in the checks' own lines).
+- **Tried, no gain:** skipping replayed checks instead of running them silently (run 1 took 12.6 s instead of 12.9 s:
+  the cost is `harness start`, not its checks); `NODE_COMPILE_CACHE` (31 ms → 30 ms per call);
+  `--v8-pool-size=0`, `--jitless`, `--no-opt`, `--single-threaded` (all the same or slower).
+- **What would reach it**, both outside a suite split: (a) fewer `node` starts in the driver, e.g. caching
+  `F model` (pure in its argument) and the read-only list queries keyed on the list's content. That is about 8 % of
+  file 12's CPU by count, so close to 150 s but not a margin. (b) Rewriting the debrief, desk and services_down checks
+  so their state chains are shorter. Both change code the spec put out of P0-02's scope (no rewrite, no harness
+  change), so neither is done here.
+- **D2 *default*:** the suite stays as measured (165 s with `TEST_JOBS=4`, 599 s with `TEST_JOBS=1`, peak 390 MB),
+  and step 5's "under 150 s" is reported as not met rather than claimed. A question for Michael: accept "under
+  180 s, measured and recorded" for S2, or queue (a), the driver's `node` calls, as a feature of its own.
