@@ -9,6 +9,19 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 19:16 · M1-01 · passes
+
+Wrote docs/plans/2026-10-26-M1-retro-backlog.md: row schema and defaults, lib/backlog.mjs's exported API and CLI, harness backlog forms, retro()/finish() handling of retro-proposals.json via scratch past restrict, retro prompt Backlog section, the two debrief changes, STUB_RETRO_PROPOSALS, check names for files 35/36, the 8 seed rows, the live import steps.
+
+- **Files:** docs/plans/2026-10-26-M1-retro-backlog.md
+- **Verified:** grep of the plan for each step's names (schema, 5 statuses, 3 CLI forms, STUB_RETRO_PROPOSALS, 35/36 file names, flock 9, HARNESS_SCRATCH, lib/debrief.sh:164-165, the 8 seed ids); driver line refs re-read (retro 499-511, ledger 513-525, finish 527-569); suite green 395 (cached, plan-only tree)
+- **Tests:** 395 → 395
+- **Discovery** (affects M1-04): restrict also deletes retro-proposals.json; the plan has retro() copy it to $SCRATCH before restrict only when it differs from the rstart copy (a continued run's old file isn't re-merged), leave it out of the reverted-edits note, and put it back in the run record as retro.md is, so the ledger keeps the evidence
+- **Discovery** (affects M1-02, M1-05): The debrief gatherer needs run ids to flag re-raised items, so it uses `backlog.mjs list --jsonl --max-bytes 6000` (ordered rows); the retro prompt uses the text list (`<id> · <status> · seen <n> · <title>…`), which carries the `test-counts · specced` prefix M1-05 greps
+- **Discovery** (affects M1-03, M1-04, M1-05): `run 16` is already the parking run's label (tests/checks/13-run-2-michael-sets-desk.sh:261); the plan's checks in 36-run-16-retro-backlog.sh say `backlog run` instead
+- **Question for Michael:** Defaults taken in the plan (to be recorded in journal/decisions/2026-10-26-retro-backlog.md by M1-04): unset links are null; a proposals file is all-or-nothing (≤10 items, kebab ids ≤60 chars); seed rows have first_seen {run: seed, date: 2026-10-25}, runs_seen []. Change any?
+- *01-M1-01 · claude-opus-5-5*
+
 ### 2026-10-26 19:12 · init · passes
 
 23 features: M1 6 (plan, backlog.mjs, CLI + seed, retro emits and driver merges, retro prompt + debrief, review), M2 3 (block + decisionsStore, prompts and templates with folded review, docs), M3 5 (plan, Gotchas note, resolved questions, current rules, review), M4 2 (memlint, run-start notes + CLI), M5 2 (contract, tests-end per session), M6 5 (plan, gate, escalation, summary, review).
