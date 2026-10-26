@@ -113,8 +113,10 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 ## Steering
 
 - **Phone:** `progress.md` is rendered from the journal (`entries.jsonl`) after every session and is still the phone view; sessions write `entry.json`, the driver appends it. Steer by editing `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
-  `status: stop`; answers under `## Answers`. The driver pulls before every session.
-- **Box:** `harness pause|resume|stop|answer <run>`, `harness attach <run>` (tmux: driver · log · supervisor). When the driver exits, the
+  `status: stop`, optionally with why (`status: stop the spec changed`); answers under `## Answers`. The driver pulls before every session.
+- **Why a stop:** either reason ends up in harness-log.md, `ended`, summary.json's `end_reason` and the retro prompt as
+  `stopped by Michael: <why>` (the `--why` one wins when both are set); without one, `stopped by Michael` as before.
+- **Box:** `harness pause|resume|stop|answer <run>` (`harness stop <run> --why "<text>"` records why), `harness attach <run>` (tmux: driver · log · supervisor). When the driver exits, the
   supervisor window closes, the driver window's scrollback goes to `<state>/tmux-driver.txt` (its last 2000 lines, tmux's `history-limit`;
   `run.log` beside it has everything), and the session `h-<run>`
   closes after `TMUX_KEEP_HOURS` (24; `0` = at once), or sooner: `harness gc <project>` and the queue runner, as it

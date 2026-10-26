@@ -24,6 +24,7 @@
 #   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each)
 #   harness attach <run-id>                      the run's tmux session (driver · log · supervisor)
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
+#   harness stop <run-id> --why "<text>"         the same, and harness-log.md and ended say "stopped by Michael: <text>"
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
 #   harness parked [<run-id>] [--json]           what parked features wait on: why, the INBOX question, the next commands
 #   harness desk <run> [--why "…"] | --debrief   a Remote Control session that briefs you and takes your answers (tmux h-desk)
@@ -330,12 +331,20 @@ cmd_queue() {
   esac
 }
 
-cmd_control() {   # pause|resume|stop run-id
+cmd_control() {   # pause|resume|stop run-id [--why "<text>"] (stop only)
   local st; st=$(state_of "${2:?usage: harness $1 <run-id>}")
+  [[ $1 == stop ]] || (( $# <= 2 )) || die "usage: harness $1 <run-id>"
   case $1 in
     pause) touch "$st/PAUSE"; echo "pausing $2 after the current session" ;;
     resume) rm -f "$st/PAUSE"; echo "resuming $2 (within a minute)" ;;
-    stop) touch "$st/STOP"; echo "stopping $2 after the current session" ;;
+    stop)   # the reason goes in STOP, on one line: the driver ends with "stopped by Michael: <why>" (decisions/2026-10-26-stop-reason)
+      local why=""
+      if (( $# > 2 )); then
+        [[ $3 == --why && $# == 4 ]] || die "usage: harness stop <run-id> [--why \"<text>\"]"
+        why=$(tr -s '\n\t\r' '   ' <<< "$4" | sed 's/^ *//; s/ *$//'); [[ -n $why ]] || die "harness stop: --why needs a reason"
+      fi
+      if [[ -n $why ]]; then printf '%s\n' "$why" > "$st/STOP"; else touch "$st/STOP"; fi
+      echo "stopping $2 after the current session" ;;
   esac
 }
 
@@ -494,7 +503,7 @@ case ${1:-help} in
   report) shift; cmd_report "$@" ;;
   trends) node "$HARNESS_HOME/lib/summary.mjs" trends "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/runs.jsonl" "${@:2}" ;;
   attach) tmux attach -t "=$(tmux_name "${2:?usage: harness attach <run-id>}")" ;;
-  pause|resume|stop) cmd_control "$1" "${2:-}" ;;
+  pause|resume|stop) cmd_control "$1" "${2:-}" "${@:3}" ;;
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;

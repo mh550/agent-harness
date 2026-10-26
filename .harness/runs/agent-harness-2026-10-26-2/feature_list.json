@@ -80,7 +80,7 @@
         "journal/decisions/2026-10-26-stop-reason.md exists (finding · choice · rejected) and cites R8 as already done (lib/driver.sh's EXIT trap writes `$END_REASON`); docs/architecture.md §4's markers row and README.md § Steering say the optional reason for both paths",
         "`bash -n bin/harness lib/driver.sh` passes; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F1-06",

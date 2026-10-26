@@ -169,6 +169,13 @@ control() {   # → run | pause | stop
   else echo run; fi
 }
 
+stop_why() {   # → "stopped by Michael[: <why>]": STOP's line (harness stop --why), else the text after control()'s `status: stop`
+  local w s; w=$(head -1 "$STATE/STOP" 2> /dev/null)
+  s=$(sed -n 's/^status:[[:space:]]*//p' "$RUN_DIR/INBOX.md" 2> /dev/null | head -1 | tr -d '\r')
+  [[ -z $w && $s =~ ^stop[^[:alnum:]]+([[:alnum:]](.*[^[:space:]])?) ]] && w=${BASH_REMATCH[1]}   # "stopped", "stop" or "stop -" give none
+  echo "stopped by Michael${w:+: ${w:0:200}}"
+}
+
 demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
   local f; for f in "$STATE_ROOT"/queue/*-continue-"$RUN_ID".args "$STATE_ROOT"/queue/held/*-continue-"$RUN_ID".args; do
     [[ -f $f ]] && grep -qx -- --requested "$f" || continue
@@ -470,7 +477,7 @@ verify_ready() {
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
   local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x
   rstart=$(git rev-parse HEAD)
-  HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER prompt retro
+  HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
   reverted=$(restrict "$rstart" nothing retro | paste -sd' ')
@@ -659,7 +666,7 @@ while :; do
     log "resumed"; continue
   fi
   [[ $c == stop ]] && demote_requests
-  [[ $c == stop ]] && { note "stopped by Michael"; finish "stopped by Michael"; }
+  [[ $c == stop ]] && { why=$(stop_why); note "$why"; finish "$why"; }
   limit_wait
   (( $(date +%s) >= DEADLINE )) && continue
   verify_ready || continue   # 2 = deferred by a usage limit: wait for the window first

@@ -903,6 +903,30 @@ check "a stop makes a queued requested continuation of its run automatic (the la
 rm -f "$HARNESS_STATE"/queue/*.args
 check "second run got its own port"       '[[ $(cat "$HARNESS_STATE/proj/stoppy/port") != $(cat "$HARNESS_STATE/proj/demo/port") ]]'
 
+# ---- run 2b: a stop records why (R7): `harness stop --why` and `status: stop <why>`; the retro prompt carries it ----
+check "a stop without a reason says just: stopped by Michael (the note and ended)" 'hlog stoppy | grep -q "· stopped by Michael$" && grep -q "^stopped by Michael · [0-9-]* [0-9:]*$" "$HARNESS_STATE/proj/stoppy/ended"'
+STUB_CLI_STOP="the spec changed" "$H" start "$T/proj" whycli --spec SPEC.md --foreground > "$T/run2b.out" 2>&1
+check "harness stop --why: the note and ended say stopped by Michael: <why>" 'hlog whycli | grep -q "· stopped by Michael: the spec changed$" \
+  && grep -q "^stopped by Michael: the spec changed · " "$HARNESS_STATE/proj/whycli/ended" && grep -qx "the spec changed" "$HARNESS_STATE/proj/whycli/STOP"'
+STUB_CLI_STOP=- "$H" start "$T/proj" whybare --spec SPEC.md --foreground > "$T/run2b-bare.out" 2>&1
+check "harness stop without --why: an empty STOP, and stopped by Michael as before" '[[ -f $HARNESS_STATE/proj/whybare/STOP && ! -s $HARNESS_STATE/proj/whybare/STOP ]] \
+  && hlog whybare | grep -q "· stopped by Michael$" && grep -q "^stopped by Michael · " "$HARNESS_STATE/proj/whybare/ended" \
+  && ! "$H" stop whybare --why "" 2> /dev/null && ! "$H" stop whybare --because x 2> /dev/null && [[ ! -s $HARNESS_STATE/proj/whybare/STOP ]] \
+  && ! "$H" pause whybare --why x 2> /dev/null && [[ ! -f $HARNESS_STATE/proj/whybare/PAUSE ]]'
+STUB_PHONE_STOP="the spec changed" "$H" start "$T/proj" whyphone --spec SPEC.md --foreground > "$T/run2b-phone.out" 2>&1
+check "status: stop <why> from the phone: the same note, ended and services note" 'hlog whyphone | grep -q "· stopped by Michael: the spec changed$" \
+  && grep -q "^stopped by Michael: the spec changed · " "$HARNESS_STATE/proj/whyphone/ended" && hlog whyphone | grep -q "· services stopped (stopped by Michael: the spec changed)$"'
+check "the retro prompt carries the end reason" 'grep -q "{{END_REASON}}" "$HERE/../prompts/retro.md" && grep -q "stopped by Michael: the spec changed" "$HARNESS_STATE/proj/whyphone/prompt-retro.md"'
+STUB_PHONE_STOP=", blocked · 2026-11 usage limit" "$H" start "$T/proj" whyodd --spec SPEC.md --foreground > "$T/run2b-odd.out" 2>&1
+check "a reason after any separator is kept whole, \" · 2026-\" in it included" 'S=$T/wt/proj/whyodd/.harness/runs/whyodd/summary.json \
+  && [[ $(jq -r .end_reason "$S") == "stopped by Michael: blocked · 2026-11 usage limit" ]] && hlog whyodd | grep -q "· stopped by Michael: blocked · 2026-11 usage limit$"'
+check "the debrief page never reads a stop reason's words as its tone" 'node --input-type=module -e "import { card } from \"$HERE/../lib/page.mjs\"; const c = r => card({ run: \"r\", project: \"p\", end_reason: r }, \"\");
+  process.exit(c(\"stopped by Michael: blocked, failed\").includes(\"pill muted\") && c(\"blocked on A\").includes(\"pill warn\") ? 0 : 1)"'
+check "a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason" '[[ $("$H" continue whycli --queued) == "skipping queued continuation of whycli: Michael stopped it" ]] \
+  && [[ $(jq -r .end_reason "$T/wt/proj/whycli/.harness/runs/whycli/summary.json") == "stopped by Michael: the spec changed" ]] \
+  && "$H" queue add --continue whycli > /dev/null && grep -qx -- --requested "$(compgen -G "$HARNESS_STATE/queue/*-continue-whycli.args")"'
+rm -f "$HARNESS_STATE"/queue/*-continue-whycli.args
+
 # ---- run 3: a verifier that always rejects; C is independent of M1 ----
 SPY3='printf "%s · %s\n" "$(printf "%s\n" "$@" | sed -n "s/^Title: //p")" "$(git -C "$STUB_DIR/origin.git" log -1 --format=%s harness/strict)" >> "$STUB_DIR/spy-strict.log"'
 STUB_CURL_SPY=$SPY3 STUB_STRICT_VERIFIER=1 STUB_INDEPENDENT_M2=1 "$H" start "$T/proj" strict --spec SPEC.md --foreground > "$T/run3.out" 2>&1

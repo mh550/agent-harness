@@ -86,7 +86,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Journal | `…/entries.jsonl` (one line per session: feature, outcome, what changed, evidence, dead ends, discoveries) | driver only (`ingest`) | `render`, `pack`, retro, evals | yes |
 | Context pack | `…/context.md` (at most `CONTEXT_PACK_BYTES`; five parts in priority order: this feature's earlier attempts, dead ends, failed verify rows and questions; Michael's answers; discoveries that name it, its milestone or the run; the latest entry of each feature in its `after`; the last 3 entries; each item ends `→ entries.jsonl:<line>`); a copy in `logs/*.context.md` | driver (`entries.mjs pack`) before every coding and verify session, committed `HARNESS: context pack for <id>` | the session, first (prompts say `Read context.md first`); `eval probes` | yes |
 | Progress log | `…/progress.md` (newest first: 15 in full, then one line each) and `…/progress-archive.md` (every entry in full; a continued legacy run's old progress.md at its end) | driver (`entries.mjs render` after every journal append, decisions/2026-10-22-rendered-progress); a legacy run's sessions until it is continued | sessions, Michael (phone), retro, PR bodies (the archive), verify's `F evidence` | yes |
-| Steering | `…/INBOX.md` (`status: run/pause/stop`, `## Answers`) | Michael (GitHub app), `harness answer` via the driver | driver, sessions | yes |
+| Steering | `…/INBOX.md` (`status: run/pause/stop [<why>]`, `## Answers`) | Michael (GitHub app), `harness answer` via the driver | driver, sessions | yes |
 | Brief | `…/brief.md` | driver, from `--brief` at start/continue | every prompt | yes |
 | Driver events | `…/harness-log.md` | driver (`note`) | Michael, summary, retro | yes |
 | Metrics | `…/metrics.jsonl` (one row per session: kind, role, model, cost, wall/api seconds, turns, `tokens_in cache_read cache_write tokens_out cache_hit_rate context_peak`, `orient_tokens orient_turns orient_s`, exit, result, `mem_peak_mb`) | driver (`metrics.mjs append`) | summary, report (memory peaks) | yes |
@@ -97,7 +97,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Harness version | `~/.local/state/harness/<p>/<run>/{harness-version,harness-dirty}` (last harness commit outside `ledger/`, and whether the tree has changes outside it; `lib/version.sh`; rewritten each segment, shown on the `run <id> on` line, copied into `summary.json` and the ledger row) | driver | summary, `harness trends --by version` | no |
 | Attempts | `…/attempts.json` | driver (bump, unbump, grant, reset) | scheduler | no |
 | Parked features | `…/parked.json` (`id → {answers, why, at}`; `answers` = hash of INBOX.md from `## Answers` on) | driver (park after a `PARKED:` session; unpark when the hash changes) | scheduler, summary, `harness parked` | no |
-| Markers | `…/{driver.pid, ended, PAUSE, STOP, verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, verify-rounds-<m>, tests-start, tests-end, testcount-nomatch, waited-<t>, port, meta.env, run.env, brief.md, inbox.md}` | driver, CLI | driver, CLI, summary | no |
+| Markers | `…/{driver.pid, ended, PAUSE, STOP (empty, or the reason of `harness stop --why`, one line), verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, verify-rounds-<m>, tests-start, tests-end, testcount-nomatch, waited-<t>, port, meta.env, run.env, brief.md, inbox.md}` | driver, CLI | driver, CLI, summary | no |
 | Driver scrollback | `…/tmux-driver.txt`: a tmux-started run's driver window, captured when the driver exits (its last `history-limit` lines, tmux's default 2000; the whole record is `run.log`) | the driver window (`bin/harness`) | you, after `h-<run>` closes | no |
 | Last outputs | `…/{check-last.out, init.out, teardown.out}`: the last full suite's, the init's and the teardown's output, copied from scratch by `finish` before it deletes scratch (`check-last.out` is the final tree's `check-<key>.out` when scratch has it, else the last `check.out`; a failed copy keeps scratch; the note lists what was kept) | driver (`scratch_done`, `lib/prompt.sh`) | you, after the run | no |
 | Suite cache | `…/green/green-<key>`: one marker per code tree that went green, holding its test count; outlives scratch; `verify()` removes the verified tree's before each verify | `lib/check.sh` | `check.sh` (a cached green), `finish` (`tests-end`) | no |
@@ -122,7 +122,7 @@ harness start ─► worktree + branch ─► driver:
   [resume?] merge main in before any session, the initializer included (and reload the config if it changed) · merge verified (v3) milestones
   [no list] init + suite ─► INITIALIZER ─► feature_list.json, entry.json ─► entries.jsonl ─► progress.md (rendered)
   loop:
-    stop if: session cap · deadline · STOP/"status: stop"
+    stop if: session cap · deadline · STOP/"status: stop [<why>]" → "stopped by Michael[: <why>]"
     pause while: PAUSE/"status: pause" (services down first, the note committed and pushed)
     unpark every feature parked under different INBOX answers
     wait while: LIMIT_UNTIL is in the future (any run set it); services down first when the wait is over SVC_IDLE_STOP_MIN
@@ -164,7 +164,7 @@ harness start ─► worktree + branch ─► driver:
 | `session cap (N)` | the session budget is spent | a continuation is queued (`AUTO_CONTINUE=1`, at most `AUTO_CONTINUE_MAX`=3, within the run's `--until`, given-up features stay given up) |
 | `deadline`, `deadline (paused)` | the run's time (`HOURS` or `--until`) is up | nothing automatic: time is your budget. `harness continue` or queue it for another night |
 | `usage limit (N sessions refused in a row)` | the plan refused `MAX_LIMIT_HITS` sessions in a row | the run ends so the queue isn't blocked; `harness continue` later |
-| `stopped by Michael` | STOP or `status: stop` | `harness continue` when you want |
+| `stopped by Michael`, `stopped by Michael: <why>` | STOP or `status: stop`; the reason is `STOP`'s line (`harness stop --why`), else the text after `status: stop`, cut at 200 characters (`stop_why`, decisions/2026-10-26-stop-reason). The retro prompt says it (`{{END_REASON}}`) | `harness continue` when you want |
 | `feature-list edits` | MAX_REPAIRS sessions in a row edited the list | a prompt/model problem: look before continuing |
 | `initializer failed` / `usage limit before the feature list` | no valid list | fix and `harness continue` (it re-runs the initializer) |
 | `driver exited unexpectedly` | the trap fired without a reason (crash, kill) | the trap stopped the session's scope and the services first (`services stopped (driver exited)` in `run.log`; not after a SIGKILL); `harness continue` resumes safely: everything is on disk |
