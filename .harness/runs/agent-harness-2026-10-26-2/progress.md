@@ -9,6 +9,22 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file, so the questions below are for after the run.
 
+### 2026-10-26 09:07 · F1-01 · passes
+
+Wrote docs/plans/2026-10-26-F1-driver-cli.md: per item (R1, R4, R6, R7, R11) the files, harness-log.md lines, check names and tests/run.sh sections, the five fixtures and their sources, the five decision files, and what main already has (R8 done at lib/driver.sh:104/108). No code changed.
+
+- **Files:** docs/plans/2026-10-26-F1-driver-cli.md
+- **Verified:** Each step anchor grepped in the plan; check.sh full run green in 599 s, 325/325 checks passed (tests/run.sh).
+- **Tests:** 325 → 325
+- **Discovery** (affects F1-04): No check exercises finish()s automatic continuation (lib/driver.sh:519); the plan adds a run `capped` (run.env MAX_SESSIONS=1) for it.
+- **Discovery** (affects F1-04): Two checks (queue section ~1020, L5 ~1598) queue `--continue stoppy-o` (fake stopped run, empty meta.env) and rely on the skip; after R6 they must pass --automatic or cmd_continue runs on an empty meta.env.
+- **Discovery** (affects F1-05): services_down gets finish()s whole reason, so a stop with a reason changes the services note and the teardown marker name; run 2 keeps a bare STUB_PHONE_STOP=1 and the reason paths get a new run 2b section.
+- **Discovery** (affects F1-02): The new `test count: no match` note will appear in every stub run whose suite prints nothing (demo uses `test ! -f BROKEN`); check no existing check counts harness-log.md lines exactly.
+- **Question for Michael:** D1 default: the driver's and the debrief's continuations pass --automatic; every other `harness queue add --continue` (you, the desk, n8n) is --requested and runs even after your stop. OK?
+- **Question for Michael:** D2 default: a suite with no output also gets the once-per-run `test count: no match` note. OK?
+- **Question for Michael:** D3 default: go is counted from `--- PASS` lines only, so it needs `go test -v`. OK?
+- *01-F1-01 · claude-opus-5-5*
+
 ### 2026-10-26 08:51 · init · passes
 
 12 features: F1 6 (plan, R1 test counts, R4 verify clears the suite cache, R6+R11 queue continuations and numbering, R7 stop reason, review), F2 6 (plan, R3 lint pure, lint wiring + R10 after line, R2 review sizing, R5 verify before the deadline, review). F1 and F2 independent (F2-01 after []; F2 chained inside). F3 dropped per the brief.
