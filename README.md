@@ -254,7 +254,8 @@ Results go to `evals/results/<stamp>-<sha>-<label>/` (git-ignored). The ref's wo
 or later commit of the source) and the runs' worktrees stay beside it for `eval probes`; `rm -rf
 /tmp/harness-eval/<stamp>` once you're done with them. **Evals are real sessions and cost money** (about $28 per
 eval of the default set); they are Michael's to run, the overnight run never does. The commands, in order, with the
-cost: `evals/NEXT.md`.
+cost: `evals/NEXT.md`; its `## 5. M6: the review gate` compares the harness before the review gate (tag `…/M5`) with M6
+(`summary.json`'s `review.cost_pct` and `review.found_nothing` say what the reviews cost and found).
 
 ## Tests
 

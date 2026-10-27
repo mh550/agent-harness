@@ -1,6 +1,6 @@
 # The review gate: a milestone review's model by its measured diff, one Opus round after a Sonnet finding
 
-*(2026-10-27, run agent-harness-2026-10-25-memory, features M6-02 and M6-03; spec `docs/specs/2026-10-25-memory.md`
+*(2026-10-27, run agent-harness-2026-10-25-memory, features M6-02, M6-03 and M6-04; spec `docs/specs/2026-10-25-memory.md`
 § M6 = `docs/specs/2026-10-22-retro-followups.md` § D, plan `docs/plans/2026-10-26-M6-review-gate.md`)*
 
 - **Finding:** the milestone review feature is 14–34 % of a run (24.5 % across the 12 runs with data) and always ran
@@ -27,6 +27,12 @@
      Opus subagents), so a Sonnet review session saves less than its model suggests; whether to change that line is
      asked in M6-03's entry.
   6. *default* A review that already ran on Opus (at or over the threshold, or the round itself) never escalates.
+  7. *default* (M6-04) What it saves is measured, not claimed: `summary.json` gains `review.cost_pct` (the review
+     role's cost over the run's, in % with one decimal, null without a review session) and `review.found_nothing`
+     (review features whose last entry reports `0 Critical, 0 Important`, out of `review.reviews` with an entry);
+     `report.md` shows both in a `Review share` row, the ledger row adds `review_cost_pct` (`harness trends` keeps
+     its columns), and `rework` no longer counts the Opus round as a second try. The cost claim waits for the evals
+     in `evals/NEXT.md` § 5, which Michael runs.
 - **Rejected:** skipping the milestone review when in-session reviews found nothing (§ D: unsafe, the rane Critical
   was cross-feature); measuring from the milestone's first commit (the driver keeps no per-milestone start marker; the
   merge base is what main lacks, which is what a review should read); re-using `verify()`'s two-model loop (the coding

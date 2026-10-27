@@ -406,7 +406,7 @@ dj-crate-streaming's live protocols, rane-one-mixxx's hardware); the others have
    and **`mem_peak_mb`**: the session scope's `MemoryPeak` in MB, null when it ran uncapped
    (`decisions/2026-10-25-session-memory-peaks`).
 2. **Per run**: `summary.json` (features, milestones verified/merged, tests start→end, cost by role and model, time
-   by role, **tokens**, cost and tokens per verified feature, median orientation, first-attempt pass rate, rework, verify-fail rate, `harness` version and dirty flag, sessions real/refused, guard counts, every non-passing feature with an automatic cause), `report.md`
+   by role, **tokens**, cost and tokens per verified feature, median orientation, first-attempt pass rate, rework (a review gate's Opus round is not a second try), verify-fail rate, **`review`** (`cost_pct`: the review role's share of the run's cost in % with one decimal, null without a review session; `found_nothing`: review features whose last entry reports `0 Critical, 0 Important`, of `reviews` that have one; a `Review share` row in `report.md`, `review_cost_pct` in the ledger row; decisions/2026-10-27-review-gate), `harness` version and dirty flag, sessions real/refused, guard counts, every non-passing feature with an automatic cause), `report.md`
    (the writeup: `harness report <run>`; its `Memory peaks over 2 GB` section lists `<feature> · <model> · <peak> MB`
    per session over 2048 MB, read from the `metrics.jsonl` beside `summary.json`, which carries no peak), and `retro.md` (a Sonnet session classifies "not done" features into
    spec / size / dependency / permission / environment / model / harness causes and proposes ≤ 3 harness changes,

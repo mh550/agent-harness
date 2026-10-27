@@ -34,4 +34,24 @@ check "review gate: a review on opus never escalates; the escalation round's clo
   && grep -qE "^Clock: .* · Review round 2 of 2 \(escalated: sonnet found 1 Critical, 0 Important\)$" "$p2" \
   && grep -qE "^Review diff: [0-9]+ files, [0-9]+ changed lines .*; under 400; sonnet$" "$p2" && ! grep -q "Review round" "$(plog rsmall R)"'
 
+RF='import { reviewFindings as f } from "'$HERE'/../lib/entries.mjs"; const j = x => JSON.stringify(f(x));
+  process.exit(j("R: 2 Critical, 3 Important, 0 Minor") === "{\"critical\":2,\"important\":3}" && j("found 1 important issue") === "{\"critical\":0,\"important\":1}"
+    && j("0 Critical, 0 Important") === "{\"critical\":0,\"important\":0}" && f("R: stub work (1)") === null && f("") === null && f(undefined) === null ? 0 : 1);'
+check "review gate: reviewFindings reads <n> Critical and <n> Important, null without either" 'node --input-type=module -e "$RF"'
+RS='import { reviewSummary as r } from "'$HERE'/../lib/summary.mjs";
+  const list = [{ id: "A", kind: "build" }, { id: "R", kind: "review" }, { id: "S", kind: "review" }, { id: "Q", kind: "review" }];
+  const ents = [{ feature: "R", summary: "R: 1 Critical, 0 Important" }, null, { feature: "R", summary: "R: 0 Critical, 0 Important" },
+    { feature: "S", summary: "S: 0 Critical, 2 Important" }, { feature: "A", summary: "0 Critical, 0 Important" }];
+  const a = r(list, [{ role: "build", cost_usd: 2 }, { role: "review", cost_usd: 1 }], ents), b = r(list.slice(0, 1), [{ role: "build", cost_usd: 2 }], []);
+  const z = r(list, [{ role: "review", cost_usd: 0 }], ents);
+  process.exit(a.cost_pct === 33.3 && a.found_nothing === 1 && a.reviews === 2 && b.cost_pct === null && b.found_nothing === 0 && b.reviews === 0 && z.cost_pct === null ? 0 : 1);'
+check "review gate: reviewSummary gives the review share with one decimal, null without reviews, and counts the reviews that found nothing" 'node --input-type=module -e "$RS"'
+sj() { echo "$T/wt/proj/$1/.harness/runs/$1/summary.json"; }   # <run> → its summary.json
+check "review gate: summary.json and report.md carry review.cost_pct and review.found_nothing; the ledger row has review_cost_pct" \
+  'jq -e ".review.found_nothing == 1 and .review.reviews == 1 and .review.cost_pct > 0 and .review.cost_pct < 100" "$(sj rnone)" > /dev/null \
+  && jq -e ".review.found_nothing == 0 and .review.reviews == 1 and (.rework | index(\"R\") | not)" "$(sj rsmall)" > /dev/null \
+  && p=$(jq -r .review.cost_pct "$(sj rnone)") && grep -qF "| Review share | $p % of the run'"'"'s cost · 1 of 1 reviews found nothing Critical or Important |" "$(dirname "$(sj rnone)")/report.md" \
+  && grep -qF "| Review share | " "$(dirname "$(sj rsmall)")/report.md" \
+  && [[ $(jq -r "select(.run == \"rnone\") | .review_cost_pct" "$T/ledger/runs.jsonl") == "$p" ]]'
+
 suite_end

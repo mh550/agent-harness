@@ -346,6 +346,9 @@ review gate: a review on opus never escalates; the escalation round's clock says
 review gate: a review reporting 0 Critical, 0 Important is not escalated and the run ends done
 review gate: a review under REVIEW_OPUS_LINES runs on sonnet, noted with its changed lines
 review gate: a sonnet review reporting 1 Critical gets one round on opus at no attempt
+review gate: reviewFindings reads <n> Critical and <n> Important, null without either
+review gate: reviewSummary gives the review share with one decimal, null without reviews, and counts the reviews that found nothing
+review gate: summary.json and report.md carry review.cost_pct and review.found_nothing; the ledger row has review_cost_pct
 review gate: the review's prompt copy has its Review diff line, a build session's has none
 routine notifications keep the default priority
 routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count
