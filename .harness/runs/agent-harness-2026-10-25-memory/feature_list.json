@@ -157,7 +157,7 @@
         "a CLAUDE.md fixture of 121 lines yields a `size` finding and one with 16 Gotchas lines a `gotchas` finding (two checks); the store lookup is M2's `decisionsStore` (one function); `node --check lib/memlint.mjs` passes",
         "`node lib/memlint.mjs .` on this worktree prints nothing: this repo's CLAUDE.md loses its stored check count (`395 checks`) on the way, and journal/decisions.md (closed) is not the store",
         "the suite is green" ],
-      "after": ["M2"], "passes": false },
+      "after": ["M2"], "passes": true },
 
     { "id": "M4-02", "milestone": "M4", "kind": "build", "model": "opus",
       "description": "At each driver start the memlint findings for the worktree become `note \"memlint: …\"` lines in harness-log.md that never stop the run, and `harness memlint <project>` prints the same for Michael; an Opus subagent reviews the M4 diff.",

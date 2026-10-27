@@ -257,8 +257,22 @@ lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
+memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
+memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
+memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
+memlint: a directory store file marked superseded with no Updated in place line yields a finding, with one none
+memlint: a stated rule is no count or night scope (1 test, as of decision 12), a month alone is a date (as of October)
+memlint: a worktree with neither DECISIONS= nor docs/decisions.md yields decisions: no store
 memlint: currentRules reads a directory store and the three file shapes newest first
 memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row
+memlint: node --check passes, the usage header lists the five checks, a missing worktree exits 2
+memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming its line, exit 0
+memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9
+memlint: the old rane store without its current-rule-set header yields a header finding
+memlint: the pathways project.md (4cafb65^) yields a night-scope finding for tonight
+memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
+memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
+memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
