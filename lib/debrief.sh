@@ -161,8 +161,8 @@ names() { local d; for d in "${RUNS[@]}"; do basename "$d"; done | paste -sd' ' 
   awk -v s="$SINCE" 'on || (/^[0-9-]+ [0-9:]+ / && ($1 " " $2) >= s) { on = 1; print }' "$Q/runner.log" 2>/dev/null | tail -n 200 | cut -c1-400 | fence
   echo; echo "## Runs"
   for d in "${RUNS[@]}"; do run_context "$d"; done
-  echo; echo "## Earlier retros (newest first; for proposals seen in two or more)"; echo
-  ls -t "$LEDGER"/*/*/retro.md 2>/dev/null | head -20 | fence
+  echo; echo "## Retro backlog (ledger/retro-backlog.jsonl)"; echo
+  node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --jsonl --max-bytes 6000 2>&1 | fence
 } > "$CTX"
 CMAX=${HARNESS_DEBRIEF_CONTEXT_MAX:-150000}   # the whole context, after each part's own cap (many runs add up)
 if (( $(wc -c < "$CTX") > CMAX )); then

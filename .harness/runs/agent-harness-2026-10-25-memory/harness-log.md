@@ -1,0 +1,17 @@
+- 2026-10-26 19:12 · feature list written: 0/23 passing
+- 2026-10-26 19:12 · lint: clean
+- 2026-10-26 19:12 · context.md for M1-01: 4418 bytes
+- 2026-10-26 19:16 · M1-01 · claude-opus-5-5 · passes=true · 4 min · 1/23 passing
+- 2026-10-26 19:16 · context.md for M1-02: 5268 bytes
+- 2026-10-26 19:23 · M1-02 · claude-opus-5-5 · passes=true · 6 min · 2/23 passing
+- 2026-10-26 19:23 · context.md for M1-03: 6397 bytes
+- 2026-10-26 19:29 · M1-03 · claude-opus-5-5 · passes=true · 6 min · 3/23 passing
+- 2026-10-26 19:29 · context.md for M1-04: 7651 bytes
+- 2026-10-26 19:39 · M1-04 · claude-opus-5-5 · passes=true · 9 min · 4/23 passing
+- 2026-10-26 19:39 · context.md for M1-05: 7770 bytes, 2 items left out
+- 2026-10-26 19:47 · M1-05: entry.json invalid (summary: 411 characters (at most 400)); recorded a minimal entry
+- 2026-10-26 19:47 · M1-05 · claude-opus-5-5 · passes=true · 8 min · 5/23 passing
+- 2026-10-26 19:47 · context.md for M1-06: 6475 bytes
+- 2026-10-26 20:05 · M1-06 · claude-opus-5-5 · passes=true · 18 min · 6/23 passing
+- 2026-10-26 20:05 · verify M1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-26 20:09 · context.md for M1: 8049 bytes, 10 items left out

@@ -47,6 +47,7 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue (`list` marks each continuation `(requested)`, yours, or `(automatic)`, the driver's or the debrief's: an automatic one is skipped for a run you stopped) |
 | `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end; new entries are numbered past parked ones, and a park never overwrites one of the same name |
 | `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
+| `harness backlog [list]` · `backlog set <id> <status> [--spec] [--pr] [--note]` · `backlog import <file.jsonl>` | the retro backlog, `ledger/retro-backlog.jsonl`: one row per retro proposal across runs, `proposed` first, most seen first; `set` moves one (`proposed` · `specced` · `queued` · `merged` · `dropped`), `import` merges rows by id; writes hold the ledger lock and are a ledger commit (`LEDGER_COMMIT`) (see [Retro backlog](#retro-backlog)) |
 | `harness status` · `report` · `trends [--by version]` · `attach` | look (`status`: under a running run, each of its systemd units with its `MemoryCurrent`; `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
@@ -97,7 +98,7 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 | | Where |
 |---|---|
 | Worktree, branch | `~/worktrees/<project>/<run-id>`, `harness/<run-id>` from `origin/main` |
-| Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` |
+| Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` · `retro-proposals.json` |
 | Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, one Opus round (a second only after a Critical finding). The lint flags `review-small` and `review-missing` |
 | Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) |
 | Local state | `~/.local/state/harness/<project>/<run-id>/`: `run.log`, transcripts, attempts, `driver.pid`, `ended` |
@@ -170,16 +171,36 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 - **Weekly budget:** past `WEEKLY_STOP_AT` (default 85 %) of the plan's 7-day window, as sessions report it, the queue
   starts no run and a running one stops before its next coding session.
 
+## Retro backlog
+
+Every retro proposal across runs, deduplicated by id, with a status: `ledger/retro-backlog.jsonl`, one JSON row each
+(`id`, `title`, `first_seen`, `runs_seen`, `status`, `spec`, `pr`, `note`). Only the harness writes it: the driver and
+`harness backlog`, never a session. Each retro writes its proposals (at most three, `{id, title, evidence}`) to the
+run's `retro-proposals.json`; at the run's end the driver merges them in, under the ledger lock and in the ledger
+commit: a new id is a `proposed` row, a known id gains the run in `runs_seen`, and a malformed file is noted in
+harness-log.md (`backlog: retro-proposals.json invalid: …`) and skipped whole. Mark what became work with `harness backlog set <id> specced --spec <path>` (or
+`queued`, `merged --pr <url>`, `dropped --note "<why>"`); `harness backlog` lists it, open proposals first. Each retro
+is shown that list, so it reuses an id and cites a specced or queued item's status instead of re-arguing it; the
+debrief reads it to rank the open proposals.
+
+**Seed it once, by hand, on the live checkout** (the build that added the backlog never ran this; it writes the real
+ledger): `harness backlog import docs/specs/2026-10-25-memory.backlog-seed.jsonl`. It prints `backlog: imported 8
+rows (8 new, 0 updated)`, makes one `ledger: backlog import …` commit, and is idempotent by id: a second import never moves a row back to an
+earlier status nor clears a link `set` gave it. To look first:
+`node lib/backlog.mjs list docs/specs/2026-10-25-memory.backlog-seed.jsonl` (writes nothing); to undo, `git revert`
+that commit.
+
 ## Debrief
 
 After a queue, `harness debrief` replaces the "morning session". The queue runner starts it, detached, as it exits
 (queue empty, past `--until`, or `harness queue stop`), if it started a run; run it by hand any time. It covers every
 run whose driver started since the last debrief that produced a note, so a debrief that was refused, failed or killed
 is caught up by the next one. Bash gathers the context (status, trends, the queue, the runner's log, and per run: end
-reason, summary, report, retro, INBOX.md, open questions, the usage-limit window), then one Sonnet session writes the
+reason, summary, report, retro, INBOX.md, open questions, the usage-limit window; and the retro backlog), then one Sonnet session writes the
 note: a headline (what landed on main, what's blocked, spend against the usage window), 3–6 lines per run, **Needs
 Michael**, draft answers the project's docs support (it never writes to INBOX.md), and **For the next interactive
-session** (merge conflicts, retro proposals seen in two or more retros). It can ask for a continuation of a run that
+session** (merge conflicts, the retro backlog's open `proposed` items most seen first, and items re-raised though
+already `specced` or `queued`). It can ask for a continuation of a run that
 ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harness checks it and queues it with
 `--automatic --keep-attempts` (an automatic continuation: skipped if you stop the run first); nothing starts.
 

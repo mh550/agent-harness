@@ -497,14 +497,26 @@ verify_ready() {
 }
 
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
-  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x
+  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x backlog nolist="" p=$RUN_DIR/retro-proposals.json
   rstart=$(git rev-parse HEAD)
-  HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
+  # the backlog as the list prints it ({{BACKLOG}}): ids to reuse and statuses to cite, not re-argue
+  backlog=$(node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --max-bytes 6000 2> "$SCRATCH/backlog.err") \
+    || nolist="backlog: the retro prompt has no backlog: $(head -1 "$SCRATCH/backlog.err" | cut -c1-200 | sed 's/^backlog: //')"
+  HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
-  reverted=$(restrict "$rstart" nothing retro | paste -sd' ')
+  # its one output file besides retro.md: restrict deletes it, so it goes to scratch first, and only when this retro
+  # wrote it (not a continued run's earlier copy) as a plain file of at most 64 KB (a symlink would carry another file
+  # into the record); ledger() merges it into the backlog (decisions/2026-10-26-retro-backlog)
+  rm -f "$SCRATCH/retro-proposals.json"
+  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= 65536 )) && ! git show "$rstart:$p" 2> /dev/null | cmp -s - "$p" \
+    && cp "$p" "$SCRATCH/retro-proposals.json"
+  reverted=$(restrict "$rstart" nothing retro | { [[ -f $SCRATCH/retro-proposals.json ]] && grep -vxF "$p" || cat; } | paste -sd' ')
   for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict: the driver's notes, not the retro's edits
   [[ -n $reverted ]] && note "retro: reverted edits (it is read-only): $reverted"
+  [[ -n $nolist ]] && note "$nolist"   # noted here: restrict reverts a note written before the session
+  if [[ -f $SCRATCH/retro-proposals.json ]]; then cp "$SCRATCH/retro-proposals.json" "$RUN_DIR/"   # in the run record, as retro.md
+  else note "backlog: the retro wrote no retro-proposals.json"; fi
   MET final "$rlog" > "$SCRATCH/retro.md"
   [[ -s $SCRATCH/retro.md ]] && ! MET limit "$rlog" "$S_WALL" "$S_EXIT" > /dev/null && cp "$SCRATCH/retro.md" "$RUN_DIR/retro.md"
   MET append "$rlog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" retro "" "$(F model "$RETRO_MODEL")" true "$S_WALL" "$S_EXIT" false retro "$S_PEAK"
@@ -516,9 +528,15 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   (
     flock 9
     SUM ledger-line "$RUN_DIR/summary.json" "$LEDGER/runs.jsonl"
+    local out paths=("$d" "$LEDGER/runs.jsonl")   # the retro's proposals into the backlog; a bad file is noted and skipped whole
+    if [[ -f $SCRATCH/retro-proposals.json ]]; then
+      out=$(node "$HARNESS_HOME/lib/backlog.mjs" merge "$LEDGER/retro-backlog.jsonl" "$SCRATCH/retro-proposals.json" "$RUN_ID" "$(date +%F)" 2>> "$STATE/run.log")
+      note "${out:-backlog: merge failed (run.log)}"
+    fi
+    [[ -f $LEDGER/retro-backlog.jsonl ]] && paths+=("$LEDGER/retro-backlog.jsonl")
     if [[ $LEDGER_COMMIT == 1 ]] && git -C "$LEDGER" rev-parse --show-toplevel > /dev/null 2>&1; then
-      git -C "$LEDGER" add -- "$d" "$LEDGER/runs.jsonl" \
-        && git -C "$LEDGER" commit -q -m "ledger: $RUN_ID ($PROJECT_NAME): $(F summary "$LIST")" -- "$d" "$LEDGER/runs.jsonl" \
+      git -C "$LEDGER" add -- "${paths[@]}" \
+        && git -C "$LEDGER" commit -q -m "ledger: $RUN_ID ($PROJECT_NAME): $(F summary "$LIST")" -- "${paths[@]}" \
         || log "ledger commit skipped"
     fi
   ) 9> "$STATE_ROOT/ledger.lock"
