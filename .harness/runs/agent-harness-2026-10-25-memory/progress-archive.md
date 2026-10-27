@@ -9,6 +9,20 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 01:03 · M6-03 · passes
+
+A Sonnet review whose entry summary (else final message) reports a Critical or Important finding is un-passed and gets one round on REVIEW_ESCALATE_MODEL before the next pick, at no attempt, once per feature; Opus reviews and 0/0 never escalate. reviewFindings + `entries.mjs findings`, stub STUB_REVIEW_FINDINGS, 3 checks, §7 row, decision file.
+
+- **Files:** lib/driver.sh, lib/entries.mjs, tests/stub-claude.sh, tests/checks/41-run-19-review-gate-m6.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-27-review-gate.md
+- **Verified:** Three new checks in tests/checks/41 written first: 2 FAIL before the driver change (4/6), 6/6 after; rsmall: R rows sonnet then opus, note `review R: sonnet found 1 Critical, 0 Important; one round on opus`, attempts.json R=1, ended done, 2nd R prompt copy has `Review round 2 of 2 (escalated: …)` and the measured Review diff line; rnone one row, no round; rbig one opus row. Full suite via check.sh: green, 489 tests; bash -n driver/stub/check 41, node --check entries.mjs.
+- **Tests:** 486 → 489
+- **Discovery** (affects M6-04): reviewFindings(text) is exported from lib/entries.mjs (→ {critical, important} or null) and `node lib/entries.mjs findings <run dir> <id> <final file>` prints `<c>\t<i>` (exit 1 without counts); M6-04's summary.mjs can import it and its pure check is still to write.
+- **Discovery** (affects M6-04, M6-05): Pending round is $STATE/review-escalate (`id\tc\ti\trdiff`), once-marker $STATE/review-escalated-<id>; the round skips F bump, F unbump (limit and park branches) and the diff measure, and keeps the measured Review diff line. M6-04's rework fix must subtract the `one round on` notes: rsmall's R now has two real coding rows.
+- **Discovery** (affects M6-04): rsmall and rbig now run with STUB_REVIEW_FINDINGS=1,0 and a third run rnone (0,0) follows rbig in tests/checks/41; check 41 takes ~31 s.
+- **Question for Michael:** prompts/coding.md §2 still tells every session (a Sonnet review session included) to send reviews to Opus subagents, so a Sonnet review saves less than its model suggests. Change that line for review features? (default: unchanged, decisions/2026-10-27-review-gate D5)
+- **Proposed change:** M6-04 step 4 should say the decision file journal/decisions/2026-10-27-review-gate.md already exists (M6-03 wrote it) and only gains the two field names.
+- *22-M6-03 · claude-opus-5-5*
+
 ### 2026-10-27 00:47 · M6-02 · passes
 
 Review gate, measure and route: driver review_diff (git diff --shortstat origin/main...HEAD, run dir left out) picks sonnet under REVIEW_OPUS_LINES (400), opus at or over, notes `review <id>: <n> changed lines, …`, fills {{REVIEW_DIFF}}; config + template keys; stub STUB_REVIEW_LIST/STUB_BIG_DIFF; 3 checks in 41. Tests 483 → 486.
