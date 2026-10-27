@@ -9,6 +9,18 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 22:22 · M3-05 · passes
+
+Opus review of the M3 diff (706a001..HEAD): 0 Critical, 2 Important, 9 Minor; no second round. Fixed both Important (a Gotchas line carries a fact in any case/markup/wrap; `resolved` dismisses a promoted fact) and 7 Minor RED→GREEN; docs and the three M3 decision files updated. Tests 451 → 455.
+
+- **Files:** lib/entries.mjs, lib/memlint.mjs, prompts/coding.md, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, docs/plans/2026-10-26-M3-review.md, journal/decisions/2026-10-26-gotchas-in-place.md, journal/decisions/2026-10-26-resolved-and-project-facts.md, journal/decisions/2026-10-26-pack-current-rules.md
+- **Verified:** Each new check was watched failing, then passing: `entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it` (Important 1, 2; Minor 3, 4), `gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section` (1, 6), `entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack` (5), `memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row` (7; old memlint gives d.md:13,9,5,3,1). All 7 ~/projects/*/docs/decisions.md give the same currentRules output before and after (md5). bash -n on driver.sh, prompt.sh, stub-claude.sh, checks 12 and 38; node --check on entries.mjs and memlint.mjs. Full suite: check.sh green in 257 s, 455 tests.
+- **Tests:** 451 → 455
+- **Discovery** (affects M4): memlint gotchasLines now joins an indented continuation line onto its bullet and ends the section at a `# ` heading too; entries.mjs pack matches a promoted fact to a Gotchas line by its first 40 characters lowercased with backticks, * and _ removed (key/loose in pack).
+- **Discovery** (affects M4): currentRules: a heading never replaces a bullet or table row of the same D<n>, and D1—D6 / D1 – D6 / D1 to D6 are group headings; M4's lint can reuse the same id regex.
+- **Proposed change:** The debrief (lib/debrief.sh:124) still lists questions a later entry resolved; it could skip them now that progress.md renders `Resolved:` items (review finding 4, left).
+- *14-M3-05 · claude-opus-5-5*
+
 ### 2026-10-26 22:07 · M3-04 · passes
 
 context.md ends with `Current rules` (memlint currentRules/readRules: dir store by dated name, file store's D<n> headings, bullets, table rows incl. `*default*`; ≤cap/4, rest one older-rules line). Verify packs use CONTEXT_PACK_BYTES_VERIFY=16384 with failed rows first. Stub STUB_VERIFY_FAIL_ROW, 3 fixtures, decision file, arch/README. Tests 445 → 451.
