@@ -344,7 +344,7 @@
         "the suite is green"
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-02",
