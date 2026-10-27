@@ -86,8 +86,10 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 
 The run record (`<wt>/.harness/runs/<run>/`, every "yes, record branch" or plain "yes" row of the run directory below) is committed only on the record
 branch `harness/<run>`, in the run's worktree (`RWT`); code is committed only on lane branches
-`harness-lane/<run>/<m>`, worked in the slot worktree `<worktrees>/<project>/lanes/<run>/slot-0` (lanes P1-03,
-`lib/record.sh`). Before each coding and verify session the record is copied into the slot (invisible to the slot's
+`harness-lane/<run>/<m>`, worked in a slot worktree `<worktrees>/<project>/lanes/<run>/slot-<k>` (lanes P1-03,
+`lib/record.sh`). A lane opens in the lowest slot no live lane holds (`k < MAX_LANES`, so `slot-0` alone at the
+default 1): the worktree is created the first time and checked out on the lane's branch after that, so ignored build
+and install directories carry over from one milestone to the next; `finish` removes every slot. Before each coding and verify session the record is copied into the slot (invisible to the slot's
 git through a per-worktree `core.excludesFile`, `state/lanes/<m>/exclude`, holding `.harness/runs/`; skip-worktree
 when the slot's base tracks it); after it the driver takes back `entry.json`, the lines the session added above
 `## Answers` and its `passes` flip (`F pass` on the record's list), and removes the copy. Every write to the record
@@ -113,7 +115,7 @@ goes through `record` (one `flock` on `state/record.lock`); sessions, inits and 
 | Parked features | `…/parked.json` (`id → {answers, why, at}`; `answers` = hash of INBOX.md from `## Answers` on) | driver (park after a `PARKED:` session; unpark when the hash changes) | scheduler, summary, `harness parked` | no |
 | Markers | `…/{driver.pid, ended, PAUSE, STOP (empty, or the reason of `harness stop --why`, one line), verified-<m>, merged-<m>, proposed-<m>, nomerge-<m>, needs-<m>, conflict-<m>, moved-<m> (main moved since the verify, once per main commit), waits-<m> (its PR waits for a dependency, noted once), verify-rounds-<m>, tests-start (the baseline: the first `run_init` with a count writes it, nothing rewrites it), tests-end (the latest green tree's count, from its marker or, an older empty marker, its `check-<key>.out`; a red tree has none: `tests_end` after every coding session, of its lane's slot, and at `finish` (of the last lane's slot, with that lane's `check-<key>.out` copied in first), which clears it when there is none), testcount-source (older runs: testcount-nomatch), review-escalated-<id> (the review gate's once-marker), waited-<t>, port, meta.env, run.env (`SPEC_FILES`, `DEADLINE_AT`, `BASE_REF` from `--base`), brief.md, inbox.md, inbox-unstopped (the `status: stop` line `harness continue` reset, for the driver's note)}` | driver, CLI | driver, CLI, summary | no |
 | Record lock and counters | `…/record.lock` (the `record` helper's flock; desk.sh's note takes it too), `…/sessions` (coding sessions started this segment, less those a limit gave back; `MAX_SESSIONS` is checked against it), `…/limits` (refused sessions in a row); both written 0 at each segment's start | driver (`lib/record.sh`) | driver | no |
-| Lane state | `…/lanes/<m>/{exclude, slot}` (the slot's excludes file; the slot's path, so `lib/prompt.sh` renders a lane's prompt as the driver did), `…/question` (what the last session added above `## Answers`, for the park's notification), `…/lanes/<m>/review-escalate` (the review gate's pending escalation round, kept across a usage-limit wait and a continue) | driver (`slot_open`, `take_question`) | git in the slot, `lib/prompt.sh`, `notify_park` | no |
+| Lane state | `…/lanes/<m>/{pid, port, slot, exit, closed, need, svc-up, exclude}` (the lane's process, written by the coordinator as it starts it, removed when it is reaped, so a pid file is an open lane and its slot taken; its port; the slot's path, so `lib/prompt.sh` renders a lane's prompt as the driver did; `<code> <reason>` as it exits, renamed `closed` once reaped; why it needs Michael; the services unit it left up; the slot's excludes file), `…/question` (what the last session added above `## Answers`, for the park's notification), `…/lanes/<m>/review-escalate` (the review gate's pending escalation round, kept across a usage-limit wait and a continue) | coordinator (`lane_open`, `reap`), `slot_open`, the lane (`lane_exit`), `take_question` | the coordinator (`lanes_open`, `reap`, `lane_open`'s free slot), git in the slot, `lib/prompt.sh`, `notify_park` | no |
 | Driver scrollback | `…/tmux-driver.txt`: a tmux-started run's driver window, captured when the driver exits (its last `history-limit` lines, tmux's default 2000; the whole record is `run.log`) | the driver window (`bin/harness`) | you, after `h-<run>` closes | no |
 | Last outputs | `…/{check-last.out, init.out, teardown.out}`: the last full suite's, the init's and the teardown's output, copied from scratch by `finish` before it deletes scratch (`check-last.out` is the final tree's `check-<key>.out` when scratch has it, else the last `check.out`; a failed copy keeps scratch; the note lists what was kept) | driver (`scratch_done`, `lib/prompt.sh`) | you, after the run | no |
 | Suite cache | `…/green/green-<key>`: one marker per code tree that went green, holding its test count; outlives scratch; `verify()` removes the verified tree's (as its init left it) before each verify's suite run (`run_init fresh`). The key (`treekey.mjs`) hashes every tracked and untracked file except `.harness/runs` and the prefixes in `CHECK_KEY_IGNORE` (default `.harness/runs docs/plans`; read as `HARNESS_CHECK_KEY_IGNORE`, exported by `prompt_env`), so a plan alone leaves the tree cached green; a cached line names a non-default list (`check: green (cached for this code tree, N tests; key ignores: docs/plans …)`) (decisions/2026-10-26-suite-split) | `lib/check.sh` | `check.sh` (a cached green), `finish` (`tests-end`) | no |
@@ -495,6 +497,12 @@ The runner exits when the queue is empty and nothing it started runs, when it is
 or on `harness queue stop`; whichever, if it started at least one run (marked in `<state>/runners`), it then starts
 `harness debrief` once, detached with `setsid`, so a new runner replacing tmux `h-queue` can't kill it (§16). Before that, on every exit it lives through (a runner killed with its `h-queue` session doesn't), it reaps the tmux sessions of every project's ended runs (`tmux_reap`, the same helper as `harness gc`; a `+ reaped tmux session <s> (<run> ended)` line each in `runner.log`); `h-queue` and the desk are no run's session, so they stay (decisions/2026-10-25-tmux-reaper). Then, if it started a run, it **collects as it drains**: `harness gc <project> --all-merged --deps` once for each distinct project (`PROJECT_DIR` in `meta.env`) of the runs it started, logged as `gc <name>: harness gc <dir> --all-merged --deps` and each output line as `gc <name>: <line>` in `runner.log`; a gc that exits non-zero logs `gc <name> failed (exit <n>)` and the debrief starts anyway. Nobody watches it, so it runs with `GIT_TERMINAL_PROMPT=0` under `timeout -k 10s ${HARNESS_GC_TIMEOUT:-10m}` (a hang is `failed (exit 124)`; decisions/2026-10-26-gc-unattended-guards). The gc runs first so the debrief sees what is left; a removed worktree's run record is read from the ledger's copy, and the debrief itself stays read-only (decisions/2026-10-25-runner-gc).
 
+**Lanes beside `MAX_PARALLEL_RUNS`.** `MAX_PARALLEL_RUNS` bounds drivers (runs) on the box; `MAX_LANES` (default 1)
+bounds the lanes inside one run: each open milestone is a `lib/lane.sh` process in its own slot, with its own port,
+scratch and units (`harness-<run>-<m>-…`), so two runs at two lanes each are up to four sessions and four suites at
+once. The queue counts drivers only and still starts one run per project; a run's lanes share its record (one lock),
+its session cap and the plan's usage windows (decisions/2026-10-26-lanes).
+
 **Parked entries** (`harness queue park <n> [<why>]`) move to `queue/held/` with a `.why` file: the runner skips them
 and says how many at start-up, `harness queue list` shows each with its reason, and `unpark <n>` puts one back at the
 end of the queue, renumbered. New entries are numbered past the parked ones too, and a park whose name is already in
@@ -546,8 +554,11 @@ record and their own `passes`; make every new behaviour visible in `harness-log.
 
 - Verify evidence is counted, not judged: a verifier can write plausible rows. The real quality gate is still the
   milestone's review (its review feature, or the last build feature's review steps in a milestone of one or two); an occasional Opus audit of verify entries would measure this.
-- The scheduler is linear-by-default; a richer `after` graph from the initializer would allow parallel sessions
-  within one run (worktree per feature), which the driver doesn't do.
+- Inside a run, milestones are the unit of parallelism (lanes, §5, `MAX_LANES`); a milestone's features run one after
+  another in its lane. Feature-level lanes (a feature whose `after` lies outside its milestone opening as a lane of
+  one) are not built: a milestone's features edit the same modules (decisions/2026-10-26-lanes). Until P2, a further
+  lane opens on `MAX_LANES` alone (no memory or five-hour admission), and a verified lane under a moved main waits
+  for Michael (D1) instead of re-basing.
 - The weekly gate reacts to the last session's figure; it doesn't forecast a night's spend (a run that starts at
   80 % can still use most of the rest before the next reading).
 - `harness gc` deletes a run branch whose unmerged commits only touch `.harness/runs/` (the ledger keeps the whole
