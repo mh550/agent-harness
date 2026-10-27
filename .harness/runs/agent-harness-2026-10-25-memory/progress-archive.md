@@ -9,6 +9,86 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:29 · verify M5 · passes
+
+M5-01 and M5-02 hold. Fixture check-agent-harness gives 395 generic; contract 1115, jest 7, pytest 4, empty none. Checks 06 and 40 pass (14/14). Init suite's one red file (13, 66 checks) passed alone on rerun: load flake.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M5-01 | 1 | node lib/testcount.mjs <fixtures> --source and plain | 1115 tests · contract; plain 1115 tests | yes |
+| M5-01 | 2 | head -1 and testcount on check-jest-contract and check-agent-harness | provenance first line; 1115; 395 generic; ends 395/395 | yes |
+| M5-01 | 3 | testcount --source on jest, pytest, empty file | 7 jest; 4 generic; ? none | yes |
+| M5-01 | 4 | bash tests/run.sh test-counts | 40 checks 4/4 pass: contract note once, tests.start 12, parsed (node) | yes |
+| M5-01 | 5 | init suite + rerun of file 13 | 482/483 at init, file 13 66/66 alone (timing flake under load) | yes |
+| M5-02 | 1 | grep lib/driver.sh; check 40 | tests_end() at 569 called after each session (817) and in finish; check asserts tests-end 3 before finish | yes |
+| M5-02 | 2 | tests/checks/40 continued-run check | start 3, end 5, tests-start 3 asserted and passes | yes |
+| M5-02 | 3 | grep summary.mjs; check 40 report/trends check | baseline at run start → end; header tests (baseline → end); passes | yes |
+| M5-02 | 4 | grep architecture, README, decision file | Markers row, README paragraph, decision with TEST_REPORT rejected all present | yes |
+| M5-02 | 5 | entries.jsonl M5-02 entry | Opus review 0 Critical, 1 Important fixed, 2 Minor | yes |
+| M5-02 | 6 | init suite + rerun of file 13 | all other files pass; 13 passes alone | yes |
+
+- *002538-verify-M5 · claude-sonnet-5-5*
+
+### 2026-10-27 00:20 · M5-01 · passes
+
+Fixed verify's step-2 fail: tests/fixtures/check-agent-harness.txt is now the last 30 lines of the suite re-run on the run's start tree ac49ba8 (395/395, what scratch check.out held at init, since overwritten); check 06 asserts 395 · generic; decision file updated in place. Tests 483 → 483.
+
+- **Files:** tests/fixtures/check-agent-harness.txt, tests/checks/06-test-counts-pure-r1.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-test-count-contract.md
+- **Verified:** check 06 red at 395 before the fixture (9/10), green after (10/10); testcount --source: 1115·contract, 7·jest, 4·generic, 395·generic, empty ? tests·none; full suite via check.sh green in 378 s, 483 tests
+- **Tests:** 483 → 483
+- **Dead end:** git archive ac49ba8 into scratch and run the suite there — 12 eval checks need the repo's history (383/395); a full git clone checked out at ac49ba8 gives 395/395
+- **Discovery** (affects run): Scratch check.out is overwritten by every suite run; a fixture meant to be 'the output at init' has to be copied at init or regenerated from the start tree in a full clone.
+- *19-M5-01 · claude-opus-5-5*
+
+### 2026-10-27 00:01 · verify M5 · not yet
+
+M5-02 holds. M5-01 step 2 fails: tests/fixtures/check-agent-harness.txt yields 474 (ends 474/474), the step says 395 (this run's scratch check.out); the check asserts 474. Other steps hold; suite green (483).
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M5-01 | 1 | node lib/testcount.mjs on check-jest-contract/check-jest/empty with and without --source; testCount on two contract lines | 1115 tests · contract; 7 tests · jest; plain form '7 tests'; last contract line wins (9) | yes |
+| M5-01 | 2 | node lib/testcount.mjs tests/fixtures/check-agent-harness.txt --source; head/tail of fixtures | contract fixture 1115 with provenance first line OK; check-agent-harness gives 474 tests · generic (31 lines, ends 474/474), step demands 395; check 06 asserts 474 | no |
+| M5-01 | 3 | testcount.mjs --source on jest, pytest, empty fixtures | 7 · jest; 4 · generic; ? tests · none | yes |
+| M5-01 | 4 | bash tests/run.sh 40-run-18; read lib/driver.sh:332-334 | PASS 'a suite printing HARNESS_TESTS=12 is noted once ... tests.start is 12'; notes contract/parsed/no match | yes |
+| M5-01 | 5 | harness init check; tests/run.sh subsets | check green in 282 s, 483 tests | yes |
+| M5-02 | 1 | grep lib/driver.sh tests_end; subset 40 | tests_end() at 569, called after sessions (817) and in finish (582); continued-run check passes | yes |
+| M5-02 | 2 | bash tests/run.sh 40-run-18 | PASS 'a continued run refreshes tests-end after each session (3 → 5 before finish), tests-start stays the baseline' | yes |
+| M5-02 | 3 | grep lib/summary.mjs; subset 40 and 14 | 'baseline at run start → end' (236), trends header 'tests (baseline → end)' (289); report label check PASS; 14/14 pass | yes |
+| M5-02 | 4 | grep architecture.md, README.md; ls journal/decisions | Markers row says when tests-start/tests-end written; README HARNESS_TESTS paragraph; decisions/2026-10-26-test-count-contract.md with TEST_REPORT rejected | yes |
+| M5-02 | 5 | read entries.jsonl:23 summary | Opus review recorded: 0 Critical, 1 Important fixed RED→GREEN, 2 Minor fixed | yes |
+| M5-02 | 6 | init suite | green, 483 tests | yes |
+
+- *000021-verify-M5 · claude-sonnet-5-5*
+
+### 2026-10-26 23:55 · M5-02 · passes
+
+tests_end (driver) writes tests-end after every coding session from a green tree's marker/output, not only at finish; status shows `tests 3 → 5`, the session note `· tests <n>`; report/trends labelled baseline. Opus review: 0 Critical, 1 Important fixed RED→GREEN (a red tree's count became tests-end), 2 Minor fixed (unsafe-int contract, stub set -e). Tests 480 → 483.
+
+- **Files:** lib/driver.sh, bin/harness, lib/summary.mjs, lib/testcount.mjs, tests/stub-claude.sh, tests/checks/40-run-18-test-counts-m5.sh, tests/checks/06-test-counts-pure-r1.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md, journal/decisions/2026-10-26-test-count-contract.md
+- **Verified:** full suite via check.sh: green, 483/483; tests/run.sh 40-run 4/4 (the continued-run check failed first with summary.json {start:3,end:3} mid-run, then with `C … passes=false … tests 9` for the red tree); 06-test 10/10 (the unsafe-integer case failed first); 08-scope 123/123
+- **Tests:** 480 → 483
+- **Dead end:** dropping `local key` from finish() when lifting tests_end — scratch_done "$key" later in finish needs it: set -u killed finish (08 scrub, 15 session-cap continuation, 36 backlog failed in the full run)
+- **Dead end:** stub `for tn in ${STUB_TESTS_N//,/ }; do [[ … ]] && …; done` — unbound under set -u when unset (every stub coding session died and read as refused), and a for loop ending on a false `[[ ]] &&` returns 1 and trips set -e
+- **Discovery** (affects run): In tests/checks/40 the contract run's suite ignores BROKEN, so its C merges a BROKEN file into origin main; a later run in that file whose suite tests BROKEN must `git rm` it first (the cont setup does).
+- **Discovery** (affects M5, run): Review Minor left: run_init pins testcount-source from the first check.out even when that suite was red (a failed first suite notes `no match`/`parsed (jest)` for the whole run); green markers written before a contract line (or a CHECK_CMD change via run.env, not in the tree key) keep the scraped count until the tree changes.
+- **Question for Michael:** Should run_init pin the run's testcount-source only from a green suite (review Minor: a red first suite fixes `no match` for the run)? Default left as M5-01 built it.
+- **Proposed change:** M5-02 step 2: the check's CHECK_CMD is `echo HARNESS_TESTS=$(cat tests.n); test ! -f BROKEN` (the step's command plus a red case), so the same run also shows a red tree's count is never tests-end
+- *18-M5-02 · claude-opus-5-5*
+
+### 2026-10-26 23:18 · M5-01 · passes
+
+testcount.mjs: a last whole-line HARNESS_TESTS=<n> wins, then R1's runners, then generic; countSource() gives {n, source}; `--source` prints `<n> tests · <source>` (`? tests · none`). run_init notes once per run `test count: HARNESS_TESTS contract` / `parsed (<runner>)` / no match (marker testcount-source). Tests 474 → 480.
+
+- **Files:** lib/testcount.mjs, lib/driver.sh, tests/checks/06-test-counts-pure-r1.sh, tests/checks/40-run-18-test-counts-m5.sh, tests/fixtures/check-jest-contract.txt, tests/fixtures/check-agent-harness.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-test-count-contract.md, docs/architecture.md, README.md
+- **Verified:** 6 new checks watched red (06: 5/9, 40: 0/2), then green (06 9/9, 40 2/2: a two-segment contract run notes once and summary tests.start 12; a `# pass 7` run notes parsed (node)); full suite via check.sh green in 271 s, 480 tests; bash -n driver and both check files, node --check testcount.mjs.
+- **Tests:** 474 → 480
+- **Dead end:** a pure check input `echo HARNESS_TESTS=8 # pass 2` on one line — node:test's rule is anchored at line start too, so it gave null; the input now has `# pass 2` on its own line
+- **Discovery** (affects M5-02): decisions/2026-10-26-test-count-contract exists (the contract part, TEST_REPORT rejected); M5-02 extends it in place with the tests-end refresh and baseline label. README's `## What a project needs` already has the HARNESS_TESTS paragraph and architecture's Markers row names testcount-source; M5-02 adds when tests-start/tests-end are written.
+- **Discovery** (affects M5-02): tests/checks/40-run-18-test-counts-m5.sh exists with a `sumj <run>` helper (summary.json path) and run.env CHECK_CMD overrides; M5-02's continued-run check goes there.
+- **Discovery** (affects run): The live harness runs main's testcount.mjs, so this run's own logs show no contract note until M5 merges.
+- **Proposed change:** M5-01 step 2: the scratch check.out now ends `474/474 checks passed` (the suite grew since init), so check-agent-harness.txt yields 474, not 395; the fixture copies the file as it is.
+- *17-M5-01 · claude-opus-5-5*
+
 ### 2026-10-26 23:10 · verify M4 · passes
 
 M4-01 and M4-02 hold: suite green (474 tests), memlint subset 19/19, fixtures re-linted by hand give the stated findings, docs and decision file present, review recorded in entries.

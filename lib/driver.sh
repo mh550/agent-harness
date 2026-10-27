@@ -323,9 +323,17 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
   [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \
     || rm -f "$STATE/tests-start"
-  # once per run: a suite whose output has no count leaves the report's tests at `?` (a cached green wrote no check.out)
-  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-nomatch && -z $(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out") ]]; then
-    note "test count: no match in the suite's output (tests start/end stay unknown)"; touch "$STATE/testcount-nomatch"
+  # once per run, from the first suite that wrote a check.out (a cached green wrote none): where the count came from, so
+  # a scraped count is told from the contract and a missing one explains the report's `?` (testcount-nomatch: older runs)
+  local src
+  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-source && ! -f $STATE/testcount-nomatch ]]; then
+    src=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" --source); src=${src##* · }
+    case $src in
+      contract) note "test count: HARNESS_TESTS contract" ;;
+      none|"") src=none; note "test count: no match in the suite's output (tests start/end stay unknown)" ;;
+      *) note "test count: parsed ($src)" ;;
+    esac
+    echo "$src" > "$STATE/testcount-source"
   fi
 }
 
@@ -554,15 +562,24 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   ) 9> "$STATE_ROOT/ledger.lock"
 }
 
+# tests-end: a green tree's count, its marker's (a continued segment's scratch has no output of a tree cached green),
+# else (an older, empty marker) its output's; a red tree has none, whatever its output counted. Written after every
+# session too, so status and report show it between sessions; tests-start, the run's baseline, is never rewritten
+# (decisions/2026-10-26-test-count-contract). Without a count only `final` (finish) clears it: mid-run, the last stays.
+tests_end() {   # [final]
+  local key n=""; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
+  if [[ -f $STATE/green/green-$key ]]; then
+    n=$(cat "$STATE/green/green-$key"); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out" 2> /dev/null)
+  fi
+  if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; elif [[ ${1:-} == final ]]; then rm -f "$STATE/tests-end"; fi
+}
+
 finish() {   # reason → summary, notification, retro, ledger, continuation
   END_REASON=$1
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$RUN_DIR/metrics.jsonl")"
   merge_milestones
-  # the tree's count: its green marker's (a continued segment's scratch has no output of a tree cached green), else its output's
-  local key n; green; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
-  n=$(cat "$STATE/green/green-$key" 2> /dev/null); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out")
-  if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; else rm -f "$STATE/tests-end"; fi
+  local key; green; tests_end final; key=$(node "$HARNESS_HOME/lib/treekey.mjs")   # scratch_done keeps this tree's output
   services_down "$1"   # after the last suite run, which may need them
   SUM build "$WT" "$RUN_ID" "$STATE" > "$RUN_DIR/summary.json"
   SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"   # the end notification's click; rewritten after the retro
@@ -797,9 +814,10 @@ while :; do
     (( repairs >= MAX_REPAIRS )) && { note "$repairs sessions in a row edited the feature list; stopping for Michael"; finish "feature-list edits"; }
   fi
   if F passes "$LIST" "$id" && ! green; then F unpass "$LIST" "$id"; note "$id un-passed: suite red after the session"; fi
+  tests_end
   passed=$(F passes "$LIST" "$id" && echo true || echo false)
   MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$(F kind "$LIST" "$id")" "$S_PEAK"
-  note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")"
+  note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")$( [[ -f $STATE/tests-end ]] && echo " · tests $(cat "$STATE/tests-end")")"
   if [[ $passed == false ]] && why=$(MET final "$slog" | sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' | head -1) && [[ -n $why ]]; then
     F unbump "$ATT" "$id"; F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault
     note "$id parked (waiting on Michael): $why"

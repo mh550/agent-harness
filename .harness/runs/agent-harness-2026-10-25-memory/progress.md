@@ -9,6 +9,86 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:29 · verify M5 · passes
+
+M5-01 and M5-02 hold. Fixture check-agent-harness gives 395 generic; contract 1115, jest 7, pytest 4, empty none. Checks 06 and 40 pass (14/14). Init suite's one red file (13, 66 checks) passed alone on rerun: load flake.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M5-01 | 1 | node lib/testcount.mjs <fixtures> --source and plain | 1115 tests · contract; plain 1115 tests | yes |
+| M5-01 | 2 | head -1 and testcount on check-jest-contract and check-agent-harness | provenance first line; 1115; 395 generic; ends 395/395 | yes |
+| M5-01 | 3 | testcount --source on jest, pytest, empty file | 7 jest; 4 generic; ? none | yes |
+| M5-01 | 4 | bash tests/run.sh test-counts | 40 checks 4/4 pass: contract note once, tests.start 12, parsed (node) | yes |
+| M5-01 | 5 | init suite + rerun of file 13 | 482/483 at init, file 13 66/66 alone (timing flake under load) | yes |
+| M5-02 | 1 | grep lib/driver.sh; check 40 | tests_end() at 569 called after each session (817) and in finish; check asserts tests-end 3 before finish | yes |
+| M5-02 | 2 | tests/checks/40 continued-run check | start 3, end 5, tests-start 3 asserted and passes | yes |
+| M5-02 | 3 | grep summary.mjs; check 40 report/trends check | baseline at run start → end; header tests (baseline → end); passes | yes |
+| M5-02 | 4 | grep architecture, README, decision file | Markers row, README paragraph, decision with TEST_REPORT rejected all present | yes |
+| M5-02 | 5 | entries.jsonl M5-02 entry | Opus review 0 Critical, 1 Important fixed, 2 Minor | yes |
+| M5-02 | 6 | init suite + rerun of file 13 | all other files pass; 13 passes alone | yes |
+
+- *002538-verify-M5 · claude-sonnet-5-5*
+
+### 2026-10-27 00:20 · M5-01 · passes
+
+Fixed verify's step-2 fail: tests/fixtures/check-agent-harness.txt is now the last 30 lines of the suite re-run on the run's start tree ac49ba8 (395/395, what scratch check.out held at init, since overwritten); check 06 asserts 395 · generic; decision file updated in place. Tests 483 → 483.
+
+- **Files:** tests/fixtures/check-agent-harness.txt, tests/checks/06-test-counts-pure-r1.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-test-count-contract.md
+- **Verified:** check 06 red at 395 before the fixture (9/10), green after (10/10); testcount --source: 1115·contract, 7·jest, 4·generic, 395·generic, empty ? tests·none; full suite via check.sh green in 378 s, 483 tests
+- **Tests:** 483 → 483
+- **Dead end:** git archive ac49ba8 into scratch and run the suite there — 12 eval checks need the repo's history (383/395); a full git clone checked out at ac49ba8 gives 395/395
+- **Discovery** (affects run): Scratch check.out is overwritten by every suite run; a fixture meant to be 'the output at init' has to be copied at init or regenerated from the start tree in a full clone.
+- *19-M5-01 · claude-opus-5-5*
+
+### 2026-10-27 00:01 · verify M5 · not yet
+
+M5-02 holds. M5-01 step 2 fails: tests/fixtures/check-agent-harness.txt yields 474 (ends 474/474), the step says 395 (this run's scratch check.out); the check asserts 474. Other steps hold; suite green (483).
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M5-01 | 1 | node lib/testcount.mjs on check-jest-contract/check-jest/empty with and without --source; testCount on two contract lines | 1115 tests · contract; 7 tests · jest; plain form '7 tests'; last contract line wins (9) | yes |
+| M5-01 | 2 | node lib/testcount.mjs tests/fixtures/check-agent-harness.txt --source; head/tail of fixtures | contract fixture 1115 with provenance first line OK; check-agent-harness gives 474 tests · generic (31 lines, ends 474/474), step demands 395; check 06 asserts 474 | no |
+| M5-01 | 3 | testcount.mjs --source on jest, pytest, empty fixtures | 7 · jest; 4 · generic; ? tests · none | yes |
+| M5-01 | 4 | bash tests/run.sh 40-run-18; read lib/driver.sh:332-334 | PASS 'a suite printing HARNESS_TESTS=12 is noted once ... tests.start is 12'; notes contract/parsed/no match | yes |
+| M5-01 | 5 | harness init check; tests/run.sh subsets | check green in 282 s, 483 tests | yes |
+| M5-02 | 1 | grep lib/driver.sh tests_end; subset 40 | tests_end() at 569, called after sessions (817) and in finish (582); continued-run check passes | yes |
+| M5-02 | 2 | bash tests/run.sh 40-run-18 | PASS 'a continued run refreshes tests-end after each session (3 → 5 before finish), tests-start stays the baseline' | yes |
+| M5-02 | 3 | grep lib/summary.mjs; subset 40 and 14 | 'baseline at run start → end' (236), trends header 'tests (baseline → end)' (289); report label check PASS; 14/14 pass | yes |
+| M5-02 | 4 | grep architecture.md, README.md; ls journal/decisions | Markers row says when tests-start/tests-end written; README HARNESS_TESTS paragraph; decisions/2026-10-26-test-count-contract.md with TEST_REPORT rejected | yes |
+| M5-02 | 5 | read entries.jsonl:23 summary | Opus review recorded: 0 Critical, 1 Important fixed RED→GREEN, 2 Minor fixed | yes |
+| M5-02 | 6 | init suite | green, 483 tests | yes |
+
+- *000021-verify-M5 · claude-sonnet-5-5*
+
+### 2026-10-26 23:55 · M5-02 · passes
+
+tests_end (driver) writes tests-end after every coding session from a green tree's marker/output, not only at finish; status shows `tests 3 → 5`, the session note `· tests <n>`; report/trends labelled baseline. Opus review: 0 Critical, 1 Important fixed RED→GREEN (a red tree's count became tests-end), 2 Minor fixed (unsafe-int contract, stub set -e). Tests 480 → 483.
+
+- **Files:** lib/driver.sh, bin/harness, lib/summary.mjs, lib/testcount.mjs, tests/stub-claude.sh, tests/checks/40-run-18-test-counts-m5.sh, tests/checks/06-test-counts-pure-r1.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md, journal/decisions/2026-10-26-test-count-contract.md
+- **Verified:** full suite via check.sh: green, 483/483; tests/run.sh 40-run 4/4 (the continued-run check failed first with summary.json {start:3,end:3} mid-run, then with `C … passes=false … tests 9` for the red tree); 06-test 10/10 (the unsafe-integer case failed first); 08-scope 123/123
+- **Tests:** 480 → 483
+- **Dead end:** dropping `local key` from finish() when lifting tests_end — scratch_done "$key" later in finish needs it: set -u killed finish (08 scrub, 15 session-cap continuation, 36 backlog failed in the full run)
+- **Dead end:** stub `for tn in ${STUB_TESTS_N//,/ }; do [[ … ]] && …; done` — unbound under set -u when unset (every stub coding session died and read as refused), and a for loop ending on a false `[[ ]] &&` returns 1 and trips set -e
+- **Discovery** (affects run): In tests/checks/40 the contract run's suite ignores BROKEN, so its C merges a BROKEN file into origin main; a later run in that file whose suite tests BROKEN must `git rm` it first (the cont setup does).
+- **Discovery** (affects M5, run): Review Minor left: run_init pins testcount-source from the first check.out even when that suite was red (a failed first suite notes `no match`/`parsed (jest)` for the whole run); green markers written before a contract line (or a CHECK_CMD change via run.env, not in the tree key) keep the scraped count until the tree changes.
+- **Question for Michael:** Should run_init pin the run's testcount-source only from a green suite (review Minor: a red first suite fixes `no match` for the run)? Default left as M5-01 built it.
+- **Proposed change:** M5-02 step 2: the check's CHECK_CMD is `echo HARNESS_TESTS=$(cat tests.n); test ! -f BROKEN` (the step's command plus a red case), so the same run also shows a red tree's count is never tests-end
+- *18-M5-02 · claude-opus-5-5*
+
+### 2026-10-26 23:18 · M5-01 · passes
+
+testcount.mjs: a last whole-line HARNESS_TESTS=<n> wins, then R1's runners, then generic; countSource() gives {n, source}; `--source` prints `<n> tests · <source>` (`? tests · none`). run_init notes once per run `test count: HARNESS_TESTS contract` / `parsed (<runner>)` / no match (marker testcount-source). Tests 474 → 480.
+
+- **Files:** lib/testcount.mjs, lib/driver.sh, tests/checks/06-test-counts-pure-r1.sh, tests/checks/40-run-18-test-counts-m5.sh, tests/fixtures/check-jest-contract.txt, tests/fixtures/check-agent-harness.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-test-count-contract.md, docs/architecture.md, README.md
+- **Verified:** 6 new checks watched red (06: 5/9, 40: 0/2), then green (06 9/9, 40 2/2: a two-segment contract run notes once and summary tests.start 12; a `# pass 7` run notes parsed (node)); full suite via check.sh green in 271 s, 480 tests; bash -n driver and both check files, node --check testcount.mjs.
+- **Tests:** 474 → 480
+- **Dead end:** a pure check input `echo HARNESS_TESTS=8 # pass 2` on one line — node:test's rule is anchored at line start too, so it gave null; the input now has `# pass 2` on its own line
+- **Discovery** (affects M5-02): decisions/2026-10-26-test-count-contract exists (the contract part, TEST_REPORT rejected); M5-02 extends it in place with the tests-end refresh and baseline label. README's `## What a project needs` already has the HARNESS_TESTS paragraph and architecture's Markers row names testcount-source; M5-02 adds when tests-start/tests-end are written.
+- **Discovery** (affects M5-02): tests/checks/40-run-18-test-counts-m5.sh exists with a `sumj <run>` helper (summary.json path) and run.env CHECK_CMD overrides; M5-02's continued-run check goes there.
+- **Discovery** (affects run): The live harness runs main's testcount.mjs, so this run's own logs show no contract note until M5 merges.
+- **Proposed change:** M5-01 step 2: the scratch check.out now ends `474/474 checks passed` (the suite grew since init), so check-agent-harness.txt yields 474, not 395; the fixture copies the file as it is.
+- *17-M5-01 · claude-opus-5-5*
+
 ### 2026-10-26 23:10 · verify M4 · passes
 
 M4-01 and M4-02 hold: suite green (474 tests), memlint subset 19/19, fixtures re-linted by hand give the stated findings, docs and decision file present, review recorded in entries.
@@ -186,95 +266,13 @@ All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/
 
 - *210433-verify-M2 · claude-sonnet-5-5*
 
-### 2026-10-26 21:00 · M2-03 · passes
-
-docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles row citing decisions/2026-10-26-where-things-go; README names the routing block, Gotchas and DECISIONS=.
-
-- **Files:** docs/architecture.md, README.md
-- **Verified:** grep -c 'Memory model' docs/architecture.md = 2; check.sh green, 435 tests
-- **Tests:** 435 → 435
-- *09-M2-03 · claude-sonnet-5-5*
-
-### 2026-10-26 20:55 · M2-02 · passes
-
-A background wait I had left running for the review was stopped at its time limit. It doesn't matter: the review had already come back and its findings were handled. M2-02 passes. The last commit is `7ec5b20`, pushed. The full suite is green, and tests went from 429 to 435.
-
-- **Files:** .harness/config.sh, CLAUDE.md, journal/decisions/2026-10-26-where-things-go.md, lib/prompt.sh, prompts/coding.md, prompts/draft-claude-md.md, prompts/initializer.md, prompts/parts/where-things-go-override.md, templates/project/CLAUDE.md, templates/project/config.sh, tests/checks/37-memory-prompts-m2.sh, tests/fixtures/check-names.txt
-- *08-M2-02 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 417 characters (at most 400)*
-
-### 2026-10-26 20:21 · M2-01 · passes
-
-lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else null), storeLine, CLI store/store-line. prompt_render appends prompts/parts/where-things-go.md (coding, initializer) or -readonly.md (verify, retro) unless CLAUDE.md has a `## Where things go` line; no CLAUDE.md gets it too. Decision file written. Tests 420 → 429.
-
-- **Files:** lib/memlint.mjs, lib/prompt.sh, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, tests/checks/37-memory-prompts-m2.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-where-things-go.md, docs/architecture.md
-- **Verified:** bash tests/run.sh 37-memory: 1/9 before (all of decisionsStore's checks failed on the missing memlint.mjs, and 'where things go: … carry the block once when CLAUDE.md lacks the heading', '… read-only variant …', '… with no CLAUDE.md … once each, the store from DECISIONS=' failed; the heading-present 0-times check passed vacuously), 9/9 after; read the rendered blocks of a KEEP=1 run (wt1 coding, wt3 verify, wt1 retro); node --check, bash -n; full suite via check.sh green, 429 tests incl. the check-names conformance check.
-- **Tests:** 420 → 429
-- **Dead end:** committing to $T/proj and pushing between stub runs — rejected: each run merges into origin main; `git pull -q --ff-only origin main` first
-- **Discovery** (affects M2-02): The three-prompt checks grep -c `## Where things go`: any template line quoting that heading counts. M2-02's coding.md Decisions bullet must name the block without the `## ` prefix (e.g. 'the Where things go block below') or the counts go to 2.
-- **Discovery** (affects M2-02, M2-03): journal/decisions/2026-10-26-where-things-go.md exists already with the seven-project census and both accepted risks; M2-02 edits it in place (initializer/coding/template wording) rather than creating it.
-- **Discovery** (affects M3, M4): `node lib/memlint.mjs store-line <wt>` gives the block's {{DECISIONS}} phrase; decisionsStore returns {path, kind: dir|file, exists} or null. M3 and M4 import it.
-- *07-M2-01 · claude-opus-5-5*
-
-### 2026-10-26 20:10 · verify M1 · passes
-
-All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/import/errors against a throwaway ledger, bash -n and node --check, read plan, decision, review, README, architecture, prompts, stub and checks.
-
-| Feature | Step | What you ran or read | What you saw | Holds |
-|---|---|---|---|---|
-| M1-01 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-01 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-01 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-01 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-01 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-02 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-02 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-02 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-02 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-02 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-02 | 6 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-02 | 7 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-03 | 1 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-03 | 2 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-03 | 3 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-03 | 4 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-03 | 5 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-03 | 6 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-04 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-04 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-04 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-04 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-04 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-04 | 6 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-04 | 7 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-05 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-05 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-05 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-05 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-05 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-05 | 6 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-06 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-06 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-06 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-06 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-| M1-06 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
-
-- *200939-verify-M1 · claude-sonnet-5-5*
-
-### 2026-10-26 20:05 · M1-06 · passes
-
-Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no second round. Fixed all 5 Important and Minor 6-8 test-first: forward-only import, one-line 200-char titles, a cap keeping every id·status, JSONL skip + {more:n}, LEDGER_COMMIT=1 run check, no symlinked proposals, unlistable store noted. Stray .tmp removed. Tests 413 → 420.
-
-- **Files:** lib/backlog.mjs, lib/driver.sh, tests/stub-claude.sh, tests/checks/35-backlog-pure-m1.sh, tests/checks/36-run-16-retro-backlog.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-26-M1-review.md, journal/decisions/2026-10-26-retro-backlog.md, docs/architecture.md, README.md, .tmp (removed)
-- **Verified:** Each new check red then green: `backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)`, `backlog merge: a title's newlines and control characters fold to one space, at most 200 characters`, `backlog validate: the why line of a huge bad id stays under 300 bytes`, `backlog list: past --max-bytes every row keeps its id and status, full lines first`, `backlog list --jsonl: a row too big is skipped, not the rest; a cut list ends with a {"more": n} line`, `backlog run: a symlinked retro-proposals.json is not followed, and a store that will not list is noted`; `backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.jsonl with its proposal` red with the paths+= line removed, green restored. bash -n on the six named files, node --check lib/backlog.mjs. check.sh green in 229 s, 420 tests.
-- **Tests:** 413 → 420
-- **Dead end:** noting an unlistable store before the retro session — restrict reverts harness-log.md edits made after rstart; the note is now written after restrict
-- **Discovery** (affects run): Any note() written in retro() between rstart and restrict is reverted with the retro's edits: write it after restrict (as S_NOTES are).
-- **Discovery** (affects M2, M3): backlog.mjs exports oneLine (whitespace and control characters folded, 200 chars): reuse it for any retro-written text that reaches a prompt.
-- **Question for Michael:** Review finding 10 (left): `harness backlog set/import` can race lib/sync.sh's rebase since sync takes no ledger.lock. Add it to the backlog (e.g. `sync-ledger-lock`) or fix in a later run?
-- *06-M1-06 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 21:00 · M2-03 · passes · docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles… ([in full](progress-archive.md))
+- 2026-10-26 20:55 · M2-02 · passes · A background wait I had left running for the review was stopped at its time limit. It doesn't matter… ([in full](progress-archive.md))
+- 2026-10-26 20:21 · M2-01 · passes · lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else … ([in full](progress-archive.md))
+- 2026-10-26 20:10 · verify M1 · passes · All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/im… ([in full](progress-archive.md))
+- 2026-10-26 20:05 · M1-06 · passes · Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no second round. Fixed al… ([in full](progress-archive.md))
 - 2026-10-26 19:47 · M1-05 · passes · M1-05 passes, in commit `8623944`, pushed to the run branch. - **Retro:** its prompt now has a `## B… ([in full](progress-archive.md))
 - 2026-10-26 19:39 · M1-04 · passes · retro() copies the retro's retro-proposals.json to scratch before restrict (skipped from the reverte… ([in full](progress-archive.md))
 - 2026-10-26 19:29 · M1-03 · passes · Added lib/backlog.sh (harness backlog [list] | set | import, writes under flock on $STATE_ROOT/ledge… ([in full](progress-archive.md))
