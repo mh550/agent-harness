@@ -42,3 +42,4 @@
 - 2026-10-26 22:22 · merged main into harness/agent-harness-2026-10-25-memory
 - 2026-10-26 22:22 · verify M3: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-26 22:26 · context.md for M3: 7709 bytes, 7 items left out
+- 2026-10-26 22:28 · M3 verified and tagged run/agent-harness-2026-10-25-memory/M3
