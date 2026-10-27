@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-10-26",
   "started": "2026-10-26T09:29:44.000Z",
-  "ended_at": "2026-10-27T21:11:59.000Z",
+  "ended_at": "2026-10-27T21:12:25.000Z",
   "end_reason": "stopped by Michael: merge main's flake fix (PR #39) first",
   "continuations": 3,
   "features": {
@@ -40,12 +40,12 @@
     "end": 539
   },
   "cost": {
-    "total": 69.99,
-    "per_passing_feature": 8.75,
+    "total": 70.11,
+    "per_passing_feature": 8.76,
     "by_role": {
       "init": 4.71,
       "build": 50.62,
-      "retro": 0.35,
+      "retro": 0.47,
       "review": 3.49,
       "verify": 0.24,
       "plan": 10.58
@@ -53,28 +53,28 @@
     "by_model": {
       "claude-fable-5-1": 4.71,
       "claude-opus-5-5": 64.69,
-      "claude-sonnet-5-5": 0.59
+      "claude-sonnet-5-5": 0.71
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 7.85,
-    "sessions_h": 6.97,
+    "wall_h": 7.86,
+    "sessions_h": 6.98,
     "driver_h": 0.88,
     "by_role_h": {
       "init": 0.17,
       "build": 5.82,
-      "retro": 0.03,
+      "retro": 0.04,
       "review": 0.33,
       "verify": 0.06,
       "plan": 0.57
     }
   },
   "tokens": {
-    "in": 2438,
-    "cache_read": 113629065,
-    "cache_write": 3369524,
-    "out": 1096662,
+    "in": 2446,
+    "cache_read": 113733123,
+    "cache_write": 3391453,
+    "out": 1098439,
     "cache_hit_rate": 0.971,
     "context_peak": 314111,
     "by_role": {
@@ -91,10 +91,10 @@
         "out": 805129
       },
       "retro": {
-        "in": 24,
-        "cache_read": 302697,
-        "cache_write": 66663,
-        "out": 5763
+        "in": 32,
+        "cache_read": 406755,
+        "cache_write": 88592,
+        "out": 7540
       },
       "review": {
         "in": 146,
@@ -117,8 +117,8 @@
     }
   },
   "per_verified_feature": {
-    "cost": 17.5,
-    "tokens": 29524422
+    "cost": 17.53,
+    "tokens": 29556365
   },
   "orientation": {
     "tokens": 1241726,
@@ -137,8 +137,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 18,
-    "real": 18,
+    "total": 19,
+    "real": 19,
     "environmental": 0
   },
   "guards": {
