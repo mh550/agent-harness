@@ -9,6 +9,19 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 20:21 · M2-01 · passes
+
+lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else null), storeLine, CLI store/store-line. prompt_render appends prompts/parts/where-things-go.md (coding, initializer) or -readonly.md (verify, retro) unless CLAUDE.md has a `## Where things go` line; no CLAUDE.md gets it too. Decision file written. Tests 420 → 429.
+
+- **Files:** lib/memlint.mjs, lib/prompt.sh, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, tests/checks/37-memory-prompts-m2.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-where-things-go.md, docs/architecture.md
+- **Verified:** bash tests/run.sh 37-memory: 1/9 before (all of decisionsStore's checks failed on the missing memlint.mjs, and 'where things go: … carry the block once when CLAUDE.md lacks the heading', '… read-only variant …', '… with no CLAUDE.md … once each, the store from DECISIONS=' failed; the heading-present 0-times check passed vacuously), 9/9 after; read the rendered blocks of a KEEP=1 run (wt1 coding, wt3 verify, wt1 retro); node --check, bash -n; full suite via check.sh green, 429 tests incl. the check-names conformance check.
+- **Tests:** 420 → 429
+- **Dead end:** committing to $T/proj and pushing between stub runs — rejected: each run merges into origin main; `git pull -q --ff-only origin main` first
+- **Discovery** (affects M2-02): The three-prompt checks grep -c `## Where things go`: any template line quoting that heading counts. M2-02's coding.md Decisions bullet must name the block without the `## ` prefix (e.g. 'the Where things go block below') or the counts go to 2.
+- **Discovery** (affects M2-02, M2-03): journal/decisions/2026-10-26-where-things-go.md exists already with the seven-project census and both accepted risks; M2-02 edits it in place (initializer/coding/template wording) rather than creating it.
+- **Discovery** (affects M3, M4): `node lib/memlint.mjs store-line <wt>` gives the block's {{DECISIONS}} phrase; decisionsStore returns {path, kind: dir|file, exists} or null. M3 and M4 import it.
+- *07-M2-01 · claude-opus-5-5*
+
 ### 2026-10-26 20:10 · verify M1 · passes
 
 All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/import/errors against a throwaway ledger, bash -n and node --check, read plan, decision, review, README, architecture, prompts, stub and checks.
