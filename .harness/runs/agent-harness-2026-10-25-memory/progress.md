@@ -9,6 +9,51 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 20:10 · verify M1 · passes
+
+All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/import/errors against a throwaway ledger, bash -n and node --check, read plan, decision, review, README, architecture, prompts, stub and checks.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M1-01 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-01 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-01 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-01 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-01 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-02 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-02 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-02 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-02 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-02 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-02 | 6 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-02 | 7 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-03 | 1 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-03 | 2 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-03 | 3 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-03 | 4 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-03 | 5 | bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-03 | 6 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-04 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-04 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-04 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-04 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-04 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-04 | 6 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-04 | 7 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-05 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-05 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-05 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-05 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-05 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-05 | 6 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-06 | 1 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-06 | 2 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-06 | 3 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-06 | 4 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+| M1-06 | 5 | read the named file/check assertions; suite 420/420 green; bash -n and node --check | Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite | yes |
+
+- *200939-verify-M1 · claude-sonnet-5-5*
+
 ### 2026-10-26 20:05 · M1-06 · passes
 
 Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no second round. Fixed all 5 Important and Minor 6-8 test-first: forward-only import, one-line 200-char titles, a cap keeping every id·status, JSONL skip + {more:n}, LEDGER_COMMIT=1 run check, no symlinked proposals, unlistable store noted. Stray .tmp removed. Tests 413 → 420.
