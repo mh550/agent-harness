@@ -26,6 +26,7 @@
 # tests-end in $STUB_DIR/snap-<run>/ (M5-02).
 # STUB_REVIEW_LIST=1: the initializer writes A (sonnet), B, D (build) and R (review, opus), all in M1, and no C (M6).
 # STUB_BIG_DIFF=1: A's first coding session also commits big-A.txt, 500 lines (a review diff at or over 400).
+# STUB_REVIEW_FINDINGS=<c>,<i>: every R session's entry summary is "R: stub review (<n>): <c> Critical, <i> Important, 0 Minor" (M6).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -161,8 +162,8 @@ JSON
     fi
     # main may already have work-<id>.txt as written here (run demo merged it): a file only this run adds, for the minimal entry's files
     [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
-    entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
-      outcome: "passes", summary: "\($id): stub work (\($n))", files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
+    entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --arg rf "${STUB_REVIEW_FINDINGS:-}" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
+      outcome: "passes", summary: (if $id == "R" and $rf != "" then "R: stub review (\($n)): \($rf | split(",")[0]) Critical, \($rf | split(",")[1]) Important, 0 Minor" else "\($id): stub work (\($n))" end), files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
       + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end
       + if $failrow == "1" and $id == "A" then {dead_ends: [{tried: "A by the first approach (\($n))", why: "verify M1 may find step 1 failing"}]} else {} end
       + if $ask == $id and $n == "1" then {questions: ["Should \($id) default to off?"]} else {} end

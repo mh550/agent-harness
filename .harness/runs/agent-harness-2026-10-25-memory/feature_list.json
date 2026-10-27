@@ -380,7 +380,7 @@
       "after": [
         "M6-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-04",
