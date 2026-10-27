@@ -13,3 +13,5 @@
 - 2026-10-26 19:47 · M1-05 · claude-opus-5-5 · passes=true · 8 min · 5/23 passing
 - 2026-10-26 19:47 · context.md for M1-06: 6475 bytes
 - 2026-10-26 20:05 · M1-06 · claude-opus-5-5 · passes=true · 18 min · 6/23 passing
+- 2026-10-26 20:05 · verify M1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-26 20:09 · context.md for M1: 8049 bytes, 10 items left out

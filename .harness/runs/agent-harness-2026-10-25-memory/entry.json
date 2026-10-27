@@ -1,0 +1,260 @@
+{
+  "feature": "M1",
+  "kind": "verify",
+  "outcome": "passes",
+  "summary": "All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/import/errors against a throwaway ledger, bash -n and node --check, read plan, decision, review, README, architecture, prompts, stub and checks.",
+  "evidence": [
+    {
+      "feature": "M1-01",
+      "step": 1,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-01",
+      "step": 2,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-01",
+      "step": 3,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-01",
+      "step": 4,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-01",
+      "step": 5,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-02",
+      "step": 1,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-02",
+      "step": 2,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-02",
+      "step": 3,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-02",
+      "step": 4,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-02",
+      "step": 5,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-02",
+      "step": 6,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-02",
+      "step": 7,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-03",
+      "step": 1,
+      "ran": "bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-03",
+      "step": 2,
+      "ran": "bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-03",
+      "step": 3,
+      "ran": "bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-03",
+      "step": 4,
+      "ran": "bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-03",
+      "step": 5,
+      "ran": "bin/harness backlog list/set/import/bad args with a temp HARNESS_LEDGER, LEDGER_COMMIT=0; read check names in 36-run-16 file",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-03",
+      "step": 6,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-04",
+      "step": 1,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-04",
+      "step": 2,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-04",
+      "step": 3,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-04",
+      "step": 4,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-04",
+      "step": 5,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-04",
+      "step": 6,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-04",
+      "step": 7,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-05",
+      "step": 1,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-05",
+      "step": 2,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-05",
+      "step": 3,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-05",
+      "step": 4,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-05",
+      "step": 5,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-05",
+      "step": 6,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-06",
+      "step": 1,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-06",
+      "step": 2,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-06",
+      "step": 3,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-06",
+      "step": 4,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    },
+    {
+      "feature": "M1-06",
+      "step": 5,
+      "ran": "read the named file/check assertions; suite 420/420 green; bash -n and node --check",
+      "saw": "Output and file contents match the step; matching check in tests/checks/35/36 passes in the full suite",
+      "holds": true
+    }
+  ]
+}
