@@ -1,10 +1,12 @@
-# Context pack for `M3-02`
+# Context pack for `M3-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (M3-01, affects M3-02): Gotchas-step text cannot use {{RUN}} (no such prompt variable); the run id is on the `Run:` line under *This run*. → entries.jsonl:13
+- Discovery (M3-02, affects M3-03, M3-04): tests/checks/38 runs one stub run `gotcha` (STUB_GOTCHA=B); M3-03/M3-04 checks can add their own runs below it. With KEEP_SCRATCH=1 the stub's sessions.log is at $T/scratch/proj/<run>/sessions.log. → entries.jsonl:14
+- Discovery (M3-02, affects M3-03): coding.md Finish steps are now 1 suite-verify, 2 suite, 3 Gotchas, 4 entry.json, 5 commit; the M3-03 Promote-to-Gotchas sentence belongs in step 3. → entries.jsonl:14
+- Discovery (M3-01, affects M3-03, M3-04): pack CLI must read CLAUDE.md and the decisions store only when the run dir sits at <wt>/.harness/runs/<run>; tests/checks/12 calls `pack` on $T/pk and $T/jr/legacy, whose third parent is outside the throwaway tree. → entries.jsonl:13
 - Discovery (M2-01, affects M3, M4): `node lib/memlint.mjs store-line <wt>` gives the block's {{DECISIONS}} phrase; decisionsStore returns {path, kind: dir|file, exists} or null. M3 and M4 import it. → entries.jsonl:9
 - Discovery (M1-06, affects run): Any note() written in retro() between rstart and restrict is reverted with the retro's edits: write it after restrict (as S_NOTES are). → entries.jsonl:7
 - Discovery (M1-06, affects M2, M3): backlog.mjs exports oneLine (whitespace and control characters folded, 200 chars): reuse it for any retro-written text that reaches a prompt. → entries.jsonl:7
@@ -18,9 +20,9 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-26 21:11 · M3-01 · passes: Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a ~e -d, a replace is one edit) and the driver's gotchas() after journal coding; resolved (exact after flattening, later entries only); Promote to Gotchas (coding packs, cap/8); Current rules (last, cap/4, three file shapes); verify cap 16384, failed rows first; stub flags; check names.; tests 435 → 435; files docs/plans/2026-10-26-M3-gotchas-and-pack.md → entries.jsonl:13
+- 2026-10-26 21:23 · M3-02 · passes: Finish step 3 in prompts/coding.md: one ## Gotchas line (≤160 chars, ends (<run> <date>), 15 max, edit in place, no rewrite). memlint.mjs gains gotchasLines/gotchasDiff (multiset; a replace is ~1) and `gotchas <before> <after>`; driver gotchas() after journal coding notes `<id>: gotchas +a ~e -d`. STUB_GOTCHA flag, arch §7 row, decision file. Tests 435 → 439.; tests 435 → 439; files prompts/coding.md, lib/memlint.mjs, lib/driver.sh, tests/stub-claude.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, … → entries.jsonl:14
 
 ## Lately in the run
 
+- 2026-10-26 21:11 · M3-01 · passes: Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a ~e -d, a replace is one edit) and the driver's gotchas() after journal coding; resolved (exact after flattening, later entries only); Promote to Gotchas (coding packs, cap/8); Current rules (last, cap/4, three file shapes); verify cap 16384, failed rows first; stub flags; check names.; tests 435 → 435; files docs/plans/2026-10-26-M3-gotchas-and-pack.md → entries.jsonl:13
 - 2026-10-26 21:06 · verify M2 · passes: All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/templates/docs/decision file read and match each step. → entries.jsonl:12
-- 2026-10-26 21:00 · M2-03 · passes: docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles row citing decisions/2026-10-26-where-things-go; README names the routing block, Gotchas and DECISIONS=.; tests 435 → 435; files docs/architecture.md, README.md → entries.jsonl:11
