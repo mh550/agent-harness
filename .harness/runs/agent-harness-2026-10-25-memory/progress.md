@@ -9,6 +9,26 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:29 · verify M5 · passes
+
+M5-01 and M5-02 hold. Fixture check-agent-harness gives 395 generic; contract 1115, jest 7, pytest 4, empty none. Checks 06 and 40 pass (14/14). Init suite's one red file (13, 66 checks) passed alone on rerun: load flake.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M5-01 | 1 | node lib/testcount.mjs <fixtures> --source and plain | 1115 tests · contract; plain 1115 tests | yes |
+| M5-01 | 2 | head -1 and testcount on check-jest-contract and check-agent-harness | provenance first line; 1115; 395 generic; ends 395/395 | yes |
+| M5-01 | 3 | testcount --source on jest, pytest, empty file | 7 jest; 4 generic; ? none | yes |
+| M5-01 | 4 | bash tests/run.sh test-counts | 40 checks 4/4 pass: contract note once, tests.start 12, parsed (node) | yes |
+| M5-01 | 5 | init suite + rerun of file 13 | 482/483 at init, file 13 66/66 alone (timing flake under load) | yes |
+| M5-02 | 1 | grep lib/driver.sh; check 40 | tests_end() at 569 called after each session (817) and in finish; check asserts tests-end 3 before finish | yes |
+| M5-02 | 2 | tests/checks/40 continued-run check | start 3, end 5, tests-start 3 asserted and passes | yes |
+| M5-02 | 3 | grep summary.mjs; check 40 report/trends check | baseline at run start → end; header tests (baseline → end); passes | yes |
+| M5-02 | 4 | grep architecture, README, decision file | Markers row, README paragraph, decision with TEST_REPORT rejected all present | yes |
+| M5-02 | 5 | entries.jsonl M5-02 entry | Opus review 0 Critical, 1 Important fixed, 2 Minor | yes |
+| M5-02 | 6 | init suite + rerun of file 13 | all other files pass; 13 passes alone | yes |
+
+- *002538-verify-M5 · claude-sonnet-5-5*
+
 ### 2026-10-27 00:20 · M5-01 · passes
 
 Fixed verify's step-2 fail: tests/fixtures/check-agent-harness.txt is now the last 30 lines of the suite re-run on the run's start tree ac49ba8 (395/395, what scratch check.out held at init, since overwritten); check 06 asserts 395 · generic; decision file updated in place. Tests 483 → 483.
@@ -246,17 +266,9 @@ All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/
 
 - *210433-verify-M2 · claude-sonnet-5-5*
 
-### 2026-10-26 21:00 · M2-03 · passes
-
-docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles row citing decisions/2026-10-26-where-things-go; README names the routing block, Gotchas and DECISIONS=.
-
-- **Files:** docs/architecture.md, README.md
-- **Verified:** grep -c 'Memory model' docs/architecture.md = 2; check.sh green, 435 tests
-- **Tests:** 435 → 435
-- *09-M2-03 · claude-sonnet-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 21:00 · M2-03 · passes · docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles… ([in full](progress-archive.md))
 - 2026-10-26 20:55 · M2-02 · passes · A background wait I had left running for the review was stopped at its time limit. It doesn't matter… ([in full](progress-archive.md))
 - 2026-10-26 20:21 · M2-01 · passes · lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else … ([in full](progress-archive.md))
 - 2026-10-26 20:10 · verify M1 · passes · All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/im… ([in full](progress-archive.md))
