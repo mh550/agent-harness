@@ -63,3 +63,5 @@
 - 2026-10-27 00:01 · verify M5: M5-01 failed the re-check, back in the queue (one more attempt)
 - 2026-10-27 00:01 · context.md for M5-01: 7833 bytes, 1 items left out
 - 2026-10-27 00:20 · M5-01 · claude-opus-5-5 · passes=true · 18 min · 18/23 passing
+- 2026-10-27 00:20 · verify M5: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 00:25 · context.md for M5: 7758 bytes, 5 items left out
