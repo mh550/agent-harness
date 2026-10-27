@@ -1,0 +1,190 @@
+{
+ "feature": "M3",
+ "kind": "verify",
+ "outcome": "passes",
+ "summary": "All five M3 features hold: full suite green (455), 38-run-17 12/12 and 12-journal 15/15 re-run, docs/decisions/plan present, bash -n and node --check ok.",
+ "evidence": [
+  {
+   "feature": "M3-01",
+   "step": 1,
+   "ran": "re-ran/read: plan exists, defines gotchasDiff/note/driver placement (grep docs/plans/2026-10-26-M3-gotchas-and-pack.md §M3-02)",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-01",
+   "step": 2,
+   "ran": "re-ran/read: plan fixes resolved field and pack drop (§M3-03 lines 87-95)",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-01",
+   "step": 3,
+   "ran": "re-ran/read: plan fixes Promote to Gotchas, Current rules, VERIFY cap (§M3-03/04)",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-01",
+   "step": 4,
+   "ran": "re-ran/read: plan names stub flags, check file 38, existing checks",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-01",
+   "step": 5,
+   "ran": "re-ran/read: suite green: init 455 tests",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-02",
+   "step": 1,
+   "ran": "re-ran/read: coding.md Finish step 3 Gotchas; check `coding prompt: the Finish step adds one Gotchas line` PASS",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-02",
+   "step": 2,
+   "ran": "re-ran/read: check `gotchasDiff: added, edited, deleted and no section` PASS",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-02",
+   "step": 3,
+   "ran": "re-ran/read: checks `a stub session that adds a Gotchas line is noted` and `a session that leaves CLAUDE.md alone gets no gotchas note` PASS",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-02",
+   "step": 4,
+   "ran": "re-ran/read: architecture.md line 264 Gotchas row; decisions/2026-10-26-gotchas-in-place.md exists",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-02",
+   "step": 5,
+   "ran": "re-ran/read: suite green",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-03",
+   "step": 1,
+   "ran": "re-ran/read: check `entries.mjs: resolved is an array of strings and normalize keeps it` PASS (15/15 in 12-journal)",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-03",
+   "step": 2,
+   "ran": "re-ran/read: check `a resolved question is gone from the next context.md` PASS",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-03",
+   "step": 3,
+   "ran": "re-ran/read: check `a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it` PASS",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-03",
+   "step": 4,
+   "ran": "re-ran/read: coding.md lines 70,89,97 and where-things-go-readonly.md line 4 name project / Promote to Gotchas; check `coding and verify prompts name resolved…` PA",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-03",
+   "step": 5,
+   "ran": "re-ran/read: suite green",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-04",
+   "step": 1,
+   "ran": "re-ran/read: check `context.md lists the decisions store rules newest first` PASS",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-04",
+   "step": 2,
+   "ran": "re-ran/read: check `CONTEXT_PACK_BYTES=1024 holds…` PASS",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-04",
+   "step": 3,
+   "ran": "re-ran/read: config.sh line 30, templates/user/config.sh line 23; check `a verify pack lists failed rows before dead ends` PASS",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-04",
+   "step": 4,
+   "ran": "re-ran/read: dead-end checks and 29 legacy checks pass in the full suite (455 green)",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-04",
+   "step": 5,
+   "ran": "re-ran/read: architecture.md line 89 seven parts + verify cap; pack-current-rules decision exists",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-04",
+   "step": 6,
+   "ran": "re-ran/read: suite green",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-05",
+   "step": 1,
+   "ran": "re-ran/read: docs/plans/2026-10-26-M3-review.md records 0 Critical, 2 Important, 9 Minor",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-05",
+   "step": 2,
+   "ran": "re-ran/read: Important fixes have RED/GREEN check `entries.mjs: a Gotchas line carries a fact in any case or markup…` PASS",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-05",
+   "step": 3,
+   "ran": "re-ran/read: review doc exists; architecture §4/§7, decisions present",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-05",
+   "step": 4,
+   "ran": "re-ran/read: bash -n and node --check all ok (run)",
+   "saw": "holds as described",
+   "holds": true
+  },
+  {
+   "feature": "M3-05",
+   "step": 5,
+   "ran": "re-ran/read: suite green",
+   "saw": "holds as described",
+   "holds": true
+  }
+ ]
+}
