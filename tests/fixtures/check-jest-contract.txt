@@ -1,0 +1,10 @@
+# tests/fixtures/check-jest.txt (jest's summary, its own provenance line aside) plus a trailing HARNESS_TESTS=1115 line, as a project's check prints the contract after its runner (portfolio_site's suite has 1115 tests)
+PASS src/sum.test.js
+PASS src/format.test.js
+
+Test Suites: 2 passed, 2 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        0.512 s
+Ran all test suites.
+HARNESS_TESTS=1115

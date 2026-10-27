@@ -3,3 +3,5 @@
 CHECK_CMD="bash tests/run.sh"
 # paths the suite never reads stay out of its cache key, so a plan, spec, decision or ledger change doesn't rerun it
 CHECK_KEY_IGNORE=".harness/runs docs/plans docs/specs journal findings-and-research ledger"
+# the decisions store: one file per decision, never numbered (decisions/2026-10-21-one-file-per-decision)
+DECISIONS=journal/decisions

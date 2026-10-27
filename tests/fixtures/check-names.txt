@@ -2,6 +2,7 @@
 Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
+CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
 DEBRIEF_PAGE_CMD gets the page
 DESK=0 by default, DESK_MODEL=opus
 DESK=0: no desk
@@ -50,6 +51,7 @@ a listed worktree whose directory is gone never ends gc: every later step still 
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
 a park notification: title, question, answer command, click and Edit INBOX action
+a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it
 a proposed merge: ready to merge, click = the PR, default priority
 a queued continuation: only the answer command
 a reason after any separator is kept whole, " · 2026-" in it included
@@ -63,6 +65,7 @@ a request for a run with an automatic continuation queued makes that one request
 a request queued after the stop (before the driver acts on it) stays requested
 a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)
 a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)
+a resolved question is gone from the next context.md
 a run still ending: answer now, continue once it has ended
 a run still going is covered again next time
 a run still going: only the answer command
@@ -73,6 +76,7 @@ a scope systemd refuses after the probe: the session runs bare and harness-log.m
 a second event reuses the desk window
 a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)
 a session that dies at startup: failed, and no usage-limit window for the box
+a session that leaves CLAUDE.md alone gets no gotchas note
 a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
 a session's edits to the journal are restored (E4 review F1)
 a stale green marker is caught at verify: M1 red, not tagged
@@ -84,10 +88,12 @@ a stop reason with | keeps its card on the debrief page and is one cell in repor
 a stop reason's words are never read as a feature's cause (A failed the re-check)
 a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason
 a stop without a reason says just: stopped by Michael (the note and ended)
+a stub session that adds a Gotchas line is noted
 a successful post: a line in run.log only
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
 a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
+a verify pack lists failed rows before dead ends
 a waiting-on-Michael run end: priority high, click = report.md
 a window of the run's name that never showed a URL is replaced
 a window past the 5 h cap: no session (the next debrief covers it)
@@ -98,6 +104,25 @@ all features pass
 an INBOX answer unparks it; the run finishes
 an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
 an open desk showing a dialog gets nothing typed
+backlog import: 8 rows into an empty store, then again 8 (idempotent by id)
+backlog import: a known id takes status, spec, pr and note, keeps first_seen, unions runs_seen
+backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)
+backlog list --jsonl: a row too big is skipped, not the rest; a cut list ends with a {"more": n} line
+backlog list: past --max-bytes every row keeps its id and status, full lines first
+backlog list: proposed first, then more runs_seen first within a status
+backlog merge: a known id adds its run to runs_seen once, status unchanged
+backlog merge: a new id becomes one proposed row first seen in its run
+backlog merge: a title's newlines and control characters fold to one space, at most 200 characters
+backlog run: a malformed retro-proposals.json is noted, the run finishes, the backlog unchanged
+backlog run: a retro proposal lands as a proposed row, noted 1 new, 0 seen again
+backlog run: a symlinked retro-proposals.json is not followed, and a store that will not list is noted
+backlog run: restrict reverts a retro's edit to the backlog, and the merge still lands
+backlog run: the rendered retro prompt carries test-counts · specced
+backlog run: the same id from a second run adds it to runs_seen, noted 0 new, 1 seen again
+backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.jsonl with its proposal
+backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1
+backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
+backlog validate: the why line of a huge bad id stays under 300 bytes
 brief committed with the run
 brief, rules and policy in the prompt
 by hand right after: nothing new, no session
@@ -109,24 +134,41 @@ check.sh: a subset call is scoped too and never cached
 check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
 check.sh: the cached line names the key's ignore list only when it isn't the default
+coding and verify prompts name resolved, project facts and Promote to Gotchas
 coding prompt names CLAUDE.md but doesn't paste it
+coding prompt: the Finish step adds one Gotchas line
 context.md carries the earlier attempt's dead end
+context.md lists the decisions store's rules newest first
 continuation queued: keeps attempts, brief marked as the debrief's
 continue after a no-list end merges main first
 continue finishes a paused run
 continue refuses a running run
+debrief --dry-run gathers the retro backlog, not Earlier retros
 debrief notifications go to NTFY_URL when set
 debrief waits for the usage-limit window, then runs
+decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
+decisionsStore: a quoted DECISIONS wins over docs/decisions.md, an unknown command exits 2
+decisionsStore: neither is null, and store prints nothing
+decisionsStore: no DECISIONS and docs/decisions.md present is a file store
 default MERGE_POLICY proposes a verified milestone, never merges it
 deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
 deploy.mjs: vercel and netlify guards merge, keep keys and detect
+driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
+driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
 each debrief is a commit of ledger/debrief.md
 each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
+entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
+entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
+entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
 entries.mjs: a damaged journal line is skipped, never fused or fatal
+entries.mjs: a milestone pack lists failed verify rows before dead ends
 entries.mjs: progress renders 15 in full and the rest as archive lines
+entries.mjs: resolved is an array of strings and normalize keeps it
+entries.mjs: the pack drops a question a later entry resolves
 entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap
 entries.mjs: validate accepts the schema and names what is wrong
 entries: the driver appends each session's entry
@@ -162,6 +204,13 @@ gc never removes a worktree that is no run's (its branch isn't harness/<run>), e
 gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
 gc removed the finished worktree
 gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+gotchasDiff: added, edited, deleted and no section
+gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
+harness backlog import of the seed file gives 8 rows, and 8 again on a second import
+harness backlog set flips test-counts to specced and list shows the spec
+harness backlog set with an unknown id, a bad status or a missing argument exits 1, store byte-identical
+harness backlog with LEDGER_COMMIT=1 commits retro-backlog.jsonl alone, one ledger commit per write
+harness backlog with no store prints (empty)
 harness continue of a run stopped from the phone: INBOX.md's status: stop goes back to run, so it doesn't stop again
 harness desk --all
 harness desk --close <run>
@@ -175,6 +224,7 @@ harness gc closes idle desks
 harness gc keeps the worktree of a run whose desk is open
 harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
 harness gc stops the units of this project's runs with no live driver; --dry-run stops none
+harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line
 harness merge keeps the harness version of the run (E1 review)
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
 harness merge merges v2 tags, closes the v2 PR
@@ -236,6 +286,25 @@ lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
 materialize: a record tracked at the slot's base is skip-worktree, so the session's commit carries none of the copy
+memlint.mjs: node --check passes, a usage header, decisionsStore exported
+memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
+memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
+memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
+memlint: a current-rule-set header under a ## section before the first decision is a header; a symlinked file is linted
+memlint: a directory store file marked superseded with no Updated in place line yields a finding, with one none
+memlint: a stated rule is no count or night scope (1 test, as of decision 12), a month alone is a date (as of October)
+memlint: a worktree with neither DECISIONS= nor docs/decisions.md yields decisions: no store
+memlint: an unreadable CLAUDE.md is exit 1 and one stderr line naming the file and the error
+memlint: currentRules reads a directory store and the three file shapes newest first
+memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row
+memlint: node --check passes, the usage header lists the five checks, a missing worktree exits 2
+memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming its line, exit 0
+memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9
+memlint: the old rane store without its current-rule-set header yields a header finding
+memlint: the pathways project.md (4cafb65^) yields a night-scope finding for tonight
+memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
+memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
+memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
@@ -303,7 +372,29 @@ report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
 resume reloads config merged from main
 retro edits reverted
+review gate: a review at or over REVIEW_OPUS_LINES runs on opus
+review gate: a review on opus never escalates; the escalation round's clock says Review round 2 of 2
+review gate: a review reporting 0 Critical, 0 Important is not escalated and the run ends done
+review gate: a review under REVIEW_OPUS_LINES runs on sonnet, noted with its changed lines
+review gate: a review whose summary gives no counts is noted not escalated, and the run ends done
+review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor in its entry summary; a build session's doesn't
+review gate: a sonnet review reporting 1 Critical gets one round on opus at no attempt
+review gate: after an escalation round that doesn't pass, the review's next attempt runs on opus and never escalates again
+review gate: an escalation round refused by a usage limit runs again on opus, still at no attempt
+review gate: reviewFindings reads <n> Critical and <n> Important, null without either
+review gate: reviewSummary gives the review share with one decimal, null without reviews, and counts the reviews that found nothing
+review gate: summary.json and report.md carry review.cost_pct and review.found_nothing; the ledger row has review_cost_pct
+review gate: the escalation round's Review diff line names the model it runs on
+review gate: the review's prompt copy has its Review diff line, a build session's has none
+reviewFindings: reads Critical before Important in either order of word and count, never a step number or lowercase prose
+reviewSummary: a review counts as finding nothing only when every entry that gives counts reports 0 Critical, 0 Important
+review_diff: fails with the reason when origin has no such main branch
+review_diff: fetches main first, so a milestone merged meanwhile drops out; the run directory is left out
 routine notifications keep the default priority
+routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count
+routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=
+routing: the rendered initializer prompt sends gotchas to ## Gotchas, run-only facts to discoveries, no decision number
+routing: this repo has the block (journal/decisions/, never numbered), an empty Gotchas and DECISIONS=journal/decisions
 run start with the guard: nothing
 run start without the deploy guard: one note, one notification
 run start without the netlify guard: one note, one notification
@@ -357,12 +448,21 @@ sync: nothing local: fast-forward
 sync: pulls the merged PR and pushes the ledger commit, no merge commit
 tampered list restored
 tampered text reverted
+test count: a continued run refreshes tests-end after each session (summary.json 3 → 5 before finish), tests-start stays the baseline
+test count: a suite printing HARNESS_TESTS=12 is noted once per run as the contract, and summary.json tests.start is 12
+test count: a suite printing only a node:test summary is noted as parsed (node)
 test count: no match is noted once per run (demo: no output; nocount: text with no count), never for a counted or cached suite (scrub)
+test count: report.md labels the tests cell, trends its column (baseline → end)
+testCount: a HARNESS_TESTS= line wins over the jest summary (1115, not 7), source contract
+testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 is no contract, a CRLF one is
 testCount: cargo fixture gives the sum of its test result lines (3)
 testCount: go fixture gives its --- PASS count (3)
 testCount: jest fixture gives the Tests: count (7), not Test Suites:
 testCount: node:test fixture gives 3
 testCount: pytest fixture gives 4
+testCount: the last HARNESS_TESTS= line wins, and only a whole line counts
+testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)
+testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
 testcount.mjs: the runner's last N/M checks passed is the count
 the EXIT trap commits its services note: harness-log.md is clean after a TERM
 the allowlist runs nothing that writes or executes
@@ -428,4 +528,10 @@ verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
 waits for another run's limit window
 what lands on main is byte for byte what was verified
+where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
+where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md
+where things go: the verify prompt has the read-only variant (discoveries, no Gotchas edit)
+where things go: verify and retro keep the read-only rule without the heading when CLAUDE.md has its own block
+where things go: with no CLAUDE.md the three prompts carry the block once each, the store from DECISIONS=
+where things go: with the heading in CLAUDE.md the three prompts carry the block 0 times
 with a queue runner going, the continue command is a queue add

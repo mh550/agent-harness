@@ -15,6 +15,10 @@
 #   harness queue park <n> [<why>] | unpark <n> set an entry aside (listed with its reason, skipped) · back at the end
 #   harness sync                                 the live checkout level with origin: pull merged PRs, push ledger
 #                                                commits (the queue runner does it whenever no run is alive)
+#   harness backlog [list]                       the retro backlog (ledger/retro-backlog.jsonl): proposed first, most seen first
+#   harness backlog set <id> <status> [--spec <path>] [--pr <url>] [--note <text>]
+#                                                move an item: proposed|specced|queued|merged|dropped (a ledger commit)
+#   harness backlog import <file.jsonl>          merge rows by id (the seed: docs/specs/2026-10-25-memory.backlog-seed.jsonl)
 #   harness status [<run-id>]                    every run: running / ended (why), features, last log lines
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
 #   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
@@ -32,6 +36,8 @@
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
 #                                                CLAUDE.md from the repo's docs for you to edit), and the Vercel/Netlify
 #                                                guard that keeps run branches from deploying
+#   harness memlint <project>                    the lint each run starts with (lib/memlint.mjs): one finding per line
+#                                                about its CLAUDE.md, .harness/project.md and decisions store
 #   harness gc <project> [--all-merged] [--deps] [--dry-run]
 #                               delete merged harness branches and their clean worktrees, locally and on origin
 #                               (--all-merged: every merged branch, whatever its name; --deps: DEPS_DIRS in ended runs' worktrees);
@@ -264,7 +270,9 @@ cmd_status() {
         upto=$(cat "$STATE_ROOT/LIMIT_UNTIL" 2>/dev/null || echo 0); (( upto > $(date +%s) )) && state="$state, waiting for the usage limit until $(date -d "@$upto" '+%H:%M')"
       elif [[ -f $STATE/ended ]]; then state="ended: $(cat "$STATE/ended")"
       else state="not running"; fi
-      echo "$RUN_ID ($(basename "$PROJECT_DIR")) · $state · port $(cat "$STATE/port") · $( [[ -f $list ]] && node "$HARNESS_HOME/lib/features.mjs" summary "$list" || echo 'no feature list yet')"
+      # tests: the baseline at run start → the latest session's tree (the driver refreshes tests-end after each session)
+      local tests=""; [[ -f $STATE/tests-start || -f $STATE/tests-end ]] && tests=" · tests $(cat "$STATE/tests-start" 2> /dev/null || echo '?') → $(cat "$STATE/tests-end" 2> /dev/null || echo '?')"
+      echo "$RUN_ID ($(basename "$PROJECT_DIR")) · $state · port $(cat "$STATE/port") · $( [[ -f $list ]] && node "$HARNESS_HOME/lib/features.mjs" summary "$list" || echo 'no feature list yet')$tests"
       if [[ $state == running* ]]; then   # what it holds: one line per unit; a missing bus or a unit gone just now shows nothing
         local u b
         while read -r u _; do
@@ -516,8 +524,10 @@ case ${1:-help} in
   pause|resume|stop) cmd_control "$1" "${2:-}" "${@:3}" ;;
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
+  memlint) p=$(toplevel "${2:?usage: harness memlint <project>}") && node "$HARNESS_HOME/lib/memlint.mjs" "$p" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
   sync) shift; exec "$HARNESS_HOME/lib/sync.sh" "$@" ;;
+  backlog) shift; exec "$HARNESS_HOME/lib/backlog.sh" "$@" ;;
   desk) shift; exec "$HARNESS_HOME/lib/desk.sh" "$@" ;;
   eval) shift; exec "$HARNESS_HOME/lib/eval.sh" "$@" ;;
   *) sed -n '2,/^set -/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;   # the header, whatever its length

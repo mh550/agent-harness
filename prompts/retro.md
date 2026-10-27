@@ -5,8 +5,8 @@ Run: `{{RUN_ID}}` of {{PROJECT}}
 It ended: {{END_REASON}}. A reason after "stopped by Michael:" is his; judge the run against it.
 
 You review how **the harness** did on this run, so the harness can improve. You are read-only:
-**do not edit, create, commit or push anything.** Your final message is saved as the run's
-`retro.md`; it is the only output.
+**do not edit, create, commit or push anything, except one file: `{{RUN_DIR}}/retro-proposals.json`.**
+Your final message is saved as the run's `retro.md`. The driver reverts every other edit.
 
 Read (with `jq`/`grep` for large files; never read a `.jsonl` transcript whole):
 - `{{SUMMARY}}`: the run's numbers (features, causes of non-passing features, cost by role, time, guards).
@@ -16,7 +16,20 @@ Read (with `jq`/`grep` for large files; never read a `.jsonl` transcript whole):
   entry is in full in `progress-archive.md`, one JSON line each in `entries.jsonl`).
 - `{{RUN_DIR}}/feature_list.json` and `{{RUN_DIR}}/brief.md` if present.
 - Session transcripts in `{{STATE}}/logs/` only to confirm a specific claim (final `result` events).
-- Earlier runs: `{{LEDGER}}/runs.jsonl` and `{{LEDGER}}/*/*/retro.md` (to spot a repeat).
+- Earlier runs: `{{LEDGER}}/runs.jsonl`. Earlier retros' proposals are the backlog below.
+
+## Backlog
+
+Every proposal earlier retros made, one per id (`<id> · <status> · seen <n> · <title>`, proposed first, most seen
+first; specced, queued and merged items carry their spec or PR):
+
+~~~
+{{BACKLOG}}
+~~~
+
+- Re-raising an item: use its id exactly as listed.
+- A `specced`, `queued` or `merged` item: cite its status (and spec or PR) in one line; don't re-argue it.
+- Coin a new kebab-case slug only for a proposal that is not in the list.
 
 Write, in at most 400 words, with real ids and numbers:
 
@@ -34,5 +47,9 @@ Guards that fired, and whether correctly. Anything the driver did that cost time
 gain. Whether verify sessions really re-ran steps (evidence rows vs steps).
 
 ## Proposed harness changes
-At most three, ranked, each: the change (file and what), the evidence from this run, and whether an
-earlier retro proposed it already (say which run). Only changes to the harness, not to the project.
+At most three, ranked, each: the change (file and what), the evidence from this run, and its backlog id (an
+existing one when the backlog has it, with its status). Only changes to the harness, not to the project.
+
+Then write the same proposals as data to `{{RUN_DIR}}/retro-proposals.json`: a JSON list of at most three
+`{"id": "<kebab-case-slug>", "title": "<one line>", "evidence": "<one line from this run>"}`, in rank order (`[]` for
+none). The driver merges it into the harness's retro backlog (`ledger/retro-backlog.jsonl`); never write that file.

@@ -19,7 +19,7 @@ ln -s ~/projects/agent-harness/bin/harness ~/.local/bin/harness     # once
 harness init ~/projects/myapp            # CLAUDE.md template + .harness/config.sh (POLICY=build-only); prints what it detected
 # fill in CLAUDE.md, commit to main, then:
 harness start ~/projects/myapp --spec docs/todo.md --brief "items 1–3 only"
-harness status                           # every run: running / ended (why), features, last log lines
+harness status                           # every run: running / ended (why), features, tests, last log lines
 harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes, memory peaks over 2 GB
                                          # (tests: counted for node:test, pytest, jest/vitest, cargo and go test -v; a suite with no count is said once in harness-log.md)
 ```
@@ -47,6 +47,7 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue (`list` marks each continuation `(requested)`, yours, or `(automatic)`, the driver's or the debrief's: an automatic one is skipped for a run you stopped) |
 | `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end; new entries are numbered past parked ones, and a park never overwrites one of the same name |
 | `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
+| `harness backlog [list]` · `backlog set <id> <status> [--spec] [--pr] [--note]` · `backlog import <file.jsonl>` | the retro backlog, `ledger/retro-backlog.jsonl`: one row per retro proposal across runs, `proposed` first, most seen first; `set` moves one (`proposed` · `specced` · `queued` · `merged` · `dropped`), `import` merges rows by id; writes hold the ledger lock and are a ledger commit (`LEDGER_COMMIT`) (see [Retro backlog](#retro-backlog)) |
 | `harness status` · `report` · `trends [--by version]` · `attach` | look (`status`: under a running run, each of its systemd units with its `MemoryCurrent`; `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
@@ -59,11 +60,29 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 
 | File | What | Required |
 |---|---|---|
-| `CLAUDE.md` | durable rules: code rules, how to verify, where decisions live, off-limits; `## Live system` for live projects. Claude Code loads it in every session; the harness prompt names it, it doesn't paste it | yes (template: `harness init`, or `harness init --draft` to have Claude draft it) |
-| `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only | recommended |
+| `CLAUDE.md` | durable rules: code rules, how to verify, off-limits; a `## Where things go` block (what goes in which store: your entry, a decision file, a plan, `CLAUDE.md`) and `## Gotchas` (15 lines, edited in place, facts a fresh session would rediscover: a coding session adds or edits one line as it finishes, and `harness-log.md` notes `<feature>: gotchas +<a> ~<e> -<d>`); the harness appends its own routing block to the prompts only when `CLAUDE.md` lacks the `## Where things go` heading; `## Live system` for live projects. Claude Code loads it in every session; the harness prompt names it, it doesn't paste it | yes (template: `harness init`, or `harness init --draft` to have Claude draft it) |
+| `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only; `DECISIONS=<path>` names the decisions store (a directory of one file each, or one file) when it isn't `docs/decisions.md` | recommended |
 | `.mcp.json` | the MCP servers runs may use. Sessions run with `--strict-mcp-config`, so a committed `.mcp.json` (passed as `--mcp-config <worktree>/.mcp.json`) is what run worktrees load; without one they get none, whatever your user config holds | no |
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
 | `.harness/teardown.sh` (executable) | what stopping the run's services scope can't reach, e.g. `npx supabase stop` or `docker compose down` (containers live under `dockerd`): see below | no |
+
+**Test counts.** A suite may print a line `HARNESS_TESTS=<n>` (a whole line from column 0, no colour or prefix; the
+last one wins): the harness takes it over scraping
+the runner's summary (node:test, cargo, jest, `go test -v`, then the last `N passed`), and `harness-log.md` says once
+per run which it used: `test count: HARNESS_TESTS contract`, `parsed (<runner>)` or `no match`. The run's first count
+is its baseline (`tests-start`); the latest tree's (`tests-end`) is refreshed after every session, so `harness status`,
+`harness report` and each session's line in `harness-log.md` show it mid-run, and report.md's Tests cell reads
+`<start> → <end> (baseline at run start → end)`.
+
+**Memory lint.** `harness memlint <project>` prints what `lib/memlint.mjs` finds in a project's memory files, one
+`<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines),
+`derivable-count` (a stored `<n> tests`), `night-scope` (`tonight`, `this run`, `as of <date>`) and `decisions` (no
+store, no current-rule-set header, a superseded entry without an `Updated in place` line). Every run segment starts
+with the same lint as `memlint: …` notes in `harness-log.md`; they never stop the run. Run `harness memlint
+<project>` for each project to confirm chunk 3 Part 2's tidy held: on 2026-10-26 the projects with a `CLAUDE.md`
+give two `size` findings (hit_list's, 181 lines; portfolio_site's, 127) and nothing else, agent-harness once the memory
+run's tidy of its own `CLAUDE.md` and `DECISIONS=` is on main; a directory without a decisions store gives `decisions:
+no store`.
 
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; cached per code tree, whose key
@@ -97,8 +116,8 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 | | Where |
 |---|---|
 | Worktree, branch | `~/worktrees/<project>/<run-id>`, `harness/<run-id>` from `origin/main` |
-| Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` |
-| Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, one Opus round (a second only after a Critical finding). The lint flags `review-small` and `review-missing` |
+| Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` · `retro-proposals.json` |
+| Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, which the driver runs on Sonnet under `REVIEW_OPUS_LINES` (400) changed lines of what the run branch has and main doesn't (main fetched first) and on Opus at or over; a Sonnet review whose entry summary reports `<n> Critical, <n> Important` above 0 gets one more round on Opus, at no attempt, and any later attempt stays on Opus (decisions/2026-10-27-review-gate). The lint flags `review-small` and `review-missing` |
 | Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) |
 | Local state | `~/.local/state/harness/<project>/<run-id>/`: `run.log`, transcripts, attempts, `driver.pid`, `ended` |
 | Ledger | `ledger/runs.jsonl` and `ledger/<project>/<run-id>/` in this repo · `harness trends` |
@@ -126,7 +145,7 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
   `run.log` beside it has everything), and the session `h-<run>`
   closes after `TMUX_KEEP_HOURS` (24; `0` = at once), or sooner: `harness gc <project>` and the queue runner, as it
   exits, kill the sessions of ended runs.
-- **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends, recent entries); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
+- **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends and open questions (a later entry's `resolved` drops one), facts to promote into `## Gotchas` (until a line there or a later `resolved` carries them), recent entries, and last the decisions store's current rules, newest first; a verify's pack is larger, `CONTEXT_PACK_BYTES_VERIFY`, its failed rows first); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
   Claude Code itself (the prompt names it in one line, it doesn't paste it), so a rule edited on the run branch reaches
   the next session. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 - **Notifications:** start, merges, needs-Michael, parks, limits, end. In `~/.config/harness/config.sh` either
@@ -170,16 +189,36 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 - **Weekly budget:** past `WEEKLY_STOP_AT` (default 85 %) of the plan's 7-day window, as sessions report it, the queue
   starts no run and a running one stops before its next coding session.
 
+## Retro backlog
+
+Every retro proposal across runs, deduplicated by id, with a status: `ledger/retro-backlog.jsonl`, one JSON row each
+(`id`, `title`, `first_seen`, `runs_seen`, `status`, `spec`, `pr`, `note`). Only the harness writes it: the driver and
+`harness backlog`, never a session. Each retro writes its proposals (at most three, `{id, title, evidence}`) to the
+run's `retro-proposals.json`; at the run's end the driver merges them in, under the ledger lock and in the ledger
+commit: a new id is a `proposed` row, a known id gains the run in `runs_seen`, and a malformed file is noted in
+harness-log.md (`backlog: retro-proposals.json invalid: …`) and skipped whole. Mark what became work with `harness backlog set <id> specced --spec <path>` (or
+`queued`, `merged --pr <url>`, `dropped --note "<why>"`); `harness backlog` lists it, open proposals first. Each retro
+is shown that list, so it reuses an id and cites a specced or queued item's status instead of re-arguing it; the
+debrief reads it to rank the open proposals.
+
+**Seed it once, by hand, on the live checkout** (the build that added the backlog never ran this; it writes the real
+ledger): `harness backlog import docs/specs/2026-10-25-memory.backlog-seed.jsonl`. It prints `backlog: imported 8
+rows (8 new, 0 updated)`, makes one `ledger: backlog import …` commit, and is idempotent by id: a second import never moves a row back to an
+earlier status nor clears a link `set` gave it. To look first:
+`node lib/backlog.mjs list docs/specs/2026-10-25-memory.backlog-seed.jsonl` (writes nothing); to undo, `git revert`
+that commit.
+
 ## Debrief
 
 After a queue, `harness debrief` replaces the "morning session". The queue runner starts it, detached, as it exits
 (queue empty, past `--until`, or `harness queue stop`), if it started a run; run it by hand any time. It covers every
 run whose driver started since the last debrief that produced a note, so a debrief that was refused, failed or killed
 is caught up by the next one. Bash gathers the context (status, trends, the queue, the runner's log, and per run: end
-reason, summary, report, retro, INBOX.md, open questions, the usage-limit window), then one Sonnet session writes the
+reason, summary, report, retro, INBOX.md, open questions, the usage-limit window; and the retro backlog), then one Sonnet session writes the
 note: a headline (what landed on main, what's blocked, spend against the usage window), 3–6 lines per run, **Needs
 Michael**, draft answers the project's docs support (it never writes to INBOX.md), and **For the next interactive
-session** (merge conflicts, retro proposals seen in two or more retros). It can ask for a continuation of a run that
+session** (merge conflicts, the retro backlog's open `proposed` items most seen first, and items re-raised though
+already `specced` or `queued`). It can ask for a continuation of a run that
 ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harness checks it and queues it with
 `--automatic --keep-attempts` (an automatic continuation: skipped if you stop the run first); nothing starts.
 
@@ -215,7 +254,9 @@ Results go to `evals/results/<stamp>-<sha>-<label>/` (git-ignored). The ref's wo
 or later commit of the source) and the runs' worktrees stay beside it for `eval probes`; `rm -rf
 /tmp/harness-eval/<stamp>` once you're done with them. **Evals are real sessions and cost money** (about $28 per
 eval of the default set); they are Michael's to run, the overnight run never does. The commands, in order, with the
-cost: `evals/NEXT.md`.
+cost: `evals/NEXT.md`; its `## 5. M6: the review gate` compares the harness before the review gate (tag `…/M5`) with M6
+(`summary.json`'s `review.cost_pct` and `review.found_nothing` say what the reviews cost and how many found nothing
+Critical or Important in any round).
 
 ## Tests
 

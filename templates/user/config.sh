@@ -15,6 +15,11 @@
 #                                    #     you, and a debrief with Needs Michael. Try `harness desk <run> --why test` first.
 # DESK_MODEL=opus                    # the desk session's model: fable, opus, sonnet, haiku or a claude-… id
 
+# A milestone's review feature is sized by its diff (git diff --shortstat origin/<main>...HEAD, the run directory left out).
+# REVIEW_OPUS_LINES=400              # changed lines (insertions + deletions): under it the review runs on sonnet, at or over on opus
+# REVIEW_ESCALATE_MODEL=opus         # a sonnet review that reports a Critical or Important finding gets one round on this (no attempt);
+#                                    #     a later attempt of that review stays on it
+
 # MAX_PARALLEL_RUNS=1                # runs alive at once (1 = one after another); the queue runner re-reads it each poll,
 #                                    #     and lowering it stops no running run (an entry waits until fewer are alive)
 
@@ -26,6 +31,10 @@
 #                                    #     verify = a verify session every time
 # MAX_REBASE_ROUNDS=1                # verify rounds a re-based lane gets before it needs you
 # RECORD_PR=end                      # the run record's own PR, opened when the run ends; off = none
+
+# context.md, the bounded pack of the run's journal a session reads first (failed verify rows lead a verify's pack).
+# CONTEXT_PACK_BYTES=8192            # a coding session's pack; whole bytes, at least 1024
+# CONTEXT_PACK_BYTES_VERIFY=16384    # a verify session's pack (raising the first doesn't raise this one: set both)
 
 # Each claude session runs in its own systemd user scope (harness-<run>-s<n>); without user systemd, uncapped.
 # SESSION_MEMORY_HIGH=5G             # throttled above this

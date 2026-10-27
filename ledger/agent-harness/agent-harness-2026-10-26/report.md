@@ -2,31 +2,27 @@
 
 | | |
 |---|---|
-| Passing | **2/17** · verified 0 (none) · merged 0 (none) |
+| Passing | **6/17** · verified 4 (P0) · merged 4 (P0) |
 | Tests | not recorded |
-| Spend | **$22.87** total · **$11.44** per passing feature |
-| Spend by role | init $4.71 · build $18.05 · retro $0.11 · manager (the bash driver) $0.00 |
-| Tokens | 34.6M in (cache hit 0.97) · context peak 206.4k · orientation 843.5k tokens / 15 turns (median) · per verified feature – tokens, – |
-| Quality | first-attempt pass rate 0.67 · rework P0-02 · verify-fail rate – |
-| Time | 3.01 h wall: sessions 2.8 h (init 0.17, build 2.62, retro 0.01), driver 0.22 h |
-| Sessions | 6 (6 real, 0 refused by limits/API errors) |
-| Ended | blocked on P0-02 |
-| Not passing | not done 1 · blocked 14 |
+| Spend | **$52.94** total · **$8.82** per passing feature |
+| Spend by role | init $4.71 · plan $10.58 · build $33.68 · review $3.49 · verify $0.24 · retro $0.24 · manager (the bash driver) $0.00 |
+| Tokens | 82.7M in (cache hit 0.97) · context peak 292.7k · orientation 1.0M tokens / 16 turns (median) · per verified feature 20.9M tokens, $13.24 |
+| Quality | first-attempt pass rate 0.71 · rework P0-02, P1-03 · verify-fail rate 0.00 |
+| Time | 5.92 h wall: sessions 5.45 h (init 0.17, build 4.3, retro 0.02, review 0.33, verify 0.06, plan 0.57), driver 0.47 h |
+| Sessions | 14 (14 real, 0 refused by limits/API errors) |
+| Ended | blocked on P1-03 (after 1 continuation) |
+| Not passing | not done 1 · blocked 10 |
 
 | Feature | Cause | Detail | Sessions | $ |
 |---|---|---|---|---|
-| P0-02 | not done | P0-02 does **not** pass. I left `passes` false because step 5, a full suite under 150 s with `TEST_JOBS=4`, isn't met. Steps 1–4, 6 and 7 hold, and the suite is green: 335/335 in 165 s. - **Why splitt | 2 | $10.44 |
-| P0-04 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P1-01 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P1-02 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P1-03 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P1-04 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P1-05 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P1-06 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P2-01 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P2-02 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P2-03 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P2-04 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P2-05 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P2-06 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
-| P2-07 | blocked | waits on P0-02, which was given up | 0 | $0.00 |
+| P1-03 | not done | The decision file is in place (D1–D6 defaults recorded). I'm waiting for the review before fixing anything or flipping `passes`. | 2 | $11.67 |
+| P1-04 | blocked | waits on P1-03, which was given up | 0 | $0.00 |
+| P1-05 | blocked | waits on P1-03, which was given up | 0 | $0.00 |
+| P1-06 | blocked | waits on P1-03, which was given up | 0 | $0.00 |
+| P2-01 | blocked | waits on P1-03, which was given up | 0 | $0.00 |
+| P2-02 | blocked | waits on P1-03, which was given up | 0 | $0.00 |
+| P2-03 | blocked | waits on P1-03, which was given up | 0 | $0.00 |
+| P2-04 | blocked | waits on P1-03, which was given up | 0 | $0.00 |
+| P2-05 | blocked | waits on P1-03, which was given up | 0 | $0.00 |
+| P2-06 | blocked | waits on P1-03, which was given up | 0 | $0.00 |
+| P2-07 | blocked | waits on P1-03, which was given up | 0 | $0.00 |

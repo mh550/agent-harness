@@ -57,3 +57,21 @@ Each prints `score <n>/<m>` and writes `probes.json` beside the result. Expect b
 sees the coding prompt but not `progress.md`. E4's `context.md` is what should raise the score: for E4 results `harness eval probes` pastes the saved pack after the probe prompt.
 
 **What the E4 comparison should show** (`harness eval compare e3 e4`, and `baseline e4`): orientation cost (`orient_tokens`, `orient_turns`, `orient_s`) and `context_peak` down, since the session reads one bounded file instead of the whole progress log; probe score up; pass rate and cost per pass not worse. A worse pass rate with lower orientation cost means the pack cut something it needed: read `context.md` in that task's result.
+
+## 5. M6: the review gate
+
+The harness before the review gate (tag `run/agent-harness-2026-10-25-memory/M5`, the last tree before M6) against
+M6 as merged (tag `run/agent-harness-2026-10-25-memory/M6`, set when verify M6 holds and the milestone merges, its
+review M6-05 included). Michael runs these by hand; the
+build never does. Two evals ≈ $56:
+
+```bash
+EVAL_BUDGET_USD=35 harness eval run --set default --harness run/agent-harness-2026-10-25-memory/M5 --label pre-m6
+EVAL_BUDGET_USD=35 harness eval run --set default --harness run/agent-harness-2026-10-25-memory/M6 --label m6
+harness eval compare pre-m6 m6
+```
+
+**No cost claim for the review gate stands before these have run.** What they should show: $ per verified feature
+down, verify-fail rate not up. The default set's tasks are 1–3 features each, so few of them reach a milestone
+review; read each result's `summary.json` (`review.cost_pct`; `review.found_nothing`, the reviews whose every round
+reported `0 Critical, 0 Important`) to see whether a review ran at all, and judge the gate on the real runs' ledger rows (`review_cost_pct`) as they accumulate if none did.

@@ -13,6 +13,22 @@
 # clone of the origin, as Michael's phone would. STUB_CLI_STOP=-|<why>: it runs `harness stop <run>` (-) or
 # `harness stop <run> --why "<why>"` (R7). STUB_CLI_REQUEST=<brief>: then `harness queue add --continue <run> --brief
 # "<brief>"`, a request made after the stop and before the driver acts on it.
+# STUB_RETRO_PROPOSALS=<id>[,<id>…]: the retro writes retro-proposals.json in the run directory, one
+# `{id, title: "stub proposal <id>", evidence}` per id (`bad`: `{not json`; `link`: a symlink to feature_list.json). STUB_RETRO_EDITS=1: the retro edits code, progress.md
+# and the worktree's ledger/retro-backlog.jsonl (restrict reverts all three).
+# STUB_GOTCHA=<id>: that feature's first coding session adds a `## Gotchas` line to CLAUDE.md (and the section when
+# it has none), committed with its work (M3). STUB_ASK=<id>: that feature's first coding session's entry asks
+# "Should <id> default to off?"; STUB_RESOLVE=<id>: its later sessions' entries list it in `resolved`. STUB_PROJECT_FACT=<id>:
+# its first session's entry has the discovery STUB_GOTCHA writes, affecting "project" (M3-03). STUB_VERIFY_FAIL_ROW=1: A's
+# coding entries record a dead end and verify M1 round 1's entry has a `holds: false` row for A step 1 (M3-04).
+# STUB_TESTS_N=<id>:<n>[,<id>:<n>…]: that feature's first coding session commits tests.n <n> (a suite echoing it counts <n>). STUB_SNAPSHOT=<id>:
+# its first coding session saves `harness status`, `harness report` and the state's summary.json, tests-start and
+# tests-end in $STUB_DIR/snap-<run>/ (M5-02).
+# STUB_REVIEW_LIST=1: the initializer writes A (sonnet), B, D (build) and R (review, sonnet), all in M1, and no C (M6).
+# STUB_BIG_DIFF=1: A's first coding session also commits big-A.txt, 500 lines (a review diff at or over 400).
+# STUB_REVIEW_FINDINGS=<c>,<i>: every R session's entry summary is "R: stub review (<n>): <c> Critical, <i> Important, 0 Minor" (M6).
+# STUB_REVIEW_ROUND=limit|fail: R's second session (the escalation round) is refused by the usage limit, or ends not
+# passing (M6-05).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -57,12 +73,20 @@ case $first in
     [[ ${STUB_QUEUE_STOP:-} ]] && touch "$HARNESS_STATE/queue/STOP"   # Michael runs `harness queue stop` meanwhile
     [[ ${STUB_MEM_DROP:-} ]] && sed -i 's/^MemAvailable: .*/MemAvailable:    2097152 kB/' "$STUB_MEM_DROP"   # the box runs low on memory meanwhile (2 GB)
     after=""; [[ ${STUB_INDEPENDENT_M2:-} ]] && after=', "after": []'
-    cat > "$L" <<JSON
+    if [[ ${STUB_REVIEW_LIST:-} ]]; then cat > "$L" <<JSON
+{ "run": "test", "features": [
+  { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
+  { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false },
+  { "id": "D", "milestone": "M1", "kind": "build", "description": "d", "steps": ["w"], "passes": false },
+  { "id": "R", "milestone": "M1", "kind": "review", "model": "sonnet", "description": "review M1", "steps": ["r"], "passes": false } ] }
+JSON
+    else cat > "$L" <<JSON
 { "run": "test", "features": [
   { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
   { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false },
   { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"]$after, "passes": false } ] }
 JSON
+    fi
     entry init 1 '{feature: "init", kind: "init", outcome: "passes", summary: "3 features: M1 2, M2 1", header: "# progress"}'
     git add -A && git commit -qm "HARNESS: feature list" && git push -q -u origin "$HARNESS_BRANCH"
     if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop [<why>]
@@ -134,20 +158,39 @@ JSON
       echo '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":1.4,"num_turns":0,"duration_ms":0,"result":""}'   # as 22-T4-09: a background task's empty result after the cut
       exit 1
     fi
+    if [[ $id == R && $n == 2 && ${STUB_REVIEW_ROUND:-} == limit ]]; then cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; fi
+    if [[ $id == R && $n == 2 && ${STUB_REVIEW_ROUND:-} == fail ]]; then
+      entry R 2 '{feature: "R", kind: "coding", outcome: "not yet", summary: "R: the round did not finish"}'; ok 0.5 "R: not done"; exit 0
+    fi
     set_passes "$id" true
     if [[ ${STUB_PASS_THEN_LIMIT:-} && $id == A && $n == 1 ]]; then   # claims the feature, then the limit cuts it off
       echo "A $n" > "work-A.txt"; git add -A && git commit -qm "A: claimed"; sed -n 2p "$HERE/fixtures/usage-limit.jsonl"; exit 1
     fi
     if [[ $id == B && $n == 1 && ! ${STUB_NO_TAMPER:-} ]]; then   # tampers: flips C and rewrites its description
-      node -e 'const fs=require("fs"),f=process.argv[1],l=JSON.parse(fs.readFileSync(f));const c=l.features.find(x=>x.id==="C");c.passes=true;c.description="easier";fs.writeFileSync(f,JSON.stringify(l))' "$L"
+      node -e 'const fs=require("fs"),f=process.argv[1],l=JSON.parse(fs.readFileSync(f));const c=l.features.find(x=>x.id==="C");if(!c)process.exit(0);c.passes=true;c.description="easier";fs.writeFileSync(f,JSON.stringify(l))' "$L"
     fi
     if [[ $id == C ]]; then [[ $n == 1 && ! ${STUB_NO_RED:-} ]] && touch BROKEN || rm -f BROKEN; fi   # first try leaves the suite red
     echo "$id $n" > "work-$id.txt"
+    [[ ${STUB_BIG_DIFF:-} && $id == A && $n == 1 ]] && seq 500 > big-A.txt   # a milestone diff over REVIEW_OPUS_LINES (M6)
+    tns=${STUB_TESTS_N:-}; for tn in ${tns//,/ }; do if [[ ${tn%%:*} == "$id" && $n == 1 ]]; then echo "${tn#*:}" > tests.n; fi; done   # the suite's count moves (M5-02)
+    if [[ ${STUB_SNAPSHOT:-} == "$id" && $n == 1 ]]; then   # what Michael sees between sessions, before finish (M5-02)
+      st=$(compgen -G "$HARNESS_STATE/*/$HARNESS_RUN_ID") && mkdir -p "$STUB_DIR/snap-$HARNESS_RUN_ID" && (set +e; cd "$STUB_DIR/snap-$HARNESS_RUN_ID"
+        "$HERE/../bin/harness" status "$HARNESS_RUN_ID" > status.txt; "$HERE/../bin/harness" report "$HARNESS_RUN_ID" > report.md
+        cp "$st/summary.json" "$st/tests-start" .; cp "$st/tests-end" . 2> /dev/null; true)
+    fi
+    if [[ ${STUB_GOTCHA:-} == "$id" && $n == 1 ]]; then   # a fact a fresh session would rediscover, as the Finish step asks
+      grep -qx '## Gotchas' CLAUDE.md 2> /dev/null || printf '\n## Gotchas\n\n' >> CLAUDE.md
+      echo "- the stub's work files sit at the repo root, one per feature ($HARNESS_RUN_ID $(date +%F))" >> CLAUDE.md
+    fi
     # main may already have work-<id>.txt as written here (run demo merged it): a file only this run adds, for the minimal entry's files
     [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
-    entry "$id" "$n" --arg id "$id" --arg n "$n" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
-      outcome: "passes", summary: "\($id): stub work (\($n))", files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
-      + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end'
+    entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --arg rf "${STUB_REVIEW_FINDINGS:-}" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
+      outcome: "passes", summary: (if $id == "R" and $rf != "" then "R: stub review (\($n)): \($rf | split(",")[0]) Critical, \($rf | split(",")[1]) Important, 0 Minor" else "\($id): stub work (\($n))" end), files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
+      + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end
+      + if $failrow == "1" and $id == "A" then {dead_ends: [{tried: "A by the first approach (\($n))", why: "verify M1 may find step 1 failing"}]} else {} end
+      + if $ask == $id and $n == "1" then {questions: ["Should \($id) default to off?"]} else {} end
+      + if $resolve == $id and $n != "1" then {resolved: ["Should \($id) default to off?"]} else {} end
+      + if $fact == $id and $n == "1" then {discoveries: [{text: "the stub'"'"'s work files sit at the repo root, one per feature", affects: ["project"]}]} else {} end'
     git add -A && git commit -qm "$id: stub work ($n)" && git push -q origin "$HARNESS_BRANCH"
     if [[ ${STUB_STALE_GREEN:-} == "$id" && $n == 1 ]]; then   # red tree, cached green: only a full run catches it
       touch BROKEN && git add -A && git commit -qm "$id: left BROKEN" && git push -q origin "$HARNESS_BRANCH"
@@ -163,15 +206,20 @@ JSON
     # one evidence row per step of every feature of m (none in a thin round 1); passes when every feature of m still passes
     ev=$(node -e 'const [f,m,full]=process.argv.slice(1),fs=JSON.parse(require("fs").readFileSync(f)).features.filter(x=>x.milestone===m);console.log(JSON.stringify({done:fs.every(x=>x.passes),
       rows:full==="1"?fs.flatMap(x=>x.steps.map((s,i)=>({feature:x.id,step:i+1,ran:"check",saw:"ok",holds:true}))):[]}))' "$L" "$m" "$([[ ! ${STUB_THIN_VERIFY:-} || $n -gt 1 ]] && echo 1)")
-    entry "$m" "$n" --arg m "$m" --arg n "$n" --argjson ev "$ev" '{feature: $m, kind: "verify", outcome: (if $ev.done then "passes" else "not yet" end),
-      summary: "verify \($m) (\($n))", evidence: $ev.rows}'
+    fail='[]'; [[ ${STUB_VERIFY_FAIL_ROW:-} == 1 && $m == M1 && $n == 1 ]] && fail='[{"feature":"A","step":1,"ran":"check","saw":"A fails: work-A.txt holds the line \"A 1\" the first approach wrote, where step 1 expects the session after the verify to rewrite it; the check read the stale line twice, so step 1 does not hold on this tree","holds":false}]'
+    entry "$m" "$n" --arg m "$m" --arg n "$n" --argjson ev "$ev" --argjson fail "$fail" '{feature: $m, kind: "verify", outcome: (if $ev.done then "passes" else "not yet" end),
+      summary: "verify \($m) (\($n))", evidence: ($ev.rows + $fail)}'
     git add -A && git commit -qm "verify $m ($n)" --allow-empty && git push -q origin "$HARNESS_BRANCH"
     ok 0.1 ;;
   "# Retro")
     echo "retro" >> "$RS/sessions.log"
     if [[ ${STUB_LEAVE_RETRO:-} == 1 ]]; then sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/left.pids"   # as STUB_LEAVE_PROCESS, for the read-only retro
       [[ -n ${STUB_SCOPE_UNIT:-} ]] && echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"; fi
-    [[ ${STUB_RETRO_EDITS:-} ]] && { echo "retro was here" > retro-hack.txt; echo x >> "$HARNESS_RUN_DIR/progress.md"; }
+    [[ ${STUB_RETRO_EDITS:-} ]] && { echo "retro was here" > retro-hack.txt; echo x >> "$HARNESS_RUN_DIR/progress.md"
+      mkdir -p ledger && echo '{"id":"retro-hack"}' > ledger/retro-backlog.jsonl; }   # a retro editing the backlog itself (M1-04)
+    case ${STUB_RETRO_PROPOSALS:-} in "") ;; bad) printf '{not json' > "$HARNESS_RUN_DIR/retro-proposals.json" ;;
+      link) ln -s feature_list.json "$HARNESS_RUN_DIR/retro-proposals.json" ;;
+      *) tr , '\n' <<< "$STUB_RETRO_PROPOSALS" | jq -R '{id: ., title: "stub proposal \(.)", evidence: "stub retro"}' | jq -s . > "$HARNESS_RUN_DIR/retro-proposals.json" ;; esac
     ok 0.2 "## Outcome\\nStub retro.\\n\\n## Proposed harness changes\\n1. none" ;;
   "# Probe session"*)   # records its command line, $PWD and prompt; for t2, Q1 (T2a's files) is right and Q2 (T2b's deps) wrong
     { printf '%s\n' "${ARGS[@]}"; echo "PWD=$PWD"; echo "HARNESS_EVAL=${HARNESS_EVAL:-}"; } > "$STUB_DIR/probe-args"; printf '%s\n' "$prompt" > "$STUB_DIR/probe-prompt"

@@ -261,17 +261,30 @@ journal_() {   # who kind id name model outcome: the ingest and the render, in t
   return 0
 }
 
+# <feature> <start commit> → a note when the `## Gotchas` lines of CLAUDE.md differ between the session's start commit
+# and HEAD (lib/memlint.mjs gotchasDiff; decisions/2026-10-26-gotchas-in-place). Coding sessions only: verify and retro
+# are read-only, restrict reverts their CLAUDE.md. In a lane, the slot's commits.
+gotchas() {
+  local d
+  git show "$2:CLAUDE.md" > "$SCRATCH/gotchas-before.md" 2> /dev/null || : > "$SCRATCH/gotchas-before.md"
+  git show HEAD:CLAUDE.md > "$SCRATCH/gotchas-after.md" 2> /dev/null || : > "$SCRATCH/gotchas-after.md"
+  d=$(node "$HARNESS_HOME/lib/memlint.mjs" gotchas "$SCRATCH/gotchas-before.md" "$SCRATCH/gotchas-after.md") && [[ -n $d ]] && note "$1: gotchas $d"
+  return 0
+}
+
 # <m> → how many verify entries the milestone has in entries.jsonl (the rendered progress.md shows only the 15 newest in
 # full). A run with a list always has the file by its first verify: the start-up or the initializer's append creates it
 vcount() {
   jq -cR --arg m "$1" 'fromjson? | objects | select(.kind == "verify" and .feature == $m)' "$REC/entries.jsonl" 2> /dev/null | wc -l
 }
 
-# <feature or milestone> → <run>/context.md, the bounded pack of the journal the next coding or verify session reads first
-# (lib/entries.mjs pack, at most CONTEXT_PACK_BYTES; decisions/2026-10-22-context-pack). Committed with the run record
-# on the record branch; materialize copies it into the slot.
+# <feature or milestone> [<cap>] → <run>/context.md, the bounded pack of the journal the next coding or verify session
+# reads first (lib/entries.mjs pack, at most <cap>, default CONTEXT_PACK_BYTES; verify passes CONTEXT_PACK_BYTES_VERIFY:
+# decisions/2026-10-22-context-pack, decisions/2026-10-26-pack-current-rules). Its Gotchas and Current rules are the
+# cwd's (a lane's slot: the code the session sees). Committed with the run record on the record branch; materialize
+# copies it into the slot.
 context_() {
-  if node "$HARNESS_HOME/lib/entries.mjs" pack "$REC" "$1" "$CONTEXT_PACK_BYTES" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
+  if node "$HARNESS_HOME/lib/entries.mjs" pack "$REC" "$1" "${2:-$CONTEXT_PACK_BYTES}" "$PWD" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
     mv -f "$SCRATCH/context.md" "$REC/context.md"
     note "context.md for $1: $(wc -c < "$REC/context.md") bytes$(sed -n 's/^_\([0-9]*\) items left out at .*/, \1 items left out/p' "$REC/context.md")"
   else   # never a stale pack: the session is sent to the full record instead
@@ -281,7 +294,7 @@ context_() {
   # committed now, alone: anything else uncommitted in the record stays for its own commit (E4 review F4)
   git -C "$RWT" add -- "$RUN_DIR/context.md" && { git -C "$RWT" diff --cached --quiet -- "$RUN_DIR/context.md" || git -C "$RWT" commit -q -m "HARNESS: context pack for $1" -- "$RUN_DIR/context.md"; }
 }
-context() { record context_ "$1"; }
+context() { record context_ "$@"; }
 
 # The project's init, then the suite (cached per code tree); both go into the next prompt. The init runs in
 # harness-<run>-svc (decisions/2026-10-25-services-scope): what it backgrounds (a dev server) stays there, capped at
@@ -300,10 +313,31 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
   [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \
     || rm -f "$STATE/tests-start"
-  # once per run: a suite whose output has no count leaves the report's tests at `?` (a cached green wrote no check.out)
-  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-nomatch && -z $(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out") ]]; then
-    note "test count: no match in the suite's output (tests start/end stay unknown)"; touch "$STATE/testcount-nomatch"
+  # once per run, from the first suite that wrote a check.out (a cached green wrote none): where the count came from, so
+  # a scraped count is told from the contract and a missing one explains the report's `?` (testcount-nomatch: older runs)
+  local src
+  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-source && ! -f $STATE/testcount-nomatch ]]; then
+    src=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" --source); src=${src##* · }
+    case $src in
+      contract) note "test count: HARNESS_TESTS contract" ;;
+      none|"") src=none; note "test count: no match in the suite's output (tests start/end stay unknown)" ;;
+      *) note "test count: parsed ($src)" ;;
+    esac
+    echo "$src" > "$STATE/testcount-source"
   fi
+}
+
+# tests-end: a green tree's count, its marker's (a continued segment's scratch has no output of a tree cached green),
+# else (an older, empty marker) its output's; a red tree has none, whatever its output counted. Written after every
+# session too (by its lane, of its slot's tree), so status and report show it between sessions; tests-start, the run's
+# baseline, is never rewritten (decisions/2026-10-26-test-count-contract). Without a count only `final` (finish) clears
+# it: mid-run, the last stays. The cwd's tree, with this process's SCRATCH.
+tests_end() {   # [final]
+  local key n=""; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
+  if [[ -f $STATE/green/green-$key ]]; then
+    n=$(cat "$STATE/green/green-$key"); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out" 2> /dev/null)
+  fi
+  if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; elif [[ ${1:-} == final ]]; then rm -f "$STATE/tests-end"; fi
 }
 
 pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the archive has every entry in full

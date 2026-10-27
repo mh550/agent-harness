@@ -177,14 +177,26 @@ deadline_verify() {
 }
 
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
-  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x
+  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x backlog nolist="" p=$RUN_DIR/retro-proposals.json
   rstart=$(git rev-parse HEAD)
-  HARNESS_SUMMARY=$REC/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
+  # the backlog as the list prints it ({{BACKLOG}}): ids to reuse and statuses to cite, not re-argue
+  backlog=$(node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --max-bytes 6000 2> "$SCRATCH/backlog.err") \
+    || nolist="backlog: the retro prompt has no backlog: $(head -1 "$SCRATCH/backlog.err" | cut -c1-200 | sed 's/^backlog: //')"
+  HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$REC/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
-  reverted=$(restrict "$rstart" nothing retro | paste -sd' ')
+  # its one output file besides retro.md: restrict deletes it, so it goes to scratch first, and only when this retro
+  # wrote it (not a continued run's earlier copy) as a plain file of at most 64 KB (a symlink would carry another file
+  # into the record); ledger() merges it into the backlog (decisions/2026-10-26-retro-backlog)
+  rm -f "$SCRATCH/retro-proposals.json"
+  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= 65536 )) && ! git show "$rstart:$p" 2> /dev/null | cmp -s - "$p" \
+    && cp "$p" "$SCRATCH/retro-proposals.json"
+  reverted=$(restrict "$rstart" nothing retro | { [[ -f $SCRATCH/retro-proposals.json ]] && grep -vxF "$p" || cat; } | paste -sd' ')
   for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict: the driver's notes, not the retro's edits
   [[ -n $reverted ]] && note "retro: reverted edits (it is read-only): $reverted"
+  [[ -n $nolist ]] && note "$nolist"   # noted here: restrict reverts a note written before the session
+  if [[ -f $SCRATCH/retro-proposals.json ]]; then cp "$SCRATCH/retro-proposals.json" "$REC/"   # in the run record, as retro.md
+  else note "backlog: the retro wrote no retro-proposals.json"; fi
   MET final "$rlog" > "$SCRATCH/retro.md"
   [[ -s $SCRATCH/retro.md ]] && ! MET limit "$rlog" "$S_WALL" "$S_EXIT" > /dev/null && cp "$SCRATCH/retro.md" "$REC/retro.md"
   record MET append "$rlog" "$REC/metrics.jsonl" "$RUN_ID" retro "" "$(F model "$RETRO_MODEL")" true "$S_WALL" "$S_EXIT" false retro "$S_PEAK"
@@ -196,9 +208,15 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   (
     flock 9
     SUM ledger-line "$REC/summary.json" "$LEDGER/runs.jsonl"
+    local out paths=("$d" "$LEDGER/runs.jsonl")   # the retro's proposals into the backlog; a bad file is noted and skipped whole
+    if [[ -f $SCRATCH/retro-proposals.json ]]; then
+      out=$(node "$HARNESS_HOME/lib/backlog.mjs" merge "$LEDGER/retro-backlog.jsonl" "$SCRATCH/retro-proposals.json" "$RUN_ID" "$(date +%F)" 2>> "$STATE/run.log")
+      note "${out:-backlog: merge failed (run.log)}"
+    fi
+    [[ -f $LEDGER/retro-backlog.jsonl ]] && paths+=("$LEDGER/retro-backlog.jsonl")
     if [[ $LEDGER_COMMIT == 1 ]] && git -C "$LEDGER" rev-parse --show-toplevel > /dev/null 2>&1; then
-      git -C "$LEDGER" add -- "$d" "$LEDGER/runs.jsonl" \
-        && git -C "$LEDGER" commit -q -m "ledger: $RUN_ID ($PROJECT_NAME): $(F summary "$LIST")" -- "$d" "$LEDGER/runs.jsonl" \
+      git -C "$LEDGER" add -- "${paths[@]}" \
+        && git -C "$LEDGER" commit -q -m "ledger: $RUN_ID ($PROJECT_NAME): $(F summary "$LIST")" -- "${paths[@]}" \
         || log "ledger commit skipped"
     fi
   ) 9> "$STATE_ROOT/ledger.lock"
@@ -211,12 +229,9 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
   merge_milestones
-  # the tree's count (the slot's, the last lane's code, if one opened): its green marker's (a continued segment's
-  # scratch has no output of a tree cached green), else its output's
-  local key n f dir=$RWT; [[ -n $SLOT && -d $SLOT ]] && dir=$SLOT
-  key=$(cd "$dir" && { green; node "$HARNESS_HOME/lib/treekey.mjs"; })
-  n=$(cat "$STATE/green/green-$key" 2> /dev/null); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out")
-  if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; else rm -f "$STATE/tests-end"; fi
+  # the tree's count (the slot's, the last lane's code, if one opened): tests_end's, a red tree none
+  local key f dir=$RWT; [[ -n $SLOT && -d $SLOT ]] && dir=$SLOT
+  key=$(cd "$dir" && { green; tests_end final; node "$HARNESS_HOME/lib/treekey.mjs"; })   # scratch_done keeps this tree's output
   services_down "$1"; lanes_services_down "$1"   # after the last suite run, which may need them
   # the last lane's outputs are the run's (scratch_done keeps them in the state dir)
   if [[ -n ${LAST_LANE:-} && -d $SCRATCH/lanes/$LAST_LANE ]]; then
@@ -338,6 +353,20 @@ deploy_check() {
   return 0
 }
 deploy_check
+
+# Every segment: the project's memory files linted (lib/memlint.mjs; decisions/2026-10-26-memlint), one note per
+# finding. Notes only: a finding or a failing lint never stops the run. HARNESS_MEMLINT stands in for the lint (tests).
+# Findings are stdout only (a node warning on stderr is no finding); a store on a hung mount can't hold the segment.
+memlint_check() {
+  local out rc f err=$SCRATCH/memlint.err
+  if [[ ${HARNESS_MEMLINT:-} ]]; then out=$(timeout 60 "$HARNESS_MEMLINT" "$WT" 2> "$err")
+  else out=$(timeout 60 node "$HARNESS_HOME/lib/memlint.mjs" "$WT" 2> "$err"); fi
+  rc=$?
+  if (( rc )); then f=$(grep -m1 -v '^\s*$' "$err" 2> /dev/null); note "memlint: failed (exit $rc)${f:+: ${f:0:200}}"; return 0; fi
+  while IFS= read -r f; do [[ -n $f ]] && note "memlint: $f"; done <<< "$out"
+  return 0
+}
+memlint_check
 
 # One probe per segment (this driver process): without a user bus every session runs bare, said once
 unset SCOPE_OK; scope_available || note "no user systemd: sessions and suites run uncapped"

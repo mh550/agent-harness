@@ -19,9 +19,9 @@ checkouts on this machine.
 - **The suite** is the command named under *This run* (it runs the project's suite, cached per code
   tree, so a tree that was green isn't run twice). While iterating, pass arguments for a subset:
   `<suite> <args>`. Run it in full once before you flip `passes`.
-- **Decisions.** A decision that is Michael's: take the simplest reversible default, record it where
-  the project rules say decisions live (as `D<n> *default*`), and ask it as a direct question in your
-  entry's `questions`.
+- **Decisions.** A decision that is Michael's: take the simplest reversible default, record it as
+  the Where things go block says (below, or in `CLAUDE.md`), marked *default*, and ask it as a
+  direct question in your entry's `questions`.
 - **Waiting on Michael.** Only when there is no safe default and nothing left to build without
   him (a secret or value only he can set, a sudo step, an approval the policy requires): write the
   exact question or steps in the run directory's `INBOX.md` **above** `## Answers`, finish as below
@@ -66,7 +66,16 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    `proposed_changes` in your entry.
 2. The suite green. If your work is half done, commit only what leaves the suite green.
    The harness un-passes a feature whose session ends with a red suite.
-3. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object. The
+3. Write each `Promote to Gotchas` item of context.md that still holds (a fact an earlier session
+   recorded with `affects: ["project"]`) as a line under `## Gotchas` in the project's `CLAUDE.md`,
+   shortened but keeping its opening words (that is how the harness sees it carried); one that no
+   longer holds, or that you drop from a full section, goes in your entry's `resolved`. And if this
+   session taught you a fact a fresh session would otherwise rediscover, add or edit one line there
+   too (create the section if it has none): at most 160 characters, ending `(<run> <date>)` (the
+   run id from the `Run:` line under *This run*, today's date). 15 lines at most: at 15, replace
+   the least useful. A wrong line is edited in place; never rewrite the section. The harness notes
+   each change in `harness-log.md`.
+4. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object. The
    harness validates it, adds it to `entries.jsonl` and deletes it; a missing or invalid one leaves
    only a minimal entry (your final message and the files git saw change). For example:
 
@@ -76,18 +85,23 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
      "files": ["lib/parse.mjs", "tests/run.sh"], "verified_how": "tests: 211/212, the new check fails on …",
      "tests_before": 211, "tests_after": 212,
      "dead_ends": [{ "tried": "trimming in render.mjs", "why": "the prompt prefix check then fails" }],
-     "discoveries": [{ "text": "render.mjs keeps trailing blank lines", "affects": ["D", "run"] }],
-     "questions": ["Should X default to off?"], "proposed_changes": ["C step 2 should name tests/run.sh"] }
+     "discoveries": [{ "text": "render.mjs keeps trailing blank lines", "affects": ["D", "run"] },
+                     { "text": "the fixtures must end in a newline", "affects": ["project"] }],
+     "questions": ["Should Y default to off?"], "resolved": ["Should X default to off?"],
+     "proposed_changes": ["C step 2 should name tests/run.sh"] }
    ```
 
    Required: `feature` (your feature id), `kind` (`"coding"`), `outcome` (`passes` · `not yet` ·
    `parked`) and `summary` (at most 400 characters). The rest may be left out: `dead_ends` is what
    you tried that failed and why (the next attempt reads it), `discoveries` what changes other
-   features or the whole run (`affects`: feature ids, milestone ids or `"run"`), `questions` are for
-   Michael. Say what changed (files, test count before → after), how you verified it (real names
-   and numbers) and what the next session must know. The harness renders `progress.md` from these
+   features or the whole run (`affects`: feature ids, milestone ids, `"run"`, or `"project"` for a
+   fact that outlives the run), `questions` are for Michael, `resolved` the questions you found
+   answered (in `## Answers` or a decision) and the `Promote to Gotchas` facts you left out of
+   `## Gotchas`, copied as context.md shows them; the pack then leaves them out. Say what changed (files, test count
+   before → after), how you verified it (real names and numbers) and what the next session must
+   know. The harness renders `progress.md` from these
    entries for Michael's phone: don't edit it.
-4. Commit `<feature id>: <what changed>` and run `git push -u origin <branch>`.
+5. Commit `<feature id>: <what changed>` and run `git push -u origin <branch>`.
 
 Final message: at most 100 words. Say whether the feature passes, the commit, and the test count.
 
@@ -100,6 +114,7 @@ Final message: at most 100 words. Say whether the feature passes, the commit, an
 Feature: `{{FEATURE}}`
 Milestone: {{MILESTONE}}
 {{CLOCK}}
+{{REVIEW_DIFF}}
 
 ## Init output
 

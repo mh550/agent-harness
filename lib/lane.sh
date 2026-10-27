@@ -24,6 +24,7 @@ source "$HARNESS_HOME/lib/scope.sh"
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID
 # shellcheck source=lib/record.sh
 source "$HARNESS_HOME/lib/record.sh"
+source "$HARNESS_HOME/lib/review.sh"   # review_diff: the lane's diff the review gate sizes a review's model by (M6)
 run_paths   # the record worktree's paths; from here the lane works in its slot
 LANE=$M LANEU=${M//[^A-Za-z0-9_]/_} LDIR=$STATE/lanes/$M LS=$STATE/lanes/$M T0=$HARNESS_T0 DEADLINE=$HARNESS_DEADLINE
 SLOT=$WT_ROOT_DIR/lanes/$RUN_ID/slot-$LANE_SLOT LBRANCH=harness-lane/$RUN_ID/$M
@@ -56,7 +57,7 @@ verify() {
   note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
   run_init fresh
   for model in "${models[@]}"; do
-    context "$m"   # each round: an escalated verify's pack has the first round's entry
+    context "$m" "$CONTEXT_PACK_BYTES_VERIFY"   # each round: an escalated verify's pack has the first round's entry
     materialize
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
     mem_gate || run_init   # before the clock, so the prompt's time is the session's; a wait stopped the services
@@ -168,6 +169,12 @@ while :; do
     [[ -f $STATE/needs-$M ]] && lane_exit 12 "$M needs Michael: $(cat "$LDIR/need" 2> /dev/null)"
     continue   # a feature back in the queue
   fi
+  esc=""   # a sonnet review's escalation round goes before any pick: same feature, REVIEW_ESCALATE_MODEL, no attempt (M6)
+  if [[ -s $LS/review-escalate ]]; then   # the lane's own: a feature of this milestone (decisions/2026-10-27-p1-main-merge)
+    IFS=$'\t' read -r id rc ri rdiff < "$LS/review-escalate"
+    milestone=$(F milestone "$LIST" "$id") mdl=$(F model "$REVIEW_ESCALATE_MODEL") esc="sonnet found $rc Critical, $ri Important"
+    rdiff="${rdiff%; *}; escalated to $REVIEW_ESCALATE_MODEL"   # the measure stands; the model it named doesn't
+  else
   next=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$M")
   if [[ -z $next ]]; then
     # the default lane (features with no milestone) has no verify: done when they all pass
@@ -179,13 +186,33 @@ while :; do
     lane_exit 10 "given up ${g:-(nothing left to try)}"
   fi
   IFS=$'\t' read -r id mdl milestone <<< "$next"
+  fi
   # the memory gate before the attempt and its prompt; after a wait, the checks above (deadline, stop, pause, the pick)
   # run again, and the gate doesn't: once is enough, then the session starts anyway (decisions/2026-10-25-memory-gate)
   if (( ! gated )) && ! mem_gate; then gated=1; continue; fi; gated=0
+  [[ $esc ]] || rdiff=""   # the review gate: a review runs on sonnet under REVIEW_OPUS_LINES changed lines, on opus at or over (M6)
+  kind=$(F kind "$LIST" "$id")
+  if [[ ! $esc && $kind == review ]]; then
+    if rd=$(review_diff); then   # the slot's lane branch against main: this milestone's diff
+      read -r rfiles rlines <<< "$rd"
+      if [[ -e $STATE/review-escalated-$id ]]; then   # its round ran (and parked or failed): the next attempt stays there
+        mdl=$(F model "$REVIEW_ESCALATE_MODEL") rside="escalated earlier in this run; $REVIEW_ESCALATE_MODEL"
+      elif (( rlines < REVIEW_OPUS_LINES )); then mdl=$(F model sonnet) rside="under $REVIEW_OPUS_LINES; sonnet"
+      else mdl=$(F model opus) rside="at or over $REVIEW_OPUS_LINES; opus"; fi
+      note "review $id: $rlines changed lines, $rside"
+      rdiff="Review diff: $rfiles files, $rlines changed lines (git diff --shortstat origin/$MAIN_BRANCH...HEAD, the run directory left out); $rside"
+    else   # unmeasured: the safe side
+      mdl=$(F model opus); note "review $id: diff not measured ($rd); opus"
+      rdiff="Review diff: not measured ($rd); opus"
+    fi
+  fi
   n=$(rec_count "$STATE/sessions" 1)
-  record F bump "$ATT" "$id"
+  [[ $esc ]] || record F bump "$ATT" "$id"
   run_init; context "$id"; materialize   # the copy, the snapshot and the INBOX the session is judged against
-  HARNESS_CLOCK=$(clock "attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
+  if [[ $esc ]]; then sclock="Review round 2 of 2 (escalated: $esc)"; else sclock="attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS"; fi
+  # the counts the gate reads (the findings check below and the summary's found_nothing), asked in one fixed form
+  [[ $kind == review ]] && rdiff+=$'\n'"Review findings: give your entry's summary this review's findings as \`<n> Critical, <n> Important, <n> Minor\` (the driver reads the counts)."
+  HARNESS_CLOCK=$(clock "$sclock") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone HARNESS_REVIEW_DIFF=$rdiff prompt coding
   log "session $n · $id · $mdl"
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   sstart=$(git rev-parse HEAD)
@@ -194,13 +221,15 @@ while :; do
   journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
   take_question   # what it asked above ## Answers, into the record's INBOX.md
   lane_guard "$sstart" "$id"
+  gotchas "$id" "$sstart"   # a limited session's edit is noted too
 
   # A usage/rate limit, an API error or a session that did no work is not the feature's fault: give the attempt back.
   # Its work stays (committed above); its claims never reach the record (the copy goes).
   if why=$(MET limit "$slog" "$S_WALL" "$S_EXIT"); then
     IFS=$'\t' read -r reason reset <<< "$why"
     unmaterialize
-    record F unbump "$ATT" "$id"; rec_count "$STATE/sessions" -1 > /dev/null; limits=$(rec_count "$STATE/limits" 1)
+    [[ $esc ]] || record F unbump "$ATT" "$id"   # an escalation round runs again after the wait
+    rec_count "$STATE/sessions" -1 > /dev/null; limits=$(rec_count "$STATE/limits" 1)
     record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" false "$S_WALL" "$S_EXIT" true "" "$S_PEAK" "$LANE"
     if (( limits >= MAX_LIMIT_HITS )); then
       note "$limits sessions in a row refused ($reason)"
@@ -222,15 +251,29 @@ while :; do
     (( repairs >= MAX_REPAIRS )) && { note "$repairs sessions in a row edited the feature list; stopping for Michael"; lane_exit 12 "feature-list edits"; }
   fi
   if F passes "$SLIST" "$id" && ! green; then F unpass "$SLIST" "$id"; note "$id un-passed: suite red after the session"; fi
+  tests_end   # the slot's tree, after the un-pass above ran its suite
   passed=$(F passes "$SLIST" "$id" && echo true || echo false)
   unmaterialize
   if [[ $passed == true ]]; then record F pass "$LIST" "$id"; else record F unpass "$LIST" "$id"; fi
-  record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$(F kind "$LIST" "$id")" "$S_PEAK" "$LANE"
-  note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")"
+  record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$kind" "$S_PEAK" "$LANE"
+  note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")$( [[ -f $STATE/tests-end ]] && echo " · tests $(cat "$STATE/tests-end")")"
   if [[ $passed == false ]] && why=$(MET final "$slog" | sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' | head -1) && [[ -n $why ]]; then
-    record F unbump "$ATT" "$id"; record F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault
+    [[ $esc ]] || record F unbump "$ATT" "$id"; record F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault (an escalation round took none)
     note "$id parked (waiting on Michael): $why"
   else why=""; fi
+  if [[ $esc ]]; then rm -f "$LS/review-escalate"   # the round ran; its verdict stands
+  elif [[ -z $why && $mdl == "$(F model sonnet)" && $kind == review && ! -e $STATE/review-escalated-$id ]]; then
+    # a sonnet review that found something gets one round on REVIEW_ESCALATE_MODEL, once per feature; un-passed first,
+    # so its verify waits for that round's verdict (decisions/2026-10-27-review-gate). Its entry is in the record now.
+    if rf=$(node "$HARNESS_HOME/lib/entries.mjs" findings "$REC" "$id" "$SCRATCH/entry-final"); then
+      IFS=$'\t' read -r rc ri <<< "$rf"
+      if (( rc + ri > 0 )); then
+        note "review $id: sonnet found $rc Critical, $ri Important; one round on $REVIEW_ESCALATE_MODEL"
+        record F unpass "$LIST" "$id"; touch "$STATE/review-escalated-$id"
+        printf '%s\t%s\t%s\t%s\n' "$id" "$rc" "$ri" "${rdiff%%$'\n'*}" > "$LS/review-escalate"
+      fi
+    else note "review $id: no \"<n> Critical, <n> Important\" in its summary or final message; not escalated"; fi
+  fi
   rec_commit "HARNESS: after $id (passes=$passed)"; sync_record
   if [[ -n $why ]]; then   # after the push, so its links show the question; a failed post's note is committed too
     notify_park "$id" "$why"; [[ -n $(git -C "$RWT" status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: park notification failed"; sync_record; }

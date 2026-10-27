@@ -31,7 +31,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 
 ## How to verify
 
-- The suite: `bash tests/run.sh` (~3 min 30 s on this box: 208 s measured with `TEST_JOBS=4`, the default here, 395 checks; end-to-end
+- The suite: `bash tests/run.sh` (~3 min 30 s on this box: 208 s measured with `TEST_JOBS=4`, the default here; end-to-end
   with stub `claude`/`gh` on a throwaway repo; prints `PASS`/`FAIL` per check, a `<file>: <n> checks, <s> s` line per
   file, the slowest three with the wall time, and `N/M checks passed`). It must end with every check passing. It runs
   the files in `tests/checks/` (one per topic, each from a fresh throwaway state built by `tests/lib.sh`), `TEST_JOBS`
@@ -49,3 +49,17 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   for "a `D-H<n>` entry", this file is what it means.
 - Update `docs/architecture.md` (components, state, guards, end reasons as they apply) and `README.md` in the same
   milestone as the code.
+
+## Where things go
+
+- What happened, what you tried, what failed → your `entry.json` (the harness keeps the journal), never here.
+- A decision → one file in `journal/decisions/` (`decisions/2026-10-21-one-file-per-decision`), never numbered.
+  Overturned → edit it in place in its own file, plus one `Updated in place <date>: …` line; never a new file
+  beside a dead one.
+- A fact a fresh session would otherwise rediscover → one line under `## Gotchas`, edited in place.
+- Tonight's scope (what to build, drop or do first) → the run's brief, never this file.
+- How to work here (rules, conventions, workflow) → Michael's: say it in your entry's `proposed_changes`.
+- Anything the code, git or the suite can tell (test counts, file lists, constants) → nowhere.
+
+## Gotchas
+<!-- At most 15 lines, one fact each, edited in place: replace a wrong or least useful line, never rewrite the section. -->
