@@ -200,10 +200,19 @@ init: a Vercel project without vercel.json gets one
 init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
 lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end by default; commented in the user template; HARNESS_LANE_POLL in the driver's usage
+lanes pause: the lane finishes its session and waits (no new session), and the coordinator logs paused once
 lanes record: a lane commit touching .harness/runs/ is reverted with a note, and harness/<run> never gets it
 lanes record: a session's question above ## Answers lands in the record's INBOX.md above that line
 lanes record: the slot is gone at the end, the run keeps one worktree, the merged lane's branch is deleted
 lanes record: two sessions' passes flips both land while the record moved between them
+lanes run: MAX_LANES=1 ends done with M1 and M2 merged by two PRs
+lanes run: a lane's sessions, suites and services run in its own units (harness-<run>-<m>-s<n>, -check-<pid>, -svc)
+lanes run: a lane's verify judges the copy against its own snapshot (no list repair, no failed repair note)
+lanes run: each lane is noted opened in slot 0 and then closed, M1's before M2's
+lanes run: every coding and verify row in metrics.jsonl carries its lane; the initializer and the retro none
+lanes run: finish leaves the run one worktree (the record's), no slot, and deletes the merged lanes' branches
+lanes run: harness/ln holds every entry; each lane wrote its exit line, closed by the coordinator
+lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left
 lanes: a complete unverified milestone is a candidate (to be verified); a given-up one with nothing to try is not
 lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)
 lanes: a milestone whose first feature has after: [] opens at once, beside the first

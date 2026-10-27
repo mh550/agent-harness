@@ -37,7 +37,8 @@ first=$(head -1 <<< "$prompt")
 [[ -n ${STUB_DIR:-} ]] && echo "${HARNESS_RUN_ID:-} ${HARNESS_CACHE:-unset}" >> "$STUB_DIR/cache.log"   # what each headless session sees (L3-02); not in scratch, which finish deletes
 L=${HARNESS_RUN_DIR:-.}/feature_list.json
 after_session() { awk '/^# This session$/ { s = 1 } s && '"$1" <<< "$prompt"; }   # an awk rule, applied below `# This session` only (a brief can't fake an id)
-count() { local f=$HARNESS_SCRATCH/count-$1 n; n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$f"; echo "$n"; }
+RS=${HARNESS_SCRATCH:-}; RS=${RS%%/lanes/*}   # the run's scratch, not a lane's: the stub's own bookkeeping is run-wide (STUB_LIMIT_HITS counts across lanes)
+count() { local f=$RS/count-$1 n; n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$f"; echo "$n"; }
 set_passes() { node -e 'const fs=require("fs"),[f,id,v]=process.argv.slice(1),l=JSON.parse(fs.readFileSync(f));for(const x of l.features)if(x.id===id)x.passes=v==="true";fs.writeFileSync(f,JSON.stringify(l,null,2))' "$L" "$1" "$2"; }
 # <id> <n> <jq args…> → the session's journal entry, built by jq (E4-03); STUB_BAD_ENTRY=<id>: that id's first session writes `{not json`
 entry() { local id=$1 n=$2; shift 2
@@ -87,7 +88,7 @@ JSON
       echo '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":0,"num_turns":1,"duration_ms":400,"result":""}'; exit 0
     fi
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
-    echo "$id attempt $n" >> "$HARNESS_SCRATCH/sessions.log"
+    echo "$id attempt $n" >> "$RS/sessions.log"
     if [[ ${STUB_EDIT:-} ]]; then   # edits only that path, passes nothing; keeps the init output it was started with (the suite cache, S3)
       cp "$HARNESS_SCRATCH/init.out" "$STUB_DIR/init-$HARNESS_RUN_ID-$n.out"
       mkdir -p "$(dirname "$STUB_EDIT")" && echo "$id $n" >> "$STUB_EDIT"
@@ -106,8 +107,8 @@ JSON
       sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/left.pids"
       [[ -n ${STUB_SCOPE_UNIT:-} ]] && echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"
     fi
-    if [[ ${STUB_ADD_TEARDOWN:-} && ! -f $HARNESS_SCRATCH/teardown-added ]]; then   # the first coding session adds a hook mid-run (a lane commit)
-      printf '#!/usr/bin/env bash\ntouch "$HARNESS_SCRATCH/teardown-late.marker"\n' > .harness/teardown.sh && chmod +x .harness/teardown.sh; touch "$HARNESS_SCRATCH/teardown-added"
+    if [[ ${STUB_ADD_TEARDOWN:-} && ! -f $RS/teardown-added ]]; then   # the first coding session adds a hook mid-run (a lane commit)
+      printf '#!/usr/bin/env bash\ntouch "${HARNESS_SCRATCH%%%%/lanes/*}/teardown-late.marker"\n' > .harness/teardown.sh && chmod +x .harness/teardown.sh; touch "$RS/teardown-added"
       git add -A && git commit -qm "$id: a teardown hook" && git push -q origin "$HARNESS_BRANCH"
       if [[ ${STUB_PHONE_STOP_CODING:-} ]]; then   # then Michael stops the run from his phone, as STUB_PHONE_STOP does
         tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "harness/$HARNESS_RUN_ID"
@@ -155,7 +156,7 @@ JSON
     ok ;;
   "# Verify session")
     m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "verify-$m")
-    echo "verify $m $n" >> "$HARNESS_SCRATCH/sessions.log"
+    echo "verify $m $n" >> "$RS/sessions.log"
     if [[ ${STUB_VERIFY_LIMIT:-} && $m == M1 && $n == 1 ]]; then cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; fi   # refused
     if [[ ${STUB_VERIFY_EDITS:-} && $n == 1 ]]; then echo hack > "hack-$m.txt"; echo "edited" >> CLAUDE.md; echo null >> "$HARNESS_RUN_DIR/entries.jsonl"; fi   # a verifier "fixing" code and the journal
     [[ $m == M1 && ( $n == 1 || ${STUB_STRICT_VERIFIER:-} ) && ! ${STUB_LENIENT:-} ]] && set_passes A false   # catches a false pass
@@ -167,7 +168,7 @@ JSON
     git add -A && git commit -qm "verify $m ($n)" --allow-empty && git push -q origin "$HARNESS_BRANCH"
     ok 0.1 ;;
   "# Retro")
-    echo "retro" >> "$HARNESS_SCRATCH/sessions.log"
+    echo "retro" >> "$RS/sessions.log"
     if [[ ${STUB_LEAVE_RETRO:-} == 1 ]]; then sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/left.pids"   # as STUB_LEAVE_PROCESS, for the read-only retro
       [[ -n ${STUB_SCOPE_UNIT:-} ]] && echo $! >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"; fi
     [[ ${STUB_RETRO_EDITS:-} ]] && { echo "retro was here" > retro-hack.txt; echo x >> "$HARNESS_RUN_DIR/progress.md"; }

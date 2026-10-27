@@ -50,9 +50,10 @@ ug checkout -q -b m1; echo m1 > "$U/wt/run/f"; ug commit -qam m1; ug tag run/u/M
 ug checkout -q -b harness/u; mkdir -p "$U/wt/run/.harness/runs/u"
 printf '{"features":[{"id":"A","milestone":"M1","passes":true},{"id":"B","milestone":"M2","after":["A"],"passes":false}]}\n' > "$U/wt/run/.harness/runs/u/feature_list.json"
 printf 'status: run\n\n## Answers\n' > "$U/wt/run/.harness/runs/u/INBOX.md"
-uenv() { STATE=$U/st RWT=$U/wt/run REC=$U/wt/run/.harness/runs/u RUN_DIR=.harness/runs/u RUN_ID=u MAIN_BRANCH=main RBRANCH=harness/u WT_ROOT_DIR=$U/wt PORT=7999
+uenv() { source "$HERE/../lib/record.sh"   # first: the stand-ins below replace its F, note and log
+  STATE=$U/st LS=$U/st LDIR="" RWT=$U/wt/run REC=$U/wt/run/.harness/runs/u RUN_DIR=.harness/runs/u RUN_ID=u MAIN_BRANCH=main RBRANCH=harness/u WT_ROOT_DIR=$U/wt PORT=7999
   LIST=$REC/feature_list.json; F() { node "$HERE/../lib/features.mjs" "$@"; }; note() { echo "$*" >> "$U/notes"; }; log() { :; }
-  export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t; source "$HERE/../lib/record.sh"; }
+  export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t; }
 u_conf=$( uenv; slot_open M2; echo "rc=$? pwd=$PWD" )
 check "slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>" \
   '[[ $u_conf == "rc=1 pwd=$U/wt/run" ]] && grep -qx "M2: its base conflicts (M1 vs main); needs Michael" "$U/notes" && [[ -f $U/st/needs-M2 ]]'

@@ -174,15 +174,16 @@ check "no code PR touches the run record, and the record branch holds every entr
   && [[ $(git -C "$T/origin.git" ls-tree -r main --name-only | grep -c "\.harness/runs/") == 0 ]]'
 
 # ---- capped sessions (L1-03): every claude session in harness-<run>-s<n> under timeout -k 30s, stopped after it returns ----
-sd_units() { grep -x -- "--unit=harness-$1-s[0-9]*" "$T/systemd.log" | sed 's/^--unit=//' | sort; }   # the session scopes run <run> started
-sd_stops() { grep -A1 -x stop "$T/systemd.log" | grep -x "harness-$1-s[0-9]*\.scope" | sed 's/\.scope$//' | sort; }   # and the ones it stopped
+# the session scopes run <run> started (a lane's are harness-<run>-<m>-s<n>), and the ones it stopped
+sd_units() { grep -x -- "--unit=harness-$1-\([A-Za-z0-9_]*-\)\?s[0-9]*" "$T/systemd.log" | sed 's/^--unit=//' | sort; }
+sd_stops() { grep -A1 -x stop "$T/systemd.log" | grep -x "harness-$1-\([A-Za-z0-9_]*-\)\?s[0-9]*\.scope" | sed 's/\.scope$//' | sort; }
 check "sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s" 'C1=$(sd_with --unit=harness-demo-s1); ( for a in --user --scope -p MemoryHigh=5G MemoryMax=6G MemorySwapMax=1G \
   timeout -k 30s 100m "$HERE/stub-claude.sh" "# Initializer session"; do grep -qxF -- "$a" <<< "$C1" || exit 1; done ) && grep -A4 -x timeout <<< "$C1" | paste -sd" " | grep -qxF "timeout -k 30s 100m $HERE/stub-claude.sh"'
 check "each session's scope is stopped after it returns" 'U=$(sd_units demo); [[ $(wc -l <<< "$U") -ge 9 && $U == "$(sd_stops demo)" ]] \
   && [[ $(grep -cE "^[0-9-]+ [0-9:]+   (init|coding|verify|retro) exit [0-9]+ · " "$HARNESS_STATE/proj/demo/run.log") == $(wc -l <<< "$U") ]]'
 check "a run whose sessions leave nothing gets no leftover or cap note" '[[ -s $T/demo-hlog.md ]] && ! grep -q "process(es) running\|hit its memory cap\|no user systemd" "$T/demo-hlog.md"'
 # L1-07: headless sessions load only the project's MCP servers; demo commits no .mcp.json, so no --mcp-config (run mp1 below has one)
-check "every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config" 'awk "BEGIN { RS = \"===\\n\" } /--unit=harness-demo-s[0-9]+\\n/ { n++; if (/\\n--strict-mcp-config\\n/) s++; if (/\\n--mcp-config\\n/) m++ } END { exit !(n >= 9 && s == n && !m) }" "$T/systemd.log" \
+check "every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config" 'awk "BEGIN { RS = \"===\\n\" } /--unit=harness-demo-([A-Za-z0-9_]+-)?s[0-9]+\\n/ { n++; if (/\\n--strict-mcp-config\\n/) s++; if (/\\n--mcp-config\\n/) m++ } END { exit !(n >= 9 && s == n && !m) }" "$T/systemd.log" \
   && grep -q "  MCP servers: none (--strict-mcp-config; no .mcp.json)" "$HARNESS_STATE/proj/demo/run.log"'
 STUB_LEAVE_PROCESS=1 STUB_LEAVE_RETRO=1 STUB_OOM=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" leftover --spec SPEC.md --foreground > "$T/run-left.out" 2>&1
 check "a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)" '[[ $(hlog leftover | grep -c "coding session left 1 process(es) running; stopped with its scope") -ge 3 ]] \
@@ -205,7 +206,7 @@ check "metrics.jsonl: mem_peak_mb is null when uncapped" 'jq -se "length >= 5 an
 # ---- services_down (L2-03): the project's teardown, then the svc scope, then one note; on finish and in the EXIT trap ----
 sd_last() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { n = NR } END { print n + 0 }' "$T/systemd.log" 2>/dev/null; }   # the index of the last stub call containing $1
 check "finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)" '[[ -f $T/scratch/proj/demo/teardown-done.marker ]] \
-  && D=$(sd_at $'"'"'teardown\ndemo\ndone\n'"'"') && [[ -n $D ]] && (( D < $(sd_last $'"'"'stop\nharness-demo-svc.scope\n'"'"') )) && [[ $(grep -c "· services stopped (done)$" "$T/demo-hlog.md") == 1 ]] \
+  && D=$(sd_at $'"'"'teardown\ndemo\ndone\n'"'"') && [[ -n $D ]] && (( D < $(sd_last $'"'"'stop\nharness-demo-M2-svc.scope\n'"'"') )) && [[ $(grep -c "· services stopped (done)$" "$T/demo-hlog.md") == 1 ]] \
   && [[ $(grep -c "services stopped" "$HARNESS_STATE/proj/demo/run.log") == 1 && $(sd_count $'"'"'teardown\ndemo\n'"'"') == 1 ]]'
 # a TERM to the driver mid-session: bash runs the EXIT trap at once and the session would live on, so the trap stops
 # the session's scope first (killing the slow stub claude), then the teardown and the svc scope
@@ -217,14 +218,14 @@ kill -TERM "$(cat "$HARNESS_STATE/proj/termed/driver.pid")"; wait "$TP"
 touch "$T/scope/harness-termed-s99".{alive,running}; TSL=$(sd_count list-units)   # a unit left behind: an ended run still lists none
 "$H" status termed > "$T/status-termed2.out" 2>&1; TSR2=$?; TSL2=$(sd_count list-units); rm -f "$T/scope/harness-termed-s99".*
 check "harness status lists a running run's units with MemoryCurrent; an ended run's none" '[[ $TSR == 0 && $TSR2 == 0 ]] && grep -q "^termed (proj) · running" "$T/status-termed.out" \
-  && grep -Eqx "    harness-termed-s[0-9]+ · MemoryCurrent 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
+  && grep -Eqx "    harness-termed-M1-s[0-9]+ · MemoryCurrent 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
   && grep -q "^termed (proj) · ended: driver exited" "$T/status-termed2.out" && ! grep -q MemoryCurrent "$T/status-termed2.out" && [[ $TSL2 == "$TSL" ]]'
-termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* ]] && echo "$p"; done; }
+termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* || $(readlink "/proc/$p/cwd") == "$T/wt/proj/lanes/termed/"* ]] && echo "$p"; done; }
 check "the EXIT trap commits its services note: harness-log.md is clean after a TERM" '[[ -z $(git -C "$T/wt/proj/termed" status --porcelain -- .harness/runs/termed/harness-log.md) ]] \
   && git -C "$T/wt/proj/termed" show HEAD:.harness/runs/termed/harness-log.md | grep -q "· services stopped (driver exited)$"'
-check "a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it" 'U=$(grep -x -- "--unit=harness-termed-s[0-9]*" "$T/systemd.log" | tail -1 | sed "s/^--unit=//")
+check "a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it" 'U=$(grep -x -- "--unit=harness-termed-M1-s[0-9]*" "$T/systemd.log" | tail -1 | sed "s/^--unit=//")
   D=$(sd_at $'"'"'teardown\ntermed\ndriver exited\n'"'"'); SS=$(sd_last "stop"$'"'"'\n'"'"'"$U.scope"$'"'"'\n'"'"'); [[ $t_mid == 1 && -n $U && -n $D && -f $T/scratch/proj/termed/teardown-driver-exited.marker ]] \
-  && (( SS > 0 && SS < D && D < $(sd_last $'"'"'stop\nharness-termed-svc.scope\n'"'"') )) && sleep 1 && [[ -z $(termed_left) ]] \
+  && (( SS > 0 && SS < D && D < $(sd_last $'"'"'stop\nharness-termed-M1-svc.scope\n'"'"') )) && sleep 1 && [[ -z $(termed_left) ]] \
   && grep -q " services stopped (driver exited)$" "$HARNESS_STATE/proj/termed/run.log" && grep -q "^driver exited unexpectedly" "$HARNESS_STATE/proj/termed/ended" && [[ ! -e $HARNESS_STATE/proj/termed/driver.pid ]]'
 # a TERM during an init (L2-06): the trap stops the init (the svc scope) before the teardown, or the init goes on
 # starting what the teardown just stopped; a TERM during finish's own teardown waits for it, never runs a second
@@ -248,7 +249,7 @@ p_seen=0; for _ in $(seq 600); do hlog paused | grep -q "· services stopped (pa
 "$H" resume paused > /dev/null; wait "$PP"
 check "PAUSE stops the services before its poll, and the next init starts them again" 'D=$(sd_at $'"'"'teardown\npaused\npaused\n'"'"') \
   && [[ $p_seen == 1 && -n $D && -f $T/scratch/proj/paused/teardown-paused.marker && $(hlog paused | grep -c "· services stopped (paused)$") == 1 ]] \
-  && (( $(sd_last $'"'"'--unit=harness-paused-svc\n'"'"') > D )) && grep -q "^paused (INBOX.md" <(cut -d" " -f3- "$HARNESS_STATE/proj/paused/run.log") && [[ $($F summary "$(list paused)") == "3/3 passing" ]]'
+  && (( $(sd_last $'"'"'--unit=harness-paused-M1-svc\n'"'"') > D )) && grep -q "^paused (INBOX.md" <(cut -d" " -f3- "$HARNESS_STATE/proj/paused/run.log") && [[ $($F summary "$(list paused)") == "3/3 passing" ]]'
 # systemd refusing the scope after the probe passed (a MemoryMax it can't parse): each session runs bare, and says so
 { cat "$T/base-config.sh"; echo SESSION_MEMORY_MAX=bogus; } > "$T/user-config.sh"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" refused --spec SPEC.md --foreground > "$T/run-refused.out" 2>&1
@@ -266,8 +267,8 @@ check "memory gate: under 5 GB the driver waits, then starts the session anyway 
 check "memory gate: the wait stops the services (services stopped (memory wait))" 'hlog lowmem | grep -q "· services stopped (memory wait)$"'
 # the memory wait stops the services (L2-03 made services_down real): every session before finish's teardown starts
 # with harness-<run>-svc up, verify's included (its gate came after its run_init: now `mem_gate || run_init`)
-svc_gaps() { awk -v r="$1" 'BEGIN { RS = "===\n" } index($0, "teardown\n" r "\ndone\n") { exit } index($0, "stop\nharness-" r "-svc.scope\n") { up = 0 }
-  index($0, "--unit=harness-" r "-svc\n") { up = 1 } $0 ~ "--unit=harness-" r "-s[0-9]+\n" { n++; if (!up) bad++ } END { print n + 0, bad + 0 }' "$T/systemd.log"; }
+svc_gaps() { awk -v r="$1" 'BEGIN { RS = "===\n" } index($0, "teardown\n" r "\ndone\n") { exit } $0 ~ "stop\nharness-" r "-([A-Za-z0-9_]+-)?svc[.]scope\n" { up = 0 }
+  $0 ~ "--unit=harness-" r "-([A-Za-z0-9_]+-)?svc\n" { up = 1 } $0 ~ "--unit=harness-" r "-([A-Za-z0-9_]+-)?s[0-9]+\n" { n++; if (!up) bad++ } END { print n + 0, bad + 0 }' "$T/systemd.log"; }
 check "memory gate: every session starts with the services up, a verify after its wait included" 'read -r n bad <<< "$(svc_gaps lowmem)"; (( n >= 5 && bad == 0 ))'
 # the gate comes before the feature is picked, not inside session(): a status: stop set during the wait is seen before
 # any coding session, no attempt is spent, and the prompt's clock comes after the wait (the L1 review's Important finding)

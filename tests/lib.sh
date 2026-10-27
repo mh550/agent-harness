@@ -12,7 +12,7 @@ export TMUX_TMPDIR=$T/tmux HARNESS_DESK_SESSION=h-desk-test-$$; mkdir -p "$TMUX_
 trap 'for w in "$T"/evaltmp/*/harness; do [[ -d $w ]] && git -C "$HERE/.." worktree remove --force "$w"; done 2> /dev/null   # the harness worktree of a killed eval
   for p in $(cat "$T"/scope/*.pids "$T"/left.pids 2> /dev/null); do kill "$p"; done 2> /dev/null   # sleeps a stub session left
   tmux kill-session -t "=$HARNESS_DESK_SESSION" 2> /dev/null; [[ $TMUX_TMPDIR == "$T/tmux" ]] && tmux kill-server 2> /dev/null; [[ ${KEEP:-} ]] || rm -rf "$T"' EXIT   # the server is ours alone
-export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/scratch HARNESS_PAUSE_POLL=1 \
+export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/scratch HARNESS_PAUSE_POLL=1 HARNESS_LANE_POLL=1 \
   HARNESS_CLAUDE=$HERE/stub-claude.sh HARNESS_GH=$HERE/stub-gh.sh HARNESS_CURL=$HERE/stub-curl.sh STUB_DIR=$T HARNESS_LEDGER=$T/ledger \
   HARNESS_CONFIG=$T/user-config.sh HARNESS_LIMIT_SLEEP=0 HARNESS_NO_RUNNER=1 HARNESS_QUEUE_POLL=0 HARNESS_QUEUE_SETTLE=0
 export HARNESS_SYSTEMD_RUN=$HERE/stub-systemd-run.sh HARNESS_SYSTEMCTL=$HERE/stub-systemctl.sh HARNESS_MEMINFO=$HERE/fixtures/meminfo.txt HARNESS_MEM_POLL=1
@@ -33,15 +33,16 @@ git init -q --bare -b main "$T/origin.git"
 git init -q -b main "$T/proj" && cd "$T/proj"
 mkdir .harness && cat > .harness/config.sh <<'EOF'
 CHECK_CMD="test ! -f BROKEN"
-INIT_CMD='echo init ok; echo "cache: $HARNESS_CACHE"; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "$HARNESS_SCRATCH/init-begin"; sleep "$STUB_SLOW_INITCMD"; }'
+INIT_CMD='echo init ok; echo "cache: $HARNESS_CACHE"; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "${HARNESS_SCRATCH%%/lanes/*}/init-begin"; sleep "$STUB_SLOW_INITCMD"; }'
 BASE_PORT=7950
 EOF
-# its teardown hook (L2-03): one marker per why, and the call in the stubs' own timeline (systemd.log)
+# its teardown hook (L2-03): one marker per why, and the call in the stubs' own timeline (systemd.log); the markers go
+# to the run's scratch, a lane's teardown included (${HARNESS_SCRATCH%%/lanes/*})
 cat > .harness/teardown.sh <<'EOF'
 #!/usr/bin/env bash
-w=$(printf %s "$HARNESS_TEARDOWN_WHY" | tr -cs 'A-Za-z0-9' -)
-touch "$HARNESS_SCRATCH/teardown-$w.marker"
-[[ -z ${STUB_SLOW_TEARDOWN:-} ]] || { touch "$HARNESS_SCRATCH/teardown-begin"; sleep "$STUB_SLOW_TEARDOWN"; }
+w=$(printf %s "$HARNESS_TEARDOWN_WHY" | tr -cs 'A-Za-z0-9' -) rs=${HARNESS_SCRATCH%%/lanes/*}
+touch "$rs/teardown-$w.marker"
+[[ -z ${STUB_SLOW_TEARDOWN:-} ]] || { touch "$rs/teardown-begin"; sleep "$STUB_SLOW_TEARDOWN"; }
 printf 'teardown\n%s\n%s\n===\n' "$HARNESS_RUN_ID" "$HARNESS_TEARDOWN_WHY" >> "$STUB_DIR/systemd.log"
 EOF
 chmod +x .harness/teardown.sh

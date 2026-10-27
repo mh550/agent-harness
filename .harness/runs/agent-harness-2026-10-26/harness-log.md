@@ -38,3 +38,4 @@
 - 2026-10-26 22:40 · main conflicts with harness/agent-harness-2026-10-26; carrying on without it (merges into main need Michael)
 - 2026-10-26 22:45 · context.md for P1-03: 7827 bytes, 3 items left out
 - 2026-10-26 23:07 · P1-03 · claude-opus-5-5 · passes=true · 22 min · 7/17 passing
+- 2026-10-26 23:07 · context.md for P1-04: 7956 bytes, 9 items left out
