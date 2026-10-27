@@ -9,6 +9,19 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 23:03 · M4-02 · passes
+
+Driver notes memlint findings as `memlint: …` at every segment start (60 s, stdout only, a failure is one `memlint: failed` note, never a stop); `harness memlint <project|path>`. Opus review of M4: 0 Critical, 2 Important fixed RED→GREEN (a stack-trace failure note; a header under a ## section flagged) plus 4 Minor. Tests 469 → 474.
+
+- **Files:** lib/driver.sh, bin/harness, lib/memlint.mjs, tests/checks/39-memlint-m4.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md, journal/decisions/2026-10-26-memlint.md
+- **Verified:** tests/checks/39-memlint-m4.sh 19/19 (3 driver/CLI checks and 2 review checks watched failing first); full suite via lib/check.sh; bash -n driver.sh, bin/harness; node --check lib/memlint.mjs
+- **Tests:** 469 → 474
+- **Dead end:** memlint stderr merged into the findings (2>&1) — a node warning became a finding note, and a crash's note was `node:fs:483` (review); stderr now goes to $SCRATCH/memlint.err
+- **Discovery** (affects run): tests/checks/08's step-lint check counted `lint: ` lines, which `memlint: ` notes also match; it now greps `· lint: `. A future note ending in `lint:` needs the same care.
+- **Discovery** (affects M4, run): Review Minor left as heuristics (D-defaults in decisions/2026-10-26-memlint): `# ` lines inside code fences end the Where-things-go/Gotchas section; `this run fails` and `2 checks` are flagged; a table store's `Updated in place` on the successor row doesn't clear the superseded row; `no store` cites .harness/config.sh:1 even when absent.
+- **Question for Michael:** The memlint notes repeat every segment (a continue too) until the file is tidied: keep that, or note only findings that are new since the run's last segment?
+- *16-M4-02 · claude-opus-5-5*
+
 ### 2026-10-26 22:48 · M4-01 · passes
 
 lib/memlint.mjs <worktree> lints CLAUDE.md, .harness/project.md and the decisionsStore store: size, gotchas, derivable-count, night-scope, decisions; one `<file>:<line> <check>: <text>` per line, exit 0 (2: no worktree). 6 fixtures from pre-tidy and tidy commits. This repo's CLAUDE.md lost `395 checks`. Opus review: 0 Critical/Important, 5 Minor fixed RED→GREEN. Tests 455 → 469.
@@ -246,20 +259,9 @@ M1-05 passes, in commit `8623944`, pushed to the run branch. - **Retro:** its pr
 - **Files:** README.md, docs/architecture.md, journal/decisions/2026-10-26-retro-backlog.md, lib/debrief.sh, lib/driver.sh, prompts/debrief.md, prompts/retro.md, tests/checks/36-run-16-retro-backlog.sh, tests/fixtures/check-names.txt
 - *05-M1-05 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 411 characters (at most 400)*
 
-### 2026-10-26 19:39 · M1-04 · passes
-
-retro() copies the retro's retro-proposals.json to scratch before restrict (skipped from the reverted note, put back in the run record); ledger() merges it under flock 9 and commits the store with the ledger. Retro prompt allows that one file; stub gains STUB_RETRO_PROPOSALS and a ledger/ edit under STUB_RETRO_EDITS; decision file. Tests 407 → 411.
-
-- **Files:** lib/driver.sh, prompts/retro.md, tests/stub-claude.sh, tests/checks/36-run-16-retro-backlog.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-retro-backlog.md, docs/architecture.md, README.md
-- **Verified:** 4 backlog run checks in 36-run-16-retro-backlog.sh written first, all FAIL (5/9), then 9/9; KEEP=1 run showed bk1 `backlog: 1 new, 0 seen again`, bk2 `0 new, 1 seen again` and reverted `.harness/runs/bk2/progress.md ledger/retro-backlog.jsonl retro-hack.txt`, bk3 `retro-proposals.json invalid: not JSON…`; full suite 411/411 (220 s); git status -- ledger/ empty.
-- **Tests:** 407 → 411
-- **Discovery** (affects M1-05, M1-06): Every run with RETRO=1 whose retro wrote no proposals now notes `backlog: the retro wrote no retro-proposals.json` (in retro(), not finish()). The backlog merge note is written after ledger()'s cp -r, so it is in the worktree harness-log.md (committed by `run end notes`) but not the ledger copy.
-- **Discovery** (affects M1-05): 36-run-16-retro-backlog.sh now ends with runs bk1, bk2 (STUB_RETRO_EDITS=1), bk3 (bad) on one $T; $ST then holds one row no-retry-on-denial seen in bk1,bk2. M1-05's prompt-retro check should reseed $ST (test-counts specced) before its own run; the file takes ~39 s.
-- **Discovery** (affects M1-05): prompts/retro.md `## Proposed harness changes` still says “whether an earlier retro proposed it already (say which run)” and Read still globs */*/retro.md: M1-05 swaps both for the backlog.
-- *04-M1-04 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 19:39 · M1-04 · passes · retro() copies the retro's retro-proposals.json to scratch before restrict (skipped from the reverte… ([in full](progress-archive.md))
 - 2026-10-26 19:29 · M1-03 · passes · Added lib/backlog.sh (harness backlog [list] | set | import, writes under flock on $STATE_ROOT/ledge… ([in full](progress-archive.md))
 - 2026-10-26 19:23 · M1-02 · passes · Added lib/backlog.mjs (pure exports STATUSES, parseRows, formatRows, validateProposals, mergeProposa… ([in full](progress-archive.md))
 - 2026-10-26 19:16 · M1-01 · passes · Wrote docs/plans/2026-10-26-M1-retro-backlog.md: row schema and defaults, lib/backlog.mjs's exported… ([in full](progress-archive.md))
