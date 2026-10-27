@@ -51,3 +51,4 @@
 - 2026-10-26 23:03 · merged main into harness/agent-harness-2026-10-25-memory
 - 2026-10-26 23:03 · verify M4: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-26 23:09 · context.md for M4: 8000 bytes, 5 items left out
+- 2026-10-26 23:10 · M4 verified and tagged run/agent-harness-2026-10-25-memory/M4
