@@ -1,14 +1,13 @@
-# Context pack for `M3-04`
+# Context pack for `M3-05`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (M3-03, affects M3-04): pack() parts may carry a third element, a byte share: an item past it is counted in items left out without stopping the pack; Promote to Gotchas items are {fact, ref} objects cut to the share's room. M3-04's Current rules (cap/4) can reuse the share slot. → entries.jsonl:15
+- Discovery (M3-04, affects M4, M3-05): memlint.mjs exports currentRules(store, input) and readRules(worktree) → [{text, ref}] newest first; M4's lint can reuse the D<n> line parser (heading, bullet with wrapped lines, table row with an optional `*default*` in the id cell). → entries.jsonl:16
+- Discovery (M3-04, affects M3-05, M4): Current rules leaves out unnumbered headings (voice-concierge `## LLM provider: …`) and B<n> rulings; in a pack that already stopped (most real verify packs at 8 KB did) the part is omitted whole. → entries.jsonl:16
+- Discovery (M3-04, affects M3-05, run): In tests/checks/38, a change to $T/proj after a stub run must `git pull -q --ff-only origin main` first: the run merged its PRs into origin main. → entries.jsonl:16
 - Discovery (M3-03, affects M3-04, M3-05): lib/eval.sh:134 packs from <clone>/.harness/runs/<run>, which passes the CLAUDE.md guard, so an eval probe's context.md includes Promote to Gotchas (and will include Current rules): the plan said probes read none. → entries.jsonl:15
-- Discovery (M3-02, affects M3-03, M3-04): tests/checks/38 runs one stub run `gotcha` (STUB_GOTCHA=B); M3-03/M3-04 checks can add their own runs below it. With KEEP_SCRATCH=1 the stub's sessions.log is at $T/scratch/proj/<run>/sessions.log. → entries.jsonl:14
-- Discovery (M3-01, affects M3-04, M4): Real decisions.md stores have three decision-line shapes: `## D7 *default*: …` headings (voice-concierge), `- **D1 · …**` bullets (rane-one-mixxx), `| D24 | … |` table rows (dj-crate-streaming); M3-04's parser and fixtures cover all three. → entries.jsonl:13
-- Discovery (M3-01, affects M3-03, M3-04): pack CLI must read CLAUDE.md and the decisions store only when the run dir sits at <wt>/.harness/runs/<run>; tests/checks/12 calls `pack` on $T/pk and $T/jr/legacy, whose third parent is outside the throwaway tree. → entries.jsonl:13
 - Discovery (M2-01, affects M3, M4): `node lib/memlint.mjs store-line <wt>` gives the block's {{DECISIONS}} phrase; decisionsStore returns {path, kind: dir|file, exists} or null. M3 and M4 import it. → entries.jsonl:9
 - Discovery (M1-06, affects run): Any note() written in retro() between rstart and restrict is reverted with the retro's edits: write it after restrict (as S_NOTES are). → entries.jsonl:7
 - Discovery (M1-06, affects M2, M3): backlog.mjs exports oneLine (whitespace and control characters folded, 200 chars): reuse it for any retro-written text that reaches a prompt. → entries.jsonl:7
@@ -22,9 +21,9 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-26 21:46 · M3-03 · passes: entries.mjs: `resolved` (array of strings, kept only when non-empty) drops a question a later entry names (whitespace-folded); `project` discoveries go to a coding-only `Promote to Gotchas` part (cap/8 share, long facts cut, dedup by first 40 chars) until a CLAUDE.md Gotchas line holds them. Stub flags STUB_ASK/RESOLVE/PROJECT_FACT, prompts, arch, README, decision file. Tests 439 → 445.; tests 439 → 445; files lib/entries.mjs, tests/stub-claude.sh, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/check-names.txt, … → entries.jsonl:15
+- 2026-10-26 22:07 · M3-04 · passes: context.md ends with `Current rules` (memlint currentRules/readRules: dir store by dated name, file store's D<n> headings, bullets, table rows incl. `*default*`; ≤cap/4, rest one older-rules line). Verify packs use CONTEXT_PACK_BYTES_VERIFY=16384 with failed rows first. Stub STUB_VERIFY_FAIL_ROW, 3 fixtures, decision file, arch/README. Tests 445 → 451.; tests 445 → 451; files lib/memlint.mjs, lib/entries.mjs, lib/driver.sh, lib/config.sh, templates/user/config.sh, … → entries.jsonl:16
 
 ## Lately in the run
 
+- 2026-10-26 21:46 · M3-03 · passes: entries.mjs: `resolved` (array of strings, kept only when non-empty) drops a question a later entry names (whitespace-folded); `project` discoveries go to a coding-only `Promote to Gotchas` part (cap/8 share, long facts cut, dedup by first 40 chars) until a CLAUDE.md Gotchas line holds them. Stub flags STUB_ASK/RESOLVE/PROJECT_FACT, prompts, arch, README, decision file. Tests 439 → 445.; tests 439 → 445; files lib/entries.mjs, tests/stub-claude.sh, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/check-names.txt, … → entries.jsonl:15
 - 2026-10-26 21:23 · M3-02 · passes: Finish step 3 in prompts/coding.md: one ## Gotchas line (≤160 chars, ends (<run> <date>), 15 max, edit in place, no rewrite). memlint.mjs gains gotchasLines/gotchasDiff (multiset; a replace is ~1) and `gotchas <before> <after>`; driver gotchas() after journal coding notes `<id>: gotchas +a ~e -d`. STUB_GOTCHA flag, arch §7 row, decision file. Tests 435 → 439.; tests 435 → 439; files prompts/coding.md, lib/memlint.mjs, lib/driver.sh, tests/stub-claude.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, … → entries.jsonl:14
-- 2026-10-26 21:11 · M3-01 · passes: Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a ~e -d, a replace is one edit) and the driver's gotchas() after journal coding; resolved (exact after flattening, later entries only); Promote to Gotchas (coding packs, cap/8); Current rules (last, cap/4, three file shapes); verify cap 16384, failed rows first; stub flags; check names.; tests 435 → 435; files docs/plans/2026-10-26-M3-gotchas-and-pack.md → entries.jsonl:13
