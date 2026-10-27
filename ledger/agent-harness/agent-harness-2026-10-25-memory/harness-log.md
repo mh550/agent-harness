@@ -1,0 +1,87 @@
+- 2026-10-26 19:12 · feature list written: 0/23 passing
+- 2026-10-26 19:12 · lint: clean
+- 2026-10-26 19:12 · context.md for M1-01: 4418 bytes
+- 2026-10-26 19:16 · M1-01 · claude-opus-5-5 · passes=true · 4 min · 1/23 passing
+- 2026-10-26 19:16 · context.md for M1-02: 5268 bytes
+- 2026-10-26 19:23 · M1-02 · claude-opus-5-5 · passes=true · 6 min · 2/23 passing
+- 2026-10-26 19:23 · context.md for M1-03: 6397 bytes
+- 2026-10-26 19:29 · M1-03 · claude-opus-5-5 · passes=true · 6 min · 3/23 passing
+- 2026-10-26 19:29 · context.md for M1-04: 7651 bytes
+- 2026-10-26 19:39 · M1-04 · claude-opus-5-5 · passes=true · 9 min · 4/23 passing
+- 2026-10-26 19:39 · context.md for M1-05: 7770 bytes, 2 items left out
+- 2026-10-26 19:47 · M1-05: entry.json invalid (summary: 411 characters (at most 400)); recorded a minimal entry
+- 2026-10-26 19:47 · M1-05 · claude-opus-5-5 · passes=true · 8 min · 5/23 passing
+- 2026-10-26 19:47 · context.md for M1-06: 6475 bytes
+- 2026-10-26 20:05 · M1-06 · claude-opus-5-5 · passes=true · 18 min · 6/23 passing
+- 2026-10-26 20:05 · verify M1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-26 20:09 · context.md for M1: 8049 bytes, 10 items left out
+- 2026-10-26 20:10 · M1 verified and tagged run/agent-harness-2026-10-25-memory/M1
+- 2026-10-26 20:10 · M1 merged into main · https://github.com/mh550/agent-harness/pull/32
+- 2026-10-26 20:10 · context.md for M2-01: 5722 bytes
+- 2026-10-26 20:21 · M2-01 · claude-opus-5-5 · passes=true · 11 min · 7/23 passing
+- 2026-10-26 20:21 · context.md for M2-02: 6333 bytes
+- 2026-10-26 20:55 · M2-02: entry.json invalid (summary: 417 characters (at most 400)); recorded a minimal entry
+- 2026-10-26 20:55 · M2-02 · claude-opus-5-5 · passes=true · 33 min · 8/23 passing
+- 2026-10-26 20:55 · context.md for M2-03: 5916 bytes
+- 2026-10-26 21:00 · M2-03 · claude-sonnet-5-5 · passes=true · 4 min · 9/23 passing
+- 2026-10-26 21:00 · merged main into harness/agent-harness-2026-10-25-memory
+- 2026-10-26 21:00 · verify M2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-26 21:04 · context.md for M2: 6418 bytes
+- 2026-10-26 21:06 · M2 verified and tagged run/agent-harness-2026-10-25-memory/M2
+- 2026-10-26 21:06 · M2 merged into main · https://github.com/mh550/agent-harness/pull/33
+- 2026-10-26 21:06 · context.md for M3-01: 6235 bytes
+- 2026-10-26 21:11 · M3-01 · claude-opus-5-5 · passes=true · 5 min · 10/23 passing
+- 2026-10-26 21:11 · context.md for M3-02: 5842 bytes
+- 2026-10-26 21:23 · M3-02 · claude-opus-5-5 · passes=true · 12 min · 11/23 passing
+- 2026-10-26 21:23 · context.md for M3-03: 6666 bytes
+- 2026-10-26 21:46 · M3-03 · claude-opus-5-5 · passes=true · 22 min · 12/23 passing
+- 2026-10-26 21:46 · context.md for M3-04: 7785 bytes
+- 2026-10-26 22:07 · M3-04 · claude-opus-5-5 · passes=true · 21 min · 13/23 passing
+- 2026-10-26 22:07 · context.md for M3-05: 7430 bytes
+- 2026-10-26 22:22 · M3-05 · claude-opus-5-5 · passes=true · 14 min · 14/23 passing
+- 2026-10-26 22:22 · merged main into harness/agent-harness-2026-10-25-memory
+- 2026-10-26 22:22 · verify M3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-26 22:26 · context.md for M3: 7709 bytes, 7 items left out
+- 2026-10-26 22:28 · M3 verified and tagged run/agent-harness-2026-10-25-memory/M3
+- 2026-10-26 22:28 · M3 merged into main · https://github.com/mh550/agent-harness/pull/34
+- 2026-10-26 22:28 · context.md for M4-01: 7861 bytes, 4 items left out
+- 2026-10-26 22:48 · M4-01 · claude-opus-5-5 · passes=true · 19 min · 15/23 passing
+- 2026-10-26 22:48 · context.md for M4-02: 7573 bytes, 1 items left out
+- 2026-10-26 23:03 · M4-02 · claude-opus-5-5 · passes=true · 15 min · 16/23 passing
+- 2026-10-26 23:03 · merged main into harness/agent-harness-2026-10-25-memory
+- 2026-10-26 23:03 · verify M4: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-26 23:09 · context.md for M4: 8000 bytes, 5 items left out
+- 2026-10-26 23:10 · M4 verified and tagged run/agent-harness-2026-10-25-memory/M4
+- 2026-10-26 23:10 · M4 merged into main · https://github.com/mh550/agent-harness/pull/35
+- 2026-10-26 23:10 · context.md for M5-01: 6966 bytes
+- 2026-10-26 23:18 · M5-01 · claude-opus-5-5 · passes=true · 7 min · 17/23 passing
+- 2026-10-26 23:18 · context.md for M5-02: 7731 bytes
+- 2026-10-26 23:55 · M5-02 · claude-opus-5-5 · passes=true · 37 min · 18/23 passing
+- 2026-10-26 23:55 · merged main into harness/agent-harness-2026-10-25-memory
+- 2026-10-26 23:55 · verify M5: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 00:00 · context.md for M5: 7352 bytes, 4 items left out
+- 2026-10-27 00:01 · verify M5: M5-01 failed the re-check, back in the queue (one more attempt)
+- 2026-10-27 00:01 · context.md for M5-01: 7833 bytes, 1 items left out
+- 2026-10-27 00:20 · M5-01 · claude-opus-5-5 · passes=true · 18 min · 18/23 passing
+- 2026-10-27 00:20 · verify M5: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 00:25 · context.md for M5: 7758 bytes, 5 items left out
+- 2026-10-27 00:33 · M5 verified and tagged run/agent-harness-2026-10-25-memory/M5
+- 2026-10-27 00:33 · M5 merged into main · https://github.com/mh550/agent-harness/pull/36
+- 2026-10-27 00:33 · context.md for M6-01: 7595 bytes
+- 2026-10-27 00:38 · M6-01 · claude-opus-5-5 · passes=true · 4 min · 19/23 passing
+- 2026-10-27 00:38 · context.md for M6-02: 7567 bytes, 1 items left out
+- 2026-10-27 00:47 · M6-02 · claude-opus-5-5 · passes=true · 8 min · 20/23 passing
+- 2026-10-27 00:47 · context.md for M6-03: 7913 bytes, 3 items left out
+- 2026-10-27 01:03 · M6-03 · claude-opus-5-5 · passes=true · 16 min · 21/23 passing
+- 2026-10-27 01:03 · context.md for M6-04: 7701 bytes, 4 items left out
+- 2026-10-27 01:12 · M6-04 · claude-opus-5-5 · passes=true · 9 min · 22/23 passing
+- 2026-10-27 01:12 · context.md for M6-05: 7951 bytes, 2 items left out
+- 2026-10-27 01:40 · M6-05 · claude-opus-5-5 · passes=true · 27 min · 23/23 passing
+- 2026-10-27 01:40 · merged main into harness/agent-harness-2026-10-25-memory
+- 2026-10-27 01:40 · verify M6: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 01:45 · context.md for M6: 7852 bytes, 20 items left out
+- 2026-10-27 01:46 · M6 verified and tagged run/agent-harness-2026-10-25-memory/M6
+- 2026-10-27 01:47 · M6 merged into main · https://github.com/mh550/agent-harness/pull/37
+- 2026-10-27 01:47 · every feature passes
+- 2026-10-27 01:47 · run ended (done): 23/23 passing · 32 sessions (32 real) · 23 features passed · $57.93 · 6.2 h · by kind: init 1 ($8.03), coding 24 ($48.62), verify 7 ($1.29) · by model: claude-fable-5-1 1 ($8.03), claude-opus-5-5 23 ($48.40), claude-sonnet-5-5 8 ($1.51)
+- 2026-10-27 01:47 · services stopped (done)
