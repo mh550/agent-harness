@@ -105,7 +105,7 @@
         "the plan fixes the pack's new parts: `Promote to Gotchas` (discoveries whose `affects` includes `project`, shown until a `## Gotchas` line of the worktree's CLAUDE.md shares their first 40 characters) and `Current rules` (decisionsStore's headings and one-line rules, newest first, last in priority, at most a quarter of the cap), and `CONTEXT_PACK_BYTES_VERIFY=16384` for milestone packs with failed evidence rows first",
         "the plan names the stub flags (a coding session that adds a Gotchas line, one that resolves a question, one that records a `project` discovery, a verify whose entry has a `holds: false` row), the check file tests/checks/38-run-17-gotchas-and-pack-m3.sh, and the existing checks that must keep passing: tests/checks/12-journal-pure-e4-entrys.sh and the four `context.md carries the earlier attempt's dead end` checks",
         "the suite is green" ],
-      "after": ["M2"], "passes": false },
+      "after": ["M2"], "passes": true },
 
     { "id": "M3-02", "milestone": "M3", "kind": "build", "model": "opus",
       "description": "prompts/coding.md's Finish step adds or edits one `## Gotchas` line (≤ 160 characters, ending `(<run> <date>)`, 15 lines at most, never a wholesale rewrite) and the driver notes `<feature>: gotchas +<a> ~<e> -<d>` when the section changed between a session's start and end commits.",
