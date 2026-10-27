@@ -9,6 +9,13 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 20:55 · M2-02 · passes
+
+A background wait I had left running for the review was stopped at its time limit. It doesn't matter: the review had already come back and its findings were handled. M2-02 passes. The last commit is `7ec5b20`, pushed. The full suite is green, and tests went from 429 to 435.
+
+- **Files:** .harness/config.sh, CLAUDE.md, journal/decisions/2026-10-26-where-things-go.md, lib/prompt.sh, prompts/coding.md, prompts/draft-claude-md.md, prompts/initializer.md, prompts/parts/where-things-go-override.md, templates/project/CLAUDE.md, templates/project/config.sh, tests/checks/37-memory-prompts-m2.sh, tests/fixtures/check-names.txt
+- *08-M2-02 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 417 characters (at most 400)*
+
 ### 2026-10-26 20:21 · M2-01 · passes
 
 lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else null), storeLine, CLI store/store-line. prompt_render appends prompts/parts/where-things-go.md (coding, initializer) or -readonly.md (verify, retro) unless CLAUDE.md has a `## Where things go` line; no CLAUDE.md gets it too. Decision file written. Tests 420 → 429.
