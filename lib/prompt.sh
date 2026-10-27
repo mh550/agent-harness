@@ -53,10 +53,18 @@ prompt_env() {
     HARNESS_SCOPE_PREFIX="$(scope_unit "$RUN_ID" "")" HARNESS_CHECK_MEMORY_MAX=$CHECK_MEMORY_MAX HARNESS_CHECK_TIMEOUT=$CHECK_TIMEOUT   # check.sh caps the same way for both
 }
 
-prompt_render() {   # template name → stdout: the static template, the policy, this run (its lines, the brief, the line naming CLAUDE.md), this session
-  local extra=() rules=()
+prompt_render() {   # template name → stdout: the static template, the policy, this run (its lines, the brief, the line naming CLAUDE.md, the routing block), this session
+  local extra=() rules=() where=where-things-go
   # Claude Code loads CLAUDE.md in the worktree itself: one line names it, the file isn't pasted (decisions/2026-10-21-no-double-claude-md)
   [[ -f CLAUDE.md ]] && rules=("$HARNESS_HOME/prompts/parts/rules.md")
+  # the `## Where things go` block, unless CLAUDE.md has its own; verify and retro edit nothing, so theirs routes facts to
+  # discoveries, and with the project's own block they still get that one rule, without the heading (decisions/2026-10-26-where-things-go)
+  [[ $1 == verify || $1 == retro ]] && where=where-things-go-readonly
+  if ! grep -qE '^## Where things go[[:space:]]*$' CLAUDE.md 2> /dev/null; then
+    if (( ${#rules[@]} )); then rules+=("$HARNESS_HOME/prompts/parts/$where.md")
+    else rules=("Project rules (this project has no CLAUDE.md)=$HARNESS_HOME/prompts/parts/$where.md"); fi
+  elif [[ $where == where-things-go-readonly ]]; then rules+=("$HARNESS_HOME/prompts/parts/where-things-go-override.md")
+  fi
   if [[ $1 == retro ]]; then extra=("${rules[@]}")
   else   # these go at the template's {{SECTIONS}} line: nothing run-specific before the policy (decisions/2026-10-21-static-first-prompts)
     extra=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md" "$HARNESS_HOME/prompts/parts/run.md")
@@ -66,7 +74,7 @@ prompt_render() {   # template name → stdout: the static template, the policy,
     [[ -f .harness/project.md ]] && extra+=("Project rules (.harness/project.md)=.harness/project.md")
   fi
   # the last 40 whole lines and where the rest is (decisions/2026-10-21-clock-and-bounded-init-output)
-  HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
+  HARNESS_DECISIONS=$(node "$HARNESS_HOME/lib/memlint.mjs" store-line .) HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
     node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
 }
 

@@ -49,3 +49,17 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   for "a `D-H<n>` entry", this file is what it means.
 - Update `docs/architecture.md` (components, state, guards, end reasons as they apply) and `README.md` in the same
   milestone as the code.
+
+## Where things go
+
+- What happened, what you tried, what failed → your `entry.json` (the harness keeps the journal), never here.
+- A decision → one file in `journal/decisions/` (`decisions/2026-10-21-one-file-per-decision`), never numbered.
+  Overturned → edit it in place in its own file, plus one `Updated in place <date>: …` line; never a new file
+  beside a dead one.
+- A fact a fresh session would otherwise rediscover → one line under `## Gotchas`, edited in place.
+- Tonight's scope (what to build, drop or do first) → the run's brief, never this file.
+- How to work here (rules, conventions, workflow) → Michael's: say it in your entry's `proposed_changes`.
+- Anything the code, git or the suite can tell (test counts, file lists, constants) → nowhere.
+
+## Gotchas
+<!-- At most 15 lines, one fact each, edited in place: replace a wrong or least useful line, never rewrite the section. -->

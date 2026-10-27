@@ -24,6 +24,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | **Milestones are the unit of merge** (D-H6, D-H13, D-H17) | Only verified milestones reach `main`, in order. Unverified work stays on the run branch |
 | **Humans gate policy, not routine** (D-H15, D-H16) | Merges of verified work are automatic. Permissions, policies and project rules change only through Michael |
 | **Measure every run; learn from the ledger** (D-H19) | `summary.json`, `retro.md`, `ledger/runs.jsonl`, `harness trends`, calibration fed back to the initializer |
+| **Each fact has one home, named in the project's `CLAUDE.md`** (`decisions/2026-10-26-where-things-go`) | The `## Where things go` block (appended to prompts only when `CLAUDE.md` lacks it) routes a session's writes to a store by bucket and scope: see Memory model, §4 |
 
 ## 3. Components
 
@@ -66,6 +67,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/prompt.sh` | ~50 | The driver's prompt assembly (`prompt_vars`, `prompt_env`, `prompt_render`), sourced by the driver; run as `prompt.sh <state dir> <template> <feature>` it renders a run's prompt the way its driver would (eval probes use it) |
 | `lib/eval.sh` | ~260 | `harness eval run\|compare\|probes` (§11): replays `evals/` tasks with a ref's own driver on throwaway clones in `/tmp/harness-eval/<stamp>/`, under `EVAL_BUDGET_USD` and the 7-day window; compare; probes |
 | `lib/eval.mjs` | ~335 | Pure helpers: task validation, `spent`, `loadResult`, `METRICS`, `compare`/`compareText` (verdicts with the repeat spread as noise), probe `questions`/`score` |
+| `lib/memlint.mjs` | ~50 | The project's memory, read deterministically (decisions/2026-10-26-where-things-go): `decisionsStore(worktree)` (`DECISIONS=` from `.harness/config.sh`, else `docs/decisions.md` if it exists, else null; `{ path, kind: dir\|file, exists }`), `storeLine` (the routing block's `{{DECISIONS}}`); CLI `store <worktree>` (the path or nothing), `store-line <worktree>` |
 | `lib/render.mjs` | ~35 | Prompt templating (`{{X}}` ← `HARNESS_X`), titled sections placed at a `{{SECTIONS}}` line (`assemble`) |
 | `lib/page.mjs` | ~130 | The debrief page: a card per run from summary.json, then the note (escaped), one self-contained HTML file |
 | `lib/desk.sh` | ~240 | `harness desk <run> [--why …]` \| `--debrief` (§17): a Remote Control `claude` in tmux session `h-desk`, window `<run>`, in the project directory; the pane's session URL is the notification's click; one desk per run (a later event is typed into the open one); a desk that can't start is a note and the plain notification, exit 0. `--list`, `--close <run>\|--all`, `--gc` (from `harness gc`: idle for 24 h) |
@@ -74,7 +76,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
 | `templates/user/{settings.permissions.json,CLAUDE.md,config.merge-policy.sh}` | | The permissions policy (`decisions/2026-10-24-permissions-policy`): the user settings, the `~/.claude/CLAUDE.md` section that is its one home, and `MERGE_POLICY=auto` |
 | `setup/apply-2026-10-24.sh` | ~110 | Installs those three (`--dry-run` shows every diff; backs up to `~/projects/backups/`) and moves the n8n MCP servers to n8n-home's `.mcp.json`; Michael runs it, the harness never does |
-| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*) and `parts/rules.md` (the line naming `CLAUDE.md`) |
+| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*), `parts/rules.md` (the line naming `CLAUDE.md`) and `parts/where-things-go{,-readonly}.md` (the routing block) |
 | `tests/run.sh` + `tests/lib.sh` + `tests/checks/` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 395 checks, 208 s with `TEST_JOBS=4`. `run.sh` is the runner (all files, or those whose names contain an argument; `TEST_JOBS` at a time, default half the cores, 1 to 4, largest first, as background jobs in the one check scope, never a scope of their own; each file's output whole when it ends, a timing line per file, the slowest three and the wall time, one total, in which a file that exited non-zero with no `FAIL` line is one failed check; on a TERM/INT/HUP, each unfinished file's output so far and its name; on a full run the conformance check against `tests/fixtures/check-names.txt`); each `checks/NN-<slug>.sh` starts from `lib.sh`'s `suite_setup` and ends with `suite_end`; `tests/split.sh` cut them from the single file by its section markers, grouping a section with the one whose state it reads or replaying that one first, uncounted (`REPLAY=1`) (decisions/2026-10-26-suite-split) |
 
 ## 4. Where state lives
@@ -115,6 +117,40 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Live-write lock | `LIVE_LOCK` (default `/tmp/harness/<p>/live.lock`; dj: `/srv/docker/crates/live.lock`, shared with the backup job) | sessions under `live-staged` (`flock -n`), the backup script (`flock -w`) | both | no |
 | Ledger | `<harness>/ledger/runs.jsonl`, `ledger/<p>/<run>/{summary.json,retro.md,…}` | driver at the end (flock, `git commit -- <paths>`; the retro's proposals merged into `retro-backlog.jsonl` in the same lock and commit) | `harness trends`, retro, calibration | yes, harness repo |
 | Retro backlog | `<harness>/ledger/retro-backlog.jsonl` (one row per retro proposal id across runs: `id`, `title`, `first_seen`, `runs_seen`, `status` proposed · specced · queued · merged · dropped, `spec`, `pr`, `note`; decisions/2026-10-26-retro-backlog) | the driver's `finish()` (`ledger()`, merging the retro's `retro-proposals.json` under the ledger flock) and `harness backlog` (set, import), never a session | the retro prompt (`{{BACKLOG}}`, the text list), the debrief (its gathered context, the rows as JSONL) | yes, harness repo |
+
+### Memory model
+
+Four buckets (CoALA), each store tied to a scope, with one writer kind and one mutation rule
+(`docs/specs/2026-10-25-throughput-and-memory-design.md` §6). The paths are the ones in the table above.
+
+| Scope | Working (what this actor sees now) | Episodic (what happened; append-only) | Semantic (what is true now; in place) | Procedural (how to work; in place, reviewed) |
+|---|---|---|---|---|
+| **Session** | the prompt; `context.md`; the auto-loaded `CLAUDE.md` (derived by the driver, never hand-edited) | its transcript (`logs/*.jsonl`, state); its `metrics.jsonl` row; its `entry.json` → one line of `entries.jsonl` | none: it proposes (entry `discoveries`, `questions`, `proposed_changes`) | none |
+| **Lane** | none | the lane column in `metrics.jsonl`; the `lane …` notes in `harness-log.md` | none (port, pid, scratch: deleted with the lane) | none |
+| **Run** | `context.md` per session (cap per kind) | `entries.jsonl`, `harness-log.md`, `progress.md` and `progress-archive.md` (rendered), `brief.md`, `INBOX.md` questions, `retro.md`, `summary.json` | `INBOX.md` `status:` and `## Answers`; `feature_list.json` `passes`; discoveries with `affects: ["run"]` | the run's `brief.md` |
+| **Project** | none | `.harness/runs/<run>/` on its record branch; `docs/plans/`; `docs/specs/` | the decisions store (`DECISIONS=`: `journal/decisions/` or `docs/decisions.md`, an overturned rule rewritten in place with one `Updated in place <date>` line); `## Gotchas` in `CLAUDE.md` (15 lines, in place) | `CLAUDE.md` (all but Gotchas), `.harness/config.sh`, `.harness/{check,init,teardown}.sh`, `.claude/settings.json` |
+| **Harness** | the initializer's calibration line (derived each time); the debrief's context | `ledger/runs.jsonl`, `ledger/<p>/<run>/`, `queue/runner.log`, `journal/` | `ledger/retro-backlog.jsonl` (keyed by id, status moved in place by the CLI); `ledger/debrief.md` (a view, overwritten) | `lib/`, `prompts/`, `policy/`, `templates/`, `journal/decisions/`, `docs/architecture.md` |
+| **User** | none | none | Michael's own notes | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.config/harness/config.sh` |
+
+Rules that follow, each enforced where the driver can:
+
+1. **Append or in place is decided by bucket, not by file type.** Episodic stores only grow: a mistake there is a new
+   entry (`dead_ends`), never an edit. Semantic stores are rewritten in place with one dated line; a dead rule beside
+   a new one is a memlint finding. Procedural stores change through review. Working stores are derived and may be
+   regenerated at any time.
+2. **One writer kind per store.** The driver writes the run's episodic stores and the ledger; sessions write their
+   `entry.json`, their `passes`, project semantic files and code; Michael writes `INBOX.md` answers, user and policy
+   files; the CLI moves backlog status.
+3. **Scope is declared, not inferred.** An entry's `discoveries[].affects` carries the scope (a feature, a
+   milestone, `"run"`, and `"project"` for a fact that outlives the run).
+4. **Derive, don't store.** Test counts, file lists, calibration, "needs Michael" lists and the debrief are computed
+   from the ledger or the tree; memlint flags stored copies.
+5. **Working memory has a budget per role.** `CONTEXT_PACK_BYTES` bounds the coding pack; verify gets a larger
+   `CONTEXT_PACK_BYTES_VERIFY`, failed evidence rows first.
+6. **Lanes add no store.** A lane's state is operational and dies with it; its facts go through the same entry.
+
+A new store must name its bucket, scope, writer and mutation rule before it exists; this section is the registry.
+The routing block (`decisions/2026-10-26-where-things-go`) tells sessions which row to use.
 
 ## 5. The life of a run
 
@@ -326,7 +362,10 @@ this order: (1) the static part of `prompts/<kind>.md`: a fixed first line (`# C
 policy (`prompts/policy/<POLICY>.md`); (3) the run-level parts: *This run* (`prompts/parts/run.md`: run id,
 worktree, branch, run directory, port, scratch, suite, init, smoke, spec), "Brief for this run" (pasted as written,
 so a `{{X}}` in it stays text), `prompts/parts/rules.md` (one line naming `CLAUDE.md`, which Claude Code loads
-itself, when the worktree has one; decisions/2026-10-21-no-double-claude-md) and legacy `.harness/project.md` if
+itself, when the worktree has one; decisions/2026-10-21-no-double-claude-md), the `## Where things go` block
+(`prompts/parts/where-things-go.md`, or `-readonly.md` for verify and the retro; under `# Project rules (this project
+has no CLAUDE.md)` when there is none) unless `CLAUDE.md` has a `## Where things go` line, its `{{DECISIONS}}` from
+`memlint.mjs store-line` (decisions/2026-10-26-where-things-go), and legacy `.harness/project.md` if
 present; (4) the template's *This session* part: `` Feature: `<id>` `` / `Milestone: <m>` (coding), `Milestone:` /
 `Features:` (verify) or `Earlier runs' feature sizes:` (initializer), the clock line, the init output. Sections are
 one blank line apart. Two sessions of a run share every byte up to *This session*. The clock line (`{{CLOCK}}`,
@@ -334,7 +373,7 @@ driver `clock`, coding and verify only; decisions/2026-10-21-clock-and-bounded-i
 <elapsed> of <total>, ends <HH:MM> · this session: $<budget> budget, <turns> turns, <timeout> timeout · attempt N of
 MAX_ATTEMPTS` (or `verify round N of MAX_VERIFY_ROUNDS`); the run is this driver's segment, `T0` to `DEADLINE`. A
 probe rendered by `lib/prompt.sh` says it is outside a run. The retro (`# Retro`, its run on line 3) gets the
-template and the rules line; its `{{BACKLOG}}` is `backlog.mjs list` of the ledger's backlog (≤ 6000 bytes, past which every
+template, the rules line and the read-only block; its `{{BACKLOG}}` is `backlog.mjs list` of the ledger's backlog (≤ 6000 bytes, past which every
 row keeps at least `<id> · <status>`; `(empty)` without one, and a store that won't parse is a `backlog: the retro
 prompt has no backlog: <why>` note), so it reuses an id, cites a specced/queued/merged item's status and coins a slug only for a new
 proposal. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output)

@@ -9,6 +9,60 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 21:06 · verify M2 · passes
+
+All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/templates/docs/decision file read and match each step.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M2-01 | 1 | node --check lib/memlint.mjs; read checks 10-19 of 37-memory-prompts-m2 | ok; decisionsStore exported, store prints journal/decisions; dir/file/null checks PASS | yes |
+| M2-01 | 2 | cat prompts/parts/where-things-go*.md | both ~7 lines under ## Where things go, {{DECISIONS}} store line, readonly sends to discoveries | yes |
+| M2-01 | 3 | read prompt.sh 57-66, check at line 27/31 | appends block when no heading/no CLAUDE.md; once-each and discoveries checks PASS | yes |
+| M2-01 | 4 | checks at lines 36 and 40 | heading 0 times with heading; once each with no CLAUDE.md; PASS | yes |
+| M2-01 | 5 | grep check-names.txt; bash tests/run.sh memory-prompts | 15 names listed; 15/15 pass; entries.jsonl names checks | yes |
+| M2-01 | 6 | init suite output | green, 435 tests | yes |
+| M2-02 | 1 | grep initializer.md; routing check line 50 | old phrase absent; Gotchas/discoveries wording present; no D<n>; check PASS | yes |
+| M2-02 | 2 | read coding.md, draft-claude-md.md, templates/project/* | Decisions bullet points at block; draft asks block+Gotchas, no test count; template block+empty Gotchas; commented DECISIONS= | yes |
+| M2-02 | 3 | read CLAUDE.md, .harness/config.sh, node lib/memlint.mjs store . | block and empty Gotchas present; DECISIONS=journal/decisions; prints journal/decisions | yes |
+| M2-02 | 4 | read decision file and M2 entry | Opus review Important finding fixed (read-only override) and recorded in decision file/entry | yes |
+| M2-02 | 5 | read journal/decisions/2026-10-26-where-things-go.md | Finding/Choice/Rejected; seven projects, none set DECISIONS=; both accepted risks | yes |
+| M2-02 | 6 | init suite output | green | yes |
+| M2-03 | 1 | read docs/architecture.md Memory model | 6x4 table, six rules as specified | yes |
+| M2-03 | 2 | grep README.md | line 63-64 name block, Gotchas 15 lines in place, DECISIONS=, append only when heading lacking | yes |
+| M2-03 | 3 | grep -c Memory model docs/architecture.md | 2; Principles row cites decisions/2026-10-26-where-things-go | yes |
+| M2-03 | 4 | init suite output | green | yes |
+
+- *210433-verify-M2 · claude-sonnet-5-5*
+
+### 2026-10-26 21:00 · M2-03 · passes
+
+docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles row citing decisions/2026-10-26-where-things-go; README names the routing block, Gotchas and DECISIONS=.
+
+- **Files:** docs/architecture.md, README.md
+- **Verified:** grep -c 'Memory model' docs/architecture.md = 2; check.sh green, 435 tests
+- **Tests:** 435 → 435
+- *09-M2-03 · claude-sonnet-5-5*
+
+### 2026-10-26 20:55 · M2-02 · passes
+
+A background wait I had left running for the review was stopped at its time limit. It doesn't matter: the review had already come back and its findings were handled. M2-02 passes. The last commit is `7ec5b20`, pushed. The full suite is green, and tests went from 429 to 435.
+
+- **Files:** .harness/config.sh, CLAUDE.md, journal/decisions/2026-10-26-where-things-go.md, lib/prompt.sh, prompts/coding.md, prompts/draft-claude-md.md, prompts/initializer.md, prompts/parts/where-things-go-override.md, templates/project/CLAUDE.md, templates/project/config.sh, tests/checks/37-memory-prompts-m2.sh, tests/fixtures/check-names.txt
+- *08-M2-02 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 417 characters (at most 400)*
+
+### 2026-10-26 20:21 · M2-01 · passes
+
+lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else null), storeLine, CLI store/store-line. prompt_render appends prompts/parts/where-things-go.md (coding, initializer) or -readonly.md (verify, retro) unless CLAUDE.md has a `## Where things go` line; no CLAUDE.md gets it too. Decision file written. Tests 420 → 429.
+
+- **Files:** lib/memlint.mjs, lib/prompt.sh, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, tests/checks/37-memory-prompts-m2.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-where-things-go.md, docs/architecture.md
+- **Verified:** bash tests/run.sh 37-memory: 1/9 before (all of decisionsStore's checks failed on the missing memlint.mjs, and 'where things go: … carry the block once when CLAUDE.md lacks the heading', '… read-only variant …', '… with no CLAUDE.md … once each, the store from DECISIONS=' failed; the heading-present 0-times check passed vacuously), 9/9 after; read the rendered blocks of a KEEP=1 run (wt1 coding, wt3 verify, wt1 retro); node --check, bash -n; full suite via check.sh green, 429 tests incl. the check-names conformance check.
+- **Tests:** 420 → 429
+- **Dead end:** committing to $T/proj and pushing between stub runs — rejected: each run merges into origin main; `git pull -q --ff-only origin main` first
+- **Discovery** (affects M2-02): The three-prompt checks grep -c `## Where things go`: any template line quoting that heading counts. M2-02's coding.md Decisions bullet must name the block without the `## ` prefix (e.g. 'the Where things go block below') or the counts go to 2.
+- **Discovery** (affects M2-02, M2-03): journal/decisions/2026-10-26-where-things-go.md exists already with the seven-project census and both accepted risks; M2-02 edits it in place (initializer/coding/template wording) rather than creating it.
+- **Discovery** (affects M3, M4): `node lib/memlint.mjs store-line <wt>` gives the block's {{DECISIONS}} phrase; decisionsStore returns {path, kind: dir|file, exists} or null. M3 and M4 import it.
+- *07-M2-01 · claude-opus-5-5*
+
 ### 2026-10-26 20:10 · verify M1 · passes
 
 All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/import/errors against a throwaway ledger, bash -n and node --check, read plan, decision, review, README, architecture, prompts, stub and checks.

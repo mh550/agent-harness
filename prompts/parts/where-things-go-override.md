@@ -1,0 +1,1 @@
+**Read-only session.** The harness reverts your edits to the code, `CLAUDE.md` and the decisions store ({{DECISIONS}}). Where the project's own Where things go rules send a fact to `## Gotchas` or a decision to the store, put it in your entry's `discoveries`, affecting `"run"` (a retro: your report), instead.

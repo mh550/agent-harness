@@ -75,7 +75,7 @@
         "a check that with `## Where things go` added to the stub project's CLAUDE.md the three rendered prompts contain the heading 0 times, and a check that with CLAUDE.md deleted they contain it once each",
         "every new check's name is in tests/fixtures/check-names.txt and the entry's `verified_how` names the checks that failed before the change",
         "the suite is green" ],
-      "after": [], "passes": false },
+      "after": [], "passes": true },
 
     { "id": "M2-02", "milestone": "M2", "kind": "build", "model": "opus",
       "description": "The prompts and templates stop contradicting the routing block: prompts/initializer.md sends durable gotchas to `## Gotchas` and run-only facts to `discoveries` `run` and never names a new decision number, prompts/coding.md's Decisions bullet points at the block, templates/project/CLAUDE.md and config.sh carry the block, an empty `## Gotchas` and a commented `DECISIONS=`, this repo's CLAUDE.md and .harness/config.sh get the block and `DECISIONS=journal/decisions`; an Opus subagent reviews the M2 diff.",
@@ -86,7 +86,7 @@
         "an Opus subagent reviews `git diff <commit before M2-01>..HEAD -- . ':!.harness/runs'` from a file in `$HARNESS_SCRATCH`; Critical and Important findings are fixed RED→GREEN and counted in the entry's summary",
         "journal/decisions/<date>-where-things-go.md exists (finding · choice · rejected): it records that on 2026-10-26 all seven projects with a CLAUDE.md (dj-crate-streaming, hit_list, n8n-home, pathways, portfolio_site, rane-one-mixxx, voice-concierge) had the heading and none set `DECISIONS=`, and the two accepted risks (numbered-file collisions between a run and an interactive session; `claude -p --bare` skipping CLAUDE.md)",
         "the suite is green" ],
-      "after": ["M2-01"], "passes": false },
+      "after": ["M2-01"], "passes": true },
 
     { "id": "M2-03", "milestone": "M2", "kind": "docs", "model": "sonnet",
       "description": "docs/architecture.md gains a `Memory model` section with the bucket × scope table and rules 1–6 of docs/specs/2026-10-25-throughput-and-memory-design.md §6, and README.md describes the routing block, `## Gotchas` and `DECISIONS=`.",
@@ -95,7 +95,7 @@
         "README.md's `## What a project needs` names the `## Where things go` block, `## Gotchas` (15 lines, edited in place) and `DECISIONS=` in .harness/config.sh, and says the harness appends the block to prompts only when CLAUDE.md lacks the heading",
         "docs/architecture.md §2 Principles cites `decisions/<date>-where-things-go`; `grep -c 'Memory model' docs/architecture.md` prints at least 1",
         "the suite is green" ],
-      "after": ["M2-02"], "passes": false },
+      "after": ["M2-02"], "passes": true },
 
     { "id": "M3-01", "milestone": "M3", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-26-M3-gotchas-and-pack.md fixes the Gotchas diff rule and its note, the entry field for a resolved question, the pack's two new parts (Promote to Gotchas, Current rules) and their shares, `project` as an affects value, CONTEXT_PACK_BYTES_VERIFY, the stub flags and the check file.",

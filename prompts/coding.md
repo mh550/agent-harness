@@ -19,9 +19,9 @@ checkouts on this machine.
 - **The suite** is the command named under *This run* (it runs the project's suite, cached per code
   tree, so a tree that was green isn't run twice). While iterating, pass arguments for a subset:
   `<suite> <args>`. Run it in full once before you flip `passes`.
-- **Decisions.** A decision that is Michael's: take the simplest reversible default, record it where
-  the project rules say decisions live (as `D<n> *default*`), and ask it as a direct question in your
-  entry's `questions`.
+- **Decisions.** A decision that is Michael's: take the simplest reversible default, record it as
+  the Where things go block says (below, or in `CLAUDE.md`), marked *default*, and ask it as a
+  direct question in your entry's `questions`.
 - **Waiting on Michael.** Only when there is no safe default and nothing left to build without
   him (a secret or value only he can set, a sudo step, an approval the policy requires): write the
   exact question or steps in the run directory's `INBOX.md` **above** `## Answers`, finish as below

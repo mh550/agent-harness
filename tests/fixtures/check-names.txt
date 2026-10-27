@@ -136,6 +136,10 @@ continue refuses a running run
 debrief --dry-run gathers the retro backlog, not Earlier retros
 debrief notifications go to NTFY_URL when set
 debrief waits for the usage-limit window, then runs
+decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
+decisionsStore: a quoted DECISIONS wins over docs/decisions.md, an unknown command exits 2
+decisionsStore: neither is null, and store prints nothing
+decisionsStore: no DECISIONS and docs/decisions.md present is a file store
 default MERGE_POLICY proposes a verified milestone, never merges it
 deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
 deploy.mjs: vercel and netlify guards merge, keep keys and detect
@@ -234,6 +238,7 @@ lint: self-match trips a grep of progress.md for the step's own words, not of ha
 lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
+memlint.mjs: node --check passes, a usage header, decisionsStore exported
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
@@ -298,6 +303,10 @@ report.md lists the session that peaked at its cap among the peaks over 2 GB
 resume reloads config merged from main
 retro edits reverted
 routine notifications keep the default priority
+routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count
+routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=
+routing: the rendered initializer prompt sends gotchas to ## Gotchas, run-only facts to discoveries, no decision number
+routing: this repo has the block (journal/decisions/, never numbered), an empty Gotchas and DECISIONS=journal/decisions
 run start with the guard: nothing
 run start without the deploy guard: one note, one notification
 run start without the netlify guard: one note, one notification
@@ -416,4 +425,10 @@ verify needs Michael starts a desk
 verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
 waits for another run's limit window
+where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
+where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md
+where things go: the verify prompt has the read-only variant (discoveries, no Gotchas edit)
+where things go: verify and retro keep the read-only rule without the heading when CLAUDE.md has its own block
+where things go: with no CLAUDE.md the three prompts carry the block once each, the store from DECISIONS=
+where things go: with the heading in CLAUDE.md the three prompts carry the block 0 times
 with a queue runner going, the continue command is a queue add
