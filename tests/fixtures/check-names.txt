@@ -378,6 +378,7 @@ review gate: a review reporting 0 Critical, 0 Important is not escalated and the
 review gate: a review under REVIEW_OPUS_LINES runs on sonnet, noted with its changed lines
 review gate: a review whose summary gives no counts is noted not escalated, and the run ends done
 review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor in its entry summary; a build session's doesn't
+review gate: a round pending at a session cap with the review at MAX_ATTEMPTS is work left (continuation queued) and runs on the continue
 review gate: a sonnet review reporting 1 Critical gets one round on opus at no attempt
 review gate: after an escalation round that doesn't pass, the review's next attempt runs on opus and never escalates again
 review gate: an escalation round refused by a usage limit runs again on opus, still at no attempt

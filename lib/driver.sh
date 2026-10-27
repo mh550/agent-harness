@@ -229,15 +229,16 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
   merge_milestones
-  # the tree's count (the slot's, the last lane's code, if one opened): tests_end's, a red tree none
-  local key f dir=$RWT; [[ -n $SLOT && -d $SLOT ]] && dir=$SLOT
+  # the tree's count (the slot's, the last lane's code, if one opened): tests_end's, a red tree none. The last lane's
+  # outputs are the run's (scratch_done keeps them in the state dir): copied first, so tests_end reads that lane's
+  # check-<key>.out under an older, empty marker
+  local key f dir=$RWT L=$SCRATCH/lanes/${LAST_LANE:-}; [[ -n $SLOT && -d $SLOT ]] && dir=$SLOT
+  if [[ -n ${LAST_LANE:-} && -d $L ]]; then
+    for f in "$L"/init.out "$L"/check.out "$L"/check-*.out; do [[ -f $f ]] && cp -f "$f" "$SCRATCH/"; done
+  fi
   key=$(cd "$dir" && { green; tests_end final; node "$HARNESS_HOME/lib/treekey.mjs"; })   # scratch_done keeps this tree's output
   services_down "$1"; lanes_services_down "$1"   # after the last suite run, which may need them
-  # the last lane's outputs are the run's (scratch_done keeps them in the state dir)
-  if [[ -n ${LAST_LANE:-} && -d $SCRATCH/lanes/$LAST_LANE ]]; then
-    for f in init.out check.out "check-$key.out"; do [[ -f $SCRATCH/lanes/$LAST_LANE/$f ]] && cp -f "$SCRATCH/lanes/$LAST_LANE/$f" "$SCRATCH/$f"; done
-    [[ -f $SCRATCH/lanes/$LAST_LANE/teardown.out ]] && cat "$SCRATCH/lanes/$LAST_LANE/teardown.out" >> "$SCRATCH/teardown.out"
-  fi
+  [[ -n ${LAST_LANE:-} && -f $L/teardown.out ]] && cat "$L/teardown.out" >> "$SCRATCH/teardown.out"
   slot_close   # every slot goes; lane branches are pushed; a merged lane's branch goes
   SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"
   SUM report "$REC/summary.json" > "$REC/report.md"   # the end notification's click; rewritten after the retro
@@ -261,6 +262,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   # Only a session cap continues by itself (time and Michael's stops don't), within the run's --until, at most
   # AUTO_CONTINUE_MAX times, without giving given-up features new attempts.
   local left conts; left=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" 2>/dev/null); conts=$(cat "$STATE/auto-continues" 2>/dev/null || echo 0)
+  for f in "$STATE"/lanes/*/review-escalate; do [[ -s $f ]] && left+=" ${f%/review-escalate}"; done   # a pending round is work left: it takes no attempt
   if [[ -n $left && $AUTO_CONTINUE == 1 && $1 == session\ cap* ]] && (( conts < ${AUTO_CONTINUE_MAX:-3} )) \
      && (( DEADLINE_AT == 0 || $(date +%s) < DEADLINE_AT - 600 )); then
     echo $(( conts + 1 )) > "$STATE/auto-continues"

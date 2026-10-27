@@ -376,15 +376,15 @@ check outside these tables go red treats it as a bug in its code, not in the che
 
 ### 10.3 New check files (one per topic; names into `tests/fixtures/check-names.txt`, 394 today)
 
-- `tests/checks/35-lanes-scheduler.sh` (P1-02, pure, seconds): the five `F lanes`/`F next <m>` unit checks of the
+- `tests/checks/43-lanes-scheduler.sh` (P1-02, pure, seconds): the five `F lanes`/`F next <m>` unit checks of the
   spec, `F pass`, `F deps`, a complete unverified milestone is a candidate, `scope_owns` for the `<m>-` roles.
-- `tests/checks/36-lanes-record.sh` (P1-03): the `record` lock (two background writers, `HARNESS_RECORD_DELAY=0.05`,
+- `tests/checks/44-lanes-record.sh` (P1-03): the `record` lock (two background writers, `HARNESS_RECORD_DELAY=0.05`,
   20 lines each → 40 intact lines); one stub run that covers: a session committing `.harness/runs/<run>/x` (revert
   note, `harness/<run>` unchanged by it, the lane branch reverted), a question above `## Answers` landing in the
   record's INBOX above that line with `answers_hash` unchanged, two sessions' flips both landing while the record
   moved between them; the base conflict note; the record tracked on main (skip-worktree: the session's commit
   carries none of the copy); the run-id `lanes` refused (D6).
-- `tests/checks/37-lanes-run.sh` (P1-04): the `MAX_LANES=1` three-feature run (`done`, two PRs, `lane M1 opened
+- `tests/checks/45-lanes-run.sh` (P1-04): the `MAX_LANES=1` three-feature run (`done`, two PRs, `lane M1 opened
   (slot 0` before `lane M1 closed (`, the same for M2, `lane` on every coding metrics row, every entry on
   `harness/demo`, one worktree left), pause and stop (no `lanes/` left, every lane pid dead), the exit file.
 - `tests/checks/38-lanes-continue.sh` (P1-05): continue mid-M2 on the same lane branch, the legacy refusal, the
@@ -414,11 +414,11 @@ Each copies a real shape: a session's `git add`/`commit`/`push`, or the phone's 
    Nothing calls them yet. Suite green, 394 + about 8.
 2. **P1-03** the record branch, one loop still: `lib/record.sh` (the lock, `sessions`, `limits`, record writes);
    the loop opens `slot-0` per milestone and materializes; verify on the lane tip; the merge rules; taint and held
-   deleted; §10.1 and P1-03's rows of §10.2 rewritten with the new invariant checks; `36-lanes-record.sh`;
+   deleted; §10.1 and P1-03's rows of §10.2 rewritten with the new invariant checks; `44-lanes-record.sh`;
    `journal/decisions/2026-10-26-lanes.md` started (P1's finding · choice · rejected; P2 completes it);
    `docs/architecture.md` §4, §7, §8. Green, the record checks rewritten from here on.
 3. **P1-04** `lib/lane.sh` and the coordinator: units and scratch per lane, P1-04's rows of §10.2, the fixture and
-   stub scratch paths, `finish`'s slot and branch cleanup, `metrics` `lane`; `37-lanes-run.sh`; architecture §3,
+   stub scratch paths, `finish`'s slot and branch cleanup, `metrics` `lane`; `45-lanes-run.sh`; architecture §3,
    §5. Green; the suite's time measured and recorded.
 4. **P1-05** `harness continue` (attempts reset as today), the legacy refusal in `cmd_start`'s resume path (not under
    `HARNESS_MERGE_ONLY`: `harness merge` of a legacy run still works, the `lgm` and `legacy` checks keep their

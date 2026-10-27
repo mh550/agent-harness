@@ -9,6 +9,14 @@ git pull -q --ff-only origin main
 STUB_REVIEW_LIST=1 STUB_LENIENT=1 STUB_REVIEW_FINDINGS=1,0 STUB_REVIEW_ROUND=limit "$H" start "$T/proj" rlimit --spec SPEC.md --foreground > "$T/rlimit.out" 2>&1
 rm -f "$HARNESS_STATE/LIMIT_UNTIL"; git pull -q --ff-only origin main
 STUB_REVIEW_LIST=1 STUB_LENIENT=1 STUB_REVIEW_FINDINGS=0,1 STUB_REVIEW_ROUND=fail "$H" start "$T/proj" rfail --spec SPEC.md --foreground > "$T/rfail.out" 2>&1
+git pull -q --ff-only origin main
+# rcap: the session cap (A, B, D, R: coding sessions) ends the segment with R's round pending and R at MAX_ATTEMPTS; the
+# continuation (--keep-attempts, as the automatic one) must reopen M1 for the round (decisions/2026-10-27-p1-main-merge)
+mkdir -p "$HARNESS_STATE/proj/rcap" && printf '%s\n' MAX_SESSIONS=4 MAX_ATTEMPTS=1 > "$HARNESS_STATE/proj/rcap/run.env"
+STUB_REVIEW_LIST=1 STUB_LENIENT=1 STUB_REVIEW_FINDINGS=1,0 "$H" start "$T/proj" rcap --spec SPEC.md --foreground > "$T/rcap.out" 2>&1
+cp "$HARNESS_STATE/proj/rcap/ended" "$T/rcap-ended1"; compgen -G "$HARNESS_STATE/proj/rcap/lanes/*/review-escalate" > "$T/rcap-pending1"
+rm -f "$HARNESS_STATE"/queue/*-continue-rcap.args
+STUB_REVIEW_LIST=1 STUB_LENIENT=1 STUB_REVIEW_FINDINGS=1,0 "$H" continue rcap --keep-attempts --foreground > "$T/rcap2.out" 2>&1
 met() { jq -r --arg f "$2" 'select(.feature == $f and .kind == "coding") | .model' "$T/wt/proj/$1/.harness/runs/$1/metrics.jsonl" 2> /dev/null; }   # <run> <id> → its coding rows' models
 plog() { ls "$HARNESS_STATE/proj/$1/logs/"*-"$2".prompt.md 2> /dev/null | head -1; }   # <run> <id> → its first session's prompt copy
 
@@ -26,6 +34,10 @@ check "review gate: after an escalation round that doesn't pass, the review's ne
   '[[ $(met rfail R | paste -sd " " -) == *sonnet*" "*opus*" "*opus* && $(met rfail R | wc -l) == 3 ]] \
   && [[ $(hlog rfail | grep -c "one round on") == 1 ]] && hlog rfail | grep -qE "· review R: [0-9]+ changed lines, escalated earlier in this run; opus$" \
   && [[ $(jq -r .R "$HARNESS_STATE/proj/rfail/attempts.json") == 2 ]] && grep -q "^done" "$HARNESS_STATE/proj/rfail/ended"'
+check "review gate: a round pending at a session cap with the review at MAX_ATTEMPTS is work left (continuation queued) and runs on the continue" \
+  'grep -q "^session cap (4)" "$T/rcap-ended1" && [[ -s $T/rcap-pending1 ]] && hlog rcap | grep -q "continuation queued (1 of 3, automatic;" \
+  && [[ $(met rcap R | paste -sd " " -) == *sonnet*" "*opus* && $(met rcap R | wc -l) == 2 ]] && [[ $(jq -r .R "$HARNESS_STATE/proj/rcap/attempts.json") == 1 ]] \
+  && ! compgen -G "$HARNESS_STATE/proj/rcap/lanes/*/review-escalate" > /dev/null && grep -q "^done" "$HARNESS_STATE/proj/rcap/ended"'
 check "review gate: the escalation round's Review diff line names the model it runs on" \
   'p2=$(ls "$HARNESS_STATE/proj/rlimit/logs/"*-R.prompt.md | sed -n 2p) && [[ -s $p2 ]] \
   && grep -qE "^Review diff: [0-9]+ files, [0-9]+ changed lines .*; under 400; escalated to opus$" "$p2"'
