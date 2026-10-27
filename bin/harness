@@ -134,6 +134,41 @@ queue_ensure_runner() {
   echo "queue runner started (tmux h-queue)"
 }
 
+# <project> <run worktree> <run> <state dir> [<--base given now>]: a run from before lanes has code on harness/<run>
+# that main (or the run's --base, BASE_REF) doesn't have. Lanes keep code on lane branches and only the record on
+# harness/<run>, so it can't go on as a lanes run: refused with the three ways forward, said in run.log and a
+# high-priority notification too (a queued continuation runs with nobody watching). The branch merged into its base
+# (merge-tree), then diffed outside the record: the base's own later changes and the record are no code of the run's.
+# `harness merge` is never refused.
+legacy_refuse() {
+  local p=$1 wt=$2 run=$3 st=$4 ref tree files n why base
+  ref=${5:-$( [[ -f $st/run.env ]] && source "$st/run.env" 2> /dev/null; echo "${BASE_REF:-}" )}
+  ref=${ref:-origin/$MAIN_BRANCH}; [[ $ref == "origin/$MAIN_BRANCH" ]] && base=$MAIN_BRANCH || base="$ref (its --base)"
+  git -C "$wt" fetch -q origin 2> /dev/null || true
+  git -C "$wt" rev-parse -q --verify "$ref^{commit}" > /dev/null || return 0
+  tree=$(git -C "$wt" merge-tree --write-tree "$ref" HEAD 2> /dev/null | head -1) || true   # a conflict still writes its tree
+  [[ -n $tree ]] || return 0
+  files=$(git -C "$wt" diff --name-only "$ref" "$tree" -- . ':!.harness/runs') || return 0
+  [[ -n $files ]] || return 0
+  n=$(grep -c . <<< "$files")
+  why="harness/$run has code $base does not have ($n file$( (( n == 1 )) || echo s) outside .harness/runs/: $(head -3 <<< "$files" | paste -sd' ')$( (( n <= 3 )) || echo ' …'))"
+  { echo "harness: continue refused: $why"
+    echo "  Lanes keep a run's code on harness-lane/$run/<m> and only its record on harness/$run, so a run from before lanes can't go on. Three ways forward:"
+    echo "  1. harness merge $run"
+    echo "       merges its verified milestones (tags run/$run/<m>) into $MAIN_BRANCH"
+    echo "  2. harness start $p --brief \"finish <what is left>; harness/$run is the source\""
+    echo "       a new run for what is left, from $MAIN_BRANCH"
+    echo "  3. finish it by hand on harness/$run, then merge it into $MAIN_BRANCH yourself"; } >&2
+  ( set +e   # notify always returns 0, and a failed post or log line must not turn the refusal's exit 1 into another code
+    log() { echo "$(date '+%F %T') $*" >> "$st/run.log"; } 2> /dev/null
+    # shellcheck source=lib/notify.sh
+    source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$run
+    log "continue refused: $why"
+    notify "continue refused: $why. Ways forward: harness merge $run; a new run with --brief naming harness/$run; or by hand" \
+      title="[$run] continue refused: a pre-lanes run" priority=high )
+  exit 1
+}
+
 cmd_start() {
   local p run="" base="" supervisor=1 fg=0 now=0 spec="" brief="" until="" orig=("$@")
   p=$(toplevel "${1:?usage: harness start <project> [<run-id>] [options]}"); shift
@@ -168,6 +203,7 @@ cmd_start() {
     echo "$(alive_count) run(s) going (MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS): $run is queued"; queue_ensure_runner; return
   fi
   if [[ -d $wt ]]; then
+    [[ ${HARNESS_MERGE_ONLY:-} ]] || legacy_refuse "$p" "$wt" "$run" "$state" "$base"
     echo "resuming $run in $wt"
   else
     [[ -n $spec || -n $SPEC_FILES || -n $brief ]] || die "a new run needs --spec <files> or --brief <text> (or SPEC_FILES in .harness/config.sh)"
@@ -235,6 +271,8 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start op
   if (( queued && ! requested )) && grep -qs '^stopped by Michael' "$st/ended"; then echo "skipping queued continuation of $run: Michael stopped it"; return 0; fi
   # shellcheck source=/dev/null
   ( source "$st/meta.env"
+    # before anything changes its state: a refused run stays as it ended
+    [[ -d $WT ]] && { harness_config "$PROJECT_DIR"; legacy_refuse "$PROJECT_DIR" "$WT" "$RUN_ID" "$STATE"; }
     # a continuation you start gives every feature that isn't passing fresh attempts; an automatic one doesn't
     (( keep )) || { [[ -f $WT/.harness/runs/$RUN_ID/feature_list.json ]] && node "$HARNESS_HOME/lib/features.mjs" reset "$STATE/attempts.json" "$WT/.harness/runs/$RUN_ID/feature_list.json"
       rm -f "$STATE"/needs-* "$STATE"/verify-rounds-* "$STATE"/refused-*; }

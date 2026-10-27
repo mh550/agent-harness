@@ -379,8 +379,8 @@ merge_one() {
   url=$($GH pr view "$head" --json url,state -q 'select(.state=="OPEN") | .url' 2>/dev/null) || url=""
   [[ $url == http* ]] || url=$($GH pr create --base "$MAIN_BRANCH" --head "$head" --title "$RUN_ID: $m (verified)" --body-file "$LS/pr-body.md" 2>> "$STATE/run.log" | tail -1)
   [[ $url == http* ]] || { note "$m: could not open its PR (see run.log)"; return 1; }
+  [[ ${2:-} == --open ]] && return 0   # a dependency hasn't merged: the PR waits for it, whatever the policy
   if [[ $MERGE_POLICY != auto && ! ${HARNESS_MERGE_ONLY:-} ]]; then touch "$STATE/proposed-$m"; note "$m proposed for merging · $url"; notify "$m verified · review: $url" title="[$RUN_ID] $m ready to merge" click="$url"; return 0; fi   # harness merge lands it whatever the policy
-  [[ ${2:-} == --open ]] && return 0   # a dependency hasn't merged: the PR waits for it
   if $GH pr merge "$url" --merge --match-head-commit "$c" > /dev/null 2>> "$STATE/run.log"; then
     git push -q origin --delete "$head" 2>/dev/null
     touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH · $url"; notify "$m merged · $url" click="$url"
@@ -396,14 +396,20 @@ merge_one() {
 
 # [<m>] → merge every verified, unmerged milestone (or just <m>) in list order. A tag is a lane tip, so it carries no
 # other milestone's unverified work: each merges on its own once every milestone it depends on (F deps) has merged;
-# until then its PR is opened and waits (noted once). v2 tags (verified under weaker rules) merge only through
-# `harness merge`. Nothing under MERGE_POLICY=off.
+# until then its PR is opened and waits (noted once, under pr too). v2 tags (verified under weaker rules) and proposed
+# milestones (pr) merge only through `harness merge`, in the same order. Nothing under MERGE_POLICY=off.
 merge_milestones() {
   [[ $MERGE_POLICY == off || ! -f $LIST ]] && return 0
   local m d wait
   for m in $(F milestones "$LIST"); do
     [[ -n ${1:-} && $m != "$1" ]] && continue
-    [[ -f $STATE/merged-$m || -f $STATE/proposed-$m ]] && continue
+    [[ -f $STATE/merged-$m ]] && continue
+    if [[ -f $STATE/proposed-$m && ! ${HARNESS_MERGE_ONLY:-} ]]; then   # Michael's to merge, or `harness merge`'s
+      # merged by Michael meanwhile (its PR on GitHub): merged here too, so what waits on it moves on
+      git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null && git fetch -q origin "$MAIN_BRANCH" 2> /dev/null \
+        && git merge-base --is-ancestor "run/$RUN_ID/$m" "origin/$MAIN_BRANCH" && { touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (by its PR)"; }
+      continue
+    fi
     git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null || continue
     if [[ ! ${HARNESS_MERGE_ONLY:-} ]] && ! git tag -l --format='%(contents:subject)' "run/$RUN_ID/$m" | grep -q '(v3'; then
       [[ -f $STATE/legacy-noted ]] || { touch "$STATE/legacy-noted"; note "$m was verified by harness v2; it merges only with: harness merge $RUN_ID"; }
@@ -433,26 +439,43 @@ sync_record() { record sync_record_; }
 sync_lane() { [[ -n ${LBRANCH:-} ]] || return 0; git -C "$SLOT" push -q -u origin "$LBRANCH" 2>> "$STATE/run.log" || log "push of $LBRANCH failed"; }
 
 # <m> [<k>] → slot k (0) on harness-lane/<run>/<m>, cwd there; HARNESS_WT and HARNESS_BRANCH name it for sessions.
-# The coordinator opens it, then starts the lane process in it (lib/lane.sh). A lane resumes its branch (local, else the origin's: a segment that ended mid-milestone), else starts from BASE_REF
-# (harness start --base) or origin/main, then merges the tag of every dependency main doesn't have yet. 1 = its base
+# The coordinator opens it, then starts the lane process in it (lib/lane.sh). A lane resumes its branch (the newer of
+# the box's and the origin's, both merged if they diverged), else starts from BASE_REF (harness start --base) or
+# origin/main, then merges the tag of every dependency main doesn't have yet. 1 = its base
 # conflicts or the slot can't be checked out (needs-<m>, noted: the loop would only pick it again), cwd back in the
 # record worktree.
 slot_open() {
-  local m=$1 k=${2:-0} b=harness-lane/$RUN_ID/$1 base dep tag first=0 sha
+  local m=$1 k=${2:-0} b=harness-lane/$RUN_ID/$1 base fold dep tag first=0 sha
   SLOT=$WT_ROOT_DIR/lanes/$RUN_ID/slot-$k
   LBRANCH="" LANE=""   # from here the slot leaves the last lane's branch: only a full open names a lane again
+  if [[ -d $SLOT ]]; then   # a segment killed mid-session left its work here: committed before the base is chosen, so it stays
+    local cur; cur=$(git -C "$SLOT" branch --show-current)
+    ( cd "$SLOT" && commit_all "WIP: uncommitted in the slot when it was reused (harness)" )
+    [[ $cur == harness-lane/* ]] && git -C "$SLOT" push -q origin "$cur" 2> /dev/null
+  fi
   git -C "$RWT" fetch -q origin 2> /dev/null
-  base=${BASE_REF:-origin/$MAIN_BRANCH}
-  if git -C "$RWT" rev-parse -q --verify "refs/heads/$b" > /dev/null; then base=$b
-  elif git -C "$RWT" rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null; then base=origin/$b; fi
+  base=${BASE_REF:-origin/$MAIN_BRANCH} fold=""
+  # a lane resumes its branch (harness continue, a segment that ended mid-milestone): the origin's, which may be ahead
+  # (Michael pushed a fix by hand); the box's when it has commits the origin lacks (a failed push); both when they diverged
+  if git -C "$RWT" rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null; then
+    base=origin/$b
+    if git -C "$RWT" rev-parse -q --verify "refs/heads/$b" > /dev/null && ! git -C "$RWT" merge-base --is-ancestor "refs/heads/$b" "refs/remotes/origin/$b"; then
+      base=$b; git -C "$RWT" merge-base --is-ancestor "refs/remotes/origin/$b" "refs/heads/$b" || fold=origin/$b
+    fi
+  elif git -C "$RWT" rev-parse -q --verify "refs/heads/$b" > /dev/null; then base=$b; fi
   if [[ ! -d $SLOT ]]; then
     mkdir -p "${SLOT%/*}"; first=1
     git -C "$RWT" worktree add -q -f "$SLOT" -B "$b" "$base" 2>> "$STATE/run.log" || { slot_fail "$m" "worktree add of $SLOT"; return 1; }
   else
-    local cur; cur=$(git -C "$SLOT" branch --show-current)   # a segment killed mid-session left its work here
-    ( cd "$SLOT" && commit_all "WIP: uncommitted in the slot when it was reused (harness)" )
-    [[ $cur == harness-lane/* ]] && git -C "$SLOT" push -q origin "$cur" 2> /dev/null
     git -C "$SLOT" checkout -q -f -B "$b" "$base" 2>> "$STATE/run.log" || { slot_fail "$m" "checkout of $b"; return 1; }
+  fi
+  if [[ -n $fold ]]; then
+    if ! git -C "$SLOT" merge -q --no-edit "$fold" > /dev/null 2>&1; then
+      git -C "$SLOT" merge --abort 2> /dev/null
+      note "$m: $b here and on origin diverged and conflict; needs Michael"; touch "$STATE/needs-$m"
+      cd "$RWT" || return 1; return 1
+    fi
+    note "$m: $b here and on origin had diverged; merged origin's into it"
   fi
   for dep in $(F deps "$LIST" "$m"); do
     tag=run/$RUN_ID/$dep

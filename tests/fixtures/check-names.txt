@@ -250,7 +250,18 @@ init: a Vercel project without vercel.json gets one
 init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
 lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end by default; commented in the user template; HARNESS_LANE_POLL in the driver's usage
+lanes continue: M2's merged PR still has the lane's earlier commits (the first segment's, the one by hand, the unpushed one)
+lanes continue: a legacy run (code on its branch beyond main) is refused with the three ways forward, exit 1
+lanes continue: a record-only run (its record on main too) continues as a lanes run and ends done
+lanes continue: a reused slot's work, committed while its push failed, stays on the lane and reaches main
+lanes continue: a run started with --base is measured against its base, not main: not refused
+lanes continue: a run stopped mid-M2 reopens harness-lane/<run>/M2 from the origin's and the box's branch and finishes M2 on it
+lanes continue: harness merge of a legacy run is not refused
 lanes pause: the lane finishes its session and waits (no new session), and the coordinator logs paused once
+lanes pr-held: M1 merged on GitHub is seen as merged, and the waiting M2 is proposed, with its notification
+lanes pr-held: M1 verified is proposed (its PR open, not merged), and M2 opens from main with run/<run>/M1 merged in
+lanes pr-held: M2 verified opens its PR, not merged, with the waits note once
+lanes pr-held: harness merge afterwards merges M1, then M2
 lanes record: a lane commit touching .harness/runs/ is reverted with a note, and harness/<run> never gets it
 lanes record: a session's question above ## Answers lands in the record's INBOX.md above that line
 lanes record: the slot is gone at the end, the run keeps one worktree, the merged lane's branch is deleted

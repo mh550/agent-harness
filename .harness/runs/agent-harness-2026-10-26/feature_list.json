@@ -151,7 +151,7 @@
         "under MERGE_POLICY=pr with M2 depending on M1: M1 verified is proposed (PR open, not merged, no merged-M1); M2 opens from origin/main with run/<run>/M1 merged in (`note \"lane M2 opened (... from <sha>)\"` where <sha> contains the tag), M2 verified opens its PR and `note \"M2 verified; its PR waits for M1 to merge\"` appears once; `harness merge <run>` afterwards merges both in order (the run 10 and run 14 checks keep their text and pass)",
         "the new checks live in tests/checks/NN-lanes-continue.sh, names in tests/fixtures/check-names.txt; README.md says what `harness continue` tells a legacy run; `bash -n bin/harness lib/driver.sh lib/lane.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-06",

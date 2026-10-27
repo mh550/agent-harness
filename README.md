@@ -54,7 +54,15 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | `harness eval run` · `compare` · `probes` | replay a fixed task set under a harness version and compare two results (see [Evals](#evals); costs money) |
 | `harness init` · `gc [--all-merged] [--deps] [--dry-run]` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs (their clean worktrees, run worktrees only (`harness/<run>`: a worktree on any other branch is a `keeps` line), clean counting untracked files whatever the config, ignored build output and all: `worktree remove --force`, then `rm -rf` only once git has let go of it (a locked one stays), a failure a `! could not remove <wt>: <why>` line and gc goes on; and the merged `harness/` and `harness-merge/` branches, local and on origin; `--all-merged`: every branch merged into `origin/main`, whatever its name, except `main`, the origin's default branch and a running run's; local deletes are `branch -d`, a refused one is a `! failed:` line and gc goes on; `--deps`: the `DEPS_DIRS`, default `node_modules .next .next-check .venv`, in the worktrees of ended runs, merged or not, never the project's checkout or a live or queued run's, each a `+ freed <n> MB in <wt>: <dirs>` line), stop the systemd units a killed driver left (`harness-<run>-*` of runs with no live driver) and kill the tmux sessions `h-<run>` of its ended runs (never `h-queue`, the desk, a live or paused run's) |
 
-`harness continue` merges `main` into the run branch before any session, so a resumed run never works on a stale base.
+`harness continue` merges `main` into the run branch (the record) before any session, so a resumed run never works on
+a stale base, and reopens each unfinished milestone on its lane branch `harness-lane/<run>/<m>`: the origin's when it
+is ahead (a fix you pushed there by hand), both merged when the box's and the origin's diverged. A run from before
+lanes, whose `harness/<run>` carries code `main` doesn't have, is refused (exit 1, plus a high-priority notification)
+with three ways forward: `harness merge <run>` for its verified milestones; a new run with `--brief "finish <what is
+left>; harness/<run> is the source"`; or finishing it by hand on that branch. A branch that holds only the record
+continues as a lanes run. Under `MERGE_POLICY=pr`, a verified milestone whose dependency's PR still waits for you opens
+its own PR from the dependency's tag and waits (`<m> verified; its PR waits for <dep> to merge`); `harness merge <run>`
+then lands every proposed milestone, dependencies first.
 
 ## What a project needs
 
