@@ -9,6 +9,41 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 22:27 · verify M3 · passes
+
+All five M3 features hold: full suite green (455), 38-run-17 12/12 and 12-journal 15/15 re-run, docs/decisions/plan present, bash -n and node --check ok.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M3-01 | 1 | re-ran/read: plan exists, defines gotchasDiff/note/driver placement (grep docs/plans/2026-10-26-M3-gotchas-and-pack.md §M3-02) | holds as described | yes |
+| M3-01 | 2 | re-ran/read: plan fixes resolved field and pack drop (§M3-03 lines 87-95) | holds as described | yes |
+| M3-01 | 3 | re-ran/read: plan fixes Promote to Gotchas, Current rules, VERIFY cap (§M3-03/04) | holds as described | yes |
+| M3-01 | 4 | re-ran/read: plan names stub flags, check file 38, existing checks | holds as described | yes |
+| M3-01 | 5 | re-ran/read: suite green: init 455 tests | holds as described | yes |
+| M3-02 | 1 | re-ran/read: coding.md Finish step 3 Gotchas; check `coding prompt: the Finish step adds one Gotchas line` PASS | holds as described | yes |
+| M3-02 | 2 | re-ran/read: check `gotchasDiff: added, edited, deleted and no section` PASS | holds as described | yes |
+| M3-02 | 3 | re-ran/read: checks `a stub session that adds a Gotchas line is noted` and `a session that leaves CLAUDE.md alone gets no gotchas note` PASS | holds as described | yes |
+| M3-02 | 4 | re-ran/read: architecture.md line 264 Gotchas row; decisions/2026-10-26-gotchas-in-place.md exists | holds as described | yes |
+| M3-02 | 5 | re-ran/read: suite green | holds as described | yes |
+| M3-03 | 1 | re-ran/read: check `entries.mjs: resolved is an array of strings and normalize keeps it` PASS (15/15 in 12-journal) | holds as described | yes |
+| M3-03 | 2 | re-ran/read: check `a resolved question is gone from the next context.md` PASS | holds as described | yes |
+| M3-03 | 3 | re-ran/read: check `a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it` PASS | holds as described | yes |
+| M3-03 | 4 | re-ran/read: coding.md lines 70,89,97 and where-things-go-readonly.md line 4 name project / Promote to Gotchas; check `coding and verify prompts name resolved…` PA | holds as described | yes |
+| M3-03 | 5 | re-ran/read: suite green | holds as described | yes |
+| M3-04 | 1 | re-ran/read: check `context.md lists the decisions store rules newest first` PASS | holds as described | yes |
+| M3-04 | 2 | re-ran/read: check `CONTEXT_PACK_BYTES=1024 holds…` PASS | holds as described | yes |
+| M3-04 | 3 | re-ran/read: config.sh line 30, templates/user/config.sh line 23; check `a verify pack lists failed rows before dead ends` PASS | holds as described | yes |
+| M3-04 | 4 | re-ran/read: dead-end checks and 29 legacy checks pass in the full suite (455 green) | holds as described | yes |
+| M3-04 | 5 | re-ran/read: architecture.md line 89 seven parts + verify cap; pack-current-rules decision exists | holds as described | yes |
+| M3-04 | 6 | re-ran/read: suite green | holds as described | yes |
+| M3-05 | 1 | re-ran/read: docs/plans/2026-10-26-M3-review.md records 0 Critical, 2 Important, 9 Minor | holds as described | yes |
+| M3-05 | 2 | re-ran/read: Important fixes have RED/GREEN check `entries.mjs: a Gotchas line carries a fact in any case or markup…` PASS | holds as described | yes |
+| M3-05 | 3 | re-ran/read: review doc exists; architecture §4/§7, decisions present | holds as described | yes |
+| M3-05 | 4 | re-ran/read: bash -n and node --check all ok (run) | holds as described | yes |
+| M3-05 | 5 | re-ran/read: suite green | holds as described | yes |
+
+- *222650-verify-M3 · claude-sonnet-5-5*
+
 ### 2026-10-26 22:22 · M3-05 · passes
 
 Opus review of the M3 diff (706a001..HEAD): 0 Critical, 2 Important, 9 Minor; no second round. Fixed both Important (a Gotchas line carries a fact in any case/markup/wrap; `resolved` dismisses a promoted fact) and 7 Minor RED→GREEN; docs and the three M3 decision files updated. Tests 451 → 455.

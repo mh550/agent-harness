@@ -9,6 +9,41 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 22:27 · verify M3 · passes
+
+All five M3 features hold: full suite green (455), 38-run-17 12/12 and 12-journal 15/15 re-run, docs/decisions/plan present, bash -n and node --check ok.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M3-01 | 1 | re-ran/read: plan exists, defines gotchasDiff/note/driver placement (grep docs/plans/2026-10-26-M3-gotchas-and-pack.md §M3-02) | holds as described | yes |
+| M3-01 | 2 | re-ran/read: plan fixes resolved field and pack drop (§M3-03 lines 87-95) | holds as described | yes |
+| M3-01 | 3 | re-ran/read: plan fixes Promote to Gotchas, Current rules, VERIFY cap (§M3-03/04) | holds as described | yes |
+| M3-01 | 4 | re-ran/read: plan names stub flags, check file 38, existing checks | holds as described | yes |
+| M3-01 | 5 | re-ran/read: suite green: init 455 tests | holds as described | yes |
+| M3-02 | 1 | re-ran/read: coding.md Finish step 3 Gotchas; check `coding prompt: the Finish step adds one Gotchas line` PASS | holds as described | yes |
+| M3-02 | 2 | re-ran/read: check `gotchasDiff: added, edited, deleted and no section` PASS | holds as described | yes |
+| M3-02 | 3 | re-ran/read: checks `a stub session that adds a Gotchas line is noted` and `a session that leaves CLAUDE.md alone gets no gotchas note` PASS | holds as described | yes |
+| M3-02 | 4 | re-ran/read: architecture.md line 264 Gotchas row; decisions/2026-10-26-gotchas-in-place.md exists | holds as described | yes |
+| M3-02 | 5 | re-ran/read: suite green | holds as described | yes |
+| M3-03 | 1 | re-ran/read: check `entries.mjs: resolved is an array of strings and normalize keeps it` PASS (15/15 in 12-journal) | holds as described | yes |
+| M3-03 | 2 | re-ran/read: check `a resolved question is gone from the next context.md` PASS | holds as described | yes |
+| M3-03 | 3 | re-ran/read: check `a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it` PASS | holds as described | yes |
+| M3-03 | 4 | re-ran/read: coding.md lines 70,89,97 and where-things-go-readonly.md line 4 name project / Promote to Gotchas; check `coding and verify prompts name resolved…` PA | holds as described | yes |
+| M3-03 | 5 | re-ran/read: suite green | holds as described | yes |
+| M3-04 | 1 | re-ran/read: check `context.md lists the decisions store rules newest first` PASS | holds as described | yes |
+| M3-04 | 2 | re-ran/read: check `CONTEXT_PACK_BYTES=1024 holds…` PASS | holds as described | yes |
+| M3-04 | 3 | re-ran/read: config.sh line 30, templates/user/config.sh line 23; check `a verify pack lists failed rows before dead ends` PASS | holds as described | yes |
+| M3-04 | 4 | re-ran/read: dead-end checks and 29 legacy checks pass in the full suite (455 green) | holds as described | yes |
+| M3-04 | 5 | re-ran/read: architecture.md line 89 seven parts + verify cap; pack-current-rules decision exists | holds as described | yes |
+| M3-04 | 6 | re-ran/read: suite green | holds as described | yes |
+| M3-05 | 1 | re-ran/read: docs/plans/2026-10-26-M3-review.md records 0 Critical, 2 Important, 9 Minor | holds as described | yes |
+| M3-05 | 2 | re-ran/read: Important fixes have RED/GREEN check `entries.mjs: a Gotchas line carries a fact in any case or markup…` PASS | holds as described | yes |
+| M3-05 | 3 | re-ran/read: review doc exists; architecture §4/§7, decisions present | holds as described | yes |
+| M3-05 | 4 | re-ran/read: bash -n and node --check all ok (run) | holds as described | yes |
+| M3-05 | 5 | re-ran/read: suite green | holds as described | yes |
+
+- *222650-verify-M3 · claude-sonnet-5-5*
+
 ### 2026-10-26 22:22 · M3-05 · passes
 
 Opus review of the M3 diff (706a001..HEAD): 0 Critical, 2 Important, 9 Minor; no second round. Fixed both Important (a Gotchas line carries a fact in any case/markup/wrap; `resolved` dismisses a promoted fact) and 7 Minor RED→GREEN; docs and the three M3 decision files updated. Tests 451 → 455.
@@ -220,19 +255,8 @@ Added lib/backlog.sh (harness backlog [list] | set | import, writes under flock 
 - **Discovery** (affects M1-04, M1-05): README's new ## Retro backlog section already says the driver writes the backlog (M1-04's merge); docs/architecture.md §4 row and the Debrief paragraph are still M1-05's.
 - *03-M1-03 · claude-opus-5-5*
 
-### 2026-10-26 19:23 · M1-02 · passes
-
-Added lib/backlog.mjs (pure exports STATUSES, parseRows, formatRows, validateProposals, mergeProposals, setStatus, orderRows, importRows, listLines; CLI merge/set/list/import/validate, atomic tmp+rename writes) and tests/checks/35-backlog-pure-m1.sh, 7 checks written first. Tests 395 → 402.
-
-- **Files:** lib/backlog.mjs, tests/checks/35-backlog-pure-m1.sh, tests/fixtures/check-names.txt
-- **Verified:** Red first, before lib/backlog.mjs existed, all 7 failed: 'backlog merge: a new id becomes one proposed row first seen in its run', 'backlog merge: a known id adds its run to runs_seen once, status unchanged', 'backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged', 'backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1', 'backlog list: proposed first, then more runs_seen first within a status', 'backlog import: 8 rows into an empty store, then again 8 (idempotent by id)', 'backlog import: a known id takes status, spec, pr and note, keeps first_seen, unions runs_seen'. Then 7/7 (bash tests/run.sh 35-backlog); full suite via lib/check.sh green, 402 tests, conformance passing; node --check lib/backlog.mjs.
-- **Tests:** 395 → 402
-- **Dead end:** the list check reading the same store the set check edited — set leaves bb-once with a spec, so the line lengths and --max-bytes cut changed; the list check now reads an untouched copy (four.jsonl)
-- **Discovery** (affects M1-03, M1-04): CLI output channels: merge's ok and invalid lines and validate's why line go to stdout (the driver notes `$(node lib/backlog.mjs merge …)`); set/import/usage errors go to stderr as one `backlog: <why>` line, exit 1 (usage: exit 2 for an unknown command). set on a missing store exits 1 (unknown id) and writes nothing.
-- **Discovery** (affects M1-03, M1-05): list --max-bytes is a hard cap including the `… (<n> more rows)` line; list --jsonl --max-bytes stops at whole rows with no trailer. import of a known id sets spec/pr/note to the import row's values (null when absent), keeps title and first_seen; a new import row needs a title, a slug id and one of the five statuses.
-- *02-M1-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 19:23 · M1-02 · passes · Added lib/backlog.mjs (pure exports STATUSES, parseRows, formatRows, validateProposals, mergeProposa… ([in full](progress-archive.md))
 - 2026-10-26 19:16 · M1-01 · passes · Wrote docs/plans/2026-10-26-M1-retro-backlog.md: row schema and defaults, lib/backlog.mjs's exported… ([in full](progress-archive.md))
 - 2026-10-26 19:12 · init · passes · 23 features: M1 6 (plan, backlog.mjs, CLI + seed, retro emits and driver merges, retro prompt + debr… ([in full](progress-archive.md))
