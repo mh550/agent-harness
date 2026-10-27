@@ -9,6 +9,18 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 01:12 · M6-04 · passes
+
+summary.mjs: pure reviewSummary → summary.json review {cost_pct, found_nothing, reviews}, a Review share row in report.md, review_cost_pct in the ledger row; rework no longer counts the review gate's Opus round. evals/NEXT.md § 5 (pre-m6 vs m6, never run), README Evals pointer, architecture §per-run, decision default 7.
+
+- **Files:** lib/summary.mjs, tests/checks/41-run-19-review-gate-m6.sh, tests/fixtures/check-names.txt, evals/NEXT.md, README.md, docs/architecture.md, journal/decisions/2026-10-27-review-gate.md
+- **Verified:** check.sh full: 492/492 (was 489). New in tests/checks/41: reviewSummary pure check and the summary/report/ledger check watched failing (missing export), then green; the reviewFindings pure check passed at once (M6-03 wrote the function). Mutation: with rounds() forced to 0 the summary check fails on rsmall's rework containing R. tests/checks/14 green unchanged; git status --porcelain -- evals/results empty.
+- **Tests:** 489 → 492
+- **Discovery** (affects M6-05): summary.json's review object also carries `reviews` (review features with a coding entry), the denominator of report.md's `<n> of <m> reviews found nothing` row; found_nothing reads entries.jsonl's coding entries only, the last per feature.
+- **Discovery** (affects M6-05): rework subtracts per feature the harness-log notes matching `· review <id>: …; one round on ` (summary.mjs rounds()).
+- **Question for Michael:** The default eval set's tasks are 1–3 features, so they may never reach a milestone review; should a review-bearing eval task be added before judging the gate (evals/NEXT.md § 5 says to fall back on the ledger's review_cost_pct otherwise)?
+- *23-M6-04 · claude-opus-5-5*
+
 ### 2026-10-27 01:03 · M6-03 · passes
 
 A Sonnet review whose entry summary (else final message) reports a Critical or Important finding is un-passed and gets one round on REVIEW_ESCALATE_MODEL before the next pick, at no attempt, once per feature; Opus reviews and 0/0 never escalate. reviewFindings + `entries.mjs findings`, stub STUB_REVIEW_FINDINGS, 3 checks, §7 row, decision file.

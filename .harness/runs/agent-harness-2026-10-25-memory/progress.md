@@ -9,6 +9,18 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 01:12 · M6-04 · passes
+
+summary.mjs: pure reviewSummary → summary.json review {cost_pct, found_nothing, reviews}, a Review share row in report.md, review_cost_pct in the ledger row; rework no longer counts the review gate's Opus round. evals/NEXT.md § 5 (pre-m6 vs m6, never run), README Evals pointer, architecture §per-run, decision default 7.
+
+- **Files:** lib/summary.mjs, tests/checks/41-run-19-review-gate-m6.sh, tests/fixtures/check-names.txt, evals/NEXT.md, README.md, docs/architecture.md, journal/decisions/2026-10-27-review-gate.md
+- **Verified:** check.sh full: 492/492 (was 489). New in tests/checks/41: reviewSummary pure check and the summary/report/ledger check watched failing (missing export), then green; the reviewFindings pure check passed at once (M6-03 wrote the function). Mutation: with rounds() forced to 0 the summary check fails on rsmall's rework containing R. tests/checks/14 green unchanged; git status --porcelain -- evals/results empty.
+- **Tests:** 489 → 492
+- **Discovery** (affects M6-05): summary.json's review object also carries `reviews` (review features with a coding entry), the denominator of report.md's `<n> of <m> reviews found nothing` row; found_nothing reads entries.jsonl's coding entries only, the last per feature.
+- **Discovery** (affects M6-05): rework subtracts per feature the harness-log notes matching `· review <id>: …; one round on ` (summary.mjs rounds()).
+- **Question for Michael:** The default eval set's tasks are 1–3 features, so they may never reach a milestone review; should a review-bearing eval task be added before judging the gate (evals/NEXT.md § 5 says to fall back on the ledger's review_cost_pct otherwise)?
+- *23-M6-04 · claude-opus-5-5*
+
 ### 2026-10-27 01:03 · M6-03 · passes
 
 A Sonnet review whose entry summary (else final message) reports a Critical or Important finding is un-passed and gets one round on REVIEW_ESCALATE_MODEL before the next pick, at no attempt, once per feature; Opus reviews and 0/0 never escalate. reviewFindings + `entries.mjs findings`, stub STUB_REVIEW_FINDINGS, 3 checks, §7 row, decision file.
@@ -242,22 +254,9 @@ context.md ends with `Current rules` (memlint currentRules/readRules: dir store 
 - **Proposed change:** M3-04 step 3's `context.md for M1:` byte count exceeding 8192 can't be observed in a stub run; the check proves the verify cap with CONTEXT_PACK_BYTES=1024 (verify pack > 1024 and ≤ 16384, harness-log count > 1024) instead
 - *13-M3-04 · claude-opus-5-5*
 
-### 2026-10-26 21:46 · M3-03 · passes
-
-entries.mjs: `resolved` (array of strings, kept only when non-empty) drops a question a later entry names (whitespace-folded); `project` discoveries go to a coding-only `Promote to Gotchas` part (cap/8 share, long facts cut, dedup by first 40 chars) until a CLAUDE.md Gotchas line holds them. Stub flags STUB_ASK/RESOLVE/PROJECT_FACT, prompts, arch, README, decision file. Tests 439 → 445.
-
-- **Files:** lib/entries.mjs, tests/stub-claude.sh, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/check-names.txt, prompts/coding.md, prompts/parts/where-things-go-readonly.md, prompts/parts/where-things-go-override.md, docs/architecture.md, README.md, journal/decisions/2026-10-26-resolved-and-project-facts.md
-- **Verified:** lib/check.sh full run green, 445 tests (248 s); the 6 new checks watched failing first (the two stub-run checks and the prompt check against HEAD's entries.mjs/prompts, the long-fact case before its fix); Opus review of the diff: 1 Important fixed (a long project fact was dropped, now cut to its share)
-- **Tests:** 439 → 445
-- **Dead end:** Promote items as whole strings checked only against the cap/8 share — a fact over ~1000 bytes (or ~80 at cap 1024) never fit and, being filtered out of Discoveries, vanished from every coding pack; items are now cut to the share's room (≥ 32 bytes)
-- **Discovery** (affects M3-04): pack() parts may carry a third element, a byte share: an item past it is counted in items left out without stopping the pack; Promote to Gotchas items are {fact, ref} objects cut to the share's room. M3-04's Current rules (cap/4) can reuse the share slot.
-- **Discovery** (affects M3-04, M3-05): lib/eval.sh:134 packs from <clone>/.harness/runs/<run>, which passes the CLAUDE.md guard, so an eval probe's context.md includes Promote to Gotchas (and will include Current rules): the plan said probes read none.
-- **Question for Michael:** The eval probe's context.md now reads the clone's CLAUDE.md Gotchas (it shows what the session would read). Keep that, or make probes read none as the plan said?
-- **Proposed change:** M3-03 step 2 names `logs/NN-<id>.context.md`, but after STUB_RESOLVE=C's 05-C passes there is no later C coding session; the check reads the next session's pack, `logs/<hhmmss>-verify-M2.context.md`, as the plan says.
-- *12-M3-03 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 21:46 · M3-03 · passes · entries.mjs: `resolved` (array of strings, kept only when non-empty) drops a question a later entry … ([in full](progress-archive.md))
 - 2026-10-26 21:23 · M3-02 · passes · Finish step 3 in prompts/coding.md: one ## Gotchas line (≤160 chars, ends (<run> <date>), 15 max, ed… ([in full](progress-archive.md))
 - 2026-10-26 21:11 · M3-01 · passes · Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a ~e -d, a replace is… ([in full](progress-archive.md))
 - 2026-10-26 21:06 · verify M2 · passes · All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/t… ([in full](progress-archive.md))
