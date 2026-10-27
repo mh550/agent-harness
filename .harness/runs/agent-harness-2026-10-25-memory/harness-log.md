@@ -16,3 +16,5 @@
 - 2026-10-26 20:05 · verify M1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-26 20:09 · context.md for M1: 8049 bytes, 10 items left out
 - 2026-10-26 20:10 · M1 verified and tagged run/agent-harness-2026-10-25-memory/M1
+- 2026-10-26 20:10 · M1 merged into main · https://github.com/mh550/agent-harness/pull/32
+- 2026-10-26 20:10 · context.md for M2-01: 5722 bytes
