@@ -3,20 +3,20 @@
   "project": "n8n-home",
   "branch": "harness/n8n-home-2026-10-22",
   "started": "2026-10-22T22:51:44.000Z",
-  "ended_at": "2026-10-22T23:27:39.000Z",
-  "end_reason": "blocked on B1-01",
-  "continuations": 0,
+  "ended_at": "2026-10-27T05:03:27.000Z",
+  "end_reason": "waiting on Michael: B1-05",
+  "continuations": 1,
   "features": {
-    "total": 32,
-    "passing": 0,
+    "total": 34,
+    "passing": 4,
     "verified": 0,
     "merged": 0
   },
   "milestones": [
     {
       "id": "B1",
-      "features": 4,
-      "passing": 0,
+      "features": 5,
+      "passing": 4,
       "verified": false,
       "merged": false
     },
@@ -50,7 +50,7 @@
     },
     {
       "id": "B6",
-      "features": 4,
+      "features": 5,
       "passing": 0,
       "verified": false,
       "merged": false
@@ -61,33 +61,95 @@
     "end": null
   },
   "cost": {
-    "total": 10.82,
-    "per_passing_feature": null,
+    "total": 22.57,
+    "per_passing_feature": 5.64,
     "by_role": {
       "init": 6.86,
-      "plan": 3.82,
-      "retro": 0.14
+      "plan": 4.77,
+      "retro": 0.25,
+      "build": 6.72,
+      "review": 3.95
     },
     "by_model": {
       "claude-fable-5-1": 6.86,
-      "claude-opus-5-5": 3.82,
-      "claude-sonnet-5-5": 0.14
+      "claude-opus-5-5": 15.44,
+      "claude-sonnet-5-5": 0.25
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 0.6,
-    "sessions_h": 0.59,
-    "driver_h": 0,
+    "wall_h": 1.33,
+    "sessions_h": 1.31,
+    "driver_h": 0.01,
     "by_role_h": {
       "init": 0.36,
-      "plan": 0.23,
-      "retro": 0.01
+      "plan": 0.28,
+      "retro": 0.02,
+      "build": 0.45,
+      "review": 0.21
     }
   },
+  "tokens": {
+    "in": 378,
+    "cache_read": 13626771,
+    "cache_write": 697666,
+    "out": 211089,
+    "cache_hit_rate": 0.951,
+    "context_peak": 131597,
+    "by_role": {
+      "init": {
+        "in": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "out": 0
+      },
+      "plan": {
+        "in": 44,
+        "cache_read": 1159735,
+        "cache_write": 60100,
+        "out": 12096
+      },
+      "retro": {
+        "in": 6,
+        "cache_read": 74982,
+        "cache_write": 22348,
+        "out": 1675
+      },
+      "build": {
+        "in": 188,
+        "cache_read": 6621440,
+        "cache_write": 395386,
+        "out": 130158
+      },
+      "review": {
+        "in": 140,
+        "cache_read": 5770614,
+        "cache_write": 219832,
+        "out": 67160
+      }
+    }
+  },
+  "per_verified_feature": {
+    "cost": null,
+    "tokens": null
+  },
+  "orientation": {
+    "tokens": 487225,
+    "turns": 11,
+    "seconds": 121.14
+  },
+  "rework": [
+    "B1-01"
+  ],
+  "first_attempt_pass_rate": 0.6,
+  "verify_fail_rate": null,
+  "harness": {
+    "version": "705141c",
+    "dirty": false
+  },
   "sessions": {
-    "total": 4,
-    "real": 4,
+    "total": 10,
+    "real": 10,
     "environmental": 0
   },
   "guards": {
@@ -104,60 +166,75 @@
       "milestone": "B1",
       "kind": "plan",
       "model": "opus",
-      "passes": false,
+      "passes": true,
       "verified": false,
       "merged": false,
-      "sessions": 2,
+      "sessions": 3,
       "refused": 0,
-      "minutes": 14,
-      "cost": 3.82,
-      "cause": "not done",
-      "detail": "B1-01 still doesn't pass, and I didn't change any code. Steps 2, 3 and 7 need `docker compose -f deploy/compose.yml config`, which `.claude/settings.json` still blocks. I didn't work around that block"
+      "minutes": 17,
+      "cost": 4.77,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "B1-02",
       "milestone": "B1",
       "kind": "build",
       "model": "opus",
-      "passes": false,
+      "passes": true,
       "verified": false,
       "merged": false,
-      "sessions": 0,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "minutes": 16,
+      "cost": 3.58,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "B1-03",
       "milestone": "B1",
       "kind": "build",
       "model": "opus",
-      "passes": false,
+      "passes": true,
       "verified": false,
       "merged": false,
-      "sessions": 0,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "minutes": 8,
+      "cost": 2.12,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "B1-04",
       "milestone": "B1",
       "kind": "review",
       "model": "opus",
+      "passes": true,
+      "verified": false,
+      "merged": false,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 13,
+      "cost": 3.95,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "B1-05",
+      "milestone": "B1",
+      "kind": "build",
+      "model": "opus",
       "passes": false,
       "verified": false,
       "merged": false,
-      "sessions": 0,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "minutes": 3,
+      "cost": 1.02,
+      "cause": "waiting on Michael",
+      "detail": "Michael to run `install -d -m 700 ~/.local/state/harness/requests` (Q2 in INBOX) so B1-05 can deploy."
     },
     {
       "id": "B2-01",
@@ -172,7 +249,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B2-02",
@@ -187,7 +264,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B2-03",
@@ -202,7 +279,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B2-04",
@@ -217,7 +294,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B2-05",
@@ -232,7 +309,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B2-06",
@@ -247,7 +324,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B3-01",
@@ -262,7 +339,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B3-02",
@@ -277,7 +354,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B3-03",
@@ -292,7 +369,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B3-04",
@@ -307,7 +384,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B4-01",
@@ -322,7 +399,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B4-02",
@@ -337,7 +414,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B4-03",
@@ -352,7 +429,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B4-04",
@@ -367,7 +444,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B4-05",
@@ -382,7 +459,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B4-06",
@@ -397,7 +474,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B4-07",
@@ -412,7 +489,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B4-08",
@@ -427,7 +504,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B5-01",
@@ -442,7 +519,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B5-02",
@@ -457,7 +534,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B5-03",
@@ -472,7 +549,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B5-04",
@@ -487,7 +564,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B5-05",
@@ -502,7 +579,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B5-06",
@@ -517,7 +594,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B6-01",
@@ -532,7 +609,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B6-02",
@@ -547,7 +624,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B6-03",
@@ -562,7 +639,7 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
     },
     {
       "id": "B6-04",
@@ -577,7 +654,22 @@
       "minutes": 0,
       "cost": 0,
       "cause": "blocked",
-      "detail": "waits on B1-01, which was given up"
+      "detail": "waits on B1-05, which is waiting on Michael"
+    },
+    {
+      "id": "B6-05",
+      "milestone": "B6",
+      "kind": "build",
+      "model": "opus",
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 0,
+      "refused": 0,
+      "minutes": 0,
+      "cost": 0,
+      "cause": "blocked",
+      "detail": "waits on B1-05, which is waiting on Michael"
     }
   ]
 }

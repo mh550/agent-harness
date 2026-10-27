@@ -1,20 +1,24 @@
 ## Outcome
-Not delivered. The run ended at 22:51–23:27 with 0 of 32 features passing, after 3 sessions, $10.68 and 0.59 h. The run ended with "blocked on B1-01". B1-01's own work was built and its local check passed (`tests/checks/compose.sh`: 19 PASS). But steps 2, 3 and 7 need `docker compose -f deploy/compose.yml config`, and `.claude/settings.json` denies `Bash(docker compose:*)`. The remaining 31 features were never attempted, because the driver treated all of them as waiting on B1-01.
+Not delivered. The run passed 4 of 34 features (B1-01 to B1-04) for $22.45 over 1.3 h across 9 sessions. It stopped on B1-05, the live deploy, because `~/.local/state/harness/requests` doesn't exist. Sessions may not create it, so Michael has to run `install -d -m 700 …` (Q2 in INBOX). B2–B6 (29 features) are marked blocked on B1-05. The run's first start (2026-10-22) ended after 0.6 h and $10.68 with 0/32 passing, blocked on B1-01. The second start passed B1-01 in 2 min.
 
 ## Non-passing features by cause
-- **B1-01, "not done"** (2 sessions, 14 min, $3.82): spec or feature-list problem, with permission denial as a secondary cause. `CLAUDE.md` and the B1 plan say `docker compose … config -q` is "the one allowed compose use", but the settings file blanket-denies `docker compose`. The final entry reads: "Steps 2, 3 and 7 need `docker compose -f deploy/compose.yml config`, which `.claude/settings.json` still blocks. I didn't work around that block."
-- B1-02, B1-03, B1-04 and B2-01 through B6-*: 31 features, cause "blocked", all depending on a failed feature. Each is listed in `summary.json` as "waits on B1-01, which was given up".
+- **B1-05 — permission or classifier denial / environment.** Its last summary says: "bind source ~/.local/state/harness/requests is missing (create_host_path:false, so up -d would fail after removing the running container), and sessions may not write there." The session behaved correctly: it made `deploy.sh` refuse before any live write and recorded the blocker.
+- **B2-01 to B6-05 (29 features) — depends on a failed feature.** All carry "waits on B1-05, which is waiting on Michael".
+
+The real dependency is thinner than that. B2 builds the test rig, which runs in a throwaway container and needs no live deploy. One missing directory froze every milestone.
 
 ## Harness behaviour
-- **Guards:** none fired (repairs, red_unpass, verify_failed and escalations are all 0). Giving up on B1-01 after a second session was reasonable, since the session correctly refused to work around a deny.
-- **Wasted time and money:**
-  - Init cost $6.86 (Fable) and the plan session cost $3.82. The plan session wrote the B1 plan and then could not get the feature checked.
-  - The second B1-01 session lasted 1 min and was a no-op re-verify.
-  - The driver stopped the whole run because of one feature. Many later features, such as B2 and the other milestones, probably do not need compose. Nothing in the feature list says whether they truly depend on it.
-  - The INBOX Q1 was written after the run ended (19:40 vs the log's 19:27).
-- **Verify:** no verify session ran, so there is no evidence on whether verify re-ran steps.
+- **Guards:** none fired (repairs 0, red_unpass 0, verify_failed 0, escalations 0). Parking B1-05 as "waiting on Michael" was correct.
+- **Wasted money:**
+  - The first start (2026-10-22) spent $10.68, of which init was $6.86 on fable. It then gave up, "blocked on B1-01", after 13 min across 2 sessions.
+  - B1-01 is a plan feature that burned 3 sessions and $4.77 in total.
+  - Orientation cost 487k tokens over 11 turns (121 s) in a run where each session did 2–16 min of work.
+- **Dependency graph:** the driver treats "milestone blocked" as one chain. It never tried independent B2 work while B1-05 waited. That cost 5 days of wall-clock time.
+- **Verify:** no verify sessions ran (`verified` 0, `verify_fail_rate` null). B1-04 was a review-kind feature, not a verify of the earlier ones, so evidence rows versus steps can't be judged.
+- **Merges:** `merges` is 0, with no merge to `main` this run.
+- **Preflight gap:** the first run couldn't tell that the deploy needed a host path that sessions can't create. B1-05 found it at session time, after the context bundle was built.
 
 ## Proposed harness changes
-1. **Park a blocked feature and continue with features that don't depend on it** (driver next-feature selection). Evidence: all 31 later features were unattempted, though B2 onward is mostly independent of a compose check. Proposed before by `threads-2026-10-17` and by the run that stopped at 18:34, so this is a repeat, probably the third time.
-2. **Check the feature list's verification commands against `.claude/settings.json` at init** (init prompt, or an init script step). Evidence: B1-01's steps need a command the deny list blocks, which was knowable before any session started. The init session wrote this rule into its own plan notes and then still produced the impossible steps. I found no earlier retro proposing this.
-3. **Write the INBOX question when the feature is given up** (driver). Evidence: the block was logged at 19:27 but Q1 only appeared at 19:40. I found no earlier proposal for this.
+1. **Preflight blockers at plan or init time** (init/plan prompts and driver). Check that bind-mount sources, request inboxes and other host paths named in the spec exist, or are listed in the live checklist as steps for Michael. Evidence: B1-05 spent $1.02 and 3 min only to find a missing directory that the spec's own §4.3 request inbox implies. No earlier retro proposed this, as far as I checked. I read only the titles of the 10 ledger retros and no contents.
+2. **Dependency granularity in the feature list** (feature-list schema and the driver's "blocked" logic). Let a feature declare `needs: live` versus build-only, so build and rig features keep running while a live step is parked. Evidence: 29 features blocked on B1-05, though B2 is rig work in a throwaway container. Not proposed before, as far as I checked.
+3. **Cheaper orientation** (context.md generation). 487k orientation tokens over 11 turns, against 130k output tokens for build. Trim the bundle or reuse the cache between consecutive sessions. This is unconfirmed, and I didn't check earlier retros for it.

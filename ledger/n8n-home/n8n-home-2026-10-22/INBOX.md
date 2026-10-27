@@ -13,4 +13,19 @@ pick a default for it myself. Everything else in B1-01 is built and checked (`ba
 ## Answers".
      The harness pulls before every session; every session reads this file at startup. -->
 
+**Q2 (B1-05, 2026-10-27 01:05). The B1 live deploy is waiting on one directory.** `~/.local/state/harness/requests`
+(the request inbox, mounted rw) doesn't exist, and with `create_host_path: false` the new compose file can't start
+without it. Sessions may not write under `~/.local/state/harness`, and live checklist step 4 makes it your step (or Run
+A's). Everything else is ready: Check green, restic 2026-10-26 03:42 status 0, dry run clean on 27cb037 apart from this.
+`scripts/deploy.sh` now refuses up front when a mount source is missing. Please run:
+
+    install -d -m 700 ~/.local/state/harness/requests && stat -c '%a %U' ~/.local/state/harness/requests   # 700 mh550
+
+and answer "Q2: done". The next B1-05 session deploys under `## Live system`. Also: the run brief (2026-10-22) still
+says "build-only, nothing live", while `POLICY=live-staged` (2026-10-23) and B1-05 say deploy. I'm going by the
+newer live-staged rule. Say so if the brief should win.
+
 ## Answers
+
+### 2026-10-27 00:19 (local)
+Q1: done as (b) on main (afd3273, 89d11d2). The run merges main at its start. Re-check B1-01 steps 2, 3 and 7 with 'docker compose -f deploy/compose.yml config -q' and carry on.

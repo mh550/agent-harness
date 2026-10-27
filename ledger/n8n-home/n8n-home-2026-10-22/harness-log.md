@@ -3,3 +3,20 @@
 - 2026-10-22 19:27 · B1-01 · claude-opus-5-5 · passes=false · 1 min · 0/32 passing
 - 2026-10-22 19:27 · blocked: the remaining features wait on B1-01 (given up; needs Michael)
 - 2026-10-22 19:27 · run ended (blocked on B1-01): 0/32 passing · 3 sessions (3 real) · 0 features passed · $10.68 · 0.6 h · by kind: init 1 ($6.86), coding 2 ($3.82) · by model: claude-fable-5-1 1 ($6.86), claude-opus-5-5 2 ($3.82)
+- 2026-10-27 00:19 · merged main into harness/n8n-home-2026-10-22
+- 2026-10-27 00:19 · configuration reloaded after merging main: policy live-staged · suite none · spec docs/specs/2026-10-22-harness-reporter.md
+- 2026-10-27 00:19 · journal started; progress.md kept as progress-archive.md
+- 2026-10-27 00:19 · context.md for B1-01: 511 bytes
+- 2026-10-27 00:22 · B1-01 · claude-opus-5-5 · passes=true · 2 min · 1/34 passing
+- 2026-10-27 00:22 · context.md for B1-02: 1495 bytes
+- 2026-10-27 00:38 · B1-02 · claude-opus-5-5 · passes=true · 15 min · 2/34 passing
+- 2026-10-27 00:38 · context.md for B1-03: 1830 bytes
+- 2026-10-27 00:46 · B1-03 · claude-opus-5-5 · passes=true · 7 min · 3/34 passing
+- 2026-10-27 00:46 · context.md for B1-04: 2999 bytes
+- 2026-10-27 00:59 · B1-04 · claude-opus-5-5 · passes=true · 12 min · 4/34 passing
+- 2026-10-27 00:59 · context.md for B1-05: 4264 bytes
+- 2026-10-27 01:03 · B1-05 · claude-opus-5-5 · passes=false · 3 min · 4/34 passing
+- 2026-10-27 01:03 · B1-05 parked (waiting on Michael): Michael to run `install -d -m 700 ~/.local/state/harness/requests` (Q2 in INBOX) so B1-05 can deploy.
+- 2026-10-27 01:03 · waiting on Michael: B1-05 (parked; answer in INBOX.md, then harness continue n8n-home-2026-10-22)
+- 2026-10-27 01:03 · run ended (waiting on Michael: B1-05): 4/34 passing · 9 sessions (9 real) · 4 features passed · $22.45 · 1.3 h · by kind: init 1 ($6.86), coding 7 ($15.45), retro 1 ($0.14) · by model: claude-fable-5-1 1 ($6.86), claude-opus-5-5 7 ($15.45), claude-sonnet-5-5 1 ($0.14)
+- 2026-10-27 01:03 · services stopped (waiting on Michael: B1-05)

@@ -17,23 +17,24 @@
         "docs/plans/2026-10-22-live-checklist.md exists and lists spec §7 steps in order (restic include, .env keys, deploy, credentials named `Anthropic API key` and `ntfy token`, tailscale serve check, EVENT_URL after Run A, snapshot timer + linger, private topic, replace the fixture bundle, screenshot), each with the command and a `Done when:` line; items spec §7a marks done are marked done.",
         "No suite exists before B2: `bash -n` on every *.sh in the tree and `docker compose -f deploy/compose.yml config -q` both pass (the B1 stand-in for a green suite)."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "B1-02",
       "milestone": "B1",
       "kind": "build",
       "model": "opus",
-      "description": "scripts/deploy.sh (Michael-only) refuses a dirty tree or a commit not on origin/main, shows the compose diff, copies compose.yml and workflows/ into N8N_DIR, creates /srv/n8n/files subdirs, runs compose up -d, imports and publishes workflows and restarts, with a --dry-run that only prints.",
+      "description": "scripts/deploy.sh (run by sessions under the live-staged protocol in CLAUDE.md, and by Michael) refuses a dirty tree or a commit not pushed to origin (any branch: sessions deploy from the run branch), shows the compose diff, copies compose.yml and workflows/ into N8N_DIR, creates /srv/n8n/files subdirs, runs compose up -d, imports workflows, publishes only those the repo marks active, writes N8N_DIR/DEPLOYED, restarts, has --check, with a --dry-run that only prints.",
       "steps": [
         "`bash -n scripts/deploy.sh` passes; the script starts with `set -uo pipefail`, takes N8N_DIR (default /srv/n8n) and DOCKER (default docker) overrides, and never references `data/` except to say it leaves it alone.",
-        "tests/checks/deploy.sh (runnable standalone: `bash tests/checks/deploy.sh`) prints PASS lines for: dirty tree -> exit 1 and message naming the dirty files; HEAD not on origin/main -> exit 1 (simulated with a temp git repo); missing $N8N_DIR/.env -> exit 1 with the .env.example hint; `--dry-run` against a temp N8N_DIR with a stub `docker` on PATH prints the commit sha, the compose diff, and the exact commands (`docker compose -f <dir>/compose.yml up -d`, `… exec n8n n8n import:workflow --separate --input=/srv/n8n/workflows`, one `… publish:workflow --id=<id>` per workflows/*.json, `… restart n8n`) and leaves the temp dir byte-identical.",
+        "tests/checks/deploy.sh (runnable standalone: `bash tests/checks/deploy.sh`) prints PASS lines for: dirty tree -> exit 1 and message naming the dirty files; HEAD not pushed (no origin branch contains it) -> exit 1 (simulated with a temp git repo); HEAD pushed on a non-main branch -> allowed; missing $N8N_DIR/.env -> exit 1 with the .env.example hint; `--dry-run` against a temp N8N_DIR with a stub `docker` on PATH prints the commit sha, the compose diff, and the exact commands (`docker compose -f <dir>/compose.yml up -d`, `… exec n8n n8n import:workflow --separate --input=/srv/n8n/workflows`, one `… publish:workflow --id=<id>` per workflow the repo marks active (how it is marked is recorded in docs/decisions.md), `… restart n8n`) and leaves the temp dir byte-identical.",
         "A non-dry run against a temp N8N_DIR with the stub docker copies compose.yml and workflows/*.json, creates files/{reports,memory,events,cards}, and the stub's log shows the commands in that order; the stub records that `up -d` ran before `import:workflow`.",
         "The script prints `deployed <sha> (<subject>)` at the end of a real run and `dry run: nothing changed` for --dry-run.",
+        "A real run writes `<sha> <subject>` to $N8N_DIR/DEPLOYED; `scripts/deploy.sh --check` compares workflows/ with the instance (`… exec n8n n8n list:workflow` through the stub) and exits 1 naming any workflow that is missing or whose active state differs; it only checks that $N8N_DIR/.env exists and never reads its content. All three are PASS lines in tests/checks/deploy.sh.",
         "docs/plans/2026-10-22-live-checklist.md deploy step uses `scripts/deploy.sh --dry-run` first, then `scripts/deploy.sh`, with `Done when: curl -s http://127.0.0.1:5678/healthz` and `docker compose -f /srv/n8n/compose.yml ps` outcomes, and an undo (`git checkout <previous sha> && scripts/deploy.sh`).",
         "No suite exists before B2: `bash -n` on every *.sh, `bash tests/checks/deploy.sh` all PASS, and `docker compose -f deploy/compose.yml config -q` pass."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "B1-03",
@@ -48,7 +49,7 @@
         "docs/plans/2026-10-22-live-checklist.md step for the timer gives `systemctl --user link $PWD/deploy/systemd/n8n-snapshot.service $PWD/deploy/systemd/n8n-snapshot.timer`, `systemctl --user enable --now n8n-snapshot.timer`, `Done when: systemctl --user list-timers | grep n8n-snapshot` shows the next 03:00, a one-off `systemctl --user start n8n-snapshot.service` check, the `loginctl enable-linger` note, and how to undo (disable, unlink).",
         "No suite exists before B2: `bash -n` on every *.sh, `bash tests/checks/deploy.sh` and `bash tests/checks/snapshot.sh` all PASS, `docker compose -f deploy/compose.yml config -q` passes."
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "B1-04",
@@ -59,9 +60,24 @@
       "steps": [
         "`git diff main...HEAD -- deploy scripts docs tests CLAUDE.md > /tmp/b1.diff` and the review is written to docs/plans/2026-10-22-B1-review.md with a findings table (severity, file:line, finding, fix commit or `won't fix: why`); zero Critical/Important findings remain open.",
         "Each Critical/Important fix is a separate commit that first adds or extends a check in tests/checks/ (RED), then the fix (GREEN), named in the review table.",
-        "README.md exists (what this repo is, layout: deploy/ scripts/ workflows/ tests/ fixtures/ docs/, how to verify, that only Michael deploys) and CLAUDE.md's `How to verify` section still matches what exists (B1 stand-in checks).",
+        "README.md exists (what this repo is, layout: deploy/ scripts/ workflows/ tests/ fixtures/ docs/, how to verify, how deploys happen (run sessions under the live-staged protocol in CLAUDE.md `## Live system`, or Michael by hand)) and CLAUDE.md's `How to verify` section still matches what exists (B1 stand-in checks).",
         "docs/plans/2026-10-22-live-checklist.md and docs/plans/2026-10-22-B1-compose.md reflect the code as merged (paths, env keys, commands re-checked against deploy/compose.yml and deploy/.env.example).",
         "No suite exists before B2: `bash -n` on every *.sh, `bash tests/checks/deploy.sh`, `bash tests/checks/snapshot.sh` all PASS, `docker compose -f deploy/compose.yml config -q` passes."
+      ],
+      "passes": true
+    },
+    {
+      "id": "B1-05",
+      "milestone": "B1",
+      "kind": "build",
+      "model": "opus",
+      "description": "Deploy B1 live (live-staged, Michael 2026-10-23): the running n8n is adopted with the new compose file (mounts, /srv/n8n/files, N8N_RESTRICT_FILE_ACCESS_TO, env) per CLAUDE.md `## Live system`; no workflows yet.",
+      "steps": [
+        "Preconditions in the progress entry, verbatim with output: the checks green on a clean, pushed HEAD; CLAUDE.md **Check** passes; restic status ExecMainStatus=0 and under 26 h old; the time is outside 03:15–04:30 and `systemctl is-active restic-backup.service` is not `active`; the running image, `sha256sum /srv/n8n/compose.yml` and `cat /srv/n8n/DEPLOYED` (or \"none\") recorded as the rollback; snapshots taken as CLAUDE.md **Snapshots** says, named `pre-n8n-home-2026-10-22-B1`, the database one passing `pragma integrity_check` = ok.",
+        "`flock -n /srv/n8n/live.lock scripts/deploy.sh --dry-run` output pasted into the progress entry; then `flock -n /srv/n8n/live.lock scripts/deploy.sh` prints `deployed <sha> (<subject>)`.",
+        "After: **Check** passes (`{\"status\":\"ok\"}`, the pinned image, `running`); `docker exec n8n-n8n-1 ls /srv/n8n/files /home/mh550/projects/agent-harness/ledger` lists both; `docker exec n8n-n8n-1 printenv N8N_RESTRICT_FILE_ACCESS_TO` equals the value in deploy/compose.yml; `curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:5678/` prints 200; /srv/n8n/DEPLOYED names HEAD.",
+        "On any failure: the CLAUDE.md rollback runs under the lock (the database snapshot too if an import broke the instance), **Check** is green again, what happened is at the top of progress.md with the exact commands, and `passes` stays false.",
+        "docs/plans/2026-10-22-live-checklist.md marks the B1 deploy as done by the run (with the sha) and keeps only the steps that are Michael's (credentials, restic include check, timer and linger, screenshot)."
       ],
       "passes": false
     },
@@ -71,7 +87,9 @@
       "kind": "plan",
       "model": "opus",
       "description": "Plan for the test rig: file layout, container lifecycle (D1), scratch dirs mounted at host-equal paths, fake server API, fixture placeholders, PASS/FAIL format and debugging flags.",
-      "after": ["B1"],
+      "after": [
+        "B1"
+      ],
       "steps": [
         "docs/plans/2026-10-22-B2-test-rig.md exists with sections: layout (tests/run.sh, tests/lib.sh, tests/checks/*.sh, tests/fakes/server.mjs + tests/fakes/responses/, tests/workflows/, fixtures/{harness,events,bundles,credentials.json,README.md}, .harness/check.sh); container lifecycle (name n8n-test-<random>, scratch /tmp/n8n-test-<random>/{data,files,state,ledger,worktrees}, --network host, N8N_LISTEN_ADDRESS=127.0.0.1, random N8N_PORT in 20000-39999, import -> publish --id -> start, healthz wait <= 120 s, trap removes container and scratch on any exit); env passed to the container (every D2 variable with its test value, N8N_RESTRICT_FILE_ACCESS_TO = the five scratch paths, N8N_ENCRYPTION_KEY fixed scratch value, N8N_DIAGNOSTICS_ENABLED=false, N8N_VERSION_NOTIFICATIONS_ENABLED=false).",
         "The plan fixes the placeholder scheme (`__STATE_ROOT__`, `__LEDGER__`, `__WORKTREES__`, `__FILES__` replaced when fixtures are staged into scratch), the fake server API (routes, canned-response selection by output_config.format.schema title, /_calls, /_reset, FAKE_PORT), the check-line format (`PASS <name>` / `FAIL <name>: <why>`, summary `<n> passed, <m> failed`, exit 1 on any FAIL), `tests/run.sh --only <check>`, `KEEP=1` to leave the container up, and `tests/lib.sh` helpers (wait_for, post_event, poll_file, fake_calls).",
@@ -101,7 +119,9 @@
       "kind": "build",
       "model": "opus",
       "description": "tests/fakes/server.mjs (node stdlib) fakes Anthropic /v1/messages with the 2026-10-21 API rules and ntfy, records every call, and is checked standalone without a container.",
-      "after": ["B2-01"],
+      "after": [
+        "B2-01"
+      ],
       "steps": [
         "`node tests/fakes/server.mjs` with FAKE_PORT prints `listening <port>`; `bash tests/checks/fakes.sh` (curl only, no docker) runs in under 10 s and prints PASS lines for each behaviour below.",
         "POST /v1/messages: without x-api-key -> 401; with `temperature`, `top_p`, `top_k`, `tool_choice`, or `thinking: {type: \"disabled\"}` in the body -> 400 with an Anthropic-shaped error JSON; otherwise 200 with `{id, type: \"message\", role, model, content: [{type: \"text\", text}], stop_reason, usage: {input_tokens, output_tokens}}` where `text` is the canned JSON from tests/fakes/responses/<schema title>.json when `output_config.format.type == \"json_schema\"` (title or name from the schema), else tests/fakes/responses/default.txt.",
@@ -117,7 +137,9 @@
       "kind": "build",
       "model": "opus",
       "description": "Sanitised fixtures copied from real harness files (ledger rows, run records, a decision table) plus the five v1 events and the context bundles shaped from Run A's spec, with a shape and secret check.",
-      "after": ["B2-01"],
+      "after": [
+        "B2-01"
+      ],
       "steps": [
         "fixtures/harness/ledger/runs.jsonl holds the real rows for dj-2026-10-17, dj-crate-streaming-2026-10-21 and agent-harness-2026-10-21-measure copied from ~/projects/agent-harness/ledger/runs.jsonl (read-only), and fixtures/harness/ledger/<project>/<run>/ holds summary.json, report.md, progress.md, INBOX.md, feature_list.json, harness-log.md for dj-2026-10-17 and dj-crate-streaming-2026-10-21; fixtures/harness/worktrees/dj-crate-streaming/dj-2026-10-17/ holds .harness/runs/dj-2026-10-17/{feature_list.json,progress.md,INBOX.md,brief.md} and docs/specs/2026-10-13-next-session-design.md (the decision table with D1.. rows).",
         "fixtures/events/{park,needs_michael,blocked,debrief,debrief-2,ended}.json each have exactly the 12 keys of event JSON v1 (v, id, at, kind, project, run, feature, title, body, priority, click, actions, context) with `context` = `__STATE_ROOT__/events/<id>/context.json` (null for `ended`); the debrief events have null project/run/feature as Run A's spec says; park and needs_michael reference run dj-2026-10-17, debrief covers dj-2026-10-17 and debrief-2 covers dj-crate-streaming-2026-10-21 (and repeats the park question).",
@@ -164,7 +186,9 @@
       "kind": "plan",
       "model": "opus",
       "description": "Plan for memory (spec §4.6, D3, D6): the three JSONL schemas, the pure rules as named functions, how n8n reads/writes the files, the code-node sync mechanism, and docs/memory.md for Michael.",
-      "after": ["B2"],
+      "after": [
+        "B2"
+      ],
       "steps": [
         "docs/plans/2026-10-22-B3-memory.md exists with: the schema of concepts.jsonl (id, term, explanation, first_report, times_referenced, understanding unknown|shaky|understood, last_checked, updated_at), questions.jsonl (id, run, feature, question, options, recommendation, status open|answered|withdrawn, answer, answered_at, via, first_asked_report, first_asked_at, event, updated_at) and reports.jsonl (id, date, event, runs, concepts_explained, questions_asked, usage, cost_usd, path); one row per entity, newest row wins on reread.",
         "The plan names the pure functions in lib/memory.js with signatures and the rules each enforces: selectConcepts(glossary, concepts) -> {full, brief, again} (unknown -> full; understood or unknown-but-explained -> brief with first_report; shaky -> again); matchQuestions(parked, questions) -> {new, followUp, answered}; applyReport(memory, reportMeta, introduced, asked) -> new rows; gradeAnswers(grades, concepts) -> updated rows; parseJsonl(text) -> {rows, skipped}.",
@@ -224,7 +248,9 @@
       "kind": "plan",
       "model": "opus",
       "description": "Plan for the desk report (spec §4.4, D4, D7, D9): intake and report workflows node by node, the two LLM JSON schemas, prompts, the HTML renderer and ID lint, webhooks, file names and ntfy text.",
-      "after": ["B3"],
+      "after": [
+        "B3"
+      ],
       "steps": [
         "docs/plans/2026-10-22-B4-desk-report.md exists with: the intake workflow node list and names (per D7, including the interim plain-ntfy branch for card kinds); the report workflow node list in order (Execute Workflow Trigger + `report-now` webhook, Config Set from $env, Read context.json/context.md, Read ledger runs.jsonl, Memory load, Select memory (Code), Build prompt (Code), Claude HTTP Request, Parse plan (Code), Render HTML (Code), Write report, Memory save, ntfy, Respond).",
         "The plan fixes the JSON schema `report_plan` (headline, needs_you[] {question_ref, context, options[] {label, tradeoff}, recommended}, changes[] {run, product_terms, system_view, see_it_yourself}, decisions[] {id_ref, plain}, files[] {path_ref, why}, concepts_introduced[] {id, term, explanation}, check_questions[] {q, expected}, diagram {components[] {id, label, kind}, flows[] {from, to, label}}) and `check_grade` (grades[] {id, understanding, note}), states that numbers, paths, costs and statuses are taken from the bundle/ledger by the renderer and never from the plan (the schema has refs, not values), and gives the system/user prompt texts (voice, no bare IDs, explain-mode per concept from memory).",
@@ -347,7 +373,9 @@
       "kind": "plan",
       "model": "opus",
       "description": "Plan for the phone card (spec §4.5, D5, D9): card JSON schema, prompt, phone-first HTML, request writing to the inbox (request JSON v1), result polling, memory of open questions, ntfy text, and replacing the intake's interim branch.",
-      "after": ["B4"],
+      "after": [
+        "B4"
+      ],
       "steps": [
         "docs/plans/2026-10-22-B5-phone-card.md exists with: the `card` JSON schema (blocked_what, why, options[] {label, tradeoff, recommended, verb answer|answer_continue, answer_text}, note_hint) and the rule that exactly one option is recommended and 2-4 options exist; the prompt (facts only from the bundle, options from the parked question, debrief draft answers and docs); the default verb (answer_continue when the bundle says the run has ended, else answer).",
         "The plan fixes the card workflow node list (Execute Workflow Trigger from intake, Config, Read bundle, Memory load, Build prompt, Claude HTTP Request, Parse card, Write files/cards/<event id>.json, Memory save question, ntfy), the serve/answer workflow (GET `card?event=` -> Read card -> Render; POST `card-answer` -> Validate -> Build request(s) -> Generate id (Crypto node) -> Write <HARNESS_REQUESTS_DIR>/<id>.json.tmp then rename or write-final -> poll done/<id>.json up to 15 s in 1 s steps with Wait -> Render result), the request JSON v1 field list verbatim from spec §4.3, and the id regex `^[A-Za-z0-9-]{8,64}$`.",
@@ -438,7 +466,9 @@
       "kind": "build",
       "model": "opus",
       "description": "workflows/90-error-handler.json (Error Trigger) re-sends a plain ntfy built from the stored event when a card or report execution fails, else a generic alert naming workflow, node and execution, and every workflow sets it as its error workflow.",
-      "after": ["B5"],
+      "after": [
+        "B5"
+      ],
       "steps": [
         "docs/plans/2026-10-22-B6-error-and-canvas.md exists (short plan: how the handler finds the event id in the failed execution's trigger data, falls back to files/events/<id>.json, the two message shapes, the canvas lint rules for B6-02, the screenshot approach for B6-03).",
         "Suite PASS `error handler card`: POSTing a park event whose `context` points at a non-existent path (fixtures/events/park-broken.json) returns 200 from intake, the card workflow fails, and within 60 s the fake ntfy records a call whose Title equals the event's title, Click equals the event's click, and body contains the event's body plus a line `n8n: <workflow name> failed at <node name>` and an execution URL under PUBLIC_BASE_URL; PASS `error handler report`: the same with a broken debrief event (debrief-broken.json).",
@@ -485,10 +515,26 @@
       "description": "Final review and simplify for B6 and the run: findings fixed, the live checklist complete with every step in order and a `Done when` each, README/CLAUDE.md/decisions accurate.",
       "steps": [
         "`git diff <B5 tip>...HEAD > /tmp/b6.diff`; docs/plans/2026-10-22-B6-review.md holds the findings table plus B6-03's defects; zero Critical/Important open; fixes RED then GREEN.",
-        "docs/plans/2026-10-22-live-checklist.md, read top to bottom, has every live step in the order Michael must do them, each with the exact command and a `Done when:` line and an undo where one exists: add the .env keys from deploy/.env.example (names only), restic include, `scripts/deploy.sh --dry-run` then `scripts/deploy.sh`, create credentials named exactly `Anthropic API key` and `ntfy token`, check `tailscale serve status`, link/enable the snapshot timer and the linger note, after Run A merges set EVENT_URL=http://127.0.0.1:5678/webhook/harness-event and enable the harness-requests path unit, replace the fixture bundle with a captured one, NTFY_PRIVATE + private topic, DESK_URL, run `report-now` once and record the measured LLM cost from reports.jsonl (spec §4.7), take the application screenshot.",
+        "docs/plans/2026-10-22-live-checklist.md, read top to bottom, has every live step in the order Michael must do them, each with the exact command and a `Done when:` line and an undo where one exists: add the .env keys from deploy/.env.example (names only), restic include, a note that the run deploys (B1-05, B6-05) with how to redeploy or roll back by hand, create credentials named exactly `Anthropic API key` and `ntfy token`, check `tailscale serve status`, link/enable the snapshot timer and the linger note, after Run A merges set EVENT_URL=http://127.0.0.1:5678/webhook/harness-event and enable the harness-requests path unit, replace the fixture bundle with a captured one, NTFY_PRIVATE + private topic, DESK_URL, run `report-now` once and record the measured LLM cost from reports.jsonl (spec §4.7), take the application screenshot.",
         "README.md, CLAUDE.md (How to verify, paths), docs/workflows.md, docs/memory.md and docs/decisions.md (D1-D10 each marked confirmed-by-build, amended or struck) match the tree; `grep -rn 'TODO\\|FIXME' lib scripts workflows tests docs` lists nothing unexplained.",
         "`.harness/check.sh` from a fresh clone of the branch into /tmp passes end to end and its PASS lines are pasted into the review doc with the wall time.",
         "The suite is green: `.harness/check.sh` ends with `0 failed`."
+      ],
+      "passes": false
+    },
+    {
+      "id": "B6-05",
+      "milestone": "B6",
+      "kind": "build",
+      "model": "opus",
+      "description": "Deploy the workflows live per CLAUDE.md `## Live system`: every workflow in workflows/ on the live n8n; the harness-event intake, report and card webhooks active; workflows that need the `Anthropic API key` or `ntfy token` credential imported but inactive until Michael enters the credentials.",
+      "steps": [
+        "Preconditions in the progress entry, verbatim with output: the checks green on a clean, pushed HEAD; CLAUDE.md **Check** passes; restic status ExecMainStatus=0 and under 26 h old; the time is outside 03:15–04:30 and `systemctl is-active restic-backup.service` is not `active`; the running image, `sha256sum /srv/n8n/compose.yml` and `cat /srv/n8n/DEPLOYED` (or \"none\") recorded as the rollback; snapshots taken as CLAUDE.md **Snapshots** says, named `pre-n8n-home-2026-10-22-B6`, the database one passing `pragma integrity_check` = ok.",
+        "`flock -n /srv/n8n/live.lock scripts/deploy.sh --dry-run` lists every workflow and whether it will be active; then the real deploy prints `deployed <sha> (<subject>)`.",
+        "After: **Check** and `scripts/deploy.sh --check` pass; a POST of `{}` to http://127.0.0.1:5678/webhook/harness-event gets a non-2xx validation answer (the intake is live and rejects a non-v1 body) and writes no event file; GET /webhook/report?id=does-not-exist answers 404 through the path guard.",
+        "No real notification is sent and no real Claude call is made: the workflows that need a credential are inactive (listed in the progress entry), and no v1 event is posted to the live instance.",
+        "On any failure: the CLAUDE.md rollback runs under the lock (the database snapshot too if an import broke the instance), **Check** is green again, what happened is at the top of progress.md with the exact commands, and `passes` stays false.",
+        "docs/plans/2026-10-22-live-checklist.md names each workflow Michael activates after entering `Anthropic API key` and `ntfy token`, and how (mark it active in the repo and let a run redeploy, or toggle it in the editor)."
       ],
       "passes": false
     }
