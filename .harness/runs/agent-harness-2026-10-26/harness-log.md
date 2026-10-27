@@ -52,3 +52,4 @@
 - 2026-10-27 17:11 · run ended (stopped by Michael: merge main's flake fix (PR #39) first): 8/17 passing · 18 sessions (18 real) · 8 features passed · $69.99 · 7.0 h · by kind: init 1 ($4.71), coding 13 ($64.69), retro 3 ($0.35), verify 1 ($0.24) · by model: claude-fable-5-1 1 ($4.71), claude-opus-5-5 13 ($64.69), claude-sonnet-5-5 4 ($0.59)
 - 2026-10-27 17:11 · services stopped (stopped by Michael: merge main's flake fix (PR #39) first)
 - 2026-10-27 17:12 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-26 (in the state dir: init.out check-last.out)
+- 2026-10-27 18:54 · context.md for P1-05: 7808 bytes, 6 items left out

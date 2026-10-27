@@ -1,0 +1,16 @@
+{ "feature": "P1-05", "kind": "coding", "outcome": "passes",
+  "summary": "harness continue reopens a lane from the newer of the box's and origin's branch (both merged if diverged); refuses a legacy run (code beyond its base) with three ways forward, exit 1, run.log + high-priority notification; under pr a dependent's PR waits (noted once), harness merge lands proposed milestones in order. 11 checks in 46-lanes-continue.sh.",
+  "files": ["lib/record.sh", "bin/harness", "tests/checks/46-lanes-continue.sh", "tests/fixtures/check-names.txt", "README.md", "docs/architecture.md", "journal/decisions/2026-10-26-lanes.md"],
+  "verified_how": "tests/checks/46-lanes-continue.sh 11/11 (6 of the first 8 red before the code; the 3 added after review red with their fix undone); full suite via check.sh: green in 383 s, 550 tests; bash -n on bin/harness lib/driver.sh lib/lane.sh lib/record.sh",
+  "tests_before": 539, "tests_after": 550,
+  "dead_ends": [{ "tried": "slot_open as P1-03 left it (local lane branch first)", "why": "a stale local branch after Michael pushed to origin made every lane push non-fast-forward; the stub's own push failed and the sessions read as usage limits" }],
+  "discoveries": [
+    { "text": "Under MERGE_POLICY=pr a proposed milestone merged by Michael on GitHub was never seen as merged by the driver, so anything depending on it waited forever; merge_milestones now notes '<m> merged into main (by its PR)' when the tag is on main.", "affects": ["P2", "run"] },
+    { "text": "The legacy test is merge-tree of the run's base (origin/main or BASE_REF) and HEAD, diffed outside .harness/runs/, not the plan's merge-base diff; a --base run would otherwise be refused.", "affects": ["P2"] },
+    { "text": "Once P1 merges, an automatic continuation of agent-harness-2026-10-26 run by the P1 driver is refused (this branch carries code main lacks): the refusal now reaches Michael as a high-priority notification.", "affects": ["run"] }
+  ],
+  "questions": [
+    "D13 default: the legacy refusal goes to stderr, run.log and a high-priority notification, not to harness-log.md (the CLI never writes the record). Want a harness-log note too?",
+    "D14 default: when the box's and origin's lane branch diverged, origin's is merged into the box's (a conflict is needs Michael). OK, or should origin's always win?"
+  ],
+  "proposed_changes": ["P1-05 step 4 says NN-lanes-continue.sh; the plan's §10 named it 38-lanes-continue.sh, but 38 is taken: it is 46-lanes-continue.sh"] }
