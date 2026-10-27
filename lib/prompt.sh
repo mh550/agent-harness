@@ -93,8 +93,13 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
   prompt_vars; harness_config "$WT" "$STATE"; prompt_env
   jq -e --arg id "$3" 'any(.features[]; .id == $id)' "$RUN_DIR/feature_list.json" > /dev/null || { echo "prompt.sh: no feature '$3' in $RUN_DIR/feature_list.json" >&2; exit 1; }
   m=$(jq -r --arg id "$3" '.features[] | select(.id == $id) | .milestone // empty' "$RUN_DIR/feature_list.json")
-  # a lanes run's session works in the slot on its lane branch (lib/record.sh): the prompt names them as the driver's did
-  [[ -s $STATE/lanes/${m:-default}/slot ]] && export HARNESS_WT=$(cat "$STATE/lanes/${m:-default}/slot") HARNESS_BRANCH=harness-lane/$RUN_ID/${m:-default}
+  # a lanes run's session works in the slot on its lane branch with the lane's port and scratch (lib/lane.sh): the
+  # prompt names them as the lane's did
+  l=$STATE/lanes/${m:-default}
+  if [[ -s $l/slot ]]; then
+    SCRATCH=$SCRATCH/lanes/${m:-default}; [[ -s $l/port ]] && PORT=$(cat "$l/port")
+    export HARNESS_WT=$(cat "$l/slot") HARNESS_BRANCH=harness-lane/$RUN_ID/${m:-default} HARNESS_SCRATCH=$SCRATCH HARNESS_PORT=$PORT
+  fi
   # no driver, so no run clock or attempt: the line says so rather than going blank
   HARNESS_CLOCK=${HARNESS_CLOCK:-"Clock: $(date '+%F %H:%M') · outside a run (no deadline, budget or attempt)"} HARNESS_FEATURE=$3 HARNESS_MILESTONE=$m prompt_render "$2"
 fi
