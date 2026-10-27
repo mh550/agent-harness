@@ -157,7 +157,7 @@
         "a CLAUDE.md fixture of 121 lines yields a `size` finding and one with 16 Gotchas lines a `gotchas` finding (two checks); the store lookup is M2's `decisionsStore` (one function); `node --check lib/memlint.mjs` passes",
         "`node lib/memlint.mjs .` on this worktree prints nothing: this repo's CLAUDE.md loses its stored check count (`395 checks`) on the way, and journal/decisions.md (closed) is not the store",
         "the suite is green" ],
-      "after": ["M2"], "passes": false },
+      "after": ["M2"], "passes": true },
 
     { "id": "M4-02", "milestone": "M4", "kind": "build", "model": "opus",
       "description": "At each driver start the memlint findings for the worktree become `note \"memlint: …\"` lines in harness-log.md that never stop the run, and `harness memlint <project>` prints the same for Michael; an Opus subagent reviews the M4 diff.",
@@ -168,7 +168,7 @@
         "README.md tells Michael `harness memlint <project>` for each project is how he confirms Part 2 held; docs/architecture.md §7 gains a `memlint` row (trigger, notes only, never stops the run) and §3 lists lib/memlint.mjs; journal/decisions/<date>-memlint.md exists (finding · choice · rejected: notes not gates, fixtures from the pre-tidy commits)",
         "an Opus subagent reviews `git diff <commit before M4-01>..HEAD -- . ':!.harness/runs'` from a file in `$HARNESS_SCRATCH`; Critical and Important findings are fixed RED→GREEN and counted in the entry's summary",
         "the suite is green" ],
-      "after": ["M4-01"], "passes": false },
+      "after": ["M4-01"], "passes": true },
 
     { "id": "M5-01", "milestone": "M5", "kind": "build", "model": "opus",
       "description": "lib/testcount.mjs prefers a `HARNESS_TESTS=<n>` line in the suite's output over R1's per-runner parsers and the heuristic, reports which source it used, and the driver's harness-log.md says `test count: HARNESS_TESTS contract` / `parsed (<runner>)` / `no match` once per run.",

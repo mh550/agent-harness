@@ -152,6 +152,8 @@ decisionsStore: no DECISIONS and docs/decisions.md present is a file store
 default MERGE_POLICY proposes a verified milestone, never merges it
 deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
 deploy.mjs: vercel and netlify guards merge, keep keys and detect
+driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
+driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
 each debrief is a commit of ledger/debrief.md
 each session's scope is stopped after it returns
 ended: done; status says so
@@ -221,6 +223,7 @@ harness gc closes idle desks
 harness gc keeps the worktree of a run whose desk is open
 harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
 harness gc stops the units of this project's runs with no live driver; --dry-run stops none
+harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line
 harness merge keeps the harness version of the run (E1 review)
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
 harness merge merges v2 tags, closes the v2 PR
@@ -257,8 +260,24 @@ lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
+memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
+memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
+memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
+memlint: a current-rule-set header under a ## section before the first decision is a header; a symlinked file is linted
+memlint: a directory store file marked superseded with no Updated in place line yields a finding, with one none
+memlint: a stated rule is no count or night scope (1 test, as of decision 12), a month alone is a date (as of October)
+memlint: a worktree with neither DECISIONS= nor docs/decisions.md yields decisions: no store
+memlint: an unreadable CLAUDE.md is exit 1 and one stderr line naming the file and the error
 memlint: currentRules reads a directory store and the three file shapes newest first
 memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row
+memlint: node --check passes, the usage header lists the five checks, a missing worktree exits 2
+memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming its line, exit 0
+memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9
+memlint: the old rane store without its current-rule-set header yields a header finding
+memlint: the pathways project.md (4cafb65^) yields a night-scope finding for tonight
+memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
+memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
+memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note

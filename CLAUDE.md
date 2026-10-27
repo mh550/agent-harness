@@ -31,7 +31,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 
 ## How to verify
 
-- The suite: `bash tests/run.sh` (~3 min 30 s on this box: 208 s measured with `TEST_JOBS=4`, the default here, 395 checks; end-to-end
+- The suite: `bash tests/run.sh` (~3 min 30 s on this box: 208 s measured with `TEST_JOBS=4`, the default here; end-to-end
   with stub `claude`/`gh` on a throwaway repo; prints `PASS`/`FAIL` per check, a `<file>: <n> checks, <s> s` line per
   file, the slowest three with the wall time, and `N/M checks passed`). It must end with every check passing. It runs
   the files in `tests/checks/` (one per topic, each from a fresh throwaway state built by `tests/lib.sh`), `TEST_JOBS`

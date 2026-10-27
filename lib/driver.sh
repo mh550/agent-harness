@@ -678,6 +678,20 @@ deploy_check() {
 }
 deploy_check
 
+# Every segment: the project's memory files linted (lib/memlint.mjs; decisions/2026-10-26-memlint), one note per
+# finding. Notes only: a finding or a failing lint never stops the run. HARNESS_MEMLINT stands in for the lint (tests).
+# Findings are stdout only (a node warning on stderr is no finding); a store on a hung mount can't hold the segment.
+memlint_check() {
+  local out rc f err=$SCRATCH/memlint.err
+  if [[ ${HARNESS_MEMLINT:-} ]]; then out=$(timeout 60 "$HARNESS_MEMLINT" "$WT" 2> "$err")
+  else out=$(timeout 60 node "$HARNESS_HOME/lib/memlint.mjs" "$WT" 2> "$err"); fi
+  rc=$?
+  if (( rc )); then f=$(grep -m1 -v '^\s*$' "$err" 2> /dev/null); note "memlint: failed (exit $rc)${f:+: ${f:0:200}}"; return 0; fi
+  while IFS= read -r f; do [[ -n $f ]] && note "memlint: $f"; done <<< "$out"
+  return 0
+}
+memlint_check
+
 # One probe per segment (this driver process): without a user bus every session runs bare, said once
 unset SCOPE_OK; scope_available || note "no user systemd: sessions and suites run uncapped"
 

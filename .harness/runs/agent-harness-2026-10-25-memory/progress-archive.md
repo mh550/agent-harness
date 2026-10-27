@@ -9,6 +9,55 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 23:10 · verify M4 · passes
+
+M4-01 and M4-02 hold: suite green (474 tests), memlint subset 19/19, fixtures re-linted by hand give the stated findings, docs and decision file present, review recorded in entries.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M4-01 | 1 | node lib/memlint.mjs <tmp worktrees>, /nonexist, header read | findings in file:line check: text form; exit 0; missing dir exit 2; 121-line CLAUDE.md gives size, 16 Gotchas gives gotchas; header lists checks | yes |
+| M4-01 | 2 | head -1 of the 4 fixtures | each first line names repo, commit, path as specified | yes |
+| M4-01 | 3 | lint on fixtures; bash tests/run.sh memlint | dj: derivable-count line 17; pathways: night-scope tonight; old rane: decisions D15 Superseded, none for header; tidy rane: none; no store: decisions: no store; 19/19 pass | yes |
+| M4-01 | 4 | 121-line and 16-Gotchas worktrees; node --check; test 39 store-lookup check | size and gotchas findings; node --check ok; decisionsStore check passes | yes |
+| M4-01 | 5 | node lib/memlint.mjs . in this worktree | no output, exit 0 | yes |
+| M4-01 | 6 | init.out | green, 474 tests | yes |
+| M4-02 | 1 | tests/checks/39 driver memlint check | 2 memlint notes before feature list written, run done 3/3 | yes |
+| M4-02 | 2 | tests/checks/39 failing memlint check | one memlint: failed (exit 1) note, run goes on to done 3/3 | yes |
+| M4-02 | 3 | tests/checks/39 harness memlint check | same two lines from $T/proj, exit 0, usage in bin/harness header | yes |
+| M4-02 | 4 | grep README, architecture.md, ls journal/decisions | README line 69-73, arch §7 row line 264, §3 row line 70, decisions/2026-10-26-memlint.md exist | yes |
+| M4-02 | 5 | entries.jsonl:20 summary | Opus review recorded: 0 Critical, 2 Important fixed RED to GREEN | yes |
+| M4-02 | 6 | init.out | suite green 474 tests | yes |
+
+- *230904-verify-M4 · claude-sonnet-5-5*
+
+### 2026-10-26 23:03 · M4-02 · passes
+
+Driver notes memlint findings as `memlint: …` at every segment start (60 s, stdout only, a failure is one `memlint: failed` note, never a stop); `harness memlint <project|path>`. Opus review of M4: 0 Critical, 2 Important fixed RED→GREEN (a stack-trace failure note; a header under a ## section flagged) plus 4 Minor. Tests 469 → 474.
+
+- **Files:** lib/driver.sh, bin/harness, lib/memlint.mjs, tests/checks/39-memlint-m4.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md, journal/decisions/2026-10-26-memlint.md
+- **Verified:** tests/checks/39-memlint-m4.sh 19/19 (3 driver/CLI checks and 2 review checks watched failing first); full suite via lib/check.sh; bash -n driver.sh, bin/harness; node --check lib/memlint.mjs
+- **Tests:** 469 → 474
+- **Dead end:** memlint stderr merged into the findings (2>&1) — a node warning became a finding note, and a crash's note was `node:fs:483` (review); stderr now goes to $SCRATCH/memlint.err
+- **Discovery** (affects run): tests/checks/08's step-lint check counted `lint: ` lines, which `memlint: ` notes also match; it now greps `· lint: `. A future note ending in `lint:` needs the same care.
+- **Discovery** (affects M4, run): Review Minor left as heuristics (D-defaults in decisions/2026-10-26-memlint): `# ` lines inside code fences end the Where-things-go/Gotchas section; `this run fails` and `2 checks` are flagged; a table store's `Updated in place` on the successor row doesn't clear the superseded row; `no store` cites .harness/config.sh:1 even when absent.
+- **Question for Michael:** The memlint notes repeat every segment (a continue too) until the file is tidied: keep that, or note only findings that are new since the run's last segment?
+- *16-M4-02 · claude-opus-5-5*
+
+### 2026-10-26 22:48 · M4-01 · passes
+
+lib/memlint.mjs <worktree> lints CLAUDE.md, .harness/project.md and the decisionsStore store: size, gotchas, derivable-count, night-scope, decisions; one `<file>:<line> <check>: <text>` per line, exit 0 (2: no worktree). 6 fixtures from pre-tidy and tidy commits. This repo's CLAUDE.md lost `395 checks`. Opus review: 0 Critical/Important, 5 Minor fixed RED→GREEN. Tests 455 → 469.
+
+- **Files:** lib/memlint.mjs, tests/checks/39-memlint-m4.sh, tests/fixtures/memlint/, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-memlint.md, CLAUDE.md
+- **Verified:** bash tests/run.sh 39-memlint 14/14 (11 written first and watched failing, 3 more for the review's findings, each red first); full suite via check.sh green in 312 s, 469 tests; node lib/memlint.mjs . prints nothing; node --check lib/memlint.mjs passes
+- **Tests:** 455 → 469
+- **Dead end:** bare `superseded` / `overturned` / `replaced by` as supersession markers (K3's list as written) — flags rane's own header (`when a decision is overturned`), voice-concierge D11 (`the rows they superseded`) and 3 of this repo's decision files (`replaced by` in prose); now passive or tagged forms only (decision D3)
+- **Discovery** (affects M4-02): memlint exports lint(worktree, maxLines), lintText, lintStore, gotchasEntries; CLI `node lib/memlint.mjs <dir>` exits 0 with findings, 2 on a missing dir, 1 (stack) on an unreadable file: M4-02's `memlint: failed` note keys on non-zero exit.
+- **Discovery** (affects M4-02, run): On 2026-10-26 the projects' checkouts give exactly two findings, both size: hit_list CLAUDE.md 181 lines and portfolio_site 127 (MEMLINT_LINES 120). M4-02's README line can say so.
+- **Discovery** (affects run): Fixture sources were read from bare clones in the scratch dir (git clone --bare ~/projects/<p>), never by git commands in the projects' checkouts.
+- **Question for Michael:** memlint defaults D1-D4 in journal/decisions/2026-10-26-memlint.md (plural counts incl. `checks`; month-name dates; passive/tagged supersession markers only; no-store reported at .harness/config.sh:1): keep them?
+- **Proposed change:** M4-02: architecture §7's memlint row and README can cite the two live findings (hit_list and portfolio_site CLAUDE.md over 120 lines) as what Michael will see first
+- *15-M4-01 · claude-opus-5-5*
+
 ### 2026-10-26 22:27 · verify M3 · passes
 
 All five M3 features hold: full suite green (455), 38-run-17 12/12 and 12-journal 15/15 re-run, docs/decisions/plan present, bash -n and node --check ok.
