@@ -273,6 +273,17 @@ journal() {
   return 0
 }
 
+# <feature> <start commit> → a note when the `## Gotchas` lines of CLAUDE.md differ between the session's start commit
+# and HEAD (lib/memlint.mjs gotchasDiff; decisions/2026-10-26-gotchas-in-place). Coding sessions only: verify and retro
+# are read-only, restrict reverts their CLAUDE.md.
+gotchas() {
+  local d
+  git show "$2:CLAUDE.md" > "$SCRATCH/gotchas-before.md" 2> /dev/null || : > "$SCRATCH/gotchas-before.md"
+  git show HEAD:CLAUDE.md > "$SCRATCH/gotchas-after.md" 2> /dev/null || : > "$SCRATCH/gotchas-after.md"
+  d=$(node "$HARNESS_HOME/lib/memlint.mjs" gotchas "$SCRATCH/gotchas-before.md" "$SCRATCH/gotchas-after.md") && [[ -n $d ]] && note "$1: gotchas $d"
+  return 0
+}
+
 # <m> → how many verify entries the milestone has in entries.jsonl (the rendered progress.md shows only the 15 newest in
 # full). A run with a list always has the file by its first verify: the start-up or the initializer's append creates it
 vcount() {
@@ -743,6 +754,7 @@ while :; do
   session coding "$mdl" "$slog" "$id"
   commit_all "WIP: $id — uncommitted at session end (harness)"
   journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
+  gotchas "$id" "$sstart"   # a limited session's edit is noted too
 
   # A usage/rate limit, an API error or a session that did no work is not the feature's fault: give the attempt back.
   if why=$(MET limit "$slog" "$S_WALL" "$S_EXIT"); then

@@ -72,6 +72,7 @@ a scope systemd refuses after the probe: the session runs bare and harness-log.m
 a second event reuses the desk window
 a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)
 a session that dies at startup: failed, and no usage-limit window for the box
+a session that leaves CLAUDE.md alone gets no gotchas note
 a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
 a session's edits to the journal are restored (E4 review F1)
 a stale green marker is caught at verify: M1 red, not tagged
@@ -83,6 +84,7 @@ a stop reason with | keeps its card on the debrief page and is one cell in repor
 a stop reason's words are never read as a feature's cause (A failed the re-check)
 a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason
 a stop without a reason says just: stopped by Michael (the note and ended)
+a stub session that adds a Gotchas line is noted
 a successful post: a line in run.log only
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
@@ -128,6 +130,7 @@ check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
 check.sh: the cached line names the key's ignore list only when it isn't the default
 coding prompt names CLAUDE.md but doesn't paste it
+coding prompt: the Finish step adds one Gotchas line
 context.md carries the earlier attempt's dead end
 continuation queued: keeps attempts, brief marked as the debrief's
 continue after a no-list end merges main first
@@ -185,6 +188,7 @@ gc never removes a worktree that is no run's (its branch isn't harness/<run>), e
 gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
 gc removed the finished worktree
 gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+gotchasDiff: added, edited, deleted and no section
 harness backlog import of the seed file gives 8 rows, and 8 again on a second import
 harness backlog set flips test-counts to specced and list shows the spec
 harness backlog set with an unknown id, a bad status or a missing argument exits 1, store byte-identical

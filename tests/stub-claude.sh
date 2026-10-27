@@ -16,6 +16,8 @@
 # STUB_RETRO_PROPOSALS=<id>[,<id>…]: the retro writes retro-proposals.json in the run directory, one
 # `{id, title: "stub proposal <id>", evidence}` per id (`bad`: `{not json`; `link`: a symlink to feature_list.json). STUB_RETRO_EDITS=1: the retro edits code, progress.md
 # and the worktree's ledger/retro-backlog.jsonl (restrict reverts all three).
+# STUB_GOTCHA=<id>: that feature's first coding session adds a `## Gotchas` line to CLAUDE.md (and the section when
+# it has none), committed with its work (M3).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -130,6 +132,10 @@ JSON
     fi
     if [[ $id == C ]]; then [[ $n == 1 && ! ${STUB_NO_RED:-} ]] && touch BROKEN || rm -f BROKEN; fi   # first try leaves the suite red
     echo "$id $n" > "work-$id.txt"
+    if [[ ${STUB_GOTCHA:-} == "$id" && $n == 1 ]]; then   # a fact a fresh session would rediscover, as the Finish step asks
+      grep -qx '## Gotchas' CLAUDE.md 2> /dev/null || printf '\n## Gotchas\n\n' >> CLAUDE.md
+      echo "- the stub's work files sit at the repo root, one per feature ($HARNESS_RUN_ID $(date +%F))" >> CLAUDE.md
+    fi
     # main may already have work-<id>.txt as written here (run demo merged it): a file only this run adds, for the minimal entry's files
     [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
     entry "$id" "$n" --arg id "$id" --arg n "$n" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",

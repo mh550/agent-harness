@@ -1,0 +1,9 @@
+{ "feature": "M3-02", "kind": "coding", "outcome": "passes",
+  "summary": "Finish step 3 in prompts/coding.md: one ## Gotchas line (≤160 chars, ends (<run> <date>), 15 max, edit in place, no rewrite). memlint.mjs gains gotchasLines/gotchasDiff (multiset; a replace is ~1) and `gotchas <before> <after>`; driver gotchas() after journal coding notes `<id>: gotchas +a ~e -d`. STUB_GOTCHA flag, arch §7 row, decision file. Tests 435 → 439.",
+  "files": ["prompts/coding.md", "lib/memlint.mjs", "lib/driver.sh", "tests/stub-claude.sh", "tests/checks/38-run-17-gotchas-and-pack-m3.sh", "tests/fixtures/check-names.txt", "docs/architecture.md", "README.md", "journal/decisions/2026-10-26-gotchas-in-place.md"],
+  "verified_how": "4 new checks in tests/checks/38 written first, all 4 FAIL, then PASS; full bash tests/run.sh 439/439 (248 s) and lib/check.sh green, 439 tests; bash -n on driver.sh, stub-claude.sh, check 38; node --check memlint.mjs",
+  "tests_before": 435, "tests_after": 439,
+  "discoveries": [
+    { "text": "tests/checks/38 runs one stub run `gotcha` (STUB_GOTCHA=B); M3-03/M3-04 checks can add their own runs below it. With KEEP_SCRATCH=1 the stub's sessions.log is at $T/scratch/proj/<run>/sessions.log.", "affects": ["M3-03", "M3-04"] },
+    { "text": "coding.md Finish steps are now 1 suite-verify, 2 suite, 3 Gotchas, 4 entry.json, 5 commit; the M3-03 Promote-to-Gotchas sentence belongs in step 3.", "affects": ["M3-03"] }
+  ] }

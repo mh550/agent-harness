@@ -66,7 +66,12 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    `proposed_changes` in your entry.
 2. The suite green. If your work is half done, commit only what leaves the suite green.
    The harness un-passes a feature whose session ends with a red suite.
-3. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object. The
+3. If this session taught you a fact a fresh session would otherwise rediscover, add or edit one
+   line under `## Gotchas` in the project's `CLAUDE.md` (create the section if it has none): at
+   most 160 characters, ending `(<run> <date>)` (the run id from the `Run:` line under *This run*,
+   today's date). 15 lines at most: at 15, replace the least useful. A wrong line is edited in
+   place; never rewrite the section. The harness notes each change in `harness-log.md`.
+4. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object. The
    harness validates it, adds it to `entries.jsonl` and deletes it; a missing or invalid one leaves
    only a minimal entry (your final message and the files git saw change). For example:
 
@@ -87,7 +92,7 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    Michael. Say what changed (files, test count before → after), how you verified it (real names
    and numbers) and what the next session must know. The harness renders `progress.md` from these
    entries for Michael's phone: don't edit it.
-4. Commit `<feature id>: <what changed>` and run `git push -u origin <branch>`.
+5. Commit `<feature id>: <what changed>` and run `git push -u origin <branch>`.
 
 Final message: at most 100 words. Say whether the feature passes, the commit, and the test count.
 
