@@ -1,23 +1,21 @@
 ## Outcome
-The run was stopped by Michael at 00:13 with 7 of 17 features passing (P0-01..04, P1-01..03). It ran 16 sessions in 7.57 h and cost $68.95 ($9.85 per passing feature). Only P0 was verified and merged (PR #30). P1-04 was un-passed because the suite was red after its 58 min session. The 10 features after it were not started. The stop itself was Michael's, to rebase onto main after conflicts in `lib/driver.sh`. The run had already been blocked twice before that, on P0-02 and P1-03.
+Delivered 8 of 17 features. P0 (4 features) was verified and merged as PR #30. P1-01 to P1-04 pass, but P1 was never verified or merged. P1-05, P1-06 and all 7 P2 features were not reached. The run cost $69.99 over 18 sessions and 7.85 h wall, across 3 continuations. Michael stopped it three times. The last stop was "merge main's flake fix (PR #39) first". The first two were a blocked P1-03 and a rebase onto main (conflicts in lib/driver.sh). Most of the loss was the wait between continuations (driver_h 0.88, but about 15 h of calendar gaps), not session quality.
 
 ## Non-passing features by cause
-There are no "not done" features in the summary, and `cause` is null. Reading the log, P1-04 is the only feature that did not pass at the end. Ten features were never started.
-- **P1-04, too big for one session.** `lib/lane.sh` and the `lib/driver.sh` rewrite were combined with a `lib/record.sh` extraction, per-lane units and scratch, and a new check file. The session's last entry ends with "per-lane units, scratch, prompt files; metrics…", then "suite red after the session".
-- **P0-02, spec problem.** Resolved later, once a rule was added that a time is measured rather than gated. Evidence: "step 5 (<150 s) can't be met… per-file slot times add up to 636 s".
-- **P1-03, harness bug.** Two failed sessions (39 and 11 min) had no `entry.json` ("entry.json missing; recorded a minimal entry"). Its last entry before passing described a review that was "still running", so the session probably ended before it wrote its entry.
-- **Never started:** 10 features, all dependents of P1-04.
+No feature has cause "not done". The 9 non-passing features all read "not reached": P1-05, P1-06, P2-01 to P2-07. Three features needed rework and ended passing: P0-02 (3 sessions), P1-03 (3 sessions, $16.11) and P1-04 (2 sessions, $12.50).
+- P1-03, harness bug: "P1-03: entry.json missing; recorded a minimal entry" appeared twice (18:38 and 18:53). The session was still waiting on an Opus review when it ended, and it said "I'll wait for its findings before I fix anything".
+- P1-04, environment: "P1-04 un-passed: suite red after the session". Cause: a stale probe prompt scratch, plus a flake that main fixed in PR #39.
 
 ## Harness behaviour
-- **Guards:** `red_unpass` fired once, on P1-04, correctly. There were no repairs, limit waits or verify escalations.
-- **"Blocked… needs Michael" gave up too early.** The driver ended the run twice (08:30 and 18:53), each time after only two failed attempts on one feature. Each time the run sat idle for hours until Michael resumed it, which is 7.57 h of wall time against 6.8 h of sessions. The P0-02 retry passed in 21 min once the spec changed.
-- **Merge conflict.** At 22:40 "main conflicts… carrying on without it" meant a branch that diverged from main while `lib/driver.sh` was rewritten. That led to Michael's stop.
-- **Plan role:** $10.58 for 0.57 h, which is more than review and verify combined.
-- **Context.md:** "test count: no match in the suite's output" at 16:03, so test counts went unrecorded.
-- **Verify:** only one verify session ran, for P0 ($0.24, 4.3k output tokens). `verify_fail_rate` is 0. Evidence rows against steps can't be judged from that. This looks like a spot check, not a re-run of the steps.
-- **Rework:** P0-02, P1-03 and P1-04. First-attempt pass rate was 0.63.
+- Guards: red_unpass fired once, on P1-04. The suite really was red, so it was correct.
+- The "blocked: the remaining features wait on P1-03 (given up; needs Michael)" stop fired after only two sessions. The second session was 11 min and ended with no entry. Michael resumed it later and P1-03 passed in 22 min. That gave up too early, and it cost about 4 h of idle time.
+- "main conflicts with harness/agent-harness-2026-10-26; carrying on without it" appeared twice. The run kept building on a base that main had moved past. That is why Michael stopped it to rebase and then to merge the flake fix. Both stops cost a full continuation.
+- Orientation cost 1.24M tokens over 16 turns (280 s), and the largest context peak was 314k.
+- Plan sessions cost $10.58 for one feature (P1-01).
+- Verify ran once, on P0, and cost $0.24. Evidence rows were present for P0-02 and P0-03 across steps, but I did not count rows against steps in full. Verify fail rate was 0 and first-attempt pass rate was 0.63.
+- Cache hit rate was 0.971, which is fine.
 
 ## Proposed harness changes
-1. **Warn about size before a feature starts.** In the context-pack or planning step, flag a feature that touches the driver core plus a refactor plus new checks, and split it before the session. Evidence: P1-04 ran 58 min and ended red. No earlier retro seen.
-2. **Ask for `entry.json` when it is missing.** In the session-end handler, resume the session once for the entry instead of recording a minimal one. Evidence: P1-03 lost 50 min across two sessions. I did not check earlier retros.
-3. **Merge main into the run branch at milestone boundaries.** In the driver, merge main at each milestone, not only after a block. Evidence: `lib/driver.sh` conflicts surfaced at 22:40 and ended the run. I did not check earlier retros.
+1. lib/driver.sh, session end: when entry.json is missing but a background review or subagent is still pending, don't record a minimal entry and don't count it toward the "given up" block. Resume the same session once instead, or write the entry from the session's last message. Evidence: both P1-03 failures. I can't tell from the ledger files I checked whether an earlier retro proposed this.
+2. lib/sync.sh and lib/driver.sh: when main has conflicts or has moved on, stop at the next feature boundary and notify Michael once. Today the run carries on and the merge conflict grows. Alternatively, rebase onto main between milestones when the tree is clean. Evidence: two "carrying on without it" lines, then two Michael stops. I haven't checked earlier retros for this.
+3. A flaky-check guard: if the suite goes red, rerun the failing check once before un-passing the feature. Quarantine a check that passes on rerun and record it with `note`. Evidence: the PR #39 stop came from a flaky check. Not checked against earlier retros.

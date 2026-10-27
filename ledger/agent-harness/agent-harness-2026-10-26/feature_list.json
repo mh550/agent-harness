@@ -137,7 +137,7 @@
         "`harness pause` makes the lane finish its session and wait (no new session, `paused` logged once by the coordinator) and `harness stop` ends with every $STATE/lanes/*/pid dead and no lanes/ directory left under $HARNESS_WORKTREES/proj",
         "the new checks live in tests/checks/NN-lanes-run.sh (or the rewritten run-1 file), names in tests/fixtures/check-names.txt; `bash -n lib/lane.sh lib/driver.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-05",

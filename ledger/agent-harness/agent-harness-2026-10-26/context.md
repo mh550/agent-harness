@@ -2,12 +2,21 @@
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- Dead end (P1-04, 02-P1-04): setting BRANCH to the lane branch in the lane process — gh_url then linked notifications to the lane branch; BRANCH stays the record's, HARNESS_BRANCH names the lane → entries.jsonl:14
+- Dead end (P1-04, 02-P1-04): deleting every lane branch with nothing beyond main at finish — a parked lane's pushed branch is what 36's --base check (and a continue) reads; only never-pushed ones go (D11) → entries.jsonl:14
+- Question (P1-04): D9-D12 in journal/decisions/2026-10-26-lanes.md are defaults: record sync only when a lane may open, a crashed lane needs Michael, never-pushed empty lane branches deleted at finish, unit numbers from scope-seq. Keep them? → entries.jsonl:14
+- 2026-10-27 00:06 · P1-04 · passes: lib/lane.sh runs one milestone as its own process (exit 0/10-15, reason in state/lanes/<m>/exit); lib/driver.sh is the coordinator (poll, reap, open under MAX_LANES, end reasons, finish waits for lanes, removes slots). Shared code moved to lib/record.sh. Per-lane units, scratch, prompt files; metrics rows carry lane. Opus review: 5 fixes. Suite 423 → 432, green.; tests 423 → 432; files lib/lane.sh, lib/driver.sh, lib/record.sh, lib/metrics.mjs, tests/checks/37-lanes-run.sh, … → entries.jsonl:14
+
 ## Michael's answers
 
 - ### 2026-10-26 15:59 (local) P0-02: accepted. Main (retro F1, F2) is merged into this branch and tests/checks/ re-cut from it; the suite is 392/392 green in 208 s with TEST_JOBS=4. Step 5 now reads 'measured and recorded, not a gate' and steps 2 and 4 are reworded as you proposed. Rule from here: a performance number in a step is measured and recorded, never a gate, unless the step says it protects the box. Proceed: P0-04, then P1, P2. ### 2026-10-26 22:40 (local) P1-03: the code is in ce11cdf. Run the review in the foreground (or skip it), fix what it finds, run the full suite, write entry.json, then flip passes. → INBOX.md
 
 ## Discoveries for this feature
 
+- Discovery (P1-04, affects run): The MAX_REPAIRS streak is per lane process now, not run-wide. → entries.jsonl:14
+- Discovery (P1-04, affects run): Suite: 432 checks, 256 s wall at TEST_JOBS=4 (was 423 in ~231 s); 37-lanes-run.sh adds ~35 s of slot time. → entries.jsonl:14
 - Discovery (P1-03, affects P1-04, P1-06, run): Lane branches harness-lane/<run>/<m> match neither deploy guard (Vercel harness/**, Netlify harness/*), so a guarded project such as portfolio_site gets a preview deploy on every sync_lane push. Not fixed here: extending the guard changes the existing deploy checks' text and needs a change to portfolio_site's main (D8). → entries.jsonl:13
 - Discovery (P1-03, affects P1-04, P1-05): The default lane (features with no milestone) is never verified, so its code stays on harness-lane/<run>/default and never reaches main. Before lanes, the next milestone's tainted tag carried it (D7). → entries.jsonl:13
 - Discovery (P1-03, affects P1-04): Record writes in the record worktree outside record(): the INBOX/brief creation, commit_all of RWT at start/finish, summary.json, report.md, retro.md. Only desk.sh's note competes in P1. P1-04's lane processes make that real. desk.sh's note writes even when its 10 s flock times out. → entries.jsonl:13
@@ -26,10 +35,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (P0-03, affects P1, P2): STUB_EDIT=<path> in tests/stub-claude.sh: a coding session edits only that path, passes nothing, and copies the init.out it was started with to $STUB_DIR/init-<run>-<n>.out (what the pre-session suite said). → entries.jsonl:5
 - Discovery (P0-02, affects P0-02, run): The suite's CPU is mostly the harness's own process starts: lib/driver.sh calls node 1,684 times in file 12 (30 ms each). Caching F model (pure) and the read-only list queries keyed on the list's content would cut about 8% of that file's CPU. That is the only lever left short of rewriting checks. → entries.jsonl:4
 - Discovery (P0-02, affects run): scope.sh's real 64M-scope check is flaky: in 1 of 5 full runs the cgroup OOM kill also took the bash -c wrapper, leaving an empty .show (rc/peak unread). Not the split. → entries.jsonl:3
-- Discovery (P0-02, affects P1, P2): lib.sh now has copies of ran, settle and HH (the debrief section's helpers) and a REPLAY mode for check (silent, uncounted). A new check file by topic needs no split.sh: split.sh only regenerates 01-27 into an empty SPLIT_OUT. → entries.jsonl:3
-- Discovery (P0-01, affects P0-02, run): split.sh writes only into an empty $SPLIT_OUT (default tests/checks), so it can never delete files added since the split. To re-verify the split: SPLIT_OUT=$(mktemp -d)/o bash tests/split.sh, then cmp against tests/checks. → entries.jsonl:2
-- Discovery (P0-01, affects P0-02, P0-03, P1, P2): tests/checks/25-suite-runner.sh is the runner's own check file (it holds the testcount check). P0-02's runner checks belong there. Every new check name needs a line in tests/fixtures/check-names.txt (C-sorted): the full run's conformance check fails on new names too. → entries.jsonl:2
-- Discovery (P0-01, affects run): The harness runs the live checkout's lib/check.sh/testcount.mjs, so its green line shows no test count until this merges to main. The worktree's lib/check.sh prints 'check: green (cached for this code tree, 327 tests)'. → entries.jsonl:2
-- Discovery (init, affects run): The suite is one file, tests/run.sh (1634 lines, 50 `# ---- <title> ----` sections, 325 checks, all names unique and environment-independent) and takes about 10 min single-threaded on this box (init measured 597 s), so every session spends 10 min per full run until P0-02 lands; iterate on a subset (`bash lib/check.sh <args>` is never cached) and run the full suite once before flipping passes. → entries.jsonl:1
 
-_9 items left out at 8192 bytes: entries.jsonl has them all._
+_13 items left out at 8192 bytes: entries.jsonl has them all._
