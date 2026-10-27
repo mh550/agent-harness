@@ -1,65 +1,52 @@
-# Debrief · 2026-10-26 13:35
+# Debrief · 2026-10-27 01:48
 
-_runs since 2026-10-23 13:02:53: agent-harness-2026-10-25-lifecycle agent-harness-2026-10-26 agent-harness-2026-10-26-2 rane-one-mixxx-2026-10-24 · claude-sonnet-5-5, $0.2239772 · context: /home/mh550/.local/state/harness/debrief/2026-10-26-133443/context.md_
+_runs since 2026-10-26 13:34:43: agent-harness-2026-10-25-memory agent-harness-2026-10-26 n8n-home-2026-10-22 · claude-sonnet-5-5, $0.21821800000000002 · context: /home/mh550/.local/state/harness/debrief/2026-10-27-014815/context.md_
 
 ## Headline
-Merged to main: agent-harness lifecycle L1–L5 (PRs #19–21, #25, #26) and F1/F2 (#27, #28), and rane-one-mixxx M5/M6 (#9, #10). That is 56 features verified and merged across 3 runs.
-Blocked: agent-harness-2026-10-26 (2/17). The spec's P0-02 target of under 150 s can't be met (165 s measured), so P1 and P2 never started.
-Spend was $252.67 over 4 runs. The usage window is open: five_hour 5% (resets Mon 17:40), seven_day 9% (resets Sun 17:00).
+Landed on main: agent-harness memory run, M1–M6 (23/23, PRs up to #37). Nothing else merged.
+Blocked: n8n-home on B1-05 (one `install -d` from you). agent-harness-2026-10-26 is stopped at 7/17 and needs a rebase onto main.
+Spend $149.68. Window open: five_hour 14% (resets Tue 03:40), seven_day 20% (resets Sun 17:00).
 
 ## Runs
-### agent-harness-2026-10-25-lifecycle (agent-harness) · done
-- 25/25 passing; L1–L5 verified and merged. Tests not recorded.
-- $83.17 ($3.33 per feature), 15 h wall, 32 sessions. No guards fired and every feature passed first time.
-- Retro: nothing went wrong. One builder left uncommitted work, and the driver rescued it as a WIP commit.
+### agent-harness-2026-10-25-memory (agent-harness) · done
+- 23/23 passing, verified and merged for all six milestones M1–M6 (6 merges). Tests 395 → 501. $58.05 ($2.52 per feature), 6.89 h.
+- The only rework was M5-01. Its step cited "this run's scratch check.out" (395), but the fixture held 474, so M5 verify failed once.
+- Retro proposes: lint steps that cite unreproducible values, a pre-verify literal check, and re-running only the flaky suite file.
+- Init file 13 went red once and passed alone.
 
-### agent-harness-2026-10-26 (agent-harness) · blocked on P0-02
-- 2/17 passing (P0-01, P0-03). Nothing verified or merged.
-- $22.87, 3 h. P0-02 took 2 sessions (87 min, $10.44). Its suite is green (335/335) but takes 165 s against a target of under 150 s with `TEST_JOBS=4`.
-- The other 14 features (P0-04, P1-01…06, P2-01…07) were blocked at $0.
-- Retro: the spec set a measured threshold as a pass condition, and the driver blocks every later feature, not just real dependents.
+### agent-harness-2026-10-26 (agent-harness) · stopped by Michael
+- 7/17 passing. P0 (4 features) verified and merged (PR #30). P1-01..03 pass but are unverified. Tests 419 → 430. $69.06 ($9.87 per feature), 7.58 h, 2 continuations.
+- P1-04 was un-passed because the suite was red after a 58 min session. It was too big: the lane.sh and driver.sh rewrite plus a record.sh extraction. P1-05..P2-07 (9 features) were not reached.
+- You stopped it to rebase onto main (conflicts in `lib/driver.sh`) once the memory run ended. It has now ended.
+- Retro: the run was blocked twice after two failed attempts and sat idle for hours. P1-03 lost about 50 min to a missing `entry.json`.
 
-### agent-harness-2026-10-26-2 (agent-harness) · done
-- 12/12 passing; F1 and F2 verified and merged (#27, #28).
-- $35.55 ($2.96 per feature), 5 h.
-- Retro: review took 25% of spend ($8.76) and found nothing that needed rework.
-
-### rane-one-mixxx-2026-10-24 (rane-one-mixxx) · done
-- 19/19 passing; M5 and M6 merged (#9, #10). Tests 868 → 1262.
-- $111.08 ($5.85 per feature), 7.8 h of work. The run sat parked on M5-06 for about 21 h until you answered at 02:51, then resumed.
-- M5-06 and M5-10 needed rework. 1 verify failure, and it was a real one.
-- Check ($45.87) and review ($19.08) together took 58% of spend.
+### n8n-home-2026-10-22 (n8n-home) · waiting on Michael: B1-05
+- 4/34 passing (B1-01..04), none verified or merged. $22.57, 1.33 h.
+- B1-05 (the live deploy) parked because `~/.local/state/harness/requests` doesn't exist. Sessions may not create it, and `deploy.sh` now refuses up front.
+- The other 29 features are marked blocked on B1-05. The retro says B2 is rig work in a throwaway container and doesn't need the live deploy.
 
 ## Needs Michael
-- **agent-harness-2026-10-26, P0-02** (progress.md questions): choose how to unblock.
-  - (a) Accept "under 180 s, measured and recorded" for step 5. This is the cheapest option.
-  - (b) Add a feature to cut the driver's node calls or rewrite the debrief chain's checks first.
-  - Then start `harness continue agent-harness-2026-10-26`. The run ended as blocked, so I can't queue it.
-- **Same run, smaller questions:**
-  - Should S4 (`tests/run.sh --for`) be skipped? The default taken was to skip it.
-  - Should treekey always exclude `.harness/runs`? It does now.
-  - Should the conformance check fail on names missing from the fixture? It is strict now.
-- **Lifecycle run, install the optional tmpfiles rule?** Run: `mkdir -p ~/.config/user-tmpfiles.d && cp templates/user/harness-tmpfiles.conf ~/.config/user-tmpfiles.d/harness.conf && systemd-tmpfiles --user --create && systemctl --user enable --now systemd-tmpfiles-clean.timer`
-- **Lifecycle run, policy defaults to confirm:**
-  - Keep `MAX_PARALLEL_RUNS=0` as a quiet pause.
-  - Add a `GC_KEEP_BRANCHES` setting?
-  - Should gc delete a merged branch that has no upstream, using `update-ref -d`?
-- **agent-harness-2026-10-26-2:** about 10 defaults to confirm. They cover stop versus deadline, continuation `--automatic` versus `--requested`, an empty suite's test count, and what counts as an outside-repo path. See that run's progress.md.
-- **rane-one-mixxx:**
-  - Run Hardware Round 3 after Round 2.
-  - Pad mode D30: Shift+pad in Hot Cue mode clears a hot cue, and no LED shows the mode.
-  - Questions D31–D35 on the mapping's behaviour (Shift+Play, FX paddles, Shift+Load, strip-search guard, channel fader start).
-  - The optional check in dev Mixxx: Preferences → Decks → Apply, and see whether the rate range still reads 50%.
-- **Parked entry:** `agent-harness-2026-10-25-memory` has been parked with no reason since 13:07. Unpark it or drop it.
+- **n8n-home B1-05 (Q2, progress.md and INBOX):** run `install -d -m 700 ~/.local/state/harness/requests && stat -c '%a %U' ~/.local/state/harness/requests`. It should print `700 mh550`. Then answer "Q2: done" in INBOX.md.
+- **n8n-home, also in progress.md:**
+  - Can the proposed CLAUDE.md wording go in (restic check, Deploy paragraph)?
+  - D12, D13 and D14: are the active-flag, read-only workflows mount and snapshot lock-wait defaults OK?
+- **agent-harness-2026-10-26, rebase:** the run needs rebasing onto main now that memory has merged. Also decide D7 (should the default lane be verified and merged), D8 (deploy guards for `harness-lane/**`, which needs a `vercel.json` edit on portfolio_site), D2, D9–D12, the treekey and D1 defaults, and the legacy-refusal question.
+- **Memory run, product calls (progress.md):**
+  - Should the reviewer subagent follow the session's model? The question was asked three times.
+  - Should the memlint notes repeat every segment, and are memlint defaults D1–D4 OK?
+  - Should `run_init` pin the testcount source only from a green suite?
+  - Is the review-gate Minor #8 worth a fix?
+  - Should a review-bearing eval task be added?
+
+## Draft answers
+**n8n-home, "does the build-only brief still hold, or does live-staged win?"**
+- Answer: live-staged wins, so the B1-05 session's assumption was right.
+- Source: `~/.claude/CLAUDE.md`: "n8n-home: **live**. Agents deploy through the live-staged protocol in its `CLAUDE.md` (`## Live system`)".
 
 ## For the next interactive session
-- No merge conflicts, and no held or refused merges.
-- Retro proposals seen in two or more retros (each a candidate harness PR):
-  1. **Skip or cap review on clean milestones, or run it on Sonnet.** Proposed in 10-26-2, rane-10-24 and rane-10-19, v2-10-18, agent-harness-10-19, the portfolio_site 10-20 runs and voice-concierge 10-20 and 10-21. It is the most repeated proposal and is still unfixed.
-  2. **Block only real dependents, and keep working while a feature is parked or given up.** Proposed in agent-harness-10-26, rane-10-24 and voice-concierge-10-20.
-  3. **Put verify evidence-versus-steps counts in `summary.json`.** Proposed in lifecycle and 10-26-2.
-  4. **Make log timestamps UTC.** The logs disagree with the summary by about 4 h. Proposed in lifecycle and 10-26-2.
-  5. **Builders should commit at session end.** The driver rescued WIP commits in lifecycle and 10-26.
-- Only one retro proposed each of these:
-  - an escape for measured-threshold steps (10-26)
-  - truncating over-limit entry fields (rane-10-24)
+- **Merge conflicts:** `harness/agent-harness-2026-10-26` conflicts with main in `lib/driver.sh` (P1). The memory run is merged and its branch was deleted by gc.
+- **Held or refused merges:** none. The n8n and 10-26 P1 milestones are unverified and unmerged.
+- **Retro candidates in two or more retros** (I did not read the earlier ledger retros):
+  - Lint or flag verify steps whose numbers can't be met or reproduced: P0-02 in the 10-26 run (a <150 s gate that was out of reach) and M5-01 in the memory run (scratch fixture 395 vs 474).
+  - Proposed once only, each worth a look: split oversized features before the session (10-26); finer dependency granularity so build-only work continues while a live step is parked (n8n); preflight host-path blockers (n8n); ask for a missing `entry.json` instead of recording a minimal one (10-26).
+- The driver should merge main at milestone boundaries; this was proposed only by the 10-26 retro.

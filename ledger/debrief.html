@@ -27,108 +27,83 @@ dd{margin:0;font-variant-numeric:tabular-nums;font-size:14px}.open{margin:12px 0
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--line) 60%,transparent);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
 pre{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}</style></head>
 <body><main>
-<h1>Debrief · 2026-10-26 13:35</h1>
-<p class="sub">4 runs · page built 2026-10-26 17:35 UTC from each run's summary.json and the debrief note</p>
-<section class="headline"><p>Merged to main: agent-harness lifecycle L1–L5 (PRs #19–21, #25, #26) and F1/F2 (#27, #28), and rane-one-mixxx M5/M6 (#9, #10). That is 56 features verified and merged across 3 runs.</p></section>
+<h1>Debrief · 2026-10-27 01:48</h1>
+<p class="sub">3 runs · page built 2026-10-27 05:48 UTC from each run's summary.json and the debrief note</p>
+<section class="headline"><p>Landed on main: agent-harness memory run, M1–M6 (23/23, PRs up to #37). Nothing else merged.</p></section>
 <section class="cards"><article class="card">
-  <header><h3>agent-harness-2026-10-25-lifecycle</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
-  <div class="big"><b>25/25 passing</b><span>25 verified · 25 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="L1: 8/8 passing, merged">L1</li><li class="ms merged" title="L2: 6/6 passing, merged">L2</li><li class="ms merged" title="L3: 5/5 passing, merged">L3</li><li class="ms merged" title="L4: 5/5 passing, merged">L4</li><li class="ms merged" title="L5: 1/1 passing, merged">L5</li></ul>
-  <dl><div><dt>Spend</dt><dd>$83.17</dd></div><div><dt>Per feature</dt><dd>$3.33</dd></div>
-  <div><dt>Wall</dt><dd>14.99 h</dd></div><div><dt>Tests</dt><dd>–</dd></div></dl>
+  <header><h3>agent-harness-2026-10-25-memory</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>23/23 passing</b><span>23 verified · 23 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="M1: 6/6 passing, merged">M1</li><li class="ms merged" title="M2: 3/3 passing, merged">M2</li><li class="ms merged" title="M3: 5/5 passing, merged">M3</li><li class="ms merged" title="M4: 2/2 passing, merged">M4</li><li class="ms merged" title="M5: 2/2 passing, merged">M5</li><li class="ms merged" title="M6: 5/5 passing, merged">M6</li></ul>
+  <dl><div><dt>Spend</dt><dd>$58.05</dd></div><div><dt>Per feature</dt><dd>$2.52</dd></div>
+  <div><dt>Wall</dt><dd>6.89 h</dd></div><div><dt>Tests</dt><dd>395 → 501</dd></div></dl>
   
 </article>
 <article class="card">
-  <header><h3>agent-harness-2026-10-26</h3><span class="proj">agent-harness</span><span class="pill warn">blocked on P0-02</span></header>
-  <div class="big"><b>2/17 passing</b><span>0 verified · 0 merged</span></div>
-  <ul class="milestones"><li class="ms partial" title="P0: 2/4 passing, partial">P0</li><li class="ms todo" title="P1: 0/6 passing, todo">P1</li><li class="ms todo" title="P2: 0/7 passing, todo">P2</li></ul>
-  <dl><div><dt>Spend</dt><dd>$22.87</dd></div><div><dt>Per feature</dt><dd>$11.44</dd></div>
-  <div><dt>Wall</dt><dd>3.01 h</dd></div><div><dt>Tests</dt><dd>–</dd></div></dl>
-  <ul class="open"><li><span class="cause">not done</span> <code>P0-02</code><div class="detail">P0-02 does **not** pass. I left `passes` false because step 5, a full suite under 150 s with `TEST_JOBS=4`, isn&#39;t met. Steps 1–4, 6 and 7 hold, and the suite is green: 335/335 in 165 s. - **Why splitt</div></li><li><span class="cause">blocked</span> <code>P0-04</code> <code>P1-01</code> <code>P1-02</code> <code>P1-03</code> <code>P1-04</code> <code>P1-05</code> <code>P1-06</code> <code>P2-01</code> +6<div class="detail">waits on P0-02, which was given up</div></li></ul>
+  <header><h3>agent-harness-2026-10-26</h3><span class="proj">agent-harness</span><span class="pill muted">stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh)</span></header>
+  <div class="big"><b>7/17 passing</b><span>4 verified · 4 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="P0: 4/4 passing, merged">P0</li><li class="ms partial" title="P1: 3/6 passing, partial">P1</li><li class="ms todo" title="P2: 0/7 passing, todo">P2</li></ul>
+  <dl><div><dt>Spend</dt><dd>$69.06</dd></div><div><dt>Per feature</dt><dd>$9.87</dd></div>
+  <div><dt>Wall</dt><dd>7.58 h</dd></div><div><dt>Tests</dt><dd>419 → 430</dd></div></dl>
+  <ul class="open"><li><span class="cause">red suite</span> <code>P1-04</code><div class="detail">the suite was red after its session</div></li><li><span class="cause">not reached</span> <code>P1-05</code> <code>P1-06</code> <code>P2-01</code> <code>P2-02</code> <code>P2-03</code> <code>P2-04</code> <code>P2-05</code> <code>P2-06</code> +1<div class="detail">run ended: stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh)</div></li></ul>
 </article>
 <article class="card">
-  <header><h3>agent-harness-2026-10-26-2</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
-  <div class="big"><b>12/12 passing</b><span>12 verified · 12 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="F1: 6/6 passing, merged">F1</li><li class="ms merged" title="F2: 6/6 passing, merged">F2</li></ul>
-  <dl><div><dt>Spend</dt><dd>$35.55</dd></div><div><dt>Per feature</dt><dd>$2.96</dd></div>
-  <div><dt>Wall</dt><dd>5.06 h</dd></div><div><dt>Tests</dt><dd>–</dd></div></dl>
-  
-</article>
-<article class="card">
-  <header><h3>rane-one-mixxx-2026-10-24</h3><span class="proj">rane-one-mixxx</span><span class="pill good">done</span></header>
-  <div class="big"><b>19/19 passing</b><span>19 verified · 19 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="M5: 10/10 passing, merged">M5</li><li class="ms merged" title="M6: 9/9 passing, merged">M6</li></ul>
-  <dl><div><dt>Spend</dt><dd>$111.08</dd></div><div><dt>Per feature</dt><dd>$5.85</dd></div>
-  <div><dt>Wall</dt><dd>7.81 h</dd></div><div><dt>Tests</dt><dd>868 → 1262</dd></div></dl>
-  
+  <header><h3>n8n-home-2026-10-22</h3><span class="proj">n8n-home</span><span class="pill warn">waiting on Michael: B1-05</span></header>
+  <div class="big"><b>4/34 passing</b><span>0 verified · 0 merged</span></div>
+  <ul class="milestones"><li class="ms partial" title="B1: 4/5 passing, partial">B1</li><li class="ms todo" title="B2: 0/6 passing, todo">B2</li><li class="ms todo" title="B3: 0/4 passing, todo">B3</li><li class="ms todo" title="B4: 0/8 passing, todo">B4</li><li class="ms todo" title="B5: 0/6 passing, todo">B5</li><li class="ms todo" title="B6: 0/5 passing, todo">B6</li></ul>
+  <dl><div><dt>Spend</dt><dd>$22.57</dd></div><div><dt>Per feature</dt><dd>$5.64</dd></div>
+  <div><dt>Wall</dt><dd>1.33 h</dd></div><div><dt>Tests</dt><dd>–</dd></div></dl>
+  <ul class="open"><li><span class="cause">waiting on Michael</span> <code>B1-05</code><div class="detail">Michael to run `install -d -m 700 ~/.local/state/harness/requests` (Q2 in INBOX) so B1-05 can deploy.</div></li><li><span class="cause">blocked</span> <code>B2-01</code> <code>B2-02</code> <code>B2-03</code> <code>B2-04</code> <code>B2-05</code> <code>B2-06</code> <code>B3-01</code> <code>B3-02</code> +21<div class="detail">waits on B1-05, which is waiting on Michael</div></li></ul>
 </article></section>
-<section class="note"><p><em>runs since 2026-10-23 13:02:53: agent-harness-2026-10-25-lifecycle agent-harness-2026-10-26 agent-harness-2026-10-26-2 rane-one-mixxx-2026-10-24 · claude-sonnet-5-5, $0.2239772 · context: /home/mh550/.local/state/harness/debrief/2026-10-26-133443/context.md</em></p>
-<p>Blocked: agent-harness-2026-10-26 (2/17). The spec&#39;s P0-02 target of under 150 s can&#39;t be met (165 s measured), so P1 and P2 never started.<br>Spend was $252.67 over 4 runs. The usage window is open: five_hour 5% (resets Mon 17:40), seven_day 9% (resets Sun 17:00).</p>
+<section class="note"><p><em>runs since 2026-10-26 13:34:43: agent-harness-2026-10-25-memory agent-harness-2026-10-26 n8n-home-2026-10-22 · claude-sonnet-5-5, $0.21821800000000002 · context: /home/mh550/.local/state/harness/debrief/2026-10-27-014815/context.md</em></p>
+<p>Blocked: n8n-home on B1-05 (one <code>install -d</code> from you). agent-harness-2026-10-26 is stopped at 7/17 and needs a rebase onto main.<br>Spend $149.68. Window open: five_hour 14% (resets Tue 03:40), seven_day 20% (resets Sun 17:00).</p>
 <h3>Runs</h3>
-<h4>agent-harness-2026-10-25-lifecycle (agent-harness) · done</h4>
+<h4>agent-harness-2026-10-25-memory (agent-harness) · done</h4>
 <ul>
-<li>25/25 passing; L1–L5 verified and merged. Tests not recorded.</li>
-<li>$83.17 ($3.33 per feature), 15 h wall, 32 sessions. No guards fired and every feature passed first time.</li>
-<li>Retro: nothing went wrong. One builder left uncommitted work, and the driver rescued it as a WIP commit.</li>
+<li>23/23 passing, verified and merged for all six milestones M1–M6 (6 merges). Tests 395 → 501. $58.05 ($2.52 per feature), 6.89 h.</li>
+<li>The only rework was M5-01. Its step cited &quot;this run&#39;s scratch check.out&quot; (395), but the fixture held 474, so M5 verify failed once.</li>
+<li>Retro proposes: lint steps that cite unreproducible values, a pre-verify literal check, and re-running only the flaky suite file.</li>
+<li>Init file 13 went red once and passed alone.</li>
 </ul>
-<h4>agent-harness-2026-10-26 (agent-harness) · blocked on P0-02</h4>
+<h4>agent-harness-2026-10-26 (agent-harness) · stopped by Michael</h4>
 <ul>
-<li>2/17 passing (P0-01, P0-03). Nothing verified or merged.</li>
-<li>$22.87, 3 h. P0-02 took 2 sessions (87 min, $10.44). Its suite is green (335/335) but takes 165 s against a target of under 150 s with <code>TEST_JOBS=4</code>.</li>
-<li>The other 14 features (P0-04, P1-01…06, P2-01…07) were blocked at $0.</li>
-<li>Retro: the spec set a measured threshold as a pass condition, and the driver blocks every later feature, not just real dependents.</li>
+<li>7/17 passing. P0 (4 features) verified and merged (PR #30). P1-01..03 pass but are unverified. Tests 419 → 430. $69.06 ($9.87 per feature), 7.58 h, 2 continuations.</li>
+<li>P1-04 was un-passed because the suite was red after a 58 min session. It was too big: the lane.sh and driver.sh rewrite plus a record.sh extraction. P1-05..P2-07 (9 features) were not reached.</li>
+<li>You stopped it to rebase onto main (conflicts in <code>lib/driver.sh</code>) once the memory run ended. It has now ended.</li>
+<li>Retro: the run was blocked twice after two failed attempts and sat idle for hours. P1-03 lost about 50 min to a missing <code>entry.json</code>.</li>
 </ul>
-<h4>agent-harness-2026-10-26-2 (agent-harness) · done</h4>
+<h4>n8n-home-2026-10-22 (n8n-home) · waiting on Michael: B1-05</h4>
 <ul>
-<li>12/12 passing; F1 and F2 verified and merged (#27, #28).</li>
-<li>$35.55 ($2.96 per feature), 5 h.</li>
-<li>Retro: review took 25% of spend ($8.76) and found nothing that needed rework.</li>
-</ul>
-<h4>rane-one-mixxx-2026-10-24 (rane-one-mixxx) · done</h4>
-<ul>
-<li>19/19 passing; M5 and M6 merged (#9, #10). Tests 868 → 1262.</li>
-<li>$111.08 ($5.85 per feature), 7.8 h of work. The run sat parked on M5-06 for about 21 h until you answered at 02:51, then resumed.</li>
-<li>M5-06 and M5-10 needed rework. 1 verify failure, and it was a real one.</li>
-<li>Check ($45.87) and review ($19.08) together took 58% of spend.</li>
+<li>4/34 passing (B1-01..04), none verified or merged. $22.57, 1.33 h.</li>
+<li>B1-05 (the live deploy) parked because <code>~/.local/state/harness/requests</code> doesn&#39;t exist. Sessions may not create it, and <code>deploy.sh</code> now refuses up front.</li>
+<li>The other 29 features are marked blocked on B1-05. The retro says B2 is rig work in a throwaway container and doesn&#39;t need the live deploy.</li>
 </ul>
 <h3>Needs Michael</h3>
 <ul>
-<li><strong>agent-harness-2026-10-26, P0-02</strong> (progress.md questions): choose how to unblock.</li>
-<li>(a) Accept &quot;under 180 s, measured and recorded&quot; for step 5. This is the cheapest option.</li>
-<li>(b) Add a feature to cut the driver&#39;s node calls or rewrite the debrief chain&#39;s checks first.</li>
-<li>Then start <code>harness continue agent-harness-2026-10-26</code>. The run ended as blocked, so I can&#39;t queue it.</li>
-<li><strong>Same run, smaller questions:</strong></li>
-<li>Should S4 (<code>tests/run.sh --for</code>) be skipped? The default taken was to skip it.</li>
-<li>Should treekey always exclude <code>.harness/runs</code>? It does now.</li>
-<li>Should the conformance check fail on names missing from the fixture? It is strict now.</li>
-<li><strong>Lifecycle run, install the optional tmpfiles rule?</strong> Run: <code>mkdir -p ~/.config/user-tmpfiles.d &amp;&amp; cp templates/user/harness-tmpfiles.conf ~/.config/user-tmpfiles.d/harness.conf &amp;&amp; systemd-tmpfiles --user --create &amp;&amp; systemctl --user enable --now systemd-tmpfiles-clean.timer</code></li>
-<li><strong>Lifecycle run, policy defaults to confirm:</strong></li>
-<li>Keep <code>MAX_PARALLEL_RUNS=0</code> as a quiet pause.</li>
-<li>Add a <code>GC_KEEP_BRANCHES</code> setting?</li>
-<li>Should gc delete a merged branch that has no upstream, using <code>update-ref -d</code>?</li>
-<li><strong>agent-harness-2026-10-26-2:</strong> about 10 defaults to confirm. They cover stop versus deadline, continuation <code>--automatic</code> versus <code>--requested</code>, an empty suite&#39;s test count, and what counts as an outside-repo path. See that run&#39;s progress.md.</li>
-<li><strong>rane-one-mixxx:</strong></li>
-<li>Run Hardware Round 3 after Round 2.</li>
-<li>Pad mode D30: Shift+pad in Hot Cue mode clears a hot cue, and no LED shows the mode.</li>
-<li>Questions D31–D35 on the mapping&#39;s behaviour (Shift+Play, FX paddles, Shift+Load, strip-search guard, channel fader start).</li>
-<li>The optional check in dev Mixxx: Preferences → Decks → Apply, and see whether the rate range still reads 50%.</li>
-<li><strong>Parked entry:</strong> <code>agent-harness-2026-10-25-memory</code> has been parked with no reason since 13:07. Unpark it or drop it.</li>
+<li><strong>n8n-home B1-05 (Q2, progress.md and INBOX):</strong> run <code>install -d -m 700 ~/.local/state/harness/requests &amp;&amp; stat -c &#39;%a %U&#39; ~/.local/state/harness/requests</code>. It should print <code>700 mh550</code>. Then answer &quot;Q2: done&quot; in INBOX.md.</li>
+<li><strong>n8n-home, also in progress.md:</strong></li>
+<li>Can the proposed CLAUDE.md wording go in (restic check, Deploy paragraph)?</li>
+<li>D12, D13 and D14: are the active-flag, read-only workflows mount and snapshot lock-wait defaults OK?</li>
+<li><strong>agent-harness-2026-10-26, rebase:</strong> the run needs rebasing onto main now that memory has merged. Also decide D7 (should the default lane be verified and merged), D8 (deploy guards for <code>harness-lane/**</code>, which needs a <code>vercel.json</code> edit on portfolio_site), D2, D9–D12, the treekey and D1 defaults, and the legacy-refusal question.</li>
+<li><strong>Memory run, product calls (progress.md):</strong></li>
+<li>Should the reviewer subagent follow the session&#39;s model? The question was asked three times.</li>
+<li>Should the memlint notes repeat every segment, and are memlint defaults D1–D4 OK?</li>
+<li>Should <code>run_init</code> pin the testcount source only from a green suite?</li>
+<li>Is the review-gate Minor #8 worth a fix?</li>
+<li>Should a review-bearing eval task be added?</li>
+</ul>
+<h3>Draft answers</h3>
+<p><strong>n8n-home, &quot;does the build-only brief still hold, or does live-staged win?&quot;</strong></p>
+<ul>
+<li>Answer: live-staged wins, so the B1-05 session&#39;s assumption was right.</li>
+<li>Source: <code>~/.claude/CLAUDE.md</code>: &quot;n8n-home: <strong>live</strong>. Agents deploy through the live-staged protocol in its <code>CLAUDE.md</code> (<code>## Live system</code>)&quot;.</li>
 </ul>
 <h3>For the next interactive session</h3>
 <ul>
-<li>No merge conflicts, and no held or refused merges.</li>
-<li>Retro proposals seen in two or more retros (each a candidate harness PR):</li>
-</ul>
-<ol>
-<li><strong>Skip or cap review on clean milestones, or run it on Sonnet.</strong> Proposed in 10-26-2, rane-10-24 and rane-10-19, v2-10-18, agent-harness-10-19, the portfolio_site 10-20 runs and voice-concierge 10-20 and 10-21. It is the most repeated proposal and is still unfixed.</li>
-<li><strong>Block only real dependents, and keep working while a feature is parked or given up.</strong> Proposed in agent-harness-10-26, rane-10-24 and voice-concierge-10-20.</li>
-<li><strong>Put verify evidence-versus-steps counts in <code>summary.json</code>.</strong> Proposed in lifecycle and 10-26-2.</li>
-<li><strong>Make log timestamps UTC.</strong> The logs disagree with the summary by about 4 h. Proposed in lifecycle and 10-26-2.</li>
-<li><strong>Builders should commit at session end.</strong> The driver rescued WIP commits in lifecycle and 10-26.</li>
-</ol>
-<ul>
-<li>Only one retro proposed each of these:</li>
-<li>an escape for measured-threshold steps (10-26)</li>
-<li>truncating over-limit entry fields (rane-10-24)</li>
+<li><strong>Merge conflicts:</strong> <code>harness/agent-harness-2026-10-26</code> conflicts with main in <code>lib/driver.sh</code> (P1). The memory run is merged and its branch was deleted by gc.</li>
+<li><strong>Held or refused merges:</strong> none. The n8n and 10-26 P1 milestones are unverified and unmerged.</li>
+<li><strong>Retro candidates in two or more retros</strong> (I did not read the earlier ledger retros):</li>
+<li>Lint or flag verify steps whose numbers can&#39;t be met or reproduced: P0-02 in the 10-26 run (a &lt;150 s gate that was out of reach) and M5-01 in the memory run (scratch fixture 395 vs 474).</li>
+<li>Proposed once only, each worth a look: split oversized features before the session (10-26); finer dependency granularity so build-only work continues while a live step is parked (n8n); preflight host-path blockers (n8n); ask for a missing <code>entry.json</code> instead of recording a minimal one (10-26).</li>
+<li>The driver should merge main at milestone boundaries; this was proposed only by the 10-26 retro.</li>
 </ul></section>
 </main></body></html>
