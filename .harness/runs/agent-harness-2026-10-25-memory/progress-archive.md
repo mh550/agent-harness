@@ -9,6 +9,20 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:38 · M6-01 · passes
+
+Wrote docs/plans/2026-10-26-M6-review-gate.md: diff measure (git diff --shortstat origin/main...HEAD, run dir left out), model choice after the pick (sonnet <400, opus ≥400), Sonnet escalation via a pending-round state file (no attempt, once per feature), summary/ledger fields, stub flags, check 41's eight checks, evals/NEXT.md §5. Plan only; tests 483 → 483.
+
+- **Files:** docs/plans/2026-10-26-M6-review-gate.md
+- **Verified:** grep of every step's terms in the plan (17/17 present); lib/driver.sh line refs re-read (774 read, 777 gate, 779 bump, 786 session, 788 journal, 794/822 unbump); suite green, cached for the code tree, 483 tests
+- **Tests:** 483 → 483
+- **Discovery** (affects M6-03, M6-04): summary.mjs counts a feature with more than one real coding row as rework (summary.mjs:164): the review escalation round would mark every escalated review as rework unless M6-04 subtracts its `one round on` notes (in the plan).
+- **Discovery** (affects M6-03): The escalation round must un-pass the review when deciding to escalate, else verify_ready verifies the milestone on the Sonnet verdict before the round runs; the plan does this and the escalated round is picked from $STATE/review-escalate before F next.
+- **Discovery** (affects M6-02): The stub's B first session tampers with C via a node one-liner that crashes when the list has no C: STUB_REVIEW_LIST (A, B, D, R all in M1) must guard it.
+- **Discovery** (affects M6-04): Pre-M6 eval tag is run/agent-harness-2026-10-25-memory/M5 (exists); M6's is .../M6 once verify M6 holds.
+- **Question for Michael:** D-default (plan, Defaults 5): prompts/coding.md still tells every session, a Sonnet review included, to send reviews to Opus subagents, which eats much of the gate's saving. Should a review under REVIEW_OPUS_LINES run its reviewer subagent on Sonnet too? Default: unchanged.
+- *20-M6-01 · claude-opus-5-5*
+
 ### 2026-10-27 00:29 · verify M5 · passes
 
 M5-01 and M5-02 hold. Fixture check-agent-harness gives 395 generic; contract 1115, jest 7, pytest 4, empty none. Checks 06 and 40 pass (14/14). Init suite's one red file (13, 66 checks) passed alone on rerun: load flake.

@@ -9,6 +9,20 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:38 · M6-01 · passes
+
+Wrote docs/plans/2026-10-26-M6-review-gate.md: diff measure (git diff --shortstat origin/main...HEAD, run dir left out), model choice after the pick (sonnet <400, opus ≥400), Sonnet escalation via a pending-round state file (no attempt, once per feature), summary/ledger fields, stub flags, check 41's eight checks, evals/NEXT.md §5. Plan only; tests 483 → 483.
+
+- **Files:** docs/plans/2026-10-26-M6-review-gate.md
+- **Verified:** grep of every step's terms in the plan (17/17 present); lib/driver.sh line refs re-read (774 read, 777 gate, 779 bump, 786 session, 788 journal, 794/822 unbump); suite green, cached for the code tree, 483 tests
+- **Tests:** 483 → 483
+- **Discovery** (affects M6-03, M6-04): summary.mjs counts a feature with more than one real coding row as rework (summary.mjs:164): the review escalation round would mark every escalated review as rework unless M6-04 subtracts its `one round on` notes (in the plan).
+- **Discovery** (affects M6-03): The escalation round must un-pass the review when deciding to escalate, else verify_ready verifies the milestone on the Sonnet verdict before the round runs; the plan does this and the escalated round is picked from $STATE/review-escalate before F next.
+- **Discovery** (affects M6-02): The stub's B first session tampers with C via a node one-liner that crashes when the list has no C: STUB_REVIEW_LIST (A, B, D, R all in M1) must guard it.
+- **Discovery** (affects M6-04): Pre-M6 eval tag is run/agent-harness-2026-10-25-memory/M5 (exists); M6's is .../M6 once verify M6 holds.
+- **Question for Michael:** D-default (plan, Defaults 5): prompts/coding.md still tells every session, a Sonnet review included, to send reviews to Opus subagents, which eats much of the gate's saving. Should a review under REVIEW_OPUS_LINES run its reviewer subagent on Sonnet too? Default: unchanged.
+- *20-M6-01 · claude-opus-5-5*
+
 ### 2026-10-27 00:29 · verify M5 · passes
 
 M5-01 and M5-02 hold. Fixture check-agent-harness gives 395 generic; contract 1115, jest 7, pytest 4, empty none. Checks 06 and 40 pass (14/14). Init suite's one red file (13, 66 checks) passed alone on rerun: load flake.
@@ -241,33 +255,9 @@ Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a
 - **Proposed change:** M3-04 step 3's 'byte count may exceed 8192' cannot be observed in a stub run; the plan proves the verify cap with CONTEXT_PACK_BYTES=1024 (verify pack > 1024, coding packs ≤ 1024) instead.
 - *10-M3-01 · claude-opus-5-5*
 
-### 2026-10-26 21:06 · verify M2 · passes
-
-All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/templates/docs/decision file read and match each step.
-
-| Feature | Step | What you ran or read | What you saw | Holds |
-|---|---|---|---|---|
-| M2-01 | 1 | node --check lib/memlint.mjs; read checks 10-19 of 37-memory-prompts-m2 | ok; decisionsStore exported, store prints journal/decisions; dir/file/null checks PASS | yes |
-| M2-01 | 2 | cat prompts/parts/where-things-go*.md | both ~7 lines under ## Where things go, {{DECISIONS}} store line, readonly sends to discoveries | yes |
-| M2-01 | 3 | read prompt.sh 57-66, check at line 27/31 | appends block when no heading/no CLAUDE.md; once-each and discoveries checks PASS | yes |
-| M2-01 | 4 | checks at lines 36 and 40 | heading 0 times with heading; once each with no CLAUDE.md; PASS | yes |
-| M2-01 | 5 | grep check-names.txt; bash tests/run.sh memory-prompts | 15 names listed; 15/15 pass; entries.jsonl names checks | yes |
-| M2-01 | 6 | init suite output | green, 435 tests | yes |
-| M2-02 | 1 | grep initializer.md; routing check line 50 | old phrase absent; Gotchas/discoveries wording present; no D<n>; check PASS | yes |
-| M2-02 | 2 | read coding.md, draft-claude-md.md, templates/project/* | Decisions bullet points at block; draft asks block+Gotchas, no test count; template block+empty Gotchas; commented DECISIONS= | yes |
-| M2-02 | 3 | read CLAUDE.md, .harness/config.sh, node lib/memlint.mjs store . | block and empty Gotchas present; DECISIONS=journal/decisions; prints journal/decisions | yes |
-| M2-02 | 4 | read decision file and M2 entry | Opus review Important finding fixed (read-only override) and recorded in decision file/entry | yes |
-| M2-02 | 5 | read journal/decisions/2026-10-26-where-things-go.md | Finding/Choice/Rejected; seven projects, none set DECISIONS=; both accepted risks | yes |
-| M2-02 | 6 | init suite output | green | yes |
-| M2-03 | 1 | read docs/architecture.md Memory model | 6x4 table, six rules as specified | yes |
-| M2-03 | 2 | grep README.md | line 63-64 name block, Gotchas 15 lines in place, DECISIONS=, append only when heading lacking | yes |
-| M2-03 | 3 | grep -c Memory model docs/architecture.md | 2; Principles row cites decisions/2026-10-26-where-things-go | yes |
-| M2-03 | 4 | init suite output | green | yes |
-
-- *210433-verify-M2 · claude-sonnet-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 21:06 · verify M2 · passes · All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/t… ([in full](progress-archive.md))
 - 2026-10-26 21:00 · M2-03 · passes · docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles… ([in full](progress-archive.md))
 - 2026-10-26 20:55 · M2-02 · passes · A background wait I had left running for the review was stopped at its time limit. It doesn't matter… ([in full](progress-archive.md))
 - 2026-10-26 20:21 · M2-01 · passes · lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else … ([in full](progress-archive.md))
