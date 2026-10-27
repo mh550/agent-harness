@@ -9,6 +9,39 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 01:46 · verify M6 · passes
+
+All five M6 features hold: suite green (501), checks 41/07/14 re-run and pass, config, prompt, docs, decision file, evals/NEXT.md §5 present, bash -n/node --check clean, no eval results.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M6-01 | 1 | grep shortstat/REVIEW_DIFF in docs/plans/2026-10-26-M6-review-gate.md | plan gives git diff --shortstat origin/$MAIN...HEAD -- . :!.harness/runs, the Review diff line, the 400/opus gate in the loop | yes |
+| M6-01 | 2 | read plan escalation section (l.87-94) | c+i>0 escalates, note text matches, 0/0 does not | yes |
+| M6-01 | 3 | grep plan for fields, flags, check file | review.cost_pct, found_nothing, STUB_REVIEW_LIST/BIG_DIFF/FINDINGS, check 41; NEXT.md commands in evals/NEXT.md §5 | yes |
+| M6-01 | 4 | harness init check.sh | green, 501 tests | yes |
+| M6-02 | 1 | grep config.sh, templates/user/config.sh, prompts/coding.md | REVIEW_OPUS_LINES=400, REVIEW_ESCALATE_MODEL=opus, documented; {{REVIEW_DIFF}} at coding.md:117 | yes |
+| M6-02 | 2 | bash tests/run.sh 41-run | PASS sonnet-under and opus-at-or-over checks; 9/9 | yes |
+| M6-02 | 3 | same run | PASS prompt copy has Review diff line, build has none | yes |
+| M6-02 | 4 | bash tests/run.sh 07-step | 9/9 pass | yes |
+| M6-02 | 5 | init suite | green 501 | yes |
+| M6-03 | 1 | tests/run.sh 41-run | PASS 1 Critical gets one round on opus at no attempt | yes |
+| M6-03 | 2 | same | PASS 0/0 not escalated, run ends done | yes |
+| M6-03 | 3 | same | PASS opus never escalates; clock Review round 2 of 2 | yes |
+| M6-03 | 4 | grep architecture.md; ls journal/decisions | §7 Review gate row at l.264; 2026-10-27-review-gate.md exists | yes |
+| M6-03 | 5 | init suite | green 501 | yes |
+| M6-04 | 1 | tests/run.sh 41-run | PASS summary.json and report.md carry review.cost_pct/found_nothing; reviewSummary pure check | yes |
+| M6-04 | 2 | tests/run.sh 14-run; grep ledger-line | 12/12 pass; ledger row has review_cost_pct | yes |
+| M6-04 | 3 | read evals/NEXT.md §5; git status --porcelain -- evals/results | three commands as specified, no-claim wording; status empty | yes |
+| M6-04 | 4 | grep README.md, decision file | README points to NEXT.md §5; decision names both fields | yes |
+| M6-04 | 5 | init suite | green 501 | yes |
+| M6-05 | 1 | jq entries.jsonl M6-05 summary | 715-line diff, 0 Critical 5 Important 7 Minor, no second round | yes |
+| M6-05 | 2 | read verified_how and plan table | each Important has named red-then-green check; simplifications listed | yes |
+| M6-05 | 3 | read docs/plans/2026-10-26-M6-review.md, architecture §7/§11, NEXT.md, decision | findings recorded; docs describe M6 | yes |
+| M6-05 | 4 | bash -n on driver, config, review, stub, check 41; node --check summary.mjs | all ok | yes |
+| M6-05 | 5 | init suite | green 501 | yes |
+
+- *014538-verify-M6 · claude-sonnet-5-5*
+
 ### 2026-10-27 01:40 · M6-05 · passes
 
 M6 review (Opus subagent, 715-line diff): 0 Critical, 5 Important, 7 Minor; no second round. Fixed: review_diff fetches main first (lib/review.sh), the prompt asks for the counts, reviewFindings strict, found_nothing reads every entry, later attempts after a round stay on opus, the round's diff line names opus. 1 Minor left (#8). Tests 492 → 501.
