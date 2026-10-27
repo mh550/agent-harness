@@ -426,7 +426,9 @@ verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
 waits for another run's limit window
 where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
+where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md
 where things go: the verify prompt has the read-only variant (discoveries, no Gotchas edit)
+where things go: verify and retro keep the read-only rule without the heading when CLAUDE.md has its own block
 where things go: with no CLAUDE.md the three prompts carry the block once each, the store from DECISIONS=
 where things go: with the heading in CLAUDE.md the three prompts carry the block 0 times
 with a queue runner going, the continue command is a queue add

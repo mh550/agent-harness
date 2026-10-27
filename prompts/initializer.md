@@ -48,7 +48,7 @@ Rules:
 - **Steps are verifiable** with real names, numbers, pages, widths and commands, never "works
   correctly". A verifier re-runs each step and writes one evidence row per step. The last step is
   always that the suite is green. A step that records a decision says `record as a new decision`
-  and never names its number: the session takes the next free one when it writes.
+  and never names its number: a numbered file's next free one is taken when the session writes it.
 - **`kind`**: `plan` · `build` · `review` · `check` (a "What Michael will see" pass: screenshots,
   replays) · `docs`.
 - **Milestones** (the spec's, or yours if it has none) follow this pattern:
@@ -79,9 +79,9 @@ Rules:
   header of the run's `progress.md` (at most 2000 characters: what this file is, newest entry first,
   how to read the feature list and steer via `INBOX.md`); the harness renders progress.md from the
   journal for Michael's phone, so don't write it yourself. What a worker must know about the code
-  goes as the Where things go block below says: a durable gotcha (still true after this run) → one
-  line under `## Gotchas` in `CLAUDE.md`; a run-only fact → `discoveries` affecting `"run"`; where
-  things live → nowhere, unless the tree doesn't show it. Questions for Michael go in `questions`
+  goes as the Where things go rules say (below, or in `CLAUDE.md`): a durable gotcha (still true
+  after this run) → one line under `## Gotchas` in `CLAUDE.md`; a run-only fact → `discoveries`
+  affecting `"run"`; where things live → nowhere, unless the tree doesn't show it. Questions for Michael go in `questions`
   (decisions that are his get the simplest reversible default):
 
   ```json

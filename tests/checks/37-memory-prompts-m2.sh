@@ -40,6 +40,12 @@ git pull -q --ff-only origin main && git rm -q CLAUDE.md && echo DECISIONS=journ
 check "where things go: with no CLAUDE.md the three prompts carry the block once each, the store from DECISIONS=" '
   [[ $(n wt3 coding) == 1 && $(n wt3 initializer) == 1 && $(n wt3 verify) == 1 ]] && ! grep -q "CLAUDE.md. at the root of this worktree" "$(P wt3 coding)" &&
   grep -q "one file per decision in .journal/decisions/., never numbered" "$(P wt3 coding)"'
+check "where things go: verify and retro keep the read-only rule without the heading when CLAUDE.md has its own block" '
+  ok=1; for k in verify retro; do [[ $(n wt2 $k) == 0 ]] && grep -q "^\*\*Read-only session\.\*\*.*discoveries" "$(P wt2 $k)" || ok=0; done; (( ok )) &&
+  ! grep -q "Read-only session" "$(P wt2 coding)" && ! grep -q "Read-only session" "$(P wt1 verify)"'
+check "where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md" '
+  ok=1; for r in wt1 wt3; do [[ $(n $r retro) == 1 ]] && sed -n "/^## Where things go/,/^#/p" "$(P $r retro)" | grep -q "discoveries" &&
+    ! sed -n "/^## Where things go/,/^#/p" "$(P $r retro)" | grep -q "Updated in place" || ok=0; done; (( ok ))'
 # ---- the prompts and templates stop contradicting the block (M2-02) ----
 check "routing: the rendered initializer prompt sends gotchas to ## Gotchas, run-only facts to discoveries, no decision number" '
   i=$(tr -s " \n" "  " < "$(P wt1 initializer)") && [[ $i != *"where things live, gotchas"* && $i != *"D<n>"* ]] &&

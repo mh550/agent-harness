@@ -36,6 +36,14 @@ takes `docs/specs/2026-10-24-memory-model.md` §K1 as written)*
     sections and for no test counts. This repo's `CLAUDE.md` gets the block in its own wording (one file per decision
     in `journal/decisions/`, an overturned one edited in place in its own file, never numbered) and an empty
     `## Gotchas`; its `.harness/config.sh` sets `DECISIONS=journal/decisions`.
+  - Verify and retro keep their one rule when the project has its own block (M2-02 review, Important): every real
+    project's `CLAUDE.md` has the heading, so they would otherwise never see the read-only variant and would follow
+    the project's "edit `## Gotchas`", which `restrict` reverts. They get `prompts/parts/where-things-go-override.md`:
+    one bold line, no heading (so K1.6's "with the heading, not at all" holds for the heading), sending such a fact to
+    `discoveries` affecting `"run"`.
+  - Left as they are (review, Minor): `DECISIONS=` is found only at the start of a line and taken literally (no
+    `$VAR`, no second assignment on the line); a heading worded otherwise (`### Where things go`) gets the harness
+    block too; the read-only variant's "the next coding session moves it" is M3's promotion step.
 - **Rejected:** sourcing `.harness/config.sh` from node (it is bash; `harness_config` already sources it, but the
   store is needed by the pure `.mjs` callers of M3 and M4 too, and a store path is one word); pasting the block into
   `rules.md` itself (then a project with no `CLAUDE.md` would get no block, and a tidied one would get it twice); one
