@@ -9,6 +9,19 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 20:05 · M1-06 · passes
+
+Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no second round. Fixed all 5 Important and Minor 6-8 test-first: forward-only import, one-line 200-char titles, a cap keeping every id·status, JSONL skip + {more:n}, LEDGER_COMMIT=1 run check, no symlinked proposals, unlistable store noted. Stray .tmp removed. Tests 413 → 420.
+
+- **Files:** lib/backlog.mjs, lib/driver.sh, tests/stub-claude.sh, tests/checks/35-backlog-pure-m1.sh, tests/checks/36-run-16-retro-backlog.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-26-M1-review.md, journal/decisions/2026-10-26-retro-backlog.md, docs/architecture.md, README.md, .tmp (removed)
+- **Verified:** Each new check red then green: `backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)`, `backlog merge: a title's newlines and control characters fold to one space, at most 200 characters`, `backlog validate: the why line of a huge bad id stays under 300 bytes`, `backlog list: past --max-bytes every row keeps its id and status, full lines first`, `backlog list --jsonl: a row too big is skipped, not the rest; a cut list ends with a {"more": n} line`, `backlog run: a symlinked retro-proposals.json is not followed, and a store that will not list is noted`; `backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.jsonl with its proposal` red with the paths+= line removed, green restored. bash -n on the six named files, node --check lib/backlog.mjs. check.sh green in 229 s, 420 tests.
+- **Tests:** 413 → 420
+- **Dead end:** noting an unlistable store before the retro session — restrict reverts harness-log.md edits made after rstart; the note is now written after restrict
+- **Discovery** (affects run): Any note() written in retro() between rstart and restrict is reverted with the retro's edits: write it after restrict (as S_NOTES are).
+- **Discovery** (affects M2, M3): backlog.mjs exports oneLine (whitespace and control characters folded, 200 chars): reuse it for any retro-written text that reaches a prompt.
+- **Question for Michael:** Review finding 10 (left): `harness backlog set/import` can race lib/sync.sh's rebase since sync takes no ledger.lock. Add it to the backlog (e.g. `sync-ledger-lock`) or fix in a later run?
+- *06-M1-06 · claude-opus-5-5*
+
 ### 2026-10-26 19:47 · M1-05 · passes
 
 M1-05 passes, in commit `8623944`, pushed to the run branch. - **Retro:** its prompt now has a `## Backlog` section with the current backlog list and three rules: reuse an existing id, cite the status of an item already specced, queued or merged instead of re-arguing it, and make up a new id only for a new proposal. - **Debrief:** it now gets the backlog instead of the list of old `retro.md` file…
