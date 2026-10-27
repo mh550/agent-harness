@@ -9,6 +9,21 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 23:55 · M5-02 · passes
+
+tests_end (driver) writes tests-end after every coding session from a green tree's marker/output, not only at finish; status shows `tests 3 → 5`, the session note `· tests <n>`; report/trends labelled baseline. Opus review: 0 Critical, 1 Important fixed RED→GREEN (a red tree's count became tests-end), 2 Minor fixed (unsafe-int contract, stub set -e). Tests 480 → 483.
+
+- **Files:** lib/driver.sh, bin/harness, lib/summary.mjs, lib/testcount.mjs, tests/stub-claude.sh, tests/checks/40-run-18-test-counts-m5.sh, tests/checks/06-test-counts-pure-r1.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md, journal/decisions/2026-10-26-test-count-contract.md
+- **Verified:** full suite via check.sh: green, 483/483; tests/run.sh 40-run 4/4 (the continued-run check failed first with summary.json {start:3,end:3} mid-run, then with `C … passes=false … tests 9` for the red tree); 06-test 10/10 (the unsafe-integer case failed first); 08-scope 123/123
+- **Tests:** 480 → 483
+- **Dead end:** dropping `local key` from finish() when lifting tests_end — scratch_done "$key" later in finish needs it: set -u killed finish (08 scrub, 15 session-cap continuation, 36 backlog failed in the full run)
+- **Dead end:** stub `for tn in ${STUB_TESTS_N//,/ }; do [[ … ]] && …; done` — unbound under set -u when unset (every stub coding session died and read as refused), and a for loop ending on a false `[[ ]] &&` returns 1 and trips set -e
+- **Discovery** (affects run): In tests/checks/40 the contract run's suite ignores BROKEN, so its C merges a BROKEN file into origin main; a later run in that file whose suite tests BROKEN must `git rm` it first (the cont setup does).
+- **Discovery** (affects M5, run): Review Minor left: run_init pins testcount-source from the first check.out even when that suite was red (a failed first suite notes `no match`/`parsed (jest)` for the whole run); green markers written before a contract line (or a CHECK_CMD change via run.env, not in the tree key) keep the scraped count until the tree changes.
+- **Question for Michael:** Should run_init pin the run's testcount-source only from a green suite (review Minor: a red first suite fixes `no match` for the run)? Default left as M5-01 built it.
+- **Proposed change:** M5-02 step 2: the check's CHECK_CMD is `echo HARNESS_TESTS=$(cat tests.n); test ! -f BROKEN` (the step's command plus a red case), so the same run also shows a red tree's count is never tests-end
+- *18-M5-02 · claude-opus-5-5*
+
 ### 2026-10-26 23:18 · M5-01 · passes
 
 testcount.mjs: a last whole-line HARNESS_TESTS=<n> wins, then R1's runners, then generic; countSource() gives {n, source}; `--source` prints `<n> tests · <source>` (`? tests · none`). run_init notes once per run `test count: HARNESS_TESTS contract` / `parsed (<runner>)` / no match (marker testcount-source). Tests 474 → 480.
