@@ -31,8 +31,8 @@ check "test count: a continued run refreshes tests-end after each session (summa
   && hlog cont | grep -q "· C · .* · passes=true · .* passing · tests 9$" && [[ $(cat "$HARNESS_STATE/proj/cont/tests-start") == 3 && $(jq -r .tests.end "$(sumj cont)") == 9 ]]'
 check "test count: report.md labels the tests cell, trends its column (baseline → end)" \
   'jq -nc "{run: \"r\", project: \"p\", passing: 0, total: 1, merged: 0, cost: 0, per_passing: null, wall_h: 0, end_reason: \"x\", causes: {}, tests_start: 3, tests_end: 5}" > "$T/tr.jsonl" \
-  && node "$HERE/../lib/summary.mjs" trends "$T/tr.jsonl" | head -1 | grep -qF "| Passing | tests (baseline → end) | \$ |" \
-  && node "$HERE/../lib/summary.mjs" trends "$T/tr.jsonl" | grep -qF "| 0/1 (merged 0) | 3 → 5 |" \
-  && jq ".tests = {start: null, end: null}" "$(sumj cont)" > "$T/nt.json" && node "$HERE/../lib/summary.mjs" report "$T/nt.json" | grep -qxF "| Tests | not recorded |"'
+  && node "$HERE/../lib/summary.mjs" trends "$T/tr.jsonl" | head -1 | grep -F "| Passing | tests (baseline → end) | \$ |" > /dev/null \
+  && node "$HERE/../lib/summary.mjs" trends "$T/tr.jsonl" | grep -F "| 0/1 (merged 0) | 3 → 5 |" > /dev/null \
+  && jq ".tests = {start: null, end: null}" "$(sumj cont)" > "$T/nt.json" && node "$HERE/../lib/summary.mjs" report "$T/nt.json" | grep -xF "| Tests | not recorded |" > /dev/null'
 
 suite_end

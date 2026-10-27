@@ -215,7 +215,7 @@ check "harness status lists a running run's units with MemoryCurrent; an ended r
   && grep -q "^termed (proj) · ended: driver exited" "$T/status-termed2.out" && ! grep -q MemoryCurrent "$T/status-termed2.out" && [[ $TSL2 == "$TSL" ]]'
 termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* ]] && echo "$p"; done; }
 check "the EXIT trap commits its services note: harness-log.md is clean after a TERM" '[[ -z $(git -C "$T/wt/proj/termed" status --porcelain -- .harness/runs/termed/harness-log.md) ]] \
-  && git -C "$T/wt/proj/termed" show HEAD:.harness/runs/termed/harness-log.md | grep -q "· services stopped (driver exited)$"'
+  && git -C "$T/wt/proj/termed" show HEAD:.harness/runs/termed/harness-log.md | grep "· services stopped (driver exited)$" > /dev/null'
 check "a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it" 'U=$(grep -x -- "--unit=harness-termed-s[0-9]*" "$T/systemd.log" | tail -1 | sed "s/^--unit=//")
   D=$(sd_at $'"'"'teardown\ntermed\ndriver exited\n'"'"'); SS=$(sd_last "stop"$'"'"'\n'"'"'"$U.scope"$'"'"'\n'"'"'); [[ $t_mid == 1 && -n $U && -n $D && -f $T/scratch/proj/termed/teardown-driver-exited.marker ]] \
   && (( SS > 0 && SS < D && D < $(sd_last $'"'"'stop\nharness-termed-svc.scope\n'"'"') )) && sleep 1 && [[ -z $(termed_left) ]] \
@@ -498,7 +498,7 @@ mkdir -p "$HARNESS_STATE/proj/nocount" && echo "CHECK_CMD='echo \"lint: clean\"'
 check "test count: no match is noted once per run (demo: no output; nocount: text with no count), never for a counted or cached suite (scrub)" \
   '[[ $(grep -c "test count: no match in the suite'"'"'s output (tests start/end stay unknown)" "$T/demo-hlog.md") == 1 ]] \
   && [[ $(hlog nocount | grep -c "test count: no match") == 1 && $(hlog nocount | grep -c "run ended") == 2 ]] \
-  && hlog nocount | grep -m1 -e "test count: no match" -e "run ended" | grep -q "test count" && hlog nocount | grep -q "run ended (done)" && ! hlog scrub | grep -q "test count: no match"'
+  && [[ $(hlog nocount | grep -m1 -e "test count: no match" -e "run ended") == *"test count"* ]] && hlog nocount | grep -q "run ended (done)" && ! hlog scrub | grep -q "test count: no match"'
 check "KEEP_SCRATCH=1 keeps the run's scratch; the default is 0" '[[ -d $T/scratch/proj/demo ]] && grep -qF "scratch kept (KEEP_SCRATCH=1): $T/scratch/proj/demo" "$T/demo-hlog.md" \
   && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ $KEEP_SCRATCH == 0 ]] ) && grep -q "^# KEEP_SCRATCH=0 " "$HERE/../templates/user/config.sh"'
 git init -q "$T/ck2" && ( cd "$T/ck2" && echo a > f && git add f && git -c user.name=t -c user.email=t@t commit -qm a )

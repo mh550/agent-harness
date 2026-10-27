@@ -63,8 +63,8 @@ GA=(GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EM
 env "${GA[@]}" HARNESS_CONFIG=$T/commit-config.sh HARNESS_LEDGER=$T/live/ledger STUB_RETRO_PROPOSALS=from-bk4 "$H" start "$T/proj" bk4 --spec SPEC.md --foreground > "$T/bk4.out" 2>&1
 check "backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.jsonl with its proposal" '
   [[ $(git -C "$T/live" log -1 --format=%s) == "ledger: bk4 (proj)"* ]] &&
-  git -C "$T/live" show --name-only --format= HEAD | grep -qx ledger/retro-backlog.jsonl &&
-  git -C "$T/live" show HEAD:ledger/retro-backlog.jsonl | grep -q "^{\"id\":\"from-bk4\",.*\"status\":\"proposed\""'
+  git -C "$T/live" show --name-only --format= HEAD | grep -x ledger/retro-backlog.jsonl > /dev/null &&
+  git -C "$T/live" show HEAD:ledger/retro-backlog.jsonl | grep "^{\"id\":\"from-bk4\",.*\"status\":\"proposed\"" > /dev/null'
 cp "$ST" "$T/st.keep"; echo "{broken" >> "$ST"
 STUB_RETRO_PROPOSALS=link "$H" start "$T/proj" bk5 --spec SPEC.md --foreground > "$T/bk5.out" 2>&1
 check "backlog run: a symlinked retro-proposals.json is not followed, and a store that will not list is noted" '

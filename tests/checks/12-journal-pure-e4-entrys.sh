@@ -173,7 +173,7 @@ check "entries.mjs: a damaged journal line is skipped, never fused or fatal" 'no
   && node "$HERE/../lib/entries.mjs" render "$T/jb" && [[ $(grep -c "^### " "$T/jb/progress.md") == 2 ]] \
   && node "$HERE/../lib/entries.mjs" pack "$T/jb" A > "$T/jb.md" && grep -qx -- "- Dead end (A, 01-A): t — w → entries.jsonl:1" "$T/jb.md" && grep -q -- "a2 → entries.jsonl:5$" "$T/jb.md" \
   && node "$HERE/../lib/entries.mjs" ingest "$T/jb" coding A 03-A m passes /dev/null "$T/jb-final" && [[ $(wc -l < "$T/jb/entries.jsonl") == 6 ]] \
-  && node "$HERE/../lib/entries.mjs" pack "$T/jb" A | grep -q -- "a3 → entries.jsonl:6$" && node "$HERE/../lib/entries.mjs" pack "$T/jb" A | grep -q -- "a2 → entries.jsonl:5$"'
+  && node "$HERE/../lib/entries.mjs" pack "$T/jb" A | grep -- "a3 → entries.jsonl:6$" > /dev/null && node "$HERE/../lib/entries.mjs" pack "$T/jb" A | grep -- "a2 → entries.jsonl:5$" > /dev/null'
 git init -q -b main "$T/vj" && echo '{"framework":"nextjs"}' > "$T/vj/vercel.json" && "$H" init "$T/vj" > "$T/init-vj.out" 2>&1 && "$H" init "$T/vj" > "$T/init-vj2.out" 2>&1
 check "init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept" 'jq -e ".framework == \"nextjs\" and .git.deploymentEnabled[\"harness/**\"] == false" "$T/vj/vercel.json" > /dev/null \
   && grep -q "added the deploy guard to vercel.json" "$T/init-vj.out" && grep -q "keep    vercel.json" "$T/init-vj2.out" && ! grep -q "added the deploy guard" "$T/init-vj2.out"'

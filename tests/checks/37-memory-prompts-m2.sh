@@ -29,7 +29,7 @@ check "where things go: the coding, initializer and verify prompts carry the blo
   grep -q "Gotchas" "$(P wt1 coding)" && grep -q "Updated in place" "$(P wt1 initializer)" && ! grep -q "{{DECISIONS}}" "$(P wt1 coding)" &&
   grep -q "where the project rules say decisions live" "$(P wt1 coding)"'
 check "where things go: the verify prompt has the read-only variant (discoveries, no Gotchas edit)" '
-  sed -n "/^## Where things go/,/^#/p" "$(P wt1 verify)" | grep -q "discoveries" &&
+  sed -n "/^## Where things go/,/^#/p" "$(P wt1 verify)" | grep "discoveries" > /dev/null &&
   ! sed -n "/^## Where things go/,/^#/p" "$(P wt1 verify)" | grep -q "Updated in place" && grep -q "^## Where things go" "$(P wt1 retro)"'
 git pull -q --ff-only origin main && printf '# proj\nrules\n\n## Where things go\n\nours\n' > CLAUDE.md && git commit -qam "where things go" && git push -q origin main
 "$H" start "$T/proj" wt2 --spec SPEC.md --foreground > "$T/wt2.out" 2>&1
@@ -44,7 +44,7 @@ check "where things go: verify and retro keep the read-only rule without the hea
   ok=1; for k in verify retro; do [[ $(n wt2 $k) == 0 ]] && grep -q "^\*\*Read-only session\.\*\*.*discoveries" "$(P wt2 $k)" || ok=0; done; (( ok )) &&
   ! grep -q "Read-only session" "$(P wt2 coding)" && ! grep -q "Read-only session" "$(P wt1 verify)"'
 check "where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md" '
-  ok=1; for r in wt1 wt3; do [[ $(n $r retro) == 1 ]] && sed -n "/^## Where things go/,/^#/p" "$(P $r retro)" | grep -q "discoveries" &&
+  ok=1; for r in wt1 wt3; do [[ $(n $r retro) == 1 ]] && sed -n "/^## Where things go/,/^#/p" "$(P $r retro)" | grep "discoveries" > /dev/null &&
     ! sed -n "/^## Where things go/,/^#/p" "$(P $r retro)" | grep -q "Updated in place" || ok=0; done; (( ok ))'
 # ---- the prompts and templates stop contradicting the block (M2-02) ----
 check "routing: the rendered initializer prompt sends gotchas to ## Gotchas, run-only facts to discoveries, no decision number" '
@@ -53,7 +53,7 @@ check "routing: the rendered initializer prompt sends gotchas to ## Gotchas, run
   [[ $i == *"a run-only fact → \`discoveries\` affecting \`\"run\"\`"* && $i == *"says \`record as a new decision\`"* ]]'
 check "routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count" '
   c=$HERE/../prompts/coding.md d=$HERE/../prompts/draft-claude-md.md &&
-  sed -n "/^- \*\*Decisions\.\*\*/,/^- \*\*W/p" "$c" | grep -q "Where things go" && ! grep -q "D<n> \*default\*" "$c" &&
+  sed -n "/^- \*\*Decisions\.\*\*/,/^- \*\*W/p" "$c" | grep "Where things go" > /dev/null && ! grep -q "D<n> \*default\*" "$c" &&
   grep -q "## Where things go" "$d" && grep -q "## Gotchas" "$d" && ! grep -q "test count, duration" "$d"'
 check "routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=" '
   t=$HERE/../templates/project/CLAUDE.md && ! grep -q "<count> tests" "$t" &&
@@ -61,7 +61,7 @@ check "routing: the project template has the block and an empty Gotchas after De
   [[ -z $(sed -n "/^## Gotchas/,/^## /p" "$t" | sed "1d;\$d" | grep -v "^ *$" | grep -v "^<!--.*-->$") ]] &&
   grep -q "^# DECISIONS=" "$HERE/../templates/project/config.sh" && bash -n "$HERE/../templates/project/config.sh"'
 check "routing: this repo has the block (journal/decisions/, never numbered), an empty Gotchas and DECISIONS=journal/decisions" '
-  r=$HERE/.. && sed -n "/^## Where things go/,/^## /p" "$r/CLAUDE.md" | grep -q "journal/decisions/.*never numbered" &&
+  r=$HERE/.. && sed -n "/^## Where things go/,/^## /p" "$r/CLAUDE.md" | grep "journal/decisions/.*never numbered" > /dev/null &&
   grep -qx "## Gotchas" "$r/CLAUDE.md" && grep -qx "DECISIONS=journal/decisions" "$r/.harness/config.sh" &&
   [[ $(node "$MM" store "$r") == journal/decisions ]]'
 suite_end
