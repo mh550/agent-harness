@@ -1,10 +1,14 @@
-# Context pack for `M6-02`
+# Context pack for `M6-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (M6-01, affects M6-02): The stub's B first session tampers with C via a node one-liner that crashes when the list has no C: STUB_REVIEW_LIST (A, B, D, R all in M1) must guard it. → entries.jsonl:27
+- Discovery (M6-02, affects M6-03, M6-04): In check 41, rbig runs after rsmall merged work-A/B/D.txt into main with the same content, so rbig's diff is big-A.txt alone (1 file, 500 lines); rsmall's is 3 files, 3 lines. → entries.jsonl:28
+- Discovery (M6-02, affects M6-03): The gate sits in the loop after the memory gate and before `n=$(( n + 1 ))`; `rdiff` holds the Review diff line (empty for non-review) and is passed as HARNESS_REVIEW_DIFF on the `prompt coding` line only. M6-03's escalation round must set mdl/rdiff itself and skip this block (it runs whenever F kind is review). → entries.jsonl:28
+- Discovery (M6-02, affects M6-03): STUB_REVIEW_FINDINGS is not built yet (M6-03 adds it); B's tamper one-liner now exits 0 when the list has no C. → entries.jsonl:28
+- Discovery (M6-01, affects M6-03, M6-04): summary.mjs counts a feature with more than one real coding row as rework (summary.mjs:164): the review escalation round would mark every escalated review as rework unless M6-04 subtracts its `one round on` notes (in the plan). → entries.jsonl:27
+- Discovery (M6-01, affects M6-03): The escalation round must un-pass the review when deciding to escalate, else verify_ready verifies the milestone on the Sonnet verdict before the round runs; the plan does this and the escalated round is picked from $STATE/review-escalate before F next. → entries.jsonl:27
 - Discovery (M5-01, affects run): Scratch check.out is overwritten by every suite run; a fixture meant to be 'the output at init' has to be copied at init or regenerated from the start tree in a full clone. → entries.jsonl:25
 - Discovery (M5-02, affects run): In tests/checks/40 the contract run's suite ignores BROKEN, so its C merges a BROKEN file into origin main; a later run in that file whose suite tests BROKEN must `git rm` it first (the cont setup does). → entries.jsonl:23
 - Discovery (M5-02, affects M5, run): Review Minor left: run_init pins testcount-source from the first check.out even when that suite was red (a failed first suite notes `no match`/`parsed (jest)` for the whole run); green markers written before a contract line (or a CHECK_CMD change via run.env, not in the tree key) keep the scraped count until the tree changes. → entries.jsonl:23
@@ -23,12 +27,4 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): Decision files: journal/decisions/<YYYY-MM-DD>-<slug>.md, title line, provenance line in italics (run, feature, spec section, plan), then `- **Finding:**`, `- **Choice:**`, `- **Rejected:**` bullets (see journal/decisions/2026-10-26-real-test-counts.md). Never number one, never append to journal/decisions.md. Plans: docs/plans/<date>-<milestone>-<topic>.md, header as docs/plans/2026-10-26-F2-initializer-verify.md (`Checked against main at <sha>`, `What main already has`, one feature per item). → entries.jsonl:1
 - Discovery (init, affects run): Lint rules (features.mjs lint) flag a path in `~` or $HOME in a step (outside-repo) and a grep whose pattern matches the step's own text when the target is progress.md, entries.jsonl, context.md or feature_list.json (self-match); harness-log.md is not a quoting file. Steps here name checks by their check name instead; a session's `proposed_changes` is where a wrong step goes. → entries.jsonl:1
 
-## What it builds on
-
-- 2026-10-27 00:38 · M6-01 · passes: Wrote docs/plans/2026-10-26-M6-review-gate.md: diff measure (git diff --shortstat origin/main...HEAD, run dir left out), model choice after the pick (sonnet <400, opus ≥400), Sonnet escalation via a pending-round state file (no attempt, once per feature), summary/ledger fields, stub flags, check 41's eight checks, evals/NEXT.md §5. Plan only; tests 483 → 483.; tests 483 → 483; files docs/plans/2026-10-26-M6-review-gate.md → entries.jsonl:27
-
-## Lately in the run
-
-- 2026-10-27 00:29 · verify M5 · passes: M5-01 and M5-02 hold. Fixture check-agent-harness gives 395 generic; contract 1115, jest 7, pytest 4, empty none. Checks 06 and 40 pass (14/14). Init suite's one red file (13, 66 checks) passed alone on rerun: load flake. → entries.jsonl:26
-
-_1 items left out at 8192 bytes: entries.jsonl has them all._
+_3 items left out at 8192 bytes: entries.jsonl has them all._
