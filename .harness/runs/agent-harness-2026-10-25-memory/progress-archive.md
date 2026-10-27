@@ -9,6 +9,109 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 22:27 · verify M3 · passes
+
+All five M3 features hold: full suite green (455), 38-run-17 12/12 and 12-journal 15/15 re-run, docs/decisions/plan present, bash -n and node --check ok.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M3-01 | 1 | re-ran/read: plan exists, defines gotchasDiff/note/driver placement (grep docs/plans/2026-10-26-M3-gotchas-and-pack.md §M3-02) | holds as described | yes |
+| M3-01 | 2 | re-ran/read: plan fixes resolved field and pack drop (§M3-03 lines 87-95) | holds as described | yes |
+| M3-01 | 3 | re-ran/read: plan fixes Promote to Gotchas, Current rules, VERIFY cap (§M3-03/04) | holds as described | yes |
+| M3-01 | 4 | re-ran/read: plan names stub flags, check file 38, existing checks | holds as described | yes |
+| M3-01 | 5 | re-ran/read: suite green: init 455 tests | holds as described | yes |
+| M3-02 | 1 | re-ran/read: coding.md Finish step 3 Gotchas; check `coding prompt: the Finish step adds one Gotchas line` PASS | holds as described | yes |
+| M3-02 | 2 | re-ran/read: check `gotchasDiff: added, edited, deleted and no section` PASS | holds as described | yes |
+| M3-02 | 3 | re-ran/read: checks `a stub session that adds a Gotchas line is noted` and `a session that leaves CLAUDE.md alone gets no gotchas note` PASS | holds as described | yes |
+| M3-02 | 4 | re-ran/read: architecture.md line 264 Gotchas row; decisions/2026-10-26-gotchas-in-place.md exists | holds as described | yes |
+| M3-02 | 5 | re-ran/read: suite green | holds as described | yes |
+| M3-03 | 1 | re-ran/read: check `entries.mjs: resolved is an array of strings and normalize keeps it` PASS (15/15 in 12-journal) | holds as described | yes |
+| M3-03 | 2 | re-ran/read: check `a resolved question is gone from the next context.md` PASS | holds as described | yes |
+| M3-03 | 3 | re-ran/read: check `a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it` PASS | holds as described | yes |
+| M3-03 | 4 | re-ran/read: coding.md lines 70,89,97 and where-things-go-readonly.md line 4 name project / Promote to Gotchas; check `coding and verify prompts name resolved…` PA | holds as described | yes |
+| M3-03 | 5 | re-ran/read: suite green | holds as described | yes |
+| M3-04 | 1 | re-ran/read: check `context.md lists the decisions store rules newest first` PASS | holds as described | yes |
+| M3-04 | 2 | re-ran/read: check `CONTEXT_PACK_BYTES=1024 holds…` PASS | holds as described | yes |
+| M3-04 | 3 | re-ran/read: config.sh line 30, templates/user/config.sh line 23; check `a verify pack lists failed rows before dead ends` PASS | holds as described | yes |
+| M3-04 | 4 | re-ran/read: dead-end checks and 29 legacy checks pass in the full suite (455 green) | holds as described | yes |
+| M3-04 | 5 | re-ran/read: architecture.md line 89 seven parts + verify cap; pack-current-rules decision exists | holds as described | yes |
+| M3-04 | 6 | re-ran/read: suite green | holds as described | yes |
+| M3-05 | 1 | re-ran/read: docs/plans/2026-10-26-M3-review.md records 0 Critical, 2 Important, 9 Minor | holds as described | yes |
+| M3-05 | 2 | re-ran/read: Important fixes have RED/GREEN check `entries.mjs: a Gotchas line carries a fact in any case or markup…` PASS | holds as described | yes |
+| M3-05 | 3 | re-ran/read: review doc exists; architecture §4/§7, decisions present | holds as described | yes |
+| M3-05 | 4 | re-ran/read: bash -n and node --check all ok (run) | holds as described | yes |
+| M3-05 | 5 | re-ran/read: suite green | holds as described | yes |
+
+- *222650-verify-M3 · claude-sonnet-5-5*
+
+### 2026-10-26 22:22 · M3-05 · passes
+
+Opus review of the M3 diff (706a001..HEAD): 0 Critical, 2 Important, 9 Minor; no second round. Fixed both Important (a Gotchas line carries a fact in any case/markup/wrap; `resolved` dismisses a promoted fact) and 7 Minor RED→GREEN; docs and the three M3 decision files updated. Tests 451 → 455.
+
+- **Files:** lib/entries.mjs, lib/memlint.mjs, prompts/coding.md, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, docs/plans/2026-10-26-M3-review.md, journal/decisions/2026-10-26-gotchas-in-place.md, journal/decisions/2026-10-26-resolved-and-project-facts.md, journal/decisions/2026-10-26-pack-current-rules.md
+- **Verified:** Each new check was watched failing, then passing: `entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it` (Important 1, 2; Minor 3, 4), `gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section` (1, 6), `entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack` (5), `memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row` (7; old memlint gives d.md:13,9,5,3,1). All 7 ~/projects/*/docs/decisions.md give the same currentRules output before and after (md5). bash -n on driver.sh, prompt.sh, stub-claude.sh, checks 12 and 38; node --check on entries.mjs and memlint.mjs. Full suite: check.sh green in 257 s, 455 tests.
+- **Tests:** 451 → 455
+- **Discovery** (affects M4): memlint gotchasLines now joins an indented continuation line onto its bullet and ends the section at a `# ` heading too; entries.mjs pack matches a promoted fact to a Gotchas line by its first 40 characters lowercased with backticks, * and _ removed (key/loose in pack).
+- **Discovery** (affects M4): currentRules: a heading never replaces a bullet or table row of the same D<n>, and D1—D6 / D1 – D6 / D1 to D6 are group headings; M4's lint can reuse the same id regex.
+- **Proposed change:** The debrief (lib/debrief.sh:124) still lists questions a later entry resolved; it could skip them now that progress.md renders `Resolved:` items (review finding 4, left).
+- *14-M3-05 · claude-opus-5-5*
+
+### 2026-10-26 22:07 · M3-04 · passes
+
+context.md ends with `Current rules` (memlint currentRules/readRules: dir store by dated name, file store's D<n> headings, bullets, table rows incl. `*default*`; ≤cap/4, rest one older-rules line). Verify packs use CONTEXT_PACK_BYTES_VERIFY=16384 with failed rows first. Stub STUB_VERIFY_FAIL_ROW, 3 fixtures, decision file, arch/README. Tests 445 → 451.
+
+- **Files:** lib/memlint.mjs, lib/entries.mjs, lib/driver.sh, lib/config.sh, templates/user/config.sh, tests/stub-claude.sh, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/decisions-rane.md, tests/fixtures/decisions-voice-concierge.md, tests/fixtures/decisions-dj.md, tests/fixtures/check-names.txt, +3 more
+- **Verified:** check.sh green, 451 tests (256 s); new checks watched red first; readRules on the real stores gives rane 24, voice-concierge 23, dj 53 (newest D53); an Opus review fuzzed pack() 20k times with no cap breach; its Important finding (dj `| D36 *default* |` rows dropped) fixed red→green along with CRLF, undated dir files, per-file read errors, ref length
+- **Tests:** 445 → 451
+- **Dead end:** appending CONTEXT_PACK_BYTES=1024 to $T/proj's config after the gotcha run and pushing — that run had merged PRs into origin main, so the push was refused; pull --ff-only first
+- **Dead end:** proving `items left out` at 1024 with the stub's default entries — the stub's packs stay under 864 bytes; STUB_VERIFY_FAIL_ROW's row has a long `saw`, as real rows quote output
+- **Discovery** (affects M4, M3-05): memlint.mjs exports currentRules(store, input) and readRules(worktree) → [{text, ref}] newest first; M4's lint can reuse the D<n> line parser (heading, bullet with wrapped lines, table row with an optional `*default*` in the id cell).
+- **Discovery** (affects M3-05, M4): Current rules leaves out unnumbered headings (voice-concierge `## LLM provider: …`) and B<n> rulings; in a pack that already stopped (most real verify packs at 8 KB did) the part is omitted whole.
+- **Discovery** (affects M3-05, run): In tests/checks/38, a change to $T/proj after a stub run must `git pull -q --ff-only origin main` first: the run merged its PRs into origin main.
+- **Question for Michael:** Should Current rules also list unnumbered decision headings (voice-concierge's `## LLM provider: Anthropic direct (Michael, …)`), or is numbering them M4's lint's job? Default taken: numbered only.
+- **Proposed change:** M3-04 step 3's `context.md for M1:` byte count exceeding 8192 can't be observed in a stub run; the check proves the verify cap with CONTEXT_PACK_BYTES=1024 (verify pack > 1024 and ≤ 16384, harness-log count > 1024) instead
+- *13-M3-04 · claude-opus-5-5*
+
+### 2026-10-26 21:46 · M3-03 · passes
+
+entries.mjs: `resolved` (array of strings, kept only when non-empty) drops a question a later entry names (whitespace-folded); `project` discoveries go to a coding-only `Promote to Gotchas` part (cap/8 share, long facts cut, dedup by first 40 chars) until a CLAUDE.md Gotchas line holds them. Stub flags STUB_ASK/RESOLVE/PROJECT_FACT, prompts, arch, README, decision file. Tests 439 → 445.
+
+- **Files:** lib/entries.mjs, tests/stub-claude.sh, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/check-names.txt, prompts/coding.md, prompts/parts/where-things-go-readonly.md, prompts/parts/where-things-go-override.md, docs/architecture.md, README.md, journal/decisions/2026-10-26-resolved-and-project-facts.md
+- **Verified:** lib/check.sh full run green, 445 tests (248 s); the 6 new checks watched failing first (the two stub-run checks and the prompt check against HEAD's entries.mjs/prompts, the long-fact case before its fix); Opus review of the diff: 1 Important fixed (a long project fact was dropped, now cut to its share)
+- **Tests:** 439 → 445
+- **Dead end:** Promote items as whole strings checked only against the cap/8 share — a fact over ~1000 bytes (or ~80 at cap 1024) never fit and, being filtered out of Discoveries, vanished from every coding pack; items are now cut to the share's room (≥ 32 bytes)
+- **Discovery** (affects M3-04): pack() parts may carry a third element, a byte share: an item past it is counted in items left out without stopping the pack; Promote to Gotchas items are {fact, ref} objects cut to the share's room. M3-04's Current rules (cap/4) can reuse the share slot.
+- **Discovery** (affects M3-04, M3-05): lib/eval.sh:134 packs from <clone>/.harness/runs/<run>, which passes the CLAUDE.md guard, so an eval probe's context.md includes Promote to Gotchas (and will include Current rules): the plan said probes read none.
+- **Question for Michael:** The eval probe's context.md now reads the clone's CLAUDE.md Gotchas (it shows what the session would read). Keep that, or make probes read none as the plan said?
+- **Proposed change:** M3-03 step 2 names `logs/NN-<id>.context.md`, but after STUB_RESOLVE=C's 05-C passes there is no later C coding session; the check reads the next session's pack, `logs/<hhmmss>-verify-M2.context.md`, as the plan says.
+- *12-M3-03 · claude-opus-5-5*
+
+### 2026-10-26 21:23 · M3-02 · passes
+
+Finish step 3 in prompts/coding.md: one ## Gotchas line (≤160 chars, ends (<run> <date>), 15 max, edit in place, no rewrite). memlint.mjs gains gotchasLines/gotchasDiff (multiset; a replace is ~1) and `gotchas <before> <after>`; driver gotchas() after journal coding notes `<id>: gotchas +a ~e -d`. STUB_GOTCHA flag, arch §7 row, decision file. Tests 435 → 439.
+
+- **Files:** prompts/coding.md, lib/memlint.mjs, lib/driver.sh, tests/stub-claude.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-26-gotchas-in-place.md
+- **Verified:** 4 new checks in tests/checks/38 written first, all 4 FAIL, then PASS; full bash tests/run.sh 439/439 (248 s) and lib/check.sh green, 439 tests; bash -n on driver.sh, stub-claude.sh, check 38; node --check memlint.mjs
+- **Tests:** 435 → 439
+- **Discovery** (affects M3-03, M3-04): tests/checks/38 runs one stub run `gotcha` (STUB_GOTCHA=B); M3-03/M3-04 checks can add their own runs below it. With KEEP_SCRATCH=1 the stub's sessions.log is at $T/scratch/proj/<run>/sessions.log.
+- **Discovery** (affects M3-03): coding.md Finish steps are now 1 suite-verify, 2 suite, 3 Gotchas, 4 entry.json, 5 commit; the M3-03 Promote-to-Gotchas sentence belongs in step 3.
+- *11-M3-02 · claude-opus-5-5*
+
+### 2026-10-26 21:11 · M3-01 · passes
+
+Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a ~e -d, a replace is one edit) and the driver's gotchas() after journal coding; resolved (exact after flattening, later entries only); Promote to Gotchas (coding packs, cap/8); Current rules (last, cap/4, three file shapes); verify cap 16384, failed rows first; stub flags; check names.
+
+- **Files:** docs/plans/2026-10-26-M3-gotchas-and-pack.md
+- **Verified:** Each step's terms checked against the plan text; line refs re-grepped (pack lib/entries.mjs:216-269, CLI :314-325, coding loop lib/driver.sh:737-745); check.sh green, 435 tests (cached: plans are outside the key).
+- **Tests:** 435 → 435
+- **Discovery** (affects M3-04, M4): Real decisions.md stores have three decision-line shapes: `## D7 *default*: …` headings (voice-concierge), `- **D1 · …**` bullets (rane-one-mixxx), `| D24 | … |` table rows (dj-crate-streaming); M3-04's parser and fixtures cover all three.
+- **Discovery** (affects M3-03, M3-04): pack CLI must read CLAUDE.md and the decisions store only when the run dir sits at <wt>/.harness/runs/<run>; tests/checks/12 calls `pack` on $T/pk and $T/jr/legacy, whose third parent is outside the throwaway tree.
+- **Discovery** (affects M3-02): Gotchas-step text cannot use {{RUN}} (no such prompt variable); the run id is on the `Run:` line under *This run*.
+- **Question for Michael:** Promote to Gotchas is in coding packs only (a verify cannot write CLAUDE.md), and a project raising CONTEXT_PACK_BYTES above 16384 does not raise the verify cap: OK as defaults?
+- **Proposed change:** M3-03 step 4 should also name `resolved` in prompts/coding.md, and M3-03 should write journal/decisions/<date>-resolved-and-project-facts.md (a behaviour change gets a decision file).
+- **Proposed change:** M3-04 step 3's 'byte count may exceed 8192' cannot be observed in a stub run; the plan proves the verify cap with CONTEXT_PACK_BYTES=1024 (verify pack > 1024, coding packs ≤ 1024) instead.
+- *10-M3-01 · claude-opus-5-5*
+
 ### 2026-10-26 21:06 · verify M2 · passes
 
 All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/templates/docs/decision file read and match each step.

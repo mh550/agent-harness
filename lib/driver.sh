@@ -273,16 +273,28 @@ journal() {
   return 0
 }
 
+# <feature> <start commit> → a note when the `## Gotchas` lines of CLAUDE.md differ between the session's start commit
+# and HEAD (lib/memlint.mjs gotchasDiff; decisions/2026-10-26-gotchas-in-place). Coding sessions only: verify and retro
+# are read-only, restrict reverts their CLAUDE.md.
+gotchas() {
+  local d
+  git show "$2:CLAUDE.md" > "$SCRATCH/gotchas-before.md" 2> /dev/null || : > "$SCRATCH/gotchas-before.md"
+  git show HEAD:CLAUDE.md > "$SCRATCH/gotchas-after.md" 2> /dev/null || : > "$SCRATCH/gotchas-after.md"
+  d=$(node "$HARNESS_HOME/lib/memlint.mjs" gotchas "$SCRATCH/gotchas-before.md" "$SCRATCH/gotchas-after.md") && [[ -n $d ]] && note "$1: gotchas $d"
+  return 0
+}
+
 # <m> → how many verify entries the milestone has in entries.jsonl (the rendered progress.md shows only the 15 newest in
 # full). A run with a list always has the file by its first verify: the start-up or the initializer's append creates it
 vcount() {
   jq -cR --arg m "$1" 'fromjson? | objects | select(.kind == "verify" and .feature == $m)' "$RUN_DIR/entries.jsonl" 2> /dev/null | wc -l
 }
 
-# <feature or milestone> → <run>/context.md, the bounded pack of the journal the next coding or verify session reads first
-# (lib/entries.mjs pack, at most CONTEXT_PACK_BYTES; decisions/2026-10-22-context-pack). Committed with the run record.
+# <feature or milestone> [<cap>] → <run>/context.md, the bounded pack of the journal the next coding or verify session
+# reads first (lib/entries.mjs pack, at most <cap>, default CONTEXT_PACK_BYTES; verify passes CONTEXT_PACK_BYTES_VERIFY:
+# decisions/2026-10-22-context-pack, decisions/2026-10-26-pack-current-rules). Committed with the run record.
 context() {
-  if node "$HARNESS_HOME/lib/entries.mjs" pack "$RUN_DIR" "$1" "$CONTEXT_PACK_BYTES" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
+  if node "$HARNESS_HOME/lib/entries.mjs" pack "$RUN_DIR" "$1" "${2:-$CONTEXT_PACK_BYTES}" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
     mv -f "$SCRATCH/context.md" "$RUN_DIR/context.md"
     note "context.md for $1: $(wc -c < "$RUN_DIR/context.md") bytes$(sed -n 's/^_\([0-9]*\) items left out at .*/, \1 items left out/p' "$RUN_DIR/context.md")"
   else   # never a stale pack: the session is sent to the full record instead
@@ -406,7 +418,7 @@ verify() {
   run_init fresh
   for model in "${models[@]}"; do
     F snapshot "$LIST" > "$STATE/before.json"
-    context "$m"   # each round: an escalated verify's pack has the first round's entry
+    context "$m" "$CONTEXT_PACK_BYTES_VERIFY"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
     mem_gate || run_init   # before the clock, so the prompt's time is the session's; a wait stopped the services
     HARNESS_CLOCK=$(clock "verify round $rounds of $maxr") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
@@ -743,6 +755,7 @@ while :; do
   session coding "$mdl" "$slog" "$id"
   commit_all "WIP: $id — uncommitted at session end (harness)"
   journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
+  gotchas "$id" "$sstart"   # a limited session's edit is noted too
 
   # A usage/rate limit, an API error or a session that did no work is not the feature's fault: give the attempt back.
   if why=$(MET limit "$slog" "$S_WALL" "$S_EXIT"); then

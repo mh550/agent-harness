@@ -2,6 +2,7 @@
 Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
+CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
 DEBRIEF_PAGE_CMD gets the page
 DESK=0 by default, DESK_MODEL=opus
 DESK=0: no desk
@@ -49,6 +50,7 @@ a listed worktree whose directory is gone never ends gc: every later step still 
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
 a park notification: title, question, answer command, click and Edit INBOX action
+a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it
 a proposed merge: ready to merge, click = the PR, default priority
 a queued continuation: only the answer command
 a reason after any separator is kept whole, " · 2026-" in it included
@@ -62,6 +64,7 @@ a request for a run with an automatic continuation queued makes that one request
 a request queued after the stop (before the driver acts on it) stays requested
 a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)
 a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)
+a resolved question is gone from the next context.md
 a run still ending: answer now, continue once it has ended
 a run still going is covered again next time
 a run still going: only the answer command
@@ -72,6 +75,7 @@ a scope systemd refuses after the probe: the session runs bare and harness-log.m
 a second event reuses the desk window
 a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)
 a session that dies at startup: failed, and no usage-limit window for the box
+a session that leaves CLAUDE.md alone gets no gotchas note
 a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
 a session's edits to the journal are restored (E4 review F1)
 a stale green marker is caught at verify: M1 red, not tagged
@@ -83,10 +87,12 @@ a stop reason with | keeps its card on the debrief page and is one cell in repor
 a stop reason's words are never read as a feature's cause (A failed the re-check)
 a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason
 a stop without a reason says just: stopped by Michael (the note and ended)
+a stub session that adds a Gotchas line is noted
 a successful post: a line in run.log only
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
 a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
+a verify pack lists failed rows before dead ends
 a waiting-on-Michael run end: priority high, click = report.md
 a window of the run's name that never showed a URL is replaced
 a window past the 5 h cap: no session (the next debrief covers it)
@@ -127,8 +133,11 @@ check.sh: a subset call is scoped too and never cached
 check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
 check.sh: the cached line names the key's ignore list only when it isn't the default
+coding and verify prompts name resolved, project facts and Promote to Gotchas
 coding prompt names CLAUDE.md but doesn't paste it
+coding prompt: the Finish step adds one Gotchas line
 context.md carries the earlier attempt's dead end
+context.md lists the decisions store's rules newest first
 continuation queued: keeps attempts, brief marked as the debrief's
 continue after a no-list end merges main first
 continue finishes a paused run
@@ -148,8 +157,15 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
+entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
+entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
+entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
 entries.mjs: a damaged journal line is skipped, never fused or fatal
+entries.mjs: a milestone pack lists failed verify rows before dead ends
 entries.mjs: progress renders 15 in full and the rest as archive lines
+entries.mjs: resolved is an array of strings and normalize keeps it
+entries.mjs: the pack drops a question a later entry resolves
 entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap
 entries.mjs: validate accepts the schema and names what is wrong
 entries: the driver appends each session's entry
@@ -185,6 +201,8 @@ gc never removes a worktree that is no run's (its branch isn't harness/<run>), e
 gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
 gc removed the finished worktree
 gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+gotchasDiff: added, edited, deleted and no section
+gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
 harness backlog import of the seed file gives 8 rows, and 8 again on a second import
 harness backlog set flips test-counts to specced and list shows the spec
 harness backlog set with an unknown id, a bad status or a missing argument exits 1, store byte-identical
@@ -239,6 +257,8 @@ lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
+memlint: currentRules reads a directory store and the three file shapes newest first
+memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note

@@ -105,7 +105,7 @@
         "the plan fixes the pack's new parts: `Promote to Gotchas` (discoveries whose `affects` includes `project`, shown until a `## Gotchas` line of the worktree's CLAUDE.md shares their first 40 characters) and `Current rules` (decisionsStore's headings and one-line rules, newest first, last in priority, at most a quarter of the cap), and `CONTEXT_PACK_BYTES_VERIFY=16384` for milestone packs with failed evidence rows first",
         "the plan names the stub flags (a coding session that adds a Gotchas line, one that resolves a question, one that records a `project` discovery, a verify whose entry has a `holds: false` row), the check file tests/checks/38-run-17-gotchas-and-pack-m3.sh, and the existing checks that must keep passing: tests/checks/12-journal-pure-e4-entrys.sh and the four `context.md carries the earlier attempt's dead end` checks",
         "the suite is green" ],
-      "after": ["M2"], "passes": false },
+      "after": ["M2"], "passes": true },
 
     { "id": "M3-02", "milestone": "M3", "kind": "build", "model": "opus",
       "description": "prompts/coding.md's Finish step adds or edits one `## Gotchas` line (≤ 160 characters, ending `(<run> <date>)`, 15 lines at most, never a wholesale rewrite) and the driver notes `<feature>: gotchas +<a> ~<e> -<d>` when the section changed between a session's start and end commits.",
@@ -115,7 +115,7 @@
         "a stub coding session with `STUB_GOTCHA=<id>` appends a `## Gotchas` line to the project's CLAUDE.md and the run's harness-log.md has `<id>: gotchas +1 ~0 -0`; a session that touches CLAUDE.md nowhere yields no `gotchas` note (two checks)",
         "docs/architecture.md §7 gains a `Gotchas` row (trigger, the note, `gotchasDiff`) and journal/decisions/<date>-gotchas-in-place.md exists (finding · choice · rejected)",
         "the suite is green" ],
-      "after": ["M3-01"], "passes": false },
+      "after": ["M3-01"], "passes": true },
 
     { "id": "M3-03", "milestone": "M3", "kind": "build", "model": "opus",
       "description": "A session marks an answered question resolved in its entry and the context pack drops it; `project` is a valid `affects` value and the pack lists such discoveries under `Promote to Gotchas` until a `## Gotchas` line carries them.",
@@ -125,7 +125,7 @@
         "pack() has a part `Promote to Gotchas` listing discoveries whose `affects` includes `project`, each ending `→ entries.jsonl:<line>`; a check shows a stub `project` discovery (`STUB_PROJECT_FACT=<id>`) appears there in the next context.md and is gone once the project's CLAUDE.md `## Gotchas` has a line sharing its first 40 characters",
         "prompts/coding.md's entry example and its `affects` sentence name `project` (a fact that outlives the run) and the Finish step says to write `Promote to Gotchas` items into `## Gotchas`; prompts/parts/where-things-go-readonly.md says a verify's durable fact goes to `discoveries` with `project`",
         "the suite is green" ],
-      "after": ["M3-02"], "passes": false },
+      "after": ["M3-02"], "passes": true },
 
     { "id": "M3-04", "milestone": "M3", "kind": "build", "model": "opus",
       "description": "context.md gains a `Current rules` part with the decisions store's current lines (headings and their one-line rule, newest first) within the cap, and verify packs use CONTEXT_PACK_BYTES_VERIFY (16384) with failed evidence rows first.",
@@ -136,7 +136,7 @@
         "the four `context.md carries the earlier attempt's dead end` checks and tests/checks/29-run-15-resumed-run.sh's legacy-run checks pass unchanged",
         "docs/architecture.md §4's Context pack row lists the seven parts and the verify cap; journal/decisions/<date>-pack-current-rules.md exists (finding · choice · rejected)",
         "the suite is green" ],
-      "after": ["M3-03"], "passes": false },
+      "after": ["M3-03"], "passes": true },
 
     { "id": "M3-05", "milestone": "M3", "kind": "review", "model": "opus",
       "description": "An Opus review of the M3 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, docs touched by M3 brought in line.",
@@ -146,7 +146,7 @@
         "docs/plans/2026-10-26-M3-review.md records the findings and their fixes; docs/architecture.md §4 and §7, README.md and the two M3 decision files describe M3 as merged",
         "`bash -n` passes on lib/driver.sh, lib/prompt.sh, tests/stub-claude.sh and tests/checks/38-run-17-gotchas-and-pack-m3.sh; `node --check` passes on lib/entries.mjs and lib/memlint.mjs",
         "the suite is green" ],
-      "after": ["M3-04"], "passes": false },
+      "after": ["M3-04"], "passes": true },
 
     { "id": "M4-01", "milestone": "M4", "kind": "build", "model": "opus",
       "description": "lib/memlint.mjs runs four deterministic checks on a worktree (CLAUDE.md size and Gotchas length, stored test counts, night-scope phrases, decisions-store header and supersession markers without `Updated in place`) and prints one finding per line, proven on fixtures trimmed from the projects' files as they were before chunk 3 Part 2 tidied them.",

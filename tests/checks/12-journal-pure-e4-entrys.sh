@@ -73,6 +73,91 @@ check "entries.mjs: the pack keeps a feature's dead end under a flood and respec
   && node "$HERE/../lib/entries.mjs" pack "$T/pk" A > "$T/pk.md" && grep -qx -- "- Dead end (A, 01-A): t — w → entries.jsonl:1" "$T/pk.md" \
   && grep -q -- "^- x · A · passes: a2 → entries.jsonl:3$" "$T/pk.md" && grep -qx -- "- use 7900 → INBOX.md" "$T/pk.md" \
   && [[ $(node "$HERE/../lib/entries.mjs" pack "$T/jr/legacy" Z | head -1) == "# Context pack for \`Z\`" ]]'
+# resolved questions (M3-03): `resolved` is an array of strings kept by normalize only when non-empty; `project` is a valid affects
+ENRS='import { validate as v, normalize as nz } from "'$HERE'/../lib/entries.mjs"; const c = { feature: "C", kind: "coding", outcome: "passes", summary: "s" };
+  const r = nz({ ...c, questions: ["q"], resolved: ["Should X default to off?"] }), k = Object.keys(r);
+  process.exit(v({ ...c, resolved: ["Should X default to off?"] }).length === 0 && v({ ...c, resolved: "x" }).join() === "resolved: not an array of strings"
+    && JSON.stringify(r.resolved) === "[\"Should X default to off?\"]" && k.indexOf("resolved") === k.indexOf("questions") + 1 && !("resolved" in nz(c)) && !("resolved" in nz({ ...c, resolved: [] }))
+    && v({ ...c, discoveries: [{ text: "t", affects: ["project"] }] }).length === 0 && /"project"/.test(v({ ...c, discoveries: [{ text: "t", affects: [] }] })[0]) ? 0 : 1);'
+check "entries.mjs: resolved is an array of strings and normalize keeps it" 'node --input-type=module -e "$ENRS"'
+# a question shows until a later entry resolves it (whitespace folded); an earlier entry's resolved doesn't count
+ENRQ='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (x = {}) => ({ feature: "X", kind: "coding", outcome: "not yet", summary: "x", session: "s", at: "t", ...x });
+  const list = [{ id: "X", milestone: "M1" }], q = "Should X default to off?", has = es => pack(es, { feature: "X", list }).includes("Question (X): " + q);
+  process.exit(has([c({ questions: [q] })]) && !has([c({ questions: [q] }), c({ resolved: [" Should  X default\nto off? "] })]) && has([c({ resolved: [q] }), c({ questions: [q] })])
+    && has([c({ questions: [q] }), c({ resolved: ["Should X"] })]) && !has([c({ questions: [q] }), { feature: "M1", kind: "verify", outcome: "passes", summary: "v", resolved: [q] }]) ? 0 : 1);'
+check "entries.mjs: the pack drops a question a later entry resolves" 'node --input-type=module -e "$ENRQ"'
+# Promote to Gotchas (M3-03): project discoveries in a coding pack, newest first, one per first 40 characters, left out once a
+# Gotchas line carries them, at most cap/8 bytes (the rest counted, the pack goes on); a milestone pack has no such part
+ENPG='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (f, d) => ({ feature: f, kind: "coding", outcome: "passes", summary: f + " done", session: "s", at: "t", discoveries: d });
+  const list = [{ id: "X", milestone: "M1" }, { id: "Y", milestone: "M1" }], P = t => ({ text: t, affects: ["project"] }), sec = (p, t) => (p.split("## " + t + "\n")[1] ?? "").split("\n## ")[0];
+  const e = [c("Y", [P("old fact about the port being 7900 for every run here"), { text: "for X only", affects: ["X"] }]), c("Y", [P("old fact about the port being 7900 for every run, newer wording")]), c("Y", [P("the stub writes work files")])];
+  const p = pack(e, { feature: "X", list }), pr = sec(p, "Promote to Gotchas"), ls = pr.split("\n").filter(l => l.startsWith("- "));
+  const g = pack(e, { feature: "X", list, gotchas: ["- note: the stub writes work files (r 2026-10-26)"] }), m = pack(e, { feature: "M1", list });
+  const many = Array.from({ length: 30 }, (_, i) => c("Y", [P(i + " " + "z".repeat(300))])), f = pack([...many, c("Y", [{ text: "late run fact", affects: ["run"] }])], { feature: "X", list, cap: 4096 });
+  process.exit(ls.length === 2 && ls[0] === "- the stub writes work files → entries.jsonl:3" && ls[1].includes("newer wording → entries.jsonl:2") && !sec(p, "Discoveries for this feature").includes("fact")
+    && sec(p, "Discoveries for this feature").includes("for X only") && p.indexOf("## Promote to Gotchas") > p.indexOf("## Discoveries") && p.indexOf("## Promote to Gotchas") < p.indexOf("## Lately")
+    && !sec(g, "Promote to Gotchas").includes("stub writes") && sec(g, "Promote to Gotchas").includes("newer wording") && !m.includes("Promote to Gotchas")
+    && Buffer.byteLength(sec(f, "Promote to Gotchas")) <= 512 && f.includes("## Lately in the run") && /^_\d+ items left out at 4096 bytes/m.test(f)
+    && [[8192, 1000], [1024, 100]].every(([k, n]) => { const q = pack([c("Y", [P("a".repeat(n))])], { feature: "X", list, cap: k }), s = sec(q, "Promote to Gotchas");
+      return /^- a+… → entries\.jsonl:1$/m.test(s) && Buffer.byteLength(s) <= k / 8 && !q.includes("items left out"); }) ? 0 : 1);'
+check "entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them" 'node --input-type=module -e "$ENPG"'
+# M3 review (M3-05): a Gotchas line carries a fact whatever its case, backticks or emphasis; a later entry's `resolved`
+# dismisses a promoted fact (by its first 40 characters) or a question copied with the line's ` → entries.jsonl:<n>`,
+# its `Question (<id>): ` lead or as cut with `…`; progress.md shows what an entry resolved
+ENRV='import { pack, renderEntry } from "'$HERE'/../lib/entries.mjs"; const c = (f, x = {}) => ({ feature: f, kind: "coding", outcome: "passes", summary: f + " done", session: "s", at: "t", ...x });
+  const list = [{ id: "X", milestone: "M1" }, { id: "Y", milestone: "M1" }], P = t => ({ text: t, affects: ["project"] }), sec = (p, t) => (p.split("## " + t + "\n")[1] ?? "").split("\n## ")[0];
+  const fact = "the stub writes work files at the repo root, one per feature", promoted = (es, g = []) => sec(pack(es, { feature: "X", list, gotchas: g }), "Promote to Gotchas").includes("stub writes");
+  const q = "Should X default to off? It decides whether the queue starts a run on its own at night", long = "Is it " + "w".repeat(1100) + "?";
+  const asked = (es, t = q) => pack(es, { feature: "X", list }).includes("Question (X): " + t.slice(0, 40));
+  process.exit(promoted([c("Y", { discoveries: [P(fact)] })]) && !promoted([c("Y", { discoveries: [P(fact)] })], ["- The `stub` **writes** work  files at the repo root, one per feature (r 2026-10-26)"])
+    && !promoted([c("Y", { discoveries: [P(fact)] }), c("X", { resolved: ["- " + fact + " → entries.jsonl:1"] })]) && !promoted([c("Y", { discoveries: [P(fact)] }), c("X", { resolved: [fact.slice(0, 45) + " (wrong now)"] })])
+    && promoted([c("X", { resolved: [fact] }), c("Y", { discoveries: [P(fact)] })])
+    && !asked([c("X", { questions: [q] }), c("X", { resolved: ["- Question (X): " + q + " → entries.jsonl:1"] })]) && !asked([c("X", { questions: [q] }), c("X", { resolved: [q + " → entries.jsonl:1"] })])
+    && asked([c("X", { questions: [long] })], long) && !asked([c("X", { questions: [long] }), c("X", { resolved: [long.slice(0, 900) + "…"] })], long)
+    && asked([c("X", { questions: [q] }), c("X", { resolved: ["Should X…"] })])
+    && renderEntry(c("X", { resolved: [q] })).includes("- **Resolved:** " + q) ? 0 : 1);'
+check "entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it" 'node --input-type=module -e "$ENRV"'
+# Current rules (M3-04): the decisions store's lines newest first, from a directory (each file's `# ` title, by name) or
+# a file in the three shapes the projects use (fixtures copied from rane-one-mixxx, voice-concierge, dj-crate-streaming)
+MLCR='import { currentRules as cr } from "'$HERE'/../lib/memlint.mjs"; import { readFileSync as rf } from "node:fs"; const fx = n => rf("'$HERE'/fixtures/decisions-" + n + ".md", "utf8");
+  const F = { path: "docs/decisions.md", kind: "file" }, s = r => r.map(x => x.text + " → " + x.ref).join("\n");
+  const rane = cr(F, fx("rane")), vc = cr(F, fx("voice-concierge")), dj = cr(F, fx("dj"));
+  const dir = cr({ path: "journal/decisions", kind: "dir" }, [{ name: "2026-10-20-a.md", text: "# Alpha rule\nbody" }, { name: "2026-10-26-b.md", text: "intro\n# Beta rule\n" }, { name: "2026-10-22-c.md", text: "no title\n" }, { name: "README.md", text: "# About this store\n" }]);
+  process.exit(rane.length === 3 && rane.map(r => r.ref).join() === "docs/decisions.md:15,docs/decisions.md:13,docs/decisions.md:7"
+    && rane[2].text.startsWith("D1 default · Playback model: hybrid. Mixxx") && rane[0].text.startsWith("D3 · Separate Mixxx dev profile at `~/.var/") && rane[1].text.endsWith("so it can be PR\x27d to `mixxxdj/mixxx` later. (2026-10-19)")
+    && vc.map(r => r.ref).join() === "docs/decisions.md:7,docs/decisions.md:3" && vc[1].text.startsWith("D7 default: turn detection is silero VAD only (2026-10-20, C1-01) — Finding. B1 leaves")
+    && dj.map(r => r.ref).join() === "docs/decisions.md:17,docs/decisions.md:16,docs/decisions.md:15,docs/decisions.md:14,docs/decisions.md:13" && dj[4].text.startsWith("D24 · One download quality. A file is acceptable")
+    && dj[0].text.startsWith("D53 default · A matched release gives") && dj[1].text.startsWith("D36 default · The cleanup")
+    && s(cr(F, fx("rane").replace(/\n/g, "\r\n"))) === s(rane)
+    && s(dir) === "Beta rule → journal/decisions/2026-10-26-b.md\nAlpha rule → journal/decisions/2026-10-20-a.md\nAbout this store → journal/decisions/README.md" && cr(F, "# Decisions\nnone yet\n").length === 0 ? 0 : 1);'
+check "memlint: currentRules reads a directory store and the three file shapes newest first" 'node --input-type=module -e "$MLCR"'
+# a range or a group heading is no decision, however its dash is written, and a heading never replaces a row of the same n
+MLGR='import { currentRules as cr } from "'$HERE'/../lib/memlint.mjs"; const F = { path: "d.md", kind: "file" };
+  const r = cr(F, "## D1—D6 the early ones\n\n## D7 – D9 later\n\n## D10 to D12\n\n| D24 | **One quality** | x |\n\n## D24 on\n\ntext\n\n## D30: a rule\n\nwhy\n");
+  process.exit(r.map(x => x.ref).join() === "d.md:13,d.md:7" && r[1].text.startsWith("D24 · One quality") ? 0 : 1);'
+check "memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row" 'node --input-type=module -e "$MLGR"'
+# the part: last, within cap/4 (and the room left), the rest one `older rules` line that isn't an item left out; a pack
+# that already stopped has no rules part at all; an item is cut to 240 bytes
+ENCR='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (f, x = {}) => ({ feature: f, kind: "coding", outcome: "passes", summary: f + " done", session: "s", at: "t", ...x });
+  const list = [{ id: "X", milestone: "M1" }], B = s => Buffer.byteLength(s), sec = (p, t) => (p.split("## " + t + "\n")[1] ?? "").split("\n## ")[0];
+  const rules = Array.from({ length: 12 }, (_, i) => ({ text: "D" + (12 - i) + " rule " + "r".repeat(180), ref: "docs/decisions.md:" + (100 - i) }));
+  const p = pack([c("X")], { feature: "X", list, rules, rulesFrom: "docs/decisions.md" }), r = sec(p, "Current rules"), ls = r.split("\n").filter(l => l.startsWith("- "));
+  const flood = Array.from({ length: 40 }, () => c("X", { summary: "x".repeat(300) })), st = pack(flood, { feature: "X", list, cap: 2048 });
+  const long = sec(pack([], { feature: "X", list, rules: [{ text: "w".repeat(1000), ref: "docs/decisions.md:9" }], rulesFrom: "docs/decisions.md" }), "Current rules");
+  const lref = sec(pack([], { feature: "X", list, rules: [{ text: "w", ref: "d/" + "é".repeat(300) }] }), "Current rules").split("\n").find(l => l.startsWith("- ")) ?? "";
+  process.exit(p.split("\n").filter(l => l.startsWith("## ")).at(-1) === "## Current rules" && B("\n## Current rules\n" + r) <= 2048 && ls.length >= 5 && ls[0].startsWith("- D12 rule")
+    && ls.every((l, i) => l.endsWith(" → docs/decisions.md:" + (100 - i)) && B(l) <= 240) && r.trimEnd().endsWith("_" + (12 - ls.length) + " older rules: docs/decisions.md._") && !p.includes("items left out")
+    && st.includes("items left out") && pack(flood, { feature: "X", list, cap: 2048, rules, rulesFrom: "d" }) === st && !pack([c("X")], { feature: "X", list }).includes("Current rules")
+    && /^- w+… → docs\/decisions\.md:9$/m.test(long) && B(long.split("\n").find(l => l.startsWith("- "))) <= 240 && !long.includes("older rules") && lref.startsWith("- w → d/é") && B(lref) <= 240
+    && [1024, 1500, 2048, 4096].every(k => B(pack([c("X", { dead_ends: [{ tried: "t".repeat(300), why: "w" }] }), c("Y")], { feature: "X", list, rules, rulesFrom: "d", cap: k })) <= k) ? 0 : 1);'
+check "entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line" 'node --input-type=module -e "$ENCR"'
+# a milestone pack (verify) lists its failed rows before its features' dead ends; a feature pack keeps dead ends first
+ENVF='import { pack } from "'$HERE'/../lib/entries.mjs"; const list = [{ id: "P", milestone: "M0" }];
+  const e = [{ feature: "P", kind: "coding", outcome: "passes", summary: "p", session: "s", at: "t", dead_ends: [{ tried: "p1", why: "w" }] },
+    { feature: "M0", kind: "verify", outcome: "not yet", summary: "P fails", session: "v", at: "t", evidence: [{ feature: "P", step: 1, ran: "r", saw: "s", holds: false }] }];
+  const at = (p, re) => p.split("\n").findIndex(l => re.test(l)), m = pack(e, { feature: "M0", list }), f = pack(e, { feature: "P", list });
+  process.exit(at(m, /^- Verify M0 found/) > 0 && at(m, /^- Verify M0 found/) < at(m, /^- Dead end/) && at(f, /^- Dead end/) > 0 && at(f, /^- Dead end/) < at(f, /^- Verify M0 found/) ? 0 : 1);'
+check "entries.mjs: a milestone pack lists failed verify rows before dead ends" 'node --input-type=module -e "$ENVF"'
 # a journal a session or an editor damaged (E4 review F1, F2): a null line, wrongly typed fields and a blank line are
 # skipped, never fatal; a last line without its newline doesn't swallow the next append; references stay real lines.
 # A summary can't open a code fence or an HTML block, and a long id doesn't break the cap (F5, F9)

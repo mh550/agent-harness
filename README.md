@@ -60,7 +60,7 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 
 | File | What | Required |
 |---|---|---|
-| `CLAUDE.md` | durable rules: code rules, how to verify, off-limits; a `## Where things go` block (what goes in which store: your entry, a decision file, a plan, `CLAUDE.md`) and `## Gotchas` (15 lines, edited in place, facts a fresh session would rediscover); the harness appends its own routing block to the prompts only when `CLAUDE.md` lacks the `## Where things go` heading; `## Live system` for live projects. Claude Code loads it in every session; the harness prompt names it, it doesn't paste it | yes (template: `harness init`, or `harness init --draft` to have Claude draft it) |
+| `CLAUDE.md` | durable rules: code rules, how to verify, off-limits; a `## Where things go` block (what goes in which store: your entry, a decision file, a plan, `CLAUDE.md`) and `## Gotchas` (15 lines, edited in place, facts a fresh session would rediscover: a coding session adds or edits one line as it finishes, and `harness-log.md` notes `<feature>: gotchas +<a> ~<e> -<d>`); the harness appends its own routing block to the prompts only when `CLAUDE.md` lacks the `## Where things go` heading; `## Live system` for live projects. Claude Code loads it in every session; the harness prompt names it, it doesn't paste it | yes (template: `harness init`, or `harness init --draft` to have Claude draft it) |
 | `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only; `DECISIONS=<path>` names the decisions store (a directory of one file each, or one file) when it isn't `docs/decisions.md` | recommended |
 | `.mcp.json` | the MCP servers runs may use. Sessions run with `--strict-mcp-config`, so a committed `.mcp.json` (passed as `--mcp-config <worktree>/.mcp.json`) is what run worktrees load; without one they get none, whatever your user config holds | no |
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
@@ -127,7 +127,7 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
   `run.log` beside it has everything), and the session `h-<run>`
   closes after `TMUX_KEEP_HOURS` (24; `0` = at once), or sooner: `harness gc <project>` and the queue runner, as it
   exits, kill the sessions of ended runs.
-- **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends, recent entries); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
+- **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends and open questions (a later entry's `resolved` drops one), facts to promote into `## Gotchas` (until a line there or a later `resolved` carries them), recent entries, and last the decisions store's current rules, newest first; a verify's pack is larger, `CONTEXT_PACK_BYTES_VERIFY`, its failed rows first); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
   Claude Code itself (the prompt names it in one line, it doesn't paste it), so a rule edited on the run branch reaches
   the next session. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 - **Notifications:** start, merges, needs-Michael, parks, limits, end. In `~/.config/harness/config.sh` either
