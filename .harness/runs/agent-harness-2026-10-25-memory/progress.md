@@ -9,6 +9,15 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 21:00 · M2-03 · passes
+
+docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles row citing decisions/2026-10-26-where-things-go; README names the routing block, Gotchas and DECISIONS=.
+
+- **Files:** docs/architecture.md, README.md
+- **Verified:** grep -c 'Memory model' docs/architecture.md = 2; check.sh green, 435 tests
+- **Tests:** 435 → 435
+- *09-M2-03 · claude-sonnet-5-5*
+
 ### 2026-10-26 20:55 · M2-02 · passes
 
 A background wait I had left running for the review was stopped at its time limit. It doesn't matter: the review had already come back and its findings were handled. M2-02 passes. The last commit is `7ec5b20`, pushed. The full suite is green, and tests went from 429 to 435.
