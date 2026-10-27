@@ -156,8 +156,8 @@ check "harness continue of a run stopped from the phone: INBOX.md's status: stop
 rm -f "$HARNESS_STATE"/queue/*-continue-whyback.args
 check "a stop reason with | keeps its card on the debrief page and is one cell in report.md and trends" 'S=$T/wt/proj/whyback/.harness/runs/whyback/summary.json \
   && echo note > "$T/pipe-note.md" && node "$HERE/../lib/page.mjs" "$T/pipe-note.md" "$T/pipe.html" "$S|stopped by Michael: a|b" && grep -q "whyback" "$T/pipe.html" \
-  && jq ".end_reason = \"stopped by Michael: a|b\"" "$S" > "$T/pipe.json" && node "$HERE/../lib/summary.mjs" report "$T/pipe.json" | grep -qF "| Ended | stopped by Michael: a\|b " \
+  && jq ".end_reason = \"stopped by Michael: a|b\"" "$S" > "$T/pipe.json" && node "$HERE/../lib/summary.mjs" report "$T/pipe.json" | grep -F "| Ended | stopped by Michael: a\|b " > /dev/null \
   && jq -nc "{run: \"r\", project: \"p\", passing: 0, total: 1, merged: 0, cost: 0, per_passing: null, wall_h: 0, end_reason: \"stopped by Michael: a|b\", causes: {}}" > "$T/pipe.jsonl" \
-  && node "$HERE/../lib/summary.mjs" trends "$T/pipe.jsonl" | grep -qF "| stopped by Michael: a\|b |"'
+  && node "$HERE/../lib/summary.mjs" trends "$T/pipe.jsonl" | grep -F "| stopped by Michael: a\|b |" > /dev/null'
 
 suite_end

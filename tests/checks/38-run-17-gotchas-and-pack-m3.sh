@@ -30,7 +30,7 @@ check "coding prompt: the Finish step adds one Gotchas line" '
   p=$(sed -n "/^## 3\. Finish/,/^Final message/p" "$HARNESS_STATE/proj/gotcha/prompt-coding.md" | tr -s " \n" "  ") &&
   [[ $p == *"## Gotchas"* && $p == *"160 characters"* && $p == *"(<run> <date>)"* && $p == *"15 lines"* && $p == *"never rewrite the section"* ]]'
 check "a stub session that adds a Gotchas line is noted" '
-  hlog gotcha | grep -q "· B: gotchas +1 ~0 -0$" && git -C "$T/wt/proj/gotcha" show run/gotcha/M1:CLAUDE.md | sed -n "/^## Gotchas/,\$p" | grep -q "(gotcha "'
+  hlog gotcha | grep -q "· B: gotchas +1 ~0 -0$" && git -C "$T/wt/proj/gotcha" show run/gotcha/M1:CLAUDE.md | sed -n "/^## Gotchas/,\$p" | grep "(gotcha " > /dev/null'
 check "a session that leaves CLAUDE.md alone gets no gotchas note" '
   [[ $(hlog gotcha | grep -c ": gotchas ") == 1 ]] && (( $(grep -c " attempt " "$T/scratch/proj/gotcha/sessions.log") >= 3 ))'
 GL=$HARNESS_STATE/proj/gotcha/logs
@@ -42,7 +42,7 @@ check "a resolved question is gone from the next context.md" '
   grep -qx -- "- Question (C): Should C default to off? → entries.jsonl:[0-9]*" "$GL/05-C.context.md" &&
   v=$(ls "$GL"/*-verify-M2.context.md | head -1) && grep -q "^# Context pack for \`M2\`" "$v" && ! grep -q "Question (" "$v"'
 check "a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it" '
-  sed -n "/^## Promote to Gotchas/,/^## /p" "$GL/02-B.context.md" | grep -qx -- "- the stub.s work files sit at the repo root, one per feature → entries.jsonl:[0-9]*" &&
+  sed -n "/^## Promote to Gotchas/,/^## /p" "$GL/02-B.context.md" | grep -x -- "- the stub.s work files sit at the repo root, one per feature → entries.jsonl:[0-9]*" > /dev/null &&
   ! grep -q "Promote to Gotchas" "$GL/01-A.context.md" && ! grep -q "Promote to Gotchas" "$GL/03-A.context.md" && grep -q "^## " "$GL/03-A.context.md"'
 check "context.md lists the decisions store's rules newest first" '
   [[ $(grep "^## " "$GL/01-A.context.md" | tail -1) == "## Current rules" ]] &&

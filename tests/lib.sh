@@ -53,7 +53,7 @@ git add -A && git commit -qm init && git config url."$T/origin.git".insteadOf gi
 # REPLAY=1 (split.sh, around a section a file replays for its state): the check runs, silent and uncounted (its own file counts it)
 check() { [[ ${REPLAY:-} ]] && { eval "$2" > /dev/null 2>&1; return 0; }
   total=$((total + 1)); if eval "$2"; then echo "PASS $1"; else echo "FAIL $1"; fails=$((fails + 1)); fi; }
-hlog() { cat "$T/wt/${2:-proj}/$1/.harness/runs/$1/harness-log.md" 2>/dev/null; }   # <run> [<project>]
+hlog() { cat "$T/wt/${2:-proj}/$1/.harness/runs/$1/harness-log.md" 2>/dev/null || (( $? == 141 )); }   # <run> [<project>]; a reader that quits early (grep -q) must not turn cat's SIGPIPE into a pipefail failure
 list() { echo "$T/wt/proj/$1/.harness/runs/$1/feature_list.json"; }
 on_main() { git -C "$T/origin.git" merge-base --is-ancestor "$(git -C "$T/origin.git" rev-parse "$1^{commit}")" main; }
 curl_with() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { printf "%s", $0; exit }' "$T/curl.log" 2>/dev/null; }   # the first stub-curl call containing $1
