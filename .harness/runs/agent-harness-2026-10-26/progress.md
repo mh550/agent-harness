@@ -9,6 +9,22 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 19:25 · P1-05 · passes
+
+harness continue reopens a lane from the newer of the box's and origin's branch (both merged if diverged); refuses a legacy run (code beyond its base) with three ways forward, exit 1, run.log + high-priority notification; under pr a dependent's PR waits (noted once), harness merge lands proposed milestones in order. 11 checks in 46-lanes-continue.sh.
+
+- **Files:** lib/record.sh, bin/harness, tests/checks/46-lanes-continue.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md, journal/decisions/2026-10-26-lanes.md
+- **Verified:** tests/checks/46-lanes-continue.sh 11/11 (6 of the first 8 red before the code; the 3 added after review red with their fix undone); full suite via check.sh: green in 383 s, 550 tests; bash -n on bin/harness lib/driver.sh lib/lane.sh lib/record.sh
+- **Tests:** 539 → 550
+- **Dead end:** slot_open as P1-03 left it (local lane branch first) — a stale local branch after Michael pushed to origin made every lane push non-fast-forward; the stub's own push failed and the sessions read as usage limits
+- **Discovery** (affects P2, run): Under MERGE_POLICY=pr a proposed milestone merged by Michael on GitHub was never seen as merged by the driver, so anything depending on it waited forever; merge_milestones now notes '<m> merged into main (by its PR)' when the tag is on main.
+- **Discovery** (affects P2): The legacy test is merge-tree of the run's base (origin/main or BASE_REF) and HEAD, diffed outside .harness/runs/, not the plan's merge-base diff; a --base run would otherwise be refused.
+- **Discovery** (affects run): Once P1 merges, an automatic continuation of agent-harness-2026-10-26 run by the P1 driver is refused (this branch carries code main lacks): the refusal now reaches Michael as a high-priority notification.
+- **Question for Michael:** D13 default: the legacy refusal goes to stderr, run.log and a high-priority notification, not to harness-log.md (the CLI never writes the record). Want a harness-log note too?
+- **Question for Michael:** D14 default: when the box's and origin's lane branch diverged, origin's is merged into the box's (a conflict is needs Michael). OK, or should origin's always win?
+- **Proposed change:** P1-05 step 4 says NN-lanes-continue.sh; the plan's §10 named it 38-lanes-continue.sh, but 38 is taken: it is 46-lanes-continue.sh
+- *01-P1-05 · claude-opus-5-5*
+
 ### 2026-10-27 17:11 · P1-04 · passes
 
 The lanes code (bda683c, merged with main by Michael) was already in place; the suite was red on one check: eval probes rendered the probe prompt with the run's scratch, the lane's session had $SCRATCH/lanes/<m>. lib/prompt.sh's command mode now names the lane's scratch and port as it already did its slot and branch. Every step re-verified; suite 538 → 539/539 green.
@@ -230,17 +246,6 @@ tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for by
 - **Proposed change:** P0-01 step 3 (multiset equal) and step 7 (N = 325 + conformance) describe the split alone. After the testcount fix, the full run is 327 (325 + 'testcount.mjs: the runner's last N/M checks passed is the count' + conformance). The split files' check lines still equal the monolith's exactly.
 - *01-P0-01 · claude-opus-5-5*
 
-### 2026-10-26 05:50 · init · passes
+## Older entries (in full in progress-archive.md)
 
-17 features: P0 4 (suite split S1-S3 + review; S4 left out), P1 6 (plan, pure scheduler, record branch + slot, lane process + coordinator, continue/legacy/pr-held, review), P2 7 (plan, admission, re-base, slots + gc, record PR, status + summary + prompts, review).
-
-- **Discovery** (affects run): The suite is one file, tests/run.sh (1634 lines, 50 `# ---- <title> ----` sections, 325 checks, all names unique and environment-independent) and takes about 10 min single-threaded on this box (init measured 597 s), so every session spends 10 min per full run until P0-02 lands; iterate on a subset (`bash lib/check.sh <args>` is never cached) and run the full suite once before flipping passes.
-- **Discovery** (affects run): The pre-split suite output of this run's init is at /tmp/harness/agent-harness/agent-harness-2026-10-26/check.out (325 PASS lines): P0-01 generates tests/fixtures/check-names.txt from it instead of re-running the monolith.
-- **Discovery** (affects run): Sections known to read an earlier section's state: run 15e (line 1145) reads $T/demo-hlog.md from run 1 (line 540); the gc section (755) and runs 2-14 reuse run 1's demo repo and tags; the eval sections share $ED; the debrief sections share a runner log. split.sh's grouping pairs are found by running each file alone, never by patching a check.
-- **Discovery** (affects run): The driver loop is lib/driver.sh:567-719 (counters n, limits, repairs, gated as shell variables; verify_ready before each pick); verify is at 375, merge_one 314, merge_milestones 351, finish 484, restrict 87 (the revert pattern for a commit touching the record). bin/harness: cmd_continue 212, cmd_merge 227, cmd_status 236, cmd_gc 351 with record_only at 384 and the harness/ + harness-merge/ prefix passes at 449.
-- **Discovery** (affects run): Helpers that already exist for the lanes work: `notify.mjs question <before> <after>` computes the INBOX lines a session added; `features.mjs` has unpass, repair, snapshot, milestone-done, touched-outside; scope.sh has mem_available_gb's reader (HARNESS_MEMINFO), scope_unit and scope_owns (role regex at line 27); metrics.mjs `usage` reads unifiedWindows from the real capture tests/fixtures/usage-limit.jsonl, which carries five_hour beside seven_day.
-- **Discovery** (affects run): The stubs: tests/stub-claude.sh acts on the prompt's first line and STUB_* flags (set with `tmux set-environment -g` for sessions started in tmux, plain env otherwise); tests/stub-gh.sh keeps PRs as files under $STUB_DIR/prs and really merges into the bare origin; the record of git pushes is the bare origin itself. New stub behaviour must copy a real shape (fakes mirror the live API).
-- **Discovery** (affects run): S4 of the suite-split spec (`--for` selection by `# covers:`) is deliberately not in the list: P1 and P2 are the run's bulk and a feature a milestone can't ship without would hold P0. It is a one-session interactive change if wanted.
-- **Question for Michael:** S4 (`tests/run.sh --for <paths>` by `# covers:` lines) was left out of P0 so the split ships first; default taken: skip it this run, do it interactively if the two-minute suite still feels slow to iterate on.
-- **Question for Michael:** P1 keeps the lane port equal to the run port (one lane); distinct per-lane ports arrive with admission in P2-02. Default taken: no port change until two lanes exist.
-- *00-init · claude-fable-5-1*
+- 2026-10-26 05:50 · init · passes · 17 features: P0 4 (suite split S1-S3 + review; S4 left out), P1 6 (plan, pure scheduler, record bran… ([in full](progress-archive.md))
