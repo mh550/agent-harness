@@ -66,6 +66,10 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
 | `.harness/teardown.sh` (executable) | what stopping the run's services scope can't reach, e.g. `npx supabase stop` or `docker compose down` (containers live under `dockerd`): see below | no |
 
+**Test counts.** A suite may print a line `HARNESS_TESTS=<n>` (the last one wins): the harness takes it over scraping
+the runner's summary (node:test, cargo, jest, `go test -v`, then the last `N passed`), and `harness-log.md` says once
+per run which it used: `test count: HARNESS_TESTS contract`, `parsed (<runner>)` or `no match`.
+
 **Memory lint.** `harness memlint <project>` prints what `lib/memlint.mjs` finds in a project's memory files, one
 `<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines),
 `derivable-count` (a stored `<n> tests`), `night-scope` (`tonight`, `this run`, `as of <date>`) and `decisions` (no

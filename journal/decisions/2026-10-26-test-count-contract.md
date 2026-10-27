@@ -1,0 +1,25 @@
+# A test-count contract: a suite's own `HARNESS_TESTS=<n>` line wins over scraping its summary
+
+*(2026-10-26, run agent-harness-2026-10-25-memory, feature M5-01; spec `docs/specs/2026-10-25-memory.md` M5, which
+takes `docs/specs/2026-10-22-retro-followups.md` §C as written; extends decisions/2026-10-26-real-test-counts)*
+
+- **Finding:** R1's parsers scrape a runner's human-readable summary. That breaks when a runner changes its wording or
+  a project uses one that isn't listed (portfolio_site's 1115-test jest suite read as `6 → 6` before R1), and nothing
+  said whether a count was scraped or missing.
+- **Choice:**
+  - **The contract wins:** `lib/testcount.mjs` takes the **last** whole line `HARNESS_TESTS=<n>` in the suite's output
+    (a wrapper may print one after its runner's), then R1's rules in their order, then the generic `N passed`.
+    `countSource(text)` returns `{ n, source }`; `testCount(text)` is its `n`, so `lib/check.sh`'s green line and
+    markers are unchanged. `testcount.mjs <file> --source` prints `<n> tests · <source>`, source one of `contract`,
+    `node`, `cargo`, `jest`, `go`, `generic`, `none`; with no count, `? tests · none` (*default*: `?` as the report
+    prints an unknown count).
+  - **Said once per run:** `run_init` notes the first suite with a `check.out`: `test count: HARNESS_TESTS contract`,
+    `test count: parsed (<runner>)` (pytest and the like say `parsed (generic)`), or R1's `no match` line unchanged.
+    Marker `testcount-source` holds the source; a run that already has R1's `testcount-nomatch` isn't noted again
+    (*default*).
+  - Fixtures: `tests/fixtures/check-jest-contract.txt` (the jest fixture plus `HARNESS_TESTS=1115`) and
+    `tests/fixtures/check-agent-harness.txt` (this run's own `check.out`, last 30 lines, `474/474 checks passed`: the
+    feature's step said 395, which was the count at init; the file is copied, not retyped).
+- **Rejected:** a structured report option (`TEST_REPORT=<path+format>`, reading `jest --json`, `pytest --report-log`
+  or `go test -json`) for now: a project's check can print the contract line from its own report, with no parser per
+  format in the harness. Taking the first `HARNESS_TESTS=` line instead of the last: a wrapper prints its total last.

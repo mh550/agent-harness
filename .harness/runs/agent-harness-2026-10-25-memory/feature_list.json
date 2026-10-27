@@ -178,7 +178,7 @@
         "without a contract line the jest and pytest fixtures still give 7 and 4 with sources `jest` and `generic`, and an empty file gives source `none` (checks)",
         "lib/driver.sh's run_init notes once per run which source the first counted suite used (`test count: HARNESS_TESTS contract`, `test count: parsed (<runner>)`, or the existing `test count: no match …` line; marker `$STATE/testcount-source`); a stub run whose CHECK_CMD echoes `HARNESS_TESTS=12` has `test count: HARNESS_TESTS contract` in harness-log.md and summary.json `tests.start` 12 (a check in tests/checks/40-run-18-test-counts-m5.sh)",
         "the suite is green" ],
-      "after": [], "passes": false },
+      "after": [], "passes": true },
 
     { "id": "M5-02", "milestone": "M5", "kind": "build", "model": "opus",
       "description": "The driver refreshes `tests-end` from the latest green suite after every session, not only at finish, `tests-start` stays the run's baseline and report.md labels it `baseline at run start`; an Opus subagent reviews the M5 diff.",

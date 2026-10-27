@@ -323,9 +323,17 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
   [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \
     || rm -f "$STATE/tests-start"
-  # once per run: a suite whose output has no count leaves the report's tests at `?` (a cached green wrote no check.out)
-  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-nomatch && -z $(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out") ]]; then
-    note "test count: no match in the suite's output (tests start/end stay unknown)"; touch "$STATE/testcount-nomatch"
+  # once per run, from the first suite that wrote a check.out (a cached green wrote none): where the count came from, so
+  # a scraped count is told from the contract and a missing one explains the report's `?` (testcount-nomatch: older runs)
+  local src
+  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-source && ! -f $STATE/testcount-nomatch ]]; then
+    src=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" --source); src=${src##* · }
+    case $src in
+      contract) note "test count: HARNESS_TESTS contract" ;;
+      none|"") src=none; note "test count: no match in the suite's output (tests start/end stay unknown)" ;;
+      *) note "test count: parsed ($src)" ;;
+    esac
+    echo "$src" > "$STATE/testcount-source"
   fi
 }
 
