@@ -166,7 +166,7 @@
         "docs/architecture.md §3 lists lib/lane.sh, the coordinator and the record library; §4 the lane state, slots and the record lock; §5 the coordinator's loop as a diagram; §7 a record guard row replacing the tainted-tag rows; §8 the record branch and lane branches; §12 lanes beside MAX_PARALLEL_RUNS; §15's first bullet replaced; README.md names MAX_LANES, slots, and the lane exit codes' meanings in harness-log.md",
         "`bash -n` on every shell file P1 touched and `node --check` on every .mjs; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-01",
