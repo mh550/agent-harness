@@ -1,0 +1,12 @@
+{ "feature": "M2-02", "kind": "coding", "outcome": "passes",
+  "summary": "initializer.md routes durable gotchas to ## Gotchas, run-only facts to discoveries run, steps say 'record as a new decision'; coding.md's Decisions bullet points at the block; draft-claude-md.md and templates/project carry the block, empty Gotchas, commented DECISIONS=; this repo's CLAUDE.md and DECISIONS=journal/decisions. Opus review: 0 Critical, 1 Important (fixed RED→GREEN), 8 Minor (3 fixed). Tests 429 → 435.",
+  "files": ["prompts/initializer.md", "prompts/coding.md", "prompts/draft-claude-md.md", "prompts/parts/where-things-go-override.md", "lib/prompt.sh", "templates/project/CLAUDE.md", "templates/project/config.sh", "CLAUDE.md", ".harness/config.sh", "journal/decisions/2026-10-26-where-things-go.md", "tests/checks/37-memory-prompts-m2.sh", "tests/fixtures/check-names.txt"],
+  "verified_how": "Full suite green twice (433, then 435 tests). Failed before the change: the four 'routing: …' checks (initializer, coding/draft, template, this repo) and 'where things go: verify and retro keep the read-only rule without the heading when CLAUDE.md has its own block'. 'where things go: the retro prompt carries the read-only variant once…' passed at once (coverage for review Minor 8). node lib/memlint.mjs store . prints journal/decisions; the decision file names all seven projects and both risks.",
+  "tests_before": 429, "tests_after": 435,
+  "dead_ends": [{ "tried": "exit 1 inside a for loop in a check body", "why": "check evals in the file's shell, so the whole check file exits; use ok=0 … (( ok ))" }],
+  "discoveries": [
+    { "text": "Every real project's CLAUDE.md has ## Where things go, so verify/retro now get prompts/parts/where-things-go-override.md (one bold 'Read-only session.' line, no heading) instead of nothing; the heading count stays 0.", "affects": ["M3", "M4"] },
+    { "text": "where-things-go-readonly.md promises 'the next coding session moves it into ## Gotchas': nothing does yet; M3's Finish step must read run discoveries from context.md for that.", "affects": ["M3"] },
+    { "text": "This repo's CLAUDE.md How to verify still stores '395 checks' and '208 s' (now 435): left for M4's memlint to flag rather than edited here.", "affects": ["M4"] }
+  ],
+  "proposed_changes": ["M2-03: README should also name prompts/parts/where-things-go-override.md (verify/retro when CLAUDE.md has its own block)."] }
