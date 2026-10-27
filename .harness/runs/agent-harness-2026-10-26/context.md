@@ -4,11 +4,12 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## This feature's earlier attempts
 
+- 2026-10-26 18:53 · P1-03 · not yet: The decision file is in place (D1–D6 defaults recorded). I'm waiting for the review before fixing anything or flipping `passes`. → entries.jsonl:12
 - 2026-10-26 18:38 · P1-03 · not yet: The Opus review of the P1-03 diff is still running. I'll wait for its findings before I fix anything, rerun the suite, write `entry.json` and flip `passes`.; files bin/harness, docs/architecture.md, journal/decisions/2026-10-26-lanes.md, lib/desk.sh, lib/driver.sh, … → entries.jsonl:11
 
 ## Michael's answers
 
-- ### 2026-10-26 15:59 (local) P0-02: accepted. Main (retro F1, F2) is merged into this branch and tests/checks/ re-cut from it; the suite is 392/392 green in 208 s with TEST_JOBS=4. Step 5 now reads 'measured and recorded, not a gate' and steps 2 and 4 are reworded as you proposed. Rule from here: a performance number in a step is measured and recorded, never a gate, unless the step says it protects the box. Proceed: P0-04, then P1, P2. → INBOX.md
+- ### 2026-10-26 15:59 (local) P0-02: accepted. Main (retro F1, F2) is merged into this branch and tests/checks/ re-cut from it; the suite is 392/392 green in 208 s with TEST_JOBS=4. Step 5 now reads 'measured and recorded, not a gate' and steps 2 and 4 are reworded as you proposed. Rule from here: a performance number in a step is measured and recorded, never a gate, unless the step says it protects the box. Proceed: P0-04, then P1, P2. ### 2026-10-26 22:40 (local) P1-03: the code is in ce11cdf. Run the review in the foreground (or skip it), fix what it finds, run the full suite, write entry.json, then flip passes. → INBOX.md
 
 ## Discoveries for this feature
 
@@ -32,6 +33,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): Sections known to read an earlier section's state: run 15e (line 1145) reads $T/demo-hlog.md from run 1 (line 540); the gc section (755) and runs 2-14 reuse run 1's demo repo and tags; the eval sections share $ED; the debrief sections share a runner log. split.sh's grouping pairs are found by running each file alone, never by patching a check. → entries.jsonl:1
 - Discovery (init, affects run): The driver loop is lib/driver.sh:567-719 (counters n, limits, repairs, gated as shell variables; verify_ready before each pick); verify is at 375, merge_one 314, merge_milestones 351, finish 484, restrict 87 (the revert pattern for a commit touching the record). bin/harness: cmd_continue 212, cmd_merge 227, cmd_status 236, cmd_gc 351 with record_only at 384 and the harness/ + harness-merge/ prefix passes at 449. → entries.jsonl:1
 - Discovery (init, affects run): Helpers that already exist for the lanes work: `notify.mjs question <before> <after>` computes the INBOX lines a session added; `features.mjs` has unpass, repair, snapshot, milestone-done, touched-outside; scope.sh has mem_available_gb's reader (HARNESS_MEMINFO), scope_unit and scope_owns (role regex at line 27); metrics.mjs `usage` reads unifiedWindows from the real capture tests/fixtures/usage-limit.jsonl, which carries five_hour beside seven_day. → entries.jsonl:1
-- Discovery (init, affects run): The stubs: tests/stub-claude.sh acts on the prompt's first line and STUB_* flags (set with `tmux set-environment -g` for sessions started in tmux, plain env otherwise); tests/stub-gh.sh keeps PRs as files under $STUB_DIR/prs and really merges into the bare origin; the record of git pushes is the bare origin itself. New stub behaviour must copy a real shape (fakes mirror the live API). → entries.jsonl:1
 
 _3 items left out at 8192 bytes: entries.jsonl has them all._
