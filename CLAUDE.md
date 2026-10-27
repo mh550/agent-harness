@@ -63,3 +63,4 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 
 ## Gotchas
 <!-- At most 15 lines, one fact each, edited in place: replace a wrong or least useful line, never rewrite the section. -->
+- tests/lib.sh runs under `pipefail`: never pipe a multi-write producer (sed/awk/git show, a log over 4 KiB) into `grep -q`, `grep -m` or `head` in a check; the early exit SIGPIPEs the producer now and then (141). Use `grep X > /dev/null`.
