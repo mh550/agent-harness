@@ -1,9 +1,17 @@
-# Context pack for `M2-03`
+# Context pack for `M2`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- Dead end (M2-01, 07-M2-01): committing to $T/proj and pushing between stub runs — rejected: each run merges into origin main; `git pull -q --ff-only origin main` first → entries.jsonl:9
+- 2026-10-26 21:00 · M2-03 · passes: docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles row citing decisions/2026-10-26-where-things-go; README names the routing block, Gotchas and DECISIONS=.; tests 435 → 435; files docs/architecture.md, README.md → entries.jsonl:11
+- 2026-10-26 20:55 · M2-02 · passes: A background wait I had left running for the review was stopped at its time limit. It doesn't matter: the review had already come back and its findings were handled. M2-02 passes. The last commit is `7ec5b20`, pushed. The full suite is green, and tests went from 429 to 435.; files .harness/config.sh, CLAUDE.md, journal/decisions/2026-10-26-where-things-go.md, lib/prompt.sh, prompts/coding.md, … → entries.jsonl:10
+- 2026-10-26 20:21 · M2-01 · passes: lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else null), storeLine, CLI store/store-line. prompt_render appends prompts/parts/where-things-go.md (coding, initializer) or -readonly.md (verify, retro) unless CLAUDE.md has a `## Where things go` line; no CLAUDE.md gets it too. Decision file written. Tests 420 → 429.; tests 420 → 429; files lib/memlint.mjs, lib/prompt.sh, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, tests/checks/37-memory-prompts-m2.sh, … → entries.jsonl:9
+
 ## Discoveries for this feature
 
+- Discovery (M2-01, affects M2-02): The three-prompt checks grep -c `## Where things go`: any template line quoting that heading counts. M2-02's coding.md Decisions bullet must name the block without the `## ` prefix (e.g. 'the Where things go block below') or the counts go to 2. → entries.jsonl:9
 - Discovery (M2-01, affects M2-02, M2-03): journal/decisions/2026-10-26-where-things-go.md exists already with the seven-project census and both accepted risks; M2-02 edits it in place (initializer/coding/template wording) rather than creating it. → entries.jsonl:9
 - Discovery (M1-06, affects run): Any note() written in retro() between rstart and restrict is reverted with the retro's edits: write it after restrict (as S_NOTES are). → entries.jsonl:7
 - Discovery (M1-06, affects M2, M3): backlog.mjs exports oneLine (whitespace and control characters folded, 200 chars): reuse it for any retro-written text that reaches a prompt. → entries.jsonl:7
@@ -14,12 +22,3 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects M2, M4): On 2026-10-26 every project with a CLAUDE.md (dj-crate-streaming 105 lines, hit_list 181, n8n-home 120, pathways 49, portfolio_site 127, rane-one-mixxx 92, voice-concierge 56) already has `## Where things go` and `## Gotchas` (chunk 3 Part 2); none sets DECISIONS= in .harness/config.sh; agent-harness itself has neither heading (51 lines, and its `How to verify` line stores `395 checks`, which memlint will flag). backups, career, ideas, library, proposals and setup have no CLAUDE.md and no .harness/project.md. Record this in M2's decision file. → entries.jsonl:1
 - Discovery (init, affects run): Decision files: journal/decisions/<YYYY-MM-DD>-<slug>.md, title line, provenance line in italics (run, feature, spec section, plan), then `- **Finding:**`, `- **Choice:**`, `- **Rejected:**` bullets (see journal/decisions/2026-10-26-real-test-counts.md). Never number one, never append to journal/decisions.md. Plans: docs/plans/<date>-<milestone>-<topic>.md, header as docs/plans/2026-10-26-F2-initializer-verify.md (`Checked against main at <sha>`, `What main already has`, one feature per item). → entries.jsonl:1
 - Discovery (init, affects run): Lint rules (features.mjs lint) flag a path in `~` or $HOME in a step (outside-repo) and a grep whose pattern matches the step's own text when the target is progress.md, entries.jsonl, context.md or feature_list.json (self-match); harness-log.md is not a quoting file. Steps here name checks by their check name instead; a session's `proposed_changes` is where a wrong step goes. → entries.jsonl:1
-
-## What it builds on
-
-- 2026-10-26 20:55 · M2-02 · passes: A background wait I had left running for the review was stopped at its time limit. It doesn't matter: the review had already come back and its findings were handled. M2-02 passes. The last commit is `7ec5b20`, pushed. The full suite is green, and tests went from 429 to 435.; files .harness/config.sh, CLAUDE.md, journal/decisions/2026-10-26-where-things-go.md, lib/prompt.sh, prompts/coding.md, … → entries.jsonl:10
-
-## Lately in the run
-
-- 2026-10-26 20:21 · M2-01 · passes: lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else null), storeLine, CLI store/store-line. prompt_render appends prompts/parts/where-things-go.md (coding, initializer) or -readonly.md (verify, retro) unless CLAUDE.md has a `## Where things go` line; no CLAUDE.md gets it too. Decision file written. Tests 420 → 429.; tests 420 → 429; files lib/memlint.mjs, lib/prompt.sh, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, tests/checks/37-memory-prompts-m2.sh, … → entries.jsonl:9
-- 2026-10-26 20:10 · verify M1 · passes: All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/import/errors against a throwaway ledger, bash -n and node --check, read plan, decision, review, README, architecture, prompts, stub and checks. → entries.jsonl:8
