@@ -1,28 +1,16 @@
-{
-  "run": "agent-harness-2026-10-25-memory",
-  "branch": "harness/agent-harness-2026-10-25-memory",
+{ "run": "agent-harness-2026-10-25-memory", "branch": "harness/agent-harness-2026-10-25-memory",
   "features": [
-    {
-      "id": "M1-01",
-      "milestone": "M1",
-      "kind": "plan",
-      "model": "opus",
+    { "id": "M1-01", "milestone": "M1", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-26-M1-retro-backlog.md fixes the backlog row schema, lib/backlog.mjs's pure API, the `harness backlog` CLI forms, where retro() and finish() read retro-proposals.json, the retro prompt's backlog section, the one debrief change, the stub flags and the check file names.",
       "steps": [
         "docs/plans/2026-10-26-M1-retro-backlog.md exists and names: the row schema `{id, title, first_seen: {run, date}, runs_seen, status, spec, pr, note}` with the five statuses proposed|specced|queued|merged|dropped, the exported functions of lib/backlog.mjs (merge proposals into rows, set a status with --spec/--pr/--note, list order with `proposed` first and most seen first, import rows by id, validate a proposals list) and the `harness backlog [list]`, `harness backlog set <id> <status> [--spec <path>] [--pr <url>] [--note <text>]` and `harness backlog import <file.jsonl>` forms",
         "the plan says where the driver reads `retro-proposals.json`: copied from the run directory to `$HARNESS_SCRATCH` in retro() before `restrict` (which reverts every file a retro created, the run record included), then merged in finish() inside ledger()'s `flock 9` block before the ledger commit; invalid JSON or a bad shape gives one `note` line and the run goes on",
         "the plan names the stub flag the retro branch of tests/stub-claude.sh gains to write retro-proposals.json (`STUB_RETRO_PROPOSALS`), the new check files tests/checks/35-backlog-pure-m1.sh and tests/checks/36-run-16-retro-backlog.sh, and the eight seed rows of docs/specs/2026-10-25-memory.backlog-seed.jsonl exactly as the spec's M1 table gives them (ids, titles, statuses, spec fields)",
         "the plan lists the only debrief lines it changes: lib/debrief.sh's `## Earlier retros` gatherer block (lines 164-165 on main) and prompts/debrief.md's `## For the next interactive session` section",
-        "the suite is green"
-      ],
-      "after": [],
-      "passes": true
-    },
-    {
-      "id": "M1-02",
-      "milestone": "M1",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": [], "passes": true },
+
+    { "id": "M1-02", "milestone": "M1", "kind": "build", "model": "opus",
       "description": "lib/backlog.mjs (pure, exported, node standard library only) merges a run's proposals into backlog rows, sets a status with its links, orders a listing and imports rows by id, each proven by a check in tests/checks/35-backlog-pure-m1.sh written first.",
       "steps": [
         "`node --check lib/backlog.mjs` passes and the file starts with a usage header naming its commands (`merge`, `set`, `list`, `import`, `validate`), as lib/features.mjs does",
@@ -31,18 +19,10 @@
         "a check that `set <id> specced --spec docs/specs/x.md` flips the status and records the spec, that `set` on an unknown id or a status outside the five exits 1, and that the list order puts `proposed` rows first and, within a status, rows with more `runs_seen` first",
         "a check that `import` of a file with 8 rows into an empty store gives 8 rows and importing it again gives 8 again (idempotent by id), and that an import row for a known id updates status, spec, pr and note while keeping `first_seen` and the union of `runs_seen`",
         "every new check's name is in tests/fixtures/check-names.txt (C sort order) and the entry's `verified_how` names the checks that failed before lib/backlog.mjs existed",
-        "the suite is green"
-      ],
-      "after": [
-        "M1-01"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M1-03",
-      "milestone": "M1",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M1-01"], "passes": true },
+
+    { "id": "M1-03", "milestone": "M1", "kind": "build", "model": "opus",
       "description": "`harness backlog [list]`, `harness backlog set <id> <status> [--spec] [--pr] [--note]` and `harness backlog import <file.jsonl>` read and write `<ledger>/retro-backlog.jsonl` under the ledger flock with a ledger commit, and docs/specs/2026-10-25-memory.backlog-seed.jsonl holds the eight seed rows Michael imports by hand.",
       "steps": [
         "bin/harness dispatches `backlog` to lib/backlog.sh and its header comment block lists the three forms; with the suite's `HARNESS_LEDGER=$T/ledger`, `harness backlog set test-counts specced --spec docs/specs/2026-10-21-retro-fixes.md` on a store seeded with that id flips its status and `harness backlog list` prints the row with `specced` and that spec path (a check in tests/checks/36-run-16-retro-backlog.sh)",
@@ -50,18 +30,10 @@
         "writes run under `flock` on `$STATE_ROOT/ledger.lock` and, when `LEDGER_COMMIT=1` and the ledger is a git checkout, are committed with `git -C <ledger> commit -- <file>` as ledger() in lib/driver.sh does; with the suite's `LEDGER_COMMIT=0` nothing is committed and the command exits 0",
         "`harness backlog set` with an unknown id, a bad status or a missing argument exits 1 with one usage line and leaves the file byte-identical (a check); `harness backlog` with no store prints `(empty)` and exits 0",
         "README.md gives Michael the one command to run on the live checkout, `harness backlog import docs/specs/2026-10-25-memory.backlog-seed.jsonl`, and says the build never ran it; after the suite `git status --porcelain -- ledger/` in this worktree is empty (the real ledger untouched); `bash -n lib/backlog.sh bin/harness` passes",
-        "the suite is green"
-      ],
-      "after": [
-        "M1-02"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M1-04",
-      "milestone": "M1",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M1-02"], "passes": true },
+
+    { "id": "M1-04", "milestone": "M1", "kind": "build", "model": "opus",
       "description": "The retro writes `<run dir>/retro-proposals.json` beside retro.md and the driver merges it into the ledger's retro-backlog.jsonl in finish() inside the ledger commit: a new id becomes a `proposed` row, a known id gains the run in runs_seen, bad JSON is noted and skipped, and restrict still reverts a retro's own edit to the backlog.",
       "steps": [
         "prompts/retro.md tells the retro to write `retro-proposals.json` in the run directory (a JSON list of `{id, title, evidence}`, the one file it may create) and tests/stub-claude.sh's retro branch writes it when `STUB_RETRO_PROPOSALS=<id>[,<id>…]` is set (`bad` writes `{not json`), documented in the stub's header",
@@ -70,18 +42,10 @@
         "a stub run with `STUB_RETRO_PROPOSALS=bad` ends normally: harness-log.md has a line starting `backlog: retro-proposals.json invalid`, `$T/ledger/runs.jsonl` has the run's row and retro-backlog.jsonl is unchanged (a check)",
         "a stub retro with `STUB_RETRO_EDITS=1` that also writes `ledger/retro-backlog.jsonl` inside the worktree has that file reverted (the `retro: reverted edits` line in harness-log.md names it, the file is gone from the worktree) while the driver's merge from the scratch copy of retro-proposals.json still lands (a check)",
         "journal/decisions/<date>-retro-backlog.md exists (finding · choice · rejected: the driver is the only writer, proposals travel as data, bad JSON is skipped as E4 skips a bad entry.json)",
-        "the suite is green"
-      ],
-      "after": [
-        "M1-03"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M1-05",
-      "milestone": "M1",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M1-03"], "passes": true },
+
+    { "id": "M1-05", "milestone": "M1", "kind": "build", "model": "opus",
       "description": "The retro prompt carries the current backlog (`HARNESS_BACKLOG` rendered as `{{BACKLOG}}`) and says to reuse an id, cite a specced/queued/merged item's status instead of re-arguing it and coin a slug only for a new proposal; the debrief's gathered context has the backlog instead of the `Earlier retros` list and its prompt's last section ranks open `proposed` items and flags re-raised ones.",
       "steps": [
         "retro() in lib/driver.sh exports `HARNESS_BACKLOG` (one line per row `<id> · <status> · seen <n>`, or `(empty)`, built by `node lib/backlog.mjs list`) before `prompt retro`, and prompts/retro.md has a `## Backlog` section with `{{BACKLOG}}` and the three rules: reuse an existing id, cite its status rather than re-argue a specced/queued/merged item, a new slug only for a new proposal",
@@ -89,36 +53,20 @@
         "lib/debrief.sh's gatherer block (only the `## Earlier retros` lines, 164-165 on main) now emits `## Retro backlog (ledger/retro-backlog.jsonl)` with the file's rows capped at 6000 bytes and no `ls` of retro.md files; `harness debrief --dry-run` after a stub run prints a context containing `## Retro backlog` and not `## Earlier retros` (a check)",
         "prompts/debrief.md's `## For the next interactive session` asks for open `proposed` items ordered by times seen and for items re-raised though already `specced` or `queued`, and no longer asks to scan earlier retros for proposals seen in two or more",
         "docs/architecture.md §4 gains the backlog row (path `<harness>/ledger/retro-backlog.jsonl`, writers: driver finish() and `harness backlog`, readers: retro prompt and debrief) and §16 says the debrief reads the backlog; README.md's `## Debrief` section says the same",
-        "the suite is green"
-      ],
-      "after": [
-        "M1-04"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M1-06",
-      "milestone": "M1",
-      "kind": "review",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M1-04"], "passes": true },
+
+    { "id": "M1-06", "milestone": "M1", "kind": "review", "model": "opus",
       "description": "An Opus review of the M1 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, docs touched by M1 brought in line.",
       "steps": [
         "`git diff <commit before M1-01>..HEAD -- . ':!.harness/runs' > $HARNESS_SCRATCH/m1-review.diff` is read by an Opus subagent that returns findings only; the entry's summary gives `<n> Critical, <n> Important, <n> Minor`; a second round runs only when the first found a Critical",
         "every Critical and Important finding is fixed with a check written first (RED) then passing (GREEN), each named in the entry's `verified_how`; the simplification pass's edits are listed in the entry's `files`",
         "docs/plans/2026-10-26-M1-review.md records the findings and their fixes; docs/architecture.md, README.md and journal/decisions/<date>-retro-backlog.md describe M1 as merged",
         "`bash -n` passes on lib/driver.sh, lib/backlog.sh, lib/debrief.sh, bin/harness, tests/stub-claude.sh and tests/checks/36-run-16-retro-backlog.sh; `node --check lib/backlog.mjs` passes",
-        "the suite is green"
-      ],
-      "after": [
-        "M1-05"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M2-01",
-      "milestone": "M2",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M1-05"], "passes": true },
+
+    { "id": "M2-01", "milestone": "M2", "kind": "build", "model": "opus",
       "description": "lib/memlint.mjs exports `decisionsStore(worktree)` (DECISIONS= from .harness/config.sh, else docs/decisions.md if it exists, else none) and every coding, initializer and verify prompt gets the `## Where things go` block exactly once when the project's CLAUDE.md lacks that heading or is missing, never when it has it; the verify variant sends facts to `discoveries` instead of editing Gotchas.",
       "steps": [
         "`node --check lib/memlint.mjs` passes (usage header, `decisionsStore` exported, CLI `store <worktree>` prints the path or nothing); checks in tests/checks/37-memory-prompts-m2.sh show `decisionsStore` returns `.harness/config.sh`'s `DECISIONS=journal/decisions` as a directory store, `docs/decisions.md` as a file store when no DECISIONS is set and the file exists, and null when neither",
@@ -126,16 +74,10 @@
         "lib/prompt.sh's prompt_render appends the block when the worktree's CLAUDE.md has no line `## Where things go` or there is no CLAUDE.md: a check that the stub project's rendered prompt-coding.md, prompt-initializer.md and prompt-verify.md each contain `## Where things go` exactly once (`grep -c`) and that prompt-verify.md's variant contains `discoveries`",
         "a check that with `## Where things go` added to the stub project's CLAUDE.md the three rendered prompts contain the heading 0 times, and a check that with CLAUDE.md deleted they contain it once each",
         "every new check's name is in tests/fixtures/check-names.txt and the entry's `verified_how` names the checks that failed before the change",
-        "the suite is green"
-      ],
-      "after": [],
-      "passes": true
-    },
-    {
-      "id": "M2-02",
-      "milestone": "M2",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": [], "passes": true },
+
+    { "id": "M2-02", "milestone": "M2", "kind": "build", "model": "opus",
       "description": "The prompts and templates stop contradicting the routing block: prompts/initializer.md sends durable gotchas to `## Gotchas` and run-only facts to `discoveries` `run` and never names a new decision number, prompts/coding.md's Decisions bullet points at the block, templates/project/CLAUDE.md and config.sh carry the block, an empty `## Gotchas` and a commented `DECISIONS=`, this repo's CLAUDE.md and .harness/config.sh get the block and `DECISIONS=journal/decisions`; an Opus subagent reviews the M2 diff.",
       "steps": [
         "prompts/initializer.md no longer contains `where things live, gotchas` and says: a durable gotcha → `## Gotchas` in CLAUDE.md, a run-only fact → `discoveries` affecting `run`, a step says `record as a new decision` and never names a `D<n>` number; the rendered prompt-initializer.md of a stub run has the new wording and not the old (a check in tests/checks/37-memory-prompts-m2.sh)",
@@ -143,89 +85,49 @@
         "this repo's CLAUDE.md has a `## Where things go` block in the harness's wording (decisions one file each in journal/decisions/, an overturned one edited in place in its own file, never numbered) and an empty `## Gotchas`; .harness/config.sh has `DECISIONS=journal/decisions`; `node lib/memlint.mjs store .` prints `journal/decisions`",
         "an Opus subagent reviews `git diff <commit before M2-01>..HEAD -- . ':!.harness/runs'` from a file in `$HARNESS_SCRATCH`; Critical and Important findings are fixed RED→GREEN and counted in the entry's summary",
         "journal/decisions/<date>-where-things-go.md exists (finding · choice · rejected): it records that on 2026-10-26 all seven projects with a CLAUDE.md (dj-crate-streaming, hit_list, n8n-home, pathways, portfolio_site, rane-one-mixxx, voice-concierge) had the heading and none set `DECISIONS=`, and the two accepted risks (numbered-file collisions between a run and an interactive session; `claude -p --bare` skipping CLAUDE.md)",
-        "the suite is green"
-      ],
-      "after": [
-        "M2-01"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M2-03",
-      "milestone": "M2",
-      "kind": "docs",
-      "model": "sonnet",
+        "the suite is green" ],
+      "after": ["M2-01"], "passes": true },
+
+    { "id": "M2-03", "milestone": "M2", "kind": "docs", "model": "sonnet",
       "description": "docs/architecture.md gains a `Memory model` section with the bucket × scope table and rules 1–6 of docs/specs/2026-10-25-throughput-and-memory-design.md §6, and README.md describes the routing block, `## Gotchas` and `DECISIONS=`.",
       "steps": [
         "docs/architecture.md has a section headed `Memory model` with a table whose rows are Session, Lane, Run, Project, Harness, User and whose columns are Working, Episodic, Semantic, Procedural, each cell naming the §4 paths it maps to, followed by the six numbered rules (append or in place is decided by bucket; one writer kind per store; scope declared, not inferred; derive, don't store; a working-memory budget per role; lanes add no store)",
         "README.md's `## What a project needs` names the `## Where things go` block, `## Gotchas` (15 lines, edited in place) and `DECISIONS=` in .harness/config.sh, and says the harness appends the block to prompts only when CLAUDE.md lacks the heading",
         "docs/architecture.md §2 Principles cites `decisions/<date>-where-things-go`; `grep -c 'Memory model' docs/architecture.md` prints at least 1",
-        "the suite is green"
-      ],
-      "after": [
-        "M2-02"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M3-01",
-      "milestone": "M3",
-      "kind": "plan",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M2-02"], "passes": true },
+
+    { "id": "M3-01", "milestone": "M3", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-26-M3-gotchas-and-pack.md fixes the Gotchas diff rule and its note, the entry field for a resolved question, the pack's two new parts (Promote to Gotchas, Current rules) and their shares, `project` as an affects value, CONTEXT_PACK_BYTES_VERIFY, the stub flags and the check file.",
       "steps": [
         "docs/plans/2026-10-26-M3-gotchas-and-pack.md exists and defines `gotchasDiff(before, after)` in lib/memlint.mjs (the `## Gotchas` section's lines at the session's start and end commits → `{added, edited, deleted}`), the exact note `<feature>: gotchas +<a> ~<e> -<d>` and where lib/driver.sh computes it (after `journal coding`, from `$sstart` and HEAD, `git show <commit>:CLAUDE.md`)",
         "the plan fixes the entry field for a resolved question (default `resolved: ['<question text>']`, matched after whitespace flattening) in lib/entries.mjs validate() and normalize(), and how pack() drops a question any later entry resolves",
         "the plan fixes the pack's new parts: `Promote to Gotchas` (discoveries whose `affects` includes `project`, shown until a `## Gotchas` line of the worktree's CLAUDE.md shares their first 40 characters) and `Current rules` (decisionsStore's headings and one-line rules, newest first, last in priority, at most a quarter of the cap), and `CONTEXT_PACK_BYTES_VERIFY=16384` for milestone packs with failed evidence rows first",
         "the plan names the stub flags (a coding session that adds a Gotchas line, one that resolves a question, one that records a `project` discovery, a verify whose entry has a `holds: false` row), the check file tests/checks/38-run-17-gotchas-and-pack-m3.sh, and the existing checks that must keep passing: tests/checks/12-journal-pure-e4-entrys.sh and the four `context.md carries the earlier attempt's dead end` checks",
-        "the suite is green"
-      ],
-      "after": [
-        "M2"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M3-02",
-      "milestone": "M3",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M2"], "passes": true },
+
+    { "id": "M3-02", "milestone": "M3", "kind": "build", "model": "opus",
       "description": "prompts/coding.md's Finish step adds or edits one `## Gotchas` line (≤ 160 characters, ending `(<run> <date>)`, 15 lines at most, never a wholesale rewrite) and the driver notes `<feature>: gotchas +<a> ~<e> -<d>` when the section changed between a session's start and end commits.",
       "steps": [
         "prompts/coding.md's `## 3. Finish` has the Gotchas step (one line of at most 160 characters ending `(<run> <date>)`, 15 lines at most, replace the least useful, edit a wrong line in place, never rewrite the section); the rendered prompt-coding.md of a stub run contains `## Gotchas` (a check in tests/checks/38-run-17-gotchas-and-pack-m3.sh)",
         "`gotchasDiff` in lib/memlint.mjs is exported and pure: a check shows one added line → `+1 ~0 -0`, one changed line → `+0 ~1 -0`, one removed → `+0 ~0 -1`, no section on either side → no change",
         "a stub coding session with `STUB_GOTCHA=<id>` appends a `## Gotchas` line to the project's CLAUDE.md and the run's harness-log.md has `<id>: gotchas +1 ~0 -0`; a session that touches CLAUDE.md nowhere yields no `gotchas` note (two checks)",
         "docs/architecture.md §7 gains a `Gotchas` row (trigger, the note, `gotchasDiff`) and journal/decisions/<date>-gotchas-in-place.md exists (finding · choice · rejected)",
-        "the suite is green"
-      ],
-      "after": [
-        "M3-01"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M3-03",
-      "milestone": "M3",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M3-01"], "passes": true },
+
+    { "id": "M3-03", "milestone": "M3", "kind": "build", "model": "opus",
       "description": "A session marks an answered question resolved in its entry and the context pack drops it; `project` is a valid `affects` value and the pack lists such discoveries under `Promote to Gotchas` until a `## Gotchas` line carries them.",
       "steps": [
         "lib/entries.mjs validate() accepts `resolved` (an array of strings) and normalize() keeps it; a check in tests/checks/12-journal-pure-e4-entrys.sh shows an entry with `resolved: ['Should X default to off?']` validates and one with `resolved: 'x'` is rejected with `resolved: not an array of strings`",
         "pack() leaves a question out of `This feature's earlier attempts` when a later entry's `resolved` lists it; a check in tests/checks/38-run-17-gotchas-and-pack-m3.sh runs a stub session that asks a question, then one with `STUB_RESOLVE=<id>` that resolves it, and the next session's `logs/NN-<id>.context.md` has no `Question (` line",
         "pack() has a part `Promote to Gotchas` listing discoveries whose `affects` includes `project`, each ending `→ entries.jsonl:<line>`; a check shows a stub `project` discovery (`STUB_PROJECT_FACT=<id>`) appears there in the next context.md and is gone once the project's CLAUDE.md `## Gotchas` has a line sharing its first 40 characters",
         "prompts/coding.md's entry example and its `affects` sentence name `project` (a fact that outlives the run) and the Finish step says to write `Promote to Gotchas` items into `## Gotchas`; prompts/parts/where-things-go-readonly.md says a verify's durable fact goes to `discoveries` with `project`",
-        "the suite is green"
-      ],
-      "after": [
-        "M3-02"
-      ],
-      "passes": false
-    },
-    {
-      "id": "M3-04",
-      "milestone": "M3",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M3-02"], "passes": false },
+
+    { "id": "M3-04", "milestone": "M3", "kind": "build", "model": "opus",
       "description": "context.md gains a `Current rules` part with the decisions store's current lines (headings and their one-line rule, newest first) within the cap, and verify packs use CONTEXT_PACK_BYTES_VERIFY (16384) with failed evidence rows first.",
       "steps": [
         "pack() reads the store through `decisionsStore` of the worktree three directories above the run dir (a directory store: each file's `# ` title line, newest first by file name; a file store: its `D<n>` headings with their first line) and emits them under `## Current rules` as the last part, at most a quarter of the cap; a check in tests/checks/38-run-17-gotchas-and-pack-m3.sh shows a stub project with `docs/decisions.md` holding `D1`, `D2`, `D3` gets all three titles in the next context.md, newest first",
@@ -233,36 +135,20 @@
         "lib/config.sh has `CONTEXT_PACK_BYTES_VERIFY=16384`, templates/user/config.sh documents it, context() in lib/driver.sh uses it for a milestone pack and puts `Verify … found` rows first; a check with a stub verify whose entry has a `holds: false` row (`STUB_VERIFY_FAIL_ROW=1`) shows the next `*-verify-M1.context.md` lists that row before any `Dead end` line and the harness-log.md `context.md for M1:` byte count may exceed 8192",
         "the four `context.md carries the earlier attempt's dead end` checks and tests/checks/29-run-15-resumed-run.sh's legacy-run checks pass unchanged",
         "docs/architecture.md §4's Context pack row lists the seven parts and the verify cap; journal/decisions/<date>-pack-current-rules.md exists (finding · choice · rejected)",
-        "the suite is green"
-      ],
-      "after": [
-        "M3-03"
-      ],
-      "passes": false
-    },
-    {
-      "id": "M3-05",
-      "milestone": "M3",
-      "kind": "review",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M3-03"], "passes": false },
+
+    { "id": "M3-05", "milestone": "M3", "kind": "review", "model": "opus",
       "description": "An Opus review of the M3 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, docs touched by M3 brought in line.",
       "steps": [
         "`git diff <commit before M3-01>..HEAD -- . ':!.harness/runs' > $HARNESS_SCRATCH/m3-review.diff` is read by an Opus subagent that returns findings only; the entry's summary gives `<n> Critical, <n> Important, <n> Minor`; a second round runs only when the first found a Critical",
         "every Critical and Important finding is fixed with a check written first (RED) then passing (GREEN), each named in the entry's `verified_how`; the simplification pass's edits are listed in the entry's `files`",
         "docs/plans/2026-10-26-M3-review.md records the findings and their fixes; docs/architecture.md §4 and §7, README.md and the two M3 decision files describe M3 as merged",
         "`bash -n` passes on lib/driver.sh, lib/prompt.sh, tests/stub-claude.sh and tests/checks/38-run-17-gotchas-and-pack-m3.sh; `node --check` passes on lib/entries.mjs and lib/memlint.mjs",
-        "the suite is green"
-      ],
-      "after": [
-        "M3-04"
-      ],
-      "passes": false
-    },
-    {
-      "id": "M4-01",
-      "milestone": "M4",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M3-04"], "passes": false },
+
+    { "id": "M4-01", "milestone": "M4", "kind": "build", "model": "opus",
       "description": "lib/memlint.mjs runs four deterministic checks on a worktree (CLAUDE.md size and Gotchas length, stored test counts, night-scope phrases, decisions-store header and supersession markers without `Updated in place`) and prints one finding per line, proven on fixtures trimmed from the projects' files as they were before chunk 3 Part 2 tidied them.",
       "steps": [
         "`node lib/memlint.mjs <worktree>` prints one finding per line as `<file>:<line> <check>: <text>` (checks `size`, `gotchas`, `derivable-count`, `night-scope`, `decisions`) and exits 0 with or without findings, 2 on a missing worktree; `MEMLINT_LINES` (default 120) caps CLAUDE.md and `## Gotchas` is capped at 15 lines; the usage header lists the checks",
@@ -270,18 +156,10 @@
         "checks in tests/checks/39-memlint-m4.sh: the dj fixture yields one `derivable-count` finding naming its line; the pathways fixture yields a `night-scope` finding for `tonight`; the old rane store yields a `decisions` finding for its `Superseded` line and none for the header; the tidy rane store beside a CLAUDE.md with `## Where things go` yields no finding; a worktree with neither `DECISIONS=` nor docs/decisions.md yields `decisions: no store`",
         "a CLAUDE.md fixture of 121 lines yields a `size` finding and one with 16 Gotchas lines a `gotchas` finding (two checks); the store lookup is M2's `decisionsStore` (one function); `node --check lib/memlint.mjs` passes",
         "`node lib/memlint.mjs .` on this worktree prints nothing: this repo's CLAUDE.md loses its stored check count (`395 checks`) on the way, and journal/decisions.md (closed) is not the store",
-        "the suite is green"
-      ],
-      "after": [
-        "M2"
-      ],
-      "passes": false
-    },
-    {
-      "id": "M4-02",
-      "milestone": "M4",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M2"], "passes": false },
+
+    { "id": "M4-02", "milestone": "M4", "kind": "build", "model": "opus",
       "description": "At each driver start the memlint findings for the worktree become `note \"memlint: …\"` lines in harness-log.md that never stop the run, and `harness memlint <project>` prints the same for Michael; an Opus subagent reviews the M4 diff.",
       "steps": [
         "lib/driver.sh runs memlint beside deploy_check (every segment start, before the initializer or the first session) and writes one `memlint: <finding>` note per finding and none when clean; a stub run whose project CLAUDE.md has a `~1,870 tests` line and a `tonight` line has exactly two `memlint:` lines in harness-log.md and still ends `done` with `3/3 passing` (a check in tests/checks/39-memlint-m4.sh)",
@@ -289,34 +167,20 @@
         "`harness memlint <project|path>` (bin/harness, a usage line in its header) resolves the project directory as `harness start` does and prints the findings, exit 0; a check runs it on `$T/proj` and sees the same two lines",
         "README.md tells Michael `harness memlint <project>` for each project is how he confirms Part 2 held; docs/architecture.md §7 gains a `memlint` row (trigger, notes only, never stops the run) and §3 lists lib/memlint.mjs; journal/decisions/<date>-memlint.md exists (finding · choice · rejected: notes not gates, fixtures from the pre-tidy commits)",
         "an Opus subagent reviews `git diff <commit before M4-01>..HEAD -- . ':!.harness/runs'` from a file in `$HARNESS_SCRATCH`; Critical and Important findings are fixed RED→GREEN and counted in the entry's summary",
-        "the suite is green"
-      ],
-      "after": [
-        "M4-01"
-      ],
-      "passes": false
-    },
-    {
-      "id": "M5-01",
-      "milestone": "M5",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M4-01"], "passes": false },
+
+    { "id": "M5-01", "milestone": "M5", "kind": "build", "model": "opus",
       "description": "lib/testcount.mjs prefers a `HARNESS_TESTS=<n>` line in the suite's output over R1's per-runner parsers and the heuristic, reports which source it used, and the driver's harness-log.md says `test count: HARNESS_TESTS contract` / `parsed (<runner>)` / `no match` once per run.",
       "steps": [
         "`testCount(text)` returns the last `HARNESS_TESTS=<n>` line's n when present; `node lib/testcount.mjs <file> --source` prints `<n> tests · <source>` with source one of `contract`, `node`, `cargo`, `jest`, `go`, `generic`, `none`; the plain form still prints `<n> tests` and lib/check.sh's green line is unchanged",
         "fixtures: tests/fixtures/check-jest-contract.txt is tests/fixtures/check-jest.txt plus a trailing `HARNESS_TESTS=1115` line (its first line says so) and yields 1115 (a check in tests/checks/06-test-counts-pure-r1.sh: the contract wins over the `7 passed`); tests/fixtures/check-agent-harness.txt is this run's own scratch `/tmp/harness/agent-harness/agent-harness-2026-10-25-memory/check.out` trimmed to its last 30 lines (`395/395 checks passed`) and yields 395 by the generic rule",
         "without a contract line the jest and pytest fixtures still give 7 and 4 with sources `jest` and `generic`, and an empty file gives source `none` (checks)",
         "lib/driver.sh's run_init notes once per run which source the first counted suite used (`test count: HARNESS_TESTS contract`, `test count: parsed (<runner>)`, or the existing `test count: no match …` line; marker `$STATE/testcount-source`); a stub run whose CHECK_CMD echoes `HARNESS_TESTS=12` has `test count: HARNESS_TESTS contract` in harness-log.md and summary.json `tests.start` 12 (a check in tests/checks/40-run-18-test-counts-m5.sh)",
-        "the suite is green"
-      ],
-      "after": [],
-      "passes": false
-    },
-    {
-      "id": "M5-02",
-      "milestone": "M5",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": [], "passes": false },
+
+    { "id": "M5-02", "milestone": "M5", "kind": "build", "model": "opus",
       "description": "The driver refreshes `tests-end` from the latest green suite after every session, not only at finish, `tests-start` stays the run's baseline and report.md labels it `baseline at run start`; an Opus subagent reviews the M5 diff.",
       "steps": [
         "after each coding session's `green` check lib/driver.sh writes `$STATE/tests-end` from the tree's green marker or its check.out (the two sources finish() uses, lifted into one function `tests_end`); `harness status <run>` and summary.json's `tests.end` show it between sessions",
@@ -324,99 +188,55 @@
         "lib/summary.mjs's report() labels the tests cell `baseline at run start → end` and `harness trends`'s header column says `tests (baseline → end)`; the checks in tests/checks/14-run-2b-stop-records.sh that read report.md pass",
         "docs/architecture.md §4's Markers row says when `tests-start` and `tests-end` are written; README.md's `## What a project needs` says a suite may print `HARNESS_TESTS=<n>`; journal/decisions/<date>-test-count-contract.md exists (finding · choice · rejected; records that a structured `TEST_REPORT` option was not built: a project's check prints the contract line from its own report)",
         "an Opus subagent reviews `git diff <commit before M5-01>..HEAD -- . ':!.harness/runs'` from a file in `$HARNESS_SCRATCH`; Critical and Important findings are fixed RED→GREEN and counted in the entry's summary",
-        "the suite is green"
-      ],
-      "after": [
-        "M5-01"
-      ],
-      "passes": false
-    },
-    {
-      "id": "M6-01",
-      "milestone": "M6",
-      "kind": "plan",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M5-01"], "passes": false },
+
+    { "id": "M6-01", "milestone": "M6", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-26-M6-review-gate.md fixes how the driver measures a milestone's diff, where the review model is chosen, how a Sonnet review's Critical/Important findings are detected and escalated, the summary.json fields, the stub behaviour, the check file and the evals/NEXT.md commands.",
       "steps": [
         "docs/plans/2026-10-26-M6-review-gate.md exists and gives the diff measure as a git command (default `git diff --shortstat origin/<main>...HEAD -- . ':!.harness/runs'`, insertions plus deletions), the `Review diff: <n> files, <n> changed lines` line under `# This session` filled from `{{REVIEW_DIFF}}`, and the point in lib/driver.sh's loop (after `read -r id mdl milestone`, when `F kind` is `review`) where `mdl` becomes sonnet below `REVIEW_OPUS_LINES` (400) and opus at or above",
         "the plan fixes the escalation: the review session's entry summary (else its final message) matched for `<n> Critical` and `<n> Important` with n > 0 → one extra session for the same feature on `REVIEW_ESCALATE_MODEL` (default opus) that costs no attempt, noted `review <id>: sonnet found <c> Critical, <i> Important; one round on opus`; a review reporting `0 Critical, 0 Important` does not escalate",
         "the plan names the summary.json fields `review.cost_pct` and `review.found_nothing`, the stub flags (`STUB_REVIEW_LIST`, `STUB_BIG_DIFF`, `STUB_REVIEW_FINDINGS`), the check file tests/checks/41-run-19-review-gate-m6.sh, and the `harness eval run` and `harness eval compare` commands for evals/NEXT.md (a pre-M6 tag against M6)",
-        "the suite is green"
-      ],
-      "after": [],
-      "passes": false
-    },
-    {
-      "id": "M6-02",
-      "milestone": "M6",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": [], "passes": false },
+
+    { "id": "M6-02", "milestone": "M6", "kind": "build", "model": "opus",
       "description": "For a `review` feature the driver measures the milestone diff, passes `{{REVIEW_DIFF}}` to the prompt and runs the review on Sonnet below REVIEW_OPUS_LINES (default 400 changed lines) and on Opus at or above it.",
       "steps": [
         "lib/config.sh has `REVIEW_OPUS_LINES=400` and `REVIEW_ESCALATE_MODEL=opus`; templates/user/config.sh documents both; prompts/coding.md's `# This session` has a `{{REVIEW_DIFF}}` line that renders empty for non-review features",
         "a stub run with `STUB_REVIEW_LIST=1` (the stub initializer writes a list whose M1 has three build features and a review feature `R`) has `R`'s metrics.jsonl row with model sonnet and harness-log.md `review R: <n> changed lines, under 400; sonnet`; with `STUB_BIG_DIFF=1` (a stub build session commits a 500-line file) the row says opus and the note ends `at or over 400; opus` (two checks in tests/checks/41-run-19-review-gate-m6.sh)",
         "the review session's prompt copy (`logs/NN-R.prompt.md`) contains `Review diff:` with the measured counts and a build session's prompt copy has no `Review diff:` line (a check)",
         "tests/checks/07-step-lint-pure-r3.sh passes unchanged (R2's review sizing untouched)",
-        "the suite is green"
-      ],
-      "after": [
-        "M6-01"
-      ],
-      "passes": false
-    },
-    {
-      "id": "M6-03",
-      "milestone": "M6",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M6-01"], "passes": false },
+
+    { "id": "M6-03", "milestone": "M6", "kind": "build", "model": "opus",
       "description": "A Sonnet review that reports a Critical or Important finding gets one more round on REVIEW_ESCALATE_MODEL, costing no attempt; one that reports nothing does not.",
       "steps": [
         "a stub review session whose entry summary says `1 Critical, 0 Important` (`STUB_REVIEW_FINDINGS=1,0`) is followed by one more session for the same feature on opus (metrics.jsonl: two rows for `R`, sonnet then opus) and harness-log.md has `review R: sonnet found 1 Critical, 0 Important; one round on opus`; `$STATE/attempts.json` counts one attempt for `R` (a check in tests/checks/41-run-19-review-gate-m6.sh)",
         "a stub review saying `0 Critical, 0 Important` (`STUB_REVIEW_FINDINGS=0,0`) is followed by no second session (one metrics.jsonl row for `R`) and the run ends `done` (a check)",
         "a review already on opus (diff at or over the threshold) never escalates whatever it reports (a check); the escalation round's prompt says it is the escalation round (`Review round 2 of 2 (escalated: …)` in the clock line)",
         "docs/architecture.md §7 gains a `Review gate` row (trigger, model choice, escalation, notes) and journal/decisions/<date>-review-gate.md exists (finding · choice · rejected)",
-        "the suite is green"
-      ],
-      "after": [
-        "M6-02"
-      ],
-      "passes": false
-    },
-    {
-      "id": "M6-04",
-      "milestone": "M6",
-      "kind": "build",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M6-02"], "passes": false },
+
+    { "id": "M6-04", "milestone": "M6", "kind": "build", "model": "opus",
       "description": "summary.json and report.md carry review cost as a % of the run and the count of reviews that found nothing, and evals/NEXT.md holds the before/after `harness eval compare` commands, written for Michael and never run.",
       "steps": [
         "lib/summary.mjs build() adds `review: { cost_pct, found_nothing }` (review-role cost over total cost as a percentage with one decimal, null without reviews; review features whose last entry summary says `0 Critical, 0 Important`); report() shows both in the Spend rows; a check in tests/checks/41-run-19-review-gate-m6.sh reads them from the stub run's summary.json and report.md",
         "`harness trends` keeps its columns and the ledger line (lib/summary.mjs `ledger-line`) gains `review_cost_pct`; the checks in tests/checks/14-run-2b-stop-records.sh that read summary.json pass",
         "evals/NEXT.md gains `## 5. M6: the review gate` with `EVAL_BUDGET_USD=35 harness eval run --set default --harness <pre-M6 tag> --label pre-m6`, the same command for M6's tag with `--label m6`, and `harness eval compare pre-m6 m6`, saying Michael runs them and that no cost claim stands before they do; `git status --porcelain -- evals/results` is empty (no eval ran)",
         "README.md's `## Evals` section points at the new evals/NEXT.md section; the decision file journal/decisions/<date>-review-gate.md names the two fields",
-        "the suite is green"
-      ],
-      "after": [
-        "M6-03"
-      ],
-      "passes": false
-    },
-    {
-      "id": "M6-05",
-      "milestone": "M6",
-      "kind": "review",
-      "model": "opus",
+        "the suite is green" ],
+      "after": ["M6-03"], "passes": false },
+
+    { "id": "M6-05", "milestone": "M6", "kind": "review", "model": "opus",
       "description": "An Opus review of the M6 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, docs touched by M6 brought in line.",
       "steps": [
         "`git diff <commit before M6-01>..HEAD -- . ':!.harness/runs' > $HARNESS_SCRATCH/m6-review.diff` is read by an Opus subagent that returns findings only; the entry's summary gives `<n> Critical, <n> Important, <n> Minor`; a second round runs only when the first found a Critical",
         "every Critical and Important finding is fixed with a check written first (RED) then passing (GREEN), each named in the entry's `verified_how`; the simplification pass's edits are listed in the entry's `files`",
         "docs/plans/2026-10-26-M6-review.md records the findings and their fixes; docs/architecture.md §7 and §11, README.md, evals/NEXT.md and journal/decisions/<date>-review-gate.md describe M6 as merged",
         "`bash -n` passes on lib/driver.sh, lib/config.sh, tests/stub-claude.sh and tests/checks/41-run-19-review-gate-m6.sh; `node --check lib/summary.mjs` passes",
-        "the suite is green"
-      ],
-      "after": [
-        "M6-04"
-      ],
-      "passes": false
-    }
-  ]
-}
+        "the suite is green" ],
+      "after": ["M6-04"], "passes": false }
+  ] }
