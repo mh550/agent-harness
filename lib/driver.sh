@@ -562,15 +562,22 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   ) 9> "$STATE_ROOT/ledger.lock"
 }
 
+# tests-end: the tree's count, its green marker's (a continued segment's scratch has no output of a tree cached green),
+# else its output's. Written after every session too, so status and report show it between sessions; tests-start, the
+# run's baseline, is never rewritten (decisions/2026-10-26-test-count-contract). Without a count only `final` (finish)
+# clears it: mid-run, the last known count stays.
+tests_end() {   # [final]
+  local key n; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
+  n=$(cat "$STATE/green/green-$key" 2> /dev/null); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out" 2> /dev/null)
+  if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; elif [[ ${1:-} == final ]]; then rm -f "$STATE/tests-end"; fi
+}
+
 finish() {   # reason → summary, notification, retro, ledger, continuation
   END_REASON=$1
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$RUN_DIR/metrics.jsonl")"
   merge_milestones
-  # the tree's count: its green marker's (a continued segment's scratch has no output of a tree cached green), else its output's
-  local key n; green; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
-  n=$(cat "$STATE/green/green-$key" 2> /dev/null); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out")
-  if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; else rm -f "$STATE/tests-end"; fi
+  green; tests_end final
   services_down "$1"   # after the last suite run, which may need them
   SUM build "$WT" "$RUN_ID" "$STATE" > "$RUN_DIR/summary.json"
   SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"   # the end notification's click; rewritten after the retro
@@ -805,9 +812,10 @@ while :; do
     (( repairs >= MAX_REPAIRS )) && { note "$repairs sessions in a row edited the feature list; stopping for Michael"; finish "feature-list edits"; }
   fi
   if F passes "$LIST" "$id" && ! green; then F unpass "$LIST" "$id"; note "$id un-passed: suite red after the session"; fi
+  tests_end
   passed=$(F passes "$LIST" "$id" && echo true || echo false)
   MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$(F kind "$LIST" "$id")" "$S_PEAK"
-  note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")"
+  note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")$( [[ -f $STATE/tests-end ]] && echo " · tests $(cat "$STATE/tests-end")")"
   if [[ $passed == false ]] && why=$(MET final "$slog" | sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' | head -1) && [[ -n $why ]]; then
     F unbump "$ATT" "$id"; F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault
     note "$id parked (waiting on Michael): $why"

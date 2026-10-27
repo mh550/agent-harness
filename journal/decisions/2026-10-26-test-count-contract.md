@@ -1,6 +1,6 @@
 # A test-count contract: a suite's own `HARNESS_TESTS=<n>` line wins over scraping its summary
 
-*(2026-10-26, run agent-harness-2026-10-25-memory, feature M5-01; spec `docs/specs/2026-10-25-memory.md` M5, which
+*(2026-10-26, run agent-harness-2026-10-25-memory, features M5-01 and M5-02; spec `docs/specs/2026-10-25-memory.md` M5, which
 takes `docs/specs/2026-10-22-retro-followups.md` §C as written; extends decisions/2026-10-26-real-test-counts)*
 
 - **Finding:** R1's parsers scrape a runner's human-readable summary. That breaks when a runner changes its wording or
@@ -20,6 +20,19 @@ takes `docs/specs/2026-10-22-retro-followups.md` §C as written; extends decisio
   - Fixtures: `tests/fixtures/check-jest-contract.txt` (the jest fixture plus `HARNESS_TESTS=1115`) and
     `tests/fixtures/check-agent-harness.txt` (this run's own `check.out`, last 30 lines, `474/474 checks passed`: the
     feature's step said 395, which was the count at init; the file is copied, not retyped).
+  - **`tests-end` after every session (M5-02):** `finish()`'s two sources (the tree's green marker, else its
+    `check-<key>.out`) are one function, `tests_end`, which the driver also calls after each coding session's `green`
+    check. A continued run's summary showed the last segment's end until `finish`; now `harness status` (`· tests
+    <start> → <end>`), `harness report` and each session's `harness-log.md` line (`· tests <n>`) show the latest tree's.
+    Mid-run, a tree with no count keeps the last known one; only `finish` clears it (*default*: a session that ran no
+    full suite says nothing about the count). `tests-start` stays the first `run_init`'s count, never rewritten:
+    report.md's cell reads `<start> → <end> (baseline at run start → end)`, `harness trends`' column
+    `tests (baseline → end)`.
 - **Rejected:** a structured report option (`TEST_REPORT=<path+format>`, reading `jest --json`, `pytest --report-log`
   or `go test -json`) for now: a project's check can print the contract line from its own report, with no parser per
   format in the harness. Taking the first `HARNESS_TESTS=` line instead of the last: a wrapper prints its total last.
+  Rebasing `tests-start` at each `harness continue`: the run's start is the baseline Michael compares against; a
+  segment's own start is in its first session's `harness-log.md` line. Running the suite after a session that didn't
+  pass, to have a count for its tree: the next `run_init` runs it anyway.
+
+Updated in place 2026-10-26: M5-02 added `tests_end` after every session and the baseline labels.

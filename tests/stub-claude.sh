@@ -21,6 +21,9 @@
 # "Should <id> default to off?"; STUB_RESOLVE=<id>: its later sessions' entries list it in `resolved`. STUB_PROJECT_FACT=<id>:
 # its first session's entry has the discovery STUB_GOTCHA writes, affecting "project" (M3-03). STUB_VERIFY_FAIL_ROW=1: A's
 # coding entries record a dead end and verify M1 round 1's entry has a `holds: false` row for A step 1 (M3-04).
+# STUB_TESTS_N=<id>:<n>: that feature's first coding session commits tests.n <n> (a suite echoing it counts <n>). STUB_SNAPSHOT=<id>:
+# its first coding session saves `harness status`, `harness report` and the state's summary.json, tests-start and
+# tests-end in $STUB_DIR/snap-<run>/ (M5-02).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -135,6 +138,12 @@ JSON
     fi
     if [[ $id == C ]]; then [[ $n == 1 && ! ${STUB_NO_RED:-} ]] && touch BROKEN || rm -f BROKEN; fi   # first try leaves the suite red
     echo "$id $n" > "work-$id.txt"
+    [[ ${STUB_TESTS_N:-} && ${STUB_TESTS_N%%:*} == "$id" && $n == 1 ]] && echo "${STUB_TESTS_N#*:}" > tests.n   # the suite's count moves (M5-02)
+    if [[ ${STUB_SNAPSHOT:-} == "$id" && $n == 1 ]]; then   # what Michael sees between sessions, before finish (M5-02)
+      st=$(compgen -G "$HARNESS_STATE/*/$HARNESS_RUN_ID") && mkdir -p "$STUB_DIR/snap-$HARNESS_RUN_ID" && (cd "$STUB_DIR/snap-$HARNESS_RUN_ID"
+        "$HERE/../bin/harness" status "$HARNESS_RUN_ID" > status.txt; "$HERE/../bin/harness" report "$HARNESS_RUN_ID" > report.md
+        cp "$st/summary.json" "$st/tests-start" .; cp "$st/tests-end" . 2> /dev/null; true)
+    fi
     if [[ ${STUB_GOTCHA:-} == "$id" && $n == 1 ]]; then   # a fact a fresh session would rediscover, as the Finish step asks
       grep -qx '## Gotchas' CLAUDE.md 2> /dev/null || printf '\n## Gotchas\n\n' >> CLAUDE.md
       echo "- the stub's work files sit at the repo root, one per feature ($HARNESS_RUN_ID $(date +%F))" >> CLAUDE.md

@@ -19,7 +19,7 @@ ln -s ~/projects/agent-harness/bin/harness ~/.local/bin/harness     # once
 harness init ~/projects/myapp            # CLAUDE.md template + .harness/config.sh (POLICY=build-only); prints what it detected
 # fill in CLAUDE.md, commit to main, then:
 harness start ~/projects/myapp --spec docs/todo.md --brief "items 1–3 only"
-harness status                           # every run: running / ended (why), features, last log lines
+harness status                           # every run: running / ended (why), features, tests, last log lines
 harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes, memory peaks over 2 GB
                                          # (tests: counted for node:test, pytest, jest/vitest, cargo and go test -v; a suite with no count is said once in harness-log.md)
 ```
@@ -68,7 +68,10 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 
 **Test counts.** A suite may print a line `HARNESS_TESTS=<n>` (the last one wins): the harness takes it over scraping
 the runner's summary (node:test, cargo, jest, `go test -v`, then the last `N passed`), and `harness-log.md` says once
-per run which it used: `test count: HARNESS_TESTS contract`, `parsed (<runner>)` or `no match`.
+per run which it used: `test count: HARNESS_TESTS contract`, `parsed (<runner>)` or `no match`. The run's first count
+is its baseline (`tests-start`); the latest tree's (`tests-end`) is refreshed after every session, so `harness status`,
+`harness report` and each session's line in `harness-log.md` show it mid-run, and report.md's Tests cell reads
+`<start> → <end> (baseline at run start → end)`.
 
 **Memory lint.** `harness memlint <project>` prints what `lib/memlint.mjs` finds in a project's memory files, one
 `<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines),

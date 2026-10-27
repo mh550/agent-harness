@@ -267,7 +267,9 @@ cmd_status() {
         upto=$(cat "$STATE_ROOT/LIMIT_UNTIL" 2>/dev/null || echo 0); (( upto > $(date +%s) )) && state="$state, waiting for the usage limit until $(date -d "@$upto" '+%H:%M')"
       elif [[ -f $STATE/ended ]]; then state="ended: $(cat "$STATE/ended")"
       else state="not running"; fi
-      echo "$RUN_ID ($(basename "$PROJECT_DIR")) · $state · port $(cat "$STATE/port") · $( [[ -f $list ]] && node "$HARNESS_HOME/lib/features.mjs" summary "$list" || echo 'no feature list yet')"
+      # tests: the baseline at run start → the latest session's tree (the driver refreshes tests-end after each session)
+      local tests=""; [[ -f $STATE/tests-start || -f $STATE/tests-end ]] && tests=" · tests $(cat "$STATE/tests-start" 2> /dev/null || echo '?') → $(cat "$STATE/tests-end" 2> /dev/null || echo '?')"
+      echo "$RUN_ID ($(basename "$PROJECT_DIR")) · $state · port $(cat "$STATE/port") · $( [[ -f $list ]] && node "$HARNESS_HOME/lib/features.mjs" summary "$list" || echo 'no feature list yet')$tests"
       if [[ $state == running* ]]; then   # what it holds: one line per unit; a missing bus or a unit gone just now shows nothing
         local u b
         while read -r u _; do
