@@ -9,6 +9,21 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 22:48 · M4-01 · passes
+
+lib/memlint.mjs <worktree> lints CLAUDE.md, .harness/project.md and the decisionsStore store: size, gotchas, derivable-count, night-scope, decisions; one `<file>:<line> <check>: <text>` per line, exit 0 (2: no worktree). 6 fixtures from pre-tidy and tidy commits. This repo's CLAUDE.md lost `395 checks`. Opus review: 0 Critical/Important, 5 Minor fixed RED→GREEN. Tests 455 → 469.
+
+- **Files:** lib/memlint.mjs, tests/checks/39-memlint-m4.sh, tests/fixtures/memlint/, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-memlint.md, CLAUDE.md
+- **Verified:** bash tests/run.sh 39-memlint 14/14 (11 written first and watched failing, 3 more for the review's findings, each red first); full suite via check.sh green in 312 s, 469 tests; node lib/memlint.mjs . prints nothing; node --check lib/memlint.mjs passes
+- **Tests:** 455 → 469
+- **Dead end:** bare `superseded` / `overturned` / `replaced by` as supersession markers (K3's list as written) — flags rane's own header (`when a decision is overturned`), voice-concierge D11 (`the rows they superseded`) and 3 of this repo's decision files (`replaced by` in prose); now passive or tagged forms only (decision D3)
+- **Discovery** (affects M4-02): memlint exports lint(worktree, maxLines), lintText, lintStore, gotchasEntries; CLI `node lib/memlint.mjs <dir>` exits 0 with findings, 2 on a missing dir, 1 (stack) on an unreadable file: M4-02's `memlint: failed` note keys on non-zero exit.
+- **Discovery** (affects M4-02, run): On 2026-10-26 the projects' checkouts give exactly two findings, both size: hit_list CLAUDE.md 181 lines and portfolio_site 127 (MEMLINT_LINES 120). M4-02's README line can say so.
+- **Discovery** (affects run): Fixture sources were read from bare clones in the scratch dir (git clone --bare ~/projects/<p>), never by git commands in the projects' checkouts.
+- **Question for Michael:** memlint defaults D1-D4 in journal/decisions/2026-10-26-memlint.md (plural counts incl. `checks`; month-name dates; passive/tagged supersession markers only; no-store reported at .harness/config.sh:1): keep them?
+- **Proposed change:** M4-02: architecture §7's memlint row and README can cite the two live findings (hit_list and portfolio_site CLAUDE.md over 120 lines) as what Michael will see first
+- *15-M4-01 · claude-opus-5-5*
+
 ### 2026-10-26 22:27 · verify M3 · passes
 
 All five M3 features hold: full suite green (455), 38-run-17 12/12 and 12-journal 15/15 re-run, docs/decisions/plan present, bash -n and node --check ok.
