@@ -121,7 +121,7 @@
         "the two invariant checks: after the demo run `git -C $T/origin.git diff --quiet run/demo/M2 main` (what lands on main is byte for byte what was verified) and no PR's diff in the stub gh's record touches a .harness/runs/ path while harness/demo holds every entry (entries.jsonl lines = sessions) and `git -C $T/origin.git ls-tree -r main --name-only | grep -c .harness/runs/` is 0",
         "the record checks listed in the plan are rewritten to assert the record on harness/<run> and that no code PR touches .harness/runs/; every other check keeps its text (every name in tests/fixtures/check-names.txt still present); `bash -n` on every shell file touched; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-04",

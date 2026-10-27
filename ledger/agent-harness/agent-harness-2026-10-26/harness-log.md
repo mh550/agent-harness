@@ -34,3 +34,13 @@
 - 2026-10-26 18:53 · blocked: the remaining features wait on P1-03 (given up; needs Michael)
 - 2026-10-26 18:53 · run ended (blocked on P1-03): 6/17 passing · 13 sessions (13 real) · 6 features passed · $52.81 · 5.4 h · by kind: init 1 ($4.71), coding 10 ($47.75), retro 1 ($0.11), verify 1 ($0.24) · by model: claude-fable-5-1 1 ($4.71), claude-opus-5-5 10 ($47.75), claude-sonnet-5-5 2 ($0.35)
 - 2026-10-26 18:53 · services stopped (blocked on P1-03)
+- 2026-10-26 18:54 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-26 (in the state dir: init.out check-last.out)
+- 2026-10-26 22:40 · main conflicts with harness/agent-harness-2026-10-26; carrying on without it (merges into main need Michael)
+- 2026-10-26 22:45 · context.md for P1-03: 7827 bytes, 3 items left out
+- 2026-10-26 23:07 · P1-03 · claude-opus-5-5 · passes=true · 22 min · 7/17 passing
+- 2026-10-26 23:07 · context.md for P1-04: 7956 bytes, 9 items left out
+- 2026-10-27 00:13 · P1-04 un-passed: suite red after the session
+- 2026-10-27 00:13 · P1-04 · claude-opus-5-5 · passes=false · 58 min · 7/17 passing
+- 2026-10-27 00:13 · stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh)
+- 2026-10-27 00:13 · run ended (stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh)): 7/17 passing · 16 sessions (16 real) · 7 features passed · $68.95 · 6.8 h · by kind: init 1 ($4.71), coding 12 ($63.75), retro 2 ($0.24), verify 1 ($0.24) · by model: claude-fable-5-1 1 ($4.71), claude-opus-5-5 12 ($63.75), claude-sonnet-5-5 3 ($0.48)
+- 2026-10-27 00:19 · services stopped (stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh))
