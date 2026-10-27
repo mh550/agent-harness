@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-10-26",
   "started": "2026-10-26T09:29:44.000Z",
-  "ended_at": "2026-10-27T04:19:22.000Z",
+  "ended_at": "2026-10-27T04:19:44.000Z",
   "end_reason": "stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh)",
   "continuations": 2,
   "features": {
@@ -40,12 +40,12 @@
     "end": 430
   },
   "cost": {
-    "total": 68.95,
-    "per_passing_feature": 9.85,
+    "total": 69.06,
+    "per_passing_feature": 9.87,
     "by_role": {
       "init": 4.71,
       "build": 49.69,
-      "retro": 0.24,
+      "retro": 0.35,
       "review": 3.49,
       "verify": 0.24,
       "plan": 10.58
@@ -53,29 +53,29 @@
     "by_model": {
       "claude-fable-5-1": 4.71,
       "claude-opus-5-5": 63.76,
-      "claude-sonnet-5-5": 0.48
+      "claude-sonnet-5-5": 0.59
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 7.57,
+    "wall_h": 7.58,
     "sessions_h": 6.8,
     "driver_h": 0.78,
     "by_role_h": {
       "init": 0.17,
       "build": 5.65,
-      "retro": 0.02,
+      "retro": 0.03,
       "review": 0.33,
       "verify": 0.06,
       "plan": 0.57
     }
   },
   "tokens": {
-    "in": 2384,
-    "cache_read": 112256901,
-    "cache_write": 3285643,
-    "out": 1086241,
-    "cache_hit_rate": 0.972,
+    "in": 2390,
+    "cache_read": 112325036,
+    "cache_write": 3307201,
+    "out": 1087971,
+    "cache_hit_rate": 0.971,
     "context_peak": 314111,
     "by_role": {
       "init": {
@@ -91,10 +91,10 @@
         "out": 796438
       },
       "retro": {
-        "in": 18,
-        "cache_read": 234562,
-        "cache_write": 45105,
-        "out": 4033
+        "in": 24,
+        "cache_read": 302697,
+        "cache_write": 66663,
+        "out": 5763
       },
       "review": {
         "in": 146,
@@ -117,8 +117,8 @@
     }
   },
   "per_verified_feature": {
-    "cost": 17.24,
-    "tokens": 29157792
+    "cost": 17.26,
+    "tokens": 29180650
   },
   "orientation": {
     "tokens": 1913575,
@@ -137,8 +137,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 16,
-    "real": 16,
+    "total": 17,
+    "real": 17,
     "environmental": 0
   },
   "guards": {
