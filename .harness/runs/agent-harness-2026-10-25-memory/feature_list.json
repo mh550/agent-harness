@@ -189,7 +189,7 @@
         "docs/architecture.md §4's Markers row says when `tests-start` and `tests-end` are written; README.md's `## What a project needs` says a suite may print `HARNESS_TESTS=<n>`; journal/decisions/<date>-test-count-contract.md exists (finding · choice · rejected; records that a structured `TEST_REPORT` option was not built: a project's check prints the contract line from its own report)",
         "an Opus subagent reviews `git diff <commit before M5-01>..HEAD -- . ':!.harness/runs'` from a file in `$HARNESS_SCRATCH`; Critical and Important findings are fixed RED→GREEN and counted in the entry's summary",
         "the suite is green" ],
-      "after": ["M5-01"], "passes": false },
+      "after": ["M5-01"], "passes": true },
 
     { "id": "M6-01", "milestone": "M6", "kind": "plan", "model": "opus",
       "description": "docs/plans/2026-10-26-M6-review-gate.md fixes how the driver measures a milestone's diff, where the review model is chosen, how a Sonnet review's Critical/Important findings are detected and escalated, the summary.json fields, the stub behaviour, the check file and the evals/NEXT.md commands.",
