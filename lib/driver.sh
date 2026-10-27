@@ -574,6 +574,14 @@ tests_end() {   # [final]
   if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; elif [[ ${1:-} == final ]]; then rm -f "$STATE/tests-end"; fi
 }
 
+# → "<files> <changed lines>" of what this branch has and main doesn't (three dots: from the merge base, so a merged
+# milestone drops out), the run directory left out; the review gate sizes a review's model by it. Fails without the ref.
+review_diff() {
+  local out; out=$(git diff --shortstat "origin/$MAIN_BRANCH...HEAD" -- . ':!.harness/runs' 2>&1) || { echo "${out%%$'\n'*}"; return 1; }
+  awk '{ for (i = 2; i <= NF; i++) { if ($i ~ /^file/) f = $(i-1); if ($i ~ /^insertion/ || $i ~ /^deletion/) l += $(i-1) } }
+    END { print f + 0, l + 0 }' <<< "$out"
+}
+
 finish() {   # reason → summary, notification, retro, ledger, continuation
   END_REASON=$1
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
@@ -775,10 +783,23 @@ while :; do
   # the memory gate before the attempt and its prompt; after a wait, the checks above (deadline, stop, pause, the pick)
   # run again, and the gate doesn't: once is enough, then the session starts anyway (decisions/2026-10-25-memory-gate)
   if (( ! gated )) && ! mem_gate; then gated=1; continue; fi; gated=0
+  rdiff=""   # the review gate: a review runs on sonnet under REVIEW_OPUS_LINES changed lines, on opus at or over (M6)
+  if [[ $(F kind "$LIST" "$id") == review ]]; then
+    if rd=$(review_diff); then
+      read -r rfiles rlines <<< "$rd"
+      if (( rlines < REVIEW_OPUS_LINES )); then mdl=$(F model sonnet) rside="under $REVIEW_OPUS_LINES; sonnet"
+      else mdl=$(F model opus) rside="at or over $REVIEW_OPUS_LINES; opus"; fi
+      note "review $id: $rlines changed lines, $rside"
+      rdiff="Review diff: $rfiles files, $rlines changed lines (git diff --shortstat origin/$MAIN_BRANCH...HEAD, the run directory left out); $rside"
+    else   # unmeasured: the safe side
+      mdl=$(F model opus); note "review $id: diff not measured ($rd); opus"
+      rdiff="Review diff: not measured ($rd); opus"
+    fi
+  fi
   n=$(( n + 1 ))
   F bump "$ATT" "$id"; F snapshot "$LIST" > "$STATE/before.json"
   run_init; context "$id"
-  HARNESS_CLOCK=$(clock "attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
+  HARNESS_CLOCK=$(clock "attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone HARNESS_REVIEW_DIFF=$rdiff prompt coding
   log "session $n · $id · $mdl"
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   cp "$RUN_DIR/INBOX.md" "$STATE/inbox-before.md" 2> /dev/null || : > "$STATE/inbox-before.md"   # what the session adds is the park's question

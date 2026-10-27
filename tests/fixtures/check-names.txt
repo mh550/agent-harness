@@ -341,6 +341,9 @@ report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
 resume reloads config merged from main
 retro edits reverted
+review gate: a review at or over REVIEW_OPUS_LINES runs on opus
+review gate: a review under REVIEW_OPUS_LINES runs on sonnet, noted with its changed lines
+review gate: the review's prompt copy has its Review diff line, a build session's has none
 routine notifications keep the default priority
 routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count
 routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=

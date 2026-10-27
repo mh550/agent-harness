@@ -15,6 +15,10 @@
 #                                    #     you, and a debrief with Needs Michael. Try `harness desk <run> --why test` first.
 # DESK_MODEL=opus                    # the desk session's model: fable, opus, sonnet, haiku or a claude-… id
 
+# A milestone's review feature is sized by its diff (git diff --shortstat origin/<main>...HEAD, the run directory left out).
+# REVIEW_OPUS_LINES=400              # changed lines (insertions + deletions): under it the review runs on sonnet, at or over on opus
+# REVIEW_ESCALATE_MODEL=opus         # a sonnet review that reports a Critical or Important finding gets one round on this (no attempt)
+
 # MAX_PARALLEL_RUNS=1                # runs alive at once (1 = one after another); the queue runner re-reads it each poll,
 #                                    #     and lowering it stops no running run (an entry waits until fewer are alive)
 

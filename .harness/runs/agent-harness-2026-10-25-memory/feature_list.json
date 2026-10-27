@@ -362,7 +362,7 @@
       "after": [
         "M6-01"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-03",
