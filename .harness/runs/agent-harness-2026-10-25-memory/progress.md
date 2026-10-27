@@ -9,6 +9,19 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:47 · M6-02 · passes
+
+Review gate, measure and route: driver review_diff (git diff --shortstat origin/main...HEAD, run dir left out) picks sonnet under REVIEW_OPUS_LINES (400), opus at or over, notes `review <id>: <n> changed lines, …`, fills {{REVIEW_DIFF}}; config + template keys; stub STUB_REVIEW_LIST/STUB_BIG_DIFF; 3 checks in 41. Tests 483 → 486.
+
+- **Files:** lib/driver.sh, lib/config.sh, templates/user/config.sh, prompts/coding.md, tests/stub-claude.sh, tests/checks/41-run-19-review-gate-m6.sh, tests/fixtures/check-names.txt
+- **Verified:** tests/checks/41: 3 checks watched failing (0/3) then passing (3/3); KEEP=1 run: rsmall `review R: 3 changed lines, under 400; sonnet` (R row claude-sonnet-5-5), rbig `review R: 500 changed lines, at or over 400; opus`; review_diff without origin/main returns 1 with `fatal: bad revision` (→ opus, noted); full suite via check.sh green, 486 tests; 07-step-lint file untouched and green.
+- **Tests:** 483 → 486
+- **Discovery** (affects M6-03, M6-04): In check 41, rbig runs after rsmall merged work-A/B/D.txt into main with the same content, so rbig's diff is big-A.txt alone (1 file, 500 lines); rsmall's is 3 files, 3 lines.
+- **Discovery** (affects M6-03): The gate sits in the loop after the memory gate and before `n=$(( n + 1 ))`; `rdiff` holds the Review diff line (empty for non-review) and is passed as HARNESS_REVIEW_DIFF on the `prompt coding` line only. M6-03's escalation round must set mdl/rdiff itself and skip this block (it runs whenever F kind is review).
+- **Discovery** (affects M6-03): STUB_REVIEW_FINDINGS is not built yet (M6-03 adds it); B's tamper one-liner now exits 0 when the list has no C.
+- **Question for Michael:** prompts/coding.md §2 still sends reviews to Opus subagents, so a Sonnet review session that delegates saves less: should a review session's subagent follow the session's model? (Default kept: unchanged; plan D-default 5.)
+- *21-M6-02 · claude-opus-5-5*
+
 ### 2026-10-27 00:38 · M6-01 · passes
 
 Wrote docs/plans/2026-10-26-M6-review-gate.md: diff measure (git diff --shortstat origin/main...HEAD, run dir left out), model choice after the pick (sonnet <400, opus ≥400), Sonnet escalation via a pending-round state file (no attempt, once per feature), summary/ledger fields, stub flags, check 41's eight checks, evals/NEXT.md §5. Plan only; tests 483 → 483.
@@ -240,23 +253,9 @@ Finish step 3 in prompts/coding.md: one ## Gotchas line (≤160 chars, ends (<ru
 - **Discovery** (affects M3-03): coding.md Finish steps are now 1 suite-verify, 2 suite, 3 Gotchas, 4 entry.json, 5 commit; the M3-03 Promote-to-Gotchas sentence belongs in step 3.
 - *11-M3-02 · claude-opus-5-5*
 
-### 2026-10-26 21:11 · M3-01 · passes
-
-Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a ~e -d, a replace is one edit) and the driver's gotchas() after journal coding; resolved (exact after flattening, later entries only); Promote to Gotchas (coding packs, cap/8); Current rules (last, cap/4, three file shapes); verify cap 16384, failed rows first; stub flags; check names.
-
-- **Files:** docs/plans/2026-10-26-M3-gotchas-and-pack.md
-- **Verified:** Each step's terms checked against the plan text; line refs re-grepped (pack lib/entries.mjs:216-269, CLI :314-325, coding loop lib/driver.sh:737-745); check.sh green, 435 tests (cached: plans are outside the key).
-- **Tests:** 435 → 435
-- **Discovery** (affects M3-04, M4): Real decisions.md stores have three decision-line shapes: `## D7 *default*: …` headings (voice-concierge), `- **D1 · …**` bullets (rane-one-mixxx), `| D24 | … |` table rows (dj-crate-streaming); M3-04's parser and fixtures cover all three.
-- **Discovery** (affects M3-03, M3-04): pack CLI must read CLAUDE.md and the decisions store only when the run dir sits at <wt>/.harness/runs/<run>; tests/checks/12 calls `pack` on $T/pk and $T/jr/legacy, whose third parent is outside the throwaway tree.
-- **Discovery** (affects M3-02): Gotchas-step text cannot use {{RUN}} (no such prompt variable); the run id is on the `Run:` line under *This run*.
-- **Question for Michael:** Promote to Gotchas is in coding packs only (a verify cannot write CLAUDE.md), and a project raising CONTEXT_PACK_BYTES above 16384 does not raise the verify cap: OK as defaults?
-- **Proposed change:** M3-03 step 4 should also name `resolved` in prompts/coding.md, and M3-03 should write journal/decisions/<date>-resolved-and-project-facts.md (a behaviour change gets a decision file).
-- **Proposed change:** M3-04 step 3's 'byte count may exceed 8192' cannot be observed in a stub run; the plan proves the verify cap with CONTEXT_PACK_BYTES=1024 (verify pack > 1024, coding packs ≤ 1024) instead.
-- *10-M3-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 21:11 · M3-01 · passes · Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a ~e -d, a replace is… ([in full](progress-archive.md))
 - 2026-10-26 21:06 · verify M2 · passes · All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/t… ([in full](progress-archive.md))
 - 2026-10-26 21:00 · M2-03 · passes · docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles… ([in full](progress-archive.md))
 - 2026-10-26 20:55 · M2-02 · passes · A background wait I had left running for the review was stopped at its time limit. It doesn't matter… ([in full](progress-archive.md))

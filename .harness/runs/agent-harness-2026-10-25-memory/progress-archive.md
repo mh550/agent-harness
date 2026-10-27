@@ -9,6 +9,19 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:47 · M6-02 · passes
+
+Review gate, measure and route: driver review_diff (git diff --shortstat origin/main...HEAD, run dir left out) picks sonnet under REVIEW_OPUS_LINES (400), opus at or over, notes `review <id>: <n> changed lines, …`, fills {{REVIEW_DIFF}}; config + template keys; stub STUB_REVIEW_LIST/STUB_BIG_DIFF; 3 checks in 41. Tests 483 → 486.
+
+- **Files:** lib/driver.sh, lib/config.sh, templates/user/config.sh, prompts/coding.md, tests/stub-claude.sh, tests/checks/41-run-19-review-gate-m6.sh, tests/fixtures/check-names.txt
+- **Verified:** tests/checks/41: 3 checks watched failing (0/3) then passing (3/3); KEEP=1 run: rsmall `review R: 3 changed lines, under 400; sonnet` (R row claude-sonnet-5-5), rbig `review R: 500 changed lines, at or over 400; opus`; review_diff without origin/main returns 1 with `fatal: bad revision` (→ opus, noted); full suite via check.sh green, 486 tests; 07-step-lint file untouched and green.
+- **Tests:** 483 → 486
+- **Discovery** (affects M6-03, M6-04): In check 41, rbig runs after rsmall merged work-A/B/D.txt into main with the same content, so rbig's diff is big-A.txt alone (1 file, 500 lines); rsmall's is 3 files, 3 lines.
+- **Discovery** (affects M6-03): The gate sits in the loop after the memory gate and before `n=$(( n + 1 ))`; `rdiff` holds the Review diff line (empty for non-review) and is passed as HARNESS_REVIEW_DIFF on the `prompt coding` line only. M6-03's escalation round must set mdl/rdiff itself and skip this block (it runs whenever F kind is review).
+- **Discovery** (affects M6-03): STUB_REVIEW_FINDINGS is not built yet (M6-03 adds it); B's tamper one-liner now exits 0 when the list has no C.
+- **Question for Michael:** prompts/coding.md §2 still sends reviews to Opus subagents, so a Sonnet review session that delegates saves less: should a review session's subagent follow the session's model? (Default kept: unchanged; plan D-default 5.)
+- *21-M6-02 · claude-opus-5-5*
+
 ### 2026-10-27 00:38 · M6-01 · passes
 
 Wrote docs/plans/2026-10-26-M6-review-gate.md: diff measure (git diff --shortstat origin/main...HEAD, run dir left out), model choice after the pick (sonnet <400, opus ≥400), Sonnet escalation via a pending-round state file (no attempt, once per feature), summary/ledger fields, stub flags, check 41's eight checks, evals/NEXT.md §5. Plan only; tests 483 → 483.
