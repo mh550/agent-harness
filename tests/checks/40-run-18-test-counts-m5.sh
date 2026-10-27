@@ -15,17 +15,20 @@ check "test count: a suite printing only a node:test summary is noted as parsed 
   '[[ $(hlog parsed | grep -c "test count: ") == 1 ]] && hlog parsed | grep -q "· test count: parsed (node)$" && [[ $(jq -r .tests.start "$(sumj parsed)") == 7 ]]'
 
 # a continued run (M5-02): segment 1 stops at its deadline on tests.n 3; segment 2's A commits tests.n 5 and B, the next
-# session, snapshots status, report and the state's markers: tests-end is refreshed after each session, not only at finish
-git pull -q --ff-only origin main && echo 3 > tests.n && git add tests.n && git commit -qm "tests.n 3" && git push -q origin main
-mkdir -p "$HARNESS_STATE/proj/cont" && echo "CHECK_CMD='echo HARNESS_TESTS=\$(cat tests.n)'" > "$HARNESS_STATE/proj/cont/run.env"
+# session, snapshots status, report and the state's markers: tests-end is refreshed after each session, not only at finish.
+# C's first session leaves the suite red on tests.n 9 (it still prints its count): a red tree's count is never tests-end.
+# (The contract run's suite ignores BROKEN, so its C merged one into main: gone first.)
+git pull -q --ff-only origin main && git rm -q --ignore-unmatch BROKEN && echo 3 > tests.n && git add tests.n && git commit -qm "tests.n 3" && git push -q origin main
+mkdir -p "$HARNESS_STATE/proj/cont" && echo "CHECK_CMD='echo HARNESS_TESTS=\$(cat tests.n); test ! -f BROKEN'" > "$HARNESS_STATE/proj/cont/run.env"
 "$H" start "$T/proj" cont --spec SPEC.md --until-epoch $(( $(date +%s) - 1 )) --foreground > "$T/cont.out" 2>&1
 cont_end1=$(cat "$HARNESS_STATE/proj/cont/tests-end" 2> /dev/null)
-STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_TESTS_N=A:5 STUB_SNAPSHOT=B "$H" continue cont --foreground > "$T/cont2.out" 2>&1
+STUB_NO_TAMPER=1 STUB_TESTS_N=A:5,C:9 STUB_SNAPSHOT=B "$H" continue cont --foreground > "$T/cont2.out" 2>&1
 S=$T/snap-cont
 check "test count: a continued run refreshes tests-end after each session (summary.json 3 → 5 before finish), tests-start stays the baseline" \
   '[[ $cont_end1 == 3 && $(jq -r .tests.start "$S/summary.json") == 3 && $(jq -r .tests.end "$S/summary.json") == 5 && $(cat "$S/tests-start") == 3 ]] \
   && grep -q "^cont (proj) · running · .* · tests 3 → 5$" "$S/status.txt" && grep -qF "| Tests | 3 → 5 (baseline at run start → end) |" "$S/report.md" \
-  && hlog cont | grep -q "· A · .* · passes=true · .* passing · tests 5$" && [[ $(cat "$HARNESS_STATE/proj/cont/tests-start") == 3 && $(jq -r .tests.end "$(sumj cont)") == 5 ]]'
+  && hlog cont | grep -q "· A · .* · passes=true · .* passing · tests 5$" && hlog cont | grep -q "· C · .* · passes=false · .* passing · tests 5$" \
+  && hlog cont | grep -q "· C · .* · passes=true · .* passing · tests 9$" && [[ $(cat "$HARNESS_STATE/proj/cont/tests-start") == 3 && $(jq -r .tests.end "$(sumj cont)") == 9 ]]'
 check "test count: report.md labels the tests cell, trends its column (baseline → end)" \
   'jq -nc "{run: \"r\", project: \"p\", passing: 0, total: 1, merged: 0, cost: 0, per_passing: null, wall_h: 0, end_reason: \"x\", causes: {}, tests_start: 3, tests_end: 5}" > "$T/tr.jsonl" \
   && node "$HERE/../lib/summary.mjs" trends "$T/tr.jsonl" | head -1 | grep -qF "| Passing | tests (baseline → end) | \$ |" \

@@ -400,6 +400,7 @@ test count: a suite printing only a node:test summary is noted as parsed (node)
 test count: no match is noted once per run (demo: no output; nocount: text with no count), never for a counted or cached suite (scrub)
 test count: report.md labels the tests cell, trends its column (baseline → end)
 testCount: a HARNESS_TESTS= line wins over the jest summary (1115, not 7), source contract
+testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 is no contract, a CRLF one is
 testCount: cargo fixture gives the sum of its test result lines (3)
 testCount: go fixture gives its --- PASS count (3)
 testCount: jest fixture gives the Tests: count (7), not Test Suites:

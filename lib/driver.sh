@@ -562,13 +562,15 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   ) 9> "$STATE_ROOT/ledger.lock"
 }
 
-# tests-end: the tree's count, its green marker's (a continued segment's scratch has no output of a tree cached green),
-# else its output's. Written after every session too, so status and report show it between sessions; tests-start, the
-# run's baseline, is never rewritten (decisions/2026-10-26-test-count-contract). Without a count only `final` (finish)
-# clears it: mid-run, the last known count stays.
+# tests-end: a green tree's count, its marker's (a continued segment's scratch has no output of a tree cached green),
+# else (an older, empty marker) its output's; a red tree has none, whatever its output counted. Written after every
+# session too, so status and report show it between sessions; tests-start, the run's baseline, is never rewritten
+# (decisions/2026-10-26-test-count-contract). Without a count only `final` (finish) clears it: mid-run, the last stays.
 tests_end() {   # [final]
-  local key n; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
-  n=$(cat "$STATE/green/green-$key" 2> /dev/null); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out" 2> /dev/null)
+  local key n=""; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
+  if [[ -f $STATE/green/green-$key ]]; then
+    n=$(cat "$STATE/green/green-$key"); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out" 2> /dev/null)
+  fi
   if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; elif [[ ${1:-} == final ]]; then rm -f "$STATE/tests-end"; fi
 }
 
@@ -577,7 +579,7 @@ finish() {   # reason → summary, notification, retro, ledger, continuation
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$RUN_DIR/metrics.jsonl")"
   merge_milestones
-  green; tests_end final
+  local key; green; tests_end final; key=$(node "$HARNESS_HOME/lib/treekey.mjs")   # scratch_done keeps this tree's output
   services_down "$1"   # after the last suite run, which may need them
   SUM build "$WT" "$RUN_ID" "$STATE" > "$RUN_DIR/summary.json"
   SUM report "$RUN_DIR/summary.json" > "$RUN_DIR/report.md"   # the end notification's click; rewritten after the retro

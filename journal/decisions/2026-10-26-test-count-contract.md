@@ -8,7 +8,8 @@ takes `docs/specs/2026-10-22-retro-followups.md` §C as written; extends decisio
   said whether a count was scraped or missing.
 - **Choice:**
   - **The contract wins:** `lib/testcount.mjs` takes the **last** whole line `HARNESS_TESTS=<n>` in the suite's output
-    (a wrapper may print one after its runner's), then R1's rules in their order, then the generic `N passed`.
+    (a wrapper may print one after its runner's; from column 0, so a coloured or prefixed line is scraped instead,
+    and a count past 2^53 is no contract: M5 review), then R1's rules in their order, then the generic `N passed`.
     `countSource(text)` returns `{ n, source }`; `testCount(text)` is its `n`, so `lib/check.sh`'s green line and
     markers are unchanged. `testcount.mjs <file> --source` prints `<n> tests · <source>`, source one of `contract`,
     `node`, `cargo`, `jest`, `go`, `generic`, `none`; with no count, `? tests · none` (*default*: `?` as the report
@@ -24,8 +25,9 @@ takes `docs/specs/2026-10-22-retro-followups.md` §C as written; extends decisio
     `check-<key>.out`) are one function, `tests_end`, which the driver also calls after each coding session's `green`
     check. A continued run's summary showed the last segment's end until `finish`; now `harness status` (`· tests
     <start> → <end>`), `harness report` and each session's `harness-log.md` line (`· tests <n>`) show the latest tree's.
-    Mid-run, a tree with no count keeps the last known one; only `finish` clears it (*default*: a session that ran no
-    full suite says nothing about the count). `tests-start` stays the first `run_init`'s count, never rewritten:
+    Only a green tree has a count (its marker exists): a red one's output may count what passed, or a contract line
+    printed whatever the outcome (M5 review). Mid-run, a tree with no count keeps the last known one; only `finish`
+    clears it (*default*: a session that ran no full suite, or left it red, says nothing about the count). `tests-start` stays the first `run_init`'s count, never rewritten:
     report.md's cell reads `<start> → <end> (baseline at run start → end)`, `harness trends`' column
     `tests (baseline → end)`.
 - **Rejected:** a structured report option (`TEST_REPORT=<path+format>`, reading `jest --json`, `pytest --report-log`
