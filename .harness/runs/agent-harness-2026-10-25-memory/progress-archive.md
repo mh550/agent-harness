@@ -9,6 +9,20 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 01:40 · M6-05 · passes
+
+M6 review (Opus subagent, 715-line diff): 0 Critical, 5 Important, 7 Minor; no second round. Fixed: review_diff fetches main first (lib/review.sh), the prompt asks for the counts, reviewFindings strict, found_nothing reads every entry, later attempts after a round stay on opus, the round's diff line names opus. 1 Minor left (#8). Tests 492 → 501.
+
+- **Files:** lib/review.sh, lib/driver.sh, lib/entries.mjs, lib/summary.mjs, tests/stub-claude.sh, tests/checks/41-run-19-review-gate-m6.sh, tests/checks/42-run-20-review-gate-rounds-m6.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-26-M6-review.md, docs/architecture.md, README.md, evals/NEXT.md, +2 more
+- **Verified:** Red then green: `review_diff: fetches main first, so a milestone merged meanwhile drops out; the run directory is left out`, `review_diff: fails with the reason when origin has no such main branch` (I1); `review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor in its entry summary; a build session's doesn't` (I2); `reviewFindings: reads Critical before Important in either order of word and count, never a step number or lowercase prose` (I3); `reviewSummary: a review counts as finding nothing only when every entry that gives counts reports 0 Critical, 0 Important` (I4); `review gate: after an escalation round that doesn't pass, the review's next attempt runs on opus and never escalates again` (I5/M6), `review gate: the escalation round's Review diff line names the model it runs on` (M7). Coverage (I5), green on arrival: `…no counts is noted not escalated…`, `…refused by a usage limit runs again on opus, still at no attempt`. Simplifications: kind computed once (driver), review_diff stderr dropped, stub R sonnet. bash -n on driver.sh, config.sh, review.sh, stub-claude.sh, checks 41 and 42; node --check summary.mjs, entries.mjs. Full suite via check.sh: green, 501 tests.
+- **Tests:** 492 → 501
+- **Dead end:** first full suite run — 500/501: `harness memlint: a project … prints the same two findings` failed once under load; alone 19/19, the rerun green 501/501. Code M6 never touched
+- **Discovery** (affects run): tests/checks/39's `harness memlint: a project (or a directory in it) prints the same two findings…` failed once in a full TEST_JOBS=4 run and passed alone and on the rerun: a load flake (likely the run's memlint note vs the direct call)
+- **Discovery** (affects run): review_diff now lives in lib/review.sh (sourced by the driver) and fetches MAIN_BRANCH first; a check can source it in a throwaway repo
+- **Discovery** (affects run): A review's prompt now has a second {{REVIEW_DIFF}} line `Review findings: give your entry's summary this review's findings as `<n> Critical, <n> Important, <n> Minor``; reviewFindings reads only capitalised Critical/Important
+- **Question for Michael:** The M6 review left Minor #8: the `passes=true` note and commit come before the gate un-passes a review for its round, and summary.json's cause doesn't say a round is pending. Worth a fix, or is the following `one round on opus` note enough?
+- *24-M6-05 · claude-opus-5-5*
+
 ### 2026-10-27 01:12 · M6-04 · passes
 
 summary.mjs: pure reviewSummary → summary.json review {cost_pct, found_nothing, reviews}, a Review share row in report.md, review_cost_pct in the ledger row; rework no longer counts the review gate's Opus round. evals/NEXT.md § 5 (pre-m6 vs m6, never run), README Evals pointer, architecture §per-run, decision default 7.
