@@ -9,6 +9,20 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 23:18 · M5-01 · passes
+
+testcount.mjs: a last whole-line HARNESS_TESTS=<n> wins, then R1's runners, then generic; countSource() gives {n, source}; `--source` prints `<n> tests · <source>` (`? tests · none`). run_init notes once per run `test count: HARNESS_TESTS contract` / `parsed (<runner>)` / no match (marker testcount-source). Tests 474 → 480.
+
+- **Files:** lib/testcount.mjs, lib/driver.sh, tests/checks/06-test-counts-pure-r1.sh, tests/checks/40-run-18-test-counts-m5.sh, tests/fixtures/check-jest-contract.txt, tests/fixtures/check-agent-harness.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-test-count-contract.md, docs/architecture.md, README.md
+- **Verified:** 6 new checks watched red (06: 5/9, 40: 0/2), then green (06 9/9, 40 2/2: a two-segment contract run notes once and summary tests.start 12; a `# pass 7` run notes parsed (node)); full suite via check.sh green in 271 s, 480 tests; bash -n driver and both check files, node --check testcount.mjs.
+- **Tests:** 474 → 480
+- **Dead end:** a pure check input `echo HARNESS_TESTS=8 # pass 2` on one line — node:test's rule is anchored at line start too, so it gave null; the input now has `# pass 2` on its own line
+- **Discovery** (affects M5-02): decisions/2026-10-26-test-count-contract exists (the contract part, TEST_REPORT rejected); M5-02 extends it in place with the tests-end refresh and baseline label. README's `## What a project needs` already has the HARNESS_TESTS paragraph and architecture's Markers row names testcount-source; M5-02 adds when tests-start/tests-end are written.
+- **Discovery** (affects M5-02): tests/checks/40-run-18-test-counts-m5.sh exists with a `sumj <run>` helper (summary.json path) and run.env CHECK_CMD overrides; M5-02's continued-run check goes there.
+- **Discovery** (affects run): The live harness runs main's testcount.mjs, so this run's own logs show no contract note until M5 merges.
+- **Proposed change:** M5-01 step 2: the scratch check.out now ends `474/474 checks passed` (the suite grew since init), so check-agent-harness.txt yields 474, not 395; the fixture copies the file as it is.
+- *17-M5-01 · claude-opus-5-5*
+
 ### 2026-10-26 23:10 · verify M4 · passes
 
 M4-01 and M4-02 hold: suite green (474 tests), memlint subset 19/19, fixtures re-linted by hand give the stated findings, docs and decision file present, review recorded in entries.
@@ -260,21 +274,9 @@ All six M1 features hold. Full suite green (420 tests, init run); re-ran harness
 
 - *200939-verify-M1 · claude-sonnet-5-5*
 
-### 2026-10-26 20:05 · M1-06 · passes
-
-Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no second round. Fixed all 5 Important and Minor 6-8 test-first: forward-only import, one-line 200-char titles, a cap keeping every id·status, JSONL skip + {more:n}, LEDGER_COMMIT=1 run check, no symlinked proposals, unlistable store noted. Stray .tmp removed. Tests 413 → 420.
-
-- **Files:** lib/backlog.mjs, lib/driver.sh, tests/stub-claude.sh, tests/checks/35-backlog-pure-m1.sh, tests/checks/36-run-16-retro-backlog.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-26-M1-review.md, journal/decisions/2026-10-26-retro-backlog.md, docs/architecture.md, README.md, .tmp (removed)
-- **Verified:** Each new check red then green: `backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)`, `backlog merge: a title's newlines and control characters fold to one space, at most 200 characters`, `backlog validate: the why line of a huge bad id stays under 300 bytes`, `backlog list: past --max-bytes every row keeps its id and status, full lines first`, `backlog list --jsonl: a row too big is skipped, not the rest; a cut list ends with a {"more": n} line`, `backlog run: a symlinked retro-proposals.json is not followed, and a store that will not list is noted`; `backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.jsonl with its proposal` red with the paths+= line removed, green restored. bash -n on the six named files, node --check lib/backlog.mjs. check.sh green in 229 s, 420 tests.
-- **Tests:** 413 → 420
-- **Dead end:** noting an unlistable store before the retro session — restrict reverts harness-log.md edits made after rstart; the note is now written after restrict
-- **Discovery** (affects run): Any note() written in retro() between rstart and restrict is reverted with the retro's edits: write it after restrict (as S_NOTES are).
-- **Discovery** (affects M2, M3): backlog.mjs exports oneLine (whitespace and control characters folded, 200 chars): reuse it for any retro-written text that reaches a prompt.
-- **Question for Michael:** Review finding 10 (left): `harness backlog set/import` can race lib/sync.sh's rebase since sync takes no ledger.lock. Add it to the backlog (e.g. `sync-ledger-lock`) or fix in a later run?
-- *06-M1-06 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 20:05 · M1-06 · passes · Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no second round. Fixed al… ([in full](progress-archive.md))
 - 2026-10-26 19:47 · M1-05 · passes · M1-05 passes, in commit `8623944`, pushed to the run branch. - **Retro:** its prompt now has a `## B… ([in full](progress-archive.md))
 - 2026-10-26 19:39 · M1-04 · passes · retro() copies the retro's retro-proposals.json to scratch before restrict (skipped from the reverte… ([in full](progress-archive.md))
 - 2026-10-26 19:29 · M1-03 · passes · Added lib/backlog.sh (harness backlog [list] | set | import, writes under flock on $STATE_ROOT/ledge… ([in full](progress-archive.md))

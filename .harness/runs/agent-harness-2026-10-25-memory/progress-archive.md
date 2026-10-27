@@ -9,6 +9,20 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 23:18 · M5-01 · passes
+
+testcount.mjs: a last whole-line HARNESS_TESTS=<n> wins, then R1's runners, then generic; countSource() gives {n, source}; `--source` prints `<n> tests · <source>` (`? tests · none`). run_init notes once per run `test count: HARNESS_TESTS contract` / `parsed (<runner>)` / no match (marker testcount-source). Tests 474 → 480.
+
+- **Files:** lib/testcount.mjs, lib/driver.sh, tests/checks/06-test-counts-pure-r1.sh, tests/checks/40-run-18-test-counts-m5.sh, tests/fixtures/check-jest-contract.txt, tests/fixtures/check-agent-harness.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-test-count-contract.md, docs/architecture.md, README.md
+- **Verified:** 6 new checks watched red (06: 5/9, 40: 0/2), then green (06 9/9, 40 2/2: a two-segment contract run notes once and summary tests.start 12; a `# pass 7` run notes parsed (node)); full suite via check.sh green in 271 s, 480 tests; bash -n driver and both check files, node --check testcount.mjs.
+- **Tests:** 474 → 480
+- **Dead end:** a pure check input `echo HARNESS_TESTS=8 # pass 2` on one line — node:test's rule is anchored at line start too, so it gave null; the input now has `# pass 2` on its own line
+- **Discovery** (affects M5-02): decisions/2026-10-26-test-count-contract exists (the contract part, TEST_REPORT rejected); M5-02 extends it in place with the tests-end refresh and baseline label. README's `## What a project needs` already has the HARNESS_TESTS paragraph and architecture's Markers row names testcount-source; M5-02 adds when tests-start/tests-end are written.
+- **Discovery** (affects M5-02): tests/checks/40-run-18-test-counts-m5.sh exists with a `sumj <run>` helper (summary.json path) and run.env CHECK_CMD overrides; M5-02's continued-run check goes there.
+- **Discovery** (affects run): The live harness runs main's testcount.mjs, so this run's own logs show no contract note until M5 merges.
+- **Proposed change:** M5-01 step 2: the scratch check.out now ends `474/474 checks passed` (the suite grew since init), so check-agent-harness.txt yields 474, not 395; the fixture copies the file as it is.
+- *17-M5-01 · claude-opus-5-5*
+
 ### 2026-10-26 23:10 · verify M4 · passes
 
 M4-01 and M4-02 hold: suite green (474 tests), memlint subset 19/19, fixtures re-linted by hand give the stated findings, docs and decision file present, review recorded in entries.
