@@ -9,6 +9,27 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 23:10 · verify M4 · passes
+
+M4-01 and M4-02 hold: suite green (474 tests), memlint subset 19/19, fixtures re-linted by hand give the stated findings, docs and decision file present, review recorded in entries.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M4-01 | 1 | node lib/memlint.mjs <tmp worktrees>, /nonexist, header read | findings in file:line check: text form; exit 0; missing dir exit 2; 121-line CLAUDE.md gives size, 16 Gotchas gives gotchas; header lists checks | yes |
+| M4-01 | 2 | head -1 of the 4 fixtures | each first line names repo, commit, path as specified | yes |
+| M4-01 | 3 | lint on fixtures; bash tests/run.sh memlint | dj: derivable-count line 17; pathways: night-scope tonight; old rane: decisions D15 Superseded, none for header; tidy rane: none; no store: decisions: no store; 19/19 pass | yes |
+| M4-01 | 4 | 121-line and 16-Gotchas worktrees; node --check; test 39 store-lookup check | size and gotchas findings; node --check ok; decisionsStore check passes | yes |
+| M4-01 | 5 | node lib/memlint.mjs . in this worktree | no output, exit 0 | yes |
+| M4-01 | 6 | init.out | green, 474 tests | yes |
+| M4-02 | 1 | tests/checks/39 driver memlint check | 2 memlint notes before feature list written, run done 3/3 | yes |
+| M4-02 | 2 | tests/checks/39 failing memlint check | one memlint: failed (exit 1) note, run goes on to done 3/3 | yes |
+| M4-02 | 3 | tests/checks/39 harness memlint check | same two lines from $T/proj, exit 0, usage in bin/harness header | yes |
+| M4-02 | 4 | grep README, architecture.md, ls journal/decisions | README line 69-73, arch §7 row line 264, §3 row line 70, decisions/2026-10-26-memlint.md exist | yes |
+| M4-02 | 5 | entries.jsonl:20 summary | Opus review recorded: 0 Critical, 2 Important fixed RED to GREEN | yes |
+| M4-02 | 6 | init.out | suite green 474 tests | yes |
+
+- *230904-verify-M4 · claude-sonnet-5-5*
+
 ### 2026-10-26 23:03 · M4-02 · passes
 
 Driver notes memlint findings as `memlint: …` at every segment start (60 s, stdout only, a failure is one `memlint: failed` note, never a stop); `harness memlint <project|path>`. Opus review of M4: 0 Critical, 2 Important fixed RED→GREEN (a stack-trace failure note; a header under a ## section flagged) plus 4 Minor. Tests 469 → 474.
@@ -252,15 +273,9 @@ Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no se
 - **Question for Michael:** Review finding 10 (left): `harness backlog set/import` can race lib/sync.sh's rebase since sync takes no ledger.lock. Add it to the backlog (e.g. `sync-ledger-lock`) or fix in a later run?
 - *06-M1-06 · claude-opus-5-5*
 
-### 2026-10-26 19:47 · M1-05 · passes
-
-M1-05 passes, in commit `8623944`, pushed to the run branch. - **Retro:** its prompt now has a `## Backlog` section with the current backlog list and three rules: reuse an existing id, cite the status of an item already specced, queued or merged instead of re-arguing it, and make up a new id only for a new proposal. - **Debrief:** it now gets the backlog instead of the list of old `retro.md` file…
-
-- **Files:** README.md, docs/architecture.md, journal/decisions/2026-10-26-retro-backlog.md, lib/debrief.sh, lib/driver.sh, prompts/debrief.md, prompts/retro.md, tests/checks/36-run-16-retro-backlog.sh, tests/fixtures/check-names.txt
-- *05-M1-05 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 411 characters (at most 400)*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 19:47 · M1-05 · passes · M1-05 passes, in commit `8623944`, pushed to the run branch. - **Retro:** its prompt now has a `## B… ([in full](progress-archive.md))
 - 2026-10-26 19:39 · M1-04 · passes · retro() copies the retro's retro-proposals.json to scratch before restrict (skipped from the reverte… ([in full](progress-archive.md))
 - 2026-10-26 19:29 · M1-03 · passes · Added lib/backlog.sh (harness backlog [list] | set | import, writes under flock on $STATE_ROOT/ledge… ([in full](progress-archive.md))
 - 2026-10-26 19:23 · M1-02 · passes · Added lib/backlog.mjs (pure exports STATUSES, parseRows, formatRows, validateProposals, mergeProposa… ([in full](progress-archive.md))
