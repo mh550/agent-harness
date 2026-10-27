@@ -15,3 +15,4 @@
 - 2026-10-26 20:05 · M1-06 · claude-opus-5-5 · passes=true · 18 min · 6/23 passing
 - 2026-10-26 20:05 · verify M1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-26 20:09 · context.md for M1: 8049 bytes, 10 items left out
+- 2026-10-26 20:10 · M1 verified and tagged run/agent-harness-2026-10-25-memory/M1
