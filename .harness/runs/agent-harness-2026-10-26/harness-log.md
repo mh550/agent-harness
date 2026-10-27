@@ -44,3 +44,4 @@
 - 2026-10-27 00:13 · stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh)
 - 2026-10-27 00:13 · run ended (stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh)): 7/17 passing · 16 sessions (16 real) · 7 features passed · $68.95 · 6.8 h · by kind: init 1 ($4.71), coding 12 ($63.75), retro 2 ($0.24), verify 1 ($0.24) · by model: claude-fable-5-1 1 ($4.71), claude-opus-5-5 12 ($63.75), claude-sonnet-5-5 3 ($0.48)
 - 2026-10-27 00:19 · services stopped (stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh))
+- 2026-10-27 00:19 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-26 (in the state dir: init.out check-last.out)
