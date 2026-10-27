@@ -24,3 +24,6 @@
 - 2026-10-26 20:55 · M2-02 · claude-opus-5-5 · passes=true · 33 min · 8/23 passing
 - 2026-10-26 20:55 · context.md for M2-03: 5916 bytes
 - 2026-10-26 21:00 · M2-03 · claude-sonnet-5-5 · passes=true · 4 min · 9/23 passing
+- 2026-10-26 21:00 · merged main into harness/agent-harness-2026-10-25-memory
+- 2026-10-26 21:00 · verify M2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-26 21:04 · context.md for M2: 6418 bytes

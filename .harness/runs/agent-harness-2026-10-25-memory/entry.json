@@ -1,0 +1,120 @@
+{
+  "feature": "M2",
+  "kind": "verify",
+  "outcome": "passes",
+  "summary": "All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/templates/docs/decision file read and match each step.",
+  "evidence": [
+    {
+      "feature": "M2-01",
+      "step": 1,
+      "ran": "node --check lib/memlint.mjs; read checks 10-19 of 37-memory-prompts-m2",
+      "saw": "ok; decisionsStore exported, store prints journal/decisions; dir/file/null checks PASS",
+      "holds": true
+    },
+    {
+      "feature": "M2-01",
+      "step": 2,
+      "ran": "cat prompts/parts/where-things-go*.md",
+      "saw": "both ~7 lines under ## Where things go, {{DECISIONS}} store line, readonly sends to discoveries",
+      "holds": true
+    },
+    {
+      "feature": "M2-01",
+      "step": 3,
+      "ran": "read prompt.sh 57-66, check at line 27/31",
+      "saw": "appends block when no heading/no CLAUDE.md; once-each and discoveries checks PASS",
+      "holds": true
+    },
+    {
+      "feature": "M2-01",
+      "step": 4,
+      "ran": "checks at lines 36 and 40",
+      "saw": "heading 0 times with heading; once each with no CLAUDE.md; PASS",
+      "holds": true
+    },
+    {
+      "feature": "M2-01",
+      "step": 5,
+      "ran": "grep check-names.txt; bash tests/run.sh memory-prompts",
+      "saw": "15 names listed; 15/15 pass; entries.jsonl names checks",
+      "holds": true
+    },
+    {
+      "feature": "M2-01",
+      "step": 6,
+      "ran": "init suite output",
+      "saw": "green, 435 tests",
+      "holds": true
+    },
+    {
+      "feature": "M2-02",
+      "step": 1,
+      "ran": "grep initializer.md; routing check line 50",
+      "saw": "old phrase absent; Gotchas/discoveries wording present; no D<n>; check PASS",
+      "holds": true
+    },
+    {
+      "feature": "M2-02",
+      "step": 2,
+      "ran": "read coding.md, draft-claude-md.md, templates/project/*",
+      "saw": "Decisions bullet points at block; draft asks block+Gotchas, no test count; template block+empty Gotchas; commented DECISIONS=",
+      "holds": true
+    },
+    {
+      "feature": "M2-02",
+      "step": 3,
+      "ran": "read CLAUDE.md, .harness/config.sh, node lib/memlint.mjs store .",
+      "saw": "block and empty Gotchas present; DECISIONS=journal/decisions; prints journal/decisions",
+      "holds": true
+    },
+    {
+      "feature": "M2-02",
+      "step": 4,
+      "ran": "read decision file and M2 entry",
+      "saw": "Opus review Important finding fixed (read-only override) and recorded in decision file/entry",
+      "holds": true
+    },
+    {
+      "feature": "M2-02",
+      "step": 5,
+      "ran": "read journal/decisions/2026-10-26-where-things-go.md",
+      "saw": "Finding/Choice/Rejected; seven projects, none set DECISIONS=; both accepted risks",
+      "holds": true
+    },
+    {
+      "feature": "M2-02",
+      "step": 6,
+      "ran": "init suite output",
+      "saw": "green",
+      "holds": true
+    },
+    {
+      "feature": "M2-03",
+      "step": 1,
+      "ran": "read docs/architecture.md Memory model",
+      "saw": "6x4 table, six rules as specified",
+      "holds": true
+    },
+    {
+      "feature": "M2-03",
+      "step": 2,
+      "ran": "grep README.md",
+      "saw": "line 63-64 name block, Gotchas 15 lines in place, DECISIONS=, append only when heading lacking",
+      "holds": true
+    },
+    {
+      "feature": "M2-03",
+      "step": 3,
+      "ran": "grep -c Memory model docs/architecture.md",
+      "saw": "2; Principles row cites decisions/2026-10-26-where-things-go",
+      "holds": true
+    },
+    {
+      "feature": "M2-03",
+      "step": 4,
+      "ran": "init suite output",
+      "saw": "green",
+      "holds": true
+    }
+  ]
+}
