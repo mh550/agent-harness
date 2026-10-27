@@ -1,9 +1,11 @@
-# Context pack for `M2-01`
+# Context pack for `M2-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (M2-01, affects M2-02): The three-prompt checks grep -c `## Where things go`: any template line quoting that heading counts. M2-02's coding.md Decisions bullet must name the block without the `## ` prefix (e.g. 'the Where things go block below') or the counts go to 2. → entries.jsonl:9
+- Discovery (M2-01, affects M2-02, M2-03): journal/decisions/2026-10-26-where-things-go.md exists already with the seven-project census and both accepted risks; M2-02 edits it in place (initializer/coding/template wording) rather than creating it. → entries.jsonl:9
 - Discovery (M1-06, affects run): Any note() written in retro() between rstart and restrict is reverted with the retro's edits: write it after restrict (as S_NOTES are). → entries.jsonl:7
 - Discovery (M1-06, affects M2, M3): backlog.mjs exports oneLine (whitespace and control characters folded, 200 chars): reuse it for any retro-written text that reaches a prompt. → entries.jsonl:7
 - Discovery (init, affects run): R1 (decisions/2026-10-26-real-test-counts) and R2 (decisions/2026-10-26-reviews-sized-to-milestone) are both on main, so M5 and M6 keep their bases; nothing is dropped. The lanes run (P1/P2) is NOT on main: the driver is serial, so the array order is the build order (M1, M2, M3, M4, M5, M6) and `after` only keeps a stuck milestone from blocking the independent ones. → entries.jsonl:1
@@ -14,8 +16,11 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): Decision files: journal/decisions/<YYYY-MM-DD>-<slug>.md, title line, provenance line in italics (run, feature, spec section, plan), then `- **Finding:**`, `- **Choice:**`, `- **Rejected:**` bullets (see journal/decisions/2026-10-26-real-test-counts.md). Never number one, never append to journal/decisions.md. Plans: docs/plans/<date>-<milestone>-<topic>.md, header as docs/plans/2026-10-26-F2-initializer-verify.md (`Checked against main at <sha>`, `What main already has`, one feature per item). → entries.jsonl:1
 - Discovery (init, affects run): Lint rules (features.mjs lint) flag a path in `~` or $HOME in a step (outside-repo) and a grep whose pattern matches the step's own text when the target is progress.md, entries.jsonl, context.md or feature_list.json (self-match); harness-log.md is not a quoting file. Steps here name checks by their check name instead; a session's `proposed_changes` is where a wrong step goes. → entries.jsonl:1
 
+## What it builds on
+
+- 2026-10-26 20:21 · M2-01 · passes: lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else null), storeLine, CLI store/store-line. prompt_render appends prompts/parts/where-things-go.md (coding, initializer) or -readonly.md (verify, retro) unless CLAUDE.md has a `## Where things go` line; no CLAUDE.md gets it too. Decision file written. Tests 420 → 429.; tests 420 → 429; files lib/memlint.mjs, lib/prompt.sh, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, tests/checks/37-memory-prompts-m2.sh, … → entries.jsonl:9
+
 ## Lately in the run
 
 - 2026-10-26 20:10 · verify M1 · passes: All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/import/errors against a throwaway ledger, bash -n and node --check, read plan, decision, review, README, architecture, prompts, stub and checks. → entries.jsonl:8
 - 2026-10-26 20:05 · M1-06 · passes: Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no second round. Fixed all 5 Important and Minor 6-8 test-first: forward-only import, one-line 200-char titles, a cap keeping every id·status, JSONL skip + {more:n}, LEDGER_COMMIT=1 run check, no symlinked proposals, unlistable store noted. Stray .tmp removed. Tests 413 → 420.; tests 413 → 420; files lib/backlog.mjs, lib/driver.sh, tests/stub-claude.sh, tests/checks/35-backlog-pure-m1.sh, tests/checks/36-run-16-retro-backlog.sh, … → entries.jsonl:7
-- 2026-10-26 19:47 · M1-05 · passes: M1-05 passes, in commit `8623944`, pushed to the run branch. - **Retro:** its prompt now has a `## Backlog` section with the current backlog list and three rules: reuse an existing id, cite the status of an item already specced, queued or merged instead of re-arguing it, and make up a new id only for a new proposal. - **Debrief:** it now gets the backlog instead of the list of old `retro.md` file…; files README.md, docs/architecture.md, journal/decisions/2026-10-26-retro-backlog.md, lib/debrief.sh, lib/driver.sh, … → entries.jsonl:6
