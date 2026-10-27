@@ -9,6 +9,22 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 22:07 · M3-04 · passes
+
+context.md ends with `Current rules` (memlint currentRules/readRules: dir store by dated name, file store's D<n> headings, bullets, table rows incl. `*default*`; ≤cap/4, rest one older-rules line). Verify packs use CONTEXT_PACK_BYTES_VERIFY=16384 with failed rows first. Stub STUB_VERIFY_FAIL_ROW, 3 fixtures, decision file, arch/README. Tests 445 → 451.
+
+- **Files:** lib/memlint.mjs, lib/entries.mjs, lib/driver.sh, lib/config.sh, templates/user/config.sh, tests/stub-claude.sh, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/decisions-rane.md, tests/fixtures/decisions-voice-concierge.md, tests/fixtures/decisions-dj.md, tests/fixtures/check-names.txt, +3 more
+- **Verified:** check.sh green, 451 tests (256 s); new checks watched red first; readRules on the real stores gives rane 24, voice-concierge 23, dj 53 (newest D53); an Opus review fuzzed pack() 20k times with no cap breach; its Important finding (dj `| D36 *default* |` rows dropped) fixed red→green along with CRLF, undated dir files, per-file read errors, ref length
+- **Tests:** 445 → 451
+- **Dead end:** appending CONTEXT_PACK_BYTES=1024 to $T/proj's config after the gotcha run and pushing — that run had merged PRs into origin main, so the push was refused; pull --ff-only first
+- **Dead end:** proving `items left out` at 1024 with the stub's default entries — the stub's packs stay under 864 bytes; STUB_VERIFY_FAIL_ROW's row has a long `saw`, as real rows quote output
+- **Discovery** (affects M4, M3-05): memlint.mjs exports currentRules(store, input) and readRules(worktree) → [{text, ref}] newest first; M4's lint can reuse the D<n> line parser (heading, bullet with wrapped lines, table row with an optional `*default*` in the id cell).
+- **Discovery** (affects M3-05, M4): Current rules leaves out unnumbered headings (voice-concierge `## LLM provider: …`) and B<n> rulings; in a pack that already stopped (most real verify packs at 8 KB did) the part is omitted whole.
+- **Discovery** (affects M3-05, run): In tests/checks/38, a change to $T/proj after a stub run must `git pull -q --ff-only origin main` first: the run merged its PRs into origin main.
+- **Question for Michael:** Should Current rules also list unnumbered decision headings (voice-concierge's `## LLM provider: Anthropic direct (Michael, …)`), or is numbering them M4's lint's job? Default taken: numbered only.
+- **Proposed change:** M3-04 step 3's `context.md for M1:` byte count exceeding 8192 can't be observed in a stub run; the check proves the verify cap with CONTEXT_PACK_BYTES=1024 (verify pack > 1024 and ≤ 16384, harness-log count > 1024) instead
+- *13-M3-04 · claude-opus-5-5*
+
 ### 2026-10-26 21:46 · M3-03 · passes
 
 entries.mjs: `resolved` (array of strings, kept only when non-empty) drops a question a later entry names (whitespace-folded); `project` discoveries go to a coding-only `Promote to Gotchas` part (cap/8 share, long facts cut, dedup by first 40 chars) until a CLAUDE.md Gotchas line holds them. Stub flags STUB_ASK/RESOLVE/PROJECT_FACT, prompts, arch, README, decision file. Tests 439 → 445.
