@@ -125,7 +125,7 @@
         "pack() has a part `Promote to Gotchas` listing discoveries whose `affects` includes `project`, each ending `→ entries.jsonl:<line>`; a check shows a stub `project` discovery (`STUB_PROJECT_FACT=<id>`) appears there in the next context.md and is gone once the project's CLAUDE.md `## Gotchas` has a line sharing its first 40 characters",
         "prompts/coding.md's entry example and its `affects` sentence name `project` (a fact that outlives the run) and the Finish step says to write `Promote to Gotchas` items into `## Gotchas`; prompts/parts/where-things-go-readonly.md says a verify's durable fact goes to `discoveries` with `project`",
         "the suite is green" ],
-      "after": ["M3-02"], "passes": false },
+      "after": ["M3-02"], "passes": true },
 
     { "id": "M3-04", "milestone": "M3", "kind": "build", "model": "opus",
       "description": "context.md gains a `Current rules` part with the decisions store's current lines (headings and their one-line rule, newest first) within the cap, and verify packs use CONTEXT_PACK_BYTES_VERIFY (16384) with failed evidence rows first.",

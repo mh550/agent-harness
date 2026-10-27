@@ -1,0 +1,12 @@
+{ "feature": "M3-03", "kind": "coding", "outcome": "passes",
+  "summary": "entries.mjs: `resolved` (array of strings, kept only when non-empty) drops a question a later entry names (whitespace-folded); `project` discoveries go to a coding-only `Promote to Gotchas` part (cap/8 share, long facts cut, dedup by first 40 chars) until a CLAUDE.md Gotchas line holds them. Stub flags STUB_ASK/RESOLVE/PROJECT_FACT, prompts, arch, README, decision file. Tests 439 → 445.",
+  "files": ["lib/entries.mjs", "tests/stub-claude.sh", "tests/checks/12-journal-pure-e4-entrys.sh", "tests/checks/38-run-17-gotchas-and-pack-m3.sh", "tests/fixtures/check-names.txt", "prompts/coding.md", "prompts/parts/where-things-go-readonly.md", "prompts/parts/where-things-go-override.md", "docs/architecture.md", "README.md", "journal/decisions/2026-10-26-resolved-and-project-facts.md"],
+  "verified_how": "lib/check.sh full run green, 445 tests (248 s); the 6 new checks watched failing first (the two stub-run checks and the prompt check against HEAD's entries.mjs/prompts, the long-fact case before its fix); Opus review of the diff: 1 Important fixed (a long project fact was dropped, now cut to its share)",
+  "tests_before": 439, "tests_after": 445,
+  "dead_ends": [{ "tried": "Promote items as whole strings checked only against the cap/8 share", "why": "a fact over ~1000 bytes (or ~80 at cap 1024) never fit and, being filtered out of Discoveries, vanished from every coding pack; items are now cut to the share's room (≥ 32 bytes)" }],
+  "discoveries": [
+    { "text": "pack() parts may carry a third element, a byte share: an item past it is counted in items left out without stopping the pack; Promote to Gotchas items are {fact, ref} objects cut to the share's room. M3-04's Current rules (cap/4) can reuse the share slot.", "affects": ["M3-04"] },
+    { "text": "lib/eval.sh:134 packs from <clone>/.harness/runs/<run>, which passes the CLAUDE.md guard, so an eval probe's context.md includes Promote to Gotchas (and will include Current rules): the plan said probes read none.", "affects": ["M3-04", "M3-05"] }
+  ],
+  "questions": ["The eval probe's context.md now reads the clone's CLAUDE.md Gotchas (it shows what the session would read). Keep that, or make probes read none as the plan said?"],
+  "proposed_changes": ["M3-03 step 2 names `logs/NN-<id>.context.md`, but after STUB_RESOLVE=C's 05-C passes there is no later C coding session; the check reads the next session's pack, `logs/<hhmmss>-verify-M2.context.md`, as the plan says."] }
