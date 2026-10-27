@@ -40,4 +40,22 @@ git pull -q --ff-only origin main && git rm -q CLAUDE.md && echo DECISIONS=journ
 check "where things go: with no CLAUDE.md the three prompts carry the block once each, the store from DECISIONS=" '
   [[ $(n wt3 coding) == 1 && $(n wt3 initializer) == 1 && $(n wt3 verify) == 1 ]] && ! grep -q "CLAUDE.md. at the root of this worktree" "$(P wt3 coding)" &&
   grep -q "one file per decision in .journal/decisions/., never numbered" "$(P wt3 coding)"'
+# ---- the prompts and templates stop contradicting the block (M2-02) ----
+check "routing: the rendered initializer prompt sends gotchas to ## Gotchas, run-only facts to discoveries, no decision number" '
+  i=$(tr -s " \n" "  " < "$(P wt1 initializer)") && [[ $i != *"where things live, gotchas"* && $i != *"D<n>"* ]] &&
+  [[ $i == *"a durable gotcha (still true after this run) → one line under \`## Gotchas\`"* ]] &&
+  [[ $i == *"a run-only fact → \`discoveries\` affecting \`\"run\"\`"* && $i == *"says \`record as a new decision\`"* ]]'
+check "routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count" '
+  c=$HERE/../prompts/coding.md d=$HERE/../prompts/draft-claude-md.md &&
+  sed -n "/^- \*\*Decisions\.\*\*/,/^- \*\*W/p" "$c" | grep -q "Where things go" && ! grep -q "D<n> \*default\*" "$c" &&
+  grep -q "## Where things go" "$d" && grep -q "## Gotchas" "$d" && ! grep -q "test count, duration" "$d"'
+check "routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=" '
+  t=$HERE/../templates/project/CLAUDE.md && ! grep -q "<count> tests" "$t" &&
+  [[ $(grep -n "^## " "$t" | sed -n "/Decisions and plans/{n;N;p}" | cut -d: -f2 | tr "\n" "|") == "## Where things go|## Gotchas|" ]] &&
+  [[ -z $(sed -n "/^## Gotchas/,/^## /p" "$t" | sed "1d;\$d" | grep -v "^ *$" | grep -v "^<!--.*-->$") ]] &&
+  grep -q "^# DECISIONS=" "$HERE/../templates/project/config.sh" && bash -n "$HERE/../templates/project/config.sh"'
+check "routing: this repo has the block (journal/decisions/, never numbered), an empty Gotchas and DECISIONS=journal/decisions" '
+  r=$HERE/.. && sed -n "/^## Where things go/,/^## /p" "$r/CLAUDE.md" | grep -q "journal/decisions/.*never numbered" &&
+  grep -qx "## Gotchas" "$r/CLAUDE.md" && grep -qx "DECISIONS=journal/decisions" "$r/.harness/config.sh" &&
+  [[ $(node "$MM" store "$r") == journal/decisions ]]'
 suite_end

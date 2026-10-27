@@ -303,6 +303,10 @@ report.md lists the session that peaked at its cap among the peaks over 2 GB
 resume reloads config merged from main
 retro edits reverted
 routine notifications keep the default priority
+routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count
+routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=
+routing: the rendered initializer prompt sends gotchas to ## Gotchas, run-only facts to discoveries, no decision number
+routing: this repo has the block (journal/decisions/, never numbered), an empty Gotchas and DECISIONS=journal/decisions
 run start with the guard: nothing
 run start without the deploy guard: one note, one notification
 run start without the netlify guard: one note, one notification
