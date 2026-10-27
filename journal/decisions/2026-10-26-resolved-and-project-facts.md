@@ -18,10 +18,12 @@
     only, after `Discoveries for this feature`) lists those discoveries newest first, one per distinct first 40
     characters, each `→ entries.jsonl:<line>`, and leaves out one a line of the worktree's `## Gotchas` contains
     (*D2 default:* contains its first 40 characters, the whole text when shorter). *D3 default:* the part shares at
-    most cap/8 bytes; an item past the share is counted in `items left out` without ending the pack; in a coding pack
+    most cap/8 bytes; a fact longer than the room left in the share is cut to it (with `…`, so a long fact still
+    shows), and one that finds under 32 bytes left is counted in `items left out` without ending the pack; in a coding pack
     a `project` fact shows there and not under `Discoveries`; a milestone pack has no such part (a verify can't write
     `CLAUDE.md`).
-  - `entries.mjs pack` reads `<worktree>/CLAUDE.md` only when the run dir is `<worktree>/.harness/runs/<run>`.
+  - `entries.mjs pack` reads `<worktree>/CLAUDE.md` only when the run dir is `<worktree>/.harness/runs/<run>` (a run,
+    or an eval probe's clone, which then shows what the session would read; the plan said a probe reads none).
   - `prompts/coding.md` names `resolved` and `project` in its entry example and field sentence; Finish step 3 writes
     the `Promote to Gotchas` items into `## Gotchas`; the read-only `Where things go` part sends a verify's durable
     fact to `discoveries` with `affects: ["project"]`. Stub flags `STUB_ASK`, `STUB_RESOLVE`, `STUB_PROJECT_FACT`.

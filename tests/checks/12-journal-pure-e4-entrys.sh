@@ -97,7 +97,9 @@ ENPG='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (f, d) => ({ 
   process.exit(ls.length === 2 && ls[0] === "- the stub writes work files → entries.jsonl:3" && ls[1].includes("newer wording → entries.jsonl:2") && !sec(p, "Discoveries for this feature").includes("fact")
     && sec(p, "Discoveries for this feature").includes("for X only") && p.indexOf("## Promote to Gotchas") > p.indexOf("## Discoveries") && p.indexOf("## Promote to Gotchas") < p.indexOf("## Lately")
     && !sec(g, "Promote to Gotchas").includes("stub writes") && sec(g, "Promote to Gotchas").includes("newer wording") && !m.includes("Promote to Gotchas")
-    && Buffer.byteLength(sec(f, "Promote to Gotchas")) <= 512 && f.includes("## Lately in the run") && /^_\d+ items left out at 4096 bytes/m.test(f) ? 0 : 1);'
+    && Buffer.byteLength(sec(f, "Promote to Gotchas")) <= 512 && f.includes("## Lately in the run") && /^_\d+ items left out at 4096 bytes/m.test(f)
+    && [[8192, 1000], [1024, 100]].every(([k, n]) => { const q = pack([c("Y", [P("a".repeat(n))])], { feature: "X", list, cap: k }), s = sec(q, "Promote to Gotchas");
+      return /^- a+… → entries\.jsonl:1$/m.test(s) && Buffer.byteLength(s) <= k / 8 && !q.includes("items left out"); }) ? 0 : 1);'
 check "entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them" 'node --input-type=module -e "$ENPG"'
 # a journal a session or an editor damaged (E4 review F1, F2): a null line, wrongly typed fields and a blank line are
 # skipped, never fatal; a last line without its newline doesn't swallow the next append; references stay real lines.
