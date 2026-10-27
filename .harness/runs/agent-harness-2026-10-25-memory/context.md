@@ -1,9 +1,10 @@
-# Context pack for `M3-01`
+# Context pack for `M3-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (M3-01, affects M3-02): Gotchas-step text cannot use {{RUN}} (no such prompt variable); the run id is on the `Run:` line under *This run*. → entries.jsonl:13
 - Discovery (M2-01, affects M3, M4): `node lib/memlint.mjs store-line <wt>` gives the block's {{DECISIONS}} phrase; decisionsStore returns {path, kind: dir|file, exists} or null. M3 and M4 import it. → entries.jsonl:9
 - Discovery (M1-06, affects run): Any note() written in retro() between rstart and restrict is reverted with the retro's edits: write it after restrict (as S_NOTES are). → entries.jsonl:7
 - Discovery (M1-06, affects M2, M3): backlog.mjs exports oneLine (whitespace and control characters folded, 200 chars): reuse it for any retro-written text that reaches a prompt. → entries.jsonl:7
@@ -17,10 +18,9 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-26 20:21 · M2-01 · passes: lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else null), storeLine, CLI store/store-line. prompt_render appends prompts/parts/where-things-go.md (coding, initializer) or -readonly.md (verify, retro) unless CLAUDE.md has a `## Where things go` line; no CLAUDE.md gets it too. Decision file written. Tests 420 → 429.; tests 420 → 429; files lib/memlint.mjs, lib/prompt.sh, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, tests/checks/37-memory-prompts-m2.sh, … → entries.jsonl:9
-- 2026-10-26 20:55 · M2-02 · passes: A background wait I had left running for the review was stopped at its time limit. It doesn't matter: the review had already come back and its findings were handled. M2-02 passes. The last commit is `7ec5b20`, pushed. The full suite is green, and tests went from 429 to 435.; files .harness/config.sh, CLAUDE.md, journal/decisions/2026-10-26-where-things-go.md, lib/prompt.sh, prompts/coding.md, … → entries.jsonl:10
-- 2026-10-26 21:00 · M2-03 · passes: docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles row citing decisions/2026-10-26-where-things-go; README names the routing block, Gotchas and DECISIONS=.; tests 435 → 435; files docs/architecture.md, README.md → entries.jsonl:11
+- 2026-10-26 21:11 · M3-01 · passes: Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a ~e -d, a replace is one edit) and the driver's gotchas() after journal coding; resolved (exact after flattening, later entries only); Promote to Gotchas (coding packs, cap/8); Current rules (last, cap/4, three file shapes); verify cap 16384, failed rows first; stub flags; check names.; tests 435 → 435; files docs/plans/2026-10-26-M3-gotchas-and-pack.md → entries.jsonl:13
 
 ## Lately in the run
 
 - 2026-10-26 21:06 · verify M2 · passes: All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/templates/docs/decision file read and match each step. → entries.jsonl:12
+- 2026-10-26 21:00 · M2-03 · passes: docs/architecture.md gains a Memory model section (scope × bucket table, rules 1–6) and a Principles row citing decisions/2026-10-26-where-things-go; README names the routing block, Gotchas and DECISIONS=.; tests 435 → 435; files docs/architecture.md, README.md → entries.jsonl:11
