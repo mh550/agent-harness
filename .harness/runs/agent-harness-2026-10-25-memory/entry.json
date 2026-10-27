@@ -1,0 +1,12 @@
+{"feature":"M5","kind":"verify","outcome":"not yet","summary":"M5-02 holds. M5-01 step 2 fails: tests/fixtures/check-agent-harness.txt yields 474 (ends 474/474), the step says 395 (this run's scratch check.out); the check asserts 474. Other steps hold; suite green (483).","evidence":[
+{"feature":"M5-01","step":1,"ran":"node lib/testcount.mjs on check-jest-contract/check-jest/empty with and without --source; testCount on two contract lines","saw":"1115 tests · contract; 7 tests · jest; plain form '7 tests'; last contract line wins (9)","holds":true},
+{"feature":"M5-01","step":2,"ran":"node lib/testcount.mjs tests/fixtures/check-agent-harness.txt --source; head/tail of fixtures","saw":"contract fixture 1115 with provenance first line OK; check-agent-harness gives 474 tests · generic (31 lines, ends 474/474), step demands 395; check 06 asserts 474","holds":false},
+{"feature":"M5-01","step":3,"ran":"testcount.mjs --source on jest, pytest, empty fixtures","saw":"7 · jest; 4 · generic; ? tests · none","holds":true},
+{"feature":"M5-01","step":4,"ran":"bash tests/run.sh 40-run-18; read lib/driver.sh:332-334","saw":"PASS 'a suite printing HARNESS_TESTS=12 is noted once ... tests.start is 12'; notes contract/parsed/no match","holds":true},
+{"feature":"M5-01","step":5,"ran":"harness init check; tests/run.sh subsets","saw":"check green in 282 s, 483 tests","holds":true},
+{"feature":"M5-02","step":1,"ran":"grep lib/driver.sh tests_end; subset 40","saw":"tests_end() at 569, called after sessions (817) and in finish (582); continued-run check passes","holds":true},
+{"feature":"M5-02","step":2,"ran":"bash tests/run.sh 40-run-18","saw":"PASS 'a continued run refreshes tests-end after each session (3 → 5 before finish), tests-start stays the baseline'","holds":true},
+{"feature":"M5-02","step":3,"ran":"grep lib/summary.mjs; subset 40 and 14","saw":"'baseline at run start → end' (236), trends header 'tests (baseline → end)' (289); report label check PASS; 14/14 pass","holds":true},
+{"feature":"M5-02","step":4,"ran":"grep architecture.md, README.md; ls journal/decisions","saw":"Markers row says when tests-start/tests-end written; README HARNESS_TESTS paragraph; decisions/2026-10-26-test-count-contract.md with TEST_REPORT rejected","holds":true},
+{"feature":"M5-02","step":5,"ran":"read entries.jsonl:23 summary","saw":"Opus review recorded: 0 Critical, 1 Important fixed RED→GREEN, 2 Minor fixed","holds":true},
+{"feature":"M5-02","step":6,"ran":"init suite","saw":"green, 483 tests","holds":true}]}

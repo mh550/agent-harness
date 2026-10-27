@@ -57,3 +57,6 @@
 - 2026-10-26 23:18 · M5-01 · claude-opus-5-5 · passes=true · 7 min · 17/23 passing
 - 2026-10-26 23:18 · context.md for M5-02: 7731 bytes
 - 2026-10-26 23:55 · M5-02 · claude-opus-5-5 · passes=true · 37 min · 18/23 passing
+- 2026-10-26 23:55 · merged main into harness/agent-harness-2026-10-25-memory
+- 2026-10-26 23:55 · verify M5: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 00:00 · context.md for M5: 7352 bytes, 4 items left out
