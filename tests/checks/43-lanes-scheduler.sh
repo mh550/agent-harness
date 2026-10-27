@@ -55,7 +55,7 @@ check "lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_RE
   '( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent \
     && [[ "$MAX_LANES $LANE_RESERVE_GB $LANE_OPEN_BELOW_5H $LANE_REBASE $MAX_REBASE_ROUNDS $RECORD_PR" == "1 4 70 suite 1 end" ]] ) \
   && for v in MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end; do grep -q "^# $v\b" "$HERE/../templates/user/config.sh" || exit 1; done \
-  && sed -n "1,/^set /p" "$HERE/../lib/driver.sh" | grep -q "HARNESS_LANE_POLL.*10.*suite sets 1"'
+  && sed -n "1,/^set /p" "$HERE/../lib/driver.sh" | grep "HARNESS_LANE_POLL.*10.*suite sets 1" > /dev/null'
 ll dflt '[{"id":"d1","passes":false},{"id":"a1","milestone":"M1","passes":false}]'
 s=$(st dflt); d0=$(lanes dflt "$s"); FM pass "$LS/dflt.json" d1; d1=$(lanes dflt "$s"); d1d=$(FM deps "$LS/dflt.json" M1)
 check "lanes: the default lane (no milestone, never verified) holds later lanes only until its features pass, then never opens" \
