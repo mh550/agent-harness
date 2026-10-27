@@ -101,6 +101,22 @@ ENPG='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (f, d) => ({ 
     && [[8192, 1000], [1024, 100]].every(([k, n]) => { const q = pack([c("Y", [P("a".repeat(n))])], { feature: "X", list, cap: k }), s = sec(q, "Promote to Gotchas");
       return /^- a+… → entries\.jsonl:1$/m.test(s) && Buffer.byteLength(s) <= k / 8 && !q.includes("items left out"); }) ? 0 : 1);'
 check "entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them" 'node --input-type=module -e "$ENPG"'
+# M3 review (M3-05): a Gotchas line carries a fact whatever its case, backticks or emphasis; a later entry's `resolved`
+# dismisses a promoted fact (by its first 40 characters) or a question copied with the line's ` → entries.jsonl:<n>`,
+# its `Question (<id>): ` lead or as cut with `…`; progress.md shows what an entry resolved
+ENRV='import { pack, renderEntry } from "'$HERE'/../lib/entries.mjs"; const c = (f, x = {}) => ({ feature: f, kind: "coding", outcome: "passes", summary: f + " done", session: "s", at: "t", ...x });
+  const list = [{ id: "X", milestone: "M1" }, { id: "Y", milestone: "M1" }], P = t => ({ text: t, affects: ["project"] }), sec = (p, t) => (p.split("## " + t + "\n")[1] ?? "").split("\n## ")[0];
+  const fact = "the stub writes work files at the repo root, one per feature", promoted = (es, g = []) => sec(pack(es, { feature: "X", list, gotchas: g }), "Promote to Gotchas").includes("stub writes");
+  const q = "Should X default to off? It decides whether the queue starts a run on its own at night", long = "Is it " + "w".repeat(1100) + "?";
+  const asked = (es, t = q) => pack(es, { feature: "X", list }).includes("Question (X): " + t.slice(0, 40));
+  process.exit(promoted([c("Y", { discoveries: [P(fact)] })]) && !promoted([c("Y", { discoveries: [P(fact)] })], ["- The `stub` **writes** work  files at the repo root, one per feature (r 2026-10-26)"])
+    && !promoted([c("Y", { discoveries: [P(fact)] }), c("X", { resolved: ["- " + fact + " → entries.jsonl:1"] })]) && !promoted([c("Y", { discoveries: [P(fact)] }), c("X", { resolved: [fact.slice(0, 45) + " (wrong now)"] })])
+    && promoted([c("X", { resolved: [fact] }), c("Y", { discoveries: [P(fact)] })])
+    && !asked([c("X", { questions: [q] }), c("X", { resolved: ["- Question (X): " + q + " → entries.jsonl:1"] })]) && !asked([c("X", { questions: [q] }), c("X", { resolved: [q + " → entries.jsonl:1"] })])
+    && asked([c("X", { questions: [long] })], long) && !asked([c("X", { questions: [long] }), c("X", { resolved: [long.slice(0, 900) + "…"] })], long)
+    && asked([c("X", { questions: [q] }), c("X", { resolved: ["Should X…"] })])
+    && renderEntry(c("X", { resolved: [q] })).includes("- **Resolved:** " + q) ? 0 : 1);'
+check "entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it" 'node --input-type=module -e "$ENRV"'
 # Current rules (M3-04): the decisions store's lines newest first, from a directory (each file's `# ` title, by name) or
 # a file in the three shapes the projects use (fixtures copied from rane-one-mixxx, voice-concierge, dj-crate-streaming)
 MLCR='import { currentRules as cr } from "'$HERE'/../lib/memlint.mjs"; import { readFileSync as rf } from "node:fs"; const fx = n => rf("'$HERE'/fixtures/decisions-" + n + ".md", "utf8");
@@ -115,6 +131,11 @@ MLCR='import { currentRules as cr } from "'$HERE'/../lib/memlint.mjs"; import { 
     && s(cr(F, fx("rane").replace(/\n/g, "\r\n"))) === s(rane)
     && s(dir) === "Beta rule → journal/decisions/2026-10-26-b.md\nAlpha rule → journal/decisions/2026-10-20-a.md\nAbout this store → journal/decisions/README.md" && cr(F, "# Decisions\nnone yet\n").length === 0 ? 0 : 1);'
 check "memlint: currentRules reads a directory store and the three file shapes newest first" 'node --input-type=module -e "$MLCR"'
+# a range or a group heading is no decision, however its dash is written, and a heading never replaces a row of the same n
+MLGR='import { currentRules as cr } from "'$HERE'/../lib/memlint.mjs"; const F = { path: "d.md", kind: "file" };
+  const r = cr(F, "## D1—D6 the early ones\n\n## D7 – D9 later\n\n## D10 to D12\n\n| D24 | **One quality** | x |\n\n## D24 on\n\ntext\n\n## D30: a rule\n\nwhy\n");
+  process.exit(r.map(x => x.ref).join() === "d.md:13,d.md:7" && r[1].text.startsWith("D24 · One quality") ? 0 : 1);'
+check "memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row" 'node --input-type=module -e "$MLGR"'
 # the part: last, within cap/4 (and the room left), the rest one `older rules` line that isn't an item left out; a pack
 # that already stopped has no rules part at all; an item is cut to 240 bytes
 ENCR='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (f, x = {}) => ({ feature: f, kind: "coding", outcome: "passes", summary: f + " done", session: "s", at: "t", ...x });

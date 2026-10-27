@@ -146,7 +146,7 @@
         "docs/plans/2026-10-26-M3-review.md records the findings and their fixes; docs/architecture.md §4 and §7, README.md and the two M3 decision files describe M3 as merged",
         "`bash -n` passes on lib/driver.sh, lib/prompt.sh, tests/stub-claude.sh and tests/checks/38-run-17-gotchas-and-pack-m3.sh; `node --check` passes on lib/entries.mjs and lib/memlint.mjs",
         "the suite is green" ],
-      "after": ["M3-04"], "passes": false },
+      "after": ["M3-04"], "passes": true },
 
     { "id": "M4-01", "milestone": "M4", "kind": "build", "model": "opus",
       "description": "lib/memlint.mjs runs four deterministic checks on a worktree (CLAUDE.md size and Gotchas length, stored test counts, night-scope phrases, decisions-store header and supersession markers without `Updated in place`) and prints one finding per line, proven on fixtures trimmed from the projects' files as they were before chunk 3 Part 2 tidied them.",

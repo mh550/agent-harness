@@ -127,7 +127,7 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
   `run.log` beside it has everything), and the session `h-<run>`
   closes after `TMUX_KEEP_HOURS` (24; `0` = at once), or sooner: `harness gc <project>` and the queue runner, as it
   exits, kill the sessions of ended runs.
-- **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends and open questions (a later entry's `resolved` drops one), facts to promote into `## Gotchas`, recent entries, and last the decisions store's current rules, newest first; a verify's pack is larger, `CONTEXT_PACK_BYTES_VERIFY`, its failed rows first); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
+- **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends and open questions (a later entry's `resolved` drops one), facts to promote into `## Gotchas` (until a line there or a later `resolved` carries them), recent entries, and last the decisions store's current rules, newest first; a verify's pack is larger, `CONTEXT_PACK_BYTES_VERIFY`, its failed rows first); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
   Claude Code itself (the prompt names it in one line, it doesn't paste it), so a rule edited on the run branch reaches
   the next session. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 - **Notifications:** start, merges, needs-Michael, parks, limits, end. In `~/.config/harness/config.sh` either

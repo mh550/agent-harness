@@ -31,6 +31,9 @@
     a feature pack keeps its dead ends first.
   - Stub flag `STUB_VERIFY_FAIL_ROW=1`: A's coding entries record a dead end and verify M1 round 1 adds a failing row
     for A step 1 (a long `saw`, as real rows quote output).
+- **The M3 review (M3-05), merged with M3:** a range written `D1—D6`, `D1 – D6` or `D1 to D6` is a group, as `D1–D6`
+  was, and a heading never replaces a bullet or a row of the same n (a group heading such as dj's `## D24 on` placed
+  after its row would have); all seven real stores parse as before (`docs/plans/2026-10-26-M3-review.md`).
 - **Rejected:** a model-written summary of the store (not deterministic, and it drifts from the rule's text); counting
   the rules past their share in `items left out` (that line points at entries.jsonl, which doesn't have them); rules
   ahead of the journal parts (the feature's own history matters more to its next session, and the store is one read

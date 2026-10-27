@@ -157,8 +157,10 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
 entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
+entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: a milestone pack lists failed verify rows before dead ends
 entries.mjs: progress renders 15 in full and the rest as archive lines
@@ -200,6 +202,7 @@ gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
 gc removed the finished worktree
 gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
 gotchasDiff: added, edited, deleted and no section
+gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
 harness backlog import of the seed file gives 8 rows, and 8 again on a second import
 harness backlog set flips test-counts to specced and list shows the spec
 harness backlog set with an unknown id, a bad status or a missing argument exits 1, store byte-identical
@@ -255,6 +258,7 @@ lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
 memlint: currentRules reads a directory store and the three file shapes newest first
+memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note

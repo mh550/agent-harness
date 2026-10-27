@@ -20,6 +20,9 @@
     <commit>:CLAUDE.md`), and notes `<feature>: gotchas +<a> ~<e> -<d>` in `harness-log.md`. Verify and retro get
     none: `restrict` reverts their `CLAUDE.md`.
   - Stub flag `STUB_GOTCHA=<id>`; checks in `tests/checks/38-run-17-gotchas-and-pack-m3.sh`.
+  - **The M3 review (M3-05), merged with M3:** an indented line continues the bullet before it (a wrapped bullet
+    is one line, `+1` not `+2`, and one string for the pack's carried test), and a `# ` heading ends the section as a
+    `## ` one does (`docs/plans/2026-10-26-M3-review.md`).
 - **Rejected:** a separate gotchas file (a second place to read; `CLAUDE.md` is loaded into every session already); a
   blocking size guard (a 16th line or a long one is noted by review, not worth stopping a night's run); an LLM tidy of
   the section (a rewrite is exactly what the rule forbids, and it isn't deterministic); a line-position diff (a moved

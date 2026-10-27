@@ -13,6 +13,15 @@ check "gotchasDiff: added, edited, deleted and no section" '
   printf "%s" "$G" > "$T/g1.md" && printf "%s" "${G/- two/- 2}" > "$T/g2.md" &&
   [[ $(node "$MM" gotchas "$T/g1.md" "$T/g2.md") == "+0 ~1 -0" ]] && o=$(node "$MM" gotchas "$T/g1.md" "$T/g1.md") && [[ -z $o ]] &&
   [[ $(node "$MM" gotchas "$T/none.md" "$T/g1.md") == "+2 ~0 -0" ]]'
+# a wrapped bullet is one line (its indented continuation joins it), and a `# ` heading ends the section too (M3-05)
+check "gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section" '
+  [[ $(gd "$G" "${G/- two (r 2026-10-26)/- two (r 2026-10-26)$'"'"'\n'"'"'- three wraps$'"'"'\n'"'"'  onto a second line (r 2026-10-26)}") == "+1 ~0 -0" ]] &&
+  [[ $(gd "${G/## Later/# Later}" "${G/$'"'"'## Later\nx'"'"'/$'"'"'# Later\ny'"'"'}") == "+0 ~0 -0" ]] &&
+  [[ $(node --input-type=module -e "import { gotchasLines as g } from \"$MM\"; console.log(JSON.stringify(g(\"## Gotchas\n- a\n  b\n\n- c\n\")))") == "[\"- a b\",\"- c\"]" ]]'
+# the CLI builds the pack without the Gotchas when CLAUDE.md can't be read (here a directory), as readRules skips its store
+check "entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack" '
+  mkdir -p "$T/cw/.harness/runs/r" "$T/cw/CLAUDE.md" && : > "$T/cw/.harness/runs/r/entries.jsonl" && echo "{\"features\":[{\"id\":\"X\",\"milestone\":\"M1\"}]}" > "$T/cw/.harness/runs/r/feature_list.json" &&
+  node "$HERE/../lib/entries.mjs" pack "$T/cw/.harness/runs/r" X 8192 > "$T/cw.out" 2> "$T/cw.err" && grep -q "^# Context pack for \`X\`" "$T/cw.out"'
 # the stub project has a decisions store (rane-one-mixxx's first three, copied): every pack ends with its rules (M3-04)
 mkdir -p docs && cp "$HERE/fixtures/decisions-rane.md" docs/decisions.md && git add docs && git commit -qm "decisions store" && git push -q origin main
 # the same run asks and resolves a question of C's (M3-03) and records A's project fact, which B's Gotchas line carries
@@ -49,6 +58,6 @@ check "CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their
   v=$(ls "$TL"/*-verify-M1.context.md | head -1) && (( $(wc -c < "$v") > 1024 && $(wc -c < "$v") <= 16384 )) &&
   hlog tight | grep -q "· context.md for M1: [0-9]* bytes" && (( $(hlog tight | sed -n "s/.*· context.md for M1: \([0-9]*\) bytes.*/\1/p" | sort -n | tail -1) > 1024 ))'
 check "a verify pack lists failed rows before dead ends" '
-  v=$(ls "$TL"/*-verify-M1.context.md | tail -1) && r=$(grep -n "^- Verify M1 found (A step 1): ran check; saw A fails" "$v" | head -1 | cut -d: -f1) &&
+  v=$(grep -l "^- Verify M1 found" "$TL"/*-verify-M1.context.md | head -1) && r=$(grep -n "^- Verify M1 found (A step 1): ran check; saw A fails" "$v" | head -1 | cut -d: -f1) &&
   d=$(grep -n "^- Dead end (A," "$v" | head -1 | cut -d: -f1) && [[ -n $r && -n $d ]] && (( r < d ))'
 suite_end

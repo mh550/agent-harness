@@ -27,7 +27,19 @@
   - `prompts/coding.md` names `resolved` and `project` in its entry example and field sentence; Finish step 3 writes
     the `Promote to Gotchas` items into `## Gotchas`; the read-only `Where things go` part sends a verify's durable
     fact to `discoveries` with `affects: ["project"]`. Stub flags `STUB_ASK`, `STUB_RESOLVE`, `STUB_PROJECT_FACT`.
-- **Rejected:** case-folded or prefix matching of `resolved` (a short string would drop unrelated questions); a
+- **The M3 review (M3-05), merged with M3:** the real projects' Gotchas lines open with a capital and backticks,
+  so a fact counts as carried when a line holds its first 40 characters with case, backticks, `*`, `_` and spacing
+  set aside; the prompt asks to keep a fact's opening words. A fact also leaves when a later entry's `resolved`
+  holds it (same 40-character key): a stale fact, or one a session dropped from a full section, would otherwise come
+  back forever and evict another line, so step 3 now writes only the items that still hold. A `resolved` string is
+  read as context.md shows the item (`- `, `Question (<id>): ` and ` → entries.jsonl:<n>` dropped; one ending `…`,
+  over 40 characters, matches as a prefix of the question), progress.md shows it as `Resolved:`, and the CLI's
+  `CLAUDE.md` read is guarded like the store's (`docs/plans/2026-10-26-M3-review.md`).
+- **Rejected:** case-folded matching of `resolved`, or a prefix match of a string not cut with `…` or of 40
+  characters or fewer (a short string would drop unrelated questions); a
   question resolved by an earlier entry (it can't answer what wasn't asked yet); a separate promote queue file (the
   journal already has the fact and its line); `Promote to Gotchas` in verify packs (the verifier can't act on it);
   matching a Gotchas line only by its start (a session prefixes or rewords the line's head).
+
+Updated in place 2026-10-26: the M3 review (M3-05) widened what carries or dismisses a promoted fact and how a
+`resolved` string is read (the review bullet above); prefix matching of a cut question is allowed past 40 characters.
