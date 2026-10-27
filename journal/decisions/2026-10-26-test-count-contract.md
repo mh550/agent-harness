@@ -19,8 +19,10 @@ takes `docs/specs/2026-10-22-retro-followups.md` §C as written; extends decisio
     Marker `testcount-source` holds the source; a run that already has R1's `testcount-nomatch` isn't noted again
     (*default*).
   - Fixtures: `tests/fixtures/check-jest-contract.txt` (the jest fixture plus `HARNESS_TESTS=1115`) and
-    `tests/fixtures/check-agent-harness.txt` (this run's own `check.out`, last 30 lines, `474/474 checks passed`: the
-    feature's step said 395, which was the count at init; the file is copied, not retyped).
+    `tests/fixtures/check-agent-harness.txt` (this run's own `check.out` at init, last 30 lines, `395/395 checks
+    passed`, as the feature's step says; the file is copied, not retyped). Updated in place 2026-10-27: the first
+    attempt copied the scratch `check.out` after the suite had grown (474) and verify failed the step; scratch no longer
+    held the init output, so the fixture is the same suite re-run on the run's start tree (`ac49ba8`).
   - **`tests-end` after every session (M5-02):** `finish()`'s two sources (the tree's green marker, else its
     `check-<key>.out`) are one function, `tests_end`, which the driver also calls after each coding session's `green`
     check. A continued run's summary showed the last segment's end until `finish`; now `harness status` (`· tests

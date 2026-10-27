@@ -1,15 +1,11 @@
-# this repo's own suite: the last 30 lines of run agent-harness-2026-10-25-memory's scratch check.out (bash tests/run.sh through lib/check.sh, 2026-10-26 23:09)
+# this repo's own suite: the last 30 lines of bash tests/run.sh on run agent-harness-2026-10-25-memory's start tree (ac49ba8), the output its scratch check.out held at init (395/395; re-run 2026-10-27 in a clone, scratch had been overwritten)
 2/2 checks passed
-18-run-9c-refused-sessions: 2 checks, 10.7 s
-tmp: /tmp/tmp.Q4bZ1C2xSa
+18-run-9c-refused-sessions: 2 checks, 13.8 s
+tmp: /tmp/tmp.7S1Wh1Rf6i
 PASS after may name a milestone
 1/1 checks passed
-01-scheduler-pure-after-may: 1 checks, 0.0 s
-tmp: /tmp/tmp.fhHYjvyetS
-PASS default MERGE_POLICY proposes a verified milestone, never merges it
-1/1 checks passed
-23-run-12b-nothing-sets: 1 checks, 10.2 s
-tmp: /tmp/tmp.EnQRUjbrLJ
+01-scheduler-pure-after-may: 1 checks, 0.1 s
+tmp: /tmp/tmp.5xoBQJxbZb
 PASS the deadline verifies a complete milestone once and merges it
 PASS a failed verify at the deadline is not retried: M1 needs Michael
 PASS thin evidence at the deadline is not escalated: one verify, M1 not verified
@@ -17,15 +13,19 @@ PASS a stop at the deadline comes first: no verify, M1 left for a continue
 PASS a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
 PASS a deadline while paused verifies a complete milestone once too
 6/6 checks passed
-19-run-9e-deadline-verifies: 6 checks, 70.7 s
-tmp: /tmp/tmp.B5r6cFnXlA
+19-run-9e-deadline-verifies: 6 checks, 90.3 s
+tmp: /tmp/tmp.qXPvJKf9Nx
+PASS default MERGE_POLICY proposes a verified milestone, never merges it
+1/1 checks passed
+23-run-12b-nothing-sets: 1 checks, 13.8 s
+tmp: /tmp/tmp.ax0KhXVBPn
 PASS thin evidence escalates the verify
 1/1 checks passed
-17-run-8-thin-verify: 1 checks, 11.7 s
-tmp: /tmp/tmp.qA0Oj2U18d
+17-run-8-thin-verify: 1 checks, 14.6 s
+tmp: /tmp/tmp.lqb5s9h4aT
 PASS resume reloads config merged from main
 1/1 checks passed
-29-run-15-resumed-run: 1 checks, 15.6 s
+29-run-15-resumed-run: 1 checks, 19.3 s
 PASS conformance: the split suite has every check the single-file suite had
-slowest: 15-run-4-same-but-queue-parked-debrief-tmux 218.6 s, 08-scope-sh-l1-02-run-capped-services-gc-scratch 194.7 s, 13-run-2-michael-sets-desk 190.6 s; wall 317.0 s, 4 jobs
-474/474 checks passed
+slowest: 15-run-4-same-but-queue-parked-debrief-tmux 339.6 s, 13-run-2-michael-sets-desk 305.5 s, 08-scope-sh-l1-02-run-capped-services-gc-scratch 300.8 s; wall 406.5 s, 4 jobs
+395/395 checks passed

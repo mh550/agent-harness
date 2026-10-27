@@ -407,7 +407,7 @@ testCount: jest fixture gives the Tests: count (7), not Test Suites:
 testCount: node:test fixture gives 3
 testCount: pytest fixture gives 4
 testCount: the last HARNESS_TESTS= line wins, and only a whole line counts
-testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (474)
+testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
 testcount.mjs: the runner's last N/M checks passed is the count
 the EXIT trap commits its services note: harness-log.md is clean after a TERM

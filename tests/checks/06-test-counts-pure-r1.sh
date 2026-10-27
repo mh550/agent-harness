@@ -16,8 +16,8 @@ check "testCount: the last HARNESS_TESTS= line wins, and only a whole line count
   'node --input-type=module -e "import { testCount } from \"$HERE/../lib/testcount.mjs\"; const a = testCount(\"HARNESS_TESTS=3\\n# pass 9\\nHARNESS_TESTS=5\\n\"), b = testCount(\"echo HARNESS_TESTS=8\\n# pass 2\\n\"); process.exit(a === 5 && b === 2 ? 0 : 1)"'
 check "testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 is no contract, a CRLF one is" \
   'node --input-type=module -e "import { testCount } from \"$HERE/../lib/testcount.mjs\"; const a = testCount(\"HARNESS_TESTS=8 of 9\\n# pass 2\\n\"), b = testCount(\"HARNESS_TESTS=8\\r\\n\"), c = testCount(\"HARNESS_TESTS=123456789012345678901\\n# pass 2\\n\"); process.exit(a === 2 && b === 8 && c === 2 ? 0 : 1)"'
-check "testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (474)" \
-  '[[ $(tcs "$HERE/fixtures/check-agent-harness.txt") == "474 tests · generic" ]] && [[ $(tail -1 "$HERE/fixtures/check-agent-harness.txt") == "474/474 checks passed" ]]'
+check "testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)" \
+  '[[ $(tcs "$HERE/fixtures/check-agent-harness.txt") == "395 tests · generic" ]] && [[ $(tail -1 "$HERE/fixtures/check-agent-harness.txt") == "395/395 checks passed" ]]'
 check "testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none" \
   '[[ $(tcs "$HERE/fixtures/check-jest.txt") == "7 tests · jest" && $(tcs "$HERE/fixtures/check-pytest.txt") == "4 tests · generic" ]] \
   && [[ $(tcs "$HERE/fixtures/check-node-test.txt") == "3 tests · node" && $(tcs "$HERE/fixtures/check-cargo.txt") == "3 tests · cargo" && $(tcs "$HERE/fixtures/check-go.txt") == "3 tests · go" ]] \
