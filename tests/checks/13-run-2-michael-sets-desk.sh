@@ -251,7 +251,8 @@ check "verify ping-pong capped, needs Michael" 'hlog strict | grep -q "M1 needs 
 check "verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)" 'Bv=$(curl_with "[strict] M1 needs Michael: A fails verification"); grep -qx "Title: \[strict\] M1 needs you" <<< "$Bv" \
   && grep -qx "Priority: high" <<< "$Bv" && grep -qx "Click: $GHP/blob/harness/strict/.harness/runs/strict/progress.md" <<< "$Bv"'
 check "verify needs Michael goes out after the verify entry is pushed" 'grep -qxF "[strict] M1 needs you · HARNESS: verify M1" "$T/spy-strict.log"'
-check "independent M2 verified and merged alone (its tag carries no M1 work)" 'on_main run/strict/M2 && [[ -n $(git -C "$T/origin.git" rev-list harness-lane/strict/M1 --not main) ]]'
+check "independent M2 verified and merged alone (its tag carries no M1 work)" 'on_main run/strict/M2 && [[ -n $(git -C "$T/origin.git" rev-list harness-lane/strict/M1 --not main) ]] \
+  && [[ -z $(comm -12 <(git -C "$T/origin.git" rev-list harness-lane/strict/M1 --not main | sort) <(git -C "$T/origin.git" rev-list run/strict/M2 | sort)) ]]'
 check "no dependency note when every milestone has after" '! hlog strict | grep -q "dependencies:"'
 
 # ---- run 10: merges refused (MERGE_POLICY=auto but GitHub says no) → `harness merge` later ----

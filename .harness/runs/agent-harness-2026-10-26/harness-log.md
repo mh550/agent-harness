@@ -36,3 +36,4 @@
 - 2026-10-26 18:53 · services stopped (blocked on P1-03)
 - 2026-10-26 18:54 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-26 (in the state dir: init.out check-last.out)
 - 2026-10-26 22:40 · main conflicts with harness/agent-harness-2026-10-26; carrying on without it (merges into main need Michael)
+- 2026-10-26 22:45 · context.md for P1-03: 7827 bytes, 3 items left out

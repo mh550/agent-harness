@@ -43,7 +43,7 @@ check "lanes: a complete unverified milestone is a candidate (to be verified); a
 ll def '[{"id":"a1","milestone":"M1","after":[],"passes":false},{"id":"x1","passes":false},{"id":"a2","milestone":"M1","passes":false}]'
 s=$(st def); f0=$(lanes def "$s"); fn=$(nx def default); rm "$s/meta.env"; f1=$(lanes def "$s")
 check "lanes: features with no milestone form lane default, listed first; without meta.env the tags name the state dir" \
-  '[[ $f0 == "default| M1|" && $fn == x1 && $f1 == "default| M1|" ]] && touch "$s/verified-default" && ll def2 '"'"'[{"id":"x1","passes":true},{"id":"a1","milestone":"M1","passes":false}]'"'"' && [[ $(lanes def2 "$s") == "M1|run/st-def/default" ]]'
+  '[[ $f0 == "default| M1|" && $fn == x1 && $f1 == "default| M1|" ]] && ll def2 '"'"'[{"id":"x1","passes":true},{"id":"a1","milestone":"M1","passes":false}]'"'"' && [[ $(lanes def2 "$s") == "M1|" ]] && touch "$s/verified-M1" && [[ $(lanes into "$s") == "M2|run/st-def/M1" ]]'
 cp "$LS/und.json" "$LS/pass.json"; FM pass "$LS/pass.json" b1; pa=$(jq -c '[.features[].passes]' "$LS/pass.json")
 check "pass: F pass <list> <id> flips passes to true and nothing else (the mirror of unpass)" \
   '[[ $pa == "[false,true,false]" ]] && FM unpass "$LS/pass.json" b1 && cmp -s "$LS/pass.json" <(jq . "$LS/und.json")'
@@ -56,4 +56,8 @@ check "lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_RE
     && [[ "$MAX_LANES $LANE_RESERVE_GB $LANE_OPEN_BELOW_5H $LANE_REBASE $MAX_REBASE_ROUNDS $RECORD_PR" == "1 4 70 suite 1 end" ]] ) \
   && for v in MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end; do grep -q "^# $v\b" "$HERE/../templates/user/config.sh" || exit 1; done \
   && sed -n "1,/^set /p" "$HERE/../lib/driver.sh" | grep -q "HARNESS_LANE_POLL.*10.*suite sets 1"'
+ll dflt '[{"id":"d1","passes":false},{"id":"a1","milestone":"M1","passes":false}]'
+s=$(st dflt); d0=$(lanes dflt "$s"); FM pass "$LS/dflt.json" d1; d1=$(lanes dflt "$s"); d1d=$(FM deps "$LS/dflt.json" M1)
+check "lanes: the default lane (no milestone, never verified) holds later lanes only until its features pass, then never opens" \
+  '[[ $d0 == "default|" && $d1 == "M1|" && -z $d1d ]]'
 suite_end

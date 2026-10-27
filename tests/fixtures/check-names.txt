@@ -212,6 +212,7 @@ lanes: a needs-<m> milestone never opens
 lanes: an after into a later milestone (a name or its feature) never makes a lane wait on a later one (no cycle)
 lanes: an open milestone (lanes/<m>/pid alive) is not a candidate; a dead pid's is
 lanes: features with no milestone form lane default, listed first; without meta.env the tags name the state dir
+lanes: the default lane (no milestone, never verified) holds later lanes only until its features pass, then never opens
 ledger has the run
 ledger row has harness_version and harness_dirty
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
@@ -319,6 +320,9 @@ scratch_rm refuses anything but the run's own scratch directory (symlinks in its
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
 slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
+slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)
+slot_open: after a lane's base conflicts, reopening the previous lane checks its branch out again
+slot_open: the slot's excludes file keeps the user's global excludes (a ~ path expanded)
 start queues when MAX_PARALLEL_RUNS are going
 status: stop <why> from the phone: the same note, ended and services note
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green

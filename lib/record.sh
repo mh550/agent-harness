@@ -37,23 +37,25 @@ sync_lane() { [[ -n ${LBRANCH:-} ]] || return 0; git -C "$SLOT" push -q -u origi
 # <m> → the slot (slot-0) on harness-lane/<run>/<m>, cwd there; HARNESS_WT and HARNESS_BRANCH name it for sessions.
 # A lane resumes its branch (local, else the origin's: a segment that ended mid-milestone), else starts from BASE_REF
 # (harness start --base) or origin/main, then merges the tag of every dependency main doesn't have yet. 1 = its base
-# conflicts (needs-<m>, noted), cwd back in the record worktree.
+# conflicts or the slot can't be checked out (needs-<m>, noted: the loop would only pick it again), cwd back in the
+# record worktree.
 slot_open() {
   local m=$1 b=harness-lane/$RUN_ID/$1 base dep tag first=0 sha
   SLOT=$WT_ROOT_DIR/lanes/$RUN_ID/slot-0
   if [[ ${LBRANCH:-} == "$b" && -d $SLOT ]]; then lane_cd; return 0; fi
+  LBRANCH="" LANE=""   # from here the slot leaves the open lane's branch: only a full open names a lane again
   git -C "$RWT" fetch -q origin 2> /dev/null
   base=${BASE_REF:-origin/$MAIN_BRANCH}
   if git -C "$RWT" rev-parse -q --verify "refs/heads/$b" > /dev/null; then base=$b
   elif git -C "$RWT" rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null; then base=origin/$b; fi
   if [[ ! -d $SLOT ]]; then
     mkdir -p "${SLOT%/*}"; first=1
-    git -C "$RWT" worktree add -q -f "$SLOT" -B "$b" "$base" 2>> "$STATE/run.log" || { log "slot: worktree add of $SLOT failed"; return 1; }
+    git -C "$RWT" worktree add -q -f "$SLOT" -B "$b" "$base" 2>> "$STATE/run.log" || { slot_fail "$m" "worktree add of $SLOT"; return 1; }
   else
     local cur; cur=$(git -C "$SLOT" branch --show-current)   # a segment killed mid-session left its work here
     ( cd "$SLOT" && commit_all "WIP: uncommitted in the slot when it was reused (harness)" )
     [[ $cur == harness-lane/* ]] && git -C "$SLOT" push -q origin "$cur" 2> /dev/null
-    git -C "$SLOT" checkout -q -f -B "$b" "$base" 2>> "$STATE/run.log" || { log "slot: checkout of $b failed"; return 1; }
+    git -C "$SLOT" checkout -q -f -B "$b" "$base" 2>> "$STATE/run.log" || { slot_fail "$m" "checkout of $b"; return 1; }
   fi
   for dep in $(F deps "$LIST" "$m"); do
     tag=run/$RUN_ID/$dep
@@ -69,7 +71,7 @@ slot_open() {
   # the copy of the record is invisible to the slot's git (a per-worktree excludes file, never .git/info/exclude,
   # which the record worktree shares), plus the user's own global excludes the worktree value would shadow
   mkdir -p "$STATE/lanes/$m"
-  { echo ".harness/runs/"; cat "$(git config --global core.excludesFile 2> /dev/null || echo "${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore")" 2> /dev/null; } > "$STATE/lanes/$m/exclude"
+  { echo ".harness/runs/"; cat "$(git config --global --path core.excludesFile 2> /dev/null || echo "${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore")" 2> /dev/null; } > "$STATE/lanes/$m/exclude"
   [[ $(git -C "$RWT" config extensions.worktreeConfig) == true ]] || git -C "$RWT" config extensions.worktreeConfig true
   git -C "$SLOT" config --worktree core.excludesFile "$STATE/lanes/$m/exclude"
   echo "$SLOT" > "$STATE/lanes/$m/slot"   # lib/prompt.sh as a command renders a lane's prompt from it
@@ -77,6 +79,7 @@ slot_open() {
   sha=$(git rev-parse --short HEAD)
   note "lane $m opened (slot 0, port $PORT, from $sha$( (( first )) || echo ", slot reused"))"
 }
+slot_fail() { note "$1: its slot failed ($2; see run.log); needs Michael"; touch "$STATE/needs-$1"; cd "$RWT" || :; }
 lane_cd() { cd "$SLOT" || return 1; export HARNESS_WT=$SLOT HARNESS_BRANCH=$LBRANCH; SLIST=$SLOT/$RUN_DIR/feature_list.json; }
 rec_cd() { cd "$RWT" || return 1; export HARNESS_WT=$RWT HARNESS_BRANCH=$RBRANCH; SLIST=$LIST; }
 
