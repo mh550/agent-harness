@@ -66,6 +66,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `lib/prompt.sh` | ~50 | The driver's prompt assembly (`prompt_vars`, `prompt_env`, `prompt_render`), sourced by the driver; run as `prompt.sh <state dir> <template> <feature>` it renders a run's prompt the way its driver would (eval probes use it) |
 | `lib/eval.sh` | ~260 | `harness eval run\|compare\|probes` (§11): replays `evals/` tasks with a ref's own driver on throwaway clones in `/tmp/harness-eval/<stamp>/`, under `EVAL_BUDGET_USD` and the 7-day window; compare; probes |
 | `lib/eval.mjs` | ~335 | Pure helpers: task validation, `spent`, `loadResult`, `METRICS`, `compare`/`compareText` (verdicts with the repeat spread as noise), probe `questions`/`score` |
+| `lib/memlint.mjs` | ~50 | The project's memory, read deterministically (decisions/2026-10-26-where-things-go): `decisionsStore(worktree)` (`DECISIONS=` from `.harness/config.sh`, else `docs/decisions.md` if it exists, else null; `{ path, kind: dir\|file, exists }`), `storeLine` (the routing block's `{{DECISIONS}}`); CLI `store <worktree>` (the path or nothing), `store-line <worktree>` |
 | `lib/render.mjs` | ~35 | Prompt templating (`{{X}}` ← `HARNESS_X`), titled sections placed at a `{{SECTIONS}}` line (`assemble`) |
 | `lib/page.mjs` | ~130 | The debrief page: a card per run from summary.json, then the note (escaped), one self-contained HTML file |
 | `lib/desk.sh` | ~240 | `harness desk <run> [--why …]` \| `--debrief` (§17): a Remote Control `claude` in tmux session `h-desk`, window `<run>`, in the project directory; the pane's session URL is the notification's click; one desk per run (a later event is typed into the open one); a desk that can't start is a note and the plain notification, exit 0. `--list`, `--close <run>\|--all`, `--gc` (from `harness gc`: idle for 24 h) |
@@ -74,7 +75,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
 | `templates/user/{settings.permissions.json,CLAUDE.md,config.merge-policy.sh}` | | The permissions policy (`decisions/2026-10-24-permissions-policy`): the user settings, the `~/.claude/CLAUDE.md` section that is its one home, and `MERGE_POLICY=auto` |
 | `setup/apply-2026-10-24.sh` | ~110 | Installs those three (`--dry-run` shows every diff; backs up to `~/projects/backups/`) and moves the n8n MCP servers to n8n-home's `.mcp.json`; Michael runs it, the harness never does |
-| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*) and `parts/rules.md` (the line naming `CLAUDE.md`) |
+| `prompts/*.md` | | initializer, coding, verify, retro, debrief, supervisor, draft-claude-md, desk; `policy/{build-only,live-staged}.md`; `parts/run.md` (*This run*), `parts/rules.md` (the line naming `CLAUDE.md`) and `parts/where-things-go{,-readonly}.md` (the routing block) |
 | `tests/run.sh` + `tests/lib.sh` + `tests/checks/` + stubs | | End-to-end with stub `claude`, `gh` and `curl` on a throwaway repo with a bare origin, desks on a private tmux server: 395 checks, 208 s with `TEST_JOBS=4`. `run.sh` is the runner (all files, or those whose names contain an argument; `TEST_JOBS` at a time, default half the cores, 1 to 4, largest first, as background jobs in the one check scope, never a scope of their own; each file's output whole when it ends, a timing line per file, the slowest three and the wall time, one total, in which a file that exited non-zero with no `FAIL` line is one failed check; on a TERM/INT/HUP, each unfinished file's output so far and its name; on a full run the conformance check against `tests/fixtures/check-names.txt`); each `checks/NN-<slug>.sh` starts from `lib.sh`'s `suite_setup` and ends with `suite_end`; `tests/split.sh` cut them from the single file by its section markers, grouping a section with the one whose state it reads or replaying that one first, uncounted (`REPLAY=1`) (decisions/2026-10-26-suite-split) |
 
 ## 4. Where state lives
@@ -326,7 +327,10 @@ this order: (1) the static part of `prompts/<kind>.md`: a fixed first line (`# C
 policy (`prompts/policy/<POLICY>.md`); (3) the run-level parts: *This run* (`prompts/parts/run.md`: run id,
 worktree, branch, run directory, port, scratch, suite, init, smoke, spec), "Brief for this run" (pasted as written,
 so a `{{X}}` in it stays text), `prompts/parts/rules.md` (one line naming `CLAUDE.md`, which Claude Code loads
-itself, when the worktree has one; decisions/2026-10-21-no-double-claude-md) and legacy `.harness/project.md` if
+itself, when the worktree has one; decisions/2026-10-21-no-double-claude-md), the `## Where things go` block
+(`prompts/parts/where-things-go.md`, or `-readonly.md` for verify and the retro; under `# Project rules (this project
+has no CLAUDE.md)` when there is none) unless `CLAUDE.md` has a `## Where things go` line, its `{{DECISIONS}}` from
+`memlint.mjs store-line` (decisions/2026-10-26-where-things-go), and legacy `.harness/project.md` if
 present; (4) the template's *This session* part: `` Feature: `<id>` `` / `Milestone: <m>` (coding), `Milestone:` /
 `Features:` (verify) or `Earlier runs' feature sizes:` (initializer), the clock line, the init output. Sections are
 one blank line apart. Two sessions of a run share every byte up to *This session*. The clock line (`{{CLOCK}}`,
@@ -334,7 +338,7 @@ driver `clock`, coding and verify only; decisions/2026-10-21-clock-and-bounded-i
 <elapsed> of <total>, ends <HH:MM> · this session: $<budget> budget, <turns> turns, <timeout> timeout · attempt N of
 MAX_ATTEMPTS` (or `verify round N of MAX_VERIFY_ROUNDS`); the run is this driver's segment, `T0` to `DEADLINE`. A
 probe rendered by `lib/prompt.sh` says it is outside a run. The retro (`# Retro`, its run on line 3) gets the
-template and the rules line; its `{{BACKLOG}}` is `backlog.mjs list` of the ledger's backlog (≤ 6000 bytes, past which every
+template, the rules line and the read-only block; its `{{BACKLOG}}` is `backlog.mjs list` of the ledger's backlog (≤ 6000 bytes, past which every
 row keeps at least `<id> · <status>`; `(empty)` without one, and a store that won't parse is a `backlog: the retro
 prompt has no backlog: <why>` note), so it reuses an id, cites a specced/queued/merged item's status and coins a slug only for a new
 proposal. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output)
