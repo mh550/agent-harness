@@ -416,7 +416,7 @@
       "after": [
         "M6-04"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

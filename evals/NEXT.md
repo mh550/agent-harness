@@ -61,7 +61,8 @@ sees the coding prompt but not `progress.md`. E4's `context.md` is what should r
 ## 5. M6: the review gate
 
 The harness before the review gate (tag `run/agent-harness-2026-10-25-memory/M5`, the last tree before M6) against
-M6 (its tag `run/agent-harness-2026-10-25-memory/M6` exists once verify M6 held). Michael runs these by hand; the
+M6 as merged (tag `run/agent-harness-2026-10-25-memory/M6`, set when verify M6 holds and the milestone merges, its
+review M6-05 included). Michael runs these by hand; the
 build never does. Two evals ≈ $56:
 
 ```bash
@@ -72,5 +73,5 @@ harness eval compare pre-m6 m6
 
 **No cost claim for the review gate stands before these have run.** What they should show: $ per verified feature
 down, verify-fail rate not up. The default set's tasks are 1–3 features each, so few of them reach a milestone
-review; read each result's `summary.json` (`review.cost_pct`, `review.found_nothing`) to see whether a review ran at
-all, and judge the gate on the real runs' ledger rows (`review_cost_pct`) as they accumulate if none did.
+review; read each result's `summary.json` (`review.cost_pct`; `review.found_nothing`, the reviews whose every round
+reported `0 Critical, 0 Important`) to see whether a review ran at all, and judge the gate on the real runs' ledger rows (`review_cost_pct`) as they accumulate if none did.

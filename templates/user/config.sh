@@ -17,7 +17,8 @@
 
 # A milestone's review feature is sized by its diff (git diff --shortstat origin/<main>...HEAD, the run directory left out).
 # REVIEW_OPUS_LINES=400              # changed lines (insertions + deletions): under it the review runs on sonnet, at or over on opus
-# REVIEW_ESCALATE_MODEL=opus         # a sonnet review that reports a Critical or Important finding gets one round on this (no attempt)
+# REVIEW_ESCALATE_MODEL=opus         # a sonnet review that reports a Critical or Important finding gets one round on this (no attempt);
+#                                    #     a later attempt of that review stays on it
 
 # MAX_PARALLEL_RUNS=1                # runs alive at once (1 = one after another); the queue runner re-reads it each poll,
 #                                    #     and lowering it stops no running run (an entry waits until fewer are alive)

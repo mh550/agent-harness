@@ -24,9 +24,11 @@
 # STUB_TESTS_N=<id>:<n>[,<id>:<n>…]: that feature's first coding session commits tests.n <n> (a suite echoing it counts <n>). STUB_SNAPSHOT=<id>:
 # its first coding session saves `harness status`, `harness report` and the state's summary.json, tests-start and
 # tests-end in $STUB_DIR/snap-<run>/ (M5-02).
-# STUB_REVIEW_LIST=1: the initializer writes A (sonnet), B, D (build) and R (review, opus), all in M1, and no C (M6).
+# STUB_REVIEW_LIST=1: the initializer writes A (sonnet), B, D (build) and R (review, sonnet), all in M1, and no C (M6).
 # STUB_BIG_DIFF=1: A's first coding session also commits big-A.txt, 500 lines (a review diff at or over 400).
 # STUB_REVIEW_FINDINGS=<c>,<i>: every R session's entry summary is "R: stub review (<n>): <c> Critical, <i> Important, 0 Minor" (M6).
+# STUB_REVIEW_ROUND=limit|fail: R's second session (the escalation round) is refused by the usage limit, or ends not
+# passing (M6-05).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -75,7 +77,7 @@ case $first in
   { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
   { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false },
   { "id": "D", "milestone": "M1", "kind": "build", "description": "d", "steps": ["w"], "passes": false },
-  { "id": "R", "milestone": "M1", "kind": "review", "model": "opus", "description": "review M1", "steps": ["r"], "passes": false } ] }
+  { "id": "R", "milestone": "M1", "kind": "review", "model": "sonnet", "description": "review M1", "steps": ["r"], "passes": false } ] }
 JSON
     else cat > "$L" <<JSON
 { "run": "test", "features": [
@@ -139,6 +141,10 @@ JSON
       ok 1.4 "working"; sed -n 2p "$HERE/fixtures/usage-limit.jsonl" | sed 's/"total_cost_usd":0/"total_cost_usd":1.4/'
       echo '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":1.4,"num_turns":0,"duration_ms":0,"result":""}'   # as 22-T4-09: a background task's empty result after the cut
       exit 1
+    fi
+    if [[ $id == R && $n == 2 && ${STUB_REVIEW_ROUND:-} == limit ]]; then cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; fi
+    if [[ $id == R && $n == 2 && ${STUB_REVIEW_ROUND:-} == fail ]]; then
+      entry R 2 '{feature: "R", kind: "coding", outcome: "not yet", summary: "R: the round did not finish"}'; ok 0.5 "R: not done"; exit 0
     fi
     set_passes "$id" true
     if [[ ${STUB_PASS_THEN_LIMIT:-} && $id == A && $n == 1 ]]; then   # claims the feature, then the limit cuts it off

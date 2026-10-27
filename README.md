@@ -117,7 +117,7 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 |---|---|
 | Worktree, branch | `~/worktrees/<project>/<run-id>`, `harness/<run-id>` from `origin/main` |
 | Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` · `retro-proposals.json` |
-| Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, which the driver runs on Sonnet under `REVIEW_OPUS_LINES` (400) changed lines of the milestone diff and on Opus at or over; a Sonnet review reporting a Critical or Important finding gets one more round on Opus, at no attempt (decisions/2026-10-27-review-gate). The lint flags `review-small` and `review-missing` |
+| Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, which the driver runs on Sonnet under `REVIEW_OPUS_LINES` (400) changed lines of what the run branch has and main doesn't (main fetched first) and on Opus at or over; a Sonnet review whose entry summary reports `<n> Critical, <n> Important` above 0 gets one more round on Opus, at no attempt, and any later attempt stays on Opus (decisions/2026-10-27-review-gate). The lint flags `review-small` and `review-missing` |
 | Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) |
 | Local state | `~/.local/state/harness/<project>/<run-id>/`: `run.log`, transcripts, attempts, `driver.pid`, `ended` |
 | Ledger | `ledger/runs.jsonl` and `ledger/<project>/<run-id>/` in this repo · `harness trends` |
@@ -255,7 +255,8 @@ or later commit of the source) and the runs' worktrees stay beside it for `eval 
 /tmp/harness-eval/<stamp>` once you're done with them. **Evals are real sessions and cost money** (about $28 per
 eval of the default set); they are Michael's to run, the overnight run never does. The commands, in order, with the
 cost: `evals/NEXT.md`; its `## 5. M6: the review gate` compares the harness before the review gate (tag `…/M5`) with M6
-(`summary.json`'s `review.cost_pct` and `review.found_nothing` say what the reviews cost and found).
+(`summary.json`'s `review.cost_pct` and `review.found_nothing` say what the reviews cost and how many found nothing
+Critical or Important in any round).
 
 ## Tests
 
