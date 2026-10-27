@@ -66,6 +66,16 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
 | `.harness/teardown.sh` (executable) | what stopping the run's services scope can't reach, e.g. `npx supabase stop` or `docker compose down` (containers live under `dockerd`): see below | no |
 
+**Memory lint.** `harness memlint <project>` prints what `lib/memlint.mjs` finds in a project's memory files, one
+`<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines),
+`derivable-count` (a stored `<n> tests`), `night-scope` (`tonight`, `this run`, `as of <date>`) and `decisions` (no
+store, no current-rule-set header, a superseded entry without an `Updated in place` line). Every run segment starts
+with the same lint as `memlint: …` notes in `harness-log.md`; they never stop the run. Run `harness memlint
+<project>` for each project to confirm chunk 3 Part 2's tidy held: on 2026-10-26 the projects with a `CLAUDE.md`
+give two `size` findings (hit_list's, 181 lines; portfolio_site's, 127) and nothing else, agent-harness once the memory
+run's tidy of its own `CLAUDE.md` and `DECISIONS=` is on main; a directory without a decisions store gives `decisions:
+no store`.
+
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; cached per code tree, whose key
 leaves out `CHECK_KEY_IGNORE`, default `.harness/runs docs/plans`, so a plan alone doesn't rerun it, and each verify

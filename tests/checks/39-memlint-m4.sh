@@ -56,4 +56,31 @@ check "memlint: a ### under a decision is part of it, a ## heading is named by i
 check "memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing" '
   [[ $(grep -c "\"\.harness/config\.sh\"" "$MM") == 1 && $(grep -c "\"docs/decisions\.md\"" "$MM") == 1 ]] &&
   o=$($M "$HERE/..") && [[ -z $o ]]'
+# the M4 review (M4-02): an unreadable file is one stderr line naming it; a header under a non-decision `## ` section is
+# a header; a symlinked decision file is linted as readRules reads it
+check "memlint: an unreadable CLAUDE.md is exit 1 and one stderr line naming the file and the error" '
+  U=$(wt unread) && mkdir "$U/CLAUDE.md" && { $M "$U" > "$T/ml-u.out" 2> "$T/ml-u.err"; (( $? == 1 )); } && [[ ! -s $T/ml-u.out ]] &&
+  [[ $(wc -l < "$T/ml-u.err") == 1 ]] && grep -q "^memlint: cannot read CLAUDE.md: EISDIR" "$T/ml-u.err"'
+check "memlint: a current-rule-set header under a ## section before the first decision is a header; a symlinked file is linted" '
+  X=$(wt hdr) && printf "%s\n" "# Decisions" "## How this file works" "This is the current rule set, rewritten in place." "## D1 one" "Rule." > "$X/docs/decisions.md" &&
+  o=$($M "$X") && [[ -z $o ]] && D=$(wt dirln) && mkdir -p "$D/journal/decisions" "$D/elsewhere" && echo DECISIONS=journal/decisions > "$D/.harness/config.sh" &&
+  printf "# Old\n- Superseded by decisions/x.\n" > "$D/elsewhere/old.md" && ln -s ../../elsewhere/old.md "$D/journal/decisions/2026-10-25-old.md" &&
+  [[ $($M "$D") == "journal/decisions/2026-10-25-old.md:2 decisions: superseded with no \"Updated in place\" line" ]]'
+# ---- the driver (M4-02): each segment's memlint findings become notes before the first session, never a stop ----
+mkdir -p docs && cp "$HERE/fixtures/decisions-rane.md" docs/decisions.md && printf "%s\n" "- the suite: ~1,870 tests" "- no rename tonight" >> CLAUDE.md &&
+  git add -A && git commit -qm "memory to lint" && git push -q origin main
+"$H" start "$T/proj" mlrun --spec SPEC.md --foreground > "$T/mlrun.out" 2>&1
+check "driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3" '
+  l=$(hlog mlrun) && [[ $(grep -c "· memlint: " <<< "$l") == 2 ]] &&
+  grep -q "· memlint: CLAUDE.md:3 derivable-count: \"~1,870 tests\"" <<< "$l" && grep -q "· memlint: CLAUDE.md:4 night-scope: \"tonight\"" <<< "$l" &&
+  (( $(grep -n "· memlint: " <<< "$l" | tail -1 | cut -d: -f1) < $(grep -n "· feature list written" <<< "$l" | cut -d: -f1) )) &&
+  grep -q "^done" "$HARNESS_STATE/proj/mlrun/ended" && [[ $($F summary "$(list mlrun)") == "3/3 passing" ]]'
+HARNESS_MEMLINT=/bin/false "$H" start "$T/proj" mlfail --spec SPEC.md --foreground > "$T/mlfail.out" 2>&1
+check "driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3" '
+  l=$(hlog mlfail) && [[ $(grep -c "· memlint: " <<< "$l") == 1 ]] && grep -q "· memlint: failed (exit 1)" <<< "$l" &&
+  grep -q "^done" "$HARNESS_STATE/proj/mlfail/ended" && [[ $($F summary "$(list mlfail)") == "3/3 passing" ]]'
+check "harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line" '
+  o=$("$H" memlint "$T/proj") && [[ $(wc -l <<< "$o") == 2 ]] && [[ $(hlog mlrun | grep "· memlint: " | sed "s/.*· memlint: //") == "$o" ]] &&
+  [[ $("$H" memlint "$T/proj/docs") == "$o" ]] && ! "$H" memlint > /dev/null 2> "$T/ml-h.err" && [[ $(wc -l < "$T/ml-h.err") == 1 ]] &&
+  ! "$H" memlint "$T/ml" > /dev/null 2> "$T/ml-h.err" && [[ $(cat "$T/ml-h.err") == "harness: $T/ml is not a git repository" ]] && sed -n "2,/^set -/p" "$H" | grep -q "harness memlint <project>"'
 suite_end
