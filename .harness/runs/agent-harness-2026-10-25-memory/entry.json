@@ -1,0 +1,14 @@
+{ "feature": "M3-04", "kind": "coding", "outcome": "passes",
+  "summary": "context.md ends with `Current rules` (memlint currentRules/readRules: dir store by dated name, file store's D<n> headings, bullets, table rows incl. `*default*`; ≤cap/4, rest one older-rules line). Verify packs use CONTEXT_PACK_BYTES_VERIFY=16384 with failed rows first. Stub STUB_VERIFY_FAIL_ROW, 3 fixtures, decision file, arch/README. Tests 445 → 451.",
+  "files": ["lib/memlint.mjs", "lib/entries.mjs", "lib/driver.sh", "lib/config.sh", "templates/user/config.sh", "tests/stub-claude.sh", "tests/checks/12-journal-pure-e4-entrys.sh", "tests/checks/38-run-17-gotchas-and-pack-m3.sh", "tests/fixtures/decisions-rane.md", "tests/fixtures/decisions-voice-concierge.md", "tests/fixtures/decisions-dj.md", "tests/fixtures/check-names.txt", "journal/decisions/2026-10-26-pack-current-rules.md", "docs/architecture.md", "README.md"],
+  "verified_how": "check.sh green, 451 tests (256 s); new checks watched red first; readRules on the real stores gives rane 24, voice-concierge 23, dj 53 (newest D53); an Opus review fuzzed pack() 20k times with no cap breach; its Important finding (dj `| D36 *default* |` rows dropped) fixed red→green along with CRLF, undated dir files, per-file read errors, ref length",
+  "tests_before": 445, "tests_after": 451,
+  "dead_ends": [{ "tried": "appending CONTEXT_PACK_BYTES=1024 to $T/proj's config after the gotcha run and pushing", "why": "that run had merged PRs into origin main, so the push was refused; pull --ff-only first" },
+    { "tried": "proving `items left out` at 1024 with the stub's default entries", "why": "the stub's packs stay under 864 bytes; STUB_VERIFY_FAIL_ROW's row has a long `saw`, as real rows quote output" }],
+  "discoveries": [
+    { "text": "memlint.mjs exports currentRules(store, input) and readRules(worktree) → [{text, ref}] newest first; M4's lint can reuse the D<n> line parser (heading, bullet with wrapped lines, table row with an optional `*default*` in the id cell).", "affects": ["M4", "M3-05"] },
+    { "text": "Current rules leaves out unnumbered headings (voice-concierge `## LLM provider: …`) and B<n> rulings; in a pack that already stopped (most real verify packs at 8 KB did) the part is omitted whole.", "affects": ["M3-05", "M4"] },
+    { "text": "In tests/checks/38, a change to $T/proj after a stub run must `git pull -q --ff-only origin main` first: the run merged its PRs into origin main.", "affects": ["M3-05", "run"] }
+  ],
+  "questions": ["Should Current rules also list unnumbered decision headings (voice-concierge's `## LLM provider: Anthropic direct (Michael, …)`), or is numbering them M4's lint's job? Default taken: numbered only."],
+  "proposed_changes": ["M3-04 step 3's `context.md for M1:` byte count exceeding 8192 can't be observed in a stub run; the check proves the verify cap with CONTEXT_PACK_BYTES=1024 (verify pack > 1024 and ≤ 16384, harness-log count > 1024) instead"] }
