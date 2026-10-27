@@ -1,0 +1,12 @@
+{ "feature": "M6-02", "kind": "coding", "outcome": "passes",
+  "summary": "Review gate, measure and route: driver review_diff (git diff --shortstat origin/main...HEAD, run dir left out) picks sonnet under REVIEW_OPUS_LINES (400), opus at or over, notes `review <id>: <n> changed lines, …`, fills {{REVIEW_DIFF}}; config + template keys; stub STUB_REVIEW_LIST/STUB_BIG_DIFF; 3 checks in 41. Tests 483 → 486.",
+  "files": ["lib/driver.sh", "lib/config.sh", "templates/user/config.sh", "prompts/coding.md", "tests/stub-claude.sh", "tests/checks/41-run-19-review-gate-m6.sh", "tests/fixtures/check-names.txt"],
+  "verified_how": "tests/checks/41: 3 checks watched failing (0/3) then passing (3/3); KEEP=1 run: rsmall `review R: 3 changed lines, under 400; sonnet` (R row claude-sonnet-5-5), rbig `review R: 500 changed lines, at or over 400; opus`; review_diff without origin/main returns 1 with `fatal: bad revision` (→ opus, noted); full suite via check.sh green, 486 tests; 07-step-lint file untouched and green.",
+  "tests_before": 483, "tests_after": 486,
+  "discoveries": [
+    { "text": "In check 41, rbig runs after rsmall merged work-A/B/D.txt into main with the same content, so rbig's diff is big-A.txt alone (1 file, 500 lines); rsmall's is 3 files, 3 lines.", "affects": ["M6-03", "M6-04"] },
+    { "text": "The gate sits in the loop after the memory gate and before `n=$(( n + 1 ))`; `rdiff` holds the Review diff line (empty for non-review) and is passed as HARNESS_REVIEW_DIFF on the `prompt coding` line only. M6-03's escalation round must set mdl/rdiff itself and skip this block (it runs whenever F kind is review).", "affects": ["M6-03"] },
+    { "text": "STUB_REVIEW_FINDINGS is not built yet (M6-03 adds it); B's tamper one-liner now exits 0 when the list has no C.", "affects": ["M6-03"] }
+  ],
+  "questions": ["prompts/coding.md §2 still sends reviews to Opus subagents, so a Sonnet review session that delegates saves less: should a review session's subagent follow the session's model? (Default kept: unchanged; plan D-default 5.)"]
+}

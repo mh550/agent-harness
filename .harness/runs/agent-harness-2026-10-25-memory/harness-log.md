@@ -69,3 +69,4 @@
 - 2026-10-27 00:33 · M5 merged into main · https://github.com/mh550/agent-harness/pull/36
 - 2026-10-27 00:33 · context.md for M6-01: 7595 bytes
 - 2026-10-27 00:38 · M6-01 · claude-opus-5-5 · passes=true · 4 min · 19/23 passing
+- 2026-10-27 00:38 · context.md for M6-02: 7567 bytes, 1 items left out
