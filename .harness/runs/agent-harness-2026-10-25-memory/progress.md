@@ -9,6 +9,21 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-26 21:11 · M3-01 · passes
+
+Wrote docs/plans/2026-10-26-M3-gotchas-and-pack.md: gotchasLines/gotchasDiff (+a ~e -d, a replace is one edit) and the driver's gotchas() after journal coding; resolved (exact after flattening, later entries only); Promote to Gotchas (coding packs, cap/8); Current rules (last, cap/4, three file shapes); verify cap 16384, failed rows first; stub flags; check names.
+
+- **Files:** docs/plans/2026-10-26-M3-gotchas-and-pack.md
+- **Verified:** Each step's terms checked against the plan text; line refs re-grepped (pack lib/entries.mjs:216-269, CLI :314-325, coding loop lib/driver.sh:737-745); check.sh green, 435 tests (cached: plans are outside the key).
+- **Tests:** 435 → 435
+- **Discovery** (affects M3-04, M4): Real decisions.md stores have three decision-line shapes: `## D7 *default*: …` headings (voice-concierge), `- **D1 · …**` bullets (rane-one-mixxx), `| D24 | … |` table rows (dj-crate-streaming); M3-04's parser and fixtures cover all three.
+- **Discovery** (affects M3-03, M3-04): pack CLI must read CLAUDE.md and the decisions store only when the run dir sits at <wt>/.harness/runs/<run>; tests/checks/12 calls `pack` on $T/pk and $T/jr/legacy, whose third parent is outside the throwaway tree.
+- **Discovery** (affects M3-02): Gotchas-step text cannot use {{RUN}} (no such prompt variable); the run id is on the `Run:` line under *This run*.
+- **Question for Michael:** Promote to Gotchas is in coding packs only (a verify cannot write CLAUDE.md), and a project raising CONTEXT_PACK_BYTES above 16384 does not raise the verify cap: OK as defaults?
+- **Proposed change:** M3-03 step 4 should also name `resolved` in prompts/coding.md, and M3-03 should write journal/decisions/<date>-resolved-and-project-facts.md (a behaviour change gets a decision file).
+- **Proposed change:** M3-04 step 3's 'byte count may exceed 8192' cannot be observed in a stub run; the plan proves the verify cap with CONTEXT_PACK_BYTES=1024 (verify pack > 1024, coding packs ≤ 1024) instead.
+- *10-M3-01 · claude-opus-5-5*
+
 ### 2026-10-26 21:06 · verify M2 · passes
 
 All 3 features hold: suite green (435 tests, full run), 37-memory-prompts-m2 15/15 re-run, prompts/templates/docs/decision file read and match each step.
