@@ -39,3 +39,5 @@
 - 2026-10-26 22:45 · context.md for P1-03: 7827 bytes, 3 items left out
 - 2026-10-26 23:07 · P1-03 · claude-opus-5-5 · passes=true · 22 min · 7/17 passing
 - 2026-10-26 23:07 · context.md for P1-04: 7956 bytes, 9 items left out
+- 2026-10-27 00:13 · P1-04 un-passed: suite red after the session
+- 2026-10-27 00:13 · P1-04 · claude-opus-5-5 · passes=false · 58 min · 7/17 passing

@@ -9,6 +9,24 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 00:06 · P1-04 · passes
+
+lib/lane.sh runs one milestone as its own process (exit 0/10-15, reason in state/lanes/<m>/exit); lib/driver.sh is the coordinator (poll, reap, open under MAX_LANES, end reasons, finish waits for lanes, removes slots). Shared code moved to lib/record.sh. Per-lane units, scratch, prompt files; metrics rows carry lane. Opus review: 5 fixes. Suite 423 → 432, green.
+
+- **Files:** lib/lane.sh, lib/driver.sh, lib/record.sh, lib/metrics.mjs, tests/checks/37-lanes-run.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/36-lanes-record.sh, tests/stub-claude.sh, tests/lib.sh, tests/fixtures/check-names.txt, docs/architecture.md, journal/decisions/2026-10-26-lanes.md
+- **Verified:** check.sh: green in 256 s, 432/432 (TEST_JOBS=4). New 37-lanes-run.sh 9/9; 3 of its first 4 checks fail on HEAD's code, the verify-snapshot check failed before its fix. bash -n on lane.sh driver.sh record.sh and the touched tests; node --check metrics.mjs.
+- **Tests:** 423 → 432
+- **Dead end:** setting BRANCH to the lane branch in the lane process — gh_url then linked notifications to the lane branch; BRANCH stays the record's, HARNESS_BRANCH names the lane
+- **Dead end:** deleting every lane branch with nothing beyond main at finish — a parked lane's pushed branch is what 36's --base check (and a continue) reads; only never-pushed ones go (D11)
+- **Discovery** (affects P1-05, P2): A lane's normal close leaves its services up (plan D4): its EXIT trap tears them down only when it dies without an exit line. finish and the coordinator's pause and long limit waits stop what closed lanes left (lanes_services_down).
+- **Discovery** (affects P2): The coordinator syncs the record (fetch, push) only when it may open a lane or while paused (D9); lanes sync before each session. P2's multi-lane admission must keep that rate in mind.
+- **Discovery** (affects run): The MAX_REPAIRS streak is per lane process now, not run-wide.
+- **Discovery** (affects run): Suite: 432 checks, 256 s wall at TEST_JOBS=4 (was 423 in ~231 s); 37-lanes-run.sh adds ~35 s of slot time.
+- **Question for Michael:** D9-D12 in journal/decisions/2026-10-26-lanes.md are defaults: record sync only when a lane may open, a crashed lane needs Michael, never-pushed empty lane branches deleted at finish, unit numbers from scope-seq. Keep them?
+- **Proposed change:** P1-04 step 1: 'n from $STATE/sessions' names the log file; the unit number is scope-seq (plan D7/decision D12), so a verify and a coding unit never share a name
+- **Proposed change:** P1-04 step 1: 'its EXIT trap runs services_down for the lane's scope' holds when the lane dies (TERM, crash); a lane that closes normally leaves them for the next lane or finish (plan §6, D4)
+- *02-P1-04 · claude-opus-5-5*
+
 ### 2026-10-26 23:07 · P1-03 · passes
 
 Reviewed ce11cdf with Opus in the foreground and fixed what it found. slot_open now checks out the right branch after another lane's failed open, marks a slot that can't be checked out needs-<m> instead of letting the loop spin, and keeps ~ global excludes. A passed default lane no longer blocks later lanes. entry.json is taken back under the record lock. Weak checks strengthened.
