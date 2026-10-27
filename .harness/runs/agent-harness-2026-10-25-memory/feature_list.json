@@ -344,7 +344,7 @@
         "the suite is green"
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-02",
@@ -362,7 +362,7 @@
       "after": [
         "M6-01"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-03",
@@ -380,7 +380,7 @@
       "after": [
         "M6-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-04",
@@ -398,7 +398,7 @@
       "after": [
         "M6-03"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-05",
@@ -416,7 +416,7 @@
       "after": [
         "M6-04"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

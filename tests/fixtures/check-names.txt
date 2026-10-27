@@ -341,6 +341,24 @@ report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
 resume reloads config merged from main
 retro edits reverted
+review gate: a review at or over REVIEW_OPUS_LINES runs on opus
+review gate: a review on opus never escalates; the escalation round's clock says Review round 2 of 2
+review gate: a review reporting 0 Critical, 0 Important is not escalated and the run ends done
+review gate: a review under REVIEW_OPUS_LINES runs on sonnet, noted with its changed lines
+review gate: a review whose summary gives no counts is noted not escalated, and the run ends done
+review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor in its entry summary; a build session's doesn't
+review gate: a sonnet review reporting 1 Critical gets one round on opus at no attempt
+review gate: after an escalation round that doesn't pass, the review's next attempt runs on opus and never escalates again
+review gate: an escalation round refused by a usage limit runs again on opus, still at no attempt
+review gate: reviewFindings reads <n> Critical and <n> Important, null without either
+review gate: reviewSummary gives the review share with one decimal, null without reviews, and counts the reviews that found nothing
+review gate: summary.json and report.md carry review.cost_pct and review.found_nothing; the ledger row has review_cost_pct
+review gate: the escalation round's Review diff line names the model it runs on
+review gate: the review's prompt copy has its Review diff line, a build session's has none
+reviewFindings: reads Critical before Important in either order of word and count, never a step number or lowercase prose
+reviewSummary: a review counts as finding nothing only when every entry that gives counts reports 0 Critical, 0 Important
+review_diff: fails with the reason when origin has no such main branch
+review_diff: fetches main first, so a milestone merged meanwhile drops out; the run directory is left out
 routine notifications keep the default priority
 routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count
 routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=

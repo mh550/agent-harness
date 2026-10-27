@@ -22,6 +22,7 @@ harness_config() {
   SVC_IDLE_STOP_MIN=10   # limit_wait stops the services before a usage-limit wait of more than this many minutes
   MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m   # mem_gate before each session: under this much MemAvailable, wait up to this long, then start anyway
   INIT_MODEL=fable WORKER_MODEL=opus VERIFY_MODEL=sonnet VERIFY_ESCALATE_MODEL=opus RETRO_MODEL=sonnet SUPERVISOR_MODEL=opus
+  REVIEW_OPUS_LINES=400 REVIEW_ESCALATE_MODEL=opus   # a review feature: sonnet under this many changed lines, opus at or over (M6)
   DEBRIEF_MODEL=sonnet   # `harness debrief`: one read-only session after a queue (40 turns, $3 cap, like the retro)
   POLICY=build-only MERGE_POLICY=pr MAIN_BRANCH=main RETRO=1 AUTO_CONTINUE=1   # MERGE_POLICY=pr: a project self-merges only by setting auto
   MAX_PARALLEL_RUNS=1 LEDGER_COMMIT=1 BASE_PORT=7800 DEADLINE_AT=0

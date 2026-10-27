@@ -114,6 +114,7 @@ Final message: at most 100 words. Say whether the feature passes, the commit, an
 Feature: `{{FEATURE}}`
 Milestone: {{MILESTONE}}
 {{CLOCK}}
+{{REVIEW_DIFF}}
 
 ## Init output
 

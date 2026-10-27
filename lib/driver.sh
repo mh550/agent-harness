@@ -79,6 +79,7 @@ source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID   # notify "<message>" 
 # shellcheck source=lib/deploy.sh
 source "$HARNESS_HOME/lib/deploy.sh"   # deploy_status: hosts that would build every pushed run branch
 source "$HARNESS_HOME/lib/version.sh"  # harness_version: the harness commit driving this segment, and whether it is dirty
+source "$HARNESS_HOME/lib/review.sh"   # review_diff: the milestone diff the review gate sizes a review's model by (M6)
 commit_all() { git add -A && ! git diff --cached --quiet && git commit -q -m "$1"; return 0; }
 green() { "$CHECK" > /dev/null 2>&1; }
 
@@ -760,6 +761,12 @@ while :; do
   verify_ready || continue   # 2 = deferred by a usage limit: wait for the window first
   if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; finish "weekly budget ($why)"; fi
 
+  esc=""   # a sonnet review's escalation round goes before any pick: same feature, REVIEW_ESCALATE_MODEL, no attempt (M6)
+  if [[ -s $STATE/review-escalate ]]; then
+    IFS=$'\t' read -r id rc ri rdiff < "$STATE/review-escalate"
+    milestone=$(F milestone "$LIST" "$id") mdl=$(F model "$REVIEW_ESCALATE_MODEL") esc="sonnet found $rc Critical, $ri Important"
+    rdiff="${rdiff%; *}; escalated to $REVIEW_ESCALATE_MODEL"   # the measure stands; the model it named doesn't
+  else
   next=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED")
   if [[ -z $next ]]; then
     [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }
@@ -772,13 +779,33 @@ while :; do
     note "no feature left to try: $(F summary "$LIST")"; finish "no feature left to try"
   fi
   IFS=$'\t' read -r id mdl milestone <<< "$next"
+  fi
   # the memory gate before the attempt and its prompt; after a wait, the checks above (deadline, stop, pause, the pick)
   # run again, and the gate doesn't: once is enough, then the session starts anyway (decisions/2026-10-25-memory-gate)
   if (( ! gated )) && ! mem_gate; then gated=1; continue; fi; gated=0
+  [[ $esc ]] || rdiff=""   # the review gate: a review runs on sonnet under REVIEW_OPUS_LINES changed lines, on opus at or over (M6)
+  kind=$(F kind "$LIST" "$id")
+  if [[ ! $esc && $kind == review ]]; then
+    if rd=$(review_diff); then
+      read -r rfiles rlines <<< "$rd"
+      if [[ -e $STATE/review-escalated-$id ]]; then   # its round ran (and parked or failed): the next attempt stays there
+        mdl=$(F model "$REVIEW_ESCALATE_MODEL") rside="escalated earlier in this run; $REVIEW_ESCALATE_MODEL"
+      elif (( rlines < REVIEW_OPUS_LINES )); then mdl=$(F model sonnet) rside="under $REVIEW_OPUS_LINES; sonnet"
+      else mdl=$(F model opus) rside="at or over $REVIEW_OPUS_LINES; opus"; fi
+      note "review $id: $rlines changed lines, $rside"
+      rdiff="Review diff: $rfiles files, $rlines changed lines (git diff --shortstat origin/$MAIN_BRANCH...HEAD, the run directory left out); $rside"
+    else   # unmeasured: the safe side
+      mdl=$(F model opus); note "review $id: diff not measured ($rd); opus"
+      rdiff="Review diff: not measured ($rd); opus"
+    fi
+  fi
   n=$(( n + 1 ))
-  F bump "$ATT" "$id"; F snapshot "$LIST" > "$STATE/before.json"
+  [[ $esc ]] || F bump "$ATT" "$id"; F snapshot "$LIST" > "$STATE/before.json"
   run_init; context "$id"
-  HARNESS_CLOCK=$(clock "attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone prompt coding
+  if [[ $esc ]]; then sclock="Review round 2 of 2 (escalated: $esc)"; else sclock="attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS"; fi
+  # the counts the gate reads (the findings check below and the summary's found_nothing), asked in one fixed form
+  [[ $kind == review ]] && rdiff+=$'\n'"Review findings: give your entry's summary this review's findings as \`<n> Critical, <n> Important, <n> Minor\` (the driver reads the counts)."
+  HARNESS_CLOCK=$(clock "$sclock") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone HARNESS_REVIEW_DIFF=$rdiff prompt coding
   log "session $n · $id · $mdl"
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   cp "$RUN_DIR/INBOX.md" "$STATE/inbox-before.md" 2> /dev/null || : > "$STATE/inbox-before.md"   # what the session adds is the park's question
@@ -791,7 +818,7 @@ while :; do
   # A usage/rate limit, an API error or a session that did no work is not the feature's fault: give the attempt back.
   if why=$(MET limit "$slog" "$S_WALL" "$S_EXIT"); then
     IFS=$'\t' read -r reason reset <<< "$why"
-    F unbump "$ATT" "$id"; n=$(( n - 1 )); limits=$(( limits + 1 ))
+    [[ $esc ]] || F unbump "$ATT" "$id"; n=$(( n - 1 )); limits=$(( limits + 1 ))   # an escalation round runs again after the wait
     # its work stays (committed above); its claims don't: the list goes back to the snapshot, "passes" included
     F repair "$LIST" "$STATE/before.json" "$id" > /dev/null; F passes "$STATE/before.json" "$id" || F unpass "$LIST" "$id"
     MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" false "$S_WALL" "$S_EXIT" true "" "$S_PEAK"
@@ -816,12 +843,25 @@ while :; do
   if F passes "$LIST" "$id" && ! green; then F unpass "$LIST" "$id"; note "$id un-passed: suite red after the session"; fi
   tests_end
   passed=$(F passes "$LIST" "$id" && echo true || echo false)
-  MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$(F kind "$LIST" "$id")" "$S_PEAK"
+  MET append "$slog" "$RUN_DIR/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$kind" "$S_PEAK"
   note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")$( [[ -f $STATE/tests-end ]] && echo " · tests $(cat "$STATE/tests-end")")"
   if [[ $passed == false ]] && why=$(MET final "$slog" | sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' | head -1) && [[ -n $why ]]; then
-    F unbump "$ATT" "$id"; F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault
+    [[ $esc ]] || F unbump "$ATT" "$id"; F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault (an escalation round took none)
     note "$id parked (waiting on Michael): $why"
   else why=""; fi
+  if [[ $esc ]]; then rm -f "$STATE/review-escalate"   # the round ran; its verdict stands
+  elif [[ -z $why && $mdl == "$(F model sonnet)" && $kind == review && ! -e $STATE/review-escalated-$id ]]; then
+    # a sonnet review that found something gets one round on REVIEW_ESCALATE_MODEL, once per feature; un-passed first,
+    # so verify waits for that round's verdict (decisions/2026-10-27-review-gate)
+    if rf=$(node "$HARNESS_HOME/lib/entries.mjs" findings "$RUN_DIR" "$id" "$SCRATCH/entry-final"); then
+      IFS=$'\t' read -r rc ri <<< "$rf"
+      if (( rc + ri > 0 )); then
+        note "review $id: sonnet found $rc Critical, $ri Important; one round on $REVIEW_ESCALATE_MODEL"
+        F unpass "$LIST" "$id"; touch "$STATE/review-escalated-$id"
+        printf '%s\t%s\t%s\t%s\n' "$id" "$rc" "$ri" "${rdiff%%$'\n'*}" > "$STATE/review-escalate"
+      fi
+    else note "review $id: no \"<n> Critical, <n> Important\" in its summary or final message; not escalated"; fi
+  fi
   commit_all "HARNESS: after $id (passes=$passed)"; sync
   if [[ -n $why ]]; then   # after the push, so its links show the question; a failed post's note is committed too
     notify_park "$id" "$why"; [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { commit_all "HARNESS: park notification failed"; sync; }

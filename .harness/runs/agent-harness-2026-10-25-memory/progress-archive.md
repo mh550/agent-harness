@@ -9,6 +9,106 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 01:46 · verify M6 · passes
+
+All five M6 features hold: suite green (501), checks 41/07/14 re-run and pass, config, prompt, docs, decision file, evals/NEXT.md §5 present, bash -n/node --check clean, no eval results.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M6-01 | 1 | grep shortstat/REVIEW_DIFF in docs/plans/2026-10-26-M6-review-gate.md | plan gives git diff --shortstat origin/$MAIN...HEAD -- . :!.harness/runs, the Review diff line, the 400/opus gate in the loop | yes |
+| M6-01 | 2 | read plan escalation section (l.87-94) | c+i>0 escalates, note text matches, 0/0 does not | yes |
+| M6-01 | 3 | grep plan for fields, flags, check file | review.cost_pct, found_nothing, STUB_REVIEW_LIST/BIG_DIFF/FINDINGS, check 41; NEXT.md commands in evals/NEXT.md §5 | yes |
+| M6-01 | 4 | harness init check.sh | green, 501 tests | yes |
+| M6-02 | 1 | grep config.sh, templates/user/config.sh, prompts/coding.md | REVIEW_OPUS_LINES=400, REVIEW_ESCALATE_MODEL=opus, documented; {{REVIEW_DIFF}} at coding.md:117 | yes |
+| M6-02 | 2 | bash tests/run.sh 41-run | PASS sonnet-under and opus-at-or-over checks; 9/9 | yes |
+| M6-02 | 3 | same run | PASS prompt copy has Review diff line, build has none | yes |
+| M6-02 | 4 | bash tests/run.sh 07-step | 9/9 pass | yes |
+| M6-02 | 5 | init suite | green 501 | yes |
+| M6-03 | 1 | tests/run.sh 41-run | PASS 1 Critical gets one round on opus at no attempt | yes |
+| M6-03 | 2 | same | PASS 0/0 not escalated, run ends done | yes |
+| M6-03 | 3 | same | PASS opus never escalates; clock Review round 2 of 2 | yes |
+| M6-03 | 4 | grep architecture.md; ls journal/decisions | §7 Review gate row at l.264; 2026-10-27-review-gate.md exists | yes |
+| M6-03 | 5 | init suite | green 501 | yes |
+| M6-04 | 1 | tests/run.sh 41-run | PASS summary.json and report.md carry review.cost_pct/found_nothing; reviewSummary pure check | yes |
+| M6-04 | 2 | tests/run.sh 14-run; grep ledger-line | 12/12 pass; ledger row has review_cost_pct | yes |
+| M6-04 | 3 | read evals/NEXT.md §5; git status --porcelain -- evals/results | three commands as specified, no-claim wording; status empty | yes |
+| M6-04 | 4 | grep README.md, decision file | README points to NEXT.md §5; decision names both fields | yes |
+| M6-04 | 5 | init suite | green 501 | yes |
+| M6-05 | 1 | jq entries.jsonl M6-05 summary | 715-line diff, 0 Critical 5 Important 7 Minor, no second round | yes |
+| M6-05 | 2 | read verified_how and plan table | each Important has named red-then-green check; simplifications listed | yes |
+| M6-05 | 3 | read docs/plans/2026-10-26-M6-review.md, architecture §7/§11, NEXT.md, decision | findings recorded; docs describe M6 | yes |
+| M6-05 | 4 | bash -n on driver, config, review, stub, check 41; node --check summary.mjs | all ok | yes |
+| M6-05 | 5 | init suite | green 501 | yes |
+
+- *014538-verify-M6 · claude-sonnet-5-5*
+
+### 2026-10-27 01:40 · M6-05 · passes
+
+M6 review (Opus subagent, 715-line diff): 0 Critical, 5 Important, 7 Minor; no second round. Fixed: review_diff fetches main first (lib/review.sh), the prompt asks for the counts, reviewFindings strict, found_nothing reads every entry, later attempts after a round stay on opus, the round's diff line names opus. 1 Minor left (#8). Tests 492 → 501.
+
+- **Files:** lib/review.sh, lib/driver.sh, lib/entries.mjs, lib/summary.mjs, tests/stub-claude.sh, tests/checks/41-run-19-review-gate-m6.sh, tests/checks/42-run-20-review-gate-rounds-m6.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-26-M6-review.md, docs/architecture.md, README.md, evals/NEXT.md, +2 more
+- **Verified:** Red then green: `review_diff: fetches main first, so a milestone merged meanwhile drops out; the run directory is left out`, `review_diff: fails with the reason when origin has no such main branch` (I1); `review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor in its entry summary; a build session's doesn't` (I2); `reviewFindings: reads Critical before Important in either order of word and count, never a step number or lowercase prose` (I3); `reviewSummary: a review counts as finding nothing only when every entry that gives counts reports 0 Critical, 0 Important` (I4); `review gate: after an escalation round that doesn't pass, the review's next attempt runs on opus and never escalates again` (I5/M6), `review gate: the escalation round's Review diff line names the model it runs on` (M7). Coverage (I5), green on arrival: `…no counts is noted not escalated…`, `…refused by a usage limit runs again on opus, still at no attempt`. Simplifications: kind computed once (driver), review_diff stderr dropped, stub R sonnet. bash -n on driver.sh, config.sh, review.sh, stub-claude.sh, checks 41 and 42; node --check summary.mjs, entries.mjs. Full suite via check.sh: green, 501 tests.
+- **Tests:** 492 → 501
+- **Dead end:** first full suite run — 500/501: `harness memlint: a project … prints the same two findings` failed once under load; alone 19/19, the rerun green 501/501. Code M6 never touched
+- **Discovery** (affects run): tests/checks/39's `harness memlint: a project (or a directory in it) prints the same two findings…` failed once in a full TEST_JOBS=4 run and passed alone and on the rerun: a load flake (likely the run's memlint note vs the direct call)
+- **Discovery** (affects run): review_diff now lives in lib/review.sh (sourced by the driver) and fetches MAIN_BRANCH first; a check can source it in a throwaway repo
+- **Discovery** (affects run): A review's prompt now has a second {{REVIEW_DIFF}} line `Review findings: give your entry's summary this review's findings as `<n> Critical, <n> Important, <n> Minor``; reviewFindings reads only capitalised Critical/Important
+- **Question for Michael:** The M6 review left Minor #8: the `passes=true` note and commit come before the gate un-passes a review for its round, and summary.json's cause doesn't say a round is pending. Worth a fix, or is the following `one round on opus` note enough?
+- *24-M6-05 · claude-opus-5-5*
+
+### 2026-10-27 01:12 · M6-04 · passes
+
+summary.mjs: pure reviewSummary → summary.json review {cost_pct, found_nothing, reviews}, a Review share row in report.md, review_cost_pct in the ledger row; rework no longer counts the review gate's Opus round. evals/NEXT.md § 5 (pre-m6 vs m6, never run), README Evals pointer, architecture §per-run, decision default 7.
+
+- **Files:** lib/summary.mjs, tests/checks/41-run-19-review-gate-m6.sh, tests/fixtures/check-names.txt, evals/NEXT.md, README.md, docs/architecture.md, journal/decisions/2026-10-27-review-gate.md
+- **Verified:** check.sh full: 492/492 (was 489). New in tests/checks/41: reviewSummary pure check and the summary/report/ledger check watched failing (missing export), then green; the reviewFindings pure check passed at once (M6-03 wrote the function). Mutation: with rounds() forced to 0 the summary check fails on rsmall's rework containing R. tests/checks/14 green unchanged; git status --porcelain -- evals/results empty.
+- **Tests:** 489 → 492
+- **Discovery** (affects M6-05): summary.json's review object also carries `reviews` (review features with a coding entry), the denominator of report.md's `<n> of <m> reviews found nothing` row; found_nothing reads entries.jsonl's coding entries only, the last per feature.
+- **Discovery** (affects M6-05): rework subtracts per feature the harness-log notes matching `· review <id>: …; one round on ` (summary.mjs rounds()).
+- **Question for Michael:** The default eval set's tasks are 1–3 features, so they may never reach a milestone review; should a review-bearing eval task be added before judging the gate (evals/NEXT.md § 5 says to fall back on the ledger's review_cost_pct otherwise)?
+- *23-M6-04 · claude-opus-5-5*
+
+### 2026-10-27 01:03 · M6-03 · passes
+
+A Sonnet review whose entry summary (else final message) reports a Critical or Important finding is un-passed and gets one round on REVIEW_ESCALATE_MODEL before the next pick, at no attempt, once per feature; Opus reviews and 0/0 never escalate. reviewFindings + `entries.mjs findings`, stub STUB_REVIEW_FINDINGS, 3 checks, §7 row, decision file.
+
+- **Files:** lib/driver.sh, lib/entries.mjs, tests/stub-claude.sh, tests/checks/41-run-19-review-gate-m6.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-27-review-gate.md
+- **Verified:** Three new checks in tests/checks/41 written first: 2 FAIL before the driver change (4/6), 6/6 after; rsmall: R rows sonnet then opus, note `review R: sonnet found 1 Critical, 0 Important; one round on opus`, attempts.json R=1, ended done, 2nd R prompt copy has `Review round 2 of 2 (escalated: …)` and the measured Review diff line; rnone one row, no round; rbig one opus row. Full suite via check.sh: green, 489 tests; bash -n driver/stub/check 41, node --check entries.mjs.
+- **Tests:** 486 → 489
+- **Discovery** (affects M6-04): reviewFindings(text) is exported from lib/entries.mjs (→ {critical, important} or null) and `node lib/entries.mjs findings <run dir> <id> <final file>` prints `<c>\t<i>` (exit 1 without counts); M6-04's summary.mjs can import it and its pure check is still to write.
+- **Discovery** (affects M6-04, M6-05): Pending round is $STATE/review-escalate (`id\tc\ti\trdiff`), once-marker $STATE/review-escalated-<id>; the round skips F bump, F unbump (limit and park branches) and the diff measure, and keeps the measured Review diff line. M6-04's rework fix must subtract the `one round on` notes: rsmall's R now has two real coding rows.
+- **Discovery** (affects M6-04): rsmall and rbig now run with STUB_REVIEW_FINDINGS=1,0 and a third run rnone (0,0) follows rbig in tests/checks/41; check 41 takes ~31 s.
+- **Question for Michael:** prompts/coding.md §2 still tells every session (a Sonnet review session included) to send reviews to Opus subagents, so a Sonnet review saves less than its model suggests. Change that line for review features? (default: unchanged, decisions/2026-10-27-review-gate D5)
+- **Proposed change:** M6-04 step 4 should say the decision file journal/decisions/2026-10-27-review-gate.md already exists (M6-03 wrote it) and only gains the two field names.
+- *22-M6-03 · claude-opus-5-5*
+
+### 2026-10-27 00:47 · M6-02 · passes
+
+Review gate, measure and route: driver review_diff (git diff --shortstat origin/main...HEAD, run dir left out) picks sonnet under REVIEW_OPUS_LINES (400), opus at or over, notes `review <id>: <n> changed lines, …`, fills {{REVIEW_DIFF}}; config + template keys; stub STUB_REVIEW_LIST/STUB_BIG_DIFF; 3 checks in 41. Tests 483 → 486.
+
+- **Files:** lib/driver.sh, lib/config.sh, templates/user/config.sh, prompts/coding.md, tests/stub-claude.sh, tests/checks/41-run-19-review-gate-m6.sh, tests/fixtures/check-names.txt
+- **Verified:** tests/checks/41: 3 checks watched failing (0/3) then passing (3/3); KEEP=1 run: rsmall `review R: 3 changed lines, under 400; sonnet` (R row claude-sonnet-5-5), rbig `review R: 500 changed lines, at or over 400; opus`; review_diff without origin/main returns 1 with `fatal: bad revision` (→ opus, noted); full suite via check.sh green, 486 tests; 07-step-lint file untouched and green.
+- **Tests:** 483 → 486
+- **Discovery** (affects M6-03, M6-04): In check 41, rbig runs after rsmall merged work-A/B/D.txt into main with the same content, so rbig's diff is big-A.txt alone (1 file, 500 lines); rsmall's is 3 files, 3 lines.
+- **Discovery** (affects M6-03): The gate sits in the loop after the memory gate and before `n=$(( n + 1 ))`; `rdiff` holds the Review diff line (empty for non-review) and is passed as HARNESS_REVIEW_DIFF on the `prompt coding` line only. M6-03's escalation round must set mdl/rdiff itself and skip this block (it runs whenever F kind is review).
+- **Discovery** (affects M6-03): STUB_REVIEW_FINDINGS is not built yet (M6-03 adds it); B's tamper one-liner now exits 0 when the list has no C.
+- **Question for Michael:** prompts/coding.md §2 still sends reviews to Opus subagents, so a Sonnet review session that delegates saves less: should a review session's subagent follow the session's model? (Default kept: unchanged; plan D-default 5.)
+- *21-M6-02 · claude-opus-5-5*
+
+### 2026-10-27 00:38 · M6-01 · passes
+
+Wrote docs/plans/2026-10-26-M6-review-gate.md: diff measure (git diff --shortstat origin/main...HEAD, run dir left out), model choice after the pick (sonnet <400, opus ≥400), Sonnet escalation via a pending-round state file (no attempt, once per feature), summary/ledger fields, stub flags, check 41's eight checks, evals/NEXT.md §5. Plan only; tests 483 → 483.
+
+- **Files:** docs/plans/2026-10-26-M6-review-gate.md
+- **Verified:** grep of every step's terms in the plan (17/17 present); lib/driver.sh line refs re-read (774 read, 777 gate, 779 bump, 786 session, 788 journal, 794/822 unbump); suite green, cached for the code tree, 483 tests
+- **Tests:** 483 → 483
+- **Discovery** (affects M6-03, M6-04): summary.mjs counts a feature with more than one real coding row as rework (summary.mjs:164): the review escalation round would mark every escalated review as rework unless M6-04 subtracts its `one round on` notes (in the plan).
+- **Discovery** (affects M6-03): The escalation round must un-pass the review when deciding to escalate, else verify_ready verifies the milestone on the Sonnet verdict before the round runs; the plan does this and the escalated round is picked from $STATE/review-escalate before F next.
+- **Discovery** (affects M6-02): The stub's B first session tampers with C via a node one-liner that crashes when the list has no C: STUB_REVIEW_LIST (A, B, D, R all in M1) must guard it.
+- **Discovery** (affects M6-04): Pre-M6 eval tag is run/agent-harness-2026-10-25-memory/M5 (exists); M6's is .../M6 once verify M6 holds.
+- **Question for Michael:** D-default (plan, Defaults 5): prompts/coding.md still tells every session, a Sonnet review included, to send reviews to Opus subagents, which eats much of the gate's saving. Should a review under REVIEW_OPUS_LINES run its reviewer subagent on Sonnet too? Default: unchanged.
+- *20-M6-01 · claude-opus-5-5*
+
 ### 2026-10-27 00:29 · verify M5 · passes
 
 M5-01 and M5-02 hold. Fixture check-agent-harness gives 395 generic; contract 1115, jest 7, pytest 4, empty none. Checks 06 and 40 pass (14/14). Init suite's one red file (13, 66 checks) passed alone on rerun: load flake.
