@@ -49,6 +49,7 @@ a listed worktree whose directory is gone never ends gc: every later step still 
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
 a park notification: title, question, answer command, click and Edit INBOX action
+a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it
 a proposed merge: ready to merge, click = the PR, default priority
 a queued continuation: only the answer command
 a reason after any separator is kept whole, " · 2026-" in it included
@@ -62,6 +63,7 @@ a request for a run with an automatic continuation queued makes that one request
 a request queued after the stop (before the driver acts on it) stays requested
 a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)
 a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)
+a resolved question is gone from the next context.md
 a run still ending: answer now, continue once it has ended
 a run still going is covered again next time
 a run still going: only the answer command
@@ -129,6 +131,7 @@ check.sh: a subset call is scoped too and never cached
 check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
 check.sh: the cached line names the key's ignore list only when it isn't the default
+coding and verify prompts name resolved, project facts and Promote to Gotchas
 coding prompt names CLAUDE.md but doesn't paste it
 coding prompt: the Finish step adds one Gotchas line
 context.md carries the earlier attempt's dead end
@@ -151,8 +154,11 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: progress renders 15 in full and the rest as archive lines
+entries.mjs: resolved is an array of strings and normalize keeps it
+entries.mjs: the pack drops a question a later entry resolves
 entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap
 entries.mjs: validate accepts the schema and names what is wrong
 entries: the driver appends each session's entry

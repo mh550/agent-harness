@@ -73,6 +73,32 @@ check "entries.mjs: the pack keeps a feature's dead end under a flood and respec
   && node "$HERE/../lib/entries.mjs" pack "$T/pk" A > "$T/pk.md" && grep -qx -- "- Dead end (A, 01-A): t — w → entries.jsonl:1" "$T/pk.md" \
   && grep -q -- "^- x · A · passes: a2 → entries.jsonl:3$" "$T/pk.md" && grep -qx -- "- use 7900 → INBOX.md" "$T/pk.md" \
   && [[ $(node "$HERE/../lib/entries.mjs" pack "$T/jr/legacy" Z | head -1) == "# Context pack for \`Z\`" ]]'
+# resolved questions (M3-03): `resolved` is an array of strings kept by normalize only when non-empty; `project` is a valid affects
+ENRS='import { validate as v, normalize as nz } from "'$HERE'/../lib/entries.mjs"; const c = { feature: "C", kind: "coding", outcome: "passes", summary: "s" };
+  const r = nz({ ...c, questions: ["q"], resolved: ["Should X default to off?"] }), k = Object.keys(r);
+  process.exit(v({ ...c, resolved: ["Should X default to off?"] }).length === 0 && v({ ...c, resolved: "x" }).join() === "resolved: not an array of strings"
+    && JSON.stringify(r.resolved) === "[\"Should X default to off?\"]" && k.indexOf("resolved") === k.indexOf("questions") + 1 && !("resolved" in nz(c)) && !("resolved" in nz({ ...c, resolved: [] }))
+    && v({ ...c, discoveries: [{ text: "t", affects: ["project"] }] }).length === 0 && /"project"/.test(v({ ...c, discoveries: [{ text: "t", affects: [] }] })[0]) ? 0 : 1);'
+check "entries.mjs: resolved is an array of strings and normalize keeps it" 'node --input-type=module -e "$ENRS"'
+# a question shows until a later entry resolves it (whitespace folded); an earlier entry's resolved doesn't count
+ENRQ='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (x = {}) => ({ feature: "X", kind: "coding", outcome: "not yet", summary: "x", session: "s", at: "t", ...x });
+  const list = [{ id: "X", milestone: "M1" }], q = "Should X default to off?", has = es => pack(es, { feature: "X", list }).includes("Question (X): " + q);
+  process.exit(has([c({ questions: [q] })]) && !has([c({ questions: [q] }), c({ resolved: [" Should  X default\nto off? "] })]) && has([c({ resolved: [q] }), c({ questions: [q] })])
+    && has([c({ questions: [q] }), c({ resolved: ["Should X"] })]) && !has([c({ questions: [q] }), { feature: "M1", kind: "verify", outcome: "passes", summary: "v", resolved: [q] }]) ? 0 : 1);'
+check "entries.mjs: the pack drops a question a later entry resolves" 'node --input-type=module -e "$ENRQ"'
+# Promote to Gotchas (M3-03): project discoveries in a coding pack, newest first, one per first 40 characters, left out once a
+# Gotchas line carries them, at most cap/8 bytes (the rest counted, the pack goes on); a milestone pack has no such part
+ENPG='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (f, d) => ({ feature: f, kind: "coding", outcome: "passes", summary: f + " done", session: "s", at: "t", discoveries: d });
+  const list = [{ id: "X", milestone: "M1" }, { id: "Y", milestone: "M1" }], P = t => ({ text: t, affects: ["project"] }), sec = (p, t) => (p.split("## " + t + "\n")[1] ?? "").split("\n## ")[0];
+  const e = [c("Y", [P("old fact about the port being 7900 for every run here"), { text: "for X only", affects: ["X"] }]), c("Y", [P("old fact about the port being 7900 for every run, newer wording")]), c("Y", [P("the stub writes work files")])];
+  const p = pack(e, { feature: "X", list }), pr = sec(p, "Promote to Gotchas"), ls = pr.split("\n").filter(l => l.startsWith("- "));
+  const g = pack(e, { feature: "X", list, gotchas: ["- note: the stub writes work files (r 2026-10-26)"] }), m = pack(e, { feature: "M1", list });
+  const many = Array.from({ length: 30 }, (_, i) => c("Y", [P(i + " " + "z".repeat(300))])), f = pack([...many, c("Y", [{ text: "late run fact", affects: ["run"] }])], { feature: "X", list, cap: 4096 });
+  process.exit(ls.length === 2 && ls[0] === "- the stub writes work files → entries.jsonl:3" && ls[1].includes("newer wording → entries.jsonl:2") && !sec(p, "Discoveries for this feature").includes("fact")
+    && sec(p, "Discoveries for this feature").includes("for X only") && p.indexOf("## Promote to Gotchas") > p.indexOf("## Discoveries") && p.indexOf("## Promote to Gotchas") < p.indexOf("## Lately")
+    && !sec(g, "Promote to Gotchas").includes("stub writes") && sec(g, "Promote to Gotchas").includes("newer wording") && !m.includes("Promote to Gotchas")
+    && Buffer.byteLength(sec(f, "Promote to Gotchas")) <= 512 && f.includes("## Lately in the run") && /^_\d+ items left out at 4096 bytes/m.test(f) ? 0 : 1);'
+check "entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them" 'node --input-type=module -e "$ENPG"'
 # a journal a session or an editor damaged (E4 review F1, F2): a null line, wrongly typed fields and a blank line are
 # skipped, never fatal; a last line without its newline doesn't swallow the next append; references stay real lines.
 # A summary can't open a code fence or an HTML block, and a long id doesn't break the cap (F5, F9)
