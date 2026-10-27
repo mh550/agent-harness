@@ -73,6 +73,7 @@ case $first in
     [[ ${STUB_QUEUE_STOP:-} ]] && touch "$HARNESS_STATE/queue/STOP"   # Michael runs `harness queue stop` meanwhile
     [[ ${STUB_MEM_DROP:-} ]] && sed -i 's/^MemAvailable: .*/MemAvailable:    2097152 kB/' "$STUB_MEM_DROP"   # the box runs low on memory meanwhile (2 GB)
     after=""; [[ ${STUB_INDEPENDENT_M2:-} ]] && after=', "after": []'
+    z=""; [[ ${STUB_DEFAULT_FEATURE:-} ]] && z='{ "id": "Z", "kind": "build", "description": "z, in no milestone", "steps": ["v"], "passes": false },'   # the default lane
     if [[ ${STUB_REVIEW_LIST:-} ]]; then cat > "$L" <<JSON
 { "run": "test", "features": [
   { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
@@ -81,7 +82,7 @@ case $first in
   { "id": "R", "milestone": "M1", "kind": "review", "model": "sonnet", "description": "review M1", "steps": ["r"], "passes": false } ] }
 JSON
     else cat > "$L" <<JSON
-{ "run": "test", "features": [
+{ "run": "test", "features": [ $z
   { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
   { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false },
   { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"]$after, "passes": false } ] }

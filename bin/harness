@@ -146,6 +146,11 @@ legacy_refuse() {
   ref=${ref:-origin/$MAIN_BRANCH}; [[ $ref == "origin/$MAIN_BRANCH" ]] && base=$MAIN_BRANCH || base="$ref (its --base)"
   git -C "$wt" fetch -q origin 2> /dev/null || true
   git -C "$wt" rev-parse -q --verify "$ref^{commit}" > /dev/null || return 0
+  # a --base run's segments merge main into its branch too: measured against its base with main merged (when they merge
+  # cleanly; a commit object no ref points at), so main's own later files are no code of the run's
+  if [[ $ref != "origin/$MAIN_BRANCH" ]] && tree=$(git -C "$wt" merge-tree --write-tree "$ref" "origin/$MAIN_BRANCH" 2> /dev/null); then
+    tree=$(git -C "$wt" commit-tree "${tree%%$'\n'*}" -p "$ref" -p "origin/$MAIN_BRANCH" -m "base and main" 2> /dev/null) && ref=$tree
+  fi
   tree=$(git -C "$wt" merge-tree --write-tree "$ref" HEAD 2> /dev/null | head -1) || true   # a conflict still writes its tree
   [[ -n $tree ]] || return 0
   files=$(git -C "$wt" diff --name-only "$ref" "$tree" -- . ':!.harness/runs') || return 0

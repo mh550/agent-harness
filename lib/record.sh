@@ -16,8 +16,9 @@ _record() { flock 9; [[ -n ${HARNESS_RECORD_DELAY:-} ]] && sleep "$HARNESS_RECOR
 record() { (( ${REC_HELD:-0} )) && { "$@"; return; }; REC_HELD=1; _record "$@"; local rc=$?; REC_HELD=0; return $rc; }
 
 commit_all() { git add -A && ! git diff --cached --quiet && git commit -q -m "$1"; return 0; }
-rec_commit_() { ( cd "$RWT" && commit_all "$1" ); }
-rec_commit() { record rec_commit_ "$1"; }   # <message>: a commit of the record worktree
+# the run record only: a suite or an init run in the record worktree may leave files there that are no record's
+rec_commit_() { ( cd "$RWT" && git add -A -- "$RUN_DIR" && ! git diff --cached --quiet -- "$RUN_DIR" && git commit -q -m "$1" -- "$RUN_DIR" ); return 0; }
+rec_commit() { record rec_commit_ "$1"; }   # <message>: a commit of the record
 
 # <file> [<delta>] → the run counter in <file> (sessions: coding sessions started, limits: refused in a row) plus delta
 rec_count_() { local n; n=$(cat "$1" 2> /dev/null || echo 0); echo $(( n + ${2:-0} )) > "$1"; }
@@ -223,7 +224,7 @@ session() {
 # refused session's claim is reverted, so not yet). A session's own edits to the journal are undone first.
 # Then progress.md and progress-archive.md are rendered from the journal (decisions/2026-10-22-rendered-progress).
 journal() {
-  local kind=$1 id=$2 who=$2 outcome="not yet" name out rc f; name=$(basename "$3" .jsonl)
+  local kind=$1 id=$2 who=$2 outcome="not yet" name f; name=$(basename "$3" .jsonl)
   git -c core.quotePath=false diff --name-only --no-renames "$5" HEAD -- . ":!$RUN_DIR" > "$SCRATCH/entry-files"
   MET final "$3" > "$SCRATCH/entry-final" 2> /dev/null
   case $kind in   # the claim is the session's own list: the slot's copy in a lane (the flip comes after the checks)
@@ -488,6 +489,18 @@ slot_open() {
       cd "$RWT" || return 1; return 1
     fi
   done
+  # the default lane (features in no milestone) is never verified or tagged (D7), so once its features pass a later
+  # lane starts on its branch, as before lanes the next milestone carried that code (review of P1)
+  dep=harness-lane/$RUN_ID/default
+  git -C "$SLOT" rev-parse -q --verify "refs/remotes/origin/$dep" > /dev/null && dep=origin/$dep
+  if [[ $m != default ]] && F milestone-done "$LIST" default && git -C "$SLOT" rev-parse -q --verify "$dep^{commit}" > /dev/null \
+    && ! git -C "$SLOT" merge-base --is-ancestor "$dep" HEAD; then
+    if ! git -C "$SLOT" merge -q --no-edit "$dep" > /dev/null 2>&1; then
+      git -C "$SLOT" merge --abort 2> /dev/null
+      note "$m: its base conflicts (default vs $MAIN_BRANCH); needs Michael"; touch "$STATE/needs-$m"
+      cd "$RWT" || return 1; return 1
+    fi
+  fi
   # the copy of the record is invisible to the slot's git (a per-worktree excludes file, never .git/info/exclude,
   # which the record worktree shares), plus the user's own global excludes the worktree value would shadow
   mkdir -p "$STATE/lanes/$m"

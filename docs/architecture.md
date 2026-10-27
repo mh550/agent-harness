@@ -93,7 +93,9 @@ and install directories carry over from one milestone to the next; `finish` remo
 git through a per-worktree `core.excludesFile`, `state/lanes/<m>/exclude`, holding `.harness/runs/`; skip-worktree
 when the slot's base tracks it); after it the driver takes back `entry.json`, the lines the session added above
 `## Answers` and its `passes` flip (`F pass` on the record's list), and removes the copy. Every write to the record
-goes through `record` (one `flock` on `state/record.lock`); sessions, inits and suites never run under it.
+goes through `record` (one `flock` on `state/record.lock`); sessions, inits and suites never run under it. A record
+commit (`rec_commit`) stages `.harness/runs/<run>/` only, so what a suite or an init leaves in the record worktree
+never lands on `harness/<run>`.
 
 | What | Path | Written by | Read by | Committed? |
 |---|---|---|---|---|
@@ -226,7 +228,7 @@ harness start ─► worktree + branch ─► driver (the coordinator):
 | Reason | Meaning | What happens next |
 |---|---|---|
 | `done` | every feature passes | nothing; `harness gc` cleans up once milestones are merged |
-| `blocked on X` | X was given up and the rest depend on it | needs Michael: read X's progress entries, answer in INBOX.md, `harness continue` |
+| `blocked on X` | X was given up and the rest depend on it (directly, or through a milestone that can't verify without X: `laneBlocked`) | needs Michael: read X's progress entries, answer in INBOX.md, `harness continue` |
 | `waiting on Michael: Y` | Y is parked (its session said `PARKED:`) and what's left depends on it (may follow `blocked on X; `) | answer in INBOX.md (phone or `harness answer`), then `harness continue`: changed answers unpark it |
 | `no feature left to try` | everything left is given up (no dependency chain) | needs Michael |
 | `weekly budget (…)` | the plan's 7-day window passed `WEEKLY_STOP_AT` | nothing automatic; the queue won't start runs either until the window resets |
@@ -500,7 +502,8 @@ or on `harness queue stop`; whichever, if it started at least one run (marked in
 **Lanes beside `MAX_PARALLEL_RUNS`.** `MAX_PARALLEL_RUNS` bounds drivers (runs) on the box; `MAX_LANES` (default 1)
 bounds the lanes inside one run: each open milestone is a `lib/lane.sh` process in its own slot, with its own port,
 scratch and units (`harness-<run>-<m>-…`), so two runs at two lanes each are up to four sessions and four suites at
-once. The queue counts drivers only and still starts one run per project; a run's lanes share its record (one lock),
+once (from P2: until then a run notes `MAX_LANES=<n>: one lane at a time until P2 …` and runs one). The queue counts
+drivers only and still starts one run per project; a run's lanes share its record (one lock),
 its session cap and the plan's usage windows (decisions/2026-10-26-lanes).
 
 **Parked entries** (`harness queue park <n> [<why>]`) move to `queue/held/` with a `.why` file: the runner skips them
@@ -556,9 +559,9 @@ record and their own `passes`; make every new behaviour visible in `harness-log.
   milestone's review (its review feature, or the last build feature's review steps in a milestone of one or two); an occasional Opus audit of verify entries would measure this.
 - Inside a run, milestones are the unit of parallelism (lanes, §5, `MAX_LANES`); a milestone's features run one after
   another in its lane. Feature-level lanes (a feature whose `after` lies outside its milestone opening as a lane of
-  one) are not built: a milestone's features edit the same modules (decisions/2026-10-26-lanes). Until P2, a further
-  lane opens on `MAX_LANES` alone (no memory or five-hour admission), and a verified lane under a moved main waits
-  for Michael (D1) instead of re-basing.
+  one) are not built: a milestone's features edit the same modules (decisions/2026-10-26-lanes). Until P2 the
+  coordinator runs one lane at a time whatever `MAX_LANES` says (noted: every lane would share the run's one port, and
+  two merges could race), and a verified lane under a moved main waits for Michael (D1) instead of re-basing.
 - The weekly gate reacts to the last session's figure; it doesn't forecast a night's spend (a run that starts at
   80 % can still use most of the rest before the next reading).
 - `harness gc` deletes a run branch whose unmerged commits only touch `.harness/runs/` (the ledger keeps the whole

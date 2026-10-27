@@ -51,6 +51,12 @@ check "scope.sh: scope_owns accepts a <m>- role prefix (s<n>, check-<pid>, svc) 
   '( source "$HERE/../lib/scope.sh"; scope_owns demo harness-demo-M1-s3.scope && scope_owns demo harness-demo-M1-check-42.scope \
     && scope_owns demo harness-demo-M1-svc.scope && ! scope_owns demo harness-demo-M1-x.scope && ! scope_owns demo harness-demo-s3-extra.scope \
     && ! scope_owns demo harness-demo-M1-M2-svc.scope && ! scope_owns demo harness-demo-M1-svc )'
+# review of P1, finding 3: C (M2) needs only A, but M2's lane waits on M1's verify, which B (given up) never allows;
+# F blocked names B, so the run ends "blocked on B", not "no feature left to try"
+ll gu '[{"id":"A","milestone":"M1","passes":true},{"id":"B","milestone":"M1","passes":false},{"id":"C","milestone":"M2","after":["A"],"passes":false},{"id":"D","milestone":"M3","after":["C"],"passes":false}]'
+echo '{"B":2}' > "$LS/att-gu.json"; g0=$(FM blocked "$LS/gu.json" "$LS/att-gu.json" 2 "$LS/parked.json" | tr '\t' '|' | sort | paste -sd ' ' -)
+check "lanes: F blocked names a given-up feature of a milestone another lane waits on (C and D wait on B through M1)" '[[ $g0 == "C|B D|B" ]]'
+
 check "lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end by default; commented in the user template; HARNESS_LANE_POLL in the driver's usage" \
   '( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent \
     && [[ "$MAX_LANES $LANE_RESERVE_GB $LANE_OPEN_BELOW_5H $LANE_REBASE $MAX_REBASE_ROUNDS $RECORD_PR" == "1 4 70 suite 1 end" ]] ) \

@@ -251,6 +251,7 @@ init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
 lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end by default; commented in the user template; HARNESS_LANE_POLL in the driver's usage
 lanes continue: M2's merged PR still has the lane's earlier commits (the first segment's, the one by hand, the unpushed one)
+lanes continue: a --base run whose branch merged main is not refused once main moves on (no main file counts as its code)
 lanes continue: a legacy run (code on its branch beyond main) is refused with the three ways forward, exit 1
 lanes continue: a record-only run (its record on main too) continues as a lanes run and ends done
 lanes continue: a reused slot's work, committed while its push failed, stays on the lane and reaches main
@@ -274,7 +275,10 @@ lanes run: every coding and verify row in metrics.jsonl carries its lane; the in
 lanes run: finish leaves the run one worktree (the record's), no slot, and deletes the merged lanes' branches
 lanes run: harness/ln holds every entry; each lane wrote its exit line, closed by the coordinator
 lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left
+lanes: F blocked names a given-up feature of a milestone another lane waits on (C and D wait on B through M1)
+lanes: MAX_LANES=2 before P2 is noted and runs one lane at a time (M2, after: [], opens only once M1 has closed)
 lanes: a complete unverified milestone is a candidate (to be verified); a given-up one with nothing to try is not
+lanes: a lane opened after the default lane's features pass starts on the default lane's code (M1's tag holds work-Z.txt)
 lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)
 lanes: a milestone whose first feature has after: [] opens at once, beside the first
 lanes: a milestone whose first feature has no after waits on every earlier milestone (tags of each as its base)
@@ -372,6 +376,7 @@ queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old value, s
 queue stop after a run: one debrief
 queue unpark puts it back at the end, its reason gone
 real limit message: not counted, run completes
+record commit: rec_commit commits .harness/runs/<run>/ only; a stray file in the record worktree stays untracked
 record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
 red suite un-passes C
 refused merge leaves the PR, needs Michael

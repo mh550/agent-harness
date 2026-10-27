@@ -10,6 +10,13 @@ HARNESS_RECORD_DELAY=0.01 rl_writer a & HARNESS_RECORD_DELAY=0.01 rl_writer b & 
 check "record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)" \
   '[[ $(wc -l < "$RL/f") == 40 && $(grep -cE "^[ab] [0-9]{2} x{60}$" "$RL/f") == 40 && $(sort -u "$RL/f" | wc -l) == 40 ]]'
 
+# A record commit stages the run record only (review of P1, finding 2): a stray file in the record worktree (a suite's
+# coverage/ from finish's green, an init's output) never lands on harness/<run>, which would read as code at a continue
+RC=$T/rc; git init -q -b main "$RC" && mkdir -p "$RC/.harness/runs/r" "$RC/coverage" && echo e > "$RC/.harness/runs/r/entries.jsonl" && echo c > "$RC/coverage/x.json"
+( STATE=$RL RWT=$RC RUN_DIR=.harness/runs/r; source "$HERE/../lib/record.sh"; rec_commit "HARNESS: run ended" )
+check "record commit: rec_commit commits .harness/runs/<run>/ only; a stray file in the record worktree stays untracked" \
+  '[[ $(git -C "$RC" ls-files) == ".harness/runs/r/entries.jsonl" ]] && git -C "$RC" status --porcelain | grep -qx "?? coverage/"'
+
 # One stub run: A's session commits a file into its copy of the record (git add -f), Michael's phone edits INBOX.md on
 # GitHub during B's session, C's session asks a question above ## Answers and parks; --base names the start of every branch
 git -C "$T/proj" checkout -q -b based && echo based > based.txt && git add based.txt && git commit -qm based && git push -q origin based && git checkout -q main

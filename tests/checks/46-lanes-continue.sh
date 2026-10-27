@@ -48,6 +48,14 @@ STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lb --base ori
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue lb --foreground > "$T/lb-b.out" 2>&1; lb_rc=$?
 check "lanes continue: a run started with --base is measured against its base, not main: not refused" \
   '[[ $lb_rc == 0 ]] && ! grep -q "continue refused" "$T/lb-b.out" && [[ $(grep -c " run lb on " "$HARNESS_STATE/proj/lb/run.log") == 2 ]]'
+# review of P1, finding 1: that continue merged main into harness/lb; main moves again; a further continue measures the
+# branch against its base and main merged, so main's own files are no code of the run's
+git -C "$T/lb-base" fetch -q origin && git -C "$T/lb-base" checkout -q -B mv origin/main && echo moved > "$T/lb-base/main-moved.txt" \
+  && git -C "$T/lb-base" add -A && git -C "$T/lb-base" -c user.name=m -c user.email=m@test commit -qm "main moves" && git -C "$T/lb-base" push -q origin mv:main
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue lb --foreground > "$T/lb-c.out" 2>&1   # merges main-moved.txt in
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue lb --foreground > "$T/lb-d.out" 2>&1
+check "lanes continue: a --base run whose branch merged main is not refused once main moves on (no main file counts as its code)" \
+  'git -C "$T/origin.git" cat-file -e harness/lb:main-moved.txt && ! grep -q "continue refused" "$T/lb-c.out" "$T/lb-d.out"'
 
 # A segment killed mid-session leaves uncommitted work in its slot, and the push of its WIP commit fails (the origin
 # refuses it once): the reopened lane keeps that commit, so it reaches the merged PR

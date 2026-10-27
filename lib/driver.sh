@@ -120,7 +120,7 @@ lane_open() {
   LANE="" LBRANCH=""; rec_cd   # SLOT stays: finish counts the last lane's tests in it
   (( rc == 0 )) || return 1
   echo "$PORT" > "$STATE/lanes/$m/port"; rm -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/need"
-  LANE=$m LANE_SLOT=$k LANE_PORT=$PORT LANE_ONCE=$LANE_ONCE bash "$HARNESS_HOME/lib/lane.sh" "$m" 9>&- &
+  LANE=$m LANE_SLOT=$k LANE_PORT=$PORT LANE_ONCE=$LANE_ONCE bash "$HARNESS_HOME/lib/lane.sh" "$m" < /dev/null 9>&- &
   echo $! > "$STATE/lanes/$m/pid"
   LANE=""
 }
@@ -301,7 +301,7 @@ if [[ -s $STATE/inbox-unstopped ]]; then   # harness continue reset a phone stop
   rm -f "$STATE/inbox-unstopped"
 fi
 echo 0 > "$STATE/sessions"; echo 0 > "$STATE/limits"   # per segment, as the counters were: a continuation after a cap starts afresh
-commit_all "HARNESS: start run $RUN_ID"
+rec_commit "HARNESS: start run $RUN_ID"
 sync_record
 # A resumed run (with or without its list) catches up with main and its configuration before any session, the
 # initializer included, so a re-run initializer plans from the current spec; a fresh run already starts from main.
@@ -321,7 +321,7 @@ if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 who
       && note "closed the whole-run PR for $BRANCH (milestones merge through their own PRs now)"
   fi
   rmdir "$SCRATCH" 2> /dev/null   # created above for nothing: `harness merge` runs no init or session (a kept scratch isn't empty)
-  commit_all "HARNESS: merge"; sync_record; END_REASON="merge only"; exit 0
+  rec_commit "HARNESS: merge"; sync_record; END_REASON="merge only"; exit 0
 fi
 
 # A run from before the journal (a feature list, no entries.jsonl): its progress.md is kept, byte for byte, as
@@ -332,7 +332,7 @@ if [[ -f $LIST && ! -f $REC/entries.jsonl ]]; then
   if [[ -f $REC/progress.md ]]; then cp "$REC/progress.md" "$REC/progress-archive.md"
     note "journal started; progress.md kept as progress-archive.md"
   else note "journal started (no progress.md to keep)"; fi   # then the default header, and no legacy part
-  commit_all "HARNESS: journal started"; sync_record
+  rec_commit "HARNESS: journal started"; sync_record
 fi
 
 # Once per run (a continue doesn't repeat it): a host that builds every branch makes a preview per pushed session
@@ -392,7 +392,7 @@ if [[ ! -f $LIST ]]; then
   record MET append "$LOGS/00-init.jsonl" "$REC/metrics.jsonl" "$RUN_ID" init "" "$(F model "$INIT_MODEL")" true "$S_WALL" "$S_EXIT" false init "$S_PEAK"
   note "feature list written: $(F summary "$LIST")"
   note "$(F lint "$LIST" --note)"   # what the initializer's own lint run left; the list stays as written (decisions/2026-10-26-step-lint)
-  commit_all "HARNESS: initializer done"; sync_record
+  rec_commit "HARNESS: initializer done"; sync_record
   notify "started: $(F summary "$LIST")" click="$(gh_url "$RUN_DIR/progress.md")"
 fi
 
@@ -403,6 +403,9 @@ if [[ ! -f $STATE/deps-noted ]]; then   # once per run: milestones that wait on 
 fi
 [[ $MAX_SESSIONS == auto ]] && MAX_SESSIONS=$(( 3 * $(jq '.features | length' "$LIST") + 5 ))
 export HARNESS_T0=$T0 HARNESS_DEADLINE=$DEADLINE LANE_MAX_SESSIONS=$MAX_SESSIONS SCOPE_OK
+# P1 runs one lane at a time: every lane would get the run's one port, and two merges could race (review of P1; P2
+# gives each lane its port and the merges a lock)
+if (( MAX_LANES > 1 )); then note "MAX_LANES=$MAX_LANES: one lane at a time until P2 (per-lane ports, a merge lock); running 1"; MAX_LANES=1; fi
 mkdir -p "$STATE/lanes"; lanes_orphans; rm -f "$STATE"/lanes/*/pid "$STATE"/lanes/*/exit   # an earlier segment's lanes are gone
 paused=0 LAST_LANE=""
 # The coordinator: every POLL seconds (at once when a lane exits) reap, check the run's ends, open what can open.
