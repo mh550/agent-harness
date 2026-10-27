@@ -24,6 +24,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | **Milestones are the unit of merge** (D-H6, D-H13, D-H17) | Only verified milestones reach `main`, in order. Unverified work stays on the run branch |
 | **Humans gate policy, not routine** (D-H15, D-H16) | Merges of verified work are automatic. Permissions, policies and project rules change only through Michael |
 | **Measure every run; learn from the ledger** (D-H19) | `summary.json`, `retro.md`, `ledger/runs.jsonl`, `harness trends`, calibration fed back to the initializer |
+| **Each fact has one home, named in the project's `CLAUDE.md`** (`decisions/2026-10-26-where-things-go`) | The `## Where things go` block (appended to prompts only when `CLAUDE.md` lacks it) routes a session's writes to a store by bucket and scope: see Memory model, §4 |
 
 ## 3. Components
 
@@ -116,6 +117,40 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | Live-write lock | `LIVE_LOCK` (default `/tmp/harness/<p>/live.lock`; dj: `/srv/docker/crates/live.lock`, shared with the backup job) | sessions under `live-staged` (`flock -n`), the backup script (`flock -w`) | both | no |
 | Ledger | `<harness>/ledger/runs.jsonl`, `ledger/<p>/<run>/{summary.json,retro.md,…}` | driver at the end (flock, `git commit -- <paths>`; the retro's proposals merged into `retro-backlog.jsonl` in the same lock and commit) | `harness trends`, retro, calibration | yes, harness repo |
 | Retro backlog | `<harness>/ledger/retro-backlog.jsonl` (one row per retro proposal id across runs: `id`, `title`, `first_seen`, `runs_seen`, `status` proposed · specced · queued · merged · dropped, `spec`, `pr`, `note`; decisions/2026-10-26-retro-backlog) | the driver's `finish()` (`ledger()`, merging the retro's `retro-proposals.json` under the ledger flock) and `harness backlog` (set, import), never a session | the retro prompt (`{{BACKLOG}}`, the text list), the debrief (its gathered context, the rows as JSONL) | yes, harness repo |
+
+### Memory model
+
+Four buckets (CoALA), each store tied to a scope, with one writer kind and one mutation rule
+(`docs/specs/2026-10-25-throughput-and-memory-design.md` §6). The paths are the ones in the table above.
+
+| Scope | Working (what this actor sees now) | Episodic (what happened; append-only) | Semantic (what is true now; in place) | Procedural (how to work; in place, reviewed) |
+|---|---|---|---|---|
+| **Session** | the prompt; `context.md`; the auto-loaded `CLAUDE.md` (derived by the driver, never hand-edited) | its transcript (`logs/*.jsonl`, state); its `metrics.jsonl` row; its `entry.json` → one line of `entries.jsonl` | none: it proposes (entry `discoveries`, `questions`, `proposed_changes`) | none |
+| **Lane** | none | the lane column in `metrics.jsonl`; the `lane …` notes in `harness-log.md` | none (port, pid, scratch: deleted with the lane) | none |
+| **Run** | `context.md` per session (cap per kind) | `entries.jsonl`, `harness-log.md`, `progress.md` and `progress-archive.md` (rendered), `brief.md`, `INBOX.md` questions, `retro.md`, `summary.json` | `INBOX.md` `status:` and `## Answers`; `feature_list.json` `passes`; discoveries with `affects: ["run"]` | the run's `brief.md` |
+| **Project** | none | `.harness/runs/<run>/` on its record branch; `docs/plans/`; `docs/specs/` | the decisions store (`DECISIONS=`: `journal/decisions/` or `docs/decisions.md`, an overturned rule rewritten in place with one `Updated in place <date>` line); `## Gotchas` in `CLAUDE.md` (15 lines, in place) | `CLAUDE.md` (all but Gotchas), `.harness/config.sh`, `.harness/{check,init,teardown}.sh`, `.claude/settings.json` |
+| **Harness** | the initializer's calibration line (derived each time); the debrief's context | `ledger/runs.jsonl`, `ledger/<p>/<run>/`, `queue/runner.log`, `journal/` | `ledger/retro-backlog.jsonl` (keyed by id, status moved in place by the CLI); `ledger/debrief.md` (a view, overwritten) | `lib/`, `prompts/`, `policy/`, `templates/`, `journal/decisions/`, `docs/architecture.md` |
+| **User** | none | none | Michael's own notes | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.config/harness/config.sh` |
+
+Rules that follow, each enforced where the driver can:
+
+1. **Append or in place is decided by bucket, not by file type.** Episodic stores only grow: a mistake there is a new
+   entry (`dead_ends`), never an edit. Semantic stores are rewritten in place with one dated line; a dead rule beside
+   a new one is a memlint finding. Procedural stores change through review. Working stores are derived and may be
+   regenerated at any time.
+2. **One writer kind per store.** The driver writes the run's episodic stores and the ledger; sessions write their
+   `entry.json`, their `passes`, project semantic files and code; Michael writes `INBOX.md` answers, user and policy
+   files; the CLI moves backlog status.
+3. **Scope is declared, not inferred.** An entry's `discoveries[].affects` carries the scope (a feature, a
+   milestone, `"run"`, and `"project"` for a fact that outlives the run).
+4. **Derive, don't store.** Test counts, file lists, calibration, "needs Michael" lists and the debrief are computed
+   from the ledger or the tree; memlint flags stored copies.
+5. **Working memory has a budget per role.** `CONTEXT_PACK_BYTES` bounds the coding pack; verify gets a larger
+   `CONTEXT_PACK_BYTES_VERIFY`, failed evidence rows first.
+6. **Lanes add no store.** A lane's state is operational and dies with it; its facts go through the same entry.
+
+A new store must name its bucket, scope, writer and mutation rule before it exists; this section is the registry.
+The routing block (`decisions/2026-10-26-where-things-go`) tells sessions which row to use.
 
 ## 5. The life of a run
 

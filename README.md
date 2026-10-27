@@ -60,8 +60,8 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 
 | File | What | Required |
 |---|---|---|
-| `CLAUDE.md` | durable rules: code rules, how to verify, where decisions live, off-limits; `## Live system` for live projects. Claude Code loads it in every session; the harness prompt names it, it doesn't paste it | yes (template: `harness init`, or `harness init --draft` to have Claude draft it) |
-| `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only | recommended |
+| `CLAUDE.md` | durable rules: code rules, how to verify, off-limits; a `## Where things go` block (what goes in which store: your entry, a decision file, a plan, `CLAUDE.md`) and `## Gotchas` (15 lines, edited in place, facts a fresh session would rediscover); the harness appends its own routing block to the prompts only when `CLAUDE.md` lacks the `## Where things go` heading; `## Live system` for live projects. Claude Code loads it in every session; the harness prompt names it, it doesn't paste it | yes (template: `harness init`, or `harness init --draft` to have Claude draft it) |
+| `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only; `DECISIONS=<path>` names the decisions store (a directory of one file each, or one file) when it isn't `docs/decisions.md` | recommended |
 | `.mcp.json` | the MCP servers runs may use. Sessions run with `--strict-mcp-config`, so a committed `.mcp.json` (passed as `--mcp-config <worktree>/.mcp.json`) is what run worktrees load; without one they get none, whatever your user config holds | no |
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
 | `.harness/teardown.sh` (executable) | what stopping the run's services scope can't reach, e.g. `npx supabase stop` or `docker compose down` (containers live under `dockerd`): see below | no |
