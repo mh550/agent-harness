@@ -9,6 +9,17 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:20 · M5-01 · passes
+
+Fixed verify's step-2 fail: tests/fixtures/check-agent-harness.txt is now the last 30 lines of the suite re-run on the run's start tree ac49ba8 (395/395, what scratch check.out held at init, since overwritten); check 06 asserts 395 · generic; decision file updated in place. Tests 483 → 483.
+
+- **Files:** tests/fixtures/check-agent-harness.txt, tests/checks/06-test-counts-pure-r1.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-test-count-contract.md
+- **Verified:** check 06 red at 395 before the fixture (9/10), green after (10/10); testcount --source: 1115·contract, 7·jest, 4·generic, 395·generic, empty ? tests·none; full suite via check.sh green in 378 s, 483 tests
+- **Tests:** 483 → 483
+- **Dead end:** git archive ac49ba8 into scratch and run the suite there — 12 eval checks need the repo's history (383/395); a full git clone checked out at ac49ba8 gives 395/395
+- **Discovery** (affects run): Scratch check.out is overwritten by every suite run; a fixture meant to be 'the output at init' has to be copied at init or regenerated from the start tree in a full clone.
+- *19-M5-01 · claude-opus-5-5*
+
 ### 2026-10-27 00:01 · verify M5 · not yet
 
 M5-02 holds. M5-01 step 2 fails: tests/fixtures/check-agent-harness.txt yields 474 (ends 474/474), the step says 395 (this run's scratch check.out); the check asserts 474. Other steps hold; suite green (483).
@@ -244,15 +255,9 @@ docs/architecture.md gains a Memory model section (scope × bucket table, rules 
 - **Tests:** 435 → 435
 - *09-M2-03 · claude-sonnet-5-5*
 
-### 2026-10-26 20:55 · M2-02 · passes
-
-A background wait I had left running for the review was stopped at its time limit. It doesn't matter: the review had already come back and its findings were handled. M2-02 passes. The last commit is `7ec5b20`, pushed. The full suite is green, and tests went from 429 to 435.
-
-- **Files:** .harness/config.sh, CLAUDE.md, journal/decisions/2026-10-26-where-things-go.md, lib/prompt.sh, prompts/coding.md, prompts/draft-claude-md.md, prompts/initializer.md, prompts/parts/where-things-go-override.md, templates/project/CLAUDE.md, templates/project/config.sh, tests/checks/37-memory-prompts-m2.sh, tests/fixtures/check-names.txt
-- *08-M2-02 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 417 characters (at most 400)*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 20:55 · M2-02 · passes · A background wait I had left running for the review was stopped at its time limit. It doesn't matter… ([in full](progress-archive.md))
 - 2026-10-26 20:21 · M2-01 · passes · lib/memlint.mjs: decisionsStore() (DECISIONS= from .harness/config.sh, else docs/decisions.md, else … ([in full](progress-archive.md))
 - 2026-10-26 20:10 · verify M1 · passes · All six M1 features hold. Full suite green (420 tests, init run); re-ran harness backlog list/set/im… ([in full](progress-archive.md))
 - 2026-10-26 20:05 · M1-06 · passes · Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no second round. Fixed al… ([in full](progress-archive.md))

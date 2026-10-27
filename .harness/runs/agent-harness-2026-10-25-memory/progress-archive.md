@@ -9,6 +9,17 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:20 · M5-01 · passes
+
+Fixed verify's step-2 fail: tests/fixtures/check-agent-harness.txt is now the last 30 lines of the suite re-run on the run's start tree ac49ba8 (395/395, what scratch check.out held at init, since overwritten); check 06 asserts 395 · generic; decision file updated in place. Tests 483 → 483.
+
+- **Files:** tests/fixtures/check-agent-harness.txt, tests/checks/06-test-counts-pure-r1.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-test-count-contract.md
+- **Verified:** check 06 red at 395 before the fixture (9/10), green after (10/10); testcount --source: 1115·contract, 7·jest, 4·generic, 395·generic, empty ? tests·none; full suite via check.sh green in 378 s, 483 tests
+- **Tests:** 483 → 483
+- **Dead end:** git archive ac49ba8 into scratch and run the suite there — 12 eval checks need the repo's history (383/395); a full git clone checked out at ac49ba8 gives 395/395
+- **Discovery** (affects run): Scratch check.out is overwritten by every suite run; a fixture meant to be 'the output at init' has to be copied at init or regenerated from the start tree in a full clone.
+- *19-M5-01 · claude-opus-5-5*
+
 ### 2026-10-27 00:01 · verify M5 · not yet
 
 M5-02 holds. M5-01 step 2 fails: tests/fixtures/check-agent-harness.txt yields 474 (ends 474/474), the step says 395 (this run's scratch check.out); the check asserts 474. Other steps hold; suite green (483).
