@@ -1,0 +1,7 @@
+{ "feature": "M5-01", "kind": "coding", "outcome": "passes",
+  "summary": "Fixed verify's step-2 fail: tests/fixtures/check-agent-harness.txt is now the last 30 lines of the suite re-run on the run's start tree ac49ba8 (395/395, what scratch check.out held at init, since overwritten); check 06 asserts 395 · generic; decision file updated in place. Tests 483 → 483.",
+  "files": ["tests/fixtures/check-agent-harness.txt", "tests/checks/06-test-counts-pure-r1.sh", "tests/fixtures/check-names.txt", "journal/decisions/2026-10-26-test-count-contract.md"],
+  "verified_how": "check 06 red at 395 before the fixture (9/10), green after (10/10); testcount --source: 1115·contract, 7·jest, 4·generic, 395·generic, empty ? tests·none; full suite via check.sh green in 378 s, 483 tests",
+  "tests_before": 483, "tests_after": 483,
+  "dead_ends": [{ "tried": "git archive ac49ba8 into scratch and run the suite there", "why": "12 eval checks need the repo's history (383/395); a full git clone checked out at ac49ba8 gives 395/395" }],
+  "discoveries": [{ "text": "Scratch check.out is overwritten by every suite run; a fixture meant to be 'the output at init' has to be copied at init or regenerated from the start tree in a full clone.", "affects": ["run"] }] }
