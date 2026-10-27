@@ -136,7 +136,7 @@
         "the four `context.md carries the earlier attempt's dead end` checks and tests/checks/29-run-15-resumed-run.sh's legacy-run checks pass unchanged",
         "docs/architecture.md §4's Context pack row lists the seven parts and the verify cap; journal/decisions/<date>-pack-current-rules.md exists (finding · choice · rejected)",
         "the suite is green" ],
-      "after": ["M3-03"], "passes": false },
+      "after": ["M3-03"], "passes": true },
 
     { "id": "M3-05", "milestone": "M3", "kind": "review", "model": "opus",
       "description": "An Opus review of the M3 diff from a file: Critical and Important findings fixed RED→GREEN, simplifications applied, docs touched by M3 brought in line.",

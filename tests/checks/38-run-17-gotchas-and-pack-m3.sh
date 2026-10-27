@@ -13,6 +13,8 @@ check "gotchasDiff: added, edited, deleted and no section" '
   printf "%s" "$G" > "$T/g1.md" && printf "%s" "${G/- two/- 2}" > "$T/g2.md" &&
   [[ $(node "$MM" gotchas "$T/g1.md" "$T/g2.md") == "+0 ~1 -0" ]] && o=$(node "$MM" gotchas "$T/g1.md" "$T/g1.md") && [[ -z $o ]] &&
   [[ $(node "$MM" gotchas "$T/none.md" "$T/g1.md") == "+2 ~0 -0" ]]'
+# the stub project has a decisions store (rane-one-mixxx's first three, copied): every pack ends with its rules (M3-04)
+mkdir -p docs && cp "$HERE/fixtures/decisions-rane.md" docs/decisions.md && git add docs && git commit -qm "decisions store" && git push -q origin main
 # the same run asks and resolves a question of C's (M3-03) and records A's project fact, which B's Gotchas line carries
 STUB_GOTCHA=B STUB_PROJECT_FACT=A STUB_ASK=C STUB_RESOLVE=C "$H" start "$T/proj" gotcha --spec SPEC.md --foreground > "$T/gotcha.out" 2>&1
 check "coding prompt: the Finish step adds one Gotchas line" '
@@ -33,4 +35,20 @@ check "a resolved question is gone from the next context.md" '
 check "a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it" '
   sed -n "/^## Promote to Gotchas/,/^## /p" "$GL/02-B.context.md" | grep -qx -- "- the stub.s work files sit at the repo root, one per feature → entries.jsonl:[0-9]*" &&
   ! grep -q "Promote to Gotchas" "$GL/01-A.context.md" && ! grep -q "Promote to Gotchas" "$GL/03-A.context.md" && grep -q "^## " "$GL/03-A.context.md"'
+check "context.md lists the decisions store's rules newest first" '
+  [[ $(grep "^## " "$GL/01-A.context.md" | tail -1) == "## Current rules" ]] &&
+  [[ $(sed -n "/^## Current rules/,\$p" "$GL/01-A.context.md" | grep -o "^- D[0-9]* .*→ docs/decisions.md:[0-9]*$" | sed "s/^- \(D[0-9]*\) .*:\([0-9]*\)$/\1@\2/" | tr "\n" " ") == "D3@15 D2@13 D1@7 " ]] &&
+  grep -q -- "^- D1 default · Playback model: hybrid. Mixxx.s clock plays the track while the platter is within tolerance of the expected .*… → docs/decisions.md:7$" "$GL/01-A.context.md"'
+# a 1024-byte coding cap from the project's config, and a verify that finds A's step 1 failing after A recorded a dead end
+git pull -q --ff-only origin main && printf 'CONTEXT_PACK_BYTES=1024\n' >> .harness/config.sh && git commit -qam "a tight pack" && git push -q origin main
+STUB_VERIFY_FAIL_ROW=1 "$H" start "$T/proj" tight --spec SPEC.md --foreground > "$T/tight.out" 2>&1
+TL=$HARNESS_STATE/proj/tight/logs
+check "CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap" '
+  ls "$TL"/[0-9][0-9]-*.context.md > "$T/tight.ls" && (( $(wc -l < "$T/tight.ls") >= 4 )) &&
+  [[ -z $(find "$TL" -name "[0-9][0-9]-*.context.md" -size +1024c) ]] && grep -l "^_[0-9]* items left out at 1024 bytes" $(cat "$T/tight.ls") > /dev/null &&
+  v=$(ls "$TL"/*-verify-M1.context.md | head -1) && (( $(wc -c < "$v") > 1024 && $(wc -c < "$v") <= 16384 )) &&
+  hlog tight | grep -q "· context.md for M1: [0-9]* bytes" && (( $(hlog tight | sed -n "s/.*· context.md for M1: \([0-9]*\) bytes.*/\1/p" | sort -n | tail -1) > 1024 ))'
+check "a verify pack lists failed rows before dead ends" '
+  v=$(ls "$TL"/*-verify-M1.context.md | tail -1) && r=$(grep -n "^- Verify M1 found (A step 1): ran check; saw A fails" "$v" | head -1 | cut -d: -f1) &&
+  d=$(grep -n "^- Dead end (A," "$v" | head -1 | cut -d: -f1) && [[ -n $r && -n $d ]] && (( r < d ))'
 suite_end

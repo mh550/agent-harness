@@ -2,6 +2,7 @@
 Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
+CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
 DEBRIEF_PAGE_CMD gets the page
 DESK=0 by default, DESK_MODEL=opus
 DESK=0: no desk
@@ -91,6 +92,7 @@ a successful post: a line in run.log only
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
 a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
+a verify pack lists failed rows before dead ends
 a waiting-on-Michael run end: priority high, click = report.md
 a window of the run's name that never showed a URL is replaced
 a window past the 5 h cap: no session (the next debrief covers it)
@@ -135,6 +137,7 @@ coding and verify prompts name resolved, project facts and Promote to Gotchas
 coding prompt names CLAUDE.md but doesn't paste it
 coding prompt: the Finish step adds one Gotchas line
 context.md carries the earlier attempt's dead end
+context.md lists the decisions store's rules newest first
 continuation queued: keeps attempts, brief marked as the debrief's
 continue after a no-list end merges main first
 continue finishes a paused run
@@ -154,8 +157,10 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
 entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
 entries.mjs: a damaged journal line is skipped, never fused or fatal
+entries.mjs: a milestone pack lists failed verify rows before dead ends
 entries.mjs: progress renders 15 in full and the rest as archive lines
 entries.mjs: resolved is an array of strings and normalize keeps it
 entries.mjs: the pack drops a question a later entry resolves
@@ -249,6 +254,7 @@ lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
+memlint: currentRules reads a directory store and the three file shapes newest first
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note

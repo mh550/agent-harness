@@ -18,6 +18,10 @@
 # MAX_PARALLEL_RUNS=1                # runs alive at once (1 = one after another); the queue runner re-reads it each poll,
 #                                    #     and lowering it stops no running run (an entry waits until fewer are alive)
 
+# context.md, the bounded pack of the run's journal a session reads first (failed verify rows lead a verify's pack).
+# CONTEXT_PACK_BYTES=8192            # a coding session's pack; whole bytes, at least 1024
+# CONTEXT_PACK_BYTES_VERIFY=16384    # a verify session's pack (raising the first doesn't raise this one: set both)
+
 # Each claude session runs in its own systemd user scope (harness-<run>-s<n>); without user systemd, uncapped.
 # SESSION_MEMORY_HIGH=5G             # throttled above this
 # SESSION_MEMORY_MAX=6G              # killed at this (exit 137; the attempt counts)

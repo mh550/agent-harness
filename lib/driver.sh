@@ -290,10 +290,11 @@ vcount() {
   jq -cR --arg m "$1" 'fromjson? | objects | select(.kind == "verify" and .feature == $m)' "$RUN_DIR/entries.jsonl" 2> /dev/null | wc -l
 }
 
-# <feature or milestone> → <run>/context.md, the bounded pack of the journal the next coding or verify session reads first
-# (lib/entries.mjs pack, at most CONTEXT_PACK_BYTES; decisions/2026-10-22-context-pack). Committed with the run record.
+# <feature or milestone> [<cap>] → <run>/context.md, the bounded pack of the journal the next coding or verify session
+# reads first (lib/entries.mjs pack, at most <cap>, default CONTEXT_PACK_BYTES; verify passes CONTEXT_PACK_BYTES_VERIFY:
+# decisions/2026-10-22-context-pack, decisions/2026-10-26-pack-current-rules). Committed with the run record.
 context() {
-  if node "$HARNESS_HOME/lib/entries.mjs" pack "$RUN_DIR" "$1" "$CONTEXT_PACK_BYTES" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
+  if node "$HARNESS_HOME/lib/entries.mjs" pack "$RUN_DIR" "$1" "${2:-$CONTEXT_PACK_BYTES}" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
     mv -f "$SCRATCH/context.md" "$RUN_DIR/context.md"
     note "context.md for $1: $(wc -c < "$RUN_DIR/context.md") bytes$(sed -n 's/^_\([0-9]*\) items left out at .*/, \1 items left out/p' "$RUN_DIR/context.md")"
   else   # never a stale pack: the session is sent to the full record instead
@@ -417,7 +418,7 @@ verify() {
   run_init fresh
   for model in "${models[@]}"; do
     F snapshot "$LIST" > "$STATE/before.json"
-    context "$m"   # each round: an escalated verify's pack has the first round's entry
+    context "$m" "$CONTEXT_PACK_BYTES_VERIFY"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
     mem_gate || run_init   # before the clock, so the prompt's time is the session's; a wait stopped the services
     HARNESS_CLOCK=$(clock "verify round $rounds of $maxr") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify

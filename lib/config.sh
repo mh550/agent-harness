@@ -26,7 +26,8 @@ harness_config() {
   POLICY=build-only MERGE_POLICY=pr MAIN_BRANCH=main RETRO=1 AUTO_CONTINUE=1   # MERGE_POLICY=pr: a project self-merges only by setting auto
   MAX_PARALLEL_RUNS=1 LEDGER_COMMIT=1 BASE_PORT=7800 DEADLINE_AT=0
   LIVE_SYNC=1   # the queue runner keeps the live checkout level with origin while no run is alive (lib/sync.sh; 0 = off)
-  CONTEXT_PACK_BYTES=8192   # context.md's cap (E4): the pack of the journal a coding or verify session reads first
+  CONTEXT_PACK_BYTES=8192   # context.md's cap (E4): the pack of the journal a coding session reads first
+  CONTEXT_PACK_BYTES_VERIFY=16384   # a verify session's pack: its failed rows first (decisions/2026-10-26-pack-current-rules)
   WEEKLY_STOP_AT=85   # % of the plan's 7-day window: past it no run starts and a run ends before its next session (0 = off)
   EVAL_BUDGET_USD=10   # `harness eval run`: no further task starts once its tasks have spent this much (a safety cap)
   PROBE_MODEL=haiku   # `harness eval probes`: the one tool-less session that answers the handoff questions

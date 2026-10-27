@@ -101,6 +101,42 @@ ENPG='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (f, d) => ({ 
     && [[8192, 1000], [1024, 100]].every(([k, n]) => { const q = pack([c("Y", [P("a".repeat(n))])], { feature: "X", list, cap: k }), s = sec(q, "Promote to Gotchas");
       return /^- a+… → entries\.jsonl:1$/m.test(s) && Buffer.byteLength(s) <= k / 8 && !q.includes("items left out"); }) ? 0 : 1);'
 check "entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them" 'node --input-type=module -e "$ENPG"'
+# Current rules (M3-04): the decisions store's lines newest first, from a directory (each file's `# ` title, by name) or
+# a file in the three shapes the projects use (fixtures copied from rane-one-mixxx, voice-concierge, dj-crate-streaming)
+MLCR='import { currentRules as cr } from "'$HERE'/../lib/memlint.mjs"; import { readFileSync as rf } from "node:fs"; const fx = n => rf("'$HERE'/fixtures/decisions-" + n + ".md", "utf8");
+  const F = { path: "docs/decisions.md", kind: "file" }, s = r => r.map(x => x.text + " → " + x.ref).join("\n");
+  const rane = cr(F, fx("rane")), vc = cr(F, fx("voice-concierge")), dj = cr(F, fx("dj"));
+  const dir = cr({ path: "journal/decisions", kind: "dir" }, [{ name: "2026-10-20-a.md", text: "# Alpha rule\nbody" }, { name: "2026-10-26-b.md", text: "intro\n# Beta rule\n" }, { name: "2026-10-22-c.md", text: "no title\n" }, { name: "README.md", text: "# About this store\n" }]);
+  process.exit(rane.length === 3 && rane.map(r => r.ref).join() === "docs/decisions.md:15,docs/decisions.md:13,docs/decisions.md:7"
+    && rane[2].text.startsWith("D1 default · Playback model: hybrid. Mixxx") && rane[0].text.startsWith("D3 · Separate Mixxx dev profile at `~/.var/") && rane[1].text.endsWith("so it can be PR\x27d to `mixxxdj/mixxx` later. (2026-10-19)")
+    && vc.map(r => r.ref).join() === "docs/decisions.md:7,docs/decisions.md:3" && vc[1].text.startsWith("D7 default: turn detection is silero VAD only (2026-10-20, C1-01) — Finding. B1 leaves")
+    && dj.map(r => r.ref).join() === "docs/decisions.md:17,docs/decisions.md:16,docs/decisions.md:15,docs/decisions.md:14,docs/decisions.md:13" && dj[4].text.startsWith("D24 · One download quality. A file is acceptable")
+    && dj[0].text.startsWith("D53 default · A matched release gives") && dj[1].text.startsWith("D36 default · The cleanup")
+    && s(cr(F, fx("rane").replace(/\n/g, "\r\n"))) === s(rane)
+    && s(dir) === "Beta rule → journal/decisions/2026-10-26-b.md\nAlpha rule → journal/decisions/2026-10-20-a.md\nAbout this store → journal/decisions/README.md" && cr(F, "# Decisions\nnone yet\n").length === 0 ? 0 : 1);'
+check "memlint: currentRules reads a directory store and the three file shapes newest first" 'node --input-type=module -e "$MLCR"'
+# the part: last, within cap/4 (and the room left), the rest one `older rules` line that isn't an item left out; a pack
+# that already stopped has no rules part at all; an item is cut to 240 bytes
+ENCR='import { pack } from "'$HERE'/../lib/entries.mjs"; const c = (f, x = {}) => ({ feature: f, kind: "coding", outcome: "passes", summary: f + " done", session: "s", at: "t", ...x });
+  const list = [{ id: "X", milestone: "M1" }], B = s => Buffer.byteLength(s), sec = (p, t) => (p.split("## " + t + "\n")[1] ?? "").split("\n## ")[0];
+  const rules = Array.from({ length: 12 }, (_, i) => ({ text: "D" + (12 - i) + " rule " + "r".repeat(180), ref: "docs/decisions.md:" + (100 - i) }));
+  const p = pack([c("X")], { feature: "X", list, rules, rulesFrom: "docs/decisions.md" }), r = sec(p, "Current rules"), ls = r.split("\n").filter(l => l.startsWith("- "));
+  const flood = Array.from({ length: 40 }, () => c("X", { summary: "x".repeat(300) })), st = pack(flood, { feature: "X", list, cap: 2048 });
+  const long = sec(pack([], { feature: "X", list, rules: [{ text: "w".repeat(1000), ref: "docs/decisions.md:9" }], rulesFrom: "docs/decisions.md" }), "Current rules");
+  const lref = sec(pack([], { feature: "X", list, rules: [{ text: "w", ref: "d/" + "é".repeat(300) }] }), "Current rules").split("\n").find(l => l.startsWith("- ")) ?? "";
+  process.exit(p.split("\n").filter(l => l.startsWith("## ")).at(-1) === "## Current rules" && B("\n## Current rules\n" + r) <= 2048 && ls.length >= 5 && ls[0].startsWith("- D12 rule")
+    && ls.every((l, i) => l.endsWith(" → docs/decisions.md:" + (100 - i)) && B(l) <= 240) && r.trimEnd().endsWith("_" + (12 - ls.length) + " older rules: docs/decisions.md._") && !p.includes("items left out")
+    && st.includes("items left out") && pack(flood, { feature: "X", list, cap: 2048, rules, rulesFrom: "d" }) === st && !pack([c("X")], { feature: "X", list }).includes("Current rules")
+    && /^- w+… → docs\/decisions\.md:9$/m.test(long) && B(long.split("\n").find(l => l.startsWith("- "))) <= 240 && !long.includes("older rules") && lref.startsWith("- w → d/é") && B(lref) <= 240
+    && [1024, 1500, 2048, 4096].every(k => B(pack([c("X", { dead_ends: [{ tried: "t".repeat(300), why: "w" }] }), c("Y")], { feature: "X", list, rules, rulesFrom: "d", cap: k })) <= k) ? 0 : 1);'
+check "entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line" 'node --input-type=module -e "$ENCR"'
+# a milestone pack (verify) lists its failed rows before its features' dead ends; a feature pack keeps dead ends first
+ENVF='import { pack } from "'$HERE'/../lib/entries.mjs"; const list = [{ id: "P", milestone: "M0" }];
+  const e = [{ feature: "P", kind: "coding", outcome: "passes", summary: "p", session: "s", at: "t", dead_ends: [{ tried: "p1", why: "w" }] },
+    { feature: "M0", kind: "verify", outcome: "not yet", summary: "P fails", session: "v", at: "t", evidence: [{ feature: "P", step: 1, ran: "r", saw: "s", holds: false }] }];
+  const at = (p, re) => p.split("\n").findIndex(l => re.test(l)), m = pack(e, { feature: "M0", list }), f = pack(e, { feature: "P", list });
+  process.exit(at(m, /^- Verify M0 found/) > 0 && at(m, /^- Verify M0 found/) < at(m, /^- Dead end/) && at(f, /^- Dead end/) > 0 && at(f, /^- Dead end/) < at(f, /^- Verify M0 found/) ? 0 : 1);'
+check "entries.mjs: a milestone pack lists failed verify rows before dead ends" 'node --input-type=module -e "$ENVF"'
 # a journal a session or an editor damaged (E4 review F1, F2): a null line, wrongly typed fields and a blank line are
 # skipped, never fatal; a last line without its newline doesn't swallow the next append; references stay real lines.
 # A summary can't open a code fence or an HTML block, and a long id doesn't break the cap (F5, F9)
