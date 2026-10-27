@@ -1,9 +1,10 @@
-# Context pack for `M6-01`
+# Context pack for `M6-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (M6-01, affects M6-02): The stub's B first session tampers with C via a node one-liner that crashes when the list has no C: STUB_REVIEW_LIST (A, B, D, R all in M1) must guard it. → entries.jsonl:27
 - Discovery (M5-01, affects run): Scratch check.out is overwritten by every suite run; a fixture meant to be 'the output at init' has to be copied at init or regenerated from the start tree in a full clone. → entries.jsonl:25
 - Discovery (M5-02, affects run): In tests/checks/40 the contract run's suite ignores BROKEN, so its C merges a BROKEN file into origin main; a later run in that file whose suite tests BROKEN must `git rm` it first (the cont setup does). → entries.jsonl:23
 - Discovery (M5-02, affects M5, run): Review Minor left: run_init pins testcount-source from the first check.out even when that suite was red (a failed first suite notes `no match`/`parsed (jest)` for the whole run); green markers written before a contract line (or a CHECK_CMD change via run.env, not in the tree key) keep the scraped count until the tree changes. → entries.jsonl:23
@@ -22,8 +23,12 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): Decision files: journal/decisions/<YYYY-MM-DD>-<slug>.md, title line, provenance line in italics (run, feature, spec section, plan), then `- **Finding:**`, `- **Choice:**`, `- **Rejected:**` bullets (see journal/decisions/2026-10-26-real-test-counts.md). Never number one, never append to journal/decisions.md. Plans: docs/plans/<date>-<milestone>-<topic>.md, header as docs/plans/2026-10-26-F2-initializer-verify.md (`Checked against main at <sha>`, `What main already has`, one feature per item). → entries.jsonl:1
 - Discovery (init, affects run): Lint rules (features.mjs lint) flag a path in `~` or $HOME in a step (outside-repo) and a grep whose pattern matches the step's own text when the target is progress.md, entries.jsonl, context.md or feature_list.json (self-match); harness-log.md is not a quoting file. Steps here name checks by their check name instead; a session's `proposed_changes` is where a wrong step goes. → entries.jsonl:1
 
+## What it builds on
+
+- 2026-10-27 00:38 · M6-01 · passes: Wrote docs/plans/2026-10-26-M6-review-gate.md: diff measure (git diff --shortstat origin/main...HEAD, run dir left out), model choice after the pick (sonnet <400, opus ≥400), Sonnet escalation via a pending-round state file (no attempt, once per feature), summary/ledger fields, stub flags, check 41's eight checks, evals/NEXT.md §5. Plan only; tests 483 → 483.; tests 483 → 483; files docs/plans/2026-10-26-M6-review-gate.md → entries.jsonl:27
+
 ## Lately in the run
 
 - 2026-10-27 00:29 · verify M5 · passes: M5-01 and M5-02 hold. Fixture check-agent-harness gives 395 generic; contract 1115, jest 7, pytest 4, empty none. Checks 06 and 40 pass (14/14). Init suite's one red file (13, 66 checks) passed alone on rerun: load flake. → entries.jsonl:26
-- 2026-10-27 00:20 · M5-01 · passes: Fixed verify's step-2 fail: tests/fixtures/check-agent-harness.txt is now the last 30 lines of the suite re-run on the run's start tree ac49ba8 (395/395, what scratch check.out held at init, since overwritten); check 06 asserts 395 · generic; decision file updated in place. Tests 483 → 483.; tests 483 → 483; files tests/fixtures/check-agent-harness.txt, tests/checks/06-test-counts-pure-r1.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-test-count-contract.md → entries.jsonl:25
-- 2026-10-27 00:01 · verify M5 · not yet: M5-02 holds. M5-01 step 2 fails: tests/fixtures/check-agent-harness.txt yields 474 (ends 474/474), the step says 395 (this run's scratch check.out); the check asserts 474. Other steps hold; suite green (483). → entries.jsonl:24
+
+_1 items left out at 8192 bytes: entries.jsonl has them all._
