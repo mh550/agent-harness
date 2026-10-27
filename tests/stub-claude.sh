@@ -14,7 +14,7 @@
 # `harness stop <run> --why "<why>"` (R7). STUB_CLI_REQUEST=<brief>: then `harness queue add --continue <run> --brief
 # "<brief>"`, a request made after the stop and before the driver acts on it.
 # STUB_RETRO_PROPOSALS=<id>[,<id>…]: the retro writes retro-proposals.json in the run directory, one
-# `{id, title: "stub proposal <id>", evidence}` per id (`bad`: `{not json`). STUB_RETRO_EDITS=1: the retro edits code, progress.md
+# `{id, title: "stub proposal <id>", evidence}` per id (`bad`: `{not json`; `link`: a symlink to feature_list.json). STUB_RETRO_EDITS=1: the retro edits code, progress.md
 # and the worktree's ledger/retro-backlog.jsonl (restrict reverts all three).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -161,6 +161,7 @@ JSON
     [[ ${STUB_RETRO_EDITS:-} ]] && { echo "retro was here" > retro-hack.txt; echo x >> "$HARNESS_RUN_DIR/progress.md"
       mkdir -p ledger && echo '{"id":"retro-hack"}' > ledger/retro-backlog.jsonl; }   # a retro editing the backlog itself (M1-04)
     case ${STUB_RETRO_PROPOSALS:-} in "") ;; bad) printf '{not json' > "$HARNESS_RUN_DIR/retro-proposals.json" ;;
+      link) ln -s feature_list.json "$HARNESS_RUN_DIR/retro-proposals.json" ;;
       *) tr , '\n' <<< "$STUB_RETRO_PROPOSALS" | jq -R '{id: ., title: "stub proposal \(.)", evidence: "stub retro"}' | jq -s . > "$HARNESS_RUN_DIR/retro-proposals.json" ;; esac
     ok 0.2 "## Outcome\\nStub retro.\\n\\n## Proposed harness changes\\n1. none" ;;
   "# Probe session"*)   # records its command line, $PWD and prompt; for t2, Q1 (T2a's files) is right and Q2 (T2b's deps) wrong

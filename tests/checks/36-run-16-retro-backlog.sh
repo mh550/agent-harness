@@ -58,4 +58,18 @@ check "backlog run: the rendered retro prompt carries test-counts · specced" '
 check "debrief --dry-run gathers the retro backlog, not Earlier retros" '
   grep -qxF "## Retro backlog (ledger/retro-backlog.jsonl)" "$T/bk-dry.out" && ! grep -q "Earlier retros" "$T/bk-dry.out" &&
   grep -q "^{\"id\":\"no-retry-on-denial\",.*\"runs_seen\":\[\"bk1\",\"bk2\"\]" "$T/bk-dry.out" && ! grep -q "/retro\.md$" "$T/bk-dry.out"'
+# ---- the M1 review (M1-06): the run's ledger commit carries the backlog; a symlink or an unlistable store is noted ----
+GA=(GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t)
+env "${GA[@]}" HARNESS_CONFIG=$T/commit-config.sh HARNESS_LEDGER=$T/live/ledger STUB_RETRO_PROPOSALS=from-bk4 "$H" start "$T/proj" bk4 --spec SPEC.md --foreground > "$T/bk4.out" 2>&1
+check "backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.jsonl with its proposal" '
+  [[ $(git -C "$T/live" log -1 --format=%s) == "ledger: bk4 (proj)"* ]] &&
+  git -C "$T/live" show --name-only --format= HEAD | grep -qx ledger/retro-backlog.jsonl &&
+  git -C "$T/live" show HEAD:ledger/retro-backlog.jsonl | grep -q "^{\"id\":\"from-bk4\",.*\"status\":\"proposed\""'
+cp "$ST" "$T/st.keep"; echo "{broken" >> "$ST"
+STUB_RETRO_PROPOSALS=link "$H" start "$T/proj" bk5 --spec SPEC.md --foreground > "$T/bk5.out" 2>&1
+check "backlog run: a symlinked retro-proposals.json is not followed, and a store that will not list is noted" '
+  hlog bk5 | grep -q " · backlog: the retro wrote no retro-proposals.json$" && hlog bk5 | grep "retro: reverted edits" | grep -q retro-proposals.json &&
+  [[ ! -e $T/wt/proj/bk5/.harness/runs/bk5/retro-proposals.json && ! -e $T/ledger/proj/bk5/retro-proposals.json ]] &&
+  hlog bk5 | grep -q " · backlog: the retro prompt has no backlog: line [0-9]*: not JSON"'
+cp "$T/st.keep" "$ST"
 suite_end

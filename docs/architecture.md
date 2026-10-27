@@ -334,8 +334,9 @@ driver `clock`, coding and verify only; decisions/2026-10-21-clock-and-bounded-i
 <elapsed> of <total>, ends <HH:MM> · this session: $<budget> budget, <turns> turns, <timeout> timeout · attempt N of
 MAX_ATTEMPTS` (or `verify round N of MAX_VERIFY_ROUNDS`); the run is this driver's segment, `T0` to `DEADLINE`. A
 probe rendered by `lib/prompt.sh` says it is outside a run. The retro (`# Retro`, its run on line 3) gets the
-template and the rules line; its `{{BACKLOG}}` is `backlog.mjs list` of the ledger's backlog (≤ 6000 bytes, `(empty)`
-without one), so it reuses an id, cites a specced/queued/merged item's status and coins a slug only for a new
+template and the rules line; its `{{BACKLOG}}` is `backlog.mjs list` of the ledger's backlog (≤ 6000 bytes, past which every
+row keeps at least `<id> · <status>`; `(empty)` without one, and a store that won't parse is a `backlog: the retro
+prompt has no backlog: <why>` note), so it reuses an id, cites a specced/queued/merged item's status and coins a slug only for a new
 proposal. `{{INIT_OUTPUT}}` is the last 40 lines of `$SCRATCH/init.out` (init and suite output)
 and then `full output: <path>`. The coding and verify templates open their bearings with `Read context.md first` (the pack in the run directory, written by the driver just before the session, §4), so it is not pasted into the prompt. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
 
@@ -367,7 +368,8 @@ dj-crate-streaming's live protocols, rane-one-mixxx's hardware); the others have
    spec / size / dependency / permission / environment / model / harness causes and proposes ≤ 3 harness changes,
    each with its backlog id, reusing the id of an item already in the backlog it is shown), with the same proposals as data in `retro-proposals.json`
    (`[{id, title, evidence}]`), which the driver merges into `ledger/retro-backlog.jsonl` in `ledger()`: a new id is a
-   `proposed` row, a known one gains the run in `runs_seen`, a malformed file is one note and skipped.
+   `proposed` row (its title folded to one line of ≤ 200 characters), a known one gains the run in `runs_seen`, a
+   malformed file is one note and skipped; a symlink or a file over 64 KB is not taken.
 3. **Across runs**: `ledger/runs.jsonl` + `harness trends` ($ per feature, causes, end reasons over time);
    `harness trends --by version` groups runs by the harness version that ran them, to compare a change before and after.
 4. **Back into runs**: the initializer gets a calibration line from the ledger (median and p90 minutes per passing
@@ -502,7 +504,8 @@ harness debrief [--dry-run]:
   LIMIT_UNTIL in the future: wait (≤ 5 h; HARNESS_LIMIT_SLEEP in tests), else exit (the next debrief covers it)
   context.md (bash, $0, each part capped): status · trends · queue · runner.log since · per run: ended · summary.json
      · report.md · retro.md · INBOX.md · progress.md questions · needs-Michael lines · limit window · rate-limit info
-     · the retro backlog (ledger/retro-backlog.jsonl as JSONL rows, proposed first, ≤ 6000 bytes)
+     · the retro backlog (ledger/retro-backlog.jsonl as JSONL rows, proposed first, ≤ 6000 bytes, a cut list
+       ending {"more": n})
      · the whole capped at 150 KB; pasted into the prompt with render.mjs --raw ({{X}} in it stays literal)
      (--dry-run: print it and stop)
   DEBRIEF SESSION (DEBRIEF_MODEL=sonnet, 40 turns, $3, SESSION_TIMEOUT; prompt on stdin; --permission-mode dontAsk,

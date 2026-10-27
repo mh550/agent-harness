@@ -1,6 +1,7 @@
 # The retro backlog: the retro proposes as data, the driver is the only writer
 
-*Run `agent-harness-2026-10-25-memory`, feature M1-04 (rows and CLI: M1-02, M1-03; readers: M1-05). Spec
+*Run `agent-harness-2026-10-25-memory`, feature M1-04 (rows and CLI: M1-02, M1-03; readers: M1-05; review: M1-06,
+`docs/plans/2026-10-26-M1-review.md`). Spec
 `docs/specs/2026-10-25-memory.md` § M1 (retro-followups §E). Plan `docs/plans/2026-10-26-M1-retro-backlog.md`.*
 
 - **Finding:** each retro proposes up to three harness changes in `retro.md`'s prose, and nothing tracks them across
@@ -32,11 +33,22 @@
     it can match `runs_seen` to its runs) in place of the `ls` of the last 20 `retro.md` files, and its `For the next
     interactive session` lists the open `proposed` items, most seen first, and items re-raised though `specced` or
     `queued`, instead of "proposals in two or more retros".
+  - **The M1 review (M1-06)** hardened what a retro's text can do downstream. A title (proposed or imported) is
+    folded to one line of at most 200 characters, so it can't end the prompt's fenced list and forge a row; a why line
+    in a note is cut at 200. Past the 6000-byte cap the text list keeps every row as at least `<id> · <status>`, full
+    lines to the first rows, so specced and queued items stay citable as proposals pile up; the JSONL list skips a row
+    too big rather than stopping, and a cut list ends `{"more": n}`. `import` moves a known row's status forward only
+    (by the status order) and keeps a link the incoming row lacks, so a second import of the seed never undoes a
+    `set`. `retro()` takes the proposals file only as a plain file (not a symlink) of at most 64 KB, and notes a store
+    that won't list. Checks in `tests/checks/35-backlog-pure-m1.sh` and `36-run-16-retro-backlog.sh` (the run's own
+    ledger commit with `LEDGER_COMMIT=1` included).
 - **Rejected:**
   - The retro editing the backlog itself: a session never writes `ledger/` (and `restrict` would revert it anyway;
     check `backlog run: restrict reverts a retro's edit to the backlog, and the merge still lands`).
   - Parsing proposals out of `retro.md`'s prose: fragile, and the ids would be guessed.
   - An LLM curator deduplicating proposals: a cost per run for what an id and a status do.
   - Keeping a bad file's valid items: a half-read file hides the error; the next retro proposes again.
+  - (M1-06) An import that adds unknown ids only, with `--force` to overwrite: a second flag for what forward-only
+    statuses already make safe.
   - Leaving the debrief to read old `retro.md` files for repeats: the backlog already counts them (`runs_seen`), and
     a list of 20 paths gave the session reading to do, not an answer.

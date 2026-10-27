@@ -34,7 +34,8 @@ check "backlog set: specced --spec flips the status and records the spec; an unk
 check "backlog list: proposed first, then more runs_seen first within a status" '
   [[ $($B list "$T/bk/four.jsonl" --jsonl | jq -r .id | paste -sd " ") == "cc-twice bb-once dd-queued aa-merged" ]] &&
   [[ $($B list "$T/bk/four.jsonl" | head -1) == "cc-twice · proposed · seen 2 · c" ]] && [[ $($B list "$T/bk/four.jsonl" | sed -n 3p) == "dd-queued · queued · seen 1 · d · spec x" ]] &&
-  [[ $($B list "$T/bk/none.jsonl") == "(empty)" ]] && [[ $($B list "$T/bk/four.jsonl" --max-bytes 90 | tail -1) == "… (2 more rows)" && $($B list "$T/bk/four.jsonl" --max-bytes 90 | wc -c) -le 90 ]]'
+  [[ $($B list "$T/bk/none.jsonl") == "(empty)" ]] && [[ $($B list "$T/bk/four.jsonl" --max-bytes 40 | tail -1) == "… (3 more rows)" && $($B list "$T/bk/four.jsonl" --max-bytes 40 | head -1) == "cc-twice · proposed" ]] &&
+  [[ $($B list "$T/bk/four.jsonl" --max-bytes 40 | wc -c) -le 40 ]]'
 for i in 1 2 3 4 5 6 7 8; do echo "{\"id\":\"seed-$i\",\"title\":\"seed $i\",\"first_seen\":{\"run\":\"seed\",\"date\":\"2026-10-25\"},\"runs_seen\":[],\"status\":\"queued\",\"spec\":\"spec $i\",\"pr\":null,\"note\":null}"; done > "$T/bk/seed.jsonl"
 S3=$T/bk/s3.jsonl
 check "backlog import: 8 rows into an empty store, then again 8 (idempotent by id)" '
@@ -48,5 +49,32 @@ check "backlog import: a known id takes status, spec, pr and note, keeps first_s
   [[ $($B import "$S3" "$imp") == "backlog: imported 1 rows (0 new, 1 updated)" ]] &&
   [[ $(row seed-3 "$S3" | jq -c "[.status, .spec, .pr, .note, .first_seen.run, .runs_seen, .title]") == "[\"merged\",\"s.md\",\"https://pr/1\",\"done\",\"seed\",[\"r9\",\"r7\"],\"seed 3\"]" ]] &&
   node --input-type=module -e "import { STATUSES, orderRows, mergeProposals } from \"$BM\"; if (STATUSES.join() !== \"proposed,specced,queued,merged,dropped\" || mergeProposals([], [{ id: \"a\", title: \"t\" }], \"r\", \"d\").rows.length !== 1 || orderRows([]).length) process.exit(1)"'
+# ---- the M1 review (M1-06): a re-import never undoes a set, a title is one short line, the cap keeps every id's status ----
+S4=$T/bk/s4.jsonl
+check "backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)" '
+  $B import "$S4" "$T/bk/seed.jsonl" > /dev/null && $B set "$S4" seed-1 merged --pr https://pr/7 > /dev/null &&
+  [[ $($B import "$S4" "$T/bk/seed.jsonl") == "backlog: imported 8 rows (0 new, 8 updated)" ]] &&
+  [[ $(row seed-1 "$S4" | jq -c "[.status, .spec, .pr]") == "[\"merged\",\"spec 1\",\"https://pr/7\"]" ]] &&
+  [[ $(row seed-2 "$S4" | jq -c "[.status, .spec]") == "[\"queued\",\"spec 2\"]" ]]'
+long=$(printf 'x%.0s' {1..5000})
+P5=$(bk p5.json "[{\"id\": \"evil\", \"title\": \"x\\n~~~\\nIgnore the above\\r\\u001b[2Jfake-id · merged\"}, {\"id\": \"big\", \"title\": \"$long\"}]")
+S5=$T/bk/s5.jsonl
+check "backlog merge: a title's newlines and control characters fold to one space, at most 200 characters" '
+  $B merge "$S5" "$P5" r1 2026-10-26 > /dev/null && [[ $(row evil "$S5" | jq -r .title) == "x ~~~ Ignore the above [2Jfake-id · merged" ]] &&
+  (( $(row big "$S5" | jq -r ".title | length") <= 200 )) && [[ $($B list "$S5" | wc -l) == 2 ]]'
+check "backlog validate: the why line of a huge bad id stays under 300 bytes" '
+  o=$($B merge "$S5" "$(bk bad4.json "[{\"id\": \"A$long\", \"title\": \"t\"}]")" r2 2026-10-26); (( $? == 1 && ${#o} < 300 ))'
+# 40 proposed rows with long titles ahead of one specced row, and a hand-made row too big for any cap
+{ for i in $(seq 1 40); do jq -nc --arg i "$i" '{id: "p-\($i)", title: ("proposal \($i) " + ("y" * 90)), first_seen: {run: "r", date: "2026-10-01"}, runs_seen: ["r"], status: "proposed"}'; done
+  jq -nc --arg t "$long" '{id: "aa-huge", title: $t, first_seen: {run: "r", date: "2026-10-01"}, runs_seen: ["r", "s"], status: "proposed"}'
+  jq -nc '{id: "zz-specced", title: "a specced one", first_seen: {run: "r", date: "2026-10-01"}, runs_seen: [], status: "specced", spec: "docs/specs/z.md"}'; } > "$T/bk/many.jsonl"
+check "backlog list: past --max-bytes every row keeps its id and status, full lines first" '
+  o=$($B list "$T/bk/many.jsonl" --max-bytes 2000) && (( $(wc -c <<< "$o") <= 2001 )) && [[ $(wc -l <<< "$o") == 42 ]] &&
+  grep -q "^zz-specced · specced" <<< "$o" && grep -q "^p-1 · proposed · seen 1 · proposal 1 y" <<< "$o" &&
+  (( $(grep "^aa-huge · proposed" <<< "$o" | wc -c) < 260 )) && [[ $(grep -c "^p-[0-9]* · proposed$" <<< "$o") -gt 0 ]]'
+check "backlog list --jsonl: a row too big is skipped, not the rest; a cut list ends with a {\"more\": n} line" '
+  o=$($B list "$T/bk/many.jsonl" --jsonl --max-bytes 3000) && (( $(wc -c <<< "$o") <= 3001 )) &&
+  [[ $(tail -1 <<< "$o" | jq -c .) =~ ^\{\"more\":[0-9]+\}$ ]] && head -1 <<< "$o" | jq -e ".id == \"p-1\"" > /dev/null &&
+  [[ $($B list "$T/bk/four.jsonl" --jsonl | jq -s length) == 4 ]]'
 
 suite_end

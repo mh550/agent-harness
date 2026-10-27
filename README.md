@@ -185,7 +185,8 @@ debrief reads it to rank the open proposals.
 
 **Seed it once, by hand, on the live checkout** (the build that added the backlog never ran this; it writes the real
 ledger): `harness backlog import docs/specs/2026-10-25-memory.backlog-seed.jsonl`. It prints `backlog: imported 8
-rows (8 new, 0 updated)`, makes one `ledger: backlog import …` commit, and is idempotent by id. To look first:
+rows (8 new, 0 updated)`, makes one `ledger: backlog import …` commit, and is idempotent by id: a second import never moves a row back to an
+earlier status nor clears a link `set` gave it. To look first:
 `node lib/backlog.mjs list docs/specs/2026-10-25-memory.backlog-seed.jsonl` (writes nothing); to undo, `git revert`
 that commit.
 

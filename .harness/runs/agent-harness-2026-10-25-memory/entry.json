@@ -1,0 +1,12 @@
+{ "feature": "M1-06", "kind": "coding", "outcome": "passes",
+  "summary": "Opus review of the M1 diff (1065 lines): 0 Critical, 5 Important, 9 Minor; no second round. Fixed all 5 Important and Minor 6-8 test-first: forward-only import, one-line 200-char titles, a cap keeping every id·status, JSONL skip + {more:n}, LEDGER_COMMIT=1 run check, no symlinked proposals, unlistable store noted. Stray .tmp removed. Tests 413 → 420.",
+  "files": ["lib/backlog.mjs", "lib/driver.sh", "tests/stub-claude.sh", "tests/checks/35-backlog-pure-m1.sh", "tests/checks/36-run-16-retro-backlog.sh", "tests/fixtures/check-names.txt", "docs/plans/2026-10-26-M1-review.md", "journal/decisions/2026-10-26-retro-backlog.md", "docs/architecture.md", "README.md", ".tmp (removed)"],
+  "verified_how": "Each new check red then green: `backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)`, `backlog merge: a title's newlines and control characters fold to one space, at most 200 characters`, `backlog validate: the why line of a huge bad id stays under 300 bytes`, `backlog list: past --max-bytes every row keeps its id and status, full lines first`, `backlog list --jsonl: a row too big is skipped, not the rest; a cut list ends with a {\"more\": n} line`, `backlog run: a symlinked retro-proposals.json is not followed, and a store that will not list is noted`; `backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.jsonl with its proposal` red with the paths+= line removed, green restored. bash -n on the six named files, node --check lib/backlog.mjs. check.sh green in 229 s, 420 tests.",
+  "tests_before": 413, "tests_after": 420,
+  "dead_ends": [{ "tried": "noting an unlistable store before the retro session", "why": "restrict reverts harness-log.md edits made after rstart; the note is now written after restrict" }],
+  "discoveries": [
+    { "text": "Any note() written in retro() between rstart and restrict is reverted with the retro's edits: write it after restrict (as S_NOTES are).", "affects": ["run"] },
+    { "text": "backlog.mjs exports oneLine (whitespace and control characters folded, 200 chars): reuse it for any retro-written text that reaches a prompt.", "affects": ["M2", "M3"] }
+  ],
+  "questions": ["Review finding 10 (left): `harness backlog set/import` can race lib/sync.sh's rebase since sync takes no ledger.lock. Add it to the backlog (e.g. `sync-ledger-lock`) or fix in a later run?"],
+  "proposed_changes": [] }

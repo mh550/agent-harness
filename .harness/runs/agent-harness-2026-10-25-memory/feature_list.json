@@ -64,7 +64,7 @@
         "docs/plans/2026-10-26-M1-review.md records the findings and their fixes; docs/architecture.md, README.md and journal/decisions/<date>-retro-backlog.md describe M1 as merged",
         "`bash -n` passes on lib/driver.sh, lib/backlog.sh, lib/debrief.sh, bin/harness, tests/stub-claude.sh and tests/checks/36-run-16-retro-backlog.sh; `node --check lib/backlog.mjs` passes",
         "the suite is green" ],
-      "after": ["M1-05"], "passes": false },
+      "after": ["M1-05"], "passes": true },
 
     { "id": "M2-01", "milestone": "M2", "kind": "build", "model": "opus",
       "description": "lib/memlint.mjs exports `decisionsStore(worktree)` (DECISIONS= from .harness/config.sh, else docs/decisions.md if it exists, else none) and every coding, initializer and verify prompt gets the `## Where things go` block exactly once when the project's CLAUDE.md lacks that heading or is missing, never when it has it; the verify variant sends facts to `discoveries` instead of editing Gotchas.",

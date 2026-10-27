@@ -497,21 +497,24 @@ verify_ready() {
 }
 
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
-  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x
+  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x backlog nolist="" p=$RUN_DIR/retro-proposals.json
   rstart=$(git rev-parse HEAD)
   # the backlog as the list prints it ({{BACKLOG}}): ids to reuse and statuses to cite, not re-argue
-  HARNESS_BACKLOG=$(node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --max-bytes 6000 2>> "$STATE/run.log") \
-    HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
+  backlog=$(node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --max-bytes 6000 2> "$SCRATCH/backlog.err") \
+    || nolist="backlog: the retro prompt has no backlog: $(head -1 "$SCRATCH/backlog.err" | cut -c1-200 | sed 's/^backlog: //')"
+  HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$RUN_DIR/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
   # its one output file besides retro.md: restrict deletes it, so it goes to scratch first, and only when this retro
-  # wrote it (not a continued run's earlier copy); ledger() merges it into the backlog (decisions/2026-10-26-retro-backlog)
+  # wrote it (not a continued run's earlier copy) as a plain file of at most 64 KB (a symlink would carry another file
+  # into the record); ledger() merges it into the backlog (decisions/2026-10-26-retro-backlog)
   rm -f "$SCRATCH/retro-proposals.json"
-  [[ -f $RUN_DIR/retro-proposals.json ]] && ! git show "$rstart:$RUN_DIR/retro-proposals.json" 2> /dev/null | cmp -s - "$RUN_DIR/retro-proposals.json" \
-    && cp "$RUN_DIR/retro-proposals.json" "$SCRATCH/retro-proposals.json"
-  reverted=$(restrict "$rstart" nothing retro | grep -vxF "$RUN_DIR/retro-proposals.json" | paste -sd' ')
+  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= 65536 )) && ! git show "$rstart:$p" 2> /dev/null | cmp -s - "$p" \
+    && cp "$p" "$SCRATCH/retro-proposals.json"
+  reverted=$(restrict "$rstart" nothing retro | { [[ -f $SCRATCH/retro-proposals.json ]] && grep -vxF "$p" || cat; } | paste -sd' ')
   for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict: the driver's notes, not the retro's edits
   [[ -n $reverted ]] && note "retro: reverted edits (it is read-only): $reverted"
+  [[ -n $nolist ]] && note "$nolist"   # noted here: restrict reverts a note written before the session
   if [[ -f $SCRATCH/retro-proposals.json ]]; then cp "$SCRATCH/retro-proposals.json" "$RUN_DIR/"   # in the run record, as retro.md
   else note "backlog: the retro wrote no retro-proposals.json"; fi
   MET final "$rlog" > "$SCRATCH/retro.md"

@@ -99,16 +99,23 @@ an init that backgrounds a server returns at once; stopping the scope that kept 
 an open desk showing a dialog gets nothing typed
 backlog import: 8 rows into an empty store, then again 8 (idempotent by id)
 backlog import: a known id takes status, spec, pr and note, keeps first_seen, unions runs_seen
+backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)
+backlog list --jsonl: a row too big is skipped, not the rest; a cut list ends with a {"more": n} line
+backlog list: past --max-bytes every row keeps its id and status, full lines first
 backlog list: proposed first, then more runs_seen first within a status
 backlog merge: a known id adds its run to runs_seen once, status unchanged
 backlog merge: a new id becomes one proposed row first seen in its run
+backlog merge: a title's newlines and control characters fold to one space, at most 200 characters
 backlog run: a malformed retro-proposals.json is noted, the run finishes, the backlog unchanged
 backlog run: a retro proposal lands as a proposed row, noted 1 new, 0 seen again
+backlog run: a symlinked retro-proposals.json is not followed, and a store that will not list is noted
 backlog run: restrict reverts a retro's edit to the backlog, and the merge still lands
 backlog run: the rendered retro prompt carries test-counts · specced
 backlog run: the same id from a second run adds it to runs_seen, noted 0 new, 1 seen again
+backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.jsonl with its proposal
 backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1
 backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
+backlog validate: the why line of a huge bad id stays under 300 bytes
 brief committed with the run
 brief, rules and policy in the prompt
 by hand right after: nothing new, no session
