@@ -9,6 +9,26 @@ The run builds `docs/specs/2026-10-25-memory.md`, M1–M6 in its order, per Mich
 
 Steer from the GitHub app: edit `INBOX.md` on this branch. First line `status: pause` or `status: stop [why]`; answers to questions go under `## Answers` (every session reads them; a parked feature is retried once answers change). Each entry's **Question for Michael** lines are what the sessions need from you; each took the simplest reversible default meanwhile.
 
+### 2026-10-27 00:01 · verify M5 · not yet
+
+M5-02 holds. M5-01 step 2 fails: tests/fixtures/check-agent-harness.txt yields 474 (ends 474/474), the step says 395 (this run's scratch check.out); the check asserts 474. Other steps hold; suite green (483).
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M5-01 | 1 | node lib/testcount.mjs on check-jest-contract/check-jest/empty with and without --source; testCount on two contract lines | 1115 tests · contract; 7 tests · jest; plain form '7 tests'; last contract line wins (9) | yes |
+| M5-01 | 2 | node lib/testcount.mjs tests/fixtures/check-agent-harness.txt --source; head/tail of fixtures | contract fixture 1115 with provenance first line OK; check-agent-harness gives 474 tests · generic (31 lines, ends 474/474), step demands 395; check 06 asserts 474 | no |
+| M5-01 | 3 | testcount.mjs --source on jest, pytest, empty fixtures | 7 · jest; 4 · generic; ? tests · none | yes |
+| M5-01 | 4 | bash tests/run.sh 40-run-18; read lib/driver.sh:332-334 | PASS 'a suite printing HARNESS_TESTS=12 is noted once ... tests.start is 12'; notes contract/parsed/no match | yes |
+| M5-01 | 5 | harness init check; tests/run.sh subsets | check green in 282 s, 483 tests | yes |
+| M5-02 | 1 | grep lib/driver.sh tests_end; subset 40 | tests_end() at 569, called after sessions (817) and in finish (582); continued-run check passes | yes |
+| M5-02 | 2 | bash tests/run.sh 40-run-18 | PASS 'a continued run refreshes tests-end after each session (3 → 5 before finish), tests-start stays the baseline' | yes |
+| M5-02 | 3 | grep lib/summary.mjs; subset 40 and 14 | 'baseline at run start → end' (236), trends header 'tests (baseline → end)' (289); report label check PASS; 14/14 pass | yes |
+| M5-02 | 4 | grep architecture.md, README.md; ls journal/decisions | Markers row says when tests-start/tests-end written; README HARNESS_TESTS paragraph; decisions/2026-10-26-test-count-contract.md with TEST_REPORT rejected | yes |
+| M5-02 | 5 | read entries.jsonl:23 summary | Opus review recorded: 0 Critical, 1 Important fixed RED→GREEN, 2 Minor fixed | yes |
+| M5-02 | 6 | init suite | green, 483 tests | yes |
+
+- *000021-verify-M5 · claude-sonnet-5-5*
+
 ### 2026-10-26 23:55 · M5-02 · passes
 
 tests_end (driver) writes tests-end after every coding session from a green tree's marker/output, not only at finish; status shows `tests 3 → 5`, the session note `· tests <n>`; report/trends labelled baseline. Opus review: 0 Critical, 1 Important fixed RED→GREEN (a red tree's count became tests-end), 2 Minor fixed (unsafe-int contract, stub set -e). Tests 480 → 483.
