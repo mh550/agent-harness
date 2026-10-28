@@ -22,3 +22,5 @@
 - 2026-10-28 05:14 · U1-05: entry.json invalid (summary: 410 characters (at most 400)); recorded a minimal entry
 - 2026-10-28 05:14 · U1-05: gotchas +1 ~0 -0
 - 2026-10-28 05:14 · U1-05 · claude-opus-5-5 · passes=true · 29 min · 5/24 passing · tests 668
+- 2026-10-28 05:15 · context.md for U1-06: 7206 bytes
+- 2026-10-28 06:08 · U1-06 · claude-opus-5-5 · passes=true · 53 min · 6/24 passing · tests 680

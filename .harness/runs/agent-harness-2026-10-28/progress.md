@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 06:08 · U1-06 · passes
+
+harness queue list renders through status.mjs renderQueue + view.mjs: QUEUE/PARKED/RUNNING/RECENT, rule, show hint; harness queue show <n> [--parked] is a card (renderEntry). entry_kind gone; QUEUED rows share queueRow. The four 15- queue checks read the new rows; 55-queue-view.sh, 12 checks. An Opus review found 1 Important and 6 Minor issues, all fixed red to green.
+
+- **Files:** lib/status.mjs, bin/harness, tests/checks/55-queue-view.sh, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md
+- **Verified:** bash tests/run.sh 15-run 52- 53- 54- 55-: 131/131; 55-queue-view 12/12 after the review fixes; full suite via lib/check.sh TEST_JOBS=2: green in 868 s, 680 tests (an earlier TEST_JOBS=4 run lost 28-run-14d-harness-merge to load ~3.6; alone it passes in 12 s); output eyeballed at COLUMNS 100/60/80
+- **Tests:** 668 → 680
+- **Dead end:** the brief inline in the row's flex column, as the step's row shape reads — at 80 and 60 columns the flex cut drops '(+1170 chars)'; the brief goes on its own sub-line, as the spec's 80-column example shows
+- **Discovery** (affects U1-07): status.mjs now has queue and entry <n> [--parked] modes; readQueue returns [entry, {args, file}] pairs (queued() maps to the entries), so --json is unchanged
+- **Discovery** (affects U1-07): queue show adds fields beyond the step: held, options (the args no other field names, --queued included) and added; an --until text to_epoch reads but status.mjs cannot (e.g. 'tomorrow 06:00') shows as given
+- **Discovery** (affects U1-07): RUNNING in queue list folds its ids under the title instead of cutting them; the spec's narrow 'PARKED 0 · RUNNING …' join was dropped
+- **Proposed change:** U1-06 step 1's row shape puts the brief on the row; the build puts it on its own sub-line (the spec's 80-column example does the same) so its (+k chars) is never cut. U1-07 can note this in decisions/2026-10-27-read-views
+- **Proposed change:** the debrief's ALLOW list has 'harness queue list' but not 'harness queue show' (read-only): U1-07 or Michael may add it
+- *06-U1-06 · claude-opus-5-5*
+
 ### 2026-10-28 05:14 · U1-05 · passes
 
 U1-05 passes, in commit `681d468` (pushed). The full suite is green: 668 tests, up from 655. - **The card:** `harness status <run>` now prints a card. Its first line gives the state or end class, `x/y passing` and the age. The fields are now, ended, milestones, lanes, spend, branch, worktree, needs you, units and next. `-v` or `N` adds the log tail. - **Old checks:** the old checks that read the …

@@ -112,7 +112,7 @@
         "checks in a file by topic (e.g. `tests/checks/55-queue-view.sh`): an entry queued with a 1,200-character `--brief` shows 30 characters and `(+1170 chars)` in `queue list` and `harness queue show 1` prints all 1,200; an entry for a project with a live stub run has the `held:` line naming that run; a parked entry shows under PARKED with its `why:`; `COLUMNS=60` and `COLUMNS=80` output never exceeds the width; the existing \"queue list marks continuations (requested) or (automatic)\" and \"a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too\" checks in tests/checks/15- read the new rows",
         "`bash -n bin/harness`, `node --check` on every `.mjs` touched; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U1-07",
