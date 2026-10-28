@@ -2,6 +2,10 @@
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- 2026-10-28 02:37 · U1-03 · not yet: API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN) → entries.jsonl:4
+
 ## Discoveries for this feature
 
 - Discovery (U1-02, affects run): the full suite took 478 s and 481 s tonight (TEST_JOBS=4) → entries.jsonl:3
@@ -24,7 +28,6 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 ## Lately in the run
 
 - 2026-10-28 01:40 · U1-01 · passes: Wrote docs/plans/2026-10-28-U1-read-views.md: view.mjs API (15 functions, glyphs, width/colour/override rules, end classes), status.mjs stdin/args/files read and the v1 --json keys, the 9 existing checks the new text touches with their rewrites, the stub-state helper, check files 51-55 and the U1-02..07 order. Code unchanged; suite cached green.; tests 602 → 602; files docs/plans/2026-10-28-U1-read-views.md → entries.jsonl:2
-- 2026-10-28 01:32 · init · passes: 24 features: U1 7 (plan, view.mjs, status.mjs + --json, the default view, the card, queue list/show, review), U2 9 (plan, inbox.mjs, the needs record, cards, session-side paths, git-side paths, readers, question locations, review), U3 8 (plan, project names, record after gc + gc units, show, same-project starts + overlap.mjs, overlap wiring, TTY views, review). Serial: U1 → U2 → U3.; files .harness/runs/agent-harness-2026-10-28/feature_list.json, .harness/runs/agent-harness-2026-10-28/entry.json → entries.jsonl:1
 
 ## Current rules
 
