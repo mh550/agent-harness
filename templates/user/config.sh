@@ -22,6 +22,8 @@
 
 # MAX_PARALLEL_RUNS=1                # runs alive at once (1 = one after another); the queue runner re-reads it each poll,
 #                                    #     and lowering it stops no running run (an entry waits until fewer are alive)
+# STATUS_SINCE=24h                   # `harness status`: FINISHED lists the runs ended this recently (never fewer than the
+#                                    #     3 newest, never more than 10; --since and --all for the rest)
 
 # Lanes: a run builds each open milestone in its own process and slot worktree (~/worktrees/<p>/lanes/<run>/slot-<k>).
 # MAX_LANES=1                        # milestones built at once in one run (2 once a night at 1 shows the memory for it)

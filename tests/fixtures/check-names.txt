@@ -401,12 +401,24 @@ queue add numbers past a parked entry
 queue end triggers one debrief, detached
 queue holds an entry whose project has a live run, starts the next one
 queue list marks continuations (requested) or (automatic)
+queue list: PARKED <n> (skipped; harness queue unpark <n>) lists each parked entry with its why:
+queue list: QUEUE <n> · runner off · MAX_PARALLEL_RUNS=<k> to the width, then a row per entry: n, verb, run or project (new run) and its mark, spec basenames, age
+queue list: RUNNING names the live runs; RECENT is runner.log's last 5 lines, time only, home as a tilde; a rule and the show hint end it
+queue list: a 1,200-character --brief shows its first 30 characters and (+1170 chars); harness queue show 1 prints all 1,200
+queue list: a live runner reads runner ● going; COLUMNS=60 says max <k>; at 60 and 80 no line passes the width
+queue list: an empty queue is QUEUE 0 · runner off · MAX_PARALLEL_RUNS=<k> and PARKED 0, one line each, and no hint
+queue list: an entry whose project has a live run says held: <project> busy (<run>); the other entry nothing
+queue list: its numbers are the ones queue rm takes
 queue park refuses to overwrite a parked entry; both survive
 queue park sets an entry aside with its reason
 queue ran both entries, distinct run ids (their merged worktrees gone with the runner's gc: the ledger has the records)
 queue runner: MAX_PARALLEL_RUNS 1 → 2 in the config starts the second entry without a restart, and says so
 queue runner: MAX_PARALLEL_RUNS 2 → 1 stops no running run; the third entry waits until under it, then starts
 queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old value, said once; nothing starts
+queue show <n> --parked: the parked entry with its why; a number past the end fails with the list to see
+queue show <n>: verb, project path, run, spec, brief, until as a time, mark, added and the .args file, one labelled field per line
+queue show: a continue names its project path from meta.env, one %q quoted under a C locale too
+queue show: an --until text shows as given, a --brief-file as its path; an empty --brief is no brief; a CR or an empty file never reaches the screen
 queue stop after a run: one debrief
 queue unpark puts it back at the end, its reason gone
 real limit message: not counted, run completes
@@ -487,6 +499,57 @@ slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop
 slot_open: after a lane's base conflicts, reopening the previous lane checks its branch out again
 slot_open: the slot's excludes file keeps the user's global excludes (a ~ path expanded)
 start queues when MAX_PARALLEL_RUNS are going
+status card: ASCII only under LC_ALL=C (lane and log lines are verbatim); no ESC off a TTY, colour with HARNESS_TTY=1; the worktree with the home directory as a tilde
+status card: COLUMNS=60 lines never exceed 60 columns but a URL; a long reason wraps under its label
+status card: N=3 and -v end with exactly the last 3 run.log lines; N=1 one; none without either
+status card: a driver killed before run.log has no NaN, a missing worktree is not removed by gc; a run started just now; N=0 adds no log field
+status card: a running run has now (feature, session, attempt of max, model, minutes in), lanes verbatim, its own units, next attach
+status card: an ended run has ended, milestones, spend, branch, worktree, next; no now, lanes or units
+status card: branch names its commit and ahead, behind origin/main from local refs, with no fetch and no write
+status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)
+status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
+status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule
+status card: needs you counts the run's items with the first headline and the harness needs hint
+status card: the debrief keeps N=3 harness status <run>; the supervisor asks for -v and keeps N=20
+status card: the gcd run says removed by gc and 23/23 from the ledger; its milestones from the summary; next report only
+status json: --json writes nothing, and reads the queue dir without creating it
+status json: --project proj2 keeps only that project's runs, items and queue entries
+status json: STATUS_SINCE in the user config sets the window, --since wins over it
+status json: an empty meta.env is skipped and a bare end reason dated by its file
+status json: finished holds the runs ended in the last 24h, newest first, and older the rest; at least the 3 newest
+status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
+status json: harness status --json over 38 stub runs takes under 1 s (best of 3)
+status json: harness status <run> --json prints that one run object with v; an unknown run is an error
+status json: lib/status.mjs has a usage header, imports only node: built-ins and ./view.mjs, exports runObject, queueEntry and sections
+status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
+status json: queued holds the entries as queue list numbers them, held by a live run of their project, a brief's first 30 characters
+status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
+status json: the gc'd run's features are 23/23 from the ledger's summary.json, its worktree gone, its lanes from the summary
+status json: the running run's feature, session (all segments'), model, port and started_at; lane M1 open with its unit; its own unit apart
+status review: a feature list without milestones shows its features under default, never undefined
+status review: a lane now line loses its control bytes in the card and in the view's lane rows
+status review: a queue entry with an out-of-range --until-epoch shows it as given; status and queue list and show still print
+status review: a session waiting out a limit (its limit note, its row refused) is no live session and has no minutes in
+status review: between sessions (the newest session has its passes note and row) the run counts its rows and shows no minutes in
+status review: harness queue show takes --parked before or after the number
+status review: queue show shortens the home directory in spec and brief to a tilde
+status review: session counts coding sessions only (no init, verify, retro or limit-refused row) plus the one running
+status review: two lanes: one lane closing its session leaves the other live (counted, its minutes in)
+status view: --since 4d adds the 3-day-old run and drops the footer; --all lists every run; --project proj2 only that project's
+status view: -v adds each running run's lane lines (P2-06's text), its own units with MemoryCurrent and the last 3 run.log lines; N alone implies -v
+status view: -v with a non-numeric N keeps 3 log lines; two lanes' sub-rows are ASCII under LC_ALL=C; only a path starting with the home directory becomes a tilde; no control byte from run.log
+status view: FINISHED newest first with the end class glyph and the reason, the gc'd run 23/23 from the ledger; the 3-day-old run only in the footer
+status view: NEEDS YOU lists the crashed, the parked and the given-up run, oldest first, with headline, passing, dollars and age; the gc'd run none
+status view: QUEUED shows the waiting entries as queue rows, a held one says which run holds it, parked ones counted; past three, +<k> more
+status view: RUNNING shows the live run as ● with feature, session and model alias; paused ‖; a usage-limit wait; two lanes as sub-rows
+status view: STATUS_SINCE defaults to 24h (lib/config.sh), commented in the user config template; the catch-up prompt asks for one project
+status view: an empty state root prints the four empty sections and no footer
+status view: at 60 columns the cost stays beside a long reason; the footer keeps -p; a date window reads since <date>
+status view: colour only with HARNESS_TTY=1 (none under NO_COLOR); ASCII only under LC_ALL=C; paths with the home directory as a tilde
+status view: four sections in order (NEEDS YOU · harness needs, RUNNING, QUEUED · runner off, FINISHED · last 24h), a rule and the footer
+status view: harness status --all over 38 stub runs takes under 1 s (best of 3), and lists them all
+status view: no line over 60 or 80 display columns (also with -v); at 60 the long field and the cost go on an indented second line
+status view: no run.log line without -v; a bad --since is an error
 status: stop <why> from the phone: the same note, ended and services note
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
@@ -536,6 +599,7 @@ the deadline verifies a complete milestone once and merges it
 the debrief page never reads a stop reason's words as its tone
 the debrief saw the queue's runs
 the debrief starts a desk when Needs Michael is non-empty
+the debrief's harness status block per run opens with the run's card line
 the desk notification
 the desk prompt names the run, its commands and the never-list
 the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory
@@ -590,6 +654,29 @@ verify needs Michael goes out after the verify entry is pushed
 verify needs Michael starts a desk
 verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
+view: ago gives now 4m 3h 2d 5w for 0 s, 240 s, 3 h, 2 d and 5 w before now; a future time is now
+view: an over-wide narrow row breaks at a column gap before folding: an id that fits the width stays whole, no blank line
+view: card puts a URL inside a value on its own line at 2, splits a value at newlines, keeps a long label and a tiny width inside the line
+view: card wraps a 200-character value under an 11-wide label with a hanging indent, keeps lines verbatim at 4 and a URL whole
+view: context now is HARNESS_NOW when a whole number, else the clock
+view: context tty from isTTY or HARNESS_TTY; colour only on a TTY without NO_COLOR or TERM=dumb, HARNESS_COLOR overrides
+view: context width is COLUMNS when a whole number >= 40, else a TTY'\''s columns, else 100; narrow below 72
+view: cut never splits a code point or an SGR sequence and ends in the cut glyph; pad right-aligns numbers
+view: displayWidth ignores ANSI escapes and combining marks and counts wide characters 2
+view: duration takes 30m 6h 2d 1w and a date relative to now, and fails on abc
+view: endClass gives each reason in tests/fixtures/end-reasons.txt its class; an unknown or empty reason is failed
+view: glyphs unicode from the first set of LC_ALL, LC_CTYPE, LANG naming UTF-8; HARNESS_GLYPHS overrides; ascii otherwise
+view: home shortens a path under the home directory to a tilde and leaves other paths
+view: lib/view.mjs has a usage header, imports only node: built-ins, exports the formatter's functions, and node --check passes
+view: paint wraps in SGR only with colour on; an unknown style throws
+view: section fills to the width with the rule glyph; an empty one is one line without the rule; rule is the width
+view: table lines stay within 40, 60, 80 and 120 columns with a 60-character id whole and a 300-character reason cut
+view: table puts a row'\''s sub lines under it at 4 and gives no second line to an empty flex value when narrow
+view: tests/fixtures/end-reasons.txt holds every literal reason finish, END_REASON and a run-ending lane exit write
+view: the CLI renders a table, a card and a section from tab-separated stdin
+view: the glyph set is fixed, each one text-presentation code point of width 1, with its ASCII form; an unknown name throws
+view: when and duration use local time: 00:19 and a local midnight under TZ=America/New_York
+view: when gives 2026-10-27 00:19 (10h ago) under TZ=UTC, and (now) under a minute
 waits for another run's limit window
 what lands on main is byte for byte what was verified
 where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading

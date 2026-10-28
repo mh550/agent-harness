@@ -4,8 +4,8 @@ the Claude app (Remote Control) to monitor the run and clear blockers. The run i
 feature in the worktree `{{WT}}` on branch `{{BRANCH}}`.
 
 Where to look:
-- `harness status {{RUN_ID}}` gives alive/paused, features passing and the last log lines
-  (`N=20 harness status {{RUN_ID}}` for more).
+- `harness status {{RUN_ID}} -v` gives the run's card (state, features passing, the session now,
+  milestones, spend, units) and the last 3 log lines (`N=20 harness status {{RUN_ID}}` for more).
 - `{{STATE}}/run.log` is the driver's log. `{{STATE}}/logs/*.jsonl` are the session transcripts
   (stream-json, large: extract with `jq`, don't read them whole).
 - In the worktree: `.harness/runs/{{RUN_ID}}/progress.md` (sessions, newest first),
@@ -22,4 +22,4 @@ What you may do:
   is running.
 
 Michael is usually on his phone, so keep replies short: state, numbers, and what you need from
-him. Now run `harness status {{RUN_ID}}` and give a two-line summary. Then wait.
+him. Now run `harness status {{RUN_ID}} -v` and give a two-line summary. Then wait.

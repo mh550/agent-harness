@@ -1,0 +1,31 @@
+# <class>\t<reason>: every reason a run's `ended` file can hold (view.mjs endClass, decisions/2026-10-27-read-views).
+# Sources: finish (lib/driver.sh: "done", the cap, the deadline, the run-end compound of blocked/parked/needs, "no feature
+# left to try", the initializer's two), stop_why (lib/record.sh, through finish), weekly_over's echo (lib/config.sh,
+# inside "weekly budget (…)"), lane_exit 13 and "feature-list edits" (lib/lane.sh, through reap's LANE_END), the EXIT
+# trap's END_REASON (driver exited, unknown POLICY, merge only); then the ended lines of this box's harness status of
+# 2026-10-27 (the spec's What Michael saw), with their " · <date>" stamp as the file holds it.
+done	done
+stopped	stopped by Michael
+stopped	stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh)
+stopped	session cap (12)
+stopped	deadline
+stopped	deadline (paused)
+stopped	weekly budget (7-day window at 96%, stop at 95%; resets Sat 09:00)
+stopped	usage limit (6 sessions refused in a row)
+stopped	merge only
+waiting	blocked on P1-04
+waiting	blocked on C,D
+waiting	waiting on Michael: B1-05
+waiting	waiting on Michael: B,M2
+waiting	blocked on C; waiting on Michael: B
+waiting	blocked on C; waiting on Michael: B; waiting on Michael: M2
+failed	no feature left to try
+failed	feature-list edits
+failed	initializer failed
+failed	usage limit before the feature list
+failed	unknown POLICY
+failed	driver exited unexpectedly (see run.log)
+done	done · 2026-10-19 15:57:27
+done	done · 2026-10-27 01:47:38
+stopped	stopped by Michael: rebase onto main once the memory run ends (conflicts in lib/driver.sh) · 2026-10-27 00:19:48
+waiting	waiting on Michael: B1-05 · 2026-10-27 09:12:03

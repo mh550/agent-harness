@@ -57,7 +57,7 @@ check "context.md carries the earlier attempt's dead end" 'C5=$HARNESS_STATE/pro
   && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-coding.md" \
   && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-verify.md" \
   && git -C "$T/origin.git" cat-file -e harness/demo:.harness/runs/demo/context.md && hlog demo | grep -q "context.md for C: [0-9]* bytes"'
-check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && grep -q "ended: done" <<< "$("$H" status demo)"'
+check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && S=$(HARNESS_GLYPHS=unicode "$H" status demo) && [[ ${S%%$'"'"'\n'"'"'*} == "✓ demo · proj · done · "* ]] && [[ $("$H" status demo --json | jq -r .end_reason) == done ]]'
 check "summary, report and retro written" '[[ $(jq .features.merged "$RD/summary.json") == 3 ]] && grep -q "per passing feature" "$RD/report.md" && grep -q "Stub retro" "$RD/retro.md"'
 check "summary: tokens, per verified feature, first-attempt rate, rework" 'jq -e ".tokens.in > 0 and .per_verified_feature.cost > 0 and .rework == [\"A\", \"C\"] and .first_attempt_pass_rate == 0.33 and .verify_fail_rate > 0" "$RD/summary.json" > /dev/null'
 check "report shows tokens and quality"   'R=$("$H" report demo); grep -q "^| Tokens | .* in (cache hit .*context peak .*per verified feature " <<< "$R" && grep -q "^| Quality | first-attempt pass rate 0.33 · rework A, C · verify-fail rate " <<< "$R"'
@@ -192,13 +192,13 @@ for r in stopreq stopauto; do mkdir -p "$HARNESS_STATE/other/$r" && echo "stoppe
 "$H" queue add --continue stopreq > /dev/null; "$H" queue add --continue stopauto --automatic > /dev/null
 check "queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't" 'fr=$(compgen -G "$Q/*-continue-stopreq.args") && fa=$(compgen -G "$Q/*-continue-stopauto.args") \
   && grep -qx -- --queued "$fr" && grep -qx -- --requested "$fr" && grep -qx -- --queued "$fa" && ! grep -qx -- --requested "$fa" && ! grep -qx -- --automatic "$fa"'
-check "queue list marks continuations (requested) or (automatic)" 'L=$("$H" queue list) && grep -q "^  [0-9]*\. continue stopreq .*(requested)$" <<< "$L" && grep -q "^  [0-9]*\. continue stopauto .*(automatic)$" <<< "$L"'
+check "queue list marks continuations (requested) or (automatic)" 'L=$("$H" queue list) && grep -E "^ *[0-9]+  continue  stopreq \(requested\)( |$)" <<< "$L" > /dev/null && grep -E "^ *[0-9]+  continue  stopauto \(automatic\)( |$)" <<< "$L" > /dev/null'
 B=$(ndb); HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2r.out" 2>&1; settle
 check "a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)" 'grep -q "starting: harness continue stopreq" "$Q/runner.log" && ! grep -q "skipping queued continuation of stopreq" "$Q/runner.log" \
   && grep -q "skipping queued continuation of stopauto: Michael stopped it" "$Q/runner.log" && grep -q "no-checkout is not a git repository" "$Q/runner.log" && [[ $(ndb) == "$B" ]]'
 "$H" queue add --continue stopauto --automatic > /dev/null
 check "a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too" '[[ $("$H" queue add --continue stopauto) == "already queued: continue stopauto (now requested, with this request'"'"'s options)" ]] \
-  && grep -qx -- --requested "$(compgen -G "$Q/*-continue-stopauto.args")" && "$H" queue park 1 > /dev/null && grep -q "^  1\. continue stopauto .*(requested)$" <<< "$("$H" queue list | sed -n "/^parked/,\$p")"'
+  && grep -qx -- --requested "$(compgen -G "$Q/*-continue-stopauto.args")" && "$H" queue park 1 > /dev/null && grep -E "^ *1  continue  stopauto \(requested\)( |$)" <<< "$("$H" queue list | sed -n "/^PARKED/,\$p")" > /dev/null'
 "$H" queue add --continue stopreq --automatic --keep-attempts --until-epoch 1 > /dev/null
 check "a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)" '[[ $("$H" queue add --continue stopreq --brief "from Michael") == "already queued: continue stopreq (now requested, with this request'"'"'s options)" ]] \
   && [[ $(cat "$(compgen -G "$Q/*-continue-stopreq.args")") == "$(printf "%s\n" continue stopreq --queued --requested --brief "from Michael")" ]]'
@@ -207,7 +207,7 @@ rm -rf "$HARNESS_STATE/other" "$Q"/*.args "$Q"/held/*
 mkdir -p "$HARNESS_STATE/proj/capped" && echo MAX_SESSIONS=1 > "$HARNESS_STATE/proj/capped/run.env"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" capped --spec SPEC.md --foreground > "$T/capped-run.out" 2>&1
 check "the driver's continuation after a session cap is automatic" 'grep -q "^session cap (1)" "$HARNESS_STATE/proj/capped/ended" && hlog capped | grep -q "continuation queued (1 of 3, automatic;" \
-  && f=$(compgen -G "$Q/*-continue-capped.args") && grep -qx -- --queued "$f" && grep -qx -- --keep-attempts "$f" && ! grep -qx -- --requested "$f" && grep -q "continue capped .*(automatic)$" <<< "$("$H" queue list)"'
+  && f=$(compgen -G "$Q/*-continue-capped.args") && grep -qx -- --queued "$f" && grep -qx -- --keep-attempts "$f" && ! grep -qx -- --requested "$f" && grep "continue  capped (automatic)" <<< "$("$H" queue list)" > /dev/null'
 rm -rf "$HARNESS_STATE/proj/capped" "$Q"/*.args   # later debriefs cover runs by their state dir: this one is gone
 # a gc that fails and hangs (a git whose fetch waits on a prompt, for this runner only: only gc runs that argv) is
 # killed at HARNESS_GC_TIMEOUT and logged; the debrief starts anyway (L4-05 review)
@@ -232,7 +232,7 @@ rm -rf "$HARNESS_STATE/proj/busy3" "$HARNESS_STATE/other" "$Q"/*.args; mv "$T/us
 check "the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)" 'grep -q "sync: .* is not in a git checkout; skipped" "$Q/runner.log"'
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
 check "queue park sets an entry aside with its reason" 'grep -q "^parked 0" <<< "$("$H" queue park 1 waiting on the measure PRs)" && ! compgen -G "$Q/*.args" > /dev/null \
-  && L=$("$H" queue list) && grep -q "^parked (the runner skips" <<< "$L" && grep -q "why: waiting on the measure PRs" <<< "$L" && grep -q "  (empty)" <<< "$L"'
+  && L=$("$H" queue list) && grep "^PARKED 1 (skipped; harness queue unpark <n>)" <<< "$L" > /dev/null && grep "why: waiting on the measure PRs" <<< "$L" > /dev/null && grep "^QUEUE 0 · " <<< "$L" > /dev/null'
 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2c.out" 2>&1
 check "the runner skips a parked entry and says so" 'grep -q "1 parked entry skipped until unparked" "$T/queue2c.out" && ! grep -q "starting:" "$T/queue2c.out" && grep -q "queue empty" "$T/queue2c.out"'
 check "queue unpark puts it back at the end, its reason gone" 'grep -q "^unparked .* as 0" <<< "$("$H" queue unpark 1)" && [[ $(ls "$Q"/*.args | wc -l) == 1 ]] && ! compgen -G "$Q/held/*" > /dev/null && grep -qx start "$(ls "$Q"/*.args)"'
@@ -279,6 +279,9 @@ check "a killed debrief changes nothing" '[[ $(cat "$Q/last-debrief") == "$LD" &
 touch "$Q/0099-continue-walled.args"; echo $$ > "$HARNESS_STATE/proj/gated/driver.pid"
 "$H" debrief --dry-run > "$T/dry.out" 2>&1
 check "--dry-run prints the context, launches nothing" '[[ $(ndb) == $B && -f $(head -1 "$T/dry.out") && $(cat "$Q/last-debrief") == "$LD" ]] && grep -q "^## harness status" "$T/dry.out" && grep -q "^### stoppy (proj)" "$T/dry.out" && grep -q "ended: deadline" "$T/dry.out"'
+check "the debrief's harness status block per run opens with the run's card line" 'awk '"'"'/^### / { run = $2 } /^#### harness status$/ { want = 2; next }
+  want == 2 { want = (/^~~~$/) ? 1 : 0; if (!want) bad++; next } want == 1 { n++; if (index($0, " " run " · ") == 0 || $0 !~ /^[^ ]+ [^ ]+ · [^ ]+ · /) bad++; want = 0 }
+  END { exit !(n > 0 && !bad) }'"'"' "$T/dry.out"'
 cp "$NOTE" "$T/note-before.md"; echo "{{LEDGER}} stays literal" >> "$T/wt/proj/stoppy/.harness/runs/stoppy/INBOX.md"
 STUB_DEBRIEF_TOUCH=$T/wt/proj/gated/still-working.txt STUB_DEBRIEF_CONTINUE="stoppy demo walled limited gated" "$H" debrief > "$T/next.out" 2>&1
 check "placeholders inside the context are not filled" 'grep -q "{{LEDGER}} stays literal" "$T/debrief-prompt"'

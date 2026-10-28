@@ -129,7 +129,7 @@ check "context.md carries the earlier attempt's dead end" 'C5=$HARNESS_STATE/pro
   && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-coding.md" \
   && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-verify.md" \
   && git -C "$T/origin.git" cat-file -e harness/demo:.harness/runs/demo/context.md && hlog demo | grep -q "context.md for C: [0-9]* bytes"'
-check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && grep -q "ended: done" <<< "$("$H" status demo)"'
+check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && S=$(HARNESS_GLYPHS=unicode "$H" status demo) && [[ ${S%%$'"'"'\n'"'"'*} == "✓ demo · proj · done · "* ]] && [[ $("$H" status demo --json | jq -r .end_reason) == done ]]'
 check "summary, report and retro written" '[[ $(jq .features.merged "$RD/summary.json") == 3 ]] && grep -q "per passing feature" "$RD/report.md" && grep -q "Stub retro" "$RD/retro.md"'
 check "summary: tokens, per verified feature, first-attempt rate, rework" 'jq -e ".tokens.in > 0 and .per_verified_feature.cost > 0 and .rework == [\"A\", \"C\"] and .first_attempt_pass_rate == 0.33 and .verify_fail_rate > 0" "$RD/summary.json" > /dev/null'
 check "report shows tokens and quality"   'R=$("$H" report demo); grep -q "^| Tokens | .* in (cache hit .*context peak .*per verified feature " <<< "$R" && grep -q "^| Quality | first-attempt pass rate 0.33 · rework A, C · verify-fail rate " <<< "$R"'
@@ -213,13 +213,14 @@ check "finish runs the teardown hook, then stops harness-<run>-svc, and notes it
 rm -f "$T/slow-coding"
 STUB_SLOW_CODING=30 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" termed --spec SPEC.md --foreground > "$T/run-termed.out" 2>&1 & TP=$!
 t_mid=0; for _ in $(seq 300); do [[ -e $T/slow-coding ]] && { t_mid=1; break; }; sleep 0.1; done
-STUB_MEM_CURRENT=52428800 "$H" status termed > "$T/status-termed.out" 2>&1; TSR=$?   # the slow session's scope is live (L2-05)
+STUB_MEM_CURRENT=52428800 HARNESS_GLYPHS=unicode "$H" status termed -v > "$T/status-termed.out" 2>&1; TSR=$?   # the slow session's scope is live (L2-05)
 kill -TERM "$(cat "$HARNESS_STATE/proj/termed/driver.pid")"; wait "$TP"
 touch "$T/scope/harness-termed-s99".{alive,running}; TSL=$(sd_count list-units)   # a unit left behind: an ended run still lists none
-"$H" status termed > "$T/status-termed2.out" 2>&1; TSR2=$?; TSL2=$(sd_count list-units); rm -f "$T/scope/harness-termed-s99".*
-check "harness status lists a running run's units with MemoryCurrent; an ended run's none" '[[ $TSR == 0 && $TSR2 == 0 ]] && grep -q "^termed (proj) · running" "$T/status-termed.out" \
+HARNESS_GLYPHS=unicode "$H" status termed -v > "$T/status-termed2.out" 2>&1; TSR2=$?; TSL2=$(sd_count list-units); rm -f "$T/scope/harness-termed-s99".*
+check "harness status lists a running run's units with MemoryCurrent; an ended run's none" '[[ $TSR == 0 && $TSR2 == 0 ]] && grep -q "^● termed · proj · running" "$T/status-termed.out" \
   && grep -Eqx "    lane M1 · A · session 1 · port [0-9]+ · slot 0 · MemoryCurrent harness-termed-M1-s[0-9]+ 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
-  && grep -q "^termed (proj) · ended: driver exited" "$T/status-termed2.out" && ! grep -q MemoryCurrent "$T/status-termed2.out" && [[ $TSL2 == "$TSL" ]]'
+  && grep -q "^✗ termed · proj · failed" "$T/status-termed2.out" && grep -q "^  ended .*driver exited unexpectedly" "$T/status-termed2.out" \
+  && ! grep -q MemoryCurrent "$T/status-termed2.out" && ! grep -q "^  units " "$T/status-termed2.out" && [[ $TSL2 == "$TSL" ]]'
 termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* || $(readlink "/proc/$p/cwd") == "$T/wt/proj/lanes/termed/"* ]] && echo "$p"; done; }
 check "the EXIT trap commits its services note: harness-log.md is clean after a TERM" '[[ -z $(git -C "$T/wt/proj/termed" status --porcelain -- .harness/runs/termed/harness-log.md) ]] \
   && git -C "$T/wt/proj/termed" show HEAD:.harness/runs/termed/harness-log.md | grep "· services stopped (driver exited)$" > /dev/null'

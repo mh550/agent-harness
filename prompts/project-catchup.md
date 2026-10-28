@@ -32,7 +32,7 @@ live state before you act on it.
 
 1. **Inventory.** List:
    - open PRs (`gh pr list`), with their base, mergeability and whether they are stacked;
-   - `harness status` for this project's runs;
+   - `harness status --project <project>` for this project's runs (`-v` adds the running ones' log lines);
    - `git worktree list`, plus `~/worktrees/<project>/*`;
    - local and remote branches not merged into `main`.
 
