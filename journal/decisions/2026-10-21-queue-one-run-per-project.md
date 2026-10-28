@@ -11,3 +11,5 @@
   change. `harness start --now` is untouched: starting a second run on a busy repo by hand is still possible.
 - **Rejected:** a per-project limit in config (nobody has asked for two runs on one repo; one is the safe default);
   stopping at a held head entry (it would idle a free slot while other projects wait).
+
+Updated in place 2026-10-27: a plain harness start or continue now queues behind a live run of its project too (decisions/2026-10-27-same-project-starts); --now still starts it.

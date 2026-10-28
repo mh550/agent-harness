@@ -5,9 +5,11 @@
 #   harness start <project> [<run-id>] [--spec "<files>"] [--brief "<text>" | --brief-file <f>] [--base <ref>]
 #                 [--until HH:MM] [--now] [--no-supervisor] [--foreground]
 #                               a new run (worktree + branch harness/<run-id>), or resume an existing one. With
-#                               MAX_PARALLEL_RUNS runs already going, it is queued instead (--now: start anyway)
+#                               MAX_PARALLEL_RUNS runs already going, or a live run of the project, it is queued
+#                               instead (--now: start anyway)
 #   harness continue <run-id> [--brief …] [--until HH:MM] [--now]
-#                               resume a run with fresh attempts for every feature that isn't passing
+#                               resume a run with fresh attempts for every feature that isn't passing (queued while
+#                               another run of its project is live; --now: start anyway)
 #   harness queue [list]                         what is queued, parked, running and done lately
 #   harness queue show <n> [--parked]            one entry whole: its spec, brief, until, mark, why and file
 #   harness queue add <project> [<run-id>] [start options] | add --continue <run-id> [--automatic] [options]
@@ -119,6 +121,12 @@ alive() { local p; p=$(cat "$1/driver.pid" 2>/dev/null) && [[ -n $p ]] && kill -
 # (a pid that is lib/lane.sh: a recycled one would keep its run busy, and its units and slots, for good)
 lane_live() { local f p; for f in "$1"/lanes/*/pid; do p=$(cat "$f" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null \
   && tr '\0' ' ' < "/proc/$p/cmdline" 2> /dev/null | grep "lib/lane.sh" > /dev/null && { f=${f%/pid}; echo "${f##*/} $p"; return 0; }; done; return 1; }
+# <project name> [<except run>] → the first other run of that project whose driver or a lane lives; 1 when none
+project_busy() { local d; for d in "$STATE_ROOT/$1"/*/; do d=${d%/}; [[ ${d##*/} == "${2:-}" ]] && continue
+  { alive "$d" || lane_live "$d" > /dev/null; } && { echo "${d##*/}"; return 0; }; done; return 1; }
+# <busy run> <project dir> <queue entry>: why a plain start or continue was queued (decisions/2026-10-27-same-project-starts)
+queued_behind() { echo "$(date '+%F %T') queued behind $1: ${3##*/}" >> "$Q/runner.log"
+  echo "$1 is running on $(basename "$2"): queued (the runner starts it when that run ends; --now starts it anyway)"; queue_ensure_runner; }
 runner_up() { [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null; }
 alive_count() { local d n=0; for d in "$STATE_ROOT"/*/*/; do alive "$d" && n=$(( n + 1 )); done; echo "$n"; }
 to_epoch() { [[ $1 =~ ^[0-9]{9,}$ ]] && { echo "$1"; return; }   # HH:MM → the next such time
@@ -215,25 +223,31 @@ cmd_start() {
     --no-supervisor) supervisor=0; shift ;; --foreground) fg=1; supervisor=0; shift ;; --now) now=1; shift ;;
     *) die "unknown option $1" ;; esac; done
   harness_config "$p"
-  if [[ -z $run ]] && (( ! now && ! fg )) && (( $(alive_count) >= MAX_PARALLEL_RUNS )); then
-    local args=("$p"); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
-    [[ -n $brief ]] && args+=(--brief "$brief"); [[ -n $until ]] && args+=(--until-epoch "$until")
-    queue_add start "${args[@]}" > /dev/null   # no run id yet: it is chosen when the run starts
-    echo "$(alive_count) run(s) going (MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS): a new $(basename "$p") run is queued"; queue_ensure_runner; return
-  fi
-  run=${run:-$(auto_id "$p")}
-  [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
+  [[ -z $run || $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
   [[ $run == desk || $run == debrief ]] && die "run-id '$run' is taken by the desk (tmux h-desk, <state>/queue/desk)"
   [[ $run == queue ]] && die "run-id 'queue' is taken by the queue runner (tmux h-queue)"
   [[ $run == lanes ]] && die "run-id 'lanes' is taken by the lane slots (<worktrees>/<project>/lanes)"
+  # a queued start: the entry the runner replays (no run id yet when none is given: it is chosen when the run starts)
+  local args=("$p" ${run:+"$run"}); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
+  [[ -n $brief ]] && args+=(--brief "$brief"); [[ -n $until ]] && args+=(--until-epoch "$until")
+  # two runs on one repo would build conflicting PRs from the same base: a plain start waits for the live one (a given
+  # run id after its own refusals, below)
+  local busy; if [[ -z $run ]] && (( ! now && ! fg )) && busy=$(project_busy "$(basename "$p")"); then
+    queued_behind "$busy" "$p" "$(queue_add start "${args[@]}")"; return; fi
+  if [[ -z $run ]] && (( ! now && ! fg )) && (( $(alive_count) >= MAX_PARALLEL_RUNS )); then
+    queue_add start "${args[@]}" > /dev/null
+    echo "$(alive_count) run(s) going (MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS): a new $(basename "$p") run is queued"; queue_ensure_runner; return
+  fi
+  local given=$run; run=${run:-$(auto_id "$p")}
+  [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
   local proj branch=harness/$run wt state
   proj=$(basename "$p"); wt=$WT_ROOT/$proj/$run; state=$STATE_ROOT/$proj/$run
   if alive "$state"; then die "run $run is already running (harness attach $run)"; fi
   # tmux names are lossy (a.b and a-b; one id in two projects): never take, and so kill, a session another run holds
   tmux_shared "$state" "$STATE_ROOT" "$(tmux_name "$run")" && die "run id $run shares tmux session $(tmux_name "$run") with $TMUX_OTHER, which has not ended: pick another id"
+  if [[ -n $given ]] && (( ! now && ! fg )) && busy=$(project_busy "$proj" "$run"); then
+    queued_behind "$busy" "$p" "$(queue_add start "${args[@]}")"; return; fi
   if (( ! now && ! fg )) && (( $(alive_count) >= MAX_PARALLEL_RUNS )); then
-    local args=("$p" "$run"); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
-    [[ -n $brief ]] && args+=(--brief "$brief"); [[ -n $until ]] && args+=(--until-epoch "$until")
     queue_add start "${args[@]}" > /dev/null
     echo "$(alive_count) run(s) going (MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS): $run is queued"; queue_ensure_runner; return
   fi
@@ -304,6 +318,19 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start op
   alive "$st" && die "$run is running; continue it after it ends (or harness stop $run)"
   # an automatic continuation never undoes Michael's stop; one queued by request does (decisions/2026-10-26-requested-continuations)
   if (( queued && ! requested )) && grep -qs '^stopped by Michael' "$st/ended"; then echo "skipping queued continuation of $run: Michael stopped it"; return 0; fi
+  # a live run of its project: queued before anything here changes its state (attempts, markers, ended), as queue add
+  # --continue writes it; a continue in cmd_start alone would leave a run that reads as crashed meanwhile
+  local busy a; if busy=$(project_busy "$(basename "$(dirname "$st")")" "$run"); then
+    for a in ${rest[@]+"${rest[@]}"}; do [[ $a == --now || $a == --foreground ]] && busy=""; done
+    if [[ -n $busy ]]; then local o=() i; (( keep )) && o+=(--keep-attempts); (( queued && ! requested )) && o+=(--automatic)
+      # as a start queues them: the deadline and the brief as they are now, not when the entry runs
+      for (( i = 0; i < ${#rest[@]}; i++ )); do case ${rest[i]} in
+        --until) o+=(--until-epoch "$(to_epoch "${rest[i+1]:?--until HH:MM}")"); i=$(( i + 1 )) ;;
+        --brief-file) o+=(--brief "$(cat "${rest[i+1]:?--brief-file <f>}")") || die "can't read ${rest[i+1]}"; i=$(( i + 1 )) ;;
+        *) o+=("${rest[i]}") ;; esac; done
+      cmd_queue add --continue "$run" ${o[@]+"${o[@]}"} > /dev/null
+      queued_behind "$busy" "$(dirname "$st")" "$(compgen -G "$Q/*-continue-$run.args" | head -1)"; return 0; fi
+  fi
   # shellcheck source=/dev/null
   ( source "$st/meta.env"
     # before anything changes its state: a refused run stays as it ended

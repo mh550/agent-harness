@@ -138,10 +138,11 @@ check "continue finishes a paused run"    '[[ $($F summary "$(list walled)") == 
 check "one ledger row per run"            '[[ $(grep -c "\"run\":\"walled\"" "$T/ledger/runs.jsonl") == 1 ]]'
 
 # ---- queue: start queues behind a running run; the runner runs entries in order ----
-mkdir -p "$HARNESS_STATE/proj/busy" && echo $$ > "$HARNESS_STATE/proj/busy/driver.pid" && printf 'WT=/x\nRUN_ID=busy\nSTATE=%s\nPROJECT_DIR=/x\n' "$HARNESS_STATE/proj/busy" > "$HARNESS_STATE/proj/busy/meta.env"
+# (busy is another project's: a live run of proj itself queues a start by the project rule, 69-same-project-starts)
+mkdir -p "$HARNESS_STATE/other/busy" && echo $$ > "$HARNESS_STATE/other/busy/driver.pid" && printf 'WT=/x\nRUN_ID=busy\nSTATE=%s\nPROJECT_DIR=/x\n' "$HARNESS_STATE/other/busy" > "$HARNESS_STATE/other/busy/meta.env"
 check "start queues when MAX_PARALLEL_RUNS are going" 'grep -q "is queued" <<< "$("$H" start "$T/proj" --spec SPEC.md)"'
 check "continue refuses a running run"     '! "$H" continue busy 2> "$T/busy.err" && grep -q "is running" "$T/busy.err"'
-rm -rf "$HARNESS_STATE/proj/busy"
+rm -rf "$HARNESS_STATE/other"
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
 D=$(date +%F)
 # the sessions a tmux start would have left for the runner's two runs (their ended comes later), and two it must spare

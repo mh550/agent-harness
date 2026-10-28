@@ -32,7 +32,8 @@ repository or a bare name: the `PROJECT_DIR` of that project's newest run, else 
 
 Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config, which the
 runner re-reads every poll, so an edit applies without a restart and lowering it stops no running run; the queue
-never runs two runs of one project at once, so a second entry for a busy repo waits while later ones go ahead):
+never runs two runs of one project at once, so a second entry for a busy repo waits while later ones go ahead; a plain
+`harness start` or `harness continue` of a project with a live run is queued behind it too, `--now` starts it anyway):
 
 ```bash
 harness queue add ~/projects/pathways --spec OVERNIGHT.md --brief "T5, T7, then T6"

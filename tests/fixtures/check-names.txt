@@ -467,6 +467,13 @@ notify.mjs: trimBody caps at 3500 bytes with …
 one ledger row per run
 one note, overwritten: ledger/debrief.md
 one notification per run end
+overlap: Markdown emphasis and HTML tags stuck to a path neither hide it nor turn it into its directory
+overlap: a dir/ or glob names its directory of two or more segments; .harness/runs/ never
+overlap: every name is a tracked file or a tracked dir/ of two or more segments; no tests/, lib/ or .harness/runs/
+overlap: named and overlap are exported and pure (no I/O at import); node --check lib/overlap.mjs
+overlap: named on the suite-split spec with this repo's git ls-files finds tests/run.sh, lib/treekey.mjs and lib/check.sh
+overlap: named takes backticked and bare path words, strips .,:;) and :<line>, and a word without / only in backticks
+overlap: overlap is the sorted intersection: file and file, a dir/ and a file under it (the file), dir/ and dir/; none
 parked card: the INBOX question verbatim with its line 16 and ?plain=1#L16 URL, where from its Files: line, parked.mjs's commands
 parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers
 parked.mjs: the question is the feature's INBOX section
@@ -575,6 +582,18 @@ run start without the deploy guard: one note, one notification
 run start without the netlify guard: one note, one notification
 run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)
 run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m
+same-project starts: --foreground starts it anyway (harness merge runs that way)
+same-project starts: --now starts it anyway (the runner passes --now: its starts are unchanged)
+same-project starts: a continue queues --until as --until-epoch and --brief-file as its text (as a start queues them)
+same-project starts: a given run id is refused as before (already running) while another run of the project is alive
+same-project starts: a run id and its options go into the entry as the MAX_PARALLEL_RUNS branch writes them
+same-project starts: a run whose driver is gone but a lane lives keeps its project busy
+same-project starts: a second continue replaces the queued entry with its options (one entry)
+same-project starts: an ended run of the project holds nothing (continue --foreground runs)
+same-project starts: an id auto_id makes is still checked (a project named _x)
+same-project starts: continue <ended run> queues continue <run> --queued --requested and leaves its ended in place
+same-project starts: start proj --brief x while a run of proj is alive queues it, prints why, and starts nothing
+same-project starts: the runner holds that entry too while the lane lives (and waits for it, not done)
 scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit
 scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]
 scope.sh: a scratch dir it can't write runs the command once, bare
