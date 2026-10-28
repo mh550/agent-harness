@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 23:51 · P2-06 · passes
+
+harness status prints one line per open lane (feature · session · port · slot · its units with MemoryCurrent; lanes/<m>/now from lane.sh); summary.json gains lanes {max_open, lane_hours, wall_hours} (pure laneSpans over run.log) and report.md a Lanes row; initializer.md and run.md say how lanes share files and slots. 594 → 598 checks. 0 Critical, 0 Important, 4 Minor (3 fixed).
+
+- **Files:** bin/harness, lib/lane.sh, lib/driver.sh, lib/summary.mjs, prompts/initializer.md, prompts/parts/run.md, tests/checks/43-lanes-scheduler.sh, tests/checks/47-lanes-two.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md
+- **Verified:** new checks watched red first (43: 14/16), then green: 43 16/16, 47 13/13 (status-two.out: 'lane M1 · A · session 1 · port 7950 · slot 0 · MemoryCurrent harness-two-M1-s2 50 MB' and M2 on 7951 slot 1), 08 125/125; full suite 598/598 green in 471 s (TEST_JOBS=4) on the second run; the first was 597/598: 50-lanes-record-pr's first check failed once, passed alone (10/10) and in the rerun; node --check lib/summary.mjs, bash -n bin/harness lib/lane.sh lib/driver.sh.
+- **Tests:** 594 → 598
+- **Dead end:** ${us:+MemoryCurrent $us}${us:-no units} in the lane line — ${us:-…} expands to $us when set, so the units printed twice; the first 47 run went red on it
+- **Discovery** (affects P2-07): harness status folds a lane's units into its lane line: 08's status check now expects 'lane M1 · A · session 1 · … · MemoryCurrent harness-termed-M1-s<n> 50 MB' instead of a bare unit line; the run's own units keep the old line
+- **Discovery** (affects P2-07, run): Review Minor left: two milestone ids that clean to the same unit name (M1-x and M1.x) collide in scope_unit, so status gives one lane all the units; a features lint rule rejecting such ids would close it
+- **Discovery** (affects run): tests/run.sh subset output isn't kept by check.sh: run 'KEEP=1 bash tests/run.sh <file> > scratch/x.out' to read a failing check's files
+- **Discovery** (affects P2-07, run): 50-lanes-record-pr's 'under auto finish opens <run>: run record' failed once under a full run (597/598) while the file's other 9 checks passed; it passed alone and in the next full run: a load flake in P2-05's check (likely its exact 'pr merge' count of 3), not reproduced
+- **Proposed change:** P2-07 (decisions and docs) could add the lane line and summary.lanes to docs/architecture.md §4/§12 prose; this session updated the lane state row, summary §2 and README's status row only
+- *08-P2-06 · claude-opus-5-5*
+
 ### 2026-10-27 23:21 · P2-05 · passes
 
 The record PR: finish's last step (record_pr) opens '<run>: run record' from harness/<run> (reusing the open one, body refreshed), merged under auto, left under pr, none with RECORD_PR=off; never if the branch has non-record changes main lacks. The v2 closer spares it. Stub gh mirrors --json/-q. Suite 584 -> 594 green.
@@ -235,30 +250,9 @@ features.mjs gains lanes (openable milestones + run/<run>/<dep> base tags from m
 - **Proposed change:** a lint rule forward-after: a feature whose after names a feature of a later milestone (lanes can't run it)
 - *04-P1-02 · claude-opus-5-5*
 
-### 2026-10-26 17:25 · P1-01 · passes
-
-Wrote docs/plans/2026-10-26-P1-lanes-serial.md: every driver.sh function mapped to lib/record.sh, lib/lane.sh or the coordinator; the record lock and what it wraps; names, state, exit codes 0/10-15; slot open and materialization; record and other checks to rewrite (file:line); new files 35-38; stub flags; P1-02..05 order. An Opus review found 14 problems, all fixed in the plan.
-
-- **Files:** docs/plans/2026-10-26-P1-lanes-serial.md
-- **Verified:** check.sh green in 209 s, 395/395 checks passed; per-worktree core.excludesFile and skip-worktree tried on git 2.43 in a throwaway repo; every check cited by file:line grepped; Opus review of the plan against driver.sh, bin/harness and tests/checks, findings spot-checked (scope_owns 08:21, desk.sh:152, eval.sh:130, 08:445 dstart, eval MERGE_POLICY=off)
-- **Tests:** 395 → 395
-- **Dead end:** plan v1: the lane merged with merge_one after verify, sessions/limits as plain files, a shared waited-* marker, take-back after the record-commit guard — review: merges under MERGE_POLICY=off (eval, runs 14/14d), a continued run ends at once at the stale cap (19's six dl checks), coordinator eats the lane's limit wait, guard deletes the copy take-back reads; all fixed in §2-§8
-- **Discovery** (affects P1-02): The spec's scope_owns regex makes `harness-demo-x-svc` a lane unit of run demo: 08:21's negative assertion must change (P1-02), and run proj-<date> owns proj-<date>-2's units (gc's live-owner rule covers it).
-- **Discovery** (affects P1-04): Lane units and per-lane scratch change ~10 checks' text in 08 (unit regexes, svc_gaps, termed_left); plan §10.2 lists each with its rewrite. The stub's sessions.log/count-* and the fixture teardown markers must go to ${HARNESS_SCRATCH%%/lanes/*} so their checks keep their text.
-- **Discovery** (affects P1-03, P1-05): Reopening a lane from origin/harness-lane/<run>/<m> is needed from P1-03 on (a segment that ends at a session cap mid-milestone, the dl runs), not only in P1-05.
-- **Discovery** (affects P1-03): lib/eval.sh:130 reads base..harness/$run for commits.json; with a record-only run branch it must read the run's tags and lane branches (10:130).
-- **Discovery** (affects run): The live check.sh still runs the suite in full for a docs/plans-only change (209-234 s twice this session): the live checkout hasn't synced P0-03's key ignores while this run lives.
-- **Question for Michael:** D2 default: until P2's record PR, `harness gc` deletes a finished lanes run's record branch (the ledger keeps the record). Fine, or should P1 keep record branches until the record PR exists?
-- **Question for Michael:** If this run auto-continues after P1 merges, the P1 driver's legacy refusal will stop it (this branch carries P2 code beyond main). Plan §14 gives the way out (harness merge, then a new --brief run). OK, or do you want P1-05 to exempt runs whose code is on their own branch only after a given date?
-- **Proposed change:** P1-02 step 1: a milestone also opens when every feature passes but it isn't verified (a resumed run, the dl deadline runs); and add a pure `F deps <list> <m>` for the merge rule and the base
-- **Proposed change:** P1-02: tests/checks/08 line 21's `! scope_owns demo harness-demo-x-svc.scope` becomes `harness-demo-x-y-svc.scope` (the spec's regex accepts one-segment prefixes)
-- **Proposed change:** P1-03 step 7: 'every name still present' except the rename of 'independent M2 verified, not merged (M1 isn't)' (plan §10.2): the spec deletes the rule it asserted
-- **Proposed change:** P1-04 step 1: the unit number is scope-seq (every session of the run), not $STATE/sessions (coding only), so verify and coding units never share a name (plan D7)
-- **Proposed change:** P1-04: tests/checks rows of plan §10.2 (unit names) are rewritten in P1-04; 'every other check keeps its text' is not achievable with the spec's lane unit names
-- *03-P1-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 17:25 · P1-01 · passes · Wrote docs/plans/2026-10-26-P1-lanes-serial.md: every driver.sh function mapped to lib/record.sh, li… ([in full](progress-archive.md))
 - 2026-10-26 16:51 · verify P0 · passes · All four P0 features hold: init full suite 395/395 (206 s), subset runs work, split/runner/key/docs/… ([in full](progress-archive.md))
 - 2026-10-26 16:44 · P0-04 · passes · Opus review of the P0 diff: 0 Critical, 2 Important, 4 Minor (docs/plans/2026-10-26-P0-review.md). F… ([in full](progress-archive.md))
 - 2026-10-26 16:24 · P0-02 · passes · Runner code was already in place; under the new rule (a time is measured and recorded, not a gate) I… ([in full](progress-archive.md))

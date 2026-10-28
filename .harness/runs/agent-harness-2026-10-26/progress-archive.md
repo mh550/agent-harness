@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 23:51 · P2-06 · passes
+
+harness status prints one line per open lane (feature · session · port · slot · its units with MemoryCurrent; lanes/<m>/now from lane.sh); summary.json gains lanes {max_open, lane_hours, wall_hours} (pure laneSpans over run.log) and report.md a Lanes row; initializer.md and run.md say how lanes share files and slots. 594 → 598 checks. 0 Critical, 0 Important, 4 Minor (3 fixed).
+
+- **Files:** bin/harness, lib/lane.sh, lib/driver.sh, lib/summary.mjs, prompts/initializer.md, prompts/parts/run.md, tests/checks/43-lanes-scheduler.sh, tests/checks/47-lanes-two.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md
+- **Verified:** new checks watched red first (43: 14/16), then green: 43 16/16, 47 13/13 (status-two.out: 'lane M1 · A · session 1 · port 7950 · slot 0 · MemoryCurrent harness-two-M1-s2 50 MB' and M2 on 7951 slot 1), 08 125/125; full suite 598/598 green in 471 s (TEST_JOBS=4) on the second run; the first was 597/598: 50-lanes-record-pr's first check failed once, passed alone (10/10) and in the rerun; node --check lib/summary.mjs, bash -n bin/harness lib/lane.sh lib/driver.sh.
+- **Tests:** 594 → 598
+- **Dead end:** ${us:+MemoryCurrent $us}${us:-no units} in the lane line — ${us:-…} expands to $us when set, so the units printed twice; the first 47 run went red on it
+- **Discovery** (affects P2-07): harness status folds a lane's units into its lane line: 08's status check now expects 'lane M1 · A · session 1 · … · MemoryCurrent harness-termed-M1-s<n> 50 MB' instead of a bare unit line; the run's own units keep the old line
+- **Discovery** (affects P2-07, run): Review Minor left: two milestone ids that clean to the same unit name (M1-x and M1.x) collide in scope_unit, so status gives one lane all the units; a features lint rule rejecting such ids would close it
+- **Discovery** (affects run): tests/run.sh subset output isn't kept by check.sh: run 'KEEP=1 bash tests/run.sh <file> > scratch/x.out' to read a failing check's files
+- **Discovery** (affects P2-07, run): 50-lanes-record-pr's 'under auto finish opens <run>: run record' failed once under a full run (597/598) while the file's other 9 checks passed; it passed alone and in the next full run: a load flake in P2-05's check (likely its exact 'pr merge' count of 3), not reproduced
+- **Proposed change:** P2-07 (decisions and docs) could add the lane line and summary.lanes to docs/architecture.md §4/§12 prose; this session updated the lane state row, summary §2 and README's status row only
+- *08-P2-06 · claude-opus-5-5*
+
 ### 2026-10-27 23:21 · P2-05 · passes
 
 The record PR: finish's last step (record_pr) opens '<run>: run record' from harness/<run> (reusing the open one, body refreshed), merged under auto, left under pr, none with RECORD_PR=off; never if the branch has non-record changes main lacks. The v2 closer spares it. Stub gh mirrors --json/-q. Suite 584 -> 594 green.
