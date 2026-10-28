@@ -31,13 +31,14 @@ check "check.sh: the cached line names the key's ignore list only when it isn't 
   '[[ $ck_wide == "check: green (cached for this code tree, 2 tests; key ignores: docs/plans docs/specs)" ]] \
   && [[ $ck_def == "check: green (cached for this code tree, 2 tests)" && $ck_unset == "check: green (cached for this code tree, 2 tests)" ]]'
 # two stub runs, two coding sessions each (one feature's two attempts): each session edits one path and passes nothing,
-# so the suite runs only before each session; the second session keeps the init output it got (STUB_EDIT)
+# so the suite runs only before each session; the second session keeps the init output it got (STUB_EDIT); the edits
+# live on the lane branch, unverified at the cap, so kept on the origin
 mkdir -p lib && echo a > lib/a.sh && git add lib && git commit -qm "lib" && git push -q origin main
 { cat "$T/base-config.sh"; echo MAX_SESSIONS=2; } > "$T/ky-config.sh"
 STUB_EDIT=docs/plans/x.md HARNESS_CONFIG=$T/ky-config.sh "$H" start "$T/proj" kyplan --spec SPEC.md --foreground > "$T/kyplan.out" 2>&1
 STUB_EDIT=lib/a.sh HARNESS_CONFIG=$T/ky-config.sh "$H" start "$T/proj" kylib --spec SPEC.md --foreground > "$T/kylib.out" 2>&1
 check "suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green" \
-  'grep -q "^check: green (cached for this code tree" "$T/init-kyplan-2.out" && git -C "$T/wt/proj/kyplan" cat-file -e HEAD:docs/plans/x.md'
+  'grep -q "^check: green (cached for this code tree" "$T/init-kyplan-2.out" && git -C "$T/origin.git" cat-file -e harness-lane/kyplan/M1:docs/plans/x.md'
 check "suite cache: a session that edits lib/ (tracked) makes the next session's suite run" \
-  'grep -q "^check: green in " "$T/init-kylib-2.out" && ! grep -q "cached" "$T/init-kylib-2.out" && [[ $(git -C "$T/wt/proj/kylib" show HEAD:lib/a.sh 2> /dev/null | wc -l) -ge 2 ]]'
+  'grep -q "^check: green in " "$T/init-kylib-2.out" && ! grep -q "cached" "$T/init-kylib-2.out" && [[ $(git -C "$T/origin.git" show harness-lane/kylib/M1:lib/a.sh 2> /dev/null | wc -l) -ge 2 ]]'
 suite_end

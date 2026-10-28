@@ -129,7 +129,8 @@ else
   harness_config "$WT" "$STATE"   # a project may set DESK_MODEL
   RUN_DIR=$WT/.harness/runs/$RUN_ID D=$STATE/desk mode=run other=debrief event="a new event"
   log() { echo "$(date '+%F %T') $*" >> "$STATE/run.log"; }   # no tee: stdout is the URL
-  note() { log "$*"; [[ -d $RUN_DIR ]] && echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; }
+  # under the driver's record lock (lib/record.sh), so its line never lands inside a record write
+  note() { log "$*"; [[ -d $RUN_DIR ]] && { flock -w 10 9; echo "- $(date '+%F %H:%M') · $*" >> "$RUN_DIR/harness-log.md"; } 9> "$STATE/record.lock"; }
 fi
 # shellcheck source=lib/notify.sh
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID

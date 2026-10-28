@@ -9,6 +9,179 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 20:26 · verify P1 · passes
+
+All 6 P1 features hold. Own full run: 555/555 (init run had one flaky file, 15-run-4, 78/78 on rerun alone and in full). bash -n/node --check clean; grep tainted|held in driver.sh = 0; docs, decision, review file, config defaults present.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P1-01 | 1 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-01 | 2 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-01 | 3 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-01 | 4 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-01 | 5 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-01 | 6 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-02 | 1 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-02 | 2 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-02 | 3 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-02 | 4 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-02 | 5 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-02 | 6 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-03 | 1 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-03 | 2 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-03 | 3 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-03 | 4 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-03 | 5 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-03 | 6 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-03 | 7 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-04 | 1 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-04 | 2 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-04 | 3 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-04 | 4 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-04 | 5 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-04 | 6 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-05 | 1 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-05 | 2 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-05 | 3 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-05 | 4 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-06 | 1 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-06 | 2 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-06 | 3 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-06 | 4 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+| P1-06 | 5 | read the step, checked the files/greps named, and the tests/checks/3x-lanes-*.sh and 46-lanes-continue.sh checks covering it in the full suite (bash tests/run.sh) | artifact present as written (lib/lane.sh, lib/record.sh, record() flock helper, config defaults, scope regex, decision file, architecture/README, review table); suite 555/555 incl. the lanes checks and conformance | yes |
+
+- *201549-verify-P1 · claude-sonnet-5-5*
+
+### 2026-10-27 20:09 · P1-06 · passes
+
+Opus review of the P1 diff (3,541 lines): 5 Important fixed, each with a check red then green (--base continue refusal, record commits staging only the record, lane-aware F blocked, later lanes on the default lane's code, MAX_LANES>1 runs 1 until P2), 2 simplifications applied. Decision file, architecture §4/§12/§15 and README updated.
+
+- **Files:** bin/harness, lib/record.sh, lib/driver.sh, lib/lane.sh, lib/features.mjs, tests/stub-claude.sh, tests/checks/43-lanes-scheduler.sh, tests/checks/44-lanes-record.sh, tests/checks/45-lanes-run.sh, tests/checks/46-lanes-continue.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-lanes.md, +3 more
+- **Verified:** bash tests/run.sh lanes: 47/50 with the 4 new checks before the fixes (the --base one red after adding a second continue), 50/50 after; 45 10/11 then 11/11 for the default-lane check; full suite via check.sh green in 403 s, 555 tests; bash -n / node --check on every P1-touched file
+- **Tests:** 550 → 555
+- **Dead end:** the --base check with one continue after main moved — it passed before the fix: the refusal needs a segment that merged the moved main, so the check runs two continues
+- **Discovery** (affects P2, run): D15: until P2, MAX_LANES above 1 is noted ('MAX_LANES=<n>: one lane at a time until P2 …') and runs 1: lanes shared the run's one port, a lane's verify and the coordinator's reap could merge one milestone twice, and LANE_END stopped no other lane. P2 must lift the clamp in lib/driver.sh with per-lane ports, a merge lock, LANE_END stopping the other lanes, and rec_count read under the lock.
+- **Discovery** (affects P2): Review Minors left for P2 (docs/plans/2026-10-26-P1-review.md): nomerge-<m> never cleared (lane.sh:54), lanes_orphans matches pid by cmdline only, continue calls legacy_refuse twice, slot_close/lanes_term branch deletions and TERMs not in harness-log.md, F lanes' unused base-tags field.
+- **Discovery** (affects P2, run): record commits (rec_commit) now stage .harness/runs/<run>/ only; driver start/merge-only/journal/initializer-done commits go through it. The initializer's WIP commit_all stays whole-tree so restrict can revert its code edits (D3).
+- **Discovery** (affects P2): STUB_DEFAULT_FEATURE=1 in tests/stub-claude.sh prepends feature Z with no milestone (the default lane) to the stub list.
+- **Question for Michael:** D15: MAX_LANES above 1 runs 1 until P2 merges (your config's 2 is noted and ignored meanwhile). OK, or should P1 not merge before P2?
+- *02-P1-06 · claude-opus-5-5*
+
+### 2026-10-27 19:25 · P1-05 · passes
+
+harness continue reopens a lane from the newer of the box's and origin's branch (both merged if diverged); refuses a legacy run (code beyond its base) with three ways forward, exit 1, run.log + high-priority notification; under pr a dependent's PR waits (noted once), harness merge lands proposed milestones in order. 11 checks in 46-lanes-continue.sh.
+
+- **Files:** lib/record.sh, bin/harness, tests/checks/46-lanes-continue.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md, journal/decisions/2026-10-26-lanes.md
+- **Verified:** tests/checks/46-lanes-continue.sh 11/11 (6 of the first 8 red before the code; the 3 added after review red with their fix undone); full suite via check.sh: green in 383 s, 550 tests; bash -n on bin/harness lib/driver.sh lib/lane.sh lib/record.sh
+- **Tests:** 539 → 550
+- **Dead end:** slot_open as P1-03 left it (local lane branch first) — a stale local branch after Michael pushed to origin made every lane push non-fast-forward; the stub's own push failed and the sessions read as usage limits
+- **Discovery** (affects P2, run): Under MERGE_POLICY=pr a proposed milestone merged by Michael on GitHub was never seen as merged by the driver, so anything depending on it waited forever; merge_milestones now notes '<m> merged into main (by its PR)' when the tag is on main.
+- **Discovery** (affects P2): The legacy test is merge-tree of the run's base (origin/main or BASE_REF) and HEAD, diffed outside .harness/runs/, not the plan's merge-base diff; a --base run would otherwise be refused.
+- **Discovery** (affects run): Once P1 merges, an automatic continuation of agent-harness-2026-10-26 run by the P1 driver is refused (this branch carries code main lacks): the refusal now reaches Michael as a high-priority notification.
+- **Question for Michael:** D13 default: the legacy refusal goes to stderr, run.log and a high-priority notification, not to harness-log.md (the CLI never writes the record). Want a harness-log note too?
+- **Question for Michael:** D14 default: when the box's and origin's lane branch diverged, origin's is merged into the box's (a conflict is needs Michael). OK, or should origin's always win?
+- **Proposed change:** P1-05 step 4 says NN-lanes-continue.sh; the plan's §10 named it 38-lanes-continue.sh, but 38 is taken: it is 46-lanes-continue.sh
+- *01-P1-05 · claude-opus-5-5*
+
+### 2026-10-27 17:11 · P1-04 · passes
+
+The lanes code (bda683c, merged with main by Michael) was already in place; the suite was red on one check: eval probes rendered the probe prompt with the run's scratch, the lane's session had $SCRATCH/lanes/<m>. lib/prompt.sh's command mode now names the lane's scratch and port as it already did its slot and branch. Every step re-verified; suite 538 → 539/539 green.
+
+- **Files:** lib/prompt.sh
+- **Verified:** bash tests/run.sh 10-harness: 12/13 before (diff: scratch line …/eval-t2 vs …/eval-t2/lanes/E), 13/13 after; full suite via check.sh: green in 373 s, 539/539, the 9 lanes run/pause/stop checks in 45-lanes-run.sh pass; bash -n lib/lane.sh lib/driver.sh lib/prompt.sh
+- **Tests:** 538 → 539
+- **Dead end:** rerunning file 10 with the fix uncommitted — harness eval runs the driver from a committed ref (a worktree at HEAD), so an uncommitted fix in lib/ isn't what it tests: commit first
+- **Discovery** (affects P1-05, P1-06, P2): lib/prompt.sh's command mode (eval probes) must mirror every per-lane value lane.sh sets (WT, branch, port, scratch); a new per-lane value in lane.sh needs the same line there, or file 10's probe check goes red
+- **Question for Michael:** P1-04's D9-D12 defaults (journal/decisions/2026-10-26-lanes.md) are still open from the earlier attempt: keep them?
+- *01-P1-04 · claude-opus-5-5*
+
+### 2026-10-27 00:06 · P1-04 · passes
+
+lib/lane.sh runs one milestone as its own process (exit 0/10-15, reason in state/lanes/<m>/exit); lib/driver.sh is the coordinator (poll, reap, open under MAX_LANES, end reasons, finish waits for lanes, removes slots). Shared code moved to lib/record.sh. Per-lane units, scratch, prompt files; metrics rows carry lane. Opus review: 5 fixes. Suite 423 → 432, green.
+
+- **Files:** lib/lane.sh, lib/driver.sh, lib/record.sh, lib/metrics.mjs, tests/checks/37-lanes-run.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/36-lanes-record.sh, tests/stub-claude.sh, tests/lib.sh, tests/fixtures/check-names.txt, docs/architecture.md, journal/decisions/2026-10-26-lanes.md
+- **Verified:** check.sh: green in 256 s, 432/432 (TEST_JOBS=4). New 37-lanes-run.sh 9/9; 3 of its first 4 checks fail on HEAD's code, the verify-snapshot check failed before its fix. bash -n on lane.sh driver.sh record.sh and the touched tests; node --check metrics.mjs.
+- **Tests:** 423 → 432
+- **Dead end:** setting BRANCH to the lane branch in the lane process — gh_url then linked notifications to the lane branch; BRANCH stays the record's, HARNESS_BRANCH names the lane
+- **Dead end:** deleting every lane branch with nothing beyond main at finish — a parked lane's pushed branch is what 36's --base check (and a continue) reads; only never-pushed ones go (D11)
+- **Discovery** (affects P1-05, P2): A lane's normal close leaves its services up (plan D4): its EXIT trap tears them down only when it dies without an exit line. finish and the coordinator's pause and long limit waits stop what closed lanes left (lanes_services_down).
+- **Discovery** (affects P2): The coordinator syncs the record (fetch, push) only when it may open a lane or while paused (D9); lanes sync before each session. P2's multi-lane admission must keep that rate in mind.
+- **Discovery** (affects run): The MAX_REPAIRS streak is per lane process now, not run-wide.
+- **Discovery** (affects run): Suite: 432 checks, 256 s wall at TEST_JOBS=4 (was 423 in ~231 s); 37-lanes-run.sh adds ~35 s of slot time.
+- **Question for Michael:** D9-D12 in journal/decisions/2026-10-26-lanes.md are defaults: record sync only when a lane may open, a crashed lane needs Michael, never-pushed empty lane branches deleted at finish, unit numbers from scope-seq. Keep them?
+- **Proposed change:** P1-04 step 1: 'n from $STATE/sessions' names the log file; the unit number is scope-seq (plan D7/decision D12), so a verify and a coding unit never share a name
+- **Proposed change:** P1-04 step 1: 'its EXIT trap runs services_down for the lane's scope' holds when the lane dies (TERM, crash); a lane that closes normally leaves them for the next lane or finish (plan §6, D4)
+- *02-P1-04 · claude-opus-5-5*
+
+### 2026-10-26 23:07 · P1-03 · passes
+
+Reviewed ce11cdf with Opus in the foreground and fixed what it found. slot_open now checks out the right branch after another lane's failed open, marks a slot that can't be checked out needs-<m> instead of letting the loop spin, and keeps ~ global excludes. A passed default lane no longer blocks later lanes. entry.json is taken back under the record lock. Weak checks strengthened.
+
+- **Files:** lib/record.sh, lib/features.mjs, lib/driver.sh, tests/checks/36-lanes-record.sh, tests/checks/35-lanes-scheduler.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/fixtures/check-names.txt, docs/architecture.md, journal/decisions/2026-10-26-lanes.md
+- **Verified:** The three new slot_open checks fail on the old record.sh (10/13) and pass on the fix (13/13). The 35-lanes default-lane check went red, then green. Files 13 and 36 together: 79/79. Full suite (lib/check.sh): green in 295 s, 423 tests. grep -c tainted|held lib/driver.sh = 0.
+- **Tests:** 419 → 423
+- **Dead end:** making laneDeps drop a passed default lane alone — lanes() still listed a complete default lane as a candidate for verify, which never happens; lanes() now never offers a complete default lane
+- **Discovery** (affects P1-04, P1-06, run): Lane branches harness-lane/<run>/<m> match neither deploy guard (Vercel harness/**, Netlify harness/*), so a guarded project such as portfolio_site gets a preview deploy on every sync_lane push. Not fixed here: extending the guard changes the existing deploy checks' text and needs a change to portfolio_site's main (D8).
+- **Discovery** (affects P1-04, P1-05): The default lane (features with no milestone) is never verified, so its code stays on harness-lane/<run>/default and never reaches main. Before lanes, the next milestone's tainted tag carried it (D7).
+- **Discovery** (affects P1-04): Record writes in the record worktree outside record(): the INBOX/brief creation, commit_all of RWT at start/finish, summary.json, report.md, retro.md. Only desk.sh's note competes in P1. P1-04's lane processes make that real. desk.sh's note writes even when its 10 s flock times out.
+- **Discovery** (affects P1-06): lane_guard's restrict reverts a forced-add modification of a record tracked at the slot's base (status M) with git checkout <base>, overwriting the copy before F repair reads it. This is rare: it needs a pre-lanes record on main and a session that runs git add -f.
+- **Discovery** (affects P1-04): Sessions get --settings and .mcp.json from the record worktree ($WT), while the -f test is relative to the slot. A lane that changes either file gets the stale record-worktree copy.
+- **Question for Michael:** D7: should the default lane (features with no milestone) be verified and merged like a milestone, or merged into the next lane's base? Today its code never reaches main.
+- **Question for Michael:** D8: should the deploy guards cover harness-lane/** too? Then portfolio_site's vercel.json on main needs "harness-lane/**": false, which you would merge.
+- **Proposed change:** P1-04 or P1-06: extend the deploy guards to harness-lane/** (deploy.mjs vercelGuarded/addVercelGuard, NETLIFY_IGNORE, deploy.sh messages) and update the deploy checks' text
+- *01-P1-03 · claude-opus-5-5*
+
+### 2026-10-26 18:53 · P1-03 · not yet
+
+The decision file is in place (D1–D6 defaults recorded). I'm waiting for the review before fixing anything or flipping `passes`.
+
+- *06-P1-03 · claude-opus-5-5 · recorded by the harness: entry.json missing*
+
+### 2026-10-26 18:38 · P1-03 · not yet
+
+The Opus review of the P1-03 diff is still running. I'll wait for its findings before I fix anything, rerun the suite, write `entry.json` and flip `passes`.
+
+- **Files:** bin/harness, docs/architecture.md, journal/decisions/2026-10-26-lanes.md, lib/desk.sh, lib/driver.sh, lib/eval.sh, lib/features.mjs, lib/prompt.sh, lib/record.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/14-run-2b-stop-records.sh, +7 more
+- *05-P1-03 · claude-opus-5-5 · recorded by the harness: entry.json missing*
+
+### 2026-10-26 17:58 · P1-02 · passes
+
+features.mjs gains lanes (openable milestones + run/<run>/<dep> base tags from meta.env), deps, next <m> (lane-local after rule) and pass; scope_owns takes an optional <m>- role prefix; config.sh and the user template carry the six lane defaults; the driver header documents HARNESS_LANE_POLL. New tests/checks/35-lanes-scheduler.sh (12 checks). Nothing calls them yet.
+
+- **Files:** lib/features.mjs, lib/scope.sh, lib/config.sh, lib/driver.sh, templates/user/config.sh, tests/checks/35-lanes-scheduler.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/fixtures/check-names.txt
+- **Verified:** 35-lanes-scheduler: 12 checks watched red (0/10, then the config and no-cycle checks red alone) then green; full suite 406/406 before the review fixes (209 s, 4 jobs) and 407/407 after (208 s); node --check features.mjs, bash -n on every shell file touched; an Opus review of the diff (1 Important, fixed with a check; 4 Minor: 1 fixed, 3 below as discoveries).
+- **Tests:** 395 → 407
+- **Discovery** (affects P1-04, P2): F lanes counts only EARLIER lanes as dependencies: an after into a later milestone's name is nothing (as deps() reads it), and into a later milestone's feature id leaves that feature waiting inside its lane, so M1 can run out of work while M2 waits on verified-M1. A lint rule for forward cross-milestone after (proposed) would catch it at the initializer.
+- **Discovery** (affects P1-04): scope_owns' spec regex ([A-Za-z0-9_]+-)? has no . or -: P1-04 must build lane units with the milestone reduced (${m//[^A-Za-z0-9_]/_}), or a milestone like M1.5 or T-1 gives units gc never stops and status never lists.
+- **Discovery** (affects P1-04, P2): With the <m>- prefix, run demo's scope_owns also matches run demo-x's harness-demo-x-svc: gc keeps it (a live owner keeps the unit; the 08/13 comment now says so), but harness status for demo (bin/harness:268) would list demo-x's units too.
+- **Discovery** (affects P1-04): Lane id 'default' is features without a milestone; a milestone literally named default would merge with them. Nothing reserves the name yet.
+- **Discovery** (affects P1-03, P1-04): F lanes reads the run id from <state>/meta.env's RUN_ID (else the state dir's name) for its run/<run>/<dep> tags; F next/blocked take an optional 5th arg <m> (blocked too), unchanged without it.
+- **Proposed change:** P1-02 step 1: 'has a feature left to try' should read 'has a feature left to try or every feature passes' (plan §9: a complete unverified milestone must open to be verified); built and checked that way
+- **Proposed change:** a lint rule forward-after: a feature whose after names a feature of a later milestone (lanes can't run it)
+- *04-P1-02 · claude-opus-5-5*
+
+### 2026-10-26 17:25 · P1-01 · passes
+
+Wrote docs/plans/2026-10-26-P1-lanes-serial.md: every driver.sh function mapped to lib/record.sh, lib/lane.sh or the coordinator; the record lock and what it wraps; names, state, exit codes 0/10-15; slot open and materialization; record and other checks to rewrite (file:line); new files 35-38; stub flags; P1-02..05 order. An Opus review found 14 problems, all fixed in the plan.
+
+- **Files:** docs/plans/2026-10-26-P1-lanes-serial.md
+- **Verified:** check.sh green in 209 s, 395/395 checks passed; per-worktree core.excludesFile and skip-worktree tried on git 2.43 in a throwaway repo; every check cited by file:line grepped; Opus review of the plan against driver.sh, bin/harness and tests/checks, findings spot-checked (scope_owns 08:21, desk.sh:152, eval.sh:130, 08:445 dstart, eval MERGE_POLICY=off)
+- **Tests:** 395 → 395
+- **Dead end:** plan v1: the lane merged with merge_one after verify, sessions/limits as plain files, a shared waited-* marker, take-back after the record-commit guard — review: merges under MERGE_POLICY=off (eval, runs 14/14d), a continued run ends at once at the stale cap (19's six dl checks), coordinator eats the lane's limit wait, guard deletes the copy take-back reads; all fixed in §2-§8
+- **Discovery** (affects P1-02): The spec's scope_owns regex makes `harness-demo-x-svc` a lane unit of run demo: 08:21's negative assertion must change (P1-02), and run proj-<date> owns proj-<date>-2's units (gc's live-owner rule covers it).
+- **Discovery** (affects P1-04): Lane units and per-lane scratch change ~10 checks' text in 08 (unit regexes, svc_gaps, termed_left); plan §10.2 lists each with its rewrite. The stub's sessions.log/count-* and the fixture teardown markers must go to ${HARNESS_SCRATCH%%/lanes/*} so their checks keep their text.
+- **Discovery** (affects P1-03, P1-05): Reopening a lane from origin/harness-lane/<run>/<m> is needed from P1-03 on (a segment that ends at a session cap mid-milestone, the dl runs), not only in P1-05.
+- **Discovery** (affects P1-03): lib/eval.sh:130 reads base..harness/$run for commits.json; with a record-only run branch it must read the run's tags and lane branches (10:130).
+- **Discovery** (affects run): The live check.sh still runs the suite in full for a docs/plans-only change (209-234 s twice this session): the live checkout hasn't synced P0-03's key ignores while this run lives.
+- **Question for Michael:** D2 default: until P2's record PR, `harness gc` deletes a finished lanes run's record branch (the ledger keeps the record). Fine, or should P1 keep record branches until the record PR exists?
+- **Question for Michael:** If this run auto-continues after P1 merges, the P1 driver's legacy refusal will stop it (this branch carries P2 code beyond main). Plan §14 gives the way out (harness merge, then a new --brief run). OK, or do you want P1-05 to exempt runs whose code is on their own branch only after a given date?
+- **Proposed change:** P1-02 step 1: a milestone also opens when every feature passes but it isn't verified (a resumed run, the dl deadline runs); and add a pure `F deps <list> <m>` for the merge rule and the base
+- **Proposed change:** P1-02: tests/checks/08 line 21's `! scope_owns demo harness-demo-x-svc.scope` becomes `harness-demo-x-y-svc.scope` (the spec's regex accepts one-segment prefixes)
+- **Proposed change:** P1-03 step 7: 'every name still present' except the rename of 'independent M2 verified, not merged (M1 isn't)' (plan §10.2): the spec deletes the rule it asserted
+- **Proposed change:** P1-04 step 1: the unit number is scope-seq (every session of the run), not $STATE/sessions (coding only), so verify and coding units never share a name (plan D7)
+- **Proposed change:** P1-04: tests/checks rows of plan §10.2 (unit names) are rewritten in P1-04; 'every other check keeps its text' is not achievable with the spec's lane unit names
+- *03-P1-01 · claude-opus-5-5*
+
 ### 2026-10-26 16:51 · verify P0 · passes
 
 All four P0 features hold: init full suite 395/395 (206 s), subset runs work, split/runner/key/docs/decision/review artefacts read and match each step. Check names and counts reconcile with the fixture.

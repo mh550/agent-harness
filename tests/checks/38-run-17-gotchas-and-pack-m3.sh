@@ -30,7 +30,7 @@ check "coding prompt: the Finish step adds one Gotchas line" '
   p=$(sed -n "/^## 3\. Finish/,/^Final message/p" "$HARNESS_STATE/proj/gotcha/prompt-coding.md" | tr -s " \n" "  ") &&
   [[ $p == *"## Gotchas"* && $p == *"160 characters"* && $p == *"(<run> <date>)"* && $p == *"15 lines"* && $p == *"never rewrite the section"* ]]'
 check "a stub session that adds a Gotchas line is noted" '
-  hlog gotcha | grep -q "· B: gotchas +1 ~0 -0$" && git -C "$T/wt/proj/gotcha" show HEAD:CLAUDE.md | sed -n "/^## Gotchas/,\$p" | grep "(gotcha " > /dev/null'
+  hlog gotcha | grep -q "· B: gotchas +1 ~0 -0$" && git -C "$T/wt/proj/gotcha" show run/gotcha/M1:CLAUDE.md | sed -n "/^## Gotchas/,\$p" | grep "(gotcha " > /dev/null'
 check "a session that leaves CLAUDE.md alone gets no gotchas note" '
   [[ $(hlog gotcha | grep -c ": gotchas ") == 1 ]] && (( $(grep -c " attempt " "$T/scratch/proj/gotcha/sessions.log") >= 3 ))'
 GL=$HARNESS_STATE/proj/gotcha/logs

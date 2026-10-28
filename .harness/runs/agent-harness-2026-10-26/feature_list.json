@@ -88,7 +88,7 @@
         "it orders P1-02..P1-05, says what the suite looks like after each (green, with the record checks rewritten from P1-03 on), and writes Michael's after-run step (MAX_LANES=2 in ~/.config/harness/config.sh; nothing live to run during the run)",
         "`bash tests/run.sh` ends with every check passing (unchanged by this feature)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-02",
@@ -104,7 +104,7 @@
         "lib/config.sh defaults MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end, each with a short why; templates/user/config.sh has them commented; HARNESS_LANE_POLL (default 10, the suite sets 1) is documented in the driver's usage header",
         "`node --check lib/features.mjs`, `bash -n lib/scope.sh lib/config.sh`; the new names are in tests/fixtures/check-names.txt; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-03",
@@ -121,7 +121,7 @@
         "the two invariant checks: after the demo run `git -C $T/origin.git diff --quiet run/demo/M2 main` (what lands on main is byte for byte what was verified) and no PR's diff in the stub gh's record touches a .harness/runs/ path while harness/demo holds every entry (entries.jsonl lines = sessions) and `git -C $T/origin.git ls-tree -r main --name-only | grep -c .harness/runs/` is 0",
         "the record checks listed in the plan are rewritten to assert the record on harness/<run> and that no code PR touches .harness/runs/; every other check keeps its text (every name in tests/fixtures/check-names.txt still present); `bash -n` on every shell file touched; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-04",
@@ -137,7 +137,7 @@
         "`harness pause` makes the lane finish its session and wait (no new session, `paused` logged once by the coordinator) and `harness stop` ends with every $STATE/lanes/*/pid dead and no lanes/ directory left under $HARNESS_WORKTREES/proj",
         "the new checks live in tests/checks/NN-lanes-run.sh (or the rewritten run-1 file), names in tests/fixtures/check-names.txt; `bash -n lib/lane.sh lib/driver.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-05",
@@ -151,7 +151,7 @@
         "under MERGE_POLICY=pr with M2 depending on M1: M1 verified is proposed (PR open, not merged, no merged-M1); M2 opens from origin/main with run/<run>/M1 merged in (`note \"lane M2 opened (... from <sha>)\"` where <sha> contains the tag), M2 verified opens its PR and `note \"M2 verified; its PR waits for M1 to merge\"` appears once; `harness merge <run>` afterwards merges both in order (the run 10 and run 14 checks keep their text and pass)",
         "the new checks live in tests/checks/NN-lanes-continue.sh, names in tests/fixtures/check-names.txt; README.md says what `harness continue` tells a legacy run; `bash -n bin/harness lib/driver.sh lib/lane.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-06",
@@ -166,7 +166,7 @@
         "docs/architecture.md §3 lists lib/lane.sh, the coordinator and the record library; §4 the lane state, slots and the record lock; §5 the coordinator's loop as a diagram; §7 a record guard row replacing the tainted-tag rows; §8 the record branch and lane branches; §12 lanes beside MAX_PARALLEL_RUNS; §15's first bullet replaced; README.md names MAX_LANES, slots, and the lane exit codes' meanings in harness-log.md",
         "`bash -n` on every shell file P1 touched and `node --check` on every .mjs; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-01",

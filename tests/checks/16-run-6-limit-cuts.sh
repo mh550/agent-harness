@@ -2,7 +2,7 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 6: a limit cuts a session off midway: work kept, attempt given back ----
 STUB_LIMIT_MIDWAY=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" midway --spec SPEC.md --foreground > "$T/run6.out" 2>&1
-check "mid-session limit: attempt given back, work kept" 'hlog midway | grep -q "hit a limit" && [[ $(jq -r .A "$HARNESS_STATE/proj/midway/attempts.json") == 1 ]] && [[ -f $T/wt/proj/midway/half-A.txt ]]'
+check "mid-session limit: attempt given back, work kept" 'hlog midway | grep -q "hit a limit" && [[ $(jq -r .A "$HARNESS_STATE/proj/midway/attempts.json") == 1 ]] && git -C "$T/origin.git" cat-file -e main:half-A.txt'
 
 # ---- run 7: a future window set by another run makes this one wait first ----
 # an 11-minute window: over SVC_IDLE_STOP_MIN=10, so the services stop first; a 9-minute one keeps them (L2-04)

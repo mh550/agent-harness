@@ -41,6 +41,7 @@ a failed verify at the deadline is not retried: M1 needs Michael
 a given-up feature blocks what depends on it
 a held index.lock: written, not committed, nothing left staged
 a killed debrief changes nothing
+a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
 a later deadline: the earlier refusals aren't the cause
 a ledger checkout on another branch: the note is written, not committed
 a legacy run is untouched, then continued into a journal
@@ -234,18 +235,58 @@ harness parked is read-only
 harness parked: an unknown or glob run id is an error
 harness parked: id, why, question, both commands
 harness report prints the writeup
+harness start --base: persisted, and the record branch and every lane start from it
 harness start refuses a run id whose tmux session another live run holds; its session lives
+harness start refuses the run id lanes (the slots' directory)
 harness status lists a running run's units with MemoryCurrent; an ended run's none
 harness stop --why: the note and ended say stopped by Michael: <why>
 harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
-independent M2 verified, not merged (M1 isn't)
+independent M2 verified and merged alone (its tag carries no M1 work)
 independent work goes on past a parked feature
 init model resolved to fable
 init output is capped at 40 lines with the log path
 init: a Vercel project without vercel.json gets one
 init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
+lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end by default; commented in the user template; HARNESS_LANE_POLL in the driver's usage
+lanes continue: M2's merged PR still has the lane's earlier commits (the first segment's, the one by hand, the unpushed one)
+lanes continue: a --base run whose branch merged main is not refused once main moves on (no main file counts as its code)
+lanes continue: a legacy run (code on its branch beyond main) is refused with the three ways forward, exit 1
+lanes continue: a record-only run (its record on main too) continues as a lanes run and ends done
+lanes continue: a reused slot's work, committed while its push failed, stays on the lane and reaches main
+lanes continue: a run started with --base is measured against its base, not main: not refused
+lanes continue: a run stopped mid-M2 reopens harness-lane/<run>/M2 from the origin's and the box's branch and finishes M2 on it
+lanes continue: harness merge of a legacy run is not refused
+lanes pause: the lane finishes its session and waits (no new session), and the coordinator logs paused once
+lanes pr-held: M1 merged on GitHub is seen as merged, and the waiting M2 is proposed, with its notification
+lanes pr-held: M1 verified is proposed (its PR open, not merged), and M2 opens from main with run/<run>/M1 merged in
+lanes pr-held: M2 verified opens its PR, not merged, with the waits note once
+lanes pr-held: harness merge afterwards merges M1, then M2
+lanes record: a lane commit touching .harness/runs/ is reverted with a note, and harness/<run> never gets it
+lanes record: a session's question above ## Answers lands in the record's INBOX.md above that line
+lanes record: the slot is gone at the end, the run keeps one worktree, the merged lane's branch is deleted
+lanes record: two sessions' passes flips both land while the record moved between them
+lanes run: MAX_LANES=1 ends done with M1 and M2 merged by two PRs
+lanes run: a lane's sessions, suites and services run in its own units (harness-<run>-<m>-s<n>, -check-<pid>, -svc)
+lanes run: a lane's verify judges the copy against its own snapshot (no list repair, no failed repair note)
+lanes run: each lane is noted opened in slot 0 and then closed, M1's before M2's
+lanes run: every coding and verify row in metrics.jsonl carries its lane; the initializer and the retro none
+lanes run: finish leaves the run one worktree (the record's), no slot, and deletes the merged lanes' branches
+lanes run: harness/ln holds every entry; each lane wrote its exit line, closed by the coordinator
+lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left
+lanes: F blocked names a given-up feature of a milestone another lane waits on (C and D wait on B through M1)
+lanes: MAX_LANES=2 before P2 is noted and runs one lane at a time (M2, after: [], opens only once M1 has closed)
+lanes: a complete unverified milestone is a candidate (to be verified); a given-up one with nothing to try is not
+lanes: a lane opened after the default lane's features pass starts on the default lane's code (M1's tag holds work-Z.txt)
+lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)
+lanes: a milestone whose first feature has after: [] opens at once, beside the first
+lanes: a milestone whose first feature has no after waits on every earlier milestone (tags of each as its base)
+lanes: a needs-<m> milestone never opens
+lanes: an after into a later milestone (a name or its feature) never makes a lane wait on a later one (no cycle)
+lanes: an open milestone (lanes/<m>/pid alive) is not a candidate; a dead pid's is
+lanes: features with no milestone form lane default, listed first; without meta.env the tags name the state dir
+lanes: the default lane (no milestone, never verified) holds later lanes only until its features pass, then never opens
 ledger has the run
 ledger row has harness_version and harness_dirty
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
@@ -259,6 +300,7 @@ lint: self-match trips a grep of progress.md for the step's own words, not of ha
 lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
+materialize: a record tracked at the slot's base is skip-worktree, so the session's commit carries none of the copy
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
 memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
 memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
@@ -292,8 +334,10 @@ metrics: coding rows carry tokens, cache rate and context peak
 metrics: orientation recorded per session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
+next <m>: a feature without after waits on its own milestone's earlier features only
 no URL in time: no window, the plain notification
 no URLs for a non-GitHub origin
+no code PR touches the run record, and the record branch holds every entry
 no dependency note when every milestone has after
 no final tag, no false 'verified'
 no user systemd: the init runs bare, and the run's one uncapped note stays the only one
@@ -311,6 +355,7 @@ parked.mjs: the newest question wins, ids with dots, code fences, never Michael'
 parked.mjs: the question is the feature's INBOX section
 parked.mjs: the report names the answer and continue commands
 parked: not an attempt, not retried
+pass: F pass <list> <id> flips passes to true and nothing else (the mirror of unpass)
 past --until after a run: one debrief
 phone stop honoured before any coding session
 placeholders inside the context are not filled
@@ -331,6 +376,8 @@ queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old value, s
 queue stop after a run: one debrief
 queue unpark puts it back at the end, its reason gone
 real limit message: not counted, run completes
+record commit: rec_commit commits .harness/runs/<run>/ only; a stray file in the record worktree stays untracked
+record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
 red suite un-passes C
 refused merge leaves the PR, needs Michael
 refused sessions recorded as env
@@ -347,6 +394,7 @@ review gate: a review reporting 0 Critical, 0 Important is not escalated and the
 review gate: a review under REVIEW_OPUS_LINES runs on sonnet, noted with its changed lines
 review gate: a review whose summary gives no counts is noted not escalated, and the run ends done
 review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor in its entry summary; a build session's doesn't
+review gate: a round pending at a session cap with the review at MAX_ATTEMPTS is work left (continuation queued) and runs on the continue
 review gate: a sonnet review reporting 1 Critical gets one round on opus at no attempt
 review gate: after an escalation round that doesn't pass, the review's next attempt runs on opus and never escalates again
 review gate: an escalation round refused by a usage limit runs again on opus, still at no attempt
@@ -377,6 +425,7 @@ scope.sh: dur_s reads timeout(1) durations as seconds
 scope.sh: mem_available_gb reads the real meminfo fixture
 scope.sh: mem_gate ends with HARNESS_MEM_POLL=0, exit 1 after a wait and 0 when it passed at once
 scope.sh: mem_gate notes, frees, waits, then starts anyway or once memory is back
+scope.sh: scope_owns accepts a <m>- role prefix (s<n>, check-<pid>, svc) and nothing else after it
 scope.sh: scope_owns matches a unit to a run by its rebuilt prefix and a role the harness starts
 scope.sh: scope_run wraps the command in systemd-run with the caps and returns its exit
 scope.sh: scope_stop stops <unit>.scope; scope_peak and scope_left read the fixture
@@ -387,6 +436,10 @@ scratch_done: the final tree's output is check-last.out, the note names what it 
 scratch_rm refuses anything but the run's own scratch directory (symlinks in its path too)
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
+slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
+slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)
+slot_open: after a lane's base conflicts, reopening the previous lane checks its branch out again
+slot_open: the slot's excludes file keeps the user's global excludes (a ~ path expanded)
 start queues when MAX_PARALLEL_RUNS are going
 status: stop <why> from the phone: the same note, ended and services note
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
@@ -491,6 +544,7 @@ verify needs Michael starts a desk
 verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
 waits for another run's limit window
+what lands on main is byte for byte what was verified
 where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
 where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md
 where things go: the verify prompt has the read-only variant (discoveries, no Gotchas edit)

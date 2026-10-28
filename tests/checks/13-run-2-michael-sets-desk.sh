@@ -35,13 +35,14 @@ check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "
 check "metrics.jsonl: every session line has mem_peak_mb from its scope" 'jq -se "length >= 9 and all(.mem_peak_mb == 2)" "$RD/metrics.jsonl" > /dev/null && ! grep -q "Memory peaks" "$RD/report.md"'
 check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'
 # the journal (E4-03): one line per session in session order, stamped by the driver, and no entry.json left behind;
-# C's first attempt (it left the suite red) carries its dead end; the tree a milestone is tagged (and merged) with has its verify's line
+# C's first attempt (it left the suite red) carries its dead end; the record branch has every line, the tag (code) none of the record
 check "entries: the driver appends each session's entry" '[[ $(jq -r .feature "$RD/entries.jsonl" 2> /dev/null | paste -sd" ") == "init A B M1 A M1 C C M2" ]] \
   && [[ $(jq -r .session "$RD/entries.jsonl" | sed "s/^[0-9]\{6\}-verify-/verify-/" | paste -sd" ") == "00-init 01-A 02-B verify-M1 03-A verify-M1 04-C 05-C verify-M2" ]] \
   && jq -se "all(.at | test(\"^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}$\")) and all(.model | startswith(\"claude-\")) and all(has(\"minimal\") | not) \
     and (map(select(.session == \"04-C\"))[0].dead_ends[0].tried == \"left BROKEN in the tree\")" "$RD/entries.jsonl" > /dev/null && [[ ! -e $RD/entry.json ]] \
-  && ! git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo/entry.json 2> /dev/null \
-  && [[ $(git -C "$T/origin.git" show run/demo/M2:.harness/runs/demo/entries.jsonl 2> /dev/null | tail -1 | jq -r .feature) == M2 ]]'
+  && ! git -C "$T/origin.git" cat-file -e harness/demo:.harness/runs/demo/entry.json 2> /dev/null \
+  && [[ $(git -C "$T/origin.git" show harness/demo:.harness/runs/demo/entries.jsonl 2> /dev/null | tail -1 | jq -r .feature) == M2 ]] \
+  && ! git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo 2> /dev/null'
 # progress.md is rendered from the journal (E4-04): its entry headers are entries.jsonl's, newest first; the newest verify
 # M1 entry carries its evidence table; the archive has every entry; the M2 PR quotes its verify entry with its rows
 check "progress.md is rendered from the journal" 'head -1 "$RD/progress.md" | grep -q "^<!-- harness: rendered from entries.jsonl" \
@@ -50,12 +51,12 @@ check "progress.md is rendered from the journal" 'head -1 "$RD/progress.md" | gr
   && [[ $(grep -c "^### " "$RD/progress-archive.md") == $(wc -l < "$RD/entries.jsonl") ]] \
   && grep -q "^### .* · verify M2 · passes$" "$HARNESS_STATE/proj/demo/pr-body.md" && grep -q "^| C | 1 |" "$HARNESS_STATE/proj/demo/pr-body.md"'
 # the context pack before each coding and verify session (E4-05): C's second attempt got its first attempt's dead end,
-# both prompts send the session there first, and the pack is committed with the run record (so it merges)
+# both prompts send the session there first, and the pack is committed with the run record on the record branch
 check "context.md carries the earlier attempt's dead end" 'C5=$HARNESS_STATE/proj/demo/logs/05-C.context.md; grep -q "left BROKEN in the tree" "$C5" && (( $(wc -c < "$C5") <= 8192 )) \
   && grep -q "^# Context pack for \`M1\`" "$(ls "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.context.md | head -1)" \
   && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-coding.md" \
   && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-verify.md" \
-  && git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo/context.md && hlog demo | grep -q "context.md for C: [0-9]* bytes"'
+  && git -C "$T/origin.git" cat-file -e harness/demo:.harness/runs/demo/context.md && hlog demo | grep -q "context.md for C: [0-9]* bytes"'
 check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && grep -q "ended: done" <<< "$("$H" status demo)"'
 check "summary, report and retro written" '[[ $(jq .features.merged "$RD/summary.json") == 3 ]] && grep -q "per passing feature" "$RD/report.md" && grep -q "Stub retro" "$RD/retro.md"'
 check "summary: tokens, per verified feature, first-attempt rate, rework" 'jq -e ".tokens.in > 0 and .per_verified_feature.cost > 0 and .rework == [\"A\", \"C\"] and .first_attempt_pass_rate == 0.33 and .verify_fail_rate > 0" "$RD/summary.json" > /dev/null'
@@ -94,14 +95,19 @@ check "NTFY_TOKEN: bearer header sent, never logged" 'grep -qx "Authorization: B
 check "a successful post: a line in run.log only" 'grep -q "notified: harness" "$HARNESS_STATE/proj/demo/run.log" && ! hlog demo | grep -q "notified\|notification failed"'
 check "routine notifications keep the default priority" 'Bs=$(curl_with "[demo] started:") Bm=$(curl_with "[demo] M1 merged") && [[ -n $Bs && -n $Bm ]] && ! grep -q "^Priority:" <<< "$Bs$Bm" \
   && grep -qx "Click: $GHP/blob/harness/demo/.harness/runs/demo/progress.md" <<< "$Bs" && U=$(grep -o "https://example.test/pr/[0-9]*" <<< "$Bm" | head -1) && [[ -n $U ]] && grep -qx "Click: $U" <<< "$Bm"'
+# the record travels on its own branch (lanes P1-03): main gets exactly the verified lane tips, never the record
+check "what lands on main is byte for byte what was verified" 'git -C "$T/origin.git" diff --quiet run/demo/M2 main'
+check "no code PR touches the run record, and the record branch holds every entry" '[[ -z $(git -C "$T/origin.git" log --first-parent -m --name-only --format= main | grep "^\.harness/runs/") ]] \
+  && [[ $(git -C "$T/origin.git" show harness/demo:.harness/runs/demo/entries.jsonl | jq -s length) == $(grep -cE " (init|coding|verify) exit " "$HARNESS_STATE/proj/demo/run.log") ]] \
+  && [[ $(git -C "$T/origin.git" ls-tree -r main --name-only | grep -c "\.harness/runs/") == 0 ]]'
 
-# ---- gc: main has every milestone; only run-record commits are left on the branch ----
+# ---- gc: main has every milestone; the run branch is record-only ----
 "$H" gc "$T/proj" > "$T/gc.out" 2>&1
 check "gc removed the finished worktree"  '[[ ! -d $WT ]]'
 check "gc deleted the run branch"         '! git -C "$T/origin.git" rev-parse -q --verify harness/demo >/dev/null'
 check "gc kept the tags"                  'git -C "$T/origin.git" tag | grep -qx run/demo/M2'
 # gc's unit step (L2-05): units a SIGKILLed driver left. demo ended; killed's driver.pid is dead and it wrote no ended;
-# gclive and demo-x have a live driver (demo-x also shows demo's prefix can't claim it); oth is another project's
+# gclive and demo-x have a live driver (demo's prefix also claims demo-x's unit, as lane x's: the live owner keeps it); oth is another project's
 # c.d (proj, ended) and c-d (other, live) share harness-c-d-: the live one keeps the unit. 999999999 is over any pid_max
 sleep 60 & GL1=$!; sleep 60 & GL2=$!; sleep 60 & GL3=$!; GLD=999999999
 for r in gclive:$GL1 demo-x:$GL2 killed:$GLD other/oth: c.d: other/c-d:$GL3; do d=$HARNESS_STATE/${r%%:*}; [[ $d == */other/* ]] || d=$HARNESS_STATE/proj/${r%%:*}
@@ -245,7 +251,8 @@ check "verify ping-pong capped, needs Michael" 'hlog strict | grep -q "M1 needs 
 check "verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)" 'Bv=$(curl_with "[strict] M1 needs Michael: A fails verification"); grep -qx "Title: \[strict\] M1 needs you" <<< "$Bv" \
   && grep -qx "Priority: high" <<< "$Bv" && grep -qx "Click: $GHP/blob/harness/strict/.harness/runs/strict/progress.md" <<< "$Bv"'
 check "verify needs Michael goes out after the verify entry is pushed" 'grep -qxF "[strict] M1 needs you · HARNESS: verify M1" "$T/spy-strict.log"'
-check "independent M2 verified, not merged (M1 isn't)" 'git -C "$T/origin.git" tag | grep -qx run/strict/M2 && ! on_main run/strict/M2'
+check "independent M2 verified and merged alone (its tag carries no M1 work)" 'on_main run/strict/M2 && [[ -n $(git -C "$T/origin.git" rev-list harness-lane/strict/M1 --not main) ]] \
+  && [[ -z $(comm -12 <(git -C "$T/origin.git" rev-list harness-lane/strict/M1 --not main | sort) <(git -C "$T/origin.git" rev-list run/strict/M2 | sort)) ]]'
 check "no dependency note when every milestone has after" '! hlog strict | grep -q "dependencies:"'
 
 # ---- run 10: merges refused (MERGE_POLICY=auto but GitHub says no) → `harness merge` later ----

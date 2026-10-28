@@ -20,7 +20,7 @@ check "scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]" \
   '( source "$SC"; [[ $(scope_unit "a.b/c d" s1) == harness-a-b-c-d-s1 && $(scope_unit demo "") == harness-demo && $(scope_bytes 6G) == 6442450944 && $(scope_bytes 64M) == 67108864 && $(scope_bytes 4096) == 4096 ]] )'
 check "scope.sh: scope_owns matches a unit to a run by its rebuilt prefix and a role the harness starts" \
   '( source "$SC"; scope_owns demo harness-demo-svc.scope && scope_owns a.b harness-a-b-s12.scope && scope_owns demo harness-demo-check-4711.scope \
-    && ! scope_owns demo harness-demo-x-svc.scope && ! scope_owns demo harness-demo-svc && ! scope_owns test harness-test-1-probe.scope && ! scope_owns demo harness-demo-s.scope )'
+    && ! scope_owns demo harness-demo-x-y-svc.scope && ! scope_owns demo harness-demo-svc && ! scope_owns test harness-test-1-probe.scope && ! scope_owns demo harness-demo-s.scope )'
 sc_bare=$( export STUB_NO_SYSTEMD=1 HARNESS_SCRATCH=$T/sc; source "$SC"; scope_available; echo "avail=$?"
   scope_run harness-x-bare "" 64M bash -c 'echo ran > "$0"; exit 4' "$T/sc-bare.out"; echo "rc=$?"; scope_stop harness-x-bare; echo "stop=$?"; scope_peak harness-x-bare; echo "peak=$?" )
 check "scope.sh: mem_available_gb reads the real meminfo fixture" '( source "$SC"; [[ $(mem_available_gb) == 9 && $(mem_available_gb "$HERE/fixtures/meminfo.txt") == 9 ]] && ! mem_available_gb /dev/null )'
@@ -107,13 +107,14 @@ check "metrics: coding rows carry tokens, cache rate and context peak" 'jq -se "
 check "metrics.jsonl: every session line has mem_peak_mb from its scope" 'jq -se "length >= 9 and all(.mem_peak_mb == 2)" "$RD/metrics.jsonl" > /dev/null && ! grep -q "Memory peaks" "$RD/report.md"'
 check "metrics: orientation recorded per session" 'jq -se "map(select(.kind==\"coding\")) | length > 0 and all(.orient_tokens > 0 and .orient_turns >= 1 and (.orient_s | type) == \"number\")" "$RD/metrics.jsonl" > /dev/null'
 # the journal (E4-03): one line per session in session order, stamped by the driver, and no entry.json left behind;
-# C's first attempt (it left the suite red) carries its dead end; the tree a milestone is tagged (and merged) with has its verify's line
+# C's first attempt (it left the suite red) carries its dead end; the record branch has every line, the tag (code) none of the record
 check "entries: the driver appends each session's entry" '[[ $(jq -r .feature "$RD/entries.jsonl" 2> /dev/null | paste -sd" ") == "init A B M1 A M1 C C M2" ]] \
   && [[ $(jq -r .session "$RD/entries.jsonl" | sed "s/^[0-9]\{6\}-verify-/verify-/" | paste -sd" ") == "00-init 01-A 02-B verify-M1 03-A verify-M1 04-C 05-C verify-M2" ]] \
   && jq -se "all(.at | test(\"^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}$\")) and all(.model | startswith(\"claude-\")) and all(has(\"minimal\") | not) \
     and (map(select(.session == \"04-C\"))[0].dead_ends[0].tried == \"left BROKEN in the tree\")" "$RD/entries.jsonl" > /dev/null && [[ ! -e $RD/entry.json ]] \
-  && ! git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo/entry.json 2> /dev/null \
-  && [[ $(git -C "$T/origin.git" show run/demo/M2:.harness/runs/demo/entries.jsonl 2> /dev/null | tail -1 | jq -r .feature) == M2 ]]'
+  && ! git -C "$T/origin.git" cat-file -e harness/demo:.harness/runs/demo/entry.json 2> /dev/null \
+  && [[ $(git -C "$T/origin.git" show harness/demo:.harness/runs/demo/entries.jsonl 2> /dev/null | tail -1 | jq -r .feature) == M2 ]] \
+  && ! git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo 2> /dev/null'
 # progress.md is rendered from the journal (E4-04): its entry headers are entries.jsonl's, newest first; the newest verify
 # M1 entry carries its evidence table; the archive has every entry; the M2 PR quotes its verify entry with its rows
 check "progress.md is rendered from the journal" 'head -1 "$RD/progress.md" | grep -q "^<!-- harness: rendered from entries.jsonl" \
@@ -122,12 +123,12 @@ check "progress.md is rendered from the journal" 'head -1 "$RD/progress.md" | gr
   && [[ $(grep -c "^### " "$RD/progress-archive.md") == $(wc -l < "$RD/entries.jsonl") ]] \
   && grep -q "^### .* · verify M2 · passes$" "$HARNESS_STATE/proj/demo/pr-body.md" && grep -q "^| C | 1 |" "$HARNESS_STATE/proj/demo/pr-body.md"'
 # the context pack before each coding and verify session (E4-05): C's second attempt got its first attempt's dead end,
-# both prompts send the session there first, and the pack is committed with the run record (so it merges)
+# both prompts send the session there first, and the pack is committed with the run record on the record branch
 check "context.md carries the earlier attempt's dead end" 'C5=$HARNESS_STATE/proj/demo/logs/05-C.context.md; grep -q "left BROKEN in the tree" "$C5" && (( $(wc -c < "$C5") <= 8192 )) \
   && grep -q "^# Context pack for \`M1\`" "$(ls "$HARNESS_STATE"/proj/demo/logs/*-verify-M1.context.md | head -1)" \
   && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-coding.md" \
   && grep -qx "Read context.md first; the full record is entries.jsonl / progress-archive.md (all in the run directory)." "$HARNESS_STATE/proj/demo/prompt-verify.md" \
-  && git -C "$T/origin.git" cat-file -e run/demo/M2:.harness/runs/demo/context.md && hlog demo | grep -q "context.md for C: [0-9]* bytes"'
+  && git -C "$T/origin.git" cat-file -e harness/demo:.harness/runs/demo/context.md && hlog demo | grep -q "context.md for C: [0-9]* bytes"'
 check "ended: done; status says so"       'grep -q "^done" "$HARNESS_STATE/proj/demo/ended" && grep -q "ended: done" <<< "$("$H" status demo)"'
 check "summary, report and retro written" '[[ $(jq .features.merged "$RD/summary.json") == 3 ]] && grep -q "per passing feature" "$RD/report.md" && grep -q "Stub retro" "$RD/retro.md"'
 check "summary: tokens, per verified feature, first-attempt rate, rework" 'jq -e ".tokens.in > 0 and .per_verified_feature.cost > 0 and .rework == [\"A\", \"C\"] and .first_attempt_pass_rate == 0.33 and .verify_fail_rate > 0" "$RD/summary.json" > /dev/null'
@@ -166,17 +167,23 @@ check "NTFY_TOKEN: bearer header sent, never logged" 'grep -qx "Authorization: B
 check "a successful post: a line in run.log only" 'grep -q "notified: harness" "$HARNESS_STATE/proj/demo/run.log" && ! hlog demo | grep -q "notified\|notification failed"'
 check "routine notifications keep the default priority" 'Bs=$(curl_with "[demo] started:") Bm=$(curl_with "[demo] M1 merged") && [[ -n $Bs && -n $Bm ]] && ! grep -q "^Priority:" <<< "$Bs$Bm" \
   && grep -qx "Click: $GHP/blob/harness/demo/.harness/runs/demo/progress.md" <<< "$Bs" && U=$(grep -o "https://example.test/pr/[0-9]*" <<< "$Bm" | head -1) && [[ -n $U ]] && grep -qx "Click: $U" <<< "$Bm"'
+# the record travels on its own branch (lanes P1-03): main gets exactly the verified lane tips, never the record
+check "what lands on main is byte for byte what was verified" 'git -C "$T/origin.git" diff --quiet run/demo/M2 main'
+check "no code PR touches the run record, and the record branch holds every entry" '[[ -z $(git -C "$T/origin.git" log --first-parent -m --name-only --format= main | grep "^\.harness/runs/") ]] \
+  && [[ $(git -C "$T/origin.git" show harness/demo:.harness/runs/demo/entries.jsonl | jq -s length) == $(grep -cE " (init|coding|verify) exit " "$HARNESS_STATE/proj/demo/run.log") ]] \
+  && [[ $(git -C "$T/origin.git" ls-tree -r main --name-only | grep -c "\.harness/runs/") == 0 ]]'
 
 # ---- capped sessions (L1-03): every claude session in harness-<run>-s<n> under timeout -k 30s, stopped after it returns ----
-sd_units() { grep -x -- "--unit=harness-$1-s[0-9]*" "$T/systemd.log" | sed 's/^--unit=//' | sort; }   # the session scopes run <run> started
-sd_stops() { grep -A1 -x stop "$T/systemd.log" | grep -x "harness-$1-s[0-9]*\.scope" | sed 's/\.scope$//' | sort; }   # and the ones it stopped
+# the session scopes run <run> started (a lane's are harness-<run>-<m>-s<n>), and the ones it stopped
+sd_units() { grep -x -- "--unit=harness-$1-\([A-Za-z0-9_]*-\)\?s[0-9]*" "$T/systemd.log" | sed 's/^--unit=//' | sort; }
+sd_stops() { grep -A1 -x stop "$T/systemd.log" | grep -x "harness-$1-\([A-Za-z0-9_]*-\)\?s[0-9]*\.scope" | sed 's/\.scope$//' | sort; }
 check "sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s" 'C1=$(sd_with --unit=harness-demo-s1); ( for a in --user --scope -p MemoryHigh=5G MemoryMax=6G MemorySwapMax=1G \
   timeout -k 30s 100m "$HERE/stub-claude.sh" "# Initializer session"; do grep -qxF -- "$a" <<< "$C1" || exit 1; done ) && grep -A4 -x timeout <<< "$C1" | paste -sd" " | grep -qxF "timeout -k 30s 100m $HERE/stub-claude.sh"'
 check "each session's scope is stopped after it returns" 'U=$(sd_units demo); [[ $(wc -l <<< "$U") -ge 9 && $U == "$(sd_stops demo)" ]] \
   && [[ $(grep -cE "^[0-9-]+ [0-9:]+   (init|coding|verify|retro) exit [0-9]+ · " "$HARNESS_STATE/proj/demo/run.log") == $(wc -l <<< "$U") ]]'
 check "a run whose sessions leave nothing gets no leftover or cap note" '[[ -s $T/demo-hlog.md ]] && ! grep -q "process(es) running\|hit its memory cap\|no user systemd" "$T/demo-hlog.md"'
 # L1-07: headless sessions load only the project's MCP servers; demo commits no .mcp.json, so no --mcp-config (run mp1 below has one)
-check "every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config" 'awk "BEGIN { RS = \"===\\n\" } /--unit=harness-demo-s[0-9]+\\n/ { n++; if (/\\n--strict-mcp-config\\n/) s++; if (/\\n--mcp-config\\n/) m++ } END { exit !(n >= 9 && s == n && !m) }" "$T/systemd.log" \
+check "every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config" 'awk "BEGIN { RS = \"===\\n\" } /--unit=harness-demo-([A-Za-z0-9_]+-)?s[0-9]+\\n/ { n++; if (/\\n--strict-mcp-config\\n/) s++; if (/\\n--mcp-config\\n/) m++ } END { exit !(n >= 9 && s == n && !m) }" "$T/systemd.log" \
   && grep -q "  MCP servers: none (--strict-mcp-config; no .mcp.json)" "$HARNESS_STATE/proj/demo/run.log"'
 STUB_LEAVE_PROCESS=1 STUB_LEAVE_RETRO=1 STUB_OOM=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" leftover --spec SPEC.md --foreground > "$T/run-left.out" 2>&1
 check "a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)" '[[ $(hlog leftover | grep -c "coding session left 1 process(es) running; stopped with its scope") -ge 3 ]] \
@@ -199,7 +206,7 @@ check "metrics.jsonl: mem_peak_mb is null when uncapped" 'jq -se "length >= 5 an
 # ---- services_down (L2-03): the project's teardown, then the svc scope, then one note; on finish and in the EXIT trap ----
 sd_last() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { n = NR } END { print n + 0 }' "$T/systemd.log" 2>/dev/null; }   # the index of the last stub call containing $1
 check "finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)" '[[ -f $T/scratch/proj/demo/teardown-done.marker ]] \
-  && D=$(sd_at $'"'"'teardown\ndemo\ndone\n'"'"') && [[ -n $D ]] && (( D < $(sd_last $'"'"'stop\nharness-demo-svc.scope\n'"'"') )) && [[ $(grep -c "· services stopped (done)$" "$T/demo-hlog.md") == 1 ]] \
+  && D=$(sd_at $'"'"'teardown\ndemo\ndone\n'"'"') && [[ -n $D ]] && (( D < $(sd_last $'"'"'stop\nharness-demo-M2-svc.scope\n'"'"') )) && [[ $(grep -c "· services stopped (done)$" "$T/demo-hlog.md") == 1 ]] \
   && [[ $(grep -c "services stopped" "$HARNESS_STATE/proj/demo/run.log") == 1 && $(sd_count $'"'"'teardown\ndemo\n'"'"') == 1 ]]'
 # a TERM to the driver mid-session: bash runs the EXIT trap at once and the session would live on, so the trap stops
 # the session's scope first (killing the slow stub claude), then the teardown and the svc scope
@@ -211,14 +218,14 @@ kill -TERM "$(cat "$HARNESS_STATE/proj/termed/driver.pid")"; wait "$TP"
 touch "$T/scope/harness-termed-s99".{alive,running}; TSL=$(sd_count list-units)   # a unit left behind: an ended run still lists none
 "$H" status termed > "$T/status-termed2.out" 2>&1; TSR2=$?; TSL2=$(sd_count list-units); rm -f "$T/scope/harness-termed-s99".*
 check "harness status lists a running run's units with MemoryCurrent; an ended run's none" '[[ $TSR == 0 && $TSR2 == 0 ]] && grep -q "^termed (proj) · running" "$T/status-termed.out" \
-  && grep -Eqx "    harness-termed-s[0-9]+ · MemoryCurrent 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
+  && grep -Eqx "    harness-termed-M1-s[0-9]+ · MemoryCurrent 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
   && grep -q "^termed (proj) · ended: driver exited" "$T/status-termed2.out" && ! grep -q MemoryCurrent "$T/status-termed2.out" && [[ $TSL2 == "$TSL" ]]'
-termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* ]] && echo "$p"; done; }
+termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* || $(readlink "/proc/$p/cwd") == "$T/wt/proj/lanes/termed/"* ]] && echo "$p"; done; }
 check "the EXIT trap commits its services note: harness-log.md is clean after a TERM" '[[ -z $(git -C "$T/wt/proj/termed" status --porcelain -- .harness/runs/termed/harness-log.md) ]] \
   && git -C "$T/wt/proj/termed" show HEAD:.harness/runs/termed/harness-log.md | grep "· services stopped (driver exited)$" > /dev/null'
-check "a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it" 'U=$(grep -x -- "--unit=harness-termed-s[0-9]*" "$T/systemd.log" | tail -1 | sed "s/^--unit=//")
+check "a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it" 'U=$(grep -x -- "--unit=harness-termed-M1-s[0-9]*" "$T/systemd.log" | tail -1 | sed "s/^--unit=//")
   D=$(sd_at $'"'"'teardown\ntermed\ndriver exited\n'"'"'); SS=$(sd_last "stop"$'"'"'\n'"'"'"$U.scope"$'"'"'\n'"'"'); [[ $t_mid == 1 && -n $U && -n $D && -f $T/scratch/proj/termed/teardown-driver-exited.marker ]] \
-  && (( SS > 0 && SS < D && D < $(sd_last $'"'"'stop\nharness-termed-svc.scope\n'"'"') )) && sleep 1 && [[ -z $(termed_left) ]] \
+  && (( SS > 0 && SS < D && D < $(sd_last $'"'"'stop\nharness-termed-M1-svc.scope\n'"'"') )) && sleep 1 && [[ -z $(termed_left) ]] \
   && grep -q " services stopped (driver exited)$" "$HARNESS_STATE/proj/termed/run.log" && grep -q "^driver exited unexpectedly" "$HARNESS_STATE/proj/termed/ended" && [[ ! -e $HARNESS_STATE/proj/termed/driver.pid ]]'
 # a TERM during an init (L2-06): the trap stops the init (the svc scope) before the teardown, or the init goes on
 # starting what the teardown just stopped; a TERM during finish's own teardown waits for it, never runs a second
@@ -242,7 +249,7 @@ p_seen=0; for _ in $(seq 600); do hlog paused | grep -q "· services stopped (pa
 "$H" resume paused > /dev/null; wait "$PP"
 check "PAUSE stops the services before its poll, and the next init starts them again" 'D=$(sd_at $'"'"'teardown\npaused\npaused\n'"'"') \
   && [[ $p_seen == 1 && -n $D && -f $T/scratch/proj/paused/teardown-paused.marker && $(hlog paused | grep -c "· services stopped (paused)$") == 1 ]] \
-  && (( $(sd_last $'"'"'--unit=harness-paused-svc\n'"'"') > D )) && grep -q "^paused (INBOX.md" <(cut -d" " -f3- "$HARNESS_STATE/proj/paused/run.log") && [[ $($F summary "$(list paused)") == "3/3 passing" ]]'
+  && (( $(sd_last $'"'"'--unit=harness-paused-M1-svc\n'"'"') > D )) && grep -q "^paused (INBOX.md" <(cut -d" " -f3- "$HARNESS_STATE/proj/paused/run.log") && [[ $($F summary "$(list paused)") == "3/3 passing" ]]'
 # systemd refusing the scope after the probe passed (a MemoryMax it can't parse): each session runs bare, and says so
 { cat "$T/base-config.sh"; echo SESSION_MEMORY_MAX=bogus; } > "$T/user-config.sh"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" refused --spec SPEC.md --foreground > "$T/run-refused.out" 2>&1
@@ -260,8 +267,8 @@ check "memory gate: under 5 GB the driver waits, then starts the session anyway 
 check "memory gate: the wait stops the services (services stopped (memory wait))" 'hlog lowmem | grep -q "· services stopped (memory wait)$"'
 # the memory wait stops the services (L2-03 made services_down real): every session before finish's teardown starts
 # with harness-<run>-svc up, verify's included (its gate came after its run_init: now `mem_gate || run_init`)
-svc_gaps() { awk -v r="$1" 'BEGIN { RS = "===\n" } index($0, "teardown\n" r "\ndone\n") { exit } index($0, "stop\nharness-" r "-svc.scope\n") { up = 0 }
-  index($0, "--unit=harness-" r "-svc\n") { up = 1 } $0 ~ "--unit=harness-" r "-s[0-9]+\n" { n++; if (!up) bad++ } END { print n + 0, bad + 0 }' "$T/systemd.log"; }
+svc_gaps() { awk -v r="$1" 'BEGIN { RS = "===\n" } index($0, "teardown\n" r "\ndone\n") { exit } $0 ~ "stop\nharness-" r "-([A-Za-z0-9_]+-)?svc[.]scope\n" { up = 0 }
+  $0 ~ "--unit=harness-" r "-([A-Za-z0-9_]+-)?svc\n" { up = 1 } $0 ~ "--unit=harness-" r "-([A-Za-z0-9_]+-)?s[0-9]+\n" { n++; if (!up) bad++ } END { print n + 0, bad + 0 }' "$T/systemd.log"; }
 check "memory gate: every session starts with the services up, a verify after its wait included" 'read -r n bad <<< "$(svc_gaps lowmem)"; (( n >= 5 && bad == 0 ))'
 # the gate comes before the feature is picked, not inside session(): a status: stop set during the wait is seen before
 # any coding session, no attempt is spent, and the prompt's clock comes after the wait (the L1 review's Important finding)
@@ -303,13 +310,13 @@ for i in $(seq 50); do [[ -s $T/scope/harness-ckt-check-$ckt.pids ]] && break; s
 SECONDS=0; kill -TERM "$ckt"; wait "$ckt"; ckt_rc=$? ckt_s=$SECONDS
 check "check.sh: a TERM stops the suite's scope with it" '[[ $ckt_rc == 143 && $ckt_s -le 3 && -n $ckt_sleep ]] && gone "$ckt_sleep" && [[ $(sd_count $'"'"'stop\nharness-ckt-check-'"'"'"$ckt.scope") == 1 ]]'
 
-# ---- gc: main has every milestone; only run-record commits are left on the branch ----
+# ---- gc: main has every milestone; the run branch is record-only ----
 "$H" gc "$T/proj" > "$T/gc.out" 2>&1
 check "gc removed the finished worktree"  '[[ ! -d $WT ]]'
 check "gc deleted the run branch"         '! git -C "$T/origin.git" rev-parse -q --verify harness/demo >/dev/null'
 check "gc kept the tags"                  'git -C "$T/origin.git" tag | grep -qx run/demo/M2'
 # gc's unit step (L2-05): units a SIGKILLed driver left. demo ended; killed's driver.pid is dead and it wrote no ended;
-# gclive and demo-x have a live driver (demo-x also shows demo's prefix can't claim it); oth is another project's
+# gclive and demo-x have a live driver (demo's prefix also claims demo-x's unit, as lane x's: the live owner keeps it); oth is another project's
 # c.d (proj, ended) and c-d (other, live) share harness-c-d-: the live one keeps the unit. 999999999 is over any pid_max
 sleep 60 & GL1=$!; sleep 60 & GL2=$!; sleep 60 & GL3=$!; GLD=999999999
 for r in gclive:$GL1 demo-x:$GL2 killed:$GLD other/oth: c.d: other/c-d:$GL3; do d=$HARNESS_STATE/${r%%:*}; [[ $d == */other/* ]] || d=$HARNESS_STATE/proj/${r%%:*}
@@ -439,8 +446,9 @@ dproj() {   # <name> [<file> <content>]: a project with its own bare origin behi
     && git -C "$T/$1" config url."$T/$1-origin.git".insteadOf "git@github.com:test/$1.git" && git -C "$T/$1" remote add origin "git@github.com:test/$1.git" && git -C "$T/$1" push -q -u origin main
 }
 cp "$T/user-config.sh" "$T/user-config.bak"; cp "$T/base-config.sh" "$T/user-config.sh"   # NTFY_URL: the checks read curl.log
-# a teardown hook added mid-run (L2-06): services_down looks for .harness/teardown.sh when it runs, not at load_config
-dproj lt && STUB_ADD_TEARDOWN=1 STUB_PHONE_STOP=1 "$H" start "$T/lt" lt1 --spec SPEC.md --foreground > "$T/run-lt1.out" 2>&1
+# a teardown hook added mid-run (L2-06): services_down looks for .harness/teardown.sh when it runs, not at load_config;
+# the first coding session commits it in its lane (the initializer's code edits are reverted), then the phone stops the run
+dproj lt && STUB_ADD_TEARDOWN=1 STUB_PHONE_STOP_CODING=1 "$H" start "$T/lt" lt1 --spec SPEC.md --foreground > "$T/run-lt1.out" 2>&1
 check "a .harness/teardown.sh added after the run started is run at its stop points" '[[ -f $T/scratch/lt/lt1/teardown-late.marker ]] && hlog lt1 lt | grep -q "· services stopped (stopped by Michael)$"'
 dstart() { STUB_INIT_LIMIT=1 "$H" "${@:2}" --foreground > "$T/$1.out" 2>&1; rm -f "$HARNESS_STATE/LIMIT_UNTIL"; }   # <out> <harness args>: a run that ends at once (the initializer is refused)
 dproj vp vercel.json '{"framework":"nextjs"}' && dstart vp1 start "$T/vp" vp1 --spec SPEC.md && dstart vp1b continue vp1

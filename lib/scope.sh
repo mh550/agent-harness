@@ -21,10 +21,12 @@ scope_available() {
 # harness-<run>-<role>, the run id reduced to [A-Za-z0-9_-]: "." is legal in a unit name but would blur harness-<run>-* globs
 scope_unit() { local r=${1//[^A-Za-z0-9_-]/-}; echo "harness-$r${2:+-$2}"; }
 
-# <run> <unit>.scope: the unit is that run's when it is harness-<run>-<role>.scope with a role the harness starts (s<n>,
-# check-<pid>, svc). Rebuilt from the id, never parsed from the name: so run demo never claims demo-x's harness-demo-x-svc
+# <run> <unit>.scope: the unit is that run's when it is harness-<run>-[<m>-]<role>.scope with a role the harness starts
+# (s<n>, check-<pid>, svc), behind a lane's milestone or not. Rebuilt from the id, never parsed from the name: so run demo
+# never claims demo-x-y's harness-demo-x-y-svc (a milestone prefix has no "-"; demo-x's units read as lane x's, and gc's
+# rule that a live owner keeps its units covers that overlap)
 scope_owns() { local role=${2%.scope}; role=${role#"$(scope_unit "$1")-"}
-  [[ $2 == *.scope && $role != "${2%.scope}" && $role =~ ^(s[0-9]+|check-[0-9]+|svc)$ ]]; }
+  [[ $2 == *.scope && $role != "${2%.scope}" && $role =~ ^([A-Za-z0-9_]+-)?(s[0-9]+|check-[0-9]+|svc)$ ]]; }
 
 # 6G → bytes, 1024-based as systemd reads K/M/G/T; a bare number is bytes
 scope_bytes() { local n=${1%[KMGTkmgt]}; case ${1##*[0-9]} in [Kk]) echo $(( n << 10 )) ;; [Mm]) echo $(( n << 20 )) ;; [Gg]) echo $(( n << 30 )) ;; [Tt]) echo $(( n << 40 )) ;; *) echo "$n" ;; esac; }
