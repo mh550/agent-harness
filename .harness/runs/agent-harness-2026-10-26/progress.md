@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 22:14 · P2-03 · passes
+
+The re-base rule: merge_one returns 3 when main moved; the lane (or a LANE_MERGE merge lane, coordinator or harness merge) merges main into the verified commit; disjoint files: full suite, tag forced to the merged commit, merge; overlapping or LANE_REBASE=verify: one verify round. Review's 5 findings fixed. Suite 566 -> 574, green.
+
+- **Files:** lib/lane.sh, lib/record.sh, lib/driver.sh, bin/harness, tests/stub-claude.sh, tests/checks/48-lanes-rebase.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-lane-rebase-disjoint.md, docs/architecture.md, README.md
+- **Verified:** tests/checks/48-lanes-rebase.sh 8/8: rb (disjoint: note, uncached check: green in lanes/M2/rebase-check.out, merged, git -C origin.git diff --quiet run/rb/M2 main, origin reflog shows only refs/tags/run/rb/M2 rewritten), ro (overlapping (shared.txt), two verify M2 sessions, 're-base verify round 1 of 1' in its prompt), rv (LANE_REBASE=verify), rr (MAX_REBASE_ROUNDS=0 needs Michael), rf (failed round removes tag; watched red with the fix disabled), rp (MERGE_POLICY=pr, harness merge re-bases M1 then M2). Full suite via check.sh: green, 574 tests, 437 s. bash -n on every touched shell file.
+- **Tests:** 566 → 574
+- **Dead end:** reading the origin's reflog after resetting main between runs — update-ref of main is itself a logged non-fast-forward; the rewritten refs are now read before the reset
+- **Discovery** (affects P2-04, P2-07): merge_milestones_ now skips a milestone whose lane is alive (other than the caller's own, by pid == $$): the coordinator's reap never merges a lane's milestone under it; lane_alive moved from driver.sh to record.sh
+- **Discovery** (affects P2-07): A re-base verify round that fails removes verified-<m> and the tag run/<run>/<m> locally and on origin (else the old tag would merge or block a later tag -a); lane_done checks needs-<m> before waits-<m> (waits-<m> is never cleared)
+- **Discovery** (affects run): 48-lanes-rebase.sh costs ~77 s of slot time (six stub runs); each run resets origin main with update-ref so the stub's work files are new
+- **Discovery** (affects P2-05, P2-07): harness merge clears moved-* (one more re-base per main); harness continue also clears rebase-rounds-* and moved-*; harness merge clears a stale lanes-end before its merge lanes
+- **Proposed change:** P2-03 step 1's note reads '<n> files' even for 1 file ('1 files'); kept as the spec wrote it
+- *05-P2-03 · claude-opus-5-5*
+
 ### 2026-10-27 21:41 · P2-02 · passes
 
 Two lanes on: admit (memory reserve, five-hour window, once-per-kind waiting note), a port per lane (port_alloc_ under the record and port locks), a merge lock, lanes-end + exit 16, atomic rec_count, USAGE_5H, sliced limit/mem waits, TEST_FILE_TIMEOUT. Clamp gone. Tests 555 -> 566.
@@ -256,18 +271,9 @@ Opus review of the P0 diff: 0 Critical, 2 Important, 4 Minor (docs/plans/2026-10
 - **Discovery** (affects run): A check file that exits non-zero with no FAIL line now adds 'FAIL <file>: exited <rc> before its end, with no FAIL line' to the total, so a subset run can no longer read as all passed while a file crashed.
 - *02-P0-04 · claude-opus-5-5*
 
-### 2026-10-26 16:24 · P0-02 · passes
-
-Runner code was already in place; under the new rule (a time is measured and recorded, not a gate) I measured it and wrote it down. TEST_JOBS=4: 207 s wall, 392/392, slowest file 156 s, floor 203 s (811 s of slot time / 4), peak 254 MB. TEST_JOBS=1: 758 s. Same per-file counts and PASS names at 1 and 4 jobs. Decision file, CLAUDE.md, README and architecture updated.
-
-- **Files:** journal/decisions/2026-10-26-suite-split.md, CLAUDE.md, README.md, docs/architecture.md
-- **Verified:** TEST_JOBS=4 bash tests/run.sh in a 3G user scope: rc 0, 392/392, wall 207 s, memory.peak 266801152 B; TEST_JOBS=1: 392/392, 758 s, per-file counts and C-sorted PASS names cmp-equal; bash -n on run.sh, lib.sh and every tests/checks/*.sh; lib/check.sh green in 205 s (392/392)
-- **Tests:** 392 → 392
-- **Discovery** (affects run): The suite is now work-bound, not chain-bound: the 4-job floor (811 s / 4 = 203 s) is above the slowest file (156 s), so reordering files gains nothing. Only cutting CPU (fewer node starts in the driver) would make it shorter. Four jobs' contention adds about 56 s of slot time over TEST_JOBS=1's 755 s.
-- *01-P0-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 16:24 · P0-02 · passes · Runner code was already in place; under the new rule (a time is measured and recorded, not a gate) I… ([in full](progress-archive.md))
 - 2026-10-26 08:30 · P0-03 · passes · CHECK_KEY_IGNORE (default .harness/runs docs/plans; this repo adds docs/specs journal findings-and-r… ([in full](progress-archive.md))
 - 2026-10-26 08:15 · P0-02 · not yet · Steps 1-4, 6, 7 hold; step 5 (<150 s) can't be met inside a suite split. Measured: per-file slot tim… ([in full](progress-archive.md))
 - 2026-10-26 07:35 · P0-02 · not yet · Runner runs TEST_JOBS files (default 4 here) as background jobs, largest first; output whole per fil… ([in full](progress-archive.md))
