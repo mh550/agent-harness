@@ -7,3 +7,7 @@
 - 2026-10-28 01:40 · context.md for U1-02: 4935 bytes
 - 2026-10-28 02:05 · U1-02: gotchas +1 ~0 -0
 - 2026-10-28 02:05 · U1-02 · claude-opus-5-5 · passes=true · 25 min · 2/24 passing · tests 625
+- 2026-10-28 02:05 · context.md for U1-03: 6562 bytes
+- 2026-10-28 02:37 · U1-03: entry.json missing; recorded a minimal entry
+- 2026-10-28 02:41 · notification failed (curl exit 28): harness
+- 2026-10-28 02:41 · session for U1-03 hit a limit (API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN)); not counted; resuming at 02:52

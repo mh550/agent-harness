@@ -7,6 +7,12 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 02:37 · U1-03 · not yet
+
+API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN)
+
+- *03-U1-03 · claude-opus-5-5 · recorded by the harness: entry.json missing*
+
 ### 2026-10-28 02:05 · U1-02 · passes
 
 lib/view.mjs: the formatter (context, glyphs with ASCII forms, paint, displayWidth, cut, pad, table, section, rule, card, ago, when, home, duration, endClass) plus a table|card|section CLI; 23 unit checks in 51-view-pure.sh; end-reasons.txt; decision 2026-10-27-read-views started. An Opus review's 2 Important and 7 Minor findings were fixed red→green.
