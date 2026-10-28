@@ -56,3 +56,5 @@
 - 2026-10-27 19:25 · P1-05 · claude-opus-5-5 · passes=true · 30 min · 9/17 passing
 - 2026-10-27 19:25 · context.md for P1-06: 7908 bytes, 6 items left out
 - 2026-10-27 20:09 · P1-06 · claude-opus-5-5 · passes=true · 43 min · 10/17 passing
+- 2026-10-27 20:09 · verify P1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 20:15 · context.md for P1: 7841 bytes, 43 items left out
