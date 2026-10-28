@@ -54,3 +54,4 @@
 - 2026-10-27 17:12 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-26 (in the state dir: init.out check-last.out)
 - 2026-10-27 18:54 · context.md for P1-05: 7808 bytes, 6 items left out
 - 2026-10-27 19:25 · P1-05 · claude-opus-5-5 · passes=true · 30 min · 9/17 passing
+- 2026-10-27 19:25 · context.md for P1-06: 7908 bytes, 6 items left out
