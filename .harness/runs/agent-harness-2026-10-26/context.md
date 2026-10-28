@@ -1,4 +1,4 @@
-# Context pack for `P2-01`
+# Context pack for `P2-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
@@ -33,4 +33,4 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (P0-02, affects P0-02, run): The suite's CPU is mostly the harness's own process starts: lib/driver.sh calls node 1,684 times in file 12 (30 ms each). Caching F model (pure) and the read-only list queries keyed on the list's content would cut about 8% of that file's CPU. That is the only lever left short of rewriting checks. → entries.jsonl:4
 - Discovery (P0-02, affects run): scope.sh's real 64M-scope check is flaky: in 1 of 5 full runs the cgroup OOM kill also took the bash -c wrapper, leaving an empty .show (rc/peak unread). Not the split. → entries.jsonl:3
 
-_18 items left out at 8192 bytes: entries.jsonl has them all._
+_14 items left out at 8192 bytes: entries.jsonl has them all._
