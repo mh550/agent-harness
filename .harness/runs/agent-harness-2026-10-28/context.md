@@ -1,4 +1,4 @@
-# Context pack for `U3-01`
+# Context pack for `U3-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
@@ -29,9 +29,21 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-28 08:40 · U2-01 · passes: Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and card keys, file locations, the 15 reasons mapped to their functions with kind/severity/priority/key/sweep rule, a card template per reason, needs.sh/needs.mjs/inbox.mjs APIs, notification texts, check files 57-63, fixtures, touched checks, order U2-02..09. Code unchanged; suite cached green.; tests 689 → 689; files docs/plans/2026-10-28-U2-needs-record.md → entries.jsonl:12
-- 2026-10-28 09:19 · U2-02 · passes: lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, question, questionLine, added, answers, insert, files, repair + CLI); parked/notify/entries/record.sh on it; inbox_repair after each lane session (slot copy) and the initializer, noted; template comment without ## Answers; STUB_INBOX_IN_COMMENT; 57-inbox (11 checks), n8n-home fixture.; tests 689 → 700; files lib/inbox.mjs, lib/parked.mjs, lib/notify.mjs, lib/entries.mjs, lib/record.sh, … → entries.jsonl:13
-- 2026-10-28 09:53 · U2-03 · passes: lib/needs.mjs: the needs record (24 keys, first 13 = event v1), REASONS (15), pure record/refresh/sweep/synthesize/order, CLI open (0 new, 3 refreshed)/sweep/done/list; lib/needs.sh needs_open (sourced by driver, lane, harness; no caller); harness needs [--all] [--json] and needs done; needs_fixture; 58-needs-record (15 checks); decision needs-record.; tests 700 → 715; files lib/needs.mjs, lib/needs.sh, bin/harness, lib/driver.sh, lib/lane.sh, … → entries.jsonl:14
-- 2026-10-28 10:31 · U2-04 · passes: Cards by code: TEMPLATES (15, data) in lib/needs.mjs, card(reason, facts) and the card CLI, waitsOn, mergedBy; 15 fixtures in tests/fixtures/needs; harness needs as view.mjs cards (cutFront, card rule:false) with footer, 60 columns clean; harness parked = needs for text, --json joined with ref and card; notify.mjs urls compare; 59-needs-cards; Opus review fixed.; tests 715 → 744; files lib/needs.mjs, lib/view.mjs, lib/notify.mjs, lib/parked.mjs, lib/needs.sh, … → entries.jsonl:15
+- 2026-10-28 15:59 · U3-01 · passes: Wrote docs/plans/2026-10-28-U3-show-and-fixes.md: project_dir's order and six callers, report's worktree→state→ledger order and finish's copy, gc's unit rule, harness show (fields, CHANGES, CONFLICTS, NEEDS, feature form, --json), project_busy, overlap.mjs and its wiring/sweep, TTY report/trends/gc, checks 65-72, fixtures, U3-02..08 order, four decisions. Code unchanged.; tests 785 → 785; files docs/plans/2026-10-28-U3-show-and-fixes.md → entries.jsonl:22
 
-_6 items left out at 8192 bytes: entries.jsonl has them all._
+## Lately in the run
+
+- 2026-10-28 15:42 · verify U2 · passes: All 9 U2 features hold. Full suite 783/785: the 2 memory-gate checks in 08-scope failed only under 4-job load; alone 08-scope passes 125/125. Files, syntax checks, docs, cards, prompts, fixtures verified against each step. → entries.jsonl:21
+- 2026-10-28 15:29 · U2-09 · passes: U2 review: 0 Critical, 3 Important, 11 Minor (one Opus round, no second: nothing Critical). Fixed red to green in 64-needs-review: harness merge takes a hand merge of main, card commands in a fix worktree, needs done refuses a park and locks; 7 minors fixed. Docs: architecture §7 INBOX repair, §8 hand merge; README n8n record path; both U2 decisions updated.; tests 775 → 785; files lib/needs.mjs, lib/needs.sh, lib/record.sh, lib/lane.sh, lib/inbox.mjs, … → entries.jsonl:20
+
+## Current rules
+
+- The review gate: a milestone review's model by its measured diff, one Opus round after a Sonnet finding → journal/decisions/2026-10-27-review-gate.md
+- Read views: one formatter, `lib/view.mjs`, that every read view renders through → journal/decisions/2026-10-27-read-views.md
+- Questions where Michael sees them: one INBOX parser, the steering comment repaired → journal/decisions/2026-10-27-question-locations.md
+- Merging the memory run into lanes: main's driver changes in their lane-era homes, the review round per lane → journal/decisions/2026-10-27-p1-main-merge.md
+- What waits on Michael: one needs record per item, swept by its reason's rule → journal/decisions/2026-10-27-needs-record.md
+- Lane branches go when their PR merges; gc reaps lane branches, leftover slots and a killed run's lane units → journal/decisions/2026-10-27-lane-branches-and-slots.md
+- Where things go: one routing block in every session's prompt, unless CLAUDE.md has its own; one decisions store per project → journal/decisions/2026-10-26-where-things-go.md
+
+_54 older rules: journal/decisions._
