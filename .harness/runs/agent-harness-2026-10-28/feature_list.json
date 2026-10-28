@@ -359,7 +359,7 @@
         "checks in a new file by topic (e.g. `tests/checks/65-show.sh`): for a stub run whose session changed 2 files, `show` lists both with +/− and marks the one a stub `main` commit also changed `✗ conflicts`; the compare URL appears with the throwaway project's GitHub-shaped origin and not with a plain path origin; `show <run> A` lists A's commits and entry files; `COLUMNS=60` lines never exceed 60 columns except URLs; `--json` parses with `v` 1",
         "`bash -n bin/harness`, `node --check` on the `.mjs` the view lives in (e.g. `lib/show.mjs`); every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U3-05",

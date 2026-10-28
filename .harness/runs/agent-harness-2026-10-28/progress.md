@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 18:30 · U3-04 · passes
+
+harness show <run> [<feature>] [--files] [--json]: cmd_show + lib/show.mjs (read-only, local refs in PROJECT_DIR): card header (status.mjs cardHeader), worktree, branch, record, state, lanes, merged/proposed milestones, compare URLs, CHANGES vs origin/<main> with ✗ conflicts, CONFLICTS, NEEDS YOU; feature form; v1 JSON. 68-show (11 checks).
+
+- **Files:** lib/show.mjs, bin/harness, lib/status.mjs, tests/checks/68-show.sh, tests/fixtures/show-json-keys.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-28-show.md, docs/architecture.md, README.md
+- **Verified:** bash tests/checks/68-show.sh 11/11; subset status needs view queue 266/266; full suite via lib/check.sh (TEST_JOBS=2) green, 815 tests; an Opus review of the diff found 8 issues, all fixed with checks (blob dedupe, bounded commit log, MAIN_BRANCH, quotePath, unknown changes, scratch object store, ± total)
+- **Tests:** 804 → 815
+- **Dead end:** summing every lane branch's diff, then skipping a branch that is an ancestor of another — stub lanes stack (M2's branch holds M1's commits): sums doubled; the ancestor skip still doubles two lanes opened on one; a path's identical blob on two branches is now counted once
+- **Discovery** (affects U3-05, U3-06): lib/show.mjs exports joinDiff, mergeTreePaths, combine and milestonesOf (pure); U3-06's overlaps can reuse branchesOf' rule (harness/<run> + harness-lane/<run>/* + origin-only lanes) and joinDiff for 'what an ended run's branches changed'
+- **Discovery** (affects U3-06, run): git merge-tree --write-tree writes loose objects into the repo; show runs it with GIT_OBJECT_DIRECTORY=<tmp> and the repo's objects as an alternate so a read view leaves the object store as it was
+- **Discovery** (affects U3-07, U3-08): status.mjs gitOf now takes the main branch (default main); cardHeader and extraOf are exported
+- **Question for Michael:** Default taken (decisions/2026-10-28-show): show counts a path once when its blob is the same on two run branches and sums different results (refines plan default 5, which summed). OK?
+- **Proposed change:** U3-04 step 3 names tests/checks/65-show.sh; 65- was taken by U3-02, the plan's 68-show.sh is used
+- *21-U3-04 · claude-opus-5-5*
+
 ### 2026-10-28 17:55 · U3-03 · passes
 
 U3-03 passes. Commit `5de9bd7` is pushed to `harness-lane/agent-harness-2026-10-28/U3`. The full suite went from 796 to 804 checks and was green (804/804) on the fourth full run. - **Record after gc:** a finished run now also keeps `summary.json`, `report.md` and `metrics.jsonl` in its state dir. `harness report` reads the worktree, then that copy, then the ledger's copy. If none exists, it print…
@@ -304,21 +319,9 @@ All 40 steps of U1-01..07 hold. Init suite red (7 checks in 08-scope, 45-lanes) 
 
 - *081544-verify-U1 · claude-sonnet-5-5*
 
-### 2026-10-28 08:07 · U1-07 · passes
-
-U1 review: 1 Critical, 3 Important, 11 Minor (two Opus rounds, in f8ea1f6). This attempt changed no code: it re-verified all four steps and got a green full suite for the tree. TEST_JOBS=4 runs failed one to four different e2e timing checks each (46, 38, 32, 08), every file green alone.
-
-- **Verified:** steps 1-3 read back (U1-review.diff, docs/plans/2026-10-28-U1-review.md, 9 names from 56-status-review in check-names.txt, README status/queue show/STATUS_SINCE/NO_COLOR, architecture §3/§12, template, decision); bash -n and node --check clean; 46+38 alone 24/24, 08 alone 125/125; full suite through check.sh at TEST_JOBS=2 (HARNESS_CHECK_TIMEOUT=25m): green in 871 s, 689 tests
-- **Tests:** 689 → 689
-- **Dead end:** rerunning the full suite at TEST_JOBS=4 with other lanes loading the box (~3.6) — four runs, four different e2e flakes (46 pr-held, 38 pack bytes, 32 MAX_PARALLEL_RUNS, 08 no user systemd); none in code U1 changed
-- **Discovery** (affects run): At load ~3.6 (other lanes) every TEST_JOBS=4 full run tonight failed 1-4 timing-bound e2e checks, a different file each time; TEST_JOBS=2 with HARNESS_CHECK_TIMEOUT=25m is the way to a green
-- **Question for Michael:** The U1 review deferred four Minor findings (continued-run wall hours, MAIN_BRANCH in the card's branch line, lane liveness by cmdline, the --since 3d hint). Should they go in a later milestone's list, or be dropped?
-- **Question for Michael:** The full suite flakes under load at TEST_JOBS=4 (a different e2e check each run). Should the harness's check use TEST_JOBS=2 (and a 25m check timeout) while lanes run in parallel?
-- **Proposed change:** When lanes share the box, run the suite with fewer jobs (TEST_JOBS=2) or tie TEST_JOBS to the load average, so a milestone's last feature isn't un-passed by a load flake
-- *08-U1-07 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-28 08:07 · U1-07 · passes · U1 review: 1 Critical, 3 Important, 11 Minor (two Opus rounds, in f8ea1f6). This attempt changed no … ([in full](progress-archive.md))
 - 2026-10-28 07:11 · U1-07 · passes · U1 review: 1 Critical, 3 Important, 11 Minor over two Opus rounds. Critical (session counted every m… ([in full](progress-archive.md))
 - 2026-10-28 06:08 · U1-06 · passes · harness queue list renders through status.mjs renderQueue + view.mjs: QUEUE/PARKED/RUNNING/RECENT, r… ([in full](progress-archive.md))
 - 2026-10-28 05:14 · U1-05 · passes · U1-05 passes, in commit `681d468` (pushed). The full suite is green: 668 tests, up from 655. - **The… ([in full](progress-archive.md))

@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 18:30 · U3-04 · passes
+
+harness show <run> [<feature>] [--files] [--json]: cmd_show + lib/show.mjs (read-only, local refs in PROJECT_DIR): card header (status.mjs cardHeader), worktree, branch, record, state, lanes, merged/proposed milestones, compare URLs, CHANGES vs origin/<main> with ✗ conflicts, CONFLICTS, NEEDS YOU; feature form; v1 JSON. 68-show (11 checks).
+
+- **Files:** lib/show.mjs, bin/harness, lib/status.mjs, tests/checks/68-show.sh, tests/fixtures/show-json-keys.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-28-show.md, docs/architecture.md, README.md
+- **Verified:** bash tests/checks/68-show.sh 11/11; subset status needs view queue 266/266; full suite via lib/check.sh (TEST_JOBS=2) green, 815 tests; an Opus review of the diff found 8 issues, all fixed with checks (blob dedupe, bounded commit log, MAIN_BRANCH, quotePath, unknown changes, scratch object store, ± total)
+- **Tests:** 804 → 815
+- **Dead end:** summing every lane branch's diff, then skipping a branch that is an ancestor of another — stub lanes stack (M2's branch holds M1's commits): sums doubled; the ancestor skip still doubles two lanes opened on one; a path's identical blob on two branches is now counted once
+- **Discovery** (affects U3-05, U3-06): lib/show.mjs exports joinDiff, mergeTreePaths, combine and milestonesOf (pure); U3-06's overlaps can reuse branchesOf' rule (harness/<run> + harness-lane/<run>/* + origin-only lanes) and joinDiff for 'what an ended run's branches changed'
+- **Discovery** (affects U3-06, run): git merge-tree --write-tree writes loose objects into the repo; show runs it with GIT_OBJECT_DIRECTORY=<tmp> and the repo's objects as an alternate so a read view leaves the object store as it was
+- **Discovery** (affects U3-07, U3-08): status.mjs gitOf now takes the main branch (default main); cardHeader and extraOf are exported
+- **Question for Michael:** Default taken (decisions/2026-10-28-show): show counts a path once when its blob is the same on two run branches and sums different results (refines plan default 5, which summed). OK?
+- **Proposed change:** U3-04 step 3 names tests/checks/65-show.sh; 65- was taken by U3-02, the plan's 68-show.sh is used
+- *21-U3-04 · claude-opus-5-5*
+
 ### 2026-10-28 17:55 · U3-03 · passes
 
 U3-03 passes. Commit `5de9bd7` is pushed to `harness-lane/agent-harness-2026-10-28/U3`. The full suite went from 796 to 804 checks and was green (804/804) on the fourth full run. - **Record after gc:** a finished run now also keeps `summary.json`, `report.md` and `metrics.jsonl` in its state dir. `harness report` reads the worktree, then that copy, then the ledger's copy. If none exists, it print…
