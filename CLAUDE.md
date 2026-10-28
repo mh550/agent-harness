@@ -67,3 +67,4 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - check() evals its command in the check file's shell: an `exit` in it ends the whole file; fail with `false` or a flag (agent-harness-2026-10-28 2026-10-28)
 - the end-reasons check greps literal finish/END_REASON/lane_exit 13 reasons in lib/driver.sh and lib/lane.sh: a new one needs a line in end-reasons.txt
 - status_stubs' HARNESS_NOW stays in the past: a file touched to a future time is -newer than any stamp (agent-harness-2026-10-28 2026-10-28)
+- a check's regex on a glyph run is locale-bound: write `(─)+`, `(●|✓) `, never `─+` or `[●✓]` (bytes under LC_ALL=C) (agent-harness-2026-10-28 2026-10-28)

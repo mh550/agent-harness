@@ -45,7 +45,7 @@ check "status json: STATUS_SINCE in the user config sets the window, --since win
 check "status json: --project proj2 keeps only that project's runs, items and queue entries" '
   J --project proj2 > "$T/p2.json" && [[ $(jq -r "[.running[], .finished[], .needs[], .queued[]] | map(.project) | unique | join(\" \")" "$T/p2.json") == proj2 ]] \
   && [[ $(jq -r "[.finished[].run] | join(\" \")" "$T/p2.json") == "givenup stopped" && $(jq ".needs | length" "$T/p2.json") == 1 ]] \
-  && J -p proj > /dev/null && ! "$H" status -p proj2 > /dev/null 2>&1'
+  && J -p proj > /dev/null && ! "$H" status running -p proj2 > /dev/null 2>&1'
 check "status json: queued holds the entries as queue list numbers them, held by a live run of their project, a brief's first 30 characters" '
   J > "$T/s.json" && [[ $(jq -r ".queued | map([.n, .verb, .project, .run // \"-\", .mark // \"-\", .parked] | join(\":\")) | join(\" \")" "$T/s.json") == "1:start:proj:-:-:false 2:continue:proj2:stopped:requested:false 1:start:proj2:proj2-next:-:true" ]] \
   && jq -e ".queued[0] | .held == {project: \"proj\", run: \"running\"} and .brief_head == \"brief brief brief brief brief \" and .brief_chars == 1200
@@ -59,9 +59,8 @@ check "status json: --json writes nothing, and reads the queue dir without creat
   touch "$T/json.stamp"; sleep 1; J > /dev/null && "$H" status running --json > /dev/null \
   && [[ -z $(find "$HARNESS_STATE" "$T/wt" "$HARNESS_LEDGER" -newer "$T/json.stamp") ]] \
   && HARNESS_STATE=$T/empty "$H" status --json | jq -e ".queued == [] and .running == [] and .older == 0" > /dev/null && [[ ! -e $T/empty ]]'
-check "status json: the text of harness status and harness status <run> is as before U1-03" '
-  diff <(LC_ALL=C "$H" status 2>&1 | sed "s|$T|<T>|g") "$HERE/fixtures/status-text-u1-03.txt" \
-  && diff <("$H" status running 2>&1 | sed "s|$T|<T>|g") <(sed -n "/^running (proj)/,/^[^ ]/p" "$HERE/fixtures/status-text-u1-03.txt" | sed "/^running (proj)/!{/^[^ ]/d}")'
+check "status json: the text of harness status <run> is as before U1-03 (U1-05 makes it a card)" '
+  diff <("$H" status running 2>&1 | sed "s|$T|<T>|g") "$HERE/fixtures/status-text-u1-03.txt"'
 # 30 more ended runs (38 in all), an empty meta.env, an ended file with a bare reason (bulk-01)
 status_bulk 30
 check "status json: an empty meta.env is skipped and a bare end reason dated by its file" '

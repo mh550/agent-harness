@@ -47,6 +47,24 @@ to U1-06 add their views' choices, U1-07 completes it.)*
     lane bumps `attempts.json` first), not given up. **(*default*)** `max-attempts` in the state dir, else 2 (the
     config default: status reads no project config). **(*default*)** A queued `--until HH:MM` shows as the next
     such time from now, as `to_epoch` reads it when the entry starts.
-- **Rejected:** `column(1)` or an npm table/colour package (CLAUDE.md: node built-ins only; `column` knows nothing of
+  - **The default view (U1-04):** `harness status` is one screen, rendered by `status.mjs` through `view.mjs`: NEEDS
+    YOU, RUNNING, QUEUED and FINISHED, always all four and in that order (an empty one is its one line), then a rule
+    and a footer only when runs are hidden. **No pager**: the view is short by design (for the long one, `HARNESS_COLOR=always COLUMNS=$COLUMNS harness
+    status --all | less -R`: through a pipe there is no colour and the width is 100). **Colour on a TTY only.** **The window:** FINISHED holds the runs ended in the last `24h` (`--since`, else
+    `STATUS_SINCE` in the user config; a date reads `since <date>`), never fewer than the 3 newest whatever their age, never more than 10; NEEDS
+    YOU is never windowed. `-v` adds each running run's lane lines (P2-06's text), its own units and the last `N`
+    `run.log` lines; `N` alone implies `-v`. The three run sections share one set of column widths so they line up;
+    narrow (under 72) moves the long field and the cost to an indented second line, the field cut so the cost stays.
+    The footer's hints keep `-p`, offer `--since 3d` only to a shorter window, and drop a hint that doesn't fit.
+    `run.log` lines lose their control bytes (a tab, an ESC) and shorten only a path that starts with the home dir. **(*default*)** RUNNING's
+    *what* is `<k> lanes` with a `lane <m> · <now>` sub-row each only with two or more open lanes: a lanes-era run
+    always has its one lane, and `<feature> · session <n> · <model>` says more. With `-v` the lane sub-rows are
+    P2-06's full lines instead, not both. **(*default*)** QUEUED counts and shows the waiting entries; the parked ones
+    are counted on the `… parked: harness queue list` line, not listed. **(*default*)** A `<run>` with `-a`,
+    `--since` or `--project` is an error (they list runs); the per-run text stays the U1-03 lines until U1-05's card.
+- **Rejected:** a pager by default (a phone over ssh, a desk and the debrief read the view as text, and the view is
+  short); colour off a TTY (escape bytes in a desk's or the debrief's capture); hiding NEEDS YOU when the window is
+  short (an item shows until it is resolved, whatever its age); per-command formatting code (each view drifted on its
+  own: the finding); `column(1)` or an npm table/colour package (CLAUDE.md: node built-ins only; `column` knows nothing of
   display width or ANSI); wrapping table cells (a row stays one scan line; a card shows the whole value); cutting
   ids (a printed command must paste); emoji glyphs (two columns, font-dependent).

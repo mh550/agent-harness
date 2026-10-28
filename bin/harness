@@ -19,10 +19,12 @@
 #   harness backlog set <id> <status> [--spec <path>] [--pr <url>] [--note <text>]
 #                                                move an item: proposed|specced|queued|merged|dropped (a ledger commit)
 #   harness backlog import <file.jsonl>          merge rows by id (the seed: docs/specs/2026-10-25-memory.backlog-seed.jsonl)
-#   harness status [<run-id>]                    every run: running / ended (why), features, last log lines
-#   harness status [<run-id>] [--json] [-a|--all] [--since <d>] [-p|--project <p>]
-#                                                --json: one v1 document (lib/status.mjs): needs, running, queued,
-#                                                finished (the last 24h, STATUS_SINCE or --since; 3 to 10), older
+#   harness status [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]
+#                                                one screen: NEEDS YOU, RUNNING, QUEUED, FINISHED (the last 24h,
+#                                                STATUS_SINCE or --since; 3 to 10) and how to see the older runs;
+#                                                -v (or N=<lines>): units, lane lines, the last N run.log lines
+#   harness status <run-id> [--json]             one run: running / ended (why), features, last log lines
+#                                                --json: one v1 document (lib/status.mjs), or that run's object
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
 #   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
 #                                                harness version (runs, passing, $/feature, cache hit, orientation)
@@ -326,24 +328,28 @@ run_rows() {   # <units 0|1>
   done
 }
 
-cmd_status() {   # [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [--json]: read-only (no harness_config writes, no mkdir)
-  local d want="" any=0 json=0 o=() use="usage: harness status [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [--json]"
+cmd_status() {   # [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]: read-only (no harness_config writes, no mkdir)
+  local d want="" any=0 json=0 v=0 o=() use="usage: harness status [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]"
   while (( $# )); do case $1 in
     --json) json=1 ;;
+    -v|--verbose) v=1 ;;
     -a|--all) o+=(--all) ;;
     --since|-p|--project) (( $# > 1 )) || die "$use"; [[ $1 == --since ]] && o+=(--since "$2") || o+=(--project "$2"); shift ;;
     -*) die "$use" ;;
     *) [[ -z $want ]] || die "$use"; want=$1 ;;
   esac; shift; done
-  (( json || ! ${#o[@]} )) || die "status: -a, --since and --project need --json (the text view takes them in U1-04)"
-  if (( json )); then   # the whole picture in one node process (decisions/2026-10-27-read-views)
+  local n=3; [[ ${N:-} =~ ^[0-9]+$ ]] && v=1 n=$N   # the supervisor's N=20 and the debrief's N=3 keep working: N implies -v
+  [[ -n $want ]] && (( ! json && ${#o[@]} )) && die "status <run>: -a, --since and --project list runs (harness status --all)"
+  if (( json )) || [[ -z $want ]]; then   # the whole picture in one node process (decisions/2026-10-27-read-views)
     [[ -n $want ]] && state_of "$want" > /dev/null
     local cfg r=0 mode=(view); cfg=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS ${STATUS_SINCE:-24h}"); runner_up && r=1
     [[ -n $want ]] && mode=(card "$want")
-    run_rows 1 | node "$HARNESS_HOME/lib/status.mjs" "${mode[@]}" --json ${o[@]+"${o[@]}"} --runner "$r" --queue "$Q" \
+    (( json )) && o+=(--json); (( v && ! json )) && o+=(--verbose "$n")
+    run_rows $(( json || v )) | node "$HARNESS_HOME/lib/status.mjs" "${mode[@]}" ${o[@]+"${o[@]}"} --runner "$r" --queue "$Q" \
       --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" --state-root "$STATE_ROOT" --max-parallel "${cfg%% *}" --since-default "${cfg#* }"
     return
   fi
+  # one run's text: the U1-03 lines until U1-05's card
   for d in "$STATE_ROOT"/*/*/; do
     [[ -f $d/meta.env ]] || continue
     [[ -n $want && $(basename "$d") != "$want" ]] && continue

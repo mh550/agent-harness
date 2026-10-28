@@ -26,6 +26,7 @@ harness_config() {
   DEBRIEF_MODEL=sonnet   # `harness debrief`: one read-only session after a queue (40 turns, $3 cap, like the retro)
   POLICY=build-only MERGE_POLICY=pr MAIN_BRANCH=main RETRO=1 AUTO_CONTINUE=1   # MERGE_POLICY=pr: a project self-merges only by setting auto
   MAX_PARALLEL_RUNS=1 LEDGER_COMMIT=1 BASE_PORT=7800 DEADLINE_AT=0
+  STATUS_SINCE=24h   # `harness status`: FINISHED shows the runs ended this recently (30m, 6h, 2d, 1w or YYYY-MM-DD), 3 to 10 of them
   # Lanes (docs/specs/2026-10-26-lanes.md): one process per open milestone, each in its own slot worktree
   MAX_LANES=1   # milestones built at once in one run; 1 = one after another (the box's memory decides any more)
   LANE_RESERVE_GB=4   # a further lane opens only with MEM_MIN_AVAILABLE_GB + this many GB per lane already open

@@ -501,7 +501,22 @@ status json: queued holds the entries as queue list numbers them, held by a live
 status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
 status json: the gc'd run's features are 23/23 from the ledger's summary.json, its worktree gone, its lanes from the summary
 status json: the running run's feature, session (all segments'), model, port and started_at; lane M1 open with its unit; its own unit apart
-status json: the text of harness status and harness status <run> is as before U1-03
+status json: the text of harness status <run> is as before U1-03 (U1-05 makes it a card)
+status view: --since 4d adds the 3-day-old run and drops the footer; --all lists every run; --project proj2 only that project's
+status view: -v adds each running run's lane lines (P2-06's text), its own units with MemoryCurrent and the last 3 run.log lines; N alone implies -v
+status view: -v with a non-numeric N keeps 3 log lines; two lanes' sub-rows are ASCII under LC_ALL=C; only a path starting with the home directory becomes a tilde; no control byte from run.log
+status view: FINISHED newest first with the end class glyph and the reason, the gc'd run 23/23 from the ledger; the 3-day-old run only in the footer
+status view: NEEDS YOU lists the crashed, the parked and the given-up run, oldest first, with headline, passing, dollars and age; the gc'd run none
+status view: QUEUED shows the waiting entries as queue rows, a held one says which run holds it, parked ones counted; past three, +<k> more
+status view: RUNNING shows the live run as ● with feature, session and model alias; paused ‖; a usage-limit wait; two lanes as sub-rows
+status view: STATUS_SINCE defaults to 24h (lib/config.sh), commented in the user config template; the catch-up prompt asks for one project
+status view: an empty state root prints the four empty sections and no footer
+status view: at 60 columns the cost stays beside a long reason; the footer keeps -p; a date window reads since <date>
+status view: colour only with HARNESS_TTY=1 (none under NO_COLOR); ASCII only under LC_ALL=C; paths with the home directory as a tilde
+status view: four sections in order (NEEDS YOU · harness needs, RUNNING, QUEUED · runner off, FINISHED · last 24h), a rule and the footer
+status view: harness status --all over 38 stub runs takes under 1 s (best of 3), and lists them all
+status view: no line over 60 or 80 display columns (also with -v); at 60 the long field and the cost go on an indented second line
+status view: no run.log line without -v; a bad --since is an error
 status: stop <why> from the phone: the same note, ended and services note
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
