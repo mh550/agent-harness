@@ -151,7 +151,7 @@
         "under MERGE_POLICY=pr with M2 depending on M1: M1 verified is proposed (PR open, not merged, no merged-M1); M2 opens from origin/main with run/<run>/M1 merged in (`note \"lane M2 opened (... from <sha>)\"` where <sha> contains the tag), M2 verified opens its PR and `note \"M2 verified; its PR waits for M1 to merge\"` appears once; `harness merge <run>` afterwards merges both in order (the run 10 and run 14 checks keep their text and pass)",
         "the new checks live in tests/checks/NN-lanes-continue.sh, names in tests/fixtures/check-names.txt; README.md says what `harness continue` tells a legacy run; `bash -n bin/harness lib/driver.sh lib/lane.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P1-06",
@@ -166,7 +166,7 @@
         "docs/architecture.md §3 lists lib/lane.sh, the coordinator and the record library; §4 the lane state, slots and the record lock; §5 the coordinator's loop as a diagram; §7 a record guard row replacing the tainted-tag rows; §8 the record branch and lane branches; §12 lanes beside MAX_PARALLEL_RUNS; §15's first bullet replaced; README.md names MAX_LANES, slots, and the lane exit codes' meanings in harness-log.md",
         "`bash -n` on every shell file P1 touched and `node --check` on every .mjs; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-01",
@@ -185,7 +185,7 @@
         "it orders P2-02..P2-06 and writes Michael's after-run steps from the spec (MAX_LANES=2 before the next run; the morning greps of harness-log.md, summary.json, metrics.jsonl, journalctl and systemctl; MAX_PARALLEL_RUNS=2 after a night with headroom)",
         "`bash tests/run.sh` ends with every check passing (unchanged by this feature)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-02",
@@ -200,7 +200,7 @@
         "checks in tests/checks/NN-lanes-two.sh: with MAX_LANES=2 and a list whose M2 is `after: []` the stub run has two `lane .* opened` notes before any `lane .* closed`, both milestones merge and the run ends `done`; with a HARNESS_MEMINFO fixture under the reserve the second lane waits with the note and opens once the fixture file is replaced; with a stub USAGE_5H at 0.80 it waits with the note",
         "journal/decisions/2026-10-26-parallel-runs-headroom.md supersedes D-H18 with the 2026-10-25 figures (five-hour at 12 %, seven-day 82 -> 83 % in 4.5 h) and the rule that admission is by headroom; names in tests/fixtures/check-names.txt; `bash -n` on the shell files touched, `node --check lib/metrics.mjs`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-03",
@@ -214,7 +214,7 @@
         "under MERGE_POLICY=pr, `harness merge <run>` opens a slot from the tag and runs the same rule (a check with main moved between verify and merge)",
         "journal/decisions/2026-10-26-lane-rebase-disjoint.md (title, provenance, finding · choice · rejected: always re-verify, never re-run, merge without a check); names in tests/fixtures/check-names.txt; `bash -n` on the shell files touched; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-04",
@@ -228,7 +228,7 @@
         "cmd_gc: the harness-lane/ prefix joins the harness/ and harness-merge/ passes; slots under lanes/ of an ended run with a dead driver are removed by the worktree pass; --deps covers slots; a check: gc on an ended run with a leftover slot (a killed driver) removes it and stops a stub lane unit harness-<run>-M1-s2.scope, and gc of a run with a live driver touches no slot and no lane unit",
         "names in tests/fixtures/check-names.txt (tests/checks/NN-lanes-slots.sh and the gc file); `bash -n bin/harness lib/lane.sh lib/driver.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-05",
@@ -242,7 +242,7 @@
         "cmd_gc's record_only keeps its meaning; the queue runner's end-of-queue `gc --all-merged --deps` deletes a merged run's record branch locally and on origin and its record worktree, the ledger keeping the record; a check in the gc file",
         "names in tests/fixtures/check-names.txt; `bash -n lib/driver.sh bin/harness lib/queue.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-06",
@@ -256,7 +256,7 @@
         "prompts/initializer.md says milestones that may run side by side should touch different files, shared docs (README.md, docs/architecture.md) are edited in a milestone's closing review feature, and a feature independent of its predecessors in the same milestone gets `after`; prompts/parts/run.md says other lanes of this run work in other slots; a check greps both",
         "names in tests/fixtures/check-names.txt; `node --check lib/summary.mjs`, `bash -n bin/harness`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-07",
@@ -271,7 +271,7 @@
         "docs/architecture.md §4 names USAGE_5H and the slots; §5 shows admission in the coordinator diagram; §8 the record PR; §12 lanes beside MAX_PARALLEL_RUNS with the headroom rule; §15 updated; README.md names MAX_LANES, LANE_RESERVE_GB, LANE_OPEN_BELOW_5H, LANE_REBASE, RECORD_PR, slots, the record PR, and the after-run steps (MAX_LANES=2, the morning greps); templates/user/config.sh has every lane key commented",
         "`bash -n` on every shell file P2 touched and `node --check` on every .mjs; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

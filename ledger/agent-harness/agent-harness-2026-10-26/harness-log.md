@@ -51,3 +51,35 @@
 - 2026-10-27 17:11 · stopped by Michael: merge main's flake fix (PR #39) first
 - 2026-10-27 17:11 · run ended (stopped by Michael: merge main's flake fix (PR #39) first): 8/17 passing · 18 sessions (18 real) · 8 features passed · $69.99 · 7.0 h · by kind: init 1 ($4.71), coding 13 ($64.69), retro 3 ($0.35), verify 1 ($0.24) · by model: claude-fable-5-1 1 ($4.71), claude-opus-5-5 13 ($64.69), claude-sonnet-5-5 4 ($0.59)
 - 2026-10-27 17:11 · services stopped (stopped by Michael: merge main's flake fix (PR #39) first)
+- 2026-10-27 17:12 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-26 (in the state dir: init.out check-last.out)
+- 2026-10-27 18:54 · context.md for P1-05: 7808 bytes, 6 items left out
+- 2026-10-27 19:25 · P1-05 · claude-opus-5-5 · passes=true · 30 min · 9/17 passing
+- 2026-10-27 19:25 · context.md for P1-06: 7908 bytes, 6 items left out
+- 2026-10-27 20:09 · P1-06 · claude-opus-5-5 · passes=true · 43 min · 10/17 passing
+- 2026-10-27 20:09 · verify P1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 20:15 · context.md for P1: 7841 bytes, 43 items left out
+- 2026-10-27 20:32 · P1 verified and tagged run/agent-harness-2026-10-26/P1
+- 2026-10-27 20:32 · P1 merged into main · https://github.com/mh550/agent-harness/pull/40
+- 2026-10-27 20:32 · context.md for P2-01: 7875 bytes, 18 items left out
+- 2026-10-27 20:56 · P2-01: entry.json invalid (summary: 413 characters (at most 400)); recorded a minimal entry
+- 2026-10-27 20:56 · P2-01 · claude-opus-5-5 · passes=true · 23 min · 11/17 passing
+- 2026-10-27 20:56 · context.md for P2-02: 7875 bytes, 14 items left out
+- 2026-10-27 21:41 · P2-02 · claude-opus-5-5 · passes=true · 45 min · 12/17 passing
+- 2026-10-27 21:41 · context.md for P2-03: 8049 bytes, 16 items left out
+- 2026-10-27 22:14 · P2-03 · claude-opus-5-5 · passes=true · 32 min · 13/17 passing
+- 2026-10-27 22:14 · context.md for P2-04: 7812 bytes, 18 items left out
+- 2026-10-27 22:44 · P2-04 · claude-opus-5-5 · passes=true · 29 min · 14/17 passing
+- 2026-10-27 22:44 · context.md for P2-05: 7991 bytes, 17 items left out
+- 2026-10-27 23:21 · P2-05 · claude-opus-5-5 · passes=true · 37 min · 15/17 passing
+- 2026-10-27 23:21 · context.md for P2-06: 7822 bytes, 22 items left out
+- 2026-10-27 23:51 · P2-06 · claude-opus-5-5 · passes=true · 29 min · 16/17 passing
+- 2026-10-27 23:51 · context.md for P2-07: 7877 bytes, 32 items left out
+- 2026-10-28 01:02 · P2-07 · claude-opus-5-5 · passes=true · 70 min · 17/17 passing
+- 2026-10-28 01:02 · merged main into harness/agent-harness-2026-10-26
+- 2026-10-28 01:02 · verify P2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-28 01:10 · context.md for P2: 7965 bytes, 58 items left out
+- 2026-10-28 01:11 · P2 verified and tagged run/agent-harness-2026-10-26/P2
+- 2026-10-28 01:11 · P2 merged into main · https://github.com/mh550/agent-harness/pull/41
+- 2026-10-28 01:11 · every feature passes
+- 2026-10-28 01:11 · run ended (done): 17/17 passing · 30 sessions (30 real) · 17 features passed · $127.81 · 12.9 h · by kind: init 1 ($4.71), coding 22 ($122.00), retro 4 ($0.47), verify 3 ($0.62) · by model: claude-fable-5-1 1 ($4.71), claude-opus-5-5 22 ($122.00), claude-sonnet-5-5 7 ($1.09)
+- 2026-10-28 01:11 · services stopped (done)
