@@ -185,7 +185,7 @@
         "it orders P2-02..P2-06 and writes Michael's after-run steps from the spec (MAX_LANES=2 before the next run; the morning greps of harness-log.md, summary.json, metrics.jsonl, journalctl and systemctl; MAX_PARALLEL_RUNS=2 after a night with headroom)",
         "`bash tests/run.sh` ends with every check passing (unchanged by this feature)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-02",
