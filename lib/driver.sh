@@ -96,6 +96,7 @@ reap() {
     read -r code why < "$STATE/lanes/$m/exit" 2> /dev/null || { code=12 why="lane exited unexpectedly"; }
     mv -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/closed" 2> /dev/null; rm -f "$f"; n=$(( n + 1 ))
     note "lane $m closed ($why)"
+    [[ -f $STATE/merged-$m ]] && lane_branch_gone "$m"   # it merged itself: its branch went from the origin, here it goes now
     [[ $why == "lane exited unexpectedly" ]] && touch "$STATE/needs-$m"
     [[ $code == 13 || $why == "feature-list edits" ]] && { LANE_END=$why; echo "$why" > "$STATE/lanes-end"; }
   done
@@ -168,17 +169,20 @@ lanes_services_down() {
 # The coordinator exiting (a TERM, a crash): every lane gets a TERM and up to 150 s to stop its session and services
 # (its teardown runs under timeout -k 10s 2m)
 lanes_term() {
-  local f i
-  for f in "$STATE"/lanes/*/pid; do [[ -f $f ]] && kill -TERM "$(cat "$f")" 2> /dev/null; done
+  local f i termed=()
+  for f in "$STATE"/lanes/*/pid; do [[ -f $f ]] && kill -TERM "$(cat "$f")" 2> /dev/null && { f=${f%/pid}; termed+=("${f##*/}"); }; done
+  for f in "${termed[@]}"; do note "lane $f: stopped (the driver is exiting)"; done   # every TERM first: a note may wait for the record lock
   for (( i = 0; i < 1500; i++ )); do (( $(lanes_open) )) || break; sleep 0.1; done
   return 0
 }
 # A lane process an earlier coordinator left (it died without its trap: SIGKILL, OOM) still works in its slot: a TERM
-# and its own trap stop it before this segment reopens that slot. Only a pid that is lib/lane.sh of this state dir.
+# and its own trap stop it before this segment reopens that slot. Only a pid that is lib/lane.sh of this state dir (its
+# environment's STATE): a recycled pid of another run's lane is never signalled.
 lanes_orphans() {
   local f p
   for f in "$STATE"/lanes/*/pid; do
-    [[ -f $f ]] && p=$(cat "$f") && kill -0 "$p" 2> /dev/null && tr '\0' ' ' < "/proc/$p/cmdline" 2> /dev/null | grep -q "lib/lane.sh" || continue
+    [[ -f $f ]] && p=$(cat "$f") && kill -0 "$p" 2> /dev/null && tr '\0' ' ' < "/proc/$p/cmdline" 2> /dev/null | grep "lib/lane.sh" > /dev/null \
+      && tr '\0' '\n' < "/proc/$p/environ" 2> /dev/null | grep -xF "STATE=$STATE" > /dev/null || continue
     p=${f%/pid}; note "lane ${p##*/}: its process $(cat "$f") outlived the last segment's driver; stopped"; kill -TERM "$(cat "$f")" 2> /dev/null
   done
   for (( p = 0; p < 1500; p++ )); do (( $(lanes_open) )) || break; sleep 0.1; done

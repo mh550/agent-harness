@@ -403,6 +403,7 @@ merge_one() {
   if $GH pr merge "$url" --merge --match-head-commit "$c" > /dev/null 8>&- 2>> "$STATE/run.log"; then
     git push -q origin --delete "$head" 8>&- 2>/dev/null
     touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH · $url"; notify "$m merged · $url" click="$url"
+    lane_branch_gone "$m"
   else
     # once per tag commit (merge_milestones runs again after every verify and at the end); `harness merge` always says so
     [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/refused-$m" 2>/dev/null) == "$c" ]] && return 1
@@ -436,7 +437,7 @@ merge_milestones_() {
     if [[ -f $STATE/proposed-$m && ! ${HARNESS_MERGE_ONLY:-} ]]; then   # Michael's to merge, or `harness merge`'s
       # merged by Michael meanwhile (its PR on GitHub): merged here too, so what waits on it moves on
       git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null && git fetch -q origin "$MAIN_BRANCH" 8>&- 2> /dev/null \
-        && git merge-base --is-ancestor "run/$RUN_ID/$m" "origin/$MAIN_BRANCH" && { touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (by its PR)"; }
+        && git merge-base --is-ancestor "run/$RUN_ID/$m" "origin/$MAIN_BRANCH" && { touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (by its PR)"; lane_branch_gone "$m"; }
       continue
     fi
     git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null || continue
@@ -451,6 +452,37 @@ merge_milestones_() {
     fi
     merge_one "$m"; (( $? == 3 )) && cp "$STATE/moved-$m" "$STATE/rebase-$m"
   done
+  return 0
+}
+
+# <m>: a merged milestone's lane branch goes, on the origin at once and here once no live lane has it checked out (a
+# lane merging its own milestone leaves its local branch to the coordinator's reap); a closed lane's slot is detached
+# from it first. Only what its merged tag or main holds (a fix Michael pushed onto it after the merge stays), only from
+# this run's slots (a checkout of Michael's with it checked out keeps it), the origin's under a lease on the tip seen.
+# Noted once, when something went. branch -D writes .git/config, which git locks without waiting: once more after a
+# second (another run of the project may be writing it)
+lane_branch_gone() {
+  local m=$1 b=harness-lane/$RUN_ID/$1 w r tip gone=0 od=0 left=""
+  tip=$(git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m^{commit}") || tip=""
+  held_() { { [[ -n $tip ]] && git merge-base --is-ancestor "$1" "$tip" 2> /dev/null; } || git merge-base --is-ancestor "$1" "origin/$MAIN_BRANCH" 2> /dev/null; }
+  r=$(git ls-remote origin "refs/heads/$b" 8>&- 9>&- 2> /dev/null | cut -f1)
+  if [[ -n $r ]]; then
+    if held_ "$r" && git push -q --force-with-lease="refs/heads/$b:$r" origin ":refs/heads/$b" 8>&- 9>&- 2>> "$STATE/run.log"; then gone=1 od=1
+    else log "lane $m: $b kept on origin (commits its merge doesn't hold, or the push failed)"; fi
+  fi
+  if git rev-parse -q --verify "refs/heads/$b" > /dev/null; then
+    w=$(git worktree list --porcelain | awk -v b="branch refs/heads/$b" '/^worktree / { w = substr($0, 10) } $0 == b { print w; exit }')
+    if [[ -n $w ]] && lane_alive "$m"; then return 0
+    elif ! held_ "refs/heads/$b"; then log "lane $m: $b kept here (commits its merge doesn't hold)"
+    elif [[ -n $w && $w != "$WT_ROOT_DIR/lanes/$RUN_ID/slot-"* ]]; then log "lane $m: $b kept here (checked out in $w)"
+    elif [[ -n $w ]] && ! git -C "$w" checkout -q --detach 2>> "$STATE/run.log"; then log "lane $m: $b kept here (its slot $w would not detach)"
+    elif git branch -q -D "$b" 2> /dev/null || { sleep 1; git branch -q -D "$b" 2>> "$STATE/run.log"; }; then gone=1
+    else log "lane $m: could not delete $b here (see run.log)"; fi
+  fi
+  (( gone )) || return 0
+  git rev-parse -q --verify "refs/heads/$b" > /dev/null && left=" here"
+  [[ -n $r ]] && (( ! od )) && left+="${left:+ and} on origin"
+  note "lane $m: branch $b deleted (merged)${left:+; kept$left (see run.log)}"
   return 0
 }
 
@@ -601,10 +633,10 @@ slot_close() {
   rmdir "$WT_ROOT_DIR/lanes/$RUN_ID" "$WT_ROOT_DIR/lanes" 2> /dev/null
   LBRANCH="" LANE=""
   local f m b
-  for f in "$STATE"/merged-*; do
+  for f in "$STATE"/merged-*; do   # most went when they merged (lane_branch_gone); what a failed push or a crash left
     [[ -f $f ]] || continue; m=${f##*/merged-} b=harness-lane/$RUN_ID/$m
-    git -C "$RWT" rev-parse -q --verify "refs/heads/$b" > /dev/null && git -C "$RWT" branch -q -D "$b"
-    git -C "$RWT" rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null && git -C "$RWT" push -q origin --delete "$b" 2> /dev/null
+    git rev-parse -q --verify "refs/heads/$b" > /dev/null || git rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null || continue
+    lane_branch_gone "$m"
   done
   # a lane opened and never pushed (the run ended before its first session) that carries nothing main lacks is litter
   for b in $(git -C "$RWT" for-each-ref --format='%(refname:short)' "refs/heads/harness-lane/$RUN_ID"); do

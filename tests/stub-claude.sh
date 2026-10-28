@@ -34,6 +34,8 @@
 # STUB_SHARED=<file>: A's first coding session rewrites <file>'s first line to A, C's its last line to C, committed with
 # their work (one path, distinct hunks: the merge is clean and the two milestones' files overlap).
 # STUB_REBASE_VERIFY_FAIL=1: M2's second verify session (a re-base's round) un-passes C.
+# STUB_IGNORED=<path>: every coding session appends "<id> present|absent" (<path> before it works) to
+# $STUB_DIR/ignored.log; the run's first writes <path> (an ignored install: a reused slot keeps it, P2-04).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -122,6 +124,10 @@ JSON
     fi
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
     echo "$id attempt $n" >> "$RS/sessions.log"
+    if [[ ${STUB_IGNORED:-} ]]; then
+      [[ -e $STUB_IGNORED ]] && echo "$id present" >> "$STUB_DIR/ignored.log" || echo "$id absent" >> "$STUB_DIR/ignored.log"
+      [[ -f $RS/ignored-made ]] || { mkdir -p "$(dirname "$STUB_IGNORED")" && echo "$id" > "$STUB_IGNORED" && touch "$RS/ignored-made"; }
+    fi
     if [[ ${STUB_EDIT:-} ]]; then   # edits only that path, passes nothing; keeps the init output it was started with (the suite cache, S3)
       cp "$HARNESS_SCRATCH/init.out" "$STUB_DIR/init-$HARNESS_RUN_ID-$n.out"
       mkdir -p "$(dirname "$STUB_EDIT")" && echo "$id $n" >> "$STUB_EDIT"

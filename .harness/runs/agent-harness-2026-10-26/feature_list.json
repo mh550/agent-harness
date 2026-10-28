@@ -228,7 +228,7 @@
         "cmd_gc: the harness-lane/ prefix joins the harness/ and harness-merge/ passes; slots under lanes/ of an ended run with a dead driver are removed by the worktree pass; --deps covers slots; a check: gc on an ended run with a leftover slot (a killed driver) removes it and stops a stub lane unit harness-<run>-M1-s2.scope, and gc of a run with a live driver touches no slot and no lane unit",
         "names in tests/fixtures/check-names.txt (tests/checks/NN-lanes-slots.sh and the gc file); `bash -n bin/harness lib/lane.sh lib/driver.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-05",

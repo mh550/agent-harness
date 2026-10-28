@@ -288,6 +288,16 @@ lanes run: each lane is noted opened in slot 0 and then closed, M1's before M2's
 lanes run: every coding and verify row in metrics.jsonl carries its lane; the initializer and the retro none
 lanes run: finish leaves the run one worktree (the record's), no slot, and deletes the merged lanes' branches
 lanes run: harness/ln holds every entry; each lane wrote its exit line, closed by the coordinator
+lanes slots: a merged lane's branch goes only as far as its merge holds it, and only from this run's slots
+lanes slots: a merged lane's branch is deleted when its PR merges (noted before the next lane opens), locally and on origin
+lanes slots: after finish no lanes/ directory is left; the merged lane branch is gone here and on origin, the unverified one stays on both
+lanes slots: gc --deps frees the dependency directories of an ended run's slot it keeps for its uncommitted work
+lanes slots: gc of a run whose driver was killed but whose lane lives keeps its slot (saying why) and its lane's session unit
+lanes slots: gc of a run with a dead driver and lane removes its leftover slot and lanes/, stops its lane unit and keeps its unmerged lane branch
+lanes slots: gc of a run with a live driver touches no slot, no lane unit and no lane branch
+lanes slots: the held run then ends with its slot gone
+lanes slots: the second milestone opens in slot 0, reused by checkout -B, and finds the ignored directory the first left
+lanes slots: under pr the slot is freed at verify and the branch kept; gc deletes it once its PR merged, here and on origin
 lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left
 lanes two: M1 opens in slot 0 on the run's port, M2 in slot 1 on the first free one
 lanes two: both milestones merge (one pr merge each, no refused merge) and the run ends done
