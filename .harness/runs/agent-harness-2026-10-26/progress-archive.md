@@ -9,6 +9,47 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-28 01:11 · verify P2 · passes
+
+All 7 P2 features hold: full suite 602/602 green (475 s); bash -n/node --check clean; named checks in 43-50 and docs/decisions/README/architecture/config items read. Note: brief items (initializer "measured and recorded", "suite ran n x" note) not found in prompts/lib.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P2-01 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 5 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 6 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 5 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-03 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-03 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-03 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-03 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-04 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-04 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-04 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-04 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-05 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-05 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-05 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-05 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-06 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-06 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-06 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-06 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 5 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+
+- *011027-verify-P2 · claude-sonnet-5-5*
+
 ### 2026-10-28 01:02 · P2-07 · passes
 
 Opus review of the P2 diff (2,106 lines): 1 Critical, 3 Important fixed red->green with 4 checks; Minor 5 fixed; the rest left in docs/plans/2026-10-26-P2-review.md. D21 overturned in place (an open record PR keeps harness/<run> from gc). Docs: README after-run steps, architecture §12 headroom rule and §15, lanes.md P2 section. Suite 598 -> 602, green.
