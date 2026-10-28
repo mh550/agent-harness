@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 22:44 · P2-04 · passes
+
+Merged lane branches now go when their PR merges (lane_branch_gone: origin at once, local at reap; only what the tag or main holds, only from this run's slots). harness gc gains the harness-lane/ pass, removes leftover slots of runs with no live driver or lane, covers slots under --deps, and treats a live lane as running. P1 Minors 8 and 11 fixed.
+
+- **Files:** lib/record.sh, lib/driver.sh, bin/harness, tests/stub-claude.sh, tests/checks/49-lanes-slots.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-27-lane-branches-and-slots.md
+- **Verified:** tests/checks/49-lanes-slots.sh 10/10 (red first: 7 of 9 failed before the code; dropping the running() lane mapping turns the live-run check red); full suite via check.sh green, 584 tests in 457 s; bash -n bin/harness lib/lane.sh lib/driver.sh lib/record.sh. An Opus review found 2 Important (deletion without an ancestry guard, detaching a non-slot checkout) and Minors 3, 5, 7: all fixed and covered by the lane_branch_gone check.
+- **Tests:** 574 → 584
+- **Dead end:** gk/gd scenarios after sr merged into main — the stub's work-A.txt then equals main's, A's commit is empty and nothing is pushed; the file resets origin main to its first commit before gk
+- **Discovery** (affects P2-06, P2-07): A lane branch is not pushed at lane open, only after its first session (sync_lane): a check that needs it on origin while held must push it itself
+- **Discovery** (affects run): 49-lanes-slots.sh costs ~42 s of slot time (five stub runs); suite 457 s at TEST_JOBS=4 (measured, not a gate)
+- **Discovery** (affects P2-07): Left for P2-07 (review Minors not fixed): lanes_orphans compares STATE as an exact string (a differently spelled path to the same dir would miss an orphan); gc's slot removal doesn't check that the unit pass's scope_stop succeeded (a session could still run in a clean slot); no --dry-run check for slots or lane branches
+- **Proposed change:** P2-04 step 3's gc check sits in 49-lanes-slots.sh, as the plan §7 says, not in 08 or 13
+- *06-P2-04 · claude-opus-5-5*
+
 ### 2026-10-27 22:14 · P2-03 · passes
 
 The re-base rule: merge_one returns 3 when main moved; the lane (or a LANE_MERGE merge lane, coordinator or harness merge) merges main into the verified commit; disjoint files: full suite, tag forced to the merged commit, merge; overlapping or LANE_REBASE=verify: one verify round. Review's 5 findings fixed. Suite 566 -> 574, green.
@@ -260,19 +274,9 @@ All four P0 features hold: init full suite 395/395 (206 s), subset runs work, sp
 
 - *164801-verify-P0 · claude-sonnet-5-5*
 
-### 2026-10-26 16:44 · P0-04 · passes
-
-Opus review of the P0 diff: 0 Critical, 2 Important, 4 Minor (docs/plans/2026-10-26-P0-review.md). Fixed RED->GREEN: the runner now prints a hung file's output on TERM and names it; a file exiting non-zero with no FAIL line counts as one failed check; treekey drops absolute/.. ignore entries. SPLIT_FROM corrected. Decision file and docs completed.
-
-- **Files:** tests/run.sh, lib/treekey.mjs, tests/split.sh, tests/checks/33-suite-runner.sh, tests/checks/34-check-key.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-suite-split.md, docs/plans/2026-10-26-P0-review.md, docs/architecture.md, README.md, CLAUDE.md
-- **Verified:** 3 new checks watched red (suite-runner 9/11, check-key 7/8), then green; suite-runner file 5x 11/11; full suite through lib/check.sh 395/395 in 208 s (slowest 15-run-4 157.5 s); SPLIT_OUT=tmp split.sh matches tests/checks 01-32 byte for byte; bash -n on 43 P0 shell files, node --check treekey/testcount.
-- **Tests:** 392 → 395
-- **Discovery** (affects P2): tests/run.sh now traps TERM/INT/HUP: a file still running when check.sh's timeout fires prints its output so far and '<file>: unfinished when the suite was stopped'. P2's TEST_FILE_TIMEOUT per file should reuse that line shape (one FAIL per hung file).
-- **Discovery** (affects run): A check file that exits non-zero with no FAIL line now adds 'FAIL <file>: exited <rc> before its end, with no FAIL line' to the total, so a subset run can no longer read as all passed while a file crashed.
-- *02-P0-04 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 16:44 · P0-04 · passes · Opus review of the P0 diff: 0 Critical, 2 Important, 4 Minor (docs/plans/2026-10-26-P0-review.md). F… ([in full](progress-archive.md))
 - 2026-10-26 16:24 · P0-02 · passes · Runner code was already in place; under the new rule (a time is measured and recorded, not a gate) I… ([in full](progress-archive.md))
 - 2026-10-26 08:30 · P0-03 · passes · CHECK_KEY_IGNORE (default .harness/runs docs/plans; this repo adds docs/specs journal findings-and-r… ([in full](progress-archive.md))
 - 2026-10-26 08:15 · P0-02 · not yet · Steps 1-4, 6, 7 hold; step 5 (<150 s) can't be met inside a suite split. Measured: per-file slot tim… ([in full](progress-archive.md))
