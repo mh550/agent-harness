@@ -30,7 +30,7 @@ notify() {
     [[ -n $actions ]] && a+=(-H "Actions: $actions")
     [[ -n ${NTFY_TOKEN:-} ]] && a+=(-H "Authorization: Bearer $NTFY_TOKEN")
     v=${body:-$(notify_trim "$msg")}; [[ $v == @* ]] && v=" $v"   # curl reads "@<file>" as a file to send
-    "${HARNESS_CURL:-curl}" "${a[@]}" --data-binary "$v" "$NTFY_URL" < /dev/null > /dev/null 2>&1 9>&-; rc=$?
+    "${HARNESS_CURL:-curl}" "${a[@]}" --data-binary "$v" "$NTFY_URL" < /dev/null > /dev/null 2>&1 8>&- 9>&-; rc=$?
     # neither line may carry the token, the URL or the body
     if (( rc == 0 )); then log "notified: $title"
     elif declare -F note > /dev/null; then note "notification failed (curl exit $rc): $title"

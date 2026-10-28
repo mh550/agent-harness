@@ -218,7 +218,7 @@ kill -TERM "$(cat "$HARNESS_STATE/proj/termed/driver.pid")"; wait "$TP"
 touch "$T/scope/harness-termed-s99".{alive,running}; TSL=$(sd_count list-units)   # a unit left behind: an ended run still lists none
 "$H" status termed > "$T/status-termed2.out" 2>&1; TSR2=$?; TSL2=$(sd_count list-units); rm -f "$T/scope/harness-termed-s99".*
 check "harness status lists a running run's units with MemoryCurrent; an ended run's none" '[[ $TSR == 0 && $TSR2 == 0 ]] && grep -q "^termed (proj) · running" "$T/status-termed.out" \
-  && grep -Eqx "    harness-termed-M1-s[0-9]+ · MemoryCurrent 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
+  && grep -Eqx "    lane M1 · A · session 1 · port [0-9]+ · slot 0 · MemoryCurrent harness-termed-M1-s[0-9]+ 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
   && grep -q "^termed (proj) · ended: driver exited" "$T/status-termed2.out" && ! grep -q MemoryCurrent "$T/status-termed2.out" && [[ $TSL2 == "$TSL" ]]'
 termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* || $(readlink "/proc/$p/cwd") == "$T/wt/proj/lanes/termed/"* ]] && echo "$p"; done; }
 check "the EXIT trap commits its services note: harness-log.md is clean after a TERM" '[[ -z $(git -C "$T/wt/proj/termed" status --porcelain -- .harness/runs/termed/harness-log.md) ]] \
@@ -275,7 +275,7 @@ check "memory gate: every session starts with the services up, a verify after it
 cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-gate.txt"; { cat "$T/base-config.sh"; echo MEM_WAIT_MAX=60s; } > "$T/user-config.sh"
 HARNESS_MEMINFO=$T/meminfo-gate.txt STUB_MEM_DROP=$T/meminfo-gate.txt STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 \
   "$H" start "$T/proj" gatestop --spec SPEC.md --foreground > "$T/run-gatestop.out" 2>&1 & GP=$!
-for _ in $(seq 300); do hlog gatestop | grep -q "waiting up to 60s$" && break; sleep 0.1; done
+for _ in $(seq 1200); do hlog gatestop | grep "waiting up to 60s$" > /dev/null && break; sleep 0.1; done   # 120 s: under 4 jobs the wait came after 30
 touch "$HARNESS_STATE/proj/gatestop/STOP"; cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-gate.txt"; wait "$GP"
 cp "$T/base-config.sh" "$T/user-config.sh"
 check "memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt" '[[ $(hlog gatestop | grep -c "· memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 60s$") == 1 ]] \

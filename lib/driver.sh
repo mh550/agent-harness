@@ -3,9 +3,10 @@
 # around agent sessions:
 #   1. no feature list → one initializer session writes it (from the spec files and the run's brief)
 #   2. every HARNESS_LANE_POLL seconds it reaps lanes that ended and opens lanes (lanes P1-04): a lane is one milestone
-#      run by its own process, lib/lane.sh, in a slot worktree on harness-lane/<run>/<m>; MAX_LANES of them at once
-#      (default 1: one after another). A lane opens when its milestone has a feature to try (or all pass, to be
-#      verified) and every milestone it depends on is verified (F lanes). In its lane, one fresh coding session per
+#      run by its own process, lib/lane.sh, in a slot worktree on harness-lane/<run>/<m>, on its own port; MAX_LANES of
+#      them at once (default 1: one after another), a further one only with headroom (admit: memory, the five-hour
+#      window). A lane opens when its milestone has a feature to try (or all pass, to be verified) and every milestone
+#      it depends on is verified (F lanes). In its lane, one fresh coding session per
 #      feature, in dependency order. Before each: take answers, sync with the remote, honour pause/stop and the box-wide
 #      usage-limit window, run the project's init and the cached suite. After each: a session that ended on a usage
 #      limit or API error is given back (not the feature's fault); otherwise commit leftovers, repair the feature list,
@@ -59,8 +60,9 @@ END_REASON="driver exited unexpectedly (see run.log)"
 # A TERM runs this at once while the session goes on: its scope stops first, so claude can't work on unread meanwhile.
 # It may now take minutes (the teardown): a second TERM/HUP (tmux closing) must not cut it short. Its note is committed
 # (that file only, not pushed): a dirty worktree would keep gc from removing it
+# A forked child (lane_wait's sleep, killed before its exec) inherits it and must not run it (P2 review 1).
 # Lanes first: each stops its own session and services; fd 9 closed so none waits on a lock this process holds.
-trap 'trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "$REC/harness-log.md" > /dev/null 2>&1; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
+trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "$REC/harness-log.md" > /dev/null 2>&1; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
 
 demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
   # the stop's time is when it reached this box (STOP, else INBOX.md pulled), not when the driver got to it: a request
@@ -75,7 +77,6 @@ demote_requests() {   # a stop after Michael queued a continuation of this run i
 # ---- the lanes (lanes P1-04): each open milestone is a lib/lane.sh process; $STATE/lanes/<m>/pid is written here, at
 # its start, never by the lane (a lane still sourcing its libraries would look closed and be reaped or opened twice)
 POLL=${HARNESS_LANE_POLL:-10} LANE_END="" LANE_ONCE=0
-lane_alive() { local p; p=$(cat "$STATE/lanes/$1/pid" 2> /dev/null) && [[ -n $p ]] && kill -0 "$p" 2> /dev/null; }
 lanes_open() { local f n=0 m; for f in "$STATE"/lanes/*/pid; do [[ -f $f ]] || continue; m=${f%/pid}; lane_alive "${m##*/}" && n=$(( n + 1 )); done; echo "$n"; }
 # Sleep the poll (or <s>), less when a lane exits: its exit wakes the coordinator at once
 lane_wait() {
@@ -85,8 +86,9 @@ lane_wait() {
   return 0
 }
 # Every lane whose process is gone: its exit line noted, its pid gone (its slot free), the merges it may have unblocked.
-# A session cap, a usage limit, the weekly budget or feature-list edits end the run (LANE_END); a stop and the deadline
-# are seen by the coordinator itself. A lane that died without a reason needs Michael (never reopened in a loop).
+# A session cap, a usage limit, the weekly budget or feature-list edits end the run (LANE_END, and state/lanes-end, so
+# every other lane exits 16 before its next session); a stop and the deadline are seen by the coordinator itself. A
+# lane that died without a reason needs Michael (never reopened in a loop).
 reap() {
   local f m code why n=0
   for f in "$STATE"/lanes/*/pid; do
@@ -95,15 +97,36 @@ reap() {
     read -r code why < "$STATE/lanes/$m/exit" 2> /dev/null || { code=12 why="lane exited unexpectedly"; }
     mv -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/closed" 2> /dev/null; rm -f "$f"; n=$(( n + 1 ))
     note "lane $m closed ($why)"
+    [[ -f $STATE/merged-$m ]] && lane_branch_gone "$m"   # it merged itself: its branch went from the origin, here it goes now
     [[ $why == "lane exited unexpectedly" ]] && touch "$STATE/needs-$m"
-    [[ $code == 13 || $why == "feature-list edits" ]] && LANE_END=$why
+    [[ $code == 13 || $why == "feature-list edits" ]] && { LANE_END=$why; echo "$why" > "$STATE/lanes-end"; }
   done
   (( n )) && merge_milestones
   return 0
 }
 wait_lanes() { while (( $(lanes_open) )); do lane_wait; reap; done; reap; }   # until every lane has exited (between sessions)
-# <m>: the lowest slot no open lane holds; the services the slot's last lane left up stopped silently (its port is
-# reused, as run_init replaces its own: D4); the slot opened (slot_open: its base, the note); the lane's process started
+# "<m>\trebase" for each verified milestone whose main moved (state/rebase-<m>, merge_milestones) and whose lane has
+# closed, in list order: the coordinator opens it as a merge lane (LANE_MERGE=1) ahead of F lanes' milestones. Not one
+# that needs Michael, except under `harness merge` (he asked)
+rebase_due() {
+  local m
+  for m in $(F milestones "$LIST"); do
+    [[ -f $STATE/rebase-$m ]] && ! lane_alive "$m" && [[ ${HARNESS_MERGE_ONLY:-} || ! -f $STATE/needs-$m ]] && printf '%s\trebase\n' "$m"
+  done
+  return 0
+}
+# <m> → its port, the first free from BASE_PORT (port_taken), written to lanes/<m>/port with lanes/<m>/opening, which
+# holds it until lane_open has written the pid; under the record lock (record port_alloc_) and the box-wide port lock,
+# which cmd_start takes too, so neither another lane nor another run takes it meanwhile
+port_alloc_() {
+  local p=$BASE_PORT
+  { flock 7; while port_taken "$p"; do p=$(( p + 1 )); done
+    echo "$p" > "$STATE/lanes/$1/port"; : > "$STATE/lanes/$1/opening"; } 7> "$STATE_ROOT/port.lock"
+  echo "$p"
+}
+# <m>: (LANE_MERGE=1: a re-base, on the verified commit) the lowest slot no open lane holds; the services the slot's last lane left up stopped silently (its port is
+# reused, as run_init replaces its own: D4); its port (slot 0: the run's, so one lane is the run as before; slot 1 up:
+# port_alloc_); the slot opened (slot_open: its base, the note); the lane's process started
 lane_open() {
   local m=$1 k=0 f d busy
   while :; do
@@ -116,13 +139,22 @@ lane_open() {
     [[ -f $f && $(cat "${f%/svc-up}/slot" 2> /dev/null) == "$WT_ROOT_DIR/lanes/$RUN_ID/slot-$k" ]] || continue
     scope_stop "$(cat "$f")"; rm -f "$f"
   done
+  mkdir -p "$STATE/lanes/$m"
+  if (( k == 0 )); then LANE_PORT=$PORT; echo "$PORT" > "$STATE/lanes/$m/port"; else LANE_PORT=$(record port_alloc_ "$m"); fi
   slot_open "$m" "$k"; local rc=$?
   LANE="" LBRANCH=""; rec_cd   # SLOT stays: finish counts the last lane's tests in it
-  (( rc == 0 )) || return 1
-  echo "$PORT" > "$STATE/lanes/$m/port"; rm -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/need"
-  LANE=$m LANE_SLOT=$k LANE_PORT=$PORT LANE_ONCE=$LANE_ONCE bash "$HARNESS_HOME/lib/lane.sh" "$m" < /dev/null 9>&- &
-  echo $! > "$STATE/lanes/$m/pid"
+  (( rc == 0 )) || { rm -f "$STATE/lanes/$m/opening"; return 1; }
+  rm -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/need" "$STATE/lanes/$m/now"
+  LANE=$m LANE_SLOT=$k LANE_PORT=$LANE_PORT LANE_ONCE=$LANE_ONCE LANE_MERGE=${LANE_MERGE:-0} bash "$HARNESS_HOME/lib/lane.sh" "$m" < /dev/null 8>&- 9>&- &
+  echo $! > "$STATE/lanes/$m/pid"; rm -f "$STATE/lanes/$m/opening"
   LANE=""
+}
+# <m> "<kind>\t<reason>": admit refused its lane; noted once per kind (the GB figure changes every poll, the kind
+# doesn't), and the open is tried again next poll
+wait_note() {
+  local kind=${2%%$'\t'*}
+  [[ $(cat "$STATE/lanes/$1/waiting" 2> /dev/null) == "$kind" ]] && return 0
+  echo "$kind" > "$STATE/lanes/$1/waiting"; note "lane $1 waiting: ${2#*$'\t'}"
 }
 # <why>: the services every closed lane left up, torn down in its slot with its port and scratch (finish, the EXIT trap)
 lanes_services_down() {
@@ -138,17 +170,20 @@ lanes_services_down() {
 # The coordinator exiting (a TERM, a crash): every lane gets a TERM and up to 150 s to stop its session and services
 # (its teardown runs under timeout -k 10s 2m)
 lanes_term() {
-  local f i
-  for f in "$STATE"/lanes/*/pid; do [[ -f $f ]] && kill -TERM "$(cat "$f")" 2> /dev/null; done
+  local f i termed=()
+  for f in "$STATE"/lanes/*/pid; do [[ -f $f ]] && kill -TERM "$(cat "$f")" 2> /dev/null && { f=${f%/pid}; termed+=("${f##*/}"); }; done
+  for f in "${termed[@]}"; do note "lane $f: stopped (the driver is exiting)"; done   # every TERM first: a note may wait for the record lock
   for (( i = 0; i < 1500; i++ )); do (( $(lanes_open) )) || break; sleep 0.1; done
   return 0
 }
 # A lane process an earlier coordinator left (it died without its trap: SIGKILL, OOM) still works in its slot: a TERM
-# and its own trap stop it before this segment reopens that slot. Only a pid that is lib/lane.sh of this state dir.
+# and its own trap stop it before this segment reopens that slot. Only a pid that is lib/lane.sh of this state dir (its
+# environment's STATE): a recycled pid of another run's lane is never signalled.
 lanes_orphans() {
   local f p
   for f in "$STATE"/lanes/*/pid; do
-    [[ -f $f ]] && p=$(cat "$f") && kill -0 "$p" 2> /dev/null && tr '\0' ' ' < "/proc/$p/cmdline" 2> /dev/null | grep -q "lib/lane.sh" || continue
+    [[ -f $f ]] && p=$(cat "$f") && kill -0 "$p" 2> /dev/null && tr '\0' ' ' < "/proc/$p/cmdline" 2> /dev/null | grep "lib/lane.sh" > /dev/null \
+      && tr '\0' '\n' < "/proc/$p/environ" 2> /dev/null | grep -xF "STATE=$STATE" > /dev/null || continue
     p=${f%/pid}; note "lane ${p##*/}: its process $(cat "$f") outlived the last segment's driver; stopped"; kill -TERM "$(cat "$f")" 2> /dev/null
   done
   for (( p = 0; p < 1500; p++ )); do (( $(lanes_open) )) || break; sleep 0.1; done
@@ -222,6 +257,31 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   ) 9> "$STATE_ROOT/ledger.lock"
 }
 
+# The last step of finish: the record branch onto main through its own PR, `<run>: run record` (RECORD_PR=end), the
+# open one reused. It is record-only (rec_commit_), so its diff is .harness/runs/<run>/ and the merge can't conflict.
+# Merged under auto, left for Michael under pr; never --delete-branch: a harness continue the same night still finds
+# harness/<run>, and the end-of-queue gc deletes it (record_only) with its worktree, the ledger keeping the record.
+# Checked, not assumed: a --base run's branch, or an edit pushed to it from the phone, may carry code main lacks
+record_pr() {
+  case $RECORD_PR in off) note "record PR: none (RECORD_PR=off)"; return 0 ;; end) ;;
+    *) note "record PR: none (RECORD_PR=$RECORD_PR is neither end nor off)"; return 0 ;; esac
+  [[ $MERGE_POLICY == off ]] && { note "record PR: none (MERGE_POLICY=off)"; return 0; }
+  local url head mb more t="$RUN_ID: run record"; sync_record; head=$(git -C "$RWT" rev-parse HEAD)
+  git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
+  mb=$(git -C "$RWT" merge-base "origin/$MAIN_BRANCH" HEAD) || { note "record PR: none ($RBRANCH shares no history with $MAIN_BRANCH)"; return 0; }
+  more=$(git -C "$RWT" diff --name-only "$mb" HEAD -- . ":!$RUN_DIR" | head -3 | paste -sd' ')
+  [[ -z $more ]] || { note "record PR: none ($RBRANCH has changes outside $RUN_DIR/ that $MAIN_BRANCH lacks: $more)"; return 0; }
+  # only the record PR is reused (an old v2 whole-run PR on this head is harness merge's to close), its body refreshed
+  url=$($GH pr view "$RBRANCH" --json url,state,title -q "select(.state == \"OPEN\" and .title == \"$t\") | .url" 2> /dev/null) || url=""
+  if [[ $url == http* ]]; then $GH pr edit "$url" --body-file "$REC/report.md" > /dev/null 2>> "$STATE/run.log"
+  else url=$($GH pr create --base "$MAIN_BRANCH" --head "$RBRANCH" --title "$t" --body-file "$REC/report.md" 2>> "$STATE/run.log" | tail -1); fi
+  [[ $url == http* ]] && echo "$url" > "$STATE/record-pr"   # gc keeps harness/<run> while this PR is open
+  if [[ $url != http* ]]; then note "record PR: could not open it (see run.log)"
+  elif [[ $MERGE_POLICY != auto ]]; then note "record PR opened; left for Michael (MERGE_POLICY=$MERGE_POLICY) · $url"
+  elif $GH pr merge "$url" --merge --match-head-commit "$head" > /dev/null 2>> "$STATE/run.log"; then note "record PR merged into $MAIN_BRANCH · $url"
+  else note "record PR: the merge was refused; left open · $url"; fi
+}
+
 finish() {   # reason → every lane exited, summary, notification, retro, ledger, slots removed, continuation
   END_REASON=$1
   wait_lanes   # each stops between sessions: a stop, the deadline, a cap
@@ -229,6 +289,9 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
   merge_milestones
+  local rb; for rb in $(F milestones "$LIST" 2> /dev/null); do   # kept for the next segment's coordinator, or harness merge
+    [[ -f $STATE/rebase-$rb ]] && note "$rb verified, but $MAIN_BRANCH moved since; harness merge $RUN_ID re-bases and merges it"
+  done
   # the tree's count (the slot's, the last lane's code, if one opened): tests_end's, a red tree none. The last lane's
   # outputs are the run's (scratch_done keeps them in the state dir): copied first, so tests_end reads that lane's
   # check-<key>.out under an older, empty marker
@@ -271,6 +334,8 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   fi
   # a note after the last commit (the continuation): commit it too, or the worktree stays dirty and gc skips it
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run end notes"; sync_record; }
+  record_pr   # its note is one record commit past the merge, which gc's record_only allows
+  [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: record PR"; sync_record; }
   log "run kept in $RWT on $RBRANCH · report: harness report $RUN_ID · continue: harness continue $RUN_ID"
   exit 0
 }
@@ -316,11 +381,22 @@ if [[ -f $LIST ]] || (( resumed )); then
   [[ -f $LIST ]] && merge_milestones   # merge what is verified
 fi
 if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 whole-run PR (milestones merge through their own PRs)
-  if [[ $($GH pr view "$BRANCH" --json state -q .state 2>/dev/null) == OPEN ]]; then
+  # the record PR (`<run>: run record`, record_pr) has the same head and stays open
+  if [[ $($GH pr view "$BRANCH" --json state,title -q "select(.title != \"$RUN_ID: run record\") | .state" 2>/dev/null) == OPEN ]]; then
     $GH pr close "$BRANCH" --comment "Superseded: harness v3 merges each verified milestone into $MAIN_BRANCH through its own PR (tags run/$RUN_ID/<milestone>). Unverified work stays on $BRANCH until its milestone is verified." > /dev/null 2>> "$STATE/run.log" \
       && note "closed the whole-run PR for $BRANCH (milestones merge through their own PRs now)"
   fi
-  rmdir "$SCRATCH" 2> /dev/null   # created above for nothing: `harness merge` runs no init or session (a kept scratch isn't empty)
+  # a milestone whose main moved re-bases in a slot as a merge lane (its suite or verify round there), then merges; a
+  # dependent's rebase-<m> appears only once its dependency merged (reap's merge_milestones): until none is new
+  if [[ -n $(rebase_due) ]]; then
+    export HARNESS_T0=$T0 HARNESS_DEADLINE=$DEADLINE LANE_MAX_SESSIONS=$(( 3 * $(jq '.features | length' "$LIST") + 5 ))
+    mkdir -p "$STATE/lanes"; rm -f "$STATE"/lanes/*/pid "$STATE"/lanes/*/exit "$STATE/lanes-end"; done_rb=" " LAST_LANE=""   # the last segment's end isn't this one's
+    while m=$(rebase_due | cut -f1 | grep -vxF -f <(tr ' ' '\n' <<< "$done_rb" | grep .) | head -1) && [[ -n $m ]]; do
+      done_rb+="$m "; LANE_MERGE=1 lane_open "$m" && wait_lanes
+    done
+    unmaterialize; lanes_services_down "merge only"; slot_close
+  fi
+  rmdir "$SCRATCH" 2> /dev/null   # created above for nothing when no re-base ran an init (a kept scratch isn't empty)
   rec_commit "HARNESS: merge"; sync_record; END_REASON="merge only"; exit 0
 fi
 
@@ -403,10 +479,8 @@ if [[ ! -f $STATE/deps-noted ]]; then   # once per run: milestones that wait on 
 fi
 [[ $MAX_SESSIONS == auto ]] && MAX_SESSIONS=$(( 3 * $(jq '.features | length' "$LIST") + 5 ))
 export HARNESS_T0=$T0 HARNESS_DEADLINE=$DEADLINE LANE_MAX_SESSIONS=$MAX_SESSIONS SCOPE_OK
-# P1 runs one lane at a time: every lane would get the run's one port, and two merges could race (review of P1; P2
-# gives each lane its port and the merges a lock)
-if (( MAX_LANES > 1 )); then note "MAX_LANES=$MAX_LANES: one lane at a time until P2 (per-lane ports, a merge lock); running 1"; MAX_LANES=1; fi
-mkdir -p "$STATE/lanes"; lanes_orphans; rm -f "$STATE"/lanes/*/pid "$STATE"/lanes/*/exit   # an earlier segment's lanes are gone
+mkdir -p "$STATE/lanes"; lanes_orphans   # an earlier segment's lanes are gone, and its run end with them
+rm -f "$STATE"/lanes/*/pid "$STATE"/lanes/*/exit "$STATE"/lanes/*/opening "$STATE"/lanes/*/waiting "$STATE/lanes-end"
 paused=0 LAST_LANE=""
 # The coordinator: every POLL seconds (at once when a lane exits) reap, check the run's ends, open what can open.
 while :; do
@@ -435,17 +509,20 @@ while :; do
   fi
   (( paused )) && { paused=0; log "resumed"; }
   if (( alive == 0 )); then   # box-wide gates: with a lane open, it waits and stops by itself
-    limit_wait
+    limit_wait || continue   # cut short by a stop: the next poll sees it
     (( $(date +%s) >= DEADLINE )) && continue
     if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; finish "weekly budget ($why)"; fi
   fi
+  reap; [[ -n $LANE_END ]] && continue   # a lane gone since the top: its slot, its end and its needs count before an open
   opened=0
   if (( alive < MAX_LANES )) && (( $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) <= $(date +%s) || alive == 0 )); then
-    while IFS=$'\t' read -r m _; do
+    while IFS=$'\t' read -r m kind; do   # kind: "rebase" from rebase_due; F lanes' second field is its base tags
       [[ -n $m ]] || continue
-      (( $(lanes_open) < MAX_LANES )) || break
-      lane_open "$m" && { opened=1 LAST_LANE=$m; }
-    done < <(F lanes "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE")
+      a=$(lanes_open); (( a < MAX_LANES )) || break   # the slot count is the configuration, not headroom: no note
+      if why=$(admit "$a"); then
+        LANE_MERGE=$([[ $kind == rebase ]] && echo 1 || echo 0) lane_open "$m" && { opened=1 LAST_LANE=$m; rm -f "$STATE/lanes/$m/waiting"; }
+      else mkdir -p "$STATE/lanes/$m"; wait_note "$m" "$why"; fi
+    done < <(rebase_due; F lanes "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE")
   fi
   if (( ! opened && $(lanes_open) == 0 )); then   # nothing open and nothing to open: the run's end, as before lanes
     [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }

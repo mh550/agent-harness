@@ -12,6 +12,7 @@ export TMUX_TMPDIR=$T/tmux HARNESS_DESK_SESSION=h-desk-test-$$; mkdir -p "$TMUX_
 trap 'for w in "$T"/evaltmp/*/harness; do [[ -d $w ]] && git -C "$HERE/.." worktree remove --force "$w"; done 2> /dev/null   # the harness worktree of a killed eval
   for p in $(cat "$T"/scope/*.pids "$T"/left.pids 2> /dev/null); do kill "$p"; done 2> /dev/null   # sleeps a stub session left
   tmux kill-session -t "=$HARNESS_DESK_SESSION" 2> /dev/null; [[ $TMUX_TMPDIR == "$T/tmux" ]] && tmux kill-server 2> /dev/null; [[ ${KEEP:-} ]] || rm -rf "$T"' EXIT   # the server is ours alone
+trap 'exit 143' TERM   # the runner's TEST_FILE_TIMEOUT or stop: the EXIT trap above still runs (rm -rf $T, the tmux server)
 export HARNESS_STATE=$T/state HARNESS_WORKTREES=$T/wt HARNESS_SCRATCH_ROOT=$T/scratch HARNESS_PAUSE_POLL=1 HARNESS_LANE_POLL=1 \
   HARNESS_CLAUDE=$HERE/stub-claude.sh HARNESS_GH=$HERE/stub-gh.sh HARNESS_CURL=$HERE/stub-curl.sh STUB_DIR=$T HARNESS_LEDGER=$T/ledger \
   HARNESS_CONFIG=$T/user-config.sh HARNESS_LIMIT_SLEEP=0 HARNESS_NO_RUNNER=1 HARNESS_QUEUE_POLL=0 HARNESS_QUEUE_SETTLE=0
@@ -25,8 +26,8 @@ mkdir -p "$T/bin" && printf '#!/usr/bin/env bash\nexec %q "$@"\n' "$HERE/stub-cl
 export PATH=$T/bin:$PATH
 fails=0 total=0
 
-# the base user config posts through the stub curl (and keeps each run's scratch: checks read it after the run; L3's scrub run doesn't); NOTIFY_CMD is set too, and must not be called (NTFY_URL wins)
-printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=auto NTFY_URL=https://ntfy.example/t NTFY_TOKEN=tok-secret-123' \
+# the base user config opens no record PR (50-lanes-record-pr turns it on: a third PR would change every run's gh.log); it posts through the stub curl (and keeps each run's scratch: checks read it after the run; L3's scrub run doesn't); NOTIFY_CMD is set too, and must not be called (NTFY_URL wins)
+printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=auto RECORD_PR=off NTFY_URL=https://ntfy.example/t NTFY_TOKEN=tok-secret-123' \
   "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify-cmd.log\"'" > "$T/base-config.sh"
 cp "$T/base-config.sh" "$T/user-config.sh"
 git init -q --bare -b main "$T/origin.git"

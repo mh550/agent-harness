@@ -29,6 +29,13 @@
 # STUB_REVIEW_FINDINGS=<c>,<i>: every R session's entry summary is "R: stub review (<n>): <c> Critical, <i> Important, 0 Minor" (M6).
 # STUB_REVIEW_ROUND=limit|fail: R's second session (the escalation round) is refused by the usage limit, or ends not
 # passing (M6-05).
+# STUB_VERIFY_WAIT=<m>:<path>: the verify session of <m> touches $STUB_DIR/vwait-<run>-<m>, then, before its verdict,
+# waits (≤ 120 s) until origin's main has <path>: another lane merges while it verifies (P2-03's re-base).
+# STUB_SHARED=<file>: A's first coding session rewrites <file>'s first line to A, C's its last line to C, committed with
+# their work (one path, distinct hunks: the merge is clean and the two milestones' files overlap).
+# STUB_REBASE_VERIFY_FAIL=1: M2's second verify session (a re-base's round) un-passes C.
+# STUB_IGNORED=<path>: every coding session appends "<id> present|absent" (<path> before it works) to
+# $STUB_DIR/ignored.log; the run's first writes <path> (an ignored install: a reused slot keeps it, P2-04).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -100,9 +107,12 @@ JSON
   "# Coding session")
     [[ ${STUB_SLOW_CODING:-} ]] && { touch "$STUB_DIR/slow-coding"; sleep "$STUB_SLOW_CODING"; }   # a session to interrupt
     # a file, not an env flag: it reaches tmux-started runs. With $STUB_DIR/hold-coding, a run's coding sessions say
-    # held-<run> and wait (≤ 180 s) for release-<run>: the suite decides when each run of a parallel queue ends (L5)
-    if [[ -f $STUB_DIR/hold-coding ]]; then touch "$STUB_DIR/held-$HARNESS_RUN_ID"
-      for _ in $(seq 900); do [[ -f $STUB_DIR/release-$HARNESS_RUN_ID ]] && break; sleep 0.2; done; fi
+    # held-<run> and held-<run>-<id> and wait (≤ 180 s) for release-<run> (all of them) or release-<run>-<id> (that
+    # feature's): the suite decides when each run of a parallel queue ends (L5), and which lane goes first (P2)
+    if [[ -f $STUB_DIR/hold-coding ]]; then
+      hid=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }')
+      touch "$STUB_DIR/held-$HARNESS_RUN_ID" "$STUB_DIR/held-$HARNESS_RUN_ID-$hid"
+      for _ in $(seq 900); do [[ -f $STUB_DIR/release-$HARNESS_RUN_ID || -f $STUB_DIR/release-$HARNESS_RUN_ID-$hid ]] && break; sleep 0.2; done; fi
     if [[ ${STUB_WEEKLY:-} ]]; then   # the rate-limit event every real session carries: this one reports the 7-day window
       now=$(date +%s); echo "{\"type\":\"rate_limit_event\",\"rate_limit_info\":{\"status\":\"allowed\",\"resetsAt\":$(( now + 3600 )),\"rateLimitType\":\"five_hour\",\"unifiedWindows\":{\"five_hour\":{\"utilization\":0.2,\"resetsAt\":$(( now + 3600 ))},\"seven_day\":{\"utilization\":$STUB_WEEKLY,\"resetsAt\":$(( now + 259200 ))}}}}"
     fi
@@ -114,6 +124,10 @@ JSON
     fi
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
     echo "$id attempt $n" >> "$RS/sessions.log"
+    if [[ ${STUB_IGNORED:-} ]]; then
+      [[ -e $STUB_IGNORED ]] && echo "$id present" >> "$STUB_DIR/ignored.log" || echo "$id absent" >> "$STUB_DIR/ignored.log"
+      [[ -f $RS/ignored-made ]] || { mkdir -p "$(dirname "$STUB_IGNORED")" && echo "$id" > "$STUB_IGNORED" && touch "$RS/ignored-made"; }
+    fi
     if [[ ${STUB_EDIT:-} ]]; then   # edits only that path, passes nothing; keeps the init output it was started with (the suite cache, S3)
       cp "$HARNESS_SCRATCH/init.out" "$STUB_DIR/init-$HARNESS_RUN_ID-$n.out"
       mkdir -p "$(dirname "$STUB_EDIT")" && echo "$id $n" >> "$STUB_EDIT"
@@ -172,6 +186,7 @@ JSON
     fi
     if [[ $id == C ]]; then [[ $n == 1 && ! ${STUB_NO_RED:-} ]] && touch BROKEN || rm -f BROKEN; fi   # first try leaves the suite red
     echo "$id $n" > "work-$id.txt"
+    if [[ ${STUB_SHARED:-} && $n == 1 ]]; then case $id in A) sed -i '1s/.*/A/' "$STUB_SHARED" ;; C) sed -i '$s/.*/C/' "$STUB_SHARED" ;; esac; fi
     [[ ${STUB_BIG_DIFF:-} && $id == A && $n == 1 ]] && seq 500 > big-A.txt   # a milestone diff over REVIEW_OPUS_LINES (M6)
     tns=${STUB_TESTS_N:-}; for tn in ${tns//,/ }; do if [[ ${tn%%:*} == "$id" && $n == 1 ]]; then echo "${tn#*:}" > tests.n; fi; done   # the suite's count moves (M5-02)
     if [[ ${STUB_SNAPSHOT:-} == "$id" && $n == 1 ]]; then   # what Michael sees between sessions, before finish (M5-02)
@@ -201,9 +216,14 @@ JSON
   "# Verify session")
     m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "verify-$m")
     echo "verify $m $n" >> "$RS/sessions.log"
+    if [[ ${STUB_VERIFY_WAIT:-} && ${STUB_VERIFY_WAIT%%:*} == "$m" ]]; then   # another lane merges meanwhile
+      touch "$STUB_DIR/vwait-$HARNESS_RUN_ID-$m"
+      for _ in $(seq 600); do git fetch -q origin main 2> /dev/null && git cat-file -e "origin/main:${STUB_VERIFY_WAIT#*:}" 2> /dev/null && break; sleep 0.2; done
+    fi
     if [[ ${STUB_VERIFY_LIMIT:-} && $m == M1 && $n == 1 ]]; then cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; fi   # refused
     if [[ ${STUB_VERIFY_EDITS:-} && $n == 1 ]]; then echo hack > "hack-$m.txt"; echo "edited" >> CLAUDE.md; echo null >> "$HARNESS_RUN_DIR/entries.jsonl"; fi   # a verifier "fixing" code and the journal
     [[ $m == M1 && ( $n == 1 || ${STUB_STRICT_VERIFIER:-} ) && ! ${STUB_LENIENT:-} ]] && set_passes A false   # catches a false pass
+    [[ ${STUB_REBASE_VERIFY_FAIL:-} && $m == M2 && $n == 2 ]] && set_passes C false   # the re-base's verify round finds C failing
     # one evidence row per step of every feature of m (none in a thin round 1); passes when every feature of m still passes
     ev=$(node -e 'const [f,m,full]=process.argv.slice(1),fs=JSON.parse(require("fs").readFileSync(f)).features.filter(x=>x.milestone===m);console.log(JSON.stringify({done:fs.every(x=>x.passes),
       rows:full==="1"?fs.flatMap(x=>x.steps.map((s,i)=>({feature:x.id,step:i+1,ran:"check",saw:"ok",holds:true}))):[]}))' "$L" "$m" "$([[ ! ${STUB_THIN_VERIFY:-} || $n -gt 1 ]] && echo 1)")

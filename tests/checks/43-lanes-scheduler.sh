@@ -66,4 +66,14 @@ ll dflt '[{"id":"d1","passes":false},{"id":"a1","milestone":"M1","passes":false}
 s=$(st dflt); d0=$(lanes dflt "$s"); FM pass "$LS/dflt.json" d1; d1=$(lanes dflt "$s"); d1d=$(FM deps "$LS/dflt.json" M1)
 check "lanes: the default lane (no milestone, never verified) holds later lanes only until its features pass, then never opens" \
   '[[ $d0 == "default|" && $d1 == "M1|" && -z $d1d ]]'
+check "lanes summary: laneSpans counts the lanes open at once and sums open-to-close hours, a lane left open closing at its segment's end" \
+  'printf "%s\n" "2026-10-27 10:00:00 run r on proj" "2026-10-27 10:00:00 lane M1 opened (slot 0, port 1, from a)" "2026-10-27 10:30:00 lane M2 opened (slot 1, port 2, from a)" \
+     "2026-10-27 11:00:00 lane M1 closed (x)" "2026-10-27 11:30:00 lane M2 closed (x)" "2026-10-27 11:30:00 lane M3 opened (slot 0, port 1, from a)" "2026-10-27 12:00:00 verify M3 · m" \
+     "2026-10-27 13:00:00 run r on proj" "2026-10-27 13:00:00 lane M3 opened (slot 0, port 1, from a)" "2026-10-27 13:30:00 lane M3 closed (x)" > "$LS/spans.log"
+   [[ $(node --input-type=module -e "import { laneSpans } from \"$HERE/../lib/summary.mjs\"; import { readFileSync } from \"node:fs\";
+     console.log(JSON.stringify(laneSpans(readFileSync(process.argv[1], \"utf8\"))), JSON.stringify(laneSpans(\"\")))" "$LS/spans.log") == "{\"max_open\":2,\"lane_hours\":3} {\"max_open\":0,\"lane_hours\":0}" ]]'
+check "lanes prompts: initializer.md says side-by-side milestones touch different files, shared docs go in the closing review, an independent feature gets after; run.md says other lanes work in other slots" \
+  'I=$HERE/../prompts/initializer.md; grep -F "Milestones that may run side by side should touch different files" "$I" > /dev/null \
+  && grep -F "edited in the milestone'"'"'s closing review feature" "$I" > /dev/null && grep -F "Give \`after\` on any feature that doesn'"'"'t need its predecessor in the same milestone" "$I" > /dev/null \
+  && grep -F "Other lanes of this run work in other slots" "$HERE/../prompts/parts/run.md" > /dev/null'
 suite_end

@@ -48,7 +48,7 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end; new entries are numbered past parked ones, and a park never overwrites one of the same name |
 | `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
 | `harness backlog [list]` · `backlog set <id> <status> [--spec] [--pr] [--note]` · `backlog import <file.jsonl>` | the retro backlog, `ledger/retro-backlog.jsonl`: one row per retro proposal across runs, `proposed` first, most seen first; `set` moves one (`proposed` · `specced` · `queued` · `merged` · `dropped`), `import` merges rows by id; writes hold the ledger lock and are a ledger commit (`LEDGER_COMMIT`) (see [Retro backlog](#retro-backlog)) |
-| `harness status` · `report` · `trends [--by version]` · `attach` | look (`status`: under a running run, each of its systemd units with its `MemoryCurrent`; `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
+| `harness status` · `report` · `trends [--by version]` · `attach` | look (`status`: under a running run, one line per open lane, `lane <m> · <feature> · session <n> · port <p> · slot <k> · MemoryCurrent <unit> <MB> MB, …`, then the run's other systemd units with their `MemoryCurrent`; `report`'s `Lanes` row: the most lanes open at once and lane hours against wall hours; `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
 | `harness eval run` · `compare` · `probes` | replay a fixed task set under a harness version and compare two results (see [Evals](#evals); costs money) |
@@ -62,7 +62,8 @@ with three ways forward: `harness merge <run>` for its verified milestones; a ne
 left>; harness/<run> is the source"`; or finishing it by hand on that branch. A branch that holds only the record
 continues as a lanes run. Under `MERGE_POLICY=pr`, a verified milestone whose dependency's PR still waits for you opens
 its own PR from the dependency's tag and waits (`<m> verified; its PR waits for <dep> to merge`); `harness merge <run>`
-then lands every proposed milestone, dependencies first.
+then lands every proposed milestone, dependencies first, re-basing in a slot each whose `main` moved since its verify
+(the same rule as in a run).
 
 ## What a project needs
 
@@ -124,10 +125,15 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 | | Where |
 |---|---|
 | Worktree, branch | `~/worktrees/<project>/<run-id>` on `harness/<run-id>` (from `origin/main`): the run record only, written by the driver alone. Code goes on a lane branch per milestone, `harness-lane/<run-id>/<m>` |
-| Lanes | each milestone runs as a lane: its own process (`lib/lane.sh`), its features in order, then its verify and merge, in a slot worktree `~/worktrees/<project>/lanes/<run-id>/slot-<k>` with its own port and scratch. `MAX_LANES` (default 1: one milestone after another) caps the lanes open at once (until P2 a higher value is noted, `MAX_LANES=<n>: one lane at a time until P2 …`, and runs 1); a slot is reused by the next lane, so its ignored install and build directories carry over, and `finish` removes every slot. `harness-log.md` says `lane <m> opened (slot <k>, port <n>, from <sha>)` and `lane <m> closed (<reason>)`, the reason by the lane's exit code: 0 `<m> merged` · `proposed` · `verified; its PR waits` (done) · 10 `given up <ids>` · 11 `parked <ids>` · 12 `<m> needs Michael: <why>` (verify, merge, a conflict, its slot, or `lane exited unexpectedly`) · 13 `session cap`, `usage limit`, `weekly budget` (ends the run) · 14 `stopped` · 15 `deadline` |
+| Lanes | each milestone runs as a lane: its own process (`lib/lane.sh`), its features in order, then its verify and merge, in a slot worktree `~/worktrees/<project>/lanes/<run-id>/slot-<k>` with its own port and scratch. `MAX_LANES` (default 1: one milestone after another) caps the lanes open at once; a second lane opens only with headroom: `MemAvailable` at least `MEM_MIN_AVAILABLE_GB` + `LANE_RESERVE_GB` (4) per open lane, and the newest session's five-hour window (`USAGE_5H`) under `LANE_OPEN_BELOW_5H` (70 %) until it resets, else `lane <m> waiting: <reason>` once per reason and a retry every poll (decisions/2026-10-26-parallel-runs-headroom). Slot 0's lane uses the run's port, a lane in slot 1 and up the first free one from `BASE_PORT`; a slot is reused by the next lane (`checkout -B`), so its ignored install and build directories carry over, and `finish` removes every slot. A merged milestone's lane branch is deleted when its PR merges (under `pr`, once `harness gc` sees it merged); an unverified one stays. `harness gc <project>` removes the slots a killed driver left once no lane process of the run lives, and stops their lane units. When another lane's merge moved `main` under a verified milestone, its lane re-bases
+it: `main` merged into the verified commit; files disjoint from the milestone's (`LANE_REBASE=suite`, the default)
+run the suite in full on the merged tree and, green, move the tag there (`<m> re-based on main <sha>: <n> files,
+disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, get one verify round
+(`MAX_REBASE_ROUNDS`, 1) first; a red suite, a conflict or the rounds used need you
+(decisions/2026-10-26-lane-rebase-disjoint). `harness-log.md` says `lane <m> opened (slot <k>, port <n>, from <sha>)` and `lane <m> closed (<reason>)`, the reason by the lane's exit code: 0 `<m> merged` · `proposed` · `verified; its PR waits` · `verified; its re-base waits` (done) · 10 `given up <ids>` · 11 `parked <ids>` · 12 `<m> needs Michael: <why>` (verify, merge, a conflict, its slot, or `lane exited unexpectedly`) · 13 `session cap`, `usage limit`, `weekly budget` (ends the run) · 14 `stopped` · 15 `deadline` · 16 `the run is ending (<why>)` (another lane ended it) |
 | Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` · `retro-proposals.json` |
 | Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, which the driver runs on Sonnet under `REVIEW_OPUS_LINES` (400) changed lines of what the lane's branch has and main doesn't (main fetched first) and on Opus at or over; a Sonnet review whose entry summary reports `<n> Critical, <n> Important` above 0 gets one more round on Opus, at no attempt, and any later attempt stays on Opus (decisions/2026-10-27-review-gate). The lint flags `review-small` and `review-missing` |
-| Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) |
+| Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) When the run ends, its record (`.harness/runs/<run-id>/`) reaches main through one PR of its own, `<run-id>: run record` from `harness/<run-id>`: merged under `auto`, left for you under `pr`, none with `RECORD_PR=off`; `finish` deletes nothing, and the queue's end-of-queue `harness gc` deletes the record branch and its worktree once its record PR is no longer open (the ledger keeps the record) |
 | Local state | `~/.local/state/harness/<project>/<run-id>/`: `run.log`, transcripts, attempts, `driver.pid`, `ended` |
 | Ledger | `ledger/runs.jsonl` and `ledger/<project>/<run-id>/` in this repo · `harness trends` |
 | Memory | each session in the transient user scope `harness-<run-id>-s<n>` (throttled at 5G, killed at 6G, 1G swap: `SESSION_MEMORY_HIGH`, `SESSION_MEMORY_MAX`, `SESSION_SWAP_MAX`), each suite in `harness-<run-id>-check-<pid>`; stopped when they return, so nothing a session started outlives it. Peaks go in `metrics.jsonl` (`mem_peak_mb`) and `report.md` (over 2 GB). No user systemd: uncapped, with a note |
@@ -137,6 +143,13 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 - With the scopes in, `systemd-oomd` can kill the offending `harness-*` scope instead of the desktop: enabling it with
   `ManagedOOMMemoryPressure=kill` on the user slice is a box setting, your call (`findings-and-research/2026-10-24-system-resource-audit.md` §3C.2).
 - `systemctl --user list-units 'harness-*'` shows what each run holds right now (nothing when no run is alive).
+- **Two lanes:** set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts (the code's default
+  stays 1; the driver reads the config at run start). The morning after: `grep -c "lane .* waiting"
+  <run dir>/harness-log.md` (how often admission held a lane back), `jq .lanes <run dir>/summary.json` (`max_open`,
+  `lane_hours`, `wall_hours`), `mem_peak_mb` in `metrics.jsonl`, no OOM lines in `journalctl --user -b`, and
+  `systemctl --user list-units 'harness-*'` empty. Under `MERGE_POLICY=pr` the record PR (`<run>: run record`) is
+  yours to merge too. `MAX_PARALLEL_RUNS=2` only after a night at two lanes shows the headroom
+  (decisions/2026-10-26-parallel-runs-headroom).
 - A crashed or stopped run leaves its scratch in `/tmp/harness`. The optional age rule removes it after 3 days
   untouched (never `live.lock`); the user tmpfiles timer it needs is off by default, so the one command enables it:
   `mkdir -p ~/.config/user-tmpfiles.d && cp templates/user/harness-tmpfiles.conf ~/.config/user-tmpfiles.d/harness.conf && systemd-tmpfiles --user --create && systemctl --user enable --now systemd-tmpfiles-clean.timer`
@@ -280,4 +293,6 @@ new or doubled. The runner starts the files `TEST_JOBS` at a time, largest first
 caller's check scope, prints each file's output whole when it finishes with a `<file>: <n> checks, <s> s` line, and
 ends with the slowest three, the wall time and the total. A file that exits non-zero with no `FAIL` line counts as one
 failed check; stopped by a signal (check.sh's timeout), the runner prints each unfinished file's output so far and names it.
+A file still running after `TEST_FILE_TIMEOUT` (10m) is stopped, its process group with it, and counted as one
+`FAIL <file>: still running after TEST_FILE_TIMEOUT=<t>; stopped`.
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

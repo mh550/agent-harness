@@ -4,12 +4,13 @@
 # its verify and merge, then it exits; the reason also goes to $STATE/lanes/<m>/exit as "<code> <reason>":
 #   0 verified and merged (or proposed, or its PR waits for a dependency) · 10 given up <ids> · 11 parked <ids> ·
 #   12 needs Michael (verify, merge, feature-list edits) · 13 limit ended (session cap, usage limit, weekly budget) ·
-#   14 stopped · 15 deadline
+#   14 stopped · 15 deadline · 16 the run is ending (another lane ended it: state/lanes-end holds why)
 # Its services stay up when it closes (the next lane in its slot stops them; finish tears them down: D4); a lane that
 # dies (the coordinator's TERM) stops its session and tears its services down at once.
 # Environment: the driver's (WT = the record worktree, RUN_ID STATE PROJECT_DIR HARNESS_HOME) plus LANE LANE_SLOT
-# LANE_PORT HARNESS_T0 HARNESS_DEADLINE LANE_MAX_SESSIONS; LANE_ONCE=1: the deadline's one verify, then exit.
-# Plan: docs/plans/2026-10-26-P1-lanes-serial.md §6, §8.
+# LANE_PORT HARNESS_T0 HARNESS_DEADLINE LANE_MAX_SESSIONS; LANE_ONCE=1: the deadline's one verify, then exit;
+# LANE_MERGE=1: a verified milestone whose main moved (state/rebase-<m>): only its re-base and merge, then exit.
+# Plans: docs/plans/2026-10-26-P1-lanes-serial.md §6, §8; docs/plans/2026-10-26-P2-two-lanes.md §3 (the re-base).
 set -uo pipefail
 : "${WT:?}" "${RUN_ID:?}" "${STATE:?}" "${PROJECT_DIR:?}" "${HARNESS_HOME:?}" "${LANE:?}" "${LANE_SLOT:?}" "${LANE_PORT:?}"
 M=$1
@@ -33,8 +34,9 @@ SLOT=$WT_ROOT_DIR/lanes/$RUN_ID/slot-$LANE_SLOT LBRANCH=harness-lane/$RUN_ID/$M
 WT=$SLOT PORT=$LANE_PORT SCRATCH=$SCRATCH/lanes/$M SVC_UNIT=$(scope_unit "$RUN_ID" "$LANEU-svc")
 mkdir -p "$LDIR" "$SCRATCH"
 lane_exit() { echo "$1 $2" > "$LDIR/exit"; exit "$1"; }
-# A TERM (the coordinator exiting) runs this at once while a session goes on: its scope first, then the services
-trap 'trap "" TERM INT HUP; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"
+# A TERM (the coordinator exiting) runs this at once while a session goes on: its scope first, then the services (a forked
+# child inherits it and skips it)
+trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"
   if [[ ! -s $LDIR/exit ]]; then services_down "driver exited"; echo "12 lane exited unexpectedly" > "$LDIR/exit"; fi' EXIT
 lane_cd || lane_exit 12 "its slot $SLOT is gone"
 load_config; MAX_SESSIONS=$LANE_MAX_SESSIONS
@@ -43,26 +45,32 @@ export HARNESS_SCOPE_PREFIX; HARNESS_SCOPE_PREFIX=$(scope_unit "$RUN_ID" "$LANEU
 
 # Independently re-check milestone m, in its lane. 0 = verified (tagged) · 1 = not verified · 2 = deferred (a usage
 # limit: retry). `once` (at the deadline): one session, no escalation, and this round is the last
-# (decisions/2026-10-26-verify-before-deadline). The session reads a copy of the record; what it un-passes in it is
-# applied to the record's list afterwards.
+# (decisions/2026-10-26-verify-before-deadline). `rebase`: the re-base's verify round (rebase below) on the merged
+# tree: no attempt granted on a failure, the tag moved on a hold, no merge here (the caller's loop merges). The session
+# reads a copy of the record; what it un-passes in it is applied to the record's list afterwards.
 verify() {
   local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS id
   local models=("$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL") last=$VERIFY_ESCALATE_MODEL
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
-  [[ ${2:-} == once ]] && { models=("$VERIFY_MODEL"); maxr=$rounds last="one verify at the deadline"; }
+  local mode=${2:-} what="verify round $rounds of $maxr"
+  [[ $mode == once ]] && { models=("$VERIFY_MODEL"); maxr=$rounds last="one verify at the deadline"; what="verify round $rounds of $maxr"; }
+  [[ $mode == rebase ]] && { maxr=$rounds what="re-base verify round $(cat "$STATE/rebase-rounds-$m") of $MAX_REBASE_ROUNDS"; }
+  rm -f "$STATE/nomerge-$m"   # a conflict an earlier verify found: this one tries main again
   sync_main || touch "$STATE/nomerge-$m"
   sync_lane
   # the verified tree's suite runs in full: a session can leave a stale green marker (decisions/2026-10-26-verify-runs-the-suite)
   note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
   run_init fresh
   for model in "${models[@]}"; do
-    context "$m" "$CONTEXT_PACK_BYTES_VERIFY"   # each round: an escalated verify's pack has the first round's entry
-    materialize
+    pack_and_copy "$m" "$CONTEXT_PACK_BYTES_VERIFY"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
-    mem_gate || run_init   # before the clock, so the prompt's time is the session's; a wait stopped the services
-    HARNESS_CLOCK=$(clock "verify round $rounds of $maxr") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
+    if ! mem_gate; then   # before the clock, so the prompt's time is the session's; a wait stopped the services
+      [[ -f $STATE/lanes-end || $(control) == stop ]] && { unmaterialize; return 2; }   # cut short: the loop's top ends the lane
+      run_init
+    fi
+    HARNESS_CLOCK=$(clock "$what") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
-    log "verify $m · $(F model "$model")"
+    log "verify $m · $(F model "$model")"; echo "$what" > "$LDIR/now"
     session verify "$(F model "$model")" "$vlog" "verify $m"
     reverted=$(restrict "$vstart" record verify | paste -sd' ')
     [[ -n $reverted ]] && note "verify $m: reverted code edits the verifier may not make: $reverted"
@@ -93,11 +101,18 @@ verify() {
   case $result in
     hold)
       touch "$STATE/verified-$m"
-      git tag -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3)" 2>/dev/null \
-        && git push -q origin "run/$RUN_ID/$m" 2>> "$STATE/run.log"
-      note "$m verified and tagged run/$RUN_ID/$m"
+      if [[ $mode == rebase ]]; then   # the tag exists: moved to the merged commit, the one forced push (the old stays reachable from its PR)
+        git tag -f -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3); re-based on $MAIN_BRANCH, verify round $(cat "$STATE/rebase-rounds-$m")" > /dev/null \
+          && git push -q --force origin "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"
+        note "$m verified on the re-based tree and re-tagged run/$RUN_ID/$m"
+      else
+        git tag -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3)" 2>/dev/null \
+          && git push -q origin "run/$RUN_ID/$m" 2>> "$STATE/run.log"
+        note "$m verified and tagged run/$RUN_ID/$m"
+      fi
       rec_commit "HARNESS: $m verified"; sync_record
-      [[ -f $STATE/nomerge-$m ]] || merge_milestones "$m"
+      if [[ $mode == once ]]; then [[ -f $STATE/nomerge-$m ]] || merge_milestones "$m"   # past the deadline: a re-base waits for the next segment
+      elif [[ $mode != rebase && ! -f $STATE/nomerge-$m ]]; then merge_own; fi
       return 0 ;;
     thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $last; not verified (needs Michael)"
       need="verify evidence too thin" ;;
@@ -116,15 +131,77 @@ verify() {
       if (( ${#failed[@]} == 1 )); then need="${failed[0]} fails verification"
       elif (( ${#failed[@]} )); then need=$(printf '%s, ' "${failed[@]}"); need="${need%, } fail verification"; fi ;;
   esac
+  if [[ $mode == rebase ]]; then   # not verified on today's main: the old tag must not merge, and a later verify tags afresh
+    rm -f "$STATE/verified-$m"; git tag -d "run/$RUN_ID/$m" > /dev/null 2>&1
+    git push -q origin --delete "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"
+    note "verify $m: the re-based tree did not hold; tag run/$RUN_ID/$m removed"
+  fi
   printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
   rec_commit "HARNESS: verify $m"; sync_record
   [[ -n $need ]] && needs_you "$m" "$need" progress.md   # after the push: the click shows the verify entry
   return 1
 }
 
-# Verified: merged, proposed or waiting on a dependency's merge is the lane's 0; a merge that needs Michael its 12
+# Main moved under the verified tag (state/rebase-<m>, merge_one's 3): main merged into the verified commit, then the
+# files main brought in compared with the milestone's own (decisions/2026-10-26-lane-rebase-disjoint). Disjoint, under
+# LANE_REBASE=suite: the suite in full on the merged tree, in this lane's check scope; green, the tag moves there.
+# Overlapping, or LANE_REBASE=verify: one verify round on it (MAX_REBASE_ROUNDS per milestone). 0 = re-tagged, or
+# nothing left to re-base: merge it · 1 = not (needs Michael; or a usage limit deferred the round, rebase-<m> back).
+# Cwd the slot, on the lane branch. At most 3 re-bases per lane process: a main that keeps moving needs Michael.
+REBASES=0
+rebase() {
+  local m=$1 tag=run/$RUN_ID/$1 c mn base theirs ours both n r how rc
+  rm -f "$STATE/rebase-$m"; echo "re-base on $MAIN_BRANCH" > "$LDIR/now"   # harness status's lane line
+  c=$(git rev-list -n1 "$tag" 2> /dev/null) || { touch "$STATE/needs-$m"; printf 'its tag is gone' > "$LDIR/need"; note "$m: its tag $tag is gone; not re-based (needs Michael)"; return 1; }
+  git fetch -q origin "$MAIN_BRANCH" 8>&- 2>> "$STATE/run.log"; mn=$(git rev-parse "origin/$MAIN_BRANCH")
+  # merged meanwhile: nothing to re-base (else an empty `ours` would read as disjoint and re-tag main's tip)
+  [[ -f $STATE/merged-$m ]] || git merge-base --is-ancestor "$c" "$mn" && return 0
+  (( ++REBASES > 3 )) && { rebase_fail "$m" "$c" "$m: $MAIN_BRANCH moved during 3 re-bases; not merged (needs Michael)" "$MAIN_BRANCH kept moving"; return 1; }
+  base=$(git merge-base "$c" "$mn")   # main as this lane last merged it (verify's sync_main)
+  git checkout -q -B "$LBRANCH" "$c"   # the verified tip, nothing else
+  if ! git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then
+    git merge --abort 2> /dev/null
+    rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH"; return 1
+  fi
+  theirs=$(git diff --name-only "$c" HEAD)   # what main brought in
+  ours=$(git diff --name-only "$base" "$c")   # the milestone's own (and its unmerged dependencies')
+  both=$(comm -12 <(sort <<< "$ours") <(sort <<< "$theirs") | grep . | paste -sd' ')
+  n=$(grep -c . <<< "$theirs"); how="$MAIN_BRANCH ${mn:0:7}: $n files"
+  if [[ -z $both && $LANE_REBASE != verify ]]; then
+    run_init fresh   # the install, then the suite in full (marker cleared), as harness-<run>-<m>-check-<pid>
+    cp "$SCRATCH/init.out" "$LDIR/rebase-check.out"   # its uncached `check: …` line: the evidence
+    green || { rebase_fail "$m" "$c" "$m re-based on $how, disjoint, suite red; not merged (needs Michael)" "suite red after the re-base"; return 1; }
+    git tag -f -a "$tag" -m "harness run $RUN_ID: $m verified (v3); re-based on $MAIN_BRANCH ${mn:0:7}, suite green" > /dev/null
+    # the one forced push, to the tag ref alone: the old commit stays reachable from the lane branch and its PR
+    git push -q --force origin "refs/tags/$tag" 8>&- 2>> "$STATE/run.log" || log "push of the re-based $tag failed"
+    sync_lane   # a fast-forward to the merge commit
+    note "$m re-based on $how, disjoint, suite green; re-tagged"
+    rec_commit "HARNESS: $m re-based"; sync_record; return 0
+  fi
+  if [[ -n $both ]]; then how+=", overlapping ($both)"; else how+=", disjoint"; fi
+  r=$(( $(cat "$STATE/rebase-rounds-$m" 2> /dev/null || echo 0) + 1 ))
+  (( r > MAX_REBASE_ROUNDS )) && { rebase_fail "$m" "$c" "$m re-based on $how; its $MAX_REBASE_ROUNDS re-base round(s) used; not merged (needs Michael)" "re-base rounds used"; return 1; }
+  echo "$r" > "$STATE/rebase-rounds-$m"; sync_lane   # the verify works on the merged commit
+  note "$m re-based on $how; one verify round ($( [[ -n $both ]] && echo "$r of $MAX_REBASE_ROUNDS" || echo LANE_REBASE=verify))"
+  rec_commit "HARNESS: $m re-based; one verify round"; sync_record
+  verify "$m" rebase; rc=$?
+  (( rc == 2 )) && { echo $(( r - 1 )) > "$STATE/rebase-rounds-$m"; echo "$mn" > "$STATE/rebase-$m"; }   # refused: the round again later
+  (( rc == 0 ))
+}
+# <m> <verified commit> <note> <need>: the slot back at the verified commit (the merge commit never pushed), Michael asked
+rebase_fail() {
+  git reset -q --hard "$2"; touch "$STATE/needs-$1"; printf '%s' "$4" > "$LDIR/need"
+  note "$3"; rec_commit "HARNESS: $1 not re-based"; sync_record; needs_you "$1" "$4" harness-log.md
+}
+# This lane's milestone merged (merge_milestones: the dependency rule, MERGE_POLICY), re-based first whenever main moved
+merge_own() { merge_milestones "$M"; while [[ -f $STATE/rebase-$M ]]; do rebase "$M" || break; merge_milestones "$M"; done; }
+
+# Verified: merged, proposed, waiting on a dependency's merge or on its re-base's deferred round is the lane's 0; a
+# merge or re-base that needs Michael its 12
 lane_done() {
   if [[ -f $STATE/merged-$M ]]; then lane_exit 0 "$M merged"
+  elif [[ -f $STATE/needs-$M ]]; then lane_exit 12 "$M needs Michael: $(cat "$LDIR/need" 2> /dev/null)"   # before waits-<m>, which stays
+  elif [[ -f $STATE/rebase-$M ]]; then lane_exit 0 "$M verified; its re-base waits"
   elif [[ -f $STATE/proposed-$M ]]; then lane_exit 0 "$M proposed"
   elif [[ -f $STATE/waits-$M ]]; then lane_exit 0 "$M verified; its PR waits"
   elif [[ -f $STATE/nomerge-$M ]]; then lane_exit 12 "$M needs Michael: $MAIN_BRANCH conflicts with its lane"
@@ -133,6 +210,11 @@ lane_done() {
 }
 in_lane() { local m; m=$(F milestone "$LIST" "$1"); [[ ${m:-default} == "$M" ]]; }
 
+if [[ ${LANE_MERGE:-0} == 1 ]]; then   # opened on the verified commit (slot_open) for its re-base and merge alone
+  limit_wait || { [[ -f $STATE/lanes-end ]] && lane_exit 16 "the run is ending ($(cat "$STATE/lanes-end"))"; lane_exit 14 stopped; }
+  while [[ -f $STATE/rebase-$M ]]; do rebase "$M" || break; merge_milestones "$M"; done
+  lane_done
+fi
 if [[ ${LANE_ONCE:-0} == 1 ]]; then   # the deadline's verify: no cap, deadline or control check (the coordinator decided)
   verify "$M" once && lane_done
   [[ -f $STATE/needs-$M ]] && lane_exit 12 "$M needs Michael: $(cat "$LDIR/need" 2> /dev/null)"
@@ -142,6 +224,7 @@ fi
 repairs=0 gated=0
 while :; do
   lane_cd
+  [[ -f $STATE/lanes-end ]] && lane_exit 16 "the run is ending ($(cat "$STATE/lanes-end"))"
   (( $(cat "$STATE/sessions") >= MAX_SESSIONS )) && lane_exit 13 "session cap ($MAX_SESSIONS)"
   (( $(date +%s) >= DEADLINE )) && lane_exit 15 deadline
   take_answers; sync_record
@@ -152,11 +235,12 @@ while :; do
     services_down paused; rec_commit "HARNESS: lane $M paused"; sync_record
     while [[ $(control) == pause ]]; do
       (( $(date +%s) >= DEADLINE )) && lane_exit 15 deadline
+      [[ -f $STATE/lanes-end ]] && lane_exit 16 "the run is ending ($(cat "$STATE/lanes-end"))"
       sleep "${HARNESS_PAUSE_POLL:-60}"; take_answers; sync_record
     done
     continue
   fi
-  limit_wait
+  limit_wait || continue   # cut short by the run's end or a stop: the checks above say which
   (( $(date +%s) >= DEADLINE )) && continue
   if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; lane_exit 13 "weekly budget ($why)"; fi
 
@@ -205,14 +289,15 @@ while :; do
       rdiff="Review diff: not measured ($rd); opus"
     fi
   fi
-  n=$(rec_count "$STATE/sessions" 1)
+  n=$(rec_count "$STATE/sessions" 1)   # the cap once more, atomically: another lane's session may have taken the last
+  (( n > MAX_SESSIONS )) && { rec_count "$STATE/sessions" -1 > /dev/null; lane_exit 13 "session cap ($MAX_SESSIONS)"; }
   [[ $esc ]] || record F bump "$ATT" "$id"
-  run_init; context "$id"; materialize   # the copy, the snapshot and the INBOX the session is judged against
+  run_init; pack_and_copy "$id"   # the copy, the snapshot and the INBOX the session is judged against
   if [[ $esc ]]; then sclock="Review round 2 of 2 (escalated: $esc)"; else sclock="attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS"; fi
   # the counts the gate reads (the findings check below and the summary's found_nothing), asked in one fixed form
   [[ $kind == review ]] && rdiff+=$'\n'"Review findings: give your entry's summary this review's findings as \`<n> Critical, <n> Important, <n> Minor\` (the driver reads the counts)."
   HARNESS_CLOCK=$(clock "$sclock") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone HARNESS_REVIEW_DIFF=$rdiff prompt coding
-  log "session $n · $id · $mdl"
+  log "session $n · $id · $mdl"; printf '%s · session %s\n' "$id" "$n" > "$LDIR/now"   # harness status's lane line
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   sstart=$(git rev-parse HEAD)
   session coding "$mdl" "$slog" "$id"

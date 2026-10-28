@@ -65,6 +65,10 @@ Rules:
      docs touched by the milestone are updated.
   When every feature of a milestone passes, the harness verifies it independently and **merges it
   into the main branch**. So a milestone must be a coherent unit that is safe to ship on its own.
+- **Milestones run side by side** when neither needs the other (`after`), each in its own worktree
+  slot. Milestones that may run side by side should touch different files: shared docs (`README.md`,
+  `docs/architecture.md`) are edited in the milestone's closing review feature (its last build
+  feature, where the review is folded in), so lanes running side by side don't collide on them.
 - **`model`**: `"opus"` for plans, code, UI and reviews; `"sonnet"` for docs-only,
   verification-only and mechanical features; `"fable"` only where the project rules say so.
 - Every `passes` starts `false`. From now on, a session may change only its own feature's

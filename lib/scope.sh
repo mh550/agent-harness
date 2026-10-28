@@ -1,6 +1,6 @@
 # Usage: source lib/scope.sh; scope_run <unit> <mem-high> <mem-max> <cmd…> · scope_stop <unit> · scope_peak <unit> ·
 #   scope_left <unit> · scope_capped <unit> <mem-max> · scope_unit <run> <role> · scope_owns <run> <unit>.scope · scope_bytes <size> · dur_s <duration> · scope_available ·
-#   mem_available_gb [<meminfo>] · mem_gate (notes through the caller's note)
+#   mem_available_gb [<meminfo>] · mem_gate (notes through the caller's note) · admit <lanes alive> [<USAGE_5H>]
 # Capped transient systemd user scopes (docs/plans/2026-10-25-L1-capped-sessions.md §1-§2): bare when the user bus is
 # missing. systemd-run and systemctl are ${HARNESS_SYSTEMD_RUN:-systemd-run} and ${HARNESS_SYSTEMCTL:-systemctl}, read
 # at call time (the suite points them at its stubs).
@@ -93,10 +93,30 @@ mem_available_gb() {
   [[ $kb =~ ^[0-9]+$ ]] || return 1; echo $(( kb / 1048576 ))
 }
 
+# <lanes alive> [<usage file>] → 0: another lane may open (decisions/2026-10-26-parallel-runs-headroom), else 1 and
+# "<kind>\t<reason>" (kind: memory, five-hour). MemAvailable must cover MEM_MIN_AVAILABLE_GB plus LANE_RESERVE_GB per
+# open lane (unreadable: not tested, as mem_gate), and the newest session's five-hour window (USAGE_5H: "<0..1>
+# <reset epoch>", default $USAGE5), while it hasn't reset, must be under LANE_OPEN_BELOW_5H percent. The first lane
+# always opens: its own mem_gate and limit_wait handle a short box (a refusal at 0 open could stall the run for good).
+admit() {
+  local a=$1 f=${2:-${USAGE5:-}} gb need u r pct; (( a == 0 )) && return 0
+  if gb=$(mem_available_gb); then need=$(( MEM_MIN_AVAILABLE_GB + LANE_RESERVE_GB * a ))
+    (( gb >= need )) || { printf 'memory\t%s GB available, under %s GB (MEM_MIN_AVAILABLE_GB %s + LANE_RESERVE_GB %s x %s open)\n' \
+      "$gb" "$need" "$MEM_MIN_AVAILABLE_GB" "$LANE_RESERVE_GB" "$a"; return 1; }
+  fi
+  if [[ -n $f ]] && read -r u r 2> /dev/null < "$f" && [[ $u =~ ^[0-9.]+$ && $r =~ ^[0-9]+$ ]] && (( r > $(date +%s) )); then
+    pct=$(awk -v u="$u" 'BEGIN { printf "%d", u * 100 + 0.5 }')
+    (( pct < LANE_OPEN_BELOW_5H )) || { printf 'five-hour\t5-hour window at %s%%, opens under %s%% (resets %s)\n' \
+      "$pct" "$LANE_OPEN_BELOW_5H" "$(date -d "@$r" +%H:%M)"; return 1; }
+  fi
+  return 0
+}
+
 # Before a session (decisions/2026-10-25-memory-gate): under MEM_MIN_AVAILABLE_GB, note it, stop the run's services
 # (services_down, when the caller has one), poll every ${HARNESS_MEM_POLL:-300} s up to MEM_WAIT_MAX, then start
 # anyway: the session's cap protects the box, and a run that never starts helps nobody. Unreadable → no gate.
 # Exit 0 when it passed at once, 1 after a wait: the caller re-checks what the wait made stale (deadline, stop, clock).
+# It sleeps at most 60 s at a time and gives up early when the run is ending (state/lanes-end) or Michael stopped it.
 mem_gate() {
   local gb waited=0 max poll=${HARNESS_MEM_POLL:-300} s; (( poll > 0 )) || poll=1   # 0 would never advance the wait
   gb=$(mem_available_gb) && (( gb < MEM_MIN_AVAILABLE_GB )) || return 0
@@ -107,7 +127,8 @@ mem_gate() {
     gb=$(mem_available_gb) || return 0
     (( gb >= MEM_MIN_AVAILABLE_GB )) && { note "memory: $gb GB available after $waited s; starting the session"; return 1; }
     (( waited < max )) || break
-    s=$(( poll < max - waited ? poll : max - waited )); sleep "$s"; waited=$(( waited + s ))
+    if [[ -f ${STATE:-/nonexistent}/lanes-end ]] || { declare -F control > /dev/null && [[ $(control) == stop ]]; }; then return 1; fi
+    s=$(( poll < max - waited ? poll : max - waited )); (( s > 60 )) && s=60; sleep "$s"; waited=$(( waited + s ))
   done
   note "memory still at $gb GB after $MEM_WAIT_MAX; starting the session anyway (its cap protects the box)"; return 1
 }

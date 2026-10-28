@@ -9,6 +9,153 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-28 01:11 · verify P2 · passes
+
+All 7 P2 features hold: full suite 602/602 green (475 s); bash -n/node --check clean; named checks in 43-50 and docs/decisions/README/architecture/config items read. Note: brief items (initializer "measured and recorded", "suite ran n x" note) not found in prompts/lib.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| P2-01 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 5 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-01 | 6 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-02 | 5 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-03 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-03 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-03 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-03 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-04 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-04 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-04 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-04 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-05 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-05 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-05 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-05 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-06 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-06 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-06 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-06 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 1 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 2 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 3 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 4 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+| P2-07 | 5 | re-read the step against code, docs and the named tests/checks file (43-50, 33); bash -n, node --check; harness suite run | matches: suite 602/602 green; the step's check/doc/decision file exists and asserts it | yes |
+
+- *011027-verify-P2 · claude-sonnet-5-5*
+
+### 2026-10-28 01:02 · P2-07 · passes
+
+Opus review of the P2 diff (2,106 lines): 1 Critical, 3 Important fixed red->green with 4 checks; Minor 5 fixed; the rest left in docs/plans/2026-10-26-P2-review.md. D21 overturned in place (an open record PR keeps harness/<run> from gc). Docs: README after-run steps, architecture §12 headroom rule and §15, lanes.md P2 section. Suite 598 -> 602, green.
+
+- **Files:** lib/driver.sh, lib/lane.sh, lib/record.sh, bin/harness, tests/checks/44-lanes-record.sh, tests/checks/47-lanes-two.sh, tests/checks/48-lanes-rebase.sh, tests/checks/50-lanes-record-pr.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-26-P2-review.md, journal/decisions/2026-10-26-lanes.md, +2 more
+- **Verified:** each new check failed first (trap: driver.pid gone/ended written; pack_and_copy: got the other pack; merge_one: 'again 1'; gc: harness/rq deleted, 10/11), then passed; bash tests/run.sh 602/602 in 474 s (TEST_JOBS=4); bash -n on 20 P2 shell files, node --check on the .mjs
+- **Tests:** 598 → 602
+- **Dead end:** inserting new names into check-names.txt with sed at a nearby line — broke its C sort order, so the runner's comm reported dozens missing/new; re-sort with LC_ALL=C sort -u
+- **Discovery** (affects run): A bash '&' child killed before its exec runs the parent's EXIT trap (200/200 here): lane_wait's sleep ran the driver's trap (lanes TERMed, driver.pid removed mid-run). Both traps now start with [[ $BASHPID == "$$" ]] || exit 0; any new trap needs the same guard
+- **Discovery** (affects run): The flakes in 45, 47 (u5) and 50 trace to review findings 1 and 5 (both fixed); 08's memory-gate stop check flaked once under 4 jobs (its 30 s wait for the note), now 120 s
+- **Discovery** (affects run): gc now keeps harness/<run> while state/record-pr names a PR gh calls OPEN (or gh can't answer): one gh call per record-only branch with that marker
+- **Question for Michael:** D21 is overturned (gc now keeps a record branch with an open record PR, as the review found deleting it closes the PR left for you under pr). Keep it that way?
+- **Proposed change:** A feature for the brief's '<id>: suite ran <n>x (<s> s) in the session' note: planned in P2-06 (plan §6) but never built; no feature's steps named it
+- **Proposed change:** Next milestone: review Minors 6 (features.mjs writes via temp file + rename), 8 (merge_one ignoring .harness/runs/ in its tree test), 9 (ledger after record_pr), 10 (milestone-id lint for scope_unit collisions), 12 (--dry-run and merge-lock checks), 15 (one fetch retry helper)
+- *09-P2-07 · claude-opus-5-5*
+
+### 2026-10-27 23:51 · P2-06 · passes
+
+harness status prints one line per open lane (feature · session · port · slot · its units with MemoryCurrent; lanes/<m>/now from lane.sh); summary.json gains lanes {max_open, lane_hours, wall_hours} (pure laneSpans over run.log) and report.md a Lanes row; initializer.md and run.md say how lanes share files and slots. 594 → 598 checks. 0 Critical, 0 Important, 4 Minor (3 fixed).
+
+- **Files:** bin/harness, lib/lane.sh, lib/driver.sh, lib/summary.mjs, prompts/initializer.md, prompts/parts/run.md, tests/checks/43-lanes-scheduler.sh, tests/checks/47-lanes-two.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md
+- **Verified:** new checks watched red first (43: 14/16), then green: 43 16/16, 47 13/13 (status-two.out: 'lane M1 · A · session 1 · port 7950 · slot 0 · MemoryCurrent harness-two-M1-s2 50 MB' and M2 on 7951 slot 1), 08 125/125; full suite 598/598 green in 471 s (TEST_JOBS=4) on the second run; the first was 597/598: 50-lanes-record-pr's first check failed once, passed alone (10/10) and in the rerun; node --check lib/summary.mjs, bash -n bin/harness lib/lane.sh lib/driver.sh.
+- **Tests:** 594 → 598
+- **Dead end:** ${us:+MemoryCurrent $us}${us:-no units} in the lane line — ${us:-…} expands to $us when set, so the units printed twice; the first 47 run went red on it
+- **Discovery** (affects P2-07): harness status folds a lane's units into its lane line: 08's status check now expects 'lane M1 · A · session 1 · … · MemoryCurrent harness-termed-M1-s<n> 50 MB' instead of a bare unit line; the run's own units keep the old line
+- **Discovery** (affects P2-07, run): Review Minor left: two milestone ids that clean to the same unit name (M1-x and M1.x) collide in scope_unit, so status gives one lane all the units; a features lint rule rejecting such ids would close it
+- **Discovery** (affects run): tests/run.sh subset output isn't kept by check.sh: run 'KEEP=1 bash tests/run.sh <file> > scratch/x.out' to read a failing check's files
+- **Discovery** (affects P2-07, run): 50-lanes-record-pr's 'under auto finish opens <run>: run record' failed once under a full run (597/598) while the file's other 9 checks passed; it passed alone and in the next full run: a load flake in P2-05's check (likely its exact 'pr merge' count of 3), not reproduced
+- **Proposed change:** P2-07 (decisions and docs) could add the lane line and summary.lanes to docs/architecture.md §4/§12 prose; this session updated the lane state row, summary §2 and README's status row only
+- *08-P2-06 · claude-opus-5-5*
+
+### 2026-10-27 23:21 · P2-05 · passes
+
+The record PR: finish's last step (record_pr) opens '<run>: run record' from harness/<run> (reusing the open one, body refreshed), merged under auto, left under pr, none with RECORD_PR=off; never if the branch has non-record changes main lacks. The v2 closer spares it. Stub gh mirrors --json/-q. Suite 584 -> 594 green.
+
+- **Files:** lib/driver.sh, tests/stub-gh.sh, tests/lib.sh, tests/checks/50-lanes-record-pr.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-26-lanes.md
+- **Verified:** check.sh: green in 475 s, 594 tests (bash tests/run.sh 592/592 before the review fixes, 470 s). 50-lanes-record-pr.sh 10/10; 8/8 red before record_pr existed; the v2-closer check and the --base guard check each go red with their guard removed. bash -n on lib/driver.sh bin/harness lib/queue.sh and the touched test files.
+- **Tests:** 584 → 594
+- **Dead end:** asserting the ledger's entries.jsonl has 3 lines (one per feature) — the journal has an entry per session (codings, verifies, retro): 6; the check compares the ledger's copy with main's instead
+- **Discovery** (affects P2-07, run): Under MERGE_POLICY=pr (or a refused auto merge) the end-of-queue gc --all-merged --deps deletes the record-only harness/<run> (record_only, unchanged per the spec), which closes the record PR left for Michael the same night. Kept as D21 default; question below.
+- **Discovery** (affects P2-07): A merged record PR moves main with .harness/runs/<run>/ only, yet merge_one's tree test counts it: a verified milestone still unmerged (waiting on a dependency, or pr-held until harness merge) then re-bases (a full suite run, one of its 3 re-bases). Another run's record PR does the same to a parallel run's lanes. Correct, but costly; P2-07 may ignore .harness/runs/ in that comparison.
+- **Discovery** (affects P2-07): The ledger copy is taken before record_pr, so the 'record PR merged/opened' note is in harness-log.md on harness/<run> (and run.log) but not in the ledger or main's copy.
+- **Discovery** (affects run): stub-gh.sh now refuses pr create for a head with an open PR, refuses pr merge --match-head-commit when the head moved, closes one PR per pr close, and keeps titles (prs/pr-N.title, pr-N.closed), as gh does.
+- **Discovery** (affects run): One full run had 45-lanes-run's default-lane check fail (593/594); it passed alone twice, in four parallel copies and in the next full run (594/594): a load flake, not reproduced.
+- **Discovery** (affects run): 50-lanes-record-pr.sh costs ~52 s of slot time (five stub runs and two continues); suite wall 475 s at TEST_JOBS=4 (measured, not a gate).
+- **Question for Michael:** Under MERGE_POLICY=pr the end-of-queue gc deletes harness/<run> (record_only) and so closes the record PR left for you the same night (D21 default, decisions/2026-10-26-lanes). Keep that, or should gc keep a record branch while its record PR is open (one gh pr view per candidate branch in gc)?
+- **Proposed change:** P2-05 step 3 says 'a check in the gc file': the end-of-queue gc check is in tests/checks/50-lanes-record-pr.sh, where the merged record PR's state is built (as P2-04 put its gc checks in 49); no file is named for gc alone (08 and 13 are the two largest).
+- *07-P2-05 · claude-opus-5-5*
+
+### 2026-10-27 22:44 · P2-04 · passes
+
+Merged lane branches now go when their PR merges (lane_branch_gone: origin at once, local at reap; only what the tag or main holds, only from this run's slots). harness gc gains the harness-lane/ pass, removes leftover slots of runs with no live driver or lane, covers slots under --deps, and treats a live lane as running. P1 Minors 8 and 11 fixed.
+
+- **Files:** lib/record.sh, lib/driver.sh, bin/harness, tests/stub-claude.sh, tests/checks/49-lanes-slots.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-27-lane-branches-and-slots.md
+- **Verified:** tests/checks/49-lanes-slots.sh 10/10 (red first: 7 of 9 failed before the code; dropping the running() lane mapping turns the live-run check red); full suite via check.sh green, 584 tests in 457 s; bash -n bin/harness lib/lane.sh lib/driver.sh lib/record.sh. An Opus review found 2 Important (deletion without an ancestry guard, detaching a non-slot checkout) and Minors 3, 5, 7: all fixed and covered by the lane_branch_gone check.
+- **Tests:** 574 → 584
+- **Dead end:** gk/gd scenarios after sr merged into main — the stub's work-A.txt then equals main's, A's commit is empty and nothing is pushed; the file resets origin main to its first commit before gk
+- **Discovery** (affects P2-06, P2-07): A lane branch is not pushed at lane open, only after its first session (sync_lane): a check that needs it on origin while held must push it itself
+- **Discovery** (affects run): 49-lanes-slots.sh costs ~42 s of slot time (five stub runs); suite 457 s at TEST_JOBS=4 (measured, not a gate)
+- **Discovery** (affects P2-07): Left for P2-07 (review Minors not fixed): lanes_orphans compares STATE as an exact string (a differently spelled path to the same dir would miss an orphan); gc's slot removal doesn't check that the unit pass's scope_stop succeeded (a session could still run in a clean slot); no --dry-run check for slots or lane branches
+- **Proposed change:** P2-04 step 3's gc check sits in 49-lanes-slots.sh, as the plan §7 says, not in 08 or 13
+- *06-P2-04 · claude-opus-5-5*
+
+### 2026-10-27 22:14 · P2-03 · passes
+
+The re-base rule: merge_one returns 3 when main moved; the lane (or a LANE_MERGE merge lane, coordinator or harness merge) merges main into the verified commit; disjoint files: full suite, tag forced to the merged commit, merge; overlapping or LANE_REBASE=verify: one verify round. Review's 5 findings fixed. Suite 566 -> 574, green.
+
+- **Files:** lib/lane.sh, lib/record.sh, lib/driver.sh, bin/harness, tests/stub-claude.sh, tests/checks/48-lanes-rebase.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-lane-rebase-disjoint.md, docs/architecture.md, README.md
+- **Verified:** tests/checks/48-lanes-rebase.sh 8/8: rb (disjoint: note, uncached check: green in lanes/M2/rebase-check.out, merged, git -C origin.git diff --quiet run/rb/M2 main, origin reflog shows only refs/tags/run/rb/M2 rewritten), ro (overlapping (shared.txt), two verify M2 sessions, 're-base verify round 1 of 1' in its prompt), rv (LANE_REBASE=verify), rr (MAX_REBASE_ROUNDS=0 needs Michael), rf (failed round removes tag; watched red with the fix disabled), rp (MERGE_POLICY=pr, harness merge re-bases M1 then M2). Full suite via check.sh: green, 574 tests, 437 s. bash -n on every touched shell file.
+- **Tests:** 566 → 574
+- **Dead end:** reading the origin's reflog after resetting main between runs — update-ref of main is itself a logged non-fast-forward; the rewritten refs are now read before the reset
+- **Discovery** (affects P2-04, P2-07): merge_milestones_ now skips a milestone whose lane is alive (other than the caller's own, by pid == $$): the coordinator's reap never merges a lane's milestone under it; lane_alive moved from driver.sh to record.sh
+- **Discovery** (affects P2-07): A re-base verify round that fails removes verified-<m> and the tag run/<run>/<m> locally and on origin (else the old tag would merge or block a later tag -a); lane_done checks needs-<m> before waits-<m> (waits-<m> is never cleared)
+- **Discovery** (affects run): 48-lanes-rebase.sh costs ~77 s of slot time (six stub runs); each run resets origin main with update-ref so the stub's work files are new
+- **Discovery** (affects P2-05, P2-07): harness merge clears moved-* (one more re-base per main); harness continue also clears rebase-rounds-* and moved-*; harness merge clears a stale lanes-end before its merge lanes
+- **Proposed change:** P2-03 step 1's note reads '<n> files' even for 1 file ('1 files'); kept as the spec wrote it
+- *05-P2-03 · claude-opus-5-5*
+
+### 2026-10-27 21:41 · P2-02 · passes
+
+Two lanes on: admit (memory reserve, five-hour window, once-per-kind waiting note), a port per lane (port_alloc_ under the record and port locks), a merge lock, lanes-end + exit 16, atomic rec_count, USAGE_5H, sliced limit/mem waits, TEST_FILE_TIMEOUT. Clamp gone. Tests 555 -> 566.
+
+- **Files:** lib/driver.sh, lib/lane.sh, lib/record.sh, lib/scope.sh, lib/config.sh, lib/metrics.mjs, lib/notify.sh, bin/harness, tests/run.sh, tests/lib.sh, tests/stub-claude.sh, tests/checks/47-lanes-two.sh, +8 more
+- **Verified:** check.sh: green in 414 s, 566 tests. 47-lanes-two 11/11 (two lanes at once, ports 7950/7951 and in prompts, both merged, done; memory wait noted once then opens on fixture swap; 5-hour 80% wait noted once; session cap -> other lane 'the run is ending'; stop in a limit wait ends within a slice). 33: TEST_FILE_TIMEOUT=2s file -> one FAIL line, under 20 s. The new checks ran red first (47 aborted, 33 timeout FAIL). bash -n all shell files, node --check lib/metrics.mjs. Opus review: 1 Important + 6 Minor, all fixed.
+- **Tests:** 555 → 566
+- **Dead end:** the plan's two-lane run releasing both lanes together — whichever lane verifies before the other merges finds main moved (needs P2-03's re-base); the check releases C first and M1 after M2 merged
+- **Dead end:** worktree add -B from origin/<b> and push -u in lanes — git locks .git/config without waiting: slot 1's open failed (could not lock config file) while M1 pushed with -u; now --no-track and no -u
+- **Dead end:** mem_gate checking stop/lanes-end after its sleep — a stop arriving with memory back lost the 'available after' note (file 08 red); the check now comes before each sleep
+- **Discovery** (affects P2-04): Concurrent git writers in one repo: .git/config fails instead of waiting (fixed for lanes: --no-track, no -u). P2-04's branch deletion at merge (branch -D writes config) must run while other lanes push; check it under two lanes.
+- **Discovery** (affects P2-03): merge_one's fetch of main can collide with another lane's sync_main fetch (ref lock); it now retries once and logs, and merges on the next reap.
+- **Discovery** (affects run): Suite wall time 414 s at TEST_JOBS=4 (was ~256 s before P2-02); 47-lanes-two is ~110 s of slot time (its limit-wait check sleeps one 60 s slice). Measured, not a gate. The first full run here had 5 failures in 08, 13 and 32 that passed on rerun alone and in the next full run (load flakes, not reproduced).
+- **Discovery** (affects P2-06, P2-07): admit lives in lib/scope.sh (beside mem_available_gb) so it is unit-checkable; port_taken moved from bin/harness to lib/config.sh; both runs and lanes allocate under $STATE_ROOT/port.lock.
+- **Discovery** (affects P2-03, P2-06): stub hold-coding now also touches held-<run>-<id> and releases on release-<run>-<id>: a check can choose which lane goes first.
+- **Question for Michael:** D16-D18 in journal/decisions/2026-10-26-lanes.md are defaults: slot 0 keeps the run's port; a run's end reaches lanes through lanes-end and exit 16; slots --no-track and lane pushes without -u. Keep them?
+- **Question for Michael:** LANE_RESERVE_GB=4 and LANE_OPEN_BELOW_5H=70 stay as specced (decisions/2026-10-26-parallel-runs-headroom). Change either before your first night at MAX_LANES=2?
+- **Proposed change:** P2-02 step 3 should say 'under the record lock and the box-wide port lock' (plan D2).
+- **Proposed change:** The P2 plan's 'two' scenario should release C before A: two lanes verifying at once is P2-03's re-base case, not P2-02's.
+- *04-P2-02 · claude-opus-5-5*
+
+### 2026-10-27 20:56 · P2-01 · passes
+
+P2-01 passes. The plan is in commit `2a5ad34` (`docs/plans/2026-10-26-P2-two-lanes.md`) and pushed. The suite is green at 555 tests: this was a cache hit, which is valid because the plan file is outside the cache key and no code changed. An Opus reviewer checked the plan against the code and found 7 Important and 9 Minor problems. I confirmed the key ones and fixed all of them in the plan. The bi…
+
+- **Files:** docs/plans/2026-10-26-P2-two-lanes.md
+- *03-P2-01 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 413 characters (at most 400)*
+
 ### 2026-10-27 20:26 · verify P1 · passes
 
 All 6 P1 features hold. Own full run: 555/555 (init run had one flaky file, 15-run-4, 78/78 on rerun alone and in full). bash -n/node --check clean; grep tainted|held in driver.sh = 0; docs, decision, review file, config defaults present.
