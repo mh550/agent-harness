@@ -578,8 +578,11 @@ status card: harness needs <run>, the card's hint, answers until U2's own comman
 status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
 status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule
 status card: needs you counts the run's items with the first headline and the harness needs hint
+status card: needs you gives the count and each open item's headline, then the harness needs hint
+status card: past three items, +<k> more; a record without its card and an unreadable state dir never stop status or harness needs
 status card: the debrief keeps N=3 harness status <run>; the supervisor asks for -v and keeps N=20
 status card: the gcd run says removed by gc and 23/23 from the ledger; its milestones from the summary; next report only
+status from records: --json needs are harness needs --json's items whole; markers and an end reason alone are none
 status json: --json writes nothing, and reads the queue dir without creating it
 status json: --project proj2 keeps only that project's runs, items and queue entries
 status json: STATUS_SINCE in the user config sets the window, --since wins over it
@@ -588,7 +591,7 @@ status json: finished holds the runs ended in the last 24h, newest first, and ol
 status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
 status json: harness status --json over 38 stub runs takes under 1 s (best of 3)
 status json: harness status <run> --json prints that one run object with v; an unknown run is an error
-status json: lib/status.mjs has a usage header, imports only node: built-ins and ./view.mjs, exports runObject, queueEntry and sections
+status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs and ./needs.mjs, exports runObject, queueEntry and sections
 status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
 status json: queued holds the entries as queue list numbers them, held by a live run of their project, a brief's first 30 characters
 status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
@@ -608,6 +611,7 @@ status view: -v adds each running run's lane lines (P2-06's text), its own units
 status view: -v with a non-numeric N keeps 3 log lines; two lanes' sub-rows are ASCII under LC_ALL=C; only a path starting with the home directory becomes a tilde; no control byte from run.log
 status view: FINISHED newest first with the end class glyph and the reason, the gc'd run 23/23 from the ledger; the 3-day-old run only in the footer
 status view: NEEDS YOU lists the crashed, the parked and the given-up run, oldest first, with headline, passing, dollars and age; the gc'd run none
+status view: NEEDS YOU lists the records' headlines, oldest first, none for the marker-only run
 status view: QUEUED shows the waiting entries as queue rows, a held one says which run holds it, parked ones counted; past three, +<k> more
 status view: RUNNING shows the live run as ● with feature, session and model alias; paused ‖; a usage-limit wait; two lanes as sub-rows
 status view: STATUS_SINCE defaults to 24h (lib/config.sh), commented in the user config template; the catch-up prompt asks for one project
@@ -665,6 +669,7 @@ the EXIT trap of a driver ended unexpectedly opens driver_crash (stored, no synt
 the allowlist runs nothing that writes or executes
 the answer skill exists and names the commands and the never-list
 the answer skill passes Michael's words through a quoted heredoc
+the answer skill's first step is harness needs, harness parked its alias
 the deadline verifies a complete milestone once and merges it
 the debrief page never reads a stop reason's words as its tone
 the debrief saw the queue's runs
@@ -672,6 +677,7 @@ the debrief starts a desk when Needs Michael is non-empty
 the debrief's harness status block per run opens with the run's card line
 the desk notification
 the desk prompt names the run, its commands and the never-list
+the desk prompt reads COLUMNS=60 harness needs and needs --json, never harness parked
 the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory
 the desk's environment has no NTFY_TOKEN
 the dialog guard: the CLI's dialog words, not the desk's own questions

@@ -188,14 +188,14 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   per project) lives in `~/.claude/CLAUDE.md` § "Git, merges and permissions" and the user settings. Install or
   refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`.
 - **Answering from the phone:** install the skill once, `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`.
-  Ask a Claude session "answer the harness": it runs `harness parked`, checks what it safely can (variable names, never
+  Ask a Claude session "answer the harness": it runs `harness needs`, checks what it safely can (variable names, never
   values), proposes, and runs `harness answer` only after your yes. Set `DESK_URL` (above) to get **Answer with Claude**
   on a park's notification; `templates/user/config.sh` documents every user setting.
 - **The desk:** with `DESK=1` in `~/.config/harness/config.sh` (off by default) the harness starts the session for you
   whenever a run needs you (a park, a blocked or waiting end, verify or a merge needing you, a debrief with something
   under Needs Michael): a Remote Control `claude` in tmux session `h-desk`, one window per run, on `DESK_MODEL` (opus).
   On the phone you get a second notification, `[<run>] needs you: <why>`; tapping it opens that session in the Claude
-  app, already briefed: it has read `harness parked`, the INBOX and the progress log and sends one numbered brief. Answer
+  app, already briefed: it has read `harness needs`, the INBOX and the progress log and sends one numbered brief. Answer
   there; it runs `harness answer` and the continue only after your yes. A later event for the same run is typed into the
   same session. By hand: `harness desk <run> [--why "…"]`, `harness desk --debrief`; `harness desk --list` (window, run,
   URL, age), `harness desk --close <run>|--all`; `harness gc <project>` closes desks idle for 24 h (and keeps the

@@ -79,7 +79,7 @@ ran() { local r; sleep 1; for r; do echo "$(date '+%F %T') run $r on harness/$r 
 # stamps are local time). proj: done2h, done3d, running (a live sleep as its driver and as lane M1's, one unit each, B
 # on its last attempt),
 # parked, gcd (worktree removed, its summary.json only in the ledger), crashed (driver.pid naming no process); proj2:
-# stopped, givenup; and <bulk> more ended 4 days ago (bulk-01's ended a bare reason). The queue: a start with a long
+# stopped, givenup (parked and givenup with the needs records the lane opens); and <bulk> more ended 4 days ago (bulk-01's ended a bare reason). The queue: a start with a long
 # brief (held: proj's run is going), a requested continue, a parked start. Leaves at, ago and sr defined for status_bulk.
 #   status_stubs [<bulk>]
 status_stubs() {
@@ -125,11 +125,18 @@ status_stubs() {
   echo "B · session 2" > "$HARNESS_STATE/proj/running/lanes/M1/now"; echo 7960 > "$HARNESS_STATE/proj/running/lanes/M1/port"
   echo "$T/wt/proj/running-slots/slot-1" > "$HARNESS_STATE/proj/running/lanes/M1/slot"
   for r in harness-running-M1-s2 harness-running-svc; do touch "$T/scope/$r.alive" "$T/scope/$r.running"; done
+  nopen() {   # <project> <run> <s ago> <reason> <subject> [key=value…]: the needs record lane.sh's needs_open writes, then
+    local p=$1 r=$2 s=$3; local wt=$T/wt/$p/$r; local rec=$wt/.harness/runs/$r; shift 3
+    HARNESS_NOW=$(( HARNESS_NOW - s )) node "$HERE/../lib/needs.mjs" open "$HARNESS_STATE/$p/$r" "$r" "$p" "$@" list="$rec/feature_list.json" \
+      record="$rec" inbox="$rec/INBOX.md" worktree="$wt" branch="harness/$r" record_branch="harness/$r" state="$HARNESS_STATE/$p/$r" > /dev/null
+  }
   sr proj parked 10800 "waiting on Michael: B" 3600; fl proj parked A:true:M1 B:false:M1 C:false:M1; mx proj parked A
   printf '{"B":{"answers":"x","why":"set the gatus vars\\nand the token","at":"%s"}}\n' "$(iso 3700)" > "$HARNESS_STATE/proj/parked/parked.json"
   printf 'status: run\n\n### B: set the gatus vars, then answer\n\n## Answers\n' > "$T/wt/proj/parked/.harness/runs/parked/INBOX.md"
+  nopen proj parked 3700 parked B feature=B why="$(printf 'set the gatus vars\nand the token')"
   sr proj2 givenup 9000 "blocked on C" 1800; fl proj2 givenup A:true:M1 B:true:M1 C:false:M1
   echo '{"C":2}' > "$HARNESS_STATE/proj2/givenup/attempts.json"; echo 2 > "$HARNESS_STATE/proj2/givenup/max-attempts"; ago "$HARNESS_STATE/proj2/givenup/attempts.json" 2000
+  nopen proj2 givenup 2000 given_up C feature=C attempts=2 max_attempts=2 log="$HARNESS_STATE/proj2/givenup/run.log"
   sr proj gcd 30000 done 4200; fl proj gcd $(for i in $(seq 23); do echo "F$i:true:M$(( (i - 1) / 12 + 1 ))"; done); mx proj gcd F1 F2
   { echo "$(at 29000) lane M1 opened (slot 1)"; echo "$(at 28000) lane M2 opened (slot 2)"; echo "$(at 9000) lane M1 closed (merged)"; echo "$(at 5000) lane M2 closed (merged)"; } >> "$HARNESS_STATE/proj/gcd/run.log"
   touch "$HARNESS_STATE/proj/gcd/verified-M1" "$HARNESS_STATE/proj/gcd/verified-M2" "$HARNESS_STATE/proj/gcd/merged-M1" "$HARNESS_STATE/proj/gcd/merged-M2"

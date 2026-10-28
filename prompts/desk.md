@@ -13,14 +13,15 @@ so Michael can answer what the runs need from his phone. The event: **{{WHY}}** 
 ## 1. Read what is waiting
 
 <!-- run -->
-- `harness parked {{RUN_ID}}`: what parked features wait on, since when, and the next commands.
+- `COLUMNS=60 harness needs {{RUN_ID}}`: a card per item that waits on Michael (parked features, verify, merges,
+  a given-up feature), why, where, since when, and the next commands.
 - `harness status {{RUN_ID}}`: running or ended, and why.
 - The questions above `## Answers` in `{{INBOX}}`.
 - The newest two or three entries of `{{PROGRESS}}` (newest first).
 <!-- /run -->
 <!-- debrief -->
 - `{{NOTE}}`, the newest debrief, and its `## Needs Michael` section.
-- For each run it names: `harness parked <run>`, `harness status <run>`, and its INBOX.md (questions above
+- For each run it names: `COLUMNS=60 harness needs <run>`, `harness status <run>`, and its INBOX.md (questions above
   `## Answers`) and progress.md in `~/worktrees/<project>/<run>/.harness/runs/<run>/`.
 <!-- /debrief -->
 
@@ -49,8 +50,9 @@ HARNESS_ANSWER_END
 )"
 ```
 
-Read it back to him. On his go, run the `commands` of its feature in `harness parked {{RUN_ID}} --json` (they know
-whether the run is going, ending, queued or has a runner; the text view wraps them and shortens paths). For a run that isn't parked (blocked, verify, a merge):
+Read it back to him. On his go, for a parked feature, run its item's `card.commands` from `harness needs {{RUN_ID}} --json` (they know
+whether the run is going, ending, queued or has a runner; the text view wraps them and shortens paths). For any other
+item (given up, verify, a merge; a card's `harness merge` is Michael's to run, not yours):
 `harness queue list`; with a runner going, `harness queue add --continue {{RUN_ID}}`, otherwise
 `harness continue {{RUN_ID}}`. A run still going needs no continue.
 <!-- /run -->
@@ -62,7 +64,8 @@ HARNESS_ANSWER_END
 )"
 ```
 
-Read it back to him. On his go, run the `commands` of its feature in `harness parked <run> --json`. For a run that isn't parked:
+Read it back to him. On his go, for a parked feature, run its item's `card.commands` from `harness needs <run> --json`. For any other
+item (a card's `harness merge` is Michael's to run, not yours):
 `harness queue list`; with a runner going, `harness queue add --continue <run>`, otherwise `harness continue <run>`.
 A run still going needs no continue.
 <!-- /debrief -->

@@ -78,6 +78,15 @@ needs`); U2-04 adds the cards, U2-05 and U2-06 the openers, U2-07 the readers.)*
     `reap` `driver_crash` for a lane that exited without a reason. `needs_you` sends the record's title, body (the
     card), click (`needs.md`, a refusal's PR) and priority, and still starts or briefs the desk, so a main conflict
     now does too.
+  - **The readers (U2-07).** `harness status` reads the records: `lib/status.mjs` imports `needs.mjs list` (the open
+    records plus the synthesized parked and crash items, ordered, a parked card's commands as of now), so NEEDS YOU,
+    `--json`'s `needs` (each item whole: the v1 keys U1 used and the rest of the record) and the card's `needs you`
+    (the count, up to three headlines, `+<k> more`) are what `harness needs` lists. U1's derived rows go, the run-end
+    item with them: a waiting or failed end is an item only when finish opened its record. The desk prompt and the
+    answer skill read `harness needs` (`COLUMNS=60` on the desk; `--json`'s `card.commands`), the debrief adds a
+    `#### needs` block per run after its card. `list` skips a state dir it can't make items of (a line on stderr),
+    so one broken run never hides the others' items, in `harness needs` or in status. Status asks for the items only
+    in its view and card (never for `queue list` or `show`), and only for the runs it shows.
 - **Rejected:** a single `needs.json` per run (two lanes writing it race; a file per item renames atomically).
   Deriving items on every read, as status did (nothing records when an item was handled, or by whom). Sweeping in
   `harness needs` (a phone session runs it to look: it must write nothing).
@@ -85,3 +94,4 @@ needs`); U2-04 adds the cards, U2-05 and U2-06 the openers, U2-07 the readers.)*
 Updated in place 2026-10-28: U2-04's cards replace the one-line view (the Cards bullets).
 Updated in place 2026-10-28: U2-05's openers, notification body and click, and sweeps (the two U2-05 bullets).
 Updated in place 2026-10-28: U2-06's git-side openers, the main-conflict notification and needs_you from the record.
+Updated in place 2026-10-28: U2-07's readers (status, desk, skill, debrief).

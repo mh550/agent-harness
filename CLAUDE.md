@@ -76,3 +76,4 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - harness needs/parked print cards: grep `  <label to 11><value>`; HARNESS_GLYPHS=unicode for `·` `⚠` (else - !) (agent-harness-2026-10-28 2026-10-28)
 - `[[ $(jq …) -ge 1 ]]`: a jq `null` is an unbound name under set -u and ends the file; test in jq (`>= 1` == true) (agent-harness-2026-10-28 2026-10-28)
 - stub runs in one check file share origin main: an earlier run's merges are on it; reset main (update-ref) between runs (agent-harness-2026-10-28 2026-10-28)
+- status-json-keys.txt lists the stub needs records' keys: a card field added to parked, given_up or driver_crash changes it (agent-harness-2026-10-28 2026-10-28)
