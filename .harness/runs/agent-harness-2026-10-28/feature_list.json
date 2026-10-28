@@ -1,6 +1,13 @@
-{ "run": "agent-harness-2026-10-28", "branch": "harness/agent-harness-2026-10-28",
+{
+  "run": "agent-harness-2026-10-28",
+  "branch": "harness/agent-harness-2026-10-28",
   "features": [
-    { "id": "U1-01", "milestone": "U1", "kind": "plan", "model": "opus", "after": [],
+    {
+      "id": "U1-01",
+      "milestone": "U1",
+      "kind": "plan",
+      "model": "opus",
+      "after": [],
       "description": "docs/plans/2026-10-28-U1-read-views.md: the view.mjs API, the status.mjs stdin and JSON contract, the existing checks the new text affects with their intent-preserving rewrites, and the order of U1's features so the suite stays green between them.",
       "steps": [
         "`docs/plans/2026-10-28-U1-read-views.md` exists and opens with one line on the lanes state: P1 and P2 of run agent-harness-2026-10-26 are on `origin/main` (PRs #40 and #41; `lib/lane.sh` and `lib/record.sh` exist), so every driver site is named by function and file (`sync_main`, `merge_one`, `needs_you`, `notify_park` in lib/record.sh; `verify` in lib/lane.sh; `finish` and the EXIT trap in lib/driver.sh; `cmd_status`, `cmd_queue`, `cmd_parked` in bin/harness), never by a line number",
@@ -10,8 +17,16 @@
         "it orders U1-02 to U1-07 with what the suite looks like after each (the old `harness status <run>` text is kept until U1-05 replaces it, so every check stays green between features), names the check files (one per topic, numbered from 51) and fixtures (`tests/fixtures/end-reasons.txt` copied from the reasons `finish` is called with and the spec's `ended` lines, `tests/fixtures/status-json-keys.txt`), the stub-state helper the checks share (one run done 2 h ago, one done 3 d ago, one stopped, one running, one parked, one given up, one gc'd with a ledger copy, 30 more for timing), and Michael's after-run step (`STATUS_SINCE` in the user config, optional)",
         "the suite is green (unchanged by this feature)"
       ],
-      "passes": false },
-    { "id": "U1-02", "milestone": "U1", "kind": "build", "model": "opus", "after": ["U1-01"],
+      "passes": true
+    },
+    {
+      "id": "U1-02",
+      "milestone": "U1",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U1-01"
+      ],
       "description": "lib/view.mjs, the one formatter every read view renders through: width and layout from the environment, a fixed single-column glyph set with an ASCII fallback, colour on a TTY only, tables that never exceed the width, cards with a hanging indent, relative and absolute times, durations and end classes, each a pure function with unit checks.",
       "steps": [
         "`lib/view.mjs` has a one-line usage header, imports nothing beyond `node:` built-ins, and exports `context`, `glyph`, `paint`, `displayWidth`, `cut`, `pad`, `table`, `section`, `rule`, `card`, `ago`, `when`, `home`, `duration`, `endClass`; `node --check lib/view.mjs` passes",
@@ -22,8 +37,16 @@
         "`tests/fixtures/end-reasons.txt` holds, one per line, every reason `finish` is called with in lib/driver.sh and lib/lane.sh plus the `ended` lines of the spec's *What Michael saw* section, sanitised; a check runs `endClass` over every line and gets `done`, `stopped`, `waiting` or `failed` exactly as the spec's end-class table says, and `some new reason` gives `failed`",
         "every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U1-03", "milestone": "U1", "kind": "build", "model": "opus", "after": ["U1-02"],
+      "passes": false
+    },
+    {
+      "id": "U1-03",
+      "milestone": "U1",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U1-02"
+      ],
       "description": "lib/status.mjs builds the run and queue objects from the state dirs, the ledger and the queue in one node process, and `harness status --json` (v1) prints them; the text output is unchanged in this feature.",
       "steps": [
         "`lib/status.mjs` (usage header; imports only `node:` built-ins and `./view.mjs`) reads one run per stdin line (`<run>\\t<project>\\t<state dir>\\t<worktree>\\t<record dir>\\t<alive 0|1|2>`) and the arguments `--runner 0|1 --queue <dir> --ledger <dir> --max-parallel <k>`, exports pure `runObject`, `queueEntry` and `sections`, and reads per run itself `ended`, `PAUSE`, the state root's `LIMIT_UNTIL`, `port`, `tests-start`/`tests-end`, `run.log` (the newest `session <n> · <id> · <model>` line and the run's first ` run <id> on ` line), `metrics.jsonl` (cost, the session count), `feature_list.json`, and for a run whose worktree is gone `summary.json` from the state dir, else the ledger's `<project>/<run>/summary.json`",
@@ -34,8 +57,16 @@
         "`harness status --json` over the 38 stub runs finishes under 1 s (the check measures with `date +%s%N`), and the text of `harness status` and `harness status <run>` is unchanged by this feature (the 08-, 13-, 14-, 15- and 47- checks pass as they are); `journal/decisions/2026-10-27-read-views.md` is started with title, provenance and the finding",
         "`node --check lib/status.mjs`, `bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U1-04", "milestone": "U1", "kind": "build", "model": "opus", "after": ["U1-03"],
+      "passes": false
+    },
+    {
+      "id": "U1-04",
+      "milestone": "U1",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U1-03"
+      ],
       "description": "`harness status` is one screen: NEEDS YOU, RUNNING, QUEUED and FINISHED sections with a footer, `--all`, `--since`, `--project`, `-v` and `N`, fitting 60 and 80 columns with colour on a TTY only; the per-run card keeps its old text until U1-05.",
       "steps": [
         "`harness status` with no run argument renders through `lib/status.mjs` and `lib/view.mjs`: four sections in this order, `NEEDS YOU <n> · harness needs`, `RUNNING <n>`, `QUEUED <n> · runner going|off (harness queue start)`, `FINISHED · last <window> · <n>`, each a `section` line even when empty (`QUEUED 0 · runner off`), then a rule and the footer `<k> older runs: harness status --all · --since 3d · one run: harness status <run>` whenever anything is hidden; `harness status` on an empty state root prints the four empty sections",
@@ -46,8 +77,16 @@
         "`journal/decisions/2026-10-27-read-views.md` gains the choice (one formatter, no pager, colour on a TTY only, the window rule: `24h`, never fewer than the 3 newest, never more than 10) and the rejected (a pager by default, colour off a TTY, `column(1)` or an npm table package, hiding NEEDS YOU when the window is short, per-command formatting code)",
         "`node --check lib/status.mjs lib/view.mjs`, `bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U1-05", "milestone": "U1", "kind": "build", "model": "opus", "after": ["U1-04"],
+      "passes": false
+    },
+    {
+      "id": "U1-05",
+      "milestone": "U1",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U1-04"
+      ],
       "description": "`harness status <run>` is a card (state line, rule, labelled fields, `-v` log tail), the debrief's and supervisor's reads keep working, and the existing checks that asserted the old text are rewritten to their intent.",
       "steps": [
         "`harness status <run>` prints a card: first line `<glyph> <run> · <project> · <running|paused|limit_wait|ending|crashed|end class> · <x/y> passing · <ago>` (since the start while running, since the end after), a rule, then the labelled fields `now` (running: feature, session, attempt of max, model, minutes in), `ended` (`when` and the full reason), `milestones` (`P0 ✓ merged 4/4 · P1 3/6 · P2 0/7` from the list and the `verified-`/`merged-` markers), `lanes` (P2-06's lane lines, their text unchanged, running only), `spend` (cents like `$69.06`, sessions, wall hours, `tests 419 → 430`), `branch` (name, `<n> ahead, <m> behind` origin/main from local refs, no fetch), `worktree` (path, or `removed by gc`), `needs you` (count and `harness needs <run>`), `units` (running only, MemoryCurrent), `next` (those that apply of `harness show`, `report`, `continue`, `attach`); `-v` or `N` adds the log tail as the last field",
@@ -56,8 +95,16 @@
         "the debrief's gatherer is unchanged (`lib/debrief.sh` keeps `N=3 \"$H\" status \"$RUN_ID\"`) and the \"--dry-run prints the context, launches nothing\" check in tests/checks/15- still finds a `#### harness status` block per run whose first line names the run; `prompts/supervisor.md` says `harness status {{RUN_ID}} -v` and that `N=20` still works; `prompts/project-catchup.md` says `harness status --project <p>`",
         "`bash -n bin/harness lib/debrief.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U1-06", "milestone": "U1", "kind": "build", "model": "opus", "after": ["U1-05"],
+      "passes": false
+    },
+    {
+      "id": "U1-06",
+      "milestone": "U1",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U1-05"
+      ],
       "description": "`harness queue list` is sectioned rows through the formatter (a brief cut to 30 characters, held and parked entries explained), and `harness queue show <n>` prints one entry whole.",
       "steps": [
         "`harness queue list` renders through the formatter: `QUEUE <n> · runner ● going|off · MAX_PARALLEL_RUNS=<k>` (narrow: `max <k>`), one row per entry `<n>  <verb>  <run id, or \"<project> (new run)\">  <mark>  <spec basenames> · brief \"<first 30 characters>…\" (+<k> chars)  <age>`, a second line `held: <project> busy (<run>)` for an entry the runner's `busy_projects` rule holds, `PARKED <n> (skipped; harness queue unpark <n>)` with `why: <reason>` per parked entry, `RUNNING <runs>`, `RECENT` with the runner log's last 5 lines (time only, the home directory shortened to a tilde), then a rule and `one entry in full: harness queue show <n>`; the numbering, the `(requested)` and `(automatic)` marks and `harness queue rm|park|unpark <n>` are unchanged",
@@ -65,8 +112,16 @@
         "checks in a file by topic (e.g. `tests/checks/55-queue-view.sh`): an entry queued with a 1,200-character `--brief` shows 30 characters and `(+1170 chars)` in `queue list` and `harness queue show 1` prints all 1,200; an entry for a project with a live stub run has the `held:` line naming that run; a parked entry shows under PARKED with its `why:`; `COLUMNS=60` and `COLUMNS=80` output never exceeds the width; the existing \"queue list marks continuations (requested) or (automatic)\" and \"a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too\" checks in tests/checks/15- read the new rows",
         "`bash -n bin/harness`, `node --check` on every `.mjs` touched; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U1-07", "milestone": "U1", "kind": "review", "model": "opus", "after": ["U1-06"],
+      "passes": false
+    },
+    {
+      "id": "U1-07",
+      "milestone": "U1",
+      "kind": "review",
+      "model": "opus",
+      "after": [
+        "U1-06"
+      ],
       "description": "An Opus review of the U1 diff from a file: Critical and Important findings fixed RED to GREEN, simplifications applied, README, architecture, the user config template and the read-views decision complete.",
       "steps": [
         "`git diff origin/main...HEAD -- lib bin tests prompts templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-28/U1-review.diff` is read by an Opus subagent; its findings, each with a severity, are in `docs/plans/2026-10-28-U1-review.md`; a second round runs only when the first found something Critical",
@@ -74,9 +129,16 @@
         "`README.md`'s command table has `status` with `--all`, `--since`, `--project`, `-v`, `--json` and `queue show`, and its settings name `STATUS_SINCE` and `NO_COLOR`; `docs/architecture.md` §3 names `lib/view.mjs` and `lib/status.mjs` and §12 the queue view; `templates/user/config.sh` has `STATUS_SINCE` commented with one sentence; `journal/decisions/2026-10-27-read-views.md` is complete (finding · choice · rejected) and never numbered",
         "`bash -n` on every shell file U1 touched and `node --check` on every `.mjs`; the suite is green"
       ],
-      "passes": false },
-
-    { "id": "U2-01", "milestone": "U2", "kind": "plan", "model": "opus", "after": ["U1"],
+      "passes": false
+    },
+    {
+      "id": "U2-01",
+      "milestone": "U2",
+      "kind": "plan",
+      "model": "opus",
+      "after": [
+        "U1"
+      ],
       "description": "docs/plans/2026-10-28-U2-needs-record.md: the needs record's shape against the n8n event v1 keys, every stop path mapped to its function with the reason it opens and the rule that resolves it, the card template per reason, the inbox.mjs API, and the order of U2's features.",
       "steps": [
         "`docs/plans/2026-10-28-U2-needs-record.md` fixes the record shape: the first 13 keys in the order of the event JSON v1 in `docs/specs/2026-10-22-n8n-events.md` (`v, id, at, kind, project, run, feature, title, body, priority, click, actions, context`), then `ref, key, reason, severity, milestone, seen, updated_at, card, resolved_at, resolved_by, resolved_why`, the `card` object's keys, and where the files live (`<state dir>/needs/<seq>.json`, `needs/done/`, the rendered `needs.md` in the run record)",
@@ -85,8 +147,16 @@
         "it orders U2-02 to U2-09, says what the suite looks like after each, names the check files and fixtures (`tests/fixtures/inbox-q-in-comment.md` from n8n-home commit `4632d1c`, `tests/fixtures/merge-tree-name-only.txt`, one fixture state dir per reason), lists the existing checks it touches by name (the three `parked.mjs` checks in tests/checks/03-, the desk prompt check in 13- naming `harness parked parky`, the park notification checks that read `PARKED:`), and Michael's after-run steps (the skill symlink; nothing live)",
         "the suite is green (unchanged by this feature)"
       ],
-      "passes": false },
-    { "id": "U2-02", "milestone": "U2", "kind": "build", "model": "opus", "after": ["U2-01"],
+      "passes": false
+    },
+    {
+      "id": "U2-02",
+      "milestone": "U2",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U2-01"
+      ],
       "description": "One INBOX parser (lib/inbox.mjs) that finds `## Answers` outside the steering comment, a repair the driver runs after each session for a question written inside the comment, and a template comment that no longer contains that text (bug a).",
       "steps": [
         "`tests/fixtures/inbox-q-in-comment.md` is the n8n-home project's `.harness/runs/n8n-home-2026-10-22/INBOX.md` at its commit `4632d1c` (git show in that project's checkout), byte for byte: its line 13 reads `## Answers\".` and its line 28 is `## Answers`",
@@ -96,8 +166,16 @@
         "the driver's INBOX heredoc in lib/driver.sh no longer has the text `## Answers` inside its comment (it says to write answers under the Answers heading at the end of the file); after each session the lane runs `inbox.mjs repair` on the record's INBOX.md and on exit 3 notes `INBOX.md: <id>'s question was inside the steering comment (hidden on GitHub); moved below it`; a stub-run check with a stub session that writes its question inside the comment (a new `tests/stub-claude.sh` flag copying the n8n-home shape) finds that note in harness-log.md, the question above `## Answers` and the comment unchanged",
         "`node --check lib/inbox.mjs lib/parked.mjs lib/notify.mjs`, `bash -n lib/driver.sh lib/lane.sh lib/record.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U2-03", "milestone": "U2", "kind": "build", "model": "opus", "after": ["U2-01"],
+      "passes": false
+    },
+    {
+      "id": "U2-03",
+      "milestone": "U2",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U2-01"
+      ],
       "description": "lib/needs.mjs: the needs record (open with key refresh, sweep by reason, done, list, a synthesized driver crash), lib/needs.sh's `needs_open`, and `harness needs --json` plus `harness needs done <ref>`; nothing in the driver opens a record yet.",
       "steps": [
         "`lib/needs.mjs` (usage header; `node:` built-ins and `./view.mjs` only) exports pure `record`, `refresh`, `sweep` and `synthesize` and has a CLI: `open <state dir> <run> <project> <reason> <subject> key=value…` writes `<state dir>/needs/<seq>.json` to a temporary name then renames it, exit 0 for a new item and exit 3 when an open item has the same `key` (`<reason>:<subject>`; then `seen` is incremented and `updated_at` and the card refreshed); `sweep <state dir>…` moves resolved items to `needs/done/` filling `resolved_at`, `resolved_by`, `resolved_why`; `done <state dir> <ref> [--why <text>]`; `list <state dir>… [--all] [--json]`",
@@ -107,8 +185,16 @@
         "`harness needs [<run>] [--all] [--json]` prints with `--json` the array of open records (block before warn, oldest first; `--all` adds those resolved in the last 7 days) and, until U2-04's cards, one text line per item `<glyph> <run> · <headline> · <ref>`; `harness needs done <ref> [--why \"<text>\"]` moves the file to `needs/done/` and prints `resolved <ref>`; `harness needs` writes nothing (a check runs `find` with `-newer` on a marker, as the parked check does); `harness needs nope` exits 1 with `harness: ` on stderr",
         "`node --check lib/needs.mjs`, `bash -n lib/needs.sh bin/harness lib/driver.sh lib/lane.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U2-04", "milestone": "U2", "kind": "build", "model": "opus", "after": ["U2-03"],
+      "passes": false
+    },
+    {
+      "id": "U2-04",
+      "milestone": "U2",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U2-03"
+      ],
       "description": "Cards built by code: a template per reason in needs.mjs with a fixture and unit check each, `harness needs` rendering them at 60 and 80 columns, and `harness parked` as its text alias with its `--json` keys kept.",
       "steps": [
         "`needs.mjs card <reason> <facts.json>` (and the exported `card(reason, facts)`) fills every field from a template per reason held as data in `lib/needs.mjs`: `headline`, `blocked` and `cost` (from `F blocked`: the features and milestones that wait, with counts), `why` (2 to 4 sentences naming the mechanism and its file; `main_conflict` names `sync_main` in lib/record.sh), `where` rows `{path, line, label, url}`, `commit`, `branch`, `question` (`parked` only: file, line, the `?plain=1#L<n>` URL, text), `options` with exactly one `recommended: true` and its why, `commands`, `files_from`",
@@ -117,8 +203,17 @@
         "`harness parked [<run>]` is an alias of `harness needs` for text; `harness parked --json` keeps today's element keys `run, project, feature, since, why, question, running, ending, queued, commands` for parked features only, plus `ref` and `card`; the three `parked.mjs` checks in tests/checks/03- pass (its pure functions stay) and a new check reads the alias's `--json` keys",
         "`node --check lib/needs.mjs lib/notify.mjs`, `bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U2-05", "milestone": "U2", "kind": "build", "model": "opus", "after": ["U2-04", "U2-02"],
+      "passes": false
+    },
+    {
+      "id": "U2-05",
+      "milestone": "U2",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U2-04",
+        "U2-02"
+      ],
       "description": "The session-side stop paths open records: a park, a given-up feature, the finish reasons and a driver crash; notifications send the record's title, body, click and priority; needs.md in the run record is the click; the driver sweeps before each pick, in finish and on continue.",
       "steps": [
         "the park branch of lib/lane.sh opens a `parked` record (`needs_open parked <id> …`) with the session's INBOX section as the card's `question` (file, line, URL), `where` from its `Files:` line and `commands` from `parked.mjs commandsFor`; `notify_park` sends the record's `title`, `body` (first line still `PARKED: <why>`, then the card, the `Answer: harness answer <run> \"…\"` line kept), `click` (the record's `needs.md` on GitHub), `priority` and `actions`; the existing park notification checks pass unchanged",
@@ -127,8 +222,16 @@
         "stub-run checks in a new file by topic (e.g. `tests/checks/59-needs-driver.sh`): a park gives one `parked` record whose `card.question.line` is the first line the session added, a ntfy body starting `PARKED:` that contains the card's `do` commands, a `needs.md` committed on the record branch and a `Click:` header naming it; a given-up feature gives a `given_up` record naming the waiting features, listed by `harness needs` and `harness parked` while `parked.json` is empty; a SIGKILLed stub driver shows a synthesized `driver_crash` in `harness needs`; `harness needs done <ref>` moves the file to `needs/done/`; after `harness continue` the `given_up` item is in `done/`",
         "`bash -n lib/lane.sh lib/record.sh lib/driver.sh bin/harness`, `node --check lib/needs.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U2-06", "milestone": "U2", "kind": "build", "model": "opus", "after": ["U2-05"],
+      "passes": false
+    },
+    {
+      "id": "U2-06",
+      "milestone": "U2",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U2-05"
+      ],
       "description": "The git-side stop paths open records with real locations: sync_main's conflict (now notified, once per main commit), merge_one's conflict and refusal, verify's three needs lines and a lane's base conflict.",
       "steps": [
         "`sync_main` in lib/record.sh on a conflict records the conflicted files (`git diff --name-only --diff-filter=U` before `merge --abort`), the two commits and the merge subjects from `git log --merges --format=%s <merge-base>..origin/main -- <files>`, opens `main_conflict` with the `origin/main` commit as the subject, and notifies at high priority once per `origin/main` commit with a title ending ` needs you`; a later clean `sync_main` resolves it",
@@ -136,8 +239,16 @@
         "stub-run checks in a new file by topic (e.g. `tests/checks/60-needs-git.sh`): a stub `main` commit touching the run's file before a verify gives a `main_conflict` record with that file in `where` and the stub merge subject's run in `why`, exactly 1 high notification for that main commit across 2 verifies, and the item in `done/` after a later clean `sync_main`; a `merge_one` conflict and a refused merge give their records, the refusal with the PR URL; a thin verify gives `verify_thin` under the title `[<run>] M1 needs you`, and the thin-verify check in tests/checks/17- passes as it is",
         "`bash -n lib/record.sh lib/lane.sh`, `node --check lib/needs.mjs lib/notify.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U2-07", "milestone": "U2", "kind": "build", "model": "opus", "after": ["U2-06"],
+      "passes": false
+    },
+    {
+      "id": "U2-07",
+      "milestone": "U2",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U2-06"
+      ],
       "description": "Everything reads the record: status's NEEDS YOU section and card field, the desk prompt, the harness-answer skill and the debrief's gatherer.",
       "steps": [
         "`harness status`'s NEEDS YOU section and `--json`'s `needs` arrays read `<state dir>/needs/*.json` (plus the synthesized `driver_crash`), U1's derived rows removed from lib/status.mjs; the card's `needs you` field gives the count and the open items' headlines; the U1 status checks for the parked and given-up runs pass with records written by the stub helper instead of markers",
@@ -145,8 +256,16 @@
         "the debrief's gatherer (`run_context` in lib/debrief.sh) adds a `#### needs` block per run from `COLUMNS=80 harness needs <run>` after the `#### harness status` block, and the \"--dry-run prints the context, launches nothing\" check in tests/checks/15- finds it",
         "`bash -n lib/debrief.sh bin/harness`, `node --check lib/status.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U2-08", "milestone": "U2", "kind": "build", "model": "opus", "after": ["U2-07"],
+      "passes": false
+    },
+    {
+      "id": "U2-08",
+      "milestone": "U2",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U2-07"
+      ],
       "description": "Questions say where: the prompts require a `Files:` line and a fixed place in INBOX.md, a question without one gets the session's files filled in with a note, and the two U2 decision files are written.",
       "steps": [
         "`prompts/coding.md` (*Waiting on Michael* and *Decisions*), `prompts/verify.md` and `prompts/initializer.md` ask that every question for Michael has a line `Files: <absolute path>[:<line>], …` (and the branch when it isn't this run's) and that an INBOX question goes below the comment block directly above the `## Answers` line, headed `### <feature id>: <one-line title> (<date time>)`, with what is blocked, why, `Files:`, options with one `(recommended)`, and the exact commands; a check finds `Files:` and `below the comment block` in `prompts/coding.md`",
@@ -155,8 +274,16 @@
         "`journal/decisions/2026-10-27-question-locations.md` (finding · choice · rejected: refusing a question without `Files:`, a model filling paths) and `journal/decisions/2026-10-27-needs-record.md` (rejected: INBOX.md as the record, parsing harness-log.md for stops, one file per reason, a session writing the cards) exist, never numbered",
         "`node --check lib/entries.mjs lib/needs.mjs`, `bash -n lib/lane.sh lib/record.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U2-09", "milestone": "U2", "kind": "review", "model": "opus", "after": ["U2-08"],
+      "passes": false
+    },
+    {
+      "id": "U2-09",
+      "milestone": "U2",
+      "kind": "review",
+      "model": "opus",
+      "after": [
+        "U2-08"
+      ],
       "description": "An Opus review of the U2 diff from a file: Critical and Important findings fixed RED to GREEN, simplifications applied, architecture §3 §4 §7 §17 and README updated, the two decision files complete.",
       "steps": [
         "`git diff origin/main...HEAD -- lib bin tests prompts skills templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-28/U2-review.diff` is read by an Opus subagent; its findings, each with a severity, are in `docs/plans/2026-10-28-U2-review.md`; a second round runs only when the first found something Critical",
@@ -164,9 +291,16 @@
         "`docs/architecture.md` §3 names `lib/needs.mjs` and `lib/inbox.mjs`, §4 the `needs/` directory of the state dir and `needs.md` in the record, §7 the INBOX repair as a guard, §17 that the desk reads `harness needs`; `README.md` has `harness needs`, `parked` as its alias, `needs done`, and the record path for n8n (`<STATE_ROOT>/<project>/<run>/needs/*.json`); `journal/decisions/2026-10-27-needs-record.md` and `journal/decisions/2026-10-27-question-locations.md` are complete",
         "`bash -n` on every shell file U2 touched and `node --check` on every `.mjs`; the suite is green"
       ],
-      "passes": false },
-
-    { "id": "U3-01", "milestone": "U3", "kind": "plan", "model": "opus", "after": ["U2"],
+      "passes": false
+    },
+    {
+      "id": "U3-01",
+      "milestone": "U3",
+      "kind": "plan",
+      "model": "opus",
+      "after": [
+        "U2"
+      ],
       "description": "docs/plans/2026-10-28-U3-show-and-fixes.md: the project-name resolver, the record-after-gc source order, gc's unit rule, `harness show`'s sections and JSON, overlap.mjs, the same-project start rule, the TTY forms of report, trends and gc, and the order of U3's features.",
       "steps": [
         "`docs/plans/2026-10-28-U3-show-and-fixes.md` fixes `project_dir <arg>`'s resolution order (a git repository: its top level; a bare name: the `PROJECT_DIR` of that name's newest run under the state root, else `$HARNESS_PROJECTS/<name>` (default the user's `projects` directory) when it is a repository; else `harness: no project '<arg>': not a git repository here, no run of a project named <arg>, no projects/<arg> (projects with runs: …)` and exit 1) and the six callers (`start`, `init`, `queue add`, `gc`, `memlint`, `--project`)",
@@ -175,16 +309,32 @@
         "it orders U3-02 to U3-08, names the check files and fixtures (`tests/fixtures/overlap-spec.md`, a copy of `docs/specs/2026-10-26-suite-split.md`; a fixture `summary.json` and its markdown for the report byte-for-byte check), the four decision files (`2026-10-27-project-names`, `2026-10-27-record-after-gc`, `2026-10-27-gc-foreign-units`, `2026-10-27-same-project-starts`) and the in-place update of `journal/decisions/2026-10-21-queue-one-run-per-project.md`, and Michael's after-run steps (none live)",
         "the suite is green (unchanged by this feature)"
       ],
-      "passes": false },
-    { "id": "U3-02", "milestone": "U3", "kind": "build", "model": "opus", "after": ["U3-01"],
+      "passes": false
+    },
+    {
+      "id": "U3-02",
+      "milestone": "U3",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U3-01"
+      ],
       "description": "Project names everywhere (bug c): one resolver `project_dir` in bin/harness takes a path or a bare project name for start, init, queue add, gc, memlint and --project.",
       "steps": [
         "`project_dir <arg>` in bin/harness resolves as the plan says, and `start`, `init`, `queue add`, `gc`, `memlint` and `--project` call it instead of `toplevel \"$1\"`; a path that is a git repository still resolves to its top level",
         "checks in a new file by topic (e.g. `tests/checks/63-project-names.sh`): from a directory outside the throwaway project, `harness gc proj --dry-run` and `harness status --project proj` resolve `proj` through its runs' `PROJECT_DIR`; with no run of it and `HARNESS_PROJECTS=<dir>` holding a `proj` repository, `harness queue add proj` resolves it there; `harness gc nope` exits 1 and its stderr names the three places looked and the projects with runs",
         "`journal/decisions/2026-10-27-project-names.md` exists (finding · choice · rejected), never numbered; `bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U3-03", "milestone": "U3", "kind": "build", "model": "opus", "after": ["U3-02"],
+      "passes": false
+    },
+    {
+      "id": "U3-03",
+      "milestone": "U3",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U3-02"
+      ],
       "description": "A finished run keeps its record after gc (bug b: report from the state copy, then the ledger) and gc skips units of another project's live run (bug d).",
       "steps": [
         "`finish` copies the final `summary.json` and `report.md` into the state dir after writing them; `cmd_report` reads the worktree (a rebuild) when it exists, else the state's `summary.json`, else the ledger's `<project>/<run>/summary.json` (copied into the state on first read), else prints `## <run>: no record (worktree removed; nothing in <state dir> or <ledger path>)`",
@@ -192,8 +342,16 @@
         "`cmd_gc`'s unit loop skips a unit owned by a live run of another project silently and prints `? <unit>: no run on this box owns it (systemctl --user stop <unit> by hand)` for a unit no run owns; checks: `gc --dry-run` with a stub unit of another project's live run prints no `?` line, and with an unowned `harness-x.scope` prints the new line; `gc`'s `would:`, `+`, `!` and `keeps` texts are unchanged (the existing gc checks pass as they are)",
         "`journal/decisions/2026-10-27-record-after-gc.md` and `journal/decisions/2026-10-27-gc-foreign-units.md` exist, never numbered; `bash -n bin/harness lib/driver.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U3-04", "milestone": "U3", "kind": "build", "model": "opus", "after": ["U3-03"],
+      "passes": false
+    },
+    {
+      "id": "U3-04",
+      "milestone": "U3",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U3-03"
+      ],
       "description": "`harness show <run> [<feature>] [--files] [--json]`: where a run's work is, read-only from local refs: worktree, branch, compare URL, milestones with tags and PRs, the changes versus origin/main with conflict marks, and a feature's steps, sessions, files and commits.",
       "steps": [
         "`harness show <run> [--files] [--json]` (read-only: local refs, no fetch) prints the run card's header line, then `worktree` (path with `clean` or `<n> changed files`, or `removed`), `branch` (head commit, `<n> ahead, <m> behind` origin/main), `compare` (the GitHub compare URL, only for a GitHub-shaped origin), `record`, `state`, the lane branches and slots when the state dir has `lanes/*`, one `merged` or `proposed` line per milestone with its tag and PR URL from the `merged into main · <url>` and `proposed for merging · <url>` notes; `CHANGES vs origin/main · <n> files · +<a> −<d>` with a row per file (status letter, path, +/−, `✗ conflicts` on files `git merge-tree --write-tree --name-only` reports), the 12 largest then `+<k> more: harness show <run> --files`; `CONFLICTS with origin/main <n>` when there are any; `NEEDS YOU <n>` with the run's open items, one line each",
@@ -201,8 +359,16 @@
         "checks in a new file by topic (e.g. `tests/checks/65-show.sh`): for a stub run whose session changed 2 files, `show` lists both with +/− and marks the one a stub `main` commit also changed `✗ conflicts`; the compare URL appears with the throwaway project's GitHub-shaped origin and not with a plain path origin; `show <run> A` lists A's commits and entry files; `COLUMNS=60` lines never exceed 60 columns except URLs; `--json` parses with `v` 1",
         "`bash -n bin/harness`, `node --check` on the `.mjs` the view lives in (e.g. `lib/show.mjs`); every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U3-05", "milestone": "U3", "kind": "build", "model": "opus", "after": ["U3-04"],
+      "passes": false
+    },
+    {
+      "id": "U3-05",
+      "milestone": "U3",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U3-04"
+      ],
       "description": "Same-project starts queue behind a live run of that project (bug e, first half) and lib/overlap.mjs finds the tracked paths a spec or brief names.",
       "steps": [
         "`cmd_start` (and so `harness continue`) without `--now` and not `--foreground`: when a run of the same project is alive the start is queued with `<run> is running on <project>: queued (the runner starts it when that run ends; --now starts it anyway)` and the runner is ensured, exactly as the `MAX_PARALLEL_RUNS` branch does; `--now` and the runner's own starts (which pass `--now`) are unchanged; a check in a new file by topic (e.g. `tests/checks/66-same-project-starts.sh`): `harness start proj` while a stub run of `proj` is alive queues the entry and prints that message, and `--now` starts it",
@@ -210,16 +376,32 @@
         "`journal/decisions/2026-10-27-same-project-starts.md` exists (finding · choice · rejected) and `journal/decisions/2026-10-21-queue-one-run-per-project.md` has one `Updated in place 2026-10-27: …` line (a plain start now queues behind a busy project; `--now` still doesn't)",
         "`bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U3-06", "milestone": "U3", "kind": "build", "model": "opus", "after": ["U3-05"],
+      "passes": false
+    },
+    {
+      "id": "U3-06",
+      "milestone": "U3",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U3-05"
+      ],
       "description": "Overlap wiring (bug e, second half): before a start and at queue add, the files a new run's spec and brief name are compared with every other run of the project; an overlap warns, records on both runs and shows in queue list, never holds.",
       "steps": [
         "before a start (by hand or by the runner) and at `queue add`, for each other run R of the project that is alive, or ended with commits outside `.harness/runs/` that `origin/main` lacks: R's files are its branch's changes (`git diff --name-only <merge-base> harness/R -- . ':!.harness/runs'`) plus what R's spec and brief name, the new run's are what its spec and brief name; a non-empty intersection prints `warning: overlaps <R> on <files>` and goes on (with or without `--now`), opens an `overlap` record (needs_michael, warn, empty priority) on the new run and on R naming the files and which merges second, and `queue list` shows `⚠ overlaps <R> on <files>` on the entry; `status --json`'s queue entry `overlap` lists the runs",
         "checks in a new file by topic (e.g. `tests/checks/67-overlap.sh`): a queued entry whose brief names a file an ended stub run's unmerged branch changed shows `⚠ overlaps` in `queue list`; starting it with `--now` prints the warning, starts, and opens a warn record on both runs (`harness needs` lists 2); the records resolve on `sweep` once the other branch is merged or gone, or by `harness needs done <ref>`",
         "`bash -n bin/harness lib/queue.sh`, `node --check lib/overlap.mjs lib/needs.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U3-07", "milestone": "U3", "kind": "build", "model": "opus", "after": ["U3-06"],
+      "passes": false
+    },
+    {
+      "id": "U3-07",
+      "milestone": "U3",
+      "kind": "build",
+      "model": "opus",
+      "after": [
+        "U3-06"
+      ],
       "description": "report, trends and gc --dry-run on a TTY render through the formatter; off a TTY (and with --md) their output is byte for byte today's.",
       "steps": [
         "`harness report` on a TTY (`HARNESS_TTY=1`) renders the key/value table as a `view.mjs` card and the feature table as aligned columns; off a TTY, or with `--md`, the markdown is byte for byte today's: a check renders a fixture `tests/fixtures/summary-report.json` both ways, the `--md` output equals the stored `tests/fixtures/summary-report.md` and the TTY output has no `|` table row",
@@ -227,8 +409,16 @@
         "`harness gc --dry-run` on a TTY groups its lines under `UNITS`, `TMUX`, `DESKS`, `WORKTREES`, `DEPS` and `BRANCHES` headers with the home directory shortened to a tilde and a footer `would remove <n> worktrees, <n> branches; keeps <n>`; off a TTY the lines and their order are as today (the existing gc checks and the runner log's readers pass as they are); a check compares the two forms of one dry run",
         "`bash -n bin/harness`, `node --check lib/summary.mjs lib/view.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false },
-    { "id": "U3-08", "milestone": "U3", "kind": "review", "model": "opus", "after": ["U3-07"],
+      "passes": false
+    },
+    {
+      "id": "U3-08",
+      "milestone": "U3",
+      "kind": "review",
+      "model": "opus",
+      "after": [
+        "U3-07"
+      ],
       "description": "An Opus review of the U3 diff from a file: Critical and Important findings fixed RED to GREEN, simplifications applied, README, architecture §3 §12 §14, the usage header of bin/harness and the four decision files complete.",
       "steps": [
         "`git diff origin/main...HEAD -- lib bin tests prompts templates docs/architecture.md README.md > /tmp/harness/agent-harness/agent-harness-2026-10-28/U3-review.diff` is read by an Opus subagent; its findings, each with a severity, are in `docs/plans/2026-10-28-U3-review.md`; a second round runs only when the first found something Critical",
@@ -236,5 +426,7 @@
         "`README.md` has `show`, project names, the start-queues rule and the TTY forms of `report`, `trends` and `gc --dry-run`; `docs/architecture.md` §3 names `lib/overlap.mjs` and the show view, §12 the start rule and overlaps, §14's runbook answers \"where is a run's work\" with `harness show`; the usage header of `bin/harness` lists `show`, `needs` and `queue show`; the four U3 decision files are complete",
         "`bash -n` on every shell file U3 touched and `node --check` on every `.mjs`; the suite is green"
       ],
-      "passes": false }
-  ] }
+      "passes": false
+    }
+  ]
+}

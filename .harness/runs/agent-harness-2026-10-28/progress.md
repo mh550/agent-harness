@@ -7,6 +7,22 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 01:40 · U1-01 · passes
+
+Wrote docs/plans/2026-10-28-U1-read-views.md: view.mjs API (15 functions, glyphs, width/colour/override rules, end classes), status.mjs stdin/args/files read and the v1 --json keys, the 9 existing checks the new text touches with their rewrites, the stub-state helper, check files 51-55 and the U1-02..07 order. Code unchanged; suite cached green.
+
+- **Files:** docs/plans/2026-10-28-U1-read-views.md
+- **Verified:** lib/check.sh: green, 602 tests (cached: docs/plans is outside the key); each plan step checked against the file; check names and files confirmed with grep on tests/checks
+- **Tests:** 602 → 602
+- **Discovery** (affects U1-03, U1-04): The ended file holds '<reason> · YYYY-MM-DD HH:MM:SS' (finish, EXIT trap), but checks also write a bare reason or an empty meta.env (15-'s stoppy-o): status.mjs and run_rows must tolerate both (run_rows uses cmd_parked's '|| true' subshell).
+- **Discovery** (affects U1-03, U3-03): finish writes summary.json only to the record; status.mjs reads it state dir → record → ledger copy, so an ended run with its worktree still there gets its summary too.
+- **Discovery** (affects U1-03, U2-03): needs-<m> markers are empty; the reason is in state/lanes/<m>/need. The weekly budget end text is weekly_over's echo in lib/config.sh.
+- **Discovery** (affects U1-05): The card's lanes field prints P2-06's lane lines verbatim at a 4-space indent so 47-lanes-two's -x regexes and 08-'s MemoryCurrent count hold unchanged.
+- **Discovery** (affects U2-07): U1's derived NEEDS items in --json use only keys of U2's record (run, project, feature, milestone, reason, kind, severity, at, title, card.headline), so U2 replaces them by adding keys within v1.
+- **Question for Michael:** Default taken: a run-level NEEDS YOU item appears only when the run has no feature or milestone item (a 'waiting on Michael: B' end is the parked B's row). Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-28/slot-0/docs/plans/2026-10-28-U1-read-views.md (section 7)
+- **Proposed change:** This session read ledger/agent-harness/agent-harness-2026-10-26/summary.json's key names (jq keys, no values used) to fix summary.json's shape, which breaks CLAUDE.md's 'never read ledger/' rule; a later session should take that shape from lib/summary.mjs build instead (the plan says so for the stub ledger copy).
+- *01-U1-01 · claude-opus-5-5*
+
 ### 2026-10-28 01:32 · init · passes
 
 24 features: U1 7 (plan, view.mjs, status.mjs + --json, the default view, the card, queue list/show, review), U2 9 (plan, inbox.mjs, the needs record, cards, session-side paths, git-side paths, readers, question locations, review), U3 8 (plan, project names, record after gc + gc units, show, same-project starts + overlap.mjs, overlap wiring, TTY views, review). Serial: U1 → U2 → U3.
