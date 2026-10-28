@@ -1,19 +1,21 @@
-# Context pack for `U2-08`
+# Context pack for `U2-09`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (U2-08, affects U2-09, run): tests/stub-claude.sh STUB_ASK_TOUCH=<path> (the STUB_ASK session also changes it), STUB_PARK_FILES=<value> (a Files: line under the park's ### heading), STUB_PARK_TOUCH=<path> (the parking session changes it) → entries.jsonl:19
+- Discovery (U2-08, affects U2-09): lib/inbox.mjs files() now reads **Files:**, `Files:`, **Files**: and (Files: …), and keeps an item only with a / or . and no blank: a park card's where can change for such INBOX lines → entries.jsonl:19
 - Discovery (U2-07, affects U2-09, run): status_stubs now opens the parked and givenup runs' records (nopen, at the stub's old times); the given-up headline is the template's 'C given up after 2 attempts', so 52/53 read that instead of U1's '(2 attempts)' → entries.jsonl:18
+- Discovery (U2-07, affects U2-09): status.mjs computes needs only in view and card mode, for the runs it shows (needsOf), so queue list/show never touch needs.mjs; needs.mjs list skips a state dir it can't read (stderr 'needs.mjs: <dir>: <msg>'), and status passes that line through → entries.jsonl:18
 - Discovery (U2-07, affects U2-09, run): With U1's run_end row gone, a run that ended failed or waiting with no record (e.g. 'no feature left to try', an unknown POLICY) shows in neither NEEDS YOU nor harness needs, only as FINISHED's red glyph → entries.jsonl:18
 - Discovery (U2-06, affects run, U2-09): lib/driver.sh coordinator: alive was counted before the second reap, so a lane reaped there skipped the open and the run ended 'no feature left to try' with an independent milestone untried; alive is recounted now (a likely source of earlier lane flakes) → entries.jsonl:17
+- Discovery (U2-06, affects U2-07, U2-09): a main conflict now notifies and starts/briefs the desk (needs_you); 13-'s strict continue meets one (other runs merged work-A.txt), so its desk check accepts the verify reaching the open desk → entries.jsonl:17
+- Discovery (U2-06, affects U2-07, U2-09): needs.mjs rule: verify_* wait on needs-<m> before verified-<m> (a failed re-base keeps verified-<m>) and resolve on merged-<m>; main_conflict resolves on merged-<m> too; 58-'s sweep unit check changed accordingly → entries.jsonl:17
 - Discovery (U2-06, affects U2-07, U2-08, U2-09): tests/stub-claude.sh STUB_MAIN_TOUCH=<id|verify-<m>>:<path> lands another run's PR merge (#7, other-M3) on origin main adding <path>; STUB_THIN_VERIFY=all keeps every verify round thin → entries.jsonl:17
-- Discovery (U2-05, affects U2-06, U2-07, U2-08): tests/stub-claude.sh STUB_GIVE_UP=<id>: every coding session of that feature ends not passing; with MAX_ATTEMPTS=1 in the user config it is given up after one → entries.jsonl:16
+- Discovery (U2-06, affects U2-09): not done (review minor): conflict_files reads merge-tree output without -z, so a path git quotes stays quoted in the card → entries.jsonl:17
 - Discovery (U2-05, affects run): 46-lanes-continue's 'record-only run … ends done' failed once in a full TEST_JOBS=2 run at load, passing alone and twice under load: a timing flake → entries.jsonl:16
-- Discovery (U2-02, affects U2-03, U2-04, U2-05, U2-08): lib/inbox.mjs has answers/insert/question/repair CLIs and pure question, questionLine (1-based line of the question's first line), files ([{path,line}] from Files: lines) for U2-04/05/08; parked.mjs questionFor and notify.mjs inboxQuestion are aliases of question/added → entries.jsonl:13
-- Discovery (U2-02, affects U2-05, U2-08): tests/stub-claude.sh STUB_INBOX_IN_COMMENT=<id>: that feature's first session splits the steering comment after 'under ' with '## Questions' + '**Q1 (<id>, stub).** set the gatus vars, then answer' and parks → entries.jsonl:13
 - Discovery (U2-02, affects U2): added() now ignores HTML comments and reads the repaired text; inbox_repair (lib/record.sh) is a no-op when a session only rewords the comment → entries.jsonl:13
-- Discovery (U2-01, affects U2-02, U2-03, U2-04, U2-05, U2-06, U2-07, U2-08): tests/checks/56- is taken (56-status-review.sh): U2's new check files are 57-inbox, 58-needs-record, 59-needs-cards, 60-needs-driver, 61-needs-git, 62-needs-readers, 63-question-locations → entries.jsonl:12
 - Discovery (U1-07, affects run): At load ~3.6 (other lanes) every TEST_JOBS=4 full run tonight failed 1-4 timing-bound e2e checks, a different file each time; TEST_JOBS=2 with HARNESS_CHECK_TIMEOUT=25m is the way to a green → entries.jsonl:10
 - Discovery (U1-07, affects run): status_stubs' mx now takes [<kind>:]<feature> (init:, verify:, refused:) and writes every row's at MX_AT s before HARNESS_NOW (default 1900); fl and mx stay defined after status_stubs → entries.jsonl:9
 - Discovery (U1-07, affects U2, run): Deferred from the U1 review (docs/plans/2026-10-28-U1-review.md, Not done): wall hours of a continued run, the card's branch line hardcodes origin/main, lane liveness lacks lane_live's cmdline test, and the footer's --since 3d hint is not conditional on hidden runs → entries.jsonl:9
@@ -33,10 +35,6 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-28 13:34 · U2-07 · passes: Status reads the needs records: lib/status.mjs imports needs.mjs list (now exported) for NEEDS YOU, --json needs (whole records) and the card's needs you (count, 3 headlines, +k more); U1's derived rows gone. The desk prompt and answer skill read harness needs; the debrief adds a #### needs block. 62-needs-readers (6 checks). Opus review fixes.; tests 763 → 769; files lib/status.mjs, lib/needs.mjs, lib/debrief.sh, prompts/desk.md, skills/harness-answer/SKILL.md, … → entries.jsonl:18
+- 2026-10-28 14:44 · U2-08 · passes: Questions say where: the three prompts ask for a Files: line and the INBOX place (below the comment block, ### <id>: <title> (<date time>), one (recommended)). entries.mjs fills a question without Files: from the session (sessionFiles, fillQuestions), noted; a park card's where takes session_files (files_from session). 63-question-locations; both U2 decisions complete; Opus review fixes.; tests 769 → 775; files prompts/coding.md, prompts/verify.md, prompts/initializer.md, lib/entries.mjs, lib/inbox.mjs, … → entries.jsonl:19
 
-## Lately in the run
-
-- 2026-10-28 12:57 · U2-06 · passes: Git-side stop paths open needs records: sync_main's main_conflict (files, PR subjects, notified once per main commit, resolved by a clean merge or the milestone merged), merge_one's merge_conflict/merge_refused, verify's three, rebase_fail, slot_open/slot_fail base_conflict, reap driver_crash; needs_you sends the record. 61-needs-git (10 checks). Coordinator stale-alive race fixed.; tests 753 → 763; files lib/record.sh, lib/lane.sh, lib/driver.sh, lib/needs.mjs, tests/checks/61-needs-git.sh, … → entries.jsonl:17
-
-_1 items left out at 8192 bytes: entries.jsonl has them all._
+_2 items left out at 8192 bytes: entries.jsonl has them all._
