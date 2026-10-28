@@ -291,7 +291,7 @@
         "`docs/architecture.md` §3 names `lib/needs.mjs` and `lib/inbox.mjs`, §4 the `needs/` directory of the state dir and `needs.md` in the record, §7 the INBOX repair as a guard, §17 that the desk reads `harness needs`; `README.md` has `harness needs`, `parked` as its alias, `needs done`, and the record path for n8n (`<STATE_ROOT>/<project>/<run>/needs/*.json`); `journal/decisions/2026-10-27-needs-record.md` and `journal/decisions/2026-10-27-question-locations.md` are complete",
         "`bash -n` on every shell file U2 touched and `node --check` on every `.mjs`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U3-01",

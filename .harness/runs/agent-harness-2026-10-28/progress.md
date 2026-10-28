@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 15:29 · U2-09 · passes
+
+U2 review: 0 Critical, 3 Important, 11 Minor (one Opus round, no second: nothing Critical). Fixed red to green in 64-needs-review: harness merge takes a hand merge of main, card commands in a fix worktree, needs done refuses a park and locks; 7 minors fixed. Docs: architecture §7 INBOX repair, §8 hand merge; README n8n record path; both U2 decisions updated.
+
+- **Files:** lib/needs.mjs, lib/needs.sh, lib/record.sh, lib/lane.sh, lib/inbox.mjs, bin/harness, tests/checks/64-needs-review.sh, tests/checks/59-needs-cards.sh, tests/checks/61-needs-git.sh, tests/checks/63-question-locations.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-28-U2-review.md, +5 more
+- **Verified:** 64-needs-review: 7/8 red before the fixes (the lock check re-written after it passed for the wrong reason: wait waited on its holder), 2 inbox checks red against HEAD's inbox.mjs via IM=; 10/10 after. 57-64 green by file; bash -n / node --check on all 27 U2 shell and mjs files; full suite via lib/check.sh; full suite green in 550 s, 785 tests (a first full run was red on 39-memlint: my Gotchas line made 16, dropped; and 08 ledger harness_dirty from committing mid-run, green alone)
+- **Tests:** 775 → 785
+- **Dead end:** HEADING = /^## Answers\b/ — 57 pins '## Answers".' outside a comment as no heading; \b matches before the quote, so the rule is a blank, : or ( after it
+- **Dead end:** adding a 16th Gotchas line — memlint fails over 15 (39-memlint); the grep count of ^- missed one
+- **Discovery** (affects run): needs card commands now run in fix_root/fix-<run>-<subject> (HARNESS_SCRATCH_ROOT/<project>, needs_open passes it) at origin's copy of the branch; merge_conflict's last command is harness merge, which re-tags at a hand-merged lane tip
+- **Discovery** (affects run): Not done from the U2 review: a park card's where can take other features' Files: lines when the INBOX has no ### <id> section; pre-U2 runs' needs-/refused-/conflict- markers show no items; needs.md rewritten by needs done is committed only at the run's next driver commit
+- **Question for Michael:** Default taken: harness merge re-tags a milestone at its lane branch's tip when you merged main into it by hand (the merge_conflict card's (a)); that tip is not re-verified, only re-checked by merge-tree. Should it run one verify round on it instead? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-28/slot-0/lib/record.sh, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-28/slot-0/docs/plans/2026-10-28-U2-review.md
+- **Proposed change:** U2-09 step 1 names the diff path outside the lane's scratch directory (/tmp/harness/agent-harness/agent-harness-2026-10-28/U2-review.diff); a lane's review step could name its own scratch
+- *17-U2-09 · claude-opus-5-5*
+
 ### 2026-10-28 14:44 · U2-08 · passes
 
 Questions say where: the three prompts ask for a Files: line and the INBOX place (below the comment block, ### <id>: <title> (<date time>), one (recommended)). entries.mjs fills a question without Files: from the session (sessionFiles, fillQuestions), noted; a park card's where takes session_files (files_from session). 63-question-locations; both U2 decisions complete; Opus review fixes.
@@ -261,25 +276,9 @@ harness status (no run) is one screen via status.mjs renderView + view.mjs: NEED
 - **Proposed change:** U1-07's review should look at a long run id (60+ chars) in the shared id column: one such id puts every run row in all three sections on two lines (review finding 7, left as is)
 - *04-U1-04 · claude-opus-5-5*
 
-### 2026-10-28 03:52 · U1-03 · passes
-
-lib/status.mjs builds the run, needs and queue objects (pure runObject, needsItems, queueEntry, sections) from run_rows' stdin; harness status [<run>] --json prints v1. status_stubs/status_bulk in tests/lib.sh; 52-status-json.sh, 15 checks; key-paths and pre-change text fixtures. Text unchanged. An Opus review found 3 Important and 3 Minor issues, all fixed red to green.
-
-- **Files:** lib/status.mjs, bin/harness, tests/lib.sh, tests/checks/52-status-json.sh, tests/fixtures/status-json-keys.txt, tests/fixtures/status-text-u1-03.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-read-views.md, docs/plans/2026-10-28-U1-read-views.md, CLAUDE.md
-- **Verified:** 52-status-json 15/15 (failed first: no status.mjs, then 6 red for the review's findings); --json over 38 runs best of 3 about 155 ms; the 08/13/14/15/47 files 321/321; full suite green 640/640 with TEST_JOBS=2 (866 s, cached). Three earlier TEST_JOBS=4 runs each had 1-2 different timing flakes (46/48 lanes, 15 queue runner, 08 memory gate); each passed when rerun alone, and none reads harness status.
-- **Tests:** 625 → 640
-- **Dead end:** HARNESS_NOW=1793232000 (2026-10-29) in the stubs — files touched to a time after the real clock are -newer than any stamp, so the read-only find check failed; now 1793145600
-- **Dead end:** a symlinked lib/ beside HEAD's bin/harness to capture the old text — node's main guard compares realpath with argv[1], so features.mjs printed nothing; git archive HEAD lib instead
-- **Discovery** (affects U1-04, U1-05, U1-06): status_stubs [<bulk>] (tests/lib.sh) builds the 8 U1 stub runs (done2h, done3d, stopped, running+lane M1+2 units, parked, givenup, gcd via ledger, crashed) and a 3-entry queue at HARNESS_NOW=1793145600, TZ=UTC; status_bulk <n> adds bulk-01..n. 53-55 can source them
-- **Discovery** (affects U1-04, U1-05): tests/fixtures/status-text-u1-03.txt is the old harness status text (LC_ALL=C, $T as <T>) that 52-'s last-but-two check compares: U1-04/U1-05 replace that text, so they drop or rewrite that check and the fixture
-- **Discovery** (affects U1-04): status.mjs needs a text mode: today it requires --json (usage exit 2); cmd_status dies when -a/--since/--project are given without --json, and U1-04 lifts that
-- **Discovery** (affects U1-04, U1-05, U2): an ended run's summary.json is read record, then state dir, then ledger: the state dir's copy is harness report's and goes stale after a continue. session = metrics rows + 1 while running, never $STATE/sessions (reset each segment). The plan's §3.1 is corrected
-- **Discovery** (affects run): the full suite at TEST_JOBS=4 flaked 1-2 timing checks per run tonight (load around 3.7 with other lanes); TEST_JOBS=2 ran green in 866 s
-- **Proposed change:** U1-03 step 1 says the summary comes from the state dir, then the ledger. The record's copy (finish's) should come first: the state dir's is harness report's, an earlier segment's after a continue (the U1-03 review)
-- *03-U1-03 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-28 03:52 · U1-03 · passes · lib/status.mjs builds the run, needs and queue objects (pure runObject, needsItems, queueEntry, sect… ([in full](progress-archive.md))
 - 2026-10-28 02:37 · U1-03 · not yet · API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN) ([in full](progress-archive.md))
 - 2026-10-28 02:05 · U1-02 · passes · lib/view.mjs: the formatter (context, glyphs with ASCII forms, paint, displayWidth, cut, pad, table,… ([in full](progress-archive.md))
 - 2026-10-28 01:40 · U1-01 · passes · Wrote docs/plans/2026-10-28-U1-read-views.md: view.mjs API (15 functions, glyphs, width/colour/overr… ([in full](progress-archive.md))

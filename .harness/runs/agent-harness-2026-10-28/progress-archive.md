@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 15:29 · U2-09 · passes
+
+U2 review: 0 Critical, 3 Important, 11 Minor (one Opus round, no second: nothing Critical). Fixed red to green in 64-needs-review: harness merge takes a hand merge of main, card commands in a fix worktree, needs done refuses a park and locks; 7 minors fixed. Docs: architecture §7 INBOX repair, §8 hand merge; README n8n record path; both U2 decisions updated.
+
+- **Files:** lib/needs.mjs, lib/needs.sh, lib/record.sh, lib/lane.sh, lib/inbox.mjs, bin/harness, tests/checks/64-needs-review.sh, tests/checks/59-needs-cards.sh, tests/checks/61-needs-git.sh, tests/checks/63-question-locations.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-28-U2-review.md, +5 more
+- **Verified:** 64-needs-review: 7/8 red before the fixes (the lock check re-written after it passed for the wrong reason: wait waited on its holder), 2 inbox checks red against HEAD's inbox.mjs via IM=; 10/10 after. 57-64 green by file; bash -n / node --check on all 27 U2 shell and mjs files; full suite via lib/check.sh; full suite green in 550 s, 785 tests (a first full run was red on 39-memlint: my Gotchas line made 16, dropped; and 08 ledger harness_dirty from committing mid-run, green alone)
+- **Tests:** 775 → 785
+- **Dead end:** HEADING = /^## Answers\b/ — 57 pins '## Answers".' outside a comment as no heading; \b matches before the quote, so the rule is a blank, : or ( after it
+- **Dead end:** adding a 16th Gotchas line — memlint fails over 15 (39-memlint); the grep count of ^- missed one
+- **Discovery** (affects run): needs card commands now run in fix_root/fix-<run>-<subject> (HARNESS_SCRATCH_ROOT/<project>, needs_open passes it) at origin's copy of the branch; merge_conflict's last command is harness merge, which re-tags at a hand-merged lane tip
+- **Discovery** (affects run): Not done from the U2 review: a park card's where can take other features' Files: lines when the INBOX has no ### <id> section; pre-U2 runs' needs-/refused-/conflict- markers show no items; needs.md rewritten by needs done is committed only at the run's next driver commit
+- **Question for Michael:** Default taken: harness merge re-tags a milestone at its lane branch's tip when you merged main into it by hand (the merge_conflict card's (a)); that tip is not re-verified, only re-checked by merge-tree. Should it run one verify round on it instead? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-28/slot-0/lib/record.sh, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-28/slot-0/docs/plans/2026-10-28-U2-review.md
+- **Proposed change:** U2-09 step 1 names the diff path outside the lane's scratch directory (/tmp/harness/agent-harness/agent-harness-2026-10-28/U2-review.diff); a lane's review step could name its own scratch
+- *17-U2-09 · claude-opus-5-5*
+
 ### 2026-10-28 14:44 · U2-08 · passes
 
 Questions say where: the three prompts ask for a Files: line and the INBOX place (below the comment block, ### <id>: <title> (<date time>), one (recommended)). entries.mjs fills a question without Files: from the session (sessionFiles, fillQuestions), noted; a park card's where takes session_files (files_from session). 63-question-locations; both U2 decisions complete; Opus review fixes.
