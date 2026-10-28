@@ -127,6 +127,46 @@ project_busy() { local d; for d in "$STATE_ROOT/$1"/*/; do d=${d%/}; [[ ${d##*/}
 # <busy run> <project dir> <queue entry>: why a plain start or continue was queued (decisions/2026-10-27-same-project-starts)
 queued_behind() { echo "$(date '+%F %T') queued behind $1: ${3##*/}" >> "$Q/runner.log"
   echo "$1 is running on $(basename "$2"): queued (the runner starts it when that run ends; --now starts it anyway)"; queue_ensure_runner; }
+# Overlaps (decisions/2026-10-27-same-project-starts): what a new run's spec and brief name against every other run of
+# its project that is alive or has changes main lacks (lib/overlap.mjs runs). A warning and records; never a hold.
+# <project dir> <new run or ""> <spec files> <brief> → "<R>\t<path>" lines (none when git or node can't say)
+overlaps() { ( harness_config "$1" > /dev/null 2>&1; printf '%s\n' "$4" |
+  node "$HARNESS_HOME/lib/overlap.mjs" runs "$1" "$STATE_ROOT" "${MAIN_BRANCH:-main}" "$2" "$3" ) 2> /dev/null || true; }
+# <overlaps lines> → one "warning: overlaps <R> on <paths>" per run, on stderr
+overlap_warn() { local r; for r in $(cut -f1 <<< "$1" | uniq); do
+  echo "warning: overlaps $r on $(awk -F'\t' -v r="$r" '$1 == r { print $2 }' <<< "$1" | node "$HARNESS_HOME/lib/overlap.mjs" names)" >&2; done; }
+# <state dir> → the run's briefs: waiting in the state, and those the driver committed to the record
+run_brief() { cat "$1/brief.md" 2> /dev/null; (source "$1/meta.env" && cat "$WT/.harness/runs/$RUN_ID/brief.md") 2> /dev/null; true; }
+# <queue entry> → its overlaps: a start's --spec and --brief; a continue's run's spec and briefs, and the entry's
+entry_overlaps() {
+  local a=() i p run="" spec="" brief="" st; mapfile -t a < "$1"
+  if [[ ${a[0]:-} == start ]]; then p=${a[1]:-}; [[ ${a[2]:-} && ${a[2]} != --* ]] && run=${a[2]}
+  else run=${a[1]:-}; st=$(compgen -G "$STATE_ROOT/*/$run" | head -1) && [[ -f $st/meta.env ]] || return 0
+    p=$( (source "$st/meta.env" && echo "$PROJECT_DIR") 2> /dev/null ) || return 0
+    spec=$( (source "$st/run.env" 2> /dev/null; echo "${SPEC_FILES:-}") ); brief=$(run_brief "$st"); fi
+  for (( i = 2; i < ${#a[@]}; i++ )); do case ${a[i]} in --spec) spec=${a[i+1]:-} ;; --brief) brief+=$'\n'${a[i+1]:-} ;; esac; done
+  [[ -d $p ]] || return 0; overlaps "$p" "$run" "$spec" "$brief"
+}
+# the waiting entries' overlaps as status.mjs --overlaps reads them: "<entry file>\t<R>\t<path>"
+queue_overlaps() { local f; for f in "$Q"/*.args; do [[ -f $f ]] && entry_overlaps "$f" | sed "s|^|${f##*/}\t|"; done; true; }
+# <state> <run> <subject> <paths> <second> <origin>: an overlap record on that run, under its record lock (a live run's
+# lanes open records under it too); a new one noted in its run.log and harness-log.md (committed with its next record commit)
+overlap_open() {
+  local st=$1 w rec ref; w=$( (source "$st/meta.env" && echo "$WT") 2> /dev/null ) || return 0; rec=$w/.harness/runs/$2
+  ref=$(flock "$st/record.lock" node "$NEEDS_MJS" open "$st" "$2" "$(basename "$(dirname "$st")")" overlap "$3" files="$4" second="$5" \
+    worktree="$w" record="$rec" list="$rec/feature_list.json" inbox="$rec/INBOX.md" branch="harness/$2" record_branch="harness/$2" \
+    main_branch="${MAIN_BRANCH:-main}" origin="$6" state="$st" 2>> "$st/run.log") || return 0   # 3: open already, refreshed
+  echo "$(date '+%F %T') needs: overlap with $3 opened ($ref)" >> "$st/run.log"
+  [[ -f $rec/harness-log.md ]] && echo "- $(date '+%F %H:%M') · needs: overlap with $3 opened" >> "$rec/harness-log.md"; true
+}
+# <project dir> <run> <state>: a start's overlaps warned and recorded on the run and on each run it meets
+overlap_start() {
+  local p=$1 run=$2 st=$3 l r o files; o=$(git -C "$p" config --get remote.origin.url || true)
+  l=$(overlaps "$p" "$run" "$( (source "$st/run.env" 2> /dev/null; echo "${SPEC_FILES:-}") )" "$(run_brief "$st")")
+  [[ -n $l ]] || return 0; overlap_warn "$l"
+  for r in $(cut -f1 <<< "$l" | uniq); do files=$(awk -F'\t' -v r="$r" '$1 == r { print $2 }' <<< "$l")
+    overlap_open "$st" "$run" "$r" "$files" "$run" "$o"; overlap_open "$(dirname "$st")/$r" "$r" "$run" "$files" "$run" "$o"; done
+}
 runner_up() { [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null; }
 alive_count() { local d n=0; for d in "$STATE_ROOT"/*/*/; do alive "$d" && n=$(( n + 1 )); done; echo "$n"; }
 to_epoch() { [[ $1 =~ ^[0-9]{9,}$ ]] && { echo "$1"; return; }   # HH:MM → the next such time
@@ -278,6 +318,7 @@ cmd_start() {
     [[ -z $spec ]] || printf 'SPEC_FILES=%q\n' "$spec"; [[ -z $until ]] || printf 'DEADLINE_AT=%q\n' "$until"
     [[ -z $base ]] || printf 'BASE_REF=%q\n' "$base"; } > "$state/run.env"
   [[ -n $brief ]] && printf '%s\n' "$brief" >> "$state/brief.md"
+  [[ ${HARNESS_MERGE_ONLY:-} ]] || overlap_start "$p" "$run" "$state"   # warned and recorded, never held
   rm -f "$state/STOP"
   local env="WT=$(printf %q "$wt") RUN_ID=$run STATE=$(printf %q "$state") PROJECT_DIR=$(printf %q "$p") HARNESS_HOME=$(printf %q "$HARNESS_HOME")"
   # tmux starts commands in its server's environment, not this shell's: pass the harness overrides along
@@ -404,8 +445,10 @@ cmd_status() {   # [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--j
   local cfg r=0 u=$(( json || v )) mode=(view); cfg=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS ${STATUS_SINCE:-24h}"); runner_up && r=1
   [[ -n $want ]] && mode=(card "$want") u=1
   (( json )) && o+=(--json); (( v && ! json )) && o+=(--verbose "$n")
+  local ov rc=0; ov=$(mktemp); [[ -n $want ]] || queue_overlaps > "$ov"   # the queued entries' overlaps: the view's, not a card's
   run_rows "$u" "$want" | node "$HARNESS_HOME/lib/status.mjs" "${mode[@]}" ${o[@]+"${o[@]}"} --runner "$r" --queue "$Q" \
-    --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" --state-root "$STATE_ROOT" --max-parallel "${cfg%% *}" --since-default "${cfg#* }"
+    --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" --state-root "$STATE_ROOT" --max-parallel "${cfg%% *}" --since-default "${cfg#* }" --overlaps "$ov" || rc=$?
+  rm -f "$ov"; return "$rc"
 }
 
 # <run> [<feature>] [--files] [--json]: where the run's work is (lib/show.mjs). Read-only: local refs, no fetch, no
@@ -461,8 +504,10 @@ cmd_queue() {
       if [[ $sub == show ]]; then local a n= p=()   # --parked before or after the number
         for a; do case $a in --parked) p=(--parked) ;; *) [[ -z $n && $a =~ ^[1-9][0-9]*$ ]] && n=$a || die "$use" ;; esac; done
         [[ -n $n ]] || die "$use"; m=(entry "$n" ${p[@]+"${p[@]}"}); fi
+      local ov rc=0; ov=$(mktemp); queue_overlaps > "$ov"
       run_rows 0 | node "$HARNESS_HOME/lib/status.mjs" "${m[@]}" --runner "$r" --queue "$Q" --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" \
-        --state-root "$STATE_ROOT" --max-parallel "$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")" ;;
+        --state-root "$STATE_ROOT" --max-parallel "$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")" --overlaps "$ov" || rc=$?
+      rm -f "$ov"; return "$rc" ;;
     add)
       if [[ ${1:-} == --continue ]]; then
         local run=${2:?usage: harness queue add --continue <run-id>}; shift 2; state_of "$run" > /dev/null
@@ -473,11 +518,12 @@ cmd_queue() {
           if (( ${#mark[@]} )); then local was; grep -qx -- --requested "$q" && was="replaced by this request" || was="now requested, with this request's options"
             printf '%s\n' continue "$run" --queued --requested ${o[@]+"${o[@]}"} > "$q" && echo "already queued: continue $run ($was)"
           else echo "already queued: continue $run"; fi; return; }
-        echo "queued: $(basename "$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"})")"
+        q=$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"}); echo "queued: $(basename "$q")"
       else
-        local p; p=$(project_dir "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
-        echo "queued: $(basename "$(queue_add start "$p" "$@")")"
-      fi ;;
+        local p q; p=$(project_dir "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
+        q=$(queue_add start "$p" "$@"); echo "queued: $(basename "$q")"
+      fi
+      overlap_warn "$(entry_overlaps "$q")" ;;   # the records come at its start (no state dir yet)
     rm) local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue rm <n>}p"); [[ -n $f ]] || die "no entry $1"; rm "$f"; echo "removed $(basename "$f")" ;;
     park)
       local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue park <n> [<why>]}p"); [[ -n $f ]] || die "no entry $1"; shift

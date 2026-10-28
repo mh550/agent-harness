@@ -469,11 +469,19 @@ one note, overwritten: ledger/debrief.md
 one notification per run end
 overlap: Markdown emphasis and HTML tags stuck to a path neither hide it nor turn it into its directory
 overlap: a dir/ or glob names its directory of two or more segments; .harness/runs/ never
+overlap: a live run is compared by what its spec and brief name (no branch yet); more than 6 files end in and <k> more
 overlap: every name is a tracked file or a tracked dir/ of two or more segments; no tests/, lib/ or .harness/runs/
+overlap: harness needs done <ref> resolves one by hand; sweep resolves the other once ov2's lane branches are gone (other run merged)
 overlap: named and overlap are exported and pure (no I/O at import); node --check lib/overlap.mjs
+overlap: named leaves docs/plans/ out as a directory (every run writes its plan there); a plan file named exactly still counts
 overlap: named on the suite-split spec with this repo's git ls-files finds tests/run.sh, lib/treekey.mjs and lib/check.sh
 overlap: named takes backticked and bare path words, strips .,:;) and :<line>, and a word without / only in backticks
 overlap: overlap is the sorted intersection: file and file, a dir/ and a file under it (the file), dir/ and dir/; none
+overlap: queue add --continue <run> warns from the run's spec and brief (brief.md) against the others
+overlap: queue add of a start whose brief names a file an ended run's unmerged branch changed warns and queues it; old1 (nothing unmerged) is not compared
+overlap: queue list shows ⚠ overlaps <R> on <files> under the entry; status --json's queued entry overlap lists {run, files}
+overlap: start --now prints the warning, starts, and opens a warn overlap record on both runs naming the files and which merges second
+overlap: the sweep rule: other run gone, other run merged, this run merged, else kept (no git facts: kept)
 parked card: the INBOX question verbatim with its line 16 and ?plain=1#L16 URL, where from its Files: line, parked.mjs's commands
 parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers
 parked.mjs: the question is the feature's INBOX section
@@ -654,7 +662,7 @@ status json: finished holds the runs ended in the last 24h, newest first, and ol
 status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
 status json: harness status --json over 38 stub runs takes under 1 s (best of 3)
 status json: harness status <run> --json prints that one run object with v; an unknown run is an error
-status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs and ./needs.mjs, exports runObject, queueEntry and sections
+status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs and ./overlap.mjs, exports runObject, queueEntry and sections
 status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
 status json: queued holds the entries as queue list numbers them, held by a live run of their project, a brief's first 30 characters
 status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says

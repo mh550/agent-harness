@@ -76,4 +76,4 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - `[[ $(jq …) -ge 1 ]]`: a jq `null` is an unbound name under set -u and ends the file; test in jq (`>= 1` == true) (agent-harness-2026-10-28 2026-10-28)
 - stub runs in one check file share origin main: an earlier run's merges are on it; reset main (update-ref) between runs (agent-harness-2026-10-28 2026-10-28)
 - status-json-keys.txt lists the stub needs records' keys: a new parked, given_up or driver_crash card field changes it (agent-harness-2026-10-28 2026-10-28)
-- entry questions without Files: are stored with ` Files (harness, from the session): …`: a check on such a line allows it (agent-harness-2026-10-28 2026-10-28)
+- the driver moves <state>/brief.md into the record's brief.md and empties it at start: a run's briefs are both files (agent-harness-2026-10-28 2026-10-28)

@@ -28,7 +28,22 @@
   segments** and holds a tracked file; a word without `/` names only a top-level tracked file, and only in backticks;
   nothing under `.harness/runs/`; HTML tags (`<br>`, `<code>`) are blanked, and trailing `*`s go when that leaves a
   tracked file (`**lib/x.sh**`; `dir/6*` stays a glob). `overlap(a, b)`: the sorted intersection (a `dir/` meets the files under it, which
-  are reported). U3-06 wires it: overlaps warn and record on both runs and never hold a start.
+  are reported). `docs/plans/` is never named as a directory (every run writes its own plan there; a plan file named
+  exactly counts). U3-06 wires it, never holding anything: `overlap.mjs runs` (I/O) compares what the new run's spec
+  and briefs name with each other run of the project that is alive (driver or lane) or ended with changes `origin/main`
+  lacks (any of its branches, `harness/<R>` and `harness-lane/<R>/*`, from its merge-base, outside `.harness/runs/`): R's
+  files are those changes plus what R's spec and briefs name (the state's `brief.md` and the one the driver committed
+  to its record); the tracked set is main's files and the compared runs' changes, so a spec may name a file a branch
+  adds. An ended run with nothing unmerged is never compared. `cmd_start` (by hand, `continue`, or the runner's `--now`
+  starts, into `runner.log`), once `meta.env`, `run.env` and `brief.md` are written: `warning: overlaps <R> on <files>`
+  (6 names, then `and <k> more`) on stderr and an `overlap` record (warn, no priority, no notification) on the new run
+  (subject R) and on R (subject the new run), each under that run's `record.lock`, naming the files and that the new run
+  merges second; a new one is noted in that run's `run.log` and `harness-log.md`. `queue add` (a start or a continue)
+  prints the same warning, no record. `queue list` and `status` show `⚠ overlaps <R> on <files>` under a waiting entry
+  and `status --json`'s `overlap` lists `{run, files}`. `needs.mjs sweep` resolves an overlap item when the other run is
+  gone (no state dir or no branch: `other run gone`), the other run has nothing main lacks and isn't live (`other run
+  merged`), or this run has nothing main lacks and isn't live (`this run merged`); git can't say: kept. *Default*: a run
+  that ended without changing anything counts as merged (nothing of it can conflict).
 - **Rejected:** the check in `cmd_start` alone (a continue would change its state first); holding a start on an
   overlap (default 11: an ended run's unmerged branch must not block a night); comparing whole spec texts (no file
   names, no signal); `tests/`- or `lib/`-level directories (every run would overlap); a bare directory word without

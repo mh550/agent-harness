@@ -165,6 +165,9 @@ needs_fixture() {
   printf 'PROJECT_DIR=%q\nWT=%q\nRUN_ID=%q\nSTATE=%q\n' "$T/proj" "$wt" "$run" "$st" > "$st/meta.env"
   echo '{"features":[{"id":"A","milestone":"M1","passes":true},{"id":"B","milestone":"M1","passes":false}]}' > "$wt/.harness/runs/$run/feature_list.json"
   case $r in parked|given_up) sub=B ;; feature_list_edits|initializer_failed|driver_crash|usage_limit|weekly_budget) sub=run ;; overlap) sub=nf-other ;; esac
+  # the overlap's other run: live (this file's shell), so the sweep keeps an open one (U3-06's rule)
+  [[ $r == overlap && ! -e $HARNESS_STATE/proj/nf-other ]] && mkdir -p "$HARNESS_STATE/proj/nf-other" && echo $$ > "$HARNESS_STATE/proj/nf-other/driver.pid" &&
+    printf 'PROJECT_DIR=%q\nWT=/x\nRUN_ID=nf-other\nSTATE=%q\n' "$T/proj" "$HARNESS_STATE/proj/nf-other" > "$HARNESS_STATE/proj/nf-other/meta.env"
   HARNESS_NOW=${3:-} node "$HERE/../lib/needs.mjs" open "$st" "$run" proj "$r" "$sub" feature="$([[ $sub == B ]] && echo B)" milestone=M1 > /dev/null
   [[ $s == open ]] || { [[ $r == overlap ]] && rm -rf "$wt"; return 0; }
   case $r in
