@@ -75,3 +75,6 @@
 - 2026-10-27 23:51 · P2-06 · claude-opus-5-5 · passes=true · 29 min · 16/17 passing
 - 2026-10-27 23:51 · context.md for P2-07: 7877 bytes, 32 items left out
 - 2026-10-28 01:02 · P2-07 · claude-opus-5-5 · passes=true · 70 min · 17/17 passing
+- 2026-10-28 01:02 · merged main into harness/agent-harness-2026-10-26
+- 2026-10-28 01:02 · verify P2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-28 01:10 · context.md for P2: 7965 bytes, 58 items left out
