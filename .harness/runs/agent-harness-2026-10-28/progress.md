@@ -7,6 +7,26 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 12:57 · U2-06 · passes
+
+Git-side stop paths open needs records: sync_main's main_conflict (files, PR subjects, notified once per main commit, resolved by a clean merge or the milestone merged), merge_one's merge_conflict/merge_refused, verify's three, rebase_fail, slot_open/slot_fail base_conflict, reap driver_crash; needs_you sends the record. 61-needs-git (10 checks). Coordinator stale-alive race fixed.
+
+- **Files:** lib/record.sh, lib/lane.sh, lib/driver.sh, lib/needs.mjs, tests/checks/61-needs-git.sh, tests/stub-claude.sh, tests/fixtures/merge-tree-name-only.txt, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/58-needs-record.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-needs-record.md, docs/architecture.md, +2 more
+- **Verified:** full suite green: 763 tests in 941 s (TEST_JOBS=2); 61-needs-git 10/10 (main_conflict once over 2 verifies, resolved after a hand merge + continue; merge_conflict, merge_refused with PR click, verify_thin, verify_recheck, base_conflict, coordinator merge_one), 13- 66/66, 58- 15/15; the coordinator check watched failing without its fix
+- **Tests:** 753 → 763
+- **Dead end:** the plan's `git log --merges <base>..origin/main -- <files>` for main_conflict's subjects — history simplification hides a merge that took the file whole from its second parent: prints nothing; --first-parent lists main's merges
+- **Dead end:** several stub runs in 61- on one origin main — the first run's continue merged M1/M2 into main, so later runs found work files already there; main is reset (update-ref) between runs
+- **Discovery** (affects run, U2-09): lib/driver.sh coordinator: alive was counted before the second reap, so a lane reaped there skipped the open and the run ended 'no feature left to try' with an independent milestone untried; alive is recounted now (a likely source of earlier lane flakes)
+- **Discovery** (affects U2-07, U2-09): a main conflict now notifies and starts/briefs the desk (needs_you); 13-'s strict continue meets one (other runs merged work-A.txt), so its desk check accepts the verify reaching the open desk
+- **Discovery** (affects U2-07, U2-09): needs.mjs rule: verify_* wait on needs-<m> before verified-<m> (a failed re-base keeps verified-<m>) and resolve on merged-<m>; main_conflict resolves on merged-<m> too; 58-'s sweep unit check changed accordingly
+- **Discovery** (affects U2-07, U2-08, U2-09): tests/stub-claude.sh STUB_MAIN_TOUCH=<id|verify-<m>>:<path> lands another run's PR merge (#7, other-M3) on origin main adding <path>; STUB_THIN_VERIFY=all keeps every verify round thin
+- **Discovery** (affects project): stub runs in one check file share origin main: reset it (update-ref refs/heads/main <first>) between runs that write the same work files
+- **Discovery** (affects U2-09): not done (review minor): conflict_files reads merge-tree output without -z, so a path git quotes stays quoted in the card
+- **Question for Michael:** A main conflict and merge_one's conflict on the same main are one notification (merge_one's skipped when the lane's main-conflict-<m> holds that main), but two records: keep both, or fold merge_conflict into main_conflict then? (default: both records)
+- **Proposed change:** U2-06 step 3 names tests/checks/60-needs-git.sh; 60- is U2-05's needs-driver, the file is 61-needs-git.sh as the plan says
+- **Proposed change:** plan §4.2's sync_main subjects command needs --first-parent
+- *14-U2-06 · claude-opus-5-5*
+
 ### 2026-10-28 11:38 · U2-05 · passes
 
 Stop paths open needs records: the lane's park (question line/URL, actions) and given_up, finish's four reasons, the EXIT trap's driver_crash. Records carry a 60-col body and click = needs.md (markdown, committed with the record). Park notification is the record's (needs_notify). Sweeps: lane and coordinator after unpark, finish, continue, gc. 60-needs-driver (9 checks).
@@ -249,22 +269,7 @@ lib/view.mjs: the formatter (context, glyphs with ASCII forms, paint, displayWid
 - **Question for Michael:** Default taken: a table id wider than the whole width is folded at the width (never cut, never past it), and a section with count 0 prints without the rule. Keep both?
 - *02-U1-02 · claude-opus-5-5*
 
-### 2026-10-28 01:40 · U1-01 · passes
-
-Wrote docs/plans/2026-10-28-U1-read-views.md: view.mjs API (15 functions, glyphs, width/colour/override rules, end classes), status.mjs stdin/args/files read and the v1 --json keys, the 9 existing checks the new text touches with their rewrites, the stub-state helper, check files 51-55 and the U1-02..07 order. Code unchanged; suite cached green.
-
-- **Files:** docs/plans/2026-10-28-U1-read-views.md
-- **Verified:** lib/check.sh: green, 602 tests (cached: docs/plans is outside the key); each plan step checked against the file; check names and files confirmed with grep on tests/checks
-- **Tests:** 602 → 602
-- **Discovery** (affects U1-03, U1-04): The ended file holds '<reason> · YYYY-MM-DD HH:MM:SS' (finish, EXIT trap), but checks also write a bare reason or an empty meta.env (15-'s stoppy-o): status.mjs and run_rows must tolerate both (run_rows uses cmd_parked's '|| true' subshell).
-- **Discovery** (affects U1-03, U3-03): finish writes summary.json only to the record; status.mjs reads it state dir → record → ledger copy, so an ended run with its worktree still there gets its summary too.
-- **Discovery** (affects U1-03, U2-03): needs-<m> markers are empty; the reason is in state/lanes/<m>/need. The weekly budget end text is weekly_over's echo in lib/config.sh.
-- **Discovery** (affects U1-05): The card's lanes field prints P2-06's lane lines verbatim at a 4-space indent so 47-lanes-two's -x regexes and 08-'s MemoryCurrent count hold unchanged.
-- **Discovery** (affects U2-07): U1's derived NEEDS items in --json use only keys of U2's record (run, project, feature, milestone, reason, kind, severity, at, title, card.headline), so U2 replaces them by adding keys within v1.
-- **Question for Michael:** Default taken: a run-level NEEDS YOU item appears only when the run has no feature or milestone item (a 'waiting on Michael: B' end is the parked B's row). Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-28/slot-0/docs/plans/2026-10-28-U1-read-views.md (section 7)
-- **Proposed change:** This session read ledger/agent-harness/agent-harness-2026-10-26/summary.json's key names (jq keys, no values used) to fix summary.json's shape, which breaks CLAUDE.md's 'never read ledger/' rule; a later session should take that shape from lib/summary.mjs build instead (the plan says so for the stub ledger copy).
-- *01-U1-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-28 01:40 · U1-01 · passes · Wrote docs/plans/2026-10-28-U1-read-views.md: view.mjs API (15 functions, glyphs, width/colour/overr… ([in full](progress-archive.md))
 - 2026-10-28 01:32 · init · passes · 24 features: U1 7 (plan, view.mjs, status.mjs + --json, the default view, the card, queue list/show,… ([in full](progress-archive.md))

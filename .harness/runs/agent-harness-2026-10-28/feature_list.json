@@ -239,7 +239,7 @@
         "stub-run checks in a new file by topic (e.g. `tests/checks/60-needs-git.sh`): a stub `main` commit touching the run's file before a verify gives a `main_conflict` record with that file in `where` and the stub merge subject's run in `why`, exactly 1 high notification for that main commit across 2 verifies, and the item in `done/` after a later clean `sync_main`; a `merge_one` conflict and a refused merge give their records, the refusal with the PR URL; a thin verify gives `verify_thin` under the title `[<run>] M1 needs you`, and the thin-verify check in tests/checks/17- passes as it is",
         "`bash -n lib/record.sh lib/lane.sh`, `node --check lib/needs.mjs lib/notify.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U2-07",
