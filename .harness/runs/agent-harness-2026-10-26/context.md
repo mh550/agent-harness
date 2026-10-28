@@ -1,4 +1,4 @@
-# Context pack for `P2-04`
+# Context pack for `P2-05`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
@@ -8,9 +8,9 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Discoveries for this feature
 
-- Discovery (P2-03, affects P2-04, P2-07): merge_milestones_ now skips a milestone whose lane is alive (other than the caller's own, by pid == $$): the coordinator's reap never merges a lane's milestone under it; lane_alive moved from driver.sh to record.sh → entries.jsonl:21
+- Discovery (P2-04, affects run): 49-lanes-slots.sh costs ~42 s of slot time (five stub runs); suite 457 s at TEST_JOBS=4 (measured, not a gate) → entries.jsonl:22
 - Discovery (P2-03, affects run): 48-lanes-rebase.sh costs ~77 s of slot time (six stub runs); each run resets origin main with update-ref so the stub's work files are new → entries.jsonl:21
-- Discovery (P2-02, affects P2-04): Concurrent git writers in one repo: .git/config fails instead of waiting (fixed for lanes: --no-track, no -u). P2-04's branch deletion at merge (branch -D writes config) must run while other lanes push; check it under two lanes. → entries.jsonl:20
+- Discovery (P2-03, affects P2-05, P2-07): harness merge clears moved-* (one more re-base per main); harness continue also clears rebase-rounds-* and moved-*; harness merge clears a stale lanes-end before its merge lanes → entries.jsonl:21
 - Discovery (P2-02, affects run): Suite wall time 414 s at TEST_JOBS=4 (was ~256 s before P2-02); 47-lanes-two is ~110 s of slot time (its limit-wait check sleeps one 60 s slice). Measured, not a gate. The first full run here had 5 failures in 08, 13 and 32 that passed on rerun alone and in the next full run (load flakes, not reproduced). → entries.jsonl:20
 - Discovery (P1-06, affects P2, run): D15: until P2, MAX_LANES above 1 is noted ('MAX_LANES=<n>: one lane at a time until P2 …') and runs 1: lanes shared the run's one port, a lane's verify and the coordinator's reap could merge one milestone twice, and LANE_END stopped no other lane. P2 must lift the clamp in lib/driver.sh with per-lane ports, a merge lock, LANE_END stopping the other lanes, and rec_count read under the lock. → entries.jsonl:17
 - Discovery (P1-06, affects P2): Review Minors left for P2 (docs/plans/2026-10-26-P1-review.md): nomerge-<m> never cleared (lane.sh:54), lanes_orphans matches pid by cmdline only, continue calls legacy_refuse twice, slot_close/lanes_term branch deletions and TERMs not in harness-log.md, F lanes' unused base-tags field. → entries.jsonl:17
@@ -32,5 +32,6 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (P0-04, affects run): A check file that exits non-zero with no FAIL line now adds 'FAIL <file>: exited <rc> before its end, with no FAIL line' to the total, so a subset run can no longer read as all passed while a file crashed. → entries.jsonl:7
 - Discovery (P0-02, affects run): The suite is now work-bound, not chain-bound: the 4-job floor (811 s / 4 = 203 s) is above the slowest file (156 s), so reordering files gains nothing. Only cutting CPU (fewer node starts in the driver) would make it shorter. Four jobs' contention adds about 56 s of slot time over TEST_JOBS=1's 755 s. → entries.jsonl:6
 - Discovery (P0-03, affects run): tests/lib.sh must unset every HARNESS_* variable prompt_env exports that changes check.sh's output (now HARNESS_CHECK_KEY_IGNORE too): a session's suite inherits its run's, and this repo's wide list turned the 'unset' checks red inside a real run (found by review, reproduced, fixed). → entries.jsonl:5
+- Discovery (P0-03, affects P1, P2, run): Once this merges, a session that only adds a plan, spec, decision or ledger file in this repo gets 'check: green (cached …; key ignores: docs/plans docs/specs journal findings-and-research ledger)' instead of a 3 min suite run. .harness/config.sh itself stays in the key. → entries.jsonl:5
 
-_18 items left out at 8192 bytes: entries.jsonl has them all._
+_17 items left out at 8192 bytes: entries.jsonl has them all._
