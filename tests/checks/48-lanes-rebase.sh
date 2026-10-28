@@ -84,4 +84,17 @@ check "lanes rebase: under MERGE_POLICY=pr, harness merge re-bases a proposed mi
   && hlog rp | grep -E "· M2 re-based on main [0-9a-f]{7}: [0-9]+ files, disjoint, suite green; re-tagged$" > /dev/null \
   && on_main run/rp/M1 && on_main run/rp/M2 && git -C "$T/origin.git" diff --quiet run/rp/M2 main && ! hlog rp | grep "needs Michael" > /dev/null \
   && [[ ! -d $T/wt/proj/lanes/rp ]]'
+# unit: a lane killed mid-re-base (rebase-<m> already removed, moved-<m> at today's main) must not leave merge_one
+# answering 1 for good: with no rebase-<m> and no needs-<m> it says "main moved" (3) again, so the re-base is redone
+# at the next merge_milestones (P2 review 4; before, the milestone waited for main to move again or a harness merge)
+U=$T/mvstate; mkdir -p "$U"; tmp=$(mktemp -d); git clone -q "$T/origin.git" "$tmp"
+git -C "$tmp" checkout -q -b mv "$main0" && echo mine > "$tmp/mv-mine.txt" && git -C "$tmp" add mv-mine.txt && git -C "$tmp" -c user.name=m -c user.email=m@test commit -qm mine \
+  && git -C "$tmp" tag -a run/mv/M1 -m "harness run mv: M1 verified (v3)" && git -C "$tmp" push -q origin run/mv/M1
+git -C "$tmp" checkout -q "$main0" && echo main > "$tmp/mv-main.txt" && git -C "$tmp" add mv-main.txt && git -C "$tmp" -c user.name=m -c user.email=m@test commit -qm main \
+  && git -C "$tmp" push -q origin HEAD:main; rm -rf "$tmp"
+mv_rc=$( cd "$T/proj" && git fetch -q origin --tags && STATE=$U LS=$U RUN_ID=mv MAIN_BRANCH=main && source "$HERE/../lib/record.sh" \
+  && note() { :; } && log() { :; } && merge_one M1; echo "first $?"; merge_one M1; echo "again $?"; rm -f "$U/rebase-M1"; true )
+git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+check "lanes rebase: merge_one says main moved (3) again when moved-<m> is today's main but no rebase-<m> is left (a lane killed mid-re-base)" \
+  '[[ $mv_rc == "first 3"$'"'"'\n'"'"'"again 3" ]]'
 suite_end

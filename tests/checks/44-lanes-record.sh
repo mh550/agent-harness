@@ -86,4 +86,10 @@ u_fail=$( uenv; slot_open M1 > /dev/null 2>&1; echo "rc=$? pwd=$PWD" ); rm -f "$
 check "slot_open: the slot's excludes file keeps the user's global excludes (a ~ path expanded)" '[[ $u_ex == ".harness/runs/ secret.txt" ]]'
 check "slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)" \
   '[[ $u_fail == "rc=1 pwd=$U/wt/run" && -f $U/st/needs-M1 ]] && grep -q "^M1: its slot failed (checkout of harness-lane/u/M1; see run.log); needs Michael$" "$U/notes"'
+# the pack and the slot's copy under one lock: another lane's pack landing between them (simulated by a writer before
+# every lock taken) must not be the one this lane's session reads first (P2 review 3)
+check "record lock: pack_and_copy builds the pack and copies it into the slot under one lock (another lane's pack can't land between)" \
+  '( d=$T/pc; mkdir -p "$d/rec" "$d/slot"; STATE=$d REC=$d/rec SLOT=$d/slot; source "$HERE/../lib/record.sh"
+     _record() { echo B > "$REC/context.md"; "$@"; }; context_() { echo "$1" > "$REC/context.md"; }; materialize_() { cp "$REC/context.md" "$SLOT/ctx"; }
+     pack_and_copy A; [[ $(cat "$SLOT/ctx") == A ]] )'
 suite_end

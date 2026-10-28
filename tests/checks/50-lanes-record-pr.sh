@@ -58,6 +58,14 @@ check "record PR: a harness continue after finish ends again and reuses the open
   '[[ $(grep -c " run rq on harness/rq " "$HARNESS_STATE/proj/rq/run.log") == 3 && $(grep -c -- "--title rq: run record" "$T/gh-rq.log") == 1 ]] \
   && grep -qx "gh pr edit https://example.test/pr/$rq_n --body-file $T/wt/proj/rq/.harness/runs/rq/report.md" "$T/gh-rq.log" \
   && [[ $(hlog rq | grep -cF "· record PR opened; left for Michael (MERGE_POLICY=pr) · https://example.test/pr/$rq_n") == 2 ]]'
+# the end-of-queue gc keeps a record-only harness/<run> while its record PR is open (deleting the head closes the PR
+# left for Michael; P2 review 2, D21 overturned); once Michael merged it, the next gc deletes it
+"$H" gc "$T/proj" --all-merged --deps > "$T/gc-rq.out" 2>&1; rq_kept=no
+has "$T/origin.git" harness/rq && has "$T/proj" harness/rq && [[ -d $T/wt/proj/rq ]] && rq_kept=yes
+touch "$T/prs/pr-$rq_n.merged"; "$H" gc "$T/proj" --all-merged --deps > "$T/gc-rq2.out" 2>&1
+check "record PR: under pr the end-of-queue gc keeps harness/<run> and its worktree while the record PR is open, and deletes them once it merged" \
+  '[[ $rq_kept == yes && ! -f $T/prs/pr-$rq_n.closed ]] && grep -F "keeps $T/wt/proj/rq: its record PR is open (https://example.test/pr/$rq_n)" "$T/gc-rq.out" > /dev/null \
+  && ! has "$T/origin.git" harness/rq && ! has "$T/proj" harness/rq && [[ ! -d $T/wt/proj/rq ]]'
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 
 # rb: a --base run under pr (its milestones proposed, not merged): harness/rb carries based.txt, which main lacks, so

@@ -89,4 +89,13 @@ check "lanes ports: port_taken counts a live lane's port (pid, svc-up or opening
   '( source "$HERE/../lib/config.sh"; STATE_ROOT=$T/pt; d=$STATE_ROOT/p/r/lanes/M2; mkdir -p "$d"; echo 7961 > "$d/port"
      ! port_taken 7961 || exit 1; : > "$d/opening"; port_taken 7961 || exit 1; rm "$d/opening"; : > "$d/svc-up"; port_taken 7961 || exit 1
      rm "$d/svc-up"; echo 7962 > "$STATE_ROOT/p/r/port"; port_taken 7962 )'
+# unit: a forked child (lane_wait's sleep, killed before its exec) inherits the EXIT traps; it must not run them. The
+# driver's ran lanes_term and removed driver.pid mid-run whenever a lane exited between reap and lane_wait (P2 review 1)
+trapkid() {   # <file> <state dir>: the file's EXIT trap in a shell whose sleep child is killed at once
+  ( STATE=$2 LDIR=$2 RWT=$2 REC=$2; for f in lanes_term scope_stop services_down lanes_services_down; do eval "$f() { :; }"; done
+    eval "$(awk "/^trap '/ { on = 1 } on { print } on && /' EXIT\$/ { exit }" "$1")"
+    for i in 1 2 3 4 5; do sleep 5 & kill $! 2> /dev/null; wait $! 2> /dev/null; done; trap - EXIT ) 2> /dev/null; }
+check "lanes trap: a killed background child runs neither the driver's nor a lane's EXIT trap (driver.pid stays, no ended, no exit line)" \
+  '( d=$T/trap-d; l=$T/trap-l; mkdir -p "$d" "$l"; echo 1 > "$d/driver.pid"; trapkid "$HERE/../lib/driver.sh" "$d"; trapkid "$HERE/../lib/lane.sh" "$l"
+     [[ -f $d/driver.pid && ! -e $d/ended && ! -e $l/exit ]] )'
 suite_end

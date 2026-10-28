@@ -60,8 +60,9 @@ END_REASON="driver exited unexpectedly (see run.log)"
 # A TERM runs this at once while the session goes on: its scope stops first, so claude can't work on unread meanwhile.
 # It may now take minutes (the teardown): a second TERM/HUP (tmux closing) must not cut it short. Its note is committed
 # (that file only, not pushed): a dirty worktree would keep gc from removing it
+# A forked child (lane_wait's sleep, killed before its exec) inherits it and must not run it (P2 review 1).
 # Lanes first: each stops its own session and services; fd 9 closed so none waits on a lock this process holds.
-trap 'trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "$REC/harness-log.md" > /dev/null 2>&1; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
+trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "$REC/harness-log.md" > /dev/null 2>&1; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
 
 demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
   # the stop's time is when it reached this box (STOP, else INBOX.md pulled), not when the driver got to it: a request
@@ -274,6 +275,7 @@ record_pr() {
   url=$($GH pr view "$RBRANCH" --json url,state,title -q "select(.state == \"OPEN\" and .title == \"$t\") | .url" 2> /dev/null) || url=""
   if [[ $url == http* ]]; then $GH pr edit "$url" --body-file "$REC/report.md" > /dev/null 2>> "$STATE/run.log"
   else url=$($GH pr create --base "$MAIN_BRANCH" --head "$RBRANCH" --title "$t" --body-file "$REC/report.md" 2>> "$STATE/run.log" | tail -1); fi
+  [[ $url == http* ]] && echo "$url" > "$STATE/record-pr"   # gc keeps harness/<run> while this PR is open
   if [[ $url != http* ]]; then note "record PR: could not open it (see run.log)"
   elif [[ $MERGE_POLICY != auto ]]; then note "record PR opened; left for Michael (MERGE_POLICY=$MERGE_POLICY) · $url"
   elif $GH pr merge "$url" --merge --match-head-commit "$head" > /dev/null 2>> "$STATE/run.log"; then note "record PR merged into $MAIN_BRANCH · $url"
@@ -511,6 +513,7 @@ while :; do
     (( $(date +%s) >= DEADLINE )) && continue
     if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; finish "weekly budget ($why)"; fi
   fi
+  reap; [[ -n $LANE_END ]] && continue   # a lane gone since the top: its slot, its end and its needs count before an open
   opened=0
   if (( alive < MAX_LANES )) && (( $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) <= $(date +%s) || alive == 0 )); then
     while IFS=$'\t' read -r m kind; do   # kind: "rebase" from rebase_due; F lanes' second field is its base tags

@@ -483,6 +483,11 @@ cmd_gc() {
   running() { local d r=${1#harness/}; r=${r#harness-lane/}; r=${r%%/*}
     d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && { alive "$d" || lane_live "$d" > /dev/null; } && return 0
     compgen -G "$Q/*-continue-$r.args" > /dev/null; }
+  # a record PR left open (under pr, or a refused merge; the driver's state/record-pr names it) keeps harness/<run>:
+  # deleting its head would close it. gh decides; one gh can't answer keeps it too (P2 review 2)
+  record_pr_open() { local r=${1#harness/} d u; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && [[ -s $d/record-pr ]] || return 1
+    u=$(cd "$p" && "${HARNESS_GH:-gh}" pr view "$1" --json state,title -q "select(.state == \"OPEN\" and .title == \"$r: run record\") | .url" 2> /dev/null) || return 0
+    [[ $u == http* ]]; }
   # a desk Michael may be talking to keeps its run's worktree (its --add-dir, the INBOX it reads); idle ones go first
   desk_open() { local d r=${1#harness/}; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && [[ -s $d/desk/url ]] \
     && ! grep -qxF "would close idle desk $r" <<< "$dg" \
@@ -531,6 +536,7 @@ cmd_gc() {
       # the harness makes its worktrees on harness/<run>: one on any other branch is a session's of Michael's
       [[ $b == harness/* ]] || { echo "keeps $wt: not a run worktree (branch $b)"; continue; }
       desk_open "$b" && { echo "keeps $wt: its desk is open (harness desk --close ${b#harness/})"; continue; }
+      record_pr_open "$b" && { echo "keeps $wt: its record PR is open ($(cat "$(compgen -G "$STATE_ROOT/*/${b#harness/}" | head -1)/record-pr"))"; continue; }
       rm_wt "$wt"
     fi
   done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p')
@@ -565,7 +571,7 @@ cmd_gc() {
     [[ $b == "$(git -C "$p" branch --show-current)" ]] && continue
     running "$b" && continue
     git -C "$p" merge-base --is-ancestor "$b" "$main" && continue
-    record_only "$b" && ! git -C "$p" worktree list --porcelain | grep -qx "branch refs/heads/$b" \
+    record_only "$b" && ! record_pr_open "$b" && ! git -C "$p" worktree list --porcelain | grep -qx "branch refs/heads/$b" \
       && { act git -C "$p" branch -D "$b"; git -C "$p" rev-parse -q --verify "origin/$b" > /dev/null && act git -C "$p" push -q origin --delete "$b"; }
   done
   # One pass per prefix, harness/, harness-merge/ and harness-lane/; --all-merged's is the bare prefix, every branch.

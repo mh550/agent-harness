@@ -34,8 +34,9 @@ SLOT=$WT_ROOT_DIR/lanes/$RUN_ID/slot-$LANE_SLOT LBRANCH=harness-lane/$RUN_ID/$M
 WT=$SLOT PORT=$LANE_PORT SCRATCH=$SCRATCH/lanes/$M SVC_UNIT=$(scope_unit "$RUN_ID" "$LANEU-svc")
 mkdir -p "$LDIR" "$SCRATCH"
 lane_exit() { echo "$1 $2" > "$LDIR/exit"; exit "$1"; }
-# A TERM (the coordinator exiting) runs this at once while a session goes on: its scope first, then the services
-trap 'trap "" TERM INT HUP; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"
+# A TERM (the coordinator exiting) runs this at once while a session goes on: its scope first, then the services (a forked
+# child inherits it and skips it)
+trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"
   if [[ ! -s $LDIR/exit ]]; then services_down "driver exited"; echo "12 lane exited unexpectedly" > "$LDIR/exit"; fi' EXIT
 lane_cd || lane_exit 12 "its slot $SLOT is gone"
 load_config; MAX_SESSIONS=$LANE_MAX_SESSIONS
@@ -61,8 +62,7 @@ verify() {
   note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
   run_init fresh
   for model in "${models[@]}"; do
-    context "$m" "$CONTEXT_PACK_BYTES_VERIFY"   # each round: an escalated verify's pack has the first round's entry
-    materialize
+    pack_and_copy "$m" "$CONTEXT_PACK_BYTES_VERIFY"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
     if ! mem_gate; then   # before the clock, so the prompt's time is the session's; a wait stopped the services
       [[ -f $STATE/lanes-end || $(control) == stop ]] && { unmaterialize; return 2; }   # cut short: the loop's top ends the lane
@@ -292,7 +292,7 @@ while :; do
   n=$(rec_count "$STATE/sessions" 1)   # the cap once more, atomically: another lane's session may have taken the last
   (( n > MAX_SESSIONS )) && { rec_count "$STATE/sessions" -1 > /dev/null; lane_exit 13 "session cap ($MAX_SESSIONS)"; }
   [[ $esc ]] || record F bump "$ATT" "$id"
-  run_init; context "$id"; materialize   # the copy, the snapshot and the INBOX the session is judged against
+  run_init; pack_and_copy "$id"   # the copy, the snapshot and the INBOX the session is judged against
   if [[ $esc ]]; then sclock="Review round 2 of 2 (escalated: $esc)"; else sclock="attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS"; fi
   # the counts the gate reads (the findings check below and the summary's found_nothing), asked in one fixed form
   [[ $kind == review ]] && rdiff+=$'\n'"Review findings: give your entry's summary this review's findings as \`<n> Critical, <n> Important, <n> Minor\` (the driver reads the counts)."

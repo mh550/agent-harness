@@ -311,7 +311,6 @@ context_() {
   # committed now, alone: anything else uncommitted in the record stays for its own commit (E4 review F4)
   git -C "$RWT" add -- "$RUN_DIR/context.md" && { git -C "$RWT" diff --cached --quiet -- "$RUN_DIR/context.md" || git -C "$RWT" commit -q -m "HARNESS: context pack for $1" -- "$RUN_DIR/context.md"; }
 }
-context() { record context_ "$@"; }
 
 # The project's init, then the suite (cached per code tree); both go into the next prompt. The init runs in
 # harness-<run>-svc (decisions/2026-10-25-services-scope): what it backgrounds (a dev server) stays there, capped at
@@ -390,7 +389,9 @@ merge_one() {
     needs_you "$m" "conflicts with $MAIN_BRANCH" harness-log.md; return 1
   fi
   if [[ ${2:-} != --open && $tree != "$(git rev-parse "$c^{tree}")" ]]; then   # main has content the lane wasn't verified with
-    [[ $(cat "$STATE/moved-$m" 2>/dev/null) == "$mn" || ( -f $STATE/needs-$m && ! ${HARNESS_MERGE_ONLY:-} ) ]] && return 1
+    # once per main while its re-base is pending (rebase-<m>); a re-base cut short (its lane killed) took that marker
+    # with it, and the milestone would wait silently for the next main (P2 review 4)
+    [[ ( $(cat "$STATE/moved-$m" 2>/dev/null) == "$mn" && -f $STATE/rebase-$m ) || ( -f $STATE/needs-$m && ! ${HARNESS_MERGE_ONLY:-} ) ]] && return 1
     echo "$mn" > "$STATE/moved-$m"; return 3
   fi
   git push -q -f origin "$c:refs/heads/$head" 8>&- 2>> "$STATE/run.log" || { note "$m: push of $head failed (see run.log)"; return 1; }
@@ -590,6 +591,10 @@ materialize_() {
   cp "$SLOT/$RUN_DIR/INBOX.md" "$LS/inbox-before.md" 2> /dev/null || : > "$LS/inbox-before.md"
 }
 materialize() { record materialize_; }
+# The pack and the slot's copy under one lock: between two, another lane's context_ could overwrite $REC/context.md and
+# this lane's session would read that feature's pack first (P2 review 3)
+pack_and_copy_() { context_ "$@"; materialize_; }
+pack_and_copy() { record pack_and_copy_ "$@"; }
 # The copy goes; the slot is clean again (the next checkout -B and gc rely on it).
 unmaterialize() {
   [[ -n ${SLOT:-} && -d $SLOT/$RUN_DIR ]] || return 0
