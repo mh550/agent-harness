@@ -1,0 +1,60 @@
+{
+ "feature": "P2-06",
+ "kind": "coding",
+ "outcome": "passes",
+ "summary": "harness status prints one line per open lane (feature \u00b7 session \u00b7 port \u00b7 slot \u00b7 its units with MemoryCurrent; lanes/<m>/now from lane.sh); summary.json gains lanes {max_open, lane_hours, wall_hours} (pure laneSpans over run.log) and report.md a Lanes row; initializer.md and run.md say how lanes share files and slots. 594 \u2192 598 checks. 0 Critical, 0 Important, 4 Minor (3 fixed).",
+ "files": [
+  "bin/harness",
+  "lib/lane.sh",
+  "lib/driver.sh",
+  "lib/summary.mjs",
+  "prompts/initializer.md",
+  "prompts/parts/run.md",
+  "tests/checks/43-lanes-scheduler.sh",
+  "tests/checks/47-lanes-two.sh",
+  "tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh",
+  "tests/fixtures/check-names.txt",
+  "docs/architecture.md",
+  "README.md"
+ ],
+ "verified_how": "new checks watched red first (43: 14/16), then green: 43 16/16, 47 13/13 (status-two.out: 'lane M1 \u00b7 A \u00b7 session 1 \u00b7 port 7950 \u00b7 slot 0 \u00b7 MemoryCurrent harness-two-M1-s2 50 MB' and M2 on 7951 slot 1), 08 125/125; full suite 598/598 green in 471 s (TEST_JOBS=4) on the second run; the first was 597/598: 50-lanes-record-pr's first check failed once, passed alone (10/10) and in the rerun; node --check lib/summary.mjs, bash -n bin/harness lib/lane.sh lib/driver.sh.",
+ "tests_before": 594,
+ "tests_after": 598,
+ "dead_ends": [
+  {
+   "tried": "${us:+MemoryCurrent $us}${us:-no units} in the lane line",
+   "why": "${us:-\u2026} expands to $us when set, so the units printed twice; the first 47 run went red on it"
+  }
+ ],
+ "discoveries": [
+  {
+   "text": "harness status folds a lane's units into its lane line: 08's status check now expects 'lane M1 \u00b7 A \u00b7 session 1 \u00b7 \u2026 \u00b7 MemoryCurrent harness-termed-M1-s<n> 50 MB' instead of a bare unit line; the run's own units keep the old line",
+   "affects": [
+    "P2-07"
+   ]
+  },
+  {
+   "text": "Review Minor left: two milestone ids that clean to the same unit name (M1-x and M1.x) collide in scope_unit, so status gives one lane all the units; a features lint rule rejecting such ids would close it",
+   "affects": [
+    "P2-07",
+    "run"
+   ]
+  },
+  {
+   "text": "tests/run.sh subset output isn't kept by check.sh: run 'KEEP=1 bash tests/run.sh <file> > scratch/x.out' to read a failing check's files",
+   "affects": [
+    "run"
+   ]
+  },
+  {
+   "text": "50-lanes-record-pr's 'under auto finish opens <run>: run record' failed once under a full run (597/598) while the file's other 9 checks passed; it passed alone and in the next full run: a load flake in P2-05's check (likely its exact 'pr merge' count of 3), not reproduced",
+   "affects": [
+    "P2-07",
+    "run"
+   ]
+  }
+ ],
+ "proposed_changes": [
+  "P2-07 (decisions and docs) could add the lane line and summary.lanes to docs/architecture.md \u00a74/\u00a712 prose; this session updated the lane state row, summary \u00a72 and README's status row only"
+ ]
+}
