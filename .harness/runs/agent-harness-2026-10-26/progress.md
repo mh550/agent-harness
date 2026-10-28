@@ -9,6 +9,27 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 21:41 · P2-02 · passes
+
+Two lanes on: admit (memory reserve, five-hour window, once-per-kind waiting note), a port per lane (port_alloc_ under the record and port locks), a merge lock, lanes-end + exit 16, atomic rec_count, USAGE_5H, sliced limit/mem waits, TEST_FILE_TIMEOUT. Clamp gone. Tests 555 -> 566.
+
+- **Files:** lib/driver.sh, lib/lane.sh, lib/record.sh, lib/scope.sh, lib/config.sh, lib/metrics.mjs, lib/notify.sh, bin/harness, tests/run.sh, tests/lib.sh, tests/stub-claude.sh, tests/checks/47-lanes-two.sh, +8 more
+- **Verified:** check.sh: green in 414 s, 566 tests. 47-lanes-two 11/11 (two lanes at once, ports 7950/7951 and in prompts, both merged, done; memory wait noted once then opens on fixture swap; 5-hour 80% wait noted once; session cap -> other lane 'the run is ending'; stop in a limit wait ends within a slice). 33: TEST_FILE_TIMEOUT=2s file -> one FAIL line, under 20 s. The new checks ran red first (47 aborted, 33 timeout FAIL). bash -n all shell files, node --check lib/metrics.mjs. Opus review: 1 Important + 6 Minor, all fixed.
+- **Tests:** 555 → 566
+- **Dead end:** the plan's two-lane run releasing both lanes together — whichever lane verifies before the other merges finds main moved (needs P2-03's re-base); the check releases C first and M1 after M2 merged
+- **Dead end:** worktree add -B from origin/<b> and push -u in lanes — git locks .git/config without waiting: slot 1's open failed (could not lock config file) while M1 pushed with -u; now --no-track and no -u
+- **Dead end:** mem_gate checking stop/lanes-end after its sleep — a stop arriving with memory back lost the 'available after' note (file 08 red); the check now comes before each sleep
+- **Discovery** (affects P2-04): Concurrent git writers in one repo: .git/config fails instead of waiting (fixed for lanes: --no-track, no -u). P2-04's branch deletion at merge (branch -D writes config) must run while other lanes push; check it under two lanes.
+- **Discovery** (affects P2-03): merge_one's fetch of main can collide with another lane's sync_main fetch (ref lock); it now retries once and logs, and merges on the next reap.
+- **Discovery** (affects run): Suite wall time 414 s at TEST_JOBS=4 (was ~256 s before P2-02); 47-lanes-two is ~110 s of slot time (its limit-wait check sleeps one 60 s slice). Measured, not a gate. The first full run here had 5 failures in 08, 13 and 32 that passed on rerun alone and in the next full run (load flakes, not reproduced).
+- **Discovery** (affects P2-06, P2-07): admit lives in lib/scope.sh (beside mem_available_gb) so it is unit-checkable; port_taken moved from bin/harness to lib/config.sh; both runs and lanes allocate under $STATE_ROOT/port.lock.
+- **Discovery** (affects P2-03, P2-06): stub hold-coding now also touches held-<run>-<id> and releases on release-<run>-<id>: a check can choose which lane goes first.
+- **Question for Michael:** D16-D18 in journal/decisions/2026-10-26-lanes.md are defaults: slot 0 keeps the run's port; a run's end reaches lanes through lanes-end and exit 16; slots --no-track and lane pushes without -u. Keep them?
+- **Question for Michael:** LANE_RESERVE_GB=4 and LANE_OPEN_BELOW_5H=70 stay as specced (decisions/2026-10-26-parallel-runs-headroom). Change either before your first night at MAX_LANES=2?
+- **Proposed change:** P2-02 step 3 should say 'under the record lock and the box-wide port lock' (plan D2).
+- **Proposed change:** The P2 plan's 'two' scenario should release C before A: two lanes verifying at once is P2-03's re-base case, not P2-02's.
+- *04-P2-02 · claude-opus-5-5*
+
 ### 2026-10-27 20:56 · P2-01 · passes
 
 P2-01 passes. The plan is in commit `2a5ad34` (`docs/plans/2026-10-26-P2-two-lanes.md`) and pushed. The suite is green at 555 tests: this was a cache hit, which is valid because the plan file is outside the cache key and no code changed. An Opus reviewer checked the plan against the code and found 7 Important and 9 Minor problems. I confirmed the key ones and fixed all of them in the plan. The bi…
@@ -245,23 +266,9 @@ Runner code was already in place; under the new rule (a time is measured and rec
 - **Discovery** (affects run): The suite is now work-bound, not chain-bound: the 4-job floor (811 s / 4 = 203 s) is above the slowest file (156 s), so reordering files gains nothing. Only cutting CPU (fewer node starts in the driver) would make it shorter. Four jobs' contention adds about 56 s of slot time over TEST_JOBS=1's 755 s.
 - *01-P0-02 · claude-opus-5-5*
 
-### 2026-10-26 08:30 · P0-03 · passes
-
-CHECK_KEY_IGNORE (default .harness/runs docs/plans; this repo adds docs/specs journal findings-and-research ledger) leaves literal path prefixes out of treekey's key; prompt_env exports it; check.sh's cached line names a non-default list. New tests/checks/29-check-key.sh (7 checks, 2 stub runs via STUB_EDIT). 335 → 342 green in 168 s.
-
-- **Files:** lib/treekey.mjs, lib/check.sh, lib/config.sh, lib/prompt.sh, .harness/config.sh, templates/project/config.sh, tests/checks/29-check-key.sh, tests/stub-claude.sh, tests/lib.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, +1 more
-- **Verified:** 29-check-key.sh red first (2/6: docs/plans run got 'green in 0 s'), then 7/7; bash tests/run.sh 342/342 (wall 170 s), again 342/342 with the repo's list exported as a real run would; live lib/check.sh: 'check: green in 168 s'; bash -n and node --check on every touched file; Opus review of the diff.
-- **Tests:** 335 → 342
-- **Dead end:** asserting with `git log --name-only | grep -qx` — pipefail + grep -q's early exit SIGPIPEs git log: the check fails although the file is there; use git cat-file -e
-- **Discovery** (affects run): tests/lib.sh must unset every HARNESS_* variable prompt_env exports that changes check.sh's output (now HARNESS_CHECK_KEY_IGNORE too): a session's suite inherits its run's, and this repo's wide list turned the 'unset' checks red inside a real run (found by review, reproduced, fixed).
-- **Discovery** (affects P1, P2, run): Once this merges, a session that only adds a plan, spec, decision or ledger file in this repo gets 'check: green (cached …; key ignores: docs/plans docs/specs journal findings-and-research ledger)' instead of a 3 min suite run. .harness/config.sh itself stays in the key.
-- **Discovery** (affects P1, P2): STUB_EDIT=<path> in tests/stub-claude.sh: a coding session edits only that path, passes nothing, and copies the init.out it was started with to $STUB_DIR/init-<run>-<n>.out (what the pre-session suite said).
-- **Question for Michael:** treekey always leaves out .harness/runs, even when CHECK_KEY_IGNORE omits it, and drops '.' entries; entries are literal (:(exclude,literal)), not globs. Keep that, or follow the spec's plain ':!<prefix>' to the letter?
-- **Proposed change:** P0-03 step 2 says lib/driver.sh exports HARNESS_CHECK_KEY_IGNORE; HARNESS_CHECK_CMD is exported by prompt_env in lib/prompt.sh (driver.sh's load_config calls it), so it is exported there.
-- *04-P0-03 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 08:30 · P0-03 · passes · CHECK_KEY_IGNORE (default .harness/runs docs/plans; this repo adds docs/specs journal findings-and-r… ([in full](progress-archive.md))
 - 2026-10-26 08:15 · P0-02 · not yet · Steps 1-4, 6, 7 hold; step 5 (<150 s) can't be met inside a suite split. Measured: per-file slot tim… ([in full](progress-archive.md))
 - 2026-10-26 07:35 · P0-02 · not yet · Runner runs TEST_JOBS files (default 4 here) as background jobs, largest first; output whole per fil… ([in full](progress-archive.md))
 - 2026-10-26 06:44 · P0-01 · passes · tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for byte from the single f… ([in full](progress-archive.md))
