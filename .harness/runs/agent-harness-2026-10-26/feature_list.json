@@ -200,7 +200,7 @@
         "checks in tests/checks/NN-lanes-two.sh: with MAX_LANES=2 and a list whose M2 is `after: []` the stub run has two `lane .* opened` notes before any `lane .* closed`, both milestones merge and the run ends `done`; with a HARNESS_MEMINFO fixture under the reserve the second lane waits with the note and opens once the fixture file is replaced; with a stub USAGE_5H at 0.80 it waits with the note",
         "journal/decisions/2026-10-26-parallel-runs-headroom.md supersedes D-H18 with the 2026-10-25 figures (five-hour at 12 %, seven-day 82 -> 83 % in 4.5 h) and the rule that admission is by headroom; names in tests/fixtures/check-names.txt; `bash -n` on the shell files touched, `node --check lib/metrics.mjs`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-03",

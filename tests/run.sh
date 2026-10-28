@@ -5,6 +5,8 @@
 #                              `N/M checks passed`, exit 1 on any failure (KEEP=1 keeps each file's $T and names it)
 # TEST_JOBS (default half the cores, 1 to 4) files run at once as plain background jobs: inside the caller's check scope,
 # never a scope of their own (scopes don't nest; one would escape the cap). TEST_CHECKS: another checks directory.
+# TEST_FILE_TIMEOUT (default 10m, a sleep duration): a file still running then is stopped (TERM to its process group,
+# KILL 10 s later) and counted as one FAIL line, so a hung file costs its timeout, not the whole suite's.
 # A full run of tests/checks also checks conformance: its check names are tests/fixtures/check-names.txt, none missing, new or doubled.
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); dir=${TEST_CHECKS:-$HERE/checks}
@@ -17,14 +19,22 @@ for f in "$dir"/*.sh; do
 done
 [[ -e ${files[0]:-} ]] || { echo "no check file matches: $*"; echo "0/0 checks passed"; exit 1; }
 mapfile -t files < <(ls -S "${files[@]}")   # largest first: its size is a fair guess at its time, and a long file started last sets the wall time
-out=$(mktemp -d); trap 'rm -rf "$out"' EXIT
+out=$(mktemp -d); trap 'for w in "$out"/*.wd; do [[ -f $w ]] && kill "$(cat "$w")"; done 2> /dev/null; rm -rf "$out"' EXIT   # a watchdog a killed job left
 us() { echo "${EPOCHREALTIME/[.,]/}"; }   # microseconds, whatever the locale's decimal point
 s1() { printf '%d.%d' $(( $1 / 1000000 )) $(( $1 % 1000000 / 100000 )); }   # microseconds as seconds, one decimal
 t0=$(us)
 
 # one file: its output to a file, not a pipe (a process a check leaves can't hold the runner), then "<rc> <µs>" beside it
-# (written whole: replay may list it the moment it appears)
-one() { local b s rc; b=$(basename "$1" .sh) s=$(us); bash "$1" > "$out/$b.out" 2>&1; rc=$?
+# (written whole: replay may list it the moment it appears). setsid: the file leads a process group of its own (the
+# watchdog and stopped() signal it whole) while its parent stays this subshell (not timeout(1)'s, which would also cut
+# it off from the caller's group signals); <file>.pgid names it
+to=${TEST_FILE_TIMEOUT:-10m}
+one() { local b s rc p w; b=$(basename "$1" .sh) s=$(us)
+  setsid bash "$1" > "$out/$b.out" 2>&1 & p=$!; echo "$p" > "$out/$b.pgid"
+  ( z=""; trap 'kill "$z" 2> /dev/null; exit 0' TERM; sleep "$to" & z=$!; wait "$z" || exit 0
+    : > "$out/$b.timedout"; kill -TERM -- "-$p"; sleep 10 & z=$!; wait "$z"; kill -KILL -- "-$p" ) > /dev/null 2>&1 & w=$!; echo "$w" > "$out/$b.wd"
+  wait "$p"; rc=$?; [[ -e $out/$b.timedout ]] || kill "$w" 2> /dev/null   # timed out: its KILL still reaches what outlived the TERM
+  wait "$w" 2> /dev/null; rm -f "$out/$b.wd"
   echo "$rc $(( $(us) - s ))" > "$out/$b.end.tmp" && mv "$out/$b.end.tmp" "$out/$b.end"; }
 broken=() done_=() timing=() lost=0
 # a file that exited non-zero with no FAIL line (set -u, a stray exit) stopped before its later checks: one failed check,
@@ -39,7 +49,8 @@ replay() {
     cat "$out/$b.out"
     [[ ${KEEP:-} ]] && echo "kept: $(sed -n '1s/^tmp: //p' "$out/$b.out") ($b)"
     echo "$b: $(grep -cE '^(PASS|FAIL) ' "$out/$b.out") checks, $(s1 "$t") s"; timing+=("$t $b")
-    (( rc )) && { broken+=("$b"); no_fail "$b" "exited $rc"; }
+    if [[ -e $out/$b.timedout ]]; then broken+=("$b"); echo "FAIL $b: still running after TEST_FILE_TIMEOUT=$to; stopped"; lost=$((lost + 1))
+    elif (( rc )); then broken+=("$b"); no_fail "$b" "exited $rc"; fi
   done
 }
 # stopped by a signal (check.sh's timeout signals the whole group): each unfinished file's output so far, named, so a hung
@@ -48,9 +59,11 @@ stopped() {
   local f b left=()
   for f in "${files[@]}"; do
     b=$(basename "$f" .sh); [[ " ${done_[*]} " == *" $b "* || ! -e $out/$b.out ]] && continue
+    kill -TERM -- "-$(cat "$out/$b.pgid" 2> /dev/null)" 2> /dev/null   # its own group: the caller's signal didn't reach it
     cat "$out/$b.out"; echo "$b: unfinished when the suite was stopped"; left+=("$b")
   done
-  (( ${#left[@]} )) && echo "files that did not finish: ${left[*]}"; exit 143
+  (( ${#left[@]} )) && { sleep 2; for b in "${left[@]}"; do kill -KILL -- "-$(cat "$out/$b.pgid" 2> /dev/null)" 2> /dev/null; done   # the caller's KILL doesn't reach them either
+    echo "files that did not finish: ${left[*]}"; }; exit 143
 }
 trap stopped TERM INT HUP
 running=0

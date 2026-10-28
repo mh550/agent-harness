@@ -249,6 +249,9 @@ init output is capped at 40 lines with the log path
 init: a Vercel project without vercel.json gets one
 init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
+lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
+lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
+lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)
 lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end by default; commented in the user template; HARNESS_LANE_POLL in the driver's usage
 lanes continue: M2's merged PR still has the lane's earlier commits (the first segment's, the one by hand, the unpushed one)
 lanes continue: a --base run whose branch merged main is not refused once main moves on (no main file counts as its code)
@@ -258,7 +261,10 @@ lanes continue: a reused slot's work, committed while its push failed, stays on 
 lanes continue: a run started with --base is measured against its base, not main: not refused
 lanes continue: a run stopped mid-M2 reopens harness-lane/<run>/M2 from the origin's and the box's branch and finishes M2 on it
 lanes continue: harness merge of a legacy run is not refused
+lanes end: a lane's session cap ends the run (lanes-end); the other lane finishes its session and closes, the run is ending
+lanes end: a stop during a usage-limit wait ends the run within a 60 s slice and starts no session in the window
 lanes pause: the lane finishes its session and waits (no new session), and the coordinator logs paused once
+lanes ports: port_taken counts a live lane's port (pid, svc-up or opening beside it), not a closed lane's
 lanes pr-held: M1 merged on GitHub is seen as merged, and the waiting M2 is proposed, with its notification
 lanes pr-held: M1 verified is proposed (its PR open, not merged), and M2 opens from main with run/<run>/M1 merged in
 lanes pr-held: M2 verified opens its PR, not merged, with the waits note once
@@ -275,8 +281,11 @@ lanes run: every coding and verify row in metrics.jsonl carries its lane; the in
 lanes run: finish leaves the run one worktree (the record's), no slot, and deletes the merged lanes' branches
 lanes run: harness/ln holds every entry; each lane wrote its exit line, closed by the coordinator
 lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left
+lanes two: M1 opens in slot 0 on the run's port, M2 in slot 1 on the first free one
+lanes two: both milestones merge (one pr merge each, no refused merge) and the run ends done
+lanes two: each lane's prompt renders its own port (A: 7950, C: 7951)
+lanes two: with MAX_LANES=2 and M2 after: [], both lanes' sessions run at once and two lanes open before any closes
 lanes: F blocked names a given-up feature of a milestone another lane waits on (C and D wait on B through M1)
-lanes: MAX_LANES=2 before P2 is noted and runs one lane at a time (M2, after: [], opens only once M1 has closed)
 lanes: a complete unverified milestone is a candidate (to be verified); a given-up one with nothing to try is not
 lanes: a lane opened after the default lane's features pass starts on the default lane's code (M1's tag holds work-Z.txt)
 lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)
@@ -325,6 +334,7 @@ memory gate: every session starts with the services up, a verify after its wait 
 memory gate: the real fixture's 9 GB passes without a note
 memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+metrics usage: five_hour reads the newest event's five-hour window; the default stays the seven-day one
 metrics.jsonl: every session line has mem_peak_mb from its scope
 metrics.jsonl: mem_peak_mb is null when uncapped
 metrics.mjs: append writes mem_peak_mb as a number or null
@@ -447,6 +457,7 @@ suite cache: a session that edits lib/ (tracked) makes the next session's suite 
 suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1
 suite runner: TEST_JOBS=1 and 4 end with the same N/M and PASS names, exit 1 and name the red file
 suite runner: TEST_JOBS=4 replays each file whole in completion order; the largest file starts first
+suite runner: a file still running after TEST_FILE_TIMEOUT is stopped, shown and counted as one FAIL line
 suite runner: a file that exits non-zero with no FAIL line counts as one failed check (the total isn't all passed)
 suite runner: a file whose job was killed shows its output and makes the runner exit 1
 suite runner: a timing line per file, then the slowest three, the wall time and the jobs

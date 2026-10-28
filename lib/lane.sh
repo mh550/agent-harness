@@ -4,7 +4,7 @@
 # its verify and merge, then it exits; the reason also goes to $STATE/lanes/<m>/exit as "<code> <reason>":
 #   0 verified and merged (or proposed, or its PR waits for a dependency) · 10 given up <ids> · 11 parked <ids> ·
 #   12 needs Michael (verify, merge, feature-list edits) · 13 limit ended (session cap, usage limit, weekly budget) ·
-#   14 stopped · 15 deadline
+#   14 stopped · 15 deadline · 16 the run is ending (another lane ended it: state/lanes-end holds why)
 # Its services stay up when it closes (the next lane in its slot stops them; finish tears them down: D4); a lane that
 # dies (the coordinator's TERM) stops its session and tears its services down at once.
 # Environment: the driver's (WT = the record worktree, RUN_ID STATE PROJECT_DIR HARNESS_HOME) plus LANE LANE_SLOT
@@ -59,7 +59,10 @@ verify() {
     context "$m" "$CONTEXT_PACK_BYTES_VERIFY"   # each round: an escalated verify's pack has the first round's entry
     materialize
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
-    mem_gate || run_init   # before the clock, so the prompt's time is the session's; a wait stopped the services
+    if ! mem_gate; then   # before the clock, so the prompt's time is the session's; a wait stopped the services
+      [[ -f $STATE/lanes-end || $(control) == stop ]] && { unmaterialize; return 2; }   # cut short: the loop's top ends the lane
+      run_init
+    fi
     HARNESS_CLOCK=$(clock "verify round $rounds of $maxr") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"
@@ -142,6 +145,7 @@ fi
 repairs=0 gated=0
 while :; do
   lane_cd
+  [[ -f $STATE/lanes-end ]] && lane_exit 16 "the run is ending ($(cat "$STATE/lanes-end"))"
   (( $(cat "$STATE/sessions") >= MAX_SESSIONS )) && lane_exit 13 "session cap ($MAX_SESSIONS)"
   (( $(date +%s) >= DEADLINE )) && lane_exit 15 deadline
   take_answers; sync_record
@@ -152,11 +156,12 @@ while :; do
     services_down paused; rec_commit "HARNESS: lane $M paused"; sync_record
     while [[ $(control) == pause ]]; do
       (( $(date +%s) >= DEADLINE )) && lane_exit 15 deadline
+      [[ -f $STATE/lanes-end ]] && lane_exit 16 "the run is ending ($(cat "$STATE/lanes-end"))"
       sleep "${HARNESS_PAUSE_POLL:-60}"; take_answers; sync_record
     done
     continue
   fi
-  limit_wait
+  limit_wait || continue   # cut short by the run's end or a stop: the checks above say which
   (( $(date +%s) >= DEADLINE )) && continue
   if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; lane_exit 13 "weekly budget ($why)"; fi
 
@@ -205,7 +210,8 @@ while :; do
       rdiff="Review diff: not measured ($rd); opus"
     fi
   fi
-  n=$(rec_count "$STATE/sessions" 1)
+  n=$(rec_count "$STATE/sessions" 1)   # the cap once more, atomically: another lane's session may have taken the last
+  (( n > MAX_SESSIONS )) && { rec_count "$STATE/sessions" -1 > /dev/null; lane_exit 13 "session cap ($MAX_SESSIONS)"; }
   [[ $esc ]] || record F bump "$ATT" "$id"
   run_init; context "$id"; materialize   # the copy, the snapshot and the INBOX the session is judged against
   if [[ $esc ]]; then sclock="Review round 2 of 2 (escalated: $esc)"; else sclock="attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS"; fi

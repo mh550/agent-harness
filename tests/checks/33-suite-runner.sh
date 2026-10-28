@@ -48,4 +48,12 @@ TEST_CHECKS=$T/rh TEST_JOBS=2 timeout -k 5s 3s bash "$HERE/run.sh" > "$T/rh.out"
 check "suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero" \
   '[[ $RH != 0 ]] && grep -qx "rh about to hang" "$T/rh.out" && grep -qx "02-h: unfinished when the suite was stopped" "$T/rh.out" \
   && grep -qx "files that did not finish: 02-h" "$T/rh.out"'
+# P2: a file still running after TEST_FILE_TIMEOUT is stopped (its group: the sleep too) and counted as one FAIL line,
+# so a hung file costs its timeout, not the whole suite's; its EXIT trap runs (lib.sh traps TERM)
+mkdir -p "$T/rt" && printf '%s\n' 'echo "PASS rt a1"; echo "1/1 checks passed"' > "$T/rt/01-a.sh" \
+  && printf '%s\n' 'trap "exit 143" TERM; trap "touch $0.trapped" EXIT; echo "PASS rt h1"; echo "rt about to hang"; sleep 60 & echo $! > $0.sleep; wait' > "$T/rt/02-h.sh"
+rt0=$(date +%s); TEST_CHECKS=$T/rt TEST_JOBS=2 TEST_FILE_TIMEOUT=2s bash "$HERE/run.sh" > "$T/rt.out" 2>&1; RT=$? rtw=$(( $(date +%s) - rt0 ))
+check "suite runner: a file still running after TEST_FILE_TIMEOUT is stopped, shown and counted as one FAIL line" \
+  '[[ $RT == 1 && $rtw -lt 20 && $(tail -1 "$T/rt.out") == "2/3 checks passed" ]] && grep -qx "rt about to hang" "$T/rt.out" \
+  && grep -qx "FAIL 02-h: still running after TEST_FILE_TIMEOUT=2s; stopped" "$T/rt.out" && [[ -f $T/rt/02-h.sh.trapped ]] && sleep 1 && ! kill -0 "$(cat "$T/rt/02-h.sh.sleep")" 2> /dev/null'
 suite_end

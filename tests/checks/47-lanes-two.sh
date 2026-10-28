@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+source "$(dirname "$0")/../lib.sh" && suite_setup
+# ---- two lanes (P2-02): admission by headroom, a port per lane, the run's end reaching every lane ----
+# M2 is after: [] (STUB_INDEPENDENT_M2), so it may open beside M1. The stub holds every coding session (hold-coding)
+# until release-<run> or release-<run>-<id>: C goes first and M2 merges before M1 verifies, so M1's verify merges main
+# in and both land (a lane verified while the other merged is P2-03's re-base)
+two_both="" mem_c="" cap_end=""
+waitf() { local i; for i in $(seq $(( $2 * 5 ))); do eval "$1" && return 0; sleep 0.2; done; return 1; }   # <bash expr> <s>
+echo 'MAX_LANES=2' >> "$T/user-config.sh"
+held() { rm -f "$T"/held-* "$T"/release-*; : > "$T/hold-coding"; }
+ats() { hlog "$1" | grep -n -m1 -E -- "$2" | cut -d: -f1; }   # <run> <ERE>: the line of the first note matching
+
+held
+STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" two --spec SPEC.md --foreground > "$T/two.out" 2>&1 & P=$!
+waitf '[[ -f $T/held-two-A && -f $T/held-two-C ]]' 120 && two_both=yes
+touch "$T/release-two-C"; waitf 'hlog two | grep -F "· M2 merged into main" > /dev/null' 120; touch "$T/release-two"; wait "$P"; rm -f "$T/hold-coding"
+S=$HARNESS_STATE/proj/two
+check "lanes two: with MAX_LANES=2 and M2 after: [], both lanes' sessions run at once and two lanes open before any closes" \
+  '[[ $two_both == yes ]] && c=$(ats two "· lane .* closed \(") && [[ -n $c ]] && (( $(hlog two | head -n "$c" | grep -c "· lane .* opened (") == 2 ))'
+check "lanes two: M1 opens in slot 0 on the run's port, M2 in slot 1 on the first free one" \
+  'hlog two | grep -F "· lane M1 opened (slot 0, port 7950, from " > /dev/null && hlog two | grep -F "· lane M2 opened (slot 1, port 7951, from " > /dev/null \
+  && [[ $(cat "$S/lanes/M1/port") == 7950 && $(cat "$S/lanes/M2/port") == 7951 ]]'
+check "lanes two: each lane's prompt renders its own port (A: 7950, C: 7951)" \
+  'grep -qx "Port: 7950 · scratch directory: \`$T/scratch/proj/two/lanes/M1\`" $S/logs/*-A.prompt.md && grep -qx "Port: 7951 · scratch directory: \`$T/scratch/proj/two/lanes/M2\`" $S/logs/*-C.prompt.md'
+check "lanes two: both milestones merge (one pr merge each, no refused merge) and the run ends done" \
+  'grep -q "^done" "$S/ended" && on_main run/two/M1 && on_main run/two/M2 && [[ $(grep -c "pr merge" "$T/gh.log") == 2 ]] && ! hlog two | grep -E "merge was refused|moved since" > /dev/null'
+
+# memory: 7 GB available is over MEM_MIN_AVAILABLE_GB (5: no session waits) and under 5 + LANE_RESERVE_GB 4 x 1 open
+held; sed 's/^MemAvailable: .*/MemAvailable:    7340032 kB/' "$HERE/fixtures/meminfo.txt" > "$T/meminfo.txt"
+HARNESS_MEMINFO=$T/meminfo.txt STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" mem --spec SPEC.md --foreground > "$T/mem.out" 2>&1 & P=$!
+waitf '[[ -f $T/held-mem-A ]]' 120; sleep 4   # four polls at 1 s
+mem_waits=$(hlog mem | grep -cF "· lane M2 waiting: 7 GB available, under 9 GB (MEM_MIN_AVAILABLE_GB 5 + LANE_RESERVE_GB 4 x 1 open)")
+mem_open=$(hlog mem | grep -c "· lane M2 opened (")
+cp "$HERE/fixtures/meminfo.txt" "$T/meminfo.txt"   # 9 GB
+waitf '[[ -f $T/held-mem-C ]]' 60 && mem_c=yes
+touch "$T/release-mem-C"; waitf 'hlog mem | grep -F "· M2 merged into main" > /dev/null' 120; touch "$T/release-mem"; wait "$P"; rm -f "$T/hold-coding"
+check "lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back" \
+  '[[ $mem_waits == 1 && $mem_open == 0 && $mem_c == yes ]] && c=$(ats mem "· lane .* closed \(") && o=$(ats mem "· lane M2 opened \(slot 1, ") && (( o < c )) \
+  && grep -q "^done" "$HARNESS_STATE/proj/mem/ended"'
+
+# the five-hour window: the newest session's USAGE_5H at 80 %, resetting in an hour, is over LANE_OPEN_BELOW_5H (70)
+held; echo "0.80 $(( $(date +%s) + 3600 ))" > "$HARNESS_STATE/USAGE_5H"
+STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" u5 --spec SPEC.md --foreground > "$T/u5.out" 2>&1 & P=$!
+waitf '[[ -f $T/held-u5-A ]]' 120; sleep 4
+u5_waits=$(hlog u5 | grep -cE "· lane M2 waiting: 5-hour window at 80%, opens under 70% \(resets [0-9]{2}:[0-9]{2}\)$")
+u5_open=$(hlog u5 | grep -c "· lane M2 opened (")
+touch "$T/release-u5"; wait "$P"; rm -f "$T/hold-coding" "$HARNESS_STATE/USAGE_5H"   # left, it would refuse every later run's second lane
+check "lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)" \
+  '[[ $u5_waits == 1 && $u5_open == 0 ]] && c=$(ats u5 "· lane M1 closed \(") && o=$(ats u5 "· lane M2 opened \(slot 0, ") && (( c < o )) && grep -q "^done" "$HARNESS_STATE/proj/u5/ended"'
+
+# the run's end reaches every lane: M1's lane ends the run at the session cap; M2's, mid-session, exits 16 after it
+held; echo MAX_SESSIONS=2 >> "$T/user-config.sh"
+STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" cap --spec SPEC.md --foreground > "$T/cap.out" 2>&1 & P=$!
+waitf '[[ -f $T/held-cap-A && -f $T/held-cap-C ]]' 120; touch "$T/release-cap-A"
+waitf '[[ -f $HARNESS_STATE/proj/cap/lanes-end ]]' 120 && cap_end=$(cat "$HARNESS_STATE/proj/cap/lanes-end")
+touch "$T/release-cap"; wait "$P"; rm -f "$T/hold-coding"
+check "lanes end: a lane's session cap ends the run (lanes-end); the other lane finishes its session and closes, the run is ending" \
+  '[[ $cap_end == "session cap (2)" ]] && grep -q "^session cap (2)" "$HARNESS_STATE/proj/cap/ended" && hlog cap | grep -F "· lane M1 closed (session cap (2))" > /dev/null \
+  && hlog cap | grep -F "· lane M2 closed (the run is ending (session cap (2)))" > /dev/null && [[ $(jq -s "map(select(.kind == \"coding\")) | length" "$T/wt/proj/cap/.harness/runs/cap/metrics.jsonl") == 2 ]]'
+
+# a usage-limit wait sleeps in slices of at most 60 s: a stop during an hour's window ends the run within a slice,
+# with no session started inside the window (before P2 it slept the whole window)
+cp "$T/base-config.sh" "$T/user-config.sh"; echo "$(( $(date +%s) + 3600 ))" > "$HARNESS_STATE/LIMIT_UNTIL"
+HARNESS_LIMIT_SLEEP=3600 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lw --spec SPEC.md --foreground > "$T/lw.out" 2>&1 & P=$!
+waitf 'hlog lw | grep -F "· usage-limit window (shared by all runs): waiting until " > /dev/null' 120; lw0=$(date +%s)
+touch "$HARNESS_STATE/proj/lw/STOP"; wait "$P"; lw_s=$(( $(date +%s) - lw0 )); rm -f "$HARNESS_STATE/LIMIT_UNTIL"
+check "lanes end: a stop during a usage-limit wait ends the run within a 60 s slice and starts no session in the window" \
+  '(( lw_s < 90 )) && grep -q "^stopped by Michael" "$HARNESS_STATE/proj/lw/ended" && ! grep -q " coding exit " "$HARNESS_STATE/proj/lw/run.log"'
+
+# unit: the five-hour window from the real capture; admit (lib/scope.sh) on stub files
+check "metrics usage: five_hour reads the newest event's five-hour window; the default stays the seven-day one" \
+  '[[ $(node "$HERE/../lib/metrics.mjs" usage "$HERE/fixtures/usage-limit.jsonl" five_hour) == "1 1792231800" && $(node "$HERE/../lib/metrics.mjs" usage "$HERE/fixtures/usage-limit.jsonl") == "0.85 1792360800" ]] \
+  && ! node "$HERE/../lib/metrics.mjs" usage "$HERE/fixtures/usage-tokens.jsonl" five_hour > /dev/null'
+check "lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset" \
+  '( source "$HERE/../lib/scope.sh"; MEM_MIN_AVAILABLE_GB=5 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 HARNESS_MEMINFO=$T/meminfo.txt; u=$T/u5.txt
+     echo "0.80 $(( $(date +%s) + 600 ))" > "$u"; admit 0 "$u" > /dev/null || exit 1
+     [[ $(admit 1 "$u") == five-hour$'"'"'\t'"'"'"5-hour window at 80%, opens under 70% (resets "* ]] || exit 1
+     echo "0.99 $(( $(date +%s) - 60 ))" > "$u"; admit 1 "$u" > /dev/null || exit 1; echo "0.69 $(( $(date +%s) + 600 ))" > "$u"; admit 1 "$u" > /dev/null || exit 1
+     [[ $(admit 2 "$u") == memory$'"'"'\t'"'"'"9 GB available, under 13 GB (MEM_MIN_AVAILABLE_GB 5 + LANE_RESERVE_GB 4 x 2 open)" ]] && ! admit 2 "$u" > /dev/null )'
+check "lanes ports: port_taken counts a live lane's port (pid, svc-up or opening beside it), not a closed lane's" \
+  '( source "$HERE/../lib/config.sh"; STATE_ROOT=$T/pt; d=$STATE_ROOT/p/r/lanes/M2; mkdir -p "$d"; echo 7961 > "$d/port"
+     ! port_taken 7961 || exit 1; : > "$d/opening"; port_taken 7961 || exit 1; rm "$d/opening"; : > "$d/svc-up"; port_taken 7961 || exit 1
+     rm "$d/svc-up"; echo 7962 > "$STATE_ROOT/p/r/port"; port_taken 7962 )'
+suite_end

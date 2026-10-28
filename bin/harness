@@ -82,7 +82,6 @@ state_of() {   # run-id → state dir
   local d; d=$(compgen -G "$STATE_ROOT/*/$1" | head -1 || true)
   [[ -n $d && -f $d/meta.env ]] || die "no run '$1' (see: harness status)"; echo "$d"
 }
-port_taken() { (echo > "/dev/tcp/127.0.0.1/$1") 2>/dev/null || grep -qsx "$1" "$STATE_ROOT"/*/*/port; }
 alive() { local p; p=$(cat "$1/driver.pid" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null; }
 runner_up() { [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null; }
 alive_count() { local d n=0; for d in "$STATE_ROOT"/*/*/; do alive "$d" && n=$(( n + 1 )); done; echo "$n"; }
@@ -221,9 +220,9 @@ cmd_start() {
     echo "worktree $wt on $branch (from ${base:-origin/main})"
   fi
   mkdir -p "$state"
-  if [[ ! -f $state/port ]]; then
-    local port=$BASE_PORT; while port_taken "$port"; do port=$(( port + 1 )); done
-    echo "$port" > "$state/port"
+  if [[ ! -f $state/port ]]; then   # port_taken (lib/config.sh), under the lock the lanes' search takes too
+    local port=$BASE_PORT; { flock 7; while port_taken "$port"; do port=$(( port + 1 )); done
+      echo "$port" > "$state/port"; } 7> "$STATE_ROOT/port.lock"
   fi
   printf 'PROJECT_DIR=%q\nWT=%q\nRUN_ID=%q\nSTATE=%q\n' "$p" "$wt" "$run" "$state" > "$state/meta.env"
   [[ -n ${HARNESS_RUNNER_ID:-} ]] && echo "$HARNESS_RUNNER_ID" >> "$state/runners"   # started by that queue runner (its debrief covers it)

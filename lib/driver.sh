@@ -3,9 +3,10 @@
 # around agent sessions:
 #   1. no feature list → one initializer session writes it (from the spec files and the run's brief)
 #   2. every HARNESS_LANE_POLL seconds it reaps lanes that ended and opens lanes (lanes P1-04): a lane is one milestone
-#      run by its own process, lib/lane.sh, in a slot worktree on harness-lane/<run>/<m>; MAX_LANES of them at once
-#      (default 1: one after another). A lane opens when its milestone has a feature to try (or all pass, to be
-#      verified) and every milestone it depends on is verified (F lanes). In its lane, one fresh coding session per
+#      run by its own process, lib/lane.sh, in a slot worktree on harness-lane/<run>/<m>, on its own port; MAX_LANES of
+#      them at once (default 1: one after another), a further one only with headroom (admit: memory, the five-hour
+#      window). A lane opens when its milestone has a feature to try (or all pass, to be verified) and every milestone
+#      it depends on is verified (F lanes). In its lane, one fresh coding session per
 #      feature, in dependency order. Before each: take answers, sync with the remote, honour pause/stop and the box-wide
 #      usage-limit window, run the project's init and the cached suite. After each: a session that ended on a usage
 #      limit or API error is given back (not the feature's fault); otherwise commit leftovers, repair the feature list,
@@ -85,8 +86,9 @@ lane_wait() {
   return 0
 }
 # Every lane whose process is gone: its exit line noted, its pid gone (its slot free), the merges it may have unblocked.
-# A session cap, a usage limit, the weekly budget or feature-list edits end the run (LANE_END); a stop and the deadline
-# are seen by the coordinator itself. A lane that died without a reason needs Michael (never reopened in a loop).
+# A session cap, a usage limit, the weekly budget or feature-list edits end the run (LANE_END, and state/lanes-end, so
+# every other lane exits 16 before its next session); a stop and the deadline are seen by the coordinator itself. A
+# lane that died without a reason needs Michael (never reopened in a loop).
 reap() {
   local f m code why n=0
   for f in "$STATE"/lanes/*/pid; do
@@ -96,14 +98,24 @@ reap() {
     mv -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/closed" 2> /dev/null; rm -f "$f"; n=$(( n + 1 ))
     note "lane $m closed ($why)"
     [[ $why == "lane exited unexpectedly" ]] && touch "$STATE/needs-$m"
-    [[ $code == 13 || $why == "feature-list edits" ]] && LANE_END=$why
+    [[ $code == 13 || $why == "feature-list edits" ]] && { LANE_END=$why; echo "$why" > "$STATE/lanes-end"; }
   done
   (( n )) && merge_milestones
   return 0
 }
 wait_lanes() { while (( $(lanes_open) )); do lane_wait; reap; done; reap; }   # until every lane has exited (between sessions)
+# <m> → its port, the first free from BASE_PORT (port_taken), written to lanes/<m>/port with lanes/<m>/opening, which
+# holds it until lane_open has written the pid; under the record lock (record port_alloc_) and the box-wide port lock,
+# which cmd_start takes too, so neither another lane nor another run takes it meanwhile
+port_alloc_() {
+  local p=$BASE_PORT
+  { flock 7; while port_taken "$p"; do p=$(( p + 1 )); done
+    echo "$p" > "$STATE/lanes/$1/port"; : > "$STATE/lanes/$1/opening"; } 7> "$STATE_ROOT/port.lock"
+  echo "$p"
+}
 # <m>: the lowest slot no open lane holds; the services the slot's last lane left up stopped silently (its port is
-# reused, as run_init replaces its own: D4); the slot opened (slot_open: its base, the note); the lane's process started
+# reused, as run_init replaces its own: D4); its port (slot 0: the run's, so one lane is the run as before; slot 1 up:
+# port_alloc_); the slot opened (slot_open: its base, the note); the lane's process started
 lane_open() {
   local m=$1 k=0 f d busy
   while :; do
@@ -116,13 +128,22 @@ lane_open() {
     [[ -f $f && $(cat "${f%/svc-up}/slot" 2> /dev/null) == "$WT_ROOT_DIR/lanes/$RUN_ID/slot-$k" ]] || continue
     scope_stop "$(cat "$f")"; rm -f "$f"
   done
+  mkdir -p "$STATE/lanes/$m"
+  if (( k == 0 )); then LANE_PORT=$PORT; echo "$PORT" > "$STATE/lanes/$m/port"; else LANE_PORT=$(record port_alloc_ "$m"); fi
   slot_open "$m" "$k"; local rc=$?
   LANE="" LBRANCH=""; rec_cd   # SLOT stays: finish counts the last lane's tests in it
-  (( rc == 0 )) || return 1
-  echo "$PORT" > "$STATE/lanes/$m/port"; rm -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/need"
-  LANE=$m LANE_SLOT=$k LANE_PORT=$PORT LANE_ONCE=$LANE_ONCE bash "$HARNESS_HOME/lib/lane.sh" "$m" < /dev/null 9>&- &
-  echo $! > "$STATE/lanes/$m/pid"
+  (( rc == 0 )) || { rm -f "$STATE/lanes/$m/opening"; return 1; }
+  rm -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/need"
+  LANE=$m LANE_SLOT=$k LANE_PORT=$LANE_PORT LANE_ONCE=$LANE_ONCE bash "$HARNESS_HOME/lib/lane.sh" "$m" < /dev/null 8>&- 9>&- &
+  echo $! > "$STATE/lanes/$m/pid"; rm -f "$STATE/lanes/$m/opening"
   LANE=""
+}
+# <m> "<kind>\t<reason>": admit refused its lane; noted once per kind (the GB figure changes every poll, the kind
+# doesn't), and the open is tried again next poll
+wait_note() {
+  local kind=${2%%$'\t'*}
+  [[ $(cat "$STATE/lanes/$1/waiting" 2> /dev/null) == "$kind" ]] && return 0
+  echo "$kind" > "$STATE/lanes/$1/waiting"; note "lane $1 waiting: ${2#*$'\t'}"
 }
 # <why>: the services every closed lane left up, torn down in its slot with its port and scratch (finish, the EXIT trap)
 lanes_services_down() {
@@ -403,10 +424,8 @@ if [[ ! -f $STATE/deps-noted ]]; then   # once per run: milestones that wait on 
 fi
 [[ $MAX_SESSIONS == auto ]] && MAX_SESSIONS=$(( 3 * $(jq '.features | length' "$LIST") + 5 ))
 export HARNESS_T0=$T0 HARNESS_DEADLINE=$DEADLINE LANE_MAX_SESSIONS=$MAX_SESSIONS SCOPE_OK
-# P1 runs one lane at a time: every lane would get the run's one port, and two merges could race (review of P1; P2
-# gives each lane its port and the merges a lock)
-if (( MAX_LANES > 1 )); then note "MAX_LANES=$MAX_LANES: one lane at a time until P2 (per-lane ports, a merge lock); running 1"; MAX_LANES=1; fi
-mkdir -p "$STATE/lanes"; lanes_orphans; rm -f "$STATE"/lanes/*/pid "$STATE"/lanes/*/exit   # an earlier segment's lanes are gone
+mkdir -p "$STATE/lanes"; lanes_orphans   # an earlier segment's lanes are gone, and its run end with them
+rm -f "$STATE"/lanes/*/pid "$STATE"/lanes/*/exit "$STATE"/lanes/*/opening "$STATE"/lanes/*/waiting "$STATE/lanes-end"
 paused=0 LAST_LANE=""
 # The coordinator: every POLL seconds (at once when a lane exits) reap, check the run's ends, open what can open.
 while :; do
@@ -435,7 +454,7 @@ while :; do
   fi
   (( paused )) && { paused=0; log "resumed"; }
   if (( alive == 0 )); then   # box-wide gates: with a lane open, it waits and stops by itself
-    limit_wait
+    limit_wait || continue   # cut short by a stop: the next poll sees it
     (( $(date +%s) >= DEADLINE )) && continue
     if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; finish "weekly budget ($why)"; fi
   fi
@@ -443,8 +462,9 @@ while :; do
   if (( alive < MAX_LANES )) && (( $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) <= $(date +%s) || alive == 0 )); then
     while IFS=$'\t' read -r m _; do
       [[ -n $m ]] || continue
-      (( $(lanes_open) < MAX_LANES )) || break
-      lane_open "$m" && { opened=1 LAST_LANE=$m; }
+      a=$(lanes_open); (( a < MAX_LANES )) || break   # the slot count is the configuration, not headroom: no note
+      if why=$(admit "$a"); then lane_open "$m" && { opened=1 LAST_LANE=$m; rm -f "$STATE/lanes/$m/waiting"; }
+      else mkdir -p "$STATE/lanes/$m"; wait_note "$m" "$why"; fi
     done < <(F lanes "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE")
   fi
   if (( ! opened && $(lanes_open) == 0 )); then   # nothing open and nothing to open: the run's end, as before lanes

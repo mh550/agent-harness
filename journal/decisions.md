@@ -156,6 +156,8 @@ still in flight may append to it, and an edit there would conflict with them.
 - **Why:** 10-17's two parallel runs spent the five-hour window in 2 h 49 min. Serial runs each get the whole
   window; queueing a night's work is one command per project. A run ending on time, sessions or limits queues
   its own continuation (fresh attempts, same branch); a blocked run does not.
+- Updated in place 2026-10-27: its reason (the five-hour window) is superseded; admission is by headroom
+  (`decisions/2026-10-26-parallel-runs-headroom`). The queue and `MAX_PARALLEL_RUNS` stand.
 
 ### D-H19 · Every run is measured and retro'd into a ledger the harness learns from *(accepted 2026-10-17, built in v3)*
 - **Choice:** the driver writes `summary.json` (automatic cause per non-passing feature), runs a read-only Sonnet

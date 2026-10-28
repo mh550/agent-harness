@@ -20,9 +20,10 @@ commit_all() { git add -A && ! git diff --cached --quiet && git commit -q -m "$1
 rec_commit_() { ( cd "$RWT" && git add -A -- "$RUN_DIR" && ! git diff --cached --quiet -- "$RUN_DIR" && git commit -q -m "$1" -- "$RUN_DIR" ); return 0; }
 rec_commit() { record rec_commit_ "$1"; }   # <message>: a commit of the record
 
-# <file> [<delta>] → the run counter in <file> (sessions: coding sessions started, limits: refused in a row) plus delta
-rec_count_() { local n; n=$(cat "$1" 2> /dev/null || echo 0); echo $(( n + ${2:-0} )) > "$1"; }
-rec_count() { record rec_count_ "$1" "${2:-0}"; cat "$1"; }
+# <file> [<delta>] → the run counter in <file> (sessions: coding sessions started, limits: refused in a row) plus delta,
+# printed from inside the lock: two lanes never get one number
+rec_count_() { local n; n=$(cat "$1" 2> /dev/null || echo 0); n=$(( n + ${2:-0} )); echo "$n" > "$1"; echo "$n"; }
+rec_count() { record rec_count_ "$1" "${2:-0}"; }
 
 
 # The run's paths and configuration, read in the record worktree (cwd). A lane then moves to its slot (lane_paths).
@@ -33,7 +34,7 @@ run_paths() {
   CLAUDE=${HARNESS_CLAUDE:-claude} GH=${HARNESS_GH:-gh}
   LIST=$REC/feature_list.json SLIST=$REC/feature_list.json
   LOGS=$STATE/logs ATT=$STATE/attempts.json PARKED=$STATE/parked.json LS=$STATE
-  STATE_ROOT=$(cd "$STATE/../.." && pwd); LIMIT_FILE=$STATE_ROOT/LIMIT_UNTIL USAGE=$STATE_ROOT/USAGE_7D
+  STATE_ROOT=$(cd "$STATE/../.." && pwd); LIMIT_FILE=$STATE_ROOT/LIMIT_UNTIL USAGE=$STATE_ROOT/USAGE_7D USAGE5=$STATE_ROOT/USAGE_5H
   LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger} SVC_UNIT=$(scope_unit "$RUN_ID" svc)
   mkdir -p "$LOGS" "$REC" "$SCRATCH"
   load_config
@@ -121,7 +122,7 @@ needs_you() {   # <milestone> <why> <file in the run record>
 # 9>&-: no lock fd may reach a tmux server it starts.
 desk() {
   [[ $DESK == 1 ]] || return 0
-  "$HARNESS_HOME/bin/harness" desk "$RUN_ID" --why "$1" > /dev/null 2>&1 9>&- || note "desk: could not start (exit $?): $1"
+  "$HARNESS_HOME/bin/harness" desk "$RUN_ID" --why "$1" > /dev/null 2>&1 8>&- 9>&- || note "desk: could not start (exit $?): $1"
   [[ -n $(git -C "$RWT" status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: desk"; sync_record; }
   return 0
 }
@@ -169,7 +170,17 @@ limit_wait() {
   fi
   note "usage-limit window (shared by all runs): waiting until $(date -d "@$upto" '+%H:%M') ($(( w / 60 )) min)"
   rec_commit "HARNESS: waiting for the usage limit"; sync_record
-  sleep "${HARNESS_LIMIT_SLEEP:-$w}"
+  w=${HARNESS_LIMIT_SLEEP:-$w}; slept_until "$w"
+}
+# <s>: sleep that long in slices of at most 60 s; 1 early when the run is ending (another lane's end: lanes-end) or
+# Michael stopped it, so finish's wait for the lanes never waits out a five-hour window
+slept_until() {
+  local w=$1 s
+  while (( w > 0 )); do
+    [[ -f $STATE/lanes-end || $(control) == stop ]] && return 1
+    s=$(( w < 60 ? w : 60 )); sleep "$s"; w=$(( w - s ))
+  done
+  return 0
 }
 
 prompt() {   # template name → $LS/prompt.md (lib/prompt.sh, which `harness eval probes` renders the same way)
@@ -214,7 +225,10 @@ session() {
   # the peak alone could be page cache: a cap kill is the kernel's 137 with the peak at the cap
   (( S_EXIT == 137 )) && scope_capped "$unit" "$SESSION_MEMORY_MAX" && S_NOTES+=("${4:-$1}: the session hit its memory cap ($SESSION_MEMORY_MAX)")
   [[ $1 == retro ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
-  MET usage "$3" > "$USAGE.tmp" 2> /dev/null && mv "$USAGE.tmp" "$USAGE" || rm -f "$USAGE.tmp"   # the box-wide 7-day window
+  # the box-wide 7-day and 5-hour windows (admit reads the second); a temporary file per process: two lanes' sessions
+  # may end in the same second
+  MET usage "$3" > "$USAGE.$$.tmp" 2> /dev/null && mv "$USAGE.$$.tmp" "$USAGE" || rm -f "$USAGE.$$.tmp"
+  MET usage "$3" five_hour > "$USAGE5.$$.tmp" 2> /dev/null && mv "$USAGE5.$$.tmp" "$USAGE5" || rm -f "$USAGE5.$$.tmp"
   log "  $1 exit $S_EXIT · $(git log --oneline -1)"
 }
 
@@ -359,7 +373,9 @@ merge_one() {
   local m=$1 tag=run/$RUN_ID/$1 c head url tree mn
   head=harness-merge/$RUN_ID-$m
   c=$(git rev-list -n1 "$tag") || return 1
-  git fetch -q origin "$MAIN_BRANCH" || return 1
+  # once more after a second: another lane's fetch may hold refs/remotes/origin/<main>'s lock
+  git fetch -q origin "$MAIN_BRANCH" 8>&- 2> /dev/null || { sleep 1; git fetch -q origin "$MAIN_BRANCH" 8>&- 2>> "$STATE/run.log"; } \
+    || { log "$m: fetch of $MAIN_BRANCH failed; merged later"; return 1; }
   if git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; then touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (already there)"; return 0; fi
   mn=$(git rev-parse "origin/$MAIN_BRANCH")
   if ! tree=$(git merge-tree --write-tree "origin/$MAIN_BRANCH" "$c" 2>/dev/null | head -1); then
@@ -375,15 +391,15 @@ merge_one() {
     note "$m verified, but $MAIN_BRANCH moved since; not merged (needs Michael)"; rec_commit "HARNESS: $m waits on $MAIN_BRANCH"; sync_record
     needs_you "$m" "$MAIN_BRANCH moved since its verify" harness-log.md; return 1
   fi
-  git push -q -f origin "$c:refs/heads/$head" 2>> "$STATE/run.log" || { note "$m: push of $head failed (see run.log)"; return 1; }
+  git push -q -f origin "$c:refs/heads/$head" 8>&- 2>> "$STATE/run.log" || { note "$m: push of $head failed (see run.log)"; return 1; }
   pr_body "$m" > "$LS/pr-body.md"; [[ $LS == "$STATE" ]] || cp "$LS/pr-body.md" "$STATE/pr-body.md"   # the last body, whichever lane (checks read it)
-  url=$($GH pr view "$head" --json url,state -q 'select(.state=="OPEN") | .url' 2>/dev/null) || url=""
-  [[ $url == http* ]] || url=$($GH pr create --base "$MAIN_BRANCH" --head "$head" --title "$RUN_ID: $m (verified)" --body-file "$LS/pr-body.md" 2>> "$STATE/run.log" | tail -1)
+  url=$($GH pr view "$head" --json url,state -q 'select(.state=="OPEN") | .url' 8>&- 2>/dev/null) || url=""
+  [[ $url == http* ]] || url=$($GH pr create --base "$MAIN_BRANCH" --head "$head" --title "$RUN_ID: $m (verified)" --body-file "$LS/pr-body.md" 8>&- 2>> "$STATE/run.log" | tail -1)
   [[ $url == http* ]] || { note "$m: could not open its PR (see run.log)"; return 1; }
   [[ ${2:-} == --open ]] && return 0   # a dependency hasn't merged: the PR waits for it, whatever the policy
   if [[ $MERGE_POLICY != auto && ! ${HARNESS_MERGE_ONLY:-} ]]; then touch "$STATE/proposed-$m"; note "$m proposed for merging · $url"; notify "$m verified · review: $url" title="[$RUN_ID] $m ready to merge" click="$url"; return 0; fi   # harness merge lands it whatever the policy
-  if $GH pr merge "$url" --merge --match-head-commit "$c" > /dev/null 2>> "$STATE/run.log"; then
-    git push -q origin --delete "$head" 2>/dev/null
+  if $GH pr merge "$url" --merge --match-head-commit "$c" > /dev/null 8>&- 2>> "$STATE/run.log"; then
+    git push -q origin --delete "$head" 8>&- 2>/dev/null
     touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH · $url"; notify "$m merged · $url" click="$url"
   else
     # once per tag commit (merge_milestones runs again after every verify and at the end); `harness merge` always says so
@@ -399,15 +415,22 @@ merge_one() {
 # other milestone's unverified work: each merges on its own once every milestone it depends on (F deps) has merged;
 # until then its PR is opened and waits (noted once, under pr too). v2 tags (verified under weaker rules) and proposed
 # milestones (pr) merge only through `harness merge`, in the same order. Nothing under MERGE_POLICY=off.
+# Under the merge lock (state/merge.lock, fd 8): a lane's verify and the coordinator's reap never merge one milestone
+# twice; the second finds merged-<m>. Lock order is merge, then record (merge_one notes and commits); nothing under the
+# record lock merges. Network commands close fd 8, as sync_record_'s close 9.
 merge_milestones() {
   [[ $MERGE_POLICY == off || ! -f $LIST ]] && return 0
+  { flock 8; merge_milestones_ "$@"; } 8> "$STATE/merge.lock"
+  return 0
+}
+merge_milestones_() {
   local m d wait
   for m in $(F milestones "$LIST"); do
     [[ -n ${1:-} && $m != "$1" ]] && continue
     [[ -f $STATE/merged-$m ]] && continue
     if [[ -f $STATE/proposed-$m && ! ${HARNESS_MERGE_ONLY:-} ]]; then   # Michael's to merge, or `harness merge`'s
       # merged by Michael meanwhile (its PR on GitHub): merged here too, so what waits on it moves on
-      git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null && git fetch -q origin "$MAIN_BRANCH" 2> /dev/null \
+      git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null && git fetch -q origin "$MAIN_BRANCH" 8>&- 2> /dev/null \
         && git merge-base --is-ancestor "run/$RUN_ID/$m" "origin/$MAIN_BRANCH" && { touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (by its PR)"; }
       continue
     fi
@@ -429,15 +452,17 @@ merge_milestones() {
 # Pull Michael's phone edits (INBOX.md) into the record, push its commits. Never rewrites history. 9>&-: a network
 # command never holds the lock past this call (an ssh ControlPersist master would keep fd 9).
 sync_record_() {
-  if git -C "$RWT" fetch -q origin "$RBRANCH" 9>&- 2> /dev/null; then
+  if git -C "$RWT" fetch -q origin "$RBRANCH" 8>&- 9>&- 2> /dev/null; then
     git -C "$RWT" merge -q --ff-only "origin/$RBRANCH" 2> /dev/null \
       || git -C "$RWT" merge -q --no-edit "origin/$RBRANCH" > /dev/null 2>&1 \
       || { git -C "$RWT" merge --abort 2> /dev/null; log "remote edits on $RBRANCH conflict with local work; kept local"; }
   fi
-  git -C "$RWT" push -q -u origin "$RBRANCH" 9>&- 2>> "$STATE/run.log" || log "push of $RBRANCH failed"
+  git -C "$RWT" push -q -u origin "$RBRANCH" 8>&- 9>&- 2>> "$STATE/run.log" || log "push of $RBRANCH failed"
 }
 sync_record() { record sync_record_; }
-sync_lane() { [[ -n ${LBRANCH:-} ]] || return 0; git -C "$SLOT" push -q -u origin "$LBRANCH" 2>> "$STATE/run.log" || log "push of $LBRANCH failed"; }
+# no -u, as slot_open's --no-track: a lane never writes .git/config, which git locks without waiting (a coordinator
+# opening another slot meanwhile would fail); nothing reads a lane branch's upstream
+sync_lane() { [[ -n ${LBRANCH:-} ]] || return 0; git -C "$SLOT" push -q origin "$LBRANCH" 2>> "$STATE/run.log" || log "push of $LBRANCH failed"; }
 
 # <m> [<k>] → slot k (0) on harness-lane/<run>/<m>, cwd there; HARNESS_WT and HARNESS_BRANCH name it for sessions.
 # The coordinator opens it, then starts the lane process in it (lib/lane.sh). A lane resumes its branch (the newer of
@@ -466,9 +491,9 @@ slot_open() {
   elif git -C "$RWT" rev-parse -q --verify "refs/heads/$b" > /dev/null; then base=$b; fi
   if [[ ! -d $SLOT ]]; then
     mkdir -p "${SLOT%/*}"; first=1
-    git -C "$RWT" worktree add -q -f "$SLOT" -B "$b" "$base" 2>> "$STATE/run.log" || { slot_fail "$m" "worktree add of $SLOT"; return 1; }
+    git -C "$RWT" worktree add -q -f --no-track "$SLOT" -B "$b" "$base" 2>> "$STATE/run.log" || { slot_fail "$m" "worktree add of $SLOT"; return 1; }
   else
-    git -C "$SLOT" checkout -q -f -B "$b" "$base" 2>> "$STATE/run.log" || { slot_fail "$m" "checkout of $b"; return 1; }
+    git -C "$SLOT" checkout -q -f --no-track -B "$b" "$base" 2>> "$STATE/run.log" || { slot_fail "$m" "checkout of $b"; return 1; }
   fi
   if [[ -n $fold ]]; then
     if ! git -C "$SLOT" merge -q --no-edit "$fold" > /dev/null 2>&1; then
@@ -510,7 +535,7 @@ slot_open() {
   echo "$SLOT" > "$STATE/lanes/$m/slot"   # lib/prompt.sh as a command renders a lane's prompt from it
   LBRANCH=$b LANE=$m; lane_cd
   sha=$(git rev-parse --short HEAD)
-  note "lane $m opened (slot $k, port $PORT, from $sha$( (( first )) || echo ", slot reused"))"
+  note "lane $m opened (slot $k, port ${LANE_PORT:-$PORT}, from $sha$( (( first )) || echo ", slot reused"))"
 }
 slot_fail() { note "$1: its slot failed ($2; see run.log); needs Michael"; touch "$STATE/needs-$1"; cd "$RWT" || :; }
 lane_cd() { cd "$SLOT" || return 1; export HARNESS_WT=$SLOT HARNESS_BRANCH=$LBRANCH; SLIST=$SLOT/$RUN_DIR/feature_list.json; }

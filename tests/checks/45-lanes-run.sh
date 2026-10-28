@@ -25,16 +25,6 @@ check "lanes run: finish leaves the run one worktree (the record's), no slot, an
   && ! git -C "$T/origin.git" rev-parse -q --verify refs/heads/harness-lane/ln/M1 > /dev/null && ! git -C "$T/origin.git" rev-parse -q --verify refs/heads/harness-lane/ln/M2 > /dev/null \
   && ! git -C "$T/proj" rev-parse -q --verify refs/heads/harness-lane/ln/M1 > /dev/null'
 
-# MAX_LANES=2 before P2 (review of P1, finding 5): every lane would get the run's one port and two merges could race,
-# so the coordinator notes it and opens one lane at a time; M2 is after: [] (it could open beside M1)
-echo 'MAX_LANES=2' >> "$T/user-config.sh"
-STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" l2 --spec SPEC.md --foreground > "$T/l2.out" 2>&1
-cp "$T/base-config.sh" "$T/user-config.sh"
-l2at() { hlog l2 | grep -n -m1 -F -- "$1" | cut -d: -f1; }
-check "lanes: MAX_LANES=2 before P2 is noted and runs one lane at a time (M2, after: [], opens only once M1 has closed)" \
-  'hlog l2 | grep -F "· MAX_LANES=2: one lane at a time until P2 (per-lane ports, a merge lock); running 1" > /dev/null \
-  && o2=$(l2at "· lane M2 opened (") c1=$(l2at "· lane M1 closed (") && [[ -n $o2 && -n $c1 ]] && (( c1 < o2 )) && grep -q "^done" "$HARNESS_STATE/proj/l2/ended"'
-
 # A feature in no milestone (the default lane, D7) builds first; M1 waits on it and opens on its code, as before lanes
 # (review of P1, finding 4): M1's verified tag holds Z's work
 STUB_DEFAULT_FEATURE=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" ld --spec SPEC.md --foreground > "$T/ld.out" 2>&1

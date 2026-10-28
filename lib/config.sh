@@ -88,3 +88,15 @@ weekly_over() {
   (( pct >= WEEKLY_STOP_AT )) || return 1
   echo "7-day window at $pct%, stop at $WEEKLY_STOP_AT%; resets $(date -d "@$r" '+%a %H:%M')"
 }
+
+# <port> → 0 when it is taken (STATE_ROOT: the state root): something listens on it, a run holds it
+# ($STATE_ROOT/*/*/port), or a lane holds it (lanes/<m>/port beside a pid, an svc-up or an opening file: a closed lane's
+# port is free once its services are down). cmd_start and the coordinator search under $STATE_ROOT/port.lock.
+port_taken() {
+  local f d; (echo > "/dev/tcp/127.0.0.1/$1") 2> /dev/null && return 0
+  grep -qsx "$1" "$STATE_ROOT"/*/*/port && return 0
+  for f in "$STATE_ROOT"/*/*/lanes/*/port; do d=${f%/port}
+    [[ -f $d/pid || -f $d/svc-up || -f $d/opening ]] && grep -qsx "$1" "$f" && return 0
+  done
+  return 1
+}
