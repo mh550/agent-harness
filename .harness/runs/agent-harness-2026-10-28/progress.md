@@ -7,6 +7,23 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 13:34 · U2-07 · passes
+
+Status reads the needs records: lib/status.mjs imports needs.mjs list (now exported) for NEEDS YOU, --json needs (whole records) and the card's needs you (count, 3 headlines, +k more); U1's derived rows gone. The desk prompt and answer skill read harness needs; the debrief adds a #### needs block. 62-needs-readers (6 checks). Opus review fixes.
+
+- **Files:** lib/status.mjs, lib/needs.mjs, lib/debrief.sh, prompts/desk.md, skills/harness-answer/SKILL.md, tests/checks/62-needs-readers.sh, tests/lib.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/checks/52-status-json.sh, tests/checks/53-status-view.sh, tests/fixtures/status-json-keys.txt, +4 more
+- **Verified:** full suite via check.sh (TEST_JOBS=2, 25m timeout): green in 953 s, 769 tests; 62 6/6, the status files 52-56 all pass; 13- (66) and 15- (79) pass with the new desk/skill/debrief checks; red first: 62 was 0/5 before the code
+- **Tests:** 763 → 769
+- **Dead end:** a feature list with a null entry as 62's unreadable state dir — status.mjs's own features() crashes on it, before needs.mjs is asked (older than U2); used a parked.json with an empty id instead
+- **Discovery** (affects U2-09, run): status_stubs now opens the parked and givenup runs' records (nopen, at the stub's old times); the given-up headline is the template's 'C given up after 2 attempts', so 52/53 read that instead of U1's '(2 attempts)'
+- **Discovery** (affects U2-09): status.mjs computes needs only in view and card mode, for the runs it shows (needsOf), so queue list/show never touch needs.mjs; needs.mjs list skips a state dir it can't read (stderr 'needs.mjs: <dir>: <msg>'), and status passes that line through
+- **Discovery** (affects U2-09, run): With U1's run_end row gone, a run that ended failed or waiting with no record (e.g. 'no feature left to try', an unknown POLICY) shows in neither NEEDS YOU nor harness needs, only as FINISHED's red glyph
+- **Discovery** (affects U2-09, project): status-json-keys.txt now lists every key path of the stubs' three needs records (parked, given_up, synthesized driver_crash); a new card field in those templates changes it
+- **Question for Michael:** U1 showed any failed or waiting end without another item as a NEEDS YOU row (run_end); with the records it shows only where finish opened one (feature_list_edits, initializer_failed, the limits). Default taken: no generic item, so 'no feature left to try' is visible only in FINISHED. Should finish open a record for every failed or waiting end (a new reason, say run_end), in U2-09 or U3?
+- **Proposed change:** U2-09 review: lib/desk.sh's notification still says 'Or by hand: harness parked <run>' (the plan keeps the alias); switch it to harness needs if wanted
+- **Proposed change:** U2-09 review: 52/53's 'the gc'd run none' clauses pass only because the gcd stub has no records; a gc'd run whose harness/<run> branch survives keeps its non-parked records in both harness needs and status (needs.mjs's removed rule)
+- *15-U2-07 · claude-opus-5-5*
+
 ### 2026-10-28 12:57 · U2-06 · passes
 
 Git-side stop paths open needs records: sync_main's main_conflict (files, PR subjects, notified once per main commit, resolved by a clean merge or the milestone merged), merge_one's merge_conflict/merge_refused, verify's three, rebase_fail, slot_open/slot_fail base_conflict, reap driver_crash; needs_you sends the record. 61-needs-git (10 checks). Coordinator stale-alive race fixed.
@@ -253,23 +270,8 @@ API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN)
 
 - *03-U1-03 · claude-opus-5-5 · recorded by the harness: entry.json missing*
 
-### 2026-10-28 02:05 · U1-02 · passes
-
-lib/view.mjs: the formatter (context, glyphs with ASCII forms, paint, displayWidth, cut, pad, table, section, rule, card, ago, when, home, duration, endClass) plus a table|card|section CLI; 23 unit checks in 51-view-pure.sh; end-reasons.txt; decision 2026-10-27-read-views started. An Opus review's 2 Important and 7 Minor findings were fixed red→green.
-
-- **Files:** lib/view.mjs, tests/checks/51-view-pure.sh, tests/fixtures/end-reasons.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-read-views.md, CLAUDE.md
-- **Verified:** bash tests/run.sh 51-view: 23/23; full suite via lib/check.sh green, 625 tests (602 before); node --check lib/view.mjs
-- **Tests:** 602 → 625
-- **Dead end:** folding a whole over-wide narrow table line at the width — split a 38-char id that fits at 40 when a glyph column precedes it (review finding); lines now break at column gaps first, only an id wider than the width folds
-- **Discovery** (affects U1-04, U1-06): view.mjs table: put the glyph in the same cell as the id (glyph + space) to get the spec's '⚠ run-id' look; columns are joined by two spaces
-- **Discovery** (affects U1-04): view.mjs section(title, 0, hint) prints the bare line without the rule (the spec's 'QUEUED 0 · runner off'); count null drops the count ('FINISHED · last 24h · 3')
-- **Discovery** (affects U1-05): view.mjs card: a value's newline starts a new hanging line; a URL token too wide for the room goes on its own line at 2; field.lines are verbatim at 4 (P2-06 lane lines)
-- **Discovery** (affects project): the end-reasons check greps literal finish/END_REASON/lane_exit 13 reasons out of lib/driver.sh and lib/lane.sh: a new literal end reason needs a line in tests/fixtures/end-reasons.txt
-- **Discovery** (affects run): the full suite took 478 s and 481 s tonight (TEST_JOBS=4)
-- **Question for Michael:** Default taken: a table id wider than the whole width is folded at the width (never cut, never past it), and a section with count 0 prints without the rule. Keep both?
-- *02-U1-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-28 02:05 · U1-02 · passes · lib/view.mjs: the formatter (context, glyphs with ASCII forms, paint, displayWidth, cut, pad, table,… ([in full](progress-archive.md))
 - 2026-10-28 01:40 · U1-01 · passes · Wrote docs/plans/2026-10-28-U1-read-views.md: view.mjs API (15 functions, glyphs, width/colour/overr… ([in full](progress-archive.md))
 - 2026-10-28 01:32 · init · passes · 24 features: U1 7 (plan, view.mjs, status.mjs + --json, the default view, the card, queue list/show,… ([in full](progress-archive.md))

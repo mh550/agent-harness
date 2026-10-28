@@ -256,7 +256,7 @@
         "the debrief's gatherer (`run_context` in lib/debrief.sh) adds a `#### needs` block per run from `COLUMNS=80 harness needs <run>` after the `#### harness status` block, and the \"--dry-run prints the context, launches nothing\" check in tests/checks/15- finds it",
         "`bash -n lib/debrief.sh bin/harness`, `node --check lib/status.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U2-08",
