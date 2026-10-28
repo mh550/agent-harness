@@ -18,3 +18,7 @@
 - 2026-10-28 03:52 · context.md for U1-04: 7356 bytes
 - 2026-10-28 04:45 · U1-04: gotchas +1 ~0 -0
 - 2026-10-28 04:45 · U1-04 · claude-opus-5-5 · passes=true · 52 min · 4/24 passing · tests 655
+- 2026-10-28 04:45 · context.md for U1-05: 7723 bytes
+- 2026-10-28 05:14 · U1-05: entry.json invalid (summary: 410 characters (at most 400)); recorded a minimal entry
+- 2026-10-28 05:14 · U1-05: gotchas +1 ~0 -0
+- 2026-10-28 05:14 · U1-05 · claude-opus-5-5 · passes=true · 29 min · 5/24 passing · tests 668

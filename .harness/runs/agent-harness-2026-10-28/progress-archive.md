@@ -7,6 +7,13 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 05:14 · U1-05 · passes
+
+U1-05 passes, in commit `681d468` (pushed). The full suite is green: 668 tests, up from 655. - **The card:** `harness status <run>` now prints a card. Its first line gives the state or end class, `x/y passing` and the age. The fields are now, ended, milestones, lanes, spend, branch, worktree, needs you, units and next. `-v` or `N` adds the log tail. - **Old checks:** the old checks that read the …
+
+- **Files:** CLAUDE.md, bin/harness, journal/decisions/2026-10-27-read-views.md, lib/status.mjs, prompts/supervisor.md, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/14-run-2b-stop-records.sh, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/checks/40-run-18-test-counts-m5.sh, tests/checks/47-lanes-two.sh, tests/checks/52-status-json.sh, +4 more
+- *05-U1-05 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 410 characters (at most 400)*
+
 ### 2026-10-28 04:45 · U1-04 · passes
 
 harness status (no run) is one screen via status.mjs renderView + view.mjs: NEEDS YOU, RUNNING, QUEUED, FINISHED, footer; --all, --since, -p, -v, N; fits 60/80; colour on a TTY only; ASCII under LC_ALL=C. STATUS_SINCE default + template; catch-up prompt; decision updated. 53-status-view.sh, 15 checks. An Opus review found 11 Minor issues; 9 fixed red to green.

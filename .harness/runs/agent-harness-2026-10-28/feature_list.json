@@ -95,7 +95,7 @@
         "the debrief's gatherer is unchanged (`lib/debrief.sh` keeps `N=3 \"$H\" status \"$RUN_ID\"`) and the \"--dry-run prints the context, launches nothing\" check in tests/checks/15- still finds a `#### harness status` block per run whose first line names the run; `prompts/supervisor.md` says `harness status {{RUN_ID}} -v` and that `N=20` still works; `prompts/project-catchup.md` says `harness status --project <p>`",
         "`bash -n bin/harness lib/debrief.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U1-06",
