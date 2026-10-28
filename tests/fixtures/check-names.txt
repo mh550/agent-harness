@@ -265,7 +265,6 @@ lanes end: a lane's session cap ends the run (lanes-end); the other lane finishe
 lanes end: a stop during a usage-limit wait ends the run within a 60 s slice and starts no session in the window
 lanes pause: the lane finishes its session and waits (no new session), and the coordinator logs paused once
 lanes ports: port_taken counts a live lane's port (pid, svc-up or opening beside it), not a closed lane's
-lanes trap: a killed background child runs neither the driver's nor a lane's EXIT trap (driver.pid stays, no ended, no exit line)
 lanes pr-held: M1 merged on GitHub is seen as merged, and the waiting M2 is proposed, with its notification
 lanes pr-held: M1 verified is proposed (its PR open, not merged), and M2 opens from main with run/<run>/M1 merged in
 lanes pr-held: M2 verified opens its PR, not merged, with the waits note once
@@ -274,12 +273,12 @@ lanes prompts: initializer.md says side-by-side milestones touch different files
 lanes rebase: LANE_REBASE=verify gives a disjoint re-base the verify round, then it merges
 lanes rebase: a re-base verify round that fails un-verifies the milestone and removes its tag, so the old tag never merges
 lanes rebase: main moved under a verified lane, files disjoint: the suite runs in full on the merged tree, the tag moves to it, it merges
+lanes rebase: merge_one says main moved (3) again when moved-<m> is today's main but no rebase-<m> is left (a lane killed mid-re-base)
 lanes rebase: overlapping files get one verify round on the merged tree, then the tag moves and it merges
 lanes rebase: the re-based tag is the only ref the origin saw rewritten (its forced push)
 lanes rebase: the tree on main after the re-based merge is the re-tagged tree (the invariant)
 lanes rebase: under MERGE_POLICY=pr, harness merge re-bases a proposed milestone on the moved main in a slot and merges it, then its dependent
 lanes rebase: with its re-base rounds used the milestone needs Michael: the slot back at the verified commit, nothing merged, nothing pushed
-lanes rebase: merge_one says main moved (3) again when moved-<m> is today's main but no rebase-<m> is left (a lane killed mid-re-base)
 lanes record: a lane commit touching .harness/runs/ is reverted with a note, and harness/<run> never gets it
 lanes record: a session's question above ## Answers lands in the record's INBOX.md above that line
 lanes record: the slot is gone at the end, the run keeps one worktree, the merged lane's branch is deleted
@@ -305,6 +304,7 @@ lanes status: harness status prints one line per open lane (feature, session, po
 lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left
 lanes summary: laneSpans counts the lanes open at once and sums open-to-close hours, a lane left open closing at its segment's end
 lanes summary: the two-lane run's summary.json has lanes {max_open: 2, lane_hours, wall_hours} and report.md its Lanes line
+lanes trap: a killed background child runs neither the driver's nor a lane's EXIT trap (driver.pid stays, no ended, no exit line)
 lanes two: M1 opens in slot 0 on the run's port, M2 in slot 1 on the first free one
 lanes two: both milestones merge (one pr merge each, no refused merge) and the run ends done
 lanes two: each lane's prompt renders its own port (A: 7950, C: 7951)
@@ -412,7 +412,6 @@ queue unpark puts it back at the end, its reason gone
 real limit message: not counted, run completes
 record PR: RECORD_PR=off opens none, noted
 record PR: a harness continue after finish ends again and reuses the open record PR (one pr create for it), its body refreshed
-record PR: under pr the end-of-queue gc keeps harness/<run> and its worktree while the record PR is open, and deletes them once it merged
 record PR: a harness continue after the merged record PR runs on main with the record, ends done and opens and merges a second one
 record PR: finish deletes nothing: harness/ra is still here and on origin (its last commit pushed), so a harness continue the same night finds it
 record PR: harness merge's v2 closer leaves the record PR open (it closes only a PR not titled <run>: run record)
@@ -421,9 +420,10 @@ record PR: none when the record branch carries changes outside its record that m
 record PR: the end-of-queue gc --all-merged --deps then removes the merged run's record worktree and deletes harness/ra here and on origin; the ledger keeps the record
 record PR: under auto finish opens <run>: run record from harness/<run> against main, its body the report, and merges it
 record PR: under pr it is opened and left for Michael, noted
+record PR: under pr the end-of-queue gc keeps harness/<run> and its worktree while the record PR is open, and deletes them once it merged
 record commit: rec_commit commits .harness/runs/<run>/ only; a stray file in the record worktree stays untracked
-record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
 record lock: pack_and_copy builds the pack and copies it into the slot under one lock (another lane's pack can't land between)
+record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
 red suite un-passes C
 refused merge leaves the PR, needs Michael
 refused sessions recorded as env
