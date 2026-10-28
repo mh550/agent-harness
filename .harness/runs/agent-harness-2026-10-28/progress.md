@@ -7,6 +7,26 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 11:38 · U2-05 · passes
+
+Stop paths open needs records: the lane's park (question line/URL, actions) and given_up, finish's four reasons, the EXIT trap's driver_crash. Records carry a 60-col body and click = needs.md (markdown, committed with the record). Park notification is the record's (needs_notify). Sweeps: lane and coordinator after unpark, finish, continue, gc. 60-needs-driver (9 checks).
+
+- **Files:** lib/needs.mjs, lib/needs.sh, lib/lane.sh, lib/record.sh, lib/driver.sh, bin/harness, tests/checks/60-needs-driver.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/stub-claude.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, +2 more
+- **Verified:** bash tests/run.sh 60-needs: 9/9 (red 1/9 before the code); 13/15/08/14/16/46/58/59 subset 342/342; full suite TEST_JOBS=2: 752/753 with one 46-lanes-continue timing check failing once, 12/12 alone and twice under load, then the full suite again: green in 953 s, 753 tests (check.sh). One Opus review: 3 Minor, all fixed (needs_open's failure note on stderr so nref is the ref alone; the park keeps INBOX.md as the fallback click; gc's sweep can't end gc under set -e; no needs.md for a run that never had an item).
+- **Tests:** 744 → 753
+- **Dead end:** a given_up opener at the lane's exit 10 as well — redundant (every give-up follows a session) and its refresh changed needs.md, adding a record commit
+- **Dead end:** needs.md showing 'seen N times' — the coordinator's refreshes would rewrite it every poll
+- **Discovery** (affects U2-06, U2-07): needs.mjs record() now fills body (bodyOf: renderCard at 60 columns, plain; a park's PARKED:/question/blocked-where-do/Answer) and click (needs.md on the record branch; a click= fact wins, for merge_refused's PR)
+- **Discovery** (affects U2-06): needs_notify <ref> <msg> [k=v…] sends the record's title/body/click/priority/actions over the caller's k=v (the caller's are the fallback and tags=); U2-06's needs_you can use it
+- **Discovery** (affects U2-06, U2-07): needs_open's stdout is the ref alone (its failure note goes to stderr); open and sweep rewrite <record>/needs.md only when its text changes, and never create it for a run with no item
+- **Discovery** (affects U2-06, U2-07, U2-08): tests/stub-claude.sh STUB_GIVE_UP=<id>: every coding session of that feature ends not passing; with MAX_ATTEMPTS=1 in the user config it is given up after one
+- **Discovery** (affects run): 46-lanes-continue's 'record-only run … ends done' failed once in a full TEST_JOBS=2 run at load, passing alone and twice under load: a timing flake
+- **Question for Michael:** Default kept (plan §8 Q3): the park notification's tap opens needs.md, with Edit INBOX still an action button. Keep it?
+- **Question for Michael:** Default: harness needs done doesn't re-render needs.md (the next sweep under a driver does), so an ended run's worktree stays clean for gc. Fine?
+- **Proposed change:** U2-05 step 1 says the existing park notification checks pass unchanged, but plan §5.2 (and step 3's click) changes the 13- Click assertion to needs.md: only that line changed
+- **Proposed change:** U2-05 step 4 names tests/checks/59-needs-driver.sh; 59 is taken by the cards, so the file is 60-needs-driver.sh (as U2-01 planned)
+- *13-U2-05 · claude-opus-5-5*
+
 ### 2026-10-28 10:31 · U2-04 · passes
 
 Cards by code: TEMPLATES (15, data) in lib/needs.mjs, card(reason, facts) and the card CLI, waitsOn, mergedBy; 15 fixtures in tests/fixtures/needs; harness needs as view.mjs cards (cutFront, card rule:false) with footer, 60 columns clean; harness parked = needs for text, --json joined with ref and card; notify.mjs urls compare; 59-needs-cards; Opus review fixed.
@@ -245,15 +265,6 @@ Wrote docs/plans/2026-10-28-U1-read-views.md: view.mjs API (15 functions, glyphs
 - **Proposed change:** This session read ledger/agent-harness/agent-harness-2026-10-26/summary.json's key names (jq keys, no values used) to fix summary.json's shape, which breaks CLAUDE.md's 'never read ledger/' rule; a later session should take that shape from lib/summary.mjs build instead (the plan says so for the stub ledger copy).
 - *01-U1-01 · claude-opus-5-5*
 
-### 2026-10-28 01:32 · init · passes
+## Older entries (in full in progress-archive.md)
 
-24 features: U1 7 (plan, view.mjs, status.mjs + --json, the default view, the card, queue list/show, review), U2 9 (plan, inbox.mjs, the needs record, cards, session-side paths, git-side paths, readers, question locations, review), U3 8 (plan, project names, record after gc + gc units, show, same-project starts + overlap.mjs, overlap wiring, TTY views, review). Serial: U1 → U2 → U3.
-
-- **Files:** .harness/runs/agent-harness-2026-10-28/feature_list.json, .harness/runs/agent-harness-2026-10-28/entry.json
-- **Discovery** (affects run): P1 and P2 of the lanes run are on origin/main (PRs #40 and #41): lib/lane.sh and lib/record.sh exist. The spec's check `git log --oneline origin/main | grep -c 'agent-harness-2026-10-26: P[12]'` prints 0 only because the merge subjects read `Merge pull request #40 from mh550/harness-merge/agent-harness-2026-10-26-P1`. The list is planned against the merged code; U1's lane rows build on P2-06's lane lines in cmd_status.
-- **Discovery** (affects run): Driver sites by function, as the code stands: sync_main, needs_you, notify_park, merge_one, slot_open (the base-conflict note) in lib/record.sh; verify, the park branch and the given-up end in lib/lane.sh; finish, the EXIT trap and the coordinator loop in lib/driver.sh; cmd_status, cmd_report, cmd_queue, cmd_parked, cmd_gc, cmd_start, cmd_continue in bin/harness.
-- **Discovery** (affects run): tests/checks/ ends at 50-lanes-record-pr.sh (new files from 51); tests/fixtures/check-names.txt has 601 names and the suite 602 checks. The init's full suite took 477 s on this box tonight, not the 208 s CLAUDE.md quotes: budget for it when a feature runs the suite more than once.
-- **Discovery** (affects U2-02): The bug (a) fixture is real: in the n8n-home checkout, `git show 4632d1c:.harness/runs/n8n-home-2026-10-22/INBOX.md` has `## Answers".` on line 13 (inside the comment) and `## Answers` on line 28; sessions may read that project (user policy), never change it.
-- **Discovery** (affects run): The step lint's outside-repo rule flags a tilde path and $HOME in step text; steps say 'the home directory shortened to a tilde' for the view's `home` rule. A grep in command position on progress.md, entries.jsonl, feature_list.json or context.md whose pattern matches the step itself is flagged too; harness-log.md greps are fine.
-- **Question for Michael:** The spec asks for three to five features per milestone; sized to 15–60 minute sessions the list has 7 (U1), 9 (U2) and 8 (U3). Default taken: keep the split (a smaller feature retries cheaper). Say so in INBOX.md if you'd rather have fewer, larger features; nothing waits on this.
-- *00-init · claude-fable-5-1*
+- 2026-10-28 01:32 · init · passes · 24 features: U1 7 (plan, view.mjs, status.mjs + --json, the default view, the card, queue list/show,… ([in full](progress-archive.md))

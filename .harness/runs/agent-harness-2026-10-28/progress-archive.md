@@ -7,6 +7,26 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 11:38 · U2-05 · passes
+
+Stop paths open needs records: the lane's park (question line/URL, actions) and given_up, finish's four reasons, the EXIT trap's driver_crash. Records carry a 60-col body and click = needs.md (markdown, committed with the record). Park notification is the record's (needs_notify). Sweeps: lane and coordinator after unpark, finish, continue, gc. 60-needs-driver (9 checks).
+
+- **Files:** lib/needs.mjs, lib/needs.sh, lib/lane.sh, lib/record.sh, lib/driver.sh, bin/harness, tests/checks/60-needs-driver.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/stub-claude.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, +2 more
+- **Verified:** bash tests/run.sh 60-needs: 9/9 (red 1/9 before the code); 13/15/08/14/16/46/58/59 subset 342/342; full suite TEST_JOBS=2: 752/753 with one 46-lanes-continue timing check failing once, 12/12 alone and twice under load, then the full suite again: green in 953 s, 753 tests (check.sh). One Opus review: 3 Minor, all fixed (needs_open's failure note on stderr so nref is the ref alone; the park keeps INBOX.md as the fallback click; gc's sweep can't end gc under set -e; no needs.md for a run that never had an item).
+- **Tests:** 744 → 753
+- **Dead end:** a given_up opener at the lane's exit 10 as well — redundant (every give-up follows a session) and its refresh changed needs.md, adding a record commit
+- **Dead end:** needs.md showing 'seen N times' — the coordinator's refreshes would rewrite it every poll
+- **Discovery** (affects U2-06, U2-07): needs.mjs record() now fills body (bodyOf: renderCard at 60 columns, plain; a park's PARKED:/question/blocked-where-do/Answer) and click (needs.md on the record branch; a click= fact wins, for merge_refused's PR)
+- **Discovery** (affects U2-06): needs_notify <ref> <msg> [k=v…] sends the record's title/body/click/priority/actions over the caller's k=v (the caller's are the fallback and tags=); U2-06's needs_you can use it
+- **Discovery** (affects U2-06, U2-07): needs_open's stdout is the ref alone (its failure note goes to stderr); open and sweep rewrite <record>/needs.md only when its text changes, and never create it for a run with no item
+- **Discovery** (affects U2-06, U2-07, U2-08): tests/stub-claude.sh STUB_GIVE_UP=<id>: every coding session of that feature ends not passing; with MAX_ATTEMPTS=1 in the user config it is given up after one
+- **Discovery** (affects run): 46-lanes-continue's 'record-only run … ends done' failed once in a full TEST_JOBS=2 run at load, passing alone and twice under load: a timing flake
+- **Question for Michael:** Default kept (plan §8 Q3): the park notification's tap opens needs.md, with Edit INBOX still an action button. Keep it?
+- **Question for Michael:** Default: harness needs done doesn't re-render needs.md (the next sweep under a driver does), so an ended run's worktree stays clean for gc. Fine?
+- **Proposed change:** U2-05 step 1 says the existing park notification checks pass unchanged, but plan §5.2 (and step 3's click) changes the 13- Click assertion to needs.md: only that line changed
+- **Proposed change:** U2-05 step 4 names tests/checks/59-needs-driver.sh; 59 is taken by the cards, so the file is 60-needs-driver.sh (as U2-01 planned)
+- *13-U2-05 · claude-opus-5-5*
+
 ### 2026-10-28 10:31 · U2-04 · passes
 
 Cards by code: TEMPLATES (15, data) in lib/needs.mjs, card(reason, facts) and the card CLI, waitsOn, mergedBy; 15 fixtures in tests/fixtures/needs; harness needs as view.mjs cards (cutFront, card rule:false) with footer, 60 columns clean; harness parked = needs for text, --json joined with ref and card; notify.mjs urls compare; 59-needs-cards; Opus review fixed.

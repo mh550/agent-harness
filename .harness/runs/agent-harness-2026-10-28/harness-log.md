@@ -51,3 +51,6 @@
 - 2026-10-28 09:53 · context.md for U2-04: 7912 bytes
 - 2026-10-28 10:31 · U2-04: gotchas +1 ~0 -0
 - 2026-10-28 10:31 · U2-04 · claude-opus-5-5 · passes=true · 37 min · 11/24 passing · tests 744
+- 2026-10-28 10:31 · context.md for U2-05: 7918 bytes, 2 items left out
+- 2026-10-28 11:38 · U2-05: gotchas +1 ~0 -0
+- 2026-10-28 11:38 · U2-05 · claude-opus-5-5 · passes=true · 66 min · 12/24 passing · tests 753

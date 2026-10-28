@@ -222,7 +222,7 @@
         "stub-run checks in a new file by topic (e.g. `tests/checks/59-needs-driver.sh`): a park gives one `parked` record whose `card.question.line` is the first line the session added, a ntfy body starting `PARKED:` that contains the card's `do` commands, a `needs.md` committed on the record branch and a `Click:` header naming it; a given-up feature gives a `given_up` record naming the waiting features, listed by `harness needs` and `harness parked` while `parked.json` is empty; a SIGKILLed stub driver shows a synthesized `driver_crash` in `harness needs`; `harness needs done <ref>` moves the file to `needs/done/`; after `harness continue` the `given_up` item is in `done/`",
         "`bash -n lib/lane.sh lib/record.sh lib/driver.sh bin/harness`, `node --check lib/needs.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U2-06",
