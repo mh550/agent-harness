@@ -271,7 +271,7 @@
         "docs/architecture.md §4 names USAGE_5H and the slots; §5 shows admission in the coordinator diagram; §8 the record PR; §12 lanes beside MAX_PARALLEL_RUNS with the headroom rule; §15 updated; README.md names MAX_LANES, LANE_RESERVE_GB, LANE_OPEN_BELOW_5H, LANE_REBASE, RECORD_PR, slots, the record PR, and the after-run steps (MAX_LANES=2, the morning greps); templates/user/config.sh has every lane key commented",
         "`bash -n` on every shell file P2 touched and `node --check` on every .mjs; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
