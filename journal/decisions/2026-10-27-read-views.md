@@ -61,7 +61,21 @@ to U1-06 add their views' choices, U1-07 completes it.)*
     always has its one lane, and `<feature> · session <n> · <model>` says more. With `-v` the lane sub-rows are
     P2-06's full lines instead, not both. **(*default*)** QUEUED counts and shows the waiting entries; the parked ones
     are counted on the `… parked: harness queue list` line, not listed. **(*default*)** A `<run>` with `-a`,
-    `--since` or `--project` is an error (they list runs); the per-run text stays the U1-03 lines until U1-05's card.
+    `--since` or `--project` is an error (they list runs).
+  - **The card (U1-05):** `harness status <run>` is `status.mjs`'s `renderCard` through `view.mjs`'s `card`: line 1
+    `<glyph> <run> · <project> · <state or end class> · <x/y> passing · <age>` (what the debrief's `head -1` reads),
+    a rule, then `now`, `ended`, `milestones`, `lanes`, `spend`, `branch`, `worktree`, `needs you`, `units`, `next`,
+    each left out when it has nothing; `-v` or `N` adds `log` last. Bash sends only that run's row, with its units.
+    The lane and log lines are verbatim (P2-06's text, 47-'s check), so they keep their `·` under `LC_ALL=C`; the
+    card's own text is ASCII there (`->` for `→`). **(*default*)** The age of a live run is `started <ago> ago` from
+    the segment's start, of an ended one `<ago> ago` from the end; a crashed run's state word is `crashed`.
+    **(*default*)** `branch` is `harness/<run> @ <short> · <a> ahead, <b> behind` from local refs (`origin/main` as
+    last fetched; `GIT_OPTIONAL_LOCKS=0`, no fetch); a gone worktree is `removed by gc` when its summary outlived it,
+    else `(missing)`. **(*default*)** `needs you` names `harness needs <run>`, as the spec and the default view's
+    NEEDS YOU hint do; until U2's command (every open item) `harness needs` is `harness parked`, so the hint works;
+    `next` is `harness attach` while running, `harness report` and (while the worktree exists) `harness continue`
+    after; `harness show` joins in U3. A card's lines are cut to the width like every view's, the log tail too
+    (`COLUMNS=200` for whole lines); `N=0` adds no `log` field, as `tail -n 0` printed nothing.
 - **Rejected:** a pager by default (a phone over ssh, a desk and the debrief read the view as text, and the view is
   short); colour off a TTY (escape bytes in a desk's or the debrief's capture); hiding NEEDS YOU when the window is
   short (an item shows until it is resolved, whatever its age); per-command formatting code (each view drifted on its

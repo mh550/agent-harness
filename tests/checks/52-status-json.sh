@@ -59,8 +59,6 @@ check "status json: --json writes nothing, and reads the queue dir without creat
   touch "$T/json.stamp"; sleep 1; J > /dev/null && "$H" status running --json > /dev/null \
   && [[ -z $(find "$HARNESS_STATE" "$T/wt" "$HARNESS_LEDGER" -newer "$T/json.stamp") ]] \
   && HARNESS_STATE=$T/empty "$H" status --json | jq -e ".queued == [] and .running == [] and .older == 0" > /dev/null && [[ ! -e $T/empty ]]'
-check "status json: the text of harness status <run> is as before U1-03 (U1-05 makes it a card)" '
-  diff <("$H" status running 2>&1 | sed "s|$T|<T>|g") "$HERE/fixtures/status-text-u1-03.txt"'
 # 30 more ended runs (38 in all), an empty meta.env, an ended file with a bare reason (bulk-01)
 status_bulk 30
 check "status json: an empty meta.env is skipped and a bare end reason dated by its file" '

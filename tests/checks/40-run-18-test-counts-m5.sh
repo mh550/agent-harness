@@ -26,7 +26,7 @@ STUB_NO_TAMPER=1 STUB_TESTS_N=A:5,C:9 STUB_SNAPSHOT=B "$H" continue cont --foreg
 S=$T/snap-cont
 check "test count: a continued run refreshes tests-end after each session (summary.json 3 → 5 before finish), tests-start stays the baseline" \
   '[[ $cont_end1 == 3 && $(jq -r .tests.start "$S/summary.json") == 3 && $(jq -r .tests.end "$S/summary.json") == 5 && $(cat "$S/tests-start") == 3 ]] \
-  && grep -q "^cont (proj) · running · .* · tests 3 → 5$" "$S/status.txt" && grep -qF "| Tests | 3 → 5 (baseline at run start → end) |" "$S/report.md" \
+  && grep -q "^● cont · proj · running · " "$S/status.txt" && grep -q "^  spend .* · tests 3 → 5 · " "$S/status.txt" && grep -qF "| Tests | 3 → 5 (baseline at run start → end) |" "$S/report.md" \
   && hlog cont | grep -q "· A · .* · passes=true · .* passing · tests 5$" && hlog cont | grep -q "· C · .* · passes=false · .* passing · tests 5$" \
   && hlog cont | grep -q "· C · .* · passes=true · .* passing · tests 9$" && [[ $(cat "$HARNESS_STATE/proj/cont/tests-start") == 3 && $(jq -r .tests.end "$(sumj cont)") == 9 ]]'
 check "test count: report.md labels the tests cell, trends its column (baseline → end)" \

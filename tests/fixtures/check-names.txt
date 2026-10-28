@@ -487,6 +487,19 @@ slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop
 slot_open: after a lane's base conflicts, reopening the previous lane checks its branch out again
 slot_open: the slot's excludes file keeps the user's global excludes (a ~ path expanded)
 start queues when MAX_PARALLEL_RUNS are going
+status card: ASCII only under LC_ALL=C (lane and log lines are verbatim); no ESC off a TTY, colour with HARNESS_TTY=1; the worktree with the home directory as a tilde
+status card: COLUMNS=60 lines never exceed 60 columns but a URL; a long reason wraps under its label
+status card: N=3 and -v end with exactly the last 3 run.log lines; N=1 one; none without either
+status card: a driver killed before run.log has no NaN, a missing worktree is not removed by gc; a run started just now; N=0 adds no log field
+status card: a running run has now (feature, session, attempt of max, model, minutes in), lanes verbatim, its own units, next attach
+status card: an ended run has ended, milestones, spend, branch, worktree, next; no now, lanes or units
+status card: branch names its commit and ahead, behind origin/main from local refs, with no fetch and no write
+status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)
+status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
+status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule
+status card: needs you counts the run's items with the first headline and the harness needs hint
+status card: the debrief keeps N=3 harness status <run>; the supervisor asks for -v and keeps N=20
+status card: the gcd run says removed by gc and 23/23 from the ledger; its milestones from the summary; next report only
 status json: --json writes nothing, and reads the queue dir without creating it
 status json: --project proj2 keeps only that project's runs, items and queue entries
 status json: STATUS_SINCE in the user config sets the window, --since wins over it
@@ -501,7 +514,6 @@ status json: queued holds the entries as queue list numbers them, held by a live
 status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
 status json: the gc'd run's features are 23/23 from the ledger's summary.json, its worktree gone, its lanes from the summary
 status json: the running run's feature, session (all segments'), model, port and started_at; lane M1 open with its unit; its own unit apart
-status json: the text of harness status <run> is as before U1-03 (U1-05 makes it a card)
 status view: --since 4d adds the 3-day-old run and drops the footer; --all lists every run; --project proj2 only that project's
 status view: -v adds each running run's lane lines (P2-06's text), its own units with MemoryCurrent and the last 3 run.log lines; N alone implies -v
 status view: -v with a non-numeric N keeps 3 log lines; two lanes' sub-rows are ASCII under LC_ALL=C; only a path starting with the home directory becomes a tilde; no control byte from run.log
@@ -566,6 +578,7 @@ the deadline verifies a complete milestone once and merges it
 the debrief page never reads a stop reason's words as its tone
 the debrief saw the queue's runs
 the debrief starts a desk when Needs Michael is non-empty
+the debrief's harness status block per run opens with the run's card line
 the desk notification
 the desk prompt names the run, its commands and the never-list
 the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory

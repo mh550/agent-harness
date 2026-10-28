@@ -13,7 +13,7 @@ ats() { hlog "$1" | grep -n -m1 -E -- "$2" | cut -d: -f1; }   # <run> <ERE>: the
 held
 STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" two --spec SPEC.md --foreground > "$T/two.out" 2>&1 & P=$!
 waitf '[[ -f $T/held-two-A && -f $T/held-two-C ]]' 120 && two_both=yes
-STUB_MEM_CURRENT=52428800 "$H" status two > "$T/status-two.out" 2>&1   # both sessions' scopes are live (P2-06)
+STUB_MEM_CURRENT=52428800 HARNESS_GLYPHS=unicode "$H" status two > "$T/status-two.out" 2>&1   # both sessions' scopes are live (P2-06); the card's lanes field
 touch "$T/release-two-C"; waitf 'hlog two | grep -F "· M2 merged into main" > /dev/null' 120; touch "$T/release-two"; wait "$P"; rm -f "$T/hold-coding"
 S=$HARNESS_STATE/proj/two
 check "lanes two: with MAX_LANES=2 and M2 after: [], both lanes' sessions run at once and two lanes open before any closes" \
