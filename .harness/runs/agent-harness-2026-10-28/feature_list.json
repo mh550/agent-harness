@@ -185,7 +185,7 @@
         "`harness needs [<run>] [--all] [--json]` prints with `--json` the array of open records (block before warn, oldest first; `--all` adds those resolved in the last 7 days) and, until U2-04's cards, one text line per item `<glyph> <run> · <headline> · <ref>`; `harness needs done <ref> [--why \"<text>\"]` moves the file to `needs/done/` and prints `resolved <ref>`; `harness needs` writes nothing (a check runs `find` with `-newer` on a marker, as the parked check does); `harness needs nope` exits 1 with `harness: ` on stderr",
         "`node --check lib/needs.mjs`, `bash -n lib/needs.sh bin/harness lib/driver.sh lib/lane.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U2-04",

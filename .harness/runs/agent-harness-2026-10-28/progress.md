@@ -7,6 +7,22 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 09:53 · U2-03 · passes
+
+lib/needs.mjs: the needs record (24 keys, first 13 = event v1), REASONS (15), pure record/refresh/sweep/synthesize/order, CLI open (0 new, 3 refreshed)/sweep/done/list; lib/needs.sh needs_open (sourced by driver, lane, harness; no caller); harness needs [--all] [--json] and needs done; needs_fixture; 58-needs-record (15 checks); decision needs-record.
+
+- **Files:** lib/needs.mjs, lib/needs.sh, bin/harness, lib/driver.sh, lib/lane.sh, tests/checks/58-needs-record.sh, tests/lib.sh, tests/checks/57-inbox.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-needs-record.md, docs/architecture.md, README.md, +1 more
+- **Verified:** 58-needs-record 15/15, each check watched red under a mutation of needs.mjs (no severity order, never removed, never unparked, no seen bump, no crash synth, no subject defaults); 03/13/53/54/57 130/130; full suite green in 628 s (TEST_JOBS=3), 715 tests; bash -n and node --check clean; needs_open sanity with stub record: 0, 3, 1 + note.
+- **Tests:** 700 → 715
+- **Dead end:** extracting check names with sed 's/^check "(.*)" .*/' — greedy on a one-line check with " inside its command: the conformance check failed once
+- **Discovery** (affects U2-04, U2-05): Deferred from U2-03 to the features that use them: needs.mjs md/fields CLIs and <record>/needs.md (U2-05 commits and clicks it), needs_waits and the waits fact (U2-04's blocked field). The card has every §1.2 key but only headline filled.
+- **Discovery** (affects U2-05, U2-06): needs.mjs open defaults feature to the subject for parked/given_up, milestone to the subject for verify_*/merge_*/main_conflict/base_conflict/driver_crash (not run/record), else the list's milestone (list= fact); positional run/reason/subject beat key=value
+- **Discovery** (affects U2-04, U2-07): harness needs prints one line per item '<glyph> <run> · <headline> · <ref>' (synthesized parked headline '<id> parked: <why>', so 54's 'harness needs parked' check still greps the why); U2-04 replaces it with cards
+- **Discovery** (affects U2-05): needs.mjs list applies only 'run removed' in memory; a resolved-but-unswept item still lists until a sweep (lane loop, finish, continue, gc in U2-05)
+- **Discovery** (affects U2-04, U2-05, U2-06): needs_fixture <reason> open|resolved [<at epoch>] [<run>] in tests/lib.sh writes $HARNESS_STATE/proj/<run> with markers per plan §2.1
+- **Proposed change:** The plan's §6 lists md/fields under U2-03 but its steps don't; U2-05's steps should name needs.md (md) and fields
+- *11-U2-03 · claude-opus-5-5*
+
 ### 2026-10-28 09:19 · U2-02 · passes
 
 lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, question, questionLine, added, answers, insert, files, repair + CLI); parked/notify/entries/record.sh on it; inbox_repair after each lane session (slot copy) and the initializer, noted; template comment without ## Answers; STUB_INBOX_IN_COMMENT; 57-inbox (11 checks), n8n-home fixture.
