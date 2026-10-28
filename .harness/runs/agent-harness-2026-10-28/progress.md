@@ -7,6 +7,19 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 08:07 · U1-07 · passes
+
+U1 review: 1 Critical, 3 Important, 11 Minor (two Opus rounds, in f8ea1f6). This attempt changed no code: it re-verified all four steps and got a green full suite for the tree. TEST_JOBS=4 runs failed one to four different e2e timing checks each (46, 38, 32, 08), every file green alone.
+
+- **Verified:** steps 1-3 read back (U1-review.diff, docs/plans/2026-10-28-U1-review.md, 9 names from 56-status-review in check-names.txt, README status/queue show/STATUS_SINCE/NO_COLOR, architecture §3/§12, template, decision); bash -n and node --check clean; 46+38 alone 24/24, 08 alone 125/125; full suite through check.sh at TEST_JOBS=2 (HARNESS_CHECK_TIMEOUT=25m): green in 871 s, 689 tests
+- **Tests:** 689 → 689
+- **Dead end:** rerunning the full suite at TEST_JOBS=4 with other lanes loading the box (~3.6) — four runs, four different e2e flakes (46 pr-held, 38 pack bytes, 32 MAX_PARALLEL_RUNS, 08 no user systemd); none in code U1 changed
+- **Discovery** (affects run): At load ~3.6 (other lanes) every TEST_JOBS=4 full run tonight failed 1-4 timing-bound e2e checks, a different file each time; TEST_JOBS=2 with HARNESS_CHECK_TIMEOUT=25m is the way to a green
+- **Question for Michael:** The U1 review deferred four Minor findings (continued-run wall hours, MAIN_BRANCH in the card's branch line, lane liveness by cmdline, the --since 3d hint). Should they go in a later milestone's list, or be dropped?
+- **Question for Michael:** The full suite flakes under load at TEST_JOBS=4 (a different e2e check each run). Should the harness's check use TEST_JOBS=2 (and a 25m check timeout) while lanes run in parallel?
+- **Proposed change:** When lanes share the box, run the suite with fewer jobs (TEST_JOBS=2) or tie TEST_JOBS to the load average, so a milestone's last feature isn't un-passed by a load flake
+- *08-U1-07 · claude-opus-5-5*
+
 ### 2026-10-28 07:11 · U1-07 · passes
 
 U1 review: 1 Critical, 3 Important, 11 Minor over two Opus rounds. Critical (session counted every metrics row) and all Important fixed red to green in 56-status-review.sh; 7 Minor fixed, 4 deferred; simplifications applied. README, architecture §3/§10/§12, config template and read-views decision complete.

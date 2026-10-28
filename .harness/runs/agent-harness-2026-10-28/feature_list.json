@@ -129,7 +129,7 @@
         "`README.md`'s command table has `status` with `--all`, `--since`, `--project`, `-v`, `--json` and `queue show`, and its settings name `STATUS_SINCE` and `NO_COLOR`; `docs/architecture.md` §3 names `lib/view.mjs` and `lib/status.mjs` and §12 the queue view; `templates/user/config.sh` has `STATUS_SINCE` commented with one sentence; `journal/decisions/2026-10-27-read-views.md` is complete (finding · choice · rejected) and never numbered",
         "`bash -n` on every shell file U1 touched and `node --check` on every `.mjs`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U2-01",
