@@ -102,9 +102,13 @@ status_stubs() {
     for f; do IFS=: read -r i r m <<< "$f"; printf '{"id":"%s","milestone":"%s","description":"%s","steps":["x"],"passes":%s}\n' "$i" "$m" "$i" "$r"; done \
       | jq -s '{features: .}' > "$rec/feature_list.json"
   }
-  mx() {   # <project> <run> <feature>…: one metrics.jsonl row per feature, from the real session shape
-    local rec=$T/wt/$1/$2/.harness/runs/$2 r=$2 f; shift 2
-    for f; do node "$HERE/../lib/metrics.mjs" append "$HERE/fixtures/usage-tokens.jsonl" "$rec/metrics.jsonl" "$r" coding "$f" claude-opus-5-5 true 600 0 "" coding 100; done
+  mx() {   # <project> <run> [<kind>:]<feature>…: one metrics.jsonl row each, from the real session shape (driver.sh's
+    # init, lane.sh's verify and its limit-refused coding row, `refused:`, beside the coding ones), at MX_AT s before now
+    local rec=$T/wt/$1/$2/.harness/runs/$2 r=$2 f k e; shift 2
+    for f; do k=coding e=false; [[ $f == *:* ]] && { k=${f%%:*}; f=${f#*:}; }; [[ $k == refused ]] && k=coding e=true
+      node "$HERE/../lib/metrics.mjs" append "$HERE/fixtures/usage-tokens.jsonl" "$rec/metrics.jsonl" "$r" "$k" "$f" claude-opus-5-5 \
+        "$([[ $e == true ]] && echo false || echo true)" 600 0 "$e" "$k" 100; done
+    jq -c --arg at "$(iso "${MX_AT:-1900}")" '.at = $at' "$rec/metrics.jsonl" > "$rec/m.tmp" && mv "$rec/m.tmp" "$rec/metrics.jsonl"
   }
   sr proj done2h 14400 done 7200; fl proj done2h A:true:M1 B:true:M1 C:true:M1; mx proj done2h A B C; touch "$HARNESS_STATE/proj/done2h/merged-M1"
   echo 419 > "$HARNESS_STATE/proj/done2h/tests-start"; echo 430 > "$HARNESS_STATE/proj/done2h/tests-end"
@@ -112,8 +116,9 @@ status_stubs() {
   echo '{"features":{"passing":1,"total":3,"verified":0,"merged":0},"cost":{"total":5}}' > "$HARNESS_STATE/proj/done2h/summary.json"   # an earlier harness report's
   sr proj done3d 270000 done 259200; fl proj done3d A:true:M1
   sr proj2 stopped 36000 "stopped by Michael: rebase first" 18000; fl proj2 stopped A:true:M1 B:false:M1 C:false:M2; mx proj2 stopped A
-  sr proj running 7200; fl proj running A:true:M1 B:false:M1 C:false:M2; mx proj running A
-  echo "$(at 1800) session 2 · B · claude-opus-5-5" >> "$HARNESS_STATE/proj/running/run.log"
+  sr proj running 7200; fl proj running A:true:M1 B:false:M1 C:false:M2; mx proj running init: A refused:B
+  { echo "$(at 3000) A · claude-opus-5-5 · passes=true · 69 min · 1/3 passing"; echo "$(at 2900) session 2 · B · claude-opus-5-5"   # lane.sh's lines
+    echo "$(at 2800) session for B hit a limit (five-hour); not counted; resuming at 23:30"; echo "$(at 1800) session 2 · B · claude-opus-5-5"; } >> "$HARNESS_STATE/proj/running/run.log"
   echo 1 > "$HARNESS_STATE/proj/running/sessions"; echo '{"A":1,"B":2}' > "$HARNESS_STATE/proj/running/attempts.json"   # this segment's count; B on its last attempt
   sleep 600 & echo $! > "$HARNESS_STATE/proj/running/driver.pid"; echo $! >> "$T/left.pids"
   mkdir -p "$HARNESS_STATE/proj/running/lanes/M1" "$T/scope"; cp "$HARNESS_STATE/proj/running/driver.pid" "$HARNESS_STATE/proj/running/lanes/M1/pid"
@@ -137,13 +142,16 @@ status_stubs() {
   printf '%s\n' continue stopped --queued --requested > "$q/0002-continue-stopped.args"; ago "$q/0002-continue-stopped.args" 300
   printf '%s\n' start "$T/proj2" proj2-next --until-epoch $(( now + 3600 )) > "$q/held/0003-start-proj2.args"; echo "waiting on the measure PRs (2026-10-28 23:00)" > "$q/held/0003-start-proj2.why"
   ago "$q/held/0003-start-proj2.args" 900
-  unset -f iso fl mx
 }
 status_bulk() {   # <n>: bulk-01 … bulk-<n> (proj), ended done 4 days and <i> minutes before HARNESS_NOW; bulk-01's a bare reason
   local i port=8000
   for (( i = 1; i <= $1; i++ )); do sr proj "bulk-$(printf %02d "$i")" 400000 done $(( 345600 + i * 60 )); done
   echo done > "$HARNESS_STATE/proj/bulk-01/ended"; ago "$HARNESS_STATE/proj/bulk-01/ended" 345660
 }
+
+# the widest stdin line in display columns (view.mjs's displayWidth); a URL line a card leaves whole (`  <scheme>://`) is not counted
+widest() { node --input-type=module -e "import { displayWidth } from \"$HERE/../lib/view.mjs\"; import { readFileSync } from \"node:fs\";
+  console.log(Math.max(0, ...readFileSync(0, \"utf8\").split(\"\n\").filter(l => !/^  [a-z]+:\/\//.test(l)).map(displayWidth)))"; }
 
 # the file's count; exit 1 on a failure
 suite_end() {

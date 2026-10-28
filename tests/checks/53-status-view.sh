@@ -4,8 +4,6 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 status_stubs
 V() { HARNESS_GLYPHS=unicode COLUMNS=${C:-80} "$H" status "$@" 2> "$T/view.err"; }   # the view, glyphs pinned
 sec() { awk -v s="$1" 'index($0, s) == 1 { on = 1; next } /^(NEEDS YOU|RUNNING|QUEUED|FINISHED|─)/ { on = 0 } on'; }   # the rows of section $1, from stdin
-widest() { node --input-type=module -e "import { displayWidth } from \"$HERE/../lib/view.mjs\"; import { readFileSync } from \"node:fs\";
-  console.log(Math.max(0, ...readFileSync(0, \"utf8\").split(\"\n\").map(displayWidth)))"; }
 
 check "status view: four sections in order (NEEDS YOU · harness needs, RUNNING, QUEUED · runner off, FINISHED · last 24h), a rule and the footer" '
   V > "$T/v.out" && [[ $(grep -E "^(NEEDS YOU|RUNNING|QUEUED|FINISHED)" "$T/v.out" | sed -E "s/ (─)+$//" | paste -sd"|") == "NEEDS YOU 3 · harness needs|RUNNING 1|QUEUED 2 · runner off (harness queue start)|FINISHED · last 24h · 6" ]] \
@@ -55,7 +53,7 @@ check "status view: colour only with HARNESS_TTY=1 (none under NO_COLOR); ASCII 
   && HARNESS_TTY=1 TERM=xterm NO_COLOR=1 V > "$T/c1.out" && ! grep $'\''\e'\'' "$T/c1.out" > /dev/null \
   && [[ $(env -u HARNESS_GLYPHS LC_ALL=C LANG= LC_CTYPE= COLUMNS=80 "$H" status | LC_ALL=C tr -d "\000-\177" | wc -c) == 0 ]] \
   && env -u HARNESS_GLYPHS LC_ALL=C COLUMNS=80 "$H" status | grep -E "^\* running +B - session 2 - opus " > /dev/null \
-  && HOME=$T C=120 V -v > "$T/home.out" && ! grep -F "$T" "$T/home.out" > /dev/null && grep -F "in ~/wt/proj/running · port" "$T/home.out" > /dev/null'
+  && HOME=$T C=120 N=10 V > "$T/home.out" && ! grep -F "$T" "$T/home.out" > /dev/null && grep -F "in ~/wt/proj/running · port" "$T/home.out" > /dev/null'
 check "status view: -v adds each running run's lane lines (P2-06's text), its own units with MemoryCurrent and the last 3 run.log lines; N alone implies -v" '
   C=120 V -v | sec RUNNING > "$T/vv.out" && [[ $(sed -n 2p "$T/vv.out") == "    lane M1 · B · session 2 · port 7960 · slot 1 · MemoryCurrent harness-running-M1-s2 300 MB" ]] \
   && [[ $(sed -n 3p "$T/vv.out") == "    harness-running-svc · MemoryCurrent 300 MB" && $(grep -c "^    2026-10-27 " "$T/vv.out") == 3 && $(wc -l < "$T/vv.out") == 6 ]] \

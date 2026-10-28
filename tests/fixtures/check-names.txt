@@ -526,6 +526,15 @@ status json: queued holds the entries as queue list numbers them, held by a live
 status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
 status json: the gc'd run's features are 23/23 from the ledger's summary.json, its worktree gone, its lanes from the summary
 status json: the running run's feature, session (all segments'), model, port and started_at; lane M1 open with its unit; its own unit apart
+status review: a feature list without milestones shows its features under default, never undefined
+status review: a lane now line loses its control bytes in the card and in the view's lane rows
+status review: a queue entry with an out-of-range --until-epoch shows it as given; status and queue list and show still print
+status review: a session waiting out a limit (its limit note, its row refused) is no live session and has no minutes in
+status review: between sessions (the newest session has its passes note and row) the run counts its rows and shows no minutes in
+status review: harness queue show takes --parked before or after the number
+status review: queue show shortens the home directory in spec and brief to a tilde
+status review: session counts coding sessions only (no init, verify, retro or limit-refused row) plus the one running
+status review: two lanes: one lane closing its session leaves the other live (counted, its minutes in)
 status view: --since 4d adds the 3-day-old run and drops the footer; --all lists every run; --project proj2 only that project's
 status view: -v adds each running run's lane lines (P2-06's text), its own units with MemoryCurrent and the last 3 run.log lines; N alone implies -v
 status view: -v with a non-numeric N keeps 3 log lines; two lanes' sub-rows are ASCII under LC_ALL=C; only a path starting with the home directory becomes a tilde; no control byte from run.log

@@ -5,8 +5,6 @@ status_stubs
 CD() { HARNESS_GLYPHS=unicode COLUMNS=${C:-80} "$H" status "$@" 2> "$T/card.err"; }   # a card, glyphs pinned
 fld() { awk -v l="$1" 'substr($0, 1, 13) ~ "^  " l " +$" || $0 == "  " l { on = 1; print; next } on && /^    / { print; next } { on = 0 }'; }   # field $1's lines, from stdin
 labels() { awk '/^  [a-z]/ { l = substr($0, 3, 11); sub(/ +$/, "", l); print l }' | paste -sd"|"; }   # the field labels, in order
-widest() { node --input-type=module -e "import { displayWidth } from \"$HERE/../lib/view.mjs\"; import { readFileSync } from \"node:fs\";
-  console.log(Math.max(0, ...readFileSync(0, \"utf8\").split(\"\n\").filter(l => !/^  [a-z]+:\/\//.test(l)).map(displayWidth)))"; }
 
 check "status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule" '
   CD done2h > "$T/d.out" && [[ $(head -1 "$T/d.out") == "✓ done2h · proj · done · 3/3 passing · 2h ago" && $(sed -n 2p "$T/d.out") =~ ^(─){80}$ ]] \

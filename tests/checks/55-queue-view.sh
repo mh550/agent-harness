@@ -7,8 +7,6 @@ QL() { HARNESS_GLYPHS=unicode COLUMNS=${C:-100} "$H" queue list "$@" 2> "$T/ql.e
 QS() { HARNESS_GLYPHS=unicode COLUMNS=${C:-100} "$H" queue show "$@" 2> "$T/qs.err"; }
 fld() { awk -v l="$1" 'substr($0, 1, 13) ~ "^  " l " +$" { on = 1; print; next } on && /^             / { print; next } { on = 0 }'; }   # card field $1's lines
 labels() { awk '/^  [a-z]/ { l = substr($0, 3, 11); sub(/ +$/, "", l); print l }' | paste -sd"|"; }
-widest() { node --input-type=module -e "import { displayWidth } from \"$HERE/../lib/view.mjs\"; import { readFileSync } from \"node:fs\";
-  console.log(Math.max(0, ...readFileSync(0, \"utf8\").split(\"\n\").map(displayWidth)))"; }
 B1200=$(printf 'brief %.0s' $(seq 200))
 { for i in 1 2 3 4 5 6 7; do echo "2026-10-28 0$i:48:1$i gc proj: harness gc $T/proj --all-merged --deps"; done
   echo "2026-10-28 08:00:00 runner down after starting 3 run(s): harness debrief (detached; output in queue/debrief.out)"; } > "$Q/runner.log"

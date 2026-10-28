@@ -371,8 +371,9 @@ cmd_queue() {
     list|show)   # through status.mjs (decisions/2026-10-27-read-views); parked entries are listed, never silent: a
                  # parked run nobody remembers is a run that never happens
       local r=0 m=(queue) use="usage: harness queue show <n> [--parked]"; runner_up && r=1
-      if [[ $sub == show ]]; then [[ ${1:-} =~ ^[1-9][0-9]*$ ]] || die "$use"; m=(entry "$1")
-        case ${2:-} in --parked) m+=(--parked) ;; "") ;; *) die "$use" ;; esac; fi
+      if [[ $sub == show ]]; then local a n= p=()   # --parked before or after the number
+        for a; do case $a in --parked) p=(--parked) ;; *) [[ -z $n && $a =~ ^[1-9][0-9]*$ ]] && n=$a || die "$use" ;; esac; done
+        [[ -n $n ]] || die "$use"; m=(entry "$n" ${p[@]+"${p[@]}"}); fi
       run_rows 0 | node "$HARNESS_HOME/lib/status.mjs" "${m[@]}" --runner "$r" --queue "$Q" --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" \
         --state-root "$STATE_ROOT" --max-parallel "$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")" ;;
     add)

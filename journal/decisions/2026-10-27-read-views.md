@@ -39,7 +39,10 @@ to U1-06 add their views' choices, U1-07 completes it.)*
     `tests/fixtures/status-json-keys.txt`. An ended run's `summary.json` (the record's, which `finish` writes; else
     the state dir's, `harness report`'s; else the ledger copy) wins for features, cost, tests and lanes, so a gc'd run
     keeps its count; the state dir's is not first, since after a continue it is an earlier segment's. `session` is the
-    metrics rows plus the one running, never `$STATE/sessions` (reset each segment). **(*default*)** A run with no
+    run's coding rows (a limit-refused one, `env`, is not counted) plus the sessions still running, never
+    `$STATE/sessions` (reset each segment), so after a continue it can read `session 5` where the log says
+    `session 2`. A session runs from its `session <n> · <id>` line until lane.sh's `passes=` or limit note for that id,
+    read in log order (Updated in place 2026-10-28: U1-07's review; it counted every row). **(*default*)** A run with no
     live driver and no `ended` is `crashed` (class `failed`); its NEEDS item (`driver_crash`) only when a
     `driver.pid` was left. **(*default*)** One run-level item at most, and none when a feature or milestone item
     covers the run (`waiting on Michael: B` is B's row). **(*default*)** A milestone's `needs`/`refused`/`conflict`
@@ -76,6 +79,16 @@ to U1-06 add their views' choices, U1-07 completes it.)*
     `next` is `harness attach` while running, `harness report` and (while the worktree exists) `harness continue`
     after; `harness show` joins in U3. A card's lines are cut to the width like every view's, the log tail too
     (`COLUMNS=200` for whole lines); `N=0` adds no `log` field, as `tail -n 0` printed nothing.
+  - **The queue view (U1-06):** `harness queue list` is `status.mjs`'s `renderQueue`: `QUEUE <n> · runner ● going|off ·
+    MAX_PARALLEL_RUNS=<k>` (narrow: `max <k>`), one row per entry as the old list numbered them (the number `rm`,
+    `park` and `unpark` take), the brief as its first 30 characters and `(+<k> chars)`, a `held: <project> busy (<run>)`
+    line by the runner's `busy_projects` rule, `PARKED` with each `why:`, `RUNNING`, `RECENT` (the runner log's last 5
+    lines, time only) and the `harness queue show <n>` hint. `harness queue show <n> [--parked]` is `renderEntry`, the
+    entry as a card with the brief whole. **(*default*)** The card adds `held`, `options` (the arguments no other
+    field names) and `added` to the spec's fields; an `--until` text `status.mjs` cannot read is shown as given.
+    **(*default*)** RUNNING folds its run ids under the title instead of cutting them (an id must paste).
+  - **Complete (U1-07):** an Opus review of the milestone's diff (`docs/plans/2026-10-28-U1-review.md`); README's
+    command table, `docs/architecture.md` §3, §10 and §12 and `templates/user/config.sh` (`STATUS_SINCE`) say it.
 - **Rejected:** a pager by default (a phone over ssh, a desk and the debrief read the view as text, and the view is
   short); colour off a TTY (escape bytes in a desk's or the debrief's capture); hiding NEEDS YOU when the window is
   short (an item shows until it is resolved, whatever its age); per-command formatting code (each view drifted on its
