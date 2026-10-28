@@ -1,0 +1,12 @@
+{ "feature": "P2-04", "kind": "coding", "outcome": "passes",
+  "summary": "Merged lane branches now go when their PR merges (lane_branch_gone: origin at once, local at reap; only what the tag or main holds, only from this run's slots). harness gc gains the harness-lane/ pass, removes leftover slots of runs with no live driver or lane, covers slots under --deps, and treats a live lane as running. P1 Minors 8 and 11 fixed.",
+  "files": ["lib/record.sh", "lib/driver.sh", "bin/harness", "tests/stub-claude.sh", "tests/checks/49-lanes-slots.sh", "tests/fixtures/check-names.txt", "docs/architecture.md", "README.md", "journal/decisions/2026-10-27-lane-branches-and-slots.md"],
+  "verified_how": "tests/checks/49-lanes-slots.sh 10/10 (red first: 7 of 9 failed before the code; dropping the running() lane mapping turns the live-run check red); full suite via check.sh green, 584 tests in 457 s; bash -n bin/harness lib/lane.sh lib/driver.sh lib/record.sh. An Opus review found 2 Important (deletion without an ancestry guard, detaching a non-slot checkout) and Minors 3, 5, 7: all fixed and covered by the lane_branch_gone check.",
+  "tests_before": 574, "tests_after": 584,
+  "dead_ends": [{ "tried": "gk/gd scenarios after sr merged into main", "why": "the stub's work-A.txt then equals main's, A's commit is empty and nothing is pushed; the file resets origin main to its first commit before gk" }],
+  "discoveries": [
+    { "text": "A lane branch is not pushed at lane open, only after its first session (sync_lane): a check that needs it on origin while held must push it itself", "affects": ["P2-06", "P2-07"] },
+    { "text": "49-lanes-slots.sh costs ~42 s of slot time (five stub runs); suite 457 s at TEST_JOBS=4 (measured, not a gate)", "affects": ["run"] },
+    { "text": "Left for P2-07 (review Minors not fixed): lanes_orphans compares STATE as an exact string (a differently spelled path to the same dir would miss an orphan); gc's slot removal doesn't check that the unit pass's scope_stop succeeded (a session could still run in a clean slot); no --dry-run check for slots or lane branches", "affects": ["P2-07"] }
+  ],
+  "proposed_changes": ["P2-04 step 3's gc check sits in 49-lanes-slots.sh, as the plan §7 says, not in 08 or 13"] }

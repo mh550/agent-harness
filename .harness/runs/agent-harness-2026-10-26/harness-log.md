@@ -67,3 +67,4 @@
 - 2026-10-27 21:41 · P2-02 · claude-opus-5-5 · passes=true · 45 min · 12/17 passing
 - 2026-10-27 21:41 · context.md for P2-03: 8049 bytes, 16 items left out
 - 2026-10-27 22:14 · P2-03 · claude-opus-5-5 · passes=true · 32 min · 13/17 passing
+- 2026-10-27 22:14 · context.md for P2-04: 7812 bytes, 18 items left out
