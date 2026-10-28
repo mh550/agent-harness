@@ -279,7 +279,7 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start op
     [[ -d $WT ]] && { harness_config "$PROJECT_DIR"; legacy_refuse "$PROJECT_DIR" "$WT" "$RUN_ID" "$STATE"; }
     # a continuation you start gives every feature that isn't passing fresh attempts; an automatic one doesn't
     (( keep )) || { [[ -f $WT/.harness/runs/$RUN_ID/feature_list.json ]] && node "$HARNESS_HOME/lib/features.mjs" reset "$STATE/attempts.json" "$WT/.harness/runs/$RUN_ID/feature_list.json"
-      rm -f "$STATE"/needs-* "$STATE"/verify-rounds-* "$STATE"/refused-*; }
+      rm -f "$STATE"/needs-* "$STATE"/verify-rounds-* "$STATE"/refused-* "$STATE"/rebase-rounds-* "$STATE"/moved-*; }
     # a phone stop that ended the last segment would end this one at once: its line goes back to run (the driver notes it)
     local inbox=$WT/.harness/runs/$RUN_ID/INBOX.md s n
     if grep -qs '^stopped by Michael' "$STATE/ended" && s=$(grep -n -m1 '^status:' "$inbox" 2> /dev/null) && [[ ${s#*:} =~ ^status:[[:space:]]*stop ]]; then
@@ -291,6 +291,7 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start op
 cmd_merge() {
   local st; st=$(state_of "${1:?usage: harness merge <run-id>}")
   alive "$st" && die "$1 is running; its driver merges verified milestones itself"
+  rm -f "$st"/moved-*   # Michael asks again: a milestone whose main moved gets one more re-base on today's main
   # shellcheck source=/dev/null
   ( source "$st/meta.env"; local keep; keep=$(cat "$STATE/ended" 2>/dev/null || true)
     HARNESS_MERGE_ONLY=1 cmd_start "$PROJECT_DIR" "$RUN_ID" --foreground

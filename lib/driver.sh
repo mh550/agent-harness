@@ -76,7 +76,6 @@ demote_requests() {   # a stop after Michael queued a continuation of this run i
 # ---- the lanes (lanes P1-04): each open milestone is a lib/lane.sh process; $STATE/lanes/<m>/pid is written here, at
 # its start, never by the lane (a lane still sourcing its libraries would look closed and be reaped or opened twice)
 POLL=${HARNESS_LANE_POLL:-10} LANE_END="" LANE_ONCE=0
-lane_alive() { local p; p=$(cat "$STATE/lanes/$1/pid" 2> /dev/null) && [[ -n $p ]] && kill -0 "$p" 2> /dev/null; }
 lanes_open() { local f n=0 m; for f in "$STATE"/lanes/*/pid; do [[ -f $f ]] || continue; m=${f%/pid}; lane_alive "${m##*/}" && n=$(( n + 1 )); done; echo "$n"; }
 # Sleep the poll (or <s>), less when a lane exits: its exit wakes the coordinator at once
 lane_wait() {
@@ -104,6 +103,16 @@ reap() {
   return 0
 }
 wait_lanes() { while (( $(lanes_open) )); do lane_wait; reap; done; reap; }   # until every lane has exited (between sessions)
+# "<m>\trebase" for each verified milestone whose main moved (state/rebase-<m>, merge_milestones) and whose lane has
+# closed, in list order: the coordinator opens it as a merge lane (LANE_MERGE=1) ahead of F lanes' milestones. Not one
+# that needs Michael, except under `harness merge` (he asked)
+rebase_due() {
+  local m
+  for m in $(F milestones "$LIST"); do
+    [[ -f $STATE/rebase-$m ]] && ! lane_alive "$m" && [[ ${HARNESS_MERGE_ONLY:-} || ! -f $STATE/needs-$m ]] && printf '%s\trebase\n' "$m"
+  done
+  return 0
+}
 # <m> → its port, the first free from BASE_PORT (port_taken), written to lanes/<m>/port with lanes/<m>/opening, which
 # holds it until lane_open has written the pid; under the record lock (record port_alloc_) and the box-wide port lock,
 # which cmd_start takes too, so neither another lane nor another run takes it meanwhile
@@ -113,7 +122,7 @@ port_alloc_() {
     echo "$p" > "$STATE/lanes/$1/port"; : > "$STATE/lanes/$1/opening"; } 7> "$STATE_ROOT/port.lock"
   echo "$p"
 }
-# <m>: the lowest slot no open lane holds; the services the slot's last lane left up stopped silently (its port is
+# <m>: (LANE_MERGE=1: a re-base, on the verified commit) the lowest slot no open lane holds; the services the slot's last lane left up stopped silently (its port is
 # reused, as run_init replaces its own: D4); its port (slot 0: the run's, so one lane is the run as before; slot 1 up:
 # port_alloc_); the slot opened (slot_open: its base, the note); the lane's process started
 lane_open() {
@@ -134,7 +143,7 @@ lane_open() {
   LANE="" LBRANCH=""; rec_cd   # SLOT stays: finish counts the last lane's tests in it
   (( rc == 0 )) || { rm -f "$STATE/lanes/$m/opening"; return 1; }
   rm -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/need"
-  LANE=$m LANE_SLOT=$k LANE_PORT=$LANE_PORT LANE_ONCE=$LANE_ONCE bash "$HARNESS_HOME/lib/lane.sh" "$m" < /dev/null 8>&- 9>&- &
+  LANE=$m LANE_SLOT=$k LANE_PORT=$LANE_PORT LANE_ONCE=$LANE_ONCE LANE_MERGE=${LANE_MERGE:-0} bash "$HARNESS_HOME/lib/lane.sh" "$m" < /dev/null 8>&- 9>&- &
   echo $! > "$STATE/lanes/$m/pid"; rm -f "$STATE/lanes/$m/opening"
   LANE=""
 }
@@ -250,6 +259,9 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
   merge_milestones
+  local rb; for rb in $(F milestones "$LIST" 2> /dev/null); do   # kept for the next segment's coordinator, or harness merge
+    [[ -f $STATE/rebase-$rb ]] && note "$rb verified, but $MAIN_BRANCH moved since; harness merge $RUN_ID re-bases and merges it"
+  done
   # the tree's count (the slot's, the last lane's code, if one opened): tests_end's, a red tree none. The last lane's
   # outputs are the run's (scratch_done keeps them in the state dir): copied first, so tests_end reads that lane's
   # check-<key>.out under an older, empty marker
@@ -341,7 +353,17 @@ if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 who
     $GH pr close "$BRANCH" --comment "Superseded: harness v3 merges each verified milestone into $MAIN_BRANCH through its own PR (tags run/$RUN_ID/<milestone>). Unverified work stays on $BRANCH until its milestone is verified." > /dev/null 2>> "$STATE/run.log" \
       && note "closed the whole-run PR for $BRANCH (milestones merge through their own PRs now)"
   fi
-  rmdir "$SCRATCH" 2> /dev/null   # created above for nothing: `harness merge` runs no init or session (a kept scratch isn't empty)
+  # a milestone whose main moved re-bases in a slot as a merge lane (its suite or verify round there), then merges; a
+  # dependent's rebase-<m> appears only once its dependency merged (reap's merge_milestones): until none is new
+  if [[ -n $(rebase_due) ]]; then
+    export HARNESS_T0=$T0 HARNESS_DEADLINE=$DEADLINE LANE_MAX_SESSIONS=$(( 3 * $(jq '.features | length' "$LIST") + 5 ))
+    mkdir -p "$STATE/lanes"; rm -f "$STATE"/lanes/*/pid "$STATE"/lanes/*/exit "$STATE/lanes-end"; done_rb=" " LAST_LANE=""   # the last segment's end isn't this one's
+    while m=$(rebase_due | cut -f1 | grep -vxF -f <(tr ' ' '\n' <<< "$done_rb" | grep .) | head -1) && [[ -n $m ]]; do
+      done_rb+="$m "; LANE_MERGE=1 lane_open "$m" && wait_lanes
+    done
+    unmaterialize; lanes_services_down "merge only"; slot_close
+  fi
+  rmdir "$SCRATCH" 2> /dev/null   # created above for nothing when no re-base ran an init (a kept scratch isn't empty)
   rec_commit "HARNESS: merge"; sync_record; END_REASON="merge only"; exit 0
 fi
 
@@ -460,12 +482,13 @@ while :; do
   fi
   opened=0
   if (( alive < MAX_LANES )) && (( $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) <= $(date +%s) || alive == 0 )); then
-    while IFS=$'\t' read -r m _; do
+    while IFS=$'\t' read -r m kind; do   # kind: "rebase" from rebase_due; F lanes' second field is its base tags
       [[ -n $m ]] || continue
       a=$(lanes_open); (( a < MAX_LANES )) || break   # the slot count is the configuration, not headroom: no note
-      if why=$(admit "$a"); then lane_open "$m" && { opened=1 LAST_LANE=$m; rm -f "$STATE/lanes/$m/waiting"; }
+      if why=$(admit "$a"); then
+        LANE_MERGE=$([[ $kind == rebase ]] && echo 1 || echo 0) lane_open "$m" && { opened=1 LAST_LANE=$m; rm -f "$STATE/lanes/$m/waiting"; }
       else mkdir -p "$STATE/lanes/$m"; wait_note "$m" "$why"; fi
-    done < <(F lanes "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE")
+    done < <(rebase_due; F lanes "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE")
   fi
   if (( ! opened && $(lanes_open) == 0 )); then   # nothing open and nothing to open: the run's end, as before lanes
     [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }

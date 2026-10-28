@@ -269,6 +269,14 @@ lanes pr-held: M1 merged on GitHub is seen as merged, and the waiting M2 is prop
 lanes pr-held: M1 verified is proposed (its PR open, not merged), and M2 opens from main with run/<run>/M1 merged in
 lanes pr-held: M2 verified opens its PR, not merged, with the waits note once
 lanes pr-held: harness merge afterwards merges M1, then M2
+lanes rebase: LANE_REBASE=verify gives a disjoint re-base the verify round, then it merges
+lanes rebase: a re-base verify round that fails un-verifies the milestone and removes its tag, so the old tag never merges
+lanes rebase: main moved under a verified lane, files disjoint: the suite runs in full on the merged tree, the tag moves to it, it merges
+lanes rebase: overlapping files get one verify round on the merged tree, then the tag moves and it merges
+lanes rebase: the re-based tag is the only ref the origin saw rewritten (its forced push)
+lanes rebase: the tree on main after the re-based merge is the re-tagged tree (the invariant)
+lanes rebase: under MERGE_POLICY=pr, harness merge re-bases a proposed milestone on the moved main in a slot and merges it, then its dependent
+lanes rebase: with its re-base rounds used the milestone needs Michael: the slot back at the verified commit, nothing merged, nothing pushed
 lanes record: a lane commit touching .harness/runs/ is reverted with a note, and harness/<run> never gets it
 lanes record: a session's question above ## Answers lands in the record's INBOX.md above that line
 lanes record: the slot is gone at the end, the run keeps one worktree, the merged lane's branch is deleted

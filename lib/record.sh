@@ -15,6 +15,8 @@ _record() { flock 9; [[ -n ${HARNESS_RECORD_DELAY:-} ]] && sleep "$HARNESS_RECOR
 # never a second flock on a new descriptor, which would wait on itself.
 record() { (( ${REC_HELD:-0} )) && { "$@"; return; }; REC_HELD=1; _record "$@"; local rc=$?; REC_HELD=0; return $rc; }
 
+# <m>: its lane process is alive ($STATE/lanes/<m>/pid, written by the coordinator: the lane's own $$)
+lane_alive() { local p; p=$(cat "$STATE/lanes/$1/pid" 2> /dev/null) && [[ -n $p ]] && kill -0 "$p" 2> /dev/null; }
 commit_all() { git add -A && ! git diff --cached --quiet && git commit -q -m "$1"; return 0; }
 # the run record only: a suite or an init run in the record worktree may leave files there that are no record's
 rec_commit_() { ( cd "$RWT" && git add -A -- "$RUN_DIR" && ! git diff --cached --quiet -- "$RUN_DIR" && git commit -q -m "$1" -- "$RUN_DIR" ); return 0; }
@@ -368,7 +370,9 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
 
 # Merge one verified milestone (its tag, the lane tip) into main through a PR. The invariant: the tree that lands on
 # main is the tree that was verified. 0 = merged, proposed, or (--open) its PR open and waiting · 1 = needs Michael
-# (conflict, refusal, or main moved since the verify: D1 until lanes re-base, decisions/2026-10-26-lanes)
+# (conflict, refusal) · 3 = main moved since the verify (moved-<m> holds that main): its lane re-bases it (lib/lane.sh
+# rebase), once per main, never after it needs Michael; `harness merge` clears moved-* and so tries once more.
+# --open (a dependency not merged yet) skips that test: main moves again when the dependency lands, and the rule runs then.
 merge_one() {
   local m=$1 tag=run/$RUN_ID/$1 c head url tree mn
   head=harness-merge/$RUN_ID-$m
@@ -385,11 +389,9 @@ merge_one() {
     note "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)"; rec_commit "HARNESS: $m conflicts with $MAIN_BRANCH"; sync_record
     needs_you "$m" "conflicts with $MAIN_BRANCH" harness-log.md; return 1
   fi
-  if [[ $tree != "$(git rev-parse "$c^{tree}")" ]]; then   # main has content the lane wasn't verified with
-    [[ $(cat "$STATE/moved-$m" 2>/dev/null) == "$mn" ]] && return 1
-    echo "$mn" > "$STATE/moved-$m"
-    note "$m verified, but $MAIN_BRANCH moved since; not merged (needs Michael)"; rec_commit "HARNESS: $m waits on $MAIN_BRANCH"; sync_record
-    needs_you "$m" "$MAIN_BRANCH moved since its verify" harness-log.md; return 1
+  if [[ ${2:-} != --open && $tree != "$(git rev-parse "$c^{tree}")" ]]; then   # main has content the lane wasn't verified with
+    [[ $(cat "$STATE/moved-$m" 2>/dev/null) == "$mn" || ( -f $STATE/needs-$m && ! ${HARNESS_MERGE_ONLY:-} ) ]] && return 1
+    echo "$mn" > "$STATE/moved-$m"; return 3
   fi
   git push -q -f origin "$c:refs/heads/$head" 8>&- 2>> "$STATE/run.log" || { note "$m: push of $head failed (see run.log)"; return 1; }
   pr_body "$m" > "$LS/pr-body.md"; [[ $LS == "$STATE" ]] || cp "$LS/pr-body.md" "$STATE/pr-body.md"   # the last body, whichever lane (checks read it)
@@ -418,6 +420,8 @@ merge_one() {
 # Under the merge lock (state/merge.lock, fd 8): a lane's verify and the coordinator's reap never merge one milestone
 # twice; the second finds merged-<m>. Lock order is merge, then record (merge_one notes and commits); nothing under the
 # record lock merges. Network commands close fd 8, as sync_record_'s close 9.
+# Main moved under a tag: state/rebase-<m> (that main) for its lane's rebase, outside this lock. A milestone whose lane
+# is alive is that lane's to merge (outside it: a reap during its re-base would find the old tag and ask for another).
 merge_milestones() {
   [[ $MERGE_POLICY == off || ! -f $LIST ]] && return 0
   { flock 8; merge_milestones_ "$@"; } 8> "$STATE/merge.lock"
@@ -428,6 +432,7 @@ merge_milestones_() {
   for m in $(F milestones "$LIST"); do
     [[ -n ${1:-} && $m != "$1" ]] && continue
     [[ -f $STATE/merged-$m ]] && continue
+    [[ $(cat "$STATE/lanes/$m/pid" 2> /dev/null) != "$$" ]] && lane_alive "$m" && continue
     if [[ -f $STATE/proposed-$m && ! ${HARNESS_MERGE_ONLY:-} ]]; then   # Michael's to merge, or `harness merge`'s
       # merged by Michael meanwhile (its PR on GitHub): merged here too, so what waits on it moves on
       git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null && git fetch -q origin "$MAIN_BRANCH" 8>&- 2> /dev/null \
@@ -444,7 +449,7 @@ merge_milestones_() {
       merge_one "$m" --open && [[ ! -f $STATE/waits-$m && ! -f $STATE/proposed-$m ]] && { touch "$STATE/waits-$m"; note "$m verified; its PR waits for $wait to merge"; }
       continue
     fi
-    merge_one "$m"
+    merge_one "$m"; (( $? == 3 )) && cp "$STATE/moved-$m" "$STATE/rebase-$m"
   done
   return 0
 }
@@ -489,6 +494,8 @@ slot_open() {
       base=$b; git -C "$RWT" merge-base --is-ancestor "refs/remotes/origin/$b" "refs/heads/$b" || fold=origin/$b
     fi
   elif git -C "$RWT" rev-parse -q --verify "refs/heads/$b" > /dev/null; then base=$b; fi
+  # a re-base (LANE_MERGE=1): the verified commit, whatever the branch holds; nothing merged into it here
+  [[ ${LANE_MERGE:-0} == 1 ]] && base=run/$RUN_ID/$m fold=""
   if [[ ! -d $SLOT ]]; then
     mkdir -p "${SLOT%/*}"; first=1
     git -C "$RWT" worktree add -q -f --no-track "$SLOT" -B "$b" "$base" 2>> "$STATE/run.log" || { slot_fail "$m" "worktree add of $SLOT"; return 1; }
@@ -503,7 +510,7 @@ slot_open() {
     fi
     note "$m: $b here and on origin had diverged; merged origin's into it"
   fi
-  for dep in $(F deps "$LIST" "$m"); do
+  for dep in $( [[ ${LANE_MERGE:-0} == 1 ]] || F deps "$LIST" "$m"); do
     tag=run/$RUN_ID/$dep
     git -C "$SLOT" rev-parse -q --verify "refs/tags/$tag" > /dev/null || continue
     git -C "$SLOT" merge-base --is-ancestor "$tag" "origin/$MAIN_BRANCH" 2> /dev/null && continue
@@ -518,7 +525,7 @@ slot_open() {
   # lane starts on its branch, as before lanes the next milestone carried that code (review of P1)
   dep=harness-lane/$RUN_ID/default
   git -C "$SLOT" rev-parse -q --verify "refs/remotes/origin/$dep" > /dev/null && dep=origin/$dep
-  if [[ $m != default ]] && F milestone-done "$LIST" default && git -C "$SLOT" rev-parse -q --verify "$dep^{commit}" > /dev/null \
+  if [[ $m != default && ${LANE_MERGE:-0} != 1 ]] && F milestone-done "$LIST" default && git -C "$SLOT" rev-parse -q --verify "$dep^{commit}" > /dev/null \
     && ! git -C "$SLOT" merge-base --is-ancestor "$dep" HEAD; then
     if ! git -C "$SLOT" merge -q --no-edit "$dep" > /dev/null 2>&1; then
       git -C "$SLOT" merge --abort 2> /dev/null

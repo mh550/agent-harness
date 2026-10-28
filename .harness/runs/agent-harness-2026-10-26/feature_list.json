@@ -214,7 +214,7 @@
         "under MERGE_POLICY=pr, `harness merge <run>` opens a slot from the tag and runs the same rule (a check with main moved between verify and merge)",
         "journal/decisions/2026-10-26-lane-rebase-disjoint.md (title, provenance, finding · choice · rejected: always re-verify, never re-run, merge without a check); names in tests/fixtures/check-names.txt; `bash -n` on the shell files touched; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-04",
