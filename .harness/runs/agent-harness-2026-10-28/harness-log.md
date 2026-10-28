@@ -78,3 +78,6 @@
 - 2026-10-28 15:59 · U3-01 · claude-opus-5-5 · passes=true · 6 min · 17/24 passing · tests 785
 - 2026-10-28 15:59 · context.md for U3-02: 8015 bytes
 - 2026-10-28 16:39 · U3-02 · claude-opus-5-5 · passes=true · 39 min · 18/24 passing · tests 796
+- 2026-10-28 16:39 · context.md for U3-03: 7904 bytes
+- 2026-10-28 17:55 · U3-03: entry.json invalid (summary: 405 characters (at most 400)); recorded a minimal entry
+- 2026-10-28 17:55 · U3-03 · claude-opus-5-5 · passes=true · 76 min · 19/24 passing · tests 804

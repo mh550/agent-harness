@@ -342,7 +342,7 @@
         "`cmd_gc`'s unit loop skips a unit owned by a live run of another project silently and prints `? <unit>: no run on this box owns it (systemctl --user stop <unit> by hand)` for a unit no run owns; checks: `gc --dry-run` with a stub unit of another project's live run prints no `?` line, and with an unowned `harness-x.scope` prints the new line; `gc`'s `would:`, `+`, `!` and `keeps` texts are unchanged (the existing gc checks pass as they are)",
         "`journal/decisions/2026-10-27-record-after-gc.md` and `journal/decisions/2026-10-27-gc-foreign-units.md` exist, never numbered; `bash -n bin/harness lib/driver.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U3-04",

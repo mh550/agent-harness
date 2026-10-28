@@ -7,6 +7,13 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 17:55 · U3-03 · passes
+
+U3-03 passes. Commit `5de9bd7` is pushed to `harness-lane/agent-harness-2026-10-28/U3`. The full suite went from 796 to 804 checks and was green (804/804) on the fourth full run. - **Record after gc:** a finished run now also keeps `summary.json`, `report.md` and `metrics.jsonl` in its state dir. `harness report` reads the worktree, then that copy, then the ledger's copy. If none exists, it print…
+
+- **Files:** README.md, bin/harness, docs/architecture.md, journal/decisions/2026-10-25-gc-orphan-units.md, journal/decisions/2026-10-27-gc-foreign-units.md, journal/decisions/2026-10-27-record-after-gc.md, lib/driver.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/66-record-after-gc.sh, tests/checks/67-gc-units.sh, tests/fixtures/check-names.txt
+- *20-U3-03 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 405 characters (at most 400)*
+
 ### 2026-10-28 16:39 · U3-02 · passes
 
 project_dir in bin/harness: a repo path → its top level; a bare name → its newest run's PROJECT_DIR still a repo, else $HARNESS_PROJECTS/<name>; else an error naming the places and the projects with runs. start, init, queue add, gc, memlint and status --project use it; toplevel is gone. 65-project-names (11 checks), decision, README/architecture/usage lines.
