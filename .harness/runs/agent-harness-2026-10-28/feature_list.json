@@ -309,7 +309,7 @@
         "it orders U3-02 to U3-08, names the check files and fixtures (`tests/fixtures/overlap-spec.md`, a copy of `docs/specs/2026-10-26-suite-split.md`; a fixture `summary.json` and its markdown for the report byte-for-byte check), the four decision files (`2026-10-27-project-names`, `2026-10-27-record-after-gc`, `2026-10-27-gc-foreign-units`, `2026-10-27-same-project-starts`) and the in-place update of `journal/decisions/2026-10-21-queue-one-run-per-project.md`, and Michael's after-run steps (none live)",
         "the suite is green (unchanged by this feature)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U3-02",

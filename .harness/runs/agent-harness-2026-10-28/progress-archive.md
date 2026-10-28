@@ -7,6 +7,25 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 15:59 · U3-01 · passes
+
+Wrote docs/plans/2026-10-28-U3-show-and-fixes.md: project_dir's order and six callers, report's worktree→state→ledger order and finish's copy, gc's unit rule, harness show (fields, CHANGES, CONFLICTS, NEEDS, feature form, --json), project_busy, overlap.mjs and its wiring/sweep, TTY report/trends/gc, checks 65-72, fixtures, U3-02..08 order, four decisions. Code unchanged.
+
+- **Files:** docs/plans/2026-10-28-U3-show-and-fixes.md
+- **Verified:** Each step checked against the code at d0403e5 (bin/harness cmd_start/cmd_continue/cmd_report/cmd_gc/cmd_queue, lib/queue.sh, lib/driver.sh finish/ledger, lib/needs.mjs open/rule/readState, lib/status.mjs readRun/renderCard/gitOf, lib/summary.mjs report/trends, tests/checks/08 gc units); git diff/merge-tree output tried in a scratch repo; suite green, 785 tests (cached).
+- **Tests:** 785 → 785
+- **Discovery** (affects U3-04): git diff --numstat --name-status prints only the name-status lines (git 2.43): show needs two diffs, both --no-renames, joined by path
+- **Discovery** (affects U3-04, U3-06): Since lanes a run's code is on harness-lane/<run>/<m> (harness/<run> is record only); a merged lane branch goes. show and overlap diff every run branch; tests need MERGE_POLICY=pr or an unverified milestone to keep unmerged code
+- **Discovery** (affects U3-03): tests/checks/08 (replayed in 13) asserts '? harness-oth-svc.scope (no run of this project)' for an ended other-project run: U3-03 changes that expectation (silent) and nosuch's text
+- **Discovery** (affects U3-05): cmd_continue removes ended before cmd_start: a same-project queue in cmd_start alone would leave a run that reads as crashed; the plan puts the check in cmd_continue before any state change
+- **Discovery** (affects U3-05): suite-split spec names lib/check.sh and lib/treekey.mjs as bare path words, not backticked: overlap.mjs named must take unquoted path-shaped tokens
+- **Question for Michael:** Should a bare project name resolve through its runs' PROJECT_DIR before ~/projects/<name> (default: yes, the runs know where it is)? Files: docs/plans/2026-10-28-U3-show-and-fixes.md §1
+- **Question for Michael:** Should an overlap record resolve as soon as either run's changes are on main, leaving a real conflict to merge_conflict's card (default: yes)? Files: docs/plans/2026-10-28-U3-show-and-fixes.md §6, §11
+- **Question for Michael:** Should spec directory names count for overlaps only at two or more segments (tests/checks/ yes, tests/ and lib/ no) (default: yes)? Files: docs/plans/2026-10-28-U3-show-and-fixes.md §6
+- **Proposed change:** U3-01 step 3 quotes `git diff --numstat --name-status`: git prints only name-status with both; the plan uses two diffs
+- **Proposed change:** U3-02 step 2 suggests tests/checks/63-project-names.sh: 63 is taken (63-question-locations); the plan numbers U3's files 65-72
+- *18-U3-01 · claude-opus-5-5*
+
 ### 2026-10-28 15:42 · verify U2 · passes
 
 All 9 U2 features hold. Full suite 783/785: the 2 memory-gate checks in 08-scope failed only under 4-job load; alone 08-scope passes 125/125. Files, syntax checks, docs, cards, prompts, fixtures verified against each step.

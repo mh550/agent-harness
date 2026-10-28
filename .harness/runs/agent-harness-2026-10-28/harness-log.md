@@ -69,3 +69,10 @@
 - 2026-10-28 15:29 · verify U2: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-28 15:38 · context.md for U2: 16007 bytes, 27 items left out
 - 2026-10-28 15:51 · U2 verified and tagged run/agent-harness-2026-10-28/U2
+- 2026-10-28 15:51 · lane U3 waiting: 7 GB available, under 9 GB (MEM_MIN_AVAILABLE_GB 5 + LANE_RESERVE_GB 4 x 1 open)
+- 2026-10-28 15:52 · U2 merged into main · https://github.com/mh550/agent-harness/pull/43
+- 2026-10-28 15:52 · lane U2 closed (U2 merged)
+- 2026-10-28 15:52 · lane U2: branch harness-lane/agent-harness-2026-10-28/U2 deleted (merged)
+- 2026-10-28 15:52 · lane U3 opened (slot 0, port 7816, from d0403e5, slot reused)
+- 2026-10-28 15:52 · context.md for U3-01: 7713 bytes, 6 items left out
+- 2026-10-28 15:59 · U3-01 · claude-opus-5-5 · passes=true · 6 min · 17/24 passing · tests 785
