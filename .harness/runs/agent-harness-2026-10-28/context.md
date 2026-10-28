@@ -1,12 +1,14 @@
-# Context pack for `U3-04`
+# Context pack for `U3-05`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (U3-04, affects U3-05, U3-06): lib/show.mjs exports joinDiff, mergeTreePaths, combine and milestonesOf (pure); U3-06's overlaps can reuse branchesOf' rule (harness/<run> + harness-lane/<run>/* + origin-only lanes) and joinDiff for 'what an ended run's branches changed' → entries.jsonl:25
+- Discovery (U3-04, affects U3-06, run): git merge-tree --write-tree writes loose objects into the repo; show runs it with GIT_OBJECT_DIRECTORY=<tmp> and the repo's objects as an alternate so a read view leaves the object store as it was → entries.jsonl:25
 - Discovery (U3-02, affects run): project_dir dies in the main shell for status --project <bad path>; bin/harness's set -e is not inherited inside $(…), so a helper that is fine in p=$(…) can exit silently when called directly → entries.jsonl:23
-- Discovery (U3-01, affects U3-04): git diff --numstat --name-status prints only the name-status lines (git 2.43): show needs two diffs, both --no-renames, joined by path → entries.jsonl:22
-- Discovery (U3-01, affects U3-04, U3-06): Since lanes a run's code is on harness-lane/<run>/<m> (harness/<run> is record only); a merged lane branch goes. show and overlap diff every run branch; tests need MERGE_POLICY=pr or an unverified milestone to keep unmerged code → entries.jsonl:22
+- Discovery (U3-01, affects U3-05): cmd_continue removes ended before cmd_start: a same-project queue in cmd_start alone would leave a run that reads as crashed; the plan puts the check in cmd_continue before any state change → entries.jsonl:22
+- Discovery (U3-01, affects U3-05): suite-split spec names lib/check.sh and lib/treekey.mjs as bare path words, not backticked: overlap.mjs named must take unquoted path-shaped tokens → entries.jsonl:22
 - Discovery (U2-09, affects run): needs card commands now run in fix_root/fix-<run>-<subject> (HARNESS_SCRATCH_ROOT/<project>, needs_open passes it) at origin's copy of the branch; merge_conflict's last command is harness merge, which re-tags at a hand-merged lane tip → entries.jsonl:20
 - Discovery (U2-09, affects run): Not done from the U2 review: a park card's where can take other features' Files: lines when the INBOX has no ### <id> section; pre-U2 runs' needs-/refused-/conflict- markers show no items; needs.md rewritten by needs done is committed only at the run's next driver commit → entries.jsonl:20
 - Discovery (U2-08, affects U2-09, run): tests/stub-claude.sh STUB_ASK_TOUCH=<path> (the STUB_ASK session also changes it), STUB_PARK_FILES=<value> (a Files: line under the park's ### heading), STUB_PARK_TOUCH=<path> (the parking session changes it) → entries.jsonl:19
@@ -32,10 +34,10 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-28 17:55 · U3-03 · passes: U3-03 passes. Commit `5de9bd7` is pushed to `harness-lane/agent-harness-2026-10-28/U3`. The full suite went from 796 to 804 checks and was green (804/804) on the fourth full run. - **Record after gc:** a finished run now also keeps `summary.json`, `report.md` and `metrics.jsonl` in its state dir. `harness report` reads the worktree, then that copy, then the ledger's copy. If none exists, it print…; files README.md, bin/harness, docs/architecture.md, journal/decisions/2026-10-25-gc-orphan-units.md, journal/decisions/2026-10-27-gc-foreign-units.md, … → entries.jsonl:24
+- 2026-10-28 18:30 · U3-04 · passes: harness show <run> [<feature>] [--files] [--json]: cmd_show + lib/show.mjs (read-only, local refs in PROJECT_DIR): card header (status.mjs cardHeader), worktree, branch, record, state, lanes, merged/proposed milestones, compare URLs, CHANGES vs origin/<main> with ✗ conflicts, CONFLICTS, NEEDS YOU; feature form; v1 JSON. 68-show (11 checks).; tests 804 → 815; files lib/show.mjs, bin/harness, lib/status.mjs, tests/checks/68-show.sh, tests/fixtures/show-json-keys.txt, … → entries.jsonl:25
 
 ## Lately in the run
 
-- 2026-10-28 16:39 · U3-02 · passes: project_dir in bin/harness: a repo path → its top level; a bare name → its newest run's PROJECT_DIR still a repo, else $HARNESS_PROJECTS/<name>; else an error naming the places and the projects with runs. start, init, queue add, gc, memlint and status --project use it; toplevel is gone. 65-project-names (11 checks), decision, README/architecture/usage lines.; tests 785 → 796; files bin/harness, tests/checks/65-project-names.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-project-names.md, README.md, … → entries.jsonl:23
+- 2026-10-28 17:55 · U3-03 · passes: U3-03 passes. Commit `5de9bd7` is pushed to `harness-lane/agent-harness-2026-10-28/U3`. The full suite went from 796 to 804 checks and was green (804/804) on the fourth full run. - **Record after gc:** a finished run now also keeps `summary.json`, `report.md` and `metrics.jsonl` in its state dir. `harness report` reads the worktree, then that copy, then the ledger's copy. If none exists, it print…; files README.md, bin/harness, docs/architecture.md, journal/decisions/2026-10-25-gc-orphan-units.md, journal/decisions/2026-10-27-gc-foreign-units.md, … → entries.jsonl:24
 
 _1 items left out at 8192 bytes: entries.jsonl has them all._
