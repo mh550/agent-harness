@@ -59,3 +59,5 @@
 - 2026-10-27 20:09 · verify P1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-27 20:15 · context.md for P1: 7841 bytes, 43 items left out
 - 2026-10-27 20:32 · P1 verified and tagged run/agent-harness-2026-10-26/P1
+- 2026-10-27 20:32 · P1 merged into main · https://github.com/mh550/agent-harness/pull/40
+- 2026-10-27 20:32 · context.md for P2-01: 7875 bytes, 18 items left out
