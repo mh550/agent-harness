@@ -9,6 +9,24 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 23:21 · P2-05 · passes
+
+The record PR: finish's last step (record_pr) opens '<run>: run record' from harness/<run> (reusing the open one, body refreshed), merged under auto, left under pr, none with RECORD_PR=off; never if the branch has non-record changes main lacks. The v2 closer spares it. Stub gh mirrors --json/-q. Suite 584 -> 594 green.
+
+- **Files:** lib/driver.sh, tests/stub-gh.sh, tests/lib.sh, tests/checks/50-lanes-record-pr.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-26-lanes.md
+- **Verified:** check.sh: green in 475 s, 594 tests (bash tests/run.sh 592/592 before the review fixes, 470 s). 50-lanes-record-pr.sh 10/10; 8/8 red before record_pr existed; the v2-closer check and the --base guard check each go red with their guard removed. bash -n on lib/driver.sh bin/harness lib/queue.sh and the touched test files.
+- **Tests:** 584 → 594
+- **Dead end:** asserting the ledger's entries.jsonl has 3 lines (one per feature) — the journal has an entry per session (codings, verifies, retro): 6; the check compares the ledger's copy with main's instead
+- **Discovery** (affects P2-07, run): Under MERGE_POLICY=pr (or a refused auto merge) the end-of-queue gc --all-merged --deps deletes the record-only harness/<run> (record_only, unchanged per the spec), which closes the record PR left for Michael the same night. Kept as D21 default; question below.
+- **Discovery** (affects P2-07): A merged record PR moves main with .harness/runs/<run>/ only, yet merge_one's tree test counts it: a verified milestone still unmerged (waiting on a dependency, or pr-held until harness merge) then re-bases (a full suite run, one of its 3 re-bases). Another run's record PR does the same to a parallel run's lanes. Correct, but costly; P2-07 may ignore .harness/runs/ in that comparison.
+- **Discovery** (affects P2-07): The ledger copy is taken before record_pr, so the 'record PR merged/opened' note is in harness-log.md on harness/<run> (and run.log) but not in the ledger or main's copy.
+- **Discovery** (affects run): stub-gh.sh now refuses pr create for a head with an open PR, refuses pr merge --match-head-commit when the head moved, closes one PR per pr close, and keeps titles (prs/pr-N.title, pr-N.closed), as gh does.
+- **Discovery** (affects run): One full run had 45-lanes-run's default-lane check fail (593/594); it passed alone twice, in four parallel copies and in the next full run (594/594): a load flake, not reproduced.
+- **Discovery** (affects run): 50-lanes-record-pr.sh costs ~52 s of slot time (five stub runs and two continues); suite wall 475 s at TEST_JOBS=4 (measured, not a gate).
+- **Question for Michael:** Under MERGE_POLICY=pr the end-of-queue gc deletes harness/<run> (record_only) and so closes the record PR left for you the same night (D21 default, decisions/2026-10-26-lanes). Keep that, or should gc keep a record branch while its record PR is open (one gh pr view per candidate branch in gc)?
+- **Proposed change:** P2-05 step 3 says 'a check in the gc file': the end-of-queue gc check is in tests/checks/50-lanes-record-pr.sh, where the merged record PR's state is built (as P2-04 put its gc checks in 49); no file is named for gc alone (08 and 13 are the two largest).
+- *07-P2-05 · claude-opus-5-5*
+
 ### 2026-10-27 22:44 · P2-04 · passes
 
 Merged lane branches now go when their PR merges (lane_branch_gone: origin at once, local at reap; only what the tag or main holds, only from this run's slots). harness gc gains the harness-lane/ pass, removes leftover slots of runs with no live driver or lane, covers slots under --deps, and treats a live lane as running. P1 Minors 8 and 11 fixed.
