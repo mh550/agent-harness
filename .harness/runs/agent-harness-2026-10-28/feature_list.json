@@ -274,7 +274,7 @@
         "`journal/decisions/2026-10-27-question-locations.md` (finding · choice · rejected: refusing a question without `Files:`, a model filling paths) and `journal/decisions/2026-10-27-needs-record.md` (rejected: INBOX.md as the record, parsing harness-log.md for stops, one file per reason, a session writing the cards) exist, never numbered",
         "`node --check lib/entries.mjs lib/needs.mjs`, `bash -n lib/lane.sh lib/record.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U2-09",

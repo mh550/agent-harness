@@ -7,6 +7,20 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 14:44 · U2-08 · passes
+
+Questions say where: the three prompts ask for a Files: line and the INBOX place (below the comment block, ### <id>: <title> (<date time>), one (recommended)). entries.mjs fills a question without Files: from the session (sessionFiles, fillQuestions), noted; a park card's where takes session_files (files_from session). 63-question-locations; both U2 decisions complete; Opus review fixes.
+
+- **Files:** prompts/coding.md, prompts/verify.md, prompts/initializer.md, lib/entries.mjs, lib/inbox.mjs, lib/needs.mjs, lib/record.sh, lib/lane.sh, tests/stub-claude.sh, tests/checks/63-question-locations.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/check-names.txt, +5 more
+- **Verified:** bash tests/run.sh 63: 6/6 (prompt text; fill unit with the rest byte for byte; card unit; stub run: A's entry question filled with <slot>/work-A.txt, <slot>/lib/x.sh and the note; B's park Files: /srv/q/lib/y.sh:48 gives where[0].line 48, files_from question; a park without Files: gives files_from session, <slot>/lib/z.sh, noted). 57, 59, 60, 38 green; full suite TEST_JOBS=2: green in 966 s, 775 tests.
+- **Tests:** 769 → 775
+- **Dead end:** a first full suite before the review fixes — 38's 'a resolved question is gone' failed: the pack line now carries the fill; the check allows it and settled() also compares the unfilled words
+- **Discovery** (affects U2-09, run): tests/stub-claude.sh STUB_ASK_TOUCH=<path> (the STUB_ASK session also changes it), STUB_PARK_FILES=<value> (a Files: line under the park's ### heading), STUB_PARK_TOUCH=<path> (the parking session changes it)
+- **Discovery** (affects U2-09): lib/inbox.mjs files() now reads **Files:**, `Files:`, **Files**: and (Files: …), and keeps an item only with a / or . and no blank: a park card's where can change for such INBOX lines
+- **Discovery** (affects project): entry questions without Files: are stored with ' Files (harness, from the session): …' appended; the pack shows it, and resolved matches either the session's words or the filled line
+- **Proposed change:** Filled paths in a lane point into the slot worktree, which slot_close removes after the segment: a later fill could add the lane branch's blob URL (the card rows already carry one)
+- *16-U2-08 · claude-opus-5-5*
+
 ### 2026-10-28 13:34 · U2-07 · passes
 
 Status reads the needs records: lib/status.mjs imports needs.mjs list (now exported) for NEEDS YOU, --json needs (whole records) and the card's needs you (count, 3 headlines, +k more); U1's derived rows gone. The desk prompt and answer skill read harness needs; the debrief adds a #### needs block. 62-needs-readers (6 checks). Opus review fixes.
