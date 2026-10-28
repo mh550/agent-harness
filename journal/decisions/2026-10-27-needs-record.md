@@ -87,7 +87,12 @@ needs`); U2-04 adds the cards, U2-05 and U2-06 the openers, U2-07 the readers.)*
     `#### needs` block per run after its card. `list` skips a state dir it can't make items of (a line on stderr),
     so one broken run never hides the others' items, in `harness needs` or in status. Status asks for the items only
     in its view and card (never for `queue list` or `show`), and only for the runs it shows.
-- **Rejected:** a single `needs.json` per run (two lanes writing it race; a file per item renames atomically).
+- **Rejected:** INBOX.md as the record (it holds the questions a session asks, not the stops the driver meets; it
+  has no state, no resolution, and a session edits it). Parsing harness-log.md for stops (prose for Michael, worded
+  freely; a reworded note would hide a stop). One file per reason (a reason recurs per subject: two milestones'
+  conflicts at once; a file per item, keyed `<reason>:<subject>`, refreshes in place). A session writing the cards
+  (a session that stops early is the case that needs one; the driver knows the facts, so `needs.mjs` TEMPLATES fill
+  them). A single `needs.json` per run (two lanes writing it race; a file per item renames atomically).
   Deriving items on every read, as status did (nothing records when an item was handled, or by whom). Sweeping in
   `harness needs` (a phone session runs it to look: it must write nothing).
 
@@ -95,3 +100,4 @@ Updated in place 2026-10-28: U2-04's cards replace the one-line view (the Cards 
 Updated in place 2026-10-28: U2-05's openers, notification body and click, and sweeps (the two U2-05 bullets).
 Updated in place 2026-10-28: U2-06's git-side openers, the main-conflict notification and needs_you from the record.
 Updated in place 2026-10-28: U2-07's readers (status, desk, skill, debrief).
+Updated in place 2026-10-28: U2-08's rejected alternatives (INBOX.md, harness-log.md, one file per reason, session cards).

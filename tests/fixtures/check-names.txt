@@ -58,6 +58,8 @@ a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
 a park notification: title, question, answer command, click and Edit INBOX action
 a park opens one parked record; card.question.line is the first line the session added, its URL that line
+a park whose INBOX question has Files: <path>:48: the record's where[0] is that path at line 48, files_from question
+a park without Files: gets the session's files as the card's where (files_from session, absolute lib/z.sh); noted
 a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it
 a proposed merge: ready to merge, click = the PR, default priority
 a queued continuation: only the answer command
@@ -169,6 +171,7 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most); the rest byte for byte
 entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
 entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
@@ -432,6 +435,7 @@ needs record: ref is <run>/<seq>, key <reason>:<subject>; seq is one past the la
 needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
 needs.md is committed on the record branch before the park goes out, and lists the park
+needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
 needs: a run whose worktree and record branch are both gone resolves run removed (list hides it before any sweep); the branch alone keeps it
 next <m>: a feature without after waits on its own milestone's earlier features only
 no URL in time: no window, the plain notification
@@ -688,12 +692,14 @@ the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), 
 the initializer prompt asks for after on independent features and on every milestone's first
 the initializer prompt has the resolved lint command
 the initializer prompt sizes reviews to the milestone
+the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the limit window is shared
 the next debrief covers what the failed and killed ones missed
 the park goes out after the run branch is pushed (the link shows the question)
 the park notification is the record's: body PARKED: first, the question, the card's do commands, the answer line; Click needs.md
 the prompt goes in on stdin, not as an argument
 the prompt says the time, the budget and the attempt
+the prompts ask every question for a Files: line and an INBOX question below the comment block, headed ### <id>: …
 the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
 the queue runner reaps its ended runs' tmux sessions before the debrief; h-queue and the desk untouched
 the queue runner runs harness gc <project> --all-merged --deps once per project, before the debrief

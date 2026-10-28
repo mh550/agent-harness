@@ -184,6 +184,9 @@ JSON
     fi
     if [[ ${STUB_PARK:-} == "$id" && $n == 1 ]]; then   # can't go on without Michael: asks in INBOX.md, parks
       sed -i '/^## Answers/i ### '"$id"': set the gatus vars, then answer\n' "$HARNESS_RUN_DIR/INBOX.md"
+      # STUB_PARK_FILES=<value>: the question's Files: line (U2-08); STUB_PARK_TOUCH=<path>: the session changes it too
+      [[ ${STUB_PARK_FILES:-} ]] && sed -i "/^### $id: set the gatus vars/a Files: $STUB_PARK_FILES" "$HARNESS_RUN_DIR/INBOX.md"
+      [[ ${STUB_PARK_TOUCH:-} ]] && mkdir -p "$(dirname "$STUB_PARK_TOUCH")" && echo "$id" > "$STUB_PARK_TOUCH"
       git add -A && git commit -qm "$id: question for Michael" && git push -q origin "$HARNESS_BRANCH"
       ok 0.3 "Not done: needs two values only Michael can set.\\nPARKED: set the gatus vars"; exit 0
     fi
@@ -224,6 +227,8 @@ JSON
     fi
     # main may already have work-<id>.txt as written here (run demo merged it): a file only this run adds, for the minimal entry's files
     [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
+    # STUB_ASK_TOUCH=<path>: the session that asks (STUB_ASK) changes it too, outside its entry's files (U2-08's fill)
+    [[ ${STUB_ASK_TOUCH:-} && ${STUB_ASK:-} == "$id" && $n == 1 ]] && mkdir -p "$(dirname "$STUB_ASK_TOUCH")" && echo "$id" > "$STUB_ASK_TOUCH"
     entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --arg rf "${STUB_REVIEW_FINDINGS:-}" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
       outcome: "passes", summary: (if $id == "R" and $rf != "" then "R: stub review (\($n)): \($rf | split(",")[0]) Critical, \($rf | split(",")[1]) Important, 0 Minor" else "\($id): stub work (\($n))" end), files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
       + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end

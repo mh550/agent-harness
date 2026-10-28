@@ -284,15 +284,18 @@ journal() {
       note "$who: $f edited by the session; restored (the driver is its only writer)"
     done
   fi
-  record journal_ "$who" "$kind" "$id" "$name" "$4" "$outcome"
+  record journal_ "$who" "$kind" "$id" "$name" "$4" "$outcome" "$PWD"
   return 0
 }
-journal_() {   # who kind id name model outcome: the ingest and the render, in the record
-  local out rc
+journal_() {   # who kind id name model outcome worktree: the ingest and the render, in the record
+  local out rc n
   if [[ $PWD != "$RWT" ]]; then   # a lane: the take-back of the copy's entry, under the lock with the ingest
     rm -f "$REC/entry.json"; [[ -e $RUN_DIR/entry.json ]] && mv -f "$RUN_DIR/entry.json" "$REC/entry.json"
   fi
-  out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$REC" "$2" "$3" "$4" "$5" "$6" "$SCRATCH/entry-files" "$SCRATCH/entry-final"); rc=$?
+  out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$REC" "$2" "$3" "$4" "$5" "$6" "$SCRATCH/entry-files" "$SCRATCH/entry-final" "$7"); rc=$?
+  # a question without a Files: line got the session's files (decisions/2026-10-27-question-locations)
+  n=$(sed -n 's/^filled //p' <<< "$out"); out=$(grep -v '^filled ' <<< "$out")
+  [[ -n $n ]] && note "$1: $n question(s) had no Files: line; filled from the session's diff"
   (( rc == 3 )) && note "$1: entry.json $out; recorded a minimal entry"
   (( rc == 0 || rc == 3 )) || { note "$1: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
     mv -f "$REC/entry.json" "$STATE/entry-failed-$4.json" 2> /dev/null; }

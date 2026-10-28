@@ -86,14 +86,20 @@ Rules:
   goes as the Where things go rules say (below, or in `CLAUDE.md`): a durable gotcha (still true
   after this run) → one line under `## Gotchas` in `CLAUDE.md`; a run-only fact → `discoveries`
   affecting `"run"`; where things live → nowhere, unless the tree doesn't show it. Questions for Michael go in `questions`
-  (decisions that are his get the simplest reversible default):
+  (decisions that are his get the simplest reversible default), each with a line
+  `Files: <absolute path>[:<line>], …` naming what he should open first (the spec, a plan, the
+  feature list; the branch when it isn't this run's); one without it gets the files your session
+  changed, filled in by the harness:
 
   ```json
   { "feature": "init", "kind": "init", "outcome": "passes", "summary": "12 features: E1 4, E2 5, E3 3.",
     "header": "# Progress — run `x` (project)\n\nWhat this file is: …",
     "discoveries": [{ "text": "the suite needs port 7804 free", "affects": ["run"] }] }
   ```
-- Leave the run directory's `INBOX.md` as the harness created it.
+- Leave the run directory's `INBOX.md` as the harness created it, except for a question the list
+  can't be written without: that goes below the comment block, directly above the `## Answers` line,
+  headed `### init: <one-line title> (<date time>)`, with what is blocked, why, `Files:`, the
+  options with one marked `(recommended)`, and the exact commands.
 
 Before you commit, run `{{LINT}} <run directory>/feature_list.json` and fix every line it prints
 (`<id> step <n> <rule> <text>`: a step with no concrete anchor, a path outside the repo or in `~`,

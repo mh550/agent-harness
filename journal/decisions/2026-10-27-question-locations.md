@@ -32,7 +32,22 @@ adds the questions' locations (`Files:`, the fill) and completes it.)*
     `INBOX.md: <id>'s question was inside the steering comment (hidden on GitHub); moved below it`.
   - The driver's template comment no longer contains `## Answers`: it says to write answers under the Answers
     heading at the end of the file, so there is nothing in it to split.
-- **Rejected:** repairing only the record's INBOX.md (the step's first wording): with lanes a session never writes it,
+  - **Where a question points (U2-08).** Every question for Michael carries a line `Files: <absolute path>[:<line>],
+    …` (the branch too when it isn't the run's): prompts/coding.md (*Decisions*, *Waiting on Michael*), verify.md and
+    initializer.md ask for it, and an INBOX question goes below the comment block, directly above the `## Answers`
+    line, headed `### <feature id>: <one-line title> (<date time>)` with what is blocked, why, `Files:`, options with
+    one `(recommended)` and the exact commands. A question without the line is filled from the session, never
+    refused: `entries.mjs sessionFiles` (the entry's `files` first, then `git diff --name-only <session start> HEAD --
+    . ':!.harness/runs/<run>'`, absolute, deduplicated, at most 8). At ingest `fillQuestions` appends ` Files
+    (harness, from the session): …` to each entry question without one; nothing else of the entry changes. A park
+    whose INBOX question has none gets the same list as its card's `where`, `files_from: "session"` (the lane passes
+    `session_files=`). Either fill notes `<id>: <n> question(s) had no Files: line; filled from the session's diff`.
+- **Rejected:** refusing a question without `Files:` (the session is over by then: the question would be lost, or a
+  feature re-run for want of a line). A model filling the paths (a second session, guesses; the diff is what the
+  session touched, and the harness has it). Rewriting the session's text otherwise (the fill only appends, so what
+  the session said is there byte for byte). Repairing only the record's INBOX.md (the step's first wording): with lanes a session never writes it,
   and `take_question` would already have copied the comment's fragments in. Matching the heading by line diff alone:
   a split line leaves both halves as "added" lines, comment text included. Dropping the comment from the template:
   it is how Michael learns the steering words on his phone.
+
+Updated in place 2026-10-28: U2-08's question locations (prompts, the fill) complete it.

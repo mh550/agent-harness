@@ -208,7 +208,9 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   fails it needs Michael.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 - **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and
-  ends `PARKED: …`. A question written inside the steering comment (GitHub hides it) is moved below it, with a note. The feature waits without spending attempts while independent work goes on; the run ends
+  ends `PARKED: …`. A question written inside the steering comment (GitHub hides it) is moved below it, with a note. Every question
+  (in INBOX.md or an entry's `questions`) names the files to open on a `Files:` line; one without it gets the files the
+  session changed, filled in by the harness (`Files (harness, from the session): …`, noted). The feature waits without spending attempts while independent work goes on; the run ends
   `waiting on Michael: <ids>` when nothing else can run. Any new answer unparks it on `harness continue`. The park's
   notification carries the question, what waits on it, where and the commands; tapping it opens `needs.md` in the
   run record, every open item there as a card. A milestone that needs you (thin, red or failed verify, a conflict with

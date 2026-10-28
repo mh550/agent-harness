@@ -371,7 +371,11 @@ while :; do
   fi
   # the needs records, committed with this session's record (needs.md, the park's click): a park (its question is in the
   # record's INBOX.md now), a feature whose attempts are used up without a park or a pending escalation round
-  if [[ -n $why ]]; then nref=$(needs_open parked "$id" feature="$id" why="$why" actions="$(park_actions)")
+  if [[ -n $why ]]; then   # a question without a Files: line points at the session's files (its entry's, then its diff)
+    nref=$(needs_open parked "$id" feature="$id" why="$why" actions="$(park_actions)" \
+      session_files="$(node "$HARNESS_HOME/lib/entries.mjs" session-files "$REC" "$id" "$SCRATCH/entry-files" "$PWD")")
+    [[ -n $nref ]] && jq -e '.card.files_from == "session"' "$STATE/needs/${nref##*/}.json" > /dev/null 2>&1 \
+      && note "$id: 1 question(s) had no Files: line; filled from the session's diff"
   elif [[ $passed == false && ! -s $LS/review-escalate ]] && (( $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") >= MAX_ATTEMPTS )); then
     needs_open given_up "$id" feature="$id" attempts="$(jq -r --arg id "$id" '.[$id]' "$ATT")" max_attempts="$MAX_ATTEMPTS" log="$slog" > /dev/null
   fi

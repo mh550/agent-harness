@@ -35,6 +35,12 @@ It says what the milestone's sessions tried. It is not evidence: re-run every st
                   { "feature": "T1-03", "step": 2, "ran": "curl :7804/x", "saw": "500", "holds": false }] }
    ```
 
+   A question for Michael goes in `questions` (in `INBOX.md` only when the milestone can't be
+   checked without him: below the comment block, directly above the `## Answers` line, headed
+   `### <milestone>: <one-line title> (<date time>)`), with a line `Files: <absolute path>[:<line>], …`
+   naming what he should open first (the failing step's code or test; the branch when it isn't
+   this run's); one without it gets the files your session changed, filled in by the harness.
+
    The harness counts these rows. Fewer rows than steps means your check was too thin and it is
    repeated on a stronger model. A missing or invalid `entry.json` leaves only a minimal entry,
    with no rows.

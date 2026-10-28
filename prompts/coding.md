@@ -22,9 +22,15 @@ checkouts on this machine.
 - **Decisions.** A decision that is Michael's: take the simplest reversible default, record it as
   the Where things go block says (below, or in `CLAUDE.md`), marked *default*, and ask it as a
   direct question in your entry's `questions`.
+- **Every question for Michael** (in `questions` or in `INBOX.md`) has a line
+  `Files: <absolute path>[:<line>], …` naming what he should open first (and the branch, when it
+  isn't this run's). One without it gets the files your session changed, filled in by the harness.
 - **Waiting on Michael.** Only when there is no safe default and nothing left to build without
   him (a secret or value only he can set, a sudo step, an approval the policy requires): write the
-  exact question or steps in the run directory's `INBOX.md` **above** `## Answers`, finish as below
+  exact question or steps in the run directory's `INBOX.md` below the comment block, directly above
+  the `## Answers` line (never inside the comment: GitHub hides it), headed
+  `### <feature id>: <one-line title> (<date time>)`, with what is blocked, why, `Files:`, the
+  options with one marked `(recommended)`, and the exact commands. Finish as below
   without flipping `passes`, and make the last line of your final message
   `PARKED: <what you need, in one line>`. The harness then parks the feature (no attempt spent),
   carries on with work that doesn't depend on it, and retries it once his answers change.
