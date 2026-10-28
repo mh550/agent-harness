@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 09:19 · U2-02 · passes
+
+lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, question, questionLine, added, answers, insert, files, repair + CLI); parked/notify/entries/record.sh on it; inbox_repair after each lane session (slot copy) and the initializer, noted; template comment without ## Answers; STUB_INBOX_IN_COMMENT; 57-inbox (11 checks), n8n-home fixture.
+
+- **Files:** lib/inbox.mjs, lib/parked.mjs, lib/notify.mjs, lib/entries.mjs, lib/record.sh, lib/lane.sh, lib/driver.sh, tests/stub-claude.sh, tests/checks/57-inbox.sh, tests/fixtures/inbox-q-in-comment.md, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-question-locations.md, +3 more
+- **Verified:** 57-inbox 11/11; its run check fails with lane.sh's inbox_repair call disabled (8/9 then). 03-harness-parked 4/4. Full suite (TEST_JOBS=2) on the pre-review tree 697/698, the one failure conformance from names added mid-run; full suite on the final tree green: 700 tests in 904 s (check.sh, TEST_JOBS=2). One Opus review (1 Important, 6 Minor), every finding fixed red to green in 57's two review checks.
+- **Tests:** 689 → 700
+- **Dead end:** repair by the comments' greedy longest common prefix/suffix alone — an edited comment's text was moved as a 'question', a --> inside the question ended the comment early, and a rotated insertion lost its tail (review); now: anchor on the comment's first and last lines, line/word-aligned placement, LCS runs for edits
+- **Discovery** (affects U2-03, U2-04, U2-05, U2-08): lib/inbox.mjs has answers/insert/question/repair CLIs and pure question, questionLine (1-based line of the question's first line), files ([{path,line}] from Files: lines) for U2-04/05/08; parked.mjs questionFor and notify.mjs inboxQuestion are aliases of question/added
+- **Discovery** (affects U2-05, U2-08): tests/stub-claude.sh STUB_INBOX_IN_COMMENT=<id>: that feature's first session splits the steering comment after 'under ' with '## Questions' + '**Q1 (<id>, stub).** set the gatus vars, then answer' and parks
+- **Discovery** (affects U2): added() now ignores HTML comments and reads the repaired text; inbox_repair (lib/record.sh) is a no-op when a session only rewords the comment
+- **Proposed change:** U2-02 step 5 says the lane repairs the record's INBOX.md; with lanes the session writes the slot copy, so the repair runs there (before take_question) and on the record's INBOX after the initializer, as the U2-01 plan §4.4/§7.5 says
+- **Proposed change:** U2-02 step 3 names tests/checks/56-inbox-pure.sh; 56 is taken, the file is 57-inbox.sh (plan §5.1)
+- *10-U2-02 · claude-opus-5-5*
+
 ### 2026-10-28 08:40 · U2-01 · passes
 
 Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and card keys, file locations, the 15 reasons mapped to their functions with kind/severity/priority/key/sweep rule, a card template per reason, needs.sh/needs.mjs/inbox.mjs APIs, notification texts, check files 57-63, fixtures, touched checks, order U2-02..09. Code unchanged; suite cached green.

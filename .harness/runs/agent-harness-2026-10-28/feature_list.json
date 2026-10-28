@@ -166,7 +166,7 @@
         "the driver's INBOX heredoc in lib/driver.sh no longer has the text `## Answers` inside its comment (it says to write answers under the Answers heading at the end of the file); after each session the lane runs `inbox.mjs repair` on the record's INBOX.md and on exit 3 notes `INBOX.md: <id>'s question was inside the steering comment (hidden on GitHub); moved below it`; a stub-run check with a stub session that writes its question inside the comment (a new `tests/stub-claude.sh` flag copying the n8n-home shape) finds that note in harness-log.md, the question above `## Answers` and the comment unchanged",
         "`node --check lib/inbox.mjs lib/parked.mjs lib/notify.mjs`, `bash -n lib/driver.sh lib/lane.sh lib/record.sh`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U2-03",

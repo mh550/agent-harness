@@ -42,3 +42,6 @@
 - 2026-10-28 08:30 · lane U2 opened (slot 0, port 7816, from fc23bf9, slot reused)
 - 2026-10-28 08:30 · context.md for U2-01: 7855 bytes, 1 items left out
 - 2026-10-28 08:40 · U2-01 · claude-opus-5-5 · passes=true · 9 min · 8/24 passing · tests 689
+- 2026-10-28 08:40 · context.md for U2-02: 7914 bytes
+- 2026-10-28 09:19 · U2-02: gotchas +1 ~0 -0
+- 2026-10-28 09:19 · U2-02 · claude-opus-5-5 · passes=true · 39 min · 9/24 passing · tests 700
