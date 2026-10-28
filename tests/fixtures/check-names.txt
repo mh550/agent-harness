@@ -594,6 +594,17 @@ scratch_done: the final tree's output is check-last.out, the note names what it 
 scratch_rm refuses anything but the run's own scratch directory (symlinks in its path too)
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
+show: --json is one v1 document (the feature form a superset) whose sorted key paths equal tests/fixtures/show-json-keys.txt
+show: <run> <feature> lists its milestone, passes, attempts, steps, sessions, its commits and its entry files, absolute
+show: CHANGES vs origin/main lists the session's 2 files with +/−, a stacked lane counted once, and marks the one main also changed ✗ conflicts
+show: NEEDS YOU lists the run's open items, one line each, then the harness needs command
+show: at COLUMNS=60 no line of the run view or the feature view passes 60 columns but a URL line
+show: once the worktree is removed: worktree removed, the record from the ledger copy, the same changes; the feature form still finds A, its one commit (not main's older A, not a body line)
+show: read-only: no fetch, the config read in a subshell, the project's object store untouched by merge-tree; bash -n and node --check
+show: the 12 largest rows, then +<k> more: harness show <run> --files; --files lists every row
+show: the compare URL of each run branch with changes, for the GitHub-shaped origin; none for a plain-path origin
+show: the pure parts: joinDiff joins by path (binary +/− null, .harness/runs/ left out), mergeTreePaths reads the real output, combine counts one blob once (stacked or fanned-out lanes), milestonesOf keeps a proposal's PR
+show: the run card's header and rule, then worktree, branch, record, state, lanes and the proposed milestones with their tags and PR URLs
 slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
 slot_open: a dependency's tag that conflicts with main opens base_conflict naming that tag
 slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)

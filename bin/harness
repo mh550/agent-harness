@@ -28,6 +28,11 @@
 #   harness status <run-id> [-v] [--json]        one run's card: state, now or ended (why), milestones, lanes, spend,
 #                                                branch, worktree, needs you, units, next; -v (or N): the log tail
 #                                                --json: one v1 document (lib/status.mjs), or that run's object
+#   harness show <run-id> [<feature>] [--files] [--json]
+#                                                where its work is: worktree, branch, compare URL, record, state, lanes,
+#                                                milestones (tag, PR), its changes vs origin/main with conflict marks (the
+#                                                12 largest; --files: all) and what needs you; a feature: its steps,
+#                                                sessions, files and commits. Local refs only (no fetch)
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
 #   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
 #                                                harness version (runs, passing, $/feature, cache hit, orientation)
@@ -376,6 +381,22 @@ cmd_status() {   # [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--j
     --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" --state-root "$STATE_ROOT" --max-parallel "${cfg%% *}" --since-default "${cfg#* }"
 }
 
+# <run> [<feature>] [--files] [--json]: where the run's work is (lib/show.mjs). Read-only: local refs, no fetch, no
+# harness_config writes; git runs in the run's PROJECT_DIR (its branches live there, worktree or not)
+cmd_show() {
+  local want="" feat="" o=() st pd m r=0 use="usage: harness show <run> [<feature>] [--files] [--json]"
+  while (( $# )); do case $1 in
+    --json|--files) o+=("$1") ;;
+    -*) die "$use" ;;
+    *) if [[ -z $want ]]; then want=$1; elif [[ -z $feat ]]; then feat=$1; else die "$use"; fi ;;
+  esac; shift; done
+  [[ -n $want ]] || die "$use"
+  st=$(state_of "$want"); pd=$( (source "$st/meta.env" && echo "$PROJECT_DIR") ) || die "no project dir in $st/meta.env"
+  runner_up && r=1; m=$( (harness_config "$pd" "$st" > /dev/null 2>&1; echo "${MAIN_BRANCH:-main}") ) || m=main   # read in a subshell, nothing set here
+  run_rows 0 "$want" | GIT_OPTIONAL_LOCKS=0 node "$HARNESS_HOME/lib/show.mjs" "$want" ${feat:+"$feat"} ${o[@]+"${o[@]}"} --project-dir "$pd" --main "$m" \
+    --state-root "$STATE_ROOT" --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" --queue "$Q" --runner "$r"
+}
+
 cmd_report() {
   local d ids=("$@") out=()
   (( ${#ids[@]} )) || for d in "$STATE_ROOT"/*/*/; do [[ -f $d/meta.env ]] && ids+=("$(basename "$d")"); done
@@ -689,6 +710,7 @@ case ${1:-help} in
   merge) shift; cmd_merge "$@" ;;
   queue) shift; cmd_queue "$@" ;;
   status) shift; cmd_status "$@" ;;
+  show) shift; cmd_show "$@" ;;
   needs) shift; cmd_needs "$@" ;;
   parked) shift; cmd_parked "$@" ;;
   report) shift; cmd_report "$@" ;;
