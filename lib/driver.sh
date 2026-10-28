@@ -352,8 +352,8 @@ log "  MCP servers: $( [[ -f $WT/.mcp.json ]] && echo ".mcp.json (--strict-mcp-c
 [[ -f $REC/INBOX.md ]] || cat > "$REC/INBOX.md" <<EOF
 status: run
 <!-- Steer this run from the GitHub app: edit this file on branch $BRANCH.
-     Change the first line to "status: pause" or "status: stop"; write answers to questions under "## Answers".
-     The harness pulls before every session; every session reads this file at startup. -->
+     Change the first line to "status: pause" or "status: stop"; write answers to questions under the Answers heading at the end
+     of this file. The harness pulls before every session; every session reads this file at startup. -->
 
 ## Answers
 EOF
@@ -454,8 +454,9 @@ if [[ ! -f $LIST ]]; then
   run_init
   HARNESS_CALIBRATION=$(SUM calibration "$LEDGER" "$PROJECT_NAME" 2>/dev/null) prompt initializer
   log "initializer · $(F model "$INIT_MODEL")"
-  istart=$(git rev-parse HEAD)
+  istart=$(git rev-parse HEAD); cp "$REC/INBOX.md" "$STATE/inbox-before.md"
   session init "$(F model "$INIT_MODEL")" "$LOGS/00-init.jsonl" initializer
+  inbox_repair initializer "$STATE/inbox-before.md" "$REC/INBOX.md"   # it writes the record's INBOX.md itself
   commit_all "WIP: initializer — uncommitted at session end (harness)"
   # the record branch holds the record only: whatever the initializer changed elsewhere goes (D3, decisions/2026-10-26-lanes)
   reverted=$(restrict "$istart" record initializer | paste -sd' ')

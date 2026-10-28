@@ -303,6 +303,7 @@ while :; do
   session coding "$mdl" "$slog" "$id"
   commit_all "WIP: $id — uncommitted at session end (harness)"; sync_lane   # the copy is excluded: code only
   journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
+  inbox_repair "$id" "$LS/inbox-before.md" "$SLOT/$RUN_DIR/INBOX.md"   # a question inside the comment, moved out first
   take_question   # what it asked above ## Answers, into the record's INBOX.md
   lane_guard "$sstart" "$id"
   gotchas "$id" "$sstart"   # a limited session's edit is noted too

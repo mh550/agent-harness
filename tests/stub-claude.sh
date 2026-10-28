@@ -36,6 +36,8 @@
 # STUB_REBASE_VERIFY_FAIL=1: M2's second verify session (a re-base's round) un-passes C.
 # STUB_IGNORED=<path>: every coding session appends "<id> present|absent" (<path> before it works) to
 # $STUB_DIR/ignored.log; the run's first writes <path> (an ignored install: a reused slot keeps it, P2-04).
+# STUB_INBOX_IN_COMMENT=<id>: that feature's first coding session asks inside INBOX.md's steering comment, splitting its
+# line after "under " with "## Questions" and "**Q1 (<id>, stub).** …" (n8n-home's 4632d1c shape), and parks (U2-02).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -161,6 +163,10 @@ JSON
       tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "harness/$HARNESS_RUN_ID"
       sed -i '2s/$/ (phone edit)/' "$tmp/$HARNESS_RUN_DIR/INBOX.md"
       git -C "$tmp" commit -qam "phone: comment" && git -C "$tmp" push -q origin "harness/$HARNESS_RUN_ID"; rm -rf "$tmp"
+    fi
+    if [[ ${STUB_INBOX_IN_COMMENT:-} == "$id" && $n == 1 ]]; then   # asks where GitHub hides it, then parks
+      node -e 'const fs=require("fs"),[f,id]=process.argv.slice(1),t=fs.readFileSync(f,"utf8"),i=t.indexOf("under ")+6;fs.writeFileSync(f,t.slice(0,i)+"## Questions\n\n**Q1 ("+id+", stub).** set the gatus vars, then answer\n\n"+t.slice(i))' "$HARNESS_RUN_DIR/INBOX.md" "$id"
+      ok 0.3 "Not done: needs two values only Michael can set.\\nPARKED: set the gatus vars"; exit 0
     fi
     if [[ ${STUB_PARK:-} == "$id" && $n == 1 ]]; then   # can't go on without Michael: asks in INBOX.md, parks
       sed -i '/^## Answers/i ### '"$id"': set the gatus vars, then answer\n' "$HARNESS_RUN_DIR/INBOX.md"

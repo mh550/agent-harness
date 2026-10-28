@@ -7,6 +7,7 @@
 # into its slot, excluded from git there, and taken back after it.
 # Plan: docs/plans/2026-10-26-P1-lanes-serial.md §2, §5, §6. Needs WT (the record worktree, the cwd) RUN_ID STATE
 # PROJECT_DIR HARNESS_HOME, and config.sh, prompt.sh, scope.sh and notify.sh sourced.
+INBOX_MJS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/inbox.mjs   # INBOX.md's one parser (U2-02)
 
 # The spec's helper: the lock is held while "$@" runs and released when fd 9 closes. HARNESS_RECORD_DELAY=<s> (tests
 # only, unset everywhere else) holds it that long first, so a check can make two writers meet.
@@ -138,8 +139,9 @@ notify_park() {
   notify "needs Michael: $id · $why" title="[$RUN_ID] $id needs you" priority=high tags=question click="$(gh_url "$RUN_DIR/INBOX.md")" actions="$acts" body="$body"
 }
 
-# What unparks a feature: Michael's answers changing (INBOX.md from "## Answers" on, local answers included).
-answers_hash() { sed -n '/^## Answers/,$p' "$REC/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12; }
+# What unparks a feature: Michael's answers changing (INBOX.md from "## Answers" on, local answers included). The
+# heading is the one outside the steering comment: a `## Answers".` a session left inside it is not his answers.
+answers_hash() { node "$INBOX_MJS" answers "$REC/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12; }
 
 control() {   # → run | pause | stop
   local s; s=$(sed -n 's/^status:[[:space:]]*//p' "$REC/INBOX.md" 2>/dev/null | head -1)
@@ -607,14 +609,23 @@ unmaterialize() {
 # The lines a session added above "## Answers" in its copy go into the record's INBOX.md above that line (at the end
 # they would sit under the answers and change answers_hash, unparking at once); saved for the park's notification.
 take_question_() {
-  local q; q=$(node "$NOTIFY_MJS" question "$LS/inbox-before.md" "$SLOT/$RUN_DIR/INBOX.md" 2> /dev/null)
+  local q; q=$(node "$INBOX_MJS" question "$LS/inbox-before.md" "$SLOT/$RUN_DIR/INBOX.md" 2> /dev/null)
   printf '%s' "$q" > "$LS/question"
   [[ -n $q ]] || return 0
-  if grep -q '^## Answers' "$REC/INBOX.md"; then
-    node -e 'const fs=require("fs"),[f,q]=process.argv.slice(1),t=fs.readFileSync(f,"utf8"),i=t.search(/^## Answers/m);fs.writeFileSync(f,t.slice(0,i)+q+"\n\n"+t.slice(i))' "$REC/INBOX.md" "$q"
-  else printf '\n%s\n' "$q" >> "$REC/INBOX.md"; fi
+  printf '%s' "$q" | node "$INBOX_MJS" insert "$REC/INBOX.md"
 }
 take_question() { record take_question_; }
+
+# A question written inside the steering comment is hidden on GitHub, and a `## Answers` it splits off there was read
+# as the heading (n8n-home 2026-10-27): the comment goes back as it was, the question above "## Answers"
+# (decisions/2026-10-27-question-locations). On the copy the session wrote: the slot's for a lane, the record's for the
+# initializer.
+inbox_repair() {   # <who> <INBOX before the session> <the INBOX it left>
+  [[ -f $3 ]] || return 0
+  node "$INBOX_MJS" repair "$2" "$3" 2>> "$STATE/run.log"
+  (( $? == 3 )) && note "INBOX.md: $1's question was inside the steering comment (hidden on GitHub); moved below it"
+  return 0
+}
 
 # <start commit> <who>: a lane commit that touched .harness/runs/ (a session that `git add -f`'d the copy) is reverted
 # by a new commit; the record never takes anything from it.

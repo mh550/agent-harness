@@ -7,6 +7,7 @@ DEBRIEF_PAGE_CMD gets the page
 DESK=0 by default, DESK_MODEL=opus
 DESK=0: no desk
 DESK=1: a park starts one desk, the run end reuses it
+INBOX repair in a run: noted, the record's comment as the driver wrote it, the question directly above ## Answers, C parked
 KEEP_SCRATCH=1 keeps the run's scratch; the default is 0
 M1 and M2 merged into main by PRs
 M1 and M2 tagged
@@ -242,6 +243,16 @@ harness status lists a running run's units with MemoryCurrent; an ended run's no
 harness stop --why: the note and ended say stopped by Michael: <why>
 harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
+inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
+inbox.mjs repair: n8n-home's fixture against its template keeps Q2 and moves Q1 above ## Answers, out of the comment
+inbox.mjs repair: the comment back byte for byte, the question directly above ## Answers; exit 3, then 0
+inbox.mjs review: a --> inside the moved question, a word-aligned insertion, a reworded comment, a comment of the session's own
+inbox.mjs review: a lone <!-- in a question hides nothing; answers() equals sed on it (no final newline); a CRLF heading counts
+inbox.mjs: added() on a session that wrote inside the comment returns that question (and only it)
+inbox.mjs: answersLine skips the comment (27 on the fixture, not 12), allows trailing blanks, and an unclosed comment runs to the end
+inbox.mjs: insert() puts the question and a blank line above ## Answers (appended without one); questionLine and files
+inbox.mjs: question(fixture, B1-05) is Q2, cut at the real heading, no comment in it
+inbox.mjs: the driver template has no "## Answers" inside its comment; answers() hashes as answers_hash's sed did
 independent M2 verified and merged alone (its tag carries no M1 work)
 independent work goes on past a parked feature
 init model resolved to fable

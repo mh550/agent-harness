@@ -71,3 +71,4 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - a card or view cuts every line at the width (100 off a TTY): a check comparing whole run.log lines sets COLUMNS=200 (agent-harness-2026-10-28 2026-10-28)
 - status.mjs: a session runs from its `session <n> · <id>` log line to its `passes=` or limit note; stub logs need both (agent-harness-2026-10-28 2026-10-28)
 - tests/fixtures/check-names.txt is LC_ALL=C sorted (run.sh comms it): re-sort it after adding names (agent-harness-2026-10-28 2026-10-28)
+- INBOX.md: cut at lib/inbox.mjs answersLine (the `## Answers` outside the steering comment), never `/^## Answers/` (agent-harness-2026-10-28 2026-10-28)
