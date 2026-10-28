@@ -32,3 +32,5 @@
 - 2026-10-28 07:19 · review U1-07: 2258 changed lines, at or over 400; opus
 - 2026-10-28 07:28 · context.md for U1-07: 7966 bytes
 - 2026-10-28 08:07 · U1-07 · claude-opus-5-5 · passes=true · 39 min · 7/24 passing · tests 689
+- 2026-10-28 08:07 · verify U1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-28 08:15 · context.md for U1: 16127 bytes
