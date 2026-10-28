@@ -11,3 +11,4 @@
 - 2026-10-28 02:37 · U1-03: entry.json missing; recorded a minimal entry
 - 2026-10-28 02:41 · notification failed (curl exit 28): harness
 - 2026-10-28 02:41 · session for U1-03 hit a limit (API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN)); not counted; resuming at 02:52
+- 2026-10-28 02:51 · usage-limit window (shared by all runs): waiting until 02:52 (1 min)
