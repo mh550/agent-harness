@@ -39,7 +39,7 @@ check "coding and verify prompts name resolved, project facts and Promote to Got
   [[ $c == *"\"resolved\": [\"Should X default to off?\"]"* && $c == *"\"affects\": [\"project\"]"* && $c == *"\"project\"\` for a fact that outlives the run"* ]] &&
   [[ $c == *"Write each \`Promote to Gotchas\` item of context.md"* && $v == *"durable fact"*"with \`affects: [\"project\"]\`"* ]]'
 check "a resolved question is gone from the next context.md" '
-  grep -qx -- "- Question (C): Should C default to off? → entries.jsonl:[0-9]*" "$GL/05-C.context.md" &&
+  grep -Eqx -- "- Question \(C\): Should C default to off\? Files \(harness, from the session\): /.*/work-C.txt(, /[^ ]+)* → entries.jsonl:[0-9]+" "$GL/05-C.context.md" &&
   v=$(ls "$GL"/*-verify-M2.context.md | head -1) && grep -q "^# Context pack for \`M2\`" "$v" && ! grep -q "Question (" "$v"'
 check "a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it" '
   sed -n "/^## Promote to Gotchas/,/^## /p" "$GL/02-B.context.md" | grep -x -- "- the stub.s work files sit at the repo root, one per feature → entries.jsonl:[0-9]*" > /dev/null &&
