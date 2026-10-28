@@ -51,4 +51,4 @@ STUB_PARK=B STUB_PARK_TOUCH=lib/z.sh STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB
   "$H" start "$T/proj" qs --spec SPEC.md --foreground > "$T/qs.out" 2>&1
 check "a park without Files: gets the session's files as the card's where (files_from session, absolute lib/z.sh); noted" \
   'W=$(nj qs ".[] | select(.reason == \"parked\") | [.card.files_from, .card.where[0].path] | join(\" \")" | jq -r .) && [[ $W =~ ^"session /".*"/lib/z.sh"$ ]] \
-  && hlog qs | grep -F "B: 1 question(s) had no Files: line; filled from the session'"'"'s diff" > /dev/null'
+  && [[ $(hlog qs | grep -cF "B: its INBOX question had no Files: line; the park card'"'"'s where is the session'"'"'s files") == 1 ]]'

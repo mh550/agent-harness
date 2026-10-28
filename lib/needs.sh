@@ -11,7 +11,7 @@ needs_open() {
   record node "$NEEDS_MJS" open "$STATE" "$RUN_ID" "$PROJECT_NAME" "$r" "$s" \
     milestone="${LANE:-}" list="$LIST" record="$REC" inbox="$REC/INBOX.md" worktree="${HARNESS_WT:-$RWT}" \
     branch="${LBRANCH:-$RBRANCH}" record_branch="$RBRANCH" main_branch="$MAIN_BRANCH" \
-    origin="$(git config --get remote.origin.url)" state="$STATE" suite="${CHECK_CMD:-}" "$@"
+    origin="$(git config --get remote.origin.url)" state="$STATE" suite="${CHECK_CMD:-}" fix_root="${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME" "$@"
   rc=$?; (( rc == 0 || rc == 3 )) || note "needs: could not record $r $s (exit $rc)" >&2   # stdout is the ref alone
   return "$rc"
 }

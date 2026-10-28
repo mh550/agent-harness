@@ -315,6 +315,7 @@ harness start ─► worktree + branch ─► driver (the coordinator):
 | Main drift | `main` moved during the run | merged into the lane branch before its verify (conflict → that milestone isn't merged; a `main_conflict` needs record naming the files and the PRs that brought them, notified once per `origin/main` commit, resolved by a later clean merge), and into the record branch when a run resumes | `sync_main` |
 | Session budget | `--max-budget-usd`, `--max-turns` per session | the CLI stops the session | `session()` |
 | Weekly budget | the newest session reported the 7-day window ≥ `WEEKLY_STOP_AT` (default 85 %, 0 = off) | the run ends before its next coding session; the queue starts no run | `weekly_over` (config.sh), driver loop, queue.sh |
+| INBOX repair | a session (a lane's or the initializer) wrote its question inside the steering comment (GitHub hides it, and a `## Answers` there was read as the heading) | the comment goes back as it was before the session, the question below it and above the real `## Answers`; note `INBOX.md: <who>'s question was inside the steering comment (hidden on GitHub); moved below it` (decisions/2026-10-27-question-locations) | `inbox_repair` (lib/record.sh) on `inbox.mjs repair`, after each lane session and the initializer |
 | Parking | a not-passing session's final message has a `PARKED:` line | attempt given back; skipped until the INBOX answers change | driver loop, `features.mjs park/unpark` |
 | Desk | `DESK=1` and a park, a blocked or waiting run end, verify or a merge needing Michael | a desk failing to start never stops or fails the run: `desk()` drops the output, notes a non-zero exit and returns 0; `desk.sh` itself exits 0 with a note and the plain notification when there is no tmux, no URL in time, or the lock is held | `desk()` (driver), `plain()` (desk.sh) |
 
@@ -354,7 +355,11 @@ the lane re-bases: main merged into the verified commit, the suite in full on it
 round when they overlap, or with `LANE_REBASE=verify`), the tag moved there (its only forced push), then the merge, so
 the invariant holds for the merged tree (decisions/2026-10-26-lane-rebase-disjoint). A lane that closed before its
 re-base gets a merge lane (`LANE_MERGE=1`: the slot at the tag, the re-base and merge only); `harness merge <run>` opens
-one for each the same way.
+one for each the same way. A milestone that conflicts with main (an open `merge_conflict` record) is Michael's to merge
+by hand. The card's commands do it in a worktree of their own (`<HARNESS_SCRATCH_ROOT>/<project>/fix-<run>-<m>`, never
+the slot or the record worktree) and push the lane branch. `harness merge <run>` then takes that branch's tip as the
+milestone's when it holds the verified commit: the tag moves there (noted), and the merge goes on from it. A conflict
+at the same main is said again on every `harness merge`, never skipped silently (U2 review).
 
 ## 9. Partial runs: the pattern
 

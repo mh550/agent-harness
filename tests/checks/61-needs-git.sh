@@ -77,7 +77,7 @@ u_base=$( source "$HH/lib/record.sh"; HARNESS_HOME=$HH; source "$HH/lib/needs.sh
   slot_open M2; echo "rc=$?" )
 check "slot_open: a dependency's tag that conflicts with main opens base_conflict naming that tag" \
   '[[ $u_base == rc=1 && -f $U/st/needs-M2 ]] && [[ $(jq -r "[.key, .card.headline] | join(\"|\")" "$U/st/needs/1.json") == "base_conflict:M2|M2 can'"'"'t open: its base conflicts (run/u/M1)" ]] \
-  && jq -r ".card.commands[]" "$U/st/needs/1.json" | grep -qx "cd $U/wt/lanes/u/slot-0 && git merge run/u/M1"'
+  && jq -r ".card.commands[]" "$U/st/needs/1.json" | grep -qx "cd $T/scratch/proj/fix-u-M2 && git merge run/u/M1"'
 # merge_one on the coordinator (no lane: LBRANCH empty, cwd the record worktree): the record names the lane's branch
 u_merge=$( source "$HH/lib/record.sh"; HARNESS_HOME=$HH; source "$HH/lib/needs.sh"
   STATE=$U/st LS=$U/st RWT=$U/wt/run REC=$U/wt/run/.harness/runs/u RUN_DIR=.harness/runs/u RUN_ID=u PROJECT_NAME=proj MAIN_BRANCH=main RBRANCH=harness/u

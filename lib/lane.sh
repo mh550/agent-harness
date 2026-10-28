@@ -140,7 +140,7 @@ verify() {
   fi
   printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
   # its record, committed with the verdict: thin, red, or the re-check's failed ids
-  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$mode")
+  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || echo "$mode")")   # verify_recheck's rebase words are rebase_fail's
   rec_commit "HARNESS: verify $m"; sync_record
   [[ -n $need ]] && needs_you "$m" "$need" progress.md "$nref"   # after the push: the click shows the verify entry
   return 1
@@ -165,7 +165,7 @@ rebase() {
   base=$(git merge-base "$c" "$mn")   # main as this lane last merged it (verify's sync_main)
   git checkout -q -B "$LBRANCH" "$c"   # the verified tip, nothing else
   if ! git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then
-    files=$(git diff --name-only --diff-filter=U); git merge --abort 2> /dev/null
+    files=$(git -c core.quotePath=false diff --name-only --diff-filter=U); git merge --abort 2> /dev/null
     rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH" merge_conflict rebase files="$files" main="$mn"; return 1
   fi
   theirs=$(git diff --name-only "$c" HEAD)   # what main brought in
@@ -375,7 +375,7 @@ while :; do
     nref=$(needs_open parked "$id" feature="$id" why="$why" actions="$(park_actions)" \
       session_files="$(node "$HARNESS_HOME/lib/entries.mjs" session-files "$REC" "$id" "$SCRATCH/entry-files" "$PWD")")
     [[ -n $nref ]] && jq -e '.card.files_from == "session" and (.card.question.text // "") != ""' "$STATE/needs/${nref##*/}.json" > /dev/null 2>&1 \
-      && note "$id: 1 question(s) had no Files: line; filled from the session's diff"
+      && note "$id: its INBOX question had no Files: line; the park card's where is the session's files"   # the entry's own fill is journal_'s note
   elif [[ $passed == false && ! -s $LS/review-escalate ]] && (( $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") >= MAX_ATTEMPTS )); then
     needs_open given_up "$id" feature="$id" attempts="$(jq -r --arg id "$id" '.[$id]' "$ATT")" max_attempts="$MAX_ATTEMPTS" log="$slog" > /dev/null
   fi

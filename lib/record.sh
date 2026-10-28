@@ -103,7 +103,7 @@ sync_main() {
   git fetch -q origin "$MAIN_BRANCH" 2>/dev/null || return 0
   git merge-base --is-ancestor "origin/$MAIN_BRANCH" HEAD && { main_clear "$sub"; return 0; }
   if git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0; fi
-  files=$(git diff --name-only --diff-filter=U); [[ -n $files ]] && mapfile -t fa <<< "$files"
+  files=$(git -c core.quotePath=false diff --name-only --diff-filter=U); [[ -n $files ]] && mapfile -t fa <<< "$files"
   # no conflicted file: the merge never started (a dirty tree, no identity): said, as before, and nothing recorded
   (( ${#fa[@]} )) || { git merge --abort 2>/dev/null; note "$MAIN_BRANCH did not merge into $b (see run.log); carrying on without it"; return 1; }
   # --first-parent: main's own merges; path-limited, git's default simplification hides a merge that took a file whole
@@ -398,7 +398,7 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
 # rebase), once per main, never after it needs Michael; `harness merge` clears moved-* and so tries once more.
 # --open (a dependency not merged yet) skips that test: main moves again when the dependency lands, and the rule runs then.
 merge_one() {
-  local m=$1 tag=run/$RUN_ID/$1 c head url tree mn out ref
+  local m=$1 tag=run/$RUN_ID/$1 c head url tree mn out ref t
   head=harness-merge/$RUN_ID-$m
   c=$(git rev-list -n1 "$tag") || return 1
   # once more after a second: another lane's fetch may hold refs/remotes/origin/<main>'s lock
@@ -406,9 +406,18 @@ merge_one() {
     || { log "$m: fetch of $MAIN_BRANCH failed; merged later"; return 1; }
   if git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; then touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (already there)"; return 0; fi
   mn=$(git rev-parse "origin/$MAIN_BRANCH")
-  if ! out=$(git merge-tree --write-tree --name-only "origin/$MAIN_BRANCH" "$c" 2>/dev/null); then
-    # once per main: merge_milestones runs again after every verify and at the end
-    [[ $(cat "$STATE/conflict-$m" 2>/dev/null) == "$mn" ]] && return 1
+  # `harness merge` after Michael merged main into the lane branch by hand (the merge_conflict card's (a)): that merge
+  # is the milestone's tip, re-tagged, when it holds the verified commit and its merge_conflict record is open
+  if [[ ${HARNESS_MERGE_ONLY:-} ]] && grep -qs "\"key\": \"merge_conflict:$m\"" "$STATE"/needs/*.json \
+    && git fetch -q origin "harness-lane/$RUN_ID/$m" 8>&- 2> /dev/null && t=$(git rev-parse FETCH_HEAD) \
+    && [[ $t != "$c" ]] && git merge-base --is-ancestor "$c" "$t"; then
+    git tag -f -a "$tag" -m "harness run $RUN_ID: $m verified (v3); main merged in by hand, harness merge" "$t" > /dev/null \
+      && git push -q --force origin "refs/tags/$tag" 8>&- 2>> "$STATE/run.log" \
+      && { c=$t; note "$m: main merged into its branch by hand; re-tagged $tag at ${t:0:7}"; }
+  fi
+  if ! out=$(git -c core.quotePath=false merge-tree --write-tree --name-only "origin/$MAIN_BRANCH" "$c" 2>/dev/null); then
+    # once per main: merge_milestones runs again after every verify and at the end; `harness merge` always says so
+    [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/conflict-$m" 2>/dev/null) == "$mn" ]] && return 1
     echo "$mn" > "$STATE/conflict-$m"
     note "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)"
     # the lane's branch and slot (on the coordinator LBRANCH is empty and HARNESS_WT the record worktree)

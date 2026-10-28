@@ -44,6 +44,11 @@ adds the questions' locations (`Files:`, the fill) and completes it.)*
     `session_files=`). The run directory's paths are left out (a lane's copy goes). `inbox.mjs files` reads the label
     bold, in backticks or in parentheses too, and an item only when it has a `/` or `.` and no blank, so `**Files:**`
     counts and "the Files: section" doesn't. Either fill notes `<id>: <n> question(s) had no Files: line; filled from the session's diff`.
+  - **The review (U2-09).**
+    - The `## Answers` heading may go on after a blank, `:` or `(` (`## Answers (Michael)`, as the old sed prefix
+      allowed), never after `".`.
+    - `repair` moves an insertion only when it has 12 or more non-blank characters: a reword of the comment stays.
+    - The lane's park note says that the card's `where` is the session's files; the entry's fill keeps its own note.
 - **Rejected:** refusing a question without `Files:` (the session is over by then: the question would be lost, or a
   feature re-run for want of a line). A model filling the paths (a second session, guesses; the diff is what the
   session touched, and the harness has it). Rewriting the session's text otherwise (the fill only appends, so what
@@ -53,3 +58,4 @@ adds the questions' locations (`Files:`, the fill) and completes it.)*
   it is how Michael learns the steering words on his phone.
 
 Updated in place 2026-10-28: U2-08's question locations (prompts, the fill) complete it.
+Updated in place 2026-10-28: U2-09's review (the heading rule, the repair floor, the park note).

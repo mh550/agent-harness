@@ -77,3 +77,4 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - stub runs in one check file share origin main: an earlier run's merges are on it; reset main (update-ref) between runs (agent-harness-2026-10-28 2026-10-28)
 - status-json-keys.txt lists the stub needs records' keys: a new parked, given_up or driver_crash card field changes it (agent-harness-2026-10-28 2026-10-28)
 - entry questions without Files: are stored with ` Files (harness, from the session): …`: a check on such a line allows it (agent-harness-2026-10-28 2026-10-28)
+- card commands use fix_root/fix-<run>-<s>: $T/scratch/proj/… in checks, /tmp/harness/<project>/… via the card CLI (agent-harness-2026-10-28 2026-10-28)

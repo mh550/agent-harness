@@ -432,6 +432,16 @@ needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref k
 needs open: an unknown reason or an empty subject exits 1 with needs.mjs: on stderr and writes nothing
 needs record: its first 13 keys are the v1 event keys in order, kind is park, needs_michael, blocked or limit (in v1's enum)
 needs record: ref is <run>/<seq>, key <reason>:<subject>; seq is one past the largest in needs/ and needs/done/; feature and milestone default from the subject or the list
+needs review: a ## Answers heading with words after it (## Answers (Michael)) is the heading; ## Answersheet is not
+needs review: a card's commands fix the branch in a worktree of its own at its pushed tip, never the slot or the record worktree
+needs review: a card's paths are shell-quoted (a blank, a $ or a ; pastes as one word)
+needs review: a short reword inside the steering comment (not a question) stays there, unmoved
+needs review: done waits for the record lock a lane holds
+needs review: harness merge at the same main says the conflict again (never a silent return)
+needs review: harness merge takes main merged into the lane branch by hand (the card's (a)): re-tagged there, its PR merged at it
+needs review: harness needs done on a parked record is refused (it resolves when unparked); the record stays open, never a synthesized twin
+needs review: harness needs done rewrites the record's needs.md (the notification's click) without the item
+needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)
 needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
 needs.md is committed on the record branch before the park goes out, and lists the park

@@ -87,14 +87,14 @@ V nc-main_conflict > "$T/v80.out"; COLUMNS=60 V nc-main_conflict > "$T/v60.out";
 check "harness needs: NEEDS YOU, a card per item (<glyph> <run> · <headline> · since <HH:MM> (<ago>) · <ref>), blocked, why, where, URLs, options, do; the footer" \
   '[[ $(head -1 "$T/v80.out") =~ ^"NEEDS YOU 1 "(─)+$ && $(sed -n 2p "$T/v80.out") == "⚠ nc-main_conflict · main conflicts with the run branch (4 files) · since 01:05 (5m) · nc-main_conflict/1" ]] \
   && for l in "  blocked    P2 " "  why        Before each verify" "  where      /home/u/worktrees/" "  https://github.com/mh550/agent-harness/compare/main...harness-lane/agent-harness-2026-10-26/P2" \
-       "  options    (a) merge main into the branch by hand" "  do         cd /home/u/worktrees/" "done by hand: harness needs done <ref> · resolved too: harness needs --all"; do
+       "  options    (a) merge main into the branch by hand" "  do         git -C /home/u/worktrees/" "done by hand: harness needs done <ref> · resolved too: harness needs --all"; do
        grep -F -- "$l" "$T/v80.out" > /dev/null || { echo "missing: $l"; miss=1; }; done; [[ -z ${miss:-} && $(tail -1 "$T/v80.out") == "done by hand: harness needs done <ref> · resolved too: harness needs --all" ]]'
 check "COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line" \
   '[[ $(widest < "$T/all60.out") -le 60 && $(widest < "$T/v60.out") -le 60 ]] && [[ $(sed -n 2p "$T/v60.out") == "⚠ nc-main_conflict · main conflicts with the run branc… · 5m" ]] \
   && grep -x "  ref        nc-main_conflict/1 · since 01:05 (5m)" "$T/v60.out" > /dev/null && grep -E "^ +…/.*/tests/fixtures/check-names.txt$" "$T/v60.out" > /dev/null \
   && grep -E "^  https://.{60,}" "$T/v60.out" > /dev/null && grep -x "NEEDS YOU 2 · 2 runs ─*" "$T/all60.out" > /dev/null'
 check "harness needs --json: each command's full text (no ~, no cut)" \
-  'V nc-main_conflict --json | jq -e ".[0].card.commands[0] == \"cd /home/u/worktrees/agent-harness/lanes/agent-harness-2026-10-26/slot-1 && git merge origin/main\"" > /dev/null'
+  'G="git -C /home/u/worktrees/agent-harness/agent-harness-2026-10-26/.harness/runs/agent-harness-2026-10-26"; V nc-main_conflict --json | jq -e --arg c "$G fetch -q origin && $G worktree add --detach /tmp/harness/proj/fix-nc-main_conflict-P2 origin/harness-lane/agent-harness-2026-10-26/P2" ".[0].card.commands[0] == \$c" > /dev/null'
 check "harness parked is harness needs for text: the parked card's question from INBOX.md, run, do" \
   'HARNESS_NOW=$NOW HOME=/home/u "$H" parked nc-parked > "$T/p.out" && cmp -s "$T/p.out" <(V nc-parked) && grep "^⚠ nc-parked · B1-05 parked: " "$T/p.out" > /dev/null \
   && grep -F "  question   **Q2 (B1-05, 2026-10-27 01:05)." "$T/p.out" > /dev/null && grep -x "  run        no" "$T/p.out" > /dev/null \

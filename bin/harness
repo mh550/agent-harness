@@ -462,7 +462,8 @@ cmd_needs() {
     shift; local ref=${1:-} why=(); [[ $ref == */* ]] || die 'usage: harness needs done <run>/<n> [--why "<text>"]'; shift
     while (( $# )); do case $1 in --why) why=(--why "${2:-}"); shift ;; *) die "unknown option $1" ;; esac; shift; done
     st=$(state_of "${ref%%/*}")
-    msg=$(node "$NEEDS_MJS" done "$st" "$ref" "${why[@]}" 2>&1) || die "${msg#needs.mjs: }"
+    # under the record lock: a lane's sweep or refresh never races the move
+    msg=$(flock "$st/record.lock" node "$NEEDS_MJS" done "$st" "$ref" "${why[@]}" 2>&1) || die "${msg#needs.mjs: }"
     echo "$msg"; return 0
   fi
   while (( $# )); do case $1 in --json|--all) opts+=("$1") ;; -*) die "unknown option $1" ;; *) [[ -z $want ]] || die "usage: harness needs [<run-id>] [--all] [--json]"; want=$1 ;; esac; shift; done
