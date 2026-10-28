@@ -7,6 +7,7 @@
 # into its slot, excluded from git there, and taken back after it.
 # Plan: docs/plans/2026-10-26-P1-lanes-serial.md §2, §5, §6. Needs WT (the record worktree, the cwd) RUN_ID STATE
 # PROJECT_DIR HARNESS_HOME, and config.sh, prompt.sh, scope.sh and notify.sh sourced.
+INBOX_MJS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/inbox.mjs   # INBOX.md's one parser (U2-02)
 
 # The spec's helper: the lock is held while "$@" runs and released when fd 9 closes. HARNESS_RECORD_DELAY=<s> (tests
 # only, unset everywhere else) holds it that long first, so a check can make two writers meet.
@@ -94,15 +95,31 @@ restrict() {   # base record|nothing|runs who
 }
 
 # Bring main's new commits into the branch checked out here (a lane at its verify, so what is verified is what merges;
-# the record branch at a resumed start, for its configuration). 1 = conflict (left as it was).
+# the record branch at a resumed start, for its configuration). 1 = conflict (left as it was): a main_conflict record
+# for the lane (record on the record branch) naming the conflicted files and the PRs that brought them, notified once
+# per origin/main commit (main-conflict-<subject> holds it); a later clean merge, or main already in, resolves it.
 sync_main() {
-  local b; b=$(git branch --show-current)
+  local b sub=${LANE:-record} mn old files fa=() subjects ref; b=$(git branch --show-current)
   git fetch -q origin "$MAIN_BRANCH" 2>/dev/null || return 0
-  git merge-base --is-ancestor "origin/$MAIN_BRANCH" HEAD && return 0
-  if git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then note "merged $MAIN_BRANCH into $b"; return 0; fi
+  git merge-base --is-ancestor "origin/$MAIN_BRANCH" HEAD && { main_clear "$sub"; return 0; }
+  if git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0; fi
+  files=$(git -c core.quotePath=false diff --name-only --diff-filter=U); [[ -n $files ]] && mapfile -t fa <<< "$files"
+  # no conflicted file: the merge never started (a dirty tree, no identity): said, as before, and nothing recorded
+  (( ${#fa[@]} )) || { git merge --abort 2>/dev/null; note "$MAIN_BRANCH did not merge into $b (see run.log); carrying on without it"; return 1; }
+  # --first-parent: main's own merges; path-limited, git's default simplification hides a merge that took a file whole
+  subjects=$(git log --first-parent --merges --format=%s "$(git merge-base HEAD "origin/$MAIN_BRANCH")..origin/$MAIN_BRANCH" -- "${fa[@]}")
   git merge --abort 2>/dev/null; note "$MAIN_BRANCH conflicts with $b; carrying on without it (merges into $MAIN_BRANCH need Michael)"
+  mn=$(git rev-parse "origin/$MAIN_BRANCH"); old=$(cat "$STATE/main-conflict-$sub" 2> /dev/null)
+  echo "$mn" > "$STATE/main-conflict-$sub"   # before the open: a sweep meanwhile must not resolve it
+  ref=$(needs_open main_conflict "$sub" files="$files" subjects="$subjects" main="$mn" head="$(git rev-parse HEAD)")
+  [[ $old == "$mn" ]] && return 1   # once per main commit: a verify after it says nothing new
+  rec_commit "HARNESS: $MAIN_BRANCH conflicts with $b"; sync_record
+  needs_you "$sub" "$MAIN_BRANCH conflicts with $b" needs.md "$ref"
   return 1
 }
+main_clear() { [[ -f $STATE/main-conflict-$1 ]] || return 0; rm -f "$STATE/main-conflict-$1"; needs_sweep; }   # <subject>
+# git merge-tree --write-tree --name-only's output → its conflicted paths (the lines between the tree and the blank line)
+conflict_files() { sed -n '2,/^$/{/./p}'; }
 
 # Answers typed locally (`harness answer`, the supervisor) are moved into INBOX.md so sessions see them.
 take_answers_() {
@@ -113,9 +130,10 @@ take_answers_() {
 }
 take_answers() { record take_answers_; }
 
-# A milestone Michael must act on (verify, a conflict): high, one tap from the run-record file that explains it.
-needs_you() {   # <milestone> <why> <file in the run record>
-  notify "$1 needs Michael: $2" title="[$RUN_ID] $1 needs you" priority=high click="$(gh_url "$RUN_DIR/$3")"
+# A milestone Michael must act on (verify, a conflict): its needs record's title, body (the card), click (needs.md) and
+# priority; without a record (a failed open) high, one tap from the run-record file that explains it.
+needs_you() {   # <milestone> <why> <file in the run record> <the record's ref>
+  needs_notify "${4:-}" "$1 needs Michael: $2" title="[$RUN_ID] $1 needs you" priority=high click="$(gh_url "$RUN_DIR/$3")"
   desk "$1 needs Michael: $2"
 }
 
@@ -130,16 +148,20 @@ desk() {
 }
 
 # The park's notification: the question the session wrote in INBOX.md and how to answer, with the INBOX one tap away.
-notify_park() {
-  local id=$1 why=$2 q body acts
+# A park's notification is its needs record's (lib/needs.sh): the title, the body (PARKED: <why>, the question, the
+# card's blocked, where and do, the answer line), the click (needs.md), priority high and the actions park_actions gave
+# it at its open. Without a record (a failed open) the question and the answer line still go out.
+park_actions() { node "$NOTIFY_MJS" actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" "Answer with Claude" "$DESK_URL" Progress "$(gh_url "$RUN_DIR/progress.md")"; }
+notify_park() {   # <id> <why> <the parked record's ref>
+  local id=$1 why=$2 q
   q=$(cat "$LS/question" 2> /dev/null)   # what take_question found in the session's copy (gone by now)
-  body="PARKED: $why"$'\n\n'"${q:+$q$'\n\n'}Answer: harness answer $RUN_ID \"…\""
-  acts=$(node "$NOTIFY_MJS" actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" "Answer with Claude" "$DESK_URL" Progress "$(gh_url "$RUN_DIR/progress.md")")
-  notify "needs Michael: $id · $why" title="[$RUN_ID] $id needs you" priority=high tags=question click="$(gh_url "$RUN_DIR/INBOX.md")" actions="$acts" body="$body"
+  needs_notify "${3:-}" "needs Michael: $id · $why" title="[$RUN_ID] $id needs you" priority=high tags=question actions="$(park_actions)" click="$(gh_url "$RUN_DIR/INBOX.md")" \
+    body="PARKED: $why"$'\n\n'"${q:+$q$'\n\n'}Answer: harness answer $RUN_ID \"…\""
 }
 
-# What unparks a feature: Michael's answers changing (INBOX.md from "## Answers" on, local answers included).
-answers_hash() { sed -n '/^## Answers/,$p' "$REC/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12; }
+# What unparks a feature: Michael's answers changing (INBOX.md from "## Answers" on, local answers included). The
+# heading is the one outside the steering comment: a `## Answers".` a session left inside it is not his answers.
+answers_hash() { node "$INBOX_MJS" answers "$REC/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12; }
 
 control() {   # → run | pause | stop
   local s; s=$(sed -n 's/^status:[[:space:]]*//p' "$REC/INBOX.md" 2>/dev/null | head -1)
@@ -262,15 +284,18 @@ journal() {
       note "$who: $f edited by the session; restored (the driver is its only writer)"
     done
   fi
-  record journal_ "$who" "$kind" "$id" "$name" "$4" "$outcome"
+  record journal_ "$who" "$kind" "$id" "$name" "$4" "$outcome" "$PWD"
   return 0
 }
-journal_() {   # who kind id name model outcome: the ingest and the render, in the record
-  local out rc
+journal_() {   # who kind id name model outcome worktree: the ingest and the render, in the record
+  local out rc n
   if [[ $PWD != "$RWT" ]]; then   # a lane: the take-back of the copy's entry, under the lock with the ingest
     rm -f "$REC/entry.json"; [[ -e $RUN_DIR/entry.json ]] && mv -f "$RUN_DIR/entry.json" "$REC/entry.json"
   fi
-  out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$REC" "$2" "$3" "$4" "$5" "$6" "$SCRATCH/entry-files" "$SCRATCH/entry-final"); rc=$?
+  out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$REC" "$2" "$3" "$4" "$5" "$6" "$SCRATCH/entry-files" "$SCRATCH/entry-final" "$7"); rc=$?
+  # a question without a Files: line got the session's files (decisions/2026-10-27-question-locations)
+  n=$(sed -n 's/^filled //p' <<< "$out"); out=$(grep -v '^filled ' <<< "$out")
+  [[ -n $n ]] && note "$1: $n question(s) had no Files: line; filled from the session's diff"
   (( rc == 3 )) && note "$1: entry.json $out; recorded a minimal entry"
   (( rc == 0 || rc == 3 )) || { note "$1: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
     mv -f "$REC/entry.json" "$STATE/entry-failed-$4.json" 2> /dev/null; }
@@ -373,7 +398,7 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
 # rebase), once per main, never after it needs Michael; `harness merge` clears moved-* and so tries once more.
 # --open (a dependency not merged yet) skips that test: main moves again when the dependency lands, and the rule runs then.
 merge_one() {
-  local m=$1 tag=run/$RUN_ID/$1 c head url tree mn
+  local m=$1 tag=run/$RUN_ID/$1 c head url tree mn out ref t
   head=harness-merge/$RUN_ID-$m
   c=$(git rev-list -n1 "$tag") || return 1
   # once more after a second: another lane's fetch may hold refs/remotes/origin/<main>'s lock
@@ -381,13 +406,29 @@ merge_one() {
     || { log "$m: fetch of $MAIN_BRANCH failed; merged later"; return 1; }
   if git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; then touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (already there)"; return 0; fi
   mn=$(git rev-parse "origin/$MAIN_BRANCH")
-  if ! tree=$(git merge-tree --write-tree "origin/$MAIN_BRANCH" "$c" 2>/dev/null | head -1); then
-    # once per main: merge_milestones runs again after every verify and at the end
-    [[ $(cat "$STATE/conflict-$m" 2>/dev/null) == "$mn" ]] && return 1
-    echo "$mn" > "$STATE/conflict-$m"
-    note "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)"; rec_commit "HARNESS: $m conflicts with $MAIN_BRANCH"; sync_record
-    needs_you "$m" "conflicts with $MAIN_BRANCH" harness-log.md; return 1
+  # `harness merge` after Michael merged main into the lane branch by hand (the merge_conflict card's (a)): that merge
+  # is the milestone's tip, re-tagged, when it holds the verified commit and its merge_conflict record is open
+  if [[ ${HARNESS_MERGE_ONLY:-} ]] && grep -qs "\"key\": \"merge_conflict:$m\"" "$STATE"/needs/*.json \
+    && git fetch -q origin "harness-lane/$RUN_ID/$m" 8>&- 2> /dev/null && t=$(git rev-parse FETCH_HEAD) \
+    && [[ $t != "$c" ]] && git merge-base --is-ancestor "$c" "$t"; then
+    git tag -f -a "$tag" -m "harness run $RUN_ID: $m verified (v3); main merged in by hand, harness merge" "$t" > /dev/null \
+      && git push -q --force origin "refs/tags/$tag" 8>&- 2>> "$STATE/run.log" \
+      && { c=$t; note "$m: main merged into its branch by hand; re-tagged $tag at ${t:0:7}"; }
   fi
+  if ! out=$(git -c core.quotePath=false merge-tree --write-tree --name-only "origin/$MAIN_BRANCH" "$c" 2>/dev/null); then
+    # once per main: merge_milestones runs again after every verify and at the end; `harness merge` always says so
+    [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/conflict-$m" 2>/dev/null) == "$mn" ]] && return 1
+    echo "$mn" > "$STATE/conflict-$m"
+    note "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)"
+    # the lane's branch and slot (on the coordinator LBRANCH is empty and HARNESS_WT the record worktree)
+    ref=$(needs_open merge_conflict "$m" milestone="$m" files="$(conflict_files <<< "$out")" main="$mn" head="$c" \
+      branch="harness-lane/$RUN_ID/$m" worktree="$(cat "$STATE/lanes/$m/slot" 2> /dev/null)")
+    rec_commit "HARNESS: $m conflicts with $MAIN_BRANCH"; sync_record
+    # its lane's sync_main already said this main conflicts (main_conflict): one notification for it
+    [[ $(cat "$STATE/main-conflict-$m" 2> /dev/null) == "$mn" ]] || needs_you "$m" "conflicts with $MAIN_BRANCH" harness-log.md "$ref"
+    return 1
+  fi
+  tree=${out%%$'\n'*}; rm -f "$STATE/conflict-$m"   # merges cleanly now: its merge_conflict record resolves at the next sweep
   if [[ ${2:-} != --open && $tree != "$(git rev-parse "$c^{tree}")" ]]; then   # main has content the lane wasn't verified with
     # once per main while its re-base is pending (rebase-<m>); a re-base cut short (its lane killed) took that marker
     # with it, and the milestone would wait silently for the next main (P2 review 4)
@@ -409,7 +450,9 @@ merge_one() {
     # once per tag commit (merge_milestones runs again after every verify and at the end); `harness merge` always says so
     [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/refused-$m" 2>/dev/null) == "$c" ]] && return 1
     echo "$c" > "$STATE/refused-$m"
-    note "$m: the merge was refused; PR left open for Michael · $url"; notify "$m needs Michael: merge refused · $url" title="[$RUN_ID] $m needs you" priority=high click="$url"
+    note "$m: the merge was refused; PR left open for Michael · $url"
+    ref=$(needs_open merge_refused "$m" milestone="$m" pr="$url" click="$url" head="$c"); rec_commit "HARNESS: $m merge refused"; sync_record
+    needs_notify "$ref" "$m needs Michael: merge refused · $url" title="[$RUN_ID] $m needs you" priority=high click="$url"
     [[ ${HARNESS_MERGE_ONLY:-} ]] || desk "$m: merge refused"   # `harness merge`: Michael is at the terminal
     return 1
   fi
@@ -538,7 +581,7 @@ slot_open() {
   if [[ -n $fold ]]; then
     if ! git -C "$SLOT" merge -q --no-edit "$fold" > /dev/null 2>&1; then
       git -C "$SLOT" merge --abort 2> /dev/null
-      note "$m: $b here and on origin diverged and conflict; needs Michael"; touch "$STATE/needs-$m"
+      note "$m: $b here and on origin diverged and conflict; needs Michael"; base_conflict "$m" "$fold" diverged
       cd "$RWT" || return 1; return 1
     fi
     note "$m: $b here and on origin had diverged; merged origin's into it"
@@ -550,7 +593,7 @@ slot_open() {
     git -C "$SLOT" merge-base --is-ancestor "$tag" HEAD && continue
     if ! git -C "$SLOT" merge -q --no-edit "$tag" > /dev/null 2>&1; then
       git -C "$SLOT" merge --abort 2> /dev/null
-      note "$m: its base conflicts ($dep vs $MAIN_BRANCH); needs Michael"; touch "$STATE/needs-$m"
+      note "$m: its base conflicts ($dep vs $MAIN_BRANCH); needs Michael"; base_conflict "$m" "$tag" dependency
       cd "$RWT" || return 1; return 1
     fi
   done
@@ -562,7 +605,7 @@ slot_open() {
     && ! git -C "$SLOT" merge-base --is-ancestor "$dep" HEAD; then
     if ! git -C "$SLOT" merge -q --no-edit "$dep" > /dev/null 2>&1; then
       git -C "$SLOT" merge --abort 2> /dev/null
-      note "$m: its base conflicts (default vs $MAIN_BRANCH); needs Michael"; touch "$STATE/needs-$m"
+      note "$m: its base conflicts (default vs $MAIN_BRANCH); needs Michael"; base_conflict "$m" "$dep" default
       cd "$RWT" || return 1; return 1
     fi
   fi
@@ -577,7 +620,12 @@ slot_open() {
   sha=$(git rev-parse --short HEAD)
   note "lane $m opened (slot $k, port ${LANE_PORT:-$PORT}, from $sha$( (( first )) || echo ", slot reused"))"
 }
-slot_fail() { note "$1: its slot failed ($2; see run.log); needs Michael"; touch "$STATE/needs-$1"; cd "$RWT" || :; }
+slot_fail() { note "$1: its slot failed ($2; see run.log); needs Michael"; base_conflict "$1" "" slot; cd "$RWT" || :; }
+# <m> <what conflicted (a ref git merge takes)> <variant>: needs-<m> and its base_conflict record, the slot its worktree
+base_conflict() {
+  touch "$STATE/needs-$1"
+  needs_open base_conflict "$1" milestone="$1" with="$2" variant="$3" worktree="$SLOT" branch="harness-lane/$RUN_ID/$1" > /dev/null
+}
 lane_cd() { cd "$SLOT" || return 1; export HARNESS_WT=$SLOT HARNESS_BRANCH=$LBRANCH; SLIST=$SLOT/$RUN_DIR/feature_list.json; }
 rec_cd() { cd "$RWT" || return 1; export HARNESS_WT=$RWT HARNESS_BRANCH=$RBRANCH; SLIST=$LIST; }
 
@@ -607,14 +655,23 @@ unmaterialize() {
 # The lines a session added above "## Answers" in its copy go into the record's INBOX.md above that line (at the end
 # they would sit under the answers and change answers_hash, unparking at once); saved for the park's notification.
 take_question_() {
-  local q; q=$(node "$NOTIFY_MJS" question "$LS/inbox-before.md" "$SLOT/$RUN_DIR/INBOX.md" 2> /dev/null)
+  local q; q=$(node "$INBOX_MJS" question "$LS/inbox-before.md" "$SLOT/$RUN_DIR/INBOX.md" 2> /dev/null)
   printf '%s' "$q" > "$LS/question"
   [[ -n $q ]] || return 0
-  if grep -q '^## Answers' "$REC/INBOX.md"; then
-    node -e 'const fs=require("fs"),[f,q]=process.argv.slice(1),t=fs.readFileSync(f,"utf8"),i=t.search(/^## Answers/m);fs.writeFileSync(f,t.slice(0,i)+q+"\n\n"+t.slice(i))' "$REC/INBOX.md" "$q"
-  else printf '\n%s\n' "$q" >> "$REC/INBOX.md"; fi
+  printf '%s' "$q" | node "$INBOX_MJS" insert "$REC/INBOX.md"
 }
 take_question() { record take_question_; }
+
+# A question written inside the steering comment is hidden on GitHub, and a `## Answers` it splits off there was read
+# as the heading (n8n-home 2026-10-27): the comment goes back as it was, the question above "## Answers"
+# (decisions/2026-10-27-question-locations). On the copy the session wrote: the slot's for a lane, the record's for the
+# initializer.
+inbox_repair() {   # <who> <INBOX before the session> <the INBOX it left>
+  [[ -f $3 ]] || return 0
+  node "$INBOX_MJS" repair "$2" "$3" 2>> "$STATE/run.log"
+  (( $? == 3 )) && note "INBOX.md: $1's question was inside the steering comment (hidden on GitHub); moved below it"
+  return 0
+}
 
 # <start commit> <who>: a lane commit that touched .harness/runs/ (a session that `git add -f`'d the copy) is reverted
 # by a new commit; the record never takes anything from it.

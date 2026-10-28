@@ -50,7 +50,8 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | `harness backlog [list]` · `backlog set <id> <status> [--spec] [--pr] [--note]` · `backlog import <file.jsonl>` | the retro backlog, `ledger/retro-backlog.jsonl`: one row per retro proposal across runs, `proposed` first, most seen first; `set` moves one (`proposed` · `specced` · `queued` · `merged` · `dropped`), `import` merges rows by id; writes hold the ledger lock and are a ledger commit (`LEDGER_COMMIT`) (see [Retro backlog](#retro-backlog)) |
 | `harness status [--all] [--since <d>] [--project <p>] [-v] [--json]` · `status <run> [-v] [--json]` | look: one screen, NEEDS YOU, RUNNING, QUEUED and FINISHED (runs ended in the last `STATUS_SINCE`, default `24h`, never fewer than the 3 newest, never more than 10), then how many are hidden; `--all` lists every run, `--since 3d` widens the window, `--project` keeps one project's; `-v` (or `N=<lines>`) adds a running run's units with `MemoryCurrent`, one line per open lane (`lane <m> · <feature> · session <n> · port <p> · slot <k> · MemoryCurrent <unit> <MB> MB, …`) and the last `N` `run.log` lines; `<run>` prints that run's card (state, now or ended, milestones, lanes, spend, branch, worktree, needs you, next); `--json` the v1 document (`tests/fixtures/status-json-keys.txt`). It fits the terminal (`COLUMNS`, else 100 off a TTY), colours only on a TTY (`NO_COLOR=1` turns it off) and falls back to ASCII glyphs outside a UTF-8 locale |
 | `harness report` · `trends [--by version]` · `attach` | look (`report`'s `Lanes` row: the most lanes open at once and lane hours against wall hours; `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
-| `harness parked [<run>] [--json]` | what each parked feature waits on: the question, since when, the commands to answer (read-only) |
+| `harness needs [<run>] [--all] [--json]` · `needs done <run>/<n> [--why "<text>"]` | every open item that waits on Michael (a park, a give-up, a failed verify or merge, a run that stopped on its own) as a card: what waits on it, the question or why (the mechanism and its file), where (files with lines, GitHub links), options with one recommended, the commands; block before warn, oldest first; `COLUMNS=60` for the phone; `--all` adds those resolved in the last 7 days; `done` resolves one by hand (read-only but for `done`); each item is a JSON file, `<STATE_ROOT>/<project>/<run>/needs/*.json` (resolved ones in `needs/done/`), what n8n reads |
+| `harness parked [<run>] [--json]` | `harness needs` for text; `--json`: each parked feature (run, project, feature, since, why, question, running, ending, queued, commands) with its needs item's `ref` and `card` (read-only) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
 | `harness eval run` · `compare` · `probes` | replay a fixed task set under a harness version and compare two results (see [Evals](#evals); costs money) |
 | `harness init` · `gc [--all-merged] [--deps] [--dry-run]` | set up a project (adds the Vercel/Netlify deploy guard so run branches never deploy), clean up merged runs (their clean worktrees, run worktrees only (`harness/<run>`: a worktree on any other branch is a `keeps` line), clean counting untracked files whatever the config, ignored build output and all: `worktree remove --force`, then `rm -rf` only once git has let go of it (a locked one stays), a failure a `! could not remove <wt>: <why>` line and gc goes on; and the merged `harness/` and `harness-merge/` branches, local and on origin; `--all-merged`: every branch merged into `origin/main`, whatever its name, except `main`, the origin's default branch and a running run's; local deletes are `branch -d`, a refused one is a `! failed:` line and gc goes on; `--deps`: the `DEPS_DIRS`, default `node_modules .next .next-check .venv`, in the worktrees of ended runs, merged or not, never the project's checkout or a live or queued run's, each a `+ freed <n> MB in <wt>: <dirs>` line), stop the systemd units a killed driver left (`harness-<run>-*` of runs with no live driver) and kill the tmux sessions `h-<run>` of its ended runs (never `h-queue`, the desk, a live or paused run's) |
@@ -187,14 +188,14 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   per project) lives in `~/.claude/CLAUDE.md` § "Git, merges and permissions" and the user settings. Install or
   refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`.
 - **Answering from the phone:** install the skill once, `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`.
-  Ask a Claude session "answer the harness": it runs `harness parked`, checks what it safely can (variable names, never
+  Ask a Claude session "answer the harness": it runs `harness needs`, checks what it safely can (variable names, never
   values), proposes, and runs `harness answer` only after your yes. Set `DESK_URL` (above) to get **Answer with Claude**
   on a park's notification; `templates/user/config.sh` documents every user setting.
 - **The desk:** with `DESK=1` in `~/.config/harness/config.sh` (off by default) the harness starts the session for you
   whenever a run needs you (a park, a blocked or waiting end, verify or a merge needing you, a debrief with something
   under Needs Michael): a Remote Control `claude` in tmux session `h-desk`, one window per run, on `DESK_MODEL` (opus).
   On the phone you get a second notification, `[<run>] needs you: <why>`; tapping it opens that session in the Claude
-  app, already briefed: it has read `harness parked`, the INBOX and the progress log and sends one numbered brief. Answer
+  app, already briefed: it has read `harness needs`, the INBOX and the progress log and sends one numbered brief. Answer
   there; it runs `harness answer` and the continue only after your yes. A later event for the same run is typed into the
   same session. By hand: `harness desk <run> [--why "…"]`, `harness desk --debrief`; `harness desk --list` (window, run,
   URL, age), `harness desk --close <run>|--all`; `harness gc <project>` closes desks idle for 24 h (and keeps the
@@ -207,8 +208,17 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   fails it needs Michael.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 - **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and
-  ends `PARKED: …`. The feature waits without spending attempts while independent work goes on; the run ends
-  `waiting on Michael: <ids>` when nothing else can run. Any new answer unparks it on `harness continue`.
+  ends `PARKED: …`. A question written inside the steering comment (GitHub hides it) is moved below it, with a note. Every question
+  (in INBOX.md or an entry's `questions`) names the files to open on a `Files:` line; one without it gets the files the
+  session changed, filled in by the harness (`Files (harness, from the session): …`, noted). The feature waits without spending attempts while independent work goes on; the run ends
+  `waiting on Michael: <ids>` when nothing else can run. Any new answer unparks it on `harness continue`. The park's
+  notification carries the question, what waits on it, where and the commands; tapping it opens `needs.md` in the
+  run record, every open item there as a card. A milestone that needs you (thin, red or failed verify, a conflict with
+  main, a refused merge, a lane base that won't merge) notifies the same way, its card as the body; main conflicting
+  with a lane is said once per main commit, and resolves itself once main merges cleanly. A card's commands fix a
+  branch in a worktree of their own (never the run's slot or record worktree) and push it. After a merge conflict,
+  `harness merge <run>` takes the branch with main merged in as the milestone's tip. `harness needs done` refuses a
+  park: it resolves when you answer and continue.
 - **Weekly budget:** past `WEEKLY_STOP_AT` (default 85 %) of the plan's 7-day window, as sessions report it, the queue
   starts no run and a running one stops before its next coding session.
 

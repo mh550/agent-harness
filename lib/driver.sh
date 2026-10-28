@@ -45,6 +45,8 @@ source "$HARNESS_HOME/lib/deploy.sh"   # deploy_status: hosts that would build e
 source "$HARNESS_HOME/lib/version.sh"  # harness_version: the harness commit driving this segment, and whether it is dirty
 # shellcheck source=lib/record.sh
 source "$HARNESS_HOME/lib/record.sh"   # record (the lock), run_paths, note, session, journal, merge_milestones, slot_open …
+# shellcheck source=lib/needs.sh
+source "$HARNESS_HOME/lib/needs.sh"   # needs_open: a needs-you record (lib/needs.mjs)
 run_paths   # PROJECT_NAME BRANCH RUN_DIR SCRATCH CHECK PORT, RWT REC LIST …, the configuration
 mkdir -p "$HARNESS_CACHE"   # installs a project keeps across runs and boots (Playwright browsers …); scratch goes at finish
 echo "$MAX_ATTEMPTS" > "$STATE/max-attempts"
@@ -62,7 +64,14 @@ END_REASON="driver exited unexpectedly (see run.log)"
 # (that file only, not pushed): a dirty worktree would keep gc from removing it
 # A forked child (lane_wait's sleep, killed before its exec) inherits it and must not run it (P2 review 1).
 # Lanes first: each stops its own session and services; fd 9 closed so none waits on a lock this process holds.
-trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "$REC/harness-log.md" > /dev/null 2>&1; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
+# An end no finish named (a TERM, an error) is a driver_crash record; it and the note are committed (not pushed).
+exit_record() {
+  local f=("$REC/harness-log.md")
+  [[ $END_REASON == "driver exited unexpectedly (see run.log)" ]] && needs_open driver_crash run log="$STATE/run.log" > /dev/null
+  [[ -f $REC/needs.md ]] && git -C "$RWT" add -- "$REC/needs.md" 2> /dev/null && f+=("$REC/needs.md")
+  git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "${f[@]}" > /dev/null 2>&1
+}
+trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; exit_record; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
 
 demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
   # the stop's time is when it reached this box (STOP, else INBOX.md pulled), not when the driver got to it: a request
@@ -98,7 +107,7 @@ reap() {
     mv -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/closed" 2> /dev/null; rm -f "$f"; n=$(( n + 1 ))
     note "lane $m closed ($why)"
     [[ -f $STATE/merged-$m ]] && lane_branch_gone "$m"   # it merged itself: its branch went from the origin, here it goes now
-    [[ $why == "lane exited unexpectedly" ]] && touch "$STATE/needs-$m"
+    [[ $why == "lane exited unexpectedly" ]] && { touch "$STATE/needs-$m"; needs_open driver_crash "$m" milestone="$m" log="$STATE/run.log" > /dev/null; }
     [[ $code == 13 || $why == "feature-list edits" ]] && { LANE_END=$why; echo "$why" > "$STATE/lanes-end"; }
   done
   (( n )) && merge_milestones
@@ -287,6 +296,11 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   wait_lanes   # each stops between sessions: a stop, the deadline, a cap
   unmaterialize; rec_cd   # a copy a killed lane left in its slot
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
+  # after ended, so the item an end opens below is never swept by its own finish; committed with the run's end
+  needs_sweep
+  local nr=""; case $1 in "feature-list edits"*) nr=feature_list_edits ;; "initializer failed"*) nr=initializer_failed ;;
+    "usage limit"*) nr=usage_limit ;; "weekly budget"*) nr=weekly_budget ;; esac
+  [[ -n $nr ]] && needs_open "$nr" run end_reason="$1" > /dev/null
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
   merge_milestones
   local rb; for rb in $(F milestones "$LIST" 2> /dev/null); do   # kept for the next segment's coordinator, or harness merge
@@ -352,8 +366,8 @@ log "  MCP servers: $( [[ -f $WT/.mcp.json ]] && echo ".mcp.json (--strict-mcp-c
 [[ -f $REC/INBOX.md ]] || cat > "$REC/INBOX.md" <<EOF
 status: run
 <!-- Steer this run from the GitHub app: edit this file on branch $BRANCH.
-     Change the first line to "status: pause" or "status: stop"; write answers to questions under "## Answers".
-     The harness pulls before every session; every session reads this file at startup. -->
+     Change the first line to "status: pause" or "status: stop"; write answers to questions under the Answers heading at the end
+     of this file. The harness pulls before every session; every session reads this file at startup. -->
 
 ## Answers
 EOF
@@ -454,8 +468,9 @@ if [[ ! -f $LIST ]]; then
   run_init
   HARNESS_CALIBRATION=$(SUM calibration "$LEDGER" "$PROJECT_NAME" 2>/dev/null) prompt initializer
   log "initializer · $(F model "$INIT_MODEL")"
-  istart=$(git rev-parse HEAD)
+  istart=$(git rev-parse HEAD); cp "$REC/INBOX.md" "$STATE/inbox-before.md"
   session init "$(F model "$INIT_MODEL")" "$LOGS/00-init.jsonl" initializer
+  inbox_repair initializer "$STATE/inbox-before.md" "$REC/INBOX.md"   # it writes the record's INBOX.md itself
   commit_all "WIP: initializer — uncommitted at session end (harness)"
   # the record branch holds the record only: whatever the initializer changed elsewhere goes (D3, decisions/2026-10-26-lanes)
   reverted=$(restrict "$istart" record initializer | paste -sd' ')
@@ -497,6 +512,7 @@ while :; do
   if (( alive < MAX_LANES || paused )); then   # with every lane slot taken there is nothing to decide: no fetch each poll
     take_answers; sync_record
     for id in $(record F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
+    needs_sweep   # before the opens: an unparked feature's record resolves
   fi
   c=$(control)
   [[ $c == stop ]] && { wait_lanes; demote_requests; why=$(stop_why); note "$why"; finish "$why"; }
@@ -514,6 +530,7 @@ while :; do
     if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; finish "weekly budget ($why)"; fi
   fi
   reap; [[ -n $LANE_END ]] && continue   # a lane gone since the top: its slot, its end and its needs count before an open
+  alive=$(lanes_open)   # and its slot is free: a stale count skipped the open and ended the run "no feature left to try"
   opened=0
   if (( alive < MAX_LANES )) && (( $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) <= $(date +%s) || alive == 0 )); then
     while IFS=$'\t' read -r m kind; do   # kind: "rebase" from rebase_due; F lanes' second field is its base tags

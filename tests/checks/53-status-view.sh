@@ -13,7 +13,7 @@ check "status view: an empty state root prints the four empty sections and no fo
 check "status view: NEEDS YOU lists the crashed, the parked and the given-up run, oldest first, with headline, passing, dollars and age; the gc'd run none" '
   V | sec "NEEDS YOU" > "$T/n.out" && [[ $(awk "{ print \$1, \$2 }" "$T/n.out" | paste -sd"|") == "⚠ crashed|⚠ parked|⚠ givenup" ]] \
   && grep -Ex "⚠ parked +B parked: set the gatus vars +1/3 +\\\$[0-9]+ +1h" "$T/n.out" > /dev/null \
-  && grep -Ex "⚠ givenup +C given up \(2 attempts\) +2/3 +33m" "$T/n.out" > /dev/null && ! grep -q gcd "$T/n.out"'
+  && grep -Ex "⚠ givenup +C given up after 2 attempts +2/3 +33m" "$T/n.out" > /dev/null && ! grep -q gcd "$T/n.out"'
 check "status view: RUNNING shows the live run as ● with feature, session and model alias; paused ‖; a usage-limit wait; two lanes as sub-rows" '
   V | sec RUNNING > "$T/r.out" && grep -Ex "● running +B · session 2 · opus +1/3 +\\\$[0-9]+ +2h" "$T/r.out" > /dev/null && [[ $(wc -l < "$T/r.out") == 1 ]] \
   && touch "$HARNESS_STATE/proj/running/PAUSE" && V | sec RUNNING | grep -Ex "‖ running +paused +1/3 .*" > /dev/null; r=$?; rm -f "$HARNESS_STATE/proj/running/PAUSE"

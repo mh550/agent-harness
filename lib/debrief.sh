@@ -7,8 +7,8 @@
 #   first debrief ever covers the runs since the newest "runner up".
 #   1. debrief.lock (a second debrief waits for the first, then covers only what is left), the preflight (node, jq,
 #      git, flock, claude), the usage-limit window (LIMIT_UNTIL): waits up to 5 h, longer: exits, the next one covers it
-#   2. bash gathers the context, no model: status, trends, the queue, runner.log, and for every run: why it ended,
-#      summary.json, report.md, retro.md, INBOX.md, open questions, each capped
+#   2. bash gathers the context, no model: status, trends, the queue, runner.log, and for every run: why it ended, its card,
+#      what waits on Michael (harness needs), summary.json, report.md, retro.md, INBOX.md, open questions, each capped
 #   3. one headless session (DEBRIEF_MODEL), prompt on stdin, in dontAsk mode with an allowlist of read-only tools and
 #      the never-list as --disallowedTools; git status and refs of the ledger, worktrees and projects compared after
 #   4. its "CONTINUE: <run> :: <brief>" lines are checked here and queued (`harness queue add --continue … --automatic --keep-attempts`);
@@ -112,6 +112,10 @@ run_context() {   # state dir → this run's section
     echo "- started by a queue runner: $( [[ -s $1/runners ]] && echo yes || echo 'no (by hand)') · continuation queued: $(compgen -G "$Q/*-continue-$RUN_ID.args" > /dev/null && echo yes || echo no)"
     echo "- features: $(F summary "$rd/feature_list.json" 2>/dev/null || echo 'no feature list')"
     echo; echo "#### harness status"; N=3 "$H" status "$RUN_ID" 2>&1 | head -c 3000 | fence
+    # what waits on Michael: the records' cards, cut at a line with a note (the model can't tell a cut list otherwise)
+    echo; echo "#### needs"; COLUMNS=80 "$H" needs "$RUN_ID" > "$WS/needs.txt" 2>&1
+    if (( $(wc -c < "$WS/needs.txt") > 4000 )); then head -c 4000 "$WS/needs.txt" | sed '$d'; echo "… (cut at 4000 bytes; the rest: harness needs $RUN_ID)"
+    else cat "$WS/needs.txt"; fi | fence
     for f in summary.json:12000 report.md:8000 retro.md:6000 INBOX.md:4000; do
       echo; echo "#### ${f%%:*}"
       if [[ ! -s $rd/${f%%:*} ]]; then echo "(none)"

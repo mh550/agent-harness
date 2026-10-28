@@ -9,7 +9,9 @@ Michael is likely on his phone: keep every message short, numbered, and easy to 
 
 ## What to run first
 
-1. `harness parked` (or `harness parked <run>`): every parked feature, with the question, since when, and the commands.
+1. `harness needs` (or `harness needs <run>`; `harness parked` is its alias): a card per item that waits on Michael
+   (parked features with their question, verify and merge stops, given-up features: why, where, since when and the
+   commands); `harness needs <run> --json` gives each item's `card.commands` whole.
 2. For each run listed, `harness status <run>`.
 3. Read that run's INBOX.md above `## Answers` and the newest two entries of its progress.md, both in
    `~/worktrees/<project>/<run>/.harness/runs/<run>/`.
@@ -45,8 +47,8 @@ HARNESS_ANSWER_END
 
 Then read it back to him. Then continue the run once: `harness queue list`; with a runner going,
 `harness queue add --continue <run>`, otherwise `harness continue <run>`. A run still going needs no continue; one
-`ending` (its driver is wrapping up) needs it once `harness status <run>` shows it ended (`harness parked` says
-which). An ambiguous reply gets a follow-up question, not a guess.
+`ending` (its driver is wrapping up) needs it once `harness status <run>` shows it ended (the card's `run` line, or `--json`'s `card.run_state`,
+says which). An ambiguous reply gets a follow-up question, not a guess.
 
 ## Never
 

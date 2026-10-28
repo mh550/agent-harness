@@ -2,11 +2,13 @@
 Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
+COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
 CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
 DEBRIEF_PAGE_CMD gets the page
 DESK=0 by default, DESK_MODEL=opus
 DESK=0: no desk
 DESK=1: a park starts one desk, the run end reuses it
+INBOX repair in a run: noted, the record's comment as the driver wrote it, the question directly above ## Answers, C parked
 KEEP_SCRATCH=1 keeps the run's scratch; the default is 0
 M1 and M2 merged into main by PRs
 M1 and M2 tagged
@@ -19,6 +21,7 @@ WEEKLY_STOP_AT raises the bar
 a $0 one-turn session is not counted
 a .harness/teardown.sh added after the run started is run at its stop points
 a 300 KB report: the context stays small, the session runs
+a SIGKILLed driver shows a synthesized driver_crash in harness needs
 a TERM during an init stops the init's scope before the teardown runs
 a TERM during finish's teardown runs no second teardown: the trap waits for it, then stops the svc scope, one note
 a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it
@@ -39,18 +42,24 @@ a failed run-end post is committed: the worktree stays clean for gc
 a failed session: its error text is never the note
 a failed verify at the deadline is not retried: M1 needs Michael
 a given-up feature blocks what depends on it
+a given-up feature opens given_up naming what waits on it; harness needs and harness parked list it while parked.json is empty
 a held index.lock: written, not committed, nothing left staged
 a killed debrief changes nothing
 a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
+a later clean sync_main resolves main_conflict: its item in needs/done/, main merged cleanly, noted
 a later deadline: the earlier refusals aren't the cause
 a ledger checkout on another branch: the note is written, not committed
 a legacy run is untouched, then continued into a journal
 a limit ending: the cause is the usage limit
 a limit-cut session's passes is reverted, A retried
 a listed worktree whose directory is gone never ends gc: every later step still runs
+a main conflict notifies once per main commit across 2 verifies: high, title <m> needs you, body the card, click needs.md
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
 a park notification: title, question, answer command, click and Edit INBOX action
+a park opens one parked record; card.question.line is the first line the session added, its URL that line
+a park whose INBOX question has Files: <path>:48: the record's where[0] is that path at line 48, files_from question
+a park without Files: gets the session's files as the card's where (files_from session, absolute lib/z.sh); noted
 a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it
 a proposed merge: ready to merge, click = the PR, default priority
 a queued continuation: only the answer command
@@ -90,6 +99,7 @@ a stop with a reason: an automatic continuation is still skipped; summary.json h
 a stop without a reason says just: stopped by Michael (the note and ended)
 a stub session that adds a Gotchas line is noted
 a successful post: a line in run.log only
+a thin verify opens verify_thin under [<run>] M1 needs you; the notification's body is the card, click needs.md
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
 a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
@@ -137,6 +147,7 @@ check.sh: the cached line names the key's ignore list only when it isn't the def
 coding and verify prompts name resolved, project facts and Promote to Gotchas
 coding prompt names CLAUDE.md but doesn't paste it
 coding prompt: the Finish step adds one Gotchas line
+conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)
 context.md carries the earlier attempt's dead end
 context.md lists the decisions store's rules newest first
 continuation queued: keeps attempts, brief marked as the debrief's
@@ -160,6 +171,7 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
 entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
 entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
@@ -191,6 +203,7 @@ eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
 files changed during the session are flagged in the note
 finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
+finish opens usage_limit (limit, warn, no priority) for a usage-limit end; needs.md committed; the run-end title kept
 finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
 gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives
 gc --all-merged keeps the origin default branch and a live run branch, merged or not
@@ -212,6 +225,7 @@ harness backlog set with an unknown id, a bad status or a missing argument exits
 harness backlog with LEDGER_COMMIT=1 commits retro-backlog.jsonl alone, one ledger commit per write
 harness backlog with no store prints (empty)
 harness continue of a run stopped from the phone: INBOX.md's status: stop goes back to run, so it doesn't stop again
+harness continue resolves the given_up item (fresh attempts): moved to needs/done/ by the sweep, noted
 harness desk --all
 harness desk --close <run>
 harness desk --debrief
@@ -230,7 +244,18 @@ harness merge leaves a legacy record as it was; its PR quotes the legacy verify 
 harness merge merges v2 tags, closes the v2 PR
 harness merge merges verified milestones afterwards
 harness merge says it was refused again, and starts no desk
+harness needs --json: each command's full text (no ~, no cut)
+harness needs --json: the open records, block before warn, oldest first; --all adds the 15 resolved ones
+harness needs and parked are read-only
+harness needs done <ref> moves the item to needs/done/, resolved by michael
+harness needs done <ref>: resolved <ref>, the file in needs/done/ by michael (--why, else done by hand); a second done, a synthesized or unknown ref exit 1
+harness needs is read-only
+harness needs nope: exit 1, harness: on stderr; needs done with no ref is a usage error
+harness needs: NEEDS YOU, a card per item (<glyph> <run> · <headline> · since <HH:MM> (<ago>) · <ref>), blocked, why, where, URLs, options, do; the footer
+harness needs: a card per item (<glyph> <run> · <headline> · since … · <ref>); with a run, that run's only; nothing open: NEEDS YOU 0, nothing needs you
 harness parked --json parses
+harness parked --json: today's keys for parked features only, plus ref and card
+harness parked is harness needs for text: the parked card's question from INBOX.md, run, do
 harness parked is read-only
 harness parked: an unknown or glob run id is an error
 harness parked: id, why, question, both commands
@@ -242,6 +267,16 @@ harness status lists a running run's units with MemoryCurrent; an ended run's no
 harness stop --why: the note and ended say stopped by Michael: <why>
 harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
+inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
+inbox.mjs repair: n8n-home's fixture against its template keeps Q2 and moves Q1 above ## Answers, out of the comment
+inbox.mjs repair: the comment back byte for byte, the question directly above ## Answers; exit 3, then 0
+inbox.mjs review: a --> inside the moved question, a word-aligned insertion, a reworded comment, a comment of the session's own
+inbox.mjs review: a lone <!-- in a question hides nothing; answers() equals sed on it (no final newline); a CRLF heading counts
+inbox.mjs: added() on a session that wrote inside the comment returns that question (and only it)
+inbox.mjs: answersLine skips the comment (27 on the fixture, not 12), allows trailing blanks, and an unclosed comment runs to the end
+inbox.mjs: insert() puts the question and a blank line above ## Answers (appended without one); questionLine and files
+inbox.mjs: question(fixture, B1-05) is Q2, cut at the real heading, no comment in it
+inbox.mjs: the driver template has no "## Answers" inside its comment; answers() hashes as answers_hash's sed did
 independent M2 verified and merged alone (its tag carries no M1 work)
 independent work goes on past a parked feature
 init model resolved to fable
@@ -333,6 +368,7 @@ lint: self-match trips a grep of progress.md for the step's own words, not of ha
 lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
+main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
 materialize: a record tracked at the slot's base is skip-worktree, so the session's commit carries none of the copy
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
 memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
@@ -358,6 +394,10 @@ memory gate: every session starts with the services up, a verify after its wait 
 memory gate: the real fixture's 9 GB passes without a note
 memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+merge_one on the coordinator: merge_conflict names the lane branch, never the record branch, and is notified
+merge_one's conflict opens merge_conflict: the merge-tree files in where, main and the tag commit, notified with the card
+merge_one's refusal opens merge_refused: the PR URL in where and as its click, notified once with it
+mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits
 metrics usage: five_hour reads the newest event's five-hour window; the default stays the seven-day one
 metrics.jsonl: every session line has mem_peak_mb from its scope
 metrics.jsonl: mem_peak_mb is null when uncapped
@@ -368,6 +408,45 @@ metrics: coding rows carry tokens, cache rate and context peak
 metrics: orientation recorded per session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
+needs REASONS: kind, severity and priority for each of the 15 reasons, as the plan's table
+needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card feature_list_edits: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card given_up: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card initializer_failed: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card main_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card merge_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card merge_refused: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card overlap: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card parked: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card usage_limit: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card verify_recheck: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card verify_red: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card verify_thin: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card weekly_budget: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
+needs cards: 15 fixtures, one per reason, and a reason without a template is exit 1
+needs list: a dead driver.pid with no ended is a synthesized driver_crash (ref <run>/crash, at run.log's mtime), parked.json's B a parked item; nothing stored
+needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver
+needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref kept, updated_at moved
+needs open: an unknown reason or an empty subject exits 1 with needs.mjs: on stderr and writes nothing
+needs record: its first 13 keys are the v1 event keys in order, kind is park, needs_michael, blocked or limit (in v1's enum)
+needs record: ref is <run>/<seq>, key <reason>:<subject>; seq is one past the largest in needs/ and needs/done/; feature and milestone default from the subject or the list
+needs review: a ## Answers heading with words after it (## Answers (Michael)) is the heading; ## Answersheet is not
+needs review: a card's commands fix the branch in a worktree of its own at its pushed tip, never the slot or the record worktree
+needs review: a card's paths are shell-quoted (a blank, a $ or a ; pastes as one word)
+needs review: a short reword inside the steering comment (not a question) stays there, unmoved
+needs review: done waits for the record lock a lane holds
+needs review: harness merge at the same main says the conflict again (never a silent return)
+needs review: harness merge takes main merged into the lane branch by hand (the card's (a)): re-tagged there, its PR merged at it
+needs review: harness needs done on a parked record is refused (it resolves when unparked); the record stays open, never a synthesized twin
+needs review: harness needs done rewrites the record's needs.md (the notification's click) without the item
+needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)
+needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
+needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
+needs.md is committed on the record branch before the park goes out, and lists the park
+needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
+needs: a run whose worktree and record branch are both gone resolves run removed (list hides it before any sweep); the branch alone keeps it
 next <m>: a feature without after waits on its own milestone's earlier features only
 no URL in time: no window, the plain notification
 no URLs for a non-GitHub origin
@@ -378,6 +457,7 @@ no user systemd: the init runs bare, and the run's one uncapped note stays the o
 no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
 not queued: ended done / already queued / no work left / still running
 nothing parked
+notify.mjs urls compare <origin> <base> <branch>: the GitHub compare URL; exit 1 off GitHub
 notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3
 notify.mjs: githubUrls for ssh, https and non-GitHub origins
 notify.mjs: inboxQuestion is the lines added above ## Answers (never Michael's old answers)
@@ -385,6 +465,7 @@ notify.mjs: trimBody caps at 3500 bytes with …
 one ledger row per run
 one note, overwritten: ledger/debrief.md
 one notification per run end
+parked card: the INBOX question verbatim with its line 16 and ?plain=1#L16 URL, where from its Files: line, parked.mjs's commands
 parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers
 parked.mjs: the question is the feature's INBOX section
 parked.mjs: the report names the answer and continue commands
@@ -495,6 +576,7 @@ scratch_rm refuses anything but the run's own scratch directory (symlinks in its
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
 slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
+slot_open: a dependency's tag that conflicts with main opens base_conflict naming that tag
 slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)
 slot_open: after a lane's base conflicts, reopening the previous lane checks its branch out again
 slot_open: the slot's excludes file keeps the user's global excludes (a ~ path expanded)
@@ -510,8 +592,11 @@ status card: harness needs <run>, the card's hint, answers until U2's own comman
 status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
 status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule
 status card: needs you counts the run's items with the first headline and the harness needs hint
+status card: needs you gives the count and each open item's headline, then the harness needs hint
+status card: past three items, +<k> more; a record without its card and an unreadable state dir never stop status or harness needs
 status card: the debrief keeps N=3 harness status <run>; the supervisor asks for -v and keeps N=20
 status card: the gcd run says removed by gc and 23/23 from the ledger; its milestones from the summary; next report only
+status from records: --json needs are harness needs --json's items whole; markers and an end reason alone are none
 status json: --json writes nothing, and reads the queue dir without creating it
 status json: --project proj2 keeps only that project's runs, items and queue entries
 status json: STATUS_SINCE in the user config sets the window, --since wins over it
@@ -520,7 +605,7 @@ status json: finished holds the runs ended in the last 24h, newest first, and ol
 status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
 status json: harness status --json over 38 stub runs takes under 1 s (best of 3)
 status json: harness status <run> --json prints that one run object with v; an unknown run is an error
-status json: lib/status.mjs has a usage header, imports only node: built-ins and ./view.mjs, exports runObject, queueEntry and sections
+status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs and ./needs.mjs, exports runObject, queueEntry and sections
 status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
 status json: queued holds the entries as queue list numbers them, held by a live run of their project, a brief's first 30 characters
 status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
@@ -540,6 +625,7 @@ status view: -v adds each running run's lane lines (P2-06's text), its own units
 status view: -v with a non-numeric N keeps 3 log lines; two lanes' sub-rows are ASCII under LC_ALL=C; only a path starting with the home directory becomes a tilde; no control byte from run.log
 status view: FINISHED newest first with the end class glyph and the reason, the gc'd run 23/23 from the ledger; the 3-day-old run only in the footer
 status view: NEEDS YOU lists the crashed, the parked and the given-up run, oldest first, with headline, passing, dollars and age; the gc'd run none
+status view: NEEDS YOU lists the records' headlines, oldest first, none for the marker-only run
 status view: QUEUED shows the waiting entries as queue rows, a held one says which run holds it, parked ones counted; past three, +<k> more
 status view: RUNNING shows the live run as ● with feature, session and model alias; paused ‖; a usage-limit wait; two lanes as sub-rows
 status view: STATUS_SINCE defaults to 24h (lib/config.sh), commented in the user config template; the catch-up prompt asks for one project
@@ -573,6 +659,7 @@ sync: another branch checked out: skipped; LIVE_SYNC=0: off
 sync: level says so
 sync: nothing local: fast-forward
 sync: pulls the merged PR and pushes the ledger commit, no merge commit
+sync_main's conflict opens main_conflict for the lane: the conflicted file in where, the merged PR's run in why, the main commit
 tampered list restored
 tampered text reverted
 test count: a continued run refreshes tests-end after each session (summary.json 3 → 5 before finish), tests-start stays the baseline
@@ -592,9 +679,11 @@ testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
 testcount.mjs: the runner's last N/M checks passed is the count
 the EXIT trap commits its services note: harness-log.md is clean after a TERM
+the EXIT trap of a driver ended unexpectedly opens driver_crash (stored, no synthesized one); its needs.md committed
 the allowlist runs nothing that writes or executes
 the answer skill exists and names the commands and the never-list
 the answer skill passes Michael's words through a quoted heredoc
+the answer skill's first step is harness needs, harness parked its alias
 the deadline verifies a complete milestone once and merges it
 the debrief page never reads a stop reason's words as its tone
 the debrief saw the queue's runs
@@ -602,6 +691,7 @@ the debrief starts a desk when Needs Michael is non-empty
 the debrief's harness status block per run opens with the run's card line
 the desk notification
 the desk prompt names the run, its commands and the never-list
+the desk prompt reads COLUMNS=60 harness needs and needs --json, never harness parked
 the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory
 the desk's environment has no NTFY_TOKEN
 the dialog guard: the CLI's dialog words, not the desk's own questions
@@ -612,11 +702,14 @@ the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), 
 the initializer prompt asks for after on independent features and on every milestone's first
 the initializer prompt has the resolved lint command
 the initializer prompt sizes reviews to the milestone
+the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the limit window is shared
 the next debrief covers what the failed and killed ones missed
 the park goes out after the run branch is pushed (the link shows the question)
+the park notification is the record's: body PARKED: first, the question, the card's do commands, the answer line; Click needs.md
 the prompt goes in on stdin, not as an argument
 the prompt says the time, the budget and the attempt
+the prompts ask every question for a Files: line and an INBOX question below the comment block, headed ### <id>: …
 the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
 the queue runner reaps its ended runs' tmux sessions before the debrief; h-queue and the desk untouched
 the queue runner runs harness gc <project> --all-merged --deps once per project, before the debrief
@@ -651,9 +744,11 @@ v2 tags don't merge on resume
 verifier caught A, re-queued
 verifier code edits reverted, never merged
 verify needs Michael goes out after the verify entry is pushed
-verify needs Michael starts a desk
-verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
+verify needs Michael starts a desk or reaches the open one
+verify needs Michael: priority high, click = needs.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
+verify's re-check failure opens verify_recheck with the failed ids; its notification is the record's
+view.mjs cutFront keeps the end from a directory boundary; card with rule: false has no rule; a url-only field is the url line alone
 view: ago gives now 4m 3h 2d 5w for 0 s, 240 s, 3 h, 2 d and 5 w before now; a future time is now
 view: an over-wide narrow row breaks at a column gap before folding: an id that fits the width stays whole, no blank line
 view: card puts a URL inside a value on its own line at 2, splits a value at newlines, keeps a long label and a tiny width inside the line
@@ -678,6 +773,7 @@ view: the glyph set is fixed, each one text-presentation code point of width 1, 
 view: when and duration use local time: 00:19 and a local midnight under TZ=America/New_York
 view: when gives 2026-10-27 00:19 (10h ago) under TZ=UTC, and (now) under a minute
 waits for another run's limit window
+waitsOn: a feature's and a milestone's unfinished dependants through after, every unfinished one for run
 what lands on main is byte for byte what was verified
 where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
 where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md

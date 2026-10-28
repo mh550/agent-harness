@@ -7,9 +7,9 @@ J() { "$H" status --json "$@" 2> "$T/json.err"; }   # one document; stderr kept 
 K='[paths | map(if type == "number" then "[]" else "." + . end) | join("") | ltrimstr(".")] | unique | .[]'
 R() { jq -c --arg r "$1" '[.running[], .finished[]] | map(select(.run == $r))[0]'; }   # <run> → its object, from the document on stdin
 
-check "status json: lib/status.mjs has a usage header, imports only node: built-ins and ./view.mjs, exports runObject, queueEntry and sections" '
+check "status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs and ./needs.mjs, exports runObject, queueEntry and sections" '
   [[ $(head -1 "$S") == "// "* ]] && node --check "$S" && bash -n "$H" \
-  && [[ -z $(grep "^import " "$S" | grep -v " from \"node:" | grep -v " from \"./view.mjs\"") ]] \
+  && [[ -z $(grep "^import " "$S" | grep -v " from \"node:" | grep -v " from \"./view.mjs\"" | grep -v " from \"./needs.mjs\"") ]] \
   && node --input-type=module -e "import * as M from \"$S\"; for (const f of [\"runObject\", \"queueEntry\", \"sections\"]) if (typeof M[f] !== \"function\") process.exit(1)"'
 check "status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt" '
   J > "$T/s.json" && jq -e ".v == 1 and (.generated_at | test(\"^2026-10-28T00:00:00\")) and .since == \"24h\" and .runner.up == false and .runner.max_parallel_runs == 1" "$T/s.json" > /dev/null \
@@ -29,7 +29,7 @@ check "status json: needs counts a parked feature, a given-up one and a crashed 
   J > "$T/s.json" && [[ $(for r in parked givenup gcd crashed done2h stopped running; do R $r < "$T/s.json" | jq -r .needs; done | paste -sd" ") == "1 1 0 1 0 0 0" ]] \
   && [[ $(jq -r ".needs | map([.run, .feature // \"-\", .reason, .kind, .severity] | join(\":\")) | join(\" \")" "$T/s.json") == "crashed:-:driver_crash:needs_michael:block parked:B:parked:park:block givenup:C:given_up:blocked:block" ]] \
   && jq -e ".needs[1] | .milestone == \"M1\" and .title == \"[parked] B needs you\" and .card.headline == \"B parked: set the gatus vars\" and .at == \"2026-10-27T22:58:20.000Z\"" "$T/s.json" > /dev/null \
-  && jq -e ".needs[2].card.headline == \"C given up (2 attempts)\"" "$T/s.json" > /dev/null'
+  && jq -e ".needs[2].card.headline == \"C given up after 2 attempts\"" "$T/s.json" > /dev/null'
 check "status json: the running run's feature, session (all segments'), model, port and started_at; lane M1 open with its unit; its own unit apart" '
   J | R running > "$T/run.json" && jq -e ".feature == \"B\" and .session == 2 and .model == \"claude-opus-5-5\" and .port == 7954 and .started_at == \"2026-10-27T22:00:00.000Z\"
     and .features == {passing: 1, total: 3, verified: 0, merged: 0} and (.cost_usd | type) == \"number\" and .lanes.max_open == null

@@ -1,0 +1,8 @@
+dac9f828aad45165a3534b224d0b9eed5a903d4b
+f.txt
+work-A.txt
+
+Auto-merging f.txt
+CONFLICT (content): Merge conflict in f.txt
+Auto-merging work-A.txt
+CONFLICT (add/add): Merge conflict in work-A.txt

@@ -25,6 +25,8 @@ source "$HARNESS_HOME/lib/scope.sh"
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID
 # shellcheck source=lib/record.sh
 source "$HARNESS_HOME/lib/record.sh"
+# shellcheck source=lib/needs.sh
+source "$HARNESS_HOME/lib/needs.sh"   # needs_open: a needs-you record (lib/needs.mjs)
 source "$HARNESS_HOME/lib/review.sh"   # review_diff: the lane's diff the review gate sizes a review's model by (M6)
 run_paths   # the record worktree's paths; from here the lane works in its slot
 LANE=$M LANEU=${M//[^A-Za-z0-9_]/_} LDIR=$STATE/lanes/$M LS=$STATE/lanes/$M T0=$HARNESS_T0 DEADLINE=$HARNESS_DEADLINE
@@ -49,7 +51,7 @@ export HARNESS_SCOPE_PREFIX; HARNESS_SCOPE_PREFIX=$(scope_unit "$RUN_ID" "$LANEU
 # tree: no attempt granted on a failure, the tag moved on a hold, no merge here (the caller's loop merges). The session
 # reads a copy of the record; what it un-passes in it is applied to the record's list afterwards.
 verify() {
-  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS id
+  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS id nref=""
   local models=("$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL") last=$VERIFY_ESCALATE_MODEL
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
   local mode=${2:-} what="verify round $rounds of $maxr"
@@ -137,8 +139,10 @@ verify() {
     note "verify $m: the re-based tree did not hold; tag run/$RUN_ID/$m removed"
   fi
   printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
+  # its record, committed with the verdict: thin, red, or the re-check's failed ids
+  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || echo "$mode")")   # verify_recheck's rebase words are rebase_fail's
   rec_commit "HARNESS: verify $m"; sync_record
-  [[ -n $need ]] && needs_you "$m" "$need" progress.md   # after the push: the click shows the verify entry
+  [[ -n $need ]] && needs_you "$m" "$need" progress.md "$nref"   # after the push: the click shows the verify entry
   return 1
 }
 
@@ -150,18 +154,19 @@ verify() {
 # Cwd the slot, on the lane branch. At most 3 re-bases per lane process: a main that keeps moving needs Michael.
 REBASES=0
 rebase() {
-  local m=$1 tag=run/$RUN_ID/$1 c mn base theirs ours both n r how rc
+  local m=$1 tag=run/$RUN_ID/$1 c mn base theirs ours both n r how rc files
   rm -f "$STATE/rebase-$m"; echo "re-base on $MAIN_BRANCH" > "$LDIR/now"   # harness status's lane line
-  c=$(git rev-list -n1 "$tag" 2> /dev/null) || { touch "$STATE/needs-$m"; printf 'its tag is gone' > "$LDIR/need"; note "$m: its tag $tag is gone; not re-based (needs Michael)"; return 1; }
+  c=$(git rev-list -n1 "$tag" 2> /dev/null) || { touch "$STATE/needs-$m"; printf 'its tag is gone' > "$LDIR/need"; note "$m: its tag $tag is gone; not re-based (needs Michael)"
+    needs_open verify_recheck "$m" milestone="$m" variant=tag > /dev/null; return 1; }
   git fetch -q origin "$MAIN_BRANCH" 8>&- 2>> "$STATE/run.log"; mn=$(git rev-parse "origin/$MAIN_BRANCH")
   # merged meanwhile: nothing to re-base (else an empty `ours` would read as disjoint and re-tag main's tip)
   [[ -f $STATE/merged-$m ]] || git merge-base --is-ancestor "$c" "$mn" && return 0
-  (( ++REBASES > 3 )) && { rebase_fail "$m" "$c" "$m: $MAIN_BRANCH moved during 3 re-bases; not merged (needs Michael)" "$MAIN_BRANCH kept moving"; return 1; }
+  (( ++REBASES > 3 )) && { rebase_fail "$m" "$c" "$m: $MAIN_BRANCH moved during 3 re-bases; not merged (needs Michael)" "$MAIN_BRANCH kept moving" merge_conflict moving; return 1; }
   base=$(git merge-base "$c" "$mn")   # main as this lane last merged it (verify's sync_main)
   git checkout -q -B "$LBRANCH" "$c"   # the verified tip, nothing else
   if ! git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then
-    git merge --abort 2> /dev/null
-    rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH"; return 1
+    files=$(git -c core.quotePath=false diff --name-only --diff-filter=U); git merge --abort 2> /dev/null
+    rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH" merge_conflict rebase files="$files" main="$mn"; return 1
   fi
   theirs=$(git diff --name-only "$c" HEAD)   # what main brought in
   ours=$(git diff --name-only "$base" "$c")   # the milestone's own (and its unmerged dependencies')
@@ -170,7 +175,7 @@ rebase() {
   if [[ -z $both && $LANE_REBASE != verify ]]; then
     run_init fresh   # the install, then the suite in full (marker cleared), as harness-<run>-<m>-check-<pid>
     cp "$SCRATCH/init.out" "$LDIR/rebase-check.out"   # its uncached `check: …` line: the evidence
-    green || { rebase_fail "$m" "$c" "$m re-based on $how, disjoint, suite red; not merged (needs Michael)" "suite red after the re-base"; return 1; }
+    green || { rebase_fail "$m" "$c" "$m re-based on $how, disjoint, suite red; not merged (needs Michael)" "suite red after the re-base" verify_red rebase; return 1; }
     git tag -f -a "$tag" -m "harness run $RUN_ID: $m verified (v3); re-based on $MAIN_BRANCH ${mn:0:7}, suite green" > /dev/null
     # the one forced push, to the tag ref alone: the old commit stays reachable from the lane branch and its PR
     git push -q --force origin "refs/tags/$tag" 8>&- 2>> "$STATE/run.log" || log "push of the re-based $tag failed"
@@ -180,7 +185,7 @@ rebase() {
   fi
   if [[ -n $both ]]; then how+=", overlapping ($both)"; else how+=", disjoint"; fi
   r=$(( $(cat "$STATE/rebase-rounds-$m" 2> /dev/null || echo 0) + 1 ))
-  (( r > MAX_REBASE_ROUNDS )) && { rebase_fail "$m" "$c" "$m re-based on $how; its $MAX_REBASE_ROUNDS re-base round(s) used; not merged (needs Michael)" "re-base rounds used"; return 1; }
+  (( r > MAX_REBASE_ROUNDS )) && { rebase_fail "$m" "$c" "$m re-based on $how; its $MAX_REBASE_ROUNDS re-base round(s) used; not merged (needs Michael)" "re-base rounds used" verify_recheck rebase; return 1; }
   echo "$r" > "$STATE/rebase-rounds-$m"; sync_lane   # the verify works on the merged commit
   note "$m re-based on $how; one verify round ($( [[ -n $both ]] && echo "$r of $MAX_REBASE_ROUNDS" || echo LANE_REBASE=verify))"
   rec_commit "HARNESS: $m re-based; one verify round"; sync_record
@@ -188,10 +193,13 @@ rebase() {
   (( rc == 2 )) && { echo $(( r - 1 )) > "$STATE/rebase-rounds-$m"; echo "$mn" > "$STATE/rebase-$m"; }   # refused: the round again later
   (( rc == 0 ))
 }
-# <m> <verified commit> <note> <need>: the slot back at the verified commit (the merge commit never pushed), Michael asked
+# <m> <verified commit> <note> <need> <reason> <variant> [key=value…]: the slot back at the verified commit (the merge
+# commit never pushed), its needs record opened, Michael asked
 rebase_fail() {
-  git reset -q --hard "$2"; touch "$STATE/needs-$1"; printf '%s' "$4" > "$LDIR/need"
-  note "$3"; rec_commit "HARNESS: $1 not re-based"; sync_record; needs_you "$1" "$4" harness-log.md
+  local m=$1 c=$2 msg=$3 need=$4 r=$5 v=$6 ref; shift 6
+  git reset -q --hard "$c"; touch "$STATE/needs-$m"; printf '%s' "$need" > "$LDIR/need"
+  note "$msg"; ref=$(needs_open "$r" "$m" milestone="$m" variant="$v" head="$c" "$@")
+  rec_commit "HARNESS: $m not re-based"; sync_record; needs_you "$m" "$need" harness-log.md "$ref"
 }
 # This lane's milestone merged (merge_milestones: the dependency rule, MERGE_POLICY), re-based first whenever main moved
 merge_own() { merge_milestones "$M"; while [[ -f $STATE/rebase-$M ]]; do rebase "$M" || break; merge_milestones "$M"; done; }
@@ -229,6 +237,7 @@ while :; do
   (( $(date +%s) >= DEADLINE )) && lane_exit 15 deadline
   take_answers; sync_record
   for id in $(record F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
+  needs_sweep   # before the pick: an unparked feature's record resolves
   c=$(control)
   [[ $c == stop ]] && lane_exit 14 stopped
   if [[ $c == pause ]]; then   # after its session: the services go, nothing new starts (the coordinator logs the pause)
@@ -303,6 +312,7 @@ while :; do
   session coding "$mdl" "$slog" "$id"
   commit_all "WIP: $id — uncommitted at session end (harness)"; sync_lane   # the copy is excluded: code only
   journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
+  inbox_repair "$id" "$LS/inbox-before.md" "$SLOT/$RUN_DIR/INBOX.md"   # a question inside the comment, moved out first
   take_question   # what it asked above ## Answers, into the record's INBOX.md
   lane_guard "$sstart" "$id"
   gotchas "$id" "$sstart"   # a limited session's edit is noted too
@@ -345,6 +355,7 @@ while :; do
     [[ $esc ]] || record F unbump "$ATT" "$id"; record F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault (an escalation round took none)
     note "$id parked (waiting on Michael): $why"
   else why=""; fi
+  nref=""
   if [[ $esc ]]; then rm -f "$LS/review-escalate"   # the round ran; its verdict stands
   elif [[ -z $why && $mdl == "$(F model sonnet)" && $kind == review && ! -e $STATE/review-escalated-$id ]]; then
     # a sonnet review that found something gets one round on REVIEW_ESCALATE_MODEL, once per feature; un-passed first,
@@ -358,9 +369,19 @@ while :; do
       fi
     else note "review $id: no \"<n> Critical, <n> Important\" in its summary or final message; not escalated"; fi
   fi
+  # the needs records, committed with this session's record (needs.md, the park's click): a park (its question is in the
+  # record's INBOX.md now), a feature whose attempts are used up without a park or a pending escalation round
+  if [[ -n $why ]]; then   # a question without a Files: line points at the session's files (its entry's, then its diff)
+    nref=$(needs_open parked "$id" feature="$id" why="$why" actions="$(park_actions)" \
+      session_files="$(node "$HARNESS_HOME/lib/entries.mjs" session-files "$REC" "$id" "$SCRATCH/entry-files" "$PWD")")
+    [[ -n $nref ]] && jq -e '.card.files_from == "session" and (.card.question.text // "") != ""' "$STATE/needs/${nref##*/}.json" > /dev/null 2>&1 \
+      && note "$id: its INBOX question had no Files: line; the park card's where is the session's files"   # the entry's own fill is journal_'s note
+  elif [[ $passed == false && ! -s $LS/review-escalate ]] && (( $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") >= MAX_ATTEMPTS )); then
+    needs_open given_up "$id" feature="$id" attempts="$(jq -r --arg id "$id" '.[$id]' "$ATT")" max_attempts="$MAX_ATTEMPTS" log="$slog" > /dev/null
+  fi
   rec_commit "HARNESS: after $id (passes=$passed)"; sync_record
   if [[ -n $why ]]; then   # after the push, so its links show the question; a failed post's note is committed too
-    notify_park "$id" "$why"; [[ -n $(git -C "$RWT" status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: park notification failed"; sync_record; }
+    notify_park "$id" "$why" "$nref"; [[ -n $(git -C "$RWT" status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: park notification failed"; sync_record; }
     desk "$id parked: $why"
   fi
 done
