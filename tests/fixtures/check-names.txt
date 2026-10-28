@@ -477,6 +477,17 @@ placeholders inside the context are not filled
 plain gc deletes only the merged harness/ and harness-merge/ branches, locally and on the origin
 preflight: no node anywhere, a clear failure and no session
 progress.md is rendered from the journal
+project names: a directory that is not a repository (by name or by path) is no project
+project names: a path that is a git repository still resolves to its top level (gc proj/<subdir>, gc .)
+project names: a run's PROJECT_DIR comes before $HARNESS_PROJECTS (a proj there too is not taken)
+project names: gc nope exits 1; its stderr names the repository here, the runs, $HARNESS_PROJECTS/nope and the projects with runs
+project names: gc proj --dry-run from outside resolves through the run's PROJECT_DIR (as gc <path> does)
+project names: memlint and init take a bare name too
+project names: queue add proj2 with no run of it resolves to $HARNESS_PROJECTS/proj2 and stores the absolute path
+project names: start proj from outside it (HARNESS_PROJECTS holding proj) runs in that repository
+project names: status --project proj, -p proj and --project <path> list proj's run; a gone project falls back to its name
+project names: the newest run whose PROJECT_DIR is no repository any more is passed over for an older one
+project names: with no project at all the list says none, and the projects directory shows ~ for the home directory
 queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't
 queue add numbers past a parked entry
 queue end triggers one debrief, detached

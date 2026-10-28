@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # harness — long-running agent harness (initializer + one fresh session per feature), reusable across projects.
 #
+#   <project>: a path in a git repository, or a bare name (its newest run's PROJECT_DIR, else $HARNESS_PROJECTS/<name>)
 #   harness start <project> [<run-id>] [--spec "<files>"] [--brief "<text>" | --brief-file <f>] [--base <ref>]
 #                 [--until HH:MM] [--now] [--no-supervisor] [--foreground]
 #                               a new run (worktree + branch harness/<run-id>), or resume an existing one. With
@@ -87,7 +88,22 @@ source "$HARNESS_HOME/lib/tmux.sh"   # tmux_name, tmux_reap: start's session and
 source "$HARNESS_HOME/lib/needs.sh"   # NEEDS_MJS: harness needs (it calls the CLI directly: no record lock here)
 
 die() { echo "harness: $*" >&2; exit 1; }
-toplevel() { git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "$1 is not a git repository"; }
+# <path or project name> → the project's top level: a git repository here, else (a bare name) the PROJECT_DIR of that
+# name's newest run still a repository, else $HARNESS_PROJECTS/<name> (decisions/2026-10-27-project-names)
+project_dir() {
+  local a=$1 m d pd ps=${HARNESS_PROJECTS:-$HOME/projects} with
+  git -C "$a" rev-parse --show-toplevel 2> /dev/null && return 0
+  [[ $a == */* ]] && die "no project '$a': not a git repository"   # a path: runs and projects are looked up by name
+  while read -r m; do   # newest first: meta.env is rewritten at every start
+    pd=$( (source "$m" 2> /dev/null && echo "${PROJECT_DIR:-}") ) || continue
+    [[ -n $pd ]] && git -C "$pd" rev-parse --show-toplevel 2> /dev/null && return 0
+  done < <(ls -t "$STATE_ROOT/$a"/*/meta.env 2> /dev/null)
+  git -C "$ps/$a" rev-parse --show-toplevel 2> /dev/null && return 0
+  with=$(for m in "$STATE_ROOT"/*/*/meta.env; do d=${m%/*/meta.env}; [[ -f $m && ${d##*/} != queue ]] || continue; echo "${d##*/}"; done |
+    LC_ALL=C sort -u | paste -sd, | sed 's/,/, /g')
+  [[ $ps == "$HOME"/* || $ps == "$HOME" ]] && ps="~${ps#"$HOME"}"
+  die "no project '$a': not a git repository here, no run of a project named $a, no $ps/$a (projects with runs: ${with:-none})"
+}
 state_of() {   # run-id → state dir
   [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "no run '$1' (run-id: letters, digits, . _ - only)"   # compgen globs
   local d; d=$(compgen -G "$STATE_ROOT/*/$1" | head -1 || true)
@@ -104,7 +120,7 @@ to_epoch() { [[ $1 =~ ^[0-9]{9,}$ ]] && { echo "$1"; return; }   # HH:MM → the
   local e; e=$(date -d "$1" +%s) || die "bad time '$1'"; (( e <= $(date +%s) )) && e=$(( e + 86400 )); echo "$e"; }
 
 cmd_init() {
-  local p draft=0; p=$(toplevel "${1:?usage: harness init <project> [--draft]}"); [[ ${2:-} == --draft ]] && draft=1
+  local p draft=0; p=$(project_dir "${1:?usage: harness init <project> [--draft]}"); [[ ${2:-} == --draft ]] && draft=1
   mkdir -p "$p/.harness"
   [[ -e $p/.harness/config.sh ]] && echo "keep    .harness/config.sh" \
     || { cp "$HARNESS_HOME/templates/project/config.sh" "$p/.harness/config.sh"; echo "created .harness/config.sh (POLICY=build-only)"; }
@@ -185,7 +201,7 @@ legacy_refuse() {
 
 cmd_start() {
   local p run="" base="" supervisor=1 fg=0 now=0 spec="" brief="" until="" orig=("$@")
-  p=$(toplevel "${1:?usage: harness start <project> [<run-id>] [options]}"); shift
+  p=$(project_dir "${1:?usage: harness start <project> [<run-id>] [options]}"); shift
   [[ ${1:-} && $1 != --* ]] && { run=$1; shift; }
   while (( $# )); do case $1 in
     --base) base=$2; shift 2 ;; --spec) spec=$2; shift 2 ;; --brief) brief=$2; shift 2 ;;
@@ -336,12 +352,16 @@ run_rows() {   # <units 0|1> [<run>]
 }
 
 cmd_status() {   # [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]: read-only (no harness_config writes, no mkdir)
-  local want="" json=0 v=0 o=() use="usage: harness status [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]"
+  local want="" json=0 v=0 o=() pd use="usage: harness status [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]"
   while (( $# )); do case $1 in
     --json) json=1 ;;
     -v|--verbose) v=1 ;;
     -a|--all) o+=(--all) ;;
-    --since|-p|--project) (( $# > 1 )) || die "$use"; [[ $1 == --since ]] && o+=(--since "$2") || o+=(--project "$2"); shift ;;
+    --since) (( $# > 1 )) || die "$use"; o+=(--since "$2"); shift ;;
+    # a path or a name, as project_dir resolves it; a bare name it can't (its checkout is gone) still filters by itself
+    -p|--project) (( $# > 1 )) || die "$use"
+      if pd=$( (project_dir "$2") 2> /dev/null ); then o+=(--project "$(basename "$pd")")
+      elif [[ $2 != */* ]]; then o+=(--project "$2"); else project_dir "$2" > /dev/null; fi; shift ;;
     -*) die "$use" ;;
     *) [[ -z $want ]] || die "$use"; want=$1 ;;
   esac; shift; done
@@ -396,7 +416,7 @@ cmd_queue() {
           else echo "already queued: continue $run"; fi; return; }
         echo "queued: $(basename "$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"})")"
       else
-        local p; p=$(toplevel "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
+        local p; p=$(project_dir "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
         echo "queued: $(basename "$(queue_add start "$p" "$@")")"
       fi ;;
     rm) local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue rm <n>}p"); [[ -n $f ]] || die "no entry $1"; rm "$f"; echo "removed $(basename "$f")" ;;
@@ -484,7 +504,7 @@ cmd_answer() {
 }
 
 cmd_gc() {
-  local p all=0 dry=0 deps=0 b pattern; p=$(toplevel "${1:?usage: harness gc <project>}"); shift
+  local p all=0 dry=0 deps=0 b pattern; p=$(project_dir "${1:?usage: harness gc <project>}"); shift
   while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; --deps) deps=1 ;; *) die "unknown option $1" ;; esac; shift; done
   # a refusal (branch -d of a branch merged into origin/main but not into HEAD, with no upstream) is said, never the
   # end of gc under set -e: every later step still runs (decisions/2026-10-25-gc-all-merged)
@@ -663,7 +683,7 @@ case ${1:-help} in
   pause|resume|stop) cmd_control "$1" "${2:-}" "${@:3}" ;;
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
-  memlint) p=$(toplevel "${2:?usage: harness memlint <project>}") && node "$HARNESS_HOME/lib/memlint.mjs" "$p" ;;
+  memlint) p=$(project_dir "${2:?usage: harness memlint <project>}") && node "$HARNESS_HOME/lib/memlint.mjs" "$p" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
   sync) shift; exec "$HARNESS_HOME/lib/sync.sh" "$@" ;;
   backlog) shift; exec "$HARNESS_HOME/lib/backlog.sh" "$@" ;;

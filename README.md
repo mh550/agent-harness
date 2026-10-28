@@ -18,11 +18,16 @@ Zero dependencies beyond `bash`, `git` (≥ 2.38), `node`, `jq`, `tmux`, `flock`
 ln -s ~/projects/agent-harness/bin/harness ~/.local/bin/harness     # once
 harness init ~/projects/myapp            # CLAUDE.md template + .harness/config.sh (POLICY=build-only); prints what it detected
 # fill in CLAUDE.md, commit to main, then:
-harness start ~/projects/myapp --spec docs/todo.md --brief "items 1–3 only"
+harness start ~/projects/myapp --spec docs/todo.md --brief "items 1–3 only"   # or: harness start myapp (a name, from anywhere)
 harness status                           # one screen: what needs you, what runs, what's queued, what finished (24h)
 harness report                           # the writeup: passing, tests, spend total / per feature / by role, causes, memory peaks over 2 GB
                                          # (tests: counted for node:test, pytest, jest/vitest, cargo and go test -v; a suite with no count is said once in harness-log.md)
 ```
+
+A `<project>` argument (`start`, `init`, `queue add`, `gc`, `memlint`, `status --project`) is a path in a git
+repository or a bare name: the `PROJECT_DIR` of that project's newest run, else `$HARNESS_PROJECTS/<name>`
+(default `~/projects`); one that is none of these is refused with the places looked and the projects that have runs
+(decisions/2026-10-27-project-names).
 
 Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config, which the
 runner re-reads every poll, so an edit applies without a restart and lowering it stops no running run; the queue

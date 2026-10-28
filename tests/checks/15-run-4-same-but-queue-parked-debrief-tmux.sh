@@ -195,7 +195,7 @@ check "queue add --continue marks its entry --requested; --automatic (the driver
 check "queue list marks continuations (requested) or (automatic)" 'L=$("$H" queue list) && grep -E "^ *[0-9]+  continue  stopreq \(requested\)( |$)" <<< "$L" > /dev/null && grep -E "^ *[0-9]+  continue  stopauto \(automatic\)( |$)" <<< "$L" > /dev/null'
 B=$(ndb); HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2r.out" 2>&1; settle
 check "a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)" 'grep -q "starting: harness continue stopreq" "$Q/runner.log" && ! grep -q "skipping queued continuation of stopreq" "$Q/runner.log" \
-  && grep -q "skipping queued continuation of stopauto: Michael stopped it" "$Q/runner.log" && grep -q "no-checkout is not a git repository" "$Q/runner.log" && [[ $(ndb) == "$B" ]]'
+  && grep -q "skipping queued continuation of stopauto: Michael stopped it" "$Q/runner.log" && grep -q "no project '"'"'$T/no-checkout'"'"': not a git repository" "$Q/runner.log" && [[ $(ndb) == "$B" ]]'
 "$H" queue add --continue stopauto --automatic > /dev/null
 check "a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too" '[[ $("$H" queue add --continue stopauto) == "already queued: continue stopauto (now requested, with this request'"'"'s options)" ]] \
   && grep -qx -- --requested "$(compgen -G "$Q/*-continue-stopauto.args")" && "$H" queue park 1 > /dev/null && grep -E "^ *1  continue  stopauto \(requested\)( |$)" <<< "$("$H" queue list | sed -n "/^PARKED/,\$p")" > /dev/null'
