@@ -37,7 +37,7 @@
         "`tests/fixtures/end-reasons.txt` holds, one per line, every reason `finish` is called with in lib/driver.sh and lib/lane.sh plus the `ended` lines of the spec's *What Michael saw* section, sanitised; a check runs `endClass` over every line and gets `done`, `stopped`, `waiting` or `failed` exactly as the spec's end-class table says, and `some new reason` gives `failed`",
         "every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U1-03",

@@ -4,3 +4,6 @@
 - 2026-10-28 01:32 · lane U1 opened (slot 0, port 7816, from 1bde491)
 - 2026-10-28 01:32 · context.md for U1-01: 4440 bytes
 - 2026-10-28 01:40 · U1-01 · claude-opus-5-5 · passes=true · 8 min · 1/24 passing · tests 602
+- 2026-10-28 01:40 · context.md for U1-02: 4935 bytes
+- 2026-10-28 02:05 · U1-02: gotchas +1 ~0 -0
+- 2026-10-28 02:05 · U1-02 · claude-opus-5-5 · passes=true · 25 min · 2/24 passing · tests 625
