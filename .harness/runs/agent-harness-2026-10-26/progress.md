@@ -9,6 +9,22 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-28 01:02 · P2-07 · passes
+
+Opus review of the P2 diff (2,106 lines): 1 Critical, 3 Important fixed red->green with 4 checks; Minor 5 fixed; the rest left in docs/plans/2026-10-26-P2-review.md. D21 overturned in place (an open record PR keeps harness/<run> from gc). Docs: README after-run steps, architecture §12 headroom rule and §15, lanes.md P2 section. Suite 598 -> 602, green.
+
+- **Files:** lib/driver.sh, lib/lane.sh, lib/record.sh, bin/harness, tests/checks/44-lanes-record.sh, tests/checks/47-lanes-two.sh, tests/checks/48-lanes-rebase.sh, tests/checks/50-lanes-record-pr.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-26-P2-review.md, journal/decisions/2026-10-26-lanes.md, +2 more
+- **Verified:** each new check failed first (trap: driver.pid gone/ended written; pack_and_copy: got the other pack; merge_one: 'again 1'; gc: harness/rq deleted, 10/11), then passed; bash tests/run.sh 602/602 in 474 s (TEST_JOBS=4); bash -n on 20 P2 shell files, node --check on the .mjs
+- **Tests:** 598 → 602
+- **Dead end:** inserting new names into check-names.txt with sed at a nearby line — broke its C sort order, so the runner's comm reported dozens missing/new; re-sort with LC_ALL=C sort -u
+- **Discovery** (affects run): A bash '&' child killed before its exec runs the parent's EXIT trap (200/200 here): lane_wait's sleep ran the driver's trap (lanes TERMed, driver.pid removed mid-run). Both traps now start with [[ $BASHPID == "$$" ]] || exit 0; any new trap needs the same guard
+- **Discovery** (affects run): The flakes in 45, 47 (u5) and 50 trace to review findings 1 and 5 (both fixed); 08's memory-gate stop check flaked once under 4 jobs (its 30 s wait for the note), now 120 s
+- **Discovery** (affects run): gc now keeps harness/<run> while state/record-pr names a PR gh calls OPEN (or gh can't answer): one gh call per record-only branch with that marker
+- **Question for Michael:** D21 is overturned (gc now keeps a record branch with an open record PR, as the review found deleting it closes the PR left for you under pr). Keep it that way?
+- **Proposed change:** A feature for the brief's '<id>: suite ran <n>x (<s> s) in the session' note: planned in P2-06 (plan §6) but never built; no feature's steps named it
+- **Proposed change:** Next milestone: review Minors 6 (features.mjs writes via temp file + rename), 8 (merge_one ignoring .harness/runs/ in its tree test), 9 (ledger after record_pr), 10 (milestone-id lint for scope_unit collisions), 12 (--dry-run and merge-lock checks), 15 (one fetch retry helper)
+- *09-P2-07 · claude-opus-5-5*
+
 ### 2026-10-27 23:51 · P2-06 · passes
 
 harness status prints one line per open lane (feature · session · port · slot · its units with MemoryCurrent; lanes/<m>/now from lane.sh); summary.json gains lanes {max_open, lane_hours, wall_hours} (pure laneSpans over run.log) and report.md a Lanes row; initializer.md and run.md say how lanes share files and slots. 594 → 598 checks. 0 Critical, 0 Important, 4 Minor (3 fixed).
@@ -234,24 +250,9 @@ The Opus review of the P1-03 diff is still running. I'll wait for its findings b
 - **Files:** bin/harness, docs/architecture.md, journal/decisions/2026-10-26-lanes.md, lib/desk.sh, lib/driver.sh, lib/eval.sh, lib/features.mjs, lib/prompt.sh, lib/record.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/14-run-2b-stop-records.sh, +7 more
 - *05-P1-03 · claude-opus-5-5 · recorded by the harness: entry.json missing*
 
-### 2026-10-26 17:58 · P1-02 · passes
-
-features.mjs gains lanes (openable milestones + run/<run>/<dep> base tags from meta.env), deps, next <m> (lane-local after rule) and pass; scope_owns takes an optional <m>- role prefix; config.sh and the user template carry the six lane defaults; the driver header documents HARNESS_LANE_POLL. New tests/checks/35-lanes-scheduler.sh (12 checks). Nothing calls them yet.
-
-- **Files:** lib/features.mjs, lib/scope.sh, lib/config.sh, lib/driver.sh, templates/user/config.sh, tests/checks/35-lanes-scheduler.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/fixtures/check-names.txt
-- **Verified:** 35-lanes-scheduler: 12 checks watched red (0/10, then the config and no-cycle checks red alone) then green; full suite 406/406 before the review fixes (209 s, 4 jobs) and 407/407 after (208 s); node --check features.mjs, bash -n on every shell file touched; an Opus review of the diff (1 Important, fixed with a check; 4 Minor: 1 fixed, 3 below as discoveries).
-- **Tests:** 395 → 407
-- **Discovery** (affects P1-04, P2): F lanes counts only EARLIER lanes as dependencies: an after into a later milestone's name is nothing (as deps() reads it), and into a later milestone's feature id leaves that feature waiting inside its lane, so M1 can run out of work while M2 waits on verified-M1. A lint rule for forward cross-milestone after (proposed) would catch it at the initializer.
-- **Discovery** (affects P1-04): scope_owns' spec regex ([A-Za-z0-9_]+-)? has no . or -: P1-04 must build lane units with the milestone reduced (${m//[^A-Za-z0-9_]/_}), or a milestone like M1.5 or T-1 gives units gc never stops and status never lists.
-- **Discovery** (affects P1-04, P2): With the <m>- prefix, run demo's scope_owns also matches run demo-x's harness-demo-x-svc: gc keeps it (a live owner keeps the unit; the 08/13 comment now says so), but harness status for demo (bin/harness:268) would list demo-x's units too.
-- **Discovery** (affects P1-04): Lane id 'default' is features without a milestone; a milestone literally named default would merge with them. Nothing reserves the name yet.
-- **Discovery** (affects P1-03, P1-04): F lanes reads the run id from <state>/meta.env's RUN_ID (else the state dir's name) for its run/<run>/<dep> tags; F next/blocked take an optional 5th arg <m> (blocked too), unchanged without it.
-- **Proposed change:** P1-02 step 1: 'has a feature left to try' should read 'has a feature left to try or every feature passes' (plan §9: a complete unverified milestone must open to be verified); built and checked that way
-- **Proposed change:** a lint rule forward-after: a feature whose after names a feature of a later milestone (lanes can't run it)
-- *04-P1-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 17:58 · P1-02 · passes · features.mjs gains lanes (openable milestones + run/<run>/<dep> base tags from meta.env), deps, next… ([in full](progress-archive.md))
 - 2026-10-26 17:25 · P1-01 · passes · Wrote docs/plans/2026-10-26-P1-lanes-serial.md: every driver.sh function mapped to lib/record.sh, li… ([in full](progress-archive.md))
 - 2026-10-26 16:51 · verify P0 · passes · All four P0 features hold: init full suite 395/395 (206 s), subset runs work, split/runner/key/docs/… ([in full](progress-archive.md))
 - 2026-10-26 16:44 · P0-04 · passes · Opus review of the P0 diff: 0 Critical, 2 Important, 4 Minor (docs/plans/2026-10-26-P0-review.md). F… ([in full](progress-archive.md))

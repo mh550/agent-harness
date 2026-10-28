@@ -9,6 +9,22 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-28 01:02 · P2-07 · passes
+
+Opus review of the P2 diff (2,106 lines): 1 Critical, 3 Important fixed red->green with 4 checks; Minor 5 fixed; the rest left in docs/plans/2026-10-26-P2-review.md. D21 overturned in place (an open record PR keeps harness/<run> from gc). Docs: README after-run steps, architecture §12 headroom rule and §15, lanes.md P2 section. Suite 598 -> 602, green.
+
+- **Files:** lib/driver.sh, lib/lane.sh, lib/record.sh, bin/harness, tests/checks/44-lanes-record.sh, tests/checks/47-lanes-two.sh, tests/checks/48-lanes-rebase.sh, tests/checks/50-lanes-record-pr.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-26-P2-review.md, journal/decisions/2026-10-26-lanes.md, +2 more
+- **Verified:** each new check failed first (trap: driver.pid gone/ended written; pack_and_copy: got the other pack; merge_one: 'again 1'; gc: harness/rq deleted, 10/11), then passed; bash tests/run.sh 602/602 in 474 s (TEST_JOBS=4); bash -n on 20 P2 shell files, node --check on the .mjs
+- **Tests:** 598 → 602
+- **Dead end:** inserting new names into check-names.txt with sed at a nearby line — broke its C sort order, so the runner's comm reported dozens missing/new; re-sort with LC_ALL=C sort -u
+- **Discovery** (affects run): A bash '&' child killed before its exec runs the parent's EXIT trap (200/200 here): lane_wait's sleep ran the driver's trap (lanes TERMed, driver.pid removed mid-run). Both traps now start with [[ $BASHPID == "$$" ]] || exit 0; any new trap needs the same guard
+- **Discovery** (affects run): The flakes in 45, 47 (u5) and 50 trace to review findings 1 and 5 (both fixed); 08's memory-gate stop check flaked once under 4 jobs (its 30 s wait for the note), now 120 s
+- **Discovery** (affects run): gc now keeps harness/<run> while state/record-pr names a PR gh calls OPEN (or gh can't answer): one gh call per record-only branch with that marker
+- **Question for Michael:** D21 is overturned (gc now keeps a record branch with an open record PR, as the review found deleting it closes the PR left for you under pr). Keep it that way?
+- **Proposed change:** A feature for the brief's '<id>: suite ran <n>x (<s> s) in the session' note: planned in P2-06 (plan §6) but never built; no feature's steps named it
+- **Proposed change:** Next milestone: review Minors 6 (features.mjs writes via temp file + rename), 8 (merge_one ignoring .harness/runs/ in its tree test), 9 (ledger after record_pr), 10 (milestone-id lint for scope_unit collisions), 12 (--dry-run and merge-lock checks), 15 (one fetch retry helper)
+- *09-P2-07 · claude-opus-5-5*
+
 ### 2026-10-27 23:51 · P2-06 · passes
 
 harness status prints one line per open lane (feature · session · port · slot · its units with MemoryCurrent; lanes/<m>/now from lane.sh); summary.json gains lanes {max_open, lane_hours, wall_hours} (pure laneSpans over run.log) and report.md a Lanes row; initializer.md and run.md say how lanes share files and slots. 594 → 598 checks. 0 Critical, 0 Important, 4 Minor (3 fixed).
