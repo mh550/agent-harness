@@ -256,6 +256,30 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   ) 9> "$STATE_ROOT/ledger.lock"
 }
 
+# The last step of finish: the record branch onto main through its own PR, `<run>: run record` (RECORD_PR=end), the
+# open one reused. It is record-only (rec_commit_), so its diff is .harness/runs/<run>/ and the merge can't conflict.
+# Merged under auto, left for Michael under pr; never --delete-branch: a harness continue the same night still finds
+# harness/<run>, and the end-of-queue gc deletes it (record_only) with its worktree, the ledger keeping the record.
+# Checked, not assumed: a --base run's branch, or an edit pushed to it from the phone, may carry code main lacks
+record_pr() {
+  case $RECORD_PR in off) note "record PR: none (RECORD_PR=off)"; return 0 ;; end) ;;
+    *) note "record PR: none (RECORD_PR=$RECORD_PR is neither end nor off)"; return 0 ;; esac
+  [[ $MERGE_POLICY == off ]] && { note "record PR: none (MERGE_POLICY=off)"; return 0; }
+  local url head mb more t="$RUN_ID: run record"; sync_record; head=$(git -C "$RWT" rev-parse HEAD)
+  git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
+  mb=$(git -C "$RWT" merge-base "origin/$MAIN_BRANCH" HEAD) || { note "record PR: none ($RBRANCH shares no history with $MAIN_BRANCH)"; return 0; }
+  more=$(git -C "$RWT" diff --name-only "$mb" HEAD -- . ":!$RUN_DIR" | head -3 | paste -sd' ')
+  [[ -z $more ]] || { note "record PR: none ($RBRANCH has changes outside $RUN_DIR/ that $MAIN_BRANCH lacks: $more)"; return 0; }
+  # only the record PR is reused (an old v2 whole-run PR on this head is harness merge's to close), its body refreshed
+  url=$($GH pr view "$RBRANCH" --json url,state,title -q "select(.state == \"OPEN\" and .title == \"$t\") | .url" 2> /dev/null) || url=""
+  if [[ $url == http* ]]; then $GH pr edit "$url" --body-file "$REC/report.md" > /dev/null 2>> "$STATE/run.log"
+  else url=$($GH pr create --base "$MAIN_BRANCH" --head "$RBRANCH" --title "$t" --body-file "$REC/report.md" 2>> "$STATE/run.log" | tail -1); fi
+  if [[ $url != http* ]]; then note "record PR: could not open it (see run.log)"
+  elif [[ $MERGE_POLICY != auto ]]; then note "record PR opened; left for Michael (MERGE_POLICY=$MERGE_POLICY) · $url"
+  elif $GH pr merge "$url" --merge --match-head-commit "$head" > /dev/null 2>> "$STATE/run.log"; then note "record PR merged into $MAIN_BRANCH · $url"
+  else note "record PR: the merge was refused; left open · $url"; fi
+}
+
 finish() {   # reason → every lane exited, summary, notification, retro, ledger, slots removed, continuation
   END_REASON=$1
   wait_lanes   # each stops between sessions: a stop, the deadline, a cap
@@ -308,6 +332,8 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   fi
   # a note after the last commit (the continuation): commit it too, or the worktree stays dirty and gc skips it
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run end notes"; sync_record; }
+  record_pr   # its note is one record commit past the merge, which gc's record_only allows
+  [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: record PR"; sync_record; }
   log "run kept in $RWT on $RBRANCH · report: harness report $RUN_ID · continue: harness continue $RUN_ID"
   exit 0
 }
@@ -353,7 +379,8 @@ if [[ -f $LIST ]] || (( resumed )); then
   [[ -f $LIST ]] && merge_milestones   # merge what is verified
 fi
 if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 whole-run PR (milestones merge through their own PRs)
-  if [[ $($GH pr view "$BRANCH" --json state -q .state 2>/dev/null) == OPEN ]]; then
+  # the record PR (`<run>: run record`, record_pr) has the same head and stays open
+  if [[ $($GH pr view "$BRANCH" --json state,title -q "select(.title != \"$RUN_ID: run record\") | .state" 2>/dev/null) == OPEN ]]; then
     $GH pr close "$BRANCH" --comment "Superseded: harness v3 merges each verified milestone into $MAIN_BRANCH through its own PR (tags run/$RUN_ID/<milestone>). Unverified work stays on $BRANCH until its milestone is verified." > /dev/null 2>> "$STATE/run.log" \
       && note "closed the whole-run PR for $BRANCH (milestones merge through their own PRs now)"
   fi

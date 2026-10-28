@@ -216,7 +216,8 @@ harness start ─► worktree + branch ─► driver (the coordinator):
   finish: every lane exited · merge what's verified · the last lane's init/check output into the run's scratch · tests-end · services down (the run's, then those the last lanes
           left up) · every slot removed, merged lanes' branches deleted · summary.json · report.md, pushed · notify · RETRO ·
           report.md again · ledger · scratch: init.out, teardown.out, check-last.out into state, rm the run's scratch
-          (KEEP_SCRATCH=1 keeps it) · queue a continuation (a feature left to try or a pending review round)
+          (KEEP_SCRATCH=1 keeps it) · queue a continuation (a feature left to try or a pending review round) · the record PR
+          (`<run>: run record`: merged under auto, left under pr, none with RECORD_PR=off; nothing deleted)
   EXIT trap (every exit, a TERM included): TERM every lane and wait for it (each stops its session's scope and its
           services) · stop the running session's scope · services down · write ended · rm driver.pid
   services down <why>: .harness/teardown.sh (TEARDOWN_CMD) · stop harness-<run>-svc · note "services stopped (<why>)";
@@ -315,7 +316,8 @@ harness start ─► worktree + branch ─► driver (the coordinator):
 
 | Ref | Created by | Lifetime | Meaning |
 |---|---|---|---|
-| `harness/<run>` | `harness start` (from `--base`, else `origin/main`) | until `harness gc` (record-only, so done once nothing else runs) | the run record only (`.harness/runs/<run>/`): never in a PR |
+| `harness/<run>` | `harness start` (from `--base`, else `origin/main`) | until `harness gc` (record-only, so done once nothing else runs; the queue runner's end-of-queue `gc --all-merged --deps` deletes it here and on origin with its worktree, the ledger keeping the record); never deleted by `finish`, so a same-night `harness continue` finds it | the run record only (`.harness/runs/<run>/`): only its own record PR carries it |
+| PR "`<run>: run record`" | driver, `record_pr`, the last step of `finish` (`RECORD_PR=end`, the default; the open one reused) | merged by the driver under `auto` (`record PR merged into main · <url>`), left for you under `pr` (`record PR opened; left for Michael (MERGE_POLICY=pr) · <url>`); none under `RECORD_PR=off` or `MERGE_POLICY=off`, or when the branch has changes outside its record that main lacks (a `--base` run, a phone edit outside `.harness/runs/`) (`record PR: none (…)`) | the record onto `main`: its diff is `.harness/runs/<run>/` only, so it can't conflict; `harness merge`'s v2 closer leaves it open |
 | `harness-lane/<run>/<m>` | driver (`slot_open`): from `--base` or `origin/main`, plus the tags of dependencies main doesn't have; resumed from itself (`harness continue`, a segment that ended mid-milestone): the origin's when it is ahead of the box's or the box has none (a fix pushed by hand), the box's when it has commits the origin lacks (a failed push), the box's with the origin's merged in when they diverged (`<m>: harness-lane/<run>/<m> here and on origin had diverged; merged origin's into it`; a conflict: needs Michael) | deleted when its PR merges: on the origin at once, here when its lane closes (`lane <m>: branch harness-lane/<run>/<m> deleted (merged)`); under `pr` kept until the driver or `harness gc` sees it merged; kept unverified or unmerged (decisions/2026-10-27-lane-branches-and-slots) | milestone `<m>`'s code, worked in the slot |
 | `run/<run>/<m>` (annotated tag) | driver, after verify holds, at the lane tip | permanent | "this commit is milestone `<m>` verified": the exact merge point |
 | `harness-merge/<run>-<m>` | driver, `merge_one` | deleted after the merge | a branch at the tag commit, so the PR contains exactly that prefix of the run |
@@ -325,7 +327,7 @@ harness start ─► worktree + branch ─► driver (the coordinator):
 a point on that line, and merging a later tag carried every earlier commit, verified or not: hence the ordering rule
 ("stop at the first unverified milestone") and held "tainted" tags. A lane tip holds main, its dependencies' verified
 tags and its own commits only, so each verified milestone merges on its own once its dependencies have; the record
-travels on `harness/<run>` and never in a PR (decisions/2026-10-26-lanes).
+travels on `harness/<run>` and reaches `main` only through its own record PR at `finish` (decisions/2026-10-26-lanes, P2-05).
 
 **`run/<run>/final`.** In v2, the end of every run called `propose final`, which **tagged the branch head as
 `run/<run>/final` with the message "final verified"**, whatever had been verified, and refreshed the whole-run PR.
@@ -371,6 +373,7 @@ the run's options (`--spec`, `--until`; in `state/run.env`) → **conventions** 
 | Setting | Convention |
 |---|---|
 | `MERGE_POLICY` | `pr` (default): a verified milestone opens its PR and waits for you. `auto`: the driver also merges each one (`gh pr merge --match-head-commit`, so the verified tree lands); Michael's user config sets it (`decisions/2026-10-24-permissions-policy`), and a project whose `main` reaches production without a gate sets `pr` in `<project>/.harness/config.sh` (portfolio_site, n8n-home). `off`: no PR. `harness merge <run>` lands verified milestones under `auto` or `pr`, and does nothing under `off` |
+| `RECORD_PR` | `end`: `finish`'s last step opens `<run>: run record` from `harness/<run>` against main (the open one reused), merged under `MERGE_POLICY=auto`, left for you under `pr`; `off`: none, the record stays on `harness/<run>` and in the ledger (§8). The suite's base config sets `off` |
 | `NTFY_URL` / `NTFY_TOKEN` | empty: notifications go to `NOTIFY_CMD` (or nowhere). Set: the harness posts to that ntfy topic itself, the token as `Authorization: Bearer` (never logged), and `NOTIFY_CMD` is not called |
 | `DESK_URL` | empty: no **Answer with Claude** action on a park's notification |
 | `DESK` / `DESK_MODEL` | `0` / `opus`: no desk starts by itself (`harness desk` by hand still works). `DESK=1`: the driver and the debrief start one whenever a run needs Michael (§17), on `DESK_MODEL` |

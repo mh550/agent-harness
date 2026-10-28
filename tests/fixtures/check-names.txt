@@ -404,6 +404,16 @@ queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old value, s
 queue stop after a run: one debrief
 queue unpark puts it back at the end, its reason gone
 real limit message: not counted, run completes
+record PR: RECORD_PR=off opens none, noted
+record PR: a harness continue after finish ends again and reuses the open record PR (one pr create for it), its body refreshed
+record PR: a harness continue after the merged record PR runs on main with the record, ends done and opens and merges a second one
+record PR: finish deletes nothing: harness/ra is still here and on origin (its last commit pushed), so a harness continue the same night finds it
+record PR: harness merge's v2 closer leaves the record PR open (it closes only a PR not titled <run>: run record)
+record PR: its merge brings only .harness/runs/<run>/ paths onto main (the record branch is record-only)
+record PR: none when the record branch carries changes outside its record that main lacks (a --base run), noted
+record PR: the end-of-queue gc --all-merged --deps then removes the merged run's record worktree and deletes harness/ra here and on origin; the ledger keeps the record
+record PR: under auto finish opens <run>: run record from harness/<run> against main, its body the report, and merges it
+record PR: under pr it is opened and left for Michael, noted
 record commit: rec_commit commits .harness/runs/<run>/ only; a stray file in the record worktree stays untracked
 record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
 red suite un-passes C

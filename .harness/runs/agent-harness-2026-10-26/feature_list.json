@@ -242,7 +242,7 @@
         "cmd_gc's record_only keeps its meaning; the queue runner's end-of-queue `gc --all-merged --deps` deletes a merged run's record branch locally and on origin and its record worktree, the ledger keeping the record; a check in the gc file",
         "names in tests/fixtures/check-names.txt; `bash -n lib/driver.sh bin/harness lib/queue.sh`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-06",
