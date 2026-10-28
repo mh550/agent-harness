@@ -149,6 +149,29 @@ status_bulk() {   # <n>: bulk-01 … bulk-<n> (proj), ended done 4 days and <i> 
   echo done > "$HARNESS_STATE/proj/bulk-01/ended"; ago "$HARNESS_STATE/proj/bulk-01/ended" 345660
 }
 
+# <reason> open|resolved [<at epoch>] [<run>]: the run nf-<reason>-<state> (proj) whose needs/1.json is <reason>'s item (needs.mjs
+# open), with plan §2.1's markers for that state; its record holds a list (A passes, B doesn't). overlap has no sweep rule
+# before U3: resolved is its worktree removed (no harness/<run> branch exists in $T/proj)
+needs_fixture() {
+  local r=$1 s=$2 run=${4:-nf-$1-$2} sub=M1; local st=$HARNESS_STATE/proj/$run wt=$T/wt/proj/$run
+  mkdir -p "$st" "$wt/.harness/runs/$run"
+  printf 'PROJECT_DIR=%q\nWT=%q\nRUN_ID=%q\nSTATE=%q\n' "$T/proj" "$wt" "$run" "$st" > "$st/meta.env"
+  echo '{"features":[{"id":"A","milestone":"M1","passes":true},{"id":"B","milestone":"M1","passes":false}]}' > "$wt/.harness/runs/$run/feature_list.json"
+  case $r in parked|given_up) sub=B ;; feature_list_edits|initializer_failed|driver_crash|usage_limit|weekly_budget) sub=run ;; overlap) sub=nf-other ;; esac
+  HARNESS_NOW=${3:-} node "$HERE/../lib/needs.mjs" open "$st" "$run" proj "$r" "$sub" feature="$([[ $sub == B ]] && echo B)" milestone=M1 > /dev/null
+  [[ $s == open ]] || { [[ $r == overlap ]] && rm -rf "$wt"; return 0; }
+  case $r in
+    parked) echo '{"B":{"why":"set the vars","at":"2026-10-28T00:00:00.000Z"}}' > "$st/parked.json" ;;
+    given_up) echo '{"B":2}' > "$st/attempts.json"; echo 2 > "$st/max-attempts" ;;
+    verify_*|base_conflict) touch "$st/needs-M1" ;;
+    merge_conflict) touch "$st/conflict-M1" "$st/needs-M1" ;;
+    merge_refused) touch "$st/refused-M1" ;;
+    main_conflict) touch "$st/main-conflict-M1" ;;
+    overlap) ;;
+    *) echo "x · 2026-10-28 00:00:00" > "$st/ended" ;;
+  esac
+}
+
 # the widest stdin line in display columns (view.mjs's displayWidth); a URL line a card leaves whole (`  <scheme>://`) is not counted
 widest() { node --input-type=module -e "import { displayWidth } from \"$HERE/../lib/view.mjs\"; import { readFileSync } from \"node:fs\";
   console.log(Math.max(0, ...readFileSync(0, \"utf8\").split(\"\n\").filter(l => !/^  [a-z]+:\/\//.test(l)).map(displayWidth)))"; }

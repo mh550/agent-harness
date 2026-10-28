@@ -231,6 +231,11 @@ harness merge leaves a legacy record as it was; its PR quotes the legacy verify 
 harness merge merges v2 tags, closes the v2 PR
 harness merge merges verified milestones afterwards
 harness merge says it was refused again, and starts no desk
+harness needs --json: the open records, block before warn, oldest first; --all adds the 15 resolved ones
+harness needs done <ref>: resolved <ref>, the file in needs/done/ by michael (--why, else done by hand); a second done, a synthesized or unknown ref exit 1
+harness needs is read-only
+harness needs nope: exit 1, harness: on stderr; needs done with no ref is a usage error
+harness needs: one line per item (<glyph> <run> · <headline> · <ref>); with a run, that run's only
 harness parked --json parses
 harness parked is read-only
 harness parked: an unknown or glob run id is an error
@@ -379,6 +384,16 @@ metrics: coding rows carry tokens, cache rate and context peak
 metrics: orientation recorded per session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
+needs REASONS: kind, severity and priority for each of the 15 reasons, as the plan's table
+needs list: a dead driver.pid with no ended is a synthesized driver_crash (ref <run>/crash, at run.log's mtime), parked.json's B a parked item; nothing stored
+needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver
+needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref kept, updated_at moved
+needs open: an unknown reason or an empty subject exits 1 with needs.mjs: on stderr and writes nothing
+needs record: its first 13 keys are the v1 event keys in order, kind is park, needs_michael, blocked or limit (in v1's enum)
+needs record: ref is <run>/<seq>, key <reason>:<subject>; seq is one past the largest in needs/ and needs/done/; feature and milestone default from the subject or the list
+needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
+needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
+needs: a run whose worktree and record branch are both gone resolves run removed (list hides it before any sweep); the branch alone keeps it
 next <m>: a feature without after waits on its own milestone's earlier features only
 no URL in time: no window, the plain notification
 no URLs for a non-GitHub origin

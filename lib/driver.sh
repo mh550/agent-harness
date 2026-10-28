@@ -45,6 +45,8 @@ source "$HARNESS_HOME/lib/deploy.sh"   # deploy_status: hosts that would build e
 source "$HARNESS_HOME/lib/version.sh"  # harness_version: the harness commit driving this segment, and whether it is dirty
 # shellcheck source=lib/record.sh
 source "$HARNESS_HOME/lib/record.sh"   # record (the lock), run_paths, note, session, journal, merge_milestones, slot_open …
+# shellcheck source=lib/needs.sh
+source "$HARNESS_HOME/lib/needs.sh"   # needs_open: a needs-you record (lib/needs.mjs)
 run_paths   # PROJECT_NAME BRANCH RUN_DIR SCRATCH CHECK PORT, RWT REC LIST …, the configuration
 mkdir -p "$HARNESS_CACHE"   # installs a project keeps across runs and boots (Playwright browsers …); scratch goes at finish
 echo "$MAX_ATTEMPTS" > "$STATE/max-attempts"

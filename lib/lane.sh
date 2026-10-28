@@ -25,6 +25,8 @@ source "$HARNESS_HOME/lib/scope.sh"
 source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$RUN_ID
 # shellcheck source=lib/record.sh
 source "$HARNESS_HOME/lib/record.sh"
+# shellcheck source=lib/needs.sh
+source "$HARNESS_HOME/lib/needs.sh"   # needs_open: a needs-you record (lib/needs.mjs)
 source "$HARNESS_HOME/lib/review.sh"   # review_diff: the lane's diff the review gate sizes a review's model by (M6)
 run_paths   # the record worktree's paths; from here the lane works in its slot
 LANE=$M LANEU=${M//[^A-Za-z0-9_]/_} LDIR=$STATE/lanes/$M LS=$STATE/lanes/$M T0=$HARNESS_T0 DEADLINE=$HARNESS_DEADLINE

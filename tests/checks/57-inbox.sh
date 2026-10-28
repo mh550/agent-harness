@@ -64,3 +64,5 @@ check "INBOX repair in a run: noted, the record's comment as the driver wrote it
   && [[ $(sed -n "/<!--/,/-->/p" "$T/inc-inbox.md") == $(sed -n "/<!--/,/-->/p" "$T/tpl.md" | sed "s|harness/r\\.|harness/inc.|") ]] \
   && awk "/^\\*\\*Q1 \\(C, stub\\)\\.\\*\\* / { n = NR } /^## Answers\$/ { a = NR } END { exit !(n && a == n + 2) }" "$T/inc-inbox.md" \
   && hlog inc | grep "C parked (waiting on Michael)" > /dev/null && ! hlog inc | grep "C unparked" > /dev/null'
+
+suite_end

@@ -38,7 +38,8 @@
 #   harness stop <run-id> --why "<text>"         the same, and harness-log.md and ended say "stopped by Michael: <text>"
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
 #   harness parked [<run-id>] [--json]           what parked features wait on: why, the INBOX question, the next commands
-#   harness needs [<run-id>] [--json]            the same, for now (U2 makes it every open item)
+#   harness needs [<run-id>] [--all] [--json]    every open item that waits on Michael (--all: and those resolved in 7 days)
+#   harness needs done <run>/<n> [--why "<t>"]   resolve one by hand
 #   harness desk <run> [--why "…"] | --debrief   a Remote Control session that briefs you and takes your answers (tmux h-desk)
 #   harness desk --list | --close <run>|--all    the open desks: window, run, URL, age · close them
 #   harness init <project> [--draft]             CLAUDE.md + .harness/config.sh for a new project (--draft: Claude drafts
@@ -82,6 +83,8 @@ source "$HARNESS_HOME/lib/deploy.sh"
 source "$HARNESS_HOME/lib/scope.sh"   # scope_unit, scope_owns, scope_stop: gc's unit step and status's unit lines
 # shellcheck source=lib/tmux.sh
 source "$HARNESS_HOME/lib/tmux.sh"   # tmux_name, tmux_reap: start's session and gc's reaper
+# shellcheck source=lib/needs.sh
+source "$HARNESS_HOME/lib/needs.sh"   # NEEDS_MJS: harness needs (it calls the CLI directly: no record lock here)
 
 die() { echo "harness: $*" >&2; exit 1; }
 toplevel() { git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "$1 is not a git repository"; }
@@ -441,6 +444,28 @@ cmd_parked() {   # [<run-id>] [--json]: read-only (no harness_config, no mkdir: 
   done | node "$HARNESS_HOME/lib/parked.mjs" report "${json[@]}" --runner "$runner" --run "$want"
 }
 
+# [<run-id>] [--all] [--json] · done <ref> [--why "<text>"]: what waits on Michael, from the runs' needs records (lib/needs.mjs).
+# Read-only but for done (no harness_config, no mkdir: a phone session runs it to look)
+cmd_needs() {
+  local want="" opts=() d st msg
+  if [[ ${1:-} == done ]]; then
+    shift; local ref=${1:-} why=(); [[ $ref == */* ]] || die 'usage: harness needs done <run>/<n> [--why "<text>"]'; shift
+    while (( $# )); do case $1 in --why) why=(--why "${2:-}"); shift ;; *) die "unknown option $1" ;; esac; shift; done
+    st=$(state_of "${ref%%/*}")
+    msg=$(node "$NEEDS_MJS" done "$st" "$ref" "${why[@]}" 2>&1) || die "${msg#needs.mjs: }"
+    echo "$msg"; return 0
+  fi
+  while (( $# )); do case $1 in --json|--all) opts+=("$1") ;; -*) die "unknown option $1" ;; *) [[ -z $want ]] || die "usage: harness needs [<run-id>] [--all] [--json]"; want=$1 ;; esac; shift; done
+  [[ -n $want ]] && state_of "$want" > /dev/null
+  local dirs=()
+  for d in "$STATE_ROOT"/*/*/; do
+    [[ -f $d/meta.env ]] || continue
+    [[ -n $want && $(basename "$d") != "$want" ]] && continue
+    dirs+=("${d%/}")
+  done
+  node "$NEEDS_MJS" list "${dirs[@]}" "${opts[@]}" --run "$want"
+}
+
 cmd_answer() {
   local st; st=$(state_of "${1:?usage: harness answer <run-id> <text>}"); shift
   printf '%s\n' "$*" >> "$st/inbox.md"; echo "queued for the next session"
@@ -611,7 +636,7 @@ case ${1:-help} in
   merge) shift; cmd_merge "$@" ;;
   queue) shift; cmd_queue "$@" ;;
   status) shift; cmd_status "$@" ;;
-  needs) shift; cmd_parked "$@" ;;   # the status card's hint; U2's harness needs (every open item) replaces it
+  needs) shift; cmd_needs "$@" ;;
   parked) shift; cmd_parked "$@" ;;
   report) shift; cmd_report "$@" ;;
   trends) node "$HARNESS_HOME/lib/summary.mjs" trends "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/runs.jsonl" "${@:2}" ;;
