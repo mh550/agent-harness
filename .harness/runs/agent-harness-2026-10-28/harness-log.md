@@ -12,3 +12,6 @@
 - 2026-10-28 02:41 · notification failed (curl exit 28): harness
 - 2026-10-28 02:41 · session for U1-03 hit a limit (API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN)); not counted; resuming at 02:52
 - 2026-10-28 02:51 · usage-limit window (shared by all runs): waiting until 02:52 (1 min)
+- 2026-10-28 02:52 · context.md for U1-03: 6177 bytes
+- 2026-10-28 03:52 · U1-03: gotchas +2 ~0 -0
+- 2026-10-28 03:52 · U1-03 · claude-opus-5-5 · passes=true · 59 min · 3/24 passing · tests 640

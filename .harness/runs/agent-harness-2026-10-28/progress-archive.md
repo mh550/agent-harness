@@ -7,6 +7,23 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 03:52 · U1-03 · passes
+
+lib/status.mjs builds the run, needs and queue objects (pure runObject, needsItems, queueEntry, sections) from run_rows' stdin; harness status [<run>] --json prints v1. status_stubs/status_bulk in tests/lib.sh; 52-status-json.sh, 15 checks; key-paths and pre-change text fixtures. Text unchanged. An Opus review found 3 Important and 3 Minor issues, all fixed red to green.
+
+- **Files:** lib/status.mjs, bin/harness, tests/lib.sh, tests/checks/52-status-json.sh, tests/fixtures/status-json-keys.txt, tests/fixtures/status-text-u1-03.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-read-views.md, docs/plans/2026-10-28-U1-read-views.md, CLAUDE.md
+- **Verified:** 52-status-json 15/15 (failed first: no status.mjs, then 6 red for the review's findings); --json over 38 runs best of 3 about 155 ms; the 08/13/14/15/47 files 321/321; full suite green 640/640 with TEST_JOBS=2 (866 s, cached). Three earlier TEST_JOBS=4 runs each had 1-2 different timing flakes (46/48 lanes, 15 queue runner, 08 memory gate); each passed when rerun alone, and none reads harness status.
+- **Tests:** 625 → 640
+- **Dead end:** HARNESS_NOW=1793232000 (2026-10-29) in the stubs — files touched to a time after the real clock are -newer than any stamp, so the read-only find check failed; now 1793145600
+- **Dead end:** a symlinked lib/ beside HEAD's bin/harness to capture the old text — node's main guard compares realpath with argv[1], so features.mjs printed nothing; git archive HEAD lib instead
+- **Discovery** (affects U1-04, U1-05, U1-06): status_stubs [<bulk>] (tests/lib.sh) builds the 8 U1 stub runs (done2h, done3d, stopped, running+lane M1+2 units, parked, givenup, gcd via ledger, crashed) and a 3-entry queue at HARNESS_NOW=1793145600, TZ=UTC; status_bulk <n> adds bulk-01..n. 53-55 can source them
+- **Discovery** (affects U1-04, U1-05): tests/fixtures/status-text-u1-03.txt is the old harness status text (LC_ALL=C, $T as <T>) that 52-'s last-but-two check compares: U1-04/U1-05 replace that text, so they drop or rewrite that check and the fixture
+- **Discovery** (affects U1-04): status.mjs needs a text mode: today it requires --json (usage exit 2); cmd_status dies when -a/--since/--project are given without --json, and U1-04 lifts that
+- **Discovery** (affects U1-04, U1-05, U2): an ended run's summary.json is read record, then state dir, then ledger: the state dir's copy is harness report's and goes stale after a continue. session = metrics rows + 1 while running, never $STATE/sessions (reset each segment). The plan's §3.1 is corrected
+- **Discovery** (affects run): the full suite at TEST_JOBS=4 flaked 1-2 timing checks per run tonight (load around 3.7 with other lanes); TEST_JOBS=2 ran green in 866 s
+- **Proposed change:** U1-03 step 1 says the summary comes from the state dir, then the ledger. The record's copy (finish's) should come first: the state dir's is harness report's, an earlier segment's after a continue (the U1-03 review)
+- *03-U1-03 · claude-opus-5-5*
+
 ### 2026-10-28 02:37 · U1-03 · not yet
 
 API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN)

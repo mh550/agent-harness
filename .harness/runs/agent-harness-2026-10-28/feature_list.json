@@ -57,7 +57,7 @@
         "`harness status --json` over the 38 stub runs finishes under 1 s (the check measures with `date +%s%N`), and the text of `harness status` and `harness status <run>` is unchanged by this feature (the 08-, 13-, 14-, 15- and 47- checks pass as they are); `journal/decisions/2026-10-27-read-views.md` is started with title, provenance and the finding",
         "`node --check lib/status.mjs`, `bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U1-04",
