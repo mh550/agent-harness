@@ -379,15 +379,26 @@ cmd_status() {   # [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--j
 cmd_report() {
   local d ids=("$@") out=()
   (( ${#ids[@]} )) || for d in "$STATE_ROOT"/*/*/; do [[ -f $d/meta.env ]] && ids+=("$(basename "$d")"); done
-  local run
+  # worktree (a rebuild) → the state's copy (finish's) → the ledger's, copied into the state on this first read
+  # (decisions/2026-10-27-record-after-gc); metrics.jsonl beside summary.json: report's memory peaks read it there
+  local run l=${HARNESS_LEDGER:-$HARNESS_HOME/ledger} lj
   for run in "${ids[@]}"; do
+    # a state dir removed by hand: the ledger's copy alone, reported where it is (nowhere to copy to)
+    if ! compgen -G "$STATE_ROOT/*/$run/meta.env" > /dev/null && [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] \
+       && lj=$(compgen -G "$l/*/$run/summary.json" | head -1); then
+      node "$HARNESS_HOME/lib/summary.mjs" report "$lj"; echo; continue; fi
     d=$(state_of "$run")
     # shellcheck source=/dev/null
     ( source "$d/meta.env"
-      # metrics.jsonl beside it: report's memory peaks read it from there, also once gc has removed the worktree
+      lj=$l/$(basename "$PROJECT_DIR")/$RUN_ID
+      local src=$STATE
       if [[ -d $WT ]]; then node "$HARNESS_HOME/lib/summary.mjs" build "$WT" "$RUN_ID" "$STATE" > "$STATE/summary.json"
-        cp "$WT/.harness/runs/$RUN_ID/metrics.jsonl" "$STATE/metrics.jsonl" 2> /dev/null; fi
-      [[ -f $STATE/summary.json ]] && node "$HARNESS_HOME/lib/summary.mjs" report "$STATE/summary.json" || echo "## $RUN_ID: no record" )
+        cp "$WT/.harness/runs/$RUN_ID/metrics.jsonl" "$STATE/metrics.jsonl" 2> /dev/null
+      elif [[ ! -f $STATE/summary.json && -f $lj/summary.json ]]; then   # a copy that fails still reports
+        cp "$lj/summary.json" "$STATE/" 2> /dev/null || src=$lj; [[ -f $lj/metrics.jsonl ]] && cp "$lj/metrics.jsonl" "$STATE/" 2> /dev/null; fi
+      if [[ -f $src/summary.json ]]; then node "$HARNESS_HOME/lib/summary.mjs" report "$src/summary.json"
+      else local s=$STATE; [[ $s == "$HOME"/* ]] && s="~${s#"$HOME"}"; [[ $lj == "$HOME"/* ]] && lj="~${lj#"$HOME"}"
+        echo "## $RUN_ID: no record (worktree removed; nothing in $s or $lj)"; fi )
     echo
   done
 }
@@ -513,16 +524,19 @@ cmd_gc() {
   # project's runs with no live driver, first (before a fetch that may fail, before their worktree goes). A dead
   # driver.pid is enough: the driver removes ended at start, only finish and the trap write it. Two ids may reduce to
   # one prefix (a.b, a-b), so every project's runs are candidates and a live one keeps the unit.
-  local u d r mine busy why err
+  # A unit only another project's runs own is that project's gc's: skipped silently, live or ended; one no run on this
+  # box owns is said with the command, never stopped: nobody can say what it is (decisions/2026-10-27-gc-foreign-units)
+  local u d r mine owned busy why err
   while read -r u _; do
     [[ $u == harness-*.scope ]] || continue
-    mine="" busy=0
+    mine="" owned=0 busy=0
     for d in "$STATE_ROOT"/*/*/; do
       [[ -f $d/meta.env ]] && scope_owns "$(basename "$d")" "$u" || continue
-      { alive "$d" || lane_live "$d" > /dev/null; } && busy=1
+      owned=1; { alive "$d" || lane_live "$d" > /dev/null; } && busy=1
       [[ -z $mine && $d == "$STATE_ROOT/$(basename "$p")/"* ]] && mine=$d
     done
-    [[ -n $mine ]] || { echo "? $u (no run of this project)"; continue; }
+    (( owned )) || { echo "? $u: no run on this box owns it (systemctl --user stop $u by hand)"; continue; }
+    [[ -n $mine ]] || continue
     (( busy )) && continue
     r=$(basename "$mine"); why="$r ended"; [[ -f $mine/ended ]] || why="$r: driver gone"
     if (( dry )); then echo "would: systemctl --user stop $u ($why)"

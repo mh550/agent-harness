@@ -217,6 +217,8 @@ gc never removes a worktree that is no run's (its branch isn't harness/<run>), e
 gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
 gc removed the finished worktree
 gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+gc units: --dry-run with units of another project's runs (live and ended) prints no ? line and no line naming them
+gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
 gotchasDiff: added, edited, deleted and no section
 gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
 harness backlog import of the seed file gives 8 rows, and 8 again on a second import
@@ -525,6 +527,12 @@ record PR: the end-of-queue gc --all-merged --deps then removes the merged run's
 record PR: under auto finish opens <run>: run record from harness/<run> against main, its body the report, and merges it
 record PR: under pr it is opened and left for Michael, noted
 record PR: under pr the end-of-queue gc keeps harness/<run> and its worktree while the record PR is open, and deletes them once it merged
+record after gc: a run with no state dir is reported from the ledger, copied nowhere; an unknown one is still an error
+record after gc: finish keeps summary.json, report.md and metrics.jsonl in the state dir, and says so
+record after gc: harness report prints the run's table from the state copy once gc removed the worktree
+record after gc: harness status shows the passing count of a run gc removed
+record after gc: with both gone, a no record line naming the state dir and the ledger dir
+record after gc: with the state copy gone, from the ledger copy, after which the state copy exists again
 record commit: rec_commit commits .harness/runs/<run>/ only; a stray file in the record worktree stays untracked
 record lock: pack_and_copy builds the pack and copies it into the slot under one lock (another lane's pack can't land between)
 record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)

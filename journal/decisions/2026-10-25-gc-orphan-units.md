@@ -20,8 +20,10 @@
     `+ stopped <unit> (<run> ended)` or `(<run>: driver gone)`; `--dry-run` prints `would: systemctl --user stop <unit>
     (…)`. gc's own lines, not `act`'s, which would print the raw argv.
   - Every project's runs are candidates, since two ids can reduce to one prefix (`a.b`, `a-b`): a live one anywhere
-    keeps the unit. A unit of no run of this project prints `? <unit> (no run of this project)` and is never stopped
-    (another project's gc owns it; the suite's `harness-test-*` probes match no role).
+    keeps the unit. A unit only another project's runs own is skipped silently (that project's gc owns it); one no run
+    on this box owns prints `? <unit>: no run on this box owns it (systemctl --user stop <unit> by hand)` and is never
+    stopped (the suite's `harness-test-*` probes match no role).
+    Updated in place 2026-10-28: the `?` line is for unowned units only, with the command (decisions/2026-10-27-gc-foreign-units).
   - `harness status` prints under a `running` run one line per unit, `    harness-<run>-<role> · MemoryCurrent <n> MB`
     (`list-units 'harness-<run>-*'`, filtered by `scope_owns`, then `show -p MemoryCurrent`, rounded as `scope_peak`
     rounds). `[not set]` (gone between the two calls), no user bus or an ended run: no line, and an ended run calls no

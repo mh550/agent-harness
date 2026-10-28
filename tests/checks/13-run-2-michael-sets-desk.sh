@@ -107,7 +107,7 @@ check "gc removed the finished worktree"  '[[ ! -d $WT ]]'
 check "gc deleted the run branch"         '! git -C "$T/origin.git" rev-parse -q --verify harness/demo >/dev/null'
 check "gc kept the tags"                  'git -C "$T/origin.git" tag | grep -qx run/demo/M2'
 # gc's unit step (L2-05): units a SIGKILLed driver left. demo ended; killed's driver.pid is dead and it wrote no ended;
-# gclive and demo-x have a live driver (demo's prefix also claims demo-x's unit, as lane x's: the live owner keeps it); oth is another project's
+# gclive and demo-x have a live driver (demo's prefix also claims demo-x's unit, as lane x's: the live owner keeps it); oth is another project's (silent)
 # c.d (proj, ended) and c-d (other, live) share harness-c-d-: the live one keeps the unit. 999999999 is over any pid_max
 sleep 60 & GL1=$!; sleep 60 & GL2=$!; sleep 60 & GL3=$!; GLD=999999999
 for r in gclive:$GL1 demo-x:$GL2 killed:$GLD other/oth: c.d: other/c-d:$GL3; do d=$HARNESS_STATE/${r%%:*}; [[ $d == */other/* ]] || d=$HARNESS_STATE/proj/${r%%:*}
@@ -122,7 +122,7 @@ GCL=$("$HARNESS_SYSTEMCTL" --user list-units 'harness-*' --plain --no-legend | c
 check "harness gc stops the units of this project's runs with no live driver; --dry-run stops none" '[[ $GS1 == "$GS0" ]] \
   && grep -qx "would: systemctl --user stop harness-demo-svc.scope (demo ended)" "$T/gcu1.out" && grep -qx "would: systemctl --user stop harness-demo-s99.scope (demo ended)" "$T/gcu1.out" \
   && grep -qx "would: systemctl --user stop harness-killed-svc.scope (killed: driver gone)" "$T/gcu1.out" && [[ $(grep -c "^would: systemctl" "$T/gcu1.out") == 3 ]] \
-  && grep -qx "? harness-nosuch-svc.scope (no run of this project)" "$T/gcu1.out" && grep -qx "? harness-oth-svc.scope (no run of this project)" "$T/gcu1.out" \
+  && grep -qx "? harness-nosuch-svc.scope: no run on this box owns it (systemctl --user stop harness-nosuch-svc.scope by hand)" "$T/gcu1.out" && ! grep -q harness-oth-svc "$T/gcu1.out" \
   && grep -qx "+ stopped harness-demo-svc.scope (demo ended)" "$T/gcu2.out" && grep -qx "+ stopped harness-demo-s99.scope (demo ended)" "$T/gcu2.out" \
   && grep -qx "+ stopped harness-killed-svc.scope (killed: driver gone)" "$T/gcu2.out" && [[ $(grep -c "^+ stopped" "$T/gcu2.out") == 3 ]] \
   && [[ $GS2 == "harness-demo-s99.scope harness-demo-svc.scope harness-killed-svc.scope" ]] \

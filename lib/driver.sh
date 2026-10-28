@@ -333,6 +333,12 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   case $1 in "blocked on"* | "waiting on Michael"*) desk "ended: $1" ;; esac   # after that commit: its note is no failed post
   if [[ $RETRO == 1 && -f $LIST ]]; then retro; SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"; fi
   SUM report "$REC/summary.json" > "$REC/report.md"
+  # the state dir outlives the worktree gc removes: harness report reads these there (decisions/2026-10-27-record-after-gc)
+  # (metrics.jsonl beside them for report's memory peaks, when the run has one)
+  if cp -f "$REC/summary.json" "$REC/report.md" "$STATE/" 2> /dev/null; then
+    [[ -f $REC/metrics.jsonl ]] && cp -f "$REC/metrics.jsonl" "$STATE/" 2> /dev/null
+    note "summary.json and report.md kept in the state dir (harness report reads them after gc)"
+  else note "could not keep summary.json and report.md in the state dir: harness report needs the worktree or the ledger"; fi
   rec_commit "HARNESS: summary and retro"; sync_record
   ledger
   scratch_done "$key"   # the record keeps the last suite and init output; the run's scratch goes (decisions/2026-10-25-scratch-cleanup)
