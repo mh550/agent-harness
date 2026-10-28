@@ -325,7 +325,7 @@
         "checks in a new file by topic (e.g. `tests/checks/63-project-names.sh`): from a directory outside the throwaway project, `harness gc proj --dry-run` and `harness status --project proj` resolve `proj` through its runs' `PROJECT_DIR`; with no run of it and `HARNESS_PROJECTS=<dir>` holding a `proj` repository, `harness queue add proj` resolves it there; `harness gc nope` exits 1 and its stderr names the three places looked and the projects with runs",
         "`journal/decisions/2026-10-27-project-names.md` exists (finding · choice · rejected), never numbered; `bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U3-03",
