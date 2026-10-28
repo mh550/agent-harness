@@ -77,7 +77,7 @@
         "`journal/decisions/2026-10-27-read-views.md` gains the choice (one formatter, no pager, colour on a TTY only, the window rule: `24h`, never fewer than the 3 newest, never more than 10) and the rejected (a pager by default, colour off a TTY, `column(1)` or an npm table package, hiding NEEDS YOU when the window is short, per-command formatting code)",
         "`node --check lib/status.mjs lib/view.mjs`, `bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U1-05",

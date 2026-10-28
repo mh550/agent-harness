@@ -7,6 +7,23 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 04:45 · U1-04 · passes
+
+harness status (no run) is one screen via status.mjs renderView + view.mjs: NEEDS YOU, RUNNING, QUEUED, FINISHED, footer; --all, --since, -p, -v, N; fits 60/80; colour on a TTY only; ASCII under LC_ALL=C. STATUS_SINCE default + template; catch-up prompt; decision updated. 53-status-view.sh, 15 checks. An Opus review found 11 Minor issues; 9 fixed red to green.
+
+- **Files:** lib/status.mjs, bin/harness, lib/config.sh, templates/user/config.sh, prompts/project-catchup.md, journal/decisions/2026-10-27-read-views.md, tests/checks/53-status-view.sh, tests/checks/52-status-json.sh, tests/fixtures/status-text-u1-03.txt, tests/fixtures/check-names.txt, CLAUDE.md
+- **Verified:** bash tests/run.sh status: 52- 15/15, 53- 15/15 (harness status --all over 38 stub runs: best of 3 about 150 ms); full suite via lib/check.sh: 655/655 green at TEST_JOBS=2 in 869 s (a TEST_JOBS=4 run before it: 652/655, three lanes pr-held timing checks in 46-lanes-continue, which passes 12/12 alone and never reads status)
+- **Tests:** 640 → 655
+- **Dead end:** the queue row's (requested) mark in its own column (review finding 7: a 74-char id plus the mark gets folded) — the padded column breaks the 'stopped (requested)' row text that U1-06's rewrite of the 15- queue checks expects; reverted, the long-id fold left as a known rare case
+- **Discovery** (affects U1-05, U1-06): renderView(doc, {runs, extra, verbose, all, project, env}, ctx) in lib/status.mjs renders the default view from the v1 document; laneLine(l) (exported) rebuilds P2-06's lane line from a run object's lanes.open entry, text identical: U1-05's card can use both
+- **Discovery** (affects U1-05): cmd_status now sends everything except 'harness status <run>' without --json to status.mjs; that one path is still the old bash loop (and accepts -v, ignored). A run with -a/--since/-p and no --json dies. tests/fixtures/status-text-u1-03.txt is now only the running run's block, compared by 52-'s 'text of harness status <run>' check, which U1-05 drops
+- **Discovery** (affects U1-06): QUEUED rows already use the queue-list row shape (n, verb, '<run> (requested)' or '<project> (new run)', spec basenames · brief "<30>…" (+k chars), age; 'held: <p> busy (<run>)' as a sub-line): U1-06 can reuse the qrows mapping
+- **Discovery** (affects run): lanes admission (47-lanes-two, five-hour window at 80 %) failed once in a full run at load ~2.9 with TEST_JOBS=3; it never reads the status view
+- **Question for Michael:** Default taken: RUNNING shows '<k> lanes' with sub-rows only for two or more open lanes (a lanes-era run always has its one lane; the feature/session/model says more). Keep?
+- **Question for Michael:** Default taken: QUEUED lists only waiting entries; parked ones are a count on the '+k more · p parked: harness queue list' line. Keep?
+- **Proposed change:** U1-07's review should look at a long run id (60+ chars) in the shared id column: one such id puts every run row in all three sections on two lines (review finding 7, left as is)
+- *04-U1-04 · claude-opus-5-5*
+
 ### 2026-10-28 03:52 · U1-03 · passes
 
 lib/status.mjs builds the run, needs and queue objects (pure runObject, needsItems, queueEntry, sections) from run_rows' stdin; harness status [<run>] --json prints v1. status_stubs/status_bulk in tests/lib.sh; 52-status-json.sh, 15 checks; key-paths and pre-change text fixtures. Text unchanged. An Opus review found 3 Important and 3 Minor issues, all fixed red to green.
