@@ -2,8 +2,17 @@
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- Dead end (U1-07, 07-U1-07): a live session = the newest session line with no coding row at or after its stamp — the second Opus round: a refused (env) row never closes it, another lane's row hides it, and rows share a second with the next line; log order per id fixed all three → entries.jsonl:9
+- Question (U1-07): The U1 review deferred four Minor findings (continued-run wall hours, MAIN_BRANCH in the card's branch line, lane liveness by cmdline, the --since 3d hint). Should they go in a later milestone's list, or be dropped? → entries.jsonl:9
+- 2026-10-28 07:11 · U1-07 · passes: U1 review: 1 Critical, 3 Important, 11 Minor over two Opus rounds. Critical (session counted every metrics row) and all Important fixed red to green in 56-status-review.sh; 7 Minor fixed, 4 deferred; simplifications applied. README, architecture §3/§10/§12, config template and read-views decision complete.; tests 680 → 689; files lib/status.mjs, lib/view.mjs, bin/harness, tests/lib.sh, tests/checks/56-status-review.sh, … → entries.jsonl:9
+
 ## Discoveries for this feature
 
+- Discovery (U1-07, affects run): status_stubs' mx now takes [<kind>:]<feature> (init:, verify:, refused:) and writes every row's at MX_AT s before HARNESS_NOW (default 1900); fl and mx stay defined after status_stubs → entries.jsonl:9
+- Discovery (U1-07, affects U2, run): Deferred from the U1 review (docs/plans/2026-10-28-U1-review.md, Not done): wall hours of a continued run, the card's branch line hardcodes origin/main, lane liveness lacks lane_live's cmdline test, and the footer's --since 3d hint is not conditional on hidden runs → entries.jsonl:9
+- Discovery (U1-07, affects run): Under load (~3.7, other lanes), full runs flaked once each in 28-run-14d-harness-merge and 48-lanes-rebase (an unknown run/<id>/M2 tag); both pass alone and neither reads status → entries.jsonl:9
 - Discovery (U1-06, affects U1-07): status.mjs now has queue and entry <n> [--parked] modes; readQueue returns [entry, {args, file}] pairs (queued() maps to the entries), so --json is unchanged → entries.jsonl:8
 - Discovery (U1-06, affects U1-07): queue show adds fields beyond the step: held, options (the args no other field names, --queued included) and added; an --until text to_epoch reads but status.mjs cannot (e.g. 'tomorrow 06:00') shows as given → entries.jsonl:8
 - Discovery (U1-06, affects U1-07): RUNNING in queue list folds its ids under the title instead of cutting them; the spec's narrow 'PARKED 0 · RUNNING …' join was dropped → entries.jsonl:8
@@ -22,7 +31,6 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 ## Lately in the run
 
 - 2026-10-28 05:14 · U1-05 · passes: U1-05 passes, in commit `681d468` (pushed). The full suite is green: 668 tests, up from 655. - **The card:** `harness status <run>` now prints a card. Its first line gives the state or end class, `x/y passing` and the age. The fields are now, ended, milestones, lanes, spend, branch, worktree, needs you, units and next. `-v` or `N` adds the log tail. - **Old checks:** the old checks that read the …; files CLAUDE.md, bin/harness, journal/decisions/2026-10-27-read-views.md, lib/status.mjs, prompts/supervisor.md, … → entries.jsonl:7
-- 2026-10-28 04:45 · U1-04 · passes: harness status (no run) is one screen via status.mjs renderView + view.mjs: NEEDS YOU, RUNNING, QUEUED, FINISHED, footer; --all, --since, -p, -v, N; fits 60/80; colour on a TTY only; ASCII under LC_ALL=C. STATUS_SINCE default + template; catch-up prompt; decision updated. 53-status-view.sh, 15 checks. An Opus review found 11 Minor issues; 9 fixed red to green.; tests 640 → 655; files lib/status.mjs, bin/harness, lib/config.sh, templates/user/config.sh, prompts/project-catchup.md, … → entries.jsonl:6
 
 ## Current rules
 
@@ -38,6 +46,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - A stop records why: `harness stop --why` and `status: stop <why>` → journal/decisions/2026-10-26-stop-reason.md
 - Step lint: four pure rules over the feature list, reported and never applied → journal/decisions/2026-10-26-step-lint.md
 - Reviews sized to the milestone: small milestones fold the review into their last build feature → journal/decisions/2026-10-26-reviews-sized-to-milestone.md
-- The retro backlog: the retro proposes as data, the driver is the only writer → journal/decisions/2026-10-26-retro-backlog.md
 
-_46 older rules: journal/decisions._
+_47 older rules: journal/decisions._
