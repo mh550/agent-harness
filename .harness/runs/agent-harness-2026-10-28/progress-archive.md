@@ -7,6 +7,27 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 08:40 · U2-01 · passes
+
+Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and card keys, file locations, the 15 reasons mapped to their functions with kind/severity/priority/key/sweep rule, a card template per reason, needs.sh/needs.mjs/inbox.mjs APIs, notification texts, check files 57-63, fixtures, touched checks, order U2-02..09. Code unchanged; suite cached green.
+
+- **Files:** docs/plans/2026-10-28-U2-needs-record.md
+- **Verified:** Each plan step checked against the code at fc23bf9 (grep of lib/record.sh, lib/lane.sh, lib/driver.sh, bin/harness, tests/checks/13-, 03-, 15-); the n8n fixture read via a scratch clone (31 lines, line 13 '## Answers".', line 28 '## Answers'); merge-tree --name-only output captured from a real scratch conflict; lib/check.sh: green, 689 tests (cached).
+- **Tests:** 689 → 689
+- **Discovery** (affects U2-02, U2-03, U2-04, U2-05, U2-06, U2-07, U2-08): tests/checks/56- is taken (56-status-review.sh): U2's new check files are 57-inbox, 58-needs-record, 59-needs-cards, 60-needs-driver, 61-needs-git, 62-needs-readers, 63-question-locations
+- **Discovery** (affects U2-02): With lanes, a session writes only its slot copy of INBOX.md; take_question_ copies the added lines into the record. So the INBOX repair belongs on the slot copy (against $LS/inbox-before.md) before take_question, plus the record's INBOX after the initializer. answers_hash and take_question_ also cut at /^## Answers/ and must move to inbox.mjs (answers, insert)
+- **Discovery** (affects U2-02): The n8n-home fixture can be read without git in that checkout: git clone -q --no-checkout ~/projects/n8n-home <scratch>/n8n-home, then git -C <scratch>/n8n-home show 4632d1c:.harness/runs/n8n-home-2026-10-22/INBOX.md
+- **Discovery** (affects U2-04, U2-05): harness parked's text is read by seven 13- checks (parky · proj · B, running:, next commands); making parked an alias in U2-04 before U2-05 opens records needs list to synthesize parked items from parked.json (plan §2.2), and those checks rewritten to the card's words (plan §5.2)
+- **Discovery** (affects U2-05, U2-06): Two 13- checks assert today's clicks: the park notification's Click is INBOX.md and verify's is progress.md; the spec's needs.md click changes exactly those two assertions (U2-05, U2-06)
+- **Question for Michael:** Should a given-up feature (and a run ending on feature-list edits or a crash) send its own high notification when it happens, not only via the run-end notification? Default: no (plan §7.3).
+- **Question for Michael:** Is one main_conflict item per lane (refreshed as main moves, notified once per main commit via a main-conflict-<m> marker) right, rather than one item per main commit? Default: per lane (plan §7.1).
+- **Question for Michael:** Should the park notification's tap open needs.md instead of INBOX.md (Edit INBOX stays a button)? Default: needs.md (plan §7.4).
+- **Proposed change:** U2-02 step 5: run the repair on the session's copy of INBOX.md (the slot's) before take_question, and on the record's INBOX.md after the initializer, not on the record's INBOX.md after each session (sessions never write it with lanes); and name answers_hash and take_question_ in lib/record.sh as callers of inbox.mjs
+- **Proposed change:** U2-03 step 1: needs.mjs may import ./inbox.mjs and ./notify.mjs (pure) as well as ./view.mjs
+- **Proposed change:** U2-05 step 1 and U2-06 step 2: 'existing park/verify notification checks pass unchanged' except the one Click assertion each (INBOX.md and progress.md become needs.md)
+- **Proposed change:** U2-06 step 1: main_conflict's key subject is the lane milestone, not the origin/main commit; once per main commit comes from a main-conflict-<m> marker (plan §7.1)
+- *09-U2-01 · claude-opus-5-5*
+
 ### 2026-10-28 08:22 · verify U1 · passes
 
 All 40 steps of U1-01..07 hold. Init suite red (7 checks in 08-scope, 45-lanes) was load flakes: both files pass alone (135/135); 51-56 pass 86/86; 25-run-13b flaked once, passes alone. Docs, fixtures, decision, prompts, syntax checked.

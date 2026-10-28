@@ -147,7 +147,7 @@
         "it orders U2-02 to U2-09, says what the suite looks like after each, names the check files and fixtures (`tests/fixtures/inbox-q-in-comment.md` from n8n-home commit `4632d1c`, `tests/fixtures/merge-tree-name-only.txt`, one fixture state dir per reason), lists the existing checks it touches by name (the three `parked.mjs` checks in tests/checks/03-, the desk prompt check in 13- naming `harness parked parky`, the park notification checks that read `PARKED:`), and Michael's after-run steps (the skill symlink; nothing live)",
         "the suite is green (unchanged by this feature)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U2-02",
