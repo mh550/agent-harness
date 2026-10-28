@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 20:09 · P1-06 · passes
+
+Opus review of the P1 diff (3,541 lines): 5 Important fixed, each with a check red then green (--base continue refusal, record commits staging only the record, lane-aware F blocked, later lanes on the default lane's code, MAX_LANES>1 runs 1 until P2), 2 simplifications applied. Decision file, architecture §4/§12/§15 and README updated.
+
+- **Files:** bin/harness, lib/record.sh, lib/driver.sh, lib/lane.sh, lib/features.mjs, tests/stub-claude.sh, tests/checks/43-lanes-scheduler.sh, tests/checks/44-lanes-record.sh, tests/checks/45-lanes-run.sh, tests/checks/46-lanes-continue.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-26-lanes.md, +3 more
+- **Verified:** bash tests/run.sh lanes: 47/50 with the 4 new checks before the fixes (the --base one red after adding a second continue), 50/50 after; 45 10/11 then 11/11 for the default-lane check; full suite via check.sh green in 403 s, 555 tests; bash -n / node --check on every P1-touched file
+- **Tests:** 550 → 555
+- **Dead end:** the --base check with one continue after main moved — it passed before the fix: the refusal needs a segment that merged the moved main, so the check runs two continues
+- **Discovery** (affects P2, run): D15: until P2, MAX_LANES above 1 is noted ('MAX_LANES=<n>: one lane at a time until P2 …') and runs 1: lanes shared the run's one port, a lane's verify and the coordinator's reap could merge one milestone twice, and LANE_END stopped no other lane. P2 must lift the clamp in lib/driver.sh with per-lane ports, a merge lock, LANE_END stopping the other lanes, and rec_count read under the lock.
+- **Discovery** (affects P2): Review Minors left for P2 (docs/plans/2026-10-26-P1-review.md): nomerge-<m> never cleared (lane.sh:54), lanes_orphans matches pid by cmdline only, continue calls legacy_refuse twice, slot_close/lanes_term branch deletions and TERMs not in harness-log.md, F lanes' unused base-tags field.
+- **Discovery** (affects P2, run): record commits (rec_commit) now stage .harness/runs/<run>/ only; driver start/merge-only/journal/initializer-done commits go through it. The initializer's WIP commit_all stays whole-tree so restrict can revert its code edits (D3).
+- **Discovery** (affects P2): STUB_DEFAULT_FEATURE=1 in tests/stub-claude.sh prepends feature Z with no milestone (the default lane) to the stub list.
+- **Question for Michael:** D15: MAX_LANES above 1 runs 1 until P2 merges (your config's 2 is noted and ignored meanwhile). OK, or should P1 not merge before P2?
+- *02-P1-06 · claude-opus-5-5*
+
 ### 2026-10-27 19:25 · P1-05 · passes
 
 harness continue reopens a lane from the newer of the box's and origin's branch (both merged if diverged); refuses a legacy run (code beyond its base) with three ways forward, exit 1, run.log + high-priority notification; under pr a dependent's PR waits (noted once), harness merge lands proposed milestones in order. 11 checks in 46-lanes-continue.sh.
@@ -228,24 +243,7 @@ Runner runs TEST_JOBS files (default 4 here) as background jobs, largest first; 
 - **Proposed change:** P0-02 step 2: the slowest/wall line is the second-to-last line; the total `N/M checks passed` stays last for testcount.mjs.
 - *02-P0-02 · claude-opus-5-5*
 
-### 2026-10-26 06:44 · P0-01 · passes
-
-tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for byte from the single file by tests/split.sh with 27 grouping pairs, plus 25-suite-runner.sh. tests/lib.sh holds the preamble. A conformance check runs against tests/fixtures/check-names.txt (325 names from init's check.out). testcount.mjs now reads N/M checks passed. 327/327 green in 589 s.
-
-- **Files:** tests/lib.sh, tests/split.sh, tests/run.sh, tests/checks/, tests/fixtures/check-names.txt, lib/testcount.mjs, journal/decisions/2026-10-26-suite-split.md, CLAUDE.md, README.md, docs/architecture.md
-- **Verified:** Full suite through check.sh: green in 589 s, 327/327 (325 + the testcount check + conformance). All 25 files pass alone, run from fresh shells 4 at a time. bash -n passes on every file. A Python comparison shows all 50 sections and the lib.sh preamble byte-identical to 3aa98b5:tests/run.sh. The check-line multiset diff is empty. Re-running split.sh into a temp dir reproduces tests/checks exactly. KEEP=1 tests/run.sh gc kept one $T and named it. Runner cases were tested on a throwaway copy: subset, no match, missing, new, doubled, skipped name, crashed file, a leftover background process.
-- **Tests:** 325 → 327
-- **Dead end:** hoisting shared helpers (sd_with, gone, has_s, keep_wts, HH, HV) into lib.sh so files that only call them need no grouping — once the state pairs were in, every such file was in the run-1 group anyway except a 1-second tmux file; dropped
-- **Dead end:** export LC_ALL=C in the runner for sort/comm — it reached each file's tmux server, which mangled the UTF-8 desk window names: 12 desk checks failed. Now set only on sort/comm
-- **Discovery** (affects P0-02, P0-04): Most of the suite reads run 1's demo state (its systemd.log scopes, worktree, tags, demo-hlog.md, state dir), and the debriefs read runs 2/4/5/9 and the queue. Grouping therefore yields one file of 25 sections and 253 checks (06-scope-sh-...-l5.sh) that takes ~400 s alone, more than half of the 589 s sequential total. Under S2 that file alone exceeds 150 s. Splitting it means re-running run 1's start in a second file: lines not in the monolith (the spec forbids patching). P0-02 must choose and record that.
-- **Discovery** (affects P0-02, run): split.sh writes only into an empty $SPLIT_OUT (default tests/checks), so it can never delete files added since the split. To re-verify the split: SPLIT_OUT=$(mktemp -d)/o bash tests/split.sh, then cmp against tests/checks.
-- **Discovery** (affects P0-02, P0-03, P1, P2): tests/checks/25-suite-runner.sh is the runner's own check file (it holds the testcount check). P0-02's runner checks belong there. Every new check name needs a line in tests/fixtures/check-names.txt (C-sorted): the full run's conformance check fails on new names too.
-- **Discovery** (affects run): The harness runs the live checkout's lib/check.sh/testcount.mjs, so its green line shows no test count until this merges to main. The worktree's lib/check.sh prints 'check: green (cached for this code tree, 327 tests)'.
-- **Discovery** (affects P0-02): A subset by name can match a group: `tests/run.sh parked` runs 03-harness-parked-pure-report and the big 06 file, because a group's file name adds its sections' first words (gc, queue, parked, debrief, desk, ...).
-- **Question for Michael:** D1 default: the conformance check fails on a check name not in tests/fixtures/check-names.txt, not only on missing or doubled names (the spec says the runner 'says' which names are new). This keeps the fixture complete, so a check deleted later is caught. Keep it strict?
-- **Proposed change:** P0-01 step 3 (multiset equal) and step 7 (N = 325 + conformance) describe the split alone. After the testcount fix, the full run is 327 (325 + 'testcount.mjs: the runner's last N/M checks passed is the count' + conformance). The split files' check lines still equal the monolith's exactly.
-- *01-P0-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 06:44 · P0-01 · passes · tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for byte from the single f… ([in full](progress-archive.md))
 - 2026-10-26 05:50 · init · passes · 17 features: P0 4 (suite split S1-S3 + review; S4 left out), P1 6 (plan, pure scheduler, record bran… ([in full](progress-archive.md))
