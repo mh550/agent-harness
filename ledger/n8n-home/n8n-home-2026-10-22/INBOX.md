@@ -29,3 +29,6 @@ newer live-staged rule. Say so if the brief should win.
 
 ### 2026-10-27 00:19 (local)
 Q1: done as (b) on main (afd3273, 89d11d2). The run merges main at its start. Re-check B1-01 steps 2, 3 and 7 with 'docker compose -f deploy/compose.yml config -q' and carry on.
+
+### 2026-10-27 10:16 (local)
+Q2: done (700 mh550). The live-staged policy from 2026-10-23 wins over the 10-22 brief: deploy B1-05 under ## Live system.

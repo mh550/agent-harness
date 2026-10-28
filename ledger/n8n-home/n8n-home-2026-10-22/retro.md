@@ -1,24 +1,22 @@
 ## Outcome
-Not delivered. The run passed 4 of 34 features (B1-01 to B1-04) for $22.45 over 1.3 h across 9 sessions. It stopped on B1-05, the live deploy, because `~/.local/state/harness/requests` doesn't exist. Sessions may not create it, so Michael has to run `install -d -m 700 …` (Q2 in INBOX). B2–B6 (29 features) are marked blocked on B1-05. The run's first start (2026-10-22) ended after 0.6 h and $10.68 with 0/32 passing, blocked on B1-01. The second start passed B1-01 in 2 min.
+Delivered: 34/34 features passed, verified and merged (6 milestone PRs, #6–#11 range). The cost was $169.24 over 11.8 h and 51 sessions, about $4.98 per feature. The first attempt (22 Oct) ended after 0.6 h, blocked on B1-01 (0/32). Michael's answer let a continuation finish B1 on 27 Oct, and a second wait for B1-05 followed. Opus did 95% of the spend: build $88.8, review $43.4, plan $23.0, verify only $2.05.
 
 ## Non-passing features by cause
-- **B1-05 — permission or classifier denial / environment.** Its last summary says: "bind source ~/.local/state/harness/requests is missing (create_host_path:false, so up -d would fail after removing the running container), and sessions may not write there." The session behaved correctly: it made `deploy.sh` refuse before any live write and recorded the blocker.
-- **B2-01 to B6-05 (29 features) — depends on a failed feature.** All carry "waits on B1-05, which is waiting on Michael".
-
-The real dependency is thinner than that. B2 builds the test rig, which runs in a throwaway container and needs no live deploy. One missing directory froze every milestone.
+No feature ended non-passing. Rework: B1-01, B1-05, B4-08, B6-01 and B6-05 (first-attempt pass rate 0.85).
+- B1-01 (22 Oct): environment/permission. Its last pre-continuation entry says docker compose was not yet allowed. The 27 Oct re-run passed in 2 min with "With docker compose config now allowed, re-checked steps 2, 3, 7".
+- B1-05: environment. "bind source ~/.local/state/harness/requests is missing… sessions may not write there". It was parked for Michael for about 9 h.
+- B4-08 and B6-01: model quality. Both failed the verify re-check. B6-01's evidence of the miss: the first build wrote the error-handler without checking the private-ntfy fallback (group `errors-private` was added on the second pass).
+- B6-05: model quality, one self-failed attempt followed by a pass 8 min later.
 
 ## Harness behaviour
-- **Guards:** none fired (repairs 0, red_unpass 0, verify_failed 0, escalations 0). Parking B1-05 as "waiting on Michael" was correct.
-- **Wasted money:**
-  - The first start (2026-10-22) spent $10.68, of which init was $6.86 on fable. It then gave up, "blocked on B1-01", after 13 min across 2 sessions.
-  - B1-01 is a plan feature that burned 3 sessions and $4.77 in total.
-  - Orientation cost 487k tokens over 11 turns (121 s) in a run where each session did 2–16 min of work.
-- **Dependency graph:** the driver treats "milestone blocked" as one chain. It never tried independent B2 work while B1-05 waited. That cost 5 days of wall-clock time.
-- **Verify:** no verify sessions ran (`verified` 0, `verify_fail_rate` null). B1-04 was a review-kind feature, not a verify of the earlier ones, so evidence rows versus steps can't be judged.
-- **Merges:** `merges` is 0, with no merge to `main` this run.
-- **Preflight gap:** the first run couldn't tell that the deploy needed a host path that sessions can't create. B1-05 found it at session time, after the context bundle was built.
+- Guards: verify_failed 2 (B4-08, B6-01) were correct catches, each fixed in one more attempt. There were 0 repairs, 0 red_unpass, 0 limit waits and 0 escalations.
+- One cosmetic event: B6-02's entry.json was rejected for a 425-character summary (limit 400), so the harness recorded a minimal entry. The session lost its real summary for no gain.
+- The first block ("remaining features wait on B1-01") burned $10.68 including $6.86 on init. The feature list (32 features) was planned before the policy change, so it was later rewritten to 34.
+- Verify sessions were cheap: 8 sessions at $2.06 total, 0.35 h. The suite is cleared and run in full at every milestone. That is real re-running, but I did not count evidence rows against steps.
+- Orientation was 1.39M tokens over 19 turns, which is small. Cache hit rate was 96.6%, context peak 253k.
+- Driver overhead was 0.08 h.
 
 ## Proposed harness changes
-1. **Preflight blockers at plan or init time** (init/plan prompts and driver). Check that bind-mount sources, request inboxes and other host paths named in the spec exist, or are listed in the live checklist as steps for Michael. Evidence: B1-05 spent $1.02 and 3 min only to find a missing directory that the spec's own §4.3 request inbox implies. No earlier retro proposed this, as far as I checked. I read only the titles of the 10 ledger retros and no contents.
-2. **Dependency granularity in the feature list** (feature-list schema and the driver's "blocked" logic). Let a feature declare `needs: live` versus build-only, so build and rig features keep running while a live step is parked. Evidence: 29 features blocked on B1-05, though B2 is rig work in a throwaway container. Not proposed before, as far as I checked.
-3. **Cheaper orientation** (context.md generation). 487k orientation tokens over 11 turns, against 130k output tokens for build. Trim the bundle or reuse the cache between consecutive sessions. This is unconfirmed, and I didn't check earlier retros for it.
+1. **Preflight checks for the brief.** Before the init plan, check the brief against project CLAUDE.md and settings. Compare the permissions and policy the run needs (docker compose, request-inbox write, MERGE_POLICY) with what the settings allow, and park questions before any session starts. Evidence: the brief still said "no deploy, no docker compose, MERGE_POLICY pr" while CLAUDE.md said live-staged. B1-01 was blocked on this, and B1-05 waited about 9 h on a missing directory that a preflight could have flagged. I did not check whether earlier retros proposed it.
+2. **Entry validation.** Where entry.json fails validation (`summary` over 400 characters), return the error to the session so it can fix the entry, instead of recording a minimal one. Evidence: B6-02. Not seen in earlier retros as far as I checked.
+3. **Verify gate.** On verify's first run, check the steps most likely to be missed (alternate configs such as private-ntfy) or add them to the build prompt. Evidence: B4-08 and B6-01 both needed a second build pass, costing roughly $6–10. Weak evidence, since the gate caught both.

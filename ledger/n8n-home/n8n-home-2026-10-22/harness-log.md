@@ -20,3 +20,110 @@
 - 2026-10-27 01:03 · waiting on Michael: B1-05 (parked; answer in INBOX.md, then harness continue n8n-home-2026-10-22)
 - 2026-10-27 01:03 · run ended (waiting on Michael: B1-05): 4/34 passing · 9 sessions (9 real) · 4 features passed · $22.45 · 1.3 h · by kind: init 1 ($6.86), coding 7 ($15.45), retro 1 ($0.14) · by model: claude-fable-5-1 1 ($6.86), claude-opus-5-5 7 ($15.45), claude-sonnet-5-5 1 ($0.14)
 - 2026-10-27 01:03 · services stopped (waiting on Michael: B1-05)
+- 2026-10-27 01:03 · scratch removed: /tmp/harness/n8n-home/n8n-home-2026-10-22 (in the state dir: init.out)
+- 2026-10-27 10:16 · B1-05 unparked: INBOX.md has new answers
+- 2026-10-27 10:16 · context.md for B1-05: 6458 bytes
+- 2026-10-27 10:19 · B1-05 · claude-opus-5-5 · passes=true · 3 min · 5/34 passing
+- 2026-10-27 10:19 · verify B1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 10:19 · context.md for B1: 8073 bytes, 11 items left out
+- 2026-10-27 10:21 · B1 verified and tagged run/n8n-home-2026-10-22/B1
+- 2026-10-27 10:21 · B1 merged into main · https://github.com/mh550/n8n-home/pull/6
+- 2026-10-27 10:21 · context.md for B2-01: 7167 bytes
+- 2026-10-27 10:28 · B2-01 · claude-opus-5-5 · passes=true · 6 min · 6/34 passing
+- 2026-10-27 10:28 · context.md for B2-02: 6125 bytes
+- 2026-10-27 10:46 · B2-02 · claude-opus-5-5 · passes=true · 17 min · 7/34 passing
+- 2026-10-27 10:46 · context.md for B2-03: 5408 bytes
+- 2026-10-27 10:54 · B2-03 · claude-opus-5-5 · passes=true · 8 min · 8/34 passing
+- 2026-10-27 10:54 · context.md for B2-04: 5617 bytes
+- 2026-10-27 11:08 · B2-04 · claude-opus-5-5 · passes=true · 13 min · 9/34 passing
+- 2026-10-27 11:08 · context.md for B2-05: 7552 bytes
+- 2026-10-27 11:19 · B2-05 · claude-opus-5-5 · passes=true · 11 min · 10/34 passing
+- 2026-10-27 11:19 · context.md for B2-06: 6492 bytes
+- 2026-10-27 11:42 · B2-06 · claude-opus-5-5 · passes=true · 22 min · 11/34 passing
+- 2026-10-27 11:42 · merged main into harness/n8n-home-2026-10-22
+- 2026-10-27 11:42 · verify B2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 11:42 · context.md for B2: 7997 bytes, 20 items left out
+- 2026-10-27 11:46 · B2 verified and tagged run/n8n-home-2026-10-22/B2
+- 2026-10-27 11:46 · B2 merged into main · https://github.com/mh550/n8n-home/pull/7
+- 2026-10-27 11:46 · context.md for B3-01: 7727 bytes, 3 items left out
+- 2026-10-27 12:08 · B3-01 · claude-opus-5-5 · passes=true · 21 min · 12/34 passing
+- 2026-10-27 12:08 · context.md for B3-02: 7127 bytes
+- 2026-10-27 12:22 · B3-02 · claude-opus-5-5 · passes=true · 14 min · 13/34 passing
+- 2026-10-27 12:22 · context.md for B3-03: 7623 bytes, 2 items left out
+- 2026-10-27 12:36 · B3-03 · claude-opus-5-5 · passes=true · 13 min · 14/34 passing
+- 2026-10-27 12:36 · context.md for B3-04: 7806 bytes, 1 items left out
+- 2026-10-27 12:53 · B3-04 · claude-opus-5-5 · passes=true · 17 min · 15/34 passing
+- 2026-10-27 12:53 · merged main into harness/n8n-home-2026-10-22
+- 2026-10-27 12:53 · verify B3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 12:53 · context.md for B3: 7887 bytes, 16 items left out
+- 2026-10-27 12:55 · B3 verified and tagged run/n8n-home-2026-10-22/B3
+- 2026-10-27 12:55 · B3 merged into main · https://github.com/mh550/n8n-home/pull/8
+- 2026-10-27 12:55 · context.md for B4-01: 7843 bytes, 11 items left out
+- 2026-10-27 13:22 · B4-01 · claude-opus-5-5 · passes=true · 27 min · 16/34 passing
+- 2026-10-27 13:22 · context.md for B4-02: 7971 bytes, 9 items left out
+- 2026-10-27 13:36 · B4-02 · claude-opus-5-5 · passes=true · 13 min · 17/34 passing
+- 2026-10-27 13:36 · context.md for B4-03: 8023 bytes, 8 items left out
+- 2026-10-27 14:10 · B4-03 · claude-opus-5-5 · passes=true · 33 min · 18/34 passing
+- 2026-10-27 14:10 · context.md for B4-04: 7989 bytes, 15 items left out
+- 2026-10-27 14:34 · B4-04 · claude-opus-5-5 · passes=true · 24 min · 19/34 passing
+- 2026-10-27 14:34 · context.md for B4-05: 7768 bytes, 15 items left out
+- 2026-10-27 14:56 · B4-05 · claude-opus-5-5 · passes=true · 22 min · 20/34 passing
+- 2026-10-27 14:56 · context.md for B4-06: 7848 bytes, 13 items left out
+- 2026-10-27 15:14 · B4-06 · claude-opus-5-5 · passes=true · 17 min · 21/34 passing
+- 2026-10-27 15:14 · context.md for B4-07: 8010 bytes, 14 items left out
+- 2026-10-27 15:20 · B4-07 · claude-opus-5-5 · passes=true · 5 min · 22/34 passing
+- 2026-10-27 15:20 · context.md for B4-08: 7928 bytes, 20 items left out
+- 2026-10-27 15:59 · B4-08 · claude-opus-5-5 · passes=true · 39 min · 23/34 passing
+- 2026-10-27 15:59 · merged main into harness/n8n-home-2026-10-22
+- 2026-10-27 15:59 · verify B4: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 15:59 · context.md for B4: 7758 bytes, 56 items left out
+- 2026-10-27 16:02 · verify B4: B4-08 failed the re-check, back in the queue (one more attempt)
+- 2026-10-27 16:02 · context.md for B4-08: 8014 bytes, 26 items left out
+- 2026-10-27 16:33 · B4-08 · claude-opus-5-5 · passes=true · 31 min · 23/34 passing
+- 2026-10-27 16:33 · verify B4: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 16:33 · context.md for B4: 7556 bytes, 62 items left out
+- 2026-10-27 16:35 · B4 verified and tagged run/n8n-home-2026-10-22/B4
+- 2026-10-27 16:35 · B4 merged into main · https://github.com/mh550/n8n-home/pull/9
+- 2026-10-27 16:35 · context.md for B5-01: 8070 bytes, 23 items left out
+- 2026-10-27 16:57 · B5-01 · claude-opus-5-5 · passes=true · 22 min · 24/34 passing
+- 2026-10-27 16:57 · context.md for B5-02: 8017 bytes, 19 items left out
+- 2026-10-27 17:17 · B5-02 · claude-opus-5-5 · passes=true · 20 min · 25/34 passing
+- 2026-10-27 17:17 · context.md for B5-03: 7973 bytes, 23 items left out
+- 2026-10-27 17:39 · B5-03 · claude-opus-5-5 · passes=true · 21 min · 26/34 passing
+- 2026-10-27 17:39 · context.md for B5-04: 8087 bytes, 26 items left out
+- 2026-10-27 18:02 · B5-04 · claude-opus-5-5 · passes=true · 23 min · 27/34 passing
+- 2026-10-27 18:03 · context.md for B5-05: 7980 bytes, 24 items left out
+- 2026-10-27 18:12 · B5-05 · claude-opus-5-5 · passes=true · 9 min · 28/34 passing
+- 2026-10-27 18:13 · context.md for B5-06: 7887 bytes, 32 items left out
+- 2026-10-27 18:32 · B5-06 · claude-opus-5-5 · passes=true · 19 min · 29/34 passing
+- 2026-10-27 18:32 · merged main into harness/n8n-home-2026-10-22
+- 2026-10-27 18:32 · verify B5: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 18:32 · context.md for B5: 8096 bytes, 60 items left out
+- 2026-10-27 18:34 · B5 verified and tagged run/n8n-home-2026-10-22/B5
+- 2026-10-27 18:34 · B5 merged into main · https://github.com/mh550/n8n-home/pull/10
+- 2026-10-27 18:34 · context.md for B6-01: 7777 bytes, 25 items left out
+- 2026-10-27 19:07 · B6-01 · claude-opus-5-5 · passes=true · 32 min · 30/34 passing
+- 2026-10-27 19:07 · context.md for B6-02: 8086 bytes, 22 items left out
+- 2026-10-27 19:20 · B6-02: entry.json invalid (summary: 425 characters (at most 400)); recorded a minimal entry
+- 2026-10-27 19:20 · B6-02 · claude-opus-5-5 · passes=true · 13 min · 31/34 passing
+- 2026-10-27 19:20 · context.md for B6-03: 8039 bytes, 21 items left out
+- 2026-10-27 19:32 · B6-03 · claude-opus-5-5 · passes=true · 11 min · 32/34 passing
+- 2026-10-27 19:32 · context.md for B6-04: 8069 bytes, 25 items left out
+- 2026-10-27 19:54 · B6-04 · claude-opus-5-5 · passes=true · 22 min · 33/34 passing
+- 2026-10-27 19:54 · context.md for B6-05: 8076 bytes, 33 items left out
+- 2026-10-27 20:13 · B6-05 · claude-opus-5-5 · passes=false · 19 min · 33/34 passing
+- 2026-10-27 20:13 · context.md for B6-05: 7993 bytes, 41 items left out
+- 2026-10-27 20:22 · B6-05 · claude-opus-5-5 · passes=true · 8 min · 34/34 passing
+- 2026-10-27 20:22 · merged main into harness/n8n-home-2026-10-22
+- 2026-10-27 20:22 · verify B6: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 20:22 · context.md for B6: 8096 bytes, 62 items left out
+- 2026-10-27 20:26 · verify B6: B6-01 failed the re-check, back in the queue (one more attempt)
+- 2026-10-27 20:26 · context.md for B6-01: 7794 bytes, 43 items left out
+- 2026-10-27 20:40 · B6-01 · claude-opus-5-5 · passes=true · 13 min · 34/34 passing
+- 2026-10-27 20:40 · verify B6: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-27 20:40 · context.md for B6: 7879 bytes, 66 items left out
+- 2026-10-27 20:44 · B6 verified and tagged run/n8n-home-2026-10-22/B6
+- 2026-10-27 20:44 · B6 merged into main · https://github.com/mh550/n8n-home/pull/11
+- 2026-10-27 20:44 · every feature passes
+- 2026-10-27 20:44 · run ended (done): 34/34 passing · 51 sessions (51 real) · 34 features passed · $169.24 · 11.7 h · by kind: init 1 ($6.86), coding 40 ($160.07), retro 2 ($0.25), verify 8 ($2.06) · by model: claude-fable-5-1 1 ($6.86), claude-opus-5-5 40 ($160.07), claude-sonnet-5-5 10 ($2.32)
+- 2026-10-27 20:44 · services stopped (done)
