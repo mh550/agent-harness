@@ -1,0 +1,69 @@
+{
+  "run": "agent-harness-2026-10-26",
+  "project": "agent-harness",
+  "subject": "P2-02",
+  "milestone": "P2",
+  "worktree": "/home/u/worktrees/agent-harness/lanes/agent-harness-2026-10-26/slot-1",
+  "branch": "harness-lane/agent-harness-2026-10-26/P2",
+  "record": "/home/u/worktrees/agent-harness/agent-harness-2026-10-26/.harness/runs/agent-harness-2026-10-26",
+  "record_branch": "harness/agent-harness-2026-10-26",
+  "main_branch": "main",
+  "origin": "git@github.com:mh550/agent-harness.git",
+  "state": "/home/u/.local/state/harness/agent-harness/agent-harness-2026-10-26",
+  "suite": "bash tests/run.sh",
+  "features": [
+    {
+      "id": "P1-01",
+      "milestone": "P1",
+      "description": "Plan the lanes: slots, record lock, merge order",
+      "passes": true
+    },
+    {
+      "id": "P1-02",
+      "milestone": "P1",
+      "description": "lib/record.sh: the record lock and rec_commit",
+      "passes": true
+    },
+    {
+      "id": "P1-03",
+      "milestone": "P1",
+      "description": "lib/lane.sh: one lane per milestone in its slot",
+      "passes": true
+    },
+    {
+      "id": "P2-01",
+      "milestone": "P2",
+      "description": "Plan the lane coordinator",
+      "passes": true,
+      "after": [
+        "P1"
+      ]
+    },
+    {
+      "id": "P2-02",
+      "milestone": "P2",
+      "description": "The coordinator loop: open, reap, merge",
+      "passes": false
+    },
+    {
+      "id": "P2-03",
+      "milestone": "P2",
+      "description": "Lane rows in harness status",
+      "passes": false
+    },
+    {
+      "id": "P3-01",
+      "milestone": "P3",
+      "description": "Docs: architecture §3 and README for lanes",
+      "passes": false,
+      "after": [
+        "P2"
+      ]
+    }
+  ],
+  "reason": "given_up",
+  "feature": "P2-02",
+  "attempts": "2",
+  "max_attempts": "2",
+  "log": "/home/u/.local/state/harness/agent-harness/agent-harness-2026-10-26/logs/14-P2-02.jsonl"
+}

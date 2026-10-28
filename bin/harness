@@ -37,7 +37,7 @@
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
 #   harness stop <run-id> --why "<text>"         the same, and harness-log.md and ended say "stopped by Michael: <text>"
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
-#   harness parked [<run-id>] [--json]           what parked features wait on: why, the INBOX question, the next commands
+#   harness parked [<run-id>] [--json]           harness needs (text); --json: the parked features with their ref and card
 #   harness needs [<run-id>] [--all] [--json]    every open item that waits on Michael (--all: and those resolved in 7 days)
 #   harness needs done <run>/<n> [--why "<t>"]   resolve one by hand
 #   harness desk <run> [--why "…"] | --debrief   a Remote Control session that briefs you and takes your answers (tmux h-desk)
@@ -428,10 +428,13 @@ cmd_control() {   # pause|resume|stop run-id [--why "<text>"] (stop only)
   esac
 }
 
-cmd_parked() {   # [<run-id>] [--json]: read-only (no harness_config, no mkdir: a phone session runs it to look)
-  local want="" json=() d runner=0
-  while (( $# )); do case $1 in --json) json=(--json) ;; -*) die "unknown option $1" ;; *) [[ -z $want ]] || die "usage: harness parked [<run-id>] [--json]"; want=$1 ;; esac; shift; done
+# [<run-id>] [--json]: read-only (no harness_config, no mkdir: a phone session runs it to look). Text: harness needs (the
+# cards); --json: today's elements for the parked features, each with its needs item's ref and card
+cmd_parked() {
+  local want="" json=0 d runner=0
+  while (( $# )); do case $1 in --json) json=1 ;; -*) die "unknown option $1" ;; *) [[ -z $want ]] || die "usage: harness parked [<run-id>] [--json]"; want=$1 ;; esac; shift; done
   [[ -n $want ]] && state_of "$want" > /dev/null
+  (( json )) || { cmd_needs ${want:+"$want"}; return; }
   runner_up && runner=1
   for d in "$STATE_ROOT"/*/*/; do
     [[ -f $d/meta.env ]] || continue
@@ -441,7 +444,9 @@ cmd_parked() {   # [<run-id>] [--json]: read-only (no harness_config, no mkdir: 
     ( source "$d/meta.env"; [[ -d $WT ]] || exit 0
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$RUN_ID" "$(basename "$PROJECT_DIR")" "$STATE" "$WT/.harness/runs/$RUN_ID" "$(alive "$STATE" && { [[ -f $STATE/ended ]] && echo 2 || echo 1; } || echo 0)" \
         "$(compgen -G "$Q/*-continue-$RUN_ID.args" > /dev/null && echo 1 || echo 0)" ) || true   # 2: ending (finish)
-  done | node "$HARNESS_HOME/lib/parked.mjs" report "${json[@]}" --runner "$runner" --run "$want"
+  done | node "$HARNESS_HOME/lib/parked.mjs" report --json --runner "$runner" --run "$want" \
+    | jq --slurpfile n <(cmd_needs ${want:+"$want"} --json) \
+      'map(. as $e | ($n[0] // [] | map(select(.reason == "parked" and .run == $e.run and .feature == $e.feature)) | first) as $i | . + { ref: $i.ref, card: $i.card })'
 }
 
 # [<run-id>] [--all] [--json] · done <ref> [--why "<text>"]: what waits on Michael, from the runs' needs records (lib/needs.mjs).
@@ -463,7 +468,8 @@ cmd_needs() {
     [[ -n $want && $(basename "$d") != "$want" ]] && continue
     dirs+=("${d%/}")
   done
-  node "$NEEDS_MJS" list "${dirs[@]}" "${opts[@]}" --run "$want"
+  local runner=0; runner_up && runner=1   # a parked card's commands as parked's: a queue add when the runner is up
+  node "$NEEDS_MJS" list "${dirs[@]}" "${opts[@]}" --run "$want" --runner "$runner" --queue "$Q"
 }
 
 cmd_answer() {

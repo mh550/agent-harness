@@ -28,8 +28,27 @@ needs`); U2-04 adds the cards, U2-05 and U2-06 the openers, U2-07 the readers.)*
     naming no live process with no `ended` (a SIGKILL: no trap ran), and `parked` (`<run>/parked:<id>`) for each
     `parked.json` feature that doesn't pass and has no open record (runs parked before U2, and the bridge until U2-05
     opens records). `harness needs done` on one exits 1 and says what resolves it.
-  - Until U2-04's templates, a card has every key with the reason's headline only, and `harness needs` prints one
-    line per item: `<glyph> <run> · <headline> · <ref>`.
+  - **Cards (U2-04).** `TEMPLATES` in lib/needs.mjs holds one template per reason as data: `headline`, `cost`, `why`
+    (2 to 4 sentences naming the mechanism and its file), `where` rows `{path, line, label, url}`, `options` (exactly
+    one with a why: the recommended), `commands`; `card(reason, facts)` adds `blocked`, `commit`, `branch`,
+    `question` and `run_state` for a park, `files_from`. A park's question is inbox.mjs's section with its line and
+    the record branch's `?plain=1#L<n>` URL, its `where` the question's `Files:` paths (`files_from: question`); its
+    commands are `parked.mjs commandsFor`, recomputed by `list` as of now. `main_conflict`'s why names the runs and
+    milestones main gained (`mergedBy`: `<run> M1–M5 (PRs #32–#36)`, the run's own left out). A fixture per reason in
+    tests/fixtures/needs/ and a check each (tests/checks/59-needs-cards.sh).
+  - **(*default*)** `blocked`'s waits are computed in lib/needs.mjs (`waitsOn`: the unfinished features whose
+    features.mjs `deps` reach the subject; every unfinished one for a run) when the opener passes no `waits=`, not
+    by a `needs_waits` shell function (plan §4.2): one pure function, unit-checked, and the synthesized items get it
+    too.
+  - **(*default*)** A park's headline keeps its why (`B parked: set the gatus vars`), not the plan's bare `<id> parked`:
+    status's NEEDS YOU row shows only the headline. A header too wide for the line drops `since` and the ref to a
+    `ref` field and keeps the age.
+  - `harness needs` renders each item as a view.mjs card (`rule: false`, `cutFront` for paths at narrow widths, each
+    URL on its own line) and a footer; `harness parked` is its alias for text, `harness parked --json` keeps its
+    element keys plus `ref` and `card`. A parked feature whose worktree is gone is not synthesized (nothing to answer
+    there, as `harness parked` skipped it).
 - **Rejected:** a single `needs.json` per run (two lanes writing it race; a file per item renames atomically).
   Deriving items on every read, as status did (nothing records when an item was handled, or by whom). Sweeping in
   `harness needs` (a phone session runs it to look: it must write nothing).
+
+Updated in place 2026-10-28: U2-04's cards replace the one-line view (the Cards bullets).

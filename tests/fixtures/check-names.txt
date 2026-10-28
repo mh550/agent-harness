@@ -2,6 +2,7 @@
 Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
+COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
 CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
 DEBRIEF_PAGE_CMD gets the page
 DESK=0 by default, DESK_MODEL=opus
@@ -231,12 +232,17 @@ harness merge leaves a legacy record as it was; its PR quotes the legacy verify 
 harness merge merges v2 tags, closes the v2 PR
 harness merge merges verified milestones afterwards
 harness merge says it was refused again, and starts no desk
+harness needs --json: each command's full text (no ~, no cut)
 harness needs --json: the open records, block before warn, oldest first; --all adds the 15 resolved ones
+harness needs and parked are read-only
 harness needs done <ref>: resolved <ref>, the file in needs/done/ by michael (--why, else done by hand); a second done, a synthesized or unknown ref exit 1
 harness needs is read-only
 harness needs nope: exit 1, harness: on stderr; needs done with no ref is a usage error
-harness needs: one line per item (<glyph> <run> · <headline> · <ref>); with a run, that run's only
+harness needs: NEEDS YOU, a card per item (<glyph> <run> · <headline> · since <HH:MM> (<ago>) · <ref>), blocked, why, where, URLs, options, do; the footer
+harness needs: a card per item (<glyph> <run> · <headline> · since … · <ref>); with a run, that run's only; nothing open: NEEDS YOU 0, nothing needs you
 harness parked --json parses
+harness parked --json: today's keys for parked features only, plus ref and card
+harness parked is harness needs for text: the parked card's question from INBOX.md, run, do
 harness parked is read-only
 harness parked: an unknown or glob run id is an error
 harness parked: id, why, question, both commands
@@ -349,6 +355,7 @@ lint: self-match trips a grep of progress.md for the step's own words, not of ha
 lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
+main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
 materialize: a record tracked at the slot's base is skip-worktree, so the session's commit carries none of the copy
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
 memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
@@ -374,6 +381,7 @@ memory gate: every session starts with the services up, a verify after its wait 
 memory gate: the real fixture's 9 GB passes without a note
 memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits
 metrics usage: five_hour reads the newest event's five-hour window; the default stays the seven-day one
 metrics.jsonl: every session line has mem_peak_mb from its scope
 metrics.jsonl: mem_peak_mb is null when uncapped
@@ -385,6 +393,23 @@ metrics: orientation recorded per session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
 needs REASONS: kind, severity and priority for each of the 15 reasons, as the plan's table
+needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card feature_list_edits: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card given_up: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card initializer_failed: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card main_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card merge_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card merge_refused: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card overlap: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card parked: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card usage_limit: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card verify_recheck: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card verify_red: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card verify_thin: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card weekly_budget: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
+needs cards: 15 fixtures, one per reason, and a reason without a template is exit 1
 needs list: a dead driver.pid with no ended is a synthesized driver_crash (ref <run>/crash, at run.log's mtime), parked.json's B a parked item; nothing stored
 needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver
 needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref kept, updated_at moved
@@ -404,6 +429,7 @@ no user systemd: the init runs bare, and the run's one uncapped note stays the o
 no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
 not queued: ended done / already queued / no work left / still running
 nothing parked
+notify.mjs urls compare <origin> <base> <branch>: the GitHub compare URL; exit 1 off GitHub
 notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3
 notify.mjs: githubUrls for ssh, https and non-GitHub origins
 notify.mjs: inboxQuestion is the lines added above ## Answers (never Michael's old answers)
@@ -411,6 +437,7 @@ notify.mjs: trimBody caps at 3500 bytes with …
 one ledger row per run
 one note, overwritten: ledger/debrief.md
 one notification per run end
+parked card: the INBOX question verbatim with its line 16 and ?plain=1#L16 URL, where from its Files: line, parked.mjs's commands
 parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers
 parked.mjs: the question is the feature's INBOX section
 parked.mjs: the report names the answer and continue commands
@@ -680,6 +707,7 @@ verify needs Michael goes out after the verify entry is pushed
 verify needs Michael starts a desk
 verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
+view.mjs cutFront keeps the end from a directory boundary; card with rule: false has no rule; a url-only field is the url line alone
 view: ago gives now 4m 3h 2d 5w for 0 s, 240 s, 3 h, 2 d and 5 w before now; a future time is now
 view: an over-wide narrow row breaks at a column gap before folding: an id that fits the width stays whole, no blank line
 view: card puts a URL inside a value on its own line at 2, splits a value at newlines, keeps a long label and a tiny width inside the line
@@ -704,6 +732,7 @@ view: the glyph set is fixed, each one text-presentation code point of width 1, 
 view: when and duration use local time: 00:19 and a local midnight under TZ=America/New_York
 view: when gives 2026-10-27 00:19 (10h ago) under TZ=UTC, and (now) under a minute
 waits for another run's limit window
+waitsOn: a feature's and a milestone's unfinished dependants through after, every unfinished one for run
 what lands on main is byte for byte what was verified
 where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
 where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md

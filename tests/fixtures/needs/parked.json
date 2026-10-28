@@ -1,0 +1,72 @@
+{
+  "run": "n8n-home-2026-10-22",
+  "project": "n8n-home",
+  "reason": "parked",
+  "subject": "B1-05",
+  "feature": "B1-05",
+  "milestone": "B1",
+  "worktree": "/home/u/worktrees/n8n-home/n8n-home-2026-10-22",
+  "branch": "harness/n8n-home-2026-10-22",
+  "record": "/home/u/worktrees/n8n-home/n8n-home-2026-10-22/.harness/runs/n8n-home-2026-10-22",
+  "record_branch": "harness/n8n-home-2026-10-22",
+  "main_branch": "main",
+  "origin": "git@github.com:mh550/n8n-home.git",
+  "state": "/home/u/.local/state/harness/n8n-home/n8n-home-2026-10-22",
+  "inbox": "/home/u/worktrees/n8n-home/n8n-home-2026-10-22/.harness/runs/n8n-home-2026-10-22/INBOX.md",
+  "inbox_text": "status: run\n<!-- Steer this run from the GitHub app: edit this file on branch harness/n8n-home-2026-10-22.\n     Change the first line to \"status: pause\" or \"status: stop\"; write answers to questions under \"## Questions\n\n**Q1 (B1-01, 2026-10-22 19:40). The run is stuck on B1-01 until you answer.** Steps 2, 3 and 7 require `docker compose -f deploy/compose.yml config`,\nand `.claude/settings.json` denies `Bash(docker compose:*)`. No session can verify the steps or work around the deny, and I can't\npick a default for it myself. Everything else in B1-01 is built and checked (`bash tests/checks/compose.sh`: 19 PASS). Pick one:\n- (a) Run `docker compose -f deploy/compose.yml config` in this worktree yourself, and set B1-01 `passes` to true if the output matches steps 2–4.\n- (b) In `.claude/settings.json`, allow `Bash(docker compose -f deploy/compose.yml config:*)` and replace the blanket deny with denies on\n  `docker compose -f /srv*`, `docker compose -p n8n*`, `docker compose * up*`, `* exec*`, `* run*`, `* down*`. Later B1 features need the same check. (recommended)\n- (c) Change the stand-in for B1-01..B2-01 in feature_list.json from `docker compose … config -q` to `bash tests/checks/compose.sh`.\n\n## Answers\".\n     The harness pulls before every session; every session reads this file at startup. -->\n\n**Q2 (B1-05, 2026-10-27 01:05). The B1 live deploy is waiting on one directory.** `~/.local/state/harness/requests`\n(the request inbox, mounted rw) doesn't exist, and with `create_host_path: false` the new compose file can't start\nwithout it. Sessions may not write under `~/.local/state/harness`, and live checklist step 4 makes it your step (or Run\nA's). Everything else is ready: Check green, restic 2026-10-26 03:42 status 0, dry run clean on 27cb037 apart from this.\n`scripts/deploy.sh` now refuses up front when a mount source is missing. Please run:\n\n    install -d -m 700 ~/.local/state/harness/requests && stat -c '%a %U' ~/.local/state/harness/requests   # 700 mh550\n\nand answer \"Q2: done\". The next B1-05 session deploys under `## Live system`. Also: the run brief (2026-10-22) still\nsays \"build-only, nothing live\", while `POLICY=live-staged` (2026-10-23) and B1-05 say deploy. I'm going by the\nnewer live-staged rule. Say so if the brief should win.\nFiles: /home/u/worktrees/n8n-home/n8n-home-2026-10-22/deploy/compose.yml:48, /home/u/worktrees/n8n-home/n8n-home-2026-10-22/scripts/deploy.sh:10\n\n## Answers\n\n### 2026-10-27 00:19 (local)\nQ1: done as (b) on main (afd3273, 89d11d2). The run merges main at its start. Re-check B1-01 steps 2, 3 and 7 with 'docker compose -f deploy/compose.yml config -q' and carry on.\n",
+  "why": "Q2: the request inbox ~/.local/state/harness/requests doesn't exist",
+  "features": [
+    {
+      "id": "B1-01",
+      "milestone": "B1",
+      "description": "B1 step 1",
+      "passes": true
+    },
+    {
+      "id": "B1-02",
+      "milestone": "B1",
+      "description": "B1 step 2",
+      "passes": true
+    },
+    {
+      "id": "B1-03",
+      "milestone": "B1",
+      "description": "B1 step 3",
+      "passes": true
+    },
+    {
+      "id": "B1-04",
+      "milestone": "B1",
+      "description": "B1 step 4",
+      "passes": true
+    },
+    {
+      "id": "B1-05",
+      "milestone": "B1",
+      "description": "B1 live deploy",
+      "passes": false
+    },
+    {
+      "id": "B2-01",
+      "milestone": "B2",
+      "description": "B2 step 1",
+      "passes": false
+    },
+    {
+      "id": "B2-02",
+      "milestone": "B2",
+      "description": "B2 step 2",
+      "passes": false
+    },
+    {
+      "id": "B2-03",
+      "milestone": "B2",
+      "description": "B2 step 3",
+      "passes": false
+    }
+  ],
+  "running": "0",
+  "ending": "0",
+  "queued": "0",
+  "runner": "0"
+}

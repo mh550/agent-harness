@@ -49,8 +49,8 @@ HARNESS_ANSWER_END
 )"
 ```
 
-Read it back to him. On his go, run the `next:` commands `harness parked {{RUN_ID}}` prints (it knows whether the
-run is going, ending, queued or has a runner). For a run that isn't parked (blocked, verify, a merge):
+Read it back to him. On his go, run the `commands` of its feature in `harness parked {{RUN_ID}} --json` (they know
+whether the run is going, ending, queued or has a runner; the text view wraps them and shortens paths). For a run that isn't parked (blocked, verify, a merge):
 `harness queue list`; with a runner going, `harness queue add --continue {{RUN_ID}}`, otherwise
 `harness continue {{RUN_ID}}`. A run still going needs no continue.
 <!-- /run -->
@@ -62,7 +62,7 @@ HARNESS_ANSWER_END
 )"
 ```
 
-Read it back to him. On his go, run the `next:` commands `harness parked <run>` prints. For a run that isn't parked:
+Read it back to him. On his go, run the `commands` of its feature in `harness parked <run> --json`. For a run that isn't parked:
 `harness queue list`; with a runner going, `harness queue add --continue <run>`, otherwise `harness continue <run>`.
 A run still going needs no continue.
 <!-- /debrief -->

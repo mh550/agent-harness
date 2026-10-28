@@ -90,10 +90,11 @@ EXP=$( { for r in $REASONS; do echo "$r"; done | head -12 | tac | sed "s|.*|nf-&
 check "harness needs --json: the open records, block before warn, oldest first; --all adds the 15 resolved ones" \
   '(( NJ == 0 )) && [[ ! -s $T/n.err ]] && [[ $(jq -r "map(.ref) | join(\" \")" "$T/n.json") == "$EXP" ]] \
   && [[ $(jq "map(select(.resolved_at == null)) | length" "$T/na.json") == $(jq length "$T/n.json") && $(jq "map(select(.resolved_by == \"sweep\")) | length" "$T/na.json") == 16 ]]'
-check "harness needs: one line per item (<glyph> <run> · <headline> · <ref>); with a run, that run's only" \
-  'grep -xF "! nf-merge_refused-open · M1: the merge was refused · nf-merge_refused-open/1" "$T/n.txt" > /dev/null && [[ $(wc -l < "$T/n.txt") == $(jq length "$T/n.json") ]] \
-  && [[ $(cat "$T/n1.txt") == "! nf-merge_refused-open · M1: the merge was refused · nf-merge_refused-open/1" ]] \
-  && [[ $("$H" needs nf-parked-resolved) == "nothing needs you in nf-parked-resolved" && $("$H" needs nf-parked-resolved --all | grep -c "") == 1 ]] && rm -rf "$T/empty" && [[ $(HARNESS_STATE=$T/empty "$H" needs) == "nothing needs you" && ! -e $T/empty ]]'
+check "harness needs: a card per item (<glyph> <run> · <headline> · since … · <ref>); with a run, that run's only; nothing open: NEEDS YOU 0, nothing needs you" \
+  'grep -E "^! nf-merge_refused-open - M1: the merge was refused - since [0-9]{2}:[0-9]{2} \([0-9a-z]+\) - nf-merge_refused-open/1$" "$T/n.txt" > /dev/null \
+  && [[ $(grep -c "^! " "$T/n.txt") == $(jq length "$T/n.json") && $(grep -c "^! " "$T/n1.txt") == 1 ]] && grep "^! nf-merge_refused-open - " "$T/n1.txt" > /dev/null \
+  && [[ $("$H" needs nf-parked-resolved) == "NEEDS YOU 0"$'"'"'\n'"'"'"nothing needs you in nf-parked-resolved" && $("$H" needs nf-parked-resolved --all | grep -c "^! ") == 1 ]] \
+  && rm -rf "$T/empty" && [[ $(HARNESS_STATE=$T/empty "$H" needs) == "NEEDS YOU 0"$'"'"'\n'"'"'"nothing needs you" && ! -e $T/empty ]]'
 check "harness needs is read-only" '[[ -z $(find "$HARNESS_STATE" "$T/wt" -newer "$T/needs.stamp") ]]'
 check "harness needs nope: exit 1, harness: on stderr; needs done with no ref is a usage error" \
   '"$H" needs nope > "$T/nope.out" 2> "$T/nope.err"; a=$?; "$H" needs done > /dev/null 2>&1; b=$?

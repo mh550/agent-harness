@@ -302,9 +302,11 @@ check "a waiting-on-Michael run end: priority high, click = report.md" 'Be=$(cur
 check "one notification per run end" '[[ $(curl_count "[parky] ended (") == 1 && $(curl_count "needs Michael: waiting on Michael") == 0 && $(curl_count "needs Michael: blocked on") == 0 ]] \
   && ! grep -q "Priority:" <<< "$(curl_with "[demo] ended (done)")" && grep -q "^Click: .*/demo/report.md" <<< "$(curl_with "[demo] ended (done)")"'
 # harness parked: parky, parkn and parkl are all parked and ended; no queue runner
+# harness parked is harness needs for text (the cards, lib/needs.mjs); the parked features are synthesized from parked.json
+export HARNESS_GLYPHS=unicode
 touch "$T/parked.stamp"; "$H" parked > "$T/parked.out" 2>&1; "$H" parked parky --json > "$T/parked.json" 2>&1
-check "harness parked: id, why, question, both commands" 'P=$(cat "$T/parked.out"); [[ $P == *"parky · proj · B"* && $P == *"why:      set the gatus vars"* && $P == *"question: ### B: set the gatus vars, then answer"* \
-  && $P == *"harness answer parky \"…\""* && $P == *"harness continue parky"* && $P == *"parkn · proj · A"* && $P == *"parkl · proj · A"* ]]'
+check "harness parked: id, why, question, both commands" 'P=$(cat "$T/parked.out"); [[ $P == *"parky · B parked: set the gatus vars"* && $P == *"  question   ### B: set the gatus vars, then answer"* \
+  && $P == *"harness answer parky \"…\""* && $P == *"harness continue parky"* && $P == *"parkn · A parked"* && $P == *"parkl · A parked"* ]]'
 check "harness parked is read-only" '[[ -z $(find "$HARNESS_STATE" "$T/wt/proj/parky" -newer "$T/parked.stamp") && -z $(git -C "$T/wt/proj/parky" status --porcelain) ]]'
 check "harness parked --json parses" 'jq -e ".[0].feature == \"B\" and .[0].running == false and (.[0].commands | length) == 2" "$T/parked.json" > /dev/null'
 RP=$HARNESS_STATE/queue/runner.pid; mkdir -p "$HARNESS_STATE/queue"; [[ -f $RP ]] && mv "$RP" "$RP.keep"; echo $$ > "$RP"
@@ -312,10 +314,10 @@ check "with a queue runner going, the continue command is a queue add" 'P=$("$H"
 rm -f "$RP"; [[ -f $RP.keep ]] && mv "$RP.keep" "$RP"
 # parky's driver still alive (our pid): wrapping up after "ended" (finish: merge, suite, retro), then mid-run
 DP=$HARNESS_STATE/proj/parky/driver.pid; echo $$ > "$DP"
-check "a run still ending: answer now, continue once it has ended" 'P=$("$H" parked parky); [[ $P == *"running:  ending"* && $P == *"harness continue parky"* ]] \
+check "a run still ending: answer now, continue once it has ended" 'P=$("$H" parked parky); [[ $P == *"  run        ending"* && $P == *"harness continue parky"* ]] \
   && "$H" parked parky --json | jq -e ".[0].running == false and .[0].ending == true and (.[0].commands | length) == 2" > /dev/null'
 mv "$HARNESS_STATE/proj/parky/ended" "$T/parky.ended"
-check "a run still going: only the answer command" 'P=$("$H" parked parky); [[ $P == *"running:  yes"* && $P == *"harness answer parky"* && $P != *"continue parky"* ]]'
+check "a run still going: only the answer command" 'P=$("$H" parked parky); [[ $P == *"  run        yes"* && $P == *"harness answer parky"* && $P != *"continue parky"* ]]'
 mv "$T/parky.ended" "$HARNESS_STATE/proj/parky/ended"; rm -f "$DP"
 check "harness parked: an unknown or glob run id is an error" '! "$H" parked nosuch 2> /dev/null && ! "$H" parked "parky*" > /dev/null 2>&1 \
   && ! "$H" answer "park*" "a glob answers no run" > /dev/null 2>&1 && ! grep -rqs "a glob answers" "$HARNESS_STATE"/proj/park*/inbox.md'
@@ -326,7 +328,7 @@ check "a queued continuation: only the answer command" 'P=$("$H" parked parky); 
 rm -f "$HARNESS_STATE/queue/9999-continue-parky.args"
 # demo's worktree is gc'd: a parked.json left in its state dir names nothing that can be answered or continued
 echo '{"Z":{"answers":"x","why":"stale","at":"2026-10-19T01:00:00.000Z"}}' > "$HARNESS_STATE/proj/demo/parked.json"
-check "nothing parked"                    '[[ $("$H" parked demo) == "nothing parked in demo" ]] && ! "$H" parked | grep -q "^demo "'
+check "nothing parked"                    '[[ $("$H" parked demo) == "NEEDS YOU 0"$'"'"'\n'"'"'"nothing needs you in demo" ]] && ! "$H" parked | grep -q "^⚠ demo "'
 check "the answer skill exists and names the commands and the never-list" 'S=$HH/skills/harness-answer/SKILL.md; [[ $(head -1 "$S") == --- ]] && grep -q "^name: harness-answer$" "$S" && grep -q "harness parked" "$S" && grep -q "harness answer" "$S" && grep -qi "never edit INBOX.md" "$S" && grep -q sudo "$S"'
 check "the answer skill passes Michael's words through a quoted heredoc" 'S=$HH/skills/harness-answer/SKILL.md; grep -qF "\"\$(cat <<'"'"'HARNESS_ANSWER_END'"'"'" "$S" && grep -qi "never let his words reach the shell" "$S"'
 check "the user config template sets nothing" 'bash -n "$HH/templates/user/config.sh" && ( unset NTFY_URL NTFY_TOKEN DESK_URL NOTIFY_CMD; source "$HH/templates/user/config.sh"; [[ -z ${NTFY_URL:-}${NTFY_TOKEN:-}${DESK_URL:-}${NOTIFY_CMD:-} ]] )'

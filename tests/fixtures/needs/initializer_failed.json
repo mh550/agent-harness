@@ -1,0 +1,17 @@
+{
+  "run": "agent-harness-2026-10-26",
+  "project": "agent-harness",
+  "subject": "run",
+  "milestone": "",
+  "worktree": "/home/u/worktrees/agent-harness/agent-harness-2026-10-26",
+  "branch": "harness/agent-harness-2026-10-26",
+  "record": "/home/u/worktrees/agent-harness/agent-harness-2026-10-26/.harness/runs/agent-harness-2026-10-26",
+  "record_branch": "harness/agent-harness-2026-10-26",
+  "main_branch": "main",
+  "origin": "git@github.com:mh550/agent-harness.git",
+  "state": "/home/u/.local/state/harness/agent-harness/agent-harness-2026-10-26",
+  "suite": "bash tests/run.sh",
+  "features": [],
+  "reason": "initializer_failed",
+  "end_reason": "initializer failed"
+}
