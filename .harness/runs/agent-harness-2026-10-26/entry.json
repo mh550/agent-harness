@@ -1,0 +1,25 @@
+{ "feature": "P2-02", "kind": "coding", "outcome": "passes",
+  "summary": "Two lanes on: admit (memory reserve, five-hour window, once-per-kind waiting note), a port per lane (port_alloc_ under the record and port locks), a merge lock, lanes-end + exit 16, atomic rec_count, USAGE_5H, sliced limit/mem waits, TEST_FILE_TIMEOUT. Clamp gone. Tests 555 -> 566.",
+  "files": ["lib/driver.sh", "lib/lane.sh", "lib/record.sh", "lib/scope.sh", "lib/config.sh", "lib/metrics.mjs", "lib/notify.sh", "bin/harness", "tests/run.sh", "tests/lib.sh", "tests/stub-claude.sh", "tests/checks/47-lanes-two.sh", "tests/checks/33-suite-runner.sh", "tests/checks/45-lanes-run.sh", "tests/fixtures/check-names.txt", "journal/decisions/2026-10-26-parallel-runs-headroom.md", "journal/decisions/2026-10-26-lanes.md", "journal/decisions.md", "docs/architecture.md", "README.md"],
+  "verified_how": "check.sh: green in 414 s, 566 tests. 47-lanes-two 11/11 (two lanes at once, ports 7950/7951 and in prompts, both merged, done; memory wait noted once then opens on fixture swap; 5-hour 80% wait noted once; session cap -> other lane 'the run is ending'; stop in a limit wait ends within a slice). 33: TEST_FILE_TIMEOUT=2s file -> one FAIL line, under 20 s. The new checks ran red first (47 aborted, 33 timeout FAIL). bash -n all shell files, node --check lib/metrics.mjs. Opus review: 1 Important + 6 Minor, all fixed.",
+  "tests_before": 555, "tests_after": 566,
+  "dead_ends": [
+    { "tried": "the plan's two-lane run releasing both lanes together", "why": "whichever lane verifies before the other merges finds main moved (needs P2-03's re-base); the check releases C first and M1 after M2 merged" },
+    { "tried": "worktree add -B from origin/<b> and push -u in lanes", "why": "git locks .git/config without waiting: slot 1's open failed (could not lock config file) while M1 pushed with -u; now --no-track and no -u" },
+    { "tried": "mem_gate checking stop/lanes-end after its sleep", "why": "a stop arriving with memory back lost the 'available after' note (file 08 red); the check now comes before each sleep" }
+  ],
+  "discoveries": [
+    { "text": "Concurrent git writers in one repo: .git/config fails instead of waiting (fixed for lanes: --no-track, no -u). P2-04's branch deletion at merge (branch -D writes config) must run while other lanes push; check it under two lanes.", "affects": ["P2-04"] },
+    { "text": "merge_one's fetch of main can collide with another lane's sync_main fetch (ref lock); it now retries once and logs, and merges on the next reap.", "affects": ["P2-03"] },
+    { "text": "Suite wall time 414 s at TEST_JOBS=4 (was ~256 s before P2-02); 47-lanes-two is ~110 s of slot time (its limit-wait check sleeps one 60 s slice). Measured, not a gate. The first full run here had 5 failures in 08, 13 and 32 that passed on rerun alone and in the next full run (load flakes, not reproduced).", "affects": ["run"] },
+    { "text": "admit lives in lib/scope.sh (beside mem_available_gb) so it is unit-checkable; port_taken moved from bin/harness to lib/config.sh; both runs and lanes allocate under $STATE_ROOT/port.lock.", "affects": ["P2-06", "P2-07"] },
+    { "text": "stub hold-coding now also touches held-<run>-<id> and releases on release-<run>-<id>: a check can choose which lane goes first.", "affects": ["P2-03", "P2-06"] }
+  ],
+  "questions": [
+    "D16-D18 in journal/decisions/2026-10-26-lanes.md are defaults: slot 0 keeps the run's port; a run's end reaches lanes through lanes-end and exit 16; slots --no-track and lane pushes without -u. Keep them?",
+    "LANE_RESERVE_GB=4 and LANE_OPEN_BELOW_5H=70 stay as specced (decisions/2026-10-26-parallel-runs-headroom). Change either before your first night at MAX_LANES=2?"
+  ],
+  "proposed_changes": [
+    "P2-02 step 3 should say 'under the record lock and the box-wide port lock' (plan D2).",
+    "The P2 plan's 'two' scenario should release C before A: two lanes verifying at once is P2-03's re-base case, not P2-02's."
+  ] }
