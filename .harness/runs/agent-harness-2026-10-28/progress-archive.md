@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 07:11 · U1-07 · passes
+
+U1 review: 1 Critical, 3 Important, 11 Minor over two Opus rounds. Critical (session counted every metrics row) and all Important fixed red to green in 56-status-review.sh; 7 Minor fixed, 4 deferred; simplifications applied. README, architecture §3/§10/§12, config template and read-views decision complete.
+
+- **Files:** lib/status.mjs, lib/view.mjs, bin/harness, tests/lib.sh, tests/checks/56-status-review.sh, tests/checks/53-status-view.sh, tests/checks/54-status-card.sh, tests/checks/55-queue-view.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-28-U1-review.md, journal/decisions/2026-10-27-read-views.md, docs/architecture.md, +2 more
+- **Verified:** 56-status-review.sh: 9 checks, each watched red against the old code (the out-of-range epoch reproduced a RangeError); full suite via lib/check.sh green, 689/689 (TEST_JOBS=2, 874 s); bash -n and node --check on every touched file.
+- **Tests:** 680 → 689
+- **Dead end:** a live session = the newest session line with no coding row at or after its stamp — the second Opus round: a refused (env) row never closes it, another lane's row hides it, and rows share a second with the next line; log order per id fixed all three
+- **Discovery** (affects run): status_stubs' mx now takes [<kind>:]<feature> (init:, verify:, refused:) and writes every row's at MX_AT s before HARNESS_NOW (default 1900); fl and mx stay defined after status_stubs
+- **Discovery** (affects U2, run): Deferred from the U1 review (docs/plans/2026-10-28-U1-review.md, Not done): wall hours of a continued run, the card's branch line hardcodes origin/main, lane liveness lacks lane_live's cmdline test, and the footer's --since 3d hint is not conditional on hidden runs
+- **Discovery** (affects run): Under load (~3.7, other lanes), full runs flaked once each in 28-run-14d-harness-merge and 48-lanes-rebase (an unknown run/<id>/M2 tag); both pass alone and neither reads status
+- **Question for Michael:** The U1 review deferred four Minor findings (continued-run wall hours, MAIN_BRANCH in the card's branch line, lane liveness by cmdline, the --since 3d hint). Should they go in a later milestone's list, or be dropped?
+- **Proposed change:** U1-07 step 1 writes the diff under /tmp/harness/<project>/<run>/ while the session's scratch is .../lanes/U1; the step could name the scratch directory instead
+- *07-U1-07 · claude-opus-5-5*
+
 ### 2026-10-28 06:08 · U1-06 · passes
 
 harness queue list renders through status.mjs renderQueue + view.mjs: QUEUE/PARKED/RUNNING/RECENT, rule, show hint; harness queue show <n> [--parked] is a card (renderEntry). entry_kind gone; QUEUED rows share queueRow. The four 15- queue checks read the new rows; 55-queue-view.sh, 12 checks. An Opus review found 1 Important and 6 Minor issues, all fixed red to green.

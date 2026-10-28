@@ -24,3 +24,8 @@
 - 2026-10-28 05:14 · U1-05 · claude-opus-5-5 · passes=true · 29 min · 5/24 passing · tests 668
 - 2026-10-28 05:15 · context.md for U1-06: 7206 bytes
 - 2026-10-28 06:08 · U1-06 · claude-opus-5-5 · passes=true · 53 min · 6/24 passing · tests 680
+- 2026-10-28 06:08 · review U1-07: 2053 changed lines, at or over 400; opus
+- 2026-10-28 06:08 · context.md for U1-07: 6765 bytes
+- 2026-10-28 07:11 · U1-07: gotchas +2 ~0 -0
+- 2026-10-28 07:19 · U1-07 un-passed: suite red after the session
+- 2026-10-28 07:19 · U1-07 · claude-opus-5-5 · passes=false · 63 min · 6/24 passing · tests 680
