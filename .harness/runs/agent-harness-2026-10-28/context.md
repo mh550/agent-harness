@@ -1,11 +1,12 @@
-# Context pack for `U3-03`
+# Context pack for `U3-04`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
 - Discovery (U3-02, affects run): project_dir dies in the main shell for status --project <bad path>; bin/harness's set -e is not inherited inside $(…), so a helper that is fine in p=$(…) can exit silently when called directly → entries.jsonl:23
-- Discovery (U3-01, affects U3-03): tests/checks/08 (replayed in 13) asserts '? harness-oth-svc.scope (no run of this project)' for an ended other-project run: U3-03 changes that expectation (silent) and nosuch's text → entries.jsonl:22
+- Discovery (U3-01, affects U3-04): git diff --numstat --name-status prints only the name-status lines (git 2.43): show needs two diffs, both --no-renames, joined by path → entries.jsonl:22
+- Discovery (U3-01, affects U3-04, U3-06): Since lanes a run's code is on harness-lane/<run>/<m> (harness/<run> is record only); a merged lane branch goes. show and overlap diff every run branch; tests need MERGE_POLICY=pr or an unverified milestone to keep unmerged code → entries.jsonl:22
 - Discovery (U2-09, affects run): needs card commands now run in fix_root/fix-<run>-<subject> (HARNESS_SCRATCH_ROOT/<project>, needs_open passes it) at origin's copy of the branch; merge_conflict's last command is harness merge, which re-tags at a hand-merged lane tip → entries.jsonl:20
 - Discovery (U2-09, affects run): Not done from the U2 review: a park card's where can take other features' Files: lines when the INBOX has no ### <id> section; pre-U2 runs' needs-/refused-/conflict- markers show no items; needs.md rewritten by needs done is committed only at the run's next driver commit → entries.jsonl:20
 - Discovery (U2-08, affects U2-09, run): tests/stub-claude.sh STUB_ASK_TOUCH=<path> (the STUB_ASK session also changes it), STUB_PARK_FILES=<value> (a Files: line under the park's ### heading), STUB_PARK_TOUCH=<path> (the parking session changes it) → entries.jsonl:19
@@ -20,7 +21,6 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (U1-04, affects run): lanes admission (47-lanes-two, five-hour window at 80 %) failed once in a full run at load ~2.9 with TEST_JOBS=3; it never reads the status view → entries.jsonl:6
 - Discovery (U1-03, affects run): the full suite at TEST_JOBS=4 flaked 1-2 timing checks per run tonight (load around 3.7 with other lanes); TEST_JOBS=2 ran green in 866 s → entries.jsonl:5
 - Discovery (U1-02, affects run): the full suite took 478 s and 481 s tonight (TEST_JOBS=4) → entries.jsonl:3
-- Discovery (U1-01, affects U1-03, U3-03): finish writes summary.json only to the record; status.mjs reads it state dir → record → ledger copy, so an ended run with its worktree still there gets its summary too. → entries.jsonl:2
 - Discovery (init, affects run): P1 and P2 of the lanes run are on origin/main (PRs #40 and #41): lib/lane.sh and lib/record.sh exist. The spec's check `git log --oneline origin/main | grep -c 'agent-harness-2026-10-26: P[12]'` prints 0 only because the merge subjects read `Merge pull request #40 from mh550/harness-merge/agent-harness-2026-10-26-P1`. The list is planned against the merged code; U1's lane rows build on P2-06's lane lines in cmd_status. → entries.jsonl:1
 - Discovery (init, affects run): Driver sites by function, as the code stands: sync_main, needs_you, notify_park, merge_one, slot_open (the base-conflict note) in lib/record.sh; verify, the park branch and the given-up end in lib/lane.sh; finish, the EXIT trap and the coordinator loop in lib/driver.sh; cmd_status, cmd_report, cmd_queue, cmd_parked, cmd_gc, cmd_start, cmd_continue in bin/harness. → entries.jsonl:1
 - Discovery (init, affects run): tests/checks/ ends at 50-lanes-record-pr.sh (new files from 51); tests/fixtures/check-names.txt has 601 names and the suite 602 checks. The init's full suite took 477 s on this box tonight, not the 208 s CLAUDE.md quotes: budget for it when a feature runs the suite more than once. → entries.jsonl:1
@@ -32,15 +32,10 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-28 16:39 · U3-02 · passes: project_dir in bin/harness: a repo path → its top level; a bare name → its newest run's PROJECT_DIR still a repo, else $HARNESS_PROJECTS/<name>; else an error naming the places and the projects with runs. start, init, queue add, gc, memlint and status --project use it; toplevel is gone. 65-project-names (11 checks), decision, README/architecture/usage lines.; tests 785 → 796; files bin/harness, tests/checks/65-project-names.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-project-names.md, README.md, … → entries.jsonl:23
+- 2026-10-28 17:55 · U3-03 · passes: U3-03 passes. Commit `5de9bd7` is pushed to `harness-lane/agent-harness-2026-10-28/U3`. The full suite went from 796 to 804 checks and was green (804/804) on the fourth full run. - **Record after gc:** a finished run now also keeps `summary.json`, `report.md` and `metrics.jsonl` in its state dir. `harness report` reads the worktree, then that copy, then the ledger's copy. If none exists, it print…; files README.md, bin/harness, docs/architecture.md, journal/decisions/2026-10-25-gc-orphan-units.md, journal/decisions/2026-10-27-gc-foreign-units.md, … → entries.jsonl:24
 
 ## Lately in the run
 
-- 2026-10-28 15:59 · U3-01 · passes: Wrote docs/plans/2026-10-28-U3-show-and-fixes.md: project_dir's order and six callers, report's worktree→state→ledger order and finish's copy, gc's unit rule, harness show (fields, CHANGES, CONFLICTS, NEEDS, feature form, --json), project_busy, overlap.mjs and its wiring/sweep, TTY report/trends/gc, checks 65-72, fixtures, U3-02..08 order, four decisions. Code unchanged.; tests 785 → 785; files docs/plans/2026-10-28-U3-show-and-fixes.md → entries.jsonl:22
-- 2026-10-28 15:42 · verify U2 · passes: All 9 U2 features hold. Full suite 783/785: the 2 memory-gate checks in 08-scope failed only under 4-job load; alone 08-scope passes 125/125. Files, syntax checks, docs, cards, prompts, fixtures verified against each step. → entries.jsonl:21
+- 2026-10-28 16:39 · U3-02 · passes: project_dir in bin/harness: a repo path → its top level; a bare name → its newest run's PROJECT_DIR still a repo, else $HARNESS_PROJECTS/<name>; else an error naming the places and the projects with runs. start, init, queue add, gc, memlint and status --project use it; toplevel is gone. 65-project-names (11 checks), decision, README/architecture/usage lines.; tests 785 → 796; files bin/harness, tests/checks/65-project-names.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-project-names.md, README.md, … → entries.jsonl:23
 
-## Current rules
-
-- The review gate: a milestone review's model by its measured diff, one Opus round after a Sonnet finding → journal/decisions/2026-10-27-review-gate.md
-
-_61 older rules: journal/decisions._
+_1 items left out at 8192 bytes: entries.jsonl has them all._
