@@ -1,16 +1,22 @@
-# Context pack for `U2-04`
+# Context pack for `U2-05`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (U2-04, affects U2-05, U2-06): blocked's waits are computed in needs.mjs (waitsOn over features.mjs deps) when no waits= is passed; no needs_waits shell function exists. needs_open now passes state= and suite= ($CHECK_CMD). U2-05/06 openers pass list= and inbox= and get blocked, where and question for free → entries.jsonl:15
+- Discovery (U2-04, affects U2-05, U2-07): A park's headline keeps its why ('B parked: set the gatus vars'); a stored parked card's commands and run_state are recomputed by list (asOfNow) from driver.pid, ended, the runner and queue/*-continue-<run>.args; parks of gc'd worktrees are not listed → entries.jsonl:15
+- Discovery (U2-04, affects U2-05): record body is still the headline: the 60-column plain card body (plan §1.1 #9, §3.2) is U2-05's, via renderCard with HARNESS_GLYPHS=unicode, no colour → entries.jsonl:15
 - Discovery (U2-03, affects U2-04, U2-05): Deferred from U2-03 to the features that use them: needs.mjs md/fields CLIs and <record>/needs.md (U2-05 commits and clicks it), needs_waits and the waits fact (U2-04's blocked field). The card has every §1.2 key but only headline filled. → entries.jsonl:14
-- Discovery (U2-03, affects U2-04, U2-07): harness needs prints one line per item '<glyph> <run> · <headline> · <ref>' (synthesized parked headline '<id> parked: <why>', so 54's 'harness needs parked' check still greps the why); U2-04 replaces it with cards → entries.jsonl:14
+- Discovery (U2-03, affects U2-05, U2-06): needs.mjs open defaults feature to the subject for parked/given_up, milestone to the subject for verify_*/merge_*/main_conflict/base_conflict/driver_crash (not run/record), else the list's milestone (list= fact); positional run/reason/subject beat key=value → entries.jsonl:14
+- Discovery (U2-03, affects U2-05): needs.mjs list applies only 'run removed' in memory; a resolved-but-unswept item still lists until a sweep (lane loop, finish, continue, gc in U2-05) → entries.jsonl:14
 - Discovery (U2-03, affects U2-04, U2-05, U2-06): needs_fixture <reason> open|resolved [<at epoch>] [<run>] in tests/lib.sh writes $HARNESS_STATE/proj/<run> with markers per plan §2.1 → entries.jsonl:14
 - Discovery (U2-02, affects U2-03, U2-04, U2-05, U2-08): lib/inbox.mjs has answers/insert/question/repair CLIs and pure question, questionLine (1-based line of the question's first line), files ([{path,line}] from Files: lines) for U2-04/05/08; parked.mjs questionFor and notify.mjs inboxQuestion are aliases of question/added → entries.jsonl:13
+- Discovery (U2-02, affects U2-05, U2-08): tests/stub-claude.sh STUB_INBOX_IN_COMMENT=<id>: that feature's first session splits the steering comment after 'under ' with '## Questions' + '**Q1 (<id>, stub).** set the gatus vars, then answer' and parks → entries.jsonl:13
 - Discovery (U2-02, affects U2): added() now ignores HTML comments and reads the repaired text; inbox_repair (lib/record.sh) is a no-op when a session only rewords the comment → entries.jsonl:13
 - Discovery (U2-01, affects U2-02, U2-03, U2-04, U2-05, U2-06, U2-07, U2-08): tests/checks/56- is taken (56-status-review.sh): U2's new check files are 57-inbox, 58-needs-record, 59-needs-cards, 60-needs-driver, 61-needs-git, 62-needs-readers, 63-question-locations → entries.jsonl:12
 - Discovery (U2-01, affects U2-04, U2-05): harness parked's text is read by seven 13- checks (parky · proj · B, running:, next commands); making parked an alias in U2-04 before U2-05 opens records needs list to synthesize parked items from parked.json (plan §2.2), and those checks rewritten to the card's words (plan §5.2) → entries.jsonl:12
+- Discovery (U2-01, affects U2-05, U2-06): Two 13- checks assert today's clicks: the park notification's Click is INBOX.md and verify's is progress.md; the spec's needs.md click changes exactly those two assertions (U2-05, U2-06) → entries.jsonl:12
 - Discovery (U1-07, affects run): At load ~3.6 (other lanes) every TEST_JOBS=4 full run tonight failed 1-4 timing-bound e2e checks, a different file each time; TEST_JOBS=2 with HARNESS_CHECK_TIMEOUT=25m is the way to a green → entries.jsonl:10
 - Discovery (U1-07, affects run): status_stubs' mx now takes [<kind>:]<feature> (init:, verify:, refused:) and writes every row's at MX_AT s before HARNESS_NOW (default 1900); fl and mx stay defined after status_stubs → entries.jsonl:9
 - Discovery (U1-07, affects U2, run): Deferred from the U1 review (docs/plans/2026-10-28-U1-review.md, Not done): wall hours of a continued run, the card's branch line hardcodes origin/main, lane liveness lacks lane_live's cmdline test, and the footer's --since 3d hint is not conditional on hidden runs → entries.jsonl:9
@@ -26,18 +32,6 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-28 09:53 · U2-03 · passes: lib/needs.mjs: the needs record (24 keys, first 13 = event v1), REASONS (15), pure record/refresh/sweep/synthesize/order, CLI open (0 new, 3 refreshed)/sweep/done/list; lib/needs.sh needs_open (sourced by driver, lane, harness; no caller); harness needs [--all] [--json] and needs done; needs_fixture; 58-needs-record (15 checks); decision needs-record.; tests 700 → 715; files lib/needs.mjs, lib/needs.sh, bin/harness, lib/driver.sh, lib/lane.sh, … → entries.jsonl:14
-
-## Lately in the run
-
 - 2026-10-28 09:19 · U2-02 · passes: lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, question, questionLine, added, answers, insert, files, repair + CLI); parked/notify/entries/record.sh on it; inbox_repair after each lane session (slot copy) and the initializer, noted; template comment without ## Answers; STUB_INBOX_IN_COMMENT; 57-inbox (11 checks), n8n-home fixture.; tests 689 → 700; files lib/inbox.mjs, lib/parked.mjs, lib/notify.mjs, lib/entries.mjs, lib/record.sh, … → entries.jsonl:13
-- 2026-10-28 08:40 · U2-01 · passes: Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and card keys, file locations, the 15 reasons mapped to their functions with kind/severity/priority/key/sweep rule, a card template per reason, needs.sh/needs.mjs/inbox.mjs APIs, notification texts, check files 57-63, fixtures, touched checks, order U2-02..09. Code unchanged; suite cached green.; tests 689 → 689; files docs/plans/2026-10-28-U2-needs-record.md → entries.jsonl:12
 
-## Current rules
-
-- The review gate: a milestone review's model by its measured diff, one Opus round after a Sonnet finding → journal/decisions/2026-10-27-review-gate.md
-- Read views: one formatter, `lib/view.mjs`, that every read view renders through → journal/decisions/2026-10-27-read-views.md
-- Questions where Michael sees them: one INBOX parser, the steering comment repaired → journal/decisions/2026-10-27-question-locations.md
-- Merging the memory run into lanes: main's driver changes in their lane-era homes, the review round per lane → journal/decisions/2026-10-27-p1-main-merge.md
-
-_57 older rules: journal/decisions._
+_2 items left out at 8192 bytes: entries.jsonl has them all._
