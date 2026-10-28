@@ -590,6 +590,29 @@ verify needs Michael goes out after the verify entry is pushed
 verify needs Michael starts a desk
 verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
+view: ago gives now 4m 3h 2d 5w for 0 s, 240 s, 3 h, 2 d and 5 w before now; a future time is now
+view: an over-wide narrow row breaks at a column gap before folding: an id that fits the width stays whole, no blank line
+view: card puts a URL inside a value on its own line at 2, splits a value at newlines, keeps a long label and a tiny width inside the line
+view: card wraps a 200-character value under an 11-wide label with a hanging indent, keeps lines verbatim at 4 and a URL whole
+view: context now is HARNESS_NOW when a whole number, else the clock
+view: context tty from isTTY or HARNESS_TTY; colour only on a TTY without NO_COLOR or TERM=dumb, HARNESS_COLOR overrides
+view: context width is COLUMNS when a whole number >= 40, else a TTY'\''s columns, else 100; narrow below 72
+view: cut never splits a code point or an SGR sequence and ends in the cut glyph; pad right-aligns numbers
+view: displayWidth ignores ANSI escapes and combining marks and counts wide characters 2
+view: duration takes 30m 6h 2d 1w and a date relative to now, and fails on abc
+view: endClass gives each reason in tests/fixtures/end-reasons.txt its class; an unknown or empty reason is failed
+view: glyphs unicode from the first set of LC_ALL, LC_CTYPE, LANG naming UTF-8; HARNESS_GLYPHS overrides; ascii otherwise
+view: home shortens a path under the home directory to a tilde and leaves other paths
+view: lib/view.mjs has a usage header, imports only node: built-ins, exports the formatter's functions, and node --check passes
+view: paint wraps in SGR only with colour on; an unknown style throws
+view: section fills to the width with the rule glyph; an empty one is one line without the rule; rule is the width
+view: table lines stay within 40, 60, 80 and 120 columns with a 60-character id whole and a 300-character reason cut
+view: table puts a row'\''s sub lines under it at 4 and gives no second line to an empty flex value when narrow
+view: tests/fixtures/end-reasons.txt holds every literal reason finish, END_REASON and a run-ending lane exit write
+view: the CLI renders a table, a card and a section from tab-separated stdin
+view: the glyph set is fixed, each one text-presentation code point of width 1, with its ASCII form; an unknown name throws
+view: when and duration use local time: 00:19 and a local midnight under TZ=America/New_York
+view: when gives 2026-10-27 00:19 (10h ago) under TZ=UTC, and (now) under a minute
 waits for another run's limit window
 what lands on main is byte for byte what was verified
 where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
