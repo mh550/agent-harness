@@ -142,12 +142,13 @@ list` reads `MAX_PARALLEL_RUNS` today (read-only: it sources the user config and
 | `attempts.json`, `max-attempts`, `parked.json` | `<state>/…` | NEEDS items (§3.2) |
 | markers | `<state>/{verified,merged,needs,refused,conflict}-<m>`, `<state>/lanes/<m>/need` | `features.verified/merged`, NEEDS items |
 | lanes | `<state>/lanes/<m>/{pid,now,port,slot}`, a pid tested with `process.kill(pid, 0)` (EPERM counts as alive, as `kill -0`) | P2-06's open lanes |
-| `summary.json` | `<state>/summary.json`, else `<record>/summary.json`, else `<ledger>/<project>/<run>/summary.json` | for an ended run: `features`, `cost.total`, `tests`, `lanes`, `milestones`, `time.wall_h`, `started`, `ended_at` (the ledger copy is how a gc'd run shows `23/23`) |
+| `summary.json` | `<record>/summary.json` (finish's), else `<state>/summary.json` (`harness report`'s: an earlier segment's after a continue), else `<ledger>/<project>/<run>/summary.json` (U1-03 review) | for an ended run: `features`, `cost.total`, `tests`, `lanes`, `milestones`, `time.wall_h`, `started`, `ended_at` (the ledger copy is how a gc'd run shows `23/23`) |
 | git (card only) | `git -C <worktree> rev-list --left-right --count origin/main...harness/<run>`, `rev-parse --short` | the card's `branch` field; read-only, local refs, no fetch; worktree gone → `harness/<run> (worktree removed)` |
 
 Precedence for an ended run: `summary.json` (the first found) wins for features, cost and tests; the live files for
 anything it lacks. For a running run: the live files only. The session number (spec default 3) is the metrics rows
-plus 1 while a session runs (alive and the newest `session` line is after the segment start).
+plus 1 while a session runs (alive and the newest `session` line is after the segment start); never `$STATE/sessions`,
+which the driver resets each segment.
 
 **Queue** (for `QUEUED`, `queue list`, `queue show`): `<queue>/*.args` and `<queue>/held/*.args` (+ `.why`), sorted
 by name as the runner does; `<queue>/runner.log` (last 5 lines). An entry's project as `queue.sh`'s `entry_project`

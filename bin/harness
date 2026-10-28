@@ -20,6 +20,9 @@
 #                                                move an item: proposed|specced|queued|merged|dropped (a ledger commit)
 #   harness backlog import <file.jsonl>          merge rows by id (the seed: docs/specs/2026-10-25-memory.backlog-seed.jsonl)
 #   harness status [<run-id>]                    every run: running / ended (why), features, last log lines
+#   harness status [<run-id>] [--json] [-a|--all] [--since <d>] [-p|--project <p>]
+#                                                --json: one v1 document (lib/status.mjs): needs, running, queued,
+#                                                finished (the last 24h, STATUS_SINCE or --since; 3 to 10), older
 #   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
 #   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
 #                                                harness version (runs, passing, $/feature, cache hit, orientation)
@@ -302,8 +305,45 @@ cmd_merge() {
     [[ -n $keep ]] && echo "$keep" > "$STATE/ended"; true )
 }
 
-cmd_status() {
-  local d want=${1:-} any=0
+# One line per run for lib/status.mjs: run, project, state dir, worktree, record dir, alive 0|1|2 (2: ending, in finish)
+# and, with <units> 1 and a live driver, its units as <unit>=<MemoryCurrent bytes>,… One broken meta.env doesn't cut the
+# others off (cmd_parked's loop)
+run_rows() {   # <units 0|1>
+  local d
+  for d in "$STATE_ROOT"/*/*/; do
+    [[ -f $d/meta.env ]] || continue
+    # shellcheck source=/dev/null
+    ( source "$d/meta.env"; a=0 us=""
+      alive "$STATE" && { [[ -f $STATE/ended ]] && a=2 || a=1; }
+      if (( $1 && a )); then   # a missing bus or a unit gone just now: none
+        while read -r u _; do
+          scope_owns "$RUN_ID" "$u" || continue
+          b=$("${HARNESS_SYSTEMCTL:-systemctl}" --user show -p MemoryCurrent "$u" 2> /dev/null | sed -n 's/^MemoryCurrent=//p' || true)
+          [[ $b =~ ^[0-9]+$ ]] && us+="${us:+,}${u%.scope}=$b"
+        done < <("${HARNESS_SYSTEMCTL:-systemctl}" --user list-units "$(scope_unit "$RUN_ID")-*" --plain --no-legend 2> /dev/null || true)
+      fi
+      printf '%s\t%s\t%s\t%s\t%s\t%s%s\n' "$RUN_ID" "${PROJECT_DIR##*/}" "$STATE" "$WT" "$WT/.harness/runs/$RUN_ID" "$a" "${us:+$'\t'$us}" ) || true
+  done
+}
+
+cmd_status() {   # [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [--json]: read-only (no harness_config writes, no mkdir)
+  local d want="" any=0 json=0 o=() use="usage: harness status [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [--json]"
+  while (( $# )); do case $1 in
+    --json) json=1 ;;
+    -a|--all) o+=(--all) ;;
+    --since|-p|--project) (( $# > 1 )) || die "$use"; [[ $1 == --since ]] && o+=(--since "$2") || o+=(--project "$2"); shift ;;
+    -*) die "$use" ;;
+    *) [[ -z $want ]] || die "$use"; want=$1 ;;
+  esac; shift; done
+  (( json || ! ${#o[@]} )) || die "status: -a, --since and --project need --json (the text view takes them in U1-04)"
+  if (( json )); then   # the whole picture in one node process (decisions/2026-10-27-read-views)
+    [[ -n $want ]] && state_of "$want" > /dev/null
+    local cfg r=0 mode=(view); cfg=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS ${STATUS_SINCE:-24h}"); runner_up && r=1
+    [[ -n $want ]] && mode=(card "$want")
+    run_rows 1 | node "$HARNESS_HOME/lib/status.mjs" "${mode[@]}" --json ${o[@]+"${o[@]}"} --runner "$r" --queue "$Q" \
+      --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" --state-root "$STATE_ROOT" --max-parallel "${cfg%% *}" --since-default "${cfg#* }"
+    return
+  fi
   for d in "$STATE_ROOT"/*/*/; do
     [[ -f $d/meta.env ]] || continue
     [[ -n $want && $(basename "$d") != "$want" ]] && continue

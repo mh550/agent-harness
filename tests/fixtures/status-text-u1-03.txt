@@ -1,0 +1,33 @@
+crashed (proj) · not running · port 7958 · 0/1 passing
+    2026-10-27 12:53:20 run crashed on harness/crashed in <T>/wt/proj/crashed · port 7958 · policy build-only · merge auto · harness test
+    2026-10-27 12:54:20 session 1 · A · claude-opus-5-5
+done2h (proj) · ended: done · 2026-10-27 22:00:00 · port 7951 · 3/3 passing · tests 419 → 430
+    2026-10-27 20:00:00 run done2h on harness/done2h in <T>/wt/proj/done2h · port 7951 · policy build-only · merge auto · harness test
+    2026-10-27 20:01:00 session 1 · A · claude-opus-5-5
+    2026-10-27 22:00:00 done
+done3d (proj) · ended: done · 2026-10-25 00:00:00 · port 7952 · 1/1 passing
+    2026-10-24 21:00:00 run done3d on harness/done3d in <T>/wt/proj/done3d · port 7952 · policy build-only · merge auto · harness test
+    2026-10-24 21:01:00 session 1 · A · claude-opus-5-5
+    2026-10-25 00:00:00 done
+gcd (proj) · ended: done · 2026-10-27 22:50:00 · port 7957 · no feature list yet
+    2026-10-27 16:13:20 lane M2 opened (slot 2)
+    2026-10-27 21:30:00 lane M1 closed (merged)
+    2026-10-27 22:36:40 lane M2 closed (merged)
+parked (proj) · ended: waiting on Michael: B · 2026-10-27 23:00:00 · port 7955 · 1/3 passing
+    2026-10-27 21:00:00 run parked on harness/parked in <T>/wt/proj/parked · port 7955 · policy build-only · merge auto · harness test
+    2026-10-27 21:01:00 session 1 · A · claude-opus-5-5
+    2026-10-27 23:00:00 waiting on Michael: B
+running (proj) · running · port 7954 · 1/3 passing
+    lane M1 · B · session 2 · port 7960 · slot 1 · MemoryCurrent harness-running-M1-s2 300 MB
+    harness-running-svc · MemoryCurrent 300 MB
+    2026-10-27 22:00:00 run running on harness/running in <T>/wt/proj/running · port 7954 · policy build-only · merge auto · harness test
+    2026-10-27 22:01:00 session 1 · A · claude-opus-5-5
+    2026-10-27 23:30:00 session 2 · B · claude-opus-5-5
+givenup (proj2) · ended: blocked on C · 2026-10-27 23:30:00 · port 7956 · 2/3 passing
+    2026-10-27 21:30:00 run givenup on harness/givenup in <T>/wt/proj2/givenup · port 7956 · policy build-only · merge auto · harness test
+    2026-10-27 21:31:00 session 1 · A · claude-opus-5-5
+    2026-10-27 23:30:00 blocked on C
+stopped (proj2) · ended: stopped by Michael: rebase first · 2026-10-27 19:00:00 · port 7953 · 1/3 passing
+    2026-10-27 14:00:00 run stopped on harness/stopped in <T>/wt/proj2/stopped · port 7953 · policy build-only · merge auto · harness test
+    2026-10-27 14:01:00 session 1 · A · claude-opus-5-5
+    2026-10-27 19:00:00 stopped by Michael: rebase first

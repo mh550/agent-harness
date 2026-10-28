@@ -33,6 +33,20 @@ to U1-06 add their views' choices, U1-07 completes it.)*
     `weekly budget (`, `usage limit (`, `merge only` stopped; anything else failed, never a crash.
     `tests/fixtures/end-reasons.txt` holds every reason, and a check fails when the driver gains a literal `finish`
     reason, `END_REASON` or run-ending `lane_exit` the fixture lacks.
+  - **Status data (U1-03):** `lib/status.mjs` builds every run, needs and queue object in one node process from
+    one stdin line per run (`run_rows` in bin/harness: the pids and units only bash collects) and the files it reads
+    itself; `harness status [<run>] --json` (v1) prints them, every key path listed in
+    `tests/fixtures/status-json-keys.txt`. An ended run's `summary.json` (the record's, which `finish` writes; else
+    the state dir's, `harness report`'s; else the ledger copy) wins for features, cost, tests and lanes, so a gc'd run
+    keeps its count; the state dir's is not first, since after a continue it is an earlier segment's. `session` is the
+    metrics rows plus the one running, never `$STATE/sessions` (reset each segment). **(*default*)** A run with no
+    live driver and no `ended` is `crashed` (class `failed`); its NEEDS item (`driver_crash`) only when a
+    `driver.pid` was left. **(*default*)** One run-level item at most, and none when a feature or milestone item
+    covers the run (`waiting on Michael: B` is B's row). **(*default*)** A milestone's `needs`/`refused`/`conflict`
+    marker counts only until `merged-<m>` exists. A live lane's feature at `MAX_ATTEMPTS` is on its last attempt (the
+    lane bumps `attempts.json` first), not given up. **(*default*)** `max-attempts` in the state dir, else 2 (the
+    config default: status reads no project config). **(*default*)** A queued `--until HH:MM` shows as the next
+    such time from now, as `to_epoch` reads it when the entry starts.
 - **Rejected:** `column(1)` or an npm table/colour package (CLAUDE.md: node built-ins only; `column` knows nothing of
   display width or ANSI); wrapping table cells (a row stays one scan line; a card shows the whole value); cutting
   ids (a printed command must paste); emoji glyphs (two columns, font-dependent).

@@ -75,6 +75,76 @@ settle() {   # the runner's debrief is detached: wait until no debrief process i
 }
 ran() { local r; sleep 1; for r; do echo "$(date '+%F %T') run $r on harness/$r in $T/wt/proj/$r · port 7999" >> "$HARNESS_STATE/proj/$r/run.log"; done; }   # runs since
 
+# The read views' stub runs (U1; call once after suite_setup): every time relative to a fixed HARNESS_NOW, TZ=UTC (the
+# stamps are local time). proj: done2h, done3d, running (a live sleep as its driver and as lane M1's, one unit each, B
+# on its last attempt),
+# parked, gcd (worktree removed, its summary.json only in the ledger), crashed (driver.pid naming no process); proj2:
+# stopped, givenup; and <bulk> more ended 4 days ago (bulk-01's ended a bare reason). The queue: a start with a long
+# brief (held: proj's run is going), a requested continue, a parked start. Leaves at, ago and sr defined for status_bulk.
+#   status_stubs [<bulk>]
+status_stubs() {
+  export TZ=UTC HARNESS_NOW=1793145600 STUB_MEM_CURRENT=314572800   # 300 MB
+  local now=$HARNESS_NOW port=7950 i r
+  at() { date -d "@$(( HARNESS_NOW - $1 ))" '+%F %T'; }
+  iso() { date -u -d "@$(( HARNESS_NOW - $1 ))" '+%Y-%m-%dT%H:%M:%S.000Z'; }
+  ago() { touch -d "@$(( HARNESS_NOW - $2 ))" "$1"; }
+  sr() {   # <project> <run> <started s ago> [<end reason> <ended s ago>]: state dir, worktree, record, run.log
+    local st=$HARNESS_STATE/$1/$2 wt=$T/wt/$1/$2; local rec=$wt/.harness/runs/$2
+    mkdir -p "$st" "$rec"; port=$(( port + 1 )); echo "$port" > "$st/port"
+    printf 'PROJECT_DIR=%q\nWT=%q\nRUN_ID=%q\nSTATE=%q\n' "$T/$1" "$wt" "$2" "$st" > "$st/meta.env"
+    { echo "$(at "$3") run $2 on harness/$2 in $wt · port $port · policy build-only · merge auto · harness test"
+      echo "$(at $(( $3 - 60 ))) session 1 · A · claude-opus-5-5"; } > "$st/run.log"
+    [[ -n ${4:-} ]] && { echo "$(at "$5") $4" >> "$st/run.log"; echo "$4 · $(at "$5")" > "$st/ended"; ago "$st/ended" "$5"; ago "$st/run.log" "$5"; }
+    return 0
+  }
+  fl() {   # <project> <run> <id:passes:milestone>…: the feature list
+    local rec=$T/wt/$1/$2/.harness/runs/$2 f i r m; shift 2
+    for f; do IFS=: read -r i r m <<< "$f"; printf '{"id":"%s","milestone":"%s","description":"%s","steps":["x"],"passes":%s}\n' "$i" "$m" "$i" "$r"; done \
+      | jq -s '{features: .}' > "$rec/feature_list.json"
+  }
+  mx() {   # <project> <run> <feature>…: one metrics.jsonl row per feature, from the real session shape
+    local rec=$T/wt/$1/$2/.harness/runs/$2 r=$2 f; shift 2
+    for f; do node "$HERE/../lib/metrics.mjs" append "$HERE/fixtures/usage-tokens.jsonl" "$rec/metrics.jsonl" "$r" coding "$f" claude-opus-5-5 true 600 0 "" coding 100; done
+  }
+  sr proj done2h 14400 done 7200; fl proj done2h A:true:M1 B:true:M1 C:true:M1; mx proj done2h A B C; touch "$HARNESS_STATE/proj/done2h/merged-M1"
+  echo 419 > "$HARNESS_STATE/proj/done2h/tests-start"; echo 430 > "$HARNESS_STATE/proj/done2h/tests-end"
+  node "$HERE/../lib/summary.mjs" build "$T/wt/proj/done2h" done2h "$HARNESS_STATE/proj/done2h" > "$T/wt/proj/done2h/.harness/runs/done2h/summary.json"   # finish's
+  echo '{"features":{"passing":1,"total":3,"verified":0,"merged":0},"cost":{"total":5}}' > "$HARNESS_STATE/proj/done2h/summary.json"   # an earlier harness report's
+  sr proj done3d 270000 done 259200; fl proj done3d A:true:M1
+  sr proj2 stopped 36000 "stopped by Michael: rebase first" 18000; fl proj2 stopped A:true:M1 B:false:M1 C:false:M2; mx proj2 stopped A
+  sr proj running 7200; fl proj running A:true:M1 B:false:M1 C:false:M2; mx proj running A
+  echo "$(at 1800) session 2 · B · claude-opus-5-5" >> "$HARNESS_STATE/proj/running/run.log"
+  echo 1 > "$HARNESS_STATE/proj/running/sessions"; echo '{"A":1,"B":2}' > "$HARNESS_STATE/proj/running/attempts.json"   # this segment's count; B on its last attempt
+  sleep 600 & echo $! > "$HARNESS_STATE/proj/running/driver.pid"; echo $! >> "$T/left.pids"
+  mkdir -p "$HARNESS_STATE/proj/running/lanes/M1" "$T/scope"; cp "$HARNESS_STATE/proj/running/driver.pid" "$HARNESS_STATE/proj/running/lanes/M1/pid"
+  echo "B · session 2" > "$HARNESS_STATE/proj/running/lanes/M1/now"; echo 7960 > "$HARNESS_STATE/proj/running/lanes/M1/port"
+  echo "$T/wt/proj/running-slots/slot-1" > "$HARNESS_STATE/proj/running/lanes/M1/slot"
+  for r in harness-running-M1-s2 harness-running-svc; do touch "$T/scope/$r.alive" "$T/scope/$r.running"; done
+  sr proj parked 10800 "waiting on Michael: B" 3600; fl proj parked A:true:M1 B:false:M1 C:false:M1; mx proj parked A
+  printf '{"B":{"answers":"x","why":"set the gatus vars\\nand the token","at":"%s"}}\n' "$(iso 3700)" > "$HARNESS_STATE/proj/parked/parked.json"
+  printf 'status: run\n\n### B: set the gatus vars, then answer\n\n## Answers\n' > "$T/wt/proj/parked/.harness/runs/parked/INBOX.md"
+  sr proj2 givenup 9000 "blocked on C" 1800; fl proj2 givenup A:true:M1 B:true:M1 C:false:M1
+  echo '{"C":2}' > "$HARNESS_STATE/proj2/givenup/attempts.json"; echo 2 > "$HARNESS_STATE/proj2/givenup/max-attempts"; ago "$HARNESS_STATE/proj2/givenup/attempts.json" 2000
+  sr proj gcd 30000 done 4200; fl proj gcd $(for i in $(seq 23); do echo "F$i:true:M$(( (i - 1) / 12 + 1 ))"; done); mx proj gcd F1 F2
+  { echo "$(at 29000) lane M1 opened (slot 1)"; echo "$(at 28000) lane M2 opened (slot 2)"; echo "$(at 9000) lane M1 closed (merged)"; echo "$(at 5000) lane M2 closed (merged)"; } >> "$HARNESS_STATE/proj/gcd/run.log"
+  touch "$HARNESS_STATE/proj/gcd/verified-M1" "$HARNESS_STATE/proj/gcd/verified-M2" "$HARNESS_STATE/proj/gcd/merged-M1" "$HARNESS_STATE/proj/gcd/merged-M2"
+  mkdir -p "$HARNESS_LEDGER/proj/gcd"; node "$HERE/../lib/summary.mjs" build "$T/wt/proj/gcd" gcd "$HARNESS_STATE/proj/gcd" > "$HARNESS_LEDGER/proj/gcd/summary.json"
+  rm -rf "$T/wt/proj/gcd"
+  sr proj crashed 40000; fl proj crashed A:false:M1; echo '{"features":{"passing":9,"total":9}}' > "$T/wt/proj/crashed/.harness/runs/crashed/summary.json"; sh -c 'echo $$' > "$HARNESS_STATE/proj/crashed/driver.pid"; ago "$HARNESS_STATE/proj/crashed/run.log" 36000
+  (( ${1:-0} )) && status_bulk "$1"
+  local q=$HARNESS_STATE/queue; mkdir -p "$q/held"
+  printf '%s\n' start "$T/proj" --spec "SPEC.md docs/b.md" --until 23:52 --brief "$(printf 'brief %.0s' $(seq 200))" > "$q/0001-start-proj.args"; ago "$q/0001-start-proj.args" 600
+  printf '%s\n' continue stopped --queued --requested > "$q/0002-continue-stopped.args"; ago "$q/0002-continue-stopped.args" 300
+  printf '%s\n' start "$T/proj2" proj2-next --until-epoch $(( now + 3600 )) > "$q/held/0003-start-proj2.args"; echo "waiting on the measure PRs (2026-10-28 23:00)" > "$q/held/0003-start-proj2.why"
+  ago "$q/held/0003-start-proj2.args" 900
+  unset -f iso fl mx
+}
+status_bulk() {   # <n>: bulk-01 … bulk-<n> (proj), ended done 4 days and <i> minutes before HARNESS_NOW; bulk-01's a bare reason
+  local i port=8000
+  for (( i = 1; i <= $1; i++ )); do sr proj "bulk-$(printf %02d "$i")" 400000 done $(( 345600 + i * 60 )); done
+  echo done > "$HARNESS_STATE/proj/bulk-01/ended"; ago "$HARNESS_STATE/proj/bulk-01/ended" 345660
+}
+
 # the file's count; exit 1 on a failure
 suite_end() {
   (( fails )) && [[ -f $T/run1.out ]] && { echo "--- run1 output"; tail -30 "$T/run1.out"; echo "--- harness-log"; hlog demo; }
