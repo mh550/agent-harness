@@ -46,12 +46,14 @@ a given-up feature opens given_up naming what waits on it; harness needs and har
 a held index.lock: written, not committed, nothing left staged
 a killed debrief changes nothing
 a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
+a later clean sync_main resolves main_conflict: its item in needs/done/, main merged cleanly, noted
 a later deadline: the earlier refusals aren't the cause
 a ledger checkout on another branch: the note is written, not committed
 a legacy run is untouched, then continued into a journal
 a limit ending: the cause is the usage limit
 a limit-cut session's passes is reverted, A retried
 a listed worktree whose directory is gone never ends gc: every later step still runs
+a main conflict notifies once per main commit across 2 verifies: high, title <m> needs you, body the card, click needs.md
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
 a park notification: title, question, answer command, click and Edit INBOX action
@@ -95,6 +97,7 @@ a stop with a reason: an automatic continuation is still skipped; summary.json h
 a stop without a reason says just: stopped by Michael (the note and ended)
 a stub session that adds a Gotchas line is noted
 a successful post: a line in run.log only
+a thin verify opens verify_thin under [<run>] M1 needs you; the notification's body is the card, click needs.md
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
 a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
@@ -142,6 +145,7 @@ check.sh: the cached line names the key's ignore list only when it isn't the def
 coding and verify prompts name resolved, project facts and Promote to Gotchas
 coding prompt names CLAUDE.md but doesn't paste it
 coding prompt: the Finish step adds one Gotchas line
+conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)
 context.md carries the earlier attempt's dead end
 context.md lists the decisions store's rules newest first
 continuation queued: keeps attempts, brief marked as the debrief's
@@ -387,6 +391,9 @@ memory gate: every session starts with the services up, a verify after its wait 
 memory gate: the real fixture's 9 GB passes without a note
 memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+merge_one on the coordinator: merge_conflict names the lane branch, never the record branch, and is notified
+merge_one's conflict opens merge_conflict: the merge-tree files in where, main and the tag commit, notified with the card
+merge_one's refusal opens merge_refused: the PR URL in where and as its click, notified once with it
 mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits
 metrics usage: five_hour reads the newest event's five-hour window; the default stays the seven-day one
 metrics.jsonl: every session line has mem_peak_mb from its scope
@@ -422,7 +429,7 @@ needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref k
 needs open: an unknown reason or an empty subject exits 1 with needs.mjs: on stderr and writes nothing
 needs record: its first 13 keys are the v1 event keys in order, kind is park, needs_michael, blocked or limit (in v1's enum)
 needs record: ref is <run>/<seq>, key <reason>:<subject>; seq is one past the largest in needs/ and needs/done/; feature and milestone default from the subject or the list
-needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
+needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
 needs.md is committed on the record branch before the park goes out, and lists the park
 needs: a run whose worktree and record branch are both gone resolves run removed (list hides it before any sweep); the branch alone keeps it
@@ -555,6 +562,7 @@ scratch_rm refuses anything but the run's own scratch directory (symlinks in its
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
 slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
+slot_open: a dependency's tag that conflicts with main opens base_conflict naming that tag
 slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)
 slot_open: after a lane's base conflicts, reopening the previous lane checks its branch out again
 slot_open: the slot's excludes file keeps the user's global excludes (a ~ path expanded)
@@ -633,6 +641,7 @@ sync: another branch checked out: skipped; LIVE_SYNC=0: off
 sync: level says so
 sync: nothing local: fast-forward
 sync: pulls the merged PR and pushes the ledger commit, no merge commit
+sync_main's conflict opens main_conflict for the lane: the conflicted file in where, the merged PR's run in why, the main commit
 tampered list restored
 tampered text reverted
 test count: a continued run refreshes tests-end after each session (summary.json 3 → 5 before finish), tests-start stays the baseline
@@ -713,9 +722,10 @@ v2 tags don't merge on resume
 verifier caught A, re-queued
 verifier code edits reverted, never merged
 verify needs Michael goes out after the verify entry is pushed
-verify needs Michael starts a desk
-verify needs Michael: priority high, click = progress.md (GitHub-shaped origin)
+verify needs Michael starts a desk or reaches the open one
+verify needs Michael: priority high, click = needs.md (GitHub-shaped origin)
 verify ping-pong capped, needs Michael
+verify's re-check failure opens verify_recheck with the failed ids; its notification is the record's
 view.mjs cutFront keeps the end from a directory boundary; card with rule: false has no rule; a url-only field is the url line alone
 view: ago gives now 4m 3h 2d 5w for 0 s, 240 s, 3 h, 2 d and 5 w before now; a future time is now
 view: an over-wide narrow row breaks at a column gap before folding: an id that fits the width stays whole, no blank line

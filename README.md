@@ -211,7 +211,9 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   ends `PARKED: …`. A question written inside the steering comment (GitHub hides it) is moved below it, with a note. The feature waits without spending attempts while independent work goes on; the run ends
   `waiting on Michael: <ids>` when nothing else can run. Any new answer unparks it on `harness continue`. The park's
   notification carries the question, what waits on it, where and the commands; tapping it opens `needs.md` in the
-  run record, every open item there as a card.
+  run record, every open item there as a card. A milestone that needs you (thin, red or failed verify, a conflict with
+  main, a refused merge, a lane base that won't merge) notifies the same way, its card as the body; main conflicting
+  with a lane is said once per main commit, and resolves itself once main merges cleanly.
 - **Weekly budget:** past `WEEKLY_STOP_AT` (default 85 %) of the plan's 7-day window, as sessions report it, the queue
   starts no run and a running one stops before its next coding session.
 

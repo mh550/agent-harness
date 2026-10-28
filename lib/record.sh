@@ -95,15 +95,31 @@ restrict() {   # base record|nothing|runs who
 }
 
 # Bring main's new commits into the branch checked out here (a lane at its verify, so what is verified is what merges;
-# the record branch at a resumed start, for its configuration). 1 = conflict (left as it was).
+# the record branch at a resumed start, for its configuration). 1 = conflict (left as it was): a main_conflict record
+# for the lane (record on the record branch) naming the conflicted files and the PRs that brought them, notified once
+# per origin/main commit (main-conflict-<subject> holds it); a later clean merge, or main already in, resolves it.
 sync_main() {
-  local b; b=$(git branch --show-current)
+  local b sub=${LANE:-record} mn old files fa=() subjects ref; b=$(git branch --show-current)
   git fetch -q origin "$MAIN_BRANCH" 2>/dev/null || return 0
-  git merge-base --is-ancestor "origin/$MAIN_BRANCH" HEAD && return 0
-  if git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then note "merged $MAIN_BRANCH into $b"; return 0; fi
+  git merge-base --is-ancestor "origin/$MAIN_BRANCH" HEAD && { main_clear "$sub"; return 0; }
+  if git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0; fi
+  files=$(git diff --name-only --diff-filter=U); [[ -n $files ]] && mapfile -t fa <<< "$files"
+  # no conflicted file: the merge never started (a dirty tree, no identity): said, as before, and nothing recorded
+  (( ${#fa[@]} )) || { git merge --abort 2>/dev/null; note "$MAIN_BRANCH did not merge into $b (see run.log); carrying on without it"; return 1; }
+  # --first-parent: main's own merges; path-limited, git's default simplification hides a merge that took a file whole
+  subjects=$(git log --first-parent --merges --format=%s "$(git merge-base HEAD "origin/$MAIN_BRANCH")..origin/$MAIN_BRANCH" -- "${fa[@]}")
   git merge --abort 2>/dev/null; note "$MAIN_BRANCH conflicts with $b; carrying on without it (merges into $MAIN_BRANCH need Michael)"
+  mn=$(git rev-parse "origin/$MAIN_BRANCH"); old=$(cat "$STATE/main-conflict-$sub" 2> /dev/null)
+  echo "$mn" > "$STATE/main-conflict-$sub"   # before the open: a sweep meanwhile must not resolve it
+  ref=$(needs_open main_conflict "$sub" files="$files" subjects="$subjects" main="$mn" head="$(git rev-parse HEAD)")
+  [[ $old == "$mn" ]] && return 1   # once per main commit: a verify after it says nothing new
+  rec_commit "HARNESS: $MAIN_BRANCH conflicts with $b"; sync_record
+  needs_you "$sub" "$MAIN_BRANCH conflicts with $b" needs.md "$ref"
   return 1
 }
+main_clear() { [[ -f $STATE/main-conflict-$1 ]] || return 0; rm -f "$STATE/main-conflict-$1"; needs_sweep; }   # <subject>
+# git merge-tree --write-tree --name-only's output → its conflicted paths (the lines between the tree and the blank line)
+conflict_files() { sed -n '2,/^$/{/./p}'; }
 
 # Answers typed locally (`harness answer`, the supervisor) are moved into INBOX.md so sessions see them.
 take_answers_() {
@@ -114,9 +130,10 @@ take_answers_() {
 }
 take_answers() { record take_answers_; }
 
-# A milestone Michael must act on (verify, a conflict): high, one tap from the run-record file that explains it.
-needs_you() {   # <milestone> <why> <file in the run record>
-  notify "$1 needs Michael: $2" title="[$RUN_ID] $1 needs you" priority=high click="$(gh_url "$RUN_DIR/$3")"
+# A milestone Michael must act on (verify, a conflict): its needs record's title, body (the card), click (needs.md) and
+# priority; without a record (a failed open) high, one tap from the run-record file that explains it.
+needs_you() {   # <milestone> <why> <file in the run record> <the record's ref>
+  needs_notify "${4:-}" "$1 needs Michael: $2" title="[$RUN_ID] $1 needs you" priority=high click="$(gh_url "$RUN_DIR/$3")"
   desk "$1 needs Michael: $2"
 }
 
@@ -378,7 +395,7 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
 # rebase), once per main, never after it needs Michael; `harness merge` clears moved-* and so tries once more.
 # --open (a dependency not merged yet) skips that test: main moves again when the dependency lands, and the rule runs then.
 merge_one() {
-  local m=$1 tag=run/$RUN_ID/$1 c head url tree mn
+  local m=$1 tag=run/$RUN_ID/$1 c head url tree mn out ref
   head=harness-merge/$RUN_ID-$m
   c=$(git rev-list -n1 "$tag") || return 1
   # once more after a second: another lane's fetch may hold refs/remotes/origin/<main>'s lock
@@ -386,13 +403,20 @@ merge_one() {
     || { log "$m: fetch of $MAIN_BRANCH failed; merged later"; return 1; }
   if git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; then touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (already there)"; return 0; fi
   mn=$(git rev-parse "origin/$MAIN_BRANCH")
-  if ! tree=$(git merge-tree --write-tree "origin/$MAIN_BRANCH" "$c" 2>/dev/null | head -1); then
+  if ! out=$(git merge-tree --write-tree --name-only "origin/$MAIN_BRANCH" "$c" 2>/dev/null); then
     # once per main: merge_milestones runs again after every verify and at the end
     [[ $(cat "$STATE/conflict-$m" 2>/dev/null) == "$mn" ]] && return 1
     echo "$mn" > "$STATE/conflict-$m"
-    note "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)"; rec_commit "HARNESS: $m conflicts with $MAIN_BRANCH"; sync_record
-    needs_you "$m" "conflicts with $MAIN_BRANCH" harness-log.md; return 1
+    note "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)"
+    # the lane's branch and slot (on the coordinator LBRANCH is empty and HARNESS_WT the record worktree)
+    ref=$(needs_open merge_conflict "$m" milestone="$m" files="$(conflict_files <<< "$out")" main="$mn" head="$c" \
+      branch="harness-lane/$RUN_ID/$m" worktree="$(cat "$STATE/lanes/$m/slot" 2> /dev/null)")
+    rec_commit "HARNESS: $m conflicts with $MAIN_BRANCH"; sync_record
+    # its lane's sync_main already said this main conflicts (main_conflict): one notification for it
+    [[ $(cat "$STATE/main-conflict-$m" 2> /dev/null) == "$mn" ]] || needs_you "$m" "conflicts with $MAIN_BRANCH" harness-log.md "$ref"
+    return 1
   fi
+  tree=${out%%$'\n'*}; rm -f "$STATE/conflict-$m"   # merges cleanly now: its merge_conflict record resolves at the next sweep
   if [[ ${2:-} != --open && $tree != "$(git rev-parse "$c^{tree}")" ]]; then   # main has content the lane wasn't verified with
     # once per main while its re-base is pending (rebase-<m>); a re-base cut short (its lane killed) took that marker
     # with it, and the milestone would wait silently for the next main (P2 review 4)
@@ -414,7 +438,9 @@ merge_one() {
     # once per tag commit (merge_milestones runs again after every verify and at the end); `harness merge` always says so
     [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/refused-$m" 2>/dev/null) == "$c" ]] && return 1
     echo "$c" > "$STATE/refused-$m"
-    note "$m: the merge was refused; PR left open for Michael · $url"; notify "$m needs Michael: merge refused · $url" title="[$RUN_ID] $m needs you" priority=high click="$url"
+    note "$m: the merge was refused; PR left open for Michael · $url"
+    ref=$(needs_open merge_refused "$m" milestone="$m" pr="$url" click="$url" head="$c"); rec_commit "HARNESS: $m merge refused"; sync_record
+    needs_notify "$ref" "$m needs Michael: merge refused · $url" title="[$RUN_ID] $m needs you" priority=high click="$url"
     [[ ${HARNESS_MERGE_ONLY:-} ]] || desk "$m: merge refused"   # `harness merge`: Michael is at the terminal
     return 1
   fi
@@ -543,7 +569,7 @@ slot_open() {
   if [[ -n $fold ]]; then
     if ! git -C "$SLOT" merge -q --no-edit "$fold" > /dev/null 2>&1; then
       git -C "$SLOT" merge --abort 2> /dev/null
-      note "$m: $b here and on origin diverged and conflict; needs Michael"; touch "$STATE/needs-$m"
+      note "$m: $b here and on origin diverged and conflict; needs Michael"; base_conflict "$m" "$fold" diverged
       cd "$RWT" || return 1; return 1
     fi
     note "$m: $b here and on origin had diverged; merged origin's into it"
@@ -555,7 +581,7 @@ slot_open() {
     git -C "$SLOT" merge-base --is-ancestor "$tag" HEAD && continue
     if ! git -C "$SLOT" merge -q --no-edit "$tag" > /dev/null 2>&1; then
       git -C "$SLOT" merge --abort 2> /dev/null
-      note "$m: its base conflicts ($dep vs $MAIN_BRANCH); needs Michael"; touch "$STATE/needs-$m"
+      note "$m: its base conflicts ($dep vs $MAIN_BRANCH); needs Michael"; base_conflict "$m" "$tag" dependency
       cd "$RWT" || return 1; return 1
     fi
   done
@@ -567,7 +593,7 @@ slot_open() {
     && ! git -C "$SLOT" merge-base --is-ancestor "$dep" HEAD; then
     if ! git -C "$SLOT" merge -q --no-edit "$dep" > /dev/null 2>&1; then
       git -C "$SLOT" merge --abort 2> /dev/null
-      note "$m: its base conflicts (default vs $MAIN_BRANCH); needs Michael"; touch "$STATE/needs-$m"
+      note "$m: its base conflicts (default vs $MAIN_BRANCH); needs Michael"; base_conflict "$m" "$dep" default
       cd "$RWT" || return 1; return 1
     fi
   fi
@@ -582,7 +608,12 @@ slot_open() {
   sha=$(git rev-parse --short HEAD)
   note "lane $m opened (slot $k, port ${LANE_PORT:-$PORT}, from $sha$( (( first )) || echo ", slot reused"))"
 }
-slot_fail() { note "$1: its slot failed ($2; see run.log); needs Michael"; touch "$STATE/needs-$1"; cd "$RWT" || :; }
+slot_fail() { note "$1: its slot failed ($2; see run.log); needs Michael"; base_conflict "$1" "" slot; cd "$RWT" || :; }
+# <m> <what conflicted (a ref git merge takes)> <variant>: needs-<m> and its base_conflict record, the slot its worktree
+base_conflict() {
+  touch "$STATE/needs-$1"
+  needs_open base_conflict "$1" milestone="$1" with="$2" variant="$3" worktree="$SLOT" branch="harness-lane/$RUN_ID/$1" > /dev/null
+}
 lane_cd() { cd "$SLOT" || return 1; export HARNESS_WT=$SLOT HARNESS_BRANCH=$LBRANCH; SLIST=$SLOT/$RUN_DIR/feature_list.json; }
 rec_cd() { cd "$RWT" || return 1; export HARNESS_WT=$RWT HARNESS_BRANCH=$RBRANCH; SLIST=$LIST; }
 

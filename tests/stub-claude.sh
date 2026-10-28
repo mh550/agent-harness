@@ -39,6 +39,10 @@
 # STUB_INBOX_IN_COMMENT=<id>: that feature's first coding session asks inside INBOX.md's steering comment, splitting its
 # line after "under " with "## Questions" and "**Q1 (<id>, stub).** …" (n8n-home's 4632d1c shape), and parks (U2-02).
 # STUB_GIVE_UP=<id>: every coding session of that feature ends not passing (U2-05's given_up).
+# STUB_MAIN_TOUCH=<id|verify-<m>>:<path>: that feature's first coding session (or <m>'s first verify session) lands a
+# merge on origin's main adding <path> ("main's <path>"), subject "Merge pull request #7 from test/harness-merge/other-M3"
+# as GitHub writes it: another run's PR merged meanwhile (U2-06's main and merge conflicts).
+# STUB_THIN_VERIFY=all: every verify round is thin (the escalated one too), so the milestone needs Michael (U2-06).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -69,6 +73,15 @@ set_passes() { node -e 'const fs=require("fs"),[f,id,v]=process.argv.slice(1),l=
 # <id> <n> <jq args…> → the session's journal entry, built by jq (E4-03); STUB_BAD_ENTRY=<id>: that id's first session writes `{not json`
 entry() { local id=$1 n=$2; shift 2
   if [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]]; then printf '{not json' > "$HARNESS_RUN_DIR/entry.json"; else jq -n "$@" > "$HARNESS_RUN_DIR/entry.json"; fi; }
+main_touch() {   # <who>: STUB_MAIN_TOUCH's merge, once, when <who> is its session
+  [[ ${STUB_MAIN_TOUCH:-} && ${STUB_MAIN_TOUCH%%:*} == "$1" ]] || return 0
+  local p=${STUB_MAIN_TOUCH#*:} d; d=$(mktemp -d)
+  ( g() { git -C "$d" -c user.name=other -c user.email=o@test "$@"; }
+    git clone -q "$STUB_DIR/origin.git" "$d" 2> /dev/null && g checkout -q -b harness-merge/other-M3 origin/main && echo "main's $p" > "$d/$p" \
+      && g add -A && g commit -qm "other: $p" && g checkout -q main \
+      && g merge -q --no-ff -m "Merge pull request #7 from test/harness-merge/other-M3" -m "other: M3 (verified)" harness-merge/other-M3 && g push -q origin main )
+  rm -rf "$d"
+}
 # A finished session: the real capture's assistant, tool-result and result events (fixtures/usage-tokens.jsonl, so every
 # session carries tokens), with cost, final text, turns and duration substituted. --argjson: callers' \\n become newlines.
 ok() { jq -c --argjson c "${1:-0.25}" --argjson r "\"${2:-done}\"" 'if .type == "result" then .total_cost_usd = $c | .result = $r | .num_turns = 12 | .duration_ms = 60000 else . end' "$HERE/fixtures/usage-tokens.jsonl"; }
@@ -196,6 +209,7 @@ JSON
     fi
     if [[ $id == C ]]; then [[ $n == 1 && ! ${STUB_NO_RED:-} ]] && touch BROKEN || rm -f BROKEN; fi   # first try leaves the suite red
     echo "$id $n" > "work-$id.txt"
+    (( n == 1 )) && main_touch "$id"
     if [[ ${STUB_SHARED:-} && $n == 1 ]]; then case $id in A) sed -i '1s/.*/A/' "$STUB_SHARED" ;; C) sed -i '$s/.*/C/' "$STUB_SHARED" ;; esac; fi
     [[ ${STUB_BIG_DIFF:-} && $id == A && $n == 1 ]] && seq 500 > big-A.txt   # a milestone diff over REVIEW_OPUS_LINES (M6)
     tns=${STUB_TESTS_N:-}; for tn in ${tns//,/ }; do if [[ ${tn%%:*} == "$id" && $n == 1 ]]; then echo "${tn#*:}" > tests.n; fi; done   # the suite's count moves (M5-02)
@@ -230,13 +244,14 @@ JSON
       touch "$STUB_DIR/vwait-$HARNESS_RUN_ID-$m"
       for _ in $(seq 600); do git fetch -q origin main 2> /dev/null && git cat-file -e "origin/main:${STUB_VERIFY_WAIT#*:}" 2> /dev/null && break; sleep 0.2; done
     fi
+    (( n == 1 )) && main_touch "verify-$m"
     if [[ ${STUB_VERIFY_LIMIT:-} && $m == M1 && $n == 1 ]]; then cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; fi   # refused
     if [[ ${STUB_VERIFY_EDITS:-} && $n == 1 ]]; then echo hack > "hack-$m.txt"; echo "edited" >> CLAUDE.md; echo null >> "$HARNESS_RUN_DIR/entries.jsonl"; fi   # a verifier "fixing" code and the journal
     [[ $m == M1 && ( $n == 1 || ${STUB_STRICT_VERIFIER:-} ) && ! ${STUB_LENIENT:-} ]] && set_passes A false   # catches a false pass
     [[ ${STUB_REBASE_VERIFY_FAIL:-} && $m == M2 && $n == 2 ]] && set_passes C false   # the re-base's verify round finds C failing
     # one evidence row per step of every feature of m (none in a thin round 1); passes when every feature of m still passes
     ev=$(node -e 'const [f,m,full]=process.argv.slice(1),fs=JSON.parse(require("fs").readFileSync(f)).features.filter(x=>x.milestone===m);console.log(JSON.stringify({done:fs.every(x=>x.passes),
-      rows:full==="1"?fs.flatMap(x=>x.steps.map((s,i)=>({feature:x.id,step:i+1,ran:"check",saw:"ok",holds:true}))):[]}))' "$L" "$m" "$([[ ! ${STUB_THIN_VERIFY:-} || $n -gt 1 ]] && echo 1)")
+      rows:full==="1"?fs.flatMap(x=>x.steps.map((s,i)=>({feature:x.id,step:i+1,ran:"check",saw:"ok",holds:true}))):[]}))' "$L" "$m" "$([[ ! ${STUB_THIN_VERIFY:-} || ( $n -gt 1 && $STUB_THIN_VERIFY != all ) ]] && echo 1)")
     fail='[]'; [[ ${STUB_VERIFY_FAIL_ROW:-} == 1 && $m == M1 && $n == 1 ]] && fail='[{"feature":"A","step":1,"ran":"check","saw":"A fails: work-A.txt holds the line \"A 1\" the first approach wrote, where step 1 expects the session after the verify to rewrite it; the check read the stale line twice, so step 1 does not hold on this tree","holds":false}]'
     entry "$m" "$n" --arg m "$m" --arg n "$n" --argjson ev "$ev" --argjson fail "$fail" '{feature: $m, kind: "verify", outcome: (if $ev.done then "passes" else "not yet" end),
       summary: "verify \($m) (\($n))", evidence: ($ev.rows + $fail)}'

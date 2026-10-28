@@ -107,7 +107,7 @@ reap() {
     mv -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/closed" 2> /dev/null; rm -f "$f"; n=$(( n + 1 ))
     note "lane $m closed ($why)"
     [[ -f $STATE/merged-$m ]] && lane_branch_gone "$m"   # it merged itself: its branch went from the origin, here it goes now
-    [[ $why == "lane exited unexpectedly" ]] && touch "$STATE/needs-$m"
+    [[ $why == "lane exited unexpectedly" ]] && { touch "$STATE/needs-$m"; needs_open driver_crash "$m" milestone="$m" log="$STATE/run.log" > /dev/null; }
     [[ $code == 13 || $why == "feature-list edits" ]] && { LANE_END=$why; echo "$why" > "$STATE/lanes-end"; }
   done
   (( n )) && merge_milestones
@@ -530,6 +530,7 @@ while :; do
     if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; finish "weekly budget ($why)"; fi
   fi
   reap; [[ -n $LANE_END ]] && continue   # a lane gone since the top: its slot, its end and its needs count before an open
+  alive=$(lanes_open)   # and its slot is free: a stale count skipped the open and ended the run "no feature left to try"
   opened=0
   if (( alive < MAX_LANES )) && (( $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) <= $(date +%s) || alive == 0 )); then
     while IFS=$'\t' read -r m kind; do   # kind: "rebase" from rebase_due; F lanes' second field is its base tags

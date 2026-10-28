@@ -61,9 +61,27 @@ needs`); U2-04 adds the cards, U2-05 and U2-06 the openers, U2-07 the readers.)*
     `harness gc` for the runs whose worktree is gone only (a sweep re-renders `needs.md`, and a stray file in an
     ended run's worktree keeps gc from removing it). **(*default*)** `harness needs done` re-renders nothing: the
     next sweep that runs under a driver brings `needs.md` level.
+  - **The git-side openers (U2-06).** `sync_main` on a conflict records the conflicted files (`git diff --name-only
+    --diff-filter=U` before the abort) and main's merge subjects for them (`git log --first-parent --merges
+    <merge-base>..origin/main -- <files>`: without `--first-parent` git's history simplification hides a merge that
+    took a file whole from its second parent, so a path-limited `--merges` prints nothing), opens `main_conflict`
+    (subject the lane, `record` on the record branch) and writes `main-conflict-<subject>` with the `origin/main`
+    commit; it notifies **once per `origin/main` commit** (new: a main conflict used to be a note only), and a later
+    clean merge, or main already in, removes the marker and sweeps (the milestone merged resolves it too: its lane
+    may never verify again). A merge that fails without a conflicted file (a dirty tree) is a note only, as before.
+    `merge_one`'s conflict on the same `origin/main` is recorded but not notified again. `merge_one` opens `merge_conflict` (the files from
+    `git merge-tree --write-tree --name-only`) and clears `conflict-<m>` once the tree merges cleanly; its refusal
+    opens `merge_refused` (`click` the PR). `verify`'s three needs lines open `verify_thin`, `verify_red` and
+    `verify_recheck` (the failed ids, also in `blocked`; the three now wait on `needs-<m>` before `verified-<m>`, which a
+    failed re-base leaves in place, and resolve on `merged-<m>`), `rebase_fail` its reason, `slot_open`'s three conflict
+    notes and `slot_fail` `base_conflict` (`with` a ref `git merge` takes, the slot its worktree), and the coordinator's
+    `reap` `driver_crash` for a lane that exited without a reason. `needs_you` sends the record's title, body (the
+    card), click (`needs.md`, a refusal's PR) and priority, and still starts or briefs the desk, so a main conflict
+    now does too.
 - **Rejected:** a single `needs.json` per run (two lanes writing it race; a file per item renames atomically).
   Deriving items on every read, as status did (nothing records when an item was handled, or by whom). Sweeping in
   `harness needs` (a phone session runs it to look: it must write nothing).
 
 Updated in place 2026-10-28: U2-04's cards replace the one-line view (the Cards bullets).
 Updated in place 2026-10-28: U2-05's openers, notification body and click, and sweeps (the two U2-05 bullets).
+Updated in place 2026-10-28: U2-06's git-side openers, the main-conflict notification and needs_you from the record.

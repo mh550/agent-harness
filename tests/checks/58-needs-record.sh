@@ -48,13 +48,15 @@ check "needs sweep: each reason's resolved fixture is resolved by its rule (its 
   && bad=0 && for r in $REASONS; do o=$HARNESS_STATE/proj/nf-$r-open s=$HARNESS_STATE/proj/nf-$r-resolved
        [[ -f $o/needs/1.json && ! -e $o/needs/done/1.json && ! -e $s/needs/1.json ]] || bad=1
        jq -e --arg w "$(why "$r")" ".resolved_by == \"sweep\" and .resolved_why == \$w and (.resolved_at | test(\"Z$\"))" "$s/needs/done/1.json" > /dev/null || bad=1; done && (( ! bad ))'
-check "needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays" \
+check "needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays" \
   'in_node "const it = (reason, sub) => N.record({ run: \"r\", project: \"p\", reason, subject: sub, seq: 1 }, 0);
     const st = o => ({ removed: false, ended: false, passing: [\"B\"], parked: {}, attempts: {}, max_attempts: 2, markers: [], ...o });
     const w = (i, s) => { const { keep, resolved } = N.sweep([i], s); return resolved.length ? resolved[0].resolved_why : (keep.length ? \"kept\" : \"?\"); };
     ok(w(it(\"parked\", \"B\"), st({ parked: { B: {} } })) === \"feature passes\" && w(it(\"given_up\", \"B\"), st({ attempts: { B: 5 } })) === \"feature passes\"
       && w(it(\"given_up\", \"C\"), st({ attempts: { C: 2 } })) === \"kept\" && w(it(\"given_up\", \"C\"), st({ attempts: { C: 1 } })) === \"attempts reset\"
-      && w(it(\"verify_thin\", \"M1\"), st({ markers: [\"needs-M1\", \"verified-M1\"] })) === \"milestone verified\"
+      && w(it(\"verify_thin\", \"M1\"), st({ markers: [\"verified-M1\"] })) === \"milestone verified\"
+      && w(it(\"verify_red\", \"M1\"), st({ markers: [\"needs-M1\", \"verified-M1\"] })) === \"kept\" && w(it(\"verify_red\", \"M1\"), st({ markers: [\"needs-M1\", \"merged-M1\"] })) === \"milestone merged\"
+      && w(it(\"main_conflict\", \"M1\"), st({ markers: [\"main-conflict-M1\", \"merged-M1\"] })) === \"milestone merged\" && w(it(\"main_conflict\", \"record\"), st({ markers: [\"main-conflict-record\"] })) === \"kept\"
       && w(it(\"merge_refused\", \"M1\"), st({ markers: [\"refused-M1\", \"merged-M1\"] })) === \"milestone merged\"
       && w(it(\"merge_conflict\", \"M1\"), st({ markers: [\"needs-M1\"] })) === \"kept\" && w(it(\"merge_conflict\", \"M1\"), st({ markers: [\"conflict-M1\", \"merged-M1\"] })) === \"milestone merged\"
       && w(it(\"driver_crash\", \"M2\"), st({ ended: true, markers: [\"needs-M2\"] })) === \"kept\" && w(it(\"driver_crash\", \"M2\"), st({ ended: true })) === \"needs-M2 cleared\"
