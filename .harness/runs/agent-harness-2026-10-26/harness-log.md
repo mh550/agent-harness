@@ -61,3 +61,5 @@
 - 2026-10-27 20:32 · P1 verified and tagged run/agent-harness-2026-10-26/P1
 - 2026-10-27 20:32 · P1 merged into main · https://github.com/mh550/agent-harness/pull/40
 - 2026-10-27 20:32 · context.md for P2-01: 7875 bytes, 18 items left out
+- 2026-10-27 20:56 · P2-01: entry.json invalid (summary: 413 characters (at most 400)); recorded a minimal entry
+- 2026-10-27 20:56 · P2-01 · claude-opus-5-5 · passes=true · 23 min · 11/17 passing

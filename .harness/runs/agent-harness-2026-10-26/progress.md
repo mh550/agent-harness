@@ -9,6 +9,13 @@ How to read the feature list: `feature_list.json` lists features in priority ord
 
 To steer: edit `INBOX.md` on this branch (GitHub app). Line 1 `status: pause` or `status: stop` takes effect before the next session; answers go under `## Answers`. Sessions never park on this run (the brief): they take the spec's default and record it in the decision file. After the run: set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts.
 
+### 2026-10-27 20:56 · P2-01 · passes
+
+P2-01 passes. The plan is in commit `2a5ad34` (`docs/plans/2026-10-26-P2-two-lanes.md`) and pushed. The suite is green at 555 tests: this was a cache hit, which is valid because the plan file is outside the cache key and no code changed. An Opus reviewer checked the plan against the code and found 7 Important and 9 Minor problems. I confirmed the key ones and fixed all of them in the plan. The bi…
+
+- **Files:** docs/plans/2026-10-26-P2-two-lanes.md
+- *03-P2-01 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 413 characters (at most 400)*
+
 ### 2026-10-27 20:26 · verify P1 · passes
 
 All 6 P1 features hold. Own full run: 555/555 (init run had one flaky file, 15-run-4, 78/78 on rerun alone and in full). bash -n/node --check clean; grep tainted|held in driver.sh = 0; docs, decision, review file, config defaults present.
@@ -253,23 +260,9 @@ CHECK_KEY_IGNORE (default .harness/runs docs/plans; this repo adds docs/specs jo
 - **Proposed change:** P0-03 step 2 says lib/driver.sh exports HARNESS_CHECK_KEY_IGNORE; HARNESS_CHECK_CMD is exported by prompt_env in lib/prompt.sh (driver.sh's load_config calls it), so it is exported there.
 - *04-P0-03 · claude-opus-5-5*
 
-### 2026-10-26 08:15 · P0-02 · not yet
-
-Steps 1-4, 6, 7 hold; step 5 (<150 s) can't be met inside a suite split. Measured: per-file slot times add up to 636 s (547 s CPU), so 4 jobs can't finish under 159 s; the suite ran 335/335 in 165 s. Node startup (30 ms × ~2,200 per big file) is half the CPU. Decision file updated (D2 default: report it as not met); no code changed.
-
-- **Files:** journal/decisions/2026-10-26-suite-split.md
-- **Verified:** lib/check.sh: green in 165 s, 335/335 (slowest 12-… 146.7 s); per-file /usr/bin/time at 4 jobs: wall 166 s, sum 636 s; strace -f of file 12: 28,325 execs (5,461 git, 2,239 node)
-- **Tests:** 335 → 335
-- **Dead end:** skipping replayed checks (REPLAY returns at once) — run 1 went from 12.9 to 12.6 s: the cost is harness start, not the checks
-- **Dead end:** NODE_COMPILE_CACHE, --v8-pool-size=0, --jitless, --no-opt, --single-threaded — node startup stays 30 ms or gets slower
-- **Dead end:** splitting or reordering files further — slot times add up to 636 s, so 4 jobs need at least 159 s, and every replay adds more
-- **Discovery** (affects P0-02, run): The suite's CPU is mostly the harness's own process starts: lib/driver.sh calls node 1,684 times in file 12 (30 ms each). Caching F model (pure) and the read-only list queries keyed on the list's content would cut about 8% of that file's CPU. That is the only lever left short of rewriting checks.
-- **Question for Michael:** S2's '<150 s with TEST_JOBS=4' is out of reach for a split: 636 s of slot time on 4 jobs is ≥159 s, and the measured time is 165 s. Do you accept 'under 180 s, measured and recorded' for step 5, or should a new feature cut the driver's node calls (or rewrite the debrief/desk chains) first?
-- **Proposed change:** P0-02 step 5: 'under 180 s (measured 165 s), with the per-file times and the 636 s / 4-job floor in the decision file' instead of 'under 150 s'
-- *03-P0-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-26 08:15 · P0-02 · not yet · Steps 1-4, 6, 7 hold; step 5 (<150 s) can't be met inside a suite split. Measured: per-file slot tim… ([in full](progress-archive.md))
 - 2026-10-26 07:35 · P0-02 · not yet · Runner runs TEST_JOBS files (default 4 here) as background jobs, largest first; output whole per fil… ([in full](progress-archive.md))
 - 2026-10-26 06:44 · P0-01 · passes · tests/run.sh is now a runner over 25 tests/checks/*.sh files: 24 cut byte for byte from the single f… ([in full](progress-archive.md))
 - 2026-10-26 05:50 · init · passes · 17 features: P0 4 (suite split S1-S3 + review; S4 left out), P1 6 (plan, pure scheduler, record bran… ([in full](progress-archive.md))
