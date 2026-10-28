@@ -1,14 +1,16 @@
-# Context pack for `U3-05`
+# Context pack for `U3-06`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (U3-05, affects U3-06, run): lib/queue.sh busy_projects now counts a live lane (lib/lane.sh cmdline) as bin/harness project_busy does, and with no driver alive the runner waits for a lane-held entry instead of ending 'queue empty' → entries.jsonl:26
+- Discovery (U3-05, affects U3-06): overlap.mjs named on the suite-split spec also names docs/plans/ (a 'docs/plans/' word): U3-06 may want docs/plans/ left out like .harness/runs/, or every run that writes a plan overlaps such a spec → entries.jsonl:26
+- Discovery (U3-05, affects run): check 15's 'start queues when MAX_PARALLEL_RUNS are going' stub busy run moved to project other: a live run of proj now queues by the project rule first → entries.jsonl:26
 - Discovery (U3-04, affects U3-05, U3-06): lib/show.mjs exports joinDiff, mergeTreePaths, combine and milestonesOf (pure); U3-06's overlaps can reuse branchesOf' rule (harness/<run> + harness-lane/<run>/* + origin-only lanes) and joinDiff for 'what an ended run's branches changed' → entries.jsonl:25
 - Discovery (U3-04, affects U3-06, run): git merge-tree --write-tree writes loose objects into the repo; show runs it with GIT_OBJECT_DIRECTORY=<tmp> and the repo's objects as an alternate so a read view leaves the object store as it was → entries.jsonl:25
 - Discovery (U3-02, affects run): project_dir dies in the main shell for status --project <bad path>; bin/harness's set -e is not inherited inside $(…), so a helper that is fine in p=$(…) can exit silently when called directly → entries.jsonl:23
-- Discovery (U3-01, affects U3-05): cmd_continue removes ended before cmd_start: a same-project queue in cmd_start alone would leave a run that reads as crashed; the plan puts the check in cmd_continue before any state change → entries.jsonl:22
-- Discovery (U3-01, affects U3-05): suite-split spec names lib/check.sh and lib/treekey.mjs as bare path words, not backticked: overlap.mjs named must take unquoted path-shaped tokens → entries.jsonl:22
+- Discovery (U3-01, affects U3-04, U3-06): Since lanes a run's code is on harness-lane/<run>/<m> (harness/<run> is record only); a merged lane branch goes. show and overlap diff every run branch; tests need MERGE_POLICY=pr or an unverified milestone to keep unmerged code → entries.jsonl:22
 - Discovery (U2-09, affects run): needs card commands now run in fix_root/fix-<run>-<subject> (HARNESS_SCRATCH_ROOT/<project>, needs_open passes it) at origin's copy of the branch; merge_conflict's last command is harness merge, which re-tags at a hand-merged lane tip → entries.jsonl:20
 - Discovery (U2-09, affects run): Not done from the U2 review: a park card's where can take other features' Files: lines when the INBOX has no ### <id> section; pre-U2 runs' needs-/refused-/conflict- markers show no items; needs.md rewritten by needs done is committed only at the run's next driver commit → entries.jsonl:20
 - Discovery (U2-08, affects U2-09, run): tests/stub-claude.sh STUB_ASK_TOUCH=<path> (the STUB_ASK session also changes it), STUB_PARK_FILES=<value> (a Files: line under the park's ### heading), STUB_PARK_TOUCH=<path> (the parking session changes it) → entries.jsonl:19
@@ -34,10 +36,6 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-28 18:30 · U3-04 · passes: harness show <run> [<feature>] [--files] [--json]: cmd_show + lib/show.mjs (read-only, local refs in PROJECT_DIR): card header (status.mjs cardHeader), worktree, branch, record, state, lanes, merged/proposed milestones, compare URLs, CHANGES vs origin/<main> with ✗ conflicts, CONFLICTS, NEEDS YOU; feature form; v1 JSON. 68-show (11 checks).; tests 804 → 815; files lib/show.mjs, bin/harness, lib/status.mjs, tests/checks/68-show.sh, tests/fixtures/show-json-keys.txt, … → entries.jsonl:25
+- 2026-10-28 19:28 · U3-05 · passes: A plain harness start/continue of a project with a live run (driver or lane: project_busy) is queued with '<R> is running on <project>: queued (…)', a runner.log line and the runner ensured; continue queues before any state change. lib/overlap.mjs: pure named/overlap + CLI. Runner holds lane-only busy projects too. 69 (12) and 70 (7) checks; decision same-project-starts.; tests 815 → 834; files bin/harness, lib/queue.sh, lib/overlap.mjs, tests/checks/69-same-project-starts.sh, tests/checks/70-overlap.sh, … → entries.jsonl:26
 
-## Lately in the run
-
-- 2026-10-28 17:55 · U3-03 · passes: U3-03 passes. Commit `5de9bd7` is pushed to `harness-lane/agent-harness-2026-10-28/U3`. The full suite went from 796 to 804 checks and was green (804/804) on the fourth full run. - **Record after gc:** a finished run now also keeps `summary.json`, `report.md` and `metrics.jsonl` in its state dir. `harness report` reads the worktree, then that copy, then the ledger's copy. If none exists, it print…; files README.md, bin/harness, docs/architecture.md, journal/decisions/2026-10-25-gc-orphan-units.md, journal/decisions/2026-10-27-gc-foreign-units.md, … → entries.jsonl:24
-
-_1 items left out at 8192 bytes: entries.jsonl has them all._
+_2 items left out at 8192 bytes: entries.jsonl has them all._
