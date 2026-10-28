@@ -1,0 +1,58 @@
+{
+ "feature": "P2-07",
+ "kind": "coding",
+ "outcome": "passes",
+ "summary": "Opus review of the P2 diff (2,106 lines): 1 Critical, 3 Important fixed red->green with 4 checks; Minor 5 fixed; the rest left in docs/plans/2026-10-26-P2-review.md. D21 overturned in place (an open record PR keeps harness/<run> from gc). Docs: README after-run steps, architecture \u00a712 headroom rule and \u00a715, lanes.md P2 section. Suite 598 -> 602, green.",
+ "files": [
+  "lib/driver.sh",
+  "lib/lane.sh",
+  "lib/record.sh",
+  "bin/harness",
+  "tests/checks/44-lanes-record.sh",
+  "tests/checks/47-lanes-two.sh",
+  "tests/checks/48-lanes-rebase.sh",
+  "tests/checks/50-lanes-record-pr.sh",
+  "tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh",
+  "tests/fixtures/check-names.txt",
+  "docs/plans/2026-10-26-P2-review.md",
+  "journal/decisions/2026-10-26-lanes.md",
+  "docs/architecture.md",
+  "README.md"
+ ],
+ "verified_how": "each new check failed first (trap: driver.pid gone/ended written; pack_and_copy: got the other pack; merge_one: 'again 1'; gc: harness/rq deleted, 10/11), then passed; bash tests/run.sh 602/602 in 474 s (TEST_JOBS=4); bash -n on 20 P2 shell files, node --check on the .mjs",
+ "tests_before": 598,
+ "tests_after": 602,
+ "dead_ends": [
+  {
+   "tried": "inserting new names into check-names.txt with sed at a nearby line",
+   "why": "broke its C sort order, so the runner's comm reported dozens missing/new; re-sort with LC_ALL=C sort -u"
+  }
+ ],
+ "discoveries": [
+  {
+   "text": "A bash '&' child killed before its exec runs the parent's EXIT trap (200/200 here): lane_wait's sleep ran the driver's trap (lanes TERMed, driver.pid removed mid-run). Both traps now start with [[ $BASHPID == \"$$\" ]] || exit 0; any new trap needs the same guard",
+   "affects": [
+    "run"
+   ]
+  },
+  {
+   "text": "The flakes in 45, 47 (u5) and 50 trace to review findings 1 and 5 (both fixed); 08's memory-gate stop check flaked once under 4 jobs (its 30 s wait for the note), now 120 s",
+   "affects": [
+    "run"
+   ]
+  },
+  {
+   "text": "gc now keeps harness/<run> while state/record-pr names a PR gh calls OPEN (or gh can't answer): one gh call per record-only branch with that marker",
+   "affects": [
+    "run"
+   ]
+  }
+ ],
+ "questions": [
+  "D21 is overturned (gc now keeps a record branch with an open record PR, as the review found deleting it closes the PR left for you under pr). Keep it that way?"
+ ],
+ "proposed_changes": [
+  "A feature for the brief's '<id>: suite ran <n>x (<s> s) in the session' note: planned in P2-06 (plan \u00a76) but never built; no feature's steps named it",
+  "Next milestone: review Minors 6 (features.mjs writes via temp file + rename), 8 (merge_one ignoring .harness/runs/ in its tree test), 9 (ledger after record_pr), 10 (milestone-id lint for scope_unit collisions), 12 (--dry-run and merge-lock checks), 15 (one fetch retry helper)"
+ ]
+}
