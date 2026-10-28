@@ -13,6 +13,7 @@ ats() { hlog "$1" | grep -n -m1 -E -- "$2" | cut -d: -f1; }   # <run> <ERE>: the
 held
 STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" two --spec SPEC.md --foreground > "$T/two.out" 2>&1 & P=$!
 waitf '[[ -f $T/held-two-A && -f $T/held-two-C ]]' 120 && two_both=yes
+STUB_MEM_CURRENT=52428800 "$H" status two > "$T/status-two.out" 2>&1   # both sessions' scopes are live (P2-06)
 touch "$T/release-two-C"; waitf 'hlog two | grep -F "· M2 merged into main" > /dev/null' 120; touch "$T/release-two"; wait "$P"; rm -f "$T/hold-coding"
 S=$HARNESS_STATE/proj/two
 check "lanes two: with MAX_LANES=2 and M2 after: [], both lanes' sessions run at once and two lanes open before any closes" \
@@ -24,6 +25,13 @@ check "lanes two: each lane's prompt renders its own port (A: 7950, C: 7951)" \
   'grep -qx "Port: 7950 · scratch directory: \`$T/scratch/proj/two/lanes/M1\`" $S/logs/*-A.prompt.md && grep -qx "Port: 7951 · scratch directory: \`$T/scratch/proj/two/lanes/M2\`" $S/logs/*-C.prompt.md'
 check "lanes two: both milestones merge (one pr merge each, no refused merge) and the run ends done" \
   'grep -q "^done" "$S/ended" && on_main run/two/M1 && on_main run/two/M2 && [[ $(grep -c "pr merge" "$T/gh.log") == 2 ]] && ! hlog two | grep -E "merge was refused|moved since" > /dev/null'
+check "lanes status: harness status prints one line per open lane (feature, session, port, slot, its units with MemoryCurrent), no bare line for a lane's unit" \
+  'grep -Eqx "    lane M1 · A · session [0-9]+ · port 7950 · slot 0 · MemoryCurrent harness-two-M1-s[0-9]+ 50 MB(, .*)?" "$T/status-two.out" \
+  && grep -Eqx "    lane M2 · C · session [0-9]+ · port 7951 · slot 1 · MemoryCurrent harness-two-M2-s[0-9]+ 50 MB(, .*)?" "$T/status-two.out" \
+  && [[ $(grep -c "^    lane " "$T/status-two.out") == 2 ]] && ! grep -E "^    harness-two-M[12]-" "$T/status-two.out" > /dev/null'
+check "lanes summary: the two-lane run's summary.json has lanes {max_open: 2, lane_hours, wall_hours} and report.md its Lanes line" \
+  'R=$T/wt/proj/two/.harness/runs/two; jq -e ".lanes.max_open == 2 and (.lanes.lane_hours | type) == \"number\" and .lanes.wall_hours == .time.wall_h" "$R/summary.json" > /dev/null \
+  && grep -Ex "\| Lanes \| at most 2 open at once · [0-9.]+ lane hours in [0-9.]+ h wall \|" "$R/report.md" > /dev/null'
 
 # memory: 7 GB available is over MEM_MIN_AVAILABLE_GB (5: no session waits) and under 5 + LANE_RESERVE_GB 4 x 1 open
 held; sed 's/^MemAvailable: .*/MemAvailable:    7340032 kB/' "$HERE/fixtures/meminfo.txt" > "$T/meminfo.txt"

@@ -143,7 +143,7 @@ lane_open() {
   slot_open "$m" "$k"; local rc=$?
   LANE="" LBRANCH=""; rec_cd   # SLOT stays: finish counts the last lane's tests in it
   (( rc == 0 )) || { rm -f "$STATE/lanes/$m/opening"; return 1; }
-  rm -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/need"
+  rm -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/need" "$STATE/lanes/$m/now"
   LANE=$m LANE_SLOT=$k LANE_PORT=$LANE_PORT LANE_ONCE=$LANE_ONCE LANE_MERGE=${LANE_MERGE:-0} bash "$HARNESS_HOME/lib/lane.sh" "$m" < /dev/null 8>&- 9>&- &
   echo $! > "$STATE/lanes/$m/pid"; rm -f "$STATE/lanes/$m/opening"
   LANE=""

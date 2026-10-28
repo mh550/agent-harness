@@ -269,6 +269,7 @@ lanes pr-held: M1 merged on GitHub is seen as merged, and the waiting M2 is prop
 lanes pr-held: M1 verified is proposed (its PR open, not merged), and M2 opens from main with run/<run>/M1 merged in
 lanes pr-held: M2 verified opens its PR, not merged, with the waits note once
 lanes pr-held: harness merge afterwards merges M1, then M2
+lanes prompts: initializer.md says side-by-side milestones touch different files, shared docs go in the closing review, an independent feature gets after; run.md says other lanes work in other slots
 lanes rebase: LANE_REBASE=verify gives a disjoint re-base the verify round, then it merges
 lanes rebase: a re-base verify round that fails un-verifies the milestone and removes its tag, so the old tag never merges
 lanes rebase: main moved under a verified lane, files disjoint: the suite runs in full on the merged tree, the tag moves to it, it merges
@@ -298,7 +299,10 @@ lanes slots: gc of a run with a live driver touches no slot, no lane unit and no
 lanes slots: the held run then ends with its slot gone
 lanes slots: the second milestone opens in slot 0, reused by checkout -B, and finds the ignored directory the first left
 lanes slots: under pr the slot is freed at verify and the branch kept; gc deletes it once its PR merged, here and on origin
+lanes status: harness status prints one line per open lane (feature, session, port, slot, its units with MemoryCurrent), no bare line for a lane's unit
 lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left
+lanes summary: laneSpans counts the lanes open at once and sums open-to-close hours, a lane left open closing at its segment's end
+lanes summary: the two-lane run's summary.json has lanes {max_open: 2, lane_hours, wall_hours} and report.md its Lanes line
 lanes two: M1 opens in slot 0 on the run's port, M2 in slot 1 on the first free one
 lanes two: both milestones merge (one pr merge each, no refused merge) and the run ends done
 lanes two: each lane's prompt renders its own port (A: 7950, C: 7951)

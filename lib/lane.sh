@@ -70,7 +70,7 @@ verify() {
     fi
     HARNESS_CLOCK=$(clock "$what") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
-    log "verify $m · $(F model "$model")"
+    log "verify $m · $(F model "$model")"; echo "$what" > "$LDIR/now"
     session verify "$(F model "$model")" "$vlog" "verify $m"
     reverted=$(restrict "$vstart" record verify | paste -sd' ')
     [[ -n $reverted ]] && note "verify $m: reverted code edits the verifier may not make: $reverted"
@@ -151,7 +151,7 @@ verify() {
 REBASES=0
 rebase() {
   local m=$1 tag=run/$RUN_ID/$1 c mn base theirs ours both n r how rc
-  rm -f "$STATE/rebase-$m"
+  rm -f "$STATE/rebase-$m"; echo "re-base on $MAIN_BRANCH" > "$LDIR/now"   # harness status's lane line
   c=$(git rev-list -n1 "$tag" 2> /dev/null) || { touch "$STATE/needs-$m"; printf 'its tag is gone' > "$LDIR/need"; note "$m: its tag $tag is gone; not re-based (needs Michael)"; return 1; }
   git fetch -q origin "$MAIN_BRANCH" 8>&- 2>> "$STATE/run.log"; mn=$(git rev-parse "origin/$MAIN_BRANCH")
   # merged meanwhile: nothing to re-base (else an empty `ours` would read as disjoint and re-tag main's tip)
@@ -297,7 +297,7 @@ while :; do
   # the counts the gate reads (the findings check below and the summary's found_nothing), asked in one fixed form
   [[ $kind == review ]] && rdiff+=$'\n'"Review findings: give your entry's summary this review's findings as \`<n> Critical, <n> Important, <n> Minor\` (the driver reads the counts)."
   HARNESS_CLOCK=$(clock "$sclock") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone HARNESS_REVIEW_DIFF=$rdiff prompt coding
-  log "session $n · $id · $mdl"
+  log "session $n · $id · $mdl"; printf '%s · session %s\n' "$id" "$n" > "$LDIR/now"   # harness status's lane line
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   sstart=$(git rev-parse HEAD)
   session coding "$mdl" "$slog" "$id"

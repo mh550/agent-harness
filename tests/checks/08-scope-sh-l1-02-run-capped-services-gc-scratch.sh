@@ -218,7 +218,7 @@ kill -TERM "$(cat "$HARNESS_STATE/proj/termed/driver.pid")"; wait "$TP"
 touch "$T/scope/harness-termed-s99".{alive,running}; TSL=$(sd_count list-units)   # a unit left behind: an ended run still lists none
 "$H" status termed > "$T/status-termed2.out" 2>&1; TSR2=$?; TSL2=$(sd_count list-units); rm -f "$T/scope/harness-termed-s99".*
 check "harness status lists a running run's units with MemoryCurrent; an ended run's none" '[[ $TSR == 0 && $TSR2 == 0 ]] && grep -q "^termed (proj) · running" "$T/status-termed.out" \
-  && grep -Eqx "    harness-termed-M1-s[0-9]+ · MemoryCurrent 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
+  && grep -Eqx "    lane M1 · A · session 1 · port [0-9]+ · slot 0 · MemoryCurrent harness-termed-M1-s[0-9]+ 50 MB" "$T/status-termed.out" && [[ $(grep -c "MemoryCurrent" "$T/status-termed.out") == 1 ]] \
   && grep -q "^termed (proj) · ended: driver exited" "$T/status-termed2.out" && ! grep -q MemoryCurrent "$T/status-termed2.out" && [[ $TSL2 == "$TSL" ]]'
 termed_left() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/termed"* || $(readlink "/proc/$p/cwd") == "$T/wt/proj/lanes/termed/"* ]] && echo "$p"; done; }
 check "the EXIT trap commits its services note: harness-log.md is clean after a TERM" '[[ -z $(git -C "$T/wt/proj/termed" status --porcelain -- .harness/runs/termed/harness-log.md) ]] \

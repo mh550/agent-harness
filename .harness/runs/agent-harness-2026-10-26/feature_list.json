@@ -256,7 +256,7 @@
         "prompts/initializer.md says milestones that may run side by side should touch different files, shared docs (README.md, docs/architecture.md) are edited in a milestone's closing review feature, and a feature independent of its predecessors in the same milestone gets `after`; prompts/parts/run.md says other lanes of this run work in other slots; a check greps both",
         "names in tests/fixtures/check-names.txt; `node --check lib/summary.mjs`, `bash -n bin/harness`; `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "P2-07",

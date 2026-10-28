@@ -320,13 +320,23 @@ cmd_status() {
       # tests: the baseline at run start → the latest session's tree (the driver refreshes tests-end after each session)
       local tests=""; [[ -f $STATE/tests-start || -f $STATE/tests-end ]] && tests=" · tests $(cat "$STATE/tests-start" 2> /dev/null || echo '?') → $(cat "$STATE/tests-end" 2> /dev/null || echo '?')"
       echo "$RUN_ID ($(basename "$PROJECT_DIR")) · $state · port $(cat "$STATE/port") · $( [[ -f $list ]] && node "$HARNESS_HOME/lib/features.mjs" summary "$list" || echo 'no feature list yet')$tests"
-      if [[ $state == running* ]]; then   # what it holds: one line per unit; a missing bus or a unit gone just now shows nothing
-        local u b
+      if [[ $state == running* ]]; then   # what it holds: a missing bus or a unit gone just now shows nothing
+        local u b units=() mb=() f m p k us i
         while read -r u _; do
           scope_owns "$RUN_ID" "$u" || continue
           b=$("${HARNESS_SYSTEMCTL:-systemctl}" --user show -p MemoryCurrent "$u" 2> /dev/null | sed -n 's/^MemoryCurrent=//p' || true)
-          [[ $b =~ ^[0-9]+$ ]] && echo "    ${u%.scope} · MemoryCurrent $(( (b + 524288) / 1048576 )) MB"
+          [[ $b =~ ^[0-9]+$ ]] && { units+=("${u%.scope}"); mb+=("$(( (b + 524288) / 1048576 ))"); }
         done < <("${HARNESS_SYSTEMCTL:-systemctl}" --user list-units "$(scope_unit "$RUN_ID")-*" --plain --no-legend 2> /dev/null || true)
+        # one line per open lane (its latest session, from lanes/<m>/now), with its units; the run's own units after
+        for f in "$STATE"/lanes/*/pid; do
+          p=$(cat "$f" 2> /dev/null) && [[ -n $p ]] && kill -0 "$p" 2> /dev/null || continue
+          f=${f%/pid} m=${f##*/} k=$(cat "$f/slot" 2> /dev/null || echo "?") us=""
+          u=$(scope_unit "$RUN_ID" "${m//[^A-Za-z0-9_]/_}")-
+          for i in "${!units[@]}"; do [[ ${units[i]} == "$u"* && ${units[i]#"$u"} =~ ^(s[0-9]+|check-[0-9]+|svc)$ ]] || continue; us+="${us:+, }${units[i]} ${mb[i]} MB"; unset "units[i]"; done
+          [[ -n $us ]] && us="MemoryCurrent $us"
+          echo "    lane $m · $(cat "$f/now" 2> /dev/null || echo starting) · port $(cat "$f/port" 2> /dev/null || echo '?') · slot ${k##*/slot-} · ${us:-no units}"
+        done
+        for i in "${!units[@]}"; do echo "    ${units[i]} · MemoryCurrent ${mb[i]} MB"; done
       fi
       [[ -f $STATE/run.log ]] && tail -n "${N:-3}" "$STATE/run.log" | sed 's/^/    /'
     )
