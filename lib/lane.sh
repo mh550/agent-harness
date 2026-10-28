@@ -231,6 +231,7 @@ while :; do
   (( $(date +%s) >= DEADLINE )) && lane_exit 15 deadline
   take_answers; sync_record
   for id in $(record F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
+  needs_sweep   # before the pick: an unparked feature's record resolves
   c=$(control)
   [[ $c == stop ]] && lane_exit 14 stopped
   if [[ $c == pause ]]; then   # after its session: the services go, nothing new starts (the coordinator logs the pause)
@@ -348,6 +349,7 @@ while :; do
     [[ $esc ]] || record F unbump "$ATT" "$id"; record F park "$PARKED" "$id" "$(answers_hash)" "$why"   # waiting on Michael is not the feature's fault (an escalation round took none)
     note "$id parked (waiting on Michael): $why"
   else why=""; fi
+  nref=""
   if [[ $esc ]]; then rm -f "$LS/review-escalate"   # the round ran; its verdict stands
   elif [[ -z $why && $mdl == "$(F model sonnet)" && $kind == review && ! -e $STATE/review-escalated-$id ]]; then
     # a sonnet review that found something gets one round on REVIEW_ESCALATE_MODEL, once per feature; un-passed first,
@@ -361,9 +363,15 @@ while :; do
       fi
     else note "review $id: no \"<n> Critical, <n> Important\" in its summary or final message; not escalated"; fi
   fi
+  # the needs records, committed with this session's record (needs.md, the park's click): a park (its question is in the
+  # record's INBOX.md now), a feature whose attempts are used up without a park or a pending escalation round
+  if [[ -n $why ]]; then nref=$(needs_open parked "$id" feature="$id" why="$why" actions="$(park_actions)")
+  elif [[ $passed == false && ! -s $LS/review-escalate ]] && (( $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") >= MAX_ATTEMPTS )); then
+    needs_open given_up "$id" feature="$id" attempts="$(jq -r --arg id "$id" '.[$id]' "$ATT")" max_attempts="$MAX_ATTEMPTS" log="$slog" > /dev/null
+  fi
   rec_commit "HARNESS: after $id (passes=$passed)"; sync_record
   if [[ -n $why ]]; then   # after the push, so its links show the question; a failed post's note is committed too
-    notify_park "$id" "$why"; [[ -n $(git -C "$RWT" status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: park notification failed"; sync_record; }
+    notify_park "$id" "$why" "$nref"; [[ -n $(git -C "$RWT" status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: park notification failed"; sync_record; }
     desk "$id parked: $why"
   fi
 done

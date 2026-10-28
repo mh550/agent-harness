@@ -209,7 +209,9 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 - **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and
   ends `PARKED: …`. A question written inside the steering comment (GitHub hides it) is moved below it, with a note. The feature waits without spending attempts while independent work goes on; the run ends
-  `waiting on Michael: <ids>` when nothing else can run. Any new answer unparks it on `harness continue`.
+  `waiting on Michael: <ids>` when nothing else can run. Any new answer unparks it on `harness continue`. The park's
+  notification carries the question, what waits on it, where and the commands; tapping it opens `needs.md` in the
+  run record, every open item there as a card.
 - **Weekly budget:** past `WEEKLY_STOP_AT` (default 85 %) of the plan's 7-day window, as sessions report it, the queue
   starts no run and a running one stops before its next coding session.
 

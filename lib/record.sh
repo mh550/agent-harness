@@ -131,12 +131,15 @@ desk() {
 }
 
 # The park's notification: the question the session wrote in INBOX.md and how to answer, with the INBOX one tap away.
-notify_park() {
-  local id=$1 why=$2 q body acts
+# A park's notification is its needs record's (lib/needs.sh): the title, the body (PARKED: <why>, the question, the
+# card's blocked, where and do, the answer line), the click (needs.md), priority high and the actions park_actions gave
+# it at its open. Without a record (a failed open) the question and the answer line still go out.
+park_actions() { node "$NOTIFY_MJS" actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" "Answer with Claude" "$DESK_URL" Progress "$(gh_url "$RUN_DIR/progress.md")"; }
+notify_park() {   # <id> <why> <the parked record's ref>
+  local id=$1 why=$2 q
   q=$(cat "$LS/question" 2> /dev/null)   # what take_question found in the session's copy (gone by now)
-  body="PARKED: $why"$'\n\n'"${q:+$q$'\n\n'}Answer: harness answer $RUN_ID \"…\""
-  acts=$(node "$NOTIFY_MJS" actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" "Answer with Claude" "$DESK_URL" Progress "$(gh_url "$RUN_DIR/progress.md")")
-  notify "needs Michael: $id · $why" title="[$RUN_ID] $id needs you" priority=high tags=question click="$(gh_url "$RUN_DIR/INBOX.md")" actions="$acts" body="$body"
+  needs_notify "${3:-}" "needs Michael: $id · $why" title="[$RUN_ID] $id needs you" priority=high tags=question actions="$(park_actions)" click="$(gh_url "$RUN_DIR/INBOX.md")" \
+    body="PARKED: $why"$'\n\n'"${q:+$q$'\n\n'}Answer: harness answer $RUN_ID \"…\""
 }
 
 # What unparks a feature: Michael's answers changing (INBOX.md from "## Answers" on, local answers included). The

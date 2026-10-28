@@ -21,6 +21,7 @@ WEEKLY_STOP_AT raises the bar
 a $0 one-turn session is not counted
 a .harness/teardown.sh added after the run started is run at its stop points
 a 300 KB report: the context stays small, the session runs
+a SIGKILLed driver shows a synthesized driver_crash in harness needs
 a TERM during an init stops the init's scope before the teardown runs
 a TERM during finish's teardown runs no second teardown: the trap waits for it, then stops the svc scope, one note
 a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it
@@ -41,6 +42,7 @@ a failed run-end post is committed: the worktree stays clean for gc
 a failed session: its error text is never the note
 a failed verify at the deadline is not retried: M1 needs Michael
 a given-up feature blocks what depends on it
+a given-up feature opens given_up naming what waits on it; harness needs and harness parked list it while parked.json is empty
 a held index.lock: written, not committed, nothing left staged
 a killed debrief changes nothing
 a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
@@ -53,6 +55,7 @@ a listed worktree whose directory is gone never ends gc: every later step still 
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
 a park notification: title, question, answer command, click and Edit INBOX action
+a park opens one parked record; card.question.line is the first line the session added, its URL that line
 a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it
 a proposed merge: ready to merge, click = the PR, default priority
 a queued continuation: only the answer command
@@ -193,6 +196,7 @@ eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
 files changed during the session are flagged in the note
 finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
+finish opens usage_limit (limit, warn, no priority) for a usage-limit end; needs.md committed; the run-end title kept
 finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
 gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives
 gc --all-merged keeps the origin default branch and a live run branch, merged or not
@@ -214,6 +218,7 @@ harness backlog set with an unknown id, a bad status or a missing argument exits
 harness backlog with LEDGER_COMMIT=1 commits retro-backlog.jsonl alone, one ledger commit per write
 harness backlog with no store prints (empty)
 harness continue of a run stopped from the phone: INBOX.md's status: stop goes back to run, so it doesn't stop again
+harness continue resolves the given_up item (fresh attempts): moved to needs/done/ by the sweep, noted
 harness desk --all
 harness desk --close <run>
 harness desk --debrief
@@ -235,6 +240,7 @@ harness merge says it was refused again, and starts no desk
 harness needs --json: each command's full text (no ~, no cut)
 harness needs --json: the open records, block before warn, oldest first; --all adds the 15 resolved ones
 harness needs and parked are read-only
+harness needs done <ref> moves the item to needs/done/, resolved by michael
 harness needs done <ref>: resolved <ref>, the file in needs/done/ by michael (--why, else done by hand); a second done, a synthesized or unknown ref exit 1
 harness needs is read-only
 harness needs nope: exit 1, harness: on stderr; needs done with no ref is a usage error
@@ -418,6 +424,7 @@ needs record: its first 13 keys are the v1 event keys in order, kind is park, ne
 needs record: ref is <run>/<seq>, key <reason>:<subject>; seq is one past the largest in needs/ and needs/done/; feature and milestone default from the subject or the list
 needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
+needs.md is committed on the record branch before the park goes out, and lists the park
 needs: a run whose worktree and record branch are both gone resolves run removed (list hides it before any sweep); the branch alone keeps it
 next <m>: a feature without after waits on its own milestone's earlier features only
 no URL in time: no window, the plain notification
@@ -645,6 +652,7 @@ testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
 testcount.mjs: the runner's last N/M checks passed is the count
 the EXIT trap commits its services note: harness-log.md is clean after a TERM
+the EXIT trap of a driver ended unexpectedly opens driver_crash (stored, no synthesized one); its needs.md committed
 the allowlist runs nothing that writes or executes
 the answer skill exists and names the commands and the never-list
 the answer skill passes Michael's words through a quoted heredoc
@@ -668,6 +676,7 @@ the initializer prompt sizes reviews to the milestone
 the limit window is shared
 the next debrief covers what the failed and killed ones missed
 the park goes out after the run branch is pushed (the link shows the question)
+the park notification is the record's: body PARKED: first, the question, the card's do commands, the answer line; Click needs.md
 the prompt goes in on stdin, not as an argument
 the prompt says the time, the budget and the attempt
 the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix

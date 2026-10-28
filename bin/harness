@@ -295,6 +295,11 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start op
     if grep -qs '^stopped by Michael' "$STATE/ended" && s=$(grep -n -m1 '^status:' "$inbox" 2> /dev/null) && [[ ${s#*:} =~ ^status:[[:space:]]*stop ]]; then
       n=${s%%:*}; sed -i "${n}s/.*/status: run/" "$inbox" && echo "${s#*:}" > "$STATE/inbox-unstopped"; fi
     rm -f "$STATE/PAUSE" "$STATE/STOP" "$STATE/ended"
+    # the items the cleared markers, the reset attempts and the removed ended resolve (no driver: no record lock to
+    # take); noted in harness-log.md, which the driver commits
+    local l; while IFS= read -r l; do
+      [[ -n $l && -d $WT/.harness/runs/$RUN_ID ]] && echo "- $(date '+%F %H:%M') · needs: $l" >> "$WT/.harness/runs/$RUN_ID/harness-log.md"
+    done < <(node "$NEEDS_MJS" sweep "$STATE" 2> /dev/null)
     cmd_start "$PROJECT_DIR" "$RUN_ID" ${rest[@]+"${rest[@]}"} )
 }
 
@@ -631,6 +636,13 @@ cmd_gc() {
       running "$b" && continue
       git -C "$p" merge-base --is-ancestor "refs/remotes/origin/$b" "$main" && act git -C "$p" push -q origin --delete "$b"
     done
+  done
+  # a run whose worktree and record branch went (now or by hand) has nothing left to act on: its open items resolve
+  # "run removed" (the sweep's rule). Only those: a sweep writes needs.md into a worktree that is there
+  (( dry )) || for d in "$STATE_ROOT/$(basename "$p")"/*/; do
+    # shellcheck source=/dev/null
+    [[ -f $d/meta.env && -d $d/needs ]] && ! ( source "$d/meta.env"; [[ -d $WT ]] ) || continue
+    node "$NEEDS_MJS" sweep "${d%/}" | sed 's/^/+ needs: /' || echo "! needs sweep failed: ${d%/}"   # never the end of gc
   done
   return 0
 }

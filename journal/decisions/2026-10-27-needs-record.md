@@ -47,8 +47,23 @@ needs`); U2-04 adds the cards, U2-05 and U2-06 the openers, U2-07 the readers.)*
     URL on its own line) and a footer; `harness parked` is its alias for text, `harness parked --json` keeps its
     element keys plus `ref` and `card`. A parked feature whose worktree is gone is not synthesized (nothing to answer
     there, as `harness parked` skipped it).
+  - **The openers (U2-05).** The lane loop opens `parked` (its question already in the record's INBOX.md, the actions
+    the park notification always had) and `given_up` (a session that leaves its feature not passing with its
+    attempts used, no park and no escalation round pending) before the session's record commit; `finish` opens
+    `feature_list_edits`, `initializer_failed`, `usage_limit` and `weekly_budget` after `ended` and its sweep; the
+    EXIT trap opens `driver_crash` when `END_REASON` is still its default, and commits `needs.md` with its note.
+    Each record's `body` is the card at 60 columns, plain (a park's: `PARKED: <why>`, the question, the card's
+    blocked, where and do, the answer line); its `click` is `needs.md` on the record branch, which `open` and a
+    sweep that changes it rewrite (`markdown`), so it is committed with the next record commit. The park
+    notification is the record's (`needs_notify`); the others send none of their own (the run-end one carries them).
+  - **Sweeps (U2-05):** the lane loop and the coordinator after their unpark (before each pick or open), `finish`,
+    `harness continue` after it clears the markers and `ended` (noted in harness-log.md: no driver, so no lock), and
+    `harness gc` for the runs whose worktree is gone only (a sweep re-renders `needs.md`, and a stray file in an
+    ended run's worktree keeps gc from removing it). **(*default*)** `harness needs done` re-renders nothing: the
+    next sweep that runs under a driver brings `needs.md` level.
 - **Rejected:** a single `needs.json` per run (two lanes writing it race; a file per item renames atomically).
   Deriving items on every read, as status did (nothing records when an item was handled, or by whom). Sweeping in
   `harness needs` (a phone session runs it to look: it must write nothing).
 
 Updated in place 2026-10-28: U2-04's cards replace the one-line view (the Cards bullets).
+Updated in place 2026-10-28: U2-05's openers, notification body and click, and sweeps (the two U2-05 bullets).

@@ -64,7 +64,14 @@ END_REASON="driver exited unexpectedly (see run.log)"
 # (that file only, not pushed): a dirty worktree would keep gc from removing it
 # A forked child (lane_wait's sleep, killed before its exec) inherits it and must not run it (P2 review 1).
 # Lanes first: each stops its own session and services; fd 9 closed so none waits on a lock this process holds.
-trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "$REC/harness-log.md" > /dev/null 2>&1; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
+# An end no finish named (a TERM, an error) is a driver_crash record; it and the note are committed (not pushed).
+exit_record() {
+  local f=("$REC/harness-log.md")
+  [[ $END_REASON == "driver exited unexpectedly (see run.log)" ]] && needs_open driver_crash run log="$STATE/run.log" > /dev/null
+  [[ -f $REC/needs.md ]] && git -C "$RWT" add -- "$REC/needs.md" 2> /dev/null && f+=("$REC/needs.md")
+  git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "${f[@]}" > /dev/null 2>&1
+}
+trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; exit_record; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
 
 demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
   # the stop's time is when it reached this box (STOP, else INBOX.md pulled), not when the driver got to it: a request
@@ -289,6 +296,11 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   wait_lanes   # each stops between sessions: a stop, the deadline, a cap
   unmaterialize; rec_cd   # a copy a killed lane left in its slot
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
+  # after ended, so the item an end opens below is never swept by its own finish; committed with the run's end
+  needs_sweep
+  local nr=""; case $1 in "feature-list edits"*) nr=feature_list_edits ;; "initializer failed"*) nr=initializer_failed ;;
+    "usage limit"*) nr=usage_limit ;; "weekly budget"*) nr=weekly_budget ;; esac
+  [[ -n $nr ]] && needs_open "$nr" run end_reason="$1" > /dev/null
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
   merge_milestones
   local rb; for rb in $(F milestones "$LIST" 2> /dev/null); do   # kept for the next segment's coordinator, or harness merge
@@ -500,6 +512,7 @@ while :; do
   if (( alive < MAX_LANES || paused )); then   # with every lane slot taken there is nothing to decide: no fetch each poll
     take_answers; sync_record
     for id in $(record F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
+    needs_sweep   # before the opens: an unparked feature's record resolves
   fi
   c=$(control)
   [[ $c == stop ]] && { wait_lanes; demote_requests; why=$(stop_why); note "$why"; finish "$why"; }

@@ -38,6 +38,7 @@
 # $STUB_DIR/ignored.log; the run's first writes <path> (an ignored install: a reused slot keeps it, P2-04).
 # STUB_INBOX_IN_COMMENT=<id>: that feature's first coding session asks inside INBOX.md's steering comment, splitting its
 # line after "under " with "## Questions" and "**Q1 (<id>, stub).** …" (n8n-home's 4632d1c shape), and parks (U2-02).
+# STUB_GIVE_UP=<id>: every coding session of that feature ends not passing (U2-05's given_up).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -172,6 +173,9 @@ JSON
       sed -i '/^## Answers/i ### '"$id"': set the gatus vars, then answer\n' "$HARNESS_RUN_DIR/INBOX.md"
       git add -A && git commit -qm "$id: question for Michael" && git push -q origin "$HARNESS_BRANCH"
       ok 0.3 "Not done: needs two values only Michael can set.\\nPARKED: set the gatus vars"; exit 0
+    fi
+    if [[ ${STUB_GIVE_UP:-} == "$id" ]]; then   # never passes: given up once its attempts are used
+      entry "$id" "$n" --arg id "$id" '{feature: $id, kind: "coding", outcome: "not yet", summary: "\($id): stub never passes"}'; ok 0.3 "$id: not done"; exit 0
     fi
     if [[ ${STUB_LIMIT_MIDWAY:-} ]] && (( $(count midway) == 1 )); then   # real work, then the limit cuts the session off
       echo "half of $id" > "half-$id.txt"; git add -A && git commit -qm "$id: half"
