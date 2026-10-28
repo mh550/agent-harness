@@ -10,7 +10,7 @@ check "the prompts ask every question for a Files: line and an INBOX question be
   '[[ -z $(cd "$HERE/../prompts" && grep -LF "Files: <absolute path>[:<line>]" coding.md verify.md initializer.md) ]] \
   && grep -F "below the comment block" "$HERE/../prompts/coding.md" > /dev/null && grep -F "### <feature id>: <one-line title> (<date time>)" "$HERE/../prompts/coding.md" > /dev/null \
   && grep -F "(recommended)" "$HERE/../prompts/coding.md" > /dev/null'
-check "entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most); the rest byte for byte" \
+check "entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts" \
   'node --input-type=module -e "
     import { sessionFiles, fillQuestions } from \"$E\";
     const e = { feature: \"A\", kind: \"coding\", outcome: \"not yet\", summary: \"s\", files: [\"lib/a.sh\"], questions: [\"Q one?\", \"Q two? Files: /x/b.md:4\"], dead_ends: [] };
@@ -20,7 +20,10 @@ check "entries.mjs fill: a question without Files: gets the session's files appe
     const ok2 = filled === 1 && entry.questions[0] === \"Q one? Files (harness, from the session): \" + fs.join(\", \") && entry.questions[1] === e.questions[1];
     const ok3 = JSON.stringify({ ...entry, questions: e.questions }) === before && JSON.stringify(e) === before;
     const none = fillQuestions(e, []), ok4 = none.filled === 0 && none.entry === e;
-    process.exit(ok1 && ok2 && ok3 && ok4 ? 0 : 1)"'
+    const md = fillQuestions({ questions: [\"Q? **Files:** /a/b.sh:4\", \"Q? \`Files:\` /a/c.sh\", \"Q? (Files: /a/d.sh)\", \"Should the Files: section stay?\"] }, [\"/wt/x\"]);
+    const ok5 = md.filled === 1 && md.entry.questions[3].endsWith(\"Files (harness, from the session): /wt/x\");
+    const ok6 = sessionFiles([\".harness/runs/r/INBOX.md\", \"lib/a.sh\"], [], \"/wt\").join() === \"/wt/lib/a.sh\";
+    process.exit(ok1 && ok2 && ok3 && ok4 && ok5 && ok6 ? 0 : 1)"'
 check "needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins" \
   'node --input-type=module -e "
     import { card } from \"$N\";

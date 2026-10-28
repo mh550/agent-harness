@@ -171,7 +171,7 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
-entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most); the rest byte for byte
+entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
 entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
 entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them

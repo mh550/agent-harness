@@ -41,7 +41,9 @@ adds the questions' locations (`Files:`, the fill) and completes it.)*
     . ':!.harness/runs/<run>'`, absolute, deduplicated, at most 8). At ingest `fillQuestions` appends ` Files
     (harness, from the session): …` to each entry question without one; nothing else of the entry changes. A park
     whose INBOX question has none gets the same list as its card's `where`, `files_from: "session"` (the lane passes
-    `session_files=`). Either fill notes `<id>: <n> question(s) had no Files: line; filled from the session's diff`.
+    `session_files=`). The run directory's paths are left out (a lane's copy goes). `inbox.mjs files` reads the label
+    bold, in backticks or in parentheses too, and an item only when it has a `/` or `.` and no blank, so `**Files:**`
+    counts and "the Files: section" doesn't. Either fill notes `<id>: <n> question(s) had no Files: line; filled from the session's diff`.
 - **Rejected:** refusing a question without `Files:` (the session is over by then: the question would be lost, or a
   feature re-run for want of a line). A model filling the paths (a second session, guesses; the diff is what the
   session touched, and the harness has it). Rewriting the session's text otherwise (the fill only appends, so what
