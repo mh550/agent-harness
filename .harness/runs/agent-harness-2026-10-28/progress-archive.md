@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 19:28 · U3-05 · passes
+
+A plain harness start/continue of a project with a live run (driver or lane: project_busy) is queued with '<R> is running on <project>: queued (…)', a runner.log line and the runner ensured; continue queues before any state change. lib/overlap.mjs: pure named/overlap + CLI. Runner holds lane-only busy projects too. 69 (12) and 70 (7) checks; decision same-project-starts.
+
+- **Files:** bin/harness, lib/queue.sh, lib/overlap.mjs, tests/checks/69-same-project-starts.sh, tests/checks/70-overlap.sh, tests/fixtures/overlap-spec.md, tests/fixtures/check-names.txt, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, journal/decisions/2026-10-27-same-project-starts.md, journal/decisions/2026-10-21-queue-one-run-per-project.md, docs/architecture.md, README.md
+- **Verified:** bash tests/run.sh 69 70: 19/19 (watched red first); 13, 14, 15, 29, 30, 32, 55 green; full suite green: check.sh 834 tests in 724 s (TEST_JOBS=3); bash -n bin/harness lib/queue.sh; node --check lib/overlap.mjs; an Opus review of the diff found 5 bugs, all fixed with red-first checks
+- **Tests:** 815 → 834
+- **Dead end:** stripping every trailing * in overlap.mjs clean() for Markdown emphasis — a prefix glob tests/checks/6* then names nothing; now a trailing * goes only when that leaves a tracked file
+- **Dead end:** a Gotchas line on queue entry names — the section was already at 15 (memlint fails 39-memlint-m4 at 16); dropped
+- **Discovery** (affects U3-06, run): lib/queue.sh busy_projects now counts a live lane (lib/lane.sh cmdline) as bin/harness project_busy does, and with no driver alive the runner waits for a lane-held entry instead of ending 'queue empty'
+- **Discovery** (affects U3-06): overlap.mjs named on the suite-split spec also names docs/plans/ (a 'docs/plans/' word): U3-06 may want docs/plans/ left out like .harness/runs/, or every run that writes a plan overlaps such a spec
+- **Discovery** (affects run): check 15's 'start queues when MAX_PARALLEL_RUNS are going' stub busy run moved to project other: a live run of proj now queues by the project rule first
+- **Question for Michael:** Default taken: named() leaves docs/plans/ in (the plan's two-segment rule); should U3-06 drop docs/plans/ like .harness/runs/, since every run writes a plan there?
+- *22-U3-05 · claude-opus-5-5*
+
 ### 2026-10-28 18:30 · U3-04 · passes
 
 harness show <run> [<feature>] [--files] [--json]: cmd_show + lib/show.mjs (read-only, local refs in PROJECT_DIR): card header (status.mjs cardHeader), worktree, branch, record, state, lanes, merged/proposed milestones, compare URLs, CHANGES vs origin/<main> with ✗ conflicts, CONFLICTS, NEEDS YOU; feature form; v1 JSON. 68-show (11 checks).

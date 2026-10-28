@@ -376,7 +376,7 @@
         "`journal/decisions/2026-10-27-same-project-starts.md` exists (finding · choice · rejected) and `journal/decisions/2026-10-21-queue-one-run-per-project.md` has one `Updated in place 2026-10-27: …` line (a plain start now queues behind a busy project; `--now` still doesn't)",
         "`bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U3-06",
