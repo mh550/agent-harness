@@ -203,7 +203,7 @@
         "`harness parked [<run>]` is an alias of `harness needs` for text; `harness parked --json` keeps today's element keys `run, project, feature, since, why, question, running, ending, queued, commands` for parked features only, plus `ref` and `card`; the three `parked.mjs` checks in tests/checks/03- pass (its pure functions stay) and a new check reads the alias's `--json` keys",
         "`node --check lib/needs.mjs lib/notify.mjs`, `bash -n bin/harness`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U2-05",

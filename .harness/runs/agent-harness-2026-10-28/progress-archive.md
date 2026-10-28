@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 10:31 · U2-04 · passes
+
+Cards by code: TEMPLATES (15, data) in lib/needs.mjs, card(reason, facts) and the card CLI, waitsOn, mergedBy; 15 fixtures in tests/fixtures/needs; harness needs as view.mjs cards (cutFront, card rule:false) with footer, 60 columns clean; harness parked = needs for text, --json joined with ref and card; notify.mjs urls compare; 59-needs-cards; Opus review fixed.
+
+- **Files:** lib/needs.mjs, lib/view.mjs, lib/notify.mjs, lib/parked.mjs, lib/needs.sh, bin/harness, tests/checks/59-needs-cards.sh, tests/checks/58-needs-record.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/fixtures/needs/*.json, tests/fixtures/check-names.txt, prompts/desk.md, +5 more
+- **Verified:** bash tests/run.sh 59: 29/29; 58: 15/15; 13-run-2: 66/66; 03: 7/7; full suite via check.sh TEST_JOBS=2: green, 744 tests in 907 s. One Opus review of the diff (0 Critical, 2 Important, 12 Minor): 13 fixed (desk/skill read --json commands, mergedBy splits merge heads at the last - so default lanes and own merges are left out, fences/tabs in questions, bad at, narrow ref keeps since, ~ in Files:, empty waits=, re-merge newest PR, commit row, gc'd parks hidden, card needs run, jq null guard), one check for them; ASCII content glyphs left (record text is Unicode by plan §1.1).
+- **Tests:** 715 → 744
+- **Dead end:** inline node -e JS with nested backtick/quote escaping inside a check's single-quoted command — unreadable and broke; a quoted heredoc writing $T/review.mjs, run with paths as argv, works
+- **Discovery** (affects U2-05, U2-06): blocked's waits are computed in needs.mjs (waitsOn over features.mjs deps) when no waits= is passed; no needs_waits shell function exists. needs_open now passes state= and suite= ($CHECK_CMD). U2-05/06 openers pass list= and inbox= and get blocked, where and question for free
+- **Discovery** (affects U2-05, U2-07): A park's headline keeps its why ('B parked: set the gatus vars'); a stored parked card's commands and run_state are recomputed by list (asOfNow) from driver.pid, ended, the runner and queue/*-continue-<run>.args; parks of gc'd worktrees are not listed
+- **Discovery** (affects U2-05): record body is still the headline: the 60-column plain card body (plan §1.1 #9, §3.2) is U2-05's, via renderCard with HARNESS_GLYPHS=unicode, no colour
+- **Discovery** (affects U2-07): prompts/desk.md and the answer skill now say to run a parked feature's commands from harness parked <run> --json (the text view wraps them and shortens paths); U2-07 still switches the desk to COLUMNS=60 harness needs
+- **Proposed change:** U2-04 step 3's header: when '<glyph> <run> · <headline> · since … · <ref>' is wider than the line, the card uses '… · <ago>' and a 'ref <ref> · since <HH:MM> (<ago>)' field (default, in decisions/2026-10-27-needs-record)
+- *12-U2-04 · claude-opus-5-5*
+
 ### 2026-10-28 09:53 · U2-03 · passes
 
 lib/needs.mjs: the needs record (24 keys, first 13 = event v1), REASONS (15), pure record/refresh/sweep/synthesize/order, CLI open (0 new, 3 refreshed)/sweep/done/list; lib/needs.sh needs_open (sourced by driver, lane, harness; no caller); harness needs [--all] [--json] and needs done; needs_fixture; 58-needs-record (15 checks); decision needs-record.
