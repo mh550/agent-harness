@@ -66,3 +66,5 @@
 - 2026-10-28 14:44 · review U2-09: 3861 changed lines, at or over 400; opus
 - 2026-10-28 14:44 · context.md for U2-09: 7622 bytes, 2 items left out
 - 2026-10-28 15:29 · U2-09 · claude-opus-5-5 · passes=true · 45 min · 16/24 passing · tests 785
+- 2026-10-28 15:29 · verify U2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-28 15:38 · context.md for U2: 16007 bytes, 27 items left out
