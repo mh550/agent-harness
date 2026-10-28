@@ -401,12 +401,24 @@ queue add numbers past a parked entry
 queue end triggers one debrief, detached
 queue holds an entry whose project has a live run, starts the next one
 queue list marks continuations (requested) or (automatic)
+queue list: PARKED <n> (skipped; harness queue unpark <n>) lists each parked entry with its why:
+queue list: QUEUE <n> · runner off · MAX_PARALLEL_RUNS=<k> to the width, then a row per entry: n, verb, run or project (new run) and its mark, spec basenames, age
+queue list: RUNNING names the live runs; RECENT is runner.log's last 5 lines, time only, home as a tilde; a rule and the show hint end it
+queue list: a 1,200-character --brief shows its first 30 characters and (+1170 chars); harness queue show 1 prints all 1,200
+queue list: a live runner reads runner ● going; COLUMNS=60 says max <k>; at 60 and 80 no line passes the width
+queue list: an empty queue is QUEUE 0 · runner off · MAX_PARALLEL_RUNS=<k> and PARKED 0, one line each, and no hint
+queue list: an entry whose project has a live run says held: <project> busy (<run>); the other entry nothing
+queue list: its numbers are the ones queue rm takes
 queue park refuses to overwrite a parked entry; both survive
 queue park sets an entry aside with its reason
 queue ran both entries, distinct run ids (their merged worktrees gone with the runner's gc: the ledger has the records)
 queue runner: MAX_PARALLEL_RUNS 1 → 2 in the config starts the second entry without a restart, and says so
 queue runner: MAX_PARALLEL_RUNS 2 → 1 stops no running run; the third entry waits until under it, then starts
 queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old value, said once; nothing starts
+queue show <n> --parked: the parked entry with its why; a number past the end fails with the list to see
+queue show <n>: verb, project path, run, spec, brief, until as a time, mark, added and the .args file, one labelled field per line
+queue show: a continue names its project path from meta.env, one %q quoted under a C locale too
+queue show: an --until text shows as given, a --brief-file as its path; an empty --brief is no brief; a CR or an empty file never reaches the screen
 queue stop after a run: one debrief
 queue unpark puts it back at the end, its reason gone
 real limit message: not counted, run completes

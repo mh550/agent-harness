@@ -44,7 +44,7 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | Command | What |
 |---|---|
 | `harness start` · `continue` · `merge` · `stop` · `pause` · `resume` · `answer` | one run |
-| `harness queue [list]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue (`list` marks each continuation `(requested)`, yours, or `(automatic)`, the driver's or the debrief's: an automatic one is skipped for a run you stopped) |
+| `harness queue [list]` · `queue show <n> [--parked]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue (`list` marks each continuation `(requested)`, yours, or `(automatic)`, the driver's or the debrief's: an automatic one is skipped for a run you stopped; a brief shows its first 30 characters, `show` prints the entry whole) |
 | `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end; new entries are numbered past parked ones, and a park never overwrites one of the same name |
 | `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
 | `harness backlog [list]` · `backlog set <id> <status> [--spec] [--pr] [--note]` · `backlog import <file.jsonl>` | the retro backlog, `ledger/retro-backlog.jsonl`: one row per retro proposal across runs, `proposed` first, most seen first; `set` moves one (`proposed` · `specced` · `queued` · `merged` · `dropped`), `import` merges rows by id; writes hold the ledger lock and are a ledger commit (`LEDGER_COMMIT`) (see [Retro backlog](#retro-backlog)) |

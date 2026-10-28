@@ -483,8 +483,8 @@ id is chosen when it starts) and ensures the runner (tmux `h-queue`); `--now` by
 **requested** or **automatic**: `harness queue add --continue <run>` (Michael, the desk) writes `--queued --requested`,
 and starts even a run Michael stopped; the driver's after a session cap and the debrief's pass `--automatic` and write
 `--queued` alone, which `harness continue` skips for a run whose `ended` starts with `stopped by Michael` (`skipping
-queued continuation of <run>: Michael stopped it` in `runner.log`). `harness queue list` ends each continuation
-`(requested)` or `(automatic)`, parked ones too. A request for a run whose continuation is queued becomes that
+queued continuation of <run>: Michael stopped it` in `runner.log`). `harness queue list` marks each continuation
+`(requested)` or `(automatic)` beside its run id, parked ones too. A request for a run whose continuation is queued becomes that
 entry, its options included (`already queued: continue <run> (now requested, with this request's options)`); a stop the
 driver honours turns its run's queued requests that are no newer than the stop (`STOP`, else INBOX.md) automatic and
 notes it:

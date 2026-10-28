@@ -7,7 +7,8 @@
 #                               MAX_PARALLEL_RUNS runs already going, it is queued instead (--now: start anyway)
 #   harness continue <run-id> [--brief …] [--until HH:MM] [--now]
 #                               resume a run with fresh attempts for every feature that isn't passing
-#   harness queue [list]                         what is queued, running and done
+#   harness queue [list]                         what is queued, parked, running and done lately
+#   harness queue show <n> [--parked]            one entry whole: its spec, brief, until, mark, why and file
 #   harness queue add <project> [<run-id>] [start options] | add --continue <run-id> [--automatic] [options]
 #                                                a continuation queued here is a request (--requested: it starts even
 #                                                after a stop); --automatic (the driver's, the debrief's) is skipped then
@@ -129,11 +130,6 @@ queue_add() {   # verb args… → a queue entry (one argument per line), number
   local n; n=$(( $(ls "$Q" "$Q/held" | sed -n 's/^\([0-9]\{4\}\)-.*\.args$/\1/p' | sort -n | tail -1 | sed 's/^0*//' || true) + 1 ))
   local f; f=$Q/$(printf '%04d' "$n")-$1-${2##*/}.args
   printf '%s\n' "$@" > "$f"; echo "$f"
-}
-
-entry_kind() {   # a queue entry → " (requested)" / " (automatic)" for a continuation, nothing for a start
-  [[ $(head -1 "$1") == continue ]] || return 0
-  grep -qx -- --requested "$1" && echo " (requested)" || echo " (automatic)"
 }
 
 queue_ensure_runner() {
@@ -372,16 +368,13 @@ cmd_queue() {
   local sub=${1:-list}; shift || true
   mkdir -p "$Q/done"
   case $sub in
-    list)
-      local f n=0
-      echo "queue ($( runner_up && echo "runner going" || echo "runner not running: harness queue start"); MAX_PARALLEL_RUNS=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")):"
-      for f in "$Q"/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g")$(entry_kind "$f")"; done
-      (( n )) || echo "  (empty)"
-      n=0   # parked entries are listed, never silent: a parked run nobody remembers is a run that never happens
-      for f in "$Q"/held/*.args; do [[ -f $f ]] || continue; n=$(( n + 1 )); (( n == 1 )) && echo "parked (the runner skips these; harness queue unpark <n>):"
-        echo "  $n. $(paste -sd' ' "$f" | sed "s|$HOME|~|g" | cut -c1-200)$(entry_kind "$f")"; echo "     why: $(cat "${f%.args}.why" 2> /dev/null || echo "no reason recorded")"; done
-      echo "running:$(for d in "$STATE_ROOT"/*/*/; do alive "$d" && basename "$d"; done | paste -sd' ' -)"
-      if [[ -f $Q/runner.log ]]; then echo "recent:"; tail -n 5 "$Q/runner.log" | sed 's/^/  /'; fi ;;
+    list|show)   # through status.mjs (decisions/2026-10-27-read-views); parked entries are listed, never silent: a
+                 # parked run nobody remembers is a run that never happens
+      local r=0 m=(queue) use="usage: harness queue show <n> [--parked]"; runner_up && r=1
+      if [[ $sub == show ]]; then [[ ${1:-} =~ ^[1-9][0-9]*$ ]] || die "$use"; m=(entry "$1")
+        case ${2:-} in --parked) m+=(--parked) ;; "") ;; *) die "$use" ;; esac; fi
+      run_rows 0 | node "$HARNESS_HOME/lib/status.mjs" "${m[@]}" --runner "$r" --queue "$Q" --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" \
+        --state-root "$STATE_ROOT" --max-parallel "$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")" ;;
     add)
       if [[ ${1:-} == --continue ]]; then
         local run=${2:?usage: harness queue add --continue <run-id>}; shift 2; state_of "$run" > /dev/null
@@ -410,7 +403,7 @@ cmd_queue() {
     clear) rm -f "$Q"/*.args; echo "queue cleared" ;;
     start) local until=0; [[ ${1:-} == --until ]] && until=$(to_epoch "$2"); queue_ensure_runner "$until" ;;
     stop) touch "$Q/STOP"; echo "the runner stops after its current start (running runs carry on)" ;;
-    *) die "usage: harness queue [list|add|rm|park|unpark|clear|start|stop]" ;;
+    *) die "usage: harness queue [list|show|add|rm|park|unpark|clear|start|stop]" ;;
   esac
 }
 
