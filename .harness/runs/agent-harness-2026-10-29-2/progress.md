@@ -9,6 +9,18 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 10:48 · R2-03 · passes
+
+Stub: each headless session prints first.jsonl's init line with a fresh session_id (kept in $STUB_DIR/sessions/<id>); --resume logs argv to resume.log, answers an unknown id as unknown-id.out (exit 1), a known one with resumed.jsonl and cumulative cost/modelUsage. STUB_NO_ENTRY, STUB_RESUME_ENTRY=good|bad|good-edits. metrics.mjs: sessionId, resumeRow, session-id, cost, append-resume. 7 checks.
+
+- **Files:** tests/stub-claude.sh, lib/metrics.mjs, tests/checks/05-metrics-pure-tokens-cache.sh, tests/checks/76-entries-survive.sh, tests/fixtures/check-names.txt
+- **Verified:** 7 new checks watched failing (5/12), then green; lib/check.sh: green after a rerun, 900 tests (899/900 first pass: 08 memory gate stop-during-wait, a 60s timing check on a box running 4x slow, green on rerun); manual stub runs: good/good-edits entries validate 0, bad 1, resumed.txt only for good-edits; chained resumes stay cumulative and append-resume on stub transcripts gives 2 in, 3 out, 15121 read, 11278 write
+- **Tests:** 893 → 900
+- **Discovery** (affects R2-04): Stub resume is the '# Entry resume' prompt plus --resume <id>; Feature:/Kind: lines under '# This session' give id and kind. The stub has metrics.mjs cost and append-resume <session> <resume> <metrics> <run> <feature> <model> <role> [wall exit peak lane] ready for entry_resume.
+- **Discovery** (affects R2-04): 76's direct stub runs use STUB_DIR=$T/direct/stub, so $T/resume.log stays absent for R2-04's 'refused → no resume.log' check.
+- **Discovery** (affects R2-04): A stub resume with no STUB_DIR, or of a session whose sessions/<id> file is empty (a refused one), starts from cost 0 and resumed.jsonl's model with zeroed tokens.
+- *06-R2-03 · claude-opus-5-5*
+
 ### 2026-10-29 10:23 · R2-02 · passes
 
 Entry check: prompt_env exports HARNESS_ENTRY_CHECK; the coding, verify and init prompts end by running it and forbid ending on background work. entries.mjs: onlyCaps, the header's own '<n> characters (at most 2000)', validate exit 2 on caps only; journalEntry cuts summary/header to 399+… and keeps the entry, ingest prints 'trimmed summary <n>', journal_ notes it. STUB_LONG_SUMMARY. 7 checks.

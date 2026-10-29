@@ -29,3 +29,5 @@
 - 2026-10-29 10:32 · R1-02 un-passed: suite red after the session
 - 2026-10-29 10:32 · R1-02 · claude-opus-5-5 · passes=false · 18 min · 3/23 passing · tests 893
 - 2026-10-29 10:32 · services stopped (paused)
+- 2026-10-29 10:48 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch (red, then green on a rerun; load 5.20)
+- 2026-10-29 10:48 · R2-03 · claude-opus-5-5 · passes=true · 24 min · 4/23 passing · tests 900
