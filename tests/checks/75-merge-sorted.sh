@@ -38,16 +38,15 @@ check "merge-sorted: with the attribute and the worktree driver, two branches ad
 
 # two lanes, M2 after: [] (C), each adding a name between the same two lines of names.txt (on main under the attribute
 # first); M2's verify waits until M1 has merged, so M2's re-base merges main's names.txt into its own
-waitf() { local i; for i in $(seq $(( $2 * 5 ))); do eval "$1" && return 0; sleep 0.2; done; return 1; }   # <bash expr> <s>
 tmp=$(mktemp -d); git clone -q "$T/origin.git" "$tmp" && printf 'a check\nc check\n' > "$tmp/names.txt" && echo 'names.txt merge=sorted-union' > "$tmp/.gitattributes" \
   && git -C "$tmp" add -A && git -C "$tmp" -c user.name=t -c user.email=t@test commit -qm "names.txt, sorted" && git -C "$tmp" push -q origin HEAD:main; rm -rf "$tmp"
 echo 'MAX_LANES=2' >> "$T/user-config.sh"
 rm -f "$T"/held-* "$T"/release-* "$T"/vwait-*; : > "$T/hold-coding"
 STUB_SORTED=names.txt STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 STUB_VERIFY_WAIT=M2:work-B.txt \
   "$H" start "$T/proj" so --spec SPEC.md --foreground > "$T/so.out" 2>&1 & P=$!
-waitf "[[ -f \$T/held-so-A && -f \$T/held-so-C ]]" 120
+wait_for 120 eval "[[ -f \$T/held-so-A && -f \$T/held-so-C ]]"
 for s in "$T"/wt/proj/lanes/so/slot-*; do echo "$(git -C "$s" config --worktree merge.sorted-union.driver)"; done > "$T/so.slots"
-touch "$T/release-so-C"; waitf "[[ -f \$T/vwait-so-M2 ]]" 120; touch "$T/release-so"; wait "$P"; rm -f "$T/hold-coding"
+touch "$T/release-so-C"; wait_for 120 eval "[[ -f \$T/vwait-so-M2 ]]"; touch "$T/release-so"; wait "$P"; rm -f "$T/hold-coding"
 check "merge-sorted: the harness sets the driver in the slot's worktree config and never in the project's checkout" \
   '[[ $(sort -u "$T/so.slots") == "$HOME_DRIVER" && $(wc -l < "$T/so.slots") == 2 ]] \
   && [[ $(git -C "$T/wt/proj/so" config --worktree merge.sorted-union.driver) == "$HOME_DRIVER" ]] \

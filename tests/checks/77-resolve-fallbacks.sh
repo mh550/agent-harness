@@ -5,7 +5,6 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # record branch and slot_open keep today's path. Plan: docs/plans/2026-10-29-N2-conflict-resolution.md ----
 # Two lanes as in 76-resolve-session.sh: C first, M2's verify waits until M1 has merged, so M2's merge meets a main
 # where A rewrote line 2 of README.md, as C did (STUB_CONFLICT).
-waitf() { local i; for i in $(seq $(( $2 * 5 ))); do eval "$1" && return 0; sleep 0.2; done; return 1; }   # <bash expr> <s>
 held() { rm -f "$T"/held-* "$T"/release-* "$T"/vwait-*; : > "$T/hold-coding"; }
 tmp=$(mktemp -d); git clone -q "$T/origin.git" "$tmp" && printf '# demo\nline two\nline three\n' > "$tmp/README.md" && git -C "$tmp" add README.md \
   && git -C "$tmp" -c user.name=t -c user.email=t@test commit -qm "README.md" && git -C "$tmp" push -q origin HEAD:main; rm -rf "$tmp"
@@ -15,8 +14,8 @@ two_lanes() {   # <run>: M2's re-base conflicts; origin's main back after it
   held
   STUB_CONFLICT=README.md STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 STUB_VERIFY_WAIT=M2:work-B.txt \
     "$H" start "$T/proj" "$1" --spec SPEC.md --foreground > "$T/$1.out" 2>&1 & P=$!
-  waitf "[[ -f \$T/held-$1-A && -f \$T/held-$1-C ]]" 120; touch "$T/release-$1-C"
-  waitf "[[ -f \$T/vwait-$1-M2 ]]" 120; touch "$T/release-$1"; wait "$P"; rm -f "$T/hold-coding"
+  wait_for 120 eval "[[ -f \$T/held-$1-A && -f \$T/held-$1-C ]]"; touch "$T/release-$1-C"
+  wait_for 120 eval "[[ -f \$T/vwait-$1-M2 ]]"; touch "$T/release-$1"; wait "$P"; rm -f "$T/hold-coding"
   git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 }
 slog() { cat "$T/scratch/proj/$1/sessions.log" 2> /dev/null; }
@@ -72,8 +71,8 @@ at_verify() {   # <run>
   held
   STUB_CONFLICT=README.md STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 \
     "$H" start "$T/proj" "$1" --spec SPEC.md --foreground > "$T/$1.out" 2>&1 & P=$!
-  waitf "[[ -f \$T/held-$1-A ]]" 120; touch "$T/release-$1-A"; waitf "[[ -f \$T/held-$1-B ]]" 120; touch "$T/release-$1-B"
-  waitf "hlog $1 2> /dev/null | grep -F '· M1 merged into main' > /dev/null" 120; touch "$T/release-$1"; wait "$P"; rm -f "$T/hold-coding"
+  wait_for 120 eval "[[ -f \$T/held-$1-A ]]"; touch "$T/release-$1-A"; wait_for 120 eval "[[ -f \$T/held-$1-B ]]"; touch "$T/release-$1-B"
+  wait_for 120 eval "hlog $1 2> /dev/null | grep -F '· M1 merged into main' > /dev/null"; touch "$T/release-$1"; wait "$P"; rm -f "$T/hold-coding"
   git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 }
 STUB_MERGE_RESOLVE=both at_verify rsm
