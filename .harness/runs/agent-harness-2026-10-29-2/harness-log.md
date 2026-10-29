@@ -109,3 +109,7 @@
 - 2026-10-29 16:52 · R3-03: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 16:52 · flaky: 74-flakes-run (red, then green on a rerun; load 7.17)
 - 2026-10-29 16:52 · R3-03 · claude-opus-5-5 · passes=true · 37 min · 14/23 passing · tests 972
+- 2026-10-29 16:52 · context.md for R3-04: 8018 bytes
+- 2026-10-29 17:09 · R1-07: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 17:09 · R1-07: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 17:26 · R1-07 · claude-opus-5-5 · passes=true · 36 min · 15/23 passing · tests 976

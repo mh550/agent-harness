@@ -9,6 +9,20 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 17:09 · R1-07 · passes
+
+R1 review: 0 Critical, 2 Important, 5 Minor. Fixed: opens no longer reopen an exited unreaped lane (MAX_LANES≥2), STUB_BARRIER check proves the hold, settle waits on this copy's debriefs only, wait_for refuses fractional limits, --repeat check exact. Helpers moved to lib.sh. Decision tests-wait-not-sleep, arch §5/§7/§15, README Tests, flaker table done.
+
+- **Files:** lib/driver.sh, tests/lib.sh, tests/stub-claude.sh, tests/checks/45-lanes-run.sh, tests/checks/75-suite-tools.sh, tests/checks/31-tmux-l3-03-when.sh, tests/checks/47-lanes-two.sh, tests/checks/48-lanes-rebase.sh, tests/checks/49-lanes-slots.sh, tests/checks/69-same-project-starts.sh, tests/checks/76-resolve-session.sh, tests/checks/77-resolve-fallbacks.sh, +7 more
+- **Verified:** full suite via check.sh: green in 857 s, 976 tests; then the six files that read the docs (07 08 12 70 76 77) 200/200 after the last doc edit. Each new check seen red first: 45's forced lane-kill (M1 reopened, run done) → green (lane M1 closed (lane exited unexpectedly), needs-M1); 75's barrier, fractional wait_for and settle checks red then green. 13-run-2 --repeat 10: 10/10 green, 718 s.
+- **Tests:** 973 → 976
+- **Dead end:** settle check with the foreign debrief's HARNESS_STATE under $T/elsewhere — it starts with $T/ too, so the filter kept it; the foreign state must be outside $T
+- **Discovery** (affects run): The coordinator's opens skip a milestone whose lanes/<m>/pid is still there (exited, unreaped); HARNESS_COUNT_HOLD leaves state/count-hold while holding, so a check can act inside the window
+- **Discovery** (affects run): 13-run-2-michael-sets-desk (harness desk --list) not reproduced: --repeat 10 was 10/10 green, 718 s
+- **Discovery** (affects project): tests/lib.sh now holds tended, held (clears vwait-* too), ats and debriefs: a check file must not redefine them differently
+- **Proposed change:** Left from the review (Minor): HARNESS_COUNT_HOLD is unbounded and serialises lanes under MAX_LANES=2; tests-only, so left as is
+- *12-R1-07 · claude-opus-5-5*
+
 ### 2026-10-29 16:52 · R3-03 · passes
 
 merge_one: ignored_only lets a main moved only in cache-ignored paths merge as verified, no re-base, noted once per main. finish: ledger and scratch_done after record_pr, plus a 'ledger notes' commit. run_init pins tests-start and testcount-source only from a green suite, read from the tree's marker or check-<key>.out (never a stale check.out). STUB_FIX_BROKEN; 3 checks in 77-leftovers.
