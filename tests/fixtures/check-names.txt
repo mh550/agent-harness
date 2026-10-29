@@ -238,6 +238,7 @@ eval: every task.json validates and a bad one is rejected
 eval: refuses past WEEKLY_STOP_AT
 eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+features.mjs writes atomically: 200 bumps beside a parsing reader, which never throws; no temp file left
 files changed during the session are flagged in the note
 finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
 finish opens usage_limit (limit, warn, no priority) for a usage-limit end; needs.md committed; the run-end title kept
@@ -411,6 +412,7 @@ ledger has the run
 ledger row has harness_version and harness_dirty
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
 lib.sh: a check replayed for its state (REPLAY=1) runs silent and uncounted
+lint: RULES and the header comment name unit-collision and unreproducible; the note counts them
 lint: no-anchor trips "works correctly", not "the suite is green" or "curl :7814/x returns 200"
 lint: outside-repo trips ~ and /home/ paths, not lib/driver.sh or /tmp/harness/
 lint: review-small for a review in a two-build milestone; review-missing for five builds without one; neither for five with one or docs only
@@ -420,6 +422,9 @@ lint: self-match trips a grep of progress.md for the step's own words, not of ha
 lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
+lint: unit-collision names each milestone whose LANEU name another shares (M1-x, M1.x, M1_x), none for M1 and M2
+lint: unreproducible flags a time bound or one run's count, once per step, with its message
+lint: unreproducible leaves names, flags, budgets, sizes and file counts alone
 main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
 materialize: a record tracked at the slot's base is skip-worktree, so the session's commit carries none of the copy
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
@@ -569,6 +574,7 @@ project names: start proj from outside it (HARNESS_PROJECTS holding proj) runs i
 project names: status --project proj, -p proj and --project <path> list proj's run; a gone project falls back to its name
 project names: the newest run whose PROJECT_DIR is no repository any more is passed over for an older one
 project names: with no project at all the list says none, and the projects directory shows ~ for the home directory
+prompt: the initializer states counts as the command that prints them (N/M checks passed)
 queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't
 queue add numbers past a parked entry
 queue end triggers one debrief, detached
