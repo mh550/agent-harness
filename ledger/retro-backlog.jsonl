@@ -1,6 +1,6 @@
 {"id":"test-counts","title":"real test counts per runner","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"merged","spec":"retro-fixes R1, this spec M5","pr":null,"note":"retro-fixes R1 (10-26-2 F1) + memory M5"}
 {"id":"review-cost","title":"size and route the milestone review","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"merged","spec":"retro-fixes R2, this spec M6","pr":null,"note":"retro-fixes R2 + memory M6, PR #37"}
-{"id":"step-lint","title":"lint feature steps at init","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"queued","spec":"retro-fixes R3","pr":null,"note":null}
+{"id":"step-lint","title":"lint feature steps at init","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"merged","spec":"retro-fixes R3","pr":null,"note":"retro-fixes R3 (10-26-2 F2-02)"}
 {"id":"carry-on-past-given-up","title":"a given-up feature doesn't end the run","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"queued","spec":"retro-fixes R10","pr":null,"note":"proposed in 4 retros"}
 {"id":"verify-fresh-suite","title":"verify never trusts the cache","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"queued","spec":"retro-fixes R4","pr":null,"note":null}
 {"id":"merge-before-deadline","title":"verify and merge a finished milestone at the deadline","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"queued","spec":"retro-fixes R5","pr":null,"note":null}
