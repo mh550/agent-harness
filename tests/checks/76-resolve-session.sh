@@ -44,6 +44,8 @@ check "resolve: the resolution's note names its files, model and minutes, and th
 check "resolve: summary.json counts the resolution and report.md has its Conflicts row" \
   'jq -e ".conflicts == {resolved: 1, escalated: 0, sessions: 1}" "$REC/summary.json" > /dev/null \
   && grep -Fx "| Conflicts | 1 resolved by sessions (M2: README.md), 0 to Michael |" "$REC/report.md" > /dev/null'
+check "resolve: report.md's Spend by role names the resolve sessions' spend" \
+  'grep -E "^\| Spend by role \| .*· resolve \\\$[0-9.]+ ·" "$REC/report.md" > /dev/null'
 check "resolve: the PR body says main was merged in by a resolve session, and no needs-you post went out" \
   'grep -Fx "Merged main in with a resolve session: README.md" "$S/pr-body.md" > /dev/null && ! grep -E "^Title: \[rs\] .*needs you" "$T/curl.log" > /dev/null'
 CFX='import { conflicts, resolutions, report } from "'$HERE'/../lib/summary.mjs"; import { readFileSync } from "node:fs";

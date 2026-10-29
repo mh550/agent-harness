@@ -12,7 +12,8 @@
   `.gitattributes` (`<path> merge=sorted-union`; this repo: `tests/fixtures/check-names.txt`). The harness sets the
   driver as worktree-local git config (`merge_drivers`, `lib/record.sh`) in the record worktree every segment and in
   each slot at `slot_open`, so it works in the harness's checkouts and never in Michael's (his checkout falls back to
-  git's text merge, as before). A side that isn't sorted exits 1 with A untouched: git reports the conflict as usual.
+  git's text merge, as before). A side that isn't sorted gets git's own text merge (`git merge-file`): clean, 0; a conflict, 1 with its markers in A
+  (git keeps A as the file's result whatever the exit, so an untouched A would be a conflict with no marker to find).
   - Limits: attributes are read from the merging checkout's tree, so a `.gitattributes` only main has applies once the
     lane's tree has it. A line one side removed and the other re-added is removed (the subtraction wins). `git
     merge-tree --write-tree` runs the driver too (git 2.43), so `merge_one`'s check sees the same clean merge.
@@ -69,4 +70,6 @@
 - Updated in place 2026-10-29: N2-04 replaced the spec's "the verify goes on without main (`nomerge-<m>`)" for a refused
   session in `sync_main` with a deferral (`verify` returns 2, the lane waits for the window), took `sync_main` out of the
   re-base round's verify, and kept `tried` in the `resolve-<m>-<main>` marker; N2-05 added `resolutions` beside
-  `summary.json`'s `conflicts`, which stays the three counts. N2-06 (review) completed the rejected list and the next step.
+  `summary.json`'s `conflicts`, which stays the three counts. N2-06 (review) completed the rejected list and the next step, and replaced the
+  unsorted side's `exit 1 with A untouched` with git's text merge (Opus review: the session saw no marker and could
+  `git add` one side).

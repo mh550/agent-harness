@@ -420,7 +420,7 @@ memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
 merge-sorted: a base line one side removed stays removed
 merge-sorted: a line both sides added is one line
-merge-sorted: a side not in LC_ALL=C order exits 1 and leaves A untouched
+merge-sorted: a side not in LC_ALL=C order falls back to git's text merge: clean is 0, a conflict exits 1 with markers in A
 merge-sorted: the fixture pair merges to a check, b lane check, b main check, c check with exit 0
 merge-sorted: the harness sets the driver in the slot's worktree config and never in the project's checkout
 merge-sorted: two lanes adding names to a sorted list both merge, with no conflict note and no needs record
@@ -612,6 +612,7 @@ resolve: merge_one's conflict at the run's end keeps today's merge_conflict reco
 resolve: merge_one's conflict returns 3 with moved-<m> in a lane and opens merge_conflict under HARNESS_MERGE_ONLY
 resolve: no needs record and one metrics row of kind resolve
 resolve: prompts/resolve.md renders through lib/prompt.sh as a command, first line # Resolve session, no {{ left
+resolve: report.md's Spend by role names the resolve sessions' spend
 resolve: slot_open undoes a merge a killed lane left in progress in its slot, never committing its markers
 resolve: summary.json counts the resolution and report.md has its Conflicts row
 resolve: the PR body says main was merged in by a resolve session, and no needs-you post went out

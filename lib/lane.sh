@@ -175,16 +175,12 @@ rebase() {
   base=$(git merge-base "$c" "$mn")   # main as this lane last merged it (verify's sync_main)
   git checkout -q -B "$LBRANCH" "$c"   # the verified tip, nothing else
   r=$(( $(cat "$STATE/rebase-rounds-$m" 2> /dev/null || echo 0) + 1 ))
-  if ! git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then
-    files=$(git -c core.quotePath=false diff --name-only --diff-filter=U); rc=1 RESOLVE_TRIED=""
-    if [[ ${CONFLICTS:-} == resolve ]] && (( r <= MAX_REBASE_ROUNDS )); then resolve "$m" "$MAIN_BRANCH"; rc=$?
-    else git merge --abort 2> /dev/null; fi
-    (( rc == 2 )) && { echo "$mn" > "$STATE/rebase-$m"; [[ -n $RESOLVE_END ]] && lane_exit 13 "$RESOLVE_END"; return 1; }   # refused: the re-base again after the wait
-    # conflict-<m>: merge_one's once per main, so the run's end doesn't record it again (and lose tried)
-    (( rc == 0 )) || { echo "$mn" > "$STATE/conflict-$m"
-      rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH" merge_conflict rebase files="$files" main="$mn" ${RESOLVE_TRIED:+tried="$RESOLVE_TRIED"}; return 1; }
-    resolved=1; resolved_note "$m" "one verify round follows"
-  fi
+  merge_main "$m" "$( (( r <= MAX_REBASE_ROUNDS )) && echo resolve)"; rc=$?   # a resolution needs a verify round left
+  (( rc == 2 )) && { echo "$mn" > "$STATE/rebase-$m"; [[ -n $RESOLVE_END ]] && lane_exit 13 "$RESOLVE_END"; return 1; }   # refused: the re-base again after the wait
+  # conflict-<m>: merge_one's once per main, so the run's end doesn't record it again (and lose tried)
+  (( rc == 0 )) || { echo "$mn" > "$STATE/conflict-$m"
+    rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH" merge_conflict rebase files="$MERGE_FILES" main="$mn" ${RESOLVE_TRIED:+tried="$RESOLVE_TRIED"}; return 1; }
+  resolved=$MERGE_RESOLVED; [[ -n $resolved ]] && resolved_note "$m" "one verify round follows"
   main_clear "$m"   # main is in the lane branch now: a main_conflict an earlier verify opened resolves
   theirs=$(git diff --name-only "$c" HEAD)   # what main brought in
   ours=$(git diff --name-only "$base" "$c")   # the milestone's own (and its unmerged dependencies')

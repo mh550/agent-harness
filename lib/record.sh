@@ -121,19 +121,16 @@ sync_main() {
   local b sub=${LANE:-record} mn old files fa=() subjects ref; b=$(git branch --show-current)
   git fetch -q origin "$MAIN_BRANCH" 2>/dev/null || return 0
   git merge-base --is-ancestor "origin/$MAIN_BRANCH" HEAD && { main_clear "$sub"; return 0; }
-  if git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0; fi
-  files=$(git -c core.quotePath=false diff --name-only --diff-filter=U); [[ -n $files ]] && mapfile -t fa <<< "$files"
+  merge_main "${LANE:-}" "${LANE:+resolve}"; case $? in   # the record branch's conflicts stay Michael's
+    0) [[ -n $MERGE_RESOLVED ]] && resolved_note "$LANE" "the verify goes on with $MAIN_BRANCH merged"
+       note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0 ;;
+    2) return 2 ;;
+  esac
+  files=$MERGE_FILES; [[ -n $files ]] && mapfile -t fa <<< "$files"
   # no conflicted file: the merge never started (a dirty tree, no identity): said, as before, and nothing recorded
-  (( ${#fa[@]} )) || { git merge --abort 2>/dev/null; note "$MAIN_BRANCH did not merge into $b (see run.log); carrying on without it"; return 1; }
+  (( ${#fa[@]} )) || { note "$MAIN_BRANCH did not merge into $b (see run.log); carrying on without it"; return 1; }
   # --first-parent: main's own merges; path-limited, git's default simplification hides a merge that took a file whole
   subjects=$(git log --first-parent --merges --format=%s "$(git merge-base HEAD "origin/$MAIN_BRANCH")..origin/$MAIN_BRANCH" -- "${fa[@]}")
-  RESOLVE_TRIED=""
-  if [[ -n ${LANE:-} && ${CONFLICTS:-} == resolve ]]; then   # the record branch's conflicts stay Michael's
-    resolve "$LANE" "$MAIN_BRANCH"; case $? in   # resolve aborts the merge on anything but 0
-      0) resolved_note "$LANE" "the verify goes on with $MAIN_BRANCH merged"; note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0 ;;
-      2) return 2 ;;
-    esac
-  else git merge --abort 2>/dev/null; fi
   note "$MAIN_BRANCH conflicts with $b; carrying on without it (merges into $MAIN_BRANCH need Michael)"
   mn=$(git rev-parse "origin/$MAIN_BRANCH"); old=$(cat "$STATE/main-conflict-$sub" 2> /dev/null)
   echo "$mn" > "$STATE/main-conflict-$sub"   # before the open: a sweep meanwhile must not resolve it
@@ -142,6 +139,19 @@ sync_main() {
   rec_commit "HARNESS: $MAIN_BRANCH conflicts with $b"; sync_record
   needs_you "$sub" "$MAIN_BRANCH conflicts with $b" needs.md "$ref"
   return 1
+}
+# <m> <resolve|""> → origin's main merged into the branch checked out here, the one conflict path of sync_main and
+# rebase: 0 = merged (MERGE_RESOLVED set when a resolve session settled a conflict: lib/resolve.sh, a lane only, under
+# CONFLICTS=resolve when the caller passes resolve) · 1 = not merged, the merge aborted (MERGE_FILES the conflicted files,
+# empty when it never started; RESOLVE_TRIED what a session tried) · 2 = a resolve session refused by a limit (aborted)
+merge_main() {
+  local rc; MERGE_FILES="" MERGE_RESOLVED="" RESOLVE_TRIED=""
+  git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1 && return 0
+  MERGE_FILES=$(git -c core.quotePath=false diff --name-only --diff-filter=U)
+  if [[ -n $MERGE_FILES && $2 == resolve && ${CONFLICTS:-} == resolve ]]; then
+    resolve "$1" "$MAIN_BRANCH"; rc=$?; (( rc )) || MERGE_RESOLVED=1; return $rc   # resolve aborts the merge on anything but 0
+  fi
+  git merge --abort 2> /dev/null; return 1
 }
 main_clear() { [[ -f $STATE/main-conflict-$1 ]] || return 0; rm -f "$STATE/main-conflict-$1"; needs_sweep; }   # <subject>
 # git merge-tree --write-tree --name-only's output → its conflicted paths (the lines between the tree and the blank line)

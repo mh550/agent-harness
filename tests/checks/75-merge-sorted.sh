@@ -20,8 +20,9 @@ printf 'a\nc\n' > "$U/O4"; printf 'a\nb\nc\n' > "$U/A4"; printf 'a\nc\nB\n' > "$
 "$MS" "$U/O4" "$U/A4" "$U/B4"; uns_rc=$?
 printf 'c\na\n' > "$U/A5"; printf 'a\nb\n' > "$U/B5"; cp "$U/A5" "$U/A5.before"
 "$MS" "$U/O4" "$U/A5" "$U/B5"; uns_rc2=$?
-check "merge-sorted: a side not in LC_ALL=C order exits 1 and leaves A untouched" \
-  '[[ $uns_rc == 1 && $uns_rc2 == 1 ]] && cmp -s "$U/A4" "$U/A4.before" && cmp -s "$U/A5" "$U/A5.before"'
+# git keeps A as the file's result whatever the exit: a conflict must carry markers, or a session git-adds one side
+check "merge-sorted: a side not in LC_ALL=C order falls back to git's text merge: clean is 0, a conflict exits 1 with markers in A" \
+  '[[ $uns_rc == 0 && $(cat "$U/A4") == $'"'"'a\nb\nc\nB'"'"' && $uns_rc2 == 1 ]] && grep -E "^<<<<<<< " "$U/A5" > /dev/null && grep -E "^>>>>>>> " "$U/A5" > /dev/null'
 
 # a throwaway repo with the attribute and the driver in its worktree config: git merge and merge-tree both settle it
 R=$T/msrepo; git init -q -b main "$R" && cd "$R" && git config user.name t && git config user.email t@test \
