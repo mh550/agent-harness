@@ -135,6 +135,11 @@ backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line,
 backlog validate: the why line of a huge bad id stays under 300 bytes
 brief committed with the run
 brief, rules and policy in the prompt
+busy continue: another project's live run changes nothing: answer, then continue
+busy continue: harness needs --json gives the queue add and --now, each naming the live run
+busy continue: harness parked --json carries the same commands
+busy continue: once that run has ended, the plain continue is back
+busy continue: the card's do and run lines name the hold
 by hand right after: nothing new, no session
 by hand while another debrief runs: it says it is waiting
 check rerun: CHECK_RERUN=auto in config.sh, exported as HARNESS_CHECK_RERUN; the template has it; lanes export HARNESS_LANE
@@ -513,6 +518,7 @@ overlap: queue list shows ⚠ overlaps <R> on <files> under the entry; status --
 overlap: start --now prints the warning, starts, and opens a warn overlap record on both runs naming the files and which merges second
 overlap: the sweep rule: other run gone, other run merged, this run merged, else kept (no git facts: kept)
 parked card: the INBOX question verbatim with its line 16 and ?plain=1#L16 URL, where from its Files: line, parked.mjs's commands
+parked.mjs: another live run of the project: the queue add and --now, each with its merge order
 parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers
 parked.mjs: the question is the feature's INBOX section
 parked.mjs: the report names the answer and continue commands
@@ -806,7 +812,9 @@ the EXIT trap of a driver ended unexpectedly opens driver_crash (stored, no synt
 the allowlist runs nothing that writes or executes
 the answer skill exists and names the commands and the never-list
 the answer skill passes Michael's words through a quoted heredoc
+the answer skill's facts cite file:line
 the answer skill's first step is harness needs, harness parked its alias
+the answer skill: another live run of the project: ask, with the queue add and --now and their merge order
 the deadline verifies a complete milestone once and merges it
 the debrief page never reads a stop reason's words as its tone
 the debrief saw the queue's runs
@@ -815,6 +823,7 @@ the debrief's harness status block per run opens with the run's card line
 the desk notification
 the desk prompt names the run, its commands and the never-list
 the desk prompt reads COLUMNS=60 harness needs and needs --json, never harness parked
+the desk prompt: two continues on a card: ask Michael which, run one
 the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory
 the desk's environment has no NTFY_TOKEN
 the dialog guard: the CLI's dialog words, not the desk's own questions

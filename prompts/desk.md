@@ -51,7 +51,9 @@ HARNESS_ANSWER_END
 ```
 
 Read it back to him. On his go, for a parked feature, run its item's `card.commands` from `harness needs {{RUN_ID}} --json` (they know
-whether the run is going, ending, queued or has a runner; the text view wraps them and shortens paths). For any other
+whether the run is going, ending, queued or has a runner; the text view wraps them and shortens paths). When they
+offer two continues (another run R of the project is alive), ask him which: the queue add waits for R to end and R merges
+first; `--now` runs beside R and this run merges first if it finishes first. Run only his pick. For any other
 item (given up, verify, a merge; a card's `harness merge` is Michael's to run, not yours):
 `harness queue list`; with a runner going, `harness queue add --continue {{RUN_ID}}`, otherwise
 `harness continue {{RUN_ID}}`. A run still going needs no continue.
@@ -64,7 +66,9 @@ HARNESS_ANSWER_END
 )"
 ```
 
-Read it back to him. On his go, for a parked feature, run its item's `card.commands` from `harness needs <run> --json`. For any other
+Read it back to him. On his go, for a parked feature, run its item's `card.commands` from `harness needs <run> --json`. When they
+offer two continues (another run R of the project is alive), ask him which: the queue add waits for R to end and R merges
+first; `--now` runs beside R and this run merges first if it finishes first. Run only his pick. For any other
 item (a card's `harness merge` is Michael's to run, not yours):
 `harness queue list`; with a runner going, `harness queue add --continue <run>`, otherwise `harness continue <run>`.
 A run still going needs no continue.

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- lanes record (lanes P1-03): the record lock; the record on harness/<run>, the code on lane branches ----
+HARNESS_HOME=$HH   # slot_open's merge_drivers (lib/record.sh): a run's session inherits its driver's, a plain shell has none
 # Two background writers through record(), each a read-modify-write of one file (the shape of F pass and the counters),
 # with HARNESS_RECORD_DELAY holding the lock: none of the 40 lines is lost or torn.
 RL=$T/rl; mkdir -p "$RL"
