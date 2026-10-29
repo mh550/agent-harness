@@ -186,7 +186,11 @@ ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
 entries survive: STUB_LONG_SUMMARY=A keeps A's entry whole with the cut-to-400 note
+entries survive: STUB_NO_ENTRY=A writes no entry.json
+entries survive: a headless stub session prints an init line with a 36-character session id
 entries survive: the coding, verify and initializer prompts say no background work at the end
+entries survive: the stub answers --resume of an unknown id with the CLI's two lines and exit 1
+entries survive: the stub's resume keeps the session id and a cumulative total_cost_usd
 entries survive: {{ENTRY_CHECK}} renders as lib/entries.mjs validate in the coding, verify and initializer prompts
 entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
 entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
@@ -435,8 +439,11 @@ metrics.jsonl: mem_peak_mb is null when uncapped
 metrics.mjs: append writes mem_peak_mb as a number or null
 metrics.mjs: orientation stops at the first Write
 metrics.mjs: tokens, cache rate and context peak from the real fixture
+metrics: an entry-resume row from first.jsonl and resumed.jsonl holds the total_cost_usd difference jq computes
 metrics: coding rows carry tokens, cache rate and context peak
 metrics: orientation recorded per session
+metrics: resumed-again-under-cap.jsonl against resumed.jsonl gives a positive difference
+metrics: session-id prints the init line's session_id of first.jsonl
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
 needs REASONS: kind, severity and priority for each of the 15 reasons, as the plan's table

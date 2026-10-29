@@ -43,12 +43,20 @@
 # merge on origin's main adding <path> ("main's <path>"), subject "Merge pull request #7 from test/harness-merge/other-M3"
 # as GitHub writes it: another run's PR merged meanwhile (U2-06's main and merge conflicts).
 # STUB_THIN_VERIFY=all: every verify round is thin (the escalated one too), so the milestone needs Michael (U2-06).
+# Every headless session prints first the init line of fixtures/claude-resume/first.jsonl with its cwd and a fresh
+# session_id, and keeps $STUB_DIR/sessions/<id> (its last result line). `--resume <id>` (R2) appends argv to
+# $STUB_DIR/resume.log: an id it never ran gets unknown-id.out's stderr line and result line, exit 1; a known one gets
+# resumed.jsonl with that session_id and its result's total_cost_usd and modelUsage cumulative, as the CLI's are.
+# STUB_NO_ENTRY=<id>: that feature's first coding session writes no entry.json. STUB_RESUME_ENTRY=good|bad|good-edits:
+# a resumed session (`# Entry resume`) writes a valid entry with one dead_ends item (good), `{not json` (bad), or the
+# good entry and an uncommitted resumed.txt in the worktree (good-edits); unset, it writes nothing.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
-ARGS=("$@"); prompt="" headless=0 rc=""
+ARGS=("$@"); prompt="" headless=0 rc="" resume=""
 while (( $# )); do
   [[ $1 == -p || $1 == --print ]] && headless=1
   [[ $1 == --remote-control ]] && rc=${2:-}
+  [[ $1 == --resume ]] && resume=${2:-}
   [[ $1 == -p && -n ${2:-} && ${2:-} != -* ]] && { prompt=$2; shift; }; shift; done
 if (( ! headless )) && [[ -n $rc ]]; then   # interactive (a desk): the pane line Remote Control prints, then each typed line to <name>.in
   mkdir -p "$STUB_DIR/desk"; n=$(( $(cat "$STUB_DIR/desk/count" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$STUB_DIR/desk/count"
@@ -64,6 +72,19 @@ if (( ! headless )) && [[ -n $rc ]]; then   # interactive (a desk): the pane lin
 fi
 [[ -n $prompt ]] || prompt=$(cat)   # `claude -p` with the prompt on stdin
 first=$(head -1 <<< "$prompt")
+RES=$HERE/fixtures/claude-resume SESS=${STUB_DIR:-/nonexistent}/sessions
+if [[ -n $resume ]]; then   # the CLI resumes a session it ran, by id, or says it has none (unknown-id.out, exit 1)
+  [[ -n ${STUB_DIR:-} ]] && { printf '%q ' "${ARGS[@]}"; echo; } >> "$STUB_DIR/resume.log"
+  if [[ ! -f $SESS/$resume ]]; then
+    sed -n "1s/00000000-0000-0000-0000-000000000000/$resume/p" "$RES/unknown-id.out" >&2
+    sed -n "2s/00000000-0000-0000-0000-000000000000/$resume/p" "$RES/unknown-id.out"; exit 1
+  fi
+  sid=$resume
+else   # the session starts before anything else, a refused one too: its init line comes first
+  sid=$(cat /proc/sys/kernel/random/uuid)
+  [[ -n ${STUB_DIR:-} ]] && mkdir -p "$SESS" && : > "$SESS/$sid"
+  sed -n 3p "$RES/first.jsonl" | jq -c --arg id "$sid" --arg cwd "$PWD" '.session_id = $id | .cwd = $cwd | .original_cwd = $cwd'
+fi
 [[ -n ${STUB_DIR:-} ]] && echo "${HARNESS_RUN_ID:-} ${HARNESS_CACHE:-unset}" >> "$STUB_DIR/cache.log"   # what each headless session sees (L3-02); not in scratch, which finish deletes
 L=${HARNESS_RUN_DIR:-.}/feature_list.json
 after_session() { awk '/^# This session$/ { s = 1 } s && '"$1" <<< "$prompt"; }   # an awk rule, applied below `# This session` only (a brief can't fake an id)
@@ -74,7 +95,8 @@ set_passes() { node -e 'const fs=require("fs"),[f,id,v]=process.argv.slice(1),l=
 # STUB_LONG_SUMMARY=<id>: that id's first coding session's summary is 410 characters, "<id>: " padded with x (R2-02)
 entry() { local id=$1 n=$2 long=; shift 2
   [[ ${STUB_LONG_SUMMARY:-} == "$id" && $n == 1 ]] && long=$id
-  if [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]]; then printf '{not json' > "$HARNESS_RUN_DIR/entry.json"
+  if [[ ${STUB_NO_ENTRY:-} == "$id" && $n == 1 && $first == "# Coding session" ]]; then return 0
+  elif [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]]; then printf '{not json' > "$HARNESS_RUN_DIR/entry.json"
   else jq -n "$@" | jq --arg long "$long" 'if $long != "" and .kind == "coding" then .summary = ("\($long): " | . + "x" * (410 - length)) else . end' > "$HARNESS_RUN_DIR/entry.json"; fi; }
 main_touch() {   # <who>: STUB_MAIN_TOUCH's merge, once, when <who> is its session
   [[ ${STUB_MAIN_TOUCH:-} && ${STUB_MAIN_TOUCH%%:*} == "$1" ]] || return 0
@@ -87,7 +109,9 @@ main_touch() {   # <who>: STUB_MAIN_TOUCH's merge, once, when <who> is its sessi
 }
 # A finished session: the real capture's assistant, tool-result and result events (fixtures/usage-tokens.jsonl, so every
 # session carries tokens), with cost, final text, turns and duration substituted. --argjson: callers' \\n become newlines.
-ok() { jq -c --argjson c "${1:-0.25}" --argjson r "\"${2:-done}\"" 'if .type == "result" then .total_cost_usd = $c | .result = $r | .num_turns = 12 | .duration_ms = 60000 else . end' "$HERE/fixtures/usage-tokens.jsonl"; }
+# The result line is kept as the session's figures so far (a resume adds to them).
+ok() { local out; out=$(jq -c --argjson c "${1:-0.25}" --argjson r "\"${2:-done}\"" 'if .type == "result" then .total_cost_usd = $c | .result = $r | .num_turns = 12 | .duration_ms = 60000 else . end' "$HERE/fixtures/usage-tokens.jsonl")
+  printf '%s\n' "$out"; if [[ -f $SESS/$sid ]]; then jq -c 'select(.type == "result")' <<< "$out" > "$SESS/$sid"; fi; }
 
 case $first in
   "# Initializer session")
@@ -275,6 +299,25 @@ JSON
       link) ln -s feature_list.json "$HARNESS_RUN_DIR/retro-proposals.json" ;;
       *) tr , '\n' <<< "$STUB_RETRO_PROPOSALS" | jq -R '{id: ., title: "stub proposal \(.)", evidence: "stub retro"}' | jq -s . > "$HARNESS_RUN_DIR/retro-proposals.json" ;; esac
     ok 0.2 "## Outcome\\nStub retro.\\n\\n## Proposed harness changes\\n1. none" ;;
+  "# Entry resume")   # resumed.jsonl on the session's figures: cost plus the fixture's increment, modelUsage plus its usage
+    id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }')
+    kind=$(after_session '/^Kind: `/ { sub(/^Kind: `/, ""); sub(/`.*/, ""); print; exit }')
+    case ${STUB_RESUME_ENTRY:-} in
+      good|good-edits) jq -n --arg id "$id" --arg k "$kind" '{feature: $id, kind: $k, outcome: "not yet", summary: "\($id): written on a resume",
+        dead_ends: [{tried: "ending without an entry", why: "the harness resumed the session to write it"}]}' > "$HARNESS_RUN_DIR/entry.json"
+        [[ $STUB_RESUME_ENTRY == good-edits ]] && echo "$id" > resumed.txt ;;
+      bad) printf '{not json' > "$HARNESS_RUN_DIR/entry.json" ;;
+    esac
+    prev=$SESS/$sid; [[ -f $prev ]] || prev=/dev/null
+    out=$(jq -c --arg id "$sid" --arg cwd "$PWD" --slurpfile prev "$prev" --slurpfile f "$RES/first.jsonl" --slurpfile r "$RES/resumed.jsonl" '
+      def res(x): x | map(select(.type == "result"))[-1]; (res($r).total_cost_usd - res($f).total_cost_usd) as $inc | res($r).usage as $u
+      | ($prev[0] // {}) as $p | (($p.modelUsage // {}) | if length == 0 then res($r).modelUsage | map_values(.inputTokens = 0 | .outputTokens = 0 | .cacheReadInputTokens = 0 | .cacheCreationInputTokens = 0 | .costUSD = 0) else . end) as $m
+      | (if has("session_id") then .session_id = $id else . end) | if .type == "system" and .subtype == "init" then .cwd = $cwd | .original_cwd = $cwd else . end
+      | if .type == "result" then .total_cost_usd = ($p.total_cost_usd // 0) + $inc
+          | .modelUsage = ($m | to_entries | (.[0].value |= (.inputTokens += $u.input_tokens | .outputTokens += $u.output_tokens
+              | .cacheReadInputTokens += $u.cache_read_input_tokens | .cacheCreationInputTokens += $u.cache_creation_input_tokens | .costUSD += $inc)) | from_entries)
+        else . end' "$RES/resumed.jsonl")
+    printf '%s\n' "$out"; if [[ -f $SESS/$sid ]]; then jq -c 'select(.type == "result")' <<< "$out" > "$SESS/$sid"; fi ;;
   "# Probe session"*)   # records its command line, $PWD and prompt; for t2, Q1 (T2a's files) is right and Q2 (T2b's deps) wrong
     { printf '%s\n' "${ARGS[@]}"; echo "PWD=$PWD"; echo "HARNESS_EVAL=${HARNESS_EVAL:-}"; } > "$STUB_DIR/probe-args"; printf '%s\n' "$prompt" > "$STUB_DIR/probe-prompt"
     [[ ${STUB_PROBE_ERROR:-} ]] && { echo "warning: noise on stderr" >&2
