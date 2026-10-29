@@ -144,3 +144,7 @@
 - 2026-10-29 19:24 · R3-06: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 19:24 · R3-06 · claude-opus-5-5 · passes=true · 48 min · 20/23 passing · tests 980
 - 2026-10-29 19:24 · R3: 1 files conflict with main (CLAUDE.md); a resolve session
+- 2026-10-29 19:24 · R3: main merged in by a resolve session (CLAUDE.md; claude-opus-5-5, 1 min); the verify goes on with main merged
+- 2026-10-29 19:24 · merged main into harness-lane/agent-harness-2026-10-29-2/R3
+- 2026-10-29 19:24 · verify R3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 19:41 · context.md for R3: 16143 bytes

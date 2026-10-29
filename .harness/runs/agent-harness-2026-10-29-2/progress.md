@@ -9,6 +9,46 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 19:43 · verify R3 · not yet
+
+Full suite RED: 39-memlint-m4 fails (memlint on this worktree prints `CLAUDE.md:80 gotchas: 16 lines, over 15`; the merge resolve kept both Gotchas lines). Every feature ends on the suite step, so all six fail. Other steps spot-checked hold.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R3-01 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-01 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-01 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-01 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-01 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-02 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 5 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 6 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-03 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-03 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-03 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-03 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-03 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-04 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-04 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-04 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-04 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-04 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-05 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-05 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-05 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-05 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-05 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-06 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-06 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-06 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-06 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-06 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+
+- *194129-verify-R3 · claude-sonnet-5-5*
+
 ### 2026-10-29 19:24 · resolve R3 · passes
 
 CLAUDE.md Gotchas: the lane added a line on {{X}} placeholders above {{SECTIONS}} in prompt templates (R3-04); main added one on stub --resume of an unknown id leaving 00000000-… in errors[] (R1-06). Independent facts, so both lines are kept, in their place; the section is at 15 lines, inside its limit. Doc-only, so no suite subset applies.
@@ -273,44 +313,9 @@ All 28 steps of R2-01..05 hold. Suite 963/963 (full, this tree), subsets 76/12/0
 - **Discovery** (affects project): stub --resume of an unknown id substitutes session_id but leaves the fixture's 00000000-… id in the result line's errors[] (the real CLI names the asked id there)
 - *145027-verify-R2 · claude-opus-5-5*
 
-### 2026-10-29 14:50 · verify R2 · passes
-
-All five R2 features hold: full suite green (963 tests), 76-entries-survive 18/18, journal and metrics subsets green, plan, review, decision, architecture and README present as the steps state.
-
-| Feature | Step | What you ran or read | What you saw | Holds |
-|---|---|---|---|---|
-| R2-01 | 1 | ls/grep docs/plans/2026-10-29-R2-entries.md sections | plan exists with entry check, trim, background, resume, stubs, check names | yes |
-| R2-01 | 2 | grep resume section | resume section names flags, budget, row | yes |
-| R2-01 | 3 | grep stub section | stub section lists behaviours | yes |
-| R2-01 | 4 | grep dependency line; git log origin/main \| grep -c N[12] | dependency line states N2 absent at init (1); origin now shows 2, historical | yes |
-| R2-01 | 5 | check.sh init run | green, 963 tests | yes |
-| R2-02 | 1 | grep ENTRY_CHECK lib/prompt.sh prompts/*.md; tests/run.sh 76-entries | HARNESS_ENTRY_CHECK exported, three prompts render validate; PASS | yes |
-| R2-02 | 2 | grep background prompts; check in 76 | background rule in all three; PASS | yes |
-| R2-02 | 3 | tests/run.sh 12-journal (trim, maybe checks) | 12-journal 20/20 incl. 410-char trim to 400 with dead_ends, outcome maybe minimal | yes |
-| R2-02 | 4 | tests/run.sh 76-entries (STUB_LONG_SUMMARY check) | 76 18/18 PASS incl. long summary note, no minimal | yes |
-| R2-02 | 5 | bash -n; node --check; check-names | syntax ok; conformance in suite green | yes |
-| R2-02 | 6 | init suite run | green | yes |
-| R2-03 | 1 | tests/run.sh 76-entries | init line session id check PASS | yes |
-| R2-03 | 2 | tests/run.sh 76-entries | unknown-id and cumulative cost checks PASS | yes |
-| R2-03 | 3 | tests/run.sh 76-entries STUB_NO_ENTRY check | STUB_NO_ENTRY check PASS | yes |
-| R2-03 | 4 | tests/run.sh 05-metrics | 05-metrics 7/7 PASS | yes |
-| R2-03 | 5 | check-names; bash -n; node --check | syntax ok | yes |
-| R2-03 | 6 | init suite | green | yes |
-| R2-04 | 1 | cat prompts/entry-resume.md; grep lib/config.sh | file exists, defaults 8/10m/1 | yes |
-| R2-04 | 2 | tests/run.sh 76-entries; read entry_resume checks | 18/18 PASS | yes |
-| R2-04 | 3 | 76 rgood checks: resume.log, dead_ends, metrics row, summary count | PASS | yes |
-| R2-04 | 4 | 76 rbad, rlimit, redits checks | PASS | yes |
-| R2-04 | 5 | bash -n; suite | ok, green | yes |
-| R2-05 | 1 | read docs/plans/2026-10-29-R2-review.md | 0 Critical, 3 Important fixed RED to GREEN | yes |
-| R2-05 | 2 | read Simplifications table | table present | yes |
-| R2-05 | 3 | read journal/decisions/2026-10-29-entries-survive.md rejected list | four rejected alternatives present | yes |
-| R2-05 | 4 | grep architecture.md/README.md for trim and resume | §4/§5 and README describe trim, resume, entry-resume row | yes |
-| R2-05 | 5 | init suite | green | yes |
-
-- *144745-verify-R2 · claude-sonnet-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 14:50 · verify R2 · passes · All five R2 features hold: full suite green (963 tests), 76-entries-survive 18/18, journal and metri… ([in full](progress-archive.md))
 - 2026-10-29 14:32 · R1-04 · passes · The lanes flakes (44, 46, 48, and 45's also-seen) were one coordinator race in lib/driver.sh: a lane… ([in full](progress-archive.md))
 - 2026-10-29 14:31 · resolve R2 · passes · CLAUDE.md Gotchas: lane reworded the stub-runs line and added the 399+… cut fact; main added the mer… ([in full](progress-archive.md))
 - 2026-10-29 14:29 · R2-05 · passes · 0 Critical, 3 Important, 8 Minor. One Opus round on R2.diff. Fixed RED→GREEN: a result-less resume's… ([in full](progress-archive.md))
