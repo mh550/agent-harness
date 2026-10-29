@@ -1,0 +1,26 @@
+agent-harness-2026-10-26-2: lane-seconds 18183 · model 25% · session_suite 64% · session_other 6% · harness_before 3% · harness_after 0% · verify 1% · waiting 0% · idle 0%
+  coding sessions 12: full-suite scopes inside them 18 (1.5 per session), session suite s 11682 (973 per session), model s 3914
+  the sessions' check.sh full calls by outcome: cached 2, green 0, flake 0, red 2, moved to background at the tool timeout 0, other (output cut by the call) 21
+  harness suites (full runs, reruns aside): before a session 1 (596 s), after 0 (0 s), verify 0 (0 s); reruns 0
+  sessions that ended passes=true 7, un-passed for a red suite 0, post-session cache hits (a passing session with no harness suite after it) 7
+agent-harness-2026-10-28: lane-seconds 76004 · model 25% · session_suite 63% · session_other 3% · harness_before 1% · harness_after 4% · verify 3% · waiting 1% · idle 1%
+  coding sessions 26: full-suite scopes inside them 54 (2.1 per session), session suite s 47739 (1836 per session), model s 19360
+  the sessions' check.sh full calls by outcome: cached 4, green 3, flake 0, red 3, moved to background at the tool timeout 0, other (output cut by the call) 55
+  harness suites (full runs, reruns aside): before a session 2 (961 s), after 5 (2655 s), verify 3 (1633 s); reruns 0
+  sessions that ended passes=true 22, un-passed for a red suite 1, post-session cache hits (a passing session with no harness suite after it) 20
+agent-harness-2026-10-29: lane-seconds 29225 · model 18% · session_suite 60% · session_other 3% · harness_before 3% · harness_after 12% · verify 3% · waiting 0% · idle 0%
+  coding sessions 15: full-suite scopes inside them 23 (1.5 per session), session suite s 17518 (1168 per session), model s 5382
+  the sessions' check.sh full calls by outcome: cached 4, green 2, flake 1, red 1, moved to background at the tool timeout 1, other (output cut by the call) 22
+  harness suites (full runs, reruns aside): before a session 2 (1345 s), after 5 (3558 s), verify 1 (605 s); reruns 2
+  sessions that ended passes=true 11, un-passed for a red suite 1, post-session cache hits (a passing session with no harness suite after it) 9
+agent-harness-2026-10-29-2: lane-seconds 56013 · model 12% · session_suite 48% · session_other 14% · harness_before 4% · harness_after 7% · verify 4% · waiting 12% · idle 0%
+  coding sessions 18: full-suite scopes inside them 34 (1.9 per session), session suite s 26895 (1494 per session), model s 6698
+  the sessions' check.sh full calls by outcome: cached 3, green 0, flake 0, red 0, moved to background at the tool timeout 3, other (output cut by the call) 24
+  harness suites (full runs, reruns aside): before a session 3 (2131 s), after 4 (3592 s), verify 1 (1014 s); reruns 5
+  sessions that ended passes=true 14, un-passed for a red suite 2, post-session cache hits (a passing session with no harness suite after it) 14
+
+all runs: lane-seconds 179425 · model 20% · session_suite 58% · session_other 6% · harness_before 2% · harness_after 6% · verify 3% · waiting 4% · idle 0%
+2026-10-29 runs, alone: n 33, wall median 624 s, cpu median 2452 s, wall max 1047
+2026-10-29 runs, overlap under 0.5: n 7, wall median 856 s, cpu median 3230 s, wall max 1237
+2026-10-29 runs, 0.5–0.9: n 12, wall median 812 s, cpu median 3102 s, wall max 1032
+2026-10-29 runs, 0.9 and over: n 11, wall median 904 s, cpu median 3220 s, wall max 1121
