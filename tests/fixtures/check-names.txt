@@ -418,6 +418,13 @@ memory gate: every session starts with the services up, a verify after its wait 
 memory gate: the real fixture's 9 GB passes without a note
 memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+merge-sorted: a base line one side removed stays removed
+merge-sorted: a line both sides added is one line
+merge-sorted: a side not in LC_ALL=C order exits 1 and leaves A untouched
+merge-sorted: the fixture pair merges to a check, b lane check, b main check, c check with exit 0
+merge-sorted: the harness sets the driver in the slot's worktree config and never in the project's checkout
+merge-sorted: two lanes adding names to a sorted list both merge, with no conflict note and no needs record
+merge-sorted: with the attribute and the worktree driver, two branches adding adjacent names merge with exit 0, no marker, the union
 merge_one on the coordinator: merge_conflict names the lane branch, never the record branch, and is notified
 merge_one's conflict opens merge_conflict: the merge-tree files in where, main and the tag commit, notified with the card
 merge_one's refusal opens merge_refused: the PR URL in where and as its click, notified once with it

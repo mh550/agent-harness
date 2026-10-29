@@ -33,6 +33,8 @@
 # waits (≤ 120 s) until origin's main has <path>: another lane merges while it verifies (P2-03's re-base).
 # STUB_SHARED=<file>: A's first coding session rewrites <file>'s first line to A, C's its last line to C, committed with
 # their work (one path, distinct hunks: the merge is clean and the two milestones' files overlap).
+# STUB_SORTED=<file>: A's first coding session adds the line `b A check` to <file>, C's `b C check`, each re-sorted and
+# committed with their work: two names between the same two lines of a sorted list (N2-02's sorted-union driver).
 # STUB_REBASE_VERIFY_FAIL=1: M2's second verify session (a re-base's round) un-passes C.
 # STUB_IGNORED=<path>: every coding session appends "<id> present|absent" (<path> before it works) to
 # $STUB_DIR/ignored.log; the run's first writes <path> (an ignored install: a reused slot keeps it, P2-04).
@@ -214,6 +216,7 @@ JSON
     echo "$id $n" > "work-$id.txt"
     (( n == 1 )) && main_touch "$id"
     if [[ ${STUB_SHARED:-} && $n == 1 ]]; then case $id in A) sed -i '1s/.*/A/' "$STUB_SHARED" ;; C) sed -i '$s/.*/C/' "$STUB_SHARED" ;; esac; fi
+    if [[ ${STUB_SORTED:-} && $n == 1 && $id == [AC] ]]; then printf '%s\n' "b $id check" >> "$STUB_SORTED"; LC_ALL=C sort -o "$STUB_SORTED" "$STUB_SORTED"; fi
     [[ ${STUB_BIG_DIFF:-} && $id == A && $n == 1 ]] && seq 500 > big-A.txt   # a milestone diff over REVIEW_OPUS_LINES (M6)
     tns=${STUB_TESTS_N:-}; for tn in ${tns//,/ }; do if [[ ${tn%%:*} == "$id" && $n == 1 ]]; then echo "${tn#*:}" > tests.n; fi; done   # the suite's count moves (M5-02)
     if [[ ${STUB_SNAPSHOT:-} == "$id" && $n == 1 ]]; then   # what Michael sees between sessions, before finish (M5-02)

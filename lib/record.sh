@@ -568,6 +568,14 @@ sync_record() { record sync_record_; }
 # opening another slot meanwhile would fail); nothing reads a lane branch's upstream
 sync_lane() { [[ -n ${LBRANCH:-} ]] || return 0; git -C "$SLOT" push -q origin "$LBRANCH" 2>> "$STATE/run.log" || log "push of $LBRANCH failed"; }
 
+# <worktree>: the sorted-union merge driver (lib/merge-sorted.sh) in that worktree's own config, so a project's
+# `.gitattributes` `merge=sorted-union` works in the harness's checkouts and never in Michael's (decisions/2026-10-29-conflict-resolution)
+merge_drivers() {
+  [[ $(git -C "$1" config extensions.worktreeConfig) == true ]] || git -C "$1" config extensions.worktreeConfig true
+  git -C "$1" config --worktree merge.sorted-union.name "sorted one-per-line list (harness)"
+  git -C "$1" config --worktree merge.sorted-union.driver "$HARNESS_HOME/lib/merge-sorted.sh %O %A %B"
+}
+
 # <m> [<k>] → slot k (0) on harness-lane/<run>/<m>, cwd there; HARNESS_WT and HARNESS_BRANCH name it for sessions.
 # The coordinator opens it, then starts the lane process in it (lib/lane.sh). A lane resumes its branch (the newer of
 # the box's and the origin's, both merged if they diverged), else starts from BASE_REF (harness start --base) or
@@ -636,7 +644,7 @@ slot_open() {
   # which the record worktree shares), plus the user's own global excludes the worktree value would shadow
   mkdir -p "$STATE/lanes/$m"
   { echo ".harness/runs/"; cat "$(git config --global --path core.excludesFile 2> /dev/null || echo "${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore")" 2> /dev/null; } > "$STATE/lanes/$m/exclude"
-  [[ $(git -C "$RWT" config extensions.worktreeConfig) == true ]] || git -C "$RWT" config extensions.worktreeConfig true
+  merge_drivers "$SLOT"
   git -C "$SLOT" config --worktree core.excludesFile "$STATE/lanes/$m/exclude"
   echo "$SLOT" > "$STATE/lanes/$m/slot"   # lib/prompt.sh as a command renders a lane's prompt from it
   LBRANCH=$b LANE=$m; lane_cd
