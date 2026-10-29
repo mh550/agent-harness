@@ -3,6 +3,49 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 05:20 · verify N1 · passes
+
+All five N1 features hold: subset 39/39 re-run, syntax checks, plan/docs/decision read, full suite green (886 tests) at init.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| N1-01 | 1 | grep ^## plan; sections | all six sections present | yes |
+| N1-01 | 2 | read plan ## check.sh | names rerun point, 4 CHECK_RERUN values, 124/137 exits, subset never reruns | yes |
+| N1-01 | 3 | read plan ## Checks | checks listed by 73/33/74 files | yes |
+| N1-01 | 4 | read plan ## Checks stub suite | counter-file stub with HARNESS_FAILED and N/M lines described | yes |
+| N1-01 | 5 | git diff --stat f0cbdc1~1 f0cbdc1 outside docs/plans | empty | yes |
+| N1-01 | 6 | suite via init | green 886 tests | yes |
+| N1-02 | 1 | bash tests/run.sh suite-runner; read tests/run.sh:100 | PASS red prints HARNESS_FAILED, green none; echo guarded by ! outside | yes |
+| N1-02 | 2 | tests/run.sh check-rerun | 14/14: green-after-rerun line, args a b, check.out/check-rerun.out, marker total, cached | yes |
+| N1-02 | 3 | check-rerun: red every time | PASS exit 1, red again on a rerun of a, no marker/row | yes |
+| N1-02 | 4 | check-rerun: no-line/failed/off/suite | PASS all variants | yes |
+| N1-02 | 5 | check-rerun: timeout and subset | PASS one call each | yes |
+| N1-02 | 6 | check-rerun flakes row keys | PASS row keys and jq | yes |
+| N1-02 | 7 | grep config.sh prompt.sh lane.sh template | CHECK_RERUN=auto, HARNESS_CHECK_RERUN export, HARNESS_LANE, template present; PASS | yes |
+| N1-02 | 8 | read decision file | rerun-guard decision exists with updates | yes |
+| N1-02 | 9 | bash -n; check-names | syntax ok; conformance in full suite green | yes |
+| N1-02 | 10 | init suite | green | yes |
+| N1-03 | 1 | grep flakes_note; 74 | record.sh defines it; lane.sh 3 sites, driver.sh finish; 74 PASS | yes |
+| N1-03 | 2 | 74 flaky run | PASS flaky: whole suite note, A stays passed | yes |
+| N1-03 | 3 | 74 invariant run | PASS C un-passed, no flaky line | yes |
+| N1-03 | 4 | 74 flakes-noted | PASS offset equals size; no-flake run writes none | yes |
+| N1-03 | 5 | bash -n | ok | yes |
+| N1-03 | 6 | init suite | green | yes |
+| N1-04 | 1 | 74 summary check | PASS flakes counts, fixture keys subset | yes |
+| N1-04 | 2 | 74 report check | PASS Flakes row after Tests | yes |
+| N1-04 | 3 | 74 run checks | PASS flakes run summary/report | yes |
+| N1-04 | 4 | 74 debrief check | PASS x2 listed, single absent | yes |
+| N1-04 | 5 | node --check; bash -n | ok | yes |
+| N1-04 | 6 | init suite | green | yes |
+| N1-05 | 1 | review diff file; entries.jsonl:7 | diff exists; entry reports 0 Critical, 1 Important, 7 Minor | yes |
+| N1-05 | 2 | tests/run.sh check-rerun suite-runner flakes | 39/39 pass | yes |
+| N1-05 | 3 | grep architecture.md | §3 row, §4 flakes row, §7 Rerun guard, §10 CHECK_RERUN present | yes |
+| N1-05 | 4 | grep README.md | CHECK_RERUN four values and HARNESS_FAILED promise present | yes |
+| N1-05 | 5 | decision file | Updated in place lines for N1-03/04/05 | yes |
+| N1-05 | 6 | init suite | green 886 | yes |
+
+- *051705-verify-N1 · claude-sonnet-5-5*
+
 ### 2026-10-29 04:56 · N1-05 · passes
 
 Opus review of N1: finish now notes a flake on its own last suite (RED→GREEN stub run fe); a non-object flakes.jsonl row is skipped by summary and flakes_note; check.sh shares one green branch and one rerun call; arch §3/§4/§7/§10, README, decision updated. Hung-file rerun kept as a default (question). 0 Critical, 1 Important, 7 Minor
