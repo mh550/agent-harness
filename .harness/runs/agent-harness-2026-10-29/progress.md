@@ -3,6 +3,18 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 04:02 · N1-04 · passes
+
+summary.mjs: flakes {count, names} from <state>/green/flakes.jsonl (tolerant reader, whole suite for no names), a Flakes row after Tests in report.md and the TTY card (n · name ×k, 0, none for older summaries), flakers() + `summary.mjs flakers <ledger>/<project>` for the debrief's #### flakes block after report.md. 4 new checks in 74-flakes-run; docs and decision updated.
+
+- **Files:** lib/summary.mjs, lib/debrief.sh, tests/checks/74-flakes-run.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-29-rerun-guard.md
+- **Verified:** 74-flakes-run 10/10 (4 new, watched failing first); full suite via check.sh: green in 622 s, 885 tests, no rerun; node --check lib/summary.mjs and bash -n lib/debrief.sh clean; 71-tty-views (summary-report.md fixture) unchanged and green
+- **Tests:** 881 → 885
+- **Dead end:** the unit check asserting build's keys minus the fixture's are exactly flakes — summary-report.json predates lanes and review: build has those too; the check asserts fixture keys ⊆ build keys and flakes new
+- **Discovery** (affects N1-05): tests/fixtures/summary-report.json predates the lanes and review keys: build() produces keys it lacks, so compare it as a subset
+- **Discovery** (affects N1-05): the debrief's flakes block reads $LEDGER/<basename of PROJECT_DIR>, as rec_dir does; the check runs debrief --dry-run with its own HARNESS_LEDGER so the stub runs' ledgered summaries don't count
+- *05-N1-04 · claude-opus-5-5*
+
 ### 2026-10-29 03:45 · N1-03 · passes
 
 Attempt 1's code (cfb23fc) verified: flakes_note in lib/record.sh, called after the un-pass check, verify, disjoint re-base and in finish before run ended; run_init's tests-start from the marker after a rerun. 74-flakes-run 6/6; full suite green on this tree at init (881 tests, 622 s, no rerun).
