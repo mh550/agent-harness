@@ -17,3 +17,4 @@
 - 2026-10-29 05:06 · N1-05 · claude-opus-5-5 · passes=true · 54 min · 5/11 passing · tests 886
 - 2026-10-29 05:07 · verify N1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-29 05:17 · context.md for N1: 14740 bytes
+- 2026-10-29 05:20 · N1 verified and tagged run/agent-harness-2026-10-29/N1
