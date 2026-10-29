@@ -9,6 +9,19 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 15:41 · R1-05 · passes
+
+Both run flakers are R1-04's lane-count race. Neither reproduced unforced (10/10 green each). Forced with HARNESS_COUNT_HOLD=1 on the pre-fix driver, 28 ended 'no feature left to try' before M2 and 15's weekly run did too. Both runs now start with the hold: red before the fix (0/1), 10/10 after. Plan rows filled; decision updated in place. Merged origin/main.
+
+- **Files:** tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/checks/28-run-14d-harness-merge.sh, docs/plans/2026-10-29-R1-flakes.md, journal/decisions/2026-10-29-lane-count-end-check.md, tests/stub-claude.sh
+- **Verified:** Before: `28-run-14d-harness-merge: 10/10 green` (91 s) and `15-run-4-same-but-queue-parked-debrief-tmux: 10/10 green` (903 s), run at the same time. Forced on the driver without `alive == 0`: 28 logged `count hold: 1 lane(s) counted, held until gone` · `no feature left to try: 2/3 passing` · `lane M1 closed (M1 verified)`; 15's weekly ended `no feature left to try` with `lane M1 closed (weekly budget (7-day window at 90%…))`. With the hold pinned and the fix reverted: 0/1 on each, only the target check failing. After: `28-run-14d-harness-merge: 10/10 green` (65 s), `15-run-4-same-but-queue-parked-debrief-tmux: 10/10 green` (653 s). Full suite after merging main: `973/973 checks passed`, check: green in 930 s. `git diff origin/main -- tests/fixtures/check-names.txt` removes 0 lines.
+- **Tests:** 944 → 973
+- **Dead end:** suite through check.sh as a background job with a 10 min limit — under the box's load (8-9) the full suite took 930 s; the job was killed before it reported
+- **Discovery** (affects R1-06, R1-07): 15's weekly check and 28 were R1-04's coordinator race, not settle's box-wide pgrep: forced, both end 'no feature left to try' with the lane closing just after. The settle lead for 15 is ruled out.
+- **Discovery** (affects R1-06): HARNESS_COUNT_HOLD=1 exported around tests/run.sh reaches every run of a check file (bin/harness passes it on), so a file can be tested forced without editing it. Revert the end-check line to see the pre-fix behaviour.
+- **Discovery** (affects run): Merging origin/main brought R2 in: its stub-claude.sh header comments conflicted with R1-02's STUB_BARRIER comment. Both are kept; the suite went from 944 to 973 checks.
+- *07-R1-05 · claude-opus-5-5*
+
 ### 2026-10-29 15:29 · R3-01 · passes
 
 Wrote docs/plans/2026-10-29-R3-leftovers.md: one section per R3 item with its function, file at 53bdc66 and check file; Minor 8 quoted and found cheap (built in R3-04); unreproducible's regexes tried on every example; N1 and N2 both on origin main (2). Plan only; Gotchas: promoted the stub --resume line in place of the HARNESS_NOW one.
@@ -252,24 +265,7 @@ Wrote docs/plans/2026-10-29-R1-flakes.md: the four tools (wait_for, stub_wait/st
 - **Proposed change:** R1-04: 45-lanes-run and 47-lanes-two also flaked under load on 2026-10-29 (not in the spec's list); give each --repeat 10 if the budget allows, as the plan's Also seen says
 - *01-R1-01 · claude-opus-5-5*
 
-### 2026-10-29 09:19 · R2-01 · passes
-
-Wrote docs/plans/2026-10-29-R2-entries.md: the entry check, the trim (399 + … so readEntries keeps it), the background rule, the resume (entry_resume in record.sh, decided before the ingest, outside the record lock, reusing session() with S_RESUME/S_TURNS/S_TIMEOUT/S_BUDGET), metrics resumeRow, the stubs, 76-entries-survive.sh's check names. N2 not on main.
-
-- **Files:** docs/plans/2026-10-29-R2-entries.md, CLAUDE.md
-- **Verified:** Each plan fact checked in code: ingest appends before exit 3; journal_ runs under record's flock; validate rejects a 401-char summary (node); metrics limit refuses the LIMIT_MIDWAY shape (rc 0); fixture costs and modelUsage by jq; N1/N2 grep = 1. Suite green, 886 (cached, plan-only tree).
-- **Tests:** 886 → 886
-- **Discovery** (affects R2-04): The resume must be decided before the ingest (ingest appends the minimal line before exit 3) and outside record's lock (journal_ holds it; a 10m resume would stall the other lane): entry_resume runs in journal(), not journal_.
-- **Discovery** (affects R2-02): A trimmed summary of 400 + … (401) fails validate and readEntries drops it: cut to 399 + … as minimal() does.
-- **Discovery** (affects R2-02): validate's header message is the same for a long string and a non-string; R2-02 gives a long one 'header: <n> characters (at most 2000)' and validate exits 2 when only caps fail.
-- **Discovery** (affects R2-03, R2-04): summary.mjs counts unmatched metrics rows as sessions; entry-resume rows must be filtered out of sessions and kept in cost (summary.mjs and metrics.mjs summary).
-- **Discovery** (affects R2-04): restrict commits a WIP first, so resumed.txt would be in history: drop the resume's uncommitted edits (checkout + clean outside .harness/runs) before restrict.
-- **Discovery** (affects R2-04): Check 25 (STUB_BAD_ENTRY=B) gets resumed after R2-04; its note becomes 'still invalid (...) after one resume'. STUB_PARK/STUB_INBOX_IN_COMMENT write no entry and will be resumed too.
-- **Proposed change:** R2-01 step 2 says the resume is called from journal_ after an ingest exit 3; the plan calls entry_resume from journal before the ingest on the same condition (validate exit 1, not refused), because the ingest has appended the minimal line by exit 3 and journal_ holds the record lock.
-- **Proposed change:** R2-02 step 3 says the cut summary is '400 code points plus …' (401): readEntries would drop it; it should read '400 code points, … last' (399 + …).
-- **Proposed change:** R2-03 needs two small CLI additions the steps don't name: metrics.mjs cost <transcript> (the resume's budget) and metrics.mjs append-resume (the row).
-- *02-R2-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 09:19 · R2-01 · passes · Wrote docs/plans/2026-10-29-R2-entries.md: the entry check, the trim (399 + … so readEntries keeps i… ([in full](progress-archive.md))
 - 2026-10-29 09:12 · init · passes · 23 features: R1 7 (plan, wait_for/barriers/--repeat, sleep lint, three flaker groups, review), R2 5 … ([in full](progress-archive.md))

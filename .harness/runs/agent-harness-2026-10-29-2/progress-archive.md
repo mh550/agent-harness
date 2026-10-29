@@ -9,6 +9,19 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 15:41 · R1-05 · passes
+
+Both run flakers are R1-04's lane-count race. Neither reproduced unforced (10/10 green each). Forced with HARNESS_COUNT_HOLD=1 on the pre-fix driver, 28 ended 'no feature left to try' before M2 and 15's weekly run did too. Both runs now start with the hold: red before the fix (0/1), 10/10 after. Plan rows filled; decision updated in place. Merged origin/main.
+
+- **Files:** tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/checks/28-run-14d-harness-merge.sh, docs/plans/2026-10-29-R1-flakes.md, journal/decisions/2026-10-29-lane-count-end-check.md, tests/stub-claude.sh
+- **Verified:** Before: `28-run-14d-harness-merge: 10/10 green` (91 s) and `15-run-4-same-but-queue-parked-debrief-tmux: 10/10 green` (903 s), run at the same time. Forced on the driver without `alive == 0`: 28 logged `count hold: 1 lane(s) counted, held until gone` · `no feature left to try: 2/3 passing` · `lane M1 closed (M1 verified)`; 15's weekly ended `no feature left to try` with `lane M1 closed (weekly budget (7-day window at 90%…))`. With the hold pinned and the fix reverted: 0/1 on each, only the target check failing. After: `28-run-14d-harness-merge: 10/10 green` (65 s), `15-run-4-same-but-queue-parked-debrief-tmux: 10/10 green` (653 s). Full suite after merging main: `973/973 checks passed`, check: green in 930 s. `git diff origin/main -- tests/fixtures/check-names.txt` removes 0 lines.
+- **Tests:** 944 → 973
+- **Dead end:** suite through check.sh as a background job with a 10 min limit — under the box's load (8-9) the full suite took 930 s; the job was killed before it reported
+- **Discovery** (affects R1-06, R1-07): 15's weekly check and 28 were R1-04's coordinator race, not settle's box-wide pgrep: forced, both end 'no feature left to try' with the lane closing just after. The settle lead for 15 is ruled out.
+- **Discovery** (affects R1-06): HARNESS_COUNT_HOLD=1 exported around tests/run.sh reaches every run of a check file (bin/harness passes it on), so a file can be tested forced without editing it. Revert the end-check line to see the pre-fix behaviour.
+- **Discovery** (affects run): Merging origin/main brought R2 in: its stub-claude.sh header comments conflicted with R1-02's STUB_BARRIER comment. Both are kept; the suite went from 944 to 973 checks.
+- *07-R1-05 · claude-opus-5-5*
+
 ### 2026-10-29 15:29 · R3-01 · passes
 
 Wrote docs/plans/2026-10-29-R3-leftovers.md: one section per R3 item with its function, file at 53bdc66 and check file; Minor 8 quoted and found cheap (built in R3-04); unreproducible's regexes tried on every example; N1 and N2 both on origin main (2). Plan only; Gotchas: promoted the stub --resume line in place of the HARNESS_NOW one.

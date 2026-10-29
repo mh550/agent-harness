@@ -88,3 +88,8 @@
 - 2026-10-29 14:56 · context.md for R3-01: 5603 bytes
 - 2026-10-29 15:29 · R3-01: gotchas +0 ~1 -0
 - 2026-10-29 15:29 · R3-01 · claude-opus-5-5 · passes=true · 32 min · 10/23 passing · tests 963
+- 2026-10-29 15:29 · context.md for R3-02: 5946 bytes
+- 2026-10-29 15:41 · R1-05: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 15:41 · R1-05: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 15:41 · R1-05: gotchas +0 ~1 -0
+- 2026-10-29 15:41 · R1-05 · claude-opus-5-5 · passes=true · 69 min · 11/23 passing · tests 973
