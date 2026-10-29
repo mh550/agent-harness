@@ -1,3 +1,10 @@
 - 2026-10-29 08:59 · test count: parsed (generic)
 - 2026-10-29 09:12 · feature list written: 0/23 passing
 - 2026-10-29 09:12 · lint: clean
+- 2026-10-29 09:12 · lane R1 opened (slot 0, port 7818, from cbdc580)
+- 2026-10-29 09:12 · lane R2 opened (slot 1, port 7819, from cbdc580)
+- 2026-10-29 09:12 · context.md for R1-01: 3502 bytes
+- 2026-10-29 09:12 · context.md for R2-01: 3163 bytes
+- 2026-10-29 09:19 · R2-01: gotchas +1 ~0 -0
+- 2026-10-29 09:32 · R2-01 un-passed: suite red after the session
+- 2026-10-29 09:32 · R2-01 · claude-opus-5-5 · passes=false · 7 min · 0/23 passing
