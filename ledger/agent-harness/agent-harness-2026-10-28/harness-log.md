@@ -1,0 +1,106 @@
+- 2026-10-28 01:20 · test count: parsed (generic)
+- 2026-10-28 01:32 · feature list written: 0/24 passing
+- 2026-10-28 01:32 · lint: clean
+- 2026-10-28 01:32 · lane U1 opened (slot 0, port 7816, from 1bde491)
+- 2026-10-28 01:32 · context.md for U1-01: 4440 bytes
+- 2026-10-28 01:40 · U1-01 · claude-opus-5-5 · passes=true · 8 min · 1/24 passing · tests 602
+- 2026-10-28 01:40 · context.md for U1-02: 4935 bytes
+- 2026-10-28 02:05 · U1-02: gotchas +1 ~0 -0
+- 2026-10-28 02:05 · U1-02 · claude-opus-5-5 · passes=true · 25 min · 2/24 passing · tests 625
+- 2026-10-28 02:05 · context.md for U1-03: 6562 bytes
+- 2026-10-28 02:37 · U1-03: entry.json missing; recorded a minimal entry
+- 2026-10-28 02:41 · notification failed (curl exit 28): harness
+- 2026-10-28 02:41 · session for U1-03 hit a limit (API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN)); not counted; resuming at 02:52
+- 2026-10-28 02:51 · usage-limit window (shared by all runs): waiting until 02:52 (1 min)
+- 2026-10-28 02:52 · context.md for U1-03: 6177 bytes
+- 2026-10-28 03:52 · U1-03: gotchas +2 ~0 -0
+- 2026-10-28 03:52 · U1-03 · claude-opus-5-5 · passes=true · 59 min · 3/24 passing · tests 640
+- 2026-10-28 03:52 · context.md for U1-04: 7356 bytes
+- 2026-10-28 04:45 · U1-04: gotchas +1 ~0 -0
+- 2026-10-28 04:45 · U1-04 · claude-opus-5-5 · passes=true · 52 min · 4/24 passing · tests 655
+- 2026-10-28 04:45 · context.md for U1-05: 7723 bytes
+- 2026-10-28 05:14 · U1-05: entry.json invalid (summary: 410 characters (at most 400)); recorded a minimal entry
+- 2026-10-28 05:14 · U1-05: gotchas +1 ~0 -0
+- 2026-10-28 05:14 · U1-05 · claude-opus-5-5 · passes=true · 29 min · 5/24 passing · tests 668
+- 2026-10-28 05:15 · context.md for U1-06: 7206 bytes
+- 2026-10-28 06:08 · U1-06 · claude-opus-5-5 · passes=true · 53 min · 6/24 passing · tests 680
+- 2026-10-28 06:08 · review U1-07: 2053 changed lines, at or over 400; opus
+- 2026-10-28 06:08 · context.md for U1-07: 6765 bytes
+- 2026-10-28 07:11 · U1-07: gotchas +2 ~0 -0
+- 2026-10-28 07:19 · U1-07 un-passed: suite red after the session
+- 2026-10-28 07:19 · U1-07 · claude-opus-5-5 · passes=false · 63 min · 6/24 passing · tests 680
+- 2026-10-28 07:19 · review U1-07: 2258 changed lines, at or over 400; opus
+- 2026-10-28 07:28 · context.md for U1-07: 7966 bytes
+- 2026-10-28 08:07 · U1-07 · claude-opus-5-5 · passes=true · 39 min · 7/24 passing · tests 689
+- 2026-10-28 08:07 · verify U1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-28 08:15 · context.md for U1: 16127 bytes
+- 2026-10-28 08:30 · U1 verified and tagged run/agent-harness-2026-10-28/U1
+- 2026-10-28 08:30 · lane U2 waiting: 8 GB available, under 9 GB (MEM_MIN_AVAILABLE_GB 5 + LANE_RESERVE_GB 4 x 1 open)
+- 2026-10-28 08:30 · U1 merged into main · https://github.com/mh550/agent-harness/pull/42
+- 2026-10-28 08:30 · lane U1 closed (U1 merged)
+- 2026-10-28 08:30 · lane U1: branch harness-lane/agent-harness-2026-10-28/U1 deleted (merged)
+- 2026-10-28 08:30 · lane U2 opened (slot 0, port 7816, from fc23bf9, slot reused)
+- 2026-10-28 08:30 · context.md for U2-01: 7855 bytes, 1 items left out
+- 2026-10-28 08:40 · U2-01 · claude-opus-5-5 · passes=true · 9 min · 8/24 passing · tests 689
+- 2026-10-28 08:40 · context.md for U2-02: 7914 bytes
+- 2026-10-28 09:19 · U2-02: gotchas +1 ~0 -0
+- 2026-10-28 09:19 · U2-02 · claude-opus-5-5 · passes=true · 39 min · 9/24 passing · tests 700
+- 2026-10-28 09:19 · context.md for U2-03: 7951 bytes
+- 2026-10-28 09:53 · U2-03: gotchas +1 ~0 -0
+- 2026-10-28 09:53 · U2-03 · claude-opus-5-5 · passes=true · 33 min · 10/24 passing · tests 715
+- 2026-10-28 09:53 · context.md for U2-04: 7912 bytes
+- 2026-10-28 10:31 · U2-04: gotchas +1 ~0 -0
+- 2026-10-28 10:31 · U2-04 · claude-opus-5-5 · passes=true · 37 min · 11/24 passing · tests 744
+- 2026-10-28 10:31 · context.md for U2-05: 7918 bytes, 2 items left out
+- 2026-10-28 11:38 · U2-05: gotchas +1 ~0 -0
+- 2026-10-28 11:38 · U2-05 · claude-opus-5-5 · passes=true · 66 min · 12/24 passing · tests 753
+- 2026-10-28 11:38 · context.md for U2-06: 7668 bytes, 1 items left out
+- 2026-10-28 12:57 · U2-06: gotchas +1 ~0 -0
+- 2026-10-28 12:57 · U2-06 · claude-opus-5-5 · passes=true · 78 min · 13/24 passing · tests 763
+- 2026-10-28 12:57 · context.md for U2-07: 8015 bytes, 2 items left out
+- 2026-10-28 13:34 · U2-07: gotchas +1 ~0 -0
+- 2026-10-28 13:43 · U2-07 · claude-opus-5-5 · passes=true · 36 min · 14/24 passing · tests 769
+- 2026-10-28 13:43 · context.md for U2-08: 7771 bytes, 1 items left out
+- 2026-10-28 14:44 · U2-08: gotchas +0 ~2 -0
+- 2026-10-28 14:44 · U2-08 · claude-opus-5-5 · passes=true · 60 min · 15/24 passing · tests 775
+- 2026-10-28 14:44 · review U2-09: 3861 changed lines, at or over 400; opus
+- 2026-10-28 14:44 · context.md for U2-09: 7622 bytes, 2 items left out
+- 2026-10-28 15:29 · U2-09 · claude-opus-5-5 · passes=true · 45 min · 16/24 passing · tests 785
+- 2026-10-28 15:29 · verify U2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-28 15:38 · context.md for U2: 16007 bytes, 27 items left out
+- 2026-10-28 15:51 · U2 verified and tagged run/agent-harness-2026-10-28/U2
+- 2026-10-28 15:51 · lane U3 waiting: 7 GB available, under 9 GB (MEM_MIN_AVAILABLE_GB 5 + LANE_RESERVE_GB 4 x 1 open)
+- 2026-10-28 15:52 · U2 merged into main · https://github.com/mh550/agent-harness/pull/43
+- 2026-10-28 15:52 · lane U2 closed (U2 merged)
+- 2026-10-28 15:52 · lane U2: branch harness-lane/agent-harness-2026-10-28/U2 deleted (merged)
+- 2026-10-28 15:52 · lane U3 opened (slot 0, port 7816, from d0403e5, slot reused)
+- 2026-10-28 15:52 · context.md for U3-01: 7713 bytes, 6 items left out
+- 2026-10-28 15:59 · U3-01 · claude-opus-5-5 · passes=true · 6 min · 17/24 passing · tests 785
+- 2026-10-28 15:59 · context.md for U3-02: 8015 bytes
+- 2026-10-28 16:39 · U3-02 · claude-opus-5-5 · passes=true · 39 min · 18/24 passing · tests 796
+- 2026-10-28 16:39 · context.md for U3-03: 7904 bytes
+- 2026-10-28 17:55 · U3-03: entry.json invalid (summary: 405 characters (at most 400)); recorded a minimal entry
+- 2026-10-28 17:55 · U3-03 · claude-opus-5-5 · passes=true · 76 min · 19/24 passing · tests 804
+- 2026-10-28 17:55 · context.md for U3-04: 7591 bytes, 1 items left out
+- 2026-10-28 18:30 · U3-04 · claude-opus-5-5 · passes=true · 34 min · 20/24 passing · tests 815
+- 2026-10-28 18:30 · context.md for U3-05: 8066 bytes, 1 items left out
+- 2026-10-28 19:28 · U3-05 · claude-opus-5-5 · passes=true · 57 min · 21/24 passing · tests 834
+- 2026-10-28 19:28 · context.md for U3-06: 8033 bytes, 2 items left out
+- 2026-10-28 20:31 · U3-06: gotchas +0 ~1 -0
+- 2026-10-28 20:31 · U3-06 · claude-opus-5-5 · passes=true · 63 min · 22/24 passing · tests 842
+- 2026-10-28 20:31 · context.md for U3-07: 8001 bytes, 2 items left out
+- 2026-10-28 21:34 · U3-07: gotchas +0 ~1 -0
+- 2026-10-28 21:34 · U3-07 · claude-opus-5-5 · passes=true · 62 min · 23/24 passing · tests 853
+- 2026-10-28 21:34 · review U3-08: 2622 changed lines, at or over 400; opus
+- 2026-10-28 21:34 · context.md for U3-08: 7896 bytes, 5 items left out
+- 2026-10-28 22:17 · U3-08: gotchas +0 ~1 -0
+- 2026-10-28 22:27 · U3-08 · claude-opus-5-5 · passes=true · 42 min · 24/24 passing · tests 859
+- 2026-10-28 22:27 · verify U3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-28 22:37 · context.md for U3: 16084 bytes, 11 items left out
+- 2026-10-28 22:38 · U3 verified and tagged run/agent-harness-2026-10-28/U3
+- 2026-10-28 22:38 · U3 merged into main · https://github.com/mh550/agent-harness/pull/45
+- 2026-10-28 22:38 · lane U3 closed (U3 merged)
+- 2026-10-28 22:39 · lane U3: branch harness-lane/agent-harness-2026-10-28/U3 deleted (merged)
+- 2026-10-28 22:39 · every feature passes
+- 2026-10-28 22:39 · run ended (done): 24/24 passing · 30 sessions (29 real) · 24 features passed · $139.12 · 19.6 h · by kind: init 1 ($7.34), coding 26 ($131.19), verify 3 ($0.59) · by model: claude-fable-5-1 1 ($7.34), claude-opus-5-5 26 ($131.19), claude-sonnet-5-5 3 ($0.59)
+- 2026-10-28 22:39 · services stopped (done)
