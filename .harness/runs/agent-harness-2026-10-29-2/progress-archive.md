@@ -9,6 +9,22 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 18:35 · R3-05 · passes
+
+Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/slot-1) and the merged harness-lane/sp/M1 on origin (one would: line each, both kept; the real gc then removes the slot). 77 starts two merge_milestones M1 at once on one state and clone: one note, one pr merge. Both green at once; each fails when what it guards is broken.
+
+- **Files:** tests/checks/49-lanes-slots.sh, tests/checks/77-leftovers.sh, tests/fixtures/check-names.txt, CLAUDE.md
+- **Verified:** bash tests/run.sh 77-left 49-lanes: 19/19. Mutations, reverted: rm_wt's dry branch also removing the worktree → 'FAIL gc --dry-run names a leftover slot…' (8/11); merge_milestones without flock 8 → 'FAIL merge_milestones: two at once merge M1 once…' (7/8), green again with it. Full suite via lib/check.sh: green in 956 s, 978 tests, no rerun.
+- **Tests:** 976 → 978
+- **Dead end:** the first concurrent check counted '· M1 merged into main' lines only — without the lock it still passed: the second call lost git's ref lock on the harness-merge push and noted 'push of harness-merge/mm-M1 failed'; the check now requires the merged note to be the log's one line
+- **Discovery** (affects R3-06): No bug: gc --dry-run's slot and lane-branch passes print would: lines only, and merge.lock serializes two merge_milestones (the second finds merged-M1 silently)
+- **Discovery** (affects R3-06): Without merge.lock two merge_milestones on one clone race on the harness-merge push (ref lock) or note 'already there': the lock is what keeps the note single
+- **Discovery** (affects run): Promote item 'tests/lib.sh now holds tended, held…' does not hold on R3's branch (R1-07's lib.sh is not merged here; 47/48/49/76/77-resolve define held and ats themselves): left for a session on a branch with R1 in
+- **Resolved:** A {{X}} above {{SECTIONS}} in a prompt template turns 08/13/14/15's byte-identical-prefix check red once two sessions' values differ: session values go under This session
+- **Proposed change:** R3-05 step 1 names $T/wt/proj/<run>-slots/slot-1; slots live at $T/wt/proj/lanes/<run>/slot-<k> (the check uses lanes/sp/slot-1, as the R3 plan says)
+- **Proposed change:** Gotchas: the 'stub --resume of an unknown id…' line was replaced by the {{SECTIONS}} line (the section was at 15 with its comment)
+- *14-R3-05 · claude-opus-5-5*
+
 ### 2026-10-29 18:33 · verify R1 · passes
 
 All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 10/10 green on 44, 46, 48, 15, 28, 32, 38, 08; lint exits 0; docs, plan, review and decision present. Note: N2 is now on origin main (count 2), plan line says 1 as of init.

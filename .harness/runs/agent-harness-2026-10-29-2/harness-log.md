@@ -124,3 +124,7 @@
 - 2026-10-29 18:33 · verify R1: entries.jsonl edited by the session; restored (the driver is its only writer)
 - 2026-10-29 18:33 · verify R1: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 18:34 · R1 verified and tagged run/agent-harness-2026-10-29-2/R1
+- 2026-10-29 18:35 · R3-05: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 18:35 · R3-05: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 18:35 · R3-05: gotchas +0 ~1 -0
+- 2026-10-29 18:35 · R3-05 · claude-opus-5-5 · passes=true · 25 min · 17/23 passing · tests 978

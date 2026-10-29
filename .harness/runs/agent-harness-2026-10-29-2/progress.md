@@ -9,6 +9,22 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 18:35 · R3-05 · passes
+
+Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/slot-1) and the merged harness-lane/sp/M1 on origin (one would: line each, both kept; the real gc then removes the slot). 77 starts two merge_milestones M1 at once on one state and clone: one note, one pr merge. Both green at once; each fails when what it guards is broken.
+
+- **Files:** tests/checks/49-lanes-slots.sh, tests/checks/77-leftovers.sh, tests/fixtures/check-names.txt, CLAUDE.md
+- **Verified:** bash tests/run.sh 77-left 49-lanes: 19/19. Mutations, reverted: rm_wt's dry branch also removing the worktree → 'FAIL gc --dry-run names a leftover slot…' (8/11); merge_milestones without flock 8 → 'FAIL merge_milestones: two at once merge M1 once…' (7/8), green again with it. Full suite via lib/check.sh: green in 956 s, 978 tests, no rerun.
+- **Tests:** 976 → 978
+- **Dead end:** the first concurrent check counted '· M1 merged into main' lines only — without the lock it still passed: the second call lost git's ref lock on the harness-merge push and noted 'push of harness-merge/mm-M1 failed'; the check now requires the merged note to be the log's one line
+- **Discovery** (affects R3-06): No bug: gc --dry-run's slot and lane-branch passes print would: lines only, and merge.lock serializes two merge_milestones (the second finds merged-M1 silently)
+- **Discovery** (affects R3-06): Without merge.lock two merge_milestones on one clone race on the harness-merge push (ref lock) or note 'already there': the lock is what keeps the note single
+- **Discovery** (affects run): Promote item 'tests/lib.sh now holds tended, held…' does not hold on R3's branch (R1-07's lib.sh is not merged here; 47/48/49/76/77-resolve define held and ats themselves): left for a session on a branch with R1 in
+- **Resolved:** A {{X}} above {{SECTIONS}} in a prompt template turns 08/13/14/15's byte-identical-prefix check red once two sessions' values differ: session values go under This session
+- **Proposed change:** R3-05 step 1 names $T/wt/proj/<run>-slots/slot-1; slots live at $T/wt/proj/lanes/<run>/slot-<k> (the check uses lanes/sp/slot-1, as the R3 plan says)
+- **Proposed change:** Gotchas: the 'stub --resume of an unknown id…' line was replaced by the {{SECTIONS}} line (the section was at 15 with its comment)
+- *14-R3-05 · claude-opus-5-5*
+
 ### 2026-10-29 18:33 · verify R1 · passes
 
 All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 10/10 green on 44, 46, 48, 15, 28, 32, 38, 08; lint exits 0; docs, plan, review and decision present. Note: N2 is now on origin main (count 2), plan line says 1 as of init.
@@ -291,23 +307,9 @@ tests/lint-sleeps.sh lists each sleep line lacking '# sleep-ok:' (default tests/
 - **Proposed change:** R1-03 step 4 should compare with the merge base (git diff origin/main...HEAD): origin/main moves while a lane works, and a plain diff then shows main's new names as removals
 - *03-R1-03 · claude-opus-5-5*
 
-### 2026-10-29 13:27 · R2-04 · passes
-
-entry_resume (lib/record.sh), from journal before the ingest, outside the lock: a coding/verify/init session left with no valid entry and not refused is resumed once through session() (S_RESUME/S_TURNS/S_TIMEOUT/S_BUDGET); then list/INBOX restored, edits dropped, restrict, an entry-resume metrics row. prompts/entry-resume.md, config defaults; summary.mjs and metrics summary count it as cost only.
-
-- **Files:** lib/record.sh, lib/config.sh, lib/prompt.sh, lib/summary.mjs, lib/metrics.mjs, prompts/entry-resume.md, tests/checks/76-entries-survive.sh, tests/checks/05-metrics-pure-tokens-cache.sh, tests/checks/25-run-13b-bs-entry.sh, tests/fixtures/check-names.txt
-- **Verified:** 8 new checks: 7 in 76 (5 red before record.sh, the summary-count one red until summary.mjs; 14/14 after) and 1 in 05 (red on HEAD metrics.mjs); bash tests/run.sh 908/908; lib/check.sh on the final tree: green after a rerun (flaky: 32-l5-queue-runner-re, the named MAX_PARALLEL_RUNS check), 908 tests
-- **Tests:** 900 → 908
-- **Dead end:** a 16th Gotchas line (entry_resume resumes any unrefused session…) — memlint counts 15 already (grep '^- ' says 14): 39-memlint-m4 went red; dropped it
-- **Discovery** (affects R2-05): entry_resume declares S_EXIT/S_WALL/S_PEAK/S_NOTES/S_UNIT local just before its session(): the callers' MET limit/append after journal still read the session's own figures
-- **Discovery** (affects R2-05): Check 25 now greps 'B: entry.json still invalid (not JSON: .*) after one resume; recorded a minimal entry'. The PARKED and STUB_OOM stub paths are resumed too (note 'still missing after one resume'); no check was red on it, so the stub's PARKED paths still write no entry
-- **Discovery** (affects R2-05): summary.mjs: entry-resume rows are out of `all` (sessions, per-feature counts, tokens, time) and in cost.total, by_role and by_model; metrics.mjs summary's session counts skip them, its cost and by-kind keep them
-- **Discovery** (affects R2-05): The resume's restrict only runs when HEAD moved: otherwise its WIP commit would commit the initializer's entry.json into the record branch
-- **Proposed change:** R2-05's review could weigh making the stub's two PARKED: paths write an outcome-parked entry, as a real session would, so stub runs stop resuming them
-- *02-R2-04 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 13:27 · R2-04 · passes · entry_resume (lib/record.sh), from journal before the ingest, outside the lock: a coding/verify/init… ([in full](progress-archive.md))
 - 2026-10-29 12:50 · R1-02 · passes · Attempt 2 of R1-02: the code from c319ca4 was right; the suite was red only on 39-memlint-m4, becaus… ([in full](progress-archive.md))
 - 2026-10-29 10:48 · R2-03 · passes · Stub: each headless session prints first.jsonl's init line with a fresh session_id (kept in $STUB_DI… ([in full](progress-archive.md))
 - 2026-10-29 10:23 · R2-02 · passes · Entry check: prompt_env exports HARNESS_ENTRY_CHECK; the coding, verify and init prompts end by runn… ([in full](progress-archive.md))
