@@ -3,6 +3,23 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 05:40 · N2-01 · passes
+
+Wrote docs/plans/2026-10-29-N2-conflict-resolution.md: merge-sorted.sh + merge_drivers, resolve/resolve_ok in lib/resolve.sh (rc 0/1/2, RESOLVE_END, snapshot, checks, bounds), exact changes in sync_main, verify, rebase, merge_one(+--open) and slot_open (stays), the gate, stub flags and modes, tried, visible, checks by file. Opus review: 0 Critical, 7 Important, 5 Minor, all folded in.
+
+- **Files:** docs/plans/2026-10-29-N2-conflict-resolution.md
+- **Verified:** 8 required sections grep -x'd; every quoted line grep -F'd in lib/record.sh and lib/lane.sh; diff outside docs/plans empty; check.sh green (886, cached: docs/plans is a key ignore); merge-tree with a worktree-config driver tried in a throwaway repo
+- **Tests:** 886 → 886
+- **Discovery** (affects N2-02, N2-03): git 2.43 merge-tree --write-tree runs a configured merge driver (attributes from the checkout's .gitattributes), so layer 1 also settles merge_one's merge-tree
+- **Discovery** (affects N2-02, project): git worktree add copies the current worktree's config.worktree into the new one: slots added from the record worktree inherit its --worktree driver; Michael's checkout never sees it
+- **Discovery** (affects N2-03): 61-needs-git.sh's mc and mr runs hit sync_main/merge_one conflicts: with CONFLICTS=resolve as default they need CONFLICTS=michael in user-config to keep testing today's path
+- **Discovery** (affects N2-04): a needs card key that is always present (even null) changes 52-status-json.sh's key-path fixture: add tried only when set
+- **Discovery** (affects N2-04): verify runs sync_main in rebase mode too (lane.sh:62); the plan skips it there so a re-base round never resolves twice
+- **Proposed change:** N2-04 step 3: in sync_main a refused resolve should defer the whole verify (verify returns 2, the lane loop waits for the window and verifies again), not 'the verify goes on without main (nomerge-<m>)': with nomerge-<m> a hold ends the lane with exit 12 'needs Michael' and no needs record, and its session runs inside the refused window (plan § Call sites/sync_main)
+- **Proposed change:** N2-04 step 6: the stray mode also git-adds a new file (stray-added.txt), so the check covers a new stage-0 path; the restoring note names three paths
+- **Proposed change:** N2-04: verify in rebase mode no longer calls sync_main (plan § Call sites), worth a step of its own
+- *07-N2-01 · claude-opus-5-5*
+
 ### 2026-10-29 05:20 · verify N1 · passes
 
 All five N1 features hold: subset 39/39 re-run, syntax checks, plan/docs/decision read, full suite green (886 tests) at init.

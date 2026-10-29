@@ -18,3 +18,9 @@
 - 2026-10-29 05:07 · verify N1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-29 05:17 · context.md for N1: 14740 bytes
 - 2026-10-29 05:20 · N1 verified and tagged run/agent-harness-2026-10-29/N1
+- 2026-10-29 05:21 · lane N2 opened (slot 1, port 7818, from e9fb31e)
+- 2026-10-29 05:21 · N1 merged into main · https://github.com/mh550/agent-harness/pull/48
+- 2026-10-29 05:21 · context.md for N2-01: 7031 bytes
+- 2026-10-29 05:21 · lane N1 closed (N1 merged)
+- 2026-10-29 05:21 · lane N1: branch harness-lane/agent-harness-2026-10-29/N1 deleted (merged)
+- 2026-10-29 05:40 · N2-01 · claude-opus-5-5 · passes=true · 19 min · 6/11 passing · tests 886
