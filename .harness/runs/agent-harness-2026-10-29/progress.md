@@ -3,6 +3,20 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 04:56 · N1-05 · passes
+
+Opus review of N1: finish now notes a flake on its own last suite (RED→GREEN stub run fe); a non-object flakes.jsonl row is skipped by summary and flakes_note; check.sh shares one green branch and one rerun call; arch §3/§4/§7/§10, README, decision updated. Hung-file rerun kept as a default (question). 0 Critical, 1 Important, 7 Minor
+
+- **Files:** lib/check.sh, lib/driver.sh, lib/record.sh, lib/summary.mjs, tests/checks/74-flakes-run.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-29-rerun-guard.md
+- **Verified:** 74-flakes-run: new check failed (row counted in summary.json, no flaky: note), 11/11 after; null-row checks failed then passed; check-rerun/suite-runner/flakes 38/38 after check.sh simplification; 08/10/34/70 161/161. Full suite: live check.sh 885/886 (45-lanes-run flaked, 10/10 alone); this branch's check.sh on the real suite: `check: green after a rerun (flaky: 08-scope-…), 886 tests`.
+- **Tests:** 885 → 886
+- **Dead end:** a Gotchas line on finish's uncached suite — the section was already at 15 lines; memlint (39-memlint-m4) fails at 16, so it was dropped
+- **Discovery** (affects R1, run): 08-scope-sh-l1-02 flakes under the full suite's load (memory gate waits, the real 64M scope check), green alone: an R1 flaker beside 45-lanes-run
+- **Discovery** (affects run): review findings left open (Minor): run_init tests-start falls back to a red check.out's passes when a flake's marker is empty (suites with no N/M line); testcount --total undercounts a file killed mid-way; the debrief prints the project-wide #### flakes block once per run, not once per project; a fractional CHECK_TIMEOUT (1.5h) makes why() miss a timeout's 137
+- **Question for Michael:** The review (Important, triaged to a default): a check file tests/run.sh stops at TEST_FILE_TIMEOUT is named in HARNESS_FAILED=, so CHECK_RERUN=auto reruns it, at most one more TEST_FILE_TIMEOUT (10m). Keep that (default: a hang under load is the likeliest flake), or skip the rerun when a file timed out? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29/slot-0/tests/run.sh:54, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29/slot-0/journal/decisions/2026-10-29-rerun-guard.md
+- **Proposed change:** N1-05 step 3 says §7's Rerun guard row goes beside `Suite cache`, but Suite cache is a §4 row; §7 has `Suite scope`, and the row went beside that
+- *06-N1-05 · claude-opus-5-5*
+
 ### 2026-10-29 04:02 · N1-04 · passes
 
 summary.mjs: flakes {count, names} from <state>/green/flakes.jsonl (tolerant reader, whole suite for no names), a Flakes row after Tests in report.md and the TTY card (n · name ×k, 0, none for older summaries), flakers() + `summary.mjs flakers <ledger>/<project>` for the debrief's #### flakes block after report.md. 4 new checks in 74-flakes-run; docs and decision updated.

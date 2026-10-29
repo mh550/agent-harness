@@ -12,3 +12,6 @@
 - 2026-10-29 03:45 · N1-03 · claude-opus-5-5 · passes=true · 1 min · 3/11 passing · tests 881
 - 2026-10-29 03:45 · context.md for N1-04: 6291 bytes
 - 2026-10-29 04:02 · N1-04 · claude-opus-5-5 · passes=true · 16 min · 4/11 passing · tests 885
+- 2026-10-29 04:02 · review N1-05: 667 changed lines, at or over 400; opus
+- 2026-10-29 04:02 · context.md for N1-05: 6319 bytes
+- 2026-10-29 05:06 · N1-05 · claude-opus-5-5 · passes=true · 54 min · 5/11 passing · tests 886
