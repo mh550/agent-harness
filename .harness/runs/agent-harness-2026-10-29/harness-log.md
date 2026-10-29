@@ -62,3 +62,6 @@
 - 2026-10-29 10:53 · context.md for N2-02: 7969 bytes
 - 2026-10-29 11:05 · N2-02: gotchas +0 ~0 -1
 - 2026-10-29 11:05 · N2-02 · claude-opus-5-5 · passes=true · 12 min · 11/11 passing · tests 925
+- 2026-10-29 11:05 · merged main into harness-lane/agent-harness-2026-10-29/N2
+- 2026-10-29 11:05 · verify N2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 11:16 · context.md for N2: 16183 bytes
