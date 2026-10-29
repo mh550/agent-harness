@@ -1,6 +1,6 @@
 # Merge conflicts resolved without Michael: a sorted merge for lists first, then a resolve session, verified
 
-*(2026-10-29, run `agent-harness-2026-10-29`, N2-02 and N2-03; spec `docs/specs/2026-10-29-unattended-night.md` §N2, plan
+*(2026-10-29, run `agent-harness-2026-10-29`, N2-02 to N2-04; spec `docs/specs/2026-10-29-unattended-night.md` §N2, plan
 `docs/plans/2026-10-29-N2-conflict-resolution.md`)*
 
 - **Finding:** two lanes that each add a check get a merge conflict in `tests/fixtures/check-names.txt` (one name per
@@ -30,6 +30,22 @@
   session did outside the conflicted files is put back from a NUL-separated `ls-files -s` snapshot (`checkout-index`, so
   a symlink stays a link); a failed session or check resets the slot to the lane's commit and removes the files it
   created; `slot_open` undoes a merge a killed lane left in progress rather than committing its markers as WIP.
+- **Choice (layer 2's bounds and fallbacks, N2-04):** a session that leaves a marker, ends `UNRESOLVED:` or fails a
+  check → the merge aborted and today's path at that place, its needs card (`merge_conflict` from `rebase`,
+  `main_conflict` from `sync_main`) carrying `tried` (`a resolve session (<model>, <n> min): <why it stopped>`; the
+  `resolve-<m>-<main>` marker keeps it, so a later record for the same main still says it). `rebase` writes
+  `conflict-<m>` for that main as `merge_one` does, so the run's end doesn't record and notify it a second time. A
+  session refused by a limit is deferred, never a stop: the merge aborted, `limit_raise`, no record; `rebase` puts
+  `rebase-<m>` back. In a lane's `sync_main` (the verify's merge of main) a conflict goes to `resolve` too; resolved,
+  the verify runs on the merged tree; refused, `verify` returns 2 before its session (no round counted) and the lane
+  loop waits for the window, then verifies again. The spec's words were "the verify goes on without main
+  (`nomerge-<m>`)": that would run the verify inside the window just refused, and a hold with `nomerge-<m>` ends the
+  lane `needs Michael` with no record. A main the lane's `sync_main` already tried (`main-conflict-<m>` at it) is not
+  sent to a re-base by `merge_one`: it would only fail and notify again; a newer main is. A re-base whose merge went
+  through clears the lane's `main_conflict` (`main_clear`). The re-base round's verify no longer runs `sync_main` (a main that moved since
+  is the next re-base's, one place, one record). The record branch's `sync_main` and `slot_open`'s base conflicts keep
+  today's path: the first is Michael's run configuration, the second runs in the coordinator, where a 30-minute session
+  would hold up every lane. `harness continue` (fresh attempts) clears `resolves-*` and `resolve-*-*` with the rest.
 - **Rejected:** a union driver without the three-way removal (git's built-in `merge=union` among them): it brings a
   deleted name back, and the conformance check then goes red on a name no file has. Michael for every conflict (today:
   a night with two lanes stops at the first overlap, though most resolutions keep both sides' lines). `git merge -X

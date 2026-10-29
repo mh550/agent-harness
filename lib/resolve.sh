@@ -31,7 +31,9 @@ resolve() {
   (( ${#fa[@]} )) || { git merge --abort 2> /dev/null; return 1; }   # the merge never started
   RESOLVE_FILES=${fa[*]}
   if ! why=$(resolve_ok "$m"); then
-    [[ $why == *"resolve session(s) used" ]] && note "$m: $why; not merged (needs Michael)"
+    [[ $why == *"resolve session(s) used" ]] && { note "$m: $why; not merged (needs Michael)"; RESOLVE_TRIED=$why; }
+    # this main's session failed before: its marker holds what it said, so the card a later record replaces keeps it
+    [[ $why == "a resolve session already ran"* ]] && RESOLVE_TRIED=$(cat "$STATE/resolve-$m-$(git rev-parse MERGE_HEAD)" 2> /dev/null)
     git merge --abort 2> /dev/null; return 1
   fi
   mn=$(git rev-parse MERGE_HEAD) pre=$(git rev-parse HEAD)
@@ -105,7 +107,7 @@ resolve() {
     rec_commit "HARNESS: resolve $m"; return 0
   fi
   resolve_undo "$pre"
-  RESOLVE_TRIED="a resolve session ($model, $RESOLVE_MIN min): $why"
+  RESOLVE_TRIED="a resolve session ($model, $RESOLVE_MIN min): $why"; printf '%s' "$RESOLVE_TRIED" > "$STATE/resolve-$m-$mn"
   note "$m: the resolve session did not resolve the merge ($why); merge aborted"
   rec_commit "HARNESS: resolve $m failed"; return 1
 }

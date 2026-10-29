@@ -112,7 +112,9 @@ restrict() {   # base record|nothing|runs who
 }
 
 # Bring main's new commits into the branch checked out here (a lane at its verify, so what is verified is what merges;
-# the record branch at a resumed start, for its configuration). 1 = conflict (left as it was): a main_conflict record
+# the record branch at a resumed start, for its configuration). In a lane under CONFLICTS=resolve a conflict goes to a
+# resolve session first (lib/resolve.sh): resolved, 0 (the verify runs on the merged tree); refused by a limit, 2 (no
+# record: the caller defers). 1 = conflict (left as it was): a main_conflict record
 # for the lane (record on the record branch) naming the conflicted files and the PRs that brought them, notified once
 # per origin/main commit (main-conflict-<subject> holds it); a later clean merge, or main already in, resolves it.
 sync_main() {
@@ -125,10 +127,17 @@ sync_main() {
   (( ${#fa[@]} )) || { git merge --abort 2>/dev/null; note "$MAIN_BRANCH did not merge into $b (see run.log); carrying on without it"; return 1; }
   # --first-parent: main's own merges; path-limited, git's default simplification hides a merge that took a file whole
   subjects=$(git log --first-parent --merges --format=%s "$(git merge-base HEAD "origin/$MAIN_BRANCH")..origin/$MAIN_BRANCH" -- "${fa[@]}")
-  git merge --abort 2>/dev/null; note "$MAIN_BRANCH conflicts with $b; carrying on without it (merges into $MAIN_BRANCH need Michael)"
+  RESOLVE_TRIED=""
+  if [[ -n ${LANE:-} && ${CONFLICTS:-} == resolve ]]; then   # the record branch's conflicts stay Michael's
+    resolve "$LANE" "$MAIN_BRANCH"; case $? in   # resolve aborts the merge on anything but 0
+      0) note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0 ;;
+      2) return 2 ;;
+    esac
+  else git merge --abort 2>/dev/null; fi
+  note "$MAIN_BRANCH conflicts with $b; carrying on without it (merges into $MAIN_BRANCH need Michael)"
   mn=$(git rev-parse "origin/$MAIN_BRANCH"); old=$(cat "$STATE/main-conflict-$sub" 2> /dev/null)
   echo "$mn" > "$STATE/main-conflict-$sub"   # before the open: a sweep meanwhile must not resolve it
-  ref=$(needs_open main_conflict "$sub" files="$files" subjects="$subjects" main="$mn" head="$(git rev-parse HEAD)")
+  ref=$(needs_open main_conflict "$sub" files="$files" subjects="$subjects" main="$mn" head="$(git rev-parse HEAD)" ${RESOLVE_TRIED:+tried="$RESOLVE_TRIED"})
   [[ $old == "$mn" ]] && return 1   # once per main commit: a verify after it says nothing new
   rec_commit "HARNESS: $MAIN_BRANCH conflicts with $b"; sync_record
   needs_you "$sub" "$MAIN_BRANCH conflicts with $b" needs.md "$ref"
@@ -444,6 +453,8 @@ merge_one() {
     # can, so Michael hears of it now
     if [[ ${CONFLICTS:-} == resolve && ! ${HARNESS_MERGE_ONLY:-} && ! -f $STATE/ended ]]; then
       [[ ( $(cat "$STATE/moved-$m" 2>/dev/null) == "$mn" && -f $STATE/rebase-$m ) || -f $STATE/needs-$m ]] && return 1
+      # its lane's sync_main already tried this main (main_conflict open): a re-base would only say it again
+      [[ $(cat "$STATE/main-conflict-$m" 2> /dev/null) == "$mn" ]] && return 1
       echo "$mn" > "$STATE/moved-$m"; return 3
     fi
     # once per main: merge_milestones runs again after every verify and at the end; `harness merge` always says so
@@ -622,6 +633,7 @@ slot_open() {
   fi
   if [[ -n $fold ]]; then
     if ! git -C "$SLOT" merge -q --no-edit "$fold" > /dev/null 2>&1; then
+      # a base conflict stays Michael's: this runs in the coordinator, where a resolve session would block every lane (decisions/2026-10-29-conflict-resolution)
       git -C "$SLOT" merge --abort 2> /dev/null
       note "$m: $b here and on origin diverged and conflict; needs Michael"; base_conflict "$m" "$fold" diverged
       cd "$RWT" || return 1; return 1

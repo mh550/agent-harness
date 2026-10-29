@@ -457,6 +457,7 @@ needs card verify_thin: from its fixture, every field filled (why of 2-4 sentenc
 needs card weekly_budget: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
 needs cards: 15 fixtures, one per reason, and a reason without a template is exit 1
+needs cards: merge_conflict and main_conflict show tried in the card, the notification body and needs.md
 needs list: a dead driver.pid with no ended is a synthesized driver_crash (ref <run>/crash, at run.log's mtime), parked.json's B a parked item; nothing stored
 needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver
 needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref kept, updated_at moved
@@ -589,6 +590,18 @@ render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line 
 report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
 report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
+resolve fallbacks: a lane's sync_main hands its conflict to resolve: refused is 2 with no record, unresolved the main_conflict record with tried
+resolve fallbacks: a refused session is deferred: no needs record, rebase-M2 back, then it re-bases and merges after the wait
+resolve fallbacks: a session that gives up is aborted the same way and its card says why
+resolve fallbacks: a session that leaves a marker is aborted, the slot back at the verified commit, merge_conflict with tried, the lane closed
+resolve fallbacks: a slot_open base conflict keeps base_conflict and runs no resolve session
+resolve fallbacks: a stray edit and new files are put back with a note naming them, and M2 merges
+resolve fallbacks: a sync_main resolve that gives up is main_conflict with tried, notified once, and no re-base retries that main
+resolve fallbacks: past MAX_RESOLVES the next conflict takes today's path with the resolve session(s) used note
+resolve fallbacks: resolve alone: a marker left aborts the merge, HEAD back at the lane's commit; this main again runs no session, same tried
+resolve fallbacks: resolve_ok says no for CONFLICTS=michael, harness merge, no lane, a marker for this main, MAX_RESOLVES used and the deadline
+resolve fallbacks: sync_main at verify resolves in the lane: the note before verify M2, one verify M2, merged with no re-base
+resolve fallbacks: the record branch's sync_main keeps today's abort and main_conflict record
 resolve: CONFLICTS=michael keeps today's merge_conflict record and runs no resolve session
 resolve: a re-base conflict gets a resolve session, noted with its file
 resolve: a resolved merge is committed and every edit outside the conflict is put back, whatever its path

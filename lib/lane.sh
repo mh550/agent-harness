@@ -53,14 +53,19 @@ export HARNESS_LANE=$M   # check.sh names it in a flakes.jsonl row, its sessions
 # tree: no attempt granted on a failure, the tag moved on a hold, no merge here (the caller's loop merges). The session
 # reads a copy of the record; what it un-passes in it is applied to the record's list afterwards.
 verify() {
-  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS id nref=""
+  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS id nref="" rc
   local models=("$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL") last=$VERIFY_ESCALATE_MODEL
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
   local mode=${2:-} what="verify round $rounds of $maxr"
   [[ $mode == once ]] && { models=("$VERIFY_MODEL"); maxr=$rounds last="one verify at the deadline"; what="verify round $rounds of $maxr"; }
   [[ $mode == rebase ]] && { maxr=$rounds what="re-base verify round $(cat "$STATE/rebase-rounds-$m") of $MAX_REBASE_ROUNDS"; }
   rm -f "$STATE/nomerge-$m"   # a conflict an earlier verify found: this one tries main again
-  sync_main || touch "$STATE/nomerge-$m"
+  if [[ $mode != rebase ]]; then   # a re-base round verifies the tree rebase just made; a main that moved since is the next re-base's
+    sync_main; rc=$?
+    # refused (a resolve session's limit): no round counted, the lane loop waits for the window, then this verify again
+    (( rc == 2 )) && { [[ -n $RESOLVE_END ]] && lane_exit 13 "$RESOLVE_END"; return 2; }
+    (( rc == 1 )) && touch "$STATE/nomerge-$m"
+  fi
   sync_lane
   # the verified tree's suite runs in full: a session can leave a stale green marker (decisions/2026-10-26-verify-runs-the-suite)
   note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
@@ -175,9 +180,12 @@ rebase() {
     if [[ ${CONFLICTS:-} == resolve ]] && (( r <= MAX_REBASE_ROUNDS )); then resolve "$m" "$MAIN_BRANCH"; rc=$?
     else git merge --abort 2> /dev/null; fi
     (( rc == 2 )) && { echo "$mn" > "$STATE/rebase-$m"; [[ -n $RESOLVE_END ]] && lane_exit 13 "$RESOLVE_END"; return 1; }   # refused: the re-base again after the wait
-    (( rc == 0 )) || { rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH" merge_conflict rebase files="$files" main="$mn" ${RESOLVE_TRIED:+tried="$RESOLVE_TRIED"}; return 1; }
+    # conflict-<m>: merge_one's once per main, so the run's end doesn't record it again (and lose tried)
+    (( rc == 0 )) || { echo "$mn" > "$STATE/conflict-$m"
+      rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH" merge_conflict rebase files="$files" main="$mn" ${RESOLVE_TRIED:+tried="$RESOLVE_TRIED"}; return 1; }
     resolved=1
   fi
+  main_clear "$m"   # main is in the lane branch now: a main_conflict an earlier verify opened resolves
   theirs=$(git diff --name-only "$c" HEAD)   # what main brought in
   ours=$(git diff --name-only "$base" "$c")   # the milestone's own (and its unmerged dependencies')
   both=$(comm -12 <(sort <<< "$ours") <(sort <<< "$theirs") | grep . | paste -sd' ')
