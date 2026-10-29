@@ -1,0 +1,1 @@
+Retro written. Run `agent-harness-2026-10-28` delivered 24 of 24 features, verified and merged, for $139.12 over 21.45 h. The report above is the saved `retro.md`; the two proposals are in `retro-proposals.json`.

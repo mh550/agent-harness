@@ -1,0 +1,557 @@
+<!-- harness: rendered from entries.jsonl after every session; edits here are overwritten -->
+# Progress — run `agent-harness-2026-10-28` (agent-harness)
+
+What this file is: the journal of this run, rendered by the harness from `entries.jsonl`, newest entry first. Each entry is one session (initializer, a feature's coding session, a milestone's verify) with what it did, what failed and what it found. The spec is `docs/specs/2026-10-27-status-ux.md`: read views (`harness status`, `queue list`, a new `show`) through one formatter, one needs-you record with cards, and five small fixes.
+
+The feature list (`feature_list.json` beside this file) has three milestones built one after the other: **U1** the formatter and `status`/`queue list` (U1-01 to U1-07), **U2** the needs record, cards, `harness needs` and questions with locations (U2-01 to U2-09), **U3** `harness show`, project names, record after gc, gc's foreign units, same-project starts and overlaps, the TTY forms of report/trends/gc (U3-01 to U3-08). Each milestone starts with a plan feature, ends with an Opus review, and merges into `main` on its own once verified. A feature's `passes` flips when its session's steps hold and the suite is green.
+
+Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
+
+### 2026-10-28 22:38 · verify U3 · passes
+
+Full suite green (859); subset re-run of checks 65-72 passes (74/74); artifacts, decisions, docs, usage header, bash -n and node --check verified for U3-01..08.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| U3-01 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-01 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-01 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-01 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-01 | 5 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-02 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | tests/checks/65-project-names.sh 11 checks pass in subset run; project-names decision present; bash -n clean | yes |
+| U3-02 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | tests/checks/65-project-names.sh 11 checks pass in subset run; project-names decision present; bash -n clean | yes |
+| U3-02 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | tests/checks/65-project-names.sh 11 checks pass in subset run; project-names decision present; bash -n clean | yes |
+| U3-03 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 66-record-after-gc (6) and 67-gc-units (2) pass; decisions record-after-gc and gc-foreign-units exist; bash -n clean | yes |
+| U3-03 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 66-record-after-gc (6) and 67-gc-units (2) pass; decisions record-after-gc and gc-foreign-units exist; bash -n clean | yes |
+| U3-03 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 66-record-after-gc (6) and 67-gc-units (2) pass; decisions record-after-gc and gc-foreign-units exist; bash -n clean | yes |
+| U3-03 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 66-record-after-gc (6) and 67-gc-units (2) pass; decisions record-after-gc and gc-foreign-units exist; bash -n clean | yes |
+| U3-04 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 68-show passes; decision 2026-10-28-show exists; README documents show; node --check clean | yes |
+| U3-04 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 68-show passes; decision 2026-10-28-show exists; README documents show; node --check clean | yes |
+| U3-04 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 68-show passes; decision 2026-10-28-show exists; README documents show; node --check clean | yes |
+| U3-04 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 68-show passes; decision 2026-10-28-show exists; README documents show; node --check clean | yes |
+| U3-05 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 69-same-project-starts passes; overlap.mjs named finds lib/check.sh, lib/treekey.mjs, tests/run.sh on overlap-spec fixture; queue-one-run decision has Updated in place line | yes |
+| U3-05 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 69-same-project-starts passes; overlap.mjs named finds lib/check.sh, lib/treekey.mjs, tests/run.sh on overlap-spec fixture; queue-one-run decision has Updated in place line | yes |
+| U3-05 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 69-same-project-starts passes; overlap.mjs named finds lib/check.sh, lib/treekey.mjs, tests/run.sh on overlap-spec fixture; queue-one-run decision has Updated in place line | yes |
+| U3-05 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 69-same-project-starts passes; overlap.mjs named finds lib/check.sh, lib/treekey.mjs, tests/run.sh on overlap-spec fixture; queue-one-run decision has Updated in place line | yes |
+| U3-06 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 70-overlap 15 checks pass; architecture/README describe overlaps; node --check clean | yes |
+| U3-06 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 70-overlap 15 checks pass; architecture/README describe overlaps; node --check clean | yes |
+| U3-06 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 70-overlap 15 checks pass; architecture/README describe overlaps; node --check clean | yes |
+| U3-07 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 71-tty-views passes; summary-report.json/.md fixtures exist; node --check clean | yes |
+| U3-07 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 71-tty-views passes; summary-report.json/.md fixtures exist; node --check clean | yes |
+| U3-07 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 71-tty-views passes; summary-report.json/.md fixtures exist; node --check clean | yes |
+| U3-07 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 71-tty-views passes; summary-report.json/.md fixtures exist; node --check clean | yes |
+| U3-08 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | docs/plans/2026-10-28-U3-review.md exists, 72-u3-review 6 checks pass; README, architecture, usage header list show/needs/queue show; full suite green 859 | yes |
+| U3-08 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | docs/plans/2026-10-28-U3-review.md exists, 72-u3-review 6 checks pass; README, architecture, usage header list show/needs/queue show; full suite green 859 | yes |
+| U3-08 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | docs/plans/2026-10-28-U3-review.md exists, 72-u3-review 6 checks pass; README, architecture, usage header list show/needs/queue show; full suite green 859 | yes |
+| U3-08 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | docs/plans/2026-10-28-U3-review.md exists, 72-u3-review 6 checks pass; README, architecture, usage header list show/needs/queue show; full suite green 859 | yes |
+
+- *223724-verify-U3 · claude-sonnet-5-5*
+
+### 2026-10-28 22:17 · U3-08 · passes
+
+U3 review, one Opus round: 0 Critical, 2 Important, 9 Minor. Fixed red→green in 72-u3-review: a multi-line brief is one queue argument (\x1f), and an ended run's overlap record stays in its state, so gc can remove its worktree. Minors 3, 5, 6, 10, 11 fixed; 4, 7, 8, 9 noted. README and §12 now describe overlaps.
+
+- **Files:** bin/harness, lib/queue.sh, lib/status.mjs, lib/needs.mjs, lib/overlap.mjs, lib/view.mjs, tests/checks/72-u3-review.sh, tests/checks/70-overlap.sh, tests/checks/71-tty-views.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-28-U3-review.md, docs/architecture.md, +3 more
+- **Verified:** Each 72- check was run red on the unfixed code (Important 2 with Important 1's fix in place) and green after. Subset queue/status/overlap/show/tty/same-project/needs: 273/273. Full suite through check.sh (TEST_JOBS=2): green, 859 tests in 1077 s. bash -n and node --check pass on every touched file.
+- **Tests:** 853 → 859
+- **Dead end:** checking an ended run's worktree after the runner's start — the runner's end-of-queue gc removes that worktree once it is clean; the check reads that removal instead
+- **Discovery** (affects project): queue .args entries write a newline inside an argument as \x1f (queue_add). lib/queue.sh, entry_overlaps and status.mjs argsOf decode it
+- **Discovery** (affects run): overlap_open on an ended other run passes no record: no needs.md and no harness-log.md line in its worktree, only its state and run.log. The new run's record dir doesn't exist yet at overlap_start, so it gets no harness-log line either
+- **Discovery** (affects run): Left from the U3 review (docs/plans/2026-10-28-U3-review.md, Not done): a dismissed overlap reopens at the next start; the sweep's sideOf compares with origin/HEAD, not MAIN_BRANCH; queue_overlaps runs once per entry; report/trends TTY views keep · and → under ASCII glyphs
+- **Resolved:** status-json-keys.txt lists the stub needs records' keys (dropped from Gotchas for the queue .args line: the section was full)
+- **Proposed change:** The gcView footer is now 'would remove 1 worktree, 1 branch; keeps <k>' (singular for one); the spec's wording shows the plural form only
+- *25-U3-08 · claude-opus-5-5*
+
+### 2026-10-28 21:34 · U3-07 · passes
+
+report/trends/gc --dry-run render through view.mjs on a TTY: summary.mjs reportView (card + NOT PASSING table + memory peaks) and trendsView (newest 15, '<k> older: harness trends --all', total), report/trends --md; gc --dry-run --sections into view.mjs gcView (six steps, ~, footer, 'gc stopped before <step>'). Off a TTY byte-identical. 71-tty-views 11 checks.
+
+- **Files:** lib/summary.mjs, lib/view.mjs, lib/status.mjs, bin/harness, lib/driver.sh, lib/debrief.sh, tests/checks/71-tty-views.sh, tests/fixtures/summary-report.json, tests/fixtures/summary-report.md, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-read-views.md, docs/architecture.md, +2 more
+- **Verified:** tests 842 -> 853 (full suite via lib/check.sh, TEST_JOBS=2); 71-tty-views 11/11, the finish --md check watched failing with --md removed; fixtures made before summary.mjs changed; Opus review of the diff: no Critical, Important #1 (a stopped gc looked like an empty dry run) and 9 Minor fixed
+- **Tests:** 842 → 853
+- **Dead end:** GC_SECTIONS=1 env switch for the gc markers (the plan's) — a function call's prefix assignment is exported to children, so an inherited GC_SECTIONS would put markers into a real gc and runner.log; a --sections option of the inner call instead
+- **Discovery** (affects U3-08): summary-report.json is main's .harness/runs/agent-harness-2026-10-26/summary.json (the run record, not ledger/); summary-report.md is the pre-U3-07 report of it
+- **Discovery** (affects U3-08): view.mjs now exports homeIn(text, env) (status.mjs logText uses it), gcView and GC_SECTIONS; summary.mjs exports reportView and trendsView
+- **Discovery** (affects U3-08): cmd_gc prints \x1eEND as its last line under --sections; gcView without END ends 'gc stopped before <step> (see the error above)' (a failed fetch under set -e)
+- **Discovery** (affects run): memlint counts the Gotchas section's leading <!-- comment as a line: the section holds 14 facts, not 15
+- **Question for Michael:** Default taken: the TTY trends table lists newest first (status's FINISHED order) and, narrow, drops project, tests, $/f and wall h. Keep?
+- **Resolved:** entry questions without Files: are stored with ' Files (harness, from the session): …' appended; the pack shows it, and resolved matches either the session's words or the filled line
+- **Proposed change:** U3-08: review items not done here: the report card's 'not passing' label (11 = LABEL) starts its value one column late; the '## <run>: no record' line stays markdown on a TTY (the plan's choice); trends --by version <extra> is now a usage error
+- *24-U3-07 · claude-opus-5-5*
+
+### 2026-10-28 20:31 · U3-06 · passes
+
+Overlaps wired, never holding: overlap.mjs runs compares a new run's spec+briefs with each other live or unmerged run of the project; start warns and opens a warn overlap record on both runs; queue add warns; queue list/status show ⚠ overlaps, --json overlap {run, files}; sweep resolves other run gone/merged, this run merged. 70-overlap +8 checks.
+
+- **Files:** bin/harness, lib/overlap.mjs, lib/needs.mjs, lib/status.mjs, lib/show.mjs, tests/checks/70-overlap.sh, tests/checks/52-status-json.sh, tests/lib.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-same-project-starts.md, CLAUDE.md
+- **Verified:** tests/run.sh 70-overlap 15/15 (8 new, watched failing first); needs/status/show/queue/same-project subsets 100/100; full suite via lib/check.sh: 842 checks (one run flaked 13-run-2 "independent work goes on past a parked feature" at load 4.9; it passed alone 66/66 and in the run before)
+- **Tests:** 834 → 842
+- **Dead end:** reading a run's brief from <state>/brief.md only — the driver moves it into the record's brief.md and empties it at start: a continue entry found no brief
+- **Discovery** (affects U3-07, U3-08): lib/overlap.mjs now holds the shared git I/O: gitIn, branchesOf (show.mjs imports them), changes(dir, run, mainRef), envFile, liveRun, briefOf, others; status.mjs imports names from it (52's import check allows ./overlap.mjs)
+- **Discovery** (affects U3-08, run): needs_fixture's overlap subject nf-other is now a state dir with driver.pid = the check file's shell, so the open overlap fixture stays open under the sweep rule
+- **Discovery** (affects U3-08): README and architecture §3/§12 don't yet describe overlaps (the warning, records, ⚠ in queue list, the sweep words): U3-08's docs step
+- **Question for Michael:** Default taken: an overlap record resolves 'this run merged' / 'other run merged' when that side isn't live and has nothing outside .harness/runs/ main lacks, so a run that ended without changing anything resolves it too. Keep that?
+- **Proposed change:** U3-06 step 1 names `git diff … harness/R`: since lanes the code is on harness-lane/R/*; the build diffs every run branch (the plan's rule)
+- *23-U3-06 · claude-opus-5-5*
+
+### 2026-10-28 19:28 · U3-05 · passes
+
+A plain harness start/continue of a project with a live run (driver or lane: project_busy) is queued with '<R> is running on <project>: queued (…)', a runner.log line and the runner ensured; continue queues before any state change. lib/overlap.mjs: pure named/overlap + CLI. Runner holds lane-only busy projects too. 69 (12) and 70 (7) checks; decision same-project-starts.
+
+- **Files:** bin/harness, lib/queue.sh, lib/overlap.mjs, tests/checks/69-same-project-starts.sh, tests/checks/70-overlap.sh, tests/fixtures/overlap-spec.md, tests/fixtures/check-names.txt, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, journal/decisions/2026-10-27-same-project-starts.md, journal/decisions/2026-10-21-queue-one-run-per-project.md, docs/architecture.md, README.md
+- **Verified:** bash tests/run.sh 69 70: 19/19 (watched red first); 13, 14, 15, 29, 30, 32, 55 green; full suite green: check.sh 834 tests in 724 s (TEST_JOBS=3); bash -n bin/harness lib/queue.sh; node --check lib/overlap.mjs; an Opus review of the diff found 5 bugs, all fixed with red-first checks
+- **Tests:** 815 → 834
+- **Dead end:** stripping every trailing * in overlap.mjs clean() for Markdown emphasis — a prefix glob tests/checks/6* then names nothing; now a trailing * goes only when that leaves a tracked file
+- **Dead end:** a Gotchas line on queue entry names — the section was already at 15 (memlint fails 39-memlint-m4 at 16); dropped
+- **Discovery** (affects U3-06, run): lib/queue.sh busy_projects now counts a live lane (lib/lane.sh cmdline) as bin/harness project_busy does, and with no driver alive the runner waits for a lane-held entry instead of ending 'queue empty'
+- **Discovery** (affects U3-06): overlap.mjs named on the suite-split spec also names docs/plans/ (a 'docs/plans/' word): U3-06 may want docs/plans/ left out like .harness/runs/, or every run that writes a plan overlaps such a spec
+- **Discovery** (affects run): check 15's 'start queues when MAX_PARALLEL_RUNS are going' stub busy run moved to project other: a live run of proj now queues by the project rule first
+- **Question for Michael:** Default taken: named() leaves docs/plans/ in (the plan's two-segment rule); should U3-06 drop docs/plans/ like .harness/runs/, since every run writes a plan there?
+- *22-U3-05 · claude-opus-5-5*
+
+### 2026-10-28 18:30 · U3-04 · passes
+
+harness show <run> [<feature>] [--files] [--json]: cmd_show + lib/show.mjs (read-only, local refs in PROJECT_DIR): card header (status.mjs cardHeader), worktree, branch, record, state, lanes, merged/proposed milestones, compare URLs, CHANGES vs origin/<main> with ✗ conflicts, CONFLICTS, NEEDS YOU; feature form; v1 JSON. 68-show (11 checks).
+
+- **Files:** lib/show.mjs, bin/harness, lib/status.mjs, tests/checks/68-show.sh, tests/fixtures/show-json-keys.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-28-show.md, docs/architecture.md, README.md
+- **Verified:** bash tests/checks/68-show.sh 11/11; subset status needs view queue 266/266; full suite via lib/check.sh (TEST_JOBS=2) green, 815 tests; an Opus review of the diff found 8 issues, all fixed with checks (blob dedupe, bounded commit log, MAIN_BRANCH, quotePath, unknown changes, scratch object store, ± total)
+- **Tests:** 804 → 815
+- **Dead end:** summing every lane branch's diff, then skipping a branch that is an ancestor of another — stub lanes stack (M2's branch holds M1's commits): sums doubled; the ancestor skip still doubles two lanes opened on one; a path's identical blob on two branches is now counted once
+- **Discovery** (affects U3-05, U3-06): lib/show.mjs exports joinDiff, mergeTreePaths, combine and milestonesOf (pure); U3-06's overlaps can reuse branchesOf' rule (harness/<run> + harness-lane/<run>/* + origin-only lanes) and joinDiff for 'what an ended run's branches changed'
+- **Discovery** (affects U3-06, run): git merge-tree --write-tree writes loose objects into the repo; show runs it with GIT_OBJECT_DIRECTORY=<tmp> and the repo's objects as an alternate so a read view leaves the object store as it was
+- **Discovery** (affects U3-07, U3-08): status.mjs gitOf now takes the main branch (default main); cardHeader and extraOf are exported
+- **Question for Michael:** Default taken (decisions/2026-10-28-show): show counts a path once when its blob is the same on two run branches and sums different results (refines plan default 5, which summed). OK?
+- **Proposed change:** U3-04 step 3 names tests/checks/65-show.sh; 65- was taken by U3-02, the plan's 68-show.sh is used
+- *21-U3-04 · claude-opus-5-5*
+
+### 2026-10-28 17:55 · U3-03 · passes
+
+U3-03 passes. Commit `5de9bd7` is pushed to `harness-lane/agent-harness-2026-10-28/U3`. The full suite went from 796 to 804 checks and was green (804/804) on the fourth full run. - **Record after gc:** a finished run now also keeps `summary.json`, `report.md` and `metrics.jsonl` in its state dir. `harness report` reads the worktree, then that copy, then the ledger's copy. If none exists, it print…
+
+- **Files:** README.md, bin/harness, docs/architecture.md, journal/decisions/2026-10-25-gc-orphan-units.md, journal/decisions/2026-10-27-gc-foreign-units.md, journal/decisions/2026-10-27-record-after-gc.md, lib/driver.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/66-record-after-gc.sh, tests/checks/67-gc-units.sh, tests/fixtures/check-names.txt
+- *20-U3-03 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 405 characters (at most 400)*
+
+### 2026-10-28 16:39 · U3-02 · passes
+
+project_dir in bin/harness: a repo path → its top level; a bare name → its newest run's PROJECT_DIR still a repo, else $HARNESS_PROJECTS/<name>; else an error naming the places and the projects with runs. start, init, queue add, gc, memlint and status --project use it; toplevel is gone. 65-project-names (11 checks), decision, README/architecture/usage lines.
+
+- **Files:** bin/harness, tests/checks/65-project-names.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-project-names.md, README.md, docs/architecture.md, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/checks/39-memlint-m4.sh
+- **Verified:** 65-project-names: 1/10 before project_dir (red), 11/11 after; first full run 793/796 (15's and 39's checks expected the old 'is not a git repository' text, memlint flagged a 16th Gotchas line): fixed, both files 98/98; final full suite TEST_JOBS=2 green in 999 s, 796 tests
+- **Tests:** 785 → 796
+- **Dead end:** running the name checks from $T — from $T a bare `proj` is the path ./proj, so the old toplevel already resolved it: the checks passed red; they cd to $T/away
+- **Dead end:** the project list as `[[ … ]] && echo` in a for loop inside with=$(…) — the loop's last status fails the pipeline under pipefail and set -e ends harness silently when project_dir runs outside a substitution (status -p <bad path>)
+- **Dead end:** a Gotchas line on cd-ing away from $T for name checks — the section was at memlint's 15-line limit (the comment counts); 39's this-worktree check failed, so the line was dropped
+- **Discovery** (affects U3-08): A path argument (it has a /) that is no repository now says `harness: no project '<arg>': not a git repository` (not the plan's three-places line): the runs and HARNESS_PROJECTS are looked up by name only
+- **Discovery** (affects run): project_dir dies in the main shell for status --project <bad path>; bin/harness's set -e is not inherited inside $(…), so a helper that is fine in p=$(…) can exit silently when called directly
+- **Question for Michael:** Default taken (decisions/2026-10-27-project-names): a bare name resolves through its runs' PROJECT_DIR before $HARNESS_PROJECTS (~/projects). Keep that order?
+- **Proposed change:** U3-02 step 2 names tests/checks/63-project-names.sh as an example; 63 is taken (63-question-locations), the plan's 65-project-names.sh is what was built
+- *19-U3-02 · claude-opus-5-5*
+
+### 2026-10-28 15:59 · U3-01 · passes
+
+Wrote docs/plans/2026-10-28-U3-show-and-fixes.md: project_dir's order and six callers, report's worktree→state→ledger order and finish's copy, gc's unit rule, harness show (fields, CHANGES, CONFLICTS, NEEDS, feature form, --json), project_busy, overlap.mjs and its wiring/sweep, TTY report/trends/gc, checks 65-72, fixtures, U3-02..08 order, four decisions. Code unchanged.
+
+- **Files:** docs/plans/2026-10-28-U3-show-and-fixes.md
+- **Verified:** Each step checked against the code at d0403e5 (bin/harness cmd_start/cmd_continue/cmd_report/cmd_gc/cmd_queue, lib/queue.sh, lib/driver.sh finish/ledger, lib/needs.mjs open/rule/readState, lib/status.mjs readRun/renderCard/gitOf, lib/summary.mjs report/trends, tests/checks/08 gc units); git diff/merge-tree output tried in a scratch repo; suite green, 785 tests (cached).
+- **Tests:** 785 → 785
+- **Discovery** (affects U3-04): git diff --numstat --name-status prints only the name-status lines (git 2.43): show needs two diffs, both --no-renames, joined by path
+- **Discovery** (affects U3-04, U3-06): Since lanes a run's code is on harness-lane/<run>/<m> (harness/<run> is record only); a merged lane branch goes. show and overlap diff every run branch; tests need MERGE_POLICY=pr or an unverified milestone to keep unmerged code
+- **Discovery** (affects U3-03): tests/checks/08 (replayed in 13) asserts '? harness-oth-svc.scope (no run of this project)' for an ended other-project run: U3-03 changes that expectation (silent) and nosuch's text
+- **Discovery** (affects U3-05): cmd_continue removes ended before cmd_start: a same-project queue in cmd_start alone would leave a run that reads as crashed; the plan puts the check in cmd_continue before any state change
+- **Discovery** (affects U3-05): suite-split spec names lib/check.sh and lib/treekey.mjs as bare path words, not backticked: overlap.mjs named must take unquoted path-shaped tokens
+- **Question for Michael:** Should a bare project name resolve through its runs' PROJECT_DIR before ~/projects/<name> (default: yes, the runs know where it is)? Files: docs/plans/2026-10-28-U3-show-and-fixes.md §1
+- **Question for Michael:** Should an overlap record resolve as soon as either run's changes are on main, leaving a real conflict to merge_conflict's card (default: yes)? Files: docs/plans/2026-10-28-U3-show-and-fixes.md §6, §11
+- **Question for Michael:** Should spec directory names count for overlaps only at two or more segments (tests/checks/ yes, tests/ and lib/ no) (default: yes)? Files: docs/plans/2026-10-28-U3-show-and-fixes.md §6
+- **Proposed change:** U3-01 step 3 quotes `git diff --numstat --name-status`: git prints only name-status with both; the plan uses two diffs
+- **Proposed change:** U3-02 step 2 suggests tests/checks/63-project-names.sh: 63 is taken (63-question-locations); the plan numbers U3's files 65-72
+- *18-U3-01 · claude-opus-5-5*
+
+### 2026-10-28 15:42 · verify U2 · passes
+
+All 9 U2 features hold. Full suite 783/785: the 2 memory-gate checks in 08-scope failed only under 4-job load; alone 08-scope passes 125/125. Files, syntax checks, docs, cards, prompts, fixtures verified against each step.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| U2-01 | 1 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-01 | 2 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-01 | 3 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-01 | 4 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-01 | 5 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-02 | 1 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-02 | 2 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-02 | 3 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-02 | 4 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-02 | 5 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-02 | 6 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-03 | 1 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-03 | 2 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-03 | 3 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-03 | 4 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-03 | 5 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-03 | 6 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-04 | 1 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-04 | 2 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-04 | 3 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-04 | 4 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-04 | 5 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-05 | 1 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-05 | 2 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-05 | 3 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-05 | 4 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-05 | 5 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-06 | 1 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-06 | 2 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-06 | 3 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-06 | 4 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-07 | 1 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-07 | 2 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-07 | 3 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-07 | 4 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-08 | 1 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-08 | 2 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-08 | 3 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-08 | 4 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-08 | 5 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-09 | 1 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-09 | 2 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-09 | 3 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+| U2-09 | 4 | read the step, inspected the named files/fixtures/docs in the worktree, bash -n / node --check, suite files 56-64 in the init run; reran 08-scope alone | step matches code, docs and the passing check; full init run 783/785, the 2 failures are load-timing in 08-scope and pass alone (125/125) | yes |
+
+- *153858-verify-U2 · claude-sonnet-5-5*
+
+### 2026-10-28 15:29 · U2-09 · passes
+
+U2 review: 0 Critical, 3 Important, 11 Minor (one Opus round, no second: nothing Critical). Fixed red to green in 64-needs-review: harness merge takes a hand merge of main, card commands in a fix worktree, needs done refuses a park and locks; 7 minors fixed. Docs: architecture §7 INBOX repair, §8 hand merge; README n8n record path; both U2 decisions updated.
+
+- **Files:** lib/needs.mjs, lib/needs.sh, lib/record.sh, lib/lane.sh, lib/inbox.mjs, bin/harness, tests/checks/64-needs-review.sh, tests/checks/59-needs-cards.sh, tests/checks/61-needs-git.sh, tests/checks/63-question-locations.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-28-U2-review.md, +5 more
+- **Verified:** 64-needs-review: 7/8 red before the fixes (the lock check re-written after it passed for the wrong reason: wait waited on its holder), 2 inbox checks red against HEAD's inbox.mjs via IM=; 10/10 after. 57-64 green by file; bash -n / node --check on all 27 U2 shell and mjs files; full suite via lib/check.sh; full suite green in 550 s, 785 tests (a first full run was red on 39-memlint: my Gotchas line made 16, dropped; and 08 ledger harness_dirty from committing mid-run, green alone)
+- **Tests:** 775 → 785
+- **Dead end:** HEADING = /^## Answers\b/ — 57 pins '## Answers".' outside a comment as no heading; \b matches before the quote, so the rule is a blank, : or ( after it
+- **Dead end:** adding a 16th Gotchas line — memlint fails over 15 (39-memlint); the grep count of ^- missed one
+- **Discovery** (affects run): needs card commands now run in fix_root/fix-<run>-<subject> (HARNESS_SCRATCH_ROOT/<project>, needs_open passes it) at origin's copy of the branch; merge_conflict's last command is harness merge, which re-tags at a hand-merged lane tip
+- **Discovery** (affects run): Not done from the U2 review: a park card's where can take other features' Files: lines when the INBOX has no ### <id> section; pre-U2 runs' needs-/refused-/conflict- markers show no items; needs.md rewritten by needs done is committed only at the run's next driver commit
+- **Question for Michael:** Default taken: harness merge re-tags a milestone at its lane branch's tip when you merged main into it by hand (the merge_conflict card's (a)); that tip is not re-verified, only re-checked by merge-tree. Should it run one verify round on it instead? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-28/slot-0/lib/record.sh, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-28/slot-0/docs/plans/2026-10-28-U2-review.md
+- **Proposed change:** U2-09 step 1 names the diff path outside the lane's scratch directory (/tmp/harness/agent-harness/agent-harness-2026-10-28/U2-review.diff); a lane's review step could name its own scratch
+- *17-U2-09 · claude-opus-5-5*
+
+### 2026-10-28 14:44 · U2-08 · passes
+
+Questions say where: the three prompts ask for a Files: line and the INBOX place (below the comment block, ### <id>: <title> (<date time>), one (recommended)). entries.mjs fills a question without Files: from the session (sessionFiles, fillQuestions), noted; a park card's where takes session_files (files_from session). 63-question-locations; both U2 decisions complete; Opus review fixes.
+
+- **Files:** prompts/coding.md, prompts/verify.md, prompts/initializer.md, lib/entries.mjs, lib/inbox.mjs, lib/needs.mjs, lib/record.sh, lib/lane.sh, tests/stub-claude.sh, tests/checks/63-question-locations.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/fixtures/check-names.txt, +5 more
+- **Verified:** bash tests/run.sh 63: 6/6 (prompt text; fill unit with the rest byte for byte; card unit; stub run: A's entry question filled with <slot>/work-A.txt, <slot>/lib/x.sh and the note; B's park Files: /srv/q/lib/y.sh:48 gives where[0].line 48, files_from question; a park without Files: gives files_from session, <slot>/lib/z.sh, noted). 57, 59, 60, 38 green; full suite TEST_JOBS=2: green in 966 s, 775 tests.
+- **Tests:** 769 → 775
+- **Dead end:** a first full suite before the review fixes — 38's 'a resolved question is gone' failed: the pack line now carries the fill; the check allows it and settled() also compares the unfilled words
+- **Discovery** (affects U2-09, run): tests/stub-claude.sh STUB_ASK_TOUCH=<path> (the STUB_ASK session also changes it), STUB_PARK_FILES=<value> (a Files: line under the park's ### heading), STUB_PARK_TOUCH=<path> (the parking session changes it)
+- **Discovery** (affects U2-09): lib/inbox.mjs files() now reads **Files:**, `Files:`, **Files**: and (Files: …), and keeps an item only with a / or . and no blank: a park card's where can change for such INBOX lines
+- **Discovery** (affects project): entry questions without Files: are stored with ' Files (harness, from the session): …' appended; the pack shows it, and resolved matches either the session's words or the filled line
+- **Proposed change:** Filled paths in a lane point into the slot worktree, which slot_close removes after the segment: a later fill could add the lane branch's blob URL (the card rows already carry one)
+- *16-U2-08 · claude-opus-5-5*
+
+### 2026-10-28 13:34 · U2-07 · passes
+
+Status reads the needs records: lib/status.mjs imports needs.mjs list (now exported) for NEEDS YOU, --json needs (whole records) and the card's needs you (count, 3 headlines, +k more); U1's derived rows gone. The desk prompt and answer skill read harness needs; the debrief adds a #### needs block. 62-needs-readers (6 checks). Opus review fixes.
+
+- **Files:** lib/status.mjs, lib/needs.mjs, lib/debrief.sh, prompts/desk.md, skills/harness-answer/SKILL.md, tests/checks/62-needs-readers.sh, tests/lib.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/checks/52-status-json.sh, tests/checks/53-status-view.sh, tests/fixtures/status-json-keys.txt, +4 more
+- **Verified:** full suite via check.sh (TEST_JOBS=2, 25m timeout): green in 953 s, 769 tests; 62 6/6, the status files 52-56 all pass; 13- (66) and 15- (79) pass with the new desk/skill/debrief checks; red first: 62 was 0/5 before the code
+- **Tests:** 763 → 769
+- **Dead end:** a feature list with a null entry as 62's unreadable state dir — status.mjs's own features() crashes on it, before needs.mjs is asked (older than U2); used a parked.json with an empty id instead
+- **Discovery** (affects U2-09, run): status_stubs now opens the parked and givenup runs' records (nopen, at the stub's old times); the given-up headline is the template's 'C given up after 2 attempts', so 52/53 read that instead of U1's '(2 attempts)'
+- **Discovery** (affects U2-09): status.mjs computes needs only in view and card mode, for the runs it shows (needsOf), so queue list/show never touch needs.mjs; needs.mjs list skips a state dir it can't read (stderr 'needs.mjs: <dir>: <msg>'), and status passes that line through
+- **Discovery** (affects U2-09, run): With U1's run_end row gone, a run that ended failed or waiting with no record (e.g. 'no feature left to try', an unknown POLICY) shows in neither NEEDS YOU nor harness needs, only as FINISHED's red glyph
+- **Discovery** (affects U2-09, project): status-json-keys.txt now lists every key path of the stubs' three needs records (parked, given_up, synthesized driver_crash); a new card field in those templates changes it
+- **Question for Michael:** U1 showed any failed or waiting end without another item as a NEEDS YOU row (run_end); with the records it shows only where finish opened one (feature_list_edits, initializer_failed, the limits). Default taken: no generic item, so 'no feature left to try' is visible only in FINISHED. Should finish open a record for every failed or waiting end (a new reason, say run_end), in U2-09 or U3?
+- **Proposed change:** U2-09 review: lib/desk.sh's notification still says 'Or by hand: harness parked <run>' (the plan keeps the alias); switch it to harness needs if wanted
+- **Proposed change:** U2-09 review: 52/53's 'the gc'd run none' clauses pass only because the gcd stub has no records; a gc'd run whose harness/<run> branch survives keeps its non-parked records in both harness needs and status (needs.mjs's removed rule)
+- *15-U2-07 · claude-opus-5-5*
+
+### 2026-10-28 12:57 · U2-06 · passes
+
+Git-side stop paths open needs records: sync_main's main_conflict (files, PR subjects, notified once per main commit, resolved by a clean merge or the milestone merged), merge_one's merge_conflict/merge_refused, verify's three, rebase_fail, slot_open/slot_fail base_conflict, reap driver_crash; needs_you sends the record. 61-needs-git (10 checks). Coordinator stale-alive race fixed.
+
+- **Files:** lib/record.sh, lib/lane.sh, lib/driver.sh, lib/needs.mjs, tests/checks/61-needs-git.sh, tests/stub-claude.sh, tests/fixtures/merge-tree-name-only.txt, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/58-needs-record.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-needs-record.md, docs/architecture.md, +2 more
+- **Verified:** full suite green: 763 tests in 941 s (TEST_JOBS=2); 61-needs-git 10/10 (main_conflict once over 2 verifies, resolved after a hand merge + continue; merge_conflict, merge_refused with PR click, verify_thin, verify_recheck, base_conflict, coordinator merge_one), 13- 66/66, 58- 15/15; the coordinator check watched failing without its fix
+- **Tests:** 753 → 763
+- **Dead end:** the plan's `git log --merges <base>..origin/main -- <files>` for main_conflict's subjects — history simplification hides a merge that took the file whole from its second parent: prints nothing; --first-parent lists main's merges
+- **Dead end:** several stub runs in 61- on one origin main — the first run's continue merged M1/M2 into main, so later runs found work files already there; main is reset (update-ref) between runs
+- **Discovery** (affects run, U2-09): lib/driver.sh coordinator: alive was counted before the second reap, so a lane reaped there skipped the open and the run ended 'no feature left to try' with an independent milestone untried; alive is recounted now (a likely source of earlier lane flakes)
+- **Discovery** (affects U2-07, U2-09): a main conflict now notifies and starts/briefs the desk (needs_you); 13-'s strict continue meets one (other runs merged work-A.txt), so its desk check accepts the verify reaching the open desk
+- **Discovery** (affects U2-07, U2-09): needs.mjs rule: verify_* wait on needs-<m> before verified-<m> (a failed re-base keeps verified-<m>) and resolve on merged-<m>; main_conflict resolves on merged-<m> too; 58-'s sweep unit check changed accordingly
+- **Discovery** (affects U2-07, U2-08, U2-09): tests/stub-claude.sh STUB_MAIN_TOUCH=<id|verify-<m>>:<path> lands another run's PR merge (#7, other-M3) on origin main adding <path>; STUB_THIN_VERIFY=all keeps every verify round thin
+- **Discovery** (affects project): stub runs in one check file share origin main: reset it (update-ref refs/heads/main <first>) between runs that write the same work files
+- **Discovery** (affects U2-09): not done (review minor): conflict_files reads merge-tree output without -z, so a path git quotes stays quoted in the card
+- **Question for Michael:** A main conflict and merge_one's conflict on the same main are one notification (merge_one's skipped when the lane's main-conflict-<m> holds that main), but two records: keep both, or fold merge_conflict into main_conflict then? (default: both records)
+- **Proposed change:** U2-06 step 3 names tests/checks/60-needs-git.sh; 60- is U2-05's needs-driver, the file is 61-needs-git.sh as the plan says
+- **Proposed change:** plan §4.2's sync_main subjects command needs --first-parent
+- *14-U2-06 · claude-opus-5-5*
+
+### 2026-10-28 11:38 · U2-05 · passes
+
+Stop paths open needs records: the lane's park (question line/URL, actions) and given_up, finish's four reasons, the EXIT trap's driver_crash. Records carry a 60-col body and click = needs.md (markdown, committed with the record). Park notification is the record's (needs_notify). Sweeps: lane and coordinator after unpark, finish, continue, gc. 60-needs-driver (9 checks).
+
+- **Files:** lib/needs.mjs, lib/needs.sh, lib/lane.sh, lib/record.sh, lib/driver.sh, bin/harness, tests/checks/60-needs-driver.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/stub-claude.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, +2 more
+- **Verified:** bash tests/run.sh 60-needs: 9/9 (red 1/9 before the code); 13/15/08/14/16/46/58/59 subset 342/342; full suite TEST_JOBS=2: 752/753 with one 46-lanes-continue timing check failing once, 12/12 alone and twice under load, then the full suite again: green in 953 s, 753 tests (check.sh). One Opus review: 3 Minor, all fixed (needs_open's failure note on stderr so nref is the ref alone; the park keeps INBOX.md as the fallback click; gc's sweep can't end gc under set -e; no needs.md for a run that never had an item).
+- **Tests:** 744 → 753
+- **Dead end:** a given_up opener at the lane's exit 10 as well — redundant (every give-up follows a session) and its refresh changed needs.md, adding a record commit
+- **Dead end:** needs.md showing 'seen N times' — the coordinator's refreshes would rewrite it every poll
+- **Discovery** (affects U2-06, U2-07): needs.mjs record() now fills body (bodyOf: renderCard at 60 columns, plain; a park's PARKED:/question/blocked-where-do/Answer) and click (needs.md on the record branch; a click= fact wins, for merge_refused's PR)
+- **Discovery** (affects U2-06): needs_notify <ref> <msg> [k=v…] sends the record's title/body/click/priority/actions over the caller's k=v (the caller's are the fallback and tags=); U2-06's needs_you can use it
+- **Discovery** (affects U2-06, U2-07): needs_open's stdout is the ref alone (its failure note goes to stderr); open and sweep rewrite <record>/needs.md only when its text changes, and never create it for a run with no item
+- **Discovery** (affects U2-06, U2-07, U2-08): tests/stub-claude.sh STUB_GIVE_UP=<id>: every coding session of that feature ends not passing; with MAX_ATTEMPTS=1 in the user config it is given up after one
+- **Discovery** (affects run): 46-lanes-continue's 'record-only run … ends done' failed once in a full TEST_JOBS=2 run at load, passing alone and twice under load: a timing flake
+- **Question for Michael:** Default kept (plan §8 Q3): the park notification's tap opens needs.md, with Edit INBOX still an action button. Keep it?
+- **Question for Michael:** Default: harness needs done doesn't re-render needs.md (the next sweep under a driver does), so an ended run's worktree stays clean for gc. Fine?
+- **Proposed change:** U2-05 step 1 says the existing park notification checks pass unchanged, but plan §5.2 (and step 3's click) changes the 13- Click assertion to needs.md: only that line changed
+- **Proposed change:** U2-05 step 4 names tests/checks/59-needs-driver.sh; 59 is taken by the cards, so the file is 60-needs-driver.sh (as U2-01 planned)
+- *13-U2-05 · claude-opus-5-5*
+
+### 2026-10-28 10:31 · U2-04 · passes
+
+Cards by code: TEMPLATES (15, data) in lib/needs.mjs, card(reason, facts) and the card CLI, waitsOn, mergedBy; 15 fixtures in tests/fixtures/needs; harness needs as view.mjs cards (cutFront, card rule:false) with footer, 60 columns clean; harness parked = needs for text, --json joined with ref and card; notify.mjs urls compare; 59-needs-cards; Opus review fixed.
+
+- **Files:** lib/needs.mjs, lib/view.mjs, lib/notify.mjs, lib/parked.mjs, lib/needs.sh, bin/harness, tests/checks/59-needs-cards.sh, tests/checks/58-needs-record.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/fixtures/needs/*.json, tests/fixtures/check-names.txt, prompts/desk.md, +5 more
+- **Verified:** bash tests/run.sh 59: 29/29; 58: 15/15; 13-run-2: 66/66; 03: 7/7; full suite via check.sh TEST_JOBS=2: green, 744 tests in 907 s. One Opus review of the diff (0 Critical, 2 Important, 12 Minor): 13 fixed (desk/skill read --json commands, mergedBy splits merge heads at the last - so default lanes and own merges are left out, fences/tabs in questions, bad at, narrow ref keeps since, ~ in Files:, empty waits=, re-merge newest PR, commit row, gc'd parks hidden, card needs run, jq null guard), one check for them; ASCII content glyphs left (record text is Unicode by plan §1.1).
+- **Tests:** 715 → 744
+- **Dead end:** inline node -e JS with nested backtick/quote escaping inside a check's single-quoted command — unreadable and broke; a quoted heredoc writing $T/review.mjs, run with paths as argv, works
+- **Discovery** (affects U2-05, U2-06): blocked's waits are computed in needs.mjs (waitsOn over features.mjs deps) when no waits= is passed; no needs_waits shell function exists. needs_open now passes state= and suite= ($CHECK_CMD). U2-05/06 openers pass list= and inbox= and get blocked, where and question for free
+- **Discovery** (affects U2-05, U2-07): A park's headline keeps its why ('B parked: set the gatus vars'); a stored parked card's commands and run_state are recomputed by list (asOfNow) from driver.pid, ended, the runner and queue/*-continue-<run>.args; parks of gc'd worktrees are not listed
+- **Discovery** (affects U2-05): record body is still the headline: the 60-column plain card body (plan §1.1 #9, §3.2) is U2-05's, via renderCard with HARNESS_GLYPHS=unicode, no colour
+- **Discovery** (affects U2-07): prompts/desk.md and the answer skill now say to run a parked feature's commands from harness parked <run> --json (the text view wraps them and shortens paths); U2-07 still switches the desk to COLUMNS=60 harness needs
+- **Proposed change:** U2-04 step 3's header: when '<glyph> <run> · <headline> · since … · <ref>' is wider than the line, the card uses '… · <ago>' and a 'ref <ref> · since <HH:MM> (<ago>)' field (default, in decisions/2026-10-27-needs-record)
+- *12-U2-04 · claude-opus-5-5*
+
+### 2026-10-28 09:53 · U2-03 · passes
+
+lib/needs.mjs: the needs record (24 keys, first 13 = event v1), REASONS (15), pure record/refresh/sweep/synthesize/order, CLI open (0 new, 3 refreshed)/sweep/done/list; lib/needs.sh needs_open (sourced by driver, lane, harness; no caller); harness needs [--all] [--json] and needs done; needs_fixture; 58-needs-record (15 checks); decision needs-record.
+
+- **Files:** lib/needs.mjs, lib/needs.sh, bin/harness, lib/driver.sh, lib/lane.sh, tests/checks/58-needs-record.sh, tests/lib.sh, tests/checks/57-inbox.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-needs-record.md, docs/architecture.md, README.md, +1 more
+- **Verified:** 58-needs-record 15/15, each check watched red under a mutation of needs.mjs (no severity order, never removed, never unparked, no seen bump, no crash synth, no subject defaults); 03/13/53/54/57 130/130; full suite green in 628 s (TEST_JOBS=3), 715 tests; bash -n and node --check clean; needs_open sanity with stub record: 0, 3, 1 + note.
+- **Tests:** 700 → 715
+- **Dead end:** extracting check names with sed 's/^check "(.*)" .*/' — greedy on a one-line check with " inside its command: the conformance check failed once
+- **Discovery** (affects U2-04, U2-05): Deferred from U2-03 to the features that use them: needs.mjs md/fields CLIs and <record>/needs.md (U2-05 commits and clicks it), needs_waits and the waits fact (U2-04's blocked field). The card has every §1.2 key but only headline filled.
+- **Discovery** (affects U2-05, U2-06): needs.mjs open defaults feature to the subject for parked/given_up, milestone to the subject for verify_*/merge_*/main_conflict/base_conflict/driver_crash (not run/record), else the list's milestone (list= fact); positional run/reason/subject beat key=value
+- **Discovery** (affects U2-04, U2-07): harness needs prints one line per item '<glyph> <run> · <headline> · <ref>' (synthesized parked headline '<id> parked: <why>', so 54's 'harness needs parked' check still greps the why); U2-04 replaces it with cards
+- **Discovery** (affects U2-05): needs.mjs list applies only 'run removed' in memory; a resolved-but-unswept item still lists until a sweep (lane loop, finish, continue, gc in U2-05)
+- **Discovery** (affects U2-04, U2-05, U2-06): needs_fixture <reason> open|resolved [<at epoch>] [<run>] in tests/lib.sh writes $HARNESS_STATE/proj/<run> with markers per plan §2.1
+- **Proposed change:** The plan's §6 lists md/fields under U2-03 but its steps don't; U2-05's steps should name needs.md (md) and fields
+- *11-U2-03 · claude-opus-5-5*
+
+### 2026-10-28 09:19 · U2-02 · passes
+
+lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, question, questionLine, added, answers, insert, files, repair + CLI); parked/notify/entries/record.sh on it; inbox_repair after each lane session (slot copy) and the initializer, noted; template comment without ## Answers; STUB_INBOX_IN_COMMENT; 57-inbox (11 checks), n8n-home fixture.
+
+- **Files:** lib/inbox.mjs, lib/parked.mjs, lib/notify.mjs, lib/entries.mjs, lib/record.sh, lib/lane.sh, lib/driver.sh, tests/stub-claude.sh, tests/checks/57-inbox.sh, tests/fixtures/inbox-q-in-comment.md, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-question-locations.md, +3 more
+- **Verified:** 57-inbox 11/11; its run check fails with lane.sh's inbox_repair call disabled (8/9 then). 03-harness-parked 4/4. Full suite (TEST_JOBS=2) on the pre-review tree 697/698, the one failure conformance from names added mid-run; full suite on the final tree green: 700 tests in 904 s (check.sh, TEST_JOBS=2). One Opus review (1 Important, 6 Minor), every finding fixed red to green in 57's two review checks.
+- **Tests:** 689 → 700
+- **Dead end:** repair by the comments' greedy longest common prefix/suffix alone — an edited comment's text was moved as a 'question', a --> inside the question ended the comment early, and a rotated insertion lost its tail (review); now: anchor on the comment's first and last lines, line/word-aligned placement, LCS runs for edits
+- **Discovery** (affects U2-03, U2-04, U2-05, U2-08): lib/inbox.mjs has answers/insert/question/repair CLIs and pure question, questionLine (1-based line of the question's first line), files ([{path,line}] from Files: lines) for U2-04/05/08; parked.mjs questionFor and notify.mjs inboxQuestion are aliases of question/added
+- **Discovery** (affects U2-05, U2-08): tests/stub-claude.sh STUB_INBOX_IN_COMMENT=<id>: that feature's first session splits the steering comment after 'under ' with '## Questions' + '**Q1 (<id>, stub).** set the gatus vars, then answer' and parks
+- **Discovery** (affects U2): added() now ignores HTML comments and reads the repaired text; inbox_repair (lib/record.sh) is a no-op when a session only rewords the comment
+- **Proposed change:** U2-02 step 5 says the lane repairs the record's INBOX.md; with lanes the session writes the slot copy, so the repair runs there (before take_question) and on the record's INBOX after the initializer, as the U2-01 plan §4.4/§7.5 says
+- **Proposed change:** U2-02 step 3 names tests/checks/56-inbox-pure.sh; 56 is taken, the file is 57-inbox.sh (plan §5.1)
+- *10-U2-02 · claude-opus-5-5*
+
+### 2026-10-28 08:40 · U2-01 · passes
+
+Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and card keys, file locations, the 15 reasons mapped to their functions with kind/severity/priority/key/sweep rule, a card template per reason, needs.sh/needs.mjs/inbox.mjs APIs, notification texts, check files 57-63, fixtures, touched checks, order U2-02..09. Code unchanged; suite cached green.
+
+- **Files:** docs/plans/2026-10-28-U2-needs-record.md
+- **Verified:** Each plan step checked against the code at fc23bf9 (grep of lib/record.sh, lib/lane.sh, lib/driver.sh, bin/harness, tests/checks/13-, 03-, 15-); the n8n fixture read via a scratch clone (31 lines, line 13 '## Answers".', line 28 '## Answers'); merge-tree --name-only output captured from a real scratch conflict; lib/check.sh: green, 689 tests (cached).
+- **Tests:** 689 → 689
+- **Discovery** (affects U2-02, U2-03, U2-04, U2-05, U2-06, U2-07, U2-08): tests/checks/56- is taken (56-status-review.sh): U2's new check files are 57-inbox, 58-needs-record, 59-needs-cards, 60-needs-driver, 61-needs-git, 62-needs-readers, 63-question-locations
+- **Discovery** (affects U2-02): With lanes, a session writes only its slot copy of INBOX.md; take_question_ copies the added lines into the record. So the INBOX repair belongs on the slot copy (against $LS/inbox-before.md) before take_question, plus the record's INBOX after the initializer. answers_hash and take_question_ also cut at /^## Answers/ and must move to inbox.mjs (answers, insert)
+- **Discovery** (affects U2-02): The n8n-home fixture can be read without git in that checkout: git clone -q --no-checkout ~/projects/n8n-home <scratch>/n8n-home, then git -C <scratch>/n8n-home show 4632d1c:.harness/runs/n8n-home-2026-10-22/INBOX.md
+- **Discovery** (affects U2-04, U2-05): harness parked's text is read by seven 13- checks (parky · proj · B, running:, next commands); making parked an alias in U2-04 before U2-05 opens records needs list to synthesize parked items from parked.json (plan §2.2), and those checks rewritten to the card's words (plan §5.2)
+- **Discovery** (affects U2-05, U2-06): Two 13- checks assert today's clicks: the park notification's Click is INBOX.md and verify's is progress.md; the spec's needs.md click changes exactly those two assertions (U2-05, U2-06)
+- **Question for Michael:** Should a given-up feature (and a run ending on feature-list edits or a crash) send its own high notification when it happens, not only via the run-end notification? Default: no (plan §7.3).
+- **Question for Michael:** Is one main_conflict item per lane (refreshed as main moves, notified once per main commit via a main-conflict-<m> marker) right, rather than one item per main commit? Default: per lane (plan §7.1).
+- **Question for Michael:** Should the park notification's tap open needs.md instead of INBOX.md (Edit INBOX stays a button)? Default: needs.md (plan §7.4).
+- **Proposed change:** U2-02 step 5: run the repair on the session's copy of INBOX.md (the slot's) before take_question, and on the record's INBOX.md after the initializer, not on the record's INBOX.md after each session (sessions never write it with lanes); and name answers_hash and take_question_ in lib/record.sh as callers of inbox.mjs
+- **Proposed change:** U2-03 step 1: needs.mjs may import ./inbox.mjs and ./notify.mjs (pure) as well as ./view.mjs
+- **Proposed change:** U2-05 step 1 and U2-06 step 2: 'existing park/verify notification checks pass unchanged' except the one Click assertion each (INBOX.md and progress.md become needs.md)
+- **Proposed change:** U2-06 step 1: main_conflict's key subject is the lane milestone, not the origin/main commit; once per main commit comes from a main-conflict-<m> marker (plan §7.1)
+- *09-U2-01 · claude-opus-5-5*
+
+### 2026-10-28 08:22 · verify U1 · passes
+
+All 40 steps of U1-01..07 hold. Init suite red (7 checks in 08-scope, 45-lanes) was load flakes: both files pass alone (135/135); 51-56 pass 86/86; 25-run-13b flaked once, passes alone. Docs, fixtures, decision, prompts, syntax checked.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| U1-01 | 1 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-01 | 2 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-01 | 3 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-01 | 4 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-01 | 5 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-01 | 6 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-02 | 1 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-02 | 2 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-02 | 3 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-02 | 4 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-02 | 5 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-02 | 6 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-02 | 7 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-03 | 1 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-03 | 2 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-03 | 3 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-03 | 4 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-03 | 5 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-03 | 6 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-03 | 7 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-04 | 1 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-04 | 2 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-04 | 3 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-04 | 4 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-04 | 5 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-04 | 6 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-04 | 7 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-05 | 1 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-05 | 2 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-05 | 3 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-05 | 4 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-05 | 5 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-06 | 1 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-06 | 2 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-06 | 3 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-06 | 4 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-07 | 1 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-07 | 2 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-07 | 3 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+| U1-07 | 4 | read step, checked files/docs/prompts by grep, node --check, bash -n, ran tests/run.sh 08-scope 45-lanes and 51-..56- and 25-run-13b | artifact present and matches step; covering checks in 51-56 (and rewritten 08/13/14/15/47) pass; suite failures in init were load flakes, green on rerun | yes |
+
+- *081544-verify-U1 · claude-sonnet-5-5*
+
+### 2026-10-28 08:07 · U1-07 · passes
+
+U1 review: 1 Critical, 3 Important, 11 Minor (two Opus rounds, in f8ea1f6). This attempt changed no code: it re-verified all four steps and got a green full suite for the tree. TEST_JOBS=4 runs failed one to four different e2e timing checks each (46, 38, 32, 08), every file green alone.
+
+- **Verified:** steps 1-3 read back (U1-review.diff, docs/plans/2026-10-28-U1-review.md, 9 names from 56-status-review in check-names.txt, README status/queue show/STATUS_SINCE/NO_COLOR, architecture §3/§12, template, decision); bash -n and node --check clean; 46+38 alone 24/24, 08 alone 125/125; full suite through check.sh at TEST_JOBS=2 (HARNESS_CHECK_TIMEOUT=25m): green in 871 s, 689 tests
+- **Tests:** 689 → 689
+- **Dead end:** rerunning the full suite at TEST_JOBS=4 with other lanes loading the box (~3.6) — four runs, four different e2e flakes (46 pr-held, 38 pack bytes, 32 MAX_PARALLEL_RUNS, 08 no user systemd); none in code U1 changed
+- **Discovery** (affects run): At load ~3.6 (other lanes) every TEST_JOBS=4 full run tonight failed 1-4 timing-bound e2e checks, a different file each time; TEST_JOBS=2 with HARNESS_CHECK_TIMEOUT=25m is the way to a green
+- **Question for Michael:** The U1 review deferred four Minor findings (continued-run wall hours, MAIN_BRANCH in the card's branch line, lane liveness by cmdline, the --since 3d hint). Should they go in a later milestone's list, or be dropped?
+- **Question for Michael:** The full suite flakes under load at TEST_JOBS=4 (a different e2e check each run). Should the harness's check use TEST_JOBS=2 (and a 25m check timeout) while lanes run in parallel?
+- **Proposed change:** When lanes share the box, run the suite with fewer jobs (TEST_JOBS=2) or tie TEST_JOBS to the load average, so a milestone's last feature isn't un-passed by a load flake
+- *08-U1-07 · claude-opus-5-5*
+
+### 2026-10-28 07:11 · U1-07 · passes
+
+U1 review: 1 Critical, 3 Important, 11 Minor over two Opus rounds. Critical (session counted every metrics row) and all Important fixed red to green in 56-status-review.sh; 7 Minor fixed, 4 deferred; simplifications applied. README, architecture §3/§10/§12, config template and read-views decision complete.
+
+- **Files:** lib/status.mjs, lib/view.mjs, bin/harness, tests/lib.sh, tests/checks/56-status-review.sh, tests/checks/53-status-view.sh, tests/checks/54-status-card.sh, tests/checks/55-queue-view.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-28-U1-review.md, journal/decisions/2026-10-27-read-views.md, docs/architecture.md, +2 more
+- **Verified:** 56-status-review.sh: 9 checks, each watched red against the old code (the out-of-range epoch reproduced a RangeError); full suite via lib/check.sh green, 689/689 (TEST_JOBS=2, 874 s); bash -n and node --check on every touched file.
+- **Tests:** 680 → 689
+- **Dead end:** a live session = the newest session line with no coding row at or after its stamp — the second Opus round: a refused (env) row never closes it, another lane's row hides it, and rows share a second with the next line; log order per id fixed all three
+- **Discovery** (affects run): status_stubs' mx now takes [<kind>:]<feature> (init:, verify:, refused:) and writes every row's at MX_AT s before HARNESS_NOW (default 1900); fl and mx stay defined after status_stubs
+- **Discovery** (affects U2, run): Deferred from the U1 review (docs/plans/2026-10-28-U1-review.md, Not done): wall hours of a continued run, the card's branch line hardcodes origin/main, lane liveness lacks lane_live's cmdline test, and the footer's --since 3d hint is not conditional on hidden runs
+- **Discovery** (affects run): Under load (~3.7, other lanes), full runs flaked once each in 28-run-14d-harness-merge and 48-lanes-rebase (an unknown run/<id>/M2 tag); both pass alone and neither reads status
+- **Question for Michael:** The U1 review deferred four Minor findings (continued-run wall hours, MAIN_BRANCH in the card's branch line, lane liveness by cmdline, the --since 3d hint). Should they go in a later milestone's list, or be dropped?
+- **Proposed change:** U1-07 step 1 writes the diff under /tmp/harness/<project>/<run>/ while the session's scratch is .../lanes/U1; the step could name the scratch directory instead
+- *07-U1-07 · claude-opus-5-5*
+
+### 2026-10-28 06:08 · U1-06 · passes
+
+harness queue list renders through status.mjs renderQueue + view.mjs: QUEUE/PARKED/RUNNING/RECENT, rule, show hint; harness queue show <n> [--parked] is a card (renderEntry). entry_kind gone; QUEUED rows share queueRow. The four 15- queue checks read the new rows; 55-queue-view.sh, 12 checks. An Opus review found 1 Important and 6 Minor issues, all fixed red to green.
+
+- **Files:** lib/status.mjs, bin/harness, tests/checks/55-queue-view.sh, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md
+- **Verified:** bash tests/run.sh 15-run 52- 53- 54- 55-: 131/131; 55-queue-view 12/12 after the review fixes; full suite via lib/check.sh TEST_JOBS=2: green in 868 s, 680 tests (an earlier TEST_JOBS=4 run lost 28-run-14d-harness-merge to load ~3.6; alone it passes in 12 s); output eyeballed at COLUMNS 100/60/80
+- **Tests:** 668 → 680
+- **Dead end:** the brief inline in the row's flex column, as the step's row shape reads — at 80 and 60 columns the flex cut drops '(+1170 chars)'; the brief goes on its own sub-line, as the spec's 80-column example shows
+- **Discovery** (affects U1-07): status.mjs now has queue and entry <n> [--parked] modes; readQueue returns [entry, {args, file}] pairs (queued() maps to the entries), so --json is unchanged
+- **Discovery** (affects U1-07): queue show adds fields beyond the step: held, options (the args no other field names, --queued included) and added; an --until text to_epoch reads but status.mjs cannot (e.g. 'tomorrow 06:00') shows as given
+- **Discovery** (affects U1-07): RUNNING in queue list folds its ids under the title instead of cutting them; the spec's narrow 'PARKED 0 · RUNNING …' join was dropped
+- **Proposed change:** U1-06 step 1's row shape puts the brief on the row; the build puts it on its own sub-line (the spec's 80-column example does the same) so its (+k chars) is never cut. U1-07 can note this in decisions/2026-10-27-read-views
+- **Proposed change:** the debrief's ALLOW list has 'harness queue list' but not 'harness queue show' (read-only): U1-07 or Michael may add it
+- *06-U1-06 · claude-opus-5-5*
+
+### 2026-10-28 05:14 · U1-05 · passes
+
+U1-05 passes, in commit `681d468` (pushed). The full suite is green: 668 tests, up from 655. - **The card:** `harness status <run>` now prints a card. Its first line gives the state or end class, `x/y passing` and the age. The fields are now, ended, milestones, lanes, spend, branch, worktree, needs you, units and next. `-v` or `N` adds the log tail. - **Old checks:** the old checks that read the …
+
+- **Files:** CLAUDE.md, bin/harness, journal/decisions/2026-10-27-read-views.md, lib/status.mjs, prompts/supervisor.md, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/14-run-2b-stop-records.sh, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/checks/40-run-18-test-counts-m5.sh, tests/checks/47-lanes-two.sh, tests/checks/52-status-json.sh, +4 more
+- *05-U1-05 · claude-opus-5-5 · recorded by the harness: entry.json invalid: summary: 410 characters (at most 400)*
+
+### 2026-10-28 04:45 · U1-04 · passes
+
+harness status (no run) is one screen via status.mjs renderView + view.mjs: NEEDS YOU, RUNNING, QUEUED, FINISHED, footer; --all, --since, -p, -v, N; fits 60/80; colour on a TTY only; ASCII under LC_ALL=C. STATUS_SINCE default + template; catch-up prompt; decision updated. 53-status-view.sh, 15 checks. An Opus review found 11 Minor issues; 9 fixed red to green.
+
+- **Files:** lib/status.mjs, bin/harness, lib/config.sh, templates/user/config.sh, prompts/project-catchup.md, journal/decisions/2026-10-27-read-views.md, tests/checks/53-status-view.sh, tests/checks/52-status-json.sh, tests/fixtures/status-text-u1-03.txt, tests/fixtures/check-names.txt, CLAUDE.md
+- **Verified:** bash tests/run.sh status: 52- 15/15, 53- 15/15 (harness status --all over 38 stub runs: best of 3 about 150 ms); full suite via lib/check.sh: 655/655 green at TEST_JOBS=2 in 869 s (a TEST_JOBS=4 run before it: 652/655, three lanes pr-held timing checks in 46-lanes-continue, which passes 12/12 alone and never reads status)
+- **Tests:** 640 → 655
+- **Dead end:** the queue row's (requested) mark in its own column (review finding 7: a 74-char id plus the mark gets folded) — the padded column breaks the 'stopped (requested)' row text that U1-06's rewrite of the 15- queue checks expects; reverted, the long-id fold left as a known rare case
+- **Discovery** (affects U1-05, U1-06): renderView(doc, {runs, extra, verbose, all, project, env}, ctx) in lib/status.mjs renders the default view from the v1 document; laneLine(l) (exported) rebuilds P2-06's lane line from a run object's lanes.open entry, text identical: U1-05's card can use both
+- **Discovery** (affects U1-05): cmd_status now sends everything except 'harness status <run>' without --json to status.mjs; that one path is still the old bash loop (and accepts -v, ignored). A run with -a/--since/-p and no --json dies. tests/fixtures/status-text-u1-03.txt is now only the running run's block, compared by 52-'s 'text of harness status <run>' check, which U1-05 drops
+- **Discovery** (affects U1-06): QUEUED rows already use the queue-list row shape (n, verb, '<run> (requested)' or '<project> (new run)', spec basenames · brief "<30>…" (+k chars), age; 'held: <p> busy (<run>)' as a sub-line): U1-06 can reuse the qrows mapping
+- **Discovery** (affects run): lanes admission (47-lanes-two, five-hour window at 80 %) failed once in a full run at load ~2.9 with TEST_JOBS=3; it never reads the status view
+- **Question for Michael:** Default taken: RUNNING shows '<k> lanes' with sub-rows only for two or more open lanes (a lanes-era run always has its one lane; the feature/session/model says more). Keep?
+- **Question for Michael:** Default taken: QUEUED lists only waiting entries; parked ones are a count on the '+k more · p parked: harness queue list' line. Keep?
+- **Proposed change:** U1-07's review should look at a long run id (60+ chars) in the shared id column: one such id puts every run row in all three sections on two lines (review finding 7, left as is)
+- *04-U1-04 · claude-opus-5-5*
+
+### 2026-10-28 03:52 · U1-03 · passes
+
+lib/status.mjs builds the run, needs and queue objects (pure runObject, needsItems, queueEntry, sections) from run_rows' stdin; harness status [<run>] --json prints v1. status_stubs/status_bulk in tests/lib.sh; 52-status-json.sh, 15 checks; key-paths and pre-change text fixtures. Text unchanged. An Opus review found 3 Important and 3 Minor issues, all fixed red to green.
+
+- **Files:** lib/status.mjs, bin/harness, tests/lib.sh, tests/checks/52-status-json.sh, tests/fixtures/status-json-keys.txt, tests/fixtures/status-text-u1-03.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-read-views.md, docs/plans/2026-10-28-U1-read-views.md, CLAUDE.md
+- **Verified:** 52-status-json 15/15 (failed first: no status.mjs, then 6 red for the review's findings); --json over 38 runs best of 3 about 155 ms; the 08/13/14/15/47 files 321/321; full suite green 640/640 with TEST_JOBS=2 (866 s, cached). Three earlier TEST_JOBS=4 runs each had 1-2 different timing flakes (46/48 lanes, 15 queue runner, 08 memory gate); each passed when rerun alone, and none reads harness status.
+- **Tests:** 625 → 640
+- **Dead end:** HARNESS_NOW=1793232000 (2026-10-29) in the stubs — files touched to a time after the real clock are -newer than any stamp, so the read-only find check failed; now 1793145600
+- **Dead end:** a symlinked lib/ beside HEAD's bin/harness to capture the old text — node's main guard compares realpath with argv[1], so features.mjs printed nothing; git archive HEAD lib instead
+- **Discovery** (affects U1-04, U1-05, U1-06): status_stubs [<bulk>] (tests/lib.sh) builds the 8 U1 stub runs (done2h, done3d, stopped, running+lane M1+2 units, parked, givenup, gcd via ledger, crashed) and a 3-entry queue at HARNESS_NOW=1793145600, TZ=UTC; status_bulk <n> adds bulk-01..n. 53-55 can source them
+- **Discovery** (affects U1-04, U1-05): tests/fixtures/status-text-u1-03.txt is the old harness status text (LC_ALL=C, $T as <T>) that 52-'s last-but-two check compares: U1-04/U1-05 replace that text, so they drop or rewrite that check and the fixture
+- **Discovery** (affects U1-04): status.mjs needs a text mode: today it requires --json (usage exit 2); cmd_status dies when -a/--since/--project are given without --json, and U1-04 lifts that
+- **Discovery** (affects U1-04, U1-05, U2): an ended run's summary.json is read record, then state dir, then ledger: the state dir's copy is harness report's and goes stale after a continue. session = metrics rows + 1 while running, never $STATE/sessions (reset each segment). The plan's §3.1 is corrected
+- **Discovery** (affects run): the full suite at TEST_JOBS=4 flaked 1-2 timing checks per run tonight (load around 3.7 with other lanes); TEST_JOBS=2 ran green in 866 s
+- **Proposed change:** U1-03 step 1 says the summary comes from the state dir, then the ledger. The record's copy (finish's) should come first: the state dir's is harness report's, an earlier segment's after a continue (the U1-03 review)
+- *03-U1-03 · claude-opus-5-5*
+
+### 2026-10-28 02:37 · U1-03 · not yet
+
+API Error: Can't reach the API server — check your internet or DNS (EAI_AGAIN)
+
+- *03-U1-03 · claude-opus-5-5 · recorded by the harness: entry.json missing*
+
+### 2026-10-28 02:05 · U1-02 · passes
+
+lib/view.mjs: the formatter (context, glyphs with ASCII forms, paint, displayWidth, cut, pad, table, section, rule, card, ago, when, home, duration, endClass) plus a table|card|section CLI; 23 unit checks in 51-view-pure.sh; end-reasons.txt; decision 2026-10-27-read-views started. An Opus review's 2 Important and 7 Minor findings were fixed red→green.
+
+- **Files:** lib/view.mjs, tests/checks/51-view-pure.sh, tests/fixtures/end-reasons.txt, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-read-views.md, CLAUDE.md
+- **Verified:** bash tests/run.sh 51-view: 23/23; full suite via lib/check.sh green, 625 tests (602 before); node --check lib/view.mjs
+- **Tests:** 602 → 625
+- **Dead end:** folding a whole over-wide narrow table line at the width — split a 38-char id that fits at 40 when a glyph column precedes it (review finding); lines now break at column gaps first, only an id wider than the width folds
+- **Discovery** (affects U1-04, U1-06): view.mjs table: put the glyph in the same cell as the id (glyph + space) to get the spec's '⚠ run-id' look; columns are joined by two spaces
+- **Discovery** (affects U1-04): view.mjs section(title, 0, hint) prints the bare line without the rule (the spec's 'QUEUED 0 · runner off'); count null drops the count ('FINISHED · last 24h · 3')
+- **Discovery** (affects U1-05): view.mjs card: a value's newline starts a new hanging line; a URL token too wide for the room goes on its own line at 2; field.lines are verbatim at 4 (P2-06 lane lines)
+- **Discovery** (affects project): the end-reasons check greps literal finish/END_REASON/lane_exit 13 reasons out of lib/driver.sh and lib/lane.sh: a new literal end reason needs a line in tests/fixtures/end-reasons.txt
+- **Discovery** (affects run): the full suite took 478 s and 481 s tonight (TEST_JOBS=4)
+- **Question for Michael:** Default taken: a table id wider than the whole width is folded at the width (never cut, never past it), and a section with count 0 prints without the rule. Keep both?
+- *02-U1-02 · claude-opus-5-5*
+
+### 2026-10-28 01:40 · U1-01 · passes
+
+Wrote docs/plans/2026-10-28-U1-read-views.md: view.mjs API (15 functions, glyphs, width/colour/override rules, end classes), status.mjs stdin/args/files read and the v1 --json keys, the 9 existing checks the new text touches with their rewrites, the stub-state helper, check files 51-55 and the U1-02..07 order. Code unchanged; suite cached green.
+
+- **Files:** docs/plans/2026-10-28-U1-read-views.md
+- **Verified:** lib/check.sh: green, 602 tests (cached: docs/plans is outside the key); each plan step checked against the file; check names and files confirmed with grep on tests/checks
+- **Tests:** 602 → 602
+- **Discovery** (affects U1-03, U1-04): The ended file holds '<reason> · YYYY-MM-DD HH:MM:SS' (finish, EXIT trap), but checks also write a bare reason or an empty meta.env (15-'s stoppy-o): status.mjs and run_rows must tolerate both (run_rows uses cmd_parked's '|| true' subshell).
+- **Discovery** (affects U1-03, U3-03): finish writes summary.json only to the record; status.mjs reads it state dir → record → ledger copy, so an ended run with its worktree still there gets its summary too.
+- **Discovery** (affects U1-03, U2-03): needs-<m> markers are empty; the reason is in state/lanes/<m>/need. The weekly budget end text is weekly_over's echo in lib/config.sh.
+- **Discovery** (affects U1-05): The card's lanes field prints P2-06's lane lines verbatim at a 4-space indent so 47-lanes-two's -x regexes and 08-'s MemoryCurrent count hold unchanged.
+- **Discovery** (affects U2-07): U1's derived NEEDS items in --json use only keys of U2's record (run, project, feature, milestone, reason, kind, severity, at, title, card.headline), so U2 replaces them by adding keys within v1.
+- **Question for Michael:** Default taken: a run-level NEEDS YOU item appears only when the run has no feature or milestone item (a 'waiting on Michael: B' end is the parked B's row). Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-28/slot-0/docs/plans/2026-10-28-U1-read-views.md (section 7)
+- **Proposed change:** This session read ledger/agent-harness/agent-harness-2026-10-26/summary.json's key names (jq keys, no values used) to fix summary.json's shape, which breaks CLAUDE.md's 'never read ledger/' rule; a later session should take that shape from lib/summary.mjs build instead (the plan says so for the stub ledger copy).
+- *01-U1-01 · claude-opus-5-5*
+
+### 2026-10-28 01:32 · init · passes
+
+24 features: U1 7 (plan, view.mjs, status.mjs + --json, the default view, the card, queue list/show, review), U2 9 (plan, inbox.mjs, the needs record, cards, session-side paths, git-side paths, readers, question locations, review), U3 8 (plan, project names, record after gc + gc units, show, same-project starts + overlap.mjs, overlap wiring, TTY views, review). Serial: U1 → U2 → U3.
+
+- **Files:** .harness/runs/agent-harness-2026-10-28/feature_list.json, .harness/runs/agent-harness-2026-10-28/entry.json
+- **Discovery** (affects run): P1 and P2 of the lanes run are on origin/main (PRs #40 and #41): lib/lane.sh and lib/record.sh exist. The spec's check `git log --oneline origin/main | grep -c 'agent-harness-2026-10-26: P[12]'` prints 0 only because the merge subjects read `Merge pull request #40 from mh550/harness-merge/agent-harness-2026-10-26-P1`. The list is planned against the merged code; U1's lane rows build on P2-06's lane lines in cmd_status.
+- **Discovery** (affects run): Driver sites by function, as the code stands: sync_main, needs_you, notify_park, merge_one, slot_open (the base-conflict note) in lib/record.sh; verify, the park branch and the given-up end in lib/lane.sh; finish, the EXIT trap and the coordinator loop in lib/driver.sh; cmd_status, cmd_report, cmd_queue, cmd_parked, cmd_gc, cmd_start, cmd_continue in bin/harness.
+- **Discovery** (affects run): tests/checks/ ends at 50-lanes-record-pr.sh (new files from 51); tests/fixtures/check-names.txt has 601 names and the suite 602 checks. The init's full suite took 477 s on this box tonight, not the 208 s CLAUDE.md quotes: budget for it when a feature runs the suite more than once.
+- **Discovery** (affects U2-02): The bug (a) fixture is real: in the n8n-home checkout, `git show 4632d1c:.harness/runs/n8n-home-2026-10-22/INBOX.md` has `## Answers".` on line 13 (inside the comment) and `## Answers` on line 28; sessions may read that project (user policy), never change it.
+- **Discovery** (affects run): The step lint's outside-repo rule flags a tilde path and $HOME in step text; steps say 'the home directory shortened to a tilde' for the view's `home` rule. A grep in command position on progress.md, entries.jsonl, feature_list.json or context.md whose pattern matches the step itself is flagged too; harness-log.md greps are fine.
+- **Question for Michael:** The spec asks for three to five features per milestone; sized to 15–60 minute sessions the list has 7 (U1), 9 (U2) and 8 (U3). Default taken: keep the split (a smaller feature retries cheaper). Say so in INBOX.md if you'd rather have fewer, larger features; nothing waits on this.
+- *00-init · claude-fable-5-1*
