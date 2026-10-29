@@ -9,6 +9,21 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 19:24 · R3-06 · passes
+
+R3 review: 0 Critical, 2 Important, 7 Minor. Fixed: 58 read docs/specs (key-ignored) → fixture + guard check in 34; ignored_only's pathspec checked (77) and moved to treekey.mjs --pathspec, output not a pathspec list re-bases; cached rows in the suite-ran check; run_init's key once; writeAtomic cleanup. Decision lanes-leftovers, two in-place lines, architecture §4/§6/§12, README.
+
+- **Files:** docs/plans/2026-10-29-R3-review.md, journal/decisions/2026-10-29-lanes-leftovers.md, journal/decisions/2026-10-27-review-gate.md, journal/decisions/2026-10-26-test-count-contract.md, docs/architecture.md, README.md, lib/record.sh, lib/treekey.mjs, lib/features.mjs, lib/driver.sh, tests/checks/34-check-key.sh, tests/checks/48-lanes-rebase.sh, +5 more
+- **Verified:** Full suite: check: green in 1007 s, 980 tests (first full run red on 48-lanes-rebase, fixed; 40-run-18 flaked once, green on rerun). New checks seen red: 34 guard on 58; 77 ignored_only on a copy without literal and on an old treekey; 77 suite-ran 2x on a lane.sh without the cached filter.
+- **Tests:** 978 → 980
+- **Dead end:** ignored_only calling treekey.mjs --pathspec with no output check — a sourced shell with the live (older) HARNESS_HOME got a tree key back, a pathspec matching nothing, so a real main move read as ignored (48 red)
+- **Discovery** (affects run): The suite must read nothing under CHECK_KEY_IGNORE paths (34's guard): a merge now skips its re-base on them; copy a spec's shape into tests/fixtures instead
+- **Discovery** (affects run): lib/treekey.mjs --pathspec prints the key's pathspecs; ignored_only (lib/record.sh) uses them and takes only output starting with '.'
+- **Discovery** (affects run): Promote item 'tests/lib.sh now holds tended, held…' still not on R3's branch (R1 not on origin main): left for a session with R1 in
+- **Discovery** (affects run): 40-run-18-test-counts-m5 'a continued run refreshes tests-end' flaked once in a full run (green on the rerun)
+- **Proposed change:** prompts/initializer.md still has folded reviews say 'an Opus subagent reviews the diff' while coding.md sends reviews to the session's own model: align the initializer's wording (pinned by 13/14-run-2 prefix checks, so a deliberate edit)
+- *15-R3-06 · claude-opus-5-5*
+
 ### 2026-10-29 19:22 · R4-02 · passes
 
 needs.mjs has the question reason: questionKey (fill and Files: lines cut, folded, 80 code points), open refreshes in the run (exit 3) or moves an open item forward from a sibling run (seen +1, asked_in, old in its done/), a warn card, the sweep resolves on a later entry's resolved (entries.mjs resolvedBy, shared with pack).

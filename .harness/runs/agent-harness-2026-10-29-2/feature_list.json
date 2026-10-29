@@ -308,7 +308,7 @@
         "`docs/architecture.md` §4 has the lanes prose: the `lane <m> · …` line of `harness status <run>` and `summary.json`'s `lanes: {max_open, lane_hours, wall_hours}`; §12 is updated; `README.md`'s configuration section mentions `CHECK_KEY_IGNORE`'s role in a merge and `check-runs.log`, and its lint list names `unit-collision` and `unreproducible`",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R4-01",
