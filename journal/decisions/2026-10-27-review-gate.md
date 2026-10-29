@@ -28,7 +28,10 @@
      fetch measures from the ref the worktree has.
   5. *default* The review session's own reviewer subagent is unchanged (`prompts/coding.md` §2 still sends reviews to
      Opus subagents), so a Sonnet review session saves less than its model suggests; whether to change that line is
-     asked in M6-03's entry.
+     asked in M6-03's entry. Michael's answer (2026-10-28): change it. The reviewer subagent follows the review
+     session's model (Sonnet under `REVIEW_OPUS_LINES`, Opus at or over it and in the escalation round), judged by
+     the ledger's `review_cost_pct` and verify-fail rate. To be built by `docs/specs/2026-10-28-reliability.md`;
+     this default stands until then.
   6. *default* A review that already ran on Opus (at or over the threshold, or the round itself) never escalates.
   7. *default* (M6-04) What it saves is measured, not claimed: `summary.json` gains `review.cost_pct` (the review
      role's cost over the run's, in % with one decimal, null without a review session) and `review.found_nothing`
@@ -51,3 +54,8 @@ measure (a self-merged milestone stayed in it until the next verify); the prompt
 `reviewFindings` reads only that (capitalised, pair first, never `M3-06 Critical` or `step 1 important`);
 `found_nothing` reads every entry of a review, not its last; defaults 2 and 4 as above; the round's `Review diff:` line
 ends `; escalated to <model>`.
+
+Updated in place 2026-10-28 (Michael's answers to the memory run's M6 questions): default 5 as above. Review Minor 8
+(`docs/plans/2026-10-26-M6-review.md`) gets a fix only if it is cheap beside other review leftovers; until then the
+`one round on opus` note is the signal. No review-bearing eval task for now: the gate's cost is judged on the real
+runs' `review_cost_pct` (`evals/NEXT.md` § 5's fallback) until a first eval baseline has run.
