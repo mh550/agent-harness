@@ -25,3 +25,9 @@ Updated in place 2026-10-29 (R1-05): two more flakes were this race. `28-run-14d
 check of file 15 were 10/10 green unforced; forced on the code before the fix, 28's run ended `no feature left to try:
 2/3 passing` before M2, and 15's `weekly` run ended `no feature left to try: 1/3 passing` with its lane closed after
 for `weekly budget (…)`. Both runs now start with `HARNESS_COUNT_HOLD=1`, so each check holds the window every time.
+
+Updated in place 2026-10-29 (R1-06): three more were this race. `32-l5-queue-runner-re` (`MAX_PARALLEL_RUNS 2 → 1 …`),
+`38-run-17-gotchas-and-pack-m3` (`CONTEXT_PACK_BYTES=1024 …`: a run cut after M1 writes 3 coding packs, the check needs
+4) and 08's `no user systemd: the run goes bare …` were 10/10 green unforced; forced on the code before the fix, each
+run ended `no feature left to try: 2/3 passing` before M2. Their runs now start with `HARNESS_COUNT_HOLD=1` (32's
+through its queue runner, which `bin/harness` passes on to the tmux-started runs).

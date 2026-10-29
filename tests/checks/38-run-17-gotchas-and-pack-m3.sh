@@ -50,7 +50,9 @@ check "context.md lists the decisions store's rules newest first" '
   grep -q -- "^- D1 default · Playback model: hybrid. Mixxx.s clock plays the track while the platter is within tolerance of the expected .*… → docs/decisions.md:7$" "$GL/01-A.context.md"'
 # a 1024-byte coding cap from the project's config, and a verify that finds A's step 1 failing after A recorded a dead end
 git pull -q --ff-only origin main && printf 'CONTEXT_PACK_BYTES=1024\n' >> .harness/config.sh && git commit -qam "a tight pack" && git push -q origin main
-STUB_VERIFY_FAIL_ROW=1 "$H" start "$T/proj" tight --spec SPEC.md --foreground > "$T/tight.out" 2>&1
+# HARNESS_COUNT_HOLD: M1's lane exits between the coordinator's lane count and its end check, the window that ended
+# this run "no feature left to try" before M2's packs now and then (R1-06; decisions/2026-10-29-lane-count-end-check)
+HARNESS_COUNT_HOLD=1 STUB_VERIFY_FAIL_ROW=1 "$H" start "$T/proj" tight --spec SPEC.md --foreground > "$T/tight.out" 2>&1
 TL=$HARNESS_STATE/proj/tight/logs
 check "CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap" '
   ls "$TL"/[0-9][0-9]-*.context.md > "$T/tight.ls" && (( $(wc -l < "$T/tight.ls") >= 4 )) &&

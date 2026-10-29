@@ -192,7 +192,9 @@ check "a session that leaves a process gets the left-1-process note (STUB_LEAVE_
 check "a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)" '[[ $(hlog leftover | grep -c "· A: the session hit its memory cap (6G)$") == 1 ]] \
   && [[ $(jq .A "$HARNESS_STATE/proj/leftover/attempts.json") == 2 ]] && grep -q "A attempt 2" "$T/scratch/proj/leftover/sessions.log" && [[ $($F summary "$(list leftover)") == "3/3 passing" ]] \
   && grep -q "  coding exit 137 · " "$HARNESS_STATE/proj/leftover/run.log"'
-STUB_NO_SYSTEMD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" bare --spec SPEC.md --foreground > "$T/run-bare.out" 2>&1
+# HARNESS_COUNT_HOLD: M1's lane exits between the coordinator's lane count and its end check, the window that ended
+# this run "no feature left to try" before M2 now and then (R1-06; decisions/2026-10-29-lane-count-end-check)
+HARNESS_COUNT_HOLD=1 STUB_NO_SYSTEMD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" bare --spec SPEC.md --foreground > "$T/run-bare.out" 2>&1
 check "no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)" '[[ $(sd_count --unit=harness-bare) == 0 && $($F summary "$(list bare)") == "3/3 passing" ]] \
   && [[ $(hlog bare | grep -c "· no user systemd: sessions and suites run uncapped$") == 1 ]] && grep -q "  coding exit 0 · " "$HARNESS_STATE/proj/bare/run.log"'
 # ---- the services scope (L2-02): run_init stops harness-<run>-svc, then runs the init in it under timeout -k 10s ----
@@ -232,12 +234,14 @@ check "a TERM to the driver mid-session stops the session's scope, runs the tear
 # starting what the teardown just stopped; a TERM during finish's own teardown waits for it, never runs a second
 sd_before() { awk -v k="$1" -v n="$2" 'BEGIN { RS = "===\n" } NR < n && index($0, k) { c++ } END { print c + 0 }' "$T/systemd.log"; }   # calls containing $1 before index $2
 STUB_SLOW_INITCMD=31 STUB_PHONE_STOP=1 "$H" start "$T/proj" initterm --spec SPEC.md --foreground > "$T/run-initterm.out" 2>&1 & TP=$!
+# this copy's slow init only: pgrep is box-wide, and a sibling copy's (another check file's) init sleeps the same (R1-06)
+init_left() { local p; for p in $(pgrep -fx "sleep 31"); do grep -zqF "HARNESS_SCRATCH=$T/" "/proc/$p/environ" 2> /dev/null && echo "$p"; done; }   # sleep-ok: text (the slow init's process, by name)
 wait_for 60 test -e "$T/scratch/proj/initterm/init-begin"
-init_sleep="sleep 31"   # sleep-ok: text (the slow init's process, by name)
+wait_for 10 eval '[[ -n $(init_left) ]]'; init_seen=$?   # the helper sees the init it must see gone
 kill -TERM "$(cat "$HARNESS_STATE/proj/initterm/driver.pid")"; wait "$TP"
 check "a TERM during an init stops the init's scope before the teardown runs" 'D=$(sd_at $'"'"'teardown\ninitterm\ndriver exited\n'"'"') \
   && [[ -e $T/scratch/proj/initterm/init-begin && -n $D ]] && [[ $(sd_before $'"'"'stop\nharness-initterm-svc.scope\n'"'"' "$D") == 2 ]] \
-  && ! pgrep -fx "$init_sleep" > /dev/null && [[ $(grep -c "services stopped" "$HARNESS_STATE/proj/initterm/run.log") == 1 ]]'
+  && [[ $init_seen == 0 && -z $(init_left) ]] && [[ $(grep -c "services stopped" "$HARNESS_STATE/proj/initterm/run.log") == 1 ]]'
 STUB_SLOW_TEARDOWN=3 STUB_PHONE_STOP=1 "$H" start "$T/proj" tdterm --spec SPEC.md --foreground > "$T/run-tdterm.out" 2>&1 & TP=$!
 wait_for 60 test -e "$T/scratch/proj/tdterm/teardown-begin"
 kill -TERM "$(cat "$HARNESS_STATE/proj/tdterm/driver.pid")"; wait "$TP"
@@ -273,15 +277,17 @@ svc_gaps() { awk -v r="$1" 'BEGIN { RS = "===\n" } index($0, "teardown\n" r "\nd
   $0 ~ "--unit=harness-" r "-([A-Za-z0-9_]+-)?svc\n" { up = 1 } $0 ~ "--unit=harness-" r "-([A-Za-z0-9_]+-)?s[0-9]+\n" { n++; if (!up) bad++ } END { print n + 0, bad + 0 }' "$T/systemd.log"; }
 check "memory gate: every session starts with the services up, a verify after its wait included" 'read -r n bad <<< "$(svc_gaps lowmem)"; (( n >= 5 && bad == 0 ))'
 # the gate comes before the feature is picked, not inside session(): a status: stop set during the wait is seen before
-# any coding session, no attempt is spent, and the prompt's clock comes after the wait (the L1 review's Important finding)
+# any coding session, no attempt is spent, and the prompt's clock comes after the wait (the L1 review's Important finding).
+# The memory stays at 2 GB: the gate's own poll sees the stop and gives up the wait (P2-02). Bringing it back as well
+# raced that poll: one between the two writes gave up silently, one after them noted "9 GB available" (R1-06)
 cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-gate.txt"; { cat "$T/base-config.sh"; echo MEM_WAIT_MAX=60s; } > "$T/user-config.sh"
 HARNESS_MEMINFO=$T/meminfo-gate.txt STUB_MEM_DROP=$T/meminfo-gate.txt STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 \
   "$H" start "$T/proj" gatestop --spec SPEC.md --foreground > "$T/run-gatestop.out" 2>&1 & GP=$!
 wait_for 120 eval 'hlog gatestop | grep "waiting up to 60s$" > /dev/null'   # 120 s: under 4 jobs the wait came after 30
-touch "$HARNESS_STATE/proj/gatestop/STOP"; cp "$HERE/fixtures/meminfo.txt" "$T/meminfo-gate.txt"; wait "$GP"
+touch "$HARNESS_STATE/proj/gatestop/STOP"; wait "$GP"
 cp "$T/base-config.sh" "$T/user-config.sh"
 check "memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt" '[[ $(hlog gatestop | grep -c "· memory: 2 GB available, under MEM_MIN_AVAILABLE_GB=5; waiting up to 60s$") == 1 ]] \
-  && hlog gatestop | grep -q "· memory: 9 GB available after [0-9]* s; starting the session$" && hlog gatestop | grep -q "· stopped by Michael$" \
+  && ! hlog gatestop | grep -q "starting the session" && hlog gatestop | grep -q "· stopped by Michael$" \
   && ! grep -q "coding exit" "$HARNESS_STATE/proj/gatestop/run.log" && [[ $(jq "[.[]] | add // 0" "$HARNESS_STATE/proj/gatestop/attempts.json" 2> /dev/null || echo 0) == 0 ]]'
 check "memory gate: the real fixture's 9 GB passes without a note" '[[ -s $T/demo-hlog.md ]] && ! grep -q "· memory" "$T/demo-hlog.md"'
 # A's cap kill peaks at the cap (6G): report.md beside it, and harness report's rebuild in the state dir, list it

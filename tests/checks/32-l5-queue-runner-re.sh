@@ -25,7 +25,10 @@ check "queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old v
 kill "$BP5" "$RP5" 2> /dev/null; rm -rf "$HARNESS_STATE/other/busy5" "$HARNESS_STATE"/queue/*.args
 cfg 1; : > "$T/hold-coding"; rm -f "$T"/held-l5? "$T"/release-l5?
 "$H" queue add "$T/proj" l5a --spec SPEC.md > /dev/null; "$H" queue add "$T/proj2" l5b --spec SPEC.md > /dev/null; "$H" queue add --continue stoppy-o --automatic > /dev/null
-HARNESS_QUEUE_POLL=1 HARNESS_QUEUE_SETTLE=5 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$RL5" 2>&1 & RP5=$!
+# HARNESS_COUNT_HOLD (bin/harness passes it to the tmux-started runs): each run's M1 lane exits between the coordinator's
+# lane count and its end check, the window that ended a run "no feature left to try" before M2 now and then (R1-06;
+# decisions/2026-10-29-lane-count-end-check)
+HARNESS_COUNT_HOLD=1 HARNESS_QUEUE_POLL=1 HARNESS_QUEUE_SETTLE=5 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$RL5" 2>&1 & RP5=$!
 wait_for 90 test -f "$T/held-l5a"; sleep 3; l5_early=$(st5 "start $T/proj2" && echo started)   # sleep-ok: a negative over three polls at 1: the second waits
 cfg 2; wait_for 15 st5 "start $T/proj2"; l5_up=$(grep -c "MAX_PARALLEL_RUNS 1 → 2 (config reloaded)" "$RL5")
 wait_for 90 test -f "$T/held-l5b"; l5_both=$(pid_up proj/l5a && pid_up proj2/l5b && echo yes)
