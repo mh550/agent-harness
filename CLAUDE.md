@@ -65,7 +65,6 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 <!-- At most 15 lines, one fact each, edited in place: replace a wrong or least useful line, never rewrite the section. -->
 - tests/lib.sh runs under `pipefail`: never pipe a multi-write producer (sed/awk/git show, a log over 4 KiB) into `grep -q`, `grep -m` or `head` in a check; the early exit SIGPIPEs the producer now and then (141). Use `grep X > /dev/null`.
 - check() evals its command in the check file's shell: an `exit` in it ends the whole file; fail with `false` or a flag (agent-harness-2026-10-28 2026-10-28)
-- the end-reasons check greps literal finish/END_REASON/lane_exit 13 reasons in lib/driver.sh and lib/lane.sh: a new one needs a line in end-reasons.txt
 - status_stubs' HARNESS_NOW stays in the past: a file touched to a future time is -newer than any stamp (agent-harness-2026-10-28 2026-10-28)
 - a check's regex on a glyph run is locale-bound: write `(─)+`, `(●|✓) `, never `─+`; awk length is bytes: width via node (agent-harness-2026-10-28 2026-10-28)
 - a card or view cuts every line at the width (100 off a TTY): a check comparing whole run.log lines sets COLUMNS=200 (agent-harness-2026-10-28 2026-10-28)
