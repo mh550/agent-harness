@@ -128,3 +128,6 @@
 - 2026-10-29 18:35 · R3-05: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 18:35 · R3-05: gotchas +0 ~1 -0
 - 2026-10-29 18:35 · R3-05 · claude-opus-5-5 · passes=true · 25 min · 17/23 passing · tests 978
+- 2026-10-29 18:35 · review R3-06: 637 changed lines, at or over 400; opus
+- 2026-10-29 18:35 · context.md for R3-06: 7996 bytes
+- 2026-10-29 18:46 · R1 re-based on main 8976461: 10 files, disjoint, suite green; re-tagged
