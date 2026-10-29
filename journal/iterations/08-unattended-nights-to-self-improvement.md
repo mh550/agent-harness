@@ -178,6 +178,68 @@ flowchart LR
 - **Self-modification:** I pick an approach, then a spec, then a run builds it. Until then a chain of harness runs still
   needs the four manual commands whenever a run parks mid-chain.
 
+## Run-time budget: reading the reliability run's signal (10-29 afternoon)
+
+With the reliability run paused and the -2 record showing 4/23 features in 2.4 h, the question came up: **where does
+the wall time actually go?** The run cost $18.55 and produced 7 sessions, but each session took 12–45 minutes of
+elapsed time, which felt long for the token counts logged. My hypothesis was the orchestrator running the full suite on
+every change.
+
+**What the raw records show** (read before proposing any fix):
+
+| Metric | What the raw source says |
+|---|---|
+| `api_s` in `metrics.jsonl` | Built from `duration_ms` in the stream result — the session's *total* time, not model time. The stream also carries `duration_api_ms` (model-only); the harness drops it. Model time and tool time have never been separated. |
+| Lane time vs session time | Lanes ran 09:12–11:36 (~8,600 s each). Sessions add up to ~3,800–4,000 s. Some gap is the 10:32 pause and the 11:36 stop; the rest is unaccounted harness overhead between sessions. |
+| Suite under contention | `journalctl --user` shows R2's suite after its first session ran 09:19:33→09:32:00 and consumed **47 CPU-minutes**. Running alone, the suite takes ~3.5 minutes and eight cores supply at most ~28 CPU-minutes. The same suite burned 1.7× more CPU while competing. |
+| Flakes and rework | Two sessions were un-passed for "suite red after the session". One (R2-01) changed only docs and one Gotchas line — very unlikely to break a test. The rerun guard had already caught two flakes. |
+| Load at flake time | Both flakes were logged at system load ~5.3. The hypothesis: contention slows the suite, slow suites hit timing margins in checks, timing misses become flakes. |
+| Unexplained | A 16-minute gap 09:32→09:48 before R2-01's retry; the retry's 761 s wall time against 145 s in `claude`. |
+
+**The contention loop:**
+```
+two lanes' suites compete for 8 cores
+  → suite wall time grows (600 s → 857 s measured the night before)
+  → timing-sensitive checks miss their windows
+  → flakes; rerun guard rescues some, others red the suite
+  → red suite un-passes a feature
+  → one rework session replaces the slot a passing session would have used
+  → that session's suite runs alongside the other lane's
+  → back to the top
+```
+This is a plausible cause, not a proven one. The evidence is circumstantial (journal scope CPU events, load at flake
+time, the R2-01 rework's unlikely scope) and the 16-minute gap has no explanation yet.
+
+**What a full diagnosis needs** (and the raw material it would start from):
+1. `journalctl --user` scope start, stop and "Consumed CPU" lines across several runs — the one clock the harness
+   doesn't write itself.
+2. Stream logs (per session in the state dir, not yet readable without a read-only CLAUDE.md exception): each result's
+   `duration_ms` vs `duration_api_ms`, and every Bash call to `check.sh` with its duration and cache outcome.
+3. The cache hit rate: `green-<key>` markers and `check-<key>.out` files tell how often two consecutive runs hit the
+   same tree. A session's last commit is often a bookkeeping change (`CLAUDE.md` Gotchas, an entry) that shouldn't
+   invalidate the key.
+4. A controlled load curve: `bash tests/run.sh` alone vs two copies concurrently, at `TEST_JOBS` 1, 2 and 4, with
+   `/proc/pressure/cpu` and systemd CPU accounting — only while `harness status` shows no live run.
+
+**The fix space, with tradeoffs written down before picking:**
+
+| Fix | Seconds saved | Guard it weakens | Replacement |
+|---|---|---|---|
+| Box-wide suite token: one full suite at a time across lanes | Large if contention is confirmed | None (reduces contention); may slow individual lanes | A lane that wins the token gets its suite; the other waits. Adds inter-lane coupling. |
+| Cache key excludes bookkeeping commits (Gotchas, entries) | Moderate; depends on hit rate | `CHECK_KEY_IGNORE` already excludes `.harness/runs docs/plans`; extend to `CLAUDE.md` | Needs care: the key must still change when the test suite itself changes. |
+| No duplicate runs on the same tree (driver + session both check) | Depends on how often session and harness hash-collide | None | Relies on the cache key being correct. |
+| Fix spin-waits in checks (if any) | Unknown | None | Inspect `tests/lib.sh` and checks for `sleep`-free polling. |
+| Targeted tests per feature, full suite at milestone | Hard to measure before trying; moves failures to merge time | `verify-runs-the-suite`, `rerun-guard`, `capped-suites` each require the full suite | Escape-rate analysis: for each past feature, would a file-based subset have missed the red that the full suite caught? |
+
+The targeted-tests idea (my original hypothesis) is listed last because it moves failures to the most expensive
+possible point. The evidence collected so far points at contention and cache misses as the primary cause — both of
+which can be fixed without touching the test gating logic.
+
+**Next step:** a read-only investigation task to produce
+`findings-and-research/2026-10-29-run-time-budget.md` and `docs/plans/2026-10-29-suite-time.md`,
+using the journal scope data, committed run records and a controlled load curve. The investigation prompt is saved in
+`evidence/prompts/2026-10-29-run-time-budget.md` (to be pasted there from this conversation's transcript).
+
 ## Led to
 - The fixes still owed from the morning: the `harness-answer` skill and the parked card should say `harness continue
   <run> --now` (or name the hold) when another run of the project is alive.
@@ -230,6 +292,9 @@ slide order across iterations 0–8. Terminal shots at `COLUMNS=100`, `HARNESS_G
 | 26 | `26-iter8-four-commands.png` | Your shell history of the stop, the N2 check, `harness sync` and `harness continue`, with the continue's error | It. 8: the series break |
 | 27 | `27-iter8-proposal.png` | This file on GitHub, the rendered mermaid diagram and table of *Stable self-modification* | It. 8: the proposal slide |
 | 28 | `28-arc-iterations-table.png` | `journal/README.md` on GitHub, the iterations table | Closing slide: the whole arc |
+| 29 | `29-iter8-journal-scope-cpu.png` | `journalctl --user --since "2026-10-29 09:00" --until "2026-10-29 11:40" --no-pager \| grep -E "harness.*check.*Consumed"`: the CPU-minute totals for both lanes' suites side by side | It. 8: contention makes suites burn more CPU than they contain |
+| 30 | `30-iter8-metrics-wall-vs-api.png` | `jq -s '[.[]|{kind,feature,wall_s,api_s,cost_usd}]' .harness/runs/agent-harness-2026-10-29-2/metrics.jsonl` in a terminal; or a table pasted into a doc: the wide gap between `wall_s` and `api_s` for the retry session (R2-01: 761 s wall, 145 s api) | It. 8: model time and tool time were never separated; the `api_s` field is mislabelled |
+| 31 | `31-iter8-run-time-budget-prompt.png` | The diagnosis prompt from this conversation (rendered in markdown if possible), or the `evidence/prompts/2026-10-29-run-time-budget.md` file on GitHub | It. 8: how a professional diagnosis is set up before a fix is chosen |
 
 ## Questions for Michael
 - Today's design-session prompt isn't saved verbatim. Paste it into `evidence/prompts/2026-10-29-<slug>.md` while you
