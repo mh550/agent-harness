@@ -1,0 +1,2 @@
+[{"id":"suite-flake-retry","title":"Re-run failed test files serially before declaring the suite red or un-passing a feature","evidence":"U1-07 un-passed at 07:19 on e2e timing checks that were green alone at TEST_JOBS=4; the retry changed no code (39 min)"},
+{"id":"verify-evidence-rows","title":"Record per-step evidence rows from verify sessions in entries.jsonl so step re-runs can be audited","evidence":"steps_evidence is empty for sampled entries U1-01, U1-02 and U1-03"}]
