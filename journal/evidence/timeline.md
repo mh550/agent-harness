@@ -1,4 +1,4 @@
-# Timeline: how Michael drove agents, 2026-02 → 2026-10-26
+# Timeline: how Michael drove agents, 2026-02 → 2026-10-29
 
 Built only from git history and committed docs in `~/projects` (umbrella), `pathways`,
 `dj-crate-streaming`, `hit_list`. Times are commit times (EDT) unless a runbook's Status log is quoted.
@@ -146,3 +146,41 @@ converted to EDT) and the session transcripts quoted in `sessions/2026-10-25-thr
 19. **A soft target written as a gate.** "About 2.5 minutes" became "under 150 s", and an honest session that
     wouldn't pass itself at 165 s blocked 14 features. The fix is a rule, not just an answer: performance numbers in
     steps are "measured and recorded" unless they protect the box.
+
+## 2026-10-26 → 10-29: lanes land, stops made visible, the unattended night, a chain that broke (iterations 7–8)
+
+Added 2026-10-29 from `harness report <run>`, `harness status --all --json` (start and end times converted to EDT),
+`harness show`, `gh pr list --state merged` (merge times EDT), the ledger commit subjects in `git log origin/main`, the
+specs and decisions of those days, and `runs/2026-10-29-hiccups.md`.
+
+| Date (EDT) | Project | Driver | Model(s) if stated | What was asked (one line) | Outcome (real numbers) | Notable problems |
+|---|---|---|---|---|---|---|
+| 10-26 08:30 → 13:34 | agent-harness | harness v3 run `…-2026-10-26-2` (retro), its end | Opus build | F1, F2 | **12/12**; F1 #27 (11:37), F2 #28 (13:33); $35.25, $2.94/feature; 5.03 h, 14 sessions; first-attempt 1.00 | `status --json` gives the start as 08:30 (the row above says 08:51); its report still says `Ended running` |
+| 10-26 13:37 | agent-harness | interactive | — | write iteration 7 | PR #29 | — |
+| 10-26 afternoon → 10-28 01:11 | agent-harness | the lanes run `…-2026-10-26`, 4 continuations | per role | P0 split, P1 lanes serial, P2 two lanes | **17/17**; P0 #30 (10-26 16:51), P1 #40 (10-27 20:32), P2 #41 (10-28 01:11); $127.95, $7.53/feature; 14.24 h wall, 31 sessions; first-attempt 0.82; tests 419 → 602 | built at the same time as the memory run, both rewriting `lib/driver.sh`, no warning; a merge session moved memory's driver changes into lane-era files (`decisions/2026-10-27-p1-main-merge`) |
+| 10-26 17:23 | agent-harness | interactive research | — | orchestrator landscape and sandboxing | PR #31 (findings) | — |
+| **10-26 18:54 → 10-27 01:47** | agent-harness | harness v3 run `…-2026-10-25-memory` | per role | M1–M6: retro backlog, gotchas in place, pack rules, memlint, test counts, review gate | **23/23**, M1–M6 #32–#37; $58.05, $2.52/feature; 6.89 h, 33 sessions; first-attempt 0.96; tests 395 → 501 | ran on the serial driver (P1 not merged yet), so not the first lane run as planned |
+| 10-27 01:03 → 20:44 | n8n-home | harness v3 continuation of `n8n-home-2026-10-22` | per role | B1–B6 | 4/34 → **34/34** (ledger commits); whole run $169.39, 52 sessions, 2 continuations, first-attempt 0.85 | overlap with the lanes run *(inferred from commit times)* |
+| 10-27 morning → 10:43 | agent-harness | interactive spec session | — | "what needs me" on one screen: what I saw (24 runs / 105 lines of status, `nothing parked` with two runs blocked) | PR #38: `docs/specs/2026-10-27-status-ux.md` (U1–U3, five bugs) | — |
+| 10-27 16:39 | agent-harness | interactive fix | — | checks SIGPIPE-ing under pipefail | PR #39 | — |
+| **10-28 01:12 → 22:39** | agent-harness | harness run `…-2026-10-28` (first run on lanes) | per role | U1 read views, U2 the needs record, U3 `show` and same-project starts | **24/24**; U1 #42 (08:30), U2 #43 (15:52), U3 #45 (22:38); $139.12, $5.80/feature; 21.46 h, 30 sessions (1 refused by a limit); first-attempt 0.96; tests 602 → 859; at most 1 lane open | — |
+| 10-28 20:02 → 22:39 | agent-harness | interactive | — | my answers to the open defaults | PR #44 (reviewer follows the session's model; test count pinned only from a green suite) | — |
+| 10-28 evening → 10-29 01:17 | agent-harness | interactive spec session | — | "handle merge conflicts like this without needing my approval", guard in place "before the night starts" | PR #47: unattended-night (N1, N2) and reliability (R1–R4) specs; suite measured 00:05–01:00: 601 s alone, 857 s two at once; `CHECK_TIMEOUT=25m` | two lanes would have left 43 s of the old 15-min timeout |
+| **10-29 01:19 → 11:20** | agent-harness | harness run `…-2026-10-29`, 1 continuation | per role | N1 rerun guard, N2 conflict resolution, in series | **11/11**; N1 #48 (05:21), N2 #51 (11:19); $54.36, $4.94/feature; 8.49 h, 21 sessions; first-attempt 0.82; verify-fail 0.08; tests 859 → 925; 0 flakes | parked at 10/11 at 08:49 (record #49): N2-02's step contradicted git 2.43; reworded by me, re-verified with no code change |
+| 10-29 08:49 → 11:37 | agent-harness | harness run `…-2026-10-29-2` (reliability, two lanes) | per role | R1–R4 side by side | paused at 3/23 (~$14), stopped; record #53 (11:37); **4/23**, $18.67, 2.8 h wall, 8 sessions, 4.8 lane hours; 2 flakes named | started on 3470da3, without N2; the continue after the sync failed: gc had deleted its worktree and branch (#53 made it look merged) |
+| 10-29 morning *(inferred)* → 10:39 | agent-harness | two assisting interactive sessions | — | answer N2-02; what to do about -2 | PR #50: `runs/2026-10-29-hiccups.md` | one advised a continue that the one-run-per-project hold would have queued behind -2; I caught it |
+| 10-29 late morning | agent-harness | interactive design session | — | let the harness improve itself in a chain of runs without breaking | proposal: `--after` series, pinned installs, mid-run upgrade, adoption gate, edge/stable channels, rollback ([iteration 8](../iterations/08-unattended-nights-to-self-improvement.md)); not chosen, no spec yet | — |
+| 10-29 12:33 | agent-harness | `…-2026-10-29-2` running again | — | — | 4/23, two lanes; `harness show` lists a conflict with `origin/main` in `CLAUDE.md` | — |
+
+### Turning points
+
+20. **Visibility before autonomy.** Before removing any stop, every stop got one record and one card that says where
+    and what to type. `harness parked` had said `nothing parked` while two runs were blocked on me.
+21. **Remove only the mechanical stops, and keep the gate.** A flake is rerun once; a conflict in a sorted list is a
+    merge driver; anything else is a resolve session. The merged tree still goes through verify, so what lands on
+    `main` is still what was verified.
+22. **Measure the guard before the night.** The 15-min suite timeout would have left 43 s with two lanes. Measured at
+    midnight, set to 25 min for this repo only.
+23. **Ended isn't merged.** A chain of self-improvement runs assumed run 2 would start on run 1's code. Run 1 parked,
+    the queue started run 2 on the old harness, and moving it took four commands that still failed. Upgrading the
+    harness is a release problem: installs, a gate, channels, rollback (proposed, not built).
