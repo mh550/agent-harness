@@ -1,55 +1,38 @@
-# Debrief · 2026-10-28 22:40
+# Debrief · 2026-10-29 11:37
 
-_runs since 2026-10-27 01:48:15: agent-harness-2026-10-26 agent-harness-2026-10-28 n8n-home-2026-10-22 · claude-sonnet-5-5, $0.198248 · context: /home/mh550/.local/state/harness/debrief/2026-10-28-224015/context.md_
+_runs since 2026-10-28 22:40:15: agent-harness-2026-10-29 agent-harness-2026-10-29-2 · claude-sonnet-5-5, $0.156086 · context: /home/mh550/.local/state/harness/debrief/2026-10-29-113725/context.md_
 
 ## Headline
-All three runs finished, 75/75 features verified and merged to main. agent-harness-2026-10-26 merged P0, P1 and P2 (PRs #40, #41). agent-harness-2026-10-28 merged U1, U2 and U3 (PR #45). n8n-home-2026-10-22 merged B1–B6 (PRs #6–#11). Nothing is blocked.
-Spend $436.58. The usage window is open: five_hour 2% (resets Thu 02:00), seven_day 38% (resets Sun 17:00).
+Landed on main: agent-harness-2026-10-29 merged N1 (5/5) and N2 (6/6), 11/11 features, tests 859 → 925. agent-harness-2026-10-29-2 (the reliability spec) was stopped at 4/23 with nothing verified or merged, and its branch is already deleted.
+Spend is $73.03 across the two runs. The window is open: five_hour 15% (resets Thu 12:00), seven_day 42% (resets Sun 17:00).
 
 ## Runs
-### agent-harness-2026-10-26 (agent-harness) · done
-- 17/17 passing, P0, P1 and P2 verified and merged. Tests 419 → 602. $127.95 ($7.53 per feature), 14.2 h wall, 4 continuations.
-- It stopped four times, each needing Michael: P0-02 (a spec step demanding <150 s, ruled "measured, not a gate"), P1-03 (entry.json missing twice), and two rebases onto main. About 8.5 h of the wall time was spent waiting.
-- The retro proposes three things: validate entry.json inside the session, carry on with independent features when one is blocked, and escalate main conflicts early.
+### agent-harness-2026-10-29 (agent-harness) · done
+- 11/11 passing, N1 and N2 verified and merged (PRs #51 and #52 on main). Tests 859 → 925. Cost $54.36 ($4.94 per feature), 8.5 h.
+- N2-02 parked on a step that contradicted itself: "A untouched" can't hold beside "git reports the conflict as usual". You answered "N2-02: step 2 reworded" at 10:21 and it passed.
+- Rework was on N1-03 and N2-02. First-attempt pass rate was 0.82, and the one verify failure was that N2 step 2.
+- Retro: proposed `step-contradiction-lint`, so init flags steps that contradict themselves.
 
-### agent-harness-2026-10-28 (agent-harness) · done
-- 24/24 passing, U1, U2 and U3 verified and merged. Tests 602 → 859. $139.24 ($5.80 per feature), 21.5 h wall.
-- Only U1-07 needed rework. One usage-limit wait (`limit_waits` 1).
-- Review was 16% of cost and every review found something. The retro proposed suite-flake-retry and verify-evidence-rows, both now in the backlog.
-
-### n8n-home-2026-10-22 (n8n-home) · done
-- 34/34 passing, B1–B6 verified and merged. Tests 10 → ? (no end count recorded). $169.39 ($4.98 per feature), 11.8 h wall, 2 continuations.
-- It was blocked twice and each time needed Michael. B1-01 was blocked on the docker compose deny, which wasn't in the brief. B1-05 waited about 9 h for `~/.local/state/harness/requests` to be created.
-- Verify caught B4-08 and B6-01, each fixed in one more attempt.
-- B6-02 lost its session summary to the 400-character limit on `entry.json`.
+### agent-harness-2026-10-29-2 (agent-harness) · stopped by Michael
+- 4/23 passing (R1-01, R2-01, R2-02, R2-03). R1-02 was un-passed on a red suite. R3 and R4 were never started.
+- Tests 886 → 900. Cost $18.67, 2.8 h.
+- It overlapped run 1 on 20+ files, because it started from main before run 1's merges.
+- Two flakes appeared at load ~5.2 and were green on rerun: `13-run-2-michael-sets-desk` and `08-scope-sh-l1-02-run-capped-services-gc-scratch`.
+- R2-01 needed a second session ($3.11) because a Gotchas line pushed the section to 16 lines and 39-memlint-m4 failed.
+- No verify ran, so there is no evidence on verify failures.
+- No continuation is queued, because it ended on a stop and not on a deadline or usage limit.
 
 ## Needs Michael
-All of these are defaults the runs took, with no deadline.
-- **agent-harness-2026-10-26, P2-07 and P1-04 (progress.md):**
-  - D21: gc now keeps a record branch while its record PR is open. Keep that?
-  - D7: should the default lane (features with no milestone) be verified and merged? Today its code never reaches main.
-  - D9–D14, D16–D18 and D15: lane defaults, including whether MAX_LANES>1 should wait until P2 merges.
-  - LANE_RESERVE_GB=4 and LANE_OPEN_BELOW_5H=70: change either before the first night at MAX_LANES=2?
-- **agent-harness-2026-10-28, U3 and the earlier U-features (progress.md):**
-  - Does a bare project name resolve through its runs' PROJECT_DIR before `~/projects`?
-  - Should `show` count a path once when two run branches have the same blob?
-  - Should named() drop `docs/plans/`?
-  - Should an overlap record resolve once either side is on main?
-  - Does a trends table that lists newest first and drops columns when narrow suit you?
-- **n8n-home, D28/R1, D30 and D31:**
-  - On the public topic, the error fallback sends only the title, link and priority. Keep that?
-  - Before you have an ntfy token, create the `ntfy token` credential as Header Auth `X-Ntfy-Unused: none`. OK?
-  - 20 desk report, 40 phone card and 90 error handler are live but unpublished until you create `Anthropic API key` and `ntfy token`. Checklist step 6 publishes them. Publish all seven now instead?
+- Whether to re-run `docs/specs/2026-10-28-reliability.md`. That run's branch was deleted by gc (was 7c3c850), and its 4 passing features were never merged. Only the record PR #53 landed. The commits are recoverable via the reflog until pruned. Because the run overlapped run 1's files, a fresh run from current main is probably cleaner.
+- Optional product call from run 1, N1 review, in progress.md. The harness kept the default that a check file stopped at TEST_FILE_TIMEOUT is still rerun once under `CHECK_RERUN=auto`, at most another 10 minutes. The alternative is to skip the rerun when a file timed out. See `tests/run.sh:54` and `journal/decisions/2026-10-29-rerun-guard.md`.
 
 ## For the next interactive session
-- No merge conflicts, holds or refusals. gc deleted both agent-harness run branches. The n8n-home worktree and branch are listed as removed.
-- Open `proposed` backlog items:
-  - `suite-flake-retry`: re-run failed test files serially before declaring the suite red (seen 1×).
-  - `verify-evidence-rows`: record per-step evidence rows from verify sessions (seen 1×).
-  - `no-retry-on-denial`: don't retry a session that stopped on a permission question with nothing changed (seen 0×).
-- Not yet in the backlog, so worth adding:
-  - entry.json validated inside the session, with the error returned so the session can fix it. Seen in agent-harness-2026-10-26 (P1-03, P2-01) and n8n-home (B6-02): 2 runs.
-  - A brief preflight against CLAUDE.md and settings (n8n-home B1-01 and B1-05).
-  - Escalating a main conflict early (agent-harness-2026-10-26).
-  - The retro's blocked-spec-step proposal is probably covered by the merged `carry-on-past-given-up` (lanes), but I didn't confirm that.
-- Check whether n8n-home's `tests` end count (null in summary.json) is a harness bug.
+- Merge conflicts, or held or refused merges: none. All 3 merges in run 1 went through.
+- Open `proposed` retro items, most seen first:
+  1. `suite-flake-retry`: re-run failed test files serially before un-passing a feature. Seen 3 times. This run's R1-02 un-pass is more evidence.
+  2. `verify-evidence-rows`: record per-step evidence rows from verify sessions. Seen 3 times.
+  3. `memlint-before-session-end`: run memlint in the session's own end gate. Seen once.
+  4. `step-contradiction-lint`: flag self-contradictory steps at init. Seen once.
+  5. `no-retry-on-denial`: don't retry a session that stopped on a permission question with nothing changed. Seen 0 times.
+- Re-raised though already done: `step-lint` is `merged` (retro-fixes R3) but lists agent-harness-2026-10-29 in `runs_seen`. `step-contradiction-lint` is an extension of it, so the two may overlap.
+- The R1 flaky-check fixes (`wait_for`, `--repeat`) in the reliability spec target the same flakes as `suite-flake-retry`. Check whether they cover it before writing a separate spec.
