@@ -218,7 +218,8 @@ a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its c
   refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`.
 - **Answering from the phone:** install the skill once, `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`.
   Ask a Claude session "answer the harness": it runs `harness needs`, checks what it safely can (variable names, never
-  values), proposes, and runs `harness answer` only after your yes. Set `DESK_URL` (above) to get **Answer with Claude**
+  values), proposes, and runs `harness answer` only after your yes. When another run of the same project is alive it
+  asks before continuing: queue behind it (it merges first) or `--now` beside it. Set `DESK_URL` (above) to get **Answer with Claude**
   on a park's notification; `templates/user/config.sh` documents every user setting.
 - **The desk:** with `DESK=1` in `~/.config/harness/config.sh` (off by default) the harness starts the session for you
   whenever a run needs you (a park, a blocked or waiting end, verify or a merge needing you, a debrief with something
