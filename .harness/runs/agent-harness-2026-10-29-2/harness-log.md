@@ -80,3 +80,4 @@
 - 2026-10-29 14:47 · context.md for R2: 14694 bytes
 - 2026-10-29 14:50 · verify R2: evidence short of the steps (R2-04 5/6); re-running on opus
 - 2026-10-29 14:50 · context.md for R2: 14952 bytes
+- 2026-10-29 14:56 · R2 verified and tagged run/agent-harness-2026-10-29-2/R2
