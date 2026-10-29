@@ -67,4 +67,41 @@ check "needs questions: a later entry's resolved resolves it at the sweep (answe
   && NF_Q="Should A cap the queue? (default: 9)" needs_fixture question resolved "$BASE" q-no-line && d=$P/q-no-line/needs/1.json \
   && jq ".card.question.line = null" "$d" > "$T/nl" && mv "$T/nl" "$d" && node "$NM" sweep "$P/q-no-line" > "$T/nl.out" && [[ ! -s $T/nl.out && -f $d ]]'
 
+# ---- R4-03: journal_ opens one question item per question of the entry it ingests (plan §3); stub runs ----
+nj() { jq -s "${2:-.}" "$P/$1"/needs/*.json 2> /dev/null; }   # <run> [<jq over its open items>]
+FAST=(STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1)   # one coding session per feature
+main0=$(git -C "$T/origin.git" rev-parse main)
+rm -rf "$P"/q-* "$T"/wt/proj/q-*   # the fixtures above are runs of proj too: an open one of the same text would move forward
+env "${FAST[@]}" STUB_ASK_TWO=A "$H" start "$T/proj" qa --spec SPEC.md --foreground > "$T/qa.out" 2>&1
+check "needs questions: an entry with two questions opens two question items with their Files:, noted" \
+  '[[ $(nj qa "[.[] | select(.reason == \"question\")] | length") == 2 ]] \
+  && [[ $(nj qa "[.[] | select(.reason == \"question\") | .card.where[0].path] | sort | join(\" \")" | jq -r .) == "/srv/q/lib/a.sh /srv/q/lib/b.sh" ]] \
+  && [[ $(nj qa "[.[] | select(.reason == \"question\") | .feature + \" \" + (.card.question.line | tostring)] | unique | join(\",\")" | jq -r .) =~ ^"A "[0-9]+$ ]] \
+  && hlog qa | grep -F "A: 2 question(s) for Michael recorded (harness needs)" > /dev/null'
+check "needs questions: harness needs prints both question cards" \
+  '"$H" needs qa > "$T/qa-needs.out" 2>&1 && [[ $(grep -c " · A asked: Should A " "$T/qa-needs.out") == 2 ]] \
+  && grep -F "A asked: Should A keep the old cache?" "$T/qa-needs.out" > /dev/null && grep -F "A asked: Should A log at debug?" "$T/qa-needs.out" > /dev/null'
+
+# A asks, B asks the same again (one item, seen 2), A's second session (M1's verify un-passes A) lists it in resolved
+git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_ASK=A STUB_ASK_AGAIN=B STUB_RESOLVE=A "$H" start "$T/proj" qr --spec SPEC.md --foreground > "$T/qr.out" 2>&1
+check "needs questions: the same question in a later session is one item, seen 2" \
+  '[[ $(jq -s "[.[] | select(.reason == \"question\")] | length" "$P/qr"/needs/*.json "$P/qr"/needs/done/*.json 2> /dev/null) == 1 ]] \
+  && jq -s -e "[.[] | select(.reason == \"question\")][0] | .seen == 2 and .asked_in == [\"qr\"] and .key == \"question:should a default to off?\"" "$P/qr"/needs/done/*.json > /dev/null \
+  && hlog qr | grep -F "B: 1 question(s) for Michael recorded (harness needs)" > /dev/null'
+check "needs questions: a later entry's resolved closes it by the run's end" \
+  '[[ -z $(nj qr "[.[] | select(.reason == \"question\")] | .[]") ]] \
+  && jq -s -e "[.[] | select(.reason == \"question\")][0] | .resolved_by == \"sweep\" and .resolved_why == \"answered in A'"'"'s entry\"" "$P/qr"/needs/done/*.json > /dev/null'
+
+# two runs of the project ask A's question: the second moves the first's open item forward
+git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+env "${FAST[@]}" STUB_ASK=A "$H" start "$T/proj" qm1 --spec SPEC.md --foreground > "$T/qm1.out" 2>&1
+tended "$P/qm1"; git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+env "${FAST[@]}" STUB_ASK=A "$H" start "$T/proj" qm2 --spec SPEC.md --foreground > "$T/qm2.out" 2>&1
+check "needs questions: a second run's ask moves the first run's open item forward" \
+  '[[ -z $(nj qm1 "[.[] | select(.reason == \"question\")] | .[]") ]] \
+  && [[ $(nj qm2 "[.[] | select(.reason == \"question\")] | length") == 1 ]] \
+  && nj qm2 "[.[] | select(.reason == \"question\")][0] | .seen == 2 and .asked_in == [\"qm1\", \"qm2\"] and .run == \"qm2\"" | jq -e . > /dev/null \
+  && jq -s -e "[.[] | select(.reason == \"question\")] | length == 1 and .[0].resolved_why == \"asked again in qm2\"" "$P/qm1"/needs/done/*.json > /dev/null'
+
 suite_end
