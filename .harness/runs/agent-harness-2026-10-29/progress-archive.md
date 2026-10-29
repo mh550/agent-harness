@@ -3,6 +3,20 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 08:48 · N2-02 · parked
+
+Parked: step 2's 'exit 1 with A untouched' contradicts its own '(git reports the conflict as usual)'. git 2.43 keeps A as the result whatever the driver's exit, so an untouched A is a conflict with no markers and theirs' lines are lost. The code (N2-06's git merge-file fallback) does what the spec intends. INBOX asks Michael to reword the step. No code change.
+
+- **Files:** .harness/runs/agent-harness-2026-10-29/INBOX.md
+- **Verified:** throwaway repo, base `a b`, ours `b a`, theirs `b a c`: a driver that exits 1 without writing gives a CONFLICT with f = `b a` and 0 `<<<<<<<` lines (merge-tree stage result is the same); with lib/merge-sorted.sh, f has markers around `c`; check.sh 75: 7/7; init suite green, 925
+- **Tests:** 925 → 925
+- **Dead end:** a way for A to stay untouched and git still to write its usual markers — an external merge driver's %A is the file's result whatever its exit code; git has no fallback to its own text merge
+- **Discovery** (affects project): git keeps a merge driver's %A as the file whatever its exit: a driver that exits 1 must write the markers itself (git merge-file)
+- **Question for Michael:** N2-02 step 2: reword its last clause to 'a side that fails `LC_ALL=C sort -c` gets git's text merge (`git merge-file`): clean exits 0, a conflict exits 1 with its `<<<<<<<` markers in A'? (recommended; the exact jq command is in INBOX.md) Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29/slot-1/.harness/runs/agent-harness-2026-10-29/INBOX.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29/slot-1/lib/merge-sorted.sh:11
+- **Proposed change:** N2-02 step 2: replace 'makes it exit 1 with A untouched (git reports the conflict as usual)' with 'gets git's text merge (`git merge-file`): clean exits 0, a conflict exits 1 with its `<<<<<<<` markers in A'
+- **Proposed change:** the plan's check name 'merge-sorted: a side not in LC_ALL=C order exits 1 and leaves A untouched' (docs/plans/2026-10-29-N2-conflict-resolution.md:479) is stale for the same reason
+- *13-N2-02 · claude-opus-5-5*
+
 ### 2026-10-29 08:46 · verify N2 · not yet
 
 N2-02 step 2 fails: an unsorted side now gets git merge-file markers in A (exit 1), not A untouched as the step says (deliberate N2-06 change; the step or code needs aligning). Other features hold; suite green (925). Only spot-checked 03-06 steps via files and suite.

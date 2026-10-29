@@ -39,3 +39,6 @@
 - 2026-10-29 08:34 · verify N2: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-29 08:45 · context.md for N2: 16051 bytes
 - 2026-10-29 08:46 · verify N2: N2-02 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 08:46 · context.md for N2-02: 8030 bytes
+- 2026-10-29 08:48 · N2-02 · claude-opus-5-5 · passes=false · 2 min · 10/11 passing · tests 925
+- 2026-10-29 08:48 · N2-02 parked (waiting on Michael): Michael to reword N2-02 step 2 to "a conflict exits 1 with its markers in A" (the jq command is in INBOX.md)
