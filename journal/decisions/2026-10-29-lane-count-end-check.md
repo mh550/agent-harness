@@ -20,3 +20,8 @@
   run (M2 opens, done)` (`tests/checks/45-lanes-run.sh`), red before the fix, green after.
 - **Rejected:** one more `reap` just before the end check (the window moves, it doesn't close); a sleep or a retry
   of the end check (a clock assumption in the driver).
+
+Updated in place 2026-10-29 (R1-05): two more flakes were this race. `28-run-14d-harness-merge` and the weekly-budget
+check of file 15 were 10/10 green unforced; forced on the code before the fix, 28's run ended `no feature left to try:
+2/3 passing` before M2, and 15's `weekly` run ended `no feature left to try: 1/3 passing` with its lane closed after
+for `weekly budget (…)`. Both runs now start with `HARNESS_COUNT_HOLD=1`, so each check holds the window every time.
