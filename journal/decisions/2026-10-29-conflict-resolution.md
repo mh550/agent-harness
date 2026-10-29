@@ -60,4 +60,13 @@
   ours/theirs`: it drops one side's intent silently, and nothing checks the result. Resolving on main (a session on the
   main branch after the merge): what lands would be unverified, and main is shared with other runs. A resolve session
   without the verify round: the session runs only the tests for its files, so a resolution that breaks another part of
-  the milestone would merge.
+  the milestone would merge. A resolve session in the coordinator for `slot_open`'s base conflicts (a dependency's tag against
+  main, or a lane branch that diverged from its origin copy): the coordinator opens every lane, so a 30-minute
+  session there holds up the whole run, and the base it would settle hasn't been verified by anyone yet.
+- **Next step, if it shows up:** a `base_conflict` from `slot_open` is still Michael's. If nights show it, the lane
+  process (not the coordinator) should take it: open the slot at main, let the lane's first act be the merge of its
+  dependency's tag and a resolve session there, under the same bounds, before its first coding session.
+- Updated in place 2026-10-29: N2-04 replaced the spec's "the verify goes on without main (`nomerge-<m>`)" for a refused
+  session in `sync_main` with a deferral (`verify` returns 2, the lane waits for the window), took `sync_main` out of the
+  re-base round's verify, and kept `tried` in the `resolve-<m>-<main>` marker; N2-05 added `resolutions` beside
+  `summary.json`'s `conflicts`, which stays the three counts. N2-06 (review) completed the rejected list and the next step.
