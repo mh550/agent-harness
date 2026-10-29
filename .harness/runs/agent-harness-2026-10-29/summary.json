@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-10-29",
   "started": "2026-10-29T05:19:15.000Z",
-  "ended_at": "2026-10-29T12:48:39.000Z",
+  "ended_at": "2026-10-29T12:49:05.000Z",
   "end_reason": "waiting on Michael: N2-02",
   "continuations": 0,
   "features": {
@@ -33,45 +33,47 @@
     "end": 925
   },
   "cost": {
-    "total": 52.91,
-    "per_passing_feature": 5.29,
+    "total": 53.02,
+    "per_passing_feature": 5.3,
     "by_role": {
       "init": 7.4,
       "plan": 8.74,
       "build": 26.69,
       "review": 9.64,
-      "verify": 0.44
+      "verify": 0.44,
+      "retro": 0.11
     },
     "by_model": {
       "claude-fable-5-1": 7.4,
       "claude-opus-5-5": 45.07,
-      "claude-sonnet-5-5": 0.44
+      "claude-sonnet-5-5": 0.55
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 7.49,
-    "sessions_h": 6.59,
+    "wall_h": 7.5,
+    "sessions_h": 6.6,
     "driver_h": 0.9,
     "by_role_h": {
       "init": 0.18,
       "plan": 0.43,
       "build": 4.66,
       "review": 1.26,
-      "verify": 0.07
+      "verify": 0.07,
+      "retro": 0.01
     }
   },
   "lanes": {
     "max_open": 2,
     "lane_hours": 7.14,
-    "wall_hours": 7.49
+    "wall_hours": 7.5
   },
   "tokens": {
-    "in": 2634,
-    "cache_read": 86249682,
-    "cache_write": 2527090,
-    "out": 694074,
-    "cache_hit_rate": 0.972,
+    "in": 2642,
+    "cache_read": 86356505,
+    "cache_write": 2548322,
+    "out": 695914,
+    "cache_hit_rate": 0.971,
     "context_peak": 227785,
     "by_role": {
       "init": {
@@ -103,12 +105,18 @@
         "cache_read": 528180,
         "cache_write": 77757,
         "out": 7689
+      },
+      "retro": {
+        "in": 8,
+        "cache_read": 106823,
+        "cache_write": 21232,
+        "out": 1840
       }
     }
   },
   "per_verified_feature": {
-    "cost": 10.58,
-    "tokens": 17894696
+    "cost": 10.6,
+    "tokens": 17920677
   },
   "orientation": {
     "tokens": 1716560,
@@ -131,8 +139,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 16,
-    "real": 16,
+    "total": 17,
+    "real": 17,
     "environmental": 0
   },
   "guards": {
