@@ -154,3 +154,6 @@
 - 2026-10-29 19:43 · verify R3: R3-04 failed the re-check, back in the queue (one more attempt)
 - 2026-10-29 19:43 · verify R3: R3-05 failed the re-check, back in the queue (one more attempt)
 - 2026-10-29 19:43 · verify R3: R3-06 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:56 · R4-03: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 19:56 · R4-03: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 19:56 · R4-03 · claude-opus-5-5 · passes=true · 34 min · 15/23 passing · tests 989

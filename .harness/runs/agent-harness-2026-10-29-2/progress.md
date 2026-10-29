@@ -9,6 +9,18 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 19:56 · R4-03 · passes
+
+journal_ (lib/record.sh) now opens one question item per question of the entry it ingests (questions_: the filled text, asker, line, feature for coding), notes '<id>: <n> question(s) for Michael recorded (harness needs)' and sweeps at once when the entry has resolved. Stub learns STUB_ASK_TWO and STUB_ASK_AGAIN. 78 gains 5 stub-run checks.
+
+- **Files:** lib/record.sh, tests/stub-claude.sh, tests/checks/78-needs-questions.sh, tests/fixtures/check-names.txt
+- **Verified:** the 5 new checks failed before the change (7/12 in 78), 12/12 after; 38, 58, 59, 63 green (64/64); bash -n lib/record.sh tests/stub-claude.sh; full suite via lib/check.sh
+- **Tests:** 984 → 989
+- **Discovery** (affects R4-04, R4-05): 78's needs_fixture runs (q-*) are runs of proj: the stub runs rm them first, or a stub question of the same text (ASK_TWO's cache one is the fixture default) moves their item forward
+- **Discovery** (affects R4-04): 78 runs four stub runs (qa ASK_TWO, qr ASK+AGAIN+RESOLVE=A, qm1/qm2 ASK=A), ~70 s; R4-04's no-notification check can reuse qa's curl.log instead of a fifth run
+- **Proposed change:** R4-03 step 3 says STUB_RESOLVE=B; the check uses STUB_ASK=A STUB_ASK_AGAIN=B STUB_RESOLVE=A (A's second session, after M1's verify un-passes it, is the later entry), as the R4 plan's Proposed changes says. Its 'one open item with seen 2' is asserted on the one question item of that run (seen 2, in done/ by the end).
+- *18-R4-03 · claude-opus-5-5*
+
 ### 2026-10-29 19:43 · verify R3 · not yet
 
 Full suite RED: 39-memlint-m4 fails (memlint on this worktree prints `CLAUDE.md:80 gotchas: 16 lines, over 15`; the merge resolve kept both Gotchas lines). Every feature ends on the suite step, so all six fail. Other steps spot-checked hold.
@@ -274,47 +286,9 @@ Wrote docs/plans/2026-10-29-R3-leftovers.md: one section per R3 item with its fu
 - **Proposed change:** A 'review round pending' cause in summary.mjs (a lanes/*/review-escalate file at the end) would give Minor 8's summary.json effect; not in R3's scope
 - *08-R3-01 · claude-opus-5-5*
 
-### 2026-10-29 14:56 · verify R2 · passes
-
-All 28 steps of R2-01..05 hold. Suite 963/963 (full, this tree), subsets 76/12/05/16/18/25 52/52. Re-ran by hand: ingest trim (400 with …), stub init/--resume/unknown id, resumeRow vs jq, own stub runs good/bad/edits/limit/long-summary (resume argv, own scope s3, 10m, entry-resume row, session count equal), finding 1 RED at 3654c5c.
-
-| Feature | Step | What you ran or read | What you saw | Holds |
-|---|---|---|---|---|
-| R2-01 | 1 | grep sections/terms in docs/plans/2026-10-29-R2-entries.md | sections entry check, trim, background-work rule, resume, stubs, Checks (76's names); HARNESS_ENTRY_CHECK in prompt_env, {{ENTRY_CHECK}} in 3 prompts, journalEntry cut 399+… = 400 code points, note 'cut to 400 and kept' | yes |
-| R2-01 | 2 | read §The resume | entry_resume in lib/record.sh (called from journal before the ingest, same exit-1 test, outside the lock: reasoned move from journal_), MET limit, --resume flags, turns 8, timeout 10m, budget cost+1, scope s<n>, <nn>-<id>.resume.jsonl, restrict, both notes, entry-resume row, 0.0031→0.0055→0.0058 | yes |
-| R2-01 | 3 | read §The stubs | init line with session_id, --resume (unknown-id.out lines 1/2, exit 1), STUB_NO_ENTRY, STUB_RESUME_ENTRY=good\|bad\|good-edits, $STUB_DIR/resume.log | yes |
-| R2-01 | 4 | read dependency line; git log --oneline origin/main \| grep -cE '...-N[12]$' | plan states 1 (N1 only) and a lane conflict needs Michael; today the count is 2 (N2 merged 11:19, in HEAD): the line was right when written | yes |
-| R2-01 | 5 | check.sh (full, cache cleared by harness) + check.sh rerun | 963/963 checks passed in 965 s at 08b5edf; check.sh now 'green (cached for this code tree, 963 tests)'; my subset 76/12/05/16/18/25: 52/52 | yes |
-| R2-02 | 1 | grep lib/prompt.sh + prompts; lib/prompt.sh <state> coding\|verify\|initializer A in my stub run | prompt.sh:51 exports HARNESS_ENTRY_CHECK; each rendered prompt has 'node …/lib/entries.mjs validate <run directory>/entry.json …', no literal {{ENTRY_CHECK}}; check 76 'renders as lib/entries.mjs validate' green | yes |
-| R2-02 | 2 | grep background prompts/{coding,verify,initializer}.md | each: 'Never end your turn while a background task or subagent is still running: wait for it, or stop it and say so in your entry'; 76 check greps it, green | yes |
-| R2-02 | 3 | node lib/entries.mjs ingest on a 410-char summary entry, then with outcome maybe; 12 checks | exit 0 'trimmed summary 410', summary 400 code points ending … (399+…), dead_ends 1, questions 1, no minimal; maybe → exit 3, minimal 'invalid: outcome: "maybe"…'; 12's trim/maybe/header/validate-exit checks green (😀 padding) | yes |
-| R2-02 | 4 | own stub run STUB_LONG_SUMMARY=A | harness-log '· A: entry.json summary 410 characters; cut to 400 and kept'; A's entry minimal null, summary length 400; no resume.log | yes |
-| R2-02 | 5 | check-names grep for 76/12/05 names; bash -n prompt.sh record.sh stub-claude.sh; node --check entries.mjs | every name listed, file LC_ALL=C sorted, 29 added lines; syntax ok | yes |
-| R2-02 | 6 | check.sh (full, cache cleared by harness) + check.sh rerun | 963/963 checks passed in 965 s at 08b5edf; check.sh now 'green (cached for this code tree, 963 tests)'; my subset 76/12/05/16/18/25: 52/52 | yes |
-| R2-03 | 1 | stub run directly on a coding prompt (STUB_NO_ENTRY=A) | first line init, session_id c3a40d6f-… matches ^[0-9a-f-]{36}$, built from first.jsonl's init line (cwd, session_id replaced) | yes |
-| R2-03 | 2 | stub --resume <that id> and --resume 11111111-… | known: same session_id, total_cost 0.25 → 0.25240851 = 0.25 + (resumed − first); unknown: stderr 'No conversation found…', error_during_execution line, exit 1; argv in stub/resume.log | yes |
-| R2-03 | 3 | same direct run; read stub header lines 56-62 | no run/entry.json with STUB_NO_ENTRY=A; header documents STUB_NO_ENTRY, STUB_RESUME_ENTRY good\|bad\|good-edits (and good-overreach); good-edits writes resumed.txt (stub:341) | yes |
-| R2-03 | 4 | node lib/metrics.mjs session-id first.jsonl; resumeRow on fixtures vs jq | session-id = jq's ef525536-…; first→resumed cost 0.00240851 = jq diff; resumed→under-cap 0.00028224 > 0 = jq diff; 05's 3 checks green | yes |
-| R2-03 | 5 | check-names + bash -n tests/stub-claude.sh + node --check lib/metrics.mjs | all listed; ok | yes |
-| R2-03 | 6 | check.sh (full, cache cleared by harness) + check.sh rerun | 963/963 checks passed in 965 s at 08b5edf; check.sh now 'green (cached for this code tree, 963 tests)'; my subset 76/12/05/16/18/25: 52/52 | yes |
-| R2-04 | 1 | cat prompts/entry-resume.md; grep lib/config.sh | prompt: errors (It is missing. / The entry check printed:), write entry.json and nothing else, run {{ENTRY_CHECK}}, end; config.sh:14 ENTRY_RESUME_TURNS=8 ENTRY_RESUME_TIMEOUT=10m ENTRY_RESUME_BUDGET_USD=1 | yes |
-| R2-04 | 2 | read entry_resume; own stub run vgood: resume.log, systemd stub log | coding/verify/init, validate exit 1, not MET limit; argv '--model claude-sonnet-5-5 --permission-mode auto --strict-mcp-config --max-turns 8 --max-budget-usd 1.25 … --resume <sid>'; own unit harness-vgood-M1-s3 under 'timeout -k 30s 10m'; 01-A.resume.jsonl; edits dropped + restrict when HEAD moved; ingest after | yes |
-| R2-04 | 3 | own stub run STUB_NO_ENTRY=A STUB_RESUME_ENTRY=good vs plain | 1 --resume line with 01-A.jsonl's init sid; 01-A.resume.jsonl beside it; entry dead_ends 1, minimal null; note 'A: entry.json written on a resume'; 1 entry-resume row cost 0.00240851 = 0.25240851−0.25; summary.json sessions.total 7 = plain's 7 | yes |
-| R2-04 | 4 | own stub runs bad, good-edits, STUB_LIMIT_MIDWAY (16's scenario) | bad: minimal 'invalid: not JSON…', note '…still invalid (not JSON: …) after one resume; recorded a minimal entry'; edits: resumed.txt in no commit of origin or proj (git log --all), entry written; limit: 'hit a limit', no resume.log | yes |
-| R2-04 | 5 | check-names grep; bash -n lib/record.sh lib/config.sh | all 76 names listed; ok | yes |
-| R2-04 | 6 | check.sh (full, cache cleared by harness) + check.sh rerun | 963/963 checks passed in 965 s at 08b5edf; check.sh now 'green (cached for this code tree, 963 tests)'; my subset 76/12/05/16/18/25: 52/52 | yes |
-| R2-05 | 1 | read docs/plans/2026-10-29-R2-review.md; R2.diff in scratch (710 lines); replayed finding 1 at 3654c5c vs HEAD | one Opus round on R2.diff, 0 Critical, 3 Important all fixed with checks; resumeRow without result line: −0.0031115 at 3654c5c, 0 now (RED→GREEN real) | yes |
-| R2-05 | 2 | read ## Simplifications | 6 rows: 3 applied, 3 left, each with why | yes |
-| R2-05 | 3 | cat journal/decisions/2026-10-29-entries-survive.md | title, provenance, finding, choice, rejected: dropping the 400 cap, resuming more than once, resuming a refused session, writing the entry from the transcript by code | yes |
-| R2-05 | 4 | grep docs/architecture.md §4 (Where state lives) + §5 (life of a run); README Steering | §4 entry row: trim, resume, minimal; metrics row: entry-resume; transcripts: .resume.jsonl; §5: ENTRY_CHECK, no background work, one resume; README 'Entries:' bullet under ## Steering: check, cut to 400, one resume, entry-resume row | yes |
-| R2-05 | 5 | check.sh (full, cache cleared by harness) + check.sh rerun | 963/963 checks passed in 965 s at 08b5edf; check.sh now 'green (cached for this code tree, 963 tests)'; my subset 76/12/05/16/18/25: 52/52 | yes |
-
-- **Discovery** (affects run): N2 is on origin main now (grep -c ...-N[12]$ = 2; 645d87e, in R2's HEAD): the R2/R1 plans' 'needs Michael' dependency line is stale
-- **Discovery** (affects project): stub --resume of an unknown id substitutes session_id but leaves the fixture's 00000000-… id in the result line's errors[] (the real CLI names the asked id there)
-- *145027-verify-R2 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 14:56 · verify R2 · passes · All 28 steps of R2-01..05 hold. Suite 963/963 (full, this tree), subsets 76/12/05/16/18/25 52/52. Re… ([in full](progress-archive.md))
 - 2026-10-29 14:50 · verify R2 · passes · All five R2 features hold: full suite green (963 tests), 76-entries-survive 18/18, journal and metri… ([in full](progress-archive.md))
 - 2026-10-29 14:32 · R1-04 · passes · The lanes flakes (44, 46, 48, and 45's also-seen) were one coordinator race in lib/driver.sh: a lane… ([in full](progress-archive.md))
 - 2026-10-29 14:31 · resolve R2 · passes · CLAUDE.md Gotchas: lane reworded the stub-runs line and added the 399+… cut fact; main added the mer… ([in full](progress-archive.md))

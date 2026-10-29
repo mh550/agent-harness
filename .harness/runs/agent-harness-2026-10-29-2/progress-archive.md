@@ -9,6 +9,18 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 19:56 · R4-03 · passes
+
+journal_ (lib/record.sh) now opens one question item per question of the entry it ingests (questions_: the filled text, asker, line, feature for coding), notes '<id>: <n> question(s) for Michael recorded (harness needs)' and sweeps at once when the entry has resolved. Stub learns STUB_ASK_TWO and STUB_ASK_AGAIN. 78 gains 5 stub-run checks.
+
+- **Files:** lib/record.sh, tests/stub-claude.sh, tests/checks/78-needs-questions.sh, tests/fixtures/check-names.txt
+- **Verified:** the 5 new checks failed before the change (7/12 in 78), 12/12 after; 38, 58, 59, 63 green (64/64); bash -n lib/record.sh tests/stub-claude.sh; full suite via lib/check.sh
+- **Tests:** 984 → 989
+- **Discovery** (affects R4-04, R4-05): 78's needs_fixture runs (q-*) are runs of proj: the stub runs rm them first, or a stub question of the same text (ASK_TWO's cache one is the fixture default) moves their item forward
+- **Discovery** (affects R4-04): 78 runs four stub runs (qa ASK_TWO, qr ASK+AGAIN+RESOLVE=A, qm1/qm2 ASK=A), ~70 s; R4-04's no-notification check can reuse qa's curl.log instead of a fifth run
+- **Proposed change:** R4-03 step 3 says STUB_RESOLVE=B; the check uses STUB_ASK=A STUB_ASK_AGAIN=B STUB_RESOLVE=A (A's second session, after M1's verify un-passes it, is the later entry), as the R4 plan's Proposed changes says. Its 'one open item with seen 2' is asserted on the one question item of that run (seen 2, in done/ by the end).
+- *18-R4-03 · claude-opus-5-5*
+
 ### 2026-10-29 19:43 · verify R3 · not yet
 
 Full suite RED: 39-memlint-m4 fails (memlint on this worktree prints `CLAUDE.md:80 gotchas: 16 lines, over 15`; the merge resolve kept both Gotchas lines). Every feature ends on the suite step, so all six fail. Other steps spot-checked hold.

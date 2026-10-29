@@ -357,7 +357,7 @@
         "Every new check name is one line in `tests/fixtures/check-names.txt`; `bash -n lib/record.sh tests/stub-claude.sh` passes",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R4-04",
