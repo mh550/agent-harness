@@ -18,6 +18,3 @@ Options:
 2. Keep the step and go back to A untouched. Not advised: that conflict leaves no markers and loses theirs' lines.
 
 ## Answers
-
-### 2026-10-29 10:21 (local)
-N2-02: step 2 reworded
