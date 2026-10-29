@@ -137,6 +137,19 @@ brief committed with the run
 brief, rules and policy in the prompt
 by hand right after: nothing new, no session
 by hand while another debrief runs: it says it is waiting
+check rerun: CHECK_RERUN=auto in config.sh, exported as HARNESS_CHECK_RERUN; the template has it; lanes export HARNESS_LANE
+check rerun: CHECK_RERUN=failed with no line, or off, runs the suite once and is red as today
+check rerun: CHECK_RERUN=suite reruns the whole suite even with the line
+check rerun: a kill at the memory cap is never rerun
+check rerun: a rerun-green appends one flakes.jsonl row with at, key, names, rerun, first, load and lane
+check rerun: a timeout is never rerun
+check rerun: auto with no HARNESS_FAILED line reruns the whole suite (flaky: whole suite)
+check rerun: check.out is the first run byte for byte; check-rerun.out holds the rerun
+check rerun: red every time exits 1 with red again on a rerun of a and the rerun's tail; no marker, no flakes row
+check rerun: red once with HARNESS_FAILED=a b, then green: exit 0 and the green-after-a-rerun line with the full count
+check rerun: the green marker holds the first run's total, and the next call is cached with it
+check rerun: the rerun gets exactly the named files as arguments
+check rerun: the subset form never reruns
 check.sh keeps one check-<key>.out; the green markers stay
 check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s
 check.sh: a TERM stops the suite's scope with it
@@ -157,6 +170,7 @@ continue refuses a running run
 debrief --dry-run gathers the retro backlog, not Earlier retros
 debrief notifications go to NTFY_URL when set
 debrief waits for the usage-limit window, then runs
+debrief: the flakes block names a check that flaked in two of the last five ledgered runs (×2), not one in one
 decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
 decisionsStore: a quoted DECISIONS wins over docs/decisions.md, an unknown command exits 2
 decisionsStore: neither is null, and store prints nothing
@@ -205,6 +219,14 @@ files changed during the session are flagged in the note
 finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
 finish opens usage_limit (limit, warn, no priority) for a usage-limit end; needs.md committed; the run-end title kept
 finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
+flakes run: a flake on finish's own suite is noted too, and summary.json counts it once
+flakes run: a red every time still un-passes C with today's note after a rerun (the invariant)
+flakes run: a run with no flake writes no flaky: line and no flakes.jsonl
+flakes run: a suite red once after A's session is noted flaky: whole suite with its load, and A stays passed
+flakes run: flakes-noted holds flakes.jsonl's size after the note
+flakes run: summary.json flakes and report.md's Flakes row (1 · whole suite); the invariant run's Flakes 0
+flakes run: tests-start after a flake on the first suite is the marker's total, not the red run's passes
+flakes_note: one note per whole row past flakes-noted (whole suite for no names), a row that isn't JSON passed over
 gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives
 gc --all-merged keeps the origin default branch and a live run branch, merged or not
 gc --deps empties an ended, unmerged run's worktree of its DEPS_DIRS; its branch and committed files stay; --dry-run deletes none
@@ -559,6 +581,7 @@ render.mjs: --raw applies to the next file only
 render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
 report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
+report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
 resume reloads config merged from main
 retro edits reverted
 review gate: a review at or over REVIEW_OPUS_LINES runs on opus
@@ -702,12 +725,15 @@ suite runner: TEST_JOBS=4 replays each file whole in completion order; the large
 suite runner: a file still running after TEST_FILE_TIMEOUT is stopped, shown and counted as one FAIL line
 suite runner: a file that exits non-zero with no FAIL line counts as one failed check (the total isn't all passed)
 suite runner: a file whose job was killed shows its output and makes the runner exit 1
+suite runner: a green run prints no HARNESS_FAILED= line
+suite runner: a red full run prints HARNESS_FAILED=<the red files> right after the files-that-exited-non-zero line
 suite runner: a timing line per file, then the slowest three, the wall time and the jobs
 suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero
 suite runner: the parallel runner starts no scope of its own (no systemd-run call)
 summary end reason is how the run ended
 summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)
+summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
 summary: tokens, per verified feature, first-attempt rate, rework
 sync: a local commit outside ledger/ is left alone, nothing pushed
@@ -734,6 +760,7 @@ testCount: pytest fixture gives 4
 testCount: the last HARNESS_TESTS= line wins, and only a whole line counts
 testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
+testcount.mjs: --total is the last N/M line's total; nothing without one
 testcount.mjs: the runner's last N/M checks passed is the count
 the EXIT trap commits its services note: harness-log.md is clean after a TERM
 the EXIT trap of a driver ended unexpectedly opens driver_crash (stored, no synthesized one); its needs.md committed

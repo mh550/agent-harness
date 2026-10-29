@@ -301,6 +301,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   local nr=""; case $1 in "feature-list edits"*) nr=feature_list_edits ;; "initializer failed"*) nr=initializer_failed ;;
     "usage limit"*) nr=usage_limit ;; "weekly budget"*) nr=weekly_budget ;; esac
   [[ -n $nr ]] && needs_open "$nr" run end_reason="$1" > /dev/null
+  flakes_note   # every lane's, before the line
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
   merge_milestones
   local rb; for rb in $(F milestones "$LIST" 2> /dev/null); do   # kept for the next segment's coordinator, or harness merge
@@ -314,6 +315,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
     for f in "$L"/init.out "$L"/check.out "$L"/check-*.out; do [[ -f $f ]] && cp -f "$f" "$SCRATCH/"; done
   fi
   key=$(cd "$dir" && { green; tests_end final; node "$HARNESS_HOME/lib/treekey.mjs"; })   # scratch_done keeps this tree's output
+  flakes_note   # that suite's own rerun, before the summary counts it
   services_down "$1"; lanes_services_down "$1"   # after the last suite run, which may need them
   [[ -n ${LAST_LANE:-} && -f $L/teardown.out ]] && cat "$L/teardown.out" >> "$SCRATCH/teardown.out"
   slot_close   # every slot goes; lane branches are pushed; a merged lane's branch goes

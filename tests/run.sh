@@ -8,6 +8,8 @@
 # TEST_FILE_TIMEOUT (default 10m, a sleep duration): a file still running then is stopped (TERM to its process group,
 # KILL 10 s later) and counted as one FAIL line, so a hung file costs its timeout, not the whole suite's.
 # A full run of tests/checks also checks conformance: its check names are tests/fixtures/check-names.txt, none missing, new or doubled.
+# A red run ends with HARNESS_FAILED=<the red files' basenames> (check.sh's rerun takes them as arguments), only when
+# every failure is inside a named file; a failure outside one (conformance) leaves it out, so check.sh reruns the whole suite.
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); dir=${TEST_CHECKS:-$HERE/checks}
 jobs=${TEST_JOBS:-}
@@ -80,6 +82,8 @@ done
 cat "$out"/*.out | sed -n 's/^\(PASS\|FAIL\) //p' > "$out/names"
 total=$(( $(grep -c '' "$out/names") + lost )) fails=$(( $(cat "$out"/*.out | grep -c '^FAIL ') + lost ))
 
+# a FAIL line in a file that exited 0 (one not written on lib.sh) is a failure outside every named file
+outside=0; for f in "${files[@]}"; do b=$(basename "$f" .sh); [[ " ${broken[*]} " != *" $b "* ]] && grep -q '^FAIL ' "$out/$b.out" 2> /dev/null && outside=1; done
 # conformance: the names this run produced against the fixture (a subset run produces only its own)
 if (( ! $# )) && [[ $(cd "$dir" && pwd -P) == "$(cd "$HERE/checks" && pwd -P)" ]]; then
   sed -i 's/ (skipped: [^)]*)$//' "$out/names"   # a check skipped where its tool is missing (no user systemd) keeps its name
@@ -89,10 +93,11 @@ if (( ! $# )) && [[ $(cd "$dir" && pwd -P) == "$(cd "$HERE/checks" && pwd -P)" ]
   [[ -n $new ]] && printf 'new (add each to tests/fixtures/check-names.txt):\n%s\n' "$new"
   [[ -n $doubled ]] && printf 'doubled (two checks of one name):\n%s\n' "$doubled"
   name="conformance: the split suite has every check the single-file suite had"; total=$((total + 1))
-  if [[ -z $missing$new$doubled ]]; then echo "PASS $name"; else echo "FAIL $name"; fails=$((fails + 1)); fi
+  if [[ -z $missing$new$doubled ]]; then echo "PASS $name"; else echo "FAIL $name"; fails=$((fails + 1)) outside=1; fi
 fi
 
 (( ${#broken[@]} )) && echo "files that exited non-zero: ${broken[*]}"
+(( ${#broken[@]} && ! outside )) && echo "HARNESS_FAILED=${broken[*]}"
 echo "slowest: $(printf '%s\n' "${timing[@]}" | sort -rn | head -3 | while read -r t b; do printf '%s %s s, ' "$b" "$(s1 "$t")"; done | sed 's/, $//'); wall $(s1 $(( $(us) - t0 ))) s, $jobs jobs"
 echo "$(( total - fails ))/$total checks passed"
 (( fails == 0 && ${#broken[@]} == 0 ))

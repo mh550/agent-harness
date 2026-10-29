@@ -77,6 +77,23 @@ services_down() {
   else note "services stopped ($1)"; fi
 }
 green() { "$CHECK" > /dev/null 2>&1; }
+# The flakes check.sh's reruns turned green (green/flakes.jsonl, every lane's and session's) get one note each, once:
+# $STATE/flakes-noted is the byte offset noted up to. Whole lines only (a lane may be mid-append); a row that isn't a
+# JSON object is passed over. Under its own lock, so two lanes never note a row twice (decisions/2026-10-29-rerun-guard).
+flakes_note() { [[ -s $STATE/green/flakes.jsonl ]] || return 0; _flakes_note 9> "$STATE/flakes-noted.lock"; }
+_flakes_note() {
+  flock 9
+  local f=$STATE/green/flakes.jsonl off size chunk msg
+  off=$(cat "$STATE/flakes-noted" 2> /dev/null); [[ $off =~ ^[0-9]+$ ]] || off=0
+  size=$(stat -c %s "$f") || return 0; (( size < off )) && off=0   # a file started again
+  (( size > off )) || return 0
+  chunk=$(tail -c "+$(( off + 1 ))" "$f"; echo .); chunk=${chunk%.}
+  [[ $chunk == *$'\n'* ]] || return 0
+  chunk=${chunk%$'\n'*}$'\n'
+  while IFS= read -r msg; do [[ -n $msg ]] && note "$msg"; done <<< "$(jq -Rr 'try (fromjson | objects | "flaky: \(if (.names | length) > 0
+    then .names | join(" ") else "whole suite" end) (red, then green on a rerun; load \((.load // "") | split(" ")[0] // "?"))") catch empty' <<< "${chunk%$'\n'}")"
+  echo $(( off + $(printf %s "$chunk" | wc -c) )) > "$STATE/flakes-noted"
+}
 
 # Revert what a session changed since <base> outside what it may change: "record" (the run record), "nothing", or
 # "runs" (a lane may change anything but .harness/runs/: an added path is only un-indexed, the copy is still read).
@@ -352,8 +369,14 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
   [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")"
   "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
-  [[ -f $STATE/tests-start ]] || node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" | cut -d' ' -f1 | grep . > "$STATE/tests-start" \
-    || rm -f "$STATE/tests-start"
+  # after a rerun (check-rerun.out beside check.out), check.out is the red first run, whose count is its passes: the
+  # tree's marker first then, as tests_end
+  local n=""
+  if [[ ! -f $STATE/tests-start ]]; then
+    [[ -f $SCRATCH/check-rerun.out ]] && n=$(cat "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")" 2> /dev/null)
+    [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out")
+    [[ -n $n ]] && echo "${n%% *}" > "$STATE/tests-start"
+  fi
   # once per run, from the first suite that wrote a check.out (a cached green wrote none): where the count came from, so
   # a scraped count is told from the contract and a missing one explains the report's `?` (testcount-nomatch: older runs)
   local src
