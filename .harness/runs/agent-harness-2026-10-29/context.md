@@ -1,14 +1,21 @@
-# Context pack for `N1-01`
+# Context pack for `N1-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (N1-01, affects N1-02): check.sh's find deletes every check-*.out but check-<key>.out after the full run: check-rerun.out must be written after it, and rm'd before the first run → entries.jsonl:2
+- Discovery (N1-01, affects N1-02): 08-scope-sh's ck() calls check.sh with exit 3 and exit 137 (short of the cap) and greps '— last lines of .../check.out': under auto they rerun; pin HARNESS_CHECK_RERUN=off in ck() → entries.jsonl:2
+- Discovery (N1-01, affects N1-02): a rerun-green with no N/M total leaves an empty marker, and the cached line and tests_end then fall back to check-<key>.out, the red run's count: the plan removes check-<key>.out then → entries.jsonl:2
 - Discovery (init, affects run): the suite took 604 s at init here (859 checks); each full run inside a feature costs about 10 min, so a build feature runs it twice at most → entries.jsonl:1
 - Discovery (init, affects run): HARNESS_LANE is not exported anywhere today; N1-02 exports it from lib/lane.sh so flakes.jsonl rows and resolve sessions can name their lane → entries.jsonl:1
 - Discovery (init, affects run): the stub project's CHECK_CMD (`test ! -f BROKEN`, tests/lib.sh) prints no HARNESS_FAILED= line, so in stub runs CHECK_RERUN=auto reruns the whole suite: the flaky note reads `flaky: whole suite` → entries.jsonl:1
 - Discovery (init, affects run): scope_run clears <unit>.started and .show before each call, so check.sh can run its rerun through run() with the same unit name → entries.jsonl:1
 - Discovery (init, affects run): the last run's build features took 25 to 78 min each (the lane-wiring ones the longest); N2-03 and N2-04 are the big ones here and may take two attempts → entries.jsonl:1
+
+## What it builds on
+
+- 2026-10-29 01:46 · N1-01 · passes: Wrote docs/plans/2026-10-29-N1-rerun-guard.md: the rerun's place and rules in lib/check.sh (CHECK_RERUN table, never-rerun exits, marker from the first run's total via testcount --total), the HARNESS_FAILED= guard in tests/run.sh, the flakes.jsonl row, flakes_note's sites and lock, summary/report/debrief, every new check name by file, docs.; tests 859 → 859; files docs/plans/2026-10-29-N1-rerun-guard.md → entries.jsonl:2
 
 ## Lately in the run
 
