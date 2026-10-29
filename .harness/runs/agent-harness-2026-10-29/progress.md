@@ -3,6 +3,16 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 10:22 · N2-02 · passes
+
+Step 2 reworded by Michael (10:21) to match the git merge-file fallback. Re-verified every step: driver on the fixture pair (exit 0, four lines), removal, both-add, unsorted clean 0 / conflict 1 with markers; .gitattributes; merge_drivers in record worktree and slot_open; 75-merge-sorted 7/7; decision; bash -n; suite green 925. No code change.
+
+- **Files:** CLAUDE.md
+- **Verified:** lib/merge-sorted.sh run by hand on all step 1-2 cases; bash tests/run.sh 75-merge: 7/7; check.sh: green, 925 tests (cached for this tree); bash -n on the five files: clean
+- **Tests:** 925 → 925
+- **Resolved:** N2-02 step 2: reword its last clause to 'a side that fails `LC_ALL=C sort -c` gets git's text merge (`git merge-file`): clean exits 0, a conflict exits 1 with its `<<<<<<<` markers in A'? (recommended; the exact jq command is in INBOX.md) Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29/slot-1/.harness/runs/agent-harness-2026-10-29/INBOX.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29/slot-1/lib/merge-sorted.sh:11
+- *01-N2-02 · claude-opus-5-5*
+
 ### 2026-10-29 08:48 · N2-02 · parked
 
 Parked: step 2's 'exit 1 with A untouched' contradicts its own '(git reports the conflict as usual)'. git 2.43 keeps A as the result whatever the driver's exit, so an untouched A is a conflict with no markers and theirs' lines are lost. The code (N2-06's git merge-file fallback) does what the spec intends. INBOX asks Michael to reword the step. No code change.
@@ -272,22 +282,7 @@ check.sh's full form reruns a red once by CHECK_RERUN (auto/failed/suite/off): n
 - **Proposed change:** N1-05: CLAUDE.md's Gotchas is full (15/15); a line on 'a check on check.sh's first RED line sets HARNESS_CHECK_RERUN=off' would help but needs one evicted, which is Michael's call
 - *02-N1-02 · claude-opus-5-5*
 
-### 2026-10-29 01:46 · N1-01 · passes
-
-Wrote docs/plans/2026-10-29-N1-rerun-guard.md: the rerun's place and rules in lib/check.sh (CHECK_RERUN table, never-rerun exits, marker from the first run's total via testcount --total), the HARNESS_FAILED= guard in tests/run.sh, the flakes.jsonl row, flakes_note's sites and lock, summary/report/debrief, every new check name by file, docs.
-
-- **Files:** docs/plans/2026-10-29-N1-rerun-guard.md
-- **Verified:** the six headings grep -x present; git diff --stat origin/main...HEAD outside docs/plans and the run dir is empty; check.sh: green (cached, 859 tests)
-- **Tests:** 859 → 859
-- **Discovery** (affects N1-02): check.sh's find deletes every check-*.out but check-<key>.out after the full run: check-rerun.out must be written after it, and rm'd before the first run
-- **Discovery** (affects N1-02): 08-scope-sh's ck() calls check.sh with exit 3 and exit 137 (short of the cap) and greps '— last lines of .../check.out': under auto they rerun; pin HARNESS_CHECK_RERUN=off in ck()
-- **Discovery** (affects N1-03): run_init writes tests-start from check.out, which after a rerun-green is the red run (its passes, not the total); take it from the marker first, as tests_end does
-- **Discovery** (affects N1-02): a rerun-green with no N/M total leaves an empty marker, and the cached line and tests_end then fall back to check-<key>.out, the red run's count: the plan removes check-<key>.out then
-- **Discovery** (affects N1-04): summary.mjs's jsonl() throws on a bad line; flakes.jsonl is appended by lanes at once, so read it tolerantly
-- **Proposed change:** N1-03: add a step for run_init's tests-start after a flake (from the marker first) with its check in 74-flakes-run.sh, as the plan's §flakes.jsonl and flakes_note says
-- **Proposed change:** N1-02: add 'a kill at the memory cap is never rerun' to step 5 (the plan lists the check) and the 08 ck() pin to HARNESS_CHECK_RERUN=off
-- *01-N1-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 01:46 · N1-01 · passes · Wrote docs/plans/2026-10-29-N1-rerun-guard.md: the rerun's place and rules in lib/check.sh (CHECK_RE… ([in full](progress-archive.md))
 - 2026-10-29 01:40 · init · passes · 11 features: N1 5 (plan, 3 build, review), N2 6 (plan, 4 build, review); in series, N2 after N1 as t… ([in full](progress-archive.md))

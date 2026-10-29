@@ -52,3 +52,10 @@
 - 2026-10-29 08:49 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-29 (in the state dir: init.out check-last.out)
 - 2026-10-29 08:49 · record PR merged into main · https://github.com/mh550/agent-harness/pull/49
 - 2026-10-29 10:21 · merged main into harness/agent-harness-2026-10-29
+- 2026-10-29 10:21 · N2-02 unparked: INBOX.md has new answers
+- 2026-10-29 10:21 · needs: resolved agent-harness-2026-10-29/1 (feature unparked)
+- 2026-10-29 10:21 · lane N2 opened (slot 0, port 7817, from 252aea6)
+- 2026-10-29 10:21 · context.md for N2-02: 7889 bytes
+- 2026-10-29 10:22 · N2-02: gotchas +1 ~0 -0
+- 2026-10-29 10:40 · N2-02 un-passed: suite red after the session
+- 2026-10-29 10:40 · N2-02 · claude-opus-5-5 · passes=false · 1 min · 10/11 passing · tests 925
