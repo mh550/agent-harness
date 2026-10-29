@@ -72,6 +72,16 @@ check "view.mjs cutFront keeps the end from a directory boundary; card with rule
     ok(V.cutFront(p, 47, c) === \"…/n8n-home-2026-10-22/deploy/compose.yml:48\" && V.cutFront(\"short\", 10, c) === \"short\"
       && V.displayWidth(V.cutFront(p, 30, c)) <= 30 && k.join(\"|\") === \"h|  x          1|  https://e.x/a\" && V.card(\"h\", [], c)[1].startsWith(\"─\"))"'
 
+# a conflict a resolve session tried (N2-04): its card says so in the card, the notification body and needs.md; one
+# without it says nothing of it
+TRIED="a resolve session (opus, 4 min): UNRESOLVED: stub gives up"
+check "needs cards: merge_conflict and main_conflict show tried in the card, the notification body and needs.md" \
+  'in_node "const fs = await import(\"node:fs\"), t = \"$TRIED\", now = Date.parse(\"2026-10-27T01:10:00Z\") / 1000;
+    const its = r => { const f = JSON.parse(fs.readFileSync(\"$FX/\" + r + \".json\", \"utf8\")); return [N.record({ ...f, seq: 1, tried: t }, now), N.record({ ...f, seq: 2 }, now)]; };
+    ok([\"merge_conflict\", \"main_conflict\"].every(r => { const [a, b] = its(r), body = N.bodyOf(a, now);
+      return a.card.tried === t && /^  tried {6}a resolve session \(opus, 4 min\)/m.test(body) && N.markdown([a], a.run).includes(\"**tried** \" + t)
+        && !(\"tried\" in b.card) && !/tried/.test(N.bodyOf(b, now)) && !N.markdown([b], b.run).includes(\"tried\"); }))"'
+
 # the text view over a parked and a main_conflict item opened from the fixtures
 ST=$HARNESS_STATE/proj; NOW=$(date -d "2026-10-27 01:10" +%s); export HARNESS_GLYPHS=unicode
 for r in parked main_conflict; do

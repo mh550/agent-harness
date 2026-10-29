@@ -35,6 +35,8 @@ harness_config() {
   LANE_OPEN_BELOW_5H=70   # % of the 5-hour window: past it no further lane opens (the open ones would hit the limit sooner)
   LANE_REBASE=suite   # main moved under a verified lane: disjoint files re-tag on a green suite; verify = a verify session every time
   MAX_REBASE_ROUNDS=1   # verify rounds a re-based lane gets before it needs Michael
+  # a conflict with main in a lane: resolve = a resolve session, verified, merged; michael = needs Michael (decisions/2026-10-29-conflict-resolution)
+  CONFLICTS=resolve RESOLVE_MODEL=opus RESOLVE_MAX_TURNS=60 RESOLVE_BUDGET_USD=5 RESOLVE_TIMEOUT=30m MAX_RESOLVES=3
   RECORD_PR=end   # the run record's own PR, opened at finish (off = none: the record stays on harness/<run>)
   LIVE_SYNC=1   # the queue runner keeps the live checkout level with origin while no run is alive (lib/sync.sh; 0 = off)
   CONTEXT_PACK_BYTES=8192   # context.md's cap (E4): the pack of the journal a coding session reads first

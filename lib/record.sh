@@ -112,27 +112,46 @@ restrict() {   # base record|nothing|runs who
 }
 
 # Bring main's new commits into the branch checked out here (a lane at its verify, so what is verified is what merges;
-# the record branch at a resumed start, for its configuration). 1 = conflict (left as it was): a main_conflict record
+# the record branch at a resumed start, for its configuration). In a lane under CONFLICTS=resolve a conflict goes to a
+# resolve session first (lib/resolve.sh): resolved, 0 (the verify runs on the merged tree); refused by a limit, 2 (no
+# record: the caller defers). 1 = conflict (left as it was): a main_conflict record
 # for the lane (record on the record branch) naming the conflicted files and the PRs that brought them, notified once
 # per origin/main commit (main-conflict-<subject> holds it); a later clean merge, or main already in, resolves it.
 sync_main() {
   local b sub=${LANE:-record} mn old files fa=() subjects ref; b=$(git branch --show-current)
   git fetch -q origin "$MAIN_BRANCH" 2>/dev/null || return 0
   git merge-base --is-ancestor "origin/$MAIN_BRANCH" HEAD && { main_clear "$sub"; return 0; }
-  if git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1; then note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0; fi
-  files=$(git -c core.quotePath=false diff --name-only --diff-filter=U); [[ -n $files ]] && mapfile -t fa <<< "$files"
+  merge_main "${LANE:-}" "${LANE:+resolve}"; case $? in   # the record branch's conflicts stay Michael's
+    0) [[ -n $MERGE_RESOLVED ]] && resolved_note "$LANE" "the verify goes on with $MAIN_BRANCH merged"
+       note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0 ;;
+    2) return 2 ;;
+  esac
+  files=$MERGE_FILES; [[ -n $files ]] && mapfile -t fa <<< "$files"
   # no conflicted file: the merge never started (a dirty tree, no identity): said, as before, and nothing recorded
-  (( ${#fa[@]} )) || { git merge --abort 2>/dev/null; note "$MAIN_BRANCH did not merge into $b (see run.log); carrying on without it"; return 1; }
+  (( ${#fa[@]} )) || { note "$MAIN_BRANCH did not merge into $b (see run.log); carrying on without it"; return 1; }
   # --first-parent: main's own merges; path-limited, git's default simplification hides a merge that took a file whole
   subjects=$(git log --first-parent --merges --format=%s "$(git merge-base HEAD "origin/$MAIN_BRANCH")..origin/$MAIN_BRANCH" -- "${fa[@]}")
-  git merge --abort 2>/dev/null; note "$MAIN_BRANCH conflicts with $b; carrying on without it (merges into $MAIN_BRANCH need Michael)"
+  note "$MAIN_BRANCH conflicts with $b; carrying on without it (merges into $MAIN_BRANCH need Michael)"
   mn=$(git rev-parse "origin/$MAIN_BRANCH"); old=$(cat "$STATE/main-conflict-$sub" 2> /dev/null)
   echo "$mn" > "$STATE/main-conflict-$sub"   # before the open: a sweep meanwhile must not resolve it
-  ref=$(needs_open main_conflict "$sub" files="$files" subjects="$subjects" main="$mn" head="$(git rev-parse HEAD)")
+  ref=$(needs_open main_conflict "$sub" files="$files" subjects="$subjects" main="$mn" head="$(git rev-parse HEAD)" ${RESOLVE_TRIED:+tried="$RESOLVE_TRIED"})
   [[ $old == "$mn" ]] && return 1   # once per main commit: a verify after it says nothing new
   rec_commit "HARNESS: $MAIN_BRANCH conflicts with $b"; sync_record
   needs_you "$sub" "$MAIN_BRANCH conflicts with $b" needs.md "$ref"
   return 1
+}
+# <m> <resolve|""> → origin's main merged into the branch checked out here, the one conflict path of sync_main and
+# rebase: 0 = merged (MERGE_RESOLVED set when a resolve session settled a conflict: lib/resolve.sh, a lane only, under
+# CONFLICTS=resolve when the caller passes resolve) · 1 = not merged, the merge aborted (MERGE_FILES the conflicted files,
+# empty when it never started; RESOLVE_TRIED what a session tried) · 2 = a resolve session refused by a limit (aborted)
+merge_main() {
+  local rc; MERGE_FILES="" MERGE_RESOLVED="" RESOLVE_TRIED=""
+  git merge -q --no-edit "origin/$MAIN_BRANCH" > /dev/null 2>&1 && return 0
+  MERGE_FILES=$(git -c core.quotePath=false diff --name-only --diff-filter=U)
+  if [[ -n $MERGE_FILES && $2 == resolve && ${CONFLICTS:-} == resolve ]]; then
+    resolve "$1" "$MAIN_BRANCH"; rc=$?; (( rc )) || MERGE_RESOLVED=1; return $rc   # resolve aborts the merge on anything but 0
+  fi
+  git merge --abort 2> /dev/null; return 1
 }
 main_clear() { [[ -f $STATE/main-conflict-$1 ]] || return 0; rm -f "$STATE/main-conflict-$1"; needs_sweep; }   # <subject>
 # git merge-tree --write-tree --name-only's output → its conflicted paths (the lines between the tree and the blank line)
@@ -329,6 +348,7 @@ journal() {
             elif F passes "$RUN_DIR/feature_list.json" "$id"; then outcome=passes
             elif sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' "$SCRATCH/entry-final" | grep -q .; then outcome=parked; fi ;;
     verify) who="verify $id" ;;   # a verify without its entry has no evidence rows, so it never holds: not yet
+    resolve) who="resolve $id" ;;   # its verdict is the driver's checks (lib/resolve.sh), never its entry's outcome
     init)   F summary "$LIST" > /dev/null 2>&1 && outcome=passes ;;
   esac
   entry_resume "$kind" "$id" "$3" "$4" "$who"   # before the loop below, which also undoes a resume's journal edits
@@ -455,6 +475,8 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
   local p=$REC/progress-archive.md; [[ -f $p ]] || p=$REC/progress.md
   echo "Milestone **$1** of harness run \`$RUN_ID\` (lane \`harness-lane/$RUN_ID/$1\`), verified by an independent session."
   echo; echo "**Features:**"; for id in $(F ids "$LIST" "$1"); do echo "- \`$id\` · $(jq -r --arg id "$id" '.features[]|select(.id==$id)|.description' "$LIST" 2>/dev/null)"; done
+  # a lane's resolve session merged main in (lib/resolve.sh wrote its files): said, never asked about
+  [[ -s $STATE/resolved-$1 ]] && { echo; echo "Merged $MAIN_BRANCH in with a resolve session: $(awk '!s[$0]++ { printf "%s%s", n++ ? ", " : "", $0 }' "$STATE/resolved-$1")"; }
   echo; echo "**Run so far:** $(F summary "$LIST") · $(MET summary "$REC/metrics.jsonl")"
   echo; echo "**Verify entry:**"; echo
   # `verify M1` followed by anything but a letter, digit, _ or - (M1 never matches M10; a legacy `verify M1: …` does)
@@ -486,6 +508,14 @@ merge_one() {
       && { c=$t; note "$m: main merged into its branch by hand; re-tagged $tag at ${t:0:7}"; }
   fi
   if ! out=$(git -c core.quotePath=false merge-tree --write-tree --name-only "origin/$MAIN_BRANCH" "$c" 2>/dev/null); then
+    # the lane's rebase merges, resolves and verifies it (lib/resolve.sh); at the run's end (finish wrote ended) no lane
+    # can, so Michael hears of it now
+    if [[ ${CONFLICTS:-} == resolve && ! ${HARNESS_MERGE_ONLY:-} && ! -f $STATE/ended ]]; then
+      [[ ( $(cat "$STATE/moved-$m" 2>/dev/null) == "$mn" && -f $STATE/rebase-$m ) || -f $STATE/needs-$m ]] && return 1
+      # its lane's sync_main already tried this main (main_conflict open): a re-base would only say it again
+      [[ $(cat "$STATE/main-conflict-$m" 2> /dev/null) == "$mn" ]] && return 1
+      echo "$mn" > "$STATE/moved-$m"; return 3
+    fi
     # once per main: merge_milestones runs again after every verify and at the end; `harness merge` always says so
     [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/conflict-$m" 2>/dev/null) == "$mn" ]] && return 1
     echo "$mn" > "$STATE/conflict-$m"
@@ -543,7 +573,7 @@ merge_milestones() {
   return 0
 }
 merge_milestones_() {
-  local m d wait
+  local m d wait rc
   for m in $(F milestones "$LIST"); do
     [[ -n ${1:-} && $m != "$1" ]] && continue
     [[ -f $STATE/merged-$m ]] && continue
@@ -561,7 +591,9 @@ merge_milestones_() {
     fi
     wait=""; for d in $(F deps "$LIST" "$m"); do [[ -f $STATE/merged-$d ]] || wait+="${wait:+, }$d"; done
     if [[ -n $wait ]]; then
-      merge_one "$m" --open && [[ ! -f $STATE/waits-$m && ! -f $STATE/proposed-$m ]] && { touch "$STATE/waits-$m"; note "$m verified; its PR waits for $wait to merge"; }
+      merge_one "$m" --open; rc=$?   # 3: it conflicts with main; the re-base once the dependency has merged
+      (( rc == 0 || rc == 3 )) && [[ ! -f $STATE/waits-$m && ! -f $STATE/proposed-$m ]] && { touch "$STATE/waits-$m"
+        (( rc == 0 )) && note "$m verified; its PR waits for $wait to merge" || note "$m verified; it conflicts with $MAIN_BRANCH and is re-based once $wait has merged"; }
       continue
     fi
     merge_one "$m"; (( $? == 3 )) && cp "$STATE/moved-$m" "$STATE/rebase-$m"
@@ -615,6 +647,14 @@ sync_record() { record sync_record_; }
 # opening another slot meanwhile would fail); nothing reads a lane branch's upstream
 sync_lane() { [[ -n ${LBRANCH:-} ]] || return 0; git -C "$SLOT" push -q origin "$LBRANCH" 2>> "$STATE/run.log" || log "push of $LBRANCH failed"; }
 
+# <worktree>: the sorted-union merge driver (lib/merge-sorted.sh) in that worktree's own config, so a project's
+# `.gitattributes` `merge=sorted-union` works in the harness's checkouts and never in Michael's (decisions/2026-10-29-conflict-resolution)
+merge_drivers() {
+  [[ $(git -C "$1" config extensions.worktreeConfig) == true ]] || git -C "$1" config extensions.worktreeConfig true
+  git -C "$1" config --worktree merge.sorted-union.name "sorted one-per-line list (harness)"
+  git -C "$1" config --worktree merge.sorted-union.driver "$HARNESS_HOME/lib/merge-sorted.sh %O %A %B"
+}
+
 # <m> [<k>] → slot k (0) on harness-lane/<run>/<m>, cwd there; HARNESS_WT and HARNESS_BRANCH name it for sessions.
 # The coordinator opens it, then starts the lane process in it (lib/lane.sh). A lane resumes its branch (the newer of
 # the box's and the origin's, both merged if they diverged), else starts from BASE_REF (harness start --base) or
@@ -627,6 +667,8 @@ slot_open() {
   LBRANCH="" LANE=""   # from here the slot leaves the last lane's branch: only a full open names a lane again
   if [[ -d $SLOT ]]; then   # a segment killed mid-session left its work here: committed before the base is chosen, so it stays
     local cur; cur=$(git -C "$SLOT" branch --show-current)
+    # a lane killed mid-merge (its resolve session) left MERGE_HEAD: undone, never committed as WIP with its markers
+    git -C "$SLOT" rev-parse -q --verify MERGE_HEAD > /dev/null && { git -C "$SLOT" reset -q --hard HEAD; note "$m: its slot-$k had a merge left in progress; undone"; }
     ( cd "$SLOT" && commit_all "WIP: uncommitted in the slot when it was reused (harness)" )
     [[ $cur == harness-lane/* ]] && git -C "$SLOT" push -q origin "$cur" 2> /dev/null
   fi
@@ -650,6 +692,7 @@ slot_open() {
   fi
   if [[ -n $fold ]]; then
     if ! git -C "$SLOT" merge -q --no-edit "$fold" > /dev/null 2>&1; then
+      # a base conflict stays Michael's: this runs in the coordinator, where a resolve session would block every lane (decisions/2026-10-29-conflict-resolution)
       git -C "$SLOT" merge --abort 2> /dev/null
       note "$m: $b here and on origin diverged and conflict; needs Michael"; base_conflict "$m" "$fold" diverged
       cd "$RWT" || return 1; return 1
@@ -683,7 +726,7 @@ slot_open() {
   # which the record worktree shares), plus the user's own global excludes the worktree value would shadow
   mkdir -p "$STATE/lanes/$m"
   { echo ".harness/runs/"; cat "$(git config --global --path core.excludesFile 2> /dev/null || echo "${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore")" 2> /dev/null; } > "$STATE/lanes/$m/exclude"
-  [[ $(git -C "$RWT" config extensions.worktreeConfig) == true ]] || git -C "$RWT" config extensions.worktreeConfig true
+  merge_drivers "$SLOT"
   git -C "$SLOT" config --worktree core.excludesFile "$STATE/lanes/$m/exclude"
   echo "$SLOT" > "$STATE/lanes/$m/slot"   # lib/prompt.sh as a command renders a lane's prompt from it
   LBRANCH=$b LANE=$m; lane_cd

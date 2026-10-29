@@ -3,6 +3,81 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 11:19 · verify N2 · passes
+
+All N2 steps hold: driver run by hand (four-line union, removal, both-add, unsorted markers), 75/76/77 pass (38 checks, 77 in 100 s), docs/config/decision present, suite green 925. Spot-checked doc and stub steps via checks and greps, not line by line.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| N2-01 | 1 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-01 | 2 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-01 | 3 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-01 | 4 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-01 | 5 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-01 | 6 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-01 | 7 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-02 | 1 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-02 | 2 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-02 | 3 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-02 | 4 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-02 | 5 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-02 | 6 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-02 | 7 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 1 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 2 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 3 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 4 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 5 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 6 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 7 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 8 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 9 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-03 | 10 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-04 | 1 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-04 | 2 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-04 | 3 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-04 | 4 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-04 | 5 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-04 | 6 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-04 | 7 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-04 | 8 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-05 | 1 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-05 | 2 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-05 | 3 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-05 | 4 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-05 | 5 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-05 | 6 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-06 | 1 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-06 | 2 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-06 | 3 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-06 | 4 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-06 | 5 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+| N2-06 | 6 | ran tests/run.sh merge-sorted resolve (75: 7/7 15s, 76: 17/17 30s, 77: 14/14 100s), plus init full suite green 925; ran the merge-sorted driver by hand, read plan/config/docs greps | step holds: matching artifact present and its check passes | yes |
+
+- *111656-verify-N2 · claude-sonnet-5-5*
+
+### 2026-10-29 11:05 · N2-02 · passes
+
+The suite was red after the last attempt: its new Gotchas line made the section 16 memlint lines (memlint counts the <!-- --> comment), failing 39-memlint-m4. Dropped the 'git worktree add copies config.worktree' line (slot_open sets the driver itself). Re-verified every step: driver cases, .gitattributes, merge_drivers call sites, bash -n; suite green 925.
+
+- **Files:** CLAUDE.md
+- **Verified:** merge-sorted.sh on the fixture pair: exit 0, four lines; removal/both-add exit 0; unsorted clean 0, conflict 1 with one <<<<<<< in A; merge_drivers at lib/driver.sh:393 and lib/record.sh:682; node lib/memlint.mjs . prints nothing; check.sh green in 667 s, 925 tests
+- **Tests:** 925 → 925
+- **Discovery** (affects run): memlint counts the Gotchas section's <!-- At most 15 lines --> comment as a line: the section holds 14 facts, and a 15th turns 39-memlint-m4 red
+- **Resolved:** git worktree add copies the current worktree's config.worktree into the new one: slots inherit the record's driver (dropped from Gotchas: memlint's 15-line cap)
+- **Proposed change:** Either memlint's gotchas count should skip the section's HTML comment, or the comment should say 14 facts: the session prompt says '15 lines at most' and a session following it turns the suite red
+- *02-N2-02 · claude-opus-5-5*
+
+### 2026-10-29 10:22 · N2-02 · passes
+
+Step 2 reworded by Michael (10:21) to match the git merge-file fallback. Re-verified every step: driver on the fixture pair (exit 0, four lines), removal, both-add, unsorted clean 0 / conflict 1 with markers; .gitattributes; merge_drivers in record worktree and slot_open; 75-merge-sorted 7/7; decision; bash -n; suite green 925. No code change.
+
+- **Files:** CLAUDE.md
+- **Verified:** lib/merge-sorted.sh run by hand on all step 1-2 cases; bash tests/run.sh 75-merge: 7/7; check.sh: green, 925 tests (cached for this tree); bash -n on the five files: clean
+- **Tests:** 925 → 925
+- **Resolved:** N2-02 step 2: reword its last clause to 'a side that fails `LC_ALL=C sort -c` gets git's text merge (`git merge-file`): clean exits 0, a conflict exits 1 with its `<<<<<<<` markers in A'? (recommended; the exact jq command is in INBOX.md) Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29/slot-1/.harness/runs/agent-harness-2026-10-29/INBOX.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29/slot-1/lib/merge-sorted.sh:11
+- *01-N2-02 · claude-opus-5-5*
+
 ### 2026-10-29 08:48 · N2-02 · parked
 
 Parked: step 2's 'exit 1 with A untouched' contradicts its own '(git reports the conflict as usual)'. git 2.43 keeps A as the result whatever the driver's exit, so an untouched A is a conflict with no markers and theirs' lines are lost. The code (N2-06's git merge-file fallback) does what the spec intends. INBOX asks Michael to reword the step. No code change.
