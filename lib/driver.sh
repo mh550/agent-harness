@@ -301,6 +301,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   local nr=""; case $1 in "feature-list edits"*) nr=feature_list_edits ;; "initializer failed"*) nr=initializer_failed ;;
     "usage limit"*) nr=usage_limit ;; "weekly budget"*) nr=weekly_budget ;; esac
   [[ -n $nr ]] && needs_open "$nr" run end_reason="$1" > /dev/null
+  flakes_note   # every lane's, before the line and the summary that count them
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
   merge_milestones
   local rb; for rb in $(F milestones "$LIST" 2> /dev/null); do   # kept for the next segment's coordinator, or harness merge

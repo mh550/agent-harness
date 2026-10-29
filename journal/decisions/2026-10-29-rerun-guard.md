@@ -44,3 +44,9 @@
   - **Rerunning on a timeout:** a second full `CHECK_TIMEOUT` (25 min here) for a suite that is likely to time out again.
   - **One full suite at a time across lanes** (a box-wide lock): two suites in series take longer than two at once
     (`decisions/2026-10-29-check-timeout-25m`), and it would not stop the flakes the 2026-10-29 single suite had.
+
+Updated in place 2026-10-29: N1-03: the driver notes each new `flakes.jsonl` row once in `harness-log.md`, `flaky:
+<names | whole suite> (red, then green on a rerun; load <1-min>)` (`flakes_note`, its byte offset in
+`$STATE/flakes-noted`, under its own lock), after each coding session's un-pass check, verify and disjoint re-base, and
+in `finish` before `run ended`; `run_init`'s `tests-start` takes the tree's marker first, so a flake on the run's first
+suite records its total, not the red run's passes.
