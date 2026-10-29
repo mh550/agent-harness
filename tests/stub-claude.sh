@@ -33,13 +33,23 @@
 # waits (≤ 120 s) until origin's main has <path>: another lane merges while it verifies (P2-03's re-base).
 # STUB_SHARED=<file>: A's first coding session rewrites <file>'s first line to A, C's its last line to C, committed with
 # their work (one path, distinct hunks: the merge is clean and the two milestones' files overlap).
+# STUB_SORTED=<file>: A's first coding session adds the line `b A check` to <file>, C's `b C check`, each re-sorted and
+# committed with their work: two names between the same two lines of a sorted list (N2-02's sorted-union driver).
+# STUB_CONFLICT=<file>: A's first coding session rewrites line 2 of <file> to `line two, from A`, C's to `line two, from
+# C`, committed with their work: one line both lanes change, a real merge conflict (N2-03's resolve session).
+# STUB_MERGE_RESOLVE=both: a `# Resolve session` deletes the marker lines of every conflicted file (both sides' lines
+# stay, HEAD's first), `git add`s each and ends `RESOLVED: <file>: kept both sides` per file; markers: as both, then puts
+# `<<<<<<< HEAD` back as README.md's first line (one marker left) and ends `RESOLVED: README.md: kept both sides`;
+# stray: as both, and also appends `stray` to work-A.txt, writes stray.txt (untracked) and stray-added.txt (`git add`);
+# give-up or unset: touches nothing and ends `UNRESOLVED: stub gives up`. It never commits (N2-04).
+# STUB_RESOLVE_LIMIT=<n>: the first <n> resolve sessions are the real usage-limit refusal (fixtures/usage-limit.jsonl).
 # STUB_REBASE_VERIFY_FAIL=1: M2's second verify session (a re-base's round) un-passes C.
 # STUB_IGNORED=<path>: every coding session appends "<id> present|absent" (<path> before it works) to
 # $STUB_DIR/ignored.log; the run's first writes <path> (an ignored install: a reused slot keeps it, P2-04).
 # STUB_INBOX_IN_COMMENT=<id>: that feature's first coding session asks inside INBOX.md's steering comment, splitting its
 # line after "under " with "## Questions" and "**Q1 (<id>, stub).** …" (n8n-home's 4632d1c shape), and parks (U2-02).
 # STUB_GIVE_UP=<id>: every coding session of that feature ends not passing (U2-05's given_up).
-# STUB_MAIN_TOUCH=<id|verify-<m>>:<path>: that feature's first coding session (or <m>'s first verify session) lands a
+# STUB_MAIN_TOUCH=<id|verify-<m>|resolve-<m>>:<path>: that feature's first coding session (or <m>'s first verify or resolve session) lands a
 # merge on origin's main adding <path> ("main's <path>"), subject "Merge pull request #7 from test/harness-merge/other-M3"
 # as GitHub writes it: another run's PR merged meanwhile (U2-06's main and merge conflicts).
 # STUB_THIN_VERIFY=all: every verify round is thin (the escalated one too), so the milestone needs Michael (U2-06).
@@ -220,6 +230,8 @@ JSON
     echo "$id $n" > "work-$id.txt"
     (( n == 1 )) && main_touch "$id"
     if [[ ${STUB_SHARED:-} && $n == 1 ]]; then case $id in A) sed -i '1s/.*/A/' "$STUB_SHARED" ;; C) sed -i '$s/.*/C/' "$STUB_SHARED" ;; esac; fi
+    if [[ ${STUB_CONFLICT:-} && $n == 1 && $id == [AC] ]]; then sed -i "2s/.*/line two, from $id/" "$STUB_CONFLICT"; fi
+    if [[ ${STUB_SORTED:-} && $n == 1 && $id == [AC] ]]; then printf '%s\n' "b $id check" >> "$STUB_SORTED"; LC_ALL=C sort -o "$STUB_SORTED" "$STUB_SORTED"; fi
     [[ ${STUB_BIG_DIFF:-} && $id == A && $n == 1 ]] && seq 500 > big-A.txt   # a milestone diff over REVIEW_OPUS_LINES (M6)
     tns=${STUB_TESTS_N:-}; for tn in ${tns//,/ }; do if [[ ${tn%%:*} == "$id" && $n == 1 ]]; then echo "${tn#*:}" > tests.n; fi; done   # the suite's count moves (M5-02)
     if [[ ${STUB_SNAPSHOT:-} == "$id" && $n == 1 ]]; then   # what Michael sees between sessions, before finish (M5-02)
@@ -268,6 +280,22 @@ JSON
       summary: "verify \($m) (\($n))", evidence: ($ev.rows + $fail)}'
     git add -A && git commit -qm "verify $m ($n)" --allow-empty && git push -q origin "$HARNESS_BRANCH"
     ok 0.1 ;;
+  "# Resolve session")   # the merge in progress in the slot: its conflicted files as git lists them (fixtures/git-conflict/diff-name-only-U.txt)
+    m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "resolve-$m")
+    echo "resolve $m $n" >> "$RS/sessions.log"
+    (( n == 1 )) && main_touch "resolve-$m"   # main moves again during the session's turn
+    [[ ${STUB_RESOLVE_LIMIT:-} ]] && (( n <= STUB_RESOLVE_LIMIT )) && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before it touches a file
+    mapfile -t cf < <(git -c core.quotePath=false diff --name-only --diff-filter=U)
+    case ${STUB_MERGE_RESOLVE:-} in
+      both|markers|stray)
+        fin=""; for f in "${cf[@]}"; do sed -i -E '/^(<<<<<<<|=======|>>>>>>>)( |$)/d' "$f"; git add -- "$f"; fin+="RESOLVED: $f: kept both sides\\n"; done
+        out=passes
+        [[ $STUB_MERGE_RESOLVE == markers ]] && { sed -i '1i <<<<<<< HEAD' README.md; git add README.md; fin="RESOLVED: README.md: kept both sides"; }
+        [[ $STUB_MERGE_RESOLVE == stray ]] && { echo stray >> work-A.txt; echo stray > stray.txt; echo added > stray-added.txt; git add stray-added.txt; } ;;
+      *) fin="UNRESOLVED: stub gives up" out="not yet" ;;
+    esac
+    entry "$m" "$n" --arg m "$m" --arg n "$n" --arg o "$out" '{feature: $m, kind: "resolve", outcome: $o, summary: "resolve \($m) (\($n))", files: $ARGS.positional}' --args "${cf[@]}"
+    ok 0.3 "$fin" ;;
   "# Retro")
     echo "retro" >> "$RS/sessions.log"
     if [[ ${STUB_LEAVE_RETRO:-} == 1 ]]; then sleep 300 > /dev/null 2>&1 & echo $! >> "$STUB_DIR/left.pids"   # as STUB_LEAVE_PROCESS, for the read-only retro

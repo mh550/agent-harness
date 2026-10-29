@@ -9,6 +9,7 @@ ni() { nj "$1" ".[] | select(.key == \"$2\") | ${3:-.}" | jq -r .; }
 # how many stub-curl posts hold every one of the given strings
 posts() { awk 'BEGIN { RS = "===\n"; split(ARGV[1], k, "\t"); ARGV[1] = "" } { for (i in k) if (!index($0, k[i])) next; n++ } END { print n + 0 }' "$(IFS=$'\t'; echo "$*")" "$T/curl.log"; }
 export COLUMNS=200 HARNESS_GLYPHS=unicode
+echo 'CONFLICTS=michael' >> "$T/user-config.sh"   # today's path: mc's and mr's conflicts go to Michael, not a resolve session (N2)
 main0=$(git -C "$T/origin.git" rev-parse main)   # each run starts from it: a run's merges would otherwise already be on main
 
 check "conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)" \

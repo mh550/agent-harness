@@ -390,6 +390,7 @@ fi
 echo 0 > "$STATE/sessions"; echo 0 > "$STATE/limits"   # per segment, as the counters were: a continuation after a cap starts afresh
 rec_commit "HARNESS: start run $RUN_ID"
 sync_record
+merge_drivers "$RWT"   # every segment: a continue may run another HARNESS_HOME, and a resumed start's sync_main merges with it
 # A resumed run (with or without its list) catches up with main and its configuration before any session, the
 # initializer included, so a re-run initializer plans from the current spec; a fresh run already starts from main.
 if [[ -f $LIST ]] || (( resumed )); then

@@ -86,6 +86,7 @@ then lands every proposed milestone, dependencies first, re-basing in a slot eac
 | `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only; `DECISIONS=<path>` names the decisions store (a directory of one file each, or one file) when it isn't `docs/decisions.md` | recommended |
 | `.mcp.json` | the MCP servers runs may use. Sessions run with `--strict-mcp-config`, so a committed `.mcp.json` (passed as `--mcp-config <worktree>/.mcp.json`) is what run worktrees load; without one they get none, whatever your user config holds | no |
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
+| `.gitattributes` | `<path> merge=sorted-union` for a sorted one-item-per-line list two lanes both add to (this repo: `tests/fixtures/check-names.txt`): the harness's merge driver (`lib/merge-sorted.sh`, set in its own worktrees only) takes both sides' lines, minus those either side removed, so the merge never conflicts there; your checkout merges it as text | no |
 | `.harness/teardown.sh` (executable) | what stopping the run's services scope can't reach, e.g. `npx supabase stop` or `docker compose down` (containers live under `dockerd`): see below | no |
 
 **Test counts.** A suite may print a line `HARNESS_TESTS=<n>` (a whole line from column 0, no colour or prefix; the
@@ -147,8 +148,13 @@ hook: `harness gc <project>` stops the units it left (run the teardown by hand f
 it: `main` merged into the verified commit; files disjoint from the milestone's (`LANE_REBASE=suite`, the default)
 run the suite in full on the merged tree and, green, move the tag there (`<m> re-based on main <sha>: <n> files,
 disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, get one verify round
-(`MAX_REBASE_ROUNDS`, 1) first; a red suite, a conflict or the rounds used need you
-(decisions/2026-10-26-lane-rebase-disjoint). `harness-log.md` says `lane <m> opened (slot <k>, port <n>, from <sha>)` and `lane <m> closed (<reason>)`, the reason by the lane's exit code: 0 `<m> merged` · `proposed` · `verified; its PR waits` · `verified; its re-base waits` (done) · 10 `given up <ids>` · 11 `parked <ids>` · 12 `<m> needs Michael: <why>` (verify, merge, a conflict, its slot, or `lane exited unexpectedly`) · 13 `session cap`, `usage limit`, `weekly budget` (ends the run) · 14 `stopped` · 15 `deadline` · 16 `the run is ending (<why>)` (another lane ended it) |
+(`MAX_REBASE_ROUNDS`, 1) first; a red suite or the rounds used need you
+(decisions/2026-10-26-lane-rebase-disjoint). A conflict with `main` (the re-base's merge, or the verify's) goes to a
+resolve session under `CONFLICTS=resolve` (the default): it edits only the conflicted files, the driver checks no marker
+is left and commits the merge, and the milestone merges only after a verify round on that tree (`<m>: main merged in
+by a resolve session (<files>; <model>, <n> min); one verify round follows`; report.md's `Conflicts` row counts them);
+a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its card saying what it tried
+(decisions/2026-10-29-conflict-resolution). `harness-log.md` says `lane <m> opened (slot <k>, port <n>, from <sha>)` and `lane <m> closed (<reason>)`, the reason by the lane's exit code: 0 `<m> merged` · `proposed` · `verified; its PR waits` · `verified; its re-base waits` (done) · 10 `given up <ids>` · 11 `parked <ids>` · 12 `<m> needs Michael: <why>` (verify, merge, a conflict, its slot, or `lane exited unexpectedly`) · 13 `session cap`, `usage limit`, `weekly budget` (ends the run) · 14 `stopped` · 15 `deadline` · 16 `the run is ending (<why>)` (another lane ended it) |
 | Run record (committed) | `.harness/runs/<run-id>/`: `feature_list.json` · `entries.jsonl` (the journal: one entry per session; sessions write `entry.json`, only the driver appends, and a session's edit to it is undone) · `progress.md` (rendered from it for the phone; 15 in full) · `progress-archive.md` (every entry) · `INBOX.md` · `brief.md` · `harness-log.md` · `metrics.jsonl` · `summary.json` · `report.md` · `retro.md` · `retro-proposals.json` |
 | Reviews | sized to the milestone: one or two build features fold the review into the last one's steps (an Opus subagent reads the diff); three or more keep one review feature, which the driver runs on Sonnet under `REVIEW_OPUS_LINES` (400) changed lines of what the lane's branch has and main doesn't (main fetched first) and on Opus at or over; a Sonnet review whose entry summary reports `<n> Critical, <n> Important` above 0 gets one more round on Opus, at no attempt, and any later attempt stays on Opus (decisions/2026-10-27-review-gate). The lint flags `review-small` and `review-missing` |
 | Merges | per verified milestone: tag `run/<run-id>/<m>`, PR from `harness-merge/<run-id>-<m>`, left for you to merge (`MERGE_POLICY=pr`, the default; `auto` lets the driver self-merge — Michael's user config sets it, and a project whose `main` deploys sets `pr` back; `off`) When the run ends, its record (`.harness/runs/<run-id>/`) reaches main through one PR of its own, `<run-id>: run record` from `harness/<run-id>`: merged under `auto`, left for you under `pr`, none with `RECORD_PR=off`; `finish` deletes nothing, and the queue's end-of-queue `harness gc` deletes the record branch and its worktree once its record PR is no longer open (the ledger keeps the record) |
@@ -168,6 +174,13 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   `systemctl --user list-units 'harness-*'` empty. Under `MERGE_POLICY=pr` the record PR (`<run>: run record`) is
   yours to merge too. `MAX_PARALLEL_RUNS=2` only after a night at two lanes shows the headroom
   (decisions/2026-10-26-parallel-runs-headroom).
+- **Conflicts:** `CONFLICTS=resolve` (the default) sends a lane's conflict with main to one resolve session:
+  `RESOLVE_MODEL` (opus), `RESOLVE_MAX_TURNS` (60), `RESOLVE_BUDGET_USD` (5), `RESOLVE_TIMEOUT` (30m; none starts
+  with less left before the deadline), at most `MAX_RESOLVES` (3) per milestone and one per main commit; a refused one
+  waits for the window like any session. `CONFLICTS=michael` in a project's `.harness/config.sh` (or yours) keeps
+  every conflict yours, as before. The record branch's conflicts, a lane base's, `harness merge` and one the run's end
+  meets are always yours. The morning after: `jq .conflicts <run dir>/summary.json` (`resolved`, `escalated`,
+  `sessions`) and `grep 'resolve session' <run dir>/harness-log.md`.
 - A crashed or stopped run leaves its scratch in `/tmp/harness`. The optional age rule removes it after 3 days
   untouched (never `live.lock`); the user tmpfiles timer it needs is off by default, so the one command enables it:
   `mkdir -p ~/.config/user-tmpfiles.d && cp templates/user/harness-tmpfiles.conf ~/.config/user-tmpfiles.d/harness.conf && systemd-tmpfiles --user --create && systemctl --user enable --now systemd-tmpfiles-clean.timer`
@@ -205,7 +218,8 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`.
 - **Answering from the phone:** install the skill once, `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`.
   Ask a Claude session "answer the harness": it runs `harness needs`, checks what it safely can (variable names, never
-  values), proposes, and runs `harness answer` only after your yes. Set `DESK_URL` (above) to get **Answer with Claude**
+  values), proposes, and runs `harness answer` only after your yes. When another run of the same project is alive it
+  asks before continuing: queue behind it (it merges first) or `--now` beside it. Set `DESK_URL` (above) to get **Answer with Claude**
   on a park's notification; `templates/user/config.sh` documents every user setting.
 - **The desk:** with `DESK=1` in `~/.config/harness/config.sh` (off by default) the harness starts the session for you
   whenever a run needs you (a park, a blocked or waiting end, verify or a merge needing you, a debrief with something
@@ -230,7 +244,7 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   `waiting on Michael: <ids>` when nothing else can run. Any new answer unparks it on `harness continue`. The park's
   notification carries the question, what waits on it, where and the commands; tapping it opens `needs.md` in the
   run record, every open item there as a card. A milestone that needs you (thin, red or failed verify, a conflict with
-  main, a refused merge, a lane base that won't merge) notifies the same way, its card as the body; main conflicting
+  main a resolve session couldn't settle or `CONFLICTS=michael` keeps yours, a refused merge, a lane base that won't merge) notifies the same way, its card as the body; main conflicting
   with a lane is said once per main commit, and resolves itself once main merges cleanly. A card's commands fix a
   branch in a worktree of their own (never the run's slot or record worktree) and push it. After a merge conflict,
   `harness merge <run>` takes the branch with main merged in as the milestone's tip. `harness needs done` refuses a

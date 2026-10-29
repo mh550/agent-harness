@@ -31,6 +31,11 @@ Off limits: `.env` contents, tokens, keys and any other secret; anything with `s
 One brief first: what is waiting, and since when. Then each open item, numbered: what you checked, the options, and your
 recommendation in one or two sentences. Michael answers by number.
 
+- **An overlap card open** (two runs on the same files): say which run merges first, and whether the commands you
+  propose keep that order.
+- **An edit Michael makes himself** (a feature-list `jq` the run proposed): run it to stdout first, never into the file,
+  and show him the text it gives before he runs it.
+
 ## Acting, only after his yes
 
 For each item he decided, pass his words on through a quoted heredoc, so no backtick, `$` or quote in them is run or
@@ -45,14 +50,38 @@ HARNESS_ANSWER_END
 
 (If a line of his text is exactly `HARNESS_ANSWER_END`, pick another end word.)
 
-Then read it back to him. Then continue the run once: `harness queue list`; with a runner going,
-`harness queue add --continue <run>`, otherwise `harness continue <run>`. A run still going needs no continue; one
-`ending` (its driver is wrapping up) needs it once `harness status <run>` shows it ended (the card's `run` line, or `--json`'s `card.run_state`,
-says which). An ambiguous reply gets a follow-up question, not a guess.
+Then read it back to him. Then continue the run once. A run still going needs no continue; one `ending` (its driver is
+wrapping up) needs it once `harness status <run>` shows it ended (the card's `run` line, or `--json`'s `card.run_state`,
+says which). First look in `harness status` for another live run of the same project (running, paused or ending; the
+card's `run` line names it too):
+- **None:** `harness queue list`; with a runner going, `harness queue add --continue <run>`, otherwise
+  `harness continue <run>`.
+- **One, R:** don't choose alone. Any continue without `--now` waits until R ends, maybe for hours, and R then merges
+  first. Ask him, numbered:
+  1. `harness queue add --continue <run>`: waits for R to end; R merges first.
+  2. `harness continue <run> --now`: runs beside R; this run merges first if it finishes first.
+  3. He stops R himself; once `harness status` shows it ended, a plain continue starts. Pausing R doesn't free the
+     project.
+
+**Then check it took:** `harness status <run>` again (and `harness queue list` after a queue add). Say whether the run
+started, or is held and why (`held: <project> busy (R)`). An ambiguous reply gets a follow-up question, not a guess.
+
+## Facts that matter
+
+- `harness pause` keeps the driver alive, waiting (`lib/driver.sh:528-533`); `harness stop` ends it after the current
+  session (`lib/driver.sh:527`).
+- `harness continue` refuses a run whose driver is alive, a paused one too (`bin/harness:367`).
+- Without `--now` (or `--foreground`), `harness continue` queues itself behind a live run of the same project
+  (`bin/harness:372-381`); the queue runner holds its entries the same way (`lib/queue.sh:29`).
+- `harness sync` by hand doesn't check whether a run is alive; only the queue runner does (`lib/sync.sh:3-4`). Suggest
+  it only when `harness status` shows no run alive.
+- A driver keeps the harness it started with: it reads its scripts as it runs, so a merged harness fix reaches a run
+  only through a sync with nothing alive, then a continue (`lib/sync.sh:3-4`).
 
 ## Never
 
 - Never edit INBOX.md, feature lists, policies or CLAUDE.md directly.
 - Never answer without Michael's yes, or an item he didn't decide; never let his words reach the shell unquoted.
 - Never run a project's live commands, and never `sudo`.
-- Never start, stop or merge runs; the one `continue` above is the only run command besides `answer`.
+- Never start, stop, pause or merge runs; the one `continue` above is the only run command besides `answer`. You may
+  suggest `harness stop` or `harness pause` for Michael to run himself.

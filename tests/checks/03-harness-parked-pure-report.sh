@@ -22,6 +22,17 @@ QNEW='import { questionFor as q, commandsFor as c } from "'$HERE'/../lib/parked.
     && q("### B: set vars\n```bash\n# put these in .env\nFOO=1\n```\nthen answer\n## Answers\n", "B") === "### B: set vars\n```bash\n# put these in .env\nFOO=1\n```\nthen answer"
     && JSON.stringify(c("r", { queued: true })) === JSON.stringify(["harness answer r \"…\""]) ? 0 : 1);'
 check "parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers" 'node --input-type=module -e "$QNEW"'
+BUSY='import { commandsFor as c, runState as s, parkedReport as r, entriesFor as e } from "'$HERE'/../lib/parked.mjs";
+  const b = c("r", { busy: "o" }), Q = "harness queue add --continue r # waits for o to end; o merges first", N = "harness continue r --now # runs beside o; this run merges first if it finishes first";
+  const t = r(e({ run: "r", project: "p", parked: { B: { why: "w", at: "2026-10-19T01:00:00Z" } }, list: null, inbox: "", busy: "o" })), j = JSON.parse(r([{ run: "r", feature: "B", busy: "o" }], { json: true }));
+  process.exit(JSON.stringify(b) === JSON.stringify(["harness answer r \"…\"", Q, N]) && JSON.stringify(c("r", { busy: "o", runner: true })) === JSON.stringify(b)
+    && c("r", { busy: "o", running: true }).length === 1 && c("r", { busy: "o", queued: true }).length === 1
+    && JSON.stringify(c("r", { busy: "" })) === JSON.stringify(c("r")) && JSON.stringify(c("r", { busy: "", runner: true })) === JSON.stringify(["harness answer r \"…\"", "harness queue add --continue r"])
+    && s({ busy: "o" }) === "no; o is running on this project: pick one continue" && s({ busy: "o", ending: true }).startsWith("ending (answer now") && s({ busy: "o", ending: true }).endsWith("; o is running on this project: pick one continue")
+    && s({ busy: "o", running: true }) === s({ running: true }) && s({ busy: "o", queued: true }) === s({ queued: true }) && s({ busy: "" }) === "no"
+    && t.includes("  running:  no; o is running on this project") && t.includes("            " + Q) && t.includes("            " + N)
+    && JSON.stringify(j[0].commands) === JSON.stringify(b) ? 0 : 1);'
+check "parked.mjs: another live run of the project: the queue add and --now, each with its merge order" 'node --input-type=module -e "$BUSY"'
 ( NTFY_URL=https://ntfy.example/t NTFY_TOKEN="" NOTIFY_CMD=""; log() { :; }; source "$HERE/../lib/notify.sh"; notify "long one" title="long one" body="$(head -c 4000 /dev/zero | tr '\0' x)" )
 check "a body over the cap is trimmed"    'Bd=$(curl_body "Title: long one"); (( $(printf %s "$Bd" | wc -c) <= 3500 && $(printf %s "$Bd" | wc -c) > 3000 )) && [[ $Bd == *… ]]'
 
