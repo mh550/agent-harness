@@ -104,3 +104,5 @@
 - 2026-10-28 22:39 · every feature passes
 - 2026-10-28 22:39 · run ended (done): 24/24 passing · 30 sessions (29 real) · 24 features passed · $139.12 · 19.6 h · by kind: init 1 ($7.34), coding 26 ($131.19), verify 3 ($0.59) · by model: claude-fable-5-1 1 ($7.34), claude-opus-5-5 26 ($131.19), claude-sonnet-5-5 3 ($0.59)
 - 2026-10-28 22:39 · services stopped (done)
+- 2026-10-28 22:39 · backlog: 2 new, 0 seen again
+- 2026-10-28 22:39 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-28 (in the state dir: init.out check-last.out)
