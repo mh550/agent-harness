@@ -106,6 +106,10 @@ Before you commit, run `{{LINT}} <run directory>/feature_list.json` and fix ever
 a grep that matches its own words in the run record, a milestone without `after`, a review the
 milestone's size doesn't call for). No output means clean.
 A step that is right as written (a live path the project's rules name, a route) may stay.
+Then run `{{ENTRY_CHECK}} <run directory>/entry.json init init` and fix every line it prints; it
+prints nothing when the entry is valid.
+Never end your turn while a background task or subagent is still running: wait for it, or stop it
+and say so in your entry.
 
 Commit `HARNESS: feature list (<n> features) for <run id>` and push
 `git push -u origin <branch>`.

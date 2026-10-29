@@ -185,6 +185,9 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries survive: STUB_LONG_SUMMARY=A keeps A's entry whole with the cut-to-400 note
+entries survive: the coding, verify and initializer prompts say no background work at the end
+entries survive: {{ENTRY_CHECK}} renders as lib/entries.mjs validate in the coding, verify and initializer prompts
 entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
 entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
@@ -308,6 +311,10 @@ init output is capped at 40 lines with the log path
 init: a Vercel project without vercel.json gets one
 init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
+journal: a 2001-character init header is cut to 2000 and kept
+journal: a 410-character summary and outcome "maybe" is minimal with why invalid (outcome
+journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
+journal: validate exits 2 when its only errors are the caps, 1 with any other
 lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
 lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
 lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)

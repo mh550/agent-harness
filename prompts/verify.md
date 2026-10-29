@@ -43,8 +43,12 @@ It says what the milestone's sessions tried. It is not evidence: re-run every st
 
    The harness counts these rows. Fewer rows than steps means your check was too thin and it is
    repeated on a stronger model. A missing or invalid `entry.json` leaves only a minimal entry,
-   with no rows.
+   with no rows. Then run `{{ENTRY_CHECK}} <run directory>/entry.json <milestone> verify` and fix
+   every line it prints; it prints nothing when the entry is valid.
 5. Commit `verify <m>: <n> hold, <k> fail` and push `git push -u origin <branch>`.
+
+Never end your turn while a background task or subagent is still running: wait for it, or stop it
+and say so in your entry.
 
 The project's policy comes right after these instructions. It binds you.
 

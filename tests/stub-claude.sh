@@ -70,9 +70,12 @@ after_session() { awk '/^# This session$/ { s = 1 } s && '"$1" <<< "$prompt"; } 
 RS=${HARNESS_SCRATCH:-}; RS=${RS%%/lanes/*}   # the run's scratch, not a lane's: the stub's own bookkeeping is run-wide (STUB_LIMIT_HITS counts across lanes)
 count() { local f=$RS/count-$1 n; n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$f"; echo "$n"; }
 set_passes() { node -e 'const fs=require("fs"),[f,id,v]=process.argv.slice(1),l=JSON.parse(fs.readFileSync(f));for(const x of l.features)if(x.id===id)x.passes=v==="true";fs.writeFileSync(f,JSON.stringify(l,null,2))' "$L" "$1" "$2"; }
-# <id> <n> <jq args…> → the session's journal entry, built by jq (E4-03); STUB_BAD_ENTRY=<id>: that id's first session writes `{not json`
-entry() { local id=$1 n=$2; shift 2
-  if [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]]; then printf '{not json' > "$HARNESS_RUN_DIR/entry.json"; else jq -n "$@" > "$HARNESS_RUN_DIR/entry.json"; fi; }
+# <id> <n> <jq args…> → the session's journal entry, built by jq (E4-03); STUB_BAD_ENTRY=<id>: that id's first session writes `{not json`;
+# STUB_LONG_SUMMARY=<id>: that id's first coding session's summary is 410 characters, "<id>: " padded with x (R2-02)
+entry() { local id=$1 n=$2 long=; shift 2
+  [[ ${STUB_LONG_SUMMARY:-} == "$id" && $n == 1 ]] && long=$id
+  if [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]]; then printf '{not json' > "$HARNESS_RUN_DIR/entry.json"
+  else jq -n "$@" | jq --arg long "$long" 'if $long != "" and .kind == "coding" then .summary = ("\($long): " | . + "x" * (410 - length)) else . end' > "$HARNESS_RUN_DIR/entry.json"; fi; }
 main_touch() {   # <who>: STUB_MAIN_TOUCH's merge, once, when <who> is its session
   [[ ${STUB_MAIN_TOUCH:-} && ${STUB_MAIN_TOUCH%%:*} == "$1" ]] || return 0
   local p=${STUB_MAIN_TOUCH#*:} d; d=$(mktemp -d)

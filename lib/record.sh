@@ -313,6 +313,9 @@ journal_() {   # who kind id name model outcome worktree: the ingest and the ren
   # a question without a Files: line got the session's files (decisions/2026-10-27-question-locations)
   n=$(sed -n 's/^filled //p' <<< "$out"); out=$(grep -v '^filled ' <<< "$out")
   [[ -n $n ]] && note "$1: $n question(s) had no Files: line; filled from the session's diff"
+  # a summary or header over its cap, the entry's only fault: cut and kept, not minimal (docs/plans/2026-10-29-R2-entries.md)
+  while read -r f n; do [[ -n $n ]] && note "$1: entry.json $f $n characters; cut to $([[ $f == header ]] && echo 2000 || echo 400) and kept"
+  done < <(sed -n 's/^trimmed //p' <<< "$out"); out=$(grep -v '^trimmed ' <<< "$out")
   (( rc == 3 )) && note "$1: entry.json $out; recorded a minimal entry"
   (( rc == 0 || rc == 3 )) || { note "$1: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
     mv -f "$REC/entry.json" "$STATE/entry-failed-$4.json" 2> /dev/null; }

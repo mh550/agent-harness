@@ -106,8 +106,13 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    `## Gotchas`, copied as context.md shows them; the pack then leaves them out. Say what changed (files, test count
    before → after), how you verified it (real names and numbers) and what the next session must
    know. The harness renders `progress.md` from these
-   entries for Michael's phone: don't edit it.
+   entries for Michael's phone: don't edit it. Then run
+   `{{ENTRY_CHECK}} <run directory>/entry.json <feature id> coding` and fix every line it prints;
+   it prints nothing when the entry is valid.
 5. Commit `<feature id>: <what changed>` and run `git push -u origin <branch>`.
+
+Never end your turn while a background task or subagent is still running: wait for it, or stop it
+and say so in your entry.
 
 Final message: at most 100 words. Say whether the feature passes, the commit, and the test count.
 
