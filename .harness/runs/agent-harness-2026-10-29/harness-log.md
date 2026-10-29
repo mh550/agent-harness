@@ -50,3 +50,28 @@
 - 2026-10-29 08:49 · summary.json and report.md kept in the state dir (harness report reads them after gc)
 - 2026-10-29 08:49 · backlog: 0 new, 2 seen again
 - 2026-10-29 08:49 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-29 (in the state dir: init.out check-last.out)
+- 2026-10-29 08:49 · record PR merged into main · https://github.com/mh550/agent-harness/pull/49
+- 2026-10-29 10:21 · merged main into harness/agent-harness-2026-10-29
+- 2026-10-29 10:21 · N2-02 unparked: INBOX.md has new answers
+- 2026-10-29 10:21 · needs: resolved agent-harness-2026-10-29/1 (feature unparked)
+- 2026-10-29 10:21 · lane N2 opened (slot 0, port 7817, from 252aea6)
+- 2026-10-29 10:21 · context.md for N2-02: 7889 bytes
+- 2026-10-29 10:22 · N2-02: gotchas +1 ~0 -0
+- 2026-10-29 10:40 · N2-02 un-passed: suite red after the session
+- 2026-10-29 10:40 · N2-02 · claude-opus-5-5 · passes=false · 1 min · 10/11 passing · tests 925
+- 2026-10-29 10:53 · context.md for N2-02: 7969 bytes
+- 2026-10-29 11:05 · N2-02: gotchas +0 ~0 -1
+- 2026-10-29 11:05 · N2-02 · claude-opus-5-5 · passes=true · 12 min · 11/11 passing · tests 925
+- 2026-10-29 11:05 · merged main into harness-lane/agent-harness-2026-10-29/N2
+- 2026-10-29 11:05 · verify N2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 11:16 · context.md for N2: 16183 bytes
+- 2026-10-29 11:19 · N2 verified and tagged run/agent-harness-2026-10-29/N2
+- 2026-10-29 11:19 · N2 merged into main · https://github.com/mh550/agent-harness/pull/51
+- 2026-10-29 11:19 · lane N2 closed (N2 merged)
+- 2026-10-29 11:19 · lane N2: branch harness-lane/agent-harness-2026-10-29/N2 deleted (merged)
+- 2026-10-29 11:19 · every feature passes
+- 2026-10-29 11:19 · run ended (done): 11/11 passing · 20 sessions (20 real) · 11 features passed · $54.25 · 6.9 h · by kind: init 1 ($7.40), coding 15 ($46.09), verify 3 ($0.63), retro 1 ($0.11) · by model: claude-fable-5-1 1 ($7.40), claude-opus-5-5 15 ($46.09), claude-sonnet-5-5 4 ($0.75)
+- 2026-10-29 11:19 · services stopped (done)
+- 2026-10-29 11:20 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-10-29 11:20 · backlog: 1 new, 2 seen again
+- 2026-10-29 11:20 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-29 (in the state dir: init.out check-last.out)

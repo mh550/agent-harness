@@ -27,86 +27,64 @@ dd{margin:0;font-variant-numeric:tabular-nums;font-size:14px}.open{margin:12px 0
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--line) 60%,transparent);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
 pre{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}</style></head>
 <body><main>
-<h1>Debrief · 2026-10-28 22:40</h1>
-<p class="sub">3 runs · page built 2026-10-29 02:40 UTC from each run's summary.json and the debrief note</p>
-<section class="headline"><p>All three runs finished, 75/75 features verified and merged to main. agent-harness-2026-10-26 merged P0, P1 and P2 (PRs #40, #41). agent-harness-2026-10-28 merged U1, U2 and U3 (PR #45). n8n-home-2026-10-22 merged B1–B6 (PRs #6–#11). Nothing is blocked.</p></section>
+<h1>Debrief · 2026-10-29 11:37</h1>
+<p class="sub">2 runs · page built 2026-10-29 15:37 UTC from each run's summary.json and the debrief note</p>
+<section class="headline"><p>Landed on main: agent-harness-2026-10-29 merged N1 (5/5) and N2 (6/6), 11/11 features, tests 859 → 925. agent-harness-2026-10-29-2 (the reliability spec) was stopped at 4/23 with nothing verified or merged, and its branch is already deleted.</p></section>
 <section class="cards"><article class="card">
-  <header><h3>agent-harness-2026-10-26</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
-  <div class="big"><b>17/17 passing</b><span>17 verified · 17 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="P0: 4/4 passing, merged">P0</li><li class="ms merged" title="P1: 6/6 passing, merged">P1</li><li class="ms merged" title="P2: 7/7 passing, merged">P2</li></ul>
-  <dl><div><dt>Spend</dt><dd>$127.95</dd></div><div><dt>Per feature</dt><dd>$7.53</dd></div>
-  <div><dt>Wall</dt><dd>14.24 h</dd></div><div><dt>Tests</dt><dd>419 → 602</dd></div></dl>
+  <header><h3>agent-harness-2026-10-29</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>11/11 passing</b><span>11 verified · 11 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="N1: 5/5 passing, merged">N1</li><li class="ms merged" title="N2: 6/6 passing, merged">N2</li></ul>
+  <dl><div><dt>Spend</dt><dd>$54.36</dd></div><div><dt>Per feature</dt><dd>$4.94</dd></div>
+  <div><dt>Wall</dt><dd>8.49 h</dd></div><div><dt>Tests</dt><dd>859 → 925</dd></div></dl>
   
 </article>
 <article class="card">
-  <header><h3>agent-harness-2026-10-28</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
-  <div class="big"><b>24/24 passing</b><span>24 verified · 24 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="U1: 7/7 passing, merged">U1</li><li class="ms merged" title="U2: 9/9 passing, merged">U2</li><li class="ms merged" title="U3: 8/8 passing, merged">U3</li></ul>
-  <dl><div><dt>Spend</dt><dd>$139.24</dd></div><div><dt>Per feature</dt><dd>$5.80</dd></div>
-  <div><dt>Wall</dt><dd>21.46 h</dd></div><div><dt>Tests</dt><dd>602 → 859</dd></div></dl>
-  
-</article>
-<article class="card">
-  <header><h3>n8n-home-2026-10-22</h3><span class="proj">n8n-home</span><span class="pill good">done</span></header>
-  <div class="big"><b>34/34 passing</b><span>34 verified · 34 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="B1: 5/5 passing, merged">B1</li><li class="ms merged" title="B2: 6/6 passing, merged">B2</li><li class="ms merged" title="B3: 4/4 passing, merged">B3</li><li class="ms merged" title="B4: 8/8 passing, merged">B4</li><li class="ms merged" title="B5: 6/6 passing, merged">B5</li><li class="ms merged" title="B6: 5/5 passing, merged">B6</li></ul>
-  <dl><div><dt>Spend</dt><dd>$169.39</dd></div><div><dt>Per feature</dt><dd>$4.98</dd></div>
-  <div><dt>Wall</dt><dd>11.8 h</dd></div><div><dt>Tests</dt><dd>10 → ?</dd></div></dl>
-  
+  <header><h3>agent-harness-2026-10-29-2</h3><span class="proj">agent-harness</span><span class="pill muted">stopped by Michael</span></header>
+  <div class="big"><b>4/23 passing</b><span>0 verified · 0 merged</span></div>
+  <ul class="milestones"><li class="ms partial" title="R1: 1/7 passing, partial">R1</li><li class="ms partial" title="R2: 3/5 passing, partial">R2</li><li class="ms todo" title="R3: 0/6 passing, todo">R3</li><li class="ms todo" title="R4: 0/5 passing, todo">R4</li></ul>
+  <dl><div><dt>Spend</dt><dd>$18.67</dd></div><div><dt>Per feature</dt><dd>$4.67</dd></div>
+  <div><dt>Wall</dt><dd>2.79 h</dd></div><div><dt>Tests</dt><dd>886 → 900</dd></div></dl>
+  <ul class="open"><li><span class="cause">red suite</span> <code>R1-02</code><div class="detail">the suite was red after its session</div></li><li><span class="cause">not reached</span> <code>R1-03</code> <code>R1-04</code> <code>R1-05</code> <code>R1-06</code> <code>R1-07</code> <code>R2-04</code> <code>R2-05</code> <code>R3-01</code> +10<div class="detail">run ended: stopped by Michael</div></li></ul>
 </article></section>
-<section class="note"><p><em>runs since 2026-10-27 01:48:15: agent-harness-2026-10-26 agent-harness-2026-10-28 n8n-home-2026-10-22 · claude-sonnet-5-5, $0.198248 · context: /home/mh550/.local/state/harness/debrief/2026-10-28-224015/context.md</em></p>
-<p>Spend $436.58. The usage window is open: five_hour 2% (resets Thu 02:00), seven_day 38% (resets Sun 17:00).</p>
+<section class="note"><p><em>runs since 2026-10-28 22:40:15: agent-harness-2026-10-29 agent-harness-2026-10-29-2 · claude-sonnet-5-5, $0.156086 · context: /home/mh550/.local/state/harness/debrief/2026-10-29-113725/context.md</em></p>
+<p>Spend is $73.03 across the two runs. The window is open: five_hour 15% (resets Thu 12:00), seven_day 42% (resets Sun 17:00).</p>
 <h3>Runs</h3>
-<h4>agent-harness-2026-10-26 (agent-harness) · done</h4>
+<h4>agent-harness-2026-10-29 (agent-harness) · done</h4>
 <ul>
-<li>17/17 passing, P0, P1 and P2 verified and merged. Tests 419 → 602. $127.95 ($7.53 per feature), 14.2 h wall, 4 continuations.</li>
-<li>It stopped four times, each needing Michael: P0-02 (a spec step demanding &lt;150 s, ruled &quot;measured, not a gate&quot;), P1-03 (entry.json missing twice), and two rebases onto main. About 8.5 h of the wall time was spent waiting.</li>
-<li>The retro proposes three things: validate entry.json inside the session, carry on with independent features when one is blocked, and escalate main conflicts early.</li>
+<li>11/11 passing, N1 and N2 verified and merged (PRs #51 and #52 on main). Tests 859 → 925. Cost $54.36 ($4.94 per feature), 8.5 h.</li>
+<li>N2-02 parked on a step that contradicted itself: &quot;A untouched&quot; can&#39;t hold beside &quot;git reports the conflict as usual&quot;. You answered &quot;N2-02: step 2 reworded&quot; at 10:21 and it passed.</li>
+<li>Rework was on N1-03 and N2-02. First-attempt pass rate was 0.82, and the one verify failure was that N2 step 2.</li>
+<li>Retro: proposed <code>step-contradiction-lint</code>, so init flags steps that contradict themselves.</li>
 </ul>
-<h4>agent-harness-2026-10-28 (agent-harness) · done</h4>
+<h4>agent-harness-2026-10-29-2 (agent-harness) · stopped by Michael</h4>
 <ul>
-<li>24/24 passing, U1, U2 and U3 verified and merged. Tests 602 → 859. $139.24 ($5.80 per feature), 21.5 h wall.</li>
-<li>Only U1-07 needed rework. One usage-limit wait (<code>limit_waits</code> 1).</li>
-<li>Review was 16% of cost and every review found something. The retro proposed suite-flake-retry and verify-evidence-rows, both now in the backlog.</li>
-</ul>
-<h4>n8n-home-2026-10-22 (n8n-home) · done</h4>
-<ul>
-<li>34/34 passing, B1–B6 verified and merged. Tests 10 → ? (no end count recorded). $169.39 ($4.98 per feature), 11.8 h wall, 2 continuations.</li>
-<li>It was blocked twice and each time needed Michael. B1-01 was blocked on the docker compose deny, which wasn&#39;t in the brief. B1-05 waited about 9 h for <code>~/.local/state/harness/requests</code> to be created.</li>
-<li>Verify caught B4-08 and B6-01, each fixed in one more attempt.</li>
-<li>B6-02 lost its session summary to the 400-character limit on <code>entry.json</code>.</li>
+<li>4/23 passing (R1-01, R2-01, R2-02, R2-03). R1-02 was un-passed on a red suite. R3 and R4 were never started.</li>
+<li>Tests 886 → 900. Cost $18.67, 2.8 h.</li>
+<li>It overlapped run 1 on 20+ files, because it started from main before run 1&#39;s merges.</li>
+<li>Two flakes appeared at load ~5.2 and were green on rerun: <code>13-run-2-michael-sets-desk</code> and <code>08-scope-sh-l1-02-run-capped-services-gc-scratch</code>.</li>
+<li>R2-01 needed a second session ($3.11) because a Gotchas line pushed the section to 16 lines and 39-memlint-m4 failed.</li>
+<li>No verify ran, so there is no evidence on verify failures.</li>
+<li>No continuation is queued, because it ended on a stop and not on a deadline or usage limit.</li>
 </ul>
 <h3>Needs Michael</h3>
-<p>All of these are defaults the runs took, with no deadline.</p>
 <ul>
-<li><strong>agent-harness-2026-10-26, P2-07 and P1-04 (progress.md):</strong></li>
-<li>D21: gc now keeps a record branch while its record PR is open. Keep that?</li>
-<li>D7: should the default lane (features with no milestone) be verified and merged? Today its code never reaches main.</li>
-<li>D9–D14, D16–D18 and D15: lane defaults, including whether MAX_LANES&gt;1 should wait until P2 merges.</li>
-<li>LANE_RESERVE_GB=4 and LANE_OPEN_BELOW_5H=70: change either before the first night at MAX_LANES=2?</li>
-<li><strong>agent-harness-2026-10-28, U3 and the earlier U-features (progress.md):</strong></li>
-<li>Does a bare project name resolve through its runs&#39; PROJECT_DIR before <code>~/projects</code>?</li>
-<li>Should <code>show</code> count a path once when two run branches have the same blob?</li>
-<li>Should named() drop <code>docs/plans/</code>?</li>
-<li>Should an overlap record resolve once either side is on main?</li>
-<li>Does a trends table that lists newest first and drops columns when narrow suit you?</li>
-<li><strong>n8n-home, D28/R1, D30 and D31:</strong></li>
-<li>On the public topic, the error fallback sends only the title, link and priority. Keep that?</li>
-<li>Before you have an ntfy token, create the <code>ntfy token</code> credential as Header Auth <code>X-Ntfy-Unused: none</code>. OK?</li>
-<li>20 desk report, 40 phone card and 90 error handler are live but unpublished until you create <code>Anthropic API key</code> and <code>ntfy token</code>. Checklist step 6 publishes them. Publish all seven now instead?</li>
+<li>Whether to re-run <code>docs/specs/2026-10-28-reliability.md</code>. That run&#39;s branch was deleted by gc (was 7c3c850), and its 4 passing features were never merged. Only the record PR #53 landed. The commits are recoverable via the reflog until pruned. Because the run overlapped run 1&#39;s files, a fresh run from current main is probably cleaner.</li>
+<li>Optional product call from run 1, N1 review, in progress.md. The harness kept the default that a check file stopped at TEST_FILE_TIMEOUT is still rerun once under <code>CHECK_RERUN=auto</code>, at most another 10 minutes. The alternative is to skip the rerun when a file timed out. See <code>tests/run.sh:54</code> and <code>journal/decisions/2026-10-29-rerun-guard.md</code>.</li>
 </ul>
 <h3>For the next interactive session</h3>
 <ul>
-<li>No merge conflicts, holds or refusals. gc deleted both agent-harness run branches. The n8n-home worktree and branch are listed as removed.</li>
-<li>Open <code>proposed</code> backlog items:</li>
-<li><code>suite-flake-retry</code>: re-run failed test files serially before declaring the suite red (seen 1×).</li>
-<li><code>verify-evidence-rows</code>: record per-step evidence rows from verify sessions (seen 1×).</li>
-<li><code>no-retry-on-denial</code>: don&#39;t retry a session that stopped on a permission question with nothing changed (seen 0×).</li>
-<li>Not yet in the backlog, so worth adding:</li>
-<li>entry.json validated inside the session, with the error returned so the session can fix it. Seen in agent-harness-2026-10-26 (P1-03, P2-01) and n8n-home (B6-02): 2 runs.</li>
-<li>A brief preflight against CLAUDE.md and settings (n8n-home B1-01 and B1-05).</li>
-<li>Escalating a main conflict early (agent-harness-2026-10-26).</li>
-<li>The retro&#39;s blocked-spec-step proposal is probably covered by the merged <code>carry-on-past-given-up</code> (lanes), but I didn&#39;t confirm that.</li>
-<li>Check whether n8n-home&#39;s <code>tests</code> end count (null in summary.json) is a harness bug.</li>
+<li>Merge conflicts, or held or refused merges: none. All 3 merges in run 1 went through.</li>
+<li>Open <code>proposed</code> retro items, most seen first:</li>
+</ul>
+<ol>
+<li><code>suite-flake-retry</code>: re-run failed test files serially before un-passing a feature. Seen 3 times. This run&#39;s R1-02 un-pass is more evidence.</li>
+<li><code>verify-evidence-rows</code>: record per-step evidence rows from verify sessions. Seen 3 times.</li>
+<li><code>memlint-before-session-end</code>: run memlint in the session&#39;s own end gate. Seen once.</li>
+<li><code>step-contradiction-lint</code>: flag self-contradictory steps at init. Seen once.</li>
+<li><code>no-retry-on-denial</code>: don&#39;t retry a session that stopped on a permission question with nothing changed. Seen 0 times.</li>
+</ol>
+<ul>
+<li>Re-raised though already done: <code>step-lint</code> is <code>merged</code> (retro-fixes R3) but lists agent-harness-2026-10-29 in <code>runs_seen</code>. <code>step-contradiction-lint</code> is an extension of it, so the two may overlap.</li>
+<li>The R1 flaky-check fixes (<code>wait_for</code>, <code>--repeat</code>) in the reliability spec target the same flakes as <code>suite-flake-retry</code>. Check whether they cover it before writing a separate spec.</li>
 </ul></section>
 </main></body></html>
