@@ -68,7 +68,8 @@ check "overlap: start --now prints the warning, starts, and opens a warn overlap
   jq -e "[.[] | select(.reason == \"overlap\")] | length == 2" "$T/needs.json" > /dev/null &&
   jq -e "any(.[]; .reason == \"overlap\" and .run == \"ov2\" and .key == \"overlap:ov1\" and .severity == \"warn\" and .priority == \"\")" "$T/needs.json" > /dev/null &&
   jq -e "any(.[]; .reason == \"overlap\" and .run == \"ov1\" and .key == \"overlap:ov2\" and (.card.why | contains(\"ov2 merges second\")) and (.card.where[0].path | endswith(\"/work-A.txt\")))" "$T/needs.json" > /dev/null &&
-  hlog ov1 | grep -E "· needs: overlap with ov2 opened$" > /dev/null'
+  grep " needs: overlap with ov1 opened " "$HARNESS_STATE/proj/ov2/run.log" > /dev/null && grep " needs: overlap with ov2 opened " "$HARNESS_STATE/proj/ov1/run.log" > /dev/null &&
+  ! hlog ov1 | grep "overlap with ov2" > /dev/null'
 check "overlap: queue add --continue <run> warns from the run's spec and brief (brief.md) against the others" '
   "$H" queue add --continue ov2 > "$T/qc.out" 2> "$T/qc.err" && grep -x "warning: overlaps ov1 on work-A.txt" "$T/qc.err" > /dev/null; ok=$?; rm -f "$Q"/*.args; (( ok == 0 ))'
 R2=$(jq -r ".[] | select(.reason == \"overlap\" and .run == \"ov2\") | .ref" "$T/needs.json")

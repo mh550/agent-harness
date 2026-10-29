@@ -48,3 +48,9 @@
   overlap (default 11: an ended run's unmerged branch must not block a night); comparing whole spec texts (no file
   names, no signal); `tests/`- or `lib/`-level directories (every run would overlap); a bare directory word without
   `/` at its end (`docs/plans` is in most specs and every run writes there).
+
+Updated in place 2026-10-28: U3-08's review (docs/plans/2026-10-28-U3-review.md). An overlap record on an ended other run
+goes into its state dir only (no `needs.md`, no `harness-log.md` line in a worktree no commit follows, which gc would
+then keep for good); a queue entry writes a newline inside an argument as `\x1f`, so a multi-line brief queued behind a
+live run stays one `--brief`; an unended run with nothing main lacks is `open`, not `merged`, for the sweep; `queue list`
+shows `held:` for a lane-held project and the runner ends past `--until` while only lane-held entries wait.

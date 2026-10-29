@@ -61,7 +61,7 @@ check "tty views: gc --dry-run on a TTY has the six headers in order and the foo
   [[ $(grep -oE "^(UNITS|TMUX|DESKS|WORKTREES|DEPS|BRANCHES)( [0-9]+)?" "$T/gt.out" | cut -d" " -f1 | paste -sd" ") == "UNITS TMUX DESKS WORKTREES DEPS BRANCHES" ]] &&
   grep -E "^WORKTREES 2 (─)+" "$T/gt.out" > /dev/null && grep -xE "DEPS 0" "$T/gt.out" > /dev/null &&
   b=$(grep -E "^would: git .* (branch -[dD]|push -q origin --delete) " "$T/gp.out" | awk "{ print \$NF }" | sort -u | wc -l) &&
-  (( b == 1 )) && [[ $(tail -1 "$T/gt.out") == "would remove 1 worktrees, 1 branches; keeps 1" ]] &&
+  (( b == 1 )) && [[ $(tail -1 "$T/gt.out") == "would remove 1 worktree, 1 branch; keeps 1" ]] &&
   ! grep -E "^(UNITS|TMUX|DESKS|WORKTREES|DEPS|BRANCHES)|would remove|$(printf "\x1e")" "$T/gp.out" > /dev/null &&
   grep -x "would: systemctl --user stop harness-tv1-svc.scope (tv1 ended)" "$T/gp.out" > /dev/null'
 check "tty views: the TTY form less its headers, rule and footer is the plain form, line for line in the same order" '
@@ -82,7 +82,7 @@ check "tty views: gcView shortens the home directory to a tilde and counts a bra
     const want = [\"UNITS 0\", \"TMUX 0\", \"DESKS 0\", \"WORKTREES 2 \" + d.slice(12), \"would: git -C ~/my p worktree remove --force ~/wt/p/a\",
       \"keeps ~/wt/p/b: its desk is open (harness desk --close b)\", \"DEPS 1 \" + d.slice(7), \"keeps the deps of ~/wt/p/b: its desk is open\",
       \"BRANCHES 2 \" + d.slice(11), \"would: git -C ~/p branch -d harness/a\", \"would: git -C ~/p push -q origin --delete harness/a\", d,
-      \"would remove 1 worktrees, 1 branches; keeps 1\"];
+      \"would remove 1 worktree, 1 branch; keeps 1\"];
     if (JSON.stringify(out) !== JSON.stringify(want)) { console.error(JSON.stringify(out)); process.exit(1); }
     const cutShort = gcView([R + \"UNITS\", \"? x\", R + \"TMUX\"].join(\"\n\"), ctx, {});
     if (JSON.stringify(cutShort) !== JSON.stringify([\"UNITS 1 \" + d.slice(8), \"? x\", \"TMUX 0\", \"gc stopped before DESKS (see the error above)\"])) { console.error(JSON.stringify(cutShort)); process.exit(1); }"'

@@ -62,7 +62,9 @@ while :; do
   done
   [[ $held != "${last_held:-}" ]] && { [[ -n $held ]] && log "holding $held: that project has a run going"; last_held=$held; }
   # (an entry held by a lane alone, with no driver alive, is waited for: it starts when that lane ends)
-  if [[ -z $next ]]; then (( a == 0 )) && [[ -z $held ]] && { log "queue empty, nothing running: done"; break; }; sleep "$POLL"; continue; fi
+  if [[ -z $next ]]; then (( a == 0 )) && [[ -z $held ]] && { log "queue empty, nothing running: done"; break; }
+    (( a == 0 && UNTIL > 0 && now >= UNTIL )) && { log "past the --until time; $(ls "$Q"/*.args | wc -l) left queued"; break; }   # lane-held ones too
+    sleep "$POLL"; continue; fi
   if (( UNTIL > 0 && now >= UNTIL )); then
     (( a == 0 )) && { log "past the --until time; $(ls "$Q"/*.args | wc -l) left queued"; break; }; sleep "$POLL"; continue
   fi
@@ -76,7 +78,8 @@ while :; do
     log "not starting runs: $why; $(ls "$Q"/*.args | wc -l) left queued"; break
   fi
   (( a == 0 )) && log "$("$HARNESS_HOME/lib/sync.sh")"   # no driver alive: the live checkout may move under none
-  mapfile -t args < "$next"; mv "$next" "$Q/done/$(date +%Y%m%d-%H%M%S)-$(basename "$next")"
+  mapfile -t args < "$next"; args=("${args[@]//$'\x1f'/$'\n'}")   # queue_add's newlines back
+  mv "$next" "$Q/done/$(date +%Y%m%d-%H%M%S)-$(basename "$next")"
   extra=(--now); [[ ${HARNESS_QUEUE_FOREGROUND:-} ]] && extra=(--foreground) || extra+=(--no-supervisor)
   (( UNTIL )) && extra+=(--until-epoch "$UNTIL")
   log "starting: harness ${args[*]}"

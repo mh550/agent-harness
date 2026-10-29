@@ -808,6 +808,12 @@ tty views: trends at 60 columns keeps every line within 60, one or two lines a r
 tty views: trends off a TTY is the markdown table of all 17 rows, --all and --md the same bytes
 tty views: trends on a TTY shows the newest 15 runs as columns, 2 older: harness trends --all and the total over all 17
 two coding prompts share a byte-identical prefix that includes the policy
+u3 review: a continue queued behind a live run keeps a multi-line --brief-file as one --brief
+u3 review: a multi-line --brief is one argument in its queue entry (one line per argument; queue show has it whole)
+u3 review: an overlap with an ended run records on it in its state only: its worktree stays clean, so the runner's gc removes it
+u3 review: past --until with only lane-held entries the runner ends (it no longer polls until the lane ends)
+u3 review: queue list shows held: <project> busy for an entry a live lane holds (as the runner holds it)
+u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
 v2 tags don't merge on resume
 verifier caught A, re-queued
 verifier code edits reverted, never merged

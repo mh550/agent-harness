@@ -144,7 +144,7 @@ overlap_warn() { local r; for r in $(cut -f1 <<< "$1" | uniq); do
 run_brief() { cat "$1/brief.md" 2> /dev/null; (source "$1/meta.env" && cat "$WT/.harness/runs/$RUN_ID/brief.md") 2> /dev/null; true; }
 # <queue entry> → its overlaps: a start's --spec and --brief; a continue's run's spec and briefs, and the entry's
 entry_overlaps() {
-  local a=() i p run="" spec="" brief="" st; mapfile -t a < "$1"
+  local a=() i p run="" spec="" brief="" st; mapfile -t a < "$1"; a=(${a[@]+"${a[@]//$'\x1f'/$'\n'}"})
   if [[ ${a[0]:-} == start ]]; then p=${a[1]:-}; [[ ${a[2]:-} && ${a[2]} != --* ]] && run=${a[2]}
   else run=${a[1]:-}; st=$(compgen -G "$STATE_ROOT/*/$run" | head -1) && [[ -f $st/meta.env ]] || return 0
     p=$( (source "$st/meta.env" && echo "$PROJECT_DIR") 2> /dev/null ) || return 0
@@ -154,15 +154,18 @@ entry_overlaps() {
 }
 # the waiting entries' overlaps as status.mjs --overlaps reads them: "<entry file>\t<R>\t<path>"
 queue_overlaps() { local f; for f in "$Q"/*.args; do [[ -f $f ]] && entry_overlaps "$f" | sed "s|^|${f##*/}\t|"; done; true; }
-# <state> <run> <subject> <paths> <second> <origin>: an overlap record on that run, under its record lock (a live run's
-# lanes open records under it too); a new one noted in its run.log and harness-log.md (committed with its next record commit)
+# <state> <run> <subject> <paths> <second> <origin> [other]: an overlap record on that run, under its record lock (a live
+# run's lanes open records under it too); a new one noted in its run.log and harness-log.md (committed with its next record
+# commit). The other run, ended: in its state only (no needs.md, no log line), since no commit follows and a dirty
+# worktree is one gc never removes
 overlap_open() {
-  local st=$1 w rec ref; w=$( (source "$st/meta.env" && echo "$WT") 2> /dev/null ) || return 0; rec=$w/.harness/runs/$2
+  local st=$1 w rec ref md; w=$( (source "$st/meta.env" && echo "$WT") 2> /dev/null ) || return 0; rec=$w/.harness/runs/$2 md=$rec
+  [[ ${7:-} ]] && ! alive "$st" && ! lane_live "$st" > /dev/null && md=""
   ref=$(flock "$st/record.lock" node "$NEEDS_MJS" open "$st" "$2" "$(basename "$(dirname "$st")")" overlap "$3" files="$4" second="$5" \
-    worktree="$w" record="$rec" list="$rec/feature_list.json" inbox="$rec/INBOX.md" branch="harness/$2" record_branch="harness/$2" \
+    worktree="$w" record="$md" list="$rec/feature_list.json" inbox="$rec/INBOX.md" branch="harness/$2" record_branch="harness/$2" \
     main_branch="${MAIN_BRANCH:-main}" origin="$6" state="$st" 2>> "$st/run.log") || return 0   # 3: open already, refreshed
   echo "$(date '+%F %T') needs: overlap with $3 opened ($ref)" >> "$st/run.log"
-  [[ -f $rec/harness-log.md ]] && echo "- $(date '+%F %H:%M') · needs: overlap with $3 opened" >> "$rec/harness-log.md"; true
+  [[ -n $md && -f $rec/harness-log.md ]] && echo "- $(date '+%F %H:%M') · needs: overlap with $3 opened" >> "$rec/harness-log.md"; true
 }
 # <project dir> <run> <state>: a start's overlaps warned and recorded on the run and on each run it meets
 overlap_start() {
@@ -170,7 +173,7 @@ overlap_start() {
   l=$(overlaps "$p" "$run" "$( (source "$st/run.env" 2> /dev/null; echo "${SPEC_FILES:-}") )" "$(run_brief "$st")")
   [[ -n $l ]] || return 0; overlap_warn "$l"
   for r in $(cut -f1 <<< "$l" | uniq); do files=$(awk -F'\t' -v r="$r" '$1 == r { print $2 }' <<< "$l")
-    overlap_open "$st" "$run" "$r" "$files" "$run" "$o"; overlap_open "$(dirname "$st")/$r" "$r" "$run" "$files" "$run" "$o"; done
+    overlap_open "$st" "$run" "$r" "$files" "$run" "$o"; overlap_open "$(dirname "$st")/$r" "$r" "$run" "$files" "$run" "$o" other; done
 }
 runner_up() { [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null; }
 alive_count() { local d n=0; for d in "$STATE_ROOT"/*/*/; do alive "$d" && n=$(( n + 1 )); done; echo "$n"; }
@@ -202,11 +205,11 @@ auto_id() {   # project → <project>-<date>[-n], not used before
   echo "$id"
 }
 
-queue_add() {   # verb args… → a queue entry (one argument per line), numbered past the parked ones too
+queue_add() {   # verb args… → a queue entry (one argument per line, a newline in one as \x1f), numbered past the parked ones too
   mkdir -p "$Q/done" "$Q/held"
   local n; n=$(( $(ls "$Q" "$Q/held" | sed -n 's/^\([0-9]\{4\}\)-.*\.args$/\1/p' | sort -n | tail -1 | sed 's/^0*//' || true) + 1 ))
   local f; f=$Q/$(printf '%04d' "$n")-$1-${2##*/}.args
-  printf '%s\n' "$@" > "$f"; echo "$f"
+  local a; for a in "$@"; do printf '%s\n' "${a//$'\n'/$'\x1f'}"; done > "$f"; echo "$f"   # a multi-line brief stays one argument
 }
 
 queue_ensure_runner() {
