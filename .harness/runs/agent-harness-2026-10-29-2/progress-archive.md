@@ -9,6 +9,21 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 16:14 · R3-02 · passes
+
+lib/features.mjs: every list/attempts/parked write goes through writeAtomic (<file>.<pid>.tmp + renameSync; namespace import, so grep -c writeFileSync = 1). lint gains unit-collision (LANEU mapping, one finding per colliding milestone) and unreproducible (time bounds, one run's test counts, this run's check.out). initializer.md states counts as commands. 5 checks in 07, 1 in new 77-leftovers.sh.
+
+- **Files:** lib/features.mjs, prompts/initializer.md, tests/checks/07-step-lint-pure-r3.sh, tests/checks/77-leftovers.sh, tests/fixtures/check-names.txt
+- **Verified:** Red first: 77's reader threw 'Unexpected end of JSON input' at HEAD's in-place write; 07's four new checks failed. Then 07 14/14, 77 1/1; full suite green after the rerun guard's one rerun (969 tests; 08-scope and 48-lanes-rebase flaked under load average ~21, wall 1237 s). features.mjs lint on this run's list: unreproducible on R1-02 step 4 (below 5 s), R3-01 step 3, R3-02 step 3, as the plan predicted. Final full run on the committed tree (a4c864c): green in 949 s, 969 tests, no rerun.
+- **Tests:** 963 → 969
+- **Dead end:** the plan's COUNT regex with tests?/checks? singular — it hit R1-02 step 4's command `wait_for 30 test -f <file>`; plural only now, and that string is a not-flagged case in 07
+- **Dead end:** a comment on the namespace import naming writeFileSync — the step's grep -c counts lines, comments too: it printed 2
+- **Discovery** (affects R3-06, run): 13/14-run-2 pin the initializer's lint sentence ending `milestone's size doesn't call for). No output means clean.`: a new lint item goes before the review one
+- **Discovery** (affects R3-06): README/architecture lint lists don't name unit-collision or unreproducible yet: R3-06's docs item
+- **Discovery** (affects R1-07, run): Under this box's load (~21) the full suite took 1237 s and 08-scope and 48-lanes-rebase (a non-fast-forward push to origin main) flaked once each, green on the rerun
+- **Proposed change:** R3-02 step 3's not-flagged list could add `wait_for 30 test -f <file>` (a command, not a count): 07 checks it
+- *09-R3-02 · claude-opus-5-5*
+
 ### 2026-10-29 15:41 · R1-05 · passes
 
 Both run flakers are R1-04's lane-count race. Neither reproduced unforced (10/10 green each). Forced with HARNESS_COUNT_HOLD=1 on the pre-fix driver, 28 ended 'no feature left to try' before M2 and 15's weekly run did too. Both runs now start with the hold: red before the fix (0/1), 10/10 after. Plan rows filled; decision updated in place. Merged origin/main.
