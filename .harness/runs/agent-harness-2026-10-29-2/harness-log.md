@@ -148,3 +148,9 @@
 - 2026-10-29 19:24 · merged main into harness-lane/agent-harness-2026-10-29-2/R3
 - 2026-10-29 19:24 · verify R3: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-29 19:41 · context.md for R3: 16143 bytes
+- 2026-10-29 19:43 · verify R3: R3-01 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-02 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-03 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-04 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-05 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-06 failed the re-check, back in the queue (one more attempt)
