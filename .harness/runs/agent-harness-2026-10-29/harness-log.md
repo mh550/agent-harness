@@ -42,3 +42,8 @@
 - 2026-10-29 08:46 · context.md for N2-02: 8030 bytes
 - 2026-10-29 08:48 · N2-02 · claude-opus-5-5 · passes=false · 2 min · 10/11 passing · tests 925
 - 2026-10-29 08:48 · N2-02 parked (waiting on Michael): Michael to reword N2-02 step 2 to "a conflict exits 1 with its markers in A" (the jq command is in INBOX.md)
+- 2026-10-29 08:48 · lane N2 closed (parked N2-02)
+- 2026-10-29 08:48 · waiting on Michael: N2-02 (parked; answer in INBOX.md, then harness continue agent-harness-2026-10-29)
+- 2026-10-29 08:48 · run ended (waiting on Michael: N2-02): 10/11 passing · 16 sessions (16 real) · 11 features passed · $52.91 · 6.6 h · by kind: init 1 ($7.40), coding 13 ($45.06), verify 2 ($0.44) · by model: claude-fable-5-1 1 ($7.40), claude-opus-5-5 13 ($45.06), claude-sonnet-5-5 2 ($0.44)
+- 2026-10-29 08:48 · services stopped (waiting on Michael: N2-02)
+- 2026-10-29 08:48 · services stopped (waiting on Michael: N2-02)
