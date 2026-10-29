@@ -9,6 +9,21 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 16:33 · R1-06 · passes
+
+32, 38 and 08's first `no user systemd` check were R1-04's lane-count race: 10/10 green unforced, red forced on the pre-fix driver. Their runs now start with HARNESS_COUNT_HOLD=1 (red 0/1 before). 08's repeat (7/10) found two test races, fixed: the gatestop run kept at 2 GB (STOP and the memory write raced the gate's poll) and a per-copy init_left for the box-wide pgrep. All 10/10 after.
+
+- **Files:** tests/checks/32-l5-queue-runner-re.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, docs/plans/2026-10-29-R1-flakes.md, journal/decisions/2026-10-29-lane-count-end-check.md, CLAUDE.md
+- **Verified:** Before (direct, KEEP=1, the three at once): `32-l5-queue-runner-re: 10/10 green` 342 s; `38-run-17-gotchas-and-pack-m3: 10/10 green` 342 s; `08-scope-sh-l1-02-run-capped-services-gc-scratch: 7/10 green` 1075 s (copies 2, 5 memory gate stop; copy 3 TERM during an init). Forced (HARNESS_COUNT_HOLD=1, end check reverted in a scratch copy): 32 FAIL `MAX_PARALLEL_RUNS 2 → 1 …` (l5a/l5b: `no feature left to try: 2/3 passing`), 38 FAIL `CONTEXT_PACK_BYTES=1024 …` (packs 01-A 02-B 03-A only), 08 FAIL `no user systemd: the run goes bare …`. Edited files on the pre-fix driver: 32 `0/1 green`, 38 `0/1 green`, 08 FAIL bare only (gatestop and initterm green with a foreign `sleep 31` loop); old 08 on the fixed driver with `sleep 2` between STOP and the cp and the foreign loop: FAIL gatestop + initterm. After: `32-l5-queue-runner-re: 10/10 green` 330 s, `38-run-17-gotchas-and-pack-m3: 10/10 green` 328 s, `08-scope-sh-l1-02-run-capped-services-gc-scratch: 10/10 green` 809 s. check.sh: green in 934 s, 973 tests; check-names.txt vs origin/main: added lines only (0 removed); lint-sleeps clean; bash -n on the three files.
+- **Tests:** 973 → 973
+- **Discovery** (affects R1-07, run): Every stub run is M1 (A, B) then M2 (C, after M1): any check on a run's 3/3, M2's tag or its packs can hit R1-04's lane-count race; HARNESS_COUNT_HOLD=1 on that start holds the window every time
+- **Discovery** (affects R1-07, run): pgrep in a check is box-wide (sibling copies, other lanes' suites): match this copy's process by grep -zqF "HARNESS_SCRATCH=$T/" /proc/<pid>/environ (08's init_left)
+- **Discovery** (affects R1-07): mem_gate (lib/scope.sh:127-130) checks memory, then stop, every HARNESS_MEM_POLL (1 s in tests): a check that writes both must not let a poll fall between them
+- **Discovery** (affects R1-07): A forced copy built with git archive has no .git: its 'ledger row has harness_version and harness_dirty' fails there, not on the tree
+- **Resolved:** stub --resume of an unknown id substitutes session_id but leaves the fixture's 00000000-… id in the result line's errors[] (the real CLI names the asked id there)
+- **Proposed change:** R1-07: the flaker table now has every row; the race's checks share one fix (44's), so the review can name HARNESS_COUNT_HOLD=1 on a check's start as the pattern for any stub run that must reach M2
+- *10-R1-06 · claude-opus-5-5*
+
 ### 2026-10-29 16:14 · R3-02 · passes
 
 lib/features.mjs: every list/attempts/parked write goes through writeAtomic (<file>.<pid>.tmp + renameSync; namespace import, so grep -c writeFileSync = 1). lint gains unit-collision (LANEU mapping, one finding per colliding milestone) and unreproducible (time bounds, one run's test counts, this run's check.out). initializer.md states counts as commands. 5 checks in 07, 1 in new 77-leftovers.sh.
@@ -250,20 +265,9 @@ tests/lib.sh gains wait_for (clock-bounded 0.1 s poll), stub_wait/stub_go; in_ha
 - **Proposed change:** The plan's STUB_BARRIER check (`suite tools: STUB_BARRIER holds that feature's first coding session until stub_go`) is in 75-suite-tools.sh though R1-02's steps don't name it; the step list could.
 - *04-R1-02 · claude-opus-5-5*
 
-### 2026-10-29 10:01 · R2-01 · passes
-
-Attempt 1's plan (docs/plans/2026-10-29-R2-entries.md) holds every step; the suite was red only because its new Gotchas line made CLAUDE.md's ## Gotchas 16 lines, which 39-memlint-m4 fails. Dropped the narrowest line (brief.md move); memlint on the worktree prints nothing; full suite green, 886 tests.
-
-- **Files:** CLAUDE.md
-- **Verified:** node lib/memlint.mjs . prints nothing; tests/run.sh memlint 19/19; plan grepped for each step's names (HARNESS_ENTRY_CHECK, entry_resume, ENTRY_RESUME_*, .resume.jsonl, 0.0031/0.0055/0.0058, STUB_NO_ENTRY, STUB_RESUME_ENTRY, resume.log, 76-entries-survive, N2 line = 1); full suite via check.sh green in 648 s, 886 tests
-- **Tests:** 886 → 886
-- **Dead end:** attempt 1 adding a 16th Gotchas line — memlint caps ## Gotchas at 15 and the suite lints this worktree
-- **Discovery** (affects run): 39-memlint-m4 lints this worktree's CLAUDE.md: a 16th Gotchas line turns the suite red; replace a line, never add past 15
-- **Resolved:** the driver moves <state>/brief.md into the record's brief.md and empties it at start: a run's briefs are both files (agent-harness-2026-10-28 2026-10-28)
-- *03-R2-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 10:01 · R2-01 · passes · Attempt 1's plan (docs/plans/2026-10-29-R2-entries.md) holds every step; the suite was red only beca… ([in full](progress-archive.md))
 - 2026-10-29 09:58 · R1-01 · passes · Wrote docs/plans/2026-10-29-R1-flakes.md: the four tools (wait_for, stub_wait/stub_go + STUB_BARRIER… ([in full](progress-archive.md))
 - 2026-10-29 09:19 · R2-01 · passes · Wrote docs/plans/2026-10-29-R2-entries.md: the entry check, the trim (399 + … so readEntries keeps i… ([in full](progress-archive.md))
 - 2026-10-29 09:12 · init · passes · 23 features: R1 7 (plan, wait_for/barriers/--repeat, sleep lint, three flaker groups, review), R2 5 … ([in full](progress-archive.md))

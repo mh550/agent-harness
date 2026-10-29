@@ -98,3 +98,8 @@
 - 2026-10-29 16:14 · R3-02: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 16:14 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch 48-lanes-rebase (red, then green on a rerun; load 4.94)
 - 2026-10-29 16:14 · R3-02 · claude-opus-5-5 · passes=true · 45 min · 12/23 passing · tests 969
+- 2026-10-29 16:14 · context.md for R3-03: 7488 bytes
+- 2026-10-29 16:33 · R1-06: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:33 · R1-06: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:33 · R1-06: gotchas +0 ~1 -0
+- 2026-10-29 16:33 · R1-06 · claude-opus-5-5 · passes=true · 51 min · 13/23 passing · tests 973
