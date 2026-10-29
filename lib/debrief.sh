@@ -8,7 +8,7 @@
 #   1. debrief.lock (a second debrief waits for the first, then covers only what is left), the preflight (node, jq,
 #      git, flock, claude), the usage-limit window (LIMIT_UNTIL): waits up to 5 h, longer: exits, the next one covers it
 #   2. bash gathers the context, no model: status, trends, the queue, runner.log, and for every run: why it ended, its card,
-#      what waits on Michael (harness needs), summary.json, report.md, retro.md, INBOX.md, open questions, each capped
+#      what waits on Michael (harness needs), summary.json, report.md, the flakers, retro.md, INBOX.md, open questions, each capped
 #   3. one headless session (DEBRIEF_MODEL), prompt on stdin, in dontAsk mode with an allowlist of read-only tools and
 #      the never-list as --disallowedTools; git status and refs of the ledger, worktrees and projects compared after
 #   4. its "CONTINUE: <run> :: <brief>" lines are checked here and queued (`harness queue add --continue … --automatic --keep-attempts`);
@@ -123,6 +123,8 @@ run_context() {   # state dir → this run's section
         capped "${f##*:}" "$WS/s.json" | fence
       elif [[ $f == INBOX.md:* ]]; then capped "${f##*:}" "$rd/INBOX.md" tail | fence
       else capped "${f##*:}" "$rd/${f%%:*}" | fence; fi
+      # the checks that flaked in two or more of the project's last five ledgered runs (a flake once is noise)
+      [[ $f == report.md:* ]] && { echo; echo "#### flakes"; node "$HARNESS_HOME/lib/summary.mjs" flakers "$LEDGER/$proj" 2>&1 | fence; }
     done
     echo; echo "#### Questions for Michael in progress.md (newest first)"
     grep -i 'question' "$rd/progress.md" 2>/dev/null | grep -viE 'none new|questions that are not|answers to the questions' | head -12 | cut -c1-600 | fence

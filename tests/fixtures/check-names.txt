@@ -170,6 +170,7 @@ continue refuses a running run
 debrief --dry-run gathers the retro backlog, not Earlier retros
 debrief notifications go to NTFY_URL when set
 debrief waits for the usage-limit window, then runs
+debrief: the flakes block names a check that flaked in two of the last five ledgered runs (×2), not one in one
 decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
 decisionsStore: a quoted DECISIONS wins over docs/decisions.md, an unknown command exits 2
 decisionsStore: neither is null, and store prints nothing
@@ -222,6 +223,7 @@ flakes run: a red every time still un-passes C with today's note after a rerun (
 flakes run: a run with no flake writes no flaky: line and no flakes.jsonl
 flakes run: a suite red once after A's session is noted flaky: whole suite with its load, and A stays passed
 flakes run: flakes-noted holds flakes.jsonl's size after the note
+flakes run: summary.json flakes and report.md's Flakes row (1 · whole suite); the invariant run's Flakes 0
 flakes run: tests-start after a flake on the first suite is the marker's total, not the red run's passes
 flakes_note: one note per whole row past flakes-noted (whole suite for no names), a row that isn't JSON passed over
 gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives
@@ -578,6 +580,7 @@ render.mjs: --raw applies to the next file only
 render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
 report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
+report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
 resume reloads config merged from main
 retro edits reverted
 review gate: a review at or over REVIEW_OPUS_LINES runs on opus
@@ -729,6 +732,7 @@ suite runner: the parallel runner starts no scope of its own (no systemd-run cal
 summary end reason is how the run ended
 summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)
+summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
 summary: tokens, per verified feature, first-attempt rate, rework
 sync: a local commit outside ledger/ is left alone, nothing pushed

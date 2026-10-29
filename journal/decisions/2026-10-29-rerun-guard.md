@@ -50,3 +50,8 @@ Updated in place 2026-10-29: N1-03: the driver notes each new `flakes.jsonl` row
 `$STATE/flakes-noted`, under its own lock), after each coding session's un-pass check, verify and disjoint re-base, and
 in `finish` before `run ended`; `run_init`'s `tests-start` takes the tree's marker first, so a flake on the run's first
 suite records its total, not the red run's passes.
+
+Updated in place 2026-10-29: N1-04: counted where Michael reads: `summary.json`'s `flakes` (`{count, names}` from the
+state dir's `green/flakes.jsonl`, a whole-suite rerun under `whole suite`), `report.md`'s `Flakes` row after `Tests`
+(`<n> · <name> ×<k>, …`, `0` for none), and the debrief's `#### flakes` block: the names in two or more of the
+project's last five ledgered summaries (`summary.mjs flakers`), the repeat flakers that are fix work.

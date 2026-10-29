@@ -17,6 +17,23 @@ note: flaky: c (red, then green on a rerun; load 1.5)
 at 109 of 109'
 check "flakes_note: one note per whole row past flakes-noted (whole suite for no names), a row that isn't JSON passed over" '[[ $fn == "$FN" ]]'
 
+# summary.json's flakes and report's Flakes row (N1-04), pure: from a state dir's green/flakes.jsonl, a row that isn't JSON passed over
+mkdir -p "$T/sf/green"; printf '%s\n' '{"names":["a","b"]}' 'not json' '{"names":[]}' '{"names":["a"]}' > "$T/sf/green/flakes.jsonl"
+SFL='import { build } from "'$HERE'/../lib/summary.mjs"; import { readFileSync } from "node:fs";
+  const fx = Object.keys(JSON.parse(readFileSync("'$HERE'/fixtures/summary-report.json", "utf8")));
+  const s = build("/nonexistent/p/w", "r", "'$T'/sf"), none = build("/nonexistent/p/w", "r", "/nonexistent/s");
+  process.exit(JSON.stringify(s.flakes) === JSON.stringify({ count: 3, names: { a: 2, b: 1, "whole suite": 1 } })
+    && JSON.stringify(none.flakes) === JSON.stringify({ count: 0, names: {} })
+    && fx.every(k => k in none) && "flakes" in none && !fx.includes("flakes") ? 0 : 1);'
+check "summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built" 'node --input-type=module -e "$SFL"'
+RFL='import { report } from "'$HERE'/../lib/summary.mjs"; import { readFileSync } from "node:fs";
+  const fx = JSON.parse(readFileSync("'$HERE'/fixtures/summary-report.json", "utf8"));
+  const after = (s, row) => { const ls = report(s).split("\n"), i = ls.findIndex(l => l.startsWith("| Tests | ")); return ls[i + 1] === row; };
+  const three = { ...fx, flakes: { count: 3, names: { "44-lanes-record": 1, "28-run-14d-harness-merge": 2 } } };
+  process.exit(after(three, "| Flakes | 3 · 28-run-14d-harness-merge ×2, 44-lanes-record |")
+    && after({ ...fx, flakes: { count: 0, names: {} } }, "| Flakes | 0 |") && !report(fx).includes("Flakes") ? 0 : 1);'
+check "report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary" 'node --input-type=module -e "$RFL"'
+
 main0=$(git -C "$T/origin.git" rev-parse main)
 STUB_NO_TAMPER=1 STUB_LENIENT=1 "$H" start "$T/proj" inv --spec SPEC.md --foreground > "$T/inv.out" 2>&1
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
@@ -38,6 +55,10 @@ check "flakes run: a suite red once after A's session is noted flaky: whole suit
   && ! hlog fl | grep -F "A un-passed: suite red" > /dev/null && grep "^done" "$HARNESS_STATE/proj/fl/ended" > /dev/null'
 check "flakes run: flakes-noted holds flakes.jsonl's size after the note" \
   'S=$HARNESS_STATE/proj/fl; [[ $(grep -c "" "$S/green/flakes.jsonl") == 1 && $(cat "$S/flakes-noted") == "$(wc -c < "$S/green/flakes.jsonl")" ]]'
+rd() { echo "$T/wt/proj/$1/.harness/runs/$1"; }
+check "flakes run: summary.json flakes and report.md's Flakes row (1 · whole suite); the invariant run's Flakes 0" \
+  'jq -e ".flakes.count == 1 and .flakes.names[\"whole suite\"] == 1" "$(rd fl)/summary.json" > /dev/null \
+  && grep -Fx "| Flakes | 1 · whole suite |" "$(rd fl)/report.md" > /dev/null && grep -Fx "| Flakes | 0 |" "$(rd inv)/report.md" > /dev/null'
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 
 # ts: the run's first suite (its init's) red once with a count, then green: tests-start is the marker's total, 5, not 3
@@ -45,4 +66,17 @@ check_cmd "flaky first suite" "if mkdir $T/flaked-ts 2> /dev/null; then echo '3/
 STUB_NO_TAMPER=1 STUB_LENIENT=1 STUB_NO_RED=1 "$H" start "$T/proj" ts --spec SPEC.md --foreground > "$T/ts.out" 2>&1
 check "flakes run: tests-start after a flake on the first suite is the marker's total, not the red run's passes" \
   '[[ -d $T/flaked-ts && $(cat "$HARNESS_STATE/proj/ts/tests-start") == 5 ]] && hlog ts | grep -F "flaky: whole suite" > /dev/null'
+
+# the debrief's flakes block: the names in two or more of the project's last five ledgered summaries (its own ledger here)
+for r in 1:2026-10-01:'{"x":1,"y":1}' 2:2026-10-02:'{"x":2}' 3:2026-10-03:; do IFS=: read -r n d fl <<< "$r"; mkdir -p "$T/dl/proj/r$n"
+  jq -n --arg d "${d}T00:00:00Z" --argjson f "${fl:-null}" '{run: "r\($d)", ended_at: $d} + (if $f then {flakes: {count: 1, names: $f}} else {} end)' > "$T/dl/proj/r$n/summary.json"; done
+HARNESS_LEDGER=$T/dl "$H" debrief --dry-run > "$T/dl.out" 2>&1
+FW='import { flakers } from "'$HERE'/../lib/summary.mjs";
+  const s = (d, n) => ({ ended_at: d, flakes: { count: 1, names: n } }), old = s(undefined, { o: 1 });
+  const ls = flakers([old, s("2026-10-01", { o: 1, p: 1 }), s("2026-10-02", { p: 1, q: 1 }), s("2026-10-03", { q: 2 }), {}, s("2026-10-05", {}), s("2026-10-06", { q: 1 })]);
+  process.exit(JSON.stringify(ls) === JSON.stringify(["q ×3", "p ×2"]) && JSON.stringify(flakers([{}])) === JSON.stringify(["(none)"]) ? 0 : 1);'
+check "debrief: the flakes block names a check that flaked in two of the last five ledgered runs (×2), not one in one" \
+  'C=$(head -1 "$T/dl.out"); [[ -f $C ]] && [[ $(awk "/^#### / { if (p) { print; exit } if (\$0 == \"#### report.md\") p = 1 }" "$C") == "#### flakes" ]] \
+  && grep -A3 -x "#### flakes" "$C" > "$T/dl.block" && grep -Fx "x ×2" "$T/dl.block" > /dev/null && ! grep "^y" "$T/dl.block" > /dev/null \
+  && node --input-type=module -e "$FW"'
 suite_end
