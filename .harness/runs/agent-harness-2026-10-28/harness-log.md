@@ -85,3 +85,6 @@
 - 2026-10-28 18:30 · U3-04 · claude-opus-5-5 · passes=true · 34 min · 20/24 passing · tests 815
 - 2026-10-28 18:30 · context.md for U3-05: 8066 bytes, 1 items left out
 - 2026-10-28 19:28 · U3-05 · claude-opus-5-5 · passes=true · 57 min · 21/24 passing · tests 834
+- 2026-10-28 19:28 · context.md for U3-06: 8033 bytes, 2 items left out
+- 2026-10-28 20:31 · U3-06: gotchas +0 ~1 -0
+- 2026-10-28 20:31 · U3-06 · claude-opus-5-5 · passes=true · 63 min · 22/24 passing · tests 842

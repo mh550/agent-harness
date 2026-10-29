@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 20:31 · U3-06 · passes
+
+Overlaps wired, never holding: overlap.mjs runs compares a new run's spec+briefs with each other live or unmerged run of the project; start warns and opens a warn overlap record on both runs; queue add warns; queue list/status show ⚠ overlaps, --json overlap {run, files}; sweep resolves other run gone/merged, this run merged. 70-overlap +8 checks.
+
+- **Files:** bin/harness, lib/overlap.mjs, lib/needs.mjs, lib/status.mjs, lib/show.mjs, tests/checks/70-overlap.sh, tests/checks/52-status-json.sh, tests/lib.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-same-project-starts.md, CLAUDE.md
+- **Verified:** tests/run.sh 70-overlap 15/15 (8 new, watched failing first); needs/status/show/queue/same-project subsets 100/100; full suite via lib/check.sh: 842 checks (one run flaked 13-run-2 "independent work goes on past a parked feature" at load 4.9; it passed alone 66/66 and in the run before)
+- **Tests:** 834 → 842
+- **Dead end:** reading a run's brief from <state>/brief.md only — the driver moves it into the record's brief.md and empties it at start: a continue entry found no brief
+- **Discovery** (affects U3-07, U3-08): lib/overlap.mjs now holds the shared git I/O: gitIn, branchesOf (show.mjs imports them), changes(dir, run, mainRef), envFile, liveRun, briefOf, others; status.mjs imports names from it (52's import check allows ./overlap.mjs)
+- **Discovery** (affects U3-08, run): needs_fixture's overlap subject nf-other is now a state dir with driver.pid = the check file's shell, so the open overlap fixture stays open under the sweep rule
+- **Discovery** (affects U3-08): README and architecture §3/§12 don't yet describe overlaps (the warning, records, ⚠ in queue list, the sweep words): U3-08's docs step
+- **Question for Michael:** Default taken: an overlap record resolves 'this run merged' / 'other run merged' when that side isn't live and has nothing outside .harness/runs/ main lacks, so a run that ended without changing anything resolves it too. Keep that?
+- **Proposed change:** U3-06 step 1 names `git diff … harness/R`: since lanes the code is on harness-lane/R/*; the build diffs every run branch (the plan's rule)
+- *23-U3-06 · claude-opus-5-5*
+
 ### 2026-10-28 19:28 · U3-05 · passes
 
 A plain harness start/continue of a project with a live run (driver or lane: project_busy) is queued with '<R> is running on <project>: queued (…)', a runner.log line and the runner ensured; continue queues before any state change. lib/overlap.mjs: pure named/overlap + CLI. Runner holds lane-only busy projects too. 69 (12) and 70 (7) checks; decision same-project-starts.
@@ -264,29 +279,9 @@ lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, quest
 - **Proposed change:** U2-02 step 3 names tests/checks/56-inbox-pure.sh; 56 is taken, the file is 57-inbox.sh (plan §5.1)
 - *10-U2-02 · claude-opus-5-5*
 
-### 2026-10-28 08:40 · U2-01 · passes
-
-Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and card keys, file locations, the 15 reasons mapped to their functions with kind/severity/priority/key/sweep rule, a card template per reason, needs.sh/needs.mjs/inbox.mjs APIs, notification texts, check files 57-63, fixtures, touched checks, order U2-02..09. Code unchanged; suite cached green.
-
-- **Files:** docs/plans/2026-10-28-U2-needs-record.md
-- **Verified:** Each plan step checked against the code at fc23bf9 (grep of lib/record.sh, lib/lane.sh, lib/driver.sh, bin/harness, tests/checks/13-, 03-, 15-); the n8n fixture read via a scratch clone (31 lines, line 13 '## Answers".', line 28 '## Answers'); merge-tree --name-only output captured from a real scratch conflict; lib/check.sh: green, 689 tests (cached).
-- **Tests:** 689 → 689
-- **Discovery** (affects U2-02, U2-03, U2-04, U2-05, U2-06, U2-07, U2-08): tests/checks/56- is taken (56-status-review.sh): U2's new check files are 57-inbox, 58-needs-record, 59-needs-cards, 60-needs-driver, 61-needs-git, 62-needs-readers, 63-question-locations
-- **Discovery** (affects U2-02): With lanes, a session writes only its slot copy of INBOX.md; take_question_ copies the added lines into the record. So the INBOX repair belongs on the slot copy (against $LS/inbox-before.md) before take_question, plus the record's INBOX after the initializer. answers_hash and take_question_ also cut at /^## Answers/ and must move to inbox.mjs (answers, insert)
-- **Discovery** (affects U2-02): The n8n-home fixture can be read without git in that checkout: git clone -q --no-checkout ~/projects/n8n-home <scratch>/n8n-home, then git -C <scratch>/n8n-home show 4632d1c:.harness/runs/n8n-home-2026-10-22/INBOX.md
-- **Discovery** (affects U2-04, U2-05): harness parked's text is read by seven 13- checks (parky · proj · B, running:, next commands); making parked an alias in U2-04 before U2-05 opens records needs list to synthesize parked items from parked.json (plan §2.2), and those checks rewritten to the card's words (plan §5.2)
-- **Discovery** (affects U2-05, U2-06): Two 13- checks assert today's clicks: the park notification's Click is INBOX.md and verify's is progress.md; the spec's needs.md click changes exactly those two assertions (U2-05, U2-06)
-- **Question for Michael:** Should a given-up feature (and a run ending on feature-list edits or a crash) send its own high notification when it happens, not only via the run-end notification? Default: no (plan §7.3).
-- **Question for Michael:** Is one main_conflict item per lane (refreshed as main moves, notified once per main commit via a main-conflict-<m> marker) right, rather than one item per main commit? Default: per lane (plan §7.1).
-- **Question for Michael:** Should the park notification's tap open needs.md instead of INBOX.md (Edit INBOX stays a button)? Default: needs.md (plan §7.4).
-- **Proposed change:** U2-02 step 5: run the repair on the session's copy of INBOX.md (the slot's) before take_question, and on the record's INBOX.md after the initializer, not on the record's INBOX.md after each session (sessions never write it with lanes); and name answers_hash and take_question_ in lib/record.sh as callers of inbox.mjs
-- **Proposed change:** U2-03 step 1: needs.mjs may import ./inbox.mjs and ./notify.mjs (pure) as well as ./view.mjs
-- **Proposed change:** U2-05 step 1 and U2-06 step 2: 'existing park/verify notification checks pass unchanged' except the one Click assertion each (INBOX.md and progress.md become needs.md)
-- **Proposed change:** U2-06 step 1: main_conflict's key subject is the lane milestone, not the origin/main commit; once per main commit comes from a main-conflict-<m> marker (plan §7.1)
-- *09-U2-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-28 08:40 · U2-01 · passes · Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and c… ([in full](progress-archive.md))
 - 2026-10-28 08:22 · verify U1 · passes · All 40 steps of U1-01..07 hold. Init suite red (7 checks in 08-scope, 45-lanes) was load flakes: bot… ([in full](progress-archive.md))
 - 2026-10-28 08:07 · U1-07 · passes · U1 review: 1 Critical, 3 Important, 11 Minor (two Opus rounds, in f8ea1f6). This attempt changed no … ([in full](progress-archive.md))
 - 2026-10-28 07:11 · U1-07 · passes · U1 review: 1 Critical, 3 Important, 11 Minor over two Opus rounds. Critical (session counted every m… ([in full](progress-archive.md))

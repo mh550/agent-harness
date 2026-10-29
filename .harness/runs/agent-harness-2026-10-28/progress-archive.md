@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 20:31 · U3-06 · passes
+
+Overlaps wired, never holding: overlap.mjs runs compares a new run's spec+briefs with each other live or unmerged run of the project; start warns and opens a warn overlap record on both runs; queue add warns; queue list/status show ⚠ overlaps, --json overlap {run, files}; sweep resolves other run gone/merged, this run merged. 70-overlap +8 checks.
+
+- **Files:** bin/harness, lib/overlap.mjs, lib/needs.mjs, lib/status.mjs, lib/show.mjs, tests/checks/70-overlap.sh, tests/checks/52-status-json.sh, tests/lib.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-same-project-starts.md, CLAUDE.md
+- **Verified:** tests/run.sh 70-overlap 15/15 (8 new, watched failing first); needs/status/show/queue/same-project subsets 100/100; full suite via lib/check.sh: 842 checks (one run flaked 13-run-2 "independent work goes on past a parked feature" at load 4.9; it passed alone 66/66 and in the run before)
+- **Tests:** 834 → 842
+- **Dead end:** reading a run's brief from <state>/brief.md only — the driver moves it into the record's brief.md and empties it at start: a continue entry found no brief
+- **Discovery** (affects U3-07, U3-08): lib/overlap.mjs now holds the shared git I/O: gitIn, branchesOf (show.mjs imports them), changes(dir, run, mainRef), envFile, liveRun, briefOf, others; status.mjs imports names from it (52's import check allows ./overlap.mjs)
+- **Discovery** (affects U3-08, run): needs_fixture's overlap subject nf-other is now a state dir with driver.pid = the check file's shell, so the open overlap fixture stays open under the sweep rule
+- **Discovery** (affects U3-08): README and architecture §3/§12 don't yet describe overlaps (the warning, records, ⚠ in queue list, the sweep words): U3-08's docs step
+- **Question for Michael:** Default taken: an overlap record resolves 'this run merged' / 'other run merged' when that side isn't live and has nothing outside .harness/runs/ main lacks, so a run that ended without changing anything resolves it too. Keep that?
+- **Proposed change:** U3-06 step 1 names `git diff … harness/R`: since lanes the code is on harness-lane/R/*; the build diffs every run branch (the plan's rule)
+- *23-U3-06 · claude-opus-5-5*
+
 ### 2026-10-28 19:28 · U3-05 · passes
 
 A plain harness start/continue of a project with a live run (driver or lane: project_busy) is queued with '<R> is running on <project>: queued (…)', a runner.log line and the runner ensured; continue queues before any state change. lib/overlap.mjs: pure named/overlap + CLI. Runner holds lane-only busy projects too. 69 (12) and 70 (7) checks; decision same-project-starts.

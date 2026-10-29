@@ -392,7 +392,7 @@
         "checks in a new file by topic (e.g. `tests/checks/67-overlap.sh`): a queued entry whose brief names a file an ended stub run's unmerged branch changed shows `⚠ overlaps` in `queue list`; starting it with `--now` prints the warning, starts, and opens a warn record on both runs (`harness needs` lists 2); the records resolve on `sweep` once the other branch is merged or gone, or by `harness needs done <ref>`",
         "`bash -n bin/harness lib/queue.sh`, `node --check lib/overlap.mjs lib/needs.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U3-07",
