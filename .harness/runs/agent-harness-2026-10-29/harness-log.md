@@ -48,3 +48,5 @@
 - 2026-10-29 08:48 · services stopped (waiting on Michael: N2-02)
 - 2026-10-29 08:48 · services stopped (waiting on Michael: N2-02)
 - 2026-10-29 08:49 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-10-29 08:49 · backlog: 0 new, 2 seen again
+- 2026-10-29 08:49 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-29 (in the state dir: init.out check-last.out)
