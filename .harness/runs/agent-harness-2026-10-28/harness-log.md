@@ -91,3 +91,7 @@
 - 2026-10-28 20:31 · context.md for U3-07: 8001 bytes, 2 items left out
 - 2026-10-28 21:34 · U3-07: gotchas +0 ~1 -0
 - 2026-10-28 21:34 · U3-07 · claude-opus-5-5 · passes=true · 62 min · 23/24 passing · tests 853
+- 2026-10-28 21:34 · review U3-08: 2622 changed lines, at or over 400; opus
+- 2026-10-28 21:34 · context.md for U3-08: 7896 bytes, 5 items left out
+- 2026-10-28 22:17 · U3-08: gotchas +0 ~1 -0
+- 2026-10-28 22:27 · U3-08 · claude-opus-5-5 · passes=true · 42 min · 24/24 passing · tests 859

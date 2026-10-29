@@ -426,7 +426,7 @@
         "`README.md` has `show`, project names, the start-queues rule and the TTY forms of `report`, `trends` and `gc --dry-run`; `docs/architecture.md` §3 names `lib/overlap.mjs` and the show view, §12 the start rule and overlaps, §14's runbook answers \"where is a run's work\" with `harness show`; the usage header of `bin/harness` lists `show`, `needs` and `queue show`; the four U3 decision files are complete",
         "`bash -n` on every shell file U3 touched and `node --check` on every `.mjs`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

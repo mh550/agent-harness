@@ -7,6 +7,21 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 22:17 · U3-08 · passes
+
+U3 review, one Opus round: 0 Critical, 2 Important, 9 Minor. Fixed red→green in 72-u3-review: a multi-line brief is one queue argument (\x1f), and an ended run's overlap record stays in its state, so gc can remove its worktree. Minors 3, 5, 6, 10, 11 fixed; 4, 7, 8, 9 noted. README and §12 now describe overlaps.
+
+- **Files:** bin/harness, lib/queue.sh, lib/status.mjs, lib/needs.mjs, lib/overlap.mjs, lib/view.mjs, tests/checks/72-u3-review.sh, tests/checks/70-overlap.sh, tests/checks/71-tty-views.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-28-U3-review.md, docs/architecture.md, +3 more
+- **Verified:** Each 72- check was run red on the unfixed code (Important 2 with Important 1's fix in place) and green after. Subset queue/status/overlap/show/tty/same-project/needs: 273/273. Full suite through check.sh (TEST_JOBS=2): green, 859 tests in 1077 s. bash -n and node --check pass on every touched file.
+- **Tests:** 853 → 859
+- **Dead end:** checking an ended run's worktree after the runner's start — the runner's end-of-queue gc removes that worktree once it is clean; the check reads that removal instead
+- **Discovery** (affects project): queue .args entries write a newline inside an argument as \x1f (queue_add). lib/queue.sh, entry_overlaps and status.mjs argsOf decode it
+- **Discovery** (affects run): overlap_open on an ended other run passes no record: no needs.md and no harness-log.md line in its worktree, only its state and run.log. The new run's record dir doesn't exist yet at overlap_start, so it gets no harness-log line either
+- **Discovery** (affects run): Left from the U3 review (docs/plans/2026-10-28-U3-review.md, Not done): a dismissed overlap reopens at the next start; the sweep's sideOf compares with origin/HEAD, not MAIN_BRANCH; queue_overlaps runs once per entry; report/trends TTY views keep · and → under ASCII glyphs
+- **Resolved:** status-json-keys.txt lists the stub needs records' keys (dropped from Gotchas for the queue .args line: the section was full)
+- **Proposed change:** The gcView footer is now 'would remove 1 worktree, 1 branch; keeps <k>' (singular for one); the spec's wording shows the plural form only
+- *25-U3-08 · claude-opus-5-5*
+
 ### 2026-10-28 21:34 · U3-07 · passes
 
 report/trends/gc --dry-run render through view.mjs on a TTY: summary.mjs reportView (card + NOT PASSING table + memory peaks) and trendsView (newest 15, '<k> older: harness trends --all', total), report/trends --md; gc --dry-run --sections into view.mjs gcView (six steps, ~, footer, 'gc stopped before <step>'). Off a TTY byte-identical. 71-tty-views 11 checks.
@@ -265,24 +280,9 @@ Cards by code: TEMPLATES (15, data) in lib/needs.mjs, card(reason, facts) and th
 - **Proposed change:** U2-04 step 3's header: when '<glyph> <run> · <headline> · since … · <ref>' is wider than the line, the card uses '… · <ago>' and a 'ref <ref> · since <HH:MM> (<ago>)' field (default, in decisions/2026-10-27-needs-record)
 - *12-U2-04 · claude-opus-5-5*
 
-### 2026-10-28 09:53 · U2-03 · passes
-
-lib/needs.mjs: the needs record (24 keys, first 13 = event v1), REASONS (15), pure record/refresh/sweep/synthesize/order, CLI open (0 new, 3 refreshed)/sweep/done/list; lib/needs.sh needs_open (sourced by driver, lane, harness; no caller); harness needs [--all] [--json] and needs done; needs_fixture; 58-needs-record (15 checks); decision needs-record.
-
-- **Files:** lib/needs.mjs, lib/needs.sh, bin/harness, lib/driver.sh, lib/lane.sh, tests/checks/58-needs-record.sh, tests/lib.sh, tests/checks/57-inbox.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-needs-record.md, docs/architecture.md, README.md, +1 more
-- **Verified:** 58-needs-record 15/15, each check watched red under a mutation of needs.mjs (no severity order, never removed, never unparked, no seen bump, no crash synth, no subject defaults); 03/13/53/54/57 130/130; full suite green in 628 s (TEST_JOBS=3), 715 tests; bash -n and node --check clean; needs_open sanity with stub record: 0, 3, 1 + note.
-- **Tests:** 700 → 715
-- **Dead end:** extracting check names with sed 's/^check "(.*)" .*/' — greedy on a one-line check with " inside its command: the conformance check failed once
-- **Discovery** (affects U2-04, U2-05): Deferred from U2-03 to the features that use them: needs.mjs md/fields CLIs and <record>/needs.md (U2-05 commits and clicks it), needs_waits and the waits fact (U2-04's blocked field). The card has every §1.2 key but only headline filled.
-- **Discovery** (affects U2-05, U2-06): needs.mjs open defaults feature to the subject for parked/given_up, milestone to the subject for verify_*/merge_*/main_conflict/base_conflict/driver_crash (not run/record), else the list's milestone (list= fact); positional run/reason/subject beat key=value
-- **Discovery** (affects U2-04, U2-07): harness needs prints one line per item '<glyph> <run> · <headline> · <ref>' (synthesized parked headline '<id> parked: <why>', so 54's 'harness needs parked' check still greps the why); U2-04 replaces it with cards
-- **Discovery** (affects U2-05): needs.mjs list applies only 'run removed' in memory; a resolved-but-unswept item still lists until a sweep (lane loop, finish, continue, gc in U2-05)
-- **Discovery** (affects U2-04, U2-05, U2-06): needs_fixture <reason> open|resolved [<at epoch>] [<run>] in tests/lib.sh writes $HARNESS_STATE/proj/<run> with markers per plan §2.1
-- **Proposed change:** The plan's §6 lists md/fields under U2-03 but its steps don't; U2-05's steps should name needs.md (md) and fields
-- *11-U2-03 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-28 09:53 · U2-03 · passes · lib/needs.mjs: the needs record (24 keys, first 13 = event v1), REASONS (15), pure record/refresh/sw… ([in full](progress-archive.md))
 - 2026-10-28 09:19 · U2-02 · passes · lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, question, questionLine, a… ([in full](progress-archive.md))
 - 2026-10-28 08:40 · U2-01 · passes · Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and c… ([in full](progress-archive.md))
 - 2026-10-28 08:22 · verify U1 · passes · All 40 steps of U1-01..07 hold. Init suite red (7 checks in 08-scope, 45-lanes) was load flakes: bot… ([in full](progress-archive.md))
