@@ -3,6 +3,19 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 08:13 · N2-05 · passes
+
+Resolutions are visible, never asked about: resolved_note (lib/resolve.sh) from rebase and sync_main; summary.mjs conflicts {resolved, escalated, sessions} plus resolutions [{milestone, files}] and report's Conflicts row after Flakes; pr_body's `Merged main in with a resolve session: <files>` from resolved-<m>. 6 new checks in 76/77; decision updated.
+
+- **Files:** lib/resolve.sh, lib/lane.sh, lib/record.sh, lib/summary.mjs, tests/checks/76-resolve-session.sh, tests/checks/77-resolve-fallbacks.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-29-conflict-resolution.md
+- **Verified:** bash tests/run.sh resolve-session: 16/16 (29 s); resolve-fallbacks: 14/14 (99 s); unit check of conflicts()/resolutions()/report row run alone before (no export: red) and after (green); full suite via check.sh: green in 665 s, 924 tests
+- **Tests:** 918 → 924
+- **Discovery** (affects N2-06): summary.json's conflicts is exactly {resolved, escalated, sessions} (the step's jq ==), so the report row's files live in a sibling key `resolutions: [{milestone, files}]`; docs (§ state/summary) should name both
+- **Discovery** (affects N2-06): RESOLVE_FILES is now comma-joined ("a, b"), as the conflict note had it; rebase's `resolved by a session (...)` how text uses it too
+- **Discovery** (affects N2-06): the resolution note and the PR paragraph say $MAIN_BRANCH, not a literal `main`; summary.mjs matches any branch word (`\S+ merged in by a resolve session`)
+- **Proposed change:** N2-05 step 2: name the `resolutions` key beside `conflicts` (step 4's exact `.conflicts ==` leaves no room for the files the row needs)
+- *11-N2-05 · claude-opus-5-5*
+
 ### 2026-10-29 07:46 · N2-04 · passes
 
 Layer 2 fallbacks: stub STUB_MERGE_RESOLVE markers/stray/give-up, STUB_RESOLVE_LIMIT, STUB_MAIN_TOUCH=resolve-<m>; sync_main resolves in a lane (verify defers on a refusal, skips sync_main in rebase mode); needs cards' tried; rebase records conflict-<m>; 77-resolve-fallbacks (12). Opus review: 0 Critical, 2 Important, 1 Minor, all fixed.

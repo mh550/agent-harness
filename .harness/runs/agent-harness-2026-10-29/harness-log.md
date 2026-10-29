@@ -31,3 +31,5 @@
 - 2026-10-29 07:04 · N2-03 · claude-opus-5-5 · passes=true · 56 min · 8/11 passing · tests 905
 - 2026-10-29 07:04 · context.md for N2-04: 7896 bytes
 - 2026-10-29 07:46 · N2-04 · claude-opus-5-5 · passes=true · 42 min · 9/11 passing · tests 918
+- 2026-10-29 07:46 · context.md for N2-05: 6821 bytes
+- 2026-10-29 08:13 · N2-05 · claude-opus-5-5 · passes=true · 26 min · 10/11 passing · tests 924
