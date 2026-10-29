@@ -9,6 +9,22 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 19:22 · R4-02 · passes
+
+needs.mjs has the question reason: questionKey (fill and Files: lines cut, folded, 80 code points), open refreshes in the run (exit 3) or moves an open item forward from a sibling run (seen +1, asked_in, old in its done/), a warn card, the sweep resolves on a later entry's resolved (entries.mjs resolvedBy, shared with pack).
+
+- **Files:** lib/needs.mjs, lib/entries.mjs, tests/checks/78-needs-questions.sh, tests/lib.sh, tests/checks/58-needs-record.sh, tests/checks/59-needs-cards.sh, tests/fixtures/needs/question.json, tests/fixtures/check-names.txt
+- **Verified:** bash tests/run.sh 78-needs: 9/9 checks, each watched red first (0/7, then the 2 review fixes red); full suite via lib/check.sh green in 1006 s, 984 checks; node --check lib/needs.mjs lib/entries.mjs; 12 and 38 (pack resolved) green after the resolvedBy refactor
+- **Tests:** 976 → 984
+- **Discovery** (affects R4-03, R4-04): needs_fixture question (tests/lib.sh) puts every fixture run under one project proj: an open of the same text in another run moves it forward; give each its own NF_Q=<text>
+- **Discovery** (affects R4-03): journal_ must pass the question as entries.jsonl stores it (filled): the sweep compares card.question.text with resolved items as pack does, and a pack-cut resolved copied from the filled words would not match the unfilled text
+- **Discovery** (affects R4-03): An open with no line= is never resolved by the sweep (no later to tell): journal_ must pass line=<entries.jsonl line>
+- **Discovery** (affects R4-04): A question item counts in harness status NEEDS YOU until R4-04 splits it out; nothing opens one before R4-03
+- **Question for Michael:** The question key is the first 80 characters (R4-02 step 1). The review found two different questions with a shared preamble get one key: the memory run's M1-01 "Defaults taken in the plan (to be recorded in journal/decisions/2026-10-26-retro-backlog.md by M1-04): …" questions collide, so the second refreshes over the first and one resolved closes both. Default kept: 80 characters as specified. Should the key be a hash of the whole folded text instead (the move forward still works; a reworded question is then a new item)? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/lib/needs.mjs:62, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/docs/plans/2026-10-29-R4-questions.md
+- **Proposed change:** R4-05 review: the notification body and needs.md never show the asked row (record() builds body at seen 1); harmless while no question notifies, but needs.md could carry asked N times
+- **Proposed change:** R4-05 review: a moved-forward run's needs.md (in the old run's record) stays stale until its next open, sweep or done (plan §2.4 accepts it)
+- *17-R4-02 · claude-opus-5-5*
+
 ### 2026-10-29 18:52 · R4-01 · passes
 
 Wrote docs/plans/2026-10-29-R4-questions.md: the question reason, a key that drops the harness's Files fill (worktree paths differ per run), refresh, the move forward through sibling state dirs, card and sweep rule (resolvedBy shared with pack), journal_'s questions_ after the ingest, readers, the skill step, 17 check names, needs_fixture question, STUB_ASK_TWO/AGAIN. No code changed.
@@ -292,22 +308,9 @@ CLAUDE.md Gotchas: lane reworded the stub-runs line and added the 399+… cut fa
 - **Files:** CLAUDE.md
 - *142907-resolve-R2 · claude-opus-5-5*
 
-### 2026-10-29 14:29 · R2-05 · passes
-
-0 Critical, 3 Important, 8 Minor. One Opus round on R2.diff. Fixed RED→GREEN: a result-less resume's negative cost (resumeRow), a list an init's resume writes now removed, untested resume paths (stub good-overreach, STUB_INIT_NO_LIST, STUB_NO_INIT_LINE); 6 Minors fixed, 2 left. Decision entries-survive; architecture §4/§5, README.
-
-- **Files:** docs/plans/2026-10-29-R2-review.md, journal/decisions/2026-10-29-entries-survive.md, docs/architecture.md, README.md, lib/metrics.mjs, lib/record.sh, lib/entries.mjs, lib/summary.mjs, lib/show.mjs, tests/stub-claude.sh, tests/checks/76-entries-survive.sh, tests/checks/05-metrics-pure-tokens-cache.sh, +4 more
-- **Verified:** Each new check watched red first (05 result-less resume, 76 init list, 12 capwhy, 68 show label, 76 tokens on a kept run: 30 vs 28), then green; subsets 05/12/68/76 green; full check.sh twice: green, 915 tests, each after a rerun of load flakes in files R2 never touched (52, 28; then 08, 47, 28).
-- **Tests:** 908 → 915
-- **Dead end:** the resume setting A's passes to true in the stub — A's session had already passed, so cmp saw no change and no restore note; the stub toggles it
-- **Dead end:** committing resumed.txt in the overreach mode — check redits greps git log --all for resumed.txt across every run of the file; the overreach mode commits overreach.txt
-- **Discovery** (affects R2): A verify session's resume has no stub run of its own: entry_resume is the same path for verify, checked for coding and init only
-- **Discovery** (affects run): Left by the review (Minor): the resume ignores a stop/lanes-end/deadline (bounded 10m, $1), and a refused resume is not fed to limit_raise
-- **Proposed change:** R2-05 step 1's diff command leaves out docs/: fine for a code review, but the plan and docs are then reviewed by no one
-- *04-R2-05 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 14:29 · R2-05 · passes · 0 Critical, 3 Important, 8 Minor. One Opus round on R2.diff. Fixed RED→GREEN: a result-less resume's… ([in full](progress-archive.md))
 - 2026-10-29 13:33 · R1-03 · passes · tests/lint-sleeps.sh lists each sleep line lacking '# sleep-ok:' (default tests/checks/*.sh + tests/… ([in full](progress-archive.md))
 - 2026-10-29 13:27 · R2-04 · passes · entry_resume (lib/record.sh), from journal before the ingest, outside the lock: a coding/verify/init… ([in full](progress-archive.md))
 - 2026-10-29 12:50 · R1-02 · passes · Attempt 2 of R1-02: the code from c319ca4 was right; the suite was red only on 39-memlint-m4, becaus… ([in full](progress-archive.md))

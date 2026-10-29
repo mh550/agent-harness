@@ -9,6 +9,22 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 19:22 · R4-02 · passes
+
+needs.mjs has the question reason: questionKey (fill and Files: lines cut, folded, 80 code points), open refreshes in the run (exit 3) or moves an open item forward from a sibling run (seen +1, asked_in, old in its done/), a warn card, the sweep resolves on a later entry's resolved (entries.mjs resolvedBy, shared with pack).
+
+- **Files:** lib/needs.mjs, lib/entries.mjs, tests/checks/78-needs-questions.sh, tests/lib.sh, tests/checks/58-needs-record.sh, tests/checks/59-needs-cards.sh, tests/fixtures/needs/question.json, tests/fixtures/check-names.txt
+- **Verified:** bash tests/run.sh 78-needs: 9/9 checks, each watched red first (0/7, then the 2 review fixes red); full suite via lib/check.sh green in 1006 s, 984 checks; node --check lib/needs.mjs lib/entries.mjs; 12 and 38 (pack resolved) green after the resolvedBy refactor
+- **Tests:** 976 → 984
+- **Discovery** (affects R4-03, R4-04): needs_fixture question (tests/lib.sh) puts every fixture run under one project proj: an open of the same text in another run moves it forward; give each its own NF_Q=<text>
+- **Discovery** (affects R4-03): journal_ must pass the question as entries.jsonl stores it (filled): the sweep compares card.question.text with resolved items as pack does, and a pack-cut resolved copied from the filled words would not match the unfilled text
+- **Discovery** (affects R4-03): An open with no line= is never resolved by the sweep (no later to tell): journal_ must pass line=<entries.jsonl line>
+- **Discovery** (affects R4-04): A question item counts in harness status NEEDS YOU until R4-04 splits it out; nothing opens one before R4-03
+- **Question for Michael:** The question key is the first 80 characters (R4-02 step 1). The review found two different questions with a shared preamble get one key: the memory run's M1-01 "Defaults taken in the plan (to be recorded in journal/decisions/2026-10-26-retro-backlog.md by M1-04): …" questions collide, so the second refreshes over the first and one resolved closes both. Default kept: 80 characters as specified. Should the key be a hash of the whole folded text instead (the move forward still works; a reworded question is then a new item)? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/lib/needs.mjs:62, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/docs/plans/2026-10-29-R4-questions.md
+- **Proposed change:** R4-05 review: the notification body and needs.md never show the asked row (record() builds body at seen 1); harmless while no question notifies, but needs.md could carry asked N times
+- **Proposed change:** R4-05 review: a moved-forward run's needs.md (in the old run's record) stays stale until its next open, sweep or done (plan §2.4 accepts it)
+- *17-R4-02 · claude-opus-5-5*
+
 ### 2026-10-29 18:52 · R4-01 · passes
 
 Wrote docs/plans/2026-10-29-R4-questions.md: the question reason, a key that drops the harness's Files fill (worktree paths differ per run), refresh, the move forward through sibling state dirs, card and sweep rule (resolvedBy shared with pack), journal_'s questions_ after the ingest, readers, the skill step, 17 check names, needs_fixture question, STUB_ASK_TWO/AGAIN. No code changed.
