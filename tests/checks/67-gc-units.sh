@@ -2,7 +2,7 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- gc's foreign units (U3-03, decisions/2026-10-27-gc-foreign-units): a unit of another project's run, live ----
 # ---- or ended, is that project's gc's and is skipped silently; ? only for a unit no run on this box owns ----
-sleep 60 & OL=$!   # olive's live driver
+sleep 60 & OL=$!   # sleep-ok: olive's live driver
 for r in other/olive:$OL other/oend: proj/pend:; do d=$HARNESS_STATE/${r%%:*}; mkdir -p "$d"
   printf 'RUN_ID=%s\nPROJECT_DIR=%s\nWT=%s\n' "${d##*/}" "$T/${r%%/*}" "$T/wt/${r%/*}" > "$d/meta.env"; [[ -n ${r#*:} ]] && echo "${r#*:}" > "$d/driver.pid"; done
 echo done > "$HARNESS_STATE/other/oend/ended"; echo done > "$HARNESS_STATE/proj/pend/ended"

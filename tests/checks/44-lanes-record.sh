@@ -4,7 +4,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # Two background writers through record(), each a read-modify-write of one file (the shape of F pass and the counters),
 # with HARNESS_RECORD_DELAY holding the lock: none of the 40 lines is lost or torn.
 RL=$T/rl; mkdir -p "$RL"
-rl_add() { local c; c=$(cat "$RL/f" 2> /dev/null); sleep 0.01; { [[ -n $c ]] && printf '%s\n' "$c"; printf '%s %02d %s\n' "$1" "$2" "$(printf 'x%.0s' {1..60})"; } > "$RL/f"; }
+rl_add() { local c; c=$(cat "$RL/f" 2> /dev/null); sleep 0.01; { [[ -n $c ]] && printf '%s\n' "$c"; printf '%s %02d %s\n' "$1" "$2" "$(printf 'x%.0s' {1..60})"; } > "$RL/f"; }   # sleep-ok: widens the read-modify-write the lock must cover
 rl_writer() { ( STATE=$RL; source "$HERE/../lib/record.sh"; for i in $(seq 20); do record rl_add "$1" "$i"; done ); }
 HARNESS_RECORD_DELAY=0.01 rl_writer a & HARNESS_RECORD_DELAY=0.01 rl_writer b & wait
 check "record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)" \

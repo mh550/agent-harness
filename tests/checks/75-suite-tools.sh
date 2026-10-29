@@ -47,4 +47,12 @@ check "suite tools: --repeat 3 on a file red every other copy prints k/3 green a
 rs=$(TEST_CHECKS=$T/rep TEST_JOBS=2 bash "$HERE/run.sh" --repeat 3 steady 2>&1); rsc=$?
 check "suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0" \
   '(( rsc == 0 )) && grep -x "steady: 3/3 green" <<< "$rs" > /dev/null && ! grep "^copy " <<< "$rs" > /dev/null'
+# the sleep lint (R1-03): a sleep line without `# sleep-ok:` is listed as <file>:<line>; the real checks and library hold none
+mkdir -p "$T/lint" && printf '%s\n' '#!/usr/bin/env bash' 'sleep 1' 'echo done' > "$T/lint/bare.sh" && printf '%s\n' '#!/usr/bin/env bash' 'sleep 1  # sleep-ok: x' > "$T/lint/ok.sh"   # sleep-ok: text (the fixtures)
+lb=$(bash "$HERE/lint-sleeps.sh" "$T/lint/bare.sh" 2>&1); lbc=$?
+check "sleep lint: a bare sleep is listed as <file>:<line>, exit 1" '(( lbc == 1 )) && [[ $lb == "$T/lint/bare.sh:2" ]]'   # sleep-ok: text
+lo=$(bash "$HERE/lint-sleeps.sh" "$T/lint/ok.sh" 2>&1); loc=$?
+check "sleep lint: a sleep with # sleep-ok: passes silently" '(( loc == 0 )) && [[ -z $lo ]]'
+lr=$(cd "$HERE/.." && bash tests/lint-sleeps.sh 2>&1); lrc=$?
+check "sleep lint: tests/checks and tests/lib.sh hold no bare sleep" '(( lrc == 0 )) && [[ -z $lr ]] || { printf "%s\n" "$lr" | head -20; false; }'   # sleep-ok: text
 suite_end

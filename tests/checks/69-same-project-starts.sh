@@ -3,11 +3,11 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- same-project starts (U3-05): a plain start or continue queues behind a live run of its project, before it ----
 # ---- changes any state; --now, --foreground and the runner's starts (which pass --now) start anyway ----
 echo MAX_PARALLEL_RUNS=4 >> "$HARNESS_CONFIG"   # room to spare: only the project rule queues here
-sleep 600 & LIVE=$!; echo "$LIVE" >> "$T/left.pids"
+sleep 600 & LIVE=$!; echo "$LIVE" >> "$T/left.pids"   # sleep-ok: a live driver
 L=$HARNESS_STATE/proj/live1; mkdir -p "$L" && echo "$LIVE" > "$L/driver.pid" && printf 'PROJECT_DIR=%q\nWT=/x\nRUN_ID=live1\nSTATE=%q\n' "$T/proj" "$L" > "$L/meta.env"
 Q=$HARNESS_STATE/queue PAST=$(( $(date +%s) - 1 ))
 MSG="live1 is running on proj: queued (the runner starts it when that run ends; --now starts it anyway)"
-tended() { local i; for i in $(seq 600); do [[ -f $1/ended && ! -f $1/driver.pid ]] && return 0; sleep 0.1; done; return 1; }   # ≤ 60 s
+tended() { local d=$1; wait_for 60 eval '[[ -f $d/ended && ! -f $d/driver.pid ]]'; }
 
 check "same-project starts: start proj --brief x while a run of proj is alive queues it, prints why, and starts nothing" '
   o=$("$H" start proj --brief x 2>&1) && [[ $o == "$MSG" ]] && f=$(ls "$Q"/*-start-proj.args) &&
@@ -41,10 +41,10 @@ git init -q -b main "$T/_x" && git -C "$T/_x" commit -q --allow-empty -m init
 check "same-project starts: an id auto_id makes is still checked (a project named _x)" '
   "$H" start "$T/_x" --brief x > "$T/ux.out" 2>&1; (( $? == 1 )) && grep "run-id: letters, digits" "$T/ux.out" > /dev/null && [[ ! -e $HARNESS_STATE/_x ]]'
 kill "$LIVE" 2> /dev/null; rm -f "$L/driver.pid"
-( exec -a "$HERE/../lib/lane.sh" sleep 600 ) & LANE=$!; echo "$LANE" >> "$T/left.pids"; mkdir -p "$L/lanes/M1"; echo "$LANE" > "$L/lanes/M1/pid"
+( exec -a "$HERE/../lib/lane.sh" sleep 600 ) & LANE=$!; echo "$LANE" >> "$T/left.pids"; mkdir -p "$L/lanes/M1"; echo "$LANE" > "$L/lanes/M1/pid"   # sleep-ok: a live lane
 check "same-project starts: a run whose driver is gone but a lane lives keeps its project busy" '
   rm -f "$Q"/*.args; o=$("$H" start proj --brief y 2>&1) && [[ $o == "$MSG" ]] && [[ -f $(ls "$Q"/*-start-proj.args) ]]'
-( sleep 2; touch "$Q/STOP" ) &
+( wait_for 20 grep "holding .*(proj)" "$T/qlane.out"; sleep 1; touch "$Q/STOP" ) &   # sleep-ok: then a negative (still holding, never done) over five polls
 HARNESS_QUEUE_POLL=0.2 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. timeout 30 "$HERE/../lib/queue.sh" > "$T/qlane.out" 2>&1
 check "same-project starts: the runner holds that entry too while the lane lives (and waits for it, not done)" '
   grep "holding .*(proj): that project has a run going" "$T/qlane.out" > /dev/null && ! grep "starting:\|queue empty" "$T/qlane.out" > /dev/null &&

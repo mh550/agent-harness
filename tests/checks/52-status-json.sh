@@ -56,7 +56,8 @@ check "status json: harness status <run> --json prints that one run object with 
   && diff <(jq -S "del(.v)" "$T/one.json") <(J | R parked | jq -S .) \
   && ! "$H" status nosuch --json > /dev/null 2> "$T/err" && grep -q "^harness: no run '\''nosuch'\''" "$T/err"'
 check "status json: --json writes nothing, and reads the queue dir without creating it" '
-  touch "$T/json.stamp"; sleep 1; J > /dev/null && "$H" status running --json > /dev/null \
+  touch "$T/json.stamp"; sleep 1   # sleep-ok: mtime granularity, so a write by what follows is -newer
+  J > /dev/null && "$H" status running --json > /dev/null \
   && [[ -z $(find "$HARNESS_STATE" "$T/wt" "$HARNESS_LEDGER" -newer "$T/json.stamp") ]] \
   && HARNESS_STATE=$T/empty "$H" status --json | jq -e ".queued == [] and .running == [] and .older == 0" > /dev/null && [[ ! -e $T/empty ]]'
 # 30 more ended runs (38 in all), an empty meta.env, an ended file with a bare reason (bulk-01)

@@ -655,6 +655,9 @@ show: the 12 largest rows, then +<k> more: harness show <run> --files; --files l
 show: the compare URL of each run branch with changes, for the GitHub-shaped origin; none for a plain-path origin
 show: the pure parts: joinDiff joins by path (binary +/− null, .harness/runs/ left out), mergeTreePaths reads the real output, combine counts one blob once (stacked or fanned-out lanes), milestonesOf keeps a proposal's PR
 show: the run card's header and rule, then worktree, branch, record, state, lanes and the proposed milestones with their tags and PR URLs
+sleep lint: a bare sleep is listed as <file>:<line>, exit 1
+sleep lint: a sleep with # sleep-ok: passes silently
+sleep lint: tests/checks and tests/lib.sh hold no bare sleep
 slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
 slot_open: a dependency's tag that conflicts with main opens base_conflict naming that tag
 slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)

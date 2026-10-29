@@ -34,7 +34,7 @@ git init -q --bare -b main "$T/origin.git"
 git init -q -b main "$T/proj" && cd "$T/proj"
 mkdir .harness && cat > .harness/config.sh <<'EOF'
 CHECK_CMD="test ! -f BROKEN"
-INIT_CMD='echo init ok; echo "cache: $HARNESS_CACHE"; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "${HARNESS_SCRATCH%%/lanes/*}/init-begin"; sleep "$STUB_SLOW_INITCMD"; }'
+INIT_CMD='echo init ok; echo "cache: $HARNESS_CACHE"; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "${HARNESS_SCRATCH%%/lanes/*}/init-begin"; sleep "$STUB_SLOW_INITCMD"; }'   # sleep-ok: a slow init
 BASE_PORT=7950
 EOF
 # its teardown hook (L2-03): one marker per why, and the call in the stubs' own timeline (systemd.log); the markers go
@@ -43,7 +43,7 @@ cat > .harness/teardown.sh <<'EOF'
 #!/usr/bin/env bash
 w=$(printf %s "$HARNESS_TEARDOWN_WHY" | tr -cs 'A-Za-z0-9' -) rs=${HARNESS_SCRATCH%%/lanes/*}
 touch "$rs/teardown-$w.marker"
-[[ -z ${STUB_SLOW_TEARDOWN:-} ]] || { touch "$rs/teardown-begin"; sleep "$STUB_SLOW_TEARDOWN"; }
+[[ -z ${STUB_SLOW_TEARDOWN:-} ]] || { touch "$rs/teardown-begin"; sleep "$STUB_SLOW_TEARDOWN"; }   # sleep-ok: a slow teardown
 printf 'teardown\n%s\n%s\n===\n' "$HARNESS_RUN_ID" "$HARNESS_TEARDOWN_WHY" >> "$STUB_DIR/systemd.log"
 EOF
 chmod +x .harness/teardown.sh
@@ -77,11 +77,12 @@ stub_wait() { wait_for "${2:-60}" test -e "$T/barriers/$1"; }
 in_has() { wait_for 30 grep -q "$2" "$1"; }   # send-keys is asynchronous: wait for the typed line
 desk_of() { grep -lx "desk · $1\( · .*\)\?" "$T"/desk/*.args 2> /dev/null | sort -V | tail -1; }   # the newest desk of run $1 (.args; .in beside it)
 GHP=https://github.com/test/proj
-# two helpers the debrief sections define (the same lines, copied): L5 calls settle and the desk calls ran, each in a file
-# of its own without the debrief sections since P0-02
+# the debrief sections' helpers (file 15, and L5 calls settle, the desk ran, in files of their own since P0-02)
 HH=$(cd "$HERE/.." && pwd)
-settle() {   # the runner's debrief is detached: wait until no debrief process is left
-  sleep 0.5; wait_for 30 eval '! pgrep -f "$HH/lib/debrief\.sh|$HH/bin/harness debrief"'
+settle() {   # the runner's debrief is detached: wait until no debrief process is left. The runner starts it as
+  # $HERE/../bin/harness (setsid -f: forked before the runner exits), which execs $HH/lib/debrief.sh: the pattern
+  # matches every step, so a debrief not yet exec'd counts as running
+  wait_for 30 eval '! pgrep -f "($HH|$HERE/\.\.)/(lib/debrief\.sh|bin/harness debrief)"'
 }
 ran() { local r s; s=$(date +%s); wait_for 2 eval '(( $(date +%s) > s ))'; for r; do echo "$(date '+%F %T') run $r on harness/$r in $T/wt/proj/$r · port 7999" >> "$HARNESS_STATE/proj/$r/run.log"; done; }   # runs since
 
@@ -130,7 +131,7 @@ status_stubs() {
   { echo "$(at 3000) A · claude-opus-5-5 · passes=true · 69 min · 1/3 passing"; echo "$(at 2900) session 2 · B · claude-opus-5-5"   # lane.sh's lines
     echo "$(at 2800) session for B hit a limit (five-hour); not counted; resuming at 23:30"; echo "$(at 1800) session 2 · B · claude-opus-5-5"; } >> "$HARNESS_STATE/proj/running/run.log"
   echo 1 > "$HARNESS_STATE/proj/running/sessions"; echo '{"A":1,"B":2}' > "$HARNESS_STATE/proj/running/attempts.json"   # this segment's count; B on its last attempt
-  sleep 600 & echo $! > "$HARNESS_STATE/proj/running/driver.pid"; echo $! >> "$T/left.pids"
+  sleep 600 & echo $! > "$HARNESS_STATE/proj/running/driver.pid"; echo $! >> "$T/left.pids"   # sleep-ok: a live driver
   mkdir -p "$HARNESS_STATE/proj/running/lanes/M1" "$T/scope"; cp "$HARNESS_STATE/proj/running/driver.pid" "$HARNESS_STATE/proj/running/lanes/M1/pid"
   echo "B · session 2" > "$HARNESS_STATE/proj/running/lanes/M1/now"; echo 7960 > "$HARNESS_STATE/proj/running/lanes/M1/port"
   echo "$T/wt/proj/running-slots/slot-1" > "$HARNESS_STATE/proj/running/lanes/M1/slot"

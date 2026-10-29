@@ -35,8 +35,8 @@ check "lanes: a lane opened after the default lane's features pass starts on the
 # harness pause during A's first session (STUB_PAUSE=A touches PAUSE): the lane finishes that session and waits; the
 # coordinator logs the pause once; nothing new starts until harness resume
 STUB_PAUSE=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lp --spec SPEC.md --foreground > "$T/lp.out" 2>&1 & LPP=$!
-for _ in $(seq 1200); do hlog lp | grep -q "· services stopped (paused)$" && break; sleep 0.1; done
-sleep 3; lp_sessions=$(grep -c . "$T/scratch/proj/lp/sessions.log"); lp_lane=$(cat "$HARNESS_STATE/proj/lp/lanes/M1/pid" 2> /dev/null)
+wait_for 120 eval 'hlog lp | grep "· services stopped (paused)$" > /dev/null'
+sleep 3; lp_sessions=$(grep -c . "$T/scratch/proj/lp/sessions.log"); lp_lane=$(cat "$HARNESS_STATE/proj/lp/lanes/M1/pid" 2> /dev/null)   # sleep-ok: a negative (no session after the pause) over three polls
 "$H" resume lp > /dev/null; wait "$LPP"
 check "lanes pause: the lane finishes its session and waits (no new session), and the coordinator logs paused once" \
   '[[ $lp_sessions == 1 && -n $lp_lane ]] && [[ $(grep -c "^[0-9-]* [0-9:]* paused (INBOX.md status or harness pause)$" "$HARNESS_STATE/proj/lp/run.log") == 1 ]] \
@@ -45,7 +45,7 @@ check "lanes pause: the lane finishes its session and waits (no new session), an
 # harness stop during a session: the lane stops after it, the run ends with every lane process gone and no slot left
 rm -f "$T/slow-coding"
 STUB_SLOW_CODING=3 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lst --spec SPEC.md --foreground > "$T/lst.out" 2>&1 & LSP=$!
-for _ in $(seq 1200); do [[ -e $T/slow-coding && -s $HARNESS_STATE/proj/lst/lanes/M1/pid ]] && break; sleep 0.1; done   # up to 2 min: a loaded box
+wait_for 120 eval '[[ -e $T/slow-coding && -s $HARNESS_STATE/proj/lst/lanes/M1/pid ]]'   # up to 2 min: a loaded box
 lst_lane=$(cat "$HARNESS_STATE/proj/lst/lanes/M1/pid" 2> /dev/null); "$H" stop lst > /dev/null; wait "$LSP"
 check "lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left" \
   '[[ -n $lst_lane ]] && ! kill -0 "$lst_lane" 2> /dev/null && grep -q "^stopped by Michael" "$HARNESS_STATE/proj/lst/ended" \

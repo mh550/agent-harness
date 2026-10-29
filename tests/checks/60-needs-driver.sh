@@ -52,7 +52,7 @@ check "finish opens usage_limit (limit, warn, no priority) for a usage-limit end
 # a TERM mid-session: the EXIT trap ends it with its default reason and records driver_crash; harness needs done resolves it
 rm -f "$T/slow-coding"
 STUB_SLOW_CODING=30 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" tm --spec SPEC.md --foreground > "$T/tm.out" 2>&1 & TP=$!
-for _ in $(seq 300); do [[ -e $T/slow-coding ]] && break; sleep 0.1; done
+wait_for 60 test -e "$T/slow-coding"
 kill -TERM "$(cat "$HARNESS_STATE/proj/tm/driver.pid")"; wait "$TP"
 TS=$HARNESS_STATE/proj/tm TREF=$(nj tm '.[] | select(.key == "driver_crash:run") | .ref' | jq -r .)
 "$H" needs tm > "$T/tm-needs.out" 2>&1
@@ -67,9 +67,9 @@ check "harness needs done <ref> moves the item to needs/done/, resolved by micha
 # a SIGKILL mid-session: no trap runs (no ended, driver.pid names no process); its lane is TERMed after it
 rm -f "$T/slow-coding"
 STUB_SLOW_CODING=30 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" sk --spec SPEC.md --foreground > "$T/sk.out" 2>&1 & TP=$!
-for _ in $(seq 300); do [[ -e $T/slow-coding ]] && break; sleep 0.1; done
+wait_for 60 test -e "$T/slow-coding"
 kill -KILL "$(cat "$HARNESS_STATE/proj/sk/driver.pid")"; wait "$TP" 2> /dev/null
-for f in "$HARNESS_STATE"/proj/sk/lanes/*/pid; do p=$(cat "$f" 2> /dev/null) && kill -TERM "$p" 2> /dev/null; for _ in $(seq 100); do kill -0 "$p" 2> /dev/null || break; sleep 0.1; done; done
+for f in "$HARNESS_STATE"/proj/sk/lanes/*/pid; do p=$(cat "$f" 2> /dev/null) && kill -TERM "$p" 2> /dev/null && wait_for 10 eval '! kill -0 $p'; done
 "$H" needs sk > "$T/sk-needs.out" 2>&1
 check "a SIGKILLed driver shows a synthesized driver_crash in harness needs" \
   '[[ ! -e $HARNESS_STATE/proj/sk/ended ]] && grep -q "sk · the driver stopped without an end" "$T/sk-needs.out" && grep -q "sk/crash" "$T/sk-needs.out"'
