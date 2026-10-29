@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-10-29",
   "started": "2026-10-29T05:19:15.000Z",
-  "ended_at": "2026-10-29T15:19:41.000Z",
+  "ended_at": "2026-10-29T15:20:14.000Z",
   "end_reason": "done",
   "continuations": 1,
   "features": {
@@ -37,26 +37,26 @@
     "names": {}
   },
   "cost": {
-    "total": 54.25,
-    "per_passing_feature": 4.93,
+    "total": 54.36,
+    "per_passing_feature": 4.94,
     "by_role": {
       "init": 7.4,
       "plan": 8.74,
       "build": 27.72,
       "review": 9.64,
       "verify": 0.63,
-      "retro": 0.11
+      "retro": 0.23
     },
     "by_model": {
       "claude-fable-5-1": 7.4,
       "claude-opus-5-5": 46.1,
-      "claude-sonnet-5-5": 0.74
+      "claude-sonnet-5-5": 0.86
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 8.48,
-    "sessions_h": 6.88,
+    "wall_h": 8.49,
+    "sessions_h": 6.89,
     "driver_h": 1.61,
     "by_role_h": {
       "init": 0.18,
@@ -64,20 +64,20 @@
       "build": 4.9,
       "review": 1.26,
       "verify": 0.11,
-      "retro": 0.01
+      "retro": 0.02
     }
   },
   "lanes": {
     "max_open": 2,
     "lane_hours": 8.12,
-    "wall_hours": 8.48
+    "wall_hours": 8.49
   },
   "tokens": {
-    "in": 2710,
-    "cache_read": 87703906,
-    "cache_write": 2657933,
-    "out": 709386,
-    "cache_hit_rate": 0.971,
+    "in": 2718,
+    "cache_read": 87809953,
+    "cache_write": 2679941,
+    "out": 711346,
+    "cache_hit_rate": 0.97,
     "context_peak": 227785,
     "by_role": {
       "init": {
@@ -111,16 +111,16 @@
         "out": 10309
       },
       "retro": {
-        "in": 8,
-        "cache_read": 106823,
-        "cache_write": 21232,
-        "out": 1840
+        "in": 16,
+        "cache_read": 212870,
+        "cache_write": 43240,
+        "out": 3800
       }
     }
   },
   "per_verified_feature": {
-    "cost": 4.93,
-    "tokens": 8279449
+    "cost": 4.94,
+    "tokens": 8291269
   },
   "orientation": {
     "tokens": 1102578,
@@ -134,7 +134,7 @@
   "first_attempt_pass_rate": 0.82,
   "verify_fail_rate": 0.08,
   "review": {
-    "cost_pct": 17.8,
+    "cost_pct": 17.7,
     "found_nothing": 0,
     "reviews": 2
   },
@@ -143,8 +143,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 20,
-    "real": 20,
+    "total": 21,
+    "real": 21,
     "environmental": 0
   },
   "guards": {
