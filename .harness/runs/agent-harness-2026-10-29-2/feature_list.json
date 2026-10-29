@@ -204,7 +204,7 @@
         "`docs/architecture.md` §4 (the journal: the trim, the resume, the `entry-resume` metrics row) and §5 (the session's end: the entry check, no background work) are updated, and `README.md` describes entries (the check, the trim, the one resume) in its steering section",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R3-01",

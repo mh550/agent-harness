@@ -62,3 +62,10 @@
 - 2026-10-29 13:33 · restored the feature list after R1-03: R1-02: passes true → false
 - 2026-10-29 13:33 · flaky: 13-run-2-michael-sets-desk (red, then green on a rerun; load 1.38)
 - 2026-10-29 13:33 · R1-03 · claude-opus-5-5 · passes=true · 42 min · 7/23 passing · tests 943
+- 2026-10-29 13:33 · context.md for R1-04: 6722 bytes
+- 2026-10-29 14:29 · R2-05: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 14:29 · R2-05: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 14:29 · R2-05: gotchas +0 ~1 -0
+- 2026-10-29 14:29 · flaky: 52-status-json 28-run-14d-harness-merge (red, then green on a rerun; load 8.15)
+- 2026-10-29 14:29 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch 47-lanes-two 28-run-14d-harness-merge (red, then green on a rerun; load 6.29)
+- 2026-10-29 14:29 · R2-05 · claude-opus-5-5 · passes=true · 61 min · 8/23 passing · tests 915
