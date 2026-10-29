@@ -69,3 +69,4 @@
 - 2026-10-29 14:29 · flaky: 52-status-json 28-run-14d-harness-merge (red, then green on a rerun; load 8.15)
 - 2026-10-29 14:29 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch 47-lanes-two 28-run-14d-harness-merge (red, then green on a rerun; load 6.29)
 - 2026-10-29 14:29 · R2-05 · claude-opus-5-5 · passes=true · 61 min · 8/23 passing · tests 915
+- 2026-10-29 14:29 · R2: 1 files conflict with main (CLAUDE.md); a resolve session
