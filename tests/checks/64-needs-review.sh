@@ -55,7 +55,8 @@ check "needs review: harness needs done rewrites the record's needs.md (the noti
   && grep "Nothing needs Michael in nf-merge_refused-open" "$MD" > /dev/null'
 needs_fixture verify_thin open
 check "needs review: done waits for the record lock a lane holds" \
-  '(flock 9; sleep 3) 9> "$HARNESS_STATE/proj/nf-verify_thin-open/record.lock" & sleep 0.3; s=$SECONDS
+  's=$SECONDS; (flock 9; sleep 3) 9> "$HARNESS_STATE/proj/nf-verify_thin-open/record.lock" &   # sleep-ok: a lane holding the lock
+  wait_for 10 eval "! flock -n $HARNESS_STATE/proj/nf-verify_thin-open/record.lock true"
   r=$("$H" needs done nf-verify_thin-open/1); d=$(( SECONDS - s )); wait; [[ $r == "resolved nf-verify_thin-open/1" ]] && (( d >= 2 ))'
 
 # 4: mergedBy and a run id that is another's prefix

@@ -540,17 +540,27 @@ while :; do
   fi
   reap; [[ -n $LANE_END ]] && continue   # a lane gone since the top: its slot, its end and its needs count before an open
   alive=$(lanes_open)   # and its slot is free: a stale count skipped the open and ended the run "no feature left to try"
+  # HARNESS_COUNT_HOLD=1 (tests only, unset everywhere else): wait here until the counted lanes are gone, so a check
+  # can make a lane's exit land between this count and the end check below (R1-04)
+  # (state/count-hold while it holds, so a check knows the coordinator is there)
+  if [[ -n ${HARNESS_COUNT_HOLD:-} ]] && (( alive )); then
+    : > "$STATE/count-hold"; while (( $(lanes_open) )); do sleep 0.2; done; rm -f "$STATE/count-hold"
+    log "count hold: $alive lane(s) counted, held until gone"; fi
   opened=0
   if (( alive < MAX_LANES )) && (( $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) <= $(date +%s) || alive == 0 )); then
     while IFS=$'\t' read -r m kind; do   # kind: "rebase" from rebase_due; F lanes' second field is its base tags
       [[ -n $m ]] || continue
+      [[ -f $STATE/lanes/$m/pid ]] && continue   # exited since the count, not reaped yet: reap notes it first (R1-07)
       a=$(lanes_open); (( a < MAX_LANES )) || break   # the slot count is the configuration, not headroom: no note
       if why=$(admit "$a"); then
         LANE_MERGE=$([[ $kind == rebase ]] && echo 1 || echo 0) lane_open "$m" && { opened=1 LAST_LANE=$m; rm -f "$STATE/lanes/$m/waiting"; }
       else mkdir -p "$STATE/lanes/$m"; wait_note "$m" "$why"; fi
     done < <(rebase_due; F lanes "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE")
   fi
-  if (( ! opened && $(lanes_open) == 0 )); then   # nothing open and nothing to open: the run's end, as before lanes
+  # nothing open and nothing to open: the run's end, as before lanes. Only when the count the opens used saw no lane
+  # either: a lane that exited since then had its slot counted taken, so nothing was offered; the next poll reaps it and
+  # opens what it unblocked (R1-04: the run ended "no feature left to try" with M2 ready)
+  if (( ! opened && alive == 0 && $(lanes_open) == 0 )); then
     [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }
     parked=$(F parked "$PARKED" "$LIST" | cut -f1 | paste -sd, -)
     blocked=$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | awk -F'\t' '{print $2}' | sort -u | grep -vxF -f <(tr , '\n' <<< "$parked") | paste -sd, -)

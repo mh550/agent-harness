@@ -8,9 +8,9 @@ check "testcount.mjs: the runner's last N/M checks passed is the count" 'node --
 # three tiny check files (TEST_CHECKS points the runner at them): a and c print a line, sleep, print another, so a
 # streamed output would interleave them; b is the quickest and smallest, c the slowest, largest and red. A systemd-run on PATH logs any call.
 RC=$T/rc; mkdir -p "$RC" "$T/sdbin"
-printf '%s\n' 'echo "PASS rc a1"; sleep 1; echo "PASS rc a2"; echo "2/2 checks passed"' > "$RC/01-a.sh"
+printf '%s\n' 'echo "PASS rc a1"; sleep 1; echo "PASS rc a2"; echo "2/2 checks passed"' > "$RC/01-a.sh"   # sleep-ok: the fixture's work (output interleaving)
 printf '%s\n' 'echo "PASS rc b1"; echo "1/1 checks passed"' > "$RC/02-b.sh"
-printf '%s\n' 'sleep 0.5; echo "PASS rc c1"; sleep 1.5; echo "FAIL rc c2"; echo "1/2 checks passed"; exit 1' > "$RC/03-c.sh"
+printf '%s\n' 'sleep 0.5; echo "PASS rc c1"; sleep 1.5; echo "FAIL rc c2"; echo "1/2 checks passed"; exit 1' > "$RC/03-c.sh"   # sleep-ok: the fixture's work
 printf '#!/usr/bin/env bash\necho "$*" >> %q\n' "$T/sd-called" > "$T/sdbin/systemd-run" && chmod +x "$T/sdbin/systemd-run"
 for j in 1 4 ""; do TEST_CHECKS=$RC TEST_JOBS=$j PATH=$T/sdbin:$PATH bash "$HERE/run.sh" > "$T/rc$j.out" 2>&1; echo $? > "$T/rc$j.rc"; done
 rcn() { grep '^PASS ' "$T/rc$1.out" | LC_ALL=C sort; }
@@ -48,7 +48,7 @@ TEST_CHECKS=$T/rx TEST_JOBS=2 bash "$HERE/run.sh" > "$T/rx.out" 2>&1; RX=$?
 check "suite runner: a file that exits non-zero with no FAIL line counts as one failed check (the total isn't all passed)" \
   '[[ $RX == 1 && $(tail -1 "$T/rx.out") == "2/3 checks passed" ]] && grep -qx "FAIL 02-x: exited 1 before its end, with no FAIL line" "$T/rx.out"'
 # P0 review: a hung file stopped by the caller's timeout (check.sh's, which signals the whole group) shows its output so far
-mkdir -p "$T/rh" && printf '%s\n' 'echo "PASS rh a1"; echo "1/1 checks passed"' > "$T/rh/01-a.sh" && printf '%s\n' 'echo "PASS rh h1"; echo "rh about to hang"; sleep 30' > "$T/rh/02-h.sh"
+mkdir -p "$T/rh" && printf '%s\n' 'echo "PASS rh a1"; echo "1/1 checks passed"' > "$T/rh/01-a.sh" && printf '%s\n' 'echo "PASS rh h1"; echo "rh about to hang"; sleep 30' > "$T/rh/02-h.sh"   # sleep-ok: a hung file
 TEST_CHECKS=$T/rh TEST_JOBS=2 timeout -k 5s 3s bash "$HERE/run.sh" > "$T/rh.out" 2>&1; RH=$?
 check "suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero" \
   '[[ $RH != 0 ]] && grep -qx "rh about to hang" "$T/rh.out" && grep -qx "02-h: unfinished when the suite was stopped" "$T/rh.out" \
@@ -56,9 +56,9 @@ check "suite runner: stopped by a signal, it prints each unfinished file's outpu
 # P2: a file still running after TEST_FILE_TIMEOUT is stopped (its group: the sleep too) and counted as one FAIL line,
 # so a hung file costs its timeout, not the whole suite's; its EXIT trap runs (lib.sh traps TERM)
 mkdir -p "$T/rt" && printf '%s\n' 'echo "PASS rt a1"; echo "1/1 checks passed"' > "$T/rt/01-a.sh" \
-  && printf '%s\n' 'trap "exit 143" TERM; trap "touch $0.trapped" EXIT; echo "PASS rt h1"; echo "rt about to hang"; sleep 60 & echo $! > $0.sleep; wait' > "$T/rt/02-h.sh"
+  && printf '%s\n' 'trap "exit 143" TERM; trap "touch $0.trapped" EXIT; echo "PASS rt h1"; echo "rt about to hang"; sleep 60 & echo $! > $0.hang; wait' > "$T/rt/02-h.sh"   # sleep-ok: a hung file
 rt0=$(date +%s); TEST_CHECKS=$T/rt TEST_JOBS=2 TEST_FILE_TIMEOUT=2s bash "$HERE/run.sh" > "$T/rt.out" 2>&1; RT=$? rtw=$(( $(date +%s) - rt0 ))
 check "suite runner: a file still running after TEST_FILE_TIMEOUT is stopped, shown and counted as one FAIL line" \
   '[[ $RT == 1 && $rtw -lt 20 && $(tail -1 "$T/rt.out") == "2/3 checks passed" ]] && grep -qx "rt about to hang" "$T/rt.out" \
-  && grep -qx "FAIL 02-h: still running after TEST_FILE_TIMEOUT=2s; stopped" "$T/rt.out" && [[ -f $T/rt/02-h.sh.trapped ]] && sleep 1 && ! kill -0 "$(cat "$T/rt/02-h.sh.sleep")" 2> /dev/null'
+  && grep -qx "FAIL 02-h: still running after TEST_FILE_TIMEOUT=2s; stopped" "$T/rt.out" && [[ -f $T/rt/02-h.sh.trapped ]] && rtp=$(cat "$T/rt/02-h.sh.hang") && wait_for 10 eval "! kill -0 $rtp"'
 suite_end

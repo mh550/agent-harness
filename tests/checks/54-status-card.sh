@@ -37,8 +37,8 @@ check "status card: needs you counts the run's items with the first headline and
 check "status card: branch names its commit and ahead, behind origin/main from local refs, with no fetch and no write" '
   W=$T/wt/proj/done2h && git -C "$W" init -q -b harness/done2h && git -C "$W" commit -q --allow-empty -m base && B=$(git -C "$W" rev-parse HEAD) \
   && git -C "$W" commit -q --allow-empty -m m1 && git -C "$W" update-ref refs/remotes/origin/main HEAD && git -C "$W" reset -q --hard "$B" \
-  && git -C "$W" commit -q --allow-empty -m a1 && git -C "$W" commit -q --allow-empty -m a2 && touch "$T/card.stamp" && sleep 1 \
-  && CD done2h > "$T/b.out" && grep -x "  branch     harness/done2h @ $(git -C "$W" rev-parse --short HEAD) · 2 ahead, 1 behind" "$T/b.out" > /dev/null \
+  && git -C "$W" commit -q --allow-empty -m a1 && git -C "$W" commit -q --allow-empty -m a2 && touch "$T/card.stamp" && sleep 1 &&   # sleep-ok: mtime granularity, so a write by what follows is -newer
+  CD done2h > "$T/b.out" && grep -x "  branch     harness/done2h @ $(git -C "$W" rev-parse --short HEAD) · 2 ahead, 1 behind" "$T/b.out" > /dev/null \
   && [[ -z $(find "$HARNESS_STATE" "$T/wt" "$HARNESS_LEDGER" -newer "$T/card.stamp") ]]; r=$?; rm -rf "$W/.git"; (( r == 0 ))'
 check "status card: COLUMNS=60 lines never exceed 60 columns but a URL; a long reason wraps under its label" '
   E=$HARNESS_STATE/proj2/stopped/ended; cp "$E" "$T/e.bak"; echo "stopped by Michael: $(printf "a long reason %.0s" $(seq 9)) see https://github.com/mh550/agent-harness/pull/123456789/files#diff-0123456789abcdef · $(date -d "@$(( HARNESS_NOW - 18000 ))" "+%F %T")" > "$E"

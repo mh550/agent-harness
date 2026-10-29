@@ -5,8 +5,6 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # `harness merge` keep today's needs path. Plan: docs/plans/2026-10-29-N2-conflict-resolution.md ----
 # Two lanes, M2 after: [] (C): C goes first and M2's verify waits (STUB_VERIFY_WAIT) until M1 has merged work-B.txt, so
 # M2's merge meets a main where A rewrote line 2 of README.md, as C did (STUB_CONFLICT): a real conflict.
-waitf() { local i; for i in $(seq $(( $2 * 5 ))); do eval "$1" && return 0; sleep 0.2; done; return 1; }   # <bash expr> <s>
-held() { rm -f "$T"/held-* "$T"/release-* "$T"/vwait-*; : > "$T/hold-coding"; }
 tmp=$(mktemp -d); git clone -q "$T/origin.git" "$tmp" && printf '# demo\nline two\nline three\n' > "$tmp/README.md" && git -C "$tmp" add README.md \
   && git -C "$tmp" -c user.name=t -c user.email=t@test commit -qm "README.md" && git -C "$tmp" push -q origin HEAD:main; rm -rf "$tmp"
 main0=$(git -C "$T/origin.git" rev-parse main)
@@ -15,8 +13,8 @@ two_lanes() {   # <run>: then the invariant, read before origin's main goes back
   held
   STUB_CONFLICT=README.md STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 STUB_VERIFY_WAIT=M2:work-B.txt \
     "$H" start "$T/proj" "$1" --spec SPEC.md --foreground > "$T/$1.out" 2>&1 & P=$!
-  waitf "[[ -f \$T/held-$1-A && -f \$T/held-$1-C ]]" 120; touch "$T/release-$1-C"
-  waitf "[[ -f \$T/vwait-$1-M2 ]]" 120; touch "$T/release-$1"; wait "$P"; rm -f "$T/hold-coding"
+  wait_for 120 eval "[[ -f \$T/held-$1-A && -f \$T/held-$1-C ]]"; touch "$T/release-$1-C"
+  wait_for 120 eval "[[ -f \$T/vwait-$1-M2 ]]"; touch "$T/release-$1"; wait "$P"; rm -f "$T/hold-coding"
   git -C "$T/origin.git" diff --quiet "run/$1/M2" main 2> /dev/null && echo same > "$T/$1.inv"
 }
 slog() { cat "$T/scratch/proj/$1/sessions.log" 2> /dev/null; }

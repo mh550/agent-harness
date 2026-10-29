@@ -53,6 +53,10 @@
 # merge on origin's main adding <path> ("main's <path>"), subject "Merge pull request #7 from test/harness-merge/other-M3"
 # as GitHub writes it: another run's PR merged meanwhile (U2-06's main and merge conflicts).
 # STUB_THIN_VERIFY=all: every verify round is thin (the escalated one too), so the milestone needs Michael (U2-06).
+# STUB_BARRIER=<id>:<name>: that feature's first coding session touches $STUB_DIR/barriers/<name>.held, then waits
+# (≤ 180 s by the clock) for $STUB_DIR/barriers/<name> before its entry and its end, and then touches <name>.released
+# (or <name>.timedout, given up): tests/lib.sh's stub_wait <name>.held and stub_go <name> order a check's steps around
+# the session (R1-02).
 # Every headless session prints first the init line of fixtures/claude-resume/first.jsonl with its cwd and a fresh
 # session_id, and keeps $STUB_DIR/sessions/<id> (its last result line). `--resume <id>` (R2) appends argv to
 # $STUB_DIR/resume.log: an id it never ran gets unknown-id.out's stderr line and result line, exit 1; a known one gets
@@ -182,6 +186,11 @@ JSON
     fi
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
     echo "$id attempt $n" >> "$RS/sessions.log"
+    if [[ ${STUB_BARRIER:-} == "$id":* && $n == 1 ]]; then   # at a barrier the check opens with stub_go (ordered, not timed)
+      bn=${STUB_BARRIER#*:}; mkdir -p "$STUB_DIR/barriers" && touch "$STUB_DIR/barriers/$bn.held"
+      bend=$(( $(date +%s) + 180 )) bout=timedout   # by the clock: a loaded box's slow rounds must not stretch it
+      while (( $(date +%s) < bend )); do [[ -e $STUB_DIR/barriers/$bn ]] && { bout=released; break; }; sleep 0.1; done
+      touch "$STUB_DIR/barriers/$bn.$bout"; fi
     if [[ ${STUB_IGNORED:-} ]]; then
       [[ -e $STUB_IGNORED ]] && echo "$id present" >> "$STUB_DIR/ignored.log" || echo "$id absent" >> "$STUB_DIR/ignored.log"
       [[ -f $RS/ignored-made ]] || { mkdir -p "$(dirname "$STUB_IGNORED")" && echo "$id" > "$STUB_IGNORED" && touch "$RS/ignored-made"; }

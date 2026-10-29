@@ -2,9 +2,6 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- slots and cleanup (P2-04): a slot reused across milestones, merged lane branches deleted, gc's lane passes ----
 # The gc checks are here, not in 08 or 13 (the two largest files): this file builds the lane state they read.
-waitf() { local i; for i in $(seq $(( $2 * 5 ))); do eval "$1" && return 0; sleep 0.2; done; return 1; }   # <bash expr> <s>
-held() { rm -f "$T"/held-* "$T"/release-*; : > "$T/hold-coding"; }
-ats() { hlog "$1" | grep -n -m1 -E -- "$2" | cut -d: -f1; }   # <run> <ERE>: the line of the first note matching
 has() { git -C "$1" rev-parse -q --verify "refs/heads/$2" > /dev/null; }   # <repo> <branch>
 printf 'node_modules/\n' > .gitignore && git add .gitignore && git commit -qm "ignore node_modules" && git push -q origin main
 main0=$(git -C "$T/origin.git" rev-parse main)
@@ -47,7 +44,7 @@ git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 held
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" gk --spec SPEC.md --foreground > "$T/gk.out" 2>&1 & P=$!
 S=$HARNESS_STATE/proj/gk
-waitf '[[ -f $T/held-gk-A && -s $S/lanes/M1/pid ]]' 120
+wait_for 120 eval '[[ -f $T/held-gk-A && -s $S/lanes/M1/pid ]]'
 gk_unit=$(cd "$T/scope" && ls harness-gk-M1-s*.running 2> /dev/null | head -1); gk_unit=${gk_unit%.running}
 lp=$(cat "$S/lanes/M1/pid"); kill -KILL "$(cat "$S/driver.pid")"; wait "$P" 2> /dev/null
 "$H" gc "$T/proj" > "$T/gc-gk1.out" 2>&1
@@ -55,7 +52,7 @@ check "lanes slots: gc of a run whose driver was killed but whose lane lives kee
   '[[ -n $gk_unit && -f $T/scope/$gk_unit.running && -d $T/wt/proj/lanes/gk/slot-0 ]] && ! grep -F "$gk_unit" "$T/gc-gk1.out" > /dev/null \
   && grep -F "keeps $T/wt/proj/lanes/gk/slot-0: lane M1'"'"'s process $lp is alive" "$T/gc-gk1.out" > /dev/null'
 kill -KILL "$lp"; touch "$T/release-gk"
-waitf '[[ ! -f $T/scope/$gk_unit.running && $(lane_at gk) && $(lane_at gk) != "$main0" ]]' 60
+wait_for 60 eval '[[ ! -f $T/scope/$gk_unit.running && $(lane_at gk) && $(lane_at gk) != "$main0" ]]'
 rm -f "$T/hold-coding"
 git -C "$T/wt/proj/lanes/gk/slot-0" status --porcelain --untracked-files=normal > "$T/gk-status.out" 2>&1
 touch "$T/scope/harness-gk-M1-s2".{alive,running}   # a lane unit the killed lane left
@@ -69,9 +66,11 @@ check "lanes slots: gc of a run with a dead driver and lane removes its leftover
 held
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" gd --spec SPEC.md --foreground > "$T/gd.out" 2>&1 & P=$!
 S=$HARNESS_STATE/proj/gd
-waitf '[[ -f $T/held-gd-A && -s $S/lanes/M1/pid ]]' 120
+wait_for 120 eval '[[ -f $T/held-gd-A && -s $S/lanes/M1/pid ]]'
 lp=$(cat "$S/lanes/M1/pid"); kill -KILL "$(cat "$S/driver.pid")" "$lp"; wait "$P" 2> /dev/null; touch "$T/release-gd"
-waitf '[[ $(lane_at gd) && $(lane_at gd) != "$main0" ]]' 60; sleep 1
+wait_for 60 eval '[[ $(lane_at gd) && $(lane_at gd) != "$main0" ]]'
+gd_stub() { local p; for p in $(pgrep -f "$HERE/stub-claude.sh"); do [[ $(readlink "/proc/$p/cwd") == "$T/wt/proj/lanes/gd/"* ]] && return 0; done; return 1; }
+wait_for 30 eval '! gd_stub'   # the orphaned session's push still writes the slot's refs after origin's moved
 rm -f "$T/hold-coding"; echo "ended (killed)" > "$S/ended"
 GS=$T/wt/proj/lanes/gd/slot-0; mkdir -p "$GS/node_modules" && echo x > "$GS/node_modules/m" && echo wip > "$GS/wip.txt"
 "$H" gc "$T/proj" --deps > "$T/gc-gd.out" 2>&1
@@ -84,7 +83,7 @@ rm -f "$GS/wip.txt"; "$H" gc "$T/proj" > /dev/null 2>&1
 held
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" gl --spec SPEC.md --foreground > "$T/gl.out" 2>&1 & P=$!
 S=$HARNESS_STATE/proj/gl
-waitf '[[ -f $T/held-gl-A && -s $S/lanes/M1/pid ]]' 120
+wait_for 120 eval '[[ -f $T/held-gl-A && -s $S/lanes/M1/pid ]]'
 gl_unit=$(cd "$T/scope" && ls harness-gl-M1-s*.running 2> /dev/null | head -1); gl_unit=${gl_unit%.running}
 git -C "$T/wt/proj/lanes/gl/slot-0" push -q origin harness-lane/gl/M1   # as an earlier session's sync_lane: on origin, merged (no commit yet)
 gl_lane=$(lane_at gl)

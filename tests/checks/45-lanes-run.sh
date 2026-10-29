@@ -35,8 +35,8 @@ check "lanes: a lane opened after the default lane's features pass starts on the
 # harness pause during A's first session (STUB_PAUSE=A touches PAUSE): the lane finishes that session and waits; the
 # coordinator logs the pause once; nothing new starts until harness resume
 STUB_PAUSE=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lp --spec SPEC.md --foreground > "$T/lp.out" 2>&1 & LPP=$!
-for _ in $(seq 1200); do hlog lp | grep -q "· services stopped (paused)$" && break; sleep 0.1; done
-sleep 3; lp_sessions=$(grep -c . "$T/scratch/proj/lp/sessions.log"); lp_lane=$(cat "$HARNESS_STATE/proj/lp/lanes/M1/pid" 2> /dev/null)
+wait_for 120 eval 'hlog lp | grep "· services stopped (paused)$" > /dev/null'
+sleep 3; lp_sessions=$(grep -c . "$T/scratch/proj/lp/sessions.log"); lp_lane=$(cat "$HARNESS_STATE/proj/lp/lanes/M1/pid" 2> /dev/null)   # sleep-ok: a negative (no session after the pause) over three polls
 "$H" resume lp > /dev/null; wait "$LPP"
 check "lanes pause: the lane finishes its session and waits (no new session), and the coordinator logs paused once" \
   '[[ $lp_sessions == 1 && -n $lp_lane ]] && [[ $(grep -c "^[0-9-]* [0-9:]* paused (INBOX.md status or harness pause)$" "$HARNESS_STATE/proj/lp/run.log") == 1 ]] \
@@ -45,11 +45,30 @@ check "lanes pause: the lane finishes its session and waits (no new session), an
 # harness stop during a session: the lane stops after it, the run ends with every lane process gone and no slot left
 rm -f "$T/slow-coding"
 STUB_SLOW_CODING=3 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lst --spec SPEC.md --foreground > "$T/lst.out" 2>&1 & LSP=$!
-for _ in $(seq 1200); do [[ -e $T/slow-coding && -s $HARNESS_STATE/proj/lst/lanes/M1/pid ]] && break; sleep 0.1; done   # up to 2 min: a loaded box
+wait_for 120 eval '[[ -e $T/slow-coding && -s $HARNESS_STATE/proj/lst/lanes/M1/pid ]]'   # up to 2 min: a loaded box
 lst_lane=$(cat "$HARNESS_STATE/proj/lst/lanes/M1/pid" 2> /dev/null); "$H" stop lst > /dev/null; wait "$LSP"
 check "lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left" \
   '[[ -n $lst_lane ]] && ! kill -0 "$lst_lane" 2> /dev/null && grep -q "^stopped by Michael" "$HARNESS_STATE/proj/lst/ended" \
   && ( for f in "$HARNESS_STATE"/proj/lst/lanes/*/pid; do [[ -f $f ]] || continue; ! kill -0 "$(cat "$f")" 2> /dev/null || exit 1; done ) && [[ ! -e $HARNESS_WORKTREES/proj/lanes ]] \
   && grep -q "· lane M1 closed (stopped)$" <(hlog lst) && git -C "$T/origin.git" rev-parse -q --verify refs/heads/harness-lane/lst/M1 > /dev/null'
+
+# M1's lane exits after the coordinator counted it alive and before its end check (R1-04, the 44 and 46 flakes):
+# HARNESS_COUNT_HOLD holds the coordinator there until the counted lanes are gone, so the exit lands in that window
+# every time. The count said "no slot free", not "nothing to open": the run goes on, M2 opens and the run ends done
+HARNESS_COUNT_HOLD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lh --spec SPEC.md --foreground > "$T/lh.out" 2>&1
+check "lanes run: a lane that exits between the coordinator's lane count and its end check doesn't end the run (M2 opens, done)" \
+  'grep -F "count hold: 1 lane(s) counted, held until gone" "$HARNESS_STATE/proj/lh/run.log" > /dev/null \
+  && ! hlog lh | grep -F "no feature left to try" > /dev/null && hlog lh | grep -F "· lane M2 opened (slot 0, " > /dev/null \
+  && grep -q "^done" "$HARNESS_STATE/proj/lh/ended" && [[ $($F summary "$(list lh)") == "3/3 passing" ]]'
+
+# The same window with a slot free (MAX_LANES=2): M1's lane dies (KILL, no exit file) while the coordinator holds after
+# counting it. Unreaped, its pid file says "not closed yet": the opens must not offer M1 again (which overwrote the pid,
+# so the crash was never noted) before the next poll reaps it as exited unexpectedly (R1-07 review)
+echo 'MAX_LANES=2' >> "$T/user-config.sh"; held
+HARNESS_COUNT_HOLD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lk --spec SPEC.md --foreground > "$T/lk.out" 2>&1 & P=$!
+LK=$HARNESS_STATE/proj/lk; wait_for 120 test -f "$T/held-lk-A" && wait_for 60 test -f "$LK/count-hold" && kill -KILL "$(cat "$LK/lanes/M1/pid")"
+rm -f "$T/hold-coding"; touch "$T/release-lk"; wait "$P"
+check "lanes run: a lane that dies while the coordinator holds its count, with a slot free, is reaped as exited unexpectedly, never reopened" \
+  'hlog lk | grep -F "· lane M1 closed (lane exited unexpectedly)" > /dev/null && [[ $(hlog lk | grep -c "· lane M1 opened") == 1 ]] && [[ -f $LK/needs-M1 ]]'
 
 suite_end
