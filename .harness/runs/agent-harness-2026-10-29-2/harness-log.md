@@ -25,3 +25,4 @@
 - 2026-10-29 10:23 · R2-02: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 10:23 · flaky: 13-run-2-michael-sets-desk (red, then green on a rerun; load 5.38)
 - 2026-10-29 10:23 · R2-02 · claude-opus-5-5 · passes=true · 22 min · 3/23 passing · tests 893
+- 2026-10-29 10:23 · context.md for R2-03: 4990 bytes
