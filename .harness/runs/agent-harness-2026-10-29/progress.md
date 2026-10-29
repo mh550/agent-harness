@@ -3,6 +3,21 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 02:15 · N1-02 · passes
+
+check.sh's full form reruns a red once by CHECK_RERUN (auto/failed/suite/off): never after a timeout or cap kill; check-rerun.out; green rerun → 'green after a rerun (flaky: …)', marker = first run's total (testcount --total), a flakes.jsonl row. tests/run.sh prints HARNESS_FAILED=<files> unless a failure is outside them. Config, prompt_env, HARNESS_LANE, template, decision.
+
+- **Files:** lib/check.sh, lib/testcount.mjs, tests/run.sh, lib/config.sh, lib/prompt.sh, lib/lane.sh, templates/user/config.sh, tests/checks/73-check-rerun.sh, tests/checks/33-suite-runner.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/lib.sh, tests/fixtures/check-names.txt, +1 more
+- **Verified:** 73-check-rerun 14/14 and 33-suite-runner 14/14 written first (10 and 1 red before the code); full suite via check.sh: first run 873/875 (the known file-15 weekly-budget flake, and memlint: my Gotchas line made 16, removed), second run green 875/875 in 600 s. The first run's own output ended HARNESS_FAILED=15-run-4-… 39-memlint-m4.
+- **Tests:** 859 → 875
+- **Dead end:** a Gotchas line on HARNESS_CHECK_RERUN=off for checks reading the first RED line — ## Gotchas is already at 15 lines and memlint fails at 16; the fact is in check.sh's header and the decision instead
+- **Discovery** (affects N1-03, N1-04): tests/lib.sh's suite_setup now unsets HARNESS_CHECK_RERUN and HARNESS_LANE, so a session's own values never reach a check; a stub run gets CHECK_RERUN=auto from lib/config.sh
+- **Discovery** (affects N1-03): a rerun-red's RED line names check-rerun.out, not check.out: a stub run's red now leaves $SCRATCH/lanes/<m>/check-rerun.out (N1-03's invariant check can rely on it)
+- **Discovery** (affects N1-05): why() gained a third argument (the run's own seconds, for the timeout test) so a rerun's 137 isn't called a timeout by the two runs' summed time; N1-05's fold should keep it
+- **Discovery** (affects N1): the first full suite after this change printed HARNESS_FAILED=15-run-4-same-but-queue-parked-debrief-tmux 39-memlint-m4 on a real red: the line works on the real suite
+- **Proposed change:** N1-05: CLAUDE.md's Gotchas is full (15/15); a line on 'a check on check.sh's first RED line sets HARNESS_CHECK_RERUN=off' would help but needs one evicted, which is Michael's call
+- *02-N1-02 · claude-opus-5-5*
+
 ### 2026-10-29 01:46 · N1-01 · passes
 
 Wrote docs/plans/2026-10-29-N1-rerun-guard.md: the rerun's place and rules in lib/check.sh (CHECK_RERUN table, never-rerun exits, marker from the first run's total via testcount --total), the HARNESS_FAILED= guard in tests/run.sh, the flakes.jsonl row, flakes_note's sites and lock, summary/report/debrief, every new check name by file, docs.
