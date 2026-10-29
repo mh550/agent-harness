@@ -37,4 +37,36 @@ check "entries survive: the stub's resume keeps the session id and a cumulative 
       c(\$b) == c(\$a) + (c(\$r) - c(\$f)) and c(\$b) > c(\$a) and u(\$b) == u(\$a) + (\$r | map(select(.type == \"result\"))[0].usage.cache_read_input_tokens)" > /dev/null'
 check "entries survive: STUB_NO_ENTRY=A writes no entry.json" '[[ ! -e $D/wt/run/entry.json ]] && grep -F "A attempt 1" "$D/scratch/sessions.log" > /dev/null'
 
+# The resume (R2-04): a stub run per case, main reset between them, each run's resume.log kept as resume-<run>.log
+main0=$(git -C "$T/origin.git" rev-parse main)
+rrun() { local r=$1; shift; rm -f "$T/resume.log"; env "$@" STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" "$r" --spec SPEC.md --foreground > "$T/$r.out" 2>&1
+  [[ -e $T/resume.log ]] && mv "$T/resume.log" "$T/resume-$r.log"; git -C "$T/origin.git" update-ref refs/heads/main "$main0"; }
+rrun rlimit STUB_LIMIT_MIDWAY=1
+rrun rgood STUB_NO_ENTRY=A STUB_RESUME_ENTRY=good
+rrun rplain
+rrun rbad STUB_NO_ENTRY=A STUB_RESUME_ENTRY=bad
+rrun redits STUB_NO_ENTRY=A STUB_RESUME_ENTRY=good-edits
+RL=$HARNESS_STATE/proj/rgood/logs
+tj() { jq -Rr "fromjson? | $1" "$2"; }   # <filter> <transcript>: its JSON lines only (stderr shares the file)
+ent() { jq -sc "map(select(.feature == \"A\"))[0]" "$T/wt/proj/$1/.harness/runs/$1/entries.jsonl"; }
+check "entries survive: STUB_NO_ENTRY=A is resumed once with the init line's session id, beside 01-A.resume.jsonl" '[[ $(grep -c -- "--resume" "$T/resume-rgood.log") == 1 ]] \
+  && sid=$(tj "select(.type == \"system\" and .subtype == \"init\").session_id" "$RL/01-A.jsonl") && [[ $sid =~ ^[0-9a-f-]{36}$ ]] \
+  && grep -F -- "--resume $sid" "$T/resume-rgood.log" > /dev/null && [[ -s $RL/01-A.resume.jsonl && -s $RL/01-A.resume.prompt.md ]] \
+  && [[ $(head -1 "$RL/01-A.resume.prompt.md") == "# Entry resume" ]] && grep -E -- "--max-turns 8 .*--resume $sid" "$T/resume-rgood.log" > /dev/null'
+check "entries survive: the resumed entry has its dead_ends, no minimal, and the written-on-a-resume note" 'ent rgood | jq -e "(.dead_ends | length) == 1 and (.minimal | not)" > /dev/null \
+  && hlog rgood | grep -E " · A: entry\.json written on a resume$" > /dev/null'
+check "entries survive: one entry-resume metrics row for A holds the resume's cost minus the session's" 'jq -se --argjson s "$(tj "select(.type == \"result\").total_cost_usd" "$RL/01-A.jsonl" | tail -1)" \
+    --argjson r "$(tj "select(.type == \"result\").total_cost_usd" "$RL/01-A.resume.jsonl" | tail -1)" "map(select(.kind == \"entry-resume\")) as \$m
+    | (\$m | length) == 1 and \$m[0].feature == \"A\" and \$m[0].role == \"coding\" and \$m[0].cost_usd == \$r - \$s and \$m[0].cost_usd > 0" \
+    "$T/wt/proj/rgood/.harness/runs/rgood/metrics.jsonl" > /dev/null'
+check "entries survive: a resume leaves summary.json's session count as the same run without it" 'a=$(jq -r .sessions.total "$HARNESS_STATE/proj/rgood/summary.json") \
+  && b=$(jq -r .sessions.total "$HARNESS_STATE/proj/rplain/summary.json") && [[ $a =~ ^[0-9]+$ && $a == "$b" ]] && [[ ! -e $T/resume-rplain.log ]] \
+  && jq -e ".cost.total > 0" "$HARNESS_STATE/proj/rgood/summary.json" > /dev/null'
+check "entries survive: STUB_RESUME_ENTRY=bad is minimal with the after-one-resume note" 'ent rbad | jq -e ".minimal | startswith(\"invalid\")" > /dev/null \
+  && hlog rbad | grep -E " · A: entry\.json still invalid \(not JSON: .*\) after one resume; recorded a minimal entry$" > /dev/null'
+check "entries survive: a session refused by a usage limit is not resumed (no resume.log)" 'hlog rlimit | grep "hit a limit" > /dev/null && [[ ! -e $T/resume-rlimit.log ]]'
+check "entries survive: a resume's edit outside the run record is in no commit and the entry is still written" '[[ -s $T/resume-redits.log ]] \
+  && [[ -z $(git -C "$T/origin.git" log --all --oneline -- resumed.txt) && -z $(git -C "$T/proj" log --all --oneline -- resumed.txt) ]] \
+  && ent redits | jq -e "(.dead_ends | length) == 1 and (.minimal | not)" > /dev/null && hlog redits | grep -E " · A: entry\.json written on a resume$" > /dev/null'
+
 suite_end

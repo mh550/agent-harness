@@ -66,7 +66,8 @@ prompt_render() {   # template name → stdout: the static template, the policy,
     else rules=("Project rules (this project has no CLAUDE.md)=$HARNESS_HOME/prompts/parts/$where.md"); fi
   elif [[ $where == where-things-go-readonly ]]; then rules+=("$HARNESS_HOME/prompts/parts/where-things-go-override.md")
   fi
-  if [[ $1 == retro ]]; then extra=("${rules[@]}")
+  if [[ $1 == entry-resume ]]; then extra=()   # a resumed session has the policy, the run and the rules in its context
+  elif [[ $1 == retro ]]; then extra=("${rules[@]}")
   else   # these go at the template's {{SECTIONS}} line: nothing run-specific before the policy (decisions/2026-10-21-static-first-prompts)
     extra=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md" "$HARNESS_HOME/prompts/parts/run.md")
     # the brief as written: a "{{X}}" in it would put session values into the shared prefix (E3 review F7)

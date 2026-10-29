@@ -186,9 +186,16 @@ ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
 entries survive: STUB_LONG_SUMMARY=A keeps A's entry whole with the cut-to-400 note
+entries survive: STUB_NO_ENTRY=A is resumed once with the init line's session id, beside 01-A.resume.jsonl
 entries survive: STUB_NO_ENTRY=A writes no entry.json
+entries survive: STUB_RESUME_ENTRY=bad is minimal with the after-one-resume note
 entries survive: a headless stub session prints an init line with a 36-character session id
+entries survive: a resume leaves summary.json's session count as the same run without it
+entries survive: a resume's edit outside the run record is in no commit and the entry is still written
+entries survive: a session refused by a usage limit is not resumed (no resume.log)
+entries survive: one entry-resume metrics row for A holds the resume's cost minus the session's
 entries survive: the coding, verify and initializer prompts say no background work at the end
+entries survive: the resumed entry has its dead_ends, no minimal, and the written-on-a-resume note
 entries survive: the stub answers --resume of an unknown id with the CLI's two lines and exit 1
 entries survive: the stub's resume keeps the session id and a cumulative total_cost_usd
 entries survive: {{ENTRY_CHECK}} renders as lib/entries.mjs validate in the coding, verify and initializer prompts
@@ -444,6 +451,7 @@ metrics: coding rows carry tokens, cache rate and context peak
 metrics: orientation recorded per session
 metrics: resumed-again-under-cap.jsonl against resumed.jsonl gives a positive difference
 metrics: session-id prints the init line's session_id of first.jsonl
+metrics: summary counts an entry-resume row's cost but never as a session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
 needs REASONS: kind, severity and priority for each of the 15 reasons, as the plan's table
