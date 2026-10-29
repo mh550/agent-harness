@@ -7,10 +7,14 @@
 # cache, holds its test count, so a cached green still has it after scratch is gone (a continued run).
 # Both forms run under timeout -k 30s HARNESS_CHECK_TIMEOUT (15m), in the scope $HARNESS_SCOPE_PREFIX-check-<pid> capped
 # at HARNESS_CHECK_MEMORY_MAX (3G); bare without a prefix or user systemd (decisions/2026-10-25-capped-suites).
+# A red full run is rerun once by HARNESS_CHECK_RERUN (auto: the HARNESS_FAILED=<names> files, else the whole suite ·
+# failed · suite · off), never after a timeout or a cap kill; its output is check-rerun.out. A green rerun is a flake: one
+# row in the cache's flakes.jsonl, the marker the first run's total (decisions/2026-10-29-rerun-guard). A subset never reruns.
 set -uo pipefail
 cmd=${HARNESS_CHECK_CMD:-} scratch=${HARNESS_SCRATCH:?HARNESS_SCRATCH is not set}
 cache=${HARNESS_CHECK_CACHE:-$scratch}   # green-<key> markers (the driver keeps them in its state dir, not in scratch)
 max=${HARNESS_CHECK_MEMORY_MAX:-3G} to=${HARNESS_CHECK_TIMEOUT:-15m}
+rerun=${HARNESS_CHECK_RERUN:-auto}; [[ $rerun == @(auto|failed|suite|off) ]] || rerun=auto   # an unknown value: one wasted rerun at worst
 here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=lib/scope.sh
 source "$here/scope.sh"
@@ -36,11 +40,11 @@ run() {
   (( scoped )) && scope_stop "$unit"; return $rc
 }
 
-# <rc> <seconds>: what the RED line says. GNU timeout exits 137, not 124, when it had to KILL, so a 137 that took the
-# whole CHECK_TIMEOUT is the timeout; a 137 whose scope peaked at its cap is the kernel's kill there.
+# <rc> <seconds> [<the run's own seconds>]: what the RED line says. GNU timeout exits 137, not 124, when it had to KILL, so
+# a 137 that took the whole CHECK_TIMEOUT is the timeout; a 137 whose scope peaked at its cap is the kernel's kill there.
 why() {
   local lim; lim=$(dur_s "$to") || lim=0
-  if (( $1 == 124 )) || (( $1 == 137 && lim > 0 && $2 >= lim )); then echo "timed out after $to, exit $1 after $2 s"
+  if (( $1 == 124 )) || (( $1 == 137 && lim > 0 && ${3:-$2} >= lim )); then echo "timed out after $to, exit $1 after $2 s"
   elif (( $1 == 137 && scoped )) && scope_capped "$unit" "$max"; then echo "killed at its $max memory cap, exit 137 after $2 s"
   else echo "exit $1 after $2 s"; fi
 }
@@ -59,13 +63,41 @@ if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's t
   ki=$(tr -s ' \t' '\n' <<< "${HARNESS_CHECK_KEY_IGNORE:-}" | grep -vx -e '' -e '\.harness/runs' | paste -sd' '); [[ $ki == docs/plans ]] && ki=""
   echo "check: green (cached for this code tree${n:+, $n}${ki:+; key ignores: $ki})"; exit 0
 fi
+rm -f "$scratch/check-rerun.out"   # a check-rerun.out always belongs to the check.out beside it
 run "$cmd" > "$scratch/check.out" 2>&1; rc=$?
 [[ -n $key ]] && cp "$scratch/check.out" "$scratch/check-$key.out" \
   && find "$scratch" -maxdepth 1 -name 'check-*.out' ! -name "check-$key.out" -delete   # the newest tree's only: the markers are in $cache
-if (( rc == 0 )); then
-  [[ -n $key ]] && node "$here/testcount.mjs" "$scratch/check.out" > "$cache/green-$key"   # "<n> tests" or empty: outlives scratch
-  echo "check: green in $(( $(date +%s) - start )) s$(node "$here/testcount.mjs" "$scratch/check.out" | sed 's/^/, /')"
+# the rerun guard: a red that isn't a timeout or a cap kill (a rerun would cost the whole timeout again, or be killed
+# again) runs once more, the named files or the whole suite; the first run's output stays whole in check.out
+out=$scratch/check.out how="" names=()
+if (( rc )); then
+  first=$(why $rc $(( $(date +%s) - start )))
+  read -ra names <<< "$(sed -n 's/^HARNESS_FAILED=//p' "$scratch/check.out" | tail -1)"
+  if [[ $first != @("timed out"|"killed at")* ]]; then
+    case $rerun in
+      auto) how=suite; (( ${#names[@]} )) && how=failed ;;
+      failed) (( ${#names[@]} )) && how=failed ;;
+      suite) how=suite ;;
+    esac
+  fi
+  if [[ -n $how ]]; then   # the names as arguments, the subset form's way: never spliced into the command
+    out=$scratch/check-rerun.out r0=$(date +%s) args=(); [[ $how == failed ]] && args=("${names[@]}")
+    run "$cmd \"\$@\"" _ "${args[@]}" > "$out" 2>&1; rc=$?
+  fi
+fi
+s=$(( $(date +%s) - start ))
+if (( rc == 0 )); then   # the marker ("<n> tests" or empty) outlives scratch; a flake's is its first run's total, not the rerun's subset
+  n=$(node "$here/testcount.mjs" "$scratch/check.out" ${how:+--total})
+  [[ -n $key ]] && printf '%s' "${n:+$n$'\n'}" > "$cache/green-$key"
+  if [[ -n $how ]]; then   # a flake: green, named and counted
+    [[ -n $key && -z $n ]] && rm -f "$scratch/check-$key.out"   # no total: unknown beats the red run's passes
+    load=$(cut -d' ' -f1-3 /proc/loadavg 2> /dev/null)
+    jq -nc --arg at "$(date -u +%FT%TZ)" --arg key "$key" --arg rerun "$how" --arg first "$first" --arg load "$load" --arg lane "${HARNESS_LANE:-}" \
+      '{at: $at, key: $key, names: $ARGS.positional, rerun: $rerun, first: $first, load: $load, lane: $lane}' --args "${names[@]}" >> "$cache/flakes.jsonl"
+    flaky=${names[*]}; echo "check: green after a rerun (flaky: ${flaky:-whole suite})${n:+, $n}"
+  else echo "check: green in $s s${n:+, $n}"; fi
 else
-  echo "check: RED ($(why $rc $(( $(date +%s) - start )))) — last lines of $scratch/check.out:"; tail -25 "$scratch/check.out"
+  case $how in failed) again="; red again on a rerun of ${names[*]}" ;; suite) again="; red again on a rerun of the whole suite" ;; *) again="" ;; esac
+  echo "check: RED ($(why $rc $s $(( $(date +%s) - ${r0:-$start} )))$again) — last lines of $out:"; tail -25 "$out"
 fi
 exit $rc

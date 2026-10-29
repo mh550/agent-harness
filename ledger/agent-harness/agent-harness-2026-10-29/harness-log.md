@@ -1,0 +1,50 @@
+- 2026-10-29 01:29 · test count: parsed (generic)
+- 2026-10-29 01:40 · feature list written: 0/11 passing
+- 2026-10-29 01:40 · lint: clean
+- 2026-10-29 01:40 · lane N1 opened (slot 0, port 7817, from 6ffecbb)
+- 2026-10-29 01:40 · context.md for N1-01: 3451 bytes
+- 2026-10-29 01:46 · N1-01 · claude-opus-5-5 · passes=true · 6 min · 1/11 passing · tests 859
+- 2026-10-29 01:46 · context.md for N1-02: 4630 bytes
+- 2026-10-29 02:15 · N1-02 · claude-opus-5-5 · passes=true · 28 min · 2/11 passing · tests 875
+- 2026-10-29 02:15 · context.md for N1-03: 5365 bytes
+- 2026-10-29 03:33 · N1-03 · claude-opus-5-5 · passes=false · 77 min · 2/11 passing · tests 875
+- 2026-10-29 03:43 · context.md for N1-03: 7261 bytes
+- 2026-10-29 03:45 · N1-03 · claude-opus-5-5 · passes=true · 1 min · 3/11 passing · tests 881
+- 2026-10-29 03:45 · context.md for N1-04: 6291 bytes
+- 2026-10-29 04:02 · N1-04 · claude-opus-5-5 · passes=true · 16 min · 4/11 passing · tests 885
+- 2026-10-29 04:02 · review N1-05: 667 changed lines, at or over 400; opus
+- 2026-10-29 04:02 · context.md for N1-05: 6319 bytes
+- 2026-10-29 05:06 · N1-05 · claude-opus-5-5 · passes=true · 54 min · 5/11 passing · tests 886
+- 2026-10-29 05:07 · verify N1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 05:17 · context.md for N1: 14740 bytes
+- 2026-10-29 05:20 · N1 verified and tagged run/agent-harness-2026-10-29/N1
+- 2026-10-29 05:21 · lane N2 opened (slot 1, port 7818, from e9fb31e)
+- 2026-10-29 05:21 · N1 merged into main · https://github.com/mh550/agent-harness/pull/48
+- 2026-10-29 05:21 · context.md for N2-01: 7031 bytes
+- 2026-10-29 05:21 · lane N1 closed (N1 merged)
+- 2026-10-29 05:21 · lane N1: branch harness-lane/agent-harness-2026-10-29/N1 deleted (merged)
+- 2026-10-29 05:40 · N2-01 · claude-opus-5-5 · passes=true · 19 min · 6/11 passing · tests 886
+- 2026-10-29 05:40 · context.md for N2-02: 5911 bytes
+- 2026-10-29 06:07 · N2-02: gotchas +0 ~1 -0
+- 2026-10-29 06:07 · N2-02 · claude-opus-5-5 · passes=true · 26 min · 7/11 passing · tests 893
+- 2026-10-29 06:07 · context.md for N2-03: 6280 bytes
+- 2026-10-29 07:04 · N2-03 · claude-opus-5-5 · passes=true · 56 min · 8/11 passing · tests 905
+- 2026-10-29 07:04 · context.md for N2-04: 7896 bytes
+- 2026-10-29 07:46 · N2-04 · claude-opus-5-5 · passes=true · 42 min · 9/11 passing · tests 918
+- 2026-10-29 07:46 · context.md for N2-05: 6821 bytes
+- 2026-10-29 08:13 · N2-05 · claude-opus-5-5 · passes=true · 26 min · 10/11 passing · tests 924
+- 2026-10-29 08:13 · review N2-06: 1413 changed lines, at or over 400; opus
+- 2026-10-29 08:13 · context.md for N2-06: 7881 bytes
+- 2026-10-29 08:34 · N2-06 · claude-opus-5-5 · passes=true · 20 min · 11/11 passing · tests 925
+- 2026-10-29 08:34 · verify N2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 08:45 · context.md for N2: 16051 bytes
+- 2026-10-29 08:46 · verify N2: N2-02 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 08:46 · context.md for N2-02: 8030 bytes
+- 2026-10-29 08:48 · N2-02 · claude-opus-5-5 · passes=false · 2 min · 10/11 passing · tests 925
+- 2026-10-29 08:48 · N2-02 parked (waiting on Michael): Michael to reword N2-02 step 2 to "a conflict exits 1 with its markers in A" (the jq command is in INBOX.md)
+- 2026-10-29 08:48 · lane N2 closed (parked N2-02)
+- 2026-10-29 08:48 · waiting on Michael: N2-02 (parked; answer in INBOX.md, then harness continue agent-harness-2026-10-29)
+- 2026-10-29 08:48 · run ended (waiting on Michael: N2-02): 10/11 passing · 16 sessions (16 real) · 11 features passed · $52.91 · 6.6 h · by kind: init 1 ($7.40), coding 13 ($45.06), verify 2 ($0.44) · by model: claude-fable-5-1 1 ($7.40), claude-opus-5-5 13 ($45.06), claude-sonnet-5-5 2 ($0.44)
+- 2026-10-29 08:48 · services stopped (waiting on Michael: N2-02)
+- 2026-10-29 08:48 · services stopped (waiting on Michael: N2-02)
+- 2026-10-29 08:49 · summary.json and report.md kept in the state dir (harness report reads them after gc)

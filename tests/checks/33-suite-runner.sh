@@ -25,6 +25,11 @@ check "suite runner: a timing line per file, then the slowest three, the wall ti
   && grep -qE "^slowest: 03-c [0-9.]+ s, 01-a [0-9.]+ s, 02-b [0-9.]+ s; wall [0-9.]+ s, 4 jobs$" "$T/rc4.out" && grep -qE "; wall [0-9.]+ s, 1 jobs$" "$T/rc1.out"'
 check "suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1" \
   'n=$(( $(nproc) / 2 )); (( n > 4 )) && n=4; (( n < 1 )) && n=1; grep -qE "; wall [0-9.]+ s, $n jobs$" "$T/rc.out" && [[ $(cat "$T/rc.rc") == 1 ]]'
+# the failed-files line (N1): a red full run names its red files for check.sh's rerun, a green one names none
+mkdir -p "$T/rg" && cp "$RC/01-a.sh" "$RC/02-b.sh" "$T/rg/" && TEST_CHECKS=$T/rg bash "$HERE/run.sh" > "$T/rg.out" 2>&1
+check "suite runner: a red full run prints HARNESS_FAILED=<the red files> right after the files-that-exited-non-zero line" \
+  '[[ $(grep -x -A1 "files that exited non-zero: 03-c" "$T/rc4.out" | tail -1) == HARNESS_FAILED=03-c && $(grep -c "^HARNESS_FAILED=" "$T/rc1.out") == 1 ]]'
+check "suite runner: a green run prints no HARNESS_FAILED= line" '[[ $(tail -1 "$T/rg.out") == "3/3 checks passed" ]] && ! grep "^HARNESS_FAILED=" "$T/rg.out"'
 check "suite runner: the parallel runner starts no scope of its own (no systemd-run call)" '[[ ! -e $T/sd-called ]]'
 check "lib.sh: a check replayed for its state (REPLAY=1) runs silent and uncounted" \
   '( REPLAY=1 total=0 fails=0; check "rp x" "touch $T/rp-ran" > "$T/rp.out"; check "rp y" false >> "$T/rp.out"

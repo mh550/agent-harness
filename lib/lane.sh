@@ -44,6 +44,7 @@ lane_cd || lane_exit 12 "its slot $SLOT is gone"
 load_config; MAX_SESSIONS=$LANE_MAX_SESSIONS
 lane_cd   # after load_config: sessions see the slot and the lane branch as HARNESS_WT and HARNESS_BRANCH
 export HARNESS_SCOPE_PREFIX; HARNESS_SCOPE_PREFIX=$(scope_unit "$RUN_ID" "$LANEU")   # its suites run as harness-<run>-<m>-check-<pid>
+export HARNESS_LANE=$M   # check.sh names it in a flakes.jsonl row, its sessions' {{CHECK}} calls too
 
 # Independently re-check milestone m, in its lane. 0 = verified (tagged) · 1 = not verified · 2 = deferred (a usage
 # limit: retry). `once` (at the deadline): one session, no escalation, and this round is the last
@@ -100,6 +101,7 @@ verify() {
   done
   echo "$rounds" > "$STATE/verify-rounds-$m"
   if [[ $result == hold ]] && ! green; then result=red; fi   # on the slot's tree, the one tagged below
+  flakes_note
   case $result in
     hold)
       touch "$STATE/verified-$m"
@@ -175,7 +177,8 @@ rebase() {
   if [[ -z $both && $LANE_REBASE != verify ]]; then
     run_init fresh   # the install, then the suite in full (marker cleared), as harness-<run>-<m>-check-<pid>
     cp "$SCRATCH/init.out" "$LDIR/rebase-check.out"   # its uncached `check: …` line: the evidence
-    green || { rebase_fail "$m" "$c" "$m re-based on $how, disjoint, suite red; not merged (needs Michael)" "suite red after the re-base" verify_red rebase; return 1; }
+    green; rc=$?; flakes_note
+    (( rc == 0 )) || { rebase_fail "$m" "$c" "$m re-based on $how, disjoint, suite red; not merged (needs Michael)" "suite red after the re-base" verify_red rebase; return 1; }
     git tag -f -a "$tag" -m "harness run $RUN_ID: $m verified (v3); re-based on $MAIN_BRANCH ${mn:0:7}, suite green" > /dev/null
     # the one forced push, to the tag ref alone: the old commit stays reachable from the lane branch and its PR
     git push -q --force origin "refs/tags/$tag" 8>&- 2>> "$STATE/run.log" || log "push of the re-based $tag failed"
@@ -345,6 +348,7 @@ while :; do
     (( repairs >= MAX_REPAIRS )) && { note "$repairs sessions in a row edited the feature list; stopping for Michael"; lane_exit 12 "feature-list edits"; }
   fi
   if F passes "$SLIST" "$id" && ! green; then F unpass "$SLIST" "$id"; note "$id un-passed: suite red after the session"; fi
+  flakes_note   # the rows of that suite and of the session's own calls
   tests_end   # the slot's tree, after the un-pass above ran its suite
   passed=$(F passes "$SLIST" "$id" && echo true || echo false)
   unmaterialize
