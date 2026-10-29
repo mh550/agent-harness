@@ -8,3 +8,7 @@
 - 2026-10-29 09:19 · R2-01: gotchas +1 ~0 -0
 - 2026-10-29 09:32 · R2-01 un-passed: suite red after the session
 - 2026-10-29 09:32 · R2-01 · claude-opus-5-5 · passes=false · 7 min · 0/23 passing
+- 2026-10-29 09:48 · context.md for R2-01: 3694 bytes
+- 2026-10-29 09:58 · R1-01: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 09:58 · R1-01: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 09:58 · R1-01 · claude-opus-5-5 · passes=true · 45 min · 1/23 passing · tests 886

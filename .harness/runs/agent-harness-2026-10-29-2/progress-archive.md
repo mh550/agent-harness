@@ -9,6 +9,24 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 09:58 · R1-01 · passes
+
+Wrote docs/plans/2026-10-29-R1-flakes.md: the four tools (wait_for, stub_wait/stub_go + STUB_BARRIER, the sleep lint, --repeat) with signatures, output and named checks in 75-suite-tools.sh; the flaker table (8 rows, cause not yet, 44's missing lane branch first) with code leads; all 96 sleep lines in 22 files marked poll/order/work/text.
+
+- **Files:** docs/plans/2026-10-29-R1-flakes.md
+- **Verified:** grep -c sleep tests/checks/*.sh tests/lib.sh: 22 files, 96 lines, each in the sweep table (marks tallied 29 poll + 16 order + 36 work + 15 text = 96); N2 grep on origin/main prints 1 (N1 only, e9fb31e); flaker names copied from tests/fixtures/check-names.txt; suite green, 886 checks (check.sh). Final tree equals the cached green tree (docs/plans is outside the key); memlint clean.
+- **Tests:** 886 → 886
+- **Dead end:** a 16th Gotchas line (pgrep -f is box-wide) — memlint caps Gotchas at 15 (39-memlint-m4 red); the fact stays in the plan and this entry
+- **Discovery** (affects R1-05, R1-06, project): settle (tests/lib.sh:74, copy at 15:177) pgreps every debrief of this checkout and 08:239 pgreps `sleep 31` box-wide: another file or a --repeat copy matches them; a cross-file wait under load, first lead for 15 and 08
+- **Discovery** (affects R1-02, R1-03): waitf is defined identically in 32, 47, 48, 49; settle and ran are copied in file 15 (175-178, 263): the sweep removes the copies, calls become wait_for <s> eval '<expr>'
+- **Discovery** (affects R1-03, R1-06): seven sleeps are negatives (nothing happens over n polls: 13:444, 32:29/32/34, 45:39, 47:39/52); they wait for the actor's nth poll when it leaves a trace, else keep sleep-ok; 32's three are its likely flake
+- **Discovery** (affects R1-04): 44's --base check needs harness-lane/rec/M2 on origin (C parks in M2): leads are sync_lane (record.sh:569), lane_branch_gone (527-538) and the slot sweep's never-pushed-litter rule (726)
+- **Discovery** (affects run): N2 is not on origin main (1 of N1/N2 merged): an overlap conflict between lanes needs Michael
+- **Discovery** (affects R1-04): this session's full suite (with a Gotchas line added) failed 47 `lanes admission: … 80 %` and 45 `lanes run: MAX_LANES=1 …` (two checks) under load; both green on the rerun: 45 and 47 flake today
+- **Proposed change:** R1-02: add a check for STUB_BARRIER (the plan names it: `suite tools: STUB_BARRIER holds that feature's first coding session until stub_go`); the steps list none for it
+- **Proposed change:** R1-04: 45-lanes-run and 47-lanes-two also flaked under load on 2026-10-29 (not in the spec's list); give each --repeat 10 if the budget allows, as the plan's Also seen says
+- *01-R1-01 · claude-opus-5-5*
+
 ### 2026-10-29 09:19 · R2-01 · passes
 
 Wrote docs/plans/2026-10-29-R2-entries.md: the entry check, the trim (399 + … so readEntries keeps it), the background rule, the resume (entry_resume in record.sh, decided before the ingest, outside the record lock, reusing session() with S_RESUME/S_TURNS/S_TIMEOUT/S_BUDGET), metrics resumeRow, the stubs, 76-entries-survive.sh's check names. N2 not on main.
