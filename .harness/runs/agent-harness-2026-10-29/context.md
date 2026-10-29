@@ -1,12 +1,18 @@
-# Context pack for `N2-03`
+# Context pack for `N2-04`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (N2-03, affects N2-04): resolve.sh already holds N2-04's failure code (resolve_ok bounds, MAX_RESOLVES note, refused deferral with RESOLVE_END, marker/UNRESOLVED/unmerged checks, stray restore, resolve_undo); N2-04 needs its stub modes and checks, the sync_main call site, the verify caller's rc 2 and needs.mjs `tried` (rebase already passes tried= only when set) → entries.jsonl:11
+- Discovery (N2-03, affects N2-04): the stray restore is covered by a unit check in 76 (resolve with a function session: a blank, café.txt, a symlink, a created and an added file); N2-04's stub `stray` run is the end-to-end one → entries.jsonl:11
+- Discovery (N2-03, affects N2-04, N2-06): merge_one keeps today's merge_conflict at the run's end ($STATE/ended, written by finish before merge_milestones and cleared at each segment start): no lane could re-base then → entries.jsonl:11
+- Discovery (N2-03, affects N2-04): the marker check counts marker-like lines (diff3's ||||||| too) above what either side (:2:/:3:) already had, so a setext ======= underline isn't a false marker → entries.jsonl:11
+- Discovery (N2-03, affects N2-04): verify's `sync_main` still runs in rebase mode (the plan's skip is N2-04's); harmless in 76's runs → entries.jsonl:11
 - Discovery (N2-02, affects N2-03, N2-04, N2-06): merge_drivers is called right after the driver's first sync_record (lib/driver.sh), before the resumed start's sync_main; slot_open calls it in place of its extensions.worktreeConfig line → entries.jsonl:10
-- Discovery (N2-01, affects N2-02, N2-03): git 2.43 merge-tree --write-tree runs a configured merge driver (attributes from the checkout's .gitattributes), so layer 1 also settles merge_one's merge-tree → entries.jsonl:9
-- Discovery (N2-01, affects N2-03): 61-needs-git.sh's mc and mr runs hit sync_main/merge_one conflicts: with CONFLICTS=resolve as default they need CONFLICTS=michael in user-config to keep testing today's path → entries.jsonl:9
+- Discovery (N2-02, affects N2-04, N2-06): STUB_SORTED=<file> in tests/stub-claude.sh: A adds `b A check`, C `b C check`, re-sorted, in their first coding session → entries.jsonl:10
+- Discovery (N2-01, affects N2-04): a needs card key that is always present (even null) changes 52-status-json.sh's key-path fixture: add tried only when set → entries.jsonl:9
+- Discovery (N2-01, affects N2-04): verify runs sync_main in rebase mode too (lane.sh:62); the plan skips it there so a re-base round never resolves twice → entries.jsonl:9
 - Discovery (N1-05, affects R1, run): 08-scope-sh-l1-02 flakes under the full suite's load (memory gate waits, the real 64M scope check), green alone: an R1 flaker beside 45-lanes-run → entries.jsonl:7
 - Discovery (N1-05, affects run): review findings left open (Minor): run_init tests-start falls back to a red check.out's passes when a flake's marker is empty (suites with no N/M line); testcount --total undercounts a file killed mid-way; the debrief prints the project-wide #### flakes block once per run, not once per project; a fractional CHECK_TIMEOUT (1.5h) makes why() miss a timeout's 137 → entries.jsonl:7
 - Discovery (N1-03, affects run): the live suite check.sh (projects/agent-harness, main) has no rerun yet: a full run from a session goes red on one flake until N1 merges → entries.jsonl:4
@@ -19,17 +25,17 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-29 06:07 · N2-02 · passes: Layer 1: lib/merge-sorted.sh (three-way sorted union; an unsorted side exits 1, A untouched), .gitattributes opts check-names.txt in, merge_drivers (lib/record.sh) sets the driver as worktree config in the record worktree each segment and in slot_open; STUB_SORTED; 75-merge-sorted.sh (7 checks, ~14 s); decision started.; tests 886 → 893; files lib/merge-sorted.sh, lib/record.sh, lib/driver.sh, .gitattributes, tests/stub-claude.sh, … → entries.jsonl:10
+- 2026-10-29 07:04 · N2-03 · passes: Layer 2 happy path: lib/resolve.sh (resolve_ok, resolve: snapshot, session on RESOLVE_*, journal, metrics row, checks, NUL-safe restore, commit), prompts/resolve.md, CONFLICTS/RESOLVE_*/MAX_RESOLVES, stub # Resolve session (both) and STUB_CONFLICT; merge_one returns 3 in a lane, rebase resolves then verifies; 76-resolve-session (12 checks). Opus review: 1 Critical, 3 Important, 7 Minor, all fixed.; tests 893 → 905; files lib/resolve.sh, prompts/resolve.md, lib/lane.sh, lib/record.sh, lib/config.sh, … → entries.jsonl:11
 
 ## Lately in the run
 
+- 2026-10-29 06:07 · N2-02 · passes: Layer 1: lib/merge-sorted.sh (three-way sorted union; an unsorted side exits 1, A untouched), .gitattributes opts check-names.txt in, merge_drivers (lib/record.sh) sets the driver as worktree config in the record worktree each segment and in slot_open; STUB_SORTED; 75-merge-sorted.sh (7 checks, ~14 s); decision started.; tests 886 → 893; files lib/merge-sorted.sh, lib/record.sh, lib/driver.sh, .gitattributes, tests/stub-claude.sh, … → entries.jsonl:10
 - 2026-10-29 05:40 · N2-01 · passes: Wrote docs/plans/2026-10-29-N2-conflict-resolution.md: merge-sorted.sh + merge_drivers, resolve/resolve_ok in lib/resolve.sh (rc 0/1/2, RESOLVE_END, snapshot, checks, bounds), exact changes in sync_main, verify, rebase, merge_one(+--open) and slot_open (stays), the gate, stub flags and modes, tried, visible, checks by file. Opus review: 0 Critical, 7 Important, 5 Minor, all folded in.; tests 886 → 886; files docs/plans/2026-10-29-N2-conflict-resolution.md → entries.jsonl:9
-- 2026-10-29 05:20 · verify N1 · passes: All five N1 features hold: subset 39/39 re-run, syntax checks, plan/docs/decision read, full suite green (886 tests) at init. → entries.jsonl:8
 
 ## Current rules
 
 - The rerun guard: a red full suite is rerun once; a flake is green, named and counted, never quarantined → journal/decisions/2026-10-29-rerun-guard.md
-- Merge conflicts resolved without Michael: a sorted merge for lists first → journal/decisions/2026-10-29-conflict-resolution.md
+- Merge conflicts resolved without Michael: a sorted merge for lists first, then a resolve session, verified → journal/decisions/2026-10-29-conflict-resolution.md
 - This repo's suite gets a 25-minute check timeout; TEST_JOBS stays at its default → journal/decisions/2026-10-29-check-timeout-25m.md
 - `harness show`: where a run's work is, from local refs, one change counted once → journal/decisions/2026-10-28-show.md
 - A plain start or continue queues behind a live run of its project; overlaps are named, never held → journal/decisions/2026-10-27-same-project-starts.md
@@ -41,6 +47,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Merging the memory run into lanes: main's driver changes in their lane-era homes, the review round per lane → journal/decisions/2026-10-27-p1-main-merge.md
 - What waits on Michael: one needs record per item, swept by its reason's rule → journal/decisions/2026-10-27-needs-record.md
 - Lane branches go when their PR merges; gc reaps lane branches, leftover slots and a killed run's lane units → journal/decisions/2026-10-27-lane-branches-and-slots.md
-- gc's foreign units: another project's are silent, an unowned one is said with its command → journal/decisions/2026-10-27-gc-foreign-units.md
 
-_55 older rules: journal/decisions._
+_56 older rules: journal/decisions._
