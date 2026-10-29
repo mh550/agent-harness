@@ -43,6 +43,9 @@
 # merge on origin's main adding <path> ("main's <path>"), subject "Merge pull request #7 from test/harness-merge/other-M3"
 # as GitHub writes it: another run's PR merged meanwhile (U2-06's main and merge conflicts).
 # STUB_THIN_VERIFY=all: every verify round is thin (the escalated one too), so the milestone needs Michael (U2-06).
+# STUB_BARRIER=<id>:<name>: that feature's first coding session touches $STUB_DIR/barriers/<name>.held, then waits
+# (≤ 180 s) for $STUB_DIR/barriers/<name> before its entry and its end: tests/lib.sh's stub_wait <name>.held and
+# stub_go <name> order a check's steps around the session (R1-02).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc=""
@@ -140,6 +143,9 @@ JSON
     fi
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }'); n=$(count "$id")
     echo "$id attempt $n" >> "$RS/sessions.log"
+    if [[ ${STUB_BARRIER:-} == "$id":* && $n == 1 ]]; then   # at a barrier the check opens with stub_go (ordered, not timed)
+      bn=${STUB_BARRIER#*:}; mkdir -p "$STUB_DIR/barriers" && touch "$STUB_DIR/barriers/$bn.held"
+      for _ in $(seq 1800); do [[ -e $STUB_DIR/barriers/$bn ]] && break; sleep 0.1; done; fi
     if [[ ${STUB_IGNORED:-} ]]; then
       [[ -e $STUB_IGNORED ]] && echo "$id present" >> "$STUB_DIR/ignored.log" || echo "$id absent" >> "$STUB_DIR/ignored.log"
       [[ -f $RS/ignored-made ]] || { mkdir -p "$(dirname "$STUB_IGNORED")" && echo "$id" > "$STUB_IGNORED" && touch "$RS/ignored-made"; }

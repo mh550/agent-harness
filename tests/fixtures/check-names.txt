@@ -730,6 +730,12 @@ suite runner: a red full run prints HARNESS_FAILED=<the red files> right after t
 suite runner: a timing line per file, then the slowest three, the wall time and the jobs
 suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero
 suite runner: the parallel runner starts no scope of its own (no systemd-run call)
+suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1
+suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0
+suite tools: STUB_BARRIER holds that feature's first coding session until stub_go
+suite tools: a stub_wait/stub_go barrier orders two background jobs the same way in 20 of 20 rounds
+suite tools: wait_for gives up after its limit with its still-failing line, exit 1
+suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
 summary end reason is how the run ended
 summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)

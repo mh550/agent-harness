@@ -10,8 +10,16 @@
 # A full run of tests/checks also checks conformance: its check names are tests/fixtures/check-names.txt, none missing, new or doubled.
 # A red run ends with HARNESS_FAILED=<the red files' basenames> (check.sh's rerun takes them as arguments), only when
 # every failure is inside a named file; a failure outside one (conformance) leaves it out, so check.sh reruns the whole suite.
+#   tests/run.sh --repeat <n> <name>…  → each matching file n times, TEST_JOBS copies at once (load, to reproduce a flake),
+#                              each copy its own process and fresh state; per file `<file>: <k>/<n> green`, then each red
+#                              copy's FAIL lines as `copy <i>: FAIL …`; exit 1 when any copy was red (no conformance, no HARNESS_FAILED=)
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); dir=${TEST_CHECKS:-$HERE/checks}
+repeat=0
+if [[ ${1:-} == --repeat ]]; then
+  [[ ${2:-} =~ ^[1-9][0-9]*$ && $# -ge 3 ]] || { echo "usage: tests/run.sh --repeat <n> <name>…"; exit 2; }
+  repeat=$2; shift 2
+fi
 jobs=${TEST_JOBS:-}
 [[ $jobs =~ ^[1-9][0-9]*$ ]] || { jobs=$(( $(nproc) / 2 )); (( jobs > 4 )) && jobs=4; (( jobs < 1 )) && jobs=1; }
 files=()
@@ -21,6 +29,10 @@ for f in "$dir"/*.sh; do
 done
 [[ -e ${files[0]:-} ]] || { echo "no check file matches: $*"; echo "0/0 checks passed"; exit 1; }
 mapfile -t files < <(ls -S "${files[@]}")   # largest first: its size is a fair guess at its time, and a long file started last sets the wall time
+# a job per file, or per copy under --repeat (<file>.c<i>); src names its file
+keys=(); declare -A src
+for f in "${files[@]}"; do b=$(basename "$f" .sh)
+  if (( repeat )); then for i in $(seq "$repeat"); do keys+=("$b.c$i"); src[$b.c$i]=$f; done; else keys+=("$b"); src[$b]=$f; fi; done
 out=$(mktemp -d); trap 'for w in "$out"/*.wd; do [[ -f $w ]] && kill "$(cat "$w")"; done 2> /dev/null; rm -rf "$out"' EXIT   # a watchdog a killed job left
 us() { echo "${EPOCHREALTIME/[.,]/}"; }   # microseconds, whatever the locale's decimal point
 s1() { printf '%d.%d' $(( $1 / 1000000 )) $(( $1 % 1000000 / 100000 )); }   # microseconds as seconds, one decimal
@@ -31,8 +43,8 @@ t0=$(us)
 # watchdog and stopped() signal it whole) while its parent stays this subshell (not timeout(1)'s, which would also cut
 # it off from the caller's group signals); <file>.pgid names it
 to=${TEST_FILE_TIMEOUT:-10m}
-one() { local b s rc p w; b=$(basename "$1" .sh) s=$(us)
-  setsid bash "$1" > "$out/$b.out" 2>&1 & p=$!; echo "$p" > "$out/$b.pgid"
+one() { local b=$1 s rc p w; s=$(us)
+  setsid bash "${src[$b]}" > "$out/$b.out" 2>&1 & p=$!; echo "$p" > "$out/$b.pgid"
   ( z=""; trap 'kill "$z" 2> /dev/null; exit 0' TERM; sleep "$to" & z=$!; wait "$z" || exit 0
     : > "$out/$b.timedout"; kill -TERM -- "-$p"; sleep 10 & z=$!; wait "$z"; kill -KILL -- "-$p" ) > /dev/null 2>&1 & w=$!; echo "$w" > "$out/$b.wd"
   wait "$p"; rc=$?; [[ -e $out/$b.timedout ]] || kill "$w" 2> /dev/null   # timed out: its KILL still reaches what outlived the TERM
@@ -48,6 +60,7 @@ replay() {
   for e in $(ls -tr "$out"/*.end 2> /dev/null); do
     b=$(basename "$e" .end); [[ " ${done_[*]} " == *" $b "* ]] && continue
     done_+=("$b"); read -r rc t < "$e"
+    if (( repeat )); then { [[ -e $out/$b.timedout ]] || (( rc )); } && broken+=("$b"); continue; fi   # told per file at the end
     cat "$out/$b.out"
     [[ ${KEEP:-} ]] && echo "kept: $(sed -n '1s/^tmp: //p' "$out/$b.out") ($b)"
     echo "$b: $(grep -cE '^(PASS|FAIL) ' "$out/$b.out") checks, $(s1 "$t") s"; timing+=("$t $b")
@@ -58,9 +71,9 @@ replay() {
 # stopped by a signal (check.sh's timeout signals the whole group): each unfinished file's output so far, named, so a hung
 # file shows its last line; the EXIT trap then deletes $out
 stopped() {
-  local f b left=()
-  for f in "${files[@]}"; do
-    b=$(basename "$f" .sh); [[ " ${done_[*]} " == *" $b "* || ! -e $out/$b.out ]] && continue
+  local b left=()
+  for b in "${keys[@]}"; do
+    [[ " ${done_[*]} " == *" $b "* || ! -e $out/$b.out ]] && continue
     kill -TERM -- "-$(cat "$out/$b.pgid" 2> /dev/null)" 2> /dev/null   # its own group: the caller's signal didn't reach it
     cat "$out/$b.out"; echo "$b: unfinished when the suite was stopped"; left+=("$b")
   done
@@ -69,13 +82,27 @@ stopped() {
 }
 trap stopped TERM INT HUP
 running=0
-for f in "${files[@]}"; do
+for b in "${keys[@]}"; do
   (( running >= jobs )) && { wait -n; running=$((running - 1)); replay; }
-  one "$f" & running=$((running + 1))
+  one "$b" & running=$((running + 1))
 done
 while (( running )); do wait -n; running=$((running - 1)); replay; done
-for f in "${files[@]}"; do   # a job that died before its .end (killed): its output so far, and it counts as broken
-  b=$(basename "$f" .sh); [[ " ${done_[*]} " == *" $b "* ]] && continue
+if (( repeat )); then   # per file: its green copies, then each red copy's FAIL lines (a red one with none: how it ended)
+  red=0
+  for f in "${files[@]}"; do b=$(basename "$f" .sh) k=0 lines=""
+    for i in $(seq "$repeat"); do c=$b.c$i
+      if [[ -e $out/$c.end && " ${broken[*]} " != *" $c "* ]] && ! grep -q '^FAIL ' "$out/$c.out"; then k=$((k + 1)); continue; fi
+      red=1; l=$(grep '^FAIL ' "$out/$c.out" 2> /dev/null)
+      [[ -n $l ]] || { [[ -e $out/$c.timedout ]] && l="FAIL $b: still running after TEST_FILE_TIMEOUT=$to; stopped" || l="FAIL $b: ended red with no FAIL line"; }
+      lines+=$(sed "s/^/copy $i: /" <<< "$l")$'\n'
+      [[ ${KEEP:-} ]] && lines+="copy $i kept: $(sed -n '1s/^tmp: //p' "$out/$c.out")"$'\n'
+    done
+    echo "$b: $k/$repeat green"; printf '%s' "$lines"
+  done
+  echo "wall $(s1 $(( $(us) - t0 ))) s, $jobs jobs"; exit "$red"
+fi
+for b in "${keys[@]}"; do   # a job that died before its .end (killed): its output so far, and it counts as broken
+  [[ " ${done_[*]} " == *" $b "* ]] && continue
   cat "$out/$b.out" 2> /dev/null; echo "$b: ended without its exit status (killed?)"; broken+=("$b"); no_fail "$b" killed
 done
 

@@ -63,17 +63,27 @@ curl_last() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { b = $0 } END 
 curl_count() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { n++ } END { print n + 0 }' "$T/curl.log" 2>/dev/null; }   # how many calls contain $1
 win() { tmux list-windows -t "=$HARNESS_DESK_SESSION" -F '#{window_id} #{window_name}' 2> /dev/null | awk -v w="$1" '$2 == w { print $1 }'; }
 wins() { tmux list-windows -t "=$HARNESS_DESK_SESSION" -F '#W' 2> /dev/null; }
-in_has() { local i; for i in $(seq 20); do grep -q "$2" "$1" 2> /dev/null && return 0; sleep 0.1; done; return 1; }   # send-keys is asynchronous: wait ≤ 2 s for the typed line
+# wait_for <max s> <command…>: the command (quiet) every 0.1 s until it exits 0 (0), or <max> s by the clock, not by
+# counted rounds (a loaded box's rounds are slow), then one line on stderr (1). In the caller's shell: `eval '<expr>'` sees its variables
+wait_for() { local _wf_max=$1 _wf_t0=${EPOCHREALTIME/[.,]/}; shift
+  until "$@" > /dev/null 2>&1; do
+    (( ${EPOCHREALTIME/[.,]/} - _wf_t0 >= _wf_max * 1000000 )) && { echo "wait_for: $* still failing after $_wf_max s" >&2; return 1; }
+    sleep 0.1   # sleep-ok: wait_for's own poll
+  done; }
+# a barrier between two jobs of a check (or a check and a STUB_BARRIER session: $STUB_DIR is $T): stub_go <name> opens
+# it, stub_wait <name> [<max s>] waits (default 60 s) until it is open
+stub_go() { mkdir -p "$T/barriers" && : > "$T/barriers/$1"; }
+stub_wait() { wait_for "${2:-60}" test -e "$T/barriers/$1"; }
+in_has() { wait_for 30 grep -q "$2" "$1"; }   # send-keys is asynchronous: wait for the typed line
 desk_of() { grep -lx "desk · $1\( · .*\)\?" "$T"/desk/*.args 2> /dev/null | sort -V | tail -1; }   # the newest desk of run $1 (.args; .in beside it)
 GHP=https://github.com/test/proj
 # two helpers the debrief sections define (the same lines, copied): L5 calls settle and the desk calls ran, each in a file
 # of its own without the debrief sections since P0-02
 HH=$(cd "$HERE/.." && pwd)
 settle() {   # the runner's debrief is detached: wait until no debrief process is left
-  local i; sleep 0.5
-  for i in $(seq 150); do pgrep -f "$HH/lib/debrief\.sh|$HH/bin/harness debrief" > /dev/null || return 0; sleep 0.2; done; return 1
+  sleep 0.5; wait_for 30 eval '! pgrep -f "$HH/lib/debrief\.sh|$HH/bin/harness debrief"'
 }
-ran() { local r; sleep 1; for r; do echo "$(date '+%F %T') run $r on harness/$r in $T/wt/proj/$r · port 7999" >> "$HARNESS_STATE/proj/$r/run.log"; done; }   # runs since
+ran() { local r s; s=$(date +%s); wait_for 2 eval '(( $(date +%s) > s ))'; for r; do echo "$(date '+%F %T') run $r on harness/$r in $T/wt/proj/$r · port 7999" >> "$HARNESS_STATE/proj/$r/run.log"; done; }   # runs since
 
 # The read views' stub runs (U1; call once after suite_setup): every time relative to a fixed HARNESS_NOW, TZ=UTC (the
 # stamps are local time). proj: done2h, done3d, running (a live sleep as its driver and as lane M1's, one unit each, B
@@ -145,7 +155,7 @@ status_stubs() {
   sr proj crashed 40000; fl proj crashed A:false:M1; echo '{"features":{"passing":9,"total":9}}' > "$T/wt/proj/crashed/.harness/runs/crashed/summary.json"; sh -c 'echo $$' > "$HARNESS_STATE/proj/crashed/driver.pid"; ago "$HARNESS_STATE/proj/crashed/run.log" 36000
   (( ${1:-0} )) && status_bulk "$1"
   local q=$HARNESS_STATE/queue; mkdir -p "$q/held"
-  printf '%s\n' start "$T/proj" --spec "SPEC.md docs/b.md" --until 23:52 --brief "$(printf 'brief %.0s' $(seq 200))" > "$q/0001-start-proj.args"; ago "$q/0001-start-proj.args" 600
+  printf '%s\n' start "$T/proj" --spec "SPEC.md docs/b.md" --until 23:52 --brief "$(printf 'brief %.0s' {1..200})" > "$q/0001-start-proj.args"; ago "$q/0001-start-proj.args" 600
   printf '%s\n' continue stopped --queued --requested > "$q/0002-continue-stopped.args"; ago "$q/0002-continue-stopped.args" 300
   printf '%s\n' start "$T/proj2" proj2-next --until-epoch $(( now + 3600 )) > "$q/held/0003-start-proj2.args"; echo "waiting on the measure PRs (2026-10-28 23:00)" > "$q/held/0003-start-proj2.why"
   ago "$q/held/0003-start-proj2.args" 900

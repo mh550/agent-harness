@@ -77,3 +77,4 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - stub runs in one check file share origin main: an earlier run's merges are on it; reset main (update-ref) between runs (agent-harness-2026-10-28 2026-10-28)
 - queue .args: one argument per line, a newline in one as \x1f (queue_add); a new reader decodes it as lib/queue.sh does (agent-harness-2026-10-28 2026-10-28)
 - the driver moves <state>/brief.md into the record's brief.md and empties it at start: a run's briefs are both files (agent-harness-2026-10-28 2026-10-28)
+- settle (tests/lib.sh:84, 15:177) pgreps debriefs box-wide, 08:239 `sleep 31` too: a sibling or --repeat copy matches (agent-harness-2026-10-29-2 2026-10-29)
