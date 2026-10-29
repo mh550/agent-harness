@@ -40,3 +40,7 @@ takes `docs/specs/2026-10-22-retro-followups.md` §C as written; extends decisio
   pass, to have a count for its tree: the next `run_init` runs it anyway.
 
 Updated in place 2026-10-26: M5-02 added `tests_end` after every session and the baseline labels.
+
+Updated in place 2026-10-28 (Michael's answer to the M5 review's Minor): `run_init` should pin `testcount-source` (and
+the `no match` note) only from a green suite, so a red first suite doesn't fix `no match` for the whole run. To be
+built by `docs/specs/2026-10-28-reliability.md`; the rule above stands until then.

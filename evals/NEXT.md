@@ -75,3 +75,6 @@ harness eval compare pre-m6 m6
 down, verify-fail rate not up. The default set's tasks are 1–3 features each, so few of them reach a milestone
 review; read each result's `summary.json` (`review.cost_pct`; `review.found_nothing`, the reviews whose every round
 reported `0 Critical, 0 Important`) to see whether a review ran at all, and judge the gate on the real runs' ledger rows (`review_cost_pct`) as they accumulate if none did.
+
+Michael (2026-10-28): no review-bearing eval task for now. Judge the gate on the ledger's `review_cost_pct` until a
+first baseline at current main has run (`decisions/2026-10-27-review-gate`, updated in place 2026-10-28).
