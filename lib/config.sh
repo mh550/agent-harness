@@ -14,6 +14,7 @@ harness_config() {
   SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G   # each session's scope (lib/scope.sh): throttle, kill, swap
   CHECK_KEY_IGNORE=".harness/runs docs/plans"   # path prefixes left out of the suite cache key (lib/treekey.mjs): a plan alone doesn't rerun the suite
   CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m   # each check.sh run's scope (no MemoryHigh: a runaway test dies, not crawls) and its timeout -k 30s
+  CHECK_RERUN=auto   # a red full suite is rerun once: auto (the HARNESS_FAILED= files, else the whole suite) · failed · suite · off
   INIT_TIMEOUT=10m SVC_MEMORY_MAX=3G   # run_init: timeout -k 10s around the init's foreground; its services scope's MemoryMax
   TMUX_KEEP_HOURS=24   # a tmux-started run's session stays this many whole hours after its driver exits (0: closes at once)
   DEPS_DIRS="node_modules .next .next-check .venv"   # `harness gc --deps` deletes these in the worktrees of ended runs

@@ -45,6 +45,7 @@
 # Each check.sh run (full or subset, the driver's or a session's) runs in its own scope, harness-<run>-check-<pid>.
 # CHECK_MEMORY_MAX=3G                # killed at this: "check: RED (killed at its 3G memory cap, …)"
 # CHECK_TIMEOUT=15m                  # then TERM, KILL 30 s later: "check: RED (timed out after 15m, …)"
+# CHECK_RERUN=auto                   # a red full suite is rerun once: auto (the HARNESS_FAILED= files, else the whole suite) · failed · suite · off
 # The project's init runs in the run's services scope, harness-<run>-svc: what it backgrounds (a dev server) stays there.
 # INIT_TIMEOUT=10m                   # the init itself, then TERM, KILL 10 s later; servers it left when it returned keep running
 # SVC_MEMORY_MAX=3G                  # the services scope is killed at this (no MemoryHigh: a runaway server dies, not crawls)

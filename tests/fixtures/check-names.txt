@@ -137,6 +137,19 @@ brief committed with the run
 brief, rules and policy in the prompt
 by hand right after: nothing new, no session
 by hand while another debrief runs: it says it is waiting
+check rerun: CHECK_RERUN=auto in config.sh, exported as HARNESS_CHECK_RERUN; the template has it; lanes export HARNESS_LANE
+check rerun: CHECK_RERUN=failed with no line, or off, runs the suite once and is red as today
+check rerun: CHECK_RERUN=suite reruns the whole suite even with the line
+check rerun: a kill at the memory cap is never rerun
+check rerun: a rerun-green appends one flakes.jsonl row with at, key, names, rerun, first, load and lane
+check rerun: a timeout is never rerun
+check rerun: auto with no HARNESS_FAILED line reruns the whole suite (flaky: whole suite)
+check rerun: check.out is the first run byte for byte; check-rerun.out holds the rerun
+check rerun: red every time exits 1 with red again on a rerun of a and the rerun's tail; no marker, no flakes row
+check rerun: red once with HARNESS_FAILED=a b, then green: exit 0 and the green-after-a-rerun line with the full count
+check rerun: the green marker holds the first run's total, and the next call is cached with it
+check rerun: the rerun gets exactly the named files as arguments
+check rerun: the subset form never reruns
 check.sh keeps one check-<key>.out; the green markers stay
 check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s
 check.sh: a TERM stops the suite's scope with it
@@ -702,6 +715,8 @@ suite runner: TEST_JOBS=4 replays each file whole in completion order; the large
 suite runner: a file still running after TEST_FILE_TIMEOUT is stopped, shown and counted as one FAIL line
 suite runner: a file that exits non-zero with no FAIL line counts as one failed check (the total isn't all passed)
 suite runner: a file whose job was killed shows its output and makes the runner exit 1
+suite runner: a green run prints no HARNESS_FAILED= line
+suite runner: a red full run prints HARNESS_FAILED=<the red files> right after the files-that-exited-non-zero line
 suite runner: a timing line per file, then the slowest three, the wall time and the jobs
 suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero
 suite runner: the parallel runner starts no scope of its own (no systemd-run call)
@@ -734,6 +749,7 @@ testCount: pytest fixture gives 4
 testCount: the last HARNESS_TESTS= line wins, and only a whole line counts
 testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
+testcount.mjs: --total is the last N/M line's total; nothing without one
 testcount.mjs: the runner's last N/M checks passed is the count
 the EXIT trap commits its services note: harness-log.md is clean after a TERM
 the EXIT trap of a driver ended unexpectedly opens driver_crash (stored, no synthesized one); its needs.md committed

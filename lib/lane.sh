@@ -44,6 +44,7 @@ lane_cd || lane_exit 12 "its slot $SLOT is gone"
 load_config; MAX_SESSIONS=$LANE_MAX_SESSIONS
 lane_cd   # after load_config: sessions see the slot and the lane branch as HARNESS_WT and HARNESS_BRANCH
 export HARNESS_SCOPE_PREFIX; HARNESS_SCOPE_PREFIX=$(scope_unit "$RUN_ID" "$LANEU")   # its suites run as harness-<run>-<m>-check-<pid>
+export HARNESS_LANE=$M   # check.sh names it in a flakes.jsonl row, its sessions' {{CHECK}} calls too
 
 # Independently re-check milestone m, in its lane. 0 = verified (tagged) · 1 = not verified · 2 = deferred (a usage
 # limit: retry). `once` (at the deadline): one session, no escalation, and this round is the last
