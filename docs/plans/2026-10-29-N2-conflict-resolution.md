@@ -76,8 +76,9 @@ merge_drivers() {
   (`if [[ -f $LIST ]] || (( resumed )); then`), every segment: `merge_drivers "$RWT"`. Every segment rather than once
   where `bin/harness cmd_start` creates the record worktree, because a continue may run a different `HARNESS_HOME`
   (the path in the value must be the running harness's), and a resumed start's own `sync_main` should have it.
-- Called in `slot_open` in place of its `extensions.worktreeConfig` line (`merge_drivers "$SLOT"` after `git -C "$SLOT"
-  config --worktree core.excludesFile …`, which needs the extension first: move that line below the call).
+- Called in `slot_open`: `merge_drivers "$SLOT"` replaces its `extensions.worktreeConfig` line (`[[ $(git -C "$RWT"
+  config extensions.worktreeConfig) == true ]] || …`), and the `git -C "$SLOT" config --worktree core.excludesFile …`
+  line follows the call, as it follows that line today (it needs the extension first).
 - A merge layer 1 settles is a clean merge to every caller; no caller changes.
 
 ## Layer 2: resolve.sh
@@ -124,7 +125,11 @@ The re-base round (`MAX_REBASE_ROUNDS`) is the caller's (`rebase` knows `r`): se
 3. `note "<m>: <n> files conflict with <what> (<files, comma-separated>); a resolve session"` (N2-03's check greps
    `M2: 1 files conflict with main (README.md); a resolve session`).
 4. Session cap and weekly gate, as the coding loop does: `n=$(rec_count "$STATE/sessions" 1)`; `(( n > MAX_SESSIONS ))`
-   → `rec_count … -1`, abort, return 2. `weekly_over "$USAGE"` → abort, note `<m>: no resolve session: <why>`, return 2.
+   → `rec_count … -1`, abort, `RESOLVE_END="session cap ($MAX_SESSIONS)"`, return 2. `weekly_over "$USAGE"` → abort,
+   `RESOLVE_END="weekly budget (<why>)"`, return 2. **`RESOLVE_END`** (empty otherwise, set empty at entry) tells the
+   caller the lane must end with 13 as the coding loop does (lane.sh's `lane_exit 13 "session cap …"`/`"weekly
+   budget …"`), not wait: a 2 alone would let the coordinator re-open the merge lane at once (neither `rebase_due` nor
+   the opening gate checks the cap) and spin through slot_open, merge, abort while another lane is alive.
 5. Memory gate: `mem_gate` (0 = enough memory, 1 = waited and now enough, a wait cut short is 1 too): after it,
    `[[ -f $STATE/lanes-end || $(control) == stop ]]` → `rec_count sessions -1`, abort, return 2. No `run_init` after a
    wait: the verify that follows runs it (`run_init fresh`).
@@ -148,7 +153,9 @@ The re-base round (`MAX_REBASE_ROUNDS`) is the caller's (`rebase` knows `r`): se
 11. **Refused** (`why=$(MET limit "$rlog" "$S_WALL" "$S_EXIT")`): `rec_count sessions -1`; `limits=$(rec_count
     "$STATE/limits" 1)`; `record MET append "$rlog" "$REC/metrics.jsonl" "$RUN_ID" resolve "$m" "$model" false
     "$S_WALL" "$S_EXIT" true resolve "$S_PEAK" "$LANE"`; abort. At `limits >= MAX_LIMIT_HITS` → `RESOLVE_TRIED="a
-    resolve session (<model>): refused <n> times in a row (<reason>)"`, return 1 (today's path: the bound). Else
+    resolve session (<model>): refused <n> times in a row (<reason>)"`, `note "<n> sessions in a row refused (<reason>)"`,
+    `RESOLVE_END="usage limit (<n> sessions refused in a row)"`, return 2 (the coding loop's `lane_exit 13` at
+    `MAX_LIMIT_HITS`, lane.sh, not a conflict for Michael). Else
     `upto` as the verify's refusal computes it (`reset + 120`, else now + 900), `record limit_raise "$upto"`, `note "<m>:
     the resolve session was refused (<reason>); deferred until <HH:MM>"`, `rec_commit`, `sync_record`, return 2. No
     `resolve-<m>-<sha>` marker and no `resolves-<m>` count: the retry after the wait is the same session.
@@ -167,7 +174,9 @@ The re-base round (`MAX_REBASE_ROUNDS`) is the caller's (`rebase` knows `r`): se
        path's current stage-0 entry (`git ls-files -s -- "$path"`) and worktree blob (`git hash-object -- "$path"`,
        missing = deleted) both equal `blob`, else `git update-index --cacheinfo "$mode,$blob,$path"` and `git
        cat-file blob "$blob" > "$path"` (mkdir -p its directory; `chmod +x` for 100755); each path in `git ls-files
-       --others --exclude-standard -- . ":!$RUN_DIR"` and not in `resolve-untracked`: `rm -f`. Any → `note "<m>: the
+       --others --exclude-standard -- . ":!$RUN_DIR"` and not in `resolve-untracked`: `rm -f`; each stage-0 path now in
+       the index (`git ls-files -s -- . ":!$RUN_DIR"`) that is in neither `resolve-index` nor `fa` (a file the session
+       created and `git add`ed): `git rm -q -f --cached -- "$path"` and `rm -f -- "$path"`. Any → `note "<m>: the
        resolve session edited <paths, space-separated> outside the conflict; restored"`. A conflicted path is never in
        `resolve-index` (it was at stages 1–3), so the resolution itself is never undone.
 14. Both branches first: `RESOLVE_MIN=$(( (S_WALL + 59) / 60 ))`, `RESOLVE_MODEL_RAN=$model`, `record MET append
@@ -179,8 +188,8 @@ The re-base round (`MAX_REBASE_ROUNDS`) is the caller's (`rebase` knows `r`): se
     merge aborted"`, return 1.
 
 **`journal()`** (`lib/record.sh`): `resolve) who="resolve $id" ;;` beside `verify)`. **`entries.mjs`**: `KINDS` gains
-`"resolve"`; a resolve entry is rendered into progress.md like a coding entry without evidence (whatever `render`
-does with an unknown kind today: N2-03 checks the line appears and fixes it if not).
+`"resolve"`; `title()` (`entries.mjs`, today `e.kind === "verify" ? \`verify ${…}\` : …`) gains `resolve` the same
+way, so progress.md heads the entry `resolve M2`, not `M2`.
 
 ### prompts/resolve.md
 
@@ -233,8 +242,9 @@ Before this line (after `subjects=…`), a lane only:
   RESOLVE_TRIED=""
   if [[ -n ${LANE:-} && ${CONFLICTS:-} == resolve ]]; then
     resolve "$LANE" "$MAIN_BRANCH"; case $? in
-      0) note "$LANE: main merged in by a resolve session (…); the verify goes on with main merged"; main_clear "$sub"; return 0 ;;
-      2) return 2 ;;   # deferred: no record, no nomerge-<m> (verify below)
+      0) note "merged $MAIN_BRANCH into $b"; note "$LANE: main merged in by a resolve session (…); the verify goes on with main merged"
+         main_clear "$sub"; return 0 ;;
+      2) return 2 ;;   # deferred: no record, no nomerge-<m>; the verify defers too (below)
     esac
   fi
 ```
@@ -244,12 +254,28 @@ driver's resumed start) keeps today's abort and record unchanged. N2-03 can leav
 through `rebase`); N2-04 adds it.
 
 **The caller** (`verify`, `lib/lane.sh`): `sync_main || touch "$STATE/nomerge-$m"` becomes
-`sync_main; (( $? == 1 )) && touch "$STATE/nomerge-$m"`. A deferred resolve (2) leaves `nomerge-<m>` off: the verify
-goes on without main, holds, and `merge_own` → `merge_one` finds the conflict and returns 3 (below), so the lane's
-`rebase` meets it again, where a refused session puts `rebase-<m>` back and the lane ends `its re-base waits` (exit 0)
-for the coordinator to re-base it after the wait. With `nomerge-<m>` set instead (the spec's wording) a verified lane
-ends `lane_exit 12 "$M needs Michael: main conflicts with its lane"` with no needs record: a stop, which the spec rules
-out. This is the one place the plan departs from N2-04 step 3's words; said in the entry's `proposed_changes`.
+
+```bash
+  if [[ $mode != rebase ]]; then   # a re-base round verifies the tree rebase just made; a main that moved since is the next re-base's
+    sync_main; rc=$?
+    (( rc == 2 )) && { [[ -n $RESOLVE_END ]] && lane_exit 13 "$RESOLVE_END"; return 2; }   # deferred: the lane loop waits for the window, then verifies again
+    (( rc == 1 )) && touch "$STATE/nomerge-$m"
+  fi
+```
+
+- **rc 2**: `verify` returns 2 before its session (nothing ran, so no round is counted: `verify-rounds-<m>` is written
+  only at its end). The lane loop's `(( rc == 2 )) && continue` takes it to `limit_wait`, then this verify again: its
+  `sync_main` tries the merge and the resolve again (the spec's "its next round tries again"). Running the verify
+  without main instead (`nomerge-<m>`, the spec's words) would run its session inside the window that was just refused,
+  and a hold with `nomerge-<m>` ends the lane `lane_exit 12 "$M needs Michael: main conflicts with its lane"` with no
+  needs record: a stop. This is where the plan departs from N2-04 step 3's words; said in the entry's
+  `proposed_changes`. `once` mode: `verify "$M" once && lane_done`, else `lane_exit 15 deadline` (resolve_ok refuses
+  past the deadline anyway).
+- **No `sync_main` in `rebase` mode**: today it runs there too (lane.sh:62) and is a no-op unless main moved again
+  during the round's setup. With resolving it would be a second resolve inside the round (with
+  `STUB_MAIN_TOUCH=resolve-M2` a `main_conflict` record here and a `merge_conflict` record from the next `rebase`, two
+  notifications). Skipped, a main that moved during the round shows at `merge_one` (tree differs → 3) and goes through
+  the next `rebase`, one place, one record. `nomerge-<m>` is still cleared (`rm -f` stays above the block).
 
 ### `rebase` (`lib/lane.sh`), main moved under a verified tag (N2-03, N2-04)
 
@@ -269,7 +295,7 @@ moves up here, not copied; `resolved=""` and `rc` locals):
     files=$(git -c core.quotePath=false diff --name-only --diff-filter=U); rc=1 RESOLVE_TRIED=""
     if [[ ${CONFLICTS:-} == resolve ]] && (( r <= MAX_REBASE_ROUNDS )); then resolve "$m" "$MAIN_BRANCH"; rc=$?
     else git merge --abort 2> /dev/null; fi
-    (( rc == 2 )) && { echo "$mn" > "$STATE/rebase-$m"; return 1; }   # refused: the re-base again after the wait
+    (( rc == 2 )) && { echo "$mn" > "$STATE/rebase-$m"; [[ -n $RESOLVE_END ]] && lane_exit 13 "$RESOLVE_END"; return 1; }   # refused: the re-base again after the wait
     (( rc == 0 )) || { rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH" merge_conflict rebase files="$files" main="$mn" tried="$RESOLVE_TRIED"; return 1; }
     resolved=1
   fi
@@ -282,6 +308,18 @@ the guard for the clean overlapping case. Its note (N2-05):
 `note "$m: main merged in by a resolve session ($RESOLVE_FILES; $RESOLVE_MODEL_RAN, $RESOLVE_MIN min); one verify round follows"`,
 then the existing `$m re-based on $how; one verify round (…)` note, `verify "$m" rebase`, re-tag and merge as today.
 The round's verify sees the merge commit (`sync_lane` pushes it, the existing line).
+
+**A refused round after a resolution** (`verify "$m" rebase` returns 2; the existing line puts `rebase-<m>` back and
+the round count back): the LANE_MERGE lane re-opens on the old tag (`slot_open`'s `base=run/$RUN_ID/$m`), merges, and
+conflicts again, so the resolution must be allowed again: on that path, when `resolved` is set, `rm -f
+"$STATE/resolve-$m-$mn"` and `rec_count "$STATE/resolves-$m" -1`:
+
+```bash
+  (( rc == 2 )) && { echo $(( r - 1 )) > "$STATE/rebase-rounds-$m"; echo "$mn" > "$STATE/rebase-$m"
+    [[ -n $resolved ]] && { rm -f "$STATE/resolve-$m-$mn"; rec_count "$STATE/resolves-$m" -1 > /dev/null; }; }   # refused: the round (and its resolve) again later
+```
+
+(the resolve session's spend stays in metrics.jsonl; only the bound is given back).
 
 ### `merge_one`'s conflicting `merge-tree` (`lib/record.sh`, N2-03)
 
@@ -303,8 +341,18 @@ A first line inside the branch, before the once-per-main line:
 (the moved branch's guard, word for word but for the `HARNESS_MERGE_ONLY` half, which this branch excludes). No
 record opens. `merge_milestones_` already turns 3 into `rebase-<m>` for the non-`--open` call; the lane's `merge_own`
 then re-bases, and a closed lane's `rebase-<m>` goes through `rebase_due` and a `LANE_MERGE` lane. Under `--open` (a
-dependency not merged) the 3 is dropped by `merge_milestones_`'s `merge_one "$m" --open && …` as it is for a clean
-moved main today: the milestone is re-based once the dependency has merged and the call without `--open` runs. On the
+dependency not merged) a clean moved main today skips the tree test, opens the PR, returns 0 and so gets `waits-<m>`;
+the new 3 would set nothing, and `lane_done` would fall through to `lane_exit 12 "$M needs Michael: its merge"` with no
+record. So `merge_milestones_`'s `--open` call takes 3 like 0, with its own note:
+
+```bash
+      merge_one "$m" --open; rc=$?
+      (( rc == 0 || rc == 3 )) && [[ ! -f $STATE/waits-$m && ! -f $STATE/proposed-$m ]] && { touch "$STATE/waits-$m"
+        (( rc == 0 )) && note "$m verified; its PR waits for $wait to merge" || note "$m verified; it conflicts with $MAIN_BRANCH and is re-based once $wait has merged"; }
+```
+
+(`rc` a new local). The lane ends `its PR waits` (exit 0); once the dependency merges, the coordinator's call without
+`--open` returns 3 and the re-base runs in a LANE_MERGE lane. On the
 coordinator (`harness merge`, `HARNESS_MERGE_ONLY`) the branch is today's: a `merge_conflict` record, no session.
 
 ### `slot_open`'s three `merge --abort` lines (`lib/record.sh`): they stay
@@ -373,9 +421,9 @@ What makes *what lands on main is byte for byte what was verified* hold after a 
 
 | value | the conflicted files | also | ends (final text) | entry outcome |
 |---|---|---|---|---|
-| `both` (N2-03) | each: the lines `^(<<<<<<<\|=======\|>>>>>>>)( \|$)` deleted, so both sides' lines stay (`line two, from A` then `line two, from C`); `git add` | — | `RESOLVED: <file>: kept both sides` per file | passes |
+| `both` (N2-03) | each: the lines `^(<<<<<<<\|=======\|>>>>>>>)( \|$)` deleted, so both sides' lines stay, HEAD's (the lane's) first: `line two, from C` then `line two, from A` in the re-base and at sync_main alike (no check asserts the order beyond both lines present); `git add` | — | `RESOLVED: <file>: kept both sides` per file | passes |
 | `markers` (N2-04) | as `both`, then `<<<<<<< HEAD` put back as the first line of `README.md` (one marker left); `git add` | — | `RESOLVED: README.md: kept both sides` | passes |
-| `stray` (N2-04) | as `both` | appends `stray` to `work-A.txt` (a path main merged in by itself, stage 0) and writes `stray.txt` (untracked) | as `both` | passes |
+| `stray` (N2-04) | as `both` | appends `stray` to `work-A.txt` (a path main merged in by itself, stage 0), writes `stray.txt` (untracked) and `stray-added.txt` with `git add` (a new stage-0 path) | as `both` | passes |
 | `give-up` and unset (N2-04) | untouched | — | `UNRESOLVED: stub gives up` | not yet |
 
   Each writes `entry.json` (`{feature: $m, kind: "resolve", outcome, summary: "resolve \($m) (\($n))", files}`) and
@@ -398,10 +446,12 @@ What makes *what lands on main is byte for byte what was verified* hold after a 
   - `<m>: its <n> resolve session(s) used; not merged (needs Michael)`.
 - `metrics.jsonl`: one row per resolve session, `kind` and `role` `resolve` (`env: true` for a refused one).
 - `entries.jsonl`/progress.md: the session's entry, `resolve <m>`.
-- Needs cards (N2-04): `card()` in `lib/needs.mjs` returns `tried: t.tried ? nul(t.tried(F)) : null`; the
+- Needs cards (N2-04): `card()` in `lib/needs.mjs` adds `tried` **only when it is set** (`...(t.tried && nul(t.tried(F))
+  ? { tried: t.tried(F) } : {})`): a `tried: null` on every card would change `52-status-json.sh`'s key paths
+  (`tests/fixtures/status-json-keys.txt`, built from `needs.mjs open` records); the
   `merge_conflict` and `main_conflict` templates get `tried: F => F.tried`; `renderCard` puts `{ label: "tried",
   value: c.tried }` right after `why`/`question` (so the notification body, `bodyOf` → `renderCard`, has it), and
-  `markdown` a `**tried** …` paragraph after `**why**`. Absent (`null`) prints nothing: every other card is unchanged.
+  `markdown` a `**tried** …` paragraph after `**why**`. Absent prints nothing: every other card is unchanged.
 - `summary.json` (N2-05, `lib/summary.mjs` build): `conflicts: {resolved, escalated, sessions}`: `resolved` = the
   number of `main merged in by a resolve session` notes in harness-log.md, `escalated` = the number of distinct
   milestones with a `conflicts with <main>; not merged (needs Michael)` or `<main> conflicts with harness-lane/<run>/<m>;`
@@ -456,7 +506,8 @@ Every name goes into `tests/fixtures/check-names.txt` (LC_ALL=C sorted). Planned
 
 - `resolve fallbacks: a session that leaves a marker is aborted, the slot back at the verified commit, merge_conflict with tried, the lane closed`
 - `resolve fallbacks: a session that gives up is aborted the same way and its card says why`
-- `resolve fallbacks: a stray edit and a new file are put back with a note naming both, and M2 merges`
+- `resolve fallbacks: a stray edit and new files are put back with a note naming them, and M2 merges` (work-A.txt,
+  stray.txt and stray-added.txt in the note; none of the three changed or present on main)
 - `resolve fallbacks: a refused session is deferred: no needs record, rebase-M2 back, then it re-bases and merges after the wait`
   (`STUB_RESOLVE_LIMIT=1`, `STUB_MERGE_RESOLVE=both`; `HARNESS_LIMIT_SLEEP=0` is `tests/lib.sh`'s)
 - `resolve fallbacks: past MAX_RESOLVES the next conflict takes today's path with the resolve session(s) used note`
