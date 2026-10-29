@@ -51,7 +51,8 @@
 # STUB_GIVE_UP=<id>: every coding session of that feature ends not passing (U2-05's given_up).
 # STUB_MAIN_TOUCH=<id|verify-<m>|resolve-<m>>:<path>: that feature's first coding session (or <m>'s first verify or resolve session) lands a
 # merge on origin's main adding <path> ("main's <path>"), subject "Merge pull request #7 from test/harness-merge/other-M3"
-# as GitHub writes it: another run's PR merged meanwhile (U2-06's main and merge conflicts).
+# as GitHub writes it: another run's PR merged meanwhile (U2-06's main and merge conflicts); <path>'s directories are made.
+# STUB_FIX_BROKEN=<id>: that feature's first coding session removes BROKEN (a red main's fix, R3-03's green-only count).
 # STUB_THIN_VERIFY=all: every verify round is thin (the escalated one too), so the milestone needs Michael (U2-06).
 # Every headless session prints first the init line of fixtures/claude-resume/first.jsonl with its cwd and a fresh
 # session_id, and keeps $STUB_DIR/sessions/<id> (its last result line). `--resume <id>` (R2) appends argv to
@@ -115,7 +116,7 @@ main_touch() {   # <who>: STUB_MAIN_TOUCH's merge, once, when <who> is its sessi
   [[ ${STUB_MAIN_TOUCH:-} && ${STUB_MAIN_TOUCH%%:*} == "$1" ]] || return 0
   local p=${STUB_MAIN_TOUCH#*:} d; d=$(mktemp -d)
   ( g() { git -C "$d" -c user.name=other -c user.email=o@test "$@"; }
-    git clone -q "$STUB_DIR/origin.git" "$d" 2> /dev/null && g checkout -q -b harness-merge/other-M3 origin/main && echo "main's $p" > "$d/$p" \
+    git clone -q "$STUB_DIR/origin.git" "$d" 2> /dev/null && g checkout -q -b harness-merge/other-M3 origin/main && mkdir -p "$(dirname "$d/$p")" && echo "main's $p" > "$d/$p" \
       && g add -A && g commit -qm "other: $p" && g checkout -q main \
       && g merge -q --no-ff -m "Merge pull request #7 from test/harness-merge/other-M3" -m "other: M3 (verified)" harness-merge/other-M3 && g push -q origin main )
   rm -rf "$d"
@@ -253,6 +254,7 @@ JSON
       node -e 'const fs=require("fs"),f=process.argv[1],l=JSON.parse(fs.readFileSync(f));const c=l.features.find(x=>x.id==="C");if(!c)process.exit(0);c.passes=true;c.description="easier";fs.writeFileSync(f,JSON.stringify(l))' "$L"
     fi
     if [[ $id == C ]]; then [[ $n == 1 && ! ${STUB_NO_RED:-} ]] && touch BROKEN || rm -f BROKEN; fi   # first try leaves the suite red
+    [[ ${STUB_FIX_BROKEN:-} == "$id" && $n == 1 ]] && rm -f BROKEN
     echo "$id $n" > "work-$id.txt"
     (( n == 1 )) && main_touch "$id"
     if [[ ${STUB_SHARED:-} && $n == 1 ]]; then case $id in A) sed -i '1s/.*/A/' "$STUB_SHARED" ;; C) sed -i '$s/.*/C/' "$STUB_SHARED" ;; esac; fi
