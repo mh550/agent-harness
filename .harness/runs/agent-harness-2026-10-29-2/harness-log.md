@@ -81,3 +81,10 @@
 - 2026-10-29 14:50 · verify R2: evidence short of the steps (R2-04 5/6); re-running on opus
 - 2026-10-29 14:50 · context.md for R2: 14952 bytes
 - 2026-10-29 14:56 · R2 verified and tagged run/agent-harness-2026-10-29-2/R2
+- 2026-10-29 14:56 · R2 merged into main · https://github.com/mh550/agent-harness/pull/56
+- 2026-10-29 14:56 · lane R2 closed (R2 merged)
+- 2026-10-29 14:56 · lane R2: branch harness-lane/agent-harness-2026-10-29-2/R2 deleted (merged)
+- 2026-10-29 14:56 · lane R3 opened (slot 1, port 7819, from 53bdc66, slot reused)
+- 2026-10-29 14:56 · context.md for R3-01: 5603 bytes
+- 2026-10-29 15:29 · R3-01: gotchas +0 ~1 -0
+- 2026-10-29 15:29 · R3-01 · claude-opus-5-5 · passes=true · 32 min · 10/23 passing · tests 963

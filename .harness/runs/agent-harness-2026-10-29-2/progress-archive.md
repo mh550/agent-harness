@@ -9,6 +9,26 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 15:29 · R3-01 · passes
+
+Wrote docs/plans/2026-10-29-R3-leftovers.md: one section per R3 item with its function, file at 53bdc66 and check file; Minor 8 quoted and found cheap (built in R3-04); unreproducible's regexes tried on every example; N1 and N2 both on origin main (2). Plan only; Gotchas: promoted the stub --resume line in place of the HARNESS_NOW one.
+
+- **Files:** docs/plans/2026-10-29-R3-leftovers.md, CLAUDE.md
+- **Verified:** grep -cE '...-N[12]$' on origin/main = 2; the unreproducible patterns run in node against 9 match / 13 no-match examples (all as the table says) and this run's list (3 steps flagged); Minor 8 lines copied from lib/lane.sh at HEAD; memlint subset 19/19; full suite via check.sh
+- **Tests:** 963 → 963
+- **Discovery** (affects R3-02): grep -c 'writeFileSync' lib/features.mjs counts the import line too: R3-02 must drop it from the named import (namespace import for the helper) or the step prints 2
+- **Discovery** (affects R3-05): slots live at $T/wt/proj/lanes/<run>/slot-<k>, not <run>-slots/slot-1; gc --dry-run names only a lane branch already merged into origin/main: put the check in 49's sp block before its gc
+- **Discovery** (affects R3-03): The ignored-paths merge note must contain neither 're-base' nor 'moved since' (R3-03 step 1 greps both absent): plan gives '<m>: main changed only in ignored paths (<paths>); merged as verified'
+- **Discovery** (affects R3-03): finish: ledger reads $SCRATCH/retro-proposals.json, so ledger and scratch_done move together after record_pr; the backlog note then misses main's copy
+- **Discovery** (affects R3-04, R3-06): Minor 8 at HEAD: one rec_commit follows the passes note and the gate, so no run ends between them; the move sets passed=false for an escalated review (its first metrics row turns false)
+- **Discovery** (affects R3-02, run): unreproducible flags 3 steps of this run's list (R1-02 step 4 'below 5 s', R3-01 step 3, R3-02 step 3 quoting the examples): expected, reported never applied
+- **Resolved:** Discovery (init, affects run): N2 (conflict resolution) is not on origin main: N2-02 waits on Michael. Only N1 merged (grep -c harness-merge/...-N[12] = 1). A text conflict between two lanes needs Michael as before; each plan says so in one line. → entries.jsonl:1
+- **Resolved:** Discovery (R1-01, affects run): N2 is not on origin main (1 of N1/N2 merged): an overlap conflict between lanes needs Michael → entries.jsonl:3
+- **Proposed change:** R3-05 step 1 should name the slot path $T/wt/proj/lanes/<run>/slot-1 (slot_gc's layout), not $T/wt/proj/<run>-slots/slot-1, and a lane branch merged into main (gc names no unmerged one)
+- **Proposed change:** R3-02 step 1's grep should be 'writeFileSync(' (the call), or the plan's namespace import is required for it to print 1
+- **Proposed change:** A 'review round pending' cause in summary.mjs (a lanes/*/review-escalate file at the end) would give Minor 8's summary.json effect; not in R3's scope
+- *08-R3-01 · claude-opus-5-5*
+
 ### 2026-10-29 14:56 · verify R2 · passes
 
 All 28 steps of R2-01..05 hold. Suite 963/963 (full, this tree), subsets 76/12/05/16/18/25 52/52. Re-ran by hand: ingest trim (400 with …), stub init/--resume/unknown id, resumeRow vs jq, own stub runs good/bad/edits/limit/long-summary (resume argv, own scope s3, 10m, entry-resume row, session count equal), finding 1 RED at 3654c5c.
