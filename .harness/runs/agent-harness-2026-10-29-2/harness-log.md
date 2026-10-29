@@ -48,3 +48,8 @@
 - 2026-10-29 12:48 · context.md for R1-02: 5336 bytes
 - 2026-10-29 12:50 · R1-02: gotchas +0 ~0 -1
 - 2026-10-29 12:50 · R1-02 · claude-opus-5-5 · passes=true · 2 min · 5/23 passing · tests 892
+- 2026-10-29 12:50 · context.md for R1-03: 6188 bytes
+- 2026-10-29 13:27 · R2-04: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 13:27 · R2-04: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 13:27 · flaky: 32-l5-queue-runner-re (red, then green on a rerun; load 7.19)
+- 2026-10-29 13:27 · R2-04 · claude-opus-5-5 · passes=true · 55 min · 6/23 passing · tests 908

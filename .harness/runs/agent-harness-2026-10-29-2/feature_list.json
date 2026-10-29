@@ -189,7 +189,7 @@
         "R2-02",
         "R2-03"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R2-05",
