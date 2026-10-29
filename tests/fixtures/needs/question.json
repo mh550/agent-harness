@@ -1,0 +1,31 @@
+{
+  "run": "agent-harness-2026-10-25-memory",
+  "project": "agent-harness",
+  "reason": "question",
+  "subject": "Defaults taken in the plan (to be recorded in journal/decisions/2026-10-26-retro-backlog.md by M1-04): unset links are null; a proposals file is all-or-nothing (≤10 items, kebab ids ≤60 chars); seed rows have first_seen {run: seed, date: 2026-10-25}, runs_seen []. Change any?\nFiles: /home/u/worktrees/agent-harness/agent-harness-2026-10-25-memory/journal/decisions/2026-10-26-retro-backlog.md, /home/u/worktrees/agent-harness/agent-harness-2026-10-25-memory/lib/backlog.mjs:41",
+  "asker": "M1-01",
+  "feature": "M1-01",
+  "line": "7",
+  "seq": "3",
+  "worktree": "/home/u/worktrees/agent-harness/agent-harness-2026-10-25-memory",
+  "branch": "harness/agent-harness-2026-10-25-memory",
+  "record": "/home/u/worktrees/agent-harness/agent-harness-2026-10-25-memory/.harness/runs/agent-harness-2026-10-25-memory",
+  "record_branch": "harness/agent-harness-2026-10-25-memory",
+  "main_branch": "main",
+  "origin": "git@github.com:mh550/agent-harness.git",
+  "state": "/home/u/.local/state/harness/agent-harness/agent-harness-2026-10-25-memory",
+  "features": [
+    {
+      "id": "M1-01",
+      "milestone": "M1",
+      "description": "Plan the retro backlog",
+      "passes": true
+    },
+    {
+      "id": "M1-02",
+      "milestone": "M1",
+      "description": "The backlog store",
+      "passes": false
+    }
+  ]
+}
