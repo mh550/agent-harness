@@ -9,6 +9,18 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 10:01 · R2-01 · passes
+
+Attempt 1's plan (docs/plans/2026-10-29-R2-entries.md) holds every step; the suite was red only because its new Gotchas line made CLAUDE.md's ## Gotchas 16 lines, which 39-memlint-m4 fails. Dropped the narrowest line (brief.md move); memlint on the worktree prints nothing; full suite green, 886 tests.
+
+- **Files:** CLAUDE.md
+- **Verified:** node lib/memlint.mjs . prints nothing; tests/run.sh memlint 19/19; plan grepped for each step's names (HARNESS_ENTRY_CHECK, entry_resume, ENTRY_RESUME_*, .resume.jsonl, 0.0031/0.0055/0.0058, STUB_NO_ENTRY, STUB_RESUME_ENTRY, resume.log, 76-entries-survive, N2 line = 1); full suite via check.sh green in 648 s, 886 tests
+- **Tests:** 886 → 886
+- **Dead end:** attempt 1 adding a 16th Gotchas line — memlint caps ## Gotchas at 15 and the suite lints this worktree
+- **Discovery** (affects run): 39-memlint-m4 lints this worktree's CLAUDE.md: a 16th Gotchas line turns the suite red; replace a line, never add past 15
+- **Resolved:** the driver moves <state>/brief.md into the record's brief.md and empties it at start: a run's briefs are both files (agent-harness-2026-10-28 2026-10-28)
+- *03-R2-01 · claude-opus-5-5*
+
 ### 2026-10-29 09:58 · R1-01 · passes
 
 Wrote docs/plans/2026-10-29-R1-flakes.md: the four tools (wait_for, stub_wait/stub_go + STUB_BARRIER, the sleep lint, --repeat) with signatures, output and named checks in 75-suite-tools.sh; the flaker table (8 rows, cause not yet, 44's missing lane branch first) with code leads; all 96 sleep lines in 22 files marked poll/order/work/text.

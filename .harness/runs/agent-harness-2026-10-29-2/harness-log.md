@@ -12,3 +12,8 @@
 - 2026-10-29 09:58 · R1-01: entries.jsonl edited by the session; restored (the driver is its only writer)
 - 2026-10-29 09:58 · R1-01: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 09:58 · R1-01 · claude-opus-5-5 · passes=true · 45 min · 1/23 passing · tests 886
+- 2026-10-29 09:58 · context.md for R1-02: 5104 bytes
+- 2026-10-29 10:01 · R2-01: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:01 · R2-01: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:01 · R2-01: gotchas +0 ~0 -1
+- 2026-10-29 10:01 · R2-01 · claude-opus-5-5 · passes=true · 12 min · 2/23 passing · tests 886
