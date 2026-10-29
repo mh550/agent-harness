@@ -2,6 +2,7 @@
 Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
+CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
 COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
 CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
 DEBRIEF_PAGE_CMD gets the page
@@ -319,6 +320,7 @@ harness status lists a running run's units with MemoryCurrent; an ended run's no
 harness stop --why: the note and ended say stopped by Michael: <why>
 harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
+ignored_only: CHECK_KEY_IGNORE entries are literal prefixes (docs/plans-old, docs/*, ../lib are code), ./x/ is x, no pathspecs is moved; noted once per main
 inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
 inbox.mjs repair: n8n-home's fixture against its template keeps Q2 and moves Q1 above ## Answers, out of the comment
 inbox.mjs repair: the comment back byte for byte, the question directly above ## Answers; exit 3, then 0

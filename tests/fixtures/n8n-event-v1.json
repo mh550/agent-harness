@@ -1,0 +1,4 @@
+{ "v": 1, "id": "<uuid>", "at": "<ISO 8601>", "kind": "park|needs_michael|blocked|ended|debrief|verified|merged|started|limit|other",
+  "project": "dj-crate-streaming", "run": "dj-2026-10-17", "feature": "N1-03 or null",
+  "title": "...", "body": "...", "priority": "high|", "click": "<url or null>", "actions": "<ntfy actions or null>",
+  "context": "<absolute path of the context bundle, or null>" }

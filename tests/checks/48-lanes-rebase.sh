@@ -92,7 +92,7 @@ git -C "$tmp" checkout -q -b mv "$main0" && echo mine > "$tmp/mv-mine.txt" && gi
   && git -C "$tmp" tag -a run/mv/M1 -m "harness run mv: M1 verified (v3)" && git -C "$tmp" push -q origin run/mv/M1
 git -C "$tmp" checkout -q "$main0" && echo main > "$tmp/mv-main.txt" && git -C "$tmp" add mv-main.txt && git -C "$tmp" -c user.name=m -c user.email=m@test commit -qm main \
   && git -C "$tmp" push -q origin HEAD:main; rm -rf "$tmp"
-mv_rc=$( cd "$T/proj" && git fetch -q origin --tags && STATE=$U LS=$U RUN_ID=mv MAIN_BRANCH=main && source "$HERE/../lib/record.sh" \
+mv_rc=$( cd "$T/proj" && git fetch -q origin --tags && HARNESS_HOME=$HH STATE=$U LS=$U RUN_ID=mv MAIN_BRANCH=main && source "$HERE/../lib/record.sh" \
   && note() { :; } && log() { :; } && merge_one M1; echo "first $?"; merge_one M1; echo "again $?"; rm -f "$U/rebase-M1"; true )
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 check "lanes rebase: merge_one says main moved (3) again when moved-<m> is today's main but no rebase-<m> is left (a lane killed mid-re-base)" \

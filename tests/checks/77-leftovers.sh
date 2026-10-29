@@ -24,6 +24,20 @@ check "merge_one: a main moved only in ignored paths merges the milestone as ver
 check "finish: record_pr runs before ledger, so the ledger copy of harness-log.md holds the record PR note" \
   'grep -F "record PR merged into main" "$T/ledger/proj/im/harness-log.md" > /dev/null'
 
+# ignored_only's pathspec, sourced: the CHECK_KEY_IGNORE entries are literal prefixes (never a glob), ./ and a trailing / are
+# trimmed, a .. or absolute one is dropped; the note is once per main
+IO=$T/io; git init -q -b main "$IO/r" && ( cd "$IO/r" && mkdir -p lib docs/plans docs/plans-old .harness/runs/o && for f in lib/a docs/plans/a docs/plans-old/a .harness/runs/o/a; do echo 0 > "$f"; done \
+  && git add -A && git -c user.name=t -c user.email=t@t commit -qm base )
+iot() { ( cd "$IO/r" && git checkout -q -B "t$1" main && echo 1 > "$1" && git add -A && git -c user.name=t -c user.email=t@t commit -qm "$1" && git rev-parse HEAD^{tree} ); }
+tp=$(iot docs/plans/a) tpo=$(iot docs/plans-old/a) tl=$(iot lib/a) tr=$(iot .harness/runs/o/a); mkdir -p "$IO/st"
+io() { ( cd "$IO/r" && HARNESS_HOME=$HH && source "$HERE/../lib/record.sh" && STATE=$IO/st MAIN_BRANCH=main CHECK_KEY_IGNORE=$1 \
+  && HARNESS_HOME=${IOH:-$HH} && note() { echo "$*" >> "$IO/notes"; } && ignored_only M1 main "$2" "${3:-m1}" ) 2>> "$IO/err"; }
+# an older harness's treekey.mjs (no --pathspec) prints a key: a pathspec that matches nothing must not pass for "ignored"
+mkdir -p "$IO/old/lib" && echo 'console.log("bed6b9ddcad72940")' > "$IO/old/lib/treekey.mjs"
+check "ignored_only: CHECK_KEY_IGNORE entries are literal prefixes (docs/plans-old, docs/*, ../lib are code), ./x/ is x, no pathspecs is moved; noted once per main" \
+  'io docs/plans "$tp" && io docs/plans "$tp" && io "./docs/plans/" "$tp" m2 && io "" "$tr" m3 && ! io docs/plans "$tpo" && ! io "docs/*" "$tp" \
+  && ! io "../lib /lib docs/plans" "$tl" && ! io . "$tl" && ! IOH=$IO/old io docs/plans "$tl" m4 && [[ $(grep -c "^M1: main changed only in ignored paths (docs/plans/a)" "$IO/notes") == 2 && ! -s $IO/err ]]'
+
 # gr: main is red when the run starts (BROKEN), A's first session fixes it; the count is pinned from the first green suite only
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 git reset -q --hard "$main0" && touch BROKEN && git add BROKEN && git commit -qm "red main" && git push -q origin main
@@ -41,7 +55,7 @@ CR=$T/cr; mkdir -p "$CR/repo" && git -C "$CR/repo" init -q && echo x > "$CR/repo
 check "check.sh: appends <epoch> <full|cached|subset> <seconds> to check-runs.log on each call; no suite configured, no row" \
   '[[ $(cut -f2 "$CR/s/check-runs.log" | paste -sd " " -) == "full cached subset" ]] && ! grep -vP "^[0-9]+(\.[0-9]+)?\t(full|cached|subset)\t[0-9]+$" "$CR/s/check-runs.log" > /dev/null'
 
-# sr: A's first coding session runs the suite in full and as a subset; B's none. A is a sonnet feature: its reviewers too
+# sr: A's first coding session runs the suite in full, again (cached: not counted) and as a subset; B's none. A is a sonnet feature: its reviewers too
 STUB_RUN_SUITE=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" sr --spec SPEC.md --foreground > "$T/sr.out" 2>&1
 git reset -q --hard "$main0"; git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 check "lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))" \

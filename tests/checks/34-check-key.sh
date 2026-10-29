@@ -41,4 +41,9 @@ check "suite cache: a session that adds only docs/plans/x.md leaves the next ses
   'grep -q "^check: green (cached for this code tree" "$T/init-kyplan-2.out" && git -C "$T/origin.git" cat-file -e harness-lane/kyplan/M1:docs/plans/x.md'
 check "suite cache: a session that edits lib/ (tracked) makes the next session's suite run" \
   'grep -q "^check: green in " "$T/init-kylib-2.out" && ! grep -q "cached" "$T/init-kylib-2.out" && [[ $(git -C "$T/origin.git" show harness-lane/kylib/M1:lib/a.sh 2> /dev/null | wc -l) -ge 2 ]]'
+# a main moved only in these paths merges without a re-base (ignored_only, lib/record.sh): no file the suite runs may read one
+reads_ignored() { ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config "$HERE/.." \
+  && for p in $CHECK_KEY_IGNORE; do grep -rlE "/\.\./${p//./\\.}(/|\"|\$)" "$HERE" "$HERE/../lib" "$HERE/../bin"; done ); }
+check "CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)" \
+  '[[ -z $(reads_ignored) ]]'
 suite_end

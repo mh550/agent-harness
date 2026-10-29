@@ -356,8 +356,8 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run end notes"; sync_record; }
   record_pr   # its note is one record commit past the merge, which gc's record_only allows
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: record PR"; sync_record; }
-  # after the record PR, so the ledger's copy holds its note; the backlog's note then lands past the merge, on the
-  # record branch and in the ledger only. ledger reads the retro's proposals from scratch: scratch_done after it
+  # after the record PR, so the ledger's copy holds its note; the backlog's and scratch_done's notes come after that copy,
+  # on the record branch only (past the merge). ledger reads the retro's proposals from scratch: scratch_done after it
   ledger
   scratch_done "$key"   # the record keeps the last suite and init output; the run's scratch goes (decisions/2026-10-25-scratch-cleanup)
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: ledger notes"; sync_record; }

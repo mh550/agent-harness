@@ -44,3 +44,7 @@ Updated in place 2026-10-26: M5-02 added `tests_end` after every session and the
 Updated in place 2026-10-28 (Michael's answer to the M5 review's Minor): `run_init` should pin `testcount-source` (and
 the `no match` note) only from a green suite, so a red first suite doesn't fix `no match` for the whole run. To be
 built by `docs/specs/2026-10-28-reliability.md`; the rule above stands until then.
+
+Updated in place 2026-10-29: built (R3-03, decisions/2026-10-29-lanes-leftovers) the green-only pin: `run_init` writes
+`tests-start` and `testcount-source` (or the `no match` note) only when its suite exits 0, from the tree's marker or
+its own `check-<key>.out`; a red first suite pins nothing, and the next green `run_init` pins both.

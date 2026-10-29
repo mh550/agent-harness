@@ -434,12 +434,14 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   local rc=$?; SVC_INIT=0; echo "(init exit $rc)" >> "$SCRATCH/init.out"
   [[ -n ${SCOPE_BARE:-} ]] && note "init ran uncapped: $SCOPE_BARE"   # systemd refused the unit; its line is in init.out
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
-  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")"
+  # the tree's key as check.sh takes it, before the suite runs (what a suite leaves untracked would change it after)
+  local key; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key"
   local crc=0; "$CHECK" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }
   # a red suite pins neither the count nor its source: the next green one does. Of a green tree, its marker first (after
   # a rerun the first run's total), then its own output, check-<key>.out: check.out may be an older tree's, a red one's
   # when this green was cached
-  local n="" key out; key=$(node "$HARNESS_HOME/lib/treekey.mjs"); out=$SCRATCH/check-$key.out
+  local n="" out=$SCRATCH/check-$key.out
   if (( crc == 0 )) && [[ ! -f $STATE/tests-start ]]; then
     n=$(cat "$STATE/green/green-$key" 2> /dev/null)
     [[ -n $n || ! -f $out ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$out")
@@ -487,17 +489,15 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
 }
 
 # <m> <commit> <tree> <main> → 0 when they differ only in paths the suite's cache key ignores (.harness/runs and
-# CHECK_KEY_IGNORE, the literal prefixes lib/treekey.mjs leaves out), noted once per main: main moved only there, so
-# the verified result stands
+# CHECK_KEY_IGNORE: lib/treekey.mjs's own pathspecs, so the key and this test are one definition), noted once per main:
+# main moved only there, so the verified result stands
 ignored_only() {
-  local p ps spec=(. ':(exclude,literal).harness/runs'); read -ra ps <<< "${CHECK_KEY_IGNORE:-}"   # no glob: literal prefixes
-  for p in "${ps[@]}"; do
-    p=${p#./}; p=${p%/}; [[ -z $p || $p == . || $p == /* || /$p/ == */../* ]] || spec+=(":(exclude,literal)$p")
-  done
-  git diff --quiet "$2" "$3" -- "${spec[@]}" || return 1
+  local spec; mapfile -t spec < <(HARNESS_CHECK_KEY_IGNORE=${CHECK_KEY_IGNORE:-} node "$HARNESS_HOME/lib/treekey.mjs" --pathspec)
+  # no pathspecs (node failed, or an older treekey.mjs printed its key): a re-base
+  [[ ${spec[0]:-} == . ]] && git diff --quiet "$2" "$3" -- "${spec[@]}" || return 1
   [[ $(cat "$STATE/ignored-$1" 2> /dev/null) == "$4" ]] && return 0   # once per main: merge_milestones runs again after every verify
   echo "$4" > "$STATE/ignored-$1"
-  note "$1: $MAIN_BRANCH changed only in ignored paths ($(git diff --name-only "$2" "$3" | head -3 | paste -sd' ')); merging as verified"
+  note "$1: $MAIN_BRANCH changed only in ignored paths ($(git diff --name-only "$2" "$3" | head -3 | paste -sd' ')); its verify stands"
   return 0
 }
 
