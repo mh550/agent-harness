@@ -3,6 +3,24 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 07:46 · N2-04 · passes
+
+Layer 2 fallbacks: stub STUB_MERGE_RESOLVE markers/stray/give-up, STUB_RESOLVE_LIMIT, STUB_MAIN_TOUCH=resolve-<m>; sync_main resolves in a lane (verify defers on a refusal, skips sync_main in rebase mode); needs cards' tried; rebase records conflict-<m>; 77-resolve-fallbacks (12). Opus review: 0 Critical, 2 Important, 1 Minor, all fixed.
+
+- **Files:** lib/record.sh, lib/lane.sh, lib/resolve.sh, lib/needs.mjs, bin/harness, tests/stub-claude.sh, tests/checks/77-resolve-fallbacks.sh, tests/checks/59-needs-cards.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-29-conflict-resolution.md
+- **Verified:** check.sh: green in 660 s, 918 tests; 77-resolve-fallbacks 12/12 in 107.7 s; 76/75/61/48/59 green; 77 against the old record.sh+lane.sh failed 6/11, the rsg check failed before the merge_one guard (2 needs-you posts, a second merge lane)
+- **Tests:** 905 → 918
+- **Dead end:** asserting `lane M2 closed (M2 verified; its re-base waits)` in the refused run — a lane whose re-base waits closes with no such note; the check counts two `lane M2 opened` lines instead
+- **Dead end:** inspecting the slot after a stub run for MERGE_HEAD — finish removes the slots; the e2e checks compare origin's lane branch with the tag, and a unit on resolve alone checks MERGE_HEAD and HEAD
+- **Discovery** (affects N2-05, N2-06): resolve's tried is stored in the resolve-<m>-<main> marker, so a later record for the same main (resolve_ok: already ran) keeps tried; MAX_RESOLVES sets tried to `its <n> resolve session(s) used`
+- **Discovery** (affects N2-05, N2-06): rebase writes conflict-<m> before rebase_fail: without it the run's-end merge_one re-opened merge_conflict, dropping tried and the rebase variant, and notified twice
+- **Discovery** (affects N2-06): merge_one's resolve branch returns 1 when main-conflict-<m> is this main (the lane's sync_main already tried it); rebase calls main_clear once its merge went through
+- **Discovery** (affects N2-05): stub resolve sessions report 0 min (S_WALL 0): a check on tried's minutes matches [0-9]+
+- **Discovery** (affects N2-05, N2-06): a unit calling resolve() needs USAGE and REC set (weekly gate, metrics row) or it dies under set -u mid-function
+- **Proposed change:** N2-04 step 3's `in sync_main the verify goes on without main (nomerge-<m>)` was built as the plan says instead: verify returns 2 before its session and the lane loop waits, then verifies again (a hold with nomerge-<m> would end the lane needs Michael with no record); recorded in the decision file
+- **Proposed change:** N2-06's docs should name the main-conflict-<m> guard in merge_one and rebase's conflict-<m>/main_clear (§5, §7)
+- *10-N2-04 · claude-opus-5-5*
+
 ### 2026-10-29 07:04 · N2-03 · passes
 
 Layer 2 happy path: lib/resolve.sh (resolve_ok, resolve: snapshot, session on RESOLVE_*, journal, metrics row, checks, NUL-safe restore, commit), prompts/resolve.md, CONFLICTS/RESOLVE_*/MAX_RESOLVES, stub # Resolve session (both) and STUB_CONFLICT; merge_one returns 3 in a lane, rebase resolves then verifies; 76-resolve-session (12 checks). Opus review: 1 Critical, 3 Important, 7 Minor, all fixed.
