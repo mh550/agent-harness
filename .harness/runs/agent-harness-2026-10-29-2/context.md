@@ -1,9 +1,11 @@
-# Context pack for `R4-01`
+# Context pack for `R4-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (R4-01, affects R4-02): Adding a reason turns 58 (REASONS table literal, '15 reasons' in its name) and 59 (one fixture per reason in tests/fixtures/needs, FILLED's parked-only .question) red: plan §2.6 lists the edits → entries.jsonl:25
+- Discovery (R4-01, affects R4-02, R4-03): entries.jsonl questions carry the fill ' Files (harness, from the session): <abs paths>': a key over the raw first 80 characters would differ per run for a short question; questionKey cuts it (entries.mjs unfilled, to export) → entries.jsonl:25
 - Discovery (R3-05, affects run): Promote item 'tests/lib.sh now holds tended, held…' does not hold on R3's branch (R1-07's lib.sh is not merged here; 47/48/49/76/77-resolve define held and ats themselves): left for a session on a branch with R1 in → entries.jsonl:24
 - Discovery (R3-04, affects R3-06, run): 08-scope flaked twice in this session's full runs (gatestop memory gate; M2's lane never started, 2/3 passing): R1-06's fixes (HARNESS_COUNT_HOLD, gatestop at 2 GB) are not on this lane's base → entries.jsonl:22
 - Discovery (R1-07, affects run): The coordinator's opens skip a milestone whose lanes/<m>/pid is still there (exited, unreaped); HARNESS_COUNT_HOLD leaves state/count-hold while holding, so a check can act inside the window → entries.jsonl:21
@@ -25,16 +27,22 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): N2 (conflict resolution) is not on origin main: N2-02 waits on Michael. Only N1 merged (grep -c harness-merge/...-N[12] = 1). A text conflict between two lanes needs Michael as before; each plan says so in one line. → entries.jsonl:1
 - Discovery (init, affects run): R2 and R3 both edit lib/record.sh and prompts/coding.md; R2-02 and R3-02 both edit prompts/initializer.md. Whichever merges second takes a re-base verify round; a text conflict needs Michael (no N2). → entries.jsonl:1
 
-## Promote to Gotchas
+## Lately in the run
 
-- tests/lib.sh now holds tended, held (clears vwait-* too), ats and debriefs: a check file must not redefine them differently → entries.jsonl:21
+- 2026-10-29 18:52 · R4-01 · passes: Wrote docs/plans/2026-10-29-R4-questions.md: the question reason, a key that drops the harness's Files fill (worktree paths differ per run), refresh, the move forward through sibling state dirs, card and sweep rule (resolvedBy shared with pack), journal_'s questions_ after the ingest, readers, the skill step, 17 check names, needs_fixture question, STUB_ASK_TWO/AGAIN. No code changed.; tests 976 → 976; files docs/plans/2026-10-29-R4-questions.md → entries.jsonl:25
+- 2026-10-29 18:35 · R3-05 · passes: Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/slot-1) and the merged harness-lane/sp/M1 on origin (one would: line each, both kept; the real gc then removes the slot). 77 starts two merge_milestones M1 at once on one state and clone: one note, one pr merge. Both green at once; each fails when what it guards is broken.; tests 976 → 978; files tests/checks/49-lanes-slots.sh, tests/checks/77-leftovers.sh, tests/fixtures/check-names.txt, CLAUDE.md → entries.jsonl:24
+- 2026-10-29 18:33 · verify R1 · passes: All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 10/10 green on 44, 46, 48, 15, 28, 32, 38, 08; lint exits 0; docs, plan, review and decision present. Note: N2 is now on origin main (count 2), plan line says 1 as of init. → entries.jsonl:23
 
-## What it builds on
+## Current rules
 
-- 2026-10-29 10:01 · R2-01 · passes: Attempt 1's plan (docs/plans/2026-10-29-R2-entries.md) holds every step; the suite was red only because its new Gotchas line made CLAUDE.md's ## Gotchas 16 lines, which 39-memlint-m4 fails. Dropped the narrowest line (brief.md move); memlint on the worktree prints nothing; full suite green, 886 tests.; tests 886 → 886; files CLAUDE.md → entries.jsonl:4
-- 2026-10-29 10:23 · R2-02 · passes: Entry check: prompt_env exports HARNESS_ENTRY_CHECK; the coding, verify and init prompts end by running it and forbid ending on background work. entries.mjs: onlyCaps, the header's own '<n> characters (at most 2000)', validate exit 2 on caps only; journalEntry cuts summary/header to 399+… and keeps the entry, ingest prints 'trimmed summary <n>', journal_ notes it. STUB_LONG_SUMMARY. 7 checks.; tests 886 → 893; files lib/entries.mjs, lib/prompt.sh, lib/record.sh, prompts/coding.md, prompts/verify.md, … → entries.jsonl:6
-- 2026-10-29 10:48 · R2-03 · passes: Stub: each headless session prints first.jsonl's init line with a fresh session_id (kept in $STUB_DIR/sessions/<id>); --resume logs argv to resume.log, answers an unknown id as unknown-id.out (exit 1), a known one with resumed.jsonl and cumulative cost/modelUsage. STUB_NO_ENTRY, STUB_RESUME_ENTRY=good|bad|good-edits. metrics.mjs: sessionId, resumeRow, session-id, cost, append-resume. 7 checks.; tests 893 → 900; files tests/stub-claude.sh, lib/metrics.mjs, tests/checks/05-metrics-pure-tokens-cache.sh, tests/checks/76-entries-survive.sh, tests/fixtures/check-names.txt → entries.jsonl:7
-- 2026-10-29 13:27 · R2-04 · passes: entry_resume (lib/record.sh), from journal before the ingest, outside the lock: a coding/verify/init session left with no valid entry and not refused is resumed once through session() (S_RESUME/S_TURNS/S_TIMEOUT/S_BUDGET); then list/INBOX restored, edits dropped, restrict, an entry-resume metrics row. prompts/entry-resume.md, config defaults; summary.mjs and metrics summary count it as cost only.; tests 900 → 908; files lib/record.sh, lib/config.sh, lib/prompt.sh, lib/summary.mjs, lib/metrics.mjs, … → entries.jsonl:9
-- 2026-10-29 14:29 · R2-05 · passes: 0 Critical, 3 Important, 8 Minor. One Opus round on R2.diff. Fixed RED→GREEN: a result-less resume's negative cost (resumeRow), a list an init's resume writes now removed, untested resume paths (stub good-overreach, STUB_INIT_NO_LIST, STUB_NO_INIT_LINE); 6 Minors fixed, 2 left. Decision entries-survive; architecture §4/§5, README.; tests 908 → 915; files docs/plans/2026-10-29-R2-review.md, journal/decisions/2026-10-29-entries-survive.md, docs/architecture.md, README.md, lib/metrics.mjs, … → entries.jsonl:11
+- The suite waits on a condition or a barrier, never on the clock; a flake is reproduced with --repeat and fixed at its cause → journal/decisions/2026-10-29-tests-wait-not-sleep.md
+- The rerun guard: a red full suite is rerun once; a flake is green, named and counted, never quarantined → journal/decisions/2026-10-29-rerun-guard.md
+- The coordinator ends a run only when the lane count its opens used saw no lane → journal/decisions/2026-10-29-lane-count-end-check.md
+- Entries that survive: the session checks its own, a long summary is cut and kept, one resume for a missing one → journal/decisions/2026-10-29-entries-survive.md
+- A parked run's continue advice names another live run of its project and gives Michael the choice → journal/decisions/2026-10-29-continue-advice-busy-project.md
+- Merge conflicts resolved without Michael: a sorted merge for lists first, then a resolve session, verified → journal/decisions/2026-10-29-conflict-resolution.md
+- This repo's suite gets a 25-minute check timeout; TEST_JOBS stays at its default → journal/decisions/2026-10-29-check-timeout-25m.md
+- `harness show`: where a run's work is, from local refs, one change counted once → journal/decisions/2026-10-28-show.md
+- A plain start or continue queues behind a live run of its project; overlaps are named, never held → journal/decisions/2026-10-27-same-project-starts.md
 
-_3 items left out at 8192 bytes: entries.jsonl has them all._
+_64 older rules: journal/decisions._
