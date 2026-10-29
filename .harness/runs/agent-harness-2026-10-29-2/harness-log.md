@@ -143,3 +143,4 @@
 - 2026-10-29 19:24 · R3-06: entries.jsonl edited by the session; restored (the driver is its only writer)
 - 2026-10-29 19:24 · R3-06: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 19:24 · R3-06 · claude-opus-5-5 · passes=true · 48 min · 20/23 passing · tests 980
+- 2026-10-29 19:24 · R3: 1 files conflict with main (CLAUDE.md); a resolve session

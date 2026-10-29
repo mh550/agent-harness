@@ -9,6 +9,13 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 19:24 · resolve R3 · passes
+
+CLAUDE.md Gotchas: the lane added a line on {{X}} placeholders above {{SECTIONS}} in prompt templates (R3-04); main added one on stub --resume of an unknown id leaving 00000000-… in errors[] (R1-06). Independent facts, so both lines are kept, in their place; the section is at 15 lines, inside its limit. Doc-only, so no suite subset applies.
+
+- **Files:** CLAUDE.md
+- *192411-resolve-R3 · claude-opus-5-5*
+
 ### 2026-10-29 19:24 · R3-06 · passes
 
 R3 review: 0 Critical, 2 Important, 7 Minor. Fixed: 58 read docs/specs (key-ignored) → fixture + guard check in 34; ignored_only's pathspec checked (77) and moved to treekey.mjs --pathspec, output not a pathspec list re-bases; cached rows in the suite-ran check; run_init's key once; writeAtomic cleanup. Decision lanes-leftovers, two in-place lines, architecture §4/§6/§12, README.
@@ -302,22 +309,9 @@ All five R2 features hold: full suite green (963 tests), 76-entries-survive 18/1
 
 - *144745-verify-R2 · claude-sonnet-5-5*
 
-### 2026-10-29 14:32 · R1-04 · passes
-
-The lanes flakes (44, 46, 48, and 45's also-seen) were one coordinator race in lib/driver.sh: a lane exiting between the lane count and the end check ended the run 'no feature left to try' with M2 ready. Fixed: the end check also needs alive == 0. Its own check in 45 forces the window (HARNESS_COUNT_HOLD=1, tests only). Decision file; plan table rows filled.
-
-- **Files:** lib/driver.sh, bin/harness, tests/checks/45-lanes-run.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-29-lane-count-end-check.md, docs/plans/2026-10-29-R1-flakes.md, docs/architecture.md
-- **Verified:** Before: '44-lanes-record: 10/10 green' (93 s; 16/16 at TEST_JOBS=8), '46-lanes-continue: 9/10 green' (copy 7: lc log 'M1 merged' · 'no feature left to try: 2/3 passing' · 'lane M1 closed'), '48-lanes-rebase: 10/10 green'. Forced pre-fix (HARNESS_COUNT_HOLD=1): 44 0/1 with 'fatal: Not a valid object name harness-lane/rec/M2', 46 0/1 (7 FAIL incl. pr-held), 48 0/1, 45 ld run ends early. After: '44-lanes-record: 10/10 green', '46-lanes-continue: 10/10 green', '48-lanes-rebase: 10/10 green', '45-lanes-run: 10/10 green', '47-lanes-two: 10/10 green'; forced 1/1 each. New check red before the fix, green after. check-names diff: added lines only. Suite: check: green in 813 s, 944 tests.
-- **Tests:** 943 → 944
-- **Dead end:** reproducing 44 by load alone (--repeat 10, then 16 copies at TEST_JOBS=8) — green every time; the window is a few lines wide, so it took a barrier (HARNESS_COUNT_HOLD) to land the exit in it
-- **Discovery** (affects R1-05, R1-06, R1-07): HARNESS_COUNT_HOLD=1 (bin/harness passes it) holds the coordinator after its lane count until the lanes exit; logs 'count hold: …' in run.log. Use it to test whether a lanes flaker is the count/end race
-- **Discovery** (affects R1-05): 28-run-14d-harness-merge (harness merge path) and 48's MERGE_POLICY=pr check ended early with the window forced before the fix; 28 may be this race too: try it forced first
-- **Discovery** (affects R1-07): 47-lanes-two (admission at 80 %) was 10/10 green after the fix; its negative sleeps remain for R1-07 to list
-- **Proposed change:** R1-07's README/architecture §7 pass could mention HARNESS_COUNT_HOLD beside HARNESS_RECORD_DELAY as the suite's driver-side test hooks
-- *05-R1-04 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 14:32 · R1-04 · passes · The lanes flakes (44, 46, 48, and 45's also-seen) were one coordinator race in lib/driver.sh: a lane… ([in full](progress-archive.md))
 - 2026-10-29 14:31 · resolve R2 · passes · CLAUDE.md Gotchas: lane reworded the stub-runs line and added the 399+… cut fact; main added the mer… ([in full](progress-archive.md))
 - 2026-10-29 14:29 · R2-05 · passes · 0 Critical, 3 Important, 8 Minor. One Opus round on R2.diff. Fixed RED→GREEN: a result-less resume's… ([in full](progress-archive.md))
 - 2026-10-29 13:33 · R1-03 · passes · tests/lint-sleeps.sh lists each sleep line lacking '# sleep-ok:' (default tests/checks/*.sh + tests/… ([in full](progress-archive.md))
