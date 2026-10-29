@@ -14,4 +14,21 @@ ORNT='import { orientation as or, events } from "'$HERE'/../lib/metrics.mjs"; co
     && eq(or(noTs), { tokens: 24547, turns: 1, seconds: null }) && eq(or(evs.map((e, i) => i === 1 ? noTs[1] : e)), { tokens: 24547, turns: 1, seconds: 0 }) && eq(or([{ type: "result" }]), { tokens: null, turns: null, seconds: null }) ? 0 : 1);'
 check "metrics.mjs: orientation stops at the first Write" 'node --input-type=module -e "$ORNT"'
 
+# A resume (R2): the init line's session id, and an entry-resume row that holds the resume's cumulative figures minus the
+# session's (total_cost_usd and modelUsage are cumulative over a session id), compared with what jq computes from the files
+R=$HERE/fixtures/claude-resume
+check "metrics: session-id prints the init line's session_id of first.jsonl" '[[ $(node "$HERE/../lib/metrics.mjs" session-id "$R/first.jsonl") == "$(jq -r "select(.type == \"system\" and .subtype == \"init\").session_id" "$R/first.jsonl")" ]] \
+  && ! node "$HERE/../lib/metrics.mjs" session-id "$R/unknown-id.out" > /dev/null'
+RESUME='import { resumeRow, events } from "'$HERE'/../lib/metrics.mjs"; const [a, b, want, tin] = process.argv.slice(1), r = resumeRow(events(a), events(b), ["", "", "", "run", "A", "opus", "coding", "30", "0", "null", "M1"]);
+  console.error(JSON.stringify(r)); process.exit(r.kind === "entry-resume" && r.role === "coding" && r.feature === "A" && r.lane === "M1" && r.cost_usd === Number(want) && r.cost_usd > 0 && r.tokens_in === Number(tin) && r.passes === false ? 0 : 1);'
+dcost() { jq -n --slurpfile a "$1" --slurpfile b "$2" 'def c(x): x | map(select(.type == "result"))[-1].total_cost_usd; c($b) - c($a)'; }
+duse() { jq -r 'select(.type == "result").usage.input_tokens' "$1"; }
+check "metrics: an entry-resume row from first.jsonl and resumed.jsonl holds the total_cost_usd difference jq computes" 'node --input-type=module -e "$RESUME" "$R/first.jsonl" "$R/resumed.jsonl" "$(dcost "$R/first.jsonl" "$R/resumed.jsonl")" "$(duse "$R/resumed.jsonl")"'
+check "metrics: resumed-again-under-cap.jsonl against resumed.jsonl gives a positive difference" 'node --input-type=module -e "$RESUME" "$R/resumed.jsonl" "$R/resumed-again-under-cap.jsonl" "$(dcost "$R/resumed.jsonl" "$R/resumed-again-under-cap.jsonl")" "$(duse "$R/resumed-again-under-cap.jsonl")"'
+grep -v '"type":"result"' "$R/resumed.jsonl" > "$T/resumed-no-result.jsonl"
+check "metrics: a resume that ended without a result line (a timeout, a kill) costs 0, never minus the session's" 'node --input-type=module -e "import { resumeRow, events } from \"$HERE/../lib/metrics.mjs\"; const r = resumeRow(events(process.argv[1]), events(process.argv[2]), [\"\", \"\", \"\", \"run\", \"A\", \"opus\", \"coding\", \"30\", \"124\", \"null\", \"\"]);
+    console.error(JSON.stringify(r)); process.exit(r.cost_usd === 0 && r.kind === \"entry-resume\" ? 0 : 1)" "$R/first.jsonl" "$T/resumed-no-result.jsonl"'
+printf '%s\n' '{"kind":"coding","feature":"A","model":"opus","cost_usd":1.5,"turns":9,"passes":true}' '{"kind":"entry-resume","feature":"A","model":"opus","cost_usd":0.25,"turns":2,"passes":false}' > "$T/resume-metrics.jsonl"
+check "metrics: summary counts an entry-resume row's cost but never as a session" '[[ $(node "$HERE/../lib/metrics.mjs" summary "$T/resume-metrics.jsonl") == "1 sessions (1 real) · 1 features passed · \$1.75 · "* ]]'
+
 suite_end

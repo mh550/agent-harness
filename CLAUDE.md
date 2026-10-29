@@ -73,7 +73,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - INBOX.md: cut at lib/inbox.mjs answersLine (the `## Answers` outside the steering comment), never `/^## Answers/` (agent-harness-2026-10-28 2026-10-28)
 - harness needs/parked print cards: grep `  <label to 11><value>`; HARNESS_GLYPHS=unicode for `·` `⚠` (else - !) (agent-harness-2026-10-28 2026-10-28)
 - `[[ $(jq …) -ge 1 ]]`: a jq `null` is an unbound name under set -u and ends the file; test in jq (`>= 1` == true) (agent-harness-2026-10-28 2026-10-28)
-- stub runs in one check file share origin main: an earlier run's merges are on it; reset main (update-ref) between runs (agent-harness-2026-10-28 2026-10-28)
+- stub runs in one check file share origin main: update-ref it between runs; `git log --all` sees all runs' commits (agent-harness-2026-10-29-2 2026-10-29)
 - queue .args: one argument per line, a newline in one as \x1f (queue_add); a new reader decodes it as lib/queue.sh does (agent-harness-2026-10-28 2026-10-28)
 - git keeps a merge driver's %A as the file whatever its exit: a driver that exits 1 must write the markers itself (git merge-file) (agent-harness-2026-10-29 2026-10-29)
 - a check that sources lib/*.sh needs `HARNESS_HOME=$HH`: a run's session inherits its driver's, so a missing one fails only in a plain shell (2026-10-29)

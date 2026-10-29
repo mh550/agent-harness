@@ -33,7 +33,8 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 | 4 | [Harness v2](iterations/04-harness-v2.md) | 16 Oct | A reusable tool: worktrees, a deterministic driver, repair not stop, verify gates, PRs, phone steering, metrics |
 | 5 | [Harness v3](iterations/05-harness-v3.md) | 17 Oct | Merges verified milestones itself, waits out limits box-wide, queues nights, measures and retros every run into a ledger |
 | 6 | [The harness maintains itself](iterations/06-the-harness-maintains-itself.md) | 23–25 Oct | A week of v3 nights silted up (224 of 520 passing features merged, 10 OOM kills, 404 permission rules): discovery → one root cause → clean up once by hand *and* change the harness so it stays clean |
-| 7 | [Throughput: lanes, a split suite, memory with scopes](iterations/07-throughput-lanes-and-memory-scopes.md) | 25 Oct → | The harness is now safe (25/25 verified, 0 real OOM kills) but slow (25 features in 15 h). Measuring showed the harness's own 8-min suite and a serial driver were the bottleneck, not usage limits. Design: parallel milestone lanes with no new cleanup work, a split suite (589 s → 165 s), and one CoALA bucket × scope memory model, built by the harness itself. In progress |
+| 7 | [Throughput: lanes, a split suite, memory with scopes](iterations/07-throughput-lanes-and-memory-scopes.md) | 25–28 Oct | The harness is now safe (25/25 verified, 0 real OOM kills) but slow (25 features in 15 h). Measuring showed the harness's own 8-min suite and a serial driver were the bottleneck, not usage limits. Design: parallel milestone lanes with no new cleanup work, a split suite (589 s → 165 s), and one CoALA bucket × scope memory model, built by the harness itself. Closed: lanes 17/17, memory 23/23, retro 12/12, all merged by the harness; the suite's gain was spent by growth (165 s at 335 checks → 601 s at 859) |
+| 8 | [From unattended nights to a harness that improves itself](iterations/08-unattended-nights-to-self-improvement.md) | 27 Oct → | Make every stop visible (one needs record, `harness status` on one screen, 24/24), remove the stops that don't need me (flake rerun, conflicts resolved by a session behind the verify gate, 11/11), then chain self-improvement runs. The chain broke: run 2 started on the old harness, and moving it took four commands. Proposed, not built: pinned installs, an adoption gate, edge/stable channels, rollback. In progress |
 
 ## How to keep it (the habit)
 
@@ -54,9 +55,10 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 
 - **Interview (10–15 min):** a story with a clear arc:
   1. The problem: building a real app with agents, and the limits I hit (context, usage, permissions).
-  2. The iterations, each with its trigger and a metric. Iterations 6 and 7 end with ready two-minute versions:
+  2. The iterations, each with its trigger and a metric. Iterations 6, 7 and 8 end with ready two-minute versions:
      a system that silted up, one root cause, and a cleanup that also fixed the harness (6); then measuring before
-     parallelizing, designing against anti-goals, and the harness building its own parallelism (7).
+     parallelizing, designing against anti-goals, and the harness building its own parallelism (7); making stops
+     visible, removing the mechanical ones, and a self-improvement chain that broke on its own install (8).
   3. A live look at a run: `harness status`, the PR, `metrics.jsonl`.
   4. What I'd do next.
   Source: the iteration files' "Trigger" and "Evidence" sections.

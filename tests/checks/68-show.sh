@@ -84,4 +84,9 @@ check "show: read-only: no fetch, the config read in a subshell, the project's o
   ! grep -E "fetch" <(sed -n "/^cmd_show()/,/^}/p" "$HERE/../bin/harness") > /dev/null && grep -F "\$( (harness_config" <(sed -n "/^cmd_show()/,/^}/p" "$HERE/../bin/harness") > /dev/null &&
   n0=$(git count-objects | cut -d" " -f1) && "$H" show sh1 > /dev/null && [[ $(git count-objects | cut -d" " -f1) == "$n0" ]] &&
   bash -n "$HERE/../bin/harness" && node --check "$HERE/../lib/show.mjs"'
+SHOWR='import { renderFeature } from "'$HERE'/../lib/show.mjs"; const s = (kind, role) => ({ role, kind, model: "opus", wall_s: 60, cost_usd: 1, result: "success" });
+  const doc = { feature: { id: "A", milestone: "M1", description: "a", passes: false, attempts: 1, max_attempts: 2, steps: [], sessions: [s("coding", "build"), s("entry-resume", "coding")], files: [], commits: [], card: null } };
+  console.log([].concat(renderFeature(doc, { width: 200, now: 0 }, { head: { r: { run: "x", features: {} }, x: {}, extra: [] } })).join("\n"));'
+check "show: an entry resume's metrics row is listed as an entry resume, never a second coding session" '(cd "$T" && node --input-type=module -e "$SHOWR") > "$T/showr.out" \
+  && grep -E " · entry resume · opus · " "$T/showr.out" > /dev/null && ! grep -E " · coding · " "$T/showr.out" > /dev/null'
 suite_end

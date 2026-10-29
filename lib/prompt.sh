@@ -48,7 +48,7 @@ prompt_env() {
     HARNESS_CHECK="$CHECK" HARNESS_CHECK_CMD=$CHECK_CMD HARNESS_CHECK_KEY_IGNORE=$CHECK_KEY_IGNORE HARNESS_SMOKE_CMD=$SMOKE_CMD HARNESS_INIT_CMD=$INIT_CMD \
     HARNESS_SPEC_FILES=${SPEC_FILES:-none} HARNESS_MAIN_BRANCH=$MAIN_BRANCH HARNESS_PROJECT=$PROJECT_NAME HARNESS_WT=$WT \
     HARNESS_POLICY=$POLICY HARNESS_LIVE_LOCK=$LIVE_LOCK HARNESS_CHECK_CACHE=$STATE/green \
-    HARNESS_LINT="node $HARNESS_HOME/lib/features.mjs lint" \
+    HARNESS_LINT="node $HARNESS_HOME/lib/features.mjs lint" HARNESS_ENTRY_CHECK="node $HARNESS_HOME/lib/entries.mjs validate" \
     HARNESS_CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/harness/$PROJECT_NAME \
     HARNESS_SCOPE_PREFIX="$(scope_unit "$RUN_ID" "")" HARNESS_CHECK_MEMORY_MAX=$CHECK_MEMORY_MAX HARNESS_CHECK_TIMEOUT=$CHECK_TIMEOUT \
     HARNESS_CHECK_RERUN=$CHECK_RERUN   # check.sh caps and reruns the same way for both
@@ -66,7 +66,8 @@ prompt_render() {   # template name → stdout: the static template, the policy,
     else rules=("Project rules (this project has no CLAUDE.md)=$HARNESS_HOME/prompts/parts/$where.md"); fi
   elif [[ $where == where-things-go-readonly ]]; then rules+=("$HARNESS_HOME/prompts/parts/where-things-go-override.md")
   fi
-  if [[ $1 == retro ]]; then extra=("${rules[@]}")
+  if [[ $1 == entry-resume ]]; then extra=()   # a resumed session has the policy, the run and the rules in its context
+  elif [[ $1 == retro ]]; then extra=("${rules[@]}")
   else   # these go at the template's {{SECTIONS}} line: nothing run-specific before the policy (decisions/2026-10-21-static-first-prompts)
     extra=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md" "$HARNESS_HOME/prompts/parts/run.md")
     # the brief as written: a "{{X}}" in it would put session values into the shared prefix (E3 review F7)

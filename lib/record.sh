@@ -259,12 +259,14 @@ clock() {
 
 # kind model log who → runs claude headless on $LS/prompt.md in its own capped scope (decisions/2026-10-25-scoped-sessions);
 # sets S_EXIT, S_WALL, S_PEAK (MB, empty when uncapped) and S_NOTES (what the scope showed; noted here, except for the
-# read-only retro, whose caller notes them after restrict, which would revert them)
+# read-only retro, whose caller notes them after restrict, which would revert them). The caller's S_RESUME (a session id:
+# --resume, and its entry.json kept), S_TURNS, S_TIMEOUT and S_BUDGET override the defaults (entry_resume's)
 session() {
-  local settings=() mcp=(--strict-mcp-config) t0 seq unit left x
+  local settings=() mcp=(--strict-mcp-config) t0 seq unit left x resume=()
   t0=$(date +%s) S_NOTES=()
+  [[ -n ${S_RESUME:-} ]] && resume=(--resume "$S_RESUME")
   # an entry.json no ingest took (the driver died after its session) would pass for this session's own
-  [[ -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$STATE/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
+  [[ -z ${S_RESUME:-} && -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$STATE/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
   cp "$LS/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
   [[ $1 == coding || $1 == verify ]] && cp "$RUN_DIR/context.md" "${3%.jsonl}.context.md" 2> /dev/null   # and the pack it read first
   [[ -f $AGENT_SETTINGS ]] && settings=(--settings "$WT/$AGENT_SETTINGS")
@@ -274,9 +276,9 @@ session() {
   seq=$(rec_count "$STATE/scope-seq" 1); unit=$(scope_unit "$RUN_ID" "${LANEU:+$LANEU-}s$seq")
   # timeout inside the scope: outside it would signal the wrapper and leave claude running; -k: claude ignoring TERM
   S_UNIT=$unit   # the EXIT trap stops it when the driver dies mid-session
-  scope_run "$unit" "$SESSION_MEMORY_HIGH" "$SESSION_MEMORY_MAX" timeout -k 30s "$SESSION_TIMEOUT" \
+  scope_run "$unit" "$SESSION_MEMORY_HIGH" "$SESSION_MEMORY_MAX" timeout -k 30s "${S_TIMEOUT:-$SESSION_TIMEOUT}" \
     "$CLAUDE" -p "$(cat "$LS/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" "${mcp[@]}" \
-    --max-turns "$MAX_TURNS" --max-budget-usd "$SESSION_BUDGET_USD" --output-format stream-json --verbose > "$3" 2>&1
+    --max-turns "${S_TURNS:-$MAX_TURNS}" --max-budget-usd "${S_BUDGET:-$SESSION_BUDGET_USD}" --output-format stream-json --verbose "${resume[@]}" > "$3" 2>&1
   S_EXIT=$? S_WALL=$(( $(date +%s) - t0 ))
   # read what the wrapper recorded, then stop the scope: whatever the session left running goes with it
   S_PEAK=$(scope_peak "$unit") left=$(scope_left "$unit"); scope_stop "$unit"; S_UNIT=""
@@ -290,6 +292,46 @@ session() {
   MET usage "$3" > "$USAGE.$$.tmp" 2> /dev/null && mv "$USAGE.$$.tmp" "$USAGE" || rm -f "$USAGE.$$.tmp"
   MET usage "$3" five_hour > "$USAGE5.$$.tmp" 2> /dev/null && mv "$USAGE5.$$.tmp" "$USAGE5" || rm -f "$USAGE5.$$.tmp"
   log "  $1 exit $S_EXIT · $(git log --oneline -1)"
+}
+
+# <kind> <id> <transcript> <model> <who> → once, a coding, verify or init session whose entry the ingest would make
+# minimal (missing, or invalid beyond the caps the ingest trims) and that no limit refused: resumed by its session id to
+# write entry.json and nothing else, in its own scope, before the ingest and outside the record lock. Its other edits
+# go (the run's list and INBOX put back, the tree's changes dropped, its commits reverted); its cost is an entry-resume
+# metrics row, never a session. Sets ENTRY_RESUMED (journal_'s note). docs/plans/2026-10-29-R2-entries.md §The resume
+entry_resume() {
+  local errs sid budget base f out
+  ENTRY_RESUMED=""
+  [[ $1 == coding || $1 == verify || $1 == init ]] || return 0
+  errs=$(node "$HARNESS_HOME/lib/entries.mjs" validate "$RUN_DIR/entry.json" "$2" "$1" 2>&1)
+  (( $? == 1 )) || return 0   # valid, or only a cap over (2: the ingest trims it)
+  MET limit "$3" "$S_WALL" "$S_EXIT" > /dev/null && return 0   # refused: the limit would refuse the resume too
+  sid=$(MET session-id "$3" 2> /dev/null) || { note "$5: no session id in its transcript; not resumed"; return 0; }
+  [[ $errs == missing ]] && errs="It is missing." || errs="The entry check printed:"$'\n\n'$(sed 's/^/    /' <<< "$errs")
+  HARNESS_FEATURE=$2 HARNESS_ENTRY_KIND=$1 HARNESS_ENTRY_ERRORS=$errs prompt entry-resume
+  for f in feature_list.json INBOX.md; do   # absent (an initializer's list): a marker, so one the resume writes goes
+    rm -f "$SCRATCH/resume-absent-$f"; cp -p "$RUN_DIR/$f" "$SCRATCH/resume-before-$f" 2> /dev/null || : > "$SCRATCH/resume-absent-$f"; done
+  budget=$(awk -v a="$(MET cost "$3" 2> /dev/null)" -v b="$ENTRY_RESUME_BUDGET_USD" 'BEGIN { print a + b }')
+  base=$(git rev-parse HEAD)
+  local S_EXIT S_WALL S_PEAK S_NOTES S_UNIT   # the resume's: the caller reads the session's own after this
+  S_RESUME=$sid S_TURNS=$ENTRY_RESUME_TURNS S_TIMEOUT=$ENTRY_RESUME_TIMEOUT S_BUDGET=$budget \
+    session entry-resume "$4" "${3%.jsonl}.resume.jsonl" "$5"
+  ENTRY_RESUMED=1
+  # the driver reads the list's claim and the INBOX's questions after this: the resume may write entry.json only
+  for f in feature_list.json INBOX.md; do
+    if [[ -e $SCRATCH/resume-absent-$f ]]; then rm -f "$SCRATCH/resume-absent-$f"
+      [[ -e $RUN_DIR/$f ]] && { rm -f "$RUN_DIR/$f"; note "$5: the resume wrote $f; removed"; }; continue; fi
+    cmp -s "$SCRATCH/resume-before-$f" "$RUN_DIR/$f" || { cp -p "$SCRATCH/resume-before-$f" "$RUN_DIR/$f"; note "$5: the resume changed $f; restored"; }
+    rm -f "$SCRATCH/resume-before-$f"
+  done
+  # the tree was clean before it (the WIP commit, restrict): its uncommitted edits go uncommitted, then its commits
+  git checkout -q -- . ':!.harness/runs' 2> /dev/null; git clean -fdq -- . ':!.harness/runs' 2> /dev/null
+  if [[ $(git rev-parse HEAD) != "$base" ]]; then
+    out=$(restrict "$base" record entry-resume | paste -sd' ')
+    [[ -n $out ]] && { note "$5: reverted edits the resume may not make: $out"; sync_lane; }
+  fi
+  record MET append-resume "$3" "${3%.jsonl}.resume.jsonl" "$REC/metrics.jsonl" "$RUN_ID" "$2" "$4" "$1" "$S_WALL" "$S_EXIT" "$S_PEAK" "${LANE:-}"
+  return 0
 }
 
 # <kind> <feature> <transcript> <model> <start commit> → the session's entry.json into entries.jsonl: the driver is its
@@ -309,6 +351,7 @@ journal() {
     resolve) who="resolve $id" ;;   # its verdict is the driver's checks (lib/resolve.sh), never its entry's outcome
     init)   F summary "$LIST" > /dev/null 2>&1 && outcome=passes ;;
   esac
+  entry_resume "$kind" "$id" "$3" "$4" "$who"   # before the loop below, which also undoes a resume's journal edits
   if [[ $PWD == "$RWT" ]]; then   # the initializer: committed by the WIP/restrict commit, so a diff from the start sees it
     for f in entries.jsonl progress-archive.md; do
       git diff --quiet "$5" -- "$RUN_DIR/$f" 2> /dev/null && continue
@@ -325,7 +368,7 @@ journal() {
   return 0
 }
 journal_() {   # who kind id name model outcome worktree: the ingest and the render, in the record
-  local out rc n
+  local out rc n f
   if [[ $PWD != "$RWT" ]]; then   # a lane: the take-back of the copy's entry, under the lock with the ingest
     rm -f "$REC/entry.json"; [[ -e $RUN_DIR/entry.json ]] && mv -f "$RUN_DIR/entry.json" "$REC/entry.json"
   fi
@@ -333,7 +376,11 @@ journal_() {   # who kind id name model outcome worktree: the ingest and the ren
   # a question without a Files: line got the session's files (decisions/2026-10-27-question-locations)
   n=$(sed -n 's/^filled //p' <<< "$out"); out=$(grep -v '^filled ' <<< "$out")
   [[ -n $n ]] && note "$1: $n question(s) had no Files: line; filled from the session's diff"
-  (( rc == 3 )) && note "$1: entry.json $out; recorded a minimal entry"
+  # a summary or header over its cap, the entry's only fault: cut and kept, not minimal (docs/plans/2026-10-29-R2-entries.md)
+  while read -r f n; do [[ -n $n ]] && note "$1: entry.json $f $n characters; cut to $([[ $f == header ]] && echo 2000 || echo 400) and kept"
+  done < <(sed -n 's/^trimmed //p' <<< "$out"); out=$(grep -v '^trimmed ' <<< "$out")
+  if (( rc == 3 )); then note "$1: entry.json ${ENTRY_RESUMED:+still }$out${ENTRY_RESUMED:+ after one resume}; recorded a minimal entry"
+  elif (( rc == 0 && ${ENTRY_RESUMED:-0} )); then note "$1: entry.json written on a resume"; fi
   (( rc == 0 || rc == 3 )) || { note "$1: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
     mv -f "$REC/entry.json" "$STATE/entry-failed-$4.json" 2> /dev/null; }
   out=$(node "$HARNESS_HOME/lib/entries.mjs" render "$REC" 2>&1) || note "$1: rendering progress.md failed: $out"
