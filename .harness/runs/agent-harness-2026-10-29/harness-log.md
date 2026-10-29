@@ -1,3 +1,6 @@
 - 2026-10-29 01:29 · test count: parsed (generic)
 - 2026-10-29 01:40 · feature list written: 0/11 passing
 - 2026-10-29 01:40 · lint: clean
+- 2026-10-29 01:40 · lane N1 opened (slot 0, port 7817, from 6ffecbb)
+- 2026-10-29 01:40 · context.md for N1-01: 3451 bytes
+- 2026-10-29 01:46 · N1-01 · claude-opus-5-5 · passes=true · 6 min · 1/11 passing · tests 859

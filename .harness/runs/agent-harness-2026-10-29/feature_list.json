@@ -1,6 +1,12 @@
-{ "run": "agent-harness-2026-10-29", "branch": "harness/agent-harness-2026-10-29",
+{
+  "run": "agent-harness-2026-10-29",
+  "branch": "harness/agent-harness-2026-10-29",
   "features": [
-    { "id": "N1-01", "milestone": "N1", "kind": "plan", "model": "opus",
+    {
+      "id": "N1-01",
+      "milestone": "N1",
+      "kind": "plan",
+      "model": "opus",
       "description": "docs/plans/2026-10-29-N1-rerun-guard.md: where the rerun goes in lib/check.sh, the HARNESS_FAILED= line in tests/run.sh, the flakes.jsonl row and where the driver notes it, the summary, report and debrief fields, and the check list by file.",
       "steps": [
         "docs/plans/2026-10-29-N1-rerun-guard.md exists with the sections `## check.sh`, `## tests/run.sh`, `## flakes.jsonl and flakes_note`, `## summary, report, debrief`, `## Checks`, `## Docs`",
@@ -10,8 +16,14 @@
         "no file outside docs/plans/ changed: `git diff --stat origin/main...HEAD -- . ':!.harness/runs' ':!docs/plans'` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing (cached: docs/plans is in CHECK_KEY_IGNORE)"
       ],
-      "after": [], "passes": false },
-    { "id": "N1-02", "milestone": "N1", "kind": "build", "model": "opus",
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "N1-02",
+      "milestone": "N1",
+      "kind": "build",
+      "model": "opus",
       "description": "tests/run.sh prints `HARNESS_FAILED=<file basenames>` on a red full run, and lib/check.sh's full form reruns a red once by CHECK_RERUN (auto, failed, suite, off; default auto, exported as HARNESS_CHECK_RERUN): a rerun that is green says `check: green after a rerun (flaky: <names>)` and exits 0, a rerun that is red says `red again on a rerun of <names>`; check.out keeps the first run, check-rerun.out the rerun, the green marker the first run's total, and each rerun-green appends a flakes.jsonl row.",
       "steps": [
         "tests/checks/33-suite-runner.sh: with TEST_CHECKS at the three-file stub dir where 03-c exits 1, `bash tests/run.sh` prints the line `HARNESS_FAILED=03-c` right after `files that exited non-zero: 03-c`; with every stub file green it prints no `HARNESS_FAILED=` line; in tests/run.sh the echo is guarded so a red conformance check (a failure outside every file, full runs only) prints none (read the guard: it can't run inside the suite)",
@@ -25,8 +37,16 @@
         "every new check name is in tests/fixtures/check-names.txt (LC_ALL=C sorted); `bash -n lib/check.sh tests/run.sh lib/config.sh lib/prompt.sh lib/lane.sh` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N1-01"], "passes": false },
-    { "id": "N1-03", "milestone": "N1", "kind": "build", "model": "opus",
+      "after": [
+        "N1-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N1-03",
+      "milestone": "N1",
+      "kind": "build",
+      "model": "opus",
       "description": "The driver notes every new flakes.jsonl row as `flaky: <names> (red, then green on a rerun; load <1-min>)` after each coding session, verify and re-base and before finish's summary, keeping its offset in $STATE/flakes-noted; and a red that stays red still un-passes its feature with today's note, shown in stub runs.",
       "steps": [
         "lib/record.sh gains `flakes_note`: the rows of `$STATE/green/flakes.jsonl` past the byte offset in `$STATE/flakes-noted` get one `note` each (`flaky: <names> (red, then green on a rerun; load <1-min>)`, `whole suite` when names is empty) and the offset moves on; lib/lane.sh calls it after a coding session's un-pass check, after `verify` and after `rebase`; lib/driver.sh's `finish` calls it before its `run ended` note",
@@ -36,8 +56,16 @@
         "every new check name is in tests/fixtures/check-names.txt; `bash -n lib/record.sh lib/lane.sh lib/driver.sh` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N1-02"], "passes": false },
-    { "id": "N1-04", "milestone": "N1", "kind": "build", "model": "opus",
+      "after": [
+        "N1-02"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N1-04",
+      "milestone": "N1",
+      "kind": "build",
+      "model": "opus",
       "description": "summary.json gains `flakes: {count, names}` from the state dir's green/flakes.jsonl, report.md a `| Flakes | … |` row (`0` when none), and the debrief's gatherer a `#### flakes` block naming the checks that flaked in two or more of the project's last five ledgered runs.",
       "steps": [
         "lib/summary.mjs build: `flakes: {count: <rows>, names: {\"<name>\": <n>}}` read from `<state>/green/flakes.jsonl` (`{count: 0, names: {}}` without the file; a whole-suite rerun counts under the name `whole suite`); every key tests/fixtures/summary-report.json has is still produced (a unit check compares `Object.keys` of a build against the fixture's, plus `flakes`)",
@@ -47,8 +75,16 @@
         "every new check name is in tests/fixtures/check-names.txt; `node --check lib/summary.mjs` and `bash -n lib/debrief.sh` print nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N1-03"], "passes": false },
-    { "id": "N1-05", "milestone": "N1", "kind": "review", "model": "opus",
+      "after": [
+        "N1-03"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N1-05",
+      "milestone": "N1",
+      "kind": "review",
+      "model": "opus",
       "description": "Review + simplify of N1 and its docs: an Opus reviewer reads the milestone diff from a file, Critical and Important findings are fixed RED→GREEN, simplification passes applied, and docs/architecture.md, README.md and the decision file describe the rerun guard as shipped.",
       "steps": [
         "`git diff origin/main...HEAD -- . ':!.harness/runs' > /tmp/harness/agent-harness/agent-harness-2026-10-29/review-N1.diff`; an Opus subagent reviews that file (one round; a second only when the first found something Critical); every Critical or Important finding gets a failing check first, then its fix; the entry's summary ends `<n> Critical, <n> Important, <n> Minor`",
@@ -58,9 +94,16 @@
         "journal/decisions/2026-10-29-rerun-guard.md reads as the shipped behaviour (edited in place, with an `Updated in place 2026-10-29:` line, if N1-03 or N1-04 changed it)",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N1-04"], "passes": false },
-
-    { "id": "N2-01", "milestone": "N2", "kind": "plan", "model": "opus",
+      "after": [
+        "N1-04"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N2-01",
+      "milestone": "N2",
+      "kind": "plan",
+      "model": "opus",
       "description": "docs/plans/2026-10-29-N2-conflict-resolution.md: the sorted merge driver's wiring, `resolve` in lib/resolve.sh (signature, return codes, the index snapshot, the checks after the session), the exact call-site changes in sync_main, rebase, merge_one and slot_open, the stub's `# Resolve session` modes and the flag that makes two lanes conflict, the needs cards' `tried` field, and the check list by file.",
       "steps": [
         "docs/plans/2026-10-29-N2-conflict-resolution.md exists with the sections `## Layer 1: merge-sorted.sh`, `## Layer 2: resolve.sh`, `## Call sites`, `## The gate`, `## Stubs and fixtures`, `## Visible`, `## Checks`, `## Docs`",
@@ -71,8 +114,16 @@
         "no file outside docs/plans/ changed: `git diff --stat origin/main...HEAD -- . ':!.harness/runs' ':!docs/plans'` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N1"], "passes": false },
-    { "id": "N2-02", "milestone": "N2", "kind": "build", "model": "opus",
+      "after": [
+        "N1"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N2-02",
+      "milestone": "N2",
+      "kind": "build",
+      "model": "opus",
       "description": "Layer 1: lib/merge-sorted.sh, a git merge driver for one-item-per-line LC_ALL=C sorted files (the three-way union minus what either side removed), opted into by .gitattributes (`tests/fixtures/check-names.txt merge=sorted-union` in this repo) and wired by the harness as a worktree-local git config in the record worktree at start and in each slot at slot_open.",
       "steps": [
         "`bash lib/merge-sorted.sh <O> <A> <B>` on the pair tests/fixtures/git-conflict/names.conflicted.txt stands for (base `a check` and `c check`; A adds `b lane check`; B adds `b main check`) exits 0 and leaves A as the four lines `a check`, `b lane check`, `b main check`, `c check`",
@@ -83,8 +134,16 @@
         "every new check name is in tests/fixtures/check-names.txt; `bash -n lib/merge-sorted.sh lib/record.sh lib/driver.sh bin/harness tests/stub-claude.sh` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N2-01"], "passes": false },
-    { "id": "N2-03", "milestone": "N2", "kind": "build", "model": "opus",
+      "after": [
+        "N2-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N2-03",
+      "milestone": "N2",
+      "kind": "build",
+      "model": "opus",
       "description": "Layer 2, the happy path: lib/resolve.sh's `resolve`, prompts/resolve.md, the stub's `# Resolve session`, the CONFLICTS, RESOLVE_* and MAX_RESOLVES settings; merge_one's conflict routes to the lane's rebase, rebase runs a resolve session instead of aborting, a resolved merge takes the verify round and merges with the tree that was verified; CONFLICTS=michael and `harness merge` keep today's path.",
       "steps": [
         "lib/config.sh: `CONFLICTS=resolve RESOLVE_MODEL=opus RESOLVE_MAX_TURNS=60 RESOLVE_BUDGET_USD=5 RESOLVE_TIMEOUT=30m MAX_RESOLVES=3`, each commented in templates/user/config.sh",
@@ -98,8 +157,16 @@
         "every new check name is in tests/fixtures/check-names.txt; `bash -n lib/resolve.sh lib/lane.sh lib/record.sh lib/config.sh tests/stub-claude.sh` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N2-02"], "passes": false },
-    { "id": "N2-04", "milestone": "N2", "kind": "build", "model": "opus",
+      "after": [
+        "N2-02"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N2-04",
+      "milestone": "N2",
+      "kind": "build",
+      "model": "opus",
       "description": "Layer 2's bounds and fallbacks: a session that leaves markers, gives up or edits outside the conflict; a session refused by a limit is deferred, never a stop; MAX_RESOLVES and the re-base rounds bound it; sync_main at a lane's verify resolves too; the record branch's sync_main and slot_open keep today's path; the merge_conflict and main_conflict cards say a resolve session was tried.",
       "steps": [
         "tests/stub-claude.sh: STUB_MERGE_RESOLVE=markers leaves one `<<<<<<<` line in README.md and ends `RESOLVED: README.md`; give-up edits nothing and ends `UNRESOLVED: stub gives up`; stray does what both does and also writes a new line to work-A.txt and a new file stray.txt; STUB_RESOLVE_LIMIT=1 makes the first resolve session the fixture usage-limit refusal",
@@ -111,8 +178,16 @@
         "every new check name is in tests/fixtures/check-names.txt; `bash -n lib/resolve.sh lib/lane.sh lib/record.sh tests/stub-claude.sh` and `node --check lib/needs.mjs` print nothing; 77-resolve-fallbacks.sh's timing line is under 300 s (split the file by topic if not)",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N2-03"], "passes": false },
-    { "id": "N2-05", "milestone": "N2", "kind": "build", "model": "opus",
+      "after": [
+        "N2-03"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N2-05",
+      "milestone": "N2",
+      "kind": "build",
+      "model": "opus",
       "description": "A resolution is visible, never asked about: the note names the files, model, minutes and the round that follows; summary.json gains `conflicts: {resolved, escalated, sessions}`; report.md a `| Conflicts | … |` row; the milestone's PR body a `Merged main in with a resolve session` paragraph listing the files; no needs record and no notification for a resolution that passed its gate.",
       "steps": [
         "after a resolved merge the note reads `<m>: main merged in by a resolve session (<files>; <model>, <n> min); one verify round follows` from rebase and `…; the verify goes on with main merged` from sync_main",
@@ -122,8 +197,16 @@
         "every new check name is in tests/fixtures/check-names.txt; `node --check lib/summary.mjs` and `bash -n lib/record.sh lib/resolve.sh` print nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N2-04"], "passes": false },
-    { "id": "N2-06", "milestone": "N2", "kind": "review", "model": "opus",
+      "after": [
+        "N2-04"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N2-06",
+      "milestone": "N2",
+      "kind": "review",
+      "model": "opus",
       "description": "Review + simplify of N2 and its docs: an Opus reviewer reads the milestone diff from a file, Critical and Important findings are fixed RED→GREEN, simplification passes applied, and docs/architecture.md, README.md and the decision file describe conflict resolution as shipped.",
       "steps": [
         "`git diff origin/main...HEAD -- . ':!.harness/runs' > /tmp/harness/agent-harness/agent-harness-2026-10-29/review-N2.diff`; an Opus subagent reviews that file (one round; a second only when the first found something Critical); every Critical or Important finding gets a failing check first, then its fix; the entry's summary ends `<n> Critical, <n> Important, <n> Minor`",
@@ -133,5 +216,10 @@
         "journal/decisions/2026-10-29-conflict-resolution.md complete: finding · choice · rejected (Michael for every conflict; `-X ours/theirs`; a union driver without the three-way removal; resolving on main; a resolve session without the verify round; a resolve session in the coordinator for slot_open), the slot_open case named as the next step if it shows up; edited in place with an `Updated in place 2026-10-29:` line where N2-04 or N2-05 changed it",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "after": ["N2-05"], "passes": false }
-  ] }
+      "after": [
+        "N2-05"
+      ],
+      "passes": false
+    }
+  ]
+}
