@@ -127,7 +127,7 @@
       "description": "Layer 1: lib/merge-sorted.sh, a git merge driver for one-item-per-line LC_ALL=C sorted files (the three-way union minus what either side removed), opted into by .gitattributes (`tests/fixtures/check-names.txt merge=sorted-union` in this repo) and wired by the harness as a worktree-local git config in the record worktree at start and in each slot at slot_open.",
       "steps": [
         "`bash lib/merge-sorted.sh <O> <A> <B>` on the pair tests/fixtures/git-conflict/names.conflicted.txt stands for (base `a check` and `c check`; A adds `b lane check`; B adds `b main check`) exits 0 and leaves A as the four lines `a check`, `b lane check`, `b main check`, `c check`",
-        "a base line one side removed stays removed; a line both sides added is one line; a side that fails `LC_ALL=C sort -c` makes it exit 1 with A untouched (git reports the conflict as usual)",
+        "a base line one side removed stays removed; a line both sides added is one line; a side that fails `LC_ALL=C sort -c` gets git's text merge (`git merge-file`): clean exits 0, a conflict exits 1 with its `<<<<<<<` markers in A",
         "`.gitattributes` at the repo root holds `tests/fixtures/check-names.txt merge=sorted-union`; the harness runs `git config --worktree merge.sorted-union.driver \"$HARNESS_HOME/lib/merge-sorted.sh %O %A %B\"` and `merge.sorted-union.name` where it creates the record worktree (after `extensions.worktreeConfig`) and in slot_open; `git -C <slot> config --worktree merge.sorted-union.driver` prints the harness's path and `git -C $T/proj config merge.sorted-union.driver` prints nothing",
         "tests/checks/75-merge-sorted.sh (new): the driver checks above; a throwaway repo with the attribute and the worktree config where two branches each add an adjacent name to a sorted list merges with exit 0, no `<<<<<<<` line and the union; a stub run with MAX_LANES=2 whose lanes M1 and M2 each add a name to a sorted file under the attribute (a new stub flag from the plan) ends with both merged into main, no `conflicts with main` note and no file under $HARNESS_STATE/proj/<run>/needs/",
         "journal/decisions/2026-10-29-conflict-resolution.md started: finding · choice (layer 1) · rejected (a union driver without the three-way removal: it brings back a deleted name and the conformance check goes red); record as a new decision",
@@ -137,7 +137,7 @@
       "after": [
         "N2-01"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N2-03",
