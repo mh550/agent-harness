@@ -9,6 +9,22 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 18:52 · R4-01 · passes
+
+Wrote docs/plans/2026-10-29-R4-questions.md: the question reason, a key that drops the harness's Files fill (worktree paths differ per run), refresh, the move forward through sibling state dirs, card and sweep rule (resolvedBy shared with pack), journal_'s questions_ after the ingest, readers, the skill step, 17 check names, needs_fixture question, STUB_ASK_TWO/AGAIN. No code changed.
+
+- **Files:** docs/plans/2026-10-29-R4-questions.md
+- **Verified:** check.sh green (cached, 976 tests; docs/plans is outside the key); R2 merged: grep -c harness-merge/agent-harness-2026-10-29-2-R2 on origin/main = 1
+- **Tests:** 976 → 976
+- **Discovery** (affects R4-02): Adding a reason turns 58 (REASONS table literal, '15 reasons' in its name) and 59 (one fixture per reason in tests/fixtures/needs, FILLED's parked-only .question) red: plan §2.6 lists the edits
+- **Discovery** (affects R4-03): In a default stub run only A (verify un-passes it) and C (BROKEN first) get a second coding session: STUB_RESOLVE=A, not B, resolves STUB_ASK=A's question after STUB_ASK_AGAIN=B
+- **Discovery** (affects R4-02, R4-03): entries.jsonl questions carry the fill ' Files (harness, from the session): <abs paths>': a key over the raw first 80 characters would differ per run for a short question; questionKey cuts it (entries.mjs unfilled, to export)
+- **Discovery** (affects R4-04): status line stays 'NEEDS YOU <n> · harness needs' (53 pins it): with questions it reads 'NEEDS YOU 1 · 3 questions · harness needs'
+- **Resolved:** tests/lib.sh now holds tended, held (clears vwait-* too), ats and debriefs: a check file must not redefine them differently
+- **Proposed change:** R4-03 step 3: use STUB_ASK=A STUB_ASK_AGAIN=B STUB_RESOLVE=A (A's second session after M1's verify is later than B's entry); STUB_RESOLVE=B names B's question and B has no later session
+- **Proposed change:** R4-04 step 2: the status line is 'NEEDS YOU 1 · 3 questions · harness needs' (the hint stays); the check matches the prefix
+- *16-R4-01 · claude-opus-5-5*
+
 ### 2026-10-29 18:35 · R3-05 · passes
 
 Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/slot-1) and the merged harness-lane/sp/M1 on origin (one would: line each, both kept; the real gc then removes the slot). 77 starts two merge_milestones M1 at once on one state and clone: one note, one pr merge. Both green at once; each fails when what it guards is broken.
@@ -290,25 +306,9 @@ CLAUDE.md Gotchas: lane reworded the stub-runs line and added the 399+… cut fa
 - **Proposed change:** R2-05 step 1's diff command leaves out docs/: fine for a code review, but the plan and docs are then reviewed by no one
 - *04-R2-05 · claude-opus-5-5*
 
-### 2026-10-29 13:33 · R1-03 · passes
-
-tests/lint-sleeps.sh lists each sleep line lacking '# sleep-ok:' (default tests/checks/*.sh + tests/lib.sh; stubs exempt), 3 checks in 75-suite-tools. Swept 23 files: every counted poll and waitf copy is wait_for; orders wait on a trace; negatives, live pids and slow work keep a marked sleep. Merged origin/main and swept its new 75-78 too; Gotchas back to 15.
-
-- **Files:** tests/lint-sleeps.sh, tests/lib.sh, tests/checks/75-suite-tools.sh, tests/fixtures/check-names.txt, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/checks/32-l5-queue-runner-re.sh, tests/checks/47-lanes-two.sh, tests/checks/48-lanes-rebase.sh, tests/checks/49-lanes-slots.sh, tests/checks/73-check-rerun.sh, +1 more
-- **Verified:** the 3 lint checks watched failing (6/9 in 75-suite-tools before lint-sleeps.sh existed), then green; bash tests/lint-sleeps.sh on the tree: no output, rc 0 (on tests/stub-claude.sh: rc 1, so its exemption is the default's scope); bash tests/run.sh 08-scope: 125/125; 39-memlint: 19/19; full suite via lib/check.sh: green after a rerun, 943 tests (first pass: FAIL harness desk --list in 13, the same flake R2-02 saw before this sweep); git diff origin/main -- check-names.txt: added lines only; bash -n on every touched file; grep -c 'seq 20\|seq 150' tests/lib.sh = 0.
-- **Tests:** 892 → 943
-- **Dead end:** a python block editor where an empty replacement was an empty block — its regex ran across blocks and mangled 15 and 32 (restored with git checkout, redone)
-- **Discovery** (affects R1-04, R1-05, R1-06, R1-07): wait_for <s> eval '<expr>' runs the expr in wait_for's frame: $1/$2 there are 'eval' and the expr; a helper copies its argument to a local first (gone, tended, tgone do)
-- **Discovery** (affects R1-05, R1-07): settle no longer sleeps 0.5: its pgrep pattern also matches $HERE/../bin/harness debrief (the runner's H, before it execs $HH/lib/debrief.sh), so a debrief that hasn't exec'd yet counts as running
-- **Discovery** (affects R1-06, R1-07): the negatives kept as '# sleep-ok: a negative over n polls' are 13:444, 32 (19,20,21,29,32,34), 45:39, 47 (38,51), 69:47 (after a wait_for on the runner's holding line); R1-06 decides whether 32's become counted-poll waits
-- **Discovery** (affects R1-07, run): 13-run-2-michael-sets-desk 'harness desk --list' flakes under the full suite's load (R2-02 and R1-03 each saw it once, green on the rerun); not in the plan's flaker table
-- **Discovery** (affects run): origin/main came with 16 Gotchas lines (memlint red on main itself); this lane dropped the end-reasons line when it merged main
-- **Resolved:** the end-reasons check greps literal finish/END_REASON/lane_exit 13 reasons in lib/driver.sh and lib/lane.sh: a new one needs a line in end-reasons.txt (dropped from a full Gotchas section: the check's own failure names the fix)
-- **Proposed change:** R1-03 step 4 should compare with the merge base (git diff origin/main...HEAD): origin/main moves while a lane works, and a plain diff then shows main's new names as removals
-- *03-R1-03 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 13:33 · R1-03 · passes · tests/lint-sleeps.sh lists each sleep line lacking '# sleep-ok:' (default tests/checks/*.sh + tests/… ([in full](progress-archive.md))
 - 2026-10-29 13:27 · R2-04 · passes · entry_resume (lib/record.sh), from journal before the ingest, outside the lock: a coding/verify/init… ([in full](progress-archive.md))
 - 2026-10-29 12:50 · R1-02 · passes · Attempt 2 of R1-02: the code from c319ca4 was right; the suite was red only on 39-memlint-m4, becaus… ([in full](progress-archive.md))
 - 2026-10-29 10:48 · R2-03 · passes · Stub: each headless session prints first.jsonl's init line with a fresh session_id (kept in $STUB_DI… ([in full](progress-archive.md))

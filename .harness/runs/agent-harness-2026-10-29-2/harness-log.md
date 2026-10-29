@@ -131,3 +131,9 @@
 - 2026-10-29 18:35 · review R3-06: 637 changed lines, at or over 400; opus
 - 2026-10-29 18:35 · context.md for R3-06: 7996 bytes
 - 2026-10-29 18:46 · R1 re-based on main 8976461: 10 files, disjoint, suite green; re-tagged
+- 2026-10-29 18:46 · R1 merged into main · https://github.com/mh550/agent-harness/pull/59
+- 2026-10-29 18:46 · lane R1 closed (R1 merged)
+- 2026-10-29 18:46 · lane R1: branch harness-lane/agent-harness-2026-10-29-2/R1 deleted (merged)
+- 2026-10-29 18:46 · lane R4 opened (slot 0, port 7818, from 4d15739, slot reused)
+- 2026-10-29 18:46 · context.md for R4-01: 7512 bytes, 3 items left out
+- 2026-10-29 18:52 · R4-01 · claude-opus-5-5 · passes=true · 5 min · 18/23 passing · tests 976

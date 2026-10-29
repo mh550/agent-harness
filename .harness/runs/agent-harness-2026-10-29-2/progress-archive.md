@@ -9,6 +9,22 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 18:52 · R4-01 · passes
+
+Wrote docs/plans/2026-10-29-R4-questions.md: the question reason, a key that drops the harness's Files fill (worktree paths differ per run), refresh, the move forward through sibling state dirs, card and sweep rule (resolvedBy shared with pack), journal_'s questions_ after the ingest, readers, the skill step, 17 check names, needs_fixture question, STUB_ASK_TWO/AGAIN. No code changed.
+
+- **Files:** docs/plans/2026-10-29-R4-questions.md
+- **Verified:** check.sh green (cached, 976 tests; docs/plans is outside the key); R2 merged: grep -c harness-merge/agent-harness-2026-10-29-2-R2 on origin/main = 1
+- **Tests:** 976 → 976
+- **Discovery** (affects R4-02): Adding a reason turns 58 (REASONS table literal, '15 reasons' in its name) and 59 (one fixture per reason in tests/fixtures/needs, FILLED's parked-only .question) red: plan §2.6 lists the edits
+- **Discovery** (affects R4-03): In a default stub run only A (verify un-passes it) and C (BROKEN first) get a second coding session: STUB_RESOLVE=A, not B, resolves STUB_ASK=A's question after STUB_ASK_AGAIN=B
+- **Discovery** (affects R4-02, R4-03): entries.jsonl questions carry the fill ' Files (harness, from the session): <abs paths>': a key over the raw first 80 characters would differ per run for a short question; questionKey cuts it (entries.mjs unfilled, to export)
+- **Discovery** (affects R4-04): status line stays 'NEEDS YOU <n> · harness needs' (53 pins it): with questions it reads 'NEEDS YOU 1 · 3 questions · harness needs'
+- **Resolved:** tests/lib.sh now holds tended, held (clears vwait-* too), ats and debriefs: a check file must not redefine them differently
+- **Proposed change:** R4-03 step 3: use STUB_ASK=A STUB_ASK_AGAIN=B STUB_RESOLVE=A (A's second session after M1's verify is later than B's entry); STUB_RESOLVE=B names B's question and B has no later session
+- **Proposed change:** R4-04 step 2: the status line is 'NEEDS YOU 1 · 3 questions · harness needs' (the hint stays); the check matches the prefix
+- *16-R4-01 · claude-opus-5-5*
+
 ### 2026-10-29 18:35 · R3-05 · passes
 
 Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/slot-1) and the merged harness-lane/sp/M1 on origin (one would: line each, both kept; the real gc then removes the slot). 77 starts two merge_milestones M1 at once on one state and clone: one note, one pr merge. Both green at once; each fails when what it guards is broken.
