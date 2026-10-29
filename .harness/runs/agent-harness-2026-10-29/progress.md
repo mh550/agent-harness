@@ -3,6 +3,24 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 03:33 · N1-03 · not yet
+
+flakes_note (lib/record.sh) notes each new green/flakes.jsonl row once (`flaky: <names|whole suite> (red, then green on a rerun; load <1-min>)`, offset in flakes-noted, locked) after the un-pass check, verify, disjoint re-base and before run ended; run_init takes tests-start from the marker after a rerun. 74-flakes-run 6/6. Not passed: no full suite came out green (one load flake each run).
+
+- **Files:** lib/record.sh, lib/lane.sh, lib/driver.sh, tests/checks/74-flakes-run.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-29-rerun-guard.md
+- **Verified:** bash tests/run.sh flakes: 6/6; tests-start check red (3) without the marker line, green (5) with it; flaky-run checks red before flakes_note. Full suite x5, 880/881 each time after the memlint fix: 47-lanes-two `lanes admission: … five-hour window at 80 %` red x3 (green alone x3 and under a 7-file load), then 45-lanes-run `a lane opened after the default lane…` x1.
+- **Tests:** 875 → 881
+- **Dead end:** the step's `$T/scratch/proj/<run>/lanes/M1/check-rerun.out exists` for the invariant — the stub's C is in lane M2, and check.sh removes check-rerun.out at the next full suite (C's second init); the check reads the `red again on a rerun of the whole suite) — last lines of …/lanes/M2/check-rerun.out:` line in logs/04-C.prompt.md instead
+- **Dead end:** a Gotchas line about that — CLAUDE.md's Gotchas already had 15 lines; memlint (39-memlint-m4) fails at 16; the fact is in 74's header comment
+- **Dead end:** run_init reading the marker on every init (an extra node treekey per init while tests-start is absent, i.e. every stub init) — 47-lanes-two`s u5 admission check failed in 3 full runs in a row; now read only when check-rerun.out is beside check.out; the next full run passed 47 but failed 45 (load flake, R1)
+- **Discovery** (affects N1-04, N1-05): flakes_note notes an empty load as `load ?`; its message is built in jq, one call per flakes_note
+- **Discovery** (affects N1-04): 74-flakes-run.sh has check_cmd <subject> <command>: commits a CHECK_CMD on the first main and pushes it; N1-04's stub-run checks (summary.json flakes, report's Flakes row) can read the fl and inv runs already there
+- **Discovery** (affects run): the live suite check.sh (projects/agent-harness, main) has no rerun yet: a full run from a session goes red on one flake until N1 merges
+- **Discovery** (affects R1, run): 47-lanes-two `lanes admission: with the five-hour window at 80 %…` and 45-lanes-run `a lane opened after the default lane…` fail under the full suite`s load, pass alone: R1 flakers
+- **Discovery** (affects N1-03): the next N1-03 attempt only needs one green full suite on cfb23fc (or its successor): the code and 74 are done
+- **Proposed change:** N1-03 step 3 should read: the rerun-red's `check: RED (…; red again on a rerun of the whole suite) — last lines of $T/scratch/proj/<run>/lanes/M2/check-rerun.out:` line is in $HARNESS_STATE/proj/<run>/logs/04-C.prompt.md (C is M2's, and check-rerun.out is removed by the next full suite)
+- *03-N1-03 · claude-opus-5-5*
+
 ### 2026-10-29 02:15 · N1-02 · passes
 
 check.sh's full form reruns a red once by CHECK_RERUN (auto/failed/suite/off): never after a timeout or cap kill; check-rerun.out; green rerun → 'green after a rerun (flaky: …)', marker = first run's total (testcount --total), a flakes.jsonl row. tests/run.sh prints HARNESS_FAILED=<files> unless a failure is outside them. Config, prompt_env, HARNESS_LANE, template, decision.
