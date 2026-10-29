@@ -76,3 +76,5 @@
 - 2026-10-29 14:32 · R1-04: entries.jsonl edited by the session; restored (the driver is its only writer)
 - 2026-10-29 14:32 · R1-04: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 14:32 · R1-04 · claude-opus-5-5 · passes=true · 58 min · 9/23 passing · tests 944
+- 2026-10-29 14:32 · context.md for R1-05: 7604 bytes
+- 2026-10-29 14:47 · context.md for R2: 14694 bytes
