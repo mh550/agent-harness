@@ -1,14 +1,20 @@
-# Context pack for `N2-05`
+# Context pack for `N2-06`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (N2-05, affects N2-06): summary.json's conflicts is exactly {resolved, escalated, sessions} (the step's jq ==), so the report row's files live in a sibling key `resolutions: [{milestone, files}]`; docs (§ state/summary) should name both → entries.jsonl:13
+- Discovery (N2-05, affects N2-06): RESOLVE_FILES is now comma-joined ("a, b"), as the conflict note had it; rebase's `resolved by a session (...)` how text uses it too → entries.jsonl:13
+- Discovery (N2-05, affects N2-06): the resolution note and the PR paragraph say $MAIN_BRANCH, not a literal `main`; summary.mjs matches any branch word (`\S+ merged in by a resolve session`) → entries.jsonl:13
 - Discovery (N2-04, affects N2-05, N2-06): resolve's tried is stored in the resolve-<m>-<main> marker, so a later record for the same main (resolve_ok: already ran) keeps tried; MAX_RESOLVES sets tried to `its <n> resolve session(s) used` → entries.jsonl:12
 - Discovery (N2-04, affects N2-05, N2-06): rebase writes conflict-<m> before rebase_fail: without it the run's-end merge_one re-opened merge_conflict, dropping tried and the rebase variant, and notified twice → entries.jsonl:12
-- Discovery (N2-04, affects N2-05): stub resolve sessions report 0 min (S_WALL 0): a check on tried's minutes matches [0-9]+ → entries.jsonl:12
+- Discovery (N2-04, affects N2-06): merge_one's resolve branch returns 1 when main-conflict-<m> is this main (the lane's sync_main already tried it); rebase calls main_clear once its merge went through → entries.jsonl:12
 - Discovery (N2-04, affects N2-05, N2-06): a unit calling resolve() needs USAGE and REC set (weekly gate, metrics row) or it dies under set -u mid-function → entries.jsonl:12
-- Discovery (N2-03, affects N2-05): resolved-<m> is overwritten (>) on each successful resolve, not appended, so N2-05's PR body lists the last resolution's files once → entries.jsonl:11
+- Discovery (N2-03, affects N2-04, N2-06): merge_one keeps today's merge_conflict at the run's end ($STATE/ended, written by finish before merge_milestones and cleared at each segment start): no lane could re-base then → entries.jsonl:11
+- Discovery (N2-03, affects N2-06): slot_open now undoes a MERGE_HEAD left in a reused slot (a lane killed mid-resolve) with a note `<m>: its slot-<k> had a merge left in progress; undone`, before the WIP commit → entries.jsonl:11
+- Discovery (N2-02, affects N2-03, N2-04, N2-06): merge_drivers is called right after the driver's first sync_record (lib/driver.sh), before the resumed start's sync_main; slot_open calls it in place of its extensions.worktreeConfig line → entries.jsonl:10
+- Discovery (N2-02, affects N2-04, N2-06): STUB_SORTED=<file> in tests/stub-claude.sh: A adds `b A check`, C `b C check`, re-sorted, in their first coding session → entries.jsonl:10
 - Discovery (N1-05, affects R1, run): 08-scope-sh-l1-02 flakes under the full suite's load (memory gate waits, the real 64M scope check), green alone: an R1 flaker beside 45-lanes-run → entries.jsonl:7
 - Discovery (N1-05, affects run): review findings left open (Minor): run_init tests-start falls back to a red check.out's passes when a flake's marker is empty (suites with no N/M line); testcount --total undercounts a file killed mid-way; the debrief prints the project-wide #### flakes block once per run, not once per project; a fractional CHECK_TIMEOUT (1.5h) makes why() miss a timeout's 137 → entries.jsonl:7
 - Discovery (N1-03, affects run): the live suite check.sh (projects/agent-harness, main) has no rerun yet: a full run from a session goes red on one flake until N1 merges → entries.jsonl:4
@@ -21,12 +27,12 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-29 07:46 · N2-04 · passes: Layer 2 fallbacks: stub STUB_MERGE_RESOLVE markers/stray/give-up, STUB_RESOLVE_LIMIT, STUB_MAIN_TOUCH=resolve-<m>; sync_main resolves in a lane (verify defers on a refusal, skips sync_main in rebase mode); needs cards' tried; rebase records conflict-<m>; 77-resolve-fallbacks (12). Opus review: 0 Critical, 2 Important, 1 Minor, all fixed.; tests 905 → 918; files lib/record.sh, lib/lane.sh, lib/resolve.sh, lib/needs.mjs, bin/harness, … → entries.jsonl:12
+- 2026-10-29 08:13 · N2-05 · passes: Resolutions are visible, never asked about: resolved_note (lib/resolve.sh) from rebase and sync_main; summary.mjs conflicts {resolved, escalated, sessions} plus resolutions [{milestone, files}] and report's Conflicts row after Flakes; pr_body's `Merged main in with a resolve session: <files>` from resolved-<m>. 6 new checks in 76/77; decision updated.; tests 918 → 924; files lib/resolve.sh, lib/lane.sh, lib/record.sh, lib/summary.mjs, tests/checks/76-resolve-session.sh, … → entries.jsonl:13
 
 ## Lately in the run
 
+- 2026-10-29 07:46 · N2-04 · passes: Layer 2 fallbacks: stub STUB_MERGE_RESOLVE markers/stray/give-up, STUB_RESOLVE_LIMIT, STUB_MAIN_TOUCH=resolve-<m>; sync_main resolves in a lane (verify defers on a refusal, skips sync_main in rebase mode); needs cards' tried; rebase records conflict-<m>; 77-resolve-fallbacks (12). Opus review: 0 Critical, 2 Important, 1 Minor, all fixed.; tests 905 → 918; files lib/record.sh, lib/lane.sh, lib/resolve.sh, lib/needs.mjs, bin/harness, … → entries.jsonl:12
 - 2026-10-29 07:04 · N2-03 · passes: Layer 2 happy path: lib/resolve.sh (resolve_ok, resolve: snapshot, session on RESOLVE_*, journal, metrics row, checks, NUL-safe restore, commit), prompts/resolve.md, CONFLICTS/RESOLVE_*/MAX_RESOLVES, stub # Resolve session (both) and STUB_CONFLICT; merge_one returns 3 in a lane, rebase resolves then verifies; 76-resolve-session (12 checks). Opus review: 1 Critical, 3 Important, 7 Minor, all fixed.; tests 893 → 905; files lib/resolve.sh, prompts/resolve.md, lib/lane.sh, lib/record.sh, lib/config.sh, … → entries.jsonl:11
-- 2026-10-29 06:07 · N2-02 · passes: Layer 1: lib/merge-sorted.sh (three-way sorted union; an unsorted side exits 1, A untouched), .gitattributes opts check-names.txt in, merge_drivers (lib/record.sh) sets the driver as worktree config in the record worktree each segment and in slot_open; STUB_SORTED; 75-merge-sorted.sh (7 checks, ~14 s); decision started.; tests 886 → 893; files lib/merge-sorted.sh, lib/record.sh, lib/driver.sh, .gitattributes, tests/stub-claude.sh, … → entries.jsonl:10
 
 ## Current rules
 
@@ -40,8 +46,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Read views: one formatter, `lib/view.mjs`, that every read view renders through → journal/decisions/2026-10-27-read-views.md
 - Questions where Michael sees them: one INBOX parser, the steering comment repaired → journal/decisions/2026-10-27-question-locations.md
 - Project names: one resolver takes a path or a bare name → journal/decisions/2026-10-27-project-names.md
-- Merging the memory run into lanes: main's driver changes in their lane-era homes, the review round per lane → journal/decisions/2026-10-27-p1-main-merge.md
-- What waits on Michael: one needs record per item, swept by its reason's rule → journal/decisions/2026-10-27-needs-record.md
-- Lane branches go when their PR merges; gc reaps lane branches, leftover slots and a killed run's lane units → journal/decisions/2026-10-27-lane-branches-and-slots.md
 
-_56 older rules: journal/decisions._
+_59 older rules: journal/decisions._
