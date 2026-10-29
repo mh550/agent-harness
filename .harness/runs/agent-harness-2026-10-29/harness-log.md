@@ -38,3 +38,4 @@
 - 2026-10-29 08:34 · N2-06 · claude-opus-5-5 · passes=true · 20 min · 11/11 passing · tests 925
 - 2026-10-29 08:34 · verify N2: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-29 08:45 · context.md for N2: 16051 bytes
+- 2026-10-29 08:46 · verify N2: N2-02 failed the re-check, back in the queue (one more attempt)
