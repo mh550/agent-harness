@@ -103,3 +103,9 @@
 - 2026-10-29 16:33 · R1-06: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 16:33 · R1-06: gotchas +0 ~1 -0
 - 2026-10-29 16:33 · R1-06 · claude-opus-5-5 · passes=true · 51 min · 13/23 passing · tests 973
+- 2026-10-29 16:33 · review R1-07: 689 changed lines, at or over 400; opus
+- 2026-10-29 16:33 · context.md for R1-07: 7998 bytes
+- 2026-10-29 16:52 · R3-03: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:52 · R3-03: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:52 · flaky: 74-flakes-run (red, then green on a rerun; load 7.17)
+- 2026-10-29 16:52 · R3-03 · claude-opus-5-5 · passes=true · 37 min · 14/23 passing · tests 972
