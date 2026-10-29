@@ -3,6 +3,18 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 08:34 · N2-06 · passes
+
+N2 review + simplify + docs. merge-sorted.sh: an unsorted side now gets git merge-file (markers kept; git keeps %A whatever the exit). sync_main and rebase share merge_main (lib/record.sh). report's Spend by role names resolve. architecture.md §3-§12, README, decision completed. 0 Critical, 1 Important, 7 Minor
+
+- **Files:** lib/merge-sorted.sh, lib/record.sh, lib/lane.sh, lib/summary.mjs, tests/checks/75-merge-sorted.sh, tests/checks/76-resolve-session.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, journal/decisions/2026-10-29-conflict-resolution.md
+- **Verified:** Opus review of /tmp/harness/agent-harness/agent-harness-2026-10-29/review-N2.diff (one round, no Critical). Each fix's check failed first (75 unsorted fallback, 76 Spend by role). tests/run.sh merge-sorted resolve lanes-rebase needs-cards: 77/77 after the merge_main refactor; full check.sh green
+- **Tests:** 924 → 925
+- **Discovery** (affects run): open Minor review findings: resolved-<m> is written with > (sync_main's then rebase's resolution keeps only the last files in the PR body; the plan said >>); slot_open's reset after a killed resolve still commits the session's untracked files as WIP; resolve ignores S_EXIT (a timed-out session that git-added clean files is committed, the verify still gates it); a rebase refused by resolve's mem_gate (lanes-end/stop, no RESOLVE_END) exits the lane 0 'its re-base waits' not 16/14; rebase's main_clear runs before the re-base's outcome; 77's slot_open check's `! -e resolve-called` half can't fail
+- **Discovery** (affects run): merge_main <m> <resolve|""> (lib/record.sh) is the one conflict path into resolve: 0 merged (MERGE_RESOLVED when a session settled it), 1 aborted (MERGE_FILES, RESOLVE_TRIED), 2 refused
+- **Proposed change:** N2-06 step 2's STUB_MERGE_RESOLVE modes were already one case arm; the reviewer suggests dropping the `markers` end-to-end run in 77 (the rv unit covers it) to save a two-lane stub run
+- *12-N2-06 · claude-opus-5-5*
+
 ### 2026-10-29 08:13 · N2-05 · passes
 
 Resolutions are visible, never asked about: resolved_note (lib/resolve.sh) from rebase and sync_main; summary.mjs conflicts {resolved, escalated, sessions} plus resolutions [{milestone, files}] and report's Conflicts row after Flakes; pr_body's `Merged main in with a resolve session: <files>` from resolved-<m>. 6 new checks in 76/77; decision updated.
