@@ -183,7 +183,7 @@ rebase() {
     # conflict-<m>: merge_one's once per main, so the run's end doesn't record it again (and lose tried)
     (( rc == 0 )) || { echo "$mn" > "$STATE/conflict-$m"
       rebase_fail "$m" "$c" "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)" "conflicts with $MAIN_BRANCH" merge_conflict rebase files="$files" main="$mn" ${RESOLVE_TRIED:+tried="$RESOLVE_TRIED"}; return 1; }
-    resolved=1
+    resolved=1; resolved_note "$m" "one verify round follows"
   fi
   main_clear "$m"   # main is in the lane branch now: a main_conflict an earlier verify opened resolves
   theirs=$(git diff --name-only "$c" HEAD)   # what main brought in

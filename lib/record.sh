@@ -130,7 +130,7 @@ sync_main() {
   RESOLVE_TRIED=""
   if [[ -n ${LANE:-} && ${CONFLICTS:-} == resolve ]]; then   # the record branch's conflicts stay Michael's
     resolve "$LANE" "$MAIN_BRANCH"; case $? in   # resolve aborts the merge on anything but 0
-      0) note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0 ;;
+      0) resolved_note "$LANE" "the verify goes on with $MAIN_BRANCH merged"; note "merged $MAIN_BRANCH into $b"; main_clear "$sub"; return 0 ;;
       2) return 2 ;;
     esac
   else git merge --abort 2>/dev/null; fi
@@ -418,6 +418,8 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
   local p=$REC/progress-archive.md; [[ -f $p ]] || p=$REC/progress.md
   echo "Milestone **$1** of harness run \`$RUN_ID\` (lane \`harness-lane/$RUN_ID/$1\`), verified by an independent session."
   echo; echo "**Features:**"; for id in $(F ids "$LIST" "$1"); do echo "- \`$id\` · $(jq -r --arg id "$id" '.features[]|select(.id==$id)|.description' "$LIST" 2>/dev/null)"; done
+  # a lane's resolve session merged main in (lib/resolve.sh wrote its files): said, never asked about
+  [[ -s $STATE/resolved-$1 ]] && { echo; echo "Merged $MAIN_BRANCH in with a resolve session: $(awk '!s[$0]++ { printf "%s%s", n++ ? ", " : "", $0 }' "$STATE/resolved-$1")"; }
   echo; echo "**Run so far:** $(F summary "$LIST") · $(MET summary "$REC/metrics.jsonl")"
   echo; echo "**Verify entry:**"; echo
   # `verify M1` followed by anything but a letter, digit, _ or - (M1 never matches M10; a legacy `verify M1: …` does)

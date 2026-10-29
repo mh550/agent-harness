@@ -592,6 +592,7 @@ report.md lists the session that peaked at its cap among the peaks over 2 GB
 report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
 resolve fallbacks: a lane's sync_main hands its conflict to resolve: refused is 2 with no record, unresolved the main_conflict record with tried
 resolve fallbacks: a refused session is deferred: no needs record, rebase-M2 back, then it re-bases and merges after the wait
+resolve fallbacks: a session that gives up counts as escalated in summary.json and report.md's Conflicts row
 resolve fallbacks: a session that gives up is aborted the same way and its card says why
 resolve fallbacks: a session that leaves a marker is aborted, the slot back at the verified commit, merge_conflict with tried, the lane closed
 resolve fallbacks: a slot_open base conflict keeps base_conflict and runs no resolve session
@@ -601,6 +602,7 @@ resolve fallbacks: past MAX_RESOLVES the next conflict takes today's path with t
 resolve fallbacks: resolve alone: a marker left aborts the merge, HEAD back at the lane's commit; this main again runs no session, same tried
 resolve fallbacks: resolve_ok says no for CONFLICTS=michael, harness merge, no lane, a marker for this main, MAX_RESOLVES used and the deadline
 resolve fallbacks: sync_main at verify resolves in the lane: the note before verify M2, one verify M2, merged with no re-base
+resolve fallbacks: sync_main's resolution is noted with its files, model and minutes, and the verify going on
 resolve fallbacks: the record branch's sync_main keeps today's abort and main_conflict record
 resolve: CONFLICTS=michael keeps today's merge_conflict record and runs no resolve session
 resolve: a re-base conflict gets a resolve session, noted with its file
@@ -611,6 +613,9 @@ resolve: merge_one's conflict returns 3 with moved-<m> in a lane and opens merge
 resolve: no needs record and one metrics row of kind resolve
 resolve: prompts/resolve.md renders through lib/prompt.sh as a command, first line # Resolve session, no {{ left
 resolve: slot_open undoes a merge a killed lane left in progress in its slot, never committing its markers
+resolve: summary.json counts the resolution and report.md has its Conflicts row
+resolve: the PR body says main was merged in by a resolve session, and no needs-you post went out
+resolve: the resolution's note names its files, model and minutes, and the verify round that follows
 resolve: the resolve prompt names README.md and a commit subject from each side
 resolve: the resolved merge takes one verify round, then M2 merges (one resolve line, two verify lines)
 resolve: the tree on main is the tree verified as run/<run>/M2 (the invariant)
@@ -765,6 +770,7 @@ suite runner: the parallel runner starts no scope of its own (no systemd-run cal
 summary end reason is how the run ended
 summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)
+summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
 summary: tokens, per verified feature, first-attempt rate, rework

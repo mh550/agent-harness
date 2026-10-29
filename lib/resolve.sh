@@ -21,7 +21,7 @@ resolve_ok() {
 
 # <m> <what merged in>, cwd the slot with the merge in progress. 0 = resolved and committed (the merge commit) · 1 =
 # unresolved (no session, or it or the checks below failed): merge aborted · 2 = refused by a limit (deferred): merge
-# aborted. Sets RESOLVE_TRIED (empty when no session ran), RESOLVE_FILES, RESOLVE_MODEL_RAN, RESOLVE_MIN and
+# aborted. Sets RESOLVE_TRIED (empty when no session ran), RESOLVE_FILES ("a, b"), RESOLVE_MODEL_RAN, RESOLVE_MIN and
 # RESOLVE_END (set: the lane must end with 13, as the coding loop does at the cap, the weekly gate or MAX_LIMIT_HITS).
 resolve() {
   local m=$1 what=$2 fa=() files mn pre mb why model rlog n limits upto line rec p RESTORED=()
@@ -29,7 +29,7 @@ resolve() {
   RESOLVE_TRIED="" RESOLVE_FILES="" RESOLVE_MODEL_RAN="" RESOLVE_MIN=0 RESOLVE_END=""
   files=$(git -c core.quotePath=false diff --name-only --diff-filter=U); [[ -n $files ]] && mapfile -t fa <<< "$files"
   (( ${#fa[@]} )) || { git merge --abort 2> /dev/null; return 1; }   # the merge never started
-  RESOLVE_FILES=${fa[*]}
+  RESOLVE_FILES=$(printf '%s, ' "${fa[@]}" | sed 's/, $//')
   if ! why=$(resolve_ok "$m"); then
     [[ $why == *"resolve session(s) used" ]] && { note "$m: $why; not merged (needs Michael)"; RESOLVE_TRIED=$why; }
     # this main's session failed before: its marker holds what it said, so the card a later record replaces keeps it
@@ -37,7 +37,7 @@ resolve() {
     git merge --abort 2> /dev/null; return 1
   fi
   mn=$(git rev-parse MERGE_HEAD) pre=$(git rev-parse HEAD)
-  note "$m: ${#fa[@]} files conflict with $what ($(printf '%s, ' "${fa[@]}" | sed 's/, $//')); a resolve session"
+  note "$m: ${#fa[@]} files conflict with $what ($RESOLVE_FILES); a resolve session"
   # the session cap and the weekly gate, as the coding loop's (lane.sh)
   n=$(rec_count "$STATE/sessions" 1)
   if (( n > MAX_SESSIONS )); then rec_count "$STATE/sessions" -1 > /dev/null; git merge --abort 2> /dev/null; RESOLVE_END="session cap ($MAX_SESSIONS)"; return 2; fi
@@ -111,6 +111,10 @@ resolve() {
   note "$m: the resolve session did not resolve the merge ($why); merge aborted"
   rec_commit "HARNESS: resolve $m failed"; return 1
 }
+
+# <m> <what follows>: the note after a resolved merge (the last resolve's RESOLVE_*), never a question for Michael: the
+# summary's conflicts and report.md's Conflicts row count it (lib/summary.mjs resolutions)
+resolved_note() { note "$1: $MAIN_BRANCH merged in by a resolve session ($RESOLVE_FILES; $RESOLVE_MODEL_RAN, $RESOLVE_MIN min); $2"; }
 
 # stdin → how many lines look like a conflict marker (diff3's base marker too)
 marker_lines() { grep -cE '^(<<<<<<<|=======|>>>>>>>|\|{7})( |$)'; }

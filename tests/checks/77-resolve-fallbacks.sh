@@ -41,6 +41,9 @@ STUB_MERGE_RESOLVE=give-up two_lanes rgu
 check "resolve fallbacks: a session that gives up is aborted the same way and its card says why" \
   'hlog rgu | grep -F "· M2: the resolve session did not resolve the merge (UNRESOLVED: stub gives up); merge aborted" > /dev/null \
   && aborted rgu "a resolve session \([a-z0-9.-]+, [0-9]+ min\): UNRESOLVED: stub gives up" && [[ $(slog rgu | grep -c "^resolve M2 ") == 1 ]]'
+check "resolve fallbacks: a session that gives up counts as escalated in summary.json and report.md's Conflicts row" \
+  'R=$T/wt/proj/rgu/.harness/runs/rgu; jq -e ".conflicts.escalated == 1 and .conflicts.resolved == 0 and .conflicts.sessions == 1" "$R/summary.json" > /dev/null \
+  && grep -Fx "| Conflicts | 0 resolved, 1 to Michael |" "$R/report.md" > /dev/null'
 
 STUB_MERGE_RESOLVE=stray two_lanes rst
 check "resolve fallbacks: a stray edit and new files are put back with a note naming them, and M2 merges" \
@@ -80,6 +83,8 @@ check "resolve fallbacks: sync_main at verify resolves in the lane: the note bef
   [[ -n $a && -n $b ]] && (( a < b )) && [[ $(slog rsm | grep -c "^verify M2 ") == 1 && $(slog rsm | grep -c "^resolve M2 ") == 1 ]] \
   && hlog rsm | grep -F "· merged main into harness-lane/rsm/M2" > /dev/null && hlog rsm | grep -F "· M2 merged into main" > /dev/null \
   && ! hlog rsm | grep -F "re-based on" > /dev/null && [[ -z $(ls -A "$HARNESS_STATE/proj/rsm/needs" 2> /dev/null | grep -v "^done$") ]]'
+check "resolve fallbacks: sync_main's resolution is noted with its files, model and minutes, and the verify going on" \
+  'hlog rsm | grep -E "· M2: main merged in by a resolve session \(README.md; [a-z0-9.-]+, [0-9]+ min\); the verify goes on with main merged$" > /dev/null'
 # the same, the session giving up: Michael's main_conflict, notified once; no merge lane re-bases onto that main again
 STUB_MERGE_RESOLVE=give-up at_verify rsg
 check "resolve fallbacks: a sync_main resolve that gives up is main_conflict with tried, notified once, and no re-base retries that main" \

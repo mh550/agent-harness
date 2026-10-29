@@ -1,6 +1,6 @@
 # Merge conflicts resolved without Michael: a sorted merge for lists first, then a resolve session, verified
 
-*(2026-10-29, run `agent-harness-2026-10-29`, N2-02 to N2-04; spec `docs/specs/2026-10-29-unattended-night.md` §N2, plan
+*(2026-10-29, run `agent-harness-2026-10-29`, N2-02 to N2-05; spec `docs/specs/2026-10-29-unattended-night.md` §N2, plan
 `docs/plans/2026-10-29-N2-conflict-resolution.md`)*
 
 - **Finding:** two lanes that each add a check get a merge conflict in `tests/fixtures/check-names.txt` (one name per
@@ -46,6 +46,14 @@
   is the next re-base's, one place, one record). The record branch's `sync_main` and `slot_open`'s base conflicts keep
   today's path: the first is Michael's run configuration, the second runs in the coordinator, where a 30-minute session
   would hold up every lane. `harness continue` (fresh attempts) clears `resolves-*` and `resolve-*-*` with the rest.
+- **Choice (visible, never asked about, N2-05):** a resolution is said, not asked: the caller notes `<m>: main merged in
+  by a resolve session (<files>; <model>, <n> min); one verify round follows` (`rebase`) or `…; the verify goes on with
+  main merged` (`sync_main`), opens no needs record and sends no `needs you`. `summary.json` gains `conflicts:
+  {resolved, escalated, sessions}` (the resolution notes; the distinct milestones whose conflict went to Michael; the
+  metrics rows of kind `resolve`) and, beside it, `resolutions: [{milestone, files}]`, which `report.md`'s `| Conflicts
+  | … |` row (after `Flakes`) names: the plan put the files nowhere a report could read them, and `conflicts` stays the
+  three counts. A milestone whose lane resolved one gets `Merged main in with a resolve session: <files>` in its PR body
+  (`$STATE/resolved-<m>`).
 - **Rejected:** a union driver without the three-way removal (git's built-in `merge=union` among them): it brings a
   deleted name back, and the conformance check then goes red on a name no file has. Michael for every conflict (today:
   a night with two lanes stops at the first overlap, though most resolutions keep both sides' lines). `git merge -X

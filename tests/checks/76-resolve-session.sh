@@ -38,6 +38,31 @@ check "resolve: no needs record and one metrics row of kind resolve" \
 check "resolve: the resolve prompt names README.md and a commit subject from each side" \
   'p=$(ls "$S"/logs/*-resolve-M2.prompt.md 2> /dev/null | head -1); [[ -n $p ]] && head -1 "$p" | grep -x "# Resolve session" > /dev/null \
   && grep -x "README.md" "$p" > /dev/null && grep -F "A: stub work (1)" "$p" > /dev/null && grep -F "C: stub work (1)" "$p" > /dev/null'
+# visible, never asked about (N2-05): the note, summary.json's conflicts, report.md's row, the PR body; no needs-you post
+check "resolve: the resolution's note names its files, model and minutes, and the verify round that follows" \
+  'hlog rs | grep -E "· M2: main merged in by a resolve session \(README.md; [a-z0-9.-]+, [0-9]+ min\); one verify round follows$" > /dev/null'
+check "resolve: summary.json counts the resolution and report.md has its Conflicts row" \
+  'jq -e ".conflicts == {resolved: 1, escalated: 0, sessions: 1}" "$REC/summary.json" > /dev/null \
+  && grep -Fx "| Conflicts | 1 resolved by sessions (M2: README.md), 0 to Michael |" "$REC/report.md" > /dev/null'
+check "resolve: the PR body says main was merged in by a resolve session, and no needs-you post went out" \
+  'grep -Fx "Merged main in with a resolve session: README.md" "$S/pr-body.md" > /dev/null && ! grep -E "^Title: \[rs\] .*needs you" "$T/curl.log" > /dev/null'
+CFX='import { conflicts, resolutions, report } from "'$HERE'/../lib/summary.mjs"; import { readFileSync } from "node:fs";
+  const fx = JSON.parse(readFileSync("'$HERE'/fixtures/summary-report.json", "utf8"));
+  const log = ["- 2026-10-29 01:00 · M2: main merged in by a resolve session (a.txt, b c.txt; claude-opus-5-5, 3 min); one verify round follows",
+    "- 2026-10-29 01:10 · M3: main merged in by a resolve session (d.txt; opus, 0 min); the verify goes on with main merged",
+    "- 2026-10-29 01:20 · M4 conflicts with main; not merged (needs Michael)", "- 2026-10-29 01:30 · M4 conflicts with main; not merged (needs Michael)",
+    "- 2026-10-29 01:40 · main conflicts with harness-lane/r/M5; carrying on without it (merges into main need Michael)",
+    "- 2026-10-29 01:50 · main conflicts with harness/r; carrying on without it (merges into main need Michael)"].join("\n");
+  const c = conflicts(log, [{ kind: "resolve" }, { kind: "resolve", env: true }, { kind: "coding" }]), rs = resolutions(log);
+  const row = s => report(s).split("\n").find(l => l.startsWith("| Conflicts | "));
+  process.exit(JSON.stringify(c) === JSON.stringify({ resolved: 2, escalated: 2, sessions: 2 })
+    && JSON.stringify(rs) === JSON.stringify([{ milestone: "M2", files: "a.txt, b c.txt" }, { milestone: "M3", files: "d.txt" }])
+    && row({ ...fx, conflicts: c, resolutions: rs }) === "| Conflicts | 2 resolved by sessions (M2: a.txt, b c.txt; M3: d.txt), 2 to Michael |"
+    && row({ ...fx, conflicts: conflicts("", []), resolutions: [] }) === "| Conflicts | 0 resolved, 0 to Michael |" && row(fx) === undefined
+    && report({ ...fx, flakes: { count: 0, names: {} }, conflicts: c, resolutions: rs }).split("\n").findIndex(l => l.startsWith("| Conflicts | "))
+      === report({ ...fx, flakes: { count: 0, names: {} } }).split("\n").findIndex(l => l.startsWith("| Flakes | ")) + 1 ? 0 : 1);'
+check "summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes" \
+  'node --input-type=module -e "$CFX"'
 check "resolve: prompts/resolve.md renders through lib/prompt.sh as a command, first line # Resolve session, no {{ left" \
   '"$HH/lib/prompt.sh" "$S" resolve C > "$T/rs-prompt.md" 2> "$T/rs-prompt.err" && [[ $(head -1 "$T/rs-prompt.md") == "# Resolve session" ]] \
   && ! grep -F "{{" "$T/rs-prompt.md" > /dev/null && grep -F "Milestone: M2" "$T/rs-prompt.md" > /dev/null'
@@ -117,6 +142,7 @@ sed -i '/^CONFLICTS=/d' "$T/user-config.sh"
 rm_needs=$(grep -l '"key": "merge_conflict:M2"' "$HARNESS_STATE"/proj/rm/needs/*.json 2> /dev/null | wc -l)
 check "resolve: CONFLICTS=michael keeps today's merge_conflict record and runs no resolve session" \
   'hlog rm | grep -F "· M2 conflicts with main; not merged (needs Michael)" > /dev/null && [[ $rm_needs == 1 ]] \
+  && [[ -f $HARNESS_STATE/proj/rm/pr-body.md ]] && ! grep -F "resolve session" "$HARNESS_STATE/proj/rm/pr-body.md" > /dev/null \
   && ! slog rm | grep "^resolve " > /dev/null && ! hlog rm | grep "a resolve session" > /dev/null'
 STUB_MERGE_RESOLVE=both "$H" merge rm > "$T/rm-merge.out" 2>&1
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
