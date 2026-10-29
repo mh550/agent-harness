@@ -1,7 +1,8 @@
 # Iteration 7 — Throughput: measure first, then parallel lanes, a split suite and memory with scopes
 
-**Dates:** 2026-10-25 → in progress. Written 10-26 at 13:30 EDT. At that point the retro run is at 12/12 with its last
-verify still to run, and the lanes run is blocked, waiting on its continuation.
+**Dates:** 2026-10-25 → 2026-10-28 (closed). Written 10-26 at 13:30 EDT, while the retro run was at 12/12 with its last
+verify still to run and the lanes run was blocked. **Results added 2026-10-29** (below, *Results*); the story continues
+in [iteration 8](08-unattended-nights-to-self-improvement.md).
 **Sessions:** five interactive sessions and four harness runs. The sessions:
 - the status check that turned into a measurement (10-25 14:23 → 16:32);
 - the design session (10-25 22:00 → 10-26 12:59);
@@ -283,11 +284,44 @@ What I expect, so the results can be checked against it:
   not a measurement yet. The memory run should take about half its serial time *(inferred)*.
 - **Memory:** zero real OOM kills over two or three nights; then decide whether `MAX_PARALLEL_RUNS=2` stays.
 
+## Results (added 2026-10-29)
+Sources: `harness report <run>`, `harness status --all --json` (start and end times, converted to EDT), `gh pr list
+--state merged`, `git ls-remote`, the ledger commit subjects in `git log origin/main`, and
+`docs/specs/2026-10-27-status-ux.md` (what I saw on 10-27).
+
+| Run | Window (EDT) | Result | Spend · per feature | Wall · sessions | First-attempt | Tests |
+|---|---|---|---|---|---|---|
+| retro `…-2026-10-26-2` | 10-26 08:30 → 13:34 | **12/12**, F1 #27 (11:37), F2 #28 (13:33) | $35.25 · $2.94 | 5.03 h · 14 | 1.00 | not recorded |
+| lanes `…-2026-10-26` | 10-26 05:29 → 10-28 01:11, 4 continuations | **17/17**, P0 #30 (10-26 16:51), P1 #40 (10-27 20:32), P2 #41 (10-28 01:11) | $127.95 · $7.53 | 14.24 h · 31 | 0.82 (rework P0-02, P1-03, P1-04) | 419 → 602 |
+| memory `…-2026-10-25-memory` | 10-26 18:54 → 10-27 01:47 | **23/23**, M1–M6 #32–#37 | $58.05 · $2.52 | 6.89 h · 33 | 0.96 (rework M5-01) | 395 → 501 |
+
+The retro run's report still says `Ended running` and `verified 6 (F1)`, although the F2 tag exists and #28 merged.
+*(inferred: its record was written before F2's merge reached it.)*
+
+My expectations from 10-26, checked:
+
+| Expected | What happened |
+|---|---|
+| Lanes: P0, P1, P2 merge; the record PR merges; no lane branch or slot left after gc | P0–P2 merged. `gh pr list` has no record PR for the lanes run; record PRs start with the next run (#46). On 10-29 `git ls-remote` shows no `harness-lane/*` branch except the live run's two. |
+| The memory run is the first real use of lanes, `max_open` 2 | **No.** Memory started at 18:54, before P1 merged, so it ran on the serial driver. It ran at the same time as the lanes continuation, and both rewrote `lib/driver.sh` with no warning (status-ux spec, bug e). After P1-04 a merge session had to move memory's driver changes into their lane-era homes (`decisions/2026-10-27-p1-main-merge`). The first run on lanes was `…-2026-10-28` (at most 1 lane open). The first real two-lane run was `…-2026-10-29-2` (4.8 lane hours in 2.8 h wall). |
+| Wall time per feature 25–40 % lower | **Not measurable cleanly.** Per feature: lifecycle 36 min, memory 18 min, lanes 50 min, status UX 54 min, N1/N2 46 min. The features differ too much in size to compare *(inferred)*. The suite gives a cleaner number: 589 s (about 270 checks) → 165 s (335 checks, 10-26) → **601 s alone** (859 checks, 10-29, `decisions/2026-10-29-check-timeout-25m`). The split's gain was spent by growth: 2.6× the checks in three days. |
+| Zero real OOM kills over two or three nights | Not counted since the 10-26 status. *(no number)* |
+| Two runs at once | n8n-home-2026-10-22 went from 4/34 (10-27 01:03) to 34/34 (20:44) while the lanes run built P1 *(inferred from the ledger commit times)*. |
+
+So iteration 7 delivered what it designed: lanes, a split suite and the memory model are all on `main`, built and
+merged by the harness itself. What it didn't settle is what happens when two runs or two lanes touch the same files.
+That became the next iteration.
+
 ## Led to
+- [Iteration 8](08-unattended-nights-to-self-improvement.md): make every stop visible (U1–U3), remove the stops that
+  didn't need me (N1, N2), then try to let the harness improve itself in a chain of runs.
 - Harness v4 is lanes (`docs/architecture.md` §15's first bullet is replaced when P2 lands). D-H18 ("runs serial")
-  gets a superseding decision file citing the 10-25 usage numbers (lanes P2 item 7).
+  gets a superseding decision file citing the 10-25 usage numbers (lanes P2 item 7). Done:
+  `decisions/2026-10-26-parallel-runs-headroom`.
 - After the memory run: `harness memlint` per project, the retro backlog seeded from
-  `docs/specs/2026-10-25-memory.backlog-seed.jsonl`, and the parked n8n-events run unparked.
+  `docs/specs/2026-10-25-memory.backlog-seed.jsonl`, and the parked n8n-events run unparked. Done for memlint
+  (`decisions/2026-10-26-memlint`) and the backlog (imported 10-28 22:12, per the ledger commit). n8n-events: no record
+  of it in `harness status --all` on 10-29.
 
 ## How to tell it (2 minutes)
 1. **Problem:** the harness had just become safe. Memory caps and cleanup were in place, 25/25 features were verified,
