@@ -9,6 +9,32 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 10:23 · R2-02 · passes
+
+Entry check: prompt_env exports HARNESS_ENTRY_CHECK; the coding, verify and init prompts end by running it and forbid ending on background work. entries.mjs: onlyCaps, the header's own '<n> characters (at most 2000)', validate exit 2 on caps only; journalEntry cuts summary/header to 399+… and keeps the entry, ingest prints 'trimmed summary <n>', journal_ notes it. STUB_LONG_SUMMARY. 7 checks.
+
+- **Files:** lib/entries.mjs, lib/prompt.sh, lib/record.sh, prompts/coding.md, prompts/verify.md, prompts/initializer.md, tests/stub-claude.sh, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/76-entries-survive.sh, tests/fixtures/check-names.txt
+- **Verified:** Watched 6 of the 7 new checks fail first (the outcome-maybe one guards behaviour that already held); then bash tests/run.sh 12-journal 76-entries 25-run: 23/23; full suite via lib/check.sh: green after a rerun, 893 tests (the first run 892/893: FAIL harness desk --list in 13-run-2-michael-sets-desk, unrelated, green on the rerun); bash -n on prompt.sh record.sh stub-claude.sh, node --check entries.mjs.
+- **Tests:** 886 → 893
+- **Discovery** (affects R2-03, R2-04): 76-entries-survive.sh exists now with a STUB_LONG_SUMMARY run (run id longsum) whose state dir the prompt checks render from; R2-03/R2-04 append to it and must reset main between stub runs
+- **Discovery** (affects R2-04): entries.mjs exports onlyCaps(errs) and validate's CLI exits 2 when only caps fail: entry_resume (R2-04) resumes only on exit 1, as the plan says
+- **Resolved:** settle (tests/lib.sh:74, copy at 15:177) pgreps every debrief of this checkout and 08:239 pgreps `sleep 31` box-wide: another file or a --repeat copy matches them; a cross-file wait under load, first lead for 15 and 08
+- **Proposed change:** R2-02 step 3 says 'the summary is 400 code points plus …'; built as the plan says (399 code points + …, 400 in all), since 401 fails validate and readEntries would drop the line. The step should read '400 code points in all, ending …'.
+- *05-R2-02 · claude-opus-5-5*
+
+### 2026-10-29 10:16 · R1-02 · passes
+
+tests/lib.sh gains wait_for (clock-bounded 0.1 s poll), stub_wait/stub_go; in_has, settle's poll and ran run on wait_for. stub-claude.sh learns STUB_BARRIER=<id>:<name>. tests/run.sh --repeat <n> <name>… runs n fresh copies per file, prints <file>: k/n green and red copies' FAIL lines. Six checks in 75-suite-tools.sh, watched failing first.
+
+- **Files:** tests/lib.sh, tests/run.sh, tests/stub-claude.sh, tests/checks/75-suite-tools.sh, tests/fixtures/check-names.txt, CLAUDE.md
+- **Verified:** 75-suite-tools: 0/6 before the code, 6/6 after; bash tests/run.sh --repeat 3 17-run-8-thin-verify printed 3/3 green (15.6 s); --repeat x prints the usage, exit 2; full suite via check.sh green, 892 tests in 803 s (box loaded by the other lanes); grep -c 'seq 20\|seq 150' tests/lib.sh = 0; bash -n on the four shell files
+- **Tests:** 886 → 892
+- **Discovery** (affects R1-03): wait_for evals in its own frame: an eval'd condition sees the caller's locals (ran's s), so wait_for's locals are _wf_*; settle keeps its sleep 0.5 and the 15 copies of settle/ran stay for R1-03's sweep
+- **Discovery** (affects R1-03): lib.sh's `seq 200` (status_stubs' long brief) matched step 1's grep; it is now {1..200}, same output
+- **Discovery** (affects R1-04, R1-05, R1-06): --repeat keys each copy <file>.c<i> in run.sh's $out; it prints no per-copy PASS lines, only the per-file count, red copies' FAIL lines (copy <i>: …) and the wall time; KEEP=1 adds `copy <i> kept: <T>`
+- **Proposed change:** The plan's STUB_BARRIER check (`suite tools: STUB_BARRIER holds that feature's first coding session until stub_go`) is in 75-suite-tools.sh though R1-02's steps don't name it; the step list could.
+- *04-R1-02 · claude-opus-5-5*
+
 ### 2026-10-29 10:01 · R2-01 · passes
 
 Attempt 1's plan (docs/plans/2026-10-29-R2-entries.md) holds every step; the suite was red only because its new Gotchas line made CLAUDE.md's ## Gotchas 16 lines, which 39-memlint-m4 fails. Dropped the narrowest line (brief.md move); memlint on the worktree prints nothing; full suite green, 886 tests.

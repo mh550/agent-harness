@@ -150,7 +150,7 @@
         "Every new check name is one line in `tests/fixtures/check-names.txt`; `bash -n lib/prompt.sh lib/record.sh tests/stub-claude.sh` and `node --check lib/entries.mjs` pass",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R2-03",

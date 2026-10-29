@@ -17,3 +17,11 @@
 - 2026-10-29 10:01 · R2-01: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 10:01 · R2-01: gotchas +0 ~0 -1
 - 2026-10-29 10:01 · R2-01 · claude-opus-5-5 · passes=true · 12 min · 2/23 passing · tests 886
+- 2026-10-29 10:01 · context.md for R2-02: 4995 bytes
+- 2026-10-29 10:16 · R1-02: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:16 · R1-02: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:16 · R1-02: gotchas +1 ~0 -0
+- 2026-10-29 10:23 · R2-02: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:23 · R2-02: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:23 · flaky: 13-run-2-michael-sets-desk (red, then green on a rerun; load 5.38)
+- 2026-10-29 10:23 · R2-02 · claude-opus-5-5 · passes=true · 22 min · 3/23 passing · tests 893
