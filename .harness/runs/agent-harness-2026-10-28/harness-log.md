@@ -95,3 +95,5 @@
 - 2026-10-28 21:34 · context.md for U3-08: 7896 bytes, 5 items left out
 - 2026-10-28 22:17 · U3-08: gotchas +0 ~1 -0
 - 2026-10-28 22:27 · U3-08 · claude-opus-5-5 · passes=true · 42 min · 24/24 passing · tests 859
+- 2026-10-28 22:27 · verify U3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-28 22:37 · context.md for U3: 16084 bytes, 11 items left out

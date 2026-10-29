@@ -7,6 +7,46 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 22:38 · verify U3 · passes
+
+Full suite green (859); subset re-run of checks 65-72 passes (74/74); artifacts, decisions, docs, usage header, bash -n and node --check verified for U3-01..08.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| U3-01 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-01 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-01 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-01 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-01 | 5 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | plan docs/plans/2026-10-28-U3-show-and-fixes.md exists; its content is implemented as the later features and their checks verify (65-72 pass) | yes |
+| U3-02 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | tests/checks/65-project-names.sh 11 checks pass in subset run; project-names decision present; bash -n clean | yes |
+| U3-02 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | tests/checks/65-project-names.sh 11 checks pass in subset run; project-names decision present; bash -n clean | yes |
+| U3-02 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | tests/checks/65-project-names.sh 11 checks pass in subset run; project-names decision present; bash -n clean | yes |
+| U3-03 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 66-record-after-gc (6) and 67-gc-units (2) pass; decisions record-after-gc and gc-foreign-units exist; bash -n clean | yes |
+| U3-03 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 66-record-after-gc (6) and 67-gc-units (2) pass; decisions record-after-gc and gc-foreign-units exist; bash -n clean | yes |
+| U3-03 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 66-record-after-gc (6) and 67-gc-units (2) pass; decisions record-after-gc and gc-foreign-units exist; bash -n clean | yes |
+| U3-03 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 66-record-after-gc (6) and 67-gc-units (2) pass; decisions record-after-gc and gc-foreign-units exist; bash -n clean | yes |
+| U3-04 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 68-show passes; decision 2026-10-28-show exists; README documents show; node --check clean | yes |
+| U3-04 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 68-show passes; decision 2026-10-28-show exists; README documents show; node --check clean | yes |
+| U3-04 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 68-show passes; decision 2026-10-28-show exists; README documents show; node --check clean | yes |
+| U3-04 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 68-show passes; decision 2026-10-28-show exists; README documents show; node --check clean | yes |
+| U3-05 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 69-same-project-starts passes; overlap.mjs named finds lib/check.sh, lib/treekey.mjs, tests/run.sh on overlap-spec fixture; queue-one-run decision has Updated in place line | yes |
+| U3-05 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 69-same-project-starts passes; overlap.mjs named finds lib/check.sh, lib/treekey.mjs, tests/run.sh on overlap-spec fixture; queue-one-run decision has Updated in place line | yes |
+| U3-05 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 69-same-project-starts passes; overlap.mjs named finds lib/check.sh, lib/treekey.mjs, tests/run.sh on overlap-spec fixture; queue-one-run decision has Updated in place line | yes |
+| U3-05 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 69-same-project-starts passes; overlap.mjs named finds lib/check.sh, lib/treekey.mjs, tests/run.sh on overlap-spec fixture; queue-one-run decision has Updated in place line | yes |
+| U3-06 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 70-overlap 15 checks pass; architecture/README describe overlaps; node --check clean | yes |
+| U3-06 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 70-overlap 15 checks pass; architecture/README describe overlaps; node --check clean | yes |
+| U3-06 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 70-overlap 15 checks pass; architecture/README describe overlaps; node --check clean | yes |
+| U3-07 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 71-tty-views passes; summary-report.json/.md fixtures exist; node --check clean | yes |
+| U3-07 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 71-tty-views passes; summary-report.json/.md fixtures exist; node --check clean | yes |
+| U3-07 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 71-tty-views passes; summary-report.json/.md fixtures exist; node --check clean | yes |
+| U3-07 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | 71-tty-views passes; summary-report.json/.md fixtures exist; node --check clean | yes |
+| U3-08 | 1 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | docs/plans/2026-10-28-U3-review.md exists, 72-u3-review 6 checks pass; README, architecture, usage header list show/needs/queue show; full suite green 859 | yes |
+| U3-08 | 2 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | docs/plans/2026-10-28-U3-review.md exists, 72-u3-review 6 checks pass; README, architecture, usage header list show/needs/queue show; full suite green 859 | yes |
+| U3-08 | 3 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | docs/plans/2026-10-28-U3-review.md exists, 72-u3-review 6 checks pass; README, architecture, usage header list show/needs/queue show; full suite green 859 | yes |
+| U3-08 | 4 | read step; subset run of bash tests/run.sh for its check file, grep/ls/bash -n/node --check on artifacts; full suite green (859 checks) | docs/plans/2026-10-28-U3-review.md exists, 72-u3-review 6 checks pass; README, architecture, usage header list show/needs/queue show; full suite green 859 | yes |
+
+- *223724-verify-U3 · claude-sonnet-5-5*
+
 ### 2026-10-28 22:17 · U3-08 · passes
 
 U3 review, one Opus round: 0 Critical, 2 Important, 9 Minor. Fixed red→green in 72-u3-review: a multi-line brief is one queue argument (\x1f), and an ended run's overlap record stays in its state, so gc can remove its worktree. Minors 3, 5, 6, 10, 11 fixed; 4, 7, 8, 9 noted. README and §12 now describe overlaps.
@@ -265,23 +305,9 @@ Stop paths open needs records: the lane's park (question line/URL, actions) and 
 - **Proposed change:** U2-05 step 4 names tests/checks/59-needs-driver.sh; 59 is taken by the cards, so the file is 60-needs-driver.sh (as U2-01 planned)
 - *13-U2-05 · claude-opus-5-5*
 
-### 2026-10-28 10:31 · U2-04 · passes
-
-Cards by code: TEMPLATES (15, data) in lib/needs.mjs, card(reason, facts) and the card CLI, waitsOn, mergedBy; 15 fixtures in tests/fixtures/needs; harness needs as view.mjs cards (cutFront, card rule:false) with footer, 60 columns clean; harness parked = needs for text, --json joined with ref and card; notify.mjs urls compare; 59-needs-cards; Opus review fixed.
-
-- **Files:** lib/needs.mjs, lib/view.mjs, lib/notify.mjs, lib/parked.mjs, lib/needs.sh, bin/harness, tests/checks/59-needs-cards.sh, tests/checks/58-needs-record.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/fixtures/needs/*.json, tests/fixtures/check-names.txt, prompts/desk.md, +5 more
-- **Verified:** bash tests/run.sh 59: 29/29; 58: 15/15; 13-run-2: 66/66; 03: 7/7; full suite via check.sh TEST_JOBS=2: green, 744 tests in 907 s. One Opus review of the diff (0 Critical, 2 Important, 12 Minor): 13 fixed (desk/skill read --json commands, mergedBy splits merge heads at the last - so default lanes and own merges are left out, fences/tabs in questions, bad at, narrow ref keeps since, ~ in Files:, empty waits=, re-merge newest PR, commit row, gc'd parks hidden, card needs run, jq null guard), one check for them; ASCII content glyphs left (record text is Unicode by plan §1.1).
-- **Tests:** 715 → 744
-- **Dead end:** inline node -e JS with nested backtick/quote escaping inside a check's single-quoted command — unreadable and broke; a quoted heredoc writing $T/review.mjs, run with paths as argv, works
-- **Discovery** (affects U2-05, U2-06): blocked's waits are computed in needs.mjs (waitsOn over features.mjs deps) when no waits= is passed; no needs_waits shell function exists. needs_open now passes state= and suite= ($CHECK_CMD). U2-05/06 openers pass list= and inbox= and get blocked, where and question for free
-- **Discovery** (affects U2-05, U2-07): A park's headline keeps its why ('B parked: set the gatus vars'); a stored parked card's commands and run_state are recomputed by list (asOfNow) from driver.pid, ended, the runner and queue/*-continue-<run>.args; parks of gc'd worktrees are not listed
-- **Discovery** (affects U2-05): record body is still the headline: the 60-column plain card body (plan §1.1 #9, §3.2) is U2-05's, via renderCard with HARNESS_GLYPHS=unicode, no colour
-- **Discovery** (affects U2-07): prompts/desk.md and the answer skill now say to run a parked feature's commands from harness parked <run> --json (the text view wraps them and shortens paths); U2-07 still switches the desk to COLUMNS=60 harness needs
-- **Proposed change:** U2-04 step 3's header: when '<glyph> <run> · <headline> · since … · <ref>' is wider than the line, the card uses '… · <ago>' and a 'ref <ref> · since <HH:MM> (<ago>)' field (default, in decisions/2026-10-27-needs-record)
-- *12-U2-04 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-28 10:31 · U2-04 · passes · Cards by code: TEMPLATES (15, data) in lib/needs.mjs, card(reason, facts) and the card CLI, waitsOn,… ([in full](progress-archive.md))
 - 2026-10-28 09:53 · U2-03 · passes · lib/needs.mjs: the needs record (24 keys, first 13 = event v1), REASONS (15), pure record/refresh/sw… ([in full](progress-archive.md))
 - 2026-10-28 09:19 · U2-02 · passes · lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, question, questionLine, a… ([in full](progress-archive.md))
 - 2026-10-28 08:40 · U2-01 · passes · Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and c… ([in full](progress-archive.md))
