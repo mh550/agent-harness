@@ -53,6 +53,8 @@
 # merge on origin's main adding <path> ("main's <path>"), subject "Merge pull request #7 from test/harness-merge/other-M3"
 # as GitHub writes it: another run's PR merged meanwhile (U2-06's main and merge conflicts); <path>'s directories are made.
 # STUB_FIX_BROKEN=<id>: that feature's first coding session removes BROKEN (a red main's fix, R3-03's green-only count).
+# STUB_RUN_SUITE=<id>: that feature's first coding session runs $HARNESS_CHECK in full, then as a subset (`x`), before
+# its commit (R3-04's "suite ran" note).
 # STUB_THIN_VERIFY=all: every verify round is thin (the escalated one too), so the milestone needs Michael (U2-06).
 # Every headless session prints first the init line of fixtures/claude-resume/first.jsonl with its cwd and a fresh
 # session_id, and keeps $STUB_DIR/sessions/<id> (its last result line). `--resume <id>` (R2) appends argv to
@@ -256,6 +258,7 @@ JSON
     if [[ $id == C ]]; then [[ $n == 1 && ! ${STUB_NO_RED:-} ]] && touch BROKEN || rm -f BROKEN; fi   # first try leaves the suite red
     [[ ${STUB_FIX_BROKEN:-} == "$id" && $n == 1 ]] && rm -f BROKEN
     echo "$id $n" > "work-$id.txt"
+    [[ ${STUB_RUN_SUITE:-} == "$id" && $n == 1 ]] && { "$HARNESS_CHECK"; "$HARNESS_CHECK" x; true; } > /dev/null 2>&1
     (( n == 1 )) && main_touch "$id"
     if [[ ${STUB_SHARED:-} && $n == 1 ]]; then case $id in A) sed -i '1s/.*/A/' "$STUB_SHARED" ;; C) sed -i '$s/.*/C/' "$STUB_SHARED" ;; esac; fi
     if [[ ${STUB_CONFLICT:-} && $n == 1 && $id == [AC] ]]; then sed -i "2s/.*/line two, from $id/" "$STUB_CONFLICT"; fi

@@ -159,11 +159,13 @@ check.sh keeps one check-<key>.out; the green markers stay
 check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s
 check.sh: a TERM stops the suite's scope with it
 check.sh: a subset call is scoped too and never cached
+check.sh: appends <epoch> <full|cached|subset> <seconds> to check-runs.log on each call; no suite configured, no row
 check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
 check.sh: the cached line names the key's ignore list only when it isn't the default
 coding and verify prompts name resolved, project facts and Promote to Gotchas
 coding prompt names CLAUDE.md but doesn't paste it
+coding prompt: reviews go to subagents on the session's own model (A's prompt, its metrics row, prompt.sh's render: claude-sonnet-5-5)
 coding prompt: the Finish step adds one Gotchas line
 conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)
 context.md carries the earlier attempt's dead end
@@ -338,6 +340,7 @@ journal: a 410-character summary and outcome "maybe" is minimal with why invalid
 journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
 journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
 journal: validate exits 2 when its only errors are the caps, 1 with any other
+lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
 lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
 lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
 lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)
@@ -673,6 +676,7 @@ review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor i
 review gate: a round pending at a session cap with the review at MAX_ATTEMPTS is work left (continuation queued) and runs on the continue
 review gate: a sonnet review reporting 1 Critical gets one round on opus at no attempt
 review gate: after an escalation round that doesn't pass, the review's next attempt runs on opus and never escalates again
+review gate: an escalated review is un-passed before its passes= note, which says passes=false (Minor 8)
 review gate: an escalation round refused by a usage limit runs again on opus, still at no attempt
 review gate: reviewFindings reads <n> Critical and <n> Important, null without either
 review gate: reviewSummary gives the review share with one decimal, null without reviews, and counts the reviews that found nothing
