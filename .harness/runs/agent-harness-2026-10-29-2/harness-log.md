@@ -70,3 +70,9 @@
 - 2026-10-29 14:29 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch 47-lanes-two 28-run-14d-harness-merge (red, then green on a rerun; load 6.29)
 - 2026-10-29 14:29 · R2-05 · claude-opus-5-5 · passes=true · 61 min · 8/23 passing · tests 915
 - 2026-10-29 14:29 · R2: 1 files conflict with main (CLAUDE.md); a resolve session
+- 2026-10-29 14:31 · R2: main merged in by a resolve session (CLAUDE.md; claude-opus-5-5, 3 min); the verify goes on with main merged
+- 2026-10-29 14:31 · merged main into harness-lane/agent-harness-2026-10-29-2/R2
+- 2026-10-29 14:31 · verify R2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 14:32 · R1-04: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 14:32 · R1-04: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 14:32 · R1-04 · claude-opus-5-5 · passes=true · 58 min · 9/23 passing · tests 944
