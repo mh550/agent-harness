@@ -64,8 +64,10 @@ curl_count() { awk -v k="$1" 'BEGIN { RS = "===\n" } index($0, k) { n++ } END { 
 win() { tmux list-windows -t "=$HARNESS_DESK_SESSION" -F '#{window_id} #{window_name}' 2> /dev/null | awk -v w="$1" '$2 == w { print $1 }'; }
 wins() { tmux list-windows -t "=$HARNESS_DESK_SESSION" -F '#W' 2> /dev/null; }
 # wait_for <max s> <command…>: the command (quiet) every 0.1 s until it exits 0 (0), or <max> s by the clock, not by
-# counted rounds (a loaded box's rounds are slow), then one line on stderr (1). In the caller's shell: `eval '<expr>'` sees its variables
+# counted rounds (a loaded box's rounds are slow), then one line on stderr (1). In the caller's shell: `eval '<expr>'` sees its variables.
+# Whole seconds only (2 otherwise): the limit is integer arithmetic, and a failing one would never end the wait
 wait_for() { local _wf_max=$1 _wf_t0=${EPOCHREALTIME/[.,]/}; shift
+  [[ $_wf_max =~ ^[0-9]+$ ]] || { echo "wait_for: $_wf_max is not whole seconds" >&2; return 2; }
   until "$@" > /dev/null 2>&1; do
     (( ${EPOCHREALTIME/[.,]/} - _wf_t0 >= _wf_max * 1000000 )) && { echo "wait_for: $* still failing after $_wf_max s" >&2; return 1; }
     sleep 0.1   # sleep-ok: wait_for's own poll
@@ -75,15 +77,22 @@ wait_for() { local _wf_max=$1 _wf_t0=${EPOCHREALTIME/[.,]/}; shift
 stub_go() { mkdir -p "$T/barriers" && : > "$T/barriers/$1"; }
 stub_wait() { wait_for "${2:-60}" test -e "$T/barriers/$1"; }
 in_has() { wait_for 30 grep -q "$2" "$1"; }   # send-keys is asynchronous: wait for the typed line
+tended() { local d=$1; wait_for 60 eval '[[ -f $d/ended && ! -f $d/driver.pid ]]'; }   # <state dir>: its run ended and its driver gone (finish writes ended before the retro)
+# the stub's hold-coding: every coding session after this says held-<run>[-<id>] and waits for release-<run>[-<id>]
+held() { rm -f "$T"/held-* "$T"/release-* "$T"/vwait-*; : > "$T/hold-coding"; }
+ats() { hlog "$1" | grep -n -m1 -E -- "$2" | cut -d: -f1; }   # <run> <ERE>: the line of the first note matching
 desk_of() { grep -lx "desk · $1\( · .*\)\?" "$T"/desk/*.args 2> /dev/null | sort -V | tail -1; }   # the newest desk of run $1 (.args; .in beside it)
 GHP=https://github.com/test/proj
 # the debrief sections' helpers (file 15, and L5 calls settle, the desk ran, in files of their own since P0-02)
 HH=$(cd "$HERE/.." && pwd)
 settle() {   # the runner's debrief is detached: wait until no debrief process is left. The runner starts it as
   # $HERE/../bin/harness (setsid -f: forked before the runner exits), which execs $HH/lib/debrief.sh: the pattern
-  # matches every step, so a debrief not yet exec'd counts as running
-  wait_for 30 eval '! pgrep -f "($HH|$HERE/\.\.)/(lib/debrief\.sh|bin/harness debrief)"'
+  # matches every step, so a debrief not yet exec'd counts as running. Only this copy's (its HARNESS_STATE): pgrep is
+  # box-wide, and a sibling copy's debrief is not this check's to wait for
+  wait_for 30 eval '[[ -z $(debriefs) ]]'
 }
+debriefs() { local p; for p in $(pgrep -f "($HH|$HERE/\.\.)/(lib/debrief\.sh|bin/harness debrief)"); do
+  grep -zqF "HARNESS_STATE=$T/" "/proc/$p/environ" 2> /dev/null && echo "$p"; done; }
 ran() { local r s; s=$(date +%s); wait_for 2 eval '(( $(date +%s) > s ))'; for r; do echo "$(date '+%F %T') run $r on harness/$r in $T/wt/proj/$r · port 7999" >> "$HARNESS_STATE/proj/$r/run.log"; done; }   # runs since
 
 # The read views' stub runs (U1; call once after suite_setup): every time relative to a fixed HARNESS_NOW, TZ=UTC (the

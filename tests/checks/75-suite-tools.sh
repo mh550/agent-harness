@@ -7,6 +7,11 @@ w0=${EPOCHREALTIME/[.,]/}; wait_for 30 test -f "$T/wf"; wrc=$? wus=$(( ${EPOCHRE
 check "suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)" '(( wrc == 0 && wus < 5000000 ))'
 wf=$(wait_for 1 test -f "$T/missing" 2>&1); wrc=$?
 check "suite tools: wait_for gives up after its limit with its still-failing line, exit 1" '(( wrc == 1 )) && [[ $wf == "wait_for: test -f $T/missing still failing after 1 s" ]]'
+# a limit that isn't whole seconds is refused at once (its arithmetic would fail and the wait never end)
+( wait_for 0.5 false 2> "$T/wf-frac" ) & wp=$!
+wait_for 5 eval "! kill -0 $wp"; wfe=$?; kill "$wp" 2> /dev/null; wait "$wp"; wfrc=$?
+check "suite tools: wait_for refuses a limit that isn't whole seconds with one line, exit 2" \
+  '(( wfe == 0 && wfrc == 2 )) && [[ $(cat "$T/wf-frac") == "wait_for: 0.5 is not whole seconds" ]]'
 
 # the barrier: job 1 (started first) waits for job 2's stub_go, so the order file reads first, second every round
 for i in $(seq 20); do
@@ -17,14 +22,21 @@ done
 check "suite tools: a stub_wait/stub_go barrier orders two background jobs the same way in 20 of 20 rounds" \
   '[[ $(cat "$T/order") == "$(for i in $(seq 20); do printf "first\nsecond\n"; done)" ]]'
 
-# STUB_BARRIER=A:a-end: A's first coding session says a-end.held, then waits for a-end before its entry
+# STUB_BARRIER=A:a-end: A's first coding session says a-end.held, then waits for a-end before its entry, and says
+# a-end.released as it goes on: not released over 2 s at the barrier (a negative: nothing to count), released after stub_go
 STUB_BARRIER=A:a-end STUB_NO_TAMPER=1 STUB_NO_RED=1 "$H" start "$T/proj" bar --spec SPEC.md --foreground > "$T/bar.out" 2>&1 & bp=$!
-ENT=$T/wt/proj/bar/.harness/runs/bar/entries.jsonl
 stub_wait a-end.held; bheld=$?
-bwait=$(jq -s '[.[] | select(.feature == "A")] | length' "$ENT" 2> /dev/null)
-stub_go a-end; wait "$bp"
+wait_for 2 test -e "$T/barriers/a-end.released" 2> /dev/null; bearly=$?
+stub_go a-end; stub_wait a-end.released; brel=$?; wait "$bp"
 check "suite tools: STUB_BARRIER holds that feature's first coding session until stub_go" \
-  '(( bheld == 0 )) && [[ $bwait == 0 ]] && [[ $(jq -r ".features[] | select(.id == \"A\") | .passes" "$(list bar)") == true ]]'
+  '(( bheld == 0 && bearly == 1 && brel == 0 )) && [[ $(jq -r ".features[] | select(.id == \"A\") | .passes" "$(list bar)") == true ]]'
+
+# settle waits for this copy's debriefs only: a process named like a debrief with another state dir (a sibling copy's,
+# another file's) is not its business; one with this copy's is waited for until it ends
+( export HARNESS_STATE=${T%/}-sibling/state; exec -a "$HH/lib/debrief.sh" sleep 40 ) & fp=$!   # sleep-ok: a foreign debrief that lives on
+( exec -a "$HH/lib/debrief.sh" sleep 3 ) & op=$!   # sleep-ok: this copy's debrief, 3 s of work
+s0=${EPOCHREALTIME/[.,]/}; settle; src=$? sus=$(( ${EPOCHREALTIME/[.,]/} - s0 )); kill "$fp" 2> /dev/null
+check "suite tools: settle waits for this copy's debrief to end and never for another state dir's" '(( src == 0 && sus >= 2000000 && sus < 20000000 ))'
 
 # --repeat on two fixture check files: flaky is red on an even count (a flock'ed counter, so one copy of three), steady never
 mkdir -p "$T/rep"
@@ -43,7 +55,8 @@ suite_end
 EOF
 rf=$(TEST_CHECKS=$T/rep TEST_JOBS=2 bash "$HERE/run.sh" --repeat 3 flaky 2>&1); rfc=$?
 check "suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1" \
-  '(( rfc == 1 )) && grep -xE "flaky: [12]/3 green" <<< "$rf" > /dev/null && grep -xE "copy [123]: FAIL fixture: red on an even copy" <<< "$rf" > /dev/null'
+  '(( rfc == 1 )) && grep -x "flaky: 2/3 green" <<< "$rf" > /dev/null \
+  && [[ $(grep -cxE "copy [123]: FAIL fixture: red on an even copy" <<< "$rf") == 1 ]]'
 rs=$(TEST_CHECKS=$T/rep TEST_JOBS=2 bash "$HERE/run.sh" --repeat 3 steady 2>&1); rsc=$?
 check "suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0" \
   '(( rsc == 0 )) && grep -x "steady: 3/3 green" <<< "$rs" > /dev/null && ! grep "^copy " <<< "$rs" > /dev/null'

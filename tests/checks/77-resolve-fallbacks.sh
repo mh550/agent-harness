@@ -5,7 +5,6 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # record branch and slot_open keep today's path. Plan: docs/plans/2026-10-29-N2-conflict-resolution.md ----
 # Two lanes as in 76-resolve-session.sh: C first, M2's verify waits until M1 has merged, so M2's merge meets a main
 # where A rewrote line 2 of README.md, as C did (STUB_CONFLICT).
-held() { rm -f "$T"/held-* "$T"/release-* "$T"/vwait-*; : > "$T/hold-coding"; }
 tmp=$(mktemp -d); git clone -q "$T/origin.git" "$tmp" && printf '# demo\nline two\nline three\n' > "$tmp/README.md" && git -C "$tmp" add README.md \
   && git -C "$tmp" -c user.name=t -c user.email=t@test commit -qm "README.md" && git -C "$tmp" push -q origin HEAD:main; rm -rf "$tmp"
 main0=$(git -C "$T/origin.git" rev-parse main)

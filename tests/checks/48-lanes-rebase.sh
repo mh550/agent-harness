@@ -4,7 +4,6 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # Two lanes, M2 after: [] (one feature, C): C goes first and M2's verify waits (STUB_VERIFY_WAIT) until M1 has merged
 # work-B.txt into main, so M2 is verified on a main that has moved by the time it merges. Each run starts from the
 # first main (origin's main is set back between runs: the stub's work files would otherwise already be there).
-held() { rm -f "$T"/held-* "$T"/release-* "$T"/vwait-*; : > "$T/hold-coding"; }
 main0=$(git -C "$T/origin.git" rev-parse main)
 echo 'MAX_LANES=2' >> "$T/user-config.sh"
 # <run>: the two-lane run above, M1's B released once M2's verify waits; then the invariant, read before the next run

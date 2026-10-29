@@ -5,7 +5,6 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # `harness merge` keep today's needs path. Plan: docs/plans/2026-10-29-N2-conflict-resolution.md ----
 # Two lanes, M2 after: [] (C): C goes first and M2's verify waits (STUB_VERIFY_WAIT) until M1 has merged work-B.txt, so
 # M2's merge meets a main where A rewrote line 2 of README.md, as C did (STUB_CONFLICT): a real conflict.
-held() { rm -f "$T"/held-* "$T"/release-* "$T"/vwait-*; : > "$T/hold-coding"; }
 tmp=$(mktemp -d); git clone -q "$T/origin.git" "$tmp" && printf '# demo\nline two\nline three\n' > "$tmp/README.md" && git -C "$tmp" add README.md \
   && git -C "$tmp" -c user.name=t -c user.email=t@test commit -qm "README.md" && git -C "$tmp" push -q origin HEAD:main; rm -rf "$tmp"
 main0=$(git -C "$T/origin.git" rev-parse main)

@@ -6,8 +6,6 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # in and both land (a lane verified while the other merged is P2-03's re-base)
 two_both="" mem_c="" cap_end=""
 echo 'MAX_LANES=2' >> "$T/user-config.sh"
-held() { rm -f "$T"/held-* "$T"/release-*; : > "$T/hold-coding"; }
-ats() { hlog "$1" | grep -n -m1 -E -- "$2" | cut -d: -f1; }   # <run> <ERE>: the line of the first note matching
 
 held
 STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" two --spec SPEC.md --foreground > "$T/two.out" 2>&1 & P=$!

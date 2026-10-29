@@ -2,8 +2,6 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- slots and cleanup (P2-04): a slot reused across milestones, merged lane branches deleted, gc's lane passes ----
 # The gc checks are here, not in 08 or 13 (the two largest files): this file builds the lane state they read.
-held() { rm -f "$T"/held-* "$T"/release-*; : > "$T/hold-coding"; }
-ats() { hlog "$1" | grep -n -m1 -E -- "$2" | cut -d: -f1; }   # <run> <ERE>: the line of the first note matching
 has() { git -C "$1" rev-parse -q --verify "refs/heads/$2" > /dev/null; }   # <repo> <branch>
 printf 'node_modules/\n' > .gitignore && git add .gitignore && git commit -qm "ignore node_modules" && git push -q origin main
 main0=$(git -C "$T/origin.git" rev-parse main)

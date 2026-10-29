@@ -2,7 +2,6 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- tmux (L3-03): when the driver exits, its window saves the scrollback, closes the supervisor and, after TMUX_KEEP_HOURS, the session ----
 { cat "$T/base-config.sh"; echo TMUX_KEEP_HOURS=0; } > "$T/keep0.sh"; { cat "$T/base-config.sh"; echo TMUX_KEEP_HOURS=1; } > "$T/keep1.sh"
-tended() { local d=$1; wait_for 60 eval '[[ -f $d/ended && ! -f $d/driver.pid ]]'; }   # finish writes ended before the retro
 tgone() { local s=$1; wait_for 10 eval '! tmux has-session -t "=$s"'; }
 PAST=$(( $(date +%s) - 1 ))   # the tmux runs take no STUB_* flags (they don't reach a window): the initializer, then the deadline
 HARNESS_CONFIG=$T/keep0.sh "$H" start "$T/proj" tmux0 --spec SPEC.md --until-epoch "$PAST" --now > "$T/tmux0.out" 2>&1

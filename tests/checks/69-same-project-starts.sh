@@ -7,7 +7,6 @@ sleep 600 & LIVE=$!; echo "$LIVE" >> "$T/left.pids"   # sleep-ok: a live driver
 L=$HARNESS_STATE/proj/live1; mkdir -p "$L" && echo "$LIVE" > "$L/driver.pid" && printf 'PROJECT_DIR=%q\nWT=/x\nRUN_ID=live1\nSTATE=%q\n' "$T/proj" "$L" > "$L/meta.env"
 Q=$HARNESS_STATE/queue PAST=$(( $(date +%s) - 1 ))
 MSG="live1 is running on proj: queued (the runner starts it when that run ends; --now starts it anyway)"
-tended() { local d=$1; wait_for 60 eval '[[ -f $d/ended && ! -f $d/driver.pid ]]'; }
 
 check "same-project starts: start proj --brief x while a run of proj is alive queues it, prints why, and starts nothing" '
   o=$("$H" start proj --brief x 2>&1) && [[ $o == "$MSG" ]] && f=$(ls "$Q"/*-start-proj.args) &&

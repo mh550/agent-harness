@@ -61,4 +61,14 @@ check "lanes run: a lane that exits between the coordinator's lane count and its
   && ! hlog lh | grep -F "no feature left to try" > /dev/null && hlog lh | grep -F "· lane M2 opened (slot 0, " > /dev/null \
   && grep -q "^done" "$HARNESS_STATE/proj/lh/ended" && [[ $($F summary "$(list lh)") == "3/3 passing" ]]'
 
+# The same window with a slot free (MAX_LANES=2): M1's lane dies (KILL, no exit file) while the coordinator holds after
+# counting it. Unreaped, its pid file says "not closed yet": the opens must not offer M1 again (which overwrote the pid,
+# so the crash was never noted) before the next poll reaps it as exited unexpectedly (R1-07 review)
+echo 'MAX_LANES=2' >> "$T/user-config.sh"; held
+HARNESS_COUNT_HOLD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lk --spec SPEC.md --foreground > "$T/lk.out" 2>&1 & P=$!
+LK=$HARNESS_STATE/proj/lk; wait_for 120 test -f "$T/held-lk-A" && wait_for 60 test -f "$LK/count-hold" && kill -KILL "$(cat "$LK/lanes/M1/pid")"
+rm -f "$T/hold-coding"; touch "$T/release-lk"; wait "$P"
+check "lanes run: a lane that dies while the coordinator holds its count, with a slot free, is reaped as exited unexpectedly, never reopened" \
+  'hlog lk | grep -F "· lane M1 closed (lane exited unexpectedly)" > /dev/null && [[ $(hlog lk | grep -c "· lane M1 opened") == 1 ]] && [[ -f $LK/needs-M1 ]]'
+
 suite_end

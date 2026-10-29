@@ -31,3 +31,11 @@ Updated in place 2026-10-29 (R1-06): three more were this race. `32-l5-queue-run
 4) and 08's `no user systemd: the run goes bare …` were 10/10 green unforced; forced on the code before the fix, each
 run ended `no feature left to try: 2/3 passing` before M2. Their runs now start with `HARNESS_COUNT_HOLD=1` (32's
 through its queue runner, which `bin/harness` passes on to the tmux-started runs).
+
+Updated in place 2026-10-29 (R1-07, the milestone review): the opens shared the window when a slot was free
+(`MAX_LANES` ≥ 2). `F lanes` counts a lane open only while its pid lives, so a lane that died after the count was
+offered again, and `lane_open` removed its `exit` and overwrote its `pid`: no `lane <m> closed` note, no `lanes-end`, a
+crash never `needs-<m>`. The opens now skip a milestone whose `lanes/<m>/pid` is still there (exited, not reaped); the
+next poll reaps it first. Checked forced: `lanes run: a lane that dies while the coordinator holds its count, with a
+slot free, …` (45; the hold leaves `state/count-hold` while it holds, so the check kills the lane inside it), red before
+(M1 reopened in its slot, the run `done`), green after (`lane M1 closed (lane exited unexpectedly)`, `needs-M1`).
