@@ -180,6 +180,13 @@ disjoint, suite green; re-tagged`); overlapping files, or `LANE_REBASE=verify`, 
   `stopped by Michael: <why>` (the `--why` one wins when both are set); without one, `stopped by Michael` as before.
   `harness continue` (or a queued request) of a run stopped from the phone sets its `status: stop` line back to
   `status: run`, so the continuation doesn't stop again at once.
+- **Entries:** each session ends by running the entry check (`{{ENTRY_CHECK}}`, `node lib/entries.mjs validate`) on
+  its `entry.json` and fixing what it prints, and never ends its turn on a running background task. A summary over
+  400 characters (or a header over 2000), the entry's only fault, is cut to fit and the entry kept (`<id>: entry.json
+  summary <n> characters; cut to 400 and kept`). A missing or otherwise invalid entry of a session no usage limit
+  refused gets **one resume** of that session (`claude --resume`, 8 turns, 10 min, `$1` over its cost) to write it,
+  and nothing else; its cost is an `entry-resume` row in `metrics.jsonl`, never a session. Still none: the minimal
+  entry from git, as before (decisions/2026-10-29-entries-survive).
 - **Box:** `harness pause|resume|stop|answer <run>` (`harness stop <run> --why "<text>"` records why), `harness attach <run>` (tmux: driver · log · supervisor). When the driver exits, the
   supervisor window closes, the driver window's scrollback goes to `<state>/tmux-driver.txt` (its last 2000 lines, tmux's `history-limit`;
   `run.log` beside it has everything), and the session `h-<run>`

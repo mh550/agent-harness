@@ -290,7 +290,8 @@ entry_resume() {
   sid=$(MET session-id "$3" 2> /dev/null) || { note "$5: no session id in its transcript; not resumed"; return 0; }
   [[ $errs == missing ]] && errs="It is missing." || errs="The entry check printed:"$'\n\n'$(sed 's/^/    /' <<< "$errs")
   HARNESS_FEATURE=$2 HARNESS_ENTRY_KIND=$1 HARNESS_ENTRY_ERRORS=$errs prompt entry-resume
-  for f in feature_list.json INBOX.md; do cp -p "$RUN_DIR/$f" "$SCRATCH/resume-before-$f" 2> /dev/null; done
+  for f in feature_list.json INBOX.md; do   # absent (an initializer's list): a marker, so one the resume writes goes
+    rm -f "$SCRATCH/resume-absent-$f"; cp -p "$RUN_DIR/$f" "$SCRATCH/resume-before-$f" 2> /dev/null || : > "$SCRATCH/resume-absent-$f"; done
   budget=$(awk -v a="$(MET cost "$3" 2> /dev/null)" -v b="$ENTRY_RESUME_BUDGET_USD" 'BEGIN { print a + b }')
   base=$(git rev-parse HEAD)
   local S_EXIT S_WALL S_PEAK S_NOTES S_UNIT   # the resume's: the caller reads the session's own after this
@@ -299,7 +300,8 @@ entry_resume() {
   ENTRY_RESUMED=1
   # the driver reads the list's claim and the INBOX's questions after this: the resume may write entry.json only
   for f in feature_list.json INBOX.md; do
-    [[ -e $SCRATCH/resume-before-$f ]] || continue
+    if [[ -e $SCRATCH/resume-absent-$f ]]; then rm -f "$SCRATCH/resume-absent-$f"
+      [[ -e $RUN_DIR/$f ]] && { rm -f "$RUN_DIR/$f"; note "$5: the resume wrote $f; removed"; }; continue; fi
     cmp -s "$SCRATCH/resume-before-$f" "$RUN_DIR/$f" || { cp -p "$SCRATCH/resume-before-$f" "$RUN_DIR/$f"; note "$5: the resume changed $f; restored"; }
     rm -f "$SCRATCH/resume-before-$f"
   done
@@ -346,7 +348,7 @@ journal() {
   return 0
 }
 journal_() {   # who kind id name model outcome worktree: the ingest and the render, in the record
-  local out rc n
+  local out rc n f
   if [[ $PWD != "$RWT" ]]; then   # a lane: the take-back of the copy's entry, under the lock with the ingest
     rm -f "$REC/entry.json"; [[ -e $RUN_DIR/entry.json ]] && mv -f "$RUN_DIR/entry.json" "$REC/entry.json"
   fi

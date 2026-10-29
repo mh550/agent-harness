@@ -49,7 +49,10 @@
 # resumed.jsonl with that session_id and its result's total_cost_usd and modelUsage cumulative, as the CLI's are.
 # STUB_NO_ENTRY=<id>: that feature's first coding session writes no entry.json. STUB_RESUME_ENTRY=good|bad|good-edits:
 # a resumed session (`# Entry resume`) writes a valid entry with one dead_ends item (good), `{not json` (bad), or the
-# good entry and an uncommitted resumed.txt in the worktree (good-edits); unset, it writes nothing.
+# good entry and an uncommitted resumed.txt in the worktree (good-edits); unset, it writes nothing. good-overreach:
+# the good entry, and it toggles the feature's passes, commits overreach.txt and (an init's) writes a feature list, the
+# edits entry_resume must undo. STUB_INIT_NO_LIST=1: the initializer ends, not refused, with no list and no entry.
+# STUB_NO_INIT_LINE=1: no session prints its init line (a transcript with no session id: never resumed).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc="" resume=""
@@ -83,7 +86,7 @@ if [[ -n $resume ]]; then   # the CLI resumes a session it ran, by id, or says i
 else   # the session starts before anything else, a refused one too: its init line comes first
   sid=$(cat /proc/sys/kernel/random/uuid)
   [[ -n ${STUB_DIR:-} ]] && mkdir -p "$SESS" && : > "$SESS/$sid"
-  sed -n 3p "$RES/first.jsonl" | jq -c --arg id "$sid" --arg cwd "$PWD" '.session_id = $id | .cwd = $cwd | .original_cwd = $cwd'
+  [[ ${STUB_NO_INIT_LINE:-} ]] || sed -n 3p "$RES/first.jsonl" | jq -c --arg id "$sid" --arg cwd "$PWD" '.session_id = $id | .cwd = $cwd | .original_cwd = $cwd'
 fi
 [[ -n ${STUB_DIR:-} ]] && echo "${HARNESS_RUN_ID:-} ${HARNESS_CACHE:-unset}" >> "$STUB_DIR/cache.log"   # what each headless session sees (L3-02); not in scratch, which finish deletes
 L=${HARNESS_RUN_DIR:-.}/feature_list.json
@@ -111,12 +114,14 @@ main_touch() {   # <who>: STUB_MAIN_TOUCH's merge, once, when <who> is its sessi
 # session carries tokens), with cost, final text, turns and duration substituted. --argjson: callers' \\n become newlines.
 # The result line is kept as the session's figures so far (a resume adds to them).
 ok() { local out; out=$(jq -c --argjson c "${1:-0.25}" --argjson r "\"${2:-done}\"" 'if .type == "result" then .total_cost_usd = $c | .result = $r | .num_turns = 12 | .duration_ms = 60000 else . end' "$HERE/fixtures/usage-tokens.jsonl")
-  printf '%s\n' "$out"; if [[ -f $SESS/$sid ]]; then jq -c 'select(.type == "result")' <<< "$out" > "$SESS/$sid"; fi; }
+  keep "$out"; }
+keep() { printf '%s\n' "$1"; if [[ -f $SESS/$sid ]]; then jq -c 'select(.type == "result")' <<< "$1" > "$SESS/$sid"; fi; }   # print it, keep its result line
 
 case $first in
   "# Initializer session")
     [[ ${STUB_SLOW_INIT:-} ]] && sleep "$STUB_SLOW_INIT"
     [[ ${STUB_INIT_LIMIT:-} ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before the list exists
+    [[ ${STUB_INIT_NO_LIST:-} ]] && { ok 1.5 "out of turns"; exit 0; }   # ended, not refused, with nothing written
     case ${STUB_CLI_STOP:-} in "") ;; -) "$HERE/../bin/harness" stop "$HARNESS_RUN_ID" > /dev/null ;;   # Michael runs `harness stop` meanwhile
       *) "$HERE/../bin/harness" stop "$HARNESS_RUN_ID" --why "$STUB_CLI_STOP" > /dev/null ;; esac
     [[ ${STUB_CLI_REQUEST:-} ]] && "$HERE/../bin/harness" queue add --continue "$HARNESS_RUN_ID" --brief "$STUB_CLI_REQUEST" > /dev/null
@@ -303,9 +308,13 @@ JSON
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }')
     kind=$(after_session '/^Kind: `/ { sub(/^Kind: `/, ""); sub(/`.*/, ""); print; exit }')
     case ${STUB_RESUME_ENTRY:-} in
-      good|good-edits) jq -n --arg id "$id" --arg k "$kind" '{feature: $id, kind: $k, outcome: "not yet", summary: "\($id): written on a resume",
+      good|good-edits|good-overreach) jq -n --arg id "$id" --arg k "$kind" '{feature: $id, kind: $k, outcome: "not yet", summary: "\($id): written on a resume",
         dead_ends: [{tried: "ending without an entry", why: "the harness resumed the session to write it"}]}' > "$HARNESS_RUN_DIR/entry.json"
-        [[ $STUB_RESUME_ENTRY == good-edits ]] && echo "$id" > resumed.txt ;;
+        [[ $STUB_RESUME_ENTRY == good-edits ]] && echo "$id" > resumed.txt
+        if [[ $STUB_RESUME_ENTRY == good-overreach ]]; then
+          if [[ $kind == init ]]; then echo '{ "run": "test", "features": [ { "id": "A", "kind": "build", "description": "a", "steps": ["x"], "passes": false } ] }' > "$L"
+          else set_passes "$id" "$(jq --arg i "$id" '[.features[] | select(.id == $i).passes] | .[0] | not' "$L")"; echo "$id" > overreach.txt && git add overreach.txt && git commit -qm "resume: $id" -- overreach.txt; fi
+        fi ;;
       bad) printf '{not json' > "$HARNESS_RUN_DIR/entry.json" ;;
     esac
     prev=$SESS/$sid; [[ -f $prev ]] || prev=/dev/null
@@ -317,7 +326,7 @@ JSON
           | .modelUsage = ($m | to_entries | (.[0].value |= (.inputTokens += $u.input_tokens | .outputTokens += $u.output_tokens
               | .cacheReadInputTokens += $u.cache_read_input_tokens | .cacheCreationInputTokens += $u.cache_creation_input_tokens | .costUSD += $inc)) | from_entries)
         else . end' "$RES/resumed.jsonl")
-    printf '%s\n' "$out"; if [[ -f $SESS/$sid ]]; then jq -c 'select(.type == "result")' <<< "$out" > "$SESS/$sid"; fi ;;
+    keep "$out" ;;
   "# Probe session"*)   # records its command line, $PWD and prompt; for t2, Q1 (T2a's files) is right and Q2 (T2b's deps) wrong
     { printf '%s\n' "${ARGS[@]}"; echo "PWD=$PWD"; echo "HARNESS_EVAL=${HARNESS_EVAL:-}"; } > "$STUB_DIR/probe-args"; printf '%s\n' "$prompt" > "$STUB_DIR/probe-prompt"
     [[ ${STUB_PROBE_ERROR:-} ]] && { echo "warning: noise on stderr" >&2

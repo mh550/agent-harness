@@ -188,14 +188,15 @@ check "init: netlify.toml gets a [build] ignore for harness/* refs, other keys k
 # the trim (R2-02): a summary or init header over its cap, the only error, is cut to fit (399 + …, so readEntries keeps it)
 # and the entry kept whole; any other error beside it is minimal as before; validate exits 2 when only the caps fail
 ENTR='import { journalEntry as j, validate } from "'$HERE'/../lib/entries.mjs"; const o = { feature: "A", kind: "coding", outcome: "not yet", files: ["f"], final: "done", session: "01-A", model: "m", at: "t" };
-  const long = { feature: "A", kind: "coding", outcome: "not yet", summary: "A: " + "é".repeat(407), dead_ends: [{ tried: "t", why: "w" }], questions: ["Q?"] };
+  const long = { feature: "A", kind: "coding", outcome: "not yet", summary: "A: " + "😀".repeat(407), dead_ends: [{ tried: "t", why: "w" }], questions: ["Q?"] };
   const r = j(JSON.stringify(long), o), s = r.entry.summary;
-  const ok = !r.why && r.entry.minimal === undefined && [...s].length === 400 && s.endsWith("…") && s.startsWith("A: é") && r.trimmed.join() === "summary 410"
+  const ok = !r.why && r.entry.minimal === undefined && [...s].length === 400 && s.endsWith("…") && s.startsWith("A: 😀") && r.trimmed.join() === "summary 410"
     && r.entry.dead_ends.length === 1 && r.entry.questions[0] === "Q?" && validate(r.entry).length === 0;
   const m = j(JSON.stringify({ ...long, outcome: "maybe" }), o);
   const it = j(JSON.stringify({ feature: "init", kind: "init", outcome: "passes", summary: "x".repeat(401), header: "# P\n" + "h".repeat(1997) }), { ...o, feature: "init", kind: "init" });
   const h = it.entry.header ?? "";
-  process.exit(process.argv[1] === "trim" ? (ok ? 0 : 1) : process.argv[1] === "maybe" ? (m.why.startsWith("invalid: outcome") && m.entry.minimal.startsWith("invalid: outcome") && m.entry.dead_ends.length === 0 && !m.trimmed?.length ? 0 : 1)
+  const cw = j(JSON.stringify({ ...long, header: "# no" }), o);   // a cap beside another fault: why names the other
+  process.exit(process.argv[1] === "capwhy" ? (cw.entry.minimal.startsWith("invalid: header") ? 0 : (console.error(cw.why), 1)) : process.argv[1] === "trim" ? (ok ? 0 : 1) : process.argv[1] === "maybe" ? (m.why.startsWith("invalid: outcome") && m.entry.minimal.startsWith("invalid: outcome") && m.entry.dead_ends.length === 0 && !m.trimmed?.length ? 0 : 1)
     : (!it.why && [...h].length === 2000 && h.endsWith("…") && h.startsWith("# P\n") && it.trimmed.join() === "summary 401,header 2001" && [...it.entry.summary].length === 400 && validate(it.entry).length === 0 ? 0 : 1));'
 mkdir -p "$T/jt" && node -e 'process.stdout.write(JSON.stringify({ feature: "A", kind: "coding", outcome: "not yet", summary: "A: " + "x".repeat(407), dead_ends: [{ tried: "t", why: "w" }] }))' > "$T/jt/entry.json" \
   && echo done > "$T/jt-final" && node "$HERE/../lib/entries.mjs" ingest "$T/jt" coding A 01-A m "not yet" /dev/null "$T/jt-final" > "$T/jt.out"; echo "exit $?" >> "$T/jt.out"
@@ -203,6 +204,7 @@ check "journal: a 410-character summary is cut to 400 code points ending … and
   && [[ $(cat "$T/jt.out") == "trimmed summary 410"$'"'"'\n'"'"'"exit 0" ]] && jq -e "(.minimal | not) and (.dead_ends | length) == 1 and (.summary | length) == 400" "$T/jt/entries.jsonl" > /dev/null'
 check "journal: a 410-character summary and outcome \"maybe\" is minimal with why invalid (outcome" 'node --input-type=module -e "$ENTR" maybe'
 check "journal: a 2001-character init header is cut to 2000 and kept" 'node --input-type=module -e "$ENTR" header'
+check "journal: a summary over its cap beside another fault is minimal for the other fault, never the cap" 'node --input-type=module -e "$ENTR" capwhy'
 node -e 'const w = (f, e) => require("fs").writeFileSync(process.argv[1] + "/" + f, JSON.stringify(e)), c = { feature: "A", kind: "coding", outcome: "passes" };
   w("caps.json", { ...c, summary: "s".repeat(401) }); w("hcap.json", { feature: "init", kind: "init", outcome: "passes", summary: "s", header: "h".repeat(2001) });
   w("hnum.json", { feature: "init", kind: "init", outcome: "passes", summary: "s", header: 7 }); w("mixed.json", { ...c, summary: "s".repeat(401), files: "f" }); w("good.json", { ...c, summary: "s" })' "$T/jt"
