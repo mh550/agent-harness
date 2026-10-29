@@ -3,6 +3,24 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 07:04 · N2-03 · passes
+
+Layer 2 happy path: lib/resolve.sh (resolve_ok, resolve: snapshot, session on RESOLVE_*, journal, metrics row, checks, NUL-safe restore, commit), prompts/resolve.md, CONFLICTS/RESOLVE_*/MAX_RESOLVES, stub # Resolve session (both) and STUB_CONFLICT; merge_one returns 3 in a lane, rebase resolves then verifies; 76-resolve-session (12 checks). Opus review: 1 Critical, 3 Important, 7 Minor, all fixed.
+
+- **Files:** lib/resolve.sh, prompts/resolve.md, lib/lane.sh, lib/record.sh, lib/config.sh, lib/entries.mjs, templates/user/config.sh, tests/stub-claude.sh, tests/checks/76-resolve-session.sh, tests/checks/61-needs-git.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-29-conflict-resolution.md
+- **Verified:** 76-resolve-session 12/12 (27.8 s): rs run notes `M2: 1 files conflict with main (README.md); a resolve session`, one resolve + two verify M2 lines, M2 merged, main tree == run/rs/M2, no needs, 1 metrics row kind resolve, prompt names README.md + A/C subjects; michael run and harness merge keep merge_conflict. ended and slot_open checks watched red without their fix. Full suite via check.sh green on the final tree.
+- **Tests:** 893 → 905
+- **Dead end:** a stray-path restore over `git ls-files -s | awk` lines and `awk -v p=path` membership — the Opus review showed it deletes tracked paths with a blank, writes junk for quoted non-ASCII paths and writes through symlinks; replaced by -z snapshots in associative arrays and checkout-index
+- **Discovery** (affects N2-04): resolve.sh already holds N2-04's failure code (resolve_ok bounds, MAX_RESOLVES note, refused deferral with RESOLVE_END, marker/UNRESOLVED/unmerged checks, stray restore, resolve_undo); N2-04 needs its stub modes and checks, the sync_main call site, the verify caller's rc 2 and needs.mjs `tried` (rebase already passes tried= only when set)
+- **Discovery** (affects N2-04): the stray restore is covered by a unit check in 76 (resolve with a function session: a blank, café.txt, a symlink, a created and an added file); N2-04's stub `stray` run is the end-to-end one
+- **Discovery** (affects N2-04, N2-06): merge_one keeps today's merge_conflict at the run's end ($STATE/ended, written by finish before merge_milestones and cleared at each segment start): no lane could re-base then
+- **Discovery** (affects N2-06): slot_open now undoes a MERGE_HEAD left in a reused slot (a lane killed mid-resolve) with a note `<m>: its slot-<k> had a merge left in progress; undone`, before the WIP commit
+- **Discovery** (affects N2-04): the marker check counts marker-like lines (diff3's ||||||| too) above what either side (:2:/:3:) already had, so a setext ======= underline isn't a false marker
+- **Discovery** (affects N2-05): resolved-<m> is overwritten (>) on each successful resolve, not appended, so N2-05's PR body lists the last resolution's files once
+- **Discovery** (affects N2-04): verify's `sync_main` still runs in rebase mode (the plan's skip is N2-04's); harmless in 76's runs
+- **Proposed change:** N2-06's simplification list could add: resolve.sh's early `git merge --abort` exits (before the snapshot) and resolve_undo are two undo forms; one would do once sync_main calls resolve
+- *09-N2-03 · claude-opus-5-5*
+
 ### 2026-10-29 06:07 · N2-02 · passes
 
 Layer 1: lib/merge-sorted.sh (three-way sorted union; an unsorted side exits 1, A untouched), .gitattributes opts check-names.txt in, merge_drivers (lib/record.sh) sets the driver as worktree config in the record worktree each segment and in slot_open; STUB_SORTED; 75-merge-sorted.sh (7 checks, ~14 s); decision started.
