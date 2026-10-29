@@ -78,8 +78,8 @@ services_down() {
 }
 green() { "$CHECK" > /dev/null 2>&1; }
 # The flakes check.sh's reruns turned green (green/flakes.jsonl, every lane's and session's) get one note each, once:
-# $STATE/flakes-noted is the byte offset noted up to. Whole lines only (a lane may be mid-append); a row that isn't
-# JSON is passed over. Under its own lock, so two lanes never note a row twice (decisions/2026-10-29-rerun-guard).
+# $STATE/flakes-noted is the byte offset noted up to. Whole lines only (a lane may be mid-append); a row that isn't a
+# JSON object is passed over. Under its own lock, so two lanes never note a row twice (decisions/2026-10-29-rerun-guard).
 flakes_note() { [[ -s $STATE/green/flakes.jsonl ]] || return 0; _flakes_note 9> "$STATE/flakes-noted.lock"; }
 _flakes_note() {
   flock 9
@@ -90,7 +90,7 @@ _flakes_note() {
   chunk=$(tail -c "+$(( off + 1 ))" "$f"; echo .); chunk=${chunk%.}
   [[ $chunk == *$'\n'* ]] || return 0
   chunk=${chunk%$'\n'*}$'\n'
-  while IFS= read -r msg; do [[ -n $msg ]] && note "$msg"; done <<< "$(jq -Rr 'try (fromjson | "flaky: \(if (.names | length) > 0
+  while IFS= read -r msg; do [[ -n $msg ]] && note "$msg"; done <<< "$(jq -Rr 'try (fromjson | objects | "flaky: \(if (.names | length) > 0
     then .names | join(" ") else "whole suite" end) (red, then green on a rerun; load \((.load // "") | split(" ")[0] // "?"))") catch empty' <<< "${chunk%$'\n'}")"
   echo $(( off + $(printf %s "$chunk" | wc -c) )) > "$STATE/flakes-noted"
 }

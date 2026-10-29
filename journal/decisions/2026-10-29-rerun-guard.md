@@ -55,3 +55,10 @@ Updated in place 2026-10-29: N1-04: counted where Michael reads: `summary.json`'
 state dir's `green/flakes.jsonl`, a whole-suite rerun under `whole suite`), `report.md`'s `Flakes` row after `Tests`
 (`<n> · <name> ×<k>, …`, `0` for none), and the debrief's `#### flakes` block: the names in two or more of the
 project's last five ledgered summaries (`summary.mjs flakers`), the repeat flakers that are fix work.
+
+Updated in place 2026-10-29: N1-05 (the milestone review): `finish` notes flakes again after its own last suite run,
+so a flake there is in `harness-log.md` as well as in the summary; a `flakes.jsonl` row that is JSON but not an object
+(a stray `null`) is passed over by `flakes_note` and `summary.mjs` alike. *Default, Michael's to confirm:* a file
+`tests/run.sh` stopped at `TEST_FILE_TIMEOUT` stays in `HARNESS_FAILED=`, so `auto` reruns it; that costs at most one
+more `TEST_FILE_TIMEOUT` (10m), and a hang under load is the likeliest flake. Leaving its name out would let a rerun of
+the other files go green over it, and leaving the whole line out would rerun the whole suite.

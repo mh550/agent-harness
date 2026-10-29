@@ -6,19 +6,19 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # flake (C is M2's; its check-rerun.out goes at the next full suite, so its rerun-red is read where it is kept: the
 # `check: RED` line C's second prompt carries from its init). fl: a CHECK_CMD red exactly once, on the first suite call after A's first session (mkdir is the atomic once).
 # flakes_note alone: a row that isn't JSON is passed over, a half-written last line waits for the next call
-mkdir -p "$T/fn/green"; printf '%s\n' '{"names":["a","b"],"load":"0.52 0.61 0.70"}' 'not json' '{"names":[],"load":""}' > "$T/fn/green/flakes.jsonl"
+mkdir -p "$T/fn/green"; printf '%s\n' '{"names":["a","b"],"load":"0.52 0.61 0.70"}' 'not json' 'null' '{"names":[],"load":""}' > "$T/fn/green/flakes.jsonl"
 printf '{"names":["c"],"load":"1.5' >> "$T/fn/green/flakes.jsonl"
 fn=$( source "$HERE/../lib/record.sh"; STATE=$T/fn; note() { echo "note: $*"; }; flakes_note; echo "at $(cat "$T/fn/flakes-noted")"; flakes_note
   printf ' 2 3"}\n' >> "$T/fn/green/flakes.jsonl"; flakes_note; echo "at $(cat "$T/fn/flakes-noted") of $(wc -c < "$T/fn/green/flakes.jsonl")" )
 FN='note: flaky: a b (red, then green on a rerun; load 0.52)
 note: flaky: whole suite (red, then green on a rerun; load ?)
-at 76
+at 81
 note: flaky: c (red, then green on a rerun; load 1.5)
-at 109 of 109'
+at 114 of 114'
 check "flakes_note: one note per whole row past flakes-noted (whole suite for no names), a row that isn't JSON passed over" '[[ $fn == "$FN" ]]'
 
 # summary.json's flakes and report's Flakes row (N1-04), pure: from a state dir's green/flakes.jsonl, a row that isn't JSON passed over
-mkdir -p "$T/sf/green"; printf '%s\n' '{"names":["a","b"]}' 'not json' '{"names":[]}' '{"names":["a"]}' > "$T/sf/green/flakes.jsonl"
+mkdir -p "$T/sf/green"; printf '%s\n' '{"names":["a","b"]}' 'not json' 'null' '[1]' '{"names":[]}' '{"names":["a"]}' > "$T/sf/green/flakes.jsonl"
 SFL='import { build } from "'$HERE'/../lib/summary.mjs"; import { readFileSync } from "node:fs";
   const fx = Object.keys(JSON.parse(readFileSync("'$HERE'/fixtures/summary-report.json", "utf8")));
   const s = build("/nonexistent/p/w", "r", "'$T'/sf"), none = build("/nonexistent/p/w", "r", "/nonexistent/s");
@@ -66,6 +66,16 @@ check_cmd "flaky first suite" "if mkdir $T/flaked-ts 2> /dev/null; then echo '3/
 STUB_NO_TAMPER=1 STUB_LENIENT=1 STUB_NO_RED=1 "$H" start "$T/proj" ts --spec SPEC.md --foreground > "$T/ts.out" 2>&1
 check "flakes run: tests-start after a flake on the first suite is the marker's total, not the red run's passes" \
   '[[ -d $T/flaked-ts && $(cat "$HARNESS_STATE/proj/ts/tests-start") == 5 ]] && hlog ts | grep -F "flaky: whole suite" > /dev/null'
+git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+
+# fe: finish's own suite flakes. C's one attempt leaves its tree red (BROKEN), so finish's suite of it is uncached; with
+# `ended` written it is red once, then green on the rerun: its row is noted like any other, and counted once
+check_cmd "flaky end" "if [ -e $T/state/proj/fe/ended ]; then if mkdir $T/flaked-fe 2> /dev/null; then exit 1; fi; exit 0; fi; test ! -f BROKEN"
+mkdir -p "$HARNESS_STATE/proj/fe" && echo MAX_ATTEMPTS=1 > "$HARNESS_STATE/proj/fe/run.env"
+STUB_NO_TAMPER=1 STUB_LENIENT=1 "$H" start "$T/proj" fe --spec SPEC.md --foreground > "$T/fe.out" 2>&1
+check "flakes run: a flake on finish's own suite is noted too, and summary.json counts it once" \
+  '[[ -d $T/flaked-fe && $(hlog fe | grep -cE "flaky: whole suite \(red, then green on a rerun; load [0-9.]+\)$") == 1 ]] \
+  && jq -e ".flakes.count == 1" "$(rd fe)/summary.json" > /dev/null'
 
 # the debrief's flakes block: the names in two or more of the project's last five ledgered summaries (its own ledger here)
 for r in 1:2026-10-01:'{"x":1,"y":1}' 2:2026-10-02:'{"x":2}' 3:2026-10-03:; do IFS=: read -r n d fl <<< "$r"; mkdir -p "$T/dl/proj/r$n"

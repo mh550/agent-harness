@@ -96,6 +96,11 @@ is its baseline (`tests-start`); the latest tree's (`tests-end`) is refreshed af
 `harness report` and each session's line in `harness-log.md` show it mid-run, and report.md's Tests cell reads
 `<start> → <end> (baseline at run start → end)`.
 
+**Failed files.** A red suite may print a line `HARNESS_FAILED=<name> <name>…` (a whole line from column 0, the last one
+wins): the names, taken as arguments by the suite, of the files that failed. Its promise: every failure of the run is
+inside a named file. A suite omits the line when one isn't (this repo's `tests/run.sh` leaves it out on a red
+conformance check or a FAIL in a file that exited 0), and `CHECK_RERUN=auto` then reruns the whole suite.
+
 **Memory lint.** `harness memlint <project>` prints what `lib/memlint.mjs` finds in a project's memory files, one
 `<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines),
 `derivable-count` (a stored `<n> tests`), `night-scope` (`tonight`, `this run`, `as of <date>`) and `decisions` (no
@@ -107,7 +112,7 @@ run's tidy of its own `CLAUDE.md` and `DECISIONS=` is on main; a directory witho
 no store`.
 
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
-its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; cached per code tree, whose key
+its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; a red full run rerun once, never after a timeout or a cap kill, by `CHECK_RERUN`: `auto` (the `HARNESS_FAILED=` files, else the whole suite) · `failed` (the named files only) · `suite` (the whole suite) · `off`, a rerun that goes green counted as a flake in `harness-log.md`, `summary.json` and report.md's `Flakes` row; cached per code tree, whose key
 leaves out `CHECK_KEY_IGNORE`, default `.harness/runs docs/plans`, so a plan alone doesn't rerun it, and each verify
 clears its tree's cached green so the suite runs in full on what it judges), smoke, init (run in the run's
 services scope `harness-<run>-svc`, capped at 3G, under a 10m timeout; what it leaves running when it returns stays in the

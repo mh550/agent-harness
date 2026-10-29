@@ -81,23 +81,23 @@ if (( rc )); then
     esac
   fi
   if [[ -n $how ]]; then   # the names as arguments, the subset form's way: never spliced into the command
-    out=$scratch/check-rerun.out r0=$(date +%s)
-    if [[ $how == failed ]]; then run "$cmd \"\$@\"" _ "${names[@]}" > "$out" 2>&1; else run "$cmd" > "$out" 2>&1; fi; rc=$?
+    out=$scratch/check-rerun.out r0=$(date +%s) args=(); [[ $how == failed ]] && args=("${names[@]}")
+    run "$cmd \"\$@\"" _ "${args[@]}" > "$out" 2>&1; rc=$?
   fi
 fi
 s=$(( $(date +%s) - start ))
-if (( rc == 0 )) && [[ -n $how ]]; then   # a flake: green, named and counted, with the first run's total (the rerun's is the subset's)
-  n=$(node "$here/testcount.mjs" "$scratch/check.out" --total)
-  [[ -n $key ]] && { echo "$n" > "$cache/green-$key"; [[ -n $n ]] || rm -f "$scratch/check-$key.out"; }   # no total: unknown beats the red run's passes
-  load=$(cut -d' ' -f1-3 /proc/loadavg 2> /dev/null)
-  jq -nc --arg at "$(date -u +%FT%TZ)" --arg key "$key" --arg rerun "$how" --arg first "$first" --arg load "$load" --arg lane "${HARNESS_LANE:-}" \
-    '{at: $at, key: $key, names: $ARGS.positional, rerun: $rerun, first: $first, load: $load, lane: $lane}' --args "${names[@]}" >> "$cache/flakes.jsonl"
-  flaky=${names[*]}; echo "check: green after a rerun (flaky: ${flaky:-whole suite})${n:+, $n}"
-elif (( rc == 0 )); then
-  [[ -n $key ]] && node "$here/testcount.mjs" "$scratch/check.out" > "$cache/green-$key"   # "<n> tests" or empty: outlives scratch
-  echo "check: green in $s s$(node "$here/testcount.mjs" "$scratch/check.out" | sed 's/^/, /')"
+if (( rc == 0 )); then   # the marker ("<n> tests" or empty) outlives scratch; a flake's is its first run's total, not the rerun's subset
+  n=$(node "$here/testcount.mjs" "$scratch/check.out" ${how:+--total})
+  [[ -n $key ]] && printf '%s' "${n:+$n$'\n'}" > "$cache/green-$key"
+  if [[ -n $how ]]; then   # a flake: green, named and counted
+    [[ -n $key && -z $n ]] && rm -f "$scratch/check-$key.out"   # no total: unknown beats the red run's passes
+    load=$(cut -d' ' -f1-3 /proc/loadavg 2> /dev/null)
+    jq -nc --arg at "$(date -u +%FT%TZ)" --arg key "$key" --arg rerun "$how" --arg first "$first" --arg load "$load" --arg lane "${HARNESS_LANE:-}" \
+      '{at: $at, key: $key, names: $ARGS.positional, rerun: $rerun, first: $first, load: $load, lane: $lane}' --args "${names[@]}" >> "$cache/flakes.jsonl"
+    flaky=${names[*]}; echo "check: green after a rerun (flaky: ${flaky:-whole suite})${n:+, $n}"
+  else echo "check: green in $s s${n:+, $n}"; fi
 else
-  again=""; [[ $how == failed ]] && again="; red again on a rerun of ${names[*]}"; [[ $how == suite ]] && again="; red again on a rerun of the whole suite"
+  case $how in failed) again="; red again on a rerun of ${names[*]}" ;; suite) again="; red again on a rerun of the whole suite" ;; *) again="" ;; esac
   echo "check: RED ($(why $rc $s $(( $(date +%s) - ${r0:-$start} )))$again) — last lines of $out:"; tail -25 "$out"
 fi
 exit $rc
