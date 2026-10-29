@@ -32,6 +32,13 @@
 # LANE_REBASE=suite                  # main moved under a verified lane: suite = disjoint files re-tag on a green suite;
 #                                    #     verify = a verify session every time
 # MAX_REBASE_ROUNDS=1                # verify rounds a re-based lane gets before it needs you
+# CONFLICTS=resolve                  # a lane's merge conflicts with main: resolve = a resolve session merges it, then a
+#                                    #     verify round on that tree before it merges; michael = it needs you, as before
+# RESOLVE_MODEL=opus                 # the resolve session's model
+# RESOLVE_MAX_TURNS=60               # its turns
+# RESOLVE_BUDGET_USD=5               # its spend cap
+# RESOLVE_TIMEOUT=30m                # its wall time; none starts with less than this left before the run's deadline
+# MAX_RESOLVES=3                     # resolve sessions per milestone per run; past them a conflict needs you
 # RECORD_PR=end                      # the run record's own PR, opened when the run ends; off = none
 
 # context.md, the bounded pack of the run's journal a session reads first (failed verify rows lead a verify's pack).
