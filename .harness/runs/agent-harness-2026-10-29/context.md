@@ -1,23 +1,16 @@
-# Context pack for `N1-03`
+# Context pack for `N1-04`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
-## This feature's earlier attempts
-
-- Dead end (N1-03, 03-N1-03): the step's `$T/scratch/proj/<run>/lanes/M1/check-rerun.out exists` for the invariant — the stub's C is in lane M2, and check.sh removes check-rerun.out at the next full suite (C's second init); the check reads the `red again on a rerun of the whole suite) — last lines of …/lanes/M2/check-rerun.out:` line in logs/04-C.prompt.md instead → entries.jsonl:4
-- Dead end (N1-03, 03-N1-03): a Gotchas line about that — CLAUDE.md's Gotchas already had 15 lines; memlint (39-memlint-m4) fails at 16; the fact is in 74's header comment → entries.jsonl:4
-- Dead end (N1-03, 03-N1-03): run_init reading the marker on every init (an extra node treekey per init while tests-start is absent, i.e. every stub init) — 47-lanes-two`s u5 admission check failed in 3 full runs in a row; now read only when check-rerun.out is beside check.out; the next full run passed 47 but failed 45 (load flake, R1) → entries.jsonl:4
-- 2026-10-29 03:33 · N1-03 · not yet: flakes_note (lib/record.sh) notes each new green/flakes.jsonl row once (`flaky: <names|whole suite> (red, then green on a rerun; load <1-min>)`, offset in flakes-noted, locked) after the un-pass check, verify, disjoint re-base and before run ended; run_init takes tests-start from the marker after a rerun. 74-flakes-run 6/6. Not passed: no full suite came out green (one load flake each run).; tests 875 → 881; files lib/record.sh, lib/lane.sh, lib/driver.sh, tests/checks/74-flakes-run.sh, tests/fixtures/check-names.txt, … → entries.jsonl:4
-
 ## Discoveries for this feature
 
+- Discovery (N1-03, affects N1-04, N1-05): flakes_note notes an empty load as `load ?`; its message is built in jq, one call per flakes_note → entries.jsonl:4
+- Discovery (N1-03, affects N1-04): 74-flakes-run.sh has check_cmd <subject> <command>: commits a CHECK_CMD on the first main and pushes it; N1-04's stub-run checks (summary.json flakes, report's Flakes row) can read the fl and inv runs already there → entries.jsonl:4
 - Discovery (N1-03, affects run): the live suite check.sh (projects/agent-harness, main) has no rerun yet: a full run from a session goes red on one flake until N1 merges → entries.jsonl:4
 - Discovery (N1-03, affects R1, run): 47-lanes-two `lanes admission: with the five-hour window at 80 %…` and 45-lanes-run `a lane opened after the default lane…` fail under the full suite`s load, pass alone: R1 flakers → entries.jsonl:4
-- Discovery (N1-03, affects N1-03): the next N1-03 attempt only needs one green full suite on cfb23fc (or its successor): the code and 74 are done → entries.jsonl:4
 - Discovery (N1-02, affects N1-03, N1-04): tests/lib.sh's suite_setup now unsets HARNESS_CHECK_RERUN and HARNESS_LANE, so a session's own values never reach a check; a stub run gets CHECK_RERUN=auto from lib/config.sh → entries.jsonl:3
-- Discovery (N1-02, affects N1-03): a rerun-red's RED line names check-rerun.out, not check.out: a stub run's red now leaves $SCRATCH/lanes/<m>/check-rerun.out (N1-03's invariant check can rely on it) → entries.jsonl:3
 - Discovery (N1-02, affects N1): the first full suite after this change printed HARNESS_FAILED=15-run-4-same-but-queue-parked-debrief-tmux 39-memlint-m4 on a real red: the line works on the real suite → entries.jsonl:3
-- Discovery (N1-01, affects N1-03): run_init writes tests-start from check.out, which after a rerun-green is the red run (its passes, not the total); take it from the marker first, as tests_end does → entries.jsonl:2
+- Discovery (N1-01, affects N1-04): summary.mjs's jsonl() throws on a bad line; flakes.jsonl is appended by lanes at once, so read it tolerantly → entries.jsonl:2
 - Discovery (init, affects run): the suite took 604 s at init here (859 checks); each full run inside a feature costs about 10 min, so a build feature runs it twice at most → entries.jsonl:1
 - Discovery (init, affects run): HARNESS_LANE is not exported anywhere today; N1-02 exports it from lib/lane.sh so flakes.jsonl rows and resolve sessions can name their lane → entries.jsonl:1
 - Discovery (init, affects run): the stub project's CHECK_CMD (`test ! -f BROKEN`, tests/lib.sh) prints no HARNESS_FAILED= line, so in stub runs CHECK_RERUN=auto reruns the whole suite: the flaky note reads `flaky: whole suite` → entries.jsonl:1
@@ -26,11 +19,12 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-29 02:15 · N1-02 · passes: check.sh's full form reruns a red once by CHECK_RERUN (auto/failed/suite/off): never after a timeout or cap kill; check-rerun.out; green rerun → 'green after a rerun (flaky: …)', marker = first run's total (testcount --total), a flakes.jsonl row. tests/run.sh prints HARNESS_FAILED=<files> unless a failure is outside them. Config, prompt_env, HARNESS_LANE, template, decision.; tests 859 → 875; files lib/check.sh, lib/testcount.mjs, tests/run.sh, lib/config.sh, lib/prompt.sh, … → entries.jsonl:3
+- 2026-10-29 03:45 · N1-03 · passes: Attempt 1's code (cfb23fc) verified: flakes_note in lib/record.sh, called after the un-pass check, verify, disjoint re-base and in finish before run ended; run_init's tests-start from the marker after a rerun. 74-flakes-run 6/6; full suite green on this tree at init (881 tests, 622 s, no rerun).; tests 881 → 881; files lib/record.sh, lib/lane.sh, lib/driver.sh, tests/checks/74-flakes-run.sh, tests/fixtures/check-names.txt, … → entries.jsonl:5
 
 ## Lately in the run
 
-- 2026-10-29 01:46 · N1-01 · passes: Wrote docs/plans/2026-10-29-N1-rerun-guard.md: the rerun's place and rules in lib/check.sh (CHECK_RERUN table, never-rerun exits, marker from the first run's total via testcount --total), the HARNESS_FAILED= guard in tests/run.sh, the flakes.jsonl row, flakes_note's sites and lock, summary/report/debrief, every new check name by file, docs.; tests 859 → 859; files docs/plans/2026-10-29-N1-rerun-guard.md → entries.jsonl:2
+- 2026-10-29 03:33 · N1-03 · not yet: flakes_note (lib/record.sh) notes each new green/flakes.jsonl row once (`flaky: <names|whole suite> (red, then green on a rerun; load <1-min>)`, offset in flakes-noted, locked) after the un-pass check, verify, disjoint re-base and before run ended; run_init takes tests-start from the marker after a rerun. 74-flakes-run 6/6. Not passed: no full suite came out green (one load flake each run).; tests 875 → 881; files lib/record.sh, lib/lane.sh, lib/driver.sh, tests/checks/74-flakes-run.sh, tests/fixtures/check-names.txt, … → entries.jsonl:4
+- 2026-10-29 02:15 · N1-02 · passes: check.sh's full form reruns a red once by CHECK_RERUN (auto/failed/suite/off): never after a timeout or cap kill; check-rerun.out; green rerun → 'green after a rerun (flaky: …)', marker = first run's total (testcount --total), a flakes.jsonl row. tests/run.sh prints HARNESS_FAILED=<files> unless a failure is outside them. Config, prompt_env, HARNESS_LANE, template, decision.; tests 859 → 875; files lib/check.sh, lib/testcount.mjs, tests/run.sh, lib/config.sh, lib/prompt.sh, … → entries.jsonl:3
 
 ## Current rules
 
