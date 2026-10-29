@@ -52,4 +52,13 @@ check "lanes stop: harness stop ends the run with every lane process dead and no
   && ( for f in "$HARNESS_STATE"/proj/lst/lanes/*/pid; do [[ -f $f ]] || continue; ! kill -0 "$(cat "$f")" 2> /dev/null || exit 1; done ) && [[ ! -e $HARNESS_WORKTREES/proj/lanes ]] \
   && grep -q "· lane M1 closed (stopped)$" <(hlog lst) && git -C "$T/origin.git" rev-parse -q --verify refs/heads/harness-lane/lst/M1 > /dev/null'
 
+# M1's lane exits after the coordinator counted it alive and before its end check (R1-04, the 44 and 46 flakes):
+# HARNESS_COUNT_HOLD holds the coordinator there until the counted lanes are gone, so the exit lands in that window
+# every time. The count said "no slot free", not "nothing to open": the run goes on, M2 opens and the run ends done
+HARNESS_COUNT_HOLD=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lh --spec SPEC.md --foreground > "$T/lh.out" 2>&1
+check "lanes run: a lane that exits between the coordinator's lane count and its end check doesn't end the run (M2 opens, done)" \
+  'grep -F "count hold: 1 lane(s) counted, held until gone" "$HARNESS_STATE/proj/lh/run.log" > /dev/null \
+  && ! hlog lh | grep -F "no feature left to try" > /dev/null && hlog lh | grep -F "· lane M2 opened (slot 0, " > /dev/null \
+  && grep -q "^done" "$HARNESS_STATE/proj/lh/ended" && [[ $($F summary "$(list lh)") == "3/3 passing" ]]'
+
 suite_end

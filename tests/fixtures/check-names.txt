@@ -348,6 +348,7 @@ lanes record: a session's question above ## Answers lands in the record's INBOX.
 lanes record: the slot is gone at the end, the run keeps one worktree, the merged lane's branch is deleted
 lanes record: two sessions' passes flips both land while the record moved between them
 lanes run: MAX_LANES=1 ends done with M1 and M2 merged by two PRs
+lanes run: a lane that exits between the coordinator's lane count and its end check doesn't end the run (M2 opens, done)
 lanes run: a lane's sessions, suites and services run in its own units (harness-<run>-<m>-s<n>, -check-<pid>, -svc)
 lanes run: a lane's verify judges the copy against its own snapshot (no list repair, no failed repair note)
 lanes run: each lane is noted opened in slot 0 and then closed, M1's before M2's
