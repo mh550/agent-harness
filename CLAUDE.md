@@ -67,7 +67,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - check() evals its command in the check file's shell: an `exit` in it ends the whole file; fail with `false` or a flag (agent-harness-2026-10-28 2026-10-28)
 - the end-reasons check greps literal finish/END_REASON/lane_exit 13 reasons in lib/driver.sh and lib/lane.sh: a new one needs a line in end-reasons.txt
 - status_stubs' HARNESS_NOW stays in the past: a file touched to a future time is -newer than any stamp (agent-harness-2026-10-28 2026-10-28)
-- a check's regex on a glyph run is locale-bound: write `(─)+`, `(●|✓) `, never `─+` or `[●✓]` (bytes under LC_ALL=C) (agent-harness-2026-10-28 2026-10-28)
+- a check's regex on a glyph run is locale-bound: write `(─)+`, `(●|✓) `, never `─+`; awk length is bytes: width via node (agent-harness-2026-10-28 2026-10-28)
 - a card or view cuts every line at the width (100 off a TTY): a check comparing whole run.log lines sets COLUMNS=200 (agent-harness-2026-10-28 2026-10-28)
 - status.mjs: a session runs from its `session <n> · <id>` log line to its `passes=` or limit note; stub logs need both (agent-harness-2026-10-28 2026-10-28)
 - tests/fixtures/check-names.txt is LC_ALL=C sorted: copy names from PASS lines of `tests/run.sh <f>`, re-sort (agent-harness-2026-10-28 2026-10-28)

@@ -35,9 +35,11 @@
 #                                                milestones (tag, PR), its changes vs origin/main with conflict marks (the
 #                                                12 largest; --files: all) and what needs you; a feature: its steps,
 #                                                sessions, files and commits. Local refs only (no fetch)
-#   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
-#   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
-#                                                harness version (runs, passing, $/feature, cache hit, orientation)
+#   harness report [<run-id>…] [--md]            the writeup: passing, tests, spend (total, per feature, by role), causes
+#                                                (a card on a TTY; markdown off one or with --md)
+#   harness trends [--all] [--md] [--by version] every recorded run in one table (the harness ledger; on a TTY the newest
+#                                                15 as columns, --all every one), or one row per harness version (runs,
+#                                                passing, $/feature, cache hit, orientation)
 #   harness debrief [--dry-run]                  after a queue: one short read-only session writes the debrief
 #                               (ledger/debrief.md; NOTIFY_CMD gets its headline). The queue runner starts it as it exits
 #   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each)
@@ -57,7 +59,8 @@
 #                                                about its CLAUDE.md, .harness/project.md and decisions store
 #   harness gc <project> [--all-merged] [--deps] [--dry-run]
 #                               delete merged harness branches and their clean worktrees, locally and on origin
-#                               (--all-merged: every merged branch, whatever its name; --deps: DEPS_DIRS in ended runs' worktrees);
+#                               (--all-merged: every merged branch, whatever its name; --deps: DEPS_DIRS in ended runs' worktrees;
+#                               --dry-run on a TTY: grouped by step with a would-remove footer);
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
 #   harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]
 #                               replay a task set (evals/) with that harness version's driver on throwaway clones,
@@ -95,6 +98,8 @@ source "$HARNESS_HOME/lib/tmux.sh"   # tmux_name, tmux_reap: start's session and
 source "$HARNESS_HOME/lib/needs.sh"   # NEEDS_MJS: harness needs (it calls the CLI directly: no record lock here)
 
 die() { echo "harness: $*" >&2; exit 1; }
+# for a person: HARNESS_TTY=1|0 decides, else a terminal on stdout (view.mjs context's rule)
+tty_out() { [[ ${HARNESS_TTY:-} == 1 ]] || { [[ ${HARNESS_TTY:-} != 0 ]] && [[ -t 1 ]]; }; }
 # <path or project name> → the project's top level: a git repository here, else (a bare name) the PROJECT_DIR of that
 # name's newest run still a repository, else $HARNESS_PROJECTS/<name> (decisions/2026-10-27-project-names)
 project_dir() {
@@ -468,7 +473,8 @@ cmd_show() {
 }
 
 cmd_report() {
-  local d ids=("$@") out=()
+  local d ids=() md=() a
+  for a in "$@"; do if [[ $a == --md ]]; then md=(--md); else ids+=("$a"); fi; done   # --md: markdown on a TTY too
   (( ${#ids[@]} )) || for d in "$STATE_ROOT"/*/*/; do [[ -f $d/meta.env ]] && ids+=("$(basename "$d")"); done
   # worktree (a rebuild) → the state's copy (finish's) → the ledger's, copied into the state on this first read
   # (decisions/2026-10-27-record-after-gc); metrics.jsonl beside summary.json: report's memory peaks read it there
@@ -477,7 +483,7 @@ cmd_report() {
     # a state dir removed by hand: the ledger's copy alone, reported where it is (nowhere to copy to)
     if ! compgen -G "$STATE_ROOT/*/$run/meta.env" > /dev/null && [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] \
        && lj=$(compgen -G "$l/*/$run/summary.json" | head -1); then
-      node "$HARNESS_HOME/lib/summary.mjs" report "$lj"; echo; continue; fi
+      node "$HARNESS_HOME/lib/summary.mjs" report "${md[@]}" "$lj"; echo; continue; fi
     d=$(state_of "$run")
     # shellcheck source=/dev/null
     ( source "$d/meta.env"
@@ -487,7 +493,7 @@ cmd_report() {
         cp "$WT/.harness/runs/$RUN_ID/metrics.jsonl" "$STATE/metrics.jsonl" 2> /dev/null
       elif [[ ! -f $STATE/summary.json && -f $lj/summary.json ]]; then   # a copy that fails still reports
         cp "$lj/summary.json" "$STATE/" 2> /dev/null || src=$lj; [[ -f $lj/metrics.jsonl ]] && cp "$lj/metrics.jsonl" "$STATE/" 2> /dev/null; fi
-      if [[ -f $src/summary.json ]]; then node "$HARNESS_HOME/lib/summary.mjs" report "$src/summary.json"
+      if [[ -f $src/summary.json ]]; then node "$HARNESS_HOME/lib/summary.mjs" report "${md[@]}" "$src/summary.json"
       else local s=$STATE; [[ $s == "$HOME"/* ]] && s="~${s#"$HOME"}"; [[ $lj == "$HOME"/* ]] && lj="~${lj#"$HOME"}"
         echo "## $RUN_ID: no record (worktree removed; nothing in $s or $lj)"; fi )
     echo
@@ -609,8 +615,14 @@ cmd_answer() {
 }
 
 cmd_gc() {
-  local p all=0 dry=0 deps=0 b pattern; p=$(project_dir "${1:?usage: harness gc <project>}"); shift
-  while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; --deps) deps=1 ;; *) die "unknown option $1" ;; esac; shift; done
+  local p all=0 dry=0 deps=0 sections=0 b pattern opts; p=$(project_dir "${1:?usage: harness gc <project>}"); shift; opts=("$@")
+  while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; --deps) deps=1 ;; --sections) sections=1 ;; *) die "unknown option $1" ;; esac; shift; done
+  # a dry run for a person is grouped by step (view.mjs gcView): the same run with a marker line before each step's
+  # lines (--sections, an option of this call alone). Never a real gc, never off a TTY: runner.log and the checks read
+  # today's lines in today's order
+  (( dry )) || sections=0
+  if (( dry && ! sections )) && tty_out; then cmd_gc "$p" "${opts[@]}" --sections | node "$HARNESS_HOME/lib/view.mjs" gc; return; fi
+  step() { (( sections )) && printf '\x1e%s\n' "$1"; return 0; }
   # a refusal (branch -d of a branch merged into origin/main but not into HEAD, with no upstream) is said, never the
   # end of gc under set -e: every later step still runs (decisions/2026-10-25-gc-all-merged)
   act() { if (( dry )); then echo "would: $*"; else echo "+ $*"; "$@" || echo "! failed: $*"; fi; }
@@ -621,6 +633,7 @@ cmd_gc() {
   # A unit only another project's runs own is that project's gc's: skipped silently, live or ended; one no run on this
   # box owns is said with the command, never stopped: nobody can say what it is (decisions/2026-10-27-gc-foreign-units)
   local u d r mine owned busy why err
+  step UNITS
   while read -r u _; do
     [[ $u == harness-*.scope ]] || continue
     mine="" owned=0 busy=0
@@ -639,6 +652,7 @@ cmd_gc() {
   done < <("${HARNESS_SYSTEMCTL:-systemctl}" --user list-units 'harness-*' --plain --no-legend 2> /dev/null || true)
   # the tmux sessions of this project's ended runs (a window kept for TMUX_KEEP_HOURS; no ended, no reap): before the
   # fetch, which has nothing to do with them; h-queue and the desk are no run's name (decisions/2026-10-25-tmux-reaper)
+  step TMUX
   tmux_reap "$dry" "$STATE_ROOT/$(basename "$p")"/*/
   git -C "$p" fetch -q --prune origin
   local main=origin/main
@@ -659,6 +673,7 @@ cmd_gc() {
   desk_open() { local d r=${1#harness/}; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && [[ -s $d/desk/url ]] \
     && ! grep -qxF "would close idle desk $r" <<< "$dg" \
     && "$HARNESS_HOME/lib/desk.sh" --list 2> /dev/null | awk -v r="$r" '$1 == r && $3 ~ /^https:/ { f = 1 } END { exit !f }'; }
+  step DESKS
   local dd=() dg; (( dry )) && dd=(--dry-run)   # a dry run counts the desks it would close as closed
   dg=$("$HARNESS_HOME/lib/desk.sh" --gc "$(basename "$p")" "${dd[@]}") || echo "harness: could not check the desks"   # never fails gc
   [[ -n $dg ]] && echo "$dg"
@@ -690,6 +705,7 @@ cmd_gc() {
     (( dry )) || rmdir "${wt%/*}" "$slots" 2> /dev/null || true   # lanes/<run>, then lanes/, once empty
   }
   local st
+  step WORKTREES
   while read -r wt; do
     # never the checkout itself (rm -rf below); a listed worktree whose directory is gone (a locked one) is skipped
     [[ $wt == "$WT_ROOT"/* && $wt != "$p" && -d $wt ]] || continue
@@ -710,6 +726,7 @@ cmd_gc() {
   # --deps: an ended run's dependency directories, merged or not (the branch keeps the work; the next init reinstalls).
   # Only a worktree of this project under WT_ROOT whose run says so (its meta.env names it), never the checkout, never
   # a live, queued or desk-open run's; never a symlink, a path out of the tree or anything git tracks (decisions/2026-10-25-gc-deps)
+  step DEPS
   (( deps )) && { local proj wr x n got rp ds=(); proj=$(basename "$p")
     read -ra ds <<< "$(harness_config "$p" > /dev/null; echo "$DEPS_DIRS")"
     while read -r wt; do
@@ -734,6 +751,7 @@ cmd_gc() {
       if err=$( (cd "$wt" && rm -rf -- "${got[@]}") 2>&1); then echo "+ freed $n MB in $wt: ${got[*]}"
       else echo "! could not free $wt: $(tail -1 <<< "$err")"; fi
     done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p'); }
+  step BRANCHES
   for b in $(git -C "$p" for-each-ref --format='%(refname:short)' refs/heads/harness/); do   # record-only tails
     [[ $b == "$(git -C "$p" branch --show-current)" ]] && continue
     running "$b" && continue
@@ -773,6 +791,7 @@ cmd_gc() {
     [[ -f $d/meta.env && -d $d/needs ]] && ! ( source "$d/meta.env"; [[ -d $WT ]] ) || continue
     node "$NEEDS_MJS" sweep "${d%/}" | sed 's/^/+ needs: /' || echo "! needs sweep failed: ${d%/}"   # never the end of gc
   done
+  step END   # gcView: the run got here (a fetch that failed under set -e did not)
   return 0
 }
 

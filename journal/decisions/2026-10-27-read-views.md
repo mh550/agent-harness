@@ -87,6 +87,21 @@ to U1-06 add their views' choices, U1-07 completes it.)*
     entry as a card with the brief whole. **(*default*)** The card adds `held`, `options` (the arguments no other
     field names) and `added` to the spec's fields; an `--until` text `status.mjs` cannot read is shown as given.
     **(*default*)** RUNNING folds its run ids under the title instead of cutting them (an id must paste).
+  - **The remaining views (U3-07, plan `docs/plans/2026-10-28-U3-show-and-fixes.md` §7):** for a person
+    (`HARNESS_TTY=1`, else a terminal on stdout; `tty_out` in `bin/harness`) `harness report` is `summary.mjs
+    reportView`: a card `<run> · <project>` of the markdown table's values (`**` dropped), the features not passing
+    as columns under `NOT PASSING <n>`, the memory peaks under `MEMORY PEAKS OVER 2 GB <n>`; `harness trends` is
+    `trendsView`: the newest 15 rows by `ended_at` (newest first, under a header row; `--all` every row), `<k> older:
+    harness trends --all`, a rule and the total line over all rows, filled to the width at its ` · ` joins, never cut;
+    `harness gc <p> --dry-run` re-runs itself with `--sections` (a `\x1e<STEP>` line before each step's lines, `\x1eEND`
+    at its end; an option of that call, never an environment variable a real gc could inherit) into `view.mjs gcView`: `UNITS TMUX DESKS WORKTREES DEPS BRANCHES` sections, the home directory as `~`, a rule and
+    `would remove <w> worktrees, <b> branches; keeps <k>` (a branch deleted locally and on origin counts once, a kept
+    worktree's deps line not at all); a run with no `END` (a failed fetch under `set -e`) ends `gc stopped before <step>
+    (see the error above)`, never empty sections and a zero footer (U3-07's review). Narrow, trends drops project,
+    tests, `$/f` and wall h and puts the causes before `ended`; the debrief reads `trends --md`. Off a
+    TTY, with `--md`, and for a real gc: the bytes as before (`tests/fixtures/summary-report.md`, runner.log's
+    readers); `finish` writes `report.md` with `--md`, so `HARNESS_TTY=1` never reaches a file. **(*default*)**
+    `trends --by version` stays markdown on a TTY (a short table nobody reads at the terminal yet).
   - **Complete (U1-07):** an Opus review of the milestone's diff (`docs/plans/2026-10-28-U1-review.md`); README's
     command table, `docs/architecture.md` §3, §10 and §12 and `templates/user/config.sh` (`STATUS_SINCE`) say it.
 - **Rejected:** a pager by default (a phone over ssh, a desk and the debrief read the view as text, and the view is
@@ -94,4 +109,8 @@ to U1-06 add their views' choices, U1-07 completes it.)*
   short (an item shows until it is resolved, whatever its age); per-command formatting code (each view drifted on its
   own: the finding); `column(1)` or an npm table/colour package (CLAUDE.md: node built-ins only; `column` knows nothing of
   display width or ANSI); wrapping table cells (a row stays one scan line; a card shows the whole value); cutting
-  ids (a printed command must paste); emoji glyphs (two columns, font-dependent).
+  ids (a printed command must paste); emoji glyphs (two columns, font-dependent). (U3-07) A gc view built from parsing
+  its plain lines (a step's lines have no common shape; the markers are free); a TTY report written into `report.md`
+  (a phone's ntfy click and the debrief read it as markdown).
+
+Updated in place 2026-10-28: U3-07 renders report, trends and gc --dry-run through view.mjs on a TTY.
