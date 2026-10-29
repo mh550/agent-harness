@@ -9,6 +9,53 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 18:33 · verify R1 · passes
+
+All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 10/10 green on 44, 46, 48, 15, 28, 32, 38, 08; lint exits 0; docs, plan, review and decision present. Note: N2 is now on origin main (count 2), plan line says 1 as of init.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R1-01 | 1 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-01 | 2 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-01 | 3 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-01 | 4 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-01 | 5 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
+| R1-02 | 1 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-02 | 2 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-02 | 3 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-02 | 4 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-02 | 5 | git diff origin/main -- tests/fixtures/check-names.txt \| grep "^-[^-]" | no removed lines | yes |
+| R1-02 | 6 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
+| R1-03 | 1 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-03 | 2 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-03 | 3 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-03 | 4 | git diff origin/main -- tests/fixtures/check-names.txt \| grep "^-[^-]" | no removed lines | yes |
+| R1-03 | 5 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
+| R1-04 | 1 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 44, 46, 48: 10/10 green each; table rows carry cause, fix, before → after | yes |
+| R1-04 | 2 | read plan table and decision, repeat runs above | --repeat 10 44, 46, 48: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
+| R1-04 | 3 | read plan table and decision, repeat runs above | --repeat 10 44, 46, 48: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
+| R1-04 | 4 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 44, 46, 48: 10/10 green each; table rows carry cause, fix, before → after | yes |
+| R1-04 | 5 | git diff origin/main -- tests/fixtures/check-names.txt \| grep "^-[^-]" | no removed lines | yes |
+| R1-04 | 6 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
+| R1-05 | 1 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 15 and 28: 10/10 green each; table rows carry cause, fix, before → after | yes |
+| R1-05 | 2 | read plan table and decision, repeat runs above | --repeat 10 15 and 28: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
+| R1-05 | 3 | read plan table and decision, repeat runs above | --repeat 10 15 and 28: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
+| R1-05 | 4 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 15 and 28: 10/10 green each; table rows carry cause, fix, before → after | yes |
+| R1-05 | 5 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
+| R1-06 | 1 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 32, 38, 08: 10/10 green each; table rows carry cause, fix, before → after | yes |
+| R1-06 | 2 | read plan table and decision, repeat runs above | --repeat 10 32, 38, 08: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
+| R1-06 | 3 | read plan table and decision, repeat runs above | --repeat 10 32, 38, 08: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
+| R1-06 | 4 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 32, 38, 08: 10/10 green each; table rows carry cause, fix, before → after | yes |
+| R1-06 | 5 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
+| R1-07 | 1 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-07 | 2 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-07 | 3 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-07 | 4 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-07 | 5 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
+| R1-07 | 6 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
+
+- *174535-verify-R1 · claude-sonnet-5-5*
+
 ### 2026-10-29 18:10 · R3-04 · passes
 
 check.sh appends <epoch.µs> <full|subset|cached> <s> to $HARNESS_SCRATCH/check-runs.log; lane.sh stamps around session coding and notes '<id>: suite ran <n>x (<s> s) in the session'. Reviews go to subagents on the session's model ({{MODEL}}, HARNESS_MODEL; prompt.sh fills the feature's). The review gate un-passes before the record flip, row and passes= note. 4 checks.
@@ -259,21 +306,9 @@ entry_resume (lib/record.sh), from journal before the ingest, outside the lock: 
 - **Proposed change:** R2-05's review could weigh making the stub's two PARKED: paths write an outcome-parked entry, as a real session would, so stub runs stop resuming them
 - *02-R2-04 · claude-opus-5-5*
 
-### 2026-10-29 12:50 · R1-02 · passes
-
-Attempt 2 of R1-02: the code from c319ca4 was right; the suite was red only on 39-memlint-m4, because the Gotchas line the first attempt added made 16 non-blank lines (the section's comment line counts). Dropped that line (its fact is now a run discovery). Every step re-checked.
-
-- **Files:** CLAUDE.md
-- **Verified:** node lib/memlint.mjs . prints nothing; tests/run.sh 75-suite memlint-m4: 25/25; check.sh green for this tree (892 tests); grep -c 'seq 20\|seq 150' tests/lib.sh = 0; bash -n on lib.sh/run.sh/stub-claude.sh; check-names.txt LC_ALL=C sorted
-- **Tests:** 892 → 892
-- **Dead end:** a 15th Gotchas bullet (attempt 1) — memlint counts every non-blank line under ## Gotchas, the <!-- --> comment too, so 14 bullets is the cap
-- **Discovery** (affects run): ## Gotchas holds 14 bullets at most: memlint counts its <!-- --> comment line among the 15
-- **Discovery** (affects R1-03, R1-04, R1-05, R1-06): settle (tests/lib.sh:83) pgreps debriefs box-wide and file 08's `sleep 31` too: a sibling check file or a --repeat copy matches them (R1-04..06 flakers)
-- **Proposed change:** The coding prompt's '15 lines at most' should say the Gotchas comment counts, i.e. 14 bullets, or memlint should skip the comment line
-- *01-R1-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 12:50 · R1-02 · passes · Attempt 2 of R1-02: the code from c319ca4 was right; the suite was red only on 39-memlint-m4, becaus… ([in full](progress-archive.md))
 - 2026-10-29 10:48 · R2-03 · passes · Stub: each headless session prints first.jsonl's init line with a fresh session_id (kept in $STUB_DI… ([in full](progress-archive.md))
 - 2026-10-29 10:23 · R2-02 · passes · Entry check: prompt_env exports HARNESS_ENTRY_CHECK; the coding, verify and init prompts end by runn… ([in full](progress-archive.md))
 - 2026-10-29 10:16 · R1-02 · passes · tests/lib.sh gains wait_for (clock-bounded 0.1 s poll), stub_wait/stub_go; in_has, settle's poll and… ([in full](progress-archive.md))

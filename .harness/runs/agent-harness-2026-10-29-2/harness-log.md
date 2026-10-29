@@ -120,3 +120,6 @@
 - 2026-10-29 18:10 · flaky: 46-lanes-continue (red, then green on a rerun; load 5.89)
 - 2026-10-29 18:10 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch (red, then green on a rerun; load 5.52)
 - 2026-10-29 18:10 · R3-04 · claude-opus-5-5 · passes=true · 77 min · 16/23 passing · tests 976
+- 2026-10-29 18:10 · context.md for R3-05: 7955 bytes
+- 2026-10-29 18:33 · verify R1: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 18:33 · verify R1: progress-archive.md edited by the session; restored (the driver is its only writer)
