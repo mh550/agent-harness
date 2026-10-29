@@ -5,4 +5,4 @@
 {"id":"verify-fresh-suite","title":"verify never trusts the cache","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"merged","spec":"retro-fixes R4","pr":null,"note":"retro-fixes R4 (10-26-2 F1-03)"}
 {"id":"merge-before-deadline","title":"verify and merge a finished milestone at the deadline","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"merged","spec":"retro-fixes R5","pr":null,"note":"retro-fixes R5 (10-26-2 F2-05)"}
 {"id":"no-retry-on-denial","title":"don't retry a session that stopped on a permission question with nothing changed","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"proposed","spec":null,"pr":null,"note":null}
-{"id":"session-memory-cap","title":"cap and stop each session's processes","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"queued","spec":"resource-lifecycle L1–L2","pr":null,"note":null}
+{"id":"session-memory-cap","title":"cap and stop each session's processes","first_seen":{"run":"seed","date":"2026-10-25"},"runs_seen":[],"status":"merged","spec":"resource-lifecycle L1–L2","pr":null,"note":"resource-lifecycle L1-L2"}
