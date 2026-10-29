@@ -41,3 +41,10 @@
 - 2026-10-29 11:36 · backlog: 1 new, 2 seen again
 - 2026-10-29 11:36 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-29-2 (in the state dir: init.out check-last.out)
 - 2026-10-29 11:37 · record PR merged into main · https://github.com/mh550/agent-harness/pull/53
+- 2026-10-29 12:31 · merged main into harness/agent-harness-2026-10-29-2
+- 2026-10-29 12:31 · lane R1 opened (slot 0, port 7818, from c319ca4)
+- 2026-10-29 12:31 · lane R2 opened (slot 1, port 7819, from 49bf908)
+- 2026-10-29 12:31 · context.md for R2-04: 6904 bytes
+- 2026-10-29 12:48 · context.md for R1-02: 5336 bytes
+- 2026-10-29 12:50 · R1-02: gotchas +0 ~0 -1
+- 2026-10-29 12:50 · R1-02 · claude-opus-5-5 · passes=true · 2 min · 5/23 passing · tests 892

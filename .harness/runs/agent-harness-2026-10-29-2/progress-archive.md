@@ -9,6 +9,19 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 12:50 · R1-02 · passes
+
+Attempt 2 of R1-02: the code from c319ca4 was right; the suite was red only on 39-memlint-m4, because the Gotchas line the first attempt added made 16 non-blank lines (the section's comment line counts). Dropped that line (its fact is now a run discovery). Every step re-checked.
+
+- **Files:** CLAUDE.md
+- **Verified:** node lib/memlint.mjs . prints nothing; tests/run.sh 75-suite memlint-m4: 25/25; check.sh green for this tree (892 tests); grep -c 'seq 20\|seq 150' tests/lib.sh = 0; bash -n on lib.sh/run.sh/stub-claude.sh; check-names.txt LC_ALL=C sorted
+- **Tests:** 892 → 892
+- **Dead end:** a 15th Gotchas bullet (attempt 1) — memlint counts every non-blank line under ## Gotchas, the <!-- --> comment too, so 14 bullets is the cap
+- **Discovery** (affects run): ## Gotchas holds 14 bullets at most: memlint counts its <!-- --> comment line among the 15
+- **Discovery** (affects R1-03, R1-04, R1-05, R1-06): settle (tests/lib.sh:83) pgreps debriefs box-wide and file 08's `sleep 31` too: a sibling check file or a --repeat copy matches them (R1-04..06 flakers)
+- **Proposed change:** The coding prompt's '15 lines at most' should say the Gotchas comment counts, i.e. 14 bullets, or memlint should skip the comment line
+- *01-R1-02 · claude-opus-5-5*
+
 ### 2026-10-29 10:48 · R2-03 · passes
 
 Stub: each headless session prints first.jsonl's init line with a fresh session_id (kept in $STUB_DIR/sessions/<id>); --resume logs argv to resume.log, answers an unknown id as unknown-id.out (exit 1), a known one with resumed.jsonl and cumulative cost/modelUsage. STUB_NO_ENTRY, STUB_RESUME_ENTRY=good|bad|good-edits. metrics.mjs: sessionId, resumeRow, session-id, cost, append-resume. 7 checks.

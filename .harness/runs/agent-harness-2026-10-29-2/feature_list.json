@@ -32,7 +32,7 @@
         "Every new check name is one line in `tests/fixtures/check-names.txt` (LC_ALL=C sorted) and `bash -n tests/lib.sh tests/run.sh tests/stub-claude.sh` passes",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R1-03",
