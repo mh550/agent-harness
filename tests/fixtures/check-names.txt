@@ -190,6 +190,24 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries survive: STUB_LONG_SUMMARY=A keeps A's entry whole with the cut-to-400 note
+entries survive: STUB_NO_ENTRY=A is resumed once with the init line's session id, beside 01-A.resume.jsonl
+entries survive: STUB_NO_ENTRY=A writes no entry.json
+entries survive: STUB_RESUME_ENTRY=bad is minimal with the after-one-resume note
+entries survive: a feature list an initializer's resume writes is removed, so the run ends initializer failed
+entries survive: a headless stub session prints an init line with a 36-character session id
+entries survive: a resume leaves summary.json's session count as the same run without it, its tokens counted
+entries survive: a resume's edit outside the run record is in no commit and the entry is still written
+entries survive: a resume's passes flip is put back and its commit reverted, each noted, and the entry kept
+entries survive: a session refused by a usage limit is not resumed (no resume.log)
+entries survive: a transcript without a session id is noted and never resumed
+entries survive: one entry-resume metrics row for A holds the resume's cost minus the session's
+entries survive: the coding, verify and initializer prompts say no background work at the end
+entries survive: the resume's prompt says the entry is missing, and its budget is the session's cost plus ENTRY_RESUME_BUDGET_USD
+entries survive: the resumed entry has its dead_ends, no minimal, and the written-on-a-resume note
+entries survive: the stub answers --resume of an unknown id with the CLI's two lines and exit 1
+entries survive: the stub's resume keeps the session id and a cumulative total_cost_usd
+entries survive: {{ENTRY_CHECK}} renders as lib/entries.mjs validate in the coding, verify and initializer prompts
 entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
 entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
@@ -313,6 +331,11 @@ init output is capped at 40 lines with the log path
 init: a Vercel project without vercel.json gets one
 init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
 init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
+journal: a 2001-character init header is cut to 2000 and kept
+journal: a 410-character summary and outcome "maybe" is minimal with why invalid (outcome
+journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
+journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
+journal: validate exits 2 when its only errors are the caps, 1 with any other
 lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
 lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
 lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)
@@ -440,8 +463,13 @@ metrics.jsonl: mem_peak_mb is null when uncapped
 metrics.mjs: append writes mem_peak_mb as a number or null
 metrics.mjs: orientation stops at the first Write
 metrics.mjs: tokens, cache rate and context peak from the real fixture
+metrics: a resume that ended without a result line (a timeout, a kill) costs 0, never minus the session's
+metrics: an entry-resume row from first.jsonl and resumed.jsonl holds the total_cost_usd difference jq computes
 metrics: coding rows carry tokens, cache rate and context peak
 metrics: orientation recorded per session
+metrics: resumed-again-under-cap.jsonl against resumed.jsonl gives a positive difference
+metrics: session-id prints the init line's session_id of first.jsonl
+metrics: summary counts an entry-resume row's cost but never as a session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
 needs REASONS: kind, severity and priority for each of the 15 reasons, as the plan's table
@@ -692,6 +720,7 @@ show: --json is one v1 document (the feature form a superset) whose sorted key p
 show: <run> <feature> lists its milestone, passes, attempts, steps, sessions, its commits and its entry files, absolute
 show: CHANGES vs origin/main lists the session's 2 files with +/−, a stacked lane counted once, and marks the one main also changed ✗ conflicts
 show: NEEDS YOU lists the run's open items, one line each, then the harness needs command
+show: an entry resume's metrics row is listed as an entry resume, never a second coding session
 show: at COLUMNS=60 no line of the run view or the feature view passes 60 columns but a URL line
 show: once the worktree is removed: worktree removed, the record from the ledger copy, the same changes; the feature form still finds A, its one commit (not main's older A, not a body line)
 show: read-only: no fetch, the config read in a subshell, the project's object store untouched by merge-tree; bash -n and node --check
