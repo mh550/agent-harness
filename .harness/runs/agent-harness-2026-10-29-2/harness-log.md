@@ -53,3 +53,12 @@
 - 2026-10-29 13:27 · R2-04: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 13:27 · flaky: 32-l5-queue-runner-re (red, then green on a rerun; load 7.19)
 - 2026-10-29 13:27 · R2-04 · claude-opus-5-5 · passes=true · 55 min · 6/23 passing · tests 908
+- 2026-10-29 13:27 · review R2-05: 698 changed lines, at or over 400; opus
+- 2026-10-29 13:27 · context.md for R2-05: 5714 bytes
+- 2026-10-29 13:33 · R1-03: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 13:33 · R1-03: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 13:33 · R1-03: a lane commit touched the run record; reverted
+- 2026-10-29 13:33 · R1-03: gotchas +0 ~2 -0
+- 2026-10-29 13:33 · restored the feature list after R1-03: R1-02: passes true → false
+- 2026-10-29 13:33 · flaky: 13-run-2-michael-sets-desk (red, then green on a rerun; load 1.38)
+- 2026-10-29 13:33 · R1-03 · claude-opus-5-5 · passes=true · 42 min · 7/23 passing · tests 943
