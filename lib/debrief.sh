@@ -159,7 +159,7 @@ names() { local d; for d in "${RUNS[@]}"; do basename "$d"; done | paste -sd' ' 
   echo "- Latest rate-limit info in these runs' sessions: $(rate_info)"
   echo; echo "## harness status (these runs; each one's section below has more)"; echo
   for d in "${RUNS[@]}"; do N=1 "$H" status "$(basename "$d")" 2>&1 | head -1; done | fence
-  echo; echo "## harness trends (last 40 lines)"; echo; "$H" trends 2>&1 | tail -n 40 | cut -c1-400 | fence
+  echo; echo "## harness trends (last 40 lines)"; echo; "$H" trends --md 2>&1 | tail -n 40 | cut -c1-400 | fence
   echo; echo "## harness queue"; echo; "$H" queue list 2>&1 | head -n 60 | cut -c1-400 | fence
   echo; echo "## Queue runner.log since $SINCE (last 200 lines)"; echo
   awk -v s="$SINCE" 'on || (/^[0-9-]+ [0-9:]+ / && ($1 " " $2) >= s) { on = 1; print }' "$Q/runner.log" 2>/dev/null | tail -n 200 | cut -c1-400 | fence

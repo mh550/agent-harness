@@ -24,7 +24,12 @@ H=$HARNESS_HOME/bin/harness
 mkdir -p "$Q/done"
 log() { echo "$(date '+%F %T') $*" | tee -a "$Q/runner.log"; }
 alive_count() { local d p n=0; for d in "$STATE_ROOT"/*/*/; do p=$(cat "$d/driver.pid" 2>/dev/null) && kill -0 "$p" 2>/dev/null && n=$(( n + 1 )); done; echo "$n"; }
-busy_projects() { local d p; for d in "$STATE_ROOT"/*/*/; do p=$(cat "$d/driver.pid" 2>/dev/null) && kill -0 "$p" 2>/dev/null && basename "$(dirname "$d")"; done; }
+# a project is busy while a run's driver or one of its lanes lives (a SIGKILLed driver's lane works on), as bin/harness
+# project_busy has it: a start queued behind such a run must not start here at once
+busy_projects() { local d p f; for d in "$STATE_ROOT"/*/*/; do
+  p=$(cat "$d/driver.pid" 2>/dev/null) && kill -0 "$p" 2>/dev/null && { basename "$(dirname "$d")"; continue; }
+  for f in "$d"lanes/*/pid; do p=$(cat "$f" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null \
+    && tr '\0' ' ' < "/proc/$p/cmdline" 2> /dev/null | grep "lib/lane.sh" > /dev/null && { basename "$(dirname "$d")"; break; }; done; done; }
 # An entry's project: start → the repo's directory name (what the state dir is named after); continue → its run's state dir.
 entry_project() { local verb arg d; { read -r verb; read -r arg; } < "$1"
   if [[ $verb == start ]]; then basename "$arg"; else d=$(compgen -G "$STATE_ROOT/*/$arg" | head -1) && basename "$(dirname "$d")"; fi; }
@@ -56,7 +61,10 @@ while :; do
     next=$f; break
   done
   [[ $held != "${last_held:-}" ]] && { [[ -n $held ]] && log "holding $held: that project has a run going"; last_held=$held; }
-  if [[ -z $next ]]; then (( a == 0 )) && { log "queue empty, nothing running: done"; break; }; sleep "$POLL"; continue; fi
+  # (an entry held by a lane alone, with no driver alive, is waited for: it starts when that lane ends)
+  if [[ -z $next ]]; then (( a == 0 )) && [[ -z $held ]] && { log "queue empty, nothing running: done"; break; }
+    (( a == 0 && UNTIL > 0 && now >= UNTIL )) && { log "past the --until time; $(ls "$Q"/*.args | wc -l) left queued"; break; }   # lane-held ones too
+    sleep "$POLL"; continue; fi
   if (( UNTIL > 0 && now >= UNTIL )); then
     (( a == 0 )) && { log "past the --until time; $(ls "$Q"/*.args | wc -l) left queued"; break; }; sleep "$POLL"; continue
   fi
@@ -70,7 +78,8 @@ while :; do
     log "not starting runs: $why; $(ls "$Q"/*.args | wc -l) left queued"; break
   fi
   (( a == 0 )) && log "$("$HARNESS_HOME/lib/sync.sh")"   # no driver alive: the live checkout may move under none
-  mapfile -t args < "$next"; mv "$next" "$Q/done/$(date +%Y%m%d-%H%M%S)-$(basename "$next")"
+  mapfile -t args < "$next"; args=("${args[@]//$'\x1f'/$'\n'}")   # queue_add's newlines back
+  mv "$next" "$Q/done/$(date +%Y%m%d-%H%M%S)-$(basename "$next")"
   extra=(--now); [[ ${HARNESS_QUEUE_FOREGROUND:-} ]] && extra=(--foreground) || extra+=(--no-supervisor)
   (( UNTIL )) && extra+=(--until-epoch "$UNTIL")
   log "starting: harness ${args[*]}"

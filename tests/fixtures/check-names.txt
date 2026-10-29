@@ -217,6 +217,8 @@ gc never removes a worktree that is no run's (its branch isn't harness/<run>), e
 gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
 gc removed the finished worktree
 gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+gc units: --dry-run with units of another project's runs (live and ended) prints no ? line and no line naming them
+gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
 gotchasDiff: added, edited, deleted and no section
 gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
 harness backlog import of the seed file gives 8 rows, and 8 again on a second import
@@ -465,6 +467,21 @@ notify.mjs: trimBody caps at 3500 bytes with …
 one ledger row per run
 one note, overwritten: ledger/debrief.md
 one notification per run end
+overlap: Markdown emphasis and HTML tags stuck to a path neither hide it nor turn it into its directory
+overlap: a dir/ or glob names its directory of two or more segments; .harness/runs/ never
+overlap: a live run is compared by what its spec and brief name (no branch yet); more than 6 files end in and <k> more
+overlap: every name is a tracked file or a tracked dir/ of two or more segments; no tests/, lib/ or .harness/runs/
+overlap: harness needs done <ref> resolves one by hand; sweep resolves the other once ov2's lane branches are gone (other run merged)
+overlap: named and overlap are exported and pure (no I/O at import); node --check lib/overlap.mjs
+overlap: named leaves docs/plans/ out as a directory (every run writes its plan there); a plan file named exactly still counts
+overlap: named on the suite-split spec with this repo's git ls-files finds tests/run.sh, lib/treekey.mjs and lib/check.sh
+overlap: named takes backticked and bare path words, strips .,:;) and :<line>, and a word without / only in backticks
+overlap: overlap is the sorted intersection: file and file, a dir/ and a file under it (the file), dir/ and dir/; none
+overlap: queue add --continue <run> warns from the run's spec and brief (brief.md) against the others
+overlap: queue add of a start whose brief names a file an ended run's unmerged branch changed warns and queues it; old1 (nothing unmerged) is not compared
+overlap: queue list shows ⚠ overlaps <R> on <files> under the entry; status --json's queued entry overlap lists {run, files}
+overlap: start --now prints the warning, starts, and opens a warn overlap record on both runs naming the files and which merges second
+overlap: the sweep rule: other run gone, other run merged, this run merged, else kept (no git facts: kept)
 parked card: the INBOX question verbatim with its line 16 and ?plain=1#L16 URL, where from its Files: line, parked.mjs's commands
 parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers
 parked.mjs: the question is the feature's INBOX section
@@ -477,6 +494,17 @@ placeholders inside the context are not filled
 plain gc deletes only the merged harness/ and harness-merge/ branches, locally and on the origin
 preflight: no node anywhere, a clear failure and no session
 progress.md is rendered from the journal
+project names: a directory that is not a repository (by name or by path) is no project
+project names: a path that is a git repository still resolves to its top level (gc proj/<subdir>, gc .)
+project names: a run's PROJECT_DIR comes before $HARNESS_PROJECTS (a proj there too is not taken)
+project names: gc nope exits 1; its stderr names the repository here, the runs, $HARNESS_PROJECTS/nope and the projects with runs
+project names: gc proj --dry-run from outside resolves through the run's PROJECT_DIR (as gc <path> does)
+project names: memlint and init take a bare name too
+project names: queue add proj2 with no run of it resolves to $HARNESS_PROJECTS/proj2 and stores the absolute path
+project names: start proj from outside it (HARNESS_PROJECTS holding proj) runs in that repository
+project names: status --project proj, -p proj and --project <path> list proj's run; a gone project falls back to its name
+project names: the newest run whose PROJECT_DIR is no repository any more is passed over for an older one
+project names: with no project at all the list says none, and the projects directory shows ~ for the home directory
 queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't
 queue add numbers past a parked entry
 queue end triggers one debrief, detached
@@ -514,6 +542,12 @@ record PR: the end-of-queue gc --all-merged --deps then removes the merged run's
 record PR: under auto finish opens <run>: run record from harness/<run> against main, its body the report, and merges it
 record PR: under pr it is opened and left for Michael, noted
 record PR: under pr the end-of-queue gc keeps harness/<run> and its worktree while the record PR is open, and deletes them once it merged
+record after gc: a run with no state dir is reported from the ledger, copied nowhere; an unknown one is still an error
+record after gc: finish keeps summary.json, report.md and metrics.jsonl in the state dir, and says so
+record after gc: harness report prints the run's table from the state copy once gc removed the worktree
+record after gc: harness status shows the passing count of a run gc removed
+record after gc: with both gone, a no record line naming the state dir and the ledger dir
+record after gc: with the state copy gone, from the ledger copy, after which the state copy exists again
 record commit: rec_commit commits .harness/runs/<run>/ only; a stray file in the record worktree stays untracked
 record lock: pack_and_copy builds the pack and copies it into the slot under one lock (another lane's pack can't land between)
 record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
@@ -556,6 +590,18 @@ run start without the deploy guard: one note, one notification
 run start without the netlify guard: one note, one notification
 run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)
 run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m
+same-project starts: --foreground starts it anyway (harness merge runs that way)
+same-project starts: --now starts it anyway (the runner passes --now: its starts are unchanged)
+same-project starts: a continue queues --until as --until-epoch and --brief-file as its text (as a start queues them)
+same-project starts: a given run id is refused as before (already running) while another run of the project is alive
+same-project starts: a run id and its options go into the entry as the MAX_PARALLEL_RUNS branch writes them
+same-project starts: a run whose driver is gone but a lane lives keeps its project busy
+same-project starts: a second continue replaces the queued entry with its options (one entry)
+same-project starts: an ended run of the project holds nothing (continue --foreground runs)
+same-project starts: an id auto_id makes is still checked (a project named _x)
+same-project starts: continue <ended run> queues continue <run> --queued --requested and leaves its ended in place
+same-project starts: start proj --brief x while a run of proj is alive queues it, prints why, and starts nothing
+same-project starts: the runner holds that entry too while the lane lives (and waits for it, not done)
 scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit
 scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]
 scope.sh: a scratch dir it can't write runs the command once, bare
@@ -575,6 +621,17 @@ scratch_done: the final tree's output is check-last.out, the note names what it 
 scratch_rm refuses anything but the run's own scratch directory (symlinks in its path too)
 second run got its own port
 sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
+show: --json is one v1 document (the feature form a superset) whose sorted key paths equal tests/fixtures/show-json-keys.txt
+show: <run> <feature> lists its milestone, passes, attempts, steps, sessions, its commits and its entry files, absolute
+show: CHANGES vs origin/main lists the session's 2 files with +/−, a stacked lane counted once, and marks the one main also changed ✗ conflicts
+show: NEEDS YOU lists the run's open items, one line each, then the harness needs command
+show: at COLUMNS=60 no line of the run view or the feature view passes 60 columns but a URL line
+show: once the worktree is removed: worktree removed, the record from the ledger copy, the same changes; the feature form still finds A, its one commit (not main's older A, not a body line)
+show: read-only: no fetch, the config read in a subshell, the project's object store untouched by merge-tree; bash -n and node --check
+show: the 12 largest rows, then +<k> more: harness show <run> --files; --files lists every row
+show: the compare URL of each run branch with changes, for the GitHub-shaped origin; none for a plain-path origin
+show: the pure parts: joinDiff joins by path (binary +/− null, .harness/runs/ left out), mergeTreePaths reads the real output, combine counts one blob once (stacked or fanned-out lanes), milestonesOf keeps a proposal's PR
+show: the run card's header and rule, then worktree, branch, record, state, lanes and the proposed milestones with their tags and PR URLs
 slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
 slot_open: a dependency's tag that conflicts with main opens base_conflict naming that tag
 slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)
@@ -605,7 +662,7 @@ status json: finished holds the runs ended in the last 24h, newest first, and ol
 status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
 status json: harness status --json over 38 stub runs takes under 1 s (best of 3)
 status json: harness status <run> --json prints that one run object with v; an unknown run is an error
-status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs and ./needs.mjs, exports runObject, queueEntry and sections
+status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs and ./overlap.mjs, exports runObject, queueEntry and sections
 status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
 status json: queued holds the entries as queue list numbers them, held by a live run of their project, a brief's first 30 characters
 status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
@@ -739,7 +796,24 @@ treekey: two trees that differ only under an ignored prefix have the same 16-hex
 treekey: unset, HARNESS_CHECK_KEY_IGNORE leaves out .harness/runs alone (docs/plans changes the key)
 trends --by version groups the runs
 trends lists every run
+tty views: a dry run that stops at the fetch says where it stopped, no empty sections after it and no footer
+tty views: finish writes report.md as markdown under HARNESS_TTY=1
+tty views: gc --dry-run on a TTY has the six headers in order and the footer; off a TTY no header, marker or footer
+tty views: gcView shortens the home directory to a tilde and counts a branch named twice once
+tty views: harness report on a TTY is a card and a feature table: no | table row, no **, the fields and the 9 rows
+tty views: summary.mjs report --md and off a TTY, and harness report off a TTY, are the stored markdown byte for byte
+tty views: the TTY form less its headers, rule and footer is the plain form, line for line in the same order
+tty views: the memory peaks over 2 GB are a section of the TTY report, as they are a list in the markdown
+tty views: trends at 60 columns keeps every line within 60, one or two lines a run, and the whole total line
+tty views: trends off a TTY is the markdown table of all 17 rows, --all and --md the same bytes
+tty views: trends on a TTY shows the newest 15 runs as columns, 2 older: harness trends --all and the total over all 17
 two coding prompts share a byte-identical prefix that includes the policy
+u3 review: a continue queued behind a live run keeps a multi-line --brief-file as one --brief
+u3 review: a multi-line --brief is one argument in its queue entry (one line per argument; queue show has it whole)
+u3 review: an overlap with an ended run records on it in its state only: its worktree stays clean, so the runner's gc removes it
+u3 review: past --until with only lane-held entries the runner ends (it no longer polls until the lane ends)
+u3 review: queue list shows held: <project> busy for an entry a live lane holds (as the runner holds it)
+u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
 v2 tags don't merge on resume
 verifier caught A, re-queued
 verifier code edits reverted, never merged

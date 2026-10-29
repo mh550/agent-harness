@@ -318,7 +318,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   [[ -n ${LAST_LANE:-} && -f $L/teardown.out ]] && cat "$L/teardown.out" >> "$SCRATCH/teardown.out"
   slot_close   # every slot goes; lane branches are pushed; a merged lane's branch goes
   SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"
-  SUM report "$REC/summary.json" > "$REC/report.md"   # the end notification's click; rewritten after the retro
+  SUM report --md "$REC/summary.json" > "$REC/report.md"   # the end notification's click; rewritten after the retro
   rec_commit "HARNESS: run ended ($1)"; sync_record
   # the run's one end notification goes out now, not after the retro (minutes, and a crash there would lose it).
   # The reasons below are Michael's to act on: the report, the INBOX one tap away
@@ -332,7 +332,13 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run-end notification failed"; sync_record; }
   case $1 in "blocked on"* | "waiting on Michael"*) desk "ended: $1" ;; esac   # after that commit: its note is no failed post
   if [[ $RETRO == 1 && -f $LIST ]]; then retro; SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"; fi
-  SUM report "$REC/summary.json" > "$REC/report.md"
+  SUM report --md "$REC/summary.json" > "$REC/report.md"
+  # the state dir outlives the worktree gc removes: harness report reads these there (decisions/2026-10-27-record-after-gc)
+  # (metrics.jsonl beside them for report's memory peaks, when the run has one)
+  if cp -f "$REC/summary.json" "$REC/report.md" "$STATE/" 2> /dev/null; then
+    [[ -f $REC/metrics.jsonl ]] && cp -f "$REC/metrics.jsonl" "$STATE/" 2> /dev/null
+    note "summary.json and report.md kept in the state dir (harness report reads them after gc)"
+  else note "could not keep summary.json and report.md in the state dir: harness report needs the worktree or the ledger"; fi
   rec_commit "HARNESS: summary and retro"; sync_record
   ledger
   scratch_done "$key"   # the record keeps the last suite and init output; the run's scratch goes (decisions/2026-10-25-scratch-cleanup)

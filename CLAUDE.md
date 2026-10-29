@@ -67,7 +67,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - check() evals its command in the check file's shell: an `exit` in it ends the whole file; fail with `false` or a flag (agent-harness-2026-10-28 2026-10-28)
 - the end-reasons check greps literal finish/END_REASON/lane_exit 13 reasons in lib/driver.sh and lib/lane.sh: a new one needs a line in end-reasons.txt
 - status_stubs' HARNESS_NOW stays in the past: a file touched to a future time is -newer than any stamp (agent-harness-2026-10-28 2026-10-28)
-- a check's regex on a glyph run is locale-bound: write `(─)+`, `(●|✓) `, never `─+` or `[●✓]` (bytes under LC_ALL=C) (agent-harness-2026-10-28 2026-10-28)
+- a check's regex on a glyph run is locale-bound: write `(─)+`, `(●|✓) `, never `─+`; awk length is bytes: width via node (agent-harness-2026-10-28 2026-10-28)
 - a card or view cuts every line at the width (100 off a TTY): a check comparing whole run.log lines sets COLUMNS=200 (agent-harness-2026-10-28 2026-10-28)
 - status.mjs: a session runs from its `session <n> · <id>` log line to its `passes=` or limit note; stub logs need both (agent-harness-2026-10-28 2026-10-28)
 - tests/fixtures/check-names.txt is LC_ALL=C sorted: copy names from PASS lines of `tests/run.sh <f>`, re-sort (agent-harness-2026-10-28 2026-10-28)
@@ -75,5 +75,5 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - harness needs/parked print cards: grep `  <label to 11><value>`; HARNESS_GLYPHS=unicode for `·` `⚠` (else - !) (agent-harness-2026-10-28 2026-10-28)
 - `[[ $(jq …) -ge 1 ]]`: a jq `null` is an unbound name under set -u and ends the file; test in jq (`>= 1` == true) (agent-harness-2026-10-28 2026-10-28)
 - stub runs in one check file share origin main: an earlier run's merges are on it; reset main (update-ref) between runs (agent-harness-2026-10-28 2026-10-28)
-- status-json-keys.txt lists the stub needs records' keys: a new parked, given_up or driver_crash card field changes it (agent-harness-2026-10-28 2026-10-28)
-- entry questions without Files: are stored with ` Files (harness, from the session): …`: a check on such a line allows it (agent-harness-2026-10-28 2026-10-28)
+- queue .args: one argument per line, a newline in one as \x1f (queue_add); a new reader decodes it as lib/queue.sh does (agent-harness-2026-10-28 2026-10-28)
+- the driver moves <state>/brief.md into the record's brief.md and empties it at start: a run's briefs are both files (agent-harness-2026-10-28 2026-10-28)

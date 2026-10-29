@@ -138,10 +138,11 @@ check "continue finishes a paused run"    '[[ $($F summary "$(list walled)") == 
 check "one ledger row per run"            '[[ $(grep -c "\"run\":\"walled\"" "$T/ledger/runs.jsonl") == 1 ]]'
 
 # ---- queue: start queues behind a running run; the runner runs entries in order ----
-mkdir -p "$HARNESS_STATE/proj/busy" && echo $$ > "$HARNESS_STATE/proj/busy/driver.pid" && printf 'WT=/x\nRUN_ID=busy\nSTATE=%s\nPROJECT_DIR=/x\n' "$HARNESS_STATE/proj/busy" > "$HARNESS_STATE/proj/busy/meta.env"
+# (busy is another project's: a live run of proj itself queues a start by the project rule, 69-same-project-starts)
+mkdir -p "$HARNESS_STATE/other/busy" && echo $$ > "$HARNESS_STATE/other/busy/driver.pid" && printf 'WT=/x\nRUN_ID=busy\nSTATE=%s\nPROJECT_DIR=/x\n' "$HARNESS_STATE/other/busy" > "$HARNESS_STATE/other/busy/meta.env"
 check "start queues when MAX_PARALLEL_RUNS are going" 'grep -q "is queued" <<< "$("$H" start "$T/proj" --spec SPEC.md)"'
 check "continue refuses a running run"     '! "$H" continue busy 2> "$T/busy.err" && grep -q "is running" "$T/busy.err"'
-rm -rf "$HARNESS_STATE/proj/busy"
+rm -rf "$HARNESS_STATE/other"
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
 D=$(date +%F)
 # the sessions a tmux start would have left for the runner's two runs (their ended comes later), and two it must spare
@@ -195,7 +196,7 @@ check "queue add --continue marks its entry --requested; --automatic (the driver
 check "queue list marks continuations (requested) or (automatic)" 'L=$("$H" queue list) && grep -E "^ *[0-9]+  continue  stopreq \(requested\)( |$)" <<< "$L" > /dev/null && grep -E "^ *[0-9]+  continue  stopauto \(automatic\)( |$)" <<< "$L" > /dev/null'
 B=$(ndb); HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue2r.out" 2>&1; settle
 check "a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)" 'grep -q "starting: harness continue stopreq" "$Q/runner.log" && ! grep -q "skipping queued continuation of stopreq" "$Q/runner.log" \
-  && grep -q "skipping queued continuation of stopauto: Michael stopped it" "$Q/runner.log" && grep -q "no-checkout is not a git repository" "$Q/runner.log" && [[ $(ndb) == "$B" ]]'
+  && grep -q "skipping queued continuation of stopauto: Michael stopped it" "$Q/runner.log" && grep -q "no project '"'"'$T/no-checkout'"'"': not a git repository" "$Q/runner.log" && [[ $(ndb) == "$B" ]]'
 "$H" queue add --continue stopauto --automatic > /dev/null
 check "a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too" '[[ $("$H" queue add --continue stopauto) == "already queued: continue stopauto (now requested, with this request'"'"'s options)" ]] \
   && grep -qx -- --requested "$(compgen -G "$Q/*-continue-stopauto.args")" && "$H" queue park 1 > /dev/null && grep -E "^ *1  continue  stopauto \(requested\)( |$)" <<< "$("$H" queue list | sed -n "/^PARKED/,\$p")" > /dev/null'

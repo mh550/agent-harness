@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # harness — long-running agent harness (initializer + one fresh session per feature), reusable across projects.
 #
+#   <project>: a path in a git repository, or a bare name (its newest run's PROJECT_DIR, else $HARNESS_PROJECTS/<name>)
 #   harness start <project> [<run-id>] [--spec "<files>"] [--brief "<text>" | --brief-file <f>] [--base <ref>]
 #                 [--until HH:MM] [--now] [--no-supervisor] [--foreground]
 #                               a new run (worktree + branch harness/<run-id>), or resume an existing one. With
-#                               MAX_PARALLEL_RUNS runs already going, it is queued instead (--now: start anyway)
+#                               MAX_PARALLEL_RUNS runs already going, or a live run of the project, it is queued
+#                               instead (--now: start anyway)
 #   harness continue <run-id> [--brief …] [--until HH:MM] [--now]
-#                               resume a run with fresh attempts for every feature that isn't passing
+#                               resume a run with fresh attempts for every feature that isn't passing (queued while
+#                               another run of its project is live; --now: start anyway)
 #   harness queue [list]                         what is queued, parked, running and done lately
 #   harness queue show <n> [--parked]            one entry whole: its spec, brief, until, mark, why and file
 #   harness queue add <project> [<run-id>] [start options] | add --continue <run-id> [--automatic] [options]
@@ -27,9 +30,16 @@
 #   harness status <run-id> [-v] [--json]        one run's card: state, now or ended (why), milestones, lanes, spend,
 #                                                branch, worktree, needs you, units, next; -v (or N): the log tail
 #                                                --json: one v1 document (lib/status.mjs), or that run's object
-#   harness report [<run-id>…]                   the writeup: passing, tests, spend (total, per feature, by role), causes
-#   harness trends [--by version]                every recorded run in one table (the harness ledger), or one row per
-#                                                harness version (runs, passing, $/feature, cache hit, orientation)
+#   harness show <run-id> [<feature>] [--files] [--json]
+#                                                where its work is: worktree, branch, compare URL, record, state, lanes,
+#                                                milestones (tag, PR), its changes vs origin/main with conflict marks (the
+#                                                12 largest; --files: all) and what needs you; a feature: its steps,
+#                                                sessions, files and commits. Local refs only (no fetch)
+#   harness report [<run-id>…] [--md]            the writeup: passing, tests, spend (total, per feature, by role), causes
+#                                                (a card on a TTY; markdown off one or with --md)
+#   harness trends [--all] [--md] [--by version] every recorded run in one table (the harness ledger; on a TTY the newest
+#                                                15 as columns, --all every one), or one row per harness version (runs,
+#                                                passing, $/feature, cache hit, orientation)
 #   harness debrief [--dry-run]                  after a queue: one short read-only session writes the debrief
 #                               (ledger/debrief.md; NOTIFY_CMD gets its headline). The queue runner starts it as it exits
 #   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each)
@@ -49,7 +59,8 @@
 #                                                about its CLAUDE.md, .harness/project.md and decisions store
 #   harness gc <project> [--all-merged] [--deps] [--dry-run]
 #                               delete merged harness branches and their clean worktrees, locally and on origin
-#                               (--all-merged: every merged branch, whatever its name; --deps: DEPS_DIRS in ended runs' worktrees);
+#                               (--all-merged: every merged branch, whatever its name; --deps: DEPS_DIRS in ended runs' worktrees;
+#                               --dry-run on a TTY: grouped by step with a would-remove footer);
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
 #   harness eval run [--set <name|file>] [--harness <ref>] [--label <L>] [--repeat <N>]
 #                               replay a task set (evals/) with that harness version's driver on throwaway clones,
@@ -87,7 +98,24 @@ source "$HARNESS_HOME/lib/tmux.sh"   # tmux_name, tmux_reap: start's session and
 source "$HARNESS_HOME/lib/needs.sh"   # NEEDS_MJS: harness needs (it calls the CLI directly: no record lock here)
 
 die() { echo "harness: $*" >&2; exit 1; }
-toplevel() { git -C "$1" rev-parse --show-toplevel 2>/dev/null || die "$1 is not a git repository"; }
+# for a person: HARNESS_TTY=1|0 decides, else a terminal on stdout (view.mjs context's rule)
+tty_out() { [[ ${HARNESS_TTY:-} == 1 ]] || { [[ ${HARNESS_TTY:-} != 0 ]] && [[ -t 1 ]]; }; }
+# <path or project name> → the project's top level: a git repository here, else (a bare name) the PROJECT_DIR of that
+# name's newest run still a repository, else $HARNESS_PROJECTS/<name> (decisions/2026-10-27-project-names)
+project_dir() {
+  local a=$1 m d pd ps=${HARNESS_PROJECTS:-$HOME/projects} with
+  git -C "$a" rev-parse --show-toplevel 2> /dev/null && return 0
+  [[ $a == */* ]] && die "no project '$a': not a git repository"   # a path: runs and projects are looked up by name
+  while read -r m; do   # newest first: meta.env is rewritten at every start
+    pd=$( (source "$m" 2> /dev/null && echo "${PROJECT_DIR:-}") ) || continue
+    [[ -n $pd ]] && git -C "$pd" rev-parse --show-toplevel 2> /dev/null && return 0
+  done < <(ls -t "$STATE_ROOT/$a"/*/meta.env 2> /dev/null)
+  git -C "$ps/$a" rev-parse --show-toplevel 2> /dev/null && return 0
+  with=$(for m in "$STATE_ROOT"/*/*/meta.env; do d=${m%/*/meta.env}; [[ -f $m && ${d##*/} != queue ]] || continue; echo "${d##*/}"; done |
+    LC_ALL=C sort -u | paste -sd, | sed 's/,/, /g')
+  [[ $ps == "$HOME"/* || $ps == "$HOME" ]] && ps="~${ps#"$HOME"}"
+  die "no project '$a': not a git repository here, no run of a project named $a, no $ps/$a (projects with runs: ${with:-none})"
+}
 state_of() {   # run-id → state dir
   [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "no run '$1' (run-id: letters, digits, . _ - only)"   # compgen globs
   local d; d=$(compgen -G "$STATE_ROOT/*/$1" | head -1 || true)
@@ -98,13 +126,62 @@ alive() { local p; p=$(cat "$1/driver.pid" 2>/dev/null) && [[ -n $p ]] && kill -
 # (a pid that is lib/lane.sh: a recycled one would keep its run busy, and its units and slots, for good)
 lane_live() { local f p; for f in "$1"/lanes/*/pid; do p=$(cat "$f" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null \
   && tr '\0' ' ' < "/proc/$p/cmdline" 2> /dev/null | grep "lib/lane.sh" > /dev/null && { f=${f%/pid}; echo "${f##*/} $p"; return 0; }; done; return 1; }
+# <project name> [<except run>] → the first other run of that project whose driver or a lane lives; 1 when none
+project_busy() { local d; for d in "$STATE_ROOT/$1"/*/; do d=${d%/}; [[ ${d##*/} == "${2:-}" ]] && continue
+  { alive "$d" || lane_live "$d" > /dev/null; } && { echo "${d##*/}"; return 0; }; done; return 1; }
+# <busy run> <project dir> <queue entry>: why a plain start or continue was queued (decisions/2026-10-27-same-project-starts)
+queued_behind() { echo "$(date '+%F %T') queued behind $1: ${3##*/}" >> "$Q/runner.log"
+  echo "$1 is running on $(basename "$2"): queued (the runner starts it when that run ends; --now starts it anyway)"; queue_ensure_runner; }
+# Overlaps (decisions/2026-10-27-same-project-starts): what a new run's spec and brief name against every other run of
+# its project that is alive or has changes main lacks (lib/overlap.mjs runs). A warning and records; never a hold.
+# <project dir> <new run or ""> <spec files> <brief> → "<R>\t<path>" lines (none when git or node can't say)
+overlaps() { ( harness_config "$1" > /dev/null 2>&1; printf '%s\n' "$4" |
+  node "$HARNESS_HOME/lib/overlap.mjs" runs "$1" "$STATE_ROOT" "${MAIN_BRANCH:-main}" "$2" "$3" ) 2> /dev/null || true; }
+# <overlaps lines> → one "warning: overlaps <R> on <paths>" per run, on stderr
+overlap_warn() { local r; for r in $(cut -f1 <<< "$1" | uniq); do
+  echo "warning: overlaps $r on $(awk -F'\t' -v r="$r" '$1 == r { print $2 }' <<< "$1" | node "$HARNESS_HOME/lib/overlap.mjs" names)" >&2; done; }
+# <state dir> → the run's briefs: waiting in the state, and those the driver committed to the record
+run_brief() { cat "$1/brief.md" 2> /dev/null; (source "$1/meta.env" && cat "$WT/.harness/runs/$RUN_ID/brief.md") 2> /dev/null; true; }
+# <queue entry> → its overlaps: a start's --spec and --brief; a continue's run's spec and briefs, and the entry's
+entry_overlaps() {
+  local a=() i p run="" spec="" brief="" st; mapfile -t a < "$1"; a=(${a[@]+"${a[@]//$'\x1f'/$'\n'}"})
+  if [[ ${a[0]:-} == start ]]; then p=${a[1]:-}; [[ ${a[2]:-} && ${a[2]} != --* ]] && run=${a[2]}
+  else run=${a[1]:-}; st=$(compgen -G "$STATE_ROOT/*/$run" | head -1) && [[ -f $st/meta.env ]] || return 0
+    p=$( (source "$st/meta.env" && echo "$PROJECT_DIR") 2> /dev/null ) || return 0
+    spec=$( (source "$st/run.env" 2> /dev/null; echo "${SPEC_FILES:-}") ); brief=$(run_brief "$st"); fi
+  for (( i = 2; i < ${#a[@]}; i++ )); do case ${a[i]} in --spec) spec=${a[i+1]:-} ;; --brief) brief+=$'\n'${a[i+1]:-} ;; esac; done
+  [[ -d $p ]] || return 0; overlaps "$p" "$run" "$spec" "$brief"
+}
+# the waiting entries' overlaps as status.mjs --overlaps reads them: "<entry file>\t<R>\t<path>"
+queue_overlaps() { local f; for f in "$Q"/*.args; do [[ -f $f ]] && entry_overlaps "$f" | sed "s|^|${f##*/}\t|"; done; true; }
+# <state> <run> <subject> <paths> <second> <origin> [other]: an overlap record on that run, under its record lock (a live
+# run's lanes open records under it too); a new one noted in its run.log and harness-log.md (committed with its next record
+# commit). The other run, ended: in its state only (no needs.md, no log line), since no commit follows and a dirty
+# worktree is one gc never removes
+overlap_open() {
+  local st=$1 w rec ref md; w=$( (source "$st/meta.env" && echo "$WT") 2> /dev/null ) || return 0; rec=$w/.harness/runs/$2 md=$rec
+  [[ ${7:-} ]] && ! alive "$st" && ! lane_live "$st" > /dev/null && md=""
+  ref=$(flock "$st/record.lock" node "$NEEDS_MJS" open "$st" "$2" "$(basename "$(dirname "$st")")" overlap "$3" files="$4" second="$5" \
+    worktree="$w" record="$md" list="$rec/feature_list.json" inbox="$rec/INBOX.md" branch="harness/$2" record_branch="harness/$2" \
+    main_branch="${MAIN_BRANCH:-main}" origin="$6" state="$st" 2>> "$st/run.log") || return 0   # 3: open already, refreshed
+  echo "$(date '+%F %T') needs: overlap with $3 opened ($ref)" >> "$st/run.log"
+  [[ -n $md && -f $rec/harness-log.md ]] && echo "- $(date '+%F %H:%M') · needs: overlap with $3 opened" >> "$rec/harness-log.md"; true
+}
+# <project dir> <run> <state>: a start's overlaps warned and recorded on the run and on each run it meets
+overlap_start() {
+  local p=$1 run=$2 st=$3 l r o files; o=$(git -C "$p" config --get remote.origin.url || true)
+  l=$(overlaps "$p" "$run" "$( (source "$st/run.env" 2> /dev/null; echo "${SPEC_FILES:-}") )" "$(run_brief "$st")")
+  [[ -n $l ]] || return 0; overlap_warn "$l"
+  for r in $(cut -f1 <<< "$l" | uniq); do files=$(awk -F'\t' -v r="$r" '$1 == r { print $2 }' <<< "$l")
+    overlap_open "$st" "$run" "$r" "$files" "$run" "$o"; overlap_open "$(dirname "$st")/$r" "$r" "$run" "$files" "$run" "$o" other; done
+}
 runner_up() { [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null; }
 alive_count() { local d n=0; for d in "$STATE_ROOT"/*/*/; do alive "$d" && n=$(( n + 1 )); done; echo "$n"; }
 to_epoch() { [[ $1 =~ ^[0-9]{9,}$ ]] && { echo "$1"; return; }   # HH:MM → the next such time
   local e; e=$(date -d "$1" +%s) || die "bad time '$1'"; (( e <= $(date +%s) )) && e=$(( e + 86400 )); echo "$e"; }
 
 cmd_init() {
-  local p draft=0; p=$(toplevel "${1:?usage: harness init <project> [--draft]}"); [[ ${2:-} == --draft ]] && draft=1
+  local p draft=0; p=$(project_dir "${1:?usage: harness init <project> [--draft]}"); [[ ${2:-} == --draft ]] && draft=1
   mkdir -p "$p/.harness"
   [[ -e $p/.harness/config.sh ]] && echo "keep    .harness/config.sh" \
     || { cp "$HARNESS_HOME/templates/project/config.sh" "$p/.harness/config.sh"; echo "created .harness/config.sh (POLICY=build-only)"; }
@@ -128,11 +205,11 @@ auto_id() {   # project → <project>-<date>[-n], not used before
   echo "$id"
 }
 
-queue_add() {   # verb args… → a queue entry (one argument per line), numbered past the parked ones too
+queue_add() {   # verb args… → a queue entry (one argument per line, a newline in one as \x1f), numbered past the parked ones too
   mkdir -p "$Q/done" "$Q/held"
   local n; n=$(( $(ls "$Q" "$Q/held" | sed -n 's/^\([0-9]\{4\}\)-.*\.args$/\1/p' | sort -n | tail -1 | sed 's/^0*//' || true) + 1 ))
   local f; f=$Q/$(printf '%04d' "$n")-$1-${2##*/}.args
-  printf '%s\n' "$@" > "$f"; echo "$f"
+  local a; for a in "$@"; do printf '%s\n' "${a//$'\n'/$'\x1f'}"; done > "$f"; echo "$f"   # a multi-line brief stays one argument
 }
 
 queue_ensure_runner() {
@@ -185,7 +262,7 @@ legacy_refuse() {
 
 cmd_start() {
   local p run="" base="" supervisor=1 fg=0 now=0 spec="" brief="" until="" orig=("$@")
-  p=$(toplevel "${1:?usage: harness start <project> [<run-id>] [options]}"); shift
+  p=$(project_dir "${1:?usage: harness start <project> [<run-id>] [options]}"); shift
   [[ ${1:-} && $1 != --* ]] && { run=$1; shift; }
   while (( $# )); do case $1 in
     --base) base=$2; shift 2 ;; --spec) spec=$2; shift 2 ;; --brief) brief=$2; shift 2 ;;
@@ -194,25 +271,31 @@ cmd_start() {
     --no-supervisor) supervisor=0; shift ;; --foreground) fg=1; supervisor=0; shift ;; --now) now=1; shift ;;
     *) die "unknown option $1" ;; esac; done
   harness_config "$p"
-  if [[ -z $run ]] && (( ! now && ! fg )) && (( $(alive_count) >= MAX_PARALLEL_RUNS )); then
-    local args=("$p"); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
-    [[ -n $brief ]] && args+=(--brief "$brief"); [[ -n $until ]] && args+=(--until-epoch "$until")
-    queue_add start "${args[@]}" > /dev/null   # no run id yet: it is chosen when the run starts
-    echo "$(alive_count) run(s) going (MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS): a new $(basename "$p") run is queued"; queue_ensure_runner; return
-  fi
-  run=${run:-$(auto_id "$p")}
-  [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
+  [[ -z $run || $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
   [[ $run == desk || $run == debrief ]] && die "run-id '$run' is taken by the desk (tmux h-desk, <state>/queue/desk)"
   [[ $run == queue ]] && die "run-id 'queue' is taken by the queue runner (tmux h-queue)"
   [[ $run == lanes ]] && die "run-id 'lanes' is taken by the lane slots (<worktrees>/<project>/lanes)"
+  # a queued start: the entry the runner replays (no run id yet when none is given: it is chosen when the run starts)
+  local args=("$p" ${run:+"$run"}); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
+  [[ -n $brief ]] && args+=(--brief "$brief"); [[ -n $until ]] && args+=(--until-epoch "$until")
+  # two runs on one repo would build conflicting PRs from the same base: a plain start waits for the live one (a given
+  # run id after its own refusals, below)
+  local busy; if [[ -z $run ]] && (( ! now && ! fg )) && busy=$(project_busy "$(basename "$p")"); then
+    queued_behind "$busy" "$p" "$(queue_add start "${args[@]}")"; return; fi
+  if [[ -z $run ]] && (( ! now && ! fg )) && (( $(alive_count) >= MAX_PARALLEL_RUNS )); then
+    queue_add start "${args[@]}" > /dev/null
+    echo "$(alive_count) run(s) going (MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS): a new $(basename "$p") run is queued"; queue_ensure_runner; return
+  fi
+  local given=$run; run=${run:-$(auto_id "$p")}
+  [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "run-id: letters, digits, . _ - only"
   local proj branch=harness/$run wt state
   proj=$(basename "$p"); wt=$WT_ROOT/$proj/$run; state=$STATE_ROOT/$proj/$run
   if alive "$state"; then die "run $run is already running (harness attach $run)"; fi
   # tmux names are lossy (a.b and a-b; one id in two projects): never take, and so kill, a session another run holds
   tmux_shared "$state" "$STATE_ROOT" "$(tmux_name "$run")" && die "run id $run shares tmux session $(tmux_name "$run") with $TMUX_OTHER, which has not ended: pick another id"
+  if [[ -n $given ]] && (( ! now && ! fg )) && busy=$(project_busy "$proj" "$run"); then
+    queued_behind "$busy" "$p" "$(queue_add start "${args[@]}")"; return; fi
   if (( ! now && ! fg )) && (( $(alive_count) >= MAX_PARALLEL_RUNS )); then
-    local args=("$p" "$run"); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
-    [[ -n $brief ]] && args+=(--brief "$brief"); [[ -n $until ]] && args+=(--until-epoch "$until")
     queue_add start "${args[@]}" > /dev/null
     echo "$(alive_count) run(s) going (MAX_PARALLEL_RUNS=$MAX_PARALLEL_RUNS): $run is queued"; queue_ensure_runner; return
   fi
@@ -243,6 +326,7 @@ cmd_start() {
     [[ -z $spec ]] || printf 'SPEC_FILES=%q\n' "$spec"; [[ -z $until ]] || printf 'DEADLINE_AT=%q\n' "$until"
     [[ -z $base ]] || printf 'BASE_REF=%q\n' "$base"; } > "$state/run.env"
   [[ -n $brief ]] && printf '%s\n' "$brief" >> "$state/brief.md"
+  [[ ${HARNESS_MERGE_ONLY:-} ]] || overlap_start "$p" "$run" "$state"   # warned and recorded, never held
   rm -f "$state/STOP"
   local env="WT=$(printf %q "$wt") RUN_ID=$run STATE=$(printf %q "$state") PROJECT_DIR=$(printf %q "$p") HARNESS_HOME=$(printf %q "$HARNESS_HOME")"
   # tmux starts commands in its server's environment, not this shell's: pass the harness overrides along
@@ -283,6 +367,19 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start op
   alive "$st" && die "$run is running; continue it after it ends (or harness stop $run)"
   # an automatic continuation never undoes Michael's stop; one queued by request does (decisions/2026-10-26-requested-continuations)
   if (( queued && ! requested )) && grep -qs '^stopped by Michael' "$st/ended"; then echo "skipping queued continuation of $run: Michael stopped it"; return 0; fi
+  # a live run of its project: queued before anything here changes its state (attempts, markers, ended), as queue add
+  # --continue writes it; a continue in cmd_start alone would leave a run that reads as crashed meanwhile
+  local busy a; if busy=$(project_busy "$(basename "$(dirname "$st")")" "$run"); then
+    for a in ${rest[@]+"${rest[@]}"}; do [[ $a == --now || $a == --foreground ]] && busy=""; done
+    if [[ -n $busy ]]; then local o=() i; (( keep )) && o+=(--keep-attempts); (( queued && ! requested )) && o+=(--automatic)
+      # as a start queues them: the deadline and the brief as they are now, not when the entry runs
+      for (( i = 0; i < ${#rest[@]}; i++ )); do case ${rest[i]} in
+        --until) o+=(--until-epoch "$(to_epoch "${rest[i+1]:?--until HH:MM}")"); i=$(( i + 1 )) ;;
+        --brief-file) o+=(--brief "$(cat "${rest[i+1]:?--brief-file <f>}")") || die "can't read ${rest[i+1]}"; i=$(( i + 1 )) ;;
+        *) o+=("${rest[i]}") ;; esac; done
+      cmd_queue add --continue "$run" ${o[@]+"${o[@]}"} > /dev/null
+      queued_behind "$busy" "$(dirname "$st")" "$(compgen -G "$Q/*-continue-$run.args" | head -1)"; return 0; fi
+  fi
   # shellcheck source=/dev/null
   ( source "$st/meta.env"
     # before anything changes its state: a refused run stays as it ended
@@ -336,12 +433,16 @@ run_rows() {   # <units 0|1> [<run>]
 }
 
 cmd_status() {   # [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]: read-only (no harness_config writes, no mkdir)
-  local want="" json=0 v=0 o=() use="usage: harness status [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]"
+  local want="" json=0 v=0 o=() pd use="usage: harness status [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]"
   while (( $# )); do case $1 in
     --json) json=1 ;;
     -v|--verbose) v=1 ;;
     -a|--all) o+=(--all) ;;
-    --since|-p|--project) (( $# > 1 )) || die "$use"; [[ $1 == --since ]] && o+=(--since "$2") || o+=(--project "$2"); shift ;;
+    --since) (( $# > 1 )) || die "$use"; o+=(--since "$2"); shift ;;
+    # a path or a name, as project_dir resolves it; a bare name it can't (its checkout is gone) still filters by itself
+    -p|--project) (( $# > 1 )) || die "$use"
+      if pd=$( (project_dir "$2") 2> /dev/null ); then o+=(--project "$(basename "$pd")")
+      elif [[ $2 != */* ]]; then o+=(--project "$2"); else project_dir "$2" > /dev/null; fi; shift ;;
     -*) die "$use" ;;
     *) [[ -z $want ]] || die "$use"; want=$1 ;;
   esac; shift; done
@@ -352,22 +453,52 @@ cmd_status() {   # [<run>] [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--j
   local cfg r=0 u=$(( json || v )) mode=(view); cfg=$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS ${STATUS_SINCE:-24h}"); runner_up && r=1
   [[ -n $want ]] && mode=(card "$want") u=1
   (( json )) && o+=(--json); (( v && ! json )) && o+=(--verbose "$n")
+  local ov rc=0; ov=$(mktemp); [[ -n $want ]] || queue_overlaps > "$ov"   # the queued entries' overlaps: the view's, not a card's
   run_rows "$u" "$want" | node "$HARNESS_HOME/lib/status.mjs" "${mode[@]}" ${o[@]+"${o[@]}"} --runner "$r" --queue "$Q" \
-    --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" --state-root "$STATE_ROOT" --max-parallel "${cfg%% *}" --since-default "${cfg#* }"
+    --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" --state-root "$STATE_ROOT" --max-parallel "${cfg%% *}" --since-default "${cfg#* }" --overlaps "$ov" || rc=$?
+  rm -f "$ov"; return "$rc"
+}
+
+# <run> [<feature>] [--files] [--json]: where the run's work is (lib/show.mjs). Read-only: local refs, no fetch, no
+# harness_config writes; git runs in the run's PROJECT_DIR (its branches live there, worktree or not)
+cmd_show() {
+  local want="" feat="" o=() st pd m r=0 use="usage: harness show <run> [<feature>] [--files] [--json]"
+  while (( $# )); do case $1 in
+    --json|--files) o+=("$1") ;;
+    -*) die "$use" ;;
+    *) if [[ -z $want ]]; then want=$1; elif [[ -z $feat ]]; then feat=$1; else die "$use"; fi ;;
+  esac; shift; done
+  [[ -n $want ]] || die "$use"
+  st=$(state_of "$want"); pd=$( (source "$st/meta.env" && echo "$PROJECT_DIR") ) || die "no project dir in $st/meta.env"
+  runner_up && r=1; m=$( (harness_config "$pd" "$st" > /dev/null 2>&1; echo "${MAIN_BRANCH:-main}") ) || m=main   # read in a subshell, nothing set here
+  run_rows 0 "$want" | GIT_OPTIONAL_LOCKS=0 node "$HARNESS_HOME/lib/show.mjs" "$want" ${feat:+"$feat"} ${o[@]+"${o[@]}"} --project-dir "$pd" --main "$m" \
+    --state-root "$STATE_ROOT" --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" --queue "$Q" --runner "$r"
 }
 
 cmd_report() {
-  local d ids=("$@") out=()
+  local d ids=() md=() a
+  for a in "$@"; do if [[ $a == --md ]]; then md=(--md); else ids+=("$a"); fi; done   # --md: markdown on a TTY too
   (( ${#ids[@]} )) || for d in "$STATE_ROOT"/*/*/; do [[ -f $d/meta.env ]] && ids+=("$(basename "$d")"); done
-  local run
+  # worktree (a rebuild) → the state's copy (finish's) → the ledger's, copied into the state on this first read
+  # (decisions/2026-10-27-record-after-gc); metrics.jsonl beside summary.json: report's memory peaks read it there
+  local run l=${HARNESS_LEDGER:-$HARNESS_HOME/ledger} lj
   for run in "${ids[@]}"; do
+    # a state dir removed by hand: the ledger's copy alone, reported where it is (nowhere to copy to)
+    if ! compgen -G "$STATE_ROOT/*/$run/meta.env" > /dev/null && [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] \
+       && lj=$(compgen -G "$l/*/$run/summary.json" | head -1); then
+      node "$HARNESS_HOME/lib/summary.mjs" report "${md[@]}" "$lj"; echo; continue; fi
     d=$(state_of "$run")
     # shellcheck source=/dev/null
     ( source "$d/meta.env"
-      # metrics.jsonl beside it: report's memory peaks read it from there, also once gc has removed the worktree
+      lj=$l/$(basename "$PROJECT_DIR")/$RUN_ID
+      local src=$STATE
       if [[ -d $WT ]]; then node "$HARNESS_HOME/lib/summary.mjs" build "$WT" "$RUN_ID" "$STATE" > "$STATE/summary.json"
-        cp "$WT/.harness/runs/$RUN_ID/metrics.jsonl" "$STATE/metrics.jsonl" 2> /dev/null; fi
-      [[ -f $STATE/summary.json ]] && node "$HARNESS_HOME/lib/summary.mjs" report "$STATE/summary.json" || echo "## $RUN_ID: no record" )
+        cp "$WT/.harness/runs/$RUN_ID/metrics.jsonl" "$STATE/metrics.jsonl" 2> /dev/null
+      elif [[ ! -f $STATE/summary.json && -f $lj/summary.json ]]; then   # a copy that fails still reports
+        cp "$lj/summary.json" "$STATE/" 2> /dev/null || src=$lj; [[ -f $lj/metrics.jsonl ]] && cp "$lj/metrics.jsonl" "$STATE/" 2> /dev/null; fi
+      if [[ -f $src/summary.json ]]; then node "$HARNESS_HOME/lib/summary.mjs" report "${md[@]}" "$src/summary.json"
+      else local s=$STATE; [[ $s == "$HOME"/* ]] && s="~${s#"$HOME"}"; [[ $lj == "$HOME"/* ]] && lj="~${lj#"$HOME"}"
+        echo "## $RUN_ID: no record (worktree removed; nothing in $s or $lj)"; fi )
     echo
   done
 }
@@ -382,8 +513,10 @@ cmd_queue() {
       if [[ $sub == show ]]; then local a n= p=()   # --parked before or after the number
         for a; do case $a in --parked) p=(--parked) ;; *) [[ -z $n && $a =~ ^[1-9][0-9]*$ ]] && n=$a || die "$use" ;; esac; done
         [[ -n $n ]] || die "$use"; m=(entry "$n" ${p[@]+"${p[@]}"}); fi
+      local ov rc=0; ov=$(mktemp); queue_overlaps > "$ov"
       run_rows 0 | node "$HARNESS_HOME/lib/status.mjs" "${m[@]}" --runner "$r" --queue "$Q" --ledger "${HARNESS_LEDGER:-$HARNESS_HOME/ledger}" \
-        --state-root "$STATE_ROOT" --max-parallel "$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")" ;;
+        --state-root "$STATE_ROOT" --max-parallel "$(harness_config /nonexistent; echo "$MAX_PARALLEL_RUNS")" --overlaps "$ov" || rc=$?
+      rm -f "$ov"; return "$rc" ;;
     add)
       if [[ ${1:-} == --continue ]]; then
         local run=${2:?usage: harness queue add --continue <run-id>}; shift 2; state_of "$run" > /dev/null
@@ -394,11 +527,12 @@ cmd_queue() {
           if (( ${#mark[@]} )); then local was; grep -qx -- --requested "$q" && was="replaced by this request" || was="now requested, with this request's options"
             printf '%s\n' continue "$run" --queued --requested ${o[@]+"${o[@]}"} > "$q" && echo "already queued: continue $run ($was)"
           else echo "already queued: continue $run"; fi; return; }
-        echo "queued: $(basename "$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"})")"
+        q=$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"}); echo "queued: $(basename "$q")"
       else
-        local p; p=$(toplevel "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
-        echo "queued: $(basename "$(queue_add start "$p" "$@")")"
-      fi ;;
+        local p q; p=$(project_dir "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
+        q=$(queue_add start "$p" "$@"); echo "queued: $(basename "$q")"
+      fi
+      overlap_warn "$(entry_overlaps "$q")" ;;   # the records come at its start (no state dir yet)
     rm) local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue rm <n>}p"); [[ -n $f ]] || die "no entry $1"; rm "$f"; echo "removed $(basename "$f")" ;;
     park)
       local f; f=$(ls "$Q"/*.args 2>/dev/null | sed -n "${1:?usage: harness queue park <n> [<why>]}p"); [[ -n $f ]] || die "no entry $1"; shift
@@ -484,8 +618,14 @@ cmd_answer() {
 }
 
 cmd_gc() {
-  local p all=0 dry=0 deps=0 b pattern; p=$(toplevel "${1:?usage: harness gc <project>}"); shift
-  while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; --deps) deps=1 ;; *) die "unknown option $1" ;; esac; shift; done
+  local p all=0 dry=0 deps=0 sections=0 b pattern opts; p=$(project_dir "${1:?usage: harness gc <project>}"); shift; opts=("$@")
+  while (( $# )); do case $1 in --all-merged) all=1 ;; --dry-run) dry=1 ;; --deps) deps=1 ;; --sections) sections=1 ;; *) die "unknown option $1" ;; esac; shift; done
+  # a dry run for a person is grouped by step (view.mjs gcView): the same run with a marker line before each step's
+  # lines (--sections, an option of this call alone). Never a real gc, never off a TTY: runner.log and the checks read
+  # today's lines in today's order
+  (( dry )) || sections=0
+  if (( dry && ! sections )) && tty_out; then cmd_gc "$p" "${opts[@]}" --sections | node "$HARNESS_HOME/lib/view.mjs" gc; return; fi
+  step() { (( sections )) && printf '\x1e%s\n' "$1"; return 0; }
   # a refusal (branch -d of a branch merged into origin/main but not into HEAD, with no upstream) is said, never the
   # end of gc under set -e: every later step still runs (decisions/2026-10-25-gc-all-merged)
   act() { if (( dry )); then echo "would: $*"; else echo "+ $*"; "$@" || echo "! failed: $*"; fi; }
@@ -493,16 +633,20 @@ cmd_gc() {
   # project's runs with no live driver, first (before a fetch that may fail, before their worktree goes). A dead
   # driver.pid is enough: the driver removes ended at start, only finish and the trap write it. Two ids may reduce to
   # one prefix (a.b, a-b), so every project's runs are candidates and a live one keeps the unit.
-  local u d r mine busy why err
+  # A unit only another project's runs own is that project's gc's: skipped silently, live or ended; one no run on this
+  # box owns is said with the command, never stopped: nobody can say what it is (decisions/2026-10-27-gc-foreign-units)
+  local u d r mine owned busy why err
+  step UNITS
   while read -r u _; do
     [[ $u == harness-*.scope ]] || continue
-    mine="" busy=0
+    mine="" owned=0 busy=0
     for d in "$STATE_ROOT"/*/*/; do
       [[ -f $d/meta.env ]] && scope_owns "$(basename "$d")" "$u" || continue
-      { alive "$d" || lane_live "$d" > /dev/null; } && busy=1
+      owned=1; { alive "$d" || lane_live "$d" > /dev/null; } && busy=1
       [[ -z $mine && $d == "$STATE_ROOT/$(basename "$p")/"* ]] && mine=$d
     done
-    [[ -n $mine ]] || { echo "? $u (no run of this project)"; continue; }
+    (( owned )) || { echo "? $u: no run on this box owns it (systemctl --user stop $u by hand)"; continue; }
+    [[ -n $mine ]] || continue
     (( busy )) && continue
     r=$(basename "$mine"); why="$r ended"; [[ -f $mine/ended ]] || why="$r: driver gone"
     if (( dry )); then echo "would: systemctl --user stop $u ($why)"
@@ -511,6 +655,7 @@ cmd_gc() {
   done < <("${HARNESS_SYSTEMCTL:-systemctl}" --user list-units 'harness-*' --plain --no-legend 2> /dev/null || true)
   # the tmux sessions of this project's ended runs (a window kept for TMUX_KEEP_HOURS; no ended, no reap): before the
   # fetch, which has nothing to do with them; h-queue and the desk are no run's name (decisions/2026-10-25-tmux-reaper)
+  step TMUX
   tmux_reap "$dry" "$STATE_ROOT/$(basename "$p")"/*/
   git -C "$p" fetch -q --prune origin
   local main=origin/main
@@ -531,6 +676,7 @@ cmd_gc() {
   desk_open() { local d r=${1#harness/}; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && [[ -s $d/desk/url ]] \
     && ! grep -qxF "would close idle desk $r" <<< "$dg" \
     && "$HARNESS_HOME/lib/desk.sh" --list 2> /dev/null | awk -v r="$r" '$1 == r && $3 ~ /^https:/ { f = 1 } END { exit !f }'; }
+  step DESKS
   local dd=() dg; (( dry )) && dd=(--dry-run)   # a dry run counts the desks it would close as closed
   dg=$("$HARNESS_HOME/lib/desk.sh" --gc "$(basename "$p")" "${dd[@]}") || echo "harness: could not check the desks"   # never fails gc
   [[ -n $dg ]] && echo "$dg"
@@ -562,6 +708,7 @@ cmd_gc() {
     (( dry )) || rmdir "${wt%/*}" "$slots" 2> /dev/null || true   # lanes/<run>, then lanes/, once empty
   }
   local st
+  step WORKTREES
   while read -r wt; do
     # never the checkout itself (rm -rf below); a listed worktree whose directory is gone (a locked one) is skipped
     [[ $wt == "$WT_ROOT"/* && $wt != "$p" && -d $wt ]] || continue
@@ -582,6 +729,7 @@ cmd_gc() {
   # --deps: an ended run's dependency directories, merged or not (the branch keeps the work; the next init reinstalls).
   # Only a worktree of this project under WT_ROOT whose run says so (its meta.env names it), never the checkout, never
   # a live, queued or desk-open run's; never a symlink, a path out of the tree or anything git tracks (decisions/2026-10-25-gc-deps)
+  step DEPS
   (( deps )) && { local proj wr x n got rp ds=(); proj=$(basename "$p")
     read -ra ds <<< "$(harness_config "$p" > /dev/null; echo "$DEPS_DIRS")"
     while read -r wt; do
@@ -606,6 +754,7 @@ cmd_gc() {
       if err=$( (cd "$wt" && rm -rf -- "${got[@]}") 2>&1); then echo "+ freed $n MB in $wt: ${got[*]}"
       else echo "! could not free $wt: $(tail -1 <<< "$err")"; fi
     done < <(git -C "$p" worktree list --porcelain | sed -n 's/^worktree //p'); }
+  step BRANCHES
   for b in $(git -C "$p" for-each-ref --format='%(refname:short)' refs/heads/harness/); do   # record-only tails
     [[ $b == "$(git -C "$p" branch --show-current)" ]] && continue
     running "$b" && continue
@@ -645,6 +794,7 @@ cmd_gc() {
     [[ -f $d/meta.env && -d $d/needs ]] && ! ( source "$d/meta.env"; [[ -d $WT ]] ) || continue
     node "$NEEDS_MJS" sweep "${d%/}" | sed 's/^/+ needs: /' || echo "! needs sweep failed: ${d%/}"   # never the end of gc
   done
+  step END   # gcView: the run got here (a fetch that failed under set -e did not)
   return 0
 }
 
@@ -655,6 +805,7 @@ case ${1:-help} in
   merge) shift; cmd_merge "$@" ;;
   queue) shift; cmd_queue "$@" ;;
   status) shift; cmd_status "$@" ;;
+  show) shift; cmd_show "$@" ;;
   needs) shift; cmd_needs "$@" ;;
   parked) shift; cmd_parked "$@" ;;
   report) shift; cmd_report "$@" ;;
@@ -663,7 +814,7 @@ case ${1:-help} in
   pause|resume|stop) cmd_control "$1" "${2:-}" "${@:3}" ;;
   answer) shift; cmd_answer "$@" ;;
   gc) shift; cmd_gc "$@" ;;
-  memlint) p=$(toplevel "${2:?usage: harness memlint <project>}") && node "$HARNESS_HOME/lib/memlint.mjs" "$p" ;;
+  memlint) p=$(project_dir "${2:?usage: harness memlint <project>}") && node "$HARNESS_HOME/lib/memlint.mjs" "$p" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
   sync) shift; exec "$HARNESS_HOME/lib/sync.sh" "$@" ;;
   backlog) shift; exec "$HARNESS_HOME/lib/backlog.sh" "$@" ;;

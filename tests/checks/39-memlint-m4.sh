@@ -82,5 +82,5 @@ check "driver memlint: a failing memlint is one memlint: failed note and the run
 check "harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line" '
   o=$("$H" memlint "$T/proj") && [[ $(wc -l <<< "$o") == 2 ]] && [[ $(hlog mlrun | grep "· memlint: " | sed "s/.*· memlint: //") == "$o" ]] &&
   [[ $("$H" memlint "$T/proj/docs") == "$o" ]] && ! "$H" memlint > /dev/null 2> "$T/ml-h.err" && [[ $(wc -l < "$T/ml-h.err") == 1 ]] &&
-  ! "$H" memlint "$T/ml" > /dev/null 2> "$T/ml-h.err" && [[ $(cat "$T/ml-h.err") == "harness: $T/ml is not a git repository" ]] && sed -n "2,/^set -/p" "$H" | grep "harness memlint <project>" > /dev/null'
+  ! "$H" memlint "$T/ml" > /dev/null 2> "$T/ml-h.err" && [[ $(cat "$T/ml-h.err") == "harness: no project '"'"'$T/ml'"'"': not a git repository" ]] && sed -n "2,/^set -/p" "$H" | grep "harness memlint <project>" > /dev/null'
 suite_end
