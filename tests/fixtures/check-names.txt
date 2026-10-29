@@ -589,6 +589,18 @@ render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line 
 report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
 report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
+resolve: CONFLICTS=michael keeps today's merge_conflict record and runs no resolve session
+resolve: a re-base conflict gets a resolve session, noted with its file
+resolve: a resolved merge is committed and every edit outside the conflict is put back, whatever its path
+resolve: harness merge on the conflicting milestone keeps the needs path and runs no session
+resolve: merge_one's conflict at the run's end keeps today's merge_conflict record
+resolve: merge_one's conflict returns 3 with moved-<m> in a lane and opens merge_conflict under HARNESS_MERGE_ONLY
+resolve: no needs record and one metrics row of kind resolve
+resolve: prompts/resolve.md renders through lib/prompt.sh as a command, first line # Resolve session, no {{ left
+resolve: slot_open undoes a merge a killed lane left in progress in its slot, never committing its markers
+resolve: the resolve prompt names README.md and a commit subject from each side
+resolve: the resolved merge takes one verify round, then M2 merges (one resolve line, two verify lines)
+resolve: the tree on main is the tree verified as run/<run>/M2 (the invariant)
 resume reloads config merged from main
 retro edits reverted
 review gate: a review at or over REVIEW_OPUS_LINES runs on opus

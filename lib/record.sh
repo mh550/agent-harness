@@ -287,6 +287,7 @@ journal() {
             elif F passes "$RUN_DIR/feature_list.json" "$id"; then outcome=passes
             elif sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' "$SCRATCH/entry-final" | grep -q .; then outcome=parked; fi ;;
     verify) who="verify $id" ;;   # a verify without its entry has no evidence rows, so it never holds: not yet
+    resolve) who="resolve $id" ;;   # its verdict is the driver's checks (lib/resolve.sh), never its entry's outcome
     init)   F summary "$LIST" > /dev/null 2>&1 && outcome=passes ;;
   esac
   if [[ $PWD == "$RWT" ]]; then   # the initializer: committed by the WIP/restrict commit, so a diff from the start sees it
@@ -439,6 +440,12 @@ merge_one() {
       && { c=$t; note "$m: main merged into its branch by hand; re-tagged $tag at ${t:0:7}"; }
   fi
   if ! out=$(git -c core.quotePath=false merge-tree --write-tree --name-only "origin/$MAIN_BRANCH" "$c" 2>/dev/null); then
+    # the lane's rebase merges, resolves and verifies it (lib/resolve.sh); at the run's end (finish wrote ended) no lane
+    # can, so Michael hears of it now
+    if [[ ${CONFLICTS:-} == resolve && ! ${HARNESS_MERGE_ONLY:-} && ! -f $STATE/ended ]]; then
+      [[ ( $(cat "$STATE/moved-$m" 2>/dev/null) == "$mn" && -f $STATE/rebase-$m ) || -f $STATE/needs-$m ]] && return 1
+      echo "$mn" > "$STATE/moved-$m"; return 3
+    fi
     # once per main: merge_milestones runs again after every verify and at the end; `harness merge` always says so
     [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/conflict-$m" 2>/dev/null) == "$mn" ]] && return 1
     echo "$mn" > "$STATE/conflict-$m"
@@ -496,7 +503,7 @@ merge_milestones() {
   return 0
 }
 merge_milestones_() {
-  local m d wait
+  local m d wait rc
   for m in $(F milestones "$LIST"); do
     [[ -n ${1:-} && $m != "$1" ]] && continue
     [[ -f $STATE/merged-$m ]] && continue
@@ -514,7 +521,9 @@ merge_milestones_() {
     fi
     wait=""; for d in $(F deps "$LIST" "$m"); do [[ -f $STATE/merged-$d ]] || wait+="${wait:+, }$d"; done
     if [[ -n $wait ]]; then
-      merge_one "$m" --open && [[ ! -f $STATE/waits-$m && ! -f $STATE/proposed-$m ]] && { touch "$STATE/waits-$m"; note "$m verified; its PR waits for $wait to merge"; }
+      merge_one "$m" --open; rc=$?   # 3: it conflicts with main; the re-base once the dependency has merged
+      (( rc == 0 || rc == 3 )) && [[ ! -f $STATE/waits-$m && ! -f $STATE/proposed-$m ]] && { touch "$STATE/waits-$m"
+        (( rc == 0 )) && note "$m verified; its PR waits for $wait to merge" || note "$m verified; it conflicts with $MAIN_BRANCH and is re-based once $wait has merged"; }
       continue
     fi
     merge_one "$m"; (( $? == 3 )) && cp "$STATE/moved-$m" "$STATE/rebase-$m"
@@ -588,6 +597,8 @@ slot_open() {
   LBRANCH="" LANE=""   # from here the slot leaves the last lane's branch: only a full open names a lane again
   if [[ -d $SLOT ]]; then   # a segment killed mid-session left its work here: committed before the base is chosen, so it stays
     local cur; cur=$(git -C "$SLOT" branch --show-current)
+    # a lane killed mid-merge (its resolve session) left MERGE_HEAD: undone, never committed as WIP with its markers
+    git -C "$SLOT" rev-parse -q --verify MERGE_HEAD > /dev/null && { git -C "$SLOT" reset -q --hard HEAD; note "$m: its slot-$k had a merge left in progress; undone"; }
     ( cd "$SLOT" && commit_all "WIP: uncommitted in the slot when it was reused (harness)" )
     [[ $cur == harness-lane/* ]] && git -C "$SLOT" push -q origin "$cur" 2> /dev/null
   fi
