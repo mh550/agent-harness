@@ -47,7 +47,7 @@
         "The sweep changes no check name: `git diff origin/main -- tests/fixtures/check-names.txt` shows added lines only",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R1-04",
