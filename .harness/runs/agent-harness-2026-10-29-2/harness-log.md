@@ -32,3 +32,8 @@
 - 2026-10-29 10:48 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch (red, then green on a rerun; load 5.20)
 - 2026-10-29 10:48 · R2-03 · claude-opus-5-5 · passes=true · 24 min · 4/23 passing · tests 900
 - 2026-10-29 10:48 · services stopped (paused)
+- 2026-10-29 11:20 · needs: resolved agent-harness-2026-10-29-2/1 (other run merged)
+- 2026-10-29 11:36 · lane R2 closed (stopped)
+- 2026-10-29 11:36 · lane R1 closed (stopped)
+- 2026-10-29 11:36 · stopped by Michael
+- 2026-10-29 11:36 · run ended (stopped by Michael): 4/23 passing · 7 sessions (7 real) · 4 features passed · $18.55 · 2.4 h · by kind: init 1 ($6.72), coding 6 ($11.83) · by model: claude-fable-5-1 1 ($6.72), claude-opus-5-5 6 ($11.83)
