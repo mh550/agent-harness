@@ -33,9 +33,16 @@ cp "$T/base-config.sh" "$T/user-config.sh"
 sp_kept=$(hlog sp | grep -F "· lane M1 closed (M1 proposed)" > /dev/null && [[ ! -e $T/wt/proj/lanes ]] && has "$T/proj" harness-lane/sp/M1 && has "$T/origin.git" harness-lane/sp/M1 && echo yes)
 tmp=$(mktemp -d); git clone -q "$T/origin.git" "$tmp" && git -C "$tmp" fetch -q origin "refs/tags/run/sp/M1:refs/tags/run/sp/M1" \
   && git -C "$tmp" -c user.name=gh -c user.email=gh@test merge -q --no-ff -m "Merge pull request #1" run/sp/M1 && git -C "$tmp" push -q origin HEAD:main; rm -rf "$tmp"
+# a slot the ended run left (clean, detached): --dry-run names it and the merged lane branch, and removes neither
+git -C "$T/proj" worktree add -q --detach "$T/wt/proj/lanes/sp/slot-1" main
+"$H" gc "$T/proj" --dry-run > "$T/gc-sp-dry.out" 2>&1
+sp_dry=$( [[ -d $T/wt/proj/lanes/sp/slot-1 ]] && git -C "$T/proj" ls-remote origin harness-lane/sp/M1 | grep -F refs/heads/harness-lane/sp/M1 > /dev/null && echo kept)
+check "gc --dry-run names a leftover slot and a merged lane branch on origin, one line each, and removes neither" \
+  '[[ $(grep -cxF "would: git -C $T/proj worktree remove --force $T/wt/proj/lanes/sp/slot-1" "$T/gc-sp-dry.out") == 1 \
+  && $(grep -cxF "would: git -C $T/proj push -q origin --delete harness-lane/sp/M1" "$T/gc-sp-dry.out") == 1 && $sp_dry == kept ]]'
 "$H" gc "$T/proj" > "$T/gc-sp.out" 2>&1
 check "lanes slots: under pr the slot is freed at verify and the branch kept; gc deletes it once its PR merged, here and on origin" \
-  '[[ $sp_kept == yes ]] && ! has "$T/proj" harness-lane/sp/M1 && ! has "$T/origin.git" harness-lane/sp/M1 \
+  '[[ $sp_kept == yes && ! -e $T/wt/proj/lanes/sp/slot-1 ]] && ! has "$T/proj" harness-lane/sp/M1 && ! has "$T/origin.git" harness-lane/sp/M1 \
   && grep -F "push -q origin --delete harness-lane/sp/M1" "$T/gc-sp.out" > /dev/null'
 
 # from here each run starts from the first main (the stub's work files would otherwise already be there: A's commit empty)

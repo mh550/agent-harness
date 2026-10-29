@@ -51,4 +51,22 @@ check "coding prompt: reviews go to subagents on the session's own model (A's pr
   && bash "$HERE/../lib/prompt.sh" "$HARNESS_STATE/proj/sr" coding A 2> /dev/null | grep -F "subagents on your own model (\`claude-sonnet-5-5\`)" > /dev/null \
   && [[ $(jq -r "select(.feature == \"A\" and .kind == \"coding\") | .model" "$T/wt/proj/sr/.harness/runs/sr/metrics.jsonl" | sort -u) == claude-sonnet-5-5 ]]'
 
+# mm: two merge_milestones M1 at once, in one clone with one verified tag and one state (merge.lock): the lock lets one
+# merge it; the other finds merged-M1 and says nothing (without the lock it notes a failed push or "already there").
+# The stub gh's pr merge really merges into the bare origin
+git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+MM=$T/mm; mkdir -p "$MM/st" "$MM/rec"; git clone -q "$T/origin.git" "$MM/wt"
+( cd "$MM/wt" && echo m1 > m1.txt && git add m1.txt && git -c user.name=t -c user.email=t@t commit -qm "A: M1 work" \
+  && git -c user.name=t -c user.email=t@t tag -a run/mm/M1 -m "harness run mm: M1 verified (v3)" )
+printf '{"features":[{"id":"A","milestone":"M1","passes":true}]}\n' > "$MM/rec/feature_list.json"
+mm() { ( cd "$MM/wt" && HARNESS_HOME=$HH && source "$HERE/../lib/record.sh" \
+  && STATE=$MM/st LS=$MM/st REC=$MM/rec LIST=$MM/rec/feature_list.json RUN_ID=mm RUN_DIR=.harness/runs/mm RBRANCH=harness/mm \
+     MAIN_BRANCH=main MERGE_POLICY=auto GH=$HERE/stub-gh.sh && F() { node "$HERE/../lib/features.mjs" "$@"; } \
+  && note() { echo "$(date +%T) · $*" >> "$MM/rec/harness-log.md"; } && log() { :; } && notify() { :; } && lane_alive() { false; } \
+  && lane_branch_gone() { :; } && needs_open() { :; } && rec_commit() { :; } && sync_record() { :; } && merge_milestones M1 ) 2>> "$MM/err"; }
+gh0=$(grep -c "^gh pr merge " "$T/gh.log" 2> /dev/null); mm & mm & wait
+check "merge_milestones: two at once merge M1 once (the merged note its one note, one pr merge, the merge on origin main)" \
+  '[[ $(wc -l < "$MM/rec/harness-log.md") == 1 && $(grep -c "· M1 merged into main · " "$MM/rec/harness-log.md") == 1 && $(( $(grep -c "^gh pr merge " "$T/gh.log") - gh0 )) == 1 ]] \
+  && git -C "$MM/wt" fetch -q origin && git -C "$MM/wt" merge-base --is-ancestor run/mm/M1 origin/main'
+
 suite_end

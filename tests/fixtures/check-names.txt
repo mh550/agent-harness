@@ -259,6 +259,7 @@ gc --all-merged keeps the origin default branch and a live run branch, merged or
 gc --deps empties an ended, unmerged run's worktree of its DEPS_DIRS; its branch and committed files stay; --dry-run deletes none
 gc --deps keeps the worktree of a live run and the project checkout
 gc --deps keeps the worktree of a run with a queued continuation
+gc --dry-run names a leftover slot and a merged lane branch on origin, one line each, and removes neither
 gc deleted the run branch
 gc keeps a worktree with an untracked file even when status.showUntrackedFiles=no hides it
 gc kept the tags
@@ -462,6 +463,7 @@ merge-sorted: the fixture pair merges to a check, b lane check, b main check, c 
 merge-sorted: the harness sets the driver in the slot's worktree config and never in the project's checkout
 merge-sorted: two lanes adding names to a sorted list both merge, with no conflict note and no needs record
 merge-sorted: with the attribute and the worktree driver, two branches adding adjacent names merge with exit 0, no marker, the union
+merge_milestones: two at once merge M1 once (the merged note its one note, one pr merge, the merge on origin main)
 merge_one on the coordinator: merge_conflict names the lane branch, never the record branch, and is notified
 merge_one's conflict opens merge_conflict: the merge-tree files in where, main and the tag commit, notified with the card
 merge_one's refusal opens merge_refused: the PR URL in where and as its click, notified once with it
