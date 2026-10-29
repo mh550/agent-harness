@@ -5,16 +5,13 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # until release-<run> or release-<run>-<id>: C goes first and M2 merges before M1 verifies, so M1's verify merges main
 # in and both land (a lane verified while the other merged is P2-03's re-base)
 two_both="" mem_c="" cap_end=""
-waitf() { local i; for i in $(seq $(( $2 * 5 ))); do eval "$1" && return 0; sleep 0.2; done; return 1; }   # <bash expr> <s>
 echo 'MAX_LANES=2' >> "$T/user-config.sh"
-held() { rm -f "$T"/held-* "$T"/release-*; : > "$T/hold-coding"; }
-ats() { hlog "$1" | grep -n -m1 -E -- "$2" | cut -d: -f1; }   # <run> <ERE>: the line of the first note matching
 
 held
 STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" two --spec SPEC.md --foreground > "$T/two.out" 2>&1 & P=$!
-waitf '[[ -f $T/held-two-A && -f $T/held-two-C ]]' 120 && two_both=yes
+wait_for 120 eval '[[ -f $T/held-two-A && -f $T/held-two-C ]]' && two_both=yes
 STUB_MEM_CURRENT=52428800 HARNESS_GLYPHS=unicode "$H" status two > "$T/status-two.out" 2>&1   # both sessions' scopes are live (P2-06); the card's lanes field
-touch "$T/release-two-C"; waitf 'hlog two | grep -F "· M2 merged into main" > /dev/null' 120; touch "$T/release-two"; wait "$P"; rm -f "$T/hold-coding"
+touch "$T/release-two-C"; wait_for 120 eval 'hlog two | grep -F "· M2 merged into main" > /dev/null'; touch "$T/release-two"; wait "$P"; rm -f "$T/hold-coding"
 S=$HARNESS_STATE/proj/two
 check "lanes two: with MAX_LANES=2 and M2 after: [], both lanes' sessions run at once and two lanes open before any closes" \
   '[[ $two_both == yes ]] && c=$(ats two "· lane .* closed \(") && [[ -n $c ]] && (( $(hlog two | head -n "$c" | grep -c "· lane .* opened (") == 2 ))'
@@ -36,12 +33,12 @@ check "lanes summary: the two-lane run's summary.json has lanes {max_open: 2, la
 # memory: 7 GB available is over MEM_MIN_AVAILABLE_GB (5: no session waits) and under 5 + LANE_RESERVE_GB 4 x 1 open
 held; sed 's/^MemAvailable: .*/MemAvailable:    7340032 kB/' "$HERE/fixtures/meminfo.txt" > "$T/meminfo.txt"
 HARNESS_MEMINFO=$T/meminfo.txt STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" mem --spec SPEC.md --foreground > "$T/mem.out" 2>&1 & P=$!
-waitf '[[ -f $T/held-mem-A ]]' 120; sleep 4   # four polls at 1 s
+wait_for 120 eval '[[ -f $T/held-mem-A ]]'; sleep 4   # sleep-ok: a negative over four polls at 1 s
 mem_waits=$(hlog mem | grep -cF "· lane M2 waiting: 7 GB available, under 9 GB (MEM_MIN_AVAILABLE_GB 5 + LANE_RESERVE_GB 4 x 1 open)")
 mem_open=$(hlog mem | grep -c "· lane M2 opened (")
 cp "$HERE/fixtures/meminfo.txt" "$T/meminfo.txt"   # 9 GB
-waitf '[[ -f $T/held-mem-C ]]' 60 && mem_c=yes
-touch "$T/release-mem-C"; waitf 'hlog mem | grep -F "· M2 merged into main" > /dev/null' 120; touch "$T/release-mem"; wait "$P"; rm -f "$T/hold-coding"
+wait_for 60 eval '[[ -f $T/held-mem-C ]]' && mem_c=yes
+touch "$T/release-mem-C"; wait_for 120 eval 'hlog mem | grep -F "· M2 merged into main" > /dev/null'; touch "$T/release-mem"; wait "$P"; rm -f "$T/hold-coding"
 check "lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back" \
   '[[ $mem_waits == 1 && $mem_open == 0 && $mem_c == yes ]] && c=$(ats mem "· lane .* closed \(") && o=$(ats mem "· lane M2 opened \(slot 1, ") && (( o < c )) \
   && grep -q "^done" "$HARNESS_STATE/proj/mem/ended"'
@@ -49,7 +46,7 @@ check "lanes admission: under the memory reserve the second lane waits, noted on
 # the five-hour window: the newest session's USAGE_5H at 80 %, resetting in an hour, is over LANE_OPEN_BELOW_5H (70)
 held; echo "0.80 $(( $(date +%s) + 3600 ))" > "$HARNESS_STATE/USAGE_5H"
 STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" u5 --spec SPEC.md --foreground > "$T/u5.out" 2>&1 & P=$!
-waitf '[[ -f $T/held-u5-A ]]' 120; sleep 4
+wait_for 120 eval '[[ -f $T/held-u5-A ]]'; sleep 4   # sleep-ok: a negative over four polls at 1 s
 u5_waits=$(hlog u5 | grep -cE "· lane M2 waiting: 5-hour window at 80%, opens under 70% \(resets [0-9]{2}:[0-9]{2}\)$")
 u5_open=$(hlog u5 | grep -c "· lane M2 opened (")
 touch "$T/release-u5"; wait "$P"; rm -f "$T/hold-coding" "$HARNESS_STATE/USAGE_5H"   # left, it would refuse every later run's second lane
@@ -59,8 +56,8 @@ check "lanes admission: with the five-hour window at 80 % the second lane waits,
 # the run's end reaches every lane: M1's lane ends the run at the session cap; M2's, mid-session, exits 16 after it
 held; echo MAX_SESSIONS=2 >> "$T/user-config.sh"
 STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" cap --spec SPEC.md --foreground > "$T/cap.out" 2>&1 & P=$!
-waitf '[[ -f $T/held-cap-A && -f $T/held-cap-C ]]' 120; touch "$T/release-cap-A"
-waitf '[[ -f $HARNESS_STATE/proj/cap/lanes-end ]]' 120 && cap_end=$(cat "$HARNESS_STATE/proj/cap/lanes-end")
+wait_for 120 eval '[[ -f $T/held-cap-A && -f $T/held-cap-C ]]'; touch "$T/release-cap-A"
+wait_for 120 eval '[[ -f $HARNESS_STATE/proj/cap/lanes-end ]]' && cap_end=$(cat "$HARNESS_STATE/proj/cap/lanes-end")
 touch "$T/release-cap"; wait "$P"; rm -f "$T/hold-coding"
 check "lanes end: a lane's session cap ends the run (lanes-end); the other lane finishes its session and closes, the run is ending" \
   '[[ $cap_end == "session cap (2)" ]] && grep -q "^session cap (2)" "$HARNESS_STATE/proj/cap/ended" && hlog cap | grep -F "· lane M1 closed (session cap (2))" > /dev/null \
@@ -70,7 +67,7 @@ check "lanes end: a lane's session cap ends the run (lanes-end); the other lane 
 # with no session started inside the window (before P2 it slept the whole window)
 cp "$T/base-config.sh" "$T/user-config.sh"; echo "$(( $(date +%s) + 3600 ))" > "$HARNESS_STATE/LIMIT_UNTIL"
 HARNESS_LIMIT_SLEEP=3600 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" lw --spec SPEC.md --foreground > "$T/lw.out" 2>&1 & P=$!
-waitf 'hlog lw | grep -F "· usage-limit window (shared by all runs): waiting until " > /dev/null' 120; lw0=$(date +%s)
+wait_for 120 eval 'hlog lw | grep -F "· usage-limit window (shared by all runs): waiting until " > /dev/null'; lw0=$(date +%s)
 touch "$HARNESS_STATE/proj/lw/STOP"; wait "$P"; lw_s=$(( $(date +%s) - lw0 )); rm -f "$HARNESS_STATE/LIMIT_UNTIL"
 check "lanes end: a stop during a usage-limit wait ends the run within a 60 s slice and starts no session in the window" \
   '(( lw_s < 90 )) && grep -q "^stopped by Michael" "$HARNESS_STATE/proj/lw/ended" && ! grep -q " coding exit " "$HARNESS_STATE/proj/lw/run.log"'
@@ -91,10 +88,10 @@ check "lanes ports: port_taken counts a live lane's port (pid, svc-up or opening
      rm "$d/svc-up"; echo 7962 > "$STATE_ROOT/p/r/port"; port_taken 7962 )'
 # unit: a forked child (lane_wait's sleep, killed before its exec) inherits the EXIT traps; it must not run them. The
 # driver's ran lanes_term and removed driver.pid mid-run whenever a lane exited between reap and lane_wait (P2 review 1)
-trapkid() {   # <file> <state dir>: the file's EXIT trap in a shell whose sleep child is killed at once
+trapkid() {   # <file> <state dir>: the file's EXIT trap in a shell whose child is killed at once
   ( STATE=$2 LDIR=$2 RWT=$2 REC=$2; for f in lanes_term scope_stop services_down lanes_services_down; do eval "$f() { :; }"; done
     eval "$(awk "/^trap '/ { on = 1 } on { print } on && /' EXIT\$/ { exit }" "$1")"
-    for i in 1 2 3 4 5; do sleep 5 & kill $! 2> /dev/null; wait $! 2> /dev/null; done; trap - EXIT ) 2> /dev/null; }
+    for i in 1 2 3 4 5; do sleep 5 & kill $! 2> /dev/null; wait $! 2> /dev/null; done; trap - EXIT ) 2> /dev/null; }   # sleep-ok: the child killed
 check "lanes trap: a killed background child runs neither the driver's nor a lane's EXIT trap (driver.pid stays, no ended, no exit line)" \
   '( d=$T/trap-d; l=$T/trap-l; mkdir -p "$d" "$l"; echo 1 > "$d/driver.pid"; trapkid "$HERE/../lib/driver.sh" "$d"; trapkid "$HERE/../lib/lane.sh" "$l"
      [[ -f $d/driver.pid && ! -e $d/ended && ! -e $l/exit ]] )'

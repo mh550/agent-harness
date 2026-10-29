@@ -4,7 +4,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # One stub suite (HARNESS_CHECK_CMD) in one throwaway repo, so treekey gives a key. Each case has its own directory
 # $T/rr-<case>: the call counter n, every call's arguments (args, one line per call), each call's output (out<n>), and
 # its own scratch and cache, so markers never cross cases. RR_MODE: once (red on call 1, HARNESS_FAILED=a b), always
-# (red every call, HARNESS_FAILED=a), noline (red on call 1, no line), sleep, oom (the scope stub's cap kill).
+# (red every call, HARNESS_FAILED=a), noline (red on call 1, no line), hang (past its timeout), oom (the scope stub's cap kill).
 git init -q "$T/rr" && ( cd "$T/rr" && echo a > a && git add a && git -c user.name=t -c user.email=t@t commit -qm a )
 cat > "$T/rr-suite.sh" <<'EOF'
 n=$(( $(cat "$RR/n" 2> /dev/null || echo 0) + 1 )); echo "$n" > "$RR/n"; echo "$*" >> "$RR/args"; o=$RR/out$n
@@ -13,7 +13,7 @@ case $RR_MODE in
   once) (( n == 1 )) || green "$@"; printf '%s\n' "FAIL a" "FAIL b" "HARNESS_FAILED=a b" "3/5 checks passed" > "$o" ;;
   always) printf '%s\n' "FAIL a" "HARNESS_FAILED=a" "4/5 checks passed" > "$o" ;;
   noline) (( n == 1 )) || green "$@"; printf '%s\n' "FAIL x" "4/5 checks passed" > "$o" ;;
-  sleep) sleep 5 ;;
+  hang) sleep 5 ;;   # sleep-ok: a suite that outlives its timeout
   oom) touch "$STUB_DIR/scope/$STUB_SCOPE_UNIT.oom"; exit 137 ;;
 esac
 cat "$o"; exit 1
@@ -61,10 +61,10 @@ check "check rerun: CHECK_RERUN=suite reruns the whole suite even with the line"
   '[[ $o_sui == $'"'"'check: green after a rerun (flaky: a b), 5 tests\nrc=0'"'"' && $(calls suite) == 2 && -z $(args suite 2) ]] \
   && jq -e '"'"'.names == ["a","b"] and .rerun == "suite"'"'"' "$T/rr-suite/c/flakes.jsonl" > /dev/null'
 
-o_to=$(HARNESS_CHECK_TIMEOUT=2s rr sleep sleep; echo "rc=$?")
+o_to=$(HARNESS_CHECK_TIMEOUT=2s rr hang hang; echo "rc=$?")
 check "check rerun: a timeout is never rerun" \
-  'grep -qx "check: RED (timed out after 2s, exit 124 after [0-9]* s) — last lines of $T/rr-sleep/s/check.out:" <<< "$o_to" \
-  && [[ $(tail -1 <<< "$o_to") == rc=124 && $(calls sleep) == 1 && ! -e $T/rr-sleep/s/check-rerun.out ]]'
+  'grep -qx "check: RED (timed out after 2s, exit 124 after [0-9]* s) — last lines of $T/rr-hang/s/check.out:" <<< "$o_to" \
+  && [[ $(tail -1 <<< "$o_to") == rc=124 && $(calls hang) == 1 && ! -e $T/rr-hang/s/check-rerun.out ]]'
 
 o_oom=$(HARNESS_SCOPE_PREFIX=harness-rr rr oom oom; echo "rc=$?")
 check "check rerun: a kill at the memory cap is never rerun" \

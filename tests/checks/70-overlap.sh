@@ -55,7 +55,7 @@ check "overlap: queue list shows ⚠ overlaps <R> on <files> under the entry; st
   "$H" queue list > "$T/ql.out" && grep -E "^ +⚠ overlaps ov1 on work-A.txt$" "$T/ql.out" > /dev/null &&
   "$H" status > "$T/sv.out" && grep -E "^ +⚠ overlaps ov1 on work-A.txt$" "$T/sv.out" > /dev/null &&
   "$H" status --json > "$T/st.json" && jq -e ".queued[0].overlap == [{\"run\": \"ov1\", \"files\": [\"work-A.txt\"]}]" "$T/st.json" > /dev/null'
-sleep 600 & LIVE=$!; echo "$LIVE" >> "$T/left.pids"
+sleep 600 & LIVE=$!; echo "$LIVE" >> "$T/left.pids"   # sleep-ok: a live driver
 L=$HARNESS_STATE/proj/live1; mkdir -p "$L" && echo "$LIVE" > "$L/driver.pid" && printf 'PROJECT_DIR=%q\nWT=/x\nRUN_ID=live1\nSTATE=%q\n' "$T/proj" "$L" > "$L/meta.env" && echo 'see `CLAUDE.md`' > "$L/brief.md"
 check "overlap: a live run is compared by what its spec and brief name (no branch yet); more than 6 files end in and <k> more" '
   "$H" queue add proj --brief "see \`CLAUDE.md\`" 2> "$T/qb.err" > /dev/null && grep -x "warning: overlaps live1 on CLAUDE.md" "$T/qb.err" > /dev/null &&

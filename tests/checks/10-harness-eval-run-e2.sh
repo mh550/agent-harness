@@ -72,7 +72,7 @@ check "eval: a missing repo is refused before any spend, a set file in the cwd i
 # driver's `timeout` has a process group of its own (a known limit, docs/plans/2026-10-21-E2-review.md R2)
 STUB_SLOW_CODING=8 HARNESS_EVAL_TMP=$T/evaltmp-i HARNESS_EVAL_RESULTS=$T/results-i HARNESS_EVAL_GH=$HERE/stub-gh.sh HARNESS_EVAL_CURL=$HERE/stub-curl.sh \
   setsid bash -c 'echo $$ > "$1"; shift; exec "$@"' _ "$T/eval-int.pid" "$H" eval run --set "$T/set.txt" --harness HEAD --label int > "$T/eval-int.out" 2>&1 & EIJ=$!
-for _ in $(seq 150); do [[ -e $T/slow-coding ]] && break; sleep 0.2; done
+wait_for 60 test -e "$T/slow-coding"
 EIH=$(compgen -G "$T/evaltmp-i/*/harness" | head -1) EIP=$(cat "$T/eval-int.pid"); kill -TERM -- "-$EIP" 2> /dev/null
 wait "$EIJ"; EIR=$?   # setsid didn't fork (EIJ == EIP), so this is the eval's own exit
 check "eval: an interrupted eval removes its harness worktree (E2 review)" '[[ -n $EIH && $EIJ == "$EIP" ]] && (( EIR == 130 )) && [[ ! -e $EIH ]] \

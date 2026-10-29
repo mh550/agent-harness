@@ -2,8 +2,7 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- tmux (L3-03): when the driver exits, its window saves the scrollback, closes the supervisor and, after TMUX_KEEP_HOURS, the session ----
 { cat "$T/base-config.sh"; echo TMUX_KEEP_HOURS=0; } > "$T/keep0.sh"; { cat "$T/base-config.sh"; echo TMUX_KEEP_HOURS=1; } > "$T/keep1.sh"
-tended() { local i; for i in $(seq 600); do [[ -f $1/ended && ! -f $1/driver.pid ]] && return 0; sleep 0.1; done; return 1; }   # ≤ 60 s; finish writes ended before the retro
-tgone() { local i; for i in $(seq 100); do tmux has-session -t "=$1" 2> /dev/null || return 0; sleep 0.1; done; return 1; }   # ≤ 10 s
+tgone() { local s=$1; wait_for 10 eval '! tmux has-session -t "=$s"'; }
 PAST=$(( $(date +%s) - 1 ))   # the tmux runs take no STUB_* flags (they don't reach a window): the initializer, then the deadline
 HARNESS_CONFIG=$T/keep0.sh "$H" start "$T/proj" tmux0 --spec SPEC.md --until-epoch "$PAST" --now > "$T/tmux0.out" 2>&1
 HARNESS_CONFIG=$T/keep0.sh "$H" start "$T/proj" dot.run --spec SPEC.md --until-epoch "$PAST" --now --no-supervisor > "$T/tmuxdot.out" 2>&1
@@ -13,7 +12,7 @@ tmux1_w=$(tmux list-windows -t =h-tmux1 -F '#W' 2> /dev/null | tr '\n' ' ')
 tended "$HARNESS_STATE/proj/tmux0"; tmux0_gone=$(tgone h-tmux0 && echo yes)
 tended "$HARNESS_STATE/proj/dot.run"; tdot_gone=$(tgone h-dot-run && echo yes)
 tended "$HARNESS_STATE/proj/tmux1"
-for i in $(seq 100); do tmux capture-pane -pJ -t =h-tmux1:driver 2> /dev/null | grep -q "self-destructs in 1 h" && break; sleep 0.1; done   # the line comes after the capture and the kill
+wait_for 10 eval 'tmux capture-pane -pJ -t =h-tmux1:driver | grep "self-destructs in 1 h" > /dev/null'   # the line comes after the capture and the kill
 tmux1_after=$(tmux list-windows -t =h-tmux1 -F '#W' 2> /dev/null | tr '\n' ' '); tmux1_pane=$(tmux capture-pane -pJ -t =h-tmux1:driver 2> /dev/null)
 tmux send-keys -t =h-tmux1:driver C-c; tmux1_cc=$(tgone h-tmux1 && echo yes)   # a Ctrl-C in the keep window ends the wait, not the cleanup
 tmux kill-session -t =h-tmux1 2> /dev/null   # (if it failed) its keep-1 timer goes with it; the EXIT trap kills the server anyway

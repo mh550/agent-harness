@@ -4,16 +4,14 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # Two lanes, M2 after: [] (one feature, C): C goes first and M2's verify waits (STUB_VERIFY_WAIT) until M1 has merged
 # work-B.txt into main, so M2 is verified on a main that has moved by the time it merges. Each run starts from the
 # first main (origin's main is set back between runs: the stub's work files would otherwise already be there).
-waitf() { local i; for i in $(seq $(( $2 * 5 ))); do eval "$1" && return 0; sleep 0.2; done; return 1; }   # <bash expr> <s>
-held() { rm -f "$T"/held-* "$T"/release-* "$T"/vwait-*; : > "$T/hold-coding"; }
 main0=$(git -C "$T/origin.git" rev-parse main)
 echo 'MAX_LANES=2' >> "$T/user-config.sh"
 # <run>: the two-lane run above, M1's B released once M2's verify waits; then the invariant, read before the next run
 two_lanes() {
   held
   STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 STUB_VERIFY_WAIT=M2:work-B.txt "$H" start "$T/proj" "$1" --spec SPEC.md --foreground > "$T/$1.out" 2>&1 & P=$!
-  waitf "[[ -f \$T/held-$1-A && -f \$T/held-$1-C ]]" 120; touch "$T/release-$1-C"
-  waitf "[[ -f \$T/vwait-$1-M2 ]]" 120; touch "$T/release-$1"; wait "$P"; rm -f "$T/hold-coding"
+  wait_for 120 eval "[[ -f \$T/held-$1-A && -f \$T/held-$1-C ]]"; touch "$T/release-$1-C"
+  wait_for 120 eval "[[ -f \$T/vwait-$1-M2 ]]"; touch "$T/release-$1"; wait "$P"; rm -f "$T/hold-coding"
   git -C "$T/origin.git" diff --quiet "run/$1/M2" main && echo same > "$T/$1.inv"
   rewritten > "$T/$1.forced"
   git -C "$T/origin.git" update-ref refs/heads/main "$main0"

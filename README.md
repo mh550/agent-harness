@@ -338,6 +338,7 @@ Critical or Important in any round).
 tests/run.sh          # end-to-end with stub claude/gh/curl on a throwaway repo with a bare origin: 395 checks (~3 min 30 s)
 tests/run.sh gc       # only the tests/checks/ files whose names contain "gc"
 TEST_JOBS=1 tests/run.sh   # one file at a time (default: half the cores, 1 to 4)
+KEEP=1 bash tests/run.sh --repeat 10 lanes-two   # reproduce a flake: that file 10 times, TEST_JOBS copies at once
 ```
 Each `tests/checks/*.sh` sources `tests/lib.sh` (a fresh `$T`, private tmux server, stub environment and throwaway
 project) and runs alone; `tests/fixtures/check-names.txt` lists every check name and a full run fails on one missing,
@@ -347,4 +348,11 @@ ends with the slowest three, the wall time and the total. A file that exits non-
 failed check; stopped by a signal (check.sh's timeout), the runner prints each unfinished file's output so far and names it.
 A file still running after `TEST_FILE_TIMEOUT` (10m) is stopped, its process group with it, and counted as one
 `FAIL <file>: still running after TEST_FILE_TIMEOUT=<t>; stopped`.
+A check waits on a condition, never on the clock: `wait_for <max s> <command…>` (`tests/lib.sh`) polls every 0.1 s
+and gives up after `<max>` s with `wait_for: <command> still failing after <max> s`; `stub_go`/`stub_wait <name>` (and
+`STUB_BARRIER=<id>:<name>` for a stub coding session) order two events. The sleep lint (`tests/lint-sleeps.sh`, part
+of the suite) fails on a `sleep` in `tests/checks/*.sh` or `tests/lib.sh` without `# sleep-ok: <why>`. To reproduce a
+flake, run `bash tests/run.sh --repeat 10 <file>`: it prints `<file>: <k>/10 green` and each red copy's FAIL lines
+(`KEEP=1` keeps and names each red copy's `$T`); fix it at its cause, with a check red before the fix
+(decisions/2026-10-29-tests-wait-not-sleep).
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).

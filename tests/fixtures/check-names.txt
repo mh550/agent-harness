@@ -379,6 +379,8 @@ lanes record: a session's question above ## Answers lands in the record's INBOX.
 lanes record: the slot is gone at the end, the run keeps one worktree, the merged lane's branch is deleted
 lanes record: two sessions' passes flips both land while the record moved between them
 lanes run: MAX_LANES=1 ends done with M1 and M2 merged by two PRs
+lanes run: a lane that dies while the coordinator holds its count, with a slot free, is reaped as exited unexpectedly, never reopened
+lanes run: a lane that exits between the coordinator's lane count and its end check doesn't end the run (M2 opens, done)
 lanes run: a lane's sessions, suites and services run in its own units (harness-<run>-<m>-s<n>, -check-<pid>, -svc)
 lanes run: a lane's verify judges the copy against its own snapshot (no list repair, no failed repair note)
 lanes run: each lane is noted opened in slot 0 and then closed, M1's before M2's
@@ -745,6 +747,9 @@ show: the 12 largest rows, then +<k> more: harness show <run> --files; --files l
 show: the compare URL of each run branch with changes, for the GitHub-shaped origin; none for a plain-path origin
 show: the pure parts: joinDiff joins by path (binary +/− null, .harness/runs/ left out), mergeTreePaths reads the real output, combine counts one blob once (stacked or fanned-out lanes), milestonesOf keeps a proposal's PR
 show: the run card's header and rule, then worktree, branch, record, state, lanes and the proposed milestones with their tags and PR URLs
+sleep lint: a bare sleep is listed as <file>:<line>, exit 1
+sleep lint: a sleep with # sleep-ok: passes silently
+sleep lint: tests/checks and tests/lib.sh hold no bare sleep
 slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
 slot_open: a dependency's tag that conflicts with main opens base_conflict naming that tag
 slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)
@@ -820,6 +825,14 @@ suite runner: a red full run prints HARNESS_FAILED=<the red files> right after t
 suite runner: a timing line per file, then the slowest three, the wall time and the jobs
 suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero
 suite runner: the parallel runner starts no scope of its own (no systemd-run call)
+suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1
+suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0
+suite tools: STUB_BARRIER holds that feature's first coding session until stub_go
+suite tools: a stub_wait/stub_go barrier orders two background jobs the same way in 20 of 20 rounds
+suite tools: settle waits for this copy's debrief to end and never for another state dir's
+suite tools: wait_for gives up after its limit with its still-failing line, exit 1
+suite tools: wait_for refuses a limit that isn't whole seconds with one line, exit 2
+suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
 summary end reason is how the run ended
 summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)

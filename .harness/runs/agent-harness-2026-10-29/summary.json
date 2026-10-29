@@ -3,14 +3,14 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-10-29",
   "started": "2026-10-29T05:19:15.000Z",
-  "ended_at": "2026-10-29T15:20:14.000Z",
-  "end_reason": "done",
-  "continuations": 1,
+  "ended_at": "2026-10-29T12:49:05.000Z",
+  "end_reason": "waiting on Michael: N2-02",
+  "continuations": 0,
   "features": {
     "total": 11,
-    "passing": 11,
-    "verified": 11,
-    "merged": 11
+    "passing": 10,
+    "verified": 5,
+    "merged": 5
   },
   "milestones": [
     {
@@ -23,61 +23,57 @@
     {
       "id": "N2",
       "features": 6,
-      "passing": 6,
-      "verified": true,
-      "merged": true
+      "passing": 5,
+      "verified": false,
+      "merged": false
     }
   ],
   "tests": {
     "start": 859,
     "end": 925
   },
-  "flakes": {
-    "count": 0,
-    "names": {}
-  },
   "cost": {
-    "total": 54.36,
-    "per_passing_feature": 4.94,
+    "total": 53.02,
+    "per_passing_feature": 5.3,
     "by_role": {
       "init": 7.4,
       "plan": 8.74,
-      "build": 27.72,
+      "build": 26.69,
       "review": 9.64,
-      "verify": 0.63,
-      "retro": 0.23
+      "verify": 0.44,
+      "retro": 0.11
     },
     "by_model": {
       "claude-fable-5-1": 7.4,
-      "claude-opus-5-5": 46.1,
-      "claude-sonnet-5-5": 0.86
+      "claude-opus-5-5": 45.07,
+      "claude-sonnet-5-5": 0.55
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 8.49,
-    "sessions_h": 6.89,
-    "driver_h": 1.61,
+    "wall_h": 7.5,
+    "sessions_h": 6.6,
+    "driver_h": 0.9,
     "by_role_h": {
       "init": 0.18,
       "plan": 0.43,
-      "build": 4.9,
+      "build": 4.66,
       "review": 1.26,
-      "verify": 0.11,
-      "retro": 0.02
+      "verify": 0.07,
+      "retro": 0.01
     }
   },
   "lanes": {
     "max_open": 2,
-    "lane_hours": 8.12,
-    "wall_hours": 8.49
+    "lane_hours": 7.14,
+    "wall_hours": 7.5
   },
   "tokens": {
-    "in": 2718,
-    "cache_read": 87809953,
-    "cache_write": 2679941,
-    "out": 711346,
-    "cache_hit_rate": 0.97,
+    "in": 2642,
+    "cache_read": 86356505,
+    "cache_write": 2548322,
+    "out": 695914,
+    "cache_hit_rate": 0.971,
     "context_peak": 227785,
     "by_role": {
       "init": {
@@ -93,10 +89,10 @@
         "out": 139824
       },
       "build": {
-        "in": 994,
-        "cache_read": 51345943,
-        "cache_write": 1366006,
-        "out": 369791
+        "in": 938,
+        "cache_read": 50212699,
+        "cache_write": 1292361,
+        "out": 358939
       },
       "review": {
         "in": 374,
@@ -105,26 +101,26 @@
         "out": 138061
       },
       "verify": {
-        "in": 40,
-        "cache_read": 742337,
-        "cache_write": 113723,
-        "out": 10309
+        "in": 28,
+        "cache_read": 528180,
+        "cache_write": 77757,
+        "out": 7689
       },
       "retro": {
-        "in": 16,
-        "cache_read": 212870,
-        "cache_write": 43240,
-        "out": 3800
+        "in": 8,
+        "cache_read": 106823,
+        "cache_write": 21232,
+        "out": 1840
       }
     }
   },
   "per_verified_feature": {
-    "cost": 4.94,
-    "tokens": 8291269
+    "cost": 10.6,
+    "tokens": 17920677
   },
   "orientation": {
-    "tokens": 1102578,
-    "turns": 18,
+    "tokens": 1716560,
+    "turns": 19,
     "seconds": 157.84
   },
   "rework": [
@@ -132,28 +128,28 @@
     "N2-02"
   ],
   "first_attempt_pass_rate": 0.82,
-  "verify_fail_rate": 0.08,
+  "verify_fail_rate": 0.17,
   "review": {
-    "cost_pct": 17.7,
+    "cost_pct": 18.2,
     "found_nothing": 0,
     "reviews": 2
   },
   "harness": {
-    "version": "3470da3",
+    "version": "3b291c6",
     "dirty": false
   },
   "sessions": {
-    "total": 21,
-    "real": 21,
+    "total": 17,
+    "real": 17,
     "environmental": 0
   },
   "guards": {
     "repairs": 0,
-    "red_unpass": 1,
+    "red_unpass": 0,
     "verify_failed": 1,
     "limit_waits": 0,
     "verify_escalations": 0,
-    "merges": 3
+    "merges": 1
   },
   "features_detail": [
     {
@@ -237,8 +233,8 @@
       "kind": "plan",
       "model": "opus",
       "passes": true,
-      "verified": true,
-      "merged": true,
+      "verified": false,
+      "merged": false,
       "sessions": 1,
       "refused": 0,
       "minutes": 20,
@@ -251,15 +247,15 @@
       "milestone": "N2",
       "kind": "build",
       "model": "opus",
-      "passes": true,
-      "verified": true,
-      "merged": true,
-      "sessions": 4,
+      "passes": false,
+      "verified": false,
+      "merged": false,
+      "sessions": 2,
       "refused": 0,
-      "minutes": 43,
-      "cost": 3.52,
-      "cause": null,
-      "detail": null
+      "minutes": 29,
+      "cost": 2.48,
+      "cause": "waiting on Michael",
+      "detail": "Michael to reword N2-02 step 2 to \"a conflict exits 1 with its markers in A\" (the jq command is in INBOX.md)"
     },
     {
       "id": "N2-03",
@@ -267,8 +263,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": true,
-      "merged": true,
+      "verified": false,
+      "merged": false,
       "sessions": 1,
       "refused": 0,
       "minutes": 56,
@@ -282,8 +278,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": true,
-      "merged": true,
+      "verified": false,
+      "merged": false,
       "sessions": 1,
       "refused": 0,
       "minutes": 42,
@@ -297,8 +293,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": true,
-      "merged": true,
+      "verified": false,
+      "merged": false,
       "sessions": 1,
       "refused": 0,
       "minutes": 27,
@@ -312,8 +308,8 @@
       "kind": "review",
       "model": "opus",
       "passes": true,
-      "verified": true,
-      "merged": true,
+      "verified": false,
+      "merged": false,
       "sessions": 1,
       "refused": 0,
       "minutes": 21,

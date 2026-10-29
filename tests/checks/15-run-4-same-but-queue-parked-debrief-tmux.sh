@@ -146,7 +146,7 @@ rm -rf "$HARNESS_STATE/other"
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
 D=$(date +%F)
 # the sessions a tmux start would have left for the runner's two runs (their ended comes later), and two it must spare
-for s in "h-proj-$D" "h-proj-$D-2" h-queue "$HARNESS_DESK_SESSION"; do tmux new-session -d -s "$s" sleep 600; done
+for s in "h-proj-$D" "h-proj-$D-2" h-queue "$HARNESS_DESK_SESSION"; do tmux new-session -d -s "$s" sleep 600; done   # sleep-ok: stand-in sessions
 # a runner's gc (L4-04) collects what it can: the worktrees later checks read are kept dirty (untracked) until its debrief is done
 keep_wts() { local w; for w in "$T"/wt/proj/*/; do : > "$w/.keep-for-later-checks"; done; }
 unkeep_wts() { rm -f "$T"/wt/proj/*/.keep-for-later-checks; }
@@ -160,7 +160,7 @@ check "the queue runner reaps its ended runs' tmux sessions before the debrief; 
 check "the queue runner runs harness gc <project> --all-merged --deps once per project, before the debrief" 'RL=$HARNESS_STATE/queue/runner.log; [[ $(grep -c "gc proj: harness gc .* --all-merged --deps$" "$RL") == 1 ]] \
   && grep -qE "gc proj: harness gc ([^ ]*/)?proj --all-merged --deps$" "$RL" && grep -qE "gc proj: \+ (git -C .* (branch -d|push -q origin --delete|worktree remove --force)|freed)" "$RL" \
   && awk "/gc proj: harness gc / && !a { a = NR } /harness debrief \\(detached/ && !b { b = NR } END { exit !(a && b && a < b) }" "$RL" && ! grep -q "gc proj failed" "$RL"'
-for s in "h-proj-$D" "h-proj-$D-2" h-queue "$HARNESS_DESK_SESSION"; do tmux kill-session -t "=$s" 2> /dev/null; done   # the desk checks start with no desk session and no sleep 600
+for s in "h-proj-$D" "h-proj-$D-2" h-queue "$HARNESS_DESK_SESSION"; do tmux kill-session -t "=$s" 2> /dev/null; done   # the desk checks start with no desk session and none of these stand-ins
 check "queue ran both entries, distinct run ids (their merged worktrees gone with the runner's gc: the ledger has the records)" 'LR=$T/ledger/proj; [[ $($F summary "$LR/proj-$D/feature_list.json") == "3/3 passing" && $($F summary "$LR/proj-$D-2/feature_list.json") == "3/3 passing" ]] \
   && [[ ! -e $T/wt/proj/proj-$D && ! -e $T/wt/proj/proj-$D-2 ]] && grep -q "queue empty" "$HARNESS_STATE/queue/runner.log"'
 check "trends lists every run"            'grep -q "| proj-$D-2 | proj |" <<< "$("$H" trends)"'
@@ -172,11 +172,7 @@ check "trends --by version groups the runs" 'BV=$("$H" trends --by version) && g
   && grep -qxF "| abc1234 | 1 | 2/2 | \$2.00 | 0.50 | 100 | 1.00 |" <<< "$P" && grep -qxF "| abc1234+dirty | 1 | 1/3 | \$2.00 | 0.90 | – | 0.00 |" <<< "$P" && [[ $(wc -l <<< "$P") == 5 ]]'
 DB=$T/debriefs.log Q=$HARNESS_STATE/queue NOTE=$T/ledger/debrief.md
 ndb() { cat "$DB" 2>/dev/null | grep -c .; }
-settle() {   # the runner's debrief is detached: wait until no debrief process is left
-  local i; sleep 0.5
-  for i in $(seq 150); do pgrep -f "$HH/lib/debrief\.sh|$HH/bin/harness debrief" > /dev/null || return 0; sleep 0.2; done; return 1
-}
-HH=$(cd "$HERE/.." && pwd); settle; unkeep_wts
+settle; unkeep_wts
 check "queue end triggers one debrief, detached" '[[ $(ndb) == 1 && -s $NOTE && -s $Q/last-debrief ]] && grep -q "debrief written" "$Q/runner.log" && grep -q "harness debrief (detached" "$Q/runner.log"'
 check "the debrief saw the queue's runs"  'grep -q "### proj-$D-2 (proj)" "$T/debrief-prompt" && grep -q "### proj-$D (proj)" "$T/debrief-prompt"'
 PAGE=$T/ledger/debrief.html
@@ -212,7 +208,8 @@ check "the driver's continuation after a session cap is automatic" 'grep -q "^se
 rm -rf "$HARNESS_STATE/proj/capped" "$Q"/*.args   # later debriefs cover runs by their state dir: this one is gone
 # a gc that fails and hangs (a git whose fetch waits on a prompt, for this runner only: only gc runs that argv) is
 # killed at HARNESS_GC_TIMEOUT and logged; the debrief starts anyway (L4-05 review)
-mkdir -p "$T/gcfail"; printf '%s\n' '#!/usr/bin/env bash' '[[ $1 == -C && $3 == fetch && "${*:4}" == "-q --prune origin" ]] && { echo "fatal: stub fetch failure" >&2; sleep 60; exit 1; }' \
+hang='sleep 60'   # sleep-ok: the hung fetch
+mkdir -p "$T/gcfail"; printf '%s\n' '#!/usr/bin/env bash' '[[ $1 == -C && $3 == fetch && "${*:4}" == "-q --prune origin" ]] && { echo "fatal: stub fetch failure" >&2; '"$hang"'; exit 1; }' \
   "exec $(command -v git) \"\$@\"" > "$T/gcfail/git"; chmod +x "$T/gcfail/git"
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
 B=$(ndb); SECONDS=0; STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 PATH=$T/gcfail:$PATH HARNESS_GC_TIMEOUT=2s HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue-gcfail.out" 2>&1; settle
@@ -222,7 +219,7 @@ check "a failed or hung runner gc is logged (killed at HARNESS_GC_TIMEOUT) and n
 # one run per project at a time: proj has a live run, so its entry is held and the next entry (another project) goes first
 cp "$T/user-config.sh" "$T/user-config.keep"; echo 'MAX_PARALLEL_RUNS=2' >> "$T/user-config.sh"
 mkdir -p "$HARNESS_STATE/proj/busy3" "$HARNESS_STATE/other/stoppy-o" && echo 'stopped by Michael' > "$HARNESS_STATE/other/stoppy-o/ended" && : > "$HARNESS_STATE/other/stoppy-o/meta.env"
-sleep 5 & echo $! > "$HARNESS_STATE/proj/busy3/driver.pid"   # outlives the --until below, which gives the runner 3 s to start stoppy-o
+sleep 5 & echo $! > "$HARNESS_STATE/proj/busy3/driver.pid"   # sleep-ok: a live driver; outlives the --until below, which gives the runner 3 s to start stoppy-o
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null; "$H" queue add --continue stoppy-o --automatic > /dev/null
 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" $(( $(date +%s) + 3 )) > "$T/queue2b.out" 2>&1
 check "queue holds an entry whose project has a live run, starts the next one" '[[ $(grep -c "holding .*(proj)" "$T/queue2b.out") == 1 ]] && grep -q "starting: harness continue stoppy-o" "$T/queue2b.out" \
@@ -260,7 +257,6 @@ rm -f "$Q"/*.args
 # ---- debrief: since the last success; failed and killed debriefs; continuations; notification ----
 printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify.log\"'" \
   "DEBRIEF_PAGE_CMD='cp \"\$1\" \"$T/page-copy.html\"'" > "$T/user-config.sh"
-ran() { local r; sleep 1; for r; do echo "$(date '+%F %T') run $r on harness/$r in $T/wt/proj/$r · port 7999" >> "$HARNESS_STATE/proj/$r/run.log"; done; }   # runs since
 ran stoppy demo walled limited gated
 for r in stoppy limited gated; do echo "deadline · $(date '+%F %T')" > "$HARNESS_STATE/proj/$r/ended"; done
 echo "usage limit (6 sessions refused in a row) · $(date '+%F %T')" > "$HARNESS_STATE/proj/walled/ended"
@@ -274,7 +270,7 @@ STUB_DEBRIEF_ERROR=1 "$H" debrief > "$T/error.out" 2>&1
 check "a failed session: its error text is never the note" '[[ $(cat "$Q/last-debrief") == "$LD" ]] && ! grep -q "max turns" "$NOTE" && ! grep -qs "max turns" "$T/notify.log"'
 echo $(( $(date +%s) + 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
 HARNESS_LIMIT_SLEEP=60 setsid "$H" debrief > "$T/killed.out" 2>&1 & P=$!
-for i in $(seq 50); do grep -q "waiting" "$T/killed.out" && break; sleep 0.2; done; kill -- -"$P"; wait "$P" 2> /dev/null
+wait_for 30 grep "waiting" "$T/killed.out"; kill -- -"$P"; wait "$P" 2> /dev/null
 rm -f "$HARNESS_STATE/LIMIT_UNTIL"
 check "a killed debrief changes nothing" '[[ $(cat "$Q/last-debrief") == "$LD" && $(ndb) == $B ]] && grep -q "waiting" "$T/killed.out"'
 touch "$Q/0099-continue-walled.args"; echo $$ > "$HARNESS_STATE/proj/gated/driver.pid"
@@ -317,7 +313,7 @@ check "a debrief headline over ntfy: no Click (the note is a path), default prio
 rm -f "$T/wt/proj/stoppy/debrief-tamper.txt"
 ran stoppy; echo $(( $(date +%s) + 3600 )) > "$HARNESS_STATE/LIMIT_UNTIL"
 B=$(ndb); t0=$(date +%s); STUB_DEBRIEF_NEEDS=1 HARNESS_LIMIT_SLEEP=3 "$H" debrief > "$T/limit1.out" 2>&1 & P=$!
-for i in $(seq 50); do grep -q "waiting" "$T/limit1.out" && break; sleep 0.2; done; ran demo; wait "$P"; t1=$(date +%s)   # demo starts meanwhile
+wait_for 30 grep "waiting" "$T/limit1.out"; ran demo; wait "$P"; t1=$(date +%s)   # demo starts meanwhile
 check "debrief waits for the usage-limit window, then runs" 'grep -q "usage-limit window" "$T/limit1.out" && (( t1 - t0 >= 3 )) && [[ $(ndb) == $((B + 1)) ]] && (( $(stat -c %Y "$T/debrief-prompt") >= t0 + 3 ))'
 check "a run that starts during the wait is covered by the next debrief" '! grep -q "^### demo (proj)" "$T/debrief-prompt" && "$H" debrief --dry-run | grep -q "^### demo (proj)"'
 check "a debrief whose note needs Michael: priority high" 'Bn=$(curl_with "Blocked: parky B waits on Michael"); grep -qx "Title: harness debrief" <<< "$Bn" && grep -qx "Priority: high" <<< "$Bn"'
@@ -328,7 +324,8 @@ rm -f "$HARNESS_STATE/LIMIT_UNTIL"
 NP=$(tr : '\n' <<< "$PATH" | while read -r d; do [[ -x $d/node ]] || printf '%s:' "$d"; done)
 B=$(ndb); PATH=${NP%:} NVM_DIR=$T/no-nvm HOME=$T/nohome "$H" debrief > "$T/nonode.out" 2>&1; rc=$?
 check "preflight: no node anywhere, a clear failure and no session" '(( rc != 0 )) && grep -q "missing: node" "$T/nonode.out" && [[ $(ndb) == $B ]]'
-( flock "$HARNESS_STATE/debrief.lock" sleep 2 ) & HOLD=$!; sleep 0.3
+( flock "$HARNESS_STATE/debrief.lock" sleep 2 ) & HOLD=$!   # sleep-ok: another debrief holding the lock
+wait_for 10 eval '! flock -n "$HARNESS_STATE/debrief.lock" true'
 "$H" debrief > "$T/locked.out" 2>&1; wait "$HOLD"
 check "by hand while another debrief runs: it says it is waiting" 'grep -q "waiting for the debrief already running" "$T/locked.out"'
 ran stoppy; HARNESS_DEBRIEF_CONTEXT_MAX=8000 "$H" debrief --dry-run > "$T/capped.out" 2>&1
@@ -350,7 +347,9 @@ unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
 echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
 
 # ---- run 17: the 7-day window past WEEKLY_STOP_AT: the run stops before its next session; the queue starts nothing ----
-STUB_WEEKLY=0.9 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" weekly --spec SPEC.md --foreground > "$T/run17.out" 2>&1
+# HARNESS_COUNT_HOLD: the lane's weekly exit lands between the coordinator's lane count and its end check, the window
+# that ended this run "no feature left to try" now and then (R1-05; decisions/2026-10-29-lane-count-end-check)
+HARNESS_COUNT_HOLD=1 STUB_WEEKLY=0.9 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" weekly --spec SPEC.md --foreground > "$T/run17.out" 2>&1
 check "the weekly budget ends a run after the session that crossed it" 'grep -q "^weekly budget (7-day window at 90%" "$HARNESS_STATE/proj/weekly/ended" && [[ $(grep -c attempt "$T/scratch/proj/weekly/sessions.log") == 1 ]]'
 "$H" queue add "$T/proj" --spec SPEC.md > /dev/null
 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. "$HERE/../lib/queue.sh" > "$T/queue5.out" 2>&1
@@ -362,8 +361,8 @@ rm -f "$Q"/*.args "$HARNESS_STATE/USAGE_7D"; echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=
 # ---- tmux (L3-04): harness gc reaps the sessions of its project's ended runs, run → session, never the other way ----
 # sessions first, then the markers: a session created after its run ended stands for a resume's (fresh), spared
 RS="h-gone1 h-gone2 h-livey h-pausy h-pausx h-fresh h-held-x h-queue h-odone"   # held.x (ended) shares h-held-x with held-x (live, other project); odone: another project's ended run
-for s in $RS; do tmux new-session -d -s "$s" sleep 600; done
-has_s "$HARNESS_DESK_SESSION" || tmux new-session -d -s "$HARNESS_DESK_SESSION" sleep 600
+for s in $RS; do tmux new-session -d -s "$s" sleep 600; done   # sleep-ok: stand-in sessions
+has_s "$HARNESS_DESK_SESSION" || tmux new-session -d -s "$HARNESS_DESK_SESSION" sleep 600   # sleep-ok: a stand-in desk session
 for r in gone1 gone2 livey pausy pausx fresh held.x; do mkdir -p "$HARNESS_STATE/proj/$r" && : > "$HARNESS_STATE/proj/$r/meta.env"; done
 mkdir -p "$HARNESS_STATE/other/held-x" && : > "$HARNESS_STATE/other/held-x/meta.env" && echo $$ > "$HARNESS_STATE/other/held-x/driver.pid"
 mkdir -p "$HARNESS_STATE/other/odone" && : > "$HARNESS_STATE/other/odone/meta.env" && echo done > "$HARNESS_STATE/other/odone/ended"
