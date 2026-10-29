@@ -73,3 +73,5 @@
 - 2026-10-29 11:19 · run ended (done): 11/11 passing · 20 sessions (20 real) · 11 features passed · $54.25 · 6.9 h · by kind: init 1 ($7.40), coding 15 ($46.09), verify 3 ($0.63), retro 1 ($0.11) · by model: claude-fable-5-1 1 ($7.40), claude-opus-5-5 15 ($46.09), claude-sonnet-5-5 4 ($0.75)
 - 2026-10-29 11:19 · services stopped (done)
 - 2026-10-29 11:20 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-10-29 11:20 · backlog: 1 new, 2 seen again
+- 2026-10-29 11:20 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-29 (in the state dir: init.out check-last.out)
