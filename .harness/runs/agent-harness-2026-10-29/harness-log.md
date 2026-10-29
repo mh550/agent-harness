@@ -59,3 +59,6 @@
 - 2026-10-29 10:22 · N2-02: gotchas +1 ~0 -0
 - 2026-10-29 10:40 · N2-02 un-passed: suite red after the session
 - 2026-10-29 10:40 · N2-02 · claude-opus-5-5 · passes=false · 1 min · 10/11 passing · tests 925
+- 2026-10-29 10:53 · context.md for N2-02: 7969 bytes
+- 2026-10-29 11:05 · N2-02: gotchas +0 ~0 -1
+- 2026-10-29 11:05 · N2-02 · claude-opus-5-5 · passes=true · 12 min · 11/11 passing · tests 925

@@ -3,6 +3,18 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 11:05 · N2-02 · passes
+
+The suite was red after the last attempt: its new Gotchas line made the section 16 memlint lines (memlint counts the <!-- --> comment), failing 39-memlint-m4. Dropped the 'git worktree add copies config.worktree' line (slot_open sets the driver itself). Re-verified every step: driver cases, .gitattributes, merge_drivers call sites, bash -n; suite green 925.
+
+- **Files:** CLAUDE.md
+- **Verified:** merge-sorted.sh on the fixture pair: exit 0, four lines; removal/both-add exit 0; unsorted clean 0, conflict 1 with one <<<<<<< in A; merge_drivers at lib/driver.sh:393 and lib/record.sh:682; node lib/memlint.mjs . prints nothing; check.sh green in 667 s, 925 tests
+- **Tests:** 925 → 925
+- **Discovery** (affects run): memlint counts the Gotchas section's <!-- At most 15 lines --> comment as a line: the section holds 14 facts, and a 15th turns 39-memlint-m4 red
+- **Resolved:** git worktree add copies the current worktree's config.worktree into the new one: slots inherit the record's driver (dropped from Gotchas: memlint's 15-line cap)
+- **Proposed change:** Either memlint's gotchas count should skip the section's HTML comment, or the comment should say 14 facts: the session prompt says '15 lines at most' and a session following it turns the suite red
+- *02-N2-02 · claude-opus-5-5*
+
 ### 2026-10-29 10:22 · N2-02 · passes
 
 Step 2 reworded by Michael (10:21) to match the git merge-file fallback. Re-verified every step: driver on the fixture pair (exit 0, four lines), removal, both-add, unsorted clean 0 / conflict 1 with markers; .gitattributes; merge_drivers in record worktree and slot_open; 75-merge-sorted 7/7; decision; bash -n; suite green 925. No code change.

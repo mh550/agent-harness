@@ -3,6 +3,18 @@
 
 What this file is: the run's journal, rendered by the harness, newest entry first. Spec: `docs/specs/2026-10-29-unattended-night.md`. Two milestones in series: **N1** the rerun guard (a red suite is rerun once; a flake is green, named and counted; a real red stays red) and **N2** merge conflicts resolved without you (a sorted merge driver for lists, a resolve session for the rest, the verify gate, then the merge). Feature ids: `N1-01`…`N1-05`, `N2-01`…`N2-06`; `feature_list.json` in this directory holds each one's steps and `passes`. Each entry below says what a session did, what it tried and what it found; a verify entry has one evidence row per step. Steer from your phone: edit `INBOX.md` on this branch (`status: pause` or `status: stop` on line 1; answers under `## Answers`). The harness-log (`harness-log.md`) has the driver's notes: `flaky:` lines and `resolve session` lines are this run's own new behaviour once N1 and N2 land.
 
+### 2026-10-29 11:05 · N2-02 · passes
+
+The suite was red after the last attempt: its new Gotchas line made the section 16 memlint lines (memlint counts the <!-- --> comment), failing 39-memlint-m4. Dropped the 'git worktree add copies config.worktree' line (slot_open sets the driver itself). Re-verified every step: driver cases, .gitattributes, merge_drivers call sites, bash -n; suite green 925.
+
+- **Files:** CLAUDE.md
+- **Verified:** merge-sorted.sh on the fixture pair: exit 0, four lines; removal/both-add exit 0; unsorted clean 0, conflict 1 with one <<<<<<< in A; merge_drivers at lib/driver.sh:393 and lib/record.sh:682; node lib/memlint.mjs . prints nothing; check.sh green in 667 s, 925 tests
+- **Tests:** 925 → 925
+- **Discovery** (affects run): memlint counts the Gotchas section's <!-- At most 15 lines --> comment as a line: the section holds 14 facts, and a 15th turns 39-memlint-m4 red
+- **Resolved:** git worktree add copies the current worktree's config.worktree into the new one: slots inherit the record's driver (dropped from Gotchas: memlint's 15-line cap)
+- **Proposed change:** Either memlint's gotchas count should skip the section's HTML comment, or the comment should say 14 facts: the session prompt says '15 lines at most' and a session following it turns the suite red
+- *02-N2-02 · claude-opus-5-5*
+
 ### 2026-10-29 10:22 · N2-02 · passes
 
 Step 2 reworded by Michael (10:21) to match the git merge-file fallback. Re-verified every step: driver on the fixture pair (exit 0, four lines), removal, both-add, unsorted clean 0 / conflict 1 with markers; .gitattributes; merge_drivers in record worktree and slot_open; 75-merge-sorted 7/7; decision; bash -n; suite green 925. No code change.
@@ -267,22 +279,8 @@ flakes_note (lib/record.sh) notes each new green/flakes.jsonl row once (`flaky: 
 - **Proposed change:** N1-03 step 3 should read: the rerun-red's `check: RED (…; red again on a rerun of the whole suite) — last lines of $T/scratch/proj/<run>/lanes/M2/check-rerun.out:` line is in $HARNESS_STATE/proj/<run>/logs/04-C.prompt.md (C is M2's, and check-rerun.out is removed by the next full suite)
 - *03-N1-03 · claude-opus-5-5*
 
-### 2026-10-29 02:15 · N1-02 · passes
-
-check.sh's full form reruns a red once by CHECK_RERUN (auto/failed/suite/off): never after a timeout or cap kill; check-rerun.out; green rerun → 'green after a rerun (flaky: …)', marker = first run's total (testcount --total), a flakes.jsonl row. tests/run.sh prints HARNESS_FAILED=<files> unless a failure is outside them. Config, prompt_env, HARNESS_LANE, template, decision.
-
-- **Files:** lib/check.sh, lib/testcount.mjs, tests/run.sh, lib/config.sh, lib/prompt.sh, lib/lane.sh, templates/user/config.sh, tests/checks/73-check-rerun.sh, tests/checks/33-suite-runner.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/lib.sh, tests/fixtures/check-names.txt, +1 more
-- **Verified:** 73-check-rerun 14/14 and 33-suite-runner 14/14 written first (10 and 1 red before the code); full suite via check.sh: first run 873/875 (the known file-15 weekly-budget flake, and memlint: my Gotchas line made 16, removed), second run green 875/875 in 600 s. The first run's own output ended HARNESS_FAILED=15-run-4-… 39-memlint-m4.
-- **Tests:** 859 → 875
-- **Dead end:** a Gotchas line on HARNESS_CHECK_RERUN=off for checks reading the first RED line — ## Gotchas is already at 15 lines and memlint fails at 16; the fact is in check.sh's header and the decision instead
-- **Discovery** (affects N1-03, N1-04): tests/lib.sh's suite_setup now unsets HARNESS_CHECK_RERUN and HARNESS_LANE, so a session's own values never reach a check; a stub run gets CHECK_RERUN=auto from lib/config.sh
-- **Discovery** (affects N1-03): a rerun-red's RED line names check-rerun.out, not check.out: a stub run's red now leaves $SCRATCH/lanes/<m>/check-rerun.out (N1-03's invariant check can rely on it)
-- **Discovery** (affects N1-05): why() gained a third argument (the run's own seconds, for the timeout test) so a rerun's 137 isn't called a timeout by the two runs' summed time; N1-05's fold should keep it
-- **Discovery** (affects N1): the first full suite after this change printed HARNESS_FAILED=15-run-4-same-but-queue-parked-debrief-tmux 39-memlint-m4 on a real red: the line works on the real suite
-- **Proposed change:** N1-05: CLAUDE.md's Gotchas is full (15/15); a line on 'a check on check.sh's first RED line sets HARNESS_CHECK_RERUN=off' would help but needs one evicted, which is Michael's call
-- *02-N1-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 02:15 · N1-02 · passes · check.sh's full form reruns a red once by CHECK_RERUN (auto/failed/suite/off): never after a timeout… ([in full](progress-archive.md))
 - 2026-10-29 01:46 · N1-01 · passes · Wrote docs/plans/2026-10-29-N1-rerun-guard.md: the rerun's place and rules in lib/check.sh (CHECK_RE… ([in full](progress-archive.md))
 - 2026-10-29 01:40 · init · passes · 11 features: N1 5 (plan, 3 build, review), N2 6 (plan, 4 build, review); in series, N2 after N1 as t… ([in full](progress-archive.md))
