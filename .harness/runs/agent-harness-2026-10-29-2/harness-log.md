@@ -78,3 +78,5 @@
 - 2026-10-29 14:32 · R1-04 · claude-opus-5-5 · passes=true · 58 min · 9/23 passing · tests 944
 - 2026-10-29 14:32 · context.md for R1-05: 7604 bytes
 - 2026-10-29 14:47 · context.md for R2: 14694 bytes
+- 2026-10-29 14:50 · verify R2: evidence short of the steps (R2-04 5/6); re-running on opus
+- 2026-10-29 14:50 · context.md for R2: 14952 bytes
