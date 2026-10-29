@@ -7,6 +7,23 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 21:34 · U3-07 · passes
+
+report/trends/gc --dry-run render through view.mjs on a TTY: summary.mjs reportView (card + NOT PASSING table + memory peaks) and trendsView (newest 15, '<k> older: harness trends --all', total), report/trends --md; gc --dry-run --sections into view.mjs gcView (six steps, ~, footer, 'gc stopped before <step>'). Off a TTY byte-identical. 71-tty-views 11 checks.
+
+- **Files:** lib/summary.mjs, lib/view.mjs, lib/status.mjs, bin/harness, lib/driver.sh, lib/debrief.sh, tests/checks/71-tty-views.sh, tests/fixtures/summary-report.json, tests/fixtures/summary-report.md, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-read-views.md, docs/architecture.md, +2 more
+- **Verified:** tests 842 -> 853 (full suite via lib/check.sh, TEST_JOBS=2); 71-tty-views 11/11, the finish --md check watched failing with --md removed; fixtures made before summary.mjs changed; Opus review of the diff: no Critical, Important #1 (a stopped gc looked like an empty dry run) and 9 Minor fixed
+- **Tests:** 842 → 853
+- **Dead end:** GC_SECTIONS=1 env switch for the gc markers (the plan's) — a function call's prefix assignment is exported to children, so an inherited GC_SECTIONS would put markers into a real gc and runner.log; a --sections option of the inner call instead
+- **Discovery** (affects U3-08): summary-report.json is main's .harness/runs/agent-harness-2026-10-26/summary.json (the run record, not ledger/); summary-report.md is the pre-U3-07 report of it
+- **Discovery** (affects U3-08): view.mjs now exports homeIn(text, env) (status.mjs logText uses it), gcView and GC_SECTIONS; summary.mjs exports reportView and trendsView
+- **Discovery** (affects U3-08): cmd_gc prints \x1eEND as its last line under --sections; gcView without END ends 'gc stopped before <step> (see the error above)' (a failed fetch under set -e)
+- **Discovery** (affects run): memlint counts the Gotchas section's leading <!-- comment as a line: the section holds 14 facts, not 15
+- **Question for Michael:** Default taken: the TTY trends table lists newest first (status's FINISHED order) and, narrow, drops project, tests, $/f and wall h. Keep?
+- **Resolved:** entry questions without Files: are stored with ' Files (harness, from the session): …' appended; the pack shows it, and resolved matches either the session's words or the filled line
+- **Proposed change:** U3-08: review items not done here: the report card's 'not passing' label (11 = LABEL) starts its value one column late; the '## <run>: no record' line stays markdown on a TTY (the plan's choice); trends --by version <extra> is now a usage error
+- *24-U3-07 · claude-opus-5-5*
+
 ### 2026-10-28 20:31 · U3-06 · passes
 
 Overlaps wired, never holding: overlap.mjs runs compares a new run's spec+briefs with each other live or unmerged run of the project; start warns and opens a warn overlap record on both runs; queue add warns; queue list/status show ⚠ overlaps, --json overlap {run, files}; sweep resolves other run gone/merged, this run merged. 70-overlap +8 checks.

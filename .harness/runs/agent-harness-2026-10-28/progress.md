@@ -7,6 +7,23 @@ The feature list (`feature_list.json` beside this file) has three milestones bui
 
 Steer from `INBOX.md` on this branch: the first line `status: run|pause|stop`; answers to questions under `## Answers` at the end. `harness status agent-harness-2026-10-28` for the state, `harness needs` once U2 lands.
 
+### 2026-10-28 21:34 · U3-07 · passes
+
+report/trends/gc --dry-run render through view.mjs on a TTY: summary.mjs reportView (card + NOT PASSING table + memory peaks) and trendsView (newest 15, '<k> older: harness trends --all', total), report/trends --md; gc --dry-run --sections into view.mjs gcView (six steps, ~, footer, 'gc stopped before <step>'). Off a TTY byte-identical. 71-tty-views 11 checks.
+
+- **Files:** lib/summary.mjs, lib/view.mjs, lib/status.mjs, bin/harness, lib/driver.sh, lib/debrief.sh, tests/checks/71-tty-views.sh, tests/fixtures/summary-report.json, tests/fixtures/summary-report.md, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-read-views.md, docs/architecture.md, +2 more
+- **Verified:** tests 842 -> 853 (full suite via lib/check.sh, TEST_JOBS=2); 71-tty-views 11/11, the finish --md check watched failing with --md removed; fixtures made before summary.mjs changed; Opus review of the diff: no Critical, Important #1 (a stopped gc looked like an empty dry run) and 9 Minor fixed
+- **Tests:** 842 → 853
+- **Dead end:** GC_SECTIONS=1 env switch for the gc markers (the plan's) — a function call's prefix assignment is exported to children, so an inherited GC_SECTIONS would put markers into a real gc and runner.log; a --sections option of the inner call instead
+- **Discovery** (affects U3-08): summary-report.json is main's .harness/runs/agent-harness-2026-10-26/summary.json (the run record, not ledger/); summary-report.md is the pre-U3-07 report of it
+- **Discovery** (affects U3-08): view.mjs now exports homeIn(text, env) (status.mjs logText uses it), gcView and GC_SECTIONS; summary.mjs exports reportView and trendsView
+- **Discovery** (affects U3-08): cmd_gc prints \x1eEND as its last line under --sections; gcView without END ends 'gc stopped before <step> (see the error above)' (a failed fetch under set -e)
+- **Discovery** (affects run): memlint counts the Gotchas section's leading <!-- comment as a line: the section holds 14 facts, not 15
+- **Question for Michael:** Default taken: the TTY trends table lists newest first (status's FINISHED order) and, narrow, drops project, tests, $/f and wall h. Keep?
+- **Resolved:** entry questions without Files: are stored with ' Files (harness, from the session): …' appended; the pack shows it, and resolved matches either the session's words or the filled line
+- **Proposed change:** U3-08: review items not done here: the report card's 'not passing' label (11 = LABEL) starts its value one column late; the '## <run>: no record' line stays markdown on a TTY (the plan's choice); trends --by version <extra> is now a usage error
+- *24-U3-07 · claude-opus-5-5*
+
 ### 2026-10-28 20:31 · U3-06 · passes
 
 Overlaps wired, never holding: overlap.mjs runs compares a new run's spec+briefs with each other live or unmerged run of the project; start warns and opens a warn overlap record on both runs; queue add warns; queue list/status show ⚠ overlaps, --json overlap {run, files}; sweep resolves other run gone/merged, this run merged. 70-overlap +8 checks.
@@ -264,23 +281,9 @@ lib/needs.mjs: the needs record (24 keys, first 13 = event v1), REASONS (15), pu
 - **Proposed change:** The plan's §6 lists md/fields under U2-03 but its steps don't; U2-05's steps should name needs.md (md) and fields
 - *11-U2-03 · claude-opus-5-5*
 
-### 2026-10-28 09:19 · U2-02 · passes
-
-lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, question, questionLine, added, answers, insert, files, repair + CLI); parked/notify/entries/record.sh on it; inbox_repair after each lane session (slot copy) and the initializer, noted; template comment without ## Answers; STUB_INBOX_IN_COMMENT; 57-inbox (11 checks), n8n-home fixture.
-
-- **Files:** lib/inbox.mjs, lib/parked.mjs, lib/notify.mjs, lib/entries.mjs, lib/record.sh, lib/lane.sh, lib/driver.sh, tests/stub-claude.sh, tests/checks/57-inbox.sh, tests/fixtures/inbox-q-in-comment.md, tests/fixtures/check-names.txt, journal/decisions/2026-10-27-question-locations.md, +3 more
-- **Verified:** 57-inbox 11/11; its run check fails with lane.sh's inbox_repair call disabled (8/9 then). 03-harness-parked 4/4. Full suite (TEST_JOBS=2) on the pre-review tree 697/698, the one failure conformance from names added mid-run; full suite on the final tree green: 700 tests in 904 s (check.sh, TEST_JOBS=2). One Opus review (1 Important, 6 Minor), every finding fixed red to green in 57's two review checks.
-- **Tests:** 689 → 700
-- **Dead end:** repair by the comments' greedy longest common prefix/suffix alone — an edited comment's text was moved as a 'question', a --> inside the question ended the comment early, and a rotated insertion lost its tail (review); now: anchor on the comment's first and last lines, line/word-aligned placement, LCS runs for edits
-- **Discovery** (affects U2-03, U2-04, U2-05, U2-08): lib/inbox.mjs has answers/insert/question/repair CLIs and pure question, questionLine (1-based line of the question's first line), files ([{path,line}] from Files: lines) for U2-04/05/08; parked.mjs questionFor and notify.mjs inboxQuestion are aliases of question/added
-- **Discovery** (affects U2-05, U2-08): tests/stub-claude.sh STUB_INBOX_IN_COMMENT=<id>: that feature's first session splits the steering comment after 'under ' with '## Questions' + '**Q1 (<id>, stub).** set the gatus vars, then answer' and parks
-- **Discovery** (affects U2): added() now ignores HTML comments and reads the repaired text; inbox_repair (lib/record.sh) is a no-op when a session only rewords the comment
-- **Proposed change:** U2-02 step 5 says the lane repairs the record's INBOX.md; with lanes the session writes the slot copy, so the repair runs there (before take_question) and on the record's INBOX after the initializer, as the U2-01 plan §4.4/§7.5 says
-- **Proposed change:** U2-02 step 3 names tests/checks/56-inbox-pure.sh; 56 is taken, the file is 57-inbox.sh (plan §5.1)
-- *10-U2-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-28 09:19 · U2-02 · passes · lib/inbox.mjs: one INBOX parser (answersLine outside the steering comment, question, questionLine, a… ([in full](progress-archive.md))
 - 2026-10-28 08:40 · U2-01 · passes · Wrote docs/plans/2026-10-28-U2-needs-record.md: the record's 24 keys (13 = event v1, in order) and c… ([in full](progress-archive.md))
 - 2026-10-28 08:22 · verify U1 · passes · All 40 steps of U1-01..07 hold. Init suite red (7 checks in 08-scope, 45-lanes) was load flakes: bot… ([in full](progress-archive.md))
 - 2026-10-28 08:07 · U1-07 · passes · U1 review: 1 Critical, 3 Important, 11 Minor (two Opus rounds, in f8ea1f6). This attempt changed no … ([in full](progress-archive.md))

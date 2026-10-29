@@ -409,7 +409,7 @@
         "`harness gc --dry-run` on a TTY groups its lines under `UNITS`, `TMUX`, `DESKS`, `WORKTREES`, `DEPS` and `BRANCHES` headers with the home directory shortened to a tilde and a footer `would remove <n> worktrees, <n> branches; keeps <n>`; off a TTY the lines and their order are as today (the existing gc checks and the runner log's readers pass as they are); a check compares the two forms of one dry run",
         "`bash -n bin/harness`, `node --check lib/summary.mjs lib/view.mjs`; every new check name is in `tests/fixtures/check-names.txt`; the suite is green"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "U3-08",
