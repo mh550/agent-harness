@@ -5,3 +5,6 @@ CHECK_CMD="bash tests/run.sh"
 CHECK_KEY_IGNORE=".harness/runs docs/plans docs/specs journal findings-and-research ledger"
 # the decisions store: one file per decision, never numbered (decisions/2026-10-21-one-file-per-decision)
 DECISIONS=journal/decisions
+# the suite takes 601 s alone and 857 s with a second lane's beside it (2026-10-29): 15m left 43 s
+# (decisions/2026-10-29-check-timeout-25m)
+CHECK_TIMEOUT=25m

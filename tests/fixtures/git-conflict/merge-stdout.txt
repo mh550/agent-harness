@@ -1,0 +1,6 @@
+Auto-merging README.md
+CONFLICT (content): Merge conflict in README.md
+Auto-merging names.txt
+CONFLICT (content): Merge conflict in names.txt
+Automatic merge failed; fix conflicts and then commit the result.
+exit 1
