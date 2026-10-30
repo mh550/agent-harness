@@ -1,0 +1,127 @@
+{
+  "run": "agent-harness-2026-10-30",
+  "branch": "harness/agent-harness-2026-10-30",
+  "features": [
+    {
+      "id": "F1-01",
+      "milestone": "F1",
+      "kind": "plan",
+      "model": "opus",
+      "description": "docs/plans/2026-10-30-F1-flakes.md: the flaker table (one row per check that went red under load and green on a rerun since R1), the whole-suite rerun case in tests/run.sh, the method and defaults every build feature follows, and the spec situation this run started in.",
+      "steps": [
+        "`docs/plans/2026-10-30-F1-flakes.md` exists; its provenance paragraph says that the run's named spec `docs/specs/2026-10-30-suite-cpu-and-flakes.md` is on no branch of the repo, that this milestone covers the title's flakes half only (fixes at the cause, as `docs/plans/2026-10-29-R1-flakes.md` did), and that the CPU half (plan fixes 6 and 7 of `docs/plans/2026-10-29-suite-time.md` §2) waits for the spec; it changes no code",
+        "The plan has a flaker table with the columns file · check · cause · fix · before → after, one row per flaker, the cause column reading `not yet`: `52-status-json` (the `best of 3` timing check at line 70 as the code stands), `53-status-view` (the `best of 3` timing check at line 81), `28-run-14d-harness-merge` (its one check), `46-lanes-continue` (`lanes continue: a run stopped mid-M2 reopens harness-lane/<run>/M2 …`), `47-lanes-two` and `48-lanes-rebase` (check found by `--repeat`), `13-run-2-michael-sets-desk` (`harness desk --list`), `08-scope-sh-l1-02-run-capped-services-gc-scratch`, `32-l5-queue-runner-re`, `74-flakes-run`, `10-harness-eval-run-e2` (check found by `--repeat`), and a row `tests/run.sh` for the `whole suite` rerun",
+        "Each row cites its sightings: the `flaky: <files> (red, then green on a rerun; load <n>` lines of `.harness/runs/agent-harness-2026-10-29/harness-log.md`, `.harness/runs/agent-harness-2026-10-29-2/harness-log.md` and `.harness/runs/agent-harness-2026-10-29-3/harness-log.md`, and the `FAIL` lines of `findings-and-research/2026-10-30-suite-load-curve/lc-*.out` (which carry the check names for 13, 46, 52, 53 and the stopped file 15)",
+        "The plan states the method every build feature follows, copied from `docs/plans/2026-10-29-R1-flakes.md`: `bash tests/run.sh --repeat 10 <file>` run directly in the session before any fix (`KEEP=1`, a budget of 30 minutes per file, stopping at the first red copy), a file green in 10 of 10 copies recorded as `not reproduced (10/10 green)`, a test's clock assumption fixed with `wait_for` or a `stub_wait`/`stub_go` barrier, a real race in `lib/` or `bin/` fixed there with its own check that is red first, and no check loosened: an assertion stays as strong or gets stronger, and a weakening is refused in the plan's own words",
+        "The plan gives the *default* for the two `best of 3` timing checks of `52-status-json` and `53-status-view`, marked default: the bound (1000 ms) stays but measures the status process's CPU time (bash `TIMEFORMAT` with `time`, user plus system), not wall, since the load curve shows them red only at `some avg60` above 24 % (`findings-and-research/2026-10-30-suite-load-curve.md` §1), and names the alternative it rejects (a ratio against a one-run baseline)",
+        "The plan describes the `whole suite` rerun case from `tests/run.sh` lines 104–127 as the code stands: a file stopped at `TEST_FILE_TIMEOUT` or killed cannot print its names, conformance lists them as `missing`, `outside=1` and no `HARNESS_FAILED=` line follows, so `lib/check.sh`'s rerun guard runs the whole suite again (the 8-job paired runs of the load curve, where file 15 was stopped, and the `flaky: whole suite` row of `.harness/runs/agent-harness-2026-10-29-3/harness-log.md`); it states the *default* fix: `missing` names count as outside only when no file was stopped or killed in that run (`new` and `doubled` always count), with the rejected alternatives (mapping names to files; a second conformance pass after the rerun)",
+        "The plan lists what the milestone leaves out with the reason for each: `15-run-4-same-but-queue-parked-debrief-tmux`'s wall at `TEST_JOBS=8` paired (`TEST_JOBS` stays 4: `decisions/2026-10-29-check-timeout-25m`), the conformance failure that follows a stopped file (fixed by the `tests/run.sh` row, not a flake of its own), and every CPU fix",
+        "The plan names the shared docs only the review feature edits (`docs/architecture.md` §7 and §15, `README.md`'s `## Tests`) and the decision file the review writes (`journal/decisions/2026-10-30-<slug>.md`, its slug chosen in the plan)",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line); the plan changes no code"
+      ],
+      "after": [],
+      "passes": false
+    },
+    {
+      "id": "F1-02",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The timing and merge flakers (52-status-json, 53-status-view, 28-run-14d-harness-merge) are reproduced with --repeat and fixed where they start: the two `under 1 s (best of 3)` checks bound CPU time, not wall.",
+      "steps": [
+        "`bash tests/run.sh --repeat 10 52-status-json`, `bash tests/run.sh --repeat 10 53-status-view` and `bash tests/run.sh --repeat 10 28-run-14d-harness-merge` are run directly in the session before any fix (`KEEP=1`, a budget of 30 minutes per file, stopping at the first red copy); each red copy's `FAIL` line and the evidence read from its kept `$T` are quoted in the table row of `docs/plans/2026-10-30-F1-flakes.md`, or the row says `not reproduced (10/10 green)`",
+        "The `best of 3` timing checks in `tests/checks/52-status-json.sh` (line 70 as the code stands) and `tests/checks/53-status-view.sh` (line 81) measure the status process's CPU time (user plus system) as the plan's default says, print `best of 3: <n> ms` as they do today with the measure named, and keep the `(( best < 1000 ))` bound; the 38-run and 41-line assertions beside it are unchanged",
+        "Any reproduced flake in `28-run-14d-harness-merge` is fixed at its cause (a `wait_for` or barrier in the check, or a fix in `lib/` or `bin/` with its own check that was red first); a change to the driver's behaviour is recorded as a new decision file in `journal/decisions/`",
+        "After the fixes, `bash tests/run.sh --repeat 10 <file>` on each of the three files prints `10/10 green`; the result lines are quoted in the entry's `verified_how` and in the before → after column of `docs/plans/2026-10-30-F1-flakes.md`",
+        "`git diff origin/main -- tests/fixtures/check-names.txt` shows, for the two timing checks, either no change or one removed line and one added line each (a renamed check), and `LC_ALL=C sort -c tests/fixtures/check-names.txt` prints nothing",
+        "`bash -n` on every shell file the feature touched prints nothing",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "F1-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F1-03",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The lanes flakers (46-lanes-continue, 47-lanes-two, 48-lanes-rebase) are reproduced with --repeat and fixed where they start.",
+      "steps": [
+        "`bash tests/run.sh --repeat 10 46-lanes-continue`, `bash tests/run.sh --repeat 10 47-lanes-two` and `bash tests/run.sh --repeat 10 48-lanes-rebase` are run directly in the session before any fix (`KEEP=1`, a budget of 30 minutes per file, stopping at the first red copy); each red copy's `FAIL` line and the evidence read from its kept `$T` (`run.log`, `harness-log.md`) are quoted in the table row of `docs/plans/2026-10-30-F1-flakes.md`, which names the cause as a driver outcome in `lib/lane.sh` or `lib/driver.sh` or as the check's timing, or says `not reproduced (10/10 green)`",
+        "Each reproduced flake is fixed at its cause: a check's clock assumption becomes a `wait_for` or a `stub_wait`/`stub_go` barrier; a real race in `lib/` or `bin/` is fixed there with a check of its own (a barrier-ordered stub run) that fails before the fix and passes after, and a change to the driver's behaviour is recorded as a new decision file in `journal/decisions/`",
+        "After the fixes, `bash tests/run.sh --repeat 10 <file>` on each of the three files prints `10/10 green`; the result lines are quoted in the entry's `verified_how` and in the before → after column of `docs/plans/2026-10-30-F1-flakes.md`",
+        "No check of the three files is loosened: `git diff origin/main -- tests/checks/46-lanes-continue.sh tests/checks/47-lanes-two.sh tests/checks/48-lanes-rebase.sh` removes no `&&`-joined assertion from a `check` body, and `git diff origin/main -- tests/fixtures/check-names.txt` shows added lines only",
+        "`bash tests/lint-sleeps.sh` prints nothing and `bash -n` on every shell file the feature touched prints nothing",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "F1-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F1-04",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The desk, scope and one-off flakers (13-run-2-michael-sets-desk's `harness desk --list`, 08-scope-sh-l1-02-run-capped-services-gc-scratch, 32-l5-queue-runner-re, 74-flakes-run, 10-harness-eval-run-e2) are reproduced with --repeat and fixed where they start.",
+      "steps": [
+        "`bash tests/run.sh --repeat 10 <file>` for `13-run-2-michael-sets-desk`, `08-scope-sh-l1-02-run-capped-services-gc-scratch`, `32-l5-queue-runner-re`, `74-flakes-run` and `10-harness-eval-run-e2` is run directly in the session before any fix (`KEEP=1`, a budget of 30 minutes per file, stopping at the first red copy); each red copy's `FAIL` line and the evidence read from its kept `$T` are quoted in the table row of `docs/plans/2026-10-30-F1-flakes.md`, or the row says `not reproduced (10/10 green)`",
+        "For `harness desk --list` in `tests/checks/13-run-2-michael-sets-desk.sh` (line 425 as the code stands: `$(wins | wc -l) == 5` and five lines of `dlist.out` over four tmux desk windows and one `odd` window), the row says whether the five windows were all up when `harness desk --list` ran, and the fix waits for them with `wait_for` before the listing when they were not",
+        "Each reproduced flake is fixed at its cause: a check's clock assumption becomes a `wait_for` or a `stub_wait`/`stub_go` barrier; a real race in `lib/`, `bin/` or `tests/stub-claude.sh` is fixed there with a check of its own that fails before the fix and passes after, and a change to the driver's behaviour is recorded as a new decision file in `journal/decisions/`",
+        "After the fixes, `bash tests/run.sh --repeat 10 <file>` on each of the five files prints `10/10 green`; the result lines are quoted in the entry's `verified_how` and in the before → after column of `docs/plans/2026-10-30-F1-flakes.md`",
+        "No check of the five files is loosened: the diff against `origin/main` of each touched check file removes no `&&`-joined assertion from a `check` body, and `git diff origin/main -- tests/fixtures/check-names.txt` shows added lines only",
+        "`bash tests/lint-sleeps.sh` prints nothing and `bash -n` on every shell file the feature touched prints nothing",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "F1-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F1-05",
+      "milestone": "F1",
+      "kind": "build",
+      "model": "opus",
+      "description": "tests/run.sh names the stopped or killed files in HARNESS_FAILED= even when conformance lists their unprinted names as missing, so lib/check.sh's rerun guard reruns those files, not the whole suite.",
+      "steps": [
+        "A check in `tests/checks/33-suite-runner.sh`, written first and watched failing, runs the runner on a fixture checks directory whose own `check-names.txt` the runner is pointed at (a `TEST_CHECKS` directory that holds one, or an environment variable the usage header documents, as the plan chose) with one file stopped at `TEST_FILE_TIMEOUT=2s`: the output ends with `HARNESS_FAILED=<the stopped file>` and the conformance `missing` lines say in one line that they are not counted while a file was stopped or killed",
+        "A second check in the same file shows that a `new` or `doubled` conformance finding, or a `missing` name in a run where no file was stopped or killed, still fails the run with no `HARNESS_FAILED=` line (the whole-suite rerun stays for a failure the files cannot explain)",
+        "`tests/run.sh`'s usage header says the rule in one line; `bash -n tests/run.sh` prints nothing",
+        "`lib/check.sh` is unchanged by this feature: `git diff origin/main --stat -- lib/check.sh` prints nothing",
+        "Every new check name is one line in `tests/fixtures/check-names.txt` (`LC_ALL=C sort -c tests/fixtures/check-names.txt` prints nothing) and the `tests/run.sh` row of `docs/plans/2026-10-30-F1-flakes.md` has its fix and before → after columns filled",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "F1-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F1-06",
+      "milestone": "F1",
+      "kind": "review",
+      "model": "opus",
+      "description": "Review + simplify of F1: an Opus reviewer reads the milestone diff from a file, Critical/Important findings are fixed RED→GREEN, simplifications applied, the decision file written, and docs/architecture.md and README.md describe the runner's rule and the CPU-time bound.",
+      "steps": [
+        "`git diff origin/main...HEAD -- tests lib bin > $HARNESS_SCRATCH/F1.diff`; an Opus subagent reads that file with the brief: any check whose assertion got weaker, any `wait_for` whose limit hides a real race rather than a clock assumption, the `tests/run.sh` rule's two branches (a stopped file present, none present), and the CPU-time measure's units; its findings graded Critical/Important/Minor are written to `docs/plans/2026-10-30-F1-review.md`, one round, a second only when the first found something Critical",
+        "Every Critical and Important finding is fixed with a check that was red first and marked fixed in `docs/plans/2026-10-30-F1-review.md`; a `## Simplifications` table there names each pass applied or left, with why",
+        "`journal/decisions/2026-10-30-<slug>.md` (the slug the plan chose) exists with title, provenance, then finding · choice · rejected for the CPU-time bound and the runner's rule, each default marked *default* with the alternatives the plan rejected",
+        "`docs/architecture.md` §7 (guards: the rerun guard's names after a stopped file) and §15 are updated and `README.md`'s `## Tests` section says that a timing check bounds CPU time; `grep -c 'stopped' docs/architecture.md` prints a count of at least 1",
+        "The flaker table of `docs/plans/2026-10-30-F1-flakes.md` is complete: every row has a cause, a fix and a before → after result (or `not reproduced (10/10 green)`)",
+        "`bash -n` on every shell file the milestone touched prints nothing; `bash tests/lint-sleeps.sh` prints nothing",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "F1-02",
+        "F1-03",
+        "F1-04",
+        "F1-05"
+      ],
+      "passes": false
+    }
+  ]
+}
