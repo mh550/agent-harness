@@ -16,11 +16,18 @@
 # call on that tree answers from it (`check: RED (cached for this code tree: <names | whole suite>)`, the stored line on
 # the tree's own check-<key>.out, the stored exit) and runs nothing; a green run removes it; the subset form reads no
 # marker; run_init drops one found around a failed init (decisions/2026-10-30-red-marker).
-# Each call that ran or answered appends `<epoch> <full|subset|cached> <seconds>` to $HARNESS_SCRATCH/check-runs.log (the
-# lane's "suite ran" note counts a session's from it).
+# With HARNESS_CHECK_KEY_MAP (CHECK_KEY_MAP: `<path>:<check>[:<check>…]`, files only those checks read), a green full run
+# also writes part-<key>, keyed by the reduced key (treekey --partial: its full key, then its mapped `<blob> <path>` lines). A full
+# call on a tree whose only difference from that green tree is in mapped paths runs just their checks, under the same
+# timeout, cap and rerun guard, to check-partial.out (a rerun to check-partial-rerun.out): green, it is marked with the
+# reference's green-<key> lines; red, with no marker of either kind. Any doubt (a map other than the tree's own
+# .harness/config.sh one, the reference gone, another path set) runs in full; a partial writes no part-
+# (decisions/2026-10-30-partial-key; the conditions are rows 4–11 of docs/plans/2026-10-30-S2-partial-key.md §3).
+# Each call that ran or answered appends `<epoch> <full|subset|partial|cached> <seconds>` to $HARNESS_SCRATCH/check-runs.log
+# (the lane's "suite ran" note counts a session's from it).
 set -uo pipefail
 cmd=${HARNESS_CHECK_CMD:-} scratch=${HARNESS_SCRATCH:?HARNESS_SCRATCH is not set}
-cache=${HARNESS_CHECK_CACHE:-$scratch}   # green-<key> and red-<key> markers (the driver keeps them in its state dir, not in scratch)
+cache=${HARNESS_CHECK_CACHE:-$scratch}   # green-<key> and red-<key> markers, part-<key> sidecars (the driver keeps them in its state dir, not in scratch)
 max=${HARNESS_CHECK_MEMORY_MAX:-3G} to=${HARNESS_CHECK_TIMEOUT:-15m}
 rerun=${HARNESS_CHECK_RERUN:-auto}; [[ $rerun == @(auto|failed|suite|off) ]] || rerun=auto   # an unknown value: one wasted rerun at worst
 here=$(cd "$(dirname "$0")" && pwd)
@@ -57,7 +64,7 @@ why() {
   else echo "exit $1 after $2 s"; fi
 }
 
-# <full|subset|cached>: this call's row; the epoch is its end (to the microsecond, a dot whatever the locale), so a row
+# <full|subset|partial|cached>: this call's row; the epoch is its end (to the microsecond, a dot whatever the locale), so a row
 # between a lane's two stamps ended in between
 row() { printf '%s\t%s\t%s\n' "$(date +%s.%6N)" "$1" "$(( $(date +%s) - start ))" >> "$scratch/check-runs.log"; }
 
@@ -68,7 +75,9 @@ if (( $# )); then   # a subset: its output is the caller's; only a kill gets a l
   row subset; exit $rc
 fi
 
-key=$(node "$here/treekey.mjs" 2>/dev/null) || key=""
+# line 1 the tree's key, line 2 the key without the mapped paths, then one `<blob> <path>` per mapped path
+mapfile -t tk < <(node "$here/treekey.mjs" --partial 2> /dev/null); key=${tk[0]:-} red=${tk[1]:-} blobs=("${tk[@]:2}")
+[[ $key =~ ^[0-9a-f]{16}$ ]] || key=""   # treekey failed: the full run, no marker
 if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's test count (older markers are empty: its output's)
   n=""; read -r n < "$cache/green-$key"; [[ -n $n ]] || n=$(node "$here/testcount.mjs" "$scratch/check-$key.out")
   # a key ignore list beyond the default (CHECK_KEY_IGNORE, the run record aside) is named, so a docs change's skip is explained
@@ -83,6 +92,69 @@ if [[ -n $key && -f $cache/red-$key ]]; then   # the rerun guard already said it
   if [[ -f $o ]]; then echo "${line% — last lines of *} — last lines of $o (this tree's first run):"; tail -25 "$o"
   else echo "${line% — last lines of *} — its output is gone from scratch${nm:+: check.sh $nm shows the failures}"; fi
   row cached; exit "$rc"
+fi
+# collapsed whitespace, so a map spelled over two lines or with double spaces is the same map
+ws() { local a; read -ra a <<< "$(tr -s '[:space:]' ' ' <<< "$1")"; echo "${a[*]}"; }
+
+# Sets ref (the green tree this one differs from in mapped paths only) and pn (the checks that read those paths, map
+# order) and succeeds when a partial run may stand for the full one; any doubt fails, and the full run runs. The rows of
+# the plan's table, in order: the invariant is that a tree is never marked green by anything but a green run of every
+# check that reads what changed in it.
+partial() {
+  local tmap sc p l nm; local -A was=() now=(); local -a s=() ig=()
+  [[ -n $(ws "${HARNESS_CHECK_KEY_MAP:-}") && ${#blobs[@]} -gt 0 && $red =~ ^[0-9a-f]{16}$ ]] || return 1   # 4: no map
+  # 4a: only the tree's own map may choose a subset (the lint proves that one); the exported one is the driver's at its start
+  tmap=$(unset CHECK_KEY_MAP; set +u; [[ -f .harness/config.sh ]] && source .harness/config.sh > /dev/null 2>&1 < /dev/null; echo "${CHECK_KEY_MAP:-}")
+  [[ $(ws "$tmap") == "$(ws "$HARNESS_CHECK_KEY_MAP")" ]] || return 1
+  # and a config outside the key could change the map under an equal reduced key: no partial then
+  read -ra ig <<< "$(ws "${HARNESS_CHECK_KEY_IGNORE:-}")"
+  for p in "${ig[@]}"; do p=${p#./} p=${p%/}; [[ .harness/config.sh == "$p" || .harness/config.sh == "$p"/* ]] && return 1; done
+  [[ -f $cache/part-$red ]] || return 1   # 5: no green full run of a tree with these unmapped paths
+  mapfile -t sc < "$cache/part-$red"; ref=${sc[0]:-}
+  [[ $ref =~ ^[0-9a-f]{16}$ && -f $cache/green-$ref ]] || return 1   # 6: the reference is gone (run_init fresh, a new cache)
+  for l in "${sc[@]:1}"; do [[ $l =~ ^([0-9a-f]{40}|[0-9a-f]{64}|-)\ ([^ ]+)$ ]] || return 1; was[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}; done
+  for l in "${blobs[@]}"; do [[ $l =~ ^([0-9a-f]{40}|[0-9a-f]{64}|-)\ ([^ ]+)$ ]] || return 1; now[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}; done
+  (( ${#was[@]} == ${#sc[@]} - 1 && ${#now[@]} == ${#blobs[@]} )) || return 1   # 7: the path sets (a line twice is no set)
+  [[ $(printf '%s\n' "${!was[@]}" | sort) == "$(printf '%s\n' "${!now[@]}" | sort)" ]] || return 1
+  for p in "${!now[@]}"; do [[ ${was[$p]} == "${now[$p]}" ]] || s+=("$p"); done
+  (( ${#s[@]} )) || return 1   # 8: nothing mapped differs (the full key would have matched)
+  nm=$(node "$here/treekey.mjs" --names "${s[@]}" 2> /dev/null) || return 1   # 9: a path no entry's
+  read -ra pn <<< "$nm"
+  (( ${#pn[@]} ))   # 10: no name
+}
+
+if [[ -n $key ]] && partial; then   # 11: the checks that read what differs, the subset form's way (names as arguments)
+  rm -f "$scratch/check-partial-rerun.out"   # it belongs to the check-partial.out beside it
+  run "$cmd \"\$@\"" _ "${pn[@]}" > "$scratch/check-partial.out" 2>&1; rc=$?
+  out=$scratch/check-partial.out how="" names=() first=""
+  if (( rc )); then   # the rerun guard on the partial's names: a partial's "whole suite" is its subset
+    first=$(why $rc $(( $(date +%s) - start )))
+    read -ra names <<< "$(sed -n 's/^HARNESS_FAILED=//p' "$out" | tail -1)"
+    if [[ $first != @("timed out"|"killed at")* ]]; then
+      case $rerun in auto|suite) how=partial; [[ $rerun == auto ]] && (( ${#names[@]} )) && how=failed ;; failed) (( ${#names[@]} )) && how=failed ;; esac
+    fi
+    if [[ -n $how ]]; then
+      out=$scratch/check-partial-rerun.out r0=$(date +%s) args=("${pn[@]}"); [[ $how == failed ]] && args=("${names[@]}")
+      run "$cmd \"\$@\"" _ "${args[@]}" > "$out" 2>&1; rc=$?
+    fi
+  fi
+  s=$(( $(date +%s) - start ))
+  if (( rc == 0 )); then   # the reference's count and wall: every count the driver reads is a full run's
+    n=""; read -r n < "$cache/green-$ref" 2> /dev/null   # the reference gone since row 6 (a run_init fresh): green, no marker
+    cp "$cache/green-$ref" "$cache/.green-$$" 2> /dev/null && mv -f "$cache/.green-$$" "$cache/green-$key" && rm -f "$cache/red-$key"
+    if [[ -n $how ]]; then
+      (( ${#names[@]} )) || names=("${pn[@]}")   # never empty: a partial flake is never "whole suite"
+      load=$(cut -d' ' -f1-3 /proc/loadavg 2> /dev/null)
+      jq -nc --arg at "$(date -u +%FT%TZ)" --arg key "$key" --arg rerun "$how" --arg first "$first" --arg load "$load" --arg lane "${HARNESS_LANE:-}" \
+        --arg partial "${pn[*]}" '{at: $at, key: $key, names: $ARGS.positional, rerun: $rerun, first: $first, load: $load, lane: $lane,
+        partial: ($partial | split(" "))}' --args "${names[@]}" >> "$cache/flakes.jsonl"
+      echo "check: green after a rerun (partial: ${pn[*]}; flaky: ${names[*]})${n:+, $n}"
+    else echo "check: green (partial: ${pn[*]}, $s s; cached for the rest)"; fi
+  else   # no marker of either kind: the red marker is for a long run, a partial takes seconds
+    case $how in failed) again="; red again on a rerun of ${names[*]}" ;; partial) again="; red again on a rerun of ${pn[*]}" ;; *) again="" ;; esac
+    echo "check: RED (partial: ${pn[*]}; $(why $rc $s $(( $(date +%s) - ${r0:-$start} )))$again) — last lines of $out:"; tail -25 "$out"
+  fi
+  row partial; exit $rc
 fi
 rm -f "$scratch/check-rerun.out"   # a check-rerun.out always belongs to the check.out beside it
 run "$cmd" > "$scratch/check.out" 2>&1; rc=$? w=$(( $(date +%s) - start ))   # the suite's length: a rerun's is a subset's
@@ -112,6 +184,9 @@ if (( rc == 0 )); then   # the marker ("<n> tests" or empty, then the wall) outl
   n=$(node "$here/testcount.mjs" "$scratch/check.out" ${how:+--total})
   [[ -n $key ]] && printf '%s\nwall %s\n' "$n" "$w" > "$cache/.green-$$" && mv -f "$cache/.green-$$" "$cache/green-$key" \
     && rm -f "$cache/red-$key"   # a whole file or none: a concurrent call on the tree reads either
+  # the sidecar: a full run's green only, so a partial's reference is always a tree every check ran on
+  [[ -n $key && $red =~ ^[0-9a-f]{16}$ ]] && (( ${#blobs[@]} )) && printf '%s\n' "$key" "${blobs[@]}" > "$cache/.part-$$" \
+    && mv -f "$cache/.part-$$" "$cache/part-$red"
   if [[ -n $how ]]; then   # a flake: green, named and counted
     [[ -n $key && -z $n ]] && rm -f "$scratch/check-$key.out"   # no total: unknown beats the red run's passes
     load=$(cut -d' ' -f1-3 /proc/loadavg 2> /dev/null)

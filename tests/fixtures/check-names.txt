@@ -145,6 +145,19 @@ busy continue: once that run has ended, the plain continue is back
 busy continue: the card's do and run lines name the hold
 by hand right after: nothing new, no session
 by hand while another debrief runs: it says it is waiting
+check partial: a CLAUDE.md-only diff runs exactly memlint: the partial line, exit 0, check-partial.out, check.out untouched
+check partial: a green full run writes green-<full> (count, wall) and part-<reduced>: the full key, then the blob lines
+check partial: a lib/ diff runs the full suite (no arguments); a diff of both mapped paths runs memlint readme, map order
+check partial: a part- whose path set is not the map's (the map grew an entry) runs in full
+check partial: a partial green inherits the reference marker (count and wall) byte for byte, writes no part-, and the next call is cached
+check partial: a red with no HARNESS_FAILED line reruns the partial's names (a flake row naming them); a deleted mapped file is a partial
+check partial: a timeout in a partial run is said as such, no rerun, no marker
+check partial: check-runs.log gets a partial row for the partial run
+check partial: red once then green is a flake: one flakes.jsonl row with partial, the green-after-a-rerun line, the reference marker
+check partial: red twice is rerun once on memlint, says so, exits 1 and leaves no marker of either kind
+check partial: the reference green-<ref> gone, or an exported map other than the tree's .harness/config.sh one, runs in full
+check partial: the subset form on the diffed tree runs its subset and reads no map, sidecar or marker
+check partial: with .harness/config.sh outside the key (its map could change under an equal reduced key) a CLAUDE.md diff runs in full
 check rerun: CHECK_RERUN=auto in config.sh, exported as HARNESS_CHECK_RERUN; the template has it; lanes export HARNESS_LANE
 check rerun: CHECK_RERUN=failed with no line, or off, runs the suite once and is red as today
 check rerun: CHECK_RERUN=suite reruns the whole suite even with the line
