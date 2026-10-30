@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-10-29-2",
   "started": "2026-10-29T12:49:34.000Z",
-  "ended_at": "2026-10-30T01:24:21.000Z",
+  "ended_at": "2026-10-30T01:24:42.000Z",
   "end_reason": "done",
   "continuations": 1,
   "features": {
@@ -80,13 +80,13 @@
     }
   ],
   "cost": {
-    "total": 91.07,
+    "total": 91.19,
     "per_passing_feature": 3.96,
     "by_role": {
       "init": 6.72,
       "plan": 11.41,
       "build": 44.41,
-      "retro": 0.12,
+      "retro": 0.24,
       "review": 24.25,
       "verify": 3.09,
       "resolve": 1.06
@@ -94,19 +94,19 @@
     "by_model": {
       "claude-fable-5-1": 6.72,
       "claude-opus-5-5": 83.14,
-      "claude-sonnet-5-5": 1.2
+      "claude-sonnet-5-5": 1.32
     },
     "manager": 0
   },
   "time": {
     "wall_h": 11.68,
-    "sessions_h": 17.12,
+    "sessions_h": 17.13,
     "driver_h": 0,
     "by_role_h": {
       "init": 0.21,
       "plan": 2.04,
       "build": 10.78,
-      "retro": 0.01,
+      "retro": 0.02,
       "review": 3.03,
       "verify": 1.04,
       "resolve": 0.06
@@ -118,10 +118,10 @@
     "wall_hours": 11.68
   },
   "tokens": {
-    "in": 4268,
-    "cache_read": 163817547,
-    "cache_write": 4529282,
-    "out": 1107577,
+    "in": 4276,
+    "cache_read": 163926195,
+    "cache_write": 4551601,
+    "out": 1109542,
     "cache_hit_rate": 0.973,
     "context_peak": 191040,
     "by_role": {
@@ -144,10 +144,10 @@
         "out": 517281
       },
       "retro": {
-        "in": 8,
-        "cache_read": 110278,
-        "cache_write": 23085,
-        "out": 1813
+        "in": 16,
+        "cache_read": 218926,
+        "cache_write": 45404,
+        "out": 3778
       },
       "review": {
         "in": 904,
@@ -171,7 +171,7 @@
   },
   "per_verified_feature": {
     "cost": 3.96,
-    "tokens": 7367768
+    "tokens": 7373548
   },
   "orientation": {
     "tokens": 1467086,
@@ -200,8 +200,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 42,
-    "real": 42,
+    "total": 43,
+    "real": 43,
     "environmental": 0
   },
   "guards": {
