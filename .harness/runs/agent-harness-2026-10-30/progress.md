@@ -3,6 +3,23 @@
 
 What this file is: the run's journal, rendered by the harness from `entries.jsonl`, newest entry first; one entry per session (init, each feature's coding session, verify, retro). Read the feature list in `feature_list.json`: one milestone, F1 (the suite's flakes fixed where they start, as R1 did on 2026-10-29): F1-01 plans, F1-02 to F1-05 reproduce each flaker with `bash tests/run.sh --repeat 10 <file>` and fix it (timing checks, lanes, desk/scope/one-offs, the runner's whole-suite rerun after a stopped file), F1-06 reviews and writes the docs and decision. The run's named spec `docs/specs/2026-10-30-suite-cpu-and-flakes.md` was on no branch when the run started: the init planned the flakes half only and asked about the rest (see the init entry's question). Steer via `INBOX.md` on this branch: set its first line to `status: pause` or `status: stop`, or write an answer under `## Answers`; every session reads it at startup.
 
+### 2026-10-30 19:02 · F1-03 · passes
+
+Reproduced 47 (9/10: M2's lane opened in M1's slot before M1's close was noted). Fixed in lib/driver.sh: the opens stop for the poll while a lane has exited unreaped (lanes_held), and the end check counts held lanes. New check on its own HARNESS_COUNT_HOLD run (uh), red then green. 46 and 48 not reproduced (10/10). Decision opens-wait-for-reap.
+
+- **Files:** lib/driver.sh, tests/checks/47-lanes-two.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-30-opens-wait-for-reap.md, docs/plans/2026-10-30-F1-flakes.md, docs/architecture.md
+- **Verified:** Before: 46-lanes-continue: 10/10 green · 47-lanes-two: 9/10 green (copy 9 FAIL lanes admission: with the five-hour window at 80 % …; u5 run.log: lane M2 opened 17:58:03 above lane M1 closed 17:58:04) · 48-lanes-rebase: 10/10 green. New check red without the driver fix (14/15), green with it (15/15). After: 47-lanes-two: 10/10 green (twice: before and after the uh split) · 46-lanes-continue: 10/10 green · 48-lanes-rebase: 10/10 green. lint-sleeps silent, bash -n clean. Full suite (check.sh): green in 882 s, 1081/1081 checks passed, no FAIL line.
+- **Tests:** 1080 → 1081
+- **Dead end:** holding the u5 run itself with HARNESS_COUNT_HOLD=1 — the hold parks the coordinator, so u5's `noted once` saw one poll instead of four (a weaker check, found by the review); the hold moved to its own run, uh
+- **Dead end:** a Gotchas line in CLAUDE.md, written while a full suite ran — the section was full (14 facts plus its comment line, memlint's limit 15), so 39-memlint-m4 went red, and the mid-run edit left a red-<key> marker for the tree as it started; the line was dropped and the suite run again on a tree changed by one comment
+- **Discovery** (affects F1-04, F1-06): The coordinator's opens counted live pids, so a lane exited after the reap freed its slot and admit count before its close (and any lanes-end reason) was noted; fixed with lanes_held (decisions/2026-10-30-opens-wait-for-reap). The same window exists at MAX_LANES=1 between reap and count: a lead for 46's post-R1 sightings
+- **Discovery** (affects F1-06): Sightings 29-2:99 (48) and 29-2:120 (46) ran on trees without R1-05's fix df107cd (R3-02 a4c864c, R3-04 07b837b)
+- **Discovery** (affects F1-06): docs/architecture.md's coordinator lines (§ components, the open/end lines) now name the new rule; §7/§15 and README stay F1-06's
+- **Discovery** (affects F1-04, F1-06): HARNESS_COUNT_HOLD=1 parks the coordinator after its count until the counted lanes exit, so a check counting notes over polls on that run sees one poll: hold a run of its own
+- **Discovery** (affects run): The Gotchas section of CLAUDE.md is full: memlint counts its comment line, so 14 facts is the limit; a new one replaces one
+- **Proposed change:** F1-03 step 4 (`git diff origin/main -- tests/fixtures/check-names.txt` shows added lines only) can't hold on this lane's branch: F1-02's two renames (8307b34) show as removed lines. F1-03's own diff (git diff 8307b34 -- tests/fixtures/check-names.txt) adds one line and removes none. Steps like it should diff against the feature's start commit.
+- *03-F1-03 · claude-opus-5-5*
+
 ### 2026-10-30 17:47 · F1-02 · passes
 
 52/53/28 reproduced with --repeat 10: all 10/10 green (not reproduced). 52 and 53's best-of-3 checks now bound CPU time (user+sys, bash time) under 1000 ms plus the same call's wall under 5000 ms (a stall costs no CPU); renamed. 28 needs no fix: its sightings predate R1-05's lane-count fix. Plan rows filled.
