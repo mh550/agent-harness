@@ -7,6 +7,28 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-30 01:19 · S2-01 · passes
+
+Wrote docs/plans/2026-10-30-S2-partial-key.md: treekey.mjs's exported functions and --partial (plus a --names mode, default), parseMap's drops, the part-<reduced> sidecar, check.sh's partial path as a numbered table (rows 0-11 + 4a), what a partial green/red writes, the lint's rules and allow-list with today's finds, the checks, decision and S3 line. No code changed.
+
+- **Files:** docs/plans/2026-10-30-S2-partial-key.md
+- **Verified:** Lint rules prototyped in scratch over tests/checks with CLAUDE.md: finds 36, 37, 39, 75-suite-tools, 79 (13:386 without the == form); widened forms checked for new hits (none). Line refs checked by grep. Opus review, two reports: 1 Critical, 4 Important, 5 Minor, all folded into the plan. Suite: green, cached for this code tree, 1044 tests.
+- **Tests:** 1044 → 1044
+- **Discovery** (affects S2-04): The spec's lint rule (a) ('a variable set to it on that line') misses 79-suite-length.sh:87, which reads "$HH/CLAUDE.md" (HH from tests/lib.sh:87 or its own line 6): the plan widens root expressions to $HH, $HARNESS_HOME, $(cd "<R>" && pwd) and file-wide aliases, and 79 joins the map
+- **Discovery** (affects S2-04): 13-run-2-michael-sets-desk.sh:386 (`== "PWD=$HH"`) is a rule (b) hit unless the allow-list gets a sixth form, a `== "...<root>"` string compare (plan default); 13 takes ~205 s, too dear to map
+- **Discovery** (affects S2-03): The driver loads config once (lib/lane.sh:45; driver.sh:403 after a main merge): a session editing .harness/config.sh's map leaves HARNESS_CHECK_KEY_MAP stale, and a map from user config/run.env is linted by nothing. Plan row 4a: the tree's sourced CHECK_KEY_MAP (empty if unset) must equal the exported one, else full run; stub runs put the map in the throwaway project's .harness/config.sh
+- **Discovery** (affects S2-02, S2-04): tests/run.sh matches check names by substring: a map name must be the full stem (75-suite-tools, not 75: 75-merge-sorted shares it)
+- **Discovery** (affects S2-04): 82-key-map-lint's negative fixtures go in tests/fixtures/key-map-lint/, not inline: inline they'd be hits on 82's own lines
+- **Discovery** (affects S2-05): The verify's own full green rewrites part-<reduced>, so S2-05 step 2's 'no part- sidecar afterwards' is read as: its line 1 is the verified tree's key. S2-05 needs a new stub hook STUB_GOTCHA_ONLY=<id> (a pass whose only change is the Gotchas line)
+- **Discovery** (affects S2-04, S2-06): Lint escapes the review found and the plan closes: $(readlink -f "<R>") and $(cd "<R>" && pwd) are root expressions (not allowed forms); git -C "<R>" is allowed only with log/rev-parse/cat-file/worktree/ls-files; ../<basename> is a hit; the lint can't see reads by lib/ or tests/*.sh, so a map entry must be a file only check-file lines read
+- **Question for Michael:** Default taken: the lint allows a `== "...<root>"` string compare (13:386's `PWD=$HH`) rather than mapping 13 (205 s) for it. Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/docs/plans/2026-10-30-S2-partial-key.md
+- **Question for Michael:** Default taken: a partial's rerun output goes to check-partial-rerun.out, not the spec's check-rerun.out (which stays the last full run's, beside its check.out). Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/docs/plans/2026-10-30-S2-partial-key.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/lib/check.sh:87
+- **Proposed change:** S2-04 step 2 should name 79-suite-length.sh (rule a through $HH) beside 36 and 75
+- **Proposed change:** S2-05 step 2's 'no part- sidecar for that reduced key afterwards' should read 'its part-<reduced> names the verified tree' (the verify's full green rewrites it)
+- **Proposed change:** S2-03 should list a case for plan row 4a (the tree's own map differs from HARNESS_CHECK_KEY_MAP: full run)
+- **Proposed change:** S2-04 step 1's allow-list should match the plan's §5 (readlink -f and (cd && pwd) as root expressions allowed only in an alias assignment; git -C with five subcommands)
+- *06-S2-01 · claude-opus-5-5*
+
 ### 2026-10-30 01:02 · verify S1 · passes
 
 All five S1 features hold: full suite green (1044 tests), subsets 34/39/73/79/80 re-run green, greps and docs confirmed. Note: S1-04 step 3 literal diff scope also includes S1-05 review fix I1.

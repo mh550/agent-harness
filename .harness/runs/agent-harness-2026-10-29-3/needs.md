@@ -42,3 +42,45 @@ harness needs done agent-harness-2026-10-29-3/1 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-10-29-3/2 --why "<answer>"
 ```
+
+## ⚠ S2-01 asked: Default taken: the lint allows a `== "...<root>"` string co…
+
+`agent-harness-2026-10-29-3/3` · since 2026-10-30T05:19:32.495Z
+
+**blocked** nothing waits on it; S2-01's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:8](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl?plain=1#L8)
+
+> Default taken: the lint allows a `== "...<root>"` string compare (13:386's `PWD=$HH`) rather than mapping 13 (205 s) for it. Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/docs/plans/2026-10-30-S2-partial-key.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/docs/plans/2026-10-30-S2-partial-key.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-29-3/S2/docs/plans/2026-10-30-S2-partial-key.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl:8](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl?plain=1#L8)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-10-29-3/3 --why "<answer>"
+```
+
+## ⚠ S2-01 asked: Default taken: a partial's rerun output goes to check-parti…
+
+`agent-harness-2026-10-29-3/4` · since 2026-10-30T05:19:32.556Z
+
+**blocked** nothing waits on it; S2-01's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:8](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl?plain=1#L8)
+
+> Default taken: a partial's rerun output goes to check-partial-rerun.out, not the spec's check-rerun.out (which stays the last full run's, beside its check.out). Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/docs/plans/2026-10-30-S2-partial-key.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/lib/check.sh:87
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/docs/plans/2026-10-30-S2-partial-key.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-29-3/S2/docs/plans/2026-10-30-S2-partial-key.md) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/lib/check.sh:87](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-29-3/S2/lib/check.sh#L87) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl:8](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl?plain=1#L8)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-10-29-3/4 --why "<answer>"
+```
