@@ -1,0 +1,85 @@
+tmp: /tmp/tmp.OMmU1ou821
+PASS a failed post is noted and the run goes on
+PASS a failed run-end post is committed: the worktree stays clean for gc
+PASS a given-up feature blocks what depends on it
+PASS real limit message: not counted, run completes
+PASS a $0 one-turn session is not counted
+PASS the limit window is shared
+PASS refused sessions recorded as env
+PASS endless limit ends the run (frees the queue)
+PASS continue finishes a paused run
+PASS one ledger row per run
+PASS start queues when MAX_PARALLEL_RUNS are going
+PASS continue refuses a running run
+PASS the queue runner reaps its ended runs' tmux sessions before the debrief; h-queue and the desk untouched
+PASS the queue runner runs harness gc <project> --all-merged --deps once per project, before the debrief
+PASS queue ran both entries, distinct run ids (their merged worktrees gone with the runner's gc: the ledger has the records)
+PASS trends lists every run
+PASS trends --by version groups the runs
+PASS queue end triggers one debrief, detached
+PASS the debrief saw the queue's runs
+PASS a debrief page beside the note: a card per run, the note escaped
+PASS by hand right after: nothing new, no session
+PASS a runner that started nothing (a skipped continuation): no debrief
+PASS queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't
+PASS queue list marks continuations (requested) or (automatic)
+PASS a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)
+PASS a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too
+PASS a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)
+PASS the driver's continuation after a session cap is automatic
+PASS a failed or hung runner gc is logged (killed at HARNESS_GC_TIMEOUT) and never stops the debrief
+PASS queue holds an entry whose project has a live run, starts the next one
+PASS the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)
+PASS queue park sets an entry aside with its reason
+PASS the runner skips a parked entry and says so
+PASS queue unpark puts it back at the end, its reason gone
+PASS queue add numbers past a parked entry
+PASS queue park refuses to overwrite a parked entry; both survive
+PASS queue stop after a run: one debrief
+PASS past --until after a run: one debrief
+PASS a refused debrief: no note, nothing marked done, LIMIT_UNTIL set, one line to NOTIFY_CMD
+PASS a session that dies at startup: failed, and no usage-limit window for the box
+PASS a failed session: its error text is never the note
+PASS a killed debrief changes nothing
+PASS --dry-run prints the context, launches nothing
+PASS the debrief's harness status block per run opens with the run's card line
+PASS placeholders inside the context are not filled
+PASS a still-running run changing its worktree is not flagged
+PASS the allowlist runs nothing that writes or executes
+PASS the session may read each run's state dir and the queue
+PASS the next debrief covers what the failed and killed ones missed
+PASS one note, overwritten: ledger/debrief.md
+PASS the session: an allowlist (dontAsk) and the never-list
+PASS the prompt goes in on stdin, not as an argument
+PASS continuation queued: keeps attempts, brief marked as the debrief's
+PASS not queued: ended done / already queued / no work left / still running
+PASS NOTIFY_CMD gets 3 headline lines and the note path
+PASS DEBRIEF_PAGE_CMD gets the page
+PASS a run still going is covered again next time
+PASS debrief notifications go to NTFY_URL when set
+PASS a 300 KB report: the context stays small, the session runs
+PASS files changed during the session are flagged in the note
+PASS a debrief headline over ntfy: no Click (the note is a path), default priority when nothing needs Michael (a Not queued line isn't)
+PASS debrief waits for the usage-limit window, then runs
+PASS a run that starts during the wait is covered by the next debrief
+PASS a debrief whose note needs Michael: priority high
+PASS a window past the 5 h cap: no session (the next debrief covers it)
+PASS preflight: no node anywhere, a clear failure and no session
+PASS by hand while another debrief runs: it says it is waiting
+PASS the whole context is capped too
+PASS each debrief is a commit of ledger/debrief.md
+PASS a ledger checkout on another branch: the note is written, not committed
+PASS a held index.lock: written, not committed, nothing left staged
+PASS a refused commit: the note is unstaged again
+PASS the weekly budget ends a run after the session that crossed it
+PASS the queue starts no run past the weekly budget
+PASS WEEKLY_STOP_AT raises the bar
+PASS harness gc --dry-run kills no tmux session
+PASS harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
+PASS harness start refuses a run id whose tmux session another live run holds; its session lives
+PASS the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
+79/79 checks passed
+kept: /tmp/tmp.OMmU1ou821 (15-run-4-same-but-queue-parked-debrief-tmux)
+15-run-4-same-but-queue-parked-debrief-tmux: 79 checks, 207.7 s
+slowest: 15-run-4-same-but-queue-parked-debrief-tmux 207.7 s; wall 207.7 s, 4 jobs
+79/79 checks passed

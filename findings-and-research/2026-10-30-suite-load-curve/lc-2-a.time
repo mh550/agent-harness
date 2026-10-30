@@ -1,0 +1,23 @@
+	Command being timed: "env TEST_JOBS=2 bash tests/run.sh"
+	User time (seconds): 2094.60
+	System time (seconds): 1169.92
+	Percent of CPU this job got: 200%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 27:09.63
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 97956
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 965
+	Minor (reclaiming a frame) page faults: 323945061
+	Voluntary context switches: 3586695
+	Involuntary context switches: 309860
+	Swaps: 0
+	File system inputs: 72
+	File system outputs: 1980320
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

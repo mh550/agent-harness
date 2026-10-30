@@ -1,0 +1,1362 @@
+tmp: /tmp/tmp.9AQQVVtQMf
+PASS scope.sh: scope_run wraps the command in systemd-run with the caps and returns its exit
+PASS scope.sh: scope_stop stops <unit>.scope; scope_peak and scope_left read the fixture
+PASS scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]
+PASS scope.sh: scope_owns matches a unit to a run by its rebuilt prefix and a role the harness starts
+PASS scope.sh: mem_available_gb reads the real meminfo fixture
+PASS scope.sh: mem_gate notes, frees, waits, then starts anyway or once memory is back
+PASS scope.sh: mem_gate ends with HARNESS_MEM_POLL=0, exit 1 after a wait and 0 when it passed at once
+PASS scope.sh: dur_s reads timeout(1) durations as seconds
+PASS scope.sh: without user systemd scope_run runs bare (STUB_NO_SYSTEMD=1)
+PASS scope.sh: systemd-run failing after a good probe runs the command bare, with a line
+PASS scope.sh: a scratch dir it can't write runs the command once, bare
+PASS scope.sh: a unit still loaded is refused as systemd refuses it; stopped first, it starts
+PASS scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit
+PASS all features pass
+PASS tampered list restored
+PASS tampered text reverted
+PASS red suite un-passes C
+PASS C retried and passed
+PASS verifier caught A, re-queued
+PASS M1 and M2 tagged
+PASS M1 and M2 merged into main by PRs
+PASS no final tag, no false 'verified'
+PASS the verify prompt says the suite runs in full
+PASS brief committed with the run
+PASS brief, rules and policy in the prompt
+PASS coding prompt names CLAUDE.md but doesn't paste it
+PASS the rendered coding prompt has the deepEqual and bounded-rerun rule
+PASS two coding prompts share a byte-identical prefix that includes the policy
+PASS the prompt says the time, the budget and the attempt
+PASS metrics: wall time and roles
+PASS metrics: coding rows carry tokens, cache rate and context peak
+PASS metrics.jsonl: every session line has mem_peak_mb from its scope
+PASS metrics: orientation recorded per session
+PASS entries: the driver appends each session's entry
+PASS progress.md is rendered from the journal
+PASS context.md carries the earlier attempt's dead end
+PASS ended: done; status says so
+PASS summary, report and retro written
+PASS summary: tokens, per verified feature, first-attempt rate, rework
+PASS report shows tokens and quality
+PASS ledger has the run
+PASS ledger row has harness_version and harness_dirty
+PASS harness version skips ledger commits
+PASS harness report prints the writeup
+PASS the report lists the review role when a review ran
+PASS init model resolved to fable
+PASS summary end reason is how the run ended
+PASS a milestone without an after list is noted
+PASS the initializer prompt has the resolved lint command
+PASS the initializer prompt sizes reviews to the milestone
+PASS the initializer prompt asks for after on independent features and on every milestone's first
+PASS the driver notes the lint once after the initializer
+PASS the driver never edits the list: the initializer's feature_list.json is byte for byte the stub's
+PASS NTFY_URL: curl posts the fields as headers, NOTIFY_CMD not called
+PASS NTFY_TOKEN: bearer header sent, never logged
+PASS a successful post: a line in run.log only
+PASS routine notifications keep the default priority
+PASS what lands on main is byte for byte what was verified
+PASS no code PR touches the run record, and the record branch holds every entry
+PASS sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
+PASS each session's scope is stopped after it returns
+PASS a run whose sessions leave nothing gets no leftover or cap note
+PASS every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+PASS a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
+PASS a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)
+PASS no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
+PASS run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m
+PASS no user systemd: the init runs bare, and the run's one uncapped note stays the only one
+PASS metrics.jsonl: mem_peak_mb is null when uncapped
+PASS finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
+PASS harness status lists a running run's units with MemoryCurrent; an ended run's none
+PASS the EXIT trap commits its services note: harness-log.md is clean after a TERM
+PASS a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it
+PASS a TERM during an init stops the init's scope before the teardown runs
+PASS a TERM during finish's teardown runs no second teardown: the trap waits for it, then stops the svc scope, one note
+PASS PAUSE stops the services before its poll, and the next init starts them again
+PASS a scope systemd refuses after the probe: the session runs bare and harness-log.md says so
+PASS memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+PASS memory gate: the wait stops the services (services stopped (memory wait))
+PASS memory gate: every session starts with the services up, a verify after its wait included
+PASS memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
+PASS memory gate: the real fixture's 9 GB passes without a note
+PASS report.md lists the session that peaked at its cap among the peaks over 2 GB
+PASS check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s
+PASS check.sh: exit 137 prints the memory-cap RED line
+PASS check.sh: exit 124 prints the timed-out RED line
+PASS check.sh: a subset call is scoped too and never cached
+PASS check.sh: a TERM stops the suite's scope with it
+PASS gc removed the finished worktree
+PASS gc deleted the run branch
+PASS gc kept the tags
+PASS harness gc stops the units of this project's runs with no live driver; --dry-run stops none
+PASS plain gc deletes only the merged harness/ and harness-merge/ branches, locally and on the origin
+PASS a refused branch -d (merged into origin/main, not into HEAD, no upstream) is logged and gc goes on
+PASS gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives
+PASS gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+PASS a worktree gc can't remove is logged and the next one still goes; --dry-run removes none
+PASS gc never removes a worktree that is no run's (its branch isn't harness/<run>), even merged and clean
+PASS gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
+PASS gc keeps a worktree with an untracked file even when status.showUntrackedFiles=no hides it
+PASS a listed worktree whose directory is gone never ends gc: every later step still runs
+PASS gc --all-merged keeps the origin default branch and a live run branch, merged or not
+PASS gc --deps empties an ended, unmerged run's worktree of its DEPS_DIRS; its branch and committed files stay; --dry-run deletes none
+PASS gc --deps keeps the worktree of a live run and the project checkout
+PASS gc --deps keeps the worktree of a run with a queued continuation
+PASS a deps dir gc can't measure or delete is said and gc goes on; a symlinked deps dir is never followed
+PASS a .harness/teardown.sh added after the run started is run at its stop points
+PASS run start without the deploy guard: one note, one notification
+PASS a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json
+PASS run start without the netlify guard: one note, one notification
+PASS run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)
+PASS run start with the guard: nothing
+PASS init output is capped at 40 lines with the log path
+PASS a brief is pasted as written: its {{X}} isn't filled (E3 review F7)
+PASS an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
+PASS finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
+PASS a continued run whose suite is cached green keeps its test count (the green marker holds it, not scratch)
+PASS test count: no match is noted once per run (demo: no output; nocount: text with no count), never for a counted or cached suite (scrub)
+PASS KEEP_SCRATCH=1 keeps the run's scratch; the default is 0
+PASS check.sh keeps one check-<key>.out; the green markers stay
+PASS the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created
+PASS scratch_rm refuses anything but the run's own scratch directory (symlinks in its path too)
+PASS scratch_done: the final tree's output is check-last.out, the note names what it kept
+PASS scratch_done keeps scratch when a copy fails, and says why when rm fails or the guard refuses
+PASS the tmpfiles template holds the 3-day age rule; README has its install command
+125/125 checks passed
+08-scope-sh-l1-02-run-capped-services-gc-scratch: 125 checks, 202.4 s
+tmp: /tmp/tmp.sjl5rhahRz
+PASS NOTIFY_CMD-only: $1 unchanged, fields as env
+PASS phone stop honoured before any coding session
+PASS a stop from the phone stops the services through finish
+PASS a stop makes a queued requested continuation of its run automatic (the later word wins)
+PASS second run got its own port
+PASS verify ping-pong capped, needs Michael
+PASS verify needs Michael: priority high, click = needs.md (GitHub-shaped origin)
+PASS verify needs Michael goes out after the verify entry is pushed
+PASS independent M2 verified and merged alone (its tag carries no M1 work)
+PASS no dependency note when every milestone has after
+PASS refused merge leaves the PR, needs Michael
+PASS a refused merge: priority high, click = the PR
+PASS harness merge keeps the harness version of the run (E1 review)
+PASS harness merge merges verified milestones afterwards
+PASS parked: not an attempt, not retried
+PASS independent work goes on past a parked feature
+PASS ends waiting on Michael; the summary says so
+PASS a park notification: title, question, answer command, click and Edit INBOX action
+PASS Answer with Claude only when DESK_URL is set
+PASS the park goes out after the run branch is pushed (the link shows the question)
+PASS the run end goes out before the retro, once report.md is pushed
+PASS a failed park post is noted and committed at once
+PASS no URLs for a non-GitHub origin
+PASS a waiting-on-Michael run end: priority high, click = report.md
+PASS one notification per run end
+PASS harness parked: id, why, question, both commands
+PASS harness parked is read-only
+PASS harness parked --json parses
+PASS with a queue runner going, the continue command is a queue add
+PASS a run still ending: answer now, continue once it has ended
+PASS a run still going: only the answer command
+PASS harness parked: an unknown or glob run id is an error
+PASS a queued continuation: only the answer command
+PASS nothing parked
+PASS the answer skill exists and names the commands and the never-list
+PASS the answer skill passes Michael's words through a quoted heredoc
+PASS the user config template sets nothing
+PASS an INBOX answer unparks it; the run finishes
+PASS DESK=0: no desk
+PASS the stub claude's interactive mode prints the pane line and records input
+PASS DESK=0 by default, DESK_MODEL=opus
+PASS harness desk: one window, the Read line, the prompt, the notification click
+PASS the desk notification
+PASS the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory
+PASS the desk prompt names the run, its commands and the never-list
+PASS harness desk notes 'desk started:' in the run record
+PASS a second event reuses the desk window
+PASS no URL in time: no window, the plain notification
+PASS a dead desk is replaced
+PASS harness desk --debrief
+PASS harness desk: an unknown run or a bad option is an error, nothing started
+PASS a window of the run's name that never showed a URL is replaced
+PASS DESK=1: a park starts one desk, the run end reuses it
+PASS a desk that cannot start never changes the run
+PASS verify needs Michael starts a desk or reaches the open one
+PASS the debrief starts a desk when Needs Michael is non-empty
+PASS harness desk --list
+PASS harness desk --close <run>
+PASS harness gc closes idle desks
+PASS harness gc keeps the worktree of a run whose desk is open
+PASS harness desk --all
+PASS an open desk showing a dialog gets nothing typed
+PASS the desk's environment has no NTFY_TOKEN
+PASS a refused merge tells Michael and his desk once
+PASS harness merge says it was refused again, and starts no desk
+PASS the dialog guard: the CLI's dialog words, not the desk's own questions
+66/66 checks passed
+13-run-2-michael-sets-desk: 66 checks, 204.2 s
+tmp: /tmp/tmp.2gPfbDw5Tk
+PASS entries.mjs: validate accepts the schema and names what is wrong
+PASS entries.mjs: progress renders 15 in full and the rest as archive lines
+PASS entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap
+PASS entries.mjs: resolved is an array of strings and normalize keeps it
+PASS entries.mjs: the pack drops a question a later entry resolves
+PASS entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
+PASS entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
+PASS memlint: currentRules reads a directory store and the three file shapes newest first
+PASS memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row
+PASS entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
+PASS entries.mjs: a milestone pack lists failed verify rows before dead ends
+PASS entries.mjs: a damaged journal line is skipped, never fused or fatal
+PASS init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
+PASS init: a Vercel project without vercel.json gets one
+PASS init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
+PASS journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
+PASS journal: a 410-character summary and outcome "maybe" is minimal with why invalid (outcome
+PASS journal: a 2001-character init header is cut to 2000 and kept
+PASS journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
+PASS journal: validate exits 2 when its only errors are the caps, 1 with any other
+20/20 checks passed
+12-journal-pure-e4-entrys: 20 checks, 2.2 s
+tmp: /tmp/tmp.puFlr8jcLR
+PASS a stop without a reason says just: stopped by Michael (the note and ended)
+PASS harness stop --why: the note and ended say stopped by Michael: <why>
+PASS harness stop without --why: an empty STOP, and stopped by Michael as before
+PASS status: stop <why> from the phone: the same note, ended and services note
+PASS the retro prompt carries the end reason
+PASS a reason after any separator is kept whole, " · 2026-" in it included
+PASS the debrief page never reads a stop reason's words as its tone
+PASS a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason
+PASS a request queued after the stop (before the driver acts on it) stays requested
+PASS a stop reason's words are never read as a feature's cause (A failed the re-check)
+PASS harness continue of a run stopped from the phone: INBOX.md's status: stop goes back to run, so it doesn't stop again
+PASS a stop reason with | keeps its card on the debrief page and is one cell in report.md and trends
+12/12 checks passed
+14-run-2b-stop-records: 12 checks, 54.3 s
+tmp: /tmp/tmp.5ebJv3kTAO
+PASS treekey --partial: a CLAUDE.md-only change moves the full key (16 hex), keeps the reduced key, and differs in CLAUDE.md's blob line only
+PASS treekey --partial: a mapped path absent from the tree is a `- <path>` line, in map order
+PASS treekey: without a map --partial prints two equal keys and no blob line; the bare call is one line, --partial's line 1, map or not
+PASS treekey --partial: a dropped entry (directory, no name, outside the tree, under an ignored prefix) is one stderr line each; the output is the map's without it
+PASS treekey: a map whose every entry is dropped is as no map (two lines); the bare call never parses the map (no stderr)
+PASS treekey --names: the entries' names in map order (a duplicate path merged into the first), exit 1 and no line for a path no entry has
+PASS treekey.mjs exports ignoreList, parseMap, treeKey, partialKeys and mapNames, pure on a fixed file list and blobs
+PASS CHECK_KEY_MAP: harness default empty; this repo maps CLAUDE.md; the driver exports it; the template has it commented
+PASS check partial: a green full run writes green-<full> (count, wall) and part-<reduced>: the full key, then the blob lines
+PASS check partial: a CLAUDE.md-only diff runs exactly memlint: the partial line, exit 0, check-partial.out, check.out untouched
+PASS check partial: a partial green inherits the reference marker (count and wall) byte for byte, writes no part-, and the next call is cached
+PASS check partial: check-runs.log gets a partial row for the partial run
+PASS check partial: a lib/ diff runs the full suite (no arguments); a diff of both mapped paths runs memlint readme, map order
+PASS check partial: red twice is rerun once on memlint, says so, exits 1 and leaves no marker of either kind
+PASS check partial: red once then green is a flake: one flakes.jsonl row with partial, the green-after-a-rerun line, the reference marker
+PASS check partial: a red with no HARNESS_FAILED line reruns the partial's names (a flake row naming them); a deleted mapped file is a partial
+PASS check partial: with .harness/config.sh outside the key (its map could change under an equal reduced key) a CLAUDE.md diff runs in full
+PASS check partial: a map naming .harness/config.sh, or a gitignored .harness/config.sh, never lets a shrunk map run a partial
+PASS check partial: a sidecar with a path twice or a malformed line is no path set: a CLAUDE.md diff runs in full
+PASS check partial: the reference green-<ref> gone, or an exported map other than the tree's .harness/config.sh one, runs in full
+PASS check partial: a part- whose path set is not the map's (the map grew an entry) runs in full
+PASS check partial: the subset form on the diffed tree runs its subset and reads no map, sidecar or marker
+PASS check partial: a timeout in a partial run is said as such, no rerun, no marker
+PASS driver partial: a session that edits only CLAUDE.md gets a partial init (memlint alone after the full run); tests-end is the full count
+PASS driver partial: verify's run_init fresh removes the verified tree's part-; its suite runs in full (no arguments), after B's partial
+25/25 checks passed
+81-partial-key: 25 checks, 29.3 s
+tmp: /tmp/tmp.Oo3JCfgHPy
+PASS needs questions: questionKey folds whitespace, lower-cases, drops the harness's fill and a Files: line, cuts at 80
+PASS needs questions: open makes one warn item, key question:<the key>, no priority, seen 1, asked_in its run
+PASS needs questions: the same text again in the run exits 3, one item, seen 2, a later updated_at
+PASS needs questions: asked in a later run of the project, the item moves forward (seen +1, asked_in both, the old in its done/ as asked again in <run>)
+PASS needs questions: list shows the question card after a block card, its text, a where row per Files: path and the entries.jsonl line
+PASS needs questions: done --why resolves a question with that why
+PASS needs questions: a later entry's resolved resolves it at the sweep (answered in <feature>'s entry), an earlier one doesn't
+PASS needs questions: two questions of one entry that share their first 80 characters stay two items, each keeping its text
+PASS needs questions: questionKey drops only a Files: label line, and asked_in ends with the newest asker
+PASS needs questions: harness needs lists the parked card before the question card
+PASS needs questions: status counts questions apart (NEEDS YOU 1 · 3 questions, 0 · 2 questions), the run card keeps the block count
+PASS needs questions: an entry with two questions opens two question items with their Files:, noted
+PASS needs questions: harness needs prints both question cards
+PASS needs questions: the same question in a later session is one item, seen 2
+PASS needs questions: a later entry's resolved closes it by the run's end
+PASS needs questions: the entry that resolves it closes it at its ingest, before its session's line
+PASS needs questions: a second run's ask moves the first run's open item forward
+PASS needs questions: no notification carries a question
+PASS needs questions: the debrief gatherer lists the open questions under #### Questions for Michael
+PASS needs questions: the debrief lists 12 questions and how many more, and a run without question items its entries' open ones
+PASS needs questions: the answer skill passes an answer no decision file holds on with harness answer
+PASS needs questions: the answer skill records the answer in place and runs needs done
+22/22 checks passed
+78-needs-questions: 22 checks, 72.6 s
+tmp: /tmp/tmp.S72xCABk3z
+PASS eval run: two stub tasks end to end, results in place
+PASS eval run: --harness <ref> runs that ref's driver
+PASS eval run: nothing reaches a remote
+PASS eval run: a clone holds nothing of its source past base (E2 review)
+PASS eval: the budget cap stops starting tasks
+PASS eval: refuses past WEEKLY_STOP_AT
+PASS eval: --repeat 2 runs each task twice
+PASS eval: a missing repo is refused before any spend, a set file in the cwd is read (E2 review)
+PASS eval: an interrupted eval removes its harness worktree (E2 review)
+PASS eval compare prints the table
+PASS eval probes: questions derived, answers scored
+PASS eval probes: the probe prompt is the driver's coding prompt
+PASS eval probes: the probe reads the run's context pack
+13/13 checks passed
+10-harness-eval-run-e2: 13 checks, 59.0 s
+tmp: /tmp/tmp.vVehV6IxBy
+PASS view: lib/view.mjs has a usage header, imports only node: built-ins, exports the formatter's functions, and node --check passes
+PASS view: context width is COLUMNS when a whole number >= 40, else a TTY'\''s columns, else 100; narrow below 72
+PASS view: context tty from isTTY or HARNESS_TTY; colour only on a TTY without NO_COLOR or TERM=dumb, HARNESS_COLOR overrides
+PASS view: glyphs unicode from the first set of LC_ALL, LC_CTYPE, LANG naming UTF-8; HARNESS_GLYPHS overrides; ascii otherwise
+PASS view: context now is HARNESS_NOW when a whole number, else the clock
+PASS view: the glyph set is fixed, each one text-presentation code point of width 1, with its ASCII form; an unknown name throws
+PASS view: displayWidth ignores ANSI escapes and combining marks and counts wide characters 2
+PASS view: paint wraps in SGR only with colour on; an unknown style throws
+PASS view: cut never splits a code point or an SGR sequence and ends in the cut glyph; pad right-aligns numbers
+PASS view: table lines stay within 40, 60, 80 and 120 columns with a 60-character id whole and a 300-character reason cut
+PASS view: table puts a row'\''s sub lines under it at 4 and gives no second line to an empty flex value when narrow
+PASS view: an over-wide narrow row breaks at a column gap before folding: an id that fits the width stays whole, no blank line
+PASS view: card puts a URL inside a value on its own line at 2, splits a value at newlines, keeps a long label and a tiny width inside the line
+PASS view: when and duration use local time: 00:19 and a local midnight under TZ=America/New_York
+PASS view: section fills to the width with the rule glyph; an empty one is one line without the rule; rule is the width
+PASS view: card wraps a 200-character value under an 11-wide label with a hanging indent, keeps lines verbatim at 4 and a URL whole
+PASS view: ago gives now 4m 3h 2d 5w for 0 s, 240 s, 3 h, 2 d and 5 w before now; a future time is now
+PASS view: when gives 2026-10-27 00:19 (10h ago) under TZ=UTC, and (now) under a minute
+PASS view: duration takes 30m 6h 2d 1w and a date relative to now, and fails on abc
+PASS view: home shortens a path under the home directory to a tilde and leaves other paths
+PASS view: endClass gives each reason in tests/fixtures/end-reasons.txt its class; an unknown or empty reason is failed
+PASS view: tests/fixtures/end-reasons.txt holds every literal reason finish, END_REASON and a run-ending lane exit write
+PASS view: the CLI renders a table, a card and a section from tab-separated stdin
+23/23 checks passed
+51-view-pure: 23 checks, 1.1 s
+tmp: /tmp/tmp.0UPPaQzKNh
+PASS a failed post is noted and the run goes on
+PASS a failed run-end post is committed: the worktree stays clean for gc
+PASS a given-up feature blocks what depends on it
+PASS real limit message: not counted, run completes
+PASS a $0 one-turn session is not counted
+PASS the limit window is shared
+PASS refused sessions recorded as env
+PASS endless limit ends the run (frees the queue)
+PASS continue finishes a paused run
+PASS one ledger row per run
+PASS start queues when MAX_PARALLEL_RUNS are going
+PASS continue refuses a running run
+PASS the queue runner reaps its ended runs' tmux sessions before the debrief; h-queue and the desk untouched
+PASS the queue runner runs harness gc <project> --all-merged --deps once per project, before the debrief
+PASS queue ran both entries, distinct run ids (their merged worktrees gone with the runner's gc: the ledger has the records)
+PASS trends lists every run
+PASS trends --by version groups the runs
+PASS queue end triggers one debrief, detached
+PASS the debrief saw the queue's runs
+PASS a debrief page beside the note: a card per run, the note escaped
+PASS by hand right after: nothing new, no session
+PASS a runner that started nothing (a skipped continuation): no debrief
+PASS queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't
+PASS queue list marks continuations (requested) or (automatic)
+PASS a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)
+PASS a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too
+PASS a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)
+PASS the driver's continuation after a session cap is automatic
+PASS a failed or hung runner gc is logged (killed at HARNESS_GC_TIMEOUT) and never stops the debrief
+PASS queue holds an entry whose project has a live run, starts the next one
+PASS the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)
+PASS queue park sets an entry aside with its reason
+PASS the runner skips a parked entry and says so
+PASS queue unpark puts it back at the end, its reason gone
+PASS queue add numbers past a parked entry
+PASS queue park refuses to overwrite a parked entry; both survive
+PASS queue stop after a run: one debrief
+PASS past --until after a run: one debrief
+PASS a refused debrief: no note, nothing marked done, LIMIT_UNTIL set, one line to NOTIFY_CMD
+PASS a session that dies at startup: failed, and no usage-limit window for the box
+PASS a failed session: its error text is never the note
+PASS a killed debrief changes nothing
+PASS --dry-run prints the context, launches nothing
+PASS the debrief's harness status block per run opens with the run's card line
+PASS placeholders inside the context are not filled
+PASS a still-running run changing its worktree is not flagged
+PASS the allowlist runs nothing that writes or executes
+PASS the session may read each run's state dir and the queue
+PASS the next debrief covers what the failed and killed ones missed
+PASS one note, overwritten: ledger/debrief.md
+PASS the session: an allowlist (dontAsk) and the never-list
+PASS the prompt goes in on stdin, not as an argument
+PASS continuation queued: keeps attempts, brief marked as the debrief's
+PASS not queued: ended done / already queued / no work left / still running
+PASS NOTIFY_CMD gets 3 headline lines and the note path
+PASS DEBRIEF_PAGE_CMD gets the page
+PASS a run still going is covered again next time
+PASS debrief notifications go to NTFY_URL when set
+PASS a 300 KB report: the context stays small, the session runs
+PASS files changed during the session are flagged in the note
+PASS a debrief headline over ntfy: no Click (the note is a path), default priority when nothing needs Michael (a Not queued line isn't)
+PASS debrief waits for the usage-limit window, then runs
+PASS a run that starts during the wait is covered by the next debrief
+PASS a debrief whose note needs Michael: priority high
+PASS a window past the 5 h cap: no session (the next debrief covers it)
+PASS preflight: no node anywhere, a clear failure and no session
+PASS by hand while another debrief runs: it says it is waiting
+PASS the whole context is capped too
+PASS each debrief is a commit of ledger/debrief.md
+PASS a ledger checkout on another branch: the note is written, not committed
+PASS a held index.lock: written, not committed, nothing left staged
+PASS a refused commit: the note is unstaged again
+PASS the weekly budget ends a run after the session that crossed it
+PASS the queue starts no run past the weekly budget
+PASS WEEKLY_STOP_AT raises the bar
+PASS harness gc --dry-run kills no tmux session
+PASS harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
+PASS harness start refuses a run id whose tmux session another live run holds; its session lives
+PASS the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
+79/79 checks passed
+15-run-4-same-but-queue-parked-debrief-tmux: 79 checks, 235.8 s
+tmp: /tmp/tmp.6gru6zCNcS
+PASS resolve: a re-base conflict gets a resolve session, noted with its file
+PASS resolve: the resolved merge takes one verify round, then M2 merges (one resolve line, two verify lines)
+PASS resolve: the tree on main is the tree verified as run/<run>/M2 (the invariant)
+PASS resolve: no needs record and one metrics row of kind resolve
+PASS resolve: the resolve prompt names README.md and a commit subject from each side
+PASS resolve: the resolution's note names its files, model and minutes, and the verify round that follows
+PASS resolve: summary.json counts the resolution and report.md has its Conflicts row
+PASS resolve: report.md's Spend by role names the resolve sessions' spend
+PASS resolve: the PR body says main was merged in by a resolve session, and no needs-you post went out
+PASS summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes
+PASS resolve: prompts/resolve.md renders through lib/prompt.sh as a command, first line # Resolve session, no {{ left
+PASS resolve: merge_one's conflict returns 3 with moved-<m> in a lane and opens merge_conflict under HARNESS_MERGE_ONLY
+PASS resolve: merge_one's conflict at the run's end keeps today's merge_conflict record
+/home/mh550/projects/agent-harness/.claude/worktrees/phase2-pair/lib/resolve.sh: line 44: USAGE: unbound variable
+PASS resolve: a resolved merge is committed and every edit outside the conflict is put back, whatever its path
+PASS resolve: slot_open undoes a merge a killed lane left in progress in its slot, never committing its markers
+PASS resolve: CONFLICTS=michael keeps today's merge_conflict record and runs no resolve session
+PASS resolve: harness merge on the conflicting milestone keeps the needs path and runs no session
+17/17 checks passed
+76-resolve-session: 17 checks, 35.0 s
+tmp: /tmp/tmp.bdUfJeiMH8
+PASS needs record: its first 13 keys are the v1 event keys in order, kind is park, needs_michael, blocked or limit (in v1's enum)
+PASS needs record: ref is <run>/<seq>, key <reason>:<subject>; seq is one past the largest in needs/ and needs/done/; feature and milestone default from the subject or the list
+PASS needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref kept, updated_at moved
+PASS needs open: an unknown reason or an empty subject exits 1 with needs.mjs: on stderr and writes nothing
+PASS needs REASONS: kind, severity and priority for each of the 16 reasons, as the plan's table
+PASS needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
+PASS needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
+PASS needs: a run whose worktree and record branch are both gone resolves run removed (list hides it before any sweep); the branch alone keeps it
+PASS needs list: a dead driver.pid with no ended is a synthesized driver_crash (ref <run>/crash, at run.log's mtime), parked.json's B a parked item; nothing stored
+PASS needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver
+PASS harness needs --json: the open records, block before warn, oldest first; --all adds the 15 resolved ones
+PASS harness needs: a card per item (<glyph> <run> · <headline> · since … · <ref>); with a run, that run's only; nothing open: NEEDS YOU 0, nothing needs you
+PASS harness needs is read-only
+PASS harness needs nope: exit 1, harness: on stderr; needs done with no ref is a usage error
+PASS harness needs done <ref>: resolved <ref>, the file in needs/done/ by michael (--why, else done by hand); a second done, a synthesized or unknown ref exit 1
+15/15 checks passed
+58-needs-record: 15 checks, 4.8 s
+tmp: /tmp/tmp.5W3mKF1jDt
+PASS needs card parked: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card given_up: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card verify_thin: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card verify_red: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card verify_recheck: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card merge_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card merge_refused: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card main_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card feature_list_edits: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card initializer_failed: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card usage_limit: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card weekly_budget: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card overlap: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs card question: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+PASS needs cards: 16 fixtures, one per reason, and a reason without a template is exit 1
+PASS parked card: the INBOX question verbatim with its line 16 and ?plain=1#L16 URL, where from its Files: line, parked.mjs's commands
+PASS main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
+PASS mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits
+PASS needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
+PASS waitsOn: a feature's and a milestone's unfinished dependants through after, every unfinished one for run
+PASS notify.mjs urls compare <origin> <base> <branch>: the GitHub compare URL; exit 1 off GitHub
+PASS view.mjs cutFront keeps the end from a directory boundary; card with rule: false has no rule; a url-only field is the url line alone
+PASS needs cards: merge_conflict and main_conflict show tried in the card, the notification body and needs.md
+PASS harness needs: NEEDS YOU, a card per item (<glyph> <run> · <headline> · since <HH:MM> (<ago>) · <ref>), blocked, why, where, URLs, options, do; the footer
+PASS COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
+PASS harness needs --json: each command's full text (no ~, no cut)
+PASS harness parked is harness needs for text: the parked card's question from INBOX.md, run, do
+PASS harness parked --json: today's keys for parked features only, plus ref and card
+PASS harness needs and parked are read-only
+31/31 checks passed
+59-needs-cards: 31 checks, 2.6 s
+tmp: /tmp/tmp.FGr9ndp46z
+PASS resolve fallbacks: a session that leaves a marker is aborted, the slot back at the verified commit, merge_conflict with tried, the lane closed
+PASS resolve fallbacks: a session that gives up is aborted the same way and its card says why
+PASS resolve fallbacks: a session that gives up counts as escalated in summary.json and report.md's Conflicts row
+PASS resolve fallbacks: a stray edit and new files are put back with a note naming them, and M2 merges
+PASS resolve fallbacks: a refused session is deferred: no needs record, rebase-M2 back, then it re-bases and merges after the wait
+PASS resolve fallbacks: past MAX_RESOLVES the next conflict takes today's path with the resolve session(s) used note
+PASS resolve fallbacks: sync_main at verify resolves in the lane: the note before verify M2, one verify M2, merged with no re-base
+PASS resolve fallbacks: sync_main's resolution is noted with its files, model and minutes, and the verify going on
+PASS resolve fallbacks: a sync_main resolve that gives up is main_conflict with tried, notified once, and no re-base retries that main
+PASS resolve fallbacks: resolve_ok says no for CONFLICTS=michael, harness merge, no lane, a marker for this main, MAX_RESOLVES used and the deadline
+PASS resolve fallbacks: resolve alone: a marker left aborts the merge, HEAD back at the lane's commit; this main again runs no session, same tried
+PASS resolve fallbacks: the record branch's sync_main keeps today's abort and main_conflict record
+PASS resolve fallbacks: a lane's sync_main hands its conflict to resolve: refused is 2 with no record, unresolved the main_conflict record with tried
+PASS resolve fallbacks: a slot_open base conflict keeps base_conflict and runs no resolve session
+14/14 checks passed
+77-resolve-fallbacks: 14 checks, 123.6 s
+tmp: /tmp/tmp.woo9vnhYEY
+PASS show: the run card's header and rule, then worktree, branch, record, state, lanes and the proposed milestones with their tags and PR URLs
+PASS show: CHANGES vs origin/main lists the session's 2 files with +/−, a stacked lane counted once, and marks the one main also changed ✗ conflicts
+PASS show: the compare URL of each run branch with changes, for the GitHub-shaped origin; none for a plain-path origin
+PASS show: <run> <feature> lists its milestone, passes, attempts, steps, sessions, its commits and its entry files, absolute
+PASS show: at COLUMNS=60 no line of the run view or the feature view passes 60 columns but a URL line
+PASS show: --json is one v1 document (the feature form a superset) whose sorted key paths equal tests/fixtures/show-json-keys.txt
+PASS show: NEEDS YOU lists the run's open items, one line each, then the harness needs command
+PASS show: the 12 largest rows, then +<k> more: harness show <run> --files; --files lists every row
+PASS show: once the worktree is removed: worktree removed, the record from the ledger copy, the same changes; the feature form still finds A, its one commit (not main's older A, not a body line)
+PASS show: the pure parts: joinDiff joins by path (binary +/− null, .harness/runs/ left out), mergeTreePaths reads the real output, combine counts one blob once (stacked or fanned-out lanes), milestonesOf keeps a proposal's PR
+PASS show: read-only: no fetch, the config read in a subshell, the project's object store untouched by merge-tree; bash -n and node --check
+PASS show: an entry resume's metrics row is listed as an entry resume, never a second coding session
+12/12 checks passed
+68-show: 12 checks, 18.6 s
+tmp: /tmp/tmp.iPXlbeY8iP
+PASS lanes continue: a run stopped mid-M2 reopens harness-lane/<run>/M2 from the origin's and the box's branch and finishes M2 on it
+PASS lanes continue: M2's merged PR still has the lane's earlier commits (the first segment's, the one by hand, the unpushed one)
+PASS lanes continue: a legacy run (code on its branch beyond main) is refused with the three ways forward, exit 1
+PASS lanes continue: harness merge of a legacy run is not refused
+PASS lanes continue: a run started with --base is measured against its base, not main: not refused
+PASS lanes continue: a --base run whose branch merged main is not refused once main moves on (no main file counts as its code)
+PASS lanes continue: a reused slot's work, committed while its push failed, stays on the lane and reaches main
+PASS lanes continue: a record-only run (its record on main too) continues as a lanes run and ends done
+PASS lanes pr-held: M1 verified is proposed (its PR open, not merged), and M2 opens from main with run/<run>/M1 merged in
+PASS lanes pr-held: M2 verified opens its PR, not merged, with the waits note once
+PASS lanes pr-held: harness merge afterwards merges M1, then M2
+PASS lanes pr-held: M1 merged on GitHub is seen as merged, and the waiting M2 is proposed, with its notification
+12/12 checks passed
+46-lanes-continue: 12 checks, 125.1 s
+tmp: /tmp/tmp.1g6Qx46c0p
+PASS status view: four sections in order (NEEDS YOU · harness needs, RUNNING, QUEUED · runner off, FINISHED · last 24h), a rule and the footer
+PASS status view: an empty state root prints the four empty sections and no footer
+PASS status view: NEEDS YOU lists the crashed, the parked and the given-up run, oldest first, with headline, passing, dollars and age; the gc'd run none
+PASS status view: RUNNING shows the live run as ● with feature, session and model alias; paused ‖; a usage-limit wait; two lanes as sub-rows
+PASS status view: QUEUED shows the waiting entries as queue rows, a held one says which run holds it, parked ones counted; past three, +<k> more
+PASS status view: FINISHED newest first with the end class glyph and the reason, the gc'd run 23/23 from the ledger; the 3-day-old run only in the footer
+PASS status view: --since 4d adds the 3-day-old run and drops the footer; --all lists every run; --project proj2 only that project's
+PASS status view: no run.log line without -v; a bad --since is an error
+PASS status view: no line over 60 or 80 display columns (also with -v); at 60 the long field and the cost go on an indented second line
+PASS status view: colour only with HARNESS_TTY=1 (none under NO_COLOR); ASCII only under LC_ALL=C; paths with the home directory as a tilde
+PASS status view: -v adds each running run's lane lines (P2-06's text), its own units with MemoryCurrent and the last 3 run.log lines; N alone implies -v
+PASS status view: STATUS_SINCE defaults to 24h (lib/config.sh), commented in the user config template; the catch-up prompt asks for one project
+PASS status view: -v with a non-numeric N keeps 3 log lines; two lanes' sub-rows are ASCII under LC_ALL=C; only a path starting with the home directory becomes a tilde; no control byte from run.log
+PASS status view: at 60 columns the cost stays beside a long reason; the footer keeps -p; a date window reads since <date>
+    best of 3: 337 ms
+PASS status view: harness status --all over 38 stub runs takes under 1 s (best of 3), and lists them all
+15/15 checks passed
+53-status-view: 15 checks, 10.2 s
+tmp: /tmp/tmp.K1C5a9lvOK
+PASS lanes slots: the second milestone opens in slot 0, reused by checkout -B, and finds the ignored directory the first left
+PASS lanes slots: a merged lane's branch is deleted when its PR merges (noted before the next lane opens), locally and on origin
+PASS lanes slots: after finish no lanes/ directory is left; the merged lane branch is gone here and on origin, the unverified one stays on both
+PASS gc --dry-run names a leftover slot and a merged lane branch on origin, one line each, and removes neither
+PASS lanes slots: under pr the slot is freed at verify and the branch kept; gc deletes it once its PR merged, here and on origin
+PASS lanes slots: gc of a run whose driver was killed but whose lane lives keeps its slot (saying why) and its lane's session unit
+PASS lanes slots: gc of a run with a dead driver and lane removes its leftover slot and lanes/, stops its lane unit and keeps its unmerged lane branch
+PASS lanes slots: gc --deps frees the dependency directories of an ended run's slot it keeps for its uncommitted work
+PASS lanes slots: gc of a run with a live driver touches no slot, no lane unit and no lane branch
+PASS lanes slots: the held run then ends with its slot gone
+PASS lanes slots: a merged lane's branch goes only as far as its merge holds it, and only from this run's slots
+11/11 checks passed
+49-lanes-slots: 11 checks, 54.8 s
+tmp: /tmp/tmp.v6Z0zDBXx1
+PASS red marker: red twice with HARNESS_FAILED=a writes red-<key>: 1, a, wall <s>, the RED line as printed; no green-<key>
+PASS red marker: the next full call prints the cached line, the stored RED line on this tree's own output, exits 1, runs nothing
+PASS red marker: with this tree's output gone from scratch, the cached answer names the subset call, not another tree's file
+PASS red marker: a subset call on the red tree runs the suite and reads no marker
+PASS red marker: a suite that would be green on call 4 still gets the cached red (the key is the tree's)
+PASS red marker: a red with no HARNESS_FAILED line answers cached for this code tree: whole suite
+PASS red marker: a timeout and a cap kill write no red-<key>, and the next call runs the suite
+PASS red marker: the cached answer exits with the stored code (3), not 1
+PASS red marker: a red by a signal's code (143) and a red whose rerun timed out write no red-<key>; the next call runs
+PASS red marker: a marker whose exit line isn't a red exit code answers exit 1
+PASS red marker: a green run removes a planted red-<key>
+PASS red marker: check.sh's usage header names red-<key>
+PASS red marker: C's red un-passes it; the retry's init output is the cached red and run.log says suite red before the session
+PASS red marker: the red tree ran the suite twice (the full run and the rerun guard's), none from the retry's run_init
+PASS red marker: verify's run_init fresh removes the tree's red-<key> and green-<key>; the suite runs in full on it
+PASS red marker: a red under a failed init isn't kept (noted); the next init, which succeeds, runs the suite
+16/16 checks passed
+80-red-marker: 16 checks, 55.8 s
+tmp: /tmp/tmp.aui1wxo2s0
+PASS record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
+PASS record commit: rec_commit commits .harness/runs/<run>/ only; a stray file in the record worktree stays untracked
+PASS lanes record: a lane commit touching .harness/runs/ is reverted with a note, and harness/<run> never gets it
+PASS lanes record: a session's question above ## Answers lands in the record's INBOX.md above that line
+PASS lanes record: two sessions' passes flips both land while the record moved between them
+PASS harness start --base: persisted, and the record branch and every lane start from it
+PASS lanes record: the slot is gone at the end, the run keeps one worktree, the merged lane's branch is deleted
+PASS harness start refuses the run id lanes (the slots' directory)
+PASS a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
+/home/mh550/projects/agent-harness/.claude/worktrees/phase2-pair/tests/../lib/record.sh: line 786: needs_open: command not found
+PASS slot_open: a dependency's tag that conflicts with main gives the base-conflict note and needs-<m>
+PASS materialize: a record tracked at the slot's base is skip-worktree, so the session's commit carries none of the copy
+/home/mh550/projects/agent-harness/.claude/worktrees/phase2-pair/tests/../lib/record.sh: line 786: needs_open: command not found
+PASS slot_open: after a lane's base conflicts, reopening the previous lane checks its branch out again
+PASS slot_open: the slot's excludes file keeps the user's global excludes (a ~ path expanded)
+PASS slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)
+PASS record lock: pack_and_copy builds the pack and copies it into the slot under one lock (another lane's pack can't land between)
+15/15 checks passed
+44-lanes-record: 15 checks, 33.7 s
+tmp: /tmp/tmp.BRAJd9t4xJ
+PASS entries survive: {{ENTRY_CHECK}} renders as lib/entries.mjs validate in the coding, verify and initializer prompts
+PASS entries survive: the coding, verify and initializer prompts say no background work at the end
+PASS entries survive: STUB_LONG_SUMMARY=A keeps A's entry whole with the cut-to-400 note
+PASS entries survive: a headless stub session prints an init line with a 36-character session id
+PASS entries survive: the stub answers --resume of an unknown id with the CLI's two lines and exit 1
+PASS entries survive: the stub's resume keeps the session id and a cumulative total_cost_usd
+PASS entries survive: STUB_NO_ENTRY=A writes no entry.json
+PASS entries survive: STUB_NO_ENTRY=A is resumed once with the init line's session id, beside 01-A.resume.jsonl
+PASS entries survive: the resumed entry has its dead_ends, no minimal, and the written-on-a-resume note
+PASS entries survive: one entry-resume metrics row for A holds the resume's cost minus the session's
+PASS entries survive: a resume leaves summary.json's session count as the same run without it, its tokens counted
+PASS entries survive: STUB_RESUME_ENTRY=bad is minimal with the after-one-resume note
+PASS entries survive: a session refused by a usage limit is not resumed (no resume.log)
+PASS entries survive: a resume's edit outside the run record is in no commit and the entry is still written
+PASS entries survive: the resume's prompt says the entry is missing, and its budget is the session's cost plus ENTRY_RESUME_BUDGET_USD
+PASS entries survive: a resume's passes flip is put back and its commit reverted, each noted, and the entry kept
+PASS entries survive: a feature list an initializer's resume writes is removed, so the run ends initializer failed
+PASS entries survive: a transcript without a session id is noted and never resumed
+18/18 checks passed
+76-entries-survive: 18 checks, 125.4 s
+tmp: /tmp/tmp.WE4u8JCumk
+PASS lanes two: with MAX_LANES=2 and M2 after: [], both lanes' sessions run at once and two lanes open before any closes
+PASS lanes two: M1 opens in slot 0 on the run's port, M2 in slot 1 on the first free one
+PASS lanes two: each lane's prompt renders its own port (A: 7950, C: 7951)
+PASS lanes two: both milestones merge (one pr merge each, no refused merge) and the run ends done
+PASS lanes status: harness status prints one line per open lane (feature, session, port, slot, its units with MemoryCurrent), no bare line for a lane's unit
+PASS lanes summary: the two-lane run's summary.json has lanes {max_open: 2, lane_hours, wall_hours} and report.md its Lanes line
+PASS lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
+PASS lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)
+PASS lanes end: a lane's session cap ends the run (lanes-end); the other lane finishes its session and closes, the run is ending
+PASS lanes end: a stop during a usage-limit wait ends the run within a 60 s slice and starts no session in the window
+PASS metrics usage: five_hour reads the newest event's five-hour window; the default stays the seven-day one
+PASS lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
+PASS lanes ports: port_taken counts a live lane's port (pid, svc-up or opening beside it), not a closed lane's
+PASS lanes trap: a killed background child runs neither the driver's nor a lane's EXIT trap (driver.pid stays, no ended, no exit line)
+14/14 checks passed
+47-lanes-two: 14 checks, 136.7 s
+tmp: /tmp/tmp.dJEgJ7qCau
+PASS tty views: summary.mjs report --md and off a TTY, and harness report off a TTY, are the stored markdown byte for byte
+PASS tty views: harness report on a TTY is a card and a feature table: no | table row, no **, the fields and the 9 rows
+PASS tty views: the memory peaks over 2 GB are a section of the TTY report, as they are a list in the markdown
+PASS tty views: trends on a TTY shows the newest 15 runs as columns, 2 older: harness trends --all and the total over all 17
+PASS tty views: trends at 60 columns keeps every line within 60, one or two lines a run, and the whole total line
+PASS tty views: trends off a TTY is the markdown table of all 17 rows, --all and --md the same bytes
+PASS tty views: finish writes report.md as markdown under HARNESS_TTY=1
+branch 'harness-lane/tv1/Z' set up to track 'origin/main'.
+PASS tty views: gc --dry-run on a TTY has the six headers in order and the footer; off a TTY no header, marker or footer
+PASS tty views: the TTY form less its headers, rule and footer is the plain form, line for line in the same order
+PASS tty views: a dry run that stops at the fetch says where it stopped, no empty sections after it and no footer
+PASS tty views: gcView shortens the home directory to a tilde and counts a branch named twice once
+11/11 checks passed
+71-tty-views: 11 checks, 16.2 s
+tmp: /tmp/tmp.XCNTeGsDDC
+PASS conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)
+PASS sync_main's conflict opens main_conflict for the lane: the conflicted file in where, the merged PR's run in why, the main commit
+PASS a main conflict notifies once per main commit across 2 verifies: high, title <m> needs you, body the card, click needs.md
+PASS verify's re-check failure opens verify_recheck with the failed ids; its notification is the record's
+PASS a later clean sync_main resolves main_conflict: its item in needs/done/, main merged cleanly, noted
+PASS merge_one's conflict opens merge_conflict: the merge-tree files in where, main and the tag commit, notified with the card
+PASS merge_one's refusal opens merge_refused: the PR URL in where and as its click, notified once with it
+PASS a thin verify opens verify_thin under [<run>] M1 needs you; the notification's body is the card, click needs.md
+PASS slot_open: a dependency's tag that conflicts with main opens base_conflict naming that tag
+/home/mh550/projects/agent-harness/.claude/worktrees/phase2-pair/lib/record.sh: line 172: gh_url: command not found
+PASS merge_one on the coordinator: merge_conflict names the lane branch, never the record branch, and is notified
+10/10 checks passed
+61-needs-git: 10 checks, 52.2 s
+tmp: /tmp/tmp.Al9xZqpbRa
+PASS overlap: named on the suite-split spec with this repo's git ls-files finds tests/run.sh, lib/treekey.mjs and lib/check.sh
+PASS overlap: every name is a tracked file or a tracked dir/ of two or more segments; no tests/, lib/ or .harness/runs/
+PASS overlap: named takes backticked and bare path words, strips .,:;) and :<line>, and a word without / only in backticks
+PASS overlap: a dir/ or glob names its directory of two or more segments; .harness/runs/ never
+PASS overlap: Markdown emphasis and HTML tags stuck to a path neither hide it nor turn it into its directory
+PASS overlap: overlap is the sorted intersection: file and file, a dir/ and a file under it (the file), dir/ and dir/; none
+PASS overlap: named and overlap are exported and pure (no I/O at import); node --check lib/overlap.mjs
+PASS overlap: named leaves docs/plans/ out as a directory (every run writes its plan there); a plan file named exactly still counts
+PASS overlap: queue add of a start whose brief names a file an ended run's unmerged branch changed warns and queues it; old1 (nothing unmerged) is not compared
+PASS overlap: queue list shows ⚠ overlaps <R> on <files> under the entry; status --json's queued entry overlap lists {run, files}
+PASS overlap: a live run is compared by what its spec and brief name (no branch yet); more than 6 files end in and <k> more
+PASS overlap: start --now prints the warning, starts, and opens a warn overlap record on both runs naming the files and which merges second
+PASS overlap: queue add --continue <run> warns from the run's spec and brief (brief.md) against the others
+PASS overlap: harness needs done <ref> resolves one by hand; sweep resolves the other once ov2's lane branches are gone (other run merged)
+PASS overlap: the sweep rule: other run gone, other run merged, this run merged, else kept (no git facts: kept)
+15/15 checks passed
+70-overlap: 15 checks, 33.9 s
+tmp: /tmp/tmp.cUIvP6dVed
+PASS status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs and ./overlap.mjs, exports runObject, queueEntry and sections
+PASS status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
+PASS status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
+PASS status json: the gc'd run's features are 23/23 from the ledger's summary.json, its worktree gone, its lanes from the summary
+PASS status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
+PASS status json: the running run's feature, session (all segments'), model, port and started_at; lane M1 open with its unit; its own unit apart
+PASS status json: finished holds the runs ended in the last 24h, newest first, and older the rest; at least the 3 newest
+PASS status json: STATUS_SINCE in the user config sets the window, --since wins over it
+PASS status json: --project proj2 keeps only that project's runs, items and queue entries
+PASS status json: queued holds the entries as queue list numbers them, held by a live run of their project, a brief's first 30 characters
+PASS status json: harness status <run> --json prints that one run object with v; an unknown run is an error
+PASS status json: --json writes nothing, and reads the queue dir without creating it
+PASS status json: an empty meta.env is skipped and a bare end reason dated by its file
+    best of 3: 348 ms over 38 runs
+PASS status json: harness status --json over 38 stub runs takes under 1 s (best of 3)
+14/14 checks passed
+52-status-json: 14 checks, 8.9 s
+tmp: /tmp/tmp.vup2OcjSyL
+PASS lanes: a milestone whose first feature has no after waits on every earlier milestone (tags of each as its base)
+PASS lanes: a milestone whose first feature has after: [] opens at once, beside the first
+PASS lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)
+PASS lanes: a needs-<m> milestone never opens
+PASS lanes: an after into a later milestone (a name or its feature) never makes a lane wait on a later one (no cycle)
+PASS lanes: an open milestone (lanes/<m>/pid alive) is not a candidate; a dead pid's is
+PASS next <m>: a feature without after waits on its own milestone's earlier features only
+PASS lanes: a complete unverified milestone is a candidate (to be verified); a given-up one with nothing to try is not
+PASS lanes: features with no milestone form lane default, listed first; without meta.env the tags name the state dir
+PASS pass: F pass <list> <id> flips passes to true and nothing else (the mirror of unpass)
+PASS scope.sh: scope_owns accepts a <m>- role prefix (s<n>, check-<pid>, svc) and nothing else after it
+PASS lanes: F blocked names a given-up feature of a milestone another lane waits on (C and D wait on B through M1)
+PASS lanes config: MAX_LANES=1 LANE_RESERVE_GB=4 LANE_OPEN_BELOW_5H=70 LANE_REBASE=suite MAX_REBASE_ROUNDS=1 RECORD_PR=end by default; commented in the user template; HARNESS_LANE_POLL in the driver's usage
+PASS lanes: the default lane (no milestone, never verified) holds later lanes only until its features pass, then never opens
+PASS lanes summary: laneSpans counts the lanes open at once and sums open-to-close hours, a lane left open closing at its segment's end
+PASS lanes prompts: initializer.md says side-by-side milestones touch different files, shared docs go in the closing review, an independent feature gets after; run.md says other lanes work in other slots
+16/16 checks passed
+43-lanes-scheduler: 16 checks, 1.5 s
+tmp: /tmp/tmp.aLscaeEfGm
+PASS memlint: node --check passes, the usage header lists the five checks, a missing worktree exits 2
+PASS memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming its line, exit 0
+PASS memlint: the pathways project.md (4cafb65^) yields a night-scope finding for tonight
+PASS memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9
+PASS memlint: the old rane store without its current-rule-set header yields a header finding
+PASS memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
+PASS memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
+PASS memlint: a worktree with neither DECISIONS= nor docs/decisions.md yields decisions: no store
+PASS memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
+PASS memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
+PASS memlint: a directory store file marked superseded with no Updated in place line yields a finding, with one none
+PASS memlint: a stated rule is no count or night scope (1 test, as of decision 12), a month alone is a date (as of October)
+PASS memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
+PASS memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
+PASS memlint: an unreadable CLAUDE.md is exit 1 and one stderr line naming the file and the error
+PASS memlint: a current-rule-set header under a ## section before the first decision is a header; a symlinked file is linted
+PASS driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
+PASS driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
+PASS harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line
+19/19 checks passed
+39-memlint-m4: 19 checks, 44.4 s
+tmp: /tmp/tmp.vNujN2tfzK
+PASS flakes_note: one note per whole row past flakes-noted (whole suite for no names), a row that isn't JSON passed over
+PASS summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
+PASS report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
+PASS flakes run: a red every time still un-passes C with today's note after a rerun (the invariant)
+PASS flakes run: a run with no flake writes no flaky: line and no flakes.jsonl
+PASS flakes run: a suite red once after A's session is noted flaky: whole suite with its load, and A stays passed
+PASS flakes run: flakes-noted holds flakes.jsonl's size after the note
+PASS flakes run: summary.json flakes and report.md's Flakes row (1 · whole suite); the invariant run's Flakes 0
+PASS flakes run: tests-start after a flake on the first suite is the marker's total, not the red run's passes
+PASS flakes run: a flake on finish's own suite is noted too, and summary.json counts it once
+PASS debrief: the flakes block names a check that flaked in two of the last five ledgered runs (×2), not one in one
+11/11 checks passed
+74-flakes-run: 11 checks, 66.0 s
+tmp: /tmp/tmp.89vxHz8lFp
+PASS lint: no-anchor trips "works correctly", not "the suite is green" or "curl :7814/x returns 200"
+PASS lint: outside-repo trips ~ and /home/ paths, not lib/driver.sh or /tmp/harness/
+PASS lint: self-match trips a grep of progress.md for the step's own words, not of harness-log.md or lib/
+PASS lint: self-match reads grep as a command: prose, option values, -x, redirects, egrep and BRE escapes
+PASS lint: self-match ends the command at a closing backtick or a glued |, and reads --regexp=
+PASS lint: undeclared trips a later milestone's first feature without after, not the first milestone's
+PASS lint: review-small for a review in a two-build milestone; review-missing for five builds without one; neither for five with one or docs only
+PASS lint: the note counts by rule and names the first finding; clean says clean
+PASS lint: unit-collision names each milestone whose LANEU name another shares (M1-x, M1.x, M1_x), none for M1 and M2
+PASS lint: unreproducible flags a time bound or one run's count, once per step, with its message
+PASS lint: unreproducible leaves names, flags, budgets, sizes and file counts alone
+PASS lint: RULES and the header comment name unit-collision and unreproducible; the note counts them
+PASS prompt: the initializer states counts as the command that prints them (N/M checks passed)
+PASS lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
+14/14 checks passed
+07-step-lint-pure-r3: 14 checks, 0.6 s
+tmp: /tmp/tmp.v3ZOmzFixx
+PASS lanes rebase: main moved under a verified lane, files disjoint: the suite runs in full on the merged tree, the tag moves to it, it merges
+PASS lanes rebase: the tree on main after the re-based merge is the re-tagged tree (the invariant)
+PASS lanes rebase: the re-based tag is the only ref the origin saw rewritten (its forced push)
+PASS lanes rebase: overlapping files get one verify round on the merged tree, then the tag moves and it merges
+PASS lanes rebase: LANE_REBASE=verify gives a disjoint re-base the verify round, then it merges
+PASS lanes rebase: with its re-base rounds used the milestone needs Michael: the slot back at the verified commit, nothing merged, nothing pushed
+fatal: ambiguous argument 'run/rf/M2': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+PASS lanes rebase: a re-base verify round that fails un-verifies the milestone and removes its tag, so the old tag never merges
+PASS lanes rebase: under MERGE_POLICY=pr, harness merge re-bases a proposed milestone on the moved main in a slot and merges it, then its dependent
+To /tmp/tmp.v3ZOmzFixx/origin.git
+ ! [rejected]        HEAD -> main (non-fast-forward)
+error: failed to push some refs to '/tmp/tmp.v3ZOmzFixx/origin.git'
+hint: Updates were rejected because a pushed branch tip is behind its remote
+hint: counterpart. If you want to integrate the remote changes, use 'git pull'
+hint: before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+PASS lanes rebase: merge_one says main moved (3) again when moved-<m> is today's main but no rebase-<m> is left (a lane killed mid-re-base)
+9/9 checks passed
+48-lanes-rebase: 9 checks, 104.4 s
+tmp: /tmp/tmp.E9rDHlJnG1
+PASS status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule
+PASS status card: an ended run has ended, milestones, spend, branch, worktree, next; no now, lanes or units
+PASS status card: a running run has now (feature, session, attempt of max, model, minutes in), lanes verbatim, its own units, next attach
+PASS status card: N=3 and -v end with exactly the last 3 run.log lines; N=1 one; none without either
+PASS status card: the gcd run says removed by gc and 23/23 from the ledger; its milestones from the summary; next report only
+PASS status card: needs you counts the run's items with the first headline and the harness needs hint
+PASS status card: branch names its commit and ahead, behind origin/main from local refs, with no fetch and no write
+PASS status card: COLUMNS=60 lines never exceed 60 columns but a URL; a long reason wraps under its label
+PASS status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
+PASS status card: ASCII only under LC_ALL=C (lane and log lines are verbatim); no ESC off a TTY, colour with HARNESS_TTY=1; the worktree with the home directory as a tilde
+PASS status card: the debrief keeps N=3 harness status <run>; the supervisor asks for -v and keeps N=20
+PASS status card: a driver killed before run.log has no NaN, a missing worktree is not removed by gc; a run started just now; N=0 adds no log field
+PASS status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)
+54-status-card: 13 checks, 5.5 s
+tmp: /tmp/tmp.OaF8vWeORA
+PASS backlog merge: a new id becomes one proposed row first seen in its run
+PASS backlog merge: a known id adds its run to runs_seen once, status unchanged
+PASS backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
+backlog: unknown id no-such
+backlog: status must be one of proposed, specced, queued, merged, dropped
+PASS backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1
+PASS backlog list: proposed first, then more runs_seen first within a status
+backlog: line 1: not JSON (Expected property name or '}' in JSON at position 1 (line 1 column 2))
+PASS backlog import: 8 rows into an empty store, then again 8 (idempotent by id)
+PASS backlog import: a known id takes status, spec, pr and note, keeps first_seen, unions runs_seen
+PASS backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)
+PASS backlog merge: a title's newlines and control characters fold to one space, at most 200 characters
+PASS backlog validate: the why line of a huge bad id stays under 300 bytes
+PASS backlog list: past --max-bytes every row keeps its id and status, full lines first
+PASS backlog list --jsonl: a row too big is skipped, not the rest; a cut list ends with a {"more": n} line
+12/12 checks passed
+35-backlog-pure-m1: 12 checks, 1.7 s
+tmp: /tmp/tmp.ZuIiUHuqT9
+PASS key map lint: a check file reading the root's CLAUDE.md outside the map is named with its line, exit 1
+PASS key map lint: a check file passing the bare root to a new command is named with its line, exit 1
+PASS key map lint: both files pass once the map's CLAUDE.md entry names them
+PASS key map lint: each allowed form alone passes (HARNESS_HOME=, git -C log, readlink -f and cd && pwd as an alias, harness_config, == "…")
+PASS key map lint: git -C show and grep, an alias of readlink -f, HH, a relative read up from tests/, an inline cd && pwd and a %/* root are hits; comments and sub-paths are not
+PASS key map lint: a root with a trailing /, . or .., a glob, a brace, a variable path, a defaulted HH and == outside [[ ]] are hits; a variable under a sub-path is not
+PASS key map lint: a map name no check file's name holds is named (tests/run.sh would be red on it every time), exit 1
+PASS key map lint: this repo's tests/checks/ passes with the map in .harness/config.sh (CLAUDE.md and its readers)
+8/8 checks passed
+82-key-map-lint: 8 checks, 1.8 s
+tmp: /tmp/tmp.D6AwdHyVBX
+PASS features.mjs writes atomically: 200 bumps beside a parsing reader, which never throws; no temp file left
+PASS merge_one: a main moved only in ignored paths merges the milestone as verified, its note naming them; no re-base
+PASS finish: record_pr runs before ledger, so the ledger copy of harness-log.md holds the record PR note
+PASS ignored_only: CHECK_KEY_IGNORE entries are literal prefixes (docs/plans-old, docs/*, ../lib are code), ./x/ is x, no pathspecs is moved; noted once per main
+PASS run_init: a red first suite pins no test count; the first green one does (tests-start 1, one test count: line, parsed)
+PASS check.sh: appends <epoch> <full|cached|subset> <seconds> to check-runs.log on each call; no suite configured, no row
+PASS lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
+PASS coding prompt: reviews go to subagents on the session's own model (A's prompt, its metrics row, prompt.sh's render: claude-sonnet-5-5)
+PASS merge_milestones: two at once merge M1 once (the merged note its one note, one pr merge, the merge on origin main)
+9/9 checks passed
+77-leftovers: 9 checks, 59.1 s
+tmp: /tmp/tmp.kSLmjsNtaM
+PASS queue list: QUEUE <n> · runner off · MAX_PARALLEL_RUNS=<k> to the width, then a row per entry: n, verb, run or project (new run) and its mark, spec basenames, age
+PASS queue list: a 1,200-character --brief shows its first 30 characters and (+1170 chars); harness queue show 1 prints all 1,200
+PASS queue list: an entry whose project has a live run says held: <project> busy (<run>); the other entry nothing
+PASS queue list: PARKED <n> (skipped; harness queue unpark <n>) lists each parked entry with its why:
+PASS queue list: RUNNING names the live runs; RECENT is runner.log's last 5 lines, time only, home as a tilde; a rule and the show hint end it
+PASS queue list: a live runner reads runner ● going; COLUMNS=60 says max <k>; at 60 and 80 no line passes the width
+PASS queue list: an empty queue is QUEUE 0 · runner off · MAX_PARALLEL_RUNS=<k> and PARKED 0, one line each, and no hint
+PASS queue show <n>: verb, project path, run, spec, brief, until as a time, mark, added and the .args file, one labelled field per line
+PASS queue show <n> --parked: the parked entry with its why; a number past the end fails with the list to see
+PASS queue list: its numbers are the ones queue rm takes
+PASS queue show: an --until text shows as given, a --brief-file as its path; an empty --brief is no brief; a CR or an empty file never reaches the screen
+PASS queue show: a continue names its project path from meta.env, one %q quoted under a C locale too
+55-queue-view: 12 checks, 4.2 s
+tmp: /tmp/tmp.Rn8QimDzi1
+PASS inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
+PASS inbox.mjs: answersLine skips the comment (27 on the fixture, not 12), allows trailing blanks, and an unclosed comment runs to the end
+PASS inbox.mjs: question(fixture, B1-05) is Q2, cut at the real heading, no comment in it
+PASS inbox.mjs: the driver template has no "## Answers" inside its comment; answers() hashes as answers_hash's sed did
+PASS inbox.mjs: added() on a session that wrote inside the comment returns that question (and only it)
+PASS inbox.mjs repair: the comment back byte for byte, the question directly above ## Answers; exit 3, then 0
+PASS inbox.mjs repair: n8n-home's fixture against its template keeps Q2 and moves Q1 above ## Answers, out of the comment
+PASS inbox.mjs: insert() puts the question and a blank line above ## Answers (appended without one); questionLine and files
+PASS inbox.mjs review: a lone <!-- in a question hides nothing; answers() equals sed on it (no final newline); a CRLF heading counts
+PASS inbox.mjs review: a --> inside the moved question, a word-aligned insertion, a reworded comment, a comment of the session's own
+PASS INBOX repair in a run: noted, the record's comment as the driver wrote it, the question directly above ## Answers, C parked
+11/11 checks passed
+57-inbox: 11 checks, 15.2 s
+tmp: /tmp/tmp.LXneqT8hDs
+PASS suite length: the coding and initializer prompts' This session Suite line has the wall of a marker in the run's green/
+PASS suite length: every kind's wall is under # This session; its This run Suite line points there
+PASS suite length: tests-start and tests-end hold the count of a two-line marker
+PASS suite length: the tree's own green wins over a newer one; any green's wall over a red's; then the tree's red, then the newest
+PASS suite length: with no wall line anywhere, the Suite line names the run's CHECK_TIMEOUT
+PASS suite length: a run whose first suite is a cached one-line marker renders 'not measured yet' to its initializer
+PASS run_init: a marker with an empty count line pins no tests-start
+PASS check.sh: after a whole-suite rerun the marker's wall is the rerun's (a red run with no names is no measure of the suite)
+PASS tests_end: the count from a marker's first line; an empty first line writes no tests-end
+PASS the coding prompt's suite rule: a timeout twice the last wall, in the background over the tool's limit, never polled
+PASS CLAUDE.md's suite line points at the run's prompt, with no fixed measurement
+11/11 checks passed
+79-suite-length: 11 checks, 49.2 s
+tmp: /tmp/tmp.NYKZHHC3uT
+PASS lanes run: MAX_LANES=1 ends done with M1 and M2 merged by two PRs
+PASS lanes run: each lane is noted opened in slot 0 and then closed, M1's before M2's
+PASS lanes run: every coding and verify row in metrics.jsonl carries its lane; the initializer and the retro none
+PASS lanes run: harness/ln holds every entry; each lane wrote its exit line, closed by the coordinator
+PASS lanes run: a lane's sessions, suites and services run in its own units (harness-<run>-<m>-s<n>, -check-<pid>, -svc)
+PASS lanes run: a lane's verify judges the copy against its own snapshot (no list repair, no failed repair note)
+PASS lanes run: finish leaves the run one worktree (the record's), no slot, and deletes the merged lanes' branches
+PASS lanes: a lane opened after the default lane's features pass starts on the default lane's code (M1's tag holds work-Z.txt)
+PASS lanes pause: the lane finishes its session and waits (no new session), and the coordinator logs paused once
+PASS lanes stop: harness stop ends the run with every lane process dead and no lanes/ directory left
+PASS lanes run: a lane that exits between the coordinator's lane count and its end check doesn't end the run (M2 opens, done)
+PASS lanes run: a lane that dies while the coordinator holds its count, with a slot free, is reaped as exited unexpectedly, never reopened
+12/12 checks passed
+45-lanes-run: 12 checks, 85.5 s
+tmp: /tmp/tmp.jrMA3riCtH
+PASS record PR: under auto finish opens <run>: run record from harness/<run> against main, its body the report, and merges it
+PASS record PR: its merge brings only .harness/runs/<run>/ paths onto main (the record branch is record-only)
+PASS record PR: finish deletes nothing: harness/ra is still here and on origin (its last commit pushed), so a harness continue the same night finds it
+PASS record PR: a harness continue after the merged record PR runs on main with the record, ends done and opens and merges a second one
+PASS record PR: the end-of-queue gc --all-merged --deps then removes the merged run's record worktree and deletes harness/ra here and on origin; the ledger keeps the record
+PASS record PR: under pr it is opened and left for Michael, noted
+PASS record PR: harness merge's v2 closer leaves the record PR open (it closes only a PR not titled <run>: run record)
+PASS record PR: a harness continue after finish ends again and reuses the open record PR (one pr create for it), its body refreshed
+PASS record PR: under pr the end-of-queue gc keeps harness/<run> and its worktree while the record PR is open, and deletes them once it merged
+PASS record PR: none when the record branch carries changes outside its record that main lacks (a --base run), noted
+PASS record PR: RECORD_PR=off opens none, noted
+11/11 checks passed
+50-lanes-record-pr: 11 checks, 69.0 s
+tmp: /tmp/tmp.SfZHx1dzjv
+PASS harness backlog with no store prints (empty)
+PASS harness backlog set flips test-counts to specced and list shows the spec
+PASS harness backlog set with an unknown id, a bad status or a missing argument exits 1, store byte-identical
+PASS harness backlog import of the seed file gives 8 rows, and 8 again on a second import
+PASS harness backlog with LEDGER_COMMIT=1 commits retro-backlog.jsonl alone, one ledger commit per write
+PASS backlog run: a retro proposal lands as a proposed row, noted 1 new, 0 seen again
+PASS backlog run: the same id from a second run adds it to runs_seen, noted 0 new, 1 seen again
+PASS backlog run: restrict reverts a retro's edit to the backlog, and the merge still lands
+PASS backlog run: a malformed retro-proposals.json is noted, the run finishes, the backlog unchanged
+PASS backlog run: the rendered retro prompt carries test-counts · specced
+PASS debrief --dry-run gathers the retro backlog, not Earlier retros
+PASS backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.jsonl with its proposal
+PASS backlog run: a symlinked retro-proposals.json is not followed, and a store that will not list is noted
+13/13 checks passed
+36-run-16-retro-backlog: 13 checks, 109.6 s
+tmp: /tmp/tmp.vMifL8dpus
+PASS needs review: a card's commands fix the branch in a worktree of its own at its pushed tip, never the slot or the record worktree
+PASS needs review: harness merge at the same main says the conflict again (never a silent return)
+Preparing worktree (detached HEAD 7297856)
+HEAD is now at 7297856 m1
+PASS needs review: harness merge takes main merged into the lane branch by hand (the card's (a)): re-tagged there, its PR merged at it
+PASS needs review: a card's paths are shell-quoted (a blank, a $ or a ; pastes as one word)
+PASS needs review: harness needs done on a parked record is refused (it resolves when unparked); the record stays open, never a synthesized twin
+PASS needs review: harness needs done rewrites the record's needs.md (the notification's click) without the item
+PASS needs review: done waits for the record lock a lane holds
+PASS needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)
+PASS needs review: a ## Answers heading with words after it (## Answers (Michael)) is the heading; ## Answersheet is not
+PASS needs review: a short reword inside the steering comment (not a question) stays there, unmoved
+10/10 checks passed
+64-needs-review: 10 checks, 4.3 s
+tmp: /tmp/tmp.VtuDfNK0ig
+PASS a park opens one parked record; card.question.line is the first line the session added, its URL that line
+PASS the park notification is the record's: body PARKED: first, the question, the card's do commands, the answer line; Click needs.md
+PASS needs.md is committed on the record branch before the park goes out, and lists the park
+PASS a given-up feature opens given_up naming what waits on it; harness needs and harness parked list it while parked.json is empty
+PASS harness continue resolves the given_up item (fresh attempts): moved to needs/done/ by the sweep, noted
+PASS finish opens usage_limit (limit, warn, no priority) for a usage-limit end; needs.md committed; the run-end title kept
+PASS the EXIT trap of a driver ended unexpectedly opens driver_crash (stored, no synthesized one); its needs.md committed
+PASS harness needs done <ref> moves the item to needs/done/, resolved by michael
+PASS a SIGKILLed driver shows a synthesized driver_crash in harness needs
+9/9 checks passed
+60-needs-driver: 9 checks, 36.3 s
+tmp: /tmp/tmp.veDxAbrmlc
+PASS review gate: a review whose summary gives no counts is noted not escalated, and the run ends done
+PASS review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor in its entry summary; a build session's doesn't
+PASS review gate: an escalated review is un-passed before its passes= note, which says passes=false (Minor 8)
+PASS review gate: an escalation round refused by a usage limit runs again on opus, still at no attempt
+PASS review gate: after an escalation round that doesn't pass, the review's next attempt runs on opus and never escalates again
+PASS review gate: a round pending at a session cap with the review at MAX_ATTEMPTS is work left (continuation queued) and runs on the continue
+PASS review gate: the escalation round's Review diff line names the model it runs on
+PASS review_diff: fetches main first, so a milestone merged meanwhile drops out; the run directory is left out
+PASS review_diff: fails with the reason when origin has no such main branch
+PASS reviewFindings: reads Critical before Important in either order of word and count, never a step number or lowercase prose
+PASS reviewSummary: a review counts as finding nothing only when every entry that gives counts reports 0 Critical, 0 Important
+11/11 checks passed
+42-run-20-review-gate-rounds-m6: 11 checks, 69.8 s
+tmp: /tmp/tmp.I26ZJ5fFQV
+PASS check rerun: red once with HARNESS_FAILED=a b, then green: exit 0 and the green-after-a-rerun line with the full count
+PASS check rerun: the rerun gets exactly the named files as arguments
+PASS check rerun: check.out is the first run byte for byte; check-rerun.out holds the rerun
+PASS check rerun: the green marker holds the first run's total, and the next call is cached with it
+PASS check rerun: a rerun-green appends one flakes.jsonl row with at, key, names, rerun, first, load and lane
+PASS check rerun: red every time exits 1 with red again on a rerun of a and the rerun's tail; no marker, no flakes row
+PASS check rerun: auto with no HARNESS_FAILED line reruns the whole suite (flaky: whole suite)
+PASS check rerun: CHECK_RERUN=failed with no line, or off, runs the suite once and is red as today
+PASS check rerun: CHECK_RERUN=suite reruns the whole suite even with the line
+PASS check rerun: a timeout is never rerun
+PASS check rerun: a kill at the memory cap is never rerun
+PASS check rerun: the subset form never reruns
+PASS testcount.mjs: --total is the last N/M line's total; nothing without one
+PASS check rerun: CHECK_RERUN=auto in config.sh, exported as HARNESS_CHECK_RERUN; the template has it; lanes export HARNESS_LANE
+14/14 checks passed
+73-check-rerun: 14 checks, 3.1 s
+tmp: /tmp/tmp.fsIz7uB0nD
+PASS testcount.mjs: the runner's last N/M checks passed is the count
+PASS suite runner: TEST_JOBS=1 and 4 end with the same N/M and PASS names, exit 1 and name the red file
+PASS suite runner: TEST_JOBS=4 replays each file whole in completion order; the largest file starts first
+PASS suite runner: a timing line per file, then the slowest three, the wall time and the jobs
+PASS suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1
+PASS suite runner: a red full run prints HARNESS_FAILED=<the red files> right after the files-that-exited-non-zero line
+PASS suite runner: a green run prints no HARNESS_FAILED= line
+PASS suite runner: the parallel runner starts no scope of its own (no systemd-run call)
+PASS lib.sh: a check replayed for its state (REPLAY=1) runs silent and uncounted
+PASS suite runner: a file whose job was killed shows its output and makes the runner exit 1
+PASS lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
+PASS suite runner: a file that exits non-zero with no FAIL line counts as one failed check (the total isn't all passed)
+PASS suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero
+PASS suite runner: a file still running after TEST_FILE_TIMEOUT is stopped, shown and counted as one FAIL line
+14/14 checks passed
+33-suite-runner: 14 checks, 25.5 s
+tmp: /tmp/tmp.nMsqsn88XY
+PASS gotchasDiff: added, edited, deleted and no section
+PASS gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
+PASS entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
+PASS coding prompt: the Finish step adds one Gotchas line
+PASS a stub session that adds a Gotchas line is noted
+PASS a session that leaves CLAUDE.md alone gets no gotchas note
+PASS coding and verify prompts name resolved, project facts and Promote to Gotchas
+PASS a resolved question is gone from the next context.md
+PASS a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it
+PASS context.md lists the decisions store's rules newest first
+PASS CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
+PASS a verify pack lists failed rows before dead ends
+12/12 checks passed
+38-run-17-gotchas-and-pack-m3: 12 checks, 44.3 s
+tmp: /tmp/tmp.a1rxVs88RQ
+PASS deploy.mjs: vercel and netlify guards merge, keep keys and detect
+PASS deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
+PASS summary.mjs: cause and rework read the log by exact id (E1 review)
+PASS metrics.mjs: append writes mem_peak_mb as a number or null
+PASS summary.mjs: report lists only the sessions over 2 GB
+5/5 checks passed
+11-deploy-guards-pure-and: 5 checks, 0.2 s
+tmp: /tmp/tmp.kgYQtVz5d8
+PASS memlint.mjs: node --check passes, a usage header, decisionsStore exported
+PASS decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
+PASS decisionsStore: no DECISIONS and docs/decisions.md present is a file store
+PASS decisionsStore: neither is null, and store prints nothing
+PASS decisionsStore: a quoted DECISIONS wins over docs/decisions.md, an unknown command exits 2
+PASS where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
+PASS where things go: the verify prompt has the read-only variant (discoveries, no Gotchas edit)
+PASS where things go: with the heading in CLAUDE.md the three prompts carry the block 0 times
+PASS where things go: with no CLAUDE.md the three prompts carry the block once each, the store from DECISIONS=
+PASS where things go: verify and retro keep the read-only rule without the heading when CLAUDE.md has its own block
+PASS where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md
+PASS routing: the rendered initializer prompt sends gotchas to ## Gotchas, run-only facts to discoveries, no decision number
+PASS routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count
+PASS routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=
+PASS routing: this repo has the block (journal/decisions/, never numbered), an empty Gotchas and DECISIONS=journal/decisions
+15/15 checks passed
+37-memory-prompts-m2: 15 checks, 64.0 s
+tmp: /tmp/tmp.LgLlkazHuf
+PASS eval: every task.json validates and a bad one is rejected
+PASS eval.mjs: compare verdicts
+PASS eval.mjs: per verified feature counts every repeat's cost (E2 review)
+3/3 checks passed
+09-replay-set-e2-every: 3 checks, 0.2 s
+tmp: /tmp/tmp.IcojzcPnDF
+PASS treekey: two trees that differ only under an ignored prefix have the same 16-hex key; a change under lib/ changes it
+PASS treekey: entries are literal path prefixes (. and globs leave nothing out; ./docs/plans/ is docs/plans)
+PASS treekey: an absolute or .. entry is dropped, not an error (the key is docs/plans' alone)
+PASS treekey: unset, HARNESS_CHECK_KEY_IGNORE leaves out .harness/runs alone (docs/plans changes the key)
+PASS CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
+PASS check.sh: the cached line names the key's ignore list only when it isn't the default
+PASS check.sh: a green full run's marker is `2 tests` then `wall <s>`; a planted one-line marker gives the same cached line
+PASS suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
+PASS suite cache: a session that edits lib/ (tracked) makes the next session's suite run
+PASS CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
+10/10 checks passed
+34-check-key: 10 checks, 16.9 s
+tmp: /tmp/tmp.rU2PvR8JF0
+PASS review gate: a review under REVIEW_OPUS_LINES runs on sonnet, noted with its changed lines
+PASS review gate: a review at or over REVIEW_OPUS_LINES runs on opus
+PASS review gate: the review's prompt copy has its Review diff line, a build session's has none
+PASS review gate: a sonnet review reporting 1 Critical gets one round on opus at no attempt
+PASS review gate: a review reporting 0 Critical, 0 Important is not escalated and the run ends done
+PASS review gate: a review on opus never escalates; the escalation round's clock says Review round 2 of 2
+PASS review gate: reviewFindings reads <n> Critical and <n> Important, null without either
+PASS review gate: reviewSummary gives the review share with one decimal, null without reviews, and counts the reviews that found nothing
+PASS review gate: summary.json and report.md carry review.cost_pct and review.found_nothing; the ledger row has review_cost_pct
+9/9 checks passed
+41-run-19-review-gate-m6: 9 checks, 46.3 s
+tmp: /tmp/tmp.VdPBhFfwIP
+PASS same-project starts: start proj --brief x while a run of proj is alive queues it, prints why, and starts nothing
+PASS same-project starts: a run id and its options go into the entry as the MAX_PARALLEL_RUNS branch writes them
+PASS same-project starts: --now starts it anyway (the runner passes --now: its starts are unchanged)
+PASS same-project starts: --foreground starts it anyway (harness merge runs that way)
+PASS same-project starts: continue <ended run> queues continue <run> --queued --requested and leaves its ended in place
+PASS same-project starts: a second continue replaces the queued entry with its options (one entry)
+PASS same-project starts: a continue queues --until as --until-epoch and --brief-file as its text (as a start queues them)
+PASS same-project starts: a given run id is refused as before (already running) while another run of the project is alive
+PASS same-project starts: an id auto_id makes is still checked (a project named _x)
+PASS same-project starts: a run whose driver is gone but a lane lives keeps its project busy
+PASS same-project starts: the runner holds that entry too while the lane lives (and waits for it, not done)
+PASS same-project starts: an ended run of the project holds nothing (continue --foreground runs)
+12/12 checks passed
+69-same-project-starts: 12 checks, 11.3 s
+tmp: /tmp/tmp.G4iRVbnYGT
+PASS merge-sorted: the fixture pair merges to a check, b lane check, b main check, c check with exit 0
+PASS merge-sorted: a base line one side removed stays removed
+PASS merge-sorted: a line both sides added is one line
+PASS merge-sorted: a side not in LC_ALL=C order falls back to git's text merge: clean is 0, a conflict exits 1 with markers in A
+PASS merge-sorted: with the attribute and the worktree driver, two branches adding adjacent names merge with exit 0, no marker, the union
+PASS merge-sorted: the harness sets the driver in the slot's worktree config and never in the project's checkout
+PASS merge-sorted: two lanes adding names to a sorted list both merge, with no conflict note and no needs record
+7/7 checks passed
+75-merge-sorted: 7 checks, 17.2 s
+tmp: /tmp/tmp.NAzzjHtYgN
+PASS parked.mjs: the report names the answer and continue commands
+PASS parked.mjs: the question is the feature's INBOX section
+PASS parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers
+PASS parked.mjs: another live run of the project: the queue add and --now, each with its merge order
+PASS a body over the cap is trimmed
+5/5 checks passed
+03-harness-parked-pure-report: 5 checks, 0.2 s
+tmp: /tmp/tmp.Ypf9q9115U
+PASS the prompts ask every question for a Files: line and an INBOX question below the comment block, headed ### <id>: …
+PASS entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
+PASS needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
+PASS the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
+PASS a park whose INBOX question has Files: <path>:48: the record's where[0] is that path at line 48, files_from question
+PASS a park without Files: gets the session's files as the card's where (files_from session, absolute lib/z.sh); noted
+63-question-locations: 6 checks, 29.5 s
+tmp: /tmp/tmp.s70iVRZvAg
+PASS suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
+PASS suite tools: wait_for gives up after its limit with its still-failing line, exit 1
+PASS suite tools: wait_for refuses a limit that isn't whole seconds with one line, exit 2
+PASS suite tools: a stub_wait/stub_go barrier orders two background jobs the same way in 20 of 20 rounds
+PASS suite tools: STUB_BARRIER holds that feature's first coding session until stub_go
+PASS suite tools: settle waits for this copy's debrief to end and never for another state dir's
+PASS suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1
+PASS suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0
+PASS sleep lint: a bare sleep is listed as <file>:<line>, exit 1
+PASS sleep lint: a sleep with # sleep-ok: passes silently
+PASS sleep lint: tests/checks and tests/lib.sh hold no bare sleep
+11/11 checks passed
+75-suite-tools: 11 checks, 27.8 s
+tmp: /tmp/tmp.zfenjJGDVL
+PASS status review: session counts coding sessions only (no init, verify, retro or limit-refused row) plus the one running
+PASS status review: between sessions (the newest session has its passes note and row) the run counts its rows and shows no minutes in
+PASS status review: a session waiting out a limit (its limit note, its row refused) is no live session and has no minutes in
+PASS status review: two lanes: one lane closing its session leaves the other live (counted, its minutes in)
+PASS status review: a feature list without milestones shows its features under default, never undefined
+PASS status review: a queue entry with an out-of-range --until-epoch shows it as given; status and queue list and show still print
+PASS status review: queue show shortens the home directory in spec and brief to a tilde
+PASS status review: harness queue show takes --parked before or after the number
+PASS status review: a lane now line loses its control bytes in the card and in the view's lane rows
+9/9 checks passed
+56-status-review: 9 checks, 3.2 s
+tmp: /tmp/tmp.Zrz5zD2ojc
+PASS project names: start proj from outside it (HARNESS_PROJECTS holding proj) runs in that repository
+PASS project names: gc proj --dry-run from outside resolves through the run's PROJECT_DIR (as gc <path> does)
+PASS project names: a path that is a git repository still resolves to its top level (gc proj/<subdir>, gc .)
+PASS project names: status --project proj, -p proj and --project <path> list proj's run; a gone project falls back to its name
+PASS project names: queue add proj2 with no run of it resolves to $HARNESS_PROJECTS/proj2 and stores the absolute path
+PASS project names: a run's PROJECT_DIR comes before $HARNESS_PROJECTS (a proj there too is not taken)
+PASS project names: gc nope exits 1; its stderr names the repository here, the runs, $HARNESS_PROJECTS/nope and the projects with runs
+PASS project names: a directory that is not a repository (by name or by path) is no project
+PASS project names: memlint and init take a bare name too
+PASS project names: with no project at all the list says none, and the projects directory shows ~ for the home directory
+PASS project names: the newest run whose PROJECT_DIR is no repository any more is passed over for an older one
+11/11 checks passed
+65-project-names: 11 checks, 16.7 s
+tmp: /tmp/tmp.GIeh1bPaK8
+PASS metrics.mjs: tokens, cache rate and context peak from the real fixture
+PASS metrics.mjs: orientation stops at the first Write
+PASS metrics: session-id prints the init line's session_id of first.jsonl
+{"at":"2026-10-30T16:52:28.108Z","run":"run","kind":"entry-resume","role":"coding","feature":"A","model":"opus","passes":false,"cost_usd":0.00240851,"wall_s":30,"api_s":1,"turns":1,"tokens_in":2,"cache_read":15121,"cache_write":11278,"tokens_out":3,"cache_hit_rate":0.573,"context_peak":26401,"orient_tokens":26404,"orient_turns":1,"orient_s":0,"exit":0,"env":false,"result":"success","api_error":null,"final":"two","mem_peak_mb":null,"lane":"M1"}
+PASS metrics: an entry-resume row from first.jsonl and resumed.jsonl holds the total_cost_usd difference jq computes
+{"at":"2026-10-30T16:52:28.149Z","run":"run","kind":"entry-resume","role":"coding","feature":"A","model":"opus","passes":false,"cost_usd":0.0002822399999999996,"wall_s":30,"api_s":2,"turns":1,"tokens_in":2,"cache_read":26374,"cache_write":84,"tokens_out":3,"cache_hit_rate":0.997,"context_peak":26460,"orient_tokens":26463,"orient_turns":1,"orient_s":0,"exit":0,"env":false,"result":"success","api_error":null,"final":"three","mem_peak_mb":null,"lane":"M1"}
+PASS metrics: resumed-again-under-cap.jsonl against resumed.jsonl gives a positive difference
+{"at":"2026-10-30T16:52:28.187Z","run":"run","kind":"entry-resume","role":"coding","feature":"A","model":"opus","passes":false,"cost_usd":0,"wall_s":30,"api_s":0,"turns":0,"tokens_in":null,"cache_read":null,"cache_write":null,"tokens_out":null,"cache_hit_rate":null,"context_peak":26401,"orient_tokens":26404,"orient_turns":1,"orient_s":0,"exit":124,"env":false,"result":"no-result","api_error":null,"final":"","mem_peak_mb":null,"lane":null}
+PASS metrics: a resume that ended without a result line (a timeout, a kill) costs 0, never minus the session's
+PASS metrics: summary counts an entry-resume row's cost but never as a session
+7/7 checks passed
+05-metrics-pure-tokens-cache: 7 checks, 0.3 s
+tmp: /tmp/tmp.4EGmzAOgvX
+PASS status from records: --json needs are harness needs --json's items whole; markers and an end reason alone are none
+PASS status view: NEEDS YOU lists the records' headlines, oldest first, none for the marker-only run
+PASS status card: needs you gives the count and each open item's headline, then the harness needs hint
+needs.mjs: /tmp/tmp.4EGmzAOgvX/state/proj/broken: no subject
+needs.mjs: /tmp/tmp.4EGmzAOgvX/state/proj/broken: no subject
+needs.mjs: /tmp/tmp.4EGmzAOgvX/state/proj/broken: no subject
+PASS status card: past three items, +<k> more; a record without its card and an unreadable state dir never stop status or harness needs
+PASS the desk prompt reads COLUMNS=60 harness needs and needs --json, never harness parked
+PASS the answer skill's first step is harness needs, harness parked its alias
+6/6 checks passed
+62-needs-readers: 6 checks, 1.5 s
+tmp: /tmp/tmp.8HgODJ5z2O
+PASS queue runner: a MAX_PARALLEL_RUNS that is no whole number keeps the old value, said once; nothing starts
+PASS queue runner: MAX_PARALLEL_RUNS 1 → 2 in the config starts the second entry without a restart, and says so
+PASS queue runner: MAX_PARALLEL_RUNS 2 → 1 stops no running run; the third entry waits until under it, then starts
+3/3 checks passed
+32-l5-queue-runner-re: 3 checks, 57.8 s
+tmp: /tmp/tmp.SkBjcz1AHc
+PASS test count: a suite printing HARNESS_TESTS=12 is noted once per run as the contract, and summary.json tests.start is 12
+PASS test count: a suite printing only a node:test summary is noted as parsed (node)
+PASS test count: a continued run refreshes tests-end after each session (summary.json 3 → 5 before finish), tests-start stays the baseline
+PASS test count: report.md labels the tests cell, trends its column (baseline → end)
+4/4 checks passed
+40-run-18-test-counts-m5: 4 checks, 47.0 s
+tmp: /tmp/tmp.v9HcT76iCQ
+PASS u3 review: a multi-line --brief is one argument in its queue entry (one line per argument; queue show has it whole)
+PASS u3 review: a continue queued behind a live run keeps a multi-line --brief-file as one --brief
+PASS u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
+PASS u3 review: an overlap with an ended run records on it in its state only: its worktree stays clean, so the runner's gc removes it
+PASS u3 review: queue list shows held: <project> busy for an entry a live lane holds (as the runner holds it)
+PASS u3 review: past --until with only lane-held entries the runner ends (it no longer polls until the lane ends)
+6/6 checks passed
+72-u3-review: 6 checks, 32.7 s
+tmp: /tmp/tmp.DppOg6B2Gc
+PASS busy continue: another project's live run changes nothing: answer, then continue
+PASS busy continue: harness needs --json gives the queue add and --now, each naming the live run
+PASS busy continue: the card's do and run lines name the hold
+PASS busy continue: harness parked --json carries the same commands
+PASS busy continue: once that run has ended, the plain continue is back
+PASS the answer skill: another live run of the project: ask, with the queue add and --now and their merge order
+PASS the answer skill's facts cite file:line
+PASS the desk prompt: two continues on a card: ask Michael which, run one
+8/8 checks passed
+78-continue-busy: 8 checks, 0.5 s
+tmp: /tmp/tmp.pVuNyYqDud
+PASS testCount: node:test fixture gives 3
+PASS testCount: pytest fixture gives 4
+PASS testCount: jest fixture gives the Tests: count (7), not Test Suites:
+PASS testCount: cargo fixture gives the sum of its test result lines (3)
+PASS testCount: go fixture gives its --- PASS count (3)
+PASS testCount: a HARNESS_TESTS= line wins over the jest summary (1115, not 7), source contract
+PASS testCount: the last HARNESS_TESTS= line wins, and only a whole line counts
+PASS testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 is no contract, a CRLF one is
+PASS testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)
+PASS testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
+10/10 checks passed
+06-test-counts-pure-r1: 10 checks, 0.6 s
+tmp: /tmp/tmp.UtY6SWibxV
+PASS tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
+PASS tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
+PASS tmux: run id dot.run gets session h-dot-run, gone at keep 0
+3/3 checks passed
+31-tmux-l3-03-when: 3 checks, 4.2 s
+tmp: /tmp/tmp.FVrtQdkL7G
+PASS the deadline verifies a complete milestone once and merges it
+PASS a failed verify at the deadline is not retried: M1 needs Michael
+PASS thin evidence at the deadline is not escalated: one verify, M1 not verified
+PASS a stop at the deadline comes first: no verify, M1 left for a continue
+PASS a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
+PASS a deadline while paused verifies a complete milestone once too
+6/6 checks passed
+19-run-9e-deadline-verifies: 6 checks, 90.9 s
+tmp: /tmp/tmp.qu3eKcuNTg
+PASS notify.mjs: trimBody caps at 3500 bytes with …
+PASS notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3
+PASS notify.mjs: githubUrls for ssh, https and non-GitHub origins
+PASS notify.mjs: inboxQuestion is the lines added above ## Answers (never Michael's old answers)
+4/4 checks passed
+02-notifications-pure-body-cap: 4 checks, 0.2 s
+tmp: /tmp/tmp.pTvhC9kb8o
+PASS a legacy run is untouched, then continued into a journal
+PASS v2 tags don't merge on resume
+PASS harness merge merges v2 tags, closes the v2 PR
+3/3 checks passed
+27-run-14-v2-style: 3 checks, 17.4 s
+tmp: /tmp/tmp.9iv9pIBqMB
+PASS sync: pulls the merged PR and pushes the ledger commit, no merge commit
+PASS sync: level says so
+PASS sync: a local commit outside ledger/ is left alone, nothing pushed
+PASS sync: a modified tracked file: skipped
+PASS sync: nothing local: fast-forward
+PASS sync: another branch checked out: skipped; LIVE_SYNC=0: off
+6/6 checks passed
+20-sync-live-checkout-level: 6 checks, 0.4 s
+tmp: /tmp/tmp.XuNzu3N2EX
+PASS gc units: --dry-run with units of another project's runs (live and ended) prints no ? line and no line naming them
+PASS gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
+2/2 checks passed
+67-gc-units: 2 checks, 0.4 s
+tmp: /tmp/tmp.0hl1t2Vt0j
+PASS record after gc: finish keeps summary.json, report.md and metrics.jsonl in the state dir, and says so
+PASS record after gc: harness report prints the run's table from the state copy once gc removed the worktree
+PASS record after gc: with the state copy gone, from the ledger copy, after which the state copy exists again
+PASS record after gc: harness status shows the passing count of a run gc removed
+PASS record after gc: with both gone, a no record line naming the state dir and the ledger dir
+PASS record after gc: a run with no state dir is reported from the ledger, copied nowhere; an unknown one is still an error
+6/6 checks passed
+66-record-after-gc: 6 checks, 15.7 s
+tmp: /tmp/tmp.wpZDVftPRZ
+PASS a limit-cut session's passes is reverted, A retried
+PASS a refused session's minimal entry is not yet, not its reverted claim (E4 review F3)
+PASS a proposed merge: ready to merge, click = the PR, default priority
+3/3 checks passed
+22-run-12-session-claims: 3 checks, 17.4 s
+tmp: /tmp/tmp.1oFNBrDjK2
+PASS harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
+1/1 checks passed
+28-run-14d-harness-merge: 1 checks, 17.7 s
+tmp: /tmp/tmp.Ddvt1f3VFh
+PASS render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
+PASS render.mjs: --raw applies to the next file only
+2/2 checks passed
+04-render-pure-sections-go: 2 checks, 0.1 s
+tmp: /tmp/tmp.PhSNyQ099V
+PASS verifier code edits reverted, never merged
+PASS retro edits reverted
+PASS a session's edits to the journal are restored (E4 review F1)
+3/3 checks passed
+24-run-13-verify-and: 3 checks, 15.5 s
+tmp: /tmp/tmp.DVkhGTNOKX
+PASS a malformed entry is recorded as minimal and the run goes on
+1/1 checks passed
+25-run-13b-bs-entry: 1 checks, 15.8 s
+tmp: /tmp/tmp.BOVPP8R316
+PASS mid-session limit: attempt given back, work kept
+PASS waits for another run's limit window
+PASS a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
+PASS a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
+4/4 checks passed
+16-run-6-limit-cuts: 4 checks, 47.8 s
+tmp: /tmp/tmp.kesDthZf76
+PASS continue after a no-list end merges main first
+1/1 checks passed
+30-run-15b-run-that: 1 checks, 17.8 s
+tmp: /tmp/tmp.VvZHV5BRYF
+PASS refused verify: deferred, then verified, then merged
+1/1 checks passed
+21-run-11-verify-refused: 1 checks, 16.9 s
+tmp: /tmp/tmp.saO235TsgQ
+PASS a stale green marker is caught at verify: M1 red, not tagged
+1/1 checks passed
+26-run-13c-stale-green: 1 checks, 10.5 s
+tmp: /tmp/tmp.SWOnU8qvzO
+PASS a limit ending: the cause is the usage limit
+PASS a later deadline: the earlier refusals aren't the cause
+2/2 checks passed
+18-run-9c-refused-sessions: 2 checks, 15.4 s
+tmp: /tmp/tmp.bsCFMMCb20
+PASS default MERGE_POLICY proposes a verified milestone, never merges it
+1/1 checks passed
+23-run-12b-nothing-sets: 1 checks, 15.6 s
+tmp: /tmp/tmp.LObQ3rKnxv
+PASS after may name a milestone
+1/1 checks passed
+01-scheduler-pure-after-may: 1 checks, 0.0 s
+tmp: /tmp/tmp.k2IKo6Ws8R
+PASS thin evidence escalates the verify
+1/1 checks passed
+17-run-8-thin-verify: 1 checks, 18.0 s
+tmp: /tmp/tmp.QXi8ZQFlc4
+PASS resume reloads config merged from main
+1/1 checks passed
+29-run-15-resumed-run: 1 checks, 23.7 s
+PASS conformance: the split suite has every check the single-file suite had
+slowest: 15-run-4-same-but-queue-parked-debrief-tmux 235.8 s, 13-run-2-michael-sets-desk 204.2 s, 08-scope-sh-l1-02-run-capped-services-gc-scratch 202.4 s; wall 1622.3 s, 2 jobs
+1077/1077 checks passed
