@@ -9,6 +9,17 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:23 · R3-03 · passes
+
+Attempt 2: attempt 1's code (ignored_only in merge_one, record_pr before ledger in finish, run_init's green-only count pin, STUB_FIX_BROKEN) stands; verify R3 was red only on memlint, which R3-01 fixed. Re-verified every step; no code change.
+
+- **Verified:** check.sh leftovers: 77-leftovers 9/9 (merge_one ignored paths, finish ledger copy has 'record PR merged into main', ignored_only pathspecs, run_init green-only pin); full suite via check.sh green (cached for this tree, 993 tests); bash -n lib/record.sh lib/driver.sh tests/stub-claude.sh ok; check-names.txt LC_ALL=C sorted; memlint prints nothing
+- **Tests:** 993 → 993
+- **Resolved:** tests/lib.sh now holds tended, held (clears vwait-* too), ats and debriefs: a check file must not redefine them differently
+- **Proposed change:** R3-03 step 1 should name STUB_MAIN_TOUCH=verify-M1:.harness/runs/other/x.md, not A:… (A's touch is merged into the lane before the verify, so merge_one never sees a moved main)
+- **Proposed change:** The tests/lib.sh tended/held/ats fact now holds on R3 (R1 merged in, tests/lib.sh:80-83) but Gotchas is full at 15 lines and the helpers are readable in place: left out
+- *23-R3-03 · claude-opus-5-5*
+
 ### 2026-10-29 20:20 · R3-02 · passes
 
 Attempt 2: the build from attempt 1 is unchanged. Verify R3 failed it only on the suite step: 39-memlint-m4 was red because Gotchas had 16 lines, and R3-01 has since fixed that. Rechecked every step: writeFileSync count 1, node --check ok, the N/M line is in initializer.md, 07 and 77 green (23/23), check-names sorted, memlint clean, full suite green (993).
