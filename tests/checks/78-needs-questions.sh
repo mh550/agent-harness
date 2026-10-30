@@ -67,6 +67,21 @@ check "needs questions: a later entry's resolved resolves it at the sweep (answe
   && NF_Q="Should A cap the queue? (default: 9)" needs_fixture question resolved "$BASE" q-no-line && d=$P/q-no-line/needs/1.json \
   && jq ".card.question.line = null" "$d" > "$T/nl" && mv "$T/nl" "$d" && node "$NM" sweep "$P/q-no-line" > "$T/nl.out" && [[ ! -s $T/nl.out && -f $d ]]'
 
+# R4-05 review: two questions of one entry sharing their first 80 characters (a preamble) are two items, never a refresh
+PRE="Defaults taken in A (recorded in journal/decisions/2026-10-29-questions-wait.md), each reversible:"
+NF_Q="$PRE keep the cache?" needs_fixture question open "$BASE" q-twin
+check "needs questions: two questions of one entry that share their first 80 characters stay two items, each keeping its text" \
+  'r=$T/wt/proj/q-twin/.harness/runs/q-twin; node "$NM" open "$P/q-twin" q-twin proj question "$PRE log at debug?" asker=A feature=A line=1 record="$r" > "$T/twin.out"; rc=$?
+   (( rc == 0 )) && [[ $(cat "$T/twin.out") == q-twin/2 ]] \
+   && jq -e --arg t "$PRE keep the cache?" ".card.question.text == \$t and .seen == 1" "$P/q-twin/needs/1.json" > /dev/null \
+   && jq -e --arg t "$PRE log at debug?" ".card.question.text == \$t and .seen == 1" "$P/q-twin/needs/2.json" > /dev/null \
+   && [[ $(jq -r .key "$P/q-twin/needs/1.json") != $(jq -r .key "$P/q-twin/needs/2.json") ]] \
+   && node "$NM" open "$P/q-twin" q-twin proj question "$PRE  log at DEBUG?" asker=B feature=B line=2 record="$r" > /dev/null; (( $? == 3 )) \
+   && jq -e ".seen == 2" "$P/q-twin/needs/2.json" > /dev/null && jq -e ".seen == 1" "$P/q-twin/needs/1.json" > /dev/null'
+check "needs questions: questionKey drops only a Files: label line, and asked_in ends with the newest asker" \
+  'in_node "ok(N.questionKey(\"Pick one:\nFiles over 1 MB: keep? (default: keep)\") === \"pick one: files over 1 mb: keep? (default: keep)\"
+    && N.moveForward([{ run: \"r2\", seen: 2, asked_in: [\"r1\", \"r2\"], ref: \"r2/1\" }], { seen: 1, asked_in: [\"r1\"] }, \"r1\", 0).item.asked_in.join() === \"r2,r1\")"'
+
 # ---- R4-04: the readers (plan §4): harness needs, harness status, the debrief, the answer skill ----
 # q-mix: a question older than a parked item in one state dir; the block card still comes first
 NF_Q="Should A trim the log? (default: trimmed)" needs_fixture question open "$BASE" q-mix
@@ -114,6 +129,10 @@ check "needs questions: a later entry's resolved closes it by the run's end" \
   '[[ -z $(nj qr "[.[] | select(.reason == \"question\")] | .[]") ]] \
   && jq -s -e "[.[] | select(.reason == \"question\")][0] | .resolved_by == \"sweep\" and .resolved_why == \"answered in A'"'"'s entry\"" "$P/qr"/needs/done/*.json > /dev/null'
 
+check "needs questions: the entry that resolves it closes it at its ingest, before its session's line" \
+  'r=$(hlog qr | grep -n "needs: resolved qr/1 (answered in A.s entry)" | cut -d: -f1) && s=$(hlog qr | grep -n " · A · .*passes=" | tail -1 | cut -d: -f1) \
+  && (( r > 0 && s == r + 1 ))'
+
 # two runs of the project ask A's question: the second moves the first's open item forward
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 env "${FAST[@]}" STUB_ASK=A "$H" start "$T/proj" qm1 --spec SPEC.md --foreground > "$T/qm1.out" 2>&1
@@ -127,12 +146,21 @@ check "needs questions: a second run's ask moves the first run's open item forwa
 
 check "needs questions: no notification carries a question" \
   '[[ -s $T/curl.log && $(curl_count "keep the old cache") == 0 && $(curl_count "log at debug") == 0 && $(curl_count "default to off") == 0 ]]'
+# qa gets 12 more open questions (14: the list stops at 12); qm1's question items go, as a run from before R4 has none
+for n in $(seq 1 12); do node "$NM" open "$P/qa" qa proj question "Should A take extra $n? (default: no)" asker=A feature=A line=1 > /dev/null; done
+rm -f "$P/qm1"/needs/done/*.json
 check "needs questions: the debrief gatherer lists the open questions under #### Questions for Michael" \
   '"$H" debrief --dry-run > "$T/db.out" 2>&1 && [[ $(grep -c "grep -i '"'"'question'"'"'" "$HH/lib/debrief.sh") == 0 ]] \
   && awk "/^### qa \\(proj\\)/ { r = 1 } /^### / && !/^### qa / { r = 0 } r && /^#### / { on = \$0 == \"#### Questions for Michael\" } r && on" "$T/db.out" > "$T/db-qa" \
   && grep -F "Should A keep the old cache? (default: kept) Files: /srv/q/lib/a.sh:12 (qa/" "$T/db-qa" > /dev/null && grep -F "Should A log at debug?" "$T/db-qa" > /dev/null \
   && awk "/^### qm2 \\(proj\\)/ { r = 1 } /^### / && !/^### qm2 / { r = 0 } r && /^#### / { on = \$0 == \"#### Questions for Michael\" } r && on" "$T/db.out" | grep -F "Should A default to off?" | grep -F "asked 2 times" > /dev/null \
   && awk "/^### qr \\(proj\\)/ { r = 1 } /^### / && !/^### qr / { r = 0 } r && /^#### / { on = \$0 == \"#### Questions for Michael\" } r && on" "$T/db.out" | grep -x "none open" > /dev/null'
+check "needs questions: the debrief lists 12 questions and how many more, and a run without question items its entries' open ones" \
+  'sec() { awk "/^### $1 \\(proj\\)/ { r = 1 } /^### / && !/^### $1 / { r = 0 } r && /^#### / { on = \$0 == \"#### Questions for Michael\" } r && on" "$T/db.out"; }
+   [[ $(sec qa | grep -c "^- ") == 12 ]] && sec qa | grep -x "… and 2 more: harness needs qa" > /dev/null \
+   && sec qm1 | grep -F "Should A default to off?" | grep -F "(A, entries.jsonl:" > /dev/null'
+check "needs questions: the answer skill passes an answer no decision file holds on with harness answer" \
+  'awk "/^## Question items/ { on = 1; next } /^## / { on = 0 } on" "$HH/skills/harness-answer/SKILL.md" | grep -F "harness answer <run>" > /dev/null'
 check "needs questions: the answer skill records the answer in place and runs needs done" \
   'S=$HH/skills/harness-answer/SKILL.md; grep "^## Question items" "$S" > /dev/null && grep -F "harness needs done <ref> --why" "$S" > /dev/null \
   && grep -F "Updated in place <date>: Michael" "$S" > /dev/null && grep -F "default stands" "$S" > /dev/null'

@@ -256,6 +256,16 @@ a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its c
   branch in a worktree of their own (never the run's slot or record worktree) and push it. After a merge conflict,
   `harness merge <run>` takes the branch with main merged in as the milestone's tip. `harness needs done` refuses a
   park: it resolves when you answer and continue.
+- **Questions:** a session never parks on a judgment call: it takes the default and asks in its entry's `questions`
+  (with a `Files:` line). Each one waits in `harness needs` as a `question` card (`⚠ <run> · <id> asked: …`, its
+  files and its `entries.jsonl` line) after every stop, counted apart (`NEEDS YOU 1 · 3 questions`, in `harness
+  status` too), with no notification and nothing waiting on it; the debrief lists them under `#### Questions for
+  Michael` (12 at most). The same question asked again is one card: `seen` grows in its run, and asked in a later run of the
+  project it moves there (`asked 3 times (<runs>)`). It closes when you run `harness needs done <ref> --why
+  "<answer>"` (`--why "default stands"` keeps the default), when a later session's entry lists it in `resolved`, or
+  through the answer skill ("answer the harness"), which on your yes writes `Updated in place <date>: Michael …` in
+  the decision file the question names (naming none: passes it on with `harness answer`, so later sessions read it)
+  and runs the `done` (decisions/2026-10-29-questions-wait).
 - **Weekly budget:** past `WEEKLY_STOP_AT` (default 85 %) of the plan's 7-day window, as sessions report it, the queue
   starts no run and a running one stops before its next coding session.
 

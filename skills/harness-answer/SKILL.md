@@ -44,7 +44,10 @@ names and went on, so nothing waits on it and no run needs a continue. Propose a
 default among the options. After his yes:
 
 1. If the question's `Files:` names a decision file (`journal/decisions/<date>-<slug>.md`), add one line to it in the
-   run's worktree: `Updated in place <date>: Michael <his answer>` (today's date; his words).
+   run's worktree: `Updated in place <date>: Michael <his answer>` (today's date; his words). If it names none, and
+   his answer is not "the default stands", pass it on with `harness answer <run>` as below (no continue: nothing
+   waits on it), so it reaches `## Answers` and the run's next sessions read it; `needs done` alone keeps the answer
+   only in the closed item, and a session that never sees it may ask again.
 2. Close the item: `harness needs done <ref> --why "<his answer>"` (the card's `do` line; the default stands:
    `--why "default stands"`). Quote his words as for `harness answer` below.
 

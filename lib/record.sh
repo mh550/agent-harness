@@ -392,9 +392,10 @@ journal_() {   # who kind id name model outcome worktree: the ingest and the ren
 # who kind id: one question item per question of the entry just appended (its last line, under the lock), the text as
 # entries.jsonl stores it (filled): the sweep matches a later resolved against it. An entry that resolves sweeps at once
 questions_() {
-  local l q n=0 last; l=$(grep -c '' "$REC/entries.jsonl"); last=$(tail -n 1 "$REC/entries.jsonl")
+  local l q n=0 last f=(); l=$(grep -c '' "$REC/entries.jsonl"); last=$(tail -n 1 "$REC/entries.jsonl")
+  [[ $2 == coding ]] && f=(feature="$3")
   while IFS= read -r -d '' q; do
-    needs_open question "$q" asker="$3" line="$l" $([[ $2 == coding ]] && echo "feature=$3") > /dev/null; n=$(( n + 1 ))
+    needs_open question "$q" asker="$3" line="$l" "${f[@]}" > /dev/null; n=$(( n + 1 ))
   done < <(jq -j '.questions[]? | strings | select(test("\\S")) | . + "\u0000"' <<< "$last")
   (( n )) && note "$1: $n question(s) for Michael recorded (harness needs)"
   [[ $(jq '.resolved // [] | length' <<< "$last") == 0 ]] || needs_sweep

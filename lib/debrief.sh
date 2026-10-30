@@ -126,10 +126,16 @@ run_context() {   # state dir → this run's section
       # the checks that flaked in two or more of the project's last five ledgered runs (a flake once is noise)
       [[ $f == report.md:* ]] && { echo; echo "#### flakes"; node "$HARNESS_HOME/lib/summary.mjs" flakers "$LEDGER/$proj" 2>&1 | fence; }
     done
-    # the sessions' questions, from the needs record: open until answered (a later entry's resolved, or needs done)
+    # the sessions' questions, from the needs record: open until answered (a later entry's resolved, or needs done); a run
+    # with no question item ever (asked before R4) from its entries, those no later entry resolves. 12 at most
     echo; echo "#### Questions for Michael"
-    "$H" needs "$RUN_ID" --json 2> /dev/null | jq -r '[.[] | select(.reason == "question")] | if length == 0 then "none open"
-      else .[] | "- \(.card.question.text // "" | gsub("\\s+"; " ") | .[0:600]) (\(.ref)\(if .seen > 1 then ", asked \(.seen) times" else "" end))" end' | fence
+    "$H" needs "$RUN_ID" --all --json > "$WS/q.json" 2> /dev/null
+    if jq -e 'any(.[]; .reason == "question")' "$WS/q.json" > /dev/null 2>&1; then
+      jq '[.[] | select(.reason == "question" and .resolved_at == null)
+        | "\(.card.question.text // "" | gsub("\\s+"; " ") | .[0:600]) (\(.ref)\(if .seen > 1 then ", asked \(.seen) times" else "" end))"]' "$WS/q.json"
+    else node "$HARNESS_HOME/lib/entries.mjs" questions "$rd" 2> /dev/null | jq '[.[] | "\(.text | gsub("\\s+"; " ") | .[0:600]) (\(.feature), entries.jsonl:\(.line))"]'
+    fi | jq -r --arg run "$RUN_ID" 'if length == 0 then "none open" else (.[0:12][] | "- " + .),
+      (if length > 12 then "… and \(length - 12) more: harness needs \($run)" else empty end) end' | fence
     echo; echo "#### harness-log.md: needs Michael, conflicts, refusals, holds"
     grep -iE 'needs Michael|conflict|refused|blocked|held' "$rd/harness-log.md" 2>/dev/null | tail -15 | cut -c1-400 | fence
     echo; echo "#### harness-log.md (last 12 lines)"
