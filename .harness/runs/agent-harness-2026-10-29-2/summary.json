@@ -3,101 +3,127 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-10-29-2",
   "started": "2026-10-29T12:49:34.000Z",
-  "ended_at": "2026-10-29T15:36:52.000Z",
-  "end_reason": "stopped by Michael",
-  "continuations": 0,
+  "ended_at": "2026-10-30T01:24:21.000Z",
+  "end_reason": "done",
+  "continuations": 1,
   "features": {
     "total": 23,
-    "passing": 4,
-    "verified": 0,
-    "merged": 0
+    "passing": 23,
+    "verified": 23,
+    "merged": 23
   },
   "milestones": [
     {
       "id": "R1",
       "features": 7,
-      "passing": 1,
-      "verified": false,
-      "merged": false
+      "passing": 7,
+      "verified": true,
+      "merged": true
     },
     {
       "id": "R2",
       "features": 5,
-      "passing": 3,
-      "verified": false,
-      "merged": false
+      "passing": 5,
+      "verified": true,
+      "merged": true
     },
     {
       "id": "R3",
       "features": 6,
-      "passing": 0,
-      "verified": false,
-      "merged": false
+      "passing": 6,
+      "verified": true,
+      "merged": true
     },
     {
       "id": "R4",
       "features": 5,
-      "passing": 0,
-      "verified": false,
-      "merged": false
+      "passing": 5,
+      "verified": true,
+      "merged": true
     }
   ],
   "tests": {
     "start": 886,
-    "end": 900
+    "end": 1016
   },
   "flakes": {
-    "count": 2,
+    "count": 11,
     "names": {
-      "13-run-2-michael-sets-desk": 1,
-      "08-scope-sh-l1-02-run-capped-services-gc-scratch": 1
+      "13-run-2-michael-sets-desk": 2,
+      "08-scope-sh-l1-02-run-capped-services-gc-scratch": 4,
+      "32-l5-queue-runner-re": 1,
+      "52-status-json": 1,
+      "28-run-14d-harness-merge": 2,
+      "47-lanes-two": 2,
+      "48-lanes-rebase": 1,
+      "74-flakes-run": 1,
+      "46-lanes-continue": 1
     }
   },
   "conflicts": {
-    "resolved": 0,
+    "resolved": 3,
     "escalated": 0,
-    "sessions": 0
+    "sessions": 3
   },
-  "resolutions": [],
+  "resolutions": [
+    {
+      "milestone": "R2",
+      "files": "CLAUDE.md"
+    },
+    {
+      "milestone": "R3",
+      "files": "CLAUDE.md"
+    },
+    {
+      "milestone": "R4",
+      "files": "CLAUDE.md"
+    }
+  ],
   "cost": {
-    "total": 18.67,
-    "per_passing_feature": 4.67,
+    "total": 91.07,
+    "per_passing_feature": 3.96,
     "by_role": {
       "init": 6.72,
-      "plan": 5.43,
-      "build": 6.4,
-      "retro": 0.12
+      "plan": 11.41,
+      "build": 44.41,
+      "retro": 0.12,
+      "review": 24.25,
+      "verify": 3.09,
+      "resolve": 1.06
     },
     "by_model": {
       "claude-fable-5-1": 6.72,
-      "claude-opus-5-5": 11.83,
-      "claude-sonnet-5-5": 0.12
+      "claude-opus-5-5": 83.14,
+      "claude-sonnet-5-5": 1.2
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 2.79,
-    "sessions_h": 2.38,
-    "driver_h": 0.41,
+    "wall_h": 11.68,
+    "sessions_h": 17.12,
+    "driver_h": 0,
     "by_role_h": {
       "init": 0.21,
-      "plan": 1.09,
-      "build": 1.07,
-      "retro": 0.01
+      "plan": 2.04,
+      "build": 10.78,
+      "retro": 0.01,
+      "review": 3.03,
+      "verify": 1.04,
+      "resolve": 0.06
     }
   },
   "lanes": {
     "max_open": 2,
-    "lane_hours": 4.8,
-    "wall_hours": 2.79
+    "lane_hours": 21.94,
+    "wall_hours": 11.68
   },
   "tokens": {
-    "in": 1282,
-    "cache_read": 24420541,
-    "cache_write": 761599,
-    "out": 202061,
-    "cache_hit_rate": 0.97,
-    "context_peak": 184684,
+    "in": 4268,
+    "cache_read": 163817547,
+    "cache_write": 4529282,
+    "out": 1107577,
+    "cache_hit_rate": 0.973,
+    "context_peak": 191040,
     "by_role": {
       "init": {
         "in": 770,
@@ -106,61 +132,85 @@
         "out": 51769
       },
       "plan": {
-        "in": 210,
-        "cache_read": 8053753,
-        "cache_write": 274641,
-        "out": 81234
+        "in": 434,
+        "cache_read": 18139676,
+        "cache_write": 579531,
+        "out": 157115
       },
       "build": {
-        "in": 294,
-        "cache_read": 13646448,
-        "cache_write": 290487,
-        "out": 67245
+        "in": 1914,
+        "cache_read": 88122545,
+        "cache_write": 2163338,
+        "out": 517281
       },
       "retro": {
         "in": 8,
         "cache_read": 110278,
         "cache_write": 23085,
         "out": 1813
+      },
+      "review": {
+        "in": 904,
+        "cache_read": 48463952,
+        "cache_write": 1222776,
+        "out": 329669
+      },
+      "verify": {
+        "in": 182,
+        "cache_read": 5389940,
+        "cache_write": 287196,
+        "out": 38942
+      },
+      "resolve": {
+        "in": 56,
+        "cache_read": 981094,
+        "cache_write": 79970,
+        "out": 10988
       }
     }
   },
   "per_verified_feature": {
-    "cost": null,
-    "tokens": null
+    "cost": 3.96,
+    "tokens": 7367768
   },
   "orientation": {
-    "tokens": 1652627,
-    "turns": 25,
-    "seconds": 553.32
+    "tokens": 1467086,
+    "turns": 24,
+    "seconds": 297.86
   },
   "rework": [
     "R1-02",
-    "R2-01"
+    "R2-01",
+    "R3-01",
+    "R3-02",
+    "R3-03",
+    "R3-04",
+    "R3-05",
+    "R3-06"
   ],
-  "first_attempt_pass_rate": 0.6,
-  "verify_fail_rate": null,
+  "first_attempt_pass_rate": 0.65,
+  "verify_fail_rate": 0.21,
   "review": {
-    "cost_pct": null,
+    "cost_pct": 26.6,
     "found_nothing": 0,
-    "reviews": 0
+    "reviews": 4
   },
   "harness": {
-    "version": "3470da3",
+    "version": "64d23dc",
     "dirty": false
   },
   "sessions": {
-    "total": 8,
-    "real": 8,
+    "total": 42,
+    "real": 42,
     "environmental": 0
   },
   "guards": {
-    "repairs": 0,
+    "repairs": 1,
     "red_unpass": 2,
-    "verify_failed": 0,
+    "verify_failed": 6,
     "limit_waits": 0,
-    "verify_escalations": 0,
-    "merges": 0
+    "verify_escalations": 1,
+    "merges": 5
   },
   "features_detail": [
     {
@@ -169,8 +219,8 @@
       "kind": "plan",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 46,
@@ -183,90 +233,90 @@
       "milestone": "R1",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 1,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 2,
       "refused": 0,
-      "minutes": 18,
-      "cost": 1.48,
-      "cause": "red suite",
-      "detail": "the suite was red after its session"
+      "minutes": 21,
+      "cost": 2.09,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R1-03",
       "milestone": "R1",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 43,
+      "cost": 4.88,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R1-04",
       "milestone": "R1",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 58,
+      "cost": 4.37,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R1-05",
       "milestone": "R1",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 69,
+      "cost": 1.65,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R1-06",
       "milestone": "R1",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 52,
+      "cost": 3.18,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R1-07",
       "milestone": "R1",
       "kind": "review",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 37,
+      "cost": 5.67,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R2-01",
@@ -274,8 +324,8 @@
       "kind": "plan",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 2,
       "refused": 0,
       "minutes": 20,
@@ -289,8 +339,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 22,
@@ -304,8 +354,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 24,
@@ -318,195 +368,195 @@
       "milestone": "R2",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 56,
+      "cost": 3.52,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R2-05",
       "milestone": "R2",
       "kind": "review",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 62,
+      "cost": 6.05,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R3-01",
       "milestone": "R3",
       "kind": "plan",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 2,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 51,
+      "cost": 3.85,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R3-02",
       "milestone": "R3",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 2,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 47,
+      "cost": 2.35,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R3-03",
       "milestone": "R3",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 2,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 40,
+      "cost": 3.78,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R3-04",
       "milestone": "R3",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 2,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 81,
+      "cost": 3.93,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R3-05",
       "milestone": "R3",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 2,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 30,
+      "cost": 2.04,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R3-06",
       "milestone": "R3",
       "kind": "review",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 2,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 50,
+      "cost": 7.5,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R4-01",
       "milestone": "R4",
       "kind": "plan",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 6,
+      "cost": 2.12,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R4-02",
       "milestone": "R4",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 30,
+      "cost": 3.83,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R4-03",
       "milestone": "R4",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 34,
+      "cost": 1.52,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R4-04",
       "milestone": "R4",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 39,
+      "cost": 2.37,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "R4-05",
       "milestone": "R4",
       "kind": "review",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: stopped by Michael"
+      "minutes": 34,
+      "cost": 5.03,
+      "cause": null,
+      "detail": null
     }
   ]
 }
