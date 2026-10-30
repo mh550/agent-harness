@@ -7,6 +7,47 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-30 01:02 · verify S1 · passes
+
+All five S1 features hold: full suite green (1044 tests), subsets 34/39/73/79/80 re-run green, greps and docs confirmed. Note: S1-04 step 3 literal diff scope also includes S1-05 review fix I1.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| S1-01 | 1 | re-ran/inspected step 1 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | plan exists (218 lines); readers named, matching the code (check.sh/run_init/tests_end now read -r via green_count) | yes |
+| S1-01 | 2 | re-ran/inspected step 2 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | red-<key> layout and placement present in plan and implemented identically in lib/check.sh:15,129 | yes |
+| S1-01 | 3 | re-ran/inspected step 3 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | check files and stub hook STUB_PLANT_MARKERS exist and run (80-red-marker 16/16) | yes |
+| S1-01 | 4 | re-ran/inspected step 4 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | both decision files exist; SUITE_LENGTH sits under This session in prompts (decision-recorded deviation) | yes |
+| S1-01 | 5 | re-ran/inspected step 5 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | init ran the full suite: green, 1044 tests; plan-only commit changed no code | yes |
+| S1-02 | 1 | re-ran/inspected step 1 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | 34-check-key 10/10 pass: asserts 2-line marker and byte-identical cached line | yes |
+| S1-02 | 2 | re-ran/inspected step 2 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | 79-suite-length 11/11 pass incl. coding/initializer prompts, tests-start/end and not-measured case | yes |
+| S1-02 | 3 | re-ran/inspected step 3 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | check.sh writes printf n/wall; grep for surviving cat prints nothing | yes |
+| S1-02 | 4 | re-ran/inspected step 4 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | lib/prompt.sh suite_length; Suite line sits under This session in prompts (run.md points there; decision-recorded), command form checked by 79 | yes |
+| S1-02 | 5 | re-ran/inspected step 5 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | grep -c never poll it = 1; twice-its-wall sentence at coding.md:22 | yes |
+| S1-02 | 6 | re-ran/inspected step 6 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | CLAUDE.md has see the run prompt; 208 s count 0; 39-memlint 11/11 | yes |
+| S1-02 | 7 | re-ran/inspected step 7 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | decision file present with rejected list | yes |
+| S1-02 | 8 | re-ran/inspected step 8 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | check-names.txt LC_ALL=C sorted; bash -n clean | yes |
+| S1-02 | 9 | re-ran/inspected step 9 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | init full run green, 1044 tests | yes |
+| S1-03 | 1 | re-ran/inspected step 1 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | 80-red-marker 16/16 pass covering the four-line red marker | yes |
+| S1-03 | 2 | re-ran/inspected step 2 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | cached red/subset behaviour covered by 80, passes | yes |
+| S1-03 | 3 | re-ran/inspected step 3 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | green-after, whole suite, timeout, cap kill, green removal covered by 80, passes | yes |
+| S1-03 | 4 | re-ran/inspected step 4 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | check.sh write/lookup/removal present; bash -n clean; header names red-<key> | yes |
+| S1-03 | 5 | re-ran/inspected step 5 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | decision file present | yes |
+| S1-03 | 6 | re-ran/inspected step 6 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | names sorted; check-rerun, check-key, red-marker green (70/70 in my subset run) | yes |
+| S1-03 | 7 | re-ran/inspected step 7 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | init full run green | yes |
+| S1-04 | 1 | re-ran/inspected step 1 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | 80-red-marker stub-run checks with counting CHECK_CMD pass | yes |
+| S1-04 | 2 | re-ran/inspected step 2 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | verify clears planted markers (STUB_PLANT_MARKERS) check passes | yes |
+| S1-04 | 3 | re-ran/inspected step 3 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | run_init fresh rm of red-key present; but git diff main also holds S1-05 review fix I1 (init-failed flag, green_count); extra beyond literal only-removal-and-read-r, accepted as later mandated review work | yes |
+| S1-04 | 4 | re-ran/inspected step 4 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | names sorted; bash -n clean | yes |
+| S1-04 | 5 | re-ran/inspected step 5 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | init full run green | yes |
+| S1-05 | 1 | re-ran/inspected step 1 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | review file S1-review.md exists: no Critical, 3 Important, 5 Minor | yes |
+| S1-05 | 2 | re-ran/inspected step 2 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | Important findings fixed with checks (I1 init-failed, I2, I3 covered in 79/80 passing) | yes |
+| S1-05 | 3 | re-ran/inspected step 3 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | green_count shares one read -r shape in record.sh; check.sh same | yes |
+| S1-05 | 4 | re-ran/inspected step 4 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | architecture.md 4 and README 1 mention red-<key>; README names last full run | yes |
+| S1-05 | 5 | re-ran/inspected step 5 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | bash -n and node --check clean; 39-memlint green | yes |
+| S1-05 | 6 | re-ran/inspected step 6 (greps, bash tests/run.sh subset 34/79/80/39/73, init full-suite output) | init full run green 1044 tests | yes |
+
+- *010027-verify-S1 · claude-sonnet-5-5*
+
 ### 2026-10-30 00:46 · S1-05 · passes
 
 S1 review: 0 Critical, 3 Important, 5 Minor. Fixed, each red first: I1 run_init keeps no red-<key> around a failed init; I2 the cached red shows check-<key>.out or says it is gone; I3 suite_length reads every green wall before a red; M1 no red cached for codes ≥128; M2 atomic marker writes; M3 green_count in record.sh; M4. Docs: architecture §3/§4/§7/prompt, README.
