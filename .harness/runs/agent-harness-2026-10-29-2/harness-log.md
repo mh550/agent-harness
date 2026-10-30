@@ -1,0 +1,207 @@
+- 2026-10-29 08:59 · test count: parsed (generic)
+- 2026-10-29 09:12 · feature list written: 0/23 passing
+- 2026-10-29 09:12 · lint: clean
+- 2026-10-29 09:12 · lane R1 opened (slot 0, port 7818, from cbdc580)
+- 2026-10-29 09:12 · lane R2 opened (slot 1, port 7819, from cbdc580)
+- 2026-10-29 09:12 · context.md for R1-01: 3502 bytes
+- 2026-10-29 09:12 · context.md for R2-01: 3163 bytes
+- 2026-10-29 09:19 · R2-01: gotchas +1 ~0 -0
+- 2026-10-29 09:32 · R2-01 un-passed: suite red after the session
+- 2026-10-29 09:32 · R2-01 · claude-opus-5-5 · passes=false · 7 min · 0/23 passing
+- 2026-10-29 09:48 · context.md for R2-01: 3694 bytes
+- 2026-10-29 09:58 · R1-01: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 09:58 · R1-01: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 09:58 · R1-01 · claude-opus-5-5 · passes=true · 45 min · 1/23 passing · tests 886
+- 2026-10-29 09:58 · context.md for R1-02: 5104 bytes
+- 2026-10-29 10:01 · R2-01: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:01 · R2-01: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:01 · R2-01: gotchas +0 ~0 -1
+- 2026-10-29 10:01 · R2-01 · claude-opus-5-5 · passes=true · 12 min · 2/23 passing · tests 886
+- 2026-10-29 10:01 · context.md for R2-02: 4995 bytes
+- 2026-10-29 10:16 · R1-02: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:16 · R1-02: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:16 · R1-02: gotchas +1 ~0 -0
+- 2026-10-29 10:23 · R2-02: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:23 · R2-02: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 10:23 · flaky: 13-run-2-michael-sets-desk (red, then green on a rerun; load 5.38)
+- 2026-10-29 10:23 · R2-02 · claude-opus-5-5 · passes=true · 22 min · 3/23 passing · tests 893
+- 2026-10-29 10:23 · context.md for R2-03: 4990 bytes
+- 2026-10-29 10:32 · R1-02 un-passed: suite red after the session
+- 2026-10-29 10:32 · R1-02 · claude-opus-5-5 · passes=false · 18 min · 3/23 passing · tests 893
+- 2026-10-29 10:32 · services stopped (paused)
+- 2026-10-29 10:48 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch (red, then green on a rerun; load 5.20)
+- 2026-10-29 10:48 · R2-03 · claude-opus-5-5 · passes=true · 24 min · 4/23 passing · tests 900
+- 2026-10-29 10:48 · services stopped (paused)
+- 2026-10-29 11:20 · needs: resolved agent-harness-2026-10-29-2/1 (other run merged)
+- 2026-10-29 11:36 · lane R2 closed (stopped)
+- 2026-10-29 11:36 · lane R1 closed (stopped)
+- 2026-10-29 11:36 · stopped by Michael
+- 2026-10-29 11:36 · run ended (stopped by Michael): 4/23 passing · 7 sessions (7 real) · 4 features passed · $18.55 · 2.4 h · by kind: init 1 ($6.72), coding 6 ($11.83) · by model: claude-fable-5-1 1 ($6.72), claude-opus-5-5 6 ($11.83)
+- 2026-10-29 11:36 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-10-29 11:36 · backlog: 1 new, 2 seen again
+- 2026-10-29 11:36 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-29-2 (in the state dir: init.out check-last.out)
+- 2026-10-29 11:37 · record PR merged into main · https://github.com/mh550/agent-harness/pull/53
+- 2026-10-29 12:31 · merged main into harness/agent-harness-2026-10-29-2
+- 2026-10-29 12:31 · lane R1 opened (slot 0, port 7818, from c319ca4)
+- 2026-10-29 12:31 · lane R2 opened (slot 1, port 7819, from 49bf908)
+- 2026-10-29 12:31 · context.md for R2-04: 6904 bytes
+- 2026-10-29 12:48 · context.md for R1-02: 5336 bytes
+- 2026-10-29 12:50 · R1-02: gotchas +0 ~0 -1
+- 2026-10-29 12:50 · R1-02 · claude-opus-5-5 · passes=true · 2 min · 5/23 passing · tests 892
+- 2026-10-29 12:50 · context.md for R1-03: 6188 bytes
+- 2026-10-29 13:27 · R2-04: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 13:27 · R2-04: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 13:27 · flaky: 32-l5-queue-runner-re (red, then green on a rerun; load 7.19)
+- 2026-10-29 13:27 · R2-04 · claude-opus-5-5 · passes=true · 55 min · 6/23 passing · tests 908
+- 2026-10-29 13:27 · review R2-05: 698 changed lines, at or over 400; opus
+- 2026-10-29 13:27 · context.md for R2-05: 5714 bytes
+- 2026-10-29 13:33 · R1-03: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 13:33 · R1-03: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 13:33 · R1-03: a lane commit touched the run record; reverted
+- 2026-10-29 13:33 · R1-03: gotchas +0 ~2 -0
+- 2026-10-29 13:33 · restored the feature list after R1-03: R1-02: passes true → false
+- 2026-10-29 13:33 · flaky: 13-run-2-michael-sets-desk (red, then green on a rerun; load 1.38)
+- 2026-10-29 13:33 · R1-03 · claude-opus-5-5 · passes=true · 42 min · 7/23 passing · tests 943
+- 2026-10-29 13:33 · context.md for R1-04: 6722 bytes
+- 2026-10-29 14:29 · R2-05: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 14:29 · R2-05: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 14:29 · R2-05: gotchas +0 ~1 -0
+- 2026-10-29 14:29 · flaky: 52-status-json 28-run-14d-harness-merge (red, then green on a rerun; load 8.15)
+- 2026-10-29 14:29 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch 47-lanes-two 28-run-14d-harness-merge (red, then green on a rerun; load 6.29)
+- 2026-10-29 14:29 · R2-05 · claude-opus-5-5 · passes=true · 61 min · 8/23 passing · tests 915
+- 2026-10-29 14:29 · R2: 1 files conflict with main (CLAUDE.md); a resolve session
+- 2026-10-29 14:31 · R2: main merged in by a resolve session (CLAUDE.md; claude-opus-5-5, 3 min); the verify goes on with main merged
+- 2026-10-29 14:31 · merged main into harness-lane/agent-harness-2026-10-29-2/R2
+- 2026-10-29 14:31 · verify R2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 14:32 · R1-04: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 14:32 · R1-04: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 14:32 · R1-04 · claude-opus-5-5 · passes=true · 58 min · 9/23 passing · tests 944
+- 2026-10-29 14:32 · context.md for R1-05: 7604 bytes
+- 2026-10-29 14:47 · context.md for R2: 14694 bytes
+- 2026-10-29 14:50 · verify R2: evidence short of the steps (R2-04 5/6); re-running on opus
+- 2026-10-29 14:50 · context.md for R2: 14952 bytes
+- 2026-10-29 14:56 · R2 verified and tagged run/agent-harness-2026-10-29-2/R2
+- 2026-10-29 14:56 · R2 merged into main · https://github.com/mh550/agent-harness/pull/56
+- 2026-10-29 14:56 · lane R2 closed (R2 merged)
+- 2026-10-29 14:56 · lane R2: branch harness-lane/agent-harness-2026-10-29-2/R2 deleted (merged)
+- 2026-10-29 14:56 · lane R3 opened (slot 1, port 7819, from 53bdc66, slot reused)
+- 2026-10-29 14:56 · context.md for R3-01: 5603 bytes
+- 2026-10-29 15:29 · R3-01: gotchas +0 ~1 -0
+- 2026-10-29 15:29 · R3-01 · claude-opus-5-5 · passes=true · 32 min · 10/23 passing · tests 963
+- 2026-10-29 15:29 · context.md for R3-02: 5946 bytes
+- 2026-10-29 15:41 · R1-05: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 15:41 · R1-05: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 15:41 · R1-05: gotchas +0 ~1 -0
+- 2026-10-29 15:41 · R1-05 · claude-opus-5-5 · passes=true · 69 min · 11/23 passing · tests 973
+- 2026-10-29 15:41 · context.md for R1-06: 7909 bytes
+- 2026-10-29 16:14 · R3-02: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:14 · R3-02: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:14 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch 48-lanes-rebase (red, then green on a rerun; load 4.94)
+- 2026-10-29 16:14 · R3-02 · claude-opus-5-5 · passes=true · 45 min · 12/23 passing · tests 969
+- 2026-10-29 16:14 · context.md for R3-03: 7488 bytes
+- 2026-10-29 16:33 · R1-06: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:33 · R1-06: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:33 · R1-06: gotchas +0 ~1 -0
+- 2026-10-29 16:33 · R1-06 · claude-opus-5-5 · passes=true · 51 min · 13/23 passing · tests 973
+- 2026-10-29 16:33 · review R1-07: 689 changed lines, at or over 400; opus
+- 2026-10-29 16:33 · context.md for R1-07: 7998 bytes
+- 2026-10-29 16:52 · R3-03: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:52 · R3-03: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 16:52 · flaky: 74-flakes-run (red, then green on a rerun; load 7.17)
+- 2026-10-29 16:52 · R3-03 · claude-opus-5-5 · passes=true · 37 min · 14/23 passing · tests 972
+- 2026-10-29 16:52 · context.md for R3-04: 8018 bytes
+- 2026-10-29 17:09 · R1-07: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 17:09 · R1-07: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 17:26 · R1-07 · claude-opus-5-5 · passes=true · 36 min · 15/23 passing · tests 976
+- 2026-10-29 17:26 · verify R1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 17:45 · context.md for R1: 16107 bytes
+- 2026-10-29 18:10 · R3-04: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 18:10 · R3-04: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 18:10 · flaky: 46-lanes-continue (red, then green on a rerun; load 5.89)
+- 2026-10-29 18:10 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch (red, then green on a rerun; load 5.52)
+- 2026-10-29 18:10 · R3-04 · claude-opus-5-5 · passes=true · 77 min · 16/23 passing · tests 976
+- 2026-10-29 18:10 · context.md for R3-05: 7955 bytes
+- 2026-10-29 18:33 · verify R1: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 18:33 · verify R1: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 18:34 · R1 verified and tagged run/agent-harness-2026-10-29-2/R1
+- 2026-10-29 18:35 · R3-05: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 18:35 · R3-05: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 18:35 · R3-05: gotchas +0 ~1 -0
+- 2026-10-29 18:35 · R3-05 · claude-opus-5-5 · passes=true · 25 min · 17/23 passing · tests 978
+- 2026-10-29 18:35 · review R3-06: 637 changed lines, at or over 400; opus
+- 2026-10-29 18:35 · context.md for R3-06: 7996 bytes
+- 2026-10-29 18:46 · R1 re-based on main 8976461: 10 files, disjoint, suite green; re-tagged
+- 2026-10-29 18:46 · R1 merged into main · https://github.com/mh550/agent-harness/pull/59
+- 2026-10-29 18:46 · lane R1 closed (R1 merged)
+- 2026-10-29 18:46 · lane R1: branch harness-lane/agent-harness-2026-10-29-2/R1 deleted (merged)
+- 2026-10-29 18:46 · lane R4 opened (slot 0, port 7818, from 4d15739, slot reused)
+- 2026-10-29 18:46 · context.md for R4-01: 7512 bytes, 3 items left out
+- 2026-10-29 18:52 · R4-01 · claude-opus-5-5 · passes=true · 5 min · 18/23 passing · tests 976
+- 2026-10-29 18:52 · context.md for R4-02: 7921 bytes
+- 2026-10-29 19:22 · R4-02 · claude-opus-5-5 · passes=true · 29 min · 19/23 passing · tests 984
+- 2026-10-29 19:22 · context.md for R4-03: 7906 bytes
+- 2026-10-29 19:24 · R3-06: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 19:24 · R3-06: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 19:24 · R3-06 · claude-opus-5-5 · passes=true · 48 min · 20/23 passing · tests 980
+- 2026-10-29 19:24 · R3: 1 files conflict with main (CLAUDE.md); a resolve session
+- 2026-10-29 19:24 · R3: main merged in by a resolve session (CLAUDE.md; claude-opus-5-5, 1 min); the verify goes on with main merged
+- 2026-10-29 19:24 · merged main into harness-lane/agent-harness-2026-10-29-2/R3
+- 2026-10-29 19:24 · verify R3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 19:41 · context.md for R3: 16143 bytes
+- 2026-10-29 19:43 · verify R3: R3-01 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-02 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-03 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-04 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-05 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:43 · verify R3: R3-06 failed the re-check, back in the queue (one more attempt)
+- 2026-10-29 19:56 · R4-03: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 19:56 · R4-03: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 19:56 · R4-03 · claude-opus-5-5 · passes=true · 34 min · 15/23 passing · tests 989
+- 2026-10-29 19:56 · context.md for R4-04: 7816 bytes, 1 items left out
+- 2026-10-29 20:00 · context.md for R3-01: 7893 bytes
+- 2026-10-29 20:18 · R3-01: gotchas +0 ~0 -1
+- 2026-10-29 20:18 · R3-01 · claude-opus-5-5 · passes=true · 17 min · 16/23 passing · tests 993
+- 2026-10-29 20:18 · context.md for R3-02: 7726 bytes, 2 items left out
+- 2026-10-29 20:20 · R3-02 · claude-opus-5-5 · passes=true · 2 min · 17/23 passing · tests 993
+- 2026-10-29 20:20 · context.md for R3-03: 7831 bytes, 2 items left out
+- 2026-10-29 20:23 · R3-03 · claude-opus-5-5 · passes=true · 2 min · 18/23 passing · tests 993
+- 2026-10-29 20:23 · context.md for R3-04: 8001 bytes, 2 items left out
+- 2026-10-29 20:25 · R3-04 · claude-opus-5-5 · passes=true · 2 min · 19/23 passing · tests 993
+- 2026-10-29 20:25 · context.md for R3-05: 7974 bytes, 2 items left out
+- 2026-10-29 20:30 · R3-05 · claude-opus-5-5 · passes=true · 4 min · 20/23 passing · tests 993
+- 2026-10-29 20:30 · review R3-06: 886 changed lines, at or over 400; opus
+- 2026-10-29 20:30 · context.md for R3-06: 8002 bytes, 5 items left out
+- 2026-10-29 20:32 · R3-06 · claude-opus-5-5 · passes=true · 1 min · 21/23 passing · tests 993
+- 2026-10-29 20:32 · verify R3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 20:35 · R4-04: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 20:35 · R4-04: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 20:35 · R4-04: gotchas +0 ~1 -0
+- 2026-10-29 20:35 · R4-04 · claude-opus-5-5 · passes=true · 38 min · 22/23 passing · tests 994
+- 2026-10-29 20:35 · review R4-05: 693 changed lines, at or over 400; opus
+- 2026-10-29 20:35 · context.md for R4-05: 7900 bytes, 1 items left out
+- 2026-10-29 20:45 · context.md for R3: 16252 bytes, 13 items left out
+- 2026-10-29 20:47 · R3 verified and tagged run/agent-harness-2026-10-29-2/R3
+- 2026-10-29 20:47 · R3 merged into main · https://github.com/mh550/agent-harness/pull/61
+- 2026-10-29 20:47 · lane R3 closed (R3 merged)
+- 2026-10-29 20:47 · lane R3: branch harness-lane/agent-harness-2026-10-29-2/R3 deleted (merged)
+- 2026-10-29 21:09 · R4-05: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 21:09 · R4-05: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 21:09 · flaky: 47-lanes-two (red, then green on a rerun; load 2.79)
+- 2026-10-29 21:09 · R4-05 · claude-opus-5-5 · passes=true · 33 min · 23/23 passing · tests 999
+- 2026-10-29 21:09 · R4: 1 files conflict with main (CLAUDE.md); a resolve session
+- 2026-10-29 21:09 · R4: main merged in by a resolve session (CLAUDE.md; claude-opus-5-5, 1 min); the verify goes on with main merged
+- 2026-10-29 21:09 · merged main into harness-lane/agent-harness-2026-10-29-2/R4
+- 2026-10-29 21:09 · verify R4: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 21:22 · context.md for R4: 16190 bytes
+- 2026-10-29 21:24 · R4 verified and tagged run/agent-harness-2026-10-29-2/R4
+- 2026-10-29 21:24 · R4 merged into main · https://github.com/mh550/agent-harness/pull/62
+- 2026-10-29 21:24 · lane R4 closed (R4 merged)
+- 2026-10-29 21:24 · lane R4: branch harness-lane/agent-harness-2026-10-29-2/R4 deleted (merged)
+- 2026-10-29 21:24 · every feature passes
+- 2026-10-29 21:24 · run ended (done): 23/23 passing · 42 sessions (42 real) · 23 features passed · $91.07 · 17.1 h · by kind: init 1 ($6.72), coding 31 ($80.09), retro 1 ($0.12), resolve 3 ($1.06), verify 6 ($3.08) · by model: claude-fable-5-1 1 ($6.72), claude-opus-5-5 35 ($83.15), claude-sonnet-5-5 6 ($1.20)
+- 2026-10-29 21:24 · services stopped (done)
+- 2026-10-29 21:24 · services stopped (done)
+- 2026-10-29 21:24 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-10-29 21:24 · backlog: 1 new, 2 seen again
+- 2026-10-29 21:24 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-29-2 (in the state dir: init.out check-last.out)
+- 2026-10-29 21:24 · record PR: the merge was refused; left open · https://github.com/mh550/agent-harness/pull/63
