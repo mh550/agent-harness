@@ -1,13 +1,12 @@
-# Context pack for `R3-02`
+# Context pack for `R3-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## This feature's earlier attempts
 
-- Dead end (R3-02, 09-R3-02): the plan's COUNT regex with tests?/checks? singular — it hit R1-02 step 4's command `wait_for 30 test -f <file>`; plural only now, and that string is a not-flagged case in 07 → entries.jsonl:18
-- Dead end (R3-02, 09-R3-02): a comment on the namespace import naming writeFileSync — the step's grep -c counts lines, comments too: it printed 2 → entries.jsonl:18
-- Verify R3 found (R3-02 step 6): ran bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs .; saw 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 → entries.jsonl:29
-- 2026-10-29 16:14 · R3-02 · passes: lib/features.mjs: every list/attempts/parked write goes through writeAtomic (<file>.<pid>.tmp + renameSync; namespace import, so grep -c writeFileSync = 1). lint gains unit-collision (LANEU mapping, one finding per colliding milestone) and unreproducible (time bounds, one run's test counts, this run's check.out). initializer.md states counts as commands. 5 checks in 07, 1 in new 77-leftovers.sh.; tests 963 → 969; files lib/features.mjs, prompts/initializer.md, tests/checks/07-step-lint-pure-r3.sh, tests/checks/77-leftovers.sh, tests/fixtures/check-names.txt → entries.jsonl:18
+- Dead end (R3-03, 11-R3-03): STUB_MAIN_TOUCH=A:.harness/runs/other/x.md (step 1 as written) — the lane merges main in before its verify (sync_main), so merge_one never sees a moved main: green at HEAD. verify-M1:<path> lands it after the verify and is red at HEAD (M1 re-based) → entries.jsonl:20
+- Verify R3 found (R3-03 step 5): ran bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs .; saw 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 → entries.jsonl:29
+- 2026-10-29 16:52 · R3-03 · passes: merge_one: ignored_only lets a main moved only in cache-ignored paths merge as verified, no re-base, noted once per main. finish: ledger and scratch_done after record_pr, plus a 'ledger notes' commit. run_init pins tests-start and testcount-source only from a green suite, read from the tree's marker or check-<key>.out (never a stale check.out). STUB_FIX_BROKEN; 3 checks in 77-leftovers.; tests 969 → 972; files lib/record.sh, lib/driver.sh, tests/stub-claude.sh, tests/checks/77-leftovers.sh, tests/fixtures/check-names.txt → entries.jsonl:20
 
 ## Discoveries for this feature
 
@@ -26,7 +25,8 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (R3-02, affects R3-06, run): 13/14-run-2 pin the initializer's lint sentence ending `milestone's size doesn't call for). No output means clean.`: a new lint item goes before the review one → entries.jsonl:18
 - Discovery (R3-02, affects R1-07, run): Under this box's load (~21) the full suite took 1237 s and 08-scope and 48-lanes-rebase (a non-fast-forward push to origin main) flaked once each, green on the rerun → entries.jsonl:18
 - Discovery (R1-05, affects run): Merging origin/main brought R2 in: its stub-claude.sh header comments conflicted with R1-02's STUB_BARRIER comment. Both are kept; the suite went from 944 to 973 checks. → entries.jsonl:17
-- Discovery (R3-01, affects R3-02): grep -c 'writeFileSync' lib/features.mjs counts the import line too: R3-02 must drop it from the named import (namespace import for the helper) or the step prints 2 → entries.jsonl:16
+- Discovery (R3-01, affects R3-03): The ignored-paths merge note must contain neither 're-base' nor 'moved since' (R3-03 step 1 greps both absent): plan gives '<m>: main changed only in ignored paths (<paths>); merged as verified' → entries.jsonl:16
+- Discovery (R3-01, affects R3-03): finish: ledger reads $SCRATCH/retro-proposals.json, so ledger and scratch_done move together after record_pr; the backlog note then misses main's copy → entries.jsonl:16
 - Discovery (R3-01, affects R3-02, run): unreproducible flags 3 steps of this run's list (R1-02 step 4 'below 5 s', R3-01 step 3, R3-02 step 3 quoting the examples): expected, reported never applied → entries.jsonl:16
 - Discovery (R2, affects run): N2 is on origin main now (grep -c ...-N[12]$ = 2; 645d87e, in R2's HEAD): the R2/R1 plans' 'needs Michael' dependency line is stale → entries.jsonl:15
 - Discovery (R2-05, affects run): Left by the review (Minor): the resume ignores a stop/lanes-end/deadline (bounded 10m, $1), and a refused resume is not fed to limit_raise → entries.jsonl:11
