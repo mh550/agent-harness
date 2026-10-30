@@ -1,0 +1,48 @@
+2026-10-29-2 01-R1-01 39-memlint-m4: MISSED (1 files changed)
+2026-10-29-2 03-R2-01 08-scope-sh-l1-02-run-capped-services-gc-scratch: selected (names CLAUDE) (1 files changed)
+2026-10-29-2 03-R2-01 39-memlint-m4: selected (names CLAUDE) (1 files changed)
+2026-10-29-2 04-R1-02 75-suite-tools: own check file (6 files changed)
+2026-10-29-2 05-R2-02 12-journal-pure-e4-entrys: own check file (10 files changed)
+2026-10-29-2 05-R2-02 76-entries-survive: own check file (10 files changed)
+2026-10-29-2 05-R2-02 13-run-2-michael-sets-desk: selected (names entries, prompt, record) (10 files changed)
+2026-10-29-2 06-R2-03 05-metrics-pure-tokens-cache: own check file (5 files changed)
+2026-10-29-2 06-R2-03 76-entries-survive: own check file (5 files changed)
+2026-10-29-2 06-R2-03 08-scope-sh-l1-02-run-capped-services-gc-scratch: selected (names stub-claude, metrics) (5 files changed)
+
+10 reds in sessions' own suite calls: own check file 5, selected by a name match 4, repeat flaker 0, missed 1
+missed = a red in a check file that neither names a changed file nor is a repeat flaker: a file-based subset would not have run it
+
+subset size under the name rule, 7 coding sessions with files: median 19% of the check files, quartiles 14%–24%, under half the suite in 6 sessions
+  2026-10-29-2 00-init: 18/79 check files (0 code files of 1 changed)
+  2026-10-29-2 02-R2-01: 11/79 check files (0 code files of 2 changed)
+  2026-10-29-2 01-R1-01: 0/79 check files (0 code files of 1 changed)
+  2026-10-29-2 03-R2-01: 11/79 check files (0 code files of 1 changed)
+  2026-10-29-2 04-R1-02: 15/79 check files (5 code files of 6 changed)
+  2026-10-29-2 06-R2-03: 19/79 check files (5 code files of 5 changed)
+2026-10-29-3 02-S1-02 34-check-key: own check file (15 files changed)
+2026-10-29-3 02-S1-02 79-suite-length: own check file (15 files changed)
+2026-10-29-3 02-S1-02 08-scope-sh-l1-02-run-capped-services-gc-scratch: own check file (15 files changed)
+2026-10-29-3 03-S1-03 80-red-marker: own check file (7 files changed)
+2026-10-29-3 03-S1-03 08-scope-sh-l1-02-run-capped-services-gc-scratch: own check file (7 files changed)
+2026-10-29-3 03-S1-03 74-flakes-run: own check file (7 files changed)
+2026-10-29-3 03-S1-03 10-harness-eval-run-e2: own check file (7 files changed)
+2026-10-29-3 04-S1-04 80-red-marker: own check file (5 files changed)
+2026-10-29-3 04-S1-04 39-memlint-m4: MISSED (5 files changed)
+2026-10-29-3 05-S1-05 39-memlint-m4: selected (names check) (11 files changed)
+2026-10-29-3 05-S1-05 74-flakes-run: own check file (11 files changed)
+2026-10-29-3 07-S2-02 81-partial-key: own check file (7 files changed)
+2026-10-29-3 08-S2-03 81-partial-key: own check file (3 files changed)
+2026-10-29-3 08-S2-03 46-lanes-continue: selected (names check) (3 files changed)
+2026-10-29-3 09-S2-04 82-key-map-lint: own check file (10 files changed)
+2026-10-29-3 10-S2-05 81-partial-key: own check file (4 files changed)
+2026-10-29-3 11-S2-06 81-partial-key: own check file (9 files changed)
+2026-10-29-3 11-S2-06 82-key-map-lint: own check file (9 files changed)
+
+18 reds in sessions' own suite calls: own check file 15, selected by a name match 2, repeat flaker 0, missed 1
+missed = a red in a check file that neither names a changed file nor is a repeat flaker: a file-based subset would not have run it
+
+subset size under the name rule, 12 coding sessions with files: median 60% of the check files, quartiles 49%–100%, under half the suite in 4 sessions
+  2026-10-29-3 00-init: 20/86 check files (0 code files of 1 changed)
+  2026-10-29-3 01-S1-01: 0/86 check files (0 code files of 1 changed)
+  2026-10-29-3 06-S2-01: 0/86 check files (0 code files of 1 changed)
+  2026-10-29-3 10-S2-05: 42/86 check files (4 code files of 4 changed)
