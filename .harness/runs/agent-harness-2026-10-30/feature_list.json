@@ -20,7 +20,7 @@
         "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line); the plan changes no code"
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F1-02",

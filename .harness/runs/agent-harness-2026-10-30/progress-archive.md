@@ -3,6 +3,21 @@
 
 What this file is: the run's journal, rendered by the harness from `entries.jsonl`, newest entry first; one entry per session (init, each feature's coding session, verify, retro). Read the feature list in `feature_list.json`: one milestone, F1 (the suite's flakes fixed where they start, as R1 did on 2026-10-29): F1-01 plans, F1-02 to F1-05 reproduce each flaker with `bash tests/run.sh --repeat 10 <file>` and fix it (timing checks, lanes, desk/scope/one-offs, the runner's whole-suite rerun after a stopped file), F1-06 reviews and writes the docs and decision. The run's named spec `docs/specs/2026-10-30-suite-cpu-and-flakes.md` was on no branch when the run started: the init planned the flakes half only and asked about the rest (see the init entry's question). Steer via `INBOX.md` on this branch: set its first line to `status: pause` or `status: stop`, or write an answer under `## Answers`; every session reads it at startup.
 
+### 2026-10-30 17:09 · F1-01 · passes
+
+Wrote docs/plans/2026-10-30-F1-flakes.md: provenance (named spec on no branch, flakes half only, CPU fixes 6-7 wait), a 12-row flaker table with sightings, R1's method, the CPU-time default for the 52/53 timing checks, the tests/run.sh whole-suite rerun mechanism and its default fix, what is left out, shared docs and the decision slug. No code changed.
+
+- **Files:** docs/plans/2026-10-30-F1-flakes.md
+- **Verified:** check.sh: green (cached for this code tree, 1080 tests); every sighting cited was read: grep 'flaky:' in the three 10-29 records' harness-log.md, grep '^FAIL' in lc-*.out; tests/run.sh lines 104-127 read; 52:70, 53:81, 13:425 line numbers checked
+- **Tests:** 1080 → 1080
+- **Discovery** (affects F1-02): The load curve's best-of-3 walls for 53/52: 274-326 ms idle, 443-474 ms at 8 jobs solo, 487-556 ms at 4 paired, 972-1367 ms only at 8 paired (lc-*.out 'best of 3:' lines)
+- **Discovery** (affects F1-05): Plan default for F1-05: a full run of a TEST_CHECKS directory that holds its own check-names.txt checks conformance against it (no new env var)
+- **Discovery** (affects F1-06): Decision slug for F1-06: journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md
+- **Discovery** (affects F1-02, F1-03, F1-04): The 10-29 run's harness-log.md has no flaky: line; sightings are in 10-29-2 (11 lines) and 10-29-3 (5 lines)
+- **Question for Michael:** Default taken: the two 'under 1 s (best of 3)' status checks keep their 1000 ms bound but measure CPU time (user+sys) instead of wall. OK, or would you rather keep wall and accept their rare red at 8-job paired load? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/docs/plans/2026-10-30-F1-flakes.md
+- **Question for Michael:** Default taken: when a file is stopped or killed, conformance's 'missing' names no longer suppress HARNESS_FAILED= (new/doubled still do), so check.sh reruns the broken files, not the whole suite; a check dropped elsewhere in the same tree is then caught only by the next full run. OK? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/docs/plans/2026-10-30-F1-flakes.md
+- *01-F1-01 · claude-opus-5-5*
+
 ### 2026-10-30 17:05 · init · passes
 
 6 features: F1 6 (1 plan, 4 build, 1 review): the flakes half of the run's title, planned from the plan's fixes and the run records because the named spec docs/specs/2026-10-30-suite-cpu-and-flakes.md is on no branch; the CPU half (plan fixes 6 and 7) waits for the spec.

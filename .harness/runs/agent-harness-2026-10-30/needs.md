@@ -21,3 +21,45 @@
 ```sh
 harness needs done agent-harness-2026-10-30/1 --why "<answer>"
 ```
+
+## ⚠ F1-01 asked: Default taken: the two 'under 1 s (best of 3)' status check…
+
+`agent-harness-2026-10-30/2` · since 2026-10-30T21:09:06.130Z
+
+**blocked** nothing waits on it; F1-01's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:2](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl?plain=1#L2)
+
+> Default taken: the two 'under 1 s (best of 3)' status checks keep their 1000 ms bound but measure CPU time (user+sys) instead of wall. OK, or would you rather keep wall and accept their rare red at 8-job paired load? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/docs/plans/2026-10-30-F1-flakes.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/docs/plans/2026-10-30-F1-flakes.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-30/F1/docs/plans/2026-10-30-F1-flakes.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl:2](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl?plain=1#L2)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-10-30/2 --why "<answer>"
+```
+
+## ⚠ F1-01 asked: Default taken: when a file is stopped or killed, conformanc…
+
+`agent-harness-2026-10-30/3` · since 2026-10-30T21:09:06.208Z
+
+**blocked** nothing waits on it; F1-01's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:2](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl?plain=1#L2)
+
+> Default taken: when a file is stopped or killed, conformance's 'missing' names no longer suppress HARNESS_FAILED= (new/doubled still do), so check.sh reruns the broken files, not the whole suite; a check dropped elsewhere in the same tree is then caught only by the next full run. OK? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/docs/plans/2026-10-30-F1-flakes.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/docs/plans/2026-10-30-F1-flakes.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-30/F1/docs/plans/2026-10-30-F1-flakes.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl:2](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl?plain=1#L2)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-10-30/3 --why "<answer>"
+```
