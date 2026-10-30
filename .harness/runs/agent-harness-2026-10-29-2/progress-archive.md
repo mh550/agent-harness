@@ -9,6 +9,18 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:18 · R3-01 · passes
+
+Verify R3 was red only on 39-memlint-m4: the R3 resolve kept both its {{X}} line and main's stub --resume line, so Gotchas had 16 lines. Dropped the stub --resume line (76-entries-survive checks that shape); memlint prints nothing. The plan file's steps 1-4 hold (spot-checked: sections, Minor 8 quote, unreproducible examples, N2 = 2 on origin main).
+
+- **Files:** CLAUDE.md
+- **Verified:** node lib/memlint.mjs . prints nothing (was CLAUDE.md:80 gotchas: 16 lines); lib/check.sh full suite green in 1014 s, 993 tests, 0 FAIL
+- **Tests:** 993 → 993
+- **Discovery** (affects run): A resolve that keeps both sides' Gotchas lines can push the section past 15 (the comment line counts): drop one in the resolve, or 39-memlint-m4 goes red
+- **Resolved:** stub --resume of an unknown id swaps session_id but leaves 00000000-… in the result's errors[] (the CLI names the id)
+- **Proposed change:** The resolve prompt could say: after keeping both sides of a ## Gotchas conflict, run node lib/memlint.mjs . (39-memlint-m4 lints the worktree's CLAUDE.md)
+- *20-R3-01 · claude-opus-5-5*
+
 ### 2026-10-29 19:56 · R4-03 · passes
 
 journal_ (lib/record.sh) now opens one question item per question of the entry it ingests (questions_: the filled text, asker, line, feature for coding), notes '<id>: <n> question(s) for Michael recorded (harness needs)' and sweeps at once when the entry has resolved. Stub learns STUB_ASK_TWO and STUB_ASK_AGAIN. 78 gains 5 stub-run checks.
