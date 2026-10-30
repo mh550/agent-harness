@@ -1,0 +1,42 @@
+
+== dj-soulsync-review-2026-10-22 (no lanes: the run is one lane)  flakes 0
+lane run 06:37:43–16:16:47: 34744 s, 0 sessions
+  model 0 s (0%) · session suite 0 s (0%) · session other tools 0 s (0%) · harness before 0 s (0%) · harness after 0 s (0%) · verify 0 s (0%) · waiting 0 s (0%) · idle 34744 s (100%)
+  largest idle: 06:37:43–16:16:47 34744 s
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · suite calls):
+harness suites outside sessions (where · wall · cpu · rerun):
+
+== dj-crate-streaming-2026-10-22-fixes (no lanes: the run is one lane)  flakes 0
+lane run 16:17:36–21:37:13: 19177 s, 0 sessions
+  model 0 s (0%) · session suite 0 s (0%) · session other tools 0 s (0%) · harness before 0 s (0%) · harness after 0 s (0%) · verify 0 s (0%) · waiting 0 s (0%) · idle 19177 s (100%)
+  largest idle: 16:17:36–21:37:13 19177 s
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · suite calls):
+harness suites outside sessions (where · wall · cpu · rerun):
+
+== dj-crate-streaming-2026-10-22-build (no lanes: the run is one lane)  flakes 0
+lane run 21:38:02–09:35:59: 43077 s, 0 sessions
+  model 0 s (0%) · session suite 0 s (0%) · session other tools 0 s (0%) · harness before 0 s (0%) · harness after 0 s (0%) · verify 0 s (0%) · waiting 0 s (0%) · idle 43077 s (100%)
+  largest idle: 21:38:02–09:35:59 43077 s
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · suite calls):
+harness suites outside sessions (where · wall · cpu · rerun):
+
+load curve from the journal (full suites: wall s, CPU s, mean other suites overlapping):
+
+== hit_list-2026-10-20 (no lanes: the run is one lane)  flakes 0
+lane run 12:54:49–13:10:52: 963 s, 0 sessions
+  model 0 s (0%) · session suite 0 s (0%) · session other tools 0 s (0%) · harness before 0 s (0%) · harness after 0 s (0%) · verify 0 s (0%) · waiting 60 s (6%) · idle 903 s (94%)
+  largest idle: 12:54:49–13:10:52 903 s
+lane run 10:50:17–14:39:05: 13728 s, 0 sessions
+  model 0 s (0%) · session suite 0 s (0%) · session other tools 0 s (0%) · harness before 0 s (0%) · harness after 0 s (0%) · verify 0 s (0%) · waiting 0 s (0%) · idle 13728 s (100%)
+  largest idle: 10:50:17–14:39:05 13728 s
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · suite calls):
+harness suites outside sessions (where · wall · cpu · rerun):
+
+== hit_list-2026-10-22-sharing (no lanes: the run is one lane)  flakes 0
+lane run 19:28:07–13:02:12: 63245 s, 0 sessions
+  model 0 s (0%) · session suite 0 s (0%) · session other tools 0 s (0%) · harness before 0 s (0%) · harness after 0 s (0%) · verify 0 s (0%) · waiting 0 s (0%) · idle 63245 s (100%)
+  largest idle: 19:28:07–13:02:12 63245 s
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · suite calls):
+harness suites outside sessions (where · wall · cpu · rerun):
+
+load curve from the journal (full suites: wall s, CPU s, mean other suites overlapping):
