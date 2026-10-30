@@ -1,0 +1,3 @@
+[{"id":"suite-flake-retry","title":"Re-run failed test files serially before declaring the suite red or un-passing a feature","evidence":"R2-01 and R1-02 un-passed on a red suite; 7+ 'flaky ... red, then green on a rerun' notes at load 5-8"},
+{"id":"verify-evidence-rows","title":"Record per-step evidence rows from verify sessions in entries.jsonl","evidence":"6 verify sessions ($3.08), verify_failed 6; entries.jsonl has no per-step rows to audit"},
+{"id":"session-entry-write-guard","title":"Tell sessions in the prompt that entries.jsonl/progress-archive.md are driver-only, so the driver need not restore them","evidence":"'entries.jsonl edited by the session; restored' logged for R1-01, R2-01, R1-02, R2-02, R2-04, R1-03, R2-05, R1-04, R4-04, R4-05"}]

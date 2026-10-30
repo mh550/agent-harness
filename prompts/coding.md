@@ -38,7 +38,9 @@ checkouts on this machine.
   `PARKED: <what you need, in one line>`. The harness then parks the feature (no attempt spent),
   carries on with work that doesn't depend on it, and retries it once his answers change.
 - **Plans** go in `docs/plans/<date>-<milestone>-<topic>.md` unless the project says otherwise.
-- Merging into the main branch and branch cleanup are the harness's job, not yours.
+- Merging into the main branch and branch cleanup are the harness's job, not yours. So is the
+  other way: never merge or rebase the main branch into yours (the harness merges main in at the
+  verify, so what is verified is what merges).
 - The project's policy (build-only or live-staged) comes right after these instructions. It binds you.
 
 ## 1. Get your bearings (always, in this order)

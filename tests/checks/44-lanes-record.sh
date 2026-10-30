@@ -93,4 +93,39 @@ check "record lock: pack_and_copy builds the pack and copies it into the slot un
   '( d=$T/pc; mkdir -p "$d/rec" "$d/slot"; STATE=$d REC=$d/rec SLOT=$d/slot; source "$HERE/../lib/record.sh"
      _record() { echo B > "$REC/context.md"; "$@"; }; context_() { echo "$1" > "$REC/context.md"; }; materialize_() { cp "$REC/context.md" "$SLOT/ctx"; }
      pack_and_copy A; [[ $(cat "$SLOT/ctx") == A ]] )'
+
+# lane_guard after a session merged main itself (R1-03, ff2c6de): what the merge brought is main's, not the session's;
+# only its own add -f of the record is un-indexed, and the file stays on disk (F repair and the claim read the copy)
+G=$T/lg; git init -q --bare -b main "$G/o.git"; git clone -q "$G/o.git" "$G/main" 2> /dev/null
+gg() { git -C "$G/$1" -c user.name=t -c user.email=t@t "${@:2}"; }
+mkdir -p "$G/main/.harness/runs/old"; echo a1 > "$G/main/.harness/runs/old/a"; gg main add -A; gg main commit -qm base; gg main push -q origin main
+git clone -q "$G/o.git" "$G/lane" 2> /dev/null; gg lane checkout -q -b harness-lane/u/M1; echo .harness/runs/ > "$G/lane/.git/info/exclude"
+# main gains another run's record, a change to an old one, and an earlier segment of this run's (u/s, the copy's path)
+mkdir -p "$G/main/.harness/runs/new" "$G/main/.harness/runs/u"; echo b > "$G/main/.harness/runs/new/b"; echo a2 > "$G/main/.harness/runs/old/a"; echo s1 > "$G/main/.harness/runs/u/s"
+gg main add -A; gg main commit -qm "main moves"; gg main push -q origin main
+lg_out=$( cd "$G/lane" && source "$HERE/../lib/record.sh"; MAIN_BRANCH=main STATE=$G LBRANCH="" RUN_DIR=.harness/runs/u; note() { echo "$*" >> "$G/notes"; }
+  export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+  sstart=$(git rev-parse HEAD); echo c > c; git add c; git commit -qm code; git fetch -q origin; git merge -q --no-edit origin/main
+  echo s2 > .harness/runs/u/s; echo x > .harness/runs/u/x; git add -f .harness/runs/u/x; git commit -qam "into the record"
+  lane_guard "$sstart" A
+  for p in new/b old/a u/s; do [[ $(git rev-parse "HEAD:.harness/runs/$p") == $(git rev-parse "origin/main:.harness/runs/$p") ]] && echo "$p=main"; done
+  git cat-file -e HEAD:.harness/runs/u/x 2> /dev/null || echo untracked; [[ -f .harness/runs/u/x ]] && echo on-disk; cat .harness/runs/u/s
+  git diff --quiet "$(git merge-base HEAD origin/main)" HEAD -- .harness/runs/ && echo no-diff; git add -A; [[ -z $(git status --porcelain) ]] && echo clean )
+check "lane_guard: a session that merged main keeps main's records (merge-base base); its own edits are un-indexed, still on disk" \
+  '[[ $(paste -sd" " <<< "$lg_out") == "new/b=main old/a=main u/s=main untracked on-disk s2 no-diff clean" ]] && grep -qx "A: a lane commit touched the run record; reverted" "$G/notes"'
+check "lane_guard: a session's own merge of main into its branch is noted" \
+  'grep -qx "A: the session merged main into its branch itself (the driver does that, at verify)" "$G/notes" && [[ $(wc -l < "$G/notes") == 2 ]]'
+# merge_one's fail-safe: a tag that still carries .harness/runs/ changes (past lane_guard) merges with those paths as
+# main has them, in a commit on top of the tag, noted; the code merges as verified
+lm_out=$( cd "$G/lane" && source "$HERE/../lib/record.sh"; MAIN_BRANCH=main STATE=$G LS=$G RUN_ID=u MERGE_POLICY=auto HARNESS_HOME=$HH GH=lm_gh
+  note() { echo "$*" >> "$G/notes"; }; log() { :; }; notify() { :; }; pr_body() { echo body; }; lane_branch_gone() { :; }
+  lm_gh() { case $2 in view) return 1 ;; create) echo "https://github.com/o/r/pull/9" ;; merge) echo "${@: -1}" > "$G/merged-head" ;; esac; }
+  export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+  echo y > .harness/runs/old/a; echo d > d; git add d; git add -f .harness/runs/old/a .harness/runs/u/x; git commit -qm "past the guard"; git push -q origin HEAD
+  git tag -a run/u/M1 -m v HEAD; merge_one M1; echo "rc=$?"
+  h=$(cat "$G/merged-head")
+  [[ $(git rev-parse "$h^") == $(git rev-parse run/u/M1^{commit}) ]] && echo on-tag
+  git diff --quiet origin/main "$h" -- .harness/runs/ && echo runs=main; git cat-file -e "$h:d" && echo code )
+check "merge_one: a tag carrying .harness/runs/ changes merges with main's records (a commit on the tag, noted), the code as verified" \
+  '[[ $(paste -sd" " <<< "$lm_out") == "rc=0 on-tag runs=main code" ]] && grep -qx "M1: the lane carried .harness/runs/ changes (.harness/runs/old/a .harness/runs/u/x); merged with main'"'"'s" "$G/notes"'
 suite_end

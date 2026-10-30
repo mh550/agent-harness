@@ -2,7 +2,8 @@
 # Stand-in for `gh` in tests: records calls; PRs are files (prs/pr-N holds the head branch, pr-N.title its title;
 # pr-N.merged once merged, pr-N.closed once closed); "pr merge" really merges into the bare origin's main.
 # prs/branch-<name> stands for an old v2 whole-run PR (title "v2 run"). "pr view <head> --json <fields> -q <expr>"
-# answers as gh does: the head's open PR, else its newest, as {url, state, title, headRefName}, -q applied by jq -r.
+# answers as gh does: the head's open PR, else its newest, as the --json fields of {url, state, title, headRefName}
+# only (live gh 2.45: a field not asked for is absent, and -q prints its null as an empty line), -q applied by jq -r.
 # "pr create" refuses a head with an open PR, "pr merge --match-head-commit" a head that moved, as gh does.
 # "api repos/<o>/<r>/deployments…" answers GitHub's published example (fixtures/gh-deployments.json, creator octocat).
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -11,19 +12,20 @@ P=$STUB_DIR/prs; mkdir -p "$P"
 prs_of() { local f; for f in "$P"/pr-*; do [[ ${f##*/} =~ ^pr-[0-9]+$ && $(cat "$f") == "$1" ]] && echo "${f##*-}"; done | sort -n; }   # <head> → its PRs, oldest first
 state() { if [[ -f $P/pr-$1.merged ]]; then echo MERGED; elif [[ -f $P/pr-$1.closed ]]; then echo CLOSED; else echo OPEN; fi; }
 open_pr() { local n; for n in $(prs_of "$1"); do [[ $(state "$n") == OPEN ]] && { echo "$n"; return 0; }; done; return 1; }
-# <url> <state> <title> <head> [-q expr]: gh's --json object, or its -q result
-answer() { local j; j=$(jq -nc --arg u "$1" --arg s "$2" --arg t "$3" --arg h "$4" '{url: $u, state: $s, title: $t, headRefName: $h}')
-  if [[ -n ${5:-} ]]; then jq -r "$5" <<< "$j"; else echo "$j"; fi; }
+# <url> <state> <title> <head> <fields> [-q expr]: gh's --json object (those fields only), or its -q result
+answer() { local j; j=$(jq -nc --arg u "$1" --arg s "$2" --arg t "$3" --arg h "$4" --arg f "$5" \
+    '{url: $u, state: $s, title: $t, headRefName: $h} | with_entries(select(.key as $k | $f | split(",") | index($k)))')
+  if [[ -n ${6:-} ]]; then jq -r "($6) | if . == null then \"\" else . end" <<< "$j"; else echo "$j"; fi; }
 case "$1 $2" in
   "api repos/"*)   # the repo's deployments (read-only): STUB_DEPLOYMENTS=0 → none, =vercel → made by Vercel's app
     case ${STUB_DEPLOYMENTS:-} in 0) echo '[]' ;; vercel) sed 's/"octocat"/"vercel[bot]"/' "$HERE/fixtures/gh-deployments.json" ;;
       *) cat "$HERE/fixtures/gh-deployments.json" ;; esac ;;
   "pr view")
-    b=$3 q=""; while (( $# )); do [[ $1 == -q ]] && q=$2; shift; done
-    if [[ -f $P/branch-${b//\//_} ]]; then answer "https://example.test/pr/old" OPEN "v2 run" "$b" "$q"; exit 0; fi
+    b=$3 q="" js=""; while (( $# )); do [[ $1 == -q ]] && q=$2; [[ $1 == --json ]] && js=$2; shift; done
+    if [[ -f $P/branch-${b//\//_} ]]; then answer "https://example.test/pr/old" OPEN "v2 run" "$b" "$js" "$q"; exit 0; fi
     n=$(open_pr "$b") || n=$(prs_of "$b" | tail -1)
     [[ -n $n ]] || { echo "no pull requests found for branch \"$b\"" >&2; exit 1; }
-    answer "https://example.test/pr/$n" "$(state "$n")" "$(cat "$P/pr-$n.title" 2> /dev/null)" "$b" "$q" ;;
+    answer "https://example.test/pr/$n" "$(state "$n")" "$(cat "$P/pr-$n.title" 2> /dev/null)" "$b" "$js" "$q" ;;
   "pr close")   # one PR: the v2 one if the head has it, else its open one
     if [[ -f $P/branch-${3//\//_} ]]; then rm -f "$P/branch-${3//\//_}"; elif n=$(open_pr "$3"); then touch "$P/pr-$n.closed"; fi ;;
   "pr create")

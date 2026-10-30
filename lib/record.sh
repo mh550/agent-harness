@@ -95,17 +95,16 @@ _flakes_note() {
   echo $(( off + $(printf %s "$chunk" | wc -c) )) > "$STATE/flakes-noted"
 }
 
-# Revert what a session changed since <base> outside what it may change: "record" (the run record), "nothing", or
-# "runs" (a lane may change anything but .harness/runs/: an added path is only un-indexed, the copy is still read).
-# Its commits stay in history; a new commit puts the files back. Prints what it reverted.
-restrict() {   # base record|nothing|runs who
+# Revert what a session changed since <base> outside what it may change: "record" (the run record) or "nothing" (a
+# lane's .harness/runs/ is lane_guard's). Its commits stay in history; a new commit puts the files back. Prints what it
+# reverted.
+restrict() {   # base record|nothing who
   local base=$1 spec=(. ':!.harness/runs') st path
   [[ $2 == nothing ]] && spec=(.)
-  [[ $2 == runs ]] && spec=(.harness/runs)
   commit_all "WIP: uncommitted at session end (harness)"
   while IFS=$'\t' read -r st path; do
     [[ -n $path ]] || continue
-    if [[ $st == A ]]; then git rm -q --cached -- "$path" && { [[ $2 == runs ]] || rm -f -- "$path"; }; else git checkout -q "$base" -- "$path"; fi
+    if [[ $st == A ]]; then git rm -q --cached -- "$path" && rm -f -- "$path"; else git checkout -q "$base" -- "$path"; fi
     echo "$path"
   done < <(git diff --name-status --no-renames "$base" HEAD -- "${spec[@]}")
   commit_all "HARNESS: reverted edits a $3 session may not make"
@@ -529,6 +528,17 @@ ignored_only() {
   return 0
 }
 
+# <commit> → a commit on it whose .harness/runs/ is origin/<main>'s, built in a scratch index (no checkout). Dated as
+# <commit>, so merge_one's next try for the same tag makes the same commit.
+runs_as_main() {
+  local idx=$STATE/runs-index.$$ t d
+  rm -f "$idx"
+  GIT_INDEX_FILE=$idx git read-tree "$1" && GIT_INDEX_FILE=$idx git reset -q "origin/$MAIN_BRANCH" -- .harness/runs/ > /dev/null 2>&1
+  t=$(GIT_INDEX_FILE=$idx git write-tree 2>> "$STATE/run.log"); rm -f "$idx"; [[ -n $t ]] || return 1
+  d=$(git log -1 --format=%cI "$1")
+  GIT_AUTHOR_DATE=$d GIT_COMMITTER_DATE=$d git commit-tree "$t" -p "$1" -m "HARNESS: .harness/runs/ as $MAIN_BRANCH has it (a lane never carries the record)" 2>> "$STATE/run.log"
+}
+
 # Merge one verified milestone (its tag, the lane tip) into main through a PR. The invariant: the tree that lands on
 # main is the tree that was verified, outside the paths the suite's cache key ignores (ignored_only). 0 = merged,
 # proposed, or (--open) its PR open and waiting · 1 = needs Michael (conflict, refusal) · 3 = main moved since the verify
@@ -580,6 +590,12 @@ merge_one() {
     # with it, and the milestone would wait silently for the next main (P2 review 4)
     [[ ( $(cat "$STATE/moved-$m" 2>/dev/null) == "$mn" && -f $STATE/rebase-$m ) || ( -f $STATE/needs-$m && ! ${HARNESS_MERGE_ONLY:-} ) ]] && return 1
     echo "$mn" > "$STATE/moved-$m"; return 3
+  fi
+  # lane_guard's fail-safe: a lane never carries .harness/runs/ to main (decisions/2026-10-30-lane-guard-base)
+  if [[ -n $(git diff --name-only "origin/$MAIN_BRANCH...$c" -- .harness/runs/ 2> /dev/null) ]]; then
+    out=$(git diff --name-only "origin/$MAIN_BRANCH...$c" -- .harness/runs/ | head -3 | paste -sd' ')
+    c=$(runs_as_main "$c") || { note "$m: its .harness/runs/ changes could not be undone; not merged (see run.log)"; return 1; }
+    note "$m: the lane carried .harness/runs/ changes ($out); merged with $MAIN_BRANCH's"
   fi
   git push -q -f origin "$c:refs/heads/$head" 8>&- 2>> "$STATE/run.log" || { note "$m: push of $head failed (see run.log)"; return 1; }
   pr_body "$m" > "$LS/pr-body.md"; [[ $LS == "$STATE" ]] || cp "$LS/pr-body.md" "$STATE/pr-body.md"   # the last body, whichever lane (checks read it)
@@ -833,12 +849,29 @@ inbox_repair() {   # <who> <INBOX before the session> <the INBOX it left>
 }
 
 # <start commit> <who>: a lane commit that touched .harness/runs/ (a session that `git add -f`'d the copy) is reverted
-# by a new commit; the record never takes anything from it.
+# by a new commit; the record never takes anything from it. The base is the lane's merge-base with main, never the
+# session's start: a session that merged main itself brought main's records in, and those are main's
+# (decisions/2026-10-30-lane-guard-base). Only the index goes back: the copy on disk is what F repair and the claim read.
 lane_guard() {
-  [[ -n $(git diff --name-only "$1" HEAD -- .harness/runs/ 2> /dev/null) ]] || return 0
-  restrict "$1" runs "$2" > /dev/null
+  local mb; mb=$(git merge-base HEAD "origin/$MAIN_BRANCH" 2> /dev/null) || mb=$1
+  main_merged "$1" && note "$2: the session merged $MAIN_BRANCH into its branch itself (the driver does that, at verify)"
+  [[ -n $(git diff --name-only "$mb" HEAD -- .harness/runs/ 2> /dev/null) ]] || return 0
+  git reset -q "$mb" -- .harness/runs/ > /dev/null 2>&1
+  git commit -q -m "HARNESS: reverted edits a $2 session may not make"
+  # other runs' records on disk as committed again; the copy, tracked now if the session merged its run's earlier
+  # record in, kept but out of every later `git add -A` (as materialize_ marks it)
+  git checkout -q -- .harness/runs/ ":!$RUN_DIR" 2> /dev/null
+  git ls-files -z -- "$RUN_DIR" | xargs -0 -r git update-index --skip-worktree
   note "$2: a lane commit touched the run record; reverted"
   sync_lane
+}
+# <start commit>: a merge since it whose second parent is main's history (a session's own `git merge origin/main`)
+main_merged() {
+  local c p1 p2
+  while read -r c p1 p2 _; do
+    [[ -n $p2 ]] && git merge-base --is-ancestor "$p2" "origin/$MAIN_BRANCH" 2> /dev/null && return 0
+  done < <(git rev-list --merges --parents "$1..HEAD" 2> /dev/null)
+  return 1
 }
 
 # Every slot goes at the end of a segment (its lane's branch is pushed: a continuation reopens it); merged lanes'
