@@ -1,0 +1,5 @@
+# per-exec cost, idle box 14:29:41, 200 runs each
+node -e 0: 26915 us each
+git --version: 1085 us each
+cat /dev/null: 781 us each
+date: 784 us each

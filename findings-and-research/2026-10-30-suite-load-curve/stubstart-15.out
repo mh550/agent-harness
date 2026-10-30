@@ -1,0 +1,71 @@
+worktree /tmp/tmp.OMmU1ou821/wt/proj/demo-t on harness/demo-t (from origin/main)
+2026-10-30 14:12:17 run demo-t on harness/demo-t in /tmp/tmp.OMmU1ou821/wt/proj/demo-t · port 7961 · policy build-only · merge pr · harness 185ad83+dirty
+2026-10-30 14:12:17   suite: test ! -f BROKEN · smoke: true · init: echo init ok; echo "cache: $HARNESS_CACHE"; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "${HARNESS_SCRATCH%%/lanes/*}/init-begin"; sleep "$STUB_SLOW_INITCMD"; }
+2026-10-30 14:12:17   permissions: user settings only (.claude/settings.json not found)
+2026-10-30 14:12:17   MCP servers: none (--strict-mcp-config; no .mcp.json)
+2026-10-30 14:12:17 memlint: .harness/config.sh:1 decisions: no store (no DECISIONS= in .harness/config.sh and no docs/decisions.md)
+2026-10-30 14:12:17 test count: no match in the suite's output (tests start/end stay unknown)
+2026-10-30 14:12:17 initializer · claude-fable-5-1
+2026-10-30 14:12:17   init exit 0 · 54d7d7c HARNESS: feature list
+2026-10-30 14:12:18 feature list written: 0/3 passing
+2026-10-30 14:12:18 lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor
+2026-10-30 14:12:18 dependencies: M2 has no after list, so it waits on every earlier feature (one given up or parked there stops it)
+2026-10-30 14:12:18 lane M1 opened (slot 0, port 7961, from 26e73b2)
+2026-10-30 14:12:19 context.md for A: 269 bytes
+2026-10-30 14:12:19 session 1 · A · claude-sonnet-5-5
+2026-10-30 14:12:19   coding exit 0 · 26e73b2 Merge pull request #13
+2026-10-30 14:12:19 A: suite ran 0x (0 s) in the session
+2026-10-30 14:12:20 A · claude-sonnet-5-5 · passes=true · 0 min · 1/3 passing
+2026-10-30 14:12:21 context.md for B: 374 bytes
+2026-10-30 14:12:21 session 2 · B · claude-opus-5-5
+2026-10-30 14:12:21   coding exit 0 · 26e73b2 Merge pull request #13
+2026-10-30 14:12:21 B: suite ran 0x (0 s) in the session
+2026-10-30 14:12:21 restored the feature list after B: C: edited; C: passes false → true
+2026-10-30 14:12:22 B · claude-opus-5-5 · passes=true · 0 min · 2/3 passing
+2026-10-30 14:12:22 verify M1: suite cache cleared; the suite runs in full on the verified tree
+2026-10-30 14:12:22 context.md for M1: 517 bytes
+2026-10-30 14:12:22 verify M1 · claude-sonnet-5-5
+2026-10-30 14:12:23   verify exit 0 · ac74507 verify M1 (1)
+2026-10-30 14:12:23 verify M1: A failed the re-check, back in the queue (one more attempt)
+2026-10-30 14:12:24 context.md for A: 513 bytes
+2026-10-30 14:12:24 session 3 · A · claude-sonnet-5-5
+2026-10-30 14:12:24   coding exit 0 · 0b415ad A: stub work (2)
+2026-10-30 14:12:24 A: suite ran 0x (0 s) in the session
+2026-10-30 14:12:25 A · claude-sonnet-5-5 · passes=true · 0 min · 2/3 passing
+2026-10-30 14:12:25 verify M1: suite cache cleared; the suite runs in full on the verified tree
+2026-10-30 14:12:26 context.md for M1: 596 bytes
+2026-10-30 14:12:26 verify M1 · claude-sonnet-5-5
+2026-10-30 14:12:26   verify exit 0 · 177e4c3 verify M1 (2)
+2026-10-30 14:12:27 M1 verified and tagged run/demo-t/M1
+2026-10-30 14:12:27 M1 proposed for merging · https://example.test/pr/15
+2026-10-30 14:12:27 lane M1 closed (M1 proposed)
+2026-10-30 14:12:28 lane M2 opened (slot 0, port 7961, from 177e4c3, slot reused)
+2026-10-30 14:12:28 context.md for C: 448 bytes
+2026-10-30 14:12:28 session 4 · C · claude-opus-5-5
+2026-10-30 14:12:29   coding exit 0 · f4f8b23 C: stub work (1)
+2026-10-30 14:12:29 C: suite ran 0x (0 s) in the session
+2026-10-30 14:12:29 C un-passed: suite red after the session
+2026-10-30 14:12:29 C · claude-opus-5-5 · passes=false · 0 min · 2/3 passing
+2026-10-30 14:12:30   suite red before the session (the session is told to fix it first)
+2026-10-30 14:12:30 context.md for C: 601 bytes
+2026-10-30 14:12:30 session 5 · C · claude-opus-5-5
+2026-10-30 14:12:30   coding exit 0 · 89005ac C: stub work (2)
+2026-10-30 14:12:30 C: suite ran 0x (0 s) in the session
+2026-10-30 14:12:31 C · claude-opus-5-5 · passes=true · 0 min · 3/3 passing
+2026-10-30 14:12:31 verify M2: suite cache cleared; the suite runs in full on the verified tree
+2026-10-30 14:12:32 context.md for M2: 602 bytes
+2026-10-30 14:12:32 verify M2 · claude-sonnet-5-5
+2026-10-30 14:12:32   verify exit 0 · 429a4ab verify M2 (1)
+2026-10-30 14:12:33 M2 verified and tagged run/demo-t/M2
+2026-10-30 14:12:33 M2 verified; its PR waits for M1 to merge
+2026-10-30 14:12:33 lane M2 closed (M2 verified; its PR waits)
+2026-10-30 14:12:34 every feature passes
+2026-10-30 14:12:34 run ended (done): 3/3 passing · 9 sessions (9 real) · 3 features passed · $3.05 · 0.0 h · by kind: init 1 ($1.50), coding 5 ($1.25), verify 3 ($0.30) · by model: claude-fable-5-1 1 ($1.50), claude-sonnet-5-5 5 ($0.80), claude-opus-5-5 3 ($0.75)
+2026-10-30 14:12:34 services stopped (done)
+2026-10-30 14:12:35 retro · claude-sonnet-5-5
+2026-10-30 14:12:35   retro exit 0 · 0a14d5a HARNESS: run ended (done)
+2026-10-30 14:12:35 backlog: the retro wrote no retro-proposals.json
+2026-10-30 14:12:35 summary.json and report.md kept in the state dir (harness report reads them after gc)
+2026-10-30 14:12:35 record PR opened; left for Michael (MERGE_POLICY=pr) · https://example.test/pr/17
+2026-10-30 14:12:35 scratch kept (KEEP_SCRATCH=1): /tmp/tmp.OMmU1ou821/scratch/proj/demo-t
+2026-10-30 14:12:35 run kept in /tmp/tmp.OMmU1ou821/wt/proj/demo-t on harness/demo-t · report: harness report demo-t · continue: harness continue demo-t

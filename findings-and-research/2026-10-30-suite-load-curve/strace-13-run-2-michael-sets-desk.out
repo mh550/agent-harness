@@ -1,0 +1,68 @@
+tmp: /tmp/tmp.IIOBJSIngR
+PASS NOTIFY_CMD-only: $1 unchanged, fields as env
+PASS phone stop honoured before any coding session
+PASS a stop from the phone stops the services through finish
+PASS a stop makes a queued requested continuation of its run automatic (the later word wins)
+PASS second run got its own port
+PASS verify ping-pong capped, needs Michael
+PASS verify needs Michael: priority high, click = needs.md (GitHub-shaped origin)
+PASS verify needs Michael goes out after the verify entry is pushed
+PASS independent M2 verified and merged alone (its tag carries no M1 work)
+PASS no dependency note when every milestone has after
+PASS refused merge leaves the PR, needs Michael
+PASS a refused merge: priority high, click = the PR
+PASS harness merge keeps the harness version of the run (E1 review)
+PASS harness merge merges verified milestones afterwards
+PASS parked: not an attempt, not retried
+PASS independent work goes on past a parked feature
+PASS ends waiting on Michael; the summary says so
+PASS a park notification: title, question, answer command, click and Edit INBOX action
+PASS Answer with Claude only when DESK_URL is set
+PASS the park goes out after the run branch is pushed (the link shows the question)
+PASS the run end goes out before the retro, once report.md is pushed
+PASS a failed park post is noted and committed at once
+PASS no URLs for a non-GitHub origin
+PASS a waiting-on-Michael run end: priority high, click = report.md
+PASS one notification per run end
+PASS harness parked: id, why, question, both commands
+PASS harness parked is read-only
+PASS harness parked --json parses
+PASS with a queue runner going, the continue command is a queue add
+PASS a run still ending: answer now, continue once it has ended
+PASS a run still going: only the answer command
+PASS harness parked: an unknown or glob run id is an error
+PASS a queued continuation: only the answer command
+PASS nothing parked
+PASS the answer skill exists and names the commands and the never-list
+PASS the answer skill passes Michael's words through a quoted heredoc
+PASS the user config template sets nothing
+PASS an INBOX answer unparks it; the run finishes
+PASS DESK=0: no desk
+PASS the stub claude's interactive mode prints the pane line and records input
+PASS DESK=0 by default, DESK_MODEL=opus
+PASS harness desk: one window, the Read line, the prompt, the notification click
+PASS the desk notification
+PASS the desk's claude: --remote-control, the model id, --add-dir the worktree, in the project directory
+PASS the desk prompt names the run, its commands and the never-list
+PASS harness desk notes 'desk started:' in the run record
+PASS a second event reuses the desk window
+PASS no URL in time: no window, the plain notification
+PASS a dead desk is replaced
+PASS harness desk --debrief
+PASS harness desk: an unknown run or a bad option is an error, nothing started
+PASS a window of the run's name that never showed a URL is replaced
+PASS DESK=1: a park starts one desk, the run end reuses it
+PASS a desk that cannot start never changes the run
+PASS verify needs Michael starts a desk or reaches the open one
+PASS the debrief starts a desk when Needs Michael is non-empty
+PASS harness desk --list
+PASS harness desk --close <run>
+PASS harness gc closes idle desks
+PASS harness gc keeps the worktree of a run whose desk is open
+PASS harness desk --all
+PASS an open desk showing a dialog gets nothing typed
+PASS the desk's environment has no NTFY_TOKEN
+PASS a refused merge tells Michael and his desk once
+PASS harness merge says it was refused again, and starts no desk
+PASS the dialog guard: the CLI's dialog words, not the desk's own questions
+66/66 checks passed

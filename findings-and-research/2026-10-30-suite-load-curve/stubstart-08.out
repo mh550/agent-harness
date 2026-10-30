@@ -1,0 +1,40 @@
+worktree /tmp/tmp.UuIphjDwr0/wt/proj/demo-t on harness/demo-t (from origin/main)
+2026-10-30 14:08:41 run demo-t on harness/demo-t in /tmp/tmp.UuIphjDwr0/wt/proj/demo-t · port 7962 · policy build-only · merge auto · harness 185ad83+dirty
+2026-10-30 14:08:41   suite: test ! -f BROKEN · smoke: true · init: echo init ok; echo "cache: $HARNESS_CACHE"; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "${HARNESS_SCRATCH%%/lanes/*}/init-begin"; sleep "$STUB_SLOW_INITCMD"; }
+2026-10-30 14:08:41   permissions: user settings only (.claude/settings.json not found)
+2026-10-30 14:08:41   MCP servers: none (--strict-mcp-config; no .mcp.json)
+2026-10-30 14:08:41 memlint: .harness/config.sh:1 decisions: no store (no DECISIONS= in .harness/config.sh and no docs/decisions.md)
+2026-10-30 14:08:41   suite red before the session (the session is told to fix it first)
+2026-10-30 14:08:41 initializer · claude-fable-5-1
+2026-10-30 14:08:42   init exit 0 · 72de864 HARNESS: feature list
+2026-10-30 14:08:42 feature list written: 0/3 passing
+2026-10-30 14:08:42 lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor
+2026-10-30 14:08:42 notified: harness
+2026-10-30 14:08:42 dependencies: M2 has no after list, so it waits on every earlier feature (one given up or parked there stops it)
+2026-10-30 14:08:43 lane M1 opened (slot 0, port 7962, from 9863dd3)
+2026-10-30 14:08:43   suite red before the session (the session is told to fix it first)
+2026-10-30 14:08:43 context.md for A: 269 bytes
+2026-10-30 14:08:43 session 1 · A · claude-sonnet-5-5
+2026-10-30 14:08:43   coding exit 0 · e697963 A: stub work (1)
+2026-10-30 14:08:43 A: suite ran 0x (0 s) in the session
+2026-10-30 14:08:44 A un-passed: suite red after the session
+2026-10-30 14:08:44 A · claude-sonnet-5-5 · passes=false · 0 min · 0/3 passing
+2026-10-30 14:08:45   suite red before the session (the session is told to fix it first)
+2026-10-30 14:08:45 context.md for A: 500 bytes
+2026-10-30 14:08:45 session 2 · A · claude-sonnet-5-5
+2026-10-30 14:08:45   coding exit 0 · 183d455 A: stub work (2)
+2026-10-30 14:08:45 A: suite ran 0x (0 s) in the session
+2026-10-30 14:08:46 A un-passed: suite red after the session
+2026-10-30 14:08:46 A · claude-sonnet-5-5 · passes=false · 0 min · 0/3 passing
+2026-10-30 14:08:46 lane M1 closed (given up A)
+2026-10-30 14:08:47 blocked: the remaining features wait on A (given up; needs Michael)
+2026-10-30 14:08:47 run ended (blocked on A): 0/3 passing · 3 sessions (3 real) · 0 features passed · $2.00 · 0.0 h · by kind: init 1 ($1.50), coding 2 ($0.50) · by model: claude-fable-5-1 1 ($1.50), claude-sonnet-5-5 2 ($0.50)
+2026-10-30 14:08:47 services stopped (blocked on A)
+2026-10-30 14:08:47 notified: [demo-t] ended: blocked on A
+2026-10-30 14:08:48 retro · claude-sonnet-5-5
+2026-10-30 14:08:48   retro exit 0 · 83d4d91 HARNESS: run ended (blocked on A)
+2026-10-30 14:08:48 backlog: the retro wrote no retro-proposals.json
+2026-10-30 14:08:48 summary.json and report.md kept in the state dir (harness report reads them after gc)
+2026-10-30 14:08:48 record PR: none (RECORD_PR=off)
+2026-10-30 14:08:48 scratch kept (KEEP_SCRATCH=1): /tmp/tmp.UuIphjDwr0/scratch/proj/demo-t
+2026-10-30 14:08:48 run kept in /tmp/tmp.UuIphjDwr0/wt/proj/demo-t on harness/demo-t · report: harness report demo-t · continue: harness continue demo-t

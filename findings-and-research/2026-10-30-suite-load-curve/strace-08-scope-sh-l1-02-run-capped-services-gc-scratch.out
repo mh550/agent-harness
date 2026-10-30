@@ -1,0 +1,127 @@
+tmp: /tmp/tmp.jB9M935RwQ
+PASS scope.sh: scope_run wraps the command in systemd-run with the caps and returns its exit
+PASS scope.sh: scope_stop stops <unit>.scope; scope_peak and scope_left read the fixture
+PASS scope.sh: a run id becomes a unit name of [A-Za-z0-9_-]
+PASS scope.sh: scope_owns matches a unit to a run by its rebuilt prefix and a role the harness starts
+PASS scope.sh: mem_available_gb reads the real meminfo fixture
+PASS scope.sh: mem_gate notes, frees, waits, then starts anyway or once memory is back
+PASS scope.sh: mem_gate ends with HARNESS_MEM_POLL=0, exit 1 after a wait and 0 when it passed at once
+PASS scope.sh: dur_s reads timeout(1) durations as seconds
+PASS scope.sh: without user systemd scope_run runs bare (STUB_NO_SYSTEMD=1)
+PASS scope.sh: systemd-run failing after a good probe runs the command bare, with a line
+PASS scope.sh: a scratch dir it can't write runs the command once, bare
+PASS scope.sh: a unit still loaded is refused as systemd refuses it; stopped first, it starts
+PASS scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit
+PASS all features pass
+PASS tampered list restored
+PASS tampered text reverted
+PASS red suite un-passes C
+PASS C retried and passed
+PASS verifier caught A, re-queued
+PASS M1 and M2 tagged
+PASS M1 and M2 merged into main by PRs
+PASS no final tag, no false 'verified'
+PASS the verify prompt says the suite runs in full
+PASS brief committed with the run
+PASS brief, rules and policy in the prompt
+PASS coding prompt names CLAUDE.md but doesn't paste it
+PASS the rendered coding prompt has the deepEqual and bounded-rerun rule
+PASS two coding prompts share a byte-identical prefix that includes the policy
+PASS the prompt says the time, the budget and the attempt
+PASS metrics: wall time and roles
+PASS metrics: coding rows carry tokens, cache rate and context peak
+PASS metrics.jsonl: every session line has mem_peak_mb from its scope
+PASS metrics: orientation recorded per session
+PASS entries: the driver appends each session's entry
+PASS progress.md is rendered from the journal
+PASS context.md carries the earlier attempt's dead end
+PASS ended: done; status says so
+PASS summary, report and retro written
+PASS summary: tokens, per verified feature, first-attempt rate, rework
+PASS report shows tokens and quality
+PASS ledger has the run
+PASS ledger row has harness_version and harness_dirty
+PASS harness version skips ledger commits
+PASS harness report prints the writeup
+PASS the report lists the review role when a review ran
+PASS init model resolved to fable
+PASS summary end reason is how the run ended
+PASS a milestone without an after list is noted
+PASS the initializer prompt has the resolved lint command
+PASS the initializer prompt sizes reviews to the milestone
+PASS the initializer prompt asks for after on independent features and on every milestone's first
+PASS the driver notes the lint once after the initializer
+PASS the driver never edits the list: the initializer's feature_list.json is byte for byte the stub's
+PASS NTFY_URL: curl posts the fields as headers, NOTIFY_CMD not called
+PASS NTFY_TOKEN: bearer header sent, never logged
+PASS a successful post: a line in run.log only
+PASS routine notifications keep the default priority
+PASS what lands on main is byte for byte what was verified
+PASS no code PR touches the run record, and the record branch holds every entry
+PASS sessions run in harness-<run>-s<n> with the three caps and timeout -k 30s
+PASS each session's scope is stopped after it returns
+PASS a run whose sessions leave nothing gets no leftover or cap note
+PASS every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+PASS a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
+PASS a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)
+PASS no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
+PASS run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m
+PASS no user systemd: the init runs bare, and the run's one uncapped note stays the only one
+PASS metrics.jsonl: mem_peak_mb is null when uncapped
+PASS finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
+PASS harness status lists a running run's units with MemoryCurrent; an ended run's none
+PASS the EXIT trap commits its services note: harness-log.md is clean after a TERM
+PASS a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it
+PASS a TERM during an init stops the init's scope before the teardown runs
+PASS a TERM during finish's teardown runs no second teardown: the trap waits for it, then stops the svc scope, one note
+PASS PAUSE stops the services before its poll, and the next init starts them again
+PASS a scope systemd refuses after the probe: the session runs bare and harness-log.md says so
+PASS memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+PASS memory gate: the wait stops the services (services stopped (memory wait))
+PASS memory gate: every session starts with the services up, a verify after its wait included
+PASS memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
+PASS memory gate: the real fixture's 9 GB passes without a note
+PASS report.md lists the session that peaked at its cap among the peaks over 2 GB
+PASS check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s
+PASS check.sh: exit 137 prints the memory-cap RED line
+PASS check.sh: exit 124 prints the timed-out RED line
+PASS check.sh: a subset call is scoped too and never cached
+PASS check.sh: a TERM stops the suite's scope with it
+PASS gc removed the finished worktree
+PASS gc deleted the run branch
+PASS gc kept the tags
+PASS harness gc stops the units of this project's runs with no live driver; --dry-run stops none
+PASS plain gc deletes only the merged harness/ and harness-merge/ branches, locally and on the origin
+PASS a refused branch -d (merged into origin/main, not into HEAD, no upstream) is logged and gc goes on
+PASS gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives
+PASS gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
+PASS a worktree gc can't remove is logged and the next one still goes; --dry-run removes none
+PASS gc never removes a worktree that is no run's (its branch isn't harness/<run>), even merged and clean
+PASS gc never rm -rfs a worktree git refused to remove (locked): it is said and stays
+PASS gc keeps a worktree with an untracked file even when status.showUntrackedFiles=no hides it
+PASS a listed worktree whose directory is gone never ends gc: every later step still runs
+PASS gc --all-merged keeps the origin default branch and a live run branch, merged or not
+PASS gc --deps empties an ended, unmerged run's worktree of its DEPS_DIRS; its branch and committed files stay; --dry-run deletes none
+PASS gc --deps keeps the worktree of a live run and the project checkout
+PASS gc --deps keeps the worktree of a run with a queued continuation
+PASS a deps dir gc can't measure or delete is said and gc goes on; a symlinked deps dir is never followed
+PASS a .harness/teardown.sh added after the run started is run at its stop points
+PASS run start without the deploy guard: one note, one notification
+PASS a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json
+PASS run start without the netlify guard: one note, one notification
+PASS run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)
+PASS run start with the guard: nothing
+PASS init output is capped at 40 lines with the log path
+PASS a brief is pasted as written: its {{X}} isn't filled (E3 review F7)
+PASS an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
+PASS finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
+PASS a continued run whose suite is cached green keeps its test count (the green marker holds it, not scratch)
+PASS test count: no match is noted once per run (demo: no output; nocount: text with no count), never for a counted or cached suite (scrub)
+PASS KEEP_SCRATCH=1 keeps the run's scratch; the default is 0
+PASS check.sh keeps one check-<key>.out; the green markers stay
+PASS the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created
+PASS scratch_rm refuses anything but the run's own scratch directory (symlinks in its path too)
+PASS scratch_done: the final tree's output is check-last.out, the note names what it kept
+PASS scratch_done keeps scratch when a copy fails, and says why when rm fails or the guard refuses
+PASS the tmpfiles template holds the 3-day age rule; README has its install command
+125/125 checks passed
