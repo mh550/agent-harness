@@ -1,13 +1,12 @@
-# Context pack for `R3-04`
+# Context pack for `R3-05`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## This feature's earlier attempts
 
-- Dead end (R3-04, 13-R3-04): {{MODEL}} in §2's review sentence (the plan's wording) — §2 is the static part above {{SECTIONS}}: 08's 'two coding prompts share a byte-identical prefix' check went red (demo's A and B run on different models; decisions/2026-10-21-static-first-prompts). §2 now says 'on your own model (named under *This session*)' and the sentence with `{{MODEL}}` is a This session line → entries.jsonl:22
-- Dead end (R3-04, 13-R3-04): second-resolution stamps (date +%s) as the plan's awk had them — a run_init row ending in t0's second counts toward the session (>=), or a quick stub call is missed (>); rows and stamps are date +%s.%6N (a dot in any locale) with strict bounds → entries.jsonl:22
-- Verify R3 found (R3-04 step 5): ran bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs .; saw 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 → entries.jsonl:29
-- 2026-10-29 18:10 · R3-04 · passes: check.sh appends <epoch.µs> <full|subset|cached> <s> to $HARNESS_SCRATCH/check-runs.log; lane.sh stamps around session coding and notes '<id>: suite ran <n>x (<s> s) in the session'. Reviews go to subagents on the session's model ({{MODEL}}, HARNESS_MODEL; prompt.sh fills the feature's). The review gate un-passes before the record flip, row and passes= note. 4 checks.; tests 972 → 976; files lib/check.sh, lib/lane.sh, lib/prompt.sh, prompts/coding.md, tests/stub-claude.sh, … → entries.jsonl:22
+- Dead end (R3-05, 14-R3-05): the first concurrent check counted '· M1 merged into main' lines only — without the lock it still passed: the second call lost git's ref lock on the harness-merge push and noted 'push of harness-merge/mm-M1 failed'; the check now requires the merged note to be the log's one line → entries.jsonl:24
+- Verify R3 found (R3-05 step 5): ran bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs .; saw 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 → entries.jsonl:29
+- 2026-10-29 18:35 · R3-05 · passes: Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/slot-1) and the merged harness-lane/sp/M1 on origin (one would: line each, both kept; the real gc then removes the slot). 77 starts two merge_milestones M1 at once on one state and clone: one note, one pr merge. Both green at once; each fails when what it guards is broken.; tests 976 → 978; files tests/checks/49-lanes-slots.sh, tests/checks/77-leftovers.sh, tests/fixtures/check-names.txt, CLAUDE.md → entries.jsonl:24
 
 ## Discoveries for this feature
 
@@ -26,7 +25,7 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (R3-02, affects R3-06, run): 13/14-run-2 pin the initializer's lint sentence ending `milestone's size doesn't call for). No output means clean.`: a new lint item goes before the review one → entries.jsonl:18
 - Discovery (R3-02, affects R1-07, run): Under this box's load (~21) the full suite took 1237 s and 08-scope and 48-lanes-rebase (a non-fast-forward push to origin main) flaked once each, green on the rerun → entries.jsonl:18
 - Discovery (R1-05, affects run): Merging origin/main brought R2 in: its stub-claude.sh header comments conflicted with R1-02's STUB_BARRIER comment. Both are kept; the suite went from 944 to 973 checks. → entries.jsonl:17
-- Discovery (R3-01, affects R3-04, R3-06): Minor 8 at HEAD: one rec_commit follows the passes note and the gate, so no run ends between them; the move sets passed=false for an escalated review (its first metrics row turns false) → entries.jsonl:16
+- Discovery (R3-01, affects R3-05): slots live at $T/wt/proj/lanes/<run>/slot-<k>, not <run>-slots/slot-1; gc --dry-run names only a lane branch already merged into origin/main: put the check in 49's sp block before its gc → entries.jsonl:16
 - Discovery (R3-01, affects R3-02, run): unreproducible flags 3 steps of this run's list (R1-02 step 4 'below 5 s', R3-01 step 3, R3-02 step 3 quoting the examples): expected, reported never applied → entries.jsonl:16
 - Discovery (R2, affects run): N2 is on origin main now (grep -c ...-N[12]$ = 2; 645d87e, in R2's HEAD): the R2/R1 plans' 'needs Michael' dependency line is stale → entries.jsonl:15
 - Discovery (R2-05, affects run): Left by the review (Minor): the resume ignores a stop/lanes-end/deadline (bounded 10m, $1), and a refused resume is not fed to limit_raise → entries.jsonl:11
@@ -42,5 +41,9 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 ## What it builds on
 
 - 2026-10-29 20:18 · R3-01 · passes: Verify R3 was red only on 39-memlint-m4: the R3 resolve kept both its {{X}} line and main's stub --resume line, so Gotchas had 16 lines. Dropped the stub --resume line (76-entries-survive checks that shape); memlint prints nothing. The plan file's steps 1-4 hold (spot-checked: sections, Minor 8 quote, unreproducible examples, N2 = 2 on origin main).; tests 993 → 993; files CLAUDE.md → entries.jsonl:31
+
+## Lately in the run
+
+- 2026-10-29 20:25 · R3-04 · passes: Re-verified: verify R3 failed R3-04 only on step 5 (memlint: 16 Gotchas lines), which R3-01 fixed. Attempt 1's code stands unchanged: check-runs.log rows, 'suite ran <n>x' note, {{MODEL}} review sentence, review gate un-pass before the passes= note.; tests 993 → 993 → entries.jsonl:34
 
 _2 items left out at 8192 bytes: entries.jsonl has them all._
