@@ -63,3 +63,24 @@ harness needs done agent-harness-2026-10-30/2 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-10-30/3 --why "<answer>"
 ```
+
+## ⚠ F1-02 asked: Default taken: beside the 1 s CPU bound, 52 and 53 keep a 5…
+
+`agent-harness-2026-10-30/4` · since 2026-10-30T21:47:56.049Z
+
+**blocked** nothing waits on it; F1-02's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:3](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl?plain=1#L3)
+
+> Default taken: beside the 1 s CPU bound, 52 and 53 keep a 5 s wall bound from the same `time` call, so a status that stalls without CPU (a lock, a git or gh wait) still fails; the load curve's worst wall was 1.4 s. Keep the 5 s wall bound, or drop it to the CPU bound alone as the plan's default had it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/tests/checks/52-status-json.sh:73, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/docs/plans/2026-10-30-F1-flakes.md:51
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/tests/checks/52-status-json.sh:73](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-30/F1/tests/checks/52-status-json.sh#L73) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/docs/plans/2026-10-30-F1-flakes.md:51](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-30/F1/docs/plans/2026-10-30-F1-flakes.md#L51) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl:3](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl?plain=1#L3)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-10-30/4 --why "<answer>"
+```

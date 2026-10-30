@@ -3,6 +3,23 @@
 
 What this file is: the run's journal, rendered by the harness from `entries.jsonl`, newest entry first; one entry per session (init, each feature's coding session, verify, retro). Read the feature list in `feature_list.json`: one milestone, F1 (the suite's flakes fixed where they start, as R1 did on 2026-10-29): F1-01 plans, F1-02 to F1-05 reproduce each flaker with `bash tests/run.sh --repeat 10 <file>` and fix it (timing checks, lanes, desk/scope/one-offs, the runner's whole-suite rerun after a stopped file), F1-06 reviews and writes the docs and decision. The run's named spec `docs/specs/2026-10-30-suite-cpu-and-flakes.md` was on no branch when the run started: the init planned the flakes half only and asked about the rest (see the init entry's question). Steer via `INBOX.md` on this branch: set its first line to `status: pause` or `status: stop`, or write an answer under `## Answers`; every session reads it at startup.
 
+### 2026-10-30 17:47 · F1-02 · passes
+
+52/53/28 reproduced with --repeat 10: all 10/10 green (not reproduced). 52 and 53's best-of-3 checks now bound CPU time (user+sys, bash time) under 1000 ms plus the same call's wall under 5000 ms (a stall costs no CPU); renamed. 28 needs no fix: its sightings predate R1-05's lane-count fix. Plan rows filled.
+
+- **Files:** tests/checks/52-status-json.sh, tests/checks/53-status-view.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-30-F1-flakes.md
+- **Verified:** before (clean tree, load avg 11.6): `52-status-json: 10/10 green`, `53-status-view: 10/10 green`, `28-run-14d-harness-merge: 10/10 green`; after: the same three lines (load avg 9.6). Red first on throwaway copies of 52: a J burning 1.1 s CPU → `best of 3: 1533 ms CPU (wall 1444 ms)` FAIL; a J sleeping 5.1 s → `426 ms CPU (wall 5435 ms)` FAIL. Real: 438 ms CPU (wall 340) and 364 ms CPU (wall 294). check-names: 2 lines removed, 2 added, sort -c clean; bash -n clean. Full suite via check.sh: `check: green in 849 s, 1080 tests` (first full run 1079/1080: 39-memlint-m4 red on a 16th Gotchas line this session added; line dropped)
+- **Tests:** 1080 → 1080
+- **Dead end:** editing 52/53 while their first --repeat ran — bash reads a script as it runs, so copies could run the edit; reverted and reran the before-repeats on the clean tree
+- **Dead end:** adding a Gotchas line about editing running check files — Gotchas was already at 15 (memlint counts 16 → 39-memlint-m4 red); dropped, the fact kept as a run discovery
+- **Discovery** (affects F1-06): 28's two sightings (29-2:69,70, 14:29) are R2-05's, whose tree fe95a4f lacks R1-05's HARNESS_COUNT_HOLD fix df107cd (15:06): no red of 28 is known after that fix
+- **Discovery** (affects F1-06): harness status costs more CPU than wall idle (438 ms CPU, 340 ms wall for --json over 38 runs): node's threads; the 1000 ms CPU bound has about 2x headroom
+- **Discovery** (affects F1-06): 52/53's checks keep a 5 s wall bound beside the CPU bound (not in the plan's default): CPU alone would pass a status that stalls on a lock or git/gh; F1-06's decision file should say it
+- **Discovery** (affects run): bash reads a script as it runs: never edit a check file while a run or --repeat of it goes on
+- **Question for Michael:** Default taken: beside the 1 s CPU bound, 52 and 53 keep a 5 s wall bound from the same `time` call, so a status that stalls without CPU (a lock, a git or gh wait) still fails; the load curve's worst wall was 1.4 s. Keep the 5 s wall bound, or drop it to the CPU bound alone as the plan's default had it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/tests/checks/52-status-json.sh:73, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/docs/plans/2026-10-30-F1-flakes.md:51
+- **Proposed change:** F1-02 step 2 could name the wall guard beside the CPU bound; the plan's default named CPU time only
+- *02-F1-02 · claude-opus-5-5*
+
 ### 2026-10-30 17:09 · F1-01 · passes
 
 Wrote docs/plans/2026-10-30-F1-flakes.md: provenance (named spec on no branch, flakes half only, CPU fixes 6-7 wait), a 12-row flaker table with sightings, R1's method, the CPU-time default for the 52/53 timing checks, the tests/run.sh whole-suite rerun mechanism and its default fix, what is left out, shared docs and the decision slug. No code changed.
