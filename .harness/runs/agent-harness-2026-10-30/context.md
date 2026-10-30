@@ -1,12 +1,18 @@
-# Context pack for `F1-01`
+# Context pack for `F1-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (F1-01, affects F1-02): The load curve's best-of-3 walls for 53/52: 274-326 ms idle, 443-474 ms at 8 jobs solo, 487-556 ms at 4 paired, 972-1367 ms only at 8 paired (lc-*.out 'best of 3:' lines) → entries.jsonl:2
+- Discovery (F1-01, affects F1-02, F1-03, F1-04): The 10-29 run's harness-log.md has no flaky: line; sightings are in 10-29-2 (11 lines) and 10-29-3 (5 lines) → entries.jsonl:2
 - Discovery (init, affects run): The run's spec docs/specs/2026-10-30-suite-cpu-and-flakes.md exists on no local or remote branch (git fetch --all, every ref checked); the only 2026-10-30 spec, suite-time.md (S1, S2), was built and merged by run agent-harness-2026-10-29-3 (checks 79-82). The list is planned from docs/plans/2026-10-29-suite-time.md §2 fixes, findings-and-research/2026-10-30-suite-load-curve.md and the three 10-29 run records' flaky: lines. → entries.jsonl:1
 - Discovery (init, affects run): Flaker sightings since R1 (harness-log.md flaky: lines of the 10-29, 10-29-2, 10-29-3 records plus the load curve's FAIL lines): 08 five rows, 47 three, 46 three, 13 three, 28 two, 52 two, 53 one, 32/74/10/48 one each, one `whole suite` rerun (805 s) whose cause is the runner's conformance after a stopped file. → entries.jsonl:1
 - Discovery (init, affects run): The suite is 1080 checks and 817 s at init on an idle box with TEST_JOBS=4; a session's full run needs a background call with a timeout of at least twice that, as the prompt's Suite line says. → entries.jsonl:1
+
+## What it builds on
+
+- 2026-10-30 17:09 · F1-01 · passes: Wrote docs/plans/2026-10-30-F1-flakes.md: provenance (named spec on no branch, flakes half only, CPU fixes 6-7 wait), a 12-row flaker table with sightings, R1's method, the CPU-time default for the 52/53 timing checks, the tests/run.sh whole-suite rerun mechanism and its default fix, what is left out, shared docs and the decision slug. No code changed.; tests 1080 → 1080; files docs/plans/2026-10-30-F1-flakes.md → entries.jsonl:2
 
 ## Lately in the run
 
