@@ -451,7 +451,7 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
   # the tree's key as check.sh takes it, before the suite runs (what a suite leaves untracked would change it after)
   local key; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
-  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key"
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key" "$STATE/green/red-$key"   # a cached red would answer too
   local crc=0; "$CHECK" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }
   # a red suite pins neither the count nor its source: the next green one does. Of a green tree, its marker first (after
   # a rerun the first run's total), then its own output, check-<key>.out: check.out may be an older tree's, a red one's

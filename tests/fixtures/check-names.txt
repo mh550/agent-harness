@@ -658,6 +658,7 @@ record after gc: with the state copy gone, from the ledger copy, after which the
 record commit: rec_commit commits .harness/runs/<run>/ only; a stray file in the record worktree stays untracked
 record lock: pack_and_copy builds the pack and copies it into the slot under one lock (another lane's pack can't land between)
 record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
+red marker: C's red un-passes it; the retry's init output is the cached red and run.log says suite red before the session
 red marker: a green run removes a planted red-<key>
 red marker: a red with no HARNESS_FAILED line answers cached for this code tree: whole suite
 red marker: a subset call on the red tree runs the suite and reads no marker
@@ -666,6 +667,8 @@ red marker: a timeout and a cap kill write no red-<key>, and the next call runs 
 red marker: check.sh's usage header names red-<key>
 red marker: red twice with HARNESS_FAILED=a writes red-<key>: 1, a, wall <s>, the RED line as printed; no green-<key>
 red marker: the next full call prints the cached line and the stored RED line, exits 1, runs nothing, writes no check.out
+red marker: the red tree ran the suite twice (the full run and the rerun guard's), none from the retry's run_init
+red marker: verify's run_init fresh removes the tree's red-<key> and green-<key>; the suite runs in full on it
 red suite un-passes C
 refused merge leaves the PR, needs Michael
 refused sessions recorded as env

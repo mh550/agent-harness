@@ -58,4 +58,35 @@ o_pl=$(rm_ pl plant; echo "rc=$?")
 check "red marker: a green run removes a planted red-<key>" \
   '[[ $(tail -1 <<< "$o_pl") == rc=0 && $(calls pl) == 1 && $(reds pl) == 0 ]] && ls "$T/rm-pl/c"/green-* > /dev/null'
 check "red marker: check.sh's usage header names red-<key>" 'sed -n "2,/^set -uo/p" "$HERE/../lib/check.sh" | grep "red-<key>" > /dev/null'
+
+# ---- the driver (S1-04): a retry's run_init answers from the marker; verify's run_init fresh clears both markers ----
+# A counting suite that prints what tests/run.sh prints, red while BROKEN exists; each call appends `<treekey> <red|green>
+# <args>` to $CS_LOG (the run's exported key ignore list: check.sh's key)
+HH=$(cd "$HERE/.." && pwd)
+cat > "$T/cs.sh" <<EOF
+if [[ -f BROKEN ]]; then echo "\$(node $HH/lib/treekey.mjs) red \$*" >> "\$CS_LOG"; printf '%s\n' "FAIL t1" "HARNESS_FAILED=t1" "1/2 checks passed"; exit 1; fi
+echo "\$(node $HH/lib/treekey.mjs) green \$*" >> "\$CS_LOG"
+if (( \$# )); then for a; do echo "PASS \$a"; done; echo "\$#/\$# checks passed"; else printf '%s\n' "PASS t1" "PASS t2" "2/2 checks passed"; fi
+EOF
+csrun() { mkdir -p "$HARNESS_STATE/proj/$1" && echo "CHECK_CMD='CS_LOG=$T/cs-$1.log bash $T/cs.sh'" > "$HARNESS_STATE/proj/$1/run.env"; }
+# rm: the stub's C leaves BROKEN on its first try; the post-session run and its rerun find it red, the retry's init is cached
+csrun rm; STUB_NO_TAMPER=1 STUB_LENIENT=1 "$H" start "$T/proj" rm --spec SPEC.md --foreground > "$T/rm.out" 2>&1
+rm_key=$(awk '$2 == "red" { print $1; exit }' "$T/cs-rm.log" 2> /dev/null)
+rm_retry=$(grep -l '^Feature: `C`$' $(find "$HARNESS_STATE/proj/rm" -name '*.prompt.md' | sort) 2> /dev/null | sed -n 2p)
+check "red marker: C's red un-passes it; the retry's init output is the cached red and run.log says suite red before the session" \
+  'hlog rm | grep " · C un-passed: suite red after the session$" > /dev/null && grep "suite red before the session" "$HARNESS_STATE/proj/rm/run.log" > /dev/null \
+  && [[ -n $rm_retry ]] && grep "^check: RED (cached for this code tree: t1)$" "$rm_retry" > /dev/null'
+check "red marker: the red tree ran the suite twice (the full run and the rerun guard's), none from the retry's run_init" \
+  '[[ -n $rm_key && $(grep -c "^$rm_key " "$T/cs-rm.log") == 2 && $(grep -c "^$rm_key red \$" "$T/cs-rm.log") == 1 ]] \
+  && [[ $(grep -c "^$rm_key red t1\$" "$T/cs-rm.log") == 1 ]]'
+
+# pv: B (M1's last) plants a red-<key> and a green-<key> for its committed tree: the post-session check trusts the green,
+# verify's run_init fresh removes both and runs the verified tree in full
+git -C "$T/origin.git" update-ref refs/heads/main "$(git rev-parse HEAD)"
+csrun pv; STUB_PLANT_MARKERS=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" pv --spec SPEC.md --foreground > "$T/pv.out" 2>&1
+pv_key=$(cat "$T/planted-pv" 2> /dev/null) PV=$HARNESS_STATE/proj/pv/green
+check "red marker: verify's run_init fresh removes the tree's red-<key> and green-<key>; the suite runs in full on it" \
+  'hlog pv | grep " · verify M1: suite cache cleared; the suite runs in full on the verified tree$" > /dev/null \
+  && [[ -n $pv_key && ! -e $PV/red-$pv_key && $(sed -n 1p "$PV/green-$pv_key") == "2 tests" ]] \
+  && grep -x "$pv_key green " "$T/cs-pv.log" > /dev/null && ! hlog pv | grep "verify M1: the suite is red" > /dev/null'
 suite_end

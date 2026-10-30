@@ -18,6 +18,10 @@
     edit makes a new key, and the suite runs.
   - A green run removes `red-<key>` (it can't exist for a green key unless planted; a planted one must not survive).
   - The subset form (`check.sh <args>`) reads neither marker: its caller is iterating on the tree.
+  - The driver honours it as it honours any red (S1-04): a retry's `run_init` on the tree the post-session run found
+    red answers from the marker (`init.out` has the cached line, run.log `suite red before the session`, no third
+    run); `run_init fresh` (verify, a disjoint re-base) removes `red-<key>` with `green-<key>`, so the verified tree
+    always runs in full.
   - *default:* the marker doesn't store the first run's output; `check.out` and `check-<key>.out` keep it in
     scratch for the run's lifetime, and the names and RED line are what the session acts on.
   - *default:* the stored RED line keeps its scratch path (`last lines of <out>:`) as printed, though a cached answer

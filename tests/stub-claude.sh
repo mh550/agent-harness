@@ -9,6 +9,8 @@
 # fixtures/permission-menu.txt (the desk asks to run a command) and takes nothing more as an answer.
 # STUB_STALE_GREEN=<id>: that feature's first coding session leaves the suite red (BROKEN) and writes an empty green
 # marker for that tree into $HARNESS_CHECK_CACHE (a stale cached green, R4), then marks the feature passing.
+# STUB_PLANT_MARKERS=<id>: that feature's first coding session writes a red-<key> and a green-<key> (`99 tests`) for its
+# committed tree into $HARNESS_CHECK_CACHE and the key to $STUB_DIR/planted-<run> (S1-04: verify clears both).
 # STUB_PHONE_STOP=1|<why>: the initializer pushes INBOX.md line 1 `status: stop` (1) or `status: stop <why>` from a
 # clone of the origin, as Michael's phone would. STUB_CLI_STOP=-|<why>: it runs `harness stop <run>` (-) or
 # `harness stop <run> --why "<why>"` (R7). STUB_CLI_REQUEST=<brief>: then `harness queue add --continue <run> --brief
@@ -302,6 +304,10 @@ JSON
     if [[ ${STUB_STALE_GREEN:-} == "$id" && $n == 1 ]]; then   # red tree, cached green: only a full run catches it
       touch BROKEN && git add -A && git commit -qm "$id: left BROKEN" && git push -q origin "$HARNESS_BRANCH"
       mkdir -p "$HARNESS_CHECK_CACHE" && : > "$HARNESS_CHECK_CACHE/green-$(node "$HERE/../lib/treekey.mjs")"
+    fi
+    if [[ ${STUB_PLANT_MARKERS:-} == "$id" && $n == 1 ]]; then   # both markers for the committed tree: verify must clear both
+      k=$(node "$HERE/../lib/treekey.mjs") && mkdir -p "$HARNESS_CHECK_CACHE" && echo "$k" > "$STUB_DIR/planted-$HARNESS_RUN_ID"
+      printf '%s\n' 1 t1 "wall 7" "check: RED (planted)" > "$HARNESS_CHECK_CACHE/red-$k"; printf '%s\n' "99 tests" "wall 7" > "$HARNESS_CHECK_CACHE/green-$k"
     fi
     ok ;;
   "# Verify session")
