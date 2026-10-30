@@ -5,7 +5,7 @@ CHECK_CMD="bash tests/run.sh"
 CHECK_KEY_IGNORE=".harness/runs docs/plans docs/specs journal findings-and-research ledger"
 # CLAUDE.md is read by these checks alone, so a session that only adds a Gotchas line runs just them
 # (decisions/2026-10-30-partial-key; tests/checks/82-key-map-lint proves the list)
-CHECK_KEY_MAP="CLAUDE.md:39-memlint-m4:37-memory-prompts-m2"
+CHECK_KEY_MAP="CLAUDE.md:39-memlint-m4:37-memory-prompts-m2:79-suite-length"
 # the decisions store: one file per decision, never numbered (decisions/2026-10-21-one-file-per-decision)
 DECISIONS=journal/decisions
 # the suite takes 601 s alone and 857 s with a second lane's beside it (2026-10-29): 15m left 43 s

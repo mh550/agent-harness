@@ -360,6 +360,12 @@ journal: a 410-character summary and outcome "maybe" is minimal with why invalid
 journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
 journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
 journal: validate exits 2 when its only errors are the caps, 1 with any other
+key map lint: a check file passing the bare root to a new command is named with its line, exit 1
+key map lint: a check file reading the root's CLAUDE.md outside the map is named with its line, exit 1
+key map lint: both files pass once the map's CLAUDE.md entry names them
+key map lint: each allowed form alone passes (HARNESS_HOME=, git -C log, readlink -f and cd && pwd as an alias, harness_config, == "…")
+key map lint: git -C show and grep, an alias of readlink -f, HH, a relative read up from tests/, an inline cd && pwd and a %/* root are hits; comments and sub-paths are not
+key map lint: this repo's tests/checks/ passes with the map in .harness/config.sh (CLAUDE.md and its readers)
 lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
 lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
 lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back

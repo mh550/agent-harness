@@ -51,9 +51,10 @@ out.push(mapNames(pm.entries, ["R.md", "CLAUDE.md"]).join(" ") === "a b e c" && 
 console.log(out.join(" "));' 2>&1)
 check "treekey.mjs exports ignoreList, parseMap, treeKey, partialKeys and mapNames, pure on a fixed file list and blobs" \
   '[[ $pure == "true true true true true true" ]]'
+M0=CLAUDE.md:39-memlint-m4:37-memory-prompts-m2   # its own line: beside harness_config "<root>" it would be a hit of 82-key-map-lint
 check "CHECK_KEY_MAP: harness default empty; this repo maps CLAUDE.md; the driver exports it; the template has it commented" \
   '( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ -z $CHECK_KEY_MAP ]] ) \
-  && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config "$HERE/.." && [[ $CHECK_KEY_MAP == CLAUDE.md:39-memlint-m4:37-memory-prompts-m2* ]] ) \
+  && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config "$HERE/.." && [[ $CHECK_KEY_MAP == "$M0"* ]] ) \
   && [[ $(grep -c "HARNESS_CHECK_KEY_MAP=\$CHECK_KEY_MAP" "$HERE/../lib/prompt.sh") == 1 ]] && grep -q "^# CHECK_KEY_MAP=" "$HERE/../templates/project/config.sh"'
 
 # ---- check.sh's partial path (S2-03): the part-<reduced> sidecar, a mapped-only diff runs just its checks ----
