@@ -7,6 +7,21 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-30 00:46 · S1-05 · passes
+
+S1 review: 0 Critical, 3 Important, 5 Minor. Fixed, each red first: I1 run_init keeps no red-<key> around a failed init; I2 the cached red shows check-<key>.out or says it is gone; I3 suite_length reads every green wall before a red; M1 no red cached for codes ≥128; M2 atomic marker writes; M3 green_count in record.sh; M4. Docs: architecture §3/§4/§7/prompt, README.
+
+- **Files:** lib/check.sh, lib/record.sh, lib/prompt.sh, tests/checks/79-suite-length.sh, tests/checks/80-red-marker.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-30-red-marker.md, journal/decisions/2026-10-30-suite-length-in-prompt.md, docs/architecture.md, README.md, tests/checks/74-flakes-run.sh
+- **Verified:** Opus reviewer read $HARNESS_SCRATCH/S1.diff, findings in S1-review.md; 79+80 subset: 7 new/changed checks FAIL before the fixes, 27/27 after; 08/40/74/77/34 subset 181/181; 39-memlint 19/19; bash -n on every touched shell file; grep -c 'red-<key>': README 1, architecture 4; full suite: check: green in 806 s, 1044 tests (a first full run was red: 74 grepped the old cached tail, and a 15th Gotchas line went over memlint's 15-line cap; both fixed)
+- **Tests:** 1039 → 1044
+- **Dead end:** removing green-<key> too when an init failed — a green isn't harmful and carries the test count; only the red marker answers wrongly
+- **Dead end:** a Gotchas line about red-<key> answering a red tree's second full call — memlint counts the section's comment line: 15 bullets is 16 lines, over its cap; dropped rather than displace one
+- **Discovery** (affects S2, run): run_init now writes init-failed in the lane dir (driver: state dir) while an init fails; the next run_init drops the tree's red-<key> before its suite
+- **Discovery** (affects S2, run): the cached red answer no longer prints the stored RED line verbatim: its `— last lines of …:` tail is replaced with check-<key>.out's or `its output is gone from scratch`
+- **Discovery** (affects S2, run): suite_length reads every green marker (cwd tree's, then newest) before any red one
+- **Question for Michael:** Review minor M5 left: 79's rw check can't tell the rerun's wall from start-to-end (a slow-first/instant-rerun inverse case would). And I1's residue: a session on a tree cached red by something outside the key (a port, a tool) has no form that runs the full suite on it; should check.sh get an escape hatch (e.g. HARNESS_CHECK_FRESH=1 skipping the red lookup), default: none? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-0/lib/check.sh:77, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-0/journal/decisions/2026-10-30-red-marker.md
+- *05-S1-05 · claude-opus-5-5*
+
 ### 2026-10-30 00:03 · S1-04 · passes
 
 run_init fresh removes red-<key> beside green-<key> (lib/record.sh, one line), so verify's tree always runs in full. 80-red-marker gains 3 stub-run checks with a counting CHECK_CMD: the retry's init is the cached red (2 suite calls on the red tree), and STUB_PLANT_MARKERS (new stub hook) proves verify clears both markers. Decision red-marker gains the driver bullet.
