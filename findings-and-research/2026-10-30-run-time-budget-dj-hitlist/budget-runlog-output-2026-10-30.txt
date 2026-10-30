@@ -1,0 +1,635 @@
+
+== dj-soulsync-review-2026-10-22 (no lanes: the run is one lane)  green markers 29
+lane run 06:37:43–16:16:47: 34744 s, 25 sessions
+  model 13567 s (39%) · session suite 17859 s (51%) · session other tools 1198 s (3%) · harness before 639 s (2%) · harness after 718 s (2%) · verify 765 s (2%) · waiting 0 s (0%) · idle 0 s (0%)
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · full runs · suite calls):
+  init  06:47:28 wall 521 suite 0 other 12 model 509 · dur 520 api 512 · full 0 cached 0
+  coding V1-01 06:56:13 wall 1430 suite 583 other 234 model 613 · dur 1428 api 858 · full 1 cached 0 passes=true · full: green/583s
+  coding V1-02 07:20:06 wall 718 suite 581 other 46 model 91 · dur 716 api 100 · full 1 cached 0 passes=true · full: green/581s
+  verify V1 07:42:58 wall 91 suite 1 other 25 model 66 · dur 89 api 72 · full 0 cached 2 · full: cached/1s
+  coding V2-01 07:44:37 wall 1980 suite 1309 other 87 model 584 · dur 1037 api 1761 · full 2 cached 1 passes=true · full: green/658s green/651s
+  coding V2-02 08:17:41 wall 1846 suite 1307 other 44 model 496 · dur 1310 api 1350 · full 2 cached 2 passes=true · full: green/661s green/646s
+  coding V2-03a 08:48:30 wall 2437 suite 1307 other 52 model 1078 · dur 729 api 1160 · full 2 cached 2 passes=true · full: green/661s green/647s
+  coding V2-03b 09:29:11 wall 2703 suite 1313 other 53 model 1337 · dur 1505 api 1328 · full 2 cached 3 passes=true · full: green/663s green/650s cached/1s
+  coding V2-04 10:14:18 wall 1970 suite 660 other 45 model 1264 · dur 440 api 1465 · full 2 cached 2 passes=true · full: killed/11s green/649s
+  coding V2-05 10:47:12 wall 2116 suite 1296 other 51 model 768 · dur 1188 api 2002 · full 2 cached 0 passes=true · full: green/649s green/648s
+  coding V2-06 11:22:31 wall 2258 suite 1304 other 55 model 899 · dur 1084 api 2170 · full 2 cached 4 passes=true · full: green/656s green/648s cached/1s cached/1s
+  coding V2-07 12:00:16 wall 2068 suite 1304 other 60 model 704 · dur 1086 api 2004 · full 2 cached 2 passes=true · full: green/656s green/647s
+  coding V2-08 12:34:49 wall 2835 suite 1304 other 49 model 1482 · dur 961 api 2015 · full 2 cached 1 passes=true · full: green/655s green/649s
+  verify V2 13:22:08 wall 188 suite 0 other 19 model 169 · dur 187 api 177 · full 0 cached 1 · full: cached/1s
+  coding V2-08 13:25:19 wall 815 suite 649 other 27 model 139 · dur 814 api 187 · full 1 cached 0 passes=true · full: green/649s
+  verify V2 13:38:59 wall 219 suite 0 other 19 model 200 · dur 217 api 207 · full 0 cached 1 · full: cached/1s
+  coding V3-01 13:42:50 wall 1262 suite 647 other 247 model 368 · dur 1258 api 638 · full 1 cached 0 passes=true · full: green/647s
+  coding V3-02 14:03:56 wall 1413 suite 1027 other 28 model 357 · dur 447 api 776 · full 2 cached 0 passes=true · full: killed/376s green/651s
+  verify V3 14:27:33 wall 93 suite 0 other 7 model 86 · dur 91 api 87 · full 0 cached 1 · full: cached/1s
+  coding V4-01 14:29:16 wall 2761 suite 1313 other 23 model 1425 · dur 1328 api 1001 · full 3 cached 2 passes=true · full: green/650s killed/12s green/651s cached/0s
+  coding V4-02 15:15:20 wall 1343 suite 650 other 47 model 646 · dur 961 api 1138 · full 1 cached 0 passes=true · full: green/650s
+  verify V4 15:37:46 wall 105 suite 0 other 10 model 95 · dur 102 api 96 · full 0 cached 1 · full: cached/1s
+  coding V4-01 15:39:33 wall 1283 suite 652 other 17 model 614 · dur 113 api 100 · full 1 cached 1 passes=true · full: green/652s
+  coding V4-02 16:01:00 wall 864 suite 651 other 20 model 193 · dur 779 api 268 · full 1 cached 2 passes=true · full: cached/1s green/651s cached/1s
+  verify V4 16:15:28 wall 69 suite 0 other 11 model 58 · dur 68 api 58 · full 0 cached 1 · full: cached/1s
+  retro  16:16:50 wall 25 suite 0 other 2 model 23 · dur 23 api 22 · full 0 cached 1
+harness suites outside sessions (where · wall from the gap's start to the green marker, an upper bound):
+  before 06:37:43–06:47:28 585 s before init
+  after 07:32:04–07:42:58 654 s after V1-02 before V1
+
+== dj-crate-streaming-2026-10-22-fixes (no lanes: the run is one lane)  green markers 13
+lane run 16:17:36–21:37:13: 19177 s, 12 sessions
+  model 3646 s (19%) · session suite 13555 s (71%) · session other tools 156 s (1%) · harness before 1259 s (7%) · harness after 25 s (0%) · verify 537 s (3%) · waiting 0 s (0%) · idle 0 s (0%)
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · full runs · suite calls):
+  init  16:27:23 wall 875 suite 649 other 17 model 209 · dur 721 api 715 · full 1 cached 0 · full: other/649s
+  coding S1-01 16:52:53 wall 1127 suite 893 other 14 model 220 · dur 364 api 435 · full 2 cached 0 passes=true · full: killed/180s green/651s
+  coding S1-02 17:11:43 wall 993 suite 878 other 9 model 106 · dur 272 api 225 · full 2 cached 0 passes=true · full: killed/106s green/654s
+  coding S1-03 17:28:19 wall 1358 suite 987 other 16 model 355 · dur 592 api 423 · full 1 cached 0 passes=true · full: green/658s
+  coding S1-04 17:51:00 wall 1560 suite 1431 other 9 model 120 · dur 279 api 219 · full 2 cached 1 passes=true · full: green/668s green/663s
+  coding S1-05 18:17:03 wall 1293 suite 1093 other 10 model 190 · dur 546 api 289 · full 2 cached 1 passes=true · full: killed/112s green/665s
+  coding S1-06 18:38:39 wall 1722 suite 1465 other 15 model 242 · dur 716 api 546 · full 2 cached 0 passes=true · full: killed/540s green/674s
+  coding S1-07 19:07:25 wall 4058 suite 2892 other 16 model 1150 · dur 1395 api 680 · full 1 cached 0 passes=true · full: green/686s
+  coding S1-08 20:15:07 wall 1116 suite 877 other 15 model 223 · dur 376 api 423 · full 2 cached 0 passes=true · full: killed/141s green/687s
+  coding S1-R1 20:33:46 wall 2124 suite 1428 other 24 model 672 · dur 1090 api 1218 · full 2 cached 1 passes=true · full: killed/403s green/692s
+  coding S1-09 21:09:13 wall 1131 suite 962 other 11 model 158 · dur 246 api 442 · full 2 cached 1 passes=true · full: killed/270s green/691s
+  verify S1 21:28:08 wall 537 suite 303 other 64 model 170 · dur 535 api 177 · full 0 cached 1 · full: cached/1s
+  retro  21:37:15 wall 26 suite 0 other 2 model 24 · dur 24 api 23 · full 0 cached 0
+harness suites outside sessions (where · wall from the gap's start to the green marker, an upper bound):
+  before 16:17:36–16:27:23 587 s before init
+  before 16:41:58–16:52:53 655 s after init before S1-01
+
+== dj-crate-streaming-2026-10-22-build (no lanes: the run is one lane)  green markers 23
+lane run 21:38:02–09:35:59: 43077 s, 25 sessions
+  model 14489 s (34%) · session suite 25415 s (59%) · session other tools 1382 s (3%) · harness before 756 s (2%) · harness after 52 s (0%) · verify 983 s (2%) · waiting 0 s (0%) · idle 0 s (0%)
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · full runs · suite calls):
+  init  21:49:54 wall 875 suite 0 other 10 model 865 · dur 874 api 869 · full 0 cached 0
+  coding S2-01 22:04:32 wall 1088 suite 862 other 9 model 216 · dur 288 api 381 · full 2 cached 0 passes=true · full: killed/145s green/691s
+  coding S2-02 22:22:43 wall 1953 suite 864 other 9 model 1080 · dur 374 api 407 · full 3 cached 2 passes=true · full: killed/104s killed/33s green/693s cached/1s
+  coding S2-03 22:55:19 wall 2331 suite 1168 other 15 model 1148 · dur 593 api 651 · full 2 cached 1 passes=true · full: killed/345s green/698s
+  coding S2-04 23:34:13 wall 1191 suite 10 other 16 model 1165 · dur 401 api 507 · full 1 cached 0 passes=true
+  coding S2-05a 23:54:07 wall 1991 suite 503 other 15 model 1473 · dur 1059 api 803 · full 1 cached 0 passes=true
+  coding S2-05b 00:27:21 wall 2748 suite 1724 other 13 model 1011 · dur 1304 api 1012 · full 2 cached 1 passes=true · full: killed/572s green/759s
+  coding S2-05c 01:13:13 wall 2035 suite 1638 other 15 model 382 · dur 1259 api 587 · full 1 cached 0 passes=true · full: green/754s
+  coding S2-06a 01:47:11 wall 1455 suite 771 other 257 model 427 · dur 714 api 696 · full 1 cached 0 passes=true · full: green/762s
+  coding S2-06b 02:11:29 wall 2020 suite 1661 other 17 model 341 · dur 1018 api 756 · full 2 cached 0 passes=true · full: killed/495s green/769s
+  coding S2-07 02:45:13 wall 2572 suite 1658 other 18 model 896 · dur 1209 api 1054 · full 2 cached 0 passes=true · full: other/296s green/820s
+  coding S2-R1 03:28:09 wall 1898 suite 1217 other 32 model 649 · dur 1445 api 834 · full 1 cached 0 passes=true · full: green/797s
+  verify S2 03:59:50 wall 528 suite 1 other 313 model 214 · dur 526 api 224 · full 0 cached 1 · full: cached/1s
+  coding S3-01 04:08:46 wall 1931 suite 1636 other 17 model 278 · dur 1929 api 472 · full 2 cached 0 passes=true · full: killed/666s green/871s
+  coding S3-01b 04:41:00 wall 1757 suite 1220 other 23 model 514 · dur 1574 api 548 · full 1 cached 0 passes=true · full: green/835s
+  coding S3-02 05:10:20 wall 1768 suite 1468 other 16 model 284 · dur 684 api 641 · full 2 cached 0 passes=true · full: killed/511s green/845s
+  coding S3-03 05:39:51 wall 1890 suite 1487 other 15 model 388 · dur 832 api 595 · full 1 cached 0 passes=true · full: green/886s
+  coding S3-04 06:11:24 wall 1723 suite 1124 other 301 model 298 · dur 819 api 491 · full 1 cached 0 passes=true · full: green/907s
+  coding S3-05 06:40:10 wall 1069 suite 969 other 6 model 94 · dur 187 api 112 · full 1 cached 0 passes=true · full: green/896s
+  coding S3-06 06:58:02 wall 1949 suite 1817 other 8 model 123 · dur 242 api 312 · full 2 cached 0 passes=true · full: green/897s green/915s
+  coding S3-R1 07:30:34 wall 2234 suite 1708 other 20 model 506 · dur 762 api 825 · full 2 cached 0 passes=true · full: other/371s green/924s
+  verify S3 08:07:52 wall 377 suite 0 other 7 model 370 · dur 376 api 130 · full 0 cached 1 · full: cached/243s
+  coding S4-01 08:14:18 wall 2024 suite 931 other 507 model 587 · dur 1122 api 1110 · full 1 cached 0 passes=true · full: green/926s
+  coding S4-02 08:48:06 wall 2784 suite 980 other 40 model 1764 · dur 1196 api 1964 · full 3 cached 0 passes=true · full: other/453s other/1s
+  verify S4 09:34:33 wall 78 suite 1 other 4 model 73 · dur 76 api 73 · full 0 cached 1 · full: cached/1s
+  retro  09:36:02 wall 21 suite 0 other 2 model 19 · dur 19 api 19 · full 0 cached 0
+harness suites outside sessions (where · wall from the gap's start to the green marker, an upper bound):
+  before 21:38:02–21:49:54 712 s before init
+
+== hit_list-2026-10-20 (no lanes: the run is one lane)  green markers 84
+lane run 12:54:49–13:10:52: 963 s, 2 sessions
+  model 825 s (86%) · session suite 11 s (1%) · session other tools 18 s (2%) · harness before 37 s (4%) · harness after 13 s (1%) · verify 0 s (0%) · waiting 60 s (6%) · idle 0 s (0%)
+lane run 10:50:17–14:39:05: 13728 s, 51 sessions
+  model 8853 s (64%) · session suite 2264 s (16%) · session other tools 1462 s (11%) · harness before 139 s (1%) · harness after 251 s (2%) · verify 759 s (6%) · waiting 0 s (0%) · idle 0 s (0%)
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · full runs · suite calls):
+  init  12:55:24 wall 638 suite 0 other 9 model 629 · dur 636 api 632 · full 0 cached 0
+  coding M1-01 13:06:05 wall 216 suite 11 other 9 model 197 · dur 214 api 200 · full 1 cached 0 passes=true · full: green/11s
+  retro  13:10:54 wall 22 suite 0 other 2 model 20 · dur 21 api 20 · full 0 cached 0
+  coding M1-02 10:50:21 wall 518 suite 70 other 14 model 434 · dur 399 api 467 · full 2 cached 0 passes=true · full: green/11s green/16s
+  coding M1-03 10:59:02 wall 485 suite 84 other 112 model 289 · dur 483 api 397 · full 2 cached 0 passes=true · full: green/18s green/11s
+  coding M1-04 11:07:12 wall 385 suite 45 other 111 model 229 · dur 383 api 312 · full 1 cached 0 passes=true · full: green/14s
+  coding M1-05 11:13:43 wall 448 suite 46 other 32 model 370 · dur 339 api 450 · full 1 cached 0 passes=true · full: green/17s
+  verify M1 11:21:15 wall 114 suite 20 other 15 model 80 · dur 112 api 84 · full 0 cached 1 · full: cached/1s
+  coding M1-02 11:23:12 wall 168 suite 19 other 7 model 141 · dur 166 api 144 · full 1 cached 0 passes=true · full: green/9s
+  coding M1-04 11:26:04 wall 192 suite 46 other 13 model 133 · dur 190 api 143 · full 2 cached 0 passes=true · full: green/25s green/9s
+  verify M1 11:29:20 wall 83 suite 18 other 5 model 59 · dur 82 api 61 · full 0 cached 1 · full: cached/1s
+  coding M2-01 11:30:59 wall 219 suite 11 other 14 model 195 · dur 217 api 203 · full 1 cached 0 passes=true · full: green/9s
+  coding M2-02 11:34:42 wall 151 suite 20 other 8 model 123 · dur 149 api 127 · full 1 cached 0 passes=true · full: green/13s
+  coding M2-03 11:37:17 wall 252 suite 55 other 57 model 140 · dur 251 api 196 · full 4 cached 0 passes=true · full: red/5s green/9s green/9s green/15s
+  coding M2-04 11:41:33 wall 335 suite 72 other 105 model 158 · dur 333 api 259 · full 3 cached 0 passes=true · full: green/14s red/14s green/14s
+  coding M2-05 11:47:20 wall 441 suite 98 other 9 model 334 · dur 388 api 372 · full 4 cached 0 passes=true · full: other/6s green/11s green/21s green/12s
+  coding M2-06 11:54:44 wall 102 suite 46 other 1 model 55 · dur 100 api 64 · full 1 cached 0 passes=true · full: green/12s
+  coding M2-07 11:56:29 wall 631 suite 75 other 25 model 531 · dur 462 api 588 · full 1 cached 0 passes=true · full: green/12s
+  verify M2 12:07:14 wall 102 suite 26 other 3 model 73 · dur 100 api 75 · full 0 cached 1 · full: cached/1s
+  coding M3-01 12:09:11 wall 240 suite 42 other 11 model 187 · dur 239 api 196 · full 1 cached 0 passes=true · full: green/22s
+  coding M3-02 12:13:14 wall 215 suite 40 other 18 model 156 · dur 213 api 163 · full 2 cached 0 passes=true · full: red/17s green/11s
+  coding M3-03 12:16:53 wall 68 suite 2 other 4 model 62 · dur 66 api 47 · full 0 cached 1 passes=true · full: cached/15s
+  coding M3-04 12:18:16 wall 334 suite 66 other 23 model 245 · dur 264 api 313 · full 2 cached 0 passes=true · full: green/12s green/11s
+  verify M3 12:23:55 wall 73 suite 19 other 1 model 52 · dur 72 api 53 · full 0 cached 1 · full: cached/1s
+  coding M4-01 12:25:22 wall 273 suite 46 other 34 model 192 · dur 272 api 208 · full 1 cached 0 passes=true · full: green/11s
+  coding M4-02 12:29:59 wall 109 suite 38 other 7 model 64 · dur 108 api 68 · full 2 cached 0 passes=true · full: green/11s green/23s
+  coding M4-03 12:31:52 wall 273 suite 60 other 68 model 145 · dur 271 api 203 · full 2 cached 0 passes=true · full: green/14s green/13s
+  coding M4-04 12:36:40 wall 722 suite 104 other 192 model 426 · dur 720 api 600 · full 5 cached 0 passes=true · full: other/5s green/23s red/8s green/12s green/12s
+  coding M4-05 12:48:56 wall 643 suite 95 other 193 model 355 · dur 641 api 543 · full 3 cached 0 passes=true · full: green/14s green/27s green/13s
+  coding M4-06 12:59:42 wall 78 suite 32 other 4 model 42 · dur 76 api 43 · full 1 cached 0 passes=true · full: green/11s
+  coding M4-07 13:01:04 wall 612 suite 94 other 22 model 497 · dur 515 api 566 · full 3 cached 0 passes=true · full: green/11s green/26s green/17s
+  verify M4 13:11:22 wall 76 suite 9 other 12 model 54 · dur 74 api 54 · full 0 cached 1 · full: cached/1s
+  coding M4-04 13:12:41 wall 209 suite 77 other 7 model 125 · dur 208 api 130 · full 3 cached 0 passes=true · full: green/12s green/19s green/27s
+  verify M4 13:16:26 wall 61 suite 15 other 3 model 43 · dur 59 api 42 · full 0 cached 1 · full: cached/1s
+  coding M5-01 13:17:40 wall 187 suite 25 other 8 model 153 · dur 185 api 157 · full 1 cached 0 passes=true · full: green/17s
+  coding M5-02 13:20:50 wall 452 suite 130 other 82 model 240 · dur 450 api 314 · full 4 cached 0 passes=true · full: green/18s green/18s other/19s green/20s
+  coding M5-03 13:28:38 wall 213 suite 53 other 41 model 119 · dur 211 api 157 · full 2 cached 0 passes=true · full: green/13s green/20s
+  coding M5-04 13:32:25 wall 88 suite 34 other 4 model 50 · dur 86 api 51 · full 1 cached 0 passes=true · full: green/12s
+  coding M5-05 13:33:57 wall 326 suite 58 other 13 model 256 · dur 281 api 332 · full 2 cached 0 passes=true · full: green/12s green/17s
+  verify M5 13:39:29 wall 48 suite 3 other 15 model 30 · dur 47 api 32 · full 0 cached 1 · full: cached/1s
+  coding M6-01 13:40:31 wall 202 suite 32 other 12 model 158 · dur 200 api 169 · full 1 cached 0 passes=true · full: green/19s
+  coding M6-02 13:43:56 wall 100 suite 35 other 4 model 61 · dur 98 api 62 · full 1 cached 1 passes=true · full: green/13s cached/2s
+  coding M6-03 13:45:39 wall 249 suite 66 other 6 model 177 · dur 247 api 181 · full 2 cached 0 passes=true · full: green/13s green/13s
+  coding M6-04 13:49:51 wall 367 suite 101 other 40 model 226 · dur 365 api 264 · full 3 cached 0 passes=true · full: green/15s green/23s green/12s
+  coding M6-05 13:56:01 wall 72 suite 32 other 3 model 38 · dur 71 api 39 · full 1 cached 0 passes=true · full: green/12s
+  coding M6-06 13:57:16 wall 1006 suite 126 other 42 model 838 · dur 547 api 570 · full 6 cached 0 passes=true · full: green/13s green/13s green/13s other/3s green/13s green/22s
+  verify M6 14:14:05 wall 52 suite 6 other 11 model 34 · dur 50 api 35 · full 0 cached 1 · full: cached/1s
+  coding M7-01 14:15:10 wall 160 suite 41 other 6 model 113 · dur 158 api 117 · full 1 cached 0 passes=true · full: green/21s
+  coding M7-02 14:17:53 wall 212 suite 33 other 10 model 169 · dur 202 api 232 · full 1 cached 0 passes=true · full: green/20s
+  verify M7 14:21:40 wall 50 suite 11 other 4 model 35 · dur 49 api 35 · full 0 cached 1 · full: cached/1s
+  coding M8-01 14:22:46 wall 264 suite 53 other 49 model 162 · dur 263 api 168 · full 3 cached 0 passes=true · full: green/13s green/21s green/12s
+  coding M8-02 14:27:25 wall 57 suite 12 other 4 model 41 · dur 55 api 42 · full 1 cached 0 passes=true · full: green/12s
+  coding M8-03 14:28:27 wall 521 suite 51 other 44 model 427 · dur 386 api 760 · full 2 cached 0 passes=true · full: green/21s green/12s
+  verify M8 14:37:12 wall 100 suite 17 other 16 model 67 · dur 99 api 67 · full 0 cached 1 · full: cached/1s
+  retro  14:39:08 wall 19 suite 0 other 1 model 18 · dur 17 api 17 · full 0 cached 0
+harness suites outside sessions (where · wall from the gap's start to the green marker, an upper bound):
+  before 12:54:49–12:55:24 35 s before init
+  after 11:47:08–11:47:17 9 s after M2-04 before M2-05
+  after 12:18:01–12:18:12 12 s after M3-03 before M3-04
+  after 12:36:25–12:36:36 11 s after M4-03 before M4-04
+  after 12:48:42–12:48:52 11 s after M4-04 before M4-05
+  after 13:16:10–13:16:22 12 s after M4-04 before M4
+  after 13:28:22–13:28:33 12 s after M5-02 before M5-03
+  after 13:32:11–13:32:22 11 s after M5-03 before M5-04
+  after 14:21:25–14:21:36 12 s after M7-02 before M7
+  after 14:27:10–14:27:22 12 s after M8-01 before M8-02
+
+== hit_list-2026-10-22-sharing (no lanes: the run is one lane)  green markers 169
+lane run 19:28:07–13:02:12: 63245 s, 87 sessions
+  model 42366 s (67%) · session suite 10201 s (16%) · session other tools 9001 s (14%) · harness before 220 s (0%) · harness after 341 s (1%) · verify 1117 s (2%) · waiting 0 s (0%) · idle 0 s (0%)
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · full runs · suite calls):
+  init  19:29:00 wall 1545 suite 1 other 13 model 1532 · dur 1542 api 1535 · full 0 cached 0
+  coding S1-01 19:54:48 wall 268 suite 14 other 11 model 244 · dur 266 api 249 · full 1 cached 0 passes=true · full: green/14s
+  coding S1-02 19:59:19 wall 193 suite 34 other 10 model 150 · dur 191 api 156 · full 2 cached 0 passes=true · full: red/13s green/12s
+  coding S1-03 20:02:36 wall 344 suite 62 other 99 model 183 · dur 343 api 274 · full 4 cached 0 passes=true · full: red/13s green/19s red/21s
+  coding S1-04 20:08:24 wall 142 suite 29 other 7 model 106 · dur 141 api 110 · full 1 cached 0 passes=true · full: green/12s
+  coding S1-05 20:10:50 wall 389 suite 78 other 26 model 285 · dur 315 api 332 · full 3 cached 0 passes=true · full: red/8s green/12s green/16s
+  coding S1-06 20:17:23 wall 403 suite 92 other 14 model 297 · dur 320 api 335 · full 2 cached 0 passes=true · full: green/14s green/20s
+  coding S1-07 20:24:10 wall 344 suite 76 other 12 model 256 · dur 267 api 306 · full 2 cached 0 passes=true · full: green/14s green/20s
+  coding S1-08 20:29:57 wall 502 suite 110 other 114 model 278 · dur 500 api 389 · full 4 cached 0 passes=true · full: red/14s red/14s green/14s green/30s
+  coding S1-09 20:38:22 wall 364 suite 84 other 28 model 253 · dur 328 api 292 · full 2 cached 0 passes=true · full: green/14s green/21s
+  coding S1-10 20:44:29 wall 137 suite 53 other 2 model 82 · dur 135 api 93 · full 1 cached 0 passes=true · full: green/14s
+  coding S1-11 20:46:49 wall 549 suite 73 other 25 model 451 · dur 370 api 524 · full 3 cached 0 passes=true · full: green/14s green/16s green/14s
+  verify S1 20:56:02 wall 65 suite 9 other 3 model 54 · dur 63 api 56 · full 0 cached 1 · full: cached/1s
+  coding S2-01 20:57:15 wall 273 suite 13 other 13 model 247 · dur 271 api 255 · full 1 cached 0 passes=true · full: green/13s
+  coding S2-02 21:01:52 wall 217 suite 34 other 11 model 173 · dur 215 api 180 · full 1 cached 0 passes=true · full: green/21s
+  coding S2-03 21:05:32 wall 608 suite 124 other 22 model 462 · dur 559 api 594 · full 4 cached 0 passes=true · full: green/14s red/18s green/14s green/15s
+  coding S2-04 21:15:44 wall 942 suite 145 other 297 model 500 · dur 941 api 767 · full 2 cached 0 passes=true · full: green/15s green/21s
+  coding S2-05 21:31:30 wall 116 suite 54 other 3 model 58 · dur 115 api 60 · full 1 cached 0 passes=true · full: green/14s
+  coding S2-06 21:33:43 wall 592 suite 87 other 21 model 485 · dur 355 api 535 · full 2 cached 0 passes=true · full: green/17s green/21s
+  verify S2 21:43:52 wall 95 suite 30 other 5 model 60 · dur 93 api 61 · full 0 cached 1 · full: cached/1s
+  coding S3-01 21:45:35 wall 364 suite 17 other 49 model 298 · dur 362 api 309 · full 1 cached 0 passes=true · full: green/17s
+  coding S3-02 21:51:43 wall 587 suite 131 other 88 model 367 · dur 532 api 418 · full 2 cached 0 passes=true · full: green/15s green/15s
+  coding S3-03 22:01:34 wall 720 suite 30 other 163 model 528 · dur 620 api 576 · full 2 cached 0 passes=true · full: green/16s green/14s
+  coding S3-04 22:13:37 wall 2048 suite 249 other 1023 model 776 · dur 1922 api 845 · full 2 cached 0 passes=true · full: green/16s green/14s
+  coding S3-05 22:47:48 wall 1037 suite 224 other 129 model 685 · dur 965 api 767 · full 2 cached 0 passes=true · full: green/15s green/22s
+  coding S3-06 23:05:08 wall 1239 suite 221 other 112 model 906 · dur 1096 api 1009 · full 2 cached 1 passes=true · full: green/15s green/14s cached/2s
+  coding S3-07 23:25:50 wall 1193 suite 102 other 222 model 869 · dur 1054 api 996 · full 2 cached 0 passes=true · full: green/15s green/15s
+  coding S3-08 23:45:46 wall 766 suite 140 other 36 model 590 · dur 637 api 981 · full 2 cached 0 passes=true · full: green/16s green/19s
+  verify S3 23:58:48 wall 243 suite 50 other 48 model 145 · dur 241 api 149 · full 0 cached 1 · full: cached/1s
+  coding S4-01 00:03:00 wall 443 suite 15 other 42 model 386 · dur 441 api 394 · full 1 cached 0 passes=true · full: green/15s
+  coding S4-02 00:10:39 wall 1647 suite 115 other 40 model 1492 · dur 640 api 738 · full 4 cached 0 passes=true · full: red/10s green/14s green/15s green/23s
+  coding S4-03 00:38:10 wall 514 suite 121 other 62 model 331 · dur 417 api 406 · full 2 cached 0 passes=true · full: green/16s green/24s
+  coding S4-04 00:46:47 wall 870 suite 165 other 255 model 450 · dur 868 api 703 · full 4 cached 0 passes=true · full: green/21s red/25s green/22s
+  coding S4-05 01:01:20 wall 598 suite 90 other 24 model 484 · dur 460 api 537 · full 3 cached 0 passes=true · full: red/8s green/16s green/25s
+  coding S4-06 01:11:21 wall 784 suite 283 other 180 model 321 · dur 782 api 424 · full 4 cached 3 passes=true · full: red/55s other/18s cached/0s green/28s
+  coding S4-07 01:24:28 wall 177 suite 114 other 6 model 57 · dur 173 api 57 · full 1 cached 0 passes=true · full: green/16s
+  coding S4-08 01:27:28 wall 635 suite 85 other 19 model 531 · dur 434 api 619 · full 2 cached 0 passes=true · full: green/17s green/43s
+  verify S4 01:38:21 wall 71 suite 15 other 6 model 50 · dur 69 api 52 · full 0 cached 1 · full: cached/1s
+  coding S5-01 01:39:40 wall 917 suite 31 other 42 model 844 · dur 627 api 881 · full 2 cached 0 passes=true · full: green/16s green/15s
+  coding S5-02 01:55:01 wall 1808 suite 119 other 15 model 1674 · dur 717 api 878 · full 3 cached 0 passes=true · full: green/21s other/13s green/24s
+  coding S5-03 02:25:12 wall 1262 suite 100 other 464 model 697 · dur 1260 api 1156 · full 4 cached 0 passes=true · full: red/8s green/19s green/17s green/15s
+  coding S5-04 02:46:17 wall 1111 suite 90 other 393 model 627 · dur 1109 api 1015 · full 5 cached 0 passes=true · full: red/3s red/7s green/16s green/18s green/18s
+  coding S5-05 03:04:51 wall 839 suite 183 other 146 model 510 · dur 836 api 645 · full 5 cached 0 passes=true · full: green/20s green/27s green/17s green/28s green/17s
+  coding S5-06 03:18:53 wall 1933 suite 184 other 40 model 1709 · dur 1021 api 1219 · full 4 cached 0 passes=true · full: green/18s green/29s green/19s green/24s
+  coding S5-07 03:51:10 wall 714 suite 183 other 198 model 333 · dur 712 api 512 · full 2 cached 0 passes=true · full: green/29s green/25s
+  coding S5-08 04:03:07 wall 203 suite 117 other 5 model 82 · dur 200 api 82 · full 1 cached 0 passes=true · full: green/17s
+  coding S5-09 04:06:49 wall 1102 suite 151 other 102 model 849 · dur 741 api 1457 · full 3 cached 0 passes=true · full: red/26s green/17s green/28s
+  verify S5 04:25:14 wall 139 suite 7 other 8 model 124 · dur 136 api 127 · full 0 cached 1 · full: cached/1s
+  coding S6-01 04:27:41 wall 593 suite 19 other 253 model 321 · dur 591 api 568 · full 1 cached 0 passes=true · full: green/19s
+  coding S6-02 04:37:37 wall 904 suite 124 other 257 model 523 · dur 902 api 763 · full 2 cached 0 passes=true · full: green/18s green/18s
+  coding S6-03 04:53:01 wall 505 suite 93 other 80 model 332 · dur 503 api 413 · full 3 cached 0 passes=true · full: red/4s green/18s green/20s
+  coding S6-04 05:01:29 wall 875 suite 121 other 214 model 540 · dur 873 api 738 · full 4 cached 0 passes=true · full: red/9s green/18s green/19s green/19s
+  coding S6-05 05:16:07 wall 382 suite 79 other 134 model 168 · dur 380 api 182 · full 1 cached 0 passes=true · full: green/20s
+  coding S6-06 05:22:32 wall 194 suite 123 other 4 model 68 · dur 191 api 69 · full 1 cached 0 passes=true · full: green/20s
+  coding S6-07 05:25:50 wall 496 suite 83 other 26 model 388 · dur 344 api 654 · full 2 cached 0 passes=true · full: green/21s green/18s
+  verify S6 05:34:09 wall 63 suite 5 other 4 model 54 · dur 60 api 54 · full 0 cached 1 · full: cached/1s
+  coding S7-01 05:35:22 wall 1667 suite 46 other 33 model 1588 · dur 633 api 943 · full 2 cached 0 passes=true · full: green/19s green/25s
+  coding S7-02 06:03:12 wall 400 suite 101 other 17 model 282 · dur 397 api 296 · full 3 cached 0 passes=true · full: red/19s green/18s green/18s
+  coding S7-03 06:09:55 wall 1671 suite 424 other 293 model 955 · dur 1669 api 1236 · full 3 cached 0 passes=true · full: green/19s green/35s green/19s
+  coding S7-04 06:37:50 wall 1115 suite 222 other 131 model 761 · dur 1113 api 897 · full 4 cached 0 passes=true · full: green/21s red/15s green/19s green/19s
+  coding S7-05 06:56:28 wall 1186 suite 239 other 294 model 654 · dur 1184 api 877 · full 6 cached 0 passes=true · full: other/4s green/21s green/32s green/32s green/20s green/26s
+  coding S7-06 07:16:18 wall 634 suite 239 other 36 model 359 · dur 613 api 423 · full 2 cached 0 passes=true · full: green/20s green/20s
+  coding S7-07 07:26:55 wall 206 suite 107 other 19 model 81 · dur 203 api 88 · full 1 cached 0 passes=true · full: green/20s
+  coding S7-08 07:30:24 wall 1901 suite 149 other 59 model 1693 · dur 583 api 1063 · full 4 cached 0 passes=true · full: green/22s other/3s green/30s green/31s
+  verify S7 08:02:09 wall 114 suite 6 other 7 model 101 · dur 112 api 103 · full 0 cached 1 · full: cached/1s
+  coding S8-01 08:04:13 wall 1014 suite 20 other 16 model 978 · dur 615 api 1034 · full 1 cached 0 passes=true · full: green/20s
+  coding S8-02 08:21:10 wall 2072 suite 208 other 118 model 1745 · dur 1660 api 1863 · full 2 cached 0 passes=true · full: green/21s green/23s
+  coding S8-03 08:56:03 wall 1942 suite 667 other 330 model 945 · dur 1940 api 1287 · full 3 cached 0 passes=true · full: green/24s green/34s green/24s
+  coding S8-04 09:28:28 wall 973 suite 182 other 217 model 574 · dur 970 api 792 · full 3 cached 0 passes=true · full: green/22s green/32s green/32s
+  coding S8-05 09:45:03 wall 858 suite 150 other 44 model 664 · dur 676 api 722 · full 5 cached 0 passes=true · full: green/22s green/20s green/22s green/20s green/21s
+  coding S8-06 09:59:24 wall 577 suite 122 other 106 model 348 · dur 575 api 458 · full 3 cached 0 passes=true · full: green/21s red/9s green/21s
+  coding S8-07 10:09:04 wall 1112 suite 542 other 216 model 353 · dur 1110 api 537 · full 2 cached 0 passes=true · full: green/21s green/22s
+  coding S8-08 10:27:39 wall 310 suite 45 other 203 model 62 · dur 308 api 230 · full 1 cached 0 passes=true · full: green/21s
+  coding S8-09 10:32:52 wall 1298 suite 258 other 81 model 959 · dur 1044 api 1628 · full 4 cached 0 passes=true · full: green/23s green/22s green/20s green/22s
+  verify S8 10:54:34 wall 100 suite 10 other 6 model 85 · dur 98 api 87 · full 0 cached 1 · full: cached/1s
+  coding S9-01 10:56:23 wall 754 suite 20 other 373 model 361 · dur 752 api 706 · full 1 cached 0 passes=true · full: green/20s
+  coding S9-02 11:09:22 wall 766 suite 195 other 199 model 373 · dur 764 api 507 · full 1 cached 0 passes=true · full: green/32s
+  coding S9-03 11:22:11 wall 1975 suite 166 other 399 model 1410 · dur 1136 api 1537 · full 3 cached 0 passes=true · full: green/32s green/34s green/22s
+  coding S9-04 11:55:10 wall 361 suite 80 other 15 model 266 · dur 319 api 308 · full 2 cached 0 passes=true · full: green/21s green/23s
+  coding S9-05 12:01:14 wall 701 suite 301 other 38 model 361 · dur 586 api 460 · full 2 cached 0 passes=true · full: green/30s green/21s
+  coding S9-06 12:12:59 wall 265 suite 134 other 8 model 123 · dur 262 api 127 · full 1 cached 0 passes=true · full: green/21s
+  coding S9-07 12:17:27 wall 1039 suite 229 other 125 model 686 · dur 875 api 1111 · full 3 cached 0 passes=true · full: green/36s green/25s green/33s
+  verify S9 12:34:50 wall 136 suite 23 other 35 model 78 · dur 134 api 79 · full 0 cached 1 · full: cached/1s
+  coding S10-01 12:37:15 wall 1187 suite 254 other 71 model 862 · dur 692 api 1868 · full 3 cached 0 passes=true · full: green/25s green/23s green/22s
+  coding S10-02 12:57:07 wall 90 suite 21 other 5 model 65 · dur 88 api 66 · full 1 cached 0 passes=true · full: green/21s
+  coding S10-03 12:58:41 wall 106 suite 21 other 5 model 81 · dur 104 api 81 · full 1 cached 0 passes=true · full: green/21s
+  verify S10 13:00:30 wall 91 suite 2 other 20 model 69 · dur 89 api 72 · full 0 cached 1 · full: cached/1s
+  retro  13:02:14 wall 25 suite 0 other 1 model 24 · dur 23 api 22 · full 0 cached 0
+harness suites outside sessions (where · wall from the gap's start to the green marker, an upper bound):
+  before 19:28:07–19:29:00 53 s before init
+  after 21:33:26–21:33:40 14 s after S2-05 before S2-06
+  after 21:43:35–21:43:49 15 s after S2-06 before S2
+  after 23:58:32–23:58:45 14 s after S3-08 before S3
+  after 00:10:23–00:10:36 14 s after S4-01 before S4-02
+  after 01:38:03–01:38:18 16 s after S4-08 before S4
+  after 04:06:30–04:06:46 17 s after S5-08 before S5-09
+  after 04:52:41–04:52:58 17 s after S6-02 before S6-03
+  after 08:55:42–08:56:00 19 s after S8-02 before S8-03
+  after 09:44:41–09:45:00 19 s after S8-04 before S8-05
+  after 11:08:57–11:09:16 20 s after S9-01 before S9-02
+
+full suite runs (wall s; check.sh's own 'green in' s; mean other full runs overlapping; the runs they overlapped):
+  07:10:02 dj-soulsync-review-2026-10-22 V1-01 green wall 583 overlap 0
+  07:21:53 dj-soulsync-review-2026-10-22 V1-02 green wall 581 overlap 0
+  07:55:31 dj-soulsync-review-2026-10-22 V2-01 green wall 658 overlap 0
+  08:06:32 dj-soulsync-review-2026-10-22 V2-01 green wall 651 overlap 0
+  08:26:24 dj-soulsync-review-2026-10-22 V2-02 green wall 661 overlap 0
+  08:37:27 dj-soulsync-review-2026-10-22 V2-02 green wall 646 overlap 0
+  08:56:49 dj-soulsync-review-2026-10-22 V2-03a green wall 661 overlap 0
+  09:07:57 dj-soulsync-review-2026-10-22 V2-03a green wall 647 overlap 0
+  09:41:28 dj-soulsync-review-2026-10-22 V2-03b green wall 663 overlap 0
+  09:52:35 dj-soulsync-review-2026-10-22 V2-03b green wall 650 overlap 0
+  10:31:06 dj-soulsync-review-2026-10-22 V2-04 killed wall 11 overlap 0
+  10:31:20 dj-soulsync-review-2026-10-22 V2-04 green wall 649 overlap 0
+  11:00:15 dj-soulsync-review-2026-10-22 V2-05 green wall 649 overlap 0
+  11:11:08 dj-soulsync-review-2026-10-22 V2-05 green wall 648 overlap 0
+  11:34:17 dj-soulsync-review-2026-10-22 V2-06 green wall 656 overlap 0
+  11:45:16 dj-soulsync-review-2026-10-22 V2-06 green wall 648 overlap 0
+  12:12:35 dj-soulsync-review-2026-10-22 V2-07 green wall 656 overlap 0
+  12:23:36 dj-soulsync-review-2026-10-22 V2-07 green wall 647 overlap 0
+  12:45:25 dj-soulsync-review-2026-10-22 V2-08 green wall 655 overlap 0
+  12:56:23 dj-soulsync-review-2026-10-22 V2-08 green wall 649 overlap 0
+  13:27:44 dj-soulsync-review-2026-10-22 V2-08 green wall 649 overlap 0
+  13:52:42 dj-soulsync-review-2026-10-22 V3-01 green wall 647 overlap 0
+  14:08:32 dj-soulsync-review-2026-10-22 V3-02 killed wall 376 overlap 0
+  14:16:14 dj-soulsync-review-2026-10-22 V3-02 green wall 651 overlap 0
+  14:36:45 dj-soulsync-review-2026-10-22 V4-01 green wall 650 overlap 0
+  14:54:17 dj-soulsync-review-2026-10-22 V4-01 killed wall 12 overlap 0
+  14:54:33 dj-soulsync-review-2026-10-22 V4-01 green wall 651 overlap 0
+  15:26:25 dj-soulsync-review-2026-10-22 V4-02 green wall 650 overlap 0
+  15:40:38 dj-soulsync-review-2026-10-22 V4-01 green wall 652 overlap 0
+  16:04:14 dj-soulsync-review-2026-10-22 V4-02 green wall 651 overlap 0
+  06:37:43 dj-soulsync-review-2026-10-22 harness-before green wall 585 (bound) overlap 0
+  07:32:04 dj-soulsync-review-2026-10-22 harness-after green wall 654 (bound) overlap 0
+  16:30:51 dj-crate-streaming-2026-10-22-fixes init other wall 649 overlap 0
+  16:55:49 dj-crate-streaming-2026-10-22-fixes S1-01 killed wall 180 overlap 0
+  17:00:18 dj-crate-streaming-2026-10-22-fixes S1-01 green wall 651 overlap 0
+  17:14:30 dj-crate-streaming-2026-10-22-fixes S1-02 killed wall 106 overlap 0
+  17:17:03 dj-crate-streaming-2026-10-22-fixes S1-02 green wall 654 overlap 0
+  17:39:24 dj-crate-streaming-2026-10-22-fixes S1-03 green wall 658 overlap 0
+  17:54:12 dj-crate-streaming-2026-10-22-fixes S1-04 green wall 668 overlap 0
+  18:05:49 dj-crate-streaming-2026-10-22-fixes S1-04 green wall 663 overlap 0
+  18:21:08 dj-crate-streaming-2026-10-22-fixes S1-05 killed wall 112 overlap 0
+  18:27:01 dj-crate-streaming-2026-10-22-fixes S1-05 green wall 665 overlap 0
+  18:46:34 dj-crate-streaming-2026-10-22-fixes S1-06 killed wall 540 overlap 0
+  18:55:36 dj-crate-streaming-2026-10-22-fixes S1-06 green wall 674 overlap 0
+  19:49:30 dj-crate-streaming-2026-10-22-fixes S1-07 green wall 686 overlap 0.02 with hit_list-2026-10-22-sharing
+  20:19:23 dj-crate-streaming-2026-10-22-fixes S1-08 killed wall 141 overlap 0.1 with hit_list-2026-10-22-sharing
+  20:21:51 dj-crate-streaming-2026-10-22-fixes S1-08 green wall 687 overlap 0.1 with hit_list-2026-10-22-sharing
+  20:50:22 dj-crate-streaming-2026-10-22-fixes S1-R1 killed wall 403 overlap 0.11 with hit_list-2026-10-22-sharing
+  20:57:11 dj-crate-streaming-2026-10-22-fixes S1-R1 green wall 692 overlap 0.05 with hit_list-2026-10-22-sharing
+  21:11:30 dj-crate-streaming-2026-10-22-fixes S1-09 killed wall 270 overlap 0.17 with hit_list-2026-10-22-sharing
+  21:16:09 dj-crate-streaming-2026-10-22-fixes S1-09 green wall 691 overlap 0.02 with hit_list-2026-10-22-sharing
+  16:17:36 dj-crate-streaming-2026-10-22-fixes harness-before green wall 587 (bound) overlap 0
+  16:41:58 dj-crate-streaming-2026-10-22-fixes harness-before green wall 655 (bound) overlap 0
+  22:07:34 dj-crate-streaming-2026-10-22-build S2-01 killed wall 145 overlap 0.08 with hit_list-2026-10-22-sharing
+  22:10:48 dj-crate-streaming-2026-10-22-build S2-01 green wall 691 overlap 0.02 with hit_list-2026-10-22-sharing
+  22:25:52 dj-crate-streaming-2026-10-22-build S2-02 killed wall 104 overlap 0
+  22:28:34 dj-crate-streaming-2026-10-22-build S2-02 killed wall 33 overlap 0
+  22:29:08 dj-crate-streaming-2026-10-22-build S2-02 green wall 693 overlap 0.02 with hit_list-2026-10-22-sharing
+  23:02:25 dj-crate-streaming-2026-10-22-build S2-03 killed wall 345 overlap 0.06 with hit_list-2026-10-22-sharing
+  23:08:15 dj-crate-streaming-2026-10-22-build S2-03 green wall 698 overlap 0.02 with hit_list-2026-10-22-sharing
+  00:43:11 dj-crate-streaming-2026-10-22-build S2-05b killed wall 572 overlap 0.08 with hit_list-2026-10-22-sharing
+  00:52:54 dj-crate-streaming-2026-10-22-build S2-05b green wall 759 overlap 0.09 with hit_list-2026-10-22-sharing
+  01:34:11 dj-crate-streaming-2026-10-22-build S2-05c green wall 754 overlap 0.1 with hit_list-2026-10-22-sharing
+  01:58:28 dj-crate-streaming-2026-10-22-build S2-06a green wall 762 overlap 0.08 with hit_list-2026-10-22-sharing
+  02:21:33 dj-crate-streaming-2026-10-22-build S2-06b killed wall 495 overlap 0
+  02:29:50 dj-crate-streaming-2026-10-22-build S2-06b green wall 769 overlap 0.03 with hit_list-2026-10-22-sharing
+  03:08:33 dj-crate-streaming-2026-10-22-build S2-07 other wall 296 overlap 0.22 with hit_list-2026-10-22-sharing
+  03:13:54 dj-crate-streaming-2026-10-22-build S2-07 green wall 820 overlap 0.06 with hit_list-2026-10-22-sharing
+  03:46:03 dj-crate-streaming-2026-10-22-build S2-R1 green wall 797 overlap 0
+  04:13:58 dj-crate-streaming-2026-10-22-build S3-01 killed wall 666 overlap 0.11 with hit_list-2026-10-22-sharing
+  04:25:56 dj-crate-streaming-2026-10-22-build S3-01 green wall 871 overlap 0.02 with hit_list-2026-10-22-sharing
+  04:54:58 dj-crate-streaming-2026-10-22-build S3-01b green wall 835 overlap 0.08 with hit_list-2026-10-22-sharing
+  05:16:42 dj-crate-streaming-2026-10-22-build S3-02 killed wall 511 overlap 0.04 with hit_list-2026-10-22-sharing
+  05:25:15 dj-crate-streaming-2026-10-22-build S3-02 green wall 845 overlap 0.07 with hit_list-2026-10-22-sharing
+  05:56:13 dj-crate-streaming-2026-10-22-build S3-03 green wall 886 overlap 0.06 with hit_list-2026-10-22-sharing
+  06:24:32 dj-crate-streaming-2026-10-22-build S3-04 green wall 907 overlap 0.06 with hit_list-2026-10-22-sharing
+  06:42:46 dj-crate-streaming-2026-10-22-build S3-05 green wall 896 overlap 0.08 with hit_list-2026-10-22-sharing
+  06:59:59 dj-crate-streaming-2026-10-22-build S3-06 green wall 897 overlap 0.12 with hit_list-2026-10-22-sharing
+  07:15:01 dj-crate-streaming-2026-10-22-build S3-06 green wall 915 overlap 0.09 with hit_list-2026-10-22-sharing
+  07:45:36 dj-crate-streaming-2026-10-22-build S3-R1 other wall 371 overlap 0
+  07:52:06 dj-crate-streaming-2026-10-22-build S3-R1 green wall 924 overlap 0
+  08:32:19 dj-crate-streaming-2026-10-22-build S4-01 green wall 926 overlap 0.02 with hit_list-2026-10-22-sharing
+  09:11:04 dj-crate-streaming-2026-10-22-build S4-02 other wall 453 overlap 0.05 with dj-crate-streaming-2026-10-22-build,hit_list-2026-10-22-sharing
+  09:18:37 dj-crate-streaming-2026-10-22-build S4-02 other wall 1 overlap 0.25 with dj-crate-streaming-2026-10-22-build
+  21:38:02 dj-crate-streaming-2026-10-22-build harness-before green wall 712 (bound) overlap 0.07 with hit_list-2026-10-22-sharing
+  13:09:10 hit_list-2026-10-20 M1-01 green wall 11 green-in 11 overlap 0
+  10:54:57 hit_list-2026-10-20 M1-02 green wall 11 green-in 11 overlap 0
+  10:58:11 hit_list-2026-10-20 M1-02 green wall 16 green-in 10 overlap 0
+  11:04:32 hit_list-2026-10-20 M1-03 green wall 18 green-in 10 overlap 0
+  11:06:27 hit_list-2026-10-20 M1-03 green wall 11 green-in 10 overlap 0
+  11:12:44 hit_list-2026-10-20 M1-04 green wall 14 green-in 9 overlap 0
+  11:20:22 hit_list-2026-10-20 M1-05 green wall 17 green-in 9 overlap 0
+  11:25:18 hit_list-2026-10-20 M1-02 green wall 9 green-in 9 overlap 0
+  11:28:09 hit_list-2026-10-20 M1-04 green wall 25 green-in 8 overlap 0
+  11:28:52 hit_list-2026-10-20 M1-04 green wall 9 green-in 9 overlap 0
+  11:34:09 hit_list-2026-10-20 M2-01 green wall 9 green-in 8 overlap 0
+  11:36:32 hit_list-2026-10-20 M2-02 green wall 13 green-in 9 overlap 0
+  11:39:02 hit_list-2026-10-20 M2-03 red wall 5 overlap 0
+  11:39:10 hit_list-2026-10-20 M2-03 green wall 9 green-in 8 overlap 0
+  11:39:24 hit_list-2026-10-20 M2-03 green wall 9 green-in 8 overlap 0
+  11:40:56 hit_list-2026-10-20 M2-03 green wall 15 green-in 9 overlap 0
+  11:43:36 hit_list-2026-10-20 M2-04 green wall 14 green-in 9 overlap 0
+  11:45:58 hit_list-2026-10-20 M2-04 red wall 14 overlap 0
+  11:46:26 hit_list-2026-10-20 M2-04 green wall 14 green-in 9 overlap 0
+  11:50:12 hit_list-2026-10-20 M2-05 other wall 6 overlap 0
+  11:50:29 hit_list-2026-10-20 M2-05 green wall 11 green-in 10 overlap 0
+  11:53:38 hit_list-2026-10-20 M2-05 green wall 21 green-in 10 overlap 0
+  11:54:22 hit_list-2026-10-20 M2-05 green wall 12 green-in 10 overlap 0
+  11:56:10 hit_list-2026-10-20 M2-06 green wall 12 green-in 10 overlap 0
+  12:06:26 hit_list-2026-10-20 M2-07 green wall 12 green-in 11 overlap 0
+  12:12:32 hit_list-2026-10-20 M3-01 green wall 22 green-in 10 overlap 0
+  12:15:21 hit_list-2026-10-20 M3-02 red wall 17 overlap 0
+  12:15:46 hit_list-2026-10-20 M3-02 green wall 11 green-in 11 overlap 0
+  12:22:33 hit_list-2026-10-20 M3-04 green wall 12 green-in 11 overlap 0
+  12:23:31 hit_list-2026-10-20 M3-04 green wall 11 green-in 11 overlap 0
+  12:29:22 hit_list-2026-10-20 M4-01 green wall 11 green-in 11 overlap 0
+  12:30:55 hit_list-2026-10-20 M4-02 green wall 11 green-in 11 overlap 0
+  12:31:09 hit_list-2026-10-20 M4-02 green wall 23 green-in 10 overlap 0
+  12:33:39 hit_list-2026-10-20 M4-03 green wall 14 green-in 12 overlap 0
+  12:35:30 hit_list-2026-10-20 M4-03 green wall 13 green-in 11 overlap 0
+  12:40:51 hit_list-2026-10-20 M4-04 other wall 5 overlap 0
+  12:41:17 hit_list-2026-10-20 M4-04 green wall 23 green-in 11 overlap 0
+  12:46:32 hit_list-2026-10-20 M4-04 red wall 8 overlap 0
+  12:46:48 hit_list-2026-10-20 M4-04 green wall 12 green-in 11 overlap 0
+  12:47:22 hit_list-2026-10-20 M4-04 green wall 12 green-in 11 overlap 0
+  12:52:41 hit_list-2026-10-20 M4-05 green wall 14 green-in 11 overlap 0
+  12:58:30 hit_list-2026-10-20 M4-05 green wall 27 green-in 12 overlap 0
+  12:59:22 hit_list-2026-10-20 M4-05 green wall 13 green-in 11 overlap 0
+  13:00:39 hit_list-2026-10-20 M4-06 green wall 11 green-in 11 overlap 0
+  13:02:08 hit_list-2026-10-20 M4-07 green wall 11 green-in 11 overlap 0
+  13:09:25 hit_list-2026-10-20 M4-07 green wall 26 green-in 19 overlap 0
+  13:10:43 hit_list-2026-10-20 M4-07 green wall 17 green-in 10 overlap 0
+  13:13:33 hit_list-2026-10-20 M4-04 green wall 12 green-in 12 overlap 0
+  13:14:34 hit_list-2026-10-20 M4-04 green wall 19 green-in 18 overlap 0
+  13:14:59 hit_list-2026-10-20 M4-04 green wall 27 green-in 11 overlap 0
+  13:20:11 hit_list-2026-10-20 M5-01 green wall 17 green-in 11 overlap 0
+  13:24:24 hit_list-2026-10-20 M5-02 green wall 18 green-in 11 overlap 0
+  13:26:49 hit_list-2026-10-20 M5-02 green wall 18 green-in 11 overlap 0
+  13:27:16 hit_list-2026-10-20 M5-02 other wall 19 overlap 0
+  13:27:45 hit_list-2026-10-20 M5-02 green wall 20 green-in 11 overlap 0
+  13:29:47 hit_list-2026-10-20 M5-03 green wall 13 green-in 12 overlap 0
+  13:31:27 hit_list-2026-10-20 M5-03 green wall 20 green-in 12 overlap 0
+  13:33:31 hit_list-2026-10-20 M5-04 green wall 12 green-in 12 overlap 0
+  13:35:07 hit_list-2026-10-20 M5-05 green wall 12 green-in 11 overlap 0
+  13:38:43 hit_list-2026-10-20 M5-05 green wall 17 green-in 11 overlap 0
+  13:43:01 hit_list-2026-10-20 M6-01 green wall 19 green-in 12 overlap 0
+  13:44:48 hit_list-2026-10-20 M6-02 green wall 13 green-in 13 overlap 0
+  13:48:39 hit_list-2026-10-20 M6-03 green wall 13 green-in 13 overlap 0
+  13:49:16 hit_list-2026-10-20 M6-03 green wall 13 green-in 13 overlap 0
+  13:52:02 hit_list-2026-10-20 M6-04 green wall 15 green-in 11 overlap 0
+  13:54:45 hit_list-2026-10-20 M6-04 green wall 23 green-in 13 overlap 0
+  13:55:36 hit_list-2026-10-20 M6-04 green wall 12 green-in 11 overlap 0
+  13:56:52 hit_list-2026-10-20 M6-05 green wall 12 green-in 12 overlap 0
+  13:58:41 hit_list-2026-10-20 M6-06 green wall 13 green-in 12 overlap 0
+  14:04:06 hit_list-2026-10-20 M6-06 green wall 13 green-in 12 overlap 0
+  14:05:05 hit_list-2026-10-20 M6-06 green wall 13 green-in 13 overlap 0
+  14:05:44 hit_list-2026-10-20 M6-06 other wall 3 overlap 0
+  14:05:57 hit_list-2026-10-20 M6-06 green wall 13 green-in 13 overlap 0
+  14:07:00 hit_list-2026-10-20 M6-06 green wall 22 green-in 12 overlap 0
+  14:17:11 hit_list-2026-10-20 M7-01 green wall 21 green-in 13 overlap 0
+  14:20:37 hit_list-2026-10-20 M7-02 green wall 20 green-in 12 overlap 0
+  14:23:59 hit_list-2026-10-20 M8-01 green wall 13 green-in 12 overlap 0
+  14:25:16 hit_list-2026-10-20 M8-01 green wall 21 green-in 12 overlap 0
+  14:26:31 hit_list-2026-10-20 M8-01 green wall 12 green-in 11 overlap 0
+  14:27:59 hit_list-2026-10-20 M8-02 green wall 12 green-in 11 overlap 0
+  14:35:20 hit_list-2026-10-20 M8-03 green wall 21 green-in 13 overlap 0
+  14:36:42 hit_list-2026-10-20 M8-03 green wall 12 green-in 12 overlap 0
+  12:54:49 hit_list-2026-10-20 harness-before green wall 35 (bound) overlap 0
+  11:47:08 hit_list-2026-10-20 harness-after green wall 9 (bound) overlap 0
+  12:18:01 hit_list-2026-10-20 harness-after green wall 12 (bound) overlap 0
+  12:36:25 hit_list-2026-10-20 harness-after green wall 11 (bound) overlap 0
+  12:48:42 hit_list-2026-10-20 harness-after green wall 11 (bound) overlap 0
+  13:16:10 hit_list-2026-10-20 harness-after green wall 12 (bound) overlap 0
+  13:28:22 hit_list-2026-10-20 harness-after green wall 12 (bound) overlap 0
+  13:32:11 hit_list-2026-10-20 harness-after green wall 11 (bound) overlap 0
+  14:21:25 hit_list-2026-10-20 harness-after green wall 12 (bound) overlap 0
+  14:27:10 hit_list-2026-10-20 harness-after green wall 12 (bound) overlap 0
+  19:58:43 hit_list-2026-10-22-sharing S1-01 green wall 14 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  20:01:41 hit_list-2026-10-22-sharing S1-02 red wall 13 overlap 0
+  20:01:57 hit_list-2026-10-22-sharing S1-02 green wall 12 green-in 12 overlap 0
+  20:05:27 hit_list-2026-10-22-sharing S1-03 red wall 13 overlap 0
+  20:05:45 hit_list-2026-10-22-sharing S1-03 green wall 19 green-in 11 overlap 0
+  20:07:40 hit_list-2026-10-22-sharing S1-03 red wall 21 green-in 12 overlap 0
+  20:10:01 hit_list-2026-10-22-sharing S1-04 green wall 12 green-in 12 overlap 0
+  20:13:20 hit_list-2026-10-22-sharing S1-05 red wall 8 overlap 0
+  20:13:33 hit_list-2026-10-22-sharing S1-05 green wall 12 green-in 12 overlap 0
+  20:16:28 hit_list-2026-10-22-sharing S1-05 green wall 16 green-in 13 overlap 0
+  20:20:53 hit_list-2026-10-22-sharing S1-06 green wall 14 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  20:23:26 hit_list-2026-10-22-sharing S1-06 green wall 20 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  20:26:21 hit_list-2026-10-22-sharing S1-07 green wall 14 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  20:29:11 hit_list-2026-10-22-sharing S1-07 green wall 20 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  20:32:56 hit_list-2026-10-22-sharing S1-08 red wall 14 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  20:33:23 hit_list-2026-10-22-sharing S1-08 red wall 14 overlap 0
+  20:34:03 hit_list-2026-10-22-sharing S1-08 green wall 14 green-in 13 overlap 0
+  20:37:25 hit_list-2026-10-22-sharing S1-08 green wall 30 green-in 13 overlap 0
+  20:40:29 hit_list-2026-10-22-sharing S1-09 green wall 14 green-in 13 overlap 0
+  20:43:22 hit_list-2026-10-22-sharing S1-09 green wall 21 green-in 13 overlap 0
+  20:46:29 hit_list-2026-10-22-sharing S1-10 green wall 14 green-in 13 overlap 0
+  20:52:52 hit_list-2026-10-22-sharing S1-11 green wall 14 green-in 14 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  20:54:03 hit_list-2026-10-22-sharing S1-11 green wall 16 green-in 15 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  20:55:37 hit_list-2026-10-22-sharing S1-11 green wall 14 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  21:01:15 hit_list-2026-10-22-sharing S2-01 green wall 13 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  21:04:42 hit_list-2026-10-22-sharing S2-02 green wall 21 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  21:10:30 hit_list-2026-10-22-sharing S2-03 green wall 14 green-in 14 overlap 0
+  21:12:10 hit_list-2026-10-22-sharing S2-03 red wall 18 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  21:12:33 hit_list-2026-10-22-sharing S2-03 green wall 14 green-in 14 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  21:15:05 hit_list-2026-10-22-sharing S2-03 green wall 15 green-in 14 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  21:23:53 hit_list-2026-10-22-sharing S2-04 green wall 15 green-in 14 overlap 1 with dj-crate-streaming-2026-10-22-fixes
+  21:30:27 hit_list-2026-10-22-sharing S2-04 green wall 21 green-in 13 overlap 0
+  21:33:01 hit_list-2026-10-22-sharing S2-05 green wall 14 green-in 14 overlap 0
+  21:41:49 hit_list-2026-10-22-sharing S2-06 green wall 17 green-in 16 overlap 1 with dj-crate-streaming-2026-10-22-build
+  21:42:51 hit_list-2026-10-22-sharing S2-06 green wall 21 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-build
+  21:50:52 hit_list-2026-10-22-sharing S3-01 green wall 17 green-in 13 overlap 0
+  21:56:53 hit_list-2026-10-22-sharing S3-02 green wall 15 green-in 15 overlap 0
+  22:00:56 hit_list-2026-10-22-sharing S3-02 green wall 15 green-in 14 overlap 0
+  22:07:30 hit_list-2026-10-22-sharing S3-03 green wall 16 green-in 15 overlap 0.78 with dj-crate-streaming-2026-10-22-build
+  22:13:00 hit_list-2026-10-22-sharing S3-03 green wall 14 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-build
+  22:37:16 hit_list-2026-10-22-sharing S3-04 green wall 16 green-in 15 overlap 1 with dj-crate-streaming-2026-10-22-build
+  22:47:04 hit_list-2026-10-22-sharing S3-04 green wall 14 green-in 14 overlap 0
+  22:55:52 hit_list-2026-10-22-sharing S3-05 green wall 15 green-in 14 overlap 0
+  23:04:21 hit_list-2026-10-22-sharing S3-05 green wall 22 green-in 13 overlap 1 with dj-crate-streaming-2026-10-22-build
+  23:17:50 hit_list-2026-10-22-sharing S3-06 green wall 15 green-in 14 overlap 1 with dj-crate-streaming-2026-10-22-build
+  23:24:11 hit_list-2026-10-22-sharing S3-06 green wall 14 green-in 14 overlap 0
+  23:37:50 hit_list-2026-10-22-sharing S3-07 green wall 15 green-in 15 overlap 0
+  23:45:03 hit_list-2026-10-22-sharing S3-07 green wall 15 green-in 15 overlap 0
+  23:51:19 hit_list-2026-10-22-sharing S3-08 green wall 16 overlap 0
+  23:57:40 hit_list-2026-10-22-sharing S3-08 green wall 19 green-in 15 overlap 0
+  00:09:31 hit_list-2026-10-22-sharing S4-01 green wall 15 green-in 15 overlap 0
+  00:15:52 hit_list-2026-10-22-sharing S4-02 red wall 10 overlap 0
+  00:16:29 hit_list-2026-10-22-sharing S4-02 green wall 14 green-in 14 overlap 0
+  00:23:22 hit_list-2026-10-22-sharing S4-02 green wall 15 green-in 15 overlap 0
+  00:23:57 hit_list-2026-10-22-sharing S4-02 green wall 23 green-in 14 overlap 0
+  00:41:42 hit_list-2026-10-22-sharing S4-03 green wall 16 green-in 16 overlap 0
+  00:46:02 hit_list-2026-10-22-sharing S4-03 green wall 24 green-in 15 overlap 1 with dj-crate-streaming-2026-10-22-build
+  00:50:08 hit_list-2026-10-22-sharing S4-04 green wall 21 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  00:58:40 hit_list-2026-10-22-sharing S4-04 red wall 25 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  01:00:47 hit_list-2026-10-22-sharing S4-04 green wall 22 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  01:04:24 hit_list-2026-10-22-sharing S4-05 red wall 8 overlap 1 with dj-crate-streaming-2026-10-22-build
+  01:04:36 hit_list-2026-10-22-sharing S4-05 green wall 16 green-in 15 overlap 1 with dj-crate-streaming-2026-10-22-build
+  01:10:14 hit_list-2026-10-22-sharing S4-05 green wall 25 green-in 16 overlap 0
+  01:17:18 hit_list-2026-10-22-sharing S4-06 red wall 55 overlap 0
+  01:18:16 hit_list-2026-10-22-sharing S4-06 other wall 18 overlap 0
+  01:23:21 hit_list-2026-10-22-sharing S4-06 green wall 28 green-in 20 overlap 0
+  01:26:59 hit_list-2026-10-22-sharing S4-07 green wall 16 green-in 16 overlap 0
+  01:35:24 hit_list-2026-10-22-sharing S4-08 green wall 17 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  01:36:53 hit_list-2026-10-22-sharing S4-08 green wall 43 green-in 15 overlap 1 with dj-crate-streaming-2026-10-22-build
+  01:47:43 hit_list-2026-10-22-sharing S5-01 green wall 16 green-in 15 overlap 0
+  01:54:17 hit_list-2026-10-22-sharing S5-01 green wall 15 green-in 15 overlap 0
+  02:02:38 hit_list-2026-10-22-sharing S5-02 green wall 21 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  02:09:24 hit_list-2026-10-22-sharing S5-02 other wall 13 overlap 1 with dj-crate-streaming-2026-10-22-build
+  02:09:57 hit_list-2026-10-22-sharing S5-02 green wall 24 green-in 16 overlap 1 with dj-crate-streaming-2026-10-22-build
+  02:33:29 hit_list-2026-10-22-sharing S5-03 red wall 8 overlap 1 with dj-crate-streaming-2026-10-22-build
+  02:33:55 hit_list-2026-10-22-sharing S5-03 green wall 19 green-in 18 overlap 1 with dj-crate-streaming-2026-10-22-build
+  02:44:55 hit_list-2026-10-22-sharing S5-03 green wall 17 green-in 17 overlap 0
+  02:45:47 hit_list-2026-10-22-sharing S5-03 green wall 15 green-in 15 overlap 0
+  02:55:37 hit_list-2026-10-22-sharing S5-04 red wall 3 overlap 0
+  02:55:42 hit_list-2026-10-22-sharing S5-04 red wall 7 overlap 0
+  02:55:51 hit_list-2026-10-22-sharing S5-04 green wall 16 green-in 15 overlap 0
+  03:03:28 hit_list-2026-10-22-sharing S5-04 green wall 18 green-in 16 overlap 0
+  03:04:22 hit_list-2026-10-22-sharing S5-04 green wall 18 green-in 17 overlap 0
+  03:11:07 hit_list-2026-10-22-sharing S5-05 green wall 20 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  03:11:31 hit_list-2026-10-22-sharing S5-05 green wall 27 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  03:12:30 hit_list-2026-10-22-sharing S5-05 green wall 17 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  03:17:06 hit_list-2026-10-22-sharing S5-05 green wall 28 green-in 19 overlap 1 with dj-crate-streaming-2026-10-22-build
+  03:18:25 hit_list-2026-10-22-sharing S5-05 green wall 17 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  03:29:04 hit_list-2026-10-22-sharing S5-06 green wall 18 green-in 17 overlap 0
+  03:39:23 hit_list-2026-10-22-sharing S5-06 green wall 29 green-in 18 overlap 0
+  03:39:59 hit_list-2026-10-22-sharing S5-06 green wall 19 green-in 18 overlap 0
+  03:41:04 hit_list-2026-10-22-sharing S5-06 green wall 24 green-in 20 overlap 0
+  04:01:46 hit_list-2026-10-22-sharing S5-07 green wall 29 green-in 27 overlap 0
+  04:02:35 hit_list-2026-10-22-sharing S5-07 green wall 25 green-in 21 overlap 0
+  04:05:56 hit_list-2026-10-22-sharing S5-08 green wall 17 green-in 17 overlap 0
+  04:19:37 hit_list-2026-10-22-sharing S5-09 red wall 26 overlap 1 with dj-crate-streaming-2026-10-22-build
+  04:20:38 hit_list-2026-10-22-sharing S5-09 green wall 17 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  04:23:06 hit_list-2026-10-22-sharing S5-09 green wall 28 green-in 16 overlap 1 with dj-crate-streaming-2026-10-22-build
+  04:36:50 hit_list-2026-10-22-sharing S6-01 green wall 19 green-in 18 overlap 1 with dj-crate-streaming-2026-10-22-build
+  04:45:38 hit_list-2026-10-22-sharing S6-02 green wall 18 green-in 18 overlap 0
+  04:51:40 hit_list-2026-10-22-sharing S6-02 green wall 18 green-in 17 overlap 0
+  04:56:52 hit_list-2026-10-22-sharing S6-03 red wall 4 overlap 1 with dj-crate-streaming-2026-10-22-build
+  04:57:03 hit_list-2026-10-22-sharing S6-03 green wall 18 green-in 18 overlap 1 with dj-crate-streaming-2026-10-22-build
+  05:00:36 hit_list-2026-10-22-sharing S6-03 green wall 20 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  05:07:52 hit_list-2026-10-22-sharing S6-04 red wall 9 overlap 1 with dj-crate-streaming-2026-10-22-build
+  05:08:07 hit_list-2026-10-22-sharing S6-04 green wall 18 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  05:14:09 hit_list-2026-10-22-sharing S6-04 green wall 19 green-in 19 overlap 0
+  05:15:39 hit_list-2026-10-22-sharing S6-04 green wall 19 green-in 17 overlap 0
+  05:21:43 hit_list-2026-10-22-sharing S6-05 green wall 20 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  05:25:13 hit_list-2026-10-22-sharing S6-06 green wall 20 green-in 19 overlap 0.92 with dj-crate-streaming-2026-10-22-build
+  05:32:10 hit_list-2026-10-22-sharing S6-07 green wall 21 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  05:33:37 hit_list-2026-10-22-sharing S6-07 green wall 18 green-in 18 overlap 1 with dj-crate-streaming-2026-10-22-build
+  05:42:34 hit_list-2026-10-22-sharing S7-01 green wall 19 green-in 18 overlap 0
+  05:49:25 hit_list-2026-10-22-sharing S7-01 green wall 25 green-in 23 overlap 0
+  06:07:47 hit_list-2026-10-22-sharing S7-02 red wall 19 overlap 1 with dj-crate-streaming-2026-10-22-build
+  06:08:28 hit_list-2026-10-22-sharing S7-02 green wall 18 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  06:09:30 hit_list-2026-10-22-sharing S7-02 green wall 18 green-in 17 overlap 1 with dj-crate-streaming-2026-10-22-build
+  06:24:15 hit_list-2026-10-22-sharing S7-03 green wall 19 green-in 19 overlap 0.11 with dj-crate-streaming-2026-10-22-build
+  06:35:29 hit_list-2026-10-22-sharing S7-03 green wall 35 green-in 18 overlap 1 with dj-crate-streaming-2026-10-22-build
+  06:37:18 hit_list-2026-10-22-sharing S7-03 green wall 19 green-in 18 overlap 1 with dj-crate-streaming-2026-10-22-build
+  06:48:33 hit_list-2026-10-22-sharing S7-04 green wall 21 green-in 21 overlap 1 with dj-crate-streaming-2026-10-22-build
+  06:53:40 hit_list-2026-10-22-sharing S7-04 red wall 15 overlap 1 with dj-crate-streaming-2026-10-22-build
+  06:53:59 hit_list-2026-10-22-sharing S7-04 green wall 19 green-in 19 overlap 1 with dj-crate-streaming-2026-10-22-build
+  06:56:00 hit_list-2026-10-22-sharing S7-04 green wall 19 green-in 19 overlap 1 with dj-crate-streaming-2026-10-22-build
+  07:01:50 hit_list-2026-10-22-sharing S7-05 other wall 4 overlap 1 with dj-crate-streaming-2026-10-22-build
+  07:02:03 hit_list-2026-10-22-sharing S7-05 green wall 21 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  07:03:37 hit_list-2026-10-22-sharing S7-05 green wall 32 green-in 21 overlap 1 with dj-crate-streaming-2026-10-22-build
+  07:11:26 hit_list-2026-10-22-sharing S7-05 green wall 32 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  07:14:11 hit_list-2026-10-22-sharing S7-05 green wall 20 green-in 19 overlap 1 with dj-crate-streaming-2026-10-22-build
+  07:15:37 hit_list-2026-10-22-sharing S7-05 green wall 26 green-in 25 overlap 1 with dj-crate-streaming-2026-10-22-build
+  07:21:04 hit_list-2026-10-22-sharing S7-06 green wall 20 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  07:25:43 hit_list-2026-10-22-sharing S7-06 green wall 20 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  07:29:56 hit_list-2026-10-22-sharing S7-07 green wall 20 green-in 19 overlap 0.96 with dj-crate-streaming-2026-10-22-build
+  07:40:40 hit_list-2026-10-22-sharing S7-08 green wall 22 green-in 21 overlap 0
+  07:41:54 hit_list-2026-10-22-sharing S7-08 other wall 3 overlap 0
+  07:42:00 hit_list-2026-10-22-sharing S7-08 green wall 30 green-in 21 overlap 0
+  07:43:51 hit_list-2026-10-22-sharing S7-08 green wall 31 green-in 18 overlap 0
+  08:20:14 hit_list-2026-10-22-sharing S8-01 green wall 20 green-in 19 overlap 0
+  08:44:48 hit_list-2026-10-22-sharing S8-02 green wall 21 green-in 20 overlap 1 with dj-crate-streaming-2026-10-22-build
+  08:54:40 hit_list-2026-10-22-sharing S8-02 green wall 23 green-in 19 overlap 0
+  09:17:22 hit_list-2026-10-22-sharing S8-03 green wall 24 green-in 24 overlap 1 with dj-crate-streaming-2026-10-22-build
+  09:26:03 hit_list-2026-10-22-sharing S8-03 green wall 34 green-in 22 overlap 0
+  09:27:44 hit_list-2026-10-22-sharing S8-03 green wall 24 green-in 19 overlap 0
+  09:37:16 hit_list-2026-10-22-sharing S8-04 green wall 22 green-in 21 overlap 0
+  09:38:21 hit_list-2026-10-22-sharing S8-04 green wall 32 green-in 19 overlap 0
+  09:43:25 hit_list-2026-10-22-sharing S8-04 green wall 32 green-in 20 overlap 0
+  09:51:10 hit_list-2026-10-22-sharing S8-05 green wall 22 green-in 21 overlap 0
+  09:51:54 hit_list-2026-10-22-sharing S8-05 green wall 20 green-in 19 overlap 0
+  09:57:20 hit_list-2026-10-22-sharing S8-05 green wall 22 green-in 21 overlap 0
+  09:58:03 hit_list-2026-10-22-sharing S8-05 green wall 20 green-in 19 overlap 0
+  09:58:54 hit_list-2026-10-22-sharing S8-05 green wall 21 green-in 19 overlap 0
+  10:03:46 hit_list-2026-10-22-sharing S8-06 green wall 21 green-in 21 overlap 0
+  10:07:56 hit_list-2026-10-22-sharing S8-06 red wall 9 overlap 0
+  10:08:09 hit_list-2026-10-22-sharing S8-06 green wall 21 green-in 21 overlap 0
+  10:26:06 hit_list-2026-10-22-sharing S8-07 green wall 21 green-in 20 overlap 0
+  10:27:10 hit_list-2026-10-22-sharing S8-07 green wall 22 green-in 20 overlap 0
+  10:32:24 hit_list-2026-10-22-sharing S8-08 green wall 21 green-in 20 overlap 0
+  10:47:17 hit_list-2026-10-22-sharing S8-09 green wall 23 green-in 22 overlap 0
+  10:49:53 hit_list-2026-10-22-sharing S8-09 green wall 22 green-in 22 overlap 0
+  10:51:57 hit_list-2026-10-22-sharing S8-09 green wall 20 green-in 19 overlap 0
+  10:54:03 hit_list-2026-10-22-sharing S8-09 green wall 22 green-in 20 overlap 0
+  11:08:09 hit_list-2026-10-22-sharing S9-01 green wall 20 green-in 19 overlap 0
+  11:21:13 hit_list-2026-10-22-sharing S9-02 green wall 32 green-in 20 overlap 0
+  11:33:21 hit_list-2026-10-22-sharing S9-03 green wall 32 green-in 20 overlap 0
+  11:43:18 hit_list-2026-10-22-sharing S9-03 green wall 34 green-in 22 overlap 0
+  11:44:23 hit_list-2026-10-22-sharing S9-03 green wall 22 green-in 20 overlap 0
+  11:57:56 hit_list-2026-10-22-sharing S9-04 green wall 21 green-in 20 overlap 0
+  12:00:13 hit_list-2026-10-22-sharing S9-04 green wall 23 green-in 20 overlap 0
+  12:06:02 hit_list-2026-10-22-sharing S9-05 green wall 30 green-in 30 overlap 0
+  12:12:14 hit_list-2026-10-22-sharing S9-05 green wall 21 green-in 21 overlap 0
+  12:16:46 hit_list-2026-10-22-sharing S9-06 green wall 21 green-in 20 overlap 0
+  12:30:32 hit_list-2026-10-22-sharing S9-07 green wall 36 green-in 22 overlap 0
+  12:32:16 hit_list-2026-10-22-sharing S9-07 green wall 25 green-in 25 overlap 0
+  12:33:54 hit_list-2026-10-22-sharing S9-07 green wall 33 green-in 21 overlap 0
+  12:51:53 hit_list-2026-10-22-sharing S10-01 green wall 25 green-in 22 overlap 0
+  12:53:29 hit_list-2026-10-22-sharing S10-01 green wall 23 green-in 22 overlap 0
+  12:56:24 hit_list-2026-10-22-sharing S10-01 green wall 22 green-in 21 overlap 0
+  12:58:01 hit_list-2026-10-22-sharing S10-02 green wall 21 green-in 20 overlap 0
+  12:59:54 hit_list-2026-10-22-sharing S10-03 green wall 21 green-in 20 overlap 0
+  19:28:07 hit_list-2026-10-22-sharing harness-before green wall 53 (bound) overlap 0
+  21:33:26 hit_list-2026-10-22-sharing harness-after green wall 14 (bound) overlap 0
+  21:43:35 hit_list-2026-10-22-sharing harness-after green wall 15 (bound) overlap 1 with dj-crate-streaming-2026-10-22-build
+  23:58:32 hit_list-2026-10-22-sharing harness-after green wall 14 (bound) overlap 0
+  00:10:23 hit_list-2026-10-22-sharing harness-after green wall 14 (bound) overlap 0
+  01:38:03 hit_list-2026-10-22-sharing harness-after green wall 16 (bound) overlap 1 with dj-crate-streaming-2026-10-22-build
+  04:06:30 hit_list-2026-10-22-sharing harness-after green wall 17 (bound) overlap 0
+  04:52:41 hit_list-2026-10-22-sharing harness-after green wall 17 (bound) overlap 0
+  08:55:42 hit_list-2026-10-22-sharing harness-after green wall 19 (bound) overlap 0
+  09:44:41 hit_list-2026-10-22-sharing harness-after green wall 19 (bound) overlap 0
+  11:08:57 hit_list-2026-10-22-sharing harness-after green wall 20 (bound) overlap 0

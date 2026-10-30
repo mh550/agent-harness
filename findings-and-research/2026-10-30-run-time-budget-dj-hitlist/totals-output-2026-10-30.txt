@@ -1,0 +1,27 @@
+dj-soulsync-review-2026-10-22: lane-seconds 34744 · model 39% · session_suite 51% · session_other 3% · harness_before 2% · harness_after 2% · verify 2% · waiting 0% · idle 0%
+  coding sessions 18: full-suite scopes inside them 30 (1.7 per session), session suite s 17859 (992 per session), model s 13058
+  the sessions' check.sh full calls by outcome: cached 6, green 27, flake 0, red 0, moved to background at the tool timeout 0, other (output cut by the call) 0
+  harness suites (full runs, reruns aside): before a session 1 (585 s), after 1 (654 s), verify 0 (0 s); reruns 0
+  sessions that ended passes=true 18, un-passed for a red suite 0, post-session cache hits (a passing session with no harness suite after it) 17
+dj-crate-streaming-2026-10-22-fixes: lane-seconds 19177 · model 19% · session_suite 71% · session_other 1% · harness_before 7% · harness_after 0% · verify 3% · waiting 0% · idle 0%
+  coding sessions 10: full-suite scopes inside them 18 (1.8 per session), session suite s 12906 (1291 per session), model s 3437
+  the sessions' check.sh full calls by outcome: cached 0, green 11, flake 0, red 0, moved to background at the tool timeout 0, other (output cut by the call) 0
+  harness suites (full runs, reruns aside): before a session 2 (1242 s), after 0 (0 s), verify 0 (0 s); reruns 0
+  sessions that ended passes=true 10, un-passed for a red suite 0, post-session cache hits (a passing session with no harness suite after it) 10
+dj-crate-streaming-2026-10-22-build: lane-seconds 43077 · model 34% · session_suite 59% · session_other 3% · harness_before 2% · harness_after 0% · verify 2% · waiting 0% · idle 0%
+  coding sessions 21: full-suite scopes inside them 34 (1.6 per session), session suite s 25415 (1210 per session), model s 13624
+  the sessions' check.sh full calls by outcome: cached 1, green 19, flake 0, red 0, moved to background at the tool timeout 0, other (output cut by the call) 4
+  harness suites (full runs, reruns aside): before a session 1 (712 s), after 0 (0 s), verify 0 (0 s); reruns 0
+  sessions that ended passes=true 21, un-passed for a red suite 0, post-session cache hits (a passing session with no harness suite after it) 21
+hit_list-2026-10-20: lane-seconds 14691 · model 66% · session_suite 15% · session_other 10% · harness_before 1% · harness_after 2% · verify 5% · waiting 0% · idle 0%
+  coding sessions 42: full-suite scopes inside them 82 (2.0 per session), session suite s 2275 (54 per session), model s 9050
+  the sessions' check.sh full calls by outcome: cached 2, green 74, flake 0, red 4, moved to background at the tool timeout 0, other (output cut by the call) 4
+  harness suites (full runs, reruns aside): before a session 1 (35 s), after 9 (103 s), verify 0 (0 s); reruns 0
+  sessions that ended passes=true 42, un-passed for a red suite 0, post-session cache hits (a passing session with no harness suite after it) 33
+hit_list-2026-10-22-sharing: lane-seconds 63245 · model 67% · session_suite 16% · session_other 14% · harness_before 0% · harness_after 1% · verify 2% · waiting 0% · idle 0%
+  coding sessions 76: full-suite scopes inside them 182 (2.4 per session), session suite s 10201 (134 per session), model s 40834
+  the sessions' check.sh full calls by outcome: cached 2, green 155, flake 0, red 20, moved to background at the tool timeout 0, other (output cut by the call) 4
+  harness suites (full runs, reruns aside): before a session 1 (53 s), after 10 (164 s), verify 0 (0 s); reruns 0
+  sessions that ended passes=true 76, un-passed for a red suite 0, post-session cache hits (a passing session with no harness suite after it) 66
+
+all runs: lane-seconds 174934 · model 48% · session_suite 40% · session_other 8% · harness_before 2% · harness_after 1% · verify 2% · waiting 0% · idle 0%
