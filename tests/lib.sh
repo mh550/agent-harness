@@ -188,6 +188,13 @@ needs_fixture() {
   # the overlap's other run: live (this file's shell), so the sweep keeps an open one (U3-06's rule)
   [[ $r == overlap && ! -e $HARNESS_STATE/proj/nf-other ]] && mkdir -p "$HARNESS_STATE/proj/nf-other" && echo $$ > "$HARNESS_STATE/proj/nf-other/driver.pid" &&
     printf 'PROJECT_DIR=%q\nWT=/x\nRUN_ID=nf-other\nSTATE=%q\n' "$T/proj" "$HARNESS_STATE/proj/nf-other" > "$HARNESS_STATE/proj/nf-other/meta.env"
+  # a question: A's coding entry (line 1 of the record's entries.jsonl) asks it ($NF_Q, else the cache one); resolved: B's
+  # later entry lists it in resolved (the sweep's answered rule)
+  if [[ $r == question ]]; then local q=${NF_Q:-Should A keep the old cache? (default: kept) Files: /srv/q/lib/a.sh:12} rec=$wt/.harness/runs/$run
+    jq -cn --arg q "$q" '{feature: "A", kind: "coding", outcome: "passes", summary: "Built A.", questions: [$q]}' > "$rec/entries.jsonl"
+    HARNESS_NOW=${3:-} node "$HERE/../lib/needs.mjs" open "$st" "$run" proj question "$q" asker=A feature=A line=1 record="$rec" > /dev/null
+    [[ $s == open ]] || jq -cn --arg q "$q" '{feature: "B", kind: "coding", outcome: "passes", summary: "Built B.", resolved: [$q]}' >> "$rec/entries.jsonl"
+    return 0; fi
   HARNESS_NOW=${3:-} node "$HERE/../lib/needs.mjs" open "$st" "$run" proj "$r" "$sub" feature="$([[ $sub == B ]] && echo B)" milestone=M1 > /dev/null
   [[ $s == open ]] || { [[ $r == overlap ]] && rm -rf "$wt"; return 0; }
   case $r in

@@ -383,7 +383,22 @@ journal_() {   # who kind id name model outcome worktree: the ingest and the ren
   elif (( rc == 0 && ${ENTRY_RESUMED:-0} )); then note "$1: entry.json written on a resume"; fi
   (( rc == 0 || rc == 3 )) || { note "$1: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it
     mv -f "$REC/entry.json" "$STATE/entry-failed-$4.json" 2> /dev/null; }
+  # each question the entry asks waits in harness needs until answered (docs/plans/2026-10-29-R4-questions.md §3)
+  (( rc == 0 )) && questions_ "$1" "$2" "$3"
   out=$(node "$HARNESS_HOME/lib/entries.mjs" render "$REC" 2>&1) || note "$1: rendering progress.md failed: $out"
+  return 0
+}
+
+# who kind id: one question item per question of the entry just appended (its last line, under the lock), the text as
+# entries.jsonl stores it (filled): the sweep matches a later resolved against it. An entry that resolves sweeps at once
+questions_() {
+  local l q n=0 last f=(); l=$(grep -c '' "$REC/entries.jsonl"); last=$(tail -n 1 "$REC/entries.jsonl")
+  [[ $2 == coding ]] && f=(feature="$3")
+  while IFS= read -r -d '' q; do
+    needs_open question "$q" asker="$3" line="$l" "${f[@]}" > /dev/null; n=$(( n + 1 ))
+  done < <(jq -j '.questions[]? | strings | select(test("\\S")) | . + "\u0000"' <<< "$last")
+  (( n )) && note "$1: $n question(s) for Michael recorded (harness needs)"
+  [[ $(jq '.resolved // [] | length' <<< "$last") == 0 ]] || needs_sweep
   return 0
 }
 

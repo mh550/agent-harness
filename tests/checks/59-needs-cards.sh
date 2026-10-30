@@ -4,7 +4,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # Plan: docs/plans/2026-10-28-U2-needs-record.md §3, §3.1, §4.3. The facts per reason are tests/fixtures/needs/<reason>.json
 # (real-shaped paths under /home/u; parked is n8n-home's Q2 from tests/fixtures/inbox-q-in-comment.md with a Files: line).
 NM=$HERE/../lib/needs.mjs FX=$HERE/fixtures/needs
-REASONS="parked given_up verify_thin verify_red verify_recheck merge_conflict merge_refused main_conflict base_conflict feature_list_edits initializer_failed driver_crash usage_limit weekly_budget overlap"
+REASONS="parked given_up verify_thin verify_red verify_recheck merge_conflict merge_refused main_conflict base_conflict feature_list_edits initializer_failed driver_crash usage_limit weekly_budget overlap question"
 IMP="import * as N from \"$NM\"; import * as V from \"$HERE/../lib/view.mjs\"; const ok = c => process.exit(c ? 0 : 1);"
 in_node() { node --input-type=module -e "$IMP $1"; }
 
@@ -19,9 +19,9 @@ FILLED='(tostring | test("undefined|NaN|\\[object") | not) and (.headline | leng
 for r in $REASONS; do
   check "needs card $r: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)" \
     "node \"\$NM\" card $r \"\$FX/$r.json\" > \"\$T/card-$r.json\" && jq -e '$FILLED' \"\$T/card-$r.json\" > /dev/null \
-     && [[ \$(jq -r '(.question != null) == (\"$r\" == \"parked\")' \"\$T/card-$r.json\") == true ]]"
+     && [[ \$(jq -r '(.question != null) == (\"$r\" | IN(\"parked\", \"question\"))' \"\$T/card-$r.json\") == true ]]"
 done
-check "needs cards: 15 fixtures, one per reason, and a reason without a template is exit 1" \
+check "needs cards: 16 fixtures, one per reason, and a reason without a template is exit 1" \
   '[[ $(ls "$FX" | sed "s/\.json$//" | sort | paste -sd" ") == $(tr " " "\n" <<< "$REASONS" | sort | paste -sd" ") ]] \
   && ! node "$NM" card nope "$FX/parked.json" 2> /dev/null && ! node "$NM" card parked "$T/none.json" 2> /dev/null'
 check "parked card: the INBOX question verbatim with its line 16 and ?plain=1#L16 URL, where from its Files: line, parked.mjs's commands" \

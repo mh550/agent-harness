@@ -488,7 +488,7 @@ metrics: session-id prints the init line's session_id of first.jsonl
 metrics: summary counts an entry-resume row's cost but never as a session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
-needs REASONS: kind, severity and priority for each of the 15 reasons, as the plan's table
+needs REASONS: kind, severity and priority for each of the 16 reasons, as the plan's table
 needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card feature_list_edits: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
@@ -499,18 +499,41 @@ needs card merge_conflict: from its fixture, every field filled (why of 2-4 sent
 needs card merge_refused: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card overlap: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card parked: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card question: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card usage_limit: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card verify_recheck: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card verify_red: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card verify_thin: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card weekly_budget: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
-needs cards: 15 fixtures, one per reason, and a reason without a template is exit 1
+needs cards: 16 fixtures, one per reason, and a reason without a template is exit 1
 needs cards: merge_conflict and main_conflict show tried in the card, the notification body and needs.md
 needs list: a dead driver.pid with no ended is a synthesized driver_crash (ref <run>/crash, at run.log's mtime), parked.json's B a parked item; nothing stored
 needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver
 needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref kept, updated_at moved
 needs open: an unknown reason or an empty subject exits 1 with needs.mjs: on stderr and writes nothing
+needs questions: a later entry's resolved closes it by the run's end
+needs questions: a later entry's resolved resolves it at the sweep (answered in <feature>'s entry), an earlier one doesn't
+needs questions: a second run's ask moves the first run's open item forward
+needs questions: an entry with two questions opens two question items with their Files:, noted
+needs questions: asked in a later run of the project, the item moves forward (seen +1, asked_in both, the old in its done/ as asked again in <run>)
+needs questions: done --why resolves a question with that why
+needs questions: harness needs lists the parked card before the question card
+needs questions: harness needs prints both question cards
+needs questions: list shows the question card after a block card, its text, a where row per Files: path and the entries.jsonl line
+needs questions: no notification carries a question
+needs questions: open makes one warn item, key question:<the key>, no priority, seen 1, asked_in its run
+needs questions: questionKey drops only a Files: label line, and asked_in ends with the newest asker
+needs questions: questionKey folds whitespace, lower-cases, drops the harness's fill and a Files: line, cuts at 80
+needs questions: status counts questions apart (NEEDS YOU 1 · 3 questions, 0 · 2 questions), the run card keeps the block count
+needs questions: the answer skill passes an answer no decision file holds on with harness answer
+needs questions: the answer skill records the answer in place and runs needs done
+needs questions: the debrief gatherer lists the open questions under #### Questions for Michael
+needs questions: the debrief lists 12 questions and how many more, and a run without question items its entries' open ones
+needs questions: the entry that resolves it closes it at its ingest, before its session's line
+needs questions: the same question in a later session is one item, seen 2
+needs questions: the same text again in the run exits 3, one item, seen 2, a later updated_at
+needs questions: two questions of one entry that share their first 80 characters stay two items, each keeping its text
 needs record: its first 13 keys are the v1 event keys in order, kind is park, needs_michael, blocked or limit (in v1's enum)
 needs record: ref is <run>/<seq>, key <reason>:<subject>; seq is one past the largest in needs/ and needs/done/; feature and milestone default from the subject or the list
 needs review: a ## Answers heading with words after it (## Answers (Michael)) is the heading; ## Answersheet is not
