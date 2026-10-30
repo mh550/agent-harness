@@ -6,7 +6,9 @@ this repo's final map, with the decision file; S2-05 the driver (`run_init fresh
 and writes `docs/architecture.md` and `README.md`. Sites are named by function and file as the code stands at
 `adadbce` (S1 merged). Nothing here changes code, so the suite is as the init left it (1044 tests, green).
 
-**The invariant S2 keeps** (spec, *Rules*): a tree is never marked green by anything but a green run of every check that
+**The invariant S2 keeps** (spec, *Rules*), within the key: a path under `CHECK_KEY_IGNORE` is out of it before S2
+(`37` and `39` read `journal/decisions`, which this repo ignores, so a decision file alone reruns neither: the spec's
+*Not in this run*; the decision file repeats it). a tree is never marked green by anything but a green run of every check that
 reads what changed in it. The argument, which every condition below serves: the reduced keys equal ⇒ every path in the
 key outside the map has the reference tree's content; the reference tree was green in a **full** run (only a full run
 writes a sidecar); the mapped paths that differ are *S*; the map names every check file that reads a mapped path (the
@@ -87,7 +89,7 @@ holds falls through to the full run**; only row 11 runs a partial.
 | 2 | `green-<key>` present | the cached green, as today |
 | 3 | `red-<key>` present | the cached red, as today |
 | 4 | no map: `HARNESS_CHECK_KEY_MAP` blank, or `--partial` printed no line 3 (every entry dropped) | full run |
-| 4a | the tree's own `.harness/config.sh` has a `CHECK_KEY_MAP=` line and its value (sourced in a subshell, whitespace collapsed) is not `HARNESS_CHECK_KEY_MAP`'s (*default*; review finding) | full run: the driver loads the config at its start (`lib/lane.sh:45`, `lib/driver.sh:403` after a main merge), so a session that adds a reader to this repo's map leaves the run's exported map stale; the lint proves the **tree's** map, so only that map may choose a subset. A map set only in the user config or `run.env` (the stub runs) has no line in the tree and is used as exported |
+| 4a | the tree's own map is not the exported one: `CHECK_KEY_MAP` after sourcing the tree's `.harness/config.sh` in a subshell with it unset (empty when the file is absent or doesn't set it; whitespace collapsed) differs from `HARNESS_CHECK_KEY_MAP` (*default*; review finding) | full run: the driver loads the config at its start (`lib/lane.sh:45`, `lib/driver.sh:403` after a main merge), so a session that changes this repo's map (or deletes its line) leaves the exported map stale, and a map from the user config or `run.env` is linted by nothing; the lint proves the **tree's** map, so only that map may choose a subset. The stub runs put their map in the throwaway project's `.harness/config.sh` |
 | 5 | `part-<red>` absent | full run |
 | 6 | its line 1 not 16 hex, or `green-<line 1>` absent (the reference gone: a `run_init fresh`, a scratch-less cache) | full run |
 | 7 | its path set ≠ the map's: the paths of its lines 2… (sorted) differ from the paths of `--partial`'s lines 3… (sorted), or a line is not `<blob> <path>` (`<40 hex or -> <path>`) | full run (the map grew, shrank or renamed an entry since the reference) |
@@ -141,7 +143,7 @@ A **full run**, unchanged otherwise, writes `part-<red>` (§2) on green, after `
 - **`lib/prompt.sh` `prompt_env`** (line 48): `HARNESS_CHECK_KEY_MAP=$CHECK_KEY_MAP` beside
   `HARNESS_CHECK_KEY_IGNORE`.
 - **`templates/project/config.sh`** (S2-02): `# CHECK_KEY_MAP="CLAUDE.md:<check>"` under `# CHECK_KEY_IGNORE`, one line:
-  an entry is a file and every check file that reads it; a check that reads it and isn't listed lets a stale green
+  an entry is a file only check-file lines read (not the code under test, not a shared test helper) and every check file that reads it; a check that reads it and isn't listed lets a stale green
   through, so the project's suite needs a lint that proves the list (this repo's `82-key-map-lint`).
 - **`lib/record.sh` `run_init fresh`** (S2-05, line 458): `rm -f "$STATE/green/green-$key" "$STATE/green/red-$key"`
   gains `"$STATE/green/part-$red"`, with `red` line 2 of `node "$HARNESS_HOME/lib/treekey.mjs" --partial` run once
@@ -163,9 +165,12 @@ tested against two rules; a hit is `<file>:<line> reads <p>, not in CHECK_KEY_MA
 
 **Root expressions** `R` (where the spec's rules say `$HERE/..`), widened because S1 added a form the spec's rules miss:
 
-- `$HERE/..`, `${HERE}/..`;
+- `$HERE/..`, `${HERE}/..`, `"$HERE"/..`, `'"$HERE"'/..` (the `node -e` idiom of `12-journal-pure-e4-entrys.sh:122`),
+  `$(dirname "$HERE")`, `${HERE%/*}`;
 - `$HH`, `${HH}`: `tests/lib.sh:87` sets it to the repo root for every check file;
-- `$(cd "<R>" && pwd)`: the spec's allowed form 5, read as what it is, the root canonicalized;
+- `$(cd "<R>" && pwd)` and `$(readlink -f "<R>")`: the spec's allowed forms 5 and 3, read as what they are, the
+  root canonicalized (as allowed forms, `ROOT=$(readlink -f "$HERE/..")` then `grep x "$ROOT/CLAUDE.md"` escaped
+  both rules: review finding);
 - `$HARNESS_HOME`, `${HARNESS_HOME}`, `$(dirname "$0")/../..`, and any `$(…)` holding `rev-parse --show-toplevel`
   (*default*, review finding: forms no check uses today, each another name for a checkout's root; free to include);
 - `$v`, `${v}` for each **alias** `v` of the file: a name assigned exactly an `R` anywhere in the file
@@ -174,8 +179,10 @@ tested against two rules; a hit is `<file>:<line> reads <p>, not in CHECK_KEY_MA
   `"$HH/CLAUDE.md"` on a line that sets nothing, and the spec's rule passes it. Over-approximate on purpose: a loop
   variable sharing an alias's name (`37:47`'s `for r in …`) counts too.
 
-**Rule (a), names the path.** A line holds an `R` and names `p` or `b` (fixed string). The allowed forms don't apply:
-`git -C "$HERE/.." show HEAD:CLAUDE.md` reads it.
+**Rule (a), names the path.** A line holds an `R` and names `p` or `b` (fixed string), or names `../<b>` (any depth of
+`../`, with or without an `R`: a relative read after a `cd` into `tests/` or a subshell's `cd "$HERE"`). The allowed
+forms don't apply: `git -C "$HERE/.." show HEAD:CLAUDE.md` reads it. Full-line comments are skipped (sound: a comment
+runs nothing).
 
 **Rule (b), passes the root bare.** After the allowed forms are cut out of the line, an `R` is left that is not followed
 by `/` (the spec's quote, space, `)` or end of line, widened to anything but `/`: `|`, `;`, `}` end a word as well).
@@ -184,11 +191,10 @@ The **allowed forms** (each says why it reads no memory file; they live in the c
 | Form | Why |
 |---|---|
 | `HARNESS_HOME=<R>`, `HARNESS_HOME=${X:-<R>}` | the harness run from this checkout reads its `lib/`, `prompts/`, `templates/`, `bin/`, never its own repo's `CLAUDE.md` |
-| `git -C "<R>"` | git metadata (rule (a) still sees a path named on the line) |
-| `readlink -f "<R>"` | a path string |
+| `git -C "<R>" <log\|rev-parse\|cat-file\|worktree\|ls-files>` | git metadata and names, never a work-tree file's content (today: 5 `log`, 2 `worktree`, 1 `ls-files`). `git -C "<R>"` with any other subcommand (`grep`, `diff`, `show`, `status`) is a hit: those read the work tree (review finding) |
 | `harness_config "<R>"` | `.harness/config.sh` only |
-| an alias assignment `[local ]v=<R>`, `v=$(cd "<R>" && pwd)` | a string; the alias's uses are linted in turn |
-| `== "…<R>"` (*default*, a sixth form the spec doesn't list) | the right side of a `[[ … == … ]]` is a string no command reads: `13-run-2-michael-sets-desk.sh:386`'s `$(tail -1 "$A") == "PWD=$HH"` (13 is 205 s under load; mapping it for a string compare is the wrong cost) |
+| an alias assignment `[local ]v=<R>` (`<R>` including `$(cd "<R>" && pwd)` and `$(readlink -f "<R>")`) | a string; the alias's uses are linted in turn. The spec's `(cd "$HERE/.." && pwd)` used inline as an argument is now a bare root (it is one) |
+| `== "…<R>"` with `…` free of quotes, `$(` and backticks (*default*, a sixth form the spec doesn't list) | the right side of a `[[ … == … ]]` is a string no command reads: `13-run-2-michael-sets-desk.sh:386`'s `$(tail -1 "$A") == "PWD=$HH"` (13 is 205 s under load; mapping it for a string compare is the wrong cost) |
 
 **On today's tree** (prototyped in scratch over `tests/checks/` with `CLAUDE.md`):
 
@@ -204,14 +210,26 @@ Without the sixth form `13:386` is a sixth hit; nothing else is. **The final map
 joins the map rather than the allow-list growing per command):
 `CHECK_KEY_MAP="CLAUDE.md:39-memlint-m4:37-memory-prompts-m2:79-suite-length:36-run-16-retro-backlog:75-suite-tools"`.
 The cost: the five files are about 290 s of check time under load (from S1's suite output: 42 + 64 + 50 + 109 + 29),
-run `TEST_JOBS` at a time, against a full run's 600–900 s. S2-04 may instead rewrite `36`'s and `75`'s lines to run
+run `TEST_JOBS` at a time, against a full run's 600–900 s; the spec's "about 30 s" for joining 36 and 75 is 138 s by
+these figures, which tips the trade toward rewriting their lines. S2-04 may instead rewrite `36`'s and `75`'s lines to run
 from a path that is not the bare root (the lint then proves it) and records which it did per file in the decision file.
 
 **Not linted** (*default*, the spec's scope is `tests/checks/`): the shared helpers `tests/lib.sh`, `tests/stub-*.sh`,
 `tests/run.sh`. Every check file reads them, so a hit there can't be mapped; today none names `CLAUDE.md` beside a root
 expression (their `CLAUDE.md` is the stub project's, in its cwd), and their own `$HERE/..` uses are `git -C` and the
 `HH` alias. Every check file starts in the throwaway project (`tests/lib.sh:34`, `cd "$T/proj"`), so a relative path
-never reaches the repo.
+reaches the repo only after a `cd` into it: into the root is rule (b), into a subdirectory (`63:10`'s
+`cd "$HERE/../prompts"`, `75-merge-sorted:34`'s `cd "$HERE"`) is followed by `/` or not an `R`, and a later
+`../CLAUDE.md` is rule (a)'s `../<b>`. A bare `..` argument after such a `cd` is not linted (*default*: the rule hits
+four strings and comments today, `08:532`, `34:18`, `51:50`, `77:28`, and none of them reads anything).
+
+**What the lint proves, and what it doesn't** (review finding; the decision file and the template say it): that no
+check file's own lines read a mapped path through a root expression it knows. It can't see a read by the code under
+test (`lib/`, `bin/`) or by a helper every check sources (`tests/*.sh`), nor a root built some other way (an
+adversarial file can always hide one). So a map entry is only for a file that nothing but check-file lines read
+from this checkout: `CLAUDE.md` here (the harness's code reads a *project's* `CLAUDE.md`, the stub project's in the
+suite, never its own; `grep -rn 'HARNESS_HOME/CLAUDE' lib bin prompts` prints nothing; `bin/harness:193` copies `templates/project/CLAUDE.md`). The template's comment says
+an entry is such a file.
 
 **82 itself.** Its negative fixtures (`grep x "$HERE/../CLAUDE.md"`, `mytool "$HERE/.."`) would be hits on 82's own
 lines if written inline: they live in `tests/fixtures/key-map-lint/` (`reads-claude.sh`, `bare-root.sh`, one
@@ -272,6 +290,8 @@ The repo is reset (`git checkout -- . && git clean -fdq`) between cases; each ca
 **81, stub runs (S2-05)**, with the counting `CHECK_CMD` of S1 (`79`/`80`'s `cs.sh`, extended to print a `PASS` per
 argument) in the run's `run.env`, `CHECK_KEY_MAP="CLAUDE.md:memlint"` in the run's config:
 
+- both runs set the map in the throwaway project's `.harness/config.sh` (committed before `harness start`), not
+  `run.env`: row 4a runs any other in full;
 - `pkedit`: `STUB_EDIT=CLAUDE.md` (as `34`'s `kyplan`): the second session's saved `init.out`
   (`$T/init-pkedit-2.out`) has `check: green (partial: memlint,`; `cs-pkedit.log` has a no-argument line, then one
   `memlint` line with the edited tree's key; `tests-end` equals `tests-start` (`2`).
@@ -322,6 +342,11 @@ Every new check name goes into `tests/fixtures/check-names.txt`, copied from the
 - §3 row 4a (the tree's `.harness/config.sh` map against the exported one) is not in the spec: without it a stale
   exported map runs a subset the tree's lint didn't prove. S2-03 gets one more case for it: a tree whose
   `.harness/config.sh` sets a map other than `HARNESS_CHECK_KEY_MAP` runs in full on a `CLAUDE.md` diff.
+- Beside the spec, marked *default* in §1/§5: a fourth drop reason (`not a path in the tree`); rule (b) fires on an `R`
+  followed by anything but `/`; the root expressions add `$HH`, `$HARNESS_HOME`, the `"$HERE"`/`dirname`/`%/*` spellings,
+  `$(dirname "$0")/../..`, `--show-toplevel`, and the spec's allowed forms 3 and 5 become root expressions (so they
+  are allowed only as an alias assignment); `git -C` is allowed with five subcommands only; rule (a) also fires on
+  `../<b>`; the `== "…"` form.
 - `run_init` (S2-05) takes its key from `--partial`'s line 1 instead of the bare call: the same key (§1), one node
   call for both the key and the reduced key. Every other bare caller stays one line.
 - S2-05 needs one stub hook the list doesn't name, `STUB_GOTCHA_ONLY=<id>`, and S1's counting suite to print a `PASS`
