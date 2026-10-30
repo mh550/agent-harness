@@ -161,3 +161,5 @@
 - 2026-10-29 20:00 · context.md for R3-01: 7893 bytes
 - 2026-10-29 20:18 · R3-01: gotchas +0 ~0 -1
 - 2026-10-29 20:18 · R3-01 · claude-opus-5-5 · passes=true · 17 min · 16/23 passing · tests 993
+- 2026-10-29 20:18 · context.md for R3-02: 7726 bytes, 2 items left out
+- 2026-10-29 20:20 · R3-02 · claude-opus-5-5 · passes=true · 2 min · 17/23 passing · tests 993

@@ -9,6 +9,14 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:20 · R3-02 · passes
+
+Attempt 2: the build from attempt 1 is unchanged. Verify R3 failed it only on the suite step: 39-memlint-m4 was red because Gotchas had 16 lines, and R3-01 has since fixed that. Rechecked every step: writeFileSync count 1, node --check ok, the N/M line is in initializer.md, 07 and 77 green (23/23), check-names sorted, memlint clean, full suite green (993).
+
+- **Verified:** grep -c writeFileSync lib/features.mjs = 1; node --check lib/features.mjs; bash tests/run.sh 07-step-lint-pure-r3 77-leftovers: 23/23 checks passed; node lib/memlint.mjs . prints nothing; lib/check.sh: green, 993 tests (cached for this tree)
+- **Tests:** 993 → 993
+- *22-R3-02 · claude-opus-5-5*
+
 ### 2026-10-29 20:18 · R3-01 · passes
 
 Verify R3 was red only on 39-memlint-m4: the R3 resolve kept both its {{X}} line and main's stub --resume line, so Gotchas had 16 lines. Dropped the stub --resume line (76-entries-survive checks that shape); memlint prints nothing. The plan file's steps 1-4 hold (spot-checked: sections, Minor 8 quote, unreproducible examples, N2 = 2 on origin main).
