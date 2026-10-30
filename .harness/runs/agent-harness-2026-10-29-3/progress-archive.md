@@ -7,6 +7,19 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-30 00:03 · S1-04 · passes
+
+run_init fresh removes red-<key> beside green-<key> (lib/record.sh, one line), so verify's tree always runs in full. 80-red-marker gains 3 stub-run checks with a counting CHECK_CMD: the retry's init is the cached red (2 suite calls on the red tree), and STUB_PLANT_MARKERS (new stub hook) proves verify clears both markers. Decision red-marker gains the driver bullet.
+
+- **Files:** lib/record.sh, tests/checks/80-red-marker.sh, tests/stub-claude.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-30-red-marker.md
+- **Verified:** 80-red-marker: the verify check red before the record.sh line (planted red-<key> answered verify's run_init), 11/11 after; full suite via lib/check.sh: green in 793 s, 1039 tests (1036 → 1039); bash -n on record.sh, 80-red-marker.sh, stub-claude.sh clean; git diff main -- lib/record.sh is the removal line and the two read -r readers
+- **Tests:** 1036 → 1039
+- **Dead end:** grepping harness-log.md for `suite red before the session` — run_init writes it with log(), so it is only in $STATE/run.log; the check reads run.log
+- **Discovery** (affects S1-05, run): the retry's init output is best read from its session prompt ($STATE/logs/<nn>-<id>.prompt.md, ## Init output): init.out in scratch is overwritten by every later run_init, KEEP_SCRATCH or not
+- **Discovery** (affects S1-05): step 1 already held after S1-03 (the retry's run_init answers from the marker with no driver change); only the verify invariant needed the record.sh line
+- **Proposed change:** S1-04 step 1 says the log has `suite red before the session`: it is run.log, not harness-log.md (a log() line, not a note)
+- *04-S1-04 · claude-opus-5-5*
+
 ### 2026-10-29 23:42 · S1-03 · passes
 
 check.sh full form writes red-<key> (rc, HARNESS_FAILED names, wall, RED line) after a red where both runs were `exit <rc> after`, answers the next full call on that tree from it, removes it on green; subsets read none. New 80-red-marker (8 checks); 08, 74 adapted; 10-e2 drops S1-02s wall line from its prompt compare; decisions/2026-10-30-red-marker.

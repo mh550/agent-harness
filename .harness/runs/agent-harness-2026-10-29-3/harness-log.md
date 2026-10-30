@@ -15,3 +15,6 @@
 - 2026-10-29 23:42 · S1-03: suite ran 3x (2662 s) in the session
 - 2026-10-29 23:42 · flaky: 10-harness-eval-run-e2 (red, then green on a rerun; load 2.59)
 - 2026-10-29 23:42 · S1-03 · claude-opus-5-5 · passes=true · 52 min · 3/11 passing · tests 1036
+- 2026-10-29 23:42 · context.md for S1-04: 6668 bytes
+- 2026-10-30 00:03 · S1-04: suite ran 1x (793 s) in the session
+- 2026-10-30 00:03 · S1-04 · claude-opus-5-5 · passes=true · 20 min · 4/11 passing · tests 1039
