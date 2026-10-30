@@ -189,3 +189,7 @@
 - 2026-10-29 21:09 · flaky: 47-lanes-two (red, then green on a rerun; load 2.79)
 - 2026-10-29 21:09 · R4-05 · claude-opus-5-5 · passes=true · 33 min · 23/23 passing · tests 999
 - 2026-10-29 21:09 · R4: 1 files conflict with main (CLAUDE.md); a resolve session
+- 2026-10-29 21:09 · R4: main merged in by a resolve session (CLAUDE.md; claude-opus-5-5, 1 min); the verify goes on with main merged
+- 2026-10-29 21:09 · merged main into harness-lane/agent-harness-2026-10-29-2/R4
+- 2026-10-29 21:09 · verify R4: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 21:22 · context.md for R4: 16190 bytes

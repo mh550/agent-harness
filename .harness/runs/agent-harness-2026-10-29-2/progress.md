@@ -9,6 +9,43 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 21:24 · verify R4 · passes
+
+All five R4 features hold: full suite green (1016), 78-needs-questions 22/22 re-run, docs, decision, review plan and skill checked by reading.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R4-01 | 1 | read docs/plans/2026-10-29-R4-questions.md headings | sections 1-6 cover reason, key, refresh, move forward, card/sweep, journal_, readers, checks | yes |
+| R4-01 | 2 | grep STUB_ASK_TWO/needs_fixture in plan | stub flags and fixtures listed under Fixtures and stub flags | yes |
+| R4-01 | 3 | git log origin/main \| grep -c harness-merge/...-R2 | 1; plan states R2 merged | yes |
+| R4-01 | 4 | init full suite | green, 1016 tests | yes |
+| R4-02 | 1 | grep REASONS in lib/needs.mjs; bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | question: R(needs_michael,warn,''); key/refresh/exit-3 checks PASS | yes |
+| R4-02 | 2 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | move-forward check PASS (seen+1, asked_in, old in done/) | yes |
+| R4-02 | 3 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | list card after block card and done --why checks PASS | yes |
+| R4-02 | 4 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | sweep resolved-by-later-entry check PASS | yes |
+| R4-02 | 5 | grep check-names.txt; node --check lib/needs.mjs | 22 names listed; syntax ok | yes |
+| R4-02 | 6 | init full suite | green | yes |
+| R4-03 | 1 | read lib/record.sh questions_, stub header; bash -n | flags documented, syntax ok; two-question check PASS | yes |
+| R4-03 | 2 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | two-question items, cards and log note checks PASS | yes |
+| R4-03 | 3 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | seen 2 and resolved-by-run-end checks PASS | yes |
+| R4-03 | 4 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | second run moves first forward check PASS | yes |
+| R4-03 | 5 | check-names grep; bash -n | ok | yes |
+| R4-03 | 6 | init full suite | green | yes |
+| R4-04 | 1 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | parked card before question card PASS | yes |
+| R4-04 | 2 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | status NEEDS YOU 1 · 3 questions / 0 · 2 questions PASS | yes |
+| R4-04 | 3 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | no notification carries a question PASS | yes |
+| R4-04 | 4 | grep -c "grep -i 'question'" lib/debrief.sh; bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | 0; debrief Questions for Michael check PASS | yes |
+| R4-04 | 5 | grep SKILL.md; bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | needs done and Updated in place present; skill check PASS | yes |
+| R4-04 | 6 | bash -n lib/debrief.sh; node --check status/needs | ok; names listed | yes |
+| R4-04 | 7 | init full suite | green | yes |
+| R4-05 | 1 | read docs/plans/2026-10-29-R4-review.md | one Opus round, 0 Critical, 4 Important all fixed, diff from file | yes |
+| R4-05 | 2 | read ## Simplifications table | applied/left with why | yes |
+| R4-05 | 3 | read journal/decisions/2026-10-29-questions-wait.md | finding/choice/rejected incl. push per question, parking | yes |
+| R4-05 | 4 | grep architecture.md, README.md for question | §4/§17-area needs/status rows and README describe questions | yes |
+| R4-05 | 5 | init full suite | green | yes |
+
+- *212233-verify-R4 · claude-sonnet-5-5*
+
 ### 2026-10-29 21:09 · resolve R4 · passes
 
 CLAUDE.md Gotchas: main (R3-01) replaced the stub --resume line with the {{X}}-above-{{SECTIONS}} line to keep the section within 15 lines; the lane (R4-04) edited the glyph-regex line in place (grep -E "(─)+", BRE parens literal). Kept main's swap and the lane's edited glyph line: 14 lines, no markers, memlint clean.
@@ -217,24 +254,9 @@ R3 review: 0 Critical, 2 Important, 7 Minor. Fixed: 58 read docs/specs (key-igno
 - **Proposed change:** prompts/initializer.md still has folded reviews say 'an Opus subagent reviews the diff' while coding.md sends reviews to the session's own model: align the initializer's wording (pinned by 13/14-run-2 prefix checks, so a deliberate edit)
 - *15-R3-06 · claude-opus-5-5*
 
-### 2026-10-29 19:22 · R4-02 · passes
-
-needs.mjs has the question reason: questionKey (fill and Files: lines cut, folded, 80 code points), open refreshes in the run (exit 3) or moves an open item forward from a sibling run (seen +1, asked_in, old in its done/), a warn card, the sweep resolves on a later entry's resolved (entries.mjs resolvedBy, shared with pack).
-
-- **Files:** lib/needs.mjs, lib/entries.mjs, tests/checks/78-needs-questions.sh, tests/lib.sh, tests/checks/58-needs-record.sh, tests/checks/59-needs-cards.sh, tests/fixtures/needs/question.json, tests/fixtures/check-names.txt
-- **Verified:** bash tests/run.sh 78-needs: 9/9 checks, each watched red first (0/7, then the 2 review fixes red); full suite via lib/check.sh green in 1006 s, 984 checks; node --check lib/needs.mjs lib/entries.mjs; 12 and 38 (pack resolved) green after the resolvedBy refactor
-- **Tests:** 976 → 984
-- **Discovery** (affects R4-03, R4-04): needs_fixture question (tests/lib.sh) puts every fixture run under one project proj: an open of the same text in another run moves it forward; give each its own NF_Q=<text>
-- **Discovery** (affects R4-03): journal_ must pass the question as entries.jsonl stores it (filled): the sweep compares card.question.text with resolved items as pack does, and a pack-cut resolved copied from the filled words would not match the unfilled text
-- **Discovery** (affects R4-03): An open with no line= is never resolved by the sweep (no later to tell): journal_ must pass line=<entries.jsonl line>
-- **Discovery** (affects R4-04): A question item counts in harness status NEEDS YOU until R4-04 splits it out; nothing opens one before R4-03
-- **Question for Michael:** The question key is the first 80 characters (R4-02 step 1). The review found two different questions with a shared preamble get one key: the memory run's M1-01 "Defaults taken in the plan (to be recorded in journal/decisions/2026-10-26-retro-backlog.md by M1-04): …" questions collide, so the second refreshes over the first and one resolved closes both. Default kept: 80 characters as specified. Should the key be a hash of the whole folded text instead (the move forward still works; a reworded question is then a new item)? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/lib/needs.mjs:62, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/docs/plans/2026-10-29-R4-questions.md
-- **Proposed change:** R4-05 review: the notification body and needs.md never show the asked row (record() builds body at seen 1); harmless while no question notifies, but needs.md could carry asked N times
-- **Proposed change:** R4-05 review: a moved-forward run's needs.md (in the old run's record) stays stale until its next open, sweep or done (plan §2.4 accepts it)
-- *17-R4-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 19:22 · R4-02 · passes · needs.mjs has the question reason: questionKey (fill and Files: lines cut, folded, 80 code points), … ([in full](progress-archive.md))
 - 2026-10-29 18:52 · R4-01 · passes · Wrote docs/plans/2026-10-29-R4-questions.md: the question reason, a key that drops the harness's Fil… ([in full](progress-archive.md))
 - 2026-10-29 18:35 · R3-05 · passes · Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/… ([in full](progress-archive.md))
 - 2026-10-29 18:33 · verify R1 · passes · All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 10/10 green on 44, 46… ([in full](progress-archive.md))

@@ -9,6 +9,43 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 21:24 · verify R4 · passes
+
+All five R4 features hold: full suite green (1016), 78-needs-questions 22/22 re-run, docs, decision, review plan and skill checked by reading.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R4-01 | 1 | read docs/plans/2026-10-29-R4-questions.md headings | sections 1-6 cover reason, key, refresh, move forward, card/sweep, journal_, readers, checks | yes |
+| R4-01 | 2 | grep STUB_ASK_TWO/needs_fixture in plan | stub flags and fixtures listed under Fixtures and stub flags | yes |
+| R4-01 | 3 | git log origin/main \| grep -c harness-merge/...-R2 | 1; plan states R2 merged | yes |
+| R4-01 | 4 | init full suite | green, 1016 tests | yes |
+| R4-02 | 1 | grep REASONS in lib/needs.mjs; bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | question: R(needs_michael,warn,''); key/refresh/exit-3 checks PASS | yes |
+| R4-02 | 2 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | move-forward check PASS (seen+1, asked_in, old in done/) | yes |
+| R4-02 | 3 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | list card after block card and done --why checks PASS | yes |
+| R4-02 | 4 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | sweep resolved-by-later-entry check PASS | yes |
+| R4-02 | 5 | grep check-names.txt; node --check lib/needs.mjs | 22 names listed; syntax ok | yes |
+| R4-02 | 6 | init full suite | green | yes |
+| R4-03 | 1 | read lib/record.sh questions_, stub header; bash -n | flags documented, syntax ok; two-question check PASS | yes |
+| R4-03 | 2 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | two-question items, cards and log note checks PASS | yes |
+| R4-03 | 3 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | seen 2 and resolved-by-run-end checks PASS | yes |
+| R4-03 | 4 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | second run moves first forward check PASS | yes |
+| R4-03 | 5 | check-names grep; bash -n | ok | yes |
+| R4-03 | 6 | init full suite | green | yes |
+| R4-04 | 1 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | parked card before question card PASS | yes |
+| R4-04 | 2 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | status NEEDS YOU 1 · 3 questions / 0 · 2 questions PASS | yes |
+| R4-04 | 3 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | no notification carries a question PASS | yes |
+| R4-04 | 4 | grep -c "grep -i 'question'" lib/debrief.sh; bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | 0; debrief Questions for Michael check PASS | yes |
+| R4-04 | 5 | grep SKILL.md; bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | needs done and Updated in place present; skill check PASS | yes |
+| R4-04 | 6 | bash -n lib/debrief.sh; node --check status/needs | ok; names listed | yes |
+| R4-04 | 7 | init full suite | green | yes |
+| R4-05 | 1 | read docs/plans/2026-10-29-R4-review.md | one Opus round, 0 Critical, 4 Important all fixed, diff from file | yes |
+| R4-05 | 2 | read ## Simplifications table | applied/left with why | yes |
+| R4-05 | 3 | read journal/decisions/2026-10-29-questions-wait.md | finding/choice/rejected incl. push per question, parking | yes |
+| R4-05 | 4 | grep architecture.md, README.md for question | §4/§17-area needs/status rows and README describe questions | yes |
+| R4-05 | 5 | init full suite | green | yes |
+
+- *212233-verify-R4 · claude-sonnet-5-5*
+
 ### 2026-10-29 21:09 · resolve R4 · passes
 
 CLAUDE.md Gotchas: main (R3-01) replaced the stub --resume line with the {{X}}-above-{{SECTIONS}} line to keep the section within 15 lines; the lane (R4-04) edited the glyph-regex line in place (grep -E "(─)+", BRE parens literal). Kept main's swap and the lane's edited glyph line: 14 lines, no markers, memlint clean.
