@@ -27,64 +27,65 @@ dd{margin:0;font-variant-numeric:tabular-nums;font-size:14px}.open{margin:12px 0
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--line) 60%,transparent);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
 pre{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}</style></head>
 <body><main>
-<h1>Debrief · 2026-10-29 11:37</h1>
-<p class="sub">2 runs · page built 2026-10-29 15:37 UTC from each run's summary.json and the debrief note</p>
-<section class="headline"><p>Landed on main: agent-harness-2026-10-29 merged N1 (5/5) and N2 (6/6), 11/11 features, tests 859 → 925. agent-harness-2026-10-29-2 (the reliability spec) was stopped at 4/23 with nothing verified or merged, and its branch is already deleted.</p></section>
+<h1>Debrief · 2026-10-30 04:15</h1>
+<p class="sub">2 runs · page built 2026-10-30 08:15 UTC from each run's summary.json and the debrief note</p>
+<section class="headline"><p>Everything landed on main in agent-harness: -2 merged R1–R4 (23/23) and -3 merged S1–S2 (11/11, PR #64, #65). Nothing is blocked, but the record PR for -2 was refused for conflicts and is still open.</p></section>
 <section class="cards"><article class="card">
-  <header><h3>agent-harness-2026-10-29</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
-  <div class="big"><b>11/11 passing</b><span>11 verified · 11 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="N1: 5/5 passing, merged">N1</li><li class="ms merged" title="N2: 6/6 passing, merged">N2</li></ul>
-  <dl><div><dt>Spend</dt><dd>$54.36</dd></div><div><dt>Per feature</dt><dd>$4.94</dd></div>
-  <div><dt>Wall</dt><dd>8.49 h</dd></div><div><dt>Tests</dt><dd>859 → 925</dd></div></dl>
+  <header><h3>agent-harness-2026-10-29-2</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>23/23 passing</b><span>23 verified · 23 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="R1: 7/7 passing, merged">R1</li><li class="ms merged" title="R2: 5/5 passing, merged">R2</li><li class="ms merged" title="R3: 6/6 passing, merged">R3</li><li class="ms merged" title="R4: 5/5 passing, merged">R4</li></ul>
+  <dl><div><dt>Spend</dt><dd>$91.19</dd></div><div><dt>Per feature</dt><dd>$3.96</dd></div>
+  <div><dt>Wall</dt><dd>11.68 h</dd></div><div><dt>Tests</dt><dd>886 → 1016</dd></div></dl>
   
 </article>
 <article class="card">
-  <header><h3>agent-harness-2026-10-29-2</h3><span class="proj">agent-harness</span><span class="pill muted">stopped by Michael</span></header>
-  <div class="big"><b>4/23 passing</b><span>0 verified · 0 merged</span></div>
-  <ul class="milestones"><li class="ms partial" title="R1: 1/7 passing, partial">R1</li><li class="ms partial" title="R2: 3/5 passing, partial">R2</li><li class="ms todo" title="R3: 0/6 passing, todo">R3</li><li class="ms todo" title="R4: 0/5 passing, todo">R4</li></ul>
-  <dl><div><dt>Spend</dt><dd>$18.67</dd></div><div><dt>Per feature</dt><dd>$4.67</dd></div>
-  <div><dt>Wall</dt><dd>2.79 h</dd></div><div><dt>Tests</dt><dd>886 → 900</dd></div></dl>
-  <ul class="open"><li><span class="cause">red suite</span> <code>R1-02</code><div class="detail">the suite was red after its session</div></li><li><span class="cause">not reached</span> <code>R1-03</code> <code>R1-04</code> <code>R1-05</code> <code>R1-06</code> <code>R1-07</code> <code>R2-04</code> <code>R2-05</code> <code>R3-01</code> +10<div class="detail">run ended: stopped by Michael</div></li></ul>
+  <header><h3>agent-harness-2026-10-29-3</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>11/11 passing</b><span>11 verified · 11 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="S1: 5/5 passing, merged">S1</li><li class="ms merged" title="S2: 6/6 passing, merged">S2</li></ul>
+  <dl><div><dt>Spend</dt><dd>$39.90</dd></div><div><dt>Per feature</dt><dd>$3.63</dd></div>
+  <div><dt>Wall</dt><dd>6.83 h</dd></div><div><dt>Tests</dt><dd>1016 → 1077</dd></div></dl>
+  
 </article></section>
-<section class="note"><p><em>runs since 2026-10-28 22:40:15: agent-harness-2026-10-29 agent-harness-2026-10-29-2 · claude-sonnet-5-5, $0.156086 · context: /home/mh550/.local/state/harness/debrief/2026-10-29-113725/context.md</em></p>
-<p>Spend is $73.03 across the two runs. The window is open: five_hour 15% (resets Thu 12:00), seven_day 42% (resets Sun 17:00).</p>
+<section class="note"><p><em>runs since 2026-10-29 11:37:25: agent-harness-2026-10-29-2 agent-harness-2026-10-29-3 · claude-sonnet-5-5, $0.153028 · context: /home/mh550/.local/state/harness/debrief/2026-10-30-041527/context.md</em></p>
+<p>Spend was $131.09 across both runs. The usage window is open: five_hour 2% (resets Fri 08:00), seven_day 49% (resets Sun 17:00).</p>
 <h3>Runs</h3>
-<h4>agent-harness-2026-10-29 (agent-harness) · done</h4>
+<h4>agent-harness-2026-10-29-2 (agent-harness) · done</h4>
 <ul>
-<li>11/11 passing, N1 and N2 verified and merged (PRs #51 and #52 on main). Tests 859 → 925. Cost $54.36 ($4.94 per feature), 8.5 h.</li>
-<li>N2-02 parked on a step that contradicted itself: &quot;A untouched&quot; can&#39;t hold beside &quot;git reports the conflict as usual&quot;. You answered &quot;N2-02: step 2 reworded&quot; at 10:21 and it passed.</li>
-<li>Rework was on N1-03 and N2-02. First-attempt pass rate was 0.82, and the one verify failure was that N2 step 2.</li>
-<li>Retro: proposed <code>step-contradiction-lint</code>, so init flags steps that contradict themselves.</li>
+<li>23/23 passing. R1–R4 verified and merged (R3 via PR #61, R4 via PR #62). Tests 886 → 1016.</li>
+<li>$91.19 ($3.96 per feature), 11.7 h wall, 43 sessions, 1 continuation.</li>
+<li>First-attempt pass rate was 0.65 and the verify-fail rate 0.21. Eight features needed rework (R1-02, R2-01, R3-01 to R3-06). Most of it came from the suite going red under load, not from bad code.</li>
+<li>R2, R3 and R4 each hit a CLAUDE.md conflict with main. Resolve sessions fixed them for $1.06 in total.</li>
+<li>Sessions edited the driver-owned <code>entries.jsonl</code> and <code>progress-archive.md</code> about 10 times, and the driver restored them each time.</li>
+<li>The record PR merge was refused: &quot;Pull Request has merge conflicts&quot;. It is left open.</li>
 </ul>
-<h4>agent-harness-2026-10-29-2 (agent-harness) · stopped by Michael</h4>
+<h4>agent-harness-2026-10-29-3 (agent-harness) · done</h4>
 <ul>
-<li>4/23 passing (R1-01, R2-01, R2-02, R2-03). R1-02 was un-passed on a red suite. R3 and R4 were never started.</li>
-<li>Tests 886 → 900. Cost $18.67, 2.8 h.</li>
-<li>It overlapped run 1 on 20+ files, because it started from main before run 1&#39;s merges.</li>
-<li>Two flakes appeared at load ~5.2 and were green on rerun: <code>13-run-2-michael-sets-desk</code> and <code>08-scope-sh-l1-02-run-capped-services-gc-scratch</code>.</li>
-<li>R2-01 needed a second session ($3.11) because a Gotchas line pushed the section to 16 lines and 39-memlint-m4 failed.</li>
-<li>No verify ran, so there is no evidence on verify failures.</li>
-<li>No continuation is queued, because it ended on a stop and not on a deadline or usage limit.</li>
+<li>11/11 passing. S1 and S2 verified and merged. Tests 1016 → 1077.</li>
+<li>$39.90 ($3.63 per feature), 6.8 h wall, 15 sessions. Rework none, 0 verify failures, first-attempt pass rate 1.0.</li>
+<li>Five suite flakes were all green on rerun, and none un-passed a feature.</li>
+<li>The main cost was suite time. One session suite run took 793–825 s against the ~208 s in CLAUDE.md. S1-05 ran it 7× (2063 s), S1-03 3× (2662 s) and S2-03 2× (2533 s).</li>
+<li>Its record PR (#66) merged.</li>
 </ul>
 <h3>Needs Michael</h3>
-<ul>
-<li>Whether to re-run <code>docs/specs/2026-10-28-reliability.md</code>. That run&#39;s branch was deleted by gc (was 7c3c850), and its 4 passing features were never merged. Only the record PR #53 landed. The commits are recoverable via the reflog until pruned. Because the run overlapped run 1&#39;s files, a fresh run from current main is probably cleaner.</li>
-<li>Optional product call from run 1, N1 review, in progress.md. The harness kept the default that a check file stopped at TEST_FILE_TIMEOUT is still rerun once under <code>CHECK_RERUN=auto</code>, at most another 10 minutes. The alternative is to skip the rerun when a file timed out. See <code>tests/run.sh:54</code> and <code>journal/decisions/2026-10-29-rerun-guard.md</code>.</li>
-</ul>
-<h3>For the next interactive session</h3>
-<ul>
-<li>Merge conflicts, or held or refused merges: none. All 3 merges in run 1 went through.</li>
-<li>Open <code>proposed</code> retro items, most seen first:</li>
-</ul>
+<p>Both questions were asked by run -2, in the &quot;Questions for Michael&quot; section of R4&#39;s review (<code>docs/plans/2026-10-29-R4-review.md</code>). Neither is answered by the project docs.</p>
 <ol>
-<li><code>suite-flake-retry</code>: re-run failed test files serially before un-passing a feature. Seen 3 times. This run&#39;s R1-02 un-pass is more evidence.</li>
-<li><code>verify-evidence-rows</code>: record per-step evidence rows from verify sessions. Seen 3 times.</li>
-<li><code>memlint-before-session-end</code>: run memlint in the session&#39;s own end gate. Seen once.</li>
-<li><code>step-contradiction-lint</code>: flag self-contradictory steps at init. Seen once.</li>
-<li><code>no-retry-on-denial</code>: don&#39;t retry a session that stopped on a permission question with nothing changed. Seen 0 times.</li>
+<li>R4-02, <code>entries.jsonl:26</code>: should the needs question key be a hash of the whole folded text instead of the first 80 characters? Two questions that share a preamble currently collide, so the second refreshes over the first and resolving one closes both. The 80-character key was kept as specified.</li>
+<li>R4-05, <code>skills/harness-answer/SKILL.md:46</code>: should <code>harness needs done --why</code> pass the answer to the run itself? The harness-answer skill does that today, but a hand-run <code>done</code> does not reach the run&#39;s sessions.</li>
 </ol>
+<h3>For the next interactive session</h3>
+<p><strong>Merge conflicts and held merges</strong></p>
 <ul>
-<li>Re-raised though already done: <code>step-lint</code> is <code>merged</code> (retro-fixes R3) but lists agent-harness-2026-10-29 in <code>runs_seen</code>. <code>step-contradiction-lint</code> is an extension of it, so the two may overlap.</li>
-<li>The R1 flaky-check fixes (<code>wait_for</code>, <code>--repeat</code>) in the reliability spec target the same flakes as <code>suite-flake-retry</code>. Check whether they cover it before writing a separate spec.</li>
-</ul></section>
+<li>Run -2&#39;s record PR is open and refused for merge conflicts. Its branch <code>harness/agent-harness-2026-10-29-2</code> was deleted by gc, so check the PR and the ledger record on main.</li>
+<li>The R1–R4 milestone merges themselves are done.</li>
+</ul>
+<p><strong>Retro backlog, open <code>proposed</code> items</strong> (each is a candidate harness PR; none is <code>specced</code> or <code>queued</code>, and no run re-raised one that is)</p>
+<ol>
+<li><code>suite-flake-retry</code>: re-run failed test files serially before declaring the suite red (seen 4). Run -2 un-passed R2-01 and R1-02 on flakes, which the per-session check did not cover.</li>
+<li><code>verify-evidence-rows</code>: record per-step evidence rows from verify sessions (seen 4).</li>
+<li><code>suite-time-budget</code>: cap or warn on full-suite reruns inside a session (seen 1).</li>
+<li><code>session-entry-write-guard</code>: tell sessions that <code>entries.jsonl</code> and <code>progress-archive.md</code> are driver-only (seen 1).</li>
+<li><code>memlint-before-session-end</code>: run the CLAUDE.md memlint check in the session&#39;s own end-of-session gate (seen 1).</li>
+<li><code>step-contradiction-lint</code>: flag self-contradictory steps at init (seen 1).</li>
+<li><code>no-retry-on-denial</code>: don&#39;t retry a session that stopped on a permission question with nothing changed (seen 0, a seed item).</li>
+</ol></section>
 </main></body></html>
