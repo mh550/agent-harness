@@ -30,6 +30,11 @@ ck > /dev/null; ck_unset=$(ck)
 check "check.sh: the cached line names the key's ignore list only when it isn't the default" \
   '[[ $ck_wide == "check: green (cached for this code tree, 2 tests; key ignores: docs/plans docs/specs)" ]] \
   && [[ $ck_def == "check: green (cached for this code tree, 2 tests)" && $ck_unset == "check: green (cached for this code tree, 2 tests)" ]]'
+# the marker: the count on line 1, the first run's seconds on line 2; a one-line marker (an older harness's) still answers
+ckm=$T/kyc/green-$ky4 ckm1=$(sed -n 1p "$T/kyc/green-$ky4") ckm2=$(sed -n 2p "$T/kyc/green-$ky4")
+printf '2 tests\n' > "$ckm"; ck_old=$(ck)
+check "check.sh: a green full run's marker is \`2 tests\` then \`wall <s>\`; a planted one-line marker gives the same cached line" \
+  '[[ $ckm1 == "2 tests" && $ckm2 =~ ^wall\ [0-9]+$ && $ck_old == "check: green (cached for this code tree, 2 tests)" ]]'
 # two stub runs, two coding sessions each (one feature's two attempts): each session edits one path and passes nothing,
 # so the suite runs only before each session; the second session keeps the init output it got (STUB_EDIT); the edits
 # live on the lane branch, unverified at the cap, so kept on the origin

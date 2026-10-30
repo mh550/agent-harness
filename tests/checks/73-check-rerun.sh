@@ -31,7 +31,7 @@ check "check rerun: the rerun gets exactly the named files as arguments" '[[ -z 
 check "check rerun: check.out is the first run byte for byte; check-rerun.out holds the rerun" \
   'cmp -s "$T/rr-once/s/check.out" "$T/rr-once/out1" && cmp -s "$T/rr-once/s/check-rerun.out" "$T/rr-once/out2" && grep -qx "2/2 checks passed" "$T/rr-once/s/check-rerun.out"'
 check "check rerun: the green marker holds the first run's total, and the next call is cached with it" \
-  '[[ $(ls "$T/rr-once/c"/green-* | wc -l) == 1 && $(cat "$T/rr-once/c"/green-*) == "5 tests" ]] \
+  '[[ $(ls "$T/rr-once/c"/green-* | wc -l) == 1 && $(sed -n 1p "$T/rr-once/c"/green-*) == "5 tests" ]] \
   && [[ $o_once3 == "check: green (cached for this code tree, 5 tests)" && $(calls once) == 2 ]]'
 check "check rerun: a rerun-green appends one flakes.jsonl row with at, key, names, rerun, first, load and lane" \
   '[[ $(grep -c "" "$T/rr-once/c/flakes.jsonl") == 1 ]] && key=$(basename "$T/rr-once/c"/green-*) && jq -e --arg k "${key#green-}" '"'"'

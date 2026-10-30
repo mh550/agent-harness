@@ -451,15 +451,20 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
   # the tree's key as check.sh takes it, before the suite runs (what a suite leaves untracked would change it after)
   local key; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
-  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key"
+  # a red found around a failed init may be the init's (a network blip, a failed install), not the tree's: an init after
+  # a failed one runs the suite, and a red under a failed init isn't kept (init-failed: this lane's, or the driver's)
+  local flag=${LDIR:-$STATE}/init-failed prev=0; [[ -f $flag ]] && prev=1
+  if (( rc )); then touch "$flag"; else rm -f "$flag"; fi
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key" "$STATE/green/red-$key"   # a cached red would answer too
+  (( rc || prev )) && rm -f "$STATE/green/red-$key"
   local crc=0; "$CHECK" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }
+  (( rc )) && [[ -f $STATE/green/red-$key ]] && rm -f "$STATE/green/red-$key" && note "suite red under a failed init: not cached (the next init runs it)"
   # a red suite pins neither the count nor its source: the next green one does. Of a green tree, its marker first (after
   # a rerun the first run's total), then its own output, check-<key>.out: check.out may be an older tree's, a red one's
   # when this green was cached
   local n="" out=$SCRATCH/check-$key.out
   if (( crc == 0 )) && [[ ! -f $STATE/tests-start ]]; then
-    n=$(cat "$STATE/green/green-$key" 2> /dev/null)
-    [[ -n $n || ! -f $out ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$out")
+    n=$(green_count "$key")
     [[ -n $n ]] && echo "${n%% *}" > "$STATE/tests-start"
   fi
   # once per run, from the first green suite whose output is here (a green cached in an earlier segment has none): where
@@ -477,16 +482,22 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   fi
 }
 
+# <key> → a green tree's count: its marker's line 1 (line 2 is the wall), else (an older, empty marker) its output's,
+# check-<key>.out; nothing for a tree with no green marker. check.sh's cached line reads the marker the same way.
+green_count() {
+  local n="" f=$STATE/green/green-$1
+  [[ -f $f ]] || return 0
+  read -r n < "$f"; [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$1.out" 2> /dev/null)
+  echo "$n"
+}
+
 # tests-end: a green tree's count, its marker's (a continued segment's scratch has no output of a tree cached green),
 # else (an older, empty marker) its output's; a red tree has none, whatever its output counted. Written after every
 # session too (by its lane, of its slot's tree), so status and report show it between sessions; tests-start, the run's
 # baseline, is never rewritten (decisions/2026-10-26-test-count-contract). Without a count only `final` (finish) clears
 # it: mid-run, the last stays. The cwd's tree, with this process's SCRATCH.
 tests_end() {   # [final]
-  local key n=""; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
-  if [[ -f $STATE/green/green-$key ]]; then
-    n=$(cat "$STATE/green/green-$key"); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out" 2> /dev/null)
-  fi
+  local key n; key=$(node "$HARNESS_HOME/lib/treekey.mjs"); n=$(green_count "$key")
   if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; elif [[ ${1:-} == final ]]; then rm -f "$STATE/tests-end"; fi
 }
 

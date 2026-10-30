@@ -40,6 +40,7 @@ Milestone: {{MILESTONE}}
 Merging: `{{MERGING}}` into the lane branch
 Features: {{FEATURES}}
 {{FEATURE_LINES}}
+Suite: last full run {{SUITE_LENGTH}}
 
 ## Conflicted files
 

@@ -130,6 +130,7 @@ any question for Michael.
 # This session
 
 Earlier runs' feature sizes: {{CALIBRATION}}
+Suite: last full run {{SUITE_LENGTH}}
 
 ## Init output
 

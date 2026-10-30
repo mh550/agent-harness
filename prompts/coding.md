@@ -19,6 +19,9 @@ checkouts on this machine.
 - **The suite** is the command named under *This run* (it runs the project's suite, cached per code
   tree, so a tree that was green isn't run twice). While iterating, pass arguments for a subset:
   `<suite> <args>`. Run it in full once before you flip `passes`.
+  Give every full run a timeout of at least twice its last wall (under *This session*). When that is over the Bash
+  tool's foreground limit (10 min), run it in the background with that timeout, its output to a file in your scratch
+  directory, and wait for its end notification before reading it: never poll it, never run it without a timeout.
 - **Decisions.** A decision that is Michael's: take the simplest reversible default, record it as
   the Where things go block says (below, or in `CLAUDE.md`), marked *default*, and ask it as a
   direct question in your entry's `questions`.
@@ -126,6 +129,7 @@ Feature: `{{FEATURE}}`
 Milestone: {{MILESTONE}}
 Reviews go to subagents on your own model (`{{MODEL}}`).
 {{CLOCK}}
+Suite: last full run {{SUITE_LENGTH}}
 {{REVIEW_DIFF}}
 
 ## Init output

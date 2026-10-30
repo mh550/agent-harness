@@ -54,8 +54,22 @@ prompt_env() {
     HARNESS_CHECK_RERUN=$CHECK_RERUN   # check.sh caps and reruns the same way for both
 }
 
+# → the Suite line's "last full run …": the wall of the cwd tree's green-<key>, else of the newest green with one, then
+# the same of the red-<key> markers, else none and the run's CHECK_TIMEOUT (decisions/2026-10-30-suite-length-in-prompt)
+suite_length() {
+  local cache=${HARNESS_CHECK_CACHE:-$STATE/green} key f w="" greens=() reds=()
+  key=$(node "$HARNESS_HOME/lib/treekey.mjs" 2> /dev/null)
+  # every green before any red: a red may have stopped early (a compile error, a fail-fast runner), so its wall is a last resort
+  mapfile -t greens < <(ls -t "$cache"/green-* 2> /dev/null); mapfile -t reds < <(ls -t "$cache"/red-* 2> /dev/null)
+  for f in ${key:+"$cache/green-$key"} "${greens[@]}" ${key:+"$cache/red-$key"} "${reds[@]}"; do
+    [[ -f $f ]] && w=$(sed -n '/^wall [0-9][0-9]*$/{s/^wall //p;q}' "$f") && [[ -n $w ]] && break
+  done
+  if [[ -n $w ]]; then echo "$w s: give a full run a timeout of at least twice that"
+  else echo "not measured yet; bounded by CHECK_TIMEOUT ${HARNESS_CHECK_TIMEOUT:-15m}: give a full run a timeout above that"; fi
+}
+
 prompt_render() {   # template name → stdout: the static template, the policy, this run (its lines, the brief, the line naming CLAUDE.md, the routing block), this session
-  local extra=() rules=() where=where-things-go
+  local extra=() rules=() where=where-things-go length=""
   # Claude Code loads CLAUDE.md in the worktree itself: one line names it, the file isn't pasted (decisions/2026-10-21-no-double-claude-md)
   [[ -f CLAUDE.md ]] && rules=("$HARNESS_HOME/prompts/parts/rules.md")
   # the `## Where things go` block, unless CLAUDE.md has its own; verify and retro edit nothing, so theirs routes facts to
@@ -74,10 +88,11 @@ prompt_render() {   # template name → stdout: the static template, the policy,
     [[ -s $RUN_DIR/brief.md ]] && extra+=(--raw "Brief for this run, from Michael (it wins over the spec on scope)=$RUN_DIR/brief.md")
     extra+=("${rules[@]}")
     [[ -f .harness/project.md ]] && extra+=("Project rules (.harness/project.md)=.harness/project.md")
+    length=$(suite_length)   # parts/run.md's alone: the other templates pay no treekey
   fi
   # the last 40 whole lines and where the rest is (decisions/2026-10-21-clock-and-bounded-init-output)
   HARNESS_DECISIONS=$(node "$HARNESS_HOME/lib/memlint.mjs" store-line .) HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
-    node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
+    HARNESS_SUITE_LENGTH=$length node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then

@@ -63,6 +63,7 @@ Final message: at most 80 words.
 Milestone: {{MILESTONE}}
 Features: {{FEATURES}}
 {{CLOCK}}
+Suite: last full run {{SUITE_LENGTH}}
 
 ## Init output
 

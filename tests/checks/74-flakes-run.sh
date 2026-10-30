@@ -39,7 +39,7 @@ STUB_NO_TAMPER=1 STUB_LENIENT=1 "$H" start "$T/proj" inv --spec SPEC.md --foregr
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 check "flakes run: a red every time still un-passes C with today's note after a rerun (the invariant)" \
   'hlog inv | grep -F "C un-passed: suite red after the session" > /dev/null && ! hlog inv | grep -F "flaky:" > /dev/null \
-  && grep -F "red again on a rerun of the whole suite) — last lines of $T/scratch/proj/inv/lanes/M2/check-rerun.out:" "$HARNESS_STATE/proj/inv/logs/04-C.prompt.md" > /dev/null \
+  && grep -E "red again on a rerun of the whole suite\) — last lines of $T/scratch/proj/inv/lanes/M2/check-[0-9a-f]+\.out \(this tree.s first run\):$" "$HARNESS_STATE/proj/inv/logs/04-C.prompt.md" > /dev/null \
   && grep "^done" "$HARNESS_STATE/proj/inv/ended" > /dev/null \
   && grep -F "C attempt 2" "$T/scratch/proj/inv/sessions.log" > /dev/null'
 check "flakes run: a run with no flake writes no flaky: line and no flakes.jsonl" \
@@ -68,9 +68,10 @@ check "flakes run: tests-start after a flake on the first suite is the marker's 
   '[[ -d $T/flaked-ts && $(cat "$HARNESS_STATE/proj/ts/tests-start") == 5 ]] && hlog ts | grep -F "flaky: whole suite" > /dev/null'
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 
-# fe: finish's own suite flakes. C's one attempt leaves its tree red (BROKEN), so finish's suite of it is uncached; with
-# `ended` written it is red once, then green on the rerun: its row is noted like any other, and counted once
-check_cmd "flaky end" "if [ -e $T/state/proj/fe/ended ]; then if mkdir $T/flaked-fe 2> /dev/null; then exit 1; fi; exit 0; fi; test ! -f BROKEN"
+# fe: finish's own suite flakes. C's one attempt leaves its tree red (BROKEN) as a timeout's 124, which writes no
+# red-<key>, so finish's suite of it runs; with `ended` written it is red once, then green on the rerun: its row is
+# noted like any other, and counted once
+check_cmd "flaky end" "if [ -e $T/state/proj/fe/ended ]; then if mkdir $T/flaked-fe 2> /dev/null; then exit 1; fi; exit 0; fi; test ! -f BROKEN || exit 124"
 mkdir -p "$HARNESS_STATE/proj/fe" && echo MAX_ATTEMPTS=1 > "$HARNESS_STATE/proj/fe/run.env"
 STUB_NO_TAMPER=1 STUB_LENIENT=1 "$H" start "$T/proj" fe --spec SPEC.md --foreground > "$T/fe.out" 2>&1
 check "flakes run: a flake on finish's own suite is noted too, and summary.json counts it once" \

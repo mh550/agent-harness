@@ -299,7 +299,8 @@ check "report.md lists the session that peaked at its cap among the peaks over 2
 check "check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s" 'C=$(sd_with --unit=harness-demo-check-); U=$(grep -x -- "--unit=harness-demo-check-[0-9]*" <<< "$C" | sed "s/^--unit=//") \
   && [[ -n $U ]] && grep -qxF MemoryMax=3G <<< "$C" && ! grep -q MemoryHigh <<< "$C" && grep -A6 -x timeout <<< "$C" | paste -sd" " | grep -qxF "timeout -k 30s 15m bash -c test ! -f BROKEN" \
   && [[ $(sd_count $'"'"'stop\n'"'"'"$U.scope") == 1 ]]'
-ck() { ( cd "$T/proj" && HARNESS_CHECK_RERUN=off HARNESS_SCRATCH=$T/ck HARNESS_CHECK_CACHE=$T/ck-cache HARNESS_SCOPE_PREFIX=${CKP:-harness-ck} HARNESS_CHECK_CMD=$1 "$HERE/../lib/check.sh" "${@:2}" ); }   # check.sh called directly, as a session would
+# one tree, many suites: each call clears the last one's red-<key>, or every full call after a red answers from it
+ck() { rm -f "$T"/ck-cache/red-*; ( cd "$T/proj" && HARNESS_CHECK_RERUN=off HARNESS_SCRATCH=$T/ck HARNESS_CHECK_CACHE=$T/ck-cache HARNESS_SCOPE_PREFIX=${CKP:-harness-ck} HARNESS_CHECK_CMD=$1 "$HERE/../lib/check.sh" "${@:2}" ); }   # check.sh called directly, as a session would
 ck_137=$(ck 'echo started; touch "$STUB_DIR/scope/$STUB_SCOPE_UNIT.oom"; exit 137'; echo "rc=$?")   # .oom: the stub's MemoryPeak is the cap
 check "check.sh: exit 137 prints the memory-cap RED line" 'grep -qx "check: RED (killed at its 3G memory cap, exit 137 after [0-9]* s) — last lines of $T/ck/check.out:" <<< "$ck_137" \
   && grep -qx started <<< "$ck_137" && [[ $(tail -1 <<< "$ck_137") == rc=137 && $(sd_count --unit=harness-ck-check-) == 1 ]] && ! ls "$T"/ck/scopes/harness-ck-check-* 2> /dev/null'
@@ -313,7 +314,7 @@ check "check.sh: a subset call is scoped too and never cached" '[[ $(sed 3q <<< 
   && [[ $(sed 1,3d <<< "$ck_sub" | sed "s/after [0-9]* s/after <n> s/") == $'"'"'check: RED (killed at its 3G memory cap, exit 137 after <n> s)\nrc=137'"'"' ]] \
   && sd_with --unit=harness-cks-check- | grep -A9 -x timeout | paste -sd" " | grep -qxF "timeout -k 30s 15m bash -c echo sub \"\$@\" _ -k foo" && ! ls "$T"/ck-cache/green-* 2> /dev/null'
 # the calling session's scope is stopped (systemctl sends TERM) while its check.sh runs: the suite's scope goes with it
-( cd "$T/proj" && HARNESS_SCRATCH=$T/ck HARNESS_CHECK_CACHE=$T/ck-cache HARNESS_SCOPE_PREFIX=harness-ckt HARNESS_CHECK_CMD='echo $$ >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"; exec sleep 60' exec "$HERE/../lib/check.sh" > "$T/ckt.out" 2>&1 ) & ckt=$!   # sleep-ok: the suite the TERM stops
+rm -f "$T"/ck-cache/red-*; ( cd "$T/proj" && HARNESS_SCRATCH=$T/ck HARNESS_CHECK_CACHE=$T/ck-cache HARNESS_SCOPE_PREFIX=harness-ckt HARNESS_CHECK_CMD='echo $$ >> "$STUB_DIR/scope/$STUB_SCOPE_UNIT.pids"; exec sleep 60' exec "$HERE/../lib/check.sh" > "$T/ckt.out" 2>&1 ) & ckt=$!   # sleep-ok: the suite the TERM stops
 wait_for 30 test -s "$T/scope/harness-ckt-check-$ckt.pids"; ckt_sleep=$(cat "$T/scope/harness-ckt-check-$ckt.pids" 2> /dev/null)
 SECONDS=0; kill -TERM "$ckt"; wait "$ckt"; ckt_rc=$? ckt_s=$SECONDS
 check "check.sh: a TERM stops the suite's scope with it" '[[ $ckt_rc == 143 && $ckt_s -le 3 && -n $ckt_sleep ]] && gone "$ckt_sleep" && [[ $(sd_count $'"'"'stop\nharness-ckt-check-'"'"'"$ckt.scope") == 1 ]]'
@@ -522,7 +523,7 @@ ck2() { ( cd "$T/ck2" && HARNESS_SCRATCH=$T/ck2s HARNESS_CHECK_CACHE=$T/ck2c HAR
 ck2 > /dev/null; ck2k1=$(cd "$T/ck2" && node "$HERE/../lib/treekey.mjs"); echo b > "$T/ck2/f"; ck2 > /dev/null; ck2k2=$(cd "$T/ck2" && node "$HERE/../lib/treekey.mjs")
 echo a > "$T/ck2/f"; ck2_back=$(ck2)   # back to the first tree: green from its marker, its output gone
 check "check.sh keeps one check-<key>.out; the green markers stay" '[[ $(ls "$T"/ck2s/check-*.out | wc -l) == 1 && -f $T/ck2s/check-$ck2k2.out && $ck2k1 != "$ck2k2" ]] \
-  && [[ $(cat "$T/ck2c/green-$ck2k1") == "1 tests" && -f $T/ck2c/green-$ck2k2 && $ck2_back == "check: green (cached for this code tree, 1 tests)" ]]'
+  && [[ $(sed -n 1p "$T/ck2c/green-$ck2k1") == "1 tests" && -f $T/ck2c/green-$ck2k2 && $ck2_back == "check: green (cached for this code tree, 1 tests)" ]]'
 check "the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created" 'grep -qxF "cache: $T/cache/harness/proj" "$HARNESS_STATE/proj/scrub/init.out" \
   && grep -qxF "scrub $T/cache/harness/proj" "$T/cache.log" && [[ -d $T/cache/harness/proj ]]'
 mkdir -p "$T/guard/proj/r1" "$T/guard/proj/x"; for g in "$T/guard" "$T/guard/proj" "$T/guard/proj/r1" "$T/guard/proj/x"; do : > "$g/marker"; done
