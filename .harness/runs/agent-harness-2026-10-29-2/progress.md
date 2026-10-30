@@ -9,6 +9,17 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:30 · R3-05 · passes
+
+Attempt 2: attempt 1's two checks stand (49 gc --dry-run keeps a leftover slot and merged lane branch; 77 two merge_milestones M1 at once merge once). Verify R3 failed it only on memlint (16 Gotchas lines), which R3-01 fixed. Re-verified by mutation: each check fails when its guard is removed. No lib/bin bug found, so no fix.
+
+- **Files:** .harness/runs/agent-harness-2026-10-29-2/feature_list.json
+- **Verified:** Mutations, each reverted: dropping 'flock 8;' at lib/record.sh:590 -> 77-leftovers 8/9, FAIL 'merge_milestones: two at once merge M1 once'; making gc --dry-run also run worktree remove (bin/harness:689) -> 49-lanes-slots 8/11, FAIL 'gc --dry-run names a leftover slot...'. Clean tree: check.sh green, 993 tests; node lib/memlint.mjs . prints nothing; both names in check-names.txt (lines 263, 470).
+- **Tests:** 993 → 993
+- **Proposed change:** R3-05 step 1 should name the slot path $T/wt/proj/lanes/<run>/slot-1 (the real layout), not $T/wt/proj/<run>-slots/slot-1
+- **Proposed change:** R3-05 step 3 should read 'if either check uncovers a bug': neither did (each passes on the current code and fails under a mutation of its guard)
+- *25-R3-05 · claude-opus-5-5*
+
 ### 2026-10-29 20:25 · R3-04 · passes
 
 Re-verified: verify R3 failed R3-04 only on step 5 (memlint: 16 Gotchas lines), which R3-01 fixed. Attempt 1's code stands unchanged: check-runs.log rows, 'suite ran <n>x' note, {{MODEL}} review sentence, review gate un-pass before the passes= note.
@@ -247,23 +258,9 @@ R1 review: 0 Critical, 2 Important, 5 Minor. Fixed: opens no longer reopen an ex
 - **Proposed change:** Left from the review (Minor): HARNESS_COUNT_HOLD is unbounded and serialises lanes under MAX_LANES=2; tests-only, so left as is
 - *12-R1-07 · claude-opus-5-5*
 
-### 2026-10-29 16:52 · R3-03 · passes
-
-merge_one: ignored_only lets a main moved only in cache-ignored paths merge as verified, no re-base, noted once per main. finish: ledger and scratch_done after record_pr, plus a 'ledger notes' commit. run_init pins tests-start and testcount-source only from a green suite, read from the tree's marker or check-<key>.out (never a stale check.out). STUB_FIX_BROKEN; 3 checks in 77-leftovers.
-
-- **Files:** lib/record.sh, lib/driver.sh, tests/stub-claude.sh, tests/checks/77-leftovers.sh, tests/fixtures/check-names.txt
-- **Verified:** 77-leftovers 4/4 (3 new, each red at HEAD first: re-base noted, no record PR in the ledger copy, no-match note); 40, 50, 66 green; full suite via check.sh green, 972 tests, 74-flakes-run flaked once (green 3 times after); bash -n on all touched files
-- **Tests:** 969 → 972
-- **Dead end:** STUB_MAIN_TOUCH=A:.harness/runs/other/x.md (step 1 as written) — the lane merges main in before its verify (sync_main), so merge_one never sees a moved main: green at HEAD. verify-M1:<path> lands it after the verify and is red at HEAD (M1 re-based)
-- **Discovery** (affects R3-05, run): To test a main that moved after a milestone's verify, use STUB_MAIN_TOUCH=verify-<m>:<path>: a touch in a coding session is merged into the lane before the verify
-- **Discovery** (affects R3-06): finish now writes the ledger after record_pr: a hung gh in record_pr leaves the run without a ledger copy or runs.jsonl line (reviewer Minor 4, accepted with the plan's order)
-- **Discovery** (affects R3-06): A run whose suite is never green writes neither testcount-source nor testcount-nomatch: the report's tests are ? with no harness-log line saying why (reviewer Minor 5)
-- **Proposed change:** R3-03 step 1 should name STUB_MAIN_TOUCH=verify-M1:.harness/runs/other/x.md, not A:… (A's touch is merged into the lane before the verify)
-- **Proposed change:** R3-06's decision: the ignored-paths note reads '<m>: main changed only in ignored paths (<paths>); merging as verified', once per main (STATE/ignored-<m>), since it comes before the push and PR
-- *11-R3-03 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 16:52 · R3-03 · passes · merge_one: ignored_only lets a main moved only in cache-ignored paths merge as verified, no re-base,… ([in full](progress-archive.md))
 - 2026-10-29 16:33 · R1-06 · passes · 32, 38 and 08's first `no user systemd` check were R1-04's lane-count race: 10/10 green unforced, re… ([in full](progress-archive.md))
 - 2026-10-29 16:14 · R3-02 · passes · lib/features.mjs: every list/attempts/parked write goes through writeAtomic (<file>.<pid>.tmp + rena… ([in full](progress-archive.md))
 - 2026-10-29 15:41 · R1-05 · passes · Both run flakers are R1-04's lane-count race. Neither reproduced unforced (10/10 green each). Forced… ([in full](progress-archive.md))

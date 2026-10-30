@@ -9,6 +9,17 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:30 · R3-05 · passes
+
+Attempt 2: attempt 1's two checks stand (49 gc --dry-run keeps a leftover slot and merged lane branch; 77 two merge_milestones M1 at once merge once). Verify R3 failed it only on memlint (16 Gotchas lines), which R3-01 fixed. Re-verified by mutation: each check fails when its guard is removed. No lib/bin bug found, so no fix.
+
+- **Files:** .harness/runs/agent-harness-2026-10-29-2/feature_list.json
+- **Verified:** Mutations, each reverted: dropping 'flock 8;' at lib/record.sh:590 -> 77-leftovers 8/9, FAIL 'merge_milestones: two at once merge M1 once'; making gc --dry-run also run worktree remove (bin/harness:689) -> 49-lanes-slots 8/11, FAIL 'gc --dry-run names a leftover slot...'. Clean tree: check.sh green, 993 tests; node lib/memlint.mjs . prints nothing; both names in check-names.txt (lines 263, 470).
+- **Tests:** 993 → 993
+- **Proposed change:** R3-05 step 1 should name the slot path $T/wt/proj/lanes/<run>/slot-1 (the real layout), not $T/wt/proj/<run>-slots/slot-1
+- **Proposed change:** R3-05 step 3 should read 'if either check uncovers a bug': neither did (each passes on the current code and fails under a mutation of its guard)
+- *25-R3-05 · claude-opus-5-5*
+
 ### 2026-10-29 20:25 · R3-04 · passes
 
 Re-verified: verify R3 failed R3-04 only on step 5 (memlint: 16 Gotchas lines), which R3-01 fixed. Attempt 1's code stands unchanged: check-runs.log rows, 'suite ran <n>x' note, {{MODEL}} review sentence, review gate un-pass before the passes= note.
