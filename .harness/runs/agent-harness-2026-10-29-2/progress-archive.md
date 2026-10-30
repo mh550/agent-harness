@@ -9,6 +9,14 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:25 · R3-04 · passes
+
+Re-verified: verify R3 failed R3-04 only on step 5 (memlint: 16 Gotchas lines), which R3-01 fixed. Attempt 1's code stands unchanged: check-runs.log rows, 'suite ran <n>x' note, {{MODEL}} review sentence, review gate un-pass before the passes= note.
+
+- **Verified:** 77-leftovers + 42-run-20 subsets 20/20; full suite green (993, cached for this tree); memlint clean; bash -n lib/check.sh lib/lane.sh tests/stub-claude.sh ok
+- **Tests:** 993 → 993
+- *24-R3-04 · claude-opus-5-5*
+
 ### 2026-10-29 20:23 · R3-03 · passes
 
 Attempt 2: attempt 1's code (ignored_only in merge_one, record_pr before ledger in finish, run_init's green-only count pin, STUB_FIX_BROKEN) stands; verify R3 was red only on memlint, which R3-01 fixed. Re-verified every step; no code change.

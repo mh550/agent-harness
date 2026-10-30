@@ -9,6 +9,14 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:25 · R3-04 · passes
+
+Re-verified: verify R3 failed R3-04 only on step 5 (memlint: 16 Gotchas lines), which R3-01 fixed. Attempt 1's code stands unchanged: check-runs.log rows, 'suite ran <n>x' note, {{MODEL}} review sentence, review gate un-pass before the passes= note.
+
+- **Verified:** 77-leftovers + 42-run-20 subsets 20/20; full suite green (993, cached for this tree); memlint clean; bash -n lib/check.sh lib/lane.sh tests/stub-claude.sh ok
+- **Tests:** 993 → 993
+- *24-R3-04 · claude-opus-5-5*
+
 ### 2026-10-29 20:23 · R3-03 · passes
 
 Attempt 2: attempt 1's code (ignored_only in merge_one, record_pr before ledger in finish, run_init's green-only count pin, STUB_FIX_BROKEN) stands; verify R3 was red only on memlint, which R3-01 fixed. Re-verified every step; no code change.
@@ -254,23 +262,9 @@ merge_one: ignored_only lets a main moved only in cache-ignored paths merge as v
 - **Proposed change:** R3-06's decision: the ignored-paths note reads '<m>: main changed only in ignored paths (<paths>); merging as verified', once per main (STATE/ignored-<m>), since it comes before the push and PR
 - *11-R3-03 · claude-opus-5-5*
 
-### 2026-10-29 16:33 · R1-06 · passes
-
-32, 38 and 08's first `no user systemd` check were R1-04's lane-count race: 10/10 green unforced, red forced on the pre-fix driver. Their runs now start with HARNESS_COUNT_HOLD=1 (red 0/1 before). 08's repeat (7/10) found two test races, fixed: the gatestop run kept at 2 GB (STOP and the memory write raced the gate's poll) and a per-copy init_left for the box-wide pgrep. All 10/10 after.
-
-- **Files:** tests/checks/32-l5-queue-runner-re.sh, tests/checks/38-run-17-gotchas-and-pack-m3.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, docs/plans/2026-10-29-R1-flakes.md, journal/decisions/2026-10-29-lane-count-end-check.md, CLAUDE.md
-- **Verified:** Before (direct, KEEP=1, the three at once): `32-l5-queue-runner-re: 10/10 green` 342 s; `38-run-17-gotchas-and-pack-m3: 10/10 green` 342 s; `08-scope-sh-l1-02-run-capped-services-gc-scratch: 7/10 green` 1075 s (copies 2, 5 memory gate stop; copy 3 TERM during an init). Forced (HARNESS_COUNT_HOLD=1, end check reverted in a scratch copy): 32 FAIL `MAX_PARALLEL_RUNS 2 → 1 …` (l5a/l5b: `no feature left to try: 2/3 passing`), 38 FAIL `CONTEXT_PACK_BYTES=1024 …` (packs 01-A 02-B 03-A only), 08 FAIL `no user systemd: the run goes bare …`. Edited files on the pre-fix driver: 32 `0/1 green`, 38 `0/1 green`, 08 FAIL bare only (gatestop and initterm green with a foreign `sleep 31` loop); old 08 on the fixed driver with `sleep 2` between STOP and the cp and the foreign loop: FAIL gatestop + initterm. After: `32-l5-queue-runner-re: 10/10 green` 330 s, `38-run-17-gotchas-and-pack-m3: 10/10 green` 328 s, `08-scope-sh-l1-02-run-capped-services-gc-scratch: 10/10 green` 809 s. check.sh: green in 934 s, 973 tests; check-names.txt vs origin/main: added lines only (0 removed); lint-sleeps clean; bash -n on the three files.
-- **Tests:** 973 → 973
-- **Discovery** (affects R1-07, run): Every stub run is M1 (A, B) then M2 (C, after M1): any check on a run's 3/3, M2's tag or its packs can hit R1-04's lane-count race; HARNESS_COUNT_HOLD=1 on that start holds the window every time
-- **Discovery** (affects R1-07, run): pgrep in a check is box-wide (sibling copies, other lanes' suites): match this copy's process by grep -zqF "HARNESS_SCRATCH=$T/" /proc/<pid>/environ (08's init_left)
-- **Discovery** (affects R1-07): mem_gate (lib/scope.sh:127-130) checks memory, then stop, every HARNESS_MEM_POLL (1 s in tests): a check that writes both must not let a poll fall between them
-- **Discovery** (affects R1-07): A forced copy built with git archive has no .git: its 'ledger row has harness_version and harness_dirty' fails there, not on the tree
-- **Resolved:** stub --resume of an unknown id substitutes session_id but leaves the fixture's 00000000-… id in the result line's errors[] (the real CLI names the asked id there)
-- **Proposed change:** R1-07: the flaker table now has every row; the race's checks share one fix (44's), so the review can name HARNESS_COUNT_HOLD=1 on a check's start as the pattern for any stub run that must reach M2
-- *10-R1-06 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 16:33 · R1-06 · passes · 32, 38 and 08's first `no user systemd` check were R1-04's lane-count race: 10/10 green unforced, re… ([in full](progress-archive.md))
 - 2026-10-29 16:14 · R3-02 · passes · lib/features.mjs: every list/attempts/parked write goes through writeAtomic (<file>.<pid>.tmp + rena… ([in full](progress-archive.md))
 - 2026-10-29 15:41 · R1-05 · passes · Both run flakers are R1-04's lane-count race. Neither reproduced unforced (10/10 green each). Forced… ([in full](progress-archive.md))
 - 2026-10-29 15:29 · R3-01 · passes · Wrote docs/plans/2026-10-29-R3-leftovers.md: one section per R3 item with its function, file at 53bd… ([in full](progress-archive.md))
