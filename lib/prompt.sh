@@ -54,13 +54,14 @@ prompt_env() {
     HARNESS_CHECK_RERUN=$CHECK_RERUN   # check.sh caps and reruns the same way for both
 }
 
-# → the Suite line's "last full run …": the wall of the cwd tree's green-<key> (or red-<key>) marker, else of the newest
-# marker with one, else none and the run's CHECK_TIMEOUT (decisions/2026-10-30-suite-length-in-prompt)
+# → the Suite line's "last full run …": the wall of the cwd tree's green-<key>, else of the newest green with one, then
+# the same of the red-<key> markers, else none and the run's CHECK_TIMEOUT (decisions/2026-10-30-suite-length-in-prompt)
 suite_length() {
-  local cache=${HARNESS_CHECK_CACHE:-$STATE/green} key f w="" newest=()
+  local cache=${HARNESS_CHECK_CACHE:-$STATE/green} key f w="" greens=() reds=()
   key=$(node "$HARNESS_HOME/lib/treekey.mjs" 2> /dev/null)
-  mapfile -t newest < <(ls -t "$cache"/green-* "$cache"/red-* 2> /dev/null)
-  for f in ${key:+"$cache/green-$key" "$cache/red-$key"} "${newest[@]}"; do
+  # every green before any red: a red may have stopped early (a compile error, a fail-fast runner), so its wall is a last resort
+  mapfile -t greens < <(ls -t "$cache"/green-* 2> /dev/null); mapfile -t reds < <(ls -t "$cache"/red-* 2> /dev/null)
+  for f in ${key:+"$cache/green-$key"} "${greens[@]}" ${key:+"$cache/red-$key"} "${reds[@]}"; do
     [[ -f $f ]] && w=$(sed -n '/^wall [0-9][0-9]*$/{s/^wall //p;q}' "$f") && [[ -n $w ]] && break
   done
   if [[ -n $w ]]; then echo "$w s: give a full run a timeout of at least twice that"

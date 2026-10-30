@@ -15,8 +15,8 @@
     which skipped the testcount fallback and wrote `\nwall` into `tests-start`. A one-line marker (an older harness's)
     reads as before.
   - `lib/prompt.sh`'s `suite_length`, run by `prompt_render` for every template that renders `parts/run.md`, gives
-    `HARNESS_SUITE_LENGTH`: the `wall` of the cwd tree's `green-<key>`, else its `red-<key>`, else of the newest
-    marker in the cache that has one (`ls -t`), as `<s> s: give a full run a timeout of at least twice that`; with
+    `HARNESS_SUITE_LENGTH`: the `wall` of the cwd tree's `green-<key>`, else of the newest green marker that has
+    one (`ls -t`), then the same of the `red-<key>` markers, as `<s> s: give a full run a timeout of at least twice that`; with
     none, `not measured yet; bounded by CHECK_TIMEOUT <the run's>: give a full run a timeout above that`. Each
     template's *This session* block (coding, initializer, verify, resolve) has `Suite: last full run
     {{SUITE_LENGTH}}`, and the *This run* Suite line ends `cached per code tree; its last full run is under *This
@@ -38,8 +38,8 @@
   - *default:* the rule's background clause (twice the wall is over the foreground limit on this box).
   - *default:* `CLAUDE.md`'s line says `10–11 min on this box on 2026-10-29` without the brief's `at 925 checks`
     (memlint's `derivable-count` rule).
-  - *default:* the fallback scan includes `red-*` markers: a red tree's wall is the suite's length as much as a green
-    one's (S1-03 writes them).
+  - *default:* the scan reads `red-*` markers only when no green one has a wall: a red may have stopped early (a
+    compile error, a fail-fast runner, a red whole-suite rerun), and its 2 s would advise the retry a 4 s timeout.
   - *default:* `suite_length` runs only for the templates that render `parts/run.md` (`entry-resume` and `retro` pay
     no treekey).
   - *default:* the `not measured yet` phrase names the run's own `CHECK_TIMEOUT` (`15m` by default, `25m` here).
@@ -51,3 +51,6 @@
     `# This session`, as above.
   - **Reading `tests/run.sh`'s own `wall … s` line:** that is this suite's output alone; `check.sh` times any
     project's suite.
+
+Updated in place 2026-10-30 (S1-05 review, I3): every green marker's wall before any red's; the cwd tree's red used to
+come second, so a retry's prompt showed the early-stopping red run's seconds.

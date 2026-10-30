@@ -23,22 +23,27 @@ check "suite length: the coding and initializer prompts' This session Suite line
 below() { awk '/^# This session$/ { s = 1 } /last full run ([0-9]+ s|not measured)/ { print (s ? "below" : "above") }' "$1" | sort -u; }
 check "suite length: every kind's wall is under # This session; its This run Suite line points there" \
   'for k in coding initializer verify; do [[ $(below "$SL/prompt-$k.md") == below ]] || bad=1; done; [[ -z ${bad:-} ]] \
+  && sed -n "/^# This session\$/,\$p" "$HH/prompts/resolve.md" | grep -xF "Suite: last full run {{SUITE_LENGTH}}" > /dev/null \
   && grep -qF "cached per code tree; its last full run is under *This session*) · init: " "$SL/prompt-coding.md"'
 check "suite length: tests-start and tests-end hold the count of a two-line marker" \
   '[[ $(cat "$SL/tests-start") == 2 && $(cat "$SL/tests-end") == 2 ]] && grep -qx "wall [0-9]*" "$SL"/green/green-*'
 
-# the lookup, by the command form: the cwd tree's green-<key> (or red-<key>), else the newest marker with a wall, else none
+# the lookup, by the command form: the cwd tree's green-<key>, else the newest green with a wall, then the cwd tree's
+# red-<key>, else the newest red (a red may have stopped early: its wall only when no green has one), else none
 k=$( source "$SL/meta.env" && cd "$WT" && HARNESS_CHECK_KEY_IGNORE=".harness/runs docs/plans" node "$HH/lib/treekey.mjs" )
 fid=$(jq -r '.features[0].id' "$(list sl)")
 sl() { bash "$HH/lib/prompt.sh" "$SL" coding "$fid" 2> /dev/null | grep "^Suite: last full run"; }
 rm -f "$SL"/green/green-* "$SL"/green/red-*
 printf '%s\n' "2 tests" "wall 4321" > "$SL/green/green-$k"; touch -d '-1 hour' "$SL/green/green-$k"
 printf '%s\n' "2 tests" "wall 77" > "$SL/green/green-0123456789abcdef"; sl_own=$(sl)
-rm "$SL/green/green-$k"; printf '%s\n' 1 t1 "wall 55" "check: RED (exit 1 after 55 s)" > "$SL/green/red-$k"; touch -d '-1 hour' "$SL/green/red-$k"; sl_red=$(sl)
+rm "$SL/green/green-$k"; printf '%s\n' 1 t1 "wall 3" "check: RED (exit 1 after 3 s)" > "$SL/green/red-$k"; sl_gr=$(sl)
+rm "$SL/green/green-0123456789abcdef"; touch -d '-1 hour' "$SL/green/red-$k"
+printf '%s\n' 1 t1 "wall 9" "check: RED (exit 1 after 9 s)" > "$SL/green/red-0123456789abcdef"; sl_red=$(sl)
 rm "$SL/green/red-$k"; sl_new=$(sl)
-printf '%s\n' "2 tests" > "$SL/green/green-0123456789abcdef"; : > "$SL/green/green-$k"; sl_none=$(sl)
-check "suite length: the tree's own green marker wins over a newer one, then its red marker, then the newest with a wall" \
-  '[[ $sl_own == "Suite: last full run 4321 s: $PH" && $sl_red == "Suite: last full run 55 s: $PH" && $sl_new == "Suite: last full run 77 s: $PH" ]]'
+rm "$SL/green/red-0123456789abcdef"; printf '%s\n' "2 tests" > "$SL/green/green-0123456789abcdef"; : > "$SL/green/green-$k"; sl_none=$(sl)
+check "suite length: the tree's own green wins over a newer one; any green's wall over a red's; then the tree's red, then the newest" \
+  '[[ $sl_own == "Suite: last full run 4321 s: $PH" && $sl_gr == "Suite: last full run 77 s: $PH" ]] \
+  && [[ $sl_red == "Suite: last full run 3 s: $PH" && $sl_new == "Suite: last full run 9 s: $PH" ]]'
 check "suite length: with no wall line anywhere, the Suite line names the run's CHECK_TIMEOUT" \
   '[[ $sl_none == "Suite: last full run not measured yet; bounded by CHECK_TIMEOUT 15m: give a full run a timeout above that" ]]'
 

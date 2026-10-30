@@ -660,15 +660,20 @@ record lock: pack_and_copy builds the pack and copies it into the slot under one
 record lock: two writers through record() appending 20 lines each lose none (40 lines, every one intact)
 red marker: C's red un-passes it; the retry's init output is the cached red and run.log says suite red before the session
 red marker: a green run removes a planted red-<key>
+red marker: a marker whose exit line isn't a red exit code answers exit 1
+red marker: a red by a signal's code (143) and a red whose rerun timed out write no red-<key>; the next call runs
+red marker: a red under a failed init isn't kept (noted); the next init, which succeeds, runs the suite
 red marker: a red with no HARNESS_FAILED line answers cached for this code tree: whole suite
 red marker: a subset call on the red tree runs the suite and reads no marker
 red marker: a suite that would be green on call 4 still gets the cached red (the key is the tree's)
 red marker: a timeout and a cap kill write no red-<key>, and the next call runs the suite
 red marker: check.sh's usage header names red-<key>
 red marker: red twice with HARNESS_FAILED=a writes red-<key>: 1, a, wall <s>, the RED line as printed; no green-<key>
-red marker: the next full call prints the cached line and the stored RED line, exits 1, runs nothing, writes no check.out
+red marker: the cached answer exits with the stored code (3), not 1
+red marker: the next full call prints the cached line, the stored RED line on this tree's own output, exits 1, runs nothing
 red marker: the red tree ran the suite twice (the full run and the rerun guard's), none from the retry's run_init
 red marker: verify's run_init fresh removes the tree's red-<key> and green-<key>; the suite runs in full on it
+red marker: with this tree's output gone from scratch, the cached answer names the subset call, not another tree's file
 red suite un-passes C
 refused merge leaves the PR, needs Michael
 refused sessions recorded as env
@@ -856,7 +861,7 @@ suite length: a run whose first suite is a cached one-line marker renders 'not m
 suite length: every kind's wall is under # This session; its This run Suite line points there
 suite length: tests-start and tests-end hold the count of a two-line marker
 suite length: the coding and initializer prompts' This session Suite line has the wall of a marker in the run's green/
-suite length: the tree's own green marker wins over a newer one, then its red marker, then the newest with a wall
+suite length: the tree's own green wins over a newer one; any green's wall over a red's; then the tree's red, then the newest
 suite length: with no wall line anywhere, the Suite line names the run's CHECK_TIMEOUT
 suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1
 suite runner: TEST_JOBS=1 and 4 end with the same N/M and PASS names, exit 1 and name the red file

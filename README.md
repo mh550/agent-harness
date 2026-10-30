@@ -114,8 +114,11 @@ no store`.
 
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; a red full run rerun once, never after a timeout or a cap kill, by `CHECK_RERUN`: `auto` (the `HARNESS_FAILED=` files, else the whole suite) · `failed` (the named files only) · `suite` (the whole suite) · `off`, a rerun that goes green counted as a flake in `harness-log.md`, `summary.json` and report.md's `Flakes` row; cached per code tree, whose key
-leaves out `CHECK_KEY_IGNORE`, default `.harness/runs docs/plans`, so a plan alone doesn't rerun it, and each verify
-clears its tree's cached green so the suite runs in full on what it judges; the same list decides a merge: a verified
+leaves out `CHECK_KEY_IGNORE`, default `.harness/runs docs/plans`, so a plan alone doesn't rerun it; a red full run
+that was no timeout or cap kill is cached too, as `red-<key>`, so a retry's pre-session run on the tree just found red
+answers `check: RED (cached for this code tree: <names>)` without running it a third time; each verify clears its
+tree's cached green and red so the suite runs in full on what it judges; every prompt says how long the last full run
+took, `Suite: last full run <s> s: give a full run a timeout of at least twice that` (the green marker's `wall` line); the same list decides a merge: a verified
 milestone whose `main` moved only in those paths merges as verified, without a re-base round, noted `<m>: main changed
 only in ignored paths (…); its verify stands`; every call that ran or answered appends one row to
 `$HARNESS_SCRATCH/check-runs.log`, `<epoch> <full|subset|cached> <seconds>`, which each coding session's

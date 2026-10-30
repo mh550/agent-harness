@@ -39,7 +39,7 @@ STUB_NO_TAMPER=1 STUB_LENIENT=1 "$H" start "$T/proj" inv --spec SPEC.md --foregr
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 check "flakes run: a red every time still un-passes C with today's note after a rerun (the invariant)" \
   'hlog inv | grep -F "C un-passed: suite red after the session" > /dev/null && ! hlog inv | grep -F "flaky:" > /dev/null \
-  && grep -F "red again on a rerun of the whole suite) — last lines of $T/scratch/proj/inv/lanes/M2/check-rerun.out:" "$HARNESS_STATE/proj/inv/logs/04-C.prompt.md" > /dev/null \
+  && grep -E "red again on a rerun of the whole suite\) — last lines of $T/scratch/proj/inv/lanes/M2/check-[0-9a-f]+\.out \(this tree.s first run\):$" "$HARNESS_STATE/proj/inv/logs/04-C.prompt.md" > /dev/null \
   && grep "^done" "$HARNESS_STATE/proj/inv/ended" > /dev/null \
   && grep -F "C attempt 2" "$T/scratch/proj/inv/sessions.log" > /dev/null'
 check "flakes run: a run with no flake writes no flaky: line and no flakes.jsonl" \
