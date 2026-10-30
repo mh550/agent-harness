@@ -146,4 +146,34 @@ check "check partial: a timeout in a partial run is said as such, no rerun, no m
   'grep -qx "check: RED (partial: memlint; timed out after 2s, exit 124 after [0-9]* s) — last lines of $T/pk-hang/s/check-partial.out:" <<< "$o_hang" \
   && [[ $(tail -1 <<< "$o_hang") == rc=124 && $(cat "$T/pk-hang/n") == 1 && ! -e $T/pk-hang/c/green-${k1[0]} && ! -e $T/pk-hang/c/red-${k1[0]} ]]'
 ( cd "$T/pk" && git checkout -q -- . && git clean -fdq )
+
+# ---- the driver with the map (S2-05): a CLAUDE.md-only session gets a partial init; verify's run_init fresh runs in full ----
+# The throwaway project commits the map in its .harness/config.sh (row 4a: the exported map must be the tree's). A
+# counting suite as 80-red-marker's: each call appends `<treekey> <args>` to $CS_LOG and prints what tests/run.sh prints.
+echo 'CHECK_KEY_MAP="CLAUDE.md:memlint"' >> .harness/config.sh && git add -A && git commit -qm "the map" && git push -q origin main
+cat > "$T/cs.sh" <<EOF
+echo "\$(node $HERE/../lib/treekey.mjs) \$*" >> "\$CS_LOG"
+if (( \$# )); then for a; do echo "PASS \$a"; done; echo "\$#/\$# checks passed"; else printf '%s\n' "PASS t1" "PASS t2" "2/2 checks passed"; fi
+EOF
+csrun() { mkdir -p "$HARNESS_STATE/proj/$1" && echo "CHECK_CMD='CS_LOG=$T/cs-$1.log bash $T/cs.sh'" > "$HARNESS_STATE/proj/$1/run.env"; }
+# pkedit: two sessions of A, each editing CLAUDE.md alone and passing nothing, so the suite runs only before each session
+{ cat "$T/base-config.sh"; echo MAX_SESSIONS=2; } > "$T/pk-config.sh"
+csrun pkedit; STUB_EDIT=CLAUDE.md HARNESS_CONFIG=$T/pk-config.sh "$H" start "$T/proj" pkedit --spec SPEC.md --foreground > "$T/pkedit.out" 2>&1
+mapfile -t pe < "$T/cs-pkedit.log" 2> /dev/null   # the full run, then memlint alone on each CLAUDE.md-only tree (the cap's last too)
+check "driver partial: a session that edits only CLAUDE.md gets a partial init (memlint alone after the full run); tests-end is the full count" \
+  'grep "^check: green (partial: memlint, " "$T/init-pkedit-2.out" > /dev/null && [[ ${#pe[@]} -ge 2 ]] && [[ ${pe[0]} =~ ^[0-9a-f]{16}\ $ && ${pe[1]%% *} != "${pe[0]%% *}" ]] \
+  && [[ $(printf "%s\n" "${pe[@]:1}" | grep -cv "^[0-9a-f]\{16\} memlint\$") == 0 ]] \
+  && [[ $(cat "$HARNESS_STATE/proj/pkedit/tests-start") == 2 && $(cat "$HARNESS_STATE/proj/pkedit/tests-end") == 2 ]]'
+# pkv: B (M1's last) passes with a Gotchas line as its only change, so the post-session check on its tree is a partial
+# against A's; verify's run_init fresh must remove that tree's part- too, or the verified tree runs a partial
+git -C "$T/origin.git" update-ref refs/heads/main "$(git rev-parse HEAD)"
+csrun pkv; STUB_GOTCHA_ONLY=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" pkv --spec SPEC.md --foreground > "$T/pkv.out" 2>&1
+pv_b=$(awk '$2 == "memlint" { print $1; exit }' "$T/cs-pkv.log" 2> /dev/null)
+pv_a=$(awk -v b="$pv_b" '$1 == b { exit } NF == 1 { k = $1 } END { print k }' "$T/cs-pkv.log" 2> /dev/null)
+pv_part=$(grep -lx "$pv_b" "$HARNESS_STATE/proj/pkv/green"/part-* 2> /dev/null)
+check "driver partial: verify's run_init fresh removes the verified tree's part-; its suite runs in full (no arguments), after B's partial" \
+  'hlog pkv | grep " · verify M1: suite cache cleared; the suite runs in full on the verified tree$" > /dev/null \
+  && [[ -n $pv_b && -n $pv_a && $pv_a != "$pv_b" ]] && awk -v b="$pv_b" '"'"'$1 == b && NF == 2 { m = 1 } $1 == b && NF == 1 && m { f = 1 } END { exit !f }'"'"' "$T/cs-pkv.log" \
+  && [[ $(grep -c "^$pv_b memlint\$" "$T/cs-pkv.log") == 1 && $(grep -c . <<< "$pv_part") == 1 && $(sed -n 1p "$pv_part") == "$pv_b" ]] \
+  && ! grep -lx "$pv_a" "$HARNESS_STATE/proj/pkv/green"/part-* > /dev/null 2>&1 && ! hlog pkv | grep "verify M1: the suite is red" > /dev/null'
 suite_end

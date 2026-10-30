@@ -205,6 +205,8 @@ deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
 deploy.mjs: vercel and netlify guards merge, keep keys and detect
 driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
 driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
+driver partial: a session that edits only CLAUDE.md gets a partial init (memlint alone after the full run); tests-end is the full count
+driver partial: verify's run_init fresh removes the verified tree's part-; its suite runs in full (no arguments), after B's partial
 each debrief is a commit of ledger/debrief.md
 each session's scope is stopped after it returns
 ended: done; status says so
