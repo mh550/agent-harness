@@ -32,7 +32,7 @@
         "Every new check name is one line in `tests/fixtures/check-names.txt` (LC_ALL=C sorted) and `bash -n tests/lib.sh tests/run.sh tests/stub-claude.sh` passes",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R1-03",
@@ -47,7 +47,7 @@
         "The sweep changes no check name: `git diff origin/main -- tests/fixtures/check-names.txt` shows added lines only",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R1-04",
@@ -66,7 +66,7 @@
       "after": [
         "R1-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R1-05",
@@ -84,7 +84,7 @@
       "after": [
         "R1-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R1-06",
@@ -102,7 +102,7 @@
       "after": [
         "R1-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R1-07",
@@ -118,7 +118,7 @@
         "The flaker table of `docs/plans/2026-10-29-R1-flakes.md` is complete: every row has a cause, a fix and a before → after result (or `not reproduced (10/10 green)`)",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R2-01",
@@ -189,7 +189,7 @@
         "R2-02",
         "R2-03"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R2-05",
@@ -204,7 +204,7 @@
         "`docs/architecture.md` §4 (the journal: the trim, the resume, the `entry-resume` metrics row) and §5 (the session's end: the entry check, no background work) are updated, and `README.md` describes entries (the check, the trim, the one resume) in its steering section",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R3-01",
@@ -220,7 +220,7 @@
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R3-02",
@@ -239,7 +239,7 @@
       "after": [
         "R3-01"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R3-03",
@@ -257,7 +257,7 @@
       "after": [
         "R3-01"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R3-04",
@@ -275,7 +275,7 @@
       "after": [
         "R3-01"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R3-05",
@@ -293,7 +293,7 @@
       "after": [
         "R3-01"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R3-06",
@@ -308,7 +308,7 @@
         "`docs/architecture.md` §4 has the lanes prose: the `lane <m> · …` line of `harness status <run>` and `summary.json`'s `lanes: {max_open, lane_hours, wall_hours}`; §12 is updated; `README.md`'s configuration section mentions `CHECK_KEY_IGNORE`'s role in a merge and `check-runs.log`, and its lint list names `unit-collision` and `unreproducible`",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R4-01",
@@ -325,7 +325,7 @@
       "after": [
         "R2"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R4-02",
@@ -341,7 +341,7 @@
         "Every new check name is one line in `tests/fixtures/check-names.txt`; `node --check lib/needs.mjs` passes",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R4-03",
@@ -357,7 +357,7 @@
         "Every new check name is one line in `tests/fixtures/check-names.txt`; `bash -n lib/record.sh tests/stub-claude.sh` passes",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R4-04",
@@ -377,7 +377,7 @@
       "after": [
         "R4-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "R4-05",
@@ -392,7 +392,7 @@
         "`docs/architecture.md` §4 (the needs record: question items, key, move forward) and §17 (the answer desk and the skill's answer step) are updated, and `README.md`'s steering section describes `harness needs` questions and how to resolve them",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

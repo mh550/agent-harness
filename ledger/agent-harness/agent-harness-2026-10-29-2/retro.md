@@ -1,20 +1,22 @@
 ## Outcome
-The run was stopped by Michael at 2.78 h. It passed 4 of 23 features: R1-01, R2-01, R2-02 and R2-03. Nothing was verified or merged. Tests went from 886 to 900. Cost was $18.55 ($6.72 init, $11.83 build). Two lanes ran, R1 and R2, and both stopped. R3 and R4 were never started. Plan and orientation work took most of the time. Orientation used 1.65M tokens over 553 s.
+Delivered: 23/23 features passed, verified and merged (R3 via PR #61, R4 via PR #62). The run cost $91.07 over 11.7 h wall time and 42 sessions. Build was $44.41 and review $24.25. The first-attempt pass rate was 0.65 and the verify fail rate 0.21. Eight features needed rework: R1-02, R2-01 and R3-01 to R3-06. The main cost of rework was a red suite under load, not bad code.
 
 ## Non-passing features by cause
-- **R1-02 (suite red):** harness bug or environment, i.e. flaky suite plus load. Its entry says: "tests/run.sh --repeat <n>… Six checks in 75-suite-tools.sh, watched failing first." The run un-passed it with "suite red after the session". I did not confirm which check was red, and the run logged flakes at load ~5.3.
-- **R2-01 (un-passed once, then passed):** the session's own change caused it. Its retry entry says the suite was red only because the new Gotchas line made the section 16 lines, which 39-memlint-m4 fails.
-- **18 others:** these were "not reached". R1-03 to R1-07, R2-04, R2-05, and all of R3 and R4 depend on the stop, not on a failure.
+No feature ended "not done", and `summary.json` has `causes: null`. These features were un-passed along the way:
+- R2-01 and R1-02 were un-passed with "suite red after the session". That is environment (suite flakiness under load). Evidence: "R2-01 un-passed: suite red after the session".
+- R1-02 was reset to `passes false` again after R1-03 (13:33). That is environment, not model quality. Evidence: "restored the feature list after R1-03: R1-02: passes true → false".
+- The 6 verify failures and 1 verify escalation were recovered. I did not trace their causes individually.
 
 ## Harness behaviour
-- **Guards:** `red_unpass` fired twice (R2-01, R1-02). That was correct as a mechanism, but both reds were avoidable. One was a memlint overflow and the other probably a flake. Repairs, verify failures and limit waits were all 0.
-- **Flake handling:** the driver re-ran a red file and logged "red, then green on a rerun" for 13-run-2-michael-sets-desk and 08-scope-sh-l1-02-run-capped-services-gc-scratch. It did not do this for R1-02's red.
-- **Waste:** sessions edited entries.jsonl and progress-archive.md four times (R1-01, R2-01, R1-02, R2-02), and the driver restored them each time. R2-01 needed a second session ($3.11 total) for a one-line gotcha trim.
-- **Evidence rows:** none could be checked. No verify session ran because no milestone completed, so `verify_fail_rate` is null.
+- **Suite flakes:** the driver logged at least 7 "flaky: … (red, then green on a rerun)" notes, at load 1.4 to 8.2. Examples are `13-run-2-michael-sets-desk` (twice), `47-lanes-two` (twice), `28-run-14d-harness-merge` (twice) and `32-l5-queue-runner-re`. The rerun logic worked at the end-of-session gate. The two un-passes (R2-01 and R1-02) show it did not cover the per-session check.
+- **Driver-owned files:** sessions edited `entries.jsonl` and `progress-archive.md` about 10 times (R1-01, R2-01, R1-02, R2-02, R2-04, R1-03, R2-05, R1-04, R4-04, R4-05). The driver restored them each time, which was correct, but the sessions kept doing it.
+- **Merges and conflicts:** R4 hit a `CLAUDE.md` conflict with main. The resolve session took 1 min and cost $1.06 in total for 3 resolves. That was cheap and correct.
+- **Context packs:** every one left out 1 to 13 items. I saw no failure caused by this.
+- **Verify evidence:** I did not audit evidence rows against steps. `entries.jsonl` carries `verified_how` but no per-step rows, so that audit is not possible. The `verify-evidence-rows` item is still unfixed.
 
 ## Proposed harness changes
-1. **suite-flake-retry** (proposed, seen 2 → 3): re-run failed test files serially before un-passing a feature. Evidence: R1-02 was un-passed on a red suite while two other flakes appeared at load ~5.3.
-2. **verify-evidence-rows** (proposed, seen 2): record per-step evidence rows from verify sessions in entries.jsonl. There was no evidence this run, because no verify ran.
-3. **memlint-before-session-end** (new): run the memlint check in the session's own end gate. Evidence: R2-01's Gotchas overflow cost a second session.
+1. **`suite-flake-retry`** (proposed, seen 3 → 4): rerun failed test files serially before un-passing a feature. Evidence: the R2-01 and R1-02 un-passes, and 7+ flaky notes at load 5 to 8.
+2. **`verify-evidence-rows`** (proposed, seen 3 → 4): record per-step evidence rows from verify sessions. Evidence: 6 verify sessions and 6 verify failures, with nothing to audit.
+3. **`session-entry-write-guard`** (new): state in the session prompt that `entries.jsonl` and `progress-archive.md` are driver-only. Evidence: about 10 "edited by the session; restored" events.
 
 The proposals are written to `retro-proposals.json`.

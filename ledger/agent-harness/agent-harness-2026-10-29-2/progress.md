@@ -9,100 +9,276 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
-### 2026-10-29 10:48 · R2-03 · passes
+### 2026-10-29 21:24 · verify R4 · passes
 
-Stub: each headless session prints first.jsonl's init line with a fresh session_id (kept in $STUB_DIR/sessions/<id>); --resume logs argv to resume.log, answers an unknown id as unknown-id.out (exit 1), a known one with resumed.jsonl and cumulative cost/modelUsage. STUB_NO_ENTRY, STUB_RESUME_ENTRY=good|bad|good-edits. metrics.mjs: sessionId, resumeRow, session-id, cost, append-resume. 7 checks.
+All five R4 features hold: full suite green (1016), 78-needs-questions 22/22 re-run, docs, decision, review plan and skill checked by reading.
 
-- **Files:** tests/stub-claude.sh, lib/metrics.mjs, tests/checks/05-metrics-pure-tokens-cache.sh, tests/checks/76-entries-survive.sh, tests/fixtures/check-names.txt
-- **Verified:** 7 new checks watched failing (5/12), then green; lib/check.sh: green after a rerun, 900 tests (899/900 first pass: 08 memory gate stop-during-wait, a 60s timing check on a box running 4x slow, green on rerun); manual stub runs: good/good-edits entries validate 0, bad 1, resumed.txt only for good-edits; chained resumes stay cumulative and append-resume on stub transcripts gives 2 in, 3 out, 15121 read, 11278 write
-- **Tests:** 893 → 900
-- **Discovery** (affects R2-04): Stub resume is the '# Entry resume' prompt plus --resume <id>; Feature:/Kind: lines under '# This session' give id and kind. The stub has metrics.mjs cost and append-resume <session> <resume> <metrics> <run> <feature> <model> <role> [wall exit peak lane] ready for entry_resume.
-- **Discovery** (affects R2-04): 76's direct stub runs use STUB_DIR=$T/direct/stub, so $T/resume.log stays absent for R2-04's 'refused → no resume.log' check.
-- **Discovery** (affects R2-04): A stub resume with no STUB_DIR, or of a session whose sessions/<id> file is empty (a refused one), starts from cost 0 and resumed.jsonl's model with zeroed tokens.
-- *06-R2-03 · claude-opus-5-5*
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R4-01 | 1 | read docs/plans/2026-10-29-R4-questions.md headings | sections 1-6 cover reason, key, refresh, move forward, card/sweep, journal_, readers, checks | yes |
+| R4-01 | 2 | grep STUB_ASK_TWO/needs_fixture in plan | stub flags and fixtures listed under Fixtures and stub flags | yes |
+| R4-01 | 3 | git log origin/main \| grep -c harness-merge/...-R2 | 1; plan states R2 merged | yes |
+| R4-01 | 4 | init full suite | green, 1016 tests | yes |
+| R4-02 | 1 | grep REASONS in lib/needs.mjs; bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | question: R(needs_michael,warn,''); key/refresh/exit-3 checks PASS | yes |
+| R4-02 | 2 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | move-forward check PASS (seen+1, asked_in, old in done/) | yes |
+| R4-02 | 3 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | list card after block card and done --why checks PASS | yes |
+| R4-02 | 4 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | sweep resolved-by-later-entry check PASS | yes |
+| R4-02 | 5 | grep check-names.txt; node --check lib/needs.mjs | 22 names listed; syntax ok | yes |
+| R4-02 | 6 | init full suite | green | yes |
+| R4-03 | 1 | read lib/record.sh questions_, stub header; bash -n | flags documented, syntax ok; two-question check PASS | yes |
+| R4-03 | 2 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | two-question items, cards and log note checks PASS | yes |
+| R4-03 | 3 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | seen 2 and resolved-by-run-end checks PASS | yes |
+| R4-03 | 4 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | second run moves first forward check PASS | yes |
+| R4-03 | 5 | check-names grep; bash -n | ok | yes |
+| R4-03 | 6 | init full suite | green | yes |
+| R4-04 | 1 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | parked card before question card PASS | yes |
+| R4-04 | 2 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | status NEEDS YOU 1 · 3 questions / 0 · 2 questions PASS | yes |
+| R4-04 | 3 | bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | no notification carries a question PASS | yes |
+| R4-04 | 4 | grep -c "grep -i 'question'" lib/debrief.sh; bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | 0; debrief Questions for Michael check PASS | yes |
+| R4-04 | 5 | grep SKILL.md; bash tests/run.sh 78 (22/22 pass) + init full suite green 1016 tests | needs done and Updated in place present; skill check PASS | yes |
+| R4-04 | 6 | bash -n lib/debrief.sh; node --check status/needs | ok; names listed | yes |
+| R4-04 | 7 | init full suite | green | yes |
+| R4-05 | 1 | read docs/plans/2026-10-29-R4-review.md | one Opus round, 0 Critical, 4 Important all fixed, diff from file | yes |
+| R4-05 | 2 | read ## Simplifications table | applied/left with why | yes |
+| R4-05 | 3 | read journal/decisions/2026-10-29-questions-wait.md | finding/choice/rejected incl. push per question, parking | yes |
+| R4-05 | 4 | grep architecture.md, README.md for question | §4/§17-area needs/status rows and README describe questions | yes |
+| R4-05 | 5 | init full suite | green | yes |
 
-### 2026-10-29 10:23 · R2-02 · passes
+- *212233-verify-R4 · claude-sonnet-5-5*
 
-Entry check: prompt_env exports HARNESS_ENTRY_CHECK; the coding, verify and init prompts end by running it and forbid ending on background work. entries.mjs: onlyCaps, the header's own '<n> characters (at most 2000)', validate exit 2 on caps only; journalEntry cuts summary/header to 399+… and keeps the entry, ingest prints 'trimmed summary <n>', journal_ notes it. STUB_LONG_SUMMARY. 7 checks.
+### 2026-10-29 21:09 · resolve R4 · passes
 
-- **Files:** lib/entries.mjs, lib/prompt.sh, lib/record.sh, prompts/coding.md, prompts/verify.md, prompts/initializer.md, tests/stub-claude.sh, tests/checks/12-journal-pure-e4-entrys.sh, tests/checks/76-entries-survive.sh, tests/fixtures/check-names.txt
-- **Verified:** Watched 6 of the 7 new checks fail first (the outcome-maybe one guards behaviour that already held); then bash tests/run.sh 12-journal 76-entries 25-run: 23/23; full suite via lib/check.sh: green after a rerun, 893 tests (the first run 892/893: FAIL harness desk --list in 13-run-2-michael-sets-desk, unrelated, green on the rerun); bash -n on prompt.sh record.sh stub-claude.sh, node --check entries.mjs.
-- **Tests:** 886 → 893
-- **Discovery** (affects R2-03, R2-04): 76-entries-survive.sh exists now with a STUB_LONG_SUMMARY run (run id longsum) whose state dir the prompt checks render from; R2-03/R2-04 append to it and must reset main between stub runs
-- **Discovery** (affects R2-04): entries.mjs exports onlyCaps(errs) and validate's CLI exits 2 when only caps fail: entry_resume (R2-04) resumes only on exit 1, as the plan says
-- **Resolved:** settle (tests/lib.sh:74, copy at 15:177) pgreps every debrief of this checkout and 08:239 pgreps `sleep 31` box-wide: another file or a --repeat copy matches them; a cross-file wait under load, first lead for 15 and 08
-- **Proposed change:** R2-02 step 3 says 'the summary is 400 code points plus …'; built as the plan says (399 code points + …, 400 in all), since 401 fails validate and readEntries would drop the line. The step should read '400 code points in all, ending …'.
-- *05-R2-02 · claude-opus-5-5*
-
-### 2026-10-29 10:16 · R1-02 · passes
-
-tests/lib.sh gains wait_for (clock-bounded 0.1 s poll), stub_wait/stub_go; in_has, settle's poll and ran run on wait_for. stub-claude.sh learns STUB_BARRIER=<id>:<name>. tests/run.sh --repeat <n> <name>… runs n fresh copies per file, prints <file>: k/n green and red copies' FAIL lines. Six checks in 75-suite-tools.sh, watched failing first.
-
-- **Files:** tests/lib.sh, tests/run.sh, tests/stub-claude.sh, tests/checks/75-suite-tools.sh, tests/fixtures/check-names.txt, CLAUDE.md
-- **Verified:** 75-suite-tools: 0/6 before the code, 6/6 after; bash tests/run.sh --repeat 3 17-run-8-thin-verify printed 3/3 green (15.6 s); --repeat x prints the usage, exit 2; full suite via check.sh green, 892 tests in 803 s (box loaded by the other lanes); grep -c 'seq 20\|seq 150' tests/lib.sh = 0; bash -n on the four shell files
-- **Tests:** 886 → 892
-- **Discovery** (affects R1-03): wait_for evals in its own frame: an eval'd condition sees the caller's locals (ran's s), so wait_for's locals are _wf_*; settle keeps its sleep 0.5 and the 15 copies of settle/ran stay for R1-03's sweep
-- **Discovery** (affects R1-03): lib.sh's `seq 200` (status_stubs' long brief) matched step 1's grep; it is now {1..200}, same output
-- **Discovery** (affects R1-04, R1-05, R1-06): --repeat keys each copy <file>.c<i> in run.sh's $out; it prints no per-copy PASS lines, only the per-file count, red copies' FAIL lines (copy <i>: …) and the wall time; KEEP=1 adds `copy <i> kept: <T>`
-- **Proposed change:** The plan's STUB_BARRIER check (`suite tools: STUB_BARRIER holds that feature's first coding session until stub_go`) is in 75-suite-tools.sh though R1-02's steps don't name it; the step list could.
-- *04-R1-02 · claude-opus-5-5*
-
-### 2026-10-29 10:01 · R2-01 · passes
-
-Attempt 1's plan (docs/plans/2026-10-29-R2-entries.md) holds every step; the suite was red only because its new Gotchas line made CLAUDE.md's ## Gotchas 16 lines, which 39-memlint-m4 fails. Dropped the narrowest line (brief.md move); memlint on the worktree prints nothing; full suite green, 886 tests.
+CLAUDE.md Gotchas: main (R3-01) replaced the stub --resume line with the {{X}}-above-{{SECTIONS}} line to keep the section within 15 lines; the lane (R4-04) edited the glyph-regex line in place (grep -E "(─)+", BRE parens literal). Kept main's swap and the lane's edited glyph line: 14 lines, no markers, memlint clean.
 
 - **Files:** CLAUDE.md
-- **Verified:** node lib/memlint.mjs . prints nothing; tests/run.sh memlint 19/19; plan grepped for each step's names (HARNESS_ENTRY_CHECK, entry_resume, ENTRY_RESUME_*, .resume.jsonl, 0.0031/0.0055/0.0058, STUB_NO_ENTRY, STUB_RESUME_ENTRY, resume.log, 76-entries-survive, N2 line = 1); full suite via check.sh green in 648 s, 886 tests
-- **Tests:** 886 → 886
-- **Dead end:** attempt 1 adding a 16th Gotchas line — memlint caps ## Gotchas at 15 and the suite lints this worktree
-- **Discovery** (affects run): 39-memlint-m4 lints this worktree's CLAUDE.md: a 16th Gotchas line turns the suite red; replace a line, never add past 15
-- **Resolved:** the driver moves <state>/brief.md into the record's brief.md and empties it at start: a run's briefs are both files (agent-harness-2026-10-28 2026-10-28)
-- *03-R2-01 · claude-opus-5-5*
+- *210913-resolve-R4 · claude-opus-5-5*
 
-### 2026-10-29 09:58 · R1-01 · passes
+### 2026-10-29 21:09 · R4-05 · passes
 
-Wrote docs/plans/2026-10-29-R1-flakes.md: the four tools (wait_for, stub_wait/stub_go + STUB_BARRIER, the sleep lint, --repeat) with signatures, output and named checks in 75-suite-tools.sh; the flaker table (8 rows, cause not yet, 44's missing lane branch first) with code leads; all 96 sleep lines in 22 files marked poll/order/work/text.
+R4 review: 0 Critical, 4 Important, 6 Minor (one Opus round). Fixed RED→GREEN: same-80-char twin questions (twinKey #n), skill passes an undecided-file answer via harness answer, immediate sweep now checked, debrief capped at 12 with a pre-R4 fallback (entries.mjs questions). Decision questions-wait, architecture §3/§4/§16/§17, README Questions.
 
-- **Files:** docs/plans/2026-10-29-R1-flakes.md
-- **Verified:** grep -c sleep tests/checks/*.sh tests/lib.sh: 22 files, 96 lines, each in the sweep table (marks tallied 29 poll + 16 order + 36 work + 15 text = 96); N2 grep on origin/main prints 1 (N1 only, e9fb31e); flaker names copied from tests/fixtures/check-names.txt; suite green, 886 checks (check.sh). Final tree equals the cached green tree (docs/plans is outside the key); memlint clean.
-- **Tests:** 886 → 886
-- **Dead end:** a 16th Gotchas line (pgrep -f is box-wide) — memlint caps Gotchas at 15 (39-memlint-m4 red); the fact stays in the plan and this entry
-- **Discovery** (affects R1-05, R1-06, project): settle (tests/lib.sh:74, copy at 15:177) pgreps every debrief of this checkout and 08:239 pgreps `sleep 31` box-wide: another file or a --repeat copy matches them; a cross-file wait under load, first lead for 15 and 08
-- **Discovery** (affects R1-02, R1-03): waitf is defined identically in 32, 47, 48, 49; settle and ran are copied in file 15 (175-178, 263): the sweep removes the copies, calls become wait_for <s> eval '<expr>'
-- **Discovery** (affects R1-03, R1-06): seven sleeps are negatives (nothing happens over n polls: 13:444, 32:29/32/34, 45:39, 47:39/52); they wait for the actor's nth poll when it leaves a trace, else keep sleep-ok; 32's three are its likely flake
-- **Discovery** (affects R1-04): 44's --base check needs harness-lane/rec/M2 on origin (C parks in M2): leads are sync_lane (record.sh:569), lane_branch_gone (527-538) and the slot sweep's never-pushed-litter rule (726)
-- **Discovery** (affects run): N2 is not on origin main (1 of N1/N2 merged): an overlap conflict between lanes needs Michael
-- **Discovery** (affects R1-04): this session's full suite (with a Gotchas line added) failed 47 `lanes admission: … 80 %` and 45 `lanes run: MAX_LANES=1 …` (two checks) under load; both green on the rerun: 45 and 47 flake today
-- **Proposed change:** R1-02: add a check for STUB_BARRIER (the plan names it: `suite tools: STUB_BARRIER holds that feature's first coding session until stub_go`); the steps list none for it
-- **Proposed change:** R1-04: 45-lanes-run and 47-lanes-two also flaked under load on 2026-10-29 (not in the spec's list); give each --repeat 10 if the budget allows, as the plan's Also seen says
-- *01-R1-01 · claude-opus-5-5*
+- **Files:** lib/needs.mjs, lib/entries.mjs, lib/debrief.sh, lib/record.sh, skills/harness-answer/SKILL.md, tests/checks/78-needs-questions.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-29-R4-review.md, journal/decisions/2026-10-29-questions-wait.md, docs/architecture.md, README.md
+- **Verified:** RED: 4 new checks failed on 93d478d's code, the 5th (immediate sweep) failed with the sweep line removed; then 78 22/22, 58/59/12/38/15 green; full suite (see tests_after); check.sh green, 999 tests (47-lanes-two flaked once, green on the rerun)
+- **Tests:** 994 → 999
+- **Discovery** (affects run): a question item's key may end #<n> (twinKey, lib/needs.mjs): another question of the same entry with the same first 80 characters
+- **Discovery** (affects run): 47-lanes-two flaked once in this session's full run (green on check.sh's rerun)
+- **Question for Michael:** Default taken: the harness-answer skill passes an answer to a question that names no decision file on with `harness answer <run>` (no continue), so the run's next sessions read it under ## Answers. Should `harness needs done --why` on a question do that itself instead, so a hand-run done reaches the sessions too? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/skills/harness-answer/SKILL.md:46, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/docs/plans/2026-10-29-R4-review.md
+- **Proposed change:** Install the updated skill: cp -r skills/harness-answer ~/.claude/skills/ (or the ln -s the README names, once)
+- *27-R4-05 · claude-opus-5-5*
 
-### 2026-10-29 09:19 · R2-01 · passes
+### 2026-10-29 20:47 · verify R3 · passes
 
-Wrote docs/plans/2026-10-29-R2-entries.md: the entry check, the trim (399 + … so readEntries keeps it), the background rule, the resume (entry_resume in record.sh, decided before the ingest, outside the record lock, reusing session() with S_RESUME/S_TURNS/S_TIMEOUT/S_BUDGET), metrics resumeRow, the stubs, 76-entries-survive.sh's check names. N2 not on main.
+All six R3 features hold: suite green at 993, memlint clean, 45/45 on the R3 check files, plan/decision/in-place lines/README/architecture present, grep -c writeFileSync = 1, check-names sorted.
 
-- **Files:** docs/plans/2026-10-29-R2-entries.md, CLAUDE.md
-- **Verified:** Each plan fact checked in code: ingest appends before exit 3; journal_ runs under record's flock; validate rejects a 401-char summary (node); metrics limit refuses the LIMIT_MIDWAY shape (rc 0); fixture costs and modelUsage by jq; N1/N2 grep = 1. Suite green, 886 (cached, plan-only tree).
-- **Tests:** 886 → 886
-- **Discovery** (affects R2-04): The resume must be decided before the ingest (ingest appends the minimal line before exit 3) and outside record's lock (journal_ holds it; a 10m resume would stall the other lane): entry_resume runs in journal(), not journal_.
-- **Discovery** (affects R2-02): A trimmed summary of 400 + … (401) fails validate and readEntries drops it: cut to 399 + … as minimal() does.
-- **Discovery** (affects R2-02): validate's header message is the same for a long string and a non-string; R2-02 gives a long one 'header: <n> characters (at most 2000)' and validate exits 2 when only caps fail.
-- **Discovery** (affects R2-03, R2-04): summary.mjs counts unmatched metrics rows as sessions; entry-resume rows must be filtered out of sessions and kept in cost (summary.mjs and metrics.mjs summary).
-- **Discovery** (affects R2-04): restrict commits a WIP first, so resumed.txt would be in history: drop the resume's uncommitted edits (checkout + clean outside .harness/runs) before restrict.
-- **Discovery** (affects R2-04): Check 25 (STUB_BAD_ENTRY=B) gets resumed after R2-04; its note becomes 'still invalid (...) after one resume'. STUB_PARK/STUB_INBOX_IN_COMMENT write no entry and will be resumed too.
-- **Proposed change:** R2-01 step 2 says the resume is called from journal_ after an ingest exit 3; the plan calls entry_resume from journal before the ingest on the same condition (validate exit 1, not refused), because the ingest has appended the minimal line by exit 3 and journal_ holds the record lock.
-- **Proposed change:** R2-02 step 3 says the cut summary is '400 code points plus …' (401): readEntries would drop it; it should read '400 code points, … last' (399 + …).
-- **Proposed change:** R2-03 needs two small CLI additions the steps don't name: metrics.mjs cost <transcript> (the resume's budget) and metrics.mjs append-resume (the row).
-- *02-R2-01 · claude-opus-5-5*
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R3-01 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 5 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 6 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
 
-### 2026-10-29 09:12 · init · passes
+- *204533-verify-R3 · claude-sonnet-5-5*
 
-23 features: R1 7 (plan, wait_for/barriers/--repeat, sleep lint, three flaker groups, review), R2 5 (plan, entry check + trim, stub + metrics, the one resume, review), R3 6 (plan, features.mjs writes + two lint rules, merge/finish/test-count, suite-ran note + reviewer model, two lanes checks, review), R4 5 (plan, question items, ingest wiring, readers + skill, review). N1 merged, N2 not.
+### 2026-10-29 20:35 · R4-04 · passes
+
+Readers count questions apart: harness needs (NEEDS YOU 1 · 1 question; question cards after stops), harness status (NEEDS YOU 1 · 3 questions · harness needs; run object needs + questions; card '3 questions: harness needs <run>'), debrief's #### Questions for Michael from needs --json. Skill gains ## Question items. Install: cp -r skills/harness-answer ~/.claude/skills/
+
+- **Files:** lib/needs.mjs, lib/status.mjs, lib/debrief.sh, skills/harness-answer/SKILL.md, tests/checks/78-needs-questions.sh, tests/fixtures/check-names.txt, tests/fixtures/status-json-keys.txt, docs/architecture.md, README.md, CLAUDE.md
+- **Verified:** 78-needs-questions 17/17 (4 of the 5 new ones watched failing first; the no-notification one is a guard and passed at once: curl.log non-empty, 0 calls with any question text); full suite via lib/check.sh
+- **Tests:** 989 → 994
+- **Dead end:** grep -x "NEEDS YOU 1 · 1 question (─)*" — BRE takes the parens literally: grep -Ex with (─)+
+- **Discovery** (affects R4-05): status --json run objects gain `questions` (tests/fixtures/status-json-keys.txt has finished[]/running[].questions); `needs` is now the non-question count; doc.needs keeps every item
+- **Discovery** (affects R4-05): 78's debrief check runs `harness debrief --dry-run` over all four stub runs (no runner.log: the last 24 h) and reads each run's #### Questions for Michael block; qr's says `none open`
+- **Discovery** (affects R4-05): R4-05 still owns architecture §4/§17 and README's steering section; this session only touched the status.mjs row, the harness needs view paragraph and the debrief line in README
+- **Proposed change:** R4-04 step 2: the line is `NEEDS YOU 1 · 3 questions · harness needs` (the hint stays); the check matches it whole
+- *21-R4-04 · claude-opus-5-5*
+
+### 2026-10-29 20:32 · R3-06 · passes
+
+Attempt 2: R3 review: 0 Critical, 2 Important, 7 Minor (attempt 1's one Opus round; nothing Critical, so no second). Verify R3 failed only step 5 (memlint, 16 Gotchas lines), fixed by R3-01. Re-checked every step: review plan's Findings and Simplifications tables, lanes-leftovers decision, both in-place lines, architecture §4/§12, README. Suite green at 993, memlint clean. No code change.
 
 - **Files:** .harness/runs/agent-harness-2026-10-29-2/feature_list.json
-- **Verified:** node lib/features.mjs lint on the list prints nothing (6 no-anchor findings fixed); jq parses it; 23 features, every passes false; milestones R1, R2, R3 first features after [], R4 after [R2].
-- **Discovery** (affects run): N2 (conflict resolution) is not on origin main: N2-02 waits on Michael. Only N1 merged (grep -c harness-merge/...-N[12] = 1). A text conflict between two lanes needs Michael as before; each plan says so in one line.
-- **Discovery** (affects R1): The flaker features (R1-04..06) run `bash tests/run.sh --repeat 10 <file>` directly in the session, never through the suite command: its CHECK_TIMEOUT is the whole suite's. One file's ten copies take minutes under load; the spec caps repeats at 30 min per flaker, then `not reproduced`.
-- **Discovery** (affects R3): lib/entries.mjs already writes progress.md atomically (writeAtomic); R3-02's atomic writes concern lib/features.mjs only.
-- **Discovery** (affects run): R2 and R3 both edit lib/record.sh and prompts/coding.md; R2-02 and R3-02 both edit prompts/initializer.md. Whichever merges second takes a re-base verify round; a text conflict needs Michael (no N2).
-- *00-init · claude-fable-5-1*
+- **Verified:** lib/check.sh: green, 993 tests (cached for this tree, R3-05's full run); node lib/memlint.mjs . prints nothing (14 Gotchas bullets + comment); grep of plan/decision/README/architecture for each step's named items; the 34 and 77 checks for the two Important fixes present and listed in check-names.txt
+- **Tests:** 993 → 993
+- **Discovery** (affects run): Since attempt 1 the R3 diff changed only by merging origin/main (one conflict, CLAUDE.md Gotchas; stub-claude.sh headers kept both): no new R3 code to review, so no second reviewer round
+- *26-R3-06 · claude-opus-5-5*
+
+### 2026-10-29 20:30 · R3-05 · passes
+
+Attempt 2: attempt 1's two checks stand (49 gc --dry-run keeps a leftover slot and merged lane branch; 77 two merge_milestones M1 at once merge once). Verify R3 failed it only on memlint (16 Gotchas lines), which R3-01 fixed. Re-verified by mutation: each check fails when its guard is removed. No lib/bin bug found, so no fix.
+
+- **Files:** .harness/runs/agent-harness-2026-10-29-2/feature_list.json
+- **Verified:** Mutations, each reverted: dropping 'flock 8;' at lib/record.sh:590 -> 77-leftovers 8/9, FAIL 'merge_milestones: two at once merge M1 once'; making gc --dry-run also run worktree remove (bin/harness:689) -> 49-lanes-slots 8/11, FAIL 'gc --dry-run names a leftover slot...'. Clean tree: check.sh green, 993 tests; node lib/memlint.mjs . prints nothing; both names in check-names.txt (lines 263, 470).
+- **Tests:** 993 → 993
+- **Proposed change:** R3-05 step 1 should name the slot path $T/wt/proj/lanes/<run>/slot-1 (the real layout), not $T/wt/proj/<run>-slots/slot-1
+- **Proposed change:** R3-05 step 3 should read 'if either check uncovers a bug': neither did (each passes on the current code and fails under a mutation of its guard)
+- *25-R3-05 · claude-opus-5-5*
+
+### 2026-10-29 20:25 · R3-04 · passes
+
+Re-verified: verify R3 failed R3-04 only on step 5 (memlint: 16 Gotchas lines), which R3-01 fixed. Attempt 1's code stands unchanged: check-runs.log rows, 'suite ran <n>x' note, {{MODEL}} review sentence, review gate un-pass before the passes= note.
+
+- **Verified:** 77-leftovers + 42-run-20 subsets 20/20; full suite green (993, cached for this tree); memlint clean; bash -n lib/check.sh lib/lane.sh tests/stub-claude.sh ok
+- **Tests:** 993 → 993
+- *24-R3-04 · claude-opus-5-5*
+
+### 2026-10-29 20:23 · R3-03 · passes
+
+Attempt 2: attempt 1's code (ignored_only in merge_one, record_pr before ledger in finish, run_init's green-only count pin, STUB_FIX_BROKEN) stands; verify R3 was red only on memlint, which R3-01 fixed. Re-verified every step; no code change.
+
+- **Verified:** check.sh leftovers: 77-leftovers 9/9 (merge_one ignored paths, finish ledger copy has 'record PR merged into main', ignored_only pathspecs, run_init green-only pin); full suite via check.sh green (cached for this tree, 993 tests); bash -n lib/record.sh lib/driver.sh tests/stub-claude.sh ok; check-names.txt LC_ALL=C sorted; memlint prints nothing
+- **Tests:** 993 → 993
+- **Resolved:** tests/lib.sh now holds tended, held (clears vwait-* too), ats and debriefs: a check file must not redefine them differently
+- **Proposed change:** R3-03 step 1 should name STUB_MAIN_TOUCH=verify-M1:.harness/runs/other/x.md, not A:… (A's touch is merged into the lane before the verify, so merge_one never sees a moved main)
+- **Proposed change:** The tests/lib.sh tended/held/ats fact now holds on R3 (R1 merged in, tests/lib.sh:80-83) but Gotchas is full at 15 lines and the helpers are readable in place: left out
+- *23-R3-03 · claude-opus-5-5*
+
+### 2026-10-29 20:20 · R3-02 · passes
+
+Attempt 2: the build from attempt 1 is unchanged. Verify R3 failed it only on the suite step: 39-memlint-m4 was red because Gotchas had 16 lines, and R3-01 has since fixed that. Rechecked every step: writeFileSync count 1, node --check ok, the N/M line is in initializer.md, 07 and 77 green (23/23), check-names sorted, memlint clean, full suite green (993).
+
+- **Verified:** grep -c writeFileSync lib/features.mjs = 1; node --check lib/features.mjs; bash tests/run.sh 07-step-lint-pure-r3 77-leftovers: 23/23 checks passed; node lib/memlint.mjs . prints nothing; lib/check.sh: green, 993 tests (cached for this tree)
+- **Tests:** 993 → 993
+- *22-R3-02 · claude-opus-5-5*
+
+### 2026-10-29 20:18 · R3-01 · passes
+
+Verify R3 was red only on 39-memlint-m4: the R3 resolve kept both its {{X}} line and main's stub --resume line, so Gotchas had 16 lines. Dropped the stub --resume line (76-entries-survive checks that shape); memlint prints nothing. The plan file's steps 1-4 hold (spot-checked: sections, Minor 8 quote, unreproducible examples, N2 = 2 on origin main).
+
+- **Files:** CLAUDE.md
+- **Verified:** node lib/memlint.mjs . prints nothing (was CLAUDE.md:80 gotchas: 16 lines); lib/check.sh full suite green in 1014 s, 993 tests, 0 FAIL
+- **Tests:** 993 → 993
+- **Discovery** (affects run): A resolve that keeps both sides' Gotchas lines can push the section past 15 (the comment line counts): drop one in the resolve, or 39-memlint-m4 goes red
+- **Resolved:** stub --resume of an unknown id swaps session_id but leaves 00000000-… in the result's errors[] (the CLI names the id)
+- **Proposed change:** The resolve prompt could say: after keeping both sides of a ## Gotchas conflict, run node lib/memlint.mjs . (39-memlint-m4 lints the worktree's CLAUDE.md)
+- *20-R3-01 · claude-opus-5-5*
+
+### 2026-10-29 19:56 · R4-03 · passes
+
+journal_ (lib/record.sh) now opens one question item per question of the entry it ingests (questions_: the filled text, asker, line, feature for coding), notes '<id>: <n> question(s) for Michael recorded (harness needs)' and sweeps at once when the entry has resolved. Stub learns STUB_ASK_TWO and STUB_ASK_AGAIN. 78 gains 5 stub-run checks.
+
+- **Files:** lib/record.sh, tests/stub-claude.sh, tests/checks/78-needs-questions.sh, tests/fixtures/check-names.txt
+- **Verified:** the 5 new checks failed before the change (7/12 in 78), 12/12 after; 38, 58, 59, 63 green (64/64); bash -n lib/record.sh tests/stub-claude.sh; full suite via lib/check.sh
+- **Tests:** 984 → 989
+- **Discovery** (affects R4-04, R4-05): 78's needs_fixture runs (q-*) are runs of proj: the stub runs rm them first, or a stub question of the same text (ASK_TWO's cache one is the fixture default) moves their item forward
+- **Discovery** (affects R4-04): 78 runs four stub runs (qa ASK_TWO, qr ASK+AGAIN+RESOLVE=A, qm1/qm2 ASK=A), ~70 s; R4-04's no-notification check can reuse qa's curl.log instead of a fifth run
+- **Proposed change:** R4-03 step 3 says STUB_RESOLVE=B; the check uses STUB_ASK=A STUB_ASK_AGAIN=B STUB_RESOLVE=A (A's second session, after M1's verify un-passes it, is the later entry), as the R4 plan's Proposed changes says. Its 'one open item with seen 2' is asserted on the one question item of that run (seen 2, in done/ by the end).
+- *18-R4-03 · claude-opus-5-5*
+
+### 2026-10-29 19:43 · verify R3 · not yet
+
+Full suite RED: 39-memlint-m4 fails (memlint on this worktree prints `CLAUDE.md:80 gotchas: 16 lines, over 15`; the merge resolve kept both Gotchas lines). Every feature ends on the suite step, so all six fail. Other steps spot-checked hold.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R3-01 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-01 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-01 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-01 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-01 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-02 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 5 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-02 | 6 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-03 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-03 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-03 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-03 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-03 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-04 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-04 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-04 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-04 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-04 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-05 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-05 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-05 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-05 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-05 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+| R3-06 | 1 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-06 | 2 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-06 | 3 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-06 | 4 | grep/node --check/bash -n spot checks; subset bash tests/run.sh 07-step-lint-pure-r3 77-leftovers 49-lanes-slots | files/greps present (writeFileSync count 1, docs/plans and decision files exist, README mentions, bash -n ok); subset suites 9/9 and 34/34 pass | yes |
+| R3-06 | 5 | bash tests/run.sh (init full run + rerun of 39-memlint-m4); node lib/memlint.mjs . | 39-memlint-m4: 18/19, FAIL store lookup check; memlint prints CLAUDE.md:80 gotchas: 16 lines, over 15 | no |
+
+- *194129-verify-R3 · claude-sonnet-5-5*
+
+### 2026-10-29 19:24 · resolve R3 · passes
+
+CLAUDE.md Gotchas: the lane added a line on {{X}} placeholders above {{SECTIONS}} in prompt templates (R3-04); main added one on stub --resume of an unknown id leaving 00000000-… in errors[] (R1-06). Independent facts, so both lines are kept, in their place; the section is at 15 lines, inside its limit. Doc-only, so no suite subset applies.
+
+- **Files:** CLAUDE.md
+- *192411-resolve-R3 · claude-opus-5-5*
+
+### 2026-10-29 19:24 · R3-06 · passes
+
+R3 review: 0 Critical, 2 Important, 7 Minor. Fixed: 58 read docs/specs (key-ignored) → fixture + guard check in 34; ignored_only's pathspec checked (77) and moved to treekey.mjs --pathspec, output not a pathspec list re-bases; cached rows in the suite-ran check; run_init's key once; writeAtomic cleanup. Decision lanes-leftovers, two in-place lines, architecture §4/§6/§12, README.
+
+- **Files:** docs/plans/2026-10-29-R3-review.md, journal/decisions/2026-10-29-lanes-leftovers.md, journal/decisions/2026-10-27-review-gate.md, journal/decisions/2026-10-26-test-count-contract.md, docs/architecture.md, README.md, lib/record.sh, lib/treekey.mjs, lib/features.mjs, lib/driver.sh, tests/checks/34-check-key.sh, tests/checks/48-lanes-rebase.sh, +5 more
+- **Verified:** Full suite: check: green in 1007 s, 980 tests (first full run red on 48-lanes-rebase, fixed; 40-run-18 flaked once, green on rerun). New checks seen red: 34 guard on 58; 77 ignored_only on a copy without literal and on an old treekey; 77 suite-ran 2x on a lane.sh without the cached filter.
+- **Tests:** 978 → 980
+- **Dead end:** ignored_only calling treekey.mjs --pathspec with no output check — a sourced shell with the live (older) HARNESS_HOME got a tree key back, a pathspec matching nothing, so a real main move read as ignored (48 red)
+- **Discovery** (affects run): The suite must read nothing under CHECK_KEY_IGNORE paths (34's guard): a merge now skips its re-base on them; copy a spec's shape into tests/fixtures instead
+- **Discovery** (affects run): lib/treekey.mjs --pathspec prints the key's pathspecs; ignored_only (lib/record.sh) uses them and takes only output starting with '.'
+- **Discovery** (affects run): Promote item 'tests/lib.sh now holds tended, held…' still not on R3's branch (R1 not on origin main): left for a session with R1 in
+- **Discovery** (affects run): 40-run-18-test-counts-m5 'a continued run refreshes tests-end' flaked once in a full run (green on the rerun)
+- **Proposed change:** prompts/initializer.md still has folded reviews say 'an Opus subagent reviews the diff' while coding.md sends reviews to the session's own model: align the initializer's wording (pinned by 13/14-run-2 prefix checks, so a deliberate edit)
+- *15-R3-06 · claude-opus-5-5*
+
+## Older entries (in full in progress-archive.md)
+
+- 2026-10-29 19:22 · R4-02 · passes · needs.mjs has the question reason: questionKey (fill and Files: lines cut, folded, 80 code points), … ([in full](progress-archive.md))
+- 2026-10-29 18:52 · R4-01 · passes · Wrote docs/plans/2026-10-29-R4-questions.md: the question reason, a key that drops the harness's Fil… ([in full](progress-archive.md))
+- 2026-10-29 18:35 · R3-05 · passes · Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/… ([in full](progress-archive.md))
+- 2026-10-29 18:33 · verify R1 · passes · All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 10/10 green on 44, 46… ([in full](progress-archive.md))
+- 2026-10-29 18:10 · R3-04 · passes · check.sh appends <epoch.µs> <full|subset|cached> <s> to $HARNESS_SCRATCH/check-runs.log; lane.sh sta… ([in full](progress-archive.md))
+- 2026-10-29 17:09 · R1-07 · passes · R1 review: 0 Critical, 2 Important, 5 Minor. Fixed: opens no longer reopen an exited unreaped lane (… ([in full](progress-archive.md))
+- 2026-10-29 16:52 · R3-03 · passes · merge_one: ignored_only lets a main moved only in cache-ignored paths merge as verified, no re-base,… ([in full](progress-archive.md))
+- 2026-10-29 16:33 · R1-06 · passes · 32, 38 and 08's first `no user systemd` check were R1-04's lane-count race: 10/10 green unforced, re… ([in full](progress-archive.md))
+- 2026-10-29 16:14 · R3-02 · passes · lib/features.mjs: every list/attempts/parked write goes through writeAtomic (<file>.<pid>.tmp + rena… ([in full](progress-archive.md))
+- 2026-10-29 15:41 · R1-05 · passes · Both run flakers are R1-04's lane-count race. Neither reproduced unforced (10/10 green each). Forced… ([in full](progress-archive.md))
+- 2026-10-29 15:29 · R3-01 · passes · Wrote docs/plans/2026-10-29-R3-leftovers.md: one section per R3 item with its function, file at 53bd… ([in full](progress-archive.md))
+- 2026-10-29 14:56 · verify R2 · passes · All 28 steps of R2-01..05 hold. Suite 963/963 (full, this tree), subsets 76/12/05/16/18/25 52/52. Re… ([in full](progress-archive.md))
+- 2026-10-29 14:50 · verify R2 · passes · All five R2 features hold: full suite green (963 tests), 76-entries-survive 18/18, journal and metri… ([in full](progress-archive.md))
+- 2026-10-29 14:32 · R1-04 · passes · The lanes flakes (44, 46, 48, and 45's also-seen) were one coordinator race in lib/driver.sh: a lane… ([in full](progress-archive.md))
+- 2026-10-29 14:31 · resolve R2 · passes · CLAUDE.md Gotchas: lane reworded the stub-runs line and added the 399+… cut fact; main added the mer… ([in full](progress-archive.md))
+- 2026-10-29 14:29 · R2-05 · passes · 0 Critical, 3 Important, 8 Minor. One Opus round on R2.diff. Fixed RED→GREEN: a result-less resume's… ([in full](progress-archive.md))
+- 2026-10-29 13:33 · R1-03 · passes · tests/lint-sleeps.sh lists each sleep line lacking '# sleep-ok:' (default tests/checks/*.sh + tests/… ([in full](progress-archive.md))
+- 2026-10-29 13:27 · R2-04 · passes · entry_resume (lib/record.sh), from journal before the ingest, outside the lock: a coding/verify/init… ([in full](progress-archive.md))
+- 2026-10-29 12:50 · R1-02 · passes · Attempt 2 of R1-02: the code from c319ca4 was right; the suite was red only on 39-memlint-m4, becaus… ([in full](progress-archive.md))
+- 2026-10-29 10:48 · R2-03 · passes · Stub: each headless session prints first.jsonl's init line with a fresh session_id (kept in $STUB_DI… ([in full](progress-archive.md))
+- 2026-10-29 10:23 · R2-02 · passes · Entry check: prompt_env exports HARNESS_ENTRY_CHECK; the coding, verify and init prompts end by runn… ([in full](progress-archive.md))
+- 2026-10-29 10:16 · R1-02 · passes · tests/lib.sh gains wait_for (clock-bounded 0.1 s poll), stub_wait/stub_go; in_has, settle's poll and… ([in full](progress-archive.md))
+- 2026-10-29 10:01 · R2-01 · passes · Attempt 1's plan (docs/plans/2026-10-29-R2-entries.md) holds every step; the suite was red only beca… ([in full](progress-archive.md))
+- 2026-10-29 09:58 · R1-01 · passes · Wrote docs/plans/2026-10-29-R1-flakes.md: the four tools (wait_for, stub_wait/stub_go + STUB_BARRIER… ([in full](progress-archive.md))
+- 2026-10-29 09:19 · R2-01 · passes · Wrote docs/plans/2026-10-29-R2-entries.md: the entry check, the trim (399 + … so readEntries keeps i… ([in full](progress-archive.md))
+- 2026-10-29 09:12 · init · passes · 23 features: R1 7 (plan, wait_for/barriers/--repeat, sleep lint, three flaker groups, review), R2 5 … ([in full](progress-archive.md))
