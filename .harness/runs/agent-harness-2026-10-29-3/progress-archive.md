@@ -7,6 +7,22 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-29 21:53 · S1-01 · passes
+
+Wrote docs/plans/2026-10-30-S1-suite-time.md: the three marker readers (check.sh:67, run_init record.sh:461, tests_end record.sh:488) and their read -r, the wall line, suite_length in prompt_render, the red-<key> lines and placement, the driver's fresh rm, the checks of 34/79/80 with a counting run.env CHECK_CMD and STUB_PLANT_MARKERS, both decision files. No code changed.
+
+- **Files:** docs/plans/2026-10-30-S1-suite-time.md
+- **Verified:** lib/check.sh: green (cached for this code tree, 1016 tests); each step checked against the plan's sections §1, §5, §7, §8
+- **Tests:** 1016 → 1016
+- **Discovery** (affects S1-02): two existing checks cat a whole green marker and go red once it has a wall line: 08-scope-sh…:525 and 73-check-rerun.sh:34; switch them to sed -n 1p
+- **Discovery** (affects S1-02): $(cat) of a marker with an empty line 1 (the stub's test ! -f BROKEN suite prints no count) gives \nwall 0, which skips the testcount fallback and writes \nwall into tests-start: the real reason for read -r
+- **Discovery** (affects S1-02): the stub-run markers' walls are all 0: 79 pins suite_length by rewriting markers and rendering with the command form lib/prompt.sh <state> coding <id>
+- **Discovery** (affects S1-02): a planted one-line green before the first suite: a run.env INIT_CMD writes it to $HARNESS_CHECK_CACHE/green-<treekey> (the init runs before run_init takes the key; load_config exports the cache)
+- **Discovery** (affects S1-03): the red marker's write needs both whys to start 'exit ': keep the rerun's why in a variable (last) and the RED line in another (line) so it is stored as printed
+- **Proposed change:** S1-04 step 2: 'both markers are gone afterwards' cannot hold, the verify's own green run writes green-<key> again; read it as red-<key> absent and green-<key> the verify's (2 tests and a wall), not the planted 99 tests
+- **Proposed change:** S1-02 step 2: with a stub suite every wall is 0; the plan pins the lookup with command-form renders after rewriting markers (wall 4321, newest-mtime 77, none)
+- *01-S1-01 · claude-opus-5-5*
+
 ### 2026-10-29 21:47 · init · passes
 
 11 features: S1 5 (plan, fix 3 the wall line and prompt Suite line, fix 2 red-<key> in check.sh, fix 2 in the driver, review+docs), S2 6 (plan, CHECK_KEY_MAP and treekey --partial, the partial run in check.sh, the lint, the driver and verify invariant, review+docs). S2 after S1, in series, as the spec says.
