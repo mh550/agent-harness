@@ -7,6 +7,19 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-30 01:35 · S2-02 · passes
+
+treekey.mjs is now exported pure functions (ignoreList, parseMap, treeKey, partialKeys, mapNames) behind a CLI guard; adds --partial (full key, reduced key, <blob> <path> lines) and --names (plan §1 default); bare call and --pathspec unchanged (key as live). CHECK_KEY_MAP: config default empty, this repo maps CLAUDE.md to 39/37, prompt_env exports it, template comment. 81-partial-key: 8 checks.
+
+- **Files:** lib/treekey.mjs, lib/config.sh, lib/prompt.sh, .harness/config.sh, templates/project/config.sh, tests/checks/81-partial-key.sh, tests/fixtures/check-names.txt
+- **Verified:** 8 checks in tests/checks/81-partial-key.sh watched red (0/8) then green (8/8); bash tests/run.sh check-key partial-key 18/18; the new treekey's bare key and --pathspec equal the live one's on this tree (1780039c545a411b); node --check and bash -n clean; full suite via check.sh: green in 817 s, 1052 tests
+- **Tests:** 1044 → 1052
+- **Discovery** (affects S2-03): treekey.mjs --names <path>… prints the map's names for those paths (map order, a duplicate path merged into its first entry) and exits 1 with no line when a path is no kept entry's: check.sh's rows 9/10 use it
+- **Discovery** (affects S2-03, S2-05): treekey.mjs's bare call never parses HARNESS_CHECK_KEY_MAP (no stderr); only --partial and --names print the dropped-entry lines
+- **Discovery** (affects S2-03): 81-partial-key.sh's repo $T/pk has CLAUDE.md, README.md, lib/a.sh and docs/plans/p.md committed, CLAUDE.md already appended once (dirty) after the first checks; pk() sets HARNESS_CHECK_KEY_IGNORE='.harness/runs docs/plans'
+- **Discovery** (affects S2-04): the config check in 81 matches this repo's map as CLAUDE.md:39-memlint-m4:37-memory-prompts-m2* so S2-04 can extend it without editing the check
+- *07-S2-02 · claude-opus-5-5*
+
 ### 2026-10-30 01:19 · S2-01 · passes
 
 Wrote docs/plans/2026-10-30-S2-partial-key.md: treekey.mjs's exported functions and --partial (plus a --names mode, default), parseMap's drops, the part-<reduced> sidecar, check.sh's partial path as a numbered table (rows 0-11 + 4a), what a partial green/red writes, the lint's rules and allow-list with today's finds, the checks, decision and S3 line. No code changed.
