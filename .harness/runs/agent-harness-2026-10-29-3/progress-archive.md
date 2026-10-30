@@ -7,6 +7,18 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-30 03:24 · S2-05 · passes
+
+run_init takes key and reduced key from one treekey --partial call; fresh also removes part-<reduced>, so verify's tree runs in full. 81 gains two stub runs: pkedit (CLAUDE.md-only session: partial init, memlint alone, tests-end 2) and pkv (B passes with a Gotchas line only; verify M1's call has no arguments, part- line 1 is B's key). New stub hook STUB_GOTCHA_ONLY.
+
+- **Files:** lib/record.sh, tests/checks/81-partial-key.sh, tests/stub-claude.sh, tests/fixtures/check-names.txt
+- **Verified:** pkv watched red before the fix (cs-pkv.log: B's key with memlint twice, no bare call), green after; bash tests/run.sh partial-key key-map-lint 29/29; git diff main -- lib/lane.sh empty; bash -n on record.sh, 81, stub-claude.sh; full suite through check.sh: green in 806 s, 1073 tests
+- **Tests:** 1071 → 1073
+- **Dead end:** pkedit asserting exactly two suite calls — the capped run checks its last CLAUDE.md-only tree once more (a third memlint call): the check asserts the full run first, then memlint alone on every later call
+- **Discovery** (affects S2-06): pkv uses STUB_GOTCHA_ONLY=B (verify M1, as the feature step words it), not the plan's C (whose verify is M2's)
+- **Discovery** (affects S2-06): run_init now silences treekey --partial's stderr (a dropped map entry): check.sh's own --partial call prints it into init.out
+- *10-S2-05 · claude-opus-5-5*
+
 ### 2026-10-30 03:05 · S2-04 · passes
 
 82-key-map-lint: keymaplint (node in the check file) with rules (a)/(b), widened root expressions, file-wide aliases and six allowed forms, each with its why; fixtures in tests/fixtures/key-map-lint/. Map now CLAUDE.md:39-memlint-m4:37-memory-prompts-m2:79-suite-length; 36, 75 and 81:56 rewritten instead of joined. Decision 2026-10-30-partial-key written; S3 Updated line. 82: 6 checks.
