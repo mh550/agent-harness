@@ -26,6 +26,8 @@ check "review gate: a review whose summary gives no counts is noted not escalate
 check "review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor in its entry summary; a build session's doesn't" \
   'grep -qF "give your entry'"'"'s summary this review'"'"'s findings as \`<n> Critical, <n> Important, <n> Minor\`" "$(plog rquiet R)" \
   && [[ -s $(plog rquiet A) ]] && ! grep -q "<n> Critical" "$(plog rquiet A)"'
+check "review gate: an escalated review is un-passed before its passes= note, which says passes=false (Minor 8)" \
+  'hlog rlimit | awk '"'"'/· review R: sonnet found/ && !a { a = NR } /· R · .* · passes=/ && !b { b = NR; l = $0 } END { exit !(a && b && a < b && l ~ /passes=false/) }'"'"''
 check "review gate: an escalation round refused by a usage limit runs again on opus, still at no attempt" \
   '[[ $(met rlimit R | paste -sd " " -) == *sonnet*" "*opus*" "*opus* ]] && [[ $(hlog rlimit | grep -c "· review R: sonnet found 1 Critical, 0 Important; one round on opus$") == 1 ]] \
   && [[ $(jq -r .R "$HARNESS_STATE/proj/rlimit/attempts.json") == 1 ]] && [[ ! -e $HARNESS_STATE/proj/rlimit/review-escalate ]] && ! compgen -G "$HARNESS_STATE/proj/rlimit/lanes/*/review-escalate" > /dev/null \

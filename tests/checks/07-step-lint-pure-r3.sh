@@ -39,6 +39,30 @@ check "lint: the note counts by rule and names the first finding; clean says cle
   const stub = [{ id: "A", milestone: "M1", steps: ["x", "y"] }, { id: "B", milestone: "M1", steps: ["y"] }, { id: "C", milestone: "M2", steps: ["z"] }];
   process.exit(lintNote(lint(stub)) === "lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor"
     && lintNote([]) === "lint: clean" ? 0 : 1);'\'
+check "lint: unit-collision names each milestone whose LANEU name another shares (M1-x, M1.x, M1_x), none for M1 and M2" 'node --input-type=module -e "$LINT"'\''
+  const ms = ids => ids.flatMap(m => [{ id: `${m}/a`, milestone: m, after: [] }, { id: `${m}/b`, milestone: m }]);
+  const uc = l => lint(l).filter(f => f.rule === "unit-collision");
+  const r = uc(ms(["M1-x", "M0", "M1.x", "M1_x"])), names = o => ["M1-x", "M1.x", "M1_x"].filter(m => m !== o);
+  process.exit(r.map(f => `${f.id}:${f.step}`).join() === "M1-x/a:-,M1.x/a:-,M1_x/a:-"
+    && r.every((f, i) => f.text.startsWith(["M1-x", "M1.x", "M1_x"][i] + " shares lane unit name M1_x with ") && names(["M1-x", "M1.x", "M1_x"][i]).every(o => f.text.includes(o)) && f.text.includes("lib/lane.sh"))
+    && uc(ms(["M1", "M2"])).length === 0 ? 0 : 1);'\'
+check "lint: unreproducible flags a time bound or one run's count, once per step, with its message" 'node --input-type=module -e "$LINT"'\''
+  const msg = "a number another box or run won\x27t reproduce: cite the command that prints it, or a bound with room";
+  const yes = ["it runs in < 150 s", "under 2 minutes", "in at most 30 s", "395 tests", "this run\x27s check.out", "<150 s",
+    "this run\x27s scratch check.out (395 tests)", "963/963 checks passed", "the suite finishes in under 4 min"];
+  const r = lint([{ id: "A", milestone: "M1", steps: yes }]).filter(f => f.rule === "unreproducible");
+  process.exit(r.map(f => f.step).join() === yes.map((_, i) => i + 1).join() && r.every(f => f.text.startsWith(msg)) ? 0 : 1);'\'
+check "lint: unreproducible leaves names, flags, budgets, sizes and file counts alone" 'node --input-type=module -e "$LINT"'\''
+  const no = ["the suite is green", "TEST_FILE_TIMEOUT=10m", "--repeat 10", "at most 400 characters", "a budget of 30 minutes",
+    "`tests/run.sh` prints `N/M checks passed`", "3 checks in tests/checks/07-step-lint-pure-r3.sh", "ENTRY_RESUME_TIMEOUT (10m)",
+    "the 25-minute CHECK_TIMEOUT", "a 10m timeout", "within 2 lines of the note", "R3-04 adds 2 checks", "`wait_for 30 test -f <file>`"];
+  process.exit(lint([{ id: "A", milestone: "M1", steps: no }]).filter(f => f.rule === "unreproducible").map(f => f.step).join() === "" ? 0 : 1);'\'
+check "lint: RULES and the header comment name unit-collision and unreproducible; the note counts them" 'node --input-type=module -e "$LINT"'\''
+  import { RULES } from "'$HERE'/../lib/features.mjs";
+  const n = lintNote(lint([{ id: "A", milestone: "M-1", steps: ["395 tests"] }, { id: "B", milestone: "M_1", after: [], steps: ["`x`"] }]));
+  process.exit(RULES.includes("unit-collision") && RULES.includes("unreproducible") && n.includes("unreproducible: 1") && n.includes("unit-collision: 2") ? 0 : 1);'\'' \
+  && h=$(sed -n "1,/^import/p;/^ \* Pure: the step lint/,/^export const RULES/p" "$HERE/../lib/features.mjs") && [[ $h == *unit-collision*unit-collision* && $h == *unreproducible*unreproducible* ]]'
+check "prompt: the initializer states counts as the command that prints them (N/M checks passed)" 'grep -F "N/M checks passed" "$HERE/../prompts/initializer.md" > /dev/null'
 printf '%s\n' '{"features":[{"id":"A","milestone":"M1","steps":["works correctly","`lib/x.mjs` exists"]},{"id":"B","milestone":"M2","steps":["the suite is green"]}]}' > "$T/lint-list.json"
 printf '%s\n' '{"features":[{"id":"A","milestone":"M1","steps":["`lib/x.mjs` exists"]},{"id":"B","milestone":"M2","after":[],"steps":["the suite is green"]}]}' > "$T/lint-clean.json"
 check "lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean" '

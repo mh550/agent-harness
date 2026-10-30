@@ -22,9 +22,9 @@
 #      until INBOX.md's answers change, and work that doesn't depend on it goes on. Past WEEKLY_STOP_AT of the plan's
 #      7-day window (as sessions report it), the run ends before its next coding session.
 #      DESK=1: whatever needs Michael (a park, verify, a refused merge or conflict) also starts his desk (lib/desk.sh).
-#   4. the end, whatever the reason: every lane exited, summary.json and report.md, a notification (blocked or waiting:
-#      the desk too), a retro session, the harness ledger, the slots removed, and (after a session cap, within the
-#      run's --until) a continuation in the queue.
+#   4. the end, whatever the reason: every lane exited, the slots removed, summary.json and report.md, a notification
+#      (blocked or waiting: the desk too), a retro session, (after a session cap, within the run's --until) a
+#      continuation in the queue, the record PR, and the harness ledger.
 # Verify and retro sessions may not change code: whatever they change outside the run record (retro: anything) is
 # reverted. A session that ends on a usage limit or API error keeps its commits but not its "passes".
 # Environment (set by bin/harness): WT RUN_ID STATE PROJECT_DIR HARNESS_HOME
@@ -342,8 +342,6 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
     note "summary.json and report.md kept in the state dir (harness report reads them after gc)"
   else note "could not keep summary.json and report.md in the state dir: harness report needs the worktree or the ledger"; fi
   rec_commit "HARNESS: summary and retro"; sync_record
-  ledger
-  scratch_done "$key"   # the record keeps the last suite and init output; the run's scratch goes (decisions/2026-10-25-scratch-cleanup)
   # Only a session cap continues by itself (time and Michael's stops don't), within the run's --until, at most
   # AUTO_CONTINUE_MAX times, without giving given-up features new attempts.
   local left conts; left=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" 2>/dev/null); conts=$(cat "$STATE/auto-continues" 2>/dev/null || echo 0)
@@ -358,6 +356,11 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run end notes"; sync_record; }
   record_pr   # its note is one record commit past the merge, which gc's record_only allows
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: record PR"; sync_record; }
+  # after the record PR, so the ledger's copy holds its note; the backlog's and scratch_done's notes come after that copy,
+  # on the record branch only (past the merge). ledger reads the retro's proposals from scratch: scratch_done after it
+  ledger
+  scratch_done "$key"   # the record keeps the last suite and init output; the run's scratch goes (decisions/2026-10-25-scratch-cleanup)
+  [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: ledger notes"; sync_record; }
   log "run kept in $RWT on $RBRANCH · report: harness report $RUN_ID · continue: harness continue $RUN_ID"
   exit 0
 }

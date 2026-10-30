@@ -59,3 +59,11 @@ Updated in place 2026-10-28 (Michael's answers to the memory run's M6 questions)
 (`docs/plans/2026-10-26-M6-review.md`) gets a fix only if it is cheap beside other review leftovers; until then the
 `one round on opus` note is the signal. No review-bearing eval task for now: the gate's cost is judged on the real
 runs' `review_cost_pct` (`evals/NEXT.md` § 5's fallback) until a first eval baseline has run.
+
+Updated in place 2026-10-29: built (R3-04, decisions/2026-10-29-lanes-leftovers) the reviewer on the session's own
+model: `prompts/coding.md` sends reviews to subagents on `{{MODEL}}` (`HARNESS_MODEL`, the session's model after the
+gate's sizing; `lib/prompt.sh` by hand fills the feature's), so a Sonnet review's reviewers are Sonnet and an
+escalated or at-size one's are Opus, judged by the ledger's `review_cost_pct` and the verify-fail rate. And Minor 8:
+the gate now runs before the session's record flip, metrics row and `passes=` note, so an escalated review's first
+row and note say `passes=false` (`passed=false` in place of a later `record F unpass`); the park's records follow the
+note as before.

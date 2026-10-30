@@ -2,6 +2,7 @@
 Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
+CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
 COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
 CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
 DEBRIEF_PAGE_CMD gets the page
@@ -159,11 +160,13 @@ check.sh keeps one check-<key>.out; the green markers stay
 check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s
 check.sh: a TERM stops the suite's scope with it
 check.sh: a subset call is scoped too and never cached
+check.sh: appends <epoch> <full|cached|subset> <seconds> to check-runs.log on each call; no suite configured, no row
 check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
 check.sh: the cached line names the key's ignore list only when it isn't the default
 coding and verify prompts name resolved, project facts and Promote to Gotchas
 coding prompt names CLAUDE.md but doesn't paste it
+coding prompt: reviews go to subagents on the session's own model (A's prompt, its metrics row, prompt.sh's render: claude-sonnet-5-5)
 coding prompt: the Finish step adds one Gotchas line
 conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)
 context.md carries the earlier attempt's dead end
@@ -238,10 +241,12 @@ eval: every task.json validates and a bad one is rejected
 eval: refuses past WEEKLY_STOP_AT
 eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+features.mjs writes atomically: 200 bumps beside a parsing reader, which never throws; no temp file left
 files changed during the session are flagged in the note
 finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
 finish opens usage_limit (limit, warn, no priority) for a usage-limit end; needs.md committed; the run-end title kept
 finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
+finish: record_pr runs before ledger, so the ledger copy of harness-log.md holds the record PR note
 flakes run: a flake on finish's own suite is noted too, and summary.json counts it once
 flakes run: a red every time still un-passes C with today's note after a rerun (the invariant)
 flakes run: a run with no flake writes no flaky: line and no flakes.jsonl
@@ -255,6 +260,7 @@ gc --all-merged keeps the origin default branch and a live run branch, merged or
 gc --deps empties an ended, unmerged run's worktree of its DEPS_DIRS; its branch and committed files stay; --dry-run deletes none
 gc --deps keeps the worktree of a live run and the project checkout
 gc --deps keeps the worktree of a run with a queued continuation
+gc --dry-run names a leftover slot and a merged lane branch on origin, one line each, and removes neither
 gc deleted the run branch
 gc keeps a worktree with an untracked file even when status.showUntrackedFiles=no hides it
 gc kept the tags
@@ -314,6 +320,7 @@ harness status lists a running run's units with MemoryCurrent; an ended run's no
 harness stop --why: the note and ended say stopped by Michael: <why>
 harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
+ignored_only: CHECK_KEY_IGNORE entries are literal prefixes (docs/plans-old, docs/*, ../lib are code), ./x/ is x, no pathspecs is moved; noted once per main
 inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
 inbox.mjs repair: n8n-home's fixture against its template keeps Q2 and moves Q1 above ## Answers, out of the comment
 inbox.mjs repair: the comment back byte for byte, the question directly above ## Answers; exit 3, then 0
@@ -336,6 +343,7 @@ journal: a 410-character summary and outcome "maybe" is minimal with why invalid
 journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
 journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
 journal: validate exits 2 when its only errors are the caps, 1 with any other
+lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
 lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
 lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
 lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)
@@ -413,6 +421,7 @@ ledger has the run
 ledger row has harness_version and harness_dirty
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
 lib.sh: a check replayed for its state (REPLAY=1) runs silent and uncounted
+lint: RULES and the header comment name unit-collision and unreproducible; the note counts them
 lint: no-anchor trips "works correctly", not "the suite is green" or "curl :7814/x returns 200"
 lint: outside-repo trips ~ and /home/ paths, not lib/driver.sh or /tmp/harness/
 lint: review-small for a review in a two-build milestone; review-missing for five builds without one; neither for five with one or docs only
@@ -422,6 +431,9 @@ lint: self-match trips a grep of progress.md for the step's own words, not of ha
 lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
 lint: the note counts by rule and names the first finding; clean says clean
 lint: undeclared trips a later milestone's first feature without after, not the first milestone's
+lint: unit-collision names each milestone whose LANEU name another shares (M1-x, M1.x, M1_x), none for M1 and M2
+lint: unreproducible flags a time bound or one run's count, once per step, with its message
+lint: unreproducible leaves names, flags, budgets, sizes and file counts alone
 main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
 materialize: a record tracked at the slot's base is skip-worktree, so the session's commit carries none of the copy
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
@@ -455,9 +467,11 @@ merge-sorted: the fixture pair merges to a check, b lane check, b main check, c 
 merge-sorted: the harness sets the driver in the slot's worktree config and never in the project's checkout
 merge-sorted: two lanes adding names to a sorted list both merge, with no conflict note and no needs record
 merge-sorted: with the attribute and the worktree driver, two branches adding adjacent names merge with exit 0, no marker, the union
+merge_milestones: two at once merge M1 once (the merged note its one note, one pr merge, the merge on origin main)
 merge_one on the coordinator: merge_conflict names the lane branch, never the record branch, and is notified
 merge_one's conflict opens merge_conflict: the merge-tree files in where, main and the tag commit, notified with the card
 merge_one's refusal opens merge_refused: the PR URL in where and as its click, notified once with it
+merge_one: a main moved only in ignored paths merges the milestone as verified, its note naming them; no re-base
 mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits
 metrics usage: five_hour reads the newest event's five-hour window; the default stays the seven-day one
 metrics.jsonl: every session line has mem_peak_mb from its scope
@@ -571,6 +585,7 @@ project names: start proj from outside it (HARNESS_PROJECTS holding proj) runs i
 project names: status --project proj, -p proj and --project <path> list proj's run; a gone project falls back to its name
 project names: the newest run whose PROJECT_DIR is no repository any more is passed over for an older one
 project names: with no project at all the list says none, and the projects directory shows ~ for the home directory
+prompt: the initializer states counts as the command that prints them (N/M checks passed)
 queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't
 queue add numbers past a parked entry
 queue end triggers one debrief, detached
@@ -667,6 +682,7 @@ review gate: a review's prompt asks for <n> Critical, <n> Important, <n> Minor i
 review gate: a round pending at a session cap with the review at MAX_ATTEMPTS is work left (continuation queued) and runs on the continue
 review gate: a sonnet review reporting 1 Critical gets one round on opus at no attempt
 review gate: after an escalation round that doesn't pass, the review's next attempt runs on opus and never escalates again
+review gate: an escalated review is un-passed before its passes= note, which says passes=false (Minor 8)
 review gate: an escalation round refused by a usage limit runs again on opus, still at no attempt
 review gate: reviewFindings reads <n> Critical and <n> Important, null without either
 review gate: reviewSummary gives the review share with one decimal, null without reviews, and counts the reviews that found nothing
@@ -687,6 +703,7 @@ run start without the deploy guard: one note, one notification
 run start without the netlify guard: one note, one notification
 run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)
 run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m
+run_init: a red first suite pins no test count; the first green one does (tests-start 1, one test count: line, parsed)
 same-project starts: --foreground starts it anyway (harness merge runs that way)
 same-project starts: --now starts it anyway (the runner passes --now: its starts are unchanged)
 same-project starts: a continue queues --until as --until-epoch and --brief-file as its text (as a start queues them)

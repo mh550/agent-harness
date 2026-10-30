@@ -61,8 +61,8 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
   claiming anything. A plan feature writes only the plan.
 - Keep your context small by delegating. Browser and end-to-end checks go to a **Sonnet**
   subagent: tell it what to test, what PASS looks like, the port and the scratch directory. Reviews
-  go to **Opus** subagents that read a diff from a file in your scratch directory and return
-  findings only. Check each claim a subagent makes with one cheap command.
+  go to subagents on your own model (named under *This session*) that read a diff from a file in
+  your scratch directory and return findings only. Check each claim a subagent makes with one cheap command.
 
 ## 3. Finish (always, even if the feature is not done)
 
@@ -124,6 +124,7 @@ Final message: at most 100 words. Say whether the feature passes, the commit, an
 
 Feature: `{{FEATURE}}`
 Milestone: {{MILESTONE}}
+Reviews go to subagents on your own model (`{{MODEL}}`).
 {{CLOCK}}
 {{REVIEW_DIFF}}
 
