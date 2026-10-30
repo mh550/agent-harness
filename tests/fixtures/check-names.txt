@@ -3,6 +3,7 @@ Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
 CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
+CLAUDE.md's suite line points at the run's prompt, with no fixed measurement
 COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
 CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
 DEBRIEF_PAGE_CMD gets the page
@@ -159,7 +160,9 @@ check rerun: the subset form never reruns
 check.sh keeps one check-<key>.out; the green markers stay
 check.sh runs the suite in harness-<run>-check-<pid> at 3G under timeout -k 30s
 check.sh: a TERM stops the suite's scope with it
+check.sh: a green full run's marker is `2 tests` then `wall <s>`; a planted one-line marker gives the same cached line
 check.sh: a subset call is scoped too and never cached
+check.sh: after a whole-suite rerun the marker's wall is the rerun's (a red run with no names is no measure of the suite)
 check.sh: appends <epoch> <full|cached|subset> <seconds> to check-runs.log on each call; no suite configured, no row
 check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
@@ -726,6 +729,7 @@ run start without the deploy guard: one note, one notification
 run start without the netlify guard: one note, one notification
 run start: Vercel deployments on the repo count (STUB_DEPLOYMENTS=vercel)
 run_init stops harness-<run>-svc, then runs the init in it at 3G under timeout -k 10s 10m
+run_init: a marker with an empty count line pins no tests-start
 run_init: a red first suite pins no test count; the first green one does (tests-start 1, one test count: line, parsed)
 same-project starts: --foreground starts it anyway (harness merge runs that way)
 same-project starts: --now starts it anyway (the runner passes --now: its starts are unchanged)
@@ -837,6 +841,12 @@ status view: no run.log line without -v; a bad --since is an error
 status: stop <why> from the phone: the same note, ended and services note
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
+suite length: a run whose first suite is a cached one-line marker renders 'not measured yet' to its initializer
+suite length: every kind's wall is under # This session; its This run Suite line points there
+suite length: tests-start and tests-end hold the count of a two-line marker
+suite length: the coding and initializer prompts' This session Suite line has the wall of a marker in the run's green/
+suite length: the tree's own green marker wins over a newer one, then its red marker, then the newest with a wall
+suite length: with no wall line anywhere, the Suite line names the run's CHECK_TIMEOUT
 suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1
 suite runner: TEST_JOBS=1 and 4 end with the same N/M and PASS names, exit 1 and name the red file
 suite runner: TEST_JOBS=4 replays each file whole in completion order; the largest file starts first
@@ -889,6 +899,7 @@ testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
 testcount.mjs: --total is the last N/M line's total; nothing without one
 testcount.mjs: the runner's last N/M checks passed is the count
+tests_end: the count from a marker's first line; an empty first line writes no tests-end
 the EXIT trap commits its services note: harness-log.md is clean after a TERM
 the EXIT trap of a driver ended unexpectedly opens driver_crash (stored, no synthesized one); its needs.md committed
 the allowlist runs nothing that writes or executes
@@ -897,6 +908,7 @@ the answer skill passes Michael's words through a quoted heredoc
 the answer skill's facts cite file:line
 the answer skill's first step is harness needs, harness parked its alias
 the answer skill: another live run of the project: ask, with the queue add and --now and their merge order
+the coding prompt's suite rule: a timeout twice the last wall, in the background over the tool's limit, never polled
 the deadline verifies a complete milestone once and merges it
 the debrief page never reads a stop reason's words as its tone
 the debrief saw the queue's runs

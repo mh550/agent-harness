@@ -4,7 +4,8 @@
 #   check.sh <args…>     → the suite with these arguments (a subset while iterating); never cached.
 # Needs HARNESS_CHECK_CMD and HARNESS_SCRATCH (the driver exports both, and HARNESS_CHECK_KEY_IGNORE for the key). The last full run's output is
 # $HARNESS_SCRATCH/check.out; the newest tree's is kept as check-<key>.out. A green tree's marker, green-<key> in the
-# cache, holds its test count, so a cached green still has it after scratch is gone (a continued run).
+# cache, holds its test count on line 1 (so a cached green still has it after scratch is gone: a continued run) and
+# `wall <s>`, the first run's seconds (a whole-suite rerun's after one), on line 2 (every prompt's Suite line, decisions/2026-10-30-suite-length-in-prompt).
 # Both forms run under timeout -k 30s HARNESS_CHECK_TIMEOUT (15m), in the scope $HARNESS_SCOPE_PREFIX-check-<pid> capped
 # at HARNESS_CHECK_MEMORY_MAX (3G); bare without a prefix or user systemd (decisions/2026-10-25-capped-suites).
 # A red full run is rerun once by HARNESS_CHECK_RERUN (auto: the HARNESS_FAILED=<names> files, else the whole suite ·
@@ -64,13 +65,13 @@ fi
 
 key=$(node "$here/treekey.mjs" 2>/dev/null) || key=""
 if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's test count (older markers are empty: its output's)
-  n=$(cat "$cache/green-$key"); [[ -n $n ]] || n=$(node "$here/testcount.mjs" "$scratch/check-$key.out")
+  n=""; read -r n < "$cache/green-$key"; [[ -n $n ]] || n=$(node "$here/testcount.mjs" "$scratch/check-$key.out")
   # a key ignore list beyond the default (CHECK_KEY_IGNORE, the run record aside) is named, so a docs change's skip is explained
   ki=$(tr -s ' \t' '\n' <<< "${HARNESS_CHECK_KEY_IGNORE:-}" | grep -vx -e '' -e '\.harness/runs' | paste -sd' '); [[ $ki == docs/plans ]] && ki=""
   echo "check: green (cached for this code tree${n:+, $n}${ki:+; key ignores: $ki})"; row cached; exit 0
 fi
 rm -f "$scratch/check-rerun.out"   # a check-rerun.out always belongs to the check.out beside it
-run "$cmd" > "$scratch/check.out" 2>&1; rc=$?
+run "$cmd" > "$scratch/check.out" 2>&1; rc=$? w=$(( $(date +%s) - start ))   # the suite's length: a rerun's is a subset's
 [[ -n $key ]] && cp "$scratch/check.out" "$scratch/check-$key.out" \
   && find "$scratch" -maxdepth 1 -name 'check-*.out' ! -name "check-$key.out" -delete   # the newest tree's only: the markers are in $cache
 # the rerun guard: a red that isn't a timeout or a cap kill (a rerun would cost the whole timeout again, or be killed
@@ -89,12 +90,13 @@ if (( rc )); then
   if [[ -n $how ]]; then   # the names as arguments, the subset form's way: never spliced into the command
     out=$scratch/check-rerun.out r0=$(date +%s) args=(); [[ $how == failed ]] && args=("${names[@]}")
     run "$cmd \"\$@\"" _ "${args[@]}" > "$out" 2>&1; rc=$?
+    [[ $how == suite ]] && w=$(( $(date +%s) - r0 ))   # a red with no names says nothing of the suite's length; its whole rerun does
   fi
 fi
 s=$(( $(date +%s) - start ))
-if (( rc == 0 )); then   # the marker ("<n> tests" or empty) outlives scratch; a flake's is its first run's total, not the rerun's subset
+if (( rc == 0 )); then   # the marker ("<n> tests" or empty, then the wall) outlives scratch; a flake's count is its first run's total
   n=$(node "$here/testcount.mjs" "$scratch/check.out" ${how:+--total})
-  [[ -n $key ]] && printf '%s' "${n:+$n$'\n'}" > "$cache/green-$key"
+  [[ -n $key ]] && printf '%s\nwall %s\n' "$n" "$w" > "$cache/green-$key"
   if [[ -n $how ]]; then   # a flake: green, named and counted
     [[ -n $key && -z $n ]] && rm -f "$scratch/check-$key.out"   # no total: unknown beats the red run's passes
     load=$(cut -d' ' -f1-3 /proc/loadavg 2> /dev/null)

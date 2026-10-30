@@ -458,7 +458,7 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   # when this green was cached
   local n="" out=$SCRATCH/check-$key.out
   if (( crc == 0 )) && [[ ! -f $STATE/tests-start ]]; then
-    n=$(cat "$STATE/green/green-$key" 2> /dev/null)
+    [[ -f $STATE/green/green-$key ]] && read -r n < "$STATE/green/green-$key"   # line 1, the count (line 2 is the wall)
     [[ -n $n || ! -f $out ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$out")
     [[ -n $n ]] && echo "${n%% *}" > "$STATE/tests-start"
   fi
@@ -485,7 +485,7 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
 tests_end() {   # [final]
   local key n=""; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
   if [[ -f $STATE/green/green-$key ]]; then
-    n=$(cat "$STATE/green/green-$key"); [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out" 2> /dev/null)
+    read -r n < "$STATE/green/green-$key"; [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$key.out" 2> /dev/null)
   fi
   if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; elif [[ ${1:-} == final ]]; then rm -f "$STATE/tests-end"; fi
 }

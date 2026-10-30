@@ -522,7 +522,7 @@ ck2() { ( cd "$T/ck2" && HARNESS_SCRATCH=$T/ck2s HARNESS_CHECK_CACHE=$T/ck2c HAR
 ck2 > /dev/null; ck2k1=$(cd "$T/ck2" && node "$HERE/../lib/treekey.mjs"); echo b > "$T/ck2/f"; ck2 > /dev/null; ck2k2=$(cd "$T/ck2" && node "$HERE/../lib/treekey.mjs")
 echo a > "$T/ck2/f"; ck2_back=$(ck2)   # back to the first tree: green from its marker, its output gone
 check "check.sh keeps one check-<key>.out; the green markers stay" '[[ $(ls "$T"/ck2s/check-*.out | wc -l) == 1 && -f $T/ck2s/check-$ck2k2.out && $ck2k1 != "$ck2k2" ]] \
-  && [[ $(cat "$T/ck2c/green-$ck2k1") == "1 tests" && -f $T/ck2c/green-$ck2k2 && $ck2_back == "check: green (cached for this code tree, 1 tests)" ]]'
+  && [[ $(sed -n 1p "$T/ck2c/green-$ck2k1") == "1 tests" && -f $T/ck2c/green-$ck2k2 && $ck2_back == "check: green (cached for this code tree, 1 tests)" ]]'
 check "the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created" 'grep -qxF "cache: $T/cache/harness/proj" "$HARNESS_STATE/proj/scrub/init.out" \
   && grep -qxF "scrub $T/cache/harness/proj" "$T/cache.log" && [[ -d $T/cache/harness/proj ]]'
 mkdir -p "$T/guard/proj/r1" "$T/guard/proj/x"; for g in "$T/guard" "$T/guard/proj" "$T/guard/proj/r1" "$T/guard/proj/x"; do : > "$g/marker"; done
