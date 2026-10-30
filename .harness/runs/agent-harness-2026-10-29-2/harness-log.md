@@ -172,3 +172,8 @@
 - 2026-10-29 20:30 · review R3-06: 886 changed lines, at or over 400; opus
 - 2026-10-29 20:30 · context.md for R3-06: 8002 bytes, 5 items left out
 - 2026-10-29 20:32 · R3-06 · claude-opus-5-5 · passes=true · 1 min · 21/23 passing · tests 993
+- 2026-10-29 20:32 · verify R3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-29 20:35 · R4-04: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 20:35 · R4-04: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 20:35 · R4-04: gotchas +0 ~1 -0
+- 2026-10-29 20:35 · R4-04 · claude-opus-5-5 · passes=true · 38 min · 22/23 passing · tests 994

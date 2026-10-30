@@ -9,6 +9,20 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:35 · R4-04 · passes
+
+Readers count questions apart: harness needs (NEEDS YOU 1 · 1 question; question cards after stops), harness status (NEEDS YOU 1 · 3 questions · harness needs; run object needs + questions; card '3 questions: harness needs <run>'), debrief's #### Questions for Michael from needs --json. Skill gains ## Question items. Install: cp -r skills/harness-answer ~/.claude/skills/
+
+- **Files:** lib/needs.mjs, lib/status.mjs, lib/debrief.sh, skills/harness-answer/SKILL.md, tests/checks/78-needs-questions.sh, tests/fixtures/check-names.txt, tests/fixtures/status-json-keys.txt, docs/architecture.md, README.md, CLAUDE.md
+- **Verified:** 78-needs-questions 17/17 (4 of the 5 new ones watched failing first; the no-notification one is a guard and passed at once: curl.log non-empty, 0 calls with any question text); full suite via lib/check.sh
+- **Tests:** 989 → 994
+- **Dead end:** grep -x "NEEDS YOU 1 · 1 question (─)*" — BRE takes the parens literally: grep -Ex with (─)+
+- **Discovery** (affects R4-05): status --json run objects gain `questions` (tests/fixtures/status-json-keys.txt has finished[]/running[].questions); `needs` is now the non-question count; doc.needs keeps every item
+- **Discovery** (affects R4-05): 78's debrief check runs `harness debrief --dry-run` over all four stub runs (no runner.log: the last 24 h) and reads each run's #### Questions for Michael block; qr's says `none open`
+- **Discovery** (affects R4-05): R4-05 still owns architecture §4/§17 and README's steering section; this session only touched the status.mjs row, the harness needs view paragraph and the debrief line in README
+- **Proposed change:** R4-04 step 2: the line is `NEEDS YOU 1 · 3 questions · harness needs` (the hint stays); the check matches it whole
+- *21-R4-04 · claude-opus-5-5*
+
 ### 2026-10-29 20:32 · R3-06 · passes
 
 Attempt 2: R3 review: 0 Critical, 2 Important, 7 Minor (attempt 1's one Opus round; nothing Critical, so no second). Verify R3 failed only step 5 (memlint, 16 Gotchas lines), fixed by R3-01. Re-checked every step: review plan's Findings and Simplifications tables, lanes-leftovers decision, both in-place lines, architecture §4/§12, README. Suite green at 993, memlint clean. No code change.
@@ -238,24 +252,9 @@ All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 1
 
 - *174535-verify-R1 · claude-sonnet-5-5*
 
-### 2026-10-29 18:10 · R3-04 · passes
-
-check.sh appends <epoch.µs> <full|subset|cached> <s> to $HARNESS_SCRATCH/check-runs.log; lane.sh stamps around session coding and notes '<id>: suite ran <n>x (<s> s) in the session'. Reviews go to subagents on the session's model ({{MODEL}}, HARNESS_MODEL; prompt.sh fills the feature's). The review gate un-passes before the record flip, row and passes= note. 4 checks.
-
-- **Files:** lib/check.sh, lib/lane.sh, lib/prompt.sh, prompts/coding.md, tests/stub-claude.sh, tests/checks/77-leftovers.sh, tests/checks/42-run-20-review-gate-rounds-m6.sh, tests/fixtures/check-names.txt
-- **Verified:** tests/run.sh 77-leftovers 7/7 and 42-run-20 12/12 after watching the 4 new checks fail; full suite (lib/check.sh) green after a rerun, 976 tests: 08-scope flaked in all three full runs, a different check each time (gatestop, lane count, ledger row), green on the third run's rerun; Opus review: 0 Critical, 0 Important, 2 Minor (both fixed)
-- **Tests:** 972 → 976
-- **Dead end:** {{MODEL}} in §2's review sentence (the plan's wording) — §2 is the static part above {{SECTIONS}}: 08's 'two coding prompts share a byte-identical prefix' check went red (demo's A and B run on different models; decisions/2026-10-21-static-first-prompts). §2 now says 'on your own model (named under *This session*)' and the sentence with `{{MODEL}}` is a This session line
-- **Dead end:** second-resolution stamps (date +%s) as the plan's awk had them — a run_init row ending in t0's second counts toward the session (>=), or a quick stub call is missed (>); rows and stamps are date +%s.%6N (a dot in any locale) with strict bounds
-- **Discovery** (affects project): A {{X}} above {{SECTIONS}} in a prompt template turns 08/13/14/15's byte-identical-prefix check red once two sessions' values differ: session values go under This session
-- **Discovery** (affects R3-06, run): 08-scope flaked twice in this session's full runs (gatestop memory gate; M2's lane never started, 2/3 passing): R1-06's fixes (HARNESS_COUNT_HOLD, gatestop at 2 GB) are not on this lane's base
-- **Discovery** (affects R3-06): An escalated review's first metrics row, passes= note and 'HARNESS: after R' commit now say passes=false (were true)
-- **Proposed change:** R3-04 step 2: the model id is in the This session review line, not §2 (static-first-prompts); R3-06's decision file should say so and add an in-place line to decisions/2026-10-21-static-first-prompts if wanted
-- **Proposed change:** R3-06: architecture §4 (state: $SCRATCH/check-runs.log) and the README should name the suite ran note; summary.json has no 'review round pending' cause (plan §9)
-- *13-R3-04 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 18:10 · R3-04 · passes · check.sh appends <epoch.µs> <full|subset|cached> <s> to $HARNESS_SCRATCH/check-runs.log; lane.sh sta… ([in full](progress-archive.md))
 - 2026-10-29 17:09 · R1-07 · passes · R1 review: 0 Critical, 2 Important, 5 Minor. Fixed: opens no longer reopen an exited unreaped lane (… ([in full](progress-archive.md))
 - 2026-10-29 16:52 · R3-03 · passes · merge_one: ignored_only lets a main moved only in cache-ignored paths merge as verified, no re-base,… ([in full](progress-archive.md))
 - 2026-10-29 16:33 · R1-06 · passes · 32, 38 and 08's first `no user systemd` check were R1-04's lane-count race: 10/10 green unforced, re… ([in full](progress-archive.md))

@@ -9,6 +9,20 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:35 · R4-04 · passes
+
+Readers count questions apart: harness needs (NEEDS YOU 1 · 1 question; question cards after stops), harness status (NEEDS YOU 1 · 3 questions · harness needs; run object needs + questions; card '3 questions: harness needs <run>'), debrief's #### Questions for Michael from needs --json. Skill gains ## Question items. Install: cp -r skills/harness-answer ~/.claude/skills/
+
+- **Files:** lib/needs.mjs, lib/status.mjs, lib/debrief.sh, skills/harness-answer/SKILL.md, tests/checks/78-needs-questions.sh, tests/fixtures/check-names.txt, tests/fixtures/status-json-keys.txt, docs/architecture.md, README.md, CLAUDE.md
+- **Verified:** 78-needs-questions 17/17 (4 of the 5 new ones watched failing first; the no-notification one is a guard and passed at once: curl.log non-empty, 0 calls with any question text); full suite via lib/check.sh
+- **Tests:** 989 → 994
+- **Dead end:** grep -x "NEEDS YOU 1 · 1 question (─)*" — BRE takes the parens literally: grep -Ex with (─)+
+- **Discovery** (affects R4-05): status --json run objects gain `questions` (tests/fixtures/status-json-keys.txt has finished[]/running[].questions); `needs` is now the non-question count; doc.needs keeps every item
+- **Discovery** (affects R4-05): 78's debrief check runs `harness debrief --dry-run` over all four stub runs (no runner.log: the last 24 h) and reads each run's #### Questions for Michael block; qr's says `none open`
+- **Discovery** (affects R4-05): R4-05 still owns architecture §4/§17 and README's steering section; this session only touched the status.mjs row, the harness needs view paragraph and the debrief line in README
+- **Proposed change:** R4-04 step 2: the line is `NEEDS YOU 1 · 3 questions · harness needs` (the hint stays); the check matches it whole
+- *21-R4-04 · claude-opus-5-5*
+
 ### 2026-10-29 20:32 · R3-06 · passes
 
 Attempt 2: R3 review: 0 Critical, 2 Important, 7 Minor (attempt 1's one Opus round; nothing Critical, so no second). Verify R3 failed only step 5 (memlint, 16 Gotchas lines), fixed by R3-01. Re-checked every step: review plan's Findings and Simplifications tables, lanes-leftovers decision, both in-place lines, architecture §4/§12, README. Suite green at 993, memlint clean. No code change.
