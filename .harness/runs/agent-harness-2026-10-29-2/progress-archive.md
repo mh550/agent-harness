@@ -9,6 +9,19 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 21:09 · R4-05 · passes
+
+R4 review: 0 Critical, 4 Important, 6 Minor (one Opus round). Fixed RED→GREEN: same-80-char twin questions (twinKey #n), skill passes an undecided-file answer via harness answer, immediate sweep now checked, debrief capped at 12 with a pre-R4 fallback (entries.mjs questions). Decision questions-wait, architecture §3/§4/§16/§17, README Questions.
+
+- **Files:** lib/needs.mjs, lib/entries.mjs, lib/debrief.sh, lib/record.sh, skills/harness-answer/SKILL.md, tests/checks/78-needs-questions.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-29-R4-review.md, journal/decisions/2026-10-29-questions-wait.md, docs/architecture.md, README.md
+- **Verified:** RED: 4 new checks failed on 93d478d's code, the 5th (immediate sweep) failed with the sweep line removed; then 78 22/22, 58/59/12/38/15 green; full suite (see tests_after); check.sh green, 999 tests (47-lanes-two flaked once, green on the rerun)
+- **Tests:** 994 → 999
+- **Discovery** (affects run): a question item's key may end #<n> (twinKey, lib/needs.mjs): another question of the same entry with the same first 80 characters
+- **Discovery** (affects run): 47-lanes-two flaked once in this session's full run (green on check.sh's rerun)
+- **Question for Michael:** Default taken: the harness-answer skill passes an answer to a question that names no decision file on with `harness answer <run>` (no continue), so the run's next sessions read it under ## Answers. Should `harness needs done --why` on a question do that itself instead, so a hand-run done reaches the sessions too? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/skills/harness-answer/SKILL.md:46, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/docs/plans/2026-10-29-R4-review.md
+- **Proposed change:** Install the updated skill: cp -r skills/harness-answer ~/.claude/skills/ (or the ln -s the README names, once)
+- *27-R4-05 · claude-opus-5-5*
+
 ### 2026-10-29 20:47 · verify R3 · passes
 
 All six R3 features hold: suite green at 993, memlint clean, 45/45 on the R3 check files, plan/decision/in-place lines/README/architecture present, grep -c writeFileSync = 1, check-names sorted.

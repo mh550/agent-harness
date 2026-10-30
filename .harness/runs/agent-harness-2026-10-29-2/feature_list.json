@@ -392,7 +392,7 @@
         "`docs/architecture.md` §4 (the needs record: question items, key, move forward) and §17 (the answer desk and the skill's answer step) are updated, and `README.md`'s steering section describes `harness needs` questions and how to resolve them",
         "the suite is green: `bash tests/run.sh` ends with every check passing"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

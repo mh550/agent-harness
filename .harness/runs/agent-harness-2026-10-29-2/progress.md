@@ -9,6 +9,19 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 21:09 · R4-05 · passes
+
+R4 review: 0 Critical, 4 Important, 6 Minor (one Opus round). Fixed RED→GREEN: same-80-char twin questions (twinKey #n), skill passes an undecided-file answer via harness answer, immediate sweep now checked, debrief capped at 12 with a pre-R4 fallback (entries.mjs questions). Decision questions-wait, architecture §3/§4/§16/§17, README Questions.
+
+- **Files:** lib/needs.mjs, lib/entries.mjs, lib/debrief.sh, lib/record.sh, skills/harness-answer/SKILL.md, tests/checks/78-needs-questions.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-29-R4-review.md, journal/decisions/2026-10-29-questions-wait.md, docs/architecture.md, README.md
+- **Verified:** RED: 4 new checks failed on 93d478d's code, the 5th (immediate sweep) failed with the sweep line removed; then 78 22/22, 58/59/12/38/15 green; full suite (see tests_after); check.sh green, 999 tests (47-lanes-two flaked once, green on the rerun)
+- **Tests:** 994 → 999
+- **Discovery** (affects run): a question item's key may end #<n> (twinKey, lib/needs.mjs): another question of the same entry with the same first 80 characters
+- **Discovery** (affects run): 47-lanes-two flaked once in this session's full run (green on check.sh's rerun)
+- **Question for Michael:** Default taken: the harness-answer skill passes an answer to a question that names no decision file on with `harness answer <run>` (no continue), so the run's next sessions read it under ## Answers. Should `harness needs done --why` on a question do that itself instead, so a hand-run done reaches the sessions too? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/skills/harness-answer/SKILL.md:46, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-2/slot-0/docs/plans/2026-10-29-R4-review.md
+- **Proposed change:** Install the updated skill: cp -r skills/harness-answer ~/.claude/skills/ (or the ln -s the README names, once)
+- *27-R4-05 · claude-opus-5-5*
+
 ### 2026-10-29 20:47 · verify R3 · passes
 
 All six R3 features hold: suite green at 993, memlint clean, 45/45 on the R3 check files, plan/decision/in-place lines/README/architecture present, grep -c writeFileSync = 1, check-names sorted.
@@ -229,24 +242,9 @@ Wrote docs/plans/2026-10-29-R4-questions.md: the question reason, a key that dro
 - **Proposed change:** R4-04 step 2: the status line is 'NEEDS YOU 1 · 3 questions · harness needs' (the hint stays); the check matches the prefix
 - *16-R4-01 · claude-opus-5-5*
 
-### 2026-10-29 18:35 · R3-05 · passes
-
-Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/slot-1) and the merged harness-lane/sp/M1 on origin (one would: line each, both kept; the real gc then removes the slot). 77 starts two merge_milestones M1 at once on one state and clone: one note, one pr merge. Both green at once; each fails when what it guards is broken.
-
-- **Files:** tests/checks/49-lanes-slots.sh, tests/checks/77-leftovers.sh, tests/fixtures/check-names.txt, CLAUDE.md
-- **Verified:** bash tests/run.sh 77-left 49-lanes: 19/19. Mutations, reverted: rm_wt's dry branch also removing the worktree → 'FAIL gc --dry-run names a leftover slot…' (8/11); merge_milestones without flock 8 → 'FAIL merge_milestones: two at once merge M1 once…' (7/8), green again with it. Full suite via lib/check.sh: green in 956 s, 978 tests, no rerun.
-- **Tests:** 976 → 978
-- **Dead end:** the first concurrent check counted '· M1 merged into main' lines only — without the lock it still passed: the second call lost git's ref lock on the harness-merge push and noted 'push of harness-merge/mm-M1 failed'; the check now requires the merged note to be the log's one line
-- **Discovery** (affects R3-06): No bug: gc --dry-run's slot and lane-branch passes print would: lines only, and merge.lock serializes two merge_milestones (the second finds merged-M1 silently)
-- **Discovery** (affects R3-06): Without merge.lock two merge_milestones on one clone race on the harness-merge push (ref lock) or note 'already there': the lock is what keeps the note single
-- **Discovery** (affects run): Promote item 'tests/lib.sh now holds tended, held…' does not hold on R3's branch (R1-07's lib.sh is not merged here; 47/48/49/76/77-resolve define held and ats themselves): left for a session on a branch with R1 in
-- **Resolved:** A {{X}} above {{SECTIONS}} in a prompt template turns 08/13/14/15's byte-identical-prefix check red once two sessions' values differ: session values go under This session
-- **Proposed change:** R3-05 step 1 names $T/wt/proj/<run>-slots/slot-1; slots live at $T/wt/proj/lanes/<run>/slot-<k> (the check uses lanes/sp/slot-1, as the R3 plan says)
-- **Proposed change:** Gotchas: the 'stub --resume of an unknown id…' line was replaced by the {{SECTIONS}} line (the section was at 15 with its comment)
-- *14-R3-05 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 18:35 · R3-05 · passes · Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean leftover slot (lanes/sp/… ([in full](progress-archive.md))
 - 2026-10-29 18:33 · verify R1 · passes · All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 10/10 green on 44, 46… ([in full](progress-archive.md))
 - 2026-10-29 18:10 · R3-04 · passes · check.sh appends <epoch.µs> <full|subset|cached> <s> to $HARNESS_SCRATCH/check-runs.log; lane.sh sta… ([in full](progress-archive.md))
 - 2026-10-29 17:09 · R1-07 · passes · R1 review: 0 Critical, 2 Important, 5 Minor. Fixed: opens no longer reopen an exited unreaped lane (… ([in full](progress-archive.md))

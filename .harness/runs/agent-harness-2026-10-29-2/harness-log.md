@@ -181,3 +181,10 @@
 - 2026-10-29 20:35 · context.md for R4-05: 7900 bytes, 1 items left out
 - 2026-10-29 20:45 · context.md for R3: 16252 bytes, 13 items left out
 - 2026-10-29 20:47 · R3 verified and tagged run/agent-harness-2026-10-29-2/R3
+- 2026-10-29 20:47 · R3 merged into main · https://github.com/mh550/agent-harness/pull/61
+- 2026-10-29 20:47 · lane R3 closed (R3 merged)
+- 2026-10-29 20:47 · lane R3: branch harness-lane/agent-harness-2026-10-29-2/R3 deleted (merged)
+- 2026-10-29 21:09 · R4-05: entries.jsonl edited by the session; restored (the driver is its only writer)
+- 2026-10-29 21:09 · R4-05: progress-archive.md edited by the session; restored (the driver is its only writer)
+- 2026-10-29 21:09 · flaky: 47-lanes-two (red, then green on a rerun; load 2.79)
+- 2026-10-29 21:09 · R4-05 · claude-opus-5-5 · passes=true · 33 min · 23/23 passing · tests 999
