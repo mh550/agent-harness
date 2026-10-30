@@ -49,6 +49,9 @@ Rules:
   correctly". A verifier re-runs each step and writes one evidence row per step. The last step is
   always that the suite is green. A step that records a decision says `record as a new decision`
   and never names its number: a numbered file's next free one is taken when the session writes it.
+  State a count as the command that prints it (`tests/run.sh` prints `N/M checks passed`), never a
+  number one run printed, and a time bound as a budget with room (a timeout), never a measured wall
+  time: another box or run won't reproduce it.
 - **`kind`**: `plan` · `build` · `review` · `check` (a "What Michael will see" pass: screenshots,
   replays) · `docs`.
 - **Milestones** (the spec's, or yours if it has none) follow this pattern:
@@ -103,7 +106,8 @@ Rules:
 
 Before you commit, run `{{LINT}} <run directory>/feature_list.json` and fix every line it prints
 (`<id> step <n> <rule> <text>`: a step with no concrete anchor, a path outside the repo or in `~`,
-a grep that matches its own words in the run record, a milestone without `after`, a review the
+a grep that matches its own words in the run record, a number another box or run won't reproduce,
+a milestone without `after`, two milestone ids that make one lane unit name, a review the
 milestone's size doesn't call for). No output means clean.
 A step that is right as written (a live path the project's rules name, a route) may stay.
 Then run `{{ENTRY_CHECK}} <run directory>/entry.json init init` and fix every line it prints; it

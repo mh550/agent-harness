@@ -10,6 +10,8 @@
 # A red full run is rerun once by HARNESS_CHECK_RERUN (auto: the HARNESS_FAILED=<names> files, else the whole suite ·
 # failed · suite · off), never after a timeout or a cap kill; its output is check-rerun.out. A green rerun is a flake: one
 # row in the cache's flakes.jsonl, the marker the first run's total (decisions/2026-10-29-rerun-guard). A subset never reruns.
+# Each call that ran or answered appends `<epoch> <full|subset|cached> <seconds>` to $HARNESS_SCRATCH/check-runs.log (the
+# lane's "suite ran" note counts a session's from it).
 set -uo pipefail
 cmd=${HARNESS_CHECK_CMD:-} scratch=${HARNESS_SCRATCH:?HARNESS_SCRATCH is not set}
 cache=${HARNESS_CHECK_CACHE:-$scratch}   # green-<key> markers (the driver keeps them in its state dir, not in scratch)
@@ -49,11 +51,15 @@ why() {
   else echo "exit $1 after $2 s"; fi
 }
 
+# <full|subset|cached>: this call's row; the epoch is its end (to the microsecond, a dot whatever the locale), so a row
+# between a lane's two stamps ended in between
+row() { printf '%s\t%s\t%s\n' "$(date +%s.%6N)" "$1" "$(( $(date +%s) - start ))" >> "$scratch/check-runs.log"; }
+
 start=$(date +%s)
 if (( $# )); then   # a subset: its output is the caller's; only a kill gets a line of its own
   run "$cmd \"\$@\"" _ "$@"; rc=$?
   [[ $rc == 124 || $rc == 137 ]] && echo "check: RED ($(why $rc $(( $(date +%s) - start ))))"
-  exit $rc
+  row subset; exit $rc
 fi
 
 key=$(node "$here/treekey.mjs" 2>/dev/null) || key=""
@@ -61,7 +67,7 @@ if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's t
   n=$(cat "$cache/green-$key"); [[ -n $n ]] || n=$(node "$here/testcount.mjs" "$scratch/check-$key.out")
   # a key ignore list beyond the default (CHECK_KEY_IGNORE, the run record aside) is named, so a docs change's skip is explained
   ki=$(tr -s ' \t' '\n' <<< "${HARNESS_CHECK_KEY_IGNORE:-}" | grep -vx -e '' -e '\.harness/runs' | paste -sd' '); [[ $ki == docs/plans ]] && ki=""
-  echo "check: green (cached for this code tree${n:+, $n}${ki:+; key ignores: $ki})"; exit 0
+  echo "check: green (cached for this code tree${n:+, $n}${ki:+; key ignores: $ki})"; row cached; exit 0
 fi
 rm -f "$scratch/check-rerun.out"   # a check-rerun.out always belongs to the check.out beside it
 run "$cmd" > "$scratch/check.out" 2>&1; rc=$?
@@ -100,4 +106,4 @@ else
   case $how in failed) again="; red again on a rerun of ${names[*]}" ;; suite) again="; red again on a rerun of the whole suite" ;; *) again="" ;; esac
   echo "check: RED ($(why $rc $s $(( $(date +%s) - ${r0:-$start} )))$again) — last lines of $out:"; tail -25 "$out"
 fi
-exit $rc
+row full; exit $rc

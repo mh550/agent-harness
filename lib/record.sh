@@ -449,21 +449,25 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   local rc=$?; SVC_INIT=0; echo "(init exit $rc)" >> "$SCRATCH/init.out"
   [[ -n ${SCOPE_BARE:-} ]] && note "init ran uncapped: $SCOPE_BARE"   # systemd refused the unit; its line is in init.out
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
-  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")"
-  "$CHECK" >> "$SCRATCH/init.out" 2>&1 || log "  suite red before the session (the session is told to fix it first)"
-  # after a rerun (check-rerun.out beside check.out), check.out is the red first run, whose count is its passes: the
-  # tree's marker first then, as tests_end
-  local n=""
-  if [[ ! -f $STATE/tests-start ]]; then
-    [[ -f $SCRATCH/check-rerun.out ]] && n=$(cat "$STATE/green/green-$(node "$HARNESS_HOME/lib/treekey.mjs")" 2> /dev/null)
-    [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out")
+  # the tree's key as check.sh takes it, before the suite runs (what a suite leaves untracked would change it after)
+  local key; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key"
+  local crc=0; "$CHECK" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }
+  # a red suite pins neither the count nor its source: the next green one does. Of a green tree, its marker first (after
+  # a rerun the first run's total), then its own output, check-<key>.out: check.out may be an older tree's, a red one's
+  # when this green was cached
+  local n="" out=$SCRATCH/check-$key.out
+  if (( crc == 0 )) && [[ ! -f $STATE/tests-start ]]; then
+    n=$(cat "$STATE/green/green-$key" 2> /dev/null)
+    [[ -n $n || ! -f $out ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$out")
     [[ -n $n ]] && echo "${n%% *}" > "$STATE/tests-start"
   fi
-  # once per run, from the first suite that wrote a check.out (a cached green wrote none): where the count came from, so
-  # a scraped count is told from the contract and a missing one explains the report's `?` (testcount-nomatch: older runs)
+  # once per run, from the first green suite whose output is here (a green cached in an earlier segment has none): where
+  # the count came from, so a scraped count is told from the contract and a missing one explains the report's `?`
+  # (testcount-nomatch: older runs)
   local src
-  if [[ -f $SCRATCH/check.out && ! -f $STATE/testcount-source && ! -f $STATE/testcount-nomatch ]]; then
-    src=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check.out" --source); src=${src##* · }
+  if (( crc == 0 )) && [[ -f $out && ! -f $STATE/testcount-source && ! -f $STATE/testcount-nomatch ]]; then
+    src=$(node "$HARNESS_HOME/lib/testcount.mjs" "$out" --source); src=${src##* · }
     case $src in
       contract) note "test count: HARNESS_TESTS contract" ;;
       none|"") src=none; note "test count: no match in the suite's output (tests start/end stay unknown)" ;;
@@ -499,10 +503,24 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
   echo; echo "Run record: \`$RUN_DIR/\` on branch \`$RBRANCH\` (progress.md, harness-log.md, feature_list.json, metrics.jsonl)."
 }
 
+# <m> <commit> <tree> <main> → 0 when they differ only in paths the suite's cache key ignores (.harness/runs and
+# CHECK_KEY_IGNORE: lib/treekey.mjs's own pathspecs, so the key and this test are one definition), noted once per main:
+# main moved only there, so the verified result stands
+ignored_only() {
+  local spec; mapfile -t spec < <(HARNESS_CHECK_KEY_IGNORE=${CHECK_KEY_IGNORE:-} node "$HARNESS_HOME/lib/treekey.mjs" --pathspec)
+  # no pathspecs (node failed, or an older treekey.mjs printed its key): a re-base
+  [[ ${spec[0]:-} == . ]] && git diff --quiet "$2" "$3" -- "${spec[@]}" || return 1
+  [[ $(cat "$STATE/ignored-$1" 2> /dev/null) == "$4" ]] && return 0   # once per main: merge_milestones runs again after every verify
+  echo "$4" > "$STATE/ignored-$1"
+  note "$1: $MAIN_BRANCH changed only in ignored paths ($(git diff --name-only "$2" "$3" | head -3 | paste -sd' ')); its verify stands"
+  return 0
+}
+
 # Merge one verified milestone (its tag, the lane tip) into main through a PR. The invariant: the tree that lands on
-# main is the tree that was verified. 0 = merged, proposed, or (--open) its PR open and waiting · 1 = needs Michael
-# (conflict, refusal) · 3 = main moved since the verify (moved-<m> holds that main): its lane re-bases it (lib/lane.sh
-# rebase), once per main, never after it needs Michael; `harness merge` clears moved-* and so tries once more.
+# main is the tree that was verified, outside the paths the suite's cache key ignores (ignored_only). 0 = merged,
+# proposed, or (--open) its PR open and waiting · 1 = needs Michael (conflict, refusal) · 3 = main moved since the verify
+# (moved-<m> holds that main): its lane re-bases it (lib/lane.sh rebase), once per main, never after it needs Michael;
+# `harness merge` clears moved-* and so tries once more.
 # --open (a dependency not merged yet) skips that test: main moves again when the dependency lands, and the rule runs then.
 merge_one() {
   local m=$1 tag=run/$RUN_ID/$1 c head url tree mn out ref t
@@ -544,7 +562,7 @@ merge_one() {
     return 1
   fi
   tree=${out%%$'\n'*}; rm -f "$STATE/conflict-$m"   # merges cleanly now: its merge_conflict record resolves at the next sweep
-  if [[ ${2:-} != --open && $tree != "$(git rev-parse "$c^{tree}")" ]]; then   # main has content the lane wasn't verified with
+  if [[ ${2:-} != --open && $tree != "$(git rev-parse "$c^{tree}")" ]] && ! ignored_only "$m" "$c" "$tree" "$mn"; then   # main has content the lane wasn't verified with
     # once per main while its re-base is pending (rebase-<m>); a re-base cut short (its lane killed) took that marker
     # with it, and the milestone would wait silently for the next main (P2 review 4)
     [[ ( $(cat "$STATE/moved-$m" 2>/dev/null) == "$mn" && -f $STATE/rebase-$m ) || ( -f $STATE/needs-$m && ! ${HARNESS_MERGE_ONLY:-} ) ]] && return 1
