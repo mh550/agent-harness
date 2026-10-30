@@ -78,7 +78,9 @@ check "status view: at 60 columns the cost stays beside a long reason; the foote
   && V -p proj --since 30m | grep -x "2 older runs: harness status --all -p proj · --since 3d" > /dev/null \
   && V --since 2026-10-25 | grep "^FINISHED · since 2026-10-25 · " > /dev/null'
 status_bulk 30
-check "status view: harness status --all over 38 stub runs takes under 1 s (best of 3), and lists them all" '
-  best=99999; for i in 1 2 3; do t0=$(date +%s%N); V --all > "$T/all.out" || break; t=$(( ($(date +%s%N) - t0) / 1000000 )); (( t < best )) && best=$t; done
-  echo "    best of 3: $best ms"; (( best < 1000 )) && [[ $(grep -cE "^(●|‖|⚠|✓|■|✗) " "$T/all.out") == 41 ]] && grep "^31 older runs: " <(V) > /dev/null'
+# CPU time, as in 52-status-json: the wall grows with the box's load for the same work; the 5 s wall bound catches a stall
+check "status view: harness status --all over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3), and lists them all" '
+  TIMEFORMAT="%3U %3S %3R"; best=99999 wall=99999; for i in 1 2 3; do { time V --all > "$T/all.out"; } 2> "$T/cpu" || break; read -r u s r < "$T/cpu"
+    t=$(( 10#${u//[!0-9]/} + 10#${s//[!0-9]/} )) w=$(( 10#${r//[!0-9]/} )); (( t < best )) && best=$t; (( w < wall )) && wall=$w; done; unset TIMEFORMAT
+  echo "    best of 3: $best ms CPU (wall $wall ms)"; (( best < 1000 && wall < 5000 )) && [[ $(grep -cE "^(●|‖|⚠|✓|■|✗) " "$T/all.out") == 41 ]] && grep "^31 older runs: " <(V) > /dev/null'
 suite_end

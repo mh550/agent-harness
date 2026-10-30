@@ -850,7 +850,7 @@ status json: STATUS_SINCE in the user config sets the window, --since wins over 
 status json: an empty meta.env is skipped and a bare end reason dated by its file
 status json: finished holds the runs ended in the last 24h, newest first, and older the rest; at least the 3 newest
 status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
-status json: harness status --json over 38 stub runs takes under 1 s (best of 3)
+status json: harness status --json over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3)
 status json: harness status <run> --json prints that one run object with v; an unknown run is an error
 status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs and ./overlap.mjs, exports runObject, queueEntry and sections
 status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
@@ -880,7 +880,7 @@ status view: an empty state root prints the four empty sections and no footer
 status view: at 60 columns the cost stays beside a long reason; the footer keeps -p; a date window reads since <date>
 status view: colour only with HARNESS_TTY=1 (none under NO_COLOR); ASCII only under LC_ALL=C; paths with the home directory as a tilde
 status view: four sections in order (NEEDS YOU · harness needs, RUNNING, QUEUED · runner off, FINISHED · last 24h), a rule and the footer
-status view: harness status --all over 38 stub runs takes under 1 s (best of 3), and lists them all
+status view: harness status --all over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3), and lists them all
 status view: no line over 60 or 80 display columns (also with -v); at 60 the long field and the cost go on an indented second line
 status view: no run.log line without -v; a bad --since is an error
 status: stop <why> from the phone: the same note, ended and services note
