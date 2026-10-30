@@ -170,7 +170,7 @@
       "after": [
         "S2-03"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S2-05",

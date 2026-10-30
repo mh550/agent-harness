@@ -84,3 +84,25 @@ harness needs done agent-harness-2026-10-29-3/3 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-10-29-3/4 --why "<answer>"
 ```
+
+## ⚠ S2-04 asked: 36 and 75 were rewritten (cd into docs/; bash "$HERE/lint-s…
+
+`agent-harness-2026-10-29-3/5` · since 2026-10-30T07:05:27.545Z
+
+**blocked** nothing waits on it; S2-04's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:11](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl?plain=1#L11)
+
+> 36 and 75 were rewritten (cd into docs/; bash "$HERE/lint-sleeps.sh") rather than joined to CHECK_KEY_MAP (default: ~125 s kept out of Gotchas-only runs). Keep that, or join them?
+> Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/journal/decisions/2026-10-30-partial-key.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/tests/checks/36-run-16-retro-backlog.sh:19
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/journal/decisions/2026-10-30-partial-key.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-29-3/S2/journal/decisions/2026-10-30-partial-key.md) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/tests/checks/36-run-16-retro-backlog.sh:19](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-29-3/S2/tests/checks/36-run-16-retro-backlog.sh#L19) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl:11](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl?plain=1#L11)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-10-29-3/5 --why "<answer>"
+```

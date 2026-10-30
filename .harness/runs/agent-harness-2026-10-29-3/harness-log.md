@@ -42,3 +42,8 @@
 - 2026-10-30 02:29 · flaky: whole suite (red, then green on a rerun; load 4.27)
 - 2026-10-30 02:29 · flaky: 46-lanes-continue (red, then green on a rerun; load 2.18)
 - 2026-10-30 02:29 · S2-03 · claude-opus-5-5 · passes=true · 53 min · 8/11 passing · tests 1065
+- 2026-10-30 02:29 · context.md for S2-04: 7998 bytes
+- 2026-10-30 03:05 · S2-04: suite ran 1x (825 s) in the session
+- 2026-10-30 03:05 · S2-04: 1 question(s) for Michael recorded (harness needs)
+- 2026-10-30 03:05 · S2-04: gotchas +0 ~1 -0
+- 2026-10-30 03:05 · S2-04 · claude-opus-5-5 · passes=true · 36 min · 9/11 passing · tests 1071

@@ -7,6 +7,24 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-30 03:05 · S2-04 · passes
+
+82-key-map-lint: keymaplint (node in the check file) with rules (a)/(b), widened root expressions, file-wide aliases and six allowed forms, each with its why; fixtures in tests/fixtures/key-map-lint/. Map now CLAUDE.md:39-memlint-m4:37-memory-prompts-m2:79-suite-length; 36, 75 and 81:56 rewritten instead of joined. Decision 2026-10-30-partial-key written; S3 Updated line. 82: 6 checks.
+
+- **Files:** tests/checks/82-key-map-lint.sh, tests/fixtures/key-map-lint/, .harness/config.sh, tests/checks/36-run-16-retro-backlog.sh, tests/checks/75-suite-tools.sh, tests/checks/81-partial-key.sh, journal/decisions/2026-10-30-partial-key.md, journal/decisions/2026-10-26-suite-split.md, tests/fixtures/check-names.txt, CLAUDE.md
+- **Verified:** watched red: on today's tree the lint named 36:20,21,30, 75:69, 79:87, 81:56 and its own lines; two mutations (no hit pushed; allowed forms not cut) turned 3 of 6 checks red each; then key-map-lint 6/6, 36 13/13, 75 11/11, 81 21/21, 39-memlint 19/19; full suite via check.sh; full suite via check.sh: green in 825 s, 1071 tests (an earlier full run on a pre-fix tree had 2 reds: memlint over the Gotchas cap, 34 on docs/specs; both fixed and rerun)
+- **Tests:** 1065 → 1071
+- **Dead end:** check names and JS regex sources holding a literal $HERE/.., $HH or ../CLAUDE.md — the lint scans 82 itself: those were hits on its own lines; the regex names vars through a vars() helper and the check names avoid root spellings
+- **Dead end:** 36 rewritten as cd "$HERE/../docs/specs" — 34-check-key bars a check naming a path the cache key ignores (docs/specs): now cd "$HERE/../docs" and import specs/<seed>, the relative read it always was
+- **Dead end:** adding the promoted Gotchas line as a 16th — memlint counts the section comment: the section was full; the needs/parked cards line was dropped for it
+- **Discovery** (affects S2-06): rule (a) hits a line that only compares a CLAUDE.md string beside harness_config "$HERE/.." (81:56); the expected value moved to its own line (M0=)
+- **Discovery** (affects S2-06): the lint scans its own file: any literal root spelling ($HERE/.., $HH, ../CLAUDE.md) in 82's code or check names is a hit; write regex sources via vars()
+- **Discovery** (affects S2-05, run): this repo's map grew 79-suite-length, so the exported HARNESS_CHECK_KEY_MAP of a run started before this merge differs from the tree's: row 4a runs those trees in full until the driver reloads
+- **Question for Michael:** 36 and 75 were rewritten (cd into docs/; bash "$HERE/lint-sleeps.sh") rather than joined to CHECK_KEY_MAP (default: ~125 s kept out of Gotchas-only runs). Keep that, or join them? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/journal/decisions/2026-10-30-partial-key.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/tests/checks/36-run-16-retro-backlog.sh:19
+- **Resolved:** harness needs/parked print cards: grep ` <label to 11><value>`; HARNESS_GLYPHS=unicode for `·` `⚠` (else - !) (agent-harness-2026-10-28 2026-10-28)
+- **Proposed change:** S2-04 step 1 lists readlink -f and (cd && pwd) as allowed alone; per the plan §5 they are allowed only as an alias assignment (allowed-3/5 fixtures), and step 2 should name 79 (rule a) and 81:56 among the finds
+- *09-S2-04 · claude-opus-5-5*
+
 ### 2026-10-30 02:29 · S2-03 · passes
 
 check.sh's full form: one treekey --partial call; a green full run writes part-<reduced>; a mapped-only diff from that tree runs just its checks (plan rows 4-11, plus row 4a's tree-map check) to check-partial.out, inherits the reference's green marker, rerun guard on its names, no marker on red, a partial row in check-runs.log. 81-partial-key: 13 checks.
