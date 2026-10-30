@@ -151,7 +151,7 @@
       "after": [
         "S2-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S2-04",

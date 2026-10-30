@@ -7,6 +7,22 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-30 02:29 · S2-03 · passes
+
+check.sh's full form: one treekey --partial call; a green full run writes part-<reduced>; a mapped-only diff from that tree runs just its checks (plan rows 4-11, plus row 4a's tree-map check) to check-partial.out, inherits the reference's green marker, rerun guard on its names, no marker on red, a partial row in check-runs.log. 81-partial-key: 13 checks.
+
+- **Files:** lib/check.sh, tests/checks/81-partial-key.sh, tests/fixtures/check-names.txt
+- **Verified:** bash tests/run.sh check-rerun check-key red-marker partial-key: 59/59 then 81 21/21 after the review; mutations of rows 4a, 7 and the ignore guard each turn one 81 check red; full suite via check.sh green, 1065 tests; the final full run flaked once on 46-lanes-continue (a run stopped mid-M2 reopens its lane; no map there, so check.sh takes today's path), its rerun 12/12
+- **Tests:** 1052 → 1065
+- **Dead end:** testing row 7 with a hand-grown map alone — row 4a fires first; the case grows the tree's config under a stale exported map (a full run that writes the sidecar), then exports the grown map
+- **Discovery** (affects S2-05, project): check.sh's partial path needs the tree's own .harness/config.sh CHECK_KEY_MAP to equal HARNESS_CHECK_KEY_MAP (row 4a, whitespace collapsed): a stub repo or run testing a partial commits the map there
+- **Discovery** (affects S2-05, S2-06): until S2-05's run_init fresh also removes part-<reduced>, a verify or rebase check on a tree differing from its reference in CLAUDE.md alone runs a partial: S2 must not merge without S2-05
+- **Discovery** (affects S2-04, S2-06): a partial also returns 1 when .harness/config.sh is under HARNESS_CHECK_KEY_IGNORE (review finding: its map could change under an equal reduced key) - beyond the plan's table, default
+- **Discovery** (affects S2-06): a partial green writes no check-<key>.out, so scratch_done's check-last.out (lib/prompt.sh:30) can be the last full run's output on another tree; S2-06 should say it or fall back to check-partial.out
+- **Discovery** (affects S2-06): the rerun output of a partial is check-partial-rerun.out (plan default); a partial flake row has partial: [names], rerun failed|partial, names never empty
+- **Proposed change:** S2-06 should document check.sh's partial row 4a-bis (.harness/config.sh under CHECK_KEY_IGNORE runs in full) in docs/architecture.md and the decision file
+- *08-S2-03 · claude-opus-5-5*
+
 ### 2026-10-30 01:35 · S2-02 · passes
 
 treekey.mjs is now exported pure functions (ignoreList, parseMap, treeKey, partialKeys, mapNames) behind a CLI guard; adds --partial (full key, reduced key, <blob> <path> lines) and --names (plan §1 default); bare call and --pathspec unchanged (key as live). CHECK_KEY_MAP: config default empty, this repo maps CLAUDE.md to 39/37, prompt_env exports it, template comment. 81-partial-key: 8 checks.
