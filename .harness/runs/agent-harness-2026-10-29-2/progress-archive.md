@@ -9,6 +9,46 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:47 · verify R3 · passes
+
+All six R3 features hold: suite green at 993, memlint clean, 45/45 on the R3 check files, plan/decision/in-place lines/README/architecture present, grep -c writeFileSync = 1, check-names sorted.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R3-01 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 5 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 6 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+
+- *204533-verify-R3 · claude-sonnet-5-5*
+
 ### 2026-10-29 20:35 · R4-04 · passes
 
 Readers count questions apart: harness needs (NEEDS YOU 1 · 1 question; question cards after stops), harness status (NEEDS YOU 1 · 3 questions · harness needs; run object needs + questions; card '3 questions: harness needs <run>'), debrief's #### Questions for Michael from needs --json. Skill gains ## Question items. Install: cp -r skills/harness-answer ~/.claude/skills/

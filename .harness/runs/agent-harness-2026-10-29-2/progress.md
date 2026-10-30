@@ -9,6 +9,46 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:47 · verify R3 · passes
+
+All six R3 features hold: suite green at 993, memlint clean, 45/45 on the R3 check files, plan/decision/in-place lines/README/architecture present, grep -c writeFileSync = 1, check-names sorted.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R3-01 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-01 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 5 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-02 | 6 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-03 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-04 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-05 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 1 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 2 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 3 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 4 | read the step, checked the file/grep/node --check/bash -n named, and reran 07-step-lint-pure-r3, 77-leftovers, 49-lanes, 42-run-20 (45/45) | step holds: artifacts and checks present and green | yes |
+| R3-06 | 5 | init full suite run (993 tests green) + node lib/memlint.mjs . (silent) | step holds: artifacts and checks present and green | yes |
+
+- *204533-verify-R3 · claude-sonnet-5-5*
+
 ### 2026-10-29 20:35 · R4-04 · passes
 
 Readers count questions apart: harness needs (NEEDS YOU 1 · 1 question; question cards after stops), harness status (NEEDS YOU 1 · 3 questions · harness needs; run object needs + questions; card '3 questions: harness needs <run>'), debrief's #### Questions for Michael from needs --json. Skill gains ## Question items. Install: cp -r skills/harness-answer ~/.claude/skills/
@@ -205,55 +245,9 @@ Two checks, no lib/bin change: 49's sp block runs gc --dry-run with a clean left
 - **Proposed change:** Gotchas: the 'stub --resume of an unknown id…' line was replaced by the {{SECTIONS}} line (the section was at 15 with its comment)
 - *14-R3-05 · claude-opus-5-5*
 
-### 2026-10-29 18:33 · verify R1 · passes
-
-All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 10/10 green on 44, 46, 48, 15, 28, 32, 38, 08; lint exits 0; docs, plan, review and decision present. Note: N2 is now on origin main (count 2), plan line says 1 as of init.
-
-| Feature | Step | What you ran or read | What you saw | Holds |
-|---|---|---|---|---|
-| R1-01 | 1 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-01 | 2 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-01 | 3 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-01 | 4 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-01 | 5 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
-| R1-02 | 1 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-02 | 2 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-02 | 3 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-02 | 4 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-02 | 5 | git diff origin/main -- tests/fixtures/check-names.txt \| grep "^-[^-]" | no removed lines | yes |
-| R1-02 | 6 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
-| R1-03 | 1 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-03 | 2 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-03 | 3 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-03 | 4 | git diff origin/main -- tests/fixtures/check-names.txt \| grep "^-[^-]" | no removed lines | yes |
-| R1-03 | 5 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
-| R1-04 | 1 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 44, 46, 48: 10/10 green each; table rows carry cause, fix, before → after | yes |
-| R1-04 | 2 | read plan table and decision, repeat runs above | --repeat 10 44, 46, 48: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
-| R1-04 | 3 | read plan table and decision, repeat runs above | --repeat 10 44, 46, 48: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
-| R1-04 | 4 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 44, 46, 48: 10/10 green each; table rows carry cause, fix, before → after | yes |
-| R1-04 | 5 | git diff origin/main -- tests/fixtures/check-names.txt \| grep "^-[^-]" | no removed lines | yes |
-| R1-04 | 6 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
-| R1-05 | 1 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 15 and 28: 10/10 green each; table rows carry cause, fix, before → after | yes |
-| R1-05 | 2 | read plan table and decision, repeat runs above | --repeat 10 15 and 28: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
-| R1-05 | 3 | read plan table and decision, repeat runs above | --repeat 10 15 and 28: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
-| R1-05 | 4 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 15 and 28: 10/10 green each; table rows carry cause, fix, before → after | yes |
-| R1-05 | 5 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
-| R1-06 | 1 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 32, 38, 08: 10/10 green each; table rows carry cause, fix, before → after | yes |
-| R1-06 | 2 | read plan table and decision, repeat runs above | --repeat 10 32, 38, 08: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
-| R1-06 | 3 | read plan table and decision, repeat runs above | --repeat 10 32, 38, 08: 10/10 green each; fix in lib/driver.sh:542-563 (alive==0 and lanes_open==0) with forced check in 45; hold env documented | yes |
-| R1-06 | 4 | bash tests/run.sh --repeat 10 <files>; read plan table rows | --repeat 10 32, 38, 08: 10/10 green each; table rows carry cause, fix, before → after | yes |
-| R1-06 | 5 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
-| R1-07 | 1 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-07 | 2 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-07 | 3 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-07 | 4 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-07 | 5 | read the file/doc named in the step; grep/bash -n/lint | present and matches: plan, review with Simplifications, decision with rejected list, arch §7 row, README --repeat line, lint-sleeps exits 0, seq grep 0, bash -n ok | yes |
-| R1-07 | 6 | harness init full suite (check.sh) | green after a rerun (46-lanes-continue flaked once), 976 tests; 46 then 10/10 green under --repeat | yes |
-
-- *174535-verify-R1 · claude-sonnet-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 18:33 · verify R1 · passes · All 7 R1 features hold. Suite green (one rerun for 46 flake); --repeat 10 gave 10/10 green on 44, 46… ([in full](progress-archive.md))
 - 2026-10-29 18:10 · R3-04 · passes · check.sh appends <epoch.µs> <full|subset|cached> <s> to $HARNESS_SCRATCH/check-runs.log; lane.sh sta… ([in full](progress-archive.md))
 - 2026-10-29 17:09 · R1-07 · passes · R1 review: 0 Critical, 2 Important, 5 Minor. Fixed: opens no longer reopen an exited unreaped lane (… ([in full](progress-archive.md))
 - 2026-10-29 16:52 · R3-03 · passes · merge_one: ignored_only lets a main moved only in cache-ignored paths merge as verified, no re-base,… ([in full](progress-archive.md))
