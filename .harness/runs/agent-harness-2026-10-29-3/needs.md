@@ -106,3 +106,24 @@ harness needs done agent-harness-2026-10-29-3/4 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-10-29-3/5 --why "<answer>"
 ```
+
+## ⚠ S2-06 asked: The review's still-open lint holes (an alias of a sub-direc…
+
+`agent-harness-2026-10-29-3/6` · since 2026-10-30T07:59:11.658Z
+
+**blocked** nothing waits on it; S2-06's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:13](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl?plain=1#L13)
+
+> The review's still-open lint holes (an alias of a sub-directory followed by `..`, `process.env.ROOT`, a glob outside the quotes, `git -C <R> log -p`) are recorded in decisions/2026-10-30-partial-key, not closed (*default*: none occurs in the tree, and verify runs in full). Close them now? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/journal/decisions/2026-10-30-partial-key.md, /tmp/harness/agent-harness/agent-harness-2026-10-29-3/lanes/S2/S2-review.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/journal/decisions/2026-10-30-partial-key.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-29-3/S2/journal/decisions/2026-10-30-partial-key.md) · `/tmp/harness/agent-harness/agent-harness-2026-10-29-3/lanes/S2/S2-review.md` · [/home/mh550/worktrees/agent-harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl:13](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-29-3/.harness/runs/agent-harness-2026-10-29-3/entries.jsonl?plain=1#L13)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-10-29-3/6 --why "<answer>"
+```

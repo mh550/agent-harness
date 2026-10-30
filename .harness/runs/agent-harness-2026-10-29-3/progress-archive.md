@@ -7,6 +7,21 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-30 03:59 · S2-06 · passes
+
+S2 review: 0 Critical, 2 Important, 6 Minor. I1 (a map change could keep the reduced key: config mapped, gitignored, or ignored as .harness//): treekey decides, no blob line when the config is outside the key, parseMap drops .harness/ entries. I2 (lint holes via a known root): sub-path rule, ${HH:-}, [[ ]]-anchored ==. M1, M2 fixed. Shared guard/flake/bmap in check.sh; docs §3/§4/§7/§10, README.
+
+- **Files:** lib/check.sh, lib/treekey.mjs, tests/checks/81-partial-key.sh, tests/checks/82-key-map-lint.sh, tests/fixtures/key-map-lint/escapes-2.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-30-partial-key.md, docs/architecture.md, README.md
+- **Verified:** Each fix's check watched red first: 81 at 22/24 before the treekey fix, 24/24 after; 82 at 6/7 (I2) and 7/8 (M2) before the lint fix, 8/8 after. The new sidecar check was mutation-tested: dropping bmap's duplicate test turns it red. check-rerun, check-key, red-marker, partial-key, flakes, suite-length and suite-tools passed 97/97 after the check.sh refactor; 39-memlint and key-map-lint are green; the full suite (lib/check.sh) passed: `check: green in 810 s, 1077 tests`.
+- **Tests:** 1073 → 1077
+- **Dead end:** a Gotchas line for 82's self-lint — Gotchas was already at 15 lines (memlint: 16, over 15), and the lint names the hit itself; dropped
+- **Discovery** (affects S2, run): treekey --partial now prints two equal keys and no blob line, with a stderr line, when .harness/config.sh is on disk but outside the key (CHECK_KEY_IGNORE or gitignored). check.sh's own ignore-list test is gone
+- **Discovery** (affects S2, project): 82-key-map-lint's rule (b): a root not followed by /<name> (no . or .. segment, no glob, brace or variable that could reach the path) is bare; it also prints `<path>:<name> matches no check file`
+- **Discovery** (affects run): check.sh: one guard() (rerun choice and call), flake() (flakes.jsonl row, partial field when given), again() (the RED line's rerun clause) and bmap() (sidecar and blob lines to a set) serve the partial and the full paths
+- **Question for Michael:** The review's still-open lint holes (an alias of a sub-directory followed by `..`, `process.env.ROOT`, a glob outside the quotes, `git -C <R> log -p`) are recorded in decisions/2026-10-30-partial-key, not closed (*default*: none occurs in the tree, and verify runs in full). Close them now? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-1/journal/decisions/2026-10-30-partial-key.md, /tmp/harness/agent-harness/agent-harness-2026-10-29-3/lanes/S2/S2-review.md
+- **Proposed change:** S2-06 step 1 says `git diff main...HEAD`: this slot's local main was behind origin/main (S1's merge), so it would include S1. The review used origin/main...HEAD, as review_diff does
+- *11-S2-06 · claude-opus-5-5*
+
 ### 2026-10-30 03:24 · S2-05 · passes
 
 run_init takes key and reduced key from one treekey --partial call; fresh also removes part-<reduced>, so verify's tree runs in full. 81 gains two stub runs: pkedit (CLAUDE.md-only session: partial init, memlint alone, tests-end 2) and pkv (B passes with a Gotchas line only; verify M1's call has no arguments, part- line 1 is B's key). New stub hook STUB_GOTCHA_ONLY.
