@@ -1,0 +1,213 @@
+{
+  "run": "agent-harness-2026-10-29-3",
+  "branch": "harness/agent-harness-2026-10-29-3",
+  "features": [
+    {
+      "id": "S1-01",
+      "milestone": "S1",
+      "kind": "plan",
+      "model": "opus",
+      "description": "docs/plans/2026-10-30-S1-suite-time.md: where the marker's `wall` line, `HARNESS_SUITE_LENGTH` and the `red-<key>` marker go in lib/check.sh, lib/record.sh and lib/prompt.sh, and how the stub-run checks count suite calls.",
+      "steps": [
+        "`docs/plans/2026-10-30-S1-suite-time.md` exists and names, by function and file as the code stands, every reader of a `green-<key>` marker (`check.sh`'s cached line, `run_init`'s `tests-start`, `tests_end` in `lib/record.sh`) and the `cat` each one changes to a `read -r` of line 1",
+        "the plan gives the `red-<key>` marker's four lines in order (the exit code, the `HARNESS_FAILED=` names, `wall <s>`, the `check: RED (…)` line) and where in `lib/check.sh` its write, its lookup and its removal sit relative to the `green-<key>` lookup and the rerun guard, with the `why` condition (`timed out` or `killed at`) that skips the write",
+        "the plan names the check files each feature edits or adds (`tests/checks/34-check-key.sh`, `tests/checks/79-suite-length.sh`, `tests/checks/80-red-marker.sh`) and how a stub run's suite calls are counted: a counting `CHECK_CMD` in the run's config as `tests/checks/73-check-rerun.sh`'s `rr-suite.sh` does it (the stub project's default suite in `tests/lib.sh` is `test ! -f BROKEN`, which counts nothing), and how the verify check plants a `red-<key>` and a `green-<key>` for the verified tree (a stub hook beside `STUB_STALE_GREEN` in `tests/stub-claude.sh`)",
+        "the plan lists the two decision files (`journal/decisions/2026-10-30-suite-length-in-prompt.md`, `journal/decisions/2026-10-30-red-marker.md`) with each one's rejected list from the spec and every *default* the spec marks, and says that `HARNESS_SUITE_LENGTH` lands in `prompts/parts/run.md` (under `{{SECTIONS}}`, never above it: decisions/2026-10-21-static-first-prompts)",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line): the plan changes no code"
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "S1-02",
+      "milestone": "S1",
+      "kind": "build",
+      "model": "opus",
+      "description": "A green full run's marker carries `wall <s>` on line 2, every reader reads line 1 only, and every prompt's *This run* Suite line says `last full run <s> s: give a full run a timeout of at least twice that` (else `not measured yet; bounded by CHECK_TIMEOUT 25m: give a full run a timeout above that`), with the timeout rule in prompts/coding.md and CLAUDE.md's suite line pointing at the prompt.",
+      "steps": [
+        "checks first, watched red: in `tests/checks/34-check-key.sh`, after a green full run of `lib/check.sh` the marker `green-<key>` has `2 tests` on line 1 and a line 2 matching `^wall [0-9]+$`; a one-line marker planted by the check still prints `check: green (cached for this code tree, 2 tests)` byte for byte",
+        "new `tests/checks/79-suite-length.sh`: a stub run's rendered `prompt-coding.md` in its state dir has `last full run <s> s: give a full run a timeout of at least twice that` with `<s>` equal to the `wall` line of the run's `green-<key>` marker, its initializer prompt has the same phrase, and the run's `tests-start` and `tests-end` hold the count from a two-line marker; a stub run whose first suite is a cached green from a planted one-line marker renders `not measured yet; bounded by CHECK_TIMEOUT`",
+        "`lib/check.sh` writes `green-<key>` as two lines (`<n> tests` or empty, then `wall <s>` with the first run's seconds, before any rerun); `check.sh`, `run_init` and `tests_end` read a marker's first line with `read -r`: `grep -n 'cat \"\\$cache/green-\\|cat \"\\$STATE/green/green-' lib/check.sh lib/record.sh` prints nothing",
+        "`lib/prompt.sh` sets `HARNESS_SUITE_LENGTH` before rendering, from the current tree's `green-<key>` (or `red-<key>`) marker's `wall` line, else the newest marker under `$STATE/green/` with one (by mtime), else empty; `prompts/parts/run.md`'s Suite line reads `Suite: \\`{{CHECK}}\\` (runs \\`{{CHECK_CMD}}\\`, cached per code tree; last full run {{SUITE_LENGTH}}) · init: …` and `lib/prompt.sh <state dir> coding <feature>` renders it",
+        "`prompts/coding.md`'s *The suite* rule gains the sentence `Give every full run a timeout of at least twice its last wall (under *This run*)` and the background clause ending `never poll it, never run it without a timeout`; `grep -c 'never poll it' prompts/coding.md` prints 1",
+        "`CLAUDE.md`'s suite line: `grep -q \"see the run's prompt\" CLAUDE.md` succeeds and `grep -c '208 s' CLAUDE.md` prints 0; `bash tests/run.sh 39-memlint` is green (the `this worktree prints nothing` check still passes)",
+        "`journal/decisions/2026-10-30-suite-length-in-prompt.md` has finding · choice · rejected (the wall in the cached line; a fixed number in `CLAUDE.md`; reading `tests/run.sh`'s own `wall … s` line) with each default marked *default*",
+        "every new check name is one line of `tests/fixtures/check-names.txt` (LC_ALL=C sorted); `bash -n lib/check.sh lib/record.sh lib/prompt.sh tests/checks/79-suite-length.sh` prints nothing",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "S1-01"
+      ],
+      "passes": true
+    },
+    {
+      "id": "S1-03",
+      "milestone": "S1",
+      "kind": "build",
+      "model": "opus",
+      "description": "lib/check.sh's full form writes `red-<key>` (exit code, HARNESS_FAILED names, `wall <s>`, the RED line) after a red that was neither a timeout nor a cap kill, answers the next full call on that tree from it (`check: RED (cached for this code tree: <names | whole suite>)`, the stored RED line, the stored exit) without running anything, and removes it on a green run; the subset form reads no marker.",
+      "steps": [
+        "checks first, watched red, in new `tests/checks/80-red-marker.sh` with the counting stub suite of `tests/checks/73-check-rerun.sh` (a counter and a mode per case): red twice with `HARNESS_FAILED=a` writes `red-<key>` whose four lines are `1`, `a`, a line matching `^wall [0-9]+$` and the `check: RED (` line as printed, and no `green-<key>`",
+        "the next full call on that tree prints `check: RED (cached for this code tree: a)` then the stored RED line, exits 1, writes no `check.out` and leaves the stub's counter at 2; a subset call (`check.sh a`) on the same tree runs the stub (counter 3) and prints no `cached`",
+        "a mode that would be green on call 4 still gets the cached red (the key is the tree's, not the suite's); a red with no `HARNESS_FAILED` line prints `cached for this code tree: whole suite`; a timeout (`HARNESS_CHECK_TIMEOUT=2s`) and a cap kill write no `red-<key>` and the next call runs the stub; a green run removes a planted `red-<key>`",
+        "`lib/check.sh`: the write (four lines, after the rerun guard, only when `why` said `exit <rc> after`), the lookup (full form only, after the `green-<key>` lookup, exiting with the stored code and appending a `cached` row to `check-runs.log`), the removal on green; `bash -n lib/check.sh` prints nothing and the usage header at the top of `lib/check.sh` names `red-<key>`",
+        "`journal/decisions/2026-10-30-red-marker.md` has finding · choice · rejected (caching a timeout or a cap kill; clearing the red marker on a timer; a red marker that stores the whole output), defaults marked *default*",
+        "every new check name is one line of `tests/fixtures/check-names.txt` (LC_ALL=C sorted); `bash tests/run.sh check-rerun check-key red-marker` is green",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "S1-02"
+      ],
+      "passes": true
+    },
+    {
+      "id": "S1-04",
+      "milestone": "S1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The driver honours the red marker: a retry's pre-session run on the tree the post-session run found red answers from the marker (`init.out` has the `cached for this code tree` line, the log `suite red before the session`, no third suite run), and `run_init fresh` at verify removes `red-<key>` with `green-<key>` so the verified tree always runs in full.",
+      "steps": [
+        "checks first, watched red, in `tests/checks/80-red-marker.sh`: a stub run whose config sets a counting `CHECK_CMD` (one that writes `PASS`/`FAIL`, `HARNESS_FAILED=` and `N/M checks passed` lines as `tests/run.sh` does, red while `BROKEN` exists) and whose feature C leaves the suite red on its first try: `harness-log.md` has `C un-passed: suite red after the session`, the retry's `init.out` has `check: RED (cached for this code tree:` and the log has `suite red before the session`, and the counting suite's log shows exactly two calls on that tree (the red run and the rerun guard's rerun), none from the retry's `run_init`",
+        "the invariant: a stub run at verify with a planted `red-<key>` and a planted `green-<key>` for the verified tree (a stub hook beside `STUB_STALE_GREEN`): `harness-log.md` has `verify M1: suite cache cleared; the suite runs in full on the verified tree`, both markers are gone from the state dir's `green/` afterwards, and the counting suite's log shows the verify's full run",
+        "`lib/record.sh`'s `run_init fresh` removes `$STATE/green/red-$key` beside `green-$key`; its `suite red before the session` log line and its baseline logic (`tests-start` from the first run that wrote a `check.out`) are unchanged: `git diff main -- lib/record.sh` touches only `run_init`'s removal line and the `read -r` readers",
+        "every new check name is one line of `tests/fixtures/check-names.txt` (LC_ALL=C sorted); `bash -n lib/record.sh tests/checks/80-red-marker.sh tests/stub-claude.sh` prints nothing",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "S1-03"
+      ],
+      "passes": true
+    },
+    {
+      "id": "S1-05",
+      "milestone": "S1",
+      "kind": "review",
+      "model": "opus",
+      "description": "Review + simplify of S1 and its docs: an Opus reviewer reads the milestone diff from a file, Critical/Important findings fixed RED→GREEN, simplifications applied, docs/architecture.md and README.md updated for the marker's second line, HARNESS_SUITE_LENGTH and red-<key>.",
+      "steps": [
+        "`git diff main...HEAD > $HARNESS_SCRATCH/S1.diff`; an Opus subagent reads that file with the brief: every reader of a marker (`lib/check.sh`, `run_init`, `tests_end`, `lib/prompt.sh`) for a `cat` that survived, every branch of `check.sh` that writes or reads `red-<key>`, and the `why` conditions that skip the write; it returns findings graded Critical/Important/Minor, written to `$HARNESS_SCRATCH/S1-review.md`; a second round only when the first found something Critical",
+        "every Critical and Important finding is fixed with a check that was red first; each is one line in the entry's `summary` or `dead_ends`",
+        "simplification passes applied: duplicate marker parsing in `check.sh` and `lib/record.sh` shares one shape (`read -r` of line 1); no dead branch left",
+        "`docs/architecture.md` §3 (`check.sh`: the marker's second line, `red-<key>`), §4 (the *Suite cache* row: `green-<key>` two lines, `red-<key>` four lines), §7 (the guard table: a cached red un-passes as a red) and the prompt's variables (`HARNESS_SUITE_LENGTH`); `README.md`'s suite paragraph names the prompt's `last full run` line and the red marker; `grep -c 'red-<key>' docs/architecture.md README.md` prints a count of at least 1 for each file",
+        "`bash -n` on every shell file the milestone touched and `node --check` on every `.mjs` print nothing; `bash tests/run.sh 39-memlint` is green",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "S1-04"
+      ],
+      "passes": true
+    },
+    {
+      "id": "S2-01",
+      "milestone": "S2",
+      "kind": "plan",
+      "model": "opus",
+      "description": "docs/plans/2026-10-30-S2-partial-key.md: the shape of `treekey.mjs --partial`, the `part-<reduced>` sidecar, every condition of check.sh's partial path that falls through to the full run, the lint's two rules and its allow-list, and the stub-run checks.",
+      "steps": [
+        "`docs/plans/2026-10-30-S2-partial-key.md` exists and gives `treekey.mjs --partial`'s three outputs (full key, reduced key, one `<blob> <path>` line per mapped path in map order, `-` for an absent path) as exported functions of `lib/treekey.mjs`, and `CHECK_KEY_MAP`'s parse (`<path>:<name>[:<name>…]`, dropped with one stderr line when under an ignored prefix, a directory, or without a name)",
+        "the plan lists, as a numbered table, every condition in `lib/check.sh`'s full form between the marker lookups and the full run: `green-<full>` present, `part-<reduced>` absent, its reference `green-<ref>` gone, its path set not the map's, the differing set *S* empty or holding an unmapped path, and for each what runs (the partial `<cmd> <names in map order>` to `check-partial.out`, or the full run); and what a partial green writes (`green-<full>` with the reference's two lines, `red-<full>` removed) and a partial red writes (no marker of either kind)",
+        "the plan writes the lint's rule (a) (a line naming a mapped path or its basename beside `$HERE/..` or a variable set to it on that line) and rule (b) (the bare root `$HERE/..` followed by a quote, a space, `)` or the end of the line) with the allow-list of forms that read no memory file (`HARNESS_HOME=$HERE/..`, `git -C \"$HERE/..\"`, `readlink -f \"$HERE/..\"`, `harness_config \"$HERE/..\"`, `(cd \"$HERE/..\" && pwd)`), each with one line of why, and the files the rule finds on today's tree (`39-memlint-m4.sh`, `37-memory-prompts-m2.sh`, `36-run-16-retro-backlog.sh`, `75-suite-tools.sh`) with the default: a found file joins the map rather than the allow-list growing",
+        "the plan names the check files (`tests/checks/81-partial-key.sh` with a throwaway repo as `tests/checks/34-check-key.sh`'s `ky` and an argument-recording stub suite as `tests/checks/73-check-rerun.sh`'s; `tests/checks/82-key-map-lint.sh`), the stub-run checks (`STUB_EDIT=CLAUDE.md` after a green init with a map in the run's config; the verify invariant), the decision file `journal/decisions/2026-10-30-partial-key.md` with its rejected list, and the one `Updated in place 2026-10-30:` line under S3 of `journal/decisions/2026-10-26-suite-split.md`",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line): the plan changes no code"
+      ],
+      "after": [
+        "S1"
+      ],
+      "passes": true
+    },
+    {
+      "id": "S2-02",
+      "milestone": "S2",
+      "kind": "build",
+      "model": "opus",
+      "description": "`CHECK_KEY_MAP` (lib/config.sh default empty, this repo's `.harness/config.sh` maps CLAUDE.md to 39-memlint-m4 and 37-memory-prompts-m2, exported as HARNESS_CHECK_KEY_MAP, commented in the project template) and `treekey.mjs --partial`, which prints the full key, the reduced key over the unmapped paths, and one `<blob> <path>` line per mapped path.",
+      "steps": [
+        "checks first, watched red, in new `tests/checks/81-partial-key.sh` with a throwaway repo and the map `CLAUDE.md:memlint README.md:readme`: `node lib/treekey.mjs --partial` on two trees that differ only in `CLAUDE.md` prints different full keys (line 1, 16 hex chars), the same reduced key (line 2) and blob lines that differ at `CLAUDE.md` only; `-` for a mapped path absent from the tree; without a map two equal keys and no blob line; the bare call still prints one line equal to `--partial`'s line 1",
+        "a dropped entry (a path under an ignored prefix, a directory, no name) is one stderr line each and leaves both keys as without it; the key functions are exported and checked with `node --input-type=module -e` on a fixed file list and blobs",
+        "`CHECK_KEY_MAP` defaults to empty in `lib/config.sh` (`HARNESS_CONFIG=/dev/null harness_config /nonexistent` leaves it empty), this repo's `.harness/config.sh` sets `CHECK_KEY_MAP=\"CLAUDE.md:39-memlint-m4:37-memory-prompts-m2\"`, `lib/prompt.sh`'s `prompt_env` exports `HARNESS_CHECK_KEY_MAP=$CHECK_KEY_MAP` beside `HARNESS_CHECK_KEY_IGNORE`, and `templates/project/config.sh` has `# CHECK_KEY_MAP=` commented with one line of what an entry is and what the lint demands",
+        "`lib/treekey.mjs`'s usage header names `--partial` and `HARNESS_CHECK_KEY_MAP`; `node --check lib/treekey.mjs` and `bash -n lib/config.sh lib/prompt.sh .harness/config.sh templates/project/config.sh` print nothing",
+        "every new check name is one line of `tests/fixtures/check-names.txt` (LC_ALL=C sorted); `bash tests/run.sh check-key partial-key` is green",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "S2-01"
+      ],
+      "passes": true
+    },
+    {
+      "id": "S2-03",
+      "milestone": "S2",
+      "kind": "build",
+      "model": "opus",
+      "description": "lib/check.sh's full form writes the `part-<reduced>` sidecar on a green full run and, on a tree whose only difference from that green tree is in mapped paths, runs just their check files (`check: green (partial: <files>, <s> s; cached for the rest)`, inheriting the reference's marker), falls through to the full run on any sidecar mismatch, and writes no marker after a partial red.",
+      "steps": [
+        "checks first, watched red, in `tests/checks/81-partial-key.sh` with an argument-recording stub suite and the map `CLAUDE.md:memlint README.md:readme`: a green full run writes `green-<full>` (two lines) and `part-<reduced>` (line 1 the full key, then the `<blob> <path>` lines); a `CLAUDE.md`-only diff from the green tree calls the stub with exactly `memlint`, prints `check: green (partial: memlint, <s> s; cached for the rest)`, exits 0, writes `check-partial.out` and not `check.out`, leaves `green-<full>` holding the green tree's count and `wall`, and the next call on that tree is `check: green (cached for this code tree, …)`",
+        "a `lib/` diff calls the stub with no arguments (the full run); a diff of both mapped paths calls it with `memlint readme` in map order; a `CLAUDE.md` diff whose `memlint` is red (`HARNESS_FAILED=memlint`) is rerun once on `memlint`, red again prints `check: RED (partial: memlint; exit 1 after <s> s; red again on a rerun of memlint)`, exits 1 and leaves no `green-` and no `red-` marker for that tree; the same red once then green is one `flakes.jsonl` row and `check: green after a rerun (partial: memlint; flaky: memlint), <n> tests`",
+        "the sidecar mismatch runs in full: a `part-` whose reference `green-<ref>` is gone, and one whose path set is not the map's (the map grew an entry), each call the stub with no arguments; a partial run never writes a `part-` sidecar; the subset form (`check.sh memlint`) on the diffed tree runs the subset and reads no map, sidecar or marker; a timeout in a partial run (`HARNESS_CHECK_TIMEOUT=2s`) is said as `why` says it, no rerun, no marker",
+        "`lib/check.sh`'s usage header names `part-<key>`, `check-partial.out` and `CHECK_KEY_MAP`; the partial path's conditions follow the plan's table in order, every one falling through to the full run; `check-runs.log` gets a `partial` row kind for a partial run; `bash -n lib/check.sh` prints nothing",
+        "every new check name is one line of `tests/fixtures/check-names.txt` (LC_ALL=C sorted); `bash tests/run.sh check-rerun check-key red-marker partial-key` is green",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "S2-02"
+      ],
+      "passes": true
+    },
+    {
+      "id": "S2-04",
+      "milestone": "S2",
+      "kind": "build",
+      "model": "opus",
+      "description": "The lint: a check in tests/checks/82-key-map-lint.sh fails naming `<file>:<line> reads <path>, not in CHECK_KEY_MAP` for every check file that reads a mapped path (rule a) or passes the bare repo root to anything but the allow-listed forms (rule b); this repo's map, or the lines it finds, are changed until it passes.",
+      "steps": [
+        "checks first, watched red, in new `tests/checks/82-key-map-lint.sh`: on a copy of `tests/checks/` with one more file that runs `grep x \"$HERE/../CLAUDE.md\"` the lint fails naming that file and line with `reads CLAUDE.md, not in CHECK_KEY_MAP`; on a copy with a file that passes the bare root to a new command (`mytool \"$HERE/..\"`) it fails naming that file and line; on a copy where the file is in the entry it passes; each allow-listed form (`HARNESS_HOME=$HERE/..`, `git -C \"$HERE/..\"`, `readlink -f \"$HERE/..\"`, `harness_config \"$HERE/..\"`, `(cd \"$HERE/..\" && pwd)`) alone passes",
+        "the lint reads `CHECK_KEY_MAP` from this repo's `.harness/config.sh` through `harness_config` and runs over this repo's own `tests/checks/`: it passes with the map as committed; the entry's final form (the files rule (b) finds today, `36-run-16-retro-backlog.sh` and `75-suite-tools.sh`, either joined to the map or their lines rewritten not to pass the bare root) is listed in `journal/decisions/2026-10-30-partial-key.md` with which was done to each",
+        "the lint's rule text and allow-list live in the check file with one line of why per allowed form, matching the plan; `bash -n tests/checks/82-key-map-lint.sh` prints nothing",
+        "`journal/decisions/2026-10-30-partial-key.md` has finding · choice · rejected (a name-based subset for every post-session run; an LLM choosing the subset; directory entries in the map; the map read by the subset form; a partial run writing the sidecar), defaults marked *default*; `journal/decisions/2026-10-26-suite-split.md` gains one `Updated in place 2026-10-30:` line under S3 and nothing else; `bash tests/run.sh 39-memlint` is green",
+        "every new check name is one line of `tests/fixtures/check-names.txt` (LC_ALL=C sorted)",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "S2-03"
+      ],
+      "passes": true
+    },
+    {
+      "id": "S2-05",
+      "milestone": "S2",
+      "kind": "build",
+      "model": "opus",
+      "description": "The driver with the map: a stub run whose session edits only CLAUDE.md gets a partial pre-session run (`init.out` has `partial:`, the suite's call log shows the mapped file alone, `tests-end` is the full count), and `run_init fresh` at verify removes `part-<reduced>` with the two markers so the verified tree runs in full.",
+      "steps": [
+        "checks first, watched red, in `tests/checks/81-partial-key.sh`: a stub run whose config sets `CHECK_KEY_MAP=\"CLAUDE.md:memlint\"` and an argument-recording counting `CHECK_CMD`, with `STUB_EDIT=CLAUDE.md` after a green init (as `tests/checks/34-check-key.sh`'s `kyplan` run): the next session's `init.out` has `check: green (partial: memlint,`, the suite's argument log shows one call with `memlint` alone after the full run, and the run's `tests-end` equals its `tests-start` (the full count)",
+        "the invariant at verify: a stub run with that map whose verified tree differs from the last green tree in `CLAUDE.md` only: `harness-log.md` has `verify M1: suite cache cleared; the suite runs in full on the verified tree`, the state dir's `green/` has no `part-` sidecar for that reduced key afterwards, and the suite's argument log shows the verify's call with no arguments",
+        "`lib/record.sh`'s `run_init fresh` removes `part-<reduced>` (from `treekey.mjs --partial`'s line 2) beside `green-<full>` and `red-<full>`; nothing in `lib/lane.sh`'s verify path changes (`git diff main -- lib/lane.sh` is empty); the post-session `green()` and `run_init`'s baseline logic are unchanged",
+        "every new check name is one line of `tests/fixtures/check-names.txt` (LC_ALL=C sorted); `bash -n lib/record.sh tests/checks/81-partial-key.sh` prints nothing",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "S2-04"
+      ],
+      "passes": true
+    },
+    {
+      "id": "S2-06",
+      "milestone": "S2",
+      "kind": "review",
+      "model": "opus",
+      "description": "Review + simplify of S2 and its docs: an Opus reviewer reads the milestone diff from a file, Critical/Important findings fixed RED→GREEN, simplifications applied, docs/architecture.md, README.md and the project template updated for CHECK_KEY_MAP, treekey --partial, the sidecar, the partial run and the lint.",
+      "steps": [
+        "`git diff main...HEAD > $HARNESS_SCRATCH/S2.diff`; an Opus subagent reads that file with the brief: every condition of the partial path in `lib/check.sh` (each branch must fall through to the full run), the sidecar's path-set comparison, `run_init fresh`'s three removals, and the lint's two rules for a form that reads `CLAUDE.md` and slips through; it returns findings graded Critical/Important/Minor, written to `$HARNESS_SCRATCH/S2-review.md`; a second round only when the first found something Critical",
+        "every Critical and Important finding is fixed with a check that was red first; each is one line in the entry's `summary` or `dead_ends`",
+        "simplification passes applied: the key parsing shared between `check.sh`'s full and partial paths, no dead branch; `bash -n lib/check.sh lib/record.sh` prints nothing",
+        "`docs/architecture.md` §3 (`check.sh`'s partial run, `treekey.mjs --partial`), §4 (*Suite cache*: `part-<key>`; *Scratch*: `check-partial.out`), §7 (the cache guard: the invariant and the lint), §10 (`CHECK_KEY_MAP`); `README.md` says how a project declares a `CHECK_KEY_MAP` entry and what the lint demands of it; `grep -c CHECK_KEY_MAP docs/architecture.md README.md templates/project/config.sh` prints a count of at least 1 for each file",
+        "`node --check` on every `.mjs` the milestone touched prints nothing; `bash tests/run.sh 39-memlint key-map-lint` is green",
+        "`bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [
+        "S2-05"
+      ],
+      "passes": true
+    }
+  ]
+}
