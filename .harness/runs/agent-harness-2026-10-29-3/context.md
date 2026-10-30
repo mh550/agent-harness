@@ -1,13 +1,16 @@
-# Context pack for `S2-03`
+# Context pack for `S2-04`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (S2-02, affects S2-03): treekey.mjs --names <path>… prints the map's names for those paths (map order, a duplicate path merged into its first entry) and exits 1 with no line when a path is no kept entry's: check.sh's rows 9/10 use it → entries.jsonl:9
-- Discovery (S2-02, affects S2-03, S2-05): treekey.mjs's bare call never parses HARNESS_CHECK_KEY_MAP (no stderr); only --partial and --names print the dropped-entry lines → entries.jsonl:9
-- Discovery (S2-02, affects S2-03): 81-partial-key.sh's repo $T/pk has CLAUDE.md, README.md, lib/a.sh and docs/plans/p.md committed, CLAUDE.md already appended once (dirty) after the first checks; pk() sets HARNESS_CHECK_KEY_IGNORE='.harness/runs docs/plans' → entries.jsonl:9
-- Discovery (S2-01, affects S2-03): The driver loads config once (lib/lane.sh:45; driver.sh:403 after a main merge): a session editing .harness/config.sh's map leaves HARNESS_CHECK_KEY_MAP stale, and a map from user config/run.env is linted by nothing. Plan row 4a: the tree's sourced CHECK_KEY_MAP (empty if unset) must equal the exported one, else full run; stub runs put the map in the throwaway project's .harness/config.sh → entries.jsonl:8
+- Discovery (S2-03, affects S2-04, S2-06): a partial also returns 1 when .harness/config.sh is under HARNESS_CHECK_KEY_IGNORE (review finding: its map could change under an equal reduced key) - beyond the plan's table, default → entries.jsonl:10
+- Discovery (S2-02, affects S2-04): the config check in 81 matches this repo's map as CLAUDE.md:39-memlint-m4:37-memory-prompts-m2* so S2-04 can extend it without editing the check → entries.jsonl:9
+- Discovery (S2-01, affects S2-04): The spec's lint rule (a) ('a variable set to it on that line') misses 79-suite-length.sh:87, which reads "$HH/CLAUDE.md" (HH from tests/lib.sh:87 or its own line 6): the plan widens root expressions to $HH, $HARNESS_HOME, $(cd "<R>" && pwd) and file-wide aliases, and 79 joins the map → entries.jsonl:8
+- Discovery (S2-01, affects S2-04): 13-run-2-michael-sets-desk.sh:386 (`== "PWD=$HH"`) is a rule (b) hit unless the allow-list gets a sixth form, a `== "...<root>"` string compare (plan default); 13 takes ~205 s, too dear to map → entries.jsonl:8
+- Discovery (S2-01, affects S2-02, S2-04): tests/run.sh matches check names by substring: a map name must be the full stem (75-suite-tools, not 75: 75-merge-sorted shares it) → entries.jsonl:8
+- Discovery (S2-01, affects S2-04): 82-key-map-lint's negative fixtures go in tests/fixtures/key-map-lint/, not inline: inline they'd be hits on 82's own lines → entries.jsonl:8
+- Discovery (S2-01, affects S2-04, S2-06): Lint escapes the review found and the plan closes: $(readlink -f "<R>") and $(cd "<R>" && pwd) are root expressions (not allowed forms); git -C "<R>" is allowed only with log/rev-parse/cat-file/worktree/ls-files; ../<basename> is a hit; the lint can't see reads by lib/ or tests/*.sh, so a map entry must be a file only check-file lines read → entries.jsonl:8
 - Discovery (S1-05, affects S2, run): run_init now writes init-failed in the lane dir (driver: state dir) while an init fails; the next run_init drops the tree's red-<key> before its suite → entries.jsonl:6
 - Discovery (S1-05, affects S2, run): the cached red answer no longer prints the stored RED line verbatim: its `— last lines of …:` tail is replaced with check-<key>.out's or `its output is gone from scratch` → entries.jsonl:6
 - Discovery (S1-05, affects S2, run): suite_length reads every green marker (cwd tree's, then newest) before any red one → entries.jsonl:6
@@ -19,14 +22,18 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): the init suite was green after a rerun: 47-lanes-two flaked (one flakes.jsonl row); a red there in a session is a known flake, not necessarily the session's → entries.jsonl:1
 - Discovery (init, affects run): no .harness/runs/agent-harness-2026-10-29-2 directory is in this tree (only its ledger line): the 10-29-2 numbers the spec cites are the spec's, not re-derivable here → entries.jsonl:1
 
+## Promote to Gotchas
+
+- check.sh's partial path needs the tree's own .harness/config.sh CHECK_KEY_MAP to equal HARNESS_CHECK_KEY_MAP (row 4a, whitespace collapsed): a stub repo or run testing a partial commits the map there → entries.jsonl:10
+
 ## What it builds on
 
-- 2026-10-30 01:35 · S2-02 · passes: treekey.mjs is now exported pure functions (ignoreList, parseMap, treeKey, partialKeys, mapNames) behind a CLI guard; adds --partial (full key, reduced key, <blob> <path> lines) and --names (plan §1 default); bare call and --pathspec unchanged (key as live). CHECK_KEY_MAP: config default empty, this repo maps CLAUDE.md to 39/37, prompt_env exports it, template comment. 81-partial-key: 8 checks.; tests 1044 → 1052; files lib/treekey.mjs, lib/config.sh, lib/prompt.sh, .harness/config.sh, templates/project/config.sh, … → entries.jsonl:9
+- 2026-10-30 02:29 · S2-03 · passes: check.sh's full form: one treekey --partial call; a green full run writes part-<reduced>; a mapped-only diff from that tree runs just its checks (plan rows 4-11, plus row 4a's tree-map check) to check-partial.out, inherits the reference's green marker, rerun guard on its names, no marker on red, a partial row in check-runs.log. 81-partial-key: 13 checks.; tests 1052 → 1065; files lib/check.sh, tests/checks/81-partial-key.sh, tests/fixtures/check-names.txt → entries.jsonl:10
 
 ## Lately in the run
 
+- 2026-10-30 01:35 · S2-02 · passes: treekey.mjs is now exported pure functions (ignoreList, parseMap, treeKey, partialKeys, mapNames) behind a CLI guard; adds --partial (full key, reduced key, <blob> <path> lines) and --names (plan §1 default); bare call and --pathspec unchanged (key as live). CHECK_KEY_MAP: config default empty, this repo maps CLAUDE.md to 39/37, prompt_env exports it, template comment. 81-partial-key: 8 checks.; tests 1044 → 1052; files lib/treekey.mjs, lib/config.sh, lib/prompt.sh, .harness/config.sh, templates/project/config.sh, … → entries.jsonl:9
 - 2026-10-30 01:19 · S2-01 · passes: Wrote docs/plans/2026-10-30-S2-partial-key.md: treekey.mjs's exported functions and --partial (plus a --names mode, default), parseMap's drops, the part-<reduced> sidecar, check.sh's partial path as a numbered table (rows 0-11 + 4a), what a partial green/red writes, the lint's rules and allow-list with today's finds, the checks, decision and S3 line. No code changed.; tests 1044 → 1044; files docs/plans/2026-10-30-S2-partial-key.md → entries.jsonl:8
-- 2026-10-30 01:02 · verify S1 · passes: All five S1 features hold: full suite green (1044 tests), subsets 34/39/73/79/80 re-run green, greps and docs confirmed. Note: S1-04 step 3 literal diff scope also includes S1-05 review fix I1. → entries.jsonl:7
 
 ## Current rules
 
@@ -40,7 +47,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Entries that survive: the session checks its own, a long summary is cut and kept, one resume for a missing one → journal/decisions/2026-10-29-entries-survive.md
 - A parked run's continue advice names another live run of its project and gives Michael the choice → journal/decisions/2026-10-29-continue-advice-busy-project.md
 - Merge conflicts resolved without Michael: a sorted merge for lists first, then a resolve session, verified → journal/decisions/2026-10-29-conflict-resolution.md
-- This repo's suite gets a 25-minute check timeout; TEST_JOBS stays at its default → journal/decisions/2026-10-29-check-timeout-25m.md
-- `harness show`: where a run's work is, from local refs, one change counted once → journal/decisions/2026-10-28-show.md
 
-_65 older rules: journal/decisions._
+_67 older rules: journal/decisions._
