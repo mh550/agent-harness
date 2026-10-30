@@ -1,9 +1,10 @@
-# Context pack for `S2-01`
+# Context pack for `S2-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (S2-01, affects S2-02, S2-04): tests/run.sh matches check names by substring: a map name must be the full stem (75-suite-tools, not 75: 75-merge-sorted shares it) → entries.jsonl:8
 - Discovery (S1-05, affects S2, run): run_init now writes init-failed in the lane dir (driver: state dir) while an init fails; the next run_init drops the tree's red-<key> before its suite → entries.jsonl:6
 - Discovery (S1-05, affects S2, run): the cached red answer no longer prints the stored RED line verbatim: its `— last lines of …:` tail is replaced with check-<key>.out's or `its output is gone from scratch` → entries.jsonl:6
 - Discovery (S1-05, affects S2, run): suite_length reads every green marker (cwd tree's, then newest) before any red one → entries.jsonl:6
@@ -17,15 +18,12 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-29 21:53 · S1-01 · passes: Wrote docs/plans/2026-10-30-S1-suite-time.md: the three marker readers (check.sh:67, run_init record.sh:461, tests_end record.sh:488) and their read -r, the wall line, suite_length in prompt_render, the red-<key> lines and placement, the driver's fresh rm, the checks of 34/79/80 with a counting run.env CHECK_CMD and STUB_PLANT_MARKERS, both decision files. No code changed.; tests 1016 → 1016; files docs/plans/2026-10-30-S1-suite-time.md → entries.jsonl:2
-- 2026-10-29 22:50 · S1-02 · passes: green-<key> is two lines (count, wall <s>); check.sh/run_init/tests_end read line 1 with read -r; prompt.sh suite_length gives SUITE_LENGTH. Deviation (default): the wall line sits under # This session in coding/initializer/verify/resolve, not run.md's Suite line (that broke 08's prefix check: walls 0 vs 1 s); run.md points there. A whole-suite rerun sets the wall. Rule, CLAUDE.md, decision.; tests 1016 → 1028; files lib/check.sh, lib/record.sh, lib/prompt.sh, prompts/parts/run.md, prompts/coding.md, … → entries.jsonl:3
-- 2026-10-29 23:42 · S1-03 · passes: check.sh full form writes red-<key> (rc, HARNESS_FAILED names, wall, RED line) after a red where both runs were `exit <rc> after`, answers the next full call on that tree from it, removes it on green; subsets read none. New 80-red-marker (8 checks); 08, 74 adapted; 10-e2 drops S1-02s wall line from its prompt compare; decisions/2026-10-30-red-marker.; tests 1028 → 1036; files lib/check.sh, tests/checks/80-red-marker.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/74-flakes-run.sh, tests/fixtures/check-names.txt, … → entries.jsonl:4
-- 2026-10-30 00:03 · S1-04 · passes: run_init fresh removes red-<key> beside green-<key> (lib/record.sh, one line), so verify's tree always runs in full. 80-red-marker gains 3 stub-run checks with a counting CHECK_CMD: the retry's init is the cached red (2 suite calls on the red tree), and STUB_PLANT_MARKERS (new stub hook) proves verify clears both markers. Decision red-marker gains the driver bullet.; tests 1036 → 1039; files lib/record.sh, tests/checks/80-red-marker.sh, tests/stub-claude.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-30-red-marker.md → entries.jsonl:5
-- 2026-10-30 00:46 · S1-05 · passes: S1 review: 0 Critical, 3 Important, 5 Minor. Fixed, each red first: I1 run_init keeps no red-<key> around a failed init; I2 the cached red shows check-<key>.out or says it is gone; I3 suite_length reads every green wall before a red; M1 no red cached for codes ≥128; M2 atomic marker writes; M3 green_count in record.sh; M4. Docs: architecture §3/§4/§7/prompt, README.; tests 1039 → 1044; files lib/check.sh, lib/record.sh, lib/prompt.sh, tests/checks/79-suite-length.sh, tests/checks/80-red-marker.sh, … → entries.jsonl:6
+- 2026-10-30 01:19 · S2-01 · passes: Wrote docs/plans/2026-10-30-S2-partial-key.md: treekey.mjs's exported functions and --partial (plus a --names mode, default), parseMap's drops, the part-<reduced> sidecar, check.sh's partial path as a numbered table (rows 0-11 + 4a), what a partial green/red writes, the lint's rules and allow-list with today's finds, the checks, decision and S3 line. No code changed.; tests 1044 → 1044; files docs/plans/2026-10-30-S2-partial-key.md → entries.jsonl:8
 
 ## Lately in the run
 
 - 2026-10-30 01:02 · verify S1 · passes: All five S1 features hold: full suite green (1044 tests), subsets 34/39/73/79/80 re-run green, greps and docs confirmed. Note: S1-04 step 3 literal diff scope also includes S1-05 review fix I1. → entries.jsonl:7
+- 2026-10-30 00:46 · S1-05 · passes: S1 review: 0 Critical, 3 Important, 5 Minor. Fixed, each red first: I1 run_init keeps no red-<key> around a failed init; I2 the cached red shows check-<key>.out or says it is gone; I3 suite_length reads every green wall before a red; M1 no red cached for codes ≥128; M2 atomic marker writes; M3 green_count in record.sh; M4. Docs: architecture §3/§4/§7/prompt, README.; tests 1039 → 1044; files lib/check.sh, lib/record.sh, lib/prompt.sh, tests/checks/79-suite-length.sh, tests/checks/80-red-marker.sh, … → entries.jsonl:6
 
 ## Current rules
 
