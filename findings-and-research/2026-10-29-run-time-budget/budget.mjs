@@ -46,7 +46,9 @@ for (const line of readFileSync(journalPath, "utf8").split("\n")) {
     s.end = ts; s.cpu = cpuS(mm[2]); scopes.push(s); open.delete(mm[1]);
   }
 }
-for (const s of open.values()) { s.end = Date.now(); s.openEnded = true; scopes.push(s); }   // still running (a live run)
+// still running (a live run). An ended run's check scope with no Consumed line is a stub suite's: a session ran
+// lib/check.sh by hand with a stub HARNESS_CHECK_CMD, under its own HARNESS_SCOPE_PREFIX; the sub-second scope logged no CPU (§10)
+for (const s of open.values()) { if (s.kind === "check" && existsSync(join(stateRoot, s.run, "ended"))) continue; s.end = Date.now(); s.openEnded = true; scopes.push(s); }
 scopes.sort((a, b) => a.start - b.start);
 
 // ---- 2. the stream logs: per session, tool intervals and the result's two durations

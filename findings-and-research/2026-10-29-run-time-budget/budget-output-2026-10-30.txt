@@ -1,0 +1,194 @@
+
+== agent-harness-2026-10-29-2  flakes 11
+lane R2 09:12:29–11:36:11: 8622 s, 4 sessions
+  model 863 s (10%) · session suite 3017 s (35%) · session other tools 97 s (1%) · harness before 1000 s (12%) · harness after 755 s (9%) · verify 0 s (0%) · waiting 2890 s (34%) · idle 0 s (0%)
+lane R1 09:12:29–11:36:30: 8641 s, 2 sessions
+  model 510 s (6%) · session suite 2422 s (28%) · session other tools 882 s (10%) · harness before 72 s (1%) · harness after 887 s (10%) · verify 0 s (0%) · waiting 3868 s (45%) · idle 0 s (0%)
+lane R2 12:31:30–14:56:28: 8698 s, 5 sessions
+  model 1506 s (17%) · session suite 4756 s (55%) · session other tools 780 s (9%) · harness before 12 s (0%) · harness after 987 s (11%) · verify 658 s (8%) · waiting 0 s (0%) · idle 0 s (0%)
+lane R1 12:31:29–18:46:31: 22502 s, 7 sessions
+  model 2398 s (11%) · session suite 7674 s (34%) · session other tools 5605 s (25%) · harness before 1018 s (5%) · harness after 1032 s (5%) · verify 4775 s (21%) · waiting 0 s (0%) · idle 0 s (0%)
+lane R3 14:56:31–20:47:25: 21054 s, 15 sessions
+  model 3006 s (14%) · session suite 14419 s (68%) · session other tools 475 s (2%) · harness before 78 s (0%) · harness after 1818 s (9%) · verify 1257 s (6%) · waiting 0 s (0%) · idle 0 s (0%)
+lane R4 18:46:34–21:24:18: 9464 s, 7 sessions
+  model 1429 s (15%) · session suite 6562 s (69%) · session other tools 537 s (6%) · harness before 18 s (0%) · harness after 800 s (8%) · verify 118 s (1%) · waiting 0 s (0%) · idle 0 s (0%)
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · suite calls):
+  run init  08:59:41 wall 762 suite 4 other 20 model 738 · dur 761 api 757 · full 0 cached 1 · calls: s:other s:red F:cached/1s s:other s:other
+  R1 coding R1-01 09:12:32 wall 2730 suite 1531 other 873 model 326 · dur 2729 api 374 · full 3 cached 2 passes=true · calls: s:green s:cached s:other s:other s:cached
+  R2 coding R2-01 09:12:32 wall 420 suite 0 other 33 model 387 · dur 419 api 414 · full 0 cached 1 UN-PASSED · calls: s:cached
+  R2 coding R2-01 09:48:33 wall 761 suite 695 other 14 model 52 · dur 145 api 97 · full 1 cached 0 passes=true · calls: s:green F:other/45s s:other
+  R1 coding R1-02 09:58:08 wall 1083 suite 891 other 9 model 183 · dur 1082 api 236 · full 1 cached 0 UN-PASSED · calls: s:red s:red s:other s:green s:other s:other F:moved/601s s:green s:green s:other s:other
+  R2 coding R2-02 10:01:19 wall 1342 suite 1106 other 26 model 209 · dur 919 api 279 · full 2 cached 0 passes=true edits after suite: slot-1/.harness/runs/agent-harness-2026-10-29-2/entry.json · calls: s:red s:green F:moved/601s s:other
+  R2 coding R2-03 10:23:47 wall 1453 suite 1216 other 23 model 215 · dur 1084 api 397 · full 2 cached 0 passes=true · calls: s:red s:green s:green s:other F:moved/603s s:other s:other
+  run retro  11:36:33 wall 18 suite 0 other 3 model 16 · dur 18 api 17 · full 0 cached 0
+  R2 coding R2-04 12:31:33 wall 3332 suite 2202 other 132 model 998 · dur 3330 api 496 · full 2 cached 0 passes=true · calls: s:red s:red s:red s:green s:moved s:green F:other/2s F:other/2s F:other/2s s:other s:other
+  R1 coding R1-02 12:48:05 wall 166 suite 51 other 10 model 105 · dur 165 api 114 · full 0 cached 1 passes=true · calls: s:other s:green F:other/1s s:other
+  R1 coding R1-03 12:50:57 wall 2562 suite 2018 other 64 model 479 · dur 666 api 585 · full 3 cached 0 passes=true · calls: s:green s:red s:other s:other s:other F:other/1s s:green F:other/1s s:other
+  R2 coding R2-05 13:27:12 wall 3709 suite 2554 other 648 model 507 · dur 3708 api 1011 · full 3 cached 0 passes=true · calls: s:red s:green s:moved s:other s:red s:green s:red s:green F:other/2s s:green F:other/2s
+  R1 coding R1-04 13:33:46 wall 3494 suite 1277 other 1826 model 391 · dur 3493 api 580 · full 1 cached 0 passes=true · calls: s:other s:other s:other s:red s:other s:green s:other s:other s:other s:other s:green F:other/2s
+  R2 resolve R2 14:29:07 wall 151 suite 48 other 13 model 89 · dur 149 api 101 · full 0 cached 0 passes=true · calls: s:green
+  R1 coding R1-05 14:32:05 wall 4161 suite 1906 other 2076 model 179 · dur 4160 api 223 · full 2 cached 0 passes=true · calls: s:other s:other s:other s:other s:other s:other F:other/2s F:other/2s s:other
+  R2 verify R2 14:47:45 wall 160 suite 118 other 2 model 40 · dur 159 api 43 · full 0 cached 0 · calls: s:green s:other
+  R2 verify R2 14:50:27 wall 347 suite 1 other 132 model 214 · dur 346 api 255 · full 0 cached 1 · calls: F:green/1s s:cached s:other
+  R3 coding R3-01 14:56:33 wall 1971 suite 1427 other 35 model 509 · dur 648 api 602 · full 2 cached 1 passes=true · calls: F:cached/1s s:green F:other/1s s:green s:other F:other/1s
+  R3 coding R3-02 15:29:30 wall 2717 suite 2481 other 101 model 135 · dur 2716 api 236 · full 3 cached 0 passes=true · calls: s:red s:green F:other/1s F:other/1s
+  R1 coding R1-06 15:41:31 wall 3094 suite 1001 other 1575 model 518 · dur 3093 api 589 · full 1 cached 0 passes=true · calls: s:green s:other s:other s:other s:other s:other s:other s:other F:other/2s
+  R3 coding R3-03 16:14:53 wall 2230 suite 1635 other 43 model 552 · dur 640 api 528 · full 2 cached 1 passes=true · calls: s:red s:red s:other F:other/8s F:cached/1s s:green F:other/3s s:green
+  R1 coding R1-07 16:33:12 wall 2199 suite 1421 other 53 model 725 · dur 1059 api 958 · full 1 cached 0 edits after suite: slot-0/docs/plans/2026-10-29-R1-review.md · calls: s:red s:other s:other s:other s:other s:red s:green s:red s:green s:red s:green s:red s:red s:green F:other/3s s:green
+  R3 coding R3-04 16:52:08 wall 4678 suite 4073 other 32 model 574 · dur 579 api 495 · full 6 cached 3 passes=true · calls: F:cached/2s s:other s:red F:other/1s s:other s:red s:cached s:cached s:green s:other F:other/1s F:other/2s F:other/1s s:other s:other
+  R1 verify R1 17:45:35 wall 2903 suite 5 other 2849 model 49 · dur 2901 api 57 · full 0 cached 0 passes=true · calls: s:other s:other s:other
+  R3 coding R3-05 18:10:11 wall 1514 suite 1320 other 25 model 168 · dur 569 api 226 · full 1 cached 0 passes=true edits after suite: slot-1/.harness/runs/agent-harness-2026-10-29-2/entry.json.draft · calls: s:green s:red s:other s:green s:red F:other/3s s:other
+  R3 coding R3-06 18:35:31 wall 2913 suite 2114 other 180 model 619 · dur 846 api 960 · full 2 cached 4 passes=true · calls: s:cached s:green s:red s:green s:red F:other/1s F:other/1s F:cached/1s
+  R4 coding R4-01 18:46:36 wall 347 suite 0 other 27 model 321 · dur 346 api 343 · full 0 cached 1 passes=true · calls: s:cached
+  R4 coding R4-02 18:52:29 wall 1787 suite 1465 other 34 model 288 · dur 510 api 658 · full 2 cached 0 passes=true · calls: s:red s:green s:green s:green s:red s:green F:other/2s s:red s:green F:other/2s s:other
+  R4 coding R4-03 19:22:21 wall 2043 suite 1814 other 28 model 200 · dur 1064 api 268 · full 2 cached 0 passes=true · calls: s:red s:green s:green F:moved/613s s:other F:other/5s
+  R3 resolve R3 19:24:11 wall 29 suite 0 other 3 model 26 · dur 28 api 27 · full 0 cached 0
+  R3 verify R3 19:41:30 wall 113 suite 71 other 8 model 34 · dur 112 api 42 · full 0 cached 0 · calls: s:green s:other
+  R4 coding R4-04 19:56:29 wall 2338 suite 2059 other 41 model 238 · dur 521 api 296 · full 2 cached 0 passes=true · calls: s:red s:red s:green F:other/2s F:other/2s
+  R3 coding R3-01 20:00:15 wall 1073 suite 1016 other 12 model 44 · dur 683 api 77 · full 1 cached 0 passes=true · calls: F:other/1s s:other s:other
+  R3 coding R3-02 20:18:14 wall 129 suite 1 other 10 model 119 · dur 127 api 64 · full 0 cached 2 passes=true · calls: s:cached s:other
+  R3 coding R3-03 20:20:27 wall 161 suite 64 other 10 model 87 · dur 160 api 95 · full 0 cached 1 passes=true · calls: s:green s:cached
+  R3 coding R3-04 20:23:14 wall 157 suite 87 other 7 model 64 · dur 156 api 69 · full 0 cached 1 passes=true · calls: s:other s:cached s:other
+  R3 coding R3-05 20:25:57 wall 277 suite 200 other 9 model 68 · dur 276 api 81 · full 0 cached 1 passes=true · calls: s:red s:red s:cached
+  R3 coding R3-06 20:30:40 wall 79 suite 1 other 11 model 67 · dur 78 api 74 · full 0 cached 1 passes=true · calls: s:cached s:other
+  R4 coding R4-05 20:35:34 wall 2013 suite 1223 other 408 model 382 · dur 2012 api 845 · full 1 cached 0 passes=true · calls: s:green s:red s:red s:green F:other/10s
+  R3 verify R3 20:45:33 wall 99 suite 66 other 10 model 23 · dur 98 api 31 · full 0 cached 0 · calls: s:green
+  R4 resolve R4 21:09:13 wall 28 suite 0 other 4 model 23 · dur 26 api 25 · full 0 cached 0
+  R4 verify R4 21:22:33 wall 91 suite 66 other 3 model 22 · dur 90 api 26 · full 0 cached 0 · calls: s:green s:other
+  run retro  21:24:23 wall 19 suite 0 other 2 model 17 · dur 18 api 17 · full 0 cached 0
+harness suites outside sessions (where · wall · cpu · rerun):
+  run before 08:49:37 604 s cpu 2401 s
+  R2 after 09:19:33 747 s cpu 2817 s after R2-01 before R2-01
+  R2 before 09:32:00 35 s cpu 38 s rerun after R2-01 before R2-01
+  R2 before 09:32:39 743 s cpu 2749 s after R2-01 before R2-01
+  R2 before 09:45:02 210 s cpu 254 s rerun after R2-01 before R2-01
+  R1 after 10:16:13 884 s cpu 2995 s after R1-02 before R1-02
+  R1 before 10:30:56 65 s cpu 58 s rerun after R1-02 before R1-02
+  R1 before 12:31:32 784 s cpu 2871 s after R1-02 before R1-02
+  R1 before 12:44:36 209 s cpu 247 s rerun after R1-02 before R1-02
+  R2 after 14:31:40 965 s cpu 3463 s after R2 before R2
+  R1 after 17:09:53 997 s cpu 3604 s after R1-07 before R1
+  R1 verify 17:26:35 1014 s cpu 3641 s after R1-07 before R1
+  R1 verify 17:43:30 125 s cpu 133 s rerun after R1-07 before R1
+  R1 verify 18:34:03 733 s cpu 2993 s after R1
+  R3 after 19:24:41 960 s cpu 3610 s after R3 before R3
+  R3 verify 19:40:41 48 s cpu 51 s rerun after R3 before R3
+  R3 verify 19:43:28 970 s cpu 3611 s after R3 before R3-01
+  R3 before 19:59:38 37 s cpu 40 s rerun after R3 before R3-01
+  R3 after 20:32:06 806 s cpu 3209 s after R3-06 before R3
+  R4 after 21:09:42 770 s cpu 3083 s after R4 before R4
+run-level scopes: svc 08:49:37 87722 s, check 08:49:37 604 s, session 08:59:41 762 s, session 11:36:33 18 s, session 21:24:23 19 s
+
+== agent-harness-2026-10-29-3  flakes 5
+lane S1 21:47:05–01:02:18: 11713 s, 6 sessions
+  model 1973 s (17%) · session suite 8032 s (69%) · session other tools 760 s (6%) · harness before 18 s (0%) · harness after 837 s (7%) · verify 93 s (1%) · waiting 0 s (0%) · idle 0 s (0%)
+lane S2 01:02:15–04:14:20: 11525 s, 7 sessions
+  model 2431 s (21%) · session suite 7291 s (63%) · session other tools 858 s (7%) · harness before 22 s (0%) · harness after 844 s (7%) · verify 78 s (1%) · waiting 0 s (0%) · idle 0 s (0%)
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · suite calls):
+  run init  21:39:47 wall 433 suite 3 other 11 model 420 · dur 432 api 429 · full 0 cached 3 · calls: s:cached s:flake s:green s:other s:other
+  S1 coding S1-01 21:47:07 wall 354 suite 2 other 18 model 334 · dur 353 api 349 · full 0 cached 8 passes=true · calls: F:cached/1s s:other s:other F:cached/1s s:other
+  S1 coding S1-02 21:53:07 wall 3414 suite 2139 other 633 model 642 · dur 1723 api 847 · full 3 cached 6 passes=true · calls: F:cached/1s s:red s:other s:red s:red s:green s:other s:other F:other/8s s:other s:other F:red/88s s:red s:moved s:other F:other/1s F:other/1s s:other s:red s:other s:other
+  S1 coding S1-03 22:50:07 wall 3154 suite 2746 other 20 model 389 · dur 520 api 317 · full 4 cached 4 passes=true · calls: F:cached/1s s:red F:green/6s s:green F:other/9s F:cached/1s s:moved s:other F:other/2s s:green F:other/6s
+  S1 coding S1-04 23:42:46 wall 1238 suite 1060 other 26 model 151 · dur 1237 api 217 · full 1 cached 3 passes=true · calls: F:other/1s F:other/1s F:other/1s s:other s:red s:other s:red s:green s:other F:other/2s s:other s:red F:other/1s s:other
+  S1 coding S1-05 00:03:30 wall 2605 suite 2085 other 63 model 457 · dur 2518 api 883 · full 3 cached 4 passes=true · calls: s:flake F:cached/1s s:green s:other s:green s:red F:other/1s F:other/1s s:green F:other/1s F:other/2s s:other s:other s:other F:other/3s s:other s:green F:other/2s
+  S1 verify S1 01:00:27 wall 93 suite 58 other 1 model 35 · dur 92 api 37 · full 0 cached 2 · calls: s:green s:green F:cached/0s s:other
+  S2 coding S2-01 01:02:17 wall 1034 suite 4 other 201 model 829 · dur 819 api 979 · full 0 cached 7 passes=true · calls: s:other F:cached/1s s:other s:other s:other s:other s:cached s:other s:cached
+  S2 coding S2-02 01:19:37 wall 955 suite 840 other 16 model 100 · dur 954 api 143 · full 1 cached 3 passes=true · calls: s:red s:green s:other s:green F:other/2s s:other
+  S2 coding S2-03 01:35:38 wall 3206 suite 2627 other 20 model 559 · dur 486 api 843 · full 3 cached 4 passes=true · calls: F:cached/2s s:red F:red/5s s:other s:green s:red s:other s:other s:green F:other/8s F:other/1s F:other/1s F:other/1s s:green F:red/8s s:other F:other/1s s:other s:other
+  S2 coding S2-04 02:29:11 wall 2175 suite 1780 other 22 model 373 · dur 2174 api 522 · full 2 cached 2 passes=true · calls: s:red s:red s:green s:red s:cached F:other/1s s:green s:other F:other/2s s:other s:other F:other/2s s:green F:other/2s
+  S2 coding S2-05 03:05:33 wall 1155 suite 918 other 51 model 186 · dur 1154 api 243 · full 1 cached 4 passes=true edits after suite: slot-1/.harness/runs/agent-harness-2026-10-29-3/entry.json · calls: s:other s:other s:red s:red s:green s:other F:other/2s
+  S2 coding S2-06 03:24:55 wall 2055 suite 1122 other 549 model 384 · dur 2054 api 1064 · full 1 cached 5 passes=true edits after suite: slot-1/.harness/runs/agent-harness-2026-10-29-3/entry.json · calls: F:cached/2s s:other s:red s:red F:green/27s s:red s:red s:green s:red s:green s:other F:other/1s F:other/1s F:green/77s s:green F:red/27s s:other s:red s:green F:other/1s s:other
+  S2 verify S2 04:12:46 wall 78 suite 45 other 1 model 32 · dur 77 api 37 · full 0 cached 1 · calls: s:green s:green F:other/2s s:other
+  run retro  04:14:25 wall 33 suite 0 other 4 model 29 · dur 32 api 31 · full 0 cached 0
+harness suites outside sessions (where · wall · cpu · rerun):
+  run before 21:25:14 754 s cpu 3085 s
+  run before 21:37:49 118 s cpu 59 s rerun
+  S1 after 00:47:02 804 s cpu 3291 s after S1-05 before S1
+  S2 after 03:59:17 809 s cpu 3331 s after S2-06 before S2
+run-level scopes: svc 21:25:14 42385 s, check 21:25:14 754 s, check 21:37:49 118 s, session 21:39:47 433 s, session 04:14:25 33 s
+
+load curve from the journal (full suites: wall s, CPU s, mean other suites overlapping):
+  08:49:37 2026-10-29-2-check-2942770 wall 604 cpu 2401 overlap 0
+  09:17:56 2026-10-29-2-R1-check-3797383 wall 602 cpu 2189 overlap 0.84
+  09:19:33 2026-10-29-2-R2-check-3934866 wall 747 cpu 2817 overlap 0.68
+  09:32:39 2026-10-29-2-R2-check-1084667 wall 743 cpu 2749 overlap 0.6
+  09:37:40 2026-10-29-2-R1-check-1502829 wall 769 cpu 2873 overlap 0.88
+  09:45:02 2026-10-29-2-R2-check-1084667 wall 210 cpu 254 overlap 1
+  09:50:03 2026-10-29-2-R2-check-2843131 wall 648 cpu 2492 overlap 0.29
+  09:50:30 2026-10-29-2-R1-check-1502829 wall 159 cpu 206 overlap 1
+  10:02:13 2026-10-29-2-R1-check-3800342 wall 802 cpu 2968 overlap 0.79
+  10:05:02 2026-10-29-2-R2-check-4047513 wall 864 cpu 3089 overlap 0.96
+  10:16:13 2026-10-29-2-R1-check-1145614 wall 884 cpu 2995 overlap 0.61
+  10:19:26 2026-10-29-2-R2-check-4047513 wall 205 cpu 190 overlap 1
+  10:28:35 2026-10-29-2-R2-check-2519236 wall 927 cpu 3135 overlap 0.22
+  10:44:02 2026-10-29-2-R2-check-2519236 wall 205 cpu 196 overlap 0
+  12:31:32 2026-10-29-2-R1-check-3574364 wall 784 cpu 2871 overlap 0
+  12:44:36 2026-10-29-2-R1-check-3574364 wall 209 cpu 247 overlap 0
+  12:55:14 2026-10-29-2-R2-check-1638901 wall 845 cpu 3102 overlap 0.73
+  12:59:05 2026-10-29-2-R1-check-1987281 wall 904 cpu 3307 overlap 0.96
+  13:10:42 2026-10-29-2-R2-check-3312279 wall 893 cpu 3220 overlap 0.92
+  13:16:08 2026-10-29-2-R1-check-3906025 wall 821 cpu 3120 overlap 0.76
+  13:29:49 2026-10-29-2-R1-check-3906025 wall 172 cpu 158 overlap 0
+  13:50:50 2026-10-29-2-R2-check-2616115 wall 1047 cpu 3303 overlap 0
+  14:08:45 2026-10-29-2-R2-check-482187 wall 964 cpu 3230 overlap 0.44
+  14:17:45 2026-10-29-2-R1-check-1474659 wall 812 cpu 3124 overlap 0.79
+  14:24:49 2026-10-29-2-R2-check-482187 wall 220 cpu 310 overlap 1
+  14:31:40 2026-10-29-2-R2-check-2915390 wall 965 cpu 3463 overlap 0
+  15:05:50 2026-10-29-2-R3-check-1807907 wall 602 cpu 2190 overlap 0.95
+  15:06:20 2026-10-29-2-R1-check-1852434 wall 602 cpu 2184 overlap 0.99
+  15:15:59 2026-10-29-2-R3-check-2993548 wall 781 cpu 3007 overlap 0.31
+  15:25:20 2026-10-29-2-R1-check-3780394 wall 929 cpu 3456 overlap 0.75
+  15:32:54 2026-10-29-2-R3-check-339558 wall 1237 cpu 3626 overlap 0.38
+  15:53:32 2026-10-29-2-R3-check-339558 wall 293 cpu 363 overlap 0
+  15:58:38 2026-10-29-2-R3-check-3361197 wall 948 cpu 3439 overlap 0
+  16:16:39 2026-10-29-2-R1-check-999522 wall 934 cpu 3495 overlap 0.68
+  16:20:02 2026-10-29-2-R3-check-1302586 wall 278 cpu 976 overlap 1
+  16:26:18 2026-10-29-2-R3-check-2018027 wall 944 cpu 3523 overlap 0.38
+  16:50:51 2026-10-29-2-R1-check-4146694 wall 856 cpu 3309 overlap 0.41
+  16:59:13 2026-10-29-2-R3-check-719006 wall 1032 cpu 3703 overlap 0.72
+  17:09:53 2026-10-29-2-R1-check-1863799 wall 997 cpu 3604 overlap 0.97
+  17:16:25 2026-10-29-2-R3-check-719006 wall 236 cpu 226 overlap 1
+  17:20:54 2026-10-29-2-R3-check-2975946 wall 1121 cpu 3843 overlap 1
+  17:26:35 2026-10-29-2-R1-check-3605675 wall 1014 cpu 3641 overlap 0.99
+  17:39:35 2026-10-29-2-R3-check-2975946 wall 228 cpu 217 overlap 1
+  17:43:30 2026-10-29-2-R1-check-3605675 wall 125 cpu 133 overlap 0.76
+  17:44:00 2026-10-29-2-R3-check-1195337 wall 1003 cpu 3697 overlap 0.09
+  18:00:43 2026-10-29-2-R3-check-1195337 wall 210 cpu 201 overlap 0
+  18:18:57 2026-10-29-2-R3-check-393748 wall 956 cpu 3626 overlap 0.05
+  18:34:03 2026-10-29-2-R1-check-2090923 wall 733 cpu 2993 overlap 0.23
+  18:49:49 2026-10-29-2-R3-check-3244515 wall 823 cpu 3177 overlap 0.3
+  18:59:28 2026-10-29-2-R4-check-4071077 wall 321 cpu 1187 overlap 1
+  19:04:54 2026-10-29-2-R4-check-492371 wall 1006 cpu 3613 overlap 0.94
+  19:06:28 2026-10-29-2-R3-check-630853 wall 1007 cpu 3678 overlap 0.91
+  19:24:41 2026-10-29-2-R3-check-2550514 wall 960 cpu 3610 overlap 0.72
+  19:28:47 2026-10-29-2-R4-check-2940211 wall 602 cpu 2149 overlap 1
+  19:39:15 2026-10-29-2-R4-check-4159210 wall 999 cpu 3697 overlap 0.88
+  19:43:28 2026-10-29-2-R3-check-400165 wall 970 cpu 3611 overlap 0.77
+  20:00:49 2026-10-29-2-R3-check-2207997 wall 1015 cpu 3718 overlap 0.83
+  20:03:37 2026-10-29-2-R4-check-2468417 wall 995 cpu 3681 overlap 0.85
+  20:21:01 2026-10-29-2-R4-check-160191 wall 840 cpu 3278 overlap 0.38
+  20:32:06 2026-10-29-2-R3-check-1166114 wall 806 cpu 3209 overlap 0.22
+  20:55:04 2026-10-29-2-R4-check-2677503 wall 755 cpu 3018 overlap 0
+  21:09:42 2026-10-29-2-R4-check-3726712 wall 770 cpu 3083 overlap 0
+  21:25:14 2026-10-29-3-check-620837 wall 754 cpu 3085 overlap 0
+  22:01:05 2026-10-29-3-S1-check-1817869 wall 782 cpu 3211 overlap 0
+  22:14:07 2026-10-29-3-S1-check-1817869 wall 181 cpu 171 overlap 0
+  22:36:31 2026-10-29-3-S1-check-3344477 wall 786 cpu 3237 overlap 0
+  22:52:26 2026-10-29-3-S1-check-251866 wall 808 cpu 3221 overlap 0
+  23:05:54 2026-10-29-3-S1-check-251866 wall 211 cpu 236 overlap 0
+  23:13:17 2026-10-29-3-S1-check-1527450 wall 792 cpu 3242 overlap 0
+  23:28:59 2026-10-29-3-S1-check-2659098 wall 799 cpu 3208 overlap 0
+  23:49:46 2026-10-29-3-S1-check-3863814 wall 793 cpu 3272 overlap 0
+  00:05:03 2026-10-29-3-S1-check-773095 wall 195 cpu 479 overlap 0
+  00:17:03 2026-10-29-3-S1-check-1042661 wall 805 cpu 3317 overlap 0
+  00:33:03 2026-10-29-3-S1-check-2255065 wall 805 cpu 3309 overlap 0
+  00:47:02 2026-10-29-3-S1-check-3369478 wall 804 cpu 3291 overlap 0
+  01:21:31 2026-10-29-3-S2-check-540901 wall 817 cpu 3281 overlap 0
+  01:41:07 2026-10-29-3-S2-check-1696956 wall 806 cpu 3314 overlap 0
+  01:54:32 2026-10-29-3-S2-check-1696956 wall 815 cpu 3281 overlap 0
+  02:08:15 2026-10-29-3-S2-check-3931419 wall 805 cpu 3308 overlap 0
+  02:37:49 2026-10-29-3-S2-check-997836 wall 682 cpu 2802 overlap 0
+  02:51:08 2026-10-29-3-S2-check-1995500 wall 825 cpu 3334 overlap 0
+  03:10:59 2026-10-29-3-S2-check-3168729 wall 806 cpu 3352 overlap 0
+  03:45:16 2026-10-29-3-S2-check-298666 wall 809 cpu 3337 overlap 0
+  03:59:17 2026-10-29-3-S2-check-1422952 wall 809 cpu 3331 overlap 0

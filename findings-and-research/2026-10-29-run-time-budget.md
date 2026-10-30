@@ -339,3 +339,106 @@ cores; here two suites already saturate four cores, and the only CPU to be saved
   unmeasured on the current suite.
 - Whether the Gotchas-line pattern recurs under the current prompts: three cases in one run says yes; the next run will
   say.
+
+## 10. The next run against the predictions
+
+Measured 2026-10-30 after `agent-harness-2026-10-29-3` ended (the run of `docs/specs/2026-10-30-suite-time.md`:
+milestones S1 then S2, one lane at a time, 21:25–04:15, 11 coding sessions, 11/11 passing, tests 1,016 → 1,077), with
+the baseline `agent-harness-2026-10-29-2` now complete (31 coding sessions, 78,981 lane-s). Outputs:
+`*-output-2026-10-30.txt` beside the scripts. Predictions are per two-lane run of 20 coding sessions, so the measured
+column scales this run's sums by 20/11 where a prediction is a sum.
+
+**Read this first: fixes 1–3 were not live in this run.** The driver ran `ac4e46c` (`harness-version`), from before
+S1 merged. The live checkout is levelled only while no run is alive, so the run's own fixes reach the driver at the
+next run. The rendered *This run* line still reads `Suite: … (runs bash tests/run.sh, cached per code tree)`, with no
+length. The run's `harness-log.md` has **no `check: RED (cached` line and no `partial:` line**, so fixes 2 and 1 were
+not in use. The one `check: RED (cached for this code tree: t1)` in the stream logs is S1-04's stub run, and
+`partial:` appears only in the spec's text and the sessions' stub runs. They would have had nothing to do anyway: no
+coding session ended on a tree it hadn't tested, and no feature needed a retry. So this run measures §1c (nothing
+applied) and is the control for §4. It doesn't test §4.
+
+| Measure | predicted | measured (10-29-3; baseline 10-29-2 complete) | held/missed |
+|---|---|---|---|
+| non-session share of lane time, no pause | §1c 15–25 %; §4 10–18 % | **8 %** (before 0, after 7, verify 1, waiting 0; baseline 28 % with 9 % waiting) | missed both, below |
+| suite wall per run, every caller | §1c 28,000–38,000 lane-s per 20 sessions, 55–65 % of lane time | 17,914 lane-s = **32,571 per 20 sessions, 77 %** (baseline 32,860 per 20, 64 %) | amount held; share missed, above |
+| suite wall per run after fixes 1–3 | §4 26,000–30,000 | 32,571 per 20 sessions | missed (fixes not live) |
+| CPU per run in suites | §1c 70–95 CPU-h; §4 60–80 | 17.6 CPU-h = **32.0 per 20 sessions** (baseline 44.3 in 31 = 28.6 per 20) | missed both, below |
+| solo suite wall | §4 600–680 s | **805 s** median, 19 full runs, all with no other suite (max 825; CPU 3,281 s); baseline's solo runs 784 s, CPU 3,083 s (n 7) | missed, above |
+| flakes per run | §1c and §4 3–6 | **5 rows** in 11 sessions (9 per 20); baseline 11 rows in 31 | held per run; the rate per session did not fall |
+| un-passes from a red suite | §1c 1–2; §4 0–1 | **0** (baseline 2, both memlint) | §1c missed, below; §4 held |
+| features thrown out after a retry | §4 0 | 0 (no retries) | held |
+| main green after milestone merges | 100 % | **100 %**: S1 (PR #64) and S2 (PR #65), no `red on the verified tree` or `red after merging main` line | held |
+| tool-timeout hits (`F:moved`) | §1c 2–5; §4 0–1 | **0** full check.sh calls moved (baseline 4) | §1c missed, below; §4 held |
+
+What the data says about each miss:
+
+- **Non-session share 8 %.** There was one lane at a time, no pause and no retry, and every post-session run was a cache
+  hit, 11 of 11. budget.mjs prints 9 of 11 because it labels the two verify runs `after`: each began within 15 s of
+  its milestone's last session and is the `suite cache cleared` run. The harness's own full runs were the init's
+  (754 s + 118 s rerun) and the two verifies' (804 s, 809 s). §1c's 15–25 % came from two-lane runs with retries.
+  None of the events fixes 1 and 2 remove happened here.
+- **Suite share 77 %.** The amount per 20 sessions matches the baseline's (32,571 against 32,860). The share rose
+  because nothing else used lane time (no waiting, harness overhead 8 %) and because the solo suite is 805 s, not
+  624 s. The sessions' suite is 66 % of lane time and the model 19 %.
+- **§4's 26,000–30,000.** Fixes 1–3 were not live, and the waste they target (§4's ~9,000 s in 10-29-2) did not occur
+  in this run. What remains is the sessions' own full runs: 19 scopes in 11 coding sessions (1.7 each, 1,393 s of
+  suite per session), which is fix 4's ground.
+- **CPU.** §1c's arithmetic was wrong: 45 full runs × 2,450–3,200 CPU-s is 31–40 CPU-h, not 70–95. The measured
+  32.0 per 20 sessions is inside the corrected range. §4's 60–80 inherits the error; corrected, it would be about
+  25–33.
+- **Solo suite 805 s.** The 624 s was run 10-29's figure, at 859–925 checks. This run's suite had 1,016–1,077 checks,
+  about 3.1 CPU-s per check against 2.7. The baseline's own solo runs were already at 784 s. Wall time grew 29 % in
+  two runs, not the 5 % per run the plan assumed. Fix 6 (process starts) and the suite's growth decide this number;
+  fixes 1–3 don't touch it.
+- **Flakes.** The count held, but the rate didn't fall: 0.45 per session, the same as the baseline's first segment.
+  No row had another check.sh scope beside it in the journal: one lane, overlap 0, load 1.7–4.3. So §5's "flakes
+  appear only with two suites" no longer holds.
+  - `08` and `46` are names R1 fixed, `47` is one it didn't, and `10` is new.
+  - One row is `whole suite`: a red full run that printed no check-file names, so check.sh reran all of it
+    (`rerun: suite`, 805 s).
+  - The load the journal can't see is a session's own `tests/run.sh <subset>` running beside its backgrounded full
+    run.
+- **Un-passes 0 (§1c).** No session ended on a tree it hadn't tested. `39-memlint-m4` went red in S1-04's and S1-05's
+  own runs, and both sessions fixed it before they ended (`escapes-output-2026-10-30.txt`). The Gotchas pattern of
+  10-29-2 did not cost a feature this time.
+- **Tool timeout 0 (§1c).** Fix 3 was not in the prompts, but no full suite call moved. The sessions read the spec,
+  which quotes the 601 s kill, so they started their full runs in the background and waited with
+  `until grep …; do sleep …; done` polls under `timeout: 600000`. Five calls were moved to the background, and none
+  of them was a suite call:
+  - three of those polls, at 600 s (S1-02, S2-04, S2-05);
+  - two other calls, at the 120 s default (a subset run in S1-02, a python edit in S1-03; budget.mjs prints them as
+    `s:moved`).
+
+  None was killed and none was rerun.
+
+Two problems in the method, fixed or worked around here:
+
+- **Stub suites in real scopes.** S2-03 and S2-06 ran the slot's `lib/check.sh` by hand with a stub
+  `HARNESS_CHECK_CMD`, from the session's own shell. That shell's `HARNESS_SCOPE_PREFIX` gave each stub run a real
+  `harness-agent-harness-2026-10-29-3-S2-check-<pid>` scope: 33 `Started` lines between 01:46 and 03:33. tests/lib.sh
+  unsets the prefix; a hand-run outside it doesn't. The sub-second scopes logged no `Consumed` line, and budget.mjs
+  extended every never-closed scope to "now". That made it count 21 full runs in S2-06 and an overlap of 8–28 for the
+  real ones. budget.mjs now drops an ended run's never-closed check scopes; the numbers above are from the fixed
+  script and match a hand-filtered journal. totals.mjs gains the per-run "suite wall, every caller" and CPU line used
+  in the table.
+- **The baseline's run record is gone from main.** `ff2c6de` ("HARNESS: reverted edits a R1-03 session may not
+  make", 10-29 13:33) deleted `.harness/runs/agent-harness-2026-10-29-2/` (entries, summary, retro, harness-log), and
+  no later commit on any ref restores it. escapes.mjs over the baseline therefore reads `ff2c6de^`'s record: 7
+  sessions, 10 reds, 1 missed (R1-01's memlint red, as §7 found). That a revert of a session's disallowed edits
+  removed the run's own record is a driver bug worth its own finding.
+
+This run's escapes: 18 reds in the sessions' own suite calls. 15 were in the session's own check file, 2 were
+selected by a name match, and 1 was missed (`39-memlint-m4` in S1-04, which changed no file the check names). The
+median subset under the name rule is 60 % of the check files.
+
+Reproduce (read-only; `$T` a scratch dir):
+
+```
+journalctl --user --since "2026-10-29 08:49" -o json --no-pager | grep -E '"MESSAGE":"[^"]*harness-' > $T/journal.jsonl
+D=findings-and-research/2026-10-29-run-time-budget S=~/.local/state/harness/agent-harness
+R="agent-harness-2026-10-29-2 agent-harness-2026-10-29-3"
+node $D/budget.mjs $T/journal.jsonl $S $R
+node $D/budget.mjs $T/journal.jsonl $S $R --json > $T/budget.json && node $D/totals.mjs $T/budget.json
+mkdir -p $T/r && git archive ff2c6de^ tests/checks .harness/runs/agent-harness-2026-10-29-2/entries.jsonl | tar -x -C $T/r
+node $D/escapes.mjs $T/r $S agent-harness-2026-10-29-2; node $D/escapes.mjs . $S agent-harness-2026-10-29-3
+```

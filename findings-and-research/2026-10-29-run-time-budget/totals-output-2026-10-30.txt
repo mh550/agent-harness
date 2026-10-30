@@ -1,0 +1,18 @@
+agent-harness-2026-10-29-2: lane-seconds 78981 · model 12% · session_suite 49% · session_other 11% · harness_before 3% · harness_after 8% · verify 9% · waiting 9% · idle 0%
+  coding sessions 31: full-suite scopes inside them 46 (1.5 per session), session suite s 38850 (1253 per session), model s 9712
+  the sessions' check.sh full calls by outcome: cached 4, green 0, flake 0, red 0, moved to background at the tool timeout 4, other (output cut by the call) 34
+  harness suites (full runs, reruns aside): before a session 3 (2131 s), after 7 (6129 s), verify 3 (2717 s); reruns 7
+  suite wall, every caller (sessions' suite + the harness's scopes, reruns in): 50933 lane-s (64%); CPU in check scopes 44.3 CPU-h; per 20 coding sessions 32860 lane-s, 28.6 CPU-h
+  sessions that ended passes=true 28, un-passed for a red suite 2, post-session cache hits (a passing session with no harness suite after it) 27
+agent-harness-2026-10-29-3: lane-seconds 23238 · model 19% · session_suite 66% · session_other 7% · harness_before 0% · harness_after 7% · verify 1% · waiting 0% · idle 0%
+  coding sessions 11: full-suite scopes inside them 19 (1.7 per session), session suite s 15324 (1393 per session), model s 4404
+  the sessions' check.sh full calls by outcome: cached 9, green 3, flake 0, red 4, moved to background at the tool timeout 0, other (output cut by the call) 31
+  harness suites (full runs, reruns aside): before a session 1 (754 s), after 2 (1613 s), verify 0 (0 s); reruns 1
+  suite wall, every caller (sessions' suite + the harness's scopes, reruns in): 17914 lane-s (77%); CPU in check scopes 17.6 CPU-h; per 20 coding sessions 32571 lane-s, 32.0 CPU-h
+  sessions that ended passes=true 11, un-passed for a red suite 0, post-session cache hits (a passing session with no harness suite after it) 9
+
+all runs: lane-seconds 102219 · model 14% · session_suite 53% · session_other 10% · harness_before 2% · harness_after 8% · verify 7% · waiting 7% · idle 0%
+2026-10-29 runs, alone: n 26, wall median 805 s, cpu median 3281 s, wall max 1047
+2026-10-29 runs, overlap under 0.5: n 13, wall median 856 s, cpu median 3230 s, wall max 1237
+2026-10-29 runs, 0.5–0.9: n 17, wall median 884 s, cpu median 3124 s, wall max 1032
+2026-10-29 runs, 0.9 and over: n 11, wall median 904 s, cpu median 3307 s, wall max 1121

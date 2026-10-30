@@ -16,6 +16,8 @@ for (const r of runs) {
   console.log(`  the sessions' check.sh full calls by outcome: cached ${by("cached")}, green ${by("green")}, flake ${by("flake")}, red ${by("red")}, moved to background at the tool timeout ${by("moved")}, other (output cut by the call) ${by("other")}`);
   const hc = r.harnessChecks.filter(c => !c.rerun), w = o => hc.filter(c => c.where === o);
   console.log(`  harness suites (full runs, reruns aside): before a session ${w("before").length} (${r0(sum(w("before").map(c => c.wall)))} s), after ${w("after").length} (${r0(sum(w("after").map(c => c.wall)))} s), verify ${w("verify").length} (${r0(sum(w("verify").map(c => c.wall)))} s); reruns ${r.harnessChecks.filter(c => c.rerun).length}`);
+  const suiteAll = sum(r.sessions.map(s => s.suite)) + sum(r.harnessChecks.map(c => c.wall)), cpu = sum(r.checksAll.map(c => c.cpu ?? 0));
+  console.log(`  suite wall, every caller (sessions' suite + the harness's scopes, reruns in): ${r0(suiteAll)} lane-s (${Math.round(suiteAll / t * 100)}%); CPU in check scopes ${(cpu / 3600).toFixed(1)} CPU-h; per 20 coding sessions ${r0(suiteAll / coding.length * 20)} lane-s, ${(cpu / 3600 / coding.length * 20).toFixed(1)} CPU-h`);
   const passed = coding.filter(s => s.passes === true).length, un = coding.filter(s => s.unpassed).length;
   console.log(`  sessions that ended passes=true ${passed}, un-passed for a red suite ${un}, post-session cache hits (a passing session with no harness suite after it) ${coding.filter(s => s.passes === true && !r.harnessChecks.some(c => c.where === "after" && c.lane === s.lane && Math.abs(c.start - s.end) < 15000)).length}`);
 }
