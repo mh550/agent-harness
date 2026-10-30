@@ -11,3 +11,7 @@
 - 2026-10-29 22:50 · S1-02: 1 question(s) for Michael recorded (harness needs)
 - 2026-10-29 22:50 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch (red, then green on a rerun; load 1.69)
 - 2026-10-29 22:50 · S1-02 · claude-opus-5-5 · passes=true · 56 min · 2/11 passing · tests 1028
+- 2026-10-29 22:50 · context.md for S1-03: 5695 bytes
+- 2026-10-29 23:42 · S1-03: suite ran 3x (2662 s) in the session
+- 2026-10-29 23:42 · flaky: 10-harness-eval-run-e2 (red, then green on a rerun; load 2.59)
+- 2026-10-29 23:42 · S1-03 · claude-opus-5-5 · passes=true · 52 min · 3/11 passing · tests 1036

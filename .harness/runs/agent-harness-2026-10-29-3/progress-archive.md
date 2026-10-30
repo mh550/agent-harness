@@ -7,6 +7,20 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-29 23:42 · S1-03 · passes
+
+check.sh full form writes red-<key> (rc, HARNESS_FAILED names, wall, RED line) after a red where both runs were `exit <rc> after`, answers the next full call on that tree from it, removes it on green; subsets read none. New 80-red-marker (8 checks); 08, 74 adapted; 10-e2 drops S1-02s wall line from its prompt compare; decisions/2026-10-30-red-marker.
+
+- **Files:** lib/check.sh, tests/checks/80-red-marker.sh, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/74-flakes-run.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-30-red-marker.md, tests/checks/10-harness-eval-run-e2.sh
+- **Verified:** 80-red-marker 1/8 before the code (the timeout/cap-kill negative passing), 8/8 after; `tests/run.sh check-rerun check-key red-marker` 32/32; the first full run went red on 08 (2 checks) and 74 (1), red again on the rerun; after fixing both, 74 and 08 green alone, then a full run green; that run flaked once on 10-harness-eval-run-e2 (the wall line, fixed); a third full run on the final tree
+- **Tests:** 1028 → 1036
+- **Dead end:** the full suite after the check.sh change alone — 08's ck() runs many CHECK_CMDs on one tree: after its `exit 3` every full call answered the cached red (the 124 line and the TERM check); 74's fe needed finish's suite to run on C's red tree
+- **Discovery** (affects S1-04, S1-05): a green run removing a planted red-<key> is only reachable when the marker appears mid-run (the lookup answers first): 80's `plant` mode has the stub suite write it
+- **Discovery** (affects S1-04, S1-05): 74-flakes-run's fe now makes C's red an `exit 124` (a timeout, never cached) so finish's suite runs; 08's ck() rm's red-* before each call. A stub run whose session leaves BROKEN now gets a cached red at the retry's run_init: S1-04's retry check sees it
+- **Discovery** (affects S1-04): run_init fresh does not yet remove red-<key> (S1-04 step 3): until it does, a verify on a tree found red answers cached
+- **Discovery** (affects S1-05, run): 10-harness-eval-run-e2 flaked (probe prompt vs prompt-coding.md): its noinit() kept S1-02s `Suite: last full run <s> s` line, which differs between renders; it now drops it like Clock. Any check comparing two rendered prompts below # This session must too
+- *03-S1-03 · claude-opus-5-5*
+
 ### 2026-10-29 22:50 · S1-02 · passes
 
 green-<key> is two lines (count, wall <s>); check.sh/run_init/tests_end read line 1 with read -r; prompt.sh suite_length gives SUITE_LENGTH. Deviation (default): the wall line sits under # This session in coding/initializer/verify/resolve, not run.md's Suite line (that broke 08's prefix check: walls 0 vs 1 s); run.md points there. A whole-suite rerun sets the wall. Rule, CLAUDE.md, decision.
