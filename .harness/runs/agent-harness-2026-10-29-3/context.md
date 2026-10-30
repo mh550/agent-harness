@@ -1,10 +1,13 @@
-# Context pack for `S2-02`
+# Context pack for `S2-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (S2-01, affects S2-02, S2-04): tests/run.sh matches check names by substring: a map name must be the full stem (75-suite-tools, not 75: 75-merge-sorted shares it) → entries.jsonl:8
+- Discovery (S2-02, affects S2-03): treekey.mjs --names <path>… prints the map's names for those paths (map order, a duplicate path merged into its first entry) and exits 1 with no line when a path is no kept entry's: check.sh's rows 9/10 use it → entries.jsonl:9
+- Discovery (S2-02, affects S2-03, S2-05): treekey.mjs's bare call never parses HARNESS_CHECK_KEY_MAP (no stderr); only --partial and --names print the dropped-entry lines → entries.jsonl:9
+- Discovery (S2-02, affects S2-03): 81-partial-key.sh's repo $T/pk has CLAUDE.md, README.md, lib/a.sh and docs/plans/p.md committed, CLAUDE.md already appended once (dirty) after the first checks; pk() sets HARNESS_CHECK_KEY_IGNORE='.harness/runs docs/plans' → entries.jsonl:9
+- Discovery (S2-01, affects S2-03): The driver loads config once (lib/lane.sh:45; driver.sh:403 after a main merge): a session editing .harness/config.sh's map leaves HARNESS_CHECK_KEY_MAP stale, and a map from user config/run.env is linted by nothing. Plan row 4a: the tree's sourced CHECK_KEY_MAP (empty if unset) must equal the exported one, else full run; stub runs put the map in the throwaway project's .harness/config.sh → entries.jsonl:8
 - Discovery (S1-05, affects S2, run): run_init now writes init-failed in the lane dir (driver: state dir) while an init fails; the next run_init drops the tree's red-<key> before its suite → entries.jsonl:6
 - Discovery (S1-05, affects S2, run): the cached red answer no longer prints the stored RED line verbatim: its `— last lines of …:` tail is replaced with check-<key>.out's or `its output is gone from scratch` → entries.jsonl:6
 - Discovery (S1-05, affects S2, run): suite_length reads every green marker (cwd tree's, then newest) before any red one → entries.jsonl:6
@@ -18,12 +21,12 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-10-30 01:19 · S2-01 · passes: Wrote docs/plans/2026-10-30-S2-partial-key.md: treekey.mjs's exported functions and --partial (plus a --names mode, default), parseMap's drops, the part-<reduced> sidecar, check.sh's partial path as a numbered table (rows 0-11 + 4a), what a partial green/red writes, the lint's rules and allow-list with today's finds, the checks, decision and S3 line. No code changed.; tests 1044 → 1044; files docs/plans/2026-10-30-S2-partial-key.md → entries.jsonl:8
+- 2026-10-30 01:35 · S2-02 · passes: treekey.mjs is now exported pure functions (ignoreList, parseMap, treeKey, partialKeys, mapNames) behind a CLI guard; adds --partial (full key, reduced key, <blob> <path> lines) and --names (plan §1 default); bare call and --pathspec unchanged (key as live). CHECK_KEY_MAP: config default empty, this repo maps CLAUDE.md to 39/37, prompt_env exports it, template comment. 81-partial-key: 8 checks.; tests 1044 → 1052; files lib/treekey.mjs, lib/config.sh, lib/prompt.sh, .harness/config.sh, templates/project/config.sh, … → entries.jsonl:9
 
 ## Lately in the run
 
+- 2026-10-30 01:19 · S2-01 · passes: Wrote docs/plans/2026-10-30-S2-partial-key.md: treekey.mjs's exported functions and --partial (plus a --names mode, default), parseMap's drops, the part-<reduced> sidecar, check.sh's partial path as a numbered table (rows 0-11 + 4a), what a partial green/red writes, the lint's rules and allow-list with today's finds, the checks, decision and S3 line. No code changed.; tests 1044 → 1044; files docs/plans/2026-10-30-S2-partial-key.md → entries.jsonl:8
 - 2026-10-30 01:02 · verify S1 · passes: All five S1 features hold: full suite green (1044 tests), subsets 34/39/73/79/80 re-run green, greps and docs confirmed. Note: S1-04 step 3 literal diff scope also includes S1-05 review fix I1. → entries.jsonl:7
-- 2026-10-30 00:46 · S1-05 · passes: S1 review: 0 Critical, 3 Important, 5 Minor. Fixed, each red first: I1 run_init keeps no red-<key> around a failed init; I2 the cached red shows check-<key>.out or says it is gone; I3 suite_length reads every green wall before a red; M1 no red cached for codes ≥128; M2 atomic marker writes; M3 green_count in record.sh; M4. Docs: architecture §3/§4/§7/prompt, README.; tests 1039 → 1044; files lib/check.sh, lib/record.sh, lib/prompt.sh, tests/checks/79-suite-length.sh, tests/checks/80-red-marker.sh, … → entries.jsonl:6
 
 ## Current rules
 
