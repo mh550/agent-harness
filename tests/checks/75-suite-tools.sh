@@ -66,6 +66,6 @@ lb=$(bash "$HERE/lint-sleeps.sh" "$T/lint/bare.sh" 2>&1); lbc=$?
 check "sleep lint: a bare sleep is listed as <file>:<line>, exit 1" '(( lbc == 1 )) && [[ $lb == "$T/lint/bare.sh:2" ]]'   # sleep-ok: text
 lo=$(bash "$HERE/lint-sleeps.sh" "$T/lint/ok.sh" 2>&1); loc=$?
 check "sleep lint: a sleep with # sleep-ok: passes silently" '(( loc == 0 )) && [[ -z $lo ]]'
-lr=$(cd "$HERE/.." && bash tests/lint-sleeps.sh 2>&1); lrc=$?
+lr=$(bash "$HERE/lint-sleeps.sh" 2>&1); lrc=$?
 check "sleep lint: tests/checks and tests/lib.sh hold no bare sleep" '(( lrc == 0 )) && [[ -z $lr ]] || { printf "%s\n" "$lr" | head -20; false; }'   # sleep-ok: text
 suite_end

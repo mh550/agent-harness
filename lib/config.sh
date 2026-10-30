@@ -14,6 +14,7 @@ harness_config() {
   ENTRY_RESUME_TURNS=8 ENTRY_RESUME_TIMEOUT=10m ENTRY_RESUME_BUDGET_USD=1   # the one resume of a session that left no valid entry (R2)
   SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G   # each session's scope (lib/scope.sh): throttle, kill, swap
   CHECK_KEY_IGNORE=".harness/runs docs/plans"   # path prefixes left out of the suite cache key (lib/treekey.mjs): a plan alone doesn't rerun the suite
+  CHECK_KEY_MAP=""   # `<path>:<check>[:<check>…]` entries (lib/treekey.mjs --partial): a change to such a path alone runs only those checks
   CHECK_MEMORY_MAX=3G CHECK_TIMEOUT=15m   # each check.sh run's scope (no MemoryHigh: a runaway test dies, not crawls) and its timeout -k 30s
   CHECK_RERUN=auto   # a red full suite is rerun once: auto (the HARNESS_FAILED= files, else the whole suite) · failed · suite · off
   INIT_TIMEOUT=10m SVC_MEMORY_MAX=3G   # run_init: timeout -k 10s around the init's foreground; its services scope's MemoryMax

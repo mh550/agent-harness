@@ -3,6 +3,7 @@ Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
 CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
+CHECK_KEY_MAP: harness default empty; this repo maps CLAUDE.md; the driver exports it; the template has it commented
 CLAUDE.md's suite line points at the run's prompt, with no fixed measurement
 COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
 CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
@@ -144,6 +145,21 @@ busy continue: once that run has ended, the plain continue is back
 busy continue: the card's do and run lines name the hold
 by hand right after: nothing new, no session
 by hand while another debrief runs: it says it is waiting
+check partial: a CLAUDE.md-only diff runs exactly memlint: the partial line, exit 0, check-partial.out, check.out untouched
+check partial: a green full run writes green-<full> (count, wall) and part-<reduced>: the full key, then the blob lines
+check partial: a lib/ diff runs the full suite (no arguments); a diff of both mapped paths runs memlint readme, map order
+check partial: a map naming .harness/config.sh, or a gitignored .harness/config.sh, never lets a shrunk map run a partial
+check partial: a part- whose path set is not the map's (the map grew an entry) runs in full
+check partial: a partial green inherits the reference marker (count and wall) byte for byte, writes no part-, and the next call is cached
+check partial: a red with no HARNESS_FAILED line reruns the partial's names (a flake row naming them); a deleted mapped file is a partial
+check partial: a sidecar with a path twice or a malformed line is no path set: a CLAUDE.md diff runs in full
+check partial: a timeout in a partial run is said as such, no rerun, no marker
+check partial: check-runs.log gets a partial row for the partial run
+check partial: red once then green is a flake: one flakes.jsonl row with partial, the green-after-a-rerun line, the reference marker
+check partial: red twice is rerun once on memlint, says so, exits 1 and leaves no marker of either kind
+check partial: the reference green-<ref> gone, or an exported map other than the tree's .harness/config.sh one, runs in full
+check partial: the subset form on the diffed tree runs its subset and reads no map, sidecar or marker
+check partial: with .harness/config.sh outside the key (its map could change under an equal reduced key) a CLAUDE.md diff runs in full
 check rerun: CHECK_RERUN=auto in config.sh, exported as HARNESS_CHECK_RERUN; the template has it; lanes export HARNESS_LANE
 check rerun: CHECK_RERUN=failed with no line, or off, runs the suite once and is red as today
 check rerun: CHECK_RERUN=suite reruns the whole suite even with the line
@@ -191,6 +207,8 @@ deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
 deploy.mjs: vercel and netlify guards merge, keep keys and detect
 driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
 driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
+driver partial: a session that edits only CLAUDE.md gets a partial init (memlint alone after the full run); tests-end is the full count
+driver partial: verify's run_init fresh removes the verified tree's part-; its suite runs in full (no arguments), after B's partial
 each debrief is a commit of ledger/debrief.md
 each session's scope is stopped after it returns
 ended: done; status says so
@@ -346,6 +364,14 @@ journal: a 410-character summary and outcome "maybe" is minimal with why invalid
 journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
 journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
 journal: validate exits 2 when its only errors are the caps, 1 with any other
+key map lint: a check file passing the bare root to a new command is named with its line, exit 1
+key map lint: a check file reading the root's CLAUDE.md outside the map is named with its line, exit 1
+key map lint: a map name no check file's name holds is named (tests/run.sh would be red on it every time), exit 1
+key map lint: a root with a trailing /, . or .., a glob, a brace, a variable path, a defaulted HH and == outside [[ ]] are hits; a variable under a sub-path is not
+key map lint: both files pass once the map's CLAUDE.md entry names them
+key map lint: each allowed form alone passes (HARNESS_HOME=, git -C log, readlink -f and cd && pwd as an alias, harness_config, == "…")
+key map lint: git -C show and grep, an alias of readlink -f, HH, a relative read up from tests/, an inline cd && pwd and a %/* root are hits; comments and sub-paths are not
+key map lint: this repo's tests/checks/ passes with the map in .harness/config.sh (CLAUDE.md and its readers)
 lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
 lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
 lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
@@ -975,10 +1001,17 @@ thin evidence escalates the verify
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
 tmux: run id dot.run gets session h-dot-run, gone at keep 0
+treekey --names: the entries' names in map order (a duplicate path merged into the first), exit 1 and no line for a path no entry has
+treekey --partial: a CLAUDE.md-only change moves the full key (16 hex), keeps the reduced key, and differs in CLAUDE.md's blob line only
+treekey --partial: a dropped entry (directory, no name, outside the tree, under an ignored prefix) is one stderr line each; the output is the map's without it
+treekey --partial: a mapped path absent from the tree is a `- <path>` line, in map order
+treekey.mjs exports ignoreList, parseMap, treeKey, partialKeys and mapNames, pure on a fixed file list and blobs
+treekey: a map whose every entry is dropped is as no map (two lines); the bare call never parses the map (no stderr)
 treekey: an absolute or .. entry is dropped, not an error (the key is docs/plans' alone)
 treekey: entries are literal path prefixes (. and globs leave nothing out; ./docs/plans/ is docs/plans)
 treekey: two trees that differ only under an ignored prefix have the same 16-hex key; a change under lib/ changes it
 treekey: unset, HARNESS_CHECK_KEY_IGNORE leaves out .harness/runs alone (docs/plans changes the key)
+treekey: without a map --partial prints two equal keys and no blob line; the bare call is one line, --partial's line 1, map or not
 trends --by version groups the runs
 trends lists every run
 tty views: a dry run that stops at the fetch says where it stopped, no empty sections after it and no footer

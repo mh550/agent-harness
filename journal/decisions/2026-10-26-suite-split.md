@@ -237,3 +237,6 @@ are found by name: `tests/run.sh debrief`, `desk`, `scope`.*
     (found by the review: this repo's wide list made the checks that run without it red inside a real run).
 - **Rejected:** ignoring every `*.md` (README and `docs/architecture.md` are read by checks); a list of paths the suite
   *does* read (a new directory would be left out of the key silently, and a stale green is worse than a slow one).
+- Updated in place 2026-10-30: the rejected "list of paths the suite does read" is now a map of paths to their
+  readers (CHECK_KEY_MAP, decisions/2026-10-30-partial-key): every unlisted path stays in the key, and a lint proves
+  the map names every check that reads a mapped path.

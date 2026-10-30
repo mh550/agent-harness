@@ -116,12 +116,12 @@ Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; a red full run rerun once, never after a timeout or a cap kill, by `CHECK_RERUN`: `auto` (the `HARNESS_FAILED=` files, else the whole suite) · `failed` (the named files only) · `suite` (the whole suite) · `off`, a rerun that goes green counted as a flake in `harness-log.md`, `summary.json` and report.md's `Flakes` row; cached per code tree, whose key
 leaves out `CHECK_KEY_IGNORE`, default `.harness/runs docs/plans`, so a plan alone doesn't rerun it; a red full run
 that was no timeout or cap kill is cached too, as `red-<key>`, so a retry's pre-session run on the tree just found red
-answers `check: RED (cached for this code tree: <names>)` without running it a third time; each verify clears its
-tree's cached green and red so the suite runs in full on what it judges; every prompt says how long the last full run
+answers `check: RED (cached for this code tree: <names>)` without running it a third time; a `CHECK_KEY_MAP` in `.harness/config.sh` (`CLAUDE.md:<check>[:<check>…]`, space-separated entries: a file and every check file that reads it) makes a change to such files alone run just their checks, `check: green (partial: <names>, <s> s; cached for the rest)`, against the last green full run of the rest of the tree; an entry must name every reader, and only check-file lines may read it (not the code under test, not a shared test helper), so a project with a map needs a lint proving that over its checks, as this repo's `tests/checks/82-key-map-lint.sh` does (a check file outside the entry that names the path beside the repo root, or passes the bare root to a command, fails it); each verify clears its
+tree's cached green and red (and its partial sidecar) so the suite runs in full on what it judges; every prompt says how long the last full run
 took, `Suite: last full run <s> s: give a full run a timeout of at least twice that` (the green marker's `wall` line); the same list decides a merge: a verified
 milestone whose `main` moved only in those paths merges as verified, without a re-base round, noted `<m>: main changed
 only in ignored paths (…); its verify stands`; every call that ran or answered appends one row to
-`$HARNESS_SCRATCH/check-runs.log`, `<epoch> <full|subset|cached> <seconds>`, which each coding session's
+`$HARNESS_SCRATCH/check-runs.log`, `<epoch> <full|subset|partial|cached> <seconds>`, which each coding session's
 `<id>: suite ran <n>x (<s> s) in the session` note in `harness-log.md` counts, cached answers aside), smoke, init (run in the run's
 services scope `harness-<run>-svc`, capped at 3G, under a 10m timeout; what it leaves running when it returns stays in the
 scope until the run's services stop (below) or the next init stops it: `SVC_MEMORY_MAX`, `INIT_TIMEOUT`), port, models, limits

@@ -450,12 +450,14 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   [[ -n ${SCOPE_BARE:-} ]] && note "init ran uncapped: $SCOPE_BARE"   # systemd refused the unit; its line is in init.out
   (( rc == 0 )) || log "  init exit $rc (the session is told to fix it first)"
   # the tree's key as check.sh takes it, before the suite runs (what a suite leaves untracked would change it after)
-  local key; key=$(node "$HARNESS_HOME/lib/treekey.mjs")
+  # and its reduced key (CHECK_KEY_MAP's paths left out): fresh drops its part- sidecar, or a tree differing from that
+  # sidecar's green tree in mapped paths alone would run a partial (decisions/2026-10-30-partial-key)
+  local key red; { read -r key; read -r red; } < <(node "$HARNESS_HOME/lib/treekey.mjs" --partial 2> /dev/null)   # a dropped entry: check.sh says it
   # a red found around a failed init may be the init's (a network blip, a failed install), not the tree's: an init after
   # a failed one runs the suite, and a red under a failed init isn't kept (init-failed: this lane's, or the driver's)
   local flag=${LDIR:-$STATE}/init-failed prev=0; [[ -f $flag ]] && prev=1
   if (( rc )); then touch "$flag"; else rm -f "$flag"; fi
-  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key" "$STATE/green/red-$key"   # a cached red would answer too
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key" "$STATE/green/red-$key" "$STATE/green/part-$red"   # a cached red would answer too
   (( rc || prev )) && rm -f "$STATE/green/red-$key"
   local crc=0; "$CHECK" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }
   (( rc )) && [[ -f $STATE/green/red-$key ]] && rm -f "$STATE/green/red-$key" && note "suite red under a failed init: not cached (the next init runs it)"

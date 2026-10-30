@@ -19,8 +19,9 @@
 # `{id, title: "stub proposal <id>", evidence}` per id (`bad`: `{not json`; `link`: a symlink to feature_list.json). STUB_RETRO_EDITS=1: the retro edits code, progress.md
 # and the worktree's ledger/retro-backlog.jsonl (restrict reverts all three).
 # STUB_GOTCHA=<id>: that feature's first coding session adds a `## Gotchas` line to CLAUDE.md (and the section when
-# it has none), committed with its work (M3). STUB_ASK=<id>: that feature's first coding session's entry asks
-# "Should <id> default to off?"; STUB_RESOLVE=<id>: its later sessions' entries list it in `resolved`. STUB_ASK_TWO=<id>:
+# it has none), committed with its work (M3). STUB_GOTCHA_ONLY=<id>: that feature's first coding session passes with
+# that line as its only change (no work-<id>.txt: a tree differing from the last in CLAUDE.md alone, S2-05).
+# STUB_ASK=<id>: that feature's first coding session's entry asks "Should <id> default to off?"; STUB_RESOLVE=<id>: its later sessions' entries list it in `resolved`. STUB_ASK_TWO=<id>:
 # that feature's first coding session's entry asks two questions, each with a `Files:` line (R4-03); STUB_ASK_AGAIN=<id>:
 # that feature's first coding session's entry asks STUB_ASK's question again, same words. STUB_PROJECT_FACT=<id>:
 # its first session's entry has the discovery STUB_GOTCHA writes, affecting "project" (M3-03). STUB_VERIFY_FAIL_ROW=1: A's
@@ -264,6 +265,13 @@ JSON
     set_passes "$id" true
     if [[ ${STUB_PASS_THEN_LIMIT:-} && $id == A && $n == 1 ]]; then   # claims the feature, then the limit cuts it off
       echo "A $n" > "work-A.txt"; git add -A && git commit -qm "A: claimed"; sed -n 2p "$HERE/fixtures/usage-limit.jsonl"; exit 1
+    fi
+    if [[ ${STUB_GOTCHA_ONLY:-} == "$id" && $n == 1 ]]; then   # passes with the Gotchas line as its only change: a CLAUDE.md-only tree
+      grep -qx '## Gotchas' CLAUDE.md 2> /dev/null || printf '\n## Gotchas\n\n' >> CLAUDE.md
+      echo "- the stub's work files sit at the repo root, one per feature ($HARNESS_RUN_ID $(date +%F))" >> CLAUDE.md
+      entry "$id" "$n" --arg id "$id" '{feature: $id, kind: "coding", outcome: "passes", summary: "\($id): a Gotchas line", files: ["CLAUDE.md"], verified_how: "stub"}'
+      git add -A && git commit -qm "$id: a Gotchas line" && git push -q origin "$HARNESS_BRANCH"
+      ok; exit 0
     fi
     if [[ $id == B && $n == 1 && ! ${STUB_NO_TAMPER:-} ]]; then   # tampers: flips C and rewrites its description
       node -e 'const fs=require("fs"),f=process.argv[1],l=JSON.parse(fs.readFileSync(f));const c=l.features.find(x=>x.id==="C");if(!c)process.exit(0);c.passes=true;c.description="easier";fs.writeFileSync(f,JSON.stringify(l))' "$L"
