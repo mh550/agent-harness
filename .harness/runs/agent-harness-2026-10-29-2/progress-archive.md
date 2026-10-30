@@ -9,6 +9,13 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 21:09 · resolve R4 · passes
+
+CLAUDE.md Gotchas: main (R3-01) replaced the stub --resume line with the {{X}}-above-{{SECTIONS}} line to keep the section within 15 lines; the lane (R4-04) edited the glyph-regex line in place (grep -E "(─)+", BRE parens literal). Kept main's swap and the lane's edited glyph line: 14 lines, no markers, memlint clean.
+
+- **Files:** CLAUDE.md
+- *210913-resolve-R4 · claude-opus-5-5*
+
 ### 2026-10-29 21:09 · R4-05 · passes
 
 R4 review: 0 Critical, 4 Important, 6 Minor (one Opus round). Fixed RED→GREEN: same-80-char twin questions (twinKey #n), skill passes an undecided-file answer via harness answer, immediate sweep now checked, debrief capped at 12 with a pre-R4 fallback (entries.mjs questions). Decision questions-wait, architecture §3/§4/§16/§17, README Questions.

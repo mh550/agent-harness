@@ -188,3 +188,4 @@
 - 2026-10-29 21:09 · R4-05: progress-archive.md edited by the session; restored (the driver is its only writer)
 - 2026-10-29 21:09 · flaky: 47-lanes-two (red, then green on a rerun; load 2.79)
 - 2026-10-29 21:09 · R4-05 · claude-opus-5-5 · passes=true · 33 min · 23/23 passing · tests 999
+- 2026-10-29 21:09 · R4: 1 files conflict with main (CLAUDE.md); a resolve session
