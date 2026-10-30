@@ -193,3 +193,4 @@
 - 2026-10-29 21:09 · merged main into harness-lane/agent-harness-2026-10-29-2/R4
 - 2026-10-29 21:09 · verify R4: suite cache cleared; the suite runs in full on the verified tree
 - 2026-10-29 21:22 · context.md for R4: 16190 bytes
+- 2026-10-29 21:24 · R4 verified and tagged run/agent-harness-2026-10-29-2/R4
