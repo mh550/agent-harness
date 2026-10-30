@@ -68,9 +68,10 @@ check "flakes run: tests-start after a flake on the first suite is the marker's 
   '[[ -d $T/flaked-ts && $(cat "$HARNESS_STATE/proj/ts/tests-start") == 5 ]] && hlog ts | grep -F "flaky: whole suite" > /dev/null'
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 
-# fe: finish's own suite flakes. C's one attempt leaves its tree red (BROKEN), so finish's suite of it is uncached; with
-# `ended` written it is red once, then green on the rerun: its row is noted like any other, and counted once
-check_cmd "flaky end" "if [ -e $T/state/proj/fe/ended ]; then if mkdir $T/flaked-fe 2> /dev/null; then exit 1; fi; exit 0; fi; test ! -f BROKEN"
+# fe: finish's own suite flakes. C's one attempt leaves its tree red (BROKEN) as a timeout's 124, which writes no
+# red-<key>, so finish's suite of it runs; with `ended` written it is red once, then green on the rerun: its row is
+# noted like any other, and counted once
+check_cmd "flaky end" "if [ -e $T/state/proj/fe/ended ]; then if mkdir $T/flaked-fe 2> /dev/null; then exit 1; fi; exit 0; fi; test ! -f BROKEN || exit 124"
 mkdir -p "$HARNESS_STATE/proj/fe" && echo MAX_ATTEMPTS=1 > "$HARNESS_STATE/proj/fe/run.env"
 STUB_NO_TAMPER=1 STUB_LENIENT=1 "$H" start "$T/proj" fe --spec SPEC.md --foreground > "$T/fe.out" 2>&1
 check "flakes run: a flake on finish's own suite is noted too, and summary.json counts it once" \

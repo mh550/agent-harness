@@ -11,6 +11,10 @@
 # A red full run is rerun once by HARNESS_CHECK_RERUN (auto: the HARNESS_FAILED=<names> files, else the whole suite ·
 # failed · suite · off), never after a timeout or a cap kill; its output is check-rerun.out. A green rerun is a flake: one
 # row in the cache's flakes.jsonl, the marker the first run's total (decisions/2026-10-29-rerun-guard). A subset never reruns.
+# A red full run that was neither (both runs `exit <rc> after`) writes red-<key> beside green-<key>: the exit code, the
+# first run's HARNESS_FAILED names, `wall <s>`, the RED line as printed. The next full call on that tree answers from it
+# (`check: RED (cached for this code tree: <names | whole suite>)`, the stored line, the stored exit) and runs nothing; a
+# green run removes it; the subset form reads no marker (decisions/2026-10-30-red-marker).
 # Each call that ran or answered appends `<epoch> <full|subset|cached> <seconds>` to $HARNESS_SCRATCH/check-runs.log (the
 # lane's "suite ran" note counts a session's from it).
 set -uo pipefail
@@ -70,6 +74,10 @@ if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's t
   ki=$(tr -s ' \t' '\n' <<< "${HARNESS_CHECK_KEY_IGNORE:-}" | grep -vx -e '' -e '\.harness/runs' | paste -sd' '); [[ $ki == docs/plans ]] && ki=""
   echo "check: green (cached for this code tree${n:+, $n}${ki:+; key ignores: $ki})"; row cached; exit 0
 fi
+if [[ -n $key && -f $cache/red-$key ]]; then   # the rerun guard already said it isn't a flake: nothing runs on this tree again
+  rc=1 nm="" line=""; { read -r rc; read -r nm; read -r _; read -r line; } < "$cache/red-$key"
+  echo "check: RED (cached for this code tree: ${nm:-whole suite})"; echo "$line"; row cached; exit "$rc"
+fi
 rm -f "$scratch/check-rerun.out"   # a check-rerun.out always belongs to the check.out beside it
 run "$cmd" > "$scratch/check.out" 2>&1; rc=$? w=$(( $(date +%s) - start ))   # the suite's length: a rerun's is a subset's
 [[ -n $key ]] && cp "$scratch/check.out" "$scratch/check-$key.out" \
@@ -96,7 +104,7 @@ fi
 s=$(( $(date +%s) - start ))
 if (( rc == 0 )); then   # the marker ("<n> tests" or empty, then the wall) outlives scratch; a flake's count is its first run's total
   n=$(node "$here/testcount.mjs" "$scratch/check.out" ${how:+--total})
-  [[ -n $key ]] && printf '%s\nwall %s\n' "$n" "$w" > "$cache/green-$key"
+  [[ -n $key ]] && printf '%s\nwall %s\n' "$n" "$w" > "$cache/green-$key" && rm -f "$cache/red-$key"
   if [[ -n $how ]]; then   # a flake: green, named and counted
     [[ -n $key && -z $n ]] && rm -f "$scratch/check-$key.out"   # no total: unknown beats the red run's passes
     load=$(cut -d' ' -f1-3 /proc/loadavg 2> /dev/null)
@@ -106,6 +114,9 @@ if (( rc == 0 )); then   # the marker ("<n> tests" or empty, then the wall) outl
   else echo "check: green in $s s${n:+, $n}"; fi
 else
   case $how in failed) again="; red again on a rerun of ${names[*]}" ;; suite) again="; red again on a rerun of the whole suite" ;; *) again="" ;; esac
-  echo "check: RED ($(why $rc $s $(( $(date +%s) - ${r0:-$start} )))$again) — last lines of $out:"; tail -25 "$out"
+  last=$(why $rc $s $(( $(date +%s) - ${r0:-$start} ))) && line="check: RED ($last$again) — last lines of $out:"
+  echo "$line"; tail -25 "$out"
+  # cached only when neither run was a timeout (the box's load) or a cap kill (the scope's): those the next call runs
+  [[ -n $key && $first == "exit "* && $last == "exit "* ]] && printf '%s\n' "$rc" "${names[*]}" "wall $w" "$line" > "$cache/red-$key"
 fi
 row full; exit $rc
