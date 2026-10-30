@@ -7,6 +7,22 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 Steer via `INBOX.md` on this branch: change its first line to `status: pause` or `status: stop`; write answers to questions under its `## Answers` heading. The harness pulls before every session.
 
+### 2026-10-29 22:50 · S1-02 · passes
+
+green-<key> is two lines (count, wall <s>); check.sh/run_init/tests_end read line 1 with read -r; prompt.sh suite_length gives SUITE_LENGTH. Deviation (default): the wall line sits under # This session in coding/initializer/verify/resolve, not run.md's Suite line (that broke 08's prefix check: walls 0 vs 1 s); run.md points there. A whole-suite rerun sets the wall. Rule, CLAUDE.md, decision.
+
+- **Files:** lib/check.sh, lib/record.sh, lib/prompt.sh, prompts/parts/run.md, prompts/coding.md, prompts/verify.md, prompts/initializer.md, prompts/resolve.md, CLAUDE.md, journal/decisions/2026-10-30-suite-length-in-prompt.md, tests/checks/79-suite-length.sh, tests/checks/34-check-key.sh, +3 more
+- **Verified:** new checks watched red (0/8 on the old code; the rerun-wall and run_init checks red with their fix reverted); 79+34+73+39-memlint green; 08/13/14/15 prefix subset 293/293; full suite green on its first run: check: green in 786 s, 1028 tests (1028/1028 checks passed). A first full run with the wall in run.md went green only after 08 flaked on 'two coding prompts share a byte-identical prefix' (prompts differed at the Suite line).
+- **Tests:** 1016 → 1028
+- **Dead end:** {{SUITE_LENGTH}} in prompts/parts/run.md's Suite line, as the spec and step 4 say — 08/13/14/15 require two sessions' prompts byte-identical through # This session; a per-tree wall differs per session (stub walls 0 vs 1 s flaked 08), and every real run would split the shared prefix (decisions/2026-10-21-static-first-prompts, E3-05 amendment)
+- **Discovery** (affects S1-03, S1-04, S1-05): The wall is rendered as `Suite: last full run <s> s: …` under # This session of coding/initializer/verify/resolve; run.md's Suite line ends `its last full run is under *This session*)`. S1-03..05 grep that line, not run.md's.
+- **Discovery** (affects S1-03, S1-05): check.sh: after a whole-suite rerun (a red with no HARNESS_FAILED names) the marker's wall is the rerun's seconds; after a named-files rerun it stays the first run's.
+- **Discovery** (affects S1-05): The command form (lib/prompt.sh <state> coding <id>) keys suite_length on $WT, the record worktree, not the lane's slot, so it can show a different wall than the lane's session got (reviewer finding, left as is: the command form reads CLAUDE.md there too).
+- **Discovery** (affects S1-04): 79-suite-length's planted-marker run needs `mkdir -p $HARNESS_CHECK_CACHE` in its INIT_CMD: the state's green/ doesn't exist before the first check.sh
+- **Question for Michael:** S1-02 put the suite's wall under # This session (a `Suite: last full run …` line) rather than in run.md's This run Suite line, because the latter split the prompts' shared prefix that 08/13/14/15 check (default; decision file). Keep it there, or move it to run.md and relax the prefix checks to stop at the Suite line? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-0/journal/decisions/2026-10-30-suite-length-in-prompt.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-29-3/slot-0/prompts/coding.md:132
+- **Proposed change:** S1-02 step 4 should read: run.md's Suite line ends `cached per code tree; its last full run is under *This session*)` and each template's # This session block has `Suite: last full run {{SUITE_LENGTH}}`; step 5's sentence ends `(under *This session*)`. The spec's fix 3 should say the same.
+- *02-S1-02 · claude-opus-5-5*
+
 ### 2026-10-29 21:53 · S1-01 · passes
 
 Wrote docs/plans/2026-10-30-S1-suite-time.md: the three marker readers (check.sh:67, run_init record.sh:461, tests_end record.sh:488) and their read -r, the wall line, suite_length in prompt_render, the red-<key> lines and placement, the driver's fresh rm, the checks of 34/79/80 with a counting run.env CHECK_CMD and STUB_PLANT_MARKERS, both decision files. No code changed.
