@@ -202,3 +202,5 @@
 - 2026-10-29 21:24 · services stopped (done)
 - 2026-10-29 21:24 · services stopped (done)
 - 2026-10-29 21:24 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-10-29 21:24 · backlog: 1 new, 2 seen again
+- 2026-10-29 21:24 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-10-29-2 (in the state dir: init.out check-last.out)
