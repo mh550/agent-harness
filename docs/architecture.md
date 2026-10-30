@@ -211,9 +211,11 @@ harness start ─► worktree + branch ─► driver (the coordinator):
     open while lanes alive < MAX_LANES (1) and admit (memory reserve, five-hour window) lets it: each lane F lanes
       offers, in list order → "lane <m> opened (slot <k>, …)", or "lane <m> waiting: <reason>" once per reason
       (F lanes: a feature to try, every feature passing (to verify), or a review's escalation round pending in it)
-      (never one whose lane exited since the count and isn't reaped yet: its pid file is still there)
-    nothing open, nothing to open, and the count the opens used saw no lane either → the end reason (below); a lane
-      gone since that count is reaped at the next poll first (decisions/2026-10-29-lane-count-end-check)
+      (never one whose lane exited since the count and isn't reaped yet: its pid file is still there; and none at all
+      while any lane has exited unreaped: its close, its end and its slot come first,
+      decisions/2026-10-30-opens-wait-for-reap)
+    nothing open, nothing to open, the count the opens used saw no lane, and no pid file is left → the end reason
+      (below); a lane gone since that count is reaped at the next poll first (decisions/2026-10-29-lane-count-end-check)
   each lane (lib/lane.sh <m>, in its slot, until it exits with its reason):
     stop if: session cap · deadline · STOP/"status: stop [<why>]" → "stopped by Michael[: <why>]"
       deadline (paused or not): first one verify per complete, unverified milestone ("deadline reached: <m> complete

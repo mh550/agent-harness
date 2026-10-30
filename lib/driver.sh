@@ -87,6 +87,8 @@ demote_requests() {   # a stop after Michael queued a continuation of this run i
 # its start, never by the lane (a lane still sourcing its libraries would look closed and be reaped or opened twice)
 POLL=${HARNESS_LANE_POLL:-10} LANE_END="" LANE_ONCE=0
 lanes_open() { local f n=0 m; for f in "$STATE"/lanes/*/pid; do [[ -f $f ]] || continue; m=${f%/pid}; lane_alive "${m##*/}" && n=$(( n + 1 )); done; echo "$n"; }
+# Every lane with a pid file: open, or exited and not reaped yet (its close, its end and its slot not noted: no open then)
+lanes_held() { local f n=0; for f in "$STATE"/lanes/*/pid; do [[ -f $f ]] && n=$(( n + 1 )); done; echo "$n"; }
 # Sleep the poll (or <s>), less when a lane exits: its exit wakes the coordinator at once
 lane_wait() {
   local f pids=() sp; for f in "$STATE"/lanes/*/pid; do [[ -f $f ]] && pids+=("$(cat "$f")"); done
@@ -555,6 +557,7 @@ while :; do
       [[ -n $m ]] || continue
       [[ -f $STATE/lanes/$m/pid ]] && continue   # exited since the count, not reaped yet: reap notes it first (R1-07)
       a=$(lanes_open); (( a < MAX_LANES )) || break   # the slot count is the configuration, not headroom: no note
+      (( a == $(lanes_held) )) || break   # a lane exited since the reap: the next poll notes its close (and its end) first (F1-03)
       if why=$(admit "$a"); then
         LANE_MERGE=$([[ $kind == rebase ]] && echo 1 || echo 0) lane_open "$m" && { opened=1 LAST_LANE=$m; rm -f "$STATE/lanes/$m/waiting"; }
       else mkdir -p "$STATE/lanes/$m"; wait_note "$m" "$why"; fi
@@ -562,8 +565,9 @@ while :; do
   fi
   # nothing open and nothing to open: the run's end, as before lanes. Only when the count the opens used saw no lane
   # either: a lane that exited since then had its slot counted taken, so nothing was offered; the next poll reaps it and
-  # opens what it unblocked (R1-04: the run ended "no feature left to try" with M2 ready)
-  if (( ! opened && alive == 0 && $(lanes_open) == 0 )); then
+  # opens what it unblocked (R1-04: the run ended "no feature left to try" with M2 ready). Held, not alive: one that
+  # exited before the opens stopped them unreaped (F1-03)
+  if (( ! opened && alive == 0 && $(lanes_held) == 0 )); then
     [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }
     parked=$(F parked "$PARKED" "$LIST" | cut -f1 | paste -sd, -)
     blocked=$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | awk -F'\t' '{print $2}' | sort -u | grep -vxF -f <(tr , '\n' <<< "$parked") | paste -sd, -)

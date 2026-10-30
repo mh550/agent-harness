@@ -375,6 +375,7 @@ key map lint: this repo's tests/checks/ passes with the map in .harness/config.s
 lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
 lane_guard: a session that merged main keeps main's records (merge-base base); its own edits are un-indexed, still on disk
 lane_guard: a session's own merge of main into its branch is noted
+lanes admission: a lane that exits after the coordinator's reap is noted closed (its slot free) before another lane opens; M2's session after it
 lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
 lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
 lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)
