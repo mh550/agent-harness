@@ -1,9 +1,12 @@
-# Context pack for `F1-03`
+# Context pack for `F1-04`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (F1-03, affects F1-04, F1-06): The coordinator's opens counted live pids, so a lane exited after the reap freed its slot and admit count before its close (and any lanes-end reason) was noted; fixed with lanes_held (decisions/2026-10-30-opens-wait-for-reap). The same window exists at MAX_LANES=1 between reap and count: a lead for 46's post-R1 sightings → entries.jsonl:4
+- Discovery (F1-03, affects F1-04, F1-06): HARNESS_COUNT_HOLD=1 parks the coordinator after its count until the counted lanes exit, so a check counting notes over polls on that run sees one poll: hold a run of its own → entries.jsonl:4
+- Discovery (F1-03, affects run): The Gotchas section of CLAUDE.md is full: memlint counts its comment line, so 14 facts is the limit; a new one replaces one → entries.jsonl:4
 - Discovery (F1-02, affects run): bash reads a script as it runs: never edit a check file while a run or --repeat of it goes on → entries.jsonl:3
 - Discovery (F1-01, affects F1-02, F1-03, F1-04): The 10-29 run's harness-log.md has no flaky: line; sightings are in 10-29-2 (11 lines) and 10-29-3 (5 lines) → entries.jsonl:2
 - Discovery (init, affects run): The run's spec docs/specs/2026-10-30-suite-cpu-and-flakes.md exists on no local or remote branch (git fetch --all, every ref checked); the only 2026-10-30 spec, suite-time.md (S1, S2), was built and merged by run agent-harness-2026-10-29-3 (checks 79-82). The list is planned from docs/plans/2026-10-29-suite-time.md §2 fixes, findings-and-research/2026-10-30-suite-load-curve.md and the three 10-29 run records' flaky: lines. → entries.jsonl:1
@@ -16,14 +19,15 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Lately in the run
 
+- 2026-10-30 19:02 · F1-03 · passes: Reproduced 47 (9/10: M2's lane opened in M1's slot before M1's close was noted). Fixed in lib/driver.sh: the opens stop for the poll while a lane has exited unreaped (lanes_held), and the end check counts held lanes. New check on its own HARNESS_COUNT_HOLD run (uh), red then green. 46 and 48 not reproduced (10/10). Decision opens-wait-for-reap.; tests 1080 → 1081; files lib/driver.sh, tests/checks/47-lanes-two.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-30-opens-wait-for-reap.md, docs/plans/2026-10-30-F1-flakes.md, … → entries.jsonl:4
 - 2026-10-30 17:47 · F1-02 · passes: 52/53/28 reproduced with --repeat 10: all 10/10 green (not reproduced). 52 and 53's best-of-3 checks now bound CPU time (user+sys, bash time) under 1000 ms plus the same call's wall under 5000 ms (a stall costs no CPU); renamed. 28 needs no fix: its sightings predate R1-05's lane-count fix. Plan rows filled.; tests 1080 → 1080; files tests/checks/52-status-json.sh, tests/checks/53-status-view.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-30-F1-flakes.md → entries.jsonl:3
-- 2026-10-30 17:05 · init · passes: 6 features: F1 6 (1 plan, 4 build, 1 review): the flakes half of the run's title, planned from the plan's fixes and the run records because the named spec docs/specs/2026-10-30-suite-cpu-and-flakes.md is on no branch; the CPU half (plan fixes 6 and 7) waits for the spec. → entries.jsonl:1
 
 ## Current rules
 
 - The suite's length in every prompt: a green marker's `wall` line, and a timeout rule → journal/decisions/2026-10-30-suite-length-in-prompt.md
 - A red tree is cached: `red-<key>`, so the next full call on the tree just found red runs nothing → journal/decisions/2026-10-30-red-marker.md
 - A mapped path's change runs only its readers: `CHECK_KEY_MAP`, the `part-<key>` sidecar, the partial run, the lint → journal/decisions/2026-10-30-partial-key.md
+- The coordinator opens no lane while a lane that exited is not reaped yet → journal/decisions/2026-10-30-opens-wait-for-reap.md
 - The lane guard reverts against the lane's merge-base with main, in the index only → journal/decisions/2026-10-30-lane-guard-base.md
 - The suite waits on a condition or a barrier, never on the clock; a flake is reproduced with --repeat and fixed at its cause → journal/decisions/2026-10-29-tests-wait-not-sleep.md
 - The rerun guard: a red full suite is rerun once; a flake is green, named and counted, never quarantined → journal/decisions/2026-10-29-rerun-guard.md
@@ -32,6 +36,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - The coordinator ends a run only when the lane count its opens used saw no lane → journal/decisions/2026-10-29-lane-count-end-check.md
 - Entries that survive: the session checks its own, a long summary is cut and kept, one resume for a missing one → journal/decisions/2026-10-29-entries-survive.md
 - A parked run's continue advice names another live run of its project and gives Michael the choice → journal/decisions/2026-10-29-continue-advice-busy-project.md
-- Merge conflicts resolved without Michael: a sorted merge for lists first, then a resolve session, verified → journal/decisions/2026-10-29-conflict-resolution.md
 
-_67 older rules: journal/decisions._
+_68 older rules: journal/decisions._
