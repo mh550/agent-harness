@@ -9,6 +9,16 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:32 · R3-06 · passes
+
+Attempt 2: R3 review: 0 Critical, 2 Important, 7 Minor (attempt 1's one Opus round; nothing Critical, so no second). Verify R3 failed only step 5 (memlint, 16 Gotchas lines), fixed by R3-01. Re-checked every step: review plan's Findings and Simplifications tables, lanes-leftovers decision, both in-place lines, architecture §4/§12, README. Suite green at 993, memlint clean. No code change.
+
+- **Files:** .harness/runs/agent-harness-2026-10-29-2/feature_list.json
+- **Verified:** lib/check.sh: green, 993 tests (cached for this tree, R3-05's full run); node lib/memlint.mjs . prints nothing (14 Gotchas bullets + comment); grep of plan/decision/README/architecture for each step's named items; the 34 and 77 checks for the two Important fixes present and listed in check-names.txt
+- **Tests:** 993 → 993
+- **Discovery** (affects run): Since attempt 1 the R3 diff changed only by merging origin/main (one conflict, CLAUDE.md Gotchas; stub-claude.sh headers kept both): no new R3 code to review, so no second reviewer round
+- *26-R3-06 · claude-opus-5-5*
+
 ### 2026-10-29 20:30 · R3-05 · passes
 
 Attempt 2: attempt 1's two checks stand (49 gc --dry-run keeps a leftover slot and merged lane branch; 77 two merge_milestones M1 at once merge once). Verify R3 failed it only on memlint (16 Gotchas lines), which R3-01 fixed. Re-verified by mutation: each check fails when its guard is removed. No lib/bin bug found, so no fix.
@@ -244,22 +254,9 @@ check.sh appends <epoch.µs> <full|subset|cached> <s> to $HARNESS_SCRATCH/check-
 - **Proposed change:** R3-06: architecture §4 (state: $SCRATCH/check-runs.log) and the README should name the suite ran note; summary.json has no 'review round pending' cause (plan §9)
 - *13-R3-04 · claude-opus-5-5*
 
-### 2026-10-29 17:09 · R1-07 · passes
-
-R1 review: 0 Critical, 2 Important, 5 Minor. Fixed: opens no longer reopen an exited unreaped lane (MAX_LANES≥2), STUB_BARRIER check proves the hold, settle waits on this copy's debriefs only, wait_for refuses fractional limits, --repeat check exact. Helpers moved to lib.sh. Decision tests-wait-not-sleep, arch §5/§7/§15, README Tests, flaker table done.
-
-- **Files:** lib/driver.sh, tests/lib.sh, tests/stub-claude.sh, tests/checks/45-lanes-run.sh, tests/checks/75-suite-tools.sh, tests/checks/31-tmux-l3-03-when.sh, tests/checks/47-lanes-two.sh, tests/checks/48-lanes-rebase.sh, tests/checks/49-lanes-slots.sh, tests/checks/69-same-project-starts.sh, tests/checks/76-resolve-session.sh, tests/checks/77-resolve-fallbacks.sh, +7 more
-- **Verified:** full suite via check.sh: green in 857 s, 976 tests; then the six files that read the docs (07 08 12 70 76 77) 200/200 after the last doc edit. Each new check seen red first: 45's forced lane-kill (M1 reopened, run done) → green (lane M1 closed (lane exited unexpectedly), needs-M1); 75's barrier, fractional wait_for and settle checks red then green. 13-run-2 --repeat 10: 10/10 green, 718 s.
-- **Tests:** 973 → 976
-- **Dead end:** settle check with the foreign debrief's HARNESS_STATE under $T/elsewhere — it starts with $T/ too, so the filter kept it; the foreign state must be outside $T
-- **Discovery** (affects run): The coordinator's opens skip a milestone whose lanes/<m>/pid is still there (exited, unreaped); HARNESS_COUNT_HOLD leaves state/count-hold while holding, so a check can act inside the window
-- **Discovery** (affects run): 13-run-2-michael-sets-desk (harness desk --list) not reproduced: --repeat 10 was 10/10 green, 718 s
-- **Discovery** (affects project): tests/lib.sh now holds tended, held (clears vwait-* too), ats and debriefs: a check file must not redefine them differently
-- **Proposed change:** Left from the review (Minor): HARNESS_COUNT_HOLD is unbounded and serialises lanes under MAX_LANES=2; tests-only, so left as is
-- *12-R1-07 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-10-29 17:09 · R1-07 · passes · R1 review: 0 Critical, 2 Important, 5 Minor. Fixed: opens no longer reopen an exited unreaped lane (… ([in full](progress-archive.md))
 - 2026-10-29 16:52 · R3-03 · passes · merge_one: ignored_only lets a main moved only in cache-ignored paths merge as verified, no re-base,… ([in full](progress-archive.md))
 - 2026-10-29 16:33 · R1-06 · passes · 32, 38 and 08's first `no user systemd` check were R1-04's lane-count race: 10/10 green unforced, re… ([in full](progress-archive.md))
 - 2026-10-29 16:14 · R3-02 · passes · lib/features.mjs: every list/attempts/parked write goes through writeAtomic (<file>.<pid>.tmp + rena… ([in full](progress-archive.md))

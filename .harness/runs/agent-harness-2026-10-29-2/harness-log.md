@@ -169,3 +169,6 @@
 - 2026-10-29 20:25 · R3-04 · claude-opus-5-5 · passes=true · 2 min · 19/23 passing · tests 993
 - 2026-10-29 20:25 · context.md for R3-05: 7974 bytes, 2 items left out
 - 2026-10-29 20:30 · R3-05 · claude-opus-5-5 · passes=true · 4 min · 20/23 passing · tests 993
+- 2026-10-29 20:30 · review R3-06: 886 changed lines, at or over 400; opus
+- 2026-10-29 20:30 · context.md for R3-06: 8002 bytes, 5 items left out
+- 2026-10-29 20:32 · R3-06 · claude-opus-5-5 · passes=true · 1 min · 21/23 passing · tests 993

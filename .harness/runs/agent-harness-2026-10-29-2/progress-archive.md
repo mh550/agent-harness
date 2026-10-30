@@ -9,6 +9,16 @@ How to read the feature list (`feature_list.json`): array order is priority; `af
 
 To steer: edit `INBOX.md` in this directory on branch `harness/agent-harness-2026-10-29-2` (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session. Questions sessions asked are in `harness needs <run>` once R4 lands; until then in the entries below.
 
+### 2026-10-29 20:32 · R3-06 · passes
+
+Attempt 2: R3 review: 0 Critical, 2 Important, 7 Minor (attempt 1's one Opus round; nothing Critical, so no second). Verify R3 failed only step 5 (memlint, 16 Gotchas lines), fixed by R3-01. Re-checked every step: review plan's Findings and Simplifications tables, lanes-leftovers decision, both in-place lines, architecture §4/§12, README. Suite green at 993, memlint clean. No code change.
+
+- **Files:** .harness/runs/agent-harness-2026-10-29-2/feature_list.json
+- **Verified:** lib/check.sh: green, 993 tests (cached for this tree, R3-05's full run); node lib/memlint.mjs . prints nothing (14 Gotchas bullets + comment); grep of plan/decision/README/architecture for each step's named items; the 34 and 77 checks for the two Important fixes present and listed in check-names.txt
+- **Tests:** 993 → 993
+- **Discovery** (affects run): Since attempt 1 the R3 diff changed only by merging origin/main (one conflict, CLAUDE.md Gotchas; stub-claude.sh headers kept both): no new R3 code to review, so no second reviewer round
+- *26-R3-06 · claude-opus-5-5*
+
 ### 2026-10-29 20:30 · R3-05 · passes
 
 Attempt 2: attempt 1's two checks stand (49 gc --dry-run keeps a leftover slot and merged lane branch; 77 two merge_milestones M1 at once merge once). Verify R3 failed it only on memlint (16 Gotchas lines), which R3-01 fixed. Re-verified by mutation: each check fails when its guard is removed. No lib/bin bug found, so no fix.
