@@ -671,7 +671,7 @@ cmd_gc() {
   # a record PR left open (under pr, or a refused merge; the driver's state/record-pr names it) keeps harness/<run>:
   # deleting its head would close it. gh decides; one gh can't answer keeps it too (P2 review 2)
   record_pr_open() { local r=${1#harness/} d u; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && [[ -s $d/record-pr ]] || return 1
-    u=$(cd "$p" && "${HARNESS_GH:-gh}" pr view "$1" --json state,title -q "select(.state == \"OPEN\" and .title == \"$r: run record\") | .url" 2> /dev/null) || return 0
+    u=$(cd "$p" && "${HARNESS_GH:-gh}" pr view "$1" --json url,state,title -q "select(.state == \"OPEN\" and .title == \"$r: run record\") | .url" 2> /dev/null) || return 0
     [[ $u == http* ]]; }
   # a desk Michael may be talking to keeps its run's worktree (its --add-dir, the INBOX it reads); idle ones go first
   desk_open() { local d r=${1#harness/}; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && [[ -s $d/desk/url ]] \

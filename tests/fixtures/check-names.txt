@@ -373,6 +373,8 @@ key map lint: each allowed form alone passes (HARNESS_HOME=, git -C log, readlin
 key map lint: git -C show and grep, an alias of readlink -f, HH, a relative read up from tests/, an inline cd && pwd and a %/* root are hits; comments and sub-paths are not
 key map lint: this repo's tests/checks/ passes with the map in .harness/config.sh (CLAUDE.md and its readers)
 lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
+lane_guard: a session that merged main keeps main's records (merge-base base); its own edits are un-indexed, still on disk
+lane_guard: a session's own merge of main into its branch is noted
 lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
 lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
 lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)
@@ -501,6 +503,7 @@ merge_one on the coordinator: merge_conflict names the lane branch, never the re
 merge_one's conflict opens merge_conflict: the merge-tree files in where, main and the tag commit, notified with the card
 merge_one's refusal opens merge_refused: the PR URL in where and as its click, notified once with it
 merge_one: a main moved only in ignored paths merges the milestone as verified, its note naming them; no re-base
+merge_one: a tag carrying .harness/runs/ changes merges with main's records (a commit on the tag, noted), the code as verified
 mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits
 metrics usage: five_hour reads the newest event's five-hour window; the default stays the seven-day one
 metrics.jsonl: every session line has mem_peak_mb from its scope
