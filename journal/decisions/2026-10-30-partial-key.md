@@ -25,27 +25,36 @@
     `check-partial.out` (a rerun to `check-partial-rerun.out`, *default*), under the same scope, timeout and rerun
     guard (`CHECK_RERUN=suite` reruns the subset, *default*). Any other case runs in full (the plan's §3 table). A
     partial green writes `green-<full>` with the reference's count and wall and removes `red-<full>`; a partial red
-    writes no marker of either kind (*default*: the next call runs in full and finds it), and a flake row carries
+    writes no marker of either kind (*default*: the next call on that tree runs the partial again, a red it can't cache), and a flake row carries
     `partial` and never-empty `names` (*default*). A partial writes no sidecar. No new `harness-log.md` note
     (*default*): the partial's line is in `init.out`, so in the next prompt's *Init output*.
   - The tree's own map decides (*default*, row 4a): the map after sourcing the tree's `.harness/config.sh` must equal
-    the exported one, else a full run; and no partial when `.harness/config.sh` itself is under the key's ignore list
-    (*default*, S2-03's review: its map could change under an equal reduced key).
+    the exported one, else a full run; and no partial when `.harness/config.sh` is outside the reduced key (*default*,
+    S2-03's review: its map could change under an equal reduced key). S2-06's review found three ways past check.sh's
+    own ignore-list test (the map mapping its own file, a gitignored config, an ignore spelled `.harness//`), so
+    treekey decides it: `--partial` prints no blob line (no map) when the config is on disk but not among the reduced
+    key's files, and `parseMap` drops an entry under `.harness/` (`the map's own`).
   - `run_init fresh` (verify, a disjoint re-base) removes `part-<reduced>` with the two markers (S2-05), so a verified
     tree always runs in full.
   - **The lint** (`tests/checks/82-key-map-lint.sh`, S2-04): for each entry and each check file the entry doesn't
     name, (a) a line holding a root expression and naming the path or its basename, or naming `../<basename>`, and
-    (b) a root expression left bare (not followed by `/`) once the allowed forms are cut out, is
-    `<file>:<line> reads <path>, not in CHECK_KEY_MAP`. The root expressions are widened beyond the spec's `$HERE/..`
+    (b) a root expression left bare once the allowed forms are cut out, is `<file>:<line> reads <path>, not in
+    CHECK_KEY_MAP`. Bare (S2-06's review): not followed by `/<name>`, or followed by a `.` or `..` segment, or by a glob,
+    brace or variable whose literal part before it could lead to the path (`<R>/$f`, `<R>/*.md`; not
+    `<R>/evals/$t/x.json`); `${HH:-…}` is a root like `$HH`. A map name no check file holds is
+    `<path>:<name> matches no check file` (`tests/run.sh` is red on it every time). The root expressions are widened beyond the spec's `$HERE/..`
     (*default*): `$HH`, `$HARNESS_HOME`, `$(cd <R> && pwd)`, `$(readlink -f <R>)`, `$(dirname "$0")/../..`,
     `--show-toplevel`, the `"$HERE"`/`dirname`/`%/*` spellings, and file-wide aliases (`79-suite-length.sh:87` reads
     `"$HH/CLAUDE.md"` on a line that sets nothing). The allowed forms: `HARNESS_HOME=<R>`, `git -C <R>` with
     `log`/`rev-parse`/`cat-file`/`worktree`/`ls-files` only, `harness_config <R>`, an alias assignment (the spec's
-    `readlink -f` and `cd && pwd` forms are allowed as such, not inline), and `== "…<R>"` (*default*, a sixth form
+    `readlink -f` and `cd && pwd` forms are allowed as such, not inline), and `== "…<R>"` inside `[[ ]]` (*default*, a sixth form
     for `13-run-2-michael-sets-desk.sh:386`'s string compare). Each says in the check file why it reads no file.
   - What the lint can't see, so what an entry may be: a read by the code under test (`lib/`, `bin/`) or by a helper
     every check sources (`tests/*.sh`), or a root built some other way. An entry is only for a file nothing but
-    check-file lines read from this checkout: `CHECK_KEY_MAP`'s template comment says so.
+    check-file lines read from this checkout: `CHECK_KEY_MAP`'s template comment says so. Nor a file the proof
+    itself reads (a check file, `tests/run.sh`, `lib/treekey.mjs`): a change to it would run only its own names, not
+    the lint. Still open after S2-06 (contrived, none in the tree): an alias of a sub-directory followed by `..`, a
+    root alias read without `$` (`process.env.ROOT`), a glob outside the quotes (`"<R>/CLAUDE.m"?`), and `git -C <R> log -p`.
   - **This repo's map, its final form** (S2-04): `CHECK_KEY_MAP="CLAUDE.md:39-memlint-m4:37-memory-prompts-m2:79-suite-length"`.
     Per file the lint found on the day:
     - `39-memlint-m4.sh`, `37-memory-prompts-m2.sh`: joined (they read `CLAUDE.md`).

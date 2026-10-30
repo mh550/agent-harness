@@ -123,9 +123,29 @@ check "check partial: a red with no HARNESS_FAILED line reruns the partial's nam
   && jq -e '"'"'.partial == ["memlint"] and .names == ["memlint"] and .rerun == "partial"'"'"' "$T/pk-nol/c/flakes.jsonl" > /dev/null \
   && [[ $(pargs del 1) == memlint && $o_del == "check: green (partial: memlint, "* ]]'
 pkcase ign; PKIGN=".harness" pc ign > /dev/null; echo x >> "$T/pk/CLAUDE.md"; PKIGN=".harness" pc ign > /dev/null
+pkcase ign2; PKIGN="././.harness//" pc ign2 > /dev/null; echo x >> "$T/pk/CLAUDE.md"; PKIGN="././.harness//" pc ign2 > /dev/null
 check "check partial: with .harness/config.sh outside the key (its map could change under an equal reduced key) a CLAUDE.md diff runs in full" \
-  '[[ $(cat "$T/pk-ign/n") == 2 && -z $(pargs ign 1) && -z $(pargs ign 2) && $(ls "$T/pk-ign/c" | grep -c "^part-") == 2 ]]'
+  '[[ $(cat "$T/pk-ign/n") == 2 && -z $(pargs ign 1) && -z $(pargs ign 2) && $(ls "$T/pk-ign/c" | grep -c "^part-") == 1 ]] \
+  && [[ $(cat "$T/pk-ign2/n") == 2 && -z $(pargs ign2 1) && -z $(pargs ign2 2) && $(ls "$T/pk-ign2/c" | grep -c "^part-") == 1 ]]'
+# the map's own file mapped, or gitignored: a shrunk map (memlint:other to memlint) keeps the reduced key unless the
+# config is in it, so treekey prints no blob line then (no map) and parseMap drops an entry under .harness/
+pkcase self; echo 'CHECK_KEY_MAP="CLAUDE.md:memlint:other .harness/config.sh:x"' > "$T/pk/.harness/config.sh"
+PKMAP="CLAUDE.md:memlint:other .harness/config.sh:x" pc self > /dev/null
+echo 'CHECK_KEY_MAP="CLAUDE.md:memlint .harness/config.sh:x"' > "$T/pk/.harness/config.sh"; echo x >> "$T/pk/CLAUDE.md"
+PKMAP="CLAUDE.md:memlint .harness/config.sh:x" pc self > /dev/null
+pkcase gi; ( cd "$T/pk" && git rm -q --cached .harness/config.sh && echo .harness/config.sh >> .git/info/exclude )
+echo 'CHECK_KEY_MAP="CLAUDE.md:memlint:other"' > "$T/pk/.harness/config.sh"; PKMAP="CLAUDE.md:memlint:other" pc gi > /dev/null
+echo 'CHECK_KEY_MAP="CLAUDE.md:memlint"' > "$T/pk/.harness/config.sh"; echo x >> "$T/pk/CLAUDE.md"; PKMAP="CLAUDE.md:memlint" pc gi > /dev/null
+( cd "$T/pk" && sed -i '/^\.harness\/config\.sh$/d' .git/info/exclude && git reset -q && git checkout -q -- . )
+pk ".harness/config.sh:x CLAUDE.md:memlint" --partial > /dev/null 2> "$T/pk-self.err"
+check "check partial: a map naming .harness/config.sh, or a gitignored .harness/config.sh, never lets a shrunk map run a partial" \
+  '[[ $(cat "$T/pk-self/n") == 2 && -z $(pargs self 2) && $(cat "$T/pk-gi/n") == 2 && -z $(pargs gi 2) ]] \
+  && grep -qx "treekey: CHECK_KEY_MAP entry .harness/config.sh:x dropped: under .harness/, the map'"'"'s own" "$T/pk-self.err"'
 pkcase noref; rm "$T/pk-noref/c/green-${k0[0]}"; echo x >> "$T/pk/CLAUDE.md"; pc noref > /dev/null
+pkcase dup; sed -n 2p "$T/pk-dup/c/part-${k0[1]}" >> "$T/pk-dup/c/part-${k0[1]}"; echo x >> "$T/pk/CLAUDE.md"; pc dup > /dev/null
+pkcase junk; echo "junk line" >> "$T/pk-junk/c/part-${k0[1]}"; echo x >> "$T/pk/CLAUDE.md"; pc junk > /dev/null
+check "check partial: a sidecar with a path twice or a malformed line is no path set: a CLAUDE.md diff runs in full" \
+  '[[ $(cat "$T/pk-dup/n") == 1 && -z $(pargs dup 1) && $(cat "$T/pk-junk/n") == 1 && -z $(pargs junk 1) ]]'
 pkcase stale; echo x >> "$T/pk/CLAUDE.md"; PKMAP="CLAUDE.md:memlint:other README.md:readme" pc stale > /dev/null
 check "check partial: the reference green-<ref> gone, or an exported map other than the tree's .harness/config.sh one, runs in full" \
   '[[ $(cat "$T/pk-noref/n") == 1 && -z $(pargs noref 1) && $(cat "$T/pk-stale/n") == 1 && -z $(pargs stale 1) ]]'

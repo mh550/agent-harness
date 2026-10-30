@@ -148,9 +148,11 @@ by hand while another debrief runs: it says it is waiting
 check partial: a CLAUDE.md-only diff runs exactly memlint: the partial line, exit 0, check-partial.out, check.out untouched
 check partial: a green full run writes green-<full> (count, wall) and part-<reduced>: the full key, then the blob lines
 check partial: a lib/ diff runs the full suite (no arguments); a diff of both mapped paths runs memlint readme, map order
+check partial: a map naming .harness/config.sh, or a gitignored .harness/config.sh, never lets a shrunk map run a partial
 check partial: a part- whose path set is not the map's (the map grew an entry) runs in full
 check partial: a partial green inherits the reference marker (count and wall) byte for byte, writes no part-, and the next call is cached
 check partial: a red with no HARNESS_FAILED line reruns the partial's names (a flake row naming them); a deleted mapped file is a partial
+check partial: a sidecar with a path twice or a malformed line is no path set: a CLAUDE.md diff runs in full
 check partial: a timeout in a partial run is said as such, no rerun, no marker
 check partial: check-runs.log gets a partial row for the partial run
 check partial: red once then green is a flake: one flakes.jsonl row with partial, the green-after-a-rerun line, the reference marker
@@ -364,6 +366,8 @@ journal: a summary over its cap beside another fault is minimal for the other fa
 journal: validate exits 2 when its only errors are the caps, 1 with any other
 key map lint: a check file passing the bare root to a new command is named with its line, exit 1
 key map lint: a check file reading the root's CLAUDE.md outside the map is named with its line, exit 1
+key map lint: a map name no check file's name holds is named (tests/run.sh would be red on it every time), exit 1
+key map lint: a root with a trailing /, . or .., a glob, a brace, a variable path, a defaulted HH and == outside [[ ]] are hits; a variable under a sub-path is not
 key map lint: both files pass once the map's CLAUDE.md entry names them
 key map lint: each allowed form alone passes (HARNESS_HOME=, git -C log, readlink -f and cd && pwd as an alias, harness_config, == "…")
 key map lint: git -C show and grep, an alias of readlink -f, HH, a relative read up from tests/, an inline cd && pwd and a %/* root are hits; comments and sub-paths are not
