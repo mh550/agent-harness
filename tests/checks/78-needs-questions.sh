@@ -67,6 +67,27 @@ check "needs questions: a later entry's resolved resolves it at the sweep (answe
   && NF_Q="Should A cap the queue? (default: 9)" needs_fixture question resolved "$BASE" q-no-line && d=$P/q-no-line/needs/1.json \
   && jq ".card.question.line = null" "$d" > "$T/nl" && mv "$T/nl" "$d" && node "$NM" sweep "$P/q-no-line" > "$T/nl.out" && [[ ! -s $T/nl.out && -f $d ]]'
 
+# ---- R4-04: the readers (plan §4): harness needs, harness status, the debrief, the answer skill ----
+# q-mix: a question older than a parked item in one state dir; the block card still comes first
+NF_Q="Should A trim the log? (default: trimmed)" needs_fixture question open "$BASE" q-mix
+needs_fixture parked open "$(( BASE + 60 ))" q-mix
+check "needs questions: harness needs lists the parked card before the question card" \
+  'HARNESS_NOW=$(( BASE + 600 )) "$H" needs q-mix > "$T/mix.out" 2>&1 && grep -Ex "NEEDS YOU 1 · 1 question (─)+" "$T/mix.out" > /dev/null \
+  && p=$(grep -n "q-mix · B parked" "$T/mix.out" | cut -d: -f1) && q=$(grep -n "q-mix · A asked: Should A trim the log?" "$T/mix.out" | cut -d: -f1) && (( p > 0 && q > p ))'
+# status: its own state roots, so the fixtures above don't count; s-one: one block item and three questions, s-two: two questions
+SS=$T/status-q
+( export HARNESS_STATE=$SS/1; needs_fixture parked open "$BASE" s-one
+  for q in "Should A cap it? (default: 9)" "Should A pin it? (default: yes)" "Should A log it? (default: info)"; do NF_Q=$q needs_fixture question open "$BASE" s-one; done
+  export HARNESS_STATE=$SS/2; for q in "Should A cap it? (default: 9)" "Should A pin it? (default: yes)"; do NF_Q=$q needs_fixture question open "$BASE" s-two; done )
+check "needs questions: status counts questions apart (NEEDS YOU 1 · 3 questions, 0 · 2 questions), the run card keeps the block count" \
+  'HARNESS_STATE=$SS/1 "$H" status > "$T/sq1.out" && grep "^NEEDS YOU 1 · 3 questions · harness needs" "$T/sq1.out" > /dev/null \
+  && [[ $(awk "/^NEEDS YOU/ { on = 1; next } /^RUNNING/ { on = 0 } on" "$T/sq1.out" | grep -c "s-one") == 1 ]] \
+  && HARNESS_STATE=$SS/2 "$H" status > "$T/sq2.out" && grep -x "NEEDS YOU 0 · 2 questions · harness needs" "$T/sq2.out" > /dev/null \
+  && h=$(jq -r .card.headline "$SS/1/proj/s-one/needs/1.json") \
+  && [[ $(HARNESS_STATE=$SS/1 "$H" status s-one | awk "/^  needs you/ { on = 1 } on && !/^  needs you/ && !/^      / { on = 0 } on" | paste -sd"|") == "  needs you  ⚠ 1 · $h|             3 questions: harness needs s-one" ]] \
+  && [[ $(HARNESS_STATE=$SS/2 "$H" status s-two | grep "^  needs you") == "  needs you  2 questions: harness needs s-two" ]] \
+  && HARNESS_STATE=$SS/1 "$H" status --json > "$T/sq1.json" && jq -e "(.needs | length) == 4 and ([.finished[], .running[]] | map(select(.run == \"s-one\")) | .[0] | .needs == 1 and .questions == 3)" "$T/sq1.json" > /dev/null'
+
 # ---- R4-03: journal_ opens one question item per question of the entry it ingests (plan §3); stub runs ----
 nj() { jq -s "${2:-.}" "$P/$1"/needs/*.json 2> /dev/null; }   # <run> [<jq over its open items>]
 FAST=(STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1)   # one coding session per feature
@@ -103,5 +124,17 @@ check "needs questions: a second run's ask moves the first run's open item forwa
   && [[ $(nj qm2 "[.[] | select(.reason == \"question\")] | length") == 1 ]] \
   && nj qm2 "[.[] | select(.reason == \"question\")][0] | .seen == 2 and .asked_in == [\"qm1\", \"qm2\"] and .run == \"qm2\"" | jq -e . > /dev/null \
   && jq -s -e "[.[] | select(.reason == \"question\")] | length == 1 and .[0].resolved_why == \"asked again in qm2\"" "$P/qm1"/needs/done/*.json > /dev/null'
+
+check "needs questions: no notification carries a question" \
+  '[[ -s $T/curl.log && $(curl_count "keep the old cache") == 0 && $(curl_count "log at debug") == 0 && $(curl_count "default to off") == 0 ]]'
+check "needs questions: the debrief gatherer lists the open questions under #### Questions for Michael" \
+  '"$H" debrief --dry-run > "$T/db.out" 2>&1 && [[ $(grep -c "grep -i '"'"'question'"'"'" "$HH/lib/debrief.sh") == 0 ]] \
+  && awk "/^### qa \\(proj\\)/ { r = 1 } /^### / && !/^### qa / { r = 0 } r && /^#### / { on = \$0 == \"#### Questions for Michael\" } r && on" "$T/db.out" > "$T/db-qa" \
+  && grep -F "Should A keep the old cache? (default: kept) Files: /srv/q/lib/a.sh:12 (qa/" "$T/db-qa" > /dev/null && grep -F "Should A log at debug?" "$T/db-qa" > /dev/null \
+  && awk "/^### qm2 \\(proj\\)/ { r = 1 } /^### / && !/^### qm2 / { r = 0 } r && /^#### / { on = \$0 == \"#### Questions for Michael\" } r && on" "$T/db.out" | grep -F "Should A default to off?" | grep -F "asked 2 times" > /dev/null \
+  && awk "/^### qr \\(proj\\)/ { r = 1 } /^### / && !/^### qr / { r = 0 } r && /^#### / { on = \$0 == \"#### Questions for Michael\" } r && on" "$T/db.out" | grep -x "none open" > /dev/null'
+check "needs questions: the answer skill records the answer in place and runs needs done" \
+  'S=$HH/skills/harness-answer/SKILL.md; grep "^## Question items" "$S" > /dev/null && grep -F "harness needs done <ref> --why" "$S" > /dev/null \
+  && grep -F "Updated in place <date>: Michael" "$S" > /dev/null && grep -F "default stands" "$S" > /dev/null'
 
 suite_end

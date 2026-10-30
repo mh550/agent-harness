@@ -11,7 +11,8 @@ Michael is likely on his phone: keep every message short, numbered, and easy to 
 
 1. `harness needs` (or `harness needs <run>`; `harness parked` is its alias): a card per item that waits on Michael
    (parked features with their question, verify and merge stops, given-up features: why, where, since when and the
-   commands); `harness needs <run> --json` gives each item's `card.commands` whole.
+   commands), then the questions sessions asked in their entries (`question` cards, after every stop);
+   `harness needs <run> --json` gives each item's `card.commands` whole.
 2. For each run listed, `harness status <run>`.
 3. Read that run's INBOX.md above `## Answers` and the newest two entries of its progress.md, both in
    `~/worktrees/<project>/<run>/.harness/runs/<run>/`.
@@ -35,6 +36,20 @@ recommendation in one or two sentences. Michael answers by number.
   propose keep that order.
 - **An edit Michael makes himself** (a feature-list `jq` the run proposed): run it to stdout first, never into the file,
   and show him the text it gives before he runs it.
+
+## Question items
+
+A `question` card (`<feature> asked: …`) is a judgment call a session already made: it took the default its question
+names and went on, so nothing waits on it and no run needs a continue. Propose an answer like any other item, the
+default among the options. After his yes:
+
+1. If the question's `Files:` names a decision file (`journal/decisions/<date>-<slug>.md`), add one line to it in the
+   run's worktree: `Updated in place <date>: Michael <his answer>` (today's date; his words).
+2. Close the item: `harness needs done <ref> --why "<his answer>"` (the card's `do` line; the default stands:
+   `--why "default stands"`). Quote his words as for `harness answer` below.
+
+A later session's entry that lists the question in `resolved` closes it too; one asked again in a later run of the
+project moves there (`asked <n> times`), so answer it once, in the newest run.
 
 ## Acting, only after his yes
 

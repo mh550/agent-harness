@@ -20,6 +20,7 @@ finished[].model
 finished[].needs
 finished[].port
 finished[].project
+finished[].questions
 finished[].record
 finished[].run
 finished[].session
@@ -142,6 +143,7 @@ running[].model
 running[].needs
 running[].port
 running[].project
+running[].questions
 running[].record
 running[].run
 running[].session

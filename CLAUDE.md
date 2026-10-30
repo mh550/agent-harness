@@ -66,7 +66,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - tests/lib.sh runs under `pipefail`: never pipe a multi-write producer (sed/awk/git show, a log over 4 KiB) into `grep -q`, `grep -m` or `head` in a check; the early exit SIGPIPEs the producer now and then (141). Use `grep X > /dev/null`.
 - check() evals its command in the check file's shell: an `exit` in it ends the whole file; fail with `false` or a flag (agent-harness-2026-10-28 2026-10-28)
 - stub --resume of an unknown id swaps session_id but leaves 00000000-… in the result's errors[] (the CLI names the id) (agent-harness-2026-10-29-2 2026-10-29)
-- a check's regex on a glyph run is locale-bound: write `(─)+`, `(●|✓) `, never `─+`; awk length is bytes: width via node (agent-harness-2026-10-28 2026-10-28)
+- a check's regex on a glyph run is locale-bound: `grep -E "(─)+"` (BRE: parens literal), never `─+`; awk length: bytes (agent-harness-2026-10-29-2 2026-10-29)
 - a card or view cuts every line at the width (100 off a TTY): a check comparing whole run.log lines sets COLUMNS=200 (agent-harness-2026-10-28 2026-10-28)
 - status.mjs: a session runs from its `session <n> · <id>` log line to its `passes=` or limit note; stub logs need both (agent-harness-2026-10-28 2026-10-28)
 - tests/fixtures/check-names.txt is LC_ALL=C sorted: copy names from PASS lines of `tests/run.sh <f>`, re-sort (agent-harness-2026-10-28 2026-10-28)

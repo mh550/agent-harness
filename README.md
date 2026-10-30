@@ -284,7 +284,7 @@ After a queue, `harness debrief` replaces the "morning session". The queue runne
 (queue empty, past `--until`, or `harness queue stop`), if it started a run; run it by hand any time. It covers every
 run whose driver started since the last debrief that produced a note, so a debrief that was refused, failed or killed
 is caught up by the next one. Bash gathers the context (status, trends, the queue, the runner's log, and per run: end
-reason, summary, report, the checks that flaked in two or more of the project's last five ledgered runs, retro, INBOX.md, open questions, the usage-limit window; and the retro backlog), then one Sonnet session writes the
+reason, summary, report, the checks that flaked in two or more of the project's last five ledgered runs, retro, INBOX.md, the open question items (`harness needs --json`), the usage-limit window; and the retro backlog), then one Sonnet session writes the
 note: a headline (what landed on main, what's blocked, spend against the usage window), 3–6 lines per run, **Needs
 Michael**, draft answers the project's docs support (it never writes to INBOX.md), and **For the next interactive
 session** (merge conflicts, the retro backlog's open `proposed` items most seen first, and items re-raised though
