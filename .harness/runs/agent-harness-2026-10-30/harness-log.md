@@ -31,3 +31,5 @@
 - 2026-10-30 21:48 · F1-06: 1 question(s) for Michael recorded (harness needs)
 - 2026-10-30 21:48 · F1-06: gotchas +0 ~1 -0
 - 2026-10-30 21:48 · F1-06 · claude-opus-5-5 · passes=true · 22 min · 6/6 passing · tests 1084
+- 2026-10-30 21:48 · verify F1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-30 22:02 · context.md for F1: 16169 bytes
