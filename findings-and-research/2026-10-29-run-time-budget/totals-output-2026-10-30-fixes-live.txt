@@ -1,0 +1,15 @@
+agent-harness-2026-10-29-3: lane-seconds 23238 · model 19% · session_suite 66% · session_other 7% · harness_before 0% · harness_after 7% · verify 1% · waiting 0% · idle 0%
+  coding sessions 11: full-suite scopes inside them 19 (1.7 per session), session suite s 15324 (1393 per session), model s 4404
+  the sessions' check.sh full calls by outcome: cached 11, green 4, flake 0, red 5, moved to background at the tool timeout 0, other (output cut by the call) 32
+  harness suites (full runs, reruns aside): before a session 1 (754 s), after 2 (1613 s), verify 0 (0 s); reruns 1
+  suite wall, every caller (sessions' suite + the harness's scopes, reruns in): 17914 lane-s (77%); CPU in check scopes 17.6 CPU-h; per 20 coding sessions 32571 lane-s, 32.0 CPU-h
+  sessions that ended passes=true 11, un-passed for a red suite 0, post-session cache hits (a passing session with no harness suite after it) 9
+agent-harness-2026-10-30: lane-seconds 17895 · model 12% · session_suite 43% · session_other 35% · harness_before 0% · harness_after 10% · verify 0% · waiting 0% · idle 0%
+  coding sessions 7: full-suite scopes inside them 9 (1.3 per session), session suite s 7781 (1112 per session), model s 2076
+  the sessions' check.sh full calls by outcome: cached 1, green 0, flake 0, red 0, moved to background at the tool timeout 0, other (output cut by the call) 13
+  harness suites (full runs, reruns aside): before a session 1 (817 s), after 2 (1667 s), verify 0 (0 s); reruns 0
+  suite wall, every caller (sessions' suite + the harness's scopes, reruns in): 10329 lane-s (58%); CPU in check scopes 10.1 CPU-h; per 20 coding sessions 29511 lane-s, 28.9 CPU-h
+  sessions that ended passes=true 6, un-passed for a red suite 0, post-session cache hits (a passing session with no harness suite after it) 5
+
+all runs: lane-seconds 41133 · model 16% · session_suite 56% · session_other 19% · harness_before 0% · harness_after 8% · verify 1% · waiting 0% · idle 0%
+2026-10-29 runs, alone: n 19, wall median 805 s, cpu median 3281 s, wall max 825

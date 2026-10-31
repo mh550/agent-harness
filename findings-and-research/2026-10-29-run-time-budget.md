@@ -442,3 +442,76 @@ node $D/budget.mjs $T/journal.jsonl $S $R --json > $T/budget.json && node $D/tot
 mkdir -p $T/r && git archive ff2c6de^ tests/checks .harness/runs/agent-harness-2026-10-29-2/entries.jsonl | tar -x -C $T/r
 node $D/escapes.mjs $T/r $S agent-harness-2026-10-29-2; node $D/escapes.mjs . $S agent-harness-2026-10-29-3
 ```
+
+## 11. Fixes 1–3 live
+
+Measured 2026-10-30 after `agent-harness-2026-10-30` ended: the first agent-harness run that started (16:39, driver
+`bf0cd29`) after §10's control and after the lane-guard merge (PR #70, `5cf1841`, 16:27). Its driver contains S1 (PR #64)
+and S2 (PR #65), so fixes 1–3 and the lane-guard fix were live. One lane (F1), 6 features, **7 coding sessions** (F1-06
+twice: a review round on opus after sonnet's session), 6/6 passing, tests 1,078 → 1,084, 17:05–22:03. The control is
+`agent-harness-2026-10-29-3` as in §10. Outputs: `*-output-2026-10-30-fixes-live.txt` beside the scripts. A per-20
+value scales the run's sums by 20/7 (control 20/11); seven sessions are a small sample.
+
+**The script fix.** `budget.mjs` decided a call was a full run with `check\.sh(\s*(>|2>|\||;|&&|$))` and no
+`check\.sh\s+[A-Za-z0-9]`: a `2>&1` after `check.sh` began with a digit and read as a subset argument, and a chained
+`check.sh <subset> && check.sh` matched the subset test. `isFullCall` now splits the command at `&&`, `||`, `;` and
+newlines, drops each segment's redirections and its pipe tail, and counts the call as full if any segment ends in
+`check.sh`. Over `agent-harness-2026-10-29-3`, full calls by `F:` tag in all sessions went **49 → 56**; in coding
+sessions by outcome, **47 → 52** (cached 9 → 11, green 3 → 4, red 4 → 5, other 31 → 32; flake 0 and moved 0 unchanged).
+The rest of the output differs only in the per-call `F:`/`s:` tags and in the `svc` scope's wall (91,818 → 91,836 s: it
+is never closed and ends at "now", so it grows between any two runs). Every session, lane and total figure is identical.
+
+| Measure | §4 predicted | control (§10, 10-29-3) | this run (10-30) | held / missed |
+|---|---|---|---|---|
+| non-session share of lane time, no pause | 10–18 % | 8 % | **10 %** (before 0, after 10, verify 0, waiting 0; the "after" 1,702 s is the 832 s run after F1-06's review session, which ran no suite, and the 835 s verify run) | held (lower edge) |
+| suite wall per run, every caller | 26,000–30,000 lane-s per 20 sessions | 32,571 (77 %) | 10,329 lane-s = **29,511 per 20 sessions** (58 %) | held (upper edge) |
+| CPU per run in suites | 60–80 CPU-h; corrected 25–33 | 32.0 per 20 sessions | 10.1 CPU-h = **28.9 per 20** | held (corrected) |
+| solo suite wall | 600–680 s; corrected ~805–821 s at 1,077–1,080 checks | 805 s median (n 19) | harness's own runs **817, 832, 835 s** (1,081–1,084 checks, CPU 3,322–3,355 s); all 10 full runs median 844, range 817–1,220 | held (817 inside the range; 832 and 835 over it by 1–2 %) |
+| flakes per run | 3–6 | 5 rows in 11 sessions (0.45 per session) | **1 row in 7 sessions** (0.14; 2.9 per 20): `08-scope-sh-l1-02-run-capped-services-gc-scratch` | missed, below |
+| un-passes from a red suite | 0–1 | 0 | **0** | held |
+| features thrown out after a retry | 0 | 0 | 0 | held |
+| main green after milestone merges | 100 % | 100 % | **100 %**: F1 (PR #71), record PR #72; no `red on the verified tree` or `red after merging main` line | held |
+| tool-timeout hits (`F:moved`) | 0–1 | 0 full calls (2 other calls moved) | **0**; no call of any kind moved | held |
+| `check: RED (cached` lines (fix 2) | ≥ 1 per retry whose pre-session run meets a red tree; 0 retries here | 1 (S1-04's stub run) | **0** in run.log, harness-log.md and every stream tool result; 2 `red-<key>` markers written (39-memlint-m4, 17:32:51 and 18:46:24) | no retry arose to read them; the markers show fix 2 stored |
+| `partial:` lines (fix 1) | one memlint-only run (0–2 s) per Gotchas line added after a session's last full run | 11 in stream results, all from S2-03/05/06's stub runs; none in run.log | **0** in run.log, harness-log.md and every stream tool result; 1 short check scope (31 s wall, 124 CPU-s, 21:32:50, F1-06's second session), kind not readable | not observed |
+
+One line per miss:
+
+- **Flakes (below).** One red-then-green file in the 10 full runs the harness's check.sh ran (`08-scope…`, first run
+  819 s, load 1.34 at the 20:27 run, one lane); the control's five were `47-lanes-two`, `08-scope…`, `10-harness-eval-run-e2`,
+  `46-lanes-continue` and one `whole suite` row. C's load curve had 0 red files in 4 solo 4-job runs and 1 in the 8-job
+  solo run (`46-lanes-continue`). This run's other reds were not flakes: `39-memlint-m4` red on a rerun in F1-02's
+  (904 s) and F1-03's (968 s) full runs.
+- **Fix 1 (`partial:`) not observed.** The sessions started `lib/check.sh` with output redirected to files under
+  `/tmp/harness/…`, which this task does not read, and `tail`ed little of it; a `check: green (partial: …)` line would sit
+  in those files. Session 7 (F1-06, opus) committed a Gotchas line (`ee0a698`) and the driver's `gotchas +0 ~1 -0` step
+  ran at 21:48:01; the verify cleared the cache at 21:48:05, so the post-session decision for that tree was never exercised.
+  What the data can't tell: whether any `partial` row ran besides the one short scope.
+- **Fix 2 (`check: RED (cached`) not observed.** No post-session run met a red tree: no session ended red, so no retry's
+  pre-session run did either. The two `red-<key>` markers are from sessions' own full runs that found 39-memlint-m4 red
+  and were fixed in the same session.
+
+Other figures from this run: sessions' suite scopes 7,781 s over 7 sessions (1.3 full scopes each, 1,112 s per session)
+against the control's 15,324 s over 11 (1.7, 1,393); model 12 % of lane time against 19 %, session other tools 35 %
+(F1-03 1,797 s, F1-04 2,885 s); the harness's full runs
+817 s before, 832 s after, 835 s verify. Fix 3's line is in the prompt: `Suite: last full run 832 s: give a full run a
+timeout of at least twice that`; the sessions' full-run tool timeouts were 1,500,000–2,600,000 ms.
+
+**Lane guard (PR #70, `bf0cd29` in this driver).** `the session merged main into its branch itself` notes in
+`harness-log.md` and `run.log`: **0**. merge_one's `the lane carried .harness/runs/ changes` and `its .harness/runs/ changes
+could not be undone` notes: **0**. So neither trigger fired for `restrict-merge-tree-base` or
+`slot-copy-overwritten-on-merge`. The run's record is on `origin/main` under `.harness/runs/agent-harness-2026-10-30/`
+(13 files: entries, harness-log, summary, retro, feature_list, …) after record PR #72 (`96de394`, merged 22:04). 
+`git diff 2238052 origin/main -- .harness/runs/` (2238052 = main at the run's start commit) lists 12 files, all added, all
+in `.harness/runs/agent-harness-2026-10-30/`; no other run's directory changed.
+
+Reproduce (read-only; `$T` a scratch dir; the stream-log counts are `tool_result` lines starting `check: …`):
+
+```
+journalctl --user --since "2026-10-29 21:25" -o json --no-pager | grep -E '"MESSAGE":"[^"]*harness-' > $T/journal.jsonl
+D=findings-and-research/2026-10-29-run-time-budget S=~/.local/state/harness/agent-harness
+R="agent-harness-2026-10-29-3 agent-harness-2026-10-30"
+node $D/budget.mjs $T/journal.jsonl $S $R
+node $D/budget.mjs $T/journal.jsonl $S $R --json > $T/budget.json && node $D/totals.mjs $T/budget.json
+node $D/escapes.mjs . $S $R
+```
