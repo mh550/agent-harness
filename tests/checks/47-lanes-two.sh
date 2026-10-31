@@ -56,7 +56,7 @@ check "lanes admission: with the five-hour window at 80 % the second lane waits,
 # (F1-03: M2 opened in M1's slot, admitted as 0 open, before M1's close was noted)
 held
 HARNESS_COUNT_HOLD=1 STUB_INDEPENDENT_M2=1 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" uh --spec SPEC.md --foreground > "$T/uh.out" 2>&1 & P=$!
-wait_for 120 eval '[[ -f $T/held-uh-A ]]'; touch "$T/release-uh"; wait "$P"; rm -f "$T/hold-coding" "$HARNESS_STATE/USAGE_5H"   # left, it would refuse every later run's second lane
+wait_for 120 eval '[[ -f $T/held-uh-A ]]' && wait_for 60 test -f "$HARNESS_STATE/proj/uh/count-hold"; touch "$T/release-uh"; wait "$P"; rm -f "$T/hold-coding" "$HARNESS_STATE/USAGE_5H"   # left, it would refuse every later run's second lane
 check "lanes admission: a lane that exits after the coordinator's reap is noted closed (its slot free) before another lane opens; M2's session after it" \
   'grep -F "count hold: 1 lane(s) counted, held until gone" "$HARNESS_STATE/proj/uh/run.log" > /dev/null && c=$(ats uh "· lane M1 closed \(M1 merged\)$") \
   && o=$(ats uh "· lane M2 opened \(slot 0, port [0-9]+, from [0-9a-f]+, slot reused\)$") && s=$(ats uh "· context.md for C: ") && [[ -n $c && -n $o && -n $s ]] && (( c < o && o < s )) \
