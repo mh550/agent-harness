@@ -52,6 +52,10 @@ for (const s of open.values()) { if (s.kind === "check" && existsSync(join(state
 scopes.sort((a, b) => a.start - b.start);
 
 // ---- 2. the stream logs: per session, tool intervals and the result's two durations
+// A full call runs check.sh with no subset argument in at least one segment of a chained command. Each segment (split at
+// && || ; newline) loses its redirections (`2>&1`, `> f`, `&>f`) and everything from its first pipe, then check.sh must end it.
+const isFullCall = cmd => cmd.split(/&&|\|\||;|\n/).some(seg => /check\.sh$/.test(seg.replace(/\s*(\d*|&)>>?&?\s*\S*/g, " ").replace(/(?<!\|)\|(?!\|).*$/, "").trim()));
+
 function streamLog(file) {
   const uses = new Map(), tools = [], results = [];
   let first = null, last = null, edits = [], lastSuite = null;
@@ -65,7 +69,7 @@ function streamLog(file) {
       if (e.type === "assistant" && c.type === "tool_use") {
         const cmd = c.name === "Bash" ? String(c.input?.command ?? "") : "";
         const suite = c.name === "Bash" && /lib\/check\.sh|tests\/run\.sh|\{\{CHECK\}\}/.test(cmd);
-        const full = suite && /check\.sh(\s*(>|2>|\||;|&&|$))/.test(cmd) && !/check\.sh\s+[A-Za-z0-9]/.test(cmd);   // check.sh with no subset argument
+        const full = suite && isFullCall(cmd);
         uses.set(c.id, { id: c.id, name: c.name, ts, suite, full, bg: !!c.input?.run_in_background, timeout: c.input?.timeout ?? null, cmd: cmd.slice(0, 100), file: c.input?.file_path ?? null });
       } else if (e.type === "user" && c.type === "tool_result" && uses.has(c.tool_use_id)) {
         const u = uses.get(c.tool_use_id); const text = (Array.isArray(c.content) ? c.content.map(x => x.text ?? "").join("\n") : String(c.content ?? ""));
