@@ -17,3 +17,7 @@
 - 2026-10-30 19:02 · context.md for F1-04: 5991 bytes
 - 2026-10-30 20:18 · F1-04: suite ran 1x (1220 s) in the session
 - 2026-10-30 20:18 · F1-04 · claude-opus-5-5 · passes=true · 76 min · 4/6 passing · tests 1081
+- 2026-10-30 20:18 · context.md for F1-05: 6196 bytes
+- 2026-10-30 20:45 · F1-05: suite ran 1x (1002 s) in the session
+- 2026-10-30 20:45 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch (red, then green on a rerun; load 1.34)
+- 2026-10-30 20:45 · F1-05 · claude-opus-5-5 · passes=true · 26 min · 5/6 passing · tests 1083

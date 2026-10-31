@@ -3,6 +3,20 @@
 
 What this file is: the run's journal, rendered by the harness from `entries.jsonl`, newest entry first; one entry per session (init, each feature's coding session, verify, retro). Read the feature list in `feature_list.json`: one milestone, F1 (the suite's flakes fixed where they start, as R1 did on 2026-10-29): F1-01 plans, F1-02 to F1-05 reproduce each flaker with `bash tests/run.sh --repeat 10 <file>` and fix it (timing checks, lanes, desk/scope/one-offs, the runner's whole-suite rerun after a stopped file), F1-06 reviews and writes the docs and decision. The run's named spec `docs/specs/2026-10-30-suite-cpu-and-flakes.md` was on no branch when the run started: the init planned the flakes half only and asked about the rest (see the init entry's question). Steer via `INBOX.md` on this branch: set its first line to `status: pause` or `status: stop`, or write an answer under `## Answers`; every session reads it at startup.
 
+### 2026-10-30 20:45 · F1-05 · passes
+
+tests/run.sh keeps stopped/killed files in `cut`; a conformance `missing` name found literally in a cut file's source is printed but not counted (one line says so), so HARNESS_FAILED= names the files and check.sh reruns them, not the whole suite. Any other missing, new or doubled name still fails. A TEST_CHECKS dir with its own check-names.txt gets conformance. Two checks in 33.
+
+- **Files:** tests/run.sh, tests/checks/33-suite-runner.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-30-F1-flakes.md
+- **Verified:** 33-suite-runner: 14/16 before the runner change (both new checks FAIL), 16/16 after; the se case (stopped file + a missing name in no source) 15/16 on the first rule (drop every missing name), 16/16 on the narrowed one. Full suite via check.sh: green after a rerun (flaky: 08), 1083 tests, wall 819 s; the first run's HARNESS_FAILED=08-… led check.sh to rerun 08 alone (125/125), the rule working on the real suite. lib/check.sh diff empty; sort -c and bash -n clean.
+- **Tests:** 1081 → 1083
+- **Dead end:** the plan's default as written: every missing name uncounted while a file was cut — the Opus review: a check deleted elsewhere in the same run would be hidden, and check.sh's subset rerun (no conformance) goes green, so the gate passes a dropped check; narrowed to names literal in a cut file's source
+- **Discovery** (affects F1-06): F1-05 narrowed the plan's default: only a missing name literal (grep -F) in a stopped/killed file's source goes uncounted; all 22 of file 15's missing names at lc-8-a.out:1339 are literal; 30 of 1082 fixture names are literal nowhere (a cut file holding one keeps the whole-suite rerun). The decision file should say this
+- **Discovery** (affects F1-06): A file that exits non-zero partway (set -u, a stray exit) is not in `cut`: its unprinted names still count as missing and rerun the whole suite (kept out of scope, as the plan names only stopped and killed files); the decision file should say so
+- **Discovery** (affects F1-06, run): 08's `scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit` went red once in F1-05's full run (load 4.5 falling), green on check.sh's rerun of 08 alone; F1-04's 10/10 of 08 didn't see it
+- **Proposed change:** F1-05 step 1 says the missing lines are not counted 'while a file was stopped or killed'; as built, only those literal in a cut file's source are (the review's Important finding); F1-06's decision file should record that narrowing
+- *05-F1-05 · claude-opus-5-5*
+
 ### 2026-10-30 20:18 · F1-04 · passes
 
 13 reproduced (8/10): `harness desk --list` failed on its own `"$H" help | grep -qF` under pipefail (help writes 8361 bytes in 3 writes, match in the 2nd; SIGPIPE 141), not the windows (all five up: instrumented copy). Fixed to `grep -F … > /dev/null`; forced 32/400 red before, 0/400 after. 08, 32, 74, 10 not reproduced (10/10); their sightings mostly predate R1's fixes. Plan rows filled.
