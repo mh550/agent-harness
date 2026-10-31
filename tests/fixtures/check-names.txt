@@ -375,6 +375,7 @@ key map lint: this repo's tests/checks/ passes with the map in .harness/config.s
 lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
 lane_guard: a session that merged main keeps main's records (merge-base base); its own edits are un-indexed, still on disk
 lane_guard: a session's own merge of main into its branch is noted
+lanes admission: a lane that exits after the coordinator's reap is noted closed (its slot free) before another lane opens; M2's session after it
 lanes admission: admit opens the first lane always, refuses on memory or a live five-hour window, and ignores a window already reset
 lanes admission: under the memory reserve the second lane waits, noted once with the figures, and opens once memory is back
 lanes admission: with the five-hour window at 80 % the second lane waits, noted once; it opens when the first closes (0 open always admits)
@@ -850,7 +851,7 @@ status json: STATUS_SINCE in the user config sets the window, --since wins over 
 status json: an empty meta.env is skipped and a bare end reason dated by its file
 status json: finished holds the runs ended in the last 24h, newest first, and older the rest; at least the 3 newest
 status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
-status json: harness status --json over 38 stub runs takes under 1 s (best of 3)
+status json: harness status --json over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3)
 status json: harness status <run> --json prints that one run object with v; an unknown run is an error
 status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs and ./overlap.mjs, exports runObject, queueEntry and sections
 status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
@@ -880,7 +881,7 @@ status view: an empty state root prints the four empty sections and no footer
 status view: at 60 columns the cost stays beside a long reason; the footer keeps -p; a date window reads since <date>
 status view: colour only with HARNESS_TTY=1 (none under NO_COLOR); ASCII only under LC_ALL=C; paths with the home directory as a tilde
 status view: four sections in order (NEEDS YOU · harness needs, RUNNING, QUEUED · runner off, FINISHED · last 24h), a rule and the footer
-status view: harness status --all over 38 stub runs takes under 1 s (best of 3), and lists them all
+status view: harness status --all over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3), and lists them all
 status view: no line over 60 or 80 display columns (also with -v); at 60 the long field and the cost go on an indented second line
 status view: no run.log line without -v; a bad --since is an error
 status: stop <why> from the phone: the same note, ended and services note
@@ -899,7 +900,10 @@ suite runner: a file still running after TEST_FILE_TIMEOUT is stopped, shown and
 suite runner: a file that exits non-zero with no FAIL line counts as one failed check (the total isn't all passed)
 suite runner: a file whose job was killed shows its output and makes the runner exit 1
 suite runner: a green run prints no HARNESS_FAILED= line
+suite runner: a new or doubled name, or a missing one in no stopped or killed file's source, still fails conformance with no HARNESS_FAILED=
 suite runner: a red full run prints HARNESS_FAILED=<the red files> right after the files-that-exited-non-zero line
+suite runner: a stopped or killed file's unprinted names are missing but not counted, so HARNESS_FAILED= names the files
+suite runner: a subset run fails on a name not in its fixture (a stopped file's rerun) or a name twice; a conforming one passes
 suite runner: a timing line per file, then the slowest three, the wall time and the jobs
 suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero
 suite runner: the parallel runner starts no scope of its own (no systemd-run call)

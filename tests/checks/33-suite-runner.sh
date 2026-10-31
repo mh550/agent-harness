@@ -61,4 +61,38 @@ rt0=$(date +%s); TEST_CHECKS=$T/rt TEST_JOBS=2 TEST_FILE_TIMEOUT=2s bash "$HERE/
 check "suite runner: a file still running after TEST_FILE_TIMEOUT is stopped, shown and counted as one FAIL line" \
   '[[ $RT == 1 && $rtw -lt 20 && $(tail -1 "$T/rt.out") == "2/3 checks passed" ]] && grep -qx "rt about to hang" "$T/rt.out" \
   && grep -qx "FAIL 02-h: still running after TEST_FILE_TIMEOUT=2s; stopped" "$T/rt.out" && [[ -f $T/rt/02-h.sh.trapped ]] && rtp=$(cat "$T/rt/02-h.sh.hang") && wait_for 10 eval "! kill -0 $rtp"'
+# F1-05: a stopped or killed file's unprinted names are missing from conformance; those found in its source don't
+# count, so HARNESS_FAILED= still names the files and check.sh reruns those, not the whole suite. Each directory holds
+# its own check-names.txt (the runner's fixture for a full run of it). sa: 02-h stopped, 03-k killed, each with a name
+# it never printed; sb/sd/se: the same stopped file plus a new, a doubled or a missing name in no file's source (a check
+# deleted); sc: no file cut short, a missing name.
+cn() { mkdir -p "$T/$1" && printf '%s\n' "${@:2}" | LC_ALL=C sort > "$T/$1/check-names.txt"; }
+cn sa "sa a1" "sa h1" "sa h2" "sa k1" "sa k2" && printf '%s\n' 'echo "PASS sa a1"' > "$T/sa/01-a.sh" \
+  && printf '%s\n' 'echo "PASS sa h1"; sleep 60; echo "PASS sa h2"' > "$T/sa/02-h.sh" && printf '%s\n' 'echo "PASS sa k1"; kill -9 $PPID $$; echo "PASS sa k2"' > "$T/sa/03-k.sh"   # sleep-ok: a hung file
+for d in sb sd se; do cn "$d" "sa a1" "sa h1" "sa h2" && cp "$T/sa/01-a.sh" "$T/sa/02-h.sh" "$T/$d/"; done
+printf '%s\n' 'echo "PASS sb n1"' > "$T/sb/03-n.sh" && printf '%s\n' 'echo "PASS sa a1"' > "$T/sd/03-d.sh" && cn se "sa a1" "sa h1" "sa h2" "se gone"
+cn sc "sc a1" "sc r1" "sc r2" && printf '%s\n' 'echo "PASS sc a1"' > "$T/sc/01-a.sh" && printf '%s\n' 'echo "FAIL sc r1"; exit 1' > "$T/sc/02-r.sh"
+for d in sa sb sd se sc; do ( TEST_CHECKS=$T/$d TEST_JOBS=3 TEST_FILE_TIMEOUT=2s bash "$HERE/run.sh" > "$T/$d.out" 2>&1; echo $? > "$T/$d.rc" ) & done; wait
+check "suite runner: a stopped or killed file's unprinted names are missing but not counted, so HARNESS_FAILED= names the files" \
+  '[[ $(cat "$T/sa.rc") == 1 && $(grep -x -A2 "missing (in the fixture, not run):" "$T/sa.out" | tail -2) == $'"'"'sa h2\nsa k2'"'"' ]] \
+  && grep -qx "missing names in the source of a file stopped or killed are not counted: 02-h 03-k" "$T/sa.out" \
+  && grep -qx "PASS conformance: the split suite has every check the single-file suite had" "$T/sa.out" && [[ $(grep "^HARNESS_FAILED=" "$T/sa.out") == "HARNESS_FAILED=02-h 03-k" ]]'
+check "suite runner: a new or doubled name, or a missing one in no stopped or killed file's source, still fails conformance with no HARNESS_FAILED=" \
+  'ok=1; for d in sb sd se sc; do [[ $(cat "$T/$d.rc") == 1 ]] && grep -qx "FAIL conformance: the split suite has every check the single-file suite had" "$T/$d.out" \
+     && ! grep "^HARNESS_FAILED=" "$T/$d.out" > /dev/null && grep -qx "files that exited non-zero: 02-[hr]" "$T/$d.out" || { echo "  ($d)"; ok=0; }; done; (( ok )) \
+  && grep -qx "sb n1" "$T/sb.out" && grep -qx "sa a1" "$T/sd.out" && grep -qx "sc r2" "$T/sc.out" && ! grep "not counted" "$T/sc.out" > /dev/null \
+  && [[ $(grep -x -A2 "missing (in the fixture, not run):" "$T/se.out" | tail -2) == $'"'"'sa h2\nse gone'"'"' ]] && grep -qx "missing names in the source of a file stopped or killed are not counted: 02-h" "$T/se.out"'
+# F1-06 review: check.sh reruns HARNESS_FAILED='s files as a subset, so a name the stopped file never printed (sf n1,
+# added past its hang and not to the fixture) would go green there: a subset run is checked against the fixture too
+# (none new, none doubled; missing can't be told). sf: 02-h hangs until $0.go exists, 03-d prints 01-a's name again.
+cn sf "sf a1" "sf h1" "sf h2" && printf '%s\n' 'echo "PASS sf a1"' > "$T/sf/01-a.sh" \
+  && printf '%s\n' 'echo "PASS sf h1"; [[ -e $0.go ]] || sleep 60; echo "PASS sf h2"; echo "PASS sf n1"' > "$T/sf/02-h.sh"   # sleep-ok: a hung file
+sfr() { TEST_CHECKS=$T/sf TEST_JOBS=3 TEST_FILE_TIMEOUT=2s bash "$HERE/run.sh" "${@:2}" > "$T/sf-$1.out" 2>&1; echo $? > "$T/sf-$1.rc"; }
+sfr full; touch "$T/sf/02-h.sh.go"; sfr rerun 02-h; sfr ok 01-a; cp "$T/sf/01-a.sh" "$T/sf/03-d.sh"; sfr dup 01-a 03-d
+SFC="conformance: every check a subset ran is in the fixture, once"
+check "suite runner: a subset run fails on a name not in its fixture (a stopped file's rerun) or a name twice; a conforming one passes" \
+  '[[ $(grep "^HARNESS_FAILED=" "$T/sf-full.out") == "HARNESS_FAILED=02-h" && $(cat "$T/sf-rerun.rc") == 1 ]] \
+  && [[ $(grep -x -A1 "new (add each to tests/fixtures/check-names.txt):" "$T/sf-rerun.out") == *$'"'"'\nsf n1'"'"' ]] && grep -qx "FAIL $SFC" "$T/sf-rerun.out" \
+  && [[ $(cat "$T/sf-ok.rc") == 0 ]] && grep -qx "PASS $SFC" "$T/sf-ok.out" && [[ $(tail -1 "$T/sf-ok.out") == "2/2 checks passed" ]] \
+  && [[ $(cat "$T/sf-dup.rc") == 1 ]] && [[ $(grep -x -A1 "doubled (two checks of one name):" "$T/sf-dup.out") == *$'"'"'\nsf a1'"'"' ]] && grep -qx "FAIL $SFC" "$T/sf-dup.out"'
 suite_end

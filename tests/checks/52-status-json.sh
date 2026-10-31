@@ -67,7 +67,11 @@ check "status json: an empty meta.env is skipped and a bare end reason dated by 
   (( r == 0 )) && [[ $(J --all | R bulk-01 | jq -r "[.end_reason, .end_class, .ended_at] | join(\",\")") == done,done,2026-10-23T23:59:00.000Z ]] \
   && [[ $(jq -r "[(.finished | length), .older] | join(\",\")" "$T/s.json") == 6,31 && $(J --since 5d | jq -r "[(.finished | length), .older] | join(\",\")") == 10,27 ]] \
   && [[ $(J --all | jq -r "[(.finished | length), .older, .finished[-1].run] | join(\",\")") == 37,0,bulk-30 ]]'
-check "status json: harness status --json over 38 stub runs takes under 1 s (best of 3)" '
-  best=99999; for i in 1 2 3; do t0=$(date +%s%N); J > /dev/null || break; t=$(( ($(date +%s%N) - t0) / 1000000 )); (( t < best )) && best=$t; done
-  echo "    best of 3: $best ms over $(J --all | jq "[.running[], .finished[]] | length") runs"; (( best < 1000 )) && [[ $(J --all | jq "[.running[], .finished[]] | length") == 38 ]]'
+# CPU time (user plus system, the status process and its children), not wall: the wall grows with the box's load for
+# the same work (findings-and-research/2026-10-30-suite-load-curve.md §1); a slower status still costs more CPU, and a
+# stall that costs none (a lock, a git or gh wait) still meets the wall bound, 5 s (1.4 s at the curve's worst load)
+check "status json: harness status --json over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3)" '
+  TIMEFORMAT="%3U %3S %3R"; best=99999 wall=99999; for i in 1 2 3; do { time J > /dev/null; } 2> "$T/cpu" || break; read -r u s r < "$T/cpu"
+    t=$(( 10#${u//[!0-9]/} + 10#${s//[!0-9]/} )) w=$(( 10#${r//[!0-9]/} )); (( t < best )) && best=$t; (( w < wall )) && wall=$w; done; unset TIMEFORMAT
+  echo "    best of 3: $best ms CPU (wall $wall ms) over $(J --all | jq "[.running[], .finished[]] | length") runs"; (( best < 1000 && wall < 5000 )) && [[ $(J --all | jq "[.running[], .finished[]] | length") == 38 ]]'
 suite_end

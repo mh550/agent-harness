@@ -422,7 +422,7 @@ check "the debrief starts a desk when Needs Michael is non-empty" '[[ -z $DW1 &&
 # housekeeping: list, close, gc's 24 h rule, close them all (open now: parky, desky, strict, debrief)
 tmux new-window -d -t "=$HARNESS_DESK_SESSION:" -n odd sleep 600   # sleep-ok: a window that is no desk
 "$H" desk --list > "$T/dlist.out" 2>&1; DL=$?
-check "harness desk --list" '"$H" help | grep -qF -- "harness desk --list | --close <run>|--all" && [[ $DL == 0 && $(wins | wc -l) == 5 && $(wc -l < "$T/dlist.out") == 5 ]] && grep -qE "^parky +parky +$(cat "$DS/url") +[0-9]+ min$" "$T/dlist.out" \
+check "harness desk --list" '"$H" help | grep -F -- "harness desk --list | --close <run>|--all" > /dev/null && [[ $DL == 0 && $(wins | wc -l) == 5 && $(wc -l < "$T/dlist.out") == 5 ]] && grep -qE "^parky +parky +$(cat "$DS/url") +[0-9]+ min$" "$T/dlist.out" \
   && ( for w in desky strict; do grep -qE "^$w +$w +https://claude\.ai/code/session_TEST[0-9]+ +[0-9]+ min$" "$T/dlist.out" || exit 1; done ) \
   && grep -qE "^debrief +\(debrief\) +https://claude\.ai/code/session_TEST[0-9]+ +[0-9]+ min$" "$T/dlist.out" && grep -qE "^odd +- +- +-$" "$T/dlist.out"'
 "$H" desk --close desky > "$T/dclose1.out" 2>&1; DC1=$?; "$H" desk --close parkn > "$T/dclose2.out" 2>&1; DC2=$?
