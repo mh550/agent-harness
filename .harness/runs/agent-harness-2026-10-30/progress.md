@@ -3,6 +3,21 @@
 
 What this file is: the run's journal, rendered by the harness from `entries.jsonl`, newest entry first; one entry per session (init, each feature's coding session, verify, retro). Read the feature list in `feature_list.json`: one milestone, F1 (the suite's flakes fixed where they start, as R1 did on 2026-10-29): F1-01 plans, F1-02 to F1-05 reproduce each flaker with `bash tests/run.sh --repeat 10 <file>` and fix it (timing checks, lanes, desk/scope/one-offs, the runner's whole-suite rerun after a stopped file), F1-06 reviews and writes the docs and decision. The run's named spec `docs/specs/2026-10-30-suite-cpu-and-flakes.md` was on no branch when the run started: the init planned the flakes half only and asked about the rest (see the init entry's question). Steer via `INBOX.md` on this branch: set its first line to `status: pause` or `status: stop`, or write an answer under `## Answers`; every session reads it at startup.
 
+### 2026-10-30 20:18 · F1-04 · passes
+
+13 reproduced (8/10): `harness desk --list` failed on its own `"$H" help | grep -qF` under pipefail (help writes 8361 bytes in 3 writes, match in the 2nd; SIGPIPE 141), not the windows (all five up: instrumented copy). Fixed to `grep -F … > /dev/null`; forced 32/400 red before, 0/400 after. 08, 32, 74, 10 not reproduced (10/10); their sightings mostly predate R1's fixes. Plan rows filled.
+
+- **Files:** tests/checks/13-run-2-michael-sets-desk.sh, docs/plans/2026-10-30-F1-flakes.md
+- **Verified:** before: 13-run-2-michael-sets-desk: 8/10 green (copies 1, 3 FAIL harness desk --list), 08-…: 10/10 green, 32-l5-queue-runner-re: 10/10 green, 74-flakes-run: 10/10 green, 10-harness-eval-run-e2: 10/10 green. Instrumented 13 (10 copies, 1 red): 5 windows before/after the listing and after the check, DL=0, 5 lines, in every copy. Clause pinned to one busy CPU: old 32/400 fail (all rc 141), new 0/400 (old interleaved 17/400). after: 13: 10/10 green, 08: 10/10, 32: 10/10, 74: 10/10, 10: 10/10. Full suite: 1081/1081 checks passed (check: green in 1220 s). lint-sleeps and bash -n print nothing.
+- **Tests:** 1081 → 1081
+- **Dead end:** reproducing the SIGPIPE with 12 parallel loops of 300 unpinned — 0/3600: the window needs the reader scheduled between the producer's 2nd and 3rd write; pinning producer, reader and a busy loop to one CPU (taskset -c 5) gives 32/400
+- **Dead end:** set -x tracing the check in 20 copies — 20/20 green: the trace's writes change the timing
+- **Discovery** (affects F1-06, run): 13's desk --list flake was the check's `"$H" help | grep -qF` (SIGPIPE under pipefail), not the desk windows; force such a pipe red with taskset -c <n> beside a busy loop on the same CPU
+- **Discovery** (affects F1-06): check-names.txt's diff against origin/main removes two lines: F1-02's two renamed timing checks; F1-04 changes nothing there
+- **Proposed change:** F1-04 step 5 (check-names.txt added lines only) can't hold against origin/main while F1-02's renames are on the branch: it should read `git diff <the feature's base> -- tests/fixtures/check-names.txt`
+- **Proposed change:** A lint like lint-sleeps for `| grep -q`/`| head` behind a known multi-write producer (`"$H" help`, `git show`, `cat` of a log) in tests/checks would have caught 13:425
+- *04-F1-04 · claude-opus-5-5*
+
 ### 2026-10-30 19:02 · F1-03 · passes
 
 Reproduced 47 (9/10: M2's lane opened in M1's slot before M1's close was noted). Fixed in lib/driver.sh: the opens stop for the poll while a lane has exited unreaped (lanes_held), and the end check counts held lanes. New check on its own HARNESS_COUNT_HOLD run (uh), red then green. 46 and 48 not reproduced (10/10). Decision opens-wait-for-reap.
