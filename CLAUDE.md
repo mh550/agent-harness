@@ -69,7 +69,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - a check's regex on a glyph run is locale-bound: `grep -E "(─)+"` (BRE: parens literal), never `─+`; awk length: bytes (agent-harness-2026-10-29-2 2026-10-29)
 - a card or view cuts every line at the width (100 off a TTY): a check comparing whole run.log lines sets COLUMNS=200 (agent-harness-2026-10-28 2026-10-28)
 - status.mjs: a session runs from its `session <n> · <id>` log line to its `passes=` or limit note; stub logs need both (agent-harness-2026-10-28 2026-10-28)
-- tests/fixtures/check-names.txt is LC_ALL=C sorted: copy names from PASS lines of `tests/run.sh <f>`, re-sort (agent-harness-2026-10-28 2026-10-28)
+- tests/fixtures/check-names.txt is LC_ALL=C sorted; a subset is red on a name it lacks: add PASS names of run.sh <f>, sort (agent-harness-2026-10-30 2026-10-30)
 - INBOX.md: cut at lib/inbox.mjs answersLine (the `## Answers` outside the steering comment), never `/^## Answers/` (agent-harness-2026-10-28 2026-10-28)
 - check.sh's partial path needs the tree's .harness/config.sh map == HARNESS_CHECK_KEY_MAP: a stub repo commits it (agent-harness-2026-10-29-3 2026-10-30)
 - `[[ $(jq …) -ge 1 ]]`: a jq `null` is an unbound name under set -u and ends the file; test in jq (`>= 1` == true) (agent-harness-2026-10-28 2026-10-28)
