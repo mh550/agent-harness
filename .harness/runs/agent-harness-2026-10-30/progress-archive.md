@@ -3,6 +3,16 @@
 
 What this file is: the run's journal, rendered by the harness from `entries.jsonl`, newest entry first; one entry per session (init, each feature's coding session, verify, retro). Read the feature list in `feature_list.json`: one milestone, F1 (the suite's flakes fixed where they start, as R1 did on 2026-10-29): F1-01 plans, F1-02 to F1-05 reproduce each flaker with `bash tests/run.sh --repeat 10 <file>` and fix it (timing checks, lanes, desk/scope/one-offs, the runner's whole-suite rerun after a stopped file), F1-06 reviews and writes the docs and decision. The run's named spec `docs/specs/2026-10-30-suite-cpu-and-flakes.md` was on no branch when the run started: the init planned the flakes half only and asked about the rest (see the init entry's question). Steer via `INBOX.md` on this branch: set its first line to `status: pause` or `status: stop`, or write an answer under `## Answers`; every session reads it at startup.
 
+### 2026-10-30 21:11 · F1-06 · passes
+
+Review of F1 (Sonnet, one round): 0 Critical, 1 Important, 3 Minor. Fixed 47's uh check (wait for count-hold before release). Wrote decision cpu-time-bound-and-stopped-files, review file, architecture §3/§7/§15 and README Tests lines.
+
+- **Files:** tests/checks/47-lanes-two.sh, docs/plans/2026-10-30-F1-review.md, journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md, docs/architecture.md, README.md
+- **Verified:** bash tests/run.sh: 1083/1083 passed, wall 830 s; bash -n and lint-sleeps print nothing; grep -c stopped docs/architecture.md = 25
+- **Tests:** 1083 → 1083
+- **Discovery** (affects run): The Important finding is a race in the check's own ordering (needs M1 to finish within one 1 s poll): no deterministic red; fixed by the 45 pattern
+- *06-F1-06 · claude-sonnet-5-5*
+
 ### 2026-10-30 20:45 · F1-05 · passes
 
 tests/run.sh keeps stopped/killed files in `cut`; a conformance `missing` name found literally in a cut file's source is printed but not counted (one line says so), so HARNESS_FAILED= names the files and check.sh reruns them, not the whole suite. Any other missing, new or doubled name still fails. A TEST_CHECKS dir with its own check-names.txt gets conformance. Two checks in 33.

@@ -21,3 +21,8 @@
 - 2026-10-30 20:45 · F1-05: suite ran 1x (1002 s) in the session
 - 2026-10-30 20:45 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch (red, then green on a rerun; load 1.34)
 - 2026-10-30 20:45 · F1-05 · claude-opus-5-5 · passes=true · 26 min · 5/6 passing · tests 1083
+- 2026-10-30 20:45 · review F1-06: 305 changed lines, under 400; sonnet
+- 2026-10-30 20:45 · context.md for F1-06: 7891 bytes
+- 2026-10-30 21:11 · F1-06: suite ran 0x (0 s) in the session
+- 2026-10-30 21:25 · review F1-06: sonnet found 0 Critical, 1 Important; one round on opus
+- 2026-10-30 21:25 · F1-06 · claude-sonnet-5-5 · passes=false · 25 min · 5/6 passing · tests 1083
