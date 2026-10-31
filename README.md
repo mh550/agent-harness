@@ -355,13 +355,13 @@ KEEP=1 bash tests/run.sh --repeat 10 lanes-two   # reproduce a flake: that file 
 ```
 Each `tests/checks/*.sh` sources `tests/lib.sh` (a fresh `$T`, private tmux server, stub environment and throwaway
 project) and runs alone; `tests/fixtures/check-names.txt` lists every check name and a full run fails on one missing,
-new or doubled. The runner starts the files `TEST_JOBS` at a time, largest first, as plain background jobs inside the
+new or doubled (a subset run, on one new or doubled). The runner starts the files `TEST_JOBS` at a time, largest first, as plain background jobs inside the
 caller's check scope, prints each file's output whole when it finishes with a `<file>: <n> checks, <s> s` line, and
 ends with the slowest three, the wall time and the total. A file that exits non-zero with no `FAIL` line counts as one
 failed check; stopped by a signal (check.sh's timeout), the runner prints each unfinished file's output so far and names it.
 A file still running after `TEST_FILE_TIMEOUT` (10m) is stopped, its process group with it, and counted as one
 `FAIL <file>: still running after TEST_FILE_TIMEOUT=<t>; stopped`.
-A name of a stopped file's checks that never ran is not counted as missing, so only that file reruns. A timing check bounds the command's CPU time (user+sys), not its wall, which grows with the box's load; a wall limit stays beside it for a stall.
+A name of a stopped file's checks that never ran is not counted as missing, so only that file reruns (as a subset, so a name it never printed is still checked against the fixture). A timing check bounds the command's CPU time (user+sys), not its wall, which grows with the box's load; a wall limit stays beside it for a stall.
 A check waits on a condition, never on the clock: `wait_for <max s> <command…>` (`tests/lib.sh`) polls every 0.1 s
 and gives up after `<max>` s with `wait_for: <command> still failing after <max> s`; `stub_go`/`stub_wait <name>` (and
 `STUB_BARRIER=<id>:<name>` for a stub coding session) order two events. The sleep lint (`tests/lint-sleeps.sh`, part

@@ -903,6 +903,7 @@ suite runner: a green run prints no HARNESS_FAILED= line
 suite runner: a new or doubled name, or a missing one in no stopped or killed file's source, still fails conformance with no HARNESS_FAILED=
 suite runner: a red full run prints HARNESS_FAILED=<the red files> right after the files-that-exited-non-zero line
 suite runner: a stopped or killed file's unprinted names are missing but not counted, so HARNESS_FAILED= names the files
+suite runner: a subset run fails on a name not in its fixture (a stopped file's rerun) or a name twice; a conforming one passes
 suite runner: a timing line per file, then the slowest three, the wall time and the jobs
 suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero
 suite runner: the parallel runner starts no scope of its own (no systemd-run call)

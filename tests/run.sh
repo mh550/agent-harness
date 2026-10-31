@@ -8,7 +8,8 @@
 # run of it checks conformance against its own check-names.txt when it holds one).
 # TEST_FILE_TIMEOUT (default 10m, a sleep duration): a file still running then is stopped (TERM to its process group,
 # KILL 10 s later) and counted as one FAIL line, so a hung file costs its timeout, not the whole suite's.
-# A full run of tests/checks also checks conformance: its check names are tests/fixtures/check-names.txt, none missing, new or doubled.
+# A full run of tests/checks also checks conformance: its check names are tests/fixtures/check-names.txt, none missing, new or doubled
+# (a subset run: none new or doubled).
 # A red run ends with HARNESS_FAILED=<the red files' basenames> (check.sh's rerun takes them as arguments), only when
 # every failure is inside a named file; a failure outside one (conformance) leaves it out, so check.sh reruns the whole suite.
 # A missing name in the source of a file stopped or killed (one it could not print) doesn't count; any other, new and doubled do.
@@ -113,15 +114,16 @@ total=$(( $(grep -c '' "$out/names") + lost )) fails=$(( $(cat "$out"/*.out | gr
 
 # a FAIL line in a file that exited 0 (one not written on lib.sh) is a failure outside every named file
 outside=0; for f in "${files[@]}"; do b=$(basename "$f" .sh); [[ " ${broken[*]} " != *" $b "* ]] && grep -q '^FAIL ' "$out/$b.out" 2> /dev/null && outside=1; done
-# conformance: the names this run produced against the fixture (a subset run produces only its own): tests/checks's is
-# tests/fixtures/check-names.txt, another directory's its own check-names.txt
-fx=""; if (( ! $# )); then
-  if [[ $(cd "$dir" && pwd -P) == "$(cd "$HERE/checks" && pwd -P)" ]]; then fx=$HERE/fixtures/check-names.txt; elif [[ -f $dir/check-names.txt ]]; then fx=$dir/check-names.txt; fi
-fi
+# conformance: the names this run produced against the fixture: tests/checks's is tests/fixtures/check-names.txt, another
+# directory's its own check-names.txt. A subset run produces only its own, so none may be new or doubled (missing can't
+# be told): check.sh's rerun of a stopped file is a subset, and the full run never saw the names that file didn't print
+fx=""; if [[ $(cd "$dir" && pwd -P) == "$(cd "$HERE/checks" && pwd -P)" ]]; then fx=$HERE/fixtures/check-names.txt; elif [[ -f $dir/check-names.txt ]]; then fx=$dir/check-names.txt; fi
 if [[ -n $fx ]]; then
   sed -i 's/ (skipped: [^)]*)$//' "$out/names"   # a check skipped where its tool is missing (no user systemd) keeps its name
   LC_ALL=C sort -u "$out/names" > "$out/uniq"   # C order, as the fixture (never exported: tmux needs UTF-8)
   missing=$(LC_ALL=C comm -23 "$fx" "$out/uniq") new=$(LC_ALL=C comm -13 "$fx" "$out/uniq") doubled=$(LC_ALL=C sort "$out/names" | uniq -d)
+  name="conformance: the split suite has every check the single-file suite had"
+  (( $# )) && missing="" name="conformance: every check a subset ran is in the fixture, once"
   [[ -n $missing ]] && printf 'missing (in the fixture, not run):\n%s\n' "$missing"
   # a file cut short never printed its later names: one found in its source is its fault (it is named below and rerun);
   # any other (a check deleted elsewhere) still counts, so the whole suite reruns and conformance stays red
@@ -133,7 +135,7 @@ if [[ -n $fx ]]; then
   fi
   [[ -n $new ]] && printf 'new (add each to tests/fixtures/check-names.txt):\n%s\n' "$new"
   [[ -n $doubled ]] && printf 'doubled (two checks of one name):\n%s\n' "$doubled"
-  name="conformance: the split suite has every check the single-file suite had"; total=$((total + 1))
+  total=$((total + 1))
   if [[ -z $missing$new$doubled ]]; then echo "PASS $name"; else echo "FAIL $name"; fails=$((fails + 1)) outside=1; fi
 fi
 

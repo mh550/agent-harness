@@ -82,4 +82,17 @@ check "suite runner: a new or doubled name, or a missing one in no stopped or ki
      && ! grep "^HARNESS_FAILED=" "$T/$d.out" > /dev/null && grep -qx "files that exited non-zero: 02-[hr]" "$T/$d.out" || { echo "  ($d)"; ok=0; }; done; (( ok )) \
   && grep -qx "sb n1" "$T/sb.out" && grep -qx "sa a1" "$T/sd.out" && grep -qx "sc r2" "$T/sc.out" && ! grep "not counted" "$T/sc.out" > /dev/null \
   && [[ $(grep -x -A2 "missing (in the fixture, not run):" "$T/se.out" | tail -2) == $'"'"'sa h2\nse gone'"'"' ]] && grep -qx "missing names in the source of a file stopped or killed are not counted: 02-h" "$T/se.out"'
+# F1-06 review: check.sh reruns HARNESS_FAILED='s files as a subset, so a name the stopped file never printed (sf n1,
+# added past its hang and not to the fixture) would go green there: a subset run is checked against the fixture too
+# (none new, none doubled; missing can't be told). sf: 02-h hangs until $0.go exists, 03-d prints 01-a's name again.
+cn sf "sf a1" "sf h1" "sf h2" && printf '%s\n' 'echo "PASS sf a1"' > "$T/sf/01-a.sh" \
+  && printf '%s\n' 'echo "PASS sf h1"; [[ -e $0.go ]] || sleep 60; echo "PASS sf h2"; echo "PASS sf n1"' > "$T/sf/02-h.sh"   # sleep-ok: a hung file
+sfr() { TEST_CHECKS=$T/sf TEST_JOBS=3 TEST_FILE_TIMEOUT=2s bash "$HERE/run.sh" "${@:2}" > "$T/sf-$1.out" 2>&1; echo $? > "$T/sf-$1.rc"; }
+sfr full; touch "$T/sf/02-h.sh.go"; sfr rerun 02-h; sfr ok 01-a; cp "$T/sf/01-a.sh" "$T/sf/03-d.sh"; sfr dup 01-a 03-d
+SFC="conformance: every check a subset ran is in the fixture, once"
+check "suite runner: a subset run fails on a name not in its fixture (a stopped file's rerun) or a name twice; a conforming one passes" \
+  '[[ $(grep "^HARNESS_FAILED=" "$T/sf-full.out") == "HARNESS_FAILED=02-h" && $(cat "$T/sf-rerun.rc") == 1 ]] \
+  && [[ $(grep -x -A1 "new (add each to tests/fixtures/check-names.txt):" "$T/sf-rerun.out") == *$'"'"'\nsf n1'"'"' ]] && grep -qx "FAIL $SFC" "$T/sf-rerun.out" \
+  && [[ $(cat "$T/sf-ok.rc") == 0 ]] && grep -qx "PASS $SFC" "$T/sf-ok.out" && [[ $(tail -1 "$T/sf-ok.out") == "2/2 checks passed" ]] \
+  && [[ $(cat "$T/sf-dup.rc") == 1 ]] && [[ $(grep -x -A1 "doubled (two checks of one name):" "$T/sf-dup.out") == *$'"'"'\nsf a1'"'"' ]] && grep -qx "FAIL $SFC" "$T/sf-dup.out"'
 suite_end
