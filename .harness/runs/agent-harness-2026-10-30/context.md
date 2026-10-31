@@ -2,8 +2,13 @@
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- 2026-10-30 21:11 · F1-06 · passes: Review of F1 (Sonnet, one round): 0 Critical, 1 Important, 3 Minor. Fixed 47's uh check (wait for count-hold before release). Wrote decision cpu-time-bound-and-stopped-files, review file, architecture §3/§7/§15 and README Tests lines.; tests 1083 → 1083; files tests/checks/47-lanes-two.sh, docs/plans/2026-10-30-F1-review.md, journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md, docs/architecture.md, README.md → entries.jsonl:7
+
 ## Discoveries for this feature
 
+- Discovery (F1-06, affects run): The Important finding is a race in the check's own ordering (needs M1 to finish within one 1 s poll): no deterministic red; fixed by the 45 pattern → entries.jsonl:7
 - Discovery (F1-05, affects F1-06): F1-05 narrowed the plan's default: only a missing name literal (grep -F) in a stopped/killed file's source goes uncounted; all 22 of file 15's missing names at lc-8-a.out:1339 are literal; 30 of 1082 fixture names are literal nowhere (a cut file holding one keeps the whole-suite rerun). The decision file should say this → entries.jsonl:6
 - Discovery (F1-05, affects F1-06): A file that exits non-zero partway (set -u, a stray exit) is not in `cut`: its unprinted names still count as missing and rerun the whole suite (kept out of scope, as the plan names only stopped and killed files); the decision file should say so → entries.jsonl:6
 - Discovery (F1-05, affects F1-06, run): 08's `scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit` went red once in F1-05's full run (load 4.5 falling), green on check.sh's rerun of 08 alone; F1-04's 10/10 of 08 didn't see it → entries.jsonl:6
@@ -32,10 +37,4 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Current rules
 
-- The suite's length in every prompt: a green marker's `wall` line, and a timeout rule → journal/decisions/2026-10-30-suite-length-in-prompt.md
-- A red tree is cached: `red-<key>`, so the next full call on the tree just found red runs nothing → journal/decisions/2026-10-30-red-marker.md
-- A mapped path's change runs only its readers: `CHECK_KEY_MAP`, the `part-<key>` sidecar, the partial run, the lint → journal/decisions/2026-10-30-partial-key.md
-- The coordinator opens no lane while a lane that exited is not reaped yet → journal/decisions/2026-10-30-opens-wait-for-reap.md
-- The lane guard reverts against the lane's merge-base with main, in the index only → journal/decisions/2026-10-30-lane-guard-base.md
-
-_75 older rules: journal/decisions._
+_81 older rules: journal/decisions._
