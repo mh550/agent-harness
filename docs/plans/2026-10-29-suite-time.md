@@ -128,3 +128,39 @@ After fix 4 (if the hypothesis holds): suite wall per run 18,000–24,000 lane-s
   runs before assuming). Fixes 2 and 4 at most.
 - The findings' `budget.mjs` runs on any project's state dir; the first Phase 2 step for dj and hit_list is that
   table, not a fix.
+
+## 6. Decisions, 2026-10-30 (F)
+
+Taken after Phase 2's measurements (`findings-and-research/2026-10-30-suite-load-curve.md`) and the two live checks of
+the predictions (`findings-and-research/2026-10-29-run-time-budget.md` §10, §11), with the thresholds recomputed: solo
+suite 805 s at 1,077 checks (CPU 3,249 s, 4.04 cores busy); suite CPU per 20 sessions 31–40 CPU-h predicted, 32.0
+measured; suite wall per 20 sessions 32,571 lane-s (77 %); step 10's 8-job bar 582 s; 0.1 full run per session is worth
+about 1,610 s per 20 sessions.
+
+- **Fix 4, one full run per session: DO, as a rider** (fix 6's milestone's last build feature, before its review).
+  10-29-3 had 1.73 full runs per coding session, mostly red-driven; expect 1.7 → 1.4–1.5, 3,000–5,000 s per 20 sessions.
+- **Fix 5, targeted subsets: DON'T**, on agent-harness, dj and hit_list: the median subset is 60–73 % of the files;
+  dj's post-session run was a cache hit after 48 of 49 sessions; hit_list's suite is 17 % of its lane time at 8–30 s.
+  Revisit only if agent-harness grows real module boundaries.
+- **Fix 6, fewer process starts: DO, first.** Per large check file 3,128–3,516 node execs at 26.9 ms are 84–95 CPU-s
+  against 182–208 s of file wall, about 45 % of file CPU (the bar was a third); git's 7,600–8,400 execs cost ~9 s. Where
+  the node starts come from is not measured (counts are by basename), so the milestone measures first. A 20–30 % CPU
+  cut is 6,500–9,800 lane-s per 20 sessions, solo wall 805 → 560–645 s, and lower load at the same `TEST_JOBS`, the
+  only measured lever on flakes.
+- **Fix 7's variant, a box-wide token at `TEST_JOBS=8`: DON'T, and no `TEST_JOBS` change.** 8 jobs solo is 599 s, over
+  the 582 s bar; it costs 4,144 CPU-s, the same as paired at 4; 8 paired is unusable (file 15 hit the file timeout in
+  both copies).
+- **The flakes: done as F1** in run agent-harness-2026-10-30 (§11: 1 flake in 7 sessions, `08-scope`, red then green at
+  load 1.34). Not in the next run; the debrief's flaker list tracks `08`.
+- **The dj port: DON'T.** Fixes 2 and 3 are harness-side and live for dj on its next run; fix 1 has nothing to map
+  (dj's suite reads no `CLAUDE.md`); fix 4's rule is already in dj's `CLAUDE.md`. dj's lever is its own suite
+  (580–930 s, 59 % of lane time): a read-only `pytest --durations` profile in that repo is the first step of any dj
+  night.
+
+**What happened to the run meant to carry them.** F named the spec `docs/specs/2026-10-30-suite-cpu-and-flakes.md`
+(M1 fix 6 with fix 4 as its last feature, M2 the flakes) but wrote no file. `harness queue add --spec <that path>`
+accepted it (`bin/harness` checks only that `--spec` or `--brief` is given), and run agent-harness-2026-10-30 was built
+from the title alone: the initializer found the path on no branch, did the flakes half as F1
+(`docs/plans/2026-10-30-F1-flakes.md`, merged as PR #71) and left fix 6 and fix 4 out. The remainder, with a first
+milestone that makes `start` and `queue add` refuse a spec absent from `origin/main`, is
+`docs/specs/2026-10-31-suite-cpu.md`.
