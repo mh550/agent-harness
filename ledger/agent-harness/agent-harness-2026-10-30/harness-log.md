@@ -1,0 +1,44 @@
+- 2026-10-30 16:53 · test count: parsed (generic)
+- 2026-10-30 17:05 · init: 1 question(s) for Michael recorded (harness needs)
+- 2026-10-30 17:05 · feature list written: 0/6 passing
+- 2026-10-30 17:05 · lint: clean
+- 2026-10-30 17:05 · lane F1 opened (slot 0, port 7820, from 99a01ca)
+- 2026-10-30 17:05 · context.md for F1-01: 3594 bytes
+- 2026-10-30 17:09 · F1-01: suite ran 0x (0 s) in the session
+- 2026-10-30 17:09 · F1-01: 2 question(s) for Michael recorded (harness needs)
+- 2026-10-30 17:09 · F1-01 · claude-opus-5-5 · passes=true · 3 min · 1/6 passing · tests 1080
+- 2026-10-30 17:09 · context.md for F1-02: 4500 bytes
+- 2026-10-30 17:47 · F1-02: suite ran 2x (1793 s) in the session
+- 2026-10-30 17:47 · F1-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-10-30 17:47 · F1-02 · claude-opus-5-5 · passes=true · 38 min · 2/6 passing · tests 1080
+- 2026-10-30 17:48 · context.md for F1-03: 4949 bytes
+- 2026-10-30 19:02 · F1-03: suite ran 2x (1889 s) in the session
+- 2026-10-30 19:02 · F1-03 · claude-opus-5-5 · passes=true · 74 min · 3/6 passing · tests 1081
+- 2026-10-30 19:02 · context.md for F1-04: 5991 bytes
+- 2026-10-30 20:18 · F1-04: suite ran 1x (1220 s) in the session
+- 2026-10-30 20:18 · F1-04 · claude-opus-5-5 · passes=true · 76 min · 4/6 passing · tests 1081
+- 2026-10-30 20:18 · context.md for F1-05: 6196 bytes
+- 2026-10-30 20:45 · F1-05: suite ran 1x (1002 s) in the session
+- 2026-10-30 20:45 · flaky: 08-scope-sh-l1-02-run-capped-services-gc-scratch (red, then green on a rerun; load 1.34)
+- 2026-10-30 20:45 · F1-05 · claude-opus-5-5 · passes=true · 26 min · 5/6 passing · tests 1083
+- 2026-10-30 20:45 · review F1-06: 305 changed lines, under 400; sonnet
+- 2026-10-30 20:45 · context.md for F1-06: 7891 bytes
+- 2026-10-30 21:11 · F1-06: suite ran 0x (0 s) in the session
+- 2026-10-30 21:25 · review F1-06: sonnet found 0 Critical, 1 Important; one round on opus
+- 2026-10-30 21:25 · F1-06 · claude-sonnet-5-5 · passes=false · 25 min · 5/6 passing · tests 1083
+- 2026-10-30 21:25 · context.md for F1-06: 7894 bytes
+- 2026-10-30 21:48 · F1-06: suite ran 1x (839 s) in the session
+- 2026-10-30 21:48 · F1-06: 1 question(s) for Michael recorded (harness needs)
+- 2026-10-30 21:48 · F1-06: gotchas +0 ~1 -0
+- 2026-10-30 21:48 · F1-06 · claude-opus-5-5 · passes=true · 22 min · 6/6 passing · tests 1084
+- 2026-10-30 21:48 · verify F1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-10-30 22:02 · context.md for F1: 16169 bytes
+- 2026-10-30 22:03 · F1 verified and tagged run/agent-harness-2026-10-30/F1
+- 2026-10-30 22:03 · F1 merged into main · https://github.com/mh550/agent-harness/pull/71
+- 2026-10-30 22:03 · lane F1 closed (F1 merged)
+- 2026-10-30 22:03 · lane F1: branch harness-lane/agent-harness-2026-10-30/F1 deleted (merged)
+- 2026-10-30 22:03 · every feature passes
+- 2026-10-30 22:03 · run ended (done): 6/6 passing · 9 sessions (9 real) · 6 features passed · $22.61 · 4.7 h · by kind: init 1 ($5.06), coding 7 ($17.31), verify 1 ($0.24) · by model: claude-fable-5-1 1 ($5.06), claude-opus-5-5 6 ($16.69), claude-sonnet-5-5 2 ($0.86)
+- 2026-10-30 22:03 · services stopped (done)
+- 2026-10-30 22:04 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-10-30 22:04 · record PR merged into main · https://github.com/mh550/agent-harness/pull/72
