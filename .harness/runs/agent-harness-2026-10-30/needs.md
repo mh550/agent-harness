@@ -84,3 +84,24 @@ harness needs done agent-harness-2026-10-30/3 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-10-30/4 --why "<answer>"
 ```
+
+## ⚠ F1-06 asked: Default taken (decisions/2026-10-30-cpu-time-bound-and-stop…
+
+`agent-harness-2026-10-30/5` · since 2026-10-31T01:48:00.943Z
+
+**blocked** nothing waits on it; F1-06's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:8](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl?plain=1#L8)
+
+> Default taken (decisions/2026-10-30-cpu-time-bound-and-stopped-files §2): a subset tests/run.sh is red on a check name the fixture lacks, so a session's subset is red until it adds the new name (the CLAUDE.md flow already says to add it). Keep, or check conformance only in check.sh's rerun? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/tests/run.sh:117, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/tests/run.sh:117](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-30/F1/tests/run.sh#L117) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-10-30/F1/journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl:8](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-10-30/.harness/runs/agent-harness-2026-10-30/entries.jsonl?plain=1#L8)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-10-30/5 --why "<answer>"
+```

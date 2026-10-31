@@ -3,6 +3,19 @@
 
 What this file is: the run's journal, rendered by the harness from `entries.jsonl`, newest entry first; one entry per session (init, each feature's coding session, verify, retro). Read the feature list in `feature_list.json`: one milestone, F1 (the suite's flakes fixed where they start, as R1 did on 2026-10-29): F1-01 plans, F1-02 to F1-05 reproduce each flaker with `bash tests/run.sh --repeat 10 <file>` and fix it (timing checks, lanes, desk/scope/one-offs, the runner's whole-suite rerun after a stopped file), F1-06 reviews and writes the docs and decision. The run's named spec `docs/specs/2026-10-30-suite-cpu-and-flakes.md` was on no branch when the run started: the init planned the flakes half only and asked about the rest (see the init entry's question). Steer via `INBOX.md` on this branch: set its first line to `status: pause` or `status: stop`, or write an answer under `## Answers`; every session reads it at startup.
 
+### 2026-10-30 21:48 · F1-06 · passes
+
+Review round 2 (Opus): 0 Critical, 1 Important, 3 Minor. Important fixed: check.sh's rerun of a stopped file is a subset run, which checked no conformance, so a name the file never printed went green; a subset run of a directory with a fixture now fails on a new or doubled name. 33 red then green. Minors left with why. Decision, architecture, README, review file, one Gotcha edited.
+
+- **Files:** tests/run.sh, tests/checks/33-suite-runner.sh, tests/fixtures/check-names.txt, docs/plans/2026-10-30-F1-review.md, journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md, docs/architecture.md, README.md, CLAUDE.md
+- **Verified:** full suite via check.sh: green in 839 s, 1084/1084 checks passed, no FAIL line; 33 alone 16/17 before the fix (the rerun of the stopped file 3/3 green with sf n1 in no fixture), 17/17 after; bash -n and lint-sleeps clean
+- **Tests:** 1083 → 1084
+- **Dead end:** the reviewer's Minor fix: excuse a missing name only when quoted ("<name>") in the cut file's source — 33's stub files print `echo "PASS <name>"`, so the name is never quoted alone; a name built from a variable is neither; it would turn the rule off for them
+- **Discovery** (affects run): A subset tests/run.sh of tests/checks now ends with `conformance: every check a subset ran is in the fixture, once` (one more check in its N/M) and is red on a check name check-names.txt lacks, until it is added
+- **Question for Michael:** Default taken (decisions/2026-10-30-cpu-time-bound-and-stopped-files §2): a subset tests/run.sh is red on a check name the fixture lacks, so a session's subset is red until it adds the new name (the CLAUDE.md flow already says to add it). Keep, or check conformance only in check.sh's rerun? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/tests/run.sh:117, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-10-30/slot-0/journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md
+- **Proposed change:** CLAUDE.md How to verify: say a subset run (`bash tests/run.sh <name>`) also fails on a check name not in tests/fixtures/check-names.txt
+- *07-F1-06 · claude-opus-5-5*
+
 ### 2026-10-30 21:11 · F1-06 · passes
 
 Review of F1 (Sonnet, one round): 0 Critical, 1 Important, 3 Minor. Fixed 47's uh check (wait for count-hold before release). Wrote decision cpu-time-bound-and-stopped-files, review file, architecture §3/§7/§15 and README Tests lines.
