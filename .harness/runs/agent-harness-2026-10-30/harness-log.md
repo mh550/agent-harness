@@ -40,3 +40,4 @@
 - 2026-10-30 22:03 · every feature passes
 - 2026-10-30 22:03 · run ended (done): 6/6 passing · 9 sessions (9 real) · 6 features passed · $22.61 · 4.7 h · by kind: init 1 ($5.06), coding 7 ($17.31), verify 1 ($0.24) · by model: claude-fable-5-1 1 ($5.06), claude-opus-5-5 6 ($16.69), claude-sonnet-5-5 2 ($0.86)
 - 2026-10-30 22:03 · services stopped (done)
+- 2026-10-30 22:04 · summary.json and report.md kept in the state dir (harness report reads them after gc)
