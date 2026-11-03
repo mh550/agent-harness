@@ -39,3 +39,6 @@
 - 2026-11-03 16:58 · C1-06: suite ran 4x (1812 s) in the session
 - 2026-11-03 16:58 · C1-06: gotchas +0 ~1 -0
 - 2026-11-03 16:58 · C1-06 · claude-opus-5-5 · passes=true · 40 min · 8/8 passing · tests 1141
+- 2026-11-03 16:58 · merged main into harness-lane/agent-harness-2026-11-03/C1
+- 2026-11-03 16:58 · verify C1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-03 17:11 · context.md for C1: 14753 bytes

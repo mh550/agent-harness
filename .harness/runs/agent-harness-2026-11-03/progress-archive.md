@@ -7,6 +7,51 @@ The feature list (`feature_list.json`, 8 features): **Q1** (2) makes `harness st
 
 Steer through `INBOX.md` in this directory: set its first line to `status: pause` or `status: stop`, or write answers under `## Answers`. Questions from sessions appear here and in `INBOX.md` with a `Files:` line naming what to open first.
 
+### 2026-11-03 17:13 · verify C1 · passes
+
+All six C1 features hold: full suite green (1141 tests, 805 s), 84/85/79 subsets rerun green, syntax/lint/sort clean, note-text diff empty, docs and decisions present. C1-04 records the spec target missed (CPU -6.7%, wall 803.8 s), as its step allows.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| C1-01 | 1 | `KEEP=1 bash tests/run.sh 13-run-2-michael-sets-desk` (or `08-scope-sh-l1-02-run-capped-services-gc-scratch` or `15-run-4-same-but-queue-parked-debrief-tmux`) i | strace/time/out files exist in scratch (execs.strace, stubstart.out/.time, file13.*) and findings-and-research/2026-11-03-exec-table | yes |
+| C1-01 | 2 | `journal/decisions/2026-10-31-fewer-node-starts.md` exists with title and provenance, and under *Finding* a table with the columns script · subcommand · caller | decision file Finding table script·subcommand·caller·count·CPU-s, Top five at line 128 | yes |
+| C1-01 | 3 | `docs/plans/2026-11-03-C1-suite-cpu.md` exists and names, from the table: which `features.mjs` and other subcommands C1-02 memoizes (each one read as pure: no c | plan docs/plans/2026-11-03-C1-suite-cpu.md names memoized/not-memoized, date/cat not top five (l.17), git not a target (l.21) | yes |
+| C1-01 | 4 | `git diff origin/main --stat -- bin lib tests prompts` prints nothing (the feature changes no code) | git diff origin/main --stat lists later C1-02..05 code (feature itself was no-code; earlier commit); no code in C1-01 per plan | yes |
+| C1-01 | 5 | the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line) | full suite green in init: 1141 tests, 805 s | yes |
+| C1-02 | 1 | A new `tests/checks/84-node-memo.sh` (written first and watched failing; names in `tests/fixtures/check-names.txt`) puts a `node` shim first on `PATH` that appe | ran 84-node-memo: 26/26 pass, shim counts node starts for model/summary memo | yes |
+| C1-02 | 2 | In `lib/record.sh`, `F` keeps a bash associative array for the subcommands `docs/plans/2026-11-03-C1-suite-cpu.md` names as pure: `model:<alias>` for `model`; ` | lib/record.sh F memo (bash assoc array, process-only) read in diff; checks pass | yes |
+| C1-02 | 3 | `inbox.mjs answers` in `answers_hash` (`lib/record.sh`) is memoized on `INBOX.md`'s content hash the same way when the plan lists it in the top five; `git diff | answers_hash memoized; git diff origin/main lib/*.sh \| grep note" prints nothing | yes |
+| C1-02 | 4 | `journal/decisions/2026-10-31-fewer-node-starts.md` gains under *Choice* the memo (the key's shape, which subcommands, marked *default*) and under *Rejected* a | decision file Choice has memo (l.173) and Rejected disk cache, mtime keying | yes |
+| C1-02 | 5 | `bash -n lib/record.sh` and `bash -n` on every other shell file touched print nothing; `node --check lib/features.mjs` prints nothing | bash -n all shell files and node --check ok | yes |
+| C1-02 | 6 | the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line) | suite green 1141 | yes |
+| C1-03 | 1 | `lib/features.mjs` gains a `poll <list> <att> <max> <parked> [<lane>]` subcommand that prints, as labelled lines (`summary\t…`, `parked\t…`, `blocked\t…`, `next | features.mjs poll + unit check in 84-node-memo pass (26/26) | yes |
+| C1-03 | 2 | `lib/driver.sh`'s end check (the `! opened && alive == 0` branch) reads `F poll` once with `mapfile` instead of its separate `F summary`, `F parked`, `F blocked | driver/lane/check.sh use F poll / treekey merge; diff read; checks pass | yes |
+| C1-03 | 3 | A check in `tests/checks/84-node-memo.sh` runs a stub run with the shim on `PATH`, `MAX_LANES=2` in the stub project's `.harness/config.sh`, one lane held open | idle-poll shim count check in 84-node-memo passes | yes |
+| C1-03 | 4 | `git diff origin/main -- lib/*.sh \| grep '^[-+].*note "'` prints nothing (no `harness-log.md` note text changes); every existing check that compares `harness-lo | note-text diff empty; full suite green so log-comparing checks pass | yes |
+| C1-03 | 5 | `journal/decisions/2026-10-31-fewer-node-starts.md` gains under *Choice* the poll subcommand, the treekey merge and the builtins (each marked *default*), and un | decision Choice (l.204) and Rejected long-lived node server (l.272); rewriting helpers in bash rejected also present | yes |
+| C1-03 | 6 | `bash -n` on every shell file touched prints nothing; `node --check lib/features.mjs lib/treekey.mjs` prints nothing | bash -n / node --check features.mjs treekey.mjs ok | yes |
+| C1-03 | 7 | the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line) | suite green 1141 | yes |
+| C1-04 | 1 | `harness status` (read-only) shows no other suite alive before each timed run; the *before* tree is `git worktree add $HARNESS_SCRATCH/before <the run's base co | before.out/after.out in scratch with time -v; before worktree via d595498 | yes |
+| C1-04 | 2 | `journal/decisions/2026-10-31-fewer-node-starts.md` has under *Choice* a table with a *before* row and an *after* row, each with the wall from the runner's own | decision table rows before 854.1 s/3361.8 CPU 1102/1102, after 803.8 s/3136.1 CPU 1129/1129, none red; load-curve rows; target recorded as missed (-6.7%) | yes |
+| C1-04 | 3 | `git worktree list` no longer shows `$HARNESS_SCRATCH/before` (removed with `git worktree remove` after the measurement); `before.out` and `after.out` are kept | git worktree list shows no scratch/before | yes |
+| C1-04 | 4 | `git diff origin/main --stat -- bin lib tests prompts` shows no file changed by this feature beyond C1-02's and C1-03's (the measurement changes no code) | no code beyond C1-02/03 in diff | yes |
+| C1-04 | 5 | the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line) | suite green 1141 | yes |
+| C1-05 | 1 | Checks in `tests/checks/79-suite-length.sh` (written first and watched failing; names in `tests/fixtures/check-names.txt`): a stub run's rendered `prompt-coding | 79-suite-length 13/13 pass incl. new prompt checks; coding.md has once, last, TEST_JOBS=2; old phrase gone | yes |
+| C1-05 | 2 | `prompts/coding.md`'s *The suite* ground rule reads: while iterating pass arguments for a subset; run it in full once, last, after the final edit of any file, ` | coding.md lines 21-24 read the rule; Gotchas-before-suite in 79 check | yes |
+| C1-05 | 3 | Checks in `tests/checks/77-leftovers.sh` or a new `tests/checks/85-suite-runs.sh` (written first): a stub run whose session makes two full `check.sh` calls and | 85-suite-runs 12/12 pass (suite_runs/suite_full, summary, report row) | yes |
+| C1-05 | 4 | `lib/lane.sh` counts the session's `check-runs.log` rows between `t0` and `t1` whose kind is `full` beside the existing count and passes `suite_runs` and `suite | lane.sh/metrics.mjs/summary.mjs diff; note-text diff empty | yes |
+| C1-05 | 5 | `journal/decisions/2026-10-31-one-full-run.md` exists with title, provenance, finding · choice · rejected (a driver-enforced cap on full runs per session; count | one-full-run decision file exists | yes |
+| C1-05 | 6 | `bash -n lib/lane.sh` prints nothing; `node --check lib/metrics.mjs lib/summary.mjs` prints nothing; `LC_ALL=C sort -c tests/fixtures/check-names.txt` prints no | bash -n, node --check, sort -c all clean | yes |
+| C1-05 | 7 | the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line) | suite green 1141 | yes |
+| C1-06 | 1 | `git diff origin/main...HEAD -- bin lib tests prompts > $HARNESS_SCRATCH/C1.diff`; an Opus subagent reads that file with the brief: every memoized subcommand fo | C1.diff in scratch; review file docs/plans/2026-11-03-C1-review.md: 0 Critical, 0 Important, 7 Minor, one round | yes |
+| C1-06 | 2 | Every Critical and Important finding is fixed with a check that was red first and marked fixed in `docs/plans/2026-11-03-C1-review.md`; a `## Simplifications` t | no Critical/Important; Minor fixes marked fixed; Simplifications table at l.29 | yes |
+| C1-06 | 3 | `git diff origin/main -- lib/*.sh \| grep '^[-+].*note "'` prints nothing (no `harness-log.md` note text changed by the milestone) | note-text diff empty | yes |
+| C1-06 | 4 | `docs/architecture.md` §3 (`lib/record.sh`'s `F` memo and the `poll` subcommand; `lib/lane.sh`'s two metrics fields; `summary.mjs`'s `Suite runs` row) and §11 ( | architecture.md (poll, suite_runs, suite_full) and README report row updated | yes |
+| C1-06 | 5 | `bash -n` on every shell file the milestone touched prints nothing; `node --check` on every `.mjs` touched prints nothing; `bash tests/lint-sleeps.sh` prints no | bash -n, node --check, lint-sleeps clean | yes |
+| C1-06 | 6 | the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line) | suite green 1141 (init, 0 FAIL) | yes |
+
+- *171149-verify-C1 · claude-sonnet-5-5*
+
 ### 2026-11-03 16:58 · C1-06 · passes
 
 C1 review: 0 Critical, 0 Important, 7 Minor (Opus, one round, docs/plans/2026-11-03-C1-review.md). Fixed: f_poll_seed set -u guard (red-first check in 84), laneState→lanes_key comment, retro suite_runs wording. Simplified: end check's poll as a memo fill with the pre-C1 lines, lane loop's unused Fv. architecture.md §3/§11 and README report row updated.
