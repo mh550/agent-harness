@@ -7,6 +7,19 @@ The feature list (`feature_list.json`, 8 features): **Q1** (2) makes `harness st
 
 Steer through `INBOX.md` in this directory: set its first line to `status: pause` or `status: stop`, or write answers under `## Answers`. Questions from sessions appear here and in `INBOX.md` with a `Files:` line naming what to open first.
 
+### 2026-11-03 15:17 · C1-04 · passes
+
+Two solo timed suites. Before (d595498): wall 854.1 s, 3,361.8 CPU-s, 1102/1102. After (5a11f9d): wall 803.8 s, 3,136.1 CPU-s, 1129/1129. Spec target MISSED: CPU -6.7% (needed -20%), wall 803.8 s (bound 650). Rows in the decision file.
+
+- **Files:** journal/decisions/2026-10-31-fewer-node-starts.md
+- **Verified:** before.out and after.out in /tmp/harness/agent-harness/agent-harness-2026-11-03/lanes/C1 (time -v lines included); before worktree removed; git diff origin/main --stat shows only C1-02/03 files; check.sh green cached, 1129 tests
+- **Tests:** 1129 → 1129
+- **Dead end:** the step's literal `time -v TEST_JOBS=4 bash tests/run.sh` — time runs TEST_JOBS=4 as the command (exit 127); use `time -v env TEST_JOBS=4 bash …`
+- **Discovery** (affects run): C1 cut CPU only 6.7% and wall 5.9%: sys time (~36% of CPU) barely moved; next levers are metrics.mjs collapse, testcount.mjs, then git/bash forks
+- **Proposed change:** C1-04 step 1 should read `/usr/bin/time -v env TEST_JOBS=4 bash tests/run.sh`
+- **Proposed change:** The spec's -20% CPU / 650 s target was not reached by C1-02/03; consider a further cut feature (metrics.mjs, testcount.mjs)
+- *06-C1-04 · claude-sonnet-5-5*
+
 ### 2026-11-03 14:48 · C1-03 · passes
 
 features.mjs poll answers summary/parked/blocked/next/milestone-done in one start and fills F's memo for all five; the end check and the lane loop use it. The idle poll starts node once (needs sweep): unpark_warm, unparks, lanes_v (F lanes on a laneState fingerprint). treekey --partial --names: one start. No builtins. Opus review: 2 minors, fixed.
