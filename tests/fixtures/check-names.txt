@@ -118,6 +118,7 @@ a worktree gc can't remove is logged and the next one still goes; --dry-run remo
 a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json
 after may name a milestone
 all features pass
+an .args planted by hand naming a missing spec is parked at dequeue the same way
 an INBOX answer unparks it; the run finishes
 an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
 an open desk showing a dialog gets nothing typed
@@ -337,6 +338,7 @@ harness parked is harness needs for text: the parked card's question from INBOX.
 harness parked is read-only
 harness parked: an unknown or glob run id is an error
 harness parked: id, why, question, both commands
+harness queue list shows the parked entry with not in origin/main in its reason
 harness report prints the writeup
 harness start --base: persisted, and the record branch and every lane start from it
 harness start refuses a run id whose tmux session another live run holds; its session lives
@@ -1003,8 +1005,10 @@ the rendered coding prompt has the deepEqual and bounded-rerun rule
 the report lists the review role when a review ran
 the retro prompt carries the end reason
 the run end goes out before the retro, once report.md is pushed
+the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the runner skips a parked entry and says so
 the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)
+the same runner goes on to the next entry and starts it (a --brief start of the same project)
 the session may read each run's state dir and the queue
 the session: an allowlist (dontAsk) and the never-list
 the stub claude's interactive mode prints the pane line and records input

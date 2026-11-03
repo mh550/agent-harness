@@ -10,7 +10,9 @@
 # detached (setsid: a new runner replacing tmux h-queue doesn't kill it). The debrief covers every run since the last
 # successful one, so a debrief that fails or is killed is caught up by the next one (or `harness debrief` by hand).
 # Before each start with no run alive it runs lib/sync.sh (the live checkout level with origin, ledger pushed). Entries
-# in queue/held/ (`harness queue park`) are skipped until unparked; the runner says how many at start-up.
+# in queue/held/ (`harness queue park`) are skipped until unparked; the runner says how many at start-up. A start entry
+# whose --spec (or SPEC_FILES) is not in origin/<main> (or its --base) at dequeue is parked there by the runner itself,
+# with the reason, and the next entry goes on (decisions/2026-10-31-spec-must-exist).
 #   queue.sh [<until epoch, 0 = none>]
 set -uo pipefail
 : "${HARNESS_HOME:?}"
@@ -20,6 +22,8 @@ UNTIL=${1:-0} POLL=${HARNESS_QUEUE_POLL:-30}
 source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # defaults + the user's config
 # shellcheck source=lib/tmux.sh
 source "$HARNESS_HOME/lib/tmux.sh"   # tmux_reap, as the runner exits
+# shellcheck source=lib/spec.sh
+source "$HARNESS_HOME/lib/spec.sh"   # spec_entry: the re-check at dequeue
 H=$HARNESS_HOME/bin/harness
 mkdir -p "$Q/done"
 log() { echo "$(date '+%F %T') $*" | tee -a "$Q/runner.log"; }
@@ -76,6 +80,14 @@ while :; do
   fi
   if why=$(weekly_over "$STATE_ROOT/USAGE_7D"); then   # days, not minutes: stop, leaving the queue for another night
     log "not starting runs: $why; $(ls "$Q"/*.args | wc -l) left queued"; break
+  fi
+  # the spec again, as the start is about to happen: a park, never a start that dies in done/ unread; the loop goes on
+  if miss=$(spec_entry "$next" 2>> "$Q/runner.log"); then :; else   # a failed fetch is said there
+    pk=$Q/held/$(basename "$next"); mkdir -p "$Q/held"
+    if [[ ! -e $pk ]] && mv "$next" "$pk"; then
+      echo "$miss ($(date '+%F %H:%M'))" > "${pk%.args}.why"; log "parked $(basename "$next"): $miss"; continue
+    fi   # a name taken in held/ or a failed mv: said, and waited on, never a tight loop
+    log "could not park $(basename "$next") ($miss): it stays queued"; sleep "$POLL"; continue
   fi
   (( a == 0 )) && log "$("$HARNESS_HOME/lib/sync.sh")"   # no driver alive: the live checkout may move under none
   mapfile -t args < "$next"; args=("${args[@]//$'\x1f'/$'\n'}")   # queue_add's newlines back

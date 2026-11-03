@@ -54,4 +54,25 @@ check "queue add --spec of a missing path: the line, exit 1, no .args file" \
 "$H" queue add "$T/proj" --spec SPEC.md > "$T/qok.out" 2>&1
 check "queue add --spec of a present path is queued" 'grep -q "^queued: " "$T/qok.out" && compgen -G "$HARNESS_STATE/queue/*.args" > /dev/null'
 
+# ---- the runner re-checks at dequeue (Q1-02): a spec gone from origin/main parks its entry in queue/held/, never starts ----
+Q=$HARNESS_STATE/queue; rm -f "$Q"/*.args
+echo gone > docs/gone.md && git add docs/gone.md && git commit -qm "a spec" && git push -q origin main
+"$H" queue add "$T/proj" qgone --spec docs/gone.md > "$T/qgone.out" 2>&1
+git rm -q docs/gone.md && git commit -qm "the spec moved away" && git push -q origin main   # a pushed delete, no rewrite
+printf '%s\n' start "$T/proj" qplant --spec docs/missing.md > "$Q/0002-start-proj.args"   # planted by hand: never checked at add
+"$H" queue add "$T/proj" qbrief --brief x --until-epoch "$(past)" > /dev/null
+HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. timeout 120 "$HERE/../lib/queue.sh" > "$T/qrun.out" 2>&1; settle
+check "the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run" \
+  'grep -q "^queued: 0001-start-proj.args" "$T/qgone.out" && [[ -e $Q/held/0001-start-proj.args && ! -e $Q/0001-start-proj.args ]] \
+  && grep -qE "^spec docs/gone.md: not in origin/main .* \([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}\)$" "$Q/held/0001-start-proj.why" \
+  && grep -qF "parked 0001-start-proj.args: spec docs/gone.md: not in origin/main" "$Q/runner.log" \
+  && [[ ! -e $HARNESS_STATE/proj/qgone && ! -e $T/wt/proj/qgone ]] && ! grep -q "starting: harness start $T/proj qgone" "$Q/runner.log"'
+check "the same runner goes on to the next entry and starts it (a --brief start of the same project)" \
+  'grep -q "starting: harness start $T/proj qbrief" "$Q/runner.log" && [[ -d $HARNESS_STATE/proj/qbrief ]] && grep -q "run qbrief on harness/qbrief" "$Q/runner.log" && grep -q "queue empty" "$Q/runner.log"'
+check "an .args planted by hand naming a missing spec is parked at dequeue the same way" \
+  '[[ -e $Q/held/0002-start-proj.args && ! -e $HARNESS_STATE/proj/qplant && ! -e $T/wt/proj/qplant ]] && grep -qF "spec docs/missing.md: not in origin/main" "$Q/held/0002-start-proj.why" \
+  && grep -qF "parked 0002-start-proj.args: spec docs/missing.md: not in origin/main" "$Q/runner.log"'
+check "harness queue list shows the parked entry with not in origin/main in its reason" \
+  'COLUMNS=200 "$H" queue list > "$T/qlist.out" 2>&1; grep -E "why: spec docs/gone.md: not in origin/main" "$T/qlist.out" > /dev/null'
+
 suite_end

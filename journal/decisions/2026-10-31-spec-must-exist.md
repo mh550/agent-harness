@@ -24,12 +24,29 @@
     is made from that ref (`cmd_start`'s `git worktree add … origin/main`), `queue add` may be called from anywhere by
     project name, and a file in the working tree that is not pushed is exactly what the initializer cannot read.
   - No `harness-log.md` note: no run exists. The refusal is the command's output and exit code.
-  - The runner's re-check at dequeue is Q1-02's, added here in place.
+  - **The runner re-checks at dequeue and parks, never starts** (Q1-02): `lib/queue.sh`, once an entry is chosen and
+    the limit and weekly gates are past (so a closed window is not a fetch per poll), and before the live checkout's
+    sync and the `mv` to `done/`, runs `lib/spec.sh` `spec_entry` on it: a `start` entry decoded as the runner decodes
+    it (one argument per line, a newline as `\x1f`), the run id, `--spec` and `--base` read by `spec_args` (the parser
+    `queue add` uses too), the project's config in a subshell for `SPEC_FILES`, then `spec_new_run`, the check
+    `harness start` runs (a resume and `--brief` alone pass). On a miss the entry moves to `queue/held/` with a `.why`
+    holding the line and the time (`<line> (<YYYY-MM-DD HH:MM>)`, the shape `harness queue park` writes), one
+    `parked <entry>.args: spec <path>: not in <ref> …` line goes to `runner.log`, and the loop goes on to the next
+    entry at once. A branch deleted or a spec moved between `queue add` and the start parks; a spec pushed after
+    `queue add` passes; an entry planted by hand is checked here for the first time. `harness queue list` shows it
+    with its reason; `queue unpark` puts it back once the file is pushed. A name already taken in `held/` (or a failed
+    `mv`) is a `could not park` line and a poll's wait, never a tight loop. A failed fetch's line goes to `runner.log`.
+  - *default:* no notification for a park: the runner's log and `harness queue list` carry it, and the debrief reads
+    the runner's log.
 - **Rejected:**
   - **The working tree as the reference:** an unpushed spec passes there and is still absent from the worktree the
     run is made from; `queue add` may also be run from another checkout or by project name.
   - **Checking only at `queue add`:** the ref moves between queueing and the start (a branch deleted, a spec moved),
     so the runner re-checks at dequeue (Q1-02).
+  - **The runner starting the entry and letting `harness start` refuse it:** the start dies with the line, but the
+    entry is already in `done/` (the next rejection); the park keeps it, with its reason, for `unpark`.
   - **Failing the runner's start and leaving the entry in `done/`:** what happens today to a start that fails: the
     run is lost silently, a `failed:` in a log nobody reads at night.
   - **The initializer guessing from the title:** what happened; a night on half a scope.
+
+Updated in place 2026-11-03: the runner's re-check at dequeue and its park (Q1-02).

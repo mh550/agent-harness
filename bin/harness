@@ -97,7 +97,7 @@ source "$HARNESS_HOME/lib/tmux.sh"   # tmux_name, tmux_reap: start's session and
 # shellcheck source=lib/needs.sh
 source "$HARNESS_HOME/lib/needs.sh"   # NEEDS_MJS: harness needs (it calls the CLI directly: no record lock here)
 # shellcheck source=lib/spec.sh
-source "$HARNESS_HOME/lib/spec.sh"   # spec_missing: start and queue add refuse a spec the run's base ref doesn't hold
+source "$HARNESS_HOME/lib/spec.sh"   # spec_new_run, spec_args: start and queue add refuse a spec the run's base ref doesn't hold
 
 die() { echo "harness: $*" >&2; exit 1; }
 # for a person: HARNESS_TTY=1|0 decides, else a terminal on stdout (view.mjs context's rule)
@@ -208,13 +208,8 @@ auto_id() {   # project → <project>-<date>[-n], not used before
 }
 
 # <project dir> <run id or ""> <--spec value> <--base value>, the project's config loaded: dies with spec_missing's line
-# when a new run's spec (--spec, else SPEC_FILES; split on spaces) is not in its base ref (decisions/2026-10-31-spec-must-exist)
-spec_refuse() {
-  local p=$1 run=$2 spec=$3 base=$4 sp miss
-  [[ -n $run && -d $WT_ROOT/$(basename "$p")/$run ]] && return 0   # a resume: its spec was checked when it started
-  read -ra sp <<< "${spec:-$SPEC_FILES}"; (( ${#sp[@]} )) || return 0   # --brief alone
-  miss=$(spec_missing "$p" "${base:-origin/$MAIN_BRANCH}" "${sp[@]}") || die "$miss"
-}
+# when a new run's spec is not in its base ref (lib/spec.sh spec_new_run; decisions/2026-10-31-spec-must-exist)
+spec_refuse() { local miss; miss=$(spec_new_run "$@") || die "$miss"; }
 
 queue_add() {   # verb args… → a queue entry (one argument per line, a newline in one as \x1f), numbered past the parked ones too
   mkdir -p "$Q/done" "$Q/held"
@@ -542,11 +537,8 @@ cmd_queue() {
           else echo "already queued: continue $run"; fi; return; }
         q=$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"}); echo "queued: $(basename "$q")"
       else
-        local p q run="" spec="" base="" a; p=$(project_dir "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
-        [[ ${1:-} && $1 != --* ]] && run=$1
-        for (( a = 1; a <= $#; a++ )); do case ${!a} in --spec) (( a++ )); spec=${!a:-} ;; --base) (( a++ )); base=${!a:-} ;;
-          --brief|--brief-file|--until|--until-epoch) (( a++ )) ;; esac; done
-        ( harness_config "$p"; spec_refuse "$p" "$run" "$spec" "$base" ) || exit 1   # start's check, before queue_add
+        local p q; p=$(project_dir "${1:?usage: harness queue add <project> [<run-id>] [options]}"); shift
+        ( harness_config "$p"; spec_args "$@"; spec_refuse "$p" "$SPEC_RUN" "$SPEC_ARG" "$SPEC_BASE" ) || exit 1   # start's check, before queue_add
         q=$(queue_add start "$p" "$@"); echo "queued: $(basename "$q")"
       fi
       overlap_warn "$(entry_overlaps "$q")" ;;   # the records come at its start (no state dir yet)
