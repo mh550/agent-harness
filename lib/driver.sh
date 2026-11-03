@@ -525,6 +525,7 @@ while :; do
   alive=$(lanes_open)
   if (( alive < MAX_LANES || paused )); then   # with every lane slot taken there is nothing to decide: no fetch each poll
     take_answers; sync_record
+    unpark_warm   # this shell's memo: unchanged answers and nothing to un-park start no node on the line below
     for id in $(record F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
     needs_sweep   # before the opens: an unparked feature's record resolves
   fi
@@ -553,6 +554,7 @@ while :; do
     log "count hold: $alive lane(s) counted, held until gone"; fi
   opened=0
   if (( alive < MAX_LANES )) && (( $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) <= $(date +%s) || alive == 0 )); then
+    lanes_v ln "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE"   # memoized on all it reads (and rebase_due's milestones with it)
     while IFS=$'\t' read -r m kind; do   # kind: "rebase" from rebase_due; F lanes' second field is its base tags
       [[ -n $m ]] || continue
       [[ -f $STATE/lanes/$m/pid ]] && continue   # exited since the count, not reaped yet: reap notes it first (R1-07)
@@ -561,18 +563,23 @@ while :; do
       if why=$(admit "$a"); then
         LANE_MERGE=$([[ $kind == rebase ]] && echo 1 || echo 0) lane_open "$m" && { opened=1 LAST_LANE=$m; rm -f "$STATE/lanes/$m/waiting"; }
       else mkdir -p "$STATE/lanes/$m"; wait_note "$m" "$why"; fi
-    done < <(rebase_due; F lanes "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE")
+    done < <(rebase_due; [[ -z $ln ]] || printf '%s\n' "$ln")
   fi
   # nothing open and nothing to open: the run's end, as before lanes. Only when the count the opens used saw no lane
   # either: a lane that exited since then had its slot counted taken, so nothing was offered; the next poll reaps it and
   # opens what it unblocked (R1-04: the run ended "no feature left to try" with M2 ready). Held, not alive: one that
   # exited before the opens stopped them unreaped (F1-03)
   if (( ! opened && alive == 0 && $(lanes_held) == 0 )); then
+    # one node start for the five answers below (F poll), which fills the memo: the summaries on note lines hit it
+    # (a throw there: the three separately, as before, so one bad answer doesn't blank the others)
+    Fv pl poll "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" || pl=$(F parked "$PARKED" "$LIST" | sed 's/^/parked\t/'
+      F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | sed 's/^/blocked\t/'; F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | sed 's/^/next\t/')
+    mapfile -t pl <<< "$pl"
     [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }
-    parked=$(F parked "$PARKED" "$LIST" | cut -f1 | paste -sd, -)
-    blocked=$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | awk -F'\t' '{print $2}' | sort -u | grep -vxF -f <(tr , '\n' <<< "$parked") | paste -sd, -)
+    parked=$(printf '%s\n' "${pl[@]}" | sed -n 's/^parked\t//p' | cut -f1 | paste -sd, -)
+    blocked=$(printf '%s\n' "${pl[@]}" | sed -n 's/^blocked\t//p' | awk -F'\t' '{print $2}' | sort -u | grep -vxF -f <(tr , '\n' <<< "$parked") | paste -sd, -)
     # D5: features that could run but wait on a milestone that needs Michael (its lane can't open past it)
-    needs=""; [[ -n $(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED") ]] && for f in "$STATE"/needs-*; do [[ -f $f ]] && needs+="${needs:+,}${f##*/needs-}"; done
+    needs=""; [[ " ${pl[*]%%$'\t'*} " == *" next "* ]] && for f in "$STATE"/needs-*; do [[ -f $f ]] && needs+="${needs:+,}${f##*/needs-}"; done
     ends=()
     if [[ -n $blocked ]]; then note "blocked: the remaining features wait on $blocked (given up; needs Michael)"; ends+=("blocked on $blocked"); fi
     if [[ -n $parked ]]; then note "waiting on Michael: $parked (parked; answer in INBOX.md, then harness continue $RUN_ID)"; ends+=("waiting on Michael: $parked"); fi

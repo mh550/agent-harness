@@ -19,6 +19,7 @@ F model twice: one node start, the same model id
 F model: that one start answers every alias; a claude-… id is answered without node
 F next: keyed on attempts.json, max and parked.json (one start twice, a new start and answer after each changes)
 F passes twice: one start, the exit code kept (1 both times)
+F poll: one node start, and it fills the memo: summary, parked, blocked, next and milestone-done after it start none and print node's answers
 F summary after a passes flip: node again, the new count
 F summary on the list restored to its first content (a new mtime): the memo answers, no start (content, not mtime)
 F summary twice on one list: one node start, the same line
@@ -139,6 +140,7 @@ an .args planted by hand naming a missing spec is parked at dequeue the same way
 an INBOX answer unparks it; the run finishes
 an absolute --spec inside the project is checked as its repo path: present proceeds, missing is refused by that path
 an entry whose project is no repository is not parked: its start fails and says why
+an idle coordinator poll (a free slot, nothing to open) starts node at most once: the window's starts without HARNESS_LANE are at most its polls (5 or more)
 an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
 an open desk showing a dialog gets nothing typed
 answers_hash: one inbox.mjs start for two calls on one INBOX.md, a new start and hash after its answers change
@@ -181,6 +183,7 @@ check partial: a red with no HARNESS_FAILED line reruns the partial's names (a f
 check partial: a sidecar with a path twice or a malformed line is no path set: a CLAUDE.md diff runs in full
 check partial: a timeout in a partial run is said as such, no rerun, no marker
 check partial: check-runs.log gets a partial row for the partial run
+check partial: one treekey start when the partial path needs the map's names too; the same subset, map order
 check partial: red once then green is a flake: one flakes.jsonl row with partial, the green-after-a-rerun line, the reference marker
 check partial: red twice is rerun once on memlint, says so, exits 1 and leaves no marker of either kind
 check partial: the reference green-<ref> gone, or an exported map other than the tree's .harness/config.sh one, runs in full
@@ -289,6 +292,7 @@ eval: refuses past WEEKLY_STOP_AT
 eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
 features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
+features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
 features.mjs writes atomically: 200 bumps beside a parsing reader, which never throws; no temp file left
 files changed during the session are flagged in the note
 finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
@@ -477,6 +481,8 @@ lanes: an after into a later milestone (a name or its feature) never makes a lan
 lanes: an open milestone (lanes/<m>/pid alive) is not a candidate; a dead pid's is
 lanes: features with no milestone form lane default, listed first; without meta.env the tags name the state dir
 lanes: the default lane (no milestone, never verified) holds later lanes only until its features pass, then never opens
+lanes_v: F lanes memoized on the list, attempts, parked and the state laneState reads (two starts, milestones with it), a hit, then one start each on verified-, a lane pid alive, dead
+lanes_v: a pid file that is not digits is never memoized (node reads it its own way); stderr empty
 ledger has the run
 ledger row has harness_version and harness_dirty
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
@@ -1046,6 +1052,7 @@ tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
 tmux: run id dot.run gets session h-dot-run, gone at keep 0
 treekey --names: the entries' names in map order (a duplicate path merged into the first), exit 1 and no line for a path no entry has
+treekey --partial --names: --partial's lines, then one ': <path> <names…>' line per entry (a duplicate path merged), map order
 treekey --partial: a CLAUDE.md-only change moves the full key (16 hex), keeps the reduced key, and differs in CLAUDE.md's blob line only
 treekey --partial: a dropped entry (directory, no name, outside the tree, under an ignored prefix) is one stderr line each; the output is the map's without it
 treekey --partial: a mapped path absent from the tree is a `- <path>` line, in map order
@@ -1076,6 +1083,7 @@ u3 review: an overlap with an ended run records on it in its state only: its wor
 u3 review: past --until with only lane-held entries the runner ends (it no longer polls until the lane ends)
 u3 review: queue list shows held: <project> busy for an entry a live lane holds (as the runner holds it)
 u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
+unpark_warm: with a feature to unpark it fills nothing (the unpark on the note line runs and prints it); with none, that unpark starts no node
 v2 tags don't merge on resume
 verifier caught A, re-queued
 verifier code edits reverted, never merged

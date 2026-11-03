@@ -66,8 +66,8 @@ f_key() {
   local files i=0 a h
   case ${1:-} in
     model) files=" " ;;
-    summary|milestones|snapshot|undeclared|lint|passes|milestone-done|ids|deps|kind|milestone|unpark) files=" 1 " ;;
-    next|blocked) files=" 1 2 4 " ;;
+    summary|milestones|snapshot|undeclared|lint|passes|milestone-done|ids|deps|kind|milestone|unpark|unparks) files=" 1 " ;;
+    next|blocked|poll) files=" 1 2 4 " ;;
     parked) files=" 1 2 " ;;
     evidence) files=" 1 3 " ;;
     *) return 1 ;;
@@ -91,8 +91,26 @@ f_memo() {
     0:*|1:passes|1:milestone-done|1:evidence|1:lint) ;;
     *) return 0 ;;
   esac
-  f_key "$@" && [[ $F_KEY == "$k" ]] && F_MEMO[$k]=$F_OUT F_MRC[$k]=$F_RC
+  f_key "$@" && [[ $F_KEY == "$k" ]] && F_MEMO[$k]=$F_OUT F_MRC[$k]=$F_RC && [[ $s == poll ]] && f_poll_seed "$k" "$#"
   return 0
+}
+# <poll's key> <its argument count, poll included>: poll's labelled lines (F_OUT) as the memo entries of the five subcommands it
+# answers, under the keys f_key gives them: next and blocked take poll's arguments, summary the list's hash, parked
+# parked.json's and the list's, milestone-done (with a lane) the list's and the lane
+f_poll_seed() {
+  local -a kp; local l lab rest k
+  local -A out=([summary]="" [parked]="" [blocked]="" [next]="")
+  IFS=$'\x1f' read -ra kp <<< "${1}"$'\x1f'
+  while IFS= read -r l; do
+    [[ $l == *$'\t'* ]] || continue; lab=${l%%$'\t'*} rest=${l#*$'\t'}
+    case $lab in
+      summary|parked|blocked|next) out[$lab]+=$rest$'\n' ;;
+      milestone-done) (( $2 > 5 )) && k=milestone-done$'\x1f'${kp[1]}$'\x1f'${kp[5]} && F_MEMO[$k]="" F_MRC[$k]=$rest ;;
+    esac
+  done <<< "$F_OUT"
+  for lab in next blocked; do k=$lab${1#poll}; F_MEMO[$k]=${out[$lab]} F_MRC[$k]=0; done
+  k=summary$'\x1f'${kp[1]}; F_MEMO[$k]=${out[summary]} F_MRC[$k]=0
+  k=parked$'\x1f'${kp[4]}$'\x1f'${kp[1]}; F_MEMO[$k]=${out[parked]} F_MRC[$k]=0
 }
 # F model's memo, every alias from one node start (features.mjs models), once per shell: run_paths fills it, so every
 # later $(F model …) of the driver or a lane is a hit
@@ -100,6 +118,33 @@ f_models() {
   local a id out; F_MODELS=1
   out=$(node "$HARNESS_HOME/lib/features.mjs" models) || return 0
   while IFS=$'\t' read -r a id; do [[ -n $a ]] && F_MEMO[model$'\x1f'$a]=$id$'\n' F_MRC[model$'\x1f'$a]=0; done <<< "$out"
+}
+# The coordinator's F lanes (lanes_v): memoized as F is, on the list's, attempts.json's and parked.json's hashes, the max,
+# the state dir and a fingerprint of all laneState reads there, for "default" and each milestone: verified-<m>,
+# needs-<m>, a non-empty lanes/<m>/review-escalate, lanes/<m>/pid and whether /proc has that process (node's kill 0, to
+# which EPERM is alive); then meta.env's lines. Any change to them is a new key. A pid file that isn't one number is no
+# key (node reads it with Number()): node every time then.
+lanes_key() {   # <var> <list> <attempts> <max> <parked.json> <state dir>; 1: no key
+  local lk_=$1 m ms hl ha hp fp=""; local -a mm pl me; shift
+  [[ -d /proc/self ]] || return 1
+  Fv ms milestones "$1" || return 1; mapfile -t mm <<< "$ms"
+  for m in default "${mm[@]}"; do
+    [[ -n $m ]] || continue
+    pl=(); [[ -f $5/lanes/$m/pid ]] && mapfile -t pl < "$5/lanes/$m/pid"
+    (( ${#pl[@]} <= 1 )) && [[ ${pl[0]:-0} =~ ^(0|[1-9][0-9]*)$ ]] || return 1
+    fp+=$'\x1e'$m:${pl[0]:-}:; [[ ${pl[0]:-0} != 0 && -e /proc/${pl[0]} ]] && fp+=a
+    [[ -e $5/verified-$m ]] && fp+=v; [[ -e $5/needs-$m ]] && fp+=n; [[ -s $5/lanes/$m/review-escalate ]] && fp+=e
+  done
+  [[ -f $5/meta.env ]] && mapfile -t me < "$5/meta.env"
+  f_sha hl "$1"; f_sha ha "$2"; f_sha hp "$4"
+  printf -v "$lk_" '%s' "lanes"$'\x1f'"#$hl"$'\x1f'"#$ha"$'\x1f'"$3"$'\x1f'"#$hp"$'\x1f'"$5"$'\x1f'"${me[*]}$fp"
+}
+lanes_v() {   # <var> <list> <attempts> <max> <parked.json> <state dir>: F lanes' lines (trailing newline cut), from the memo
+  local lv_=$1 k="" k2="" lo lr; shift
+  if lanes_key k "$@" && [[ ${F_MEMO[$k]+x} ]]; then printf -v "$lv_" %s "${F_MEMO[$k]}"; return 0; fi
+  lo=$(node "$HARNESS_HOME/lib/features.mjs" lanes "$@"); lr=$?   # its own variable: lanes_key's Fv sets F_OUT
+  (( lr == 0 )) && [[ -n $k && $BASHPID == "$F_MEMO_PID" ]] && lanes_key k2 "$@" && [[ $k2 == "$k" ]] && F_MEMO[$k]=$lo F_MRC[$k]=0
+  printf -v "$lv_" %s "$lo"; return "$lr"
 }
 MET() { node "$HARNESS_HOME/lib/metrics.mjs" "$@"; }
 SUM() { node "$HARNESS_HOME/lib/summary.mjs" "$@"; }
@@ -255,15 +300,26 @@ notify_park() {   # <id> <why> <the parked record's ref>
 # What unparks a feature: Michael's answers changing (INBOX.md from "## Answers" on, local answers included). The
 # heading is the one outside the steering comment: a `## Answers".` a session left inside it is not his answers.
 # Memoized as F is, on INBOX.md's content (decisions/2026-10-31-fewer-node-starts).
-answers_hash() {
-  local h k v; f_sha h "$REC/INBOX.md"; k=answers$'\x1f'$h
-  if [[ -z ${F_MEMO[$k]+x} ]]; then
-    v=$(node "$INBOX_MJS" answers "$REC/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12)
-    [[ $BASHPID == "$F_MEMO_PID" ]] || { echo "$v"; return 0; }   # a subshell couldn't keep it
-    f_sha h "$REC/INBOX.md"; [[ answers$'\x1f'$h == "$k" ]] || { echo "$v"; return 0; }
-    F_MEMO[$k]=$v
+answers_hash() { local v; answers_v v; echo "$v"; }
+answers_v() {   # <var>: answers_hash's value, kept in the memo when this is the shell that keeps entries
+  local av_h av_k av_v; f_sha av_h "$REC/INBOX.md"; av_k=answers$'\x1f'$av_h
+  if [[ -z ${F_MEMO[$av_k]+x} ]]; then
+    av_v=$(node "$INBOX_MJS" answers "$REC/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12)
+    [[ $BASHPID == "$F_MEMO_PID" ]] || { printf -v "$1" %s "$av_v"; return 0; }   # a subshell couldn't keep it
+    f_sha av_h "$REC/INBOX.md"; [[ answers$'\x1f'$av_h == "$av_k" ]] || { printf -v "$1" %s "$av_v"; return 0; }
+    F_MEMO[$av_k]=$av_v
   fi
-  echo "${F_MEMO[$k]}"
+  printf -v "$1" %s "${F_MEMO[$av_k]}"
+}
+# Before `$(record F unpark "$PARKED" "$(answers_hash)")`, in the shell that keeps the memo (both run in a subshell
+# there): answers_hash's entry, and, when the pure `unparks` finds nothing to un-park, unpark's (empty: it would change
+# nothing). With something to un-park nothing is filled, so that unpark runs node, un-parks and prints as before.
+unpark_warm() {
+  local ah u; answers_v ah
+  Fv u unparks "$PARKED" "$ah" || return 0
+  # unparks' own stored answer, empty (the key's parked.json hash is the content it read): unpark's key is the same but its name
+  [[ $F_KEY == unparks$'\x1f'* && ${F_MEMO[$F_KEY]+x} && -z ${F_MEMO[$F_KEY]} ]] && F_MEMO[unpark${F_KEY#unparks}]="" F_MRC[unpark${F_KEY#unparks}]=0
+  return 0
 }
 
 control() {   # → run | pause | stop

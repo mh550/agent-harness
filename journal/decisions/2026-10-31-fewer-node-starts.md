@@ -201,9 +201,38 @@ by `#<sha1 of the file's content>` (`sha1sum`; `-` when it can't be read): never
   `deadline_verify`, `lib/record.sh`'s `milestones` and `deps` in `merge_milestones_`. The coordinator's idle poll
   (`F unpark`, `answers_hash`, `F lanes` in their subshells) is C1-03's.
 
-## Rejected
+**The poll, the idle coordinator and the treekey merge (C1-03, each *default*).**
 
-*(C1-03 adds its own here.)*
+- **`features.mjs poll <list> <att> <max> <parked> [<m>]`** prints `summary\t…`, `parked\t…`, `blocked\t…`,
+  `next\t…` and, with a lane, `milestone-done\t<its exit code>`: what the five subcommands print for those arguments,
+  composed from the same exported functions (`summaryLine`, `parkedLines`, `blockedLines`, `nextLine`,
+  `milestoneDone`, `pollLines`); the five stay. `F poll` is memoized as `next` is (the list's, `attempts.json`'s and
+  `parked.json`'s hashes), and a stored answer fills the memo for the five under the keys `f_key` gives them
+  (`f_poll_seed`), so a `$(F summary …)` on a `note "` line, which C1 may not change, hits it. The coordinator's end
+  check reads it once with `mapfile` (its two summaries on note lines hit); the lane loop asks it once per iteration
+  before `F milestone-done` and `Fv next` (and the `parked`/`blocked` of a lane with nothing left).
+- **The idle poll starts node once**, `needs.mjs sweep` (it writes `needs.md`: stays). `unpark_warm` runs in the
+  coordinator's own shell before the unchanged `for id in $(record F unpark … "$(answers_hash)")` line: `answers_v`
+  keeps `answers_hash`'s entry, and a new pure `unparks` (the ids `unpark` would remove, no write, memoized) that
+  finds none fills `unpark`'s entry with the empty answer under the same `parked.json` hash; with something to un-park
+  it fills nothing, so that line's `unpark` runs node, un-parks and notes as before. `F lanes` becomes `lanes_v`, the
+  coordinator's alone: memoized on the list's, `attempts.json`'s and `parked.json`'s hashes, the max, the state dir and
+  a fingerprint of all `laneState` reads (for `default` and each milestone: `verified-<m>`, `needs-<m>`, a non-empty
+  `lanes/<m>/review-escalate`, `lanes/<m>/pid` and whether `/proc/<pid>` exists, node's `kill 0` with EPERM alive;
+  then `meta.env`'s lines). A pid file that isn't one number is no key (node reads it with `Number()`, `0x1` is 1):
+  node every time. Stored only when the key is the same after the start, as `F`'s. `rebase_due`'s milestones hit
+  through `lanes_v`'s own `Fv milestones`. A lane's `F lanes` is not memoized (it isn't on an idle path).
+- **The treekey merge.** `treekey.mjs --partial --names` adds one `: <path> <name>…` line per map entry after
+  `--partial`'s lines; `lib/check.sh` makes that one start and computes the partial run's names in bash (`pnames`, as
+  `mapNames`: map order, each once, none when a path is no entry's). File 13 runs no partial (C1-01's table), so it
+  saves nothing there; `--names <path>…` stays for the CLI.
+- **No builtins.** `date` and `cat` are not in the top five (Finding), so `$EPOCHSECONDS`, `printf '%(%F %T)T'` and
+  `$(< file)` stay out of `lib/`.
+- **Left for the next fix:** the session-log reads (`metrics.mjs` in the lane, third of the top five: `MET usage`
+  twice and `MET limit` two or three times on one finished log) are not collapsed here (C1-03's steps don't name them;
+  the plan's §4 default stands for a later feature).
+
+## Rejected
 
 - **A disk cache of node answers** (a file per key under the state dir or the scratch, shared across processes): a
   stale answer outlives the process that computed it, and a cache that must be right after any write anywhere is the
@@ -212,3 +241,9 @@ by `#<sha1 of the file's content>` (`sha1sum`; `-` when it can't be read): never
 - **Keying on mtime or the path**: a rename-over write (`writeAtomic`) within the mtime's resolution, a `cp` back, a
   restored file and a `git checkout` all keep or reset an mtime without the content agreeing; the same path holds a
   new list after every `pass`. The content hash costs one `sha1sum` (0.8 ms, about 1/30 of a node start).
+- **Rewriting the `.mjs` helpers in bash** (C1-03): the scheduling, the lane graph and the step lint are pure functions
+  with unit checks in node; a bash copy is a second implementation of every rule that drifts from the first (the
+  memo answers from the node code's own output instead), and `jq` would be a process start of its own.
+- **A long-lived node server the driver talks to** (C1-03): one start for the run, but a process to supervise, restart
+  and version (a stale server answering after `harness sync` changed `lib/`), a socket or FIFO protocol to keep, and
+  state that outlives the answer that made it, the thing the in-process memo keeps out.

@@ -272,6 +272,8 @@ while :; do
   (( $(date +%s) >= DEADLINE )) && continue
   if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; lane_exit 13 "weekly budget ($why)"; fi
 
+  # one node start (F poll) answers milestone-done and next below, parked and blocked too, from the memo it fills
+  Fv poll poll "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$M"
   # complete: its verify, then its merge (merge_milestones: the dependency rule, MERGE_POLICY)
   if [[ $M != default ]] && F milestone-done "$LIST" "$M"; then
     verify "$M"; rc=$?
