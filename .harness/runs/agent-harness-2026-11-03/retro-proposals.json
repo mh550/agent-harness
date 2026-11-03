@@ -1,0 +1,2 @@
+[{"id":"suite-time-budget","title":"Cap or warn on session suite runs: sessions ran the full suite repeatedly at ~800 s each","evidence":"Q1-02 ran the suite 10x (3023 s); C1-06 4x (1812 s); C1-02/03/05 2x each (~1620 s)"},
+{"id":"verify-evidence-rows","title":"Record per-step evidence rows from verify sessions in entries.jsonl so step re-runs can be audited","evidence":"2 verify sessions cost $0.45 total; entries.jsonl has no per-step rows for verify"}]
