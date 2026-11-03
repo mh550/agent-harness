@@ -132,3 +132,57 @@ words, where it lives in this repo, the trade, and the answer taken. Source mate
   (2) split the three longest files so the critical path (the longest file) drops, since wall at 4 jobs is set by it;
   (3) fix 6, fewer process starts in the driver; (4) grow `CHECK_KEY_MAP` from one row toward a map of which lib
   files each check file exercises; (5) never run paired suites at 8 jobs.
+
+## 9. Why bash plus node, and whether another language would help
+
+- **Division of labour:** bash does what shells are good at (processes, signals, `setsid`, `flock`, tmux, git), and
+  node's standard library does what bash cannot do safely: JSON (the CLI's stream-json, `entries.jsonl`,
+  `feature_list.json`), rendering, hashing. `jq` covers the small cases. Node is already on the box because
+  Claude Code needs it, and "node ≥ 20 standard library only, no npm" keeps installs to zero. No decision file records
+  the language choice; the CLAUDE.md rule is its record.
+- **A faster language would not fix the cost.** The cost is process *starts* (node about 30 ms each, 2,239 per large
+  check file), not run time. Rust or Go start in about 1 ms but add a toolchain and a build step, and the model writes
+  bash and JS more reliably. The lever is the process model: fewer, larger questions, or one warm process (entry 12).
+- **Bash is error-prone, and the repo shows it:** the Gotchas list is mostly bash traps (`pipefail` SIGPIPE, `set -u`
+  on a jq null, locale-bound regexes). Best practice for that is to keep the shell thin and push logic into pure
+  functions in the structured language, which the `.mjs` layer already starts.
+
+## 10. Why 86 check files, and how growth is kept in check
+
+- **History:** one 1,634-line `tests/run.sh` with 50 sections and 325 checks (10 min single-threaded) was cut on
+  2026-10-26 into one file per section, grouped where a section read another's state
+  (`decisions/2026-10-26-suite-split`). The file is the unit of parallelism, isolation (a fresh `$T`, a private tmux
+  server, stub environment, `tests/lib.sh suite_setup`) and timeout. Now 86 files, 1,233 checks, about 14 per file;
+  the largest (`15-run-4-…`, 130 checks) runs five stub `harness start` runs.
+- **What differs between files:** each is a scenario (a stub run with certain `STUB_*` behaviours) or a `-pure` file of
+  node evals over one `.mjs`. Names carry history (`run-2b-stop-records`) rather than the unit under test.
+- **Best practice:** one test file per unit or feature, named for what it tests, mirroring the source layout;
+  every test independent; shared setup in fixtures; tiers (fast pre-merge, slow nightly).
+- **Growth:** 335 → 859 → 1,084 checks in two weeks, about 3.1 CPU-s each. The design counts (conformance fixture,
+  `tests-start`/`tests-end` markers, a count in every run's log) but has no rule for removing or merging checks.
+  The field's tools for that: coverage to find redundant tests, mutation testing to find tests that catch nothing,
+  periodic pruning. The cost per check, not the count, is the problem to attack first.
+
+## 11. What the `.mjs` files and the node evals are
+
+- `.mjs` is an ES-module JavaScript file. `lib/*.mjs` (about 5,200 lines, `needs.mjs` 750, `status.mjs` 489,
+  `features.mjs` 484, …) hold the harness's data logic. A **pure function** takes inputs and returns an output with no
+  file, clock or network read, so a test can call it with a made-up input and compare the result.
+- A **node eval** is `node --input-type=module -e "<code>"`: run a string of JS as a program. The check imports the
+  function from `lib/x.mjs`, calls it on literal data, and exits 0 or 1 (`tests/checks/03-…-pure-report.sh:4-9`,
+  `parkedReport` over two fake parked entries). It is the unit-test layer: one node start (30 ms) against a stub run's
+  seconds. 108 of them in 35 files today.
+
+## 12. Thousands of process starts, and the warm-process answer
+
+- **Where they come from:** per large check *file*, not per check: a 2026-10-26 strace of the biggest file counted
+  28,325 execs, 5,461 `git`, 2,239 `node`, about 10,000 one-millisecond utilities; 1,684 of the node starts were the
+  driver's own (`features.mjs`, `metrics.mjs`: bash asks node one question per process). The suite pays mostly for
+  the harness's own process model.
+- **Industry answer:** one warm process serving many requests. Jest/Vitest run every test file inside a few long-lived
+  workers; Bazel has persistent workers; Gradle and Nx run daemons; Watchman and language servers are the same idea.
+  For a small team with no npm: `node:test` (built in since node 18) runs every unit test in one process.
+- **For this repo, in order:** (1) move the 108 evals into `.test.mjs` files under `node --test`: one start instead of
+  108; (2) fix 6: batch the driver's questions (one `features.mjs` call returning every field) before any daemon;
+  (3) only then consider a resident helper process, which brings lifecycle, crash and lane-concurrency problems the
+  driver would have to own.
