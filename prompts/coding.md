@@ -18,7 +18,10 @@ checkouts on this machine.
   needs root goes in your entry's `questions` for Michael, with the exact command.
 - **The suite** is the command named under *This run* (it runs the project's suite, cached per code
   tree, so a tree that was green isn't run twice). While iterating, pass arguments for a subset:
-  `<suite> <args>`. Run it in full once before you flip `passes`.
+  `<suite> <args>`. Run it in full **once, last, after your final edit of any file**, `CLAUDE.md` included: a full run
+  before that is a full run you pay twice. A red check that check.sh reran green is a flake it has already recorded:
+  never rerun the suite by hand for it; a red after its rerun is real. Never lower the suite's parallelism to make room
+  for other lanes (`TEST_JOBS=2` on this box: slower and as flaky, 2026-10-28; `decisions/2026-10-29-check-timeout-25m`).
   Give every full run a timeout of at least twice its last wall (under *This session*). When that is over the Bash
   tool's foreground limit (10 min), run it in the background with that timeout, its output to a file in your scratch
   directory, and wait for its end notification before reading it: never poll it, never run it without a timeout.
@@ -71,13 +74,12 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
 
 ## 3. Finish (always, even if the feature is not done)
 
-1. Verify **every step** of your feature yourself. Only when all hold, set `"passes": true` on
-   it. That is the **only** edit you may make to `feature_list.json`. The harness reverts anything
-   else and stops the run if it keeps happening. A wrong step or a missing feature goes under
-   `proposed_changes` in your entry.
-2. The suite green. If your work is half done, commit only what leaves the suite green.
-   The harness un-passes a feature whose session ends with a red suite.
-3. Write each `Promote to Gotchas` item of context.md that still holds (a fact an earlier session
+1. Verify **every step** of your feature yourself (a "the suite is green" step is step 3's run, not one
+   of its own). Only when all hold, step 3's included, set `"passes": true` on it. That is the
+   **only** edit you may make to `feature_list.json`. The harness reverts anything else and stops
+   the run if it keeps happening. A wrong step or a missing feature goes under `proposed_changes`
+   in your entry.
+2. Write each `Promote to Gotchas` item of context.md that still holds (a fact an earlier session
    recorded with `affects: ["project"]`) as a line under `## Gotchas` in the project's `CLAUDE.md`,
    shortened but keeping its opening words (that is how the harness sees it carried); one that no
    longer holds, or that you drop from a full section, goes in your entry's `resolved`. And if this
@@ -86,6 +88,11 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    run id from the `Run:` line under *This run*, today's date). 15 lines at most: at 15, replace
    the least useful. A wrong line is edited in place; never rewrite the section. The harness notes
    each change in `harness-log.md`.
+3. The suite green: its one full run now, after the `## Gotchas` line,
+   so the tree you tested is the tree that ends the session (`entry.json`, the `passes` flip and
+   the commit come after; the run directory is outside the suite's key). If your work is half
+   done, commit only what leaves the suite green. The harness un-passes a feature whose session
+   ends with a red suite.
 4. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object. The
    harness validates it, adds it to `entries.jsonl` and deletes it; a missing or invalid one leaves
    only a minimal entry (your final message and the files git saw change). For example:

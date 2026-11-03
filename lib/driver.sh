@@ -223,12 +223,13 @@ deadline_verify() {
 }
 
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
-  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x backlog nolist="" p=$RUN_DIR/retro-proposals.json
+  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x backlog sruns nolist="" p=$RUN_DIR/retro-proposals.json
   rstart=$(git rev-parse HEAD)
   # the backlog as the list prints it ({{BACKLOG}}): ids to reuse and statuses to cite, not re-argue
   backlog=$(node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --max-bytes 6000 2> "$SCRATCH/backlog.err") \
     || nolist="backlog: the retro prompt has no backlog: $(head -1 "$SCRATCH/backlog.err" | cut -c1-200 | sed 's/^backlog: //')"
-  HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$REC/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
+  sruns=$(SUM suite-runs "$REC/summary.json" 2> /dev/null)   # {{SUITE_RUNS}}: the report's Suite runs value
+  HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$REC/summary.json HARNESS_SUITE_RUNS=${sruns:-not counted} HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
   # its one output file besides retro.md: restrict deletes it, so it goes to scratch first, and only when this retro

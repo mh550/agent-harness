@@ -83,6 +83,14 @@ check "tests_end: the count from a marker's first line; an empty first line writ
 check "the coding prompt's suite rule: a timeout twice the last wall, in the background over the tool's limit, never polled" \
   '[[ $(grep -c "never poll it" "$HH/prompts/coding.md") == 1 ]] && grep -qF "Give every full run a timeout of at least twice its last wall (under *This session*)" "$HH/prompts/coding.md" \
   && grep -q "never poll it, never run it without a timeout" "$HH/prompts/coding.md"'
+# one full run per session, last (C1 fix 4): the rule, and §3's Gotchas step before the suite step (line order)
+ord() { awk '/^## 3\. Finish/ { s = 1 } s && /Promote to Gotchas/ && !g { g = NR } s && /^[0-9]\. The suite green/ && !u { u = NR }
+  END { print (g && u && g < u) ? "gotchas-first" : "no" }' "$1"; }
+check "the coding prompt's suite rule: once, last, after your final edit of any file; TEST_JOBS=2 slower and as flaky; no 'once before you flip'" \
+  'grep -F "once, last, after your final edit of any file" "$SL/prompt-coding.md" > /dev/null && grep -F "TEST_JOBS=2" "$SL/prompt-coding.md" | grep -F "slower and as flaky" > /dev/null \
+  && ! grep -F "Run it in full once before you flip" "$HH/prompts/coding.md" > /dev/null'
+check "the coding prompt's Finish: the Gotchas step before the suite step, so the tree you tested is the tree that ends the session" \
+  '[[ $(ord "$SL/prompt-coding.md") == gotchas-first ]] && grep -F "so the tree you tested is the tree that ends the session" "$SL/prompt-coding.md" > /dev/null'
 check "CLAUDE.md's suite line points at the run's prompt, with no fixed measurement" \
   'grep -q "see the run'"'"'s prompt" "$HH/CLAUDE.md" && [[ $(grep -c "208 s" "$HH/CLAUDE.md") == 0 ]]'
 suite_end
