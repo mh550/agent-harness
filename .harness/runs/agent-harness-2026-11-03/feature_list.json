@@ -1,0 +1,143 @@
+{
+  "run": "agent-harness-2026-11-03",
+  "branch": "harness/agent-harness-2026-11-03",
+  "features": [
+    {
+      "id": "Q1-01",
+      "milestone": "Q1",
+      "kind": "build",
+      "model": "opus",
+      "description": "harness start and harness queue add refuse a --spec (or SPEC_FILES) path absent from the project's origin/main (or --base) before anything is queued or started; a resume and a --brief-only start are not checked.",
+      "steps": [
+        "A function `spec_missing <project dir> <ref> <path>…` exists in `lib/config.sh` or a new `lib/spec.sh` (one-line usage header; sourced by `bin/harness` and `lib/queue.sh`): it runs `git -C <p> fetch -q origin` (a failed fetch is one line on stderr and the check reads the last fetched ref), tests each path with `git cat-file -e <ref>:<path>`, and for the first path not in the ref prints `spec <path>: not in <ref> (fetched now); commit and push it, or name its ref with --base` and returns 1; every path present returns 0 and prints nothing",
+        "In `bin/harness` `cmd_start`, the check runs before the first `queue_add` (the busy-project and `MAX_PARALLEL_RUNS` paths queue before the worktree exists), with the `--spec` value split on spaces as `SPEC_FILES` is, or with `SPEC_FILES` from the project's `.harness/config.sh` when no `--spec` is given, the ref `--base` when given else `origin/$MAIN_BRANCH`; a miss is `die` with the line (exit 1); a run id whose worktree `$WT_ROOT/<project>/<run>` exists (a resume) and a `--brief` with no spec are not checked; `cmd_queue add` (not `add --continue`) runs the same check before `queue_add`",
+        "Checks in a new `tests/checks/83-spec-must-exist.sh` (written first and watched failing; each name one line in `tests/fixtures/check-names.txt`, `LC_ALL=C sort -c tests/fixtures/check-names.txt` prints nothing): `harness start <p> --spec docs/missing.md` exits 1, prints `spec docs/missing.md: not in origin/main`, and makes no worktree under `$T/wt`, no state dir under `$T/state` and no `.args` file under `$T/state/queue`; the same file committed in the stub project but not pushed is refused the same way; pushed, the start proceeds and the stub run's worktree exists; `--spec \"a.md b.md\"` with only `b.md` missing names `b.md`",
+        "More checks in `tests/checks/83-spec-must-exist.sh`: `--base <branch>` with the spec on that branch only proceeds, and the same without `--base` is refused naming `origin/main`; `SPEC_FILES=docs/missing.md` in the stub's `.harness/config.sh` with no `--spec` is refused; `--brief \"x\"` alone with no `SPEC_FILES` is not checked and starts; `harness start <p> <run>` of an existing run worktree is not checked (a `docs/missing.md` in its `run.env` does not refuse the resume); `harness queue add <p> --spec docs/missing.md` prints the line, exits 1 and leaves no `.args` file in `$T/state/queue`; `harness queue add <p> --spec SPEC.md` (present) prints `queued:`",
+        "`journal/decisions/2026-10-31-spec-must-exist.md` exists with title, provenance, then finding · choice · rejected: the reference is the project's `origin/main` (marked *default*) and not the working tree, with the rejected alternatives the spec lists (the working tree as the reference; checking only at `queue add`; failing the runner's start and leaving the entry in `done/`; the initializer guessing from the title); the runner's part is left for Q1-02 to add in place",
+        "`bash -n bin/harness lib/queue.sh` and `bash -n` on every other shell file the feature touched print nothing; `git diff origin/main -- lib/queue.sh` is empty (the runner's re-check is Q1-02)",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": [],
+      "passes": false
+    },
+    {
+      "id": "Q1-02",
+      "milestone": "Q1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The queue runner re-checks a start entry's spec at dequeue and parks the entry in queue/held/ with the line instead of starting it, then goes on to the next entry; README, architecture and the decision file describe the refusal and the park; an Opus subagent reviews the Q1 diff.",
+      "steps": [
+        "In `lib/queue.sh`, after the entry is chosen and before the `mv` to `done/`: for a `start` entry with `--spec` in its `.args` (decoded as the runner decodes them: one argument per line, a newline as `\\x1f`) or whose project `.harness/config.sh` names `SPEC_FILES`, `spec_missing` runs with the entry's `--base` if any; on a miss the entry is moved to `queue/held/` with a `.why` beside it holding the line and the time (the shape `harness queue park` writes: `<line> (<YYYY-MM-DD HH:MM>)`), one `parked <entry>: spec <path>: not in <ref> …` line goes to `runner.log`, no run starts, and the loop continues with the next entry",
+        "Checks in `tests/checks/83-spec-must-exist.sh` (written first and watched failing; names in `tests/fixtures/check-names.txt`): an entry queued with the spec present, then a pushed commit that deletes the file from `origin/main` (no rewrite), and the runner started with `harness queue start`: the entry's `.args` is in `$T/state/queue/held/`, its `.why` holds `spec <path>: not in origin/main`, `runner.log` has a `parked` line, no state dir for that run exists, and a second entry (a `--brief` start of the same project, or another project) is started by the same runner; an `.args` planted by hand in `$T/state/queue` naming `docs/missing.md` is parked at dequeue the same way; `harness queue list` shows the parked entry with `not in origin/main` in its reason",
+        "`journal/decisions/2026-10-31-spec-must-exist.md` gains the runner's re-check and park in place (the choice: park, never start; *default* no notification, the runner's log and `harness queue list` carry it); `README.md`'s `harness start` and `harness queue` rows say that a `--spec` path absent from `origin/main` (or `--base`) is refused at once and parked at dequeue; `docs/architecture.md` §3 (`bin/harness`, `lib/queue.sh` rows), §7 (the guard table: a missing spec parks, never starts) and §12 (the runner's dequeue) say the same",
+        "`git diff origin/main...HEAD -- bin lib tests > $HARNESS_SCRATCH/Q1.diff`; an Opus subagent reads that file with the brief: the order of the spec check against the two early `queue_add` paths in `cmd_start`, that a resume and a `--brief`-only start skip it, and that the runner's park leaves the loop able to start the next entry; its Critical and Important findings are fixed RED→GREEN and listed in the entry's `verified_how` (one round; a second only after a Critical finding)",
+        "`bash -n bin/harness lib/queue.sh` and `bash -n` on every other shell file the milestone touched print nothing",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": ["Q1-01"],
+      "passes": false
+    },
+    {
+      "id": "C1-01",
+      "milestone": "C1",
+      "kind": "plan",
+      "model": "opus",
+      "description": "The exec table: where one stub harness start's node, git, date, cat and bash starts come from (by script, subcommand and caller), measured with strace in the suite's environment and written as the Finding of the fewer-node-starts decision file, plus the milestone's plan naming the top callers and the order C1-02 and C1-03 cut them in. No code change.",
+      "steps": [
+        "`KEEP=1 bash tests/run.sh 13-run-2-michael-sets-desk` (or `08-scope-sh-l1-02-run-capped-services-gc-scratch` or `15-run-4-same-but-queue-parked-debrief-tmux`) is run with a timeout of 1200 s; then that file's first `harness start` is run by hand in the kept `$T` with the file's exports and `--foreground`, under `strace -f -e trace=execve -o $HARNESS_SCRATCH/execs.strace` and GNU `env time -v` (output to `$HARNESS_SCRATCH/stubstart.out` and `$HARNESS_SCRATCH/stubstart.time`), the way `findings-and-research/2026-10-30-suite-load-curve.md` §4 did; the strace, the output and the time file are kept in `$HARNESS_SCRATCH` and named in the entry",
+        "`journal/decisions/2026-10-31-fewer-node-starts.md` exists with title and provenance, and under *Finding* a table with the columns script · subcommand · caller · count · CPU-s (count × 26.9 ms) built from the strace: one row per `node` script and subcommand (`features.mjs model`, `features.mjs summary`, `features.mjs lanes`, `treekey.mjs --partial`, `inbox.mjs answers`, …), the caller column one of driver (`lib/*.sh`, by the parent's command line), lane, stub (`tests/stub-claude.sh`) or `tests/lib.sh`; beside it the `git`, `date`, `cat` and `bash` exec counts; the one run's wall and user+sys from the time file; and a *Top five* list of callers by execs × 26.9 ms",
+        "`docs/plans/2026-11-03-C1-suite-cpu.md` exists and names, from the table: which `features.mjs` and other subcommands C1-02 memoizes (each one read as pure: no clock, no state dir, no network; `MET append`, `entries.mjs ingest|render|pack`, `inbox.mjs insert|repair`, `notify.mjs` and `F unpark`'s mutating path are listed as not memoized), which calls of the coordinator's poll and the lane loop C1-03 collapses, whether `date` or `cat` is in the top five (then `$EPOCHSECONDS`, `printf '%(%F %T)T'` and `$(< file)` in `lib/` only), and which rows are the stub's or `tests/lib.sh`'s (left alone, with why); it says `git` is not a target",
+        "`git diff origin/main --stat -- bin lib tests prompts` prints nothing (the feature changes no code)",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": ["Q1"],
+      "passes": false
+    },
+    {
+      "id": "C1-02",
+      "milestone": "C1",
+      "kind": "build",
+      "model": "opus",
+      "description": "lib/record.sh's F memoizes its pure answers per process, keyed on the subcommand, the list file's content hash and the other arguments, never on mtime, path or time; a node shim in a new check file proves one node start for repeated calls and a new start after one byte changes.",
+      "steps": [
+        "A new `tests/checks/84-node-memo.sh` (written first and watched failing; names in `tests/fixtures/check-names.txt`) puts a `node` shim first on `PATH` that appends one line per exec (its arguments and whether `HARNESS_LANE` is set) to a count file and execs the real node, as `tests/stub-claude.sh` stands in for `claude`; a check that sources `lib/record.sh` with `HARNESS_HOME=$HH` shows: two `F model opus` calls start node once and print the same model id; `F summary` twice on one `feature_list.json` fixture starts node once; after one byte of the list changes (a `passes` flipped), `F summary` starts node again and prints the new count; the list restored to its first content answers from the memo without a start (content, not mtime)",
+        "In `lib/record.sh`, `F` keeps a bash associative array for the subcommands `docs/plans/2026-11-03-C1-suite-cpu.md` names as pure: `model:<alias>` for `model`; `<sub>:<sha1 of the list file>:<other args>` for `summary` and the other list readers, the hash by `sha1sum` or `git hash-object`; a key miss runs node and stores stdout and the exit code; a hit prints the stored stdout and returns the stored exit code; the memo lives in the process only (no file under the state dir, scratch or cache), and the subcommands the plan lists as not memoized (`append`, `ingest`, `render`, `pack`, `insert`, `repair`, `notify`, and `unpark` when it printed an id) call node every time",
+        "`inbox.mjs answers` in `answers_hash` (`lib/record.sh`) is memoized on `INBOX.md`'s content hash the same way when the plan lists it in the top five; `git diff origin/main -- lib/*.sh | grep '^[-+].*note \"'` prints nothing (no `harness-log.md` note text changes)",
+        "`journal/decisions/2026-10-31-fewer-node-starts.md` gains under *Choice* the memo (the key's shape, which subcommands, marked *default*) and under *Rejected* a disk cache of node answers (a stale answer outlives the process; the invariant of `decisions/2026-10-30-partial-key`) and keying on mtime or path",
+        "`bash -n lib/record.sh` and `bash -n` on every other shell file touched print nothing; `node --check lib/features.mjs` prints nothing",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": ["C1-01"],
+      "passes": false
+    },
+    {
+      "id": "C1-03",
+      "milestone": "C1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The coordinator's end check asks features.mjs its five questions in one node start (F poll), the lane loop's next and milestone-done the same where they sit in one iteration, check.sh's two treekey calls become one, and date/cat become bash builtins in lib/ where the plan's table puts them in the top five; an idle poll starts node at most once per iteration.",
+      "steps": [
+        "`lib/features.mjs` gains a `poll <list> <att> <max> <parked> [<lane>]` subcommand that prints, as labelled lines (`summary\\t…`, `parked\\t…`, `blocked\\t…`, `next\\t…`, `milestone-done\\t…` or the names the session chooses), what `summary`, `parked`, `blocked`, `next` and `milestone-done` print for the same arguments, as a composition of the same exported functions; a unit check in `tests/checks/84-node-memo.sh` (`node --input-type=module -e`, written first) compares its lines with the five subcommands' output on a fixture list with one parked and one blocked feature; the five subcommands stay",
+        "`lib/driver.sh`'s end check (the `! opened && alive == 0` branch) reads `F poll` once with `mapfile` instead of its separate `F summary`, `F parked`, `F blocked` and `F next` calls, and `lib/lane.sh`'s loop uses one `F poll` (or the memo) where `F next` and `F milestone-done` sit in one iteration; `lib/check.sh`'s `treekey.mjs --partial` and `--names` calls become one node start when both are needed; `date` and `cat` in `lib/*.sh` become `$EPOCHSECONDS`, `printf '%(%F %T)T'` and `$(< file)` only where `docs/plans/2026-11-03-C1-suite-cpu.md` lists them in the top five, and never in `tests/`",
+        "A check in `tests/checks/84-node-memo.sh` runs a stub run with the shim on `PATH`, `MAX_LANES=2` in the stub project's `.harness/config.sh`, one lane held open on a barrier (`stub_wait`/`stub_go`) and nothing left to open, over a window of at least 5 polls (`HARNESS_LANE_POLL=1`): the shim's count of node starts without `HARNESS_LANE` set during the window is at most the number of polls the window holds (counted from `run.log`'s poll-paced lines or a `log` line the driver already writes), so an idle poll starts node at most once",
+        "`git diff origin/main -- lib/*.sh | grep '^[-+].*note \"'` prints nothing (no `harness-log.md` note text changes); every existing check that compares `harness-log.md` or `run.log` lines passes unchanged",
+        "`journal/decisions/2026-10-31-fewer-node-starts.md` gains under *Choice* the poll subcommand, the treekey merge and the builtins (each marked *default*), and under *Rejected* rewriting the `.mjs` helpers in bash and a long-lived node server the driver talks to",
+        "`bash -n` on every shell file touched prints nothing; `node --check lib/features.mjs lib/treekey.mjs` prints nothing",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": ["C1-02"],
+      "passes": false
+    },
+    {
+      "id": "C1-04",
+      "milestone": "C1",
+      "kind": "build",
+      "model": "sonnet",
+      "description": "The proof on the runner's own wall line: two solo full suites, before (a scratch worktree of the run's base commit) and after (the feature's tree), each under time -v, their rows in the decision file beside the load curve's and the budget's, the spec's target met or recorded as a miss with the number.",
+      "steps": [
+        "`harness status` (read-only) shows no other suite alive before each timed run; the *before* tree is `git worktree add $HARNESS_SCRATCH/before <the run's base commit, the merge-base of the branch and origin/main>` and the *after* tree is the feature's worktree; each suite is run by the session directly as `systemd-run --user --scope -p MemoryMax=3G env time -v TEST_JOBS=4 bash tests/run.sh`, in the background with a timeout of 2400 s, its output to `$HARNESS_SCRATCH/before.out` and `$HARNESS_SCRATCH/after.out` (the `time -v` lines included), never through the suite command named under *This run* (its cache would answer)",
+        "`journal/decisions/2026-10-31-fewer-node-starts.md` has under *Choice* a table with a *before* row and an *after* row, each with the wall from the runner's own `wall` line, user+sys from `time -v`, the `N/M checks passed` line and the red files (none, or named), beside the rows of `findings-and-research/2026-10-30-suite-load-curve.md` §1 (4 jobs solo) and `findings-and-research/2026-10-29-run-time-budget.md` §11, and one line saying whether the spec's target (`docs/specs/2026-10-31-suite-cpu.md`, C1 fix 6 point 3: the CPU cut against the *before* row and the solo wall bound) was met, or recording the miss with its number",
+        "`git worktree list` no longer shows `$HARNESS_SCRATCH/before` (removed with `git worktree remove` after the measurement); `before.out` and `after.out` are kept in `$HARNESS_SCRATCH` and named in the entry's `verified_how`",
+        "`git diff origin/main --stat -- bin lib tests prompts` shows no file changed by this feature beyond C1-02's and C1-03's (the measurement changes no code)",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": ["C1-03"],
+      "passes": false
+    },
+    {
+      "id": "C1-05",
+      "milestone": "C1",
+      "kind": "build",
+      "model": "opus",
+      "description": "One full run per coding session, last: the coding prompt's suite rule and §3 order change, lane.sh passes suite_runs and suite_full to the coding row of metrics.jsonl, and summary.mjs reports `Suite runs` (full per coding session) in harness report and summary.json.",
+      "steps": [
+        "Checks in `tests/checks/79-suite-length.sh` (written first and watched failing; names in `tests/fixtures/check-names.txt`): a stub run's rendered `prompt-coding.md` has `once, last, after your final edit of any file` and `TEST_JOBS=2` with `slower and as flaky`, and in its §3 the `## Gotchas` step's text comes before the suite step's (line order); `prompts/coding.md` no longer has `Run it in full once before you flip`",
+        "`prompts/coding.md`'s *The suite* ground rule reads: while iterating pass arguments for a subset; run it in full once, last, after the final edit of any file, `CLAUDE.md` included (a full run before that is paid twice); a red check that check.sh reran green is a flake it has already recorded, never rerun the suite by hand for it, a red after its rerun is real; never lower the suite's parallelism to make room for other lanes (`TEST_JOBS=2` on this box: slower and as flaky, 2026-10-28; `decisions/2026-10-29-check-timeout-25m`); the timeout clause stays; §3 *Finish* puts the `## Gotchas` step before the full-run step with one sentence saying why (`so the tree you tested is the tree that ends the session`), `entry.json` and the commit after",
+        "Checks in `tests/checks/77-leftovers.sh` or a new `tests/checks/85-suite-runs.sh` (written first): a stub run whose session makes two full `check.sh` calls and one subset call has a coding row in `metrics.jsonl` with `suite_runs` 3 and `suite_full` 2 and the `suite ran 3x` note as before; a session with no call has `0` and `0`; `summary.json`'s `suite_runs` is `{ sessions, full, runs, full_per_session }` with `full_per_session` 2 for a run of one such session; `harness report --md` prints `Suite runs | 2 full per coding session (2 in 1; 3 runs in all)` after the `Flakes` row and the TTY view the same row; the rendered `prompt-retro.md` carries the number; a run with no coding row prints `0`",
+        "`lib/lane.sh` counts the session's `check-runs.log` rows between `t0` and `t1` whose kind is `full` beside the existing count and passes `suite_runs` and `suite_full` as two more trailing arguments to `MET append`; `lib/metrics.mjs` `metricsRow` writes them on the coding row (`null` when the log is missing); `lib/summary.mjs` builds `suite_runs` from the coding rows and `reportRows` gains the `Suite runs` row; `git diff origin/main -- lib/lane.sh | grep '^[-+].*note \"'` prints nothing (the note's text is unchanged); `trends` is unchanged",
+        "`journal/decisions/2026-10-31-one-full-run.md` exists with title, provenance, finding · choice · rejected (a driver-enforced cap on full runs per session; counting from `harness-log.md`'s note; the rule in `CLAUDE.md` alone), the `TEST_JOBS=2` sentence's place in the shared prompt marked *default*",
+        "`bash -n lib/lane.sh` prints nothing; `node --check lib/metrics.mjs lib/summary.mjs` prints nothing; `LC_ALL=C sort -c tests/fixtures/check-names.txt` prints nothing",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": ["C1-04"],
+      "passes": false
+    },
+    {
+      "id": "C1-06",
+      "milestone": "C1",
+      "kind": "review",
+      "model": "opus",
+      "description": "Review + simplify of C1: an Opus reviewer reads the milestone diff from a file, Critical/Important findings fixed RED→GREEN, simplifications applied, no note text changed, and docs/architecture.md and README.md describe the memo, the poll subcommand, the measurement rows and the Suite runs row.",
+      "steps": [
+        "`git diff origin/main...HEAD -- bin lib tests prompts > $HARNESS_SCRATCH/C1.diff`; an Opus subagent reads that file with the brief: every memoized subcommand for a hidden input the key doesn't cover (a file other than the list, the clock, the state dir, the network), `F poll`'s output against the five subcommands it replaces, `F unpark`'s mutating path, the `suite_full` count's window, and the prompt's new order; its findings graded Critical/Important/Minor go to `docs/plans/2026-11-03-C1-review.md`, one round, a second only when the first found something Critical",
+        "Every Critical and Important finding is fixed with a check that was red first and marked fixed in `docs/plans/2026-11-03-C1-review.md`; a `## Simplifications` table there names each pass applied or left, with why",
+        "`git diff origin/main -- lib/*.sh | grep '^[-+].*note \"'` prints nothing (no `harness-log.md` note text changed by the milestone)",
+        "`docs/architecture.md` §3 (`lib/record.sh`'s `F` memo and the `poll` subcommand; `lib/lane.sh`'s two metrics fields; `summary.mjs`'s `Suite runs` row) and §11 (the before/after measurement rows and the full-runs-per-session measure) are updated; `README.md`'s `harness report` row names the `Suite runs` row; `README.md`'s `harness start` row is otherwise unchanged",
+        "`bash -n` on every shell file the milestone touched prints nothing; `node --check` on every `.mjs` touched prints nothing; `bash tests/lint-sleeps.sh` prints nothing",
+        "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
+      ],
+      "after": ["C1-05"],
+      "passes": false
+    }
+  ]
+}
