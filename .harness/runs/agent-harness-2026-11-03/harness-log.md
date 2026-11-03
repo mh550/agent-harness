@@ -29,3 +29,8 @@
 - 2026-11-03 14:48 · context.md for C1-04: 6431 bytes
 - 2026-11-03 15:17 · C1-04: suite ran 0x (0 s) in the session
 - 2026-11-03 15:17 · C1-04 · claude-sonnet-5-5 · passes=true · 29 min · 6/8 passing · tests 1129
+- 2026-11-03 15:17 · context.md for C1-05: 5804 bytes
+- 2026-11-03 16:17 · C1-05: suite ran 2x (1617 s) in the session
+- 2026-11-03 16:17 · C1-05: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-03 16:17 · C1-05: gotchas +0 ~1 -0
+- 2026-11-03 16:17 · C1-05 · claude-opus-5-5 · passes=true · 59 min · 7/8 passing · tests 1140

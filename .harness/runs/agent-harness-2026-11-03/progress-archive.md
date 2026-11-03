@@ -7,6 +7,23 @@ The feature list (`feature_list.json`, 8 features): **Q1** (2) makes `harness st
 
 Steer through `INBOX.md` in this directory: set its first line to `status: pause` or `status: stop`, or write answers under `## Answers`. Questions from sessions appear here and in `INBOX.md` with a `Files:` line naming what to open first.
 
+### 2026-11-03 16:17 · C1-05 · passes
+
+coding.md: one full run, last, after the final edit; TEST_JOBS=2 rule; §3 Gotchas before the suite step (step 1 names it). lane.sh passes suite_runs/suite_full to MET append; metricsRow writes them (null without the log); summary.mjs suiteRuns + Suite runs row after Flakes; retro {{SUITE_RUNS}}. Stub suite calls under set +e. Decision one-full-run. Opus review: 2 Important, fixed.
+
+- **Files:** prompts/coding.md, prompts/retro.md, lib/lane.sh, lib/metrics.mjs, lib/summary.mjs, lib/driver.sh, tests/stub-claude.sh, tests/checks/85-suite-runs.sh, tests/checks/79-suite-length.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-31-one-full-run.md, CLAUDE.md
+- **Verified:** 85 and 79 red first (7 + 2 FAIL), then green; check.sh full: green in 808 s, 1140 tests (/tmp/harness/agent-harness/agent-harness-2026-11-03/lanes/C1/full2.out). The first full run was red only on 82-key-map-lint (85 used "'"$HH"'/lib/…", read as the root); fixed to '$HERE'/../lib/…
+- **Tests:** 1129 → 1140
+- **Dead end:** a full run before the key-map lint subset — 82-key-map-lint flagged 85's "'"$HH"'/lib" import as a root read: a second full run (the rule's own paid-twice case); run 82 with any new check file first
+- **Discovery** (affects run): tests/stub-claude.sh's STUB_RUN_SUITE subset (`test ! -f BROKEN x`) exits 2, which under the stub's set -e ended A's first session before its entry (a limit retry); now under set +e, so 77's sr A session completes
+- **Discovery** (affects project): 82-key-map-lint reads a node import string "'"$HH"'/lib/x.mjs" as a read of the repo root (CLAUDE.md): a new check file uses "'$HERE'/../lib/x.mjs" (11's form)
+- **Discovery** (affects C1-06): C1-06: the retro prompt carries {{SUITE_RUNS}} (summary.mjs suite-runs; `not counted` fallback in driver.sh retro); docs/architecture.md and README still need the Suite runs row and the two metrics fields
+- **Question for Michael:** Default taken: the TEST_JOBS=2 sentence sits in the shared prompts/coding.md (every project's sessions read it), not a project file. Keep it there? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-03/slot-1/prompts/coding.md:24, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-03/slot-1/journal/decisions/2026-10-31-one-full-run.md
+- **Resolved:** CLAUDE.md Gotchas line dropped for the stub set -e line (section at memlint's 15-line cap): git keeps a merge driver's %A as the file whatever its exit: a driver that exits 1 must write the markers itself (git merge-file)
+- **Proposed change:** C1-05 step 3: the retro prompt held only summary.json's path, not its content; the session added {{SUITE_RUNS}} to prompts/retro.md so the rendered prompt carries the number
+- **Proposed change:** The spec's 'a run with no coding row' case is tested as rows without a count (build() rebuilds coding rows from run.log) plus the pure suiteRuns([])
+- *07-C1-05 · claude-opus-5-5*
+
 ### 2026-11-03 15:17 · C1-04 · passes
 
 Two solo timed suites. Before (d595498): wall 854.1 s, 3,361.8 CPU-s, 1102/1102. After (5a11f9d): wall 803.8 s, 3,136.1 CPU-s, 1129/1129. Spec target MISSED: CPU -6.7% (needed -20%), wall 803.8 s (bound 650). Rows in the decision file.
