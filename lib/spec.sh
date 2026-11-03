@@ -26,6 +26,7 @@ spec_new_run() {
   local p=$1 run=$2 spec=$3 base=$4 sp
   [[ -n $run && -d ${WT_ROOT:-${HARNESS_WORKTREES:-$HOME/worktrees}}/$(basename "$p")/$run ]] && return 0   # a resume: checked when it started
   read -ra sp <<< "${spec:-$SPEC_FILES}"; (( ${#sp[@]} )) || return 0   # --brief alone
+  sp=("${sp[@]#"${p%/}"/}")   # an absolute path inside the project (a shell's ~ expanded): its path in the repo
   spec_missing "$p" "${base:-origin/$MAIN_BRANCH}" "${sp[@]}"
 }
 

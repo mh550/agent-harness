@@ -91,4 +91,11 @@ check "an entry whose project is no repository is not parked: its start fails an
 check "a spec check that fails without a line parks with a reason, never an empty one" \
   'grep -qE "^spec check failed in [^ ]*brk \(exit 3\) \([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}\)$" "$Q/held/0007-start-brk.why" && grep -qF "parked 0007-start-brk.args: spec check failed" "$Q/runner.log"'
 
+# an absolute --spec inside the project (a shell's ~ expanded) is checked as its path in the repo (the Q1-02 review)
+"$H" start "$T/proj" absok --spec "$T/proj/SPEC.md" --until-epoch "$(past)" --foreground > "$T/absok.out" 2>&1
+"$H" start "$T/proj" absmiss --spec "$T/proj/docs/missing.md" > "$T/absmiss.out" 2>&1; absmiss_rc=$?
+check "an absolute --spec inside the project is checked as its repo path: present proceeds, missing is refused by that path" \
+  '[[ -d $HARNESS_STATE/proj/absok && $absmiss_rc == 1 && ! -e $HARNESS_STATE/proj/absmiss ]] && ! grep -q "not in origin" "$T/absok.out" \
+  && grep -qF "spec docs/missing.md: not in origin/main" "$T/absmiss.out"'
+
 suite_end

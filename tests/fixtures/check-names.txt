@@ -122,6 +122,7 @@ after may name a milestone
 all features pass
 an .args planted by hand naming a missing spec is parked at dequeue the same way
 an INBOX answer unparks it; the run finishes
+an absolute --spec inside the project is checked as its repo path: present proceeds, missing is refused by that path
 an entry whose project is no repository is not parked: its start fails and says why
 an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
 an open desk showing a dialog gets nothing typed

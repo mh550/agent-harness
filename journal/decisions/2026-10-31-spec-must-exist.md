@@ -17,6 +17,9 @@
     `origin/$MAIN_BRANCH`; a miss is `die` with the line (exit 1). `cmd_start` calls it before the first `queue_add`
     (the busy-project and `MAX_PARALLEL_RUNS` paths queue before the worktree exists), so a queued entry is a checked
     one; `cmd_queue add` calls it before `queue_add`, with the project's config read in a subshell.
+  - An absolute path inside the project (`--spec ~/p/docs/x.md`, the shell's `~` expanded) is checked as its path
+    in the repo (`git cat-file` takes no absolute path); one outside the project is checked as given, so refused
+    (*default*: the run reads its worktree, made from the ref).
   - Not checked: a resume (a given run id whose worktree `$WT_ROOT/<project>/<run>` exists: its spec persists in
     `run.env` and was checked when it started), a `--brief` start with no spec, and `queue add --continue` (the run
     has its spec).
