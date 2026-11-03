@@ -186,3 +186,50 @@ words, where it lives in this repo, the trade, and the answer taken. Source mate
   108; (2) fix 6: batch the driver's questions (one `features.mjs` call returning every field) before any daemon;
   (3) only then consider a resident helper process, which brings lifecycle, crash and lane-concurrency problems the
   driver would have to own.
+
+## 13. Rust versus node once a warm process exists (2026-11-03)
+
+- **Michael's point:** process starts are the root cost, but Rust is less error-prone once it compiles; with a warm
+  worker, how do the two compare?
+- **Reasoning:** with one warm process, start-up leaves the comparison. What remains per request is tiny (parse a small
+  JSON file, build a string): sub-millisecond in either language. Rust's remaining advantages are the compiler (types,
+  no null, no silent coercion) and a single static binary. Its costs: a toolchain on every box, a build per tree
+  (each lane's worktree builds unless `CARGO_TARGET_DIR` is shared; my estimate for a crate of this size with
+  serde_json: tens of seconds cold, seconds incremental, not measured), and a slower model edit-compile loop.
+- **Evidence on error-proneness:** the repo's recorded traps are bash traps (Gotchas: pipefail SIGPIPE, `set -u` on a
+  jq null, locale regexes), not JS ones. The error budget is in the shell, so the first move is less logic in bash.
+- **Determination:** not now, and not a rejection. Revisit when the warm-process and batching numbers are in, with a
+  measured per-request cost; the candidate for Rust then is the driver's hot path (`treekey`, `features`) as one binary.
+
+## 14. Three levers that sound alike (2026-11-03)
+
+- **Move the evals (tests' node starts):** 108 one-process evals become one `node --test` process. Touches only tests.
+- **Batch the driver's questions (fix 6, the harness's node starts):** `lib/features.mjs` is the driver's feature-list
+  brain (`next`, `lanes`, `deps`, `blocked`, `pass`, `unpass`, `park`, `model`, `summary`, …), one node process per
+  question. A stub run of the driver pays those starts (1,684 of a large file's 2,239 node starts). Batching returns
+  several answers per call. Touches the driver.
+- **A resident helper:** a long-lived node process the bash driver asks over a pipe or socket, instead of spawning.
+  Not a middle-man between the harness and the tests: the tests still run under `tests/run.sh`; the helper replaces
+  the per-question spawn inside the driver. Costs: lifecycle, crashes, lane concurrency. Try batching first.
+- **"No npm"** meant the repo's rule "no npm packages" (standard library only), not that the box lacks npm.
+
+## 15. Pure functions and why one test calls them three times
+
+- `tests/checks/03-…-pure-report.sh:4-9` calls `parkedReport` with `e`, `{...e, runner: true}` and
+  `{...e, running: true}`. A function has **branches**; each branch is a different behaviour (the runner alive changes
+  the command to `queue add --continue`; the run alive drops `continue`). A test picks one input per branch
+  (**equivalence partitioning**: one representative per class of behaviour), so three calls cover three behaviours.
+- Purity is what makes that cheap: the function reads no file, so the three states are literals in memory and the
+  three calls share one process. The same three states as end-to-end checks would cost three stub runs. This is the
+  cost argument for pushing tests down the pyramid, and for making more of the harness pure.
+
+## 16. Michael's reasoning, 2026-10-30 to 11-03 (for the talk)
+
+1. Started from four defaults a run took on its own; understood each as a named testing concept (resource bounds,
+   fail-closed gates, test collection, inner-loop gates).
+2. Asked whether an LLM should make these calls; concluded the gate stays deterministic and the LLM proposes.
+3. Asked why node exists, why 86 files, what the evals are, and why thousands of process starts; learned the cost is
+   the process model, not the language, and that the driver's own calls dominate.
+4. Pushed back on dismissing Rust: wants speed and compile-time safety kept in view, bigger fish first.
+5. Decided to address bloat and tiering and to hand the redesign to a planning session
+   (`docs/specs/2026-11-03-test-suite-redesign.md`), iteratively, each step measured.
