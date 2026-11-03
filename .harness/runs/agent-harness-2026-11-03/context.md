@@ -1,10 +1,15 @@
-# Context pack for `C1-02`
+# Context pack for `C1-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (C1-02, affects C1-03): F_MEMO_PID: a miss in a subshell runs node straight and keeps nothing, so a $(F …) site gains only when its parent shell already holds the key; the coordinator's idle-poll calls ($(record F unpark … "$(answers_hash)"), rebase_due in < <(…)) still start node each poll until C1-03 moves them into the current shell (Fv, a var for answers_hash) → entries.jsonl:6
+- Discovery (C1-02, affects C1-03, C1-06): features.mjs now exits 70 on a throw (was node's 1): 1 is an answer the memo keeps for passes/milestone-done/evidence/lint; a new subcommand whose 1 is an answer goes in f_memo's case list → entries.jsonl:6
+- Discovery (C1-02, affects C1-03, C1-04): lines with note " can't change in C1 (the step grep), so $(F summary …) inside note lines (lane.sh 387, driver.sh 498/571/581) stay subshell calls: they hit only when the shell already holds that list's summary → entries.jsonl:6
 - Discovery (C1-01, affects C1-02, C1-03): bash 5.2: an F memo entry written inside $(F …), < <(…) or a pipe dies with the subshell; most answer-reading F sites are $( ). The plan's default: F model fills every alias at once (a models subcommand), Fv <var> <sub> … runs F in the current shell → entries.jsonl:5
+- Discovery (C1-01, affects C1-03): An idle coordinator poll with a free slot starts node 5 times: F unpark, inbox answers, needs.mjs sweep, F milestones (rebase_due), F lanes. needs sweep is not memoizable, so C1-03's at-most-one bound needs F lanes memoized on the state inputs laneState reads (plan §4) → entries.jsonl:5
+- Discovery (C1-01, affects C1-03, C1-04): treekey.mjs --names ran 0 times in file 13: the check.sh treekey merge saves nothing there; date/cat are not in the top five, so no builtin change → entries.jsonl:5
 - Discovery (Q1-02, affects run): lib/spec.sh now has spec_args (a start's run id/--spec/--base), spec_new_run (resume and --brief skips) and spec_entry (a .args file, project config in a subshell); bin/harness spec_refuse and queue add use them → entries.jsonl:3
 - Discovery (Q1-02, affects run): editing the worktree while a full check.sh runs can cache red-<key> for the pre-edit tree: never edit during a full run → entries.jsonl:3
 - Discovery (Q1-01, affects run): a stub check that starts a new run with --spec <file> now needs the file pushed to the stub's origin/main (SPEC.md is, from suite_setup) → entries.jsonl:2
@@ -14,12 +19,12 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-11-03 13:05 · C1-01 · passes: Exec table: one stub harness start of file 13 under strace (402 node starts = 10.8 of 20.4 CPU-s) plus the whole file (3,139 node; lanes 1,945, driver 975, stub 48, checks 9; node 49% of 170.6 CPU-s) in the fewer-node-starts decision; plan names the memo, the subshell constraint, the poll collapse, no builtins. No code change.; tests 1102 → 1102; files journal/decisions/2026-10-31-fewer-node-starts.md, docs/plans/2026-11-03-C1-suite-cpu.md, findings-and-research/2026-11-03-exec-table/ → entries.jsonl:5
+- 2026-11-03 13:55 · C1-02 · passes: lib/record.sh's F memoizes features.mjs's pure subcommands in a per-process assoc array keyed on sub + sha1 of each file arg + other args; Fv answers into a var in the current shell; models fills every alias in run_paths; answers_hash memoized on INBOX.md's hash; a throw exits 70. Busiest $(F …) sites moved to Fv. Decision Choice/Rejected written. Opus review: no Critical/Important, minors fixed.; tests 1102 → 1121; files lib/record.sh, lib/features.mjs, lib/lane.sh, lib/driver.sh, tests/checks/84-node-memo.sh, … → entries.jsonl:6
 
 ## Lately in the run
 
+- 2026-11-03 13:05 · C1-01 · passes: Exec table: one stub harness start of file 13 under strace (402 node starts = 10.8 of 20.4 CPU-s) plus the whole file (3,139 node; lanes 1,945, driver 975, stub 48, checks 9; node 49% of 170.6 CPU-s) in the fewer-node-starts decision; plan names the memo, the subshell constraint, the poll collapse, no builtins. No code change.; tests 1102 → 1102; files journal/decisions/2026-10-31-fewer-node-starts.md, docs/plans/2026-11-03-C1-suite-cpu.md, findings-and-research/2026-11-03-exec-table/ → entries.jsonl:5
 - 2026-11-03 12:48 · verify Q1 · passes: Q1-01 and Q1-02 hold: suite green (init full run, 843 s, 1102 tests), 83-spec-must-exist 18/18 re-run, bash -n clean, check names sorted, docs and decision present. → entries.jsonl:4
-- 2026-11-03 12:33 · Q1-02 · passes: The queue runner re-checks a start entry's spec at dequeue (lib/spec.sh spec_entry, after the limit/weekly gates, before sync and the mv to done/) and parks a miss in queue/held/ with the line as .why, a parked line in runner.log, then starts the next entry. README, architecture §3/§7/§12 and the decision updated; Opus review: no Critical/Important, 4 minors fixed.; tests 1094 → 1102; files lib/spec.sh, lib/queue.sh, bin/harness, tests/checks/83-spec-must-exist.sh, tests/fixtures/check-names.txt, … → entries.jsonl:3
 
 ## Current rules
 
