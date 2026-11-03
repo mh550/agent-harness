@@ -1,3 +1,5 @@
+--base <branch> with the spec on that branch only proceeds; without --base it is refused naming origin/main
+--brief alone with no SPEC_FILES is not checked and starts
 --dry-run prints the context, launches nothing
 Answer with Claude only when DESK_URL is set
 C retried and passed
@@ -20,6 +22,7 @@ NOTIFY_CMD-only: $1 unchanged, fields as env
 NTFY_TOKEN: bearer header sent, never logged
 NTFY_URL: curl posts the fields as headers, NOTIFY_CMD not called
 PAUSE stops the services before its poll, and the next init starts them again
+SPEC_FILES in the project's .harness/config.sh and no --spec: a missing path is refused
 WEEKLY_STOP_AT raises the bar
 a $0 one-turn session is not counted
 a .harness/teardown.sh added after the run started is run at its stop points
@@ -59,6 +62,7 @@ a listed worktree whose directory is gone never ends gc: every later step still 
 a main conflict notifies once per main commit across 2 verifies: high, title <m> needs you, body the card, click needs.md
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
+a name taken in held/ parks under another; the one there is untouched; the queue drains
 a park notification: title, question, answer command, click and Edit INBOX action
 a park opens one parked record; card.question.line is the first line the session added, its URL that line
 a park whose INBOX question has Files: <path>:48: the record's where[0] is that path at line 48, files_from question
@@ -78,6 +82,7 @@ a request queued after the stop (before the driver acts on it) stays requested
 a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)
 a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)
 a resolved question is gone from the next context.md
+a resume (the run's worktree exists) is not checked: a missing spec in its run.env and --spec does not refuse it
 a run still ending: answer now, continue once it has ended
 a run still going is covered again next time
 a run still going: only the answer command
@@ -91,6 +96,7 @@ a session that dies at startup: failed, and no usage-limit window for the box
 a session that leaves CLAUDE.md alone gets no gotchas note
 a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
 a session's edits to the journal are restored (E4 review F1)
+a spec check that fails without a line parks with a reason, never an empty one
 a stale green marker is caught at verify: M1 red, not tagged
 a still-running run changing its worktree is not flagged
 a stop at the deadline comes first: no verify, M1 left for a continue
@@ -114,7 +120,10 @@ a worktree gc can't remove is logged and the next one still goes; --dry-run remo
 a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json
 after may name a milestone
 all features pass
+an .args planted by hand naming a missing spec is parked at dequeue the same way
 an INBOX answer unparks it; the run finishes
+an absolute --spec inside the project is checked as its repo path: present proceeds, missing is refused by that path
+an entry whose project is no repository is not parked: its start fails and says why
 an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
 an open desk showing a dialog gets nothing typed
 backlog import: 8 rows into an empty store, then again 8 (idempotent by id)
@@ -333,6 +342,7 @@ harness parked is harness needs for text: the parked card's question from INBOX.
 harness parked is read-only
 harness parked: an unknown or glob run id is an error
 harness parked: id, why, question, both commands
+harness queue list shows the parked entry with not in origin/main in its reason
 harness report prints the writeup
 harness start --base: persisted, and the record branch and every lane start from it
 harness start refuses a run id whose tmux session another live run holds; its session lives
@@ -643,6 +653,8 @@ project names: the newest run whose PROJECT_DIR is no repository any more is pas
 project names: with no project at all the list says none, and the projects directory shows ~ for the home directory
 prompt: the initializer states counts as the command that prints them (N/M checks passed)
 queue add --continue marks its entry --requested; --automatic (the driver's, the debrief's) doesn't
+queue add --spec of a missing path: the line, exit 1, no .args file
+queue add --spec of a present path is queued
 queue add numbers past a parked entry
 queue end triggers one debrief, detached
 queue holds an entry whose project has a live run, starts the next one
@@ -828,6 +840,10 @@ slot_open: a dependency's tag that conflicts with main opens base_conflict namin
 slot_open: a slot that can't be checked out gives a note and needs-<m> (the loop never picks it again)
 slot_open: after a lane's base conflicts, reopening the previous lane checks its branch out again
 slot_open: the slot's excludes file keeps the user's global excludes (a ~ path expanded)
+start --spec "a b" with only the second missing names it, not the first
+start --spec of a file committed but not pushed is refused the same way (the working tree is not the reference)
+start --spec of a path not in origin/main: exit 1, the line, no worktree, state dir or queue entry
+start --spec of a pushed file proceeds: the run's worktree exists
 start queues when MAX_PARALLEL_RUNS are going
 status card: ASCII only under LC_ALL=C (lane and log lines are verbatim); no ESC off a TTY, colour with HARNESS_TTY=1; the worktree with the home directory as a tilde
 status card: COLUMNS=60 lines never exceed 60 columns but a URL; a long reason wraps under its label
@@ -993,8 +1009,10 @@ the rendered coding prompt has the deepEqual and bounded-rerun rule
 the report lists the review role when a review ran
 the retro prompt carries the end reason
 the run end goes out before the retro, once report.md is pushed
+the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the runner skips a parked entry and says so
 the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)
+the same runner goes on to the next entry and starts it (a --brief start of the same project)
 the session may read each run's state dir and the queue
 the session: an allowlist (dontAsk) and the never-list
 the stub claude's interactive mode prints the pane line and records input
