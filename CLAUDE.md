@@ -74,6 +74,6 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - F's memo (lib/record.sh) lives in its shell: one stored in $(F …), < <(…) or a pipe dies there; Fv <var> … keeps it (agent-harness-2026-11-03 2026-11-03)
 - `[[ $(jq …) -ge 1 ]]`: a jq `null` is an unbound name under set -u and ends the file; test in jq (`>= 1` == true) (agent-harness-2026-10-28 2026-10-28)
 - stub runs in one check file share origin main: update-ref it between runs; `git log --all` sees all runs' commits (agent-harness-2026-10-29-2 2026-10-29)
-- queue .args: one argument per line, a newline in one as \x1f (queue_add); a new reader decodes it as lib/queue.sh does (agent-harness-2026-10-28 2026-10-28)
 - stub-claude.sh is set -e, which holds in a `[[ … ]] && { … }` block: a stub step that may fail runs in `( set +e; … )` (agent-harness-2026-11-03 2026-11-03)
 - a check that sources lib/*.sh needs `HARNESS_HOME=$HH`: a run's session inherits its driver's, so a missing one fails only in a plain shell (2026-10-29)
+- 82-key-map-lint reads a node import string "'"$HH"'/lib/x.mjs" as a repo-root read: use "'$HERE'/../lib/x.mjs" (agent-harness-2026-11-03 2026-11-03)

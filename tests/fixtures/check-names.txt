@@ -19,6 +19,7 @@ F model twice: one node start, the same model id
 F model: that one start answers every alias; a claude-… id is answered without node
 F next: keyed on attempts.json, max and parked.json (one start twice, a new start and answer after each changes)
 F passes twice: one start, the exit code kept (1 both times)
+F poll with only the list: no unbound name ends the shell under set -u (f_poll_seed seeds nothing)
 F poll: one node start, and it fills the memo: summary, parked, blocked, next and milestone-done after it start none and print node's answers
 F summary after a passes flip: node again, the new count
 F summary on the list restored to its first content (a new mtime): the memo answers, no start (content, not mtime)

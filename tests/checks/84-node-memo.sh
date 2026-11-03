@@ -145,6 +145,9 @@ check "lanes_v: F lanes memoized on the list, attempts, parked and the state lan
   '[[ $(pd warm3 lanes) == 2 && $(pd lanes verified) == 1 && $(pd verified alive) == 1 && $(pd alive dead) == 1 ]] \
    && [[ $(cut -f1 "$PD/l1" | paste -sd,) == M3 && $(cut -f1 "$PD/l3" | paste -sd,) == M2,M3 && $(cut -f1 "$PD/l4" | paste -sd,) == M2 && $(cut -f1 "$PD/l5" | paste -sd,) == M2,M3 ]]'
 check "lanes_v: a pid file that is not digits is never memoized (node reads it its own way); stderr empty" '[[ $(pd dead odd) == 2 && ! -s $PD/err ]]'
+# C1-06 (the review's minor 2): a poll short of parked.json's argument answers, seeds nothing, and set -u holds
+pshort=$( export HARNESS_HOME=$HH; source "$HH/lib/record.sh"; set -u; cd "$PD"; F poll "$PL" > /dev/null; echo "rc=$? left=${#F_MEMO[@]}" ) 2>&1
+check "F poll with only the list: no unbound name ends the shell under set -u (f_poll_seed seeds nothing)" '[[ $pshort == rc=0\ left=* ]]'
 
 # ---- C1-03: an idle coordinator poll starts node at most once (MAX_LANES=2, M1's lane held, M2 waiting on M1) ----
 # needs_sweep's needs.mjs start is the poll's one (it writes needs.md: never skipped), so the window counts its polls by

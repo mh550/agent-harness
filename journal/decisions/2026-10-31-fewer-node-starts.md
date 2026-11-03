@@ -209,7 +209,9 @@ by `#<sha1 of the file's content>` (`sha1sum`; `-` when it can't be read): never
   `milestoneDone`, `pollLines`); the five stay. `F poll` is memoized as `next` is (the list's, `attempts.json`'s and
   `parked.json`'s hashes), and a stored answer fills the memo for the five under the keys `f_key` gives them
   (`f_poll_seed`), so a `$(F summary …)` on a `note "` line, which C1 may not change, hits it. The coordinator's end
-  check reads it once with `mapfile` (its two summaries on note lines hit); the lane loop asks it once per iteration
+  check runs it once in its own shell, output dropped, and its `F summary`, `F parked`, `F blocked` and `F next` lines,
+  as they were before C1, hit the memo it filled (Updated in place 2026-11-03: was read with `mapfile` and parsed by
+  label; C1-06's review simplified it, `docs/plans/2026-11-03-C1-review.md`); the lane loop asks it once per iteration
   before `F milestone-done` and `Fv next` (and the `parked`/`blocked` of a lane with nothing left).
 - **The idle poll starts node once**, `needs.mjs sweep` (it writes `needs.md`: stays). `unpark_warm` runs in the
   coordinator's own shell before the unchanged `for id in $(record F unpark … "$(answers_hash)")` line: `answers_v`

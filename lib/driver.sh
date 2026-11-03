@@ -571,16 +571,14 @@ while :; do
   # opens what it unblocked (R1-04: the run ended "no feature left to try" with M2 ready). Held, not alive: one that
   # exited before the opens stopped them unreaped (F1-03)
   if (( ! opened && alive == 0 && $(lanes_held) == 0 )); then
-    # one node start for the five answers below (F poll), which fills the memo: the summaries on note lines hit it
-    # (a throw there: the three separately, as before, so one bad answer doesn't blank the others)
-    Fv pl poll "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" || pl=$(F parked "$PARKED" "$LIST" | sed 's/^/parked\t/'
-      F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | sed 's/^/blocked\t/'; F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | sed 's/^/next\t/')
-    mapfile -t pl <<< "$pl"
+    # one node start for the four answers below (F poll), which fills the memo in this shell: every F after it, in a
+    # $( ) or a pipe too, is a hit (a throw fills nothing, so each starts node, as before)
+    F poll "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" > /dev/null
     [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }
-    parked=$(printf '%s\n' "${pl[@]}" | sed -n 's/^parked\t//p' | cut -f1 | paste -sd, -)
-    blocked=$(printf '%s\n' "${pl[@]}" | sed -n 's/^blocked\t//p' | awk -F'\t' '{print $2}' | sort -u | grep -vxF -f <(tr , '\n' <<< "$parked") | paste -sd, -)
+    parked=$(F parked "$PARKED" "$LIST" | cut -f1 | paste -sd, -)
+    blocked=$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | awk -F'\t' '{print $2}' | sort -u | grep -vxF -f <(tr , '\n' <<< "$parked") | paste -sd, -)
     # D5: features that could run but wait on a milestone that needs Michael (its lane can't open past it)
-    needs=""; [[ " ${pl[*]%%$'\t'*} " == *" next "* ]] && for f in "$STATE"/needs-*; do [[ -f $f ]] && needs+="${needs:+,}${f##*/needs-}"; done
+    needs=""; [[ -n $(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED") ]] && for f in "$STATE"/needs-*; do [[ -f $f ]] && needs+="${needs:+,}${f##*/needs-}"; done
     ends=()
     if [[ -n $blocked ]]; then note "blocked: the remaining features wait on $blocked (given up; needs Michael)"; ends+=("blocked on $blocked"); fi
     if [[ -n $parked ]]; then note "waiting on Michael: $parked (parked; answer in INBOX.md, then harness continue $RUN_ID)"; ends+=("waiting on Michael: $parked"); fi

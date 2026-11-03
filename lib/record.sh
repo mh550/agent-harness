@@ -100,6 +100,7 @@ f_memo() {
 f_poll_seed() {
   local -a kp; local l lab rest k
   local -A out=([summary]="" [parked]="" [blocked]="" [next]="")
+  (( $2 >= 5 )) || return 0   # parked.json's hash is the fourth argument: a shorter poll seeds nothing
   IFS=$'\x1f' read -ra kp <<< "${1}"$'\x1f'
   while IFS= read -r l; do
     [[ $l == *$'\t'* ]] || continue; lab=${l%%$'\t'*} rest=${l#*$'\t'}
