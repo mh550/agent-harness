@@ -7,6 +7,28 @@ The feature list (`feature_list.json`, 8 features): **Q1** (2) makes `harness st
 
 Steer through `INBOX.md` in this directory: set its first line to `status: pause` or `status: stop`, or write answers under `## Answers`. Questions from sessions appear here and in `INBOX.md` with a `Files:` line naming what to open first.
 
+### 2026-11-03 12:48 · verify Q1 · passes
+
+Q1-01 and Q1-02 hold: suite green (init full run, 843 s, 1102 tests), 83-spec-must-exist 18/18 re-run, bash -n clean, check names sorted, docs and decision present.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| Q1-01 | 1 | read lib/spec.sh spec_missing; bash tests/run.sh 83-spec | fetch, cat-file -e per path, prints 'spec <p>: not in <ref> (fetched now); commit and push it, or name its ref with --base'; checks 1-4 PASS | yes |
+| Q1-01 | 2 | read bin/harness:284 (spec_refuse before first queue_add) and :541 (queue add); checks resume/--brief PASS | check precedes queue_add; resume and --brief-only skip; queue add checked | yes |
+| Q1-01 | 3 | bash tests/run.sh 83-spec | PASS missing/unpushed/pushed/'a b' checks (no worktree, state dir, .args) | yes |
+| Q1-01 | 4 | bash tests/run.sh 83-spec | PASS --base, SPEC_FILES, --brief alone, resume, queue add missing/present | yes |
+| Q1-01 | 5 | grep journal/decisions/2026-10-31-spec-must-exist.md | default marked, rejected alternatives, runner part added in place (Updated in place line) | yes |
+| Q1-01 | 6 | bash -n bin/harness lib/queue.sh lib/spec.sh; git diff origin/main 1a22f2d -- lib/queue.sh \| wc -l | bash -n silent; queue.sh diff empty (0) at the Q1-01 commit; later changes are Q1-02's | yes |
+| Q1-01 | 7 | check.sh init output | green in 843 s, 1102 tests | yes |
+| Q1-02 | 1 | read lib/queue.sh:84 and lib/spec.sh spec_entry | spec_entry after chosen entry, before mv; park to held/ with .why, runner.log line, loop continues | yes |
+| Q1-02 | 2 | bash tests/run.sh 83-spec | PASS runner parks, goes on to next entry, planted .args parked, queue list shows reason; 18/18 | yes |
+| Q1-02 | 3 | grep README.md, docs/architecture.md, decision | README rows 56-57, arch §3 rows, §7 guard row 365, §12 text, decision updated in place | yes |
+| Q1-02 | 4 | read entries.jsonl verified_how | Opus review of Q1.diff: 0 Critical/Important, minors fixed RED to GREEN with checks | yes |
+| Q1-02 | 5 | bash -n bin/harness lib/queue.sh lib/spec.sh tests/checks/83-spec-must-exist.sh | no output | yes |
+| Q1-02 | 6 | check.sh init output | green in 843 s, 1102 tests | yes |
+
+- *124716-verify-Q1 · claude-sonnet-5-5*
+
 ### 2026-11-03 12:33 · Q1-02 · passes
 
 The queue runner re-checks a start entry's spec at dequeue (lib/spec.sh spec_entry, after the limit/weekly gates, before sync and the mv to done/) and parks a miss in queue/held/ with the line as .why, a parked line in runner.log, then starts the next entry. README, architecture §3/§7/§12 and the decision updated; Opus review: no Critical/Important, 4 minors fixed.
