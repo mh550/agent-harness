@@ -10,8 +10,8 @@ and tells Michael which block is next. Plan: `docs/plans/2026-11-03-test-suite-r
 
 | # | piece | kind | needs | status | result |
 |---|---|---|---|---|---|
-| D0 | the supervisor | `claude` session | – | not started | – |
-| D1 | re-baseline on `main` | `claude` measurement | C1 merged, box quiet | not started | – |
+| D0 | the supervisor | `claude` session | – | running | session 1, 2026-11-03: C1 merged (PR #78), box quiet (RUNNING 0, QUEUED 0, load 0.69); D1 given to Michael |
+| D1 | re-baseline on `main` | `claude` measurement | C1 merged, box quiet | not started | needs met 2026-11-03 (base `fc3ca47`); block handed to Michael, not yet run |
 | D2 | phase 1: unit tier | harness run (`2026-11-03-unit-tier.md`) | D1 | not started | – |
 | D3 | phase 3: tiers | harness run (`2026-11-03-suite-tiers.md`) | D2 merged | not started | – |
 | D4 | phase 2: resident helper | harness run (`2026-11-03-resident-helper.md`) | D3 merged | not started | – |
