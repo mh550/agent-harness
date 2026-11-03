@@ -20,6 +20,7 @@ It feeds three things: the **level-up interview** at work, a **portfolio case st
 | `evidence/prompts/` | The prompts that changed the outcome, verbatim, each with its "why it matters" | added as they happen |
 | `sessions/` | Verbatim transcript excerpts of design conversations (my messages, the key answers) | after a design conversation |
 | `runs/` | One evaluation per harness run (delivery, failures by cause, guards, cost) plus a cross-run evaluation per night (`<date>-evaluation.md`) | after each run or night (the harness writes the metrics; `harness report <run>` has the numbers) |
+| `learning/<date>-<topic>.md` | A study log from a tutoring session: concepts in a sentence each with this repo's example, the answers taken, and my reasoning trail, for talks | me + Claude, during the session |
 | `raw/` | Local, git-ignored raw material (transcript copies, screenshots) | never published as is |
 
 ## The iterations so far
