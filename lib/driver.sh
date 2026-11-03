@@ -120,8 +120,8 @@ wait_lanes() { while (( $(lanes_open) )); do lane_wait; reap; done; reap; }   # 
 # closed, in list order: the coordinator opens it as a merge lane (LANE_MERGE=1) ahead of F lanes' milestones. Not one
 # that needs Michael, except under `harness merge` (he asked)
 rebase_due() {
-  local m
-  for m in $(F milestones "$LIST"); do
+  local m ms; Fv ms milestones "$LIST"
+  for m in $ms; do
     [[ -f $STATE/rebase-$m ]] && ! lane_alive "$m" && [[ ${HARNESS_MERGE_ONLY:-} || ! -f $STATE/needs-$m ]] && printf '%s\trebase\n' "$m"
   done
   return 0
@@ -204,8 +204,8 @@ lanes_orphans() {
 # whose lane can open, each in its lane (LANE_ONCE), unless a stop came first or a usage-limit window holds, when its
 # session would only be refused (the next segment verifies first thing)
 deadline_verify() {
-  local m ms="" upto
-  for m in $(F milestones "$LIST"); do
+  local m ms="" upto all; Fv all milestones "$LIST"
+  for m in $all; do
     [[ -f $STATE/verified-$m || -f $STATE/needs-$m ]] || ! F milestone-done "$LIST" "$m" || ms+="${ms:+, }$m"
   done
   [[ -n $ms ]] || return 0
@@ -223,12 +223,13 @@ deadline_verify() {
 }
 
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
-  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x backlog nolist="" p=$RUN_DIR/retro-proposals.json
+  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x backlog sruns nolist="" p=$RUN_DIR/retro-proposals.json
   rstart=$(git rev-parse HEAD)
   # the backlog as the list prints it ({{BACKLOG}}): ids to reuse and statuses to cite, not re-argue
   backlog=$(node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --max-bytes 6000 2> "$SCRATCH/backlog.err") \
     || nolist="backlog: the retro prompt has no backlog: $(head -1 "$SCRATCH/backlog.err" | cut -c1-200 | sed 's/^backlog: //')"
-  HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$REC/summary.json HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
+  sruns=$(SUM suite-runs "$REC/summary.json" 2> /dev/null)   # {{SUITE_RUNS}}: the report's Suite runs value
+  HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$REC/summary.json HARNESS_SUITE_RUNS=${sruns:-not counted} HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
   # its one output file besides retro.md: restrict deletes it, so it goes to scratch first, and only when this retro
@@ -525,6 +526,7 @@ while :; do
   alive=$(lanes_open)
   if (( alive < MAX_LANES || paused )); then   # with every lane slot taken there is nothing to decide: no fetch each poll
     take_answers; sync_record
+    unpark_warm   # this shell's memo: unchanged answers and nothing to un-park start no node on the line below
     for id in $(record F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
     needs_sweep   # before the opens: an unparked feature's record resolves
   fi
@@ -553,6 +555,7 @@ while :; do
     log "count hold: $alive lane(s) counted, held until gone"; fi
   opened=0
   if (( alive < MAX_LANES )) && (( $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) <= $(date +%s) || alive == 0 )); then
+    lanes_v ln "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE"   # memoized on all it reads (and rebase_due's milestones with it)
     while IFS=$'\t' read -r m kind; do   # kind: "rebase" from rebase_due; F lanes' second field is its base tags
       [[ -n $m ]] || continue
       [[ -f $STATE/lanes/$m/pid ]] && continue   # exited since the count, not reaped yet: reap notes it first (R1-07)
@@ -561,13 +564,16 @@ while :; do
       if why=$(admit "$a"); then
         LANE_MERGE=$([[ $kind == rebase ]] && echo 1 || echo 0) lane_open "$m" && { opened=1 LAST_LANE=$m; rm -f "$STATE/lanes/$m/waiting"; }
       else mkdir -p "$STATE/lanes/$m"; wait_note "$m" "$why"; fi
-    done < <(rebase_due; F lanes "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$STATE")
+    done < <(rebase_due; [[ -z $ln ]] || printf '%s\n' "$ln")
   fi
   # nothing open and nothing to open: the run's end, as before lanes. Only when the count the opens used saw no lane
   # either: a lane that exited since then had its slot counted taken, so nothing was offered; the next poll reaps it and
   # opens what it unblocked (R1-04: the run ended "no feature left to try" with M2 ready). Held, not alive: one that
   # exited before the opens stopped them unreaped (F1-03)
   if (( ! opened && alive == 0 && $(lanes_held) == 0 )); then
+    # one node start for the four answers below (F poll), which fills the memo in this shell: every F after it, in a
+    # $( ) or a pipe too, is a hit (a throw fills nothing, so each starts node, as before)
+    F poll "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" > /dev/null
     [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }
     parked=$(F parked "$PARKED" "$LIST" | cut -f1 | paste -sd, -)
     blocked=$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | awk -F'\t' '{print $2}' | sort -u | grep -vxF -f <(tr , '\n' <<< "$parked") | paste -sd, -)

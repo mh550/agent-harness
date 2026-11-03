@@ -105,6 +105,15 @@ check "check partial: a lib/ diff runs the full suite (no arguments); a diff of 
   '[[ $(cat "$T/pk-lib/n") == 1 && -z $(pargs lib 1) && $(pargs two 1) == "memlint readme" ]] \
   && [[ $o_two =~ ^check:\ green\ \(partial:\ memlint\ readme,\ [0-9]+\ s\;\ cached\ for\ the\ rest\)$ ]]'
 
+# one treekey start (C1-03): --partial --names prints the map's names too, so check.sh never starts it a second time
+pkn=$(pk "CLAUDE.md:memlint:m2 README.md:readme ./CLAUDE.md:x" --partial --names); pkp=$(pk "CLAUDE.md:memlint:m2 README.md:readme ./CLAUDE.md:x" --partial)
+check "treekey --partial --names: --partial's lines, then one ': <path> <names…>' line per entry (a duplicate path merged), map order" \
+  '[[ $pkn == "$pkp"$'"'"'\n: CLAUDE.md memlint m2 x\n: README.md readme'"'"' ]]'
+pkcase two1; echo x >> "$T/pk/CLAUDE.md"; echo y >> "$T/pk/README.md"; mkdir -p "$T/pk-shim"
+printf '#!/usr/bin/env bash\necho "$*" >> "$NODE_COUNT"\nexec %q "$@"\n' "$(command -v node)" > "$T/pk-shim/node"; chmod +x "$T/pk-shim/node"
+o_two1=$(PATH=$T/pk-shim:$PATH NODE_COUNT=$T/pk-two1/node pc two1)
+check "check partial: one treekey start when the partial path needs the map's names too; the same subset, map order" \
+  '[[ $(grep -c "treekey\.mjs" "$T/pk-two1/node") == 1 && $(pargs two1 1) == "memlint readme" && $o_two1 == "check: green (partial: memlint readme, "* ]]'
 pkcase red; echo x >> "$T/pk/CLAUDE.md"; o_red=$(PK_RED=memlint pc red; echo "rc=$?")
 check "check partial: red twice is rerun once on memlint, says so, exits 1 and leaves no marker of either kind" \
   '[[ $(cat "$T/pk-red/n") == 2 && $(pargs red 1) == memlint && $(pargs red 2) == memlint && $(tail -1 <<< "$o_red") == rc=1 ]] \

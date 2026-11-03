@@ -13,6 +13,20 @@ DEBRIEF_PAGE_CMD gets the page
 DESK=0 by default, DESK_MODEL=opus
 DESK=0: no desk
 DESK=1: a park starts one desk, the run end reuses it
+F bump (a write) starts node every time
+F model of an unknown alias: node once (its fallback), then the memo
+F model twice: one node start, the same model id
+F model: that one start answers every alias; a claude-… id is answered without node
+F next: keyed on attempts.json, max and parked.json (one start twice, a new start and answer after each changes)
+F passes twice: one start, the exit code kept (1 both times)
+F poll with only the list: no unbound name ends the shell under set -u (f_poll_seed seeds nothing)
+F poll: one node start, and it fills the memo: summary, parked, blocked, next and milestone-done after it start none and print node's answers
+F summary after a passes flip: node again, the new count
+F summary on the list restored to its first content (a new mtime): the memo answers, no start (content, not mtime)
+F summary twice on one list: one node start, the same line
+F unpark that printed nothing: memoized; one that unparked: node every time, even on the same parked.json
+Fv returns the answer's exit code (passes A: 1, empty) from the memo
+Fv stores in the current shell: a $(F …) subshell after it hits, the same lines; Fv cuts trailing newlines
 INBOX repair in a run: noted, the record's comment as the driver wrote it, the question directly above ## Answers, C parked
 KEEP_SCRATCH=1 keeps the run's scratch; the default is 0
 M1 and M2 merged into main by PRs
@@ -50,6 +64,7 @@ a failed verify at the deadline is not retried: M1 needs Michael
 a given-up feature blocks what depends on it
 a given-up feature opens given_up naming what waits on it; harness needs and harness parked list it while parked.json is empty
 a held index.lock: written, not committed, nothing left staged
+a hit prints what node prints, byte for byte, and its exit code (snapshot, lint, a lone newline)
 a killed debrief changes nothing
 a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
 a later clean sync_main resolves main_conflict: its item in needs/done/, main merged cleanly, noted
@@ -62,6 +77,7 @@ a listed worktree whose directory is gone never ends gc: every later step still 
 a main conflict notifies once per main commit across 2 verifies: high, title <m> needs you, body the card, click needs.md
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
+a miss in a subshell is not kept (a nested subshell starts node again); the parent's own call then stores it
 a name taken in held/ parks under another; the one there is untouched; the queue drains
 a park notification: title, question, answer command, click and Edit INBOX action
 a park opens one parked record; card.question.line is the first line the session added, its URL that line
@@ -109,6 +125,7 @@ a stop without a reason says just: stopped by Michael (the note and ended)
 a stub session that adds a Gotchas line is noted
 a successful post: a line in run.log only
 a thin verify opens verify_thin under [<run>] M1 needs you; the notification's body is the card, click needs.md
+a throw in features.mjs exits 70 and is never kept (node each time)
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
 a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
@@ -124,8 +141,10 @@ an .args planted by hand naming a missing spec is parked at dequeue the same way
 an INBOX answer unparks it; the run finishes
 an absolute --spec inside the project is checked as its repo path: present proceeds, missing is refused by that path
 an entry whose project is no repository is not parked: its start fails and says why
+an idle coordinator poll (a free slot, nothing to open) starts node at most once: the window's starts without HARNESS_LANE are at most its polls (5 or more)
 an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
 an open desk showing a dialog gets nothing typed
+answers_hash: one inbox.mjs start for two calls on one INBOX.md, a new start and hash after its answers change
 backlog import: 8 rows into an empty store, then again 8 (idempotent by id)
 backlog import: a known id takes status, spec, pr and note, keeps first_seen, unions runs_seen
 backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)
@@ -145,6 +164,8 @@ backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.
 backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1
 backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
 backlog validate: the why line of a huge bad id stays under 300 bytes
+bash -n lib/lane.sh; node --check lib/metrics.mjs lib/summary.mjs
+bash -n lib/record.sh lib/lane.sh lib/driver.sh
 brief committed with the run
 brief, rules and policy in the prompt
 busy continue: another project's live run changes nothing: answer, then continue
@@ -164,6 +185,7 @@ check partial: a red with no HARNESS_FAILED line reruns the partial's names (a f
 check partial: a sidecar with a path twice or a malformed line is no path set: a CLAUDE.md diff runs in full
 check partial: a timeout in a partial run is said as such, no rerun, no marker
 check partial: check-runs.log gets a partial row for the partial run
+check partial: one treekey start when the partial path needs the map's names too; the same subset, map order
 check partial: red once then green is a flake: one flakes.jsonl row with partial, the green-after-a-rerun line, the reference marker
 check partial: red twice is rerun once on memlint, says so, exits 1 and leaves no marker of either kind
 check partial: the reference green-<ref> gone, or an exported map other than the tree's .harness/config.sh one, runs in full
@@ -271,6 +293,8 @@ eval: every task.json validates and a bad one is rejected
 eval: refuses past WEEKLY_STOP_AT
 eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
+features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
 features.mjs writes atomically: 200 bumps beside a parsing reader, which never throws; no temp file left
 files changed during the session are flagged in the note
 finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
@@ -459,6 +483,8 @@ lanes: an after into a later milestone (a name or its feature) never makes a lan
 lanes: an open milestone (lanes/<m>/pid alive) is not a candidate; a dead pid's is
 lanes: features with no milestone form lane default, listed first; without meta.env the tags name the state dir
 lanes: the default lane (no milestone, never verified) holds later lanes only until its features pass, then never opens
+lanes_v: F lanes memoized on the list, attempts, parked and the state laneState reads (two starts, milestones with it), a hit, then one start each on verified-, a lane pid alive, dead
+lanes_v: a pid file that is not digits is never memoized (node reads it its own way); stderr empty
 ledger has the run
 ledger row has harness_version and harness_dirty
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
@@ -520,6 +546,7 @@ metrics usage: five_hour reads the newest event's five-hour window; the default 
 metrics.jsonl: every session line has mem_peak_mb from its scope
 metrics.jsonl: mem_peak_mb is null when uncapped
 metrics.mjs: append writes mem_peak_mb as a number or null
+metrics.mjs: metricsRow writes suite_runs and suite_full as numbers, null when empty (no check-runs.log) or absent
 metrics.mjs: orientation stops at the first Write
 metrics.mjs: tokens, cache rate and context peak from the real fixture
 metrics: a resume that ended without a result line (a timeout, a kill) costs 0, never minus the session's
@@ -923,6 +950,12 @@ suite runner: a subset run fails on a name not in its fixture (a stopped file's 
 suite runner: a timing line per file, then the slowest three, the wall time and the jobs
 suite runner: stopped by a signal, it prints each unfinished file's output so far and names it, then exits non-zero
 suite runner: the parallel runner starts no scope of its own (no systemd-run call)
+suite runs: a run of one such session: full_per_session 2, harness report --md's Suite runs row after Flakes, the TTY card carries the same value
+suite runs: a run whose coding rows carry no count (rebuilt from run.log) reports 0
+suite runs: a session with no call has suite_runs 0 and suite_full 0
+suite runs: a session with two full calls and one subset has suite_runs 3 and suite_full 2 on its coding row, and the suite ran 3x note
+suite runs: the rendered retro prompt carries the run's full runs per coding session
+suite runs: the run's summary.json suite_runs is { sessions, full, runs, full_per_session } over its coding rows
 suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1
 suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0
 suite tools: STUB_BARRIER holds that feature's first coding session until stub_go
@@ -937,6 +970,7 @@ summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
+summary.mjs: suiteRuns counts the coding rows that carry suite_full; the Suite runs row after Flakes, 0 for none, none for an older summary
 summary: tokens, per verified feature, first-attempt rate, rework
 sync: a local commit outside ledger/ is left alone, nothing pushed
 sync: a modified tracked file: skipped
@@ -973,7 +1007,9 @@ the answer skill passes Michael's words through a quoted heredoc
 the answer skill's facts cite file:line
 the answer skill's first step is harness needs, harness parked its alias
 the answer skill: another live run of the project: ask, with the queue add and --now and their merge order
+the coding prompt's Finish: the Gotchas step before the suite step, so the tree you tested is the tree that ends the session
 the coding prompt's suite rule: a timeout twice the last wall, in the background over the tool's limit, never polled
+the coding prompt's suite rule: once, last, after your final edit of any file; TEST_JOBS=2 slower and as flaky; no 'once before you flip'
 the deadline verifies a complete milestone once and merges it
 the debrief page never reads a stop reason's words as its tone
 the debrief saw the queue's runs
@@ -995,6 +1031,7 @@ the initializer prompt has the resolved lint command
 the initializer prompt sizes reviews to the milestone
 the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the limit window is shared
+the memo writes nothing to disk (no file outside the check's own) and nothing to stderr
 the next debrief covers what the failed and killed ones missed
 the park goes out after the run branch is pushed (the link shows the question)
 the park notification is the record's: body PARKED: first, the question, the card's do commands, the answer line; Click needs.md
@@ -1027,6 +1064,7 @@ tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
 tmux: run id dot.run gets session h-dot-run, gone at keep 0
 treekey --names: the entries' names in map order (a duplicate path merged into the first), exit 1 and no line for a path no entry has
+treekey --partial --names: --partial's lines, then one ': <path> <names…>' line per entry (a duplicate path merged), map order
 treekey --partial: a CLAUDE.md-only change moves the full key (16 hex), keeps the reduced key, and differs in CLAUDE.md's blob line only
 treekey --partial: a dropped entry (directory, no name, outside the tree, under an ignored prefix) is one stderr line each; the output is the map's without it
 treekey --partial: a mapped path absent from the tree is a `- <path>` line, in map order
@@ -1057,6 +1095,7 @@ u3 review: an overlap with an ended run records on it in its state only: its wor
 u3 review: past --until with only lane-held entries the runner ends (it no longer polls until the lane ends)
 u3 review: queue list shows held: <project> busy for an entry a live lane holds (as the runner holds it)
 u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
+unpark_warm: with a feature to unpark it fills nothing (the unpark on the note line runs and prints it); with none, that unpark starts no node
 v2 tags don't merge on resume
 verifier caught A, re-queued
 verifier code edits reverted, never merged

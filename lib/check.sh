@@ -75,8 +75,10 @@ if (( $# )); then   # a subset: its output is the caller's; only a kill gets a l
   row subset; exit $rc
 fi
 
-# line 1 the tree's key, line 2 the key without the mapped paths, then one `<blob> <path>` per mapped path
-mapfile -t tk < <(node "$here/treekey.mjs" --partial 2> /dev/null); key=${tk[0]:-} red=${tk[1]:-} blobs=("${tk[@]:2}")
+# line 1 the tree's key, line 2 the key without the mapped paths, then one `<blob> <path>` per mapped path, then one
+# `: <path> <name>…` per map entry (--names: the partial run's checks, without a second start)
+mapfile -t tk < <(node "$here/treekey.mjs" --partial --names 2> /dev/null); key=${tk[0]:-} red=${tk[1]:-} blobs=() pmap=()
+for l in "${tk[@]:2}"; do if [[ $l == ": "* ]]; then pmap+=("${l#: }"); else blobs+=("$l"); fi; done
 [[ $key =~ ^[0-9a-f]{16}$ ]] || key=""   # treekey failed: the full run, no marker
 if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's test count (older markers are empty: its output's)
   n=""; read -r n < "$cache/green-$key"; [[ -n $n ]] || n=$(node "$here/testcount.mjs" "$scratch/check-$key.out")
@@ -100,6 +102,16 @@ bmap() { local -n m=$1; local l; for l in "${@:2}"; do
   [[ $l =~ ^([0-9a-f]{40}|[0-9a-f]{64}|-)\ ([^ ]+)$ && -z ${m[${BASH_REMATCH[2]}]+x} ]] || return 1; m[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}
 done; }
 
+# <path>… → pn: the names of the map entries (pmap, treekey's `: <path> <name>…` lines) whose path is one of them, map
+# order, each once (treekey.mjs mapNames); none when a path is no entry's
+pnames() {
+  local p e n; local -a w; local -A has=() mine=(); pn=()
+  for p; do mine[$p]=1; done
+  for e in "${pmap[@]}"; do read -ra w <<< "$e"; [[ ${mine[${w[0]}]+x} ]] && has[${w[0]}]=1; done
+  for p; do [[ ${has[$p]+x} ]] || return 0; done
+  for e in "${pmap[@]}"; do read -ra w <<< "$e"; [[ ${mine[${w[0]}]+x} ]] || continue
+    for n in "${w[@]:1}"; do [[ " ${pn[*]} " == *" $n "* ]] || pn+=("$n"); done; done
+}
 # Sets ref (the green tree this one differs from in mapped paths only) and pn (the checks that read those paths, map
 # order) and succeeds when a partial run may stand for the full one; any doubt fails, and the full run runs. The rows of
 # the plan's table, in order: the invariant is that a tree is never marked green by anything but a green run of every
@@ -118,8 +130,8 @@ partial() {
   [[ $(printf '%s\n' "${!was[@]}" | sort) == "$(printf '%s\n' "${!now[@]}" | sort)" ]] || return 1
   for p in "${!now[@]}"; do [[ ${was[$p]} == "${now[$p]}" ]] || s+=("$p"); done
   (( ${#s[@]} )) || return 1   # 8: nothing mapped differs (the full key would have matched)
-  read -ra pn <<< "$(node "$here/treekey.mjs" --names "${s[@]}" 2> /dev/null)"
-  (( ${#pn[@]} ))   # 9, 10: a path no entry's (treekey prints nothing), no name
+  pnames "${s[@]}"
+  (( ${#pn[@]} ))   # 9, 10: a path no entry's, no name
 }
 
 # The rerun guard on a red run (rc) whose output is <out>: once more by CHECK_RERUN, never after a timeout or a cap kill
