@@ -42,3 +42,4 @@
 - 2026-11-03 16:58 · merged main into harness-lane/agent-harness-2026-11-03/C1
 - 2026-11-03 16:58 · verify C1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-03 17:11 · context.md for C1: 14753 bytes
+- 2026-11-03 17:13 · C1 verified and tagged run/agent-harness-2026-11-03/C1
