@@ -18,7 +18,7 @@
         "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "Q1-02",
@@ -34,7 +34,9 @@
         "`bash -n bin/harness lib/queue.sh` and `bash -n` on every other shell file the milestone touched print nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
       ],
-      "after": ["Q1-01"],
+      "after": [
+        "Q1-01"
+      ],
       "passes": false
     },
     {
@@ -50,7 +52,9 @@
         "`git diff origin/main --stat -- bin lib tests prompts` prints nothing (the feature changes no code)",
         "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
       ],
-      "after": ["Q1"],
+      "after": [
+        "Q1"
+      ],
       "passes": false
     },
     {
@@ -67,7 +71,9 @@
         "`bash -n lib/record.sh` and `bash -n` on every other shell file touched print nothing; `node --check lib/features.mjs` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
       ],
-      "after": ["C1-01"],
+      "after": [
+        "C1-01"
+      ],
       "passes": false
     },
     {
@@ -85,7 +91,9 @@
         "`bash -n` on every shell file touched prints nothing; `node --check lib/features.mjs lib/treekey.mjs` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
       ],
-      "after": ["C1-02"],
+      "after": [
+        "C1-02"
+      ],
       "passes": false
     },
     {
@@ -101,7 +109,9 @@
         "`git diff origin/main --stat -- bin lib tests prompts` shows no file changed by this feature beyond C1-02's and C1-03's (the measurement changes no code)",
         "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
       ],
-      "after": ["C1-03"],
+      "after": [
+        "C1-03"
+      ],
       "passes": false
     },
     {
@@ -119,7 +129,9 @@
         "`bash -n lib/lane.sh` prints nothing; `node --check lib/metrics.mjs lib/summary.mjs` prints nothing; `LC_ALL=C sort -c tests/fixtures/check-names.txt` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
       ],
-      "after": ["C1-04"],
+      "after": [
+        "C1-04"
+      ],
       "passes": false
     },
     {
@@ -136,7 +148,9 @@
         "`bash -n` on every shell file the milestone touched prints nothing; `node --check` on every `.mjs` touched prints nothing; `bash tests/lint-sleeps.sh` prints nothing",
         "the suite is green: `bash tests/run.sh` ends with every check passing (`N/M checks passed`, no `FAIL` line)"
       ],
-      "after": ["C1-05"],
+      "after": [
+        "C1-05"
+      ],
       "passes": false
     }
   ]
