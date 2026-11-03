@@ -23,3 +23,6 @@
 - 2026-11-03 13:55 · C1-02: suite ran 2x (1629 s) in the session
 - 2026-11-03 13:55 · C1-02: gotchas +0 ~1 -0
 - 2026-11-03 13:55 · C1-02 · claude-opus-5-5 · passes=true · 49 min · 4/8 passing · tests 1121
+- 2026-11-03 13:55 · context.md for C1-03: 6849 bytes
+- 2026-11-03 14:48 · C1-03: suite ran 2x (1618 s) in the session
+- 2026-11-03 14:48 · C1-03 · claude-opus-5-5 · passes=true · 53 min · 5/8 passing · tests 1129

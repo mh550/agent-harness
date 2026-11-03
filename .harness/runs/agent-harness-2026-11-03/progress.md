@@ -7,6 +7,22 @@ The feature list (`feature_list.json`, 8 features): **Q1** (2) makes `harness st
 
 Steer through `INBOX.md` in this directory: set its first line to `status: pause` or `status: stop`, or write answers under `## Answers`. Questions from sessions appear here and in `INBOX.md` with a `Files:` line naming what to open first.
 
+### 2026-11-03 14:48 · C1-03 · passes
+
+features.mjs poll answers summary/parked/blocked/next/milestone-done in one start and fills F's memo for all five; the end check and the lane loop use it. The idle poll starts node once (needs sweep): unpark_warm, unparks, lanes_v (F lanes on a laneState fingerprint). treekey --partial --names: one start. No builtins. Opus review: 2 minors, fixed.
+
+- **Files:** lib/features.mjs, lib/record.sh, lib/driver.sh, lib/lane.sh, lib/check.sh, lib/treekey.mjs, tests/checks/84-node-memo.sh, tests/checks/81-partial-key.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-31-fewer-node-starts.md, docs/architecture.md
+- **Verified:** Full suite via check.sh: check: green in 788 s, 1129/1129 (scratch full2.out). The 8 new checks were red before the code (84: 6 FAIL, 81: 2 FAIL). The idle-poll check, run 6 times under 4 jobs (run.sh --repeat 6), counted 5 coordinator node starts in 5 polls, all needs.mjs sweep. Subset 45/46/47/48/49/50/13/34/73/80: 177/177. bash -n on the touched shell files and node --check on features.mjs and treekey.mjs are clean; the note-line grep against origin/main prints nothing.
+- **Tests:** 1121 → 1129
+- **Dead end:** starting the idle window at the first sweep after the barrier's .held — the lane bumps attempts.json just before its session, so the next poll's lanes_v misses once inside the window (flaky); the window now opens a full poll later
+- **Dead end:** test path "'"$HH"'/lib/features.mjs" inside a node -e script — 82-key-map-lint reads the quote after $HH as the bare root reading CLAUDE.md; pass it through an env var (FMJS) instead
+- **Discovery** (affects C1-06): Lines with note " can't change in C1, so the end check's summaries and the idle poll's `for id in $(record F unpark … $(answers_hash))` line stay as they are: F poll fills the memo for summary (f_poll_seed), and unpark_warm fills answers_hash and an empty unpark in the coordinator's shell first
+- **Discovery** (affects C1-06): lanes_v (lib/record.sh) is the coordinator's F lanes, memoized on a fingerprint of laneState's reads (verified-/needs- marks, pid + /proc existence, review-escalate size, meta.env); a pid file that isn't one number is no key. C1-06 should read this key hardest
+- **Discovery** (affects C1-04, run): metrics.mjs in the lane (MET usage twice and MET limit 2-3 times per finished session log, third of the top five) is not collapsed: the plan's §4 default is the next lever if C1-04 is short of the -20 % target
+- **Discovery** (affects run): CLAUDE.md's Gotchas is at memlint's 15-line cap (39-memlint-m4 goes red at 16): a new line must replace one
+- **Proposed change:** C1-03 step 3: the window's poll count is the coordinator's needs.mjs sweep starts (one per idle poll, unconditional) because the driver writes no per-poll line to run.log; a later spec could name that counter directly
+- *05-C1-03 · claude-opus-5-5*
+
 ### 2026-11-03 13:55 · C1-02 · passes
 
 lib/record.sh's F memoizes features.mjs's pure subcommands in a per-process assoc array keyed on sub + sha1 of each file arg + other args; Fv answers into a var in the current shell; models fills every alias in run_paths; answers_hash memoized on INBOX.md's hash; a throw exits 70. Busiest $(F …) sites moved to Fv. Decision Choice/Rejected written. Opus review: no Critical/Important, minors fixed.
