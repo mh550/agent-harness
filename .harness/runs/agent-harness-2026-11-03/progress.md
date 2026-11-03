@@ -7,6 +7,22 @@ The feature list (`feature_list.json`, 8 features): **Q1** (2) makes `harness st
 
 Steer through `INBOX.md` in this directory: set its first line to `status: pause` or `status: stop`, or write answers under `## Answers`. Questions from sessions appear here and in `INBOX.md` with a `Files:` line naming what to open first.
 
+### 2026-11-03 12:33 · Q1-02 · passes
+
+The queue runner re-checks a start entry's spec at dequeue (lib/spec.sh spec_entry, after the limit/weekly gates, before sync and the mv to done/) and parks a miss in queue/held/ with the line as .why, a parked line in runner.log, then starts the next entry. README, architecture §3/§7/§12 and the decision updated; Opus review: no Critical/Important, 4 minors fixed.
+
+- **Files:** lib/spec.sh, lib/queue.sh, bin/harness, tests/checks/83-spec-must-exist.sh, tests/fixtures/check-names.txt, README.md, docs/architecture.md, journal/decisions/2026-10-31-spec-must-exist.md
+- **Verified:** TDD: 4 runner checks red then green (83: 14/14 → 18/18 → 19/19); queue files 32, 15, 55 green; full suite green: check.sh 1102 tests in 857 s. Opus review of $HARNESS_SCRATCH/Q1.diff: check order in cmd_start, resume and --brief skips, park loop all hold; 0 Critical, 0 Important. Minors fixed RED→GREEN: taken held/ name parked under another name, non-repo project not parked, empty reason replaced, absolute --spec inside the project.
+- **Tests:** 1094 → 1102
+- **Dead end:** checking $T/wt/proj/<run> after a lib/queue.sh run — the runner's exit gc --all-merged removes merged worktrees; the check reads $HARNESS_STATE/proj/<run> instead
+- **Dead end:** a Gotchas line edited in CLAUDE.md while a full check.sh ran — the section was already at 15 (memlint red), and check.sh had taken the tree key at its start, so it cached red-<key> for the clean tree; a real code change (review minor 5) gave a new key
+- **Discovery** (affects run): lib/spec.sh now has spec_args (a start's run id/--spec/--base), spec_new_run (resume and --brief skips) and spec_entry (a .args file, project config in a subshell); bin/harness spec_refuse and queue add use them
+- **Discovery** (affects run): editing the worktree while a full check.sh runs can cache red-<key> for the pre-edit tree: never edit during a full run
+- **Question for Michael:** Default taken: an absolute --spec outside the project is checked as given and so refused (the run reads its worktree). Should one outside the project be allowed unchecked instead? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-03/slot-0/journal/decisions/2026-10-31-spec-must-exist.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-03/slot-0/lib/spec.sh:29
+- **Proposed change:** Review minors left open (not in Q1's scope): the runner's fetch has no timeout (ssh prompt or stalled network hangs the runner; cmd_start and lib/sync.sh have the same); `harness continue` of a run whose worktree gc removed is checked against SPEC_FILES (resume = worktree exists only); cmd_start makes the worktree from origin/main while the check reads origin/$MAIN_BRANCH
+- **Proposed change:** The session prompt could say: never edit the worktree while a full check.sh runs (the key is taken at its start)
+- *02-Q1-02 · claude-opus-5-5*
+
 ### 2026-11-03 11:15 · Q1-01 · passes
 
 harness start and queue add now refuse a --spec (or SPEC_FILES) path absent from origin/$MAIN_BRANCH (or --base) before anything is queued or started: lib/spec.sh spec_missing, bin/harness spec_refuse (before cmd_start's first queue_add; in queue add via a config subshell). A resume, --brief alone and add --continue skip it.
