@@ -1,0 +1,364 @@
+# programs
+git	835
+cat	419
+node	402
+date	328
+sed	250
+rm	227
+flock	180
+bash	179
+dirname	130
+mkdir	113
+sh	99
+jq	82
+tee	76
+touch	66
+cp	65
+grep	61
+stub-systemctl.sh	59
+git-receive-pack	54
+head	50
+git-upload-pack	45
+wc	41
+timeout	31
+stub-systemd-run.sh	30
+awk	28
+sleep	28
+mv	26
+tail	26
+ls	20
+check.sh	17
+tr	17
+cut	17
+paste	16
+cmp	16
+basename	14
+sha1sum	11
+stub-claude.sh	10
+find	8
+xargs	8
+stub-gh.sh	7
+sort	6
+stub-curl.sh	4
+mktemp	3
+harness	1
+readlink	1
+env	1
+driver.sh	1
+teardown.sh	1
+rmdir	1
+# rows: key	caller	class	count
+git	lib/lane.sh	lane	264
+cat	lib/driver.sh	driver	217
+date	lib/lane.sh	lane	160
+git	lib/driver.sh	driver	132
+flock	lib/lane.sh	lane	127
+date	lib/driver.sh	driver	97
+sed	tests/stub-systemctl.sh < lib/lane.sh	stub	80
+cat	tests/stub-gh.sh < lib/lane.sh	stub	77
+git	git < lib/lane.sh	lane	74
+rm	lib/lane.sh	lane	72
+date	lib/check.sh < lib/lane.sh	lane	63
+sh	git < lib/lane.sh	lane	58
+sed	lib/lane.sh	lane	57
+flock	lib/driver.sh	driver	52
+rm	bash -c < lib/lane.sh	lane	48
+tee	lib/lane.sh	lane	47
+cat	lib/lane.sh	lane	46
+sed	tests/stub-systemctl.sh < lib/check.sh	stub	45
+git	git-receive-pack < lib/lane.sh	lane	43
+git	node < lib/lane.sh	lane	42
+cp	lib/lane.sh	lane	42
+jq	tests/stub-claude.sh < lib/lane.sh	stub	40
+git	git < lib/driver.sh	driver	38
+sed	lib/driver.sh	driver	36
+rm	lib/check.sh < lib/lane.sh	lane	36
+git-receive-pack	bash -c < lib/lane.sh	lane	35
+grep	lib/lane.sh	lane	34
+bash	tests/stub-systemctl.sh < lib/lane.sh	stub	32
+dirname	tests/stub-systemctl.sh < lib/lane.sh	stub	32
+touch	bash -c < lib/lane.sh	lane	32
+git	node < lib/check.sh	lane	30
+jq	lib/lane.sh	lane	30
+tee	lib/driver.sh	driver	29
+head	lib/driver.sh	driver	29
+rm	lib/driver.sh	driver	28
+sleep	lib/driver.sh	driver	28
+mkdir	lib/lane.sh	lane	28
+git	node < bin/harness	cli	27
+git	git-receive-pack < tests/stub-claude.sh	stub	24
+rm	bash -c < lib/check.sh	lane	24
+sh	git < lib/driver.sh	driver	23
+git-upload-pack	bash -c < lib/lane.sh	lane	23
+mkdir	lib/check.sh < lib/lane.sh	lane	23
+git	tests/stub-claude.sh < lib/lane.sh	stub	23
+lib/features.mjs passes	lib/lane.sh	lane	22
+sed	tests/stub-systemctl.sh < lib/driver.sh	stub	21
+git	git-receive-pack < lib/driver.sh	driver	18
+bash	tests/stub-systemctl.sh < lib/check.sh	stub	18
+dirname	tests/stub-systemctl.sh < lib/check.sh	stub	18
+tail	lib/lane.sh	lane	18
+awk	lib/lane.sh	lane	17
+lib/features.mjs model	lib/lane.sh	lane	17
+git	git < tests/stub-claude.sh	stub	16
+stub-systemctl.sh	lib/lane.sh	lane	16
+stub-systemd-run.sh	lib/lane.sh	lane	16
+bash	tests/stub-systemd-run.sh < lib/lane.sh	stub	16
+dirname	bash -c < lib/lane.sh	lane	16
+mkdir	bash -c < lib/lane.sh	lane	16
+bash	bash -c < lib/lane.sh	lane	16
+timeout	bash -c < lib/lane.sh	lane	16
+stub-systemctl.sh	bash -c < lib/lane.sh	lane	16
+wc	tests/stub-systemctl.sh < lib/lane.sh	stub	16
+cat	tests/stub-systemctl.sh < lib/lane.sh	stub	16
+cat	bash -c < lib/lane.sh	lane	16
+mv	lib/lane.sh	lane	16
+ls	lib/lane.sh	lane	16
+cat	tests/stub-claude.sh < lib/lane.sh	stub	16
+lib/metrics.mjs usage	lib/lane.sh	lane	16
+cmp	lib/lane.sh	lane	16
+touch	bash -c < lib/check.sh	lane	16
+cp	lib/driver.sh	driver	15
+check.sh	lib/lane.sh	lane	15
+bash	lib/check.sh < lib/lane.sh	lane	15
+dirname	lib/check.sh < lib/lane.sh	lane	15
+git	lib/check.sh < lib/lane.sh	lane	15
+lib/treekey.mjs --partial	lib/check.sh < lib/lane.sh	lane	15
+git-upload-pack	bash -c < lib/driver.sh	driver	14
+lib/features.mjs milestone-done	lib/lane.sh	lane	14
+tr	lib/check.sh < lib/lane.sh	lane	14
+mkdir	lib/driver.sh	driver	13
+lib/testcount.mjs	lib/check.sh < lib/lane.sh	lane	13
+wc	lib/lane.sh	lane	13
+lib/treekey.mjs	lib/lane.sh	lane	13
+git	lib/git-core/git < lib/lane.sh	lane	13
+lib/metrics.mjs limit	lib/lane.sh	lane	13
+git	tests/stub-gh.sh < lib/lane.sh	stub	12
+grep	bin/harness	cli	11
+head	lib/lane.sh	lane	11
+lib/testcount.mjs	lib/lane.sh	lane	11
+bash	tests/stub-systemd-run.sh < lib/check.sh	stub	10
+basename	lib/lane.sh	lane	10
+cut	lib/lane.sh	lane	10
+node -e (inline)	tests/stub-claude.sh < lib/lane.sh	stub	10
+git	git < tests/stub-gh.sh	stub	10
+git-receive-pack	bash -c < lib/driver.sh	driver	9
+bash	tests/stub-systemctl.sh < lib/driver.sh	stub	9
+dirname	tests/stub-systemctl.sh < lib/driver.sh	stub	9
+rm	bash -c < lib/driver.sh	driver	9
+wc	tests/stub-systemctl.sh < lib/check.sh	stub	9
+cat	tests/stub-systemctl.sh < lib/check.sh	stub	9
+lib/metrics.mjs final	lib/lane.sh	lane	9
+lib/features.mjs ids	lib/lane.sh	lane	9
+git	node < lib/driver.sh	driver	8
+date	lib/check.sh < lib/driver.sh	driver	8
+jq	tests/stub-claude.sh < lib/driver.sh	stub	8
+sh	git < tests/stub-claude.sh	stub	8
+git-receive-pack	bash -c < tests/stub-claude.sh	stub	8
+git	lib/git-core/git < tests/stub-claude.sh	stub	8
+lib/inbox.mjs answers	lib/lane.sh	lane	8
+sha1sum	lib/lane.sh	lane	8
+lib/features.mjs unpark	lib/lane.sh	lane	8
+lib/needs.mjs sweep	lib/lane.sh	lane	8
+bash	timeout < lib/lane.sh	lane	8
+lib/treekey.mjs --partial	lib/lane.sh	lane	8
+lib/entries.mjs pack	lib/lane.sh	lane	8
+xargs	lib/lane.sh	lane	8
+lib/features.mjs snapshot	lib/lane.sh	lane	8
+lib/memlint.mjs store-line	lib/lane.sh	lane	8
+lib/render.mjs	lib/lane.sh	lane	8
+stub-claude.sh	timeout < lib/lane.sh	lane	8
+bash	tests/stub-claude.sh < lib/lane.sh	stub	8
+dirname	tests/stub-claude.sh < lib/lane.sh	stub	8
+head	tests/stub-claude.sh < lib/lane.sh	stub	8
+mkdir	tests/stub-claude.sh < lib/lane.sh	stub	8
+sed	tests/stub-claude.sh < lib/lane.sh	stub	8
+awk	tests/stub-claude.sh < lib/lane.sh	stub	8
+lib/entries.mjs validate	lib/lane.sh	lane	8
+lib/entries.mjs ingest	lib/lane.sh	lane	8
+lib/entries.mjs render	lib/lane.sh	lane	8
+lib/metrics.mjs append	lib/lane.sh	lane	8
+stub-systemd-run.sh	lib/check.sh < lib/lane.sh	lane	8
+dirname	bash -c < lib/check.sh	lane	8
+mkdir	bash -c < lib/check.sh	lane	8
+bash	bash -c < lib/check.sh	lane	8
+timeout	bash -c < lib/check.sh	lane	8
+bash	timeout < lib/check.sh	lane	8
+stub-systemctl.sh	bash -c < lib/check.sh	lane	8
+cat	bash -c < lib/check.sh	lane	8
+stub-systemctl.sh	lib/check.sh < lib/lane.sh	lane	8
+sh	git < tests/stub-gh.sh	stub	8
+git	bin/harness	cli	7
+git	git < bin/harness	cli	7
+lib/features.mjs model	lib/driver.sh	driver	7
+lib/features.mjs summary	lib/driver.sh	driver	7
+lib/features.mjs milestones	lib/driver.sh	driver	7
+grep	lib/check.sh < lib/lane.sh	lane	7
+paste	lib/check.sh < lib/lane.sh	lane	7
+lib/features.mjs summary	lib/lane.sh	lane	7
+cp	lib/check.sh < lib/lane.sh	lane	7
+find	lib/check.sh < lib/lane.sh	lane	7
+mv	lib/check.sh < lib/lane.sh	lane	7
+grep	lib/driver.sh	driver	6
+git	lib/git-core/git < lib/driver.sh	driver	6
+stub-systemctl.sh	lib/driver.sh	driver	6
+touch	bash -c < lib/driver.sh	driver	6
+paste	lib/lane.sh	lane	6
+stub-gh.sh	lib/lane.sh	lane	6
+bash	tests/stub-gh.sh < lib/lane.sh	stub	6
+dirname	tests/stub-gh.sh < lib/lane.sh	stub	6
+mkdir	tests/stub-gh.sh < lib/lane.sh	stub	6
+sort	tests/stub-gh.sh < lib/lane.sh	stub	6
+git-upload-pack	bash -c < tests/stub-gh.sh	stub	6
+git	git-receive-pack < tests/stub-gh.sh	stub	6
+rm	lib/check.sh < lib/driver.sh	driver	5
+cut	lib/driver.sh	driver	5
+lib/features.mjs next	lib/lane.sh	lane	5
+lib/features.mjs kind	lib/lane.sh	lane	5
+lib/features.mjs bump	lib/lane.sh	lane	5
+lib/inbox.mjs repair	lib/lane.sh	lane	5
+lib/inbox.mjs question	lib/lane.sh	lane	5
+lib/memlint.mjs gotchas	lib/lane.sh	lane	5
+lib/features.mjs repair	lib/lane.sh	lane	5
+stub-systemd-run.sh	lib/driver.sh	driver	4
+bash	tests/stub-systemd-run.sh < lib/driver.sh	stub	4
+git	node < lib/check.sh	driver	4
+lib/metrics.mjs usage	lib/driver.sh	driver	4
+jq	lib/driver.sh	driver	4
+lib/needs.mjs sweep	lib/driver.sh	driver	4
+dirname	lib/lane.sh	lane	4
+lib/features.mjs pass	lib/lane.sh	lane	4
+touch	lib/lane.sh	lane	4
+cat	bin/harness	cli	3
+bash	lib/driver.sh	driver	3
+timeout	lib/driver.sh	driver	3
+awk	lib/driver.sh	driver	3
+dirname	bash -c < lib/driver.sh	driver	3
+mkdir	bash -c < lib/driver.sh	driver	3
+bash	bash -c < lib/driver.sh	driver	3
+timeout	bash -c < lib/driver.sh	driver	3
+stub-systemctl.sh	bash -c < lib/driver.sh	driver	3
+wc	tests/stub-systemctl.sh < lib/driver.sh	stub	3
+cat	tests/stub-systemctl.sh < lib/driver.sh	stub	3
+cat	bash -c < lib/driver.sh	driver	3
+mkdir	lib/check.sh < lib/driver.sh	driver	3
+rm	bash -c < lib/check.sh	driver	3
+lib/testcount.mjs	lib/driver.sh	driver	3
+lib/treekey.mjs	lib/driver.sh	driver	3
+tail	lib/driver.sh	driver	3
+cat	tests/stub-claude.sh < lib/driver.sh	stub	3
+git	tests/stub-claude.sh < lib/driver.sh	stub	3
+lib/inbox.mjs answers	lib/driver.sh	driver	3
+sha1sum	lib/driver.sh	driver	3
+lib/features.mjs unpark	lib/driver.sh	driver	3
+lib/features.mjs lanes	lib/driver.sh	driver	3
+lib/features.mjs repair-verify	lib/lane.sh	lane	3
+lib/features.mjs unpass	lib/lane.sh	lane	3
+tail	lib/check.sh < lib/lane.sh	lane	3
+basename	bin/harness	cli	2
+sh	git < bin/harness	cli	2
+git-upload-pack	bash -c < bin/harness	cli	2
+dirname	lib/driver.sh	driver	2
+basename	lib/driver.sh	driver	2
+touch	lib/driver.sh	driver	2
+bash	timeout < lib/driver.sh	driver	2
+check.sh	lib/driver.sh	driver	2
+bash	lib/check.sh < lib/driver.sh	driver	2
+dirname	lib/check.sh < lib/driver.sh	driver	2
+git	lib/check.sh < lib/driver.sh	driver	2
+stub-systemd-run.sh	lib/check.sh < lib/driver.sh	driver	2
+lib/treekey.mjs --partial	lib/check.sh < lib/driver.sh	driver	2
+tr	lib/check.sh < lib/driver.sh	driver	2
+touch	bash -c < lib/check.sh	driver	2
+lib/testcount.mjs	lib/check.sh < lib/driver.sh	driver	2
+ls	lib/driver.sh	driver	2
+lib/memlint.mjs store-line	lib/driver.sh	driver	2
+lib/render.mjs	lib/driver.sh	driver	2
+stub-claude.sh	timeout < lib/driver.sh	driver	2
+bash	tests/stub-claude.sh < lib/driver.sh	stub	2
+dirname	tests/stub-claude.sh < lib/driver.sh	stub	2
+head	tests/stub-claude.sh < lib/driver.sh	stub	2
+mkdir	tests/stub-claude.sh < lib/driver.sh	stub	2
+sed	tests/stub-claude.sh < lib/driver.sh	stub	2
+paste	lib/driver.sh	driver	2
+lib/metrics.mjs final	lib/driver.sh	driver	2
+lib/metrics.mjs append	lib/driver.sh	driver	2
+lib/notify.mjs urls	lib/driver.sh	driver	2
+stub-curl.sh	lib/driver.sh	driver	2
+bash	tests/stub-curl.sh < lib/driver.sh	stub	2
+lib/features.mjs deps	lib/driver.sh	driver	2
+lib/features.mjs milestone-done	lib/driver.sh	driver	2
+lib/features.mjs evidence	lib/lane.sh	lane	2
+lib/features.mjs milestones	lib/lane.sh	lane	2
+lib/features.mjs deps	lib/lane.sh	lane	2
+lib/metrics.mjs summary	lib/lane.sh	lane	2
+tail	tests/stub-gh.sh < lib/lane.sh	stub	2
+ls	tests/stub-gh.sh < lib/lane.sh	stub	2
+grep	tests/stub-gh.sh < lib/lane.sh	stub	2
+mktemp	tests/stub-gh.sh < lib/lane.sh	stub	2
+cut	tests/stub-gh.sh < lib/lane.sh	stub	2
+git-receive-pack	bash -c < tests/stub-gh.sh	stub	2
+git	lib/git-core/git < tests/stub-gh.sh	stub	2
+touch	tests/stub-gh.sh < lib/lane.sh	stub	2
+stub-curl.sh	lib/lane.sh	lane	2
+bash	tests/stub-curl.sh < lib/lane.sh	stub	2
+mv	lib/driver.sh	driver	2
+lib/summary.mjs build	lib/driver.sh	driver	2
+lib/summary.mjs report	lib/driver.sh	driver	2
+harness	?	?	1
+bash	bin/harness	cli	1
+readlink	bin/harness	cli	1
+dirname	bin/harness	cli	1
+mkdir	bin/harness	cli	1
+flock	bin/harness	cli	1
+lib/overlap.mjs runs	bin/harness	cli	1
+rm	bin/harness	cli	1
+env	bin/harness	cli	1
+driver.sh	env < bin/harness	cli	1
+mktemp	lib/driver.sh	driver	1
+lib/deploy.mjs slug	lib/driver.sh	driver	1
+stub-gh.sh	timeout < lib/driver.sh	driver	1
+bash	tests/stub-gh.sh < lib/driver.sh	stub	1
+dirname	tests/stub-gh.sh < lib/driver.sh	stub	1
+mkdir	tests/stub-gh.sh < lib/driver.sh	stub	1
+cat	tests/stub-gh.sh < lib/driver.sh	stub	1
+lib/deploy.mjs status	lib/driver.sh	driver	1
+lib/memlint.mjs	timeout < lib/driver.sh	driver	1
+dirname	tests/stub-systemd-run.sh < lib/driver.sh	stub	1
+lib/treekey.mjs --partial	lib/driver.sh	driver	1
+dirname	tests/stub-systemd-run.sh < lib/check.sh	stub	1
+dirname	bash -c < lib/check.sh	driver	1
+mkdir	bash -c < lib/check.sh	driver	1
+bash	bash -c < lib/check.sh	driver	1
+timeout	bash -c < lib/check.sh	driver	1
+bash	timeout < lib/check.sh	driver	1
+stub-systemctl.sh	bash -c < lib/check.sh	driver	1
+cat	bash -c < lib/check.sh	driver	1
+stub-systemctl.sh	lib/check.sh < lib/driver.sh	driver	1
+cp	lib/check.sh < lib/driver.sh	driver	1
+find	lib/check.sh < lib/driver.sh	driver	1
+mv	lib/check.sh < lib/driver.sh	driver	1
+lib/summary.mjs calibration	lib/driver.sh	driver	1
+lib/inbox.mjs repair	lib/driver.sh	driver	1
+lib/entries.mjs validate	lib/driver.sh	driver	1
+lib/entries.mjs ingest	lib/driver.sh	driver	1
+lib/entries.mjs render	lib/driver.sh	driver	1
+lib/features.mjs lint	lib/driver.sh	driver	1
+lib/features.mjs undeclared	lib/driver.sh	driver	1
+lib/features.mjs grant	lib/lane.sh	lane	1
+git	git-upload-pack < lib/driver.sh	driver	1
+touch	tests/stub-claude.sh < lib/lane.sh	stub	1
+sed	lib/check.sh < lib/lane.sh	lane	1
+rm	tests/stub-claude.sh < lib/lane.sh	stub	1
+lib/metrics.mjs summary	lib/driver.sh	driver	1
+grep	lib/check.sh < lib/driver.sh	driver	1
+paste	lib/check.sh < lib/driver.sh	driver	1
+teardown.sh	bash -c < lib/driver.sh	driver	1
+bash	.harness/teardown.sh < lib/driver.sh	driver	1
+tr	.harness/teardown.sh < lib/driver.sh	driver	1
+touch	.harness/teardown.sh < lib/driver.sh	driver	1
+rmdir	lib/driver.sh	driver	1
+lib/backlog.mjs list	lib/driver.sh	driver	1
+lib/metrics.mjs limit	lib/driver.sh	driver	1
+lib/features.mjs next	lib/driver.sh	driver	1
+lib/summary.mjs ledger-line	lib/driver.sh	driver	1
