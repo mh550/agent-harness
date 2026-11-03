@@ -7,6 +7,22 @@ The feature list (`feature_list.json`, 8 features): **Q1** (2) makes `harness st
 
 Steer through `INBOX.md` in this directory: set its first line to `status: pause` or `status: stop`, or write answers under `## Answers`. Questions from sessions appear here and in `INBOX.md` with a `Files:` line naming what to open first.
 
+### 2026-11-03 13:05 · C1-01 · passes
+
+Exec table: one stub harness start of file 13 under strace (402 node starts = 10.8 of 20.4 CPU-s) plus the whole file (3,139 node; lanes 1,945, driver 975, stub 48, checks 9; node 49% of 170.6 CPU-s) in the fewer-node-starts decision; plan names the memo, the subshell constraint, the poll collapse, no builtins. No code change.
+
+- **Files:** journal/decisions/2026-10-31-fewer-node-starts.md, docs/plans/2026-11-03-C1-suite-cpu.md, findings-and-research/2026-11-03-exec-table/
+- **Verified:** KEEP=1 tests/run.sh 13 (66/66, kept /tmp/tmp.udNNEx7iBD); by-hand start under strace+time -v: /tmp/harness/agent-harness/agent-harness-2026-11-03/lanes/C1/execs.strace, /tmp/harness/agent-harness/agent-harness-2026-11-03/lanes/C1/stubstart.out, /tmp/harness/agent-harness/agent-harness-2026-11-03/lanes/C1/stubstart.time; plain: /tmp/harness/agent-harness/agent-harness-2026-11-03/lanes/C1/stubstart-plain.time (19.0 s, 12.93+7.51); whole file: /tmp/harness/agent-harness/agent-harness-2026-11-03/lanes/C1/file13.strace, /tmp/harness/agent-harness/agent-harness-2026-11-03/lanes/C1/file13-plain.time (185 s, 170.6 CPU-s); git diff origin/main --stat -- bin lib tests prompts empty; check.sh green (cached, 1102 tests)
+- **Tests:** 1102 → 1102
+- **Dead end:** ${ cmd; } (current-shell command substitution) for a memo filled inside $( ) — bash 5.2.21 on this box: bad substitution (5.3 only)
+- **Discovery** (affects C1-02, C1-03): bash 5.2: an F memo entry written inside $(F …), < <(…) or a pipe dies with the subshell; most answer-reading F sites are $( ). The plan's default: F model fills every alias at once (a models subcommand), Fv <var> <sub> … runs F in the current shell
+- **Discovery** (affects C1-03): An idle coordinator poll with a free slot starts node 5 times: F unpark, inbox answers, needs.mjs sweep, F milestones (rebase_due), F lanes. needs sweep is not memoizable, so C1-03's at-most-one bound needs F lanes memoized on the state inputs laneState reads (plan §4)
+- **Discovery** (affects C1-03, C1-04): treekey.mjs --names ran 0 times in file 13: the check.sh treekey merge saves nothing there; date/cat are not in the top five, so no builtin change
+- **Discovery** (affects C1-04): Plan §6 predicts 11-16% of file 13's CPU from C1-02+C1-03, under the spec's -20%: C1-04 may record a miss
+- **Proposed change:** C1-03 step 2/3: name the F lanes memo keyed on the list/attempts/parked hashes plus a bash fingerprint of laneState's inputs (verified-/needs- marks, lane pids alive, review-escalate, meta.env RUN_ID); without it the idle poll's floor is 2 node starts (needs.mjs sweep + F lanes) and step 3's bound can't hold
+- **Proposed change:** C1-03: add metrics.mjs (third of the top five, 314 per file): MET limit memoized on the session log's hash + wall + exit, the two MET usage calls in one start
+- *03-C1-01 · claude-opus-5-5*
+
 ### 2026-11-03 12:48 · verify Q1 · passes
 
 Q1-01 and Q1-02 hold: suite green (init full run, 843 s, 1102 tests), 83-spec-must-exist 18/18 re-run, bash -n clean, check names sorted, docs and decision present.
