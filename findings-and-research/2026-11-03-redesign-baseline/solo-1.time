@@ -1,0 +1,25 @@
+Running as unit: run-u29642.scope; invocation ID: 80190ec48c934ea8a2d9d60a7a749535
+	Command being timed: "env TEST_JOBS=4 bash tests/run.sh"
+	User time (seconds): 1941.79
+	System time (seconds): 1171.31
+	Percent of CPU this job got: 400%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 12:56.72
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 98076
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 926
+	Minor (reclaiming a frame) page faults: 325155404
+	Voluntary context switches: 3600801
+	Involuntary context switches: 307295
+	Swaps: 0
+	File system inputs: 1200
+	File system outputs: 2068632
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+rc=0

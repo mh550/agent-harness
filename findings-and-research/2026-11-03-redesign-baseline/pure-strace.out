@@ -1,0 +1,145 @@
+tmp: /tmp/tmp.g8Hm03iX03
+PASS lint: no-anchor trips "works correctly", not "the suite is green" or "curl :7814/x returns 200"
+PASS lint: outside-repo trips ~ and /home/ paths, not lib/driver.sh or /tmp/harness/
+PASS lint: self-match trips a grep of progress.md for the step's own words, not of harness-log.md or lib/
+PASS lint: self-match reads grep as a command: prose, option values, -x, redirects, egrep and BRE escapes
+PASS lint: self-match ends the command at a closing backtick or a glued |, and reads --regexp=
+PASS lint: undeclared trips a later milestone's first feature without after, not the first milestone's
+PASS lint: review-small for a review in a two-build milestone; review-missing for five builds without one; neither for five with one or docs only
+PASS lint: the note counts by rule and names the first finding; clean says clean
+PASS lint: unit-collision names each milestone whose LANEU name another shares (M1-x, M1.x, M1_x), none for M1 and M2
+PASS lint: unreproducible flags a time bound or one run's count, once per step, with its message
+PASS lint: unreproducible leaves names, flags, budgets, sizes and file counts alone
+PASS lint: RULES and the header comment name unit-collision and unreproducible; the note counts them
+PASS prompt: the initializer states counts as the command that prints them (N/M checks passed)
+PASS lint: the CLI prints <id> step <n> <rule> <text> lines, exit 1 with findings and 0 clean
+14/14 checks passed
+07-step-lint-pure-r3: 14 checks, 1.1 s
+tmp: /tmp/tmp.U6Of1EdcQ3
+PASS deploy.mjs: vercel and netlify guards merge, keep keys and detect
+PASS deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
+PASS summary.mjs: cause and rework read the log by exact id (E1 review)
+PASS metrics.mjs: append writes mem_peak_mb as a number or null
+PASS summary.mjs: report lists only the sessions over 2 GB
+5/5 checks passed
+11-deploy-guards-pure-and: 5 checks, 0.6 s
+tmp: /tmp/tmp.WUjAqoF3ec
+PASS view: lib/view.mjs has a usage header, imports only node: built-ins, exports the formatter's functions, and node --check passes
+PASS view: context width is COLUMNS when a whole number >= 40, else a TTY'\''s columns, else 100; narrow below 72
+PASS view: context tty from isTTY or HARNESS_TTY; colour only on a TTY without NO_COLOR or TERM=dumb, HARNESS_COLOR overrides
+PASS view: glyphs unicode from the first set of LC_ALL, LC_CTYPE, LANG naming UTF-8; HARNESS_GLYPHS overrides; ascii otherwise
+PASS view: context now is HARNESS_NOW when a whole number, else the clock
+PASS view: the glyph set is fixed, each one text-presentation code point of width 1, with its ASCII form; an unknown name throws
+PASS view: displayWidth ignores ANSI escapes and combining marks and counts wide characters 2
+PASS view: paint wraps in SGR only with colour on; an unknown style throws
+PASS view: cut never splits a code point or an SGR sequence and ends in the cut glyph; pad right-aligns numbers
+PASS view: table lines stay within 40, 60, 80 and 120 columns with a 60-character id whole and a 300-character reason cut
+PASS view: table puts a row'\''s sub lines under it at 4 and gives no second line to an empty flex value when narrow
+PASS view: an over-wide narrow row breaks at a column gap before folding: an id that fits the width stays whole, no blank line
+PASS view: card puts a URL inside a value on its own line at 2, splits a value at newlines, keeps a long label and a tiny width inside the line
+PASS view: when and duration use local time: 00:19 and a local midnight under TZ=America/New_York
+PASS view: section fills to the width with the rule glyph; an empty one is one line without the rule; rule is the width
+PASS view: card wraps a 200-character value under an 11-wide label with a hanging indent, keeps lines verbatim at 4 and a URL whole
+PASS view: ago gives now 4m 3h 2d 5w for 0 s, 240 s, 3 h, 2 d and 5 w before now; a future time is now
+PASS view: when gives 2026-10-27 00:19 (10h ago) under TZ=UTC, and (now) under a minute
+PASS view: duration takes 30m 6h 2d 1w and a date relative to now, and fails on abc
+PASS view: home shortens a path under the home directory to a tilde and leaves other paths
+PASS view: endClass gives each reason in tests/fixtures/end-reasons.txt its class; an unknown or empty reason is failed
+PASS view: tests/fixtures/end-reasons.txt holds every literal reason finish, END_REASON and a run-ending lane exit write
+PASS view: the CLI renders a table, a card and a section from tab-separated stdin
+23/23 checks passed
+51-view-pure: 23 checks, 2.3 s
+tmp: /tmp/tmp.bHrrhcyxif
+PASS parked.mjs: the report names the answer and continue commands
+PASS parked.mjs: the question is the feature's INBOX section
+PASS parked.mjs: the newest question wins, ids with dots, code fences, never Michael's answers
+PASS parked.mjs: another live run of the project: the queue add and --now, each with its merge order
+PASS a body over the cap is trimmed
+5/5 checks passed
+03-harness-parked-pure-report: 5 checks, 0.5 s
+tmp: /tmp/tmp.F1rZE5do3M
+PASS backlog merge: a new id becomes one proposed row first seen in its run
+PASS backlog merge: a known id adds its run to runs_seen once, status unchanged
+PASS backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
+backlog: unknown id no-such
+backlog: status must be one of proposed, specced, queued, merged, dropped
+PASS backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1
+PASS backlog list: proposed first, then more runs_seen first within a status
+backlog: line 1: not JSON (Expected property name or '}' in JSON at position 1 (line 1 column 2))
+PASS backlog import: 8 rows into an empty store, then again 8 (idempotent by id)
+PASS backlog import: a known id takes status, spec, pr and note, keeps first_seen, unions runs_seen
+PASS backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)
+PASS backlog merge: a title's newlines and control characters fold to one space, at most 200 characters
+PASS backlog validate: the why line of a huge bad id stays under 300 bytes
+PASS backlog list: past --max-bytes every row keeps its id and status, full lines first
+PASS backlog list --jsonl: a row too big is skipped, not the rest; a cut list ends with a {"more": n} line
+12/12 checks passed
+35-backlog-pure-m1: 12 checks, 3.0 s
+tmp: /tmp/tmp.dDA0940UVQ
+PASS metrics.mjs: tokens, cache rate and context peak from the real fixture
+PASS metrics.mjs: orientation stops at the first Write
+PASS metrics: session-id prints the init line's session_id of first.jsonl
+{"at":"2026-11-03T23:23:03.436Z","run":"run","kind":"entry-resume","role":"coding","feature":"A","model":"opus","passes":false,"cost_usd":0.00240851,"wall_s":30,"api_s":1,"turns":1,"tokens_in":2,"cache_read":15121,"cache_write":11278,"tokens_out":3,"cache_hit_rate":0.573,"context_peak":26401,"orient_tokens":26404,"orient_turns":1,"orient_s":0,"exit":0,"env":false,"result":"success","api_error":null,"final":"two","mem_peak_mb":null,"lane":"M1","suite_runs":null,"suite_full":null}
+PASS metrics: an entry-resume row from first.jsonl and resumed.jsonl holds the total_cost_usd difference jq computes
+{"at":"2026-11-03T23:23:03.515Z","run":"run","kind":"entry-resume","role":"coding","feature":"A","model":"opus","passes":false,"cost_usd":0.0002822399999999996,"wall_s":30,"api_s":2,"turns":1,"tokens_in":2,"cache_read":26374,"cache_write":84,"tokens_out":3,"cache_hit_rate":0.997,"context_peak":26460,"orient_tokens":26463,"orient_turns":1,"orient_s":0,"exit":0,"env":false,"result":"success","api_error":null,"final":"three","mem_peak_mb":null,"lane":"M1","suite_runs":null,"suite_full":null}
+PASS metrics: resumed-again-under-cap.jsonl against resumed.jsonl gives a positive difference
+{"at":"2026-11-03T23:23:03.576Z","run":"run","kind":"entry-resume","role":"coding","feature":"A","model":"opus","passes":false,"cost_usd":0,"wall_s":30,"api_s":0,"turns":0,"tokens_in":null,"cache_read":null,"cache_write":null,"tokens_out":null,"cache_hit_rate":null,"context_peak":26401,"orient_tokens":26404,"orient_turns":1,"orient_s":0,"exit":124,"env":false,"result":"no-result","api_error":null,"final":"","mem_peak_mb":null,"lane":null,"suite_runs":null,"suite_full":null}
+PASS metrics: a resume that ended without a result line (a timeout, a kill) costs 0, never minus the session's
+PASS metrics: summary counts an entry-resume row's cost but never as a session
+7/7 checks passed
+05-metrics-pure-tokens-cache: 7 checks, 0.7 s
+tmp: /tmp/tmp.pSD6OflecN
+PASS render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
+PASS render.mjs: --raw applies to the next file only
+2/2 checks passed
+04-render-pure-sections-go: 2 checks, 0.3 s
+tmp: /tmp/tmp.fgRQjyL3pI
+PASS notify.mjs: trimBody caps at 3500 bytes with …
+PASS notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3
+PASS notify.mjs: githubUrls for ssh, https and non-GitHub origins
+PASS notify.mjs: inboxQuestion is the lines added above ## Answers (never Michael's old answers)
+4/4 checks passed
+02-notifications-pure-body-cap: 4 checks, 0.4 s
+tmp: /tmp/tmp.K5S3PWEkd3
+PASS testCount: node:test fixture gives 3
+PASS testCount: pytest fixture gives 4
+PASS testCount: jest fixture gives the Tests: count (7), not Test Suites:
+PASS testCount: cargo fixture gives the sum of its test result lines (3)
+PASS testCount: go fixture gives its --- PASS count (3)
+PASS testCount: a HARNESS_TESTS= line wins over the jest summary (1115, not 7), source contract
+PASS testCount: the last HARNESS_TESTS= line wins, and only a whole line counts
+PASS testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 is no contract, a CRLF one is
+PASS testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)
+PASS testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
+10/10 checks passed
+06-test-counts-pure-r1: 10 checks, 1.2 s
+tmp: /tmp/tmp.WEDnsuzfKs
+PASS after may name a milestone
+1/1 checks passed
+01-scheduler-pure-after-may: 1 checks, 0.2 s
+tmp: /tmp/tmp.CFHuA6F3nc
+PASS entries.mjs: validate accepts the schema and names what is wrong
+PASS entries.mjs: progress renders 15 in full and the rest as archive lines
+PASS entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap
+PASS entries.mjs: resolved is an array of strings and normalize keeps it
+PASS entries.mjs: the pack drops a question a later entry resolves
+PASS entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
+PASS entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
+PASS memlint: currentRules reads a directory store and the three file shapes newest first
+PASS memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row
+PASS entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
+PASS entries.mjs: a milestone pack lists failed verify rows before dead ends
+PASS entries.mjs: a damaged journal line is skipped, never fused or fatal
+PASS init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
+PASS init: a Vercel project without vercel.json gets one
+PASS init: netlify.toml gets a [build] ignore for harness/* refs, other keys kept
+PASS journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
+PASS journal: a 410-character summary and outcome "maybe" is minimal with why invalid (outcome
+PASS journal: a 2001-character init header is cut to 2000 and kept
+PASS journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
+PASS journal: validate exits 2 when its only errors are the caps, 1 with any other
+20/20 checks passed
+12-journal-pure-e4-entrys: 20 checks, 4.0 s
+PASS conformance: every check a subset ran is in the fixture, once
+slowest: 12-journal-pure-e4-entrys 4.0 s, 35-backlog-pure-m1 3.0 s, 51-view-pure 2.3 s; wall 4.2 s, 4 jobs
+104/104 checks passed

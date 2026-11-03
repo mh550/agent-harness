@@ -109,3 +109,99 @@ in a 3,100 CPU-s suite. **Recommendation: stay on node and build the warm proces
 recorded fallback if the helper fails its lane and lifecycle checks, with these numbers so that choice is a decision,
 not a study.** The repo's recorded error budget is in bash (the Gotchas list), which phase 4's purity work addresses by
 moving logic into the unit tier, in either language.
+
+## 5. Re-baseline on main (2026-11-03, `6622952`)
+
+Measured by the redesign's first dispatch piece (D0) between 17:37 and 18:15 on `origin/main` at `6622952` (C1 merged
+as PR #78, the run record as #79, the plan as #80/#81), `harness status` RUNNING 0 and QUEUED 0 before each run, the
+runner's own `wall` line for the wall and `/usr/bin/time -v`'s user + sys for the CPU. Raw outputs (the `.out`, `.time`
+and the parsed exec tables; not the 34 MB strace) in `findings-and-research/2026-11-03-redesign-baseline/`.
+
+### 5.1 The solo full suite, twice (step 1)
+
+| row | wall (`TEST_JOBS=4`, solo) | user + sys | checks | red files | slowest three | load average before |
+|---|---|---|---|---|---|---|
+| C1-04 *after* (`5a11f9d`, C1's lane tree, §1) | 803.8 s | 1,939.97 + 1,196.14 = **3,136.1 s** | 1,129 | none | – | – |
+| **solo 1** (`6622952`, main) | **776.6 s** | 1,941.79 + 1,171.31 = **3,113.1 s** | 1,141/1,141 | none | `15-run-4-…` 219.9 s, `13-run-2-…` 193.7 s, `08-scope-…` 192.0 s | 0.82, 0.94, 1.64 (17:37) |
+| **solo 2** (`6622952`, main) | **794.6 s** | 1,944.83 + 1,173.23 = **3,118.1 s** | 1,141/1,141 | none | `15-run-4-…` 223.4 s, `13-run-2-…` 193.8 s, `08-scope-…` 193.1 s | 3.75, 4.14, 3.26 (17:50, run 1's tail) |
+
+Mean of the two: 785.6 s wall, 3,115.6 CPU-s. Against C1-04's *after* row: CPU −0.7 % and −0.6 %, wall −3.4 % and
+−1.1 %, with 12 more checks; against the *before* row (`d595498`): CPU −7.4 % and −7.3 %, wall −9.1 % and −7.0 %. The 18 s between
+two identical runs on a quiet box is the run-to-run noise of this method; a phase result under ~3 % of wall or ~1 % of CPU
+is inside it. Command as C1-04's: `systemd-run --user --scope -p MemoryMax=3G /usr/bin/time -v env TEST_JOBS=4 bash
+tests/run.sh`, each run started after the other had ended (`solo-1.out`, `solo-1.time`, `solo-2.out`, `solo-2.time`).
+89 check files now (86 on 10-30).
+
+### 5.2 File 13's execs by class (step 2), beside §2's
+
+`strace -f -s 512 -e trace=execve,clone,clone3,vfork,fork -o file13.strace bash tests/checks/13-run-2-michael-sets-desk.sh`
+(66/66; under strace 309.6 s wall, user 153.19 + sys 158.41), parsed by `findings-and-research/2026-11-03-exec-table/
+exectable.mjs` and `mdtable.mjs` (`file13-execs.txt`, `file13-tables.md`); then the same file timed without strace
+(`file13-plain.time`): **174.3 s wall, user 96.97 + sys 61.82 = 158.8 CPU-s** (§2: 185.0 s, 170.6 CPU-s). Load average
+before the trace 1.27 (18:04), before the plain run 1.14 (18:09). 36,740 successful execs (§2: 35,647).
+
+| program | driver | lane | cli | stub | tests/lib.sh | all | §2 (C1-01, before C1's cuts) |
+|---|---|---|---|---|---|---|---|
+| node | 759 | 1,674 | 161 | 48 | 9 | **2,651** | 3,139 (975 / 1,945 / 162 / 48 / 9) |
+| git | 2,528 | 3,002 | 1,352 | 552 | 320 | 7,754 | 7,754 |
+| date | 978 | 1,272 | 140 | 0 | 20 | 2,410 | 2,412 |
+| cat | 1,515 | 432 | 588 | 771 | 72 | 3,378 | 3,422 |
+| bash | 142 | 288 | 177 | 809 | 2 | 1,419 | 1,419 |
+| sha1sum | 753 | 1,003 | 0 | 0 | 0 | 1,756 | 86 |
+
+Node: **2,651 starts × 26.9 ms = 71.3 CPU-s = 45 % of the file's 158.8 CPU-s** (§2: 3,139, 84.4 of 170.6, 49 %). The
+driver and its lanes start 2,433 of them (92 %; §2: 2,920, 93 %). The cut is all in `features.mjs`: lane 720 → 449,
+driver 420 → 205; every other script's count is the one §2 has (`metrics.mjs` lane 314, `treekey.mjs` lane 205,
+`entries.mjs` lane 191, `testcount.mjs` lane 150, `metrics.mjs` driver 126, `inbox.mjs` lane 121). The 1,670 new
+`sha1sum` execs are the memo's content hashes, one per `F` call on a file argument (0.8 ms each, ~1.3 CPU-s).
+
+Top ten script + subcommand rows (count, caller), beside §2's:
+
+| # | main `6622952` | §2 (C1-01) |
+|---|---|---|
+| 1 | `metrics.mjs usage` 104, lane | `features.mjs passes` 125, lane |
+| 2 | `treekey.mjs --partial` 82, lane (`check.sh`) | `metrics.mjs usage` 104, lane |
+| 3 | `metrics.mjs limit` 82, lane | `features.mjs summary` 91, driver |
+| 4 | `testcount.mjs` 78, lane (`check.sh`) | `features.mjs model` 90, lane |
+| 5 | `treekey.mjs` 77, lane | `features.mjs milestone-done` 83, lane |
+| 6 | `testcount.mjs` 72, lane | `treekey.mjs --partial` 82, lane (`check.sh`) |
+| 7 | `features.mjs passes` 57, lane | `metrics.mjs limit` 82, lane |
+| 8 | `inbox.mjs answers` 56, lane | `testcount.mjs` 78, lane (`check.sh`) |
+| 9 | `metrics.mjs final` 55, lane | `features.mjs milestones` 77, driver |
+| 10 | `memlint.mjs store-line` 52, lane (`render.mjs` 52 ties) | `treekey.mjs` 77, lane |
+
+`features.mjs` by subcommand, §2 → now: `passes` lane 125 → 57, `model` lane 90 → 0 and driver 76 → 0 (`models` 18 lane +
+14 driver fills every alias at once), `milestone-done` lane 83 → 0, `summary` driver 91 → 20 and lane 41 → 22,
+`milestones` driver 77 → 31, `ids` lane 49 → 17, `next` lane 35 → 0 and driver 19 → 0, `unpark` driver 30 → 0
+(`unparks` 18); new `poll` 51 lane + 11 driver. Unchanged: `unpark` lane 51, `repair` 30, `bump` 30, `lanes` 29, `pass`
+23, `kind` 30 → 27, `snapshot` 47 → 40, `deps` 32 → 28, `milestone-done` driver 18. Top callers by count × 26.9 ms:
+`features.mjs` lane 449 (12.1 CPU-s), `metrics.mjs` lane 314 (8.4), `features.mjs` driver 205 (5.5), `entries.mjs` lane
+191 (5.1), `metrics.mjs` driver 126 (3.4), `treekey.mjs` lane 205 (5.5 across `lane.sh` 123 and `check.sh` 82).
+
+### 5.3 The unit layer (step 3)
+
+`bash tests/run.sh 01-scheduler 02-notifications 03-harness-parked 04-render-pure 05-metrics-pure 06-test-counts
+07-step-lint 11-deploy 12-journal 35-backlog 51-view-pure` (the eleven `-pure-` files; load average 1.1 before):
+**104/104 checks, 149 successful node execs, user 6.26 + sys 3.09 = 9.35 CPU-s, 3.16 s wall** (`time -v`; the runner's
+own wall 2.3 s, 4 jobs; under strace 4.2 s). Node by script (`pure-execs.txt`): `--input-type=module -e` 58,
+`backlog.mjs` 32, `entries.mjs` 17, `testcount.mjs` 13, `deploy.mjs` 12, `view.mjs` 6, `metrics.mjs` 3, `features.mjs` 3,
+`-e` 2, `render.mjs` 1: 149 × 26.9 ms = 4.0 CPU-s, 43 % of the layer's CPU; the rest is the runner and `tests/lib.sh`'s
+per-file throwaway state (1,649 execs in all: `basename` 1,001, `git` 100, `grep` 56, `jq` 54, `cat` 39). Per check: 1.4
+node starts and 0.09 CPU-s (the plan's §1 "1 node start each, ~3 CPU-s" counted the `node -e` evals alone). Of note for
+the dispatch: the brief's spelling `tests/run.sh 01- 02- … 11- 12-` is a substring match in `tests/run.sh`, so it also
+runs `08-scope-sh-l1-02-…`, `21-run-11-…` and `22-run-12-…` (236 checks, 3,186 node starts, 207 CPU-s; `pure-wide.time`);
+the eleven files need their names.
+
+### 5.4 What moved against §1–§3, and why
+
+§1's solo row moved little because its *after* row already was C1's tree: wall 803.8 → 776.6/794.6 s and CPU 3,136.1 →
+3,113.1/3,118.1 s are within the method's noise, and the 12 extra checks (1,129 → 1,141) are C1-05's 11 and C1-06's 1,
+merged after C1-04 measured `5a11f9d`; the three slowest files are the same three, each 10–20 s faster than the 10-30
+numbers (`15-run-4-…` 232 → 220/223 s, `13-run-2-…` 205 → 194 s, `08-scope-…` 203 → 192/193 s). §2's file-13 numbers
+moved because they were C1-01's finding on the tree *before* C1-02/03's cuts: node 3,139 → 2,651 (−488, −15.5 %), 49 %
+→ 45 % of a file whose CPU fell 170.6 → 158.8 s (−6.9 %) and wall 185.0 → 174.3 s; the whole of the cut is
+`features.mjs` (−486 starts: the memo, `models`, `poll`, `unparks`), and git 7,754, `date` 2,410, `cat` 3,378 and bash
+1,419 did not move, so §2's "next levers" (`metrics.mjs` 440 starts, `testcount.mjs` 204, `treekey.mjs` 271, then git and
+bash's own forks) stand as the remainder; `sha1sum` gained 1,670 execs (~1.3 CPU-s) as the memo's price. §3's per-call
+costs were not re-measured (no code under them changed). The unit layer's 11 files are 9.35 CPU-s of the suite's 3,116
+(0.3 %), so phase 1's gain is wall-shaped (fewer slot-seconds in the 4-job schedule), not CPU-shaped.
