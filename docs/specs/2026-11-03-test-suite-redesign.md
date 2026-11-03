@@ -8,9 +8,35 @@ fast pre-merge tier and a slow nightly tier; fewer, better checks), then the dev
 way, and a view of how every project of Michael's should test. Speed and efficiency are the priority; best practice
 stays in view even where it is not the next step.
 
-**Who runs this.** A Fable session, planning first: its first deliverable is a plan (`docs/plans/`) with measured
-baselines and a spec per phase, reviewed by Michael before any phase is built. Phases are built by harness runs or
-sessions from those specs, one phase at a time, each merged with its numbers.
+**Who runs this.** A Fable session as **orchestration planner**, started interactively by Michael
+(`docs/specs/2026-11-03-test-suite-redesign-start.md` is its opening prompt). It explores the key issues, plans
+first, writes no code, and hands every piece of work to other sessions as copy-and-paste commands. Phases are built
+one at a time from its specs, each merged with its numbers, under a supervisor session it also defines.
+
+## How the planning session works
+
+1. **Explore before planning.** Read the sources below and the code they name; run the phase 0 measurements; search
+   and cite for the survey. Ask Michael only where two readings lead to different plans, in one batch.
+2. **Deliverable 1: the plan**, `docs/plans/2026-11-xx-test-suite-redesign.md`: the baseline, the survey table, the
+   language recommendation, the order of phases with predictions, and for each phase a spec section (or a spec file
+   under `docs/specs/`) a fresh session can build from without this conversation.
+3. **Deliverable 2: the dispatch list**, `docs/plans/2026-11-xx-test-suite-redesign-dispatch.md`: one block per
+   piece of work, in order, each a fenced bash command Michael pastes as is. A piece that is a spec to build is a
+   harness run (`harness start`/`harness queue add` with the spec and a brief, the repo's own workflow); a piece
+   that is exploration, measurement or review is a `claude --model claude-fable-5-1 "<prompt>"` command (or the
+   model the piece needs, said why) whose prompt is complete in the block: the files to read, the question, the
+   output file, the rules that bind. Every block says what it produces and what the supervisor should check.
+4. **Deliverable 3: the supervisor**, `docs/plans/2026-11-xx-test-suite-redesign-supervisor.md`, and one bash
+   command in the dispatch list that starts it (`claude --model claude-fable-5-1 "$(cat <that file>)"`). The
+   supervisor's prompt: read the dispatch list and the plan; find each dispatched piece's results (`harness status`,
+   `harness report <run>`, the output files, the PRs); verify the numbers against the predictions; decide what must be
+   dispatched before the next step (a fix, a re-measure, a review) and give Michael the next copy-and-paste command;
+   update the dispatch list's status column; never run a harness command itself except `status`, `report`,
+   `parked`, `sync` (user `CLAUDE.md`); never touch real runs or real state.
+5. **Iterative and measured.** Each phase shows its improvement before the next starts: a before/after table in
+   `findings-and-research/`, cited in the dispatch list's status. If a phase's numbers miss its prediction, the
+   supervisor dispatches a diagnosis before the next phase.
+6. **Worktree only**, as `CLAUDE.md` binds; the planner commits its plan on a branch, opens a PR and merges it.
 
 **Source.** `journal/learning/2026-10-30-test-engineering.md` (the concepts, the four defaults, Michael's reasoning:
 entries 5–16 are the argument for this spec); `findings-and-research/2026-10-29-run-time-budget.md` (§10–11 numbers,
