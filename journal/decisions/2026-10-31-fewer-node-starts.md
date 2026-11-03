@@ -232,6 +232,29 @@ by `#<sha1 of the file's content>` (`sha1sum`; `-` when it can't be read): never
   twice and `MET limit` two or three times on one finished log) are not collapsed here (C1-03's steps don't name them;
   the plan's §4 default stands for a later feature).
 
+**The proof (C1-04, 2026-11-03).** Two solo full suites, each `systemd-run --user --scope -p MemoryMax=3G
+/usr/bin/time -v env TEST_JOBS=4 bash tests/run.sh` run by the session in the background, no other suite alive
+(`harness status` before each). *Before*: a scratch worktree of the run's base commit `d595498` (merge-base with
+`origin/main`); *after*: the feature's tree at `5a11f9d`. Outputs: `before.out`, `after.out` in the session's scratch
+(`/tmp/harness/agent-harness/agent-harness-2026-11-03/lanes/C1`). (The step's `time -v TEST_JOBS=4 bash …` order makes
+`time` run `TEST_JOBS=4`; the first launch failed with exit 127 and the spec's `time -v env TEST_JOBS=4 …` was used.)
+
+| row | wall (runner's `wall` line) | user + sys (`time -v`) | checks | red files |
+|---|---|---|---|---|
+| **before** (`d595498`, 4 jobs solo, 2026-11-03) | 854.1 s | 2135.85 + 1225.98 = **3,361.8 s** | 1102/1102 | none |
+| **after** (`5a11f9d`, 4 jobs solo, 2026-11-03) | 803.8 s | 1939.97 + 1196.14 = **3,136.1 s** | 1129/1129 | none |
+| load curve §1, 4 jobs solo (10-30) | 805 s | 3,249 s | 1,077 | – |
+| run-time budget §11, harness runs (10-30) | 817–835 s | 3,322–3,355 s | 1,081–1,084 | – |
+
+**Target (spec C1 fix 6 point 3): missed, with the numbers.** CPU −20 % against *before* needed 2,689 s; the after row
+is 3,136 s, **−6.7 %** (user −9.2 %, sys −2.4 %), and that with 27 more checks. The solo wall bound (≤ 650 s) is missed
+too: 803.8 s, −5.9 % against *before* (854.1 s), 1,129 checks. C1-02's and C1-03's cuts (memo, poll, idle poll) stand
+on their checks. The plan's §6 guess (11–16 % of file 13's CPU) was already under the target; the measured gain is
+under that guess because sys time (the fork/exec cost of each start and of bash itself, about 36 % of CPU) barely
+moved. The next levers, as the plan names them: `metrics.mjs`'s collapse (not done, above) and `testcount.mjs`
+(150 per file in the lanes, 54 in the driver); beyond node, git (7,754 starts per file) and bash's own forks are the
+larger remainder.
+
 ## Rejected
 
 - **A disk cache of node answers** (a file per key under the state dir or the scratch, shared across processes): a
