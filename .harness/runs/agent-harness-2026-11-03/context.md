@@ -1,14 +1,12 @@
-# Context pack for `C1-04`
+# Context pack for `C1-05`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (C1-04, affects run): C1 cut CPU only 6.7% and wall 5.9%: sys time (~36% of CPU) barely moved; next levers are metrics.mjs collapse, testcount.mjs, then git/bash forks → entries.jsonl:8
 - Discovery (C1-03, affects C1-04, run): metrics.mjs in the lane (MET usage twice and MET limit 2-3 times per finished session log, third of the top five) is not collapsed: the plan's §4 default is the next lever if C1-04 is short of the -20 % target → entries.jsonl:7
 - Discovery (C1-03, affects run): CLAUDE.md's Gotchas is at memlint's 15-line cap (39-memlint-m4 goes red at 16): a new line must replace one → entries.jsonl:7
-- Discovery (C1-02, affects C1-03, C1-04): lines with note " can't change in C1 (the step grep), so $(F summary …) inside note lines (lane.sh 387, driver.sh 498/571/581) stay subshell calls: they hit only when the shell already holds that list's summary → entries.jsonl:6
-- Discovery (C1-01, affects C1-03, C1-04): treekey.mjs --names ran 0 times in file 13: the check.sh treekey merge saves nothing there; date/cat are not in the top five, so no builtin change → entries.jsonl:5
-- Discovery (C1-01, affects C1-04): Plan §6 predicts 11-16% of file 13's CPU from C1-02+C1-03, under the spec's -20%: C1-04 may record a miss → entries.jsonl:5
 - Discovery (Q1-02, affects run): lib/spec.sh now has spec_args (a start's run id/--spec/--base), spec_new_run (resume and --brief skips) and spec_entry (a .args file, project config in a subshell); bin/harness spec_refuse and queue add use them → entries.jsonl:3
 - Discovery (Q1-02, affects run): editing the worktree while a full check.sh runs can cache red-<key> for the pre-edit tree: never edit during a full run → entries.jsonl:3
 - Discovery (Q1-01, affects run): a stub check that starts a new run with --spec <file> now needs the file pushed to the stub's origin/main (SPEC.md is, from suite_setup) → entries.jsonl:2
@@ -18,12 +16,12 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-11-03 14:48 · C1-03 · passes: features.mjs poll answers summary/parked/blocked/next/milestone-done in one start and fills F's memo for all five; the end check and the lane loop use it. The idle poll starts node once (needs sweep): unpark_warm, unparks, lanes_v (F lanes on a laneState fingerprint). treekey --partial --names: one start. No builtins. Opus review: 2 minors, fixed.; tests 1121 → 1129; files lib/features.mjs, lib/record.sh, lib/driver.sh, lib/lane.sh, lib/check.sh, … → entries.jsonl:7
+- 2026-11-03 15:17 · C1-04 · passes: Two solo timed suites. Before (d595498): wall 854.1 s, 3,361.8 CPU-s, 1102/1102. After (5a11f9d): wall 803.8 s, 3,136.1 CPU-s, 1129/1129. Spec target MISSED: CPU -6.7% (needed -20%), wall 803.8 s (bound 650). Rows in the decision file.; tests 1129 → 1129; files journal/decisions/2026-10-31-fewer-node-starts.md → entries.jsonl:8
 
 ## Lately in the run
 
+- 2026-11-03 14:48 · C1-03 · passes: features.mjs poll answers summary/parked/blocked/next/milestone-done in one start and fills F's memo for all five; the end check and the lane loop use it. The idle poll starts node once (needs sweep): unpark_warm, unparks, lanes_v (F lanes on a laneState fingerprint). treekey --partial --names: one start. No builtins. Opus review: 2 minors, fixed.; tests 1121 → 1129; files lib/features.mjs, lib/record.sh, lib/driver.sh, lib/lane.sh, lib/check.sh, … → entries.jsonl:7
 - 2026-11-03 13:55 · C1-02 · passes: lib/record.sh's F memoizes features.mjs's pure subcommands in a per-process assoc array keyed on sub + sha1 of each file arg + other args; Fv answers into a var in the current shell; models fills every alias in run_paths; answers_hash memoized on INBOX.md's hash; a throw exits 70. Busiest $(F …) sites moved to Fv. Decision Choice/Rejected written. Opus review: no Critical/Important, minors fixed.; tests 1102 → 1121; files lib/record.sh, lib/features.mjs, lib/lane.sh, lib/driver.sh, tests/checks/84-node-memo.sh, … → entries.jsonl:6
-- 2026-11-03 13:05 · C1-01 · passes: Exec table: one stub harness start of file 13 under strace (402 node starts = 10.8 of 20.4 CPU-s) plus the whole file (3,139 node; lanes 1,945, driver 975, stub 48, checks 9; node 49% of 170.6 CPU-s) in the fewer-node-starts decision; plan names the memo, the subshell constraint, the poll collapse, no builtins. No code change.; tests 1102 → 1102; files journal/decisions/2026-10-31-fewer-node-starts.md, docs/plans/2026-11-03-C1-suite-cpu.md, findings-and-research/2026-11-03-exec-table/ → entries.jsonl:5
 
 ## Current rules
 
