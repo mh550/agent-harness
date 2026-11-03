@@ -7,6 +7,20 @@ The feature list (`feature_list.json`, 8 features): **Q1** (2) makes `harness st
 
 Steer through `INBOX.md` in this directory: set its first line to `status: pause` or `status: stop`, or write answers under `## Answers`. Questions from sessions appear here and in `INBOX.md` with a `Files:` line naming what to open first.
 
+### 2026-11-03 13:55 · C1-02 · passes
+
+lib/record.sh's F memoizes features.mjs's pure subcommands in a per-process assoc array keyed on sub + sha1 of each file arg + other args; Fv answers into a var in the current shell; models fills every alias in run_paths; answers_hash memoized on INBOX.md's hash; a throw exits 70. Busiest $(F …) sites moved to Fv. Decision Choice/Rejected written. Opus review: no Critical/Important, minors fixed.
+
+- **Files:** lib/record.sh, lib/features.mjs, lib/lane.sh, lib/driver.sh, tests/checks/84-node-memo.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-31-fewer-node-starts.md, CLAUDE.md
+- **Verified:** tests/checks/84-node-memo.sh 20/20 (a node shim on PATH counts starts: F model twice = 1 start, summary twice = 1, a flip = 1 more, the restored content = 0, unpark that unparked = node each time, a subshell miss not kept, a throw rc 70 not kept); subset 13-run/lanes-rebase/lanes-record/verify 110/110; full check.sh green in 799 s, 1121 tests; git diff origin/main -- lib/*.sh | grep note text: nothing; bash -n, node --check clean.
+- **Tests:** 1102 → 1121
+- **Dead end:** a Gotchas line appended as a 15th item — memlint counts the section's comment line: 39-memlint-m4 went red at 16; replaced the check.sh partial-map line in place instead
+- **Discovery** (affects C1-03): F_MEMO_PID: a miss in a subshell runs node straight and keeps nothing, so a $(F …) site gains only when its parent shell already holds the key; the coordinator's idle-poll calls ($(record F unpark … "$(answers_hash)"), rebase_due in < <(…)) still start node each poll until C1-03 moves them into the current shell (Fv, a var for answers_hash)
+- **Discovery** (affects C1-03, C1-06): features.mjs now exits 70 on a throw (was node's 1): 1 is an answer the memo keeps for passes/milestone-done/evidence/lint; a new subcommand whose 1 is an answer goes in f_memo's case list
+- **Discovery** (affects C1-03, C1-04): lines with note " can't change in C1 (the step grep), so $(F summary …) inside note lines (lane.sh 387, driver.sh 498/571/581) stay subshell calls: they hit only when the shell already holds that list's summary
+- **Proposed change:** C1-06's review brief could add: the F_MEMO_PID rule (a subshell never stores) and features.mjs's exit 70 on a throw
+- *04-C1-02 · claude-opus-5-5*
+
 ### 2026-11-03 13:05 · C1-01 · passes
 
 Exec table: one stub harness start of file 13 under strace (402 node starts = 10.8 of 20.4 CPU-s) plus the whole file (3,139 node; lanes 1,945, driver 975, stub 48, checks 9; node 49% of 170.6 CPU-s) in the fewer-node-starts decision; plan names the memo, the subshell constraint, the poll collapse, no builtins. No code change.
