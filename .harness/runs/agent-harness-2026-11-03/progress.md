@@ -7,6 +7,19 @@ The feature list (`feature_list.json`, 8 features): **Q1** (2) makes `harness st
 
 Steer through `INBOX.md` in this directory: set its first line to `status: pause` or `status: stop`, or write answers under `## Answers`. Questions from sessions appear here and in `INBOX.md` with a `Files:` line naming what to open first.
 
+### 2026-11-03 16:58 · C1-06 · passes
+
+C1 review: 0 Critical, 0 Important, 7 Minor (Opus, one round, docs/plans/2026-11-03-C1-review.md). Fixed: f_poll_seed set -u guard (red-first check in 84), laneState→lanes_key comment, retro suite_runs wording. Simplified: end check's poll as a memo fill with the pre-C1 lines, lane loop's unused Fv. architecture.md §3/§11 and README report row updated.
+
+- **Files:** lib/record.sh, lib/driver.sh, lib/lane.sh, lib/features.mjs, prompts/retro.md, tests/checks/84-node-memo.sh, tests/fixtures/check-names.txt, docs/architecture.md, README.md, docs/plans/2026-11-03-C1-review.md, journal/decisions/2026-10-31-fewer-node-starts.md, CLAUDE.md
+- **Verified:** Full check.sh: green in 834 s, 1141 tests (first full run red only on 39-memlint-m4: Gotchas at 16 lines; fixed, 39 subset 20/20, then the full call green). Subset 79/84/85: 49/49. New check red without the guard (kp[4]: unbound variable), green with it. bash -n, node --check, lint-sleeps clean; note-line grep empty.
+- **Tests:** 1140 → 1141
+- **Dead end:** adding the promoted key-map-lint gotcha beside 14 bullets — memlint counts the section's comment line too: 16 over 15; dropped the queue .args line (narrowest) instead
+- **Discovery** (affects project): memlint's Gotchas cap counts the section's leading <!-- --> comment line, so the section holds 14 bullets
+- **Resolved:** 82-key-map-lint reads a node import string "'"$HH"'/lib/x.mjs" as a read of the repo root (CLAUDE.md): a new check file uses "'$HERE'/../lib/x.mjs" (11's form)
+- **Proposed change:** The coding prompt's Gotchas rule says '15 lines at most'; memlint counts the section's comment too, so it is 14 bullets: say so in the prompt or have memlint skip the comment
+- *08-C1-06 · claude-opus-5-5*
+
 ### 2026-11-03 16:17 · C1-05 · passes
 
 coding.md: one full run, last, after the final edit; TEST_JOBS=2 rule; §3 Gotchas before the suite step (step 1 names it). lane.sh passes suite_runs/suite_full to MET append; metricsRow writes them (null without the log); summary.mjs suiteRuns + Suite runs row after Flakes; retro {{SUITE_RUNS}}. Stub suite calls under set +e. Decision one-full-run. Opus review: 2 Important, fixed.

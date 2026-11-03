@@ -34,3 +34,8 @@
 - 2026-11-03 16:17 · C1-05: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-03 16:17 · C1-05: gotchas +0 ~1 -0
 - 2026-11-03 16:17 · C1-05 · claude-opus-5-5 · passes=true · 59 min · 7/8 passing · tests 1140
+- 2026-11-03 16:17 · review C1-06: 2372 changed lines, at or over 400; opus
+- 2026-11-03 16:17 · context.md for C1-06: 7416 bytes
+- 2026-11-03 16:58 · C1-06: suite ran 4x (1812 s) in the session
+- 2026-11-03 16:58 · C1-06: gotchas +0 ~1 -0
+- 2026-11-03 16:58 · C1-06 · claude-opus-5-5 · passes=true · 40 min · 8/8 passing · tests 1141
