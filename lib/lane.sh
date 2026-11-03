@@ -77,7 +77,8 @@ verify() {
       [[ -f $STATE/lanes-end || $(control) == stop ]] && { unmaterialize; return 2; }   # cut short: the loop's top ends the lane
       run_init
     fi
-    HARNESS_CLOCK=$(clock "$what") HARNESS_MILESTONE=$m HARNESS_FEATURES=$(F ids "$LIST" "$m" | paste -sd' ') prompt verify
+    local vids; Fv vids ids "$LIST" "$m"   # Fv: answered in this shell, so the memo keeps it (lib/record.sh)
+    HARNESS_CLOCK=$(clock "$what") HARNESS_MILESTONE=$m HARNESS_FEATURES=${vids//$'\n'/ } prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"; echo "$what" > "$LDIR/now"
     session verify "$(F model "$model")" "$vlog" "verify $m"
@@ -95,10 +96,12 @@ verify() {
       rec_commit "HARNESS: verify $m deferred"; sync_record; return 2
     fi
     out=$(F repair-verify "$SLIST" "$LS/before.json" "$m") || note "verify $m: reverted list edits beyond un-passing: $out"
-    for id in $(F ids "$LIST" "$m"); do F passes "$SLIST" "$id" || record F unpass "$LIST" "$id"; done   # the verdict, on the record
+    Fv vids ids "$LIST" "$m"
+    for id in $vids; do F passes "$SLIST" "$id" || record F unpass "$LIST" "$id"; done   # the verdict, on the record
     unmaterialize
+    local vdone=false; F milestone-done "$LIST" "$m" && vdone=true   # in this shell: the line after it is a memo hit
     record MET append "$vlog" "$REC/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" \
-      "$(F milestone-done "$LIST" "$m" && echo true || echo false)" "$S_WALL" "$S_EXIT" false verify "$S_PEAK" "$LANE"
+      "$vdone" "$S_WALL" "$S_EXIT" false verify "$S_PEAK" "$LANE"
     F milestone-done "$LIST" "$m" || { result=fail; break; }
     if (( $(vcount "$m") <= before )); then short="no new verify entry"
     elif short=$(F evidence "$LIST" "$m" "$REC/progress.md"); then result=hold; break; fi
@@ -129,7 +132,8 @@ verify() {
     red) touch "$STATE/needs-$m"; note "verify $m: the suite is red on the verified tree (main merged in); not verified (needs Michael)"
       need="suite red after merging main" ;;
     fail)
-      for id in $(F ids "$LIST" "$m"); do
+      local fids; Fv fids ids "$LIST" "$m"
+      for id in $fids; do
         F passes "$LIST" "$id" && continue
         if (( rounds < maxr )); then
           note "verify $m: $id failed the re-check, back in the queue (one more attempt)"; record F grant "$ATT" "$id" "$MAX_ATTEMPTS"
@@ -282,7 +286,7 @@ while :; do
     milestone=$(F milestone "$LIST" "$id") mdl=$(F model "$REVIEW_ESCALATE_MODEL") esc="sonnet found $rc Critical, $ri Important"
     rdiff="${rdiff%; *}; escalated to $REVIEW_ESCALATE_MODEL"   # the measure stands; the model it named doesn't
   else
-  next=$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$M")
+  Fv next next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$M"
   if [[ -z $next ]]; then
     # the default lane (features with no milestone) has no verify: done when they all pass
     [[ $M == default ]] && jq -e '[.features[] | select((.milestone // "") == "")] | all(.passes)' "$LIST" > /dev/null \
@@ -298,7 +302,7 @@ while :; do
   # run again, and the gate doesn't: once is enough, then the session starts anyway (decisions/2026-10-25-memory-gate)
   if (( ! gated )) && ! mem_gate; then gated=1; continue; fi; gated=0
   [[ $esc ]] || rdiff=""   # the review gate: a review runs on sonnet under REVIEW_OPUS_LINES changed lines, on opus at or over (M6)
-  kind=$(F kind "$LIST" "$id")
+  Fv kind kind "$LIST" "$id"
   if [[ ! $esc && $kind == review ]]; then
     if rd=$(review_diff); then   # the slot's lane branch against main: this milestone's diff
       read -r rfiles rlines <<< "$rd"

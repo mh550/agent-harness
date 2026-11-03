@@ -13,6 +13,18 @@ DEBRIEF_PAGE_CMD gets the page
 DESK=0 by default, DESK_MODEL=opus
 DESK=0: no desk
 DESK=1: a park starts one desk, the run end reuses it
+F bump (a write) starts node every time
+F model of an unknown alias: node once (its fallback), then the memo
+F model twice: one node start, the same model id
+F model: that one start answers every alias; a claude-… id is answered without node
+F next: keyed on attempts.json, max and parked.json (one start twice, a new start and answer after each changes)
+F passes twice: one start, the exit code kept (1 both times)
+F summary after a passes flip: node again, the new count
+F summary on the list restored to its first content (a new mtime): the memo answers, no start (content, not mtime)
+F summary twice on one list: one node start, the same line
+F unpark that printed nothing: memoized; one that unparked: node every time, even on the same parked.json
+Fv returns the answer's exit code (passes A: 1, empty) from the memo
+Fv stores in the current shell: a $(F …) subshell after it hits, the same lines; Fv cuts trailing newlines
 INBOX repair in a run: noted, the record's comment as the driver wrote it, the question directly above ## Answers, C parked
 KEEP_SCRATCH=1 keeps the run's scratch; the default is 0
 M1 and M2 merged into main by PRs
@@ -50,6 +62,7 @@ a failed verify at the deadline is not retried: M1 needs Michael
 a given-up feature blocks what depends on it
 a given-up feature opens given_up naming what waits on it; harness needs and harness parked list it while parked.json is empty
 a held index.lock: written, not committed, nothing left staged
+a hit prints what node prints, byte for byte, and its exit code (snapshot, lint, a lone newline)
 a killed debrief changes nothing
 a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
 a later clean sync_main resolves main_conflict: its item in needs/done/, main merged cleanly, noted
@@ -62,6 +75,7 @@ a listed worktree whose directory is gone never ends gc: every later step still 
 a main conflict notifies once per main commit across 2 verifies: high, title <m> needs you, body the card, click needs.md
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
+a miss in a subshell is not kept (a nested subshell starts node again); the parent's own call then stores it
 a name taken in held/ parks under another; the one there is untouched; the queue drains
 a park notification: title, question, answer command, click and Edit INBOX action
 a park opens one parked record; card.question.line is the first line the session added, its URL that line
@@ -109,6 +123,7 @@ a stop without a reason says just: stopped by Michael (the note and ended)
 a stub session that adds a Gotchas line is noted
 a successful post: a line in run.log only
 a thin verify opens verify_thin under [<run>] M1 needs you; the notification's body is the card, click needs.md
+a throw in features.mjs exits 70 and is never kept (node each time)
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
 a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
@@ -126,6 +141,7 @@ an absolute --spec inside the project is checked as its repo path: present proce
 an entry whose project is no repository is not parked: its start fails and says why
 an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
 an open desk showing a dialog gets nothing typed
+answers_hash: one inbox.mjs start for two calls on one INBOX.md, a new start and hash after its answers change
 backlog import: 8 rows into an empty store, then again 8 (idempotent by id)
 backlog import: a known id takes status, spec, pr and note, keeps first_seen, unions runs_seen
 backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)
@@ -145,6 +161,7 @@ backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.
 backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1
 backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
 backlog validate: the why line of a huge bad id stays under 300 bytes
+bash -n lib/record.sh lib/lane.sh lib/driver.sh
 brief committed with the run
 brief, rules and policy in the prompt
 busy continue: another project's live run changes nothing: answer, then continue
@@ -271,6 +288,7 @@ eval: every task.json validates and a bad one is rejected
 eval: refuses past WEEKLY_STOP_AT
 eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
 features.mjs writes atomically: 200 bumps beside a parsing reader, which never throws; no temp file left
 files changed during the session are flagged in the note
 finish keeps check-last.out and init.out in the state dir and deletes the run's scratch, not the project's (live.lock stays)
@@ -995,6 +1013,7 @@ the initializer prompt has the resolved lint command
 the initializer prompt sizes reviews to the milestone
 the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the limit window is shared
+the memo writes nothing to disk (no file outside the check's own) and nothing to stderr
 the next debrief covers what the failed and killed ones missed
 the park goes out after the run branch is pushed (the link shows the question)
 the park notification is the record's: body PARKED: first, the question, the card's do commands, the answer line; Click needs.md

@@ -167,10 +167,48 @@ in the lane 191 (5.1). `treekey.mjs --names` ran **0** times in the file (check.
 
 ## Choice
 
-*(C1-02 writes the memo here, C1-03 the poll subcommand, the treekey merge and the builtins, each marked *default*;
-C1-04 the before and after rows. The order they cut in, from the finding above, is the plan's:
-`docs/plans/2026-11-03-C1-suite-cpu.md`.)*
+*(C1-03 adds the poll subcommand, the treekey merge and the builtins here, each marked *default*; C1-04 the before and
+after rows. The order they cut in, from the finding above, is the plan's: `docs/plans/2026-11-03-C1-suite-cpu.md`.)*
+
+**The memo (C1-02, *default*).** `lib/record.sh`'s `F` answers a pure `features.mjs` subcommand from a bash
+associative array (`F_MEMO`, the exit codes in `F_MRC`) that lives in the process only: no file under the state dir,
+the scratch or a cache. The key is `<sub>` and each argument joined by `\x1f`, an argument in a file position replaced
+by `#<sha1 of the file's content>` (`sha1sum`; `-` when it can't be read): never its path, its mtime or the clock.
+
+- **Memoized**: `model` (the key is the alias; `features.mjs models` fills every alias at once, called by `run_paths`
+  in the driver's and each lane's own shell; a `claude-…` id is answered by bash as `modelId` would), and, on the list's
+  hash plus the other arguments, `summary`, `milestones`, `snapshot`, `undeclared`, `lint`, `passes`,
+  `milestone-done`, `ids`, `deps`, `kind`, `milestone`; `next` and `blocked` also on `attempts.json`'s and
+  `parked.json`'s hashes, `parked` on both its files', `evidence` on `progress.md`'s; `unpark` on `parked.json`'s hash
+  and the answers, **stored only when it printed nothing** (one that unparked rewrote the file, so the after-hash
+  below refuses it too; the rule holds should a writer put the bytes back in between); `answers_hash`
+  (`inbox.mjs answers`) on `INBOX.md`'s hash, the same way.
+- **Stored** only with an exit code that is an answer (0; 1 for `passes`, `milestone-done`, `evidence`, `lint`;
+  a throw in `features.mjs` now exits 70, never 1, so a crash is not kept as "doesn't pass"), only in the shell that
+  sourced `lib/record.sh` (`F_MEMO_PID`: a subshell's miss runs node straight, as before, since it couldn't keep the
+  entry), and only when the files hash after the start as they did before it (another process's write in between is a miss next
+  time, never a stale hit). A hit prints the stored stdout byte for byte (trailing newlines kept) and returns the
+  stored code; stderr is not stored (an answer code with output on stderr is node's own error, the same on the same
+  content).
+- **Not memoized**, node every time: `lanes` (the state dir), `park`, `bump`, `unbump`, `grant`, `reset`, `repair`,
+  `repair-verify`, `pass`, `unpass`, and every other script (`MET`, `entries.mjs`, `inbox.mjs insert|repair|question`,
+  `notify.mjs`, `needs.mjs`, `treekey.mjs`).
+- **The shell it lives in.** bash 5.2 has no current-shell command substitution: an entry stored inside `$( … )`, `<
+  <( … )` or a pipeline dies with it, but a subshell reads its parent's. `Fv <var> <sub> <args…>` answers into a
+  variable in the current shell (`printf -v`, trailing newlines cut as `$( )` cuts them); C1-02 moved the busiest
+  `$(F …)` sites that sit on no `note "` line to it or to a condition in the current shell: `lib/lane.sh`'s `next`,
+  `kind` and its verify's `ids` and `milestone-done`, `lib/driver.sh`'s `milestones` in `rebase_due` and
+  `deadline_verify`, `lib/record.sh`'s `milestones` and `deps` in `merge_milestones_`. The coordinator's idle poll
+  (`F unpark`, `answers_hash`, `F lanes` in their subshells) is C1-03's.
 
 ## Rejected
 
-*(C1-02 and C1-03 write theirs here.)*
+*(C1-03 adds its own here.)*
+
+- **A disk cache of node answers** (a file per key under the state dir or the scratch, shared across processes): a
+  stale answer outlives the process that computed it, and a cache that must be right after any write anywhere is the
+  thing `decisions/2026-10-30-partial-key` keeps out (a key covers every input, or the answer is computed). The
+  in-process memo dies with the driver or the lane, so the worst a missed input can do is one process's lifetime.
+- **Keying on mtime or the path**: a rename-over write (`writeAtomic`) within the mtime's resolution, a `cp` back, a
+  restored file and a `git checkout` all keep or reset an mtime without the content agreeing; the same path holds a
+  new list after every `pass`. The content hash costs one `sha1sum` (0.8 ms, about 1/30 of a node start).

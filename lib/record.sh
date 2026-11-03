@@ -41,8 +41,66 @@ run_paths() {
   LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger} SVC_UNIT=$(scope_unit "$RUN_ID" svc)
   mkdir -p "$LOGS" "$REC" "$SCRATCH"
   load_config
+  f_models   # F model's memo for this process: one node start answers every alias
 }
-F() { node "$HARNESS_HOME/lib/features.mjs" "$@"; }
+# F's memo (decisions/2026-10-31-fewer-node-starts): a pure subcommand's answer (stdout byte for byte and the exit code)
+# is kept in this process, keyed on the subcommand, the sha1 of each file it reads and its other arguments: never an
+# mtime, a path or the clock, and never on disk. A subshell reads its parent's entries, but one it stores dies with it:
+# Fv answers into a variable in the current shell. Writers, F lanes (it reads the state dir) and an unpark that
+# unparked (it rewrote parked.json) call node every time.
+declare -gA F_MEMO=() F_MRC=()
+F_MODELS=0 F_MEMO_PID=$BASHPID   # the shell that keeps entries: a subshell's miss runs node straight (it couldn't keep one)
+F() {
+  f_memo "$@" || { node "$HARNESS_HOME/lib/features.mjs" "$@"; return; }
+  printf %s "$F_OUT"; return "$F_RC"
+}
+Fv() {   # <var> <sub> <args…>: F's answer into <var> (trailing newlines cut, as $( ) does), stored in this shell
+  local f_var_=$1; shift
+  if f_memo "$@"; then F_OUT=${F_OUT%"${F_OUT##*[!$'\n']}"}; else F_OUT=$(node "$HARNESS_HOME/lib/features.mjs" "$@"); F_RC=$?; fi
+  printf -v "$f_var_" %s "$F_OUT"; return "$F_RC"
+}
+f_sha() { local _h; _h=$(sha1sum 2> /dev/null < "$2") || _h=-; printf -v "$1" %s "${_h%% *}"; }   # <var> <file>; "-": none
+# <sub> <args…> → F_KEY; 1: not memoized. The argument positions that are files the subcommand reads go in as their
+# content's sha1 (next and blocked read attempts.json and parked.json too, parked the list, evidence progress.md)
+f_key() {
+  local files i=0 a h
+  case ${1:-} in
+    model) files=" " ;;
+    summary|milestones|snapshot|undeclared|lint|passes|milestone-done|ids|deps|kind|milestone|unpark) files=" 1 " ;;
+    next|blocked) files=" 1 2 4 " ;;
+    parked) files=" 1 2 " ;;
+    evidence) files=" 1 3 " ;;
+    *) return 1 ;;
+  esac
+  F_KEY=$1; shift
+  for a; do (( ++i )); if [[ $files == *" $i "* ]]; then f_sha h "$a"; F_KEY+=$'\x1f'"#$h"; else F_KEY+=$'\x1f'$a; fi; done
+}
+# <sub> <args…> → F_OUT and F_RC, from the memo or one node start; 1: not memoized, or a miss in a subshell (the
+# caller runs node). An answer is kept when its exit code is one (0, or 1 where 1 is the answer; a throw exits 70) and
+# its files still hash as before the start
+f_memo() {
+  local k s=${1:-}
+  if [[ $s == model && ${2:-} == claude-* ]]; then F_OUT=$2$'\n' F_RC=0; return 0; fi   # modelId: such an id as is
+  f_key "$@" || return 1; k=$F_KEY
+  [[ $s == model && -z ${F_MEMO[$k]+x} ]] && (( ! F_MODELS )) && f_models
+  if [[ ${F_MEMO[$k]+x} ]]; then F_OUT=${F_MEMO[$k]} F_RC=${F_MRC[$k]}; return 0; fi
+  [[ $BASHPID == "$F_MEMO_PID" ]] || return 1
+  F_OUT=$(node "$HARNESS_HOME/lib/features.mjs" "$@"; r=$?; printf x; exit "$r"); F_RC=$?; F_OUT=${F_OUT%x}
+  case $F_RC:$s in
+    0:unpark) [[ -z $F_OUT ]] || return 0 ;;
+    0:*|1:passes|1:milestone-done|1:evidence|1:lint) ;;
+    *) return 0 ;;
+  esac
+  f_key "$@" && [[ $F_KEY == "$k" ]] && F_MEMO[$k]=$F_OUT F_MRC[$k]=$F_RC
+  return 0
+}
+# F model's memo, every alias from one node start (features.mjs models), once per shell: run_paths fills it, so every
+# later $(F model …) of the driver or a lane is a hit
+f_models() {
+  local a id out; F_MODELS=1
+  out=$(node "$HARNESS_HOME/lib/features.mjs" models) || return 0
+  while IFS=$'\t' read -r a id; do [[ -n $a ]] && F_MEMO[model$'\x1f'$a]=$id$'\n' F_MRC[model$'\x1f'$a]=0; done <<< "$out"
+}
 MET() { node "$HARNESS_HOME/lib/metrics.mjs" "$@"; }
 SUM() { node "$HARNESS_HOME/lib/summary.mjs" "$@"; }
 # The configuration comes from the worktree, so it is loaded again after a resumed run merges main (which may have
@@ -196,7 +254,17 @@ notify_park() {   # <id> <why> <the parked record's ref>
 
 # What unparks a feature: Michael's answers changing (INBOX.md from "## Answers" on, local answers included). The
 # heading is the one outside the steering comment: a `## Answers".` a session left inside it is not his answers.
-answers_hash() { node "$INBOX_MJS" answers "$REC/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12; }
+# Memoized as F is, on INBOX.md's content (decisions/2026-10-31-fewer-node-starts).
+answers_hash() {
+  local h k v; f_sha h "$REC/INBOX.md"; k=answers$'\x1f'$h
+  if [[ -z ${F_MEMO[$k]+x} ]]; then
+    v=$(node "$INBOX_MJS" answers "$REC/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12)
+    [[ $BASHPID == "$F_MEMO_PID" ]] || { echo "$v"; return 0; }   # a subshell couldn't keep it
+    f_sha h "$REC/INBOX.md"; [[ answers$'\x1f'$h == "$k" ]] || { echo "$v"; return 0; }
+    F_MEMO[$k]=$v
+  fi
+  echo "${F_MEMO[$k]}"
+}
 
 control() {   # → run | pause | stop
   local s; s=$(sed -n 's/^status:[[:space:]]*//p' "$REC/INBOX.md" 2>/dev/null | head -1)
@@ -635,8 +703,8 @@ merge_milestones() {
   return 0
 }
 merge_milestones_() {
-  local m d wait rc
-  for m in $(F milestones "$LIST"); do
+  local m d wait rc ms ds; Fv ms milestones "$LIST"
+  for m in $ms; do
     [[ -n ${1:-} && $m != "$1" ]] && continue
     [[ -f $STATE/merged-$m ]] && continue
     [[ $(cat "$STATE/lanes/$m/pid" 2> /dev/null) != "$$" ]] && lane_alive "$m" && continue
@@ -651,7 +719,7 @@ merge_milestones_() {
       [[ -f $STATE/legacy-noted ]] || { touch "$STATE/legacy-noted"; note "$m was verified by harness v2; it merges only with: harness merge $RUN_ID"; }
       continue
     fi
-    wait=""; for d in $(F deps "$LIST" "$m"); do [[ -f $STATE/merged-$d ]] || wait+="${wait:+, }$d"; done
+    wait=""; Fv ds deps "$LIST" "$m"; for d in $ds; do [[ -f $STATE/merged-$d ]] || wait+="${wait:+, }$d"; done
     if [[ -n $wait ]]; then
       merge_one "$m" --open; rc=$?   # 3: it conflicts with main; the re-base once the dependency has merged
       (( rc == 0 || rc == 3 )) && [[ ! -f $STATE/waits-$m && ! -f $STATE/proposed-$m ]] && { touch "$STATE/waits-$m"

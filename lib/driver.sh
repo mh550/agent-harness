@@ -120,8 +120,8 @@ wait_lanes() { while (( $(lanes_open) )); do lane_wait; reap; done; reap; }   # 
 # closed, in list order: the coordinator opens it as a merge lane (LANE_MERGE=1) ahead of F lanes' milestones. Not one
 # that needs Michael, except under `harness merge` (he asked)
 rebase_due() {
-  local m
-  for m in $(F milestones "$LIST"); do
+  local m ms; Fv ms milestones "$LIST"
+  for m in $ms; do
     [[ -f $STATE/rebase-$m ]] && ! lane_alive "$m" && [[ ${HARNESS_MERGE_ONLY:-} || ! -f $STATE/needs-$m ]] && printf '%s\trebase\n' "$m"
   done
   return 0
@@ -204,8 +204,8 @@ lanes_orphans() {
 # whose lane can open, each in its lane (LANE_ONCE), unless a stop came first or a usage-limit window holds, when its
 # session would only be refused (the next segment verifies first thing)
 deadline_verify() {
-  local m ms="" upto
-  for m in $(F milestones "$LIST"); do
+  local m ms="" upto all; Fv all milestones "$LIST"
+  for m in $all; do
     [[ -f $STATE/verified-$m || -f $STATE/needs-$m ]] || ! F milestone-done "$LIST" "$m" || ms+="${ms:+, }$m"
   done
   [[ -n $ms ]] || return 0
