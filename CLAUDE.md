@@ -77,4 +77,3 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - queue .args: one argument per line, a newline in one as \x1f (queue_add); a new reader decodes it as lib/queue.sh does (agent-harness-2026-10-28 2026-10-28)
 - git keeps a merge driver's %A as the file whatever its exit: a driver that exits 1 must write the markers itself (git merge-file) (agent-harness-2026-10-29 2026-10-29)
 - a check that sources lib/*.sh needs `HARNESS_HOME=$HH`: a run's session inherits its driver's, so a missing one fails only in a plain shell (2026-10-29)
-- after a lib/queue.sh run, a check reads the run's state dir: the runner's exit gc removes its merged worktrees (agent-harness-2026-11-03 2026-11-03)
