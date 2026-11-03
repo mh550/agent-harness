@@ -31,9 +31,13 @@ spec_new_run() {
 
 # <queue entry .args> → for a start entry, spec_new_run's line and 1 on a miss; any other entry passes. The runner's
 # re-check at dequeue: the ref may have moved since `queue add` checked it, and an entry may be planted by hand.
-# A subshell: the project's config must not leak into the runner's.
+# A subshell: the project's config must not leak into the runner's. A project that is no repository passes (its start
+# says why, as before); a check that fails without a line (a config that exits) still gives one, never an empty reason.
 spec_entry() {
-  local a; mapfile -t a < "$1"; a=("${a[@]//$'\x1f'/$'\n'}")   # queue_add's newlines back, as the runner reads them
+  local a out rc=0; mapfile -t a < "$1"; a=("${a[@]//$'\x1f'/$'\n'}")   # queue_add's newlines back, as the runner reads them
   [[ ${a[0]:-} == start && -n ${a[1]:-} ]] || return 0
-  ( harness_config "${a[1]}"; spec_args "${a[@]:2}"; GIT_TERMINAL_PROMPT=0 spec_new_run "${a[1]}" "$SPEC_RUN" "$SPEC_ARG" "$SPEC_BASE" )
+  git -C "${a[1]}" rev-parse --git-dir > /dev/null 2>&1 || return 0
+  out=$( harness_config "${a[1]}"; spec_args "${a[@]:2}"; GIT_TERMINAL_PROMPT=0 spec_new_run "${a[1]}" "$SPEC_RUN" "$SPEC_ARG" "$SPEC_BASE" ) || rc=$?
+  (( rc )) || return 0
+  echo "${out:-spec check failed in ${a[1]} (exit $rc)}"; return 1
 }

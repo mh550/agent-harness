@@ -34,8 +34,11 @@
     `parked <entry>.args: spec <path>: not in <ref> …` line goes to `runner.log`, and the loop goes on to the next
     entry at once. A branch deleted or a spec moved between `queue add` and the start parks; a spec pushed after
     `queue add` passes; an entry planted by hand is checked here for the first time. `harness queue list` shows it
-    with its reason; `queue unpark` puts it back once the file is pushed. A name already taken in `held/` (or a failed
-    `mv`) is a `could not park` line and a poll's wait, never a tight loop. A failed fetch's line goes to `runner.log`.
+    with its reason; `queue unpark` puts it back once the file is pushed. A name already taken in `held/` parks under
+    `<name>-<YYYYmmddHHMMSS>.args` (a held name would stop the queue at that entry); a failed `mv` is a `could not
+    park` line and a poll's wait, never a tight loop. A failed fetch's line goes to `runner.log`. An entry whose
+    project is no repository is not parked (its start fails and says why, as before); a check that fails without a
+    line (a project config that exits) parks with `spec check failed in <project> (exit <n>)`, never an empty reason.
   - *default:* no notification for a park: the runner's log and `harness queue list` carry it, and the debrief reads
     the runner's log.
 - **Rejected:**

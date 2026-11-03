@@ -75,4 +75,20 @@ check "an .args planted by hand naming a missing spec is parked at dequeue the s
 check "harness queue list shows the parked entry with not in origin/main in its reason" \
   'COLUMNS=200 "$H" queue list > "$T/qlist.out" 2>&1; grep -E "why: spec docs/gone.md: not in origin/main" "$T/qlist.out" > /dev/null'
 
+# the review's minors (Q1-02): a taken name in held/ parks under another, a project that is no repository is not parked
+# (its start says why), a check that fails without a line parks with a reason
+echo "planted" > "$Q/held/0005-start-proj.args"
+printf '%s\n' start "$T/proj" qtaken --spec docs/missing.md > "$Q/0005-start-proj.args"
+mkdir -p "$T/norepo"; printf '%s\n' start "$T/norepo" qnorepo --spec docs/x.md > "$Q/0006-start-norepo.args"
+git clone -q "$T/origin.git" "$T/brk" && mkdir -p "$T/brk/.harness" && echo 'exit 3' > "$T/brk/.harness/config.sh"
+printf '%s\n' start "$T/brk" qbrk --spec SPEC.md > "$Q/0007-start-brk.args"
+HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. timeout 120 "$HERE/../lib/queue.sh" > "$T/qrun2.out" 2>&1; settle
+check "a name taken in held/ parks under another; the one there is untouched; the queue drains" \
+  'tk=$(compgen -G "$Q/held/0005-start-proj-*.args") && grep -qx qtaken "$tk" && [[ $(cat "$Q/held/0005-start-proj.args") == planted ]] \
+  && grep -qF "spec docs/missing.md: not in origin/main" "${tk%.args}.why" && ! compgen -G "$Q/*.args" > /dev/null && grep -q "queue empty" "$T/qrun2.out"'
+check "an entry whose project is no repository is not parked: its start fails and says why" \
+  '! compgen -G "$Q/held/0006-*" > /dev/null && grep -q "starting: harness start $T/norepo qnorepo" "$Q/runner.log" && grep -q "failed: harness start $T/norepo" "$Q/runner.log"'
+check "a spec check that fails without a line parks with a reason, never an empty one" \
+  'grep -qE "^spec check failed in [^ ]*brk \(exit 3\) \([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}\)$" "$Q/held/0007-start-brk.why" && grep -qF "parked 0007-start-brk.args: spec check failed" "$Q/runner.log"'
+
 suite_end

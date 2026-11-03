@@ -62,6 +62,7 @@ a listed worktree whose directory is gone never ends gc: every later step still 
 a main conflict notifies once per main commit across 2 verifies: high, title <m> needs you, body the card, click needs.md
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
+a name taken in held/ parks under another; the one there is untouched; the queue drains
 a park notification: title, question, answer command, click and Edit INBOX action
 a park opens one parked record; card.question.line is the first line the session added, its URL that line
 a park whose INBOX question has Files: <path>:48: the record's where[0] is that path at line 48, files_from question
@@ -95,6 +96,7 @@ a session that dies at startup: failed, and no usage-limit window for the box
 a session that leaves CLAUDE.md alone gets no gotchas note
 a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
 a session's edits to the journal are restored (E4 review F1)
+a spec check that fails without a line parks with a reason, never an empty one
 a stale green marker is caught at verify: M1 red, not tagged
 a still-running run changing its worktree is not flagged
 a stop at the deadline comes first: no verify, M1 left for a continue
@@ -120,6 +122,7 @@ after may name a milestone
 all features pass
 an .args planted by hand naming a missing spec is parked at dequeue the same way
 an INBOX answer unparks it; the run finishes
+an entry whose project is no repository is not parked: its start fails and says why
 an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
 an open desk showing a dialog gets nothing typed
 backlog import: 8 rows into an empty store, then again 8 (idempotent by id)

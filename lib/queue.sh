@@ -84,9 +84,10 @@ while :; do
   # the spec again, as the start is about to happen: a park, never a start that dies in done/ unread; the loop goes on
   if miss=$(spec_entry "$next" 2>> "$Q/runner.log"); then :; else   # a failed fetch is said there
     pk=$Q/held/$(basename "$next"); mkdir -p "$Q/held"
+    [[ -e $pk ]] && pk=${pk%.args}-$(date +%Y%m%d%H%M%S).args   # a name taken in held/: another, or the queue stops at it
     if [[ ! -e $pk ]] && mv "$next" "$pk"; then
       echo "$miss ($(date '+%F %H:%M'))" > "${pk%.args}.why"; log "parked $(basename "$next"): $miss"; continue
-    fi   # a name taken in held/ or a failed mv: said, and waited on, never a tight loop
+    fi   # a failed mv: said, and waited on, never a tight loop
     log "could not park $(basename "$next") ($miss): it stays queued"; sleep "$POLL"; continue
   fi
   (( a == 0 )) && log "$("$HARNESS_HOME/lib/sync.sh")"   # no driver alive: the live checkout may move under none
