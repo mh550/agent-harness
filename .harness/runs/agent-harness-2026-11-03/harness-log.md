@@ -11,3 +11,4 @@
 - 2026-11-03 12:33 · Q1-02 · claude-opus-5-5 · passes=true · 77 min · 2/8 passing · tests 1102
 - 2026-11-03 12:33 · verify Q1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-03 12:47 · context.md for Q1: 8511 bytes
+- 2026-11-03 12:48 · Q1 verified and tagged run/agent-harness-2026-11-03/Q1
