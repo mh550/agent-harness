@@ -10,10 +10,11 @@ and tells Michael which block is next. Plan: `docs/plans/2026-11-03-test-suite-r
 
 | # | piece | kind | needs | status | result |
 |---|---|---|---|---|---|
-| D0 | the supervisor | `claude` session | – | running | session 1, 2026-11-03: C1 merged (PR #78), box quiet; D1 given to Michael. Session 2, 2026-11-03 19:10: D1 merged (PR #82) and held; box quiet (RUNNING 0, QUEUED 0, runner off, load 1.03); D2 given to Michael with `harness queue start --until 07:30` (the runner was off) |
+| D0 | the supervisor | `claude` session | – | running | session 1, 2026-11-03: C1 merged (PR #78), box quiet; D1 given to Michael. Session 2, 2026-11-03 19:10: D1 merged (PR #82) and held; box quiet (RUNNING 0, QUEUED 0, runner off, load 1.03); D2 given to Michael with `harness queue start --until 07:30` (the runner was off). Session 3, 2026-11-04 00:27: D2 merged (PR #84, record PR #85) and its deciding measures held; box quiet (RUNNING 0, QUEUED 0, runner off, load 1.16); D3 given to Michael with `harness queue start --until 07:30` |
 | D1 | re-baseline on `main` | `claude` measurement | C1 merged, box quiet | measured: `findings-and-research/2026-11-03-redesign-baseline.md` §5 | PR #82, tree `6622952`, RUNNING 0 before each run. Solo wall 776.6 / 794.6 s (−3.4 % / −1.1 % of C1-04's 803.8 s: within 5 %, held), CPU 3,113.1 / 3,118.1 s, 1,141 checks, no red; file 13 node 2,651 (§2: 3,139); the eleven pure files 149 node starts, 9.35 CPU-s, 3.16 s wall (§5.3: the runner and `tests/lib.sh` included; the evals alone are 60 of the 149). Phase 1's before row is §5.3, not the spec's 108 / 4–6 s |
-| D2 | phase 1: unit tier | harness run (`2026-11-03-unit-tier.md`) | D1 | not started | needs met 2026-11-03 19:10 (D1 PR #82; base `ff8558f`: 1,140 names, 111 `node --input-type=module` lines in `tests/checks/`, no `tests/unit/`); block handed to Michael, not yet queued |
-| D3 | phase 3: tiers | harness run (`2026-11-03-suite-tiers.md`) | D2 merged | not started | – |
+| D2 | phase 1: unit tier | harness run (`2026-11-03-unit-tier.md`) | D1 | merged: PR #84 | run `agent-harness-2026-11-03-2` (6/6, first-attempt 1.00, $26.68, 3.6 h wall, 1 full suite per session; record PR #85); table in `findings-and-research/2026-11-03-unit-tier.md`, decision `journal/decisions/2026-11-03-unit-tier.md`. **Held**: the tier 1 node start and 0.24 s wall (supervisor on `0bbd5c1`: `00-unit-tier.sh` 0.26 s three times, 124/124); solo full suite 805.4 → 798.3 s (−0.9 %) and 3,147.5 → 3,172.7 CPU-s (+0.8 %, 22 more checks); names 1,140 → 1,164, 0 removed (`git diff ff8558f 0bbd5c1`); 2 `node --input-type=module` lines left (82-key-map-lint, 84-node-memo, each with its reason under *Kept evals*). **Prediction wrong, not a miss** (the spec's before row counted the evals alone; D1 corrected it to §5.3 before the run): the eleven files' CPU 9.34 → 8.84 s (spec: 4–6 → < 1 s) and their node starts 176 → 117 (the −59 are the evals; the 104 left are CLI-behaviour checks the spec keeps in bash); corrected prediction: the layer's bash files keep ~8–9 CPU-s (the runner, `tests/lib.sh`, the CLI checks) until phase 4's push-down. Defaults against the spec's wording: the tier is `tests/unit/*.test.mjs` (a directory argument is red on node 24, which this box runs), and `CLAUDE.md`'s check sits in `79-suite-length.sh`, not `33-suite-runner.sh`. No Dx dispatched; D2x below holds the filled block if Michael wants the write-up |
+| D2x | phase 1 diagnosis (the Dx block, filled) | `claude` | Michael's call | held | not dispatched: the cause and the corrected prediction are already written with numbers (`2026-11-03-unit-tier.md` verdict column, baseline §5.3–§5.4); paste `## D2x` only for a session to write the diagnosis file |
+| D3 | phase 3: tiers | harness run (`2026-11-03-suite-tiers.md`) | D2 merged | not started | needs met 2026-11-04 00:27 (D2 PR #84; base `0bbd5c1`: 88 check files, 1,164 names, `00-unit-tier.sh` green in 0.26 s, no `# tier:` headers, no `check-names-fast.txt`); block handed to Michael, not yet queued |
 | D4 | phase 2: resident helper | harness run (`2026-11-03-resident-helper.md`) | D3 merged | not started | – |
 | D5 | phase 3's lane-time numbers | `claude` measurement | D4 ended | not started | – |
 | D6 | phase 4: slim suite | harness run (`2026-11-03-slim-suite.md`) | D4 merged | not started | – |
@@ -79,6 +80,31 @@ decision file); `node --test --test-isolation=none tests/unit/` runs green in un
 
 ```bash
 cd ~/projects/agent-harness && harness queue add ~/projects/agent-harness --spec docs/specs/2026-11-03-unit-tier.md --brief "Phase 1 of docs/plans/2026-11-03-test-suite-redesign.md: build the unit tier spec in full as one milestone U1, four to six features, the measurement feature (U1-05) before the review feature. Proceed on the spec's defaults, mark them *default* in the decision file, never park. Every moved check keeps its name: the full run's conformance is the proof. The measurement needs no other suite alive: check harness status before each timed run."
+```
+
+---
+
+## D2x · Phase 1's diagnosis, filled in (held: paste only if the supervisor's `prediction wrong` reading is not enough)
+
+Produces: `findings-and-research/2026-11-04-unit-tier-diagnosis.md`, merged by PR. The supervisor (session 3) did not
+dispatch it: the spec's CPU row (4–6 s → < 1 s) and starts row (108 → 1) were made for the evals alone, D1 corrected
+the before row to §5.3 (149 starts, 9.35 CPU-s, the evals 60 of the starts) before the run, and the run's findings
+file names the cause with numbers (the runner, `tests/lib.sh`'s per-file state and the CLI checks kept in bash are the
+CPU; the evals' 59 starts went to 1). The tier itself met every prediction. D3 does not wait on this block.
+
+```bash
+cd ~/projects/agent-harness && claude --model claude-fable-5-1 "$(cat <<'EOF'
+You are a diagnosis session for the test suite redesign of this repo (agent-harness). CLAUDE.md binds: enter a worktree before writing anything; never touch real runs or real state; no `harness` command but `status`, `report`, `parked`, `sync`; never send a notification. Read-only on every input; the state dir of an ENDED run may be read as findings-and-research/2026-10-29-run-time-budget.md's method does.
+
+The miss: phase 1 (docs/specs/2026-11-03-unit-tier.md) predicted the CPU of the pure files = 4–6 s → < 1 s and the node starts of the unit layer = 108 → 1 (its Predictions table) and the run agent-harness-2026-11-03-2 measured 8.84 CPU-s and 117 node starts for the eleven files' successors (set B), 0.30 CPU-s and 1 start for the tier alone (findings-and-research/2026-11-03-unit-tier.md, ## Table).
+
+Read first: the phase's spec and its Predictions table; the findings file with the measured row and the raw files beside it; the run's decision file(s) under journal/decisions/ and `harness report agent-harness-2026-11-03-2 --md`; docs/plans/2026-11-03-test-suite-redesign.md §4 (the phase's row and the one after it); findings-and-research/2026-11-03-redesign-baseline.md (the baseline the prediction was made against: §5.3 is the layer's corrected before row).
+
+Do: (1) check the measurement itself (was the box quiet: the load average and `harness status` the session recorded; the same tree before and after; the same check count or the difference accounted); (2) if the measurement stands, find the cause in the code or the run with evidence (a profile, an exec count, a diff, a log line: run `strace`, `time -v`, the exec-table parser or a subset of the suite yourself, in your worktree, never a real run); (3) write findings-and-research/2026-11-04-unit-tier-diagnosis.md: the miss, what you checked, the cause with its evidence, and exactly one outcome: `re-measure` (why the number is not trustworthy and the exact command to repeat), `fix` (a spec section appended in place to the phase's spec under `## Fix after agent-harness-2026-11-03-2`, buildable by a fresh session: finding, choice with defaults, checks written first, its own prediction), or `prediction wrong` (the corrected prediction and why the gain is bounded there). Do not build the fix.
+
+Commit on your branch, push, open a PR titled "findings: unit tier diagnosis after agent-harness-2026-11-03-2", merge it, delete the branch, remove your worktree. Report: the cause in two sentences, the outcome, and the PR number.
+EOF
+)"
 ```
 
 ---
