@@ -42,3 +42,24 @@ harness needs done agent-harness-2026-11-04/1 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-04/2 --why "<answer>"
 ```
+
+## ⚠ T2-03 asked: Default taken: the full and fast lengths are rendered under…
+
+`agent-harness-2026-11-04/3` · since 2026-11-04T10:25:42.427Z
+
+**blocked** nothing waits on it; T2-03's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:9](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L9)
+
+> Default taken: the full and fast lengths are rendered under *This session* (coding prompt), with run.md's fast Suite line saying `its last full and fast runs are under *This session*`, instead of the spec's `last full run …; last fast run …` inside run.md, to keep the shared prompt prefix (decisions/2026-10-30-suite-length-in-prompt). Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/prompts/parts/run.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/journal/decisions/2026-11-03-fast-gate.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/prompts/parts/run.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-04/T2/prompts/parts/run.md) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/journal/decisions/2026-11-03-fast-gate.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-04/T2/journal/decisions/2026-11-03-fast-gate.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl:9](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L9)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-04/3 --why "<answer>"
+```

@@ -7,6 +7,23 @@ The run: phase 3 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier (T1: the full suite) is green and the verifier agrees per milestone. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-04 05:25 · T2-03 · passes
+
+The gate is visible: suite_fast on the coding row, suiteRuns {sessions, full, fast, runs, full_per_session, fast_per_session} and the Suite runs row `<f> full and <k> fast per coding session (…)`; run.md names both tiers' commands; This session adds `Suite: last fast run <s> s`; coding.md's two-tier rule `run the fast tier once, last`; render.mjs {{?X}}/{{!X}} line markers.
+
+- **Files:** lib/lane.sh, lib/metrics.mjs, lib/summary.mjs, lib/prompt.sh, lib/render.mjs, prompts/coding.md, prompts/parts/run.md, prompts/retro.md, tests/checks/79-suite-length.sh, tests/checks/85-suite-runs.sh, tests/checks/87-fast-gate-run.sh, tests/checks/71-tty-views.sh, +11 more
+- **Verified:** Red first: 79/85/87 and three unit tests failed before the code (g1/red runs). Then `bash tests/run.sh 00-unit 79-suite 85-suite 87-fast` 160/161 (only conformance, before the names) then green; full check.sh: green in 809 s, 1220 tests. grep -F 'run the fast tier once, last' prompts/coding.md matches; bash -n lane.sh prompt.sh, node --check summary/metrics/render pass.
+- **Tests:** 1214 → 1220
+- **Dead end:** suite_fast passed only at the limit-branch MET append — lib/lane.sh has two coding-row appends (limit branch ~354, end ~397); the end one writes the real row
+- **Discovery** (affects T2-04): Both lengths sit under *This session*, not in run.md's Suite line as the spec wrote it: a wall changes per render and above This session splits the shared prefix (79's rule; recorded *default* in decisions/2026-11-03-fast-gate)
+- **Discovery** (affects T2-04, run): render.mjs now has line markers: a line opening {{?X}} stays only when HARNESS_X is non-empty, {{!X}} only when empty; parts/run.md holds both Suite lines that way
+- **Discovery** (affects T2-04): tests/stub-claude.sh STUB_RUN_FAST=<id>: the first coding session runs `$HARNESS_CHECK --fast` twice (one run, one cached); 87's fg run uses it on A
+- **Discovery** (affects T2-04): tests/fixtures/summary-report.json/.md now carry a suite_runs (the spec's 0.2/1.6 example); summary.test's Conflicts-after-Flakes order assertion sets suite_runs undefined
+- **Question for Michael:** Default taken: the full and fast lengths are rendered under *This session* (coding prompt), with run.md's fast Suite line saying `its last full and fast runs are under *This session*`, instead of the spec's `last full run …; last fast run …` inside run.md, to keep the shared prompt prefix (decisions/2026-10-30-suite-length-in-prompt). Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/prompts/parts/run.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/journal/decisions/2026-11-03-fast-gate.md
+- **Proposed change:** T2-03 step 3 should put {{SUITE_FAST_LENGTH}} under *This session* (prompts/coding.md), not in prompts/parts/run.md's Suite line, per decisions/2026-10-30-suite-length-in-prompt
+- **Proposed change:** T2-04's README/architecture step: the Suite runs row and metrics docs are already updated; the guard table, §3/§4/§10 and CLAUDE.md How to verify remain
+- *07-T2-03 · claude-opus-5-5*
+
 ### 2026-11-04 04:59 · T2-02 · passes
 
 The driver gates passes on the fast tier: run_init fast (check.sh --fast) before each coding session, green_fast after it with the note `<id> un-passed: fast tier red after the session`; run_init fresh also drops fast-<key>; tests-start/tests-end read green-<key> only. 87-fast-gate-run.sh (slow, 34 s) proves it with three stub runs.
