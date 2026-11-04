@@ -1,0 +1,53 @@
+- 2026-11-04 00:58 · test count: parsed (generic)
+- 2026-11-04 01:06 · init: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-04 01:06 · feature list written: 0/8 passing
+- 2026-11-04 01:06 · lint: clean
+- 2026-11-04 01:06 · lane T1 opened (slot 0, port 7824, from 0319fa5)
+- 2026-11-04 01:06 · context.md for T1-01: 4289 bytes
+- 2026-11-04 01:43 · T1-01: suite ran 2x (1648 s) in the session
+- 2026-11-04 01:43 · T1-01 · claude-opus-5-5 · passes=true · 36 min · 1/8 passing · tests 1171
+- 2026-11-04 01:43 · context.md for T1-02: 5895 bytes
+- 2026-11-04 02:34 · T1-02: suite ran 1x (809 s) in the session
+- 2026-11-04 02:34 · T1-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-04 02:34 · T1-02: gotchas +0 ~1 -0
+- 2026-11-04 02:34 · T1-02 · claude-opus-5-5 · passes=true · 50 min · 2/8 passing · tests 1181
+- 2026-11-04 02:34 · context.md for T1-03: 6659 bytes
+- 2026-11-04 03:29 · T1-03: suite ran 0x (0 s) in the session
+- 2026-11-04 03:29 · T1-03 · claude-sonnet-5-5 · passes=true · 55 min · 3/8 passing · tests 1181
+- 2026-11-04 03:29 · review T1-04: 1032 changed lines, at or over 400; opus
+- 2026-11-04 03:29 · context.md for T1-04: 6949 bytes
+- 2026-11-04 03:52 · T1-04: suite ran 1x (804 s) in the session
+- 2026-11-04 03:52 · T1-04 · claude-opus-5-5 · passes=true · 23 min · 4/8 passing · tests 1186
+- 2026-11-04 03:53 · verify T1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-04 04:06 · context.md for T1: 11344 bytes
+- 2026-11-04 04:09 · T1 verified and tagged run/agent-harness-2026-11-04/T1
+- 2026-11-04 04:09 · lane T2 opened (slot 1, port 7825, from 66dc056)
+- 2026-11-04 04:09 · context.md for T2-01: 7727 bytes
+- 2026-11-04 04:09 · T1 merged into main · https://github.com/mh550/agent-harness/pull/87
+- 2026-11-04 04:09 · lane T1 closed (T1 merged)
+- 2026-11-04 04:09 · lane T1: branch harness-lane/agent-harness-2026-11-04/T1 deleted (merged)
+- 2026-11-04 04:32 · T2-01: suite ran 1x (800 s) in the session
+- 2026-11-04 04:33 · T2-01 · claude-opus-5-5 · passes=true · 23 min · 5/8 passing · tests 1205
+- 2026-11-04 04:33 · context.md for T2-02: 7275 bytes
+- 2026-11-04 04:59 · T2-02: suite ran 1x (806 s) in the session
+- 2026-11-04 04:59 · T2-02 · claude-opus-5-5 · passes=true · 25 min · 6/8 passing · tests 1214
+- 2026-11-04 05:00 · context.md for T2-03: 7215 bytes
+- 2026-11-04 05:25 · T2-03: suite ran 1x (809 s) in the session
+- 2026-11-04 05:25 · T2-03: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-04 05:25 · T2-03 · claude-opus-5-5 · passes=true · 24 min · 7/8 passing · tests 1220
+- 2026-11-04 05:27 · review T2-04: 1797 changed lines, at or over 400; opus
+- 2026-11-04 05:27 · context.md for T2-04: 7933 bytes
+- 2026-11-04 05:56 · T2-04: suite ran 1x (817 s) in the session
+- 2026-11-04 05:56 · T2-04: 2 question(s) for Michael recorded (harness needs)
+- 2026-11-04 05:56 · T2-04 · claude-opus-5-5 · passes=true · 28 min · 8/8 passing · tests 1224
+- 2026-11-04 05:58 · verify T2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-04 06:11 · context.md for T2: 16138 bytes
+- 2026-11-04 06:16 · verify T2: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-04 06:17 · T2 verified and tagged run/agent-harness-2026-11-04/T2
+- 2026-11-04 06:18 · lane T2 closed (T2 needs Michael: its merge)
+- 2026-11-04 06:18 · every feature passes
+- 2026-11-04 06:18 · run ended (done): 8/8 passing · 11 sessions (11 real) · 8 features passed · $28.43 · 4.7 h · by kind: init 1 ($4.79), coding 8 ($23.21), verify 2 ($0.44) · by model: claude-fable-5-1 1 ($4.79), claude-opus-5-5 7 ($22.96), claude-sonnet-5-5 3 ($0.68)
+- 2026-11-04 06:18 · services stopped (done)
+- 2026-11-04 06:18 · services stopped (done)
+- 2026-11-04 06:18 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-11-04 06:19 · record PR merged into main · https://github.com/mh550/agent-harness/pull/88

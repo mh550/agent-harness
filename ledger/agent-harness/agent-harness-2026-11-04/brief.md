@@ -1,0 +1,2 @@
+## 2026-11-04 00:45
+Phase 3 of docs/plans/2026-11-03-test-suite-redesign.md: build the tiers spec in full, milestones T1 then T2 in series (T2's first feature after T1), three to five features each, the review feature last in each. Proceed on the spec's defaults, mark them *default* in the decision files, never park. The gate: passes stands on a fast-tier green; verify and merge stand on the full suite; a fast-green is never read as a green. T1's timing feature needs no other suite alive: check harness status first.
