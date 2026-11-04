@@ -2,8 +2,7 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- U2-09's review (docs/plans/2026-10-28-U2-review.md): each finding's check, red before its fix ----
 NM=$HERE/../lib/needs.mjs FX=$HERE/fixtures/needs
-IMP="import * as N from \"$NM\"; import { readFileSync as r } from \"node:fs\"; const ok = c => process.exit(c ? 0 : 1);"
-in_node() { node --input-type=module -e "$IMP $1"; }
+# 4 (mergedBy and a run id that is another's prefix), 5 and 11 (lib/inbox.mjs): tests/unit/needs.test.mjs, inbox.test.mjs
 
 # 1, 2: merge_one's conflict, then the card's commands as Michael pastes them (a throwaway origin, 61-'s shape)
 U=$T/u; mkdir -p "$U/st"; git init -q --bare -b main "$U/o.git"; git clone -q "$U/o.git" "$U/wt/run" 2> /dev/null
@@ -59,15 +58,4 @@ check "needs review: done waits for the record lock a lane holds" \
   wait_for 10 eval "! flock -n $HARNESS_STATE/proj/nf-verify_thin-open/record.lock true"
   r=$("$H" needs done nf-verify_thin-open/1); d=$(( SECONDS - s )); wait; [[ $r == "resolved nf-verify_thin-open/1" ]] && (( d >= 2 ))'
 
-# 4: mergedBy and a run id that is another's prefix
-check "needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)" \
-  'in_node "ok(N.mergedBy(\"Merge pull request #34 from mh550/harness-merge/agent-harness-2026-10-25-memory-M3\nMerge pull request #30 from mh550/harness-merge/agent-harness-2026-10-25-M1\", \"agent-harness-2026-10-25\") === \"agent-harness-2026-10-25-memory M3 (PR #34)\")"'
-# 5, 11: lib/inbox.mjs (IM= points a red-phase run at another copy)
-IM=${IM:-$HERE/../lib/inbox.mjs}
-in_inbox() { node --input-type=module -e "import * as I from \"$IM\"; const ok = c => process.exit(c ? 0 : 1); $1"; }
-check "needs review: a ## Answers heading with words after it (## Answers (Michael)) is the heading; ## Answersheet is not" \
-  'in_inbox "const t = \"status: run\\n\\nQ1?\\n\\n## Answers (Michael)\\nyes\\n\"; ok(I.answers(t) === \"## Answers (Michael)\\nyes\\n\" && I.answersLine(\"## Answersheet\\n\") < 0)"'
-check "needs review: a short reword inside the steering comment (not a question) stays there, unmoved" \
-  'in_inbox "const b = \"status: run\\n<!-- Steer this run from the app. -->\\n\\n## Answers\\n\", a = b.replace(\"Steer this\", \"Steer not this\");
-    const r = I.repair(b, a); ok(!r.changed && r.text === a)"'
 suite_end

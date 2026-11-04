@@ -6,23 +6,15 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # of its record's entries.jsonl; NF_Q gives another text, so fixtures of one project don't move each other's forward.
 export TZ=UTC COLUMNS=200 HARNESS_GLYPHS=unicode
 NM=$HERE/../lib/needs.mjs BASE=1793145600 P=$HARNESS_STATE/proj
-IMP="import * as N from \"$NM\"; const ok = c => process.exit(c ? 0 : 1);"
-in_node() { node --input-type=module -e "$IMP $1" "${@:2}"; }
+# questionKey, moveForward and REASONS.question on literal input: tests/unit/needs.test.mjs
 Q='Should A keep the old cache? (default: kept) Files: /srv/q/lib/a.sh:12'
-
-check "needs questions: questionKey folds whitespace, lower-cases, drops the harness's fill and a Files: line, cuts at 80" \
-  'in_node "ok(N.questionKey(\"  Should  A\n default\tto OFF?  \") === \"should a default to off?\"
-    && N.questionKey(\"Should A default to off? Files (harness, from the session): /w/run-1/lib/a.sh\") === \"should a default to off?\"
-    && N.questionKey(\"Should A?\n**Files:** /x/a.sh:3, /x/b.sh\") === \"should a?\" && N.questionKey(\"Should A?\nFiles: /x/a.sh\n\n\") === \"should a?\" && N.questionKey(\"Should A? Files: /x/a.sh\") === \"should a? files: /x/a.sh\" && N.questionKey(\"Q? (default: x)\nFiles: /w/run-1/a.sh\nBranch: harness/run-1\") === \"q? (default: x) branch: harness/run-1\"
-    && N.questionKey(\"X\".repeat(100)) === \"x\".repeat(80) && [...N.questionKey(\"é\".repeat(100))].length === 80 && N.questionKey(\" \n \") === \"\")"'
 
 needs_fixture question open "$BASE" q-one
 needs_fixture parked open "$(( BASE + 60 ))" q-park   # a block item, and a reason without asked_in
 check "needs questions: open makes one warn item, key question:<the key>, no priority, seen 1, asked_in its run" \
-  'jq -e --arg k "question:$(in_node "console.log(N.questionKey(process.argv[1]))" "$Q")" ".reason == \"question\" and .kind == \"needs_michael\" and .severity == \"warn\"
+  'jq -e --arg k "question:should a keep the old cache? (default: kept) files: /srv/q/lib/a.sh:12" ".reason == \"question\" and .kind == \"needs_michael\" and .severity == \"warn\"
     and .priority == \"\" and .key == \$k and .seen == 1 and .asked_in == [\"q-one\"] and .feature == \"A\" and .title == \"[q-one] question from A\"
     and .card.question.text == \"$Q\" and .card.question.line == 1" "$P/q-one/needs/1.json" > /dev/null \
-  && [[ $(in_node "console.log(N.REASONS.question.kind, N.REASONS.question.severity, JSON.stringify(N.REASONS.question.priority))") == "needs_michael warn \"\"" ]] \
   && jq -e "has(\"asked_in\") | not" "$P/q-park/needs/1.json" > /dev/null'
 check "needs questions: the same text again in the run exits 3, one item, seen 2, a later updated_at" \
   'rec=$T/wt/proj/q-one/.harness/runs/q-one; HARNESS_NOW=$(( BASE + 60 )) node "$NM" open "$P/q-one" q-one proj question "Should  A keep the old cache?
@@ -37,9 +29,7 @@ check "needs questions: asked in a later run of the project, the item moves forw
   && HARNESS_NOW=$(( BASE + 120 )) node "$NM" open "$P/q-b" q-b proj question "Should A drop the v1 table? (default: dropped)" asker=A feature=A line=4 > "$T/mf.out" \
   && [[ $(cat "$T/mf.out") == q-b/1 && ! -e $P/q-a/needs/1.json && $(ls "$P/q-b/needs" | paste -sd" ") == "1.json" && -f $P/q-one/needs/1.json ]] \
   && jq -e ".seen == 3 and .asked_in == [\"q-a\", \"q-b\"] and .run == \"q-b\" and .resolved_at == null" "$P/q-b/needs/1.json" > /dev/null \
-  && jq -e ".resolved_why == \"asked again in q-b\" and .resolved_by == \"sweep\" and .resolved_at == \"2026-10-28T00:02:00.000Z\" and .run == \"q-a\"" "$P/q-a/needs/done/1.json" > /dev/null \
-  && in_node "const { item, resolved } = N.moveForward([{ run: \"r1\", seen: 2, asked_in: [\"r0\", \"r1\"], ref: \"r1/3\" }, { run: \"r2\", seen: 1, ref: \"r2/1\" }], { seen: 1, asked_in: [\"r3\"] }, \"r3\", 0);
-    ok(item.seen === 3 && item.asked_in.join() === \"r0,r1,r2,r3\" && resolved.length === 2 && resolved.every(r => r.resolved_why === \"asked again in r3\" && r.resolved_by === \"sweep\"))"'
+  && jq -e ".resolved_why == \"asked again in q-b\" and .resolved_by == \"sweep\" and .resolved_at == \"2026-10-28T00:02:00.000Z\" and .run == \"q-a\"" "$P/q-a/needs/done/1.json" > /dev/null'
 
 NF_Q="Should A log at debug? (default: info)
 Files: /srv/q/lib/a.sh:12, /srv/q/lib/b.sh" needs_fixture question open "$BASE" q-list
@@ -78,9 +68,6 @@ check "needs questions: two questions of one entry that share their first 80 cha
    && [[ $(jq -r .key "$P/q-twin/needs/1.json") != $(jq -r .key "$P/q-twin/needs/2.json") ]] \
    && node "$NM" open "$P/q-twin" q-twin proj question "$PRE  log at DEBUG?" asker=B feature=B line=2 record="$r" > /dev/null; (( $? == 3 )) \
    && jq -e ".seen == 2" "$P/q-twin/needs/2.json" > /dev/null && jq -e ".seen == 1" "$P/q-twin/needs/1.json" > /dev/null'
-check "needs questions: questionKey drops only a Files: label line, and asked_in ends with the newest asker" \
-  'in_node "ok(N.questionKey(\"Pick one:\nFiles over 1 MB: keep? (default: keep)\") === \"pick one: files over 1 mb: keep? (default: keep)\"
-    && N.moveForward([{ run: \"r2\", seen: 2, asked_in: [\"r1\", \"r2\"], ref: \"r2/1\" }], { seen: 1, asked_in: [\"r1\"] }, \"r1\", 0).item.asked_in.join() === \"r2,r1\")"'
 
 # ---- R4-04: the readers (plan §4): harness needs, harness status, the debrief, the answer skill ----
 # q-mix: a question older than a parked item in one state dir; the block card still comes first

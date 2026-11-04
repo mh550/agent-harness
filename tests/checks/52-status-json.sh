@@ -10,7 +10,7 @@ R() { jq -c --arg r "$1" '[.running[], .finished[]] | map(select(.run == $r))[0]
 check "status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs and ./overlap.mjs, exports runObject, queueEntry and sections" '
   [[ $(head -1 "$S") == "// "* ]] && node --check "$S" && bash -n "$H" \
   && [[ -z $(grep "^import " "$S" | grep -v " from \"node:" | grep -v " from \"./view.mjs\"" | grep -v " from \"./needs.mjs\"" | grep -v " from \"./overlap.mjs\"") ]] \
-  && node --input-type=module -e "import * as M from \"$S\"; for (const f of [\"runObject\", \"queueEntry\", \"sections\"]) if (typeof M[f] !== \"function\") process.exit(1)"'
+  && grep -q "^export function runObject(" "$S" && grep -q "^export function queueEntry(" "$S" && grep -q "^export function sections(" "$S"'
 check "status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt" '
   J > "$T/s.json" && jq -e ".v == 1 and (.generated_at | test(\"^2026-10-28T00:00:00\")) and .since == \"24h\" and .runner.up == false and .runner.max_parallel_runs == 1" "$T/s.json" > /dev/null \
   && diff <(jq -r "$K" "$T/s.json") "$HERE/fixtures/status-json-keys.txt"'

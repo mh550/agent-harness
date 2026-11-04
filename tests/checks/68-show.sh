@@ -67,26 +67,9 @@ check "show: once the worktree is removed: worktree removed, the record from the
   grep "^CHANGES vs origin/main · 15 files" "$T/g.out" > /dev/null && grep -x "  proposed   M1 · tag run/sh1/M1" "$T/g.out" > /dev/null &&
   "$H" show sh1 A > "$T/ga.out" && grep -E "^  commits    [0-9a-f]+ A: stub work \(1\)$" "$T/ga.out" > /dev/null && grep -E "^  feature    A · M1 · passes" "$T/ga.out" > /dev/null &&
   [[ $(grep -cE "^ +(commits +)?[0-9a-f]{7,} " "$T/ga.out") == 1 ]] && ! grep -E "older run|more files" "$T/ga.out" > /dev/null'
-check "show: the pure parts: joinDiff joins by path (binary +/− null, .harness/runs/ left out), mergeTreePaths reads the real output, combine counts one blob once (stacked or fanned-out lanes), milestonesOf keeps a proposal's PR" '
-  node --input-type=module -e "
-    import { joinDiff, mergeTreePaths, combine, milestonesOf } from \"$HERE/../lib/show.mjs\"; import { readFileSync } from \"node:fs\";
-    const a = (c, m) => { if (!c) { console.error(m); process.exit(1); } };
-    const j = joinDiff(\"3\\t1\\tlib/a.sh\\n-\\t-\\tpic.png\\n2\\t0\\t.harness/runs/r/x\\n\", \"M\\tlib/a.sh\\nA\\tpic.png\\nA\\t.harness/runs/r/x\\n\");
-    a(JSON.stringify(j) === JSON.stringify([{ status: \"M\", path: \"lib/a.sh\", added: 3, deleted: 1 }, { status: \"A\", path: \"pic.png\", added: null, deleted: null }]), \"joinDiff\");
-    a(mergeTreePaths(readFileSync(\"$HERE/fixtures/merge-tree-name-only.txt\", \"utf8\")).join() === \"f.txt,work-A.txt\", \"mergeTreePaths\");
-    const r = (x, blob) => [{ status: \"A\", path: x, added: 5, deleted: 0, blob }];
-    const c = combine([{ rows: r(\"a\", \"1\"), conflicts: [] }, { rows: [...r(\"a\", \"1\"), ...r(\"b\", \"2\")], conflicts: [\"b\"] }, { rows: [...r(\"a\", \"1\"), ...r(\"b\", \"3\")], conflicts: [] }]);
-    a(c.files === 2 && c.added === 15 && c.rows[0].path === \"b\" && c.rows[0].added === 10 && c.rows[0].conflict && c.rows[1].added === 5 && !(\"blob\" in c.rows[0]) && c.conflicts.join() === \"b\", \"combine \" + JSON.stringify(c));
-    const m = milestonesOf(\"- 2026-10-28 17:56 · M1 proposed for merging · https://github.com/o/r/pull/7\\n- 2026-10-28 18:00 · record PR merged into main · https://x/pull/9\\n- 2026-10-28 18:01 · M1 merged into main (by its PR)\\n- 2026-10-28 18:02 · M2 merged into main · https://github.com/o/r/pull/8\\n\");
-    a(JSON.stringify(m) === JSON.stringify([{ id: \"M1\", status: \"merged\", url: \"https://github.com/o/r/pull/7\" }, { id: \"M2\", status: \"merged\", url: \"https://github.com/o/r/pull/8\" }]), \"milestonesOf \" + JSON.stringify(m));
-  "'
+# joinDiff, mergeTreePaths, combine, milestonesOf and renderFeature's entry-resume row: tests/unit/show.test.mjs
 check "show: read-only: no fetch, the config read in a subshell, the project's object store untouched by merge-tree; bash -n and node --check" '
   ! grep -E "fetch" <(sed -n "/^cmd_show()/,/^}/p" "$HERE/../bin/harness") > /dev/null && grep -F "\$( (harness_config" <(sed -n "/^cmd_show()/,/^}/p" "$HERE/../bin/harness") > /dev/null &&
   n0=$(git count-objects | cut -d" " -f1) && "$H" show sh1 > /dev/null && [[ $(git count-objects | cut -d" " -f1) == "$n0" ]] &&
   bash -n "$HERE/../bin/harness" && node --check "$HERE/../lib/show.mjs"'
-SHOWR='import { renderFeature } from "'$HERE'/../lib/show.mjs"; const s = (kind, role) => ({ role, kind, model: "opus", wall_s: 60, cost_usd: 1, result: "success" });
-  const doc = { feature: { id: "A", milestone: "M1", description: "a", passes: false, attempts: 1, max_attempts: 2, steps: [], sessions: [s("coding", "build"), s("entry-resume", "coding")], files: [], commits: [], card: null } };
-  console.log([].concat(renderFeature(doc, { width: 200, now: 0 }, { head: { r: { run: "x", features: {} }, x: {}, extra: [] } })).join("\n"));'
-check "show: an entry resume's metrics row is listed as an entry resume, never a second coding session" '(cd "$T" && node --input-type=module -e "$SHOWR") > "$T/showr.out" \
-  && grep -E " · entry resume · opus · " "$T/showr.out" > /dev/null && ! grep -E " · coding · " "$T/showr.out" > /dev/null'
 suite_end

@@ -21,11 +21,12 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 
 ## Code rules
 
-- bash (`set -uo pipefail`), node ≥ 20 standard library only, `jq`, `git`, `gh`, `tmux`, `flock`. No npm packages.
+- bash (`set -uo pipefail`), node ≥ 22.8 standard library only, `jq`, `git`, `gh`, `tmux`, `flock`. No npm packages.
 - Match the surrounding style: short comments that say why, one-line usage headers on every lib file, pure
-  functions in the `.mjs` files where they can be (exported, unit-checkable with `node --input-type=module -e`).
+  functions in the `.mjs` files where they can be (exported, unit-tested in `tests/unit/<module>.test.mjs` under `node --test`).
 - Every behaviour the driver or CLI gains is visible in `harness-log.md` (`note`) and gets a check in a
-  `tests/checks/` file, written first and watched failing.
+  `tests/checks/` file, written first and watched failing; a pure function's behaviour gets a test in `tests/unit/`,
+  not a stub run.
 - **Fakes mirror the live API.** Stub output copies real CLI/HTTP shapes (`tests/fixtures/`); never invent a format.
   The 2026-10-17 usage-limit miss came from a guessed stub line.
 
@@ -38,7 +39,10 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   at a time (default half the cores, 1 to 4; `TEST_JOBS=1` runs one after another); while iterating, run a subset by
   file name: `bash tests/run.sh gc` runs every file whose name contains `gc`. A new
   check goes in a `tests/checks/` file by topic, and its name gets one line in `tests/fixtures/check-names.txt` (the
-  full run's conformance check fails on a name it doesn't list).
+  full run's conformance check fails on a name it doesn't list). The unit tier (`tests/unit/*.test.mjs`, flat
+  `test("<check name>")` calls, one node process) runs alone under
+  `node --test --test-isolation=none tests/unit/*.test.mjs` (spec reporter; a bare `tests/unit/` is no glob on node 24),
+  as the suite's lines under `bash tests/run.sh 00-unit`; `--test-name-pattern "<regex>"` picks tests.
 - `bash -n` on every shell file you touch; `node --check` on every `.mjs`.
 
 ## Where decisions and docs live

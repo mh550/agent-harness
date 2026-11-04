@@ -6,6 +6,7 @@ C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
 CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
 CHECK_KEY_MAP: harness default empty; this repo maps CLAUDE.md; the driver exports it; the template has it commented
+CLAUDE.md names the node floor 22.8 and the unit tier: tests/unit, node --test, bash tests/run.sh 00-unit
 CLAUDE.md's suite line points at the run's prompt, with no fixed measurement
 COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
 CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
@@ -164,6 +165,7 @@ backlog run: with LEDGER_COMMIT=1 the run's ledger commit carries retro-backlog.
 backlog set: specced --spec flips the status and records the spec; an unknown id or status exits 1
 backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
 backlog validate: the why line of a huge bad id stays under 300 bytes
+backlog.mjs: STATUSES in order, mergeProposals adds a new id, orderRows of none is empty
 bash -n lib/lane.sh; node --check lib/metrics.mjs lib/summary.mjs
 bash -n lib/record.sh lib/lane.sh lib/driver.sh
 brief committed with the run
@@ -231,11 +233,13 @@ debrief waits for the usage-limit window, then runs
 debrief: the flakes block names a check that flaked in two of the last five ledgered runs (×2), not one in one
 decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
 decisionsStore: a quoted DECISIONS wins over docs/decisions.md, an unknown command exits 2
+decisionsStore: a quoted DECISIONS= naming a missing file wins over docs/decisions.md, a file store that doesn't exist
 decisionsStore: neither is null, and store prints nothing
 decisionsStore: no DECISIONS and docs/decisions.md present is a file store
 default MERGE_POLICY proposes a verified milestone, never merges it
 deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
 deploy.mjs: vercel and netlify guards merge, keep keys and detect
+deploy: vercel-guard prints by-hand for a vercel.json with a true harness/ key (E1 review)
 driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
 driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
 driver partial: a session that edits only CLAUDE.md gets a partial init (memlint alone after the full run); tests-end is the full count
@@ -270,10 +274,13 @@ entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries
 entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: a milestone pack lists failed verify rows before dead ends
+entries.mjs: a summary can't open a code fence or an HTML block, and a 2000-character id keeps the pack within its cap
 entries.mjs: progress renders 15 in full and the rest as archive lines
 entries.mjs: resolved is an array of strings and normalize keeps it
+entries.mjs: the pack CLI refuses a bad cap and packs a run directory's dead ends, entries and answers
 entries.mjs: the pack drops a question a later entry resolves
 entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap
+entries.mjs: the render CLI leaves a legacy progress.md alone and renders entries.jsonl to progress.md and its archive
 entries.mjs: validate accepts the schema and names what is wrong
 entries: the driver appends each session's entry
 eval compare prints the table
@@ -286,6 +293,8 @@ eval run: nothing reaches a remote
 eval run: two stub tasks end to end, results in place
 eval.mjs: compare verdicts
 eval.mjs: per verified feature counts every repeat's cost (E2 review)
+eval.mjs: probe questions derived from the list, the session rows and the commits; answers scored exact, contains or miss
+eval.mjs: validateTask accepts a task and names the field of each bad one
 eval: --repeat 2 runs each task twice
 eval: a missing repo is refused before any spend, a set file in the cwd is read (E2 review)
 eval: an interrupted eval removes its harness worktree (E2 review)
@@ -377,6 +386,7 @@ harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
 ignored_only: CHECK_KEY_IGNORE entries are literal prefixes (docs/plans-old, docs/*, ../lib are code), ./x/ is x, no pathspecs is moved; noted once per main
 inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
+inbox.mjs answers CLI: on a lone <!-- INBOX with no final newline, the same bytes as sed's cut, never empty
 inbox.mjs repair: n8n-home's fixture against its template keeps Q2 and moves Q1 above ## Answers, out of the comment
 inbox.mjs repair: the comment back byte for byte, the question directly above ## Answers; exit 3, then 0
 inbox.mjs review: a --> inside the moved question, a word-aligned insertion, a reworded comment, a comment of the session's own
@@ -397,6 +407,7 @@ journal: a 2001-character init header is cut to 2000 and kept
 journal: a 410-character summary and outcome "maybe" is minimal with why invalid (outcome
 journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
 journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
+journal: ingest prints trimmed summary 410, exits 0 and appends the cut entry whole
 journal: validate exits 2 when its only errors are the caps, 1 with any other
 key map lint: a check file passing the bare root to a new command is named with its line, exit 1
 key map lint: a check file reading the root's CLAUDE.md outside the map is named with its line, exit 1
@@ -504,6 +515,8 @@ lint: unreproducible flags a time bound or one run's count, once per step, with 
 lint: unreproducible leaves names, flags, budgets, sizes and file counts alone
 main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
 materialize: a record tracked at the slot's base is skip-worktree, so the session's commit carries none of the copy
+memlint.mjs gotchas: the CLI prints +added ~edited -deleted of two files, nothing for none, a missing file as no section
+memlint.mjs store: prints the store's path from DECISIONS= or docs/decisions.md, nothing with neither
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
 memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
 memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
@@ -578,6 +591,7 @@ needs card weekly_budget: from its fixture, every field filled (why of 2-4 sente
 needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
 needs cards: 16 fixtures, one per reason, and a reason without a template is exit 1
 needs cards: merge_conflict and main_conflict show tried in the card, the notification body and needs.md
+needs fixture records: severity warn for usage_limit, weekly_budget and overlap, else block; each with a card headline and a [<run>] title
 needs list: a dead driver.pid with no ended is a synthesized driver_crash (ref <run>/crash, at run.log's mtime), parked.json's B a parked item; nothing stored
 needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver
 needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref kept, updated_at moved
@@ -620,6 +634,8 @@ needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base f
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
 needs.md is committed on the record branch before the park goes out, and lists the park
 needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
+needs.mjs moveForward: two earlier items of the key become one, seen summed, asked_in every run's, both resolved as asked again in the new run
+needs.mjs synthesize: a driver_crash only for a dead driver without ended; ended, a live driver or no driver.pid make none
 needs: a run whose worktree and record branch are both gone resolves run removed (list hides it before any sweep); the branch alone keeps it
 next <m>: a feature without after waits on its own milestone's earlier features only
 no URL in time: no window, the plain notification
@@ -968,6 +984,7 @@ summary end reason is how the run ended
 summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes
+summary.mjs: flakers names a check in the flakes of two or more of the five newest summaries (one without ended_at oldest) as name ×runs, (none) for none
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
 summary.mjs: suiteRuns counts the coding rows that carry suite_full; the Suite runs row after Flakes, 0 for none, none for an older summary
@@ -998,6 +1015,7 @@ testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
 testcount.mjs: --total is the last N/M line's total; nothing without one
 testcount.mjs: the runner's last N/M checks passed is the count
+testcount.mjs: total is the last N/M line's M, null without one
 tests_end: the count from a marker's first line; an empty first line writes no tests-end
 the EXIT trap commits its services note: harness-log.md is clean after a TERM
 the EXIT trap of a driver ended unexpectedly opens driver_crash (stored, no synthesized one); its needs.md committed
@@ -1095,6 +1113,12 @@ u3 review: an overlap with an ended run records on it in its state only: its wor
 u3 review: past --until with only lane-held entries the runner ends (it no longer polls until the lane ends)
 u3 review: queue list shows held: <project> busy for an entry a live lane holds (as the runner holds it)
 u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
+unit tier: a passing and a failing test print PASS a, FAIL b, the indented assert diff, then its own N/M line, exit 1
+unit tier: a passing-only file prints PASS a and its N/M line, exit 0
+unit tier: lib/testcount.mjs imported beside another test file prints nothing of its own
+unit tier: no test file, a process.exit(0) at import or a test printing a PASS line is red with the tier's own FAIL line
+unit tier: node --test exiting non-zero with no FAIL line prints the unit tier FAIL line; a throw at import is red too
+unit tier: tests/unit/reporter.mjs passes node --check
 unpark_warm: with a feature to unpark it fills nothing (the unpark on the note line runs and prints it); with none, that unpark starts no node
 v2 tags don't merge on resume
 verifier caught A, re-queued

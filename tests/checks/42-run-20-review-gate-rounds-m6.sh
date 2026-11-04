@@ -55,17 +55,4 @@ check "review_diff: fetches main first, so a milestone merged meanwhile drops ou
 check "review_diff: fails with the reason when origin has no such main branch" \
   'out=$(cd "$RD/c" && source "$HERE/../lib/review.sh" && MAIN_BRANCH=nope review_diff); rc=$?; (( rc == 1 )) && [[ $out == "no origin/nope" ]]'
 
-RF='import { reviewFindings as f } from "'$HERE'/../lib/entries.mjs"; const j = x => JSON.stringify(f(x));
-  process.exit(j("Critical 0 Important 2") === "{\"critical\":0,\"important\":2}" && j("Critical: 0, Important: 2") === "{\"critical\":0,\"important\":2}"
-    && j("**2 Critical**, 3 Important") === "{\"critical\":2,\"important\":3}" && f("M3-06 Critical regression fixed") === null
-    && f("Step 1 important: run the suite") === null && f("fixed the 2 critical paths") === null ? 0 : 1);'
-check "reviewFindings: reads Critical before Important in either order of word and count, never a step number or lowercase prose" 'node --input-type=module -e "$RF"'
-RS='import { reviewSummary as r } from "'$HERE'/../lib/summary.mjs";
-  const list = [{ id: "R", kind: "review" }, { id: "S", kind: "review" }, { id: "Q", kind: "review" }];
-  const a = r(list, [{ role: "review", cost_usd: 1 }], [{ feature: "R", summary: "R: 1 Critical, 0 Important" }, { feature: "R", summary: "R: 0 Critical, 0 Important" },
-    { feature: "S", summary: "S: 0 Critical, 0 Important" }, { feature: "S", summary: "S: not done" }, { feature: "Q", summary: "Q: no counts" }]),
-    b = r(list, [], [{ feature: "R", summary: "R: 0 Critical, 0 Important" }, { feature: "R", summary: "R: done" }]);
-  process.exit(a.found_nothing === 1 && a.reviews === 3 && b.found_nothing === 1 && b.reviews === 1 ? 0 : 1);'
-check "reviewSummary: a review counts as finding nothing only when every entry that gives counts reports 0 Critical, 0 Important" 'node --input-type=module -e "$RS"'
-
 suite_end

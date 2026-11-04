@@ -91,27 +91,7 @@ check "eval compare prints the table" 'ev_cmp && grep -q "^| t1 | pass rate | pa
   && cmp -s "$T/evcmp.out" "$T/evcmp3.out" && ! "$H" eval compare "$T/results" "$ED" > /dev/null 2>&1 && grep -q "^A: 1 repeat, B: 2 repeats: pass^N" "$T/evcmp.out" \
   && grep -q "^| t2 | pass rate | pass^2 1 (2/2) | pass^2 0 (1/2) | " "$T/evcmp4.out" && grep -q "^B: t2 r2: no summary" "$T/evcmp4.out"'
 # probes (E2-06): questions from the record, one tool-less session on the next session's prompt, scored by match
-EVPQ='import { questions as q, score as s, target as tg } from "'$HERE'/../lib/eval.mjs";
-  const list = { features: [ { id: "X1", milestone: "M", passes: true }, { id: "X2", milestone: "M", passes: false, after: ["X1"] }, { id: "X3", milestone: "M", passes: false } ] };
-  const rows = [ { kind: "coding", feature: "X2", passes: false, env: false, final: "The suite was red: test foo failed. Then I stopped." },
-    { kind: "coding", feature: "X2", passes: false, env: true, final: "usage limit" }, { kind: "verify", feature: null, passes: false, env: false, final: "M not verified." } ];
-  const commits = [ { subject: "X1: work", files: ["a.txt", ".harness/runs/r/feature_list.json"] }, { subject: "X1: more", files: ["b.txt"] },
-    { subject: "X10: other", files: ["c.txt"] }, { subject: "HARNESS: x", files: ["d.txt"] } ];
-  const p = q(list, rows, commits), k = p.questions.map(x => x.kind).join();
-  const r = s(p, "Q1: `b.txt`, a.txt.\nQ2: it depends on X1 only\nQ3: no idea"), m = r.questions.map(x => x.match).join();
-  const all = { features: [ { id: "Y1", passes: true }, { id: "Y2", passes: true } ] };
-  // a markdown final, an abbreviation; the last real attempt passed (X2: no question); a park is not a failure (X3)
-  const f2 = q({ features: [ { id: "X1", passes: false }, { id: "X2", passes: true }, { id: "X3", passes: false } ] }, [
-    { kind: "coding", feature: "X1", passes: false, env: false, final: "## Summary\n\n**X1 is not done: the suite fails on e.g. foo.** More text." },
-    { kind: "coding", feature: "X2", passes: false, env: false, final: "Red suite." }, { kind: "coding", feature: "X2", passes: true, env: false, final: "Done." },
-    { kind: "coding", feature: "X3", passes: false, env: false, final: "Needs a token.\nPARKED: set the token" } ], []);
-  process.exit(p.target === "X2" && tg(all) === "Y2" && k === "files,depends,fails" && JSON.stringify(p.questions[0].key) === "[\"a.txt\",\"b.txt\"]"
-    && p.questions[0].q === "Which files did X1 change?" && p.questions[2].key === "The suite was red: test foo failed" && p.questions[2].feature === "X2"
-    && m === "exact,contains,miss" && r.points === 2 && r.score === "2/3" && q(all, [], []).questions.map(x => x.key.join()).join() === "Y1"
-    && s(p, "Q2: X1").questions[0].match === "miss" && s(p, "Q01: a.txt b.txt\nQ2: X10").questions.map(x => x.match).join() === "exact,miss,miss"
-    && s(p, "Q1: Which files did X1 change?\nQ1: data.txt, b.txt").questions[0].match === "miss" && s(p, "Q1: the files a.txt and b.txt").questions[0].match === "contains"
-    && f2.questions.filter(x => x.kind === "fails").map(x => x.feature + "=" + x.key).join("|") === "X1=X1 is not done: the suite fails on e.g. foo"
-    && !f2.questions.some(x => x.kind === "fails" && x.feature === "X2") ? 0 : 1);'
+# the questions and the scoring, pure, are tests/unit/eval.test.mjs; here the probe session on the stub result
 "$H" eval probes "$ED/t2" > "$T/evprobe.out" 2>&1; EPR=$?
 cp "$STUB_DIR/probe-args" "$T/probe-args1" 2> /dev/null; cp "$STUB_DIR/probe-prompt" "$T/probe-prompt1" 2> /dev/null
 # a session that fails (an API error) is no score: exit 1, and the last scored probes.json is kept
@@ -127,7 +107,7 @@ ev_probe() { local wt; wt=$(jq -r '.tasks[1].worktree' "$EJ")
   && grep -qx -- "--strict-mcp-config" "$T/probe-args1" && sed -n '/^--max-budget-usd$/{n;p}' "$T/probe-args1" | grep -qx 0.5 \
   && (( EPE == 1 )) && grep -q "probes: the probe session failed.*session limit" "$T/evperr.out" && cmp -s "$ED/t2/probes.json" "$T/probes-kept.json" \
   && grep -qx "PWD=$wt" "$T/probe-args1" && grep -qx "HARNESS_EVAL=1" "$T/probe-args1" && [[ $(head -1 "$T/probe-prompt1") == "# Probe session" ]] && grep -qx "Q1: Which files did T2a change?" "$T/probe-prompt1"; }
-check "eval probes: questions derived, answers scored" 'node --input-type=module -e "$EVPQ" && ev_probe'
+check "eval probes: questions derived, answers scored" 'ev_probe'
 # the prompt the probe sees is the one T2b's coding session got (the init output differs: verify re-ran init after it; the clock too);
 # a result without its run worktree runs the probe elsewhere and says so; one without a probe prompt is refused
 cp -r "$ED" "$T/evgone" && jq '.tasks[].worktree = "/nonexistent"' "$ED/eval.json" > "$T/evgone/eval.json"

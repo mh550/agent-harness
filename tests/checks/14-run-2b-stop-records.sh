@@ -133,8 +133,6 @@ check "the retro prompt carries the end reason" 'grep -q "{{END_REASON}}" "$HERE
 STUB_PHONE_STOP=", blocked · 2026-11 usage limit" "$H" start "$T/proj" whyodd --spec SPEC.md --foreground > "$T/run2b-odd.out" 2>&1
 check "a reason after any separator is kept whole, \" · 2026-\" in it included" 'S=$T/wt/proj/whyodd/.harness/runs/whyodd/summary.json \
   && [[ $(jq -r .end_reason "$S") == "stopped by Michael: blocked · 2026-11 usage limit" ]] && hlog whyodd | grep -q "· stopped by Michael: blocked · 2026-11 usage limit$"'
-check "the debrief page never reads a stop reason's words as its tone" 'node --input-type=module -e "import { card } from \"$HERE/../lib/page.mjs\"; const c = r => card({ run: \"r\", project: \"p\", end_reason: r }, \"\");
-  process.exit(c(\"stopped by Michael: blocked, failed\").includes(\"pill muted\") && c(\"blocked on A\").includes(\"pill warn\") ? 0 : 1)"'
 check "a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason" '[[ $("$H" continue whycli --queued) == "skipping queued continuation of whycli: Michael stopped it" ]] \
   && [[ $(jq -r .end_reason "$T/wt/proj/whycli/.harness/runs/whycli/summary.json") == "stopped by Michael: the spec changed" ]] \
   && "$H" queue add --continue whycli > /dev/null && grep -qx -- --requested "$(compgen -G "$HARNESS_STATE/queue/*-continue-whycli.args")"'

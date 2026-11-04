@@ -34,23 +34,7 @@ pn1=$(pk "CLAUDE.md:a ./CLAUDE.md:b:a README.md:readme" --names CLAUDE.md); pn2=
 pk "$M" --names x.md > "$T/pk-nx.out" 2> /dev/null; pnx=$?
 check "treekey --names: the entries' names in map order (a duplicate path merged into the first), exit 1 and no line for a path no entry has" \
   '[[ $pn1 == "a b" && $pn2 == "memlint readme" && $pnx == 1 && ! -s $T/pk-nx.out ]]'
-# the pure functions, imported without running the CLI (no git)
-pure=$(cd "$T" && node --input-type=module -e '
-import { ignoreList, parseMap, treeKey, partialKeys, mapNames } from "'"$HERE"'/../lib/treekey.mjs";
-const f = ["a", "b", "c"], b = ["1".repeat(40), "2".repeat(40), "3".repeat(40)];
-const out = [];
-const k0 = partialKeys(f, b, []); out.push(k0.full === treeKey(f, b) && k0.full === k0.reduced && k0.lines.length === 0);
-const kb = partialKeys(f, b, [{ path: "b", names: ["x"] }]);
-out.push(kb.full === k0.full && kb.reduced === treeKey(["a", "c"], [b[0], b[2]]) && kb.lines.join("|") === `${b[1]} b`);
-out.push(partialKeys(f, b, [{ path: "z", names: ["x"] }]).lines.join("|") === "- z");
-const ig = ignoreList({ HARNESS_CHECK_KEY_IGNORE: "./docs/plans/ /abs" });
-out.push(ig.join(" ") === ".harness/runs docs/plans");
-const pm = parseMap("CLAUDE.md:a::b d:x docs/plans/q.md:y R.md R.md:c ./CLAUDE.md:e:a", ig, p => p === "d");
-out.push(pm.dropped.length === 3 && pm.entries.map(e => `${e.path}=${e.names.join(",")}`).join(" ") === "CLAUDE.md=a,b,e R.md=c");
-out.push(mapNames(pm.entries, ["R.md", "CLAUDE.md"]).join(" ") === "a b e c" && mapNames(pm.entries, ["nope"]) === null);
-console.log(out.join(" "));' 2>&1)
-check "treekey.mjs exports ignoreList, parseMap, treeKey, partialKeys and mapNames, pure on a fixed file list and blobs" \
-  '[[ $pure == "true true true true true true" ]]'
+# the pure functions (ignoreList, parseMap, treeKey, partialKeys, mapNames) are tests/unit/treekey.test.mjs
 M0=CLAUDE.md:39-memlint-m4:37-memory-prompts-m2   # its own line: beside harness_config "<root>" it would be a hit of 82-key-map-lint
 check "CHECK_KEY_MAP: harness default empty; this repo maps CLAUDE.md; the driver exports it; the template has it commented" \
   '( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ -z $CHECK_KEY_MAP ]] ) \

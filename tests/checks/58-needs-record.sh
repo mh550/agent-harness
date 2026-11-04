@@ -6,8 +6,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 NM=$HERE/../lib/needs.mjs BASE=1793145600
 REASONS="parked given_up verify_thin verify_red verify_recheck merge_conflict merge_refused main_conflict base_conflict feature_list_edits initializer_failed driver_crash usage_limit weekly_budget overlap"
 i=0; for r in $REASONS; do i=$(( i + 1 )); needs_fixture "$r" open $(( BASE - i * 10 )); needs_fixture "$r" resolved $(( BASE - i * 10 )); done
-IMP="import * as N from \"$NM\"; import { readFileSync as r } from \"node:fs\"; const ok = c => process.exit(c ? 0 : 1);"
-in_node() { node --input-type=module -e "$IMP $1"; }
+# the pure evals (REASONS, the sweep's rules, synthesize) are tests/unit/needs.test.mjs
 R1=$HARNESS_STATE/proj/nf-parked-open/needs/1.json
 
 # the v1 event keys, in order: the fixture is a copy of docs/specs/2026-10-22-n8n-events.md's Event JSON block, since
@@ -33,9 +32,8 @@ check "needs open twice with one key: one file, seen 2, exit 0 then 3; id, at an
 check "needs open: an unknown reason or an empty subject exits 1 with needs.mjs: on stderr and writes nothing" \
   'd=$HARNESS_STATE/proj/nf-bad; mkdir -p "$d"; node "$NM" open "$d" nf-bad proj nope M1 2> "$T/bad.err"; a=$?; node "$NM" open "$d" nf-bad proj parked "" 2>> "$T/bad.err"; b=$?
    (( a == 1 && b == 1 )) && grep "^needs.mjs: " "$T/bad.err" > /dev/null && [[ -z $(ls "$d/needs" 2> /dev/null) ]]'
-check "needs REASONS: kind, severity and priority for each of the 16 reasons, as the plan's table" \
-  '[[ $(in_node "console.log(Object.entries(N.REASONS).map(([r, x]) => [r, x.kind, x.severity, x.priority].join(\":\")).join(\" \"))") == "parked:park:block:high given_up:blocked:block:high verify_thin:needs_michael:block:high verify_red:needs_michael:block:high verify_recheck:needs_michael:block:high merge_conflict:needs_michael:block:high merge_refused:needs_michael:block:high main_conflict:needs_michael:block:high base_conflict:needs_michael:block:high feature_list_edits:needs_michael:block:high initializer_failed:needs_michael:block:high driver_crash:needs_michael:block:high usage_limit:limit:warn: weekly_budget:limit:warn: overlap:needs_michael:warn: question:needs_michael:warn:" ]] \
-  && bad=0 && for r in $REASONS; do jq -e --arg r "$r" ".reason == \$r and .severity == (if (\$r | test(\"usage|weekly|overlap\")) then \"warn\" else \"block\" end) and (.card.headline | length > 0) and (.title | startswith(\"[nf-\"))" "$HARNESS_STATE/proj/nf-$r-open/needs/1.json" > /dev/null || bad=1; done && (( ! bad ))'
+check "needs fixture records: severity warn for usage_limit, weekly_budget and overlap, else block; each with a card headline and a [<run>] title" \
+  'bad=0 && for r in $REASONS; do jq -e --arg r "$r" ".reason == \$r and .severity == (if (\$r | test(\"usage|weekly|overlap\")) then \"warn\" else \"block\" end) and (.card.headline | length > 0) and (.title | startswith(\"[nf-\"))" "$HARNESS_STATE/proj/nf-$r-open/needs/1.json" > /dev/null || bad=1; done && (( ! bad ))'
 
 # the sweep over every fixture run: each resolved one moves to done/ with its rule's words, each open one stays
 for d in "$HARNESS_STATE"/proj/nf-*-open "$HARNESS_STATE"/proj/nf-*-resolved; do echo "$d"; done > "$T/dirs"
@@ -49,20 +47,6 @@ check "needs sweep: each reason's resolved fixture is resolved by its rule (its 
   && bad=0 && for r in $REASONS; do o=$HARNESS_STATE/proj/nf-$r-open s=$HARNESS_STATE/proj/nf-$r-resolved
        [[ -f $o/needs/1.json && ! -e $o/needs/done/1.json && ! -e $s/needs/1.json ]] || bad=1
        jq -e --arg w "$(why "$r")" ".resolved_by == \"sweep\" and .resolved_why == \$w and (.resolved_at | test(\"Z$\"))" "$s/needs/done/1.json" > /dev/null || bad=1; done && (( ! bad ))'
-check "needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays" \
-  'in_node "const it = (reason, sub) => N.record({ run: \"r\", project: \"p\", reason, subject: sub, seq: 1 }, 0);
-    const st = o => ({ removed: false, ended: false, passing: [\"B\"], parked: {}, attempts: {}, max_attempts: 2, markers: [], ...o });
-    const w = (i, s) => { const { keep, resolved } = N.sweep([i], s); return resolved.length ? resolved[0].resolved_why : (keep.length ? \"kept\" : \"?\"); };
-    ok(w(it(\"parked\", \"B\"), st({ parked: { B: {} } })) === \"feature passes\" && w(it(\"given_up\", \"B\"), st({ attempts: { B: 5 } })) === \"feature passes\"
-      && w(it(\"given_up\", \"C\"), st({ attempts: { C: 2 } })) === \"kept\" && w(it(\"given_up\", \"C\"), st({ attempts: { C: 1 } })) === \"attempts reset\"
-      && w(it(\"verify_thin\", \"M1\"), st({ markers: [\"verified-M1\"] })) === \"milestone verified\"
-      && w(it(\"verify_red\", \"M1\"), st({ markers: [\"needs-M1\", \"verified-M1\"] })) === \"kept\" && w(it(\"verify_red\", \"M1\"), st({ markers: [\"needs-M1\", \"merged-M1\"] })) === \"milestone merged\"
-      && w(it(\"main_conflict\", \"M1\"), st({ markers: [\"main-conflict-M1\", \"merged-M1\"] })) === \"milestone merged\" && w(it(\"main_conflict\", \"record\"), st({ markers: [\"main-conflict-record\"] })) === \"kept\"
-      && w(it(\"merge_refused\", \"M1\"), st({ markers: [\"refused-M1\", \"merged-M1\"] })) === \"milestone merged\"
-      && w(it(\"merge_conflict\", \"M1\"), st({ markers: [\"needs-M1\"] })) === \"kept\" && w(it(\"merge_conflict\", \"M1\"), st({ markers: [\"conflict-M1\", \"merged-M1\"] })) === \"milestone merged\"
-      && w(it(\"driver_crash\", \"M2\"), st({ ended: true, markers: [\"needs-M2\"] })) === \"kept\" && w(it(\"driver_crash\", \"M2\"), st({ ended: true })) === \"needs-M2 cleared\"
-      && w(it(\"driver_crash\", \"run\"), st({ ended: true })) === \"kept\" && w(it(\"overlap\", \"x\"), st({ ended: true })) === \"kept\"
-      && w(it(\"verify_red\", \"M1\"), st({ removed: true, markers: [\"needs-M1\"] })) === \"run removed\")"'
 
 # run removed: worktree and branch both gone. While the branch is there the item stays; list hides a removed run read-only
 needs_fixture verify_red open $BASE nf-gone; rm -rf "$T/wt/proj/nf-gone"; git -C "$T/proj" branch -q harness/nf-gone
@@ -81,10 +65,7 @@ check "needs list: a dead driver.pid with no ended is a synthesized driver_crash
   && [[ $(ls "$S/needs" | paste -sd" ") == "1.json" ]]'
 check "needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver" \
   'HARNESS_NOW=$BASE node "$NM" open "$S" nf-syn proj parked B feature=B > /dev/null && HARNESS_NOW=$BASE node "$NM" open "$S" nf-syn proj driver_crash run > /dev/null \
-  && [[ $(node "$NM" list "$S" --json | jq -r "map(.ref) | join(\" \")") == "nf-syn/2 nf-syn/3 nf-syn/1" ]] \
-  && in_node "const s = { run: \"r\", project: \"p\", removed: false, passing: [], parked: {}, log_mtime: 0 };
-    ok(N.synthesize({ ...s, driver: \"dead\", ended: true }, []).length === 0 && N.synthesize({ ...s, driver: \"live\", ended: false }, []).length === 0
-      && N.synthesize({ ...s, driver: \"dead\", ended: false }, []).length === 1 && N.synthesize({ ...s, driver: null, ended: false }, []).length === 0)"'
+  && [[ $(node "$NM" list "$S" --json | jq -r "map(.ref) | join(\" \")") == "nf-syn/2 nf-syn/3 nf-syn/1" ]]'
 
 # harness needs over the fixture runs (the synthesized ones above included)
 touch "$T/needs.stamp"; export HARNESS_GLYPHS=ascii

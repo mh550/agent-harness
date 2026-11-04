@@ -352,7 +352,12 @@ tests/run.sh          # end-to-end with stub claude/gh/curl on a throwaway repo 
 tests/run.sh gc       # only the tests/checks/ files whose names contain "gc"
 TEST_JOBS=1 tests/run.sh   # one file at a time (default: half the cores, 1 to 4)
 KEEP=1 bash tests/run.sh --repeat 10 lanes-two   # reproduce a flake: that file 10 times, TEST_JOBS copies at once
+node --test --test-isolation=none tests/unit/*.test.mjs   # the unit tier alone (spec reporter), under a second
+bash tests/run.sh 00-unit   # the unit tier as the suite runs it: PASS/FAIL lines and N/M
 ```
+The unit tier (`tests/unit/<module>.test.mjs`, one node process) tests the pure functions of `lib/*.mjs` under
+`node --test`; `--test-name-pattern "<regex>"` picks tests, and `tests/checks/00-unit-tier.sh` puts its tests into
+every full run under their names in `tests/fixtures/check-names.txt` (decisions/2026-11-03-unit-tier).
 Each `tests/checks/*.sh` sources `tests/lib.sh` (a fresh `$T`, private tmux server, stub environment and throwaway
 project) and runs alone; `tests/fixtures/check-names.txt` lists every check name and a full run fails on one missing,
 new or doubled (a subset run, on one new or doubled). The runner starts the files `TEST_JOBS` at a time, largest first, as plain background jobs inside the

@@ -93,4 +93,7 @@ check "the coding prompt's Finish: the Gotchas step before the suite step, so th
   '[[ $(ord "$SL/prompt-coding.md") == gotchas-first ]] && grep -F "so the tree you tested is the tree that ends the session" "$SL/prompt-coding.md" > /dev/null'
 check "CLAUDE.md's suite line points at the run's prompt, with no fixed measurement" \
   'grep -q "see the run'"'"'s prompt" "$HH/CLAUDE.md" && [[ $(grep -c "208 s" "$HH/CLAUDE.md") == 0 ]]'
+check "CLAUDE.md names the node floor 22.8 and the unit tier: tests/unit, node --test, bash tests/run.sh 00-unit" \
+  'grep -q "node ≥ 22.8" "$HH/CLAUDE.md" && grep -F "tests/unit/<module>.test.mjs" "$HH/CLAUDE.md" > /dev/null \
+  && grep -F "node --test --test-isolation=none tests/unit/*.test.mjs" "$HH/CLAUDE.md" > /dev/null && grep -F "bash tests/run.sh 00-unit" "$HH/CLAUDE.md" > /dev/null'
 suite_end

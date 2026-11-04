@@ -46,23 +46,6 @@ check "resolve: report.md's Spend by role names the resolve sessions' spend" \
   'grep -E "^\| Spend by role \| .*· resolve \\\$[0-9.]+ ·" "$REC/report.md" > /dev/null'
 check "resolve: the PR body says main was merged in by a resolve session, and no needs-you post went out" \
   'grep -Fx "Merged main in with a resolve session: README.md" "$S/pr-body.md" > /dev/null && ! grep -E "^Title: \[rs\] .*needs you" "$T/curl.log" > /dev/null'
-CFX='import { conflicts, resolutions, report } from "'$HERE'/../lib/summary.mjs"; import { readFileSync } from "node:fs";
-  const fx = JSON.parse(readFileSync("'$HERE'/fixtures/summary-report.json", "utf8"));
-  const log = ["- 2026-10-29 01:00 · M2: main merged in by a resolve session (a.txt, b c.txt; claude-opus-5-5, 3 min); one verify round follows",
-    "- 2026-10-29 01:10 · M3: main merged in by a resolve session (d.txt; opus, 0 min); the verify goes on with main merged",
-    "- 2026-10-29 01:20 · M4 conflicts with main; not merged (needs Michael)", "- 2026-10-29 01:30 · M4 conflicts with main; not merged (needs Michael)",
-    "- 2026-10-29 01:40 · main conflicts with harness-lane/r/M5; carrying on without it (merges into main need Michael)",
-    "- 2026-10-29 01:50 · main conflicts with harness/r; carrying on without it (merges into main need Michael)"].join("\n");
-  const c = conflicts(log, [{ kind: "resolve" }, { kind: "resolve", env: true }, { kind: "coding" }]), rs = resolutions(log);
-  const row = s => report(s).split("\n").find(l => l.startsWith("| Conflicts | "));
-  process.exit(JSON.stringify(c) === JSON.stringify({ resolved: 2, escalated: 2, sessions: 2 })
-    && JSON.stringify(rs) === JSON.stringify([{ milestone: "M2", files: "a.txt, b c.txt" }, { milestone: "M3", files: "d.txt" }])
-    && row({ ...fx, conflicts: c, resolutions: rs }) === "| Conflicts | 2 resolved by sessions (M2: a.txt, b c.txt; M3: d.txt), 2 to Michael |"
-    && row({ ...fx, conflicts: conflicts("", []), resolutions: [] }) === "| Conflicts | 0 resolved, 0 to Michael |" && row(fx) === undefined
-    && report({ ...fx, flakes: { count: 0, names: {} }, conflicts: c, resolutions: rs }).split("\n").findIndex(l => l.startsWith("| Conflicts | "))
-      === report({ ...fx, flakes: { count: 0, names: {} } }).split("\n").findIndex(l => l.startsWith("| Flakes | ")) + 1 ? 0 : 1);'
-check "summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes" \
-  'node --input-type=module -e "$CFX"'
 check "resolve: prompts/resolve.md renders through lib/prompt.sh as a command, first line # Resolve session, no {{ left" \
   '"$HH/lib/prompt.sh" "$S" resolve C > "$T/rs-prompt.md" 2> "$T/rs-prompt.err" && [[ $(head -1 "$T/rs-prompt.md") == "# Resolve session" ]] \
   && ! grep -F "{{" "$T/rs-prompt.md" > /dev/null && grep -F "Milestone: M2" "$T/rs-prompt.md" > /dev/null'
