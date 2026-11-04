@@ -302,6 +302,25 @@ eval: every task.json validates and a bad one is rejected
 eval: refuses past WEEKLY_STOP_AT
 eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+fast gate: --fast runs the fast command (--tier fast), writes fast-<key> (the fast count, wall) and no green-<key>; row fast
+fast gate: --fast with further arguments is a usage error (exit 2), nothing run
+fast gate: CHECK_FAST_CMD empty by default, exported as HARNESS_CHECK_FAST_CMD; the template has it commented; this repo sets the fast tier
+fast gate: a bare call on a fast-green tree runs the suite bare (a fast-green is never read as a green)
+fast gate: a fast red twice reruns a once and prints the fast RED line on check-fast.out and its tail; exit 1
+fast gate: a fast red with no HARNESS_FAILED= line reruns the fast tier: flaky: the fast tier, or red again on a rerun of the fast tier
+fast gate: a fast red writes no fast-, green- or red- marker
+fast gate: a full run's flake row has no tier key
+fast gate: a green-<key> answers --fast with the full cached line, no run, no fast-<key>
+fast gate: a hanging fast run times out: the fast RED timeout line, no rerun, no marker
+fast gate: a red-<key> answers --fast with the cached RED and exit 1, no run
+fast gate: check.sh's usage header documents --fast, fast-<key>, check-fast.out and the fast row
+fast gate: red then green is the fast flake line, fast-<key> with the first run total, one flakes.jsonl row with tier fast
+fast gate: the fast run's output is check-fast.out; check.out and check-<key>.out are not written
+fast gate: the next --fast call is the cached fast line, row cached, no run
+fast gate: the subset form is unchanged with a fast command set: its args, row subset, no marker
+fast gate: with a part- sidecar and a mapped-only diff, --fast runs the fast tier, not the partial subset; row fast
+fast gate: with no fast command, --fast runs the suite bare, writes green-<key> (count, wall) and prints the full green line
+fast gate: with no fast command, the next --fast call is the full form's cached line; rows full then cached
 features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
 features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
 features.mjs writes atomically: 200 bumps beside a parsing reader, which never throws; no temp file left

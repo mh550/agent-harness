@@ -51,7 +51,7 @@ prompt_env() {
     HARNESS_LINT="node $HARNESS_HOME/lib/features.mjs lint" HARNESS_ENTRY_CHECK="node $HARNESS_HOME/lib/entries.mjs validate" \
     HARNESS_CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/harness/$PROJECT_NAME \
     HARNESS_SCOPE_PREFIX="$(scope_unit "$RUN_ID" "")" HARNESS_CHECK_MEMORY_MAX=$CHECK_MEMORY_MAX HARNESS_CHECK_TIMEOUT=$CHECK_TIMEOUT \
-    HARNESS_CHECK_RERUN=$CHECK_RERUN   # check.sh caps and reruns the same way for both
+    HARNESS_CHECK_RERUN=$CHECK_RERUN HARNESS_CHECK_FAST_CMD=$CHECK_FAST_CMD   # check.sh caps and reruns the same way for both
 }
 
 # → the Suite line's "last full run …": the wall of the cwd tree's green-<key>, else of the newest green with one, then
