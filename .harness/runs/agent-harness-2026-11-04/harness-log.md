@@ -18,3 +18,5 @@
 - 2026-11-04 03:29 · context.md for T1-04: 6949 bytes
 - 2026-11-04 03:52 · T1-04: suite ran 1x (804 s) in the session
 - 2026-11-04 03:52 · T1-04 · claude-opus-5-5 · passes=true · 23 min · 4/8 passing · tests 1186
+- 2026-11-04 03:53 · verify T1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-04 04:06 · context.md for T1: 11344 bytes
