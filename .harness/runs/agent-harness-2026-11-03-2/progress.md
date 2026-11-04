@@ -7,6 +7,22 @@ How to read the feature list (`feature_list.json`): six features in series, U1-0
 
 To steer: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session.
 
+### 2026-11-03 20:16 · U1-01 · passes
+
+The unit tier: tests/unit/reporter.mjs (PASS/FAIL lines, the failure indented), tests/checks/00-unit-tier.sh (one node --test process, own N/M, a no-FAIL-line guard, TEST_UNIT_DIR), testcount's eval moved to tests/unit/testcount.test.mjs under its old name, CLAUDE.md's node ≥ 22.8 and tier lines, the decision file.
+
+- **Files:** tests/unit/reporter.mjs, tests/unit/testcount.test.mjs, tests/checks/00-unit-tier.sh, tests/checks/33-suite-runner.sh, tests/checks/79-suite-length.sh, tests/fixtures/check-names.txt, CLAUDE.md, journal/decisions/2026-11-03-unit-tier.md
+- **Verified:** check.sh full run green in 792 s: 1146/1146, PASS conformance: the split suite has every check the single-file suite had (fixture 1140 -> 1145 lines, no removal); the first full run was red only on memlint (Gotchas 16 > 15, from my new line, dropped). Watched red first: 33-suite-runner 16/20, 79-suite-length 13/14. 00-unit-tier prints the testcount name once; bash -n and node --check clean; node --test tests/unit/*.test.mjs no ✖.
+- **Tests:** 1141 → 1146
+- **Dead end:** node --test --test-isolation=none tests/unit/ (a directory, as the spec and steps name it) — node 24 imports the directory as a module: ERR_UNSUPPORTED_DIR_IMPORT and a ✖ line; the glob tests/unit/*.test.mjs works and is what CLAUDE.md and the decision name
+- **Dead end:** a Gotchas line on the unit tier being one process (console.log, shared module state) — Gotchas already held 15 lines; memlint failed 16 > 15; the decision file states the rule, so the line was dropped
+- **Discovery** (affects U1-02, U1-03, U1-04, U1-05, U1-06): `node --test tests/unit/` fails on node 24.21 (ERR_UNSUPPORTED_DIR_IMPORT, prints ✖): every later step's `node --test --test-isolation=none tests/unit/ prints no ✖ line` must read `tests/unit/*.test.mjs`
+- **Discovery** (affects U1-06, run): The CLAUDE.md check went in tests/checks/79-suite-length.sh (already in CHECK_KEY_MAP for CLAUDE.md), not 33-suite-runner.sh: a CLAUDE.md read there would have to join the map (82-key-map-lint).
+- **Discovery** (affects U1-02, U1-03, U1-04, U1-05, U1-06): The reporter prints a non-assertion error's stack without node: frames, and a skipped test as `PASS <name> (skipped: <reason>)` (run.sh strips the suffix); decisions/2026-11-03-unit-tier has empty `## Kept evals` and `## Measured` sections for U1-02..05.
+- **Proposed change:** U1-01 to U1-06 steps: `node --test --test-isolation=none tests/unit/` should read `node --test --test-isolation=none tests/unit/*.test.mjs` (the directory form is red on node 24)
+- **Proposed change:** U1-01 step 1: the `grep -q 'node ≥ 22.8' CLAUDE.md` check belongs in a CHECK_KEY_MAP file for CLAUDE.md (it is in 79-suite-length.sh), not 33-suite-runner.sh
+- *01-U1-01 · claude-opus-5-5*
+
 ### 2026-11-03 19:35 · init · passes
 
 6 features, one milestone U1: U1-01 the node:test reporter, tests/checks/00-unit-tier.sh, tests/unit/ (testcount's eval first), CLAUDE.md, the decision file; U1-02 the 37 evals of 51-view-pure and 12-journal-pure; U1-03 the nine smaller -pure- files; U1-04 the scenario files' evals, kept ones listed; U1-05 the before/after table (sonnet); U1-06 review + simplify, docs.
