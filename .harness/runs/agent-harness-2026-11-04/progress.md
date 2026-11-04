@@ -7,6 +7,23 @@ The run: phase 3 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier (T1: the full suite) is green and the verifier agrees per milestone. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-04 05:56 · T2-04 · passes
+
+Opus review of T2: 0 Critical, 1 Important, 9 Minor. Fixed: the verify's slow-tier red no longer blames main (note, need, verify_red card variant own); fast flakes with no names read 'the fast tier'; run.md's Suite line; a check pins the verify's full init. Simplified: one mark() marker writer in check.sh, run_init fresh's rm. Docs: architecture §3/§4/§7/§10, README, CLAUDE.md.
+
+- **Files:** lib/lane.sh, lib/needs.mjs, lib/check.sh, lib/record.sh, lib/summary.mjs, prompts/coding.md, prompts/parts/run.md, tests/checks/86-fast-gate.sh, tests/checks/87-fast-gate-run.sh, tests/checks/79-suite-length.sh, tests/unit/needs.test.mjs, tests/unit/summary.test.mjs, +4 more
+- **Verified:** RED→GREEN pairs: (Important) 87 'a slow-tier red passes the session … verify's full run is red' FAIL against HEAD's lib/lane.sh, PASS after; unit 'needs verify_red own …' fail→pass. (Minor 7) 87 'the verify's init ran the full suite …' FAIL with run_init fresh forced to --fast, PASS after. (Minor 4) 86 'flakes_note names a fast flake …' and unit 'summary.mjs: flakes counts a fast flake …' fail→pass. Invariant check 86 'a bare call on a fast-green tree runs the suite bare' stands. Subsets 86/87/81/73/34/79/26/58/59/62/74/00-unit green; full suite: check: green in 817 s, 1224 tests.
+- **Tests:** 1220 → 1224
+- **Dead end:** ls $HARNESS_STATE in the session shell (looking for a test's state dir) — outside tests/run.sh it is the live state dir: it listed project directory names only, nothing was opened or written; a session never expands it outside a check
+- **Dead end:** an apostrophe (a coding session's) in run.md's Suite line — the checks quoting that line sit inside single-quoted check strings (79, 87); reworded without one
+- **Discovery** (affects run): verify() in lib/lane.sh now sets own=1 when sync_main merged nothing (HEAD unchanged, rc 0); a red then notes '(main had nothing new: a slow-tier red the fast gate let through)' and opens verify_red with variant own
+- **Discovery** (affects run): check.sh has mark <green|fast|red|part>-<key> <line>…: the one temp-file-and-mv marker writer
+- **Question for Michael:** A slow-tier red at verify still stops the milestone for Michael (verify_red, needs Michael), now with the cause named (default). Should it instead go back to a coding session (a fix feature) automatically? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/lib/lane.sh:132, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/journal/decisions/2026-11-03-fast-gate.md
+- **Question for Michael:** With a fast tier, finish's final `green` (lib/driver.sh:320) runs the full suite uncached (~800 s here) when a run ends mid-milestone (limit, stop, deadline), since the last slot tree has only fast-<key>. Keep it full (default, the spec's), or let finish accept a fast-green there? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/lib/driver.sh:320
+- **Proposed change:** Review Minors left as they are (spec-intended or judgment calls): tests-end stays the last full count after a fast-gated session (lane.sh:381, its comment now says so); tests-start in a run whose baseline is red waits for the first full green (the verify's); the un-pass note says 'fast tier red' also when a cached full red-<key> answered green_fast; 87's fast_between awk accepts a bare call between sessions (covered today by B's init-output check)
+- **Proposed change:** Simplification not taken: folding check.sh's --fast branch into the full path (about 15 lines) — every check stays as is with mark() alone; worth a later pass
+- *08-T2-04 · claude-opus-5-5*
+
 ### 2026-11-04 05:25 · T2-03 · passes
 
 The gate is visible: suite_fast on the coding row, suiteRuns {sessions, full, fast, runs, full_per_session, fast_per_session} and the Suite runs row `<f> full and <k> fast per coding session (…)`; run.md names both tiers' commands; This session adds `Suite: last fast run <s> s`; coding.md's two-tier rule `run the fast tier once, last`; render.mjs {{?X}}/{{!X}} line markers.

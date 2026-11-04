@@ -63,3 +63,45 @@ harness needs done agent-harness-2026-11-04/2 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-04/3 --why "<answer>"
 ```
+
+## ⚠ T2-04 asked: A slow-tier red at verify still stops the milestone for Mic…
+
+`agent-harness-2026-11-04/4` · since 2026-11-04T10:56:10.901Z
+
+**blocked** nothing waits on it; T2-04's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:10](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L10)
+
+> A slow-tier red at verify still stops the milestone for Michael (verify_red, needs Michael), now with the cause named (default). Should it instead go back to a coding session (a fix feature) automatically? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/lib/lane.sh:132, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/journal/decisions/2026-11-03-fast-gate.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/lib/lane.sh:132](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-04/T2/lib/lane.sh#L132) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/journal/decisions/2026-11-03-fast-gate.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-04/T2/journal/decisions/2026-11-03-fast-gate.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl:10](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L10)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-04/4 --why "<answer>"
+```
+
+## ⚠ T2-04 asked: With a fast tier, finish's final `green` (lib/driver.sh:320…
+
+`agent-harness-2026-11-04/5` · since 2026-11-04T10:56:10.964Z
+
+**blocked** nothing waits on it; T2-04's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:10](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L10)
+
+> With a fast tier, finish's final `green` (lib/driver.sh:320) runs the full suite uncached (~800 s here) when a run ends mid-milestone (limit, stop, deadline), since the last slot tree has only fast-<key>. Keep it full (default, the spec's), or let finish accept a fast-green there? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/lib/driver.sh:320
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/lib/driver.sh:320](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-04/T2/lib/driver.sh#L320) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl:10](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L10)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-04/5 --why "<answer>"
+```
