@@ -668,6 +668,33 @@ runs_as_main() {
   GIT_AUTHOR_DATE=$d GIT_COMMITTER_DATE=$d git commit-tree "$t" -p "$1" -m "HARNESS: .harness/runs/ as $MAIN_BRANCH has it (a lane never carries the record)" 2>> "$STATE/run.log"
 }
 
+# <m> <what> <command…>: one origin step of a merge, retried with bounded backoff (ORIGIN_WAITS; HARNESS_ORIGIN_WAITS in
+# tests), its stderr appended to run.log. Each failed try is a run.log line; a success after one a note; the last failure
+# returns the command's exit with ORIGIN_TRIES and ORIGIN_SECS set for the caller's words. A GitHub refusal (a GraphQL:
+# line, gh's own or wrapped as `pull request create failed: GraphQL: …`; a pre-receive hook's decline) is a decision,
+# not an outage: one try. ORIGIN_WAITS="" is one try. Runs the command in this shell (a step
+# function may set a variable: pr_open_'s PR_URL).
+origin_try() {
+  local m=$1 what=$2 k=1 n rc w waits err=$STATE/origin-try.$BASHPID t0=$SECONDS; shift 2
+  read -ra waits <<< "${HARNESS_ORIGIN_WAITS:-${ORIGIN_WAITS-5 15 30 60 120}}"; n=$(( ${#waits[@]} + 1 ))
+  while :; do
+    "$@" 2> "$err"; rc=$?; cat "$err" >> "$STATE/run.log"
+    ORIGIN_TRIES=$k ORIGIN_SECS=$(( SECONDS - t0 ))
+    if (( rc == 0 )); then
+      rm -f "$err"; (( k > 1 )) && note "$m: $what succeeded on try $k (origin unreachable for $ORIGIN_SECS s)"; return 0
+    fi
+    if (( k >= n )) || grep -qE '(^|: )GraphQL: |\(pre-receive hook declined\)' "$err"; then rm -f "$err"; return "$rc"; fi
+    w=${waits[k-1]}; log "$m: $what failed (try $k of $n; next in $w s)"; sleep "$w"; k=$(( k + 1 ))
+  done
+}
+# <head> <m>: the head's open PR, else a new one, its URL in PR_URL (origin_try's "opening its PR": a pr view that can't
+# reach GitHub reads as no PR, and the pr create after it fails too)
+pr_open_() {
+  PR_URL=$($GH pr view "$1" --json url,state -q 'select(.state=="OPEN") | .url' 2> /dev/null) || PR_URL=""
+  [[ $PR_URL == http* ]] || PR_URL=$($GH pr create --base "$MAIN_BRANCH" --head "$1" --title "$RUN_ID: $2 (verified)" --body-file "$LS/pr-body.md" | tail -1)
+  [[ $PR_URL == http* ]]
+}
+
 # Merge one verified milestone (its tag, the lane tip) into main through a PR. The invariant: the tree that lands on
 # main is the tree that was verified, outside the paths the suite's cache key ignores (ignored_only). 0 = merged,
 # proposed, or (--open) its PR open and waiting · 1 = needs Michael (conflict, refusal) · 3 = main moved since the verify
@@ -678,8 +705,8 @@ merge_one() {
   local m=$1 tag=run/$RUN_ID/$1 c head url tree mn out ref t
   head=harness-merge/$RUN_ID-$m
   c=$(git rev-list -n1 "$tag") || return 1
-  # once more after a second: another lane's fetch may hold refs/remotes/origin/<main>'s lock
-  git fetch -q origin "$MAIN_BRANCH" 8>&- 2> /dev/null || { sleep 1; git fetch -q origin "$MAIN_BRANCH" 8>&- 2>> "$STATE/run.log"; } \
+  # retried: an outage, or another lane's fetch holding refs/remotes/origin/<main>'s lock
+  origin_try "$m" "fetch of $MAIN_BRANCH" git fetch -q origin "$MAIN_BRANCH" 8>&- \
     || { log "$m: fetch of $MAIN_BRANCH failed; merged later"; return 1; }
   if git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; then touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (already there)"; return 0; fi
   mn=$(git rev-parse "origin/$MAIN_BRANCH")
@@ -689,7 +716,7 @@ merge_one() {
     && git fetch -q origin "harness-lane/$RUN_ID/$m" 8>&- 2> /dev/null && t=$(git rev-parse FETCH_HEAD) \
     && [[ $t != "$c" ]] && git merge-base --is-ancestor "$c" "$t"; then
     git tag -f -a "$tag" -m "harness run $RUN_ID: $m verified (v3); main merged in by hand, harness merge" "$t" > /dev/null \
-      && git push -q --force origin "refs/tags/$tag" 8>&- 2>> "$STATE/run.log" \
+      && origin_try "$m" "push of tag $tag" git push -q --force origin "refs/tags/$tag" 8>&- \
       && { c=$t; note "$m: main merged into its branch by hand; re-tagged $tag at ${t:0:7}"; }
   fi
   if ! out=$(git -c core.quotePath=false merge-tree --write-tree --name-only "origin/$MAIN_BRANCH" "$c" 2>/dev/null); then
@@ -726,14 +753,13 @@ merge_one() {
     c=$(runs_as_main "$c") || { note "$m: its .harness/runs/ changes could not be undone; not merged (see run.log)"; return 1; }
     note "$m: the lane carried .harness/runs/ changes ($out); merged with $MAIN_BRANCH's"
   fi
-  git push -q -f origin "$c:refs/heads/$head" 8>&- 2>> "$STATE/run.log" || { note "$m: push of $head failed (see run.log)"; return 1; }
+  origin_try "$m" "push of $head" git push -q -f origin "$c:refs/heads/$head" 8>&- || { note "$m: push of $head failed (see run.log)"; return 1; }
   pr_body "$m" > "$LS/pr-body.md"; [[ $LS == "$STATE" ]] || cp "$LS/pr-body.md" "$STATE/pr-body.md"   # the last body, whichever lane (checks read it)
-  url=$($GH pr view "$head" --json url,state -q 'select(.state=="OPEN") | .url' 8>&- 2>/dev/null) || url=""
-  [[ $url == http* ]] || url=$($GH pr create --base "$MAIN_BRANCH" --head "$head" --title "$RUN_ID: $m (verified)" --body-file "$LS/pr-body.md" 8>&- 2>> "$STATE/run.log" | tail -1)
+  PR_URL=""; origin_try "$m" "opening its PR" pr_open_ "$head" "$m" 8>&-; url=$PR_URL
   [[ $url == http* ]] || { note "$m: could not open its PR (see run.log)"; return 1; }
   [[ ${2:-} == --open ]] && return 0   # a dependency hasn't merged: the PR waits for it, whatever the policy
   if [[ $MERGE_POLICY != auto && ! ${HARNESS_MERGE_ONLY:-} ]]; then touch "$STATE/proposed-$m"; note "$m proposed for merging · $url"; notify "$m verified · review: $url" title="[$RUN_ID] $m ready to merge" click="$url"; return 0; fi   # harness merge lands it whatever the policy
-  if $GH pr merge "$url" --merge --match-head-commit "$c" > /dev/null 8>&- 2>> "$STATE/run.log"; then
+  if origin_try "$m" "merging its PR" "$GH" pr merge "$url" --merge --match-head-commit "$c" > /dev/null 8>&-; then
     git push -q origin --delete "$head" 8>&- 2>/dev/null
     touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH · $url"; notify "$m merged · $url" click="$url"
     lane_branch_gone "$m"
@@ -771,7 +797,7 @@ merge_milestones_() {
     [[ $(cat "$STATE/lanes/$m/pid" 2> /dev/null) != "$$" ]] && lane_alive "$m" && continue
     if [[ -f $STATE/proposed-$m && ! ${HARNESS_MERGE_ONLY:-} ]]; then   # Michael's to merge, or `harness merge`'s
       # merged by Michael meanwhile (its PR on GitHub): merged here too, so what waits on it moves on
-      git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null && git fetch -q origin "$MAIN_BRANCH" 8>&- 2> /dev/null \
+      git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null && origin_try "$m" "fetch of $MAIN_BRANCH" git fetch -q origin "$MAIN_BRANCH" 8>&- \
         && git merge-base --is-ancestor "run/$RUN_ID/$m" "origin/$MAIN_BRANCH" && { touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (by its PR)"; lane_branch_gone "$m"; }
       continue
     fi

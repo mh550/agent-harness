@@ -91,6 +91,7 @@ a reason after any separator is kept whole, " · 2026-" in it included
 a refused branch -d (merged into origin/main, not into HEAD, no upstream) is logged and gc goes on
 a refused commit: the note is unstaged again
 a refused debrief: no note, nothing marked done, LIMIT_UNTIL set, one line to NOTIFY_CMD
+a refused merge is one gh pr merge per merge, its GraphQL line in run.log, merge_refused:M1 opened, no retry line
 a refused merge tells Michael and his desk once
 a refused merge: priority high, click = the PR
 a refused session's minimal entry is not yet, not its reverted claim (E4 review F3)
@@ -685,9 +686,14 @@ notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3
 notify.mjs: githubUrls for ssh, https and non-GitHub origins
 notify.mjs: inboxQuestion is the lines added above ## Answers (never Michael's old answers)
 notify.mjs: trimBody caps at 3500 bytes with …
+od1: origin down for three fetches at the lane's merge: three failed tries, succeeded on try 4, M1 merged, no needs post
+od6: gh down twice at pr create and pr merge: opening its PR and merging it succeed on try 3, M1 merged
 one ledger row per run
 one note, overwritten: ledger/debrief.md
 one notification per run end
+origin_try: a GraphQL: refusal or a pre-receive hook's decline is one try, its line in run.log, no failed-try line
+origin_try: a command failing every try returns its exit after four tries, ORIGIN_TRIES=4 and ORIGIN_SECS set, no note
+origin_try: a command failing twice then passing returns 0, two failed-try lines in run.log, one succeeded note
 overlap: Markdown emphasis and HTML tags stuck to a path neither hide it nor turn it into its directory
 overlap: a dir/ or glob names its directory of two or more segments; .harness/runs/ never
 overlap: a live run is compared by what its spec and brief name (no branch yet); more than 6 files end in and <k> more
@@ -978,6 +984,9 @@ status view: harness status --all over 38 stub runs takes under 1 s of CPU time 
 status view: no line over 60 or 80 display columns (also with -v); at 60 the long field and the cost go on an indented second line
 status view: no run.log line without -v; a bad --since is an error
 status: stop <why> from the phone: the same note, ended and services note
+stub-gh: STUB_GH_DOWN=2 fails two pr creates with fixtures/gh-down.txt (a real gh's), the third opens the PR
+stub-git-down: a count of 2 fails the first two pushes with the fixture's lines (ref and url in), the third reaches origin.git
+stub-git-down: until <epoch> fails a fetch with exit 128 and no line; other commands and unmatched calls run the real git
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
 suite length: a project without CHECK_FAST_CMD renders This run's Suite line as before and no fast length

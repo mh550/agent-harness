@@ -117,11 +117,11 @@ verify() {
       touch "$STATE/verified-$m"
       if [[ $mode == rebase ]]; then   # the tag exists: moved to the merged commit, the one forced push (the old stays reachable from its PR)
         git tag -f -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3); re-based on $MAIN_BRANCH, verify round $(cat "$STATE/rebase-rounds-$m")" > /dev/null \
-          && git push -q --force origin "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"
+          && origin_try "$m" "push of tag run/$RUN_ID/$m" git push -q --force origin "refs/tags/run/$RUN_ID/$m" 8>&-
         note "$m verified on the re-based tree and re-tagged run/$RUN_ID/$m"
       else
         git tag -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3)" 2>/dev/null \
-          && git push -q origin "run/$RUN_ID/$m" 2>> "$STATE/run.log"
+          && origin_try "$m" "push of tag run/$RUN_ID/$m" git push -q origin "run/$RUN_ID/$m"
         note "$m verified and tagged run/$RUN_ID/$m"
       fi
       rec_commit "HARNESS: $m verified"; sync_record
@@ -201,7 +201,7 @@ rebase() {
     (( rc == 0 )) || { rebase_fail "$m" "$c" "$m re-based on $how, disjoint, suite red; not merged (needs Michael)" "suite red after the re-base" verify_red rebase; return 1; }
     git tag -f -a "$tag" -m "harness run $RUN_ID: $m verified (v3); re-based on $MAIN_BRANCH ${mn:0:7}, suite green" > /dev/null
     # the one forced push, to the tag ref alone: the old commit stays reachable from the lane branch and its PR
-    git push -q --force origin "refs/tags/$tag" 8>&- 2>> "$STATE/run.log" || log "push of the re-based $tag failed"
+    origin_try "$m" "push of tag $tag" git push -q --force origin "refs/tags/$tag" 8>&- || log "push of the re-based $tag failed"
     sync_lane   # a fast-forward to the merge commit
     note "$m re-based on $how, disjoint, suite green; re-tagged"
     rec_commit "HARNESS: $m re-based"; sync_record; return 0

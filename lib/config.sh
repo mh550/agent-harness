@@ -10,6 +10,7 @@
 harness_config() {
   local wt=$1 st=${2:-} f
   HOURS=8 MAX_SESSIONS=auto MAX_ATTEMPTS=2 MAX_REPAIRS=3 MAX_VERIFY_ROUNDS=2 MAX_LIMIT_HITS=6
+  ORIGIN_WAITS="5 15 30 60 120"   # origin_try's waits (s) between tries of a merge's origin command: six tries, 230 s (HARNESS_ORIGIN_WAITS in tests)
   LIMIT_WAITS="900 1800 3600" SESSION_TIMEOUT=100m MAX_TURNS=250 SESSION_BUDGET_USD=20
   ENTRY_RESUME_TURNS=8 ENTRY_RESUME_TIMEOUT=10m ENTRY_RESUME_BUDGET_USD=1   # the one resume of a session that left no valid entry (R2)
   SESSION_MEMORY_HIGH=5G SESSION_MEMORY_MAX=6G SESSION_SWAP_MAX=1G   # each session's scope (lib/scope.sh): throttle, kill, swap
