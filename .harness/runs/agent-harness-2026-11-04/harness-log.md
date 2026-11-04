@@ -14,3 +14,7 @@
 - 2026-11-04 02:34 · context.md for T1-03: 6659 bytes
 - 2026-11-04 03:29 · T1-03: suite ran 0x (0 s) in the session
 - 2026-11-04 03:29 · T1-03 · claude-sonnet-5-5 · passes=true · 55 min · 3/8 passing · tests 1181
+- 2026-11-04 03:29 · review T1-04: 1032 changed lines, at or over 400; opus
+- 2026-11-04 03:29 · context.md for T1-04: 6949 bytes
+- 2026-11-04 03:52 · T1-04: suite ran 1x (804 s) in the session
+- 2026-11-04 03:52 · T1-04 · claude-opus-5-5 · passes=true · 23 min · 4/8 passing · tests 1186

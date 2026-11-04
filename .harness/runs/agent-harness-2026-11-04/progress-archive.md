@@ -7,6 +7,18 @@ The run: phase 3 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier (T1: the full suite) is green and the verifier agrees per milestone. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-04 03:52 · T1-04 · passes
+
+Review of T1: 0 Critical, 1 Important, 6 Minor. Fixed: a full run now holds check-names-fast.txt to what the fast files print (both ways); exact line-2 read, non-file *.sh refused quietly, strict option parsing, true fixture paths in hints; one header loop. README, architecture, CLAUDE.md carry --tier.
+
+- **Files:** tests/run.sh, tests/checks/33-suite-runner.sh, tests/fixtures/check-names.txt, journal/decisions/2026-11-03-suite-tiers.md, README.md, docs/architecture.md, CLAUDE.md
+- **Verified:** Red→green pairs in 33-suite-runner (bash tests/run.sh 33-suite: 39/44 red before run.sh change, 44/44 after): Important → 'tier conformance: a full run fails on a fast file's name absent from the fast fixture and a fast-fixture name no fast file printed'; Minor 4 → 'a new name's hint names the fixture the run compared' (+ sf-rerun check updated); Minor 5 → 'tiers: --tier after a name, twice, or as --tier=<t> prints the usage'; Minors 2/3 → 'tiers: line 2 is read exactly … directory named *.sh'; Minor 7 → 'tiers: bash -n tests/run.sh passes'. Refusal check extended to 'nothing run or written' (empty TMPDIR), proved by a mutation (mktemp before the refusal) turning it red. Full suite via check.sh: green in 804 s, 1186 tests.
+- **Tests:** 1181 → 1186
+- **Discovery** (affects T2-01, T2-02, run): tests/run.sh's full run is red when a fast file prints a name absent from check-names-fast.txt, or a fast-fixture name comes only from a slow file: moving a file's tier means moving its names in the same commit
+- **Discovery** (affects T2-01, T2-02): run.sh now rejects any --option after a name (usage, exit 2) and a second --tier; T2's check.sh --fast must pass --tier fast before names
+- **Proposed change:** README.md's Tests block still says '395 checks (~3 min 30 s)' for a full run; it is 1186 checks and about 13 min 30 s now (left: outside this feature's scope).
+- *04-T1-04 · claude-opus-5-5*
+
 ### 2026-11-04 03:29 · T1-03 · passes
 
 Timed six solo runs at TEST_JOBS=4: fast 152.8/151.5 s (537 checks), slow 670.7/659.7 s (645), full 809.9/794.1 s (1181); all green. Fast target of 180 s met. Findings in findings-and-research/2026-11-03-suite-tiers.md.
