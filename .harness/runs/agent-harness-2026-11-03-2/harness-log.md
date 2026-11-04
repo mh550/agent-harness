@@ -25,3 +25,9 @@
 - 2026-11-03 22:33 · verify U1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-03 22:46 · context.md for U1: 15616 bytes
 - 2026-11-03 22:48 · U1 verified and tagged run/agent-harness-2026-11-03-2/U1
+- 2026-11-03 22:48 · U1 merged into main · https://github.com/mh550/agent-harness/pull/84
+- 2026-11-03 22:48 · lane U1 closed (U1 merged)
+- 2026-11-03 22:48 · lane U1: branch harness-lane/agent-harness-2026-11-03-2/U1 deleted (merged)
+- 2026-11-03 22:48 · every feature passes
+- 2026-11-03 22:48 · run ended (done): 6/6 passing · 8 sessions (8 real) · 6 features passed · $26.56 · 3.1 h · by kind: init 1 ($4.26), coding 6 ($22.05), verify 1 ($0.25) · by model: claude-fable-5-1 1 ($4.26), claude-opus-5-5 5 ($21.58), claude-sonnet-5-5 2 ($0.73)
+- 2026-11-03 22:48 · services stopped (done)
