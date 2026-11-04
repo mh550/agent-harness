@@ -1,0 +1,162 @@
+{
+  "run": "agent-harness-2026-11-04",
+  "branch": "harness/agent-harness-2026-11-04",
+  "features": [
+    {
+      "id": "T1-01",
+      "milestone": "T1",
+      "kind": "build",
+      "model": "opus",
+      "description": "Every tests/checks/*.sh declares `# tier: fast` or `# tier: slow` on line 2, tests/run.sh refuses a file without one (exit 2, nothing run) and `--tier fast|slow` runs only that tier's files; every real check file carries its tier by the spec's 30 s rule, recorded with the rule and the table in journal/decisions/2026-11-03-suite-tiers.md.",
+      "steps": [
+        "tests/checks/33-suite-runner.sh gains a `TEST_CHECKS` directory of three tiny files (two with `# tier: fast`, one with `# tier: slow`) with its own `check-names.txt`, and its new checks are written first and watched failing: `bash tests/run.sh 33-suite` red before the runner change, green after.",
+        "`TEST_CHECKS=<that directory> bash tests/run.sh --tier fast` runs the two fast files and not the slow one (their PASS lines present and absent), `--tier slow` runs the slow one only, `--tier fast <name>` runs the one fast file whose name matches; one check in 33-suite-runner.sh proves each.",
+        "A check file without a tier header on line 2: `tests/run.sh` prints `no tier header: <path>` and exits 2 before running any file (no PASS line of any file in its output); a `TEST_CHECKS` directory follows the same rule; a check proves it.",
+        "The `slowest:` line ends `, tier fast`, `, tier slow` or `, tier all` (a run without `--tier`); `--repeat <n>` combines with `--tier` (the matching files of that tier n times); a check for each.",
+        "Every file of tests/checks/ has the header: fast = 00-unit-tier.sh + every file at 30 s or less in findings-and-research/2026-10-30-suite-load-curve/lc-4-solo.out + 39-memlint-m4.sh; slow = the rest; a file that output never timed (83-spec-must-exist.sh, 84-node-memo.sh, 85-suite-runs.sh) is placed by one `TEST_JOBS=4 bash tests/run.sh <file>` timing against the same 30 s line; the tiny `TEST_CHECKS` files of 33-suite-runner.sh and 75-suite-tools.sh get headers too.",
+        "journal/decisions/2026-11-03-suite-tiers.md: finding, choice (the header, the refusal, `--tier`, the 30 s rule, who may move a file: fast to slow by a session after two solo runs over 30 s with both times in one `Updated in place <date>:` line of the table; slow to fast only Michael or a spec that says so, with a time under the line and the file absent from the flaker rows of the last three runs' flakes.jsonl; a new file declares its tier by the same rule; a session that adds a stub run to a fast file re-times it), rejected; the table of every check file with its tier, its solo slot time from lc-4-solo.out and the reason; every default marked *default*.",
+        "The usage header of tests/run.sh documents `--tier fast|slow` and the line-2 header rule; `bash -n tests/run.sh` passes.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [],
+      "passes": false
+    },
+    {
+      "id": "T1-02",
+      "milestone": "T1",
+      "kind": "build",
+      "model": "opus",
+      "description": "tests/fixtures/check-names-fast.txt lists the fast tier's check names; a `--tier fast` run checks missing, new and doubled against it, a `--tier slow` run against the full fixture minus the fast one, the runner's own check lints the two fixtures against the headers, and the fast set is re-timed solo twice with any file over 30 s in both runs moved to slow.",
+      "steps": [
+        "`tests/fixtures/check-names-fast.txt`, `LC_ALL=C` sorted: the names the fast files print, every name `bash tests/run.sh 00-unit` prints included; `LC_ALL=C comm -23 tests/fixtures/check-names-fast.txt tests/fixtures/check-names.txt` prints nothing.",
+        "In 33-suite-runner.sh's `TEST_CHECKS` directory (its own `check-names.txt` and `check-names-fast.txt`), written first and watched failing: a fast name missing from a `--tier fast` run gives `FAIL conformance: every check of the fast tier ran, none new or doubled` with the name under `missing (in the fixture, not run):` and no `HARNESS_FAILED=` line; a `--tier slow` run with a slow name missing is red naming it, and a fast name absent from the slow run is not listed as missing; a run without `--tier` checks the full list as today; a names subset checks new and doubled only.",
+        "A green `--tier fast` or `--tier slow` run prints `PASS conformance: every check of the <tier> tier ran, none new or doubled`; a green full run keeps `PASS conformance: the split suite has every check the single-file suite had`; `HARNESS_FAILED=` is printed as before on a red run whose failures are all inside named files.",
+        "The lint, as checks of 33-suite-runner.sh on the real tree: every tests/checks/*.sh has a tier header on line 2; every name of check-names-fast.txt is in check-names.txt; every name of check-names-fast.txt comes from a file whose header says fast; and on a copy of the fixtures (never the real ones) a planted fast name whose file says slow turns the lint red naming it.",
+        "Re-timed solo twice, `TEST_JOBS=4 bash tests/run.sh --tier fast`, after `harness status` shows no running run but agent-harness-2026-11-04 and no queued run going: a file over 30 s in both runs moves to slow (its header and both fixtures), each with one `Updated in place <date>: <file> <t1> s, <t2> s` line in journal/decisions/2026-11-03-suite-tiers.md; the two walls go in the entry's `verified_how`.",
+        "`bash tests/run.sh --tier fast` on the real tree ends green with its conformance line, and so does `bash tests/run.sh --tier slow`; the new checks' names are in tests/fixtures/check-names.txt and, 33-suite-runner.sh being fast, in check-names-fast.txt.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "T1-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T1-03",
+      "milestone": "T1",
+      "kind": "build",
+      "model": "sonnet",
+      "description": "findings-and-research/2026-11-03-suite-tiers.md holds the measured solo wall and user+sys of `bash tests/run.sh --tier fast`, `--tier slow` and the full run, each twice at TEST_JOBS=4 with no other suite alive, and the check count per tier, against the spec's 180 s target.",
+      "steps": [
+        "`harness status` shows no running run but agent-harness-2026-11-04 and no queued run going before the first timed run (the brief: this feature needs no other suite alive); its output is quoted in the findings file.",
+        "Six runs in series, each as `TIMEFORMAT=\"%R wall %U user %S sys\"; time TEST_JOBS=4 bash tests/run.sh [--tier fast|--tier slow]` in the background with a 1800 s timeout and its output to a file under /tmp/harness/agent-harness/agent-harness-2026-11-04/, waited on by its end notification, never polled: fast twice, slow twice, full twice.",
+        "findings-and-research/2026-11-03-suite-tiers.md: a table of the six runs (tier, wall, user+sys, its `N/M checks passed` line, its `slowest:` line), the check count per tier (`grep -c '' tests/fixtures/check-names-fast.txt` and the full fixture's count minus it), the fast tier's longest file, and one line per row of the spec's Predictions table it can fill (the fast tier's solo wall, the full suite's solo wall) with the brief's gate restated.",
+        "The fast tier's solo wall is below the spec's target (180 s) in both runs; if not, the files over 30 s in both runs are named in the findings file as the next moves under journal/decisions/2026-11-03-suite-tiers.md's rule (no move in this feature).",
+        "Every timed run ends `N/M checks passed` with none failing; a red one is told from a flake by `bash tests/run.sh --repeat 3 <file>` on the red file and timed once more, both outcomes recorded in the findings file.",
+        "The suite is green: this feature changes no code (findings-and-research is in CHECK_KEY_IGNORE), so `bash tests/run.sh` prints `N/M checks passed` with none failing, as the two timed full runs above did."
+      ],
+      "after": [
+        "T1-02"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T1-04",
+      "milestone": "T1",
+      "kind": "review",
+      "model": "opus",
+      "description": "Review + simplify of T1: an Opus reviewer reads the milestone diff from a file (hardest: the three conformance branches, fast, slow and full, and that a refused header leaves the runner's exit and output deterministic), Critical/Important findings fixed RED→GREEN, simplification passes applied, README.md, docs/architecture.md and CLAUDE.md's How to verify carry `--tier`.",
+      "steps": [
+        "`git diff origin/main...HEAD -- tests journal docs findings-and-research > /tmp/harness/agent-harness/agent-harness-2026-11-04/T1-diff.patch` (the run directory left out); an Opus subagent reviews that file with the spec's T1 section and its invariant as the brief, one round by default and a second only when the first found something Critical; the findings go in the entry's summary as `<n> Critical, <n> Important, <n> Minor`.",
+        "Every Critical or Important finding gets a check in tests/checks/33-suite-runner.sh that is red before its fix and green after (the pairs listed in the entry's `verified_how`); Minor ones are fixed or listed as left.",
+        "A refused header is deterministic: `tests/run.sh` on a `TEST_CHECKS` directory with two headerless files prints one `no tier header: <path>` line per file in name order, exits 2, runs no file and writes nothing; a check in 33-suite-runner.sh if the review finds one missing.",
+        "README.md's `tests/run.sh` block has `bash tests/run.sh --tier fast` and `--tier slow` with the line-2 header rule and the fast fixture; docs/architecture.md's paragraph on `tests/run.sh` names the two tiers, the header, the refusal and the per-tier conformance; CLAUDE.md *How to verify* gains one sentence: `bash tests/run.sh --tier fast` runs the fast tier, and a new check file declares its tier on line 2 by journal/decisions/2026-11-03-suite-tiers.md's 30 s rule.",
+        "A simplification pass on tests/run.sh's tier code (one header reader, no second parse of line 2) applied where every check stays green; `bash -n tests/run.sh` passes.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "T1-03"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T2-01",
+      "milestone": "T2",
+      "kind": "build",
+      "model": "opus",
+      "description": "`lib/check.sh --fast` runs the project's fast tier (`CHECK_FAST_CMD`, exported as `HARNESS_CHECK_FAST_CMD`) under the full form's scope, cap, timeout and rerun guard, marks a green tree `fast-<key>` and never `green-<key>`, answers from a `green-<key>` or `red-<key>` first, and with no fast command is the full form byte for byte; checked in tests/checks/86-fast-gate.sh and recorded in journal/decisions/2026-11-03-fast-gate.md.",
+      "steps": [
+        "tests/checks/86-fast-gate.sh (line 2 `# tier: fast`; its names in tests/fixtures/check-names.txt and check-names-fast.txt), with the stub suite of 73-check-rerun.sh (a call counter, a mode, every call's arguments logged) in a throwaway repo, written first and watched failing: `bash tests/run.sh 86-fast` red before lib/check.sh changes, green after.",
+        "`check.sh --fast` with `HARNESS_CHECK_FAST_CMD` empty: the stub is called with no arguments, `green-<key>` is written with two lines (`<n> tests`, `wall <s>`), the output is the full form's `check: green in <s> s, <n> tests` line byte for byte, the next call prints `check: green (cached for this code tree, <n> tests)` without a run, and the check-runs.log row kind is `full`.",
+        "With `HARNESS_CHECK_FAST_CMD=\"bash <stub> --tier fast\"`: the stub's argument log shows `--tier fast`, `fast-<key>` holds two lines (`<n> tests` of the fast run, `wall <s>`), no `green-<key>` exists, the line is `check: fast green in <s> s, <n> tests`, the row kind is `fast`, exit 0; the next `--fast` call prints `check: fast green (cached for this code tree, <n> tests)` with row `cached` and no run; a bare `check.sh` call on that fast-green tree runs the stub with no arguments (a fast-green is never read as a green).",
+        "A planted `green-<key>` makes `--fast` print the full cached line and run nothing; a planted `red-<key>` the cached RED, exit 1, no run; a fast red twice (`HARNESS_FAILED=a`) gives one rerun with argument `a`, `check: RED (fast: exit 1 after <s> s; red again on a rerun of a) — last lines of <scratch>/check-fast.out:` and the tail, exit 1 and no `fast-`, `green-` or `red-` marker; red then green gives one flakes.jsonl row with `\"tier\":\"fast\"` and `check: fast green after a rerun (flaky: a), <n> tests`; a hanging stub under `HARNESS_CHECK_TIMEOUT=2s` gives `check: RED (fast: timed out after 2s, …)`, no rerun, no marker.",
+        "`--fast` never reads `part-<key>`: a planted sidecar with `HARNESS_CHECK_KEY_MAP` set and a diff in a mapped path alone runs the stub with `--tier fast` (row `fast`), not the partial subset; the subset form (`check.sh x`) is unchanged (row `subset`, no marker); the fast run's output is `check-fast.out` and `check.out` stays the last full run's.",
+        "lib/config.sh has `CHECK_FAST_CMD=\"\"` in the project layer and `prompt_env` exports `HARNESS_CHECK_FAST_CMD`; templates/project/config.sh has a commented `# CHECK_FAST_CMD=` line saying the fast tier, and that empty means the whole suite is the fast tier; this repo's .harness/config.sh sets `CHECK_FAST_CMD=\"bash tests/run.sh --tier fast\"`; lib/check.sh's usage header documents `--fast`, `fast-<key>`, `check-fast.out` and the `fast` row kind.",
+        "journal/decisions/2026-11-03-fast-gate.md: finding, choice with every default marked *default* (no marker for a fast red; `--fast` never the bare default; `check.out` the last full run's; the flake row's `tier`), rejected (the full suite behind `passes`, Michael's question 2 option a; an LLM-chosen tier or subset; a per-feature file subset; a fast red marker; `--fast` as the bare default).",
+        "`bash -n lib/check.sh lib/config.sh lib/prompt.sh` passes and `bash tests/run.sh 34-check 73-check 80-red 81-partial 86-fast` is green (the full form unchanged).",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "T1"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T2-02",
+      "milestone": "T2",
+      "kind": "build",
+      "model": "opus",
+      "description": "The driver gates `passes` on the fast tier: `run_init fast` (lib/record.sh) calls `check.sh --fast` before every coding session (lib/lane.sh), the post-session gate is `green_fast` with the note `<id> un-passed: fast tier red after the session`, `run_init fresh` removes `fast-<key>` too, and `tests-start` and `tests_end` read full markers only; proved by a stub run in tests/checks/87-fast-gate-run.sh.",
+      "steps": [
+        "tests/checks/87-fast-gate-run.sh (its tier on line 2 by the 30 s rule from one `TEST_JOBS=4 bash tests/run.sh 87-fast` timing; its names in tests/fixtures/check-names.txt and, if fast, check-names-fast.txt), written first and watched failing: the stub project's `.harness/config.sh` gets `CHECK_FAST_CMD=\"bash .harness/suite.sh --tier fast\"` and `CHECK_CMD=\"bash .harness/suite.sh\"`, a script that logs every call's arguments to a file in the run's scratch, is red bare when `BROKEN` or `BROKEN-SLOW` exists and red under `--tier fast` when `BROKEN` or `BROKEN-FAST` exists.",
+        "lib/record.sh: `run_init fast` calls `\"$CHECK\" --fast`, bare `run_init` and `run_init fresh` the full form; `run_init fresh` also removes `$STATE/green/fast-<key>`; `tests-start` is set only from a full green (`green_count` reads `green-<key>` alone) and `tests_end` never reads `fast-<key>`; lib/lane.sh's pre-session init is `run_init fast` and its post-session gate `green_fast` (`\"$CHECK\" --fast`) with the note `<id> un-passed: fast tier red after the session`; the driver's first `run_init` (the baseline), the verify's `run_init fresh` and `green` after a hold, the re-base's `run_init fresh` and `green`, and the driver's final `green` stay full.",
+        "In the stub run: the coding session's `init.out` has `check: fast green`; the suite script's argument log shows `--tier fast` before and after each coding session and no bare call between those two; the run's first init (before the initializer) was a bare call and `tests-start` holds the full count.",
+        "A stub mode `STUB_SLOW_RED=<id>` (documented in tests/stub-claude.sh's header) makes that feature's first coding session commit `BROKEN-SLOW`: the feature passes after the session (`passes=true` in harness-log.md, no un-pass note), the verify's `run_init fresh` runs the full suite, it goes red, and the existing `red on the verified tree` path fires (its note and the needs record), with `tests-end` the full count; `STUB_PLANT_MARKERS` also plants `fast-<key>` beside its two markers and the planted file is gone after the verify's `run_init fresh`.",
+        "A stub mode `STUB_FAST_RED=<id>` makes that feature's first coding session commit `BROKEN-FAST`: the note after the session is `<id> un-passed: fast tier red after the session` and the feature does not pass; tests/checks/26-run-13c-stale-green.sh's checks still pass (a stale `green-<key>` a session leaves is cleared by the verify's `run_init fresh` as before).",
+        "`bash -n lib/record.sh lib/lane.sh lib/driver.sh` passes; `bash tests/run.sh 26-run 34-check 80-red 87-fast` is green.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "T2-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T2-03",
+      "milestone": "T2",
+      "kind": "build",
+      "model": "opus",
+      "description": "The gate is visible and told: the coding row's `suite_fast` in metrics.jsonl, `summary.mjs suiteRuns` with `fast` and the report's `Suite runs` row as `<f> full and <k> fast per coding session (…)`, prompts/parts/run.md's Suite line with both commands and both last lengths (`suite_length` reads the newest `fast-<key>` wall), and prompts/coding.md's two-tier rule (`run the fast tier once, last`; the driver-path and slow-file rule).",
+      "steps": [
+        "Written first and watched failing in tests/checks/87-fast-gate-run.sh, 85-suite-runs.sh and 79-suite-length.sh: the stub run's coding row in metrics.jsonl has `suite_fast` (the `fast` rows of check-runs.log between the session's two stamps) beside `suite_runs` and `suite_full`, and the `<id>: suite ran <n>x (<s> s) in the session` note counts fast rows as runs.",
+        "lib/summary.mjs `suiteRuns` returns `{ sessions, full, fast, runs, full_per_session, fast_per_session }`; `harness report --md` prints `| Suite runs | 0.2 full and 1.6 fast per coding session (2 full, 16 fast in 10; 20 runs in all) |` for such rows and `0` for none; tests/fixtures/summary-report.md and summary-report.json are updated; the TTY card and the retro prompt carry the same line.",
+        "prompts/parts/run.md's Suite line reads `Suite: \\`{{CHECK}}\\` (full: runs \\`{{CHECK_CMD}}\\`; fast tier: \\`{{CHECK}} --fast\\` runs \\`{{CHECK_FAST_CMD}}\\`; cached per code tree; last full run {{SUITE_LENGTH}}; last fast run {{SUITE_FAST_LENGTH}})` for a project with a fast command and today's line for one without (a check on the stub project with and without `CHECK_FAST_CMD`); `suite_length` (lib/prompt.sh) also gives the newest `fast-<key>`'s `wall <s>` as `<s> s` or `not measured yet`; the new placeholders live in prompts/parts/run.md, never above `{{SECTIONS}}` in a template.",
+        "The stub run's rendered coding prompt (the lane's prompt-coding.md in its state dir) carries both lengths and the tier rule; prompts/coding.md *The suite* says the suite has two tiers, `run the fast tier once, last`, after the final edit of any file, that the full suite runs at verify on the milestone's tree, and names lib/driver.sh, lib/lane.sh, lib/record.sh, bin/harness and a slow-tier check file as the changes that also run that file (`<suite> <file>`) before the session ends; §3's order (the Gotchas line before the suite) stays; the initializer's and verify's prompts show which tier their init ran (`fast green` or `green` in the init output).",
+        "`grep -F 'run the fast tier once, last' prompts/coding.md` matches; `node --check lib/summary.mjs lib/metrics.mjs lib/render.mjs` and `bash -n lib/lane.sh lib/prompt.sh` pass; `bash tests/run.sh 79-suite 85-suite 87-fast` is green.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "T2-02"
+      ],
+      "passes": false
+    },
+    {
+      "id": "T2-04",
+      "milestone": "T2",
+      "kind": "review",
+      "model": "opus",
+      "description": "Review + simplify of T2: an Opus reviewer reads the milestone diff from a file (hardest: every branch of `check.sh --fast` ending at the right marker, a fast-green never written or read as a green, the three `run_init` modes at their call sites, `tests_end` reading full markers only, the stub run's verify path on a slow red), Critical/Important findings fixed RED→GREEN, simplification passes applied, docs/architecture.md, README.md and CLAUDE.md updated.",
+      "steps": [
+        "`git diff origin/main...HEAD -- lib bin prompts templates tests journal .harness/config.sh > /tmp/harness/agent-harness/agent-harness-2026-11-04/T2-diff.patch` (the run directory left out); an Opus subagent reviews that file with the spec's T2 section and its invariant as the brief, one round by default and a second only when the first found something Critical; the findings go in the entry's summary as `<n> Critical, <n> Important, <n> Minor`.",
+        "Every Critical or Important finding gets a check in tests/checks/86-fast-gate.sh or 87-fast-gate-run.sh that is red before its fix and green after (the pairs listed in the entry's `verified_how`); the invariant check stands: after a `--fast` green no `green-<key>` exists and a bare `check.sh` call runs the suite.",
+        "docs/architecture.md: §3 (`check.sh --fast`, `run_init fast`, `green_fast`), §4 *Suite cache* (`fast-<key>`, `check-fast.out`, the `fast` row kind), §7's guard table with one row per gate (`passes` on the fast tier; verify and merge on the full suite), §10 `CHECK_FAST_CMD`; README.md: the tier rule, `CHECK_FAST_CMD` in the configuration table, the `Suite runs` row's new form; CLAUDE.md *How to verify*: the two commands a session runs and when (`bash tests/run.sh --tier fast` while iterating and once last; the full suite at verify; a driver-path or slow-file change also runs that file).",
+        "A simplification pass on lib/check.sh's `--fast` branch and lib/record.sh's `run_init` modes applied where every check stays green (one marker writer shared by the full and fast paths where they read the same); `bash -n` on every lib/*.sh touched and `node --check` on every .mjs touched pass.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "T2-03"
+      ],
+      "passes": false
+    }
+  ]
+}
