@@ -3,10 +3,7 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- a merge that meets a GitHub outage (M1 of docs/specs/2026-11-04-run-resilience.md): origin_try's bounded
 # retries in lib/record.sh, the outage stubs (tests/stub-git-down.sh, stub-gh's STUB_GH_DOWN), the refusal never retried ----
-export COLUMNS=200 HARNESS_GLYPHS=unicode HARNESS_ORIGIN_WAITS="0 0 0"   # four tries per step, no wait between them
-main0=$(git -C "$T/origin.git" rev-parse main)   # each run starts from it (one origin for the file's runs)
-nkey() { cat "$HARNESS_STATE/proj/$1"/needs/*.json 2> /dev/null | jq -se --arg k "$2" 'any(.[]; .key == $k)' > /dev/null; }   # <run> <key>: an open item
-DOWN=$T/down; mkdir -p "$DOWN" && ln -s "$HERE/stub-git-down.sh" "$DOWN/git"   # first on PATH for a run: the outage stub
+source "$HERE/origin-lib.sh"
 
 # the outage stub alone, in a clone of the file's origin
 C=$T/clone; git clone -q "$T/origin.git" "$C" 2> /dev/null
@@ -56,6 +53,15 @@ OT3=$(ot origin_try M1 "merging its PR" refuse) OT3H=$(ot origin_try M1 "push of
 check "origin_try: a GraphQL: refusal or a pre-receive hook's decline is one try, its line in run.log, no failed-try line" \
   '[[ $OT3 =~ ^rc=1\ tries=1\  && $OT3H =~ ^rc=1\ tries=1\  ]] && grep -q "(pre-receive hook declined)" "$T/ot/run.log" && ! grep -q "failed (try" "$T/ot/run.log"'
 
+notmerge() { echo x >> "$STATE/n"; cat "$HERE/fixtures/gh-not-mergeable.txt" >&2; return 1; }   # gh 2.45's format and reason (its binary's strings), a required check's refusal
+declined() { echo x >> "$STATE/n"; printf '%s\n' " ! [remote rejected] x -> x (some rule declined it)" >&2; return 1; }   # any rule's words: it is `declined` that says refusal
+OT3N=$(ot origin_try M1 "merging its PR" notmerge) OT3D=$(ot origin_try M1 "push of x" declined)
+check "origin_try: gh's is not mergeable and any declined remote rejection are one try too; a rejected (failure) still retries" \
+  '[[ $OT3N =~ ^rc=1\ tries=1\  && $OT3D =~ ^rc=1\ tries=1\  ]] && [[ $(wc -l < "$HERE/fixtures/gh-not-mergeable.txt") == 1 ]]'
+OT4=$(HARNESS_ORIGIN_TRY_TIMEOUT=1 ot origin_try M1 "fetch of main" sleep 60)   # sleep-ok: the try that hangs is what this bounds
+check "origin_try: a try that hangs is cut at ORIGIN_TRY_TIMEOUT and retried: four tries, exit 124, no hang" \
+  '[[ $OT4 =~ ^rc=124\ tries=4\ secs=([0-9]+) ]] && (( BASH_REMATCH[1] < 30 ))'
+
 # od1: origin down for three fetches of main from the end of M1's verify session: the lane's merge retries and merges
 STUB_ORIGIN_DOWN=M1:3 STUB_GIT_DOWN_ONLY='^fetch -q origin main$' PATH=$DOWN:$PATH STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 \
   "$H" start "$T/proj" od1 --spec SPEC.md --foreground > "$T/od1.out" 2>&1
@@ -86,12 +92,6 @@ check "a refused merge is one gh pr merge per merge, its GraphQL line in run.log
 check "a refused lane closes merge refused, on the card it opened" 'hlog odr | grep -qF "lane M1 closed (M1 needs Michael: merge refused)"'
 
 # ---- past the retries: a note, a card, a notification; the tag's two notes; the push streaks (M1-02) ----
-ni() { jq -s -r ".[] | select(.key == \"$2\") | ${3:-.}" "$HARNESS_STATE/proj/$1"/needs/*.json 2> /dev/null; }   # <run> <key> <jq>: an open item's field
-ndone() { jq -s -r ".[] | select(.key == \"$2\") | ${3:-.}" "$HARNESS_STATE/proj/$1"/needs/done/*.json 2> /dev/null; }   # the same, resolved
-# how many stub-curl posts hold every one of the given strings
-posts() { awk 'BEGIN { RS = "===\n"; split(ARGV[1], k, "\t"); ARGV[1] = "" } { for (i in k) if (!index($0, k[i])) next; n++ } END { print n + 0 }' "$(IFS=$'\t'; echo "$*")" "$T/curl.log"; }
-fresh() { git -C "$T/origin.git" update-ref refs/heads/main "$main0"; rm -f "$T"/gh-down-*; }   # the next run starts from main0, gh's counts at 0
-srun() { local r=$1; shift; env STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$@" "$H" start "$T/proj" "$r" --spec SPEC.md --foreground > "$T/$r.out" 2>&1; }   # <run> [VAR=value…]: a stub run
 
 # od2: origin down from M1's verify session's end until after the run's end
 fresh; srun od2 STUB_ORIGIN_DOWN="M1:until $(( $(date +%s) + 3600 ))" PATH="$DOWN:$PATH"
@@ -120,6 +120,7 @@ rm -f "$T/origin-down"
 check "od2: origin back, harness merge: the tag reaches origin first, M1 merged, the markers gone, the item resolved milestone merged" \
   '(( OD2M == 0 )) && hlog od2 | grep -q "· M1 merged into main" && [[ $(git -C "$T/origin.git" tag -l run/od2/M1) == run/od2/M1 ]] && on_main run/od2/M1 \
   && [[ ! -e $OD2/tag-local-M1 && ! -e $OD2/merge-failed-M1 && ! -e $OD2/needs-M1 ]] && ! nkey od2 merge_failed:M1 \
+  && (( $(ats od2 "· M1: tag run/od2/M1 reached origin$") < $(ats od2 "· M1 merged into main") )) \
   && [[ $(ndone od2 merge_failed:M1 "[.resolved_by, .resolved_why] | join(\" \")") == "sweep milestone merged" ]] \
   && hlog od2 | grep -q "needs: resolved od2/[0-9]* (milestone merged)"'
 check "od2: the record branch's streak ends in one note, committed and on origin, the worktree clean" \
@@ -144,6 +145,22 @@ check "od8: a pr merge whose answer is lost is merged when its commit is on main
   'hlog od8 | grep -q "· M1 merged into main" && on_main run/od8/M1 && [[ -f $HARNESS_STATE/proj/od8/merged-M1 ]] \
   && ! nkey od8 merge_failed:M1 && ! nkey od8 merge_refused:M1 && [[ $(curl_count "Title: [od8] M1 needs you") == 0 ]]'
 
+# od9: the lane's merge outlasts its tries, the coordinator's next one (the lane's reap) lands: the card resolves at the
+# run's end, needs-M1 is gone and the milestone that waited on it goes on
+fresh; srun od9 STUB_ORIGIN_DOWN=M1:4 STUB_GIT_DOWN_ONLY='^fetch -q origin main$' PATH="$DOWN:$PATH"
+check "od9: a merge that fails in the lane and lands at its reap: one post, the card resolved milestone merged, M2 built and merged" \
+  'hlog od9 | grep -qE "· M1: merge failed at fetch of main after 4 tries" && hlog od9 | grep -q "· M1 merged into main" && hlog od9 | grep -q "· M2 merged into main" \
+  && [[ $(curl_count "Title: [od9] M1 needs you") == 1 && ! -e $HARNESS_STATE/proj/od9/needs-M1 ]] && ! nkey od9 merge_failed:M1 \
+  && [[ $(ndone od9 merge_failed:M1 .resolved_why) == "milestone merged" ]]'
+
+# odg: a hook refuses run/* tags: the tag stays local and says so, and the merge is not held up for a tag
+fresh
+printf '%s\n' '#!/bin/sh' 'while read -r o n r; do case $r in refs/tags/run/*) exit 1 ;; esac; done' > "$T/origin.git/hooks/pre-receive"; chmod +x "$T/origin.git/hooks/pre-receive"
+srun odg; rm -f "$T/origin.git/hooks/pre-receive"
+check "odg: a refused tag is noted local only after one try and never holds the merge: M1 merged, no card" \
+  'hlog odg | grep -qE "· M1 verified; tag run/odg/M1 is local only \(push failed 1 times over [0-9]+ s; see run.log\)$" && hlog odg | grep -q "· M1 merged into main" \
+  && ! nkey odg merge_refused:M1 && ! nkey odg merge_failed:M1 && [[ -f $HARNESS_STATE/proj/odg/tag-local-M1 ]]'
+
 # odh: a pre-receive hook declines the merge branch: a refusal, one try, its card says no PR was opened
 fresh
 printf '%s\n' '#!/bin/sh' 'while read -r o n r; do case $r in refs/heads/harness-merge/*) exit 1 ;; esac; done' > "$T/origin.git/hooks/pre-receive"; chmod +x "$T/origin.git/hooks/pre-receive"
@@ -164,93 +181,19 @@ check "odu: a lane left with no reason opens merge_failed what=unknown and notif
   && hlog odu | grep -qF "· M1 verified; tag run/odu/M1 could not be made (see run.log)" && ! hlog odu | grep -q "M1 verified and tagged" \
   && [[ $(curl_count "Title: [odu] M1 needs you") == 1 ]]'
 
-# The invariant (a falsifier of the spec's Predictions): scanned over every run with a worktree, before gc removes any
-inv_bad="" inv_n=0
-inv_scan() { local d r stamp hm m close
-  for d in "$HARNESS_STATE"/proj/*/; do r=$(basename "$d")
-    while read -r stamp hm m; do
-      close=$(date -d "$stamp $hm" +%s); inv_n=$(( inv_n + 1 ))
-      find "$d"needs -name '*.json' -exec cat {} + 2> /dev/null | jq -se --arg m "$m" --argjson t "$close" 'any(.[]; .milestone == $m and (.at | sub("\\.[0-9]+Z$"; "Z") | fromdate) < $t + 60)' > /dev/null || inv_bad+=" $r/$m"
-    done < <(hlog "$r" | sed -nE 's/^- ([0-9-]+ [0-9:]+) · lane ([^ ]+) closed \(\2 needs Michael: .*$/\1 \2/p')
-  done; }
-inv_scan
+# odn: main moved and its merge into the lane never started (no conflicted file: sync_main records nothing): nothing
+# needs Michael yet, so the lane says so; the coordinator's re-base lane takes it from there
+mkdir -p "$T/mergefail"; printf '%s\n' '#!/usr/bin/env bash' "[[ \$1 == merge && \$2 == -q && \$3 == --no-edit && ! -e $T/mergefail/used ]] && { touch $T/mergefail/used; echo 'error: stub: the merge never started' >&2; exit 1; }" "exec $(command -v git) \"\$@\"" > "$T/mergefail/git"; chmod +x "$T/mergefail/git"
+fresh; srun odn STUB_MAIN_TOUCH=A:other-odn.txt PATH="$T/mergefail:$PATH"
+check "odn: a lane whose main never merged closes on a retry, not needs Michael without a card; its re-base lands it, no needs item" \
+  'hlog odn | grep -qF "lane M1 closed (M1 verified; main did not merge into its lane; its merge is tried again)" && ! hlog odn | grep -q "closed (M1 needs Michael" \
+  && hlog odn | grep -q "· M1 merged into main" && [[ -z $(ls "$HARNESS_STATE/proj/odn/needs/"*.json 2> /dev/null) ]]'
 
-# ---- gc keeps verified, unmerged work; harness merge without the worktree (M1-03) ----
-has() { git -C "$1" rev-parse -q --verify "refs/heads/$2" > /dev/null; }   # <repo> <branch>
-down_run() { local r=$1; shift; fresh; srun "$r" STUB_ORIGIN_DOWN="M1:until $(( $(date +%s) + 3600 ))" PATH="$DOWN:$PATH" "$@"; rm -f "$T/origin-down"; }   # <run>: verified, the tag local, the merge failed
-wt_gone() { git -C "$T/proj" worktree remove --force "$T/wt/proj/$1"; }   # the incident's gc, by hand
-branch_gone() { git -C "$T/proj" branch -q -D "harness/$1" 2> /dev/null; git -C "$T/origin.git" update-ref -d "refs/heads/harness/$1"; }   # and its record branch
-
-# od3: gc holds a verified, unmerged run in all its forms; then harness merge without the worktree, the local branch
-# ahead of origin's (the outage ate its pushes), so the record's last commits are kept
-down_run od3; W3=$T/wt/proj/od3 KEEP3="keeps $W3: M1 verified, not merged (harness merge od3)"
-"$H" gc "$T/proj" --dry-run > "$T/gc3d.out" 2>&1; "$H" gc "$T/proj" --all-merged > "$T/gc3a.out" 2>&1; "$H" gc "$T/proj" > "$T/gc3.out" 2>&1
-check "od3: gc, --dry-run and --all-merged keep a verified, unmerged run: the keeps line, its worktree, its branch on origin, its card open" \
-  'grep -qxF "$KEEP3" "$T/gc3d.out" && grep -qxF "$KEEP3" "$T/gc3a.out" && grep -qxF "$KEEP3" "$T/gc3.out" && [[ -d $W3 ]] && has "$T/origin.git" harness/od3 && has "$T/proj" harness/od3 \
-  && has "$T/origin.git" harness-lane/od3/M1 && has "$T/proj" harness-lane/od3/M1 \
-  && nkey od3 merge_failed:M1 && ! grep -qE "resolved od3/[0-9]+ \(run removed\)" "$T/gc3.out" "$T/gc3a.out"'
-wt_gone od3; "$H" gc "$T/proj" > "$T/gc3w.out" 2>&1
-check "od3: a run whose worktree is gone is still held: its branches stay, its card is not swept run removed" \
-  'has "$T/origin.git" harness/od3 && has "$T/proj" harness/od3 && nkey od3 merge_failed:M1 && ! grep -qE "resolved od3/[0-9]+ \(run removed\)" "$T/gc3w.out"'
-"$H" merge od3 > "$T/od3m.out" 2>&1
-check "od3: harness merge without the worktree: made on the local branch, ahead of origin, no spec asked; the outage's notes kept, M1 merged, the tag on origin" \
-  'grep -qxF "worktree $W3 on harness/od3 (from harness/od3; harness merge)" "$T/od3m.out" && hlog od3 | grep -q "· M1: merge failed at fetch of main" \
-  && hlog od3 | grep -q "· M1 merged into main" && on_main run/od3/M1 && [[ $(git -C "$T/origin.git" tag -l run/od3/M1) == run/od3/M1 && $(ndone od3 merge_failed:M1 .resolved_why) == "milestone merged" ]]'
-
-# od3b: origin's branch as far as the local one: the worktree comes from origin
-fresh; srun od3b STUB_GH_DOWN=99 STUB_GH_DOWN_ONLY=merge; rm -f "$T"/gh-down-*; wt_gone od3b; "$H" merge od3b > "$T/od3bm.out" 2>&1
-check "od3b: harness merge with its worktree gone and origin up to date: on harness/<run> from origin/harness/<run>, M1 merged" \
-  'grep -qxF "worktree $T/wt/proj/od3b on harness/od3b (from origin/harness/od3b; harness merge)" "$T/od3bm.out" && hlog od3b | grep -q "· M1 merged into main" && on_main run/od3b/M1'
-
-# od3h: Michael merged the tag by hand: gc is released
-down_run od3h; git -C "$T/proj" push -q origin refs/tags/run/od3h/M1
-cg fetch -q origin; cg checkout -q main; cg reset -q --hard origin/main; cg fetch -q origin tag run/od3h/M1; cg merge -q --no-edit run/od3h/M1; cg push -q origin main
-"$H" gc "$T/proj" > "$T/gc3h.out" 2>&1
-check "od3h: a tag merged by hand no longer holds its run: gc removes the worktree and the branches, its card goes run removed" \
-  '! grep -q "keeps .*od3h" "$T/gc3h.out" && [[ ! -e $T/wt/proj/od3h ]] && ! has "$T/origin.git" harness/od3h && ! has "$T/proj" harness/od3h \
-  && [[ $(ndone od3h merge_failed:M1 .resolved_why) == "run removed" ]]'
-
-# od4: MERGE_POLICY=pr, the record PR merged, the worktree, the branch and the local tag gone: main has the record, origin the tag
-cp "$T/user-config.sh" "$T/user-config.bak"; printf '%s\n' MERGE_POLICY=pr RECORD_PR=end >> "$T/user-config.sh"
-rec_pr() { local f; for f in "$T"/prs/pr-*; do [[ ${f##*/} =~ ^pr-[0-9]+$ && $(cat "$f") == "harness/$1" ]] && "$HERE/stub-gh.sh" pr merge "https://example.test/pr/${f##*-}" --merge --match-head-commit "$(git -C "$T/origin.git" rev-parse "harness/$1")" > /dev/null; done; }   # <run>: its record PR merged
-fresh; srun od4; rec_pr od4; cp "$T/user-config.bak" "$T/user-config.sh"
-wt_gone od4; branch_gone od4; git -C "$T/proj" tag -d run/od4/M1 > /dev/null
-"$H" merge od4 > "$T/od4m.out" 2>&1
-check "od4: harness merge from origin/main, which has the record: no restore, the missing tag fetched, M1 merged by its PR" \
-  'grep -qxF "worktree $T/wt/proj/od4 on harness/od4 (from origin/main; harness merge)" "$T/od4m.out" && ! hlog od4 | grep -q "record restored" \
-  && hlog od4 | grep -q "· M1 proposed for merging" && hlog od4 | grep -q "· M1 merged into main · https" && on_main run/od4/M1'
-
-# od4m: origin's branch has no record, main has: restored from main (the record PR), main first
-printf '%s\n' MERGE_POLICY=pr RECORD_PR=end >> "$T/user-config.sh"
-fresh; srun od4m; rec_pr od4m; cp "$T/user-config.bak" "$T/user-config.sh"
-wt_gone od4m; git -C "$T/proj" branch -q -D harness/od4m; git -C "$T/origin.git" update-ref refs/heads/harness/od4m "$main0"
-"$H" merge od4m > "$T/od4mm.out" 2>&1
-check "od4m: a branch without the record and a main with it: restored from main, committed and noted, M1 merged" \
-  'grep -qxF "worktree $T/wt/proj/od4m on harness/od4m (from origin/harness/od4m; harness merge)" "$T/od4mm.out" \
-  && [[ -n $(git -C "$T/proj" log --format=%s --grep="^HARNESS: record restored from main$" harness/od4m) ]] && hlog od4m | grep -q "· record restored from main$" \
-  && hlog od4m | grep -q "· M1 merged into main" && on_main run/od4m/M1'
-
-# od5: no record anywhere: refused, nothing left behind; then the ledger's copy back: restored from it
-down_run od5; wt_gone od5; branch_gone od5; mv "$T/ledger/proj/od5" "$T/od5-ledger"
-"$H" merge od5 > "$T/od5m.out" 2>&1; OD5R=$?
-check "od5: no record on the branch, on main or in the ledger: its line, exit 1, no worktree and no branch left behind" \
-  '(( OD5R == 1 )) && grep -qxF "harness merge od5: no record for od5 (not on harness/od5, origin/main or $T/ledger/proj/od5)" "$T/od5m.out" \
-  && [[ ! -e $T/wt/proj/od5 ]] && ! git -C "$T/proj" worktree list --porcelain | grep -qF "$T/wt/proj/od5" && ! has "$T/proj" harness/od5 && ! has "$T/origin.git" harness/od5'
-mv "$T/od5-ledger" "$T/ledger/proj/od5"; "$H" merge od5 > "$T/od5l.out" 2>&1
-check "od5: the ledger's copy back: restored from the ledger, committed and noted, M1 merged, its tag carried to origin" \
-  'grep -qxF "worktree $T/wt/proj/od5 on harness/od5 (from origin/main; harness merge)" "$T/od5l.out" \
-  && [[ -n $(git -C "$T/proj" log --format=%s --grep="^HARNESS: record restored from the ledger$" harness/od5) ]] && hlog od5 | grep -q "· record restored from the ledger$" \
-  && hlog od5 | grep -q "· M1 merged into main" && on_main run/od5/M1 && [[ $(git -C "$T/origin.git" tag -l run/od5/M1) == run/od5/M1 ]]'
-
-# odt: the tag missing here: origin down is an outage, never "gone"; missing there too, it is gone and harness merge goes on
-fresh; srun odt STUB_GH_DOWN=99 STUB_GH_DOWN_ONLY=merge; rm -f "$T"/gh-down-*; git -C "$T/proj" tag -d run/odt/M1 > /dev/null
-echo "until $(( $(date +%s) + 3600 ))" > "$T/origin-down"; PATH=$DOWN:$PATH "$H" merge odt > "$T/odtd.out" 2>&1; rm -f "$T/origin-down"
-check "odt: a missing tag while origin is down is merge_failed at fetch of tag, never is gone" \
-  'hlog odt | grep -qE "· M1: merge failed at fetch of tag run/odt/M1 after 4 tries over [0-9]+ s" && ! hlog odt | grep -q "is gone" && [[ $(ni odt merge_failed:M1 .what) == "fetch of tag run/odt/M1" ]]'
-git -C "$T/origin.git" tag -d run/odt/M1 > /dev/null; "$H" merge odt > "$T/odtg.out" 2>&1; ODTG=$?
-"$H" gc "$T/proj" > "$T/gcodt.out" 2>&1
-check "odt: a tag gone here and on origin: its line, exit 0, and gc no longer holds the run for that milestone" \
-  '(( ODTG == 0 )) && [[ $(grep -c "M1: tag run/odt/M1 is gone; not merged" "$HARNESS_STATE/proj/odt/run.log") == 1 ]] && ! grep -q "keeps .*odt: M1" "$T/gcodt.out"'
+# odz: origin takes the connection and never answers: every push and fetch is cut at ORIGIN_TRY_TIMEOUT, so the run
+# reaches its card and its end
+fresh; odz0=$SECONDS; srun odz STUB_ORIGIN_DOWN="M1:until $(( $(date +%s) + 3600 ))" STUB_GIT_HANG=600 HARNESS_ORIGIN_TRY_TIMEOUT=1 HARNESS_ORIGIN_WAITS=0 PATH="$DOWN:$PATH"; odzs=$(( SECONDS - odz0 )); rm -f "$T/origin-down"
+check "odz: an origin that hangs ends in the merge_failed card and the run's end, not a hang" \
+  '(( odzs < 300 )) && [[ $(ni odz merge_failed:M1 .what) == "fetch of main" ]] && [[ $(curl_count "Title: [odz] M1 needs you") == 1 && $(curl_count "Title: [odz] ended:") == 1 ]]'
 
 inv_scan
 check "the invariant: every lane closed needs Michael in this file's runs has a needs item of that milestone, opened no later than the close" \

@@ -277,13 +277,14 @@ merge_worktree() {
   local p=$1 run=$2 wt=$3 b=$4 from made=0 how="" rec=$3/.harness/runs/$2 l
   l=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/$(basename "$p")/$run
   git -C "$p" fetch -q --prune origin || echo "harness: fetch of origin failed; going on with what is here" >&2   # the merge's steps retry it
-  if git -C "$p" rev-parse -q --verify "refs/heads/$b" > /dev/null \
-    && ! { git -C "$p" rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null && git -C "$p" merge-base --is-ancestor "refs/heads/$b" "refs/remotes/origin/$b"; }; then
+  git -C "$p" worktree prune   # a directory deleted by hand is still listed, and git refuses to add it again
+  git -C "$p" rev-parse -q --verify "refs/heads/$b" > /dev/null || made=1   # a refused merge takes back a branch it made
+  if (( ! made )) && ! { git -C "$p" rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null && git -C "$p" merge-base --is-ancestor "refs/heads/$b" "refs/remotes/origin/$b"; }; then
     from=$b; git -C "$p" worktree add -q "$wt" "$b"
   elif git -C "$p" rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null; then
     from=origin/$b; git -C "$p" worktree add -q "$wt" -B "$b" "origin/$b"
   else
-    from=origin/main made=1; git -C "$p" worktree add -q -b "$b" "$wt" origin/main
+    from=origin/main; git -C "$p" worktree add -q -b "$b" "$wt" origin/main
   fi
   if [[ ! -f $rec/feature_list.json ]]; then
     if git -C "$wt" cat-file -e "origin/main:.harness/runs/$run/feature_list.json" 2> /dev/null; then
@@ -375,7 +376,8 @@ cmd_start() {
   # tmux starts commands in its server's environment, not this shell's: pass the harness overrides along
   local v; for v in HARNESS_CLAUDE HARNESS_GH HARNESS_SCRATCH_ROOT HARNESS_PW HARNESS_PAUSE_POLL HARNESS_CONFIG HARNESS_LEDGER \
     HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL HARNESS_DESK_SESSION HARNESS_DESK_WAIT \
-    HARNESS_SYSTEMD_RUN HARNESS_SYSTEMCTL HARNESS_MEMINFO HARNESS_MEM_POLL HARNESS_LANE_POLL HARNESS_RECORD_DELAY HARNESS_COUNT_HOLD; do
+    HARNESS_SYSTEMD_RUN HARNESS_SYSTEMCTL HARNESS_MEMINFO HARNESS_MEM_POLL HARNESS_LANE_POLL HARNESS_RECORD_DELAY HARNESS_COUNT_HOLD \
+    HARNESS_ORIGIN_WAITS HARNESS_ORIGIN_TRY_TIMEOUT; do
     [[ -n ${!v:-} ]] && env+=" $v=$(printf %q "${!v}")"; done
   if (( fg )); then eval "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh")"; return; fi
 
@@ -714,8 +716,11 @@ cmd_gc() {
     compgen -G "$Q/*-continue-$r.args" > /dev/null; }
   # <run> → its first milestone that is verified and not merged, with its tag not on origin/main (a milestone merged by
   # hand holds nothing; nor does a tag gone here and on origin: nothing is left to merge). Such a run keeps its worktree
-  # and its branches, and its needs items: harness merge is its way out (2026-11-04-origin-retries)
+  # and its branches, and its needs items: harness merge is its way out (2026-11-04-origin-retries). Not under
+  # MERGE_POLICY=off, where harness merge merges nothing and a tag is all a verify leaves
+  local merge_policy; merge_policy=$(harness_config "$p" > /dev/null; echo "$MERGE_POLICY")
   unmerged_of() { local r=$1 d=$STATE_ROOT/$(basename "$p")/$1 f m t
+    [[ $merge_policy != off ]] || return 1
     for f in "$d"/verified-*; do
       [[ -e $f ]] || continue
       m=${f##*/verified-} t=run/$r/$m

@@ -42,6 +42,7 @@
 # RECORD_PR=end                      # the run record's own PR, opened when the run ends; off = none
 # ORIGIN_WAITS="5 15 30 60 120"      # seconds between the tries of a merge's fetch, push or gh call when origin fails
 #                                    #     (an outage); a GitHub refusal is never retried. Five waits: six tries, 230 s
+# ORIGIN_TRY_TIMEOUT=120             # one try of any origin command: past it a hung origin counts as a failed try
 
 # context.md, the bounded pack of the run's journal a session reads first (failed verify rows lead a verify's pack).
 # CONTEXT_PACK_BYTES=8192            # a coding session's pack; whole bytes, at least 1024

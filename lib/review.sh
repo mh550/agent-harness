@@ -4,7 +4,7 @@
 # with main fetched first, so a milestone merged meanwhile (a self-merge moves origin's main, not ours) drops out at once.
 review_diff() {
   local o="origin/$MAIN_BRANCH" out
-  git fetch -q origin "$MAIN_BRANCH" 2> /dev/null   # a failed fetch measures from the ref we have
+  timeout -k 5 "${HARNESS_ORIGIN_TRY_TIMEOUT:-${ORIGIN_TRY_TIMEOUT:-120}}" git fetch -q origin "$MAIN_BRANCH" 2> /dev/null   # a failed fetch measures from the ref we have; a hung one too (record.sh's origin_t)
   git rev-parse -q --verify "$o^{commit}" > /dev/null || { echo "no $o"; return 1; }
   out=$(git diff --shortstat "$o...HEAD" -- . ':!.harness/runs' 2> /dev/null) || { echo "git diff $o...HEAD failed"; return 1; }
   awk '{ for (i = 2; i <= NF; i++) { if ($i ~ /^file/) f = $(i-1); if ($i ~ /^insertion/ || $i ~ /^deletion/) l += $(i-1) } }

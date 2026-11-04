@@ -42,10 +42,10 @@ test("needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-
   assert.deepEqual(cases.map(([r, s, o]) => `${r} ${s}: ${w(it(r, s), st(o))}`), cases.map(([r, s, , x]) => `${r} ${s}: ${x}`));
 });
 
-test("needs sweep: merge_failed: merged-<m> resolves milestone merged, its marker gone merge went through, else kept", () => {
+test("needs sweep: merge_failed: merged-<m> resolves milestone merged, its marker gone origin back, else kept", () => {
   const i = N.record({ run: "r", project: "p", reason: "merge_failed", subject: "M1", seq: 1, what: "fetch of main" }, 0);
   const w = markers => N.sweep([i], { removed: false, ended: true, passing: [], parked: {}, attempts: {}, max_attempts: 2, markers }).resolved[0]?.resolved_why ?? "kept";
-  assert.deepEqual([w(["merged-M1", "merge-failed-M1"]), w([]), w(["merge-failed-M1", "needs-M1"])], ["milestone merged", "merge went through", "kept"]);
+  assert.deepEqual([w(["merged-M1", "merge-failed-M1"]), w([]), w(["merge-failed-M1", "needs-M1"])], ["milestone merged", "origin back", "kept"]);
 });
 
 test("needs merge_failed: the item carries what, tries, secs, tag_local and head, a refresh their new values; a card without a step says so", () => {

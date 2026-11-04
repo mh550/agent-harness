@@ -22,6 +22,8 @@ down=$( exec 7>> "$f.lock"; flock 7; v=$(cat "$f" 2> /dev/null) || exit 1
   if [[ $v == until\ * ]]; then (( $(date +%s) < ${v#until } )) || { rm -f "$f"; exit 1; }
   elif (( v <= 1 )); then rm -f "$f"; else echo $(( v - 1 )) > "$f"; fi; echo 1 )
 [[ $down == 1 ]] || exec "$real" "$@"
+# STUB_GIT_HANG=<s>: the call hangs that long first, an origin that takes the connection and never answers
+[[ ${STUB_GIT_HANG:-} ]] && sleep "$STUB_GIT_HANG"
 if [[ $sub == push ]]; then
   ref=${ref#+} ref=${ref##*:} ref=${ref#refs/heads/} ref=${ref#refs/tags/}
   url=$("$real" "${a[@]:0:i}" remote get-url origin 2> /dev/null)

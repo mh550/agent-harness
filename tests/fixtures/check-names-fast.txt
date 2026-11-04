@@ -303,7 +303,7 @@ needs review: harness needs done rewrites the record's needs.md (the notificatio
 needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)
 needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
-needs sweep: merge_failed: merged-<m> resolves milestone merged, its marker gone merge went through, else kept
+needs sweep: merge_failed: merged-<m> resolves milestone merged, its marker gone origin back, else kept
 needs verify_red own: a slow-tier red the fast gate let through, never main's disagreement
 needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
 needs.mjs moveForward: two earlier items of the key become one, seen summed, asked_in every run's, both resolved as asked again in the new run

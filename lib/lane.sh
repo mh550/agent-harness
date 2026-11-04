@@ -152,8 +152,8 @@ verify() {
       elif (( ${#failed[@]} )); then need=$(printf '%s, ' "${failed[@]}"); need="${need%, } fail verification"; fi ;;
   esac
   if [[ $mode == rebase ]]; then   # not verified on today's main: the old tag must not merge, and a later verify tags afresh
-    rm -f "$STATE/verified-$m" "$STATE/tag-local-$m"; git tag -d "run/$RUN_ID/$m" > /dev/null 2>&1
-    git push -q origin --delete "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"
+    rm -f "$STATE/verified-$m" "$STATE/tag-local-$m" "$STATE/merge-failed-$m"; git tag -d "run/$RUN_ID/$m" > /dev/null 2>&1   # this verdict's card speaks for it now
+    origin_t git push -q origin --delete "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"
     note "verify $m: the re-based tree did not hold; tag run/$RUN_ID/$m removed"
   fi
   printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
@@ -178,7 +178,7 @@ rebase() {
   rm -f "$STATE/rebase-$m"; echo "re-base on $MAIN_BRANCH" > "$LDIR/now"   # harness status's lane line
   c=$(git rev-list -n1 "$tag" 2> /dev/null) || { touch "$STATE/needs-$m"; printf 'its tag is gone' > "$LDIR/need"; note "$m: its tag $tag is gone; not re-based (needs Michael)"
     needs_open verify_recheck "$m" milestone="$m" variant=tag > /dev/null; return 1; }
-  git fetch -q origin "$MAIN_BRANCH" 8>&- 2>> "$STATE/run.log"; mn=$(git rev-parse "origin/$MAIN_BRANCH")
+  fetch_main_ 2>> "$STATE/run.log"; mn=$(git rev-parse "origin/$MAIN_BRANCH")
   # merged meanwhile: nothing to re-base (else an empty `ours` would read as disjoint and re-tag main's tip)
   [[ -f $STATE/merged-$m ]] || git merge-base --is-ancestor "$c" "$mn" && return 0
   (( ++REBASES > 3 )) && { rebase_fail "$m" "$c" "$m: $MAIN_BRANCH moved during 3 re-bases; not merged (needs Michael)" "$MAIN_BRANCH kept moving" merge_conflict moving; return 1; }
@@ -238,7 +238,11 @@ lane_done() {
   elif [[ -f $STATE/rebase-$M ]]; then lane_exit 0 "$M verified; its re-base waits"
   elif [[ -f $STATE/proposed-$M ]]; then lane_exit 0 "$M proposed"
   elif [[ -f $STATE/waits-$M ]]; then lane_exit 0 "$M verified; its PR waits"
-  elif [[ -f $STATE/nomerge-$M ]]; then lane_exit 12 "$M needs Michael: $MAIN_BRANCH conflicts with its lane"
+  # a conflict has its card. A merge that never started has none and needs no one yet: the coordinator's next merge
+  # re-bases it, and anything that stops there has its own card
+  elif [[ -f $STATE/nomerge-$M ]]; then
+    [[ -f $STATE/main-conflict-$M ]] && lane_exit 12 "$M needs Michael: $MAIN_BRANCH conflicts with its lane"
+    lane_exit 0 "$M verified; $MAIN_BRANCH did not merge into its lane; its merge is tried again"
   elif [[ $MERGE_POLICY == off ]]; then lane_exit 0 "$M verified"
   elif [[ -f $STATE/refused-$M ]]; then lane_exit 12 "$M needs Michael: merge refused"
   elif [[ -f $STATE/conflict-$M ]]; then lane_exit 12 "$M needs Michael: conflicts with $MAIN_BRANCH"

@@ -84,6 +84,7 @@
 # edits entry_resume must undo. STUB_INIT_NO_LIST=1: the initializer ends, not refused, with no list and no entry.
 # STUB_NO_INIT_LINE=1: no session prints its init line (a transcript with no session id: never resumed).
 set -euo pipefail
+export STUB_GIT_UP=1   # a session's own git never sees tests/stub-git-down.sh's outage: under set -e a failed push would end it as no real session ends
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc="" resume=""
 while (( $# )); do
