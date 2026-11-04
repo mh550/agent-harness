@@ -12,3 +12,6 @@
 - 2026-11-03 20:41 · context.md for U1-03: 5809 bytes
 - 2026-11-03 21:04 · U1-03: suite ran 1x (804 s) in the session
 - 2026-11-03 21:04 · U1-03 · claude-opus-5-5 · passes=true · 22 min · 3/6 passing · tests 1152
+- 2026-11-03 21:04 · context.md for U1-04: 6882 bytes
+- 2026-11-03 21:30 · U1-04: suite ran 1x (805 s) in the session
+- 2026-11-03 21:30 · U1-04 · claude-opus-5-5 · passes=true · 26 min · 4/6 passing · tests 1163

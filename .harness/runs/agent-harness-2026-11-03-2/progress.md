@@ -7,6 +7,19 @@ How to read the feature list (`feature_list.json`): six features in series, U1-0
 
 To steer: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session.
 
+### 2026-11-03 21:30 · U1-04 · passes
+
+36 of the 38 scenario-file eval lines moved to tests/unit (new: needs, inbox, show, eval, overlap, treekey, page; extended: summary, entries, view, metrics, memlint, testcount) under their exact names; 2 kept (82 keymaplint, 84 pollu) and listed in the decision file. 11 split names added to the fixture, none removed. Full run 1163/1163, conformance PASS.
+
+- **Files:** tests/unit/needs.test.mjs, tests/unit/inbox.test.mjs, tests/unit/show.test.mjs, tests/unit/eval.test.mjs, tests/unit/overlap.test.mjs, tests/unit/treekey.test.mjs, tests/unit/page.test.mjs, tests/unit/summary.test.mjs, tests/unit/entries.test.mjs, tests/unit/view.test.mjs, tests/unit/metrics.test.mjs, tests/unit/memlint.test.mjs, +4 more
+- **Verified:** Full suite via check.sh: green in 805 s, 1163/1163, `PASS conformance: the split suite has every check the single-file suite had`; subset of all 26 touched files + 00-unit 434/434; node --test --test-isolation=none tests/unit/*.test.mjs 124/124 no ✖; eval-line count 2; fixture diff removes 0 lines; grep for CLAUDE.md|prompts/|templates/ in tests/unit prints nothing; each new/extended test file seen red on one wrong value first.
+- **Tests:** 1152 → 1163
+- **Discovery** (affects U1-05): Only 2 eval lines are left in tests/checks (82-key-map-lint keymaplint, 84-node-memo pollu): U1-05's after rows list just those two files beside the -pure- files
+- **Discovery** (affects U1-06): U1-04 moved tests with assert.ok where the eval itself tested a predicate (endsWith, includes, <, <=): 9 lines, a U1-06 read; 81's treekey test names RULES.md for the eval's CLAUDE.md literal (default)
+- **Discovery** (affects U1-06): 58's `needs list: …` keeps its name for the CLI half; the synthesize eval took a new unit name, so the name's 'nor with ended or a live driver' clause is checked only in needs.test.mjs (default; swap if the review prefers)
+- **Discovery** (affects run): A bash run of 76-resolve-session prints `lib/resolve.sh: line 44: USAGE: unbound variable` to stderr while its checks pass (untouched by U1-04)
+- *04-U1-04 · claude-opus-5-5*
+
 ### 2026-11-03 21:04 · U1-03 · passes
 
 The 34 eval checks of the nine smaller -pure- files moved to tests/unit/{features,notify,parked,render,metrics,summary,deploy,backlog}.test.mjs and testcount.test.mjs under their exact names; 01 and 02 deleted; two splits gave 2 new names. 0 eval lines left in those files. Full run 1152/1152, conformance PASS.
