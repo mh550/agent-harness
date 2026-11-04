@@ -7,6 +7,52 @@ How to read the feature list (`feature_list.json`): six features in series, U1-0
 
 To steer: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session.
 
+### 2026-11-03 22:48 · verify U1 · passes
+
+All 37 steps of U1-01..06 hold: full suite green (803 s, 1165, conformance PASS), 124 unit tests pass in one process, reporter/00-unit-tier exit shapes re-run, 0 fixture names removed, 2 evals left and listed. Red-first steps taken from record, not re-run.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| U1-01 | 1 | TEST_UNIT_DIR fixtures u1/u2/u3 through 00-unit-tier.sh; node --check reporter; grep CLAUDE.md | u1: PASS a, FAIL b, indented '1 !== 2', 1/2, rc1; u2: PASS a rc0; u3: FAIL unit tier … exited 3 with no FAIL line rc1; reporter checks | yes |
+| U1-01 | 2 | same fixture runs + reporter read | reporter yields PASS/FAIL, indented failure lines | yes |
+| U1-01 | 3 | 00-unit-tier.sh on a/b fixtures, exit codes | script exits and N/M lines as stated | yes |
+| U1-01 | 4 | read tests/unit/testcount.test.mjs; bash tests/run.sh 00-unit 33-suite | testcount test asserts 325,12,7,null; subset ended 124/124, 19/19 green | yes |
+| U1-01 | 5 | grep CLAUDE.md for node ≥ 22.8, unit tests line; subset run 39/37/79 | node ≥ 22.8 present; tier sentence at CLAUDE.md:44; subset green | yes |
+| U1-01 | 6 | read journal/decisions/2026-11-03-unit-tier.md | decision file has Kept evals/Measured sections | yes |
+| U1-01 | 7 | bash -n / node --check all; node --test unit glob | all syntax OK; 124 tests, 0 ✖ (glob form) | yes |
+| U1-01 | 8 | init full suite run (803 s) | green in 803 s, 1165 tests, conformance in full run | yes |
+| U1-02 | 1 | read steps; grep/diff checks against the tree | verified | yes |
+| U1-02 | 2 | grep/read | verified | yes |
+| U1-02 | 3 | node --test --test-isolation=none tests/unit/*.test.mjs; grep process.exit and module-level let/var in tests/unit; wrong-value red step not re-runnable, taken from record | 124 pass, 0 fail, 0 ✖; no process.exit, no mutable module state | yes |
+| U1-02 | 4 | grep -c input-type in 51/12 files; node --check; bash -n | 0 evals in both files; syntax OK | yes |
+| U1-02 | 5 | git diff $(git merge-base origin/main HEAD) -- tests/fixtures/check-names.txt \| grep -c '^-[^-]' | 0 | yes |
+| U1-02 | 6 | harness init full suite (bash tests/run.sh via check.sh) | green 803 s, 1165 tests; conformance PASS | yes |
+| U1-03 | 1 | read steps; grep/diff checks against the tree | verified | yes |
+| U1-03 | 2 | grep/read | verified | yes |
+| U1-03 | 3 | node --test --test-isolation=none tests/unit/*.test.mjs; grep process.exit and module-level let/var in tests/unit; wrong-value red step not re-runnable, taken from record | 124 pass, 0 fail, 0 ✖; no process.exit, no mutable module state | yes |
+| U1-03 | 4 | grep -c input-type tests/checks/0[1-7]-* 11-* 35-* | 0 (01/02 deleted); syntax OK | yes |
+| U1-03 | 5 | git diff $(git merge-base origin/main HEAD) -- tests/fixtures/check-names.txt \| grep -c '^-[^-]' | 0 | yes |
+| U1-03 | 6 | harness init full suite (bash tests/run.sh via check.sh) | green 803 s, 1165 tests; conformance PASS | yes |
+| U1-04 | 1 | read steps; grep/diff checks against the tree | verified | yes |
+| U1-04 | 2 | grep -l 'CLAUDE.md\\|prompts/\\|templates/' tests/unit/*.test.mjs; bash tests/run.sh 82-key-map 37-memory | nothing printed; both green | yes |
+| U1-04 | 3 | node --test --test-isolation=none tests/unit/*.test.mjs; grep process.exit and module-level let/var in tests/unit; wrong-value red step not re-runnable, taken from record | 124 pass, 0 fail, 0 ✖; no process.exit, no mutable module state | yes |
+| U1-04 | 4 | grep -c input-type summed | 2 (82 keymaplint, 84 pollu), both listed under Kept evals | yes |
+| U1-04 | 5 | git diff $(git merge-base origin/main HEAD) -- tests/fixtures/check-names.txt \| grep -c '^-[^-]' | 0 | yes |
+| U1-04 | 6 | harness init full suite (bash tests/run.sh via check.sh) | green 803 s, 1165 tests; conformance PASS | yes |
+| U1-05 | 1 | read findings file 'How measured' | status.txt kept: RUNNING 1 each time, load noted | yes |
+| U1-05 | 2 | grep/read | verified | yes |
+| U1-05 | 3 | node --test unit glob; grep process.exit / module-level let | verified | yes |
+| U1-05 | 4 | grep -c 'node --input-type=module' tests/checks/*.sh; node --check; bash -n | verified | yes |
+| U1-05 | 5 | read findings-and-research/2026-11-03-unit-tier.md and decision's Measured | table with 5 rows, misses recorded (117 starts, files' CPU -5%), Measured line points at file | yes |
+| U1-05 | 6 | init full suite | verified | yes |
+| U1-06 | 1 | read steps; grep/diff checks against the tree | verified | yes |
+| U1-06 | 2 | grep/read | verified | yes |
+| U1-06 | 3 | grep architecture.md, README.md:355-360, decision file | unit tier, reporter, 00-unit-tier.sh and run commands named; Measured points at findings | yes |
+| U1-06 | 4 | node --check, bash -n all, unit glob, bash tests/run.sh 00-unit 33-suite 82-key-map 39-memlint 37-memory 79-suite-length | all green: 8/8, 19/19, 124/124, 14/14 | yes |
+| U1-06 | 5 | git diff base -- check-names.txt \| grep -c '^-[^-]' | verified | yes |
+
+- *224631-verify-U1 · claude-sonnet-5-5*
+
 ### 2026-11-03 22:33 · U1-06 · passes
 
 Review of U1 (Opus, one round): 0 Critical, 4 Important, 7 Minor. Fixed all 4 Important RED→GREEN (testcount.mjs CLI guard, the tier red on zero tests/no summary/stray stdout, inbox tpl read from lib/driver.sh, 2 key-order asserts) and 3 Minor; architecture.md and README.md describe the unit tier. 1163 → 1165, full run green.
