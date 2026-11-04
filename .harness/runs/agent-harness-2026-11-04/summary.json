@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-11-04",
   "started": "2026-11-04T05:45:49.000Z",
-  "ended_at": "2026-11-04T11:18:11.000Z",
+  "ended_at": "2026-11-04T11:18:40.000Z",
   "end_reason": "done",
   "continuations": 0,
   "features": {
@@ -49,42 +49,44 @@
   },
   "resolutions": [],
   "cost": {
-    "total": 28.43,
-    "per_passing_feature": 3.55,
+    "total": 28.54,
+    "per_passing_feature": 3.57,
     "by_role": {
       "init": 4.79,
       "build": 14.89,
       "review": 8.32,
-      "verify": 0.44
+      "verify": 0.44,
+      "retro": 0.1
     },
     "by_model": {
       "claude-fable-5-1": 4.79,
       "claude-opus-5-5": 22.96,
-      "claude-sonnet-5-5": 0.69
+      "claude-sonnet-5-5": 0.79
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 5.54,
+    "wall_h": 5.55,
     "sessions_h": 4.74,
     "driver_h": 0.8,
     "by_role_h": {
       "init": 0.13,
       "build": 3.61,
       "review": 0.87,
-      "verify": 0.13
+      "verify": 0.13,
+      "retro": 0
     }
   },
   "lanes": {
     "max_open": 2,
     "lane_hours": 5.19,
-    "wall_hours": 5.54
+    "wall_hours": 5.55
   },
   "tokens": {
-    "in": 1330,
-    "cache_read": 43469518,
-    "cache_write": 1390564,
-    "out": 371525,
+    "in": 1336,
+    "cache_read": 43541923,
+    "cache_write": 1410862,
+    "out": 372924,
     "cache_hit_rate": 0.969,
     "context_peak": 165858,
     "by_role": {
@@ -111,12 +113,18 @@
         "cache_read": 585906,
         "cache_write": 76345,
         "out": 7355
+      },
+      "retro": {
+        "in": 6,
+        "cache_read": 72405,
+        "cache_write": 20298,
+        "out": 1399
       }
     }
   },
   "per_verified_feature": {
-    "cost": 3.55,
-    "tokens": 5654117
+    "cost": 3.57,
+    "tokens": 5665881
   },
   "orientation": {
     "tokens": 754770,
@@ -127,7 +135,7 @@
   "first_attempt_pass_rate": 1,
   "verify_fail_rate": 0,
   "review": {
-    "cost_pct": 29.3,
+    "cost_pct": 29.2,
     "found_nothing": 0,
     "reviews": 2
   },
@@ -136,8 +144,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 11,
-    "real": 11,
+    "total": 12,
+    "real": 12,
     "environmental": 0
   },
   "guards": {
