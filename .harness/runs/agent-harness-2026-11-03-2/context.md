@@ -1,12 +1,17 @@
-# Context pack for `U1-01`
+# Context pack for `U1-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (U1-01, affects U1-02, U1-03, U1-04, U1-05, U1-06): `node --test tests/unit/` fails on node 24.21 (ERR_UNSUPPORTED_DIR_IMPORT, prints ✖): every later step's `node --test --test-isolation=none tests/unit/ prints no ✖ line` must read `tests/unit/*.test.mjs` → entries.jsonl:2
+- Discovery (U1-01, affects U1-06, run): The CLAUDE.md check went in tests/checks/79-suite-length.sh (already in CHECK_KEY_MAP for CLAUDE.md), not 33-suite-runner.sh: a CLAUDE.md read there would have to join the map (82-key-map-lint). → entries.jsonl:2
+- Discovery (U1-01, affects U1-02, U1-03, U1-04, U1-05, U1-06): The reporter prints a non-assertion error's stack without node: frames, and a skipped test as `PASS <name> (skipped: <reason>)` (run.sh strips the suffix); decisions/2026-11-03-unit-tier has empty `## Kept evals` and `## Measured` sections for U1-02..05. → entries.jsonl:2
 - Discovery (init, affects U1-01, U1-03, run): Under `node --test --test-isolation=none <glob>` process.argv is [node, <glob>] (checked 2026-11-03 in /tmp): lib/testcount.mjs's CLI tail (process.argv.slice(2)) is inert on import, so no lib/ guard is needed for the move; a module that reads argv[1] would not be. → entries.jsonl:1
-- Discovery (init, affects U1-01): A test file that throws at import gets node's own test:fail event for the file, so the reporter prints `FAIL <absolute file path>`; the `exited <rc> with no FAIL line` guard in 00-unit-tier.sh fires only for a non-zero exit with no FAIL line, e.g. `process.exit(3)` at import. U1-01's check uses process.exit for the guard line and accepts either shape for a throw. → entries.jsonl:1
-- Discovery (init, affects U1-01): The reporter spike (/tmp, deleted): node expands the quoted `*.test.mjs` glob itself, `--test-reporter=<path> --test-reporter-destination=stdout` prints only the reporter's lines on stdout, and the assert diff for `assert.equal(1, 2)` is `Expected values to be strictly equal:` then a blank line then `1 !== 2`, each indented two spaces by the reporter. → entries.jsonl:1
+
+## What it builds on
+
+- 2026-11-03 20:16 · U1-01 · passes: The unit tier: tests/unit/reporter.mjs (PASS/FAIL lines, the failure indented), tests/checks/00-unit-tier.sh (one node --test process, own N/M, a no-FAIL-line guard, TEST_UNIT_DIR), testcount's eval moved to tests/unit/testcount.test.mjs under its old name, CLAUDE.md's node ≥ 22.8 and tier lines, the decision file.; tests 1141 → 1146; files tests/unit/reporter.mjs, tests/unit/testcount.test.mjs, tests/checks/00-unit-tier.sh, tests/checks/33-suite-runner.sh, tests/checks/79-suite-length.sh, … → entries.jsonl:2
 
 ## Lately in the run
 
@@ -14,6 +19,7 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Current rules
 
+- The unit tier: node evals become `node:test` files in one process, reported as the suite's PASS/FAIL lines → journal/decisions/2026-11-03-unit-tier.md
 - A run never starts on a spec that isn't there: `harness start` and `queue add` refuse a spec absent from the run's base ref → journal/decisions/2026-10-31-spec-must-exist.md
 - One full run per coding session, last: the prompt's rule and §3 order, and `Suite runs` in the report → journal/decisions/2026-10-31-one-full-run.md
 - Fewer node starts: where a stub run's process starts come from, and the cuts C1 makes → journal/decisions/2026-10-31-fewer-node-starts.md
@@ -25,6 +31,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Timing checks bound CPU time; a stopped file's missing names don't void `HARNESS_FAILED=` → journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md
 - The suite waits on a condition or a barrier, never on the clock; a flake is reproduced with --repeat and fixed at its cause → journal/decisions/2026-10-29-tests-wait-not-sleep.md
 - The rerun guard: a red full suite is rerun once; a flake is green, named and counted, never quarantined → journal/decisions/2026-10-29-rerun-guard.md
-- Questions wait in `harness needs` until answered: one item per question, moved forward, no push → journal/decisions/2026-10-29-questions-wait.md
 
-_72 older rules: journal/decisions._
+_73 older rules: journal/decisions._
