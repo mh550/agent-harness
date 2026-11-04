@@ -1,35 +1,36 @@
-# Debrief · 2026-11-03 17:14
+# Debrief · 2026-11-03 22:49
 
-_runs since 2026-10-30 22:04:47: agent-harness-2026-11-03 · claude-sonnet-5-5, $0.11550400000000001 · context: /home/mh550/.local/state/harness/debrief/2026-11-03-171436/context.md_
+_runs since 2026-11-03 17:14:36: agent-harness-2026-11-03-2 · claude-sonnet-5-5, $0.113046 · context: /home/mh550/.local/state/harness/debrief/2026-11-03-224927/context.md_
 
 ## Headline
-agent-harness-2026-11-03 landed on main: Q1 (2/2) and C1 (6/6), 8/8 passing, no conflicts, PRs #78 and #79. No blockers. Spend $37.67 against an open usage window (seven_day 4%, resets Sun 17:00).
+agent-harness-2026-11-03-2 landed on main: milestone U1 (unit tier, 6/6 features) merged as PR #84, record PR #85. Nothing blocked.
+Spend $26.68 for the run; usage window open, seven_day at 6% (resets Sun 17:00).
 
 ## Runs
 
-### agent-harness-2026-11-03 (agent-harness) · done
-- 8/8 features passing, 8 verified, 8 merged. Q1 (2) and C1 (6) were both merged by the run.
-- Tests 1084 → 1141. Cost $37.67 ($4.71 per feature). Wall time 6.59 h, 12 sessions, 2 lanes at most.
-- First-attempt pass rate 1.00, no rework, 0 verify failures, 0 limit waits. The one review (C1-06, 2372 lines, opus) found nothing Critical or Important.
-- Flakes (no effect on the outcome): `08-scope-sh-l1-02-run-capped-services-gc-scratch` ×3, `46-lanes-continue` ×2, `47-lanes-two` ×2.
-- Retro: the main avoidable cost was repeat full-suite runs. Q1-02 ran it 10 times (3023 s, about 50 of its 78 min). C1-06 ran it 4 times. Each full run takes about 800 s, against the 10–11 min that CLAUDE.md states.
-- Spec: `docs/specs/2026-10-31-suite-cpu.md`.
+### agent-harness-2026-11-03-2 (agent-harness) · done
+- 6/6 features passing, all on the first attempt. U1 was verified and merged (PR #84). Rework, flakes and verify failures: none.
+- Tests went from 1141 to 1165. `summary.json` and the retro give different start counts (1141 vs 1146).
+- It cost $26.68 ($4.45 per feature) and took 3.62 h wall. By role: init $4.26 (fable), build $15.80, review $6.26 (opus, 2925 changed lines), verify $0.25.
+- The main cost was suite time, not failures. Each coding session ran the full suite once at about 800 s, roughly 1.3 h of the 2.44 h build time. U1-01 ran it twice (1621 s).
+- The retro notes that verify left no evidence rows in `entries.jsonl`.
+- The retro lists a flake note for U1-02, a naming question that had a default. Nothing is open in `INBOX.md`.
+- No continuation is needed.
 
 ## Needs Michael
-Nothing. The retro mentions two questions with defaults taken (C1-05 and one other entry). Neither blocked the run, and `harness status` and the questions check show none open:
-- Should an absolute `--spec` outside the project be allowed unchecked?
-- Does the `TEST_JOBS=2` sentence belong in the shared `prompts/coding.md`?
-
-You may want to confirm both defaults.
+Nothing.
 
 ## For the next interactive session
-No merge conflicts, holds or refusals. Open `proposed` retro items, most `runs_seen` first. Each is a candidate harness PR:
-1. `suite-flake-retry` (seen 5): re-run failed test files serially before declaring the suite red. It was not re-raised this run, though the flakes above are the same kind.
-2. `verify-evidence-rows` (seen 5, re-raised this run): record per-step evidence rows from verify sessions in `entries.jsonl`.
-3. `suite-time-budget` (seen 3, re-raised this run): warn or cap when a session runs the full suite more than twice. This run's evidence is above.
-4. `memlint-before-session-end` (seen 1): run the CLAUDE.md memlint check in the session's own end-of-session gate.
-5. `session-entry-write-guard` (seen 1): tell sessions that `entries.jsonl` and `progress-archive.md` are driver-only.
-6. `step-contradiction-lint` (seen 1): flag self-contradictory feature steps at init.
-7. Seen 0 and dormant: `no-retry-on-denial`, `base-branch-runs-reverted`, `restrict-merge-tree-base`, `slot-copy-overwritten-on-merge`.
+No merge conflicts, holds or refusals.
 
-No re-raised item is already `specced` or `queued`.
+Open `proposed` items from the Retro backlog, most `runs_seen` first:
+- `verify-evidence-rows`: record per-step evidence rows from verify sessions (seen 6).
+- `suite-flake-retry`: re-run failed test files serially before declaring the suite red (seen 5).
+- `suite-time-budget`: cap or warn on session suite runs (seen 4). This run again measured about 800 s per run. CLAUDE.md's "~210 s" is stale, and the retro says its 10–11 min figure is also slightly low.
+- `memlint-before-session-end`: run the memlint check inside the session's own end gate (seen 1).
+- `session-entry-write-guard`: tell sessions that `entries.jsonl` and `progress-archive.md` are driver-only (seen 1).
+- `step-contradiction-lint`: flag self-contradictory steps at init (seen 1).
+- `no-retry-on-denial`: don't retry a session that stopped on a permission question with nothing changed (seen 0).
+- `base-branch-runs-reverted`, `restrict-merge-tree-base` and `slot-copy-overwritten-on-merge` are dormant (seen 0), each with a note on when to act.
+
+No item already `specced` or `queued` was re-raised.

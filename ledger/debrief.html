@@ -27,45 +27,44 @@ dd{margin:0;font-variant-numeric:tabular-nums;font-size:14px}.open{margin:12px 0
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--line) 60%,transparent);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
 pre{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}</style></head>
 <body><main>
-<h1>Debrief · 2026-11-03 17:14</h1>
-<p class="sub">1 run · page built 2026-11-03 22:14 UTC from each run's summary.json and the debrief note</p>
-<section class="headline"><p>agent-harness-2026-11-03 landed on main: Q1 (2/2) and C1 (6/6), 8/8 passing, no conflicts, PRs #78 and #79. No blockers. Spend $37.67 against an open usage window (seven_day 4%, resets Sun 17:00).</p></section>
+<h1>Debrief · 2026-11-03 22:49</h1>
+<p class="sub">1 run · page built 2026-11-04 03:49 UTC from each run's summary.json and the debrief note</p>
+<section class="headline"><p>agent-harness-2026-11-03-2 landed on main: milestone U1 (unit tier, 6/6 features) merged as PR #84, record PR #85. Nothing blocked.</p></section>
 <section class="cards"><article class="card">
-  <header><h3>agent-harness-2026-11-03</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
-  <div class="big"><b>8/8 passing</b><span>8 verified · 8 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="Q1: 2/2 passing, merged">Q1</li><li class="ms merged" title="C1: 6/6 passing, merged">C1</li></ul>
-  <dl><div><dt>Spend</dt><dd>$37.67</dd></div><div><dt>Per feature</dt><dd>$4.71</dd></div>
-  <div><dt>Wall</dt><dd>6.59 h</dd></div><div><dt>Tests</dt><dd>1084 → 1141</dd></div></dl>
+  <header><h3>agent-harness-2026-11-03-2</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>6/6 passing</b><span>6 verified · 6 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="U1: 6/6 passing, merged">U1</li></ul>
+  <dl><div><dt>Spend</dt><dd>$26.68</dd></div><div><dt>Per feature</dt><dd>$4.45</dd></div>
+  <div><dt>Wall</dt><dd>3.62 h</dd></div><div><dt>Tests</dt><dd>1141 → 1165</dd></div></dl>
   
 </article></section>
-<section class="note"><p><em>runs since 2026-10-30 22:04:47: agent-harness-2026-11-03 · claude-sonnet-5-5, $0.11550400000000001 · context: /home/mh550/.local/state/harness/debrief/2026-11-03-171436/context.md</em></p>
+<section class="note"><p><em>runs since 2026-11-03 17:14:36: agent-harness-2026-11-03-2 · claude-sonnet-5-5, $0.113046 · context: /home/mh550/.local/state/harness/debrief/2026-11-03-224927/context.md</em></p>
+<p>Spend $26.68 for the run; usage window open, seven_day at 6% (resets Sun 17:00).</p>
 <h3>Runs</h3>
-<h4>agent-harness-2026-11-03 (agent-harness) · done</h4>
+<h4>agent-harness-2026-11-03-2 (agent-harness) · done</h4>
 <ul>
-<li>8/8 features passing, 8 verified, 8 merged. Q1 (2) and C1 (6) were both merged by the run.</li>
-<li>Tests 1084 → 1141. Cost $37.67 ($4.71 per feature). Wall time 6.59 h, 12 sessions, 2 lanes at most.</li>
-<li>First-attempt pass rate 1.00, no rework, 0 verify failures, 0 limit waits. The one review (C1-06, 2372 lines, opus) found nothing Critical or Important.</li>
-<li>Flakes (no effect on the outcome): <code>08-scope-sh-l1-02-run-capped-services-gc-scratch</code> ×3, <code>46-lanes-continue</code> ×2, <code>47-lanes-two</code> ×2.</li>
-<li>Retro: the main avoidable cost was repeat full-suite runs. Q1-02 ran it 10 times (3023 s, about 50 of its 78 min). C1-06 ran it 4 times. Each full run takes about 800 s, against the 10–11 min that CLAUDE.md states.</li>
-<li>Spec: <code>docs/specs/2026-10-31-suite-cpu.md</code>.</li>
+<li>6/6 features passing, all on the first attempt. U1 was verified and merged (PR #84). Rework, flakes and verify failures: none.</li>
+<li>Tests went from 1141 to 1165. <code>summary.json</code> and the retro give different start counts (1141 vs 1146).</li>
+<li>It cost $26.68 ($4.45 per feature) and took 3.62 h wall. By role: init $4.26 (fable), build $15.80, review $6.26 (opus, 2925 changed lines), verify $0.25.</li>
+<li>The main cost was suite time, not failures. Each coding session ran the full suite once at about 800 s, roughly 1.3 h of the 2.44 h build time. U1-01 ran it twice (1621 s).</li>
+<li>The retro notes that verify left no evidence rows in <code>entries.jsonl</code>.</li>
+<li>The retro lists a flake note for U1-02, a naming question that had a default. Nothing is open in <code>INBOX.md</code>.</li>
+<li>No continuation is needed.</li>
 </ul>
 <h3>Needs Michael</h3>
-<p>Nothing. The retro mentions two questions with defaults taken (C1-05 and one other entry). Neither blocked the run, and <code>harness status</code> and the questions check show none open:</p>
-<ul>
-<li>Should an absolute <code>--spec</code> outside the project be allowed unchecked?</li>
-<li>Does the <code>TEST_JOBS=2</code> sentence belong in the shared <code>prompts/coding.md</code>?</li>
-</ul>
-<p>You may want to confirm both defaults.</p>
+<p>Nothing.</p>
 <h3>For the next interactive session</h3>
-<p>No merge conflicts, holds or refusals. Open <code>proposed</code> retro items, most <code>runs_seen</code> first. Each is a candidate harness PR:</p>
-<ol>
-<li><code>suite-flake-retry</code> (seen 5): re-run failed test files serially before declaring the suite red. It was not re-raised this run, though the flakes above are the same kind.</li>
-<li><code>verify-evidence-rows</code> (seen 5, re-raised this run): record per-step evidence rows from verify sessions in <code>entries.jsonl</code>.</li>
-<li><code>suite-time-budget</code> (seen 3, re-raised this run): warn or cap when a session runs the full suite more than twice. This run&#39;s evidence is above.</li>
-<li><code>memlint-before-session-end</code> (seen 1): run the CLAUDE.md memlint check in the session&#39;s own end-of-session gate.</li>
-<li><code>session-entry-write-guard</code> (seen 1): tell sessions that <code>entries.jsonl</code> and <code>progress-archive.md</code> are driver-only.</li>
-<li><code>step-contradiction-lint</code> (seen 1): flag self-contradictory feature steps at init.</li>
-<li>Seen 0 and dormant: <code>no-retry-on-denial</code>, <code>base-branch-runs-reverted</code>, <code>restrict-merge-tree-base</code>, <code>slot-copy-overwritten-on-merge</code>.</li>
-</ol>
-<p>No re-raised item is already <code>specced</code> or <code>queued</code>.</p></section>
+<p>No merge conflicts, holds or refusals.</p>
+<p>Open <code>proposed</code> items from the Retro backlog, most <code>runs_seen</code> first:</p>
+<ul>
+<li><code>verify-evidence-rows</code>: record per-step evidence rows from verify sessions (seen 6).</li>
+<li><code>suite-flake-retry</code>: re-run failed test files serially before declaring the suite red (seen 5).</li>
+<li><code>suite-time-budget</code>: cap or warn on session suite runs (seen 4). This run again measured about 800 s per run. CLAUDE.md&#39;s &quot;~210 s&quot; is stale, and the retro says its 10–11 min figure is also slightly low.</li>
+<li><code>memlint-before-session-end</code>: run the memlint check inside the session&#39;s own end gate (seen 1).</li>
+<li><code>session-entry-write-guard</code>: tell sessions that <code>entries.jsonl</code> and <code>progress-archive.md</code> are driver-only (seen 1).</li>
+<li><code>step-contradiction-lint</code>: flag self-contradictory steps at init (seen 1).</li>
+<li><code>no-retry-on-denial</code>: don&#39;t retry a session that stopped on a permission question with nothing changed (seen 0).</li>
+<li><code>base-branch-runs-reverted</code>, <code>restrict-merge-tree-base</code> and <code>slot-copy-overwritten-on-merge</code> are dormant (seen 0), each with a note on when to act.</li>
+</ul>
+<p>No item already <code>specced</code> or <code>queued</code> was re-raised.</p></section>
 </main></body></html>
