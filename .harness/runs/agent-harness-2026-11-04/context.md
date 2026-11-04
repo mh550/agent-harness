@@ -1,34 +1,51 @@
-# Context pack for `T2-04`
+# Context pack for `T2`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- Dead end (T2-04, 08-T2-04): ls $HARNESS_STATE in the session shell (looking for a test's state dir) — outside tests/run.sh it is the live state dir: it listed project directory names only, nothing was opened or written; a session never expands it outside a check → entries.jsonl:10
+- Dead end (T2-04, 08-T2-04): an apostrophe (a coding session's) in run.md's Suite line — the checks quoting that line sit inside single-quoted check strings (79, 87); reworded without one → entries.jsonl:10
+- Dead end (T2-03, 07-T2-03): suite_fast passed only at the limit-branch MET append — lib/lane.sh has two coding-row appends (limit branch ~354, end ~397); the end one writes the real row → entries.jsonl:9
+- Dead end (T2-01, 05-T2-01): listing part- among the verdict markers in the check's marks helper — a full green writes part-<reduced> even with no map (treekey still prints blob lines), so the no-fast-command case failed on a marker the full form always wrote → entries.jsonl:7
+- Question (T2-04): A slow-tier red at verify still stops the milestone for Michael (verify_red, needs Michael), now with the cause named (default). Should it instead go back to a coding session (a fix feature) automatically? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/lib/lane.sh:132, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/journal/decisions/2026-11-03-fast-gate.md → entries.jsonl:10
+- Question (T2-04): With a fast tier, finish's final `green` (lib/driver.sh:320) runs the full suite uncached (~800 s here) when a run ends mid-milestone (limit, stop, deadline), since the last slot tree has only fast-<key>. Keep it full (default, the spec's), or let finish accept a fast-green there? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/lib/driver.sh:320 → entries.jsonl:10
+- Question (T2-03): Default taken: the full and fast lengths are rendered under *This session* (coding prompt), with run.md's fast Suite line saying `its last full and fast runs are under *This session*`, instead of the spec's `last full run …; last fast run …` inside run.md, to keep the shared prompt prefix (decisions/2026-10-30-suite-length-in-prompt). Keep it? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/prompts/parts/run.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-1/journal/decisions/2026-11-03-fast-gate.md → entries.jsonl:9
+- 2026-11-04 05:56 · T2-04 · passes: Opus review of T2: 0 Critical, 1 Important, 9 Minor. Fixed: the verify's slow-tier red no longer blames main (note, need, verify_red card variant own); fast flakes with no names read 'the fast tier'; run.md's Suite line; a check pins the verify's full init. Simplified: one mark() marker writer in check.sh, run_init fresh's rm. Docs: architecture §3/§4/§7/§10, README, CLAUDE.md.; tests 1220 → 1224; files lib/lane.sh, lib/needs.mjs, lib/check.sh, lib/record.sh, lib/summary.mjs, … → entries.jsonl:10
+- 2026-11-04 05:25 · T2-03 · passes: The gate is visible: suite_fast on the coding row, suiteRuns {sessions, full, fast, runs, full_per_session, fast_per_session} and the Suite runs row `<f> full and <k> fast per coding session (…)`; run.md names both tiers' commands; This session adds `Suite: last fast run <s> s`; coding.md's two-tier rule `run the fast tier once, last`; render.mjs {{?X}}/{{!X}} line markers.; tests 1214 → 1220; files lib/lane.sh, lib/metrics.mjs, lib/summary.mjs, lib/prompt.sh, lib/render.mjs, … → entries.jsonl:9
+- 2026-11-04 04:59 · T2-02 · passes: The driver gates passes on the fast tier: run_init fast (check.sh --fast) before each coding session, green_fast after it with the note `<id> un-passed: fast tier red after the session`; run_init fresh also drops fast-<key>; tests-start/tests-end read green-<key> only. 87-fast-gate-run.sh (slow, 34 s) proves it with three stub runs.; tests 1205 → 1214; files lib/record.sh, lib/lane.sh, lib/summary.mjs, tests/checks/87-fast-gate-run.sh, tests/stub-claude.sh, … → entries.jsonl:8
+- 2026-11-04 04:33 · T2-01 · passes: lib/check.sh --fast: with HARNESS_CHECK_FAST_CMD empty it is the bare form; set, a green-/red-<key> answers first, then fast-<key>, else the fast tier runs (same scope, cap, timeout, rerun guard) to check-fast.out; green writes fast-<key> only, red no marker; flake rows get tier fast. CHECK_FAST_CMD in config/prompt_env/template, this repo sets --tier fast. decisions/2026-11-03-fast-gate.; tests 1186 → 1205; files lib/check.sh, lib/config.sh, lib/prompt.sh, templates/project/config.sh, .harness/config.sh, … → entries.jsonl:7
+
 ## Discoveries for this feature
 
+- Discovery (T2-04, affects run): verify() in lib/lane.sh now sets own=1 when sync_main merged nothing (HEAD unchanged, rc 0); a red then notes '(main had nothing new: a slow-tier red the fast gate let through)' and opens verify_red with variant own → entries.jsonl:10
+- Discovery (T2-04, affects run): check.sh has mark <green|fast|red|part>-<key> <line>…: the one temp-file-and-mv marker writer → entries.jsonl:10
 - Discovery (T2-03, affects T2-04): Both lengths sit under *This session*, not in run.md's Suite line as the spec wrote it: a wall changes per render and above This session splits the shared prefix (79's rule; recorded *default* in decisions/2026-11-03-fast-gate) → entries.jsonl:9
 - Discovery (T2-03, affects T2-04, run): render.mjs now has line markers: a line opening {{?X}} stays only when HARNESS_X is non-empty, {{!X}} only when empty; parts/run.md holds both Suite lines that way → entries.jsonl:9
 - Discovery (T2-03, affects T2-04): tests/stub-claude.sh STUB_RUN_FAST=<id>: the first coding session runs `$HARNESS_CHECK --fast` twice (one run, one cached); 87's fg run uses it on A → entries.jsonl:9
 - Discovery (T2-03, affects T2-04): tests/fixtures/summary-report.json/.md now carry a suite_runs (the spec's 0.2/1.6 example); summary.test's Conflicts-after-Flakes order assertion sets suite_runs undefined → entries.jsonl:9
 - Discovery (T2-02, affects T2-03, T2-04): With a fast command set, tests-end moves only on a full green (the verify's run_init fresh): between a milestone's sessions status/report show no new tests-end, by the spec's full-markers-only rule → entries.jsonl:8
 - Discovery (T2-02, affects T2-04, run): The un-pass note is now `fast tier red after the session` for every project (no fast command: the whole suite is the fast tier); lib/summary.mjs redUnpass matches it and the older `suite red` note; checks 08/13/14/15/74/80 grep the new text → entries.jsonl:8
+- Discovery (T2-02, affects T2-03): 87-fast-gate-run.sh is slow (34.2 s at TEST_JOBS=4); a coding session's first init on an unchanged tree answers from the baseline's green-<key> (`check: green (cached`), so only later sessions' init.out show `fast green` → entries.jsonl:8
 - Discovery (T2-02, affects T2-03, T2-04): tests/stub-claude.sh: STUB_SLOW_RED, STUB_FAST_RED, a `session <id> <n>` line in the run scratch's suite-args.log when it exists, and STUB_PLANT_MARKERS now plants fast-<key> too → entries.jsonl:8
+- Discovery (T2-01, affects T2-02): check.sh --fast exists: T2-02 calls "$CHECK" --fast for run_init fast and green_fast; a fast red leaves no marker, so the post-session gate reruns the fast tier (about 150 s) when the pre-session one was red → entries.jsonl:7
+- Discovery (T2-01, affects T2-02): run_init fresh (lib/record.sh ~584) still removes only green-, red- and part-<key>: T2-02 step 2 adds fast-<key> → entries.jsonl:7
 - Discovery (T2-01, affects T2-03, T2-04): flakes_note (lib/record.sh ~197) and lib/summary.mjs ~116 print 'whole suite' for a flake with no names; a fast flake row (tier fast, names []) should read 'the fast tier' there → entries.jsonl:7
+- Discovery (T2-01, affects T2-03): check-runs.log has a new row kind `fast`; lib/lane.sh's suite-ran note already counts it (it counts every row but cached), suite_full counts full rows only → entries.jsonl:7
 - Discovery (T2-01, affects T2-02, T2-04): check.sh --fast <args> is a usage error (exit 2) whether or not a fast command is set → entries.jsonl:7
 - Discovery (T1-04, affects T2-01, T2-02, run): tests/run.sh's full run is red when a fast file prints a name absent from check-names-fast.txt, or a fast-fixture name comes only from a slow file: moving a file's tier means moving its names in the same commit → entries.jsonl:5
+- Discovery (T1-04, affects T2-01, T2-02): run.sh now rejects any --option after a name (usage, exit 2) and a second --tier; T2's check.sh --fast must pass --tier fast before names → entries.jsonl:5
+- Discovery (T1-03, affects T1-04, T2-02): Fast tier files over 30 s in both runs: 39-memlint-m4 (41.5/41.2 s, spec exception) and 84-node-memo (31.5/31.5 s): 84 moves to slow at the next re-timing; fast has 537 checks, below the spec's 560-620 estimate → entries.jsonl:4
+- Discovery (T1-02, affects T1-03, T1-04, T2-01): 33-suite-runner is slow now (51.7 s solo, 25.5 in lc-4-solo.out): its TEST_FILE_TIMEOUT fixtures (rt, sa-se, sf) each wait out run.sh's hardcoded 10 s KILL grace; the tier lint runs only in slow and full runs → entries.jsonl:3
+- Discovery (T1-02, affects T1-03, T2-02): The fast tier is now 54 files, 536 names + its conformance line (537 checks), about 151 s solo at 4 jobs; the slow tier 34 files, 645 checks, 684.6 s → entries.jsonl:3
+- Discovery (T1-02, affects T2-01): A --tier names subset checks new and doubled against its tier's list (--tier fast <f>: the fast fixture), so check.sh --fast's rerun (T2-01: --tier fast <files>) is checked against the fast fixture → entries.jsonl:3
+- Discovery (T1-01, affects T1-02, T1-04, T2-01, T2-02): The refusal looks at every *.sh in the directory, not only the selected files: a subset or --tier run is refused too. 33-suite-runner.sh's tiny fixture files use `tiny <file> <line>…` (TIER=slow for slow), which writes the shebang and header. → entries.jsonl:2
 - Discovery (T1-01, affects run): CLAUDE.md's ## Gotchas is at its 15-line cap: 39-memlint-m4 fails a 16th line; a session adding one must replace one. → entries.jsonl:2
 - Discovery (init, affects run): tests/checks/ holds four files findings-and-research/2026-10-30-suite-load-curve/lc-4-solo.out never timed: 00-unit-tier (fast by the spec's rule), 83-spec-must-exist, 84-node-memo, 85-suite-runs (T1-01 times each once and places it by the 30 s line); that output's 01-scheduler-pure and 02-notifications-pure rows now live inside 00-unit-tier (phase 1). → entries.jsonl:1
 - Discovery (init, affects run): The stub project's suite is `CHECK_CMD="test ! -f BROKEN"` (tests/lib.sh suite_setup): T2-02's stub run writes its own argument-logging suite script and CHECK_FAST_CMD into $T/proj/.harness/config.sh, as 34-check-key.sh writes its config. TEST_CHECKS directories exist only in 33-suite-runner.sh and 75-suite-tools.sh: those tiny files need tier headers too. → entries.jsonl:1
 - Discovery (init, affects run): 86 and 87 are the next free check-file numbers. The spec's one NN-fast-gate.sh is planned as two files: 86-fast-gate.sh (fast tier: the check.sh --fast cases with 73-check-rerun's stub suite) and 87-fast-gate-run.sh (the stub harness run; its tier by the 30 s rule, likely slow), so the check.sh cases stay in the fast tier. → entries.jsonl:1
 - Discovery (init, affects run): This run's init.out (/tmp/harness/agent-harness/agent-harness-2026-11-04/init.out) has every check file's time from the harness's full 4-job run: a first look at the tier line, not a solo time; the solo times are lc-4-solo.out's and T1-02's two re-timings. → entries.jsonl:1
 - Discovery (init, affects run): harness status at init: RUNNING 1 (this run), QUEUED 0; T1-02's re-timing and T1-03's six runs re-check it first (the brief: no other suite alive). → entries.jsonl:1
-
-## What it builds on
-
-- 2026-11-04 05:25 · T2-03 · passes: The gate is visible: suite_fast on the coding row, suiteRuns {sessions, full, fast, runs, full_per_session, fast_per_session} and the Suite runs row `<f> full and <k> fast per coding session (…)`; run.md names both tiers' commands; This session adds `Suite: last fast run <s> s`; coding.md's two-tier rule `run the fast tier once, last`; render.mjs {{?X}}/{{!X}} line markers.; tests 1214 → 1220; files lib/lane.sh, lib/metrics.mjs, lib/summary.mjs, lib/prompt.sh, lib/render.mjs, … → entries.jsonl:9
-
-## Lately in the run
-
-- 2026-11-04 04:59 · T2-02 · passes: The driver gates passes on the fast tier: run_init fast (check.sh --fast) before each coding session, green_fast after it with the note `<id> un-passed: fast tier red after the session`; run_init fresh also drops fast-<key>; tests-start/tests-end read green-<key> only. 87-fast-gate-run.sh (slow, 34 s) proves it with three stub runs.; tests 1205 → 1214; files lib/record.sh, lib/lane.sh, lib/summary.mjs, tests/checks/87-fast-gate-run.sh, tests/stub-claude.sh, … → entries.jsonl:8
-- 2026-11-04 04:33 · T2-01 · passes: lib/check.sh --fast: with HARNESS_CHECK_FAST_CMD empty it is the bare form; set, a green-/red-<key> answers first, then fast-<key>, else the fast tier runs (same scope, cap, timeout, rerun guard) to check-fast.out; green writes fast-<key> only, red no marker; flake rows get tier fast. CHECK_FAST_CMD in config/prompt_env/template, this repo sets --tier fast. decisions/2026-11-03-fast-gate.; tests 1186 → 1205; files lib/check.sh, lib/config.sh, lib/prompt.sh, templates/project/config.sh, .harness/config.sh, … → entries.jsonl:7
 
 ## Current rules
 
@@ -43,5 +60,20 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - A mapped path's change runs only its readers: `CHECK_KEY_MAP`, the `part-<key>` sidecar, the partial run, the lint → journal/decisions/2026-10-30-partial-key.md
 - The coordinator opens no lane while a lane that exited is not reaped yet → journal/decisions/2026-10-30-opens-wait-for-reap.md
 - The lane guard reverts against the lane's merge-base with main, in the index only → journal/decisions/2026-10-30-lane-guard-base.md
+- Timing checks bound CPU time; a stopped file's missing names don't void `HARNESS_FAILED=` → journal/decisions/2026-10-30-cpu-time-bound-and-stopped-files.md
+- The suite waits on a condition or a barrier, never on the clock; a flake is reproduced with --repeat and fixed at its cause → journal/decisions/2026-10-29-tests-wait-not-sleep.md
+- The rerun guard: a red full suite is rerun once; a flake is green, named and counted, never quarantined → journal/decisions/2026-10-29-rerun-guard.md
+- Questions wait in `harness needs` until answered: one item per question, moved forward, no push → journal/decisions/2026-10-29-questions-wait.md
+- Lanes leftovers: atomic list writes, a record-only main, the finish order, two lint rules, two checks, the suite-ran note → journal/decisions/2026-10-29-lanes-leftovers.md
+- The coordinator ends a run only when the lane count its opens used saw no lane → journal/decisions/2026-10-29-lane-count-end-check.md
+- Entries that survive: the session checks its own, a long summary is cut and kept, one resume for a missing one → journal/decisions/2026-10-29-entries-survive.md
+- A parked run's continue advice names another live run of its project and gives Michael the choice → journal/decisions/2026-10-29-continue-advice-busy-project.md
+- Merge conflicts resolved without Michael: a sorted merge for lists first, then a resolve session, verified → journal/decisions/2026-10-29-conflict-resolution.md
+- This repo's suite gets a 25-minute check timeout; TEST_JOBS stays at its default → journal/decisions/2026-10-29-check-timeout-25m.md
+- `harness show`: where a run's work is, from local refs, one change counted once → journal/decisions/2026-10-28-show.md
+- A plain start or continue queues behind a live run of its project; overlaps are named, never held → journal/decisions/2026-10-27-same-project-starts.md
+- The review gate: a milestone review's model by its measured diff, one Opus round after a Sonnet finding → journal/decisions/2026-10-27-review-gate.md
+- A finished run keeps its record after gc: report reads worktree → state → ledger → journal/decisions/2026-10-27-record-after-gc.md
+- Read views: one formatter, `lib/view.mjs`, that every read view renders through → journal/decisions/2026-10-27-read-views.md
 
-_76 older rules: journal/decisions._
+_61 older rules: journal/decisions._
