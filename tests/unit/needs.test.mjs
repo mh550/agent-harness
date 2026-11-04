@@ -163,3 +163,11 @@ test("overlap: the sweep rule: other run gone, other run merged, this run merged
   assert.equal(w({ overlaps: { R: "open" }, self: "open" }), "kept");
   assert.equal(w({ ended: true }), "kept");
 });
+
+// ---- 87-fast-gate-run.sh: the verify's red on the lane's own tree (main had nothing new) ----
+test("needs verify_red own: a slow-tier red the fast gate let through, never main's disagreement", () => {
+  const own = N.card("verify_red", { ...fixture("verify_red"), variant: "own" }), red = N.card("verify_red", fixture("verify_red"));
+  assert.equal(own.headline, "P2 not verified: suite red on the verified tree");
+  assert.match(own.why, /fast tier/); assert.doesNotMatch(own.why, /main's newer commits/);
+  assert.equal(red.headline, "P2 not verified: suite red on the merged tree"); assert.match(red.why, /main's newer commits and P2 disagree/);
+});

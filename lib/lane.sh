@@ -53,7 +53,7 @@ export HARNESS_LANE=$M   # check.sh names it in a flakes.jsonl row, its sessions
 # tree: no attempt granted on a failure, the tag moved on a hold, no merge here (the caller's loop merges). The session
 # reads a copy of the record; what it un-passes in it is applied to the record's list afterwards.
 verify() {
-  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS id nref="" rc
+  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS id nref="" rc own=0
   local models=("$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL") last=$VERIFY_ESCALATE_MODEL
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
   local mode=${2:-} what="verify round $rounds of $maxr"
@@ -61,7 +61,8 @@ verify() {
   [[ $mode == rebase ]] && { maxr=$rounds what="re-base verify round $(cat "$STATE/rebase-rounds-$m") of $MAX_REBASE_ROUNDS"; }
   rm -f "$STATE/nomerge-$m"   # a conflict an earlier verify found: this one tries main again
   if [[ $mode != rebase ]]; then   # a re-base round verifies the tree rebase just made; a main that moved since is the next re-base's
-    sync_main; rc=$?
+    local pre; pre=$(git rev-parse HEAD); sync_main; rc=$?
+    (( rc == 0 )) && [[ $(git rev-parse HEAD) == "$pre" ]] && own=1   # main had nothing new: a red verified tree is the milestone's own
     # refused (a resolve session's limit): no round counted, the lane loop waits for the window, then this verify again
     (( rc == 2 )) && { [[ -n $RESOLVE_END ]] && lane_exit 13 "$RESOLVE_END"; return 2; }
     (( rc == 1 )) && touch "$STATE/nomerge-$m"
@@ -129,8 +130,11 @@ verify() {
       return 0 ;;
     thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $last; not verified (needs Michael)"
       need="verify evidence too thin" ;;
-    red) touch "$STATE/needs-$m"; note "verify $m: the suite is red on the verified tree (main merged in); not verified (needs Michael)"
-      need="suite red after merging main" ;;
+    red) touch "$STATE/needs-$m"
+      # with main merged in, main and the milestone disagree; without, a slow-tier red the fast gate let through (fast-gate)
+      if (( own )); then note "verify $m: the suite is red on the verified tree (main had nothing new: a slow-tier red the fast gate let through); not verified (needs Michael)"
+        need="suite red on the verified tree"
+      else note "verify $m: the suite is red on the verified tree (main merged in); not verified (needs Michael)"; need="suite red after merging main"; fi ;;
     fail)
       local fids; Fv fids ids "$LIST" "$m"
       for id in $fids; do
@@ -152,7 +156,7 @@ verify() {
   fi
   printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
   # its record, committed with the verdict: thin, red, or the re-check's failed ids
-  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || echo "$mode")")   # verify_recheck's rebase words are rebase_fail's
+  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || { (( own )) && [[ $result == red ]] && echo own; } || echo "$mode")")   # verify_recheck's rebase words are rebase_fail's
   rec_commit "HARNESS: verify $m"; sync_record
   [[ -n $need ]] && needs_you "$m" "$need" progress.md "$nref"   # after the push: the click shows the verify entry
   return 1
@@ -322,7 +326,7 @@ while :; do
   n=$(rec_count "$STATE/sessions" 1)   # the cap once more, atomically: another lane's session may have taken the last
   (( n > MAX_SESSIONS )) && { rec_count "$STATE/sessions" -1 > /dev/null; lane_exit 13 "session cap ($MAX_SESSIONS)"; }
   [[ $esc ]] || record F bump "$ATT" "$id"
-  run_init; pack_and_copy "$id"   # the copy, the snapshot and the INBOX the session is judged against
+  run_init fast; pack_and_copy "$id"   # the copy, the snapshot and the INBOX the session is judged against; the fast tier
   if [[ $esc ]]; then sclock="Review round 2 of 2 (escalated: $esc)"; else sclock="attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS"; fi
   # the counts the gate reads (the findings check below and the summary's found_nothing), asked in one fixed form
   [[ $kind == review ]] && rdiff+=$'\n'"Review findings: give your entry's summary this review's findings as \`<n> Critical, <n> Important, <n> Minor\` (the driver reads the counts)."
@@ -332,9 +336,10 @@ while :; do
   sstart=$(git rev-parse HEAD)
   t0=$(date +%s.%6N); session coding "$mdl" "$slog" "$id"; t1=$(date +%s.%6N)   # the session's own suite calls are check-runs.log's rows in between
   commit_all "WIP: $id — uncommitted at session end (harness)"; sync_lane   # the copy is excluded: code only
-  # the full ones apart for metrics.jsonl's suite_runs and suite_full: no log, no third field, so both null
-  # (decisions/2026-10-31-one-full-run)
-  read -r sn ss sf < <(awk -F'\t' -v a="$t0" -v b="$t1" '$1 > a && $1 < b && $2 != "cached" { n++; s += $3; f += ($2 == "full") } END { print n + 0, s + 0, f + 0 }' "$SCRATCH/check-runs.log" 2> /dev/null || echo "0 0")
+  # the full and fast ones apart for metrics.jsonl's suite_runs, suite_full and suite_fast: no log, no third field, so all
+  # null (decisions/2026-10-31-one-full-run, decisions/2026-11-03-fast-gate)
+  read -r sn ss sf sk < <(awk -F'\t' -v a="$t0" -v b="$t1" '$1 > a && $1 < b && $2 != "cached" { n++; s += $3; f += ($2 == "full"); k += ($2 == "fast") }
+    END { print n + 0, s + 0, f + 0, k + 0 }' "$SCRATCH/check-runs.log" 2> /dev/null || echo "0 0")
   nsuite=${sf:+$sn}
   note "$id: suite ran ${sn}x ($ss s) in the session"
   journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
@@ -350,7 +355,7 @@ while :; do
     unmaterialize
     [[ $esc ]] || record F unbump "$ATT" "$id"   # an escalation round runs again after the wait
     rec_count "$STATE/sessions" -1 > /dev/null; limits=$(rec_count "$STATE/limits" 1)
-    record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" false "$S_WALL" "$S_EXIT" true "" "$S_PEAK" "$LANE" "$nsuite" "$sf"
+    record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" false "$S_WALL" "$S_EXIT" true "" "$S_PEAK" "$LANE" "$nsuite" "$sf" "$sk"
     if (( limits >= MAX_LIMIT_HITS )); then
       note "$limits sessions in a row refused ($reason)"
       lane_exit 13 "usage limit ($limits sessions refused in a row)"
@@ -370,9 +375,10 @@ while :; do
     repairs=$(( repairs + 1 )); note "restored the feature list after $id: $out"
     (( repairs >= MAX_REPAIRS )) && { note "$repairs sessions in a row edited the feature list; stopping for Michael"; lane_exit 12 "feature-list edits"; }
   fi
-  if F passes "$SLIST" "$id" && ! green; then F unpass "$SLIST" "$id"; note "$id un-passed: suite red after the session"; fi
+  # passes stands on the fast tier; the full suite runs at the verify (decisions/2026-11-03-fast-gate)
+  if F passes "$SLIST" "$id" && ! green_fast; then F unpass "$SLIST" "$id"; note "$id un-passed: fast tier red after the session"; fi
   flakes_note   # the rows of that suite and of the session's own calls
-  tests_end   # the slot's tree, after the un-pass above ran its suite
+  tests_end   # the slot's tree: a full green-<key> only, so after a fast-gated session the last full count stays
   passed=$(F passes "$SLIST" "$id" && echo true || echo false)
   unmaterialize
   why=""; [[ $passed == false ]] && why=$(MET final "$slog" | sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' | head -1)
@@ -392,7 +398,7 @@ while :; do
     else note "review $id: no \"<n> Critical, <n> Important\" in its summary or final message; not escalated"; fi
   fi
   if [[ $passed == true ]]; then record F pass "$LIST" "$id"; else record F unpass "$LIST" "$id"; fi
-  record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$kind" "$S_PEAK" "$LANE" "$nsuite" "$sf"
+  record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$kind" "$S_PEAK" "$LANE" "$nsuite" "$sf" "$sk"
   note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")$( [[ -f $STATE/tests-end ]] && echo " · tests $(cat "$STATE/tests-end")")"
   if [[ -n $why ]]; then   # waiting on Michael is not the feature's fault (an escalation round took none)
     [[ $esc ]] || record F unbump "$ATT" "$id"; record F park "$PARKED" "$id" "$(answers_hash)" "$why"

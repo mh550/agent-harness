@@ -127,6 +127,26 @@ eval.mjs: per verified feature counts every repeat's cost (E2 review)
 eval.mjs: probe questions derived from the list, the session rows and the commits; answers scored exact, contains or miss
 eval.mjs: validateTask accepts a task and names the field of each bad one
 eval: every task.json validates and a bad one is rejected
+fast gate: --fast runs the fast command (--tier fast), writes fast-<key> (the fast count, wall) and no green-<key>; row fast
+fast gate: --fast with further arguments is a usage error (exit 2), nothing run
+fast gate: CHECK_FAST_CMD empty by default, exported as HARNESS_CHECK_FAST_CMD; the template has it commented; this repo sets the fast tier
+fast gate: a bare call on a fast-green tree runs the suite bare (a fast-green is never read as a green)
+fast gate: a fast red twice reruns a once and prints the fast RED line on check-fast.out and its tail; exit 1
+fast gate: a fast red with no HARNESS_FAILED= line reruns the fast tier: flaky: the fast tier, or red again on a rerun of the fast tier
+fast gate: a fast red writes no fast-, green- or red- marker
+fast gate: a full run's flake row has no tier key
+fast gate: a green-<key> answers --fast with the full cached line, no run, no fast-<key>
+fast gate: a hanging fast run times out: the fast RED timeout line, no rerun, no marker
+fast gate: a red-<key> answers --fast with the cached RED and exit 1, no run
+fast gate: check.sh's usage header documents --fast, fast-<key>, check-fast.out and the fast row
+fast gate: flakes_note names a fast flake with no names the fast tier, a full one the whole suite
+fast gate: red then green is the fast flake line, fast-<key> with the first run total, one flakes.jsonl row with tier fast
+fast gate: the fast run's output is check-fast.out; check.out and check-<key>.out are not written
+fast gate: the next --fast call is the cached fast line, row cached, no run
+fast gate: the subset form is unchanged with a fast command set: its args, row subset, no marker
+fast gate: with a part- sidecar and a mapped-only diff, --fast runs the fast tier, not the partial subset; row fast
+fast gate: with no fast command, --fast runs the suite bare, writes green-<key> (count, wall) and prints the full green line
+fast gate: with no fast command, the next --fast call is the full form's cached line; rows full then cached
 features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
 features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
 gc units: --dry-run with units of another project's runs (live and ended) prints no ? line and no line naming them
@@ -231,7 +251,7 @@ merge-sorted: two lanes adding names to a sorted list both merge, with no confli
 merge-sorted: with the attribute and the worktree driver, two branches adding adjacent names merge with exit 0, no marker, the union
 mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits
 metrics.mjs: append writes mem_peak_mb as a number or null
-metrics.mjs: metricsRow writes suite_runs and suite_full as numbers, null when empty (no check-runs.log) or absent
+metrics.mjs: metricsRow writes suite_runs, suite_full and suite_fast as numbers, null when empty (no check-runs.log) or absent
 metrics.mjs: orientation stops at the first Write
 metrics.mjs: tokens, cache rate and context peak from the real fixture
 metrics: a resume that ended without a result line (a timeout, a kill) costs 0, never minus the session's
@@ -280,6 +300,7 @@ needs review: harness needs done rewrites the record's needs.md (the notificatio
 needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)
 needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
+needs verify_red own: a slow-tier red the fast gate let through, never main's disagreement
 needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
 needs.mjs moveForward: two earlier items of the key become one, seen summed, asked_in every run's, both resolved as asked again in the new run
 needs.mjs synthesize: a driver_crash only for a dead driver without ended; ended, a live driver or no driver.pid make none
@@ -332,6 +353,7 @@ record after gc: with both gone, a no record line naming the state dir and the l
 record after gc: with the state copy gone, from the ledger copy, after which the state copy exists again
 refused verify: deferred, then verified, then merged
 render.mjs: --raw applies to the next file only
+render.mjs: a line opening {{?X}} stays (the marker cut) only when HARNESS_X is set and not empty, one opening {{!X}} only when not
 render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
 report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
 resume reloads config merged from main
@@ -431,10 +453,10 @@ suite cache: a session that adds only docs/plans/x.md leaves the next session's 
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
 suite runs: a run of one such session: full_per_session 2, harness report --md's Suite runs row after Flakes, the TTY card carries the same value
 suite runs: a run whose coding rows carry no count (rebuilt from run.log) reports 0
-suite runs: a session with no call has suite_runs 0 and suite_full 0
-suite runs: a session with two full calls and one subset has suite_runs 3 and suite_full 2 on its coding row, and the suite ran 3x note
-suite runs: the rendered retro prompt carries the run's full runs per coding session
-suite runs: the run's summary.json suite_runs is { sessions, full, runs, full_per_session } over its coding rows
+suite runs: a session with no call has suite_runs 0, suite_full 0 and suite_fast 0
+suite runs: a session with two full calls and one subset has suite_runs 3, suite_full 2 and suite_fast 0 on its coding row, and the suite ran 3x note
+suite runs: the rendered retro prompt carries the run's full and fast runs per coding session
+suite runs: the run's summary.json suite_runs is { sessions, full, fast, runs, full_per_session, fast_per_session } over its coding rows
 suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1
 suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0
 suite tools: STUB_BARRIER holds that feature's first coding session until stub_go
@@ -446,9 +468,11 @@ suite tools: wait_for returns as soon as its command succeeds (a background touc
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes
 summary.mjs: flakers names a check in the flakes of two or more of the five newest summaries (one without ended_at oldest) as name ×runs, (none) for none
+summary.mjs: flakes counts a fast flake with no names as the fast tier, a full one as whole suite
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
-summary.mjs: suiteRuns counts the coding rows that carry suite_full; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
 sync: a local commit outside ledger/ is left alone, nothing pushed
 sync: a modified tracked file: skipped
 sync: another branch checked out: skipped; LIVE_SYNC=0: off

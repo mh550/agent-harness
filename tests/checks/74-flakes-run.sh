@@ -22,7 +22,7 @@ main0=$(git -C "$T/origin.git" rev-parse main)
 STUB_NO_TAMPER=1 STUB_LENIENT=1 "$H" start "$T/proj" inv --spec SPEC.md --foreground > "$T/inv.out" 2>&1
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 check "flakes run: a red every time still un-passes C with today's note after a rerun (the invariant)" \
-  'hlog inv | grep -F "C un-passed: suite red after the session" > /dev/null && ! hlog inv | grep -F "flaky:" > /dev/null \
+  'hlog inv | grep -F "C un-passed: fast tier red after the session" > /dev/null && ! hlog inv | grep -F "flaky:" > /dev/null \
   && grep -E "red again on a rerun of the whole suite\) — last lines of $T/scratch/proj/inv/lanes/M2/check-[0-9a-f]+\.out \(this tree.s first run\):$" "$HARNESS_STATE/proj/inv/logs/04-C.prompt.md" > /dev/null \
   && grep "^done" "$HARNESS_STATE/proj/inv/ended" > /dev/null \
   && grep -F "C attempt 2" "$T/scratch/proj/inv/sessions.log" > /dev/null'
@@ -36,7 +36,7 @@ check_cmd "flaky suite" "if [ \"\$(git log -1 --format=%s)\" = \"A: stub work (1
 STUB_NO_TAMPER=1 STUB_LENIENT=1 STUB_NO_RED=1 "$H" start "$T/proj" fl --spec SPEC.md --foreground > "$T/fl.out" 2>&1
 check "flakes run: a suite red once after A's session is noted flaky: whole suite with its load, and A stays passed" \
   '[[ -d $T/flaked && $(hlog fl | grep -cE "flaky: whole suite \(red, then green on a rerun; load [0-9.]+\)$") == 1 ]] \
-  && ! hlog fl | grep -F "A un-passed: suite red" > /dev/null && grep "^done" "$HARNESS_STATE/proj/fl/ended" > /dev/null'
+  && ! hlog fl | grep -F "A un-passed:" > /dev/null && grep "^done" "$HARNESS_STATE/proj/fl/ended" > /dev/null'
 check "flakes run: flakes-noted holds flakes.jsonl's size after the note" \
   'S=$HARNESS_STATE/proj/fl; [[ $(grep -c "" "$S/green/flakes.jsonl") == 1 && $(cat "$S/flakes-noted") == "$(wc -c < "$S/green/flakes.jsonl")" ]]'
 rd() { echo "$T/wt/proj/$1/.harness/runs/$1"; }

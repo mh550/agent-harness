@@ -45,6 +45,10 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   as the suite's lines under `bash tests/run.sh 00-unit`; `--test-name-pattern "<regex>"` picks tests.
   `bash tests/run.sh --tier fast` runs the fast tier, and a new check file declares its tier on line 2 by
   journal/decisions/2026-11-03-suite-tiers.md's 30 s rule.
+- Two commands, two moments: a coding session runs the fast tier (`bash tests/run.sh --tier fast`, the harness's
+  `check.sh --fast`) while iterating and once last, and its `passes` stands on that green; the full suite
+  (`bash tests/run.sh`) runs at verify. A change to `lib/driver.sh`, `lib/lane.sh`, `lib/record.sh`, `bin/harness` or a
+  slow-tier check file also runs that file (`bash tests/run.sh <file>`) before the session ends.
 - `bash -n` on every shell file you touch; `node --check` on every `.mjs`.
 
 ## Where decisions and docs live

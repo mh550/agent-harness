@@ -4,6 +4,7 @@
 |---|---|
 | Passing | **8/17** · verified 4 (P0) · merged 4 (P0) |
 | Tests | 419 → 539 (baseline at run start → end) |
+| Suite runs | 0.2 full and 1.6 fast per coding session (2 full, 16 fast in 10; 20 runs in all) |
 | Spend | **$70.11** total · **$8.76** per passing feature |
 | Spend by role | init $4.71 · plan $10.58 · build $50.62 · review $3.49 · verify $0.24 · retro $0.47 · manager (the bash driver) $0.00 |
 | Tokens | 117.1M in (cache hit 0.97) · context peak 314.1k · orientation 1.2M tokens / 16 turns (median) · per verified feature 29.6M tokens, $17.53 |

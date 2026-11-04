@@ -181,6 +181,7 @@ services_down() {
   else note "services stopped ($1)"; fi
 }
 green() { "$CHECK" > /dev/null 2>&1; }
+green_fast() { "$CHECK" --fast > /dev/null 2>&1; }   # the gate `passes` stands on (decisions/2026-11-03-fast-gate)
 # The flakes check.sh's reruns turned green (green/flakes.jsonl, every lane's and session's) get one note each, once:
 # $STATE/flakes-noted is the byte offset noted up to. Whole lines only (a lane may be mid-append); a row that isn't a
 # JSON object is passed over. Under its own lock, so two lanes never note a row twice (decisions/2026-10-29-rerun-guard).
@@ -195,7 +196,7 @@ _flakes_note() {
   [[ $chunk == *$'\n'* ]] || return 0
   chunk=${chunk%$'\n'*}$'\n'
   while IFS= read -r msg; do [[ -n $msg ]] && note "$msg"; done <<< "$(jq -Rr 'try (fromjson | objects | "flaky: \(if (.names | length) > 0
-    then .names | join(" ") else "whole suite" end) (red, then green on a rerun; load \((.load // "") | split(" ")[0] // "?"))") catch empty' <<< "${chunk%$'\n'}")"
+    then .names | join(" ") elif .tier == "fast" then "the fast tier" else "whole suite" end) (red, then green on a rerun; load \((.load // "") | split(" ")[0] // "?"))") catch empty' <<< "${chunk%$'\n'}")"
   echo $(( off + $(printf %s "$chunk" | wc -c) )) > "$STATE/flakes-noted"
 }
 
@@ -565,7 +566,8 @@ context_() {
 # SVC_MEMORY_MAX. timeout bounds the init, not the servers it left once it returned (a timeout takes its process group
 # too); stdin is /dev/null, so no tool waits on the tmux pane. The last init's scope is stopped first: systemd refuses
 # a unit name still loaded (tests/fixtures/systemd-run-unit-exists.txt), and its services would live on beside the new.
-run_init() {   # [fresh: clear the suite cache's marker for the tree as the init left it, so the suite runs in full]
+# fast: the suite's fast tier (check.sh --fast, a coding session's init); bare and fresh: the full suite.
+run_init() {   # [fresh: clear the suite cache's markers for the tree as the init left it, so the suite runs in full | fast]
   local unit=$SVC_UNIT
   scope_stop "$unit"
   SVC_UP=1 SVC_INIT=1 SVC_DIR=$PWD; [[ -n $LDIR ]] && echo "$unit" > "$LDIR/svc-up"   # before the start: a TERM during the init must still stop what it began (services_down, L2-03)
@@ -581,13 +583,14 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
   # a failed one runs the suite, and a red under a failed init isn't kept (init-failed: this lane's, or the driver's)
   local flag=${LDIR:-$STATE}/init-failed prev=0; [[ -f $flag ]] && prev=1
   if (( rc )); then touch "$flag"; else rm -f "$flag"; fi
-  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key" "$STATE/green/red-$key" "$STATE/green/part-$red"   # a cached red would answer too
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/"{green,red,fast}-"$key" "$STATE/green/part-$red"   # a cached red or fast-green would answer too
   (( rc || prev )) && rm -f "$STATE/green/red-$key"
-  local crc=0; "$CHECK" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }
+  local crc=0 tier=(); [[ ${1:-} == fast ]] && tier=(--fast)
+  "$CHECK" "${tier[@]}" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }
   (( rc )) && [[ -f $STATE/green/red-$key ]] && rm -f "$STATE/green/red-$key" && note "suite red under a failed init: not cached (the next init runs it)"
   # a red suite pins neither the count nor its source: the next green one does. Of a green tree, its marker first (after
   # a rerun the first run's total), then its own output, check-<key>.out: check.out may be an older tree's, a red one's
-  # when this green was cached
+  # when this green was cached. Full markers only: a fast-green tree (fast-<key>) leaves tests-start for a full green
   local n="" out=$SCRATCH/check-$key.out
   if (( crc == 0 )) && [[ ! -f $STATE/tests-start ]]; then
     n=$(green_count "$key")
@@ -610,6 +613,7 @@ run_init() {   # [fresh: clear the suite cache's marker for the tree as the init
 
 # <key> → a green tree's count: its marker's line 1 (line 2 is the wall), else (an older, empty marker) its output's,
 # check-<key>.out; nothing for a tree with no green marker. check.sh's cached line reads the marker the same way.
+# green-<key> alone, never fast-<key>: every count in the record is the whole suite's.
 green_count() {
   local n="" f=$STATE/green/green-$1
   [[ -f $f ]] || return 0

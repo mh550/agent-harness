@@ -48,6 +48,20 @@ check "suite length: the tree's own green wins over a newer one; any green's wal
 check "suite length: with no wall line anywhere, the Suite line names the run's CHECK_TIMEOUT" \
   '[[ $sl_none == "Suite: last full run not measured yet; bounded by CHECK_TIMEOUT 15m: give a full run a timeout above that" ]]'
 
+# the fast tier's length (T2-03): no CHECK_FAST_CMD, no fast line and This run's line as before; with one, This run names
+# both commands and This session the wall of the tree's fast-<key>, else of the newest fast-<key>, else none
+pr() { bash "$HH/lib/prompt.sh" "$SL" coding "$fid" 2> /dev/null; }
+pr > "$T/pr-none.md"; echo "CHECK_FAST_CMD='bash $T/cs.sh --tier fast'" >> "$SL/run.env"
+printf '%s\n' "1 tests" "wall 55" > "$SL/green/fast-$k"; touch -d '-1 hour' "$SL/green/fast-$k"
+printf '%s\n' "1 tests" "wall 66" > "$SL/green/fast-0123456789abcdef"; pr > "$T/pr-own.md"
+rm "$SL/green/fast-$k"; pr > "$T/pr-new.md"; rm "$SL/green/fast-0123456789abcdef"; pr > "$T/pr-nofast.md"
+check "suite length: a project without CHECK_FAST_CMD renders This run's Suite line as before and no fast length" \
+  '! grep -E "^Suite:.*fast" "$T/pr-none.md" > /dev/null && grep -F "cached per code tree; its last full run is under *This session*) · init: " "$T/pr-none.md" > /dev/null'
+check "suite length: with CHECK_FAST_CMD This run's Suite line names both commands; the fast length is the tree's own fast-<key>, then the newest, else not measured" \
+  'grep -F "(full: runs \`bash $T/cs.sh\`; fast tier: \`$HH/lib/check.sh --fast\` runs \`bash $T/cs.sh --tier fast\`; cached per code tree; its last full run, and in a coding session its last fast run, are under *This session*) · init: " "$T/pr-own.md" > /dev/null \
+  && grep -xF "Suite: last fast run 55 s" "$T/pr-own.md" > /dev/null && grep -xF "Suite: last fast run 66 s" "$T/pr-new.md" > /dev/null \
+  && grep -xF "Suite: last fast run not measured yet" "$T/pr-nofast.md" > /dev/null && grep -c "^Suite: last full run " "$T/pr-nofast.md" | grep -x 1 > /dev/null'
+
 # sn: the init plants a one-line green for its own tree, so the first suite is cached and nothing has been measured
 git -C "$T/origin.git" update-ref refs/heads/main "$(git rev-parse HEAD)"
 mkdir -p "$HARNESS_STATE/proj/sn" && printf '%s\n' "CHECK_CMD='bash $T/cs.sh'" \

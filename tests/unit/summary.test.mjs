@@ -5,11 +5,19 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { redSuite, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, flakers } from "../../lib/summary.mjs";
+import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
 const rowOf = (s, p) => { const ls = report(s).split("\n"), i = ls.findIndex(l => l.startsWith(p)); return { i, row: ls[i] }; };
+
+test("summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)", () => {
+  const h = "- 2026-11-04 04:38 · A un-passed: fast tier red after the session\n- 2026-10-21 12:00 · B un-passed: suite red after the session\n- 2026-11-04 04:39 · C · opus · passes=true\n";
+  assert.equal(redSuite(h, "A"), true);
+  assert.equal(redSuite(h, "B"), true);
+  assert.equal(redSuite(h, "C"), false);
+  assert.equal((h.match(new RegExp(redUnpass.source, "g")) || []).length, 2);
+});
 
 test("summary.mjs: cause and rework read the log by exact id (E1 review)", () => {
   const h = "- 2026-10-21 12:00 · 11 un-passed: suite red after the session\n- 2026-10-21 12:05 · verify M1: A failed the re-check, back in the queue\n";
@@ -71,6 +79,11 @@ test("lanes summary: laneSpans counts the lanes open at once and sums open-to-cl
   assert.deepEqual(laneSpans(""), { max_open: 0, lane_hours: 0 });
 });
 
+test("summary.mjs: flakes counts a fast flake with no names as the fast tier, a full one as whole suite", () => {
+  assert.deepEqual(flakes([{ names: [], tier: "fast" }, { names: [] }, { names: ["a"], tier: "fast" }]),
+    { count: 3, names: { "the fast tier": 1, "whole suite": 1, a: 1 } });
+});
+
 test("summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built", () => {
   const d = mkdtempSync(join(tmpdir(), "u1-"));
   try {
@@ -117,22 +130,31 @@ test("summary.mjs: conflicts counts resolutions, distinct escalated milestones a
   assert.equal(rowOf({ ...fx, conflicts: conflicts("", []), resolutions: [] }, "| Conflicts | ").row, "| Conflicts | 0 resolved, 0 to Michael |");
   assert.equal(rowOf(fx, "| Conflicts | ").row, undefined);
   const flakes = { count: 0, names: {} };
-  assert.equal(rowOf({ ...fx, flakes, conflicts: c, resolutions: rs }, "| Conflicts | ").i, rowOf({ ...fx, flakes }, "| Flakes | ").i + 1);
+  assert.equal(rowOf({ ...fx, flakes, suite_runs: undefined, conflicts: c, resolutions: rs }, "| Conflicts | ").i, rowOf({ ...fx, flakes }, "| Flakes | ").i + 1);
+  // the fixture's Suite runs row (T2-03) sits between them
+  assert.equal(rowOf({ ...fx, flakes, conflicts: c, resolutions: rs }, "| Conflicts | ").i, rowOf({ ...fx, flakes }, "| Suite runs | ").i + 1);
 });
 
-test("summary.mjs: suiteRuns counts the coding rows that carry suite_full; the Suite runs row after Flakes, 0 for none, none for an older summary", () => {
-  const c = (f, r, e = false) => ({ kind: "coding", feature: "X", env: e, suite_full: f, suite_runs: r });
+test("summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary", () => {
+  const c = (f, r, k, e = false) => ({ kind: "coding", feature: "X", env: e, suite_full: f, suite_runs: r, ...(k == null ? {} : { suite_fast: k }) });
   const fx = { run: "r", project: "p", features: { passing: 0, total: 0, verified: 0, merged: 0 }, milestones: [], tests: {},
     flakes: { count: 0, names: {} }, cost: { by_role: {} }, time: { by_role_h: {} }, sessions: {}, features_detail: [] };
   // <summary> <row> → the line before the row (undefined when the row is missing or first)
   const before = (s, row) => { const l = report(s).split("\n"), i = l.indexOf(row); return i > 0 ? l[i - 1] : undefined; };
-  const all = suiteRuns([c(2, 3), c(0, 0), c(1, 4), { kind: "coding" }, { kind: "verify", suite_full: 9 }, c(5, 5, true)]);
-  assert.deepEqual(all, { sessions: 3, full: 3, runs: 7, full_per_session: 1 });
-  assert.equal(Object.keys(all).join(), "sessions,full,runs,full_per_session");
-  assert.deepEqual(suiteRuns([c(2, 3)]), { sessions: 1, full: 2, runs: 3, full_per_session: 2 });
-  assert.equal(suiteRuns([c(1, 1), c(1, 1), c(0, 2)]).full_per_session, 0.7);
-  assert.deepEqual(suiteRuns([{ kind: "init" }]), { sessions: 0, full: 0, runs: 0, full_per_session: 0 });
-  assert.match(before({ ...fx, suite_runs: suiteRuns([c(2, 3)]) }, "| Suite runs | 2 full per coding session (2 in 1; 3 runs in all) |"), /^\| Flakes \|/);
+  // a row from before T2-03 has no suite_fast: it counts 0 fast
+  const all = suiteRuns([c(2, 3, 0), c(0, 0), c(1, 4, 2), { kind: "coding" }, { kind: "verify", suite_full: 9, suite_fast: 9 }, c(5, 5, 5, true)]);
+  assert.deepEqual(all, { sessions: 3, full: 3, fast: 2, runs: 7, full_per_session: 1, fast_per_session: 0.7 });
+  assert.equal(Object.keys(all).join(), "sessions,full,fast,runs,full_per_session,fast_per_session");
+  assert.deepEqual(suiteRuns([c(2, 3, 1)]), { sessions: 1, full: 2, fast: 1, runs: 3, full_per_session: 2, fast_per_session: 1 });
+  assert.equal(suiteRuns([c(1, 1, 0), c(1, 1, 0), c(0, 2, 1)]).full_per_session, 0.7);
+  assert.deepEqual(suiteRuns([{ kind: "init" }]), { sessions: 0, full: 0, fast: 0, runs: 0, full_per_session: 0, fast_per_session: 0 });
+  // the spec's example: 2 full and 16 fast calls in 10 sessions, 20 runs with the subsets
+  const ten = suiteRuns([c(2, 4, 0), ...Array.from({ length: 8 }, () => c(0, 2, 2)), c(0, 0, 0)]);
+  assert.deepEqual(ten, { sessions: 10, full: 2, fast: 16, runs: 20, full_per_session: 0.2, fast_per_session: 1.6 });
+  assert.equal(suiteRunsLine(ten), "0.2 full and 1.6 fast per coding session (2 full, 16 fast in 10; 20 runs in all)");
+  assert.match(before({ ...fx, suite_runs: suiteRuns([c(2, 3, 0)]) }, "| Suite runs | 2 full and 0 fast per coding session (2 full, 0 fast in 1; 3 runs in all) |"), /^\| Flakes \|/);
   assert.match(before({ ...fx, suite_runs: suiteRuns([]) }, "| Suite runs | 0 |"), /^\| Flakes \|/);
+  // a summary.json from before T2-03: no fast, read as 0
+  assert.equal(suiteRunsLine({ sessions: 1, full: 2, runs: 3, full_per_session: 2 }), "2 full and 0 fast per coding session (2 full, 0 fast in 1; 3 runs in all)");
   assert.doesNotMatch(report(fx), /Suite runs/);
 });

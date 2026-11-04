@@ -1,6 +1,9 @@
 # The harness working on itself. Verified milestones merge themselves (MERGE_POLICY from ~/.config/harness/config.sh,
 # auto since decisions/2026-10-24-permissions-policy), so each queued run builds on the last.
 CHECK_CMD="bash tests/run.sh"
+# the fast tier (decisions/2026-11-03-suite-tiers): a feature's passes stands on it, verify and merge on the whole suite
+# (decisions/2026-11-03-fast-gate)
+CHECK_FAST_CMD="bash tests/run.sh --tier fast"
 # paths the suite never reads stay out of its cache key, so a plan, spec, decision or ledger change doesn't rerun it
 CHECK_KEY_IGNORE=".harness/runs docs/plans docs/specs journal findings-and-research ledger"
 # CLAUDE.md is read by these checks alone, so a session that only adds a Gotchas line runs just them

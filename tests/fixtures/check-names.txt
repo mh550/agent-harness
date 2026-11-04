@@ -302,6 +302,38 @@ eval: every task.json validates and a bad one is rejected
 eval: refuses past WEEKLY_STOP_AT
 eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+fast gate run: a coding session's init output is the fast tier's (B's prompt: check: fast green)
+fast gate run: a fast-tier red after the session un-passes it with the fast note; the retry's init runs the fast tier
+fast gate run: a session's own fast call is suite_fast 1 on its coding row (a cached one aside) and a run in its suite ran note
+fast gate run: a slow-tier red passes the session (passes=true, no un-pass) and the verify's full run is red (note, needs record)
+fast gate run: each coding session is followed by a --tier fast call, and no bare call comes before the verify's
+fast gate run: harness report --md's Suite runs row counts full and fast calls per coding session
+fast gate run: tests-end is never the fast count (the full count or none)
+fast gate run: the coding prompt names both tiers' commands, carries both lengths under # This session, and the tier rule
+fast gate run: the run passes and merges on the full suite; tests-end is the full count, no un-pass
+fast gate run: the run's first init is a bare (full) call and tests-start holds the full count
+fast gate run: the verify's init ran the full suite (its prompt's init output is the full RED, not a fast line)
+fast gate run: the verify's run_init fresh removes a planted fast-<key> beside red- and green-<key>
+fast gate: --fast runs the fast command (--tier fast), writes fast-<key> (the fast count, wall) and no green-<key>; row fast
+fast gate: --fast with further arguments is a usage error (exit 2), nothing run
+fast gate: CHECK_FAST_CMD empty by default, exported as HARNESS_CHECK_FAST_CMD; the template has it commented; this repo sets the fast tier
+fast gate: a bare call on a fast-green tree runs the suite bare (a fast-green is never read as a green)
+fast gate: a fast red twice reruns a once and prints the fast RED line on check-fast.out and its tail; exit 1
+fast gate: a fast red with no HARNESS_FAILED= line reruns the fast tier: flaky: the fast tier, or red again on a rerun of the fast tier
+fast gate: a fast red writes no fast-, green- or red- marker
+fast gate: a full run's flake row has no tier key
+fast gate: a green-<key> answers --fast with the full cached line, no run, no fast-<key>
+fast gate: a hanging fast run times out: the fast RED timeout line, no rerun, no marker
+fast gate: a red-<key> answers --fast with the cached RED and exit 1, no run
+fast gate: check.sh's usage header documents --fast, fast-<key>, check-fast.out and the fast row
+fast gate: flakes_note names a fast flake with no names the fast tier, a full one the whole suite
+fast gate: red then green is the fast flake line, fast-<key> with the first run total, one flakes.jsonl row with tier fast
+fast gate: the fast run's output is check-fast.out; check.out and check-<key>.out are not written
+fast gate: the next --fast call is the cached fast line, row cached, no run
+fast gate: the subset form is unchanged with a fast command set: its args, row subset, no marker
+fast gate: with a part- sidecar and a mapped-only diff, --fast runs the fast tier, not the partial subset; row fast
+fast gate: with no fast command, --fast runs the suite bare, writes green-<key> (count, wall) and prints the full green line
+fast gate: with no fast command, the next --fast call is the full form's cached line; rows full then cached
 features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
 features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
 features.mjs writes atomically: 200 bumps beside a parsing reader, which never throws; no temp file left
@@ -559,7 +591,7 @@ metrics usage: five_hour reads the newest event's five-hour window; the default 
 metrics.jsonl: every session line has mem_peak_mb from its scope
 metrics.jsonl: mem_peak_mb is null when uncapped
 metrics.mjs: append writes mem_peak_mb as a number or null
-metrics.mjs: metricsRow writes suite_runs and suite_full as numbers, null when empty (no check-runs.log) or absent
+metrics.mjs: metricsRow writes suite_runs, suite_full and suite_fast as numbers, null when empty (no check-runs.log) or absent
 metrics.mjs: orientation stops at the first Write
 metrics.mjs: tokens, cache rate and context peak from the real fixture
 metrics: a resume that ended without a result line (a timeout, a kill) costs 0, never minus the session's
@@ -632,6 +664,7 @@ needs review: harness needs done rewrites the record's needs.md (the notificatio
 needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)
 needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
+needs verify_red own: a slow-tier red the fast gate let through, never main's disagreement
 needs.md is committed on the record branch before the park goes out, and lists the park
 needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
 needs.mjs moveForward: two earlier items of the key become one, seen summed, asked_in every run's, both resolved as asked again in the new run
@@ -764,6 +797,7 @@ refused merge leaves the PR, needs Michael
 refused sessions recorded as env
 refused verify: deferred, then verified, then merged
 render.mjs: --raw applies to the next file only
+render.mjs: a line opening {{?X}} stays (the marker cut) only when HARNESS_X is set and not empty, one opening {{!X}} only when not
 render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
 report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
@@ -946,11 +980,13 @@ status view: no run.log line without -v; a bad --since is an error
 status: stop <why> from the phone: the same note, ended and services note
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
+suite length: a project without CHECK_FAST_CMD renders This run's Suite line as before and no fast length
 suite length: a run whose first suite is a cached one-line marker renders 'not measured yet' to its initializer
 suite length: every kind's wall is under # This session; its This run Suite line points there
 suite length: tests-start and tests-end hold the count of a two-line marker
 suite length: the coding and initializer prompts' This session Suite line has the wall of a marker in the run's green/
 suite length: the tree's own green wins over a newer one; any green's wall over a red's; then the tree's red, then the newest
+suite length: with CHECK_FAST_CMD This run's Suite line names both commands; the fast length is the tree's own fast-<key>, then the newest, else not measured
 suite length: with no wall line anywhere, the Suite line names the run's CHECK_TIMEOUT
 suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1
 suite runner: TEST_JOBS=1 and 4 end with the same N/M and PASS names, exit 1 and name the red file
@@ -968,10 +1004,10 @@ suite runner: stopped by a signal, it prints each unfinished file's output so fa
 suite runner: the parallel runner starts no scope of its own (no systemd-run call)
 suite runs: a run of one such session: full_per_session 2, harness report --md's Suite runs row after Flakes, the TTY card carries the same value
 suite runs: a run whose coding rows carry no count (rebuilt from run.log) reports 0
-suite runs: a session with no call has suite_runs 0 and suite_full 0
-suite runs: a session with two full calls and one subset has suite_runs 3 and suite_full 2 on its coding row, and the suite ran 3x note
-suite runs: the rendered retro prompt carries the run's full runs per coding session
-suite runs: the run's summary.json suite_runs is { sessions, full, runs, full_per_session } over its coding rows
+suite runs: a session with no call has suite_runs 0, suite_full 0 and suite_fast 0
+suite runs: a session with two full calls and one subset has suite_runs 3, suite_full 2 and suite_fast 0 on its coding row, and the suite ran 3x note
+suite runs: the rendered retro prompt carries the run's full and fast runs per coding session
+suite runs: the run's summary.json suite_runs is { sessions, full, fast, runs, full_per_session, fast_per_session } over its coding rows
 suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1
 suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0
 suite tools: STUB_BARRIER holds that feature's first coding session until stub_go
@@ -985,9 +1021,11 @@ summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes
 summary.mjs: flakers names a check in the flakes of two or more of the five newest summaries (one without ended_at oldest) as name ×runs, (none) for none
+summary.mjs: flakes counts a fast flake with no names as the fast tier, a full one as whole suite
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
-summary.mjs: suiteRuns counts the coding rows that carry suite_full; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
 summary: tokens, per verified feature, first-attempt rate, rework
 sync: a local commit outside ledger/ is left alone, nothing pushed
 sync: a modified tracked file: skipped

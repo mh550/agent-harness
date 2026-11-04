@@ -130,6 +130,14 @@
     "P1-03",
     "P1-04"
   ],
+  "suite_runs": {
+    "sessions": 10,
+    "full": 2,
+    "fast": 16,
+    "runs": 20,
+    "full_per_session": 0.2,
+    "fast_per_session": 1.6
+  },
   "first_attempt_pass_rate": 0.63,
   "verify_fail_rate": 0,
   "harness": {

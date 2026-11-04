@@ -78,11 +78,12 @@ test("metrics.mjs: append writes mem_peak_mb as a number or null", () => {
   assert.equal(r(undefined), null);
 });
 
-test("metrics.mjs: metricsRow writes suite_runs and suite_full as numbers, null when empty (no check-runs.log) or absent", () => {
+test("metrics.mjs: metricsRow writes suite_runs, suite_full and suite_fast as numbers, null when empty (no check-runs.log) or absent", () => {
   const a = ["s", "o", "run", "coding", "A", "opus", "true", "10", "0", "false", "build", "", "M1"], r = x => metricsRow(outcome([]), x);
-  const k = o => [o.suite_runs, o.suite_full];
-  assert.deepEqual(k(r([...a, "3", "2"])), [3, 2]);
-  assert.deepEqual(k(r([...a, "0", "0"])), [0, 0]);
-  assert.deepEqual(k(r([...a, "", ""])), [null, null]);
-  assert.deepEqual(k(r(a)), [null, null]);
+  const k = o => [o.suite_runs, o.suite_full, o.suite_fast];
+  assert.deepEqual(k(r([...a, "3", "2", "1"])), [3, 2, 1]);
+  assert.deepEqual(k(r([...a, "0", "0", "0"])), [0, 0, 0]);
+  assert.deepEqual(k(r([...a, "", "", ""])), [null, null, null]);
+  assert.deepEqual(k(r(a)), [null, null, null]);
+  assert.equal(Object.keys(r(a)).slice(-3).join(), "suite_runs,suite_full,suite_fast");
 });
