@@ -271,10 +271,13 @@ entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries
 entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: a milestone pack lists failed verify rows before dead ends
+entries.mjs: a summary can't open a code fence or an HTML block, and a 2000-character id keeps the pack within its cap
 entries.mjs: progress renders 15 in full and the rest as archive lines
 entries.mjs: resolved is an array of strings and normalize keeps it
+entries.mjs: the pack CLI refuses a bad cap and packs a run directory's dead ends, entries and answers
 entries.mjs: the pack drops a question a later entry resolves
 entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap
+entries.mjs: the render CLI leaves a legacy progress.md alone and renders entries.jsonl to progress.md and its archive
 entries.mjs: validate accepts the schema and names what is wrong
 entries: the driver appends each session's entry
 eval compare prints the table
@@ -398,6 +401,7 @@ journal: a 2001-character init header is cut to 2000 and kept
 journal: a 410-character summary and outcome "maybe" is minimal with why invalid (outcome
 journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
 journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
+journal: ingest prints trimmed summary 410, exits 0 and appends the cut entry whole
 journal: validate exits 2 when its only errors are the caps, 1 with any other
 key map lint: a check file passing the bare root to a new command is named with its line, exit 1
 key map lint: a check file reading the root's CLAUDE.md outside the map is named with its line, exit 1
