@@ -7,6 +7,21 @@ How to read the feature list (`feature_list.json`): six features in series, U1-0
 
 To steer: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session.
 
+### 2026-11-03 22:33 · U1-06 · passes
+
+Review of U1 (Opus, one round): 0 Critical, 4 Important, 7 Minor. Fixed all 4 Important RED→GREEN (testcount.mjs CLI guard, the tier red on zero tests/no summary/stray stdout, inbox tpl read from lib/driver.sh, 2 key-order asserts) and 3 Minor; architecture.md and README.md describe the unit tier. 1163 → 1165, full run green.
+
+- **Files:** lib/testcount.mjs, tests/checks/00-unit-tier.sh, tests/unit/reporter.mjs, tests/checks/33-suite-runner.sh, tests/fixtures/check-names.txt, tests/unit/inbox.test.mjs, tests/unit/metrics.test.mjs, tests/unit/entries.test.mjs, tests/unit/eval.test.mjs, journal/decisions/2026-11-03-unit-tier.md, docs/architecture.md, README.md
+- **Verified:** Review at /tmp/harness/agent-harness/agent-harness-2026-11-03-2/u1-review.md. Two new 33-suite-runner checks seen red before the fix (u5 empty dir, u6 exit(0) at import, u8 console.log PASS line; u7 testcount beside a HARNESS_TESTS=5 file), green after; inbox and the key-order asserts each seen red on a wrong value. node --test tier 124/124 no ✖; subset 00-unit 33-suite 82-key-map 39-memlint 06 73 57: 201/201; full check.sh 1165/1165 in 810 s, conformance PASS.
+- **Tests:** 1163 → 1165
+- **Dead end:** a u7 fixture with `// HARNESS_TESTS=5` — testcount's contract regex is ^HARNESS_TESTS=<n>$ on its own line: the check passed unfixed; the line now sits alone inside a template literal
+- **Discovery** (affects project): Under node --test --test-isolation=none, process.argv is [node, file1, file2, …]: a lib/*.mjs imported by a unit test needs the import.meta.url === argv[1] guard on its CLI (testcount.mjs lacked it; U1-01's 'inert' note was wrong)
+- **Discovery** (affects run): A process.exit(0) in a unit test file ends node --test with rc 0 and its output unflushed; 00-unit-tier.sh now requires the reporter's `# unit tier: <n> tests` summary line and that PASS+FAIL equals n
+- **Proposed change:** Kept (Minor, not fixed): #6 a unit tier stopped by TEST_FILE_TIMEOUT counts its 124 names as missing (run.sh greps only the .sh source for a cut file's names) and prints nothing until node ends; #8 needs card's 'no run is exit 1' is now the function's throw (the CLI catch is still hit by 59's `card nope`); #9 export checks are greps of `^export function`, and overlap.test.mjs's name still says node --check (an import parses it); #11 the duplicated inTZ helper in parked/view tests and the u1-/unit-metrics- tmp prefixes.
+- **Proposed change:** Fixed Minor: #5 reporter.mjs usage line needs ./ (fixed), #7 a test's stray PASS/FAIL stdout line is now red via the summary count, #10 the decision says no unit test reads a CHECK_KEY_MAP path, #11 the literal U+2028 now \u2028 and eval.test.mjs's has() exact startsWith again.
+- **Proposed change:** A follow-up: teach 82-key-map-lint to scan tests/unit/*.test.mjs (or map 00-unit-tier for CLAUDE.md/prompts/templates) so the no-mapped-path rule is linted, not just written.
+- *06-U1-06 · claude-opus-5-5*
+
 ### 2026-11-03 22:02 · U1-05 · passes
 
 Measured the unit tier before (ddee9e9 clone) and after: tier alone 1 node start, 0.24 s wall, 0.30 CPU-s (124 tests); the layer's remaining bash files 117 starts, 8.84 CPU-s (a miss vs <1 s); solo full suite 805.4 → 798.3 s, CPU +0.8 %. Table in findings-and-research/2026-11-03-unit-tier.md.
