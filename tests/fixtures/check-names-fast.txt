@@ -250,7 +250,7 @@ merge-sorted: two lanes adding names to a sorted list both merge, with no confli
 merge-sorted: with the attribute and the worktree driver, two branches adding adjacent names merge with exit 0, no marker, the union
 mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits
 metrics.mjs: append writes mem_peak_mb as a number or null
-metrics.mjs: metricsRow writes suite_runs and suite_full as numbers, null when empty (no check-runs.log) or absent
+metrics.mjs: metricsRow writes suite_runs, suite_full and suite_fast as numbers, null when empty (no check-runs.log) or absent
 metrics.mjs: orientation stops at the first Write
 metrics.mjs: tokens, cache rate and context peak from the real fixture
 metrics: a resume that ended without a result line (a timeout, a kill) costs 0, never minus the session's
@@ -351,6 +351,7 @@ record after gc: with both gone, a no record line naming the state dir and the l
 record after gc: with the state copy gone, from the ledger copy, after which the state copy exists again
 refused verify: deferred, then verified, then merged
 render.mjs: --raw applies to the next file only
+render.mjs: a line opening {{?X}} stays (the marker cut) only when HARNESS_X is set and not empty, one opening {{!X}} only when not
 render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
 report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
 resume reloads config merged from main
@@ -450,10 +451,10 @@ suite cache: a session that adds only docs/plans/x.md leaves the next session's 
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
 suite runs: a run of one such session: full_per_session 2, harness report --md's Suite runs row after Flakes, the TTY card carries the same value
 suite runs: a run whose coding rows carry no count (rebuilt from run.log) reports 0
-suite runs: a session with no call has suite_runs 0 and suite_full 0
-suite runs: a session with two full calls and one subset has suite_runs 3 and suite_full 2 on its coding row, and the suite ran 3x note
-suite runs: the rendered retro prompt carries the run's full runs per coding session
-suite runs: the run's summary.json suite_runs is { sessions, full, runs, full_per_session } over its coding rows
+suite runs: a session with no call has suite_runs 0, suite_full 0 and suite_fast 0
+suite runs: a session with two full calls and one subset has suite_runs 3, suite_full 2 and suite_fast 0 on its coding row, and the suite ran 3x note
+suite runs: the rendered retro prompt carries the run's full and fast runs per coding session
+suite runs: the run's summary.json suite_runs is { sessions, full, fast, runs, full_per_session, fast_per_session } over its coding rows
 suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1
 suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0
 suite tools: STUB_BARRIER holds that feature's first coding session until stub_go
@@ -467,7 +468,7 @@ summary.mjs: conflicts counts resolutions, distinct escalated milestones and res
 summary.mjs: flakers names a check in the flakes of two or more of the five newest summaries (one without ended_at oldest) as name ×runs, (none) for none
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
-summary.mjs: suiteRuns counts the coding rows that carry suite_full; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary
 summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
 sync: a local commit outside ledger/ is left alone, nothing pushed
 sync: a modified tracked file: skipped

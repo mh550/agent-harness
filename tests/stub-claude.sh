@@ -64,7 +64,8 @@
 # STUB_FIX_BROKEN=<id>: that feature's first coding session removes BROKEN (a red main's fix, R3-03's green-only count).
 # STUB_RUN_SUITE=<id>: that feature's first coding session runs $HARNESS_CHECK in full twice (the second answers cached),
 # then as a subset (`x`), before its commit (R3-04's "suite ran" note). STUB_RUN_SUITE2=<id>: the same with suite2-<id>.txt
-# written between the two full calls, so both run in full (C1-05's suite_full 2 of suite_runs 3).
+# written between the two full calls, so both run in full (C1-05's suite_full 2 of suite_runs 3). STUB_RUN_FAST=<id>: that
+# feature's first coding session runs `$HARNESS_CHECK --fast` twice (the second answers cached: T2-03's suite_fast 1).
 # STUB_THIN_VERIFY=all: every verify round is thin (the escalated one too), so the milestone needs Michael (U2-06).
 # STUB_BARRIER=<id>:<name>: that feature's first coding session touches $STUB_DIR/barriers/<name>.held, then waits
 # (≤ 180 s by the clock) for $STUB_DIR/barriers/<name> before its entry and its end, and then touches <name>.released
@@ -290,6 +291,7 @@ JSON
     # set +e: the stub project's subset (`test ! -f BROKEN x`) exits 2, and set -e holds in a list's last command
     [[ ${STUB_RUN_SUITE:-} == "$id" && $n == 1 ]] && ( set +e; "$HARNESS_CHECK"; "$HARNESS_CHECK"; "$HARNESS_CHECK" x; true ) > /dev/null 2>&1
     [[ ${STUB_RUN_SUITE2:-} == "$id" && $n == 1 ]] && ( set +e; "$HARNESS_CHECK"; echo "$id" > "suite2-$id.txt"; "$HARNESS_CHECK"; "$HARNESS_CHECK" x; true ) > /dev/null 2>&1
+    [[ ${STUB_RUN_FAST:-} == "$id" && $n == 1 ]] && ( set +e; "$HARNESS_CHECK" --fast; "$HARNESS_CHECK" --fast; true ) > /dev/null 2>&1
     (( n == 1 )) && main_touch "$id"
     if [[ ${STUB_SHARED:-} && $n == 1 ]]; then case $id in A) sed -i '1s/.*/A/' "$STUB_SHARED" ;; C) sed -i '$s/.*/C/' "$STUB_SHARED" ;; esac; fi
     if [[ ${STUB_CONFLICT:-} && $n == 1 && $id == [AC] ]]; then sed -i "2s/.*/line two, from $id/" "$STUB_CONFLICT"; fi

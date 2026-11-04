@@ -27,8 +27,9 @@ prompt_of() { grep -l "^Feature: \`$2\`$" $(find "$(st "$1")" -name '*.prompt.md
 fast_between() { awk '/^session / { s++; want = 1; on = 1; next } want { want = 0; if ($0 != "--tier fast") bad = 1 }
   on && $0 == "bare" { on = 0; seen = 1 } on && $0 != "--tier fast" && $0 != "t1" { bad = 1 } END { exit !(s >= 2 && seen && !bad) }'; }
 
-# fg: a clean run: the baseline is full, each coding session's init and gate the fast tier, the verify full
-STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" fg --spec SPEC.md --foreground > "$T/fg.out" 2>&1
+# fg: a clean run: the baseline is full, each coding session's init and gate the fast tier, the verify full; A's first
+# session runs the fast tier itself on its edited tree, then again (cached)
+STUB_RUN_FAST=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" fg --spec SPEC.md --foreground > "$T/fg.out" 2>&1
 fg_b=$(prompt_of fg B)
 check "fast gate run: the run's first init is a bare (full) call and tests-start holds the full count" \
   '[[ $(args fg | sed -n 1p) == bare && $(cat "$(st fg)/tests-start" 2> /dev/null) == 3 ]]'
@@ -39,6 +40,22 @@ check "fast gate run: each coding session is followed by a --tier fast call, and
 check "fast gate run: the run passes and merges on the full suite; tests-end is the full count, no un-pass" \
   'grep "^done" "$(st fg)/ended" > /dev/null && hlog fg | grep " · verify M1: suite cache cleared" > /dev/null \
   && [[ $(cat "$(st fg)/tests-end" 2> /dev/null) == 3 ]] && ! hlog fg | grep "un-passed" > /dev/null'
+
+# the gate visible and told (T2-03): the session's own fast calls in metrics.jsonl and the report, both lengths and the rule
+row() { jq -sc --arg f "$2" '[.[] | select(.kind == "coding" and .feature == $f)][0] | [.suite_runs, .suite_full, .suite_fast]' \
+  "$T/wt/proj/$1/.harness/runs/$1/metrics.jsonl"; }
+check "fast gate run: a session's own fast call is suite_fast 1 on its coding row (a cached one aside) and a run in its suite ran note" \
+  '[[ $(row fg A) == "[1,0,1]" && $(row fg B) == "[0,0,0]" ]] && hlog fg | grep -F "· A: suite ran 1x (" > /dev/null'
+check "fast gate run: harness report --md's Suite runs row counts full and fast calls per coding session" \
+  '"$H" report --md fg | grep -xF "| Suite runs | 0 full and 0.3 fast per coding session (0 full, 1 fast in 3; 1 runs in all) |" > /dev/null'
+# a wall differs from session to session: every one under # This session (79-suite-length's rule, the fast one too)
+below() { awk '/^# This session$/ { s = 1 } /last (full|fast) run ([0-9]+ s|not measured)/ { print (s ? "below" : "above") }' "$1" | sort -u; }
+check "fast gate run: the coding prompt names both tiers' commands, carries both lengths under # This session, and the tier rule" \
+  'grep -F "/lib/check.sh --fast\` runs \`bash .harness/suite.sh --tier fast\`; cached per code tree; its last full and fast runs are under *This session*) · init: " "$fg_b" \
+  | grep -F "/lib/check.sh\` (full: runs \`bash .harness/suite.sh\`; fast tier: \`" > /dev/null \
+  && grep -E "^Suite: last full run [0-9]+ s: give a full run a timeout of at least twice that$" "$fg_b" > /dev/null \
+  && grep -E "^Suite: last fast run [0-9]+ s$" "$fg_b" > /dev/null && [[ $(below "$fg_b") == below ]] \
+  && grep -F "run the fast tier once, last" "$fg_b" > /dev/null'
 
 # fs: B's first session commits BROKEN-SLOW: the fast tier stays green, so B passes; the verify's full run finds it
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"

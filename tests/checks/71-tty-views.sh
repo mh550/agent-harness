@@ -3,8 +3,9 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the TTY forms (U3-07): report, trends and gc --dry-run render through view.mjs for a person (HARNESS_TTY=1 ----
 # ---- or a terminal); off a TTY, and with --md, their output is byte for byte what it was ----
-# summary-report.json: main's .harness/runs/agent-harness-2026-10-26/summary.json (that run's record, git show);
-# summary-report.md: summary.mjs report of it, made before U3-07 changed summary.mjs
+# summary-report.json: main's .harness/runs/agent-harness-2026-10-26/summary.json (that run's record, git show), plus
+# T2-03's suite_runs (the spec's example); summary-report.md: summary.mjs report of it, made before U3-07 changed
+# summary.mjs, plus T2-03's Suite runs row
 SM="node $HERE/../lib/summary.mjs" FX=$HERE/fixtures
 unset HARNESS_TTY   # "off a TTY" is the checks' stdout (a file or a pipe), whatever the caller exported
 mkdir -p "$HARNESS_LEDGER/agent-harness/agent-harness-2026-10-26"; cp "$FX/summary-report.json" "$HARNESS_LEDGER/agent-harness/agent-harness-2026-10-26/summary.json"

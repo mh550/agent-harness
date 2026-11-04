@@ -17,11 +17,17 @@ checkouts on this machine.
 - **No secrets, no sudo.** Never read, print or source `.env` files or credentials. Anything that
   needs root goes in your entry's `questions` for Michael, with the exact command.
 - **The suite** is the command named under *This run* (it runs the project's suite, cached per code
-  tree, so a tree that was green isn't run twice). While iterating, pass arguments for a subset:
-  `<suite> <args>`. Run it in full **once, last, after your final edit of any file**, `CLAUDE.md` included: a full run
-  before that is a full run you pay twice. A red check that check.sh reran green is a flake it has already recorded:
-  never rerun the suite by hand for it; a red after its rerun is real. Never lower the suite's parallelism to make room
-  for other lanes (`TEST_JOBS=2` on this box: slower and as flaky, 2026-10-28; `decisions/2026-10-29-check-timeout-25m`).
+  tree, so a tree that was green isn't run twice). The suite has two tiers: `<suite> --fast` runs the fast tier (the
+  whole suite when *This run* names no fast tier), bare `<suite>` the full suite. While iterating, run the fast tier or
+  pass arguments for a subset: `<suite> <args>`. Before you flip `passes`,
+  **run the fast tier once, last, after your final edit of any file**, `CLAUDE.md` included: your feature passes on
+  that green, and a run before it is one you pay twice. The full suite runs at verify on the milestone's tree: if
+  your change touches the driver's scenario paths (in agent-harness: `lib/driver.sh`, `lib/lane.sh`, `lib/record.sh`,
+  `bin/harness`) or a slow-tier check file, also run the slow-tier files that exercise it (`<suite> <file>`) before
+  you end: a slow red at verify costs the milestone a fix session. A red check that check.sh reran green is a flake it
+  has already recorded: never rerun the suite by hand for it; a red after its rerun is real. Never lower the suite's
+  parallelism to make room for other lanes (`TEST_JOBS=2` on this box: slower and as flaky, 2026-10-28;
+  `decisions/2026-10-29-check-timeout-25m`).
   Give every full run a timeout of at least twice its last wall (under *This session*). When that is over the Bash
   tool's foreground limit (10 min), run it in the background with that timeout, its output to a file in your scratch
   directory, and wait for its end notification before reading it: never poll it, never run it without a timeout.
@@ -88,11 +94,11 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    run id from the `Run:` line under *This run*, today's date). 15 lines at most: at 15, replace
    the least useful. A wrong line is edited in place; never rewrite the section. The harness notes
    each change in `harness-log.md`.
-3. The suite green: its one full run now, after the `## Gotchas` line,
+3. The suite green: the fast tier's one run now (`<suite> --fast`), after the `## Gotchas` line,
    so the tree you tested is the tree that ends the session (`entry.json`, the `passes` flip and
    the commit come after; the run directory is outside the suite's key). If your work is half
-   done, commit only what leaves the suite green. The harness un-passes a feature whose session
-   ends with a red suite.
+   done, commit only what leaves the fast tier green. The harness un-passes a feature whose session
+   ends with a red fast tier.
 4. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object. The
    harness validates it, adds it to `entries.jsonl` and deletes it; a missing or invalid one leaves
    only a minimal entry (your final message and the files git saw change). For example:
@@ -139,6 +145,7 @@ Milestone: {{MILESTONE}}
 Reviews go to subagents on your own model (`{{MODEL}}`).
 {{CLOCK}}
 Suite: last full run {{SUITE_LENGTH}}
+{{?CHECK_FAST_CMD}}Suite: last fast run {{SUITE_FAST_LENGTH}}
 {{REVIEW_DIFF}}
 
 ## Init output

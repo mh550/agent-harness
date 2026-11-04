@@ -332,9 +332,10 @@ while :; do
   sstart=$(git rev-parse HEAD)
   t0=$(date +%s.%6N); session coding "$mdl" "$slog" "$id"; t1=$(date +%s.%6N)   # the session's own suite calls are check-runs.log's rows in between
   commit_all "WIP: $id — uncommitted at session end (harness)"; sync_lane   # the copy is excluded: code only
-  # the full ones apart for metrics.jsonl's suite_runs and suite_full: no log, no third field, so both null
-  # (decisions/2026-10-31-one-full-run)
-  read -r sn ss sf < <(awk -F'\t' -v a="$t0" -v b="$t1" '$1 > a && $1 < b && $2 != "cached" { n++; s += $3; f += ($2 == "full") } END { print n + 0, s + 0, f + 0 }' "$SCRATCH/check-runs.log" 2> /dev/null || echo "0 0")
+  # the full and fast ones apart for metrics.jsonl's suite_runs, suite_full and suite_fast: no log, no third field, so all
+  # null (decisions/2026-10-31-one-full-run, decisions/2026-11-03-fast-gate)
+  read -r sn ss sf sk < <(awk -F'\t' -v a="$t0" -v b="$t1" '$1 > a && $1 < b && $2 != "cached" { n++; s += $3; f += ($2 == "full"); k += ($2 == "fast") }
+    END { print n + 0, s + 0, f + 0, k + 0 }' "$SCRATCH/check-runs.log" 2> /dev/null || echo "0 0")
   nsuite=${sf:+$sn}
   note "$id: suite ran ${sn}x ($ss s) in the session"
   journal coding "$id" "$slog" "$mdl" "$sstart"   # before the limit branch and F repair: every session is journaled
@@ -350,7 +351,7 @@ while :; do
     unmaterialize
     [[ $esc ]] || record F unbump "$ATT" "$id"   # an escalation round runs again after the wait
     rec_count "$STATE/sessions" -1 > /dev/null; limits=$(rec_count "$STATE/limits" 1)
-    record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" false "$S_WALL" "$S_EXIT" true "" "$S_PEAK" "$LANE" "$nsuite" "$sf"
+    record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" false "$S_WALL" "$S_EXIT" true "" "$S_PEAK" "$LANE" "$nsuite" "$sf" "$sk"
     if (( limits >= MAX_LIMIT_HITS )); then
       note "$limits sessions in a row refused ($reason)"
       lane_exit 13 "usage limit ($limits sessions refused in a row)"
@@ -393,7 +394,7 @@ while :; do
     else note "review $id: no \"<n> Critical, <n> Important\" in its summary or final message; not escalated"; fi
   fi
   if [[ $passed == true ]]; then record F pass "$LIST" "$id"; else record F unpass "$LIST" "$id"; fi
-  record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$kind" "$S_PEAK" "$LANE" "$nsuite" "$sf"
+  record MET append "$slog" "$REC/metrics.jsonl" "$RUN_ID" coding "$id" "$mdl" "$passed" "$S_WALL" "$S_EXIT" false "$kind" "$S_PEAK" "$LANE" "$nsuite" "$sf" "$sk"
   note "$id · $mdl · passes=$passed · $(( S_WALL / 60 )) min · $(F summary "$LIST")$( [[ -f $STATE/tests-end ]] && echo " · tests $(cat "$STATE/tests-end")")"
   if [[ -n $why ]]; then   # waiting on Michael is not the feature's fault (an escalation round took none)
     [[ $esc ]] || record F unbump "$ATT" "$id"; record F park "$PARKED" "$id" "$(answers_hash)" "$why"
