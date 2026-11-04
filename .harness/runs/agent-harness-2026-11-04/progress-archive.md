@@ -7,6 +7,43 @@ The run: phase 3 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier (T1: the full suite) is green and the verifier agrees per milestone. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-04 06:16 · verify T2 · passes
+
+All four T2 features hold: full suite green (1224), fast tier 561/561, targeted files green. Only deviation: T2-03 step 3 puts the fast length under This session, not in run.md (recorded default).
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| T2-01 | 1 | bash tests/run.sh 86-fast | 86-fast-gate.sh line 2 tier: fast, 21/21 pass; names in check-names files (conformance green) | yes |
+| T2-01 | 2 | bash tests/run.sh 86-fast 73-check 34-check | 86-fast-gate 21/21 incl. cached/fast-green/planted markers/rerun/timeout/part cases; 73 14/14; 34 10/10 | yes |
+| T2-01 | 3 | bash tests/run.sh 86-fast 73-check 34-check | 86-fast-gate 21/21 incl. cached/fast-green/planted markers/rerun/timeout/part cases; 73 14/14; 34 10/10 | yes |
+| T2-01 | 4 | bash tests/run.sh 86-fast 73-check 34-check | 86-fast-gate 21/21 incl. cached/fast-green/planted markers/rerun/timeout/part cases; 73 14/14; 34 10/10 | yes |
+| T2-01 | 5 | bash tests/run.sh 86-fast 73-check 34-check | 86-fast-gate 21/21 incl. cached/fast-green/planted markers/rerun/timeout/part cases; 73 14/14; 34 10/10 | yes |
+| T2-01 | 6 | grep CHECK_FAST_CMD lib/config.sh templates/project/config.sh .harness/config.sh | all three present; .harness/config.sh = bash tests/run.sh --tier fast | yes |
+| T2-01 | 7 | ls/grep journal/decisions/2026-11-03-fast-gate.md | exists, 12 lines mention default | yes |
+| T2-01 | 8 | bash -n lib/check.sh lib/config.sh lib/prompt.sh; bash tests/run.sh 34-check 73-check 80-red 81-partial 86-fast | syntax ok; all files pass (80: 16/16, 81: all pass) | yes |
+| T2-01 | 9 | /lib/check.sh (full, harness init) + tier fast | init: green 813 s, 1224 tests; cached call green | yes |
+| T2-02 | 1 | bash tests/run.sh 87-fast 26-run 80-red | 87-fast-gate-run 12/12 (stub runs: --tier fast around sessions, STUB_SLOW_RED, STUB_FAST_RED, markers); 26-run-13c 1/1 | yes |
+| T2-02 | 2 | bash tests/run.sh 87-fast 26-run 80-red | 87-fast-gate-run 12/12 (stub runs: --tier fast around sessions, STUB_SLOW_RED, STUB_FAST_RED, markers); 26-run-13c 1/1 | yes |
+| T2-02 | 3 | bash tests/run.sh 87-fast 26-run 80-red | 87-fast-gate-run 12/12 (stub runs: --tier fast around sessions, STUB_SLOW_RED, STUB_FAST_RED, markers); 26-run-13c 1/1 | yes |
+| T2-02 | 4 | bash tests/run.sh 87-fast 26-run 80-red | 87-fast-gate-run 12/12 (stub runs: --tier fast around sessions, STUB_SLOW_RED, STUB_FAST_RED, markers); 26-run-13c 1/1 | yes |
+| T2-02 | 5 | bash tests/run.sh 87-fast | 12/12 incl. STUB_FAST_RED un-pass note; 26-run-13c-stale-green 1/1 | yes |
+| T2-02 | 6 | bash -n lib/record.sh lib/lane.sh lib/driver.sh; bash tests/run.sh 26-run 34-check 80-red 87-fast | syntax ok, all green | yes |
+| T2-02 | 7 | suite | init full run green 1224/1224 | yes |
+| T2-03 | 1 | bash tests/run.sh 79-suite 85-suite 87-fast | 79 16/16, 85 7/7, 87 12/12 incl. suite_fast on coding row | yes |
+| T2-03 | 2 | grep tests/fixtures/summary-report.md; 85-suite-runs | fixture has: \| Suite runs \| 0.2 full and 1.6 fast per coding session (2 full, 16 fast in 10; 20 runs in all) \|; 85 7/7 | yes |
+| T2-03 | 3 | read prompts/parts/run.md:10-11, coding.md:148; 79-suite-length | Deviation (recorded default, open question): both lengths sit under *This session* (coding.md Suite: last fast run {{SUITE_FAST_LENGTH}}), not in run.md literally; with/without CHECK_FAST_CMD both lines checked by 79 (16/16). Intent holds. | yes |
+| T2-03 | 4 | bash tests/run.sh 87-fast 79-suite; grep coding.md | rendered coding prompt checks pass; tier rule present | yes |
+| T2-03 | 5 | grep -F "run the fast tier once, last" prompts/coding.md; node --check; bash -n | match found; syntax ok; 79/85/87 green | yes |
+| T2-03 | 6 | full suite | 1224 tests green | yes |
+| T2-04 | 1 | read entries/context; decision & diff review recorded | review of T2 recorded in entry: 0 Critical, 1 Important, 9 Minor | yes |
+| T2-04 | 2 | bash tests/run.sh 86-fast 87-fast | invariant and fix checks pass (86 21/21, 87 12/12) | yes |
+| T2-04 | 3 | grep docs/architecture.md README.md CLAUDE.md | architecture §3/§4/§7/§10 carry check.sh --fast, fast-<key>, check-fast.out, guard row; README tier rule/Suite runs row; CLAUDE.md two commands | yes |
+| T2-04 | 4 | bash -n lib/*.sh touched; node --check summary/metrics/render | all pass | yes |
+| T2-04 | 5 | bash tests/run.sh --tier fast; init full | fast 561/561; full 1224 green | yes |
+
+- **Question for Michael:** T2-03: keep the full/fast lengths under This session instead of run.md literally (recorded default in decisions/2026-11-03-fast-gate)?
+- *061141-verify-T2 · claude-sonnet-5-5*
+
 ### 2026-11-04 05:56 · T2-04 · passes
 
 Opus review of T2: 0 Critical, 1 Important, 9 Minor. Fixed: the verify's slow-tier red no longer blames main (note, need, verify_red card variant own); fast flakes with no names read 'the fast tier'; run.md's Suite line; a check pins the verify's full init. Simplified: one mark() marker writer in check.sh, run_init fresh's rm. Docs: architecture §3/§4/§7/§10, README, CLAUDE.md.

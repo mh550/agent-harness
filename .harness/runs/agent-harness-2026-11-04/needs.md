@@ -105,3 +105,24 @@ harness needs done agent-harness-2026-11-04/4 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-04/5 --why "<answer>"
 ```
+
+## ⚠ T2 asked: T2-03: keep the full/fast lengths under This session instea…
+
+`agent-harness-2026-11-04/6` · since 2026-11-04T11:16:14.205Z
+
+**blocked** nothing waits on it; T2's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:11](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L11)
+
+> T2-03: keep the full/fast lengths under This session instead of run.md literally (recorded default in decisions/2026-11-03-fast-gate)?
+
+**where** [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl:11](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L11)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-04/6 --why "<answer>"
+```
