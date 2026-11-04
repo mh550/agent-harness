@@ -1079,8 +1079,10 @@ the whole context is capped too
 thin evidence at the deadline is not escalated: one verify, M1 not verified
 thin evidence escalates the verify
 tier conformance: a fast name missing from a --tier fast run fails the fast tier's conformance naming it, with no HARNESS_FAILED=
+tier conformance: a full run fails on a fast file's name absent from the fast fixture and a fast-fixture name no fast file printed
 tier conformance: a green --tier fast or --tier slow run prints its tier's PASS line; a green full run keeps the full line
 tier conformance: a names subset, with or without --tier, checks new and doubled only
+tier conformance: a new name's hint names the fixture the run compared, a TEST_CHECKS directory's own path
 tier conformance: a red --tier fast run whose failures are all inside named files prints HARNESS_FAILED= as before
 tier conformance: a run without --tier checks the full list as before
 tier conformance: a slow name missing from a --tier slow run is red naming it; a fast name absent from it is not missing
@@ -1089,10 +1091,13 @@ tier lint: every name of check-names-fast.txt comes from a file whose header say
 tier lint: every name of check-names-fast.txt is in check-names.txt
 tier lint: every tests/checks/*.sh has a tier header on line 2
 tiers: --repeat combines with --tier: the tier's matching files n times, no file of the other tier
+tiers: --tier after a name, twice, or as --tier=<t> prints the usage, exit 2, runs nothing
 tiers: --tier fast <name> runs the one fast file whose name matches; a slow file's name under --tier fast matches none
 tiers: --tier fast runs the two fast files and not the slow one, --tier slow the slow one only, exit 0
 tiers: --tier with no tier the runner knows prints the usage, exit 2, runs nothing
-tiers: a check file without a tier header on line 2 is refused: no tier header: <path> per file in name order, exit 2, nothing run
+tiers: a check file without a tier header on line 2 is refused: no tier header: <path> per file in name order, exit 2, nothing run or written
+tiers: bash -n tests/run.sh passes
+tiers: line 2 is read exactly (a trailing blank refuses it) and a directory named *.sh is refused without a read error
 tiers: the slowest: line ends , tier fast, , tier slow, or , tier all for a run without --tier
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it

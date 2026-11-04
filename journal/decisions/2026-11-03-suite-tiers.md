@@ -24,7 +24,8 @@ no grouping but a name match, so a session could only run all of it or guess a s
   runner doesn't know: `no tier header: <path>` per file, in name order, then exit 2, with no file run and no
   scratch made. The whole run is refused, a name subset or a `--tier` run included (*default*: the refusal looks at
   the directory, not only the selected files, so a headerless file is caught by the first run of any kind).
-- **`--tier fast|slow`**, before any names: only that tier's files, and with names only those of them whose names
+- **`--tier fast|slow`**, once, before any names (an option after a name, a second `--tier` or `--tier=<t>`: the
+  usage line, exit 2): only that tier's files, and with names only those of them whose names
   match. Without `--tier`, every file as before. `--repeat <n>` combines with it in either order, and with `--tier`
   it needs no name: the whole tier n times (*default*). Any other tier word: the usage line, exit 2. The `slowest:`
   line ends `, tier fast`, `, tier slow` or `, tier all` (no `--tier`).
@@ -36,7 +37,12 @@ no grouping but a name match, so a session could only run all of it or guess a s
   line is `conformance: every check of the <tier> tier ran, none new or doubled` for a tier run, the old line for a
   full one; `HARNESS_FAILED=` is unchanged. A `TEST_CHECKS` directory's fast list is its own `check-names-fast.txt`;
   a missing one is empty (*default*: fail-closed, every name of a `--tier fast` run is then new). A `new` name's line
-  says which fixture takes it (`… and check-names-fast.txt` for a fast run, `…, not check-names-fast.txt` for a slow).
+  names the fixture the run compared, by its real path (a `TEST_CHECKS` directory's own), and the fix for a misfiled
+  name (`…, and to check-names.txt if it isn't there` for a fast run, `…, and drop it from check-names-fast.txt if it
+  is there` for a slow). A full run also holds the fast list to the names the fast files printed, both ways
+  (`in the fast fixture, not printed by a fast file:` and `printed by a fast file, not in the fast fixture:` under
+  the full conformance line, red): a misfiled name is red in the run verify and merge stand on, not first in a later
+  session's fast run (T1-04's review; a `TEST_CHECKS` directory without a fast list has no fast tier to check).
 - **The 30 s rule.** **fast** = `00-unit-tier` + every file whose solo slot time at 4 jobs in lc-4-solo.out was 30 s
   or less + `39-memlint-m4` (42.1 s, a real regression caught outside its own feature twice). **slow** = the rest. A
   file lc-4-solo.out never timed is placed by one `TEST_JOBS=4 bash tests/run.sh <file>` run against the same line
@@ -166,3 +172,7 @@ Updated in place 2026-11-04: 33-suite-runner 51.7 s, 51.7 s (T1-02's two solo `T
 runs, walls 161.9 s and 161.1 s): moved to slow, its header and the fast fixture. Over 30 s in both too:
 `39-memlint-m4` 39.8 s, 39.6 s, kept fast (*default*): it is fast by the spec's named exception, not by the 30 s line,
 and its time is below the 42.1 s it was placed at.
+
+Updated in place 2026-11-04 (T1-04's review): the full run's fast-list check, the hint's real path and the stricter
+option parsing above; line 2 is read exactly (`IFS= read`, so a trailing blank refuses it, as the lint's `sed -n 2p`
+does), and a non-file `*.sh` (a directory, a FIFO) is refused without being read.

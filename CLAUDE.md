@@ -43,6 +43,8 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   `test("<check name>")` calls, one node process) runs alone under
   `node --test --test-isolation=none tests/unit/*.test.mjs` (spec reporter; a bare `tests/unit/` is no glob on node 24),
   as the suite's lines under `bash tests/run.sh 00-unit`; `--test-name-pattern "<regex>"` picks tests.
+  `bash tests/run.sh --tier fast` runs the fast tier, and a new check file declares its tier on line 2 by
+  journal/decisions/2026-11-03-suite-tiers.md's 30 s rule.
 - `bash -n` on every shell file you touch; `node --check` on every `.mjs`.
 
 ## Where decisions and docs live

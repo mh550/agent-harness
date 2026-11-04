@@ -91,7 +91,7 @@ sfr full; touch "$T/sf/02-h.sh.go"; sfr rerun 02-h; sfr ok 01-a; cp "$T/sf/01-a.
 SFC="conformance: every check a subset ran is in the fixture, once"
 check "suite runner: a subset run fails on a name not in its fixture (a stopped file's rerun) or a name twice; a conforming one passes" \
   '[[ $(grep "^HARNESS_FAILED=" "$T/sf-full.out") == "HARNESS_FAILED=02-h" && $(cat "$T/sf-rerun.rc") == 1 ]] \
-  && [[ $(grep -x -A1 "new (add each to tests/fixtures/check-names.txt):" "$T/sf-rerun.out") == *$'"'"'\nsf n1'"'"' ]] && grep -qx "FAIL $SFC" "$T/sf-rerun.out" \
+  && [[ $(grep -x -A1 "new (add each to $T/sf/check-names.txt):" "$T/sf-rerun.out") == *$'"'"'\nsf n1'"'"' ]] && grep -qx "FAIL $SFC" "$T/sf-rerun.out" \
   && [[ $(cat "$T/sf-ok.rc") == 0 ]] && grep -qx "PASS $SFC" "$T/sf-ok.out" && [[ $(tail -1 "$T/sf-ok.out") == "2/2 checks passed" ]] \
   && [[ $(cat "$T/sf-dup.rc") == 1 ]] && [[ $(grep -x -A1 "doubled (two checks of one name):" "$T/sf-dup.out") == *$'"'"'\nsf a1'"'"' ]] && grep -qx "FAIL $SFC" "$T/sf-dup.out"'
 # ---- tiers (T1-01): line 2 of every check file is `# tier: fast` or `# tier: slow`; `--tier` runs one tier's files ----
@@ -118,10 +118,11 @@ check "tiers: --repeat combines with --tier: the tier's matching files n times, 
   && ! grep "^03-s" "$T/tr-rep.out" > /dev/null && [[ $(grep -c " green$" "$T/tr-rep2.out") == 1 ]] && grep -qx "03-s: 2/2 green" "$T/tr-rep2.out"'
 mkdir -p "$T/tn" && tiny "$T/tn/01-a.sh" 'echo "PASS tn a1"; touch $0.ran' && printf '%s\n' '#!/usr/bin/env bash' 'echo "PASS tn n1"; touch $0.ran' > "$T/tn/02-n.sh" \
   && printf '%s\n' '#!/usr/bin/env bash' '# tier: medium' 'echo "PASS tn m1"; touch $0.ran' > "$T/tn/03-m.sh"
-for a in "" "--tier fast" "01-a"; do TEST_CHECKS=$T/tn bash "$HERE/run.sh" $a > "$T/tn${a//[ -]/}.out" 2>&1; echo $? > "$T/tn${a//[ -]/}.rc"; done
-check "tiers: a check file without a tier header on line 2 is refused: no tier header: <path> per file in name order, exit 2, nothing run" \
+mkdir -p "$T/tnt"   # the runner's TMPDIR: a refusal leaves it empty (no out dir made)
+for a in "" "--tier fast" "01-a"; do TEST_CHECKS=$T/tn TMPDIR=$T/tnt bash "$HERE/run.sh" $a > "$T/tn${a//[ -]/}.out" 2>&1; echo $? > "$T/tn${a//[ -]/}.rc"; done
+check "tiers: a check file without a tier header on line 2 is refused: no tier header: <path> per file in name order, exit 2, nothing run or written" \
   'ok=1; for o in tn tntierfast tn01a; do [[ $(cat "$T/$o.rc") == 2 && $(cat "$T/$o.out") == "no tier header: $T/tn/02-n.sh"$'"'"'\n'"'"'"no tier header: $T/tn/03-m.sh" ]] || { echo "  ($o)"; ok=0; }; done \
-  && (( ok )) && ! ls "$T"/tn/*.ran 2> /dev/null'
+  && (( ok )) && ! ls "$T"/tn/*.ran 2> /dev/null && [[ -z $(ls -A "$T/tnt") ]]'
 # ---- per-tier conformance (T1-02): --tier fast against check-names-fast.txt, --tier slow against the full fixture minus it ----
 # tr (above) conforms in both tiers. tm: a fast name (tm f2) and a slow one (tm s2) deleted from their files. tx: a red
 # fast file, its tier conforming (HARNESS_FAILED= as before)
@@ -148,6 +149,26 @@ check "tier conformance: a green --tier fast or --tier slow run prints its tier'
   && grep -qx "PASS conformance: the split suite has every check the single-file suite had" "$T/tr-all.out"'
 check "tier conformance: a red --tier fast run whose failures are all inside named files prints HARNESS_FAILED= as before" \
   '[[ $(cat "$T/td-xfast.rc") == 1 ]] && grep -qx "PASS $CF" "$T/td-xfast.out" && [[ $(grep "^HARNESS_FAILED=" "$T/td-xfast.out") == "HARNESS_FAILED=02-r" ]]'
+# T1-04 (review): a full run checks the fast fixture against what the fast files print, both ways. tf: tf f2 printed by a
+# fast file, absent from the fast fixture; tf s3 in the fast fixture, printed by a slow file (each tier's own run is red too)
+cn tf "tf f1" "tf f2" "tf s1" "tf s3" && tc tf "tf f1" "tf s3" && tiny "$T/tf/01-f.sh" 'echo "PASS tf f1"; echo "PASS tf f2"' \
+  && TIER=slow tiny "$T/tf/02-s.sh" 'echo "PASS tf s1"; echo "PASS tf s3"'
+tdr tf fall; tdr tf fslow --tier slow
+mkdir -p "$T/to" && tiny "$T/to/01-f.sh" 'echo "PASS to f1"'; tor() { TEST_CHECKS=$T/to bash "$HERE/run.sh" "${@:2}" > "$T/to-$1.out" 2>&1; echo $? > "$T/to-$1.rc"; }
+tor late 01 --tier slow; tor twice --tier fast --tier slow; tor eq --tier=fast
+check "tier conformance: a full run fails on a fast file's name absent from the fast fixture and a fast-fixture name no fast file printed" \
+  '[[ $(cat "$T/td-fall.rc") == 1 ]] && grep -qx "FAIL conformance: the split suite has every check the single-file suite had" "$T/td-fall.out" \
+  && [[ $(grep -x -A1 "in the fast fixture, not printed by a fast file:" "$T/td-fall.out") == *$'"'"'\ntf s3'"'"' ]] \
+  && [[ $(grep -x -A1 "printed by a fast file, not in the fast fixture:" "$T/td-fall.out") == *$'"'"'\ntf f2'"'"' ]]'
+check "tier conformance: a new name's hint names the fixture the run compared, a TEST_CHECKS directory's own path" \
+  'grep -qx "new (add each to $T/tf/check-names.txt, and drop it from $T/tf/check-names-fast.txt if it is there):" "$T/td-fslow.out"'
+check "tiers: --tier after a name, twice, or as --tier=<t> prints the usage, exit 2, runs nothing" \
+  'ok=1; for o in late twice eq; do [[ $(cat "$T/to-$o.rc") == 2 ]] && grep -q "^usage: tests/run.sh" "$T/to-$o.out" && ! grep "^PASS " "$T/to-$o.out" > /dev/null || { echo "  ($o)"; ok=0; }; done; (( ok ))'
+mkdir -p "$T/tw" && printf '%s\n' '#!/usr/bin/env bash' '# tier: fast  ' 'echo "PASS tw a1"' > "$T/tw/01-a.sh" && mkdir "$T/tw/02-d.sh"
+TEST_CHECKS=$T/tw bash "$HERE/run.sh" > "$T/tw.out" 2> "$T/tw.err"; echo $? > "$T/tw.rc"
+check "tiers: line 2 is read exactly (a trailing blank refuses it) and a directory named *.sh is refused without a read error" \
+  '[[ $(cat "$T/tw.rc") == 2 && $(cat "$T/tw.out") == "no tier header: $T/tw/01-a.sh"$'"'"'\n'"'"'"no tier header: $T/tw/02-d.sh" && ! -s $T/tw.err ]]'
+check "tiers: bash -n tests/run.sh passes" 'bash -n "$HERE/run.sh"'
 # the lint, on the real tree (read only): the headers and the two fixtures agree. tierlint <checks dir> <full fixture>
 # <fast fixture> [<more fast sources>…]: one line per inconsistency, exit 1 on any. A name belongs to the files whose
 # source holds its text (most names are literal; one built at run time is told by the fast run's conformance instead)

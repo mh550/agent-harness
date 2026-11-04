@@ -16,6 +16,7 @@
 # A full run of tests/checks also checks conformance: its check names are tests/fixtures/check-names.txt, none missing, new or doubled;
 # a --tier fast run against tests/fixtures/check-names-fast.txt (the fast files' names, C-sorted), a --tier slow run against
 # the full list minus the fast one, the same three ways; a names subset (with or without --tier): none new or doubled.
+# A full run also holds check-names-fast.txt to the names the fast files printed, both ways (a misfiled name is red there).
 # A TEST_CHECKS directory's fixtures are its own check-names.txt and check-names-fast.txt (a missing fast one: empty).
 # A red run ends with HARNESS_FAILED=<the red files' basenames> (check.sh's rerun takes them as arguments), only when
 # every failure is inside a named file; a failure outside one (conformance) leaves it out, so check.sh reruns the whole suite.
@@ -29,23 +30,23 @@ repeat=0 tier=""
 usage() { echo "usage: tests/run.sh [--tier fast|slow] [--repeat <n>] [<name>…]   (--repeat: a name or --tier)"; exit 2; }
 while [[ ${1:-} == --repeat || ${1:-} == --tier ]]; do
   if [[ $1 == --repeat ]]; then [[ ${2:-} =~ ^[1-9][0-9]*$ ]] || usage; repeat=$2
-  else [[ ${2:-} == fast || ${2:-} == slow ]] || usage; tier=$2; fi
+  else [[ -z $tier && ( ${2:-} == fast || ${2:-} == slow ) ]] || usage; tier=$2; fi
   shift 2
 done
 (( repeat && ! $# )) && [[ -z $tier ]] && usage
-# every file's tier from its line 2, before anything runs: one without is in no gate, so the whole run is refused
-declare -A tierof; bad=()
-for f in "$dir"/*.sh; do [[ -e $f ]] || continue; l2=""; { read -r _; read -r l2; } < "$f"
-  case $l2 in "# tier: fast") tierof[$f]=fast ;; "# tier: slow") tierof[$f]=slow ;; *) bad+=("$f") ;; esac; done
-(( ${#bad[@]} )) && { printf 'no tier header: %s\n' "${bad[@]}"; exit 2; }
-jobs=${TEST_JOBS:-}
-[[ $jobs =~ ^[1-9][0-9]*$ ]] || { jobs=$(( $(nproc) / 2 )); (( jobs > 4 )) && jobs=4; (( jobs < 1 )) && jobs=1; }
-files=()
-for f in "$dir"/*.sh; do [[ -n ${tierof[$f]:-} ]] || continue
+for a; do [[ $a == --* ]] && usage; done   # an option after a name, or --tier=<t>, would be a name that matches nothing
+# the one header reader: every file's tier from its line 2, exactly (IFS=, no trim), before anything runs. One without
+# is in no gate, so the whole run is refused; the tier and the names pick the files of the rest
+declare -A tierof; bad=() files=()
+for f in "$dir"/*.sh; do [[ -e $f || -L $f ]] || continue; l2=""; [[ -f $f ]] && { IFS= read -r _; IFS= read -r l2; } < "$f"
+  case $l2 in "# tier: fast") tierof[$f]=fast ;; "# tier: slow") tierof[$f]=slow ;; *) bad+=("$f"); continue ;; esac
   [[ -z $tier || ${tierof[$f]} == "$tier" ]] || continue
   (( $# )) || { files+=("$f"); continue; }
   for a; do [[ $(basename "$f") == *"$a"* ]] && { files+=("$f"); break; }; done
 done
+(( ${#bad[@]} )) && { printf 'no tier header: %s\n' "${bad[@]}"; exit 2; }
+jobs=${TEST_JOBS:-}
+[[ $jobs =~ ^[1-9][0-9]*$ ]] || { jobs=$(( $(nproc) / 2 )); (( jobs > 4 )) && jobs=4; (( jobs < 1 )) && jobs=1; }
 [[ -e ${files[0]:-} ]] || { echo "no check file matches: ${tier:+--tier $tier }$*"; echo "0/0 checks passed"; exit 1; }
 mapfile -t files < <(ls -S "${files[@]}")   # largest first: its size is a fair guess at its time, and a long file started last sets the wall time
 # a job per file, or per copy under --repeat (<file>.c<i>); src names its file
@@ -139,15 +140,25 @@ fx=""; if [[ $(cd "$dir" && pwd -P) == "$(cd "$HERE/checks" && pwd -P)" ]]; then
 if [[ -n $fx ]]; then
   sed -i 's/ (skipped: [^)]*)$//' "$out/names"   # a check skipped where its tool is missing (no user systemd) keeps its name
   LC_ALL=C sort -u "$out/names" > "$out/uniq"   # C order, as the fixture (never exported: tmux needs UTF-8)
-  ffx=${fx%.txt}-fast.txt; [[ -f $ffx ]] || ffx=/dev/null
-  name="conformance: the split suite has every check the single-file suite had" add="tests/fixtures/check-names.txt"
+  ffx=${fx%.txt}-fast.txt; fs=$ffx; [[ -f $ffx ]] || ffx=/dev/null
+  rel() { [[ $1 == "$HERE"/* ]] && echo "tests/${1#"$HERE"/}" || echo "$1"; }   # the hint's path: the fixture compared
+  name="conformance: the split suite has every check the single-file suite had" list=$fx add=$(rel "$fx")
   case $tier in
-    fast) cp "$ffx" "$out/fx"; add+=" and check-names-fast.txt" ;;
-    slow) LC_ALL=C comm -23 "$fx" "$ffx" > "$out/fx"; add+=", not check-names-fast.txt" ;;
-    *) cp "$fx" "$out/fx" ;;
+    fast) list=$ffx add="$(rel "$fs"), and to $(rel "$fx") if it isn't there" ;;
+    slow) LC_ALL=C comm -23 "$fx" "$ffx" > "$out/fx"; list=$out/fx add+=", and drop it from $(rel "$fs") if it is there" ;;
   esac
   [[ -n $tier ]] && name="conformance: every check of the $tier tier ran, none new or doubled"
-  missing=$(LC_ALL=C comm -23 "$out/fx" "$out/uniq") new=$(LC_ALL=C comm -13 "$out/fx" "$out/uniq") doubled=$(LC_ALL=C sort "$out/names" | uniq -d)
+  missing=$(LC_ALL=C comm -23 "$list" "$out/uniq") new=$(LC_ALL=C comm -13 "$list" "$out/uniq") doubled=$(LC_ALL=C sort "$out/names" | uniq -d)
+  # a full run also holds the fast fixture to what the fast files printed, both ways, so a misfiled name can't wait for
+  # a later fast run to turn red (a TEST_CHECKS directory without a fast fixture has no fast tier to check)
+  fmiss="" fnew=""
+  if [[ -z $tier && $# == 0 && ( $fx == "$HERE/fixtures/check-names.txt" || -f $fs ) ]]; then
+    for b in "${keys[@]}"; do [[ ${tierof[${src[$b]}]} == fast ]] && cat "$out/$b.out"; done | sed -n 's/^\(PASS\|FAIL\) //p' \
+      | sed 's/ (skipped: [^)]*)$//' | LC_ALL=C sort -u > "$out/funiq"
+    fmiss=$(LC_ALL=C comm -23 "$ffx" "$out/funiq") fnew=$(LC_ALL=C comm -13 "$ffx" "$out/funiq")
+    # a fast-fixture name no fast file printed that was never printed at all is already missing above
+    fmiss=$(LC_ALL=C comm -12 <(printf '%s\n' "$fmiss") "$out/uniq")
+  fi
   (( $# )) && missing="" name="conformance: every check a subset ran is in the fixture, once"
   [[ -n $missing ]] && printf 'missing (in the fixture, not run):\n%s\n' "$missing"
   # a file cut short never printed its later names: one found in its source is its fault (it is named below and rerun);
@@ -160,8 +171,10 @@ if [[ -n $fx ]]; then
   fi
   [[ -n $new ]] && printf 'new (add each to %s):\n%s\n' "$add" "$new"
   [[ -n $doubled ]] && printf 'doubled (two checks of one name):\n%s\n' "$doubled"
+  [[ -n $fmiss ]] && printf 'in the fast fixture, not printed by a fast file:\n%s\n' "$fmiss"
+  [[ -n $fnew ]] && printf 'printed by a fast file, not in the fast fixture:\n%s\n' "$fnew"
   total=$((total + 1))
-  if [[ -z $missing$new$doubled ]]; then echo "PASS $name"; else echo "FAIL $name"; fails=$((fails + 1)) outside=1; fi
+  if [[ -z $missing$new$doubled$fmiss$fnew ]]; then echo "PASS $name"; else echo "FAIL $name"; fails=$((fails + 1)) outside=1; fi
 fi
 
 (( ${#broken[@]} )) && echo "files that exited non-zero: ${broken[*]}"
