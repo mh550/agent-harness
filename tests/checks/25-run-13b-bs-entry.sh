@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 13b: B's entry.json isn't JSON: the driver records a minimal entry from git and B's final message (E4-03) ----
 STUB_BAD_ENTRY=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" badentry --spec SPEC.md --foreground > "$T/run13b.out" 2>&1

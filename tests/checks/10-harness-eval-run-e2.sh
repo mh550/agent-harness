@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- harness eval run (E2-03): two stub tasks replayed by the committed driver (--harness HEAD), in isolation ----
 # The task repo's own config would merge through gh and post to ntfy: the eval's run.env must beat it.

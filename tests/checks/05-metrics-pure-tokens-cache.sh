@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- metrics: the session-id and summary CLI (the pure evals and the resume row are tests/unit/metrics.test.mjs) ----
 # a resume (R2): the init line's session id

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- R3's leftovers (docs/plans/2026-10-29-R3-leftovers.md): atomic list writes, … ----
 # a writer bumps one attempts file 200 times beside a reader that parses it in a loop: an in-place write (truncate, then

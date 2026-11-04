@@ -1078,6 +1078,12 @@ the weekly budget ends a run after the session that crossed it
 the whole context is capped too
 thin evidence at the deadline is not escalated: one verify, M1 not verified
 thin evidence escalates the verify
+tiers: --repeat combines with --tier: the tier's matching files n times, no file of the other tier
+tiers: --tier fast <name> runs the one fast file whose name matches; a slow file's name under --tier fast matches none
+tiers: --tier fast runs the two fast files and not the slow one, --tier slow the slow one only, exit 0
+tiers: --tier with no tier the runner knows prints the usage, exit 2, runs nothing
+tiers: a check file without a tier header on line 2 is refused: no tier header: <path> per file in name order, exit 2, nothing run
+tiers: the slowest: line ends , tier fast, , tier slow, or , tier all for a run without --tier
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
 tmux: run id dot.run gets session h-dot-run, gone at keep 0

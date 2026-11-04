@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the retro backlog (M1): `harness backlog` lists, sets and imports ledger/retro-backlog.jsonl under the ledger lock ----
 ST=$HARNESS_LEDGER/retro-backlog.jsonl SEED=specs/2026-10-25-memory.backlog-seed.jsonl DOCS=$HERE/../docs

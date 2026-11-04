@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- one full run per coding session (C1 fix 4): suite_runs and suite_full on the coding row, the Suite runs row ----
 HH=$(cd "$HERE/.." && pwd)

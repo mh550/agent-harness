@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the session-side stop paths open needs records (U2-05): a park, a given-up feature, a finish reason, a driver
 # that crashed; needs.md on the record branch is the park notification's click; sweeps resolve them ----

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- lanes continue (P1-05): harness continue reopens a lane from its origin branch; a legacy run is refused; a pr-held dependency ----
 # MAX_SESSIONS=3 ends the first segment mid-M2: A and B pass, M1 merges, C's first session leaves the suite red. Michael

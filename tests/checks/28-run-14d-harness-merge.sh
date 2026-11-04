@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 14d: `harness merge` on a legacy record (no journal, plan §14 a): it stays byte for byte; its PR quotes its own verify entry ----
 echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"

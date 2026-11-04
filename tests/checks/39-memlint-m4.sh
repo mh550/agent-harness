@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- memlint (M4): four deterministic checks on a worktree's memory files, one finding per line, on fixtures trimmed ----
 # ---- from the projects' files as they were before chunk 3 Part 2 tidied them ----

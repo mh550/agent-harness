@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- a finished run keeps its record after gc (U3-03, decisions/2026-10-27-record-after-gc): finish copies ----
 # ---- summary.json and report.md into the state dir; report reads worktree → state → ledger → a no record line ----

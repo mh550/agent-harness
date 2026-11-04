@@ -3,34 +3,48 @@
 #   tests/run.sh [<name>…]   → all check files, or those whose names contain any <name>; each file's PASS/FAIL lines whole
 #                              with a timing line, then the slowest three and the wall time, then the total
 #                              `N/M checks passed`, exit 1 on any failure (KEEP=1 keeps each file's $T and names it)
+#   tests/run.sh --tier fast|slow [<name>…]  → only that tier's files (with names: those of them that match); the
+#                              slowest: line ends `, tier <fast|slow|all>` (all: no --tier)
+# The tier header: line 2 of every check file (TEST_CHECKS's too) is `# tier: fast` or `# tier: slow`, by the 30 s rule of
+# journal/decisions/2026-11-03-suite-tiers.md. A file without one is in no gate: the runner prints `no tier header: <file>`
+# for each, in name order, and exits 2 before running anything.
 # TEST_JOBS (default half the cores, 1 to 4) files run at once as plain background jobs: inside the caller's check scope,
 # never a scope of their own (scopes don't nest; one would escape the cap). TEST_CHECKS: another checks directory (a full
 # run of it checks conformance against its own check-names.txt when it holds one).
 # TEST_FILE_TIMEOUT (default 10m, a sleep duration): a file still running then is stopped (TERM to its process group,
 # KILL 10 s later) and counted as one FAIL line, so a hung file costs its timeout, not the whole suite's.
 # A full run of tests/checks also checks conformance: its check names are tests/fixtures/check-names.txt, none missing, new or doubled
-# (a subset run: none new or doubled).
+# (a subset or --tier run: none new or doubled).
 # A red run ends with HARNESS_FAILED=<the red files' basenames> (check.sh's rerun takes them as arguments), only when
 # every failure is inside a named file; a failure outside one (conformance) leaves it out, so check.sh reruns the whole suite.
 # A missing name in the source of a file stopped or killed (one it could not print) doesn't count; any other, new and doubled do.
-#   tests/run.sh --repeat <n> <name>…  → each matching file n times, TEST_JOBS copies at once (load, to reproduce a flake),
+#   tests/run.sh [--tier <t>] --repeat <n> <name>…  → each matching file (of tier <t>; no name: all of it) n times, TEST_JOBS copies at once (load, to reproduce a flake),
 #                              each copy its own process and fresh state; per file `<file>: <k>/<n> green`, then each red
 #                              copy's FAIL lines as `copy <i>: FAIL …`; exit 1 when any copy was red (no conformance, no HARNESS_FAILED=)
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd); dir=${TEST_CHECKS:-$HERE/checks}
-repeat=0
-if [[ ${1:-} == --repeat ]]; then
-  [[ ${2:-} =~ ^[1-9][0-9]*$ && $# -ge 3 ]] || { echo "usage: tests/run.sh --repeat <n> <name>…"; exit 2; }
-  repeat=$2; shift 2
-fi
+repeat=0 tier=""
+usage() { echo "usage: tests/run.sh [--tier fast|slow] [--repeat <n>] [<name>…]   (--repeat: a name or --tier)"; exit 2; }
+while [[ ${1:-} == --repeat || ${1:-} == --tier ]]; do
+  if [[ $1 == --repeat ]]; then [[ ${2:-} =~ ^[1-9][0-9]*$ ]] || usage; repeat=$2
+  else [[ ${2:-} == fast || ${2:-} == slow ]] || usage; tier=$2; fi
+  shift 2
+done
+(( repeat && ! $# )) && [[ -z $tier ]] && usage
+# every file's tier from its line 2, before anything runs: one without is in no gate, so the whole run is refused
+declare -A tierof; bad=()
+for f in "$dir"/*.sh; do [[ -e $f ]] || continue; l2=""; { read -r _; read -r l2; } < "$f"
+  case $l2 in "# tier: fast") tierof[$f]=fast ;; "# tier: slow") tierof[$f]=slow ;; *) bad+=("$f") ;; esac; done
+(( ${#bad[@]} )) && { printf 'no tier header: %s\n' "${bad[@]}"; exit 2; }
 jobs=${TEST_JOBS:-}
 [[ $jobs =~ ^[1-9][0-9]*$ ]] || { jobs=$(( $(nproc) / 2 )); (( jobs > 4 )) && jobs=4; (( jobs < 1 )) && jobs=1; }
 files=()
-for f in "$dir"/*.sh; do
+for f in "$dir"/*.sh; do [[ -n ${tierof[$f]:-} ]] || continue
+  [[ -z $tier || ${tierof[$f]} == "$tier" ]] || continue
   (( $# )) || { files+=("$f"); continue; }
   for a; do [[ $(basename "$f") == *"$a"* ]] && { files+=("$f"); break; }; done
 done
-[[ -e ${files[0]:-} ]] || { echo "no check file matches: $*"; echo "0/0 checks passed"; exit 1; }
+[[ -e ${files[0]:-} ]] || { echo "no check file matches: ${tier:+--tier $tier }$*"; echo "0/0 checks passed"; exit 1; }
 mapfile -t files < <(ls -S "${files[@]}")   # largest first: its size is a fair guess at its time, and a long file started last sets the wall time
 # a job per file, or per copy under --repeat (<file>.c<i>); src names its file
 keys=(); declare -A src
@@ -123,7 +137,7 @@ if [[ -n $fx ]]; then
   LC_ALL=C sort -u "$out/names" > "$out/uniq"   # C order, as the fixture (never exported: tmux needs UTF-8)
   missing=$(LC_ALL=C comm -23 "$fx" "$out/uniq") new=$(LC_ALL=C comm -13 "$fx" "$out/uniq") doubled=$(LC_ALL=C sort "$out/names" | uniq -d)
   name="conformance: the split suite has every check the single-file suite had"
-  (( $# )) && missing="" name="conformance: every check a subset ran is in the fixture, once"
+  (( $# )) || [[ -n $tier ]] && missing="" name="conformance: every check a subset ran is in the fixture, once"
   [[ -n $missing ]] && printf 'missing (in the fixture, not run):\n%s\n' "$missing"
   # a file cut short never printed its later names: one found in its source is its fault (it is named below and rerun);
   # any other (a check deleted elsewhere) still counts, so the whole suite reruns and conformance stays red
@@ -141,6 +155,6 @@ fi
 
 (( ${#broken[@]} )) && echo "files that exited non-zero: ${broken[*]}"
 (( ${#broken[@]} && ! outside )) && echo "HARNESS_FAILED=${broken[*]}"
-echo "slowest: $(printf '%s\n' "${timing[@]}" | sort -rn | head -3 | while read -r t b; do printf '%s %s s, ' "$b" "$(s1 "$t")"; done | sed 's/, $//'); wall $(s1 $(( $(us) - t0 ))) s, $jobs jobs"
+echo "slowest: $(printf '%s\n' "${timing[@]}" | sort -rn | head -3 | while read -r t b; do printf '%s %s s, ' "$b" "$(s1 "$t")"; done | sed 's/, $//'); wall $(s1 $(( $(us) - t0 ))) s, $jobs jobs, tier ${tier:-all}"
 echo "$(( total - fails ))/$total checks passed"
 (( fails == 0 && ${#broken[@]} == 0 ))

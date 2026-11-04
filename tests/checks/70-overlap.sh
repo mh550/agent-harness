@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- overlaps (U3-05, the pure half): lib/overlap.mjs named finds the tracked paths a spec or brief names, overlap ----
 # ---- their intersection. tests/fixtures/overlap-spec.md is a byte copy of docs/specs/2026-10-26-suite-split.md ----

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 19: the review gate (M6): a review feature runs on sonnet under REVIEW_OPUS_LINES changed lines, opus at or over ----
 # M1 is A, B, D (build) and R (review); verify is lenient so each run ends done. rbig's A also commits a 500-line file.

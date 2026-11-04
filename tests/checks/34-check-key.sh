@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the suite cache key (suite-split S3): CHECK_KEY_IGNORE leaves out what the suite never reads ----
 git init -q "$T/ky" && ( cd "$T/ky" && mkdir -p lib docs/plans docs/plansx && echo a > lib/a.sh && echo p > docs/plans/p.md \

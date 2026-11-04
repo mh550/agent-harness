@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- render: the --raw CLI (assemble's eval is tests/unit/render.test.mjs) ----
 # --raw pastes the one file after it as written, so a brief with "{{X}}" in it stays out of the fill (E3 review F7)

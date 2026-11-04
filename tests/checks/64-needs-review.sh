@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- U2-09's review (docs/plans/2026-10-28-U2-review.md): each finding's check, red before its fix ----
 NM=$HERE/../lib/needs.mjs FX=$HERE/fixtures/needs

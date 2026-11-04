@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 13c: a stale green marker (R4): verify runs the suite in full ----
 # B leaves BROKEN with a green marker for that tree: the post-session check trusts it; verify clears it and runs in full

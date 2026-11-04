@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- same-project starts (U3-05): a plain start or continue queues behind a live run of its project, before it ----
 # ---- changes any state; --now, --foreground and the runner's starts (which pass --now) start anyway ----

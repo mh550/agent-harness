@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- U3 review (U3-08, docs/plans/2026-10-28-U3-review.md): one check per Important finding, red before its fix ----
 # MERGE_POLICY=pr keeps a stub run's code on its lane branches (work-A.txt, none on main): an ended, unmerged run

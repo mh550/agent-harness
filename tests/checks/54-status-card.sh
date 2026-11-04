@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- harness status <run> (U1-05): a card, the state line, a rule and labelled fields, through view.mjs ----
 status_stubs

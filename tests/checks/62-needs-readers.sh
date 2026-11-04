@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- everything reads the needs record (U2-07): harness status's NEEDS YOU, --json's needs and the card's needs you
 # field from <state dir>/needs/*.json (lib/needs.mjs list), the desk prompt and the answer skill on harness needs ----

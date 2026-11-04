@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- questions say where (U2-08): the prompts ask for a Files: line and a fixed place in INBOX.md; a question
 # without one gets the session's files (the entry's, then its diff), in the journal entry and in the park's card ----

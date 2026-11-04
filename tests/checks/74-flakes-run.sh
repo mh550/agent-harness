@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the rerun guard in stub runs (N1-03): a flake is noted and its feature stays passed; a real red still un-passes ----
 # Two stub runs, each from the first main (origin's main is set back between runs). inv: the stub's default C (BROKEN

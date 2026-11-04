@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- two lanes (P2-02): admission by headroom, a port per lane, the run's end reaching every lane ----
 # M2 is after: [] (STUB_INDEPENDENT_M2), so it may open beside M1. The stub holds every coding session (hold-coding)

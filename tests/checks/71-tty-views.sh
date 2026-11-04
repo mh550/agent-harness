@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the TTY forms (U3-07): report, trends and gc --dry-run render through view.mjs for a person (HARNESS_TTY=1 ----
 # ---- or a terminal); off a TTY, and with --md, their output is byte for byte what it was ----

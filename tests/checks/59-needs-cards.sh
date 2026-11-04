@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the needs cards (U2-04): a template per reason in lib/needs.mjs, harness needs as cards, harness parked its alias ----
 # Plan: docs/plans/2026-10-28-U2-needs-record.md §3, §3.1, §4.3. The facts per reason are tests/fixtures/needs/<reason>.json

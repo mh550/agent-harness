@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- slots and cleanup (P2-04): a slot reused across milestones, merged lane branches deleted, gc's lane passes ----
 # The gc checks are here, not in 08 or 13 (the two largest files): this file builds the lane state they read.

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- lanes record (lanes P1-03): the record lock; the record on harness/<run>, the code on lane branches ----
 HARNESS_HOME=$HH   # slot_open's merge_drivers (lib/record.sh): a run's session inherits its driver's, a plain shell has none

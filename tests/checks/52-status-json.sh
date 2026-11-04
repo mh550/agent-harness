@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- harness status --json (U1-03): lib/status.mjs builds the run, needs and queue objects from the stub state ----
 status_stubs

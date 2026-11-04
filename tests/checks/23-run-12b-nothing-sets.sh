@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 12b: nothing sets MERGE_POLICY → the default is pr, so a verified milestone is proposed, never merged ----
 echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"   # no MERGE_POLICY in any layer: the harness default decides

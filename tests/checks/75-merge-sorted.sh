@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- layer 1 of conflict resolution (N2-02): lib/merge-sorted.sh, the sorted-union merge driver ----
 MS=$HERE/../lib/merge-sorted.sh HOME_DRIVER="$(cd "$HERE/.." && pwd)/lib/merge-sorted.sh %O %A %B"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the rerun guard (N1): check.sh's full form reruns a red once; a flake is green and counted, a real red stays red ----
 # One stub suite (HARNESS_CHECK_CMD) in one throwaway repo, so treekey gives a key. Each case has its own directory

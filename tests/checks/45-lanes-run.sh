@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- lanes run (P1-04): lib/lane.sh runs each milestone as its own process; lib/driver.sh is the coordinator ----
 # MAX_LANES=1 (the default): today's three-feature list, M1 (A, B) then M2 (C, no after: it waits on M1), one lane at a time

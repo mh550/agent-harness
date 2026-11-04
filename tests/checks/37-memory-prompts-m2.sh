@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- one routing rule (M2): decisionsStore() names the project's decisions store; every session's prompt carries the ----
 # ---- `## Where things go` block once, unless the project's CLAUDE.md already has it ----

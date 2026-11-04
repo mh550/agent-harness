@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 # The unit tier: every tests/unit/*.test.mjs in one node process, as the suite's PASS/FAIL lines and its N/M line.
 #   tests/checks/00-unit-tier.sh   → exit 1 on any FAIL line or a non-zero node exit (TEST_UNIT_DIR: another directory)
 # No throwaway project (it doesn't source tests/lib.sh). What would be red with no FAIL line of node's prints one of its

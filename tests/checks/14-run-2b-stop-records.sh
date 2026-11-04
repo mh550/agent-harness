@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 REPLAY=1   # replayed for their state, checked in their own files (tests/split.sh REPLAYS_)
 # ---- run 1: misbehaving sessions, two milestones; verified milestones merge themselves ----
