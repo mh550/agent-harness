@@ -196,7 +196,7 @@ _flakes_note() {
   [[ $chunk == *$'\n'* ]] || return 0
   chunk=${chunk%$'\n'*}$'\n'
   while IFS= read -r msg; do [[ -n $msg ]] && note "$msg"; done <<< "$(jq -Rr 'try (fromjson | objects | "flaky: \(if (.names | length) > 0
-    then .names | join(" ") else "whole suite" end) (red, then green on a rerun; load \((.load // "") | split(" ")[0] // "?"))") catch empty' <<< "${chunk%$'\n'}")"
+    then .names | join(" ") elif .tier == "fast" then "the fast tier" else "whole suite" end) (red, then green on a rerun; load \((.load // "") | split(" ")[0] // "?"))") catch empty' <<< "${chunk%$'\n'}")"
   echo $(( off + $(printf %s "$chunk" | wc -c) )) > "$STATE/flakes-noted"
 }
 
@@ -583,7 +583,7 @@ run_init() {   # [fresh: clear the suite cache's markers for the tree as the ini
   # a failed one runs the suite, and a red under a failed init isn't kept (init-failed: this lane's, or the driver's)
   local flag=${LDIR:-$STATE}/init-failed prev=0; [[ -f $flag ]] && prev=1
   if (( rc )); then touch "$flag"; else rm -f "$flag"; fi
-  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/green-$key" "$STATE/green/red-$key" "$STATE/green/fast-$key" "$STATE/green/part-$red"   # a cached red would answer too
+  [[ ${1:-} == fresh ]] && rm -f "$STATE/green/"{green,red,fast}-"$key" "$STATE/green/part-$red"   # a cached red or fast-green would answer too
   (( rc || prev )) && rm -f "$STATE/green/red-$key"
   local crc=0 tier=(); [[ ${1:-} == fast ]] && tier=(--fast)
   "$CHECK" "${tier[@]}" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }

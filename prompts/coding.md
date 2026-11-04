@@ -24,7 +24,7 @@ checkouts on this machine.
   that green, and a run before it is one you pay twice. The full suite runs at verify on the milestone's tree: if
   your change touches the driver's scenario paths (in agent-harness: `lib/driver.sh`, `lib/lane.sh`, `lib/record.sh`,
   `bin/harness`) or a slow-tier check file, also run the slow-tier files that exercise it (`<suite> <file>`) before
-  you end: a slow red at verify costs the milestone a fix session. A red check that check.sh reran green is a flake it
+  you end: a slow red at verify stops the milestone for Michael. A red check that check.sh reran green is a flake it
   has already recorded: never rerun the suite by hand for it; a red after its rerun is real. Never lower the suite's
   parallelism to make room for other lanes (`TEST_JOBS=2` on this box: slower and as flaky, 2026-10-28;
   `decisions/2026-10-29-check-timeout-25m`).

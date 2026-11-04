@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers } from "../../lib/summary.mjs";
+import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
@@ -77,6 +77,11 @@ test("lanes summary: laneSpans counts the lanes open at once and sums open-to-cl
   assert.deepEqual(got, { max_open: 2, lane_hours: 3 });
   assert.equal(Object.keys(got).join(), "max_open,lane_hours");
   assert.deepEqual(laneSpans(""), { max_open: 0, lane_hours: 0 });
+});
+
+test("summary.mjs: flakes counts a fast flake with no names as the fast tier, a full one as whole suite", () => {
+  assert.deepEqual(flakes([{ names: [], tier: "fast" }, { names: [] }, { names: ["a"], tier: "fast" }]),
+    { count: 3, names: { "the fast tier": 1, "whole suite": 1, a: 1 } });
 });
 
 test("summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built", () => {

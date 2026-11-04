@@ -312,6 +312,7 @@ fast gate run: tests-end is never the fast count (the full count or none)
 fast gate run: the coding prompt names both tiers' commands, carries both lengths under # This session, and the tier rule
 fast gate run: the run passes and merges on the full suite; tests-end is the full count, no un-pass
 fast gate run: the run's first init is a bare (full) call and tests-start holds the full count
+fast gate run: the verify's init ran the full suite (its prompt's init output is the full RED, not a fast line)
 fast gate run: the verify's run_init fresh removes a planted fast-<key> beside red- and green-<key>
 fast gate: --fast runs the fast command (--tier fast), writes fast-<key> (the fast count, wall) and no green-<key>; row fast
 fast gate: --fast with further arguments is a usage error (exit 2), nothing run
@@ -325,6 +326,7 @@ fast gate: a green-<key> answers --fast with the full cached line, no run, no fa
 fast gate: a hanging fast run times out: the fast RED timeout line, no rerun, no marker
 fast gate: a red-<key> answers --fast with the cached RED and exit 1, no run
 fast gate: check.sh's usage header documents --fast, fast-<key>, check-fast.out and the fast row
+fast gate: flakes_note names a fast flake with no names the fast tier, a full one the whole suite
 fast gate: red then green is the fast flake line, fast-<key> with the first run total, one flakes.jsonl row with tier fast
 fast gate: the fast run's output is check-fast.out; check.out and check-<key>.out are not written
 fast gate: the next --fast call is the cached fast line, row cached, no run
@@ -662,6 +664,7 @@ needs review: harness needs done rewrites the record's needs.md (the notificatio
 needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)
 needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
+needs verify_red own: a slow-tier red the fast gate let through, never main's disagreement
 needs.md is committed on the record branch before the park goes out, and lists the park
 needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
 needs.mjs moveForward: two earlier items of the key become one, seen summed, asked_in every run's, both resolved as asked again in the new run
@@ -1018,6 +1021,7 @@ summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes
 summary.mjs: flakers names a check in the flakes of two or more of the five newest summaries (one without ended_at oldest) as name ×runs, (none) for none
+summary.mjs: flakes counts a fast flake with no names as the fast tier, a full one as whole suite
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
 summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary

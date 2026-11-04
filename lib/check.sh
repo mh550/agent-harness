@@ -80,6 +80,9 @@ why() {
 # <full|fast|subset|partial|cached>: this call's row; the epoch is its end (to the microsecond, a dot whatever the locale), so a row
 # between a lane's two stamps ended in between
 row() { printf '%s\t%s\t%s\n' "$(date +%s.%6N)" "$1" "$(( $(date +%s) - start ))" >> "$scratch/check-runs.log"; }
+# <green|fast|red|part>-<key> <line>…: a marker, whole or not at all (a temporary file moved into place), so a concurrent
+# call on the tree reads either
+mark() { local t=$cache/.${1%%-*}-$$; printf '%s\n' "${@:2}" > "$t" && mv -f "$t" "$cache/$1"; }
 
 start=$(date +%s)
 if (( $# )); then   # a subset: its output is the caller's; only a kill gets a line of its own
@@ -189,7 +192,7 @@ if (( fast )); then   # the fast tier: its own output and marker, no partial; a 
   s=$(( $(date +%s) - start ))
   if (( rc == 0 )); then
     n=$(node "$here/testcount.mjs" "$scratch/check-fast.out" ${how:+--total})
-    [[ -n $key ]] && printf '%s\nwall %s\n' "$n" "$w" > "$cache/.fast-$$" && mv -f "$cache/.fast-$$" "$cache/fast-$key"
+    [[ -n $key ]] && mark "fast-$key" "$n" "wall $w"
     if [[ -n $how ]]; then flake; flaky=${names[*]}; echo "check: fast green after a rerun (flaky: ${flaky:-the fast tier})${n:+, $n}"
     else echo "check: fast green in $s s${n:+, $n}"; fi
   else   # the tail is the whole tier's first run (a rerun's is a few files')
@@ -230,11 +233,9 @@ fi
 s=$(( $(date +%s) - start ))
 if (( rc == 0 )); then   # the marker ("<n> tests" or empty, then the wall) outlives scratch; a flake's count is its first run's total
   n=$(node "$here/testcount.mjs" "$scratch/check.out" ${how:+--total})
-  [[ -n $key ]] && printf '%s\nwall %s\n' "$n" "$w" > "$cache/.green-$$" && mv -f "$cache/.green-$$" "$cache/green-$key" \
-    && rm -f "$cache/red-$key"   # a whole file or none: a concurrent call on the tree reads either
+  [[ -n $key ]] && mark "green-$key" "$n" "wall $w" && rm -f "$cache/red-$key"
   # the sidecar: a full run's green only, so a partial's reference is always a tree every check ran on
-  [[ -n $key && $red =~ ^[0-9a-f]{16}$ ]] && (( ${#blobs[@]} )) && printf '%s\n' "$key" "${blobs[@]}" > "$cache/.part-$$" \
-    && mv -f "$cache/.part-$$" "$cache/part-$red"
+  [[ -n $key && $red =~ ^[0-9a-f]{16}$ ]] && (( ${#blobs[@]} )) && mark "part-$red" "$key" "${blobs[@]}"
   if [[ -n $how ]]; then   # a flake: green, named and counted
     [[ -n $key && -z $n ]] && rm -f "$scratch/check-$key.out"   # no total: unknown beats the red run's passes
     flake; flaky=${names[*]}; echo "check: green after a rerun (flaky: ${flaky:-whole suite})${n:+, $n}"
@@ -245,6 +246,6 @@ else
   # cached only when neither run was a timeout (the box's load), a cap kill (the scope's) or a signal's code (a kill the
   # scope didn't see, a TERM: the box's, not the tree's): those the next call runs
   [[ -n $key && $first == "exit "* && $last == "exit "* ]] && (( rc0 < 128 && rc < 128 )) \
-    && printf '%s\n' "$rc" "${names[*]}" "wall $w" "$line" > "$cache/.red-$$" && mv -f "$cache/.red-$$" "$cache/red-$key"
+    && mark "red-$key" "$rc" "${names[*]}" "wall $w" "$line"
 fi
 row full; exit $rc

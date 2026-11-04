@@ -58,7 +58,7 @@ rm "$SL/green/fast-$k"; pr > "$T/pr-new.md"; rm "$SL/green/fast-0123456789abcdef
 check "suite length: a project without CHECK_FAST_CMD renders This run's Suite line as before and no fast length" \
   '! grep -E "^Suite:.*fast" "$T/pr-none.md" > /dev/null && grep -F "cached per code tree; its last full run is under *This session*) · init: " "$T/pr-none.md" > /dev/null'
 check "suite length: with CHECK_FAST_CMD This run's Suite line names both commands; the fast length is the tree's own fast-<key>, then the newest, else not measured" \
-  'grep -F "(full: runs \`bash $T/cs.sh\`; fast tier: \`$HH/lib/check.sh --fast\` runs \`bash $T/cs.sh --tier fast\`; cached per code tree; its last full and fast runs are under *This session*) · init: " "$T/pr-own.md" > /dev/null \
+  'grep -F "(full: runs \`bash $T/cs.sh\`; fast tier: \`$HH/lib/check.sh --fast\` runs \`bash $T/cs.sh --tier fast\`; cached per code tree; its last full run, and in a coding session its last fast run, are under *This session*) · init: " "$T/pr-own.md" > /dev/null \
   && grep -xF "Suite: last fast run 55 s" "$T/pr-own.md" > /dev/null && grep -xF "Suite: last fast run 66 s" "$T/pr-new.md" > /dev/null \
   && grep -xF "Suite: last fast run not measured yet" "$T/pr-nofast.md" > /dev/null && grep -c "^Suite: last full run " "$T/pr-nofast.md" | grep -x 1 > /dev/null'
 

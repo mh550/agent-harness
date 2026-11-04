@@ -53,7 +53,7 @@ export HARNESS_LANE=$M   # check.sh names it in a flakes.jsonl row, its sessions
 # tree: no attempt granted on a failure, the tag moved on a hold, no merge here (the caller's loop merges). The session
 # reads a copy of the record; what it un-passes in it is applied to the record's list afterwards.
 verify() {
-  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS id nref="" rc
+  local m=$1 out vlog rounds model short before vstart reverted result=fail need="" failed=() maxr=$MAX_VERIFY_ROUNDS id nref="" rc own=0
   local models=("$VERIFY_MODEL" "$VERIFY_ESCALATE_MODEL") last=$VERIFY_ESCALATE_MODEL
   rounds=$(( $(cat "$STATE/verify-rounds-$m" 2>/dev/null || echo 0) + 1 ))
   local mode=${2:-} what="verify round $rounds of $maxr"
@@ -61,7 +61,8 @@ verify() {
   [[ $mode == rebase ]] && { maxr=$rounds what="re-base verify round $(cat "$STATE/rebase-rounds-$m") of $MAX_REBASE_ROUNDS"; }
   rm -f "$STATE/nomerge-$m"   # a conflict an earlier verify found: this one tries main again
   if [[ $mode != rebase ]]; then   # a re-base round verifies the tree rebase just made; a main that moved since is the next re-base's
-    sync_main; rc=$?
+    local pre; pre=$(git rev-parse HEAD); sync_main; rc=$?
+    (( rc == 0 )) && [[ $(git rev-parse HEAD) == "$pre" ]] && own=1   # main had nothing new: a red verified tree is the milestone's own
     # refused (a resolve session's limit): no round counted, the lane loop waits for the window, then this verify again
     (( rc == 2 )) && { [[ -n $RESOLVE_END ]] && lane_exit 13 "$RESOLVE_END"; return 2; }
     (( rc == 1 )) && touch "$STATE/nomerge-$m"
@@ -129,8 +130,11 @@ verify() {
       return 0 ;;
     thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $last; not verified (needs Michael)"
       need="verify evidence too thin" ;;
-    red) touch "$STATE/needs-$m"; note "verify $m: the suite is red on the verified tree (main merged in); not verified (needs Michael)"
-      need="suite red after merging main" ;;
+    red) touch "$STATE/needs-$m"
+      # with main merged in, main and the milestone disagree; without, a slow-tier red the fast gate let through (fast-gate)
+      if (( own )); then note "verify $m: the suite is red on the verified tree (main had nothing new: a slow-tier red the fast gate let through); not verified (needs Michael)"
+        need="suite red on the verified tree"
+      else note "verify $m: the suite is red on the verified tree (main merged in); not verified (needs Michael)"; need="suite red after merging main"; fi ;;
     fail)
       local fids; Fv fids ids "$LIST" "$m"
       for id in $fids; do
@@ -152,7 +156,7 @@ verify() {
   fi
   printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
   # its record, committed with the verdict: thin, red, or the re-check's failed ids
-  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || echo "$mode")")   # verify_recheck's rebase words are rebase_fail's
+  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || { (( own )) && [[ $result == red ]] && echo own; } || echo "$mode")")   # verify_recheck's rebase words are rebase_fail's
   rec_commit "HARNESS: verify $m"; sync_record
   [[ -n $need ]] && needs_you "$m" "$need" progress.md "$nref"   # after the push: the click shows the verify entry
   return 1
@@ -374,7 +378,7 @@ while :; do
   # passes stands on the fast tier; the full suite runs at the verify (decisions/2026-11-03-fast-gate)
   if F passes "$SLIST" "$id" && ! green_fast; then F unpass "$SLIST" "$id"; note "$id un-passed: fast tier red after the session"; fi
   flakes_note   # the rows of that suite and of the session's own calls
-  tests_end   # the slot's tree, after the un-pass above ran its suite
+  tests_end   # the slot's tree: a full green-<key> only, so after a fast-gated session the last full count stays
   passed=$(F passes "$SLIST" "$id" && echo true || echo false)
   unmaterialize
   why=""; [[ $passed == false ]] && why=$(MET final "$slog" | sed -n 's/^[[:space:]*`>-]*PARKED:[[:space:]]*//p' | head -1)

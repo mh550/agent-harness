@@ -116,4 +116,9 @@ check "fast gate: CHECK_FAST_CMD empty by default, exported as HARNESS_CHECK_FAS
 check "fast gate: check.sh's usage header documents --fast, fast-<key>, check-fast.out and the fast row" \
   'h=$(sed -n "/^set -uo/q;p" "$HERE/../lib/check.sh") && grep -qF -- "--fast" <<< "$h" && grep -qF "fast-<key>" <<< "$h" \
   && grep -qF "check-fast.out" <<< "$h" && grep -qF "<full|fast|subset|partial|cached>" <<< "$h"'
+# a fast flake with no names (the fast tier rerun whole) is named so in harness-log.md, not "whole suite" (T2-04)
+mkdir -p "$T/fln/green"; printf '%s\n' '{"names":[],"load":"0.5 0.6 0.7","tier":"fast"}' '{"names":[],"load":""}' > "$T/fln/green/flakes.jsonl"
+fln=$( HARNESS_HOME=$HERE/.. && source "$HERE/../lib/record.sh"; STATE=$T/fln; note() { echo "note: $*"; }; flakes_note )
+check "fast gate: flakes_note names a fast flake with no names the fast tier, a full one the whole suite" \
+  '[[ $fln == "note: flaky: the fast tier (red, then green on a rerun; load 0.5)"$'"'"'\n'"'"'"note: flaky: whole suite (red, then green on a rerun; load ?)" ]]'
 suite_end

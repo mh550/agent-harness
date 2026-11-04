@@ -51,7 +51,7 @@ check "fast gate run: harness report --md's Suite runs row counts full and fast 
 # a wall differs from session to session: every one under # This session (79-suite-length's rule, the fast one too)
 below() { awk '/^# This session$/ { s = 1 } /last (full|fast) run ([0-9]+ s|not measured)/ { print (s ? "below" : "above") }' "$1" | sort -u; }
 check "fast gate run: the coding prompt names both tiers' commands, carries both lengths under # This session, and the tier rule" \
-  'grep -F "/lib/check.sh --fast\` runs \`bash .harness/suite.sh --tier fast\`; cached per code tree; its last full and fast runs are under *This session*) · init: " "$fg_b" \
+  'grep -F "/lib/check.sh --fast\` runs \`bash .harness/suite.sh --tier fast\`; cached per code tree; its last full run, and in a coding session its last fast run, are under *This session*) · init: " "$fg_b" \
   | grep -F "/lib/check.sh\` (full: runs \`bash .harness/suite.sh\`; fast tier: \`" > /dev/null \
   && grep -E "^Suite: last full run [0-9]+ s: give a full run a timeout of at least twice that$" "$fg_b" > /dev/null \
   && grep -E "^Suite: last fast run [0-9]+ s$" "$fg_b" > /dev/null && [[ $(below "$fg_b") == below ]] \
@@ -62,8 +62,11 @@ git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 STUB_SLOW_RED=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" fs --spec SPEC.md --foreground > "$T/fs.out" 2>&1
 check "fast gate run: a slow-tier red passes the session (passes=true, no un-pass) and the verify's full run is red (note, needs record)" \
   'hlog fs | grep -E " · B · [^ ]+ · passes=true · " > /dev/null && ! hlog fs | grep "un-passed" > /dev/null \
-  && hlog fs | grep " · verify M1: the suite is red on the verified tree (main merged in); not verified (needs Michael)$" > /dev/null \
-  && [[ -f $(st fs)/needs-M1 ]] && jq -se "any(.reason == \"verify_red\")" "$(st fs)"/needs/*.json > /dev/null'
+  && hlog fs | grep " · verify M1: the suite is red on the verified tree (main had nothing new: a slow-tier red the fast gate let through); not verified (needs Michael)$" > /dev/null \
+  && [[ -f $(st fs)/needs-M1 ]] && jq -se "any(.reason == \"verify_red\" and (.card.headline | endswith(\"suite red on the verified tree\")))" "$(st fs)"/needs/*.json > /dev/null'
+check "fast gate run: the verify's init ran the full suite (its prompt's init output is the full RED, not a fast line)" \
+  'vp=$(ls "$(st fs)"/logs/*-verify-M1.prompt.md 2> /dev/null | sed -n 1p) && [[ -n $vp ]] \
+  && grep -E "^check: RED \(exit [0-9]+ after" "$vp" > /dev/null && ! grep -E "^check: (fast green|RED \(fast)" "$vp" > /dev/null'
 check "fast gate run: tests-end is never the fast count (the full count or none)" \
   '[[ ! -f $(st fs)/tests-end || $(cat "$(st fs)/tests-end") == 3 ]] && [[ $(cat "$(st fs)/tests-start") == 3 ]]'
 
