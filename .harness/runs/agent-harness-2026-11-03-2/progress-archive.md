@@ -7,6 +7,21 @@ How to read the feature list (`feature_list.json`): six features in series, U1-0
 
 To steer: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session.
 
+### 2026-11-03 20:41 · U1-02 · passes
+
+The 37 evals of 51-view-pure and 12-journal-pure moved to tests/unit/view.test.mjs (20), entries.test.mjs (14) and memlint.test.mjs (2) under their exact names, each compared value asserted; the CLI parts stay bash checks (3 under new names, the validate cases joined the vx check). Full run 1150/1150, conformance PASS.
+
+- **Files:** tests/unit/view.test.mjs, tests/unit/entries.test.mjs, tests/unit/memlint.test.mjs, tests/checks/51-view-pure.sh, tests/checks/12-journal-pure-e4-entrys.sh, tests/fixtures/check-names.txt, journal/decisions/2026-11-03-unit-tier.md
+- **Verified:** each test file run red on one wrong value (✖ + diff), then green; node --test --test-isolation=none tests/unit/*.test.mjs 37/37, no ✖; grep -c 'node --input-type=module' 0 in both check files; fixture diff removes 0 lines; Opus review: 0 Critical/Important, 1 Minor fixed (export grep accepts async); check.sh full: green 796 s, 1150/1150, both conformance lines PASS
+- **Tests:** 1146 → 1150
+- **Dead end:** test names typed from the check names as they read — two 51-view names hold a literal '\'' (bash double quotes keep it): the subset's conformance failed until the test names kept those bytes
+- **Discovery** (affects U1-03, U1-04, U1-06): A check that is an eval plus a CLI run splits: the part its name describes keeps the name, the other gets a new fixture name (decisions/2026-11-03-unit-tier, default); 12-journal gained 3 bash names and 1 unit name.
+- **Discovery** (affects U1-03, U1-04): An eval run under TZ=… node becomes a test that sets process.env.TZ and restores it in finally (node rereads it on assignment); tests stay synchronous so the zone can't leak.
+- **Discovery** (affects U1-03, U1-04): assert.throws(fn, /re/) tests String(err) ("Error: …"): an anchored message regex needs { message: /^…/ }.
+- **Discovery** (affects run): Memlint counts the Gotchas comment line: CLAUDE.md's section is at its 15-line cap now; a new line must replace one.
+- **Question for Michael:** Default: a check that was an eval plus a CLI run now keeps its old name on the part the name describes and the other part gets a new fixture name (4 new names in U1-02). Keep that, or should both parts stay under one name (the CLI run spawned from the unit test)? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-03-2/slot-0/journal/decisions/2026-11-03-unit-tier.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-03-2/slot-0/tests/checks/12-journal-pure-e4-entrys.sh
+- *02-U1-02 · claude-opus-5-5*
+
 ### 2026-11-03 20:16 · U1-01 · passes
 
 The unit tier: tests/unit/reporter.mjs (PASS/FAIL lines, the failure indented), tests/checks/00-unit-tier.sh (one node --test process, own N/M, a no-FAIL-line guard, TEST_UNIT_DIR), testcount's eval moved to tests/unit/testcount.test.mjs under its old name, CLAUDE.md's node ≥ 22.8 and tier lines, the decision file.

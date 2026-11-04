@@ -5,3 +5,7 @@
 - 2026-11-03 19:35 · context.md for U1-01: 3721 bytes
 - 2026-11-03 20:16 · U1-01: suite ran 2x (1621 s) in the session
 - 2026-11-03 20:16 · U1-01 · claude-opus-5-5 · passes=true · 40 min · 1/6 passing · tests 1146
+- 2026-11-03 20:16 · context.md for U1-02: 4369 bytes
+- 2026-11-03 20:41 · U1-02: suite ran 1x (796 s) in the session
+- 2026-11-03 20:41 · U1-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-03 20:41 · U1-02 · claude-opus-5-5 · passes=true · 25 min · 2/6 passing · tests 1150
