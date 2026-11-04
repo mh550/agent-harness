@@ -1,0 +1,34 @@
+- 2026-11-03 19:25 · test count: parsed (generic)
+- 2026-11-03 19:35 · feature list written: 0/6 passing
+- 2026-11-03 19:35 · lint: clean
+- 2026-11-03 19:35 · lane U1 opened (slot 0, port 7823, from ddee9e9)
+- 2026-11-03 19:35 · context.md for U1-01: 3721 bytes
+- 2026-11-03 20:16 · U1-01: suite ran 2x (1621 s) in the session
+- 2026-11-03 20:16 · U1-01 · claude-opus-5-5 · passes=true · 40 min · 1/6 passing · tests 1146
+- 2026-11-03 20:16 · context.md for U1-02: 4369 bytes
+- 2026-11-03 20:41 · U1-02: suite ran 1x (796 s) in the session
+- 2026-11-03 20:41 · U1-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-03 20:41 · U1-02 · claude-opus-5-5 · passes=true · 25 min · 2/6 passing · tests 1150
+- 2026-11-03 20:41 · context.md for U1-03: 5809 bytes
+- 2026-11-03 21:04 · U1-03: suite ran 1x (804 s) in the session
+- 2026-11-03 21:04 · U1-03 · claude-opus-5-5 · passes=true · 22 min · 3/6 passing · tests 1152
+- 2026-11-03 21:04 · context.md for U1-04: 6882 bytes
+- 2026-11-03 21:30 · U1-04: suite ran 1x (805 s) in the session
+- 2026-11-03 21:30 · U1-04 · claude-opus-5-5 · passes=true · 26 min · 4/6 passing · tests 1163
+- 2026-11-03 21:30 · context.md for U1-05: 6371 bytes
+- 2026-11-03 22:02 · U1-05: suite ran 0x (0 s) in the session
+- 2026-11-03 22:02 · U1-05 · claude-sonnet-5-5 · passes=true · 31 min · 5/6 passing · tests 1163
+- 2026-11-03 22:02 · review U1-06: 2925 changed lines, at or over 400; opus
+- 2026-11-03 22:02 · context.md for U1-06: 7054 bytes
+- 2026-11-03 22:33 · U1-06: suite ran 1x (810 s) in the session
+- 2026-11-03 22:33 · U1-06 · claude-opus-5-5 · passes=true · 30 min · 6/6 passing · tests 1165
+- 2026-11-03 22:33 · verify U1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-03 22:46 · context.md for U1: 15616 bytes
+- 2026-11-03 22:48 · U1 verified and tagged run/agent-harness-2026-11-03-2/U1
+- 2026-11-03 22:48 · U1 merged into main · https://github.com/mh550/agent-harness/pull/84
+- 2026-11-03 22:48 · lane U1 closed (U1 merged)
+- 2026-11-03 22:48 · lane U1: branch harness-lane/agent-harness-2026-11-03-2/U1 deleted (merged)
+- 2026-11-03 22:48 · every feature passes
+- 2026-11-03 22:48 · run ended (done): 6/6 passing · 8 sessions (8 real) · 6 features passed · $26.56 · 3.1 h · by kind: init 1 ($4.26), coding 6 ($22.05), verify 1 ($0.25) · by model: claude-fable-5-1 1 ($4.26), claude-opus-5-5 5 ($21.58), claude-sonnet-5-5 2 ($0.73)
+- 2026-11-03 22:48 · services stopped (done)
+- 2026-11-03 22:49 · summary.json and report.md kept in the state dir (harness report reads them after gc)
