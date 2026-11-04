@@ -7,6 +7,18 @@ How to read the feature list (`feature_list.json`): six features in series, U1-0
 
 To steer: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session.
 
+### 2026-11-03 22:02 · U1-05 · passes
+
+Measured the unit tier before (ddee9e9 clone) and after: tier alone 1 node start, 0.24 s wall, 0.30 CPU-s (124 tests); the layer's remaining bash files 117 starts, 8.84 CPU-s (a miss vs <1 s); solo full suite 805.4 → 798.3 s, CPU +0.8 %. Table in findings-and-research/2026-11-03-unit-tier.md.
+
+- **Files:** findings-and-research/2026-11-03-unit-tier.md, journal/decisions/2026-11-03-unit-tier.md
+- **Verified:** strace/time -v runs with harness status RUNNING 1 each time; solo before 1141/1141, after 1163/1163, conformance PASS both; check.sh green (cached, files outside the key).
+- **Tests:** 1163 → 1163
+- **Dead end:** command time under systemd-run --scope — time is a shell builtin there; 'Failed to find executable'; use /usr/bin/time
+- **Discovery** (affects run): systemd-run --scope needs /usr/bin/time, not `command time`
+- **Discovery** (affects U1-06): 84-node-memo takes 27.6 s and 800+ node starts: it dominates any run that names every file still holding a node --input-type line
+- *05-U1-05 · claude-sonnet-5-5*
+
 ### 2026-11-03 21:30 · U1-04 · passes
 
 36 of the 38 scenario-file eval lines moved to tests/unit (new: needs, inbox, show, eval, overlap, treekey, page; extended: summary, entries, view, metrics, memlint, testcount) under their exact names; 2 kept (82 keymaplint, 84 pollu) and listed in the decision file. 11 split names added to the fixture, none removed. Full run 1163/1163, conformance PASS.
