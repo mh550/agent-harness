@@ -7,6 +7,19 @@ How to read the feature list (`feature_list.json`): six features in series, U1-0
 
 To steer: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session.
 
+### 2026-11-03 21:04 · U1-03 · passes
+
+The 34 eval checks of the nine smaller -pure- files moved to tests/unit/{features,notify,parked,render,metrics,summary,deploy,backlog}.test.mjs and testcount.test.mjs under their exact names; 01 and 02 deleted; two splits gave 2 new names. 0 eval lines left in those files. Full run 1152/1152, conformance PASS.
+
+- **Files:** tests/unit/features.test.mjs, tests/unit/notify.test.mjs, tests/unit/parked.test.mjs, tests/unit/render.test.mjs, tests/unit/metrics.test.mjs, tests/unit/summary.test.mjs, tests/unit/deploy.test.mjs, tests/unit/backlog.test.mjs, tests/unit/testcount.test.mjs, tests/checks/03-harness-parked-pure-report.sh, tests/checks/04-render-pure-sections-go.sh, tests/checks/05-metrics-pure-tokens-cache.sh, +6 more
+- **Verified:** Each new/extended test file run once with a wrong expected value (sed into a zz-red copy): 3 ✖ lines each, then green; node --test --test-isolation=none tests/unit/*.test.mjs 72 pass 0 ✖; subset run 100/100 with every deleted name PASS (comm of deleted names vs PASS lines empty); fixture diff removes 0 lines; grep -c eval lines 0 in all 7 remaining files; Opus review: no Critical/Important, 3 Minor fixed (key order, file modes, headers); full run 1152/1152, conformance PASS, 804 s.
+- **Tests:** 1150 → 1152
+- **Dead end:** keeping 05's two resume checks as kept evals (their expected figures came from jq) — step 4 wants 0 eval lines in these files; the jq was plumbing for the expectation, read the same way in the test
+- **Discovery** (affects U1-04, U1-06): summary.mjs and metrics.mjs evals lived in 11-deploy-guards: they went to summary.test.mjs and metrics.test.mjs (one file per module), not deploy.test.mjs
+- **Discovery** (affects U1-04, U1-06): An eval's JSON.stringify equality checks key order; assert.deepEqual doesn't: add an Object.keys(...).join() assert where order may matter
+- **Discovery** (affects U1-04, U1-06): Rewriting a check file via `> f.new && mv` drops its 100755 mode: chmod +x after, or edit in place
+- *03-U1-03 · claude-opus-5-5*
+
 ### 2026-11-03 20:41 · U1-02 · passes
 
 The 37 evals of 51-view-pure and 12-journal-pure moved to tests/unit/view.test.mjs (20), entries.test.mjs (14) and memlint.test.mjs (2) under their exact names, each compared value asserted; the CLI parts stay bash checks (3 under new names, the validate cases joined the vx check). Full run 1150/1150, conformance PASS.
