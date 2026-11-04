@@ -7,6 +7,24 @@ The run: phase 3 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier (T1: the full suite) is green and the verifier agrees per milestone. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-04 02:34 · T1-02 · passes
+
+tests/run.sh checks a --tier fast run against tests/fixtures/check-names-fast.txt (536 names) and --tier slow against full minus fast; 33-suite-runner gains 6 tier-conformance checks and a 4-check fixture lint. Re-timed solo twice: 33-suite-runner over 30 s both times, so it moved to slow; 39-memlint-m4 stays fast by the spec's exception (*default*).
+
+- **Files:** tests/run.sh, tests/checks/33-suite-runner.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-03-suite-tiers.md, CLAUDE.md
+- **Verified:** Red first: bash tests/run.sh 33-suite gave 32/39 before the runner change (the fast/slow conformance checks and lint red), 39/39 after. Re-timing, both after harness status showed RUNNING 1 (this run), QUEUED 0: TEST_JOBS=4 bash tests/run.sh --tier fast walls 161.9 s and 161.1 s (365.0+219.4 and 363.7+219.5 user+sys). Over 30 s in both: 33-suite-runner 51.7/51.7 (moved to slow), 39-memlint-m4 39.8/39.6 (kept). After the move, on the final tree: --tier fast 537/537 in 151.6 s with PASS conformance: every check of the fast tier ran; --tier slow 645/645 in 684.6 s with the slow tier's PASS line. comm -23 fast full is empty; every name bash tests/run.sh 00-unit prints is in the fast fixture. Full suite: lib/check.sh green in 809 s, 1181 tests.
+- **Tests:** 1171 → 1181
+- **Dead end:** a first Gotchas edit of 203, then 167 characters — over the 160 cap; memlint doesn't enforce the length, so nothing turns red: count it with ${#l}
+- **Discovery** (affects T1-03, T1-04, T2-01): 33-suite-runner is slow now (51.7 s solo, 25.5 in lc-4-solo.out): its TEST_FILE_TIMEOUT fixtures (rt, sa-se, sf) each wait out run.sh's hardcoded 10 s KILL grace; the tier lint runs only in slow and full runs
+- **Discovery** (affects T1-03, T1-04): 84-node-memo is at the 30 s line: 29.1 and 28.2 s in the two re-timings, then 31.5, 30.3 and 31.3 s in three later fast runs; the next re-timing will likely move it
+- **Discovery** (affects T1-03, T2-02): The fast tier is now 54 files, 536 names + its conformance line (537 checks), about 151 s solo at 4 jobs; the slow tier 34 files, 645 checks, 684.6 s
+- **Discovery** (affects T2-01): A --tier names subset checks new and doubled against its tier's list (--tier fast <f>: the fast fixture), so check.sh --fast's rerun (T2-01: --tier fast <files>) is checked against the fast fixture
+- **Discovery** (affects T1-04): The tier lint (tierlint in 33-suite-runner.sh) maps a name to files by grep -F on their source: 1,134 of 1,170 names are literal; one built at run time is told only by the fast run's own conformance
+- **Question for Michael:** 39-memlint-m4 was over 30 s in both re-timings (39.8 s, 39.6 s). I kept it fast (*default*) because the spec names it fast by exception, not by the 30 s line. Keep it fast, or move it to slow? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-0/journal/decisions/2026-11-03-suite-tiers.md
+- **Proposed change:** T1-02 step 6 assumes 33-suite-runner stays fast; it moved to slow by step 5, so its names are only in check-names.txt and the lint runs in slow and full runs.
+- **Proposed change:** T1-04 or phase 4: a TEST_KILL_GRACE knob (default 10 s) would let 33-suite-runner's timeout fixtures use 1 s and bring it back under 30 s
+- *02-T1-02 · claude-opus-5-5*
+
 ### 2026-11-04 01:43 · T1-01 · passes
 
 tests/run.sh reads line 2 of every check file (`# tier: fast|slow`), refuses a headerless one (`no tier header: <path>` per file, exit 2, nothing run), and gains `--tier fast|slow` (with names, with --repeat; slowest: line ends `, tier <t>`). 55 files fast, 33 slow by the 30 s rule; table and rule in journal/decisions/2026-11-03-suite-tiers.md.

@@ -6,3 +6,8 @@
 - 2026-11-04 01:06 · context.md for T1-01: 4289 bytes
 - 2026-11-04 01:43 · T1-01: suite ran 2x (1648 s) in the session
 - 2026-11-04 01:43 · T1-01 · claude-opus-5-5 · passes=true · 36 min · 1/8 passing · tests 1171
+- 2026-11-04 01:43 · context.md for T1-02: 5895 bytes
+- 2026-11-04 02:34 · T1-02: suite ran 1x (809 s) in the session
+- 2026-11-04 02:34 · T1-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-04 02:34 · T1-02: gotchas +0 ~1 -0
+- 2026-11-04 02:34 · T1-02 · claude-opus-5-5 · passes=true · 50 min · 2/8 passing · tests 1181

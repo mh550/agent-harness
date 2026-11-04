@@ -21,3 +21,24 @@
 ```sh
 harness needs done agent-harness-2026-11-04/1 --why "<answer>"
 ```
+
+## ⚠ T1-02 asked: 39-memlint-m4 was over 30 s in both re-timings (39.8 s, 39.…
+
+`agent-harness-2026-11-04/2` · since 2026-11-04T07:34:03.706Z
+
+**blocked** nothing waits on it; T1-02's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:3](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L3)
+
+> 39-memlint-m4 was over 30 s in both re-timings (39.8 s, 39.6 s). I kept it fast (*default*) because the spec names it fast by exception, not by the 30 s line. Keep it fast, or move it to slow? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-0/journal/decisions/2026-11-03-suite-tiers.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04/slot-0/journal/decisions/2026-11-03-suite-tiers.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-04/T1/journal/decisions/2026-11-03-suite-tiers.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl:3](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-04/.harness/runs/agent-harness-2026-11-04/entries.jsonl?plain=1#L3)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-04/2 --why "<answer>"
+```
