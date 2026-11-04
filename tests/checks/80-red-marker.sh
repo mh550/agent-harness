@@ -97,7 +97,7 @@ csrun rm; STUB_NO_TAMPER=1 STUB_LENIENT=1 "$H" start "$T/proj" rm --spec SPEC.md
 rm_key=$(awk '$2 == "red" { print $1; exit }' "$T/cs-rm.log" 2> /dev/null)
 rm_retry=$(grep -l '^Feature: `C`$' $(find "$HARNESS_STATE/proj/rm" -name '*.prompt.md' | sort) 2> /dev/null | sed -n 2p)
 check "red marker: C's red un-passes it; the retry's init output is the cached red and run.log says suite red before the session" \
-  'hlog rm | grep " · C un-passed: suite red after the session$" > /dev/null && grep "suite red before the session" "$HARNESS_STATE/proj/rm/run.log" > /dev/null \
+  'hlog rm | grep " · C un-passed: fast tier red after the session$" > /dev/null && grep "suite red before the session" "$HARNESS_STATE/proj/rm/run.log" > /dev/null \
   && [[ -n $rm_retry ]] && grep "^check: RED (cached for this code tree: t1)$" "$rm_retry" > /dev/null'
 check "red marker: the red tree ran the suite twice (the full run and the rerun guard's), none from the retry's run_init" \
   '[[ -n $rm_key && $(grep -c "^$rm_key " "$T/cs-rm.log") == 2 && $(grep -c "^$rm_key red \$" "$T/cs-rm.log") == 1 ]] \

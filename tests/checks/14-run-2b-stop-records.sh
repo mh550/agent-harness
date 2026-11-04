@@ -8,7 +8,7 @@ WT=$T/wt/proj/demo RD=$T/wt/proj/demo/.harness/runs/demo; hlog demo > "$T/demo-h
 check "all features pass"                 '[[ $($F summary "$(list demo)") == "3/3 passing" ]]'
 check "tampered list restored"            'hlog demo | grep -q "restored the feature list after B"'
 check "tampered text reverted"            '[[ $(jq -r ".features[2].description" "$(list demo)") == c ]]'
-check "red suite un-passes C"             'hlog demo | grep -q "C un-passed: suite red"'
+check "red suite un-passes C"             'hlog demo | grep -q "C un-passed: fast tier red"'
 check "C retried and passed"              'grep -q "C attempt 2" "$T/scratch/proj/demo/sessions.log"'
 check "verifier caught A, re-queued"      'hlog demo | grep -q "verify M1: A failed the re-check" && grep -q "A attempt 2" "$T/scratch/proj/demo/sessions.log"'
 check "M1 and M2 tagged"                  'git -C "$T/origin.git" tag | grep -qx run/demo/M1 && git -C "$T/origin.git" tag | grep -qx run/demo/M2'

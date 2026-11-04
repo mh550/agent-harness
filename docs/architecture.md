@@ -239,7 +239,7 @@ harness start ─► worktree + branch ─► driver (the coordinator):
       ingest entry.json (a long summary/header cut and kept) ─► entries.jsonl ─► render progress.md + progress-archive.md (after every session, verify included)
       environmental? (limit, API error, $0 one-turn) → keep its commits, revert its claims (the list, "passes"
         included), give the attempt back, set LIMIT_UNTIL; MAX_LIMIT_HITS in a row → end "usage limit"
-      repair the list (only its own passes may change) · un-pass if the suite is red · tests-end · metrics · push
+      repair the list (only its own passes may change) · un-pass if the fast tier is red · tests-end · metrics · push
       not passing and the final message says "PARKED: <why>" → attempt given back, parked until the answers change
   VERIFY m: merge main in → context.md → session (its code edits are reverted) → refused? deferred, no verdict
       → a new entry with one evidence row per step? no → one re-run on the stronger model → still no → not verified
@@ -331,7 +331,7 @@ harness start ─► worktree + branch ─► driver (the coordinator):
 | Guard | Trigger | Action | Where |
 |---|---|---|---|
 | Edit repair | list differs from the snapshot beyond the allowed flip | revert, log; stop after `MAX_REPAIRS` in a row | `features.mjs repair`, driver loop |
-| Red suite | a session flips `passes` but `check.sh` fails (a cached red, `red-<key>`, is a red like any other: the session left the tree the last full run found red) | un-pass, log; the retry's `run_init` on that tree answers from `red-<key>` (`suite red before the session`, no third run) | driver loop |
+| Red suite | a session flips `passes` but `check.sh --fast` fails (`green_fast`: the fast tier, `CHECK_FAST_CMD`; without one the whole suite; a cached red, `red-<key>`, is a red like any other: the session left the tree the last full run found red) | un-pass, note `<id> un-passed: fast tier red after the session`; the retry's `run_init fast` on that tree answers from `red-<key>` (`suite red before the session`, no third run), or reruns the fast tier (a fast red leaves no marker); the slow tier's reds are the verify's (`run_init fresh`, full) | driver loop |
 | Attempts | `MAX_ATTEMPTS` real sessions without passing | given up → dependants blocked | `features.mjs schedule` |
 | Environmental session | the session's **final** result has `api_error` / `api_error_status ≥ 429` / `terminal_reason: api_error`; regex fallback; `$0` and ≤ 1 turn; no result within 120 s | commits kept, claims reverted (list back to the snapshot), attempt given back; `LIMIT_UNTIL` = rejected window's `resetsAt` + 2 min (else 15/30/60 min); the run ends after `MAX_LIMIT_HITS` in a row | `metrics.mjs environmental`, driver |
 | Timeout | `SESSION_TIMEOUT` (exit 124; 137 when `timeout -k 30s` had to KILL) | counts as a real attempt (the feature is too big) | `metrics.mjs` |

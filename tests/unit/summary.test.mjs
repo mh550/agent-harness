@@ -5,11 +5,19 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { redSuite, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, flakers } from "../../lib/summary.mjs";
+import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, flakers } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
 const rowOf = (s, p) => { const ls = report(s).split("\n"), i = ls.findIndex(l => l.startsWith(p)); return { i, row: ls[i] }; };
+
+test("summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)", () => {
+  const h = "- 2026-11-04 04:38 · A un-passed: fast tier red after the session\n- 2026-10-21 12:00 · B un-passed: suite red after the session\n- 2026-11-04 04:39 · C · opus · passes=true\n";
+  assert.equal(redSuite(h, "A"), true);
+  assert.equal(redSuite(h, "B"), true);
+  assert.equal(redSuite(h, "C"), false);
+  assert.equal((h.match(new RegExp(redUnpass.source, "g")) || []).length, 2);
+});
 
 test("summary.mjs: cause and rework read the log by exact id (E1 review)", () => {
   const h = "- 2026-10-21 12:00 · 11 un-passed: suite red after the session\n- 2026-10-21 12:05 · verify M1: A failed the re-check, back in the queue\n";

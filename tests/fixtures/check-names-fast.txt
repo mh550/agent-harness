@@ -468,6 +468,7 @@ summary.mjs: flakers names a check in the flakes of two or more of the five newe
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
 summary.mjs: suiteRuns counts the coding rows that carry suite_full; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
 sync: a local commit outside ledger/ is left alone, nothing pushed
 sync: a modified tracked file: skipped
 sync: another branch checked out: skipped; LIVE_SYNC=0: off

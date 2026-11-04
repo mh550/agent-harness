@@ -322,7 +322,7 @@ while :; do
   n=$(rec_count "$STATE/sessions" 1)   # the cap once more, atomically: another lane's session may have taken the last
   (( n > MAX_SESSIONS )) && { rec_count "$STATE/sessions" -1 > /dev/null; lane_exit 13 "session cap ($MAX_SESSIONS)"; }
   [[ $esc ]] || record F bump "$ATT" "$id"
-  run_init; pack_and_copy "$id"   # the copy, the snapshot and the INBOX the session is judged against
+  run_init fast; pack_and_copy "$id"   # the copy, the snapshot and the INBOX the session is judged against; the fast tier
   if [[ $esc ]]; then sclock="Review round 2 of 2 (escalated: $esc)"; else sclock="attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS"; fi
   # the counts the gate reads (the findings check below and the summary's found_nothing), asked in one fixed form
   [[ $kind == review ]] && rdiff+=$'\n'"Review findings: give your entry's summary this review's findings as \`<n> Critical, <n> Important, <n> Minor\` (the driver reads the counts)."
@@ -370,7 +370,8 @@ while :; do
     repairs=$(( repairs + 1 )); note "restored the feature list after $id: $out"
     (( repairs >= MAX_REPAIRS )) && { note "$repairs sessions in a row edited the feature list; stopping for Michael"; lane_exit 12 "feature-list edits"; }
   fi
-  if F passes "$SLIST" "$id" && ! green; then F unpass "$SLIST" "$id"; note "$id un-passed: suite red after the session"; fi
+  # passes stands on the fast tier; the full suite runs at the verify (decisions/2026-11-03-fast-gate)
+  if F passes "$SLIST" "$id" && ! green_fast; then F unpass "$SLIST" "$id"; note "$id un-passed: fast tier red after the session"; fi
   flakes_note   # the rows of that suite and of the session's own calls
   tests_end   # the slot's tree, after the un-pass above ran its suite
   passed=$(F passes "$SLIST" "$id" && echo true || echo false)

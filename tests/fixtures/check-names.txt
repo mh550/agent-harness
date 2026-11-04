@@ -302,6 +302,14 @@ eval: every task.json validates and a bad one is rejected
 eval: refuses past WEEKLY_STOP_AT
 eval: the budget cap stops starting tasks
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
+fast gate run: a coding session's init output is the fast tier's (B's prompt: check: fast green)
+fast gate run: a fast-tier red after the session un-passes it with the fast note; the retry's init runs the fast tier
+fast gate run: a slow-tier red passes the session (passes=true, no un-pass) and the verify's full run is red (note, needs record)
+fast gate run: each coding session is followed by a --tier fast call, and no bare call comes before the verify's
+fast gate run: tests-end is never the fast count (the full count or none)
+fast gate run: the run passes and merges on the full suite; tests-end is the full count, no un-pass
+fast gate run: the run's first init is a bare (full) call and tests-start holds the full count
+fast gate run: the verify's run_init fresh removes a planted fast-<key> beside red- and green-<key>
 fast gate: --fast runs the fast command (--tier fast), writes fast-<key> (the fast count, wall) and no green-<key>; row fast
 fast gate: --fast with further arguments is a usage error (exit 2), nothing run
 fast gate: CHECK_FAST_CMD empty by default, exported as HARNESS_CHECK_FAST_CMD; the template has it commented; this repo sets the fast tier
@@ -1007,6 +1015,7 @@ summary.mjs: flakers names a check in the flakes of two or more of the five newe
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
 summary.mjs: report lists only the sessions over 2 GB
 summary.mjs: suiteRuns counts the coding rows that carry suite_full; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
 summary: tokens, per verified feature, first-attempt rate, rework
 sync: a local commit outside ledger/ is left alone, nothing pushed
 sync: a modified tracked file: skipped
