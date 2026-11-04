@@ -6,6 +6,7 @@ C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
 CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
 CHECK_KEY_MAP: harness default empty; this repo maps CLAUDE.md; the driver exports it; the template has it commented
+CLAUDE.md names the node floor 22.8 and the unit tier: tests/unit, node --test, bash tests/run.sh 00-unit
 CLAUDE.md's suite line points at the run's prompt, with no fixed measurement
 COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
 CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
@@ -1095,6 +1096,10 @@ u3 review: an overlap with an ended run records on it in its state only: its wor
 u3 review: past --until with only lane-held entries the runner ends (it no longer polls until the lane ends)
 u3 review: queue list shows held: <project> busy for an entry a live lane holds (as the runner holds it)
 u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
+unit tier: a passing and a failing test print PASS a, FAIL b, the indented assert diff, then its own N/M line, exit 1
+unit tier: a passing-only file prints PASS a and its N/M line, exit 0
+unit tier: node --test exiting non-zero with no FAIL line prints the unit tier FAIL line; a throw at import is red too
+unit tier: tests/unit/reporter.mjs passes node --check
 unpark_warm: with a feature to unpark it fills nothing (the unpark on the note line runs and prints it); with none, that unpark starts no node
 v2 tags don't merge on resume
 verifier caught A, re-queued

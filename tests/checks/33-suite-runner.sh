@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/../lib.sh" && suite_setup
-# ---- the suite runner: what lib/check.sh reads from its output ----
-TC='import { testCount as t } from "'$HERE'/../lib/testcount.mjs"; const r = "PASS a\n2/2 checks passed\nPASS b\n325/326 checks passed\n";
-  process.exit(t(r) === 325 && t("12 passed, 1 failed") === 12 && t("# pass 7\n") === 7 && t("ok") === null ? 0 : 1);'
-check "testcount.mjs: the runner's last N/M checks passed is the count" 'node --input-type=module -e "$TC"'
 # ---- the suite runner: TEST_JOBS files at a time inside the one scope, each file's output whole, timing lines ----
 # three tiny check files (TEST_CHECKS points the runner at them): a and c print a line, sleep, print another, so a
 # streamed output would interleave them; b is the quickest and smallest, c the slowest, largest and red. A systemd-run on PATH logs any call.
@@ -95,4 +91,22 @@ check "suite runner: a subset run fails on a name not in its fixture (a stopped 
   && [[ $(grep -x -A1 "new (add each to tests/fixtures/check-names.txt):" "$T/sf-rerun.out") == *$'"'"'\nsf n1'"'"' ]] && grep -qx "FAIL $SFC" "$T/sf-rerun.out" \
   && [[ $(cat "$T/sf-ok.rc") == 0 ]] && grep -qx "PASS $SFC" "$T/sf-ok.out" && [[ $(tail -1 "$T/sf-ok.out") == "2/2 checks passed" ]] \
   && [[ $(cat "$T/sf-dup.rc") == 1 ]] && [[ $(grep -x -A1 "doubled (two checks of one name):" "$T/sf-dup.out") == *$'"'"'\nsf a1'"'"' ]] && grep -qx "FAIL $SFC" "$T/sf-dup.out"'
+# ---- the unit tier: tests/checks/00-unit-tier.sh runs tests/unit (TEST_UNIT_DIR: another directory) under the reporter ----
+# u1: one test passes, one fails on an assert diff; u2: passing only; u3: a file that exits at import (no FAIL line from
+# node: the check file's own); u4: a file that throws at import (node's FAIL <file> or the check file's line: both red)
+UT=$T/ut; mkdir -p "$UT"/u{1,2,3,4}; UH='import { test } from "node:test"; import assert from "node:assert/strict";'
+printf '%s\n' "$UH" 'test("a", () => {});' 'test("b", () => { assert.equal(1, 2); });' > "$UT/u1/a.test.mjs"
+printf '%s\n' "$UH" 'test("a", () => { assert.equal(1, 1); });' > "$UT/u2/a.test.mjs"
+printf '%s\n' "$UH" 'process.exit(3);' 'test("a", () => {});' > "$UT/u3/a.test.mjs"
+printf '%s\n' "$UH" 'throw new Error("u4 at import");' 'test("a", () => {});' > "$UT/u4/a.test.mjs"
+for u in u1 u2 u3 u4; do TEST_UNIT_DIR=$UT/$u bash "$HERE/checks/00-unit-tier.sh" > "$UT/$u.out" 2> "$UT/$u.err"; echo $? > "$UT/$u.rc"; done
+check "unit tier: a passing and a failing test print PASS a, FAIL b, the indented assert diff, then its own N/M line, exit 1" \
+  '[[ $(cat "$UT/u1.rc") == 1 && $(sed -n 1p "$UT/u1.out") == "PASS a" && $(sed -n 2p "$UT/u1.out") == "FAIL b" && $(tail -1 "$UT/u1.out") == "1/2 checks passed" ]] \
+  && sed "1,2d;\$d" "$UT/u1.out" > "$UT/u1.mid" && [[ -s $UT/u1.mid ]] && ! grep -v "^  " "$UT/u1.mid" > /dev/null && grep -E "^  .*1.*2" "$UT/u1.mid" > /dev/null'
+check "unit tier: a passing-only file prints PASS a and its N/M line, exit 0" \
+  '[[ $(cat "$UT/u2.rc") == 0 && $(cat "$UT/u2.out") == $'"'"'PASS a\n1/1 checks passed'"'"' ]]'
+check "unit tier: node --test exiting non-zero with no FAIL line prints the unit tier FAIL line; a throw at import is red too" \
+  '[[ $(cat "$UT/u3.rc") == 1 && $(cat "$UT/u4.rc") == 1 ]] && grep -qx "FAIL unit tier: node --test exited 3 with no FAIL line" "$UT/u3.out" \
+  && [[ $(tail -1 "$UT/u3.out") == "0/1 checks passed" ]] && grep -E "^FAIL (unit tier: node --test exited [0-9]+ with no FAIL line|$UT/u4/a.test.mjs)$" "$UT/u4.out" > /dev/null'
+check "unit tier: tests/unit/reporter.mjs passes node --check" 'node --check "$HERE/unit/reporter.mjs"'
 suite_end
