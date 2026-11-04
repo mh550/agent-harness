@@ -2,22 +2,12 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- Gotchas in place (M3): the coding prompt's Finish step edits one `## Gotchas` line; the driver notes the diff ----
 MM=$HERE/../lib/memlint.mjs
-gd() { node --input-type=module -e 'import { gotchasDiff } from "'"$MM"'"; const [b, a] = process.argv.slice(1).map(s => s === "-" ? null : s);
-  const d = gotchasDiff(b, a); console.log(`+${d.added} ~${d.edited} -${d.deleted}`)' "$1" "$2"; }
 G=$'# p\nrules\n\n## Gotchas\n\n- one (r 2026-10-26)\n- two (r 2026-10-26)\n\n## Later\nx\n'
-check "gotchasDiff: added, edited, deleted and no section" '
-  [[ $(gd "$G" "${G/- two (r 2026-10-26)/- two (r 2026-10-26)$'"'"'\n'"'"'- three (r 2026-10-26)}") == "+1 ~0 -0" ]] &&
-  [[ $(gd "$G" "${G/- two/- 2}") == "+0 ~1 -0" ]] && [[ $(gd "$G" "${G/- two (r 2026-10-26)$'"'"'\n'"'"'/}") == "+0 ~0 -1" ]] &&
-  [[ $(gd $'"'"'# p\nrules\n'"'"' $'"'"'# p\nother\n'"'"') == "+0 ~0 -0" ]] && [[ $(gd - -) == "+0 ~0 -0" ]] && [[ $(gd - $'"'"'# p\n'"'"') == "+0 ~0 -0" ]] &&
-  [[ $(gd "$G" "${G/rules/changed}") == "+0 ~0 -0" ]] && [[ $(gd "$G" "${G/x/y}") == "+0 ~0 -0" ]] &&
+# gotchasDiff and gotchasLines are tests/unit/memlint.test.mjs; here the gotchas CLI on two files
+check "memlint.mjs gotchas: the CLI prints +added ~edited -deleted of two files, nothing for none, a missing file as no section" '
   printf "%s" "$G" > "$T/g1.md" && printf "%s" "${G/- two/- 2}" > "$T/g2.md" &&
   [[ $(node "$MM" gotchas "$T/g1.md" "$T/g2.md") == "+0 ~1 -0" ]] && o=$(node "$MM" gotchas "$T/g1.md" "$T/g1.md") && [[ -z $o ]] &&
   [[ $(node "$MM" gotchas "$T/none.md" "$T/g1.md") == "+2 ~0 -0" ]]'
-# a wrapped bullet is one line (its indented continuation joins it), and a `# ` heading ends the section too (M3-05)
-check "gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section" '
-  [[ $(gd "$G" "${G/- two (r 2026-10-26)/- two (r 2026-10-26)$'"'"'\n'"'"'- three wraps$'"'"'\n'"'"'  onto a second line (r 2026-10-26)}") == "+1 ~0 -0" ]] &&
-  [[ $(gd "${G/## Later/# Later}" "${G/$'"'"'## Later\nx'"'"'/$'"'"'# Later\ny'"'"'}") == "+0 ~0 -0" ]] &&
-  [[ $(node --input-type=module -e "import { gotchasLines as g } from \"$MM\"; console.log(JSON.stringify(g(\"## Gotchas\n- a\n  b\n\n- c\n\")))") == "[\"- a b\",\"- c\"]" ]]'
 # the CLI builds the pack without the Gotchas when CLAUDE.md can't be read (here a directory), as readRules skips its store
 check "entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack" '
   mkdir -p "$T/cw/.harness/runs/r" "$T/cw/CLAUDE.md" && : > "$T/cw/.harness/runs/r/entries.jsonl" && echo "{\"features\":[{\"id\":\"X\",\"milestone\":\"M1\"}]}" > "$T/cw/.harness/runs/r/feature_list.json" &&

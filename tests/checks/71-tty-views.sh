@@ -72,18 +72,4 @@ git -C "$T/proj" remote set-url origin "$u"
 check "tty views: a dry run that stops at the fetch says where it stopped, no empty sections after it and no footer" '
   (( gs != 0 )) && grep -E "^TMUX 0$" "$T/gs.out" > /dev/null && [[ $(tail -1 "$T/gs.out") == "gc stopped before DESKS (see the error above)" ]] &&
   ! grep -E "^(DESKS|WORKTREES|DEPS|BRANCHES)|would remove" "$T/gs.out" > /dev/null && [[ -s $T/gs.err ]]'
-check "tty views: gcView shortens the home directory to a tilde and counts a branch named twice once" '
-  node --input-type=module -e "
-    import { gcView, context } from \"$HERE/../lib/view.mjs\";
-    const ctx = context({ env: { COLUMNS: \"60\", HARNESS_GLYPHS: \"ascii\" } }), R = String.fromCharCode(30), d = \"-\".repeat(60);
-    const out = gcView([R + \"UNITS\", R + \"TMUX\", R + \"DESKS\", R + \"WORKTREES\", \"would: git -C /h/u/my p worktree remove --force /h/u/wt/p/a\",
-      \"keeps /h/u/wt/p/b: its desk is open (harness desk --close b)\", R + \"DEPS\", \"keeps the deps of /h/u/wt/p/b: its desk is open\",
-      R + \"BRANCHES\", \"would: git -C /h/u/p branch -d harness/a\", \"would: git -C /h/u/p push -q origin --delete harness/a\", R + \"END\"].join(\"\n\"), ctx, { HOME: \"/h/u\" });
-    const want = [\"UNITS 0\", \"TMUX 0\", \"DESKS 0\", \"WORKTREES 2 \" + d.slice(12), \"would: git -C ~/my p worktree remove --force ~/wt/p/a\",
-      \"keeps ~/wt/p/b: its desk is open (harness desk --close b)\", \"DEPS 1 \" + d.slice(7), \"keeps the deps of ~/wt/p/b: its desk is open\",
-      \"BRANCHES 2 \" + d.slice(11), \"would: git -C ~/p branch -d harness/a\", \"would: git -C ~/p push -q origin --delete harness/a\", d,
-      \"would remove 1 worktree, 1 branch; keeps 1\"];
-    if (JSON.stringify(out) !== JSON.stringify(want)) { console.error(JSON.stringify(out)); process.exit(1); }
-    const cutShort = gcView([R + \"UNITS\", \"? x\", R + \"TMUX\"].join(\"\n\"), ctx, {});
-    if (JSON.stringify(cutShort) !== JSON.stringify([\"UNITS 1 \" + d.slice(8), \"? x\", \"TMUX 0\", \"gc stopped before DESKS (see the error above)\"])) { console.error(JSON.stringify(cutShort)); process.exit(1); }"'
 suite_end

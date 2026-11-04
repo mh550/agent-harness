@@ -203,3 +203,27 @@ test("view: endClass gives each reason in tests/fixtures/end-reasons.txt its cla
   assert.equal(V.endClass(""), "failed");
   assert.equal(V.endClass(null), "failed");
 });
+
+test("tty views: gcView shortens the home directory to a tilde and counts a branch named twice once", () => {
+  const c = V.context({ env: { COLUMNS: "60", HARNESS_GLYPHS: "ascii" } }), R = String.fromCharCode(30), d = "-".repeat(60);
+  const out = V.gcView([R + "UNITS", R + "TMUX", R + "DESKS", R + "WORKTREES", "would: git -C /h/u/my p worktree remove --force /h/u/wt/p/a",
+    "keeps /h/u/wt/p/b: its desk is open (harness desk --close b)", R + "DEPS", "keeps the deps of /h/u/wt/p/b: its desk is open",
+    R + "BRANCHES", "would: git -C /h/u/p branch -d harness/a", "would: git -C /h/u/p push -q origin --delete harness/a", R + "END"].join("\n"), c, { HOME: "/h/u" });
+  assert.deepEqual(out, ["UNITS 0", "TMUX 0", "DESKS 0", "WORKTREES 2 " + d.slice(12), "would: git -C ~/my p worktree remove --force ~/wt/p/a",
+    "keeps ~/wt/p/b: its desk is open (harness desk --close b)", "DEPS 1 " + d.slice(7), "keeps the deps of ~/wt/p/b: its desk is open",
+    "BRANCHES 2 " + d.slice(11), "would: git -C ~/p branch -d harness/a", "would: git -C ~/p push -q origin --delete harness/a", d,
+    "would remove 1 worktree, 1 branch; keeps 1"]);
+  const cutShort = V.gcView([R + "UNITS", "? x", R + "TMUX"].join("\n"), c, {});
+  assert.deepEqual(cutShort, ["UNITS 1 " + d.slice(8), "? x", "TMUX 0", "gc stopped before DESKS (see the error above)"]);
+});
+
+// view.mjs's cutFront and card as the needs cards use them (59-needs-cards.sh)
+test("view.mjs cutFront keeps the end from a directory boundary; card with rule: false has no rule; a url-only field is the url line alone", () => {
+  const c = V.context({ env: { HARNESS_GLYPHS: "unicode" } }), p = "/home/u/worktrees/n8n-home/n8n-home-2026-10-22/deploy/compose.yml:48";
+  const k = V.card("h", [{ label: "x", value: "1" }, { label: "", url: "https://e.x/a" }], c, { rule: false });
+  assert.equal(V.cutFront(p, 47, c), "…/n8n-home-2026-10-22/deploy/compose.yml:48");
+  assert.equal(V.cutFront("short", 10, c), "short");
+  assert.ok(V.displayWidth(V.cutFront(p, 30, c)) <= 30, V.cutFront(p, 30, c));
+  assert.equal(k.join("|"), "h|  x          1|  https://e.x/a");
+  assert.match(V.card("h", [], c)[1], /^─/);
+});

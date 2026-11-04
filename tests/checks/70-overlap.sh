@@ -29,12 +29,7 @@ check "overlap: overlap is the sorted intersection: file and file, a dir/ and a 
   [[ $(node "$O" overlap "$T/a.txt" "$T/b.txt" | paste -sd" ") == "lib/a.sh tests/checks/02-y.sh" ]] &&
   [[ $(node "$O" overlap "$T/b.txt" "$T/a.txt" | paste -sd" ") == "lib/a.sh tests/checks/02-y.sh" ]] &&
   [[ $(node "$O" overlap "$T/a.txt" "$T/d.txt") == tests/checks/ ]] && [[ -z $(node "$O" overlap "$T/a.txt" "$T/c.txt") ]]'
-check "overlap: named and overlap are exported and pure (no I/O at import); node --check lib/overlap.mjs" '
-  node --check "$O" && node --input-type=module -e "
-    import { named, overlap } from \"$O\";
-    const n = named(\"\`lib/a.sh\` lib/b/\", [\"lib/a.sh\", \"lib/b/c.mjs\"]);
-    if (n.join() !== \"lib/a.sh,lib/b/\") process.exit(1);
-    if (overlap(n, [\"lib/b/c.mjs\"]).join() !== \"lib/b/c.mjs\") process.exit(2);"'
+# named and overlap on literals, imported (no I/O at import), are tests/unit/overlap.test.mjs
 # ---- the wiring (U3-06): before a start and at queue add, what the new run's spec and brief name meets each other ----
 # ---- run of the project (alive, or ended with unmerged changes); a warning and a record on both runs, never a hold ----
 # MERGE_POLICY=pr keeps a stub run's code on its lane branches (work-A.txt, work-B.txt, work-C.txt, none on main)
@@ -77,10 +72,4 @@ check "overlap: harness needs done <ref> resolves one by hand; sweep resolves th
   "$H" needs done "$R2" > /dev/null && for r in $(git for-each-ref --format="%(refname)" refs/heads/harness-lane/ov2/ refs/remotes/origin/harness-lane/ov2/); do git update-ref -d "$r"; done &&
   node "$HERE/../lib/needs.mjs" sweep "$HARNESS_STATE/proj/ov1" > "$T/sw.out" && grep -E "^resolved ov1/[0-9]+ \(other run merged\)$" "$T/sw.out" > /dev/null &&
   "$H" needs --json > "$T/n2.json" 2> /dev/null && jq -e "[.[] | select(.reason == \"overlap\")] | length == 0" "$T/n2.json" > /dev/null'
-check "overlap: the sweep rule: other run gone, other run merged, this run merged, else kept (no git facts: kept)" '
-  node --input-type=module -e "
-    import { sweep } from \"$HERE/../lib/needs.mjs\";
-    const i = { key: \"overlap:R\", reason: \"overlap\", ref: \"x/1\" }, w = st => sweep([i], { markers: [], passing: [], ...st }).resolved[0]?.resolved_why ?? \"kept\";
-    const got = [w({ overlaps: { R: \"gone\" } }), w({ overlaps: { R: \"merged\" } }), w({ overlaps: { R: \"open\" }, self: \"merged\" }), w({ overlaps: { R: \"open\" }, self: \"open\" }), w({ ended: true })];
-    if (got.join() !== \"other run gone,other run merged,this run merged,kept,kept\") { console.log(got.join()); process.exit(1); }"'
 suite_end

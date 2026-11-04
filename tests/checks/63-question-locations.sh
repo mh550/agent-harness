@@ -4,35 +4,12 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # without one gets the session's files (the entry's, then its diff), in the journal entry and in the park's card ----
 # Plan: docs/plans/2026-10-28-U2-needs-record.md §4.6. Decision: decisions/2026-10-27-question-locations.
 nj() { jq -s "${2:-.}" "$HARNESS_STATE/proj/$1"/needs/*.json 2> /dev/null; }   # <run> [<jq over its open items>]
-E=$HERE/../lib/entries.mjs N=$HERE/../lib/needs.mjs
+# the fill (entries.mjs) and the card's where (needs.mjs) on literal input: tests/unit/needs.test.mjs
 
 check "the prompts ask every question for a Files: line and an INBOX question below the comment block, headed ### <id>: …" \
   '[[ -z $(cd "$HERE/../prompts" && grep -LF "Files: <absolute path>[:<line>]" coding.md verify.md initializer.md) ]] \
   && grep -F "below the comment block" "$HERE/../prompts/coding.md" > /dev/null && grep -F "### <feature id>: <one-line title> (<date time>)" "$HERE/../prompts/coding.md" > /dev/null \
   && grep -F "(recommended)" "$HERE/../prompts/coding.md" > /dev/null'
-check "entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts" \
-  'node --input-type=module -e "
-    import { sessionFiles, fillQuestions } from \"$E\";
-    const e = { feature: \"A\", kind: \"coding\", outcome: \"not yet\", summary: \"s\", files: [\"lib/a.sh\"], questions: [\"Q one?\", \"Q two? Files: /x/b.md:4\"], dead_ends: [] };
-    const fs = sessionFiles(e.files, [\"lib/a.sh\", \"/abs/c.mjs\", ...Array.from({ length: 9 }, (_, i) => \"d\" + i)], \"/wt\");
-    const ok1 = fs.length === 8 && fs[0] === \"/wt/lib/a.sh\" && fs[1] === \"/abs/c.mjs\" && fs[2] === \"/wt/d0\";
-    const before = JSON.stringify(e), { entry, filled } = fillQuestions(e, fs);
-    const ok2 = filled === 1 && entry.questions[0] === \"Q one? Files (harness, from the session): \" + fs.join(\", \") && entry.questions[1] === e.questions[1];
-    const ok3 = JSON.stringify({ ...entry, questions: e.questions }) === before && JSON.stringify(e) === before;
-    const none = fillQuestions(e, []), ok4 = none.filled === 0 && none.entry === e;
-    const md = fillQuestions({ questions: [\"Q? **Files:** /a/b.sh:4\", \"Q? \`Files:\` /a/c.sh\", \"Q? (Files: /a/d.sh)\", \"Should the Files: section stay?\"] }, [\"/wt/x\"]);
-    const ok5 = md.filled === 1 && md.entry.questions[3].endsWith(\"Files (harness, from the session): /wt/x\");
-    const ok6 = sessionFiles([\".harness/runs/r/INBOX.md\", \"lib/a.sh\"], [], \"/wt\").join() === \"/wt/lib/a.sh\";
-    process.exit(ok1 && ok2 && ok3 && ok4 && ok5 && ok6 ? 0 : 1)"'
-check "needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins" \
-  'node --input-type=module -e "
-    import { card } from \"$N\";
-    const inbox = (f) => \"status: run\n\n### B: set it (2026-10-28 01:00)\n\" + f + \"\n## Answers\n\";
-    const base = { run: \"r\", subject: \"B\", features: [{ id: \"B\", milestone: \"M1\" }], worktree: \"/wt\", session_files: \"/wt/lib/x.sh\n/wt/y.md\" };
-    const s = card(\"parked\", { ...base, inbox_text: inbox(\"\") }), q = card(\"parked\", { ...base, inbox_text: inbox(\"Files: /wt/lib/z.sh:48\") });
-    const d = card(\"parked\", { ...base, session_files: \"\", inbox_text: inbox(\"\") });
-    process.exit(s.files_from === \"session\" && s.where[0].path === \"/wt/lib/x.sh\" && s.where[1].path === \"/wt/y.md\"
-      && q.files_from === \"question\" && q.where[0].line === 48 && q.where.every(w => w.path !== \"/wt/lib/x.sh\") && d.files_from === \"driver\" ? 0 : 1)"'
 
 main0=$(git -C "$T/origin.git" rev-parse main)
 # a stub run: A asks in its entry (no Files:) and also changes lib/x.sh; B parks with Files: <path>:48 in INBOX.md

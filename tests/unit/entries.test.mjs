@@ -1,7 +1,7 @@
 // lib/entries.mjs: the run's journal (an entry's schema, the trim, progress.md, the context pack).   node --test tests/unit/entries.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validate, minimal, normalize, journalEntry, renderProgress, renderArchive, renderEntry, legacyOf, headerOf, pack } from "../../lib/entries.mjs";
+import { validate, minimal, normalize, journalEntry, renderProgress, renderArchive, renderEntry, legacyOf, headerOf, pack, reviewFindings, sessionFiles, fillQuestions } from "../../lib/entries.mjs";
 import { evidence } from "../../lib/features.mjs";
 
 const B = s => Buffer.byteLength(s);
@@ -297,4 +297,45 @@ test("journal: a 2001-character init header is cut to 2000 and kept", () => {
 test("journal: a summary over its cap beside another fault is minimal for the other fault, never the cap", () => {
   const cw = journalEntry(JSON.stringify({ ...long, header: "# no" }), o);
   starts(cw.entry.minimal, "invalid: header", cw.why);
+});
+
+test("review gate: reviewFindings reads <n> Critical and <n> Important, null without either", () => {
+  assert.deepEqual(reviewFindings("R: 2 Critical, 3 Important, 0 Minor"), { critical: 2, important: 3 });
+  assert.deepEqual(reviewFindings("found 1 Important issue"), { critical: 0, important: 1 });
+  assert.deepEqual(reviewFindings("0 Critical, 0 Important"), { critical: 0, important: 0 });
+  assert.equal(Object.keys(reviewFindings("R: 2 Critical, 3 Important, 0 Minor")).join(), "critical,important");
+  assert.equal(reviewFindings("R: stub work (1)"), null);
+  assert.equal(reviewFindings(""), null);
+  assert.equal(reviewFindings(undefined), null);
+});
+
+test("reviewFindings: reads Critical before Important in either order of word and count, never a step number or lowercase prose", () => {
+  assert.deepEqual(reviewFindings("Critical 0 Important 2"), { critical: 0, important: 2 });
+  assert.deepEqual(reviewFindings("Critical: 0, Important: 2"), { critical: 0, important: 2 });
+  assert.deepEqual(reviewFindings("**2 Critical**, 3 Important"), { critical: 2, important: 3 });
+  assert.equal(Object.keys(reviewFindings("Critical 0 Important 2")).join(), "critical,important");
+  assert.equal(reviewFindings("M3-06 Critical regression fixed"), null);
+  assert.equal(reviewFindings("Step 1 important: run the suite"), null);
+  assert.equal(reviewFindings("fixed the 2 critical paths"), null);
+});
+
+// 63-question-locations.sh: the fill a park card's where falls back to
+test("entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts", () => {
+  const e = { feature: "A", kind: "coding", outcome: "not yet", summary: "s", files: ["lib/a.sh"], questions: ["Q one?", "Q two? Files: /x/b.md:4"], dead_ends: [] };
+  const fs = sessionFiles(e.files, ["lib/a.sh", "/abs/c.mjs", ...Array.from({ length: 9 }, (_, i) => "d" + i)], "/wt");
+  assert.equal(fs.length, 8);
+  assert.deepEqual(fs.slice(0, 3), ["/wt/lib/a.sh", "/abs/c.mjs", "/wt/d0"]);
+  const before = JSON.stringify(e), { entry, filled } = fillQuestions(e, fs);
+  assert.equal(filled, 1);
+  assert.equal(entry.questions[0], "Q one? Files (harness, from the session): " + fs.join(", "));
+  assert.equal(entry.questions[1], e.questions[1]);
+  assert.equal(JSON.stringify({ ...entry, questions: e.questions }), before);
+  assert.equal(JSON.stringify(e), before);
+  const none = fillQuestions(e, []);
+  assert.equal(none.filled, 0);
+  assert.equal(none.entry, e);
+  const md = fillQuestions({ questions: ["Q? **Files:** /a/b.sh:4", "Q? `Files:` /a/c.sh", "Q? (Files: /a/d.sh)", "Should the Files: section stay?"] }, ["/wt/x"]);
+  assert.equal(md.filled, 1);
+  assert.ok(md.entry.questions[3].endsWith("Files (harness, from the session): /wt/x"), md.entry.questions[3]);
+  assert.deepEqual(sessionFiles([".harness/runs/r/INBOX.md", "lib/a.sh"], [], "/wt"), ["/wt/lib/a.sh"]);
 });
