@@ -1,9 +1,12 @@
-# Context pack for `U1-03`
+# Context pack for `U1-04`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (U1-03, affects U1-04, U1-06): summary.mjs and metrics.mjs evals lived in 11-deploy-guards: they went to summary.test.mjs and metrics.test.mjs (one file per module), not deploy.test.mjs → entries.jsonl:4
+- Discovery (U1-03, affects U1-04, U1-06): An eval's JSON.stringify equality checks key order; assert.deepEqual doesn't: add an Object.keys(...).join() assert where order may matter → entries.jsonl:4
+- Discovery (U1-03, affects U1-04, U1-06): Rewriting a check file via `> f.new && mv` drops its 100755 mode: chmod +x after, or edit in place → entries.jsonl:4
 - Discovery (U1-02, affects U1-03, U1-04, U1-06): A check that is an eval plus a CLI run splits: the part its name describes keeps the name, the other gets a new fixture name (decisions/2026-11-03-unit-tier, default); 12-journal gained 3 bash names and 1 unit name. → entries.jsonl:3
 - Discovery (U1-02, affects U1-03, U1-04): An eval run under TZ=… node becomes a test that sets process.env.TZ and restores it in finally (node rereads it on assignment); tests stay synchronous so the zone can't leak. → entries.jsonl:3
 - Discovery (U1-02, affects U1-03, U1-04): assert.throws(fn, /re/) tests String(err) ("Error: …"): an anchored message regex needs { message: /^…/ }. → entries.jsonl:3
@@ -12,6 +15,7 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (U1-01, affects U1-06, run): The CLAUDE.md check went in tests/checks/79-suite-length.sh (already in CHECK_KEY_MAP for CLAUDE.md), not 33-suite-runner.sh: a CLAUDE.md read there would have to join the map (82-key-map-lint). → entries.jsonl:2
 - Discovery (U1-01, affects U1-02, U1-03, U1-04, U1-05, U1-06): The reporter prints a non-assertion error's stack without node: frames, and a skipped test as `PASS <name> (skipped: <reason>)` (run.sh strips the suffix); decisions/2026-11-03-unit-tier has empty `## Kept evals` and `## Measured` sections for U1-02..05. → entries.jsonl:2
 - Discovery (init, affects U1-01, U1-03, run): Under `node --test --test-isolation=none <glob>` process.argv is [node, <glob>] (checked 2026-11-03 in /tmp): lib/testcount.mjs's CLI tail (process.argv.slice(2)) is inert on import, so no lib/ guard is needed for the move; a module that reads argv[1] would not be. → entries.jsonl:1
+- Discovery (init, affects U1-04): CHECK_KEY_MAP in .harness/config.sh maps CLAUDE.md to 39-memlint-m4, 37-memory-prompts-m2 and 79-suite-length, and 82-key-map-lint lints only tests/checks/*.sh: a unit test that read the repo's CLAUDE.md, prompts/ or templates/ would escape a partial run. Such an eval (37-memory-prompts-m2 has two) stays a bash check. → entries.jsonl:1
 
 ## What it builds on
 
@@ -19,8 +23,8 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Lately in the run
 
+- 2026-11-03 21:04 · U1-03 · passes: The 34 eval checks of the nine smaller -pure- files moved to tests/unit/{features,notify,parked,render,metrics,summary,deploy,backlog}.test.mjs and testcount.test.mjs under their exact names; 01 and 02 deleted; two splits gave 2 new names. 0 eval lines left in those files. Full run 1152/1152, conformance PASS.; tests 1150 → 1152; files tests/unit/features.test.mjs, tests/unit/notify.test.mjs, tests/unit/parked.test.mjs, tests/unit/render.test.mjs, tests/unit/metrics.test.mjs, … → entries.jsonl:4
 - 2026-11-03 20:41 · U1-02 · passes: The 37 evals of 51-view-pure and 12-journal-pure moved to tests/unit/view.test.mjs (20), entries.test.mjs (14) and memlint.test.mjs (2) under their exact names, each compared value asserted; the CLI parts stay bash checks (3 under new names, the validate cases joined the vx check). Full run 1150/1150, conformance PASS.; tests 1146 → 1150; files tests/unit/view.test.mjs, tests/unit/entries.test.mjs, tests/unit/memlint.test.mjs, tests/checks/51-view-pure.sh, tests/checks/12-journal-pure-e4-entrys.sh, … → entries.jsonl:3
-- 2026-11-03 19:35 · init · passes: 6 features, one milestone U1: U1-01 the node:test reporter, tests/checks/00-unit-tier.sh, tests/unit/ (testcount's eval first), CLAUDE.md, the decision file; U1-02 the 37 evals of 51-view-pure and 12-journal-pure; U1-03 the nine smaller -pure- files; U1-04 the scenario files' evals, kept ones listed; U1-05 the before/after table (sonnet); U1-06 review + simplify, docs. → entries.jsonl:1
 
 ## Current rules
 
