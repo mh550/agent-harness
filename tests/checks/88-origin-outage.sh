@@ -83,5 +83,95 @@ check "a refused merge is one gh pr merge per merge, its GraphQL line in run.log
   && (( GM >= 1 )) && [[ $GM == $(grep -c "^gh pr view harness-merge/odr-M1 " "$T/odr-gh.log") ]] \
   && grep -qxF "GraphQL: Head branch was modified. Review and try the merge again. (mergePullRequest)" "$HARNESS_STATE/proj/odr/run.log" \
   && nkey odr merge_refused:M1 && ! grep -q "merging its PR failed (try" "$HARNESS_STATE/proj/odr/run.log"'
+check "a refused lane closes merge refused, on the card it opened" 'hlog odr | grep -qF "lane M1 closed (M1 needs Michael: merge refused)"'
+
+# ---- past the retries: a note, a card, a notification; the tag's two notes; the push streaks (M1-02) ----
+ni() { jq -s -r ".[] | select(.key == \"$2\") | ${3:-.}" "$HARNESS_STATE/proj/$1"/needs/*.json 2> /dev/null; }   # <run> <key> <jq>: an open item's field
+ndone() { jq -s -r ".[] | select(.key == \"$2\") | ${3:-.}" "$HARNESS_STATE/proj/$1"/needs/done/*.json 2> /dev/null; }   # the same, resolved
+# how many stub-curl posts hold every one of the given strings
+posts() { awk 'BEGIN { RS = "===\n"; split(ARGV[1], k, "\t"); ARGV[1] = "" } { for (i in k) if (!index($0, k[i])) next; n++ } END { print n + 0 }' "$(IFS=$'\t'; echo "$*")" "$T/curl.log"; }
+fresh() { git -C "$T/origin.git" update-ref refs/heads/main "$main0"; rm -f "$T"/gh-down-*; }   # the next run starts from main0, gh's counts at 0
+srun() { local r=$1; shift; env STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$@" "$H" start "$T/proj" "$r" --spec SPEC.md --foreground > "$T/$r.out" 2>&1; }   # <run> [VAR=value…]: a stub run
+
+# od2: origin down from M1's verify session's end until after the run's end
+fresh; srun od2 STUB_ORIGIN_DOWN="M1:until $(( $(date +%s) + 3600 ))" PATH="$DOWN:$PATH"
+OD2=$HARNESS_STATE/proj/od2
+check "od2: a tag push past the retries is noted local only, its rejected line in run.log, never verified and tagged" \
+  'hlog od2 | grep -qE "· M1 verified; tag run/od2/M1 is local only \(push failed 4 times over [0-9]+ s; see run.log\)$" \
+  && ! hlog od2 | grep -q "M1 verified and tagged" && grep -qxF " ! [remote rejected] run/od2/M1 -> run/od2/M1 (failure)" "$OD2/run.log" \
+  && [[ -f $OD2/tag-local-M1 ]] && ! git -C "$T/origin.git" rev-parse -q --verify refs/tags/run/od2/M1 > /dev/null'
+check "od2: the record branch's and the lane branch's push streaks are noted once each at their start, every failure a run.log line" \
+  '[[ $(hlog od2 | grep -c "· record branch: push of harness/od2 failed; retrying at every sync (see run.log)$") == 1 ]] \
+  && [[ $(hlog od2 | grep -c "· lane M1: push of harness-lane/od2/M1 failed; retrying at every sync (see run.log)$") == 1 ]] \
+  && (( $(grep -c "push of harness/od2 failed$" "$OD2/run.log") >= 2 )) && read -r _ PF < "$OD2/push-failing" && (( PF >= 2 )) && [[ -f $OD2/lane-push-failing-M1 ]]'
+check "od2: the merge past the retries is one note, the lane closes on its words, the marker holds the step" \
+  '[[ $(hlog od2 | grep -cE "· M1: merge failed at fetch of main after 4 tries over [0-9]+ s; merged later: harness merge od2$") == 1 ]] \
+  && hlog od2 | grep -qF "lane M1 closed (M1 needs Michael: its merge (origin unreachable at fetch of main))" \
+  && [[ $(cat "$OD2/merge-failed-M1") == "fetch of main" && -f $OD2/needs-M1 ]] && ! hlog od2 | grep -q "· M1 merged into main"'
+check "od2: merge_failed:M1 is open with its fields and its one command, seen once over the lane's and the run end's merges" \
+  '[[ $(ni od2 merge_failed:M1 "[(.card.commands == [\"harness merge od2\"] | tostring), .what, (.tries | tostring), (.tag_local | tostring), (.seen | tostring), .kind, .severity, .priority] | join(\"|\")") == "true|fetch of main|4|true|1|needs_michael|block|high" ]] \
+  && ni od2 merge_failed:M1 .card.headline | grep -qx "M1: merge failed at fetch of main (origin unreachable)" \
+  && ni od2 merge_failed:M1 .card.why | grep -qF "origin_try in lib/record.sh" && [[ $(ni od2 merge_failed:M1 .head) == $(git -C "$T/proj" rev-parse "run/od2/M1^{commit}") ]]'
+check "od2: one high needs-you post with the card's words, and the run end's post went out too" \
+  '[[ $(posts "Title: [od2] M1 needs you" "Priority: high" "M1: merge failed at fetch of main") == 1 && $(curl_count "Title: [od2] M1 needs you") == 1 ]] \
+  && [[ $(curl_count "Title: [od2] ended:") == 1 ]] && [[ $(curl_count "Title: [od2] M1 merged") == 0 ]]'
+rm -f "$T/origin-down"
+"$H" merge od2 > "$T/od2m.out" 2>&1; OD2M=$?
+check "od2: origin back, harness merge: the tag reaches origin first, M1 merged, the markers gone, the item resolved milestone merged" \
+  '(( OD2M == 0 )) && hlog od2 | grep -q "· M1 merged into main" && [[ $(git -C "$T/origin.git" tag -l run/od2/M1) == run/od2/M1 ]] && on_main run/od2/M1 \
+  && [[ ! -e $OD2/tag-local-M1 && ! -e $OD2/merge-failed-M1 && ! -e $OD2/needs-M1 ]] && ! nkey od2 merge_failed:M1 \
+  && [[ $(ndone od2 merge_failed:M1 "[.resolved_by, .resolved_why] | join(\" \")") == "sweep milestone merged" ]] \
+  && hlog od2 | grep -q "needs: resolved od2/[0-9]* (milestone merged)"'
+check "od2: the record branch's streak ends in one note, committed and on origin, the worktree clean" \
+  '[[ $(hlog od2 | grep -cE "· record branch: push of harness/od2 succeeded after [0-9]+ failures over [0-9]+ min$") == 1 ]] && [[ ! -e $OD2/push-failing ]] \
+  && git -C "$T/origin.git" show harness/od2:.harness/runs/od2/harness-log.md | grep -E "record branch: push of harness/od2 succeeded after" > /dev/null \
+  && [[ -z $(git -C "$T/wt/proj/od2" status --porcelain) ]]'
+
+# od7: gh fails every pr merge: past its tries that is an outage, never a refusal; a later harness merge lands the open PR
+fresh; srun od7 STUB_GH_DOWN=99 STUB_GH_DOWN_ONLY=merge
+check "od7: pr merge past its tries: merge_failed at merging its PR, no merge_refused, the lane closes on its words" \
+  'hlog od7 | grep -qE "· M1: merge failed at merging its PR after 4 tries over [0-9]+ s; merged later: harness merge od7$" \
+  && [[ $(ni od7 merge_failed:M1 .what) == "merging its PR" ]] && ! nkey od7 merge_refused:M1 && [[ ! -e $HARNESS_STATE/proj/od7/refused-M1 ]] \
+  && hlog od7 | grep -qF "lane M1 closed (M1 needs Michael: its merge (origin unreachable at merging its PR))" \
+  && [[ $(curl_count "Title: [od7] M1 needs you") == 1 ]]'
+rm -f "$T"/gh-down-*; "$H" merge od7 > "$T/od7m.out" 2>&1
+check "od7: harness merge lands it through the PR it left open, the card resolved" \
+  'hlog od7 | grep -q "· M1 merged into main" && on_main run/od7/M1 && ! nkey od7 merge_failed:M1 && [[ $(ndone od7 merge_failed:M1 .resolved_why) == "milestone merged" ]]'
+
+# od8: the merge landed and gh's answer was lost on every try: on main, so merged, no card (M1-01's leftover)
+fresh; srun od8 STUB_GH_LOST_MERGE=1
+check "od8: a pr merge whose answer is lost is merged when its commit is on main: no card, no post" \
+  'hlog od8 | grep -q "· M1 merged into main" && on_main run/od8/M1 && [[ -f $HARNESS_STATE/proj/od8/merged-M1 ]] \
+  && ! nkey od8 merge_failed:M1 && ! nkey od8 merge_refused:M1 && [[ $(curl_count "Title: [od8] M1 needs you") == 0 ]]'
+
+# odh: a pre-receive hook declines the merge branch: a refusal, one try, its card says no PR was opened
+fresh
+printf '%s\n' '#!/bin/sh' 'while read -r o n r; do case $r in refs/heads/harness-merge/*) exit 1 ;; esac; done' > "$T/origin.git/hooks/pre-receive"; chmod +x "$T/origin.git/hooks/pre-receive"
+srun odh; rm -f "$T/origin.git/hooks/pre-receive"
+check "odh: a hook-declined push is one try and merge_refused: its real git line in run.log, no PR on the card, the lane closes merge refused" \
+  'L=$HARNESS_STATE/proj/odh/run.log; grep -qF "(pre-receive hook declined)" "$L" && ! grep -q "push of harness-merge/odh-M1 failed (try" "$L" \
+  && ! nkey odh merge_failed:M1 && nkey odh merge_refused:M1 && [[ $(ni odh merge_refused:M1 ".card.where | map(select(.label == \"PR\")) | length") == 0 ]] \
+  && ni odh merge_refused:M1 .card.why | grep -qF "push of harness-merge/odh-M1" \
+  && hlog odh | grep -qF "lane M1 closed (M1 needs Michael: merge refused)" && [[ $(curl_count "Title: [odh] M1 needs you") == 1 ]]'
+
+# odu: lane_done's last branch, which nothing should reach: no tag could be made, so nothing to merge and no reason
+# known; the lane still never closes needs Michael without a card
+mkdir -p "$T/tagfail"; printf '%s\n' '#!/usr/bin/env bash' '[[ $1 == tag && $2 == -a ]] && { echo "error: stub: no tag" >&2; exit 1; }' "exec $(command -v git) \"\$@\"" > "$T/tagfail/git"; chmod +x "$T/tagfail/git"
+fresh; srun odu PATH="$T/tagfail:$PATH"
+check "odu: a lane left with no reason opens merge_failed what=unknown and notifies before it closes; no tag, no verified-and-tagged note" \
+  'hlog odu | grep -qF "lane M1 closed (M1 needs Michael: its merge)" && [[ $(ni odu merge_failed:M1 .what) == unknown ]] \
+  && ni odu merge_failed:M1 .card.headline | grep -qx "M1: its merge stopped with no reason recorded" \
+  && hlog odu | grep -qF "· M1 verified; tag run/odu/M1 could not be made (see run.log)" && ! hlog odu | grep -q "M1 verified and tagged" \
+  && [[ $(curl_count "Title: [odu] M1 needs you") == 1 ]]'
+
+# The invariant (a falsifier of the spec's Predictions), over every run of this file
+inv_bad=""; for d in "$HARNESS_STATE"/proj/*/; do r=$(basename "$d")
+  while read -r stamp hm m; do
+    close=$(date -d "$stamp $hm" +%s)
+    find "$d"needs -name '*.json' -exec cat {} + 2> /dev/null | jq -se --arg m "$m" --argjson t "$close" 'any(.[]; .milestone == $m and (.at | sub("\\.[0-9]+Z$"; "Z") | fromdate) < $t + 60)' > /dev/null || inv_bad+=" $r/$m"
+  done < <(hlog "$r" | sed -nE 's/^- ([0-9-]+ [0-9:]+) · lane ([^ ]+) closed \(\2 needs Michael: .*$/\1 \2/p')
+done
+check "the invariant: every lane closed needs Michael in this file's runs has a needs item of that milestone, opened no later than the close" \
+  '[[ -z $inv_bad ]] || echo "no item:$inv_bad"; [[ -z $inv_bad ]] && [[ $(for r in od2 od7 odh odu odr; do hlog $r; done | grep -c "closed (M1 needs Michael: ") -ge 5 ]]'
 
 suite_end

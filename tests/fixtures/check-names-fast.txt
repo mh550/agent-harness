@@ -259,7 +259,7 @@ metrics: an entry-resume row from first.jsonl and resumed.jsonl holds the total_
 metrics: resumed-again-under-cap.jsonl against resumed.jsonl gives a positive difference
 metrics: session-id prints the init line's session_id of first.jsonl
 metrics: summary counts an entry-resume row's cost but never as a session
-needs REASONS: kind, severity and priority for each of the 16 reasons, as the plan's table
+needs REASONS: kind, severity and priority for each of the 17 reasons, as the plan's table
 needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card feature_list_edits: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
@@ -267,6 +267,7 @@ needs card given_up: from its fixture, every field filled (why of 2-4 sentences,
 needs card initializer_failed: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card main_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card merge_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card merge_failed: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card merge_refused: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card overlap: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card parked: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
@@ -277,11 +278,13 @@ needs card verify_red: from its fixture, every field filled (why of 2-4 sentence
 needs card verify_thin: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card weekly_budget: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
-needs cards: 16 fixtures, one per reason, and a reason without a template is exit 1
+needs cards: 17 fixtures, one per reason, and a reason without a template is exit 1
 needs cards: merge_conflict and main_conflict show tried in the card, the notification body and needs.md
 needs fixture records: severity warn for usage_limit, weekly_budget and overlap, else block; each with a card headline and a [<run>] title
 needs list: a dead driver.pid with no ended is a synthesized driver_crash (ref <run>/crash, at run.log's mtime), parked.json's B a parked item; nothing stored
 needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver
+needs merge_failed: the item carries what, tries, secs, tag_local and head, a refresh their new values; a card without a step says so
+needs merge_refused without a PR (a hook declined a push): the card names the step and no PR row
 needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref kept, updated_at moved
 needs open: an unknown reason or an empty subject exits 1 with needs.mjs: on stderr and writes nothing
 needs questions: questionKey drops only a Files: label line, and asked_in ends with the newest asker
@@ -300,6 +303,7 @@ needs review: harness needs done rewrites the record's needs.md (the notificatio
 needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)
 needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
+needs sweep: merge_failed: merged-<m> resolves milestone merged, its marker gone merge went through, else kept
 needs verify_red own: a slow-tier red the fast gate let through, never main's disagreement
 needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
 needs.mjs moveForward: two earlier items of the key become one, seen summed, asked_in every run's, both resolved as asked again in the new run

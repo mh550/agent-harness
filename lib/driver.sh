@@ -426,6 +426,9 @@ if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 who
     unmaterialize; lanes_services_down "merge only"; slot_close
   fi
   rmdir "$SCRATCH" 2> /dev/null   # created above for nothing when no re-base ran an init (a kept scratch isn't empty)
+  # what the merges resolved (merge_failed, merge_refused …); after ended, as finish's: a merge is no continue, and the
+  # run-level items stay open
+  echo "merge only · $(date '+%F %T')" > "$STATE/ended"; needs_sweep
   rec_commit "HARNESS: merge"; sync_record; END_REASON="merge only"; exit 0
 fi
 

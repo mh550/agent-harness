@@ -56,6 +56,9 @@ check "merge_one's conflict opens merge_conflict: the merge-tree files in where,
 check "merge_one's refusal opens merge_refused: the PR URL in where and as its click, notified once with it" \
   '[[ $PRU == https://example.test/pr/* && $(ni mr merge_refused:M2 .click) == "$PRU" ]] \
   && [[ $(posts "Title: [mr] M2 needs you" "M2: the merge was refused" "Priority: high" "Click: $PRU") == 1 ]] && hlog mr | grep -q "M2: the merge was refused"'
+check "a lane closes on its card's words: merge refused, conflicts with main; neither opens a merge_failed card" \
+  'hlog mr | grep -qF "lane M2 closed (M2 needs Michael: merge refused)" && hlog mr | grep -qF "lane M1 closed (M1 needs Michael: conflicts with main)" \
+  && [[ $(nj mr "[.[] | select(.reason == \"merge_failed\")] | length") == 0 ]]'
 
 # thin evidence in every round: verify_thin
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"

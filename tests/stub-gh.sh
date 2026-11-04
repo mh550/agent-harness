@@ -8,13 +8,15 @@
 # "api repos/<o>/<r>/deployments…" answers GitHub's published example (fixtures/gh-deployments.json, creator octocat).
 # STUB_GH_DOWN=<n>: GitHub unreachable for the first <n> calls of each of pr view, pr create and pr merge: they print
 # a real gh's line for a refused connection (fixtures/gh-down.txt) on stderr and exit 1. STUB_REFUSE_MERGE=1: every
-# pr merge is refused with live gh's GraphQL line. Its own git calls are GitHub's side: never the outage stub's.
+# pr merge is refused with live gh's GraphQL line. STUB_GH_DOWN_ONLY=<view|create|merge…>: the calls STUB_GH_DOWN counts.
+# STUB_GH_LOST_MERGE=1: a pr merge lands and its answer is lost (that same line, exit 1). Its own git calls are GitHub's
+# side: never the outage stub's.
 HERE=$(cd "$(dirname "$0")" && pwd)
 echo "gh $*" >> "$STUB_DIR/gh.log"
 export STUB_GIT_UP=1
 P=$STUB_DIR/prs; mkdir -p "$P"
 GRAPHQL_MOVED="GraphQL: Head branch was modified. Review and try the merge again. (mergePullRequest)"
-if [[ ${STUB_GH_DOWN:-} && $1 == pr && $2 =~ ^(view|create|merge)$ ]]; then
+if [[ ${STUB_GH_DOWN:-} && $1 == pr && $2 =~ ^(${STUB_GH_DOWN_ONLY:-view|create|merge})$ ]]; then
   n=$(( $(cat "$STUB_DIR/gh-down-$2" 2> /dev/null || echo 0) + 1 )); echo "$n" > "$STUB_DIR/gh-down-$2"
   (( n <= STUB_GH_DOWN )) && { cat "$HERE/fixtures/gh-down.txt" >&2; exit 1; }
 fi
@@ -50,5 +52,6 @@ case "$1 $2" in
       || { echo "$GRAPHQL_MOVED" >&2; exit 1; }
     git clone -q "$origin" "$tmp" && git -C "$tmp" fetch -q origin "$c" \
       && git -C "$tmp" -c user.name=gh -c user.email=gh@test merge -q --no-ff -m "Merge pull request #$n" "$c" \
-      && git -C "$tmp" push -q origin HEAD:main && touch "$P/pr-$n.merged" ;;
+      && git -C "$tmp" push -q origin HEAD:main && touch "$P/pr-$n.merged" || exit
+    [[ ${STUB_GH_LOST_MERGE:-} ]] && { cat "$HERE/fixtures/gh-down.txt" >&2; exit 1; }; true ;;
 esac
