@@ -1,0 +1,2 @@
+## 2026-11-03 19:12
+Phase 1 of docs/plans/2026-11-03-test-suite-redesign.md: build the unit tier spec in full as one milestone U1, four to six features, the measurement feature (U1-05) before the review feature. Proceed on the spec's defaults, mark them *default* in the decision file, never park. Every moved check keeps its name: the full run's conformance is the proof. The measurement needs no other suite alive: check harness status before each timed run.
