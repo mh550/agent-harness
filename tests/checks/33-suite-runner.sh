@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tier: fast
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the suite runner: TEST_JOBS files at a time inside the one scope, each file's output whole, timing lines ----
 # three tiny check files (TEST_CHECKS points the runner at them): a and c print a line, sleep, print another, so a
@@ -97,7 +97,8 @@ check "suite runner: a subset run fails on a name not in its fixture (a stopped 
 # ---- tiers (T1-01): line 2 of every check file is `# tier: fast` or `# tier: slow`; `--tier` runs one tier's files ----
 # tr: 01-f and 02-g fast, 03-s slow, with its own check-names.txt. tn: 02-n headerless, 03-m a tier no runner knows,
 # 01-a and both of those touch $0.ran when run (nothing may run on a refusal)
-cn tr "tr f1" "tr g1" "tr s1" && tiny "$T/tr/01-f.sh" 'echo "PASS tr f1"' && tiny "$T/tr/02-g.sh" 'echo "PASS tr g1"' && TIER=slow tiny "$T/tr/03-s.sh" 'echo "PASS tr s1"'
+tc() { printf '%s\n' "${@:2}" | LC_ALL=C sort > "$T/$1/check-names-fast.txt"; }   # a directory's fast fixture
+cn tr "tr f1" "tr g1" "tr s1" && tc tr "tr f1" "tr g1" && tiny "$T/tr/01-f.sh" 'echo "PASS tr f1"' && tiny "$T/tr/02-g.sh" 'echo "PASS tr g1"' && TIER=slow tiny "$T/tr/03-s.sh" 'echo "PASS tr s1"'
 trr() { TEST_CHECKS=$T/tr TEST_JOBS=2 bash "$HERE/run.sh" "${@:2}" > "$T/tr-$1.out" 2>&1; echo $? > "$T/tr-$1.rc"; }
 trp() { grep '^PASS tr ' "$T/tr-$1.out" | LC_ALL=C sort | tr '\n' ,; }
 trr fast --tier fast; trr slow --tier slow; trr fastg --tier fast 02-g; trr slowf --tier slow 01-f; trr bad --tier medium
@@ -121,6 +122,56 @@ for a in "" "--tier fast" "01-a"; do TEST_CHECKS=$T/tn bash "$HERE/run.sh" $a > 
 check "tiers: a check file without a tier header on line 2 is refused: no tier header: <path> per file in name order, exit 2, nothing run" \
   'ok=1; for o in tn tntierfast tn01a; do [[ $(cat "$T/$o.rc") == 2 && $(cat "$T/$o.out") == "no tier header: $T/tn/02-n.sh"$'"'"'\n'"'"'"no tier header: $T/tn/03-m.sh" ]] || { echo "  ($o)"; ok=0; }; done \
   && (( ok )) && ! ls "$T"/tn/*.ran 2> /dev/null'
+# ---- per-tier conformance (T1-02): --tier fast against check-names-fast.txt, --tier slow against the full fixture minus it ----
+# tr (above) conforms in both tiers. tm: a fast name (tm f2) and a slow one (tm s2) deleted from their files. tx: a red
+# fast file, its tier conforming (HARNESS_FAILED= as before)
+cn tm "tm f1" "tm f2" "tm g1" "tm s1" "tm s2" && tc tm "tm f1" "tm f2" "tm g1" && tiny "$T/tm/01-f.sh" 'echo "PASS tm f1"' \
+  && tiny "$T/tm/02-g.sh" 'echo "PASS tm g1"' && TIER=slow tiny "$T/tm/03-s.sh" 'echo "PASS tm s1"'
+cn tx "tx f1" "tx r1" "tx s1" && tc tx "tx f1" "tx r1" && tiny "$T/tx/01-f.sh" 'echo "PASS tx f1"' \
+  && tiny "$T/tx/02-r.sh" 'echo "FAIL tx r1"; exit 1' && TIER=slow tiny "$T/tx/03-s.sh" 'echo "PASS tx s1"'
+tdr() { TEST_CHECKS=$T/$1 TEST_JOBS=2 bash "$HERE/run.sh" "${@:3}" > "$T/td-$2.out" 2>&1; echo $? > "$T/td-$2.rc"; }
+trr all
+tdr tm fast --tier fast; tdr tm slow --tier slow; tdr tm all; tdr tm fsub --tier fast 01-f; tdr tm sub 01 03; tdr tx xfast --tier fast
+miss() { sed -n '/^missing (in the fixture, not run):$/,/^\(PASS\|FAIL\) conformance/p' "$T/td-$1.out" | sed '1d;$d' | tr '\n' ,; }
+CF="conformance: every check of the fast tier ran, none new or doubled" CS="conformance: every check of the slow tier ran, none new or doubled"
+check "tier conformance: a fast name missing from a --tier fast run fails the fast tier's conformance naming it, with no HARNESS_FAILED=" \
+  '[[ $(cat "$T/td-fast.rc") == 1 && $(miss fast) == "tm f2," ]] && grep -qx "FAIL $CF" "$T/td-fast.out" && ! grep "^HARNESS_FAILED=" "$T/td-fast.out" > /dev/null'
+check "tier conformance: a slow name missing from a --tier slow run is red naming it; a fast name absent from it is not missing" \
+  '[[ $(cat "$T/td-slow.rc") == 1 && $(miss slow) == "tm s2," ]] && grep -qx "FAIL $CS" "$T/td-slow.out"'
+check "tier conformance: a run without --tier checks the full list as before" \
+  '[[ $(cat "$T/td-all.rc") == 1 && $(miss all) == "tm f2,tm s2," ]] && grep -qx "FAIL conformance: the split suite has every check the single-file suite had" "$T/td-all.out"'
+check "tier conformance: a names subset, with or without --tier, checks new and doubled only" \
+  '[[ $(cat "$T/td-fsub.rc" "$T/td-sub.rc") == $'"'"'0\n0'"'"' ]] && grep -qx "PASS $SFC" "$T/td-fsub.out" && grep -qx "PASS $SFC" "$T/td-sub.out" \
+  && ! grep "^missing" "$T/td-fsub.out" "$T/td-sub.out" > /dev/null'
+check "tier conformance: a green --tier fast or --tier slow run prints its tier's PASS line; a green full run keeps the full line" \
+  '[[ $(cat "$T/tr-fast.rc" "$T/tr-slow.rc" "$T/tr-all.rc") == $'"'"'0\n0\n0'"'"' ]] && grep -qx "PASS $CF" "$T/tr-fast.out" && grep -qx "PASS $CS" "$T/tr-slow.out" \
+  && grep -qx "PASS conformance: the split suite has every check the single-file suite had" "$T/tr-all.out"'
+check "tier conformance: a red --tier fast run whose failures are all inside named files prints HARNESS_FAILED= as before" \
+  '[[ $(cat "$T/td-xfast.rc") == 1 ]] && grep -qx "PASS $CF" "$T/td-xfast.out" && [[ $(grep "^HARNESS_FAILED=" "$T/td-xfast.out") == "HARNESS_FAILED=02-r" ]]'
+# the lint, on the real tree (read only): the headers and the two fixtures agree. tierlint <checks dir> <full fixture>
+# <fast fixture> [<more fast sources>…]: one line per inconsistency, exit 1 on any. A name belongs to the files whose
+# source holds its text (most names are literal; one built at run time is told by the fast run's conformance instead)
+tierlint() { local d=$1 full=$2 ff=$3 fs=("${@:4}") ss=() f m bad=0
+  for f in "$d"/*.sh; do case $(sed -n 2p "$f") in "# tier: fast") fs+=("$f") ;; "# tier: slow") ss+=("$f") ;; *) echo "no tier header: $f"; bad=1 ;; esac; done
+  m=$(LC_ALL=C comm -23 "$ff" "$full"); [[ -n $m ]] && { sed 's/^/fast name not in the full fixture: /' <<< "$m"; bad=1; }
+  while IFS= read -r m; do grep -qF -- "$m" "${fs[@]}" && continue   # in a slow file's source and in no fast one's
+    echo "fast name from a slow file: $m ($(grep -lF -- "$m" "${ss[@]}" | xargs -n1 basename | tr '\n' ' ' | sed 's/ $//'))"; bad=1
+  done < <(grep -ohFf "$ff" "${ss[@]}" | LC_ALL=C sort -u)
+  return $bad; }
+FX=$HERE/fixtures UNIT=("$HERE"/unit/*.test.mjs)
+check "tier lint: every tests/checks/*.sh has a tier header on line 2" \
+  'ok=1; for f in "$HERE"/checks/*.sh; do [[ $(sed -n 2p "$f") =~ ^"# tier: "(fast|slow)$ ]] || { echo "  ($f)"; ok=0; }; done; (( ok ))'
+check "tier lint: every name of check-names-fast.txt is in check-names.txt" \
+  '[[ -s $FX/check-names-fast.txt && -z $(LC_ALL=C comm -23 "$FX/check-names-fast.txt" "$FX/check-names.txt") ]]'
+check "tier lint: every name of check-names-fast.txt comes from a file whose header says fast" \
+  'tierlint "$HERE/checks" "$FX/check-names.txt" "$FX/check-names-fast.txt" "${UNIT[@]}" > "$T/lint.out"; [[ $? == 0 && ! -s $T/lint.out ]] || { cat "$T/lint.out"; false; }'
+# planted on a copy of the fixtures: a slow file's name (the first whose text no fast file holds) in the fast list
+mkdir -p "$T/lf" && cp "$FX/check-names.txt" "$FX/check-names-fast.txt" "$T/lf/" && mapfile -t LS < <(grep -lx "# tier: slow" "$HERE"/checks/*.sh) && mapfile -t LFS < <(grep -lx "# tier: fast" "$HERE"/checks/*.sh)
+PL=""; while IFS= read -r m; do grep -qF -- "$m" "${LFS[@]}" "${UNIT[@]}" || { PL=$m; break; }; done < <(grep -ohFf <(LC_ALL=C comm -23 "$FX/check-names.txt" "$FX/check-names-fast.txt") "${LS[@]}" | LC_ALL=C sort -u)
+{ cat "$T/lf/check-names-fast.txt"; echo "$PL"; } | LC_ALL=C sort > "$T/lf/fast" && mv "$T/lf/fast" "$T/lf/check-names-fast.txt"
+tierlint "$HERE/checks" "$T/lf/check-names.txt" "$T/lf/check-names-fast.txt" "${UNIT[@]}" > "$T/lf.out"; LF=$?
+check "tier lint: a planted fast name whose file says slow turns the lint red naming it (on a copy of the fixtures)" \
+  '[[ -n $PL && $LF == 1 ]] && grep -qxF -- "fast name from a slow file: $PL ($(grep -lF -- "$PL" "${LS[@]}" | xargs -n1 basename | tr "\n" " " | sed "s/ \$//"))" "$T/lf.out"'
 # ---- the unit tier: tests/checks/00-unit-tier.sh runs tests/unit (TEST_UNIT_DIR: another directory) under the reporter ----
 # u1: one test passes, one fails on an assert diff; u2: passing only; u3: a file that exits at import (no FAIL line from
 # node: the check file's own); u4: a file that throws at import (node's FAIL <file> or the check file's line: both red)

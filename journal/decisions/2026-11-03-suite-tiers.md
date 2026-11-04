@@ -27,19 +27,31 @@ no grouping but a name match, so a session could only run all of it or guess a s
 - **`--tier fast|slow`**, before any names: only that tier's files, and with names only those of them whose names
   match. Without `--tier`, every file as before. `--repeat <n>` combines with it in either order, and with `--tier`
   it needs no name: the whole tier n times (*default*). Any other tier word: the usage line, exit 2. The `slowest:`
-  line ends `, tier fast`, `, tier slow` or `, tier all` (no `--tier`). Until T1-02's per-tier fixture, a `--tier`
-  run's conformance is a subset's (none new, none doubled).
+  line ends `, tier fast`, `, tier slow` or `, tier all` (no `--tier`).
+- **Per-tier conformance** (T1-02). `tests/fixtures/check-names.txt` stays the full list; `check-names-fast.txt` beside
+  it, `LC_ALL=C` sorted, holds the names the fast files print (the unit tier's included). A `--tier fast` run checks
+  missing, new and doubled against the fast list (a deleted fast check turns the fast run red: `passes` will stand on
+  it); a `--tier slow` run against the full list minus the fast one (`comm -23`); a run without `--tier` against the
+  full list as before; a names subset, with or without `--tier`, new and doubled only (against its tier's list). The
+  line is `conformance: every check of the <tier> tier ran, none new or doubled` for a tier run, the old line for a
+  full one; `HARNESS_FAILED=` is unchanged. A `TEST_CHECKS` directory's fast list is its own `check-names-fast.txt`;
+  a missing one is empty (*default*: fail-closed, every name of a `--tier fast` run is then new). A `new` name's line
+  says which fixture takes it (`… and check-names-fast.txt` for a fast run, `…, not check-names-fast.txt` for a slow).
 - **The 30 s rule.** **fast** = `00-unit-tier` + every file whose solo slot time at 4 jobs in lc-4-solo.out was 30 s
   or less + `39-memlint-m4` (42.1 s, a real regression caught outside its own feature twice). **slow** = the rest. A
   file lc-4-solo.out never timed is placed by one `TEST_JOBS=4 bash tests/run.sh <file>` run against the same line
   (*default*: alone, as the spec says, so it reads a little low beside a loaded slot; `84-node-memo` at 27.6 s is the
-  closest to the line and is the first to re-time). 55 fast files and 33 slow (the table below).
+  closest to the line and is the first to re-time). 55 fast files and 33 slow (the table below; 54 and 34 since T1-02 moved `33-suite-runner`).
 - **Who may move a file.** A session moves a file **fast → slow** when it took over 30 s in two solo runs, with both
   times in one `Updated in place <date>: <file> <t1> s, <t2> s` line under the table. **Slow → fast** only Michael,
   or a session whose spec says so, with a solo time under 30 s and the file absent from the flaker rows of the last
   three runs' `flakes.jsonl`. A new check file declares its tier by the same rule (*default*: one timing of it,
   `TEST_JOBS=4 bash tests/run.sh <file>`); a session that adds a stub run to a fast file re-times it. The runner's own
-  check (`tests/checks/33-suite-runner.sh`) lints the fixtures against the headers from T1-02 on.
+  check (`tests/checks/33-suite-runner.sh`) lints the fixtures against the headers: every file has a header, every
+  fast name is in the full list, and no fast name's text is in a slow file's source without being in a fast one's
+  (*default*: a name belongs to the files whose source holds it, `grep -F`; 1,134 of 1,170 names are literal there,
+  and one built at run time is caught by the fast run's own conformance instead). The lint runs in every run of the
+  slow tier and the full suite, `33-suite-runner` being slow since T1-02's re-timing.
 - **Not decided here:** what stands on which tier (`check.sh --fast`, the driver's gate) is T2's,
   `decisions/2026-11-03-fast-gate`.
 
@@ -84,7 +96,6 @@ the one 2026-11-04 timing where that output has none.
 | `29-run-15-resumed-run` | fast | 22.3 | ≤ 30 s |
 | `30-run-15b-run-that` | fast | 17.3 | ≤ 30 s |
 | `31-tmux-l3-03-when` | fast | 5.0 | ≤ 30 s |
-| `33-suite-runner` | fast | 25.5 | ≤ 30 s |
 | `34-check-key` | fast | 16.8 | ≤ 30 s |
 | `35-backlog-pure-m1` | fast | 1.6 | ≤ 30 s |
 | `39-memlint-m4` | fast | 42.1 | over the line, fast by the spec: it caught a real regression outside its own feature twice (budget §7: the Gotchas cap) |
@@ -124,6 +135,7 @@ the one 2026-11-04 timing where that output has none.
 | `16-run-6-limit-cuts` | slow | 46.5 | over 30 s |
 | `19-run-9e-deadline-verifies` | slow | 92.2 | over 30 s |
 | `32-l5-queue-runner-re` | slow | 58.7 | over 30 s |
+| `33-suite-runner` | slow | 25.5; 51.7, 51.7 (2026-11-04) | moved fast → slow by T1-02's two solo `--tier fast` runs: over 30 s in both (its `TEST_FILE_TIMEOUT` fixtures each wait out the runner's 10 s KILL grace) |
 | `36-run-16-retro-backlog` | slow | 109.4 | over 30 s |
 | `37-memory-prompts-m2` | slow | 62.6 | over 30 s |
 | `38-run-17-gotchas-and-pack-m3` | slow | 44.2 | over 30 s |
@@ -149,3 +161,8 @@ the one 2026-11-04 timing where that output has none.
 | `78-needs-questions` | slow | 70.1 | over 30 s |
 | `79-suite-length` | slow | 49.5 | over 30 s |
 | `80-red-marker` | slow | 55.8 | over 30 s |
+
+Updated in place 2026-11-04: 33-suite-runner 51.7 s, 51.7 s (T1-02's two solo `TEST_JOBS=4 bash tests/run.sh --tier fast`
+runs, walls 161.9 s and 161.1 s): moved to slow, its header and the fast fixture. Over 30 s in both too:
+`39-memlint-m4` 39.8 s, 39.6 s, kept fast (*default*): it is fast by the spec's named exception, not by the 30 s line,
+and its time is below the 42.1 s it was placed at.
