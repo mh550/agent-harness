@@ -1,0 +1,51 @@
+{
+  "feature": "init",
+  "kind": "init",
+  "outcome": "passes",
+  "summary": "6 features, one milestone U1: U1-01 the node:test reporter, tests/checks/00-unit-tier.sh, tests/unit/ (testcount's eval first), CLAUDE.md, the decision file; U1-02 the 37 evals of 51-view-pure and 12-journal-pure; U1-03 the nine smaller -pure- files; U1-04 the scenario files' evals, kept ones listed; U1-05 the before/after table (sonnet); U1-06 review + simplify, docs.",
+  "header": "# Progress — run `agent-harness-2026-11-03-2` (agent-harness)\n\nWhat this file is: the run's journal, newest entry first, rendered from `entries.jsonl` for Michael's phone. One milestone, **U1, the unit tier** (spec `docs/specs/2026-11-03-unit-tier.md`; phase 1 of `docs/plans/2026-11-03-test-suite-redesign.md`): the 111 `node --input-type=module` evals in the check files become `tests/unit/<module>.test.mjs` files under `node --test --test-isolation=none` (one node process), reported into `tests/run.sh` through `tests/unit/reporter.mjs` and `tests/checks/00-unit-tier.sh`, every check name unchanged (the full run's conformance line is the proof).\n\nHow to read the feature list (`feature_list.json`): six features in series, U1-01 the mechanism, U1-02 to U1-04 the move file by file, U1-05 the measurement (`findings-and-research/2026-11-03-unit-tier.md`, solo suites before and after, no other suite alive), U1-06 the review + simplify with the docs. Each feature's steps are what its verifier re-runs; `passes` flips when its session's suite is green. The milestone merges into `main` when all six pass and the verify is green.\n\nTo steer: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`). The harness pulls before every session.",
+  "discoveries": [
+    {
+      "text": "Under `node --test --test-isolation=none <glob>` process.argv is [node, <glob>] (checked 2026-11-03 in /tmp): lib/testcount.mjs's CLI tail (process.argv.slice(2)) is inert on import, so no lib/ guard is needed for the move; a module that reads argv[1] would not be.",
+      "affects": [
+        "U1-01",
+        "U1-03",
+        "run"
+      ]
+    },
+    {
+      "text": "A test file that throws at import gets node's own test:fail event for the file, so the reporter prints `FAIL <absolute file path>`; the `exited <rc> with no FAIL line` guard in 00-unit-tier.sh fires only for a non-zero exit with no FAIL line, e.g. `process.exit(3)` at import. U1-01's check uses process.exit for the guard line and accepts either shape for a throw.",
+      "affects": [
+        "U1-01"
+      ]
+    },
+    {
+      "text": "CHECK_KEY_MAP in .harness/config.sh maps CLAUDE.md to 39-memlint-m4, 37-memory-prompts-m2 and 79-suite-length, and 82-key-map-lint lints only tests/checks/*.sh: a unit test that read the repo's CLAUDE.md, prompts/ or templates/ would escape a partial run. Such an eval (37-memory-prompts-m2 has two) stays a bash check.",
+      "affects": [
+        "U1-04"
+      ]
+    },
+    {
+      "text": "The base commit for U1-05's before rows is `git merge-base origin/main HEAD` (ddee9e9, main at run start). The measured before row for the unit layer is findings-and-research/2026-11-03-redesign-baseline.md §5.3 (eleven -pure- files: 149 node execs, 9.35 CPU-s, 3.16 s wall, the runner and tests/lib.sh included), not the spec's 108 / 4–6 s; `tests/run.sh 01- 02-` is a substring match, so the files need their full names.",
+      "affects": [
+        "U1-05"
+      ]
+    },
+    {
+      "text": "At init `harness status` showed this run alone under RUNNING and the queue runner going; the full suite took 797 s at init (1141 checks), so U1-05's two solo runs are about 27 min of its session.",
+      "affects": [
+        "U1-05"
+      ]
+    },
+    {
+      "text": "The reporter spike (/tmp, deleted): node expands the quoted `*.test.mjs` glob itself, `--test-reporter=<path> --test-reporter-destination=stdout` prints only the reporter's lines on stdout, and the assert diff for `assert.equal(1, 2)` is `Expected values to be strictly equal:` then a blank line then `1 !== 2`, each indented two spaces by the reporter.",
+      "affects": [
+        "U1-01"
+      ]
+    }
+  ],
+  "questions": [],
+  "proposed_changes": [
+    "CLAUDE.md `## Gotchas` is at memlint's cap of 15 entries: the init could not add the node --test argv fact (it is a run discovery instead); retire one line before the next durable gotcha."
+  ]
+}
