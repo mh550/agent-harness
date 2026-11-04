@@ -701,6 +701,8 @@ tag_local_words() {
   [[ -f $STATE/tag-local-$1 ]] && printf '; tag run/%s/%s is local only (push failed %s times over %s s; see run.log)' "$RUN_ID" "$1" "${ORIGIN_TRIES:-?}" "${ORIGIN_SECS:-?}"
   return 0
 }
+# <tag>: origin's copy here, if it has one (an answer of none is no failure: only an outage is retried)
+tag_fetch_() { local r; r=$(git ls-remote origin "refs/tags/$1" 8>&-) || return 1; [[ -z $r ]] || git fetch -q origin tag "$1" 8>&-; }
 # The tag's commit, or nothing (the once-per markers and the cards' head)
 tag_commit() { git rev-parse -q --verify "refs/tags/run/$RUN_ID/$1^{commit}" 2> /dev/null; }
 # <m> <what> [<PR url>]: a merge past origin_try's retries (what=unknown: a merge with no reason to give, the fail-closed
@@ -852,7 +854,12 @@ merge_milestones_() {
         && git merge-base --is-ancestor "run/$RUN_ID/$m" "origin/$MAIN_BRANCH" && { touch "$STATE/merged-$m"; merge_settled "$m"; note "$m merged into $MAIN_BRANCH (by its PR)"; lane_branch_gone "$m"; }
       continue
     fi
-    git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null || continue
+    if ! git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null; then
+      # `harness merge`, a verified milestone whose tag isn't here: origin's; gone there too, nothing is left to merge
+      [[ ${HARNESS_MERGE_ONLY:-} && -f $STATE/verified-$m ]] || continue
+      merge_step "$m" "fetch of tag run/$RUN_ID/$m" tag_fetch_ "run/$RUN_ID/$m" || continue
+      [[ -n $(tag_commit "$m") ]] || { note "$m: tag run/$RUN_ID/$m is gone; not merged"; continue; }
+    fi
     if [[ ! ${HARNESS_MERGE_ONLY:-} ]] && ! git tag -l --format='%(contents:subject)' "run/$RUN_ID/$m" | grep -q '(v3'; then
       [[ -f $STATE/legacy-noted ]] || { touch "$STATE/legacy-noted"; note "$m was verified by harness v2; it merges only with: harness merge $RUN_ID"; }
       continue

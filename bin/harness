@@ -42,7 +42,9 @@
 #                                                passing, $/feature, cache hit, orientation)
 #   harness debrief [--dry-run]                  after a queue: one short read-only session writes the debrief
 #                               (ledger/debrief.md; NOTIFY_CMD gets its headline). The queue runner starts it as it exits
-#   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each)
+#   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each); with its
+#                                                worktree gone it makes one (no spec asked) and restores the record from
+#                                                origin/main or the ledger, a missing tag fetched from origin
 #   harness attach <run-id>                      the run's tmux session (driver · log · supervisor)
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
 #   harness stop <run-id> --why "<text>"         the same, and harness-log.md and ended say "stopped by Michael: <text>"
@@ -58,7 +60,8 @@
 #   harness memlint <project>                    the lint each run starts with (lib/memlint.mjs): one finding per line
 #                                                about its CLAUDE.md, .harness/project.md and decisions store
 #   harness gc <project> [--all-merged] [--deps] [--dry-run]
-#                               delete merged harness branches and their clean worktrees, locally and on origin
+#                               delete merged harness branches and their clean worktrees, locally and on origin; a run
+#                               with a verified milestone whose tag is not on origin/main keeps them (harness merge <run>)
 #                               (--all-merged: every merged branch, whatever its name; --deps: DEPS_DIRS in ended runs' worktrees;
 #                               --dry-run on a TTY: grouped by step with a would-remove footer);
 #                               close the project's desks idle for 24 h (an open one keeps its worktree)
@@ -266,6 +269,38 @@ legacy_refuse() {
   exit 1
 }
 
+# <project> <run> <worktree> <branch>: `harness merge` with the run's worktree gone (gc, or by hand). On the local branch
+# when origin's doesn't hold it (an outage ate its pushes: the record's last commits are there; the driver's sync merges
+# origin's), else origin's, else a new one from origin/main. The record is on it, else restored from origin/main (the
+# record PR), else from the ledger (ledger() copies it at the run's end); with none the worktree goes again, exit 1.
+merge_worktree() {
+  local p=$1 run=$2 wt=$3 b=$4 from made=0 how="" rec=$3/.harness/runs/$2 l
+  l=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}/$(basename "$p")/$run
+  git -C "$p" fetch -q --prune origin || echo "harness: fetch of origin failed; going on with what is here" >&2   # the merge's steps retry it
+  if git -C "$p" rev-parse -q --verify "refs/heads/$b" > /dev/null \
+    && ! { git -C "$p" rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null && git -C "$p" merge-base --is-ancestor "refs/heads/$b" "refs/remotes/origin/$b"; }; then
+    from=$b; git -C "$p" worktree add -q "$wt" "$b"
+  elif git -C "$p" rev-parse -q --verify "refs/remotes/origin/$b" > /dev/null; then
+    from=origin/$b; git -C "$p" worktree add -q "$wt" -B "$b" "origin/$b"
+  else
+    from=origin/main made=1; git -C "$p" worktree add -q -b "$b" "$wt" origin/main
+  fi
+  if [[ ! -f $rec/feature_list.json ]]; then
+    if git -C "$wt" cat-file -e "origin/main:.harness/runs/$run/feature_list.json" 2> /dev/null; then
+      git -C "$wt" checkout -q origin/main -- ".harness/runs/$run"; how=main
+    elif [[ -f $l/feature_list.json ]]; then
+      mkdir -p "$rec" && cp -r "$l/." "$rec/"; how="the ledger"
+    else
+      git -C "$p" worktree remove --force "$wt"; (( made )) && git -C "$p" branch -q -D "$b"
+      echo "harness merge $run: no record for $run (not on $b, origin/main or $l)" >&2; exit 1
+    fi
+    echo "- $(date '+%F %H:%M') · record restored from $how" >> "$rec/harness-log.md"
+    git -C "$wt" add -A -- ".harness/runs/$run" && git -C "$wt" commit -q -m "HARNESS: record restored from $how" -- ".harness/runs/$run"
+    echo "record restored from $how"
+  fi
+  echo "worktree $wt on $b (from $from; harness merge)"
+}
+
 cmd_start() {
   local p run="" base="" supervisor=1 fg=0 now=0 spec="" brief="" until="" orig=("$@")
   p=$(project_dir "${1:?usage: harness start <project> [<run-id>] [options]}"); shift
@@ -281,7 +316,7 @@ cmd_start() {
   [[ $run == desk || $run == debrief ]] && die "run-id '$run' is taken by the desk (tmux h-desk, <state>/queue/desk)"
   [[ $run == queue ]] && die "run-id 'queue' is taken by the queue runner (tmux h-queue)"
   [[ $run == lanes ]] && die "run-id 'lanes' is taken by the lane slots (<worktrees>/<project>/lanes)"
-  spec_refuse "$p" "$run" "$spec" "$base"   # before the first queue_add: a queued entry is a checked one
+  [[ ${HARNESS_MERGE_ONLY:-} ]] || spec_refuse "$p" "$run" "$spec" "$base"   # before the first queue_add: a queued entry is a checked one
   # a queued start: the entry the runner replays (no run id yet when none is given: it is chosen when the run starts)
   local args=("$p" ${run:+"$run"}); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
   [[ -n $brief ]] && args+=(--brief "$brief"); [[ -n $until ]] && args+=(--until-epoch "$until")
@@ -309,6 +344,7 @@ cmd_start() {
   if [[ -d $wt ]]; then
     [[ ${HARNESS_MERGE_ONLY:-} ]] || legacy_refuse "$p" "$wt" "$run" "$state" "$base"
     echo "resuming $run in $wt"
+  elif [[ ${HARNESS_MERGE_ONLY:-} ]]; then merge_worktree "$p" "$run" "$wt" "$branch"
   else
     [[ -n $spec || -n $SPEC_FILES || -n $brief ]] || die "a new run needs --spec <files> or --brief <text> (or SPEC_FILES in .harness/config.sh)"
     git -C "$p" fetch -q origin
@@ -676,6 +712,22 @@ cmd_gc() {
   running() { local d r=${1#harness/}; r=${r#harness-lane/}; r=${r%%/*}
     d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && { alive "$d" || lane_live "$d" > /dev/null; } && return 0
     compgen -G "$Q/*-continue-$r.args" > /dev/null; }
+  # <run> → its first milestone that is verified and not merged, with its tag not on origin/main (a milestone merged by
+  # hand holds nothing; nor does a tag gone here and on origin: nothing is left to merge). Such a run keeps its worktree
+  # and its branches, and its needs items: harness merge is its way out (2026-11-04-origin-retries)
+  unmerged_of() { local r=$1 d=$STATE_ROOT/$(basename "$p")/$1 f m t
+    for f in "$d"/verified-*; do
+      [[ -e $f ]] || continue
+      m=${f##*/verified-} t=run/$r/$m
+      [[ -f $d/merged-$m ]] && continue
+      git -C "$p" rev-parse -q --verify "refs/tags/$t" > /dev/null || git -C "$p" fetch -q origin tag "$t" 2> /dev/null || continue
+      git -C "$p" merge-base --is-ancestor "refs/tags/$t" "$main" 2> /dev/null && continue
+      echo "$m"; return 0
+    done
+    return 1; }
+  # harness/<run> of a run that holds it. A lane or merge branch needs no hold: only one fully in main is ever deleted,
+  # so an unmerged milestone's stays and a merged milestone's goes, whatever its sibling waits on
+  held() { [[ $1 == harness/* ]] && unmerged_of "${1#harness/}" > /dev/null; }
   # a record PR left open (under pr, or a refused merge; the driver's state/record-pr names it) keeps harness/<run>:
   # deleting its head would close it. gh decides; one gh can't answer keeps it too (P2 review 2)
   record_pr_open() { local r=${1#harness/} d u; d=$(compgen -G "$STATE_ROOT/*/$r" | head -1) && [[ -s $d/record-pr ]] || return 1
@@ -730,6 +782,7 @@ cmd_gc() {
     if git -C "$p" merge-base --is-ancestor "$b" "$main" || { [[ $b == harness/* ]] && record_only "$b"; }; then
       # the harness makes its worktrees on harness/<run>: one on any other branch is a session's of Michael's
       [[ $b == harness/* ]] || { echo "keeps $wt: not a run worktree (branch $b)"; continue; }
+      local um; um=$(unmerged_of "${b#harness/}") && { echo "keeps $wt: $um verified, not merged (harness merge ${b#harness/})"; continue; }
       desk_open "$b" && { echo "keeps $wt: its desk is open (harness desk --close ${b#harness/})"; continue; }
       record_pr_open "$b" && { echo "keeps $wt: its record PR is open ($(cat "$(compgen -G "$STATE_ROOT/*/${b#harness/}" | head -1)/record-pr"))"; continue; }
       rm_wt "$wt"
@@ -767,6 +820,7 @@ cmd_gc() {
   for b in $(git -C "$p" for-each-ref --format='%(refname:short)' refs/heads/harness/); do   # record-only tails
     [[ $b == "$(git -C "$p" branch --show-current)" ]] && continue
     running "$b" && continue
+    held "$b" && continue
     git -C "$p" merge-base --is-ancestor "$b" "$main" && continue
     record_only "$b" && ! record_pr_open "$b" && ! git -C "$p" worktree list --porcelain | grep -qx "branch refs/heads/$b" \
       && { act git -C "$p" branch -D "$b"; git -C "$p" rev-parse -q --verify "origin/$b" > /dev/null && act git -C "$p" push -q origin --delete "$b"; }
@@ -785,6 +839,7 @@ cmd_gc() {
       [[ $b == main || $b == "$keep" ]] && continue
       git -C "$p" worktree list --porcelain | grep -qxF "branch refs/heads/$b" && continue
       running "$b" && continue
+      held "$b" && continue
       git -C "$p" merge-base --is-ancestor "refs/heads/$b" "$main" || continue
       # a lane branch has no upstream (lanes push without -u), so -d would judge it by HEAD: the test above is the guard
       if [[ $b == harness-lane/* ]]; then act git -C "$p" branch -D "$b"; else act git -C "$p" branch -d "$b"; fi
@@ -793,6 +848,7 @@ cmd_gc() {
     for b in $(git -C "$p" for-each-ref --format='%(refname:lstrip=3)' "refs/remotes/origin/$pre"); do
       [[ $b == main || $b == HEAD || $b == "$keep" ]] && continue
       running "$b" && continue
+      held "$b" && continue
       git -C "$p" merge-base --is-ancestor "refs/remotes/origin/$b" "$main" && act git -C "$p" push -q origin --delete "$b"
     done
   done
@@ -801,6 +857,7 @@ cmd_gc() {
   (( dry )) || for d in "$STATE_ROOT/$(basename "$p")"/*/; do
     # shellcheck source=/dev/null
     [[ -f $d/meta.env && -d $d/needs ]] && ! ( source "$d/meta.env"; [[ -d $WT ]] ) || continue
+    unmerged_of "$(basename "$d")" > /dev/null && continue   # verified work waits for harness merge: its card stays
     node "$NEEDS_MJS" sweep "${d%/}" | sed 's/^/+ needs: /' || echo "! needs sweep failed: ${d%/}"   # never the end of gc
   done
   step END   # gcView: the run got here (a fetch that failed under set -e did not)
