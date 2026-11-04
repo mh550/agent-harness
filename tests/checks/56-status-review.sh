@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- U1-07's review (docs/plans/2026-10-28-U1-review.md): each finding's check, red before its fix ----
 status_stubs

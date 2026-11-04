@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- lanes scheduler (lanes P1-02): features.mjs lanes, next <m>, deps, pass; scope_owns' <m>- roles ----
 FM() { node "$HERE/../lib/features.mjs" "$@"; }

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 18: test counts (M5): the log says once per run which source the count came from (contract, a runner, none) ----
 # contract: two segments (the first ends at its deadline after the initializer, the second runs to the end), one note

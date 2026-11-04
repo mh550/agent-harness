@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- a parked run's continue while another run of its project is alive (decisions/2026-10-29-continue-advice-busy-project):
 # ---- the per-project hold queues a plain continue behind that run, so the card offers the queue add and --now ----

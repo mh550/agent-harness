@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the record PR (P2-05): finish's last step puts harness/<run> on main through its own PR; gc deletes it later ----
 # The suite's base config sets RECORD_PR=off (every other file's runs open none); this file turns it on per run. Each

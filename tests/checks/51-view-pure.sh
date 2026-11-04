@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the read views' formatter, pure (U1): view.mjs context, glyphs, widths, tables, cards, times, end classes ----
 # the pure formatter's tests are tests/unit/view.test.mjs; what stays here is the file itself, the fixture against the

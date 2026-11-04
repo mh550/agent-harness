@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the suite's length in the prompt (S1, fix 3): a green marker's `wall` line, read by every prompt's Suite line ----
 # A counting suite that prints what tests/run.sh prints (PASS/FAIL, HARNESS_FAILED=, N/M checks passed), red while

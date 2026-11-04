@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- entries that survive (R2): the session checks its own entry, ends with no background work, and a long summary is
 # trimmed at the ingest instead of dropping the entry (docs/plans/2026-10-29-R2-entries.md) ----

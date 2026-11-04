@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- harness status (U1-04): one screen, NEEDS YOU · RUNNING · QUEUED · FINISHED and a footer, through view.mjs ----
 status_stubs

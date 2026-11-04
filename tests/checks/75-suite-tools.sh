@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the suite's own tools (R1-02): wait_for, the stub_wait/stub_go barrier and STUB_BARRIER, run.sh --repeat ----
 # wait_for: back as soon as the condition holds; past its limit, one still-failing line and 1
@@ -42,6 +43,7 @@ check "suite tools: settle waits for this copy's debrief to end and never for an
 mkdir -p "$T/rep"
 cat > "$T/rep/flaky.sh" <<EOF
 #!/usr/bin/env bash
+# tier: fast
 source "$HERE/lib.sh" && suite_setup
 n=\$(flock "$T/rep-count.lock" bash -c 'n=\$(( \$(cat "\$1" 2> /dev/null || echo 0) + 1 )); echo "\$n" > "\$1"; echo "\$n"' _ "$T/rep-count")
 check "fixture: red on an even copy" '(( n % 2 ))'
@@ -49,6 +51,7 @@ suite_end
 EOF
 cat > "$T/rep/steady.sh" <<EOF
 #!/usr/bin/env bash
+# tier: fast
 source "$HERE/lib.sh" && suite_setup
 check "fixture: always green" 'true'
 suite_end

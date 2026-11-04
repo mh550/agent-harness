@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the key map lint (suite-time S2): CHECK_KEY_MAP names every check file that reads a mapped path ----
 # A partial run (lib/check.sh) runs only the map's names on a mapped-only diff, so a check file the map leaves out that

@@ -354,7 +354,14 @@ TEST_JOBS=1 tests/run.sh   # one file at a time (default: half the cores, 1 to 4
 KEEP=1 bash tests/run.sh --repeat 10 lanes-two   # reproduce a flake: that file 10 times, TEST_JOBS copies at once
 node --test --test-isolation=none tests/unit/*.test.mjs   # the unit tier alone (spec reporter), under a second
 bash tests/run.sh 00-unit   # the unit tier as the suite runs it: PASS/FAIL lines and N/M
+bash tests/run.sh --tier fast   # the fast tier only (every file whose line 2 is `# tier: fast`), its own conformance
+bash tests/run.sh --tier slow   # the slow tier only; `--tier <t> <name>…` and `--tier <t> --repeat <n>` combine
 ```
+Line 2 of every `tests/checks/*.sh` declares its tier, `# tier: fast` or `# tier: slow`, by the 30 s rule of
+`journal/decisions/2026-11-03-suite-tiers.md`; the runner refuses a file without one (`no tier header: <file>` per
+file, exit 2, nothing run). A `--tier fast` run checks its names against `tests/fixtures/check-names-fast.txt`, a
+`--tier slow` run against `check-names.txt` minus that list, a full run against all of `check-names.txt`; only a
+full run's green is the suite's green.
 The unit tier (`tests/unit/<module>.test.mjs`, one node process) tests the pure functions of `lib/*.mjs` under
 `node --test`; `--test-name-pattern "<regex>"` picks tests, and `tests/checks/00-unit-tier.sh` puts its tests into
 every full run under their names in `tests/fixtures/check-names.txt` (decisions/2026-11-03-unit-tier).

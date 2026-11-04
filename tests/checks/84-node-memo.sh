@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- fewer node starts: F's memo (C1-02, decisions/2026-10-31-fewer-node-starts) ----
 # lib/record.sh's F answers a pure subcommand from a per-process memo keyed on the subcommand, the content hash of the

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- sync: the live checkout level with origin (merged PRs in, ledger commits out), only when that is safe ----
 git init -q --bare -b main "$T/live.git"; git init -q -b main "$T/live"; mkdir -p "$T/live/ledger"; echo a > "$T/live/code.sh"; echo '{}' > "$T/live/ledger/runs.jsonl"

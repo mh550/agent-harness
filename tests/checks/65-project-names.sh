@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- project names (U3-02): one resolver, project_dir, takes a path or a bare name: a git repository here, the ----
 # ---- PROJECT_DIR of that name's newest run, then $HARNESS_PROJECTS/<name>; else an error naming the three places ----

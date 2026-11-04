@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 9e: the deadline verifies a complete milestone once (R5) ----
 # MAX_SESSIONS=2 ends the first segment at the cap with M1 complete and unverified; a continue past its deadline verifies it once

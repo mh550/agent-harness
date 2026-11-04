@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the journal, pure (E4): an entry's schema, the minimal entry, and progress.md rendered from the entries ----
 # the pure functions' tests are tests/unit/entries.test.mjs and tests/unit/memlint.test.mjs; what stays here is the CLI

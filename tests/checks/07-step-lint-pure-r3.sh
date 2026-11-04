@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- step lint (R3, R2): the prompt and the CLI; the rules' evals are tests/unit/features.test.mjs ----
 check "prompt: the initializer states counts as the command that prints them (N/M checks passed)" 'grep -F "N/M checks passed" "$HERE/../prompts/initializer.md" > /dev/null'

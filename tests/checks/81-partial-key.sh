@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the declared partial map (suite-time S2): treekey --partial, its exported functions, CHECK_KEY_MAP's default ----
 git init -q "$T/pk" && ( cd "$T/pk" && mkdir -p lib docs/plans && echo c > CLAUDE.md && echo r > README.md && echo a > lib/a.sh \

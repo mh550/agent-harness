@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- a run never starts on a spec that isn't there (Q1, decisions/2026-10-31-spec-must-exist) ----
 # harness start and harness queue add refuse a --spec (or SPEC_FILES) path absent from the project's origin/main (or

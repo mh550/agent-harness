@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- questions wait in harness needs until answered (R4): lib/needs.mjs's question reason, its key, refresh, the move
 # ---- forward to a later run of the project, its card, done --why and the sweep's answered-in-a-later-entry rule ----

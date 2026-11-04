@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- harness queue list (U1-06): sectioned rows through view.mjs; harness queue show <n> [--parked]: one entry whole ----
 status_stubs

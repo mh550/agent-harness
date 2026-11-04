@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the re-base rule (P2-03): main moved under a verified lane ----
 # Two lanes, M2 after: [] (one feature, C): C goes first and M2's verify waits (STUB_VERIFY_WAIT) until M1 has merged

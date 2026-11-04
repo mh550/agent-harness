@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 20: the review gate's rounds and measures (M6-05, the M6 review's findings) ----
 # M1 is A, B, D (build) and R (review); verify is lenient so each run ends done.

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- layer 2's bounds and fallbacks (N2-04): a resolve session that leaves a marker, gives up or edits outside the
 # conflict; one refused by a limit is deferred; MAX_RESOLVES bounds it; sync_main at a lane's verify resolves too; the

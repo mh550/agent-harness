@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- L5: the queue runner re-reads its config each poll: MAX_PARALLEL_RUNS 1 → 2 starts a second run, 2 → 1 stops none ----
 # two projects (proj2: a clone with its own origin) and a third entry (stoppy-o: the runner starts it, harness skips it).

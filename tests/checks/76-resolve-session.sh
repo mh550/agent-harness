@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- layer 2 of conflict resolution, the happy path (N2-03): a lane's re-base that conflicts with main runs a resolve
 # session (lib/resolve.sh), the merge it commits takes one verify round, then merges; CONFLICTS=michael and

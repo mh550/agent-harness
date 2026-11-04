@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- harness show <run> [<feature>] [--files] [--json] (U3-04): where a run's work is, from local refs only ----
 # MERGE_POLICY=pr keeps the milestones unmerged: their code stays on harness-lane/sh1/M1 and M2 (M2 stacked on M1).

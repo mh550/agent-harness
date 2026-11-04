@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 15b: a run that ended before its feature list merges main before the initializer re-runs (E0) ----
 STUB_INIT_LIMIT=1 "$H" start "$T/proj" nolist --spec SPEC.md --foreground > "$T/run15c.out" 2>&1; cp "$HARNESS_STATE/proj/nolist/ended" "$T/run15c.ended"; rm -f "$HARNESS_STATE/LIMIT_UNTIL"   # continue rewrites ended

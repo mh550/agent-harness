@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the retro backlog CLI (M1): merges proposals, sets a status, orders a listing, imports by id (the module's eval is tests/unit/backlog.test.mjs) ----
 B="node $HERE/../lib/backlog.mjs"

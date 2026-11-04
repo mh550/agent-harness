@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the git-side stop paths open needs records (U2-06): sync_main's conflict (notified once per main commit),
 # merge_one's conflict and refusal, verify's three needs lines, a lane's base conflict; needs_you sends the record ----

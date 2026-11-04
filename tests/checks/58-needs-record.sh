@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the needs record (U2-03): lib/needs.mjs's record, refresh, sweep and synthesized items; harness needs --json, done ----
 # Plan: docs/plans/2026-10-28-U2-needs-record.md §1, §2, §4.1. A fixture run per reason and state (tests/lib.sh

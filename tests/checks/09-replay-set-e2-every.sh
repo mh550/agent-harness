@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the replay set (E2): every committed task validates; each error names its field ----
 # validateTask, compare and compareText are tests/unit/eval.test.mjs; what stays here is the validate CLI on this repo's tasks

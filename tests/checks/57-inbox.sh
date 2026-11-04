@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- INBOX.md (U2-02, bug a): one parser that finds "## Answers" outside the steering comment, and the repair ----
 # The fixture is n8n-home's INBOX.md at 4632d1c, byte for byte: a session split the comment's `"## Answers".` mid-line
