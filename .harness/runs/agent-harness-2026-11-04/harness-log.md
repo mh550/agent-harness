@@ -28,3 +28,6 @@
 - 2026-11-04 04:09 · lane T1: branch harness-lane/agent-harness-2026-11-04/T1 deleted (merged)
 - 2026-11-04 04:32 · T2-01: suite ran 1x (800 s) in the session
 - 2026-11-04 04:33 · T2-01 · claude-opus-5-5 · passes=true · 23 min · 5/8 passing · tests 1205
+- 2026-11-04 04:33 · context.md for T2-02: 7275 bytes
+- 2026-11-04 04:59 · T2-02: suite ran 1x (806 s) in the session
+- 2026-11-04 04:59 · T2-02 · claude-opus-5-5 · passes=true · 25 min · 6/8 passing · tests 1214

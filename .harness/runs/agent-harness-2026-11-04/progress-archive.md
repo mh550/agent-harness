@@ -7,6 +7,20 @@ The run: phase 3 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier (T1: the full suite) is green and the verifier agrees per milestone. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-04 04:59 · T2-02 · passes
+
+The driver gates passes on the fast tier: run_init fast (check.sh --fast) before each coding session, green_fast after it with the note `<id> un-passed: fast tier red after the session`; run_init fresh also drops fast-<key>; tests-start/tests-end read green-<key> only. 87-fast-gate-run.sh (slow, 34 s) proves it with three stub runs.
+
+- **Files:** lib/record.sh, lib/lane.sh, lib/summary.mjs, tests/checks/87-fast-gate-run.sh, tests/stub-claude.sh, tests/unit/summary.test.mjs, tests/checks/08-scope-sh-l1-02-run-capped-services-gc-scratch.sh, tests/checks/13-run-2-michael-sets-desk.sh, tests/checks/14-run-2b-stop-records.sh, tests/checks/15-run-4-same-but-queue-parked-debrief-tmux.sh, tests/checks/74-flakes-run.sh, tests/checks/80-red-marker.sh, +4 more
+- **Verified:** 87-fast-gate-run red 3/8 before the lib change, 8/8 after; suite-args.log of run fg: `bare session A 1 --tier fast session B 1 --tier fast bare session C 1 --tier fast bare`, tests-start 3 tests-end 3; fs: B passes=true, verify M1 red, verify_red needs item; fr: A un-passed with the fast note, retry init ran --tier fast, planted fast-<key> gone. Subsets 26/34/74/80/86/87 and 00-unit/08/13/14/15 green; full check.sh green in 806 s, 1214 tests.
+- **Tests:** 1205 → 1214
+- **Discovery** (affects T2-03, T2-04): With a fast command set, tests-end moves only on a full green (the verify's run_init fresh): between a milestone's sessions status/report show no new tests-end, by the spec's full-markers-only rule
+- **Discovery** (affects T2-04, run): The un-pass note is now `fast tier red after the session` for every project (no fast command: the whole suite is the fast tier); lib/summary.mjs redUnpass matches it and the older `suite red` note; checks 08/13/14/15/74/80 grep the new text
+- **Discovery** (affects T2-03): 87-fast-gate-run.sh is slow (34.2 s at TEST_JOBS=4); a coding session's first init on an unchanged tree answers from the baseline's green-<key> (`check: green (cached`), so only later sessions' init.out show `fast green`
+- **Discovery** (affects T2-03, T2-04): tests/stub-claude.sh: STUB_SLOW_RED, STUB_FAST_RED, a `session <id> <n>` line in the run scratch's suite-args.log when it exists, and STUB_PLANT_MARKERS now plants fast-<key> too
+- **Proposed change:** T2-02 step 4's `tests-end the full count` cannot hold literally in the slow-red run (its final tree is red, so finish clears tests-end); 87 checks it is never the fast count there and is exactly 3 in the clean run
+- *06-T2-02 · claude-opus-5-5*
+
 ### 2026-11-04 04:33 · T2-01 · passes
 
 lib/check.sh --fast: with HARNESS_CHECK_FAST_CMD empty it is the bare form; set, a green-/red-<key> answers first, then fast-<key>, else the fast tier runs (same scope, cap, timeout, rerun guard) to check-fast.out; green writes fast-<key> only, red no marker; flake rows get tier fast. CHECK_FAST_CMD in config/prompt_env/template, this repo sets --tier fast. decisions/2026-11-03-fast-gate.
