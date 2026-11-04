@@ -7,6 +7,22 @@ The run: phase 3 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier (T1: the full suite) is green and the verifier agrees per milestone. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-04 04:33 · T2-01 · passes
+
+lib/check.sh --fast: with HARNESS_CHECK_FAST_CMD empty it is the bare form; set, a green-/red-<key> answers first, then fast-<key>, else the fast tier runs (same scope, cap, timeout, rerun guard) to check-fast.out; green writes fast-<key> only, red no marker; flake rows get tier fast. CHECK_FAST_CMD in config/prompt_env/template, this repo sets --tier fast. decisions/2026-11-03-fast-gate.
+
+- **Files:** lib/check.sh, lib/config.sh, lib/prompt.sh, templates/project/config.sh, .harness/config.sh, tests/checks/86-fast-gate.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-03-fast-gate.md
+- **Verified:** 86-fast-gate.sh written first: 3/18 before lib/check.sh changed (the 3 were vacuous), 19/19 after; review fix pair: the bare-call check red with the check-*.out sweep deleting check-fast.out, green with it spared. bash tests/run.sh 34-check 73-check 80-red 81-partial 86-fast: 86/86. bash -n lib/check.sh lib/config.sh lib/prompt.sh ok. Full suite: check.sh full run green in 800 s, 1205 tests (exit 0)
+- **Tests:** 1186 → 1205
+- **Dead end:** listing part- among the verdict markers in the check's marks helper — a full green writes part-<reduced> even with no map (treekey still prints blob lines), so the no-fast-command case failed on a marker the full form always wrote
+- **Discovery** (affects T2-02): check.sh --fast exists: T2-02 calls "$CHECK" --fast for run_init fast and green_fast; a fast red leaves no marker, so the post-session gate reruns the fast tier (about 150 s) when the pre-session one was red
+- **Discovery** (affects T2-02): run_init fresh (lib/record.sh ~584) still removes only green-, red- and part-<key>: T2-02 step 2 adds fast-<key>
+- **Discovery** (affects T2-03, T2-04): flakes_note (lib/record.sh ~197) and lib/summary.mjs ~116 print 'whole suite' for a flake with no names; a fast flake row (tier fast, names []) should read 'the fast tier' there
+- **Discovery** (affects T2-03): check-runs.log has a new row kind `fast`; lib/lane.sh's suite-ran note already counts it (it counts every row but cached), suite_full counts full rows only
+- **Discovery** (affects T2-02, T2-04): check.sh --fast <args> is a usage error (exit 2) whether or not a fast command is set
+- **Proposed change:** T2-04's review could note fast-<key> and green-<key> are keyed by the tree only: a CHECK_FAST_CMD or CHECK_CMD changed in the user config or run.env leaves an older marker standing (recorded as a default in the decision)
+- *05-T2-01 · claude-opus-5-5*
+
 ### 2026-11-04 04:09 · verify T1 · passes
 
 All four T1 features hold: full suite green (1186, 795 s); my fast-tier run 151.7 s, 537/537 with conformance; headerless dir refused deterministically (exit 2); headers, fixtures, findings and docs checked.
