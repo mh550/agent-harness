@@ -1115,6 +1115,8 @@ u3 review: queue list shows held: <project> busy for an entry a live lane holds 
 u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
 unit tier: a passing and a failing test print PASS a, FAIL b, the indented assert diff, then its own N/M line, exit 1
 unit tier: a passing-only file prints PASS a and its N/M line, exit 0
+unit tier: lib/testcount.mjs imported beside another test file prints nothing of its own
+unit tier: no test file, a process.exit(0) at import or a test printing a PASS line is red with the tier's own FAIL line
 unit tier: node --test exiting non-zero with no FAIL line prints the unit tier FAIL line; a throw at import is red too
 unit tier: tests/unit/reporter.mjs passes node --check
 unpark_warm: with a feature to unpark it fills nothing (the unpark on the note line runs and prints it); with none, that unpark starts no node

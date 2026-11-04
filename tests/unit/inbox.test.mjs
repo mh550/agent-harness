@@ -6,14 +6,9 @@ import * as I from "../../lib/inbox.mjs";
 
 // n8n-home's INBOX.md at 4632d1c, byte for byte (tests/checks/57-inbox.sh checks its bytes)
 const fx = readFileSync(new URL("../fixtures/inbox-q-in-comment.md", import.meta.url), "utf8");
-// lib/driver.sh's INBOX.md heredoc for branch harness/r, as 57-inbox.sh's tpl.md (its bash checks read the driver's own)
-const tpl = `status: run
-<!-- Steer this run from the GitHub app: edit this file on branch harness/r.
-     Change the first line to "status: pause" or "status: stop"; write answers to questions under the Answers heading at the end
-     of this file. The harness pulls before every session; every session reads this file at startup. -->
-
-## Answers
-`;
+// lib/driver.sh's INBOX.md heredoc for branch harness/r, read from the driver as 57-inbox.sh's tpl.md is (its awk)
+const drv = readFileSync(new URL("../../lib/driver.sh", import.meta.url), "utf8"), heredoc = 'cat > "$REC/INBOX.md" <<EOF\n';
+const tpl = (i => drv.slice(i, drv.indexOf("\nEOF\n", i) + 1))(drv.indexOf(heredoc) + heredoc.length).replace("$BRANCH", "harness/r");
 // the template with a question planted mid-line in its comment, n8n-home's shape (57-inbox.sh's planted.md)
 const Q1 = "**Q1 (A, stub).** set the gatus vars, then answer";
 const planted = (i => tpl.slice(0, i) + "## Questions\n\n" + Q1 + "\n\n" + tpl.slice(i))(tpl.indexOf("under ") + 6);

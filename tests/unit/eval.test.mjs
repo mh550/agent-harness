@@ -5,7 +5,7 @@ import { validateTask as v, compare as c, completeRepeats as cr, compareText as 
 
 // the replay set (E2): each error starts with the field it is about (the CLI over evals/tasks stays in 09-replay-set)
 test("eval.mjs: validateTask accepts a task and names the field of each bad one", () => {
-  const has = (e, f) => assert.match(e.join("\n"), new RegExp("^" + f.replace(/[[\]]/g, "\\$&") + ":", "m"));
+  const has = (e, f) => assert.ok(e.some(x => x.startsWith(f + ":")), `no error starts ${f}: in ${e.join("; ")}`);
   const ok = { id: "x1", project: "p", repo: "~/projects/p", base: "a".repeat(40), policy: "build-only", why: "w",
     features: [{ id: "X1", milestone: "X", description: "d", steps: ["s"] }] }, { features, ...nofeat } = ok;
   assert.deepEqual(v(ok), []);

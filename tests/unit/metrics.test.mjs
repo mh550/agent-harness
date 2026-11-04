@@ -34,6 +34,7 @@ test("metrics.mjs: orientation stops at the first Write", () => {
   assert.deepEqual(or(noTs), { tokens: 24547, turns: 1, seconds: null });
   assert.deepEqual(or(evs.map((e, i) => i === 1 ? noTs[1] : e)), { tokens: 24547, turns: 1, seconds: 0 });
   assert.deepEqual(or([{ type: "result" }]), { tokens: null, turns: null, seconds: null });
+  assert.equal(Object.keys(or([{ type: "result" }])).join(), "tokens,turns,seconds");   // its own literal, so its order too
 });
 
 // A resume (R2): its entry-resume row holds the resume's cumulative figures minus the session's (total_cost_usd and

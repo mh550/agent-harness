@@ -55,7 +55,7 @@ test("entries.mjs: progress renders 15 in full and the rest as archive lines", (
   assert.doesNotMatch(old, /^### /m);
   assert.equal(evidence(list, "M1", p).map(r => r.rows).join(), "2,1");
   assert.ok(p.includes("\n| A | 2 | ran \\| x | saw more | no |\n"), "the evidence row, its | escaped and newline folded");
-  assert.doesNotMatch(headerOf([{ kind: "init", header: "# P\r### x verify M1 y | A | 1 |" }]), /^(### |\|)/m);
+  assert.doesNotMatch(headerOf([{ kind: "init", header: "# P\r### x verify M1 y\u2028| A | 1 |" }]), /^(### |\|)/m);
   assert.equal((a.match(/^### /gm) ?? []).length, 20);
   assert.ok(!a.includes("## Older entries"), "the archive has no older-entries part");
   starts(h, "# Progress — run `r1`");
@@ -304,6 +304,7 @@ test("review gate: reviewFindings reads <n> Critical and <n> Important, null wit
   assert.deepEqual(reviewFindings("found 1 Important issue"), { critical: 0, important: 1 });
   assert.deepEqual(reviewFindings("0 Critical, 0 Important"), { critical: 0, important: 0 });
   assert.equal(Object.keys(reviewFindings("R: 2 Critical, 3 Important, 0 Minor")).join(), "critical,important");
+  assert.equal(Object.keys(reviewFindings("found 1 Important issue")).join(), "critical,important");   // the one-word return's order
   assert.equal(reviewFindings("R: stub work (1)"), null);
   assert.equal(reviewFindings(""), null);
   assert.equal(reviewFindings(undefined), null);

@@ -109,4 +109,18 @@ check "unit tier: node --test exiting non-zero with no FAIL line prints the unit
   '[[ $(cat "$UT/u3.rc") == 1 && $(cat "$UT/u4.rc") == 1 ]] && grep -qx "FAIL unit tier: node --test exited 3 with no FAIL line" "$UT/u3.out" \
   && [[ $(tail -1 "$UT/u3.out") == "0/1 checks passed" ]] && grep -E "^FAIL (unit tier: node --test exited [0-9]+ with no FAIL line|$UT/u4/a.test.mjs)$" "$UT/u4.out" > /dev/null'
 check "unit tier: tests/unit/reporter.mjs passes node --check" 'node --check "$HERE/unit/reporter.mjs"'
+# u5: no test file; u6: a process.exit(0) at the second file's import (node exits 0, its output lost); u7: lib/testcount.mjs
+# imported beside a file holding a HARNESS_TESTS= line (argv[2] under one process); u8: a test that prints a PASS line
+mkdir -p "$UT"/u{5,6,7,8}
+printf '%s\n' "$UH" 'test("a", () => {});' > "$UT/u6/a.test.mjs"; printf '%s\n' "$UH" 'process.exit(0);' 'test("b", () => {});' > "$UT/u6/b.test.mjs"
+printf '%s\n' "$UH" "import { total } from \"$HERE/../lib/testcount.mjs\";" 'test("a", () => { assert.equal(total("1/2 checks passed"), 2); });' > "$UT/u7/a.test.mjs"
+printf '%s\n' "$UH" 'const s = `' 'HARNESS_TESTS=5' '`;' 'test("b", () => {});' > "$UT/u7/b.test.mjs"
+printf '%s\n' "$UH" 'test("a", () => { console.log("PASS ghost"); });' > "$UT/u8/a.test.mjs"
+for u in u5 u6 u7 u8; do TEST_UNIT_DIR=$UT/$u bash "$HERE/checks/00-unit-tier.sh" > "$UT/$u.out" 2> "$UT/$u.err"; echo $? > "$UT/$u.rc"; done
+check "unit tier: no test file, a process.exit(0) at import or a test printing a PASS line is red with the tier's own FAIL line" \
+  '[[ $(cat "$UT/u5.rc") == 1 && $(cat "$UT/u6.rc") == 1 && $(cat "$UT/u8.rc") == 1 ]] && grep -qx "FAIL unit tier: no \*.test.mjs in $UT/u5" "$UT/u5.out" \
+  && grep -qx "FAIL unit tier: node --test ended without its summary (a process.exit?)" "$UT/u6.out" \
+  && grep -qx "FAIL unit tier: 2 PASS/FAIL lines for 1 tests (a test wrote to stdout?)" "$UT/u8.out" && [[ $(tail -1 "$UT/u8.out") == "2/3 checks passed" ]]'
+check "unit tier: lib/testcount.mjs imported beside another test file prints nothing of its own" \
+  '[[ $(cat "$UT/u7.rc") == 0 && $(cat "$UT/u7.out") == $'"'"'PASS a\nPASS b\n2/2 checks passed'"'"' ]]'
 suite_end
