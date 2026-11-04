@@ -1,36 +1,35 @@
-# Debrief · 2026-11-03 22:49
+# Debrief · 2026-11-04 06:19
 
-_runs since 2026-11-03 17:14:36: agent-harness-2026-11-03-2 · claude-sonnet-5-5, $0.113046 · context: /home/mh550/.local/state/harness/debrief/2026-11-03-224927/context.md_
+_runs since 2026-11-03 22:49:27: agent-harness-2026-11-04 · claude-sonnet-5-5, $0.13396619999999998 · context: /home/mh550/.local/state/harness/debrief/2026-11-04-061937/context.md_
 
 ## Headline
-agent-harness-2026-11-03-2 landed on main: milestone U1 (unit tier, 6/6 features) merged as PR #84, record PR #85. Nothing blocked.
-Spend $26.68 for the run; usage window open, seven_day at 6% (resets Sun 17:00).
+agent-harness-2026-11-04: T1 (4 features) merged to main. T2 (4 features) is verified and tagged `run/agent-harness-2026-11-04/T2` but not merged. Nothing is blocked. Spend was $28.54; the usage window is open and seven_day is at 8% (resets Sun 17:00).
 
 ## Runs
-
-### agent-harness-2026-11-03-2 (agent-harness) · done
-- 6/6 features passing, all on the first attempt. U1 was verified and merged (PR #84). Rework, flakes and verify failures: none.
-- Tests went from 1141 to 1165. `summary.json` and the retro give different start counts (1141 vs 1146).
-- It cost $26.68 ($4.45 per feature) and took 3.62 h wall. By role: init $4.26 (fable), build $15.80, review $6.26 (opus, 2925 changed lines), verify $0.25.
-- The main cost was suite time, not failures. Each coding session ran the full suite once at about 800 s, roughly 1.3 h of the 2.44 h build time. U1-01 ran it twice (1621 s).
-- The retro notes that verify left no evidence rows in `entries.jsonl`.
-- The retro lists a flake note for U1-02, a naming question that had a default. Nothing is open in `INBOX.md`.
-- No continuation is needed.
+### agent-harness-2026-11-04 (agent-harness) · done
+- 8/8 features passing and verified. T1 (T1-01..04) is merged. T2 (T2-01..04) is verified, with 0 merged.
+- Tests went 1165 → 1224. Cost was $28.54 ($3.57 per feature) over 5.55 h wall.
+- All 8 features passed on the first attempt. There were no rework, guard, conflict or refusal events.
+- Flakes: `08-scope-sh-l1-02-run-capped-services-gc-scratch` ×2. T1-03 (sonnet) peaked at 2067 MB of memory.
+- At 06:16 the T2 verify recorded 1 question for Michael. At 06:18 the log said "T2 needs Michael: its merge". The `harness needs` output is now empty, because gc resolved it as "run removed".
+- The retro was a clean run with nothing new. It re-raised `verify-evidence-rows` and `suite-time-budget`.
 
 ## Needs Michael
-Nothing.
+- **T2 merge decision (agent-harness-2026-11-04, T2 lane).** The run's log says T2 needs Michael's merge. The text of the verify question was not in the context, and I could not read the run record to find it. Check the T2 tag and the record in `ledger/agent-harness/agent-harness-2026-11-04` before deciding.
+- **Possible lost T2 work.** At 06:19 `harness gc --all-merged` ran `branch -D` on `harness/agent-harness-2026-11-04` (it was fe535fe) and deleted it from origin. It also removed the worktree. That happened while T2 was unmerged. I tried to check that the T2 commits still exist (tag and main), but the command was denied. Until that is checked, treat it as unconfirmed. If the tag is missing, T2's four features exist only in the reflog.
 
 ## For the next interactive session
-No merge conflicts, holds or refusals.
-
-Open `proposed` items from the Retro backlog, most `runs_seen` first:
-- `verify-evidence-rows`: record per-step evidence rows from verify sessions (seen 6).
-- `suite-flake-retry`: re-run failed test files serially before declaring the suite red (seen 5).
-- `suite-time-budget`: cap or warn on session suite runs (seen 4). This run again measured about 800 s per run. CLAUDE.md's "~210 s" is stale, and the retro says its 10–11 min figure is also slightly low.
-- `memlint-before-session-end`: run the memlint check inside the session's own end gate (seen 1).
-- `session-entry-write-guard`: tell sessions that `entries.jsonl` and `progress-archive.md` are driver-only (seen 1).
-- `step-contradiction-lint`: flag self-contradictory steps at init (seen 1).
-- `no-retry-on-denial`: don't retry a session that stopped on a permission question with nothing changed (seen 0).
-- `base-branch-runs-reverted`, `restrict-merge-tree-base` and `slot-copy-overwritten-on-merge` are dormant (seen 0), each with a note on when to act.
-
-No item already `specced` or `queued` was re-raised.
+- No merge conflicts. The one held merge is T2, above.
+- Check why `gc --all-merged` deleted a branch carrying unmerged, verified T2 work. This is a candidate harness bug.
+- Retro backlog, open `proposed` items, most seen first:
+  - `verify-evidence-rows` (seen 7): record per-step evidence rows from verify sessions.
+  - `suite-time-budget` (seen 5): cap or warn on repeat full-suite runs. The suite takes about 10–11 min and took about 1.5 h of the 3.61 h build time.
+  - `suite-flake-retry` (seen 5): re-run failed test files serially before declaring the suite red.
+  - `memlint-before-session-end` (seen 1)
+  - `session-entry-write-guard` (seen 1)
+  - `step-contradiction-lint` (seen 1)
+  - `no-retry-on-denial` (seen 0)
+  - `base-branch-runs-reverted` (seen 0)
+  - `restrict-merge-tree-base` (seen 0)
+  - `slot-copy-overwritten-on-merge` (seen 0)
+- No item that is already `specced` or `queued` was re-raised.
