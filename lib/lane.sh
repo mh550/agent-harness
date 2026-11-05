@@ -266,7 +266,7 @@ while :; do
   lane_cd
   [[ -f $STATE/lanes-end ]] && lane_exit 16 "the run is ending ($(cat "$STATE/lanes-end"))"
   (( $(cat "$STATE/sessions") >= MAX_SESSIONS )) && lane_exit 13 "session cap ($MAX_SESSIONS)"
-  (( $(date +%s) >= DEADLINE )) && lane_exit 15 deadline
+  past_deadline && lane_exit 15 deadline
   take_answers; sync_record
   for id in $(record F unpark "$PARKED" "$(answers_hash)"); do note "$id unparked: INBOX.md has new answers"; done
   needs_sweep   # before the pick: an unparked feature's record resolves
@@ -275,14 +275,14 @@ while :; do
   if [[ $c == pause ]]; then   # after its session: the services go, nothing new starts (the coordinator logs the pause)
     services_down paused; rec_commit "HARNESS: lane $M paused"; sync_record
     while [[ $(control) == pause ]]; do
-      (( $(date +%s) >= DEADLINE )) && lane_exit 15 deadline
+      past_deadline && lane_exit 15 deadline
       [[ -f $STATE/lanes-end ]] && lane_exit 16 "the run is ending ($(cat "$STATE/lanes-end"))"
       sleep "${HARNESS_PAUSE_POLL:-60}"; take_answers; sync_record
     done
     continue
   fi
   limit_wait || continue   # cut short by the run's end or a stop: the checks above say which
-  (( $(date +%s) >= DEADLINE )) && continue
+  past_deadline && continue
   if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; lane_exit 13 "weekly budget ($why)"; fi
 
   # one node start (F poll) answers milestone-done and next below, parked and blocked too, from the memo it fills

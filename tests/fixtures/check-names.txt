@@ -682,6 +682,14 @@ no URL in time: no window, the plain notification
 no URLs for a non-GitHub origin
 no code PR touches the run record, and the record branch holds every entry
 no dependency note when every milestone has after
+no end time: HOURS= run.log's first line ends · no end time, it ends done, no deadline note
+no end time: HOURS=0 is no end time too, not a deadline at once
+no end time: HOURS=1 says · ends HH:MM and the clock's of 1h, ends form
+no end time: a usage-limit window is still waited for, noted before session 1
+no end time: past_deadline never reads DEADLINE=0 as now
+no end time: resolve_ok with DEADLINE=0 is not refused for the deadline
+no end time: run_deadline: HOURS empty or 0 is none, a whole number counts from T0, --until is it or the earlier of the two
+no end time: the lanes get it: the coding and verify prompts' clock line says (no end time)
 no final tag, no false 'verified'
 no user systemd: the init runs bare, and the run's one uncapped note stays the only one
 no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)

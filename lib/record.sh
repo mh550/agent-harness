@@ -348,7 +348,7 @@ limit_wait() {
   local upto now w; upto=$(cat "$LIMIT_FILE" 2>/dev/null || echo 0); now=$(date +%s)
   (( upto > now )) && [[ ! -f $STATE/waited-$upto && ! -f $LS/waited-$upto ]] || return 0
   [[ $LS == "$STATE" ]] && compgen -G "$STATE/lanes/*/waited-$upto" > /dev/null && return 0
-  w=$(( upto - now )); (( w > DEADLINE - now )) && w=$(( DEADLINE - now )); (( w > 0 )) || return 0
+  w=$(( upto - now )); (( DEADLINE && w > DEADLINE - now )) && w=$(( DEADLINE - now )); (( w > 0 )) || return 0
   touch "$LS/waited-$upto"
   if (( w > SVC_IDLE_STOP_MIN * 60 )); then   # a short wait keeps them (decisions/2026-10-25-services-stop-points)
     services_down "usage-limit wait"; [[ $LS == "$STATE" ]] && lanes_services_down "usage-limit wait"   # the coordinator: closed lanes' too
@@ -368,6 +368,8 @@ slept_until() {
   return 0
 }
 
+past_deadline() { (( DEADLINE && $(date +%s) >= DEADLINE )); }   # 0 is no end time, never "now"
+
 prompt() {   # template name → $LS/prompt.md (lib/prompt.sh, which `harness eval probes` renders the same way)
   prompt_render "$1" > "$LS/prompt.md"
   cp "$LS/prompt.md" "$STATE/prompt-$1.md"   # the last prompt of each kind (any lane's), for debugging
@@ -376,10 +378,13 @@ prompt() {   # template name → $LS/prompt.md (lib/prompt.sh, which `harness ev
 # <attempt N of M | verify round N of M> → the clock line of a coding or verify prompt ({{CLOCK}}): sessions can't tell
 # time, budget or attempt otherwise. The run is this driver's segment (T0 to DEADLINE). decisions/2026-10-21-clock-and-bounded-init-output
 clock() {
-  local now el tot; now=$(date +%s); el=$(( (now - T0) / 60 )); tot=$(( (DEADLINE - T0) / 60 ))
-  printf 'Clock: %s · run %dh%02dm of %s, ends %s · this session: $%s budget, %s turns, %s timeout · %s\n' "$(date '+%F %H:%M')" \
-    $(( el / 60 )) $(( el % 60 )) "$( (( tot % 60 )) && printf '%dh%02dm' $(( tot / 60 )) $(( tot % 60 )) || echo "$(( tot / 60 ))h")" \
-    "$(date -d "@$DEADLINE" +%H:%M)" "$SESSION_BUDGET_USD" "$MAX_TURNS" "$SESSION_TIMEOUT" "$1"
+  local now el tot span=" (no end time)"; now=$(date +%s); el=$(( (now - T0) / 60 ))
+  if (( DEADLINE )); then
+    tot=$(( (DEADLINE - T0) / 60 ))
+    span=" of $( (( tot % 60 )) && printf '%dh%02dm' $(( tot / 60 )) $(( tot % 60 )) || echo "$(( tot / 60 ))h"), ends $(date -d "@$DEADLINE" +%H:%M)"
+  fi
+  printf 'Clock: %s · run %dh%02dm%s · this session: $%s budget, %s turns, %s timeout · %s\n' "$(date '+%F %H:%M')" \
+    $(( el / 60 )) $(( el % 60 )) "$span" "$SESSION_BUDGET_USD" "$MAX_TURNS" "$SESSION_TIMEOUT" "$1"
 }
 
 # kind model log who → runs claude headless on $LS/prompt.md in its own capped scope (decisions/2026-10-25-scoped-sessions);

@@ -7,6 +7,15 @@
 #   5. conventions for anything still unset: the suite, the smoke check and the init script are detected in the repo
 # Usage: source lib/config.sh; harness_config <worktree> [<state dir>]
 
+# <T0> → the run's DEADLINE, from HOURS and DEADLINE_AT (--until): 0 is none, and every reader takes it so
+# (past_deadline, limit_wait, resolve_ok, clock; decisions/2026-11-04-no-default-end-time)
+run_deadline() {
+  local d=0
+  (( ${HOURS:-0} > 0 )) && d=$(( $1 + HOURS * 3600 ))
+  (( DEADLINE_AT > 0 && ( d == 0 || DEADLINE_AT < d ) )) && d=$DEADLINE_AT
+  echo "$d"
+}
+
 harness_config() {
   local wt=$1 st=${2:-} f
   HOURS=8 MAX_SESSIONS=auto MAX_ATTEMPTS=2 MAX_REPAIRS=3 MAX_VERIFY_ROUNDS=2 MAX_LIMIT_HITS=6
