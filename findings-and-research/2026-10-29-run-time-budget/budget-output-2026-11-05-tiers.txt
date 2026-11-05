@@ -1,0 +1,26 @@
+
+== agent-harness-2026-11-05  flakes 0
+lane H1 10:19:51–13:46:39: 12408 s, 7 sessions
+  model 3761 s (30%) · session suite 3306 s (27%) · session other tools 3796 s (31%) · harness before 22 s (0%) · harness after 627 s (5%) · verify 897 s (7%) · waiting 0 s (0%) · idle 0 s (0%)
+sessions (wall · suite · other tools · model · stream duration_ms · duration_api_ms · suite calls):
+  run init  10:12:25 wall 441 suite 12 other 15 model 414 · dur 440 api 436 · full 0 cached 0 · calls: s:other s:other F:red/1s s:other s:other
+  H1 coding H1-01 10:19:53 wall 980 suite 353 other 45 model 582 · dur 979 api 598 · full 1 cached 0 passes=true · calls: s:green s:other s:green s:green s:other s:other
+  H1 coding H1-02 10:36:20 wall 1834 suite 754 other 119 model 961 · dur 1833 api 1039 · full 2 cached 0 passes=true · calls: s:red s:red s:red s:other s:red s:red s:other s:red s:red s:green s:red s:red s:other s:other
+  H1 coding H1-02b 11:07:00 wall 2362 suite 1435 other 12 model 916 · dur 1666 api 974 · full 1 cached 1 passes=true · calls: s:green s:other s:green s:green s:green F:cached/15s F:other/0s F:other/0s F:red/17s s:green s:red s:red s:red s:red F:other/18s s:red s:green s:other F:other/2s
+  H1 coding H1-03 11:46:28 wall 927 suite 337 other 84 model 506 · dur 926 api 523 · full 0 cached 0 passes=true · calls: F:red/0s s:green s:green s:red s:red s:other
+  H1 coding H1-04 12:02:01 wall 2930 suite 5 other 2562 model 363 · dur 2929 api 416 · full 0 cached 0 passes=true · calls: s:other s:other s:other s:other s:other s:other
+  H1 coding H1-05 12:50:57 wall 1828 suite 421 other 974 model 433 · dur 1827 api 1396 · full 0 cached 1 passes=true · calls: F:cached/0s s:red s:red s:other s:red s:green s:other s:other
+  H1 verify H1 13:31:25 wall 897 suite 239 other 608 model 50 · dur 896 api 57 · full 0 cached 0 · calls: s:green s:other s:other s:green s:other
+  run retro  13:46:43 wall 30 suite 0 other 7 model 23 · dur 29 api 28 · full 0 cached 0
+harness suites outside sessions (where · wall · cpu · rerun):
+  run before 09:56:27 957 s cpu 3822 s
+  H1 after 13:21:34 591 s cpu 2267 s after H1-05 before H1
+run-level scopes: svc 09:56:27 20521 s, check 09:56:27 957 s, session 10:12:25 441 s, session 13:46:43 30 s
+
+load curve from the journal (full suites: wall s, CPU s, mean other suites overlapping):
+  09:56:27 2026-11-05-check-22917 wall 957 cpu 3822 overlap 0
+  10:29:19 2026-11-05-H1-check-1509488 wall 158 cpu 642 overlap 0
+  10:59:25 2026-11-05-H1-check-1993807 wall 160 cpu 648 overlap 0
+  11:03:44 2026-11-05-H1-check-2255724 wall 160 cpu 650 overlap 0
+  11:27:09 2026-11-05-H1-check-2674562 wall 618 cpu 2321 overlap 0
+  13:21:34 2026-11-05-H1-check-3900531 wall 591 cpu 2267 overlap 0
