@@ -1,0 +1,2 @@
+## 2026-11-05 09:56
+Phase 2 of docs/plans/2026-11-03-test-suite-redesign.md: build the resident helper spec in full as one milestone H1, five or six features, H1-04 (the proof) the last build feature, then the review. Proceed on the spec's defaults, mark them *default* in the decision file, never park. Every answer byte for byte the spawned script's: a stub run with HARNESS_HELPER=0 and without must give identical logs. No note text changes. H1-04 needs no other suite alive: check harness status first.
