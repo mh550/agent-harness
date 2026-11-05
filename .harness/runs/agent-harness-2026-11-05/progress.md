@@ -7,6 +7,19 @@ The run: phase 2 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier is green, and the verifier re-runs every step on the full suite before H1 merges into `main`. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-05 13:21 · H1-05 · passes
+
+Review of H1: 0 Critical, 1 Important, 7 Minor. Important fixed: a writer echoing a NUL ran twice (helper declined after it wrote); captured's say now drops NULs. Header parsed by one regex; lint and tests widened; decision file complete; architecture, README and fewer-node-starts updated. Tests 684 to 689.
+
+- **Files:** lib/cli.mjs, lib/record.sh, lib/prompt.sh, tests/checks/91-resident-helper.sh, tests/unit/cli.test.mjs, tests/unit/treekey.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-05-H1-review.md, docs/architecture.md, README.md, journal/decisions/2026-11-03-resident-helper.md, +1 more
+- **Verified:** RED: file 91's 'a writer's answer holds no NUL' failed with the old lib/cli.mjs (60/61) and passes with the new (61/61); the unit test likewise. Reproduced first: 2 journal lines and `missing` with the helper, 1 line with HARNESS_HELPER=0. Green: bash tests/run.sh resident-helper 77/77, 84-node-memo 27/27, 13-run-2-michael-sets-desk + 47-lanes-two + 00-unit 274/274; check.sh --fast 689 tests in 101 s; bash -n and node --check on every file; lib/bin note-line grep only moved calls, prompts diff empty. The full suite runs at verify.
+- **Tests:** 684 → 689
+- **Discovery** (affects run): A coproc's node start reaches a counting shim after helper_begin returns, so a count taken right after it can miss the helper's own start: ask once before the baseline count.
+- **Discovery** (affects run): After the run (Michael): `grep -c 'helper restarted' <state dir>/run.log`, expected 0 for a run that ended normally (a TERM or HUP to the driver's process group writes one true, harmless line), and the solo wall from the run's own check.sh rows against the table (608.1 s; bound 600 s). Nothing to configure; HARNESS_HELPER=0 in ~/.config/harness/config.sh turns it off for every run if a real run shows `helper off:`.
+- **Discovery** (affects run): A $( ask ) in a shell that has not started a helper spawns, so a by-hand reproduction of a helper path needs helper_begin or a plain ask first: the first try at the review's finding did not reproduce without it.
+- **Proposed change:** If file 13's node starts matter again (337 against <= 300): the cheap read-only wirings are lane.sh:375, :377, :463, driver.sh:217, :582-583, resolve.sh:63, :89, answering into a variable before the pipe; about 1 CPU-s of an 88 s file, so not done here (docs/plans/2026-11-05-H1-review.md).
+- *06-H1-05 · claude-opus-5-5*
+
 ### 2026-11-05 12:50 · H1-04 · passes
 
 The proof: solo suites before 07a31f6 974.2 s, 3,804 CPU-s, after de51e2f 608.1 s, 2,108 CPU-s, all green. Met: stub start 20 nodes (≤30), file 13 CPU 88 s (≤110), suite CPU (≤2,300), 0 log lines, 0 restarts. Missed: file 13 nodes 337 (≤300), wall by 8.1 s (≤600), spawned treekey 64.4 ms in a suite (≤60; 49.3 idle, 9.7 by ask). No code change.

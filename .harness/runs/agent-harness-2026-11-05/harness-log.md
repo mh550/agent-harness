@@ -32,3 +32,7 @@
 - 2026-11-05 12:02 · context.md for H1-04: 7870 bytes
 - 2026-11-05 12:50 · H1-04: suite ran 0x (0 s) in the session
 - 2026-11-05 12:50 · H1-04 · claude-opus-5-5 · passes=true · 48 min · 5/6 passing
+- 2026-11-05 12:50 · review H1-05: 4125 changed lines, at or over 400; opus
+- 2026-11-05 12:50 · context.md for H1-05: 7874 bytes, 2 items left out
+- 2026-11-05 13:21 · H1-05: suite ran 1x (101 s) in the session
+- 2026-11-05 13:21 · H1-05 · claude-opus-5-5 · passes=true · 30 min · 6/6 passing
