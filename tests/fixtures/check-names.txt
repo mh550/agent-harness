@@ -86,6 +86,9 @@ a killed debrief changes nothing
 a lane closes on its card's words: merge refused, conflicts with main; neither opens a merge_failed card
 a lane killed with SIGKILL: its helper ends on stdin's EOF (no EXIT trap ran), the other lane's lives on
 a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
+a lane's helper killed between two questions: harness report has the Helper row with the count and the reason
+a lane's helper killed between two questions: one note in harness-log.md at the run's end (how many restarted, how many off, the first reason, see run.log), in the committed record
+a lane's helper killed between two questions: the run ends done with restarts of 1 or more in summary.json (run.log's count, 0 off, the reason)
 a later clean sync_main resolves main_conflict: its item in needs/done/, main merged cleanly, noted
 a later deadline: the earlier refusals aren't the cause
 a ledger checkout on another branch: the note is written, not committed
@@ -100,6 +103,7 @@ a milestone without an after list is noted
 a miss in a subshell is not kept (a nested subshell starts node again); the parent's own call then stores it
 a name exported and then unset is gone; X=1 ask … is that call's alone; an unset HOME in a $( ) is that call's alone
 a name taken in held/ parks under another; the one there is untouched; the queue drains
+a normal stub start: summary.json's helper is 0 restarts and 0 off, harness report's Helper row says 0 restarts, harness-log.md has no helper note (helper on or off)
 a park notification: title, question, answer command, click and Edit INBOX action
 a park opens one parked record; card.question.line is the first line the session added, its URL that line
 a park whose INBOX question has Files: <path>:48: the record's where[0] is that path at line 48, files_from question
@@ -533,6 +537,10 @@ harness status lists a running run's units with MemoryCurrent; an ended run's no
 harness stop --why: the note and ended say stopped by Michael: <why>
 harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
+helper health: build adds helper from the state dir's run.log, every segment's; zeros for a run with none or no log
+helper health: helperHealth counts run.log's helper restarted: and helper off: lines and each distinct reason, zeros for none
+helper health: helperNote is the last segment's count and first reason with see run.log, nothing for a segment with none; the CLI's helper-note prints it
+helper health: the report's Helper row comes before Sessions (0 restarts, or the counts and the reasons, most first), no row for a summary without the key
 helper off (HARNESS_HELPER=0 in the environment, or in the user's config file): no helper.mjs starts, in the driver or a lane; every question a spawn
 ignored_only: CHECK_KEY_IGNORE entries are literal prefixes (docs/plans-old, docs/*, ../lib are code), ./x/ is x, no pathspecs is moved; noted once per main
 inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
@@ -1287,6 +1295,7 @@ the driver notes the lint once after the initializer
 the driver's and a lane's EXIT traps kill their helper by name (SIGTERM's check above can't tell them from the EOF)
 the driver's continuation after a session cap is automatic
 the helper killed between two calls: the next call is a spawn (+1), the spawn's bytes, one helper restarted: line
+the helper note is the coordinator's at its named ends (before each summary build of finish, harness merge's end): never helper_failed's, which only writes run.log, and never the EXIT trap's
 the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created
 the initializer prompt asks for after on independent features and on every milestone's first
 the initializer prompt has the resolved lint command

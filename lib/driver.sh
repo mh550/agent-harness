@@ -295,6 +295,18 @@ record_pr() {
   else note "record PR: the merge was refused; left open · $url"; fi
 }
 
+# The helpers' health into the record (decisions/2026-11-03-resident-helper): one note at a segment's named end when a
+# helper of this segment, the coordinator's or a lane's, restarted or went off (run.log's count, its first reason);
+# nothing for none, so a normal run's harness-log.md is as it was. Here, in the coordinator's own shell: helper_failed
+# can run in a $( ) or under `record` and only writes run.log. Asked again after the retro: a second note only for a
+# count that grew. An end no finish named (the EXIT trap's) has none: its TERM took the helper, and the line says that.
+HELPER_NOTED=""
+helper_note() {
+  local hn; hn=$(SUM helper-note "$STATE/run.log" 2> /dev/null)
+  [[ -n $hn && $hn != "$HELPER_NOTED" ]] || return 0
+  HELPER_NOTED=$hn; note "$hn"
+}
+
 finish() {   # reason → every lane exited, summary, notification, retro, ledger, slots removed, continuation
   END_REASON=$1
   wait_lanes   # each stops between sessions: a stop, the deadline, a cap
@@ -323,6 +335,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   services_down "$1"; lanes_services_down "$1"   # after the last suite run, which may need them
   [[ -n ${LAST_LANE:-} && -f $L/teardown.out ]] && cat "$L/teardown.out" >> "$SCRATCH/teardown.out"
   slot_close   # every slot goes; lane branches are pushed; a merged lane's branch goes
+  helper_note   # every lane's and the coordinator's so far, beside the summary that counts them
   SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"
   SUM report --md "$REC/summary.json" > "$REC/report.md"   # the end notification's click; rewritten after the retro
   rec_commit "HARNESS: run ended ($1)"; sync_record
@@ -337,7 +350,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   # a failed post notes it in harness-log.md: commit it now, before a retro that may never finish
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run-end notification failed"; sync_record; }
   case $1 in "blocked on"* | "waiting on Michael"*) desk "ended: $1" ;; esac   # after that commit: its note is no failed post
-  if [[ $RETRO == 1 && -f $LIST ]]; then retro; SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"; fi
+  if [[ $RETRO == 1 && -f $LIST ]]; then retro; helper_note; SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"; fi
   SUM report --md "$REC/summary.json" > "$REC/report.md"
   # the state dir outlives the worktree gc removes: harness report reads these there (decisions/2026-10-27-record-after-gc)
   # (metrics.jsonl beside them for report's memory peaks, when the run has one)
@@ -430,6 +443,7 @@ if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 who
   # what the merges resolved (merge_failed, merge_refused …); after ended, as finish's: a merge is no continue, and the
   # run-level items stay open
   echo "merge only · $(date '+%F %T')" > "$STATE/ended"; needs_sweep
+  helper_note   # a merge's segment builds no summary: its note is its record
   rec_commit "HARNESS: merge"; sync_record; END_REASON="merge only"; exit 0
 fi
 
