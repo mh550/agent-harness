@@ -50,7 +50,8 @@ source "$HARNESS_HOME/lib/needs.sh"   # needs_open: a needs-you record (lib/need
 run_paths   # PROJECT_NAME BRANCH RUN_DIR SCRATCH CHECK PORT, RWT REC LIST …, the configuration
 mkdir -p "$HARNESS_CACHE"   # installs a project keeps across runs and boots (Playwright browsers …); scratch goes at finish
 echo "$MAX_ATTEMPTS" > "$STATE/max-attempts"
-T0=$(date +%s); DEADLINE=$(( T0 + HOURS * 3600 )); (( DEADLINE_AT > 0 && DEADLINE_AT < DEADLINE )) && DEADLINE=$DEADLINE_AT
+hours_ok || { log "HOURS=$HOURS in the config is not a whole number of hours"; exit 1; }
+T0=$(date +%s); DEADLINE=$(run_deadline "$T0")
 rm -f "$STATE"/waited-* "$STATE"/lanes/*/waited-*   # a restart inside a usage-limit window waits for it again
 
 [[ -z $BRANCH || $BRANCH == "$MAIN_BRANCH" ]] && { log "refusing to run on '${BRANCH:-detached HEAD}'"; exit 1; }
@@ -271,7 +272,7 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
 
 # The last step of finish: the record branch onto main through its own PR, `<run>: run record` (RECORD_PR=end), the
 # open one reused. It is record-only (rec_commit_), so its diff is .harness/runs/<run>/ and the merge can't conflict.
-# Merged under auto, left for Michael under pr; never --delete-branch: a harness continue the same night still finds
+# Merged under auto, left for Michael under pr; never --delete-branch: a later harness continue still finds
 # harness/<run>, and the end-of-queue gc deletes it (record_only) with its worktree, the ledger keeping the record.
 # Checked, not assumed: a --base run's branch, or an edit pushed to it from the phone, may carry code main lacks
 record_pr() {
@@ -373,7 +374,7 @@ resumed=0; grep -q " run $RUN_ID on " "$STATE/run.log" 2> /dev/null && resumed=1
 # which harness drove this segment (the latest segment's wins in the summary; run.log keeps each), for trends --by version
 harness_version "$HARNESS_HOME"
 [[ ${HARNESS_MERGE_ONLY:-} ]] || { echo "$HARNESS_VERSION" > "$STATE/harness-version"; echo "$HARNESS_DIRTY" > "$STATE/harness-dirty"; }   # `harness merge` drives no sessions
-log "run $RUN_ID on $BRANCH in $WT · port $PORT · policy $POLICY · merge $MERGE_POLICY · harness $HARNESS_VERSION$( (( HARNESS_DIRTY )) && echo +dirty)"
+log "run $RUN_ID on $BRANCH in $WT · port $PORT · policy $POLICY · merge $MERGE_POLICY · harness $HARNESS_VERSION$( (( HARNESS_DIRTY )) && echo +dirty) · $( (( DEADLINE )) && date -d "@$DEADLINE" '+ends %H:%M' || echo 'no end time')"
 log "  suite: ${CHECK_CMD:-(none detected; nothing gates passes)} · smoke: $SMOKE_CMD · init: $INIT_CMD"
 log "  permissions: user settings$( [[ -f $AGENT_SETTINGS ]] && echo " + $AGENT_SETTINGS (--settings)" || echo " only ($AGENT_SETTINGS not found)")"
 log "  MCP servers: $( [[ -f $WT/.mcp.json ]] && echo ".mcp.json (--strict-mcp-config --mcp-config)" || echo "none (--strict-mcp-config; no .mcp.json)")"
@@ -521,7 +522,7 @@ while :; do
   reap
   [[ -n $LANE_END ]] && finish "$LANE_END"
   (( $(lanes_open) == 0 && $(cat "$STATE/sessions") >= MAX_SESSIONS )) && finish "session cap ($MAX_SESSIONS)"
-  if (( $(date +%s) >= DEADLINE )); then   # the lanes stop between sessions; complete milestones get one verify
+  if past_deadline; then   # the lanes stop between sessions; complete milestones get one verify
     if (( paused )); then note "deadline reached while paused"; else note "deadline reached"; fi
     wait_lanes; deadline_verify
     if (( paused )); then finish "deadline (paused)"; else finish "deadline"; fi
@@ -545,7 +546,7 @@ while :; do
   (( paused )) && { paused=0; log "resumed"; }
   if (( alive == 0 )); then   # box-wide gates: with a lane open, it waits and stops by itself
     limit_wait || continue   # cut short by a stop: the next poll sees it
-    (( $(date +%s) >= DEADLINE )) && continue
+    past_deadline && continue
     if why=$(weekly_over "$USAGE"); then note "stopping before the next session: $why"; finish "weekly budget ($why)"; fi
   fi
   reap; [[ -n $LANE_END ]] && continue   # a lane gone since the top: its slot, its end and its needs count before an open

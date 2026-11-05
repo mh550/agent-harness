@@ -7,9 +7,21 @@
 #   5. conventions for anything still unset: the suite, the smoke check and the init script are detected in the repo
 # Usage: source lib/config.sh; harness_config <worktree> [<state dir>]
 
+# <T0> → the run's DEADLINE, from HOURS and DEADLINE_AT (--until): 0 is none, and every reader takes it so
+# (past_deadline, limit_wait, resolve_ok, clock; decisions/2026-11-04-no-default-end-time)
+run_deadline() {
+  local d=0
+  (( ${HOURS:-0} > 0 )) && d=$(( $1 + HOURS * 3600 ))
+  (( DEADLINE_AT > 0 && ( d == 0 || DEADLINE_AT < d ) )) && d=$DEADLINE_AT
+  echo "$d"
+}
+# HOURS as the rule has it: empty, 0 or a whole number (no leading 0: 08 is no number in bash). A typo must not
+# silently become no deadline, or any other one: cmd_start and the driver refuse it
+hours_ok() { [[ -z ${HOURS:-} || $HOURS =~ ^(0|[1-9][0-9]*)$ ]]; }
+
 harness_config() {
   local wt=$1 st=${2:-} f
-  HOURS=8 MAX_SESSIONS=auto MAX_ATTEMPTS=2 MAX_REPAIRS=3 MAX_VERIFY_ROUNDS=2 MAX_LIMIT_HITS=6
+  HOURS="" MAX_SESSIONS=auto MAX_ATTEMPTS=2 MAX_REPAIRS=3 MAX_VERIFY_ROUNDS=2 MAX_LIMIT_HITS=6   # HOURS: empty or 0 no end time, a whole number that many hours
   ORIGIN_WAITS="5 15 30 60 120"   # origin_try's waits (s) between tries of a merge's origin command: six tries, 230 s (HARNESS_ORIGIN_WAITS in tests)
   ORIGIN_TRY_TIMEOUT=120   # one try of any origin command, a sleep duration (HARNESS_ORIGIN_TRY_TIMEOUT in tests): a hung origin is a failure
   LIMIT_WAITS="900 1800 3600" SESSION_TIMEOUT=100m MAX_TURNS=250 SESSION_BUDGET_USD=20

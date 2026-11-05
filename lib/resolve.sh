@@ -15,7 +15,7 @@ resolve_ok() {
   n=$(cat "$STATE/resolves-$m" 2> /dev/null || echo 0)
   (( n >= MAX_RESOLVES )) && { echo "its $n resolve session(s) used"; return 1; }
   lim=$(dur_s "$RESOLVE_TIMEOUT") || lim=1800
-  (( $(date +%s) + lim > DEADLINE )) && { echo "less than RESOLVE_TIMEOUT ($RESOLVE_TIMEOUT) before the deadline"; return 1; }
+  (( DEADLINE && $(date +%s) + lim > DEADLINE )) && { echo "less than RESOLVE_TIMEOUT ($RESOLVE_TIMEOUT) before the deadline"; return 1; }
   return 0
 }
 

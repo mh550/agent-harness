@@ -19,7 +19,7 @@
 - A decision → the decisions store above. Overturned → rewrite it in place, plus one `Updated in place <date>: …`
   line; never a new entry beside a dead one.
 - A fact a fresh session would otherwise rediscover → one line under `## Gotchas`, edited in place.
-- Tonight's scope (what to build, drop or do first) → the run's brief, never this file.
+- The run's scope (what to build, drop or do first) → the run's brief, never this file.
 - How to work here (rules, conventions, workflow) → Michael's: propose it, don't write it.
 - Anything the code, git or the suite can tell (test counts, file lists, constants) → nowhere.
 

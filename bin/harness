@@ -317,6 +317,9 @@ cmd_start() {
   [[ $run == desk || $run == debrief ]] && die "run-id '$run' is taken by the desk (tmux h-desk, <state>/queue/desk)"
   [[ $run == queue ]] && die "run-id 'queue' is taken by the queue runner (tmux h-queue)"
   [[ $run == lanes ]] && die "run-id 'lanes' is taken by the lane slots (<worktrees>/<project>/lanes)"
+  # before a queue entry or a worktree comes of it; a given run's own run.env counts, in a subshell so nothing else of it leaks here
+  local bad_hours; bad_hours=$(harness_config "$p" ${run:+"$STATE_ROOT/$(basename "$p")/$run"} > /dev/null 2>&1; hours_ok || printf '%s' "$HOURS")
+  [[ -z $bad_hours ]] || die "HOURS=$bad_hours in the config is not a whole number of hours"
   [[ ${HARNESS_MERGE_ONLY:-} ]] || spec_refuse "$p" "$run" "$spec" "$base"   # before the first queue_add: a queued entry is a checked one
   # a queued start: the entry the runner replays (no run id yet when none is given: it is chosen when the run starts)
   local args=("$p" ${run:+"$run"}); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
@@ -568,7 +571,7 @@ cmd_queue() {
         local run=${2:?usage: harness queue add --continue <run-id>}; shift 2; state_of "$run" > /dev/null
         local mark=(--requested) o=() a; for a in "$@"; do [[ $a == --automatic ]] && mark=() || o+=("$a"); done
         # a request is the later word: a queued entry becomes this request, its options included (an automatic one's
-        # --until-epoch is a past night's deadline); an automatic add leaves what is queued alone
+        # --until-epoch is an earlier start's deadline); an automatic add leaves what is queued alone
         local q; q=$(compgen -G "$Q/*-continue-$run.args" | head -1) && {
           if (( ${#mark[@]} )); then local was; grep -qx -- --requested "$q" && was="replaced by this request" || was="now requested, with this request's options"
             printf '%s\n' continue "$run" --queued --requested ${o[@]+"${o[@]}"} > "$q" && echo "already queued: continue $run ($was)"

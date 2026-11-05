@@ -30,7 +30,7 @@ repository or a bare name: the `PROJECT_DIR` of that project's newest run, else 
 (default `~/projects`); one that is none of these is refused with the places looked and the projects that have runs
 (decisions/2026-10-27-project-names).
 
-Queue a night's work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config, which the
+Queue work at once (runs go one after another by default; `MAX_PARALLEL_RUNS` in your config, which the
 runner re-reads every poll, so an edit applies without a restart and lowering it stops no running run; the queue
 never runs two runs of one project at once, so a second entry for a busy repo waits while later ones go ahead; a plain
 `harness start` or `harness continue` of a project with a live run is queued behind it too, `--now` starts it anyway;
@@ -39,10 +39,10 @@ a start or `queue add` whose spec or brief names files another unmerged run of t
 `harness needs` item on both runs until one of them is merged or gone):
 
 ```bash
-harness queue add ~/projects/pathways --spec OVERNIGHT.md --brief "T5, T7, then T6"
+harness queue add ~/projects/pathways --spec docs/specs/reader.md --brief "T5, T7, then T6"
 harness queue add ~/projects/hit_list --spec docs/next.md
 harness queue add --continue dj-2026-10-17   # a request: it starts even if you stopped the run (a stop after it wins; it replaces a queued one)
-harness queue start --until 07:30        # tmux h-queue; no run starts after 07:30, and each one stops by then
+harness queue start                      # tmux h-queue; runs go one after another until the queue is empty (--until HH:MM: no run starts after it, and each one stops by then)
 ```
 
 When the runner exits (queue empty, past `--until`, or `harness queue stop`) and it started at least one run, it
@@ -54,7 +54,7 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | Command | What |
 |---|---|
 | `harness start` · `continue` · `merge` · `stop` · `pause` · `resume` · `answer` | one run (`start` of a new run refuses at once, exit 1, a `--spec` or `SPEC_FILES` path absent from `origin/main` or its `--base`: `spec <path>: not in origin/main (fetched now); commit and push it, or name its ref with --base`; a resume and `--brief` alone are not checked; `merge` asks for no spec and works with the run's worktree gone: it makes one, restores the record from `origin/main` or the ledger and fetches a missing tag, or says `no record` and leaves nothing behind) |
-| `harness queue [list]` · `queue show <n> [--parked]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the night's queue (`list` marks each continuation `(requested)`, yours, or `(automatic)`, the driver's or the debrief's: an automatic one is skipped for a run you stopped; a brief shows its first 30 characters, `show` prints the entry whole; `queue add` refuses a spec absent from `origin/main` or `--base` as `start` does, and the runner checks a start entry's spec again at dequeue: one gone by then is parked, never started, its reason the same line, a `parked <entry>: …` line in `queue/runner.log`, and the runner goes on to the next entry) |
+| `harness queue [list]` · `queue show <n> [--parked]` · `queue add` · `queue start [--until]` · `queue stop` · `rm` · `clear` | the queue (`list` marks each continuation `(requested)`, yours, or `(automatic)`, the driver's or the debrief's: an automatic one is skipped for a run you stopped; a brief shows its first 30 characters, `show` prints the entry whole; `queue add` refuses a spec absent from `origin/main` or `--base` as `start` does, and the runner checks a start entry's spec again at dequeue: one gone by then is parked, never started, its reason the same line, a `parked <entry>: …` line in `queue/runner.log`, and the runner goes on to the next entry) |
 | `harness queue park <n> [<why>]` · `queue unpark <n>` | set an entry aside: `queue list` shows it with its reason, the runner skips it; unpark puts it back at the end; new entries are numbered past parked ones, and a park never overwrites one of the same name |
 | `harness sync` | the live harness checkout level with origin (merged PRs in, ledger commits pushed); the queue runner does this itself whenever no run is alive (`LIVE_SYNC=0` turns it off) |
 | `harness backlog [list]` · `backlog set <id> <status> [--spec] [--pr] [--note]` · `backlog import <file.jsonl>` | the retro backlog, `ledger/retro-backlog.jsonl`: one row per retro proposal across runs, `proposed` first, most seen first; `set` moves one (`proposed` · `specced` · `queued` · `merged` · `dropped`), `import` merges rows by id; writes hold the ledger lock and are a ledger commit (`LEDGER_COMMIT`) (see [Retro backlog](#retro-backlog)) |
@@ -104,7 +104,7 @@ conformance check or a FAIL in a file that exited 0), and `CHECK_RERUN=auto` the
 
 **Memory lint.** `harness memlint <project>` prints what `lib/memlint.mjs` finds in a project's memory files, one
 `<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines),
-`derivable-count` (a stored `<n> tests`), `night-scope` (`tonight`, `this run`, `as of <date>`) and `decisions` (no
+`derivable-count` (a stored `<n> tests`), `run-scope` (a line tied to one run: `this run`, `as of <date>`) and `decisions` (no
 store, no current-rule-set header, a superseded entry without an `Updated in place` line). Every run segment starts
 with the same lint as `memlint: …` notes in `harness-log.md`; they never stop the run. Run `harness memlint
 <project>` for each project to confirm chunk 3 Part 2's tidy held: on 2026-10-26 the projects with a `CLAUDE.md`
@@ -169,24 +169,29 @@ a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its c
 | Ledger | `ledger/runs.jsonl` and `ledger/<project>/<run-id>/` in this repo · `harness trends` |
 | Memory | each session in the transient user scope `harness-<run-id>-s<n>` (throttled at 5G, killed at 6G, 1G swap: `SESSION_MEMORY_HIGH`, `SESSION_MEMORY_MAX`, `SESSION_SWAP_MAX`), each suite in `harness-<run-id>-check-<pid>`; stopped when they return, so nothing a session started outlives it. Peaks go in `metrics.jsonl` (`mem_peak_mb`) and `report.md` (over 2 GB). No user systemd: uncapped, with a note |
 
+A run has no end time unless you give it one, and it goes regardless of the time of day. It ends when its features
+are done, blocked or waiting on you, at its session cap (a continuation is queued, `AUTO_CONTINUE`), at the weekly
+budget, after `MAX_LIMIT_HITS` refused sessions in a row, or when you stop it. `run.log`'s first line says `· no end
+time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
+
 ### After the run (box settings, yours)
 
 - With the scopes in, `systemd-oomd` can kill the offending `harness-*` scope instead of the desktop: enabling it with
   `ManagedOOMMemoryPressure=kill` on the user slice is a box setting, your call (`findings-and-research/2026-10-24-system-resource-audit.md` §3C.2).
 - `systemctl --user list-units 'harness-*'` shows what each run holds right now (nothing when no run is alive).
 - **Two lanes:** set `MAX_LANES=2` in `~/.config/harness/config.sh` before the next run starts (the code's default
-  stays 1; the driver reads the config at run start). The morning after: `grep -c "lane .* waiting"
+  stays 1; the driver reads the config at run start). After the run: `grep -c "lane .* waiting"
   <run dir>/harness-log.md` (how often admission held a lane back), `jq .lanes <run dir>/summary.json` (`max_open`,
   `lane_hours`, `wall_hours`), `mem_peak_mb` in `metrics.jsonl`, no OOM lines in `journalctl --user -b`, and
   `systemctl --user list-units 'harness-*'` empty. Under `MERGE_POLICY=pr` the record PR (`<run>: run record`) is
-  yours to merge too. `MAX_PARALLEL_RUNS=2` only after a night at two lanes shows the headroom
+  yours to merge too. `MAX_PARALLEL_RUNS=2` only after a run at two lanes shows the headroom
   (decisions/2026-10-26-parallel-runs-headroom).
 - **Conflicts:** `CONFLICTS=resolve` (the default) sends a lane's conflict with main to one resolve session:
   `RESOLVE_MODEL` (opus), `RESOLVE_MAX_TURNS` (60), `RESOLVE_BUDGET_USD` (5), `RESOLVE_TIMEOUT` (30m; none starts
-  with less left before the deadline), at most `MAX_RESOLVES` (3) per milestone and one per main commit; a refused one
+  with less left before a deadline, when the run has one), at most `MAX_RESOLVES` (3) per milestone and one per main commit; a refused one
   waits for the window like any session. `CONFLICTS=michael` in a project's `.harness/config.sh` (or yours) keeps
   every conflict yours, as before. The record branch's conflicts, a lane base's, `harness merge` and one the run's end
-  meets are always yours. The morning after: `jq .conflicts <run dir>/summary.json` (`resolved`, `escalated`,
+  meets are always yours. After the run: `jq .conflicts <run dir>/summary.json` (`resolved`, `escalated`,
   `sessions`) and `grep 'resolve session' <run dir>/harness-log.md`.
 - A crashed or stopped run leaves its scratch in `/tmp/harness`. The optional age rule removes it after 3 days
   untouched (never `live.lock`); the user tmpfiles timer it needs is off by default, so the one command enables it:
@@ -194,6 +199,10 @@ a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its c
 
 ## Steering
 
+- **An end time, if you want one:** `harness start --until HH:MM`, `harness continue --until HH:MM` or `harness queue
+  start --until HH:MM` (every run it starts stops by then; none starts after it), or `HOURS=<n>` in a config for every
+  run. At that time the lanes stop between sessions and each complete, unverified milestone gets one verify. Without
+  one, nothing ends a run on the clock.
 - **Phone:** `progress.md` is rendered from the journal (`entries.jsonl`) after every session and is still the phone view; sessions write `entry.json`, the driver appends it. Steer by editing `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
   `status: stop`, optionally with why (`status: stop the spec changed`); answers under `## Answers`. The driver pulls before every session.
 - **Why a stop:** either reason ends up in harness-log.md, `ended`, summary.json's `end_reason` and the retro prompt as
@@ -247,8 +256,8 @@ a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its c
   start (no tmux, no URL within a minute) is a line in `harness-log.md` and the plain notification; it never changes
   the run. Turning it on in stages: `docs/plans/2026-10-19-P3-desk.md`, "For Michael: turning it on".
 - **After a partial run:** nothing, usually: verified milestones are already merged and a continuation is queued.
-  A run that hits its deadline first gives each complete, unverified milestone one verify session, so finished work
-  merges that night (not when you stopped it or a usage-limit window holds: the continuation verifies it); one that
+  A run that hits an end time it was given gives each complete, unverified milestone one verify session, so finished work
+  merges in that run (not when you stopped it or a usage-limit window holds: the continuation verifies it); one that
   fails it needs Michael.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
 - **Waiting on you:** a session that needs something only you can give (a secret, a sudo step) asks in INBOX.md and
@@ -297,7 +306,7 @@ that commit.
 
 ## Debrief
 
-After a queue, `harness debrief` replaces the "morning session". The queue runner starts it, detached, as it exits
+`harness debrief` replaces the hand triage after a queue. The queue runner starts it, detached, as it exits
 (queue empty, past `--until`, or `harness queue stop`), if it started a run; run it by hand any time. It covers every
 run whose driver started since the last debrief that produced a note, so a debrief that was refused, failed or killed
 is caught up by the next one. Bash gathers the context (status, trends, the queue, the runner's log, and per run: end
@@ -340,7 +349,7 @@ Results go to `evals/results/<stamp>-<sha>-<label>/` (git-ignored). The ref's wo
 `/tmp/harness-eval/<stamp>/harness` and is removed at the end. The throwaway clones (each sealed at its base: no tag
 or later commit of the source) and the runs' worktrees stay beside it for `eval probes`; `rm -rf
 /tmp/harness-eval/<stamp>` once you're done with them. **Evals are real sessions and cost money** (about $28 per
-eval of the default set); they are Michael's to run, the overnight run never does. The commands, in order, with the
+eval of the default set); they are Michael's to run, a harness run never does. The commands, in order, with the
 cost: `evals/NEXT.md`; its `## 5. M6: the review gate` compares the harness before the review gate (tag `…/M5`) with M6
 (`summary.json`'s `review.cost_pct` and `review.found_nothing` say what the reviews cost and how many found nothing
 Critical or Important in any round).

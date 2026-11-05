@@ -26,7 +26,7 @@
 #                                    #     3 newest, never more than 10; --since and --all for the rest)
 
 # Lanes: a run builds each open milestone in its own process and slot worktree (~/worktrees/<p>/lanes/<run>/slot-<k>).
-# MAX_LANES=1                        # milestones built at once in one run (2 once a night at 1 shows the memory for it)
+# MAX_LANES=1                        # milestones built at once in one run (2 once a run at 1 shows the memory for it)
 # LANE_RESERVE_GB=4                  # a further lane opens only with MEM_MIN_AVAILABLE_GB + this many GB per open lane
 # LANE_OPEN_BELOW_5H=70              # % of the 5-hour window: past it no further lane opens
 # LANE_REBASE=suite                  # main moved under a verified lane: suite = disjoint files re-tag on a green suite;
@@ -37,9 +37,13 @@
 # RESOLVE_MODEL=opus                 # the resolve session's model
 # RESOLVE_MAX_TURNS=60               # its turns
 # RESOLVE_BUDGET_USD=5               # its spend cap
-# RESOLVE_TIMEOUT=30m                # its wall time; none starts with less than this left before the run's deadline
+# RESOLVE_TIMEOUT=30m                # its wall time; none starts with less than this left before the run's deadline, when it has one
 # MAX_RESOLVES=3                     # resolve sessions per milestone per run; past them a conflict needs you
 # RECORD_PR=end                      # the run record's own PR, opened when the run ends; off = none
+# HOURS=                             # a run's end time: empty or 0 none; a whole number, that many hours (anything else is refused)
+#                                    #     With none, what still bounds a run: MAX_SESSIONS, MAX_ATTEMPTS, MAX_VERIFY_ROUNDS, MAX_REBASE_ROUNDS, MAX_RESOLVES,
+#                                    #     MAX_LIMIT_HITS and the limit waits, WEEKLY_STOP_AT, AUTO_CONTINUE_MAX, SESSION_TIMEOUT, SESSION_BUDGET_USD,
+#                                    #     and your stop, pause and --until
 # ORIGIN_WAITS="5 15 30 60 120"      # seconds between the tries of a merge's fetch, push or gh call when origin fails
 #                                    #     (an outage); a GitHub refusal is never retried. Five waits: six tries, 230 s
 # ORIGIN_TRY_TIMEOUT=120             # one try of any origin command: past it a hung origin counts as a failed try
