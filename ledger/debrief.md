@@ -1,35 +1,40 @@
-# Debrief · 2026-11-04 06:19
+# Debrief · 2026-11-05 13:48
 
-_runs since 2026-11-03 22:49:27: agent-harness-2026-11-04 · claude-sonnet-5-5, $0.13396619999999998 · context: /home/mh550/.local/state/harness/debrief/2026-11-04-061937/context.md_
+_runs since 2026-11-04 06:19:37: agent-harness-2026-11-04-2 agent-harness-2026-11-05 · claude-sonnet-5-5, $0.14461400000000002 · context: /home/mh550/.local/state/harness/debrief/2026-11-05-134751/context.md_
 
 ## Headline
-agent-harness-2026-11-04: T1 (4 features) merged to main. T2 (4 features) is verified and tagged `run/agent-harness-2026-11-04/T2` but not merged. Nothing is blocked. Spend was $28.54; the usage window is open and seven_day is at 8% (resets Sun 17:00).
+Landed on main (agent-harness): H1 resident helper, 6/6, PR #104, plus record PR #105. Blocked: agent-harness-2026-11-04-2 (run-resilience spec) died after 1/12 and none of it is on main.
+Spend $30.91 (the run-resilience run $9.67, the resident-helper run $21.24). The usage window is open, and seven_day is at 17% (resets Sun 17:00).
 
 ## Runs
-### agent-harness-2026-11-04 (agent-harness) · done
-- 8/8 features passing and verified. T1 (T1-01..04) is merged. T2 (T2-01..04) is verified, with 0 merged.
-- Tests went 1165 → 1224. Cost was $28.54 ($3.57 per feature) over 5.55 h wall.
-- All 8 features passed on the first attempt. There were no rework, guard, conflict or refusal events.
-- Flakes: `08-scope-sh-l1-02-run-capped-services-gc-scratch` ×2. T1-03 (sonnet) peaked at 2067 MB of memory.
-- At 06:16 the T2 verify recorded 1 question for Michael. At 06:18 the log said "T2 needs Michael: its merge". The `harness needs` output is now empty, because gc resolved it as "run removed".
-- The retro was a clean run with nothing new. It re-raised `verify-evidence-rows` and `suite-time-budget`.
+
+### agent-harness-2026-11-04-2 (agent-harness) · failed, driver exited unexpectedly
+- 1/12 features passing (M1-01). M1 is 1/4, M2 and M3 are 0/4. The M1 lane was never verified or merged.
+- Spend $9.67, 1 session, 1.0 h wall. Tests were 1224 at the start, with no end count.
+- The last log lines say M1-02 started at 15:20, then at 15:27 "lane M1: stopped (the driver is exiting)". There is no summary, report or retro. I couldn't find the cause in what I could read.
+- The branch is 8 ahead and 76 behind main. The lane worktree `~/worktrees/agent-harness/lanes/agent-harness-2026-11-04-2/slot-0` has uncommitted work, so gc kept it. This run is not eligible for a `CONTINUE:` line, because it did not end on a deadline or usage limit.
+
+### agent-harness-2026-11-05 (agent-harness) · done
+- 6/6 passing and verified. H1 merged as PR #104. Features: H1-01, 02, 02b, 03, 04 (the proof), 05 (review).
+- Tests went from 1332 to 1455. There were 0 flakes, 0 fix rounds, 0 limit waits, and a first-attempt pass rate of 1.00.
+- Cost $30.91 ($5.15 per feature) over 3.85 h. The review was 21% of the cost.
+- Retro: nothing went wrong. H1-02b's two in-session suite runs took 828 s and peaked at 4266 MB memory. The record-branch push failed 6 times in 5 minutes, and each recovered within a minute.
 
 ## Needs Michael
-- **T2 merge decision (agent-harness-2026-11-04, T2 lane).** The run's log says T2 needs Michael's merge. The text of the verify question was not in the context, and I could not read the run record to find it. Check the T2 tag and the record in `ledger/agent-harness/agent-harness-2026-11-04` before deciding.
-- **Possible lost T2 work.** At 06:19 `harness gc --all-merged` ran `branch -D` on `harness/agent-harness-2026-11-04` (it was fe535fe) and deleted it from origin. It also removed the worktree. That happened while T2 was unmerged. I tried to check that the T2 commits still exist (tag and main), but the command was denied. Until that is checked, treat it as unconfirmed. If the tag is missing, T2's four features exist only in the reflog.
+- Why the 11-04-2 driver exited at 15:27 on 11-04. Decide whether to continue it or restart it on current main (76 commits behind). Nothing was recorded in `needs`, `INBOX.md` or `harness-log.md`.
 
 ## For the next interactive session
-- No merge conflicts. The one held merge is T2, above.
-- Check why `gc --all-merged` deleted a branch carrying unmerged, verified T2 work. This is a candidate harness bug.
-- Retro backlog, open `proposed` items, most seen first:
-  - `verify-evidence-rows` (seen 7): record per-step evidence rows from verify sessions.
-  - `suite-time-budget` (seen 5): cap or warn on repeat full-suite runs. The suite takes about 10–11 min and took about 1.5 h of the 3.61 h build time.
-  - `suite-flake-retry` (seen 5): re-run failed test files serially before declaring the suite red.
-  - `memlint-before-session-end` (seen 1)
-  - `session-entry-write-guard` (seen 1)
-  - `step-contradiction-lint` (seen 1)
-  - `no-retry-on-denial` (seen 0)
-  - `base-branch-runs-reverted` (seen 0)
-  - `restrict-merge-tree-base` (seen 0)
-  - `slot-copy-overwritten-on-merge` (seen 0)
-- No item that is already `specced` or `queued` was re-raised.
+- Run agent-harness-2026-11-04-2: check `run.log` and the slot-0 uncommitted work. The driver exit is unexplained. Merge conflicts: none reported.
+- Open `proposed` backlog items, most seen first:
+  1. `verify-evidence-rows`, seen 7. Record per-step verify evidence rows.
+  2. `suite-time-budget`, seen 6. Warn or cap on long session suite runs (H1-02b took 828 s).
+  3. `suite-flake-retry`, seen 5. Re-run failed test files serially before declaring the suite red.
+  4. `memlint-before-session-end`, seen 1.
+  5. `session-entry-write-guard`, seen 1.
+  6. `step-contradiction-lint`, seen 1.
+  7. `record-push-retry-noise`, seen 1, new. Collapse record-branch push-failure log lines.
+  8. `no-retry-on-denial`, seen 0.
+  9. `base-branch-runs-reverted`, seen 0.
+  10. `restrict-merge-tree-base`, seen 0.
+  11. `slot-copy-overwritten-on-merge`, seen 0.
+- Nothing is `specced` or `queued` and was re-raised.
