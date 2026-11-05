@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes } from "../../lib/summary.mjs";
+import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
@@ -157,4 +157,47 @@ test("summary.mjs: suiteRuns counts the coding rows that carry suite_full, full 
   // a summary.json from before T2-03: no fast, read as 0
   assert.equal(suiteRunsLine({ sessions: 1, full: 2, runs: 3, full_per_session: 2 }), "2 full and 0 fast per coding session (2 full, 0 fast in 1; 3 runs in all)");
   assert.doesNotMatch(report(fx), /Suite runs/);
+});
+
+// ---- fix rounds (decisions/2026-11-04-fix-rounds): the rows counted, the report's row ----
+const fxo = (m, r) => ({ kind: "fix_round", run: "r", milestone: m, round: r, issue: "all", feature: `${m}-fix${r}`, failed_before: ["t1"], files_before: ["t1"] });
+const fxr = (m, r, after) => ({ kind: "fix_result", run: "r", milestone: m, round: r, issue: "all", failed_after: after, fixed: after.length === 0 });
+
+test("fix rounds: fixRounds pairs each fix_result to its fix_round by milestone and round, per milestone in order", () => {
+  assert.deepEqual(fixRounds([]), { opened: 0, fixed: 0, by_milestone: {} });
+  const rows = [{ kind: "coding", feature: "A" }, fxo("M1", 1), fxr("M1", 1, []), fxo("M2", 1), fxr("M2", 1, ["t3"])];
+  assert.deepEqual(fixRounds(rows), { opened: 2, fixed: 1, by_milestone: { M1: { opened: 1, fixed: 1 }, M2: { opened: 1, fixed: 0 } } });
+  // round 2's green is no verdict on round 1; an open round (no result yet) is opened, not fixed; a result with no round counts nothing
+  const two = [fxo("M1", 1), fxr("M1", 1, ["t3"]), fxo("M1", 2), fxr("M1", 2, []), fxo("M2", 1), fxr("M3", 1, [])];
+  assert.deepEqual(fixRounds(two), { opened: 3, fixed: 1, by_milestone: { M1: { opened: 2, fixed: 1 }, M2: { opened: 1, fixed: 0 } } });
+  assert.equal(Object.keys(fixRounds(two).by_milestone).join(), "M1,M2");
+});
+
+test("fix rounds: the report's Fix rounds row comes after Flakes (opened · fixed, per milestone), 0 for none, no row for a summary without the key", () => {
+  const fx = { ...fixture(), flakes: { count: 0, names: {} } }, after = s => { const { i } = rowOf(s, "| Flakes | "); return report(s).split("\n")[i + 1]; };
+  const fr = fixRounds([fxo("M1", 1), fxr("M1", 1, []), fxo("M2", 1), fxr("M2", 1, ["t3"])]);
+  assert.equal(fixRoundsLine(fr), "2 opened · 1 fixed (M1 1 of 1, M2 0 of 1)");
+  assert.equal(after({ ...fx, fix_rounds: fr }), "| Fix rounds | 2 opened · 1 fixed (M1 1 of 1, M2 0 of 1) |");
+  assert.equal(after({ ...fx, fix_rounds: fixRounds([]) }), "| Fix rounds | 0 |");
+  assert.equal(after({ ...fx, fix_rounds: fixRounds([fxo("M1", 1), fxr("M1", 1, ["t3"]), fxo("M1", 2), fxr("M1", 2, ["t3"])]) }), "| Fix rounds | 2 opened · 0 fixed (M1 0 of 2) |");
+  assert.doesNotMatch(report(fx), /Fix rounds/);
+  assert.match(after(fx), /^\| Suite runs \|/);   // as before, for a summary from before fix rounds
+});
+
+test("fix rounds: build adds fix_rounds from metrics.jsonl and counts neither row as a session, a role or a cost; Spend by role lists fix", () => {
+  const d = mkdtempSync(join(tmpdir(), "fxs-")), wt = join(d, "p", "w"), rec = join(wt, ".harness/runs/r"), st = join(d, "state");
+  try {
+    mkdirSync(rec, { recursive: true }); mkdirSync(st);
+    writeFileSync(join(rec, "feature_list.json"), JSON.stringify({ features: [{ id: "A", milestone: "M1", kind: "build", passes: true },
+      { id: "M1-fix1", milestone: "M1", kind: "fix", passes: true }] }));
+    writeFileSync(join(rec, "metrics.jsonl"), [{ kind: "coding", role: "build", feature: "A", model: "opus", passes: true, cost_usd: 1, turns: 12, wall_s: 60 }, fxo("M1", 1),
+      { kind: "coding", role: "fix", feature: "M1-fix1", model: "opus", passes: true, cost_usd: 0.5, turns: 12, wall_s: 60 }, fxr("M1", 1, [])].map(r => JSON.stringify(r) + "\n").join(""));
+    const s = build(wt, "r", st);
+    assert.deepEqual(s.fix_rounds, { opened: 1, fixed: 1, by_milestone: { M1: { opened: 1, fixed: 1 } } });
+    assert.deepEqual([s.sessions.total, s.cost.by_role, s.cost.by_model, Object.keys(s.time.by_role_h)], [2, { build: 1, fix: 0.5 }, { opus: 1.5 }, ["build", "fix"]]);
+    assert.equal(s.features_detail[1].kind, "fix");
+    assert.equal(rowOf(s, "| Spend by role | ").row, "| Spend by role | build $1.00 · fix $0.50 · manager (the bash driver) $0.00 |");
+    assert.equal(rowOf(s, "| Fix rounds | ").row, "| Fix rounds | 1 opened · 1 fixed (M1 1 of 1) |");
+    assert.deepEqual(build("/nonexistent/p/w", "r", "/nonexistent/s").fix_rounds, { opened: 0, fixed: 0, by_milestone: {} });
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });

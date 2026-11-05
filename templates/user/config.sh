@@ -32,6 +32,8 @@
 # LANE_REBASE=suite                  # main moved under a verified lane: suite = disjoint files re-tag on a green suite;
 #                                    #     verify = a verify session every time
 # MAX_REBASE_ROUNDS=1                # verify rounds a re-based lane gets before it needs you
+# MAX_FIX_ROUNDS=2                   # a verify whose full suite is red opens a fix round (a fix feature, one session's
+#                                    #     work, then the verify again): this many per milestone, then it needs you; 0 = at once
 # CONFLICTS=resolve                  # a lane's merge conflicts with main: resolve = a resolve session merges it, then a
 #                                    #     verify round on that tree before it merges; michael = it needs you, as before
 # RESOLVE_MODEL=opus                 # the resolve session's model
@@ -41,7 +43,7 @@
 # MAX_RESOLVES=3                     # resolve sessions per milestone per run; past them a conflict needs you
 # RECORD_PR=end                      # the run record's own PR, opened when the run ends; off = none
 # HOURS=                             # a run's end time: empty or 0 none; a whole number, that many hours (anything else is refused)
-#                                    #     With none, what still bounds a run: MAX_SESSIONS, MAX_ATTEMPTS, MAX_VERIFY_ROUNDS, MAX_REBASE_ROUNDS, MAX_RESOLVES,
+#                                    #     With none, what still bounds a run: MAX_SESSIONS, MAX_ATTEMPTS, MAX_VERIFY_ROUNDS, MAX_FIX_ROUNDS, MAX_REBASE_ROUNDS, MAX_RESOLVES,
 #                                    #     MAX_LIMIT_HITS and the limit waits, WEEKLY_STOP_AT, AUTO_CONTINUE_MAX, SESSION_TIMEOUT, SESSION_BUDGET_USD,
 #                                    #     and your stop, pause and --until
 # ORIGIN_WAITS="5 15 30 60 120"      # seconds between the tries of a merge's fetch, push or gh call when origin fails

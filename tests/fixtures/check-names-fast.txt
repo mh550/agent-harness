@@ -149,6 +149,17 @@ fast gate: with no fast command, --fast runs the suite bare, writes green-<key> 
 fast gate: with no fast command, the next --fast call is the full form's cached line; rows full then cached
 features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
 features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
+fix rounds: build adds fix_rounds from metrics.jsonl and counts neither row as a session, a role or a cost; Spend by role lists fix
+fix rounds: fixFeature builds <m>-fix<r> after the milestone's last feature, kind fix, issue, round, the names, files and out, three steps, not passing
+fix rounds: fixRound is the row at a round's open and fixResult the next verify's suite verdict, fixed exactly when nothing failed
+fix rounds: fixRounds pairs each fix_result to its fix_round by milestone and round, per milestone in order
+fix rounds: repairList with the appended feature in before keeps it, and reverts a session that removes or edits it
+fix rounds: schedule offers the fix feature in its lane once the milestone's last feature passes, and nothing waits on it
+fix rounds: the CLI fix-add appends the feature to the list file and prints its id and the failing words; a second add of the id is refused
+fix rounds: the CLI fix-round appends one row per call to a metrics.jsonl path; isSession is false for both kinds and summary counts neither
+fix rounds: the description names up to five failing checks, then +n; a red with no files is the whole suite
+fix rounds: the report's Fix rounds row comes after Flakes (opened · fixed, per milestone), 0 for none, no row for a summary without the key
+fix rounds: the step lint prints nothing for a fix feature, kindOf returns fix, and it is no build or review to the review rules
 gc units: --dry-run with units of another project's runs (live and ended) prints no ? line and no line naming them
 gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
 gotchasDiff: added, edited, deleted and no section

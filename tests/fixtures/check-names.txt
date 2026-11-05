@@ -345,6 +345,23 @@ finish keeps check-last.out and init.out in the state dir and deletes the run's 
 finish opens usage_limit (limit, warn, no priority) for a usage-limit end; needs.md committed; the run-end title kept
 finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
 finish: record_pr runs before ledger, so the ledger copy of harness-log.md holds the record PR note
+fix rounds config: MAX_FIX_ROUNDS=2 by default, commented in the user template and among what bounds a run
+fix rounds stub suite: --tier fast is red on BROKEN or BROKEN-FAST, green on the slow markers
+fix rounds stub suite: STUB_FLAKE_ONCE=1 makes the first bare call after flake-armed red on t2 and removes it; a fast call, a subset or a call without the flag leaves it
+fix rounds stub suite: a subset is red only on its own file's marker (t1 on BROKEN-SLOW, t3 on BROKEN-SLOW2)
+fix rounds stub suite: bare is red on BROKEN and BROKEN-SLOW (FAIL t1, HARNESS_FAILED=t1) and on BROKEN-SLOW2 (FAIL t3, HARNESS_FAILED=t3), green with none
+fix rounds stub suite: gate-green-once makes the next subset green once and goes; a bare call leaves it and stays red
+fix rounds: build adds fix_rounds from metrics.jsonl and counts neither row as a session, a role or a cost; Spend by role lists fix
+fix rounds: fixFeature builds <m>-fix<r> after the milestone's last feature, kind fix, issue, round, the names, files and out, three steps, not passing
+fix rounds: fixRound is the row at a round's open and fixResult the next verify's suite verdict, fixed exactly when nothing failed
+fix rounds: fixRounds pairs each fix_result to its fix_round by milestone and round, per milestone in order
+fix rounds: repairList with the appended feature in before keeps it, and reverts a session that removes or edits it
+fix rounds: schedule offers the fix feature in its lane once the milestone's last feature passes, and nothing waits on it
+fix rounds: the CLI fix-add appends the feature to the list file and prints its id and the failing words; a second add of the id is refused
+fix rounds: the CLI fix-round appends one row per call to a metrics.jsonl path; isSession is false for both kinds and summary counts neither
+fix rounds: the description names up to five failing checks, then +n; a red with no files is the whole suite
+fix rounds: the report's Fix rounds row comes after Flakes (opened · fixed, per milestone), 0 for none, no row for a summary without the key
+fix rounds: the step lint prints nothing for a fix feature, kindOf returns fix, and it is no build or review to the review rules
 flakes run: a flake on finish's own suite is noted too, and summary.json counts it once
 flakes run: a red every time still un-passes C with today's note after a rerun (the invariant)
 flakes run: a run with no flake writes no flaky: line and no flakes.jsonl

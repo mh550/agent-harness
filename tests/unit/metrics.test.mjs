@@ -5,7 +5,8 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { outcome, events, orientation as or, resumeRow, metricsRow } from "../../lib/metrics.mjs";
+import { execFileSync } from "node:child_process";
+import { outcome, events, orientation as or, resumeRow, metricsRow, fixRound, fixResult, isSession } from "../../lib/metrics.mjs";
 
 const fixture = name => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
 
@@ -86,4 +87,34 @@ test("metrics.mjs: metricsRow writes suite_runs, suite_full and suite_fast as nu
   assert.deepEqual(k(r([...a, "", "", ""])), [null, null, null]);
   assert.deepEqual(k(r(a)), [null, null, null]);
   assert.equal(Object.keys(r(a)).slice(-3).join(), "suite_runs,suite_full,suite_fast");
+});
+
+// ---- fix rounds (decisions/2026-11-04-fix-rounds): the two rows a round writes, no session ----
+test("fix rounds: fixRound is the row at a round's open and fixResult the next verify's suite verdict, fixed exactly when nothing failed", () => {
+  const o = fixRound({ run: "r", milestone: "M1", round: "2", issue: "all", feature: "M1-fix2", names: ["t3"], files: ["t3"] });
+  assert.deepEqual({ ...o, at: null }, { kind: "fix_round", run: "r", milestone: "M1", round: 2, issue: "all", feature: "M1-fix2", failed_before: ["t3"], files_before: ["t3"], at: null });
+  assert.equal(Object.keys(o).join(), "kind,run,milestone,round,issue,feature,failed_before,files_before,at");
+  assert.match(o.at, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
+  const red = fixResult({ run: "r", milestone: "M1", round: 2, issue: "all", names: ["t3", "t4"] }), green = fixResult({ run: "r", milestone: "M1", round: 2, issue: "all", names: [] });
+  assert.deepEqual({ ...red, at: null }, { kind: "fix_result", run: "r", milestone: "M1", round: 2, issue: "all", failed_after: ["t3", "t4"], fixed: false, at: null });
+  assert.equal(Object.keys(red).join(), "kind,run,milestone,round,issue,failed_after,fixed,at");
+  assert.deepEqual([green.failed_after, green.fixed], [[], true]);
+});
+
+test("fix rounds: the CLI fix-round appends one row per call to a metrics.jsonl path; isSession is false for both kinds and summary counts neither", () => {
+  const d = mkdtempSync(join(tmpdir(), "fxm-")), p = join(d, "metrics.jsonl"), M = fileURLToPath(new URL("../../lib/metrics.mjs", import.meta.url));
+  const run = (...a) => execFileSync(process.execPath, [M, ...a], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  try {
+    writeFileSync(p, JSON.stringify({ kind: "coding", role: "build", feature: "A", model: "opus", passes: true, cost_usd: 0.25, turns: 12, wall_s: 60 }) + "\n");
+    run("fix-round", p, "open", "r", "M1", "1", "all", "M1-fix1", "t1", "a check (x)", "--", "t1", "59-needs");
+    run("fix-round", p, "result", "r", "M1", "1", "all", "t3");
+    run("fix-round", p, "result", "r", "M1", "2", "all");
+    const rows = readFileSync(p, "utf8").trim().split("\n").map(l => JSON.parse(l));
+    assert.equal(rows.length, 4);
+    assert.deepEqual([rows[1].kind, rows[1].round, rows[1].feature, rows[1].failed_before, rows[1].files_before], ["fix_round", 1, "M1-fix1", ["t1", "a check (x)"], ["t1", "59-needs"]]);
+    assert.deepEqual([rows[2].kind, rows[2].failed_after, rows[2].fixed, rows[3].failed_after, rows[3].fixed], ["fix_result", ["t3"], false, [], true]);
+    assert.deepEqual(rows.map(isSession), [true, false, false, false]);
+    assert.equal(run("summary", p), "1 sessions (1 real) · 1 features passed · $0.25 · 0.0 h · by kind: coding 1 ($0.25) · by model: opus 1 ($0.25)\n");
+    assert.throws(() => run("fix-round", p, "nope", "r", "M1", "1", "all"), /usage: metrics\.mjs fix-round/);
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });

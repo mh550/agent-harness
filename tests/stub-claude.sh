@@ -15,6 +15,11 @@
 # red bare, green under --tier fast: a slow-tier red, 87-fast-gate-run); STUB_FAST_RED=<id>: its first commits
 # BROKEN-FAST (red under --tier fast), its later sessions remove it. Every coding session appends `session <id> <n>`
 # to the run's scratch suite-args.log when the log exists (a project suite that logs its calls there).
+# STUB_FIX=rename|fix|none (unset: none): a coding session of a fix feature (an id matching *-fix[0-9]*, tests/checks/90-fix-rounds.sh)
+# moves BROKEN-SLOW to BROKEN-SLOW2 (rename: the red moves to another check), removes both (fix) or leaves them (none).
+# The second fix session of a run is always none; under rename it also touches gate-green-once in the run's scratch, so
+# its gate's subset is green once while the tree stays red. STUB_FLAKE_ONCE=1: B's first coding session touches
+# flake-armed in the run's scratch (that suite's next bare call is red once: a flake at the verify).
 # STUB_PHONE_STOP=1|<why>: the initializer pushes INBOX.md line 1 `status: stop` (1) or `status: stop <why>` from a
 # clone of the origin, as Michael's phone would. STUB_CLI_STOP=-|<why>: it runs `harness stop <run>` (-) or
 # `harness stop <run> --why "<why>"` (R7). STUB_CLI_REQUEST=<brief>: then `harness queue add --continue <run> --brief
@@ -290,6 +295,12 @@ JSON
     [[ ${STUB_FIX_BROKEN:-} == "$id" && $n == 1 ]] && rm -f BROKEN
     if [[ ${STUB_SLOW_RED:-} == "$id" && $n == 1 ]]; then touch BROKEN-SLOW; fi   # the slow tier red, the fast green
     if [[ ${STUB_FAST_RED:-} == "$id" ]]; then if [[ $n == 1 ]]; then touch BROKEN-FAST; else rm -f BROKEN-FAST; fi; fi
+    if [[ $id == *-fix[0-9]* ]]; then   # a fix round's session: the run's second changes no code, whatever STUB_FIX says
+      fx=${STUB_FIX:-none}
+      if (( $(count fix) > 1 )); then if [[ $fx == rename ]]; then touch "$RS/gate-green-once"; fi; fx=none; fi
+      case $fx in rename) if [[ -f BROKEN-SLOW ]]; then mv BROKEN-SLOW BROKEN-SLOW2; fi ;; fix) rm -f BROKEN-SLOW BROKEN-SLOW2 ;; esac
+    fi
+    if [[ ${STUB_FLAKE_ONCE:-} == 1 && $id == B && $n == 1 ]]; then touch "$RS/flake-armed"; fi   # the verify's bare call meets it
     echo "$id $n" > "work-$id.txt"
     # set +e: the stub project's subset (`test ! -f BROKEN x`) exits 2, and set -e holds in a list's last command
     [[ ${STUB_RUN_SUITE:-} == "$id" && $n == 1 ]] && ( set +e; "$HARNESS_CHECK"; "$HARNESS_CHECK"; "$HARNESS_CHECK" x; true ) > /dev/null 2>&1
