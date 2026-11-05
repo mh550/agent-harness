@@ -130,7 +130,7 @@ helper_request() {
 # SIGPIPE (no file here traps PIPE, and `trap -` restores what it was). A failed read or a reply that doesn't parse ends
 # the helper: what's left in its pipe can't be trusted. rc 64 declines, with the helper still good.
 helper_exchange() {
-  local LC_ALL=C hx_t=${HARNESS_HELPER_TIMEOUT:-120} hx_w=${HELPER[1]:-} hx_r=${HELPER[0]:-} hx_h hx_rest hx_rc hx_n hx_e
+  local LC_ALL=C hx_t=${HARNESS_HELPER_TIMEOUT:-120} hx_w=${HELPER[1]:-} hx_r=${HELPER[0]:-} hx_h hx_rc hx_n hx_e
   (( ${#2} < 60000 )) || return 1
   trap '' PIPE
   { printf '%s\n' "$2" >&"$hx_w"; } 2> /dev/null; hx_e=$?
@@ -139,10 +139,9 @@ helper_exchange() {
   { IFS= read -r -t "$hx_t" -u "$hx_r" hx_h; } 2> /dev/null; hx_e=$?
   (( hx_e > 128 )) && { helper_failed "no reply in $hx_t s"; return 1; }
   (( hx_e == 0 )) || { helper_failed "the helper went away"; return 1; }
-  [[ $hx_h == +([0-9])\ +([0-9])\ +([0-9]) ]] || { helper_failed "bad header: ${hx_h:0:60}"; return 1; }
-  hx_rest=${hx_h#* } hx_rc=${hx_rest%% *} hx_n=${hx_rest#* }
-  [[ ${hx_h%% *} == "$1" ]] || { helper_failed "wrong id: ${hx_h%% *} for $1"; return 1; }
-  [[ ${#hx_rc} -le 3 ]] && (( 10#$hx_rc <= 255 )) || { helper_failed "bad header: ${hx_h:0:60}"; return 1; }
+  [[ $hx_h =~ ^([0-9]+)\ ([0-9]{1,3})\ ([0-9]+)$ ]] && (( 10#${BASH_REMATCH[2]} <= 255 )) || { helper_failed "bad header: ${hx_h:0:60}"; return 1; }
+  hx_rc=${BASH_REMATCH[2]} hx_n=${BASH_REMATCH[3]}
+  [[ ${BASH_REMATCH[1]} == "$1" ]] || { helper_failed "wrong id: ${BASH_REMATCH[1]} for $1"; return 1; }
   ASK_OUT=""
   if [[ $hx_n != 0 ]]; then
     { IFS= read -r -N "$hx_n" -t "$hx_t" -u "$hx_r" ASK_OUT; } 2> /dev/null; hx_e=$?
@@ -579,7 +578,7 @@ entry_resume() {
   ENTRY_RESUMED=""
   [[ $1 == coding || $1 == verify || $1 == init ]] || return 0
   errs=$(ask entries.mjs validate "$RUN_DIR/entry.json" "$2" "$1" 2>&1)
-  (( $? == 1 )) || return 0   # valid, or only a cap over (2: the ingest trims it)
+  (( $? == 1 )) || return 0   # valid, only a cap over (2: the ingest trims it), or unreadable (70: the ingest's failure takes it)
   MET limit "$3" "$S_WALL" "$S_EXIT" > /dev/null && return 0   # refused: the limit would refuse the resume too
   sid=$(MET session-id "$3" 2> /dev/null) || { note "$5: no session id in its transcript; not resumed"; return 0; }
   [[ $errs == missing ]] && errs="It is missing." || errs="The entry check printed:"$'\n\n'$(sed 's/^/    /' <<< "$errs")

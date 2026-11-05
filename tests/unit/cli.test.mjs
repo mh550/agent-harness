@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { captured, isMain, readStdin } from "../../lib/cli.mjs";
-import { mainOf } from "./cli-same.mjs";
+import { mainOf, sameAsCli } from "./cli-same.mjs";
 
 const url = name => new URL(`../../lib/${name}`, import.meta.url).href;
 const SERVED = ["features", "metrics", "treekey", "testcount", "entries", "inbox", "memlint", "render", "needs", "summary", "notify"].map(s => `${s}.mjs`);
@@ -104,11 +104,41 @@ test("cli.mjs: importing a served script runs nothing (no output, no exit), what
 test("cli.mjs: a served script exports main, reads process.argv, exit, cwd and stdout nowhere, fd 0 nowhere, and has no module-level let or var", async () => {
   for (const s of SERVED) {
     const text = readFileSync(fileURLToPath(url(s)), "utf8");
-    assert.equal(text.match(/process[.](argv|exit|cwd|stdout)|console[.]log|readFileSync[(]0/)?.[0], undefined, s);
+    assert.equal(text.match(/process[.](argv|exit|cwd|chdir|umask|stdout|stdin)|console[.]log|readFileSync[(]0|\/dev\/stdin/)?.[0], undefined, s);
     assert.equal(text.match(/^(let|var) .*$/m)?.[0], undefined, s);
     assert.match(text, /^if \(isMain\(import\.meta\.url\)\) runCli\(main\);$/m, s);
     assert.equal(typeof (await import(url(s))).main, "function", s);
   }
+});
+
+test("cli.mjs: the modules a served script imports have no module-level let or var", () => {
+  for (const s of ["cli.mjs", "view.mjs", "overlap.mjs", "parked.mjs"]) assert.equal(readFileSync(fileURLToPath(url(s)), "utf8").match(/^(let|var) .*$/m)?.[0], undefined, s);
+});
+
+test("cli.mjs: captured: what say prints holds no NUL, so no writer's answer is declined after it wrote; put's bytes keep theirs", () => {
+  const said = captured((_, __, say) => { say("a\0b", "c\0"); say("%s", "d\0e"); return 3; })([], {});
+  assert.deepEqual(said, { rc: 3, out: "ab c\nde\n" });
+  assert.equal(captured((_, __, ___, put) => { put("a\0b\0"); return 0; })([], {}).out, "a\0b\0");
+});
+
+test("cli.mjs: a served main keeps nothing between calls in one process: each answers from the files as they are now", async () => {
+  const d = mkdtempSync(join(tmpdir(), "cli-keeps-")), f = n => join(d, n), put = (n, s) => writeFileSync(f(n), s);
+  const list = n => JSON.stringify({ features: [{ id: "A", milestone: "M1", description: "d", steps: ["x"], passes: n > 0 }, { id: "B", milestone: "M1", description: "d", steps: ["x"], passes: n > 1 }] });
+  const cases = [
+    ["features.mjs", ["summary", f("l")], "l", list(1), list(2)],
+    ["testcount.mjs", [f("o")], "o", "3 passed\n", "4 passed\n"],
+    ["inbox.mjs", ["answers", f("i")], "i", "status: run\n\n## Answers\nyes\n", "status: run\n\n## Answers\nno\n"],
+    ["metrics.mjs", ["cost", f("m")], "m", '{"type":"result","total_cost_usd":1}\n', '{"type":"result","total_cost_usd":2}\n'],
+    ["render.mjs", [f("t")], "t", "one\n", "two\n"],
+  ];
+  try {
+    for (const [s, argv, file, a, b] of cases) {
+      put(file, a); const first = await mainOf(s, argv);
+      put(file, b); const second = await mainOf(s, argv);
+      assert.notEqual(second.out, first.out, s);
+      await sameAsCli(s, argv);
+    }
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
 test("cli.mjs: main of a served script with a bad argument never exits the process: the usage is rc 2", async () => {

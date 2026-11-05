@@ -128,6 +128,7 @@ test("treekey.mjs: the key equals its definition after each change to a tree: ed
     ["a file whose only change is its mode", () => chmodSync(at("mode"), 0o755)],
     ["a file touched with unchanged content", () => utimesSync(at("touched"), new Date(), new Date(Date.now() + 5000))],
     ["a same-size edit with its mtime put back", () => { const { atime, mtime } = statSync(at("sameSize")); writeFileSync(at("sameSize"), "SAMESIZE\n"); utimesSync(at("sameSize"), atime, mtime); }],
+    ["an edit in the second of its add, the same size", () => { put("racy", "r1\n"); git("add", "racy"); git("commit", "-qm", "r"); put("racy", "r2\n"); }],
     ["a file under .harness/runs", () => put(".harness/runs/r/entry", "r2\n")],
     ["an assume-unchanged file edited", () => { git("update-index", "--assume-unchanged", "valid"); put("valid", "edited\n"); }],
     ["an assume-unchanged file deleted", () => { git("update-index", "--assume-unchanged", "validGone"); rmSync(at("validGone")); }],
@@ -145,6 +146,19 @@ test("treekey.mjs: the key equals its definition after each change to a tree: ed
   git("add", "c"); git("commit", "-qm", "z"); assert.equal(main([], { cwd, env: plain() }).out, dirty); assert.notEqual(dirty, before);
   // an ignore list
   same("HARNESS_CHECK_KEY_IGNORE", { HARNESS_CHECK_KEY_IGNORE: "docs/plans" }, [".harness/runs", "docs/plans"]);
+}));
+
+test("treekey.mjs: a name with a quote or a newline: the definition's key from the index, and edited never a stale key: its own, or the throw check.sh reads as a full run", () => aRepo(async (cwd, git, put) => {
+  const { main } = await import("../../lib/treekey.mjs");
+  const key = () => main([], { cwd, env: plain() }).out;
+  put("plain", "p\n"); put('qu"ote', "q\n"); put("new\nline", "n\n"); git("add", "-A"); git("commit", "-qm", "x");
+  const clean = key();
+  assert.equal(clean, defined(cwd).full + "\n", "clean: the index's blobs");
+  put('qu"ote', "Q\n"); const quote = key();
+  assert.notEqual(quote, clean, "a quote's edit moves the key"); assert.equal(quote, defined(cwd).full + "\n");
+  put("new\nline", "N\n");
+  let edited = null; try { edited = key(); } catch { /* no key: the full run, no marker */ }
+  assert.ok(edited === null || edited === defined(cwd).full + "\n", `a newline's edit is no stale key: ${edited}`);
 }));
 
 test("treekey.mjs: --partial's full key, reduced key and blob lines equal the definition's, a mapped file clean, edited, absent and deleted", () => aRepo(async (cwd, git, put) => {

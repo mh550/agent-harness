@@ -1,7 +1,7 @@
 # The resident helper: one warm node process per driver and lane answers the `.mjs` questions over a coproc
 
 *(2026-11-05, run `agent-harness-2026-11-05`, milestone H1; spec `docs/specs/2026-11-03-resident-helper.md`; plan
-`docs/plans/2026-11-03-test-suite-redesign.md` phase 2; begun by H1-01, each later feature adds its part)*
+`docs/plans/2026-11-03-test-suite-redesign.md` phase 2; the review `docs/plans/2026-11-05-H1-review.md`)*
 
 ## Finding
 
@@ -47,6 +47,8 @@ piped answer at 65536 bytes when the reader isn't reading yet (`node big.mjs | (
   helper gives (rc 70, no `out`). Before, `summary trends` or `needs sweep` could print some lines and then die.
 - **`io` is `{ cwd, env, stdin, isTTY, columns }`**; `runCli`'s are lazy getters, so a script that asks nothing starts no
   stdout stream and a deleted cwd stops only a `main` that reads it, as today.
+- **What `say` prints holds no NUL**, *default* (the H1 review): a writer echoing a session's `\u0000` was declined by the
+  helper after it wrote and run again by the spawn. `$( )` drops a NUL anyway; `put` keeps its bytes.
 - **The cwd comes from `io.cwd`**: `treekey.mjs`'s git, its stats and its `existsSync`. No other served `main` reads the
   cwd by name; a relative path in its arguments still resolves against the process's (H1-02's to answer).
 - **Environment is read at call time from `io.env ?? process.env`**, *default*: `HARNESS_CHECK_KEY_IGNORE`,
@@ -94,8 +96,8 @@ piped answer at 65536 bytes when the reader isn't reading yet (`node big.mjs | (
 - **Length-prefixed framing**, *default*: `<id> <rc> <bytes>\n` and exactly `<bytes>` bytes, read by `read -r -N` under
   a local `LC_ALL=C`; no decoder process, and trailing newlines survive (`$( )` strips them as it does today).
 - **A NUL in an answer: the helper declines it (rc 64) and `ask` spawns**, *default*: `read` drops a NUL, so no framing
-  gets one into a bash variable. `main` has run by then and the spawn runs it again: the one served answer with NULs,
-  `needs.mjs fields`, only reads.
+  gets one into a bash variable. `main` has run by then and the spawn runs it again, so such an answer must come from a
+  reader: only `put` can hold one (`say` drops them), and every `put` reads (`needs.mjs fields`, a `pack`, a prompt, a view).
 - **rc 64 declines**, with no bytes: an unknown script, a malformed line, a failed `import`, a cwd that is gone, a
   stdin-fed call, a NUL. The caller spawns and the helper stays good. No served `main` returns 64; one that did would
   be spawned too, so the answer would still be the spawn's.
@@ -199,6 +201,9 @@ a real suite's output still spawns one, after the suite). A session's `check.sh`
 A call on a pipeline's side or in a `( )` spawns whatever it names (`metrics.mjs final`, `summary.mjs ledger-line` in a
 stub start): one start each, left as they are.
 
+**`helper restarted` is 0 for a run that ended normally.** A TERM or HUP to the driver's whole process group takes its
+helper too, so the EXIT trap's first `ask` writes one such line and spawns: true, harmless, only at an abnormal end.
+
 **A stub start's node starts: 336 helper off, 20 on**, 2026-11-05: 3 helpers, 10 of the stub's `node -e`, `overlap`, 2 of
 `deploy`, `backlog`, `memlint` under its timeout, `metrics final`, `ledger-line`.
 
@@ -226,7 +231,8 @@ have turned it into a key of that subdirectory's files alone, which a marker cou
 every row is hashed, the old path exactly.
 
 **Trusting the index is trusting `git status`.** A same-size edit with its mtime put back is still caught (ctime; a test).
-What `core.trustctime=false` would miss, `git status` misses too.
+What `core.trustctime=false` or `core.checkStat=minimal` would miss, `git status` misses too, and so now does the key, where
+the old full hash caught it: a stale green on such a config, with such an edit. No harness path sets either, *default*: left.
 
 **A file committed un-normalized has a different key from before, once**, *default*, left as it is: under `text=auto` a
 CRLF blob in the index stays that blob (`git status` calls it clean), where the old hash-object normalized it. The new key
@@ -253,11 +259,28 @@ calls per large file.
 
 ## Rejected
 
-Filled in by H1-05 from the spec's list. For H1-01: hooking `console.log` (above); the spec's inline tail in each script
-(it cuts a pipe at 64 KB, and eleven copies of the fix); top-level `await` in the tail (`runCli` returns a promise
-nobody needs to wait on, so no served module is an async module). For H1-02: the spec's `$$` and counter id (above); a
-table in `ask` of the subcommands that read stdin (a new one would silently read as a throw; `NoStdin` needs no table);
-`mapfile < <(compgen -e)` (a fork, 1.7 ms against 0.2 ms through the file). For H1-03: `git update-index --refresh` before
-the listing (it ends the racy case, but a question would then write the index and take `index.lock`, which can fail a
-session's `git add`); the spec's separate `--stage` and `--modified` calls (a second git for what one prints); `git diff-files`
-for the stale rows (a second git, and the same racy read: 94 ms on the fresh checkout).
+- **A socket or FIFO server shared by the driver and its lanes**: one process to supervise, restart and version across
+  lanes, and a protocol for several askers at once. The per-shell coproc has no shared state, has one asker at a time by
+  its lock, and dies with its shell. It is also why a session's `check.sh` has no helper.
+- **JSON replies decoded by `jq`**: a process per answer (a `jq` is 1 ms, a `base64` another), the cost the helper exists
+  to remove. The length prefix needs no decoder and keeps trailing newlines.
+- **Hooking `console.log`**: a library's stray write would join the answer; `main` returns its bytes instead.
+- **Serving `bin/harness` commands**: one question per process (the suite's `cli` class, 162 of file 13's starts), and a
+  helper there would live for one answer.
+- **A helper for `check.sh` under a session**: a session's `check.sh` has no shell to hold a coproc across calls, so it
+  would need the shared server above. Its two starts stay; under a lane the parent asks first and hands the key down.
+- **The Rust port**: one static binary for the hot path (`treekey`, `testcount`, the read-only `features` and `metrics`:
+  ~820 lines) starts in 1.2 ms against node's 27–41 ms; cold build 3.6 s debug, 4.2 s release with `serde_json`,
+  incremental 0.14–0.55 s; a 2 GB toolchain (`findings-and-research/2026-11-03-redesign-baseline.md` §4). Michael chose
+  node on 2026-11-03 (the plan's question 3). The numbers stay in the spec's §Fallback; H1-02's lifecycle checks went
+  green, so its condition never arose.
+- **`node --snapshot-blob`**: unmeasured; it shortens a start, and here the start is what goes away.
+- **H1-01**: the spec's inline tail in each script (it cuts a pipe at 64 KB, and eleven copies of the fix); top-level
+  `await` in the tail (`runCli` returns a promise nobody needs to wait on, so no served module is an async module).
+- **H1-02**: the spec's `$$` and counter id (above); a table in `ask` of the subcommands that read stdin (a new one would
+  silently read as a throw; `NoStdin` needs no table); `mapfile < <(compgen -e)` (a fork, 1.7 ms against 0.2 ms through
+  the file).
+- **H1-03**: `git update-index --refresh` before the listing (it ends the racy case, but a question would then write the
+  index and take `index.lock`, which can fail a session's `git add`); the spec's separate `--stage` and `--modified` calls
+  (a second git for what one prints); `git diff-files` for the stale rows (a second git, and the same racy read: 94 ms on
+  the fresh checkout).

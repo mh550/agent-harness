@@ -396,6 +396,22 @@ check "lib/helper.mjs keeps nothing between requests: the same request after its
   '[[ $(sed -n 2p "$HA/rep") == "$SA" && $(sed -n 4p "$HA/rep") == "$SB" ]] && ! grep -nE "^(let|var) " "$HH/lib/helper.mjs" > /dev/null'
 kill "$hp"; wait "$hp"; hkrc=$?; exec 7>&-
 check "lib/helper.mjs: SIGTERM ends it, a request or none pending" '[[ $hkrc == 143 ]]'
+# a writer's answer can't hold a NUL (its text goes through say): one the helper declined would run it twice (the H1 review)
+for w in on off; do
+  mkdir -p "$HA/nul-$w"; printf '{"feature":"a\\u0000b","kind":"coding","outcome":"passes","summary":"x"}' > "$HA/nul-$w/entry.json"; : > "$HA/nul-$w/none"
+done
+sc nulwriter << 'EOF2'
+helper_begin; ask features.mjs summary "$MD/l1.json" > /dev/null; keep 0   # the helper's own start counted
+HA_D=$MD/alone
+x=$(ask entries.mjs ingest "$HA_D/nul-on" coding F1 s1 opus passes "$HA_D/nul-on/none" "$HA_D/nul-on/none" 2> "$D/nulerr"); echo $? > "$D/nulrc"
+printf %s "$x" > "$D/nulout"; keep 1
+x=$(HARNESS_HELPER=0 ask entries.mjs ingest "$HA_D/nul-off" coding F1 s1 opus passes "$HA_D/nul-off/none" "$HA_D/nul-off/none" 2>> "$D/nulerr"); echo $? > "$D/nulrc0"
+printf %s "$x" > "$D/nulout0"
+EOF2
+NW=$MD/nulwriter
+check "a writer's answer holds no NUL: ask entries.mjs ingest of a feature with a NUL runs once (one journal line, no second start), the spawn's answer and code, no warning from \$( )" \
+  '[[ $(wc -l < "$HA/nul-on/entries.jsonl") == 1 && $(nd nulwriter 0 1) == 0 && $(cat "$NW/nulrc") == 3 && $(cat "$NW/nulrc0") == 3 ]] && cmp -s "$NW/nulout" "$NW/nulout0" \
+    && grep -Fx "invalid (feature: expected F1, got ab)" "$NW/nulout" > /dev/null && [[ ! -s $NW/nulerr ]]'
 check "bash -n lib/record.sh; node --check lib/helper.mjs; helper.mjs has a one-line usage header" \
   'bash -n "$HH/lib/record.sh" && node --check "$HH/lib/helper.mjs" && head -1 "$HH/lib/helper.mjs" | grep -q "^// .*helper"'
 suite_end

@@ -167,6 +167,7 @@ a window of the run's name that never showed a URL is replaced
 a window past the 5 h cap: no session (the next debrief covers it)
 a worktree gc can't remove is logged and the next one still goes; --dry-run removes none
 a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json
+a writer's answer holds no NUL: ask entries.mjs ingest of a feature with a NUL runs once (one journal line, no second start), the spawn's answer and code, no warning from $( )
 after harness stop no helper is left
 after may name a milestone
 after the run's ended line no helper is left
@@ -269,13 +270,16 @@ cli.mjs: a CLI with no answer and a closed stdout still exits its rc
 cli.mjs: a deleted cwd stops only a main that reads it
 cli.mjs: a main that throws prints the message on stderr, nothing on stdout, and exits 70
 cli.mjs: a reader that has gone is no failure: main's rc and an empty stderr
+cli.mjs: a served main keeps nothing between calls in one process: each answers from the files as they are now
 cli.mjs: a served script exports main, reads process.argv, exit, cwd and stdout nowhere, fd 0 nowhere, and has no module-level let or var
 cli.mjs: an answer over a pipe's 64 KB reaches a slow reader whole, with main's rc
 cli.mjs: captured's say prints as console.log does, its write as process.stdout.write does, and rc is the body's
+cli.mjs: captured: what say prints holds no NUL, so no writer's answer is declined after it wrote; put's bytes keep theirs
 cli.mjs: importing a served script runs nothing (no output, no exit), whatever process.argv holds
 cli.mjs: isMain is true only for the process's entry script
 cli.mjs: main of a served script with a bad argument never exits the process: the usage is rc 2
 cli.mjs: readStdin reads io's stdin, and an io without one throws instead of reading fd 0
+cli.mjs: the modules a served script imports have no module-level let or var
 cli.mjs: the tail awaits a main that returns a promise
 cli.mjs: the tail gives main the process's cwd, environment and stdin
 cli.mjs: the tail writes main's out to stdout and exits its rc
@@ -1357,6 +1361,7 @@ treekey.mjs exports ignoreList, parseMap, treeKey, partialKeys and mapNames, pur
 treekey.mjs parseListing: a clean regular file keeps its index blob; a stale, unmerged, symlink, gitlink, assume-unchanged, skip-worktree or untracked row has none; one row per index entry
 treekey.mjs: --partial's full key, reduced key and blob lines equal the definition's, a mapped file clean, edited, absent and deleted
 treekey.mjs: a clean tree starts one git and no hash-object; a dirty one a second, once, for whatever number of files
+treekey.mjs: a name with a quote or a newline: the definition's key from the index, and edited never a stale key: its own, or the throw check.sh reads as a full run
 treekey.mjs: an unmerged path keeps its one row per stage and the worktree's blob, a gitlink is no file, as the definition has them
 treekey.mjs: below the repo's top a clean tree still has no key (the throw check.sh reads as a full run, no marker), as a dirty one
 treekey.mjs: main reads the environment from io.env at call time: two --pathspec answers in one process

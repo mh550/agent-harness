@@ -137,7 +137,7 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     export HARNESS_WT=$(cat "$l/slot") HARNESS_BRANCH=harness-lane/$RUN_ID/${m:-default} HARNESS_SCRATCH=$SCRATCH HARNESS_PORT=$PORT
   fi
   # no driver, so no run clock or attempt: the line says so rather than going blank; the model is the feature's own (no review gate)
-  mdl=$(node "$HARNESS_HOME/lib/features.mjs" model "$(jq -r --arg id "$3" '.features[] | select(.id == $id) | .model // empty' "$RUN_DIR/feature_list.json")")
+  mdl=$(ask features.mjs model "$(jq -r --arg id "$3" '.features[] | select(.id == $id) | .model // empty' "$RUN_DIR/feature_list.json")")
   HARNESS_CLOCK=${HARNESS_CLOCK:-"Clock: $(date '+%F %H:%M') · outside a run (no deadline, budget or attempt)"} HARNESS_FEATURE=$3 HARNESS_MILESTONE=$m \
     HARNESS_MODEL=${HARNESS_MODEL:-$mdl} prompt_render "$2"
 fi
