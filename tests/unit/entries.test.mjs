@@ -1,6 +1,10 @@
 // lib/entries.mjs: the run's journal (an entry's schema, the trim, progress.md, the context pack).   node --test tests/unit/entries.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync as rd, rmSync, writeFileSync as wr } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
+import { sameAsCli, cli, mainOf } from "./cli-same.mjs";
 import { validate, minimal, normalize, journalEntry, renderProgress, renderArchive, renderEntry, legacyOf, headerOf, pack, reviewFindings, sessionFiles, fillQuestions } from "../../lib/entries.mjs";
 import { evidence } from "../../lib/features.mjs";
 
@@ -340,3 +344,40 @@ test("entries.mjs fill: a question without Files: gets the session's files appen
   assert.ok(md.entry.questions[3].endsWith("Files (harness, from the session): /wt/x"), md.entry.questions[3]);
   assert.deepEqual(sessionFiles([".harness/runs/r/INBOX.md", "lib/a.sh"], [], "/wt"), ["/wt/lib/a.sh"]);
 });
+
+// ---- main(argv, io): the CLI's bytes and exit code (decisions/2026-11-03-resident-helper) ----
+const runDir = fn => {
+  const d = mkdtempSync(join(tmpdir(), "em-"));
+  const entry = { feature: "A1", kind: "coding", outcome: "passes", summary: "did it", at: "2026-11-05 10:00", questions: ["Why?\nFiles: /x/y.md"] };
+  wr(join(d, "entries.jsonl"), JSON.stringify(entry) + "\n");
+  wr(join(d, "feature_list.json"), JSON.stringify({ features: [{ id: "A1", milestone: "A", passes: true }] }));
+  wr(join(d, "INBOX.md"), "status: run\n\n## Answers\nyes\n");
+  wr(join(d, "files"), "lib/a.mjs\n"); wr(join(d, "final"), "Critical 0, Important 2\n");
+  return Promise.resolve(fn(d)).finally(() => rmSync(d, { recursive: true, force: true }));
+};
+
+test("entries.mjs: main gives the CLI's bytes for validate (missing 1, invalid 1, valid 0), pack, session-files, questions and findings", () => runDir(async d => {
+  assert.deepEqual(await sameAsCli("entries.mjs", ["validate", join(d, "missing.json")]), { rc: 1, out: "missing\n" });
+  wr(join(d, "bad.json"), "{");
+  assert.equal((await sameAsCli("entries.mjs", ["validate", join(d, "bad.json")])).rc, 1);
+  wr(join(d, "good.json"), JSON.stringify({ feature: "A1", kind: "coding", outcome: "passes", summary: "ok" }));
+  assert.equal((await sameAsCli("entries.mjs", ["validate", join(d, "good.json"), "A1", "coding"])).rc, 0);
+  assert.ok((await sameAsCli("entries.mjs", ["pack", d, "A1"])).out.length > 0);
+  await sameAsCli("entries.mjs", ["pack", d, "A1", "4096"]);
+  await sameAsCli("entries.mjs", ["session-files", d, "A1", join(d, "files"), d]);
+  await sameAsCli("entries.mjs", ["questions", d]);
+  await sameAsCli("entries.mjs", ["findings", d, "A1", join(d, "final")]);
+  await sameAsCli("entries.mjs", ["findings", d, "none", join(d, "none")]);
+}));
+
+test("entries.mjs: main's ingest and render leave the files the CLI leaves, with its lines and rc", () => runDir(async m => runDir(async c => {
+  const ingest = d => ["ingest", d, "coding", "A1", "s1", "sonnet", "passes", join(d, "files"), join(d, "final"), d];
+  const strip = t => t.replace(/"at":"[^"]*"/g, "");
+  for (const d of [m, c]) wr(join(d, "entry.json"), JSON.stringify({ feature: "A1", kind: "coding", outcome: "passes", summary: "two", questions: ["q?"] }));
+  const a = await mainOf("entries.mjs", ingest(m), { cwd: m }), b = cli("entries.mjs", ingest(c), { cwd: c });
+  assert.deepEqual(a, b);
+  assert.equal(strip(rd(join(m, "entries.jsonl"), "utf8")).replaceAll(m, "D"), strip(rd(join(c, "entries.jsonl"), "utf8")).replaceAll(c, "D"));
+  assert.deepEqual(await mainOf("entries.mjs", ["render", m]), cli("entries.mjs", ["render", c]));
+  const prog = d => rd(join(d, "progress.md"), "utf8").replaceAll(basename(d), "D");
+  assert.equal(prog(m), prog(c));
+})));

@@ -95,6 +95,20 @@ check rerun: the rerun gets exactly the named files as arguments
 check rerun: the subset form never reruns
 check.sh: a green full run's marker is `2 tests` then `wall <s>`; a planted one-line marker gives the same cached line
 check.sh: the cached line names the key's ignore list only when it isn't the default
+cli.mjs: a CLI with no answer and a closed stdout still exits its rc
+cli.mjs: a deleted cwd stops only a main that reads it
+cli.mjs: a main that throws prints the message on stderr, nothing on stdout, and exits 70
+cli.mjs: a reader that has gone is no failure: main's rc and an empty stderr
+cli.mjs: a served script exports main, reads process.argv, exit, cwd and stdout nowhere, fd 0 nowhere, and has no module-level let or var
+cli.mjs: an answer over a pipe's 64 KB reaches a slow reader whole, with main's rc
+cli.mjs: captured's say prints as console.log does, its write as process.stdout.write does, and rc is the body's
+cli.mjs: importing a served script runs nothing (no output, no exit), whatever process.argv holds
+cli.mjs: isMain is true only for the process's entry script
+cli.mjs: main of a served script with a bad argument never exits the process: the usage is rc 2
+cli.mjs: readStdin reads io's stdin, and an io without one throws instead of reading fd 0
+cli.mjs: the tail awaits a main that returns a promise
+cli.mjs: the tail gives main the process's cwd, environment and stdin
+cli.mjs: the tail writes main's out to stdout and exits its rc
 continue after a no-list end merges main first
 decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
 decisionsStore: a quoted DECISIONS= naming a missing file wins over docs/decisions.md, a file store that doesn't exist
@@ -115,6 +129,8 @@ entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismi
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: a milestone pack lists failed verify rows before dead ends
 entries.mjs: a summary can't open a code fence or an HTML block, and a 2000-character id keeps the pack within its cap
+entries.mjs: main gives the CLI's bytes for validate (missing 1, invalid 1, valid 0), pack, session-files, questions and findings
+entries.mjs: main's ingest and render leave the files the CLI leaves, with its lines and rc
 entries.mjs: progress renders 15 in full and the rest as archive lines
 entries.mjs: resolved is an array of strings and normalize keeps it
 entries.mjs: the pack CLI refuses a bad cap and packs a run directory's dead ends, entries and answers
@@ -149,6 +165,10 @@ fast gate: with no fast command, --fast runs the suite bare, writes green-<key> 
 fast gate: with no fast command, the next --fast call is the full form's cached line; rows full then cached
 features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
 features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
+features.mjs: main gives the CLI's bytes for summary, next, poll, lanes, model and the read-only questions
+features.mjs: main throws where the CLI exits 70 (a list that is not JSON)
+features.mjs: main's exit codes are the CLI's: passes of a feature not passing is 1, of one passing 0, milestone-done, an unknown subcommand 2
+features.mjs: main's writes are the CLI's: bump and pass
 fix rounds: a fix feature's un-pass note (check <files> red) reads as a red suite, beside the fast tier's and the older note
 fix rounds: build adds fix_rounds from metrics.jsonl and counts neither row as a session, a role or a cost; Spend by role lists fix
 fix rounds: fixFeature builds <m>-fix<r> after the milestone's last feature, kind fix, issue, round, the names, files and out, three steps, not passing
@@ -190,6 +210,9 @@ inbox.mjs review: a lone <!-- in a question hides nothing; answers() equals sed 
 inbox.mjs: added() on a session that wrote inside the comment returns that question (and only it)
 inbox.mjs: answersLine skips the comment (27 on the fixture, not 12), allows trailing blanks, and an unclosed comment runs to the end
 inbox.mjs: insert() puts the question and a blank line above ## Answers (appended without one); questionLine and files
+inbox.mjs: main gives the CLI's bytes for answers (no newline added), question and repair
+inbox.mjs: main's insert takes stdin from io and leaves the file the CLI leaves
+inbox.mjs: main's insert with an io that has no stdin throws without reading fd 0
 inbox.mjs: question(fixture, B1-05) is Q2, cut at the real heading, no comment in it
 inbox.mjs: the driver template has no "## Answers" inside its comment; answers() hashes as answers_hash's sed did
 init: a Vercel project without vercel.json gets one
@@ -238,6 +261,7 @@ lint: unit-collision names each milestone whose LANEU name another shares (M1-x,
 lint: unreproducible flags a time bound or one run's count, once per step, with its message
 lint: unreproducible leaves names, flags, budgets, sizes and file counts alone
 main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
+memlint.mjs: main gives the CLI's bytes for a worktree, gotchas, store and store-line, and reads MEMLINT_LINES from io.env
 memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
 memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
 memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
@@ -265,6 +289,8 @@ merge-sorted: two lanes adding names to a sorted list both merge, with no confli
 merge-sorted: with the attribute and the worktree driver, two branches adding adjacent names merge with exit 0, no marker, the union
 mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits
 metrics.mjs: append writes mem_peak_mb as a number or null
+metrics.mjs: main gives the CLI's bytes for the driver's questions on the captures, limit's 1 and 0 included
+metrics.mjs: main's append writes the row the CLI writes
 metrics.mjs: metricsRow writes suite_runs, suite_full and suite_fast as numbers, null when empty (no check-runs.log) or absent
 metrics.mjs: orientation stops at the first Write
 metrics.mjs: tokens, cache rate and context peak from the real fixture
@@ -322,6 +348,8 @@ needs verify_red own: a slow-tier red the fast gate let through, never main's di
 needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
 needs.mjs moveForward: two earlier items of the key become one, seen summed, asked_in every run's, both resolved as asked again in the new run
 needs.mjs synthesize: a driver_crash only for a dead driver without ended; ended, a live driver or no driver.pid make none
+needs.mjs: main's card and open read HOME from io.env at call time
+needs.mjs: main's open, list, md, fields, done and sweep give the CLI's bytes, the clock and HOME from io.env
 needs: a run whose worktree and record branch are both gone resolves run removed (list hides it before any sweep); the branch alone keeps it
 next <m>: a feature without after waits on its own milestone's earlier features only
 night words: memlint says run-scope and that it goes in the run's brief
@@ -330,6 +358,8 @@ notify.mjs urls compare <origin> <base> <branch>: the GitHub compare URL; exit 1
 notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3
 notify.mjs: githubUrls for ssh, https and non-GitHub origins
 notify.mjs: inboxQuestion is the lines added above ## Answers (never Michael's old answers)
+notify.mjs: main gives the CLI's bytes for trim (stdin from io), actions, urls and question
+notify.mjs: main's trim with an io that has no stdin throws without reading fd 0
 notify.mjs: trimBody caps at 3500 bytes with …
 overlap: named and overlap are exported and pure (no I/O at import); node --check lib/overlap.mjs
 overlap: the sweep rule: other run gone, other run merged, this run merged, else kept (no git facts: kept)
@@ -375,6 +405,7 @@ refused verify: deferred, then verified, then merged
 render.mjs: --raw applies to the next file only
 render.mjs: a line opening {{?X}} stays (the marker cut) only when HARNESS_X is set and not empty, one opening {{!X}} only when not
 render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
+render.mjs: main gives the CLI's bytes, HARNESS_ variables from io.env, a titled and a --raw section
 report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
 resume reloads config merged from main
 retro edits reverted
@@ -490,6 +521,8 @@ summary.mjs: conflicts counts resolutions, distinct escalated milestones and res
 summary.mjs: flakers names a check in the flakes of two or more of the five newest summaries (one without ended_at oldest) as name ×runs, (none) for none
 summary.mjs: flakes counts a fast flake with no names as the fast tier, a full one as whole suite
 summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no names); every fixture key still built
+summary.mjs: main gives the CLI's bytes for report --md, suite-runs, ledger-line's file, trends, flakers and calibration
+summary.mjs: main's view is the io's: isTTY and columns from io, never the process's stdout
 summary.mjs: report lists only the sessions over 2 GB
 summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary
 summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
@@ -510,6 +543,7 @@ testCount: the last HARNESS_TESTS= line wins, and only a whole line counts
 testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
 testcount.mjs: --total is the last N/M line's total; nothing without one
+testcount.mjs: main gives the CLI's bytes with and without --total and --source, and a missing file is no output and 0
 testcount.mjs: the runner's last N/M checks passed is the count
 testcount.mjs: total is the last N/M line's M, null without one
 the answer skill's facts cite file:line
@@ -533,6 +567,9 @@ treekey --partial: a CLAUDE.md-only change moves the full key (16 hex), keeps th
 treekey --partial: a dropped entry (directory, no name, outside the tree, under an ignored prefix) is one stderr line each; the output is the map's without it
 treekey --partial: a mapped path absent from the tree is a `- <path>` line, in map order
 treekey.mjs exports ignoreList, parseMap, treeKey, partialKeys and mapNames, pure on a fixed file list and blobs
+treekey.mjs: main reads the environment from io.env at call time: two --pathspec answers in one process
+treekey.mjs: main runs git in io.cwd: the key, --partial --names and --pathspec are the bytes the CLI prints inside that repo, from another cwd
+treekey.mjs: main's git gets io.env (git config set on the call moves what ls-files leaves out)
 treekey: a map whose every entry is dropped is as no map (two lines); the bare call never parses the map (no stderr)
 treekey: an absolute or .. entry is dropped, not an error (the key is docs/plans' alone)
 treekey: entries are literal path prefixes (. and globs leave nothing out; ./docs/plans/ is docs/plans)

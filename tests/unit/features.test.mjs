@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { sameAsCli } from "./cli-same.mjs";
 import { deps, lint, lintNote, RULES, fixFeature, kindOf, repairList, schedule } from "../../lib/features.mjs";
 
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -194,3 +195,63 @@ test("fix rounds: the CLI fix-add appends the feature to the list file and print
     assert.throws(() => run("M1", "3", "all", "t1", "--", "t1"), /usage: features\.mjs fix-add/);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+// ---- main(argv, io): the CLI's bytes and exit code (decisions/2026-11-03-resident-helper) ----
+const inList = async fn => { const d = mkdtempSync(join(tmpdir(), "fm-")); try { return await fn(d); } finally { rmSync(d, { recursive: true, force: true }); } };
+const twoFeatures = d => {
+  const list = join(d, "feature_list.json");
+  writeFileSync(list, JSON.stringify({ features: [
+    { id: "A1", milestone: "A", description: "one", steps: ["s"], passes: true, kind: "build", depends_on: null },
+    { id: "A2", milestone: "A", description: "two", steps: ["s"], passes: false, kind: "build", depends_on: null },
+    { id: "B1", milestone: "B", description: "three", steps: ["s"], passes: false, kind: "build", depends_on: null, after: ["A"] }] }));
+  writeFileSync(join(d, "att.json"), JSON.stringify({ A2: 1 }));
+  writeFileSync(join(d, "parked.json"), "{}");
+  writeFileSync(join(d, "meta.env"), "RUN_ID=r1\n");
+  return { list, att: join(d, "att.json"), parked: join(d, "parked.json") };
+};
+
+test("features.mjs: main gives the CLI's bytes for summary, next, poll, lanes, model and the read-only questions", () => inList(async d => {
+  const { list, att, parked } = twoFeatures(d);
+  assert.equal((await sameAsCli("features.mjs", ["summary", list])).out, "1/3 passing\n");
+  assert.equal((await sameAsCli("features.mjs", ["next", list, att, "3", parked])).rc, 0);
+  assert.ok((await sameAsCli("features.mjs", ["poll", list, att, "3", parked])).out.length > 0, "poll answers");
+  assert.ok((await sameAsCli("features.mjs", ["lanes", list, att, "3", parked, d])).out.startsWith("A\t"));
+  assert.equal((await sameAsCli("features.mjs", ["model", "sonnet"])).rc, 0);
+  for (const a of [["blocked", list, att, "3", parked], ["deps", list, "B"], ["undeclared", list], ["lint", list], ["lint", list, "--note"], ["kind", list, "A1"], ["kind", list, "nope"],
+    ["milestones", list], ["evidence", list, "A", join(d, "none")], ["snapshot", list], ["milestone", list, "A2"], ["ids", list, "A"], ["models"], ["parked", parked, list], ["unparks", parked, "h"]])
+    await sameAsCli("features.mjs", a);
+}));
+
+test("features.mjs: main's exit codes are the CLI's: passes of a feature not passing is 1, of one passing 0, milestone-done, an unknown subcommand 2", () => inList(async d => {
+  const { list } = twoFeatures(d);
+  assert.equal((await sameAsCli("features.mjs", ["passes", list, "A2"])).rc, 1);
+  assert.equal((await sameAsCli("features.mjs", ["passes", list, "A1"])).rc, 0);
+  assert.equal((await sameAsCli("features.mjs", ["milestone-done", list, "A"])).rc, 1);
+  assert.equal((await sameAsCli("features.mjs", ["nope"])).rc, 2);
+}));
+
+test("features.mjs: main throws where the CLI exits 70 (a list that is not JSON)", () => inList(async d => {
+  const bad = join(d, "bad.json");
+  writeFileSync(bad, "{");
+  const { main } = await import("../../lib/features.mjs");
+  assert.throws(() => main(["summary", bad], { cwd: d }));
+  assert.equal(execFileRc(["summary", bad]), 70);
+}));
+
+test("features.mjs: main's writes are the CLI's: bump and pass", () => inList(async d => {
+  const { main } = await import("../../lib/features.mjs");
+  const lib = fileURLToPath(new URL("../../lib/features.mjs", import.meta.url));
+  for (const side of ["m", "c"]) {
+    const s = join(d, side); writeFileSync(`${s}.json`, JSON.stringify({ features: [{ id: "A", milestone: "M", steps: [], passes: false }] }));
+    writeFileSync(`${s}.att`, "{}");
+    if (side === "m") { assert.deepEqual(main(["bump", `${s}.att`, "A"], { cwd: d }), { rc: 0, out: "" }); assert.deepEqual(main(["pass", `${s}.json`, "A"], { cwd: d }), { rc: 0, out: "" }); }
+    else { execFileSync(process.execPath, [lib, "bump", `${s}.att`, "A"]); execFileSync(process.execPath, [lib, "pass", `${s}.json`, "A"]); }
+  }
+  assert.equal(readFileSync(join(d, "m.json"), "utf8"), readFileSync(join(d, "c.json"), "utf8"));
+  assert.equal(readFileSync(join(d, "m.att"), "utf8"), readFileSync(join(d, "c.att"), "utf8"));
+}));
+
+function execFileRc(argv) {
+  try { execFileSync(process.execPath, [fileURLToPath(new URL("../../lib/features.mjs", import.meta.url)), ...argv], { stdio: ["ignore", "pipe", "ignore"] }); return 0; }
+  catch (e) { return e.status; }
+}

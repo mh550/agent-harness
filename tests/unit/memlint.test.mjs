@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { sameAsCli } from "./cli-same.mjs";
 import { currentRules as cr, decisionsStore, gotchasDiff, gotchasLines } from "../../lib/memlint.mjs";
 
 const F = { path: "docs/decisions.md", kind: "file" };
@@ -90,4 +91,19 @@ test("gotchasLines: a wrapped bullet is one line and any # or ## heading ends th
   assert.equal(gd(G, G.replace("- two (r 2026-10-26)", "- two (r 2026-10-26)\n- three wraps\n  onto a second line (r 2026-10-26)")), "+1 ~0 -0");
   assert.equal(gd(G.replace("## Later", "# Later"), G.replace("## Later\nx", "# Later\ny")), "+0 ~0 -0");
   assert.equal(JSON.stringify(gotchasLines("## Gotchas\n- a\n  b\n\n- c\n")), '["- a b","- c"]');
+});
+
+// ---- main(argv, io): the CLI's bytes and exit code; MEMLINT_LINES from io.env (decisions/2026-11-03-resident-helper) ----
+test("memlint.mjs: main gives the CLI's bytes for a worktree, gotchas, store and store-line, and reads MEMLINT_LINES from io.env", async () => {
+  const d = mkdtempSync(join(tmpdir(), "ml-"));
+  try {
+    writeFileSync(join(d, "CLAUDE.md"), `# p\n\n${"line\n".repeat(30)}`);
+    const plain = await sameAsCli("memlint.mjs", [d]);
+    const low = await sameAsCli("memlint.mjs", [d], { env: { MEMLINT_LINES: "10" } });
+    assert.notEqual(low.out, plain.out, "the env moved the limit");
+    writeFileSync(join(d, "a"), "## Gotchas\n- x\n"); writeFileSync(join(d, "b"), "## Gotchas\n- x\n- y\n");
+    assert.equal((await sameAsCli("memlint.mjs", ["gotchas", join(d, "a"), join(d, "b")])).out, "+1 ~0 -0\n");
+    await sameAsCli("memlint.mjs", ["store", d]);
+    await sameAsCli("memlint.mjs", ["store-line", d]);
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });

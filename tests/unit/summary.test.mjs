@@ -5,6 +5,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { sameAsCli, mainOf } from "./cli-same.mjs";
 import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
@@ -207,4 +208,32 @@ test("fix rounds: build adds fix_rounds from metrics.jsonl and counts neither ro
     assert.equal(rowOf(s, "| Fix rounds | ").row, "| Fix rounds | 1 opened · 1 fixed (M1 1 of 1) |");
     assert.deepEqual(build("/nonexistent/p/w", "r", "/nonexistent/s").fix_rounds, { opened: 0, fixed: 0, by_milestone: {} });
   } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+// ---- main(argv, io): the CLI's bytes and exit code; the view from io (decisions/2026-11-03-resident-helper) ----
+test("summary.mjs: main gives the CLI's bytes for report --md, suite-runs, ledger-line's file, trends, flakers and calibration", async () => {
+  const d = mkdtempSync(join(tmpdir(), "sm-"));
+  try {
+    const s = fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url));
+    assert.ok((await sameAsCli("summary.mjs", ["report", "--md", s])).out.length > 0);
+    await sameAsCli("summary.mjs", ["report", s]);
+    await sameAsCli("summary.mjs", ["suite-runs", s]);
+    const c = join(d, "c.jsonl"), m = join(d, "m.jsonl");
+    assert.deepEqual(await mainOf("summary.mjs", ["ledger-line", s, m], { cwd: d }), { rc: 0, out: "" });
+    await sameAsCli("summary.mjs", ["ledger-line", s, c]);
+    assert.equal(readFileSync(m, "utf8"), readFileSync(c, "utf8"));
+    assert.ok((await sameAsCli("summary.mjs", ["trends", c])).out.startsWith("| Run |"));
+    await sameAsCli("summary.mjs", ["trends", c, "--by", "version"]);
+    await sameAsCli("summary.mjs", ["flakers", join(d, "none")]);
+    await sameAsCli("summary.mjs", ["calibration", join(d, "none"), "p"]);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test("summary.mjs: main's view is the io's: isTTY and columns from io, never the process's stdout", async () => {
+  const s = fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url));
+  const { main } = await import("../../lib/summary.mjs");
+  const env = { HARNESS_COLOR: "never", HARNESS_GLYPHS: "unicode" };
+  const plain = main(["report", s], { env }), tty = main(["report", s], { env, isTTY: true, columns: 80 });
+  assert.notEqual(tty.out, plain.out, "a TTY gets the view, a pipe the markdown");
+  assert.equal(plain.out, main(["report", "--md", s], { env, isTTY: true, columns: 80 }).out);
 });

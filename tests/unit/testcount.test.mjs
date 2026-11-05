@@ -1,6 +1,10 @@
 // lib/testcount.mjs: the passing-test count lib/check.sh reads from a suite's output.   node --test tests/unit/testcount.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { sameAsCli } from "./cli-same.mjs";
 import { testCount, total } from "../../lib/testcount.mjs";
 
 test("testcount.mjs: the runner's last N/M checks passed is the count", () => {
@@ -25,4 +29,20 @@ test("testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 i
 test("testcount.mjs: total is the last N/M line's M, null without one", () => {
   assert.equal(total("3/5 checks passed\nx 7/9 tests passed\n"), 9);
   assert.equal(total("ok"), null);
+});
+
+test("testcount.mjs: main gives the CLI's bytes with and without --total and --source, and a missing file is no output and 0", async () => {
+  const d = mkdtempSync(join(tmpdir(), "tc-"));
+  try {
+    const f = join(d, "out"), n = join(d, "none");
+    writeFileSync(f, "PASS a\n3/5 checks passed\n"); writeFileSync(n, "ok\n");
+    assert.deepEqual(await sameAsCli("testcount.mjs", [f]), { rc: 0, out: "3 tests\n" });
+    assert.deepEqual(await sameAsCli("testcount.mjs", [f, "--total"]), { rc: 0, out: "5 tests\n" });
+    assert.deepEqual(await sameAsCli("testcount.mjs", [f, "--source"]), { rc: 0, out: "3 tests · generic\n" });
+    assert.deepEqual(await sameAsCli("testcount.mjs", [n]), { rc: 0, out: "" });
+    assert.deepEqual(await sameAsCli("testcount.mjs", [n, "--total"]), { rc: 0, out: "" });
+    assert.deepEqual(await sameAsCli("testcount.mjs", [n, "--source"]), { rc: 0, out: "? tests · none\n" });
+    assert.deepEqual(await sameAsCli("testcount.mjs", [join(d, "missing")]), { rc: 0, out: "" });
+    assert.deepEqual(await sameAsCli("testcount.mjs", []), { rc: 0, out: "" });
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });

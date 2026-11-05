@@ -1,6 +1,10 @@
 // lib/notify.mjs: the body cap, ntfy's actions header, GitHub URLs and the INBOX question.   node --test tests/unit/notify.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { sameAsCli } from "./cli-same.mjs";
 import { trimBody, actionsHeader as a, githubUrls as g, inboxQuestion as q } from "../../lib/notify.mjs";
 
 test("notify.mjs: trimBody caps at 3500 bytes with …", () => {
@@ -39,4 +43,25 @@ test("notify.mjs: inboxQuestion is the lines added above ## Answers (never Micha
   assert.equal(q("", x), "status: run\n### B: set the gatus vars, then answer");
   assert.equal(q("status: run\n", x), "### B: set the gatus vars, then answer");
   assert.equal(q(b, "status: run\n### B: q\nold\n"), "### B: q");
+});
+
+// ---- main(argv, io): the CLI's bytes and exit code; stdin only from io (decisions/2026-11-03-resident-helper) ----
+test("notify.mjs: main gives the CLI's bytes for trim (stdin from io), actions, urls and question", async () => {
+  const d = mkdtempSync(join(tmpdir(), "nt-"));
+  try {
+    assert.equal((await sameAsCli("notify.mjs", ["trim"], { input: "body, no newline" })).out, "body, no newline");
+    assert.ok((await sameAsCli("notify.mjs", ["trim", "10"], { input: "x".repeat(40) })).out.length < 40);
+    await sameAsCli("notify.mjs", ["actions", "Open", "https://example.com/a", "Two", "https://example.com/b"]);
+    assert.equal((await sameAsCli("notify.mjs", ["urls", "not a url", "b", "f"])).rc, 1);
+    await sameAsCli("notify.mjs", ["urls", "git@github.com:o/r.git", "b", "f.md"]);
+    await sameAsCli("notify.mjs", ["urls", "compare", "git@github.com:o/r.git", "main", "b"]);
+    const f = join(d, "I.md");
+    writeFileSync(f, "status: run\n\n### H1: q\nwhy\n\n## Answers\n");
+    await sameAsCli("notify.mjs", ["question", join(d, "none"), f]);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test("notify.mjs: main's trim with an io that has no stdin throws without reading fd 0", async () => {
+  const { main } = await import("../../lib/notify.mjs");
+  assert.throws(() => main(["trim"], { cwd: "/" }), /no stdin/);
 });

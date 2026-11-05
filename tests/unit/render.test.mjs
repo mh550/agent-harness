@@ -1,6 +1,10 @@
 // lib/render.mjs: a prompt's assembly from a template and its sections.   node --test tests/unit/render.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { sameAsCli } from "./cli-same.mjs";
 import { assemble } from "../../lib/render.mjs";
 
 test("render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart", () => {
@@ -18,4 +22,16 @@ test("render.mjs: a line opening {{?X}} stays (the marker cut) only when HARNESS
   // a raw section keeps its markers; one mid-line is no marker
   assert.equal(assemble("{{SECTIONS}}", [{ title: null, body: "{{?X}}r", raw: true }], {}), "\n\n{{?X}}r\n\n");
   assert.equal(assemble("m {{?X}}k\n", [], {}), "m {{?X}}k\n");
+});
+
+test("render.mjs: main gives the CLI's bytes, HARNESS_ variables from io.env, a titled and a --raw section", async () => {
+  const d = mkdtempSync(join(tmpdir(), "rd-"));
+  try {
+    writeFileSync(join(d, "t.md"), "top {{X}}\n\n{{SECTIONS}}\n\nend\n"); writeFileSync(join(d, "s.md"), "s {{X}}\n");
+    const r = await sameAsCli("render.mjs", [join(d, "t.md"), `T=${join(d, "s.md")}`, "--raw", join(d, "s.md")], { env: { HARNESS_X: "x1" } });
+    assert.equal(r.rc, 0);
+    assert.match(r.out, /^top x1\n/);
+    assert.match(r.out, /s \{\{X\}\}/);
+    assert.notEqual((await sameAsCli("render.mjs", [join(d, "t.md")], { env: { HARNESS_X: "x2" } })).out, r.out);
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });
