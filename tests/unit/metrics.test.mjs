@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { outcome, events, orientation as or, resumeRow, metricsRow, fixRound, fixResult, isSession } from "../../lib/metrics.mjs";
+import { outcome, events, orientation as or, resumeRow, metricsRow, fixRound, fixResult, isSession, fixPairs } from "../../lib/metrics.mjs";
 
 const fixture = name => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
 
@@ -116,5 +116,22 @@ test("fix rounds: the CLI fix-round appends one row per call to a metrics.jsonl 
     assert.deepEqual(rows.map(isSession), [true, false, false, false]);
     assert.equal(run("summary", p), "1 sessions (1 real) · 1 features passed · $0.25 · 0.0 h · by kind: coding 1 ($0.25) · by model: opus 1 ($0.25)\n");
     assert.throws(() => run("fix-round", p, "nope", "r", "M1", "1", "all"), /usage: metrics\.mjs fix-round/);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test("fix rounds: fixPairs pairs each fix_round with the fix_result of its milestone and round (none yet: no verdict), and the CLI fix-rounds prints one milestone's", () => {
+  const o = (m, r) => ({ kind: "fix_round", milestone: m, round: r, feature: `${m}-fix${r}`, failed_before: ["t1"] });
+  const res = (m, r, after) => ({ kind: "fix_result", milestone: m, round: r, failed_after: after, fixed: after.length === 0 });
+  const rows = [{ kind: "coding", feature: "A" }, o("M1", 1), res("M1", 1, ["t3"]), o("M2", 1), o("M1", 2), res("M2", 1, []), res("M9", 1, [])];
+  assert.deepEqual(fixPairs(rows), [{ id: "M1-fix1", milestone: "M1", round: 1, failed_after: ["t3"], fixed: false },
+    { id: "M2-fix1", milestone: "M2", round: 1, failed_after: [], fixed: true }, { id: "M1-fix2", milestone: "M1", round: 2, failed_after: null, fixed: false }]);
+  assert.deepEqual(fixPairs([]), []);
+  const d = mkdtempSync(join(tmpdir(), "fxp-")), p = join(d, "metrics.jsonl"), M = fileURLToPath(new URL("../../lib/metrics.mjs", import.meta.url));
+  const run = (...a) => execFileSync(process.execPath, [M, "fix-rounds", ...a], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  try {
+    writeFileSync(p, rows.map(r => JSON.stringify(r) + "\n").join(""));
+    assert.equal(run(p, "M1"), '[{"id":"M1-fix1","round":1,"failed_after":["t3"]},{"id":"M1-fix2","round":2,"failed_after":null}]\n');
+    assert.equal(run(p, "M3"), "[]\n");
+    assert.equal(run(join(d, "none.jsonl"), "M1"), "[]\n");
   } finally { rmSync(d, { recursive: true, force: true }); }
 });

@@ -364,6 +364,9 @@ fix rounds fx3: a flake at the verify is noted (flaky: t2) and M1 is verified an
 fix rounds fx4: MAX_FIX_ROUNDS=0 opens the verify_red card at the first red, its note and why as before: no round, feature, row or fix state
 fix rounds fx5: a fix session that leaves the red is un-passed by its gate's first command (check t1; the fast tier not run), given up, and the run ends blocked on M1-fix1
 fix rounds fx6: a red after merging main opens a round with the main-merged-in note, and the fixed milestone is tagged (after fix round 1)
+fix rounds fx7: a fix feature that cannot be appended opens no round: the note says so, the card comes as before, and no fix output, row or state is left
+fix rounds fx8: both rounds have their fix_result row (t3, t3), the fix features pass in the record's list, and the attempts are untouched
+fix rounds fx8: fix features the verifier un-passed on a red suite pass again (noted) and the verdict is the suite's: round 2 opens, then the card after 2 fix rounds, never a failed re-check
 fix rounds stub suite: --tier fast is red on BROKEN or BROKEN-FAST, green on the slow markers
 fix rounds stub suite: STUB_FLAKE_ONCE=1 makes the first bare call after flake-armed red on t2 and removes it; a fast call, a subset or a call without the flag leaves it
 fix rounds stub suite: a subset is red only on its own file's marker (t1 on BROKEN-SLOW, t3 on BROKEN-SLOW2)
@@ -372,6 +375,7 @@ fix rounds stub suite: gate-green-once makes the next subset green once and goes
 fix rounds: a fix feature's un-pass note (check <files> red) reads as a red suite, beside the fast tier's and the older note
 fix rounds: build adds fix_rounds from metrics.jsonl and counts neither row as a session, a role or a cost; Spend by role lists fix
 fix rounds: fixFeature builds <m>-fix<r> after the milestone's last feature, kind fix, issue, round, the names, files and out, three steps, not passing
+fix rounds: fixPairs pairs each fix_round with the fix_result of its milestone and round (none yet: no verdict), and the CLI fix-rounds prints one milestone's
 fix rounds: fixRound is the row at a round's open and fixResult the next verify's suite verdict, fixed exactly when nothing failed
 fix rounds: fixRounds pairs each fix_result to its fix_round by milestone and round, per milestone in order
 fix rounds: repairList with the appended feature in before keeps it, and reverts a session that removes or edits it

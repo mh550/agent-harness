@@ -188,4 +188,30 @@ check "fix rounds fx6: a red after merging main opens a round with the main-merg
   && ! hlog fx6 | grep "needs Michael" > /dev/null && hlog fx6 | grep " · M1 verified and tagged run/fx6/M1 (after fix round 1)$" > /dev/null \
   && jq -se "[.[] | select(.kind == \"fix_result\")] | length == 1 and .[0].fixed" "$(rec fx6)/metrics.jsonl" > /dev/null'
 
+# fx8: fx2 with a verifier that performs the fix features' last step (the full suite) as written and un-passes them on
+# the red tree. The verdict is still the suite's: they pass again, and the rule runs (round 2, then the card)
+fx fx8 STUB_SLOW_RED=B STUB_FIX=rename STUB_VERIFY_UNPASS_FIX=1
+check "fix rounds fx8: fix features the verifier un-passed on a red suite pass again (noted) and the verdict is the suite's: round 2 opens, then the card after 2 fix rounds, never a failed re-check" \
+  'hlog fx8 | grep " · verify M1: the verifier un-passed M1-fix1 on a red suite; the verdict is the suite.s (a fix round or the card, no re-check)$" > /dev/null \
+  && hlog fx8 | grep " · verify M1: the verifier un-passed M1-fix1, M1-fix2 on a red suite; " > /dev/null \
+  && hlog fx8 | grep " · $RED; fix round 2 of 2: M1-fix2 appended (1 failing: t3)$" > /dev/null \
+  && hlog fx8 | grep " · $RED; not verified (needs Michael) after 2 fix rounds (M1-fix1, M1-fix2)$" > /dev/null \
+  && ! hlog fx8 | grep "failed the re-check" > /dev/null && [[ $(grep -c " verify M1 · " "$(st fx8)/run.log") == 3 ]] \
+  && items fx8 | jq -se "any(.key == \"verify_red:M1\" and (.card.why | contains(\"M1-fix1 left t3 red, M1-fix2 left t3 red\"))) and (any(.reason == \"verify_recheck\") | not)" > /dev/null'
+check "fix rounds fx8: both rounds have their fix_result row (t3, t3), the fix features pass in the record's list, and the attempts are untouched" \
+  '[[ $(jq -sc "[.[] | select(.kind | test(\"^fix_\")) | [.kind, .round, (.failed_before // .failed_after)]]" "$(rec fx8)/metrics.jsonl") \
+      == "[[\"fix_round\",1,[\"t1\"]],[\"fix_result\",1,[\"t3\"]],[\"fix_round\",2,[\"t3\"]],[\"fix_result\",2,[\"t3\"]]]" ]] \
+  && [[ $(jq -c "[.features[] | select(.kind == \"fix\") | .passes]" "$(list fx8)") == "[true,true]" ]] \
+  && [[ $(jq -c "[.[\"M1-fix1\"], .[\"M1-fix2\"]]" "$(st fx8)/attempts.json") == "[1,1]" ]] && [[ -f $(st fx8)/needs-M1 && ! -e $(st fx8)/fix-open-M1 ]]'
+
+# fx7: the fix feature cannot be appended (the initializer's list already has a feature with round 1's id): no round
+# opens, the card comes as before, and nothing of a round is left in the record or the state
+fx fx7 STUB_SLOW_RED=B STUB_FIX_ID_TAKEN=1
+check "fix rounds fx7: a fix feature that cannot be appended opens no round: the note says so, the card comes as before, and no fix output, row or state is left" \
+  'hlog fx7 | grep " · verify M1: fix round 1 could not be opened (its feature was not appended; see run.log)$" > /dev/null \
+  && hlog fx7 | grep " · $RED; not verified (needs Michael)$" > /dev/null && [[ -f $(st fx7)/needs-M1 ]] \
+  && grep "fix-add: M1-fix1 is in the list already" "$(st fx7)/run.log" > /dev/null \
+  && [[ ! -e $(rec fx7)/fix && ! -e $(st fx7)/fix-rounds-M1 && ! -e $(st fx7)/fix-open-M1 ]] && ! jq -se "any(.kind | test(\"^fix_\"))" "$(rec fx7)/metrics.jsonl" > /dev/null \
+  && [[ $(jq "[.features[] | select(.id == \"M1-fix1\")] | length" "$(list fx7)") == 1 && $(cat "$(st fx7)/verify-rounds-M1") == 1 ]]'
+
 suite_end

@@ -20,6 +20,9 @@
 # The second fix session of a run is always none; under rename it also touches gate-green-once in the run's scratch, so
 # its gate's subset is green once while the tree stays red. STUB_FLAKE_ONCE=1: B's first coding session touches
 # flake-armed in the run's scratch (that suite's next bare call is red once: a flake at the verify).
+# STUB_FIX_ID_TAKEN=1: the initializer's list has a build feature M1-fix1 in M1, so round 1's fix feature cannot be appended.
+# STUB_VERIFY_UNPASS_FIX=1: a verify session that finds $HARNESS_CHECK red un-passes every fix feature of its milestone
+# (a verifier performing their last step, the full suite, as written).
 # STUB_PHONE_STOP=1|<why>: the initializer pushes INBOX.md line 1 `status: stop` (1) or `status: stop <why>` from a
 # clone of the origin, as Michael's phone would. STUB_CLI_STOP=-|<why>: it runs `harness stop <run>` (-) or
 # `harness stop <run> --why "<why>"` (R7). STUB_CLI_REQUEST=<brief>: then `harness queue add --continue <run> --brief
@@ -165,6 +168,7 @@ case $first in
     [[ ${STUB_MEM_DROP:-} ]] && sed -i 's/^MemAvailable: .*/MemAvailable:    2097152 kB/' "$STUB_MEM_DROP"   # the box runs low on memory meanwhile (2 GB)
     after=""; [[ ${STUB_INDEPENDENT_M2:-} ]] && after=', "after": []'
     z=""; [[ ${STUB_DEFAULT_FEATURE:-} ]] && z='{ "id": "Z", "kind": "build", "description": "z, in no milestone", "steps": ["v"], "passes": false },'   # the default lane
+    taken=""; [[ ${STUB_FIX_ID_TAKEN:-} ]] && taken='{ "id": "M1-fix1", "milestone": "M1", "kind": "build", "description": "a build feature with a fix round id", "steps": ["v"], "passes": false },'
     if [[ ${STUB_REVIEW_LIST:-} ]]; then cat > "$L" <<JSON
 { "run": "test", "features": [
   { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
@@ -175,7 +179,7 @@ JSON
     else cat > "$L" <<JSON
 { "run": "test", "features": [ $z
   { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
-  { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false },
+  { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false }, $taken
   { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"]$after, "passes": false } ] }
 JSON
     fi
@@ -357,6 +361,10 @@ JSON
     if [[ ${STUB_VERIFY_EDITS:-} && $n == 1 ]]; then echo hack > "hack-$m.txt"; echo "edited" >> CLAUDE.md; echo null >> "$HARNESS_RUN_DIR/entries.jsonl"; fi   # a verifier "fixing" code and the journal
     [[ $m == M1 && ( $n == 1 || ${STUB_STRICT_VERIFIER:-} ) && ! ${STUB_LENIENT:-} ]] && set_passes A false   # catches a false pass
     [[ ${STUB_REBASE_VERIFY_FAIL:-} && $m == M2 && $n == 2 ]] && set_passes C false   # the re-base's verify round finds C failing
+    # a verifier performing a fix feature's last step (the full suite) on a tree whose suite is red: every fix feature of m fails it
+    if [[ ${STUB_VERIFY_UNPASS_FIX:-} ]] && ! ( "$HARNESS_CHECK" > /dev/null 2>&1 ); then
+      for fid in $(jq -r --arg m "$m" '.features[] | select(.milestone == $m and .kind == "fix") | .id' "$L"); do set_passes "$fid" false; done
+    fi
     # one evidence row per step of every feature of m (none in a thin round 1); passes when every feature of m still passes
     ev=$(node -e 'const [f,m,full]=process.argv.slice(1),fs=JSON.parse(require("fs").readFileSync(f)).features.filter(x=>x.milestone===m);console.log(JSON.stringify({done:fs.every(x=>x.passes),
       rows:full==="1"?fs.flatMap(x=>x.steps.map((s,i)=>({feature:x.id,step:i+1,ran:"check",saw:"ok",holds:true}))):[]}))' "$L" "$m" "$([[ ! ${STUB_THIN_VERIFY:-} || ( $n -gt 1 && $STUB_THIN_VERIFY != all ) ]] && echo 1)")
