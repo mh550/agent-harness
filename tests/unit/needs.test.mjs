@@ -2,6 +2,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { sameAsCli, mainOf, cli } from "./cli-same.mjs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import * as N from "../../lib/needs.mjs";
 import * as V from "../../lib/view.mjs";
 
@@ -216,3 +220,33 @@ test("fix rounds: the verify_red card with a rounds field names each round's id 
   // no rounds, an empty list or text that is no JSON: today's card
   for (const r of [undefined, "", "[]", [], "{not json"]) assert.equal(N.card("verify_red", { ...fx, rounds: r }).why, plain.why);
 });
+
+// ---- main(argv, io): the CLI's bytes and exit code; HARNESS_NOW and HOME from io.env (decisions/2026-11-03-resident-helper) ----
+const NOW = { HARNESS_NOW: "1800000000", HOME: "/home/someone" };
+const needsState = async fn => { const d = mkdtempSync(join(tmpdir(), "nd-")); try { mkdirSync(join(d, "s")); return await fn(d, join(d, "s")); } finally { rmSync(d, { recursive: true, force: true }); } };
+
+test("needs.mjs: main's open, list, md, fields, done and sweep give the CLI's bytes, the clock and HOME from io.env", () => needsState(async (d, s) => {
+  const facts = name => [name, "r1", "p", "question", "Should it?", "line=1", `list=${join(d, "none")}`];
+  const a = await mainOf("needs.mjs", ["open", ...facts(s)], { env: NOW });
+  const twin = join(d, "other", "t"); mkdirSync(twin, { recursive: true });   // never s's sibling: a sibling's open question moves forward
+  assert.deepEqual(a, cli("needs.mjs", ["open", ...facts(twin)], { env: NOW }));
+  assert.equal(a.rc, 0);
+  const ref = a.out.trim();
+  for (const argv of [["list", "--json", s], ["list", "--run", "r1", s], ["list", "--all", s], ["md", s], ["fields", s, ref]]) await sameAsCli("needs.mjs", argv, { env: { ...NOW, COLUMNS: "90" } });
+  assert.match((await sameAsCli("needs.mjs", ["fields", s, ref], { env: NOW })).out, /\0/);
+  assert.equal((await sameAsCli("needs.mjs", ["fields", s, "nope"], { env: NOW })).rc, 1);
+  await sameAsCli("needs.mjs", ["sweep", twin], { env: NOW });
+  assert.deepEqual(await mainOf("needs.mjs", ["done", s, ref, "--why", "x"], { env: NOW }), cli("needs.mjs", ["done", twin, ref, "--why", "x"], { env: NOW }));
+}));
+
+test("needs.mjs: main's card and open read HOME from io.env at call time", () => needsState(async (d, s) => {
+  const f = join(d, "facts.json");
+  writeFileSync(f, JSON.stringify({ run: "r1", project: "p", reason: "feature_list_edits", subject: "r1", record: "/x", features: [] }));
+  const card = home => mainOf("needs.mjs", ["card", "feature_list_edits", f], { env: { ...NOW, HOME: home } });
+  await sameAsCli("needs.mjs", ["card", "feature_list_edits", f], { env: NOW });
+  assert.equal((await card("/home/a")).rc, 0);
+  const { loaded } = await import("../../lib/needs.mjs");
+  assert.equal(loaded({ features: [] }, { HOME: "/home/a" }).home, "/home/a");
+  assert.equal(loaded({ features: [] }, { HOME: "/home/b" }).home, "/home/b");
+  assert.equal(loaded({ features: [], home: "/given" }, { HOME: "/home/b" }).home, "/given");
+}));

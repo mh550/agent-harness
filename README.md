@@ -128,6 +128,8 @@ scope until the run's services stop (below) or the next init stops it: `SVC_MEMO
 (a session waits up to 30m while the box has under 5 GB available, then starts anyway: `MEM_MIN_AVAILABLE_GB`,
 `MEM_WAIT_MAX`). Run scope is never committed: it's `--spec` and `--brief` on `start`/`continue`.
 
+**The resident helper.** A driver and each lane answer most `.mjs` questions from one warm node process instead of a node start per question, byte for byte the same; `HARNESS_HELPER=0` (in the environment or `~/.config/harness/config.sh`) turns it off.
+
 **Scratch and cache.** Each run gets `HARNESS_SCRATCH` (`/tmp/harness/<project>/<run>`) for its outputs, sandboxes,
 logs and screenshots; a run that finishes deletes it (`KEEP_SCRATCH=1` keeps it), after copying `init.out`,
 `teardown.out` and the last suite output (`check-last.out`) into its state dir. Installs that should outlive a run

@@ -96,7 +96,7 @@ check "treekey --partial --names: --partial's lines, then one ': <path> <namesâ€
   '[[ $pkn == "$pkp"$'"'"'\n: CLAUDE.md memlint m2 x\n: README.md readme'"'"' ]]'
 pkcase two1; echo x >> "$T/pk/CLAUDE.md"; echo y >> "$T/pk/README.md"; mkdir -p "$T/pk-shim"
 printf '#!/usr/bin/env bash\necho "$*" >> "$NODE_COUNT"\nexec %q "$@"\n' "$(command -v node)" > "$T/pk-shim/node"; chmod +x "$T/pk-shim/node"
-o_two1=$(PATH=$T/pk-shim:$PATH NODE_COUNT=$T/pk-two1/node pc two1)
+o_two1=$(HARNESS_HELPER=0 PATH=$T/pk-shim:$PATH NODE_COUNT=$T/pk-two1/node pc two1)
 check "check partial: one treekey start when the partial path needs the map's names too; the same subset, map order" \
   '[[ $(grep -c "treekey\.mjs" "$T/pk-two1/node") == 1 && $(pargs two1 1) == "memlint readme" && $o_two1 == "check: green (partial: memlint readme, "* ]]'
 pkcase red; echo x >> "$T/pk/CLAUDE.md"; o_red=$(PK_RED=memlint pc red; echo "rc=$?")

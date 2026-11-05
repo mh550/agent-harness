@@ -272,3 +272,8 @@ larger remainder.
 - **A long-lived node server the driver talks to** (C1-03): one start for the run, but a process to supervise, restart
   and version (a stale server answering after `harness sync` changed `lib/`), a socket or FIFO protocol to keep, and
   state that outlives the answer that made it, the thing the in-process memo keeps out.
+  Updated in place 2026-11-05: built after all as a per-shell coproc, not a server (`decisions/2026-11-03-resident-helper`):
+  supervising is the shell's (it dies on stdin's EOF, with an EXIT trap's kill first), restarting is `ask`'s (a failure
+  costs a spawn, three restarts then off); a stale version lasts one run at most, as the running bash does, since each
+  driver and lane starts its own; the pipe has one asker at a time under a lock, with no socket; and it keeps no answer
+  between requests, so the memo stays the only cache.

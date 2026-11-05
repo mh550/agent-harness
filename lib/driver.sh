@@ -72,7 +72,7 @@ exit_record() {
   [[ -f $REC/needs.md ]] && git -C "$RWT" add -- "$REC/needs.md" 2> /dev/null && f+=("$REC/needs.md")
   git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "${f[@]}" > /dev/null 2>&1
 }
-trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; exit_record; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
+trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; exec 9>&-; REC_HELD=0; lanes_term; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"; services_down "driver exited"; lanes_services_down "driver exited"; exit_record; helper_stop; echo "$END_REASON · $(date "+%F %T")" > "$STATE/ended"; rm -f "$STATE/driver.pid"' EXIT
 
 demote_requests() {   # a stop after Michael queued a continuation of this run is his later word: that one turns automatic
   # the stop's time is when it reached this box (STOP, else INBOX.md pulled), not when the driver got to it: a request
@@ -318,7 +318,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   if [[ -n ${LAST_LANE:-} && -d $L ]]; then
     for f in "$L"/init.out "$L"/check.out "$L"/check-*.out; do [[ -f $f ]] && cp -f "$f" "$SCRATCH/"; done
   fi
-  key=$(cd "$dir" && { green; tests_end final; node "$HARNESS_HOME/lib/treekey.mjs"; })   # scratch_done keeps this tree's output
+  key=$(cd "$dir" && { green; tests_end final; ask treekey.mjs; })   # scratch_done keeps this tree's output
   flakes_note   # that suite's own rerun, before the summary counts it
   services_down "$1"; lanes_services_down "$1"   # after the last suite run, which may need them
   [[ -n ${LAST_LANE:-} && -f $L/teardown.out ]] && cat "$L/teardown.out" >> "$SCRATCH/teardown.out"
@@ -330,7 +330,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   # The reasons below are Michael's to act on: the report, the INBOX one tap away
   local pri="" acts="" sum
   case $1 in "blocked on"* | "waiting on Michael"* | "feature-list edits"* | "initializer failed"*)
-    pri=high acts=$(node "$NOTIFY_MJS" actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" Progress "$(gh_url "$RUN_DIR/progress.md")") ;;
+    pri=high acts=$(ask notify.mjs actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" Progress "$(gh_url "$RUN_DIR/progress.md")") ;;
   esac
   sum="$(F summary "$LIST" 2>/dev/null) · $(jq -r '"$\(.cost.total) · $\(.cost.per_passing_feature) per passing feature"' "$REC/summary.json" 2>/dev/null)"
   notify "ended ($1): $sum" title="[$RUN_ID] ended: $1" priority=$pri click="$(gh_url "$RUN_DIR/report.md")" actions="$acts"

@@ -6,6 +6,7 @@
 # has ("[<NOTIFY_TAG>] <message>") plus the fields as HARNESS_NOTIFY_*. Always returns 0: a notification never stops
 # a run. Needs the caller's log (and note, where there is one) and NTFY_URL NTFY_TOKEN NOTIFY_CMD from lib/config.sh.
 NOTIFY_MJS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/notify.mjs
+declare -F ask > /dev/null || ask() { local s=$1; shift; node "${NOTIFY_MJS%/*}/$s" "$@"; }   # a plain spawn; lib/record.sh's, sourced after this in a driver or lane, answers from its helper
 
 notify() {
   local msg=${1-} kv k v title=harness body="" click="" actions="" priority="" tags="" rc a
@@ -51,6 +52,6 @@ notify_trim() {
 
 # remote.origin.url, not `git remote get-url`: that one returns the url.<…>.insteadOf rewrite (the suite's local origin).
 gh_url() {
-  local u; u=$(node "$NOTIFY_MJS" urls "$(git config --get remote.origin.url)" "${BRANCH:-$(git branch --show-current)}" "$1" 2> /dev/null) || return 0
+  local u; u=$(ask notify.mjs urls "$(git config --get remote.origin.url)" "${BRANCH:-$(git branch --show-current)}" "$1" 2> /dev/null) || return 0
   [[ ${2:-blob} == edit ]] && echo "${u#*$'\t'}" || echo "${u%%$'\t'*}"
 }

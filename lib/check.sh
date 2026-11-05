@@ -40,6 +40,8 @@ cache=${HARNESS_CHECK_CACHE:-$scratch}   # green-<key> and red-<key> markers, pa
 max=${HARNESS_CHECK_MEMORY_MAX:-3G} to=${HARNESS_CHECK_TIMEOUT:-15m}
 rerun=${HARNESS_CHECK_RERUN:-auto}; [[ $rerun == @(auto|failed|suite|off) ]] || rerun=auto   # an unknown value: one wasted rerun at worst
 here=$(cd "$(dirname "$0")" && pwd)
+tk_given=${HARNESS_CHECK_TK:-}; unset HARNESS_CHECK_TK   # a lane's answer to this call's first question (check_run, lib/record.sh); the suite never sees it
+tc() { [[ -s $1 ]] && node "$here/testcount.mjs" "$@"; }   # an empty output has no count: no node start for it
 if [[ ${1:-} == --fast ]]; then   # with no fast command the whole suite is the fast tier: the bare form, byte for byte
   shift; (( $# )) && { echo "check: --fast takes no arguments (usage: check.sh [--fast | <args…>])"; exit 2; }
   [[ -n ${HARNESS_CHECK_FAST_CMD:-} ]] && fast=1
@@ -93,11 +95,12 @@ fi
 
 # line 1 the tree's key, line 2 the key without the mapped paths, then one `<blob> <path>` per mapped path, then one
 # `: <path> <name>…` per map entry (--names: the partial run's checks, without a second start)
-mapfile -t tk < <(node "$here/treekey.mjs" --partial --names 2> /dev/null); key=${tk[0]:-} red=${tk[1]:-} blobs=() pmap=()
+if [[ -n $tk_given ]]; then mapfile -t tk <<< "$tk_given"; else mapfile -t tk < <(node "$here/treekey.mjs" --partial --names 2> /dev/null); fi
+key=${tk[0]:-} red=${tk[1]:-} blobs=() pmap=()
 for l in "${tk[@]:2}"; do if [[ $l == ": "* ]]; then pmap+=("${l#: }"); else blobs+=("$l"); fi; done
 [[ $key =~ ^[0-9a-f]{16}$ ]] || key=""   # treekey failed: the full run, no marker
 if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's test count (older markers are empty: its output's)
-  n=""; read -r n < "$cache/green-$key"; [[ -n $n ]] || n=$(node "$here/testcount.mjs" "$scratch/check-$key.out")
+  n=""; read -r n < "$cache/green-$key"; [[ -n $n ]] || n=$(tc "$scratch/check-$key.out")
   # a key ignore list beyond the default (CHECK_KEY_IGNORE, the run record aside) is named, so a docs change's skip is explained
   ki=$(tr -s ' \t' '\n' <<< "${HARNESS_CHECK_KEY_IGNORE:-}" | grep -vx -e '' -e '\.harness/runs' | paste -sd' '); [[ $ki == docs/plans ]] && ki=""
   echo "check: green (cached for this code tree${n:+, $n}${ki:+; key ignores: $ki})"; row cached; exit 0
@@ -191,7 +194,7 @@ if (( fast )); then   # the fast tier: its own output and marker, no partial; a 
   if (( rc )); then guard "$out" "$scratch/check-fast-rerun.out"; [[ $how == suite ]] && w=$(( $(date +%s) - r0 )); fi
   s=$(( $(date +%s) - start ))
   if (( rc == 0 )); then
-    n=$(node "$here/testcount.mjs" "$scratch/check-fast.out" ${how:+--total})
+    n=$(tc "$scratch/check-fast.out" ${how:+--total})
     [[ -n $key ]] && mark "fast-$key" "$n" "wall $w"
     if [[ -n $how ]]; then flake; flaky=${names[*]}; echo "check: fast green after a rerun (flaky: ${flaky:-the fast tier})${n:+, $n}"
     else echo "check: fast green in $s s${n:+, $n}"; fi
@@ -232,7 +235,7 @@ if (( rc )); then
 fi
 s=$(( $(date +%s) - start ))
 if (( rc == 0 )); then   # the marker ("<n> tests" or empty, then the wall) outlives scratch; a flake's count is its first run's total
-  n=$(node "$here/testcount.mjs" "$scratch/check.out" ${how:+--total})
+  n=$(tc "$scratch/check.out" ${how:+--total})
   [[ -n $key ]] && mark "green-$key" "$n" "wall $w" && rm -f "$cache/red-$key"
   # the sidecar: a full run's green only, so a partial's reference is always a tree every check ran on
   [[ -n $key && $red =~ ^[0-9a-f]{16}$ ]] && (( ${#blobs[@]} )) && mark "part-$red" "$key" "${blobs[@]}"

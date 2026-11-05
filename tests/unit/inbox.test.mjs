@@ -1,7 +1,10 @@
 // lib/inbox.mjs: the INBOX.md parser (## Answers outside the steering comment), question, added, insert and repair.   node --test tests/unit/inbox.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { sameAsCli, cli, mainOf } from "./cli-same.mjs";
 import * as I from "../../lib/inbox.mjs";
 
 // n8n-home's INBOX.md at 4632d1c, byte for byte (tests/checks/57-inbox.sh checks its bytes)
@@ -98,3 +101,36 @@ test("needs review: a short reword inside the steering comment (not a question) 
   assert.equal(r.changed, false);
   assert.equal(r.text, a);
 });
+
+// ---- main(argv, io): the CLI's bytes and exit code; stdin only from io (decisions/2026-11-03-resident-helper) ----
+const inTmpInbox = async fn => { const d = mkdtempSync(join(tmpdir(), "ib-")); try { return await fn(d); } finally { rmSync(d, { recursive: true, force: true }); } };
+
+test("inbox.mjs: main gives the CLI's bytes for answers (no newline added), question and repair", () => inTmpInbox(async d => {
+  const f = join(d, "INBOX.md"), base = join(d, "base.md");
+  writeFileSync(f, "status: run\n\n## Answers\nyes, no trailing newline");
+  assert.equal((await sameAsCli("inbox.mjs", ["answers", f])).out.endsWith("newline"), true);
+  await sameAsCli("inbox.mjs", ["answers", join(d, "missing")]);
+  writeFileSync(base, "status: run\n\n## Answers\n");
+  writeFileSync(f, "status: run\n\n### H1: a question\nwhy\n\n## Answers\n");
+  assert.notEqual((await sameAsCli("inbox.mjs", ["question", base, f])).out, "");
+  const c = join(d, "c.md"), m = join(d, "m.md");
+  writeFileSync(c, "x\n"); writeFileSync(m, "x\n");
+  assert.deepEqual(await mainOf("inbox.mjs", ["repair", f, m]), cli("inbox.mjs", ["repair", f, c]));
+  assert.equal(readFileSync(m, "utf8"), readFileSync(c, "utf8"));
+}));
+
+test("inbox.mjs: main's insert takes stdin from io and leaves the file the CLI leaves", () => inTmpInbox(async d => {
+  const c = join(d, "c.md"), m = join(d, "m.md"), q = "### A1: asks\nwhat?\n\n";
+  writeFileSync(c, "status: run\n\n## Answers\n"); writeFileSync(m, "status: run\n\n## Answers\n");
+  assert.deepEqual(await mainOf("inbox.mjs", ["insert", m], { input: q }), { rc: 0, out: "" });
+  assert.deepEqual(cli("inbox.mjs", ["insert", c], { input: q }), { rc: 0, out: "" });
+  assert.equal(readFileSync(m, "utf8"), readFileSync(c, "utf8"));
+  assert.match(readFileSync(m, "utf8"), /what\?/);
+}));
+
+test("inbox.mjs: main's insert with an io that has no stdin throws without reading fd 0", () => inTmpInbox(async d => {
+  const f = join(d, "f.md"), { main } = await import("../../lib/inbox.mjs");
+  writeFileSync(f, "x\n");
+  assert.throws(() => main(["insert", f], { cwd: d }), /no stdin/);
+  assert.equal(readFileSync(f, "utf8"), "x\n");
+}));

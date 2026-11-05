@@ -8,7 +8,7 @@ needs_open() {
   local r=$1 s=$2 rc; shift 2
   # under the record lock: two lanes never take one seq. A later key=value overrides an earlier one (the caller's
   # milestone= on the coordinator, where LANE is empty)
-  record node "$NEEDS_MJS" open "$STATE" "$RUN_ID" "$PROJECT_NAME" "$r" "$s" \
+  record ask needs.mjs open "$STATE" "$RUN_ID" "$PROJECT_NAME" "$r" "$s" \
     milestone="${LANE:-}" list="$LIST" record="$REC" inbox="$REC/INBOX.md" worktree="${HARNESS_WT:-$RWT}" \
     branch="${LBRANCH:-$RBRANCH}" record_branch="$RBRANCH" main_branch="$MAIN_BRANCH" \
     origin="$(git config --get remote.origin.url)" state="$STATE" suite="${CHECK_CMD:-}" fix_root="${HARNESS_SCRATCH_ROOT:-/tmp/harness}/$PROJECT_NAME" "$@"
@@ -25,7 +25,7 @@ needs_notify() {
 }
 # the items the state now resolves move to needs/done/ (needs.md re-rendered), each noted
 needs_sweep() {
-  local out l; out=$(record node "$NEEDS_MJS" sweep "$STATE" 2>> "$STATE/run.log")
+  local out l; out=$(record ask needs.mjs sweep "$STATE" 2>> "$STATE/run.log")
   while IFS= read -r l; do [[ -n $l ]] && note "needs: $l"; done <<< "$out"
   return 0
 }

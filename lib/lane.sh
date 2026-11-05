@@ -40,7 +40,7 @@ lane_exit() { echo "$1 $2" > "$LDIR/exit"; exit "$1"; }
 # A TERM (the coordinator exiting) runs this at once while a session goes on: its scope first, then the services (a forked
 # child inherits it and skips it)
 trap '[[ $BASHPID == "$$" ]] || exit 0; trap "" TERM INT HUP; [[ -n ${S_UNIT:-} ]] && scope_stop "$S_UNIT"
-  if [[ ! -s $LDIR/exit ]]; then services_down "driver exited"; echo "12 lane exited unexpectedly" > "$LDIR/exit"; fi' EXIT
+  if [[ ! -s $LDIR/exit ]]; then services_down "driver exited"; echo "12 lane exited unexpectedly" > "$LDIR/exit"; fi; helper_stop' EXIT
 lane_cd || lane_exit 12 "its slot $SLOT is gone"
 load_config; MAX_SESSIONS=$LANE_MAX_SESSIONS
 lane_cd   # after load_config: sessions see the slot and the lane branch as HARNESS_WT and HARNESS_BRANCH
@@ -52,7 +52,7 @@ export HARNESS_LANE=$M   # check.sh names it in a flakes.jsonl row, its sessions
 # RED_NAMES, every `FAIL <name>` line of that output (the tree's first run, check-<key>.out), else the files, else
 # "whole suite": never empty; RED_OUT, that output.
 red_names() {
-  local key l; key=$(node "$HARNESS_HOME/lib/treekey.mjs" 2> /dev/null)
+  local key l; key=$(ask treekey.mjs 2> /dev/null)
   RED_NAMES=() RED_FILES=() RED_OUT=$SCRATCH/check-$key.out; [[ -n $key && -f $RED_OUT ]] || RED_OUT=$SCRATCH/check.out
   if [[ -n $key && -f $STATE/green/red-$key ]]; then read -ra RED_FILES <<< "$(sed -n 2p "$STATE/green/red-$key")"
   else read -ra RED_FILES <<< "$(sed -n 's/^HARNESS_FAILED=//p' "$RED_OUT" 2> /dev/null | tail -1)"; fi
@@ -467,7 +467,7 @@ while :; do
     # a sonnet review that found something gets one round on REVIEW_ESCALATE_MODEL, once per feature; un-passed before its
     # record, row and passes= note, so its verify waits for that round's verdict (decisions/2026-10-27-review-gate). Its
     # entry is in the record now.
-    if rf=$(node "$HARNESS_HOME/lib/entries.mjs" findings "$REC" "$id" "$SCRATCH/entry-final"); then
+    if rf=$(ask entries.mjs findings "$REC" "$id" "$SCRATCH/entry-final"); then
       IFS=$'\t' read -r rc ri <<< "$rf"
       if (( rc + ri > 0 )); then
         note "review $id: sonnet found $rc Critical, $ri Important; one round on $REVIEW_ESCALATE_MODEL"
@@ -487,7 +487,7 @@ while :; do
   # record's INBOX.md now), a feature whose attempts are used up without a park or a pending escalation round
   if [[ -n $why ]]; then   # a question without a Files: line points at the session's files (its entry's, then its diff)
     nref=$(needs_open parked "$id" feature="$id" why="$why" actions="$(park_actions)" \
-      session_files="$(node "$HARNESS_HOME/lib/entries.mjs" session-files "$REC" "$id" "$SCRATCH/entry-files" "$PWD")")
+      session_files="$(ask entries.mjs session-files "$REC" "$id" "$SCRATCH/entry-files" "$PWD")")
     [[ -n $nref ]] && jq -e '.card.files_from == "session" and (.card.question.text // "") != ""' "$STATE/needs/${nref##*/}.json" > /dev/null 2>&1 \
       && note "$id: its INBOX question had no Files: line; the park card's where is the session's files"   # the entry's own fill is journal_'s note
   elif [[ $passed == false && ! -s $LS/review-escalate ]] && (( $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") >= MAX_ATTEMPTS )); then

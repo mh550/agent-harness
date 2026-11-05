@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
+import { sameAsCli } from "./cli-same.mjs";
 import { outcome, events, orientation as or, resumeRow, metricsRow, fixRound, fixResult, isSession, fixPairs } from "../../lib/metrics.mjs";
 
 const fixture = name => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
@@ -133,5 +134,27 @@ test("fix rounds: fixPairs pairs each fix_round with the fix_result of its miles
     assert.equal(run(p, "M1"), '[{"id":"M1-fix1","round":1,"failed_after":["t3"]},{"id":"M1-fix2","round":2,"failed_after":null}]\n');
     assert.equal(run(p, "M3"), "[]\n");
     assert.equal(run(join(d, "none.jsonl"), "M1"), "[]\n");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+// ---- main(argv, io): the CLI's bytes and exit code (decisions/2026-11-03-resident-helper) ----
+test("metrics.mjs: main gives the CLI's bytes for the driver's questions on the captures, limit's 1 and 0 included", async () => {
+  const fx = n => fileURLToPath(new URL(`../fixtures/${n}`, import.meta.url));
+  assert.equal((await sameAsCli("metrics.mjs", ["limit", fx("usage-limit.jsonl"), "1", "1"])).rc, 0);
+  assert.equal((await sameAsCli("metrics.mjs", ["limit", fx("usage-tokens.jsonl"), "600", "0"])).rc, 1);
+  for (const a of [["cost", fx("usage-tokens.jsonl")], ["final", fx("usage-tokens.jsonl")], ["session-id", fx("usage-tokens.jsonl")], ["usage", fx("usage-limit.jsonl")], ["usage", fx("usage-limit.jsonl"), "five_hour"], ["summary", "/nonexistent"], ["fix-rounds", "/nonexistent", "M"]])
+    await sameAsCli("metrics.mjs", a);
+});
+
+test("metrics.mjs: main's append writes the row the CLI writes", async () => {
+  const d = mkdtempSync(join(tmpdir(), "mm-"));
+  try {
+    const fx = fileURLToPath(new URL("../fixtures/usage-tokens.jsonl", import.meta.url));
+    const row = out => ["append", fx, out, "r", "coding", "A1", "sonnet", "true", "12", "0", "false", "build"];
+    const { main } = await import("../../lib/metrics.mjs");
+    assert.deepEqual(main(row(join(d, "m.jsonl")), { cwd: d }), { rc: 0, out: "" });
+    execFileSync(process.execPath, [fileURLToPath(new URL("../../lib/metrics.mjs", import.meta.url)), ...row(join(d, "c.jsonl"))]);
+    const strip = f => readFileSync(join(d, f), "utf8").replace(/"at":"[^"]*"/g, "");
+    assert.equal(strip("m.jsonl"), strip("c.jsonl"));
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
