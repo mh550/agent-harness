@@ -7,6 +7,26 @@ The run: phase 2 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier is green, and the verifier re-runs every step on the full suite before H1 merges into `main`. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-05 11:06 · H1-02 · passes
+
+lib/helper.mjs answers {id,script,args,cwd,env} one at a time as `<id> <rc> <bytes>` + bytes; ask in lib/record.sh asks over a coproc, spawning whenever off, absent, busy or broken. ask 3.1 ms, a spawn 32.8 ms. No call site uses it yet. New 91-resident-helper.sh, 50 checks, fast tier. Fast tier green.
+
+- **Files:** lib/helper.mjs, lib/record.sh, lib/cli.mjs, tests/checks/91-resident-helper.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-03-resident-helper.md
+- **Verified:** check.sh --fast: green, 668 tests, 160 s, on the final tree. bash tests/run.sh resident-helper 84-node-memo 13-run-2 82-key-map 00-unit: 91 50/50, 84 26/26, 13 66/66, unit 182/182, 82 8/8 (82 after its one fix). 91 ran three times in a row green. bash -n, node --check; git diff HEAD -- lib/lane.sh lib/driver.sh lib/check.sh lib/prompt.sh bin is empty and record.sh only gains lines. The full suite was not run here: it runs at verify.
+- **Tests:** 1369 → 1419
+- **Dead end:** `done 2> /dev/null` on the coproc's loop that closes inherited descriptors — bash parks stderr on a high fd for that redirect, the loop closes it, and the helper loses its stderr: the throw check caught it. Closing an fd that is gone is silent, so no redirect is needed.
+- **Dead end:** the environment's names in the lock file (one file) — a refused asker's `>` open truncates it while the holder reads, which could send an empty env. They have their own file now.
+- **Dead end:** timing ask inside `( for … )` — a ( ) closes the coproc's fds, so every call spawned and ask looked as slow as a spawn (33 ms). Timed in the owner shell it is 3.1 ms.
+- **Dead end:** a Gotcha line for that fact — memlint: 16 lines, over 15. The section was at its limit and every other line guards a test failure, so it went; helper_ready's comment and the decision file hold it.
+- **Discovery** (affects H1-02b): Only the shell that sourced record.sh starts a helper, and a $( ask ) before it has one spawns and starts none. Most driver call sites are $( ), so H1-02b must call helper_start itself in run_paths or at the lane's start, outside any 2> redirect: the helper's stderr is the shell's at that moment for its whole life.
+- **Discovery** (affects H1-02b): helper_start clobbers $!: coproc sets it. Today's four `$!` reads (check.sh:67, driver.sh:96 and :161, record.sh:294) are each right after their `&`, and `wait -n` in lane_wait names its pids, so none breaks; a new `$!` read must stay adjacent. No bare `wait` in lib/ or bin/ (it would wait on the coproc for ever).
+- **Discovery** (affects H1-02b): A served script's stderr goes to the helper's stderr whatever the call redirects: `F x 2> /dev/null` no longer silences a throw's stack, and `2>> run.log` no longer lands there. needs.mjs fields prints NULs (the helper declines, the spawn answers): that call site stays a spawn.
+- **Discovery** (affects H1-02b, H1-04): ask spawns in a ( ), a pipeline's side or a job: bash closes the coproc's fds there and leaves the variables. So `ask x | y` is a spawn, and a check counting starts must not wrap ask in ( ). `export -p`-free environment enumeration is compgen -e through scratch's helper-<shell>.names.
+- **Discovery** (affects H1-02b): Scratch gains helper-<shell>.lock, .names and, after a failure, .restarts. A check that lists a run's scratch directory exactly would see them once call sites ask.
+- **Discovery** (affects H1-05): A main slower than HARNESS_HELPER_TIMEOUT (120 s), a writer included, is killed and then spawned, so it can run twice: the review should look at whether any served writer can take that long (needs sweep, summary build).
+- **Proposed change:** The spec's request line should name `env`, and `HELPER_SHELL=$BASHPID` and an `$SRANDOM` id replace its `$$` and counter: reasons in decisions/2026-11-03-resident-helper. The spec itself is left as written.
+- *02-H1-02 · claude-opus-5-5*
+
 ### 2026-11-05 10:36 · H1-01 · passes
 
 All eleven served scripts export main(argv, io) → { rc, out } and share lib/cli.mjs's isMain/runCli tail; no shell file changed. 37 unit tests compare main to the CLI. Fixed a spec bug: its write-then-exit tail cuts a pipe at 64 KB, so runCli exits from the write's callback. Fast tier green.
