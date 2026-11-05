@@ -1,2 +1,0 @@
-[{"id":"suite-time-budget","title":"Warn on session suite runs that take far longer than expected","evidence":"H1-02b ran the suite 2x for 828 s; H1-02 2x for 357 s (CLAUDE.md says 10-11 min full, fast tier intended once)"},
-{"id":"record-push-retry-noise","title":"Back off and collapse record-branch push-failure log lines","evidence":"12 'record branch: push ... failed/succeeded' lines between 11:00 and 11:05, 6 failures, each recovering within a minute"}]
