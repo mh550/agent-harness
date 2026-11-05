@@ -50,6 +50,7 @@ source "$HARNESS_HOME/lib/needs.sh"   # needs_open: a needs-you record (lib/need
 run_paths   # PROJECT_NAME BRANCH RUN_DIR SCRATCH CHECK PORT, RWT REC LIST …, the configuration
 mkdir -p "$HARNESS_CACHE"   # installs a project keeps across runs and boots (Playwright browsers …); scratch goes at finish
 echo "$MAX_ATTEMPTS" > "$STATE/max-attempts"
+hours_ok || { log "HOURS=$HOURS in the config is not a whole number of hours"; exit 1; }
 T0=$(date +%s); DEADLINE=$(run_deadline "$T0")
 rm -f "$STATE"/waited-* "$STATE"/lanes/*/waited-*   # a restart inside a usage-limit window waits for it again
 

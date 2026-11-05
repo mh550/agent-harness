@@ -317,6 +317,9 @@ cmd_start() {
   [[ $run == desk || $run == debrief ]] && die "run-id '$run' is taken by the desk (tmux h-desk, <state>/queue/desk)"
   [[ $run == queue ]] && die "run-id 'queue' is taken by the queue runner (tmux h-queue)"
   [[ $run == lanes ]] && die "run-id 'lanes' is taken by the lane slots (<worktrees>/<project>/lanes)"
+  # before a queue entry or a worktree comes of it; a given run's own run.env counts, in a subshell so nothing else of it leaks here
+  local bad_hours; bad_hours=$(harness_config "$p" ${run:+"$STATE_ROOT/$(basename "$p")/$run"} > /dev/null 2>&1; hours_ok || printf '%s' "$HOURS")
+  [[ -z $bad_hours ]] || die "HOURS=$bad_hours in the config is not a whole number of hours"
   [[ ${HARNESS_MERGE_ONLY:-} ]] || spec_refuse "$p" "$run" "$spec" "$base"   # before the first queue_add: a queued entry is a checked one
   # a queued start: the entry the runner replays (no run id yet when none is given: it is chosen when the run starts)
   local args=("$p" ${run:+"$run"}); [[ -n $base ]] && args+=(--base "$base"); [[ -n $spec ]] && args+=(--spec "$spec")
