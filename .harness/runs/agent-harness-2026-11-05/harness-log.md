@@ -22,3 +22,7 @@
 - 2026-11-05 11:05 · record branch: push of harness/agent-harness-2026-11-05 succeeded after 1 failures over 0 min
 - 2026-11-05 11:06 · H1-02: suite ran 2x (357 s) in the session
 - 2026-11-05 11:06 · H1-02 · claude-opus-5-5 · passes=true · 30 min · 2/6 passing
+- 2026-11-05 11:06 · context.md for H1-02b: 7876 bytes
+- 2026-11-05 11:46 · H1-02b: suite ran 2x (828 s) in the session
+- 2026-11-05 11:46 · H1-02b: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-05 11:46 · H1-02b · claude-opus-5-5 · passes=true · 39 min · 3/6 passing

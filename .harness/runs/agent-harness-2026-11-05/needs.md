@@ -43,3 +43,25 @@ harness needs done agent-harness-2026-11-05/1 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-05/2 --why "<answer>"
 ```
+
+## ⚠ H1-02b asked: Step 1 and the spec say lib/check.sh's treekey.mjs and test…
+
+`agent-harness-2026-11-05/3` · since 2026-11-05T16:46:23.802Z
+
+**blocked** nothing waits on it; H1-02b's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:4](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-05/.harness/runs/agent-harness-2026-11-05/entries.jsonl?plain=1#L4)
+
+> Step 1 and the spec say lib/check.sh's treekey.mjs and testcount.mjs spawn as today, but step 3 bounds a stub start at 30 node starts, and those two were 32 of the 52 left once everything else was wired. So I took a *default* beyond the spec: check_run in lib/record.sh asks the lane's helper for the key and hands it down in HARNESS_CHECK_TK (unset before anything else in check.sh), and an empty suite output starts no testcount.mjs. A session's check.sh spawns as before. Keep it? The alternative is to restore both spawns and raise the bound to about 52.
+> Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/lib/record.sh:315, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/lib/check.sh:43, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/journal/decisions/2026-11-03-resident-helper.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/lib/record.sh:315](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-05/H1/lib/record.sh#L315) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/lib/check.sh:43](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-05/H1/lib/check.sh#L43) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/journal/decisions/2026-11-03-resident-helper.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-05/H1/journal/decisions/2026-11-03-resident-helper.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-05/.harness/runs/agent-harness-2026-11-05/entries.jsonl:4](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-05/.harness/runs/agent-harness-2026-11-05/entries.jsonl?plain=1#L4)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-05/3 --why "<answer>"
+```
