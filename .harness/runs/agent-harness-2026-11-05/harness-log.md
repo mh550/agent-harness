@@ -7,3 +7,5 @@
 - 2026-11-05 10:36 · H1-01: suite ran 1x (158 s) in the session
 - 2026-11-05 10:36 · H1-01: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-05 10:36 · H1-01 · claude-opus-5-5 · passes=true · 16 min · 1/6 passing
+- 2026-11-05 10:36 · context.md for H1-02: 7013 bytes
+- 2026-11-05 11:00 · record branch: push of harness/agent-harness-2026-11-05 failed; retrying at every sync (see run.log)
