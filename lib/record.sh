@@ -182,6 +182,16 @@ services_down() {
 }
 green() { "$CHECK" > /dev/null 2>&1; }
 green_fast() { "$CHECK" --fast > /dev/null 2>&1; }   # the gate `passes` stands on (decisions/2026-11-03-fast-gate)
+# <fix feature id>: the gate a fix feature's `passes` stands on (decisions/2026-11-04-fix-rounds): the red's files through
+# the suite's subset form (the record's fix_files; none: the whole suite), then the fast tier. The first red stops it and
+# sets FIX_RED to what was red, as the un-pass note says it (`check <files>`, `suite`, `fast tier`).
+green_fix() {
+  local files; read -ra files <<< "$(jq -r --arg id "$1" '.features[] | select(.id == $id) | .fix_files // [] | join(" ")' "$LIST")"
+  FIX_RED=""
+  if (( ${#files[@]} )); then "$CHECK" "${files[@]}" > /dev/null 2>&1 || { FIX_RED="check ${files[*]}"; return 1; }
+  else green || { FIX_RED=suite; return 1; }; fi
+  green_fast || { FIX_RED="fast tier"; return 1; }
+}
 # The flakes check.sh's reruns turned green (green/flakes.jsonl, every lane's and session's) get one note each, once:
 # $STATE/flakes-noted is the byte offset noted up to. Whole lines only (a lane may be mid-append); a row that isn't a
 # JSON object is passed over. Under its own lock, so two lanes never note a row twice (decisions/2026-10-29-rerun-guard).

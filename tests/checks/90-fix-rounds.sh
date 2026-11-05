@@ -60,5 +60,68 @@ check "fix rounds config: MAX_FIX_ROUNDS=2 by default, commented in the user tem
 
 git add -A && git commit -qm "two tiers" && git push -q origin main
 main0=$(git rev-parse HEAD)
+args() { cat "$T/scratch/proj/$1/suite-args.log" 2> /dev/null; }
+st() { echo "$HARNESS_STATE/proj/$1"; }
+rec() { echo "$T/wt/proj/$1/.harness/runs/$1"; }
+prompt_of() { grep -l "^Feature: \`$2\`$" $(find "$(st "$1")" -name '*.prompt.md' | sort) 2> /dev/null | sed -n "${3:-1}p"; }
+items() { cat "$(st "$1")"/needs/*.json "$(st "$1")"/needs/done/*.json 2> /dev/null || :; }   # <run>: its needs items, open and resolved (a glob with no file is no failure: pipefail)
+# <run> <id> <n>: the suite calls after that coding session's line, one per line, up to the next session's
+after_session() { args "$1" | awk -v s="session $2 $3" '$0 == s { on = 1; next } on && /^session / { exit } on'; }
+# <run> [<env>…]: one run of the stub project from main0, B's first session leaving the slow tier red
+fx() { local r=$1; shift; git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+  env STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$@" "$H" start "$T/proj" "$r" --spec SPEC.md --foreground > "$T/$r.out" 2>&1; }
+
+# fx1: B commits BROKEN-SLOW and passes on the fast tier; the verify's full suite is red on t1; round 1's session removes
+# the marker, its gate (t1, then the fast tier) is green, and the second verify tags and merges
+fx fx1 STUB_SLOW_RED=B STUB_FIX=fix
+check "fix rounds fx1: a red verify opens round 1 (the note with the failing name) and no card: no needs Michael, needs-M1, verify_red item or needs-you post" \
+  'hlog fx1 | grep -E " · B · [^ ]+ · passes=true · " > /dev/null \
+  && hlog fx1 | grep " · verify M1: the suite is red on the verified tree (main had nothing new: a slow-tier red the fast gate let through); fix round 1 of 2: M1-fix1 appended (1 failing: t1)$" > /dev/null \
+  && ! hlog fx1 | grep "needs Michael" > /dev/null && [[ ! -e $(st fx1)/needs-M1 ]] && ! items fx1 | jq -se "any(.reason == \"verify_red\")" > /dev/null \
+  && [[ $(curl_count "[fx1] M1 needs you") == 0 ]]'
+check "fix rounds fx1: the record's list has M1-fix1 (kind fix, issue all, round 1, after B, t1 as name and file, three steps, the worker model), clean under the step lint" \
+  'jq -e ".features[-1] | .id == \"M1-fix1\" and .milestone == \"M1\" and .kind == \"fix\" and .issue == \"all\" and .round == 1 and .after == [\"B\"] and .fix_names == [\"t1\"]
+    and .fix_files == [\"t1\"] and .fix_out == \".harness/runs/fx1/fix/M1-1.out\" and (.steps | length) == 3 and .model == \"opus\" and .passes == true" "$(list fx1)" > /dev/null \
+  && [[ $(jq -r ".features[-1].steps[0]" "$(list fx1)") == "\`\$HARNESS_CHECK t1\` exits 0 (the HARNESS_FAILED files of .harness/runs/fx1/fix/M1-1.out)" ]] \
+  && [[ -z $($F lint "$(list fx1)" | grep "^M1-fix1") ]] && ! hlog fx1 | grep "restored the feature list" > /dev/null'
+check "fix rounds fx1: the red's output is in the record as fix/M1-1.out with the FAIL t1 line, committed" \
+  'grep -x "FAIL t1" "$(rec fx1)/fix/M1-1.out" > /dev/null && grep -x "HARNESS_FAILED=t1" "$(rec fx1)/fix/M1-1.out" > /dev/null \
+  && git -C "$T/wt/proj/fx1" ls-files --error-unmatch .harness/runs/fx1/fix/M1-1.out > /dev/null 2>&1'
+fx1_p=$(prompt_of fx1 M1-fix1) fx1_a=$(prompt_of fx1 A)
+check "fix rounds fx1: the fix session's prompt has the Fix round line under This session (1 of 2, t1, the output's path, both gate commands); A's has none" \
+  '[[ -n $fx1_p && -n $fx1_a ]] && awk "/^# This session\$/ { s = 1 } s" "$fx1_p" \
+    | grep -E "^Fix round 1 of 2: the full suite is red on this milestone.s verified tree; failing: t1; its output: \.harness/runs/fx1/fix/M1-1\.out; your feature passes on \`[^ \`]+/lib/check\.sh t1\` and \`[^ \`]+/lib/check\.sh --fast\` green, and the verify then runs the full suite\.\$" > /dev/null \
+  && ! grep -e "^Fix round" -e "{{FIX}}" "$fx1_a" > /dev/null && ! grep -F "{{FIX}}" "$fx1_p" > /dev/null'
+check "fix rounds fx1: the fix feature's gate runs its files (t1), then the fast tier, and it passes (passes=true in run.log, no un-pass)" \
+  '[[ $(after_session fx1 M1-fix1 1 | sed -n 1,2p | paste -sd,) == "t1,--tier fast" ]] \
+  && grep -E " M1-fix1 · [^ ]+ · passes=true · " "$(st fx1)/run.log" > /dev/null && ! hlog fx1 | grep "un-passed" > /dev/null'
+check "fix rounds fx1: the second verify tags M1 (after fix round 1) and it merges; two verify sessions, verify-rounds-M1 is 1, the run is done" \
+  '[[ $(grep -c " verify M1 · " "$(st fx1)/run.log") == 2 ]] && hlog fx1 | grep " · M1 verified and tagged run/fx1/M1 (after fix round 1)$" > /dev/null \
+  && hlog fx1 | grep " · M1 merged into main" > /dev/null && [[ $(cat "$(st fx1)/verify-rounds-M1") == 1 ]] && grep "^done" "$(st fx1)/ended" > /dev/null \
+  && [[ -n $(git -C "$T/origin.git" tag -l "run/fx1/M1") ]] && [[ ! -e $(st fx1)/fix-open-M1 && $(cat "$(st fx1)/fix-rounds-M1") == 1 ]]'
+check "fix rounds fx1: metrics.jsonl has the fix_round row (failed_before t1), one fix_result (failed_after [], fixed) and the fix session's row with role fix" \
+  'jq -se "([.[] | select(.kind == \"fix_round\")] | length == 1 and (.[0] | .run == \"fx1\" and .milestone == \"M1\" and .round == 1 and .issue == \"all\" and .feature == \"M1-fix1\"
+      and .failed_before == [\"t1\"] and .files_before == [\"t1\"]))
+    and ([.[] | select(.kind == \"fix_result\")] | length == 1 and (.[0] | .milestone == \"M1\" and .round == 1 and .failed_after == [] and .fixed == true))
+    and ([.[] | select(.kind == \"coding\" and .feature == \"M1-fix1\")] | length == 1 and (.[0] | .role == \"fix\" and .passes == true))
+    and ([.[] | .kind] | index(\"fix_round\") < index(\"fix_result\"))" "$(rec fx1)/metrics.jsonl" > /dev/null'
+check "fix rounds fx1: summary.json counts 1 opened, 1 fixed and no fix row as a session; harness report --md prints the Fix rounds row; the run-ended note groups no fix kind" \
+  'jq -e ".fix_rounds == {opened: 1, fixed: 1, by_milestone: {M1: {opened: 1, fixed: 1}}} and .cost.by_role.fix > 0" "$(rec fx1)/summary.json" > /dev/null \
+  && jq -e "[.cost.by_role, .time.by_role_h, .tokens.by_role] | all(keys | all(test(\"^fix_\") | not))" "$(rec fx1)/summary.json" > /dev/null \
+  && "$H" report --md fx1 | grep -xF "| Fix rounds | 1 opened · 1 fixed (M1 1 of 1) |" > /dev/null && ! hlog fx1 | grep "fix_r" > /dev/null'
+check "fix rounds fx1: harness show fx1 M1-fix1 lists the fix session alone: the fix_round row naming the feature is no session" \
+  '"$H" show fx1 M1-fix1 --json > "$T/fx1-show.json" 2> /dev/null; jq -e ".feature.sessions | length == 1 and .[0].kind == \"coding\" and .[0].role == \"fix\"" "$T/fx1-show.json" > /dev/null'
+
+# fx5: the fix session leaves BROKEN-SLOW: its gate's first command is red, the feature is un-passed, and with one
+# attempt it is given up as any feature is
+mkdir -p "$(st fx5)" && echo MAX_ATTEMPTS=1 > "$(st fx5)/run.env"
+fx fx5 STUB_SLOW_RED=B STUB_FIX=none
+check "fix rounds fx5: a fix session that leaves the red is un-passed by its gate's first command (check t1; the fast tier not run), given up, and the run ends blocked on M1-fix1" \
+  'hlog fx5 | grep " · M1-fix1 un-passed: check t1 red after the session$" > /dev/null && [[ $(after_session fx5 M1-fix1 1 | sed -n 1p) == t1 ]] \
+  && ! after_session fx5 M1-fix1 1 | grep -x -e "--tier fast" > /dev/null \
+  && items fx5 | jq -se "any(.key == \"given_up:M1-fix1\")" > /dev/null && grep "^blocked on M1-fix1" "$(st fx5)/ended" > /dev/null \
+  && jq -e ".fix_rounds == {opened: 1, fixed: 0, by_milestone: {M1: {opened: 1, fixed: 0}}} and .guards.red_unpass == 1
+    and (.features_detail[] | select(.id == \"M1-fix1\") | .cause == \"red suite\")" "$(rec fx5)/summary.json" > /dev/null \
+  && [[ -f $(st fx5)/fix-open-M1 ]] && ! jq -se "any(.kind == \"fix_result\")" "$(rec fx5)/metrics.jsonl" > /dev/null'
 
 suite_end

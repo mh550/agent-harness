@@ -149,6 +149,7 @@ fast gate: with no fast command, --fast runs the suite bare, writes green-<key> 
 fast gate: with no fast command, the next --fast call is the full form's cached line; rows full then cached
 features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
 features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
+fix rounds: a fix feature's un-pass note (check <files> red) reads as a red suite, beside the fast tier's and the older note
 fix rounds: build adds fix_rounds from metrics.jsonl and counts neither row as a session, a role or a cost; Spend by role lists fix
 fix rounds: fixFeature builds <m>-fix<r> after the milestone's last feature, kind fix, issue, round, the names, files and out, three steps, not passing
 fix rounds: fixRound is the row at a round's open and fixResult the next verify's suite verdict, fixed exactly when nothing failed

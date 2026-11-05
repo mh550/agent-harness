@@ -57,8 +57,10 @@ check "fast gate run: the coding prompt names both tiers' commands, carries both
   && grep -E "^Suite: last fast run [0-9]+ s$" "$fg_b" > /dev/null && [[ $(below "$fg_b") == below ]] \
   && grep -F "run the fast tier once, last" "$fg_b" > /dev/null'
 
-# fs: B's first session commits BROKEN-SLOW: the fast tier stays green, so B passes; the verify's full run finds it
+# fs: B's first session commits BROKEN-SLOW: the fast tier stays green, so B passes; the verify's full run finds it.
+# MAX_FIX_ROUNDS=0: the red is the card at once, as before fix rounds (90-fix-rounds has the rounds)
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+mkdir -p "$(st fs)" && echo MAX_FIX_ROUNDS=0 > "$(st fs)/run.env"
 STUB_SLOW_RED=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" fs --spec SPEC.md --foreground > "$T/fs.out" 2>&1
 check "fast gate run: a slow-tier red passes the session (passes=true, no un-pass) and the verify's full run is red (note, needs record)" \
   'hlog fs | grep -E " · B · [^ ]+ · passes=true · " > /dev/null && ! hlog fs | grep "un-passed" > /dev/null \

@@ -346,11 +346,22 @@ finish opens usage_limit (limit, warn, no priority) for a usage-limit end; needs
 finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
 finish: record_pr runs before ledger, so the ledger copy of harness-log.md holds the record PR note
 fix rounds config: MAX_FIX_ROUNDS=2 by default, commented in the user template and among what bounds a run
+fix rounds fx1: a red verify opens round 1 (the note with the failing name) and no card: no needs Michael, needs-M1, verify_red item or needs-you post
+fix rounds fx1: harness show fx1 M1-fix1 lists the fix session alone: the fix_round row naming the feature is no session
+fix rounds fx1: metrics.jsonl has the fix_round row (failed_before t1), one fix_result (failed_after [], fixed) and the fix session's row with role fix
+fix rounds fx1: summary.json counts 1 opened, 1 fixed and no fix row as a session; harness report --md prints the Fix rounds row; the run-ended note groups no fix kind
+fix rounds fx1: the fix feature's gate runs its files (t1), then the fast tier, and it passes (passes=true in run.log, no un-pass)
+fix rounds fx1: the fix session's prompt has the Fix round line under This session (1 of 2, t1, the output's path, both gate commands); A's has none
+fix rounds fx1: the record's list has M1-fix1 (kind fix, issue all, round 1, after B, t1 as name and file, three steps, the worker model), clean under the step lint
+fix rounds fx1: the red's output is in the record as fix/M1-1.out with the FAIL t1 line, committed
+fix rounds fx1: the second verify tags M1 (after fix round 1) and it merges; two verify sessions, verify-rounds-M1 is 1, the run is done
+fix rounds fx5: a fix session that leaves the red is un-passed by its gate's first command (check t1; the fast tier not run), given up, and the run ends blocked on M1-fix1
 fix rounds stub suite: --tier fast is red on BROKEN or BROKEN-FAST, green on the slow markers
 fix rounds stub suite: STUB_FLAKE_ONCE=1 makes the first bare call after flake-armed red on t2 and removes it; a fast call, a subset or a call without the flag leaves it
 fix rounds stub suite: a subset is red only on its own file's marker (t1 on BROKEN-SLOW, t3 on BROKEN-SLOW2)
 fix rounds stub suite: bare is red on BROKEN and BROKEN-SLOW (FAIL t1, HARNESS_FAILED=t1) and on BROKEN-SLOW2 (FAIL t3, HARNESS_FAILED=t3), green with none
 fix rounds stub suite: gate-green-once makes the next subset green once and goes; a bare call leaves it and stays red
+fix rounds: a fix feature's un-pass note (check <files> red) reads as a red suite, beside the fast tier's and the older note
 fix rounds: build adds fix_rounds from metrics.jsonl and counts neither row as a session, a role or a cost; Spend by role lists fix
 fix rounds: fixFeature builds <m>-fix<r> after the milestone's last feature, kind fix, issue, round, the names, files and out, three steps, not passing
 fix rounds: fixRound is the row at a round's open and fixResult the next verify's suite verdict, fixed exactly when nothing failed

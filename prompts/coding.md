@@ -73,6 +73,10 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
 
 - Test-driven: write the test, watch it fail, make it pass. Debug systematically. Verify before
   claiming anything. A plan feature writes only the plan.
+- A fix feature (`kind: fix`; its `Fix round` line is under *This session*): the full suite was red
+  on this milestone's verified tree. Read the output that line names, find why those checks fail
+  and fix the cause. Never change a check's assertion to make it pass; a check that was itself
+  wrong is changed, with its reason in your entry.
 - Keep your context small by delegating. Browser and end-to-end checks go to a **Sonnet**
   subagent: tell it what to test, what PASS looks like, the port and the scratch directory. Reviews
   go to subagents on your own model (named under *This session*) that read a diff from a file in
@@ -147,6 +151,7 @@ Reviews go to subagents on your own model (`{{MODEL}}`).
 Suite: last full run {{SUITE_LENGTH}}
 {{?CHECK_FAST_CMD}}Suite: last fast run {{SUITE_FAST_LENGTH}}
 {{REVIEW_DIFF}}
+{{?FIX}}{{FIX}}
 
 ## Init output
 

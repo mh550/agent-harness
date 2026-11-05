@@ -163,6 +163,13 @@ test("summary.mjs: suiteRuns counts the coding rows that carry suite_full, full 
 const fxo = (m, r) => ({ kind: "fix_round", run: "r", milestone: m, round: r, issue: "all", feature: `${m}-fix${r}`, failed_before: ["t1"], files_before: ["t1"] });
 const fxr = (m, r, after) => ({ kind: "fix_result", run: "r", milestone: m, round: r, issue: "all", failed_after: after, fixed: after.length === 0 });
 
+test("fix rounds: a fix feature's un-pass note (check <files> red) reads as a red suite, beside the fast tier's and the older note", () => {
+  const h = "- 2026-11-04 04:38 · M1-fix1 un-passed: check 90-fix-rounds 59-needs-cards red after the session\n- 2026-11-04 04:39 · A un-passed: fast tier red after the session\n"
+    + "- 2026-11-04 04:40 · M1-fix2 un-passed: suite red after the session\n- 2026-11-04 04:41 · B · opus · passes=true · checked: nothing un-passed here\n";
+  assert.deepEqual(["M1-fix1", "A", "M1-fix2", "B", "M1-fix"].map(id => redSuite(h, id)), [true, true, true, false, false]);
+  assert.equal((h.match(new RegExp(redUnpass.source, "g")) || []).length, 3);
+});
+
 test("fix rounds: fixRounds pairs each fix_result to its fix_round by milestone and round, per milestone in order", () => {
   assert.deepEqual(fixRounds([]), { opened: 0, fixed: 0, by_milestone: {} });
   const rows = [{ kind: "coding", feature: "A" }, fxo("M1", 1), fxr("M1", 1, []), fxo("M2", 1), fxr("M2", 1, ["t3"])];
