@@ -7,6 +7,22 @@ The run: phase 2 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier is green, and the verifier re-runs every step on the full suite before H1 merges into `main`. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-05 12:01 · H1-03 · passes
+
+treekey.mjs takes clean tracked blobs from the index: one ls-files, hash-object only for the rest, none on a clean tree. Keys equal the old code's on this tree and an independent definition; a CRLF blob committed before text=auto differs once. 59.1 to 49.8 ms spawned, 17.3 to 6.3 ms in process; missed on a fresh checkout, 139 ms, until the next index write. Fast tier green.
+
+- **Files:** lib/treekey.mjs, tests/unit/treekey.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-03-resident-helper.md, docs/architecture.md
+- **Verified:** Fast tier: 684 tests green. 00-unit 189/189, 34-check-key 11/11, 81-partial-key 27/27 (neither check file changed), resident-helper 76/76. The new definition tests passed on the old code and went red on a naive index-only version. Old (merge-base) and new printed the same key, bare and --partial --names, in this worktree with uncommitted edits and one untracked file. Profiles in /tmp/harness/agent-harness/agent-harness-2026-11-05/lanes/H1/prof. The full suite was not run here: it runs at verify.
+- **Tests:** 678 → 684
+- **Dead end:** a Gotchas line on HARNESS_CHECK_KEY_* in a unit test's process.env — the section was already at 15 lines and 39-memlint-m4 went red at 16; the fact is under discoveries instead
+- **Dead end:** a naive cut, an index blob for every tracked row — written only to watch the tests catch it: links, stale rows, conflicts and subdirectories all give a wrong key
+- **Discovery** (affects H1-04): On a fresh checkout whose files share the index's second, git ls-files -m re-reads every file on each call, those the pathspecs exclude too (stock git compares the racy timestamp by the second): a treekey call is 139 ms, not 50, until the index is next written. H1-04's before and after trees: a fresh scratch worktree measures this unless something wrote its index first.
+- **Discovery** (affects H1-05): Below the repo's top treekey has no key by design: hash-object --stdin-paths reads from the top, so it throws and check.sh runs in full with no marker. An index-blob path must keep that, or a subdirectory gets a key of its own files alone.
+- **Discovery** (affects run): A unit test giving treekey's main process.env sees a session's HARNESS_CHECK_KEY_IGNORE and _MAP, so it is red only under a run: clear them (plain() in tests/unit/treekey.test.mjs).
+- **Discovery** (affects run): The Gotchas section in CLAUDE.md is at its limit of 15 lines: a new line must replace one, or 39-memlint-m4 goes red.
+- **Proposed change:** H1-03 step 1's three git calls became one: `git ls-files -z -v --stage -c -m -o` prints all of it; the decision file says why.
+- *04-H1-03 · claude-opus-5-5*
+
 ### 2026-11-05 11:46 · H1-02b · passes
 
 F, Fv, MET, SUM and the served calls in lib/*.sh go through ask; one helper per driver and lane, started in run_paths, killed by the EXIT traps. A stub start: 336 node starts off, 20 on, identical logs. A request's stderr follows the call's redirect (the helper's fd 2 is a file ask forwards). check_run hands check.sh its key. New 92-resident-helper-run.sh; 1419 to 1444 checks.
