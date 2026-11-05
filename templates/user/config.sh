@@ -37,7 +37,7 @@
 # RESOLVE_MODEL=opus                 # the resolve session's model
 # RESOLVE_MAX_TURNS=60               # its turns
 # RESOLVE_BUDGET_USD=5               # its spend cap
-# RESOLVE_TIMEOUT=30m                # its wall time; none starts with less than this left before the run's deadline
+# RESOLVE_TIMEOUT=30m                # its wall time; none starts with less than this left before the run's deadline, when it has one
 # MAX_RESOLVES=3                     # resolve sessions per milestone per run; past them a conflict needs you
 # RECORD_PR=end                      # the run record's own PR, opened when the run ends; off = none
 # HOURS=                             # a run's end time: empty or 0 none; a whole number, that many hours (anything else is refused)

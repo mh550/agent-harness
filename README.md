@@ -169,6 +169,11 @@ a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its c
 | Ledger | `ledger/runs.jsonl` and `ledger/<project>/<run-id>/` in this repo · `harness trends` |
 | Memory | each session in the transient user scope `harness-<run-id>-s<n>` (throttled at 5G, killed at 6G, 1G swap: `SESSION_MEMORY_HIGH`, `SESSION_MEMORY_MAX`, `SESSION_SWAP_MAX`), each suite in `harness-<run-id>-check-<pid>`; stopped when they return, so nothing a session started outlives it. Peaks go in `metrics.jsonl` (`mem_peak_mb`) and `report.md` (over 2 GB). No user systemd: uncapped, with a note |
 
+A run has no end time unless you give it one, and it goes regardless of the time of day. It ends when its features
+are done, blocked or waiting on you, at its session cap (a continuation is queued, `AUTO_CONTINUE`), at the weekly
+budget, after `MAX_LIMIT_HITS` refused sessions in a row, or when you stop it. `run.log`'s first line says `· no end
+time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
+
 ### After the run (box settings, yours)
 
 - With the scopes in, `systemd-oomd` can kill the offending `harness-*` scope instead of the desktop: enabling it with
@@ -183,7 +188,7 @@ a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its c
   (decisions/2026-10-26-parallel-runs-headroom).
 - **Conflicts:** `CONFLICTS=resolve` (the default) sends a lane's conflict with main to one resolve session:
   `RESOLVE_MODEL` (opus), `RESOLVE_MAX_TURNS` (60), `RESOLVE_BUDGET_USD` (5), `RESOLVE_TIMEOUT` (30m; none starts
-  with less left before the deadline), at most `MAX_RESOLVES` (3) per milestone and one per main commit; a refused one
+  with less left before a deadline, when the run has one), at most `MAX_RESOLVES` (3) per milestone and one per main commit; a refused one
   waits for the window like any session. `CONFLICTS=michael` in a project's `.harness/config.sh` (or yours) keeps
   every conflict yours, as before. The record branch's conflicts, a lane base's, `harness merge` and one the run's end
   meets are always yours. After the run: `jq .conflicts <run dir>/summary.json` (`resolved`, `escalated`,
@@ -194,6 +199,10 @@ a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its c
 
 ## Steering
 
+- **An end time, if you want one:** `harness start --until HH:MM`, `harness continue --until HH:MM` or `harness queue
+  start --until HH:MM` (every run it starts stops by then; none starts after it), or `HOURS=<n>` in a config for every
+  run. At that time the lanes stop between sessions and each complete, unverified milestone gets one verify. Without
+  one, nothing ends a run on the clock.
 - **Phone:** `progress.md` is rendered from the journal (`entries.jsonl`) after every session and is still the phone view; sessions write `entry.json`, the driver appends it. Steer by editing `.harness/runs/<run>/INBOX.md` on the run branch in the GitHub app: first line `status: pause` or
   `status: stop`, optionally with why (`status: stop the spec changed`); answers under `## Answers`. The driver pulls before every session.
 - **Why a stop:** either reason ends up in harness-log.md, `ended`, summary.json's `end_reason` and the retro prompt as
@@ -247,7 +256,7 @@ a session that gives up, a check it fails or `MAX_RESOLVES` used need you, its c
   start (no tmux, no URL within a minute) is a line in `harness-log.md` and the plain notification; it never changes
   the run. Turning it on in stages: `docs/plans/2026-10-19-P3-desk.md`, "For Michael: turning it on".
 - **After a partial run:** nothing, usually: verified milestones are already merged and a continuation is queued.
-  A run that hits its deadline first gives each complete, unverified milestone one verify session, so finished work
+  A run that hits an end time it was given gives each complete, unverified milestone one verify session, so finished work
   merges in that run (not when you stopped it or a usage-limit window holds: the continuation verifies it); one that
   fails it needs Michael.
   "Blocked" or "needs Michael" runs: answer, then `harness continue <run> [--brief …]`.
