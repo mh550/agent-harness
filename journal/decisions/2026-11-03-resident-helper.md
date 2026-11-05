@@ -7,7 +7,25 @@
 
 93 % of a large check file's 3,139 node starts are the driver's and its lanes' (49 % of the file's CPU;
 `findings-and-research/2026-11-03-redesign-baseline.md` §2), and most call sites are `$( … )` subshells no memo can
-serve. The measured table is H1-04's.
+serve.
+
+**The proof (H1-04, 2026-11-05):** `findings-and-research/2026-11-03-resident-helper.md`, with how each row was read.
+*Before* is the run's base `07a31f6`, *after* `de51e2f`; the baseline's suite was 203 checks smaller than *before*.
+
+| measure | baseline | before | after | predicted | result |
+|---|---|---|---|---|---|
+| node starts per large file (file 13) | 3,139 | 2,665 | **337** | ≤ 300 | **missed, by 37** |
+| node starts per stub `harness start` | 402 | 336 | **20** | ≤ 30 | met |
+| CPU of file 13 | 170.6 s | 161.3 s | **88.0 s** | ≤ 110 s | met |
+| full suite solo CPU | 3,136 s | 3,804.3 s (1332/1332, none red) | **2,107.9 s** (1450/1450, none red) | ≤ 2,300 s | met |
+| full suite solo wall at 4 jobs | 804 s | 974.2 s | **608.1 s** | ≤ 600 s | **missed, by 8.1 s** |
+| `treekey.mjs` per call, spawned | 193 ms (loaded) | 58.0 ms idle, 65.3 ms in a suite | **49.3 ms** idle, **64.4 ms** in a suite | ≤ 60 ms | met idle; **missed in a suite, by 4.4 ms** |
+| `harness-log.md` lines changed | – | – | **0** | 0 | met |
+| helper restarts per stub run | – | – | **0** | 0 | met |
+
+Against *before*: CPU −44.6 %, wall −37.6 %. Under a driver or a lane `treekey.mjs` is 9.7 ms through its helper. The wall is
+8.1 s over its bound with node starts 37 over theirs, about 1 CPU-s of file 13: by exec count the remainder is git (7,569 per
+file) and bash's forks, phase 4's ground.
 
 Writing `main` found one bug the spec's own tail would have had: `process.stdout.write(out); process.exit(rc)` cuts a
 piped answer at 65536 bytes when the reader isn't reading yet (`node big.mjs | (sleep 0.3; wc -c)` on node 24 printed

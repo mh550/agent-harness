@@ -1,0 +1,709 @@
+# programs
+git	7839
+cat	3549
+node	2665
+date	2364
+sed	1769
+sha1sum	1752
+rm	1702
+flock	1447
+bash	1420
+basename	1069
+dirname	1063
+timeout	1058
+grep	953
+mkdir	877
+sh	826
+head	756
+jq	724
+tee	613
+cp	483
+git-receive-pack	446
+touch	437
+stub-systemctl.sh	388
+git-upload-pack	380
+wc	309
+tail	303
+awk	292
+tmux	226
+sleep	217
+ls	198
+stub-systemd-run.sh	194
+env	187
+cut	170
+mv	158
+tr	138
+paste	130
+readlink	129
+harness	127
+cmp	106
+sort	106
+check.sh	104
+stub-claude.sh	91
+stub-gh.sh	71
+stub-curl.sh	58
+desk.sh	48
+xargs	47
+mktemp	46
+find	40
+utempter	28
+driver.sh	14
+rmdir	14
+teardown.sh	12
+realpath	9
+chmod	6
+comm	4
+du	3
+uniq	2
+debrief.sh	2
+diff	2
+nproc	1
+setsid	1
+tac	1
+ln	1
+# rows: key	caller	class	count
+cat	lib/driver.sh	driver	1554
+git	lib/lane.sh	lane	1358
+git	lib/driver.sh	driver	1278
+sha1sum	lib/lane.sh	lane	1003
+date	lib/lane.sh	lane	913
+date	lib/driver.sh	driver	897
+flock	lib/lane.sh	lane	809
+basename	bin/harness	cli	805
+git	bin/harness	cli	749
+sha1sum	lib/driver.sh	driver	749
+flock	lib/driver.sh	driver	588
+rm	lib/lane.sh	lane	506
+git	git < lib/driver.sh	driver	499
+sed	tests/stub-systemctl.sh < lib/lane.sh	stub	490
+git	git < lib/lane.sh	lane	480
+cat	lib/lane.sh	lane	388
+timeout	lib/lane.sh	lane	377
+timeout	lib/driver.sh	driver	363
+rm	lib/driver.sh	driver	361
+sed	lib/lane.sh	lane	357
+cat	bin/harness	cli	355
+git	timeout < lib/lane.sh	lane	346
+sh	git < lib/lane.sh	lane	346
+tee	lib/driver.sh	driver	321
+date	lib/check.sh < lib/lane.sh	lane	312
+git	node < bin/harness	cli	312
+grep	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	307
+head	bin/harness	cli	304
+git	timeout < lib/driver.sh	driver	303
+sh	git < lib/driver.sh	driver	303
+rm	bash -c < lib/lane.sh	lane	294
+tee	lib/lane.sh	lane	286
+git	git-receive-pack < lib/lane.sh	lane	278
+sed	lib/driver.sh	driver	266
+cp	lib/lane.sh	lane	265
+git	node < lib/lane.sh	lane	257
+jq	tests/stub-claude.sh < lib/lane.sh	stub	235
+git	git-receive-pack < lib/driver.sh	driver	232
+sed	tests/stub-systemctl.sh < lib/driver.sh	stub	216
+git	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	214
+grep	lib/lane.sh	lane	208
+sed	tests/stub-systemctl.sh < lib/check.sh	stub	205
+git-receive-pack	bash -c < lib/lane.sh	lane	204
+head	lib/driver.sh	driver	202
+jq	lib/lane.sh	lane	199
+cat	tests/stub-gh.sh < lib/lane.sh	stub	199
+bash	tests/stub-systemctl.sh < lib/lane.sh	stub	196
+dirname	tests/stub-systemctl.sh < lib/lane.sh	stub	196
+touch	bash -c < lib/lane.sh	lane	196
+cat	tests/stub-gh.sh < lib/driver.sh	stub	191
+mkdir	lib/lane.sh	lane	181
+cat	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	175
+sleep	lib/driver.sh	driver	173
+git-upload-pack	bash -c < lib/driver.sh	driver	171
+rm	lib/check.sh < lib/lane.sh	lane	169
+cp	lib/driver.sh	driver	167
+git	node < lib/check.sh	lane	164
+grep	bin/harness	cli	146
+timeout	env < lib/desk.sh	cli	145
+tmux	timeout < lib/desk.sh	cli	145
+mkdir	lib/driver.sh	driver	142
+git-upload-pack	bash -c < lib/lane.sh	lane	142
+ls	lib/lane.sh	lane	141
+git-receive-pack	bash -c < lib/driver.sh	driver	132
+dirname	bin/harness	cli	129
+bash	bin/harness	cli	127
+readlink	bin/harness	cli	127
+git	git-receive-pack < tests/stub-claude.sh	stub	126
+git	tests/stub-claude.sh < lib/lane.sh	stub	124
+git	git < bin/harness	cli	113
+mkdir	lib/check.sh < lib/lane.sh	lane	113
+git	node < lib/driver.sh	driver	105
+tail	lib/lane.sh	lane	105
+lib/metrics.mjs usage	lib/lane.sh	lane	104
+cmp	lib/lane.sh	lane	104
+tail	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	102
+awk	lib/lane.sh	lane	100
+basename	tests/run.sh	tests/lib.sh	98
+stub-systemctl.sh	lib/lane.sh	lane	98
+stub-systemd-run.sh	lib/lane.sh	lane	98
+bash	tests/stub-systemd-run.sh < lib/lane.sh	stub	98
+dirname	bash -c < lib/lane.sh	lane	98
+mkdir	bash -c < lib/lane.sh	lane	98
+bash	bash -c < lib/lane.sh	lane	98
+timeout	bash -c < lib/lane.sh	lane	98
+stub-systemctl.sh	bash -c < lib/lane.sh	lane	98
+wc	tests/stub-systemctl.sh < lib/lane.sh	stub	98
+cat	tests/stub-systemctl.sh < lib/lane.sh	stub	98
+cat	bash -c < lib/lane.sh	lane	98
+mv	lib/lane.sh	lane	98
+rm	bash -c < lib/driver.sh	driver	96
+grep	lib/driver.sh	driver	95
+cat	tests/stub-claude.sh < lib/lane.sh	stub	94
+rm	bash -c < lib/check.sh	lane	93
+bash	tests/stub-systemctl.sh < lib/driver.sh	stub	92
+dirname	tests/stub-systemctl.sh < lib/driver.sh	stub	92
+git	lib/git-core/git < lib/lane.sh	lane	88
+grep	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	88
+date	lib/check.sh < lib/driver.sh	driver	86
+jq	tests/stub-claude.sh < lib/driver.sh	stub	86
+git	git < tests/stub-claude.sh	stub	84
+bash	tests/stub-systemctl.sh < lib/check.sh	stub	82
+dirname	tests/stub-systemctl.sh < lib/check.sh	stub	82
+check.sh	lib/lane.sh	lane	82
+bash	lib/check.sh < lib/lane.sh	lane	82
+dirname	lib/check.sh < lib/lane.sh	lane	82
+git	lib/check.sh < lib/lane.sh	lane	82
+lib/treekey.mjs --partial	lib/check.sh < lib/lane.sh	lane	82
+lib/metrics.mjs limit	lib/lane.sh	lane	82
+tr	lib/check.sh < lib/lane.sh	lane	80
+lib/testcount.mjs	lib/check.sh < lib/lane.sh	lane	78
+lib/treekey.mjs	lib/lane.sh	lane	77
+git	lib/git-core/git < lib/driver.sh	driver	76
+harness	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	75
+wc	lib/lane.sh	lane	73
+lib/testcount.mjs	lib/lane.sh	lane	72
+cat	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	69
+head	lib/lane.sh	lane	69
+cut	lib/lane.sh	lane	68
+env	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	68
+git	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	68
+jq	lib/driver.sh	driver	66
+sh	git < bin/harness	cli	65
+basename	lib/lane.sh	lane	65
+jq	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	65
+touch	bash -c < lib/driver.sh	driver	64
+touch	bash -c < lib/check.sh	lane	62
+stub-systemctl.sh	lib/driver.sh	driver	60
+awk	tests/stub-claude.sh < lib/lane.sh	stub	57
+lib/features.mjs passes	lib/lane.sh	lane	57
+lib/inbox.mjs answers	lib/lane.sh	lane	56
+lib/needs.mjs sweep	lib/driver.sh	driver	55
+lib/metrics.mjs final	lib/lane.sh	lane	55
+date	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	55
+head	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	54
+rm	lib/check.sh < lib/driver.sh	driver	52
+lib/memlint.mjs store-line	lib/lane.sh	lane	52
+lib/render.mjs	lib/lane.sh	lane	52
+stub-claude.sh	timeout < lib/lane.sh	lane	52
+bash	tests/stub-claude.sh < lib/lane.sh	stub	52
+dirname	tests/stub-claude.sh < lib/lane.sh	stub	52
+head	tests/stub-claude.sh < lib/lane.sh	stub	52
+sed	tests/stub-claude.sh < lib/lane.sh	stub	52
+wc	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	52
+bash	tests/stub-systemd-run.sh < lib/check.sh	stub	51
+lib/features.mjs unpark	lib/lane.sh	lane	51
+lib/needs.mjs sweep	lib/lane.sh	lane	51
+lib/features.mjs poll	lib/lane.sh	lane	51
+grep	lib/check.sh < lib/lane.sh	lane	51
+paste	lib/check.sh < lib/lane.sh	lane	51
+awk	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	49
+git	git < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	48
+node -e (inline)	tests/stub-claude.sh < lib/lane.sh	stub	48
+desk.sh	bin/harness	cli	48
+xargs	lib/lane.sh	lane	47
+mkdir	tests/stub-claude.sh < lib/lane.sh	stub	47
+lib/entries.mjs ingest	lib/lane.sh	lane	47
+lib/entries.mjs render	lib/lane.sh	lane	47
+lib/metrics.mjs append	lib/lane.sh	lane	47
+rm	bin/harness	cli	46
+bash	timeout < lib/lane.sh	lane	46
+lib/treekey.mjs --partial	lib/lane.sh	lane	46
+lib/entries.mjs pack	lib/lane.sh	lane	46
+lib/entries.mjs validate	lib/lane.sh	lane	46
+git	git < tests/stub-gh.sh	stub	45
+harness	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	45
+stub-systemd-run.sh	lib/driver.sh	driver	44
+bash	tests/stub-systemd-run.sh < lib/driver.sh	stub	44
+git	node < lib/check.sh	driver	44
+lib/metrics.mjs usage	lib/driver.sh	driver	44
+cat	tests/stub-gh.sh < bin/harness	stub	44
+sh	git < tests/stub-claude.sh	stub	43
+basename	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	43
+git	git-receive-pack < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	42
+git-receive-pack	bash -c < tests/stub-claude.sh	stub	42
+git	lib/git-core/git < tests/stub-claude.sh	stub	42
+git	tests/stub-gh.sh < lib/lane.sh	stub	42
+tmux	bin/harness	cli	42
+wc	tests/stub-systemctl.sh < lib/check.sh	stub	41
+cat	tests/stub-systemctl.sh < lib/check.sh	stub	41
+awk	lib/driver.sh	driver	40
+lib/features.mjs snapshot	lib/lane.sh	lane	40
+tmux	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	39
+git-upload-pack	bash -c < bin/harness	cli	38
+paste	lib/driver.sh	driver	37
+stub-gh.sh	timeout < lib/driver.sh	driver	36
+bash	tests/stub-gh.sh < lib/driver.sh	stub	36
+dirname	tests/stub-gh.sh < lib/driver.sh	stub	36
+mkdir	tests/stub-gh.sh < lib/driver.sh	stub	36
+dirname	lib/lane.sh	lane	36
+sh	git < tests/stub-gh.sh	stub	36
+env	lib/desk.sh < lib/lane.sh	cli	36
+touch	lib/lane.sh	lane	35
+bash	lib/driver.sh	driver	34
+lib/treekey.mjs	lib/driver.sh	driver	34
+git	tests/stub-claude.sh < lib/driver.sh	stub	34
+tail	lib/driver.sh	driver	33
+cut	lib/driver.sh	driver	33
+sort	tests/stub-gh.sh < lib/lane.sh	stub	33
+dirname	bash -c < lib/driver.sh	driver	32
+mkdir	bash -c < lib/driver.sh	driver	32
+bash	bash -c < lib/driver.sh	driver	32
+timeout	bash -c < lib/driver.sh	driver	32
+stub-systemctl.sh	bash -c < lib/driver.sh	driver	32
+wc	tests/stub-systemctl.sh < lib/driver.sh	stub	32
+cat	tests/stub-systemctl.sh < lib/driver.sh	stub	32
+cat	bash -c < lib/driver.sh	driver	32
+mkdir	lib/check.sh < lib/driver.sh	driver	32
+lib/testcount.mjs	lib/driver.sh	driver	32
+cat	tests/stub-claude.sh < lib/driver.sh	stub	32
+lib/notify.mjs urls	lib/driver.sh	driver	32
+sed	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	32
+lib/features.mjs milestones	lib/driver.sh	driver	31
+stub-systemd-run.sh	lib/check.sh < lib/lane.sh	lane	31
+dirname	bash -c < lib/check.sh	lane	31
+mkdir	bash -c < lib/check.sh	lane	31
+bash	bash -c < lib/check.sh	lane	31
+timeout	bash -c < lib/check.sh	lane	31
+bash	timeout < lib/check.sh	lane	31
+stub-systemctl.sh	bash -c < lib/check.sh	lane	31
+cat	bash -c < lib/check.sh	lane	31
+stub-systemctl.sh	lib/check.sh < lib/lane.sh	lane	31
+stub-gh.sh	timeout < lib/lane.sh	lane	31
+bash	tests/stub-gh.sh < lib/lane.sh	stub	31
+dirname	tests/stub-gh.sh < lib/lane.sh	stub	31
+mkdir	tests/stub-gh.sh < lib/lane.sh	stub	31
+rm	bash -c < lib/check.sh	driver	30
+ls	lib/driver.sh	driver	30
+lib/features.mjs bump	lib/lane.sh	lane	30
+lib/inbox.mjs repair	lib/lane.sh	lane	30
+lib/inbox.mjs question	lib/lane.sh	lane	30
+lib/memlint.mjs gotchas	lib/lane.sh	lane	30
+lib/features.mjs repair	lib/lane.sh	lane	30
+lib/needs.mjs list	bin/harness	cli	30
+git	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	30
+date	lib/desk.sh < lib/lane.sh	cli	30
+mkdir	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	29
+lib/features.mjs lanes	lib/driver.sh	driver	29
+cp	lib/check.sh < lib/lane.sh	lane	29
+find	lib/check.sh < lib/lane.sh	lane	29
+mv	lib/check.sh < lib/lane.sh	lane	29
+date	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	29
+cut	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	29
+dirname	lib/driver.sh	driver	28
+lib/features.mjs deps	lib/driver.sh	driver	28
+lib/notify.mjs urls	lib/lane.sh	lane	28
+jq	tests/stub-gh.sh < lib/driver.sh	stub	28
+utempter	tmux < lib/desk.sh	cli	28
+bash	tests/stub-curl.sh < lib/driver.sh	stub	27
+lib/features.mjs kind	lib/lane.sh	lane	27
+git-upload-pack	bash -c < tests/stub-gh.sh	stub	27
+git	git-receive-pack < tests/stub-gh.sh	stub	27
+sed	bin/harness	cli	27
+git-receive-pack	bash -c < bin/harness	cli	27
+git	git-receive-pack < bin/harness	cli	27
+sh	git < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	26
+lib/metrics.mjs summary	lib/driver.sh	driver	26
+git-receive-pack	bash -c < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	25
+basename	lib/driver.sh	driver	24
+lib/summary.mjs build	lib/driver.sh	driver	24
+lib/summary.mjs report	lib/driver.sh	driver	24
+mktemp	bin/harness	cli	24
+rm	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	24
+bash	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	24
+awk	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	24
+sed	tests/stub-claude.sh < lib/driver.sh	stub	23
+stub-curl.sh	lib/driver.sh	driver	23
+lib/features.mjs pass	lib/lane.sh	lane	23
+jq	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	23
+cat	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	23
+touch	lib/driver.sh	driver	22
+bash	timeout < lib/driver.sh	driver	22
+check.sh	lib/driver.sh	driver	22
+bash	lib/check.sh < lib/driver.sh	driver	22
+dirname	lib/check.sh < lib/driver.sh	driver	22
+git	lib/check.sh < lib/driver.sh	driver	22
+lib/treekey.mjs --partial	lib/check.sh < lib/driver.sh	driver	22
+tr	lib/check.sh < lib/driver.sh	driver	22
+lib/testcount.mjs	lib/check.sh < lib/driver.sh	driver	22
+lib/memlint.mjs store-line	lib/driver.sh	driver	22
+lib/render.mjs	lib/driver.sh	driver	22
+stub-claude.sh	timeout < lib/driver.sh	driver	22
+bash	tests/stub-claude.sh < lib/driver.sh	stub	22
+dirname	tests/stub-claude.sh < lib/driver.sh	stub	22
+head	tests/stub-claude.sh < lib/driver.sh	stub	22
+mkdir	tests/stub-claude.sh < lib/driver.sh	stub	22
+lib/metrics.mjs final	lib/driver.sh	driver	22
+lib/metrics.mjs append	lib/driver.sh	driver	22
+lib/features.mjs summary	lib/lane.sh	lane	22
+paste	lib/lane.sh	lane	22
+head	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	22
+lib/status.mjs card	bin/harness	cli	22
+flock	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	22
+cat	lib/desk.sh < bin/harness	cli	22
+sort	tests/stub-gh.sh < lib/driver.sh	stub	21
+git	git-receive-pack < lib/desk.sh	cli	21
+stub-systemd-run.sh	lib/check.sh < lib/driver.sh	driver	20
+touch	bash -c < lib/check.sh	driver	20
+lib/features.mjs summary	lib/driver.sh	driver	20
+bash	tests/stub-curl.sh < lib/lane.sh	stub	20
+sed	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	20
+cat	tests/stub-systemctl.sh < bin/harness	stub	20
+env	lib/desk.sh < bin/harness	cli	20
+sed	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	20
+sort	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	19
+mkdir	bin/harness	cli	18
+lib/features.mjs unparks	lib/driver.sh	driver	18
+lib/features.mjs milestone-done	lib/driver.sh	driver	18
+lib/features.mjs models	lib/lane.sh	lane	18
+mv	lib/driver.sh	driver	18
+tail	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	18
+mkdir	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	18
+lib/inbox.mjs answers	lib/driver.sh	driver	17
+lib/features.mjs ids	lib/lane.sh	lane	17
+stub-curl.sh	lib/lane.sh	lane	17
+stub-systemctl.sh	bin/harness	cli	17
+bash	tests/stub-systemctl.sh < bin/harness	stub	17
+dirname	tests/stub-systemctl.sh < bin/harness	stub	17
+sed	tests/stub-systemctl.sh < bin/harness	stub	17
+lib/features.mjs repair-verify	lib/lane.sh	lane	16
+bash	lib/desk.sh < bin/harness	cli	16
+basename	tests/stub-systemctl.sh < bin/harness	stub	16
+sleep	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	16
+bash	tests/stub-curl.sh < lib/desk.sh	stub	16
+touch	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	15
+date	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	15
+env	bin/harness	cli	14
+driver.sh	env < bin/harness	cli	14
+lib/features.mjs models	lib/driver.sh	driver	14
+lib/features.mjs unpass	lib/lane.sh	lane	14
+rmdir	lib/driver.sh	driver	14
+lib/features.mjs ids	lib/driver.sh	driver	14
+head	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	14
+git	git < lib/desk.sh	cli	14
+env	lib/desk.sh < lib/driver.sh	cli	14
+git	lib/git-core/git < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	13
+lib/overlap.mjs runs	bin/harness	cli	13
+lib/memlint.mjs	timeout < lib/driver.sh	driver	12
+dirname	tests/stub-systemd-run.sh < lib/driver.sh	stub	12
+grep	lib/check.sh < lib/driver.sh	driver	12
+paste	lib/check.sh < lib/driver.sh	driver	12
+teardown.sh	bash -c < lib/driver.sh	driver	12
+bash	.harness/teardown.sh < lib/driver.sh	driver	12
+tr	.harness/teardown.sh < lib/driver.sh	driver	12
+touch	.harness/teardown.sh < lib/driver.sh	driver	12
+lib/backlog.mjs list	lib/driver.sh	driver	12
+lib/summary.mjs suite-runs	lib/driver.sh	driver	12
+lib/metrics.mjs limit	lib/driver.sh	driver	12
+lib/summary.mjs ledger-line	lib/driver.sh	driver	12
+git	tests/stub-gh.sh < lib/driver.sh	stub	12
+env	tmux < lib/desk.sh	cli	12
+stub-claude.sh	env < lib/desk.sh	cli	12
+bash	tests/stub-claude.sh < lib/desk.sh	stub	12
+dirname	tests/stub-claude.sh < lib/desk.sh	stub	12
+grep	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	12
+mkdir	tests/stub-claude.sh < lib/desk.sh	stub	12
+cat	tests/stub-claude.sh < lib/desk.sh	stub	12
+tr	tests/stub-claude.sh < lib/desk.sh	stub	12
+env	tests/stub-claude.sh < lib/desk.sh	stub	12
+cut	tests/stub-claude.sh < lib/desk.sh	stub	12
+sort	tests/stub-claude.sh < lib/desk.sh	stub	12
+date	lib/desk.sh < lib/driver.sh	cli	12
+basename	lib/desk.sh < bin/harness	cli	12
+lib/features.mjs evidence	lib/lane.sh	lane	11
+lib/features.mjs milestones	lib/lane.sh	lane	11
+lib/features.mjs deps	lib/lane.sh	lane	11
+lib/metrics.mjs summary	lib/lane.sh	lane	11
+tail	tests/stub-gh.sh < lib/lane.sh	stub	11
+ls	tests/stub-gh.sh < lib/lane.sh	stub	11
+grep	tests/stub-gh.sh < lib/lane.sh	stub	11
+lib/features.mjs poll	lib/driver.sh	driver	11
+cut	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	11
+lib/needs.mjs open	lib/lane.sh	lane	11
+awk	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	11
+cp	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	10
+flock	bin/harness	cli	10
+mktemp	lib/driver.sh	driver	10
+lib/deploy.mjs slug	lib/driver.sh	driver	10
+lib/deploy.mjs status	lib/driver.sh	driver	10
+lib/treekey.mjs --partial	lib/driver.sh	driver	10
+dirname	tests/stub-systemd-run.sh < lib/check.sh	stub	10
+dirname	bash -c < lib/check.sh	driver	10
+mkdir	bash -c < lib/check.sh	driver	10
+bash	bash -c < lib/check.sh	driver	10
+timeout	bash -c < lib/check.sh	driver	10
+bash	timeout < lib/check.sh	driver	10
+stub-systemctl.sh	bash -c < lib/check.sh	driver	10
+cat	bash -c < lib/check.sh	driver	10
+stub-systemctl.sh	lib/check.sh < lib/driver.sh	driver	10
+cp	lib/check.sh < lib/driver.sh	driver	10
+find	lib/check.sh < lib/driver.sh	driver	10
+mv	lib/check.sh < lib/driver.sh	driver	10
+lib/summary.mjs calibration	lib/driver.sh	driver	10
+lib/inbox.mjs repair	lib/driver.sh	driver	10
+lib/entries.mjs validate	lib/driver.sh	driver	10
+lib/entries.mjs ingest	lib/driver.sh	driver	10
+lib/entries.mjs render	lib/driver.sh	driver	10
+lib/features.mjs lint	lib/driver.sh	driver	10
+lib/features.mjs undeclared	lib/driver.sh	driver	10
+sleep	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	10
+lib/needs.mjs fields	lib/lane.sh	lane	10
+lib/notify.mjs actions	lib/lane.sh	lane	10
+rm	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	10
+tail	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	10
+sed	tests/stub-claude.sh < lib/desk.sh	stub	10
+sed	lib/desk.sh < lib/lane.sh	cli	10
+flock	lib/desk.sh < lib/lane.sh	cli	10
+cat	lib/desk.sh < lib/lane.sh	cli	10
+sleep	lib/desk.sh < lib/lane.sh	cli	10
+lib/features.mjs summary	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	10
+lib/summary.mjs flakers	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	10
+lib/entries.mjs questions	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	10
+git-receive-pack	bash -c < tests/stub-gh.sh	stub	9
+git	lib/git-core/git < tests/stub-gh.sh	stub	9
+realpath	bin/harness	cli	9
+wc	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	8
+tr	lib/driver.sh	driver	8
+lib/needs.mjs sweep	bin/harness	cli	8
+dirname	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	8
+lib/features.mjs model	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	8
+lib/render.mjs	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	8
+stub-curl.sh	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	8
+date	lib/desk.sh < bin/harness	cli	8
+jq	tests/stub-gh.sh < bin/harness	stub	8
+mktemp	tests/stub-gh.sh < lib/lane.sh	stub	7
+cut	tests/stub-gh.sh < lib/lane.sh	stub	7
+touch	tests/stub-gh.sh < lib/lane.sh	stub	7
+rm	tests/stub-claude.sh < lib/lane.sh	stub	7
+ls	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	7
+git	git-upload-pack < bin/harness	cli	7
+sed	bash -c < tests/stub-curl.sh	stub	7
+git	bash -c < tests/stub-curl.sh	stub	7
+sort	lib/driver.sh	driver	7
+sh	git < lib/desk.sh	cli	7
+git-receive-pack	bash -c < lib/desk.sh	cli	7
+git	lib/git-core/git < lib/desk.sh	cli	7
+grep	lib/desk.sh < lib/lane.sh	cli	7
+env	lib/desk.sh < lib/debrief.sh	cli	7
+chmod	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	6
+tail	lib/check.sh < lib/lane.sh	lane	6
+tail	lib/desk.sh < lib/lane.sh	cli	6
+mkdir	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	6
+tee	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	6
+head	lib/desk.sh < bin/harness	cli	6
+basename	tests/stub-systemctl.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	5
+tail	bin/harness	cli	5
+lib/metrics.mjs session-id	lib/lane.sh	lane	5
+lib/metrics.mjs cost	lib/lane.sh	lane	5
+lib/metrics.mjs append-resume	lib/lane.sh	lane	5
+lib/inbox.mjs insert	lib/lane.sh	lane	5
+lib/features.mjs unbump	lib/lane.sh	lane	5
+lib/features.mjs park	lib/lane.sh	lane	5
+lib/entries.mjs session-files	lib/lane.sh	lane	5
+lib/features.mjs milestone	lib/lane.sh	lane	5
+lib/notify.mjs actions	lib/driver.sh	driver	5
+harness	lib/lane.sh	lane	5
+bash	lib/desk.sh < lib/lane.sh	cli	5
+head	lib/desk.sh < lib/lane.sh	cli	5
+dirname	lib/desk.sh < lib/lane.sh	cli	5
+lib/features.mjs model	lib/desk.sh < lib/lane.sh	cli	5
+mkdir	lib/desk.sh < lib/lane.sh	cli	5
+lib/render.mjs	lib/desk.sh < lib/lane.sh	cli	5
+awk	lib/desk.sh < lib/lane.sh	cli	5
+stub-curl.sh	lib/desk.sh < lib/lane.sh	cli	5
+date	lib/desk.sh < lib/debrief.sh	cli	5
+jq	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	4
+paste	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	4
+cut	bin/harness	cli	4
+rm	lib/desk.sh < lib/lane.sh	cli	4
+sed	lib/desk.sh < lib/driver.sh	cli	4
+flock	lib/desk.sh < lib/driver.sh	cli	4
+cat	lib/desk.sh < lib/driver.sh	cli	4
+paste	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	4
+sort	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	4
+cat	tests/stub-claude.sh < lib/debrief.sh	stub	4
+jq	tests/stub-claude.sh < lib/debrief.sh	stub	4
+grep	lib/desk.sh < bin/harness	cli	4
+stub-gh.sh	bin/harness	cli	4
+bash	tests/stub-gh.sh < bin/harness	stub	4
+dirname	tests/stub-gh.sh < bin/harness	stub	4
+mkdir	tests/stub-gh.sh < bin/harness	stub	4
+sort	tests/stub-gh.sh < bin/harness	stub	4
+wc	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	4
+grep	tests/run.sh	tests/lib.sh	4
+lib/features.mjs grant	lib/lane.sh	lane	3
+git	git-upload-pack < lib/driver.sh	driver	3
+lib/features.mjs summary	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	3
+cat	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	3
+ls	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	3
+rm	tests/stub-systemctl.sh < bin/harness	stub	3
+du	bin/harness	cli	3
+tail	tests/stub-gh.sh < lib/driver.sh	stub	3
+lib/parked.mjs report	bin/harness	cli	3
+jq	bin/harness	cli	3
+stub-claude.sh	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	3
+bash	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	3
+dirname	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	3
+mkdir	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	3
+cat	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	3
+jq	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	3
+grep	lib/desk.sh < lib/driver.sh	cli	3
+sleep	lib/desk.sh < lib/driver.sh	cli	3
+cat	tests/run.sh	tests/lib.sh	3
+sed	tests/run.sh	tests/lib.sh	3
+sort	tests/run.sh	tests/lib.sh	3
+ls	tests/run.sh	tests/lib.sh	2
+dirname	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	2
+lib/features.mjs milestone-done	lib/lane.sh	lane	2
+touch	tests/stub-claude.sh < lib/lane.sh	stub	2
+sed	lib/check.sh < lib/lane.sh	lane	2
+bash	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	2
+git	node < lib/prompt.sh	tests/lib.sh	2
+cmp	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	2
+lib/summary.mjs build	bin/harness	cli	2
+cp	bin/harness	cli	2
+lib/summary.mjs report	bin/harness	cli	2
+comm	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	2
+env	bash -c < lib/driver.sh	driver	2
+grep	bash -c < lib/driver.sh	driver	2
+mktemp	tests/stub-gh.sh < lib/driver.sh	stub	2
+cut	tests/stub-gh.sh < lib/driver.sh	stub	2
+touch	tests/stub-gh.sh < lib/driver.sh	stub	2
+mv	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	2
+tr	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	2
+env	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	2
+cut	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	2
+sort	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	2
+sed	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	2
+sleep	tmux < lib/desk.sh	cli	2
+harness	lib/driver.sh	driver	2
+bash	lib/desk.sh < lib/driver.sh	cli	2
+head	lib/desk.sh < lib/driver.sh	cli	2
+dirname	lib/desk.sh < lib/driver.sh	cli	2
+lib/features.mjs model	lib/desk.sh < lib/driver.sh	cli	2
+mkdir	lib/desk.sh < lib/driver.sh	cli	2
+lib/render.mjs	lib/desk.sh < lib/driver.sh	cli	2
+awk	lib/desk.sh < lib/driver.sh	cli	2
+stub-curl.sh	lib/desk.sh < lib/driver.sh	cli	2
+git	lib/desk.sh < lib/lane.sh	cli	2
+tail	lib/desk.sh < lib/driver.sh	cli	2
+git	lib/desk.sh < lib/driver.sh	cli	2
+debrief.sh	bin/harness	cli	2
+bash	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+dirname	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+flock	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+ls	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+lib/summary.mjs trends	bin/harness	cli	2
+lib/status.mjs queue	bin/harness	cli	2
+lib/backlog.mjs list	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+lib/features.mjs model	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+lib/render.mjs	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+timeout	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+stub-claude.sh	timeout < lib/debrief.sh	cli	2
+bash	tests/stub-claude.sh < lib/debrief.sh	stub	2
+dirname	tests/stub-claude.sh < lib/debrief.sh	stub	2
+head	tests/stub-claude.sh < lib/debrief.sh	stub	2
+mkdir	tests/stub-claude.sh < lib/debrief.sh	stub	2
+sed	tests/stub-claude.sh < lib/debrief.sh	stub	2
+lib/metrics.mjs limit	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+lib/metrics.mjs final	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+tr	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+diff	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+lib/page.mjs	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+stub-curl.sh	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+bash	tests/stub-curl.sh < lib/debrief.sh	stub	2
+rm	lib/debrief.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	2
+sed	lib/desk.sh < lib/debrief.sh	cli	2
+mkdir	lib/desk.sh < lib/debrief.sh	cli	2
+sleep	lib/desk.sh < lib/debrief.sh	cli	2
+cut	lib/desk.sh < bin/harness	cli	2
+awk	bin/harness	cli	2
+rm	tests/run.sh	tests/lib.sh	2
+comm	tests/run.sh	tests/lib.sh	2
+bash	?	?	1
+dirname	tests/run.sh	tests/lib.sh	1
+nproc	tests/run.sh	tests/lib.sh	1
+mktemp	tests/run.sh	tests/lib.sh	1
+setsid	tests/run.sh	tests/lib.sh	1
+sleep	tests/run.sh	tests/lib.sh	1
+bash	setsid < tests/run.sh	tests/lib.sh	1
+mktemp	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	1
+readlink	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+dirname	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+basename	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+git	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+lib/features.mjs model	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+date	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+grep	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+lib/treekey.mjs	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+sed	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+lib/memlint.mjs store-line	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+tail	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+lib/render.mjs	lib/prompt.sh < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+tac	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	1
+lib/summary.mjs report	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	1
+readlink	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	1
+stub-systemd-run.sh	bin/harness	cli	1
+bash	tests/stub-systemd-run.sh < bin/harness	stub	1
+dirname	tests/stub-systemd-run.sh < bin/harness	stub	1
+stub-systemctl.sh	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	1
+bash	tests/stub-systemctl.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	1
+dirname	tests/stub-systemctl.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	1
+sed	tests/stub-systemctl.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	1
+cat	tests/stub-systemctl.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	1
+git-upload-pack	bash -c < tests/checks/13-run-2-michael-sets-desk.sh	tests/lib.sh	1
+ln	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	1
+ls	bin/harness	cli	1
+sort	bin/harness	cli	1
+uniq	bin/harness	cli	1
+mktemp	tests/stub-claude.sh < lib/driver.sh	stub	1
+git-upload-pack	bash -c < tests/stub-claude.sh	stub	1
+lib/features.mjs next	lib/driver.sh	driver	1
+ls	tests/stub-gh.sh < lib/driver.sh	stub	1
+grep	tests/stub-gh.sh < lib/driver.sh	stub	1
+find	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	1
+lib/features.mjs unpark	lib/driver.sh	driver	1
+head	tests/stub-claude.sh < tests/checks/13-run-2-michael-sets-desk.sh	stub	1
+lib/features.mjs model	tests/checks/13-run-2-michael-sets-desk.sh < tests/run.sh	tests/lib.sh	1
+lib/notify.mjs urls	lib/desk.sh < tests/checks/13-run-2-michael-sets-desk.sh	cli	1
+lib/notify.mjs urls	lib/desk.sh < lib/lane.sh	cli	1
+rm	lib/desk.sh < lib/driver.sh	cli	1
+lib/notify.mjs urls	lib/desk.sh < lib/driver.sh	cli	1
+lib/features.mjs reset	bin/harness	cli	1
+date	bin/harness	cli	1
+bash	lib/desk.sh < lib/debrief.sh	cli	1
+dirname	lib/desk.sh < lib/debrief.sh	cli	1
+lib/features.mjs model	lib/desk.sh < lib/debrief.sh	cli	1
+flock	lib/desk.sh < lib/debrief.sh	cli	1
+lib/render.mjs	lib/desk.sh < lib/debrief.sh	cli	1
+cat	lib/desk.sh < lib/debrief.sh	cli	1
+awk	lib/desk.sh < lib/debrief.sh	cli	1
+rm	lib/desk.sh < lib/debrief.sh	cli	1
+grep	lib/desk.sh < lib/debrief.sh	cli	1
+tail	lib/desk.sh < lib/debrief.sh	cli	1
+stub-curl.sh	lib/desk.sh < lib/debrief.sh	cli	1
+mkdir	lib/desk.sh < bin/harness	cli	1
+flock	lib/desk.sh < bin/harness	cli	1
+awk	lib/desk.sh < bin/harness	cli	1
+rm	lib/desk.sh < bin/harness	cli	1
+wc	tests/stub-claude.sh < lib/desk.sh	stub	1
+lib/needs.mjs open	lib/driver.sh	driver	1
+lib/needs.mjs fields	lib/driver.sh	driver	1
+mv	tests/run.sh	tests/lib.sh	1
+uniq	tests/run.sh	tests/lib.sh	1
+head	tests/run.sh	tests/lib.sh	1

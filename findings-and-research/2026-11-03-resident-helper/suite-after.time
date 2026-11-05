@@ -1,0 +1,8 @@
+slowest: 88-origin-outage 170.1 s, 47-lanes-two 158.7 s, 15-run-4-same-but-queue-parked-debrief-tmux 147.4 s; wall 608.1 s, 4 jobs, tier all
+1450/1450 checks passed
+Command being timed: "bash tests/run.sh"
+User time (seconds): 1080.02
+System time (seconds): 1027.85
+Elapsed (wall clock) time (h:mm:ss or m:ss): 10:08.25
+Maximum resident set size (kbytes): 97476
+Exit status: 0

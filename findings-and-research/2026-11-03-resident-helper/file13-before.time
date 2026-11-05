@@ -1,0 +1,6 @@
+Command being timed: "bash tests/run.sh 13-run-2-michael-sets-desk"
+User time (seconds): 98.86
+System time (seconds): 62.40
+Elapsed (wall clock) time (h:mm:ss or m:ss): 2:56.72
+Maximum resident set size (kbytes): 63240
+Exit status: 0
