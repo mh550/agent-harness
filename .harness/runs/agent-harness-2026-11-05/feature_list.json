@@ -101,7 +101,7 @@
         "H1-02b",
         "H1-03"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "H1-05",

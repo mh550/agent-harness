@@ -7,6 +7,22 @@ The run: phase 2 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier is green, and the verifier re-runs every step on the full suite before H1 merges into `main`. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-05 12:50 · H1-04 · passes
+
+The proof: solo suites before 07a31f6 974.2 s, 3,804 CPU-s, after de51e2f 608.1 s, 2,108 CPU-s, all green. Met: stub start 20 nodes (≤30), file 13 CPU 88 s (≤110), suite CPU (≤2,300), 0 log lines, 0 restarts. Missed: file 13 nodes 337 (≤300), wall by 8.1 s (≤600), spawned treekey 64.4 ms in a suite (≤60; 49.3 idle, 9.7 by ask). No code change.
+
+- **Files:** findings-and-research/2026-11-03-resident-helper.md, findings-and-research/2026-11-03-resident-helper/, journal/decisions/2026-11-03-resident-helper.md
+- **Verified:** Run by the session, one at a time, gate clear before each (proof.log). In /tmp/harness/agent-harness/agent-harness-2026-11-05/lanes/H1: before.out 1332/1332, after.out 1450/1450, file13-before.strace, file13-after.strace; file 13 67/67 in all 4 runs. check.sh --fast green (cached: only findings and journal changed since). `git worktree list` has no before; no helper.mjs left; git diff HEAD~ -- bin lib tests prompts is empty.
+- **Tests:** 684 → 684
+- **Dead end:** the step's `strace -f -e trace=execve` — it cuts arguments at 32 characters and traces no fork, so exectable.mjs has no subcommand or class; used its usage line, -s 512 with clone, clone3, fork, vfork, as C1 did
+- **Discovery** (affects H1-05): Miss detail for the review: file 13's 337 node starts are cli 162, stub 48, checks 9, helpers 32 (the spec guessed ~20), and 86 other driver and lane spawns (ledger-line, memlint under timeout, backlog, needs fields, deploy 2×, metrics final, inbox insert, in_lane under lane.sh:375's | while, one untraced features ids).
+- **Discovery** (affects H1-05, run): ask's flock is an exec per call: file 13's flock went 1,447 to 3,706, about 2 s of its 88 s at 0.9 ms each. All execs barely moved, 38,175 to 37,513; the CPU fell because node's start is the expensive one. git 7,569 per file is the remainder.
+- **Discovery** (affects run): A bench of ask in `for … done | sort` measures a spawn (46.9 ms against 10.4 ms): the loop is a pipeline's side. Collect the times in an array first.
+- **Discovery** (affects H1-05): The spawned treekey sample taken 300 s into each suite shows no gain from H1-03 (65.3 against 64.4 ms; 20 calls, loads 4.44 and 3.07), where idle does (58.0 against 49.3 ms). One sample each, not looked into further: under a lane the call now goes through its helper.
+- **Discovery** (affects run): The driver blocks on nothing while a background chain runs; a session waits with `timeout 590 bash -c 'while pgrep -f <chain>; do sleep 15; done'` in the foreground, no output read until it ends.
+- **Proposed change:** H1-04 step 2 should name strace's `-s 512 -e trace=execve,clone,clone3,fork,vfork`, which exectable.mjs's usage line requires.
+- *05-H1-04 · claude-opus-5-5*
+
 ### 2026-11-05 12:01 · H1-03 · passes
 
 treekey.mjs takes clean tracked blobs from the index: one ls-files, hash-object only for the rest, none on a clean tree. Keys equal the old code's on this tree and an independent definition; a CRLF blob committed before text=auto differs once. 59.1 to 49.8 ms spawned, 17.3 to 6.3 ms in process; missed on a fresh checkout, 139 ms, until the next index write. Fast tier green.
