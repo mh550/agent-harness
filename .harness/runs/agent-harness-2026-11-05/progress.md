@@ -7,6 +7,59 @@ The run: phase 2 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier is green, and the verifier re-runs every step on the full suite before H1 merges into `main`. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-05 13:46 · verify H1 · passes
+
+All six features hold: full suite green (1455), resident-helper, 84, 81, 34, 47, 13 and unit subsets green, syntax checks, diffs, docs and findings table confirmed. H1-04 timed suites not re-run; misses (337 nodes, 608.1 s) are recorded in the table.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| H1-01 | 1 | cli.test.mjs + 00-unit: isMain/CLI tail/exit 70 tests | node --test tests/unit via bash tests/run.sh 00-unit: 193/193 pass | yes |
+| H1-01 | 2 | per-module unit tests main vs CLI | node --test tests/unit via bash tests/run.sh 00-unit: 193/193 pass incl. features/metrics/entries/testcount/inbox | yes |
+| H1-01 | 3 | treekey io.cwd test | node --test tests/unit via bash tests/run.sh 00-unit pass | yes |
+| H1-01 | 4 | stdin/env through io tests | node --test tests/unit via bash tests/run.sh 00-unit pass | yes |
+| H1-01 | 5 | grep process.argv\|exit\|cwd\|stdout\|console.log\|readFileSync(0) and ^(let\|var) on all 11 served scripts | both greps print nothing for every script (tail lives in cli.mjs) | yes |
+| H1-01 | 6 | decision file with default marks, one line per script | 33 lines mention default; file present; served list in it | yes |
+| H1-01 | 7 | node --check all lib/*.mjs; git diff of shell/prompts for H1-01 commit; fixtures sorted; 00-unit | node --check clean; a0ba58f touches no shell/prompt/check; check-names(-fast).txt LC_ALL=C sorted; 00-unit green | yes |
+| H1-01 | 8 | full suite | harness init: bash tests/run.sh full: green 591 s, 1455 tests | yes |
+| H1-02 | 1 | resident-helper check 91 part 1 | bash tests/run.sh resident-helper: 61/61, 15/15, 77/77 all pass | yes |
+| H1-02 | 2 | check 91 stdin/spawn/lock/HELPER=0 | same run, all pass | yes |
+| H1-02 | 3 | check 91 framing | same run, all pass | yes |
+| H1-02 | 4 | check 91 failure branches | same run, all pass | yes |
+| H1-02 | 5 | helper.mjs alone; no module let/var | grep ^(let\|var) lib/helper.mjs prints nothing; check 91 green | yes |
+| H1-02 | 6 | env and cwd checks | check 91 green | yes |
+| H1-02 | 7 | bash -n, node --check, H1-02 commit touches no lane/driver/check/prompt/bin, names in fixtures, 84-node-memo | bash -n all lib/*.sh clean; 3f9a7b9 file list has none of them; 84-node-memo 26/26,27/27 | yes |
+| H1-02 | 8 | full suite | harness init: bash tests/run.sh full: green | yes |
+| H1-02b | 1 | call-site table in decision file | decision file has table (e.g. line 195 check.sh treekey row); present | yes |
+| H1-02b | 2 | grep + counting-shell edits to 81/84/one more | git diff shows 81-partial-key (2 lines), 84-node-memo (6), one scope-sh check (3) only; 81 and 84 suites green | yes |
+| H1-02b | 3 | 92-resident-helper-run.sh | resident-helper subset 61/61,15/15,77/77 green incl. file 92; table: 20 node starts, 0 log lines changed | yes |
+| H1-02b | 4 | two-lane helper counts | 47-lanes-two 15/15,16/16 green; no helper.mjs processes left after | yes |
+| H1-02b | 5 | no pipe shared; traps | file 91/92 checks green | yes |
+| H1-02b | 6 | bash -n; subsets 84,81,47,13; prompts diff; note-text diff | 13-run-2-michael-sets-desk 66/66,67/67; 81,84,47 green; git diff -- prompts empty; log/note-line diff shows only call swaps (node->ask), note text unchanged | yes |
+| H1-02b | 7 | full suite | harness init: bash tests/run.sh full: green | yes |
+| H1-03 | 1 | profile and cut recorded in decision file | decision file present with treekey cut; commit de51e2f | yes |
+| H1-03 | 2 | unit tests vs independent definition | 00-unit green (treekey.test.mjs, 6 new) | yes |
+| H1-03 | 3 | old code agrees on real tree | treekey unit test against old/independent definition green; not separately re-run by hand | yes |
+| H1-03 | 4 | 34-check-key and 81-partial-key unchanged | 34-check-key 10/10,11/11; 81-partial-key 26/26,27/27; 81 diff only 2 lines for H1-02b HELPER=0 | yes |
+| H1-03 | 5 | wall before/after table | findings table: 58.0->49.3 ms idle spawned; miss recorded for 64.4 ms in suite | yes |
+| H1-03 | 6 | node --check, names, 00-unit | node --check clean; fixtures sorted; 00-unit green | yes |
+| H1-03 | 7 | full suite | harness init: bash tests/run.sh full: green | yes |
+| H1-04 | 1 | gate and measurement method | proof.log/gate.sh in findings dir; table rows list gate loads; not re-measured (timed runs are 10+ min) | yes |
+| H1-04 | 2 | file 13 strace and time | file13-*-execs.txt and .time present in findings dir | yes |
+| H1-04 | 3 | table file with all rows | findings-and-research/2026-11-03-resident-helper.md has 8 rows, each with result met/missed; checks 1332/1332 before and 1450/1450 after, red none | yes |
+| H1-04 | 4 | exec tables kept, decision Finding, wall miss recorded | findings dir has exec files; decision has ## Finding; miss lines for 337 nodes and 608.1 s present | yes |
+| H1-04 | 5 | worktree removed, no helpers left | git worktree list has no before worktree; pgrep helper.mjs shows none | yes |
+| H1-04 | 6 | commits touch only findings/journal | git diff-tree of H1-04 commit: only findings-and-research and journal/decisions | yes |
+| H1-04 | 7 | full suite | harness init: bash tests/run.sh full: green | yes |
+| H1-05 | 1 | review file from diff | docs/plans/2026-11-05-H1-review.md: 0 Critical, 1 Important, 7 Minor | yes |
+| H1-05 | 2 | hardest points covered | review has sections for them; greps for module-level state clean | yes |
+| H1-05 | 3 | Important fixed RED->GREEN | file 91 NUL-writer check and cli.test unit named; both green | yes |
+| H1-05 | 4 | decision complete, fewer-node-starts updated | Updated in place 2026-11-05 line at fewer-node-starts.md:275 | yes |
+| H1-05 | 5 | architecture/README | architecture.md names helper.mjs, cli.mjs, helper-<pid>, helper restarted; README line 131 HARNESS_HELPER=0; entry carries After-the-run lines | yes |
+| H1-05 | 6 | bash -n, node --check, subsets | all clean; resident-helper, 84-node-memo, 00-unit green | yes |
+| H1-05 | 7 | full suite | harness init: bash tests/run.sh full: green | yes |
+
+- *133125-verify-H1 · claude-sonnet-5-5*
+
 ### 2026-11-05 13:21 · H1-05 · passes
 
 Review of H1: 0 Critical, 1 Important, 7 Minor. Important fixed: a writer echoing a NUL ran twice (helper declined after it wrote); captured's say now drops NULs. Header parsed by one regex; lint and tests widened; decision file complete; architecture, README and fewer-node-starts updated. Tests 684 to 689.

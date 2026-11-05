@@ -36,3 +36,6 @@
 - 2026-11-05 12:50 · context.md for H1-05: 7874 bytes, 2 items left out
 - 2026-11-05 13:21 · H1-05: suite ran 1x (101 s) in the session
 - 2026-11-05 13:21 · H1-05 · claude-opus-5-5 · passes=true · 30 min · 6/6 passing
+- 2026-11-05 13:21 · merged main into harness-lane/agent-harness-2026-11-05/H1
+- 2026-11-05 13:21 · verify H1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-05 13:31 · context.md for H1: 16180 bytes, 6 items left out
