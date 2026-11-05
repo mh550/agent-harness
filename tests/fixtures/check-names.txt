@@ -67,6 +67,7 @@ a given-up feature opens given_up naming what waits on it; harness needs and har
 a held index.lock: written, not committed, nothing left staged
 a hit prints what node prints, byte for byte, and its exit code (snapshot, lint, a lone newline)
 a killed debrief changes nothing
+a lane closes on its card's words: merge refused, conflicts with main; neither opens a merge_failed card
 a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
 a later clean sync_main resolves main_conflict: its item in needs/done/, main merged cleanly, noted
 a later deadline: the earlier refusals aren't the cause
@@ -91,6 +92,8 @@ a reason after any separator is kept whole, " · 2026-" in it included
 a refused branch -d (merged into origin/main, not into HEAD, no upstream) is logged and gc goes on
 a refused commit: the note is unstaged again
 a refused debrief: no note, nothing marked done, LIMIT_UNTIL set, one line to NOTIFY_CMD
+a refused lane closes merge refused, on the card it opened
+a refused merge is one gh pr merge per merge, its GraphQL line in run.log, merge_refused:M1 opened, no retry line
 a refused merge tells Michael and his desk once
 a refused merge: priority high, click = the PR
 a refused session's minimal entry is not yet, not its reverted claim (E4 review F3)
@@ -603,7 +606,7 @@ metrics: session-id prints the init line's session_id of first.jsonl
 metrics: summary counts an entry-resume row's cost but never as a session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
-needs REASONS: kind, severity and priority for each of the 16 reasons, as the plan's table
+needs REASONS: kind, severity and priority for each of the 17 reasons, as the plan's table
 needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card feature_list_edits: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
@@ -611,6 +614,7 @@ needs card given_up: from its fixture, every field filled (why of 2-4 sentences,
 needs card initializer_failed: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card main_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card merge_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card merge_failed: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card merge_refused: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card overlap: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card parked: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
@@ -621,11 +625,13 @@ needs card verify_red: from its fixture, every field filled (why of 2-4 sentence
 needs card verify_thin: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card weekly_budget: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
-needs cards: 16 fixtures, one per reason, and a reason without a template is exit 1
+needs cards: 17 fixtures, one per reason, and a reason without a template is exit 1
 needs cards: merge_conflict and main_conflict show tried in the card, the notification body and needs.md
 needs fixture records: severity warn for usage_limit, weekly_budget and overlap, else block; each with a card headline and a [<run>] title
 needs list: a dead driver.pid with no ended is a synthesized driver_crash (ref <run>/crash, at run.log's mtime), parked.json's B a parked item; nothing stored
 needs list: no synthesized item once a record is open for it (driver_crash:run, parked:B), nor with ended or a live driver
+needs merge_failed: the item carries what, tries, secs, tag_local and head, a refresh their new values; a card without a step says so
+needs merge_refused without a PR (a hook declined a push): the card names the step and no PR row
 needs open twice with one key: one file, seen 2, exit 0 then 3; id, at and ref kept, updated_at moved
 needs open: an unknown reason or an empty subject exits 1 with needs.mjs: on stderr and writes nothing
 needs questions: a later entry's resolved closes it by the run's end
@@ -664,6 +670,7 @@ needs review: harness needs done rewrites the record's needs.md (the notificatio
 needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)
 needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base failure waits on needs-<m> while verified; a milestone driver_crash waits on needs-<m>; a conflict while needs-<m> stays
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
+needs sweep: merge_failed: merged-<m> resolves milestone merged, its marker gone origin back, else kept
 needs verify_red own: a slow-tier red the fast gate let through, never main's disagreement
 needs.md is committed on the record branch before the park goes out, and lists the park
 needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
@@ -685,9 +692,46 @@ notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3
 notify.mjs: githubUrls for ssh, https and non-GitHub origins
 notify.mjs: inboxQuestion is the lines added above ## Answers (never Michael's old answers)
 notify.mjs: trimBody caps at 3500 bytes with …
+od1: origin down for three fetches at the lane's merge: three failed tries, succeeded on try 4, M1 merged, no needs post
+od2: a tag push past the retries is noted local only, its rejected line in run.log, never verified and tagged
+od2: merge_failed:M1 is open with its fields and its one command, seen once over the lane's and the run end's merges
+od2: one high needs-you post with the card's words, and the run end's post went out too
+od2: origin back, harness merge: the tag reaches origin first, M1 merged, the markers gone, the item resolved milestone merged
+od2: the merge past the retries is one note, the lane closes on its words, the marker holds the step
+od2: the record branch's and the lane branch's push streaks are noted once each at their start, every failure a run.log line
+od2: the record branch's streak ends in one note, committed and on origin, the worktree clean
+od3: a run whose worktree is gone is still held: its branches stay, its card is not swept run removed
+od3: gc, --dry-run and --all-merged keep a verified, unmerged run: the keeps line, its worktree, its branch on origin, its card open
+od3: harness merge without the worktree: made on the local branch, ahead of origin, no spec asked; the outage's notes kept, M1 merged, the tag on origin
+od3b: harness merge with its worktree deleted and origin up to date: on harness/<run> from origin/harness/<run>, M1 merged
+od3h: a tag merged by hand holds nothing: the run's next verified, unmerged milestone holds it
+od3h: every tag merged by hand: gc removes the worktree and the branches, its card goes run removed
+od4: harness merge from origin/main, which has the record: no restore, the missing tag fetched, M1 merged by its PR
+od4m: a branch without the record and a main with it: restored from main, committed and noted, M1 merged
+od5: no record on the branch, on main or in the ledger: its line, exit 1, no worktree and no branch left behind
+od5: origin's branch without a record: refused too, and the local branch it just made is gone
+od5: the ledger's copy back: restored from the ledger, committed and noted, M1 merged, its tag carried to origin
+od6: gh down twice at pr create and pr merge: opening its PR and merging it succeed on try 3, M1 merged
+od7: harness merge lands it through the PR it left open, the card resolved
+od7: pr merge past its tries: merge_failed at merging its PR, no merge_refused, the lane closes on its words
+od8: a pr merge whose answer is lost is merged when its commit is on main: no card, no post
+od9: a merge that fails in the lane and lands at its reap: one post, the card resolved milestone merged, M2 built and merged
+odg: a refused tag is noted local only after one try and never holds the merge: M1 merged, no card
+odh: a hook-declined push is one try and merge_refused: its real git line in run.log, no PR on the card, the lane closes merge refused
+odn: a lane whose main never merged closes on a retry, not needs Michael without a card; its re-base lands it, no needs item
+odo: under MERGE_POLICY=off gc does not hold a verified run for a merge that can't come
+odt: a missing tag while origin is down is merge_failed at fetch of tag, never is gone
+odt: a tag gone here and on origin: its line, exit 0, and gc no longer holds the run for that milestone
+odu: a lane left with no reason opens merge_failed what=unknown and notifies before it closes; no tag, no verified-and-tagged note
+odz: an origin that hangs ends in the merge_failed card and the run's end, not a hang
 one ledger row per run
 one note, overwritten: ledger/debrief.md
 one notification per run end
+origin_try: a GraphQL: refusal or a pre-receive hook's decline is one try, its line in run.log, no failed-try line
+origin_try: a command failing every try returns its exit after four tries, ORIGIN_TRIES=4 and ORIGIN_SECS set, no note
+origin_try: a command failing twice then passing returns 0, two failed-try lines in run.log, one succeeded note
+origin_try: a try that hangs is cut at ORIGIN_TRY_TIMEOUT and retried: four tries, exit 124, no hang
+origin_try: gh's is not mergeable and any declined remote rejection are one try too; a rejected (failure) still retries
 overlap: Markdown emphasis and HTML tags stuck to a path neither hide it nor turn it into its directory
 overlap: a dir/ or glob names its directory of two or more segments; .harness/runs/ never
 overlap: a live run is compared by what its spec and brief name (no branch yet); more than 6 files end in and <k> more
@@ -978,6 +1022,9 @@ status view: harness status --all over 38 stub runs takes under 1 s of CPU time 
 status view: no line over 60 or 80 display columns (also with -v); at 60 the long field and the cost go on an indented second line
 status view: no run.log line without -v; a bad --since is an error
 status: stop <why> from the phone: the same note, ended and services note
+stub-gh: STUB_GH_DOWN=2 fails two pr creates with fixtures/gh-down.txt (a real gh's), the third opens the PR
+stub-git-down: a count of 2 fails the first two pushes with the fixture's lines (ref and url in), the third reaches origin.git
+stub-git-down: until <epoch> fails a fetch with exit 128 and no line; other commands and unmatched calls run the real git
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
 suite length: a project without CHECK_FAST_CMD renders This run's Suite line as before and no fast length
@@ -1085,6 +1132,8 @@ the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), 
 the initializer prompt asks for after on independent features and on every milestone's first
 the initializer prompt has the resolved lint command
 the initializer prompt sizes reviews to the milestone
+the invariant, across gc: every lane closed needs Michael in this file's runs has a needs item of that milestone, opened no later than the close
+the invariant: every lane closed needs Michael in this file's runs has a needs item of that milestone, opened no later than the close
 the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the limit window is shared
 the memo writes nothing to disk (no file outside the check's own) and nothing to stderr
@@ -1168,10 +1217,11 @@ tty views: trends on a TTY shows the newest 15 runs as columns, 2 older: harness
 two coding prompts share a byte-identical prefix that includes the policy
 u3 review: a continue queued behind a live run keeps a multi-line --brief-file as one --brief
 u3 review: a multi-line --brief is one argument in its queue entry (one line per argument; queue show has it whole)
-u3 review: an overlap with an ended run records on it in its state only: its worktree stays clean, so the runner's gc removes it
+u3 review: an overlap with an ended run records on it in its state only: its worktree stays clean, and the runner's gc holds it only for its verified milestone
 u3 review: past --until with only lane-held entries the runner ends (it no longer polls until the lane ends)
 u3 review: queue list shows held: <project> busy for an entry a live lane holds (as the runner holds it)
 u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
+u3 review: with its PRs merged the same gc removes that run, its items run removed
 unit tier: a passing and a failing test print PASS a, FAIL b, the indented assert diff, then its own N/M line, exit 1
 unit tier: a passing-only file prints PASS a and its N/M line, exit 0
 unit tier: lib/testcount.mjs imported beside another test file prints nothing of its own

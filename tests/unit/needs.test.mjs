@@ -9,9 +9,9 @@ import * as V from "../../lib/view.mjs";
 const fixture = r => JSON.parse(readFileSync(new URL(`../fixtures/needs/${r}.json`, import.meta.url), "utf8"));
 
 // ---- 58-needs-record.sh ----
-test("needs REASONS: kind, severity and priority for each of the 16 reasons, as the plan's table", () => {
+test("needs REASONS: kind, severity and priority for each of the 17 reasons, as the plan's table", () => {
   assert.equal(Object.entries(N.REASONS).map(([r, x]) => [r, x.kind, x.severity, x.priority].join(":")).join(" "),
-    "parked:park:block:high given_up:blocked:block:high verify_thin:needs_michael:block:high verify_red:needs_michael:block:high verify_recheck:needs_michael:block:high merge_conflict:needs_michael:block:high merge_refused:needs_michael:block:high main_conflict:needs_michael:block:high base_conflict:needs_michael:block:high feature_list_edits:needs_michael:block:high initializer_failed:needs_michael:block:high driver_crash:needs_michael:block:high usage_limit:limit:warn: weekly_budget:limit:warn: overlap:needs_michael:warn: question:needs_michael:warn:");
+    "parked:park:block:high given_up:blocked:block:high verify_thin:needs_michael:block:high verify_red:needs_michael:block:high verify_recheck:needs_michael:block:high merge_conflict:needs_michael:block:high merge_refused:needs_michael:block:high merge_failed:needs_michael:block:high main_conflict:needs_michael:block:high base_conflict:needs_michael:block:high feature_list_edits:needs_michael:block:high initializer_failed:needs_michael:block:high driver_crash:needs_michael:block:high usage_limit:limit:warn: weekly_budget:limit:warn: overlap:needs_michael:warn: question:needs_michael:warn:");
   // a warn reason's priority is the empty string, not missing (78-needs-questions.sh read it as JSON)
   assert.deepEqual(N.REASONS.question, { kind: "needs_michael", severity: "warn", priority: "" });
 });
@@ -40,6 +40,31 @@ test("needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-
     ["verify_red", "M1", { removed: true, markers: ["needs-M1"] }, "run removed"],
   ];
   assert.deepEqual(cases.map(([r, s, o]) => `${r} ${s}: ${w(it(r, s), st(o))}`), cases.map(([r, s, , x]) => `${r} ${s}: ${x}`));
+});
+
+test("needs sweep: merge_failed: merged-<m> resolves milestone merged, its marker gone origin back, else kept", () => {
+  const i = N.record({ run: "r", project: "p", reason: "merge_failed", subject: "M1", seq: 1, what: "fetch of main" }, 0);
+  const w = markers => N.sweep([i], { removed: false, ended: true, passing: [], parked: {}, attempts: {}, max_attempts: 2, markers }).resolved[0]?.resolved_why ?? "kept";
+  assert.deepEqual([w(["merged-M1", "merge-failed-M1"]), w([]), w(["merge-failed-M1", "needs-M1"])], ["milestone merged", "origin back", "kept"]);
+});
+
+test("needs merge_failed: the item carries what, tries, secs, tag_local and head, a refresh their new values; a card without a step says so", () => {
+  const f = { run: "r", project: "p", reason: "merge_failed", subject: "M1", seq: 1, what: "fetch of main", tries: "6", secs: "230", tag_local: "1", head: "abc123" };
+  const i = N.record(f, 0);
+  assert.deepEqual([i.what, i.tries, i.secs, i.tag_local, i.head, i.card.headline, i.card.commands],
+    ["fetch of main", 6, 230, true, "abc123", "M1: merge failed at fetch of main (origin unreachable)", ["harness merge r"]]);
+  const r = N.refresh(i, { ...f, what: "merging its PR", tag_local: "", pr: "https://github.com/o/r/pull/9" }, 60);
+  assert.deepEqual([r.what, r.tag_local, r.seen], ["merging its PR", false, 2]);
+  assert.equal(r.card.options.filter(o => o.text.includes("merge the PR")).length, 1);
+  assert.equal(N.record({ ...f, what: "unknown" }, 0).card.headline, "M1: its merge stopped with no reason recorded");
+  assert.equal(N.record({ ...f, reason: "merge_refused" }, 0).what, undefined);   // only on merge_failed: other records stay as they were
+});
+
+test("needs merge_refused without a PR (a hook declined a push): the card names the step and no PR row", () => {
+  const c = N.card("merge_refused", { run: "r", subject: "M1", what: "push of harness-merge/r-M1", state: "/s" });
+  assert.ok(c.why.includes("push of harness-merge/r-M1") && !c.why.includes("The PR is open"));
+  assert.deepEqual(c.where.map(w => w.label), ["log"]);
+  assert.deepEqual(c.commands, ["harness merge r"]);
 });
 
 // the eval half of 58's "needs list: no synthesized item once a record is open for it …" (its CLI half stays there)

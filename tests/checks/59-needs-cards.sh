@@ -5,7 +5,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # Plan: docs/plans/2026-10-28-U2-needs-record.md §3, §3.1, §4.3. The facts per reason are tests/fixtures/needs/<reason>.json
 # (real-shaped paths under /home/u; parked is n8n-home's Q2 from tests/fixtures/inbox-q-in-comment.md with a Files: line).
 NM=$HERE/../lib/needs.mjs FX=$HERE/fixtures/needs
-REASONS="parked given_up verify_thin verify_red verify_recheck merge_conflict merge_refused main_conflict base_conflict feature_list_edits initializer_failed driver_crash usage_limit weekly_budget overlap question"
+REASONS="parked given_up verify_thin verify_red verify_recheck merge_conflict merge_refused merge_failed main_conflict base_conflict feature_list_edits initializer_failed driver_crash usage_limit weekly_budget overlap question"
 # mergedBy, waitsOn, cutFront, the review's card fixes and tried in the card: tests/unit/needs.test.mjs
 
 # every field filled: no undefined, 2 to 4 sentences of why naming a lib/ file, one recommended option with its why,
@@ -21,7 +21,7 @@ for r in $REASONS; do
     "node \"\$NM\" card $r \"\$FX/$r.json\" > \"\$T/card-$r.json\" && jq -e '$FILLED' \"\$T/card-$r.json\" > /dev/null \
      && [[ \$(jq -r '(.question != null) == (\"$r\" | IN(\"parked\", \"question\"))' \"\$T/card-$r.json\") == true ]]"
 done
-check "needs cards: 16 fixtures, one per reason, and a reason without a template is exit 1" \
+check "needs cards: 17 fixtures, one per reason, and a reason without a template is exit 1" \
   '[[ $(ls "$FX" | sed "s/\.json$//" | sort | paste -sd" ") == $(tr " " "\n" <<< "$REASONS" | sort | paste -sd" ") ]] \
   && ! node "$NM" card nope "$FX/parked.json" 2> /dev/null && ! node "$NM" card parked "$T/none.json" 2> /dev/null'
 check "parked card: the INBOX question verbatim with its line 16 and ?plain=1#L16 URL, where from its Files: line, parked.mjs's commands" \

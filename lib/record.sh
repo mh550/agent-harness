@@ -223,7 +223,7 @@ restrict() {   # base record|nothing who
 # per origin/main commit (main-conflict-<subject> holds it); a later clean merge, or main already in, resolves it.
 sync_main() {
   local b sub=${LANE:-record} mn old files fa=() subjects ref; b=$(git branch --show-current)
-  git fetch -q origin "$MAIN_BRANCH" 2>/dev/null || return 0
+  fetch_main_ 2>/dev/null || return 0
   git merge-base --is-ancestor "origin/$MAIN_BRANCH" HEAD && { main_clear "$sub"; return 0; }
   merge_main "${LANE:-}" "${LANE:+resolve}"; case $? in   # the record branch's conflicts stay Michael's
     0) [[ -n $MERGE_RESOLVED ]] && resolved_note "$LANE" "the verify goes on with $MAIN_BRANCH merged"
@@ -668,9 +668,107 @@ runs_as_main() {
   GIT_AUTHOR_DATE=$d GIT_COMMITTER_DATE=$d git commit-tree "$t" -p "$1" -m "HARNESS: .harness/runs/ as $MAIN_BRANCH has it (a lane never carries the record)" 2>> "$STATE/run.log"
 }
 
+# <m> <what> <command…>: one origin step of a merge, retried with bounded backoff (ORIGIN_WAITS; HARNESS_ORIGIN_WAITS in
+# tests), its stderr appended to run.log. Each failed try is a run.log line; a success after one a note; the last failure
+# returns the command's exit with ORIGIN_TRIES and ORIGIN_SECS set for the caller's words. A GitHub refusal (a GraphQL:
+# line, gh's own or wrapped as `pull request create failed: GraphQL: …`; gh's `is not mergeable: `, a required check or
+# review; a remote rejection some hook or rule `declined`) is a decision, not an outage: one try, ORIGIN_REFUSED=1.
+# ORIGIN_WAITS="" is one try. Each try runs under origin_t, a step function in this shell (it may set a variable:
+# pr_open_'s PR_URL).
+origin_try() {
+  local m=$1 what=$2 k=1 n rc w waits err=$STATE/origin-try.$BASHPID t0=$SECONDS; shift 2
+  read -ra waits <<< "${HARNESS_ORIGIN_WAITS:-${ORIGIN_WAITS-5 15 30 60 120}}"; n=$(( ${#waits[@]} + 1 ))
+  ORIGIN_REFUSED=0
+  while :; do
+    origin_t "$@" 2> "$err"; rc=$?; cat "$err" >> "$STATE/run.log"
+    ORIGIN_TRIES=$k ORIGIN_SECS=$(( SECONDS - t0 ))
+    if (( rc == 0 )); then
+      rm -f "$err"; (( k > 1 )) && note "$m: $what succeeded on try $k (origin unreachable for $ORIGIN_SECS s)"; return 0
+    fi
+    grep -qE '(^|: )GraphQL: |\[remote rejected\].*declined|is not mergeable: ' "$err" && ORIGIN_REFUSED=1
+    if (( k >= n || ORIGIN_REFUSED )); then rm -f "$err"; return "$rc"; fi
+    w=${waits[k-1]}; log "$m: $what failed (try $k of $n; next in $w s)"; sleep "$w"; k=$(( k + 1 ))
+  done
+}
+# <command…> with one try's bound: an origin that takes the connection and never answers would hold the merge or record
+# lock for good (git has no such limit of its own). 124: cut, a failure like any other. A function runs in this shell,
+# unbounded here: it puts origin_t round its own commands.
+origin_t() {
+  declare -F "$1" > /dev/null && { "$@"; return; }
+  timeout -k 5 "${HARNESS_ORIGIN_TRY_TIMEOUT:-${ORIGIN_TRY_TIMEOUT:-120}}" "$@"
+}
+fetch_main_() { origin_t git fetch -q origin "$MAIN_BRANCH" 8>&-; }
+# <m> [--force]: its tag to origin through origin_try. tag-local-<m> holds it until origin has it (set first: a lane
+# killed in the retries leaves the marker), so merge_one's next try carries it before the branch
+tag_push() {
+  local m=$1 t=run/$RUN_ID/$1; shift
+  touch "$STATE/tag-local-$m"
+  origin_try "$m" "push of tag $t" git push -q "$@" origin "refs/tags/$t" 8>&- || return 1
+  rm -f "$STATE/tag-local-$m"
+}
+# <m>: what a note adds while its tag is local only (nothing once origin has it): "harness-log.md never claims a tag the origin didn't take"
+tag_local_words() {
+  [[ -f $STATE/tag-local-$1 ]] && printf '; tag run/%s/%s is local only (push failed %s times over %s s; see run.log)' "$RUN_ID" "$1" "${ORIGIN_TRIES:-?}" "${ORIGIN_SECS:-?}"
+  return 0
+}
+# <tag>: origin's copy here, if it has one (an answer of none is no failure: only an outage is retried)
+tag_fetch_() { local r; r=$(origin_t git ls-remote origin "refs/tags/$1" 8>&-) || return 1; [[ -z $r ]] || origin_t git fetch -q origin tag "$1" 8>&-; }
+# The tag's commit, or nothing (the once-per markers and the cards' head)
+tag_commit() { git rev-parse -q --verify "refs/tags/run/$RUN_ID/$1^{commit}" 2> /dev/null; }
+# <m> <what> [<PR url>]: a merge past origin_try's retries (what=unknown: a merge with no reason to give, the fail-closed
+# case): needs-<m> and the lane's exit words, then once per <what> while merge-failed-<m> holds it (`harness merge`
+# always says so) a note, the merge_failed card and its notification. Always 1.
+merge_failed() {
+  local m=$1 what=$2 pr=${3:-} ref tries=${ORIGIN_TRIES:-0} secs=${ORIGIN_SECS:-0} tl=""
+  local words="its merge (origin unreachable at $what)"; [[ $what == unknown ]] && tries=0 secs=0 words="its merge"
+  touch "$STATE/needs-$m"
+  [[ -n ${LDIR:-} ]] && printf '%s' "$words" > "$LDIR/need"
+  [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/merge-failed-$m" 2> /dev/null) == "$what" ]] && return 1
+  echo "$what" > "$STATE/merge-failed-$m"; [[ -f $STATE/tag-local-$m ]] && tl=1
+  if [[ $what == unknown ]]; then note "$m: its merge stopped with no reason recorded (see run.log); merged later: harness merge $RUN_ID"
+  else note "$m: merge failed at $what after $tries tries over $secs s; merged later: harness merge $RUN_ID"; fi
+  ref=$(needs_open merge_failed "$m" milestone="$m" what="$what" tries="$tries" secs="$secs" tag_local="$tl" head="$(tag_commit "$m")" \
+    branch="harness-lane/$RUN_ID/$m" pr="$pr" log="$STATE/run.log")
+  rec_commit "HARNESS: $m merge failed"; sync_record
+  [[ ${HARNESS_MERGE_ONLY:-} ]] && local DESK=0   # Michael is at the terminal
+  needs_you "$m" "merge failed at $what" needs.md "$ref"
+  return 1
+}
+# <m> <what> [<PR url>]: GitHub said no: once per tag commit (merge_milestones runs again after every verify and at the
+# end; `harness merge` always says so) a note, the merge_refused card and its notification. Always 1.
+merge_refused_() {
+  local m=$1 what=$2 url=${3:-} c ref; c=$(tag_commit "$m")
+  [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/refused-$m" 2> /dev/null) == "$c" ]] && return 1
+  echo "$c" > "$STATE/refused-$m"; merge_settled "$m"   # the refusal's card speaks for it now
+  if [[ -n $url ]]; then note "$m: the merge was refused; PR left open for Michael · $url"
+  else note "$m: the merge was refused at $what; no PR is open (see run.log)"; fi
+  ref=$(needs_open merge_refused "$m" milestone="$m" pr="$url" click="$url" what="$what" head="$c"); rec_commit "HARNESS: $m merge refused"; sync_record
+  needs_notify "$ref" "$m needs Michael: merge refused${url:+ · $url}" title="[$RUN_ID] $m needs you" priority=high click="$url"
+  [[ ${HARNESS_MERGE_ONLY:-} ]] || desk "$m: merge refused"   # `harness merge`: Michael is at the terminal
+  return 1
+}
+# <m> <what> [<PR url>]: an origin step gave up: refused or an outage. Always 1.
+merge_stop() { if (( ${ORIGIN_REFUSED:-0} )); then merge_refused_ "$@"; else merge_failed "$@"; fi; }
+# <m> <what> <command…>: one origin step of merge_one; 1 = merge_stop has said why
+merge_step() { local m=$1 what=$2; shift 2; origin_try "$m" "$what" "$@" && return 0; merge_stop "$m" "$what"; }
+# <m>: nothing holds its merge up for an outage any more (it landed, it waits on Michael or a dependency for another
+# reason, or another card speaks): the marker goes, and with it the needs-<m> merge_failed set. Not on a step's success:
+# a fetch that works now and a main that moved would leave a verified milestone with no card at all.
+merge_settled() { [[ -f $STATE/merge-failed-$1 ]] && rm -f "$STATE/merge-failed-$1" "$STATE/needs-$1"; return 0; }
+# <m> <the note's words>: it is on main
+merged_() { touch "$STATE/merged-$1"; merge_settled "$1"; note "$1 merged into $MAIN_BRANCH$2"; }
+# <head> <m>: the head's open PR, else a new one, its URL in PR_URL (origin_try's "opening its PR": a pr view that can't
+# reach GitHub reads as no PR, and the pr create after it fails too)
+pr_open_() {
+  PR_URL=$(origin_t $GH pr view "$1" --json url,state -q 'select(.state=="OPEN") | .url' 2> /dev/null) || PR_URL=""
+  [[ $PR_URL == http* ]] || PR_URL=$(origin_t $GH pr create --base "$MAIN_BRANCH" --head "$1" --title "$RUN_ID: $2 (verified)" --body-file "$LS/pr-body.md" | tail -1)
+  [[ $PR_URL == http* ]]
+}
+
 # Merge one verified milestone (its tag, the lane tip) into main through a PR. The invariant: the tree that lands on
 # main is the tree that was verified, outside the paths the suite's cache key ignores (ignored_only). 0 = merged,
-# proposed, or (--open) its PR open and waiting · 1 = needs Michael (conflict, refusal) · 3 = main moved since the verify
+# proposed, or (--open) its PR open and waiting · 1 = needs Michael (conflict, refusal, an outage past the retries: each
+# with its card, once; a re-base already pending says nothing new) · 3 = main moved since the verify
 # (moved-<m> holds that main): its lane re-bases it (lib/lane.sh rebase), once per main, never after it needs Michael;
 # `harness merge` clears moved-* and so tries once more.
 # --open (a dependency not merged yet) skips that test: main moves again when the dependency lands, and the rule runs then.
@@ -678,19 +776,23 @@ merge_one() {
   local m=$1 tag=run/$RUN_ID/$1 c head url tree mn out ref t
   head=harness-merge/$RUN_ID-$m
   c=$(git rev-list -n1 "$tag") || return 1
-  # once more after a second: another lane's fetch may hold refs/remotes/origin/<main>'s lock
-  git fetch -q origin "$MAIN_BRANCH" 8>&- 2> /dev/null || { sleep 1; git fetch -q origin "$MAIN_BRANCH" 8>&- 2>> "$STATE/run.log"; } \
-    || { log "$m: fetch of $MAIN_BRANCH failed; merged later"; return 1; }
-  if git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; then touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (already there)"; return 0; fi
+  # retried: an outage, or another lane's fetch holding refs/remotes/origin/<main>'s lock
+  merge_step "$m" "fetch of $MAIN_BRANCH" fetch_main_ || return 1
+  # a tag the verify's push left local goes before the branch: forced, the local one is the verified one. A refusal (a
+  # rule on run/* tags) holds no merge up: the tag was never what lands
+  if [[ -f $STATE/tag-local-$m ]]; then
+    if tag_push "$m" --force; then note "$m: tag $tag reached origin"
+    elif (( ! ORIGIN_REFUSED )); then merge_failed "$m" "push of tag $tag"; return 1; fi
+  fi
+  if git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; then merged_ "$m" " (already there)"; return 0; fi
   mn=$(git rev-parse "origin/$MAIN_BRANCH")
   # `harness merge` after Michael merged main into the lane branch by hand (the merge_conflict card's (a)): that merge
   # is the milestone's tip, re-tagged, when it holds the verified commit and its merge_conflict record is open
   if [[ ${HARNESS_MERGE_ONLY:-} ]] && grep -qs "\"key\": \"merge_conflict:$m\"" "$STATE"/needs/*.json \
-    && git fetch -q origin "harness-lane/$RUN_ID/$m" 8>&- 2> /dev/null && t=$(git rev-parse FETCH_HEAD) \
+    && origin_t git fetch -q origin "harness-lane/$RUN_ID/$m" 8>&- 2> /dev/null && t=$(git rev-parse FETCH_HEAD) \
     && [[ $t != "$c" ]] && git merge-base --is-ancestor "$c" "$t"; then
     git tag -f -a "$tag" -m "harness run $RUN_ID: $m verified (v3); main merged in by hand, harness merge" "$t" > /dev/null \
-      && git push -q --force origin "refs/tags/$tag" 8>&- 2>> "$STATE/run.log" \
-      && { c=$t; note "$m: main merged into its branch by hand; re-tagged $tag at ${t:0:7}"; }
+      && { tag_push "$m" --force; c=$t; note "$m: main merged into its branch by hand; re-tagged $tag at ${t:0:7}$(tag_local_words "$m")"; }
   fi
   if ! out=$(git -c core.quotePath=false merge-tree --write-tree --name-only "origin/$MAIN_BRANCH" "$c" 2>/dev/null); then
     # the lane's rebase merges, resolves and verifies it (lib/resolve.sh); at the run's end (finish wrote ended) no lane
@@ -703,7 +805,7 @@ merge_one() {
     fi
     # once per main: merge_milestones runs again after every verify and at the end; `harness merge` always says so
     [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/conflict-$m" 2>/dev/null) == "$mn" ]] && return 1
-    echo "$mn" > "$STATE/conflict-$m"
+    echo "$mn" > "$STATE/conflict-$m"; merge_settled "$m"   # the conflict's card speaks for it now
     note "$m conflicts with $MAIN_BRANCH; not merged (needs Michael)"
     # the lane's branch and slot (on the coordinator LBRANCH is empty and HARNESS_WT the record worktree)
     ref=$(needs_open merge_conflict "$m" milestone="$m" files="$(conflict_files <<< "$out")" main="$mn" head="$c" \
@@ -723,30 +825,23 @@ merge_one() {
   # lane_guard's fail-safe: a lane never carries .harness/runs/ to main (decisions/2026-10-30-lane-guard-base)
   if [[ -n $(git diff --name-only "origin/$MAIN_BRANCH...$c" -- .harness/runs/ 2> /dev/null) ]]; then
     out=$(git diff --name-only "origin/$MAIN_BRANCH...$c" -- .harness/runs/ | head -3 | paste -sd' ')
-    c=$(runs_as_main "$c") || { note "$m: its .harness/runs/ changes could not be undone; not merged (see run.log)"; return 1; }
+    c=$(runs_as_main "$c") || { note "$m: its .harness/runs/ changes could not be undone; not merged (see run.log)"; merge_failed "$m" unknown; return 1; }
     note "$m: the lane carried .harness/runs/ changes ($out); merged with $MAIN_BRANCH's"
   fi
-  git push -q -f origin "$c:refs/heads/$head" 8>&- 2>> "$STATE/run.log" || { note "$m: push of $head failed (see run.log)"; return 1; }
+  merge_step "$m" "push of $head" git push -q -f origin "$c:refs/heads/$head" 8>&- || return 1
   pr_body "$m" > "$LS/pr-body.md"; [[ $LS == "$STATE" ]] || cp "$LS/pr-body.md" "$STATE/pr-body.md"   # the last body, whichever lane (checks read it)
-  url=$($GH pr view "$head" --json url,state -q 'select(.state=="OPEN") | .url' 8>&- 2>/dev/null) || url=""
-  [[ $url == http* ]] || url=$($GH pr create --base "$MAIN_BRANCH" --head "$head" --title "$RUN_ID: $m (verified)" --body-file "$LS/pr-body.md" 8>&- 2>> "$STATE/run.log" | tail -1)
-  [[ $url == http* ]] || { note "$m: could not open its PR (see run.log)"; return 1; }
-  [[ ${2:-} == --open ]] && return 0   # a dependency hasn't merged: the PR waits for it, whatever the policy
-  if [[ $MERGE_POLICY != auto && ! ${HARNESS_MERGE_ONLY:-} ]]; then touch "$STATE/proposed-$m"; note "$m proposed for merging · $url"; notify "$m verified · review: $url" title="[$RUN_ID] $m ready to merge" click="$url"; return 0; fi   # harness merge lands it whatever the policy
-  if $GH pr merge "$url" --merge --match-head-commit "$c" > /dev/null 8>&- 2>> "$STATE/run.log"; then
-    git push -q origin --delete "$head" 8>&- 2>/dev/null
-    touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH · $url"; notify "$m merged · $url" click="$url"
-    lane_branch_gone "$m"
-  else
-    # once per tag commit (merge_milestones runs again after every verify and at the end); `harness merge` always says so
-    [[ ! ${HARNESS_MERGE_ONLY:-} && $(cat "$STATE/refused-$m" 2>/dev/null) == "$c" ]] && return 1
-    echo "$c" > "$STATE/refused-$m"
-    note "$m: the merge was refused; PR left open for Michael · $url"
-    ref=$(needs_open merge_refused "$m" milestone="$m" pr="$url" click="$url" head="$c"); rec_commit "HARNESS: $m merge refused"; sync_record
-    needs_notify "$ref" "$m needs Michael: merge refused · $url" title="[$RUN_ID] $m needs you" priority=high click="$url"
-    [[ ${HARNESS_MERGE_ONLY:-} ]] || desk "$m: merge refused"   # `harness merge`: Michael is at the terminal
-    return 1
+  PR_URL=""; merge_step "$m" "opening its PR" pr_open_ "$head" "$m" 8>&- || return 1
+  url=$PR_URL
+  [[ ${2:-} == --open ]] && { merge_settled "$m"; return 0; }   # a dependency hasn't merged: the PR waits for it, whatever the policy
+  if [[ $MERGE_POLICY != auto && ! ${HARNESS_MERGE_ONLY:-} ]]; then touch "$STATE/proposed-$m"; merge_settled "$m"; note "$m proposed for merging · $url"; notify "$m verified · review: $url" title="[$RUN_ID] $m ready to merge" click="$url"; return 0; fi   # harness merge lands it whatever the policy
+  # a merge whose answer was lost looks like a failure, and every later try too (already merged): main decides
+  if origin_try "$m" "merging its PR" "$GH" pr merge "$url" --merge --match-head-commit "$c" > /dev/null 8>&- \
+    || { fetch_main_ 2> /dev/null && git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; }; then
+    origin_t git push -q origin --delete "$head" 8>&- 2>/dev/null
+    merged_ "$m" " · $url"; notify "$m merged · $url" click="$url"
+    lane_branch_gone "$m"; return 0
   fi
+  merge_stop "$m" "merging its PR" "$url"
 }
 
 # [<m>] → merge every verified, unmerged milestone (or just <m>) in list order. A tag is a lane tip, so it carries no
@@ -771,11 +866,16 @@ merge_milestones_() {
     [[ $(cat "$STATE/lanes/$m/pid" 2> /dev/null) != "$$" ]] && lane_alive "$m" && continue
     if [[ -f $STATE/proposed-$m && ! ${HARNESS_MERGE_ONLY:-} ]]; then   # Michael's to merge, or `harness merge`'s
       # merged by Michael meanwhile (its PR on GitHub): merged here too, so what waits on it moves on
-      git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null && git fetch -q origin "$MAIN_BRANCH" 8>&- 2> /dev/null \
-        && git merge-base --is-ancestor "run/$RUN_ID/$m" "origin/$MAIN_BRANCH" && { touch "$STATE/merged-$m"; note "$m merged into $MAIN_BRANCH (by its PR)"; lane_branch_gone "$m"; }
+      git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null && origin_try "$m" "fetch of $MAIN_BRANCH" fetch_main_ \
+        && git merge-base --is-ancestor "run/$RUN_ID/$m" "origin/$MAIN_BRANCH" && { merged_ "$m" " (by its PR)"; lane_branch_gone "$m"; }
       continue
     fi
-    git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null || continue
+    if ! git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m" > /dev/null; then
+      # `harness merge`, a verified milestone whose tag isn't here: origin's; gone there too, nothing is left to merge
+      [[ ${HARNESS_MERGE_ONLY:-} && -f $STATE/verified-$m ]] || continue
+      merge_step "$m" "fetch of tag run/$RUN_ID/$m" tag_fetch_ "run/$RUN_ID/$m" || continue
+      [[ -n $(tag_commit "$m") ]] || { note "$m: tag run/$RUN_ID/$m is gone; not merged"; continue; }
+    fi
     if [[ ! ${HARNESS_MERGE_ONLY:-} ]] && ! git tag -l --format='%(contents:subject)' "run/$RUN_ID/$m" | grep -q '(v3'; then
       [[ -f $STATE/legacy-noted ]] || { touch "$STATE/legacy-noted"; note "$m was verified by harness v2; it merges only with: harness merge $RUN_ID"; }
       continue
@@ -802,9 +902,9 @@ lane_branch_gone() {
   local m=$1 b=harness-lane/$RUN_ID/$1 w r tip gone=0 od=0 left=""
   tip=$(git rev-parse -q --verify "refs/tags/run/$RUN_ID/$m^{commit}") || tip=""
   held_() { { [[ -n $tip ]] && git merge-base --is-ancestor "$1" "$tip" 2> /dev/null; } || git merge-base --is-ancestor "$1" "origin/$MAIN_BRANCH" 2> /dev/null; }
-  r=$(git ls-remote origin "refs/heads/$b" 8>&- 9>&- 2> /dev/null | cut -f1)
+  r=$(origin_t git ls-remote origin "refs/heads/$b" 8>&- 9>&- 2> /dev/null | cut -f1)
   if [[ -n $r ]]; then
-    if held_ "$r" && git push -q --force-with-lease="refs/heads/$b:$r" origin ":refs/heads/$b" 8>&- 9>&- 2>> "$STATE/run.log"; then gone=1 od=1
+    if held_ "$r" && origin_t git push -q --force-with-lease="refs/heads/$b:$r" origin ":refs/heads/$b" 8>&- 9>&- 2>> "$STATE/run.log"; then gone=1 od=1
     else log "lane $m: $b kept on origin (commits its merge doesn't hold, or the push failed)"; fi
   fi
   if git rev-parse -q --verify "refs/heads/$b" > /dev/null; then
@@ -826,17 +926,51 @@ lane_branch_gone() {
 # Pull Michael's phone edits (INBOX.md) into the record, push its commits. Never rewrites history. 9>&-: a network
 # command never holds the lock past this call (an ssh ControlPersist master would keep fd 9).
 sync_record_() {
-  if git -C "$RWT" fetch -q origin "$RBRANCH" 8>&- 9>&- 2> /dev/null; then
+  if origin_t git -C "$RWT" fetch -q origin "$RBRANCH" 8>&- 9>&- 2> /dev/null; then
     git -C "$RWT" merge -q --ff-only "origin/$RBRANCH" 2> /dev/null \
       || git -C "$RWT" merge -q --no-edit "origin/$RBRANCH" > /dev/null 2>&1 \
       || { git -C "$RWT" merge --abort 2> /dev/null; log "remote edits on $RBRANCH conflict with local work; kept local"; }
   fi
-  git -C "$RWT" push -q -u origin "$RBRANCH" 8>&- 9>&- 2>> "$STATE/run.log" || log "push of $RBRANCH failed"
+  PUSH_NOTE=""
+  if origin_t git -C "$RWT" push -q -u origin "$RBRANCH" 8>&- 9>&- 2>> "$STATE/run.log"; then
+    push_streak "$STATE/push-failing" ok "record branch" "$RBRANCH"
+  else
+    log "push of $RBRANCH failed"; push_streak "$STATE/push-failing" failed "record branch" "$RBRANCH"
+  fi
 }
-sync_record() { record sync_record_; }
+# <marker> ok|failed <who> <branch>: a push streak, one note at its start and one at its end, in PUSH_NOTE for the caller
+# to say outside the lock; the marker holds "<epoch of its start> <failures>"
+push_streak() {
+  local f=$1 at=0 n=0; [[ -f $f ]] && read -r at n < "$f"
+  if [[ $2 == ok ]]; then
+    [[ -f $f ]] && { rm -f "$f"; PUSH_NOTE="$3: push of $4 succeeded after $n failures over $(( ( $(date +%s) - at ) / 60 )) min"; }
+  elif [[ -f $f ]]; then echo "$at $(( n + 1 ))" > "$f"
+  else echo "$(date +%s) 1" > "$f"; PUSH_NOTE="$3: push of $4 failed; retrying at every sync (see run.log)"; fi
+  return 0
+}
+# Its streak note is committed at once (a note left over would keep gc from the worktree); one that says the streak
+# ended goes to origin too, so harness-log.md there shows it.
+sync_record() {
+  record sync_record_; local n=${PUSH_NOTE:-}; PUSH_NOTE=""
+  [[ -n $n ]] || return 0
+  note "$n"; rec_commit "HARNESS: $n"
+  [[ $n == *succeeded* ]] && sync_record
+  return 0
+}
 # no -u, as slot_open's --no-track: a lane never writes .git/config, which git locks without waiting (a coordinator
-# opening another slot meanwhile would fail); nothing reads a lane branch's upstream
-sync_lane() { [[ -n ${LBRANCH:-} ]] || return 0; git -C "$SLOT" push -q origin "$LBRANCH" 2>> "$STATE/run.log" || log "push of $LBRANCH failed"; }
+# opening another slot meanwhile would fail); nothing reads a lane branch's upstream. Its streak's notes go with the
+# record's next commit; its commits reach origin at its next sync.
+sync_lane() {
+  [[ -n ${LBRANCH:-} ]] || return 0
+  local m=${LBRANCH##*/}; PUSH_NOTE=""
+  if origin_t git -C "$SLOT" push -q origin "$LBRANCH" 2>> "$STATE/run.log"; then
+    push_streak "$STATE/lane-push-failing-$m" ok "lane $m" "$LBRANCH"
+  else
+    log "push of $LBRANCH failed"; push_streak "$STATE/lane-push-failing-$m" failed "lane $m" "$LBRANCH"
+  fi
+  [[ -z $PUSH_NOTE ]] || note "$PUSH_NOTE"
+  PUSH_NOTE=""
+}
 
 # <worktree>: the sorted-union merge driver (lib/merge-sorted.sh) in that worktree's own config, so a project's
 # `.gitattributes` `merge=sorted-union` works in the harness's checkouts and never in Michael's (decisions/2026-10-29-conflict-resolution)
@@ -861,9 +995,9 @@ slot_open() {
     # a lane killed mid-merge (its resolve session) left MERGE_HEAD: undone, never committed as WIP with its markers
     git -C "$SLOT" rev-parse -q --verify MERGE_HEAD > /dev/null && { git -C "$SLOT" reset -q --hard HEAD; note "$m: its slot-$k had a merge left in progress; undone"; }
     ( cd "$SLOT" && commit_all "WIP: uncommitted in the slot when it was reused (harness)" )
-    [[ $cur == harness-lane/* ]] && git -C "$SLOT" push -q origin "$cur" 2> /dev/null
+    [[ $cur == harness-lane/* ]] && origin_t git -C "$SLOT" push -q origin "$cur" 2> /dev/null
   fi
-  git -C "$RWT" fetch -q origin 2> /dev/null
+  origin_t git -C "$RWT" fetch -q origin 2> /dev/null
   base=${BASE_REF:-origin/$MAIN_BRANCH} fold=""
   # a lane resumes its branch (harness continue, a segment that ended mid-milestone): the origin's, which may be ahead
   # (Michael pushed a fix by hand); the box's when it has commits the origin lacks (a failed push); both when they diverged

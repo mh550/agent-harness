@@ -279,18 +279,18 @@ record_pr() {
     *) note "record PR: none (RECORD_PR=$RECORD_PR is neither end nor off)"; return 0 ;; esac
   [[ $MERGE_POLICY == off ]] && { note "record PR: none (MERGE_POLICY=off)"; return 0; }
   local url head mb more t="$RUN_ID: run record"; sync_record; head=$(git -C "$RWT" rev-parse HEAD)
-  git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
+  origin_t git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
   mb=$(git -C "$RWT" merge-base "origin/$MAIN_BRANCH" HEAD) || { note "record PR: none ($RBRANCH shares no history with $MAIN_BRANCH)"; return 0; }
   more=$(git -C "$RWT" diff --name-only "$mb" HEAD -- . ":!$RUN_DIR" | head -3 | paste -sd' ')
   [[ -z $more ]] || { note "record PR: none ($RBRANCH has changes outside $RUN_DIR/ that $MAIN_BRANCH lacks: $more)"; return 0; }
   # only the record PR is reused (an old v2 whole-run PR on this head is harness merge's to close), its body refreshed
-  url=$($GH pr view "$RBRANCH" --json url,state,title -q "select(.state == \"OPEN\" and .title == \"$t\") | .url" 2> /dev/null) || url=""
-  if [[ $url == http* ]]; then $GH pr edit "$url" --body-file "$REC/report.md" > /dev/null 2>> "$STATE/run.log"
-  else url=$($GH pr create --base "$MAIN_BRANCH" --head "$RBRANCH" --title "$t" --body-file "$REC/report.md" 2>> "$STATE/run.log" | tail -1); fi
+  url=$(origin_t $GH pr view "$RBRANCH" --json url,state,title -q "select(.state == \"OPEN\" and .title == \"$t\") | .url" 2> /dev/null) || url=""
+  if [[ $url == http* ]]; then origin_t $GH pr edit "$url" --body-file "$REC/report.md" > /dev/null 2>> "$STATE/run.log"
+  else url=$(origin_t $GH pr create --base "$MAIN_BRANCH" --head "$RBRANCH" --title "$t" --body-file "$REC/report.md" 2>> "$STATE/run.log" | tail -1); fi
   [[ $url == http* ]] && echo "$url" > "$STATE/record-pr"   # gc keeps harness/<run> while this PR is open
   if [[ $url != http* ]]; then note "record PR: could not open it (see run.log)"
   elif [[ $MERGE_POLICY != auto ]]; then note "record PR opened; left for Michael (MERGE_POLICY=$MERGE_POLICY) · $url"
-  elif $GH pr merge "$url" --merge --match-head-commit "$head" > /dev/null 2>> "$STATE/run.log"; then note "record PR merged into $MAIN_BRANCH · $url"
+  elif origin_t $GH pr merge "$url" --merge --match-head-commit "$head" > /dev/null 2>> "$STATE/run.log"; then note "record PR merged into $MAIN_BRANCH · $url"
   else note "record PR: the merge was refused; left open · $url"; fi
 }
 
@@ -306,7 +306,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   [[ -n $nr ]] && needs_open "$nr" run end_reason="$1" > /dev/null
   flakes_note   # every lane's, before the line
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
-  merge_milestones
+  merge_milestones; needs_sweep   # what that merge landed: its card goes with it
   local rb; for rb in $(F milestones "$LIST" 2> /dev/null); do   # kept for the next segment's coordinator, or harness merge
     [[ -f $STATE/rebase-$rb ]] && note "$rb verified, but $MAIN_BRANCH moved since; harness merge $RUN_ID re-bases and merges it"
   done
@@ -411,8 +411,8 @@ if [[ -f $LIST ]] || (( resumed )); then
 fi
 if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 whole-run PR (milestones merge through their own PRs)
   # the record PR (`<run>: run record`, record_pr) has the same head and stays open
-  if [[ $($GH pr view "$BRANCH" --json state,title -q "select(.title != \"$RUN_ID: run record\") | .state" 2>/dev/null) == OPEN ]]; then
-    $GH pr close "$BRANCH" --comment "Superseded: harness v3 merges each verified milestone into $MAIN_BRANCH through its own PR (tags run/$RUN_ID/<milestone>). Unverified work stays on $BRANCH until its milestone is verified." > /dev/null 2>> "$STATE/run.log" \
+  if [[ $(origin_t $GH pr view "$BRANCH" --json state,title -q "select(.title != \"$RUN_ID: run record\") | .state" 2>/dev/null) == OPEN ]]; then
+    origin_t $GH pr close "$BRANCH" --comment "Superseded: harness v3 merges each verified milestone into $MAIN_BRANCH through its own PR (tags run/$RUN_ID/<milestone>). Unverified work stays on $BRANCH until its milestone is verified." > /dev/null 2>> "$STATE/run.log" \
       && note "closed the whole-run PR for $BRANCH (milestones merge through their own PRs now)"
   fi
   # a milestone whose main moved re-bases in a slot as a merge lane (its suite or verify round there), then merges; a
@@ -426,6 +426,9 @@ if [[ ${HARNESS_MERGE_ONLY:-} ]]; then   # `harness merge`: also retire a v2 who
     unmaterialize; lanes_services_down "merge only"; slot_close
   fi
   rmdir "$SCRATCH" 2> /dev/null   # created above for nothing when no re-base ran an init (a kept scratch isn't empty)
+  # what the merges resolved (merge_failed, merge_refused …); after ended, as finish's: a merge is no continue, and the
+  # run-level items stay open
+  echo "merge only · $(date '+%F %T')" > "$STATE/ended"; needs_sweep
   rec_commit "HARNESS: merge"; sync_record; END_REASON="merge only"; exit 0
 fi
 
@@ -445,7 +448,7 @@ fi
 deploy_check() {
   [[ -f $STATE/deploy-checked ]] && return 0
   touch "$STATE/deploy-checked"
-  git fetch -q origin "$MAIN_BRANCH" 2> /dev/null
+  fetch_main_ 2> /dev/null
   local h hosts=() j
   while read -r h; do
     case $h in

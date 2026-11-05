@@ -23,9 +23,16 @@ N=$(ls "$HARNESS_STATE/proj" | grep -vx 'r1' | head -1); NS=$HARNESS_STATE/proj/
 check "u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'" '
   [[ -n $N && -f $NS/meta.env ]] && ! grep "unknown option\|^failed: " "$T/qr.out" "$Q/runner.log" > /dev/null &&
   grep -x "then the second line" "$HARNESS_LEDGER/proj/$N/brief.md" > /dev/null'
-check "u3 review: an overlap with an ended run records on it in its state only: its worktree stays clean, so the runner's gc removes it" '
+# r1 is proposed (verified, unmerged), so the runner's gc holds it (decisions/2026-11-04-origin-retries): clean is what
+# lets gc reach that line; once its PRs have merged its tags are on main and gc removes it, its items run removed
+check "u3 review: an overlap with an ended run records on it in its state only: its worktree stays clean, and the runner's gc holds it only for its verified milestone" '
   [[ -f $T/w1-before ]] && grep " needs: overlap with $N opened " "$HARNESS_STATE/proj/r1/run.log" > /dev/null &&
-  [[ ! -d $W1 ]] && grep "gc proj: + needs: resolved r1/[0-9]* (run removed)" "$Q/runner.log" > /dev/null'
+  [[ -z $(git -C "$W1" status --porcelain) ]] && grep -qF "gc proj: keeps $W1: M1 verified, not merged (harness merge r1)" "$Q/runner.log"'
+RC=$T/r1-hand; git clone -q "$T/origin.git" "$RC" 2> /dev/null
+for m in M1 M2; do git -C "$RC" fetch -q origin tag "run/r1/$m" && git -C "$RC" -c user.name=m -c user.email=m@test merge -q --no-edit "run/r1/$m"; done; git -C "$RC" push -q origin HEAD:main
+"$H" gc "$T/proj" > "$T/gc-r1.out" 2>&1
+check "u3 review: with its PRs merged the same gc removes that run, its items run removed" \
+  '[[ ! -d $W1 ]] && grep -qE "resolved r1/[0-9]+ \(run removed\)" "$T/gc-r1.out"'
 # ---- Minor 5 and 6: a lane alone (its driver gone) holds its project in queue list too, and --until ends the runner ----
 L=$HARNESS_STATE/proj/lane1; mkdir -p "$L/lanes/M1" && printf 'PROJECT_DIR=%q\nWT=/x\nRUN_ID=lane1\nSTATE=%q\n' "$T/proj" "$L" > "$L/meta.env"
 ( exec -a "$HERE/../lib/lane.sh" sleep 600 ) & LANE=$!; echo "$LANE" >> "$T/left.pids"; echo "$LANE" > "$L/lanes/M1/pid"   # sleep-ok: a live lane

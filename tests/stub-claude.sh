@@ -58,6 +58,8 @@
 # STUB_INBOX_IN_COMMENT=<id>: that feature's first coding session asks inside INBOX.md's steering comment, splitting its
 # line after "under " with "## Questions" and "**Q1 (<id>, stub).** …" (n8n-home's 4632d1c shape), and parks (U2-02).
 # STUB_GIVE_UP=<id>: every coding session of that feature ends not passing (U2-05's given_up).
+# STUB_ORIGIN_DOWN=<m>:<count|until <epoch>>: <m>'s first verify session writes it to $STUB_DIR/origin-down after its
+# push, so origin is down for tests/stub-git-down.sh (on PATH) from the verify's end (M1 of 2026-11-04-run-resilience).
 # STUB_MAIN_TOUCH=<id|verify-<m>|resolve-<m>>:<path>: that feature's first coding session (or <m>'s first verify or resolve session) lands a
 # merge on origin's main adding <path> ("main's <path>"), subject "Merge pull request #7 from test/harness-merge/other-M3"
 # as GitHub writes it: another run's PR merged meanwhile (U2-06's main and merge conflicts); <path>'s directories are made.
@@ -82,6 +84,7 @@
 # edits entry_resume must undo. STUB_INIT_NO_LIST=1: the initializer ends, not refused, with no list and no entry.
 # STUB_NO_INIT_LINE=1: no session prints its init line (a transcript with no session id: never resumed).
 set -euo pipefail
+export STUB_GIT_UP=1   # a session's own git never sees tests/stub-git-down.sh's outage: under set -e a failed push would end it as no real session ends
 HERE=$(cd "$(dirname "$0")" && pwd)
 ARGS=("$@"); prompt="" headless=0 rc="" resume=""
 while (( $# )); do
@@ -350,6 +353,8 @@ JSON
     entry "$m" "$n" --arg m "$m" --arg n "$n" --argjson ev "$ev" --argjson fail "$fail" '{feature: $m, kind: "verify", outcome: (if $ev.done then "passes" else "not yet" end),
       summary: "verify \($m) (\($n))", evidence: ($ev.rows + $fail)}'
     git add -A && git commit -qm "verify $m ($n)" --allow-empty && git push -q origin "$HARNESS_BRANCH"
+    # origin goes down as the session ends: the lane's tag push and merge meet the outage (tests/stub-git-down.sh)
+    [[ ${STUB_ORIGIN_DOWN:-} && ${STUB_ORIGIN_DOWN%%:*} == "$m" && $n == 1 ]] && printf '%s\n' "${STUB_ORIGIN_DOWN#*:}" > "$STUB_DIR/origin-down"
     ok 0.1 ;;
   "# Resolve session")   # the merge in progress in the slot: its conflicted files as git lists them (fixtures/git-conflict/diff-name-only-U.txt)
     m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "resolve-$m")

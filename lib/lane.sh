@@ -117,12 +117,14 @@ verify() {
       touch "$STATE/verified-$m"
       if [[ $mode == rebase ]]; then   # the tag exists: moved to the merged commit, the one forced push (the old stays reachable from its PR)
         git tag -f -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3); re-based on $MAIN_BRANCH, verify round $(cat "$STATE/rebase-rounds-$m")" > /dev/null \
-          && git push -q --force origin "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"
-        note "$m verified on the re-based tree and re-tagged run/$RUN_ID/$m"
+          && tag_push "$m" --force
+        note "$m verified on the re-based tree and re-tagged run/$RUN_ID/$m$(tag_local_words "$m")"
       else
-        git tag -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3)" 2>/dev/null \
-          && git push -q origin "run/$RUN_ID/$m" 2>> "$STATE/run.log"
-        note "$m verified and tagged run/$RUN_ID/$m"
+        # a tag an earlier verify made and could not push goes now; one origin has stays as it is
+        if git tag -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3)" 2>> "$STATE/run.log" || [[ -f $STATE/tag-local-$m ]]; then tag_push "$m"; fi
+        if [[ -z $(tag_commit "$m") ]]; then note "$m verified; tag run/$RUN_ID/$m could not be made (see run.log)"   # lane_done's last branch says the rest
+        elif [[ -f $STATE/tag-local-$m ]]; then note "$m verified$(tag_local_words "$m")"
+        else note "$m verified and tagged run/$RUN_ID/$m"; fi
       fi
       rec_commit "HARNESS: $m verified"; sync_record
       if [[ $mode == once ]]; then [[ -f $STATE/nomerge-$m ]] || merge_milestones "$m"   # past the deadline: a re-base waits for the next segment
@@ -150,8 +152,8 @@ verify() {
       elif (( ${#failed[@]} )); then need=$(printf '%s, ' "${failed[@]}"); need="${need%, } fail verification"; fi ;;
   esac
   if [[ $mode == rebase ]]; then   # not verified on today's main: the old tag must not merge, and a later verify tags afresh
-    rm -f "$STATE/verified-$m"; git tag -d "run/$RUN_ID/$m" > /dev/null 2>&1
-    git push -q origin --delete "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"
+    rm -f "$STATE/verified-$m" "$STATE/tag-local-$m" "$STATE/merge-failed-$m"; git tag -d "run/$RUN_ID/$m" > /dev/null 2>&1   # this verdict's card speaks for it now
+    origin_t git push -q origin --delete "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"
     note "verify $m: the re-based tree did not hold; tag run/$RUN_ID/$m removed"
   fi
   printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
@@ -176,7 +178,7 @@ rebase() {
   rm -f "$STATE/rebase-$m"; echo "re-base on $MAIN_BRANCH" > "$LDIR/now"   # harness status's lane line
   c=$(git rev-list -n1 "$tag" 2> /dev/null) || { touch "$STATE/needs-$m"; printf 'its tag is gone' > "$LDIR/need"; note "$m: its tag $tag is gone; not re-based (needs Michael)"
     needs_open verify_recheck "$m" milestone="$m" variant=tag > /dev/null; return 1; }
-  git fetch -q origin "$MAIN_BRANCH" 8>&- 2>> "$STATE/run.log"; mn=$(git rev-parse "origin/$MAIN_BRANCH")
+  fetch_main_ 2>> "$STATE/run.log"; mn=$(git rev-parse "origin/$MAIN_BRANCH")
   # merged meanwhile: nothing to re-base (else an empty `ours` would read as disjoint and re-tag main's tip)
   [[ -f $STATE/merged-$m ]] || git merge-base --is-ancestor "$c" "$mn" && return 0
   (( ++REBASES > 3 )) && { rebase_fail "$m" "$c" "$m: $MAIN_BRANCH moved during 3 re-bases; not merged (needs Michael)" "$MAIN_BRANCH kept moving" merge_conflict moving; return 1; }
@@ -201,9 +203,9 @@ rebase() {
     (( rc == 0 )) || { rebase_fail "$m" "$c" "$m re-based on $how, disjoint, suite red; not merged (needs Michael)" "suite red after the re-base" verify_red rebase; return 1; }
     git tag -f -a "$tag" -m "harness run $RUN_ID: $m verified (v3); re-based on $MAIN_BRANCH ${mn:0:7}, suite green" > /dev/null
     # the one forced push, to the tag ref alone: the old commit stays reachable from the lane branch and its PR
-    git push -q --force origin "refs/tags/$tag" 8>&- 2>> "$STATE/run.log" || log "push of the re-based $tag failed"
+    tag_push "$m" --force
     sync_lane   # a fast-forward to the merge commit
-    note "$m re-based on $how, disjoint, suite green; re-tagged"
+    note "$m re-based on $how, disjoint, suite green; re-tagged$(tag_local_words "$m")"
     rec_commit "HARNESS: $m re-based"; sync_record; return 0
   fi
   if [[ -n $both ]]; then how+=", overlapping ($both)"; elif [[ -n $resolved ]]; then how+=", resolved by a session ($RESOLVE_FILES)"; else how+=", disjoint"; fi
@@ -228,16 +230,23 @@ rebase_fail() {
 merge_own() { merge_milestones "$M"; while [[ -f $STATE/rebase-$M ]]; do rebase "$M" || break; merge_milestones "$M"; done; }
 
 # Verified: merged, proposed, waiting on a dependency's merge or on its re-base's deferred round is the lane's 0; a
-# merge or re-base that needs Michael its 12
+# merge or re-base that needs Michael its 12. A lane never closes "needs Michael" without a card: every branch's card
+# exists; the last, which nothing should reach, opens one (fail-closed).
 lane_done() {
   if [[ -f $STATE/merged-$M ]]; then lane_exit 0 "$M merged"
   elif [[ -f $STATE/needs-$M ]]; then lane_exit 12 "$M needs Michael: $(cat "$LDIR/need" 2> /dev/null)"   # before waits-<m>, which stays
   elif [[ -f $STATE/rebase-$M ]]; then lane_exit 0 "$M verified; its re-base waits"
   elif [[ -f $STATE/proposed-$M ]]; then lane_exit 0 "$M proposed"
   elif [[ -f $STATE/waits-$M ]]; then lane_exit 0 "$M verified; its PR waits"
-  elif [[ -f $STATE/nomerge-$M ]]; then lane_exit 12 "$M needs Michael: $MAIN_BRANCH conflicts with its lane"
+  # a conflict has its card. A merge that never started has none and needs no one yet: the coordinator's next merge
+  # re-bases it, and anything that stops there has its own card
+  elif [[ -f $STATE/nomerge-$M ]]; then
+    [[ -f $STATE/main-conflict-$M ]] && lane_exit 12 "$M needs Michael: $MAIN_BRANCH conflicts with its lane"
+    lane_exit 0 "$M verified; $MAIN_BRANCH did not merge into its lane; its merge is tried again"
   elif [[ $MERGE_POLICY == off ]]; then lane_exit 0 "$M verified"
-  else lane_exit 12 "$M needs Michael: its merge"; fi
+  elif [[ -f $STATE/refused-$M ]]; then lane_exit 12 "$M needs Michael: merge refused"
+  elif [[ -f $STATE/conflict-$M ]]; then lane_exit 12 "$M needs Michael: conflicts with $MAIN_BRANCH"
+  else merge_failed "$M" unknown; lane_exit 12 "$M needs Michael: its merge"; fi
 }
 in_lane() { local m; m=$(F milestone "$LIST" "$1"); [[ ${m:-default} == "$M" ]]; }
 

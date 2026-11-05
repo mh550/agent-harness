@@ -6,9 +6,20 @@
 # only (live gh 2.45: a field not asked for is absent, and -q prints its null as an empty line), -q applied by jq -r.
 # "pr create" refuses a head with an open PR, "pr merge --match-head-commit" a head that moved, as gh does.
 # "api repos/<o>/<r>/deployments…" answers GitHub's published example (fixtures/gh-deployments.json, creator octocat).
+# STUB_GH_DOWN=<n>: GitHub unreachable for the first <n> calls of each of pr view, pr create and pr merge: they print
+# a real gh's line for a refused connection (fixtures/gh-down.txt) on stderr and exit 1. STUB_REFUSE_MERGE=1: every
+# pr merge is refused with live gh's GraphQL line. STUB_GH_DOWN_ONLY=<view|create|merge…>: the calls STUB_GH_DOWN counts.
+# STUB_GH_LOST_MERGE=1: a pr merge lands and its answer is lost (that same line, exit 1). Its own git calls are GitHub's
+# side: never the outage stub's.
 HERE=$(cd "$(dirname "$0")" && pwd)
 echo "gh $*" >> "$STUB_DIR/gh.log"
+export STUB_GIT_UP=1
 P=$STUB_DIR/prs; mkdir -p "$P"
+GRAPHQL_MOVED="GraphQL: Head branch was modified. Review and try the merge again. (mergePullRequest)"
+if [[ ${STUB_GH_DOWN:-} && $1 == pr && $2 =~ ^(${STUB_GH_DOWN_ONLY:-view|create|merge})$ ]]; then
+  n=$(( $(cat "$STUB_DIR/gh-down-$2" 2> /dev/null || echo 0) + 1 )); echo "$n" > "$STUB_DIR/gh-down-$2"
+  (( n <= STUB_GH_DOWN )) && { cat "$HERE/fixtures/gh-down.txt" >&2; exit 1; }
+fi
 prs_of() { local f; for f in "$P"/pr-*; do [[ ${f##*/} =~ ^pr-[0-9]+$ && $(cat "$f") == "$1" ]] && echo "${f##*-}"; done | sort -n; }   # <head> → its PRs, oldest first
 state() { if [[ -f $P/pr-$1.merged ]]; then echo MERGED; elif [[ -f $P/pr-$1.closed ]]; then echo CLOSED; else echo OPEN; fi; }
 open_pr() { local n; for n in $(prs_of "$1"); do [[ $(state "$n") == OPEN ]] && { echo "$n"; return 0; }; done; return 1; }
@@ -34,12 +45,13 @@ case "$1 $2" in
     n=$(( $(ls "$P" | grep -c '^pr-[0-9]*$') + 1 )); echo "$head" > "$P/pr-$n"; echo "$title" > "$P/pr-$n.title"; echo "https://example.test/pr/$n" ;;
   "pr merge")
     n=${3##*/} c=""; while (( $# )); do [[ $1 == --match-head-commit ]] && c=$2; shift; done
-    [[ ${STUB_REFUSE_MERGE:-} ]] && { echo "merge refused" >&2; exit 1; }
+    [[ ${STUB_REFUSE_MERGE:-} ]] && { echo "$GRAPHQL_MOVED" >&2; exit 1; }
     origin=$(git remote get-url origin) tmp=$(mktemp -d)
     # --match-head-commit: the PR's head branch must still be at that commit
     [[ -z $c || $(git ls-remote "$origin" "refs/heads/$(cat "$P/pr-$n")" | cut -f1) == "$c" ]] \
-      || { echo "GraphQL: Head branch was modified. Review and try the merge again. (mergePullRequest)" >&2; exit 1; }
+      || { echo "$GRAPHQL_MOVED" >&2; exit 1; }
     git clone -q "$origin" "$tmp" && git -C "$tmp" fetch -q origin "$c" \
       && git -C "$tmp" -c user.name=gh -c user.email=gh@test merge -q --no-ff -m "Merge pull request #$n" "$c" \
-      && git -C "$tmp" push -q origin HEAD:main && touch "$P/pr-$n.merged" ;;
+      && git -C "$tmp" push -q origin HEAD:main && touch "$P/pr-$n.merged" || exit
+    [[ ${STUB_GH_LOST_MERGE:-} ]] && { cat "$HERE/fixtures/gh-down.txt" >&2; exit 1; }; true ;;
 esac
