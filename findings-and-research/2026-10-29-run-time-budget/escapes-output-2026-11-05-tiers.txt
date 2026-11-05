@@ -1,0 +1,14 @@
+2026-11-05 02-H1-02 91-resident-helper: own check file (7 files changed)
+2026-11-05 02-H1-02 39-memlint-m4: MISSED (7 files changed)
+2026-11-05 03-H1-02b 91-resident-helper: own check file (16 files changed)
+2026-11-05 03-H1-02b 08-scope-sh-l1-02-run-capped-services-gc-scratch: own check file (16 files changed)
+2026-11-05 03-H1-02b 39-memlint-m4: selected (names driver, check, harness) (16 files changed)
+2026-11-05 04-H1-03 39-memlint-m4: MISSED (6 files changed)
+2026-11-05 06-H1-05 91-resident-helper: own check file (13 files changed)
+
+7 reds in sessions' own suite calls: own check file 4, selected by a name match 1, repeat flaker 0, missed 2
+missed = a red in a check file that neither names a changed file nor is a repeat flaker: a file-based subset would not have run it
+
+subset size under the name rule, 6 coding sessions with files: median 68% of the check files, quartiles 15%–86%, under half the suite in 2 sessions
+  2026-11-05 04-H1-03: 15/97 check files (4 code files of 6 changed)
+  2026-11-05 05-H1-04: 2/97 check files (0 code files of 3 changed)
