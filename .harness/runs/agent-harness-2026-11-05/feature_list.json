@@ -19,7 +19,7 @@
         "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "H1-02",

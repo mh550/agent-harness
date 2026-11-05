@@ -7,6 +7,24 @@ The run: phase 2 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/s
 
 How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier is green, and the verifier re-runs every step on the full suite before H1 merges into `main`. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
 
+### 2026-11-05 10:36 · H1-01 · passes
+
+All eleven served scripts export main(argv, io) → { rc, out } and share lib/cli.mjs's isMain/runCli tail; no shell file changed. 37 unit tests compare main to the CLI. Fixed a spec bug: its write-then-exit tail cuts a pipe at 64 KB, so runCli exits from the write's callback. Fast tier green.
+
+- **Files:** lib/cli.mjs, lib/features.mjs, lib/metrics.mjs, lib/treekey.mjs, lib/testcount.mjs, lib/entries.mjs, lib/inbox.mjs, lib/memlint.mjs, lib/render.mjs, lib/needs.mjs, lib/summary.mjs, lib/notify.mjs, +5 more
+- **Verified:** check.sh --fast: green, 618 tests, 158 s (the tree's cached run). 00-unit 182/182 (145 before). bash tests/run.sh 34-check-key 81-partial-key 84-node-memo 13-run-2: 129/129. node --check on every .mjs touched; the step 5 greps and step 7's git diff print nothing. The full suite was not run here: it runs at verify.
+- **Tests:** 1332 → 1369
+- **Dead end:** the spec's tail, process.stdout.write(out); process.exit(rc) — a 5 MB write to `| (sleep 0.3; wc -c)` arrived as 65536 bytes, 4 runs of 4
+- **Discovery** (affects H1-02): A served main still resolves a relative path argument against the process's cwd (readFileSync(a), existsSync(b), resolve(a)); only treekey.mjs uses io.cwd by name. lib/helper.mjs must process.chdir(req.cwd) per request (requests are one at a time) or ask must spawn on a relative path, or a lane that has cd'd gets the wrong file.
+- **Discovery** (affects H1-02): helper.mjs's reply must not exit before its write's callback: on stdin EOF wait for the last write, as runCli does (a pipe write over 64 KB is async).
+- **Discovery** (affects H1-02, H1-02b): main's stderr is still console.error, so in the helper it lands on the helper's stderr: it stays in H1-02b's call-site table. main takes stdin only through io.stdin: readStdin throws /no stdin/ without it, so the helper's request pipe is safe and such a call comes back rc 70 unless ask spawns it first.
+- **Discovery** (affects H1-02, H1-05): git spawned in needs.mjs and overlap.mjs (gitIn) inherits process.env, not io.env: all use git -C <dir>, so the cwd is safe, but a GIT_ variable set on one call would not reach them through the helper. treekey.mjs does pass io.env to its git.
+- **Discovery** (affects H1-02b, H1-05): A throw now exits 70 in all eleven (10 of them exited 1 uncaught). lib/record.sh:447 reads `(( $? == 1 )) || return 0` after entries.mjs validate, so a validate that throws (an unreadable entry.json) now skips the resume and goes on to the ingest. No check depends on it; H1-05 should look at that line.
+- **Discovery** (affects run): tests/unit/cli-same.mjs is the shared comparison (sameAsCli, cli, mainOf, sameBytes); it swallows main's console.error. needs.mjs moves a sibling state dir's open question forward, so a test's twin state dir must not sit beside the first.
+- **Question for Michael:** The spec's tail wrote and then exited; runCli waits for the write and treats EPIPE as no failure, and a throw's partial stdout is dropped (rc 70, no out), both marked *default*. Say in INBOX.md if you want otherwise. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/lib/cli.mjs:21, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/journal/decisions/2026-11-03-resident-helper.md:18
+- **Proposed change:** H1-01 step 8 and its peers name the full suite; the prompt's rule is the fast tier in the session and the full suite at verify. The steps could say so.
+- *01-H1-01 · claude-opus-5-5*
+
 ### 2026-11-05 10:19 · init · passes
 
 6 features, one milestone H1: H1-01 main(argv, io) + lib/cli.mjs; H1-02 lib/helper.mjs + ask (91-resident-helper.sh); H1-02b call sites, lifecycle, helper-on/off logs identical (92-resident-helper-run.sh); H1-03 treekey cut; H1-04 the proof (last build); H1-05 review + docs. Lint clean.
