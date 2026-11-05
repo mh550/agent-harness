@@ -1354,9 +1354,15 @@ treekey --partial: a CLAUDE.md-only change moves the full key (16 hex), keeps th
 treekey --partial: a dropped entry (directory, no name, outside the tree, under an ignored prefix) is one stderr line each; the output is the map's without it
 treekey --partial: a mapped path absent from the tree is a `- <path>` line, in map order
 treekey.mjs exports ignoreList, parseMap, treeKey, partialKeys and mapNames, pure on a fixed file list and blobs
+treekey.mjs parseListing: a clean regular file keeps its index blob; a stale, unmerged, symlink, gitlink, assume-unchanged, skip-worktree or untracked row has none; one row per index entry
+treekey.mjs: --partial's full key, reduced key and blob lines equal the definition's, a mapped file clean, edited, absent and deleted
+treekey.mjs: a clean tree starts one git and no hash-object; a dirty one a second, once, for whatever number of files
+treekey.mjs: an unmerged path keeps its one row per stage and the worktree's blob, a gitlink is no file, as the definition has them
+treekey.mjs: below the repo's top a clean tree still has no key (the throw check.sh reads as a full run, no marker), as a dirty one
 treekey.mjs: main reads the environment from io.env at call time: two --pathspec answers in one process
 treekey.mjs: main runs git in io.cwd: the key, --partial --names and --pathspec are the bytes the CLI prints inside that repo, from another cwd
 treekey.mjs: main's git gets io.env (git config set on the call moves what ls-files leaves out)
+treekey.mjs: the key equals its definition after each change to a tree: edits staged and not, deletions, untracked and ignored files, symlinks, a mode, a touch, the run record
 treekey: a map whose every entry is dropped is as no map (two lines); the bare call never parses the map (no stderr)
 treekey: an absolute or .. entry is dropped, not an error (the key is docs/plans' alone)
 treekey: entries are literal path prefixes (. and globs leave nothing out; ./docs/plans/ is docs/plans)

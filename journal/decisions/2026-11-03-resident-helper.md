@@ -184,10 +184,62 @@ stub start): one start each, left as they are.
 **A stub start's node starts: 336 helper off, 20 on**, 2026-11-05: 3 helpers, 10 of the stub's `node -e`, `overlap`, 2 of
 `deploy`, `backlog`, `memlint` under its timeout, `metrics final`, `ledger-line`.
 
+### H1-03: `treekey.mjs` takes tracked blobs from the index
+
+**What one call costs** (`strace -c -f`, `--cpu-prof`, this repo, 1,224 tracked files; the helper does not remove any of
+it): of the 33 ms above node's own start, the most is `spawnSync` waiting on `hash-object` over every file the key
+covers, the rest the second git and a `stat` per file. Node's start is the helper's to take; the second git and the
+hashing are this cut's.
+
+**The cut**, *default* for the spec's three git calls: **one `git ls-files -z -v --stage -c -m -o --exclude-standard`**
+gives each file's tag, mode, blob and stage, a `C` line for what is edited or gone (git's own stat check, racy timestamps
+included) and `? <path>` for what is untracked. `hash-object --stdin-paths` runs once, only for the rest, and not at all
+on a clean tree. `parseListing` is the pure part. `-v`, not `-t`: it marks assume-unchanged too.
+
+**What keeps a hash-object, because the index can't vouch for it**, *default* for each: a link (the index holds the
+target's name, hash-object follows it to the content, and a link to a directory or nowhere is no file); a gitlink; a
+conflict's stages (one row per stage, as `-co` lists them); an assume-unchanged or skip-worktree entry (`git status`
+doesn't look at them, the key always has); a path that isn't valid UTF-8 (the decode loses it, the stat drops it, as
+before).
+
+**Below the repo's top there is still no key**, *default*: `hash-object --stdin-paths` reads from the top while `ls-files`
+lists from the cwd, so it always failed there and `check.sh` read that as "the full run, no marker". An index blob would
+have turned it into a key of that subdirectory's files alone, which a marker could then trust. With no `.git` in the cwd
+every row is hashed, the old path exactly.
+
+**Trusting the index is trusting `git status`.** A same-size edit with its mtime put back is still caught (ctime; a test).
+What `core.trustctime=false` would miss, `git status` misses too.
+
+**A file committed un-normalized has a different key from before, once**, *default*, left as it is: under `text=auto` a
+CRLF blob in the index stays that blob (`git status` calls it clean), where the old hash-object normalized it. The new key
+is stable and moves on an edit, so the price is one suite rerun on such a tree. Checked on a throwaway repo; a clean filter
+keeps its key.
+
+**Measured** (2026-11-05, this repo, median of 20, `HARNESS_CHECK_KEY_IGNORE` as this repo sets it; "above idle" takes off
+`node -e 0`; "in process" is `main` called directly, a helper's cost):
+
+| tree | load | `node -e 0` | before | after | above idle, before → after | git per call | in process, before → after |
+|---|---|---|---|---|---|---|---|
+| clean, index written since the checkout | 1.37 | 27.6 ms | 59.1 ms | 49.8 ms | 31.5 → 22.2 ms | 2 → 1 | 17.3 → 6.3 ms |
+| one edit, one untracked file | 1.50 | 25.7 ms | 60.7 ms | 52.8 ms | 35.0 → 27.1 ms | 2 → 2 | 17.4 → 8.3 ms |
+| this worktree, two edits | 1.54 | 27.6 ms | 60.2 ms | 53.2 ms | 32.6 → 25.6 ms | 2 → 2 | 18.2 → 8.6 ms |
+| fresh checkout, index in the files' second | 1.32 | 24.9 ms | 58.3 ms | **139.0 ms** | 33.4 → **114.1 ms** | 2 → 1 | 17.4 → **94.9 ms** |
+
+**The target, under 60 ms per call: met** on every tree a run spends its time on, and it was already met on an idle box
+(the spec's 193 ms was the loaded one; H1-04 has the suite's number). **Missed, 139 ms, on a fresh checkout until the index
+is next written.** Stock git compares the index's timestamp to a file's mtime by the second, so a checkout that lands in
+the index's second is racily clean and `-m` reads every file, those the pathspecs leave out as well (the listing applies
+them after the check). The next index write ends it (`git status` writes one, as does a slot's `update-index` in
+`lib/record.sh`, a session's first `git add`). About 80 ms once or twice per worktree, against 11 ms saved on each of 205
+calls per large file.
+
 ## Rejected
 
 Filled in by H1-05 from the spec's list. For H1-01: hooking `console.log` (above); the spec's inline tail in each script
 (it cuts a pipe at 64 KB, and eleven copies of the fix); top-level `await` in the tail (`runCli` returns a promise
 nobody needs to wait on, so no served module is an async module). For H1-02: the spec's `$$` and counter id (above); a
 table in `ask` of the subcommands that read stdin (a new one would silently read as a throw; `NoStdin` needs no table);
-`mapfile < <(compgen -e)` (a fork, 1.7 ms against 0.2 ms through the file).
+`mapfile < <(compgen -e)` (a fork, 1.7 ms against 0.2 ms through the file). For H1-03: `git update-index --refresh` before
+the listing (it ends the racy case, but a question would then write the index and take `index.lock`, which can fail a
+session's `git add`); the spec's separate `--stage` and `--modified` calls (a second git for what one prints); `git diff-files`
+for the stale rows (a second git, and the same racy read: 94 ms on the fresh checkout).
