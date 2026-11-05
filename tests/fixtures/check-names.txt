@@ -2,6 +2,7 @@
 --base <branch> with the spec on that branch only proceeds; without --base it is refused naming origin/main
 --brief alone with no SPEC_FILES is not checked and starts
 --dry-run prints the context, launches nothing
+2>&1 gives the spawn's bytes in the spawn's order (stderr, then the answer main returns)
 < <(ask …) answers through the parent's helper (no start)
 Answer with Claude only when DESK_URL is set
 C retried and passed
@@ -60,8 +61,10 @@ a deadline while paused verifies a complete milestone once too
 a debrief headline over ntfy: no Click (the note is a path), default priority when nothing needs Michael (a Not queued line isn't)
 a debrief page beside the note: a card per run, the note escaped
 a debrief whose note needs Michael: priority high
+a declined request's stderr is dropped: the spawn says it, once
 a deps dir gc can't measure or delete is said and gc goes on; a symlinked deps dir is never followed
 a desk that cannot start never changes the run
+a driver killed with SIGTERM: its EXIT trap and the lanes' leave no helper
 a failed or hung runner gc is logged (killed at HARNESS_GC_TIMEOUT) and never stops the debrief
 a failed park post is noted and committed at once
 a failed post is noted and the run goes on
@@ -70,14 +73,18 @@ a failed run-end post is committed: the worktree stays clean for gc
 a failed session: its error text is never the note
 a failed verify at the deadline is not retried: M1 needs Michael
 a failure with no STATE in this shell: the spawn's bytes, nothing fatal under set -u, nothing on stderr
+a git or other child a script runs: its stderr lands in the call's 2> file too
 a given-up feature blocks what depends on it
 a given-up feature opens given_up naming what waits on it; harness needs and harness parked list it while parked.json is empty
 a held index.lock: written, not committed, nothing left staged
 a helper started while the shell holds the record lock (fd 9) keeps none of it: the lock is free when the shell lets go
+a helper that dies: what it wrote to stderr reaches this shell's, its call the spawn's bytes
 a helper that never replies, a two-field or four-field header, a wrong id, words, one that dies, one cut mid-answer, a short answer, an rc over 255: each call the spawn's bytes and rc, each a helper restarted: line
+a helper's own stderr lands where its shell's does: the start's output has it once per helper (the coordinator and two lanes), and no log has it
 a hit prints what node prints, byte for byte, and its exit code (snapshot, lint, a lone newline)
 a killed debrief changes nothing
 a lane closes on its card's words: merge refused, conflicts with main; neither opens a merge_failed card
+a lane killed with SIGKILL: its helper ends on stdin's EOF (no EXIT trap ran), the other lane's lives on
 a lane's PR waits for its dependency to merge (noted once), and harness merge lands both in order
 a later clean sync_main resolves main_conflict: its item in needs/done/, main merged cleanly, noted
 a later deadline: the earlier refusals aren't the cause
@@ -114,6 +121,7 @@ a request for a run with an automatic continuation queued makes that one request
 a request over a pipe's buffer spawns (a wedged helper must never block the write), the spawn's bytes, the helper still up
 a request queued after the stop (before the driver acts on it) stays requested
 a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)
+a request's stderr: into the call's 2> file, nowhere under 2> /dev/null, onto the end under 2>>, in order with the shell's own writes; the answer on stdout each time, all through the helper
 a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)
 a resolved question is gone from the next context.md
 a resume (the run's worktree exists) is not checked: a missing spec in its run.env and --spec does not refuse it
@@ -143,9 +151,13 @@ a stop reason's words are never read as a feature's cause (A failed the re-check
 a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason
 a stop without a reason says just: stopped by Michael (the note and ended)
 a stub session that adds a Gotchas line is noted
+a stub start through the helpers starts node at most 30 times (one helper for the driver and each lane among them)
+a stub start through the helpers: the same harness-log.md, run.log and feature_list.json as helper off, stripped the same way
+a stub start's run.log has no helper restarted and no helper off line
 a successful post: a line in run.log only
 a thin verify opens verify_thin under [<run>] M1 needs you; the notification's body is the card, click needs.md
 a throw in features.mjs exits 70 and is never kept (node each time)
+a throw's message follows the call's redirect too (a file, /dev/null), rc 70, nothing on the shell's stderr
 a usage-limit wait over SVC_IDLE_STOP_MIN stops the services first
 a usage-limit wait under SVC_IDLE_STOP_MIN keeps the services
 a usage-limit window at the deadline: no verify session to be refused, M1 left for a continue
@@ -155,7 +167,9 @@ a window of the run's name that never showed a URL is replaced
 a window past the 5 h cap: no session (the next debrief covers it)
 a worktree gc can't remove is logged and the next one still goes; --dry-run removes none
 a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json
+after harness stop no helper is left
 after may name a milestone
+after the run's ended line no helper is left
 after three restarts in one process: one helper off: line, HARNESS_HELPER=0, every later call spawns and starts no helper
 all features pass
 an .args planted by hand naming a missing spec is parked at dequeue the same way
@@ -200,6 +214,7 @@ backlog.mjs: STATUSES in order, mergeProposals adds a new id, orderRows of none 
 bash -n lib/lane.sh; node --check lib/metrics.mjs lib/summary.mjs
 bash -n lib/record.sh lib/lane.sh lib/driver.sh
 bash -n lib/record.sh; node --check lib/helper.mjs; helper.mjs has a one-line usage header
+bash -n on the shell files the helper touched
 brief committed with the run
 brief, rules and policy in the prompt
 busy continue: another project's live run changes nothing: answer, then continue
@@ -244,10 +259,12 @@ check.sh: a TERM stops the suite's scope with it
 check.sh: a green full run's marker is `2 tests` then `wall <s>`; a planted one-line marker gives the same cached line
 check.sh: a subset call is scoped too and never cached
 check.sh: after a whole-suite rerun the marker's wall is the rerun's (a red run with no names is no measure of the suite)
+check.sh: an empty suite output starts no testcount.mjs, a suite that printed a count one, and says it
 check.sh: appends <epoch> <full|cached|subset> <seconds> to check-runs.log on each call; no suite configured, no row
 check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
 check.sh: the cached line names the key's ignore list only when it isn't the default
+check_run: check.sh's key comes from the parent's helper (no treekey.mjs start), the same marker a spawn would write
 cli.mjs: a CLI with no answer and a closed stdout still exits its rc
 cli.mjs: a deleted cwd stops only a main that reads it
 cli.mjs: a main that throws prints the message on stderr, nothing on stdout, and exits 70
@@ -512,6 +529,7 @@ harness status lists a running run's units with MemoryCurrent; an ended run's no
 harness stop --why: the note and ended say stopped by Michael: <why>
 harness stop without --why: an empty STOP, and stopped by Michael as before
 harness version skips ledger commits
+helper off (HARNESS_HELPER=0 in the environment, or in the user's config file): no helper.mjs starts, in the driver or a lane; every question a spawn
 ignored_only: CHECK_KEY_IGNORE entries are literal prefixes (docs/plans-old, docs/*, ../lib are code), ./x/ is x, no pathspecs is moved; noted once per main
 inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
 inbox.mjs answers CLI: on a lone <!-- INBOX with no final newline, the same bytes as sed's cut, never empty
@@ -806,6 +824,8 @@ no end time: the driver itself refuses it: exit 1, the line in run.log, nothing 
 no end time: the lanes get it: the coding and verify prompts' clock line says (no end time)
 no end time: the user config template documents HOURS, the rule and what still bounds a run
 no final tag, no false 'verified'
+no init and no suite run_init started holds a helper's pipe (each listed its own descriptors)
+no stub session holds a helper's pipe (ls -l /proc/<pid>/fd of both held sessions' processes); the lane's shell does, so the look can see one
 no user systemd: the init runs bare, and the run's one uncapped note stays the only one
 no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
 not queued: ended done / already queued / no work left / still running
@@ -1260,6 +1280,7 @@ the desk's environment has no NTFY_TOKEN
 the dialog guard: the CLI's dialog words, not the desk's own questions
 the driver never edits the list: the initializer's feature_list.json is byte for byte the stub's
 the driver notes the lint once after the initializer
+the driver's and a lane's EXIT traps kill their helper by name (SIGTERM's check above can't tell them from the EOF)
 the driver's continuation after a session cap is automatic
 the helper killed between two calls: the next call is a spawn (+1), the spawn's bytes, one helper restarted: line
 the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created
@@ -1295,6 +1316,7 @@ the same runner goes on to the next entry and starts it (a --brief start of the 
 the session may read each run's state dir and the queue
 the session: an allowlist (dontAsk) and the never-list
 the stub claude's interactive mode prints the pane line and records input
+the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
 the tmpfiles template holds the 3-day age rule; README has its install command
 the user config template sets nothing
 the verify prompt says the suite runs in full
@@ -1355,6 +1377,8 @@ tty views: trends at 60 columns keeps every line within 60, one or two lines a r
 tty views: trends off a TTY is the markdown table of all 17 rows, --all and --md the same bytes
 tty views: trends on a TTY shows the newest 15 runs as columns, 2 older: harness trends --all and the total over all 17
 two coding prompts share a byte-identical prefix that includes the policy
+two helper-off runs give the same harness-log.md, run.log and feature_list.json once the clock and its commit hashes are stripped
+two lanes alive: three helpers, each a child of its own shell (the coordinator, each lane)
 u3 review: a continue queued behind a live run keeps a multi-line --brief-file as one --brief
 u3 review: a multi-line --brief is one argument in its queue entry (one line per argument; queue show has it whole)
 u3 review: an overlap with an ended run records on it in its state only: its worktree stays clean, and the runner's gc holds it only for its verified milestone
@@ -1415,4 +1439,5 @@ where things go: with no CLAUDE.md the three prompts carry the block once each, 
 where things go: with the heading in CLAUDE.md the three prompts carry the block 0 times
 with $HARNESS_SCRATCH/helper-<pid>.lock held: ( ask ) &, $( ask ) and the owner's own ask each spawn (+1 each), never wait
 with a queue runner going, the continue command is a queue add
+with no redirect a request's stderr is this shell's, once: nothing left to go out with a later call
 x=$(ask …) answers through the parent's helper (no start), its exit code seen inside

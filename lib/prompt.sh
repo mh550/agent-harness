@@ -5,6 +5,7 @@
 # meta.env, worktree, config and run.env, with the caller's HARNESS_CONFIG and HARNESS_SCRATCH_ROOT), so
 # `harness eval probes` judges the exact handoff (plan: docs/plans/2026-10-21-E2-evals.md §5.2).
 
+declare -F ask > /dev/null || ask() { local s=$1; shift; node "$HARNESS_HOME/lib/$s" "$@"; }   # a plain spawn, run as a command; lib/record.sh's, sourced after this in a driver or lane, answers from its helper
 # Needs PROJECT_DIR RUN_ID STATE HARNESS_HOME, lib/scope.sh sourced (prompt_env), and the worktree as the working directory.
 prompt_vars() {
   PROJECT_NAME=$(basename "$PROJECT_DIR") BRANCH=$(git branch --show-current) RUN_DIR=.harness/runs/$RUN_ID
@@ -60,7 +61,7 @@ prompt_env() {
 # `not measured yet` (decisions/2026-11-03-fast-gate). One treekey for both.
 suite_length() {
   local cache=${HARNESS_CHECK_CACHE:-$STATE/green} key f w="" greens=() reds=() fasts=()
-  key=$(node "$HARNESS_HOME/lib/treekey.mjs" 2> /dev/null)
+  key=$(ask treekey.mjs 2> /dev/null)
   # every green before any red: a red may have stopped early (a compile error, a fail-fast runner), so its wall is a last resort
   mapfile -t greens < <(ls -t "$cache"/green-* 2> /dev/null); mapfile -t reds < <(ls -t "$cache"/red-* 2> /dev/null)
   for f in ${key:+"$cache/green-$key"} "${greens[@]}" ${key:+"$cache/red-$key"} "${reds[@]}"; do
@@ -109,8 +110,8 @@ prompt_render() {   # template name → stdout: the static template, the policy,
     { read -r length; read -r flength; } < <(suite_length)   # parts/run.md's alone: the other templates pay no treekey
   fi
   # the last 40 whole lines and where the rest is (decisions/2026-10-21-clock-and-bounded-init-output)
-  HARNESS_DECISIONS=$(node "$HARNESS_HOME/lib/memlint.mjs" store-line .) HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
-    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength HARNESS_FIX=$fix node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
+  HARNESS_DECISIONS=$(ask memlint.mjs store-line .) HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
+    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength HARNESS_FIX=$fix ask render.mjs "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then

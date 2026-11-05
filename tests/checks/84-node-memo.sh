@@ -19,7 +19,7 @@ cp "$L" "$MD/list.orig"; echo '{}' > "$A"; echo '{"A":{"answers":"old","why":"w"
 printf '# INBOX\n\n## Answers\n\nyes\n' > "$MD/rec/INBOX.md"
 # n: the node starts so far (to <file>); every step below runs in one shell, the way the driver and a lane do
 (
-  export PATH=$MD/shim:$PATH NODE_COUNT=$MD/count HARNESS_HOME=$HH; : > "$NODE_COUNT"
+  export PATH=$MD/shim:$PATH NODE_COUNT=$MD/count HARNESS_HOME=$HH HARNESS_HELPER=0; : > "$NODE_COUNT"
   source "$HH/lib/record.sh"
   n() { wc -l < "$NODE_COUNT" > "$MD/n-$1"; }
   touch "$MD/marker"; n 0; F model opus > "$MD/model1"; F model opus > "$MD/model2"; n model
@@ -114,7 +114,7 @@ console.log(out.join(" "), run(["blocked", "list.json", "att.json", "3", "parked
 check "features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)" \
   '[[ $pollu == "true true true true true 2" ]]'
 (
-  export PATH=$MD/shim:$PATH NODE_COUNT=$PD/count HARNESS_HOME=$HH; : > "$NODE_COUNT"
+  export PATH=$MD/shim:$PATH NODE_COUNT=$PD/count HARNESS_HOME=$HH HARNESS_HELPER=0; : > "$NODE_COUNT"
   source "$HH/lib/record.sh"
   n() { wc -l < "$NODE_COUNT" > "$PD/n-$1"; }
   n 0; Fv pv poll "$PL" "$PA" 3 "$PP" M1; printf '%s\n' "$pv" > "$PD/poll1"; n poll
@@ -157,7 +157,7 @@ check "F poll with only the list: no unbound name ends the shell under set -u (f
 echo 'MAX_LANES=2' >> "$T/user-config.sh"
 IC=$MD/idle-count; : > "$IC"
 sweeps() { grep -c "^lane= .*needs\.mjs sweep" "$IC"; }
-( export PATH=$MD/shim:$PATH NODE_COUNT=$IC STUB_BARRIER=A:idle STUB_NO_TAMPER=1 STUB_NO_RED=1; exec "$H" start "$T/proj" idle --spec SPEC.md --foreground ) > "$T/idle.out" 2>&1 & ip=$!
+( export HARNESS_HELPER=0 PATH=$MD/shim:$PATH NODE_COUNT=$IC STUB_BARRIER=A:idle STUB_NO_TAMPER=1 STUB_NO_RED=1; exec "$H" start "$T/proj" idle --spec SPEC.md --foreground ) > "$T/idle.out" 2>&1 & ip=$!
 stub_wait idle.held 120; s0=$(sweeps); wait_for 60 eval '(( $(sweeps) > s0 + 1 ))'; c0=$(wc -l < "$IC"); s1=$(sweeps)
 wait_for 60 eval '(( $(sweeps) >= s1 + 5 ))'; c1=$(wc -l < "$IC")
 stub_go idle; wait "$ip"

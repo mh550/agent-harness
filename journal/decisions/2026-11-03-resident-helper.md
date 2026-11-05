@@ -105,8 +105,8 @@ piped answer at 65536 bytes when the reader isn't reading yet (`node big.mjs | (
 - **`<shell>` is `$BASHPID` at source time, not the spec's `$$`**, *default*: two subshells that each source `record.sh`
   share a `$$` and would share one lock over two helpers.
 - **Only the shell that sourced `record.sh` starts or replaces a helper**, *default*: a coproc started in a subshell dies
-  with it. So a `$( ask )` before this shell has a helper spawns; H1-02b starts it (`helper_start`) where the driver
-  and the lane begin.
+  with it. So a `$( ask )` before this shell has a helper spawns; `run_paths` starts it where the driver and the lane
+  begin (H1-02b).
 - **A `( )`, a pipeline's side and a job spawn**: bash closes the coproc's descriptors there and leaves the variables
   (5.2's manual, and file 91 on this bash), so `ask` tests `-p /proc/self/fd/<n>`, a stat and no fork.
 - **`HARNESS_HELPER_TIMEOUT`, 120 s per read**, *default*, as the spec. A `main` slower than that (a writer included) is
@@ -125,6 +125,64 @@ piped answer at 65536 bytes when the reader isn't reading yet (`node big.mjs | (
   then.
 - **A helper keeps no inherited descriptor but 0, 1 and 2**, *default*: one started under `record` would hold the record
   lock (fd 9) for its whole life. Bash already sets the coproc's own pipes close-on-exec for children.
+
+### H1-02b: the call sites, the lifecycle
+
+**A served script's stderr goes where the call sends it.** Replaces H1-02's "the helper's stderr": the helper's fd 2 is a
+file, `helper-<shell>.err` in scratch, and `ask` hands what a request left there to its own fd 2 before it prints the
+answer, so `2> /dev/null`, `2>> run.log`, `2> "$err"` and `2>&1` all keep their destination, and `2>&1`'s order is the
+spawn's (`main` writes stderr while it runs and its answer at the end). *Default*, because about 30 call sites redirect
+it, `needs_sweep` (every coordinator poll) among them; a table of spawns would have kept most of the starts. A file, not
+a hook on `console.error`: a git a script runs inherits it too. A declined request's stderr is dropped (the spawn says it
+again); a failed helper's goes to the shell's stderr (a crash's last words). So a helper's own stderr lands where the
+driver's or the lane's does, unless the call that met it redirected its own.
+
+**The helper starts in `run_paths`**, after `load_config` (`HARNESS_HELPER=0` in a config file counts) and before
+`f_models`: most call sites are `$( )`, which can't start one. The driver's and the lane's EXIT traps kill it
+(`helper_stop`), the coordinator's before it writes `ended`; a SIGKILLed shell's helper ends on stdin's EOF.
+
+**`check.sh` under a lane no longer spawns for its key or for an empty output's count**, *default*, beyond the spec's
+"`check.sh` spawns": the spec's own numbers left it out. It is 17 `treekey.mjs` and 15 `testcount.mjs` starts of a stub
+start's 52 with everything else wired, so the start's bound of 30 can't hold with both. The lane asks its helper for
+what `check.sh` would ask first and passes it down (`HARNESS_CHECK_TK`, unset before anything else runs, so a suite and
+a check.sh under it never see it). Nothing happens between the two but `check.sh`'s own start, and only from the tree's
+top (`-e .git`), where `check.sh` takes the key. An empty suite output has no count, so it asks nothing (a stub suite's;
+a real suite's output still spawns one, after the suite). A session's `check.sh` spawns as before.
+
+**The call-site table.** `grep -n 'node ' lib/*.sh`, every served script; *default* for each "stays a spawn".
+
+| call site | what | through |
+|---|---|---|
+| `record.sh` `F`, `Fv`, `f_memo`, `f_models`, `lanes_v` | `features.mjs`, behind the memo | `ask` |
+| `record.sh` `MET`, `SUM` | `metrics.mjs`, `summary.mjs` | `ask` |
+| `record.sh` `park_actions`, `driver.sh` the verify card's `actions` | `notify.mjs actions` | `ask` |
+| `record.sh` `answers_v` | `inbox.mjs answers 2> /dev/null \| sha1sum` | `ask`: answered into a variable first (a pipeline's side spawns), its trailing newlines kept so the hash in `parked.json` doesn't change |
+| `record.sh` `inbox_repair` | `inbox.mjs repair 2>> run.log`, its exit code 3 | `ask` |
+| `record.sh` `take_question_` | `inbox.mjs question 2> /dev/null` | `ask` |
+| `record.sh` `take_question_` | `inbox.mjs insert`, fed on stdin | **spawn**: only a spawn has the asker's stdin |
+| `record.sh` the entry's `validate 2>&1`, `ingest`, `render 2>&1`, `pack > file 2> file` | `entries.mjs` | `ask` |
+| `record.sh` `gotchas` | `memlint.mjs gotchas` | `ask` |
+| `record.sh` `run_init`'s `--partial 2> /dev/null` in `< <( )`, `green_count`'s `testcount.mjs 2> /dev/null`, `--source`, `treekey.mjs` | | `ask` |
+| `record.sh` `HARNESS_CHECK_KEY_IGNORE=… treekey.mjs --pathspec` in `< <( )` | environment on the call | `ask`: the request carries it (file 91) |
+| `lane.sh` `red_names` `treekey.mjs 2> /dev/null`, `entries.mjs findings`, `session-files` | | `ask` |
+| `driver.sh` finish's `treekey.mjs` | | `ask` |
+| `driver.sh` `memlint.mjs` under `timeout 60` | a store on a hung mount | **spawn**: the 60 s is the point; a helper stuck there would hold every later question for its 120 s |
+| `prompt.sh` `suite_length`'s `treekey.mjs`, `memlint.mjs store-line`, `render.mjs` with `HARNESS_*` on the call | | `ask` in a driver or lane (the request carries them; one over 60000 bytes spawns); run as a command (`lib/prompt.sh <state> …`) it has no helper and `ask` is a plain spawn |
+| `needs.sh` `needs_open`, `needs_sweep` | `needs.mjs open`, `sweep 2>> run.log`, under `record` | `ask` |
+| `needs.sh` `needs_notify` | `needs.mjs fields`: NULs | **spawn**: the helper would decline every one and pay twice |
+| `notify.sh` `gh_url` | `notify.mjs urls 2> /dev/null` | `ask` in a driver or lane; `notify.sh` alone (`bin/harness`, `desk.sh`, `debrief.sh`) has a plain spawn under that name |
+| `notify.sh` `notify_trim` | `notify.mjs trim`, fed on stdin | **spawn** |
+| `check.sh` `treekey.mjs` | a child process of a lane, or a session's: it has no helper (a socket, rejected) | **spawn**, unless its parent asked: `check_run` in `record.sh` (`green`, `green_fast`, `run_init`) hands it the answer in `HARNESS_CHECK_TK` |
+| `check.sh` `testcount.mjs` | | **spawn**, none for an empty output |
+| `prompt.sh` as a command, `desk.sh`, `debrief.sh`, `eval.sh`, `bin/harness` | one question per process | **spawn** |
+| `deploy.sh`, `backlog.mjs`, `page.mjs`, `eval.mjs`, `config.sh`'s `node -e` | not served | **spawn** |
+| `record.sh` `ask` itself, `helper_start`; the plain `ask` of `prompt.sh` and `notify.sh` | the one spawn, and the helper's start | **spawn** |
+
+A call on a pipeline's side or in a `( )` spawns whatever it names (`metrics.mjs final`, `summary.mjs ledger-line` in a
+stub start): one start each, left as they are.
+
+**A stub start's node starts: 336 helper off, 20 on**, 2026-11-05: 3 helpers, 10 of the stub's `node -e`, `overlap`, 2 of
+`deploy`, `backlog`, `memlint` under its timeout, `metrics final`, `ledger-line`.
 
 ## Rejected
 

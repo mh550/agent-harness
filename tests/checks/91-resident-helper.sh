@@ -18,6 +18,7 @@ sc() { local d=$MD/$1 th=${2:-}; mkdir -p "$d/scratch" "$d/state"; cat > "$d/s.s
       c() { wc -l < "$NODE_COUNT"; }; keep() { c > "$D/n-$1"; }; source "$D/s.sh"' > "$d/out" 2> "$d/err"; echo $? > "$d/rc" ); }
 nof() { cat "$MD/$1/n-$2"; }   # <scenario> <name>
 nd() { echo $(( $(nof "$1" "$3") - $(nof "$1" "$2") )); }   # <scenario> <from> <to>
+slice() { awk -v a="$(nof "$1" "$2")" -v b="$(nof "$1" "$3")" 'NR > a && NR <= b' "$MD/$1/count"; }   # <scenario> <from> <to>: the starts between
 lines() { grep -c -- "$2" "$MD/$1/state/run.log" 2> /dev/null; }   # <scenario> <text>: its run.log's lines holding it
 L=$MD/l1.json; REALF=$HH/lib/features.mjs
 # 20 lists with 20 different summaries: i of 20 features passing
@@ -99,6 +100,7 @@ check "HARNESS_HELPER=0: every call spawns (count = calls), no helper.mjs ever s
 # ---- framing: a copy of lib/ with memlint.mjs a fixture main, and a script the helper doesn't serve ----
 TH=$MD/home; mkdir -p "$TH"; cp -r "$HH/lib" "$TH/lib"
 cat > "$TH/lib/memlint.mjs" << 'EOF'
+import { execFileSync } from "node:child_process";
 import { isMain, runCli, readStdin } from "./cli.mjs";
 const every = () => { let s = ""; for (let i = 1; i < 128; i++) s += String.fromCharCode(i); return `${s}é—😀Ā￿`; };
 const answers = { nonl: () => "no newline", empty: () => "", newline: () => "\n", twonl: () => "a\n\n", utf8: () => "é—😀 ünï\n", big: () => `${"é".repeat(70000)}\nend`,
@@ -112,6 +114,9 @@ export const main = async (argv, io) => {
   if (m === "rc") return { rc: Number(argv[1]), out: "x\n" };
   if (m === "tty") return { rc: 0, out: `${io.isTTY ? "tty" : "no tty"}\n` };
   if (m === "stdin") return { rc: 0, out: readStdin(io) };
+  if (m === "err") { console.error("to-stderr"); return { rc: 0, out: "answer\n" }; }
+  if (m === "childerr") { execFileSync("sh", ["-c", "echo from-child >&2"]); return { rc: 0, out: "answer\n" }; }
+  if (m === "nulerr") { console.error("said-once"); return { rc: 0, out: "a\0b\n" }; }
   throw new Error(`no ${m}`);
 };
 if (isMain(import.meta.url)) runCli(main);
@@ -197,6 +202,36 @@ check "a request over a pipe's buffer spawns (a wedged helper must never block t
   '[[ $(nd bytes home long) == 1 && $(nd bytes long after-long) == 0 && $(wc -c < "$B/long") -gt 70000 && ! -e $B/state/run.log ]]'
 check "a cwd that is gone: declined and spawned (the spawn's exit code), not a restart, no line from the helper" '[[ $(cat "$B/deleted-rc") == 5 && $(cat "$B/deleted") == x && $(nd bytes after-long deleted) == 1 && ! -e $B/state/run.log ]] && ! grep -q "helper.mjs" "$B/err"'
 
+# a request's stderr goes where that call sends its own, as a spawn's does: the helper's fd 2 is a file ask hands on
+sc stderr "$TH" << 'EOF'
+ask memlint.mjs nonl > /dev/null; keep 0
+echo before > "$D/e-append"
+ask memlint.mjs err > "$D/o-file" 2> "$D/e-file"
+ask memlint.mjs err > "$D/o-null" 2> /dev/null
+ask memlint.mjs err > "$D/o-append" 2>> "$D/e-append"
+x=$(ask memlint.mjs err 2>&1); printf '%s\n' "$x" > "$D/o-both"
+ask memlint.mjs childerr > "$D/o-child" 2> "$D/e-child"
+ask memlint.mjs err > "$D/o-plain"
+{ echo first >&2; ask memlint.mjs err > /dev/null; echo last >&2; } 2> "$D/e-seq"
+keep served
+x=$(HARNESS_HELPER=0 ask memlint.mjs err 2>&1); printf '%s\n' "$x" > "$D/o-both0"
+ask memlint.mjs nulerr > "$D/o-nul" 2> "$D/e-nul"; keep nul
+EOF
+SE=$MD/stderr
+check "a request's stderr: into the call's 2> file, nowhere under 2> /dev/null, onto the end under 2>>, in order with the shell's own writes; the answer on stdout each time, all through the helper" \
+  '[[ $(cat "$SE/e-file") == to-stderr && $(cat "$SE/e-append") == before$'"'"'\n'"'"'to-stderr && $(cat "$SE/e-seq") == first$'"'"'\n'"'"'to-stderr$'"'"'\n'"'"'last && $(cat "$SE/o-file") == answer && $(cat "$SE/o-null") == answer && $(nd stderr 0 served) == 0 ]]'
+check "2>&1 gives the spawn's bytes in the spawn's order (stderr, then the answer main returns)" 'cmp -s "$SE/o-both" "$SE/o-both0" && [[ $(cat "$SE/o-both") == to-stderr$'"'"'\n'"'"'answer ]]'
+check "a git or other child a script runs: its stderr lands in the call's 2> file too" '[[ $(cat "$SE/e-child") == from-child && $(cat "$SE/o-child") == answer ]]'
+check "with no redirect a request's stderr is this shell's, once: nothing left to go out with a later call" '[[ $(grep -c "^to-stderr$" "$SE/err") == 1 && $(cat "$SE/rc") == 0 && ! -s $(echo "$SE"/scratch/helper-*.err) ]]'
+check "a declined request's stderr is dropped: the spawn says it, once" '[[ $(cat "$SE/e-nul") == said-once && $(wc -c < "$SE/o-nul") == 4 && $(nd stderr served nul) == 2 ]]'
+sc throw2 << 'EOF'
+echo '{' > "$D/bad.json"; ask features.mjs summary "$MD/l1.json" > /dev/null
+ask features.mjs summary "$D/bad.json" > /dev/null 2> "$D/e1"; echo $? > "$D/rc1"
+ask features.mjs summary "$D/bad.json" > /dev/null 2> /dev/null; echo $? > "$D/rc2"
+EOF
+check "a throw's message follows the call's redirect too (a file, /dev/null), rc 70, nothing on the shell's stderr" \
+  'grep -q JSON "$MD/throw2/e1" && [[ $(cat "$MD/throw2/rc1") == 70 && $(cat "$MD/throw2/rc2") == 70 && ! -s $MD/throw2/err ]]'
+
 # bytes, whatever the asker's locale: read -N and the request's length must not count characters
 sc utf8 "$TH" << 'EOF'
 export LC_ALL=C.UTF-8
@@ -247,6 +282,7 @@ fake dies 'const on = r => process.exit(3);'
 fake cut 'const on = r => { process.stdout.write(`${r.id} 0 10\nabc`); setTimeout(() => process.exit(0), 50); };'
 fake short 'const on = r => process.stdout.write(`${r.id} 0 10\nabc`);'
 fake bigrc 'const on = r => process.stdout.write(`${r.id} 300 0\n`);'
+fake words2 'const on = r => { console.error("last-words"); process.exit(3); };'
 fbad=""
 for k in silent two four wrong words dies cut short bigrc; do
   sc "f-$k" "$MD/fake-$k" << 'EOF'
@@ -269,6 +305,12 @@ EOF
 BO=$MD/bound
 check "after three restarts in one process: one helper off: line, HARNESS_HELPER=0, every later call spawns and starts no helper" \
   '[[ $(lines bound "helper restarted: ") == 3 && $(lines bound "helper off: wrong id") == 1 && $(head -1 "$BO/off-at") == 4 && $(cat "$BO/left") == none ]] && [[ $(grep -c helper.mjs "$BO/count") == 4 && $(nd bound 4 8) == 4 ]] && [[ $(cat "$MD/bound/a7") == "$(cat "$SUM2")" ]]'
+
+sc lastw "$MD/fake-words2" << 'EOF'
+ask features.mjs summary "$MD/l2.json" > "$D/a1"; echo $? > "$D/rc1"; keep 1
+EOF
+check "a helper that dies: what it wrote to stderr reaches this shell's, its call the spawn's bytes" \
+  'grep -q "^last-words$" "$MD/lastw/err" && cmp -s "$MD/lastw/a1" "$SUM2" && [[ $(cat "$MD/lastw/rc1") == 0 ]]'
 
 # a failure met inside a $( ): the subshell logs and kills, the parent neither logs it again nor counts it twice
 sc subfail "$MD/fake-silent" << 'EOF'
@@ -308,6 +350,32 @@ ask features.mjs summary "$MD/l2.json" > "$D/a1"; echo $? > "$D/rc1"
 EOF
 check "a failure with no STATE in this shell: the spawn's bytes, nothing fatal under set -u, nothing on stderr" \
   'cmp -s "$MD/nostate/a1" "$SUM2" && [[ $(cat "$MD/nostate/rc1") == 0 && $(cat "$MD/nostate/rc") == 0 && ! -s $MD/nostate/err ]]'
+
+# ---- check.sh's key, from its parent's helper (check_run), and no node for an empty output's count ----
+CK=$MD/ck; git init -q -b main "$CK"; echo a > "$CK/a"; mkdir "$CK/sub"; echo b > "$CK/sub/b"; git -C "$CK" add -A; git -C "$CK" -c user.name=t -c user.email=t@t commit -qm i
+ckey=$(cd "$CK" && node "$HH/lib/treekey.mjs")
+sc ckrun << 'EOF'
+export HARNESS_CHECK_CACHE=$D/cache HARNESS_CHECK_CMD='echo "tk=${HARNESS_CHECK_TK-unset}" >> "$D/suite-saw"'
+CHECK=$HARNESS_HOME/lib/check.sh; cd "$MD/ck"; ask features.mjs summary "$L" > /dev/null; keep 0
+check_run > "$D/first"; echo $? > "$D/rc-first"; keep first
+check_run > "$D/cached"; keep cached
+( cd sub; check_run > "$D/sub" ); keep sub
+"$CHECK" > "$D/direct"; keep direct
+EOF
+CR=$MD/ckrun
+check "check_run: check.sh's key comes from the parent's helper (no treekey.mjs start), the same marker a spawn would write" \
+  '[[ $(slice ckrun 0 cached | grep -c treekey) == 0 && -f $CR/cache/green-$ckey && $(cat "$CR/rc-first") == 0 ]] && grep -q "^check: green" "$CR/first" && grep -q "^check: green (cached" "$CR/cached"'
+check "the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key" \
+  '[[ $(sort -u "$CR/suite-saw") == tk=unset && $(slice ckrun cached sub | grep -c treekey) == 1 && $(slice ckrun sub direct | grep -c treekey) == 1 ]] && grep -q "^check: green (cached" "$CR/sub" && grep -q "^check: green (cached" "$CR/direct"'
+sc ckcount << 'EOF'
+CHECK=$HARNESS_HOME/lib/check.sh; cd "$MD/ck"; export HARNESS_CHECK_CACHE=$D/cache HARNESS_CHECK_CMD=true
+ask features.mjs summary "$L" > /dev/null
+check_run > "$D/empty"; keep empty
+export HARNESS_CHECK_CACHE=$D/cache2 HARNESS_CHECK_CMD='echo "3/3 checks passed"'
+check_run > "$D/counted"; keep counted
+EOF
+check "check.sh: an empty suite output starts no testcount.mjs, a suite that printed a count one, and says it" \
+  '[[ $(grep -c testcount "$MD/ckcount/count") == 1 && $(slice ckcount empty counted | grep -c testcount) == 1 ]] && grep -q "3 tests" "$MD/ckcount/counted"'
 
 # ---- lib/helper.mjs alone ----
 HA=$MD/alone; mkdir -p "$HA"; SA=$(node "$REALF" summary "$L"); SB=$(node "$REALF" summary "$MD/l2.json")

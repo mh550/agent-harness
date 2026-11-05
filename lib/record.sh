@@ -41,12 +41,13 @@ run_paths() {
   LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger} SVC_UNIT=$(scope_unit "$RUN_ID" svc)
   mkdir -p "$LOGS" "$REC" "$SCRATCH"
   load_config
+  helper_begin   # after the config (HARNESS_HELPER=0 there counts), before the first $( ask ), which can't start one
   f_models   # F model's memo for this process: one node start answers every alias
 }
 # ask <script> <args…>: what `node lib/<script> <args…>` prints and exits, from this shell's resident helper when it can
 # answer, else by that spawn, so a helper absent, busy, off or broken costs a node start and never an answer or a hang
 # (decisions/2026-11-03-resident-helper). HARNESS_HELPER=0 turns it off.
-HELPER_SHELL=$BASHPID HELPER_LIVE="" HELPER_ENV_RAW="" HELPER_ENV="{}"
+HELPER_SHELL=$BASHPID HELPER_LIVE="" HELPER_ERR="" HELPER_ENV_RAW="" HELPER_ENV="{}"
 ask() {
   if helper_ask "$@"; then printf %s "$ASK_OUT"; return "$ASK_RC"; fi
   local ask_s=$1; shift
@@ -60,7 +61,7 @@ helper_ask() {
   helper_ready || return 1
   local ha_lk ha_rc=1
   { exec {ha_lk}> "$HARNESS_SCRATCH/helper-$HELPER_SHELL.lock"; } 2> /dev/null || return 1
-  if flock -n "$ha_lk"; then helper_request "$@"; ha_rc=$?; fi
+  if flock -n "$ha_lk"; then helper_request "$@"; ha_rc=$?; helper_stderr "$ha_rc"; fi
   exec {ha_lk}>&-
   return "$ha_rc"
 }
@@ -74,11 +75,22 @@ helper_ready() {
   [[ -z $HELPER_LIVE ]] || { helper_failed "the helper went away"; return 1; }
   helper_start
 }
-# lib/helper.mjs's stderr is this shell's at this moment: a caller wanting it the shell's own starts it outside a 2>
-# redirect. It keeps no other descriptor: one started under `record` would hold the record lock (fd 9) for its whole life.
+# The helper's stderr is a file, so a request's (a git it runs included) can go where that call sends its own (helper_stderr).
+# It keeps no other descriptor: one started under `record` would hold the record lock (fd 9) for its whole life.
 helper_start() {
-  coproc HELPER { local f; for f in /proc/self/fd/*; do f=${f##*/}; (( f > 2 )) && eval "exec $f>&-"; done; exec node "$HARNESS_HOME/lib/helper.mjs"; }
+  HELPER_ERR=$HARNESS_SCRATCH/helper-$HELPER_SHELL.err
+  coproc HELPER { local f; for f in /proc/self/fd/*; do f=${f##*/}; (( f > 2 )) && eval "exec $f>&-"; done; exec node "$HARNESS_HOME/lib/helper.mjs" 2>> "$HELPER_ERR"; }
   HELPER_LIVE=$HELPER_PID
+}
+# The driver's and a lane's: their helper from the start, where $( ) can use it
+helper_begin() { [[ ${HARNESS_HELPER:-} != 0 && -d ${HARNESS_SCRATCH:-/nonexistent} && $BASHPID == "$HELPER_SHELL" && -z $HELPER_LIVE ]] && helper_start; return 0; }
+helper_stop() { [[ -n ${HELPER_PID:-} ]] && kill "$HELPER_PID" 2> /dev/null; return 0; }   # an EXIT trap's: stdin's EOF would end it anyway
+# <the exchange's status>: what the request wrote to stderr, to this call's stderr, as a spawn's would be: before ask
+# prints the answer, which a spawn's main writes at its end (2>&1 keeps the order). Declined: dropped, the spawn says it again.
+helper_stderr() {
+  [[ -s ${HELPER_ERR:-} ]] || return 0
+  (( $1 )) || cat "$HELPER_ERR" >&2
+  : > "$HELPER_ERR"
 }
 # <s>: HELPER_J is it as a JSON string. Bytes over 127 go as they are: node decodes them as it decodes an argv.
 helper_j() {
@@ -149,6 +161,7 @@ helper_failed() {
   if [[ -n $hf_k ]]; then
     if [[ $BASHPID == "$HELPER_SHELL" ]]; then { kill -9 "$hf_k" && wait "$hf_k"; } 2> /dev/null; else kill "$hf_k" 2> /dev/null; fi
   fi
+  [[ -s ${HELPER_ERR:-} ]] && { cat "$HELPER_ERR" >&2; : > "$HELPER_ERR"; }   # its last words: no answer will say them
   [[ -f $hf_f ]] && while read -r hf_l _; do (( hf_n += 1 )); [[ $hf_l == "$hf_p" ]] && hf_seen=1; done < "$hf_f"
   if [[ -z $hf_seen ]]; then
     (( hf_n >= 3 )) && hf_word=off
@@ -168,12 +181,12 @@ helper_failed() {
 declare -gA F_MEMO=() F_MRC=()
 F_MODELS=0 F_MEMO_PID=$BASHPID   # the shell that keeps entries: a subshell's miss runs node straight (it couldn't keep one)
 F() {
-  f_memo "$@" || { node "$HARNESS_HOME/lib/features.mjs" "$@"; return; }
+  f_memo "$@" || { ask features.mjs "$@"; return; }
   printf %s "$F_OUT"; return "$F_RC"
 }
 Fv() {   # <var> <sub> <args…>: F's answer into <var> (trailing newlines cut, as $( ) does), stored in this shell
   local f_var_=$1; shift
-  if f_memo "$@"; then F_OUT=${F_OUT%"${F_OUT##*[!$'\n']}"}; else F_OUT=$(node "$HARNESS_HOME/lib/features.mjs" "$@"); F_RC=$?; fi
+  if f_memo "$@"; then F_OUT=${F_OUT%"${F_OUT##*[!$'\n']}"}; else F_OUT=$(ask features.mjs "$@"); F_RC=$?; fi
   printf -v "$f_var_" %s "$F_OUT"; return "$F_RC"
 }
 f_sha() { local _h; _h=$(sha1sum 2> /dev/null < "$2") || _h=-; printf -v "$1" %s "${_h%% *}"; }   # <var> <file>; "-": none
@@ -202,7 +215,7 @@ f_memo() {
   [[ $s == model && -z ${F_MEMO[$k]+x} ]] && (( ! F_MODELS )) && f_models
   if [[ ${F_MEMO[$k]+x} ]]; then F_OUT=${F_MEMO[$k]} F_RC=${F_MRC[$k]}; return 0; fi
   [[ $BASHPID == "$F_MEMO_PID" ]] || return 1
-  F_OUT=$(node "$HARNESS_HOME/lib/features.mjs" "$@"; r=$?; printf x; exit "$r"); F_RC=$?; F_OUT=${F_OUT%x}
+  F_OUT=$(ask features.mjs "$@"; r=$?; printf x; exit "$r"); F_RC=$?; F_OUT=${F_OUT%x}
   case $F_RC:$s in
     0:unpark) [[ -z $F_OUT ]] || return 0 ;;
     0:*|1:passes|1:milestone-done|1:evidence|1:lint) ;;
@@ -234,7 +247,7 @@ f_poll_seed() {
 # later $(F model …) of the driver or a lane is a hit
 f_models() {
   local a id out; F_MODELS=1
-  out=$(node "$HARNESS_HOME/lib/features.mjs" models) || return 0
+  out=$(ask features.mjs models) || return 0
   while IFS=$'\t' read -r a id; do [[ -n $a ]] && F_MEMO[model$'\x1f'$a]=$id$'\n' F_MRC[model$'\x1f'$a]=0; done <<< "$out"
 }
 # The coordinator's F lanes (lanes_v): memoized as F is, on the list's, attempts.json's and parked.json's hashes, the max,
@@ -260,12 +273,12 @@ lanes_key() {   # <var> <list> <attempts> <max> <parked.json> <state dir>; 1: no
 lanes_v() {   # <var> <list> <attempts> <max> <parked.json> <state dir>: F lanes' lines (trailing newline cut), from the memo
   local lv_=$1 k="" k2="" lo lr; shift
   if lanes_key k "$@" && [[ ${F_MEMO[$k]+x} ]]; then printf -v "$lv_" %s "${F_MEMO[$k]}"; return 0; fi
-  lo=$(node "$HARNESS_HOME/lib/features.mjs" lanes "$@"); lr=$?   # its own variable: lanes_key's Fv sets F_OUT
+  lo=$(ask features.mjs lanes "$@"); lr=$?   # its own variable: lanes_key's Fv sets F_OUT
   (( lr == 0 )) && [[ -n $k && $BASHPID == "$F_MEMO_PID" ]] && lanes_key k2 "$@" && [[ $k2 == "$k" ]] && F_MEMO[$k]=$lo F_MRC[$k]=0
   printf -v "$lv_" %s "$lo"; return "$lr"
 }
-MET() { node "$HARNESS_HOME/lib/metrics.mjs" "$@"; }
-SUM() { node "$HARNESS_HOME/lib/summary.mjs" "$@"; }
+MET() { ask metrics.mjs "$@"; }
+SUM() { ask summary.mjs "$@"; }
 # The configuration comes from the worktree, so it is loaded again after a resumed run merges main (which may have
 # changed .harness/config.sh, e.g. a new POLICY).
 load_config() {
@@ -297,8 +310,11 @@ services_down() {
   if (( rc )); then note "services stopped ($1; teardown exit $rc, see $SCRATCH/teardown.out, at finish $STATE/teardown.out)"
   else note "services stopped ($1)"; fi
 }
-green() { "$CHECK" > /dev/null 2>&1; }
-green_fast() { "$CHECK" --fast > /dev/null 2>&1; }   # the gate `passes` stands on (decisions/2026-11-03-fast-gate)
+# check.sh's first question, the tree's key, asked here: it is a child process with no helper, and that's a node start per
+# call in it. Only from the tree's top, where check.sh takes it; empty (a subdirectory, a failure): check.sh asks itself.
+check_run() { local tk=""; [[ -e .git ]] && tk=$(ask treekey.mjs --partial --names 2> /dev/null); HARNESS_CHECK_TK=$tk "$CHECK" "$@"; }
+green() { check_run > /dev/null 2>&1; }
+green_fast() { check_run --fast > /dev/null 2>&1; }   # the gate `passes` stands on (decisions/2026-11-03-fast-gate)
 # <fix feature id>: the gate a fix feature's `passes` stands on (decisions/2026-11-04-fix-rounds): the red's files through
 # the suite's subset form (the record's fix_files; none: the whole suite), then the fast tier. The first red stops it and
 # sets FIX_RED to what was red, as the un-pass note says it (`check <files>`, `suite`, `fast tier`).
@@ -418,7 +434,7 @@ desk() {
 # A park's notification is its needs record's (lib/needs.sh): the title, the body (PARKED: <why>, the question, the
 # card's blocked, where and do, the answer line), the click (needs.md), priority high and the actions park_actions gave
 # it at its open. Without a record (a failed open) the question and the answer line still go out.
-park_actions() { node "$NOTIFY_MJS" actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" "Answer with Claude" "$DESK_URL" Progress "$(gh_url "$RUN_DIR/progress.md")"; }
+park_actions() { ask notify.mjs actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" "Answer with Claude" "$DESK_URL" Progress "$(gh_url "$RUN_DIR/progress.md")"; }
 notify_park() {   # <id> <why> <the parked record's ref>
   local id=$1 why=$2 q
   q=$(cat "$LS/question" 2> /dev/null)   # what take_question found in the session's copy (gone by now)
@@ -431,9 +447,11 @@ notify_park() {   # <id> <why> <the parked record's ref>
 # Memoized as F is, on INBOX.md's content (decisions/2026-10-31-fewer-node-starts).
 answers_hash() { local v; answers_v v; echo "$v"; }
 answers_v() {   # <var>: answers_hash's value, kept in the memo when this is the shell that keeps entries
-  local av_h av_k av_v; f_sha av_h "$REC/INBOX.md"; av_k=answers$'\x1f'$av_h
+  local av_h av_k av_o av_v; f_sha av_h "$REC/INBOX.md"; av_k=answers$'\x1f'$av_h
   if [[ -z ${F_MEMO[$av_k]+x} ]]; then
-    av_v=$(node "$INBOX_MJS" answers "$REC/INBOX.md" 2> /dev/null | sha1sum | cut -c1-12)
+    # into a variable first: a pipeline's side has no helper. The x keeps its trailing newlines, which the hash covers
+    av_o=$(ask inbox.mjs answers "$REC/INBOX.md" 2> /dev/null; printf x)
+    av_v=$(printf %s "${av_o%x}" | sha1sum | cut -c1-12)
     [[ $BASHPID == "$F_MEMO_PID" ]] || { printf -v "$1" %s "$av_v"; return 0; }   # a subshell couldn't keep it
     f_sha av_h "$REC/INBOX.md"; [[ answers$'\x1f'$av_h == "$av_k" ]] || { printf -v "$1" %s "$av_v"; return 0; }
     F_MEMO[$av_k]=$av_v
@@ -560,7 +578,7 @@ entry_resume() {
   local errs sid budget base f out
   ENTRY_RESUMED=""
   [[ $1 == coding || $1 == verify || $1 == init ]] || return 0
-  errs=$(node "$HARNESS_HOME/lib/entries.mjs" validate "$RUN_DIR/entry.json" "$2" "$1" 2>&1)
+  errs=$(ask entries.mjs validate "$RUN_DIR/entry.json" "$2" "$1" 2>&1)
   (( $? == 1 )) || return 0   # valid, or only a cap over (2: the ingest trims it)
   MET limit "$3" "$S_WALL" "$S_EXIT" > /dev/null && return 0   # refused: the limit would refuse the resume too
   sid=$(MET session-id "$3" 2> /dev/null) || { note "$5: no session id in its transcript; not resumed"; return 0; }
@@ -629,7 +647,7 @@ journal_() {   # who kind id name model outcome worktree: the ingest and the ren
   if [[ $PWD != "$RWT" ]]; then   # a lane: the take-back of the copy's entry, under the lock with the ingest
     rm -f "$REC/entry.json"; [[ -e $RUN_DIR/entry.json ]] && mv -f "$RUN_DIR/entry.json" "$REC/entry.json"
   fi
-  out=$(node "$HARNESS_HOME/lib/entries.mjs" ingest "$REC" "$2" "$3" "$4" "$5" "$6" "$SCRATCH/entry-files" "$SCRATCH/entry-final" "$7"); rc=$?
+  out=$(ask entries.mjs ingest "$REC" "$2" "$3" "$4" "$5" "$6" "$SCRATCH/entry-files" "$SCRATCH/entry-final" "$7"); rc=$?
   # a question without a Files: line got the session's files (decisions/2026-10-27-question-locations)
   n=$(sed -n 's/^filled //p' <<< "$out"); out=$(grep -v '^filled ' <<< "$out")
   [[ -n $n ]] && note "$1: $n question(s) had no Files: line; filled from the session's diff"
@@ -642,7 +660,7 @@ journal_() {   # who kind id name model outcome worktree: the ingest and the ren
     mv -f "$REC/entry.json" "$STATE/entry-failed-$4.json" 2> /dev/null; }
   # each question the entry asks waits in harness needs until answered (docs/plans/2026-10-29-R4-questions.md §3)
   (( rc == 0 )) && questions_ "$1" "$2" "$3"
-  out=$(node "$HARNESS_HOME/lib/entries.mjs" render "$REC" 2>&1) || note "$1: rendering progress.md failed: $out"
+  out=$(ask entries.mjs render "$REC" 2>&1) || note "$1: rendering progress.md failed: $out"
   return 0
 }
 
@@ -666,7 +684,7 @@ gotchas() {
   local d
   git show "$2:CLAUDE.md" > "$SCRATCH/gotchas-before.md" 2> /dev/null || : > "$SCRATCH/gotchas-before.md"
   git show HEAD:CLAUDE.md > "$SCRATCH/gotchas-after.md" 2> /dev/null || : > "$SCRATCH/gotchas-after.md"
-  d=$(node "$HARNESS_HOME/lib/memlint.mjs" gotchas "$SCRATCH/gotchas-before.md" "$SCRATCH/gotchas-after.md") && [[ -n $d ]] && note "$1: gotchas $d"
+  d=$(ask memlint.mjs gotchas "$SCRATCH/gotchas-before.md" "$SCRATCH/gotchas-after.md") && [[ -n $d ]] && note "$1: gotchas $d"
   return 0
 }
 
@@ -682,7 +700,7 @@ vcount() {
 # cwd's (a lane's slot: the code the session sees). Committed with the run record on the record branch; materialize
 # copies it into the slot.
 context_() {
-  if node "$HARNESS_HOME/lib/entries.mjs" pack "$REC" "$1" "${2:-$CONTEXT_PACK_BYTES}" "$PWD" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
+  if ask entries.mjs pack "$REC" "$1" "${2:-$CONTEXT_PACK_BYTES}" "$PWD" > "$SCRATCH/context.md" 2> "$SCRATCH/context.err"; then
     mv -f "$SCRATCH/context.md" "$REC/context.md"
     note "context.md for $1: $(wc -c < "$REC/context.md") bytes$(sed -n 's/^_\([0-9]*\) items left out at .*/, \1 items left out/p' "$REC/context.md")"
   else   # never a stale pack: the session is sent to the full record instead
@@ -710,7 +728,7 @@ run_init() {   # [fresh: clear the suite cache's markers for the tree as the ini
   # the tree's key as check.sh takes it, before the suite runs (what a suite leaves untracked would change it after)
   # and its reduced key (CHECK_KEY_MAP's paths left out): fresh drops its part- sidecar, or a tree differing from that
   # sidecar's green tree in mapped paths alone would run a partial (decisions/2026-10-30-partial-key)
-  local key red; { read -r key; read -r red; } < <(node "$HARNESS_HOME/lib/treekey.mjs" --partial 2> /dev/null)   # a dropped entry: check.sh says it
+  local key red; { read -r key; read -r red; } < <(ask treekey.mjs --partial 2> /dev/null)   # a dropped entry: check.sh says it
   # a red found around a failed init may be the init's (a network blip, a failed install), not the tree's: an init after
   # a failed one runs the suite, and a red under a failed init isn't kept (init-failed: this lane's, or the driver's)
   local flag=${LDIR:-$STATE}/init-failed prev=0; [[ -f $flag ]] && prev=1
@@ -718,7 +736,7 @@ run_init() {   # [fresh: clear the suite cache's markers for the tree as the ini
   [[ ${1:-} == fresh ]] && rm -f "$STATE/green/"{green,red,fast}-"$key" "$STATE/green/part-$red"   # a cached red or fast-green would answer too
   (( rc || prev )) && rm -f "$STATE/green/red-$key"
   local crc=0 tier=(); [[ ${1:-} == fast ]] && tier=(--fast)
-  "$CHECK" "${tier[@]}" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }
+  check_run "${tier[@]}" >> "$SCRATCH/init.out" 2>&1 || { crc=$?; log "  suite red before the session (the session is told to fix it first)"; }
   (( rc )) && [[ -f $STATE/green/red-$key ]] && rm -f "$STATE/green/red-$key" && note "suite red under a failed init: not cached (the next init runs it)"
   # a red suite pins neither the count nor its source: the next green one does. Of a green tree, its marker first (after
   # a rerun the first run's total), then its own output, check-<key>.out: check.out may be an older tree's, a red one's
@@ -733,7 +751,7 @@ run_init() {   # [fresh: clear the suite cache's markers for the tree as the ini
   # (testcount-nomatch: older runs)
   local src
   if (( crc == 0 )) && [[ -f $out && ! -f $STATE/testcount-source && ! -f $STATE/testcount-nomatch ]]; then
-    src=$(node "$HARNESS_HOME/lib/testcount.mjs" "$out" --source); src=${src##* · }
+    src=$(ask testcount.mjs "$out" --source); src=${src##* · }
     case $src in
       contract) note "test count: HARNESS_TESTS contract" ;;
       none|"") src=none; note "test count: no match in the suite's output (tests start/end stay unknown)" ;;
@@ -749,7 +767,7 @@ run_init() {   # [fresh: clear the suite cache's markers for the tree as the ini
 green_count() {
   local n="" f=$STATE/green/green-$1
   [[ -f $f ]] || return 0
-  read -r n < "$f"; [[ -n $n ]] || n=$(node "$HARNESS_HOME/lib/testcount.mjs" "$SCRATCH/check-$1.out" 2> /dev/null)
+  read -r n < "$f"; [[ -n $n ]] || n=$(ask testcount.mjs "$SCRATCH/check-$1.out" 2> /dev/null)
   echo "$n"
 }
 
@@ -759,7 +777,7 @@ green_count() {
 # baseline, is never rewritten (decisions/2026-10-26-test-count-contract). Without a count only `final` (finish) clears
 # it: mid-run, the last stays. The cwd's tree, with this process's SCRATCH.
 tests_end() {   # [final]
-  local key n; key=$(node "$HARNESS_HOME/lib/treekey.mjs"); n=$(green_count "$key")
+  local key n; key=$(ask treekey.mjs); n=$(green_count "$key")
   if [[ -n $n ]]; then echo "${n%% *}" > "$STATE/tests-end"; elif [[ ${1:-} == final ]]; then rm -f "$STATE/tests-end"; fi
 }
 
@@ -780,7 +798,7 @@ pr_body() {   # milestone → the evidence a reviewer (or the record) needs; the
 # CHECK_KEY_IGNORE: lib/treekey.mjs's own pathspecs, so the key and this test are one definition), noted once per main:
 # main moved only there, so the verified result stands
 ignored_only() {
-  local spec; mapfile -t spec < <(HARNESS_CHECK_KEY_IGNORE=${CHECK_KEY_IGNORE:-} node "$HARNESS_HOME/lib/treekey.mjs" --pathspec)
+  local spec; mapfile -t spec < <(HARNESS_CHECK_KEY_IGNORE=${CHECK_KEY_IGNORE:-} ask treekey.mjs --pathspec)
   # no pathspecs (node failed, or an older treekey.mjs printed its key): a re-base
   [[ ${spec[0]:-} == . ]] && git diff --quiet "$2" "$3" -- "${spec[@]}" || return 1
   [[ $(cat "$STATE/ignored-$1" 2> /dev/null) == "$4" ]] && return 0   # once per main: merge_milestones runs again after every verify
@@ -1225,7 +1243,7 @@ unmaterialize() {
 # The lines a session added above "## Answers" in its copy go into the record's INBOX.md above that line (at the end
 # they would sit under the answers and change answers_hash, unparking at once); saved for the park's notification.
 take_question_() {
-  local q; q=$(node "$INBOX_MJS" question "$LS/inbox-before.md" "$SLOT/$RUN_DIR/INBOX.md" 2> /dev/null)
+  local q; q=$(ask inbox.mjs question "$LS/inbox-before.md" "$SLOT/$RUN_DIR/INBOX.md" 2> /dev/null)
   printf '%s' "$q" > "$LS/question"
   [[ -n $q ]] || return 0
   printf '%s' "$q" | node "$INBOX_MJS" insert "$REC/INBOX.md"
@@ -1238,7 +1256,7 @@ take_question() { record take_question_; }
 # initializer.
 inbox_repair() {   # <who> <INBOX before the session> <the INBOX it left>
   [[ -f $3 ]] || return 0
-  node "$INBOX_MJS" repair "$2" "$3" 2>> "$STATE/run.log"
+  ask inbox.mjs repair "$2" "$3" 2>> "$STATE/run.log"
   (( $? == 3 )) && note "INBOX.md: $1's question was inside the steering comment (hidden on GitHub); moved below it"
   return 0
 }

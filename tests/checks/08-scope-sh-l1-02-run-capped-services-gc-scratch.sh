@@ -252,7 +252,8 @@ check "a TERM during finish's teardown runs no second teardown: the trap waits f
 # PAUSE mid-run (L2-04): A's first session touches PAUSE as `harness pause` would; the pause stops the services before
 # its poll, and the init after `harness resume` starts them again
 STUB_PAUSE=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" paused --spec SPEC.md --foreground > "$T/run-paused.out" 2>&1 & PP=$!
-p_seen=0; wait_for 60 eval 'hlog paused | grep "· services stopped (paused)$" > /dev/null' && p_seen=1
+# the coordinator's line too: a lane through its helper reaches its note inside the coordinator's 1 s poll
+p_seen=0; wait_for 60 eval 'hlog paused | grep "· services stopped (paused)$" > /dev/null && grep "paused (INBOX.md" "$HARNESS_STATE/proj/paused/run.log" > /dev/null' && p_seen=1
 "$H" resume paused > /dev/null; wait "$PP"
 check "PAUSE stops the services before its poll, and the next init starts them again" 'D=$(sd_at $'"'"'teardown\npaused\npaused\n'"'"') \
   && [[ $p_seen == 1 && -n $D && -f $T/scratch/proj/paused/teardown-paused.marker && $(hlog paused | grep -c "· services stopped (paused)$") == 1 ]] \

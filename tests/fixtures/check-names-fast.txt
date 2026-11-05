@@ -1,6 +1,7 @@
 ( ask … ) & and ask … | cat spawn (bash closes the coproc's descriptors there: count +1 each)
 --base <branch> with the spec on that branch only proceeds; without --base it is refused naming origin/main
 --brief alone with no SPEC_FILES is not checked and starts
+2>&1 gives the spawn's bytes in the spawn's order (stderr, then the answer main returns)
 < <(ask …) answers through the parent's helper (no start)
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
 CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
@@ -27,9 +28,12 @@ SPEC_FILES in the project's .harness/config.sh and no --spec: a missing path is 
 a $( ask ) before this shell has a helper spawns and starts none: a coproc started in a subshell would die with it
 a body over the cap is trimmed
 a cwd that is gone: declined and spawned (the spawn's exit code), not a restart, no line from the helper
+a declined request's stderr is dropped: the spawn says it, once
 a failed read inside $( ask ): the spawn's bytes, one line; the parent's next call finds the helper gone, logs nothing more, spawns
 a failure with no STATE in this shell: the spawn's bytes, nothing fatal under set -u, nothing on stderr
+a git or other child a script runs: its stderr lands in the call's 2> file too
 a helper started while the shell holds the record lock (fd 9) keeps none of it: the lock is free when the shell lets go
+a helper that dies: what it wrote to stderr reaches this shell's, its call the spawn's bytes
 a helper that never replies, a two-field or four-field header, a wrong id, words, one that dies, one cut mid-answer, a short answer, an rc over 255: each call the spawn's bytes and rc, each a helper restarted: line
 a hit prints what node prints, byte for byte, and its exit code (snapshot, lint, a lone newline)
 a later deadline: the earlier refusals aren't the cause
@@ -47,6 +51,7 @@ a proposed merge: ready to merge, click = the PR, default priority
 a refused session's minimal entry is not yet, not its reverted claim (E4 review F3)
 a relative path argument resolves against the asker's cwd, not the helper's
 a request over a pipe's buffer spawns (a wedged helper must never block the write), the spawn's bytes, the helper still up
+a request's stderr: into the call's 2> file, nowhere under 2> /dev/null, onto the end under 2>>, in order with the shell's own writes; the answer on stdout each time, all through the helper
 a resume (the run's worktree exists) is not checked: a missing spec in its run.env and --spec does not refuse it
 a scratch directory that is missing or unset: a spawn with the spawn's bytes, nothing on stderr, no restart line
 a session's edits to the journal are restored (E4 review F1)
@@ -54,6 +59,7 @@ a spec check that fails without a line parks with a reason, never an empty one
 a stale green marker is caught at verify: M1 red, not tagged
 a stdin-fed call never lets main read the request pipe: the next ask is answered by the same helper; empty stdin leaves the file
 a throw in features.mjs exits 70 and is never kept (node each time)
+a throw's message follows the call's redirect too (a file, /dev/null), rc 70, nothing on the shell's stderr
 after may name a milestone
 after three restarts in one process: one helper off: line, HARNESS_HELPER=0, every later call spawns and starts no helper
 an .args planted by hand naming a missing spec is parked at dequeue the same way
@@ -123,7 +129,9 @@ check rerun: the green marker holds the first run's total, and the next call is 
 check rerun: the rerun gets exactly the named files as arguments
 check rerun: the subset form never reruns
 check.sh: a green full run's marker is `2 tests` then `wall <s>`; a planted one-line marker gives the same cached line
+check.sh: an empty suite output starts no testcount.mjs, a suite that printed a count one, and says it
 check.sh: the cached line names the key's ignore list only when it isn't the default
+check_run: check.sh's key comes from the parent's helper (no treekey.mjs start), the same marker a spawn would write
 cli.mjs: a CLI with no answer and a closed stdout still exits its rc
 cli.mjs: a deleted cwd stops only a main that reads it
 cli.mjs: a main that throws prints the message on stderr, nothing on stdout, and exits 70
@@ -602,6 +610,7 @@ the prompts ask every question for a Files: line and an INBOX question below the
 the restart line says why: no reply in <n> s, a bad header, a wrong id, the helper gone
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the same runner goes on to the next entry and starts it (a --brief start of the same project)
+the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
 thin evidence escalates the verify
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
@@ -664,4 +673,5 @@ view: when and duration use local time: 00:19 and a local midnight under TZ=Amer
 view: when gives 2026-10-27 00:19 (10h ago) under TZ=UTC, and (now) under a minute
 waitsOn: a feature's and a milestone's unfinished dependants through after, every unfinished one for run
 with $HARNESS_SCRATCH/helper-<pid>.lock held: ( ask ) &, $( ask ) and the owner's own ask each spawn (+1 each), never wait
+with no redirect a request's stderr is this shell's, once: nothing left to go out with a later call
 x=$(ask …) answers through the parent's helper (no start), its exit code seen inside
