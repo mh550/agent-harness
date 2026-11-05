@@ -161,6 +161,7 @@ fix rounds: the CLI fix-round appends one row per call to a metrics.jsonl path; 
 fix rounds: the description names up to five failing checks, then +n; a red with no files is the whole suite
 fix rounds: the report's Fix rounds row comes after Flakes (opened · fixed, per milestone), 0 for none, no row for a summary without the key
 fix rounds: the step lint prints nothing for a fix feature, kindOf returns fix, and it is no build or review to the review rules
+fix rounds: the verify_red card with a rounds field names each round's id and what it left red and stays filled; without it the card reads as today
 gc units: --dry-run with units of another project's runs (live and ended) prints no ? line and no line naming them
 gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
 gotchasDiff: added, edited, deleted and no section

@@ -196,3 +196,23 @@ test("needs verify_red own: a slow-tier red the fast gate let through, never mai
   assert.match(own.why, /fast tier/); assert.doesNotMatch(own.why, /main's newer commits/);
   assert.equal(red.headline, "P2 not verified: suite red on the merged tree"); assert.match(red.why, /main's newer commits and P2 disagree/);
 });
+
+// ---- 90-fix-rounds.sh: the card after the fix rounds names each round and what it left red ----
+test("fix rounds: the verify_red card with a rounds field names each round's id and what it left red and stays filled; without it the card reads as today", () => {
+  const fx = { ...fixture("verify_red"), variant: "own" }, plain = N.card("verify_red", fx);
+  const rounds = [{ id: "P2-fix1", round: 1, failed_after: ["t3"] }, { id: "P2-fix2", round: 2, failed_after: ["t3", "a check (x)", "t5", "t6"] }];
+  const c = N.card("verify_red", { ...fx, rounds }), s = N.card("verify_red", { ...fx, rounds: JSON.stringify(rounds) });   // the shell passes JSON text
+  assert.equal(c.why, `${plain.why} 2 fix rounds ran first (MAX_FIX_ROUNDS, verify in lib/lane.sh): P2-fix1 left t3 red, P2-fix2 left t3, a check (x), t5 +1 red.`);
+  assert.equal(s.why, c.why);
+  // 59-needs-cards.sh's FILLED rule on the why: 2 to 4 sentences, nothing undefined; nothing else of the card moves
+  const sentences = w => [...w.matchAll(/[.!?](\s|$)/g)].length;
+  assert.deepEqual([sentences(plain.why), sentences(c.why)], [2, 3]);
+  assert.doesNotMatch(JSON.stringify(c), /undefined|NaN|\[object/);
+  assert.deepEqual({ ...c, why: plain.why }, plain);
+  // one round on the merged-tree variant, a round with no verdict, a round that left nothing: said as they are
+  const one = N.card("verify_red", { ...fixture("verify_red"), rounds: [{ id: "P2-fix1", failed_after: null }, { id: "P2-fix2", failed_after: [] }] });
+  assert.match(one.why, /disagree\. 2 fix rounds ran first \(MAX_FIX_ROUNDS, verify in lib\/lane\.sh\): P2-fix1 had no suite verdict, P2-fix2 left nothing red\.$/);
+  assert.match(N.card("verify_red", { ...fx, rounds: [{ id: "P2-fix1", failed_after: ["t1"] }] }).why, / 1 fix round ran first \(MAX_FIX_ROUNDS, verify in lib\/lane\.sh\): P2-fix1 left t1 red\.$/);
+  // no rounds, an empty list or text that is no JSON: today's card
+  for (const r of [undefined, "", "[]", [], "{not json"]) assert.equal(N.card("verify_red", { ...fx, rounds: r }).why, plain.why);
+});

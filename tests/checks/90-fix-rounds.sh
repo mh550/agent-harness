@@ -124,4 +124,68 @@ check "fix rounds fx5: a fix session that leaves the red is un-passed by its gat
     and (.features_detail[] | select(.id == \"M1-fix1\") | .cause == \"red suite\")" "$(rec fx5)/summary.json" > /dev/null \
   && [[ -f $(st fx5)/fix-open-M1 ]] && ! jq -se "any(.kind == \"fix_result\")" "$(rec fx5)/metrics.jsonl" > /dev/null'
 
+# fx2: the rounds are bounded. Round 1's session moves the red (BROKEN-SLOW → BROKEN-SLOW2: t1 is green, t3 red), so
+# the second verify opens round 2; its session changes no code and its gate is green once (gate-green-once), so the
+# third verify is red at MAX_FIX_ROUNDS: the card, naming both rounds
+fx fx2 STUB_SLOW_RED=B STUB_FIX=rename
+RED="verify M1: the suite is red on the verified tree (main had nothing new: a slow-tier red the fast gate let through)"
+check "fix rounds fx2: round 1 on t1, its session passes its gate (t1, the fast tier), the second verify is red on t3 and opens round 2 of 2 after M1-fix1" \
+  'hlog fx2 | grep " · $RED; fix round 1 of 2: M1-fix1 appended (1 failing: t1)$" > /dev/null && hlog fx2 | grep " · $RED; fix round 2 of 2: M1-fix2 appended (1 failing: t3)$" > /dev/null \
+  && [[ $(after_session fx2 M1-fix1 1 | sed -n 1,2p | paste -sd,) == "t1,--tier fast" ]] && grep -E " M1-fix1 · [^ ]+ · passes=true · " "$(st fx2)/run.log" > /dev/null \
+  && jq -e ".features[-1] | .id == \"M1-fix2\" and .round == 2 and .after == [\"M1-fix1\"] and .fix_names == [\"t3\"] and .fix_files == [\"t3\"]" "$(list fx2)" > /dev/null \
+  && grep -x "FAIL t3" "$(rec fx2)/fix/M1-2.out" > /dev/null'
+check "fix rounds fx2: round 2's session changes no code and passes its gate (t3, the fast tier); the third verify is red and the card comes after 2 fix rounds, naming both" \
+  '[[ $(after_session fx2 M1-fix2 1 | sed -n 1,2p | paste -sd,) == "t3,--tier fast" ]] && grep -E " M1-fix2 · [^ ]+ · passes=true · " "$(st fx2)/run.log" > /dev/null \
+  && ! hlog fx2 | grep "un-passed" > /dev/null && [[ $(grep -c " verify M1 · " "$(st fx2)/run.log") == 3 ]] \
+  && hlog fx2 | grep " · $RED; not verified (needs Michael) after 2 fix rounds (M1-fix1, M1-fix2)$" > /dev/null && ! hlog fx2 | grep "fix round 3" > /dev/null \
+  && [[ -f $(st fx2)/needs-M1 ]] && grep "^waiting on Michael" "$(st fx2)/ended" > /dev/null && [[ -z $(git -C "$T/origin.git" tag -l "run/fx2/M1") ]]'
+check "fix rounds fx2: the verify_red card is the own variant, its why names both rounds and what each left red (t3), and one needs-you post went out" \
+  'items fx2 | jq -se "[.[] | select(.key == \"verify_red:M1\")] | length == 1 and (.[0].card | (.headline | endswith(\"suite red on the verified tree\"))
+    and (.why | endswith(\" 2 fix rounds ran first (MAX_FIX_ROUNDS, verify in lib/lane.sh): M1-fix1 left t3 red, M1-fix2 left t3 red.\")))" > /dev/null \
+  && [[ $(curl_count "[fx2] M1 needs you") == 1 ]]'
+check "fix rounds fx2: each round's fix_result pairs with its fix_round and is written once (t1 → t3, t3 → t3, neither fixed); 2 opened, 0 fixed in summary.json and the report" \
+  'jq -sc "[.[] | select(.kind | test(\"^fix_\")) | [.kind, .round, (.failed_before // .failed_after), (.fixed // null)]]" "$(rec fx2)/metrics.jsonl" > "$T/fx2-rows.json" \
+  && [[ $(cat "$T/fx2-rows.json") == "[[\"fix_round\",1,[\"t1\"],null],[\"fix_result\",1,[\"t3\"],null],[\"fix_round\",2,[\"t3\"],null],[\"fix_result\",2,[\"t3\"],null]]" ]] \
+  && jq -se "[.[] | select(.kind == \"fix_result\") | .fixed] == [false, false]" "$(rec fx2)/metrics.jsonl" > /dev/null \
+  && jq -e ".fix_rounds == {opened: 2, fixed: 0, by_milestone: {M1: {opened: 2, fixed: 0}}}" "$(rec fx2)/summary.json" > /dev/null \
+  && "$H" report --md fx2 | grep -xF "| Fix rounds | 2 opened · 0 fixed (M1 0 of 2) |" > /dev/null \
+  && [[ ! -e $(st fx2)/fix-open-M1 && $(cat "$(st fx2)/fix-rounds-M1") == 2 && $(cat "$(st fx2)/verify-rounds-M1") == 1 ]]'
+# a continue (fresh attempts; needs-M1 and verify-rounds-M1 cleared, fix-rounds-M1 kept): the verify again, red, at the cap
+STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue fx2 --foreground > "$T/fx2-b.out" 2>&1
+check "fix rounds fx2: a continue verifies again at the cap: the card again after 2 fix rounds, no third round, feature or fix_result row" \
+  '[[ $(grep -c " verify M1 · " "$(st fx2)/run.log") == 4 ]] && [[ $(hlog fx2 | grep -c " · $RED; not verified (needs Michael) after 2 fix rounds (M1-fix1, M1-fix2)$") == 2 ]] \
+  && [[ $(jq -s "[.[] | select(.kind == \"fix_result\")] | length" "$(rec fx2)/metrics.jsonl") == 2 && $(jq -s "[.[] | select(.kind == \"fix_round\")] | length" "$(rec fx2)/metrics.jsonl") == 2 ]] \
+  && [[ $(jq "[.features[] | select(.kind == \"fix\")] | length" "$(list fx2)") == 2 && $(cat "$(st fx2)/fix-rounds-M1") == 2 && -f $(st fx2)/needs-M1 ]] \
+  && items fx2 | jq -se "[.[] | select(.key == \"verify_red:M1\" and .resolved_at == null)] | length == 1 and (.[0].card.why | contains(\"M1-fix2 left t3 red\"))" > /dev/null'
+
+# fx3: a flake never opens a round. B's session arms flake-armed; the verify's full run is red once on t2, check.sh's
+# rerun of t2 is green, so the verify holds
+fx fx3 STUB_FLAKE_ONCE=1
+check "fix rounds fx3: a flake at the verify is noted (flaky: t2) and M1 is verified and tagged with no fix round: no fix feature, no fix row, Fix rounds 0" \
+  'hlog fx3 | grep " · flaky: t2 (red, then green on a rerun" > /dev/null && hlog fx3 | grep " · M1 verified and tagged run/fx3/M1$" > /dev/null \
+  && ! hlog fx3 | grep "fix round" > /dev/null && [[ $(jq "[.features[] | select(.kind == \"fix\")] | length" "$(list fx3)") == 0 ]] \
+  && ! jq -se "any(.kind | test(\"^fix_\"))" "$(rec fx3)/metrics.jsonl" > /dev/null && [[ ! -e $(st fx3)/fix-rounds-M1 && ! -d $(rec fx3)/fix ]] \
+  && jq -e ".fix_rounds == {opened: 0, fixed: 0, by_milestone: {}} and .flakes.count == 1" "$(rec fx3)/summary.json" > /dev/null \
+  && "$H" report --md fx3 | grep -xF "| Fix rounds | 0 |" > /dev/null && grep "^done" "$(st fx3)/ended" > /dev/null \
+  && [[ $(grep -c " verify M1 · " "$(st fx3)/run.log") == 1 && $(args fx3 | grep -c "^t2$") == 1 ]]'
+
+# fx4: MAX_FIX_ROUNDS=0 is the behaviour before fix rounds: the card at the first red
+mkdir -p "$(st fx4)" && echo MAX_FIX_ROUNDS=0 > "$(st fx4)/run.env"
+fx fx4 STUB_SLOW_RED=B STUB_FIX=fix
+check "fix rounds fx4: MAX_FIX_ROUNDS=0 opens the verify_red card at the first red, its note and why as before: no round, feature, row or fix state" \
+  'hlog fx4 | grep " · $RED; not verified (needs Michael)$" > /dev/null && ! hlog fx4 | grep "fix round" > /dev/null && [[ -f $(st fx4)/needs-M1 ]] \
+  && items fx4 | jq -se "[.[] | select(.key == \"verify_red:M1\")] | length == 1 and (.[0].card.why | contains(\"fix round\") | not)" > /dev/null \
+  && [[ $(curl_count "[fx4] M1 needs you") == 1 && $(grep -c " verify M1 · " "$(st fx4)/run.log") == 1 && $(cat "$(st fx4)/verify-rounds-M1") == 1 ]] \
+  && [[ $(jq "[.features[] | select(.kind == \"fix\")] | length" "$(list fx4)") == 0 ]] && ! jq -se "any(.kind | test(\"^fix_\"))" "$(rec fx4)/metrics.jsonl" > /dev/null \
+  && [[ ! -e $(st fx4)/fix-rounds-M1 && ! -e $(st fx4)/fix-open-M1 && ! -d $(rec fx4)/fix ]] && jq -e ".fix_rounds.opened == 0" "$(rec fx4)/summary.json" > /dev/null'
+
+# fx6: a red that came in with main (another run's merge lands BROKEN-SLOW on main during B's session; the verify merges
+# main into the lane first) opens a round too, its note saying whose the red is; the fix removes the marker and the
+# second verify tags
+fx fx6 STUB_MAIN_TOUCH=B:BROKEN-SLOW STUB_FIX=fix
+check "fix rounds fx6: a red after merging main opens a round with the main-merged-in note, and the fixed milestone is tagged (after fix round 1)" \
+  'hlog fx6 | grep " · verify M1: the suite is red on the verified tree (main merged in); fix round 1 of 2: M1-fix1 appended (1 failing: t1)$" > /dev/null \
+  && ! hlog fx6 | grep "needs Michael" > /dev/null && hlog fx6 | grep " · M1 verified and tagged run/fx6/M1 (after fix round 1)$" > /dev/null \
+  && jq -se "[.[] | select(.kind == \"fix_result\")] | length == 1 and .[0].fixed" "$(rec fx6)/metrics.jsonl" > /dev/null'
+
 suite_end

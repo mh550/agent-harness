@@ -77,6 +77,12 @@ fix_open() {
   note "verify $m: the suite is red on the verified tree ($4); fix round $r of $MAX_FIX_ROUNDS: $id appended (${added#*$'\t'})"
   : > "$LDIR/need"; rec_commit "HARNESS: verify $m: fix round $r"; sync_record
 }
+# <m> → its fix rounds as the verify_red card's `rounds` field (lib/needs.mjs): [{id, round, failed_after}], one per
+# fix_round row of metrics.jsonl, failed_after its fix_result's names (null: no suite verdict yet)
+fix_rounds_json() {
+  jq -sc --arg m "$1" '[.[] | select(.milestone == $m)] as $r | [$r[] | select(.kind == "fix_round") | . as $o
+    | {id: .feature, round, failed_after: ([$r[] | select(.kind == "fix_result" and .round == $o.round)][0].failed_after)}]' "$REC/metrics.jsonl" 2>> "$STATE/run.log"
+}
 
 # Independently re-check milestone m, in its lane. 0 = verified (tagged) · 1 = not verified · 2 = deferred (a usage
 # limit: retry). `once` (at the deadline): one session, no escalation, and this round is the last
@@ -146,7 +152,7 @@ verify() {
   # Fix rounds (decisions/2026-11-04-fix-rounds). The suite spoke (hold: green; red: after check.sh's rerun guard, so
   # never a flake): the round that is open (fix-open-<m>) gets its fix_result row, once. A thin or failed verify has no
   # suite verdict and leaves it open for the next one.
-  local fixn fixr fixw=""; RED_NAMES=()
+  local fixn fixr fixw="" fixj=""; RED_NAMES=()
   fixn=$(cat "$STATE/fix-rounds-$m" 2> /dev/null || echo 0); fixr=$(cat "$STATE/fix-open-$m" 2> /dev/null)
   [[ $result == red ]] && red_names
   if [[ -n $fixr && $result == @(hold|red) ]]; then
@@ -180,8 +186,13 @@ verify() {
       # under MAX_FIX_ROUNDS a red opens a fix round, no card: the lane loop's next pick is its feature, then this verify
       # again. In a plain verify only: `once` is past the deadline (no session can follow), `rebase`'s caller is no lane loop
       if [[ -z $mode ]] && (( fixn < MAX_FIX_ROUNDS )) && fix_open "$m" $(( fixn + 1 )) $(( rounds - 1 )) "$whose"; then return 1; fi
+      # the card, as before fix rounds; after rounds (never a re-base's: its milestone was verified since) the note and the
+      # card's why name them and what each left red
       touch "$STATE/needs-$m"
-      note "verify $m: the suite is red on the verified tree ($whose); not verified (needs Michael)" ;;
+      if [[ $mode != rebase ]] && (( fixn )); then
+        fixj=$(fix_rounds_json "$m"); fixw=" after $fixn fix round$( (( fixn == 1 )) || echo s) ($(jq -r 'map(.id) | join(", ")' <<< "$fixj"))"
+      fi
+      note "verify $m: the suite is red on the verified tree ($whose); not verified (needs Michael)$fixw" ;;
     fail)
       local fids; Fv fids ids "$LIST" "$m"
       for id in $fids; do
@@ -203,7 +214,7 @@ verify() {
   fi
   printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
   # its record, committed with the verdict: thin, red, or the re-check's failed ids
-  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || { (( own )) && [[ $result == red ]] && echo own; } || echo "$mode")")   # verify_recheck's rebase words are rebase_fail's
+  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || { (( own )) && [[ $result == red ]] && echo own; } || echo "$mode")" ${fixj:+"rounds=$fixj"})   # verify_recheck's rebase words are rebase_fail's
   rec_commit "HARNESS: verify $m"; sync_record
   [[ -n $need ]] && needs_you "$m" "$need" progress.md "$nref"   # after the push: the click shows the verify entry
   return 1
