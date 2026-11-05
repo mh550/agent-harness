@@ -245,6 +245,14 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   values), proposes, and runs `harness answer` only after your yes. When another run of the same project is alive it
   asks before continuing: queue behind it (it merges first) or `--now` beside it. Set `DESK_URL` (above) to get **Answer with Claude**
   on a park's notification; `templates/user/config.sh` documents every user setting.
+- **An effort bigger than one run, on any project:** install the skill once,
+  `ln -s ~/projects/agent-harness/skills/supervise ~/.claude/skills/`. Plan it with a session:
+  `cd ~/projects/<project> && claude --model claude-fable-5-1 "/supervise new <what the effort is>"` writes the effort's
+  dispatch list (`docs/plans/<date>-<effort>-dispatch.md`: the goal, a Status row and a copy-and-paste command per
+  piece of work, your decisions, the names it uses). Then, whenever a piece has ended or you want to know where things
+  stand, `claude --model claude-fable-5-1 "/supervise docs/plans/<that file>"`: it checks what finished against what
+  was expected, updates the list, and gives you the one next command and what is yours to decide, in plain names (never
+  a bare code like "D6"). It starts nothing itself (decisions/2026-11-05-supervised-efforts).
 - **The desk:** with `DESK=1` in `~/.config/harness/config.sh` (off by default) the harness starts the session for you
   whenever a run needs you (a park, a blocked or waiting end, verify or a merge needing you, a debrief with something
   under Needs Michael): a Remote Control `claude` in tmux session `h-desk`, one window per run, on `DESK_MODEL` (opus).
