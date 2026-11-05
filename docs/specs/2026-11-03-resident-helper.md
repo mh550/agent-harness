@@ -190,7 +190,8 @@ file and bash's own forks (phase 4's purity work and a later finding); any note 
 
 ## After the run (Michael)
 
-- Nothing to configure. `HARNESS_HELPER=0` in `~/.config/harness/config.sh` turns it off for every run if a real run
-  shows a `helper off:` line.
-- The morning after the next real run on this repo: `grep -c 'helper restarted' <state dir>/run.log` (expected 0), and
-  the solo wall from the run's own `check.sh` rows against the table.
+- Nothing to configure. `HARNESS_HELPER=0` in `~/.config/harness/config.sh` turns it off for every run if a real run's
+  report shows a helper off.
+- The morning after the next real run on this repo: read `harness report <run>` (its `Helper` row, expected
+  `0 restarts`; a segment that had any also says so in `harness-log.md`), and the solo wall from the run's own
+  `check.sh` rows against the table.

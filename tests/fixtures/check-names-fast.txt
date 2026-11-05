@@ -245,6 +245,10 @@ harness needs: a card per item (<glyph> <run> · <headline> · since … · <ref
 harness parked --json: today's keys for parked features only, plus ref and card
 harness parked is harness needs for text: the parked card's question from INBOX.md, run, do
 harness queue list shows the parked entry with not in origin/main in its reason
+helper health: build adds helper from the state dir's run.log, every segment's; zeros for a run with none or no log
+helper health: helperHealth counts run.log's helper restarted: and helper off: lines and each distinct reason, zeros for none
+helper health: helperNote is the last segment's count and first reason with see run.log, nothing for a segment with none; the CLI's helper-note prints it
+helper health: the report's Helper row comes before Sessions (0 restarts, or the counts and the reasons, most first), no row for a summary without the key
 inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
 inbox.mjs answers CLI: on a lone <!-- INBOX with no final newline, the same bytes as sed's cut, never empty
 inbox.mjs repair: n8n-home's fixture against its template keeps Q2 and moves Q1 above ## Answers, out of the comment

@@ -204,6 +204,28 @@ stub start): one start each, left as they are.
 **`helper restarted` is 0 for a run that ended normally.** A TERM or HUP to the driver's whole process group takes its
 helper too, so the EXIT trap's first `ask` writes one such line and spawns: true, harmless, only at an abnormal end.
 
+**A helper's failure is in the run's record.** Updated in place 2026-11-05: `run.log` was the failure's only place, and
+it is no part of a record, so `harness-log.md`, `summary.json`, `harness report`, the retro and the debrief said nothing
+when a helper failed (Michael's ask; dispatch Decision 8, piece F4).
+
+- **`summary.json` has `helper: {restarts, off, whys}`**: `helperHealth` (pure, `lib/summary.mjs`) counts run.log's
+  `helper restarted: <why>` and `helper off: <why>` lines, the coordinator's and every lane's over every segment, and
+  each distinct reason with its count; zeros for a run with none. `build` read run.log already.
+- **`harness report` has a `Helper` row** before `Sessions`: `0 restarts`, or `2 restarts · 1 off (the helper went away
+  ×2, no reply in 120 s)`; no row for a summary from before this, as Fix rounds does.
+- **One note in `harness-log.md` at a segment's end whose count is not 0**: `helper: <n> restarted, <k> off in this
+  segment (first: <why>); see run.log`, from the coordinator's own shell (`helper_note` in `lib/driver.sh`; its words
+  are `summary.mjs helper-note`, so one parser reads the lines). `helper_failed` still only does its `printf`: it can run
+  in a `$( )`, whose `note` would be lost with it, or under `record`. *Default*: in `finish` before the first summary
+  build, so the note, `summary.json` and `report.md` are one commit, the retro reads it and the ledger's copy holds it;
+  asked again after the retro, a second note only for a count that grew; and at `harness merge`'s end, a segment that
+  builds no summary. A segment with none writes nothing: a normal run's `harness-log.md` does not change (file 92's
+  helper-on against helper-off comparison is the proof).
+- **No note from the EXIT trap**, *default*: the line there is the TERM's own (above), and a `driver_crash` card
+  already points at run.log. Those lines are still counted by the next summary built.
+- **No needs card and no notification**, *default*: the answers are right either way, the run is only slower. The
+  ledger row and `harness status` are unchanged.
+
 **A stub start's node starts: 336 helper off, 20 on**, 2026-11-05: 3 helpers, 10 of the stub's `node -e`, `overlap`, 2 of
 `deploy`, `backlog`, `memlint` under its timeout, `metrics final`, `ledger-line`.
 

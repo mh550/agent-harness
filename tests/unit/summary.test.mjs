@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sameAsCli, mainOf } from "./cli-same.mjs";
-import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine } from "../../lib/summary.mjs";
+import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
@@ -207,6 +207,69 @@ test("fix rounds: build adds fix_rounds from metrics.jsonl and counts neither ro
     assert.equal(rowOf(s, "| Spend by role | ").row, "| Spend by role | build $1.00 · fix $0.50 · manager (the bash driver) $0.00 |");
     assert.equal(rowOf(s, "| Fix rounds | ").row, "| Fix rounds | 1 opened · 1 fixed (M1 1 of 1) |");
     assert.deepEqual(build("/nonexistent/p/w", "r", "/nonexistent/s").fix_rounds, { opened: 0, fixed: 0, by_milestone: {} });
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+// ---- the resident helpers' health in the record (decisions/2026-11-03-resident-helper, updated 2026-11-05) ----
+const hlines = (...ls) => ls.map((l, i) => `2026-11-05 10:00:${String(i).padStart(2, "0")} ${l}\n`).join("");
+test("helper health: helperHealth counts run.log's helper restarted: and helper off: lines and each distinct reason, zeros for none", () => {
+  assert.deepEqual(helperHealth(""), { restarts: 0, off: 0, whys: {} });
+  const log = hlines("run r on harness/r in /w · port 1", "helper restarted: the helper went away", "session 1 · A · opus", "helper restarted: no reply in 120 s",
+    "helper restarted: the helper went away", "helper off: wrong id: 5 for 7", "  a session said helper restarted: not the driver's line", "run r on harness/r in /w · port 1", "helper restarted: the helper went away")
+    + "helper off: no stamp, no line\n";
+  const got = helperHealth(log);
+  assert.deepEqual(got, { restarts: 4, off: 1, whys: { "the helper went away": 3, "no reply in 120 s": 1, "wrong id: 5 for 7": 1 } });
+  assert.equal(Object.keys(got).join(), "restarts,off,whys");
+  assert.equal(Object.keys(got.whys).join("|"), "the helper went away|no reply in 120 s|wrong id: 5 for 7");
+  // the driver's own note about them is no such line
+  assert.deepEqual(helperHealth(hlines("helper: 1 restarted, 0 off in this segment (first: the helper went away); see run.log")), { restarts: 0, off: 0, whys: {} });
+});
+
+test("helper health: helperNote is the last segment's count and first reason with see run.log, nothing for a segment with none; the CLI's helper-note prints it", async () => {
+  assert.equal(helperNote(""), "");
+  assert.equal(helperNote(hlines("run r on harness/r in /w", "session 1 · A · opus")), "");
+  assert.equal(helperNote(hlines("run r on harness/r in /w", "helper restarted: no reply in 120 s", "helper restarted: the helper went away", "helper off: bad header: x")),
+    "helper: 2 restarted, 1 off in this segment (first: no reply in 120 s); see run.log");
+  // an earlier segment's are that segment's: said at its end, or not at all
+  const two = hlines("run r on harness/r in /w", "helper restarted: no reply in 120 s", "run r on harness/r in /w", "session 3 · B · opus");
+  assert.equal(helperNote(two), "");
+  assert.equal(helperNote(two + hlines("helper off: the helper went away")), "helper: 0 restarted, 1 off in this segment (first: the helper went away); see run.log");
+  assert.equal(helperNote(hlines("helper restarted: a log with no start line")), "helper: 1 restarted, 0 off in this segment (first: a log with no start line); see run.log");
+  const d = mkdtempSync(join(tmpdir(), "hn-"));
+  try {
+    writeFileSync(join(d, "run.log"), two + hlines("helper restarted: the helper went away"));
+    writeFileSync(join(d, "quiet.log"), two);
+    assert.equal((await sameAsCli("summary.mjs", ["helper-note", join(d, "run.log")])).out, "helper: 1 restarted, 0 off in this segment (first: the helper went away); see run.log\n");
+    assert.deepEqual(await sameAsCli("summary.mjs", ["helper-note", join(d, "quiet.log")]), { rc: 0, out: "" });
+    assert.deepEqual(await sameAsCli("summary.mjs", ["helper-note", join(d, "none.log")]), { rc: 0, out: "" });
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test("helper health: the report's Helper row comes before Sessions (0 restarts, or the counts and the reasons, most first), no row for a summary without the key", () => {
+  const fx = fixture(), before = s => { const { i } = rowOf(s, "| Sessions | "); return report(s).split("\n")[i - 1]; };
+  assert.equal(helperLine({ restarts: 0, off: 0, whys: {} }), "0 restarts");
+  assert.equal(helperLine({ restarts: 1, off: 0, whys: { "the helper went away": 1 } }), "1 restart · 0 off (the helper went away)");
+  assert.equal(before({ ...fx, helper: { restarts: 0, off: 0, whys: {} } }), "| Helper | 0 restarts |");
+  assert.equal(before({ ...fx, helper: { restarts: 3, off: 1, whys: { "no reply in 120 s": 1, "the helper went away": 3 } } }),
+    "| Helper | 3 restarts · 1 off (the helper went away ×3, no reply in 120 s) |");
+  // a reason is a helper's bytes (a bad header's first 60): a | stays in its cell
+  assert.equal(before({ ...fx, helper: { restarts: 1, off: 0, whys: { "bad header: a|b": 1 } } }), "| Helper | 1 restart · 0 off (bad header: a\\|b) |");
+  assert.equal(before({ ...fx, lanes: { max_open: 2, lane_hours: 1, wall_hours: 1 }, helper: { restarts: 0, off: 0, whys: {} } }), "| Helper | 0 restarts |");
+  assert.doesNotMatch(report(fx), /Helper/);
+  assert.match(before(fx), /^\| Time \|/);   // as before, for a summary from before this
+});
+
+test("helper health: build adds helper from the state dir's run.log, every segment's; zeros for a run with none or no log", () => {
+  const d = mkdtempSync(join(tmpdir(), "hh-"));
+  try {
+    writeFileSync(join(d, "run.log"), hlines("run r on harness/r in /w", "helper restarted: the helper went away", "run r on harness/r in /w", "helper off: no reply in 120 s"));
+    const s = build("/nonexistent/p/w", "r", d);
+    assert.deepEqual(s.helper, { restarts: 1, off: 1, whys: { "the helper went away": 1, "no reply in 120 s": 1 } });
+    assert.equal(rowOf(s, "| Helper | ").row, "| Helper | 1 restart · 1 off (no reply in 120 s, the helper went away) |");
+    writeFileSync(join(d, "run.log"), hlines("run r on harness/r in /w", "session 1 · A · opus"));
+    assert.deepEqual(build("/nonexistent/p/w", "r", d).helper, { restarts: 0, off: 0, whys: {} });
+    assert.deepEqual(build("/nonexistent/p/w", "r", "/nonexistent/s").helper, { restarts: 0, off: 0, whys: {} });
+    assert.equal(Object.keys(fixture()).includes("helper"), false);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
