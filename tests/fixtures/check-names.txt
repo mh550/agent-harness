@@ -1,6 +1,8 @@
+( ask … ) & and ask … | cat spawn (bash closes the coproc's descriptors there: count +1 each)
 --base <branch> with the spec on that branch only proceeds; without --base it is refused naming origin/main
 --brief alone with no SPEC_FILES is not checked and starts
 --dry-run prints the context, launches nothing
+< <(ask …) answers through the parent's helper (no start)
 Answer with Claude only when DESK_URL is set
 C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
@@ -28,6 +30,8 @@ F summary twice on one list: one node start, the same line
 F unpark that printed nothing: memoized; one that unparked: node every time, even on the same parked.json
 Fv returns the answer's exit code (passes A: 1, empty) from the memo
 Fv stores in the current shell: a $(F …) subshell after it hits, the same lines; Fv cuts trailing newlines
+HARNESS_CHECK_KEY_IGNORE=docs ask treekey.mjs --pathspec: the bytes the same line gives with HARNESS_HELPER=0, and a different answer from the plain line's
+HARNESS_HELPER=0: every call spawns (count = calls), no helper.mjs ever started, no coproc
 INBOX repair in a run: noted, the record's comment as the driver wrote it, the question directly above ## Answers, C parked
 KEEP_SCRATCH=1 keeps the run's scratch; the default is 0
 M1 and M2 merged into main by PRs
@@ -39,6 +43,7 @@ NTFY_URL: curl posts the fields as headers, NOTIFY_CMD not called
 PAUSE stops the services before its poll, and the next init starts them again
 SPEC_FILES in the project's .harness/config.sh and no --spec: a missing path is refused
 WEEKLY_STOP_AT raises the bar
+a $( ask ) before this shell has a helper spawns and starts none: a coproc started in a subshell would die with it
 a $0 one-turn session is not counted
 a .harness/teardown.sh added after the run started is run at its stop points
 a 300 KB report: the context stays small, the session runs
@@ -49,6 +54,7 @@ a TERM to the driver mid-session stops the session's scope, runs the teardown, s
 a body over the cap is trimmed
 a brief is pasted as written: its {{X}} isn't filled (E3 review F7)
 a continued run whose suite is cached green keeps its test count (the green marker holds it, not scratch)
+a cwd that is gone: declined and spawned (the spawn's exit code), not a restart, no line from the helper
 a dead desk is replaced
 a deadline while paused verifies a complete milestone once too
 a debrief headline over ntfy: no Click (the note is a path), default priority when nothing needs Michael (a Not queued line isn't)
@@ -59,12 +65,16 @@ a desk that cannot start never changes the run
 a failed or hung runner gc is logged (killed at HARNESS_GC_TIMEOUT) and never stops the debrief
 a failed park post is noted and committed at once
 a failed post is noted and the run goes on
+a failed read inside $( ask ): the spawn's bytes, one line; the parent's next call finds the helper gone, logs nothing more, spawns
 a failed run-end post is committed: the worktree stays clean for gc
 a failed session: its error text is never the note
 a failed verify at the deadline is not retried: M1 needs Michael
+a failure with no STATE in this shell: the spawn's bytes, nothing fatal under set -u, nothing on stderr
 a given-up feature blocks what depends on it
 a given-up feature opens given_up naming what waits on it; harness needs and harness parked list it while parked.json is empty
 a held index.lock: written, not committed, nothing left staged
+a helper started while the shell holds the record lock (fd 9) keeps none of it: the lock is free when the shell lets go
+a helper that never replies, a two-field or four-field header, a wrong id, words, one that dies, one cut mid-answer, a short answer, an rc over 255: each call the spawn's bytes and rc, each a helper restarted: line
 a hit prints what node prints, byte for byte, and its exit code (snapshot, lint, a lone newline)
 a killed debrief changes nothing
 a lane closes on its card's words: merge refused, conflicts with main; neither opens a merge_failed card
@@ -77,9 +87,11 @@ a limit ending: the cause is the usage limit
 a limit-cut session's passes is reverted, A retried
 a listed worktree whose directory is gone never ends gc: every later step still runs
 a main conflict notifies once per main commit across 2 verifies: high, title <m> needs you, body the card, click needs.md
+a main's own exit code passes through (rc 3, its bytes, no start)
 a malformed entry is recorded as minimal and the run goes on
 a milestone without an after list is noted
 a miss in a subshell is not kept (a nested subshell starts node again); the parent's own call then stores it
+a name exported and then unset is gone; X=1 ask … is that call's alone; an unset HOME in a $( ) is that call's alone
 a name taken in held/ parks under another; the one there is untouched; the queue drains
 a park notification: title, question, answer command, click and Edit INBOX action
 a park opens one parked record; card.question.line is the first line the session added, its URL that line
@@ -97,7 +109,9 @@ a refused merge is one gh pr merge per merge, its GraphQL line in run.log, merge
 a refused merge tells Michael and his desk once
 a refused merge: priority high, click = the PR
 a refused session's minimal entry is not yet, not its reverted claim (E4 review F3)
+a relative path argument resolves against the asker's cwd, not the helper's
 a request for a run with an automatic continuation queued makes that one requested; parked entries are marked too
+a request over a pipe's buffer spawns (a wedged helper must never block the write), the spawn's bytes, the helper still up
 a request queued after the stop (before the driver acts on it) stays requested
 a request replaces a queued automatic continuation's options with its own (no stale --until-epoch)
 a requested continuation of a run Michael stopped starts; an automatic one is skipped (both logged)
@@ -110,6 +124,7 @@ a run that starts during the wait is covered by the next debrief
 a run whose sessions leave nothing gets no leftover or cap note
 a runner that started nothing (a skipped continuation): no debrief
 a scope systemd refuses after the probe: the session runs bare and harness-log.md says so
+a scratch directory that is missing or unset: a spawn with the spawn's bytes, nothing on stderr, no restart line
 a second event reuses the desk window
 a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)
 a session that dies at startup: failed, and no usage-limit window for the box
@@ -118,6 +133,7 @@ a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS
 a session's edits to the journal are restored (E4 review F1)
 a spec check that fails without a line parks with a reason, never an empty one
 a stale green marker is caught at verify: M1 red, not tagged
+a stdin-fed call never lets main read the request pipe: the next ask is answered by the same helper; empty stdin leaves the file
 a still-running run changing its worktree is not flagged
 a stop at the deadline comes first: no verify, M1 left for a continue
 a stop from the phone stops the services through finish
@@ -140,15 +156,27 @@ a window past the 5 h cap: no session (the next debrief covers it)
 a worktree gc can't remove is logged and the next one still goes; --dry-run removes none
 a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json
 after may name a milestone
+after three restarts in one process: one helper off: line, HARNESS_HELPER=0, every later call spawns and starts no helper
 all features pass
 an .args planted by hand naming a missing spec is parked at dequeue the same way
 an INBOX answer unparks it; the run finishes
 an absolute --spec inside the project is checked as its repo path: present proceeds, missing is refused by that path
+an answer holding a NUL: the spawn's bytes, by a spawn (count +1), the helper still up
 an entry whose project is no repository is not parked: its start fails and says why
+an exported value with every control byte reaches process.env and io.env as a spawn's does, through the helper
 an idle coordinator poll (a free slot, nothing to open) starts node at most once: the window's starts without HARNESS_LANE are at most its polls (5 or more)
 an init that backgrounds a server returns at once; stopping the scope that kept it (finish, the next init) kills it
 an open desk showing a dialog gets nothing typed
 answers_hash: one inbox.mjs start for two calls on one INBOX.md, a new start and hash after its answers change
+arguments with every control byte, quotes, backslashes, &, an empty one, UTF-8 and invalid UTF-8 reach main as a spawn's do
+ask features.mjs passes: 1 for a feature not passing, 0 for a passing one, through the helper (no start)
+ask of a script that throws: 70, no stdout, the message on stderr
+ask of a script the helper does not serve: a spawn (count +1), the spawn's bytes, the helper still answers (no start)
+ask treekey.mjs after cd into two repos: each repo's own key (the cwd sent is $PWD), through the one helper
+ask with a TTY on stdout spawns (the view's colours are the spawn's); off a TTY the helper answers as a spawn does off one
+ask writes nothing to stderr when nothing is wrong
+ask: 20 summaries of 20 distinct lists start node once
+ask: each of the 20 answers is the spawn's bytes (cmp, the trailing newline included), and its exit code
 backlog import: 8 rows into an empty store, then again 8 (idempotent by id)
 backlog import: a known id takes status, spec, pr and note, keeps first_seen, unions runs_seen
 backlog import: a re-import keeps a later status and the links the row lacks (status never moves back)
@@ -171,6 +199,7 @@ backlog validate: the why line of a huge bad id stays under 300 bytes
 backlog.mjs: STATUSES in order, mergeProposals adds a new id, orderRows of none is empty
 bash -n lib/lane.sh; node --check lib/metrics.mjs lib/summary.mjs
 bash -n lib/record.sh lib/lane.sh lib/driver.sh
+bash -n lib/record.sh; node --check lib/helper.mjs; helper.mjs has a one-line usage header
 brief committed with the run
 brief, rules and policy in the prompt
 busy continue: another project's live run changes nothing: answer, then continue
@@ -320,6 +349,7 @@ eval: an interrupted eval removes its harness worktree (E2 review)
 eval: every task.json validates and a bad one is rejected
 eval: refuses past WEEKLY_STOP_AT
 eval: the budget cap stops starting tasks
+every one of those answers is the spawn's bytes; a reader asking while < <(ask) runs still gets its own; nothing on stderr
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
 fast gate run: a coding session's init output is the fast tier's (B's prompt: check: fast green)
 fast gate run: a fast-tier red after the session un-passes it with the fast note; the retry's init runs the fast tier
@@ -414,6 +444,8 @@ flakes run: flakes-noted holds flakes.jsonl's size after the note
 flakes run: summary.json flakes and report.md's Flakes row (1 · whole suite); the invariant run's Flakes 0
 flakes run: tests-start after a flake on the first suite is the marker's total, not the red run's passes
 flakes_note: one note per whole row past flakes-noted (whole suite for no names), a row that isn't JSON passed over
+framing: no trailing newline, empty, lone newline, two newlines, UTF-8, every byte 1-127, 70000 two-byte chars: the spawn's bytes under cmp
+framing: those answers come from the helper (one start for all of them)
 gc --all-merged deletes every merged branch whatever its name, locally and on the origin; an unmerged one survives
 gc --all-merged keeps the origin default branch and a live run branch, merged or not
 gc --deps empties an ended, unmerged run's worktree of its DEPS_DIRS; its branch and committed files stay; --dry-run deletes none
@@ -599,6 +631,11 @@ ledger has the run
 ledger row has harness_version and harness_dirty
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
 lib.sh: a check replayed for its state (REPLAY=1) runs silent and uncounted
+lib/helper.mjs keeps nothing between requests: the same request after its file changed gives the new answer; no module-level let or var
+lib/helper.mjs: SIGTERM ends it, a request or none pending
+lib/helper.mjs: a last line with no newline at EOF is still a request
+lib/helper.mjs: a malformed line and an unknown script each get rc 64 and no bytes, the reason on stderr; it goes on and exits 0
+lib/helper.mjs: two request lines give two replies in order, each a header and exactly that many bytes; nothing else on stdout; exit 0 at EOF
 lint: RULES and the header comment name unit-collision and unreproducible; the note counts them
 lint: no-anchor trips "works correctly", not "the suite is green" or "curl :7814/x returns 200"
 lint: outside-repo trips ~ and /home/ paths, not lib/driver.sh or /tmp/harness/
@@ -847,6 +884,7 @@ phone stop honoured before any coding session
 placeholders inside the context are not filled
 plain gc deletes only the merged harness/ and harness-merge/ branches, locally and on the origin
 preflight: no node anywhere, a clear failure and no session
+printf q | ask inbox.mjs insert <file>, and ask … < <file>: the file the spawn leaves, by a spawn (+1 each); its exit code
 progress.md is rendered from the journal
 project names: a directory that is not a repository (by name or by path) is no project
 project names: a path that is a git repository still resolves to its top level (gc proj/<subdir>, gc .)
@@ -1202,6 +1240,9 @@ the answer skill passes Michael's words through a quoted heredoc
 the answer skill's facts cite file:line
 the answer skill's first step is harness needs, harness parked its alias
 the answer skill: another live run of the project: ask, with the queue add and --now and their merge order
+the call after a throw is answered by the same helper (no start, the same pid, no restart line)
+the call after that starts a new helper (+1), and the one after is answered by it (no start); stderr empty; no second line
+the call's environment is the call's alone: the plain ask after it answers as before; none of them started node (the two HARNESS_HELPER=0 lines did)
 the coding prompt's Finish: the Gotchas step before the suite step, so the tree you tested is the tree that ends the session
 the coding prompt's suite rule: a timeout twice the last wall, in the background over the tool's limit, never polled
 the coding prompt's suite rule: once, last, after your final edit of any file; TEST_JOBS=2 slower and as flaky; no 'once before you flip'
@@ -1220,6 +1261,7 @@ the dialog guard: the CLI's dialog words, not the desk's own questions
 the driver never edits the list: the initializer's feature_list.json is byte for byte the stub's
 the driver notes the lint once after the initializer
 the driver's continuation after a session cap is automatic
+the helper killed between two calls: the next call is a spawn (+1), the spawn's bytes, one helper restarted: line
 the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created
 the initializer prompt asks for after on independent features and on every milestone's first
 the initializer prompt has the resolved lint command
@@ -1228,6 +1270,8 @@ the invariant, across gc: every lane closed needs Michael in this file's runs ha
 the invariant: every lane closed needs Michael in this file's runs has a needs item of that milestone, opened no later than the close
 the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the limit window is shared
+the lock file stays empty (a refused asker's open truncates it); scratch holds the environment's names, never a value
+the lock freed: the helper answers again (no start)
 the memo writes nothing to disk (no file outside the check's own) and nothing to stderr
 the next debrief covers what the failed and killed ones missed
 the park goes out after the run branch is pushed (the link shows the question)
@@ -1241,6 +1285,7 @@ the queue runner runs harness gc <project> --all-merged --deps once per project,
 the queue starts no run past the weekly budget
 the rendered coding prompt has the deepEqual and bounded-rerun rule
 the report lists the review role when a review ran
+the restart line says why: no reply in <n> s, a bad header, a wrong id, the helper gone
 the retro prompt carries the end reason
 the run end goes out before the retro, once report.md is pushed
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
@@ -1317,6 +1362,9 @@ u3 review: past --until with only lane-held entries the runner ends (it no longe
 u3 review: queue list shows held: <project> busy for an entry a live lane holds (as the runner holds it)
 u3 review: the runner starts that entry with its brief whole (both lines reach the run), not 'unknown option'
 u3 review: with its PRs merged the same gc removes that run, its items run removed
+under a UTF-8 locale: a request's bound counts bytes (31000 two-byte characters, 62000 bytes: a spawn)
+under a UTF-8 locale: main sees the asker's LC_ALL, not the C that ask reads the reply under
+under a UTF-8 locale: multi-byte answers and arguments come back as a spawn's, through the helper; the asker's locale is as it was
 unit tier: a passing and a failing test print PASS a, FAIL b, the indented assert diff, then its own N/M line, exit 1
 unit tier: a passing-only file prints PASS a and its N/M line, exit 0
 unit tier: lib/testcount.mjs imported beside another test file prints nothing of its own
@@ -1365,4 +1413,6 @@ where things go: the verify prompt has the read-only variant (discoveries, no Go
 where things go: verify and retro keep the read-only rule without the heading when CLAUDE.md has its own block
 where things go: with no CLAUDE.md the three prompts carry the block once each, the store from DECISIONS=
 where things go: with the heading in CLAUDE.md the three prompts carry the block 0 times
+with $HARNESS_SCRATCH/helper-<pid>.lock held: ( ask ) &, $( ask ) and the owner's own ask each spawn (+1 each), never wait
 with a queue runner going, the continue command is a queue add
+x=$(ask …) answers through the parent's helper (no start), its exit code seen inside

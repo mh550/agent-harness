@@ -43,6 +43,123 @@ run_paths() {
   load_config
   f_models   # F model's memo for this process: one node start answers every alias
 }
+# ask <script> <args…>: what `node lib/<script> <args…>` prints and exits, from this shell's resident helper when it can
+# answer, else by that spawn, so a helper absent, busy, off or broken costs a node start and never an answer or a hang
+# (decisions/2026-11-03-resident-helper). HARNESS_HELPER=0 turns it off.
+HELPER_SHELL=$BASHPID HELPER_LIVE="" HELPER_ENV_RAW="" HELPER_ENV="{}"
+ask() {
+  if helper_ask "$@"; then printf %s "$ASK_OUT"; return "$ASK_RC"; fi
+  local ask_s=$1; shift
+  node "$HARNESS_HOME/lib/$ask_s" "$@"
+}
+# → ASK_OUT, ASK_RC; 1: the caller spawns. A TTY on stdout is the view's question (main in the helper sees none). The
+# lock is held from before the request to after the reply: a job of this shell asking at that moment spawns, so two
+# requests never meet on the pipe; flock -n never waits.
+helper_ask() {
+  [[ ${HARNESS_HELPER:-} != 0 && -d ${HARNESS_SCRATCH:-/nonexistent} && ! -t 1 ]] || return 1
+  helper_ready || return 1
+  local ha_lk ha_rc=1
+  { exec {ha_lk}> "$HARNESS_SCRATCH/helper-$HELPER_SHELL.lock"; } 2> /dev/null || return 1
+  if flock -n "$ha_lk"; then helper_request "$@"; ha_rc=$?; fi
+  exec {ha_lk}>&-
+  return "$ha_rc"
+}
+# 0: this shell holds the pipes of a helper. Bash keeps them only in $( ) and < <( ) (5.2's manual, and checked by file
+# 91): a ( ), a pipeline's side or a job has the numbers and no pipes, and spawns. Only the shell that sourced this file
+# starts one or replaces one: a coproc started in a subshell would die with it. A helper that went between two calls
+# costs this call a spawn; the next one starts its successor.
+helper_ready() {
+  [[ -n ${HELPER[1]:-} && -p /proc/self/fd/${HELPER[1]:-} ]] && return 0
+  [[ $BASHPID == "$HELPER_SHELL" ]] || return 1
+  [[ -z $HELPER_LIVE ]] || { helper_failed "the helper went away"; return 1; }
+  helper_start
+}
+# lib/helper.mjs's stderr is this shell's at this moment: a caller wanting it the shell's own starts it outside a 2>
+# redirect. It keeps no other descriptor: one started under `record` would hold the record lock (fd 9) for its whole life.
+helper_start() {
+  coproc HELPER { local f; for f in /proc/self/fd/*; do f=${f##*/}; (( f > 2 )) && eval "exec $f>&-"; done; exec node "$HARNESS_HOME/lib/helper.mjs"; }
+  HELPER_LIVE=$HELPER_PID
+}
+# <s>: HELPER_J is it as a JSON string. Bytes over 127 go as they are: node decodes them as it decodes an argv.
+helper_j() {
+  HELPER_J=$1
+  if [[ $HELPER_J == *[\\\"[:cntrl:]]* ]]; then
+    local hj_i hj_h hj_c
+    HELPER_J=${HELPER_J//\\/"\\\\"}; HELPER_J=${HELPER_J//\"/"\\\""}
+    for (( hj_i = 1; hj_i < 32; hj_i++ )); do
+      printf -v hj_h %02x "$hj_i"; printf -v hj_c "\\x$hj_h"
+      [[ $HELPER_J == *"$hj_c"* ]] && HELPER_J=${HELPER_J//"$hj_c"/"\\u00$hj_h"}
+    done
+  fi
+  HELPER_J=\"$HELPER_J\"
+}
+# HELPER_ENV: this call's exported environment as a JSON object, so a spawn and the helper see one, X=1 ask … included.
+# Encoding is the slow part: the last one is kept while its names and values are the same. `_` differs per command. The
+# names go through a file (no fork; only names, under the lock); 1: none could be read, and an empty env would be wrong.
+helper_env() {
+  local he_n he_raw="" he_j="" he_f=$HARNESS_SCRATCH/helper-$HELPER_SHELL.names; local -a he_names=()
+  { compgen -e > "$he_f" && mapfile -t he_names < "$he_f"; } 2> /dev/null
+  (( ${#he_names[@]} )) || return 1
+  for he_n in "${he_names[@]}"; do [[ $he_n == _ ]] || he_raw+=$he_n=${!he_n-}$'\x1e'; done
+  [[ $he_raw == "$HELPER_ENV_RAW" ]] && return 0
+  for he_n in "${he_names[@]}"; do [[ $he_n == _ ]] || { helper_j "${!he_n-}"; he_j+=,\"$he_n\":$HELPER_J; }; done
+  HELPER_ENV_RAW=$he_raw HELPER_ENV={${he_j#,}}
+}
+helper_request() {
+  local hr_id=$SRANDOM hr_args="" hr_a hr_req   # random, not a counter: a $( )'s count dies with it, and a killed asker leaves its reply in the pipe
+  helper_env || return 1
+  helper_j "$1"; hr_req='{"id":'$hr_id',"script":'$HELPER_J; shift
+  for hr_a; do helper_j "$hr_a"; hr_args+=,$HELPER_J; done
+  helper_j "$PWD"; hr_req+=',"args":['${hr_args#,}'],"cwd":'$HELPER_J',"env":'$HELPER_ENV'}'
+  helper_exchange "$hr_id" "$hr_req"
+}
+# <id> <request>: bytes from here on (read -N, the length). A request that fits the pipe's buffer can't block on a
+# helper that stopped reading, the one write here with no timeout; a write to a dead one is an error, not this shell's
+# SIGPIPE (no file here traps PIPE, and `trap -` restores what it was). A failed read or a reply that doesn't parse ends
+# the helper: what's left in its pipe can't be trusted. rc 64 declines, with the helper still good.
+helper_exchange() {
+  local LC_ALL=C hx_t=${HARNESS_HELPER_TIMEOUT:-120} hx_w=${HELPER[1]:-} hx_r=${HELPER[0]:-} hx_h hx_rest hx_rc hx_n hx_e
+  (( ${#2} < 60000 )) || return 1
+  trap '' PIPE
+  { printf '%s\n' "$2" >&"$hx_w"; } 2> /dev/null; hx_e=$?
+  trap - PIPE
+  (( hx_e == 0 )) || { helper_failed "the helper went away"; return 1; }
+  { IFS= read -r -t "$hx_t" -u "$hx_r" hx_h; } 2> /dev/null; hx_e=$?
+  (( hx_e > 128 )) && { helper_failed "no reply in $hx_t s"; return 1; }
+  (( hx_e == 0 )) || { helper_failed "the helper went away"; return 1; }
+  [[ $hx_h == +([0-9])\ +([0-9])\ +([0-9]) ]] || { helper_failed "bad header: ${hx_h:0:60}"; return 1; }
+  hx_rest=${hx_h#* } hx_rc=${hx_rest%% *} hx_n=${hx_rest#* }
+  [[ ${hx_h%% *} == "$1" ]] || { helper_failed "wrong id: ${hx_h%% *} for $1"; return 1; }
+  [[ ${#hx_rc} -le 3 ]] && (( 10#$hx_rc <= 255 )) || { helper_failed "bad header: ${hx_h:0:60}"; return 1; }
+  ASK_OUT=""
+  if [[ $hx_n != 0 ]]; then
+    { IFS= read -r -N "$hx_n" -t "$hx_t" -u "$hx_r" ASK_OUT; } 2> /dev/null; hx_e=$?
+    (( hx_e > 128 )) && { helper_failed "no reply in $hx_t s (the answer's $hx_n bytes)"; return 1; }
+    [[ ${#ASK_OUT} == "$hx_n" ]] || { helper_failed "short answer: ${#ASK_OUT} of $hx_n bytes"; return 1; }
+  fi
+  ASK_RC=$(( 10#$hx_rc ))
+  (( ASK_RC != 64 ))
+}
+# <why>: this helper is done: it goes, and one run.log line says so however many shells see it die. The tally is a file
+# (a $( ) that met the failure can't tell its parent), one line per helper; a helper's fourth failure is `helper off`.
+helper_failed() {
+  local hf_k=${HELPER_PID:-} hf_p=${HELPER_PID:-$HELPER_LIVE} hf_f=$HARNESS_SCRATCH/helper-$HELPER_SHELL.restarts hf_n=0 hf_l hf_seen="" hf_word=restarted
+  # only a pid bash still holds: HELPER_LIVE's may be another process's by now. A plain kill in a subshell, so its parent,
+  # who reaps, prints no "Killed" (node has no TERM handler: it dies even in a loop); the owner can wait, and -9 is sure
+  if [[ -n $hf_k ]]; then
+    if [[ $BASHPID == "$HELPER_SHELL" ]]; then { kill -9 "$hf_k" && wait "$hf_k"; } 2> /dev/null; else kill "$hf_k" 2> /dev/null; fi
+  fi
+  [[ -f $hf_f ]] && while read -r hf_l _; do (( hf_n += 1 )); [[ $hf_l == "$hf_p" ]] && hf_seen=1; done < "$hf_f"
+  if [[ -z $hf_seen ]]; then
+    (( hf_n >= 3 )) && hf_word=off
+    (( hf_n += 1 ))
+    { echo "$hf_p $1" >> "$hf_f"; printf '%(%F %T)T helper %s: %s\n' -1 "$hf_word" "$1" >> "${STATE:-/nonexistent}/run.log"; } 2> /dev/null
+  fi
+  [[ $BASHPID == "$HELPER_SHELL" ]] || return 0
+  HELPER_LIVE=""
+  (( hf_n > 3 )) && HARNESS_HELPER=0
+  return 0
+}
 # F's memo (decisions/2026-10-31-fewer-node-starts): a pure subcommand's answer (stdout byte for byte and the exit code)
 # is kept in this process, keyed on the subcommand, the sha1 of each file it reads and its other arguments: never an
 # mtime, a path or the clock, and never on disk. A subshell reads its parent's entries, but one it stores dies with it:
