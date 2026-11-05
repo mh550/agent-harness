@@ -558,7 +558,7 @@ memlint: a ### under a decision is part of it, a ## heading is named by itself, 
 memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
 memlint: a current-rule-set header under a ## section before the first decision is a header; a symlinked file is linted
 memlint: a directory store file marked superseded with no Updated in place line yields a finding, with one none
-memlint: a stated rule is no count or night scope (1 test, as of decision 12), a month alone is a date (as of October)
+memlint: a stated rule is no count or run scope (1 test, as of decision 12), a month alone is a date (as of October)
 memlint: a worktree with neither DECISIONS= nor docs/decisions.md yields decisions: no store
 memlint: an unreadable CLAUDE.md is exit 1 and one stderr line naming the file and the error
 memlint: currentRules reads a directory store and the three file shapes newest first
@@ -567,7 +567,7 @@ memlint: node --check passes, the usage header lists the five checks, a missing 
 memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming its line, exit 0
 memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9
 memlint: the old rane store without its current-rule-set header yields a header finding
-memlint: the pathways project.md (4cafb65^) yields a night-scope finding for tonight
+memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonight
 memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
 memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
 memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
@@ -678,6 +678,8 @@ needs.mjs moveForward: two earlier items of the key become one, seen summed, ask
 needs.mjs synthesize: a driver_crash only for a dead driver without ended; ended, a live driver or no driver.pid make none
 needs: a run whose worktree and record branch are both gone resolves run removed (list hides it before any sweep); the branch alone keeps it
 next <m>: a feature without after waits on its own milestone's earlier features only
+night words: memlint says run-scope and that it goes in the run's brief
+night words: out of the docs, prompts, templates and code, but for memlint's patterns and the catch-up's lines
 no URL in time: no window, the plain notification
 no URLs for a non-GitHub origin
 no code PR touches the run record, and the record branch holds every entry

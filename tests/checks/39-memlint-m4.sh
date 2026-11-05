@@ -11,12 +11,12 @@ OLD=$(wt old) && cp "$FX/rane-decisions-old.md" "$OLD/docs/decisions.md"
 TIDY=$(wt tidy) && cp "$FX/rane-decisions-tidy.md" "$TIDY/docs/decisions.md" && cp "$FX/rane-claude-tidy.md" "$TIDY/CLAUDE.md"
 check "memlint: node --check passes, the usage header lists the five checks, a missing worktree exits 2" '
   node --check "$MM" && h=$(sed -n "/^\/\/   <worktree>/,/^import/p" "$MM") &&
-  ok=1; for c in size gotchas derivable-count night-scope decisions; do [[ $h == *"$c"* ]] || ok=0; done; (( ok )) &&
+  ok=1; for c in size gotchas derivable-count run-scope decisions; do [[ $h == *"$c"* ]] || ok=0; done; (( ok )) &&
   { $M "$T/ml/nope" > /dev/null 2>&1; (( $? == 2 )); }'
 check "memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming its line, exit 0" '
   o=$($M "$DJ") && [[ $(grep -c " derivable-count: " <<< "$o") == 1 ]] && grep -q "^CLAUDE.md:17 derivable-count: .*1,870 tests" <<< "$o"'
-check "memlint: the pathways project.md (4cafb65^) yields a night-scope finding for tonight" '
-  o=$($M "$PW") && grep -q "^.harness/project.md:22 night-scope: .*tonight" <<< "$o" && [[ $(grep -c " night-scope: " <<< "$o") == 1 ]]'
+check "memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonight" '
+  o=$($M "$PW") && grep -q "^.harness/project.md:22 run-scope: .*tonight" <<< "$o" && [[ $(grep -c " run-scope: " <<< "$o") == 1 ]]'
 check "memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9" '
   o=$($M "$OLD") && [[ $(grep -c " decisions: " <<< "$o") == 1 ]] && grep -q "^docs/decisions.md:33 decisions: D15 .*Updated in place" <<< "$o"'
 check "memlint: the old rane store without its current-rule-set header yields a header finding" '
@@ -45,10 +45,10 @@ check "memlint: a directory store file marked superseded with no Updated in plac
   printf "# New rule\n\n- **Choice:** y; its origin replaced by a clone (prose, not a marker)\n" > "$D/journal/decisions/2026-10-26-new.md" &&
   [[ $($M "$D") == "journal/decisions/2026-10-25-old.md:4 decisions: superseded with no \"Updated in place\" line" ]] &&
   echo "Updated in place 2026-10-26: now y." >> "$D/journal/decisions/2026-10-25-old.md" && [[ -z $($M "$D") ]]'
-check "memlint: a stated rule is no count or night scope (1 test, as of decision 12), a month alone is a date (as of October)" '
+check "memlint: a stated rule is no count or run scope (1 test, as of decision 12), a month alone is a date (as of October)" '
   X=$(wt text) && echo "DECISIONS=docs/d.md" > "$X/.harness/config.sh" && printf "%s\n" "# d" "The current rule set." > "$X/docs/d.md" &&
   printf "%s\n" "# x" "- Write 1 test first, watch it fail." "- Rules hold as of decision 12." "- Prices as of October." > "$X/CLAUDE.md" &&
-  [[ $($M "$X") == "CLAUDE.md:4 night-scope: \"as of October\" (night scope goes in the run'"'"'s brief)" ]]'
+  [[ $($M "$X") == "CLAUDE.md:4 run-scope: \"as of October\" (run scope goes in the run'"'"'s brief)" ]]'
 check "memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped" '
   X=$(wt store) && printf "%s\n" "# d" "The current rule set, rewritten in place." "" "## D15 old" "Superseded in part by D17." "### History" \
     "Updated in place 2026-10-20: narrowed." "## Notes on D17 and hardware" "The jog rule was superseded by the D20 rule." > "$X/docs/decisions.md" &&
@@ -73,7 +73,7 @@ mkdir -p docs && cp "$HERE/fixtures/decisions-rane.md" docs/decisions.md && prin
 "$H" start "$T/proj" mlrun --spec SPEC.md --foreground > "$T/mlrun.out" 2>&1
 check "driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3" '
   l=$(hlog mlrun) && [[ $(grep -c "· memlint: " <<< "$l") == 2 ]] &&
-  grep -q "· memlint: CLAUDE.md:3 derivable-count: \"~1,870 tests\"" <<< "$l" && grep -q "· memlint: CLAUDE.md:4 night-scope: \"tonight\"" <<< "$l" &&
+  grep -q "· memlint: CLAUDE.md:3 derivable-count: \"~1,870 tests\"" <<< "$l" && grep -q "· memlint: CLAUDE.md:4 run-scope: \"tonight\"" <<< "$l" &&
   (( $(grep -n "· memlint: " <<< "$l" | tail -1 | cut -d: -f1) < $(grep -n "· feature list written" <<< "$l" | cut -d: -f1) )) &&
   grep -q "^done" "$HARNESS_STATE/proj/mlrun/ended" && [[ $($F summary "$(list mlrun)") == "3/3 passing" ]]'
 HARNESS_MEMLINT=/bin/false "$H" start "$T/proj" mlfail --spec SPEC.md --foreground > "$T/mlfail.out" 2>&1

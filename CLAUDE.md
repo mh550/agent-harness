@@ -4,7 +4,7 @@ A harness for long-running coding agents: a deterministic bash driver around hea
 fresh session per feature, independent verify, verified milestones merged through PRs, usage-limit handling, a
 queue, per-run retros and a debrief). `docs/architecture.md` is the system as it is; `journal/decisions.md` (D-H1 to D-H34) and `journal/decisions/` are why.
 
-## This repo runs Michael's nights: what that means for a session working on it
+## This repo runs Michael's harness runs: what that means for a session working on it
 
 - **The live harness is `~/projects/agent-harness` on `main`.** It drives real runs on this box right now. Never
   edit or check out anything in that checkout; work only in your worktree. **Finish what you start:** when the suite
@@ -67,7 +67,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   Overturned → edit it in place in its own file, plus one `Updated in place <date>: …` line; never a new file
   beside a dead one.
 - A fact a fresh session would otherwise rediscover → one line under `## Gotchas`, edited in place.
-- Tonight's scope (what to build, drop or do first) → the run's brief, never this file.
+- The run's scope (what to build, drop or do first) → the run's brief, never this file.
 - How to work here (rules, conventions, workflow) → Michael's: say it in your entry's `proposed_changes`.
 - Anything the code, git or the suite can tell (test counts, file lists, constants) → nowhere.
 

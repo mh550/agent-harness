@@ -272,7 +272,7 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
 
 # The last step of finish: the record branch onto main through its own PR, `<run>: run record` (RECORD_PR=end), the
 # open one reused. It is record-only (rec_commit_), so its diff is .harness/runs/<run>/ and the merge can't conflict.
-# Merged under auto, left for Michael under pr; never --delete-branch: a harness continue the same night still finds
+# Merged under auto, left for Michael under pr; never --delete-branch: a later harness continue still finds
 # harness/<run>, and the end-of-queue gc deletes it (record_only) with its worktree, the ledger keeping the record.
 # Checked, not assumed: a --base run's branch, or an edit pushed to it from the phone, may carry code main lacks
 record_pr() {

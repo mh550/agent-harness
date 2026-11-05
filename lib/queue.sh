@@ -78,7 +78,7 @@ while :; do
     log "usage-limit window closed until $(date -d "@$upto" '+%H:%M'); waiting"
     w=$(( upto - now )); (( w > 600 )) && w=600; sleep "${HARNESS_LIMIT_SLEEP:-$w}"; continue
   fi
-  if why=$(weekly_over "$STATE_ROOT/USAGE_7D"); then   # days, not minutes: stop, leaving the queue for another night
+  if why=$(weekly_over "$STATE_ROOT/USAGE_7D"); then   # days, not minutes: stop, leaving the queue for later
     log "not starting runs: $why; $(ls "$Q"/*.args | wc -l) left queued"; break
   fi
   # the spec again, as the start is about to happen: a park, never a start that dies in done/ unread; the loop goes on

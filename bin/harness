@@ -571,7 +571,7 @@ cmd_queue() {
         local run=${2:?usage: harness queue add --continue <run-id>}; shift 2; state_of "$run" > /dev/null
         local mark=(--requested) o=() a; for a in "$@"; do [[ $a == --automatic ]] && mark=() || o+=("$a"); done
         # a request is the later word: a queued entry becomes this request, its options included (an automatic one's
-        # --until-epoch is a past night's deadline); an automatic add leaves what is queued alone
+        # --until-epoch is an earlier start's deadline); an automatic add leaves what is queued alone
         local q; q=$(compgen -G "$Q/*-continue-$run.args" | head -1) && {
           if (( ${#mark[@]} )); then local was; grep -qx -- --requested "$q" && was="replaced by this request" || was="now requested, with this request's options"
             printf '%s\n' continue "$run" --queued --requested ${o[@]+"${o[@]}"} > "$q" && echo "already queued: continue $run ($was)"
