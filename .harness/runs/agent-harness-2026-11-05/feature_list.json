@@ -1,0 +1,127 @@
+{
+  "run": "agent-harness-2026-11-05",
+  "branch": "harness/agent-harness-2026-11-05",
+  "features": [
+    {
+      "id": "H1-01",
+      "milestone": "H1",
+      "kind": "build",
+      "model": "opus",
+      "description": "Every script the helper will serve (features, metrics, treekey, testcount, entries, inbox first; memlint, render, needs, summary, notify as the session's time allows) exports `main(argv, io)` returning `{ rc, out }` with the CLI's exact bytes and exit code, runs nothing on import, and shares one `isMain` CLI tail in a new lib/cli.mjs; no shell file changes.",
+      "steps": [
+        "`lib/cli.mjs` (one-line usage header) exports `isMain(url)` and the one CLI tail the served scripts share. In `tests/unit/cli.test.mjs`, written first and watched failing: `isMain` is true only for the process's entry script; a CLI run writes `out` to stdout and exits `rc`; a `main` that throws makes the CLI print the message on stderr and exit 70 (as `features.mjs` does today).",
+        "`features.mjs`, `metrics.mjs`, `treekey.mjs`, `testcount.mjs`, `entries.mjs` and `inbox.mjs` each export `main(argv, io)` returning `{ rc, out }` (or a promise of it). In each one's `tests/unit/<module>.test.mjs`, written first: `main` called with the arguments the driver uses, on fixture or temp files, returns the bytes and the exit code the CLI gives under `execFileSync` (compared by length and first mismatch, never a `deepEqual` of a large value), covering at least `features.mjs summary`, `next`, `poll`, `lanes`, `model` and a `passes` that exits 1; one `metrics.mjs` and one `entries.mjs` subcommand the driver calls; `testcount.mjs <file>` with and without `--total` (a missing file: no output, exit 0, as today); `inbox.mjs answers`.",
+        "`treekey.mjs`'s `main` runs git in `io.cwd`, never in the process's cwd: a unit test builds a throwaway git repo in a temp directory and, from another cwd, gets from `main([], { cwd })`, `main([\"--partial\", \"--names\"], { cwd })` and `main([\"--pathspec\"], { cwd })` the bytes `node lib/treekey.mjs` prints when run inside that repo.",
+        "A subcommand that reads stdin (`inbox.mjs insert`; `notify.mjs trim` if notify is converted) takes it from `io` (the CLI tail supplies fd 0), never `readFileSync(0)` inside `main`: a unit test calls it with an `io` that has no stdin and the call returns or throws without reading the test process's stdin. Environment a served script reads (`HARNESS_CHECK_KEY_IGNORE`, `HARNESS_CHECK_KEY_MAP`, `MEMLINT_LINES`, `HARNESS_NOW`, `HOME`) is read at call time from `io.env ?? process.env`: a unit test gives `treekey.mjs --pathspec` two different `io.env` values and gets two different answers in one process.",
+        "Importing a served script runs nothing: a test in `tests/unit/cli.test.mjs` imports each one in a child `node` with extra `process.argv` entries and sees empty stdout and the child's own last line reached (no exit). On each served script `grep -nE 'process[.](argv|exit|cwd|stdout)|console[.]log|readFileSync[(]0' lib/<script>.mjs` prints only lines of its `isMain` tail, and `grep -nE '^(let|var) ' lib/<script>.mjs` prints nothing (no module-level mutable state; output is captured by `main`'s return, never by hooking `console.log`).",
+        "`memlint.mjs`, `render.mjs`, `needs.mjs`, `summary.mjs` and `notify.mjs` are each converted the same way with the same unit test, or left untouched. `journal/decisions/2026-11-03-resident-helper.md` is begun (title, provenance, the spec's H1-01 defaults each marked *default*, `io.env` and stdin through `io` marked *default* too) with one line per script of the eleven: served, or not served and why.",
+        "`node --check` passes on every `.mjs` touched; `git diff $(git merge-base HEAD origin/main) --stat -- bin prompts tests/checks tests/lib.sh 'lib/*.sh'` prints nothing (no shell file, prompt or existing check changes in this feature); the new unit test names are in `tests/fixtures/check-names.txt` and `tests/fixtures/check-names-fast.txt`, `LC_ALL=C` sorted; `bash tests/run.sh 00-unit` is green.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [],
+      "passes": false
+    },
+    {
+      "id": "H1-02",
+      "milestone": "H1",
+      "kind": "build",
+      "model": "opus",
+      "description": "`lib/helper.mjs` answers one-line `{id, script, args, cwd}` requests one at a time with a `<id> <rc> <bytes>` header and exactly that many bytes, and `ask <script> <args…>` in lib/record.sh asks it over a lazily started coproc and answers by a spawn whenever the helper is off, absent, busy or broken; no call site uses `ask` yet.",
+      "steps": [
+        "`tests/checks/91-resident-helper.sh` (the next free number if 91 is taken on `main`; its tier on line 2 by the 30 s rule of journal/decisions/2026-11-03-suite-tiers.md), written first and watched failing, with the `node` shim of `tests/checks/84-node-memo.sh` and a shell that sources `lib/record.sh` (`HARNESS_HOME=$HH`, `HARNESS_SCRATCH` and `STATE` temp directories): 20 `ask features.mjs summary <list>` calls on 20 distinct lists start node once; each answer equals `node lib/features.mjs summary <list>` under `cmp` (the trailing newline included) with the same exit code; `ask features.mjs passes <list> <id>` of a feature that is not passing returns 1.",
+        "In the same file: `ask features.mjs summary <a file holding only \"{\">` returns 70 with the message on stderr, and the next call is still answered by the same helper; `ask` of a script the helper does not serve spawns it (count +1, the spawn's bytes); `x=$(ask …)` and `< <(ask …)` answer through the parent's helper (count unchanged); `( ask … ) &` while the parent holds `$HARNESS_SCRATCH/helper-<pid>.lock` spawns (count +1, the spawn's bytes); with `HARNESS_HELPER=0` every call spawns (count = calls) and no `helper.mjs` process is started.",
+        "Framing, against a temp `HARNESS_HOME` (a copy of `lib/` with one served script replaced by a fixture `main`): an answer with no trailing newline, an empty answer, a multi-byte UTF-8 answer and one of more than 65536 bytes each come back byte for byte (`cmp` with the spawn's output); an answer holding a NUL byte still gives the spawn's bytes (the helper declines it or `ask` spawns: the choice is one line in the decision file); `printf q | ask inbox.mjs insert <file>` leaves the file the spawn leaves and the next `ask` is still answered by the helper (a stdin-fed call never lets `main` read the request pipe).",
+        "Failure branches, each ending in the spawn's bytes and never a hang (every such `ask` in the check runs under `timeout 60`): the helper killed between two calls (`kill $HELPER_PID`) → the next call answers by a spawn, `$STATE/run.log` gains one `helper restarted: <why>` line, and the call after that is answered by a new helper; fake helpers (a temp `HARNESS_HOME` whose `lib/helper.mjs` reads and never replies, with `HARNESS_HELPER_TIMEOUT=1`; one that replies with a two-field header; one that replies with a wrong id) each give the same; after three restarts in one process the log has one `helper off: <why>` line and every later call spawns without starting a helper.",
+        "`lib/helper.mjs` alone: two request lines piped into `node lib/helper.mjs` give two replies in request order, each a `<id> <rc> <bytes>` line followed by exactly that many bytes, and exit 0 at EOF; a malformed line and an unknown script each get rc 64 with the reason on stderr; `SIGTERM` ends it; nothing but replies goes to its stdout; it keeps nothing between requests (the same request repeated after its file changed gives the new answer; `grep -nE '^(let|var) ' lib/helper.mjs` shows no answer cache).",
+        "Environment and cwd: in a throwaway git repo, `ask treekey.mjs --pathspec` and then `HARNESS_CHECK_KEY_IGNORE=docs ask treekey.mjs --pathspec` each give the bytes the same line gives with `HARNESS_HELPER=0` (the request carries the environment the served scripts read, or `ask` spawns when it differs from the helper's: recorded as a *default*); `ask treekey.mjs` after `cd` into each of two different throwaway repos gives each repo's own key (the cwd sent is `$PWD`).",
+        "`bash -n lib/record.sh` and `node --check lib/helper.mjs` pass; `lib/helper.mjs` has a one-line usage header and `ask` a short why-comment; `F`, `Fv`, `MET`, `SUM` and every other call site are unchanged in this feature (`git diff HEAD~ -- lib/lane.sh lib/driver.sh lib/check.sh lib/prompt.sh bin` is empty for the feature's commits); the new check names are in `tests/fixtures/check-names.txt` (and in `check-names-fast.txt` if the file is fast); `bash tests/run.sh resident-helper` and `bash tests/run.sh 84-node-memo` are green; journal/decisions/2026-11-03-resident-helper.md gains the framing, lock, timeout, restart-bound and NUL choices, each marked *default*.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "H1-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "H1-02b",
+      "milestone": "H1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The driver and each lane ask their own resident helper: `F`, `Fv`, `MET`, `SUM` and the served-script calls in lib/*.sh go through `ask` behind the memo, one helper per driver and per lane that dies with its shell, and a stub run's `harness-log.md`, `run.log` and `feature_list.json` are identical with `HARNESS_HELPER=0` and without.",
+      "steps": [
+        "The call-site table is written first, in journal/decisions/2026-11-03-resident-helper.md: every `node \"$HARNESS_HOME/lib/<served>.mjs\"`, `$INBOX_MJS`, `$NOTIFY_MJS` and `$NEEDS_MJS` call in `lib/*.sh` (`grep -n 'node ' lib/*.sh` lists them), each marked through `ask` or stays a spawn, with why. A call that feeds stdin (`lib/notify.sh` trim, `lib/record.sh` `inbox.mjs insert`), sets environment on the call (`lib/prompt.sh`'s `render.mjs`, `lib/record.sh`'s `treekey.mjs --pathspec`) or sends the script's stderr to a file, `run.log` or `/dev/null` keeps its bytes and its stderr's destination: through `ask` only where a check shows both identical, else a spawn. `bin/harness` commands and `lib/check.sh`'s `treekey.mjs` and `testcount.mjs` calls spawn as today (*default*).",
+        "`F`, `Fv`, `MET` and `SUM` call `ask`, the memo in front (a hit never asks), and the table's other `ask` rows are wired; `grep -n 'node \"$HARNESS_HOME/lib/' lib/record.sh lib/lane.sh lib/driver.sh lib/prompt.sh` prints only calls the table marks as spawns. A check file that counts node starts through the shim (`grep -l NODE_COUNT tests/checks/*.sh`: `84-node-memo.sh`, `81-partial-key.sh`) keeps every assertion by setting `HARNESS_HELPER=0` for its counting shell (the memo's proof is the spawn count): the only kind of edit to an existing check file, each one named in the entry.",
+        "`tests/checks/92-resident-helper-run.sh` (the next free number; its tier on line 2 by the 30 s rule), written first and watched failing: a stub `harness start` with the node shim on PATH starts node at most 30 times (C1-01 counted 402 for the same start); the same start with `HARNESS_HELPER=0` from a fresh state gives a `harness-log.md`, a `run.log` and a `feature_list.json` that `diff` equal to the helper run's after stripping timestamps and nothing else that two `HARNESS_HELPER=0` runs agree on (the check first shows two helper-off runs equal under the same stripping); the helper run's `run.log` has no `helper restarted` and no `helper off` line.",
+        "In the same file, a two-lane stub run of `tests/checks/47-lanes-two.sh`'s shape (`STUB_INDEPENDENT_M2`, the coding sessions held): while both lanes are alive, the `helper.mjs` processes of this run (matched by the test's own `$HH` path or the run's process tree, never a bare `pgrep -f helper.mjs` count that another suite's helpers would change) number 3, the coordinator's and one per lane; after the run's `ended` line none is left; none is left after `harness stop` either, nor after a lane process killed with `SIGKILL` (its helper exits on EOF; waited for with `wait_for`, never a sleep).",
+        "No child holds the helper's pipe: with a stub session held, `ls -l /proc/<session pid>/fd` shows no pipe shared with the helper (a check), and the same for a suite started by `run_init`; the driver's and the lane's EXIT traps kill their helper, and a helper's stderr lands where the driver's or lane's own stderr does.",
+        "`bash -n` passes on every shell file touched; `bash tests/run.sh resident-helper`, `bash tests/run.sh 84-node-memo`, `bash tests/run.sh 81-partial-key`, `bash tests/run.sh 47-lanes-two` and `bash tests/run.sh 13-run-2-michael-sets-desk` are green (each with a timeout of 1200 s); `git diff $(git merge-base HEAD origin/main) -- prompts` is empty and `git diff $(git merge-base HEAD origin/main) -- lib bin | grep -E '^[-+].*(note|log) \"'` prints only the `helper restarted:` and `helper off:` lines (no note text changes); the new check names are in `tests/fixtures/check-names.txt` (and `check-names-fast.txt` if the file is fast).",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "H1-02"
+      ],
+      "passes": false
+    },
+    {
+      "id": "H1-03",
+      "milestone": "H1",
+      "kind": "build",
+      "model": "opus",
+      "description": "`treekey.mjs` takes tracked files' blob hashes from the index and hashes only modified and untracked files, in one `hash-object --stdin-paths` call, with the key of every tree unchanged; the per-call wall before and after is in the decision file.",
+      "steps": [
+        "One call is profiled first on this repo (`strace -c -f node lib/treekey.mjs` and `node --cpu-prof lib/treekey.mjs`, the outputs kept in `$HARNESS_SCRATCH`), and the cut the profile names is recorded in journal/decisions/2026-11-03-resident-helper.md; *default*: one `git ls-files -z --stage` for the tracked blobs, `git ls-files -z --modified` for the ones whose stat differs from the index, and `hash-object --stdin-paths` once for those and the untracked files.",
+        "Written first and watched failing where the new code can be wrong, in `tests/unit/treekey.test.mjs` (or `tests/checks/34-check-key.sh`): in a throwaway repo holding a clean tracked file, an unstaged edit, a staged edit, a staged edit edited again, an untracked file, an ignored file, a tracked file deleted from disk, a tracked symlink, a file whose only change is its mode, a file touched with unchanged content and a file under `.harness/runs/`, the key `treekey.mjs` prints equals the definition computed independently in the test: every `git ls-files -co --exclude-standard` path outside `.harness/runs` that is a file, sorted, `git hash-object` of each, sha1 over the `<path>\\0<blob>\\n` lines, the first 16 hex chars. The same repo with a `HARNESS_CHECK_KEY_MAP` entry: `--partial`'s full key, reduced key and blob lines equal the old code's.",
+        "The old code agrees on the real tree: `git show $(git merge-base HEAD origin/main):lib/treekey.mjs > $HARNESS_SCRATCH/treekey-old.mjs`, and in this worktree with one uncommitted edit and one untracked file `node $HARNESS_SCRATCH/treekey-old.mjs` and `node lib/treekey.mjs` print the same 16 hex chars, as do the two with `--partial --names`.",
+        "`bash tests/run.sh 34-check-key` and `bash tests/run.sh 81-partial-key` pass with no assertion of theirs changed (`git diff` of the two files shows only added checks, if any).",
+        "The wall of one `node lib/treekey.mjs` on this repo before and after (the median of 20 runs each, the median of 20 `node -e 0` runs subtracted, the box's load average beside them) and the git processes per call before and after (`strace -f -e trace=execve`) are in the decision file, with the spec's H1-03 per-call target met or the miss recorded with its number.",
+        "`node --check lib/treekey.mjs` passes; the file's header comment says where tracked blobs come from; any new test or check name is in `tests/fixtures/check-names.txt` and, from a fast file, in `tests/fixtures/check-names-fast.txt`; `bash tests/run.sh 00-unit` is green.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "H1-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "H1-04",
+      "milestone": "H1",
+      "kind": "build",
+      "model": "opus",
+      "description": "The proof: two solo full suites (before: a scratch worktree of the run's base commit; after: the feature's tree) under `time -v`, file 13's node execs by class under strace before and after, and one stub start's node count, as the spec's H1-04 table in findings-and-research/2026-11-03-resident-helper.md, each prediction met or recorded as a miss with its number. No code change.",
+      "steps": [
+        "Before each timed run `harness status` (read-only) shows no running run but `agent-harness-2026-11-05` and no queued run going, and `pgrep -f tests/run.sh` shows no other suite; if one is alive the session waits and looks again every few minutes (up to 30 minutes), then measures with the load average recorded beside the row: it never parks. The *before* tree is `git worktree add $HARNESS_SCRATCH/before $(git merge-base HEAD origin/main)`, the *after* tree the feature's worktree; each suite is run by the session directly as `systemd-run --user --scope -p MemoryMax=3G env TEST_JOBS=4 time -v bash tests/run.sh`, one at a time, in the background with a timeout of 2400 s, its output (the `time -v` lines included) to `$HARNESS_SCRATCH/before.out` and `$HARNESS_SCRATCH/after.out`, never through the suite command named under *This run* (its cache would answer).",
+        "File 13 in each tree: `bash tests/run.sh 13-run-2-michael-sets-desk` once under `strace -f -e trace=execve -o $HARNESS_SCRATCH/file13-<before|after>.strace` and once plain under `env time -v` (each with a timeout of 1200 s, never two at once); node execs by class from `node findings-and-research/2026-11-03-exec-table/exectable.mjs <strace> <harness home>`; one stub `harness start`'s node count from `findings-and-research/2026-11-03-exec-table/starthand.sh` or the `resident-helper` check's shim.",
+        "`findings-and-research/2026-11-03-resident-helper.md` exists with the table of the spec's H1-04, one row per measure there (node starts per large file, node starts per stub `harness start`, CPU of file 13, full suite solo CPU, full suite solo wall at 4 jobs, `treekey.mjs` per call, `harness-log.md` lines changed, helper restarts per stub run): the baseline's value, this run's measured *before* and *after*, the spec's prediction, and met or missed with the number. The wall is the runner's own `wall` line, CPU is user+sys from `time -v`, each suite row has its `N/M checks passed` line and its red files (none, or named); lines changed is the helper-on against helper-off `diff` of H1-02b's check; restarts is `grep -c 'helper restarted'` over the measured runs' `run.log` files. A miss is recorded, never hidden: the feature passes on the table's presence.",
+        "The exec tables behind the rows are kept under `findings-and-research/2026-11-03-resident-helper/` (the strace files stay in scratch, as `findings-and-research/2026-11-03-exec-table/README.md` did); journal/decisions/2026-11-03-resident-helper.md's *Finding* carries the table's rows; a wall over the spec's bound with node starts inside theirs is recorded in one line as phase 4's ground (git's execs and bash's forks).",
+        "`git worktree list` no longer shows `$HARNESS_SCRATCH/before` (`git worktree remove` after the measurement); no `helper.mjs` process whose command line names the before or the after tree is left; `before.out`, `after.out` and the two strace files are named in the entry's `verified_how`.",
+        "The feature's commits touch only `findings-and-research/` and `journal/decisions/`: `git diff HEAD~ --stat -- bin lib tests prompts` prints nothing for them.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing (the *after* run is this tree's own full run)."
+      ],
+      "after": [
+        "H1-02b",
+        "H1-03"
+      ],
+      "passes": false
+    },
+    {
+      "id": "H1-05",
+      "milestone": "H1",
+      "kind": "review",
+      "model": "opus",
+      "description": "Review + simplify of H1: an Opus reviewer reads the milestone diff from a file, Critical and Important findings are fixed RED→GREEN, simplifications are applied, and the decision file, docs/architecture.md and README.md describe the helper as built.",
+      "steps": [
+        "The milestone diff is written to a file (`git diff $(git merge-base HEAD origin/main) -- bin lib tests docs journal README.md > $HARNESS_SCRATCH/H1.diff`) and read by an Opus subagent, one round (a second only if the first finds something Critical); its findings, each Critical, Important or Minor with file and line, are in `docs/plans/2026-11-05-H1-review.md`.",
+        "The review file says what was found for each of the spec's hardest points: every failure branch of `ask` (the read timeout, EOF, a header that is not three fields, a wrong id, the lock refused, three restarts) ends in a spawn and the right answer, never a hang; no module-level mutable state in any served script; the framing on an answer that holds a NUL or has no trailing newline; no served `main` reads `process.argv`, `process.cwd()`, fd 0 or the helper's start-time environment; no child process holds the helper's pipe; `lib/helper.mjs` caches nothing between requests.",
+        "Every Critical and Important finding is fixed RED→GREEN, the check or unit test written first and watched failing and named in the review file beside its finding; simplification passes are applied (one spelling of the CLI tail in every served script, no dead spawn branch, `ask` readable top to bottom); each Minor finding is fixed or listed with why not.",
+        "journal/decisions/2026-11-03-resident-helper.md is complete: title, provenance, finding (the H1-04 table), choice with every default marked *default* (the served list, capture by `main`'s return, length-prefixed framing, `bin/harness` and `lib/check.sh` spawning, the stdin, environment and stderr treatment, the cut in `treekey.mjs`), and rejected (a socket or FIFO server shared by the driver and its lanes, JSON replies decoded by `jq`, hooking `console.log`, serving `bin/harness` commands, a helper for `check.sh` under a session, the Rust port with its numbers, `node --snapshot-blob`). journal/decisions/2026-10-31-fewer-node-starts.md's rejected long-lived-server paragraph is updated in place with one `Updated in place <date>: …` line (a per-shell coproc, and how each objection it named is answered).",
+        "`docs/architecture.md` names `lib/helper.mjs`, `ask` and `lib/cli.mjs` in §3, `helper-<pid>.lock` in scratch in §4, the helper's failure path (`helper restarted:`, `helper off:`) in §7 and the rows in §11; `README.md` has one sentence on `HARNESS_HELPER=0` as the off switch; the entry carries the spec's *After the run (Michael)* lines (`grep -c 'helper restarted' <state dir>/run.log`, expected 0, and the solo wall against the table).",
+        "`bash -n` passes on every shell file and `node --check` on every `.mjs` the milestone touched; `bash tests/run.sh resident-helper`, `bash tests/run.sh 84-node-memo` and `bash tests/run.sh 00-unit` are green after the fixes, the helper-on against helper-off `diff` check among them; any new check name is in the fixtures.",
+        "The suite is green: `bash tests/run.sh` prints `N/M checks passed` with none failing."
+      ],
+      "after": [
+        "H1-04"
+      ],
+      "passes": false
+    }
+  ]
+}
