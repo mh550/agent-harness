@@ -1,0 +1,50 @@
+- 2026-11-05 10:12 · test count: parsed (generic)
+- 2026-11-05 10:19 · init: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-05 10:19 · feature list written: 0/6 passing
+- 2026-11-05 10:19 · lint: clean
+- 2026-11-05 10:19 · lane H1 opened (slot 0, port 7826, from 07a31f6)
+- 2026-11-05 10:19 · context.md for H1-01: 4964 bytes
+- 2026-11-05 10:36 · H1-01: suite ran 1x (158 s) in the session
+- 2026-11-05 10:36 · H1-01: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-05 10:36 · H1-01 · claude-opus-5-5 · passes=true · 16 min · 1/6 passing
+- 2026-11-05 10:36 · context.md for H1-02: 7013 bytes
+- 2026-11-05 11:00 · record branch: push of harness/agent-harness-2026-11-05 failed; retrying at every sync (see run.log)
+- 2026-11-05 11:01 · record branch: push of harness/agent-harness-2026-11-05 succeeded after 2 failures over 0 min
+- 2026-11-05 11:01 · record branch: push of harness/agent-harness-2026-11-05 failed; retrying at every sync (see run.log)
+- 2026-11-05 11:03 · record branch: push of harness/agent-harness-2026-11-05 succeeded after 4 failures over 1 min
+- 2026-11-05 11:03 · record branch: push of harness/agent-harness-2026-11-05 failed; retrying at every sync (see run.log)
+- 2026-11-05 11:04 · record branch: push of harness/agent-harness-2026-11-05 succeeded after 3 failures over 1 min
+- 2026-11-05 11:04 · record branch: push of harness/agent-harness-2026-11-05 failed; retrying at every sync (see run.log)
+- 2026-11-05 11:05 · record branch: push of harness/agent-harness-2026-11-05 succeeded after 4 failures over 1 min
+- 2026-11-05 11:05 · record branch: push of harness/agent-harness-2026-11-05 failed; retrying at every sync (see run.log)
+- 2026-11-05 11:05 · record branch: push of harness/agent-harness-2026-11-05 succeeded after 1 failures over 0 min
+- 2026-11-05 11:05 · record branch: push of harness/agent-harness-2026-11-05 failed; retrying at every sync (see run.log)
+- 2026-11-05 11:05 · record branch: push of harness/agent-harness-2026-11-05 succeeded after 1 failures over 0 min
+- 2026-11-05 11:06 · H1-02: suite ran 2x (357 s) in the session
+- 2026-11-05 11:06 · H1-02 · claude-opus-5-5 · passes=true · 30 min · 2/6 passing
+- 2026-11-05 11:06 · context.md for H1-02b: 7876 bytes
+- 2026-11-05 11:46 · H1-02b: suite ran 2x (828 s) in the session
+- 2026-11-05 11:46 · H1-02b: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-05 11:46 · H1-02b · claude-opus-5-5 · passes=true · 39 min · 3/6 passing
+- 2026-11-05 11:46 · context.md for H1-03: 6716 bytes
+- 2026-11-05 12:01 · H1-03: suite ran 2x (218 s) in the session
+- 2026-11-05 12:01 · H1-03 · claude-opus-5-5 · passes=true · 15 min · 4/6 passing
+- 2026-11-05 12:02 · context.md for H1-04: 7870 bytes
+- 2026-11-05 12:50 · H1-04: suite ran 0x (0 s) in the session
+- 2026-11-05 12:50 · H1-04 · claude-opus-5-5 · passes=true · 48 min · 5/6 passing
+- 2026-11-05 12:50 · review H1-05: 4125 changed lines, at or over 400; opus
+- 2026-11-05 12:50 · context.md for H1-05: 7874 bytes, 2 items left out
+- 2026-11-05 13:21 · H1-05: suite ran 1x (101 s) in the session
+- 2026-11-05 13:21 · H1-05 · claude-opus-5-5 · passes=true · 30 min · 6/6 passing
+- 2026-11-05 13:21 · merged main into harness-lane/agent-harness-2026-11-05/H1
+- 2026-11-05 13:21 · verify H1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-05 13:31 · context.md for H1: 16180 bytes, 6 items left out
+- 2026-11-05 13:46 · H1 verified and tagged run/agent-harness-2026-11-05/H1
+- 2026-11-05 13:46 · H1 merged into main · https://github.com/mh550/agent-harness/pull/104
+- 2026-11-05 13:46 · lane H1 closed (H1 merged)
+- 2026-11-05 13:46 · lane H1: branch harness-lane/agent-harness-2026-11-05/H1 deleted (merged)
+- 2026-11-05 13:46 · every feature passes
+- 2026-11-05 13:46 · run ended (done): 6/6 passing · 8 sessions (8 real) · 6 features passed · $30.78 · 3.4 h · by kind: init 1 ($4.59), coding 6 ($25.86), verify 1 ($0.33) · by model: claude-fable-5-1 1 ($4.59), claude-opus-5-5 6 ($25.86), claude-sonnet-5-5 1 ($0.33)
+- 2026-11-05 13:46 · services stopped (done)
+- 2026-11-05 13:47 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-11-05 13:47 · record PR merged into main · https://github.com/mh550/agent-harness/pull/105

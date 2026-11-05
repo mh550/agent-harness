@@ -1,0 +1,177 @@
+<!-- harness: rendered from entries.jsonl after every session; edits here are overwritten -->
+# Progress — run `agent-harness-2026-11-05` (agent-harness)
+
+What this file is: the run's journal, newest entry first, rendered by the harness from `entries.jsonl` for Michael's phone. Each entry is one session (init, coding, verify, review, retro) with its outcome, summary and questions.
+
+The run: phase 2 of `docs/plans/2026-11-03-test-suite-redesign.md`, spec `docs/specs/2026-11-03-resident-helper.md`, one milestone H1 (6 features). A resident helper: one warm node process per driver and per lane (`lib/helper.mjs`, started lazily as a bash coproc) answers the `.mjs` questions that `ask` in `lib/record.sh` sends it, byte for byte what the spawned script printed, with a spawn whenever the helper is off (`HARNESS_HELPER=0`), absent, busy or broken. H1-01 gives the served scripts `main(argv, io)` and `lib/cli.mjs`; H1-02 builds the helper and `ask`; H1-02b moves the call sites and proves a stub run's logs identical with the helper on and off; H1-03 cuts `treekey.mjs`'s own cost; H1-04 is the proof (two solo suites, file 13 under strace, the table in `findings-and-research/2026-11-03-resident-helper.md`); H1-05 is the review and the docs. The spec's defaults are taken and marked *default* in `journal/decisions/2026-11-03-resident-helper.md`; nothing parks. No note text changes.
+
+How to read the feature list (`feature_list.json`): array order is priority; `after` names what a feature waits on; `passes` flips when a session's fast tier is green, and the verifier re-runs every step on the full suite before H1 merges into `main`. Steer via `INBOX.md` on this branch: line 1 `status: pause|stop`, answers under `## Answers`.
+
+### 2026-11-05 13:46 · verify H1 · passes
+
+All six features hold: full suite green (1455), resident-helper, 84, 81, 34, 47, 13 and unit subsets green, syntax checks, diffs, docs and findings table confirmed. H1-04 timed suites not re-run; misses (337 nodes, 608.1 s) are recorded in the table.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| H1-01 | 1 | cli.test.mjs + 00-unit: isMain/CLI tail/exit 70 tests | node --test tests/unit via bash tests/run.sh 00-unit: 193/193 pass | yes |
+| H1-01 | 2 | per-module unit tests main vs CLI | node --test tests/unit via bash tests/run.sh 00-unit: 193/193 pass incl. features/metrics/entries/testcount/inbox | yes |
+| H1-01 | 3 | treekey io.cwd test | node --test tests/unit via bash tests/run.sh 00-unit pass | yes |
+| H1-01 | 4 | stdin/env through io tests | node --test tests/unit via bash tests/run.sh 00-unit pass | yes |
+| H1-01 | 5 | grep process.argv\|exit\|cwd\|stdout\|console.log\|readFileSync(0) and ^(let\|var) on all 11 served scripts | both greps print nothing for every script (tail lives in cli.mjs) | yes |
+| H1-01 | 6 | decision file with default marks, one line per script | 33 lines mention default; file present; served list in it | yes |
+| H1-01 | 7 | node --check all lib/*.mjs; git diff of shell/prompts for H1-01 commit; fixtures sorted; 00-unit | node --check clean; a0ba58f touches no shell/prompt/check; check-names(-fast).txt LC_ALL=C sorted; 00-unit green | yes |
+| H1-01 | 8 | full suite | harness init: bash tests/run.sh full: green 591 s, 1455 tests | yes |
+| H1-02 | 1 | resident-helper check 91 part 1 | bash tests/run.sh resident-helper: 61/61, 15/15, 77/77 all pass | yes |
+| H1-02 | 2 | check 91 stdin/spawn/lock/HELPER=0 | same run, all pass | yes |
+| H1-02 | 3 | check 91 framing | same run, all pass | yes |
+| H1-02 | 4 | check 91 failure branches | same run, all pass | yes |
+| H1-02 | 5 | helper.mjs alone; no module let/var | grep ^(let\|var) lib/helper.mjs prints nothing; check 91 green | yes |
+| H1-02 | 6 | env and cwd checks | check 91 green | yes |
+| H1-02 | 7 | bash -n, node --check, H1-02 commit touches no lane/driver/check/prompt/bin, names in fixtures, 84-node-memo | bash -n all lib/*.sh clean; 3f9a7b9 file list has none of them; 84-node-memo 26/26,27/27 | yes |
+| H1-02 | 8 | full suite | harness init: bash tests/run.sh full: green | yes |
+| H1-02b | 1 | call-site table in decision file | decision file has table (e.g. line 195 check.sh treekey row); present | yes |
+| H1-02b | 2 | grep + counting-shell edits to 81/84/one more | git diff shows 81-partial-key (2 lines), 84-node-memo (6), one scope-sh check (3) only; 81 and 84 suites green | yes |
+| H1-02b | 3 | 92-resident-helper-run.sh | resident-helper subset 61/61,15/15,77/77 green incl. file 92; table: 20 node starts, 0 log lines changed | yes |
+| H1-02b | 4 | two-lane helper counts | 47-lanes-two 15/15,16/16 green; no helper.mjs processes left after | yes |
+| H1-02b | 5 | no pipe shared; traps | file 91/92 checks green | yes |
+| H1-02b | 6 | bash -n; subsets 84,81,47,13; prompts diff; note-text diff | 13-run-2-michael-sets-desk 66/66,67/67; 81,84,47 green; git diff -- prompts empty; log/note-line diff shows only call swaps (node->ask), note text unchanged | yes |
+| H1-02b | 7 | full suite | harness init: bash tests/run.sh full: green | yes |
+| H1-03 | 1 | profile and cut recorded in decision file | decision file present with treekey cut; commit de51e2f | yes |
+| H1-03 | 2 | unit tests vs independent definition | 00-unit green (treekey.test.mjs, 6 new) | yes |
+| H1-03 | 3 | old code agrees on real tree | treekey unit test against old/independent definition green; not separately re-run by hand | yes |
+| H1-03 | 4 | 34-check-key and 81-partial-key unchanged | 34-check-key 10/10,11/11; 81-partial-key 26/26,27/27; 81 diff only 2 lines for H1-02b HELPER=0 | yes |
+| H1-03 | 5 | wall before/after table | findings table: 58.0->49.3 ms idle spawned; miss recorded for 64.4 ms in suite | yes |
+| H1-03 | 6 | node --check, names, 00-unit | node --check clean; fixtures sorted; 00-unit green | yes |
+| H1-03 | 7 | full suite | harness init: bash tests/run.sh full: green | yes |
+| H1-04 | 1 | gate and measurement method | proof.log/gate.sh in findings dir; table rows list gate loads; not re-measured (timed runs are 10+ min) | yes |
+| H1-04 | 2 | file 13 strace and time | file13-*-execs.txt and .time present in findings dir | yes |
+| H1-04 | 3 | table file with all rows | findings-and-research/2026-11-03-resident-helper.md has 8 rows, each with result met/missed; checks 1332/1332 before and 1450/1450 after, red none | yes |
+| H1-04 | 4 | exec tables kept, decision Finding, wall miss recorded | findings dir has exec files; decision has ## Finding; miss lines for 337 nodes and 608.1 s present | yes |
+| H1-04 | 5 | worktree removed, no helpers left | git worktree list has no before worktree; pgrep helper.mjs shows none | yes |
+| H1-04 | 6 | commits touch only findings/journal | git diff-tree of H1-04 commit: only findings-and-research and journal/decisions | yes |
+| H1-04 | 7 | full suite | harness init: bash tests/run.sh full: green | yes |
+| H1-05 | 1 | review file from diff | docs/plans/2026-11-05-H1-review.md: 0 Critical, 1 Important, 7 Minor | yes |
+| H1-05 | 2 | hardest points covered | review has sections for them; greps for module-level state clean | yes |
+| H1-05 | 3 | Important fixed RED->GREEN | file 91 NUL-writer check and cli.test unit named; both green | yes |
+| H1-05 | 4 | decision complete, fewer-node-starts updated | Updated in place 2026-11-05 line at fewer-node-starts.md:275 | yes |
+| H1-05 | 5 | architecture/README | architecture.md names helper.mjs, cli.mjs, helper-<pid>, helper restarted; README line 131 HARNESS_HELPER=0; entry carries After-the-run lines | yes |
+| H1-05 | 6 | bash -n, node --check, subsets | all clean; resident-helper, 84-node-memo, 00-unit green | yes |
+| H1-05 | 7 | full suite | harness init: bash tests/run.sh full: green | yes |
+
+- *133125-verify-H1 · claude-sonnet-5-5*
+
+### 2026-11-05 13:21 · H1-05 · passes
+
+Review of H1: 0 Critical, 1 Important, 7 Minor. Important fixed: a writer echoing a NUL ran twice (helper declined after it wrote); captured's say now drops NULs. Header parsed by one regex; lint and tests widened; decision file complete; architecture, README and fewer-node-starts updated. Tests 684 to 689.
+
+- **Files:** lib/cli.mjs, lib/record.sh, lib/prompt.sh, tests/checks/91-resident-helper.sh, tests/unit/cli.test.mjs, tests/unit/treekey.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-05-H1-review.md, docs/architecture.md, README.md, journal/decisions/2026-11-03-resident-helper.md, +1 more
+- **Verified:** RED: file 91's 'a writer's answer holds no NUL' failed with the old lib/cli.mjs (60/61) and passes with the new (61/61); the unit test likewise. Reproduced first: 2 journal lines and `missing` with the helper, 1 line with HARNESS_HELPER=0. Green: bash tests/run.sh resident-helper 77/77, 84-node-memo 27/27, 13-run-2-michael-sets-desk + 47-lanes-two + 00-unit 274/274; check.sh --fast 689 tests in 101 s; bash -n and node --check on every file; lib/bin note-line grep only moved calls, prompts diff empty. The full suite runs at verify.
+- **Tests:** 684 → 689
+- **Discovery** (affects run): A coproc's node start reaches a counting shim after helper_begin returns, so a count taken right after it can miss the helper's own start: ask once before the baseline count.
+- **Discovery** (affects run): After the run (Michael): `grep -c 'helper restarted' <state dir>/run.log`, expected 0 for a run that ended normally (a TERM or HUP to the driver's process group writes one true, harmless line), and the solo wall from the run's own check.sh rows against the table (608.1 s; bound 600 s). Nothing to configure; HARNESS_HELPER=0 in ~/.config/harness/config.sh turns it off for every run if a real run shows `helper off:`.
+- **Discovery** (affects run): A $( ask ) in a shell that has not started a helper spawns, so a by-hand reproduction of a helper path needs helper_begin or a plain ask first: the first try at the review's finding did not reproduce without it.
+- **Proposed change:** If file 13's node starts matter again (337 against <= 300): the cheap read-only wirings are lane.sh:375, :377, :463, driver.sh:217, :582-583, resolve.sh:63, :89, answering into a variable before the pipe; about 1 CPU-s of an 88 s file, so not done here (docs/plans/2026-11-05-H1-review.md).
+- *06-H1-05 · claude-opus-5-5*
+
+### 2026-11-05 12:50 · H1-04 · passes
+
+The proof: solo suites before 07a31f6 974.2 s, 3,804 CPU-s, after de51e2f 608.1 s, 2,108 CPU-s, all green. Met: stub start 20 nodes (≤30), file 13 CPU 88 s (≤110), suite CPU (≤2,300), 0 log lines, 0 restarts. Missed: file 13 nodes 337 (≤300), wall by 8.1 s (≤600), spawned treekey 64.4 ms in a suite (≤60; 49.3 idle, 9.7 by ask). No code change.
+
+- **Files:** findings-and-research/2026-11-03-resident-helper.md, findings-and-research/2026-11-03-resident-helper/, journal/decisions/2026-11-03-resident-helper.md
+- **Verified:** Run by the session, one at a time, gate clear before each (proof.log). In /tmp/harness/agent-harness/agent-harness-2026-11-05/lanes/H1: before.out 1332/1332, after.out 1450/1450, file13-before.strace, file13-after.strace; file 13 67/67 in all 4 runs. check.sh --fast green (cached: only findings and journal changed since). `git worktree list` has no before; no helper.mjs left; git diff HEAD~ -- bin lib tests prompts is empty.
+- **Tests:** 684 → 684
+- **Dead end:** the step's `strace -f -e trace=execve` — it cuts arguments at 32 characters and traces no fork, so exectable.mjs has no subcommand or class; used its usage line, -s 512 with clone, clone3, fork, vfork, as C1 did
+- **Discovery** (affects H1-05): Miss detail for the review: file 13's 337 node starts are cli 162, stub 48, checks 9, helpers 32 (the spec guessed ~20), and 86 other driver and lane spawns (ledger-line, memlint under timeout, backlog, needs fields, deploy 2×, metrics final, inbox insert, in_lane under lane.sh:375's | while, one untraced features ids).
+- **Discovery** (affects H1-05, run): ask's flock is an exec per call: file 13's flock went 1,447 to 3,706, about 2 s of its 88 s at 0.9 ms each. All execs barely moved, 38,175 to 37,513; the CPU fell because node's start is the expensive one. git 7,569 per file is the remainder.
+- **Discovery** (affects run): A bench of ask in `for … done | sort` measures a spawn (46.9 ms against 10.4 ms): the loop is a pipeline's side. Collect the times in an array first.
+- **Discovery** (affects H1-05): The spawned treekey sample taken 300 s into each suite shows no gain from H1-03 (65.3 against 64.4 ms; 20 calls, loads 4.44 and 3.07), where idle does (58.0 against 49.3 ms). One sample each, not looked into further: under a lane the call now goes through its helper.
+- **Discovery** (affects run): The driver blocks on nothing while a background chain runs; a session waits with `timeout 590 bash -c 'while pgrep -f <chain>; do sleep 15; done'` in the foreground, no output read until it ends.
+- **Proposed change:** H1-04 step 2 should name strace's `-s 512 -e trace=execve,clone,clone3,fork,vfork`, which exectable.mjs's usage line requires.
+- *05-H1-04 · claude-opus-5-5*
+
+### 2026-11-05 12:01 · H1-03 · passes
+
+treekey.mjs takes clean tracked blobs from the index: one ls-files, hash-object only for the rest, none on a clean tree. Keys equal the old code's on this tree and an independent definition; a CRLF blob committed before text=auto differs once. 59.1 to 49.8 ms spawned, 17.3 to 6.3 ms in process; missed on a fresh checkout, 139 ms, until the next index write. Fast tier green.
+
+- **Files:** lib/treekey.mjs, tests/unit/treekey.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-03-resident-helper.md, docs/architecture.md
+- **Verified:** Fast tier: 684 tests green. 00-unit 189/189, 34-check-key 11/11, 81-partial-key 27/27 (neither check file changed), resident-helper 76/76. The new definition tests passed on the old code and went red on a naive index-only version. Old (merge-base) and new printed the same key, bare and --partial --names, in this worktree with uncommitted edits and one untracked file. Profiles in /tmp/harness/agent-harness/agent-harness-2026-11-05/lanes/H1/prof. The full suite was not run here: it runs at verify.
+- **Tests:** 678 → 684
+- **Dead end:** a Gotchas line on HARNESS_CHECK_KEY_* in a unit test's process.env — the section was already at 15 lines and 39-memlint-m4 went red at 16; the fact is under discoveries instead
+- **Dead end:** a naive cut, an index blob for every tracked row — written only to watch the tests catch it: links, stale rows, conflicts and subdirectories all give a wrong key
+- **Discovery** (affects H1-04): On a fresh checkout whose files share the index's second, git ls-files -m re-reads every file on each call, those the pathspecs exclude too (stock git compares the racy timestamp by the second): a treekey call is 139 ms, not 50, until the index is next written. H1-04's before and after trees: a fresh scratch worktree measures this unless something wrote its index first.
+- **Discovery** (affects H1-05): Below the repo's top treekey has no key by design: hash-object --stdin-paths reads from the top, so it throws and check.sh runs in full with no marker. An index-blob path must keep that, or a subdirectory gets a key of its own files alone.
+- **Discovery** (affects run): A unit test giving treekey's main process.env sees a session's HARNESS_CHECK_KEY_IGNORE and _MAP, so it is red only under a run: clear them (plain() in tests/unit/treekey.test.mjs).
+- **Discovery** (affects run): The Gotchas section in CLAUDE.md is at its limit of 15 lines: a new line must replace one, or 39-memlint-m4 goes red.
+- **Proposed change:** H1-03 step 1's three git calls became one: `git ls-files -z -v --stage -c -m -o` prints all of it; the decision file says why.
+- *04-H1-03 · claude-opus-5-5*
+
+### 2026-11-05 11:46 · H1-02b · passes
+
+F, Fv, MET, SUM and the served calls in lib/*.sh go through ask; one helper per driver and lane, started in run_paths, killed by the EXIT traps. A stub start: 336 node starts off, 20 on, identical logs. A request's stderr follows the call's redirect (the helper's fd 2 is a file ask forwards). check_run hands check.sh its key. New 92-resident-helper-run.sh; 1419 to 1444 checks.
+
+- **Files:** lib/record.sh, lib/lane.sh, lib/driver.sh, lib/prompt.sh, lib/needs.sh, lib/notify.sh, lib/check.sh, bin/harness, tests/checks/92-resident-helper-run.sh, tests/checks/91-resident-helper.sh, tests/checks/84-node-memo.sh, tests/checks/81-partial-key.sh, +4 more
+- **Verified:** One full run (lib/check.sh, 618 s wall on its first pass): 1442/1444; the two reds, 39-memlint and the PAUSE check of 08, were red on its rerun and are fixed. After the fixes: bash tests/run.sh 08-scope 39-memlint 145/145, then check.sh --fast green (678 tests). The full suite has NOT been rerun on the final tree: the only differences from that run are the 08 wait and one CLAUDE.md line dropped. 13, 47, 81, 84, 91 and 92 were green in that run. A mutation (no 2>> on the helper's start) turned 5 of 91's stderr checks red. Existing check files edited: 84-node-memo and 81-partial-key (HARNESS_HELPER=0 for the counting shells), 08 (below). Step 6's grep prints 3 -/+ pairs, none with changed text (see proposed_changes).
+- **Tests:** 1419 → 1444
+- **Dead end:** a table of spawns for every call that redirects stderr, as the feature's step 1 allowed — needs_sweep (every coordinator poll) and about 30 other sites redirect it; the file the helper's fd 2 points at keeps every destination, a child's stderr included, so they all go through ask
+- **Dead end:** HARNESS_HELPER=0 on 08's paused run — it would hide the real path; the check's wait was the wrong one
+- **Discovery** (affects H1-04, H1-05): 08's PAUSE check waited on the lane's note while asserting the coordinator's `paused (` line. Through the helper a lane reaches its note inside the coordinator's 1 s poll, so `harness resume` won the race. Fixed by waiting for that line too; no assertion changed. A faster lane can expose other checks of this shape: a first-pass red in a timing check should be read that way before it is called a flake.
+- **Discovery** (affects H1-04, H1-05): A check counting node starts through a shim needs HARNESS_HELPER=0 for its counting shell, or a stub run asks its helper instead. CLAUDE.md's Gotchas is full (memlint counts its comment line: 15 with 14 facts), so this is here.
+- **Discovery** (affects H1-04): Remaining starts in file 13's first stub start: 3 helpers, 10 of the stub's node -e, overlap, 2 deploy, backlog, memlint under its timeout, metrics final and summary ledger-line (each a call on a pipeline's side or in a ( ), so ask spawns).
+- **Discovery** (affects H1-05): A TERM or HUP sent to the driver's whole process group kills the helper too, so the EXIT trap's first ask writes one `helper restarted: the helper went away` line in run.log and spawns. True, harmless, and only at an abnormal end: the expected 0 of `grep -c 'helper restarted'` holds for a run that ended normally.
+- **Discovery** (affects H1-03, H1-04): The spec's `treekey.mjs` under a lane now comes from the lane's helper, so H1-03's cut is worth less per file than the 205 calls the spec counts, but each call that remains in the helper still pays git.
+- **Question for Michael:** Step 1 and the spec say lib/check.sh's treekey.mjs and testcount.mjs spawn as today, but step 3 bounds a stub start at 30 node starts, and those two were 32 of the 52 left once everything else was wired. So I took a *default* beyond the spec: check_run in lib/record.sh asks the lane's helper for the key and hands it down in HARNESS_CHECK_TK (unset before anything else in check.sh), and an empty suite output starts no testcount.mjs. A session's check.sh spawns as before. Keep it? The alternative is to restore both spawns and raise the bound to about 52. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/lib/record.sh:315, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/lib/check.sh:43, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/journal/decisions/2026-11-03-resident-helper.md
+- **Proposed change:** H1-02b step 6's `git diff … | grep -E '^[-+].*(note|log) "'` can't print only the helper's lines: a changed call on the same line as an unchanged note shows as a -/+ pair. It prints 3 pairs here (entries.mjs render, memlint.mjs gotchas, the run_init suite line), each with the same quoted text on both sides; the helper's own lines are written by printf and don't match. The check it wants is 92's identical logs.
+- **Proposed change:** H1-02b step 2's `grep -n 'node "$HARNESS_HOME/lib/'` prints nothing on this box's grep whatever the file holds ($ reads as an anchor): it should be grep -nF. With -F it prints only the table's spawns: ask's own, helper_start, prompt.sh's plain ask and its command mode, backlog.mjs twice, memlint.mjs under its timeout.
+- **Proposed change:** H1-02b step 1's default that check.sh spawns as today conflicts with step 3's bound of 30 (the question above).
+- **Proposed change:** docs/specs/2026-11-03-resident-helper.md's H1-04 row `node starts per large file` predicted a sum with no check.sh line; H1-04 can read this entry's number instead.
+- *03-H1-02b · claude-opus-5-5*
+
+### 2026-11-05 11:06 · H1-02 · passes
+
+lib/helper.mjs answers {id,script,args,cwd,env} one at a time as `<id> <rc> <bytes>` + bytes; ask in lib/record.sh asks over a coproc, spawning whenever off, absent, busy or broken. ask 3.1 ms, a spawn 32.8 ms. No call site uses it yet. New 91-resident-helper.sh, 50 checks, fast tier. Fast tier green.
+
+- **Files:** lib/helper.mjs, lib/record.sh, lib/cli.mjs, tests/checks/91-resident-helper.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-03-resident-helper.md
+- **Verified:** check.sh --fast: green, 668 tests, 160 s, on the final tree. bash tests/run.sh resident-helper 84-node-memo 13-run-2 82-key-map 00-unit: 91 50/50, 84 26/26, 13 66/66, unit 182/182, 82 8/8 (82 after its one fix). 91 ran three times in a row green. bash -n, node --check; git diff HEAD -- lib/lane.sh lib/driver.sh lib/check.sh lib/prompt.sh bin is empty and record.sh only gains lines. The full suite was not run here: it runs at verify.
+- **Tests:** 1369 → 1419
+- **Dead end:** `done 2> /dev/null` on the coproc's loop that closes inherited descriptors — bash parks stderr on a high fd for that redirect, the loop closes it, and the helper loses its stderr: the throw check caught it. Closing an fd that is gone is silent, so no redirect is needed.
+- **Dead end:** the environment's names in the lock file (one file) — a refused asker's `>` open truncates it while the holder reads, which could send an empty env. They have their own file now.
+- **Dead end:** timing ask inside `( for … )` — a ( ) closes the coproc's fds, so every call spawned and ask looked as slow as a spawn (33 ms). Timed in the owner shell it is 3.1 ms.
+- **Dead end:** a Gotcha line for that fact — memlint: 16 lines, over 15. The section was at its limit and every other line guards a test failure, so it went; helper_ready's comment and the decision file hold it.
+- **Discovery** (affects H1-02b): Only the shell that sourced record.sh starts a helper, and a $( ask ) before it has one spawns and starts none. Most driver call sites are $( ), so H1-02b must call helper_start itself in run_paths or at the lane's start, outside any 2> redirect: the helper's stderr is the shell's at that moment for its whole life.
+- **Discovery** (affects H1-02b): helper_start clobbers $!: coproc sets it. Today's four `$!` reads (check.sh:67, driver.sh:96 and :161, record.sh:294) are each right after their `&`, and `wait -n` in lane_wait names its pids, so none breaks; a new `$!` read must stay adjacent. No bare `wait` in lib/ or bin/ (it would wait on the coproc for ever).
+- **Discovery** (affects H1-02b): A served script's stderr goes to the helper's stderr whatever the call redirects: `F x 2> /dev/null` no longer silences a throw's stack, and `2>> run.log` no longer lands there. needs.mjs fields prints NULs (the helper declines, the spawn answers): that call site stays a spawn.
+- **Discovery** (affects H1-02b, H1-04): ask spawns in a ( ), a pipeline's side or a job: bash closes the coproc's fds there and leaves the variables. So `ask x | y` is a spawn, and a check counting starts must not wrap ask in ( ). `export -p`-free environment enumeration is compgen -e through scratch's helper-<shell>.names.
+- **Discovery** (affects H1-02b): Scratch gains helper-<shell>.lock, .names and, after a failure, .restarts. A check that lists a run's scratch directory exactly would see them once call sites ask.
+- **Discovery** (affects H1-05): A main slower than HARNESS_HELPER_TIMEOUT (120 s), a writer included, is killed and then spawned, so it can run twice: the review should look at whether any served writer can take that long (needs sweep, summary build).
+- **Proposed change:** The spec's request line should name `env`, and `HELPER_SHELL=$BASHPID` and an `$SRANDOM` id replace its `$$` and counter: reasons in decisions/2026-11-03-resident-helper. The spec itself is left as written.
+- *02-H1-02 · claude-opus-5-5*
+
+### 2026-11-05 10:36 · H1-01 · passes
+
+All eleven served scripts export main(argv, io) → { rc, out } and share lib/cli.mjs's isMain/runCli tail; no shell file changed. 37 unit tests compare main to the CLI. Fixed a spec bug: its write-then-exit tail cuts a pipe at 64 KB, so runCli exits from the write's callback. Fast tier green.
+
+- **Files:** lib/cli.mjs, lib/features.mjs, lib/metrics.mjs, lib/treekey.mjs, lib/testcount.mjs, lib/entries.mjs, lib/inbox.mjs, lib/memlint.mjs, lib/render.mjs, lib/needs.mjs, lib/summary.mjs, lib/notify.mjs, +5 more
+- **Verified:** check.sh --fast: green, 618 tests, 158 s (the tree's cached run). 00-unit 182/182 (145 before). bash tests/run.sh 34-check-key 81-partial-key 84-node-memo 13-run-2: 129/129. node --check on every .mjs touched; the step 5 greps and step 7's git diff print nothing. The full suite was not run here: it runs at verify.
+- **Tests:** 1332 → 1369
+- **Dead end:** the spec's tail, process.stdout.write(out); process.exit(rc) — a 5 MB write to `| (sleep 0.3; wc -c)` arrived as 65536 bytes, 4 runs of 4
+- **Discovery** (affects H1-02): A served main still resolves a relative path argument against the process's cwd (readFileSync(a), existsSync(b), resolve(a)); only treekey.mjs uses io.cwd by name. lib/helper.mjs must process.chdir(req.cwd) per request (requests are one at a time) or ask must spawn on a relative path, or a lane that has cd'd gets the wrong file.
+- **Discovery** (affects H1-02): helper.mjs's reply must not exit before its write's callback: on stdin EOF wait for the last write, as runCli does (a pipe write over 64 KB is async).
+- **Discovery** (affects H1-02, H1-02b): main's stderr is still console.error, so in the helper it lands on the helper's stderr: it stays in H1-02b's call-site table. main takes stdin only through io.stdin: readStdin throws /no stdin/ without it, so the helper's request pipe is safe and such a call comes back rc 70 unless ask spawns it first.
+- **Discovery** (affects H1-02, H1-05): git spawned in needs.mjs and overlap.mjs (gitIn) inherits process.env, not io.env: all use git -C <dir>, so the cwd is safe, but a GIT_ variable set on one call would not reach them through the helper. treekey.mjs does pass io.env to its git.
+- **Discovery** (affects H1-02b, H1-05): A throw now exits 70 in all eleven (10 of them exited 1 uncaught). lib/record.sh:447 reads `(( $? == 1 )) || return 0` after entries.mjs validate, so a validate that throws (an unreadable entry.json) now skips the resume and goes on to the ingest. No check depends on it; H1-05 should look at that line.
+- **Discovery** (affects run): tests/unit/cli-same.mjs is the shared comparison (sameAsCli, cli, mainOf, sameBytes); it swallows main's console.error. needs.mjs moves a sibling state dir's open question forward, so a test's twin state dir must not sit beside the first.
+- **Question for Michael:** The spec's tail wrote and then exited; runCli waits for the write and treats EPIPE as no failure, and a throw's partial stdout is dropped (rc 70, no out), both marked *default*. Say in INBOX.md if you want otherwise. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/lib/cli.mjs:21, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-05/slot-0/journal/decisions/2026-11-03-resident-helper.md:18
+- **Proposed change:** H1-01 step 8 and its peers name the full suite; the prompt's rule is the fast tier in the session and the full suite at verify. The steps could say so.
+- *01-H1-01 · claude-opus-5-5*
+
+### 2026-11-05 10:19 · init · passes
+
+6 features, one milestone H1: H1-01 main(argv, io) + lib/cli.mjs; H1-02 lib/helper.mjs + ask (91-resident-helper.sh); H1-02b call sites, lifecycle, helper-on/off logs identical (92-resident-helper-run.sh); H1-03 treekey cut; H1-04 the proof (last build); H1-05 review + docs. Lint clean.
+
+- **Discovery** (affects run): Three things the spec's request line (id, script, args, cwd) does not carry decide byte-for-byte identity. stdin: `inbox.mjs insert` (lib/record.sh, piped) and `notify.mjs trim` (lib/notify.sh) read fd 0, which inside the helper is the request pipe. Environment: lib/prompt.sh sets HARNESS_SUITE_LENGTH, HARNESS_SUITE_FAST_LENGTH and HARNESS_FIX on its render.mjs call, lib/record.sh sets HARNESS_CHECK_KEY_IGNORE on `treekey.mjs --pathspec`; treekey also reads HARNESS_CHECK_KEY_MAP, memlint MEMLINT_LINES, needs HARNESS_NOW and HOME. stderr: about 30 call sites in lib/*.sh redirect a served script's stderr (a file, run.log, /dev/null). H1-01 steps 4, H1-02 steps 3 and 6 and H1-02b step 1 cover them.
+- **Discovery** (affects run): tests/checks/84-node-memo.sh and 81-partial-key.sh count node starts through a `node` shim (NODE_COUNT) in a shell that sourced lib/record.sh: once F asks the helper their counts fall. H1-02b sets HARNESS_HELPER=0 for their counting shells, the one kind of edit to an existing check the list allows (the spec's `every existing check passes unchanged` holds for every other file).
+- **Discovery** (affects run): 91 and 92 are the next free check-file numbers. The spec's one NN-resident-helper.sh is planned as two files, as 86/87 were: 91-resident-helper.sh (H1-02: `ask` in a shell that sources lib/record.sh) and 92-resident-helper-run.sh (H1-02b: the stub start and the two-lane run), each with its tier by the 30 s rule; `bash tests/run.sh resident-helper` runs both.
+- **Discovery** (affects run): bash 5.2 here; its manual (Coprocesses) says a coproc's file descriptors are not available in subshells other than command and process substitutions: H1-02 checks `( ask … ) &` and `$( ask … )` on this bash rather than assuming either. None of the eleven served scripts has a module-level `let`/`var`; testcount.mjs reads process.argv at module level (its CLI tail) and has no main yet; render.mjs's main is not wrapped in process.exit.
+- **Discovery** (affects run): harness status at init: RUNNING 1 (this run), QUEUED 0, runner going. H1-04 re-checks before each timed run (the brief: no other suite alive). Its wall is long by design: two solo full suites (last full run 957 s, timeout 2400 s each) and four runs of file 13, one at a time, in the background.
+- **Question for Michael:** The spec plans H1-02 as one feature; the list splits it into H1-02 (lib/helper.mjs and `ask`, no call site moved) and H1-02b (the call sites, the lifecycle, the helper-on/off log diff), so H1-04 stays the proof and the last build feature, six features in all. It also takes three defaults the spec does not name: a served script reads environment from `io.env`, a stdin-fed call never reaches the helper, and a call site whose stderr is redirected goes through `ask` only where a check shows bytes and destination identical. All are recorded as *default*; say so in INBOX.md if you want otherwise. Files: /home/mh550/worktrees/agent-harness/agent-harness-2026-11-05/docs/specs/2026-11-03-resident-helper.md:47, /home/mh550/worktrees/agent-harness/agent-harness-2026-11-05/.harness/runs/agent-harness-2026-11-05/feature_list.json
+- *00-init · claude-fable-5-1*
