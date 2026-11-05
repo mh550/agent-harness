@@ -21,7 +21,8 @@ jq -c 'select(.kind != "coding" or .feature == "A")' "$RD/metrics.jsonl" > "$T/m
 "$H" report --md su > "$T/rep1.md" 2>&1; COLUMNS=200 HARNESS_TTY=1 NO_COLOR=1 "$H" report su > "$T/rep1.tty" 2>&1
 check "suite runs: a run of one such session: full_per_session 2, harness report --md's Suite runs row after Flakes, the TTY card carries the same value" \
   '[[ $(jq -c .suite_runs "$SU/summary.json") == "{\"sessions\":1,\"full\":2,\"fast\":0,\"runs\":3,\"full_per_session\":2,\"fast_per_session\":0}" ]] \
-  && grep -A1 "^| Flakes |" "$T/rep1.md" | grep -xF "| Suite runs | 2 full and 0 fast per coding session (2 full, 0 fast in 1; 3 runs in all) |" > /dev/null \
+  && grep -A1 "^| Flakes |" "$T/rep1.md" | grep -xF "| Fix rounds | 0 |" > /dev/null \
+  && grep -A1 "^| Fix rounds |" "$T/rep1.md" | grep -xF "| Suite runs | 2 full and 0 fast per coding session (2 full, 0 fast in 1; 3 runs in all) |" > /dev/null \
   && grep "suite runs" "$T/rep1.tty" | grep -F "2 full and 0 fast per coding session (2 full, 0 fast in 1; 3 runs in all)" > /dev/null'
 jq -c 'select(.kind != "coding")' "$RD/metrics.jsonl" > "$T/m0" && cp "$T/m0" "$RD/metrics.jsonl"
 check "suite runs: a run whose coding rows carry no count (rebuilt from run.log) reports 0" '"$H" report --md su | grep -xF "| Suite runs | 0 |" > /dev/null'

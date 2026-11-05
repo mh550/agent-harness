@@ -47,6 +47,43 @@ lane_cd   # after load_config: sessions see the slot and the lane branch as HARN
 export HARNESS_SCOPE_PREFIX; HARNESS_SCOPE_PREFIX=$(scope_unit "$RUN_ID" "$LANEU")   # its suites run as harness-<run>-<m>-check-<pid>
 export HARNESS_LANE=$M   # check.sh names it in a flakes.jsonl row, its sessions' {{CHECK}} calls too
 
+# A red suite's names, of the slot's tree as `green` just left it (decisions/2026-11-04-fix-rounds): RED_FILES, the
+# red-<key> marker's stored names when it exists, else its output's last HARNESS_FAILED= line (none: the whole suite);
+# RED_NAMES, every `FAIL <name>` line of that output (the tree's first run, check-<key>.out), else the files, else
+# "whole suite": never empty; RED_OUT, that output.
+red_names() {
+  local key l; key=$(node "$HARNESS_HOME/lib/treekey.mjs" 2> /dev/null)
+  RED_NAMES=() RED_FILES=() RED_OUT=$SCRATCH/check-$key.out; [[ -n $key && -f $RED_OUT ]] || RED_OUT=$SCRATCH/check.out
+  if [[ -n $key && -f $STATE/green/red-$key ]]; then read -ra RED_FILES <<< "$(sed -n 2p "$STATE/green/red-$key")"
+  else read -ra RED_FILES <<< "$(sed -n 's/^HARNESS_FAILED=//p' "$RED_OUT" 2> /dev/null | tail -1)"; fi
+  while IFS= read -r l; do [[ -n $l ]] && RED_NAMES+=("$l"); done < <(sed -n 's/^FAIL //p' "$RED_OUT" 2> /dev/null)
+  (( ${#RED_NAMES[@]} )) || RED_NAMES=("${RED_FILES[@]}")
+  (( ${#RED_NAMES[@]} )) || RED_NAMES=("whole suite")
+}
+# <m> <r> <verify-rounds-<m> before this verify> <whose the red is>: round r opens instead of the card. Under one hold
+# of the record lock: the fix feature onto the record's list (the driver's one list write besides repair's; the next
+# session's before.json is snapshotted after it, materialize_), then the red's last 200 lines into the record
+# (fix/<m>-<r>.out), the counters, the fix_round row, the note and their commit; no needs-<m>, record or notification.
+# The verdict was the suite's, the evidence held: verify-rounds-<m> goes back. 1: the feature could not be appended
+# (noted; nothing of the round is written): the caller opens the card.
+# <m> → the ids of m's features that don't pass, when there is one and every one is a fix feature; else 1
+fix_unpassed() {
+  jq -er --arg m "$1" '[.features[] | select(.milestone == $m and (.passes | not))] | if length > 0 and all(.kind == "fix") then .[].id else empty end' "$LIST" 2>> "$STATE/run.log"
+}
+fix_open() { record fix_open_ "$@" || return 1; : > "$LDIR/need"; sync_record; return 0; }
+fix_open_() {
+  local m=$1 r=$2 added id
+  # the steps name the suite as sessions see it ($HARNESS_CHECK): an absolute path would trip the lint's outside-repo
+  added=$(F fix-add "$LIST" "$m" "$r" all "${RED_NAMES[@]}" -- "${RED_FILES[@]}" -- "$RUN_DIR/fix/$m-$r.out" '$HARNESS_CHECK' "$WORKER_MODEL" 2>> "$STATE/run.log") \
+    || { note "verify $m: fix round $r could not be opened (its feature was not appended; see run.log)"; return 1; }
+  id=${added%%$'\t'*}
+  mkdir -p "$REC/fix"; tail -n 200 "$RED_OUT" > "$REC/fix/$m-$r.out" 2>> "$STATE/run.log"
+  echo "$r" > "$STATE/fix-rounds-$m"; echo "$r" > "$STATE/fix-open-$m"; echo "$3" > "$STATE/verify-rounds-$m"
+  MET fix-round "$REC/metrics.jsonl" open "$RUN_ID" "$m" "$r" all "$id" "${RED_NAMES[@]}" -- "${RED_FILES[@]}"
+  note "verify $m: the suite is red on the verified tree ($4); fix round $r of $MAX_FIX_ROUNDS: $id appended (${added#*$'\t'})"
+  rec_commit_ "HARNESS: verify $m: fix round $r"
+}
+
 # Independently re-check milestone m, in its lane. 0 = verified (tagged) · 1 = not verified · 2 = deferred (a usage
 # limit: retry). `once` (at the deadline): one session, no escalation, and this round is the last
 # (decisions/2026-10-26-verify-before-deadline). `rebase`: the re-base's verify round (rebase below) on the merged
@@ -111,7 +148,26 @@ verify() {
   done
   echo "$rounds" > "$STATE/verify-rounds-$m"
   if [[ $result == hold ]] && ! green; then result=red; fi   # on the slot's tree, the one tagged below
+  # A verifier that performs a fix feature's steps as written (its last is the full suite) un-passes it on a tree whose
+  # suite is red. That verdict is the suite's, and the rule below answers it (the next round, or the card), not a
+  # re-check's attempt: when fix features are all it un-passed and the suite is red, they pass again and the result is red
+  local fixu
+  if [[ $result == fail ]] && fixu=$(fix_unpassed "$m") && ! green; then
+    for id in $fixu; do record F pass "$LIST" "$id"; done
+    note "verify $m: the verifier un-passed ${fixu//$'\n'/, } on a red suite; the verdict is the suite's (a fix round or the card, no re-check)"
+    result=red
+  fi
   flakes_note
+  # Fix rounds (decisions/2026-11-04-fix-rounds). The suite spoke (hold: green; red: after check.sh's rerun guard, so
+  # never a flake): the round that is open (fix-open-<m>) gets its fix_result row, once. A thin or failed verify has no
+  # suite verdict and leaves it open for the next one.
+  local fixn fixr fixed="" fixj=""; RED_NAMES=()
+  fixn=$(cat "$STATE/fix-rounds-$m" 2> /dev/null || echo 0); fixr=$(cat "$STATE/fix-open-$m" 2> /dev/null)
+  [[ $result == red ]] && red_names
+  if [[ -n $fixr && $result == @(hold|red) ]]; then
+    record MET fix-round "$REC/metrics.jsonl" result "$RUN_ID" "$m" "$fixr" all "${RED_NAMES[@]}"
+    rm -f "$STATE/fix-open-$m"; [[ $result == hold ]] && fixed=" (after fix round $fixr)"
+  fi
   case $result in
     hold)
       touch "$STATE/verified-$m"
@@ -122,9 +178,9 @@ verify() {
       else
         # a tag an earlier verify made and could not push goes now; one origin has stays as it is
         if git tag -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3)" 2>> "$STATE/run.log" || [[ -f $STATE/tag-local-$m ]]; then tag_push "$m"; fi
-        if [[ -z $(tag_commit "$m") ]]; then note "$m verified; tag run/$RUN_ID/$m could not be made (see run.log)"   # lane_done's last branch says the rest
-        elif [[ -f $STATE/tag-local-$m ]]; then note "$m verified$(tag_local_words "$m")"
-        else note "$m verified and tagged run/$RUN_ID/$m"; fi
+        if [[ -z $(tag_commit "$m") ]]; then note "$m verified$fixed; tag run/$RUN_ID/$m could not be made (see run.log)"   # lane_done's last branch says the rest
+        elif [[ -f $STATE/tag-local-$m ]]; then note "$m verified$(tag_local_words "$m")$fixed"
+        else note "$m verified and tagged run/$RUN_ID/$m$fixed"; fi
       fi
       rec_commit "HARNESS: $m verified"; sync_record
       if [[ $mode == once ]]; then [[ -f $STATE/nomerge-$m ]] || merge_milestones "$m"   # past the deadline: a re-base waits for the next segment
@@ -132,11 +188,21 @@ verify() {
       return 0 ;;
     thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $last; not verified (needs Michael)"
       need="verify evidence too thin" ;;
-    red) touch "$STATE/needs-$m"
+    red)
       # with main merged in, main and the milestone disagree; without, a slow-tier red the fast gate let through (fast-gate)
-      if (( own )); then note "verify $m: the suite is red on the verified tree (main had nothing new: a slow-tier red the fast gate let through); not verified (needs Michael)"
-        need="suite red on the verified tree"
-      else note "verify $m: the suite is red on the verified tree (main merged in); not verified (needs Michael)"; need="suite red after merging main"; fi ;;
+      local whose="main merged in" after=""; need="suite red after merging main"
+      (( own )) && whose="main had nothing new: a slow-tier red the fast gate let through" need="suite red on the verified tree"
+      # under MAX_FIX_ROUNDS a red opens a fix round, no card: the lane loop's next pick is its feature, then this verify
+      # again. In a plain verify only: `once` is past the deadline (no session can follow), `rebase`'s caller is no lane loop
+      if [[ -z $mode ]] && (( fixn < MAX_FIX_ROUNDS )) && fix_open "$m" $(( fixn + 1 )) $(( rounds - 1 )) "$whose"; then return 1; fi
+      # the card, as before fix rounds; after rounds (never a re-base's: its milestone was verified since) the note names
+      # them (their ids from the list) and the card's why what each left red (the rows, paired by metrics.mjs fixPairs)
+      touch "$STATE/needs-$m"
+      if [[ $mode != rebase ]] && (( fixn )); then
+        after=" after $fixn fix round$( (( fixn == 1 )) || echo s) ($(jq -r --arg m "$m" '[.features[] | select(.milestone == $m and .kind == "fix") | .id] | join(", ")' "$LIST"))"
+        fixj=$(MET fix-rounds "$REC/metrics.jsonl" "$m" 2>> "$STATE/run.log")
+      fi
+      note "verify $m: the suite is red on the verified tree ($whose); not verified (needs Michael)$after" ;;
     fail)
       local fids; Fv fids ids "$LIST" "$m"
       for id in $fids; do
@@ -158,7 +224,7 @@ verify() {
   fi
   printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
   # its record, committed with the verdict: thin, red, or the re-check's failed ids
-  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || { (( own )) && [[ $result == red ]] && echo own; } || echo "$mode")")   # verify_recheck's rebase words are rebase_fail's
+  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || { (( own )) && [[ $result == red ]] && echo own; } || echo "$mode")" ${fixj:+"rounds=$fixj"})   # verify_recheck's rebase words are rebase_fail's
   rec_commit "HARNESS: verify $m"; sync_record
   [[ -n $need ]] && needs_you "$m" "$need" progress.md "$nref"   # after the push: the click shows the verify entry
   return 1
@@ -384,8 +450,12 @@ while :; do
     repairs=$(( repairs + 1 )); note "restored the feature list after $id: $out"
     (( repairs >= MAX_REPAIRS )) && { note "$repairs sessions in a row edited the feature list; stopping for Michael"; lane_exit 12 "feature-list edits"; }
   fi
-  # passes stands on the fast tier; the full suite runs at the verify (decisions/2026-11-03-fast-gate)
-  if F passes "$SLIST" "$id" && ! green_fast; then F unpass "$SLIST" "$id"; note "$id un-passed: fast tier red after the session"; fi
+  # passes stands on the fast tier; the full suite runs at the verify (decisions/2026-11-03-fast-gate). A fix feature's
+  # stands on its red's files first, then the fast tier (green_fix, decisions/2026-11-04-fix-rounds)
+  if F passes "$SLIST" "$id"; then
+    if [[ $kind == fix ]]; then green_fix "$id" || { F unpass "$SLIST" "$id"; note "$id un-passed: $FIX_RED red after the session"; }
+    elif ! green_fast; then F unpass "$SLIST" "$id"; note "$id un-passed: fast tier red after the session"; fi
+  fi
   flakes_note   # the rows of that suite and of the session's own calls
   tests_end   # the slot's tree: a full green-<key> only, so after a fast-gated session the last full count stays
   passed=$(F passes "$SLIST" "$id" && echo true || echo false)

@@ -1,9 +1,12 @@
 // lib/features.mjs: the scheduler's deps and the step lint (its rules and its note).   node --test tests/unit/features.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { deps, lint, lintNote, RULES } from "../../lib/features.mjs";
+import { deps, lint, lintNote, RULES, fixFeature, kindOf, repairList, schedule } from "../../lib/features.mjs";
 
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const got = (...steps) => lint([{ id: "A", milestone: "M1", steps }]).map(f => `${f.step}:${f.rule}`).join();
@@ -115,4 +118,79 @@ test("lint: RULES and the header comment name unit-collision and unreproducible;
   assert.ok(imp > 0 && p > imp, "the header ranges are found");
   assert.match(h, /unit-collision[\s\S]*unit-collision/);
   assert.match(h, /unreproducible[\s\S]*unreproducible/);
+});
+
+// ---- fix rounds (decisions/2026-11-04-fix-rounds): the fix feature a red verify appends ----
+const FXL = () => [{ id: "A", milestone: "M1", kind: "build", description: "a", steps: ["`x` exits 0"], passes: true },
+  { id: "B", milestone: "M1", kind: "build", description: "b", steps: ["`y` exits 0"], passes: true },
+  { id: "C", milestone: "M2", kind: "build", description: "c", steps: ["`z` exits 0"], after: ["M1"], passes: false }];
+const FXO = { milestone: "M1", round: 1, issue: "all", names: ["t1"], files: ["t1"], out: ".harness/runs/r/fix/M1-1.out", check: "$HARNESS_CHECK", model: "opus" };
+
+test("fix rounds: fixFeature builds <m>-fix<r> after the milestone's last feature, kind fix, issue, round, the names, files and out, three steps, not passing", () => {
+  const f = fixFeature(FXL(), FXO);
+  assert.deepEqual(f, { id: "M1-fix1", milestone: "M1", kind: "fix", issue: "all", round: 1, after: ["B"], model: "opus",
+    fix_names: ["t1"], fix_files: ["t1"], fix_out: ".harness/runs/r/fix/M1-1.out",
+    description: "fix round 1 of M1: the full suite is red on the verified tree (1 failing: t1)",
+    steps: ["`$HARNESS_CHECK t1` exits 0 (the HARNESS_FAILED files of .harness/runs/r/fix/M1-1.out)", "`$HARNESS_CHECK --fast` exits 0",
+      "`$HARNESS_CHECK` exits 0 (the full suite; the harness runs it at the verify)"], passes: false });
+  assert.equal(Object.keys(f).join(), "id,milestone,kind,issue,round,after,model,fix_names,fix_files,fix_out,description,steps,passes");
+  // round 2 waits on round 1's feature (the milestone's last by then); no model given: no key (F next falls back)
+  const l2 = [...FXL(), { ...f, passes: true }], g = fixFeature(l2, { ...FXO, round: 2, names: ["t3"], files: ["t3", "t4"], out: "o", model: undefined });
+  assert.deepEqual([g.id, g.after, g.round, "model" in g, g.steps[0]], ["M1-fix2", ["M1-fix1"], 2, false, "`$HARNESS_CHECK t3 t4` exits 0 (the HARNESS_FAILED files of o)"]);
+});
+
+test("fix rounds: the description names up to five failing checks, then +n; a red with no files is the whole suite", () => {
+  const d = n => fixFeature(FXL(), { ...FXO, names: Array.from({ length: n }, (_, i) => `n${i + 1}`) }).description;
+  assert.equal(d(5), "fix round 1 of M1: the full suite is red on the verified tree (5 failing: n1, n2, n3, n4, n5)");
+  assert.equal(d(7), "fix round 1 of M1: the full suite is red on the verified tree (7 failing: n1, n2, n3, n4, n5 +2)");
+  const w = fixFeature(FXL(), { ...FXO, files: [] });
+  assert.deepEqual(w.fix_files, []);
+  assert.equal(w.steps[0], "`$HARNESS_CHECK` exits 0 (the whole suite: .harness/runs/r/fix/M1-1.out has no HARNESS_FAILED line)");
+  assert.equal(w.steps.length, 3);
+});
+
+test("fix rounds: the step lint prints nothing for a fix feature, kindOf returns fix, and it is no build or review to the review rules", () => {
+  const l = [...FXL(), fixFeature(FXL(), FXO)];
+  assert.deepEqual(lint(l), []);
+  assert.equal(kindOf(l.at(-1)), "fix");
+  assert.deepEqual(lint([...l, fixFeature(l, { ...FXO, round: 2, files: [] })]), []);   // the whole-suite steps too
+});
+
+test("fix rounds: schedule offers the fix feature in its lane once the milestone's last feature passes, and nothing waits on it", () => {
+  const l = [...FXL(), fixFeature(FXL(), FXO)];
+  assert.equal(schedule(l, {}, 2, new Set(), "M1").next.id, "M1-fix1");
+  assert.equal(schedule(l, {}, 2, new Set(), "M2").next.id, "C");   // C's "after M1" is the M1 features before C: the fix is after it
+  assert.deepEqual(deps(l, l[2]), ["A", "B"]);
+});
+
+test("fix rounds: repairList with the appended feature in before keeps it, and reverts a session that removes or edits it", () => {
+  const before = { run: "r", features: [...FXL(), fixFeature(FXL(), FXO)] }, copy = () => JSON.parse(JSON.stringify(before));
+  const passed = copy(); passed.features[3].passes = true;
+  const ok = repairList(before, passed, f => f.id === "M1-fix1");
+  assert.deepEqual([ok.reverted, ok.list.features[3].passes, ok.list.features.length], [[], true, 4]);
+  const gone = copy(); gone.features.pop();
+  assert.deepEqual(repairList(before, gone, f => f.id === "M1-fix1").reverted, ["M1-fix1: removed"]);
+  const easier = copy(); easier.features[3].fix_files = [];
+  const r = repairList(before, easier, f => f.id === "M1-fix1");
+  assert.deepEqual([r.reverted, r.list.features[3].fix_files], [["M1-fix1: edited"], ["t1"]]);
+});
+
+test("fix rounds: the CLI fix-add appends the feature to the list file and prints its id and the failing words; a second add of the id is refused", () => {
+  const d = mkdtempSync(join(tmpdir(), "fx-")), p = join(d, "feature_list.json"), F = fileURLToPath(new URL("../../lib/features.mjs", import.meta.url));
+  const run = (...a) => execFileSync(process.execPath, [F, "fix-add", p, ...a], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  try {
+    writeFileSync(p, JSON.stringify({ run: "r", features: FXL() }));
+    assert.equal(run("M1", "1", "all", "t1", "needs card (x): y", "--", "t1", "59-needs-cards", "--", ".harness/runs/r/fix/M1-1.out", "$HARNESS_CHECK", "opus"), "M1-fix1\t2 failing: t1, needs card (x): y\n");
+    const l = JSON.parse(readFileSync(p, "utf8"));
+    assert.equal(l.run, "r");
+    assert.deepEqual(l.features.map(f => f.id), ["A", "B", "C", "M1-fix1"]);
+    assert.deepEqual(l.features[3], fixFeature(FXL(), { ...FXO, names: ["t1", "needs card (x): y"], files: ["t1", "59-needs-cards"] }));
+    assert.throws(() => run("M1", "1", "all", "t1", "--", "t1", "--", "o", "$HARNESS_CHECK"), /M1-fix1 is in the list already/);
+    // no files (the whole suite) and no model
+    assert.equal(run("M1", "2", "all", "whole suite", "--", "--", "o2", "$HARNESS_CHECK"), "M1-fix2\t1 failing: whole suite\n");
+    const g = JSON.parse(readFileSync(p, "utf8")).features[4];
+    assert.deepEqual([g.fix_files, g.after, "model" in g], [[], ["M1-fix1"], false]);
+    assert.throws(() => run("M9", "1", "all", "t1", "--", "t1", "--", "o", "$HARNESS_CHECK"), /no feature of milestone M9/);
+    assert.throws(() => run("M1", "3", "all", "t1", "--", "t1"), /usage: features\.mjs fix-add/);
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });

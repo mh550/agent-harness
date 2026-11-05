@@ -345,6 +345,47 @@ finish keeps check-last.out and init.out in the state dir and deletes the run's 
 finish opens usage_limit (limit, warn, no priority) for a usage-limit end; needs.md committed; the run-end title kept
 finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)
 finish: record_pr runs before ledger, so the ledger copy of harness-log.md holds the record PR note
+fix rounds config: MAX_FIX_ROUNDS=2 by default, commented in the user template and among what bounds a run
+fix rounds fx1: a red verify opens round 1 (the note with the failing name) and no card: no needs Michael, needs-M1, verify_red item or needs-you post
+fix rounds fx1: harness show fx1 M1-fix1 lists the fix session alone: the fix_round row naming the feature is no session
+fix rounds fx1: metrics.jsonl has the fix_round row (failed_before t1), one fix_result (failed_after [], fixed) and the fix session's row with role fix
+fix rounds fx1: summary.json counts 1 opened, 1 fixed and no fix row as a session; harness report --md prints the Fix rounds row; the run-ended note groups no fix kind
+fix rounds fx1: the fix feature's gate runs its files (t1), then the fast tier, and it passes (passes=true in run.log, no un-pass)
+fix rounds fx1: the fix session's prompt has the Fix round line under This session (1 of 2, t1, the output's path, both gate commands); A's has none
+fix rounds fx1: the record's list has M1-fix1 (kind fix, issue all, round 1, after B, t1 as name and file, three steps, the worker model), clean under the step lint
+fix rounds fx1: the red's output is in the record as fix/M1-1.out with the FAIL t1 line, committed
+fix rounds fx1: the second verify tags M1 (after fix round 1) and it merges; two verify sessions, verify-rounds-M1 is 1, the run is done
+fix rounds fx2: a continue verifies again at the cap: the card again after 2 fix rounds, no third round, feature or fix_result row
+fix rounds fx2: each round's fix_result pairs with its fix_round and is written once (t1 → t3, t3 → t3, neither fixed); 2 opened, 0 fixed in summary.json and the report
+fix rounds fx2: round 1 on t1, its session passes its gate (t1, the fast tier), the second verify is red on t3 and opens round 2 of 2 after M1-fix1
+fix rounds fx2: round 2's session changes no code and passes its gate (t3, the fast tier); the third verify is red and the card comes after 2 fix rounds, naming both
+fix rounds fx2: the verify_red card is the own variant, its why names both rounds and what each left red (t3), and one needs-you post went out
+fix rounds fx3: a flake at the verify is noted (flaky: t2) and M1 is verified and tagged with no fix round: no fix feature, no fix row, Fix rounds 0
+fix rounds fx4: MAX_FIX_ROUNDS=0 opens the verify_red card at the first red, its note and why as before: no round, feature, row or fix state
+fix rounds fx5: a fix session that leaves the red is un-passed by its gate's first command (check t1; the fast tier not run), given up, and the run ends blocked on M1-fix1
+fix rounds fx6: a red after merging main opens a round with the main-merged-in note, and the fixed milestone is tagged (after fix round 1)
+fix rounds fx7: a fix feature that cannot be appended opens no round: the note says so, the card comes as before, and no fix output, row or state is left
+fix rounds fx8: both rounds have their fix_result row (t3, t3), the fix features pass in the record's list, and the attempts are untouched
+fix rounds fx8: fix features the verifier un-passed on a red suite pass again (noted) and the verdict is the suite's: round 2 opens, then the card after 2 fix rounds, never a failed re-check
+fix rounds stub suite: --tier fast is red on BROKEN or BROKEN-FAST, green on the slow markers
+fix rounds stub suite: STUB_FLAKE_ONCE=1 makes the first bare call after flake-armed red on t2 and removes it; a fast call, a subset or a call without the flag leaves it
+fix rounds stub suite: a subset is red only on its own file's marker (t1 on BROKEN-SLOW, t3 on BROKEN-SLOW2)
+fix rounds stub suite: bare is red on BROKEN and BROKEN-SLOW (FAIL t1, HARNESS_FAILED=t1) and on BROKEN-SLOW2 (FAIL t3, HARNESS_FAILED=t3), green with none
+fix rounds stub suite: gate-green-once makes the next subset green once and goes; a bare call leaves it and stays red
+fix rounds: a fix feature's un-pass note (check <files> red) reads as a red suite, beside the fast tier's and the older note
+fix rounds: build adds fix_rounds from metrics.jsonl and counts neither row as a session, a role or a cost; Spend by role lists fix
+fix rounds: fixFeature builds <m>-fix<r> after the milestone's last feature, kind fix, issue, round, the names, files and out, three steps, not passing
+fix rounds: fixPairs pairs each fix_round with the fix_result of its milestone and round (none yet: no verdict), and the CLI fix-rounds prints one milestone's
+fix rounds: fixRound is the row at a round's open and fixResult the next verify's suite verdict, fixed exactly when nothing failed
+fix rounds: fixRounds pairs each fix_result to its fix_round by milestone and round, per milestone in order
+fix rounds: repairList with the appended feature in before keeps it, and reverts a session that removes or edits it
+fix rounds: schedule offers the fix feature in its lane once the milestone's last feature passes, and nothing waits on it
+fix rounds: the CLI fix-add appends the feature to the list file and prints its id and the failing words; a second add of the id is refused
+fix rounds: the CLI fix-round appends one row per call to a metrics.jsonl path; isSession is false for both kinds and summary counts neither
+fix rounds: the description names up to five failing checks, then +n; a red with no files is the whole suite
+fix rounds: the report's Fix rounds row comes after Flakes (opened · fixed, per milestone), 0 for none, no row for a summary without the key
+fix rounds: the step lint prints nothing for a fix feature, kindOf returns fix, and it is no build or review to the review rules
+fix rounds: the verify_red card with a rounds field names each round's id and what it left red and stays filled; without it the card reads as today
 flakes run: a flake on finish's own suite is noted too, and summary.json counts it once
 flakes run: a red every time still un-passes C with today's note after a rerun (the invariant)
 flakes run: a run with no flake writes no flaky: line and no flakes.jsonl

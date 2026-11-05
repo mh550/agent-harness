@@ -75,8 +75,19 @@ suite_length() {
   if [[ -n $w ]]; then echo "$w s"; else echo "not measured yet"; fi
 }
 
+# <feature id> → a fix feature's line under *This session* ({{FIX}}, decisions/2026-11-04-fix-rounds): its round, what
+# failed, the red's output and the two commands its `passes` stands on (green_fix in lib/record.sh); nothing for any
+# other feature. From the run directory's list in the cwd (a lane's slot holds the copy the session reads).
+fix_line() {
+  [[ -n $1 && -f $RUN_DIR/feature_list.json ]] || return 0
+  jq -r --arg id "$1" --arg max "${MAX_FIX_ROUNDS:-}" --arg check "$CHECK" --arg tree "this milestone's verified tree" '.features[] | select(.id == $id and .kind == "fix")
+    | "Fix round \(.round) of \($max): the full suite is red on \($tree); failing: \(.fix_names[:5] | join(", "))\(if (.fix_names | length) > 5 then " +\((.fix_names | length) - 5)" else "" end); its output: \(.fix_out); your feature passes on `\([$check] + .fix_files | join(" "))` and `\($check) --fast` green, and the verify then runs the full suite."' \
+    "$RUN_DIR/feature_list.json" 2> /dev/null
+}
+
 prompt_render() {   # template name → stdout: the static template, the policy, this run (its lines, the brief, the line naming CLAUDE.md, the routing block), this session
-  local extra=() rules=() where=where-things-go length="" flength=""
+  local extra=() rules=() where=where-things-go length="" flength="" fix=""
+  [[ $1 == coding ]] && fix=$(fix_line "${HARNESS_FEATURE:-}")
   # Claude Code loads CLAUDE.md in the worktree itself: one line names it, the file isn't pasted (decisions/2026-10-21-no-double-claude-md)
   [[ -f CLAUDE.md ]] && rules=("$HARNESS_HOME/prompts/parts/rules.md")
   # the `## Where things go` block, unless CLAUDE.md has its own; verify and retro edit nothing, so theirs routes facts to
@@ -99,7 +110,7 @@ prompt_render() {   # template name → stdout: the static template, the policy,
   fi
   # the last 40 whole lines and where the rest is (decisions/2026-10-21-clock-and-bounded-init-output)
   HARNESS_DECISIONS=$(node "$HARNESS_HOME/lib/memlint.mjs" store-line .) HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
-    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
+    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength HARNESS_FIX=$fix node "$HARNESS_HOME/lib/render.mjs" "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
