@@ -16,6 +16,7 @@
 #   queue.sh [<until epoch, 0 = none>]
 set -uo pipefail
 : "${HARNESS_HOME:?}"
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness} Q=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}/queue
 UNTIL=${1:-0} POLL=${HARNESS_QUEUE_POLL:-30}
 # shellcheck source=lib/config.sh

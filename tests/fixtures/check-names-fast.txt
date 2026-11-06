@@ -600,6 +600,8 @@ testcount.mjs: --total is the last N/M line's total; nothing without one
 testcount.mjs: main gives the CLI's bytes with and without --total and --source, and a missing file is no output and 0
 testcount.mjs: the runner's last N/M checks passed is the count
 testcount.mjs: total is the last N/M line's M, null without one
+tests/lib.sh: TEST_XTRACE_DIR=<dir> traces a check file's harness calls and its own shell to <dir>/<file>/, node to <dir>/<file>/v8
+tests/lib.sh: without TEST_XTRACE_DIR an inherited HARNESS_XTRACE is dropped: no trace, whoever runs the suite
 the answer skill's facts cite file:line
 the answer skill's first step is harness needs, harness parked its alias
 the answer skill: another live run of the project: ask, with the queue add and --now and their merge order
@@ -619,6 +621,7 @@ the restart line says why: no reply in <n> s, a bad header, a wrong id, the help
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the same runner goes on to the next entry and starts it (a --brief start of the same project)
 the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
+the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/00-unit-tier/v8
 thin evidence escalates the verify
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
@@ -690,3 +693,12 @@ waitsOn: a feature's and a milestone's unfinished dependants through after, ever
 with $HARNESS_SCRATCH/helper-<pid>.lock held: ( ask ) &, $( ask ) and the owner's own ask each spawn (+1 each), never wait
 with no redirect a request's stderr is this shell's, once: nothing left to go out with a later call
 x=$(ask …) answers through the parent's helper (no start), its exit code seen inside
+xtrace: HARNESS_XTRACE=<dir> traces the CLI, the driver, a lane and the check runner, lines led by +<file>:<line>:
+xtrace: a directory that can't be made costs the trace, never the command
+xtrace: a run started in tmux traces its driver too: the CLI passes the variable to the tmux command
+xtrace: a run without HARNESS_XTRACE leaves no trace file, and no trace line in its output
+xtrace: a sourced file's lines are traced under its own name, by the process that sourced it (lib/record.sh)
+xtrace: a traced segment's first note says where the trace goes; a plain run has no such note
+xtrace: every executable script of lib/ and bin/harness sources lib/xtrace.sh under the guard, once
+xtrace: the trace goes to its own descriptor: the traced run's output holds no trace line
+xtrace: the traced run's harness-log.md is the plain run's plus that note, the run id, times, hashes and lengths aside

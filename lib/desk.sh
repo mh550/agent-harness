@@ -11,6 +11,7 @@
 # --list: window, run, URL, age · --close/--all kill desk windows · --gc (from harness gc): those idle for 24 h.
 set -uo pipefail
 : "${HARNESS_HOME:?}"
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}
 S=${HARNESS_DESK_SESSION:-h-desk} WAIT=${HARNESS_DESK_WAIT:-60} LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
 

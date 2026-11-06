@@ -3,6 +3,14 @@
 #   source "$(dirname "$0")/../lib.sh" && suite_setup   … checks …   suite_end   (KEEP=1 keeps the file's $T)
 set -uo pipefail
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd); H=$HERE/../bin/harness F="node $HERE/../lib/features.mjs"
+# TEST_XTRACE_DIR=<dir> (the coverage measurement, tests/tools/coverage.sh): this check file's harness processes and its
+# own shell (a check may source a lib file and call into it) trace to <dir>/<file>/ (lib/xtrace.sh), and node writes its
+# coverage to <dir>/<file>/v8. Without it nothing traces, whatever HARNESS_XTRACE the suite inherited (a traced run's
+# session running it): the suite's stub runs never set it (decisions/2026-11-03-suite-coverage)
+if [[ -n ${TEST_XTRACE_DIR:-} ]]; then
+  export HARNESS_XTRACE=$TEST_XTRACE_DIR/$(basename "$0" .sh) NODE_V8_COVERAGE=$TEST_XTRACE_DIR/$(basename "$0" .sh)/v8
+  source "$HERE/../lib/xtrace.sh"
+else unset HARNESS_XTRACE; fi
 
 # a fresh $T, private tmux server, stub environment, base user config and throwaway project (cwd: $T/proj), so every file starts from the same state
 suite_setup() {

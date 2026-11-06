@@ -7,6 +7,7 @@
 # from the reporter (a process.exit(0)), PASS/FAIL lines that aren't the summary's count (decisions/2026-11-03-unit-tier).
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd); ud=${TEST_UNIT_DIR:-$HERE/unit}
+[[ -z ${TEST_XTRACE_DIR:-} ]] || export NODE_V8_COVERAGE=$TEST_XTRACE_DIR/00-unit-tier/v8   # the coverage measurement (tests/lib.sh, which this file doesn't source)
 shopt -s nullglob; files=("$ud"/*.test.mjs); shopt -u nullglob
 (( ${#files[@]} )) || { echo "FAIL unit tier: no *.test.mjs in $ud"; echo "0/1 checks passed"; exit 1; }
 o=$(node --test --test-isolation=none --test-reporter="$HERE/unit/reporter.mjs" --test-reporter-destination=stdout "${files[@]}"); rc=$?

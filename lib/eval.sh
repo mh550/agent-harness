@@ -18,6 +18,7 @@
 # answer exact, contains or miss into probes.json.
 set -uo pipefail
 HARNESS_HOME=${HARNESS_HOME:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 # shellcheck source=lib/version.sh
 source "$HARNESS_HOME/lib/version.sh"
 # shellcheck source=lib/config.sh

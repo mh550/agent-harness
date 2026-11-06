@@ -119,6 +119,7 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
   (( $# == 3 )) || { echo "usage: lib/prompt.sh <state dir> <template> <feature>" >&2; exit 2; }
   STATE=$(cd "$1" && pwd) && [[ -f $STATE/meta.env ]] || { echo "prompt.sh: $1 is not a run's state dir (no meta.env)" >&2; exit 1; }
   HARNESS_HOME=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)   # this version's templates, whatever the caller's
+  [[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
   # shellcheck source=lib/config.sh
   source "$HARNESS_HOME/lib/config.sh"
   # shellcheck source=lib/scope.sh

@@ -31,6 +31,7 @@
 # HARNESS_LANE_POLL: seconds between the lane coordinator's polls (default 10; the suite sets 1)
 set -uo pipefail
 : "${WT:?}" "${RUN_ID:?}" "${STATE:?}" "${PROJECT_DIR:?}" "${HARNESS_HOME:?}"
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 cd "$WT" || exit 1
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"
@@ -491,6 +492,8 @@ memlint_check() {
   while IFS= read -r f; do [[ -n $f ]] && note "memlint: $f"; done <<< "$out"
   return 0
 }
+# a traced segment says so once, first (lib/xtrace.sh; decisions/2026-11-03-suite-coverage)
+[[ -z ${HARNESS_XTRACE:-} ]] || note "trace: this segment's harness processes write every command they run to $HARNESS_XTRACE (HARNESS_XTRACE)"
 memlint_check
 
 # One probe per segment (this driver process): without a user bus every session runs bare, said once

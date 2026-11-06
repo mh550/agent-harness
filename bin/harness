@@ -86,6 +86,7 @@
 #   config layers         harness defaults → ~/.config/harness/config.sh → <project>/.harness/config.sh → the run's options
 set -euo pipefail
 HARNESS_HOME=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd); export HARNESS_HOME
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}
 WT_ROOT=${HARNESS_WORKTREES:-$HOME/worktrees}
 Q=$STATE_ROOT/queue
@@ -380,7 +381,7 @@ cmd_start() {
   local v; for v in HARNESS_CLAUDE HARNESS_GH HARNESS_SCRATCH_ROOT HARNESS_PW HARNESS_PAUSE_POLL HARNESS_CONFIG HARNESS_LEDGER \
     HARNESS_STATE HARNESS_WORKTREES HARNESS_LIMIT_SLEEP HARNESS_MERGE_ONLY HARNESS_CURL HARNESS_DESK_SESSION HARNESS_DESK_WAIT \
     HARNESS_SYSTEMD_RUN HARNESS_SYSTEMCTL HARNESS_MEMINFO HARNESS_MEM_POLL HARNESS_LANE_POLL HARNESS_RECORD_DELAY HARNESS_COUNT_HOLD \
-    HARNESS_ORIGIN_WAITS HARNESS_ORIGIN_TRY_TIMEOUT HARNESS_HELPER HARNESS_HELPER_TIMEOUT; do
+    HARNESS_ORIGIN_WAITS HARNESS_ORIGIN_TRY_TIMEOUT HARNESS_HELPER HARNESS_HELPER_TIMEOUT HARNESS_XTRACE; do
     [[ -n ${!v:-} ]] && env+=" $v=$(printf %q "${!v}")"; done
   if (( fg )); then eval "env $env $(printf %q "$HARNESS_HOME/lib/driver.sh")"; return; fi
 

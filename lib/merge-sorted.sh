@@ -6,6 +6,7 @@
 # Opted into per file by `.gitattributes` `merge=sorted-union`; the harness sets the driver in its worktrees' own
 # config (merge_drivers, lib/record.sh; decisions/2026-10-29-conflict-resolution).
 set -uo pipefail
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$(dirname "$0")/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 export LC_ALL=C
 O=$1 A=$2 B=$3
 sort -c "$A" 2> /dev/null && sort -c "$B" 2> /dev/null || { git merge-file -L ours -L base -L theirs "$A" "$O" "$B" && exit 0; exit 1; }

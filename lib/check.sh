@@ -35,6 +35,7 @@
 # Each call that ran or answered appends `<epoch> <full|fast|subset|partial|cached> <seconds>` to $HARNESS_SCRATCH/check-runs.log
 # (the lane's "suite ran" note counts a session's from it).
 set -uo pipefail
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$(dirname "$0")/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 cmd=${HARNESS_CHECK_CMD:-} fast=0 scratch=${HARNESS_SCRATCH:?HARNESS_SCRATCH is not set}
 cache=${HARNESS_CHECK_CACHE:-$scratch}   # green-<key> and red-<key> markers, part-<key> sidecars (the driver keeps them in its state dir, not in scratch)
 max=${HARNESS_CHECK_MEMORY_MAX:-3G} to=${HARNESS_CHECK_TIMEOUT:-15m}
