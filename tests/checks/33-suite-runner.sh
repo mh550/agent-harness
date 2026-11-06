@@ -20,7 +20,7 @@ check "suite runner: TEST_JOBS=4 replays each file whole in completion order; th
   '[[ $(grep -E "^(PASS|FAIL) " "$T/rc4.out" | tr "\n" ,) == "PASS rc b1,PASS rc a1,PASS rc a2,PASS rc c1,FAIL rc c2," ]] \
   && [[ $(grep -E "^(PASS|FAIL) " "$T/rc1.out" | tr "\n" ,) == "PASS rc c1,FAIL rc c2,PASS rc a1,PASS rc a2,PASS rc b1," ]]'
 check "suite runner: a timing line per file, then the slowest three, the wall time and the jobs" \
-  'grep -qE "^01-a: 2 checks, [0-9]+\.[0-9] s$" "$T/rc4.out" && grep -qE "^02-b: 1 checks, [0-9]+\.[0-9] s$" "$T/rc4.out" && grep -qE "^03-c: 2 checks, [0-9]+\.[0-9] s$" "$T/rc4.out" \
+  'grep -qE "^01-a: 2 checks, [0-9]+\.[0-9] s, tier fast$" "$T/rc4.out" && grep -qE "^02-b: 1 checks, [0-9]+\.[0-9] s, tier fast$" "$T/rc4.out" && grep -qE "^03-c: 2 checks, [0-9]+\.[0-9] s, tier fast$" "$T/rc4.out" \
   && grep -qE "^slowest: 03-c [0-9.]+ s, 01-a [0-9.]+ s, 02-b [0-9.]+ s; wall [0-9.]+ s, 4 jobs, tier all$" "$T/rc4.out" && grep -qE "; wall [0-9.]+ s, 1 jobs, tier all$" "$T/rc1.out"'
 check "suite runner: TEST_JOBS defaults to half the cores, at most 4, at least 1" \
   'n=$(( $(nproc) / 2 )); (( n > 4 )) && n=4; (( n < 1 )) && n=1; grep -qE "; wall [0-9.]+ s, $n jobs, tier all$" "$T/rc.out" && [[ $(cat "$T/rc.rc") == 1 ]]'
@@ -132,6 +132,10 @@ cn tx "tx f1" "tx r1" "tx s1" && tc tx "tx f1" "tx r1" && tiny "$T/tx/01-f.sh" '
   && tiny "$T/tx/02-r.sh" 'echo "FAIL tx r1"; exit 1' && TIER=slow tiny "$T/tx/03-s.sh" 'echo "PASS tx s1"'
 tdr() { TEST_CHECKS=$T/$1 TEST_JOBS=2 bash "$HERE/run.sh" "${@:3}" > "$T/td-$2.out" 2>&1; echo $? > "$T/td-$2.rc"; }
 trr all
+# the shape (decisions/2026-11-05-suite-shape): a file's timing line says which tier it is in, in a run of any kind
+check "tiers: each file's timing line ends with its tier: , tier fast or , tier slow" \
+  'grep -qE "^01-f: 1 checks, [0-9]+\.[0-9] s, tier fast$" "$T/tr-all.out" && grep -qE "^03-s: 1 checks, [0-9]+\.[0-9] s, tier slow$" "$T/tr-all.out" \
+  && grep -qE "^02-g: 1 checks, [0-9]+\.[0-9] s, tier fast$" "$T/tr-fast.out" && [[ $(grep -cE "^0[123]-[fgs]: 1 checks, " "$T/tr-all.out") == 3 ]]'
 tdr tm fast --tier fast; tdr tm slow --tier slow; tdr tm all; tdr tm fsub --tier fast 01-f; tdr tm sub 01 03; tdr tx xfast --tier fast
 miss() { sed -n '/^missing (in the fixture, not run):$/,/^\(PASS\|FAIL\) conformance/p' "$T/td-$1.out" | sed '1d;$d' | tr '\n' ,; }
 CF="conformance: every check of the fast tier ran, none new or doubled" CS="conformance: every check of the slow tier ran, none new or doubled"
@@ -190,6 +194,18 @@ PL=""; while IFS= read -r m; do grep -qF -- "$m" "${LFS[@]}" "${UNIT[@]}" || { P
 tierlint "$HERE/checks" "$T/lf/check-names.txt" "$T/lf/check-names-fast.txt" "${UNIT[@]}" > "$T/lf.out"; LF=$?
 check "tier lint: a planted fast name whose file says slow turns the lint red naming it (on a copy of the fixtures)" \
   '[[ -n $PL && $LF == 1 ]] && grep -qxF -- "fast name from a slow file: $PL ($(grep -lF -- "$PL" "${LS[@]}" | xargs -n1 basename | tr "\n" " " | sed "s/ \$//"))" "$T/lf.out"'
+# the name lint (decisions/2026-11-05-suite-shape): the runner matches a name by substring, so a file whose name is part
+# of another's can't be run alone, and a red in it reruns the other too (check.sh's rerun passes HARNESS_FAILED's names),
+# a slow one from a fast gate. The numbers kept every name apart until the shape took them off.
+#   namelint <checks dir> → one `<name> is part of <other>` line per pair, exit 1 on any (no fork per pair: 95 files are 9,000 pairs)
+namelint() { local f s a b bad=0 stems=()
+  for f in "$1"/*.sh; do s=${f##*/}; stems+=("${s%.sh}"); done
+  for a in "${stems[@]}"; do for b in "${stems[@]}"; do [[ $a != "$b" && $b == *"$a"* ]] && { echo "$a is part of $b"; bad=1; }; done; done
+  return $bad; }
+mkdir -p "$T/nl" && tiny "$T/nl/gate.sh" true && tiny "$T/nl/gate-run.sh" true && tiny "$T/nl/other.sh" true
+namelint "$T/nl" > "$T/nl.out" 2> /dev/null; NL=$?
+check "name lint: no check file's name is part of another's (tests/run.sh <file> and a red file's rerun pick that file alone); a planted pair is named" \
+  '{ namelint "$HERE/checks" > "$T/nl-real.out"; [[ $? == 0 && ! -s $T/nl-real.out ]] || { cat "$T/nl-real.out"; false; }; } && [[ $NL == 1 && $(cat "$T/nl.out") == "gate is part of gate-run" ]]'
 # ---- the unit tier: tests/checks/00-unit-tier.sh runs tests/unit (TEST_UNIT_DIR: another directory) under the reporter ----
 # u1: one test passes, one fails on an assert diff; u2: passing only; u3: a file that exits at import (no FAIL line from
 # node: the check file's own); u4: a file that throws at import (node's FAIL <file> or the check file's line: both red)

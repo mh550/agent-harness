@@ -69,10 +69,14 @@ check "scope.sh: a unit still loaded is refused as systemd refuses it; stopped f
 if systemd-run --user --scope --quiet true > /dev/null 2>&1; then
   SU=harness-test-$$-oom
   sc_real=$( cd "$T" && HARNESS_SYSTEMD_RUN=systemd-run HARNESS_SYSTEMCTL=systemctl HARNESS_SCRATCH=$T/sc SESSION_SWAP_MAX=0 timeout 30s bash -c 'source "$1"
-    scope_run "$2" "" 64M node -e "const a = []; for (let i = 0; i < 256; i++) a.push(Buffer.alloc(1 << 20, 1))"; echo "rc=$? peak=$(scope_peak "$2")"; scope_capped "$2" 64M && echo capped' _ "$SC" "$SU" 2> "$T/sc-real.err" )   # its stderr (bash's "Killed") kept for a failure
+    scope_run "$2" "" 64M node -e "const a = []; for (let i = 0; i < 256; i++) a.push(Buffer.alloc(1 << 20, 1))"; echo "rc=$? peak=$(scope_peak "$2")"; scope_capped "$2" 64M && echo capped' _ "$SC" "$SU" 2> "$T/sc-real.err" ); sc_rrc=$?   # its stderr (bash's "Killed") kept for a failure
   systemctl --user stop "$SU.scope" 2> /dev/null
+  # a red says what it got (red about one run in five since 2026-10-26, and nothing said which way: Decision 15 of the
+  # redesign's dispatch list, decisions/2026-11-05-suite-shape); indented, so no line reads as a PASS or FAIL
+  sc_real_said() { echo "  the real scope: the wrapper exited $sc_rrc (124: its 30 s timeout), printed <${sc_real//$'\n'/ | }> (wanted <rc=137 peak=64 | capped>)"
+    echo "  units left: <$(systemctl --user list-units "harness-test-$$-*" --plain --no-legend | tr '\n' ' ')>; its stderr ($(wc -l < "$T/sc-real.err") lines):"; sed 's/^/    /' "$T/sc-real.err"; }
   check "scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit" \
-    '[[ $sc_real == $'"'"'rc=137 peak=64\ncapped'"'"' && -z $(systemctl --user list-units "harness-test-$$-*" --plain --no-legend) ]]'
+    '[[ $sc_real == $'"'"'rc=137 peak=64\ncapped'"'"' && -z $(systemctl --user list-units "harness-test-$$-*" --plain --no-legend) ]] || { sc_real_said; false; }'
 else check "scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit (skipped: no user systemd)" true; fi
 # ---- run 1: misbehaving sessions, two milestones; verified milestones merge themselves ----
 "$H" start "$T/proj" demo --spec SPEC.md --brief "only A–C" --foreground > "$T/run1.out" 2>&1

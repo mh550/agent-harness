@@ -150,16 +150,16 @@ test("mutants: the table names what changed and the checks that caught it, per f
   assert.equal(change("x = a && b;", "x = a || b;"), "`&&` → `||`");
   assert.equal(change("return 0;", "return 1;"), "`0` → `1`");
   assert.equal(change("n=3", null), "the line deleted");
-  // tests/run.sh's own lines: a file's PASS/FAIL lines, then `<file>: <n> checks, <s> s`; a file stopped at its timeout; the totals
-  const red = ["tmp: /tmp/x", "PASS a one", "FAIL a two", "FAIL a three", "14-run-2b-stop-records: 3 checks, 27.4 s", "tmp: /tmp/y", "PASS b one", "45-lanes-run: 1 checks, 45.2 s",
-    "FAIL c one", "47-lanes-two: 1 checks, 300.1 s", "FAIL 47-lanes-two: still running after TEST_FILE_TIMEOUT=5m; stopped",
+  // tests/run.sh's own lines: a file's PASS/FAIL lines, then `<file>: <n> checks, <s> s, tier <t>` (no tier before the shape: the second output below); a file stopped at its timeout; the totals
+  const red = ["tmp: /tmp/x", "PASS a one", "FAIL a two", "FAIL a three", "14-run-2b-stop-records: 3 checks, 27.4 s, tier slow", "tmp: /tmp/y", "PASS b one", "45-lanes-run: 1 checks, 45.2 s, tier slow",
+    "FAIL c one", "47-lanes-two: 1 checks, 300.1 s, tier slow", "FAIL 47-lanes-two: still running after TEST_FILE_TIMEOUT=5m; stopped",
     "PASS conformance: every check a subset ran is in the fixture, once", "files that exited non-zero: 14-run-2b-stop-records 47-lanes-two", "HARNESS_FAILED=14-run-2b-stop-records 47-lanes-two",
     "slowest: 47-lanes-two 300.1 s; wall 300.2 s, 4 jobs, tier all", "4/8 checks passed"].join("\n");
   assert.deepEqual(caughtBy(red), { names: ["a two", "a three", "c one", "47-lanes-two: still running after TEST_FILE_TIMEOUT=5m; stopped"], files: ["14-run-2b-stop-records", "47-lanes-two"] });
   assert.deepEqual(caughtBy("PASS a one\n14-run-2b-stop-records: 1 checks, 2.0 s\nPASS conformance: every check a subset ran is in the fixture, once\n2/2 checks passed\n"), { names: [], files: [] });
   const sample = [{ id: "compare-01", file: "lib/a.sh", line: 2, kind: "compare", before: "[[ $1 -ge 2 ]]", after: "[[ $1 -gt 2 ]]", files: ["14-run-2b-stop-records", "45-lanes-run", "47-lanes-two"], partial: false },
     { id: "delete-01", file: "lib/b.mjs", line: 7, kind: "delete", before: "x();", after: null, files: ["45-lanes-run"], partial: true }];
-  const rows = tableRows(sample, new Map([["compare-01", red], ["delete-01", "PASS b one\n45-lanes-run: 1 checks, 45.2 s\n1/1 checks passed\n"]]));
+  const rows = tableRows(sample, new Map([["compare-01", red], ["delete-01", "PASS b one\n45-lanes-run: 1 checks, 45.2 s, tier slow\n1/1 checks passed\n"]]));
   assert.deepEqual(rows, [
     "| `compare-01` | `lib/a.sh:2` | `-ge` → `-gt` | 3 | caught by 4 checks in 2 files: `a two`, `a three`, `c one`, and 1 more |",
     "| `delete-01` | `lib/b.mjs:7` (run in part) | the line deleted | 1 | **survived** |"]);

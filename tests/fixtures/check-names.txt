@@ -767,6 +767,7 @@ mutants: mutate gives one change of a kind, the generator choosing which; delete
 mutants: pick draws each kind in a seeded order, one mutant per line, and passes over a candidate that no longer parses
 mutants: the seeded generator repeats: one seed gives one order every time, another seed another
 mutants: the table names what changed and the checks that caught it, per file, or says survived
+name lint: no check file's name is part of another's (tests/run.sh <file> and a red file's rerun pick that file alone); a planted pair is named
 needs REASONS: kind, severity and priority for each of the 17 reasons, as the plan's table
 needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
@@ -1375,6 +1376,7 @@ tiers: --tier fast <name> runs the one fast file whose name matches; a slow file
 tiers: --tier fast runs the two fast files and not the slow one, --tier slow the slow one only, exit 0
 tiers: --tier with no tier the runner knows prints the usage, exit 2, runs nothing
 tiers: a check file without a tier header on line 2 is refused: no tier header: <path> per file in name order, exit 2, nothing run or written
+tiers: each file's timing line ends with its tier: , tier fast or , tier slow
 tiers: line 2 is read exactly (a trailing blank refuses it) and a directory named *.sh is refused without a read error
 tiers: the slowest: line ends , tier fast, , tier slow, or , tier all for a run without --tier
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
