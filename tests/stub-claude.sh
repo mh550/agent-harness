@@ -12,10 +12,10 @@
 # STUB_PLANT_MARKERS=<id>: that feature's first coding session writes a red-<key>, a green-<key> (`99 tests`) and a
 # fast-<key> for its committed tree into $HARNESS_CHECK_CACHE and the key to $STUB_DIR/planted-<run> (S1-04, T2-02:
 # verify clears all three). STUB_SLOW_RED=<id>: that feature's first coding session commits BROKEN-SLOW (a suite
-# red bare, green under --tier fast: a slow-tier red, 87-fast-gate-run); STUB_FAST_RED=<id>: its first commits
+# red bare, green under --tier fast: a slow-tier red, session-gate-driver); STUB_FAST_RED=<id>: its first commits
 # BROKEN-FAST (red under --tier fast), its later sessions remove it. Every coding session appends `session <id> <n>`
 # to the run's scratch suite-args.log when the log exists (a project suite that logs its calls there).
-# STUB_FIX=rename|fix|none (unset: none): a coding session of a fix feature (an id matching *-fix[0-9]*, tests/checks/90-fix-rounds.sh)
+# STUB_FIX=rename|fix|none (unset: none): a coding session of a fix feature (an id matching *-fix[0-9]*, tests/checks/fix-rounds.sh)
 # moves BROKEN-SLOW to BROKEN-SLOW2 (rename: the red moves to another check), removes both (fix) or leaves them (none).
 # The second fix session of a run is always none; under rename it also touches gate-green-once in the run's scratch, so
 # its gate's subset is green once while the tree stays red. STUB_FLAKE_ONCE=1: B's first coding session touches

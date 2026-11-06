@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { named, overlap } from "../../lib/overlap.mjs";
 
 // the import is the check that the module parses and does no I/O at import (its CLI runs only as argv[1]); the CLI's
-// named, overlap and names on files stay in 70-overlap
+// named, overlap and names on files stay in overlap
 test("overlap: named and overlap are exported and pure (no I/O at import); node --check lib/overlap.mjs", () => {
   const n = named("`lib/a.sh` lib/b/", ["lib/a.sh", "lib/b/c.mjs"]);
   assert.equal(n.join(), "lib/a.sh,lib/b/");

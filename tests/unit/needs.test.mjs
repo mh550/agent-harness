@@ -9,14 +9,14 @@ import { join } from "node:path";
 import * as N from "../../lib/needs.mjs";
 import * as V from "../../lib/view.mjs";
 
-// tests/fixtures/needs/<reason>.json: the facts a card is built from (59-needs-cards.sh)
+// tests/fixtures/needs/<reason>.json: the facts a card is built from (needs-cards.sh)
 const fixture = r => JSON.parse(readFileSync(new URL(`../fixtures/needs/${r}.json`, import.meta.url), "utf8"));
 
-// ---- 58-needs-record.sh ----
+// ---- needs-record.sh ----
 test("needs REASONS: kind, severity and priority for each of the 17 reasons, as the plan's table", () => {
   assert.equal(Object.entries(N.REASONS).map(([r, x]) => [r, x.kind, x.severity, x.priority].join(":")).join(" "),
     "parked:park:block:high given_up:blocked:block:high verify_thin:needs_michael:block:high verify_red:needs_michael:block:high verify_recheck:needs_michael:block:high merge_conflict:needs_michael:block:high merge_refused:needs_michael:block:high merge_failed:needs_michael:block:high main_conflict:needs_michael:block:high base_conflict:needs_michael:block:high feature_list_edits:needs_michael:block:high initializer_failed:needs_michael:block:high driver_crash:needs_michael:block:high usage_limit:limit:warn: weekly_budget:limit:warn: overlap:needs_michael:warn: question:needs_michael:warn:");
-  // a warn reason's priority is the empty string, not missing (78-needs-questions.sh read it as JSON)
+  // a warn reason's priority is the empty string, not missing (needs-questions.sh read it as JSON)
   assert.deepEqual(N.REASONS.question, { kind: "needs_michael", severity: "warn", priority: "" });
 });
 
@@ -71,7 +71,7 @@ test("needs merge_refused without a PR (a hook declined a push): the card names 
   assert.deepEqual(c.commands, ["harness merge r"]);
 });
 
-// the eval half of 58's "needs list: no synthesized item once a record is open for it …" (its CLI half stays there)
+// the eval half of needs-record's "needs list: no synthesized item once a record is open for it …" (its CLI half stays there)
 test("needs.mjs synthesize: a driver_crash only for a dead driver without ended; ended, a live driver or no driver.pid make none", () => {
   const s = { run: "r", project: "p", removed: false, passing: [], parked: {}, log_mtime: 0 };
   assert.equal(N.synthesize({ ...s, driver: "dead", ended: true }, []).length, 0);
@@ -80,7 +80,7 @@ test("needs.mjs synthesize: a driver_crash only for a dead driver without ended;
   assert.equal(N.synthesize({ ...s, driver: null, ended: false }, []).length, 0);
 });
 
-// ---- 59-needs-cards.sh ----
+// ---- needs-cards.sh ----
 test("mergedBy: one merge is <run> M3 (PR #34), five of one run collapse, gaps are listed, the run's own are left out, others are PR #<n>, none is new commits", () => {
   const m = (pr, r, x) => `Merge pull request #${pr} from mh550/harness-merge/${r}-${x}`, mem = "agent-harness-2026-10-25-memory";
   assert.equal(N.mergedBy(m(34, mem, "M3"), "own"), `${mem} M3 (PR #34)`);
@@ -147,13 +147,13 @@ test("needs.mjs card: a park whose question has no Files: takes session_files as
   assert.equal(d.files_from, "driver");
 });
 
-// ---- 64-needs-review.sh ----
+// ---- needs-review.sh ----
 test("needs review: mergedBy names a run whose id starts with the run's own (agent-harness-2026-10-25-memory in agent-harness-2026-10-25)", () => {
   assert.equal(N.mergedBy("Merge pull request #34 from mh550/harness-merge/agent-harness-2026-10-25-memory-M3\nMerge pull request #30 from mh550/harness-merge/agent-harness-2026-10-25-M1", "agent-harness-2026-10-25"),
     "agent-harness-2026-10-25-memory M3 (PR #34)");
 });
 
-// ---- 78-needs-questions.sh ----
+// ---- needs-questions.sh ----
 test("needs questions: questionKey folds whitespace, lower-cases, drops the harness's fill and a Files: line, cuts at 80", () => {
   assert.equal(N.questionKey("  Should  A\n default\tto OFF?  "), "should a default to off?");
   assert.equal(N.questionKey("Should A default to off? Files (harness, from the session): /w/run-1/lib/a.sh"), "should a default to off?");
@@ -164,11 +164,11 @@ test("needs questions: questionKey folds whitespace, lower-cases, drops the harn
   assert.equal(N.questionKey("X".repeat(100)), "x".repeat(80));
   assert.equal([...N.questionKey("é".repeat(100))].length, 80);
   assert.equal(N.questionKey(" \n "), "");
-  // 78's $Q, whose record key that file's open check compares as a literal
+  // needs-questions's $Q, whose record key that file's open check compares as a literal
   assert.equal(N.questionKey("Should A keep the old cache? (default: kept) Files: /srv/q/lib/a.sh:12"), "should a keep the old cache? (default: kept) files: /srv/q/lib/a.sh:12");
 });
 
-// the eval half of 78's "asked in a later run of the project, the item moves forward …" (its CLI half stays there)
+// the eval half of needs-questions's "asked in a later run of the project, the item moves forward …" (its CLI half stays there)
 test("needs.mjs moveForward: two earlier items of the key become one, seen summed, asked_in every run's, both resolved as asked again in the new run", () => {
   const { item, resolved } = N.moveForward([{ run: "r1", seen: 2, asked_in: ["r0", "r1"], ref: "r1/3" }, { run: "r2", seen: 1, ref: "r2/1" }], { seen: 1, asked_in: ["r3"] }, "r3", 0);
   assert.equal(item.seen, 3);
@@ -182,7 +182,7 @@ test("needs questions: questionKey drops only a Files: label line, and asked_in 
   assert.deepEqual(N.moveForward([{ run: "r2", seen: 2, asked_in: ["r1", "r2"], ref: "r2/1" }], { seen: 1, asked_in: ["r1"] }, "r1", 0).item.asked_in, ["r2", "r1"]);
 });
 
-// ---- 70-overlap.sh ----
+// ---- overlap.sh ----
 test("overlap: the sweep rule: other run gone, other run merged, this run merged, else kept (no git facts: kept)", () => {
   const i = { key: "overlap:R", reason: "overlap", ref: "x/1" };
   const w = st => N.sweep([i], { markers: [], passing: [], ...st }).resolved[0]?.resolved_why ?? "kept";
@@ -193,7 +193,7 @@ test("overlap: the sweep rule: other run gone, other run merged, this run merged
   assert.equal(w({ ended: true }), "kept");
 });
 
-// ---- 87-fast-gate-run.sh: the verify's red on the lane's own tree (main had nothing new) ----
+// ---- session-gate-driver.sh: the verify's red on the lane's own tree (main had nothing new) ----
 test("needs verify_red own: a slow-tier red the fast gate let through, never main's disagreement", () => {
   const own = N.card("verify_red", { ...fixture("verify_red"), variant: "own" }), red = N.card("verify_red", fixture("verify_red"));
   assert.equal(own.headline, "P2 not verified: suite red on the verified tree");
@@ -201,14 +201,14 @@ test("needs verify_red own: a slow-tier red the fast gate let through, never mai
   assert.equal(red.headline, "P2 not verified: suite red on the merged tree"); assert.match(red.why, /main's newer commits and P2 disagree/);
 });
 
-// ---- 90-fix-rounds.sh: the card after the fix rounds names each round and what it left red ----
+// ---- fix-rounds.sh: the card after the fix rounds names each round and what it left red ----
 test("fix rounds: the verify_red card with a rounds field names each round's id and what it left red and stays filled; without it the card reads as today", () => {
   const fx = { ...fixture("verify_red"), variant: "own" }, plain = N.card("verify_red", fx);
   const rounds = [{ id: "P2-fix1", round: 1, failed_after: ["t3"] }, { id: "P2-fix2", round: 2, failed_after: ["t3", "a check (x)", "t5", "t6"] }];
   const c = N.card("verify_red", { ...fx, rounds }), s = N.card("verify_red", { ...fx, rounds: JSON.stringify(rounds) });   // the shell passes JSON text
   assert.equal(c.why, `${plain.why} 2 fix rounds ran first (MAX_FIX_ROUNDS, verify in lib/lane.sh): P2-fix1 left t3 red, P2-fix2 left t3, a check (x), t5 +1 red.`);
   assert.equal(s.why, c.why);
-  // 59-needs-cards.sh's FILLED rule on the why: 2 to 4 sentences, nothing undefined; nothing else of the card moves
+  // needs-cards.sh's FILLED rule on the why: 2 to 4 sentences, nothing undefined; nothing else of the card moves
   const sentences = w => [...w.matchAll(/[.!?](\s|$)/g)].length;
   assert.deepEqual([sentences(plain.why), sentences(c.why)], [2, 3]);
   assert.doesNotMatch(JSON.stringify(c), /undefined|NaN|\[object/);

@@ -249,7 +249,7 @@ test("entries.mjs: a milestone pack lists failed verify rows before dead ends", 
 });
 
 // E4 review F5, F9: a summary can't open a code fence or an HTML block, and a long id doesn't break the cap (the damaged
-// journal of the same review stays a CLI check in tests/checks/12-journal-pure-e4-entrys.sh)
+// journal of the same review stays a CLI check in tests/checks/journal-entries.sh)
 test("entries.mjs: a summary can't open a code fence or an HTML block, and a 2000-character id keeps the pack within its cap", () => {
   const e = s => renderEntry({ feature: "A", kind: "coding", outcome: "passes", summary: s });
   assert.ok(e("```js").includes("\n\\```js\n"), "```");
@@ -324,7 +324,7 @@ test("reviewFindings: reads Critical before Important in either order of word an
   assert.equal(reviewFindings("fixed the 2 critical paths"), null);
 });
 
-// 63-question-locations.sh: the fill a park card's where falls back to
+// question-locations.sh: the fill a park card's where falls back to
 test("entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts", () => {
   const e = { feature: "A", kind: "coding", outcome: "not yet", summary: "s", files: ["lib/a.sh"], questions: ["Q one?", "Q two? Files: /x/b.md:4"], dead_ends: [] };
   const fs = sessionFiles(e.files, ["lib/a.sh", "/abs/c.mjs", ...Array.from({ length: 9 }, (_, i) => "d" + i)], "/wt");

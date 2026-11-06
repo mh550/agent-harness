@@ -25,7 +25,7 @@ test("testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 i
   assert.equal(testCount("HARNESS_TESTS=123456789012345678901\n# pass 2\n"), 2);
 });
 
-// the --total CLI's bytes are main's test below; through check.sh, 73-check-rerun's green marker
+// the --total CLI's bytes are main's test below; through check.sh, check-rerun's green marker
 test("testcount.mjs: total is the last N/M line's M, null without one", () => {
   assert.equal(total("3/5 checks passed\nx 7/9 tests passed\n"), 9);
   assert.equal(total("FAIL a\n3/5 checks passed\nPASS b\n2/2 checks passed\n"), 2);

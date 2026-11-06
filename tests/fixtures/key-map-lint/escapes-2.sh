@@ -1,4 +1,4 @@
-# fixture of 82-key-map-lint: reads through a known root the S2 review found (S2-06), one per line from line 3
+# fixture of key-map-lint: reads through a known root the S2 review found (S2-06), one per line from line 3
 # ls "$HERE/../" is a hit; so is each line below
 ls "$HERE/../"
 grep -r x "$HERE/../."

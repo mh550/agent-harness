@@ -217,7 +217,7 @@ test("tty views: gcView shortens the home directory to a tilde and counts a bran
   assert.deepEqual(cutShort, ["UNITS 1 " + d.slice(8), "? x", "TMUX 0", "gc stopped before DESKS (see the error above)"]);
 });
 
-// view.mjs's cutFront and card as the needs cards use them (59-needs-cards.sh)
+// view.mjs's cutFront and card as the needs cards use them (needs-cards.sh)
 test("view.mjs cutFront keeps the end from a directory boundary; card with rule: false has no rule; a url-only field is the url line alone", () => {
   const c = V.context({ env: { HARNESS_GLYPHS: "unicode" } }), p = "/home/u/worktrees/n8n-home/n8n-home-2026-10-22/deploy/compose.yml:48";
   const k = V.card("h", [{ label: "x", value: "1" }, { label: "", url: "https://e.x/a" }], c, { rule: false });

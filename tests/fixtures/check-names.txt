@@ -9,7 +9,7 @@ C retried and passed
 CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it
 CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
 CHECK_KEY_MAP: harness default empty; this repo maps CLAUDE.md; the driver exports it; the template has it commented
-CLAUDE.md names the node floor 22.8 and the unit tier: tests/unit, node --test, bash tests/run.sh 00-unit
+CLAUDE.md names the node floor 22.8 and the unit tier: tests/unit, node --test, bash tests/run.sh unit-tier
 CLAUDE.md's suite line points at the run's prompt, with no fixed measurement
 COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
 CONTEXT_PACK_BYTES=1024 holds for coding packs and verify packs get their own cap
@@ -296,6 +296,7 @@ continue after a no-list end merges main first
 continue finishes a paused run
 continue refuses a running run
 coverage.mjs reduce reads a raw directory's traces and V8 documents into one set; tables, counts, union, covering and missing read sets
+coverage.mjs: the unit tier's check file (unit-tier) is a check file's set, never a unit row, as 00-unit-tier was
 coverage: V8's nested ranges paint the innermost count: a branch not taken and a function never called did not run
 coverage: a line ran when code of it ran, not its punctuation or the declaration of a function never called; partial when some code of it did not
 coverage: a trace line gives its source path and line at any nesting depth; a command's own continued text and other lines give nothing
@@ -767,6 +768,7 @@ mutants: mutate gives one change of a kind, the generator choosing which; delete
 mutants: pick draws each kind in a seeded order, one mutant per line, and passes over a candidate that no longer parses
 mutants: the seeded generator repeats: one seed gives one order every time, another seed another
 mutants: the table names what changed and the checks that caught it, per file, or says survived
+name lint: no check file's name is part of another's (tests/run.sh <file> and a red file's rerun pick that file alone); a planted pair is named
 needs REASONS: kind, severity and priority for each of the 17 reasons, as the plan's table
 needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
@@ -1352,7 +1354,7 @@ the session: an allowlist (dontAsk) and the never-list
 the stub claude's interactive mode prints the pane line and records input
 the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
 the tmpfiles template holds the 3-day age rule; README has its install command
-the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/00-unit-tier/v8
+the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/unit-tier/v8
 the user config template sets nothing
 the verify prompt says the suite runs in full
 the weekly budget ends a run after the session that crossed it
@@ -1375,6 +1377,7 @@ tiers: --tier fast <name> runs the one fast file whose name matches; a slow file
 tiers: --tier fast runs the two fast files and not the slow one, --tier slow the slow one only, exit 0
 tiers: --tier with no tier the runner knows prints the usage, exit 2, runs nothing
 tiers: a check file without a tier header on line 2 is refused: no tier header: <path> per file in name order, exit 2, nothing run or written
+tiers: each file's timing line ends with its tier: , tier fast or , tier slow
 tiers: line 2 is read exactly (a trailing blank refuses it) and a directory named *.sh is refused without a read error
 tiers: the slowest: line ends , tier fast, , tier slow, or , tier all for a run without --tier
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits

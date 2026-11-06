@@ -10,7 +10,8 @@
 //   node tests/tools/coverage.mjs covering <sets dir> <file> <line>   → the check files whose set holds that line
 // A set is text, one line per source file: `lib/record.sh 12-40,44,51-80`; `~lib/summary.mjs 17,23` beside it names the
 // covered .mjs lines only part of which ran (a branch on the line that never did). <sets dir>/<check file>.txt is a
-// check file's set; unit-<name>.txt is one tests/unit file's, run alone (a row of its own, never counted as a check file).
+// check file's set; unit-<name>.txt is one tests/unit file's, run alone (a row of its own, never counted as a check file;
+// unit-tier.txt is the unit tier's own check file's, a check file's set like any other).
 // What a set can't say is in findings-and-research/2026-11-03-suite-coverage.md (*What the map can't see*).
 import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
@@ -269,10 +270,12 @@ export const missingFrom = (a, b) => {
 };
 
 // ---- the commands ----
+// the unit tier's own check file is a check file, whatever its prefix says (00-unit-tier until the shape took the numbers off)
+const UNIT_TIER = "unit-tier";
 const readSets = dir => {
   const checks = new Map(), units = new Map();
   for (const f of readdirSync(dir).filter(f => f.endsWith(".txt") && !f.startsWith("_")).sort()) {
-    const name = basename(f, ".txt"); (name.startsWith("unit-") ? units : checks).set(name, parseSet(readFileSync(join(dir, f), "utf8")));
+    const name = basename(f, ".txt"); (name.startsWith("unit-") && name !== UNIT_TIER ? units : checks).set(name, parseSet(readFileSync(join(dir, f), "utf8")));
   }
   return { checks, units };
 };
@@ -315,9 +318,9 @@ function tables(dir, root) {
   for (const [name, s] of [...checks].sort(([, a], [, b]) => size(b) - size(a)))
     p(`| \`${name}\` | ${tierOf(root, name)} | ${sizeOf(s, SH)} | ${sizeOf(s, MJS)} | ${size(s)} | ${alone.get(name) ?? 0} |`);
   p(`| **the union of all ${checks.size}** | | **${sizeOf(union, SH)}** | **${sizeOf(union, MJS)}** | **${size(union)}** | |`);
-  p(""); p("The unit tier's files, each run alone (rows of `00-unit-tier` above, split):"); p("");
+  p(""); p("The unit tier's files, each run alone (rows of `unit-tier` above, split):"); p("");
   p("| unit test file | node lines | lines no stub-run or CLI check file runs |"); p("|---|---:|---:|");
-  const nonUnit = unionOf([...checks].filter(([n]) => !n.startsWith("00-unit")).map(([, s]) => s));
+  const nonUnit = unionOf([...checks].filter(([n]) => n !== UNIT_TIER && !n.startsWith("00-unit")).map(([, s]) => s));
   for (const [name, s] of units) p(`| \`${name.replace(/^unit-/, "")}\` | ${size(s)} | ${size(missingFrom(s, nonUnit))} |`);
   p(`| **the union of all ${units.size}** | **${size(uunion)}** | **${size(missingFrom(uunion, nonUnit))}** |`);
 

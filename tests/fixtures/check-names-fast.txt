@@ -7,24 +7,11 @@ CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it
 CHECK_KEY_IGNORE: no file under tests/, lib/ or bin/ reads a path this repo's cache key ignores (a merge skips its re-base on them)
 CHECK_KEY_MAP: harness default empty; this repo maps CLAUDE.md; the driver exports it; the template has it commented
 COLUMNS=60 harness needs: no line over 60 but URLs; the narrow header (… · <ago>) and a ref field; where cut at the front keeps file and line
-F bump (a write) starts node every time
-F model of an unknown alias: node once (its fallback), then the memo
-F model twice: one node start, the same model id
-F model: that one start answers every alias; a claude-… id is answered without node
-F next: keyed on attempts.json, max and parked.json (one start twice, a new start and answer after each changes)
-F passes twice: one start, the exit code kept (1 both times)
-F poll with only the list: no unbound name ends the shell under set -u (f_poll_seed seeds nothing)
-F poll: one node start, and it fills the memo: summary, parked, blocked, next and milestone-done after it start none and print node's answers
-F summary after a passes flip: node again, the new count
-F summary on the list restored to its first content (a new mtime): the memo answers, no start (content, not mtime)
-F summary twice on one list: one node start, the same line
-F unpark that printed nothing: memoized; one that unparked: node every time, even on the same parked.json
-Fv returns the answer's exit code (passes A: 1, empty) from the memo
-Fv stores in the current shell: a $(F …) subshell after it hits, the same lines; Fv cuts trailing newlines
 HARNESS_CHECK_KEY_IGNORE=docs ask treekey.mjs --pathspec: the bytes the same line gives with HARNESS_HELPER=0, and a different answer from the plain line's
 HARNESS_HELPER=0: every call spawns (count = calls), no helper.mjs ever started, no coproc
 INBOX repair in a run: noted, the record's comment as the driver wrote it, the question directly above ## Answers, C parked
 SPEC_FILES in the project's .harness/config.sh and no --spec: a missing path is refused
+WEEKLY_STOP_AT raises the bar
 a $( ask ) before this shell has a helper spawns and starts none: a coproc started in a subshell would die with it
 a body over the cap is trimmed
 a cwd that is gone: declined and spawned (the spawn's exit code), not a restart, no line from the helper
@@ -35,14 +22,12 @@ a git or other child a script runs: its stderr lands in the call's 2> file too
 a helper started while the shell holds the record lock (fd 9) keeps none of it: the lock is free when the shell lets go
 a helper that dies: what it wrote to stderr reaches this shell's, its call the spawn's bytes
 a helper that never replies, a two-field or four-field header, a wrong id, words, one that dies, one cut mid-answer, a short answer, an rc over 255: each call the spawn's bytes and rc, each a helper restarted: line
-a hit prints what node prints, byte for byte, and its exit code (snapshot, lint, a lone newline)
 a later deadline: the earlier refusals aren't the cause
 a legacy run is untouched, then continued into a journal
 a limit ending: the cause is the usage limit
 a limit-cut session's passes is reverted, A retried
 a main's own exit code passes through (rc 3, its bytes, no start)
 a malformed entry is recorded as minimal and the run goes on
-a miss in a subshell is not kept (a nested subshell starts node again); the parent's own call then stores it
 a name exported and then unset is gone; X=1 ask … is that call's alone; an unset HOME in a $( ) is that call's alone
 a name taken in held/ parks under another; the one there is untouched; the queue drains
 a park whose INBOX question has Files: <path>:48: the record's where[0] is that path at line 48, files_from question
@@ -58,7 +43,6 @@ a session's edits to the journal are restored (E4 review F1)
 a spec check that fails without a line parks with a reason, never an empty one
 a stale green marker is caught at verify: M1 red, not tagged
 a stdin-fed call never lets main read the request pipe: the next ask is answered by the same helper; empty stdin leaves the file
-a throw in features.mjs exits 70 and is never kept (node each time)
 a throw's message follows the call's redirect too (a file, /dev/null), rc 70, nothing on the shell's stderr
 a writer's answer holds no NUL: ask entries.mjs ingest of a feature with a NUL runs once (one journal line, no second start), the spawn's answer and code, no warning from $( )
 after may name a milestone
@@ -68,8 +52,6 @@ an absolute --spec inside the project is checked as its repo path: present proce
 an answer holding a NUL: the spawn's bytes, by a spawn (count +1), the helper still up
 an entry whose project is no repository is not parked: its start fails and says why
 an exported value with every control byte reaches process.env and io.env as a spawn's does, through the helper
-an idle coordinator poll (a free slot, nothing to open) starts node at most once: the window's starts without HARNESS_LANE are at most its polls (5 or more)
-answers_hash: one inbox.mjs start for two calls on one INBOX.md, a new start and hash after its answers change
 arguments with every control byte, quotes, backslashes, &, an empty one, UTF-8 and invalid UTF-8 reach main as a spawn's do
 ask features.mjs passes: 1 for a feature not passing, 0 for a passing one, through the helper (no start)
 ask of a script that throws: 70, no stdout, the message on stderr
@@ -92,7 +74,6 @@ backlog set: specced --spec flips the status and records the spec; an unknown id
 backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
 backlog validate: the why line of a huge bad id stays under 300 bytes
 backlog.mjs: STATUSES in order, mergeProposals adds a new id, orderRows of none is empty
-bash -n lib/record.sh lib/lane.sh lib/driver.sh
 bash -n lib/record.sh; node --check lib/helper.mjs; helper.mjs has a one-line usage header
 busy continue: another project's live run changes nothing: answer, then continue
 busy continue: harness needs --json gives the queue add and --now, each naming the live run
@@ -151,6 +132,7 @@ cli.mjs: the tail gives main the process's cwd, environment and stdin
 cli.mjs: the tail writes main's out to stdout and exits its rc
 continue after a no-list end merges main first
 coverage.mjs reduce reads a raw directory's traces and V8 documents into one set; tables, counts, union, covering and missing read sets
+coverage.mjs: the unit tier's check file (unit-tier) is a check file's set, never a unit row, as 00-unit-tier was
 coverage: V8's nested ranges paint the innermost count: a branch not taken and a function never called did not run
 coverage: a line ran when code of it ran, not its punctuation or the declaration of a function never called; partial when some code of it did not
 coverage: a trace line gives its source path and line at any nesting depth; a command's own continued text and other lines give nothing
@@ -174,8 +156,6 @@ default MERGE_POLICY proposes a verified milestone, never merges it
 deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
 deploy.mjs: vercel and netlify guards merge, keep keys and detect
 deploy: vercel-guard prints by-hand for a vercel.json with a true harness/ key (E1 review)
-driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
-driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
 driver partial: a session that edits only CLAUDE.md gets a partial init (memlint alone after the full run); tests-end is the full count
 driver partial: verify's run_init fresh removes the verified tree's part-; its suite runs in full (no arguments), after B's partial
 entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
@@ -220,8 +200,6 @@ fast gate: the subset form is unchanged with a fast command set: its args, row s
 fast gate: with a part- sidecar and a mapped-only diff, --fast runs the fast tier, not the partial subset; row fast
 fast gate: with no fast command, --fast runs the suite bare, writes green-<key> (count, wall) and prints the full green line
 fast gate: with no fast command, the next --fast call is the full form's cached line; rows full then cached
-features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
-features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
 features.mjs: main gives the CLI's bytes for summary, next, poll, lanes, model and the read-only questions
 features.mjs: main throws where the CLI exits 70 (a list that is not JSON)
 features.mjs: main's exit codes are the CLI's: passes of a feature not passing is 1, of one passing 0, milestone-done, an unknown subcommand 2
@@ -246,7 +224,8 @@ gc units: --dry-run with units of another project's runs (live and ended) prints
 gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
 gotchasDiff: added, edited, deleted and no section
 gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
-harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line
+harness gc --dry-run kills no tmux session
+harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
 harness merge merges v2 tags, closes the v2 PR
 harness needs --json: each command's full text (no ~, no cut)
@@ -260,6 +239,7 @@ harness needs: a card per item (<glyph> <run> · <headline> · since … · <ref
 harness parked --json: today's keys for parked features only, plus ref and card
 harness parked is harness needs for text: the parked card's question from INBOX.md, run, do
 harness queue list shows the parked entry with not in origin/main in its reason
+harness start refuses a run id whose tmux session another live run holds; its session lives
 helper health: build adds helper from the state dir's run.log, every segment's; zeros for a run with none or no log
 helper health: helperHealth counts run.log's helper restarted: and helper off: lines and each distinct reason, zeros for none
 helper health: helperNote is the last segment's count and first reason with see run.log, nothing for a segment with none; the CLI's helper-note prints it
@@ -306,8 +286,6 @@ lanes: an after into a later milestone (a name or its feature) never makes a lan
 lanes: an open milestone (lanes/<m>/pid alive) is not a candidate; a dead pid's is
 lanes: features with no milestone form lane default, listed first; without meta.env the tags name the state dir
 lanes: the default lane (no milestone, never verified) holds later lanes only until its features pass, then never opens
-lanes_v: F lanes memoized on the list, attempts, parked and the state laneState reads (two starts, milestones with it), a hit, then one start each on verified-, a lane pid alive, dead
-lanes_v: a pid file that is not digits is never memoized (node reads it its own way); stderr empty
 lib/helper.mjs keeps nothing between requests: the same request after its file changed gives the new answer; no module-level let or var
 lib/helper.mjs: SIGTERM ends it, a request or none pending
 lib/helper.mjs: a last line with no newline at EOF is still a request
@@ -638,13 +616,15 @@ the helper killed between two calls: the next call is a spawn (+1), the spawn's 
 the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the lock file stays empty (a refused asker's open truncates it); scratch holds the environment's names, never a value
 the lock freed: the helper answers again (no start)
-the memo writes nothing to disk (no file outside the check's own) and nothing to stderr
 the prompts ask every question for a Files: line and an INBOX question below the comment block, headed ### <id>: …
+the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
+the queue starts no run past the weekly budget
 the restart line says why: no reply in <n> s, a bad header, a wrong id, the helper gone
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the same runner goes on to the next entry and starts it (a --brief start of the same project)
 the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
-the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/00-unit-tier/v8
+the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/unit-tier/v8
+the weekly budget ends a run after the session that crossed it
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
 tmux: run id dot.run gets session h-dot-run, gone at keep 0
@@ -683,7 +663,6 @@ tty views: trends on a TTY shows the newest 15 runs as columns, 2 older: harness
 under a UTF-8 locale: a request's bound counts bytes (31000 two-byte characters, 62000 bytes: a spawn)
 under a UTF-8 locale: main sees the asker's LC_ALL, not the C that ask reads the reply under
 under a UTF-8 locale: multi-byte answers and arguments come back as a spawn's, through the helper; the asker's locale is as it was
-unpark_warm: with a feature to unpark it fills nothing (the unpark on the note line runs and prints it); with none, that unpark starts no node
 v2 tags don't merge on resume
 verifier code edits reverted, never merged
 view.mjs cutFront keeps the end from a directory boundary; card with rule: false has no rule; a url-only field is the url line alone

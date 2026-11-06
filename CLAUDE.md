@@ -42,7 +42,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   full run's conformance check fails on a name it doesn't list). The unit tier (`tests/unit/*.test.mjs`, flat
   `test("<check name>")` calls, one node process) runs alone under
   `node --test --test-isolation=none tests/unit/*.test.mjs` (spec reporter; a bare `tests/unit/` is no glob on node 24),
-  as the suite's lines under `bash tests/run.sh 00-unit`; `--test-name-pattern "<regex>"` picks tests.
+  as the suite's lines under `bash tests/run.sh unit-tier`; `--test-name-pattern "<regex>"` picks tests.
   `bash tests/run.sh --tier fast` runs the fast tier, and a new check file declares its tier on line 2 by
   journal/decisions/2026-11-03-suite-tiers.md's 30 s rule.
 - Two commands, two moments: a coding session runs the fast tier (`bash tests/run.sh --tier fast`, the harness's
@@ -75,7 +75,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 <!-- At most 15 lines, one fact each, edited in place: replace a wrong or least useful line, never rewrite the section. -->
 - tests/lib.sh runs under `pipefail`: never pipe a multi-write producer (sed/awk/git show, a log over 4 KiB) into `grep -q`, `grep -m` or `head` in a check; the early exit SIGPIPEs the producer now and then (141). Use `grep X > /dev/null`.
 - check() evals its command in the check file's shell: an `exit` in it ends the whole file; fail with `false` or a flag (agent-harness-2026-10-28 2026-10-28)
-- A {{X}} above {{SECTIONS}} in a prompt template turns 08/13/14/15's same-prefix checks red: put it under This session (agent-harness-2026-10-29-2 2026-10-29)
+- A {{X}} above {{SECTIONS}} in a prompt template turns run-scopes-services-gc/park-desk/stop-records/queue-debrief's same-prefix checks red: put it under This session (agent-harness-2026-10-29-2 2026-10-29)
 - a check's regex on a glyph run is locale-bound: `grep -E "(─)+"` (BRE: parens literal), never `─+`; awk length: bytes (agent-harness-2026-10-29-2 2026-10-29)
 - a card or view cuts every line at the width (100 off a TTY): a check comparing whole run.log lines sets COLUMNS=200 (agent-harness-2026-10-28 2026-10-28)
 - status.mjs: a session runs from its `session <n> · <id>` log line to its `passes=` or limit note; stub logs need both (agent-harness-2026-10-28 2026-10-28)
@@ -86,4 +86,4 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - stub runs in one check file share origin main: update-ref it between runs; `git log --all` sees all runs' commits (agent-harness-2026-10-29-2 2026-10-29)
 - stub-claude.sh is set -e, which holds in a `[[ … ]] && { … }` block: a stub step that may fail runs in `( set +e; … )` (agent-harness-2026-11-03 2026-11-03)
 - a check that sources lib/*.sh needs `HARNESS_HOME=$HH`: a run's session inherits its driver's, so a missing one fails only in a plain shell (2026-10-29)
-- 82-key-map-lint reads a node import string "'"$HH"'/lib/x.mjs" as a repo-root read: use "'$HERE'/../lib/x.mjs" (agent-harness-2026-11-03 2026-11-03)
+- key-map-lint reads a node import string "'"$HH"'/lib/x.mjs" as a repo-root read: use "'$HERE'/../lib/x.mjs" (agent-harness-2026-11-03 2026-11-03)

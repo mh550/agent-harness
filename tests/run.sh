@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The suite: every tests/checks/*.sh (each from its own fresh throwaway state, tests/lib.sh), TEST_JOBS at a time, added up.
 #   tests/run.sh [<name>…]   → all check files, or those whose names contain any <name>; each file's PASS/FAIL lines whole
-#                              with a timing line, then the slowest three and the wall time, then the total
+#                              with a timing line (`<file>: <n> checks, <s> s, tier <fast|slow>`: the file's own tier,
+#                              whatever the run), then the slowest three and the wall time, then the total
 #                              `N/M checks passed`, exit 1 on any failure (KEEP=1 keeps each file's $T and names it)
 #   tests/run.sh --tier fast|slow [<name>…]  → only that tier's files (with names: those of them that match); the
 #                              slowest: line ends `, tier <fast|slow|all>` (all: no --tier)
@@ -83,7 +84,7 @@ replay() {
     if (( repeat )); then { [[ -e $out/$b.timedout ]] || (( rc )); } && broken+=("$b"); continue; fi   # told per file at the end
     cat "$out/$b.out"
     [[ ${KEEP:-} ]] && echo "kept: $(sed -n '1s/^tmp: //p' "$out/$b.out") ($b)"
-    echo "$b: $(grep -cE '^(PASS|FAIL) ' "$out/$b.out") checks, $(s1 "$t") s"; timing+=("$t $b")
+    echo "$b: $(grep -cE '^(PASS|FAIL) ' "$out/$b.out") checks, $(s1 "$t") s, tier ${tierof[${src[$b]}]}"; timing+=("$t $b")
     if [[ -e $out/$b.timedout ]]; then broken+=("$b") cut+=("$b"); echo "FAIL $b: still running after TEST_FILE_TIMEOUT=$to; stopped"; lost=$((lost + 1))
     elif (( rc )); then broken+=("$b"); no_fail "$b" "exited $rc"; fi
   done

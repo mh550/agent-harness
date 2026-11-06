@@ -111,11 +111,11 @@ export const change = (before, after) => {
   return `\`${before.slice(a, before.length - b)}\` → \`${after.slice(a, after.length - b)}\``;
 };
 // a tests/run.sh output → the checks that went red (conformance aside) and the check files they are in: a file's
-// FAIL lines come before its `<file>: <n> checks, <s> s` line; a file stopped or cut short is named in its own FAIL line
+// FAIL lines come before its `<file>: <n> checks, <s> s, tier <t>` line (an output from before the shape has no tier); a file stopped or cut short is named in its own FAIL line
 export const caughtBy = out => {
   const names = [], files = []; let pending = 0;
   for (const l of out.split("\n")) {
-    const t = /^([0-9A-Za-z_.-]+): \d+ checks, [\d.]+ s$/.exec(l);
+    const t = /^([0-9A-Za-z_.-]+): \d+ checks, [\d.]+ s(?:, tier (?:fast|slow))?$/.exec(l);
     if (t) { if (pending && !files.includes(t[1])) files.push(t[1]); pending = 0; continue; }
     if (!l.startsWith("FAIL ") || l.startsWith("FAIL conformance: ")) continue;
     names.push(l.slice(5)); const own = /^FAIL ([0-9A-Za-z_.-]+): (still running after|exited \d+ before its end|killed before its end)/.exec(l);
@@ -140,7 +140,8 @@ const parses = (file, text) => {
 export async function main(argv, root = ROOT) {
   const [cmd, a, b, c] = argv;
   if (cmd === "pick" && a && /^\d+$/.test(b ?? "")) {
-    const sets = readdirSync(a).filter(f => f.endsWith(".txt") && !f.startsWith("_") && !f.startsWith("unit-")).sort()
+    // a unit-<name>.txt set is one tests/unit file's, no check file; unit-tier.txt is the unit tier's own check file's (coverage.mjs)
+    const sets = readdirSync(a).filter(f => f.endsWith(".txt") && !f.startsWith("_") && (!f.startsWith("unit-") || f === "unit-tier.txt")).sort()
       .map(f => [basename(f, ".txt"), parseSet(readFileSync(join(a, f), "utf8"))]);
     const by = new Map(), part = new Map();
     for (const [name, s] of sets) {

@@ -5,4 +5,4 @@ POLICY=build-only          # build-only | live-staged (live-staged needs a "## L
 # DECISIONS=docs/decisions.md   # the decisions store: a file (numbered D<n> entries) or a directory (one file per decision, never numbered). Default docs/decisions.md if it exists
 # CHECK_KEY_IGNORE=".harness/runs docs/plans"   # path prefixes the suite never reads, left out of its cache key: a change there alone doesn't rerun it
 # CHECK_FAST_CMD="<suite> --tier fast"   # the fast tier, what a feature's `passes` stands on (check.sh --fast); verify and merge still run the whole suite; empty: the whole suite is the fast tier
-# CHECK_KEY_MAP="CLAUDE.md:<check>"   # a file only check-file lines read, and every check that reads it: a change to it alone runs just those; a reader left out lets a stale green through, so the suite needs a lint proving the list (as 82-key-map-lint)
+# CHECK_KEY_MAP="CLAUDE.md:<check>"   # a file only check-file lines read, and every check that reads it: a change to it alone runs just those; a reader left out lets a stale green through, so the suite needs a lint proving the list (as key-map-lint)

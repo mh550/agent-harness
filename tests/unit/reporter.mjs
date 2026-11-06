@@ -1,7 +1,7 @@
 // The unit tier's node:test reporter: a PASS/FAIL line per test, as tests/run.sh reads them (decisions/2026-11-03-unit-tier).
 //   node --test --test-reporter=./tests/unit/reporter.mjs --test-reporter-destination=stdout …   → `PASS <name>`, or
 //   `FAIL <name>` then the failure's message (the node:assert diff) indented two spaces, and last, once node's run
-//   is complete, `# unit tier: <n> tests` (00-unit-tier.sh requires it, counts against it and drops it); nothing else
+//   is complete, `# unit tier: <n> tests` (unit-tier.sh requires it, counts against it and drops it); nothing else
 // Tests are flat (no describe, no subtests): a test's own name is its check name in tests/fixtures/check-names.txt.
 // A skipped test keeps its name with the suffix the runner strips (`PASS <name> (skipped: <reason>)`).
 const indent = s => s.replace(/\n+$/, "").split("\n").map(l => `  ${l}`).join("\n") + "\n";

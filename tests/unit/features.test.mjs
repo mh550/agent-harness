@@ -101,7 +101,7 @@ test("lint: unreproducible flags a time bound or one run's count, once per step,
 
 test("lint: unreproducible leaves names, flags, budgets, sizes and file counts alone", () => {
   const no = ["the suite is green", "TEST_FILE_TIMEOUT=10m", "--repeat 10", "at most 400 characters", "a budget of 30 minutes",
-    "`tests/run.sh` prints `N/M checks passed`", "3 checks in tests/checks/07-step-lint-pure-r3.sh", "ENTRY_RESUME_TIMEOUT (10m)",
+    "`tests/run.sh` prints `N/M checks passed`", "3 checks in tests/checks/step-lint.sh", "ENTRY_RESUME_TIMEOUT (10m)",
     "the 25-minute CHECK_TIMEOUT", "a 10m timeout", "within 2 lines of the note", "R3-04 adds 2 checks", "`wait_for 30 test -f <file>`"];
   assert.equal(lint([{ id: "A", milestone: "M1", steps: no }]).filter(f => f.rule === "unreproducible").map(f => f.step).join(), "");
 });
@@ -181,11 +181,11 @@ test("fix rounds: the CLI fix-add appends the feature to the list file and print
   const run = (...a) => execFileSync(process.execPath, [F, "fix-add", p, ...a], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   try {
     writeFileSync(p, JSON.stringify({ run: "r", features: FXL() }));
-    assert.equal(run("M1", "1", "all", "t1", "needs card (x): y", "--", "t1", "59-needs-cards", "--", ".harness/runs/r/fix/M1-1.out", "$HARNESS_CHECK", "opus"), "M1-fix1\t2 failing: t1, needs card (x): y\n");
+    assert.equal(run("M1", "1", "all", "t1", "needs card (x): y", "--", "t1", "needs-cards", "--", ".harness/runs/r/fix/M1-1.out", "$HARNESS_CHECK", "opus"), "M1-fix1\t2 failing: t1, needs card (x): y\n");
     const l = JSON.parse(readFileSync(p, "utf8"));
     assert.equal(l.run, "r");
     assert.deepEqual(l.features.map(f => f.id), ["A", "B", "C", "M1-fix1"]);
-    assert.deepEqual(l.features[3], fixFeature(FXL(), { ...FXO, names: ["t1", "needs card (x): y"], files: ["t1", "59-needs-cards"] }));
+    assert.deepEqual(l.features[3], fixFeature(FXL(), { ...FXO, names: ["t1", "needs card (x): y"], files: ["t1", "needs-cards"] }));
     assert.throws(() => run("M1", "1", "all", "t1", "--", "t1", "--", "o", "$HARNESS_CHECK"), /M1-fix1 is in the list already/);
     // no files (the whole suite) and no model
     assert.equal(run("M1", "2", "all", "whole suite", "--", "--", "o2", "$HARNESS_CHECK"), "M1-fix2\t1 failing: whole suite\n");

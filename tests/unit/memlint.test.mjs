@@ -1,9 +1,11 @@
 // lib/memlint.mjs: the project's memory read deterministically (the decisions store, its current rules, the Gotchas diff).   node --test tests/unit/memlint.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { sameAsCli } from "./cli-same.mjs";
 import { currentRules as cr, decisionsStore, gotchasDiff, gotchasLines } from "../../lib/memlint.mjs";
 
@@ -42,7 +44,7 @@ test("memlint: currentRules skips ranges written with any dash or to, and a head
 });
 
 // decisionsStore (M2): .harness/config.sh's DECISIONS= (a quoted one, after a comment) wins, else docs/decisions.md;
-// each case a worktree of these files under the OS temp dir (the store CLI's runs stay in 37-memory-prompts-m2)
+// each case a worktree of these files under the OS temp dir (the store CLI's runs stay in memory-prompts)
 const inWorktree = (files, fn) => {
   const d = mkdtempSync(join(tmpdir(), "u1-"));
   try {
@@ -71,7 +73,7 @@ test("decisionsStore: a quoted DECISIONS= naming a missing file wins over docs/d
 });
 
 // gotchasDiff (M3): the Gotchas lines added, edited and deleted between two project-rules texts (null: no file); a change
-// outside the section is none (the gotchas CLI on two files stays in 38-run-17-gotchas-and-pack-m3)
+// outside the section is none (the gotchas CLI on two files stays in gotchas-pack)
 const G = "# p\nrules\n\n## Gotchas\n\n- one (r 2026-10-26)\n- two (r 2026-10-26)\n\n## Later\nx\n";
 const gd = (b, a) => { const d = gotchasDiff(b, a); return `+${d.added} ~${d.edited} -${d.deleted}`; };
 
@@ -123,4 +125,149 @@ test("memlint.mjs: main with a wrong argument count is the usage error: exit 2, 
     try { await main(["store", d, "extra"], { cwd: d, env: process.env }); } finally { console.error = err; }
     assert.equal(said.length, 1); starts(said[0], "usage: memlint.mjs <worktree> | store <worktree> | ");
   } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+// ---- the lint (M4), on fixtures trimmed from the projects' files as they were before chunk 3 Part 2 tidied them ----
+// The 15 cases the memlint check file (39-memlint-m4) ran through the CLI until the shape (decisions/2026-11-05-suite-shape),
+// under the same names: each is the CLI's own bytes and exit code (sameAsCli: main's are held to them), on a worktree
+// under the OS temp dir with the empty docs/ and .harness/ every case there had. The lint of this checkout's own
+// files stays a bash check (tests/checks/memlint-self.sh), the driver's notes tests/checks/memlint-run.sh.
+const MM = fileURLToPath(new URL("../../lib/memlint.mjs", import.meta.url));
+const fx = name => readFileSync(new URL(`../fixtures/memlint/${name}`, import.meta.url), "utf8");
+// files: path → text, null for a directory; fn(d) may be async (the worktree outlives its awaits)
+const lintWt = async (files, fn) => {
+  const d = mkdtempSync(join(tmpdir(), "ml4-"));
+  try {
+    for (const [f, text] of Object.entries({ docs: null, ".harness": null, ...files })) {
+      mkdirSync(join(d, f, text === null ? "" : ".."), { recursive: true });
+      if (text !== null) writeFileSync(join(d, f), text);
+    }
+    return await fn(d);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+};
+// the worktree's findings: the CLI's stdout, its exit 0 asserted (bash's `o=$($M "$wt") &&`)
+const ml = async (d, opts) => { const r = await sameAsCli("memlint.mjs", [d], opts); assert.equal(r.rc, 0, "memlint's exit code"); return r.out; };
+const count = (out, check) => out.split("\n").filter(l => l.includes(` ${check}: `)).length;
+const hasLine = (out, re) => assert.ok(out.split("\n").some(l => re.test(l)), `no line matches ${re} in:\n${out}`);
+const TIDY = () => ({ "docs/decisions.md": fx("rane-decisions-tidy.md"), "CLAUDE.md": fx("rane-claude-tidy.md") });
+const DIRSTORE = { ".harness/config.sh": "DECISIONS=journal/decisions\n" };
+
+test("memlint: node --check passes, the usage header lists the five checks, a missing worktree exits 2", async () => {
+  assert.equal(spawnSync(process.execPath, ["--check", MM]).status, 0);
+  const src = readFileSync(MM, "utf8").split("\n"), a = src.findIndex(l => l.startsWith("//   <worktree>")), b = src.findIndex(l => l.startsWith("import"));
+  assert.ok(a >= 0 && b > a, "the usage header runs from its <worktree> line to the first import");
+  const h = src.slice(a, b + 1).join("\n");
+  for (const c of ["size", "gotchas", "derivable-count", "run-scope", "decisions"]) assert.ok(h.includes(c), `the header names ${c}`);
+  await lintWt({}, async d => assert.equal((await sameAsCli("memlint.mjs", [join(d, "nope")])).rc, 2));
+});
+
+test("memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming its line, exit 0", async () => {
+  await lintWt({ "CLAUDE.md": fx("dj-claude.md") }, async d => {
+    const o = await ml(d);
+    assert.equal(count(o, "derivable-count"), 1); hasLine(o, /^CLAUDE.md:17 derivable-count: .*1,870 tests/);
+  });
+});
+
+test("memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonight", async () => {
+  await lintWt({ ".harness/project.md": fx("pathways-project.md") }, async d => {
+    const o = await ml(d);
+    hasLine(o, /^.harness\/project.md:22 run-scope: .*tonight/); assert.equal(count(o, "run-scope"), 1);
+  });
+});
+
+test("memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9", async () => {
+  await lintWt({ "docs/decisions.md": fx("rane-decisions-old.md") }, async d => {
+    const o = await ml(d);
+    assert.equal(count(o, "decisions"), 1); hasLine(o, /^docs\/decisions.md:33 decisions: D15 .*Updated in place/);
+  });
+});
+
+test("memlint: the old rane store without its current-rule-set header yields a header finding", async () => {
+  const ls = fx("rane-decisions-old.md").split("\n"); ls.splice(3, 3);   // sed -i 4,6d
+  await lintWt({ "docs/decisions.md": ls.join("\n") }, async d => {
+    const o = await ml(d);
+    hasLine(o, /^docs\/decisions.md:1 decisions: no current-rule-set header/); assert.equal(count(o, "decisions"), 2);
+  });
+});
+
+test("memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding", async () => {
+  assert.match(fx("rane-claude-tidy.md"), /^## Where things go/m);
+  await lintWt(TIDY(), async d => assert.equal(await ml(d), ""));
+});
+
+test("memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)", async () => {
+  assert.ok(fx("voice-decisions.md").includes("rows they superseded"));
+  await lintWt({ "docs/decisions.md": fx("voice-decisions.md") }, async d => assert.equal(await ml(d), ""));
+});
+
+test("memlint: a worktree with neither DECISIONS= nor docs/decisions.md yields decisions: no store", async () => {
+  await lintWt({ "CLAUDE.md": fx("dj-claude.md") }, async d => {
+    hasLine(await ml(d), /^.harness\/config.sh:1 decisions: no store/);
+    writeFileSync(join(d, ".harness/config.sh"), "DECISIONS=docs/gone.md\n");
+    hasLine(await ml(d), /^.harness\/config.sh:1 decisions: store docs\/gone.md not found/);
+  });
+});
+
+test("memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap", async () => {
+  const pad = Array.from({ length: 28 }, (_, i) => `pad ${i + 1}\n`).join(""), big = fx("rane-claude-tidy.md") + pad;
+  assert.equal(big.split("\n").length - 1, 121);   // wc -l
+  await lintWt({ "docs/decisions.md": fx("rane-decisions-tidy.md"), "CLAUDE.md": big }, async d => {
+    assert.equal(await ml(d), "CLAUDE.md:121 size: 121 lines, over 120 (MEMLINT_LINES)\n");
+    writeFileSync(join(d, "CLAUDE.md"), big.replace(/pad 28\n$/, ""));   // sed -i $d
+    assert.equal(await ml(d), "");
+    assert.equal(await ml(d, { env: { MEMLINT_LINES: "100" } }), "CLAUDE.md:101 size: 120 lines, over 100 (MEMLINT_LINES)\n");
+  });
+});
+
+test("memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)", async () => {
+  const added = n => fx("rane-claude-tidy.md").split("\n").flatMap(l => /^## Gotchas/.test(l) ? [l, ...Array.from({ length: n }, (_, i) => `- added fact ${i + 1}`)] : [l]).join("\n");
+  await lintWt({ "docs/decisions.md": fx("rane-decisions-tidy.md"), "CLAUDE.md": added(9) }, async d => {
+    assert.equal(await ml(d), "CLAUDE.md:94 gotchas: 16 lines, over 15\n");
+    writeFileSync(join(d, "CLAUDE.md"), added(8));   // sed -i "/^- added fact 9$/d"
+    assert.equal(await ml(d), "");
+  });
+});
+
+test("memlint: a directory store file marked superseded with no Updated in place line yields a finding, with one none", async () => {
+  const old = "# Old rule\n\n- **Choice:** x\n- Superseded by decisions/2026-10-26-new.\n";
+  await lintWt({ ...DIRSTORE, "journal/decisions/2026-10-25-old.md": old,
+    "journal/decisions/2026-10-26-new.md": "# New rule\n\n- **Choice:** y; its origin replaced by a clone (prose, not a marker)\n" }, async d => {
+    assert.equal(await ml(d), 'journal/decisions/2026-10-25-old.md:4 decisions: superseded with no "Updated in place" line\n');
+    writeFileSync(join(d, "journal/decisions/2026-10-25-old.md"), `${old}Updated in place 2026-10-26: now y.\n`);
+    assert.equal(await ml(d), "");
+  });
+});
+
+test("memlint: a stated rule is no count or run scope (1 test, as of decision 12), a month alone is a date (as of October)", async () => {
+  await lintWt({ ".harness/config.sh": "DECISIONS=docs/d.md\n", "docs/d.md": "# d\nThe current rule set.\n",
+    "CLAUDE.md": "# x\n- Write 1 test first, watch it fail.\n- Rules hold as of decision 12.\n- Prices as of October.\n" }, async d =>
+    assert.equal(await ml(d), 'CLAUDE.md:4 run-scope: "as of October" (run scope goes in the run\'s brief)\n'));
+});
+
+test("memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped", async () => {
+  const store = ["# d", "The current rule set, rewritten in place.", "", "## D15 old", "Superseded in part by D17.", "### History",
+    "Updated in place 2026-10-20: narrowed.", "## Notes on D17 and hardware", "The jog rule was superseded by the D20 rule."].join("\n") + "\n";
+  await lintWt({ "docs/decisions.md": store }, async d =>
+    assert.equal(await ml(d), 'docs/decisions.md:9 decisions: Notes on D17 and hardware superseded with no "Updated in place" line\n'));
+  await lintWt({ ...DIRSTORE, "journal/decisions/old.md": null }, async d => assert.equal(await ml(d), ""));
+});
+
+// the M4 review (M4-02): an unreadable file is one stderr line naming it; a header under a non-decision `## ` section is
+// a header; a symlinked decision file is linted as readRules reads it
+test("memlint: an unreadable CLAUDE.md is exit 1 and one stderr line naming the file and the error", async () => {
+  await lintWt({ "CLAUDE.md": null }, async d => {
+    const r = await sameAsCli("memlint.mjs", [d]);
+    assert.equal(r.rc, 1); assert.equal(r.out, "");
+    const err = spawnSync(process.execPath, [MM, d]).stderr.toString();   // the CLI's own stderr (sameAsCli swallows it)
+    assert.equal(err.split("\n").length - 1, 1, err); starts(err, "memlint: cannot read CLAUDE.md: EISDIR");
+  });
+});
+
+test("memlint: a current-rule-set header under a ## section before the first decision is a header; a symlinked file is linted", async () => {
+  await lintWt({ "docs/decisions.md": "# Decisions\n## How this file works\nThis is the current rule set, rewritten in place.\n## D1 one\nRule.\n" },
+    async d => assert.equal(await ml(d), ""));
+  await lintWt({ ...DIRSTORE, "journal/decisions": null, "elsewhere/old.md": "# Old\n- Superseded by decisions/x.\n" }, async d => {
+    symlinkSync("../../elsewhere/old.md", join(d, "journal/decisions/2026-10-25-old.md"));
+    assert.equal(await ml(d), 'journal/decisions/2026-10-25-old.md:2 decisions: superseded with no "Updated in place" line\n');
+  });
 });

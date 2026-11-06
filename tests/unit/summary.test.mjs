@@ -130,7 +130,7 @@ test("summary.mjs: flakes counts flakes.jsonl's rows by name (whole suite for no
 
 test("report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary", () => {
   const fx = fixture(), after = s => { const { i } = rowOf(s, "| Tests | "); return report(s).split("\n")[i + 1]; };
-  assert.equal(after({ ...fx, flakes: { count: 3, names: { "44-lanes-record": 1, "28-run-14d-harness-merge": 2 } } }), "| Flakes | 3 · 28-run-14d-harness-merge ×2, 44-lanes-record |");
+  assert.equal(after({ ...fx, flakes: { count: 3, names: { "lanes-record-lock": 1, "merge-legacy-record": 2 } } }), "| Flakes | 3 · merge-legacy-record ×2, lanes-record-lock |");
   assert.equal(after({ ...fx, flakes: { count: 0, names: {} } }), "| Flakes | 0 |");
   assert.doesNotMatch(report(fx), /Flakes/);
 });
@@ -192,7 +192,7 @@ const fxo = (m, r) => ({ kind: "fix_round", run: "r", milestone: m, round: r, is
 const fxr = (m, r, after) => ({ kind: "fix_result", run: "r", milestone: m, round: r, issue: "all", failed_after: after, fixed: after.length === 0 });
 
 test("fix rounds: a fix feature's un-pass note (check <files> red) reads as a red suite, beside the fast tier's and the older note", () => {
-  const h = "- 2026-11-04 04:38 · M1-fix1 un-passed: check 90-fix-rounds 59-needs-cards red after the session\n- 2026-11-04 04:39 · A un-passed: fast tier red after the session\n"
+  const h = "- 2026-11-04 04:38 · M1-fix1 un-passed: check fix-rounds needs-cards red after the session\n- 2026-11-04 04:39 · A un-passed: fast tier red after the session\n"
     + "- 2026-11-04 04:40 · M1-fix2 un-passed: suite red after the session\n- 2026-11-04 04:41 · B · opus · passes=true · checked: nothing un-passed here\n";
   assert.deepEqual(["M1-fix1", "A", "M1-fix2", "B", "M1-fix"].map(id => redSuite(h, id)), [true, true, true, false, false]);
   assert.equal((h.match(new RegExp(redUnpass.source, "g")) || []).length, 3);
