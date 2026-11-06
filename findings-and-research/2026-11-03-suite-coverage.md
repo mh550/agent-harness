@@ -400,6 +400,153 @@ In no table: 39 lines no trace can name (what each script runs before its trace 
   shows no bash line though it runs two whole stub runs. `33-suite-runner` runs the runner, not the harness: 0 lines.
 - **Counts, not times.** How long a line takes is not measured; the before row's wall and CPU are the suite's.
 
+## The mutation sample: which changed lines no check turns red on
+
+Forty mutants, each one small change to a line of `lib/` that a check file runs, each run against every check file
+whose set holds its line. A mutant is **caught** when that run is red and **survived** when it is green: a survivor is
+a line some check file runs and no check asserts on.
+
+```bash
+node tests/tools/mutants.mjs pick findings-and-research/2026-11-03-suite-coverage 20261105 10 > _mutants.jsonl   # the sample: seed 20261105, ten of each kind
+MUTANT_WRAP="<the sandbox>" bash tests/tools/mutants.sh _mutants.jsonl <out dir>                                # each mutant in the tree, its check files run, the tree put back
+node tests/tools/mutants.mjs table _mutants.jsonl <out dir>                                                      # the table below
+```
+
+- **The pool**: the 6,126 lines of `lib/*.sh` and `lib/*.mjs` that a check file runs (the sets above; `bin/harness` is
+  not in it: the spec's sample is of `lib/`). 125 more such lines are left out because they delete, kill, push or post
+  (`rm`, `kill`, `git push`, `curl`, `gh` …): a mutant of one is a harness doing that in a way nobody has read.
+- **The four kinds**, ten of each, drawn in a seeded order (the same sets, tree and seed give the same forty): delete
+  the line · `&&` ↔ `||` · a comparison (`-ge` ↔ `-gt`, `<=` → `<`, `==` ↔ `!=` …) · a literal (`true` ↔ `false`, a
+  whole number + 1). One mutant per line at most. Only logic changes: never a comment, never message text (quoted
+  text in node, double-quoted text in bash; a single-quoted jq, awk or node program in bash is code); a deleted bash
+  line is a whole statement. Nine candidates were passed over because the changed file no longer parsed (`bash -n`,
+  `node --check`), and the next in the order was drawn.
+- **The run**: one mutant at a time, the tree clean before and after each (`git diff --quiet`), nothing of a mutant
+  committed; each under `bwrap` with the home directory read-only (the repo's `.git` aside, which the eval check's
+  worktree needs) and `/tmp` writable, inside the solo method's 3G scope at 4 jobs; `TEST_FILE_TIMEOUT=5m` (the
+  slowest file takes 2.8 min plain), a file stopped there counting as red. One unmutated suite inside the same
+  sandbox first: 1505/1505 in 608.4 s, nothing skipped, so the sandbox turns nothing red by itself.
+- **Defaults where the spec is silent**: ten per kind; the rules above for what a mutant may touch; the sandbox; the
+  timeout. The spec's default stands that every covering file runs for every mutant (Michael, 2026-11-06: no cap).
+- A first sample, drawn before the review's fixes to the sets, was stopped during its first mutant and discarded:
+  its pool held node lines that had never run.
+
+### The result
+
+**26 of the 40 mutants are caught, 14 survive**: delete 8 of 10, `&&` ↔ `||` 7 of 10, comparison 7 of 10, literal 4 of
+10. The forty runs took 12,366 s (3.4 h) of suite time, 9 to 16 min for each mutant on a line that 60 or more check
+files run. Forty is a small sample: read the counts as counts, not as a rate for the whole of `lib/`.
+
+- **Nine of the 14 survivors are gaps** (a line that runs and that no check asserts on); **five change nothing a
+  check could see** (an exit code only ever tested for zero, a constant behind a rounding or a seven-hour wait). Each
+  is read below. Without those five, 26 of 35 are caught.
+- **A line run by many check files is no better asserted than one run by few.** 19 of the 40 mutants sit on lines
+  run by 20 or more check files: 13 caught, 6 survived. The other 21: 13 caught, 8 survived.
+- **Where a widely run line is caught, it is often caught by one check.** Five of those 13 turned one or two checks
+  red among the 63 to 66 check files that ran the line (`andor-01`, `andor-02`, `andor-06`, `compare-09`,
+  `literal-03`): the other sixty-odd files ran the changed line and stayed green. That is the map's Table 4 seen from
+  the other side: most of what a stub start runs is run, not checked, by the file that starts it.
+- **The checks that catch are named** in the table (the first three, then a count); `<out dir>/<mutant>.out` held each
+  run's full output (scratch, not kept).
+
+| mutant | line | change | check files run | result |
+|---|---|---|---:|---|
+| `delete-01` | `lib/needs.mjs:360` (run in part) | the line deleted | 5 | caught by 19 checks in 3 files: `needs card question: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)`, `needs.mjs: main's open, list, md, fields, done and sweep give the CLI's bytes, the clock and HOME from io.env`, `needs questions: open makes one warn item, key question:<the key>, no priority, seen 1, asked_in its run`, and 16 more |
+| `delete-02` | `lib/entries.mjs:91` (run in part) | the line deleted | 70 | caught by 248 checks in 51 files: `a writer's answer holds no NUL: ask entries.mjs ingest of a feature with a NUL runs once (one journal line, no second start), the spawn's answer and code, no warning from $( )`, `fix rounds fx1: a red verify opens round 1 (the note with the failing name) and no card: no needs Michael, needs-M1, verify_red item or needs-you post`, `fix rounds fx1: the record's list has M1-fix1 (kind fix, issue all, round 1, after B, t1 as name and file, three steps, the worker model), clean under the step lint`, and 245 more |
+| `delete-03` | `lib/eval.mjs:16` | the line deleted | 3 | caught by 15 checks in 3 files: `eval: every task.json validates and a bad one is rejected`, `eval.mjs: validateTask accepts a task and names the field of each bad one`, `eval run: two stub tasks end to end, results in place`, and 12 more |
+| `delete-04` | `lib/view.mjs:59` | the line deleted | 52 | caught by 81 checks in 19 files: `harness status lists a running run's units with MemoryCurrent; an ended run's none`, `harness parked: id, why, question, both commands`, `a run still ending: answer now, continue once it has ended`, and 78 more |
+| `delete-05` | `lib/backlog.sh:18` | the line deleted | 1 | caught by 3 checks in 1 file: `harness backlog set flips test-counts to specced and list shows the spec`, `harness backlog import of the seed file gives 8 rows, and 8 again on a second import`, `harness backlog with LEDGER_COMMIT=1 commits retro-backlog.jsonl alone, one ledger commit per write` |
+| `delete-06` | `lib/record.sh:137` | the line deleted | 65 | **survived** |
+| `delete-07` | `lib/debrief.sh:329` | the line deleted | 1 | caught by 1 check in 1 file: `a refused commit: the note is unstaged again` |
+| `delete-08` | `lib/entries.mjs:240` | the line deleted | 3 | caught by 10 checks in 2 files: `entries.mjs: the pack keeps a feature's dead end under a flood and respects the cap`, `entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them`, `entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it`, and 7 more |
+| `delete-09` | `lib/debrief.sh:173` | the line deleted | 8 | **survived** |
+| `delete-10` | `lib/needs.mjs:391` | the line deleted | 42 | caught by 127 checks in 23 files: `fix rounds fx5: a fix session that leaves the red is un-passed by its gate's first command (check t1; the fast tier not run), given up, and the run ends blocked on M1-fix1`, `fix rounds fx2: the verify_red card is the own variant, its why names both rounds and what each left red (t3), and one needs-you post went out`, `fix rounds fx2: a continue verifies again at the cap: the card again after 2 fix rounds, no third round, feature or fix_result row`, and 124 more |
+| `andor-01` | `lib/record.sh:1261` | `&&` → `||` | 66 | caught by 2 checks in 2 files: `needs questions: the entry that resolves it closes it at its ingest, before its session's line`, `INBOX repair in a run: noted, the record's comment as the driver wrote it, the question directly above ## Answers, C parked` |
+| `andor-02` | `lib/record.sh:686` | `||` → `&&` | 63 | caught by 1 check in 1 file: `a session that leaves CLAUDE.md alone gets no gotchas note` |
+| `andor-03` | `lib/check.sh:219` | `||` → `&&` | 1 | caught by 1 check in 1 file: `check partial: a red with no HARNESS_FAILED line reruns the partial's names (a flake row naming them); a deleted mapped file is a partial` |
+| `andor-04` | `lib/record.sh:151` | `||` → `&&` | 65 | caught by 15 checks in 2 files: `a stub start through the helpers: the same harness-log.md, run.log and feature_list.json as helper off, stripped the same way`, `a stub start through the helpers starts node at most 30 times (one helper for the driver and each lane among them)`, `a stub start's run.log has no helper restarted and no helper off line`, and 12 more |
+| `andor-05` | `lib/memlint.mjs:226` (run in part) | `&&` → `||` | 68 | **survived** |
+| `andor-06` | `lib/record.sh:550` | `&&` → `||` | 66 | caught by 2 checks in 1 file: `every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config`, `a worktree with .mcp.json: sessions get --strict-mcp-config --mcp-config <wt>/.mcp.json` |
+| `andor-07` | `lib/record.sh:386` | `&&` → `||` | 4 | caught by 1 check in 1 file: `resolve fallbacks: a sync_main resolve that gives up is main_conflict with tried, notified once, and no re-base retries that main` |
+| `andor-08` | `lib/notify.sh:9` | `||` → `&&` | 67 | **survived** |
+| `andor-09` | `lib/desk.sh:145` | `&&` → `||` | 1 | **survived** |
+| `andor-10` | `lib/resolve.sh:16` | `&&` → `||` | 4 | caught by 22 checks in 3 files: `resolve: a re-base conflict gets a resolve session, noted with its file`, `resolve: the resolved merge takes one verify round, then M2 merges (one resolve line, two verify lines)`, `resolve: the tree on main is the tree verified as run/<run>/M2 (the invariant)`, and 19 more |
+| `compare-01` | `lib/treekey.mjs:105` (run in part) | `===` → `!==` | 71 | caught by 18 checks in 3 files: `scope.sh: a real 64M scope kills a 256 MB allocation with exit 137 and leaves no unit`, `treekey --partial: a CLAUDE.md-only change moves the full key (16 hex), keeps the reduced key, and differs in CLAUDE.md's blob line only`, `treekey --partial: a mapped path absent from the tree is a '- <path>' line, in map order`, and 15 more |
+| `compare-02` | `lib/eval.mjs:221` (run in part) | `===` → `!==` | 2 | caught by 2 checks in 2 files: `eval.mjs: probe questions derived from the list, the session rows and the commits; answers scored exact, contains or miss`, `eval probes: questions derived, answers scored` |
+| `compare-03` | `lib/status.mjs:130` (run in part) | `===` → `!==` | 23 | caught by 1 check in 1 file: `status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says` |
+| `compare-04` | `lib/features.mjs:200` | `===` → `!==` | 1 | caught by 3 checks in 1 file: `lint: self-match trips a grep of progress.md for the step's own words, not of harness-log.md or lib/`, `lint: self-match reads grep as a command: prose, option values, -x, redirects, egrep and BRE escapes`, `lint: self-match ends the command at a closing backtick or a glued \|, and reads --regexp=` |
+| `compare-05` | `lib/status.mjs:290` | `<` → `<=` | 8 | **survived** |
+| `compare-06` | `lib/status.mjs:272` (run in part) | `>` → `>=` | 8 | **survived** |
+| `compare-07` | `lib/record.sh:511` | `==` → `!=` | 1 | **survived** |
+| `compare-08` | `lib/check.sh:197` | `==` → `!=` | 3 | caught by 14 checks in 2 files: `fast gate: --fast runs the fast command (--tier fast), writes fast-<key> (the fast count, wall) and no green-<key>; row fast`, `fast gate: the next --fast call is the cached fast line, row cached, no run`, `fast gate: a bare call on a fast-green tree runs the suite bare (a fast-green is never read as a green)`, and 11 more |
+| `compare-09` | `lib/driver.sh:152` | `==` → `!=` | 63 | caught by 1 check in 1 file: `finish runs the teardown hook, then stops harness-<run>-svc, and notes it once (the EXIT trap after it is silent)` |
+| `compare-10` | `lib/render.mjs:12` (run in part) | `===` → `!==` | 69 | caught by 6 checks in 4 files: `fix rounds fx1: the fix session's prompt has the Fix round line under This session (1 of 2, t1, the output's path, both gate commands); A's has none`, `suite length: every kind's wall is under # This session; its This run Suite line points there`, `suite length: a project without CHECK_FAST_CMD renders This run's Suite line as before and no fast length`, and 3 more |
+| `literal-01` | `lib/config.sh:87` | `1` → `2` | 32 | **survived** |
+| `literal-02` | `lib/debrief.sh:24` | `3600` → `3601` | 8 | **survived** |
+| `literal-03` | `lib/record.sh:677` | `0` → `1` | 66 | caught by 1 check in 1 file: `needs questions: the entry that resolves it closes it at its ingest, before its session's line` |
+| `literal-04` | `lib/check.sh:155` | `1` → `2` | 1 | **survived** |
+| `literal-05` | `lib/show.mjs:28` (run in part) | `0` → `1` | 3 | caught by 3 checks in 2 files: `show: the pure parts: joinDiff joins by path (binary +/− null, .harness/runs/ left out), mergeTreePaths reads the real output, combine counts one blob once (stacked or fanned-out lanes), milestonesOf keeps a proposal's PR`, `show: CHANGES vs origin/main lists the session's 2 files with +/−, a stacked lane counted once, and marks the one main also changed ✗ conflicts`, `show: at COLUMNS=60 no line of the run view or the feature view passes 60 columns but a URL line` |
+| `literal-06` | `lib/spec.sh:41` | `0` → `1` | 4 | **survived** |
+| `literal-07` | `lib/metrics.mjs:203` | `1` → `2` | 2 | caught by 2 checks in 2 files: `fix rounds: the CLI fix-round appends one row per call to a metrics.jsonl path; isSession is false for both kinds and summary counts neither`, `fix rounds fx1: metrics.jsonl has the fix_round row (failed_before t1), one fix_result (failed_after [], fixed) and the fix session's row with role fix` |
+| `literal-08` | `lib/record.sh:1193` | `1` → `2` | 63 | **survived** |
+| `literal-09` | `lib/cli.mjs:24` | `2` → `3` | 90 | caught by 464 checks in 71 files: `ask: each of the 20 answers is the spawn's bytes (cmp, the trailing newline included), and its exit code`, `the call after a throw is answered by the same helper (no start, the same pid, no restart line)`, `every one of those answers is the spawn's bytes; a reader asking while < <(ask) runs still gets its own; nothing on stderr`, and 461 more |
+| `literal-10` | `lib/metrics.mjs:239` (run in part) | `3600` → `3601` | 69 | **survived** |
+
+26 of 40 caught, 14 survived.
+
+### The survivors: what each says
+
+Each is a line a check file runs and no check asserts on, unless the change makes no difference (an equivalent
+mutant), which is said.
+
+- `delete-06`, `lib/record.sh:137`, the helper exchange's `trap '' PIPE` deleted (65 check files run it): **a gap.**
+  The line keeps a write to a dead helper from ending the driver. No check makes that write happen (a helper killed
+  between two questions), so nothing notices the line gone.
+- `delete-09`, `lib/debrief.sh:173`, the line that puts the "harness trends" section into the debrief's context
+  deleted (8 check files): **a gap.** No check looks for that section in the context the debrief session is given
+  (the only "harness trends" in `tests/` is the trends view's own check file, `71-tty-views`).
+- `andor-05`, `lib/memlint.mjs:226`, `cmd === "gotchas" && wt && rest.length === 1` → `… && wt || rest.length === 1`
+  (68 check files; a line only ever run in part): **a small gap.** The two differ only on a wrong argument count
+  (`store <worktree> <extra>`, or `gotchas <before>` alone): the usage line and its exit 2 are asserted for no such
+  call.
+- `andor-08`, `lib/notify.sh:9`, `declare -F ask > /dev/null || ask() { … }` → `&&` (67 check files): **equivalent in
+  a driver and a lane** (`lib/prompt.sh`, sourced before it, has defined the same `ask`, and `lib/record.sh` replaces
+  it after), **a gap in the desk**: there the mutant leaves `ask` undefined, `gh_url` returns nothing, and the plain
+  notification loses its click (the INBOX on GitHub, `lib/desk.sh:143`). No check asserts that click.
+- `andor-09`, `lib/desk.sh:145`, `[[ -n $why ]] && b+=("$why")` → `||` (1 check file, `13-run-2-michael-sets-desk`):
+  **a gap.** The desk's notification body loses its first line, the reason; the checks assert the title (which holds
+  the reason too), the click and the body's other lines ("Or by hand", "answer its dialog").
+- `compare-05`, `lib/status.mjs:290`, the loop over a queue entry's options, `i < args.length` → `<=` (8 check
+  files): **equivalent to the eye.** The extra pass adds one `undefined` to the options no card field names; a card
+  with no such option drops the empty value (`lib/view.mjs:179`) and one with some gains a trailing space.
+- `compare-06`, `lib/status.mjs:272`, the status card's "needs you" list, `items.length > 3` → `>= 3` (8 check files;
+  a line only ever run in part): **a gap at the boundary.** With exactly three open items the card would gain a
+  "+0 more" line; no check has a card with exactly three.
+- `compare-07`, `lib/record.sh:511`, the usage-limit wait's slice loop, `$(control) == stop` → `!= stop` (1 check
+  file, `47-lanes-two`; every other file sets the wait to 0 s, so the loop never runs): **a gap.** The mutant's wait
+  ends at once when nothing has stopped the run. The one check on it asserts that a stop ends the wait within a 60 s
+  slice and that no session starts in the window: it can't tell a wait cut short from one that never waited.
+- `literal-01`, `lib/config.sh:87`, the node one-liner that asks whether `package.json` has a test script,
+  `process.exit(… ? 0 : 1)` → `: 2` (32 check files): **equivalent.** The exit code is only tested in an `elif … &&`.
+- `literal-02`, `lib/debrief.sh:24`, the debrief's lock wait, `7 * 3600` → `7 * 3601` s (8 check files):
+  **nothing a check could see.** Seven seconds more on a seven-hour wait.
+- `literal-04`, `lib/check.sh:155`, the check runner's "may a partial run stand for the full one", `return 1` →
+  `return 2` (1 check file): **equivalent.** Its one caller asks `if … && partial` (`lib/check.sh:208`).
+- `literal-06`, `lib/spec.sh:41`, `GIT_TERMINAL_PROMPT=0` → `1` around the spec check's new run (4 check files):
+  **a gap a stub can hardly show.** The `0` keeps git from asking for a password at a terminal; no check has an origin
+  that asks for one.
+- `literal-08`, `lib/record.sh:1193`, the slot's "start on the default lane's branch" test,
+  `${LANE_MERGE:-0} != 1` → `!= 2` (63 check files): **a gap.** The two differ only when `LANE_MERGE` is 1, where
+  the mutant merges the default lane's branch into the slot. No check has that case with a default lane whose passed
+  features the slot doesn't hold yet, or none asserts the merge didn't happen.
+- `literal-10`, `lib/metrics.mjs:239`, the summary line's hours, `wall_s / 3600` → `/ 3601` (69 check files; a line
+  only ever run in part): **nothing a check could see.** 0.03 % under a rounding to 0.1 h.
+
+So the nine gaps, for S2 and after: the helper's dead-pipe guard · the debrief's trends section · memlint's usage
+error · the desk notification's click without a URL and its reason line · the status card at exactly three open
+items · a usage-limit wait that really waits · git's terminal prompt off in the spec check · the lane merge that
+must not take the default lane's branch. None is fixed here: S1 measures.
+
 ## The raw sets (for S2)
 
 `findings-and-research/2026-11-03-suite-coverage/`:
@@ -411,5 +558,8 @@ In no table: 39 lines no trace can name (what each script runs before its trace 
   prints the lines lost and exits 1 when there are any).
 - `_line-counts.txt`: `<file>:<line> <how many check files run it>` for each of the 6,779 lines.
 - `_partial-only.txt`: the 496 node lines no check file runs whole.
+- `_mutants.jsonl`: the forty mutants (id, file, line, kind, the line before and after, the check files that run it,
+  whether the line only ran in part); `_mutants-results.txt`: one line per mutant as the runner wrote it
+  (`<id> caught|survived <file>:<line> <kind> · <n> files · <s> s`).
 
 `node tests/tools/coverage.mjs covering <sets dir> <file> <line>` names the check files that run a line.
