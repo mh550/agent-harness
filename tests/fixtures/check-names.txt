@@ -700,6 +700,7 @@ materialize: a record tracked at the slot's base is skip-worktree, so the sessio
 memlint.mjs gotchas: the CLI prints +added ~edited -deleted of two files, nothing for none, a missing file as no section
 memlint.mjs store: prints the store's path from DECISIONS= or docs/decisions.md, nothing with neither
 memlint.mjs: main gives the CLI's bytes for a worktree, gotchas, store and store-line, and reads MEMLINT_LINES from io.env
+memlint.mjs: main with a wrong argument count is the usage error: exit 2, nothing on stdout, the usage line on stderr
 memlint.mjs: node --check passes, a usage header, decisionsStore exported
 memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
 memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
@@ -1165,6 +1166,7 @@ status card: a driver killed before run.log has no NaN, a missing worktree is no
 status card: a running run has now (feature, session, attempt of max, model, minutes in), lanes verbatim, its own units, next attach
 status card: an ended run has ended, milestones, spend, branch, worktree, next; no now, lanes or units
 status card: branch names its commit and ahead, behind origin/main from local refs, with no fetch and no write
+status card: exactly three open items are three headlines and no +0 more; a fourth is +1 more
 status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)
 status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
 status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule

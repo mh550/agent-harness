@@ -331,6 +331,7 @@ lint: unreproducible flags a time bound or one run's count, once per step, with 
 lint: unreproducible leaves names, flags, budgets, sizes and file counts alone
 main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
 memlint.mjs: main gives the CLI's bytes for a worktree, gotchas, store and store-line, and reads MEMLINT_LINES from io.env
+memlint.mjs: main with a wrong argument count is the usage error: exit 2, nothing on stdout, the usage line on stderr
 memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
 memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
 memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
@@ -539,6 +540,7 @@ status card: a driver killed before run.log has no NaN, a missing worktree is no
 status card: a running run has now (feature, session, attempt of max, model, minutes in), lanes verbatim, its own units, next attach
 status card: an ended run has ended, milestones, spend, branch, worktree, next; no now, lanes or units
 status card: branch names its commit and ahead, behind origin/main from local refs, with no fetch and no write
+status card: exactly three open items are three headlines and no +0 more; a fourth is +1 more
 status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)
 status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
 status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule

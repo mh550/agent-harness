@@ -277,6 +277,7 @@ check "a killed debrief changes nothing" '[[ $(cat "$Q/last-debrief") == "$LD" &
 touch "$Q/0099-continue-walled.args"; echo $$ > "$HARNESS_STATE/proj/gated/driver.pid"
 "$H" debrief --dry-run > "$T/dry.out" 2>&1
 check "--dry-run prints the context, launches nothing" '[[ $(ndb) == $B && -f $(head -1 "$T/dry.out") && $(cat "$Q/last-debrief") == "$LD" ]] && grep -q "^## harness status" "$T/dry.out" && grep -q "^### stoppy (proj)" "$T/dry.out" && grep -q "ended: deadline" "$T/dry.out" \
+  && [[ $(grep "^## harness " "$T/dry.out" | paste -sd"|") == "## harness status (these runs; each one'"'"'s section below has more)|## harness trends (last 40 lines)|## harness queue" ]] \
   && awk '"'"'/^#### / { if ($0 == "#### needs") { n++; if (prev != "#### harness status") bad++ } prev = $0 } END { exit !(n > 0 && !bad) }'"'"' "$T/dry.out"'
 check "the debrief's harness status block per run opens with the run's card line" 'awk '"'"'/^### / { run = $2 } /^#### harness status$/ { want = 2; next }
   want == 2 { want = (/^~~~$/) ? 1 : 0; if (!want) bad++; next } want == 1 { n++; if (index($0, " " run " · ") == 0 || $0 !~ /^[^ ]+ [^ ]+ · [^ ]+ · /) bad++; want = 0 }
