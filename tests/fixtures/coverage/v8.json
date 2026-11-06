@@ -1,0 +1,142 @@
+{
+ "result": [
+  {
+   "scriptId": "88",
+   "url": "file:///ROOT/run.mjs",
+   "functions": [
+    {
+     "functionName": "",
+     "ranges": [
+      {
+       "startOffset": 0,
+       "endOffset": 65,
+       "count": 1
+      }
+     ],
+     "isBlockCoverage": true
+    }
+   ]
+  },
+  {
+   "scriptId": "89",
+   "url": "file:///ROOT/lib/sample.mjs",
+   "functions": [
+    {
+     "functionName": "",
+     "ranges": [
+      {
+       "startOffset": 0,
+       "endOffset": 791,
+       "count": 1
+      }
+     ],
+     "isBlockCoverage": true
+    },
+    {
+     "functionName": "twice",
+     "ranges": [
+      {
+       "startOffset": 378,
+       "endOffset": 388,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": false
+    },
+    {
+     "functionName": "pick",
+     "ranges": [
+      {
+       "startOffset": 397,
+       "endOffset": 511,
+       "count": 1
+      },
+      {
+       "startOffset": 429,
+       "endOffset": 452,
+       "count": 0
+      },
+      {
+       "startOffset": 484,
+       "endOffset": 493,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": true
+    },
+    {
+     "functionName": "never",
+     "ranges": [
+      {
+       "startOffset": 519,
+       "endOffset": 551,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": false
+    },
+    {
+     "functionName": "label",
+     "ranges": [
+      {
+       "startOffset": 566,
+       "endOffset": 602,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": false
+    },
+    {
+     "functionName": "get first",
+     "ranges": [
+      {
+       "startOffset": 626,
+       "endOffset": 651,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": false
+    },
+    {
+     "functionName": "second",
+     "ranges": [
+      {
+       "startOffset": 663,
+       "endOffset": 670,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": false
+    },
+    {
+     "functionName": "",
+     "ranges": [
+      {
+       "startOffset": 688,
+       "endOffset": 698,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": false
+    },
+    {
+     "functionName": "sign",
+     "ranges": [
+      {
+       "startOffset": 711,
+       "endOffset": 790,
+       "count": 1
+      },
+      {
+       "startOffset": 762,
+       "endOffset": 788,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": true
+    }
+   ]
+  }
+ ],
+ "timestamp": 1069401.154848
+}

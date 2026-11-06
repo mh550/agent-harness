@@ -151,6 +151,22 @@ cli.mjs: the tail awaits a main that returns a promise
 cli.mjs: the tail gives main the process's cwd, environment and stdin
 cli.mjs: the tail writes main's out to stdout and exits its rc
 continue after a no-list end merges main first
+coverage.mjs reduce reads a raw directory's traces and V8 documents into one set; tables, counts, union, covering and missing read sets
+coverage: V8's nested ranges paint the innermost count: a branch not taken and a function never called did not run
+coverage: a line ran when code of it ran, not its punctuation or the declaration of a function never called; partial when some code of it did not
+coverage: a trace line gives its source path and line at any nesting depth; a command's own continued text and other lines give nothing
+coverage: a traced path counts when it is a lib/*.sh or bin/harness under the root, however it is spelled; a project's config.sh and a harness elsewhere do not
+coverage: beforeTrace names the lines a script runs before its trace starts, its option line to the guard; a file without the guard has none
+coverage: line numbers round-trip through ranges, and a set's text parses back to the same set, partial lines beside
+coverage: lineCounts, unionOf and missingFrom give a line's check files, every set's union and what one set lacks of another
+coverage: mjsExecutable leaves out blank lines, line and block comments, closing punctuation and a bare else, try or finally
+coverage: shAttribute moves a traced number to the line that holds its command, the statement's first line; a number on a line with none is dropped
+coverage: shFunctions names the function around each line, and none outside one
+coverage: shScan finds the lines that hold a command and each multi-line statement's first line
+coverage: shScan keeps a multi-line array and a quoted string inside a $( ) inside a string as one statement; a case arm of only ;; holds no command
+coverage: shScan leaves out comments, closing words, a case's bare pattern, a function's header and a comment's quote or backslash
+coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
+coverage: two processes' V8 documents add up: a character ran when it did in either
 decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
 decisionsStore: a quoted DECISIONS= naming a missing file wins over docs/decisions.md, a file store that doesn't exist
 decisionsStore: neither is null, and store prints nothing
@@ -352,6 +368,23 @@ metrics: an entry-resume row from first.jsonl and resumed.jsonl holds the total_
 metrics: resumed-again-under-cap.jsonl against resumed.jsonl gives a positive difference
 metrics: session-id prints the init line's session_id of first.jsonl
 metrics: summary counts an entry-resume row's cost but never as a session
+mutants runner: MUTANT_WRAP's command is what the suite runs under
+mutants runner: a mutant a check turns red on is caught and one nothing asserts on survives, each a line with its place, kind, files and seconds
+mutants runner: a mutant already in results.txt is not run again; with no id the rest of the sample runs
+mutants runner: a tree that is not clean stops it before anything runs, exit 1
+mutants runner: each mutant's suite output is kept: the caught one's holds the red check, the survivor's is all green
+mutants runner: stopped while a mutant is in the tree, it puts the tree back before it goes
+mutants runner: the tree is as it was after the sample: no mutant stays
+mutants.mjs pick reads the sets and the tree, drawing only lines a check file runs; apply writes the mutant and refuses a line that moved
+mutants: && and || swap, a comparison flips, true, false and a whole number change; never a comment, a redirection's digit, a parameter or an arrow
+mutants: a change never lands in message text: inside quotes in node, inside double quotes in bash (a single-quoted jq or awk program is code)
+mutants: a line that deletes, kills, pushes or posts is never mutated: risky names it, and pick's pool leaves it out and counts it
+mutants: a line's code ends where its trailing comment begins; a # or // inside quotes or a parameter is no comment
+mutants: delete takes a whole statement only: a line marked as part of a longer one gets no delete mutant
+mutants: mutate gives one change of a kind, the generator choosing which; delete gives null for a line with code and nothing for a blank or comment line
+mutants: pick draws each kind in a seeded order, one mutant per line, and passes over a candidate that no longer parses
+mutants: the seeded generator repeats: one seed gives one order every time, another seed another
+mutants: the table names what changed and the checks that caught it, per file, or says survived
 needs REASONS: kind, severity and priority for each of the 17 reasons, as the plan's table
 needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
@@ -600,6 +633,8 @@ testcount.mjs: --total is the last N/M line's total; nothing without one
 testcount.mjs: main gives the CLI's bytes with and without --total and --source, and a missing file is no output and 0
 testcount.mjs: the runner's last N/M checks passed is the count
 testcount.mjs: total is the last N/M line's M, null without one
+tests/lib.sh: TEST_XTRACE_DIR=<dir> traces a check file's harness calls and its own shell to <dir>/<file>/, node to <dir>/<file>/v8
+tests/lib.sh: without TEST_XTRACE_DIR an inherited HARNESS_XTRACE is dropped: no trace, whoever runs the suite
 the answer skill's facts cite file:line
 the answer skill's first step is harness needs, harness parked its alias
 the answer skill: another live run of the project: ask, with the queue add and --now and their merge order
@@ -619,6 +654,7 @@ the restart line says why: no reply in <n> s, a bad header, a wrong id, the help
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the same runner goes on to the next entry and starts it (a --brief start of the same project)
 the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
+the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/00-unit-tier/v8
 thin evidence escalates the verify
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
@@ -690,3 +726,13 @@ waitsOn: a feature's and a milestone's unfinished dependants through after, ever
 with $HARNESS_SCRATCH/helper-<pid>.lock held: ( ask ) &, $( ask ) and the owner's own ask each spawn (+1 each), never wait
 with no redirect a request's stderr is this shell's, once: nothing left to go out with a later call
 x=$(ask …) answers through the parent's helper (no start), its exit code seen inside
+xtrace: HARNESS_XTRACE=<dir> traces the CLI, the driver, a lane and the check runner, lines led by +<file>:<line>:
+xtrace: a directory that can't be made, or can't be written, costs the trace, never the command
+xtrace: a run started in tmux traces its driver too: the CLI passes the variable to the tmux command
+xtrace: a run without HARNESS_XTRACE leaves no trace file, and no trace line in its output
+xtrace: a sourced file's lines are traced under its own name, by the process that sourced it (lib/record.sh)
+xtrace: a trace file is its owner's to read and nobody else's (it holds what the commands held, a token among it)
+xtrace: a traced segment's first note says where the trace goes; a plain run has no such note
+xtrace: every executable script of lib/ and bin/harness sources lib/xtrace.sh under the guard, once
+xtrace: the trace goes to its own descriptor: the traced run's output holds no trace line
+xtrace: the traced run's harness-log.md is the plain run's plus that note, the run id, times, hashes and lengths aside

@@ -18,6 +18,7 @@
 # --dry-run: print the context only.
 set -uo pipefail
 : "${HARNESS_HOME:?}"
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness} Q=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}/queue
 H=$HARNESS_HOME/bin/harness CLAUDE=${HARNESS_CLAUDE:-claude} LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
 NOTE=$LEDGER/debrief.md PAGE=$LEDGER/debrief.html MAX_WAIT=$(( 5 * 3600 )) LOCK_WAIT=$(( 7 * 3600 ))

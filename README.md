@@ -368,6 +368,9 @@ node --test --test-isolation=none tests/unit/*.test.mjs   # the unit tier alone 
 bash tests/run.sh 00-unit   # the unit tier as the suite runs it: PASS/FAIL lines and N/M
 bash tests/run.sh --tier fast   # the fast tier only (every file whose line 2 is `# tier: fast`), its own conformance
 bash tests/run.sh --tier slow   # the slow tier only; `--tier <t> <name>…` and `--tier <t> --repeat <n>` combine
+bash tests/tools/coverage.sh <sets dir>   # the coverage map: the suite once, traced; one set of lines per check file (about 12 min, 9 GB of raw traces)
+node tests/tools/coverage.mjs tables <sets dir>   # its five tables (what each check file runs, what nothing runs)
+bash tests/tools/mutants.sh <sample.jsonl> <out dir>   # a mutation sample (mutants.mjs pick <sets dir> <seed>): each mutant against the check files that run its line
 ```
 Line 2 of every `tests/checks/*.sh` declares its tier, `# tier: fast` or `# tier: slow`, by the 30 s rule of
 `journal/decisions/2026-11-03-suite-tiers.md`; the runner refuses a file without one (`no tier header: <file>` per
@@ -394,3 +397,12 @@ flake, run `bash tests/run.sh --repeat 10 <file>`: it prints `<file>: <k>/10 gre
 (`KEEP=1` keeps and names each red copy's `$T`); fix it at its cause, with a check red before the fix
 (decisions/2026-10-29-tests-wait-not-sleep).
 The stubs replay real CLI output where it matters (`tests/fixtures/usage-limit.jsonl`, captured 2026-10-17).
+**Coverage and mutation, by hand.** `bash tests/tools/coverage.sh <sets dir>` runs the suite once with every check file's bash
+traced and node's own coverage on, and leaves one set per check file: the lines of `lib/` and `bin/` it runs
+(`node tests/tools/coverage.mjs tables <sets dir>` prints the map's five tables; `union` and `missing` compare two maps).
+The trace is the harness's own switch: with `HARNESS_XTRACE=<dir>` any harness command or run writes bash's `set -x` lines to
+`<dir>/<pid>.xtrace` (off unless set; a traced run's first log note says where it goes; a trace holds tokens in the clear,
+so its files are mode 600 and the directory is yours to delete). `node tests/tools/mutants.mjs pick
+<sets dir> <seed>` draws a mutation sample and `bash tests/tools/mutants.sh <sample.jsonl> <out dir>` runs it: each small
+change against the check files that run its line, the tree put back after each. Neither is part of the suite or of a run;
+the first map and sample are `findings-and-research/2026-11-03-suite-coverage.md` (decisions/2026-11-03-suite-coverage).

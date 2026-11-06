@@ -5,6 +5,7 @@
 #   backlog.sh [list] | set <id> <status> [--spec <path>] [--pr <url>] [--note <text>] | import <file.jsonl>
 set -uo pipefail
 : "${HARNESS_HOME:?}"
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # LEDGER_COMMIT
 LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger} STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}

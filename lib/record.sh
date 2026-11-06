@@ -77,9 +77,11 @@ helper_ready() {
 }
 # The helper's stderr is a file, so a request's (a git it runs included) can go where that call sends its own (helper_stderr).
 # It keeps no other descriptor: one started under `record` would hold the record lock (fd 9) for its whole life.
+# `set +x` first: the trace's descriptor (HARNESS_XTRACE, lib/xtrace.sh) closes with the rest, and bash would print the
+# loop's remaining lines on stderr instead.
 helper_start() {
   HELPER_ERR=$HARNESS_SCRATCH/helper-$HELPER_SHELL.err
-  coproc HELPER { local f; for f in /proc/self/fd/*; do f=${f##*/}; (( f > 2 )) && eval "exec $f>&-"; done; exec node "$HARNESS_HOME/lib/helper.mjs" 2>> "$HELPER_ERR"; }
+  coproc HELPER { set +x; local f; for f in /proc/self/fd/*; do f=${f##*/}; (( f > 2 )) && eval "exec $f>&-"; done; exec node "$HARNESS_HOME/lib/helper.mjs" 2>> "$HELPER_ERR"; }
   HELPER_LIVE=$HELPER_PID
 }
 # The driver's and a lane's: their helper from the start, where $( ) can use it

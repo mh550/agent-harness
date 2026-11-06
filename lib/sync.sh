@@ -9,6 +9,7 @@
 #   sync.sh [<checkout>]   (default: the toplevel of HARNESS_LEDGER, else of HARNESS_HOME/ledger)
 set -uo pipefail
 : "${HARNESS_HOME:?}"
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 # shellcheck source=lib/config.sh
 source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # MAIN_BRANCH, LIVE_SYNC
 say() { echo "sync: $*"; exit 0; }

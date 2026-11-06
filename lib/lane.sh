@@ -13,6 +13,7 @@
 # Plans: docs/plans/2026-10-26-P1-lanes-serial.md §6, §8; docs/plans/2026-10-26-P2-two-lanes.md §3 (the re-base).
 set -uo pipefail
 : "${WT:?}" "${RUN_ID:?}" "${STATE:?}" "${PROJECT_DIR:?}" "${HARNESS_HOME:?}" "${LANE:?}" "${LANE_SLOT:?}" "${LANE_PORT:?}"
+[[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 M=$1
 cd "$WT" || exit 1
 # shellcheck source=lib/config.sh
