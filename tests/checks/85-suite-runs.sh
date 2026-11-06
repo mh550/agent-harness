@@ -2,7 +2,6 @@
 # tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- one full run per coding session (C1 fix 4): suite_runs and suite_full on the coding row, the Suite runs row ----
-HH=$(cd "$HERE/.." && pwd)
 
 # su: A's first coding session runs the suite in full, edits the tree, in full again and as a subset; B and C run none
 STUB_RUN_SUITE2=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" su --spec SPEC.md --foreground > "$T/su.out" 2>&1
@@ -23,6 +22,5 @@ check "suite runs: a run of one such session: full_per_session 2, harness report
   && grep -A1 "^| Flakes |" "$T/rep1.md" | grep -xF "| Fix rounds | 0 |" > /dev/null \
   && grep -A1 "^| Fix rounds |" "$T/rep1.md" | grep -xF "| Suite runs | 2 full and 0 fast per coding session (2 full, 0 fast in 1; 3 runs in all) |" > /dev/null \
   && grep "suite runs" "$T/rep1.tty" | grep -F "2 full and 0 fast per coding session (2 full, 0 fast in 1; 3 runs in all)" > /dev/null'
-jq -c 'select(.kind != "coding")' "$RD/metrics.jsonl" > "$T/m0" && cp "$T/m0" "$RD/metrics.jsonl"
-check "suite runs: a run whose coding rows carry no count (rebuilt from run.log) reports 0" '"$H" report --md su | grep -xF "| Suite runs | 0 |" > /dev/null'
+# a run whose coding rows carry no count at all reports 0: the unit tier's (summary.test.mjs, suiteRuns)
 suite_end

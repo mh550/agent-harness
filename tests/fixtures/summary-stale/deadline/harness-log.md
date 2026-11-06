@@ -1,0 +1,45 @@
+- 2026-11-06 11:07 · memlint: .harness/config.sh:1 decisions: no store (no DECISIONS= in .harness/config.sh and no docs/decisions.md)
+- 2026-11-06 11:07 · test count: no match in the suite's output (tests start/end stay unknown)
+- 2026-11-06 11:07 · feature list written: 0/3 passing
+- 2026-11-06 11:07 · lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor
+- 2026-11-06 11:07 · dependencies: M2 has no after list, so it waits on every earlier feature (one given up or parked there stops it)
+- 2026-11-06 11:07 · lane M1 opened (slot 0, port 7950, from 7579333)
+- 2026-11-06 11:07 · context.md for A: 269 bytes
+- 2026-11-06 11:07 · A: suite ran 0x (0 s) in the session
+- 2026-11-06 11:07 · A: entry.json missing; recorded a minimal entry
+- 2026-11-06 11:07 · session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+- 2026-11-06 11:07 · context.md for A: 428 bytes
+- 2026-11-06 11:07 · A: suite ran 0x (0 s) in the session
+- 2026-11-06 11:07 · A: entry.json missing; recorded a minimal entry
+- 2026-11-06 11:07 · session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+- 2026-11-06 11:07 · context.md for A: 550 bytes
+- 2026-11-06 11:07 · A: suite ran 0x (0 s) in the session
+- 2026-11-06 11:07 · A: entry.json missing; recorded a minimal entry
+- 2026-11-06 11:07 · session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+- 2026-11-06 11:07 · context.md for A: 568 bytes
+- 2026-11-06 11:07 · A: suite ran 0x (0 s) in the session
+- 2026-11-06 11:07 · A: entry.json missing; recorded a minimal entry
+- 2026-11-06 11:07 · session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+- 2026-11-06 11:07 · context.md for A: 690 bytes
+- 2026-11-06 11:07 · A: suite ran 0x (0 s) in the session
+- 2026-11-06 11:07 · A: entry.json missing; recorded a minimal entry
+- 2026-11-06 11:07 · session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+- 2026-11-06 11:07 · context.md for A: 812 bytes
+- 2026-11-06 11:07 · A: suite ran 0x (0 s) in the session
+- 2026-11-06 11:07 · A: entry.json missing; recorded a minimal entry
+- 2026-11-06 11:07 · 6 sessions in a row refused (You've hit your session limit · resets 6:10am (America/New_York))
+- 2026-11-06 11:07 · lane M1 closed (usage limit (6 sessions refused in a row))
+- 2026-11-06 11:07 · run ended (usage limit (6 sessions refused in a row)): 0/3 passing · 7 sessions (1 real) · 0 features passed · $1.50 · 0.0 h · by kind: init 1 ($1.50), coding 6 ($0.00) · by model: claude-fable-5-1 1 ($1.50), claude-sonnet-5-5 6 ($0.00)
+- 2026-11-06 11:07 · services stopped (usage limit (6 sessions refused in a row))
+- 2026-11-06 11:07 · backlog: the retro wrote no retro-proposals.json
+- 2026-11-06 11:07 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-11-06 11:07 · record PR: none (RECORD_PR=off)
+- 2026-11-06 11:07 · scratch kept (KEEP_SCRATCH=1): /tmp/tmp.WvOj1iOMHC/scratch/proj/stale
+- 2026-11-06 11:07 · needs: resolved stale/1 (run continued)
+- 2026-11-06 11:07 · memlint: .harness/config.sh:1 decisions: no store (no DECISIONS= in .harness/config.sh and no docs/decisions.md)
+- 2026-11-06 11:07 · deadline reached
+- 2026-11-06 11:07 · run ended (deadline): 0/3 passing · 8 sessions (2 real) · 0 features passed · $1.70 · 0.0 h · by kind: init 1 ($1.50), coding 6 ($0.00), retro 1 ($0.20) · by model: claude-fable-5-1 1 ($1.50), claude-sonnet-5-5 7 ($0.20)
+- 2026-11-06 11:07 · backlog: the retro wrote no retro-proposals.json
+- 2026-11-06 11:07 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-11-06 11:07 · record PR: none (RECORD_PR=off)
+- 2026-11-06 11:07 · scratch kept (KEEP_SCRATCH=1): /tmp/tmp.WvOj1iOMHC/scratch/proj/stale

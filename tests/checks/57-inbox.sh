@@ -24,10 +24,8 @@ check "inbox.mjs repair: the comment back byte for byte, the question directly a
    && awk -v q="$Q1" "\$0 == q { n = NR } /^## Answers\$/ { a = NR } END { exit !(n && a == n + 2) }" "$T/rep.md" \
    && cp "$T/tpl.md" "$T/same.md" && node "$IM" repair "$T/tpl.md" "$T/same.md" && cmp -s "$T/same.md" "$T/tpl.md"'
 
-# U2-02's review: what a never-split INBOX may hold (its parse and the comment's other edits: tests/unit/inbox.test.mjs)
-printf '%s\n' "status: run" "<!-- Steer this run -->" "" "### A: does the \`<!--\` marker in index.html matter?" "" "## Answers" "" "### 2026-10-27 10:00 (local)" > "$T/lone.md"; printf 'no' >> "$T/lone.md"
-check "inbox.mjs answers CLI: on a lone <!-- INBOX with no final newline, the same bytes as sed's cut, never empty" \
-  '[[ $(node "$IM" answers "$T/lone.md" | sha1sum) == $(sed -n "/^## Answers/,\$p" "$T/lone.md" | sha1sum) ]] && [[ -n $(node "$IM" answers "$T/lone.md") ]]'
+# U2-02's review: what a never-split INBOX may hold (a lone <!--, no final newline: its parse, its answers and the
+# comment's other edits) is tests/unit/inbox.test.mjs's
 
 # One stub run: C's session asks inside the steering comment (split mid-line, as n8n-home's Q1) and parks
 STUB_INBOX_IN_COMMENT=C STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" inc --spec SPEC.md --foreground > "$T/inc.out" 2>&1

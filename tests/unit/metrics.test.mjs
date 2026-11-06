@@ -146,6 +146,26 @@ test("metrics.mjs: main gives the CLI's bytes for the driver's questions on the 
     await sameAsCli("metrics.mjs", a);
 });
 
+// the session-id and summary CLI: bash checks of their own file until the trim (decisions/2026-11-03-trim)
+test("metrics: session-id prints the init line's session_id of first.jsonl", async () => {
+  const first = fixture("claude-resume/first.jsonl");
+  const init = readFileSync(first, "utf8").split("\n").filter(Boolean).map(l => JSON.parse(l)).find(e => e.type === "system" && e.subtype === "init");
+  assert.match(init.session_id, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(await sameAsCli("metrics.mjs", ["session-id", first]), { rc: 0, out: `${init.session_id}\n` });
+  // a capture with no init line: nothing to resume, a non-zero exit
+  assert.notEqual((await sameAsCli("metrics.mjs", ["session-id", fixture("claude-resume/unknown-id.out")])).rc, 0);
+});
+
+test("metrics: summary counts an entry-resume row's cost but never as a session", async () => {
+  const d = mkdtempSync(join(tmpdir(), "ms-")), p = join(d, "resume-metrics.jsonl");
+  try {
+    writeFileSync(p, '{"kind":"coding","feature":"A","model":"opus","cost_usd":1.5,"turns":9,"passes":true}\n{"kind":"entry-resume","feature":"A","model":"opus","cost_usd":0.25,"turns":2,"passes":false}\n');
+    const r = await sameAsCli("metrics.mjs", ["summary", p]), want = "1 sessions (1 real) · 1 features passed · $1.75 · ";
+    assert.equal(r.rc, 0);
+    assert.equal(r.out.slice(0, want.length), want);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
 test("metrics.mjs: main's append writes the row the CLI writes", async () => {
   const d = mkdtempSync(join(tmpdir(), "mm-"));
   try {

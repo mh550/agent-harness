@@ -25,10 +25,13 @@ test("testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 i
   assert.equal(testCount("HARNESS_TESTS=123456789012345678901\n# pass 2\n"), 2);
 });
 
-// the --total CLI on two files stays in 73-check-rerun
+// the --total CLI's bytes are main's test below; through check.sh, 73-check-rerun's green marker
 test("testcount.mjs: total is the last N/M line's M, null without one", () => {
   assert.equal(total("3/5 checks passed\nx 7/9 tests passed\n"), 9);
+  assert.equal(total("FAIL a\n3/5 checks passed\nPASS b\n2/2 checks passed\n"), 2);
   assert.equal(total("ok"), null);
+  // a count with no /M (the contract line, a bare "12 passed") is a count, never a total
+  assert.equal(total("HARNESS_TESTS=4\n12 passed\n"), null);
 });
 
 test("testcount.mjs: main gives the CLI's bytes with and without --total and --source, and a missing file is no output and 0", async () => {

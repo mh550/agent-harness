@@ -37,7 +37,7 @@ check "a stub start through the helpers starts node at most 30 times (one helper
 check "a stub start's run.log has no helper restarted and no helper off line" '! grep -E "helper (restarted|off)" "$MD/on/run.log" > /dev/null'
 # the helpers' health in the record (decisions/2026-11-03-resident-helper, updated in place 2026-11-05)
 check "a normal stub start: summary.json's helper is 0 restarts and 0 off, harness report's Helper row says 0 restarts, harness-log.md has no helper note (helper on or off)" \
-  'for r in on off1; do jq -e ".helper == {restarts: 0, off: 0, whys: {}}" "$MD/$r/summary.json" > /dev/null && grep -x "| Helper | 0 restarts |" "$MD/$r/report" > /dev/null && ! grep "· helper: " "$MD/$r/harness-log.md" > /dev/null || false; done'
+  'ok=1; for r in on off1; do jq -e ".helper == {restarts: 0, off: 0, whys: {}}" "$MD/$r/summary.json" > /dev/null && grep -x "| Helper | 0 restarts |" "$MD/$r/report" > /dev/null && ! grep "· helper: " "$MD/$r/harness-log.md" > /dev/null || ok=0; done; (( ok ))'   # a flag: a loop's status is its last round's alone
 
 # ---- the lifecycle: one helper per driver and per lane, gone with its shell ----
 # This file's helpers only, whatever other suites run: by the environment they started with, never a bare pgrep count
@@ -78,12 +78,12 @@ kill "$l1h"; wait_for 30 eval '! alive "$l1h"'
 touch "$T/release-two"; wait "$P"; rm -f "$T/hold-coding"
 wait_for 30 nohelper; two_left=$(helpers)
 check "after the run's ended line no helper is left" '[[ -z $two_left ]] && grep "^done" "$S/ended" > /dev/null'
-"$H" report --md two > "$MD/two.report" 2>&1; hlog two > "$MD/two.hlog"; cp "$T/wt/proj/two/.harness/runs/two/summary.json" "$S/run.log" "$MD/" 2> /dev/null
+hlog two > "$MD/two.hlog"; cp "$T/wt/proj/two/.harness/runs/two/summary.json" "$S/run.log" "$MD/" 2> /dev/null
 two_n=$(grep -c " helper restarted: the helper went away$" "$MD/run.log")
 check "a lane's helper killed between two questions: the run ends done with restarts of 1 or more in summary.json (run.log's count, 0 off, the reason)" \
   '(( two_n >= 1 )) && jq -e --argjson n "$two_n" ".helper == {restarts: \$n, off: 0, whys: {\"the helper went away\": \$n}}" "$MD/summary.json" > /dev/null'
-check "a lane's helper killed between two questions: harness report has the Helper row with the count and the reason" \
-  'grep -xE "\| Helper \| $two_n restarts? · 0 off \(the helper went away( ×$two_n)?\) \|" "$MD/two.report" > /dev/null'
+# the report's Helper row for those counts is the unit tier's (summary.test.mjs, helper health: the report's Helper row);
+# harness report's wiring to the row is the normal start's check above
 check "a lane's helper killed between two questions: one note in harness-log.md at the run's end (how many restarted, how many off, the first reason, see run.log), in the committed record" \
   '[[ $(grep -c "· helper: " "$MD/two.hlog") == 1 ]] && grep -E "^- [0-9-]+ [0-9:]+ · helper: $two_n restarted, 0 off in this segment \(first: the helper went away\); see run\.log$" "$MD/two.hlog" > /dev/null && git -C "$T/wt/proj/two" show "HEAD:.harness/runs/two/harness-log.md" | grep "· helper: $two_n restarted" > /dev/null && [[ -z $(git -C "$T/wt/proj/two" status --porcelain) ]]'
 
@@ -111,5 +111,5 @@ check "the driver's and a lane's EXIT traps kill their helper by name (SIGTERM's
   '[[ $(grep -c "helper_stop.*EXIT\|helper_stop; echo" "$HH/lib/driver.sh") == 1 && $(grep -c "helper_stop. EXIT" "$HH/lib/lane.sh") == 1 ]]'
 check "the helper note is the coordinator's at its named ends (before each summary build of finish, harness merge's end): never helper_failed's, which only writes run.log, and never the EXIT trap's" \
   '[[ $(grep -c "^  helper_note   # \|retro; helper_note; SUM build " "$HH/lib/driver.sh") == 3 ]] && ! grep "^trap .*helper_note" "$HH/lib/driver.sh" > /dev/null && ! grep "helper_note" "$HH/lib/record.sh" "$HH/lib/lane.sh" > /dev/null && [[ $(sed -n "/^helper_failed() {/,/^}/p" "$HH/lib/record.sh" | grep -c "run\.log") == 1 && $(sed -n "/^helper_failed() {/,/^}/p" "$HH/lib/record.sh" | grep -cE "(^|[ ;{&|])(note|log|record) ") == 0 ]]'
-check "bash -n on the shell files the helper touched" 'for f in record lane driver needs notify prompt check; do bash -n "$HH/lib/$f.sh" || false; done'
+check "bash -n on the shell files the helper touched" 'ok=1; for f in record lane driver needs notify prompt check; do bash -n "$HH/lib/$f.sh" || ok=0; done; (( ok ))'
 suite_end

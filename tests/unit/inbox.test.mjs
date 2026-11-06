@@ -60,7 +60,8 @@ test("inbox.mjs: insert() puts the question and a blank line above ## Answers (a
   assert.deepEqual(f.map(x => Object.keys(x).join()), ["path,line", "path,line", "path,line"]);
 });
 
-// 57-inbox.sh's lone.md, no final newline; its answers CLI against sed stays a bash check there
+// U2-02's review: a never-split INBOX with a lone <!-- in a question and no final newline. answers() below is sed's
+// cut of it (`sed -n '/^## Answers/,$p'`, byte for byte); the CLI adds nothing to answers(): main's test at the end
 const lone = "status: run\n<!-- Steer this run -->\n\n### A: does the `<!--` marker in index.html matter?\n\n## Answers\n\n### 2026-10-27 10:00 (local)\nno";
 
 test("inbox.mjs review: a lone <!-- in a question hides nothing; answers() equals sed on it (no final newline); a CRLF heading counts", () => {
