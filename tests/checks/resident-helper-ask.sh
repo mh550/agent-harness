@@ -2,7 +2,7 @@
 # tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the resident helper: lib/helper.mjs and ask (H1-02, decisions/2026-11-03-resident-helper) ----
-# A node shim first on PATH counts the starts (84-node-memo's) and execs the real node. Each scenario is a fresh bash
+# A node shim first on PATH counts the starts (node-memo's) and execs the real node. Each scenario is a fresh bash
 # under `timeout 60` that sources lib/record.sh, the way a driver or a lane does, so a hang fails its check instead of
 # holding the file; the check shell's own node is the real one, the spawn every answer is compared with.
 MD=$T/helper; mkdir -p "$MD/shim"

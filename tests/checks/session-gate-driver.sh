@@ -48,7 +48,7 @@ check "fast gate run: a session's own fast call is suite_fast 1 on its coding ro
   '[[ $(row fg A) == "[1,0,1]" && $(row fg B) == "[0,0,0]" ]] && hlog fg | grep -F "· A: suite ran 1x (" > /dev/null'
 check "fast gate run: harness report --md's Suite runs row counts full and fast calls per coding session" \
   '"$H" report --md fg | grep -xF "| Suite runs | 0 full and 0.3 fast per coding session (0 full, 1 fast in 3; 1 runs in all) |" > /dev/null'
-# a wall differs from session to session: every one under # This session (79-suite-length's rule, the fast one too)
+# a wall differs from session to session: every one under # This session (suite-length's rule, the fast one too)
 below() { awk '/^# This session$/ { s = 1 } /last (full|fast) run ([0-9]+ s|not measured)/ { print (s ? "below" : "above") }' "$1" | sort -u; }
 check "fast gate run: the coding prompt names both tiers' commands, carries both lengths under # This session, and the tier rule" \
   'grep -F "/lib/check.sh --fast\` runs \`bash .harness/suite.sh --tier fast\`; cached per code tree; its last full run, and in a coding session its last fast run, are under *This session*) · init: " "$fg_b" \
@@ -58,7 +58,7 @@ check "fast gate run: the coding prompt names both tiers' commands, carries both
   && grep -F "run the fast tier once, last" "$fg_b" > /dev/null'
 
 # fs: B's first session commits BROKEN-SLOW: the fast tier stays green, so B passes; the verify's full run finds it.
-# MAX_FIX_ROUNDS=0: the red is the card at once, as before fix rounds (90-fix-rounds has the rounds)
+# MAX_FIX_ROUNDS=0: the red is the card at once, as before fix rounds (fix-rounds has the rounds)
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 mkdir -p "$(st fs)" && echo MAX_FIX_ROUNDS=0 > "$(st fs)/run.env"
 STUB_SLOW_RED=B STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" fs --spec SPEC.md --foreground > "$T/fs.out" 2>&1

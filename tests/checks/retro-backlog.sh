@@ -16,7 +16,7 @@ bad() { local s e o; s=$(sha256sum < "$ST"); o=$($H backlog set "$@" 2>&1 > /dev
 check "harness backlog set with an unknown id, a bad status or a missing argument exits 1, store byte-identical" '
   bad no-such specced && bad test-counts done && bad test-counts && bad && bad test-counts queued --spec &&
   { $H backlog frob > /dev/null 2>&1; (( $? == 1 )); }'
-# the import path is the caller's: a relative one from the checkout's docs/ (not its root: 82-key-map-lint)
+# the import path is the caller's: a relative one from the checkout's docs/ (not its root: key-map-lint)
 check "harness backlog import of the seed file gives 8 rows, and 8 again on a second import" '
   rm -f "$ST" && [[ $(cd "$DOCS" && $H backlog import "$SEED") == "backlog: imported 8 rows (8 new, 0 updated)" ]] &&
   [[ $(wc -l < "$ST") == 8 ]] && (cd "$DOCS" && $H backlog import "$SEED") > /dev/null && [[ $(wc -l < "$ST") == 8 ]] &&

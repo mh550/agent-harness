@@ -201,3 +201,23 @@ test("coverage.mjs reduce reads a raw directory's traces and V8 documents into o
     assert.equal((await main(["nope"], root)).rc, 2);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+// the shape (decisions/2026-11-05-suite-shape) took the number off the unit tier's check file: its set is unit-tier.txt,
+// beside the unit-<name>.txt sets of the tests/unit files run alone, which the tables read apart by that prefix
+test("coverage.mjs: the unit tier's check file (unit-tier) is a check file's set, never a unit row, as 00-unit-tier was", async () => {
+  const d = mkdtempSync(join(tmpdir(), "cov-"));
+  try {
+    mkdirSync(join(d, "root/lib"), { recursive: true }); mkdirSync(join(d, "root/bin")); mkdirSync(join(d, "sets")); mkdirSync(join(d, "old"));
+    writeFileSync(join(d, "root/lib/a.mjs"), "export const x = 1;\nexport const y = 2;\n"); writeFileSync(join(d, "root/bin/harness"), "#!/usr/bin/env bash\ntrue\n");
+    const root = join(d, "root");
+    for (const [dir, tier] of [["sets", "unit-tier"], ["old", "00-unit-tier"]]) {
+      writeFileSync(join(d, dir, `${tier}.txt`), "lib/a.mjs 1-2\n"); writeFileSync(join(d, dir, "unit-a.txt"), "lib/a.mjs 1\n");
+      assert.equal((await main(["covering", join(d, dir), "lib/a.mjs", "2"], root)).out, `${tier}\n`, dir);
+      assert.equal((await main(["union", join(d, dir)], root)).out, "lib/a.mjs 1-2\n", dir);
+      const t = (await main(["tables", join(d, dir)], root)).out;
+      assert.ok(t.includes(`| \`${tier}\` | – | 0 | 2 | 2 | 2 |`), `${dir}: the tier's row in table 1:\n${t.slice(0, 600)}`);
+      assert.ok(t.includes("| `a` | 1 | 1 |"), `${dir}: the unit file's line is one no other check file runs`);
+      assert.ok(!t.includes("| `tier` |"), `${dir}: no unit row named tier`);
+    }
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});

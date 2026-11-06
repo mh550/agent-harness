@@ -9,8 +9,8 @@ import { dirname, join } from "node:path";
 import { sameAsCli, mainOf } from "./cli-same.mjs";
 import { ignoreList, parseMap, treeKey, partialKeys, mapNames } from "../../lib/treekey.mjs";
 
-// the CLI on a git tree (--partial, --names, a dropped entry's stderr) stays in 81-partial-key; the map's first path is any file
-// (81's eval named the project rules file, which no unit test names: the key map can't see tests/unit)
+// the CLI on a git tree (--partial, --names, a dropped entry's stderr) stays in partial-key; the map's first path is any file
+// (partial-key's eval named the project rules file, which no unit test names: the key map can't see tests/unit)
 test("treekey.mjs exports ignoreList, parseMap, treeKey, partialKeys and mapNames, pure on a fixed file list and blobs", () => {
   const f = ["a", "b", "c"], b = ["1".repeat(40), "2".repeat(40), "3".repeat(40)];
   const k0 = partialKeys(f, b, []);

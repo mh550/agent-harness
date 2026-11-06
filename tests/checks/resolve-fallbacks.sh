@@ -4,7 +4,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- layer 2's bounds and fallbacks (N2-04): a resolve session that leaves a marker, gives up or edits outside the
 # conflict; one refused by a limit is deferred; MAX_RESOLVES bounds it; sync_main at a lane's verify resolves too; the
 # record branch and slot_open keep today's path. Plan: docs/plans/2026-10-29-N2-conflict-resolution.md ----
-# Two lanes as in 76-resolve-session.sh: C first, M2's verify waits until M1 has merged, so M2's merge meets a main
+# Two lanes as in resolve-session.sh: C first, M2's verify waits until M1 has merged, so M2's merge meets a main
 # where A rewrote line 2 of README.md, as C did (STUB_CONFLICT).
 tmp=$(mktemp -d); git clone -q "$T/origin.git" "$tmp" && printf '# demo\nline two\nline three\n' > "$tmp/README.md" && git -C "$tmp" add README.md \
   && git -C "$tmp" -c user.name=t -c user.email=t@test commit -qm "README.md" && git -C "$tmp" push -q origin HEAD:main; rm -rf "$tmp"
@@ -21,7 +21,7 @@ two_lanes() {   # <run>: M2's re-base conflicts; origin's main back after it
 slog() { cat "$T/scratch/proj/$1/sessions.log" 2> /dev/null; }
 nj() { jq -rs "${2:-.}" "$HARNESS_STATE/proj/$1"/needs/*.json 2> /dev/null; }   # <run> [<jq over its open items>]
 
-# how many stub-curl posts hold every one of the given strings (61-needs-git.sh's)
+# how many stub-curl posts hold every one of the given strings (needs-git.sh's)
 posts() { awk 'BEGIN { RS = "===\n"; split(ARGV[1], k, "\t"); ARGV[1] = "" } { for (i in k) if (!index($0, k[i])) next; n++ } END { print n + 0 }' "$(IFS=$'\t'; echo "$*")" "$T/curl.log"; }
 # <run>: M2's lane branch on origin is its verified commit (the failed merge never pushed) and its record is the one
 # merge_conflict, its card's tried as given (an ERE), seen and notified once
@@ -144,7 +144,7 @@ check "resolve fallbacks: a lane's sync_main hands its conflict to resolve: refu
   '[[ $w_def == "rc=2 mh=" && -z $w_def_n && $w_ur == "rc=1 mh=" && $(cat "$W/resolve") == "M1 main" ]] \
   && [[ $w_ur_n == "main_conflict M1 files=f "*" tried=a resolve session (opus, 2 min): UNRESOLVED: no" ]]'
 
-# slot_open alone (61-needs-git.sh's u_base): a dependency's tag that conflicts with main stays base_conflict
+# slot_open alone (needs-git.sh's u_base): a dependency's tag that conflicts with main stays base_conflict
 U=$T/u; mkdir -p "$U/st"; git init -q --bare -b main "$U/o.git"; git clone -q "$U/o.git" "$U/wt/run" 2> /dev/null
 ug() { git -C "$U/wt/run" "$@"; }
 echo base > "$U/wt/run/f"; ug add f; ug commit -qm base; ug push -q origin main

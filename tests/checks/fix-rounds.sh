@@ -2,7 +2,7 @@
 # tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- fix rounds (docs/specs/2026-11-04-run-resilience.md M3, decisions/2026-11-04-fix-rounds): a red verify is fixed, not parked ----
-# 87-fast-gate-run's two-tier stub suite, extended. .harness/suite.sh logs every call's arguments (`bare` for none) to
+# session-gate-driver's two-tier stub suite, extended. .harness/suite.sh logs every call's arguments (`bare` for none) to
 # suite-args.log in the run's scratch and prints a red as the real suite does: `FAIL <the check's whole name>`, then
 # `HARNESS_FAILED=<its file>` (tests/lib.sh, tests/run.sh). Bare: red on BROKEN or BROKEN-SLOW (t1), on BROKEN-SLOW2
 # (t3), and with STUB_FLAKE_ONCE=1 once on t2 when flake-armed is in the run's scratch (removed: the rerun is green).

@@ -1,4 +1,4 @@
-# fixture of 82-key-map-lint: the escapes the plan closes, one per line; this comment and the next are no hits
+# fixture of key-map-lint: the escapes the plan closes, one per line; this comment and the next are no hits
 # grep x "$HERE/../CLAUDE.md"
 git -C "$HERE/.." show HEAD:CLAUDE.md
 git -C "$HERE/.." grep -n x

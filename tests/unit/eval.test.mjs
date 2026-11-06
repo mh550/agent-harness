@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { validateTask as v, compare as c, completeRepeats as cr, compareText as ct, questions as q, score as s, target as tg } from "../../lib/eval.mjs";
 
-// the replay set (E2): each error starts with the field it is about (the CLI over evals/tasks stays in 09-replay-set)
+// the replay set (E2): each error starts with the field it is about (the CLI over evals/tasks stays in replay-set)
 test("eval.mjs: validateTask accepts a task and names the field of each bad one", () => {
   const has = (e, f) => assert.ok(e.some(x => x.startsWith(f + ":")), `no error starts ${f}: in ${e.join("; ")}`);
   const ok = { id: "x1", project: "p", repo: "~/projects/p", base: "a".repeat(40), policy: "build-only", why: "w",
@@ -77,7 +77,7 @@ test("eval.mjs: per verified feature counts every repeat's cost (E2 review)", ()
 });
 
 // the probes (E2): questions from the feature list, the session rows and the commits; answers scored per question
-// (the harness eval probes run on a stub result stays in 10-harness-eval-run)
+// (the harness eval probes run on a stub result stays in eval-run)
 test("eval.mjs: probe questions derived from the list, the session rows and the commits; answers scored exact, contains or miss", () => {
   const list = { features: [{ id: "X1", milestone: "M", passes: true }, { id: "X2", milestone: "M", passes: false, after: ["X1"] }, { id: "X3", milestone: "M", passes: false }] };
   const rows = [{ kind: "coding", feature: "X2", passes: false, env: false, final: "The suite was red: test foo failed. Then I stopped." },

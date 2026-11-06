@@ -116,7 +116,7 @@ Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; a red full run rerun once, never after a timeout or a cap kill, by `CHECK_RERUN`: `auto` (the `HARNESS_FAILED=` files, else the whole suite) · `failed` (the named files only) · `suite` (the whole suite) · `off`, a rerun that goes green counted as a flake in `harness-log.md`, `summary.json` and report.md's `Flakes` row; cached per code tree, whose key
 leaves out `CHECK_KEY_IGNORE`, default `.harness/runs docs/plans`, so a plan alone doesn't rerun it; a red full run
 that was no timeout or cap kill is cached too, as `red-<key>`, so a retry's pre-session run on the tree just found red
-answers `check: RED (cached for this code tree: <names>)` without running it a third time; a `CHECK_KEY_MAP` in `.harness/config.sh` (`CLAUDE.md:<check>[:<check>…]`, space-separated entries: a file and every check file that reads it) makes a change to such files alone run just their checks, `check: green (partial: <names>, <s> s; cached for the rest)`, against the last green full run of the rest of the tree; an entry must name every reader, and only check-file lines may read it (not the code under test, not a shared test helper), so a project with a map needs a lint proving that over its checks, as this repo's `tests/checks/82-key-map-lint.sh` does (a check file outside the entry that names the path beside the repo root, or passes the bare root to a command, fails it); each verify clears its
+answers `check: RED (cached for this code tree: <names>)` without running it a third time; a `CHECK_KEY_MAP` in `.harness/config.sh` (`CLAUDE.md:<check>[:<check>…]`, space-separated entries: a file and every check file that reads it) makes a change to such files alone run just their checks, `check: green (partial: <names>, <s> s; cached for the rest)`, against the last green full run of the rest of the tree; an entry must name every reader, and only check-file lines may read it (not the code under test, not a shared test helper), so a project with a map needs a lint proving that over its checks, as this repo's `tests/checks/key-map-lint.sh` does (a check file outside the entry that names the path beside the repo root, or passes the bare root to a command, fails it); each verify clears its
 tree's cached green and red (and its partial sidecar) so the suite runs in full on what it judges; every prompt says how long the last full run
 took, `Suite: last full run <s> s: give a full run a timeout of at least twice that` (the green marker's `wall` line); two tiers by `CHECK_FAST_CMD` (empty: the whole suite is the fast tier, and nothing changes; this repo sets `bash tests/run.sh --tier fast`): a feature's `passes` stands on the fast tier (`check.sh --fast` before and after each coding session, its green marked `fast-<key>`, never read as a green; a red after the session un-passes it, `<id> un-passed: fast tier red after the session`), while the verify, a re-base and the run's end run the full suite, so a slow-tier red meets the verify's `red on the verified tree` path, never a merge; the prompts then name both commands and both lengths (`Suite: last fast run <s> s`; decisions/2026-11-03-fast-gate); the same list decides a merge: a verified
 milestone whose `main` moved only in those paths merges as verified, without a re-base round, noted `<m>: main changed
@@ -365,7 +365,7 @@ tests/run.sh gc       # only the tests/checks/ files whose names contain "gc"
 TEST_JOBS=1 tests/run.sh   # one file at a time (default: half the cores, 1 to 4)
 KEEP=1 bash tests/run.sh --repeat 10 lanes-two   # reproduce a flake: that file 10 times, TEST_JOBS copies at once
 node --test --test-isolation=none tests/unit/*.test.mjs   # the unit tier alone (spec reporter), under a second
-bash tests/run.sh 00-unit   # the unit tier as the suite runs it: PASS/FAIL lines and N/M
+bash tests/run.sh unit-tier   # the unit tier as the suite runs it: PASS/FAIL lines and N/M
 bash tests/run.sh --tier fast   # the fast tier only (every file whose line 2 is `# tier: fast`), its own conformance
 bash tests/run.sh --tier slow   # the slow tier only; `--tier <t> <name>…` and `--tier <t> --repeat <n>` combine
 bash tests/tools/coverage.sh <sets dir>   # the coverage map: the suite once, traced; one set of lines per check file (about 12 min, 9 GB of raw traces)
@@ -378,7 +378,7 @@ file, exit 2, nothing run). A `--tier fast` run checks its names against `tests/
 `--tier slow` run against `check-names.txt` minus that list, a full run against all of `check-names.txt`; only a
 full run's green is the suite's green.
 The unit tier (`tests/unit/<module>.test.mjs`, one node process) tests the pure functions of `lib/*.mjs` under
-`node --test`; `--test-name-pattern "<regex>"` picks tests, and `tests/checks/00-unit-tier.sh` puts its tests into
+`node --test`; `--test-name-pattern "<regex>"` picks tests, and `tests/checks/unit-tier.sh` puts its tests into
 every full run under their names in `tests/fixtures/check-names.txt` (decisions/2026-11-03-unit-tier).
 Each `tests/checks/*.sh` sources `tests/lib.sh` (a fresh `$T`, private tmux server, stub environment and throwaway
 project) and runs alone; `tests/fixtures/check-names.txt` lists every check name and a full run fails on one missing,

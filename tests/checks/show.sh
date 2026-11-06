@@ -10,7 +10,7 @@ echo 'MERGE_POLICY=pr' >> "$T/user-config.sh"
 echo old > old-A.txt && git add old-A.txt && GIT_AUTHOR_DATE=2026-01-01T00:00:00 GIT_COMMITTER_DATE=2026-01-01T00:00:00 git commit -qm "A: from an older run" && git push -q origin main
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 STUB_BIG_DIFF=1 "$H" start "$T/proj" sh1 --spec SPEC.md --foreground > "$T/sh1.out" 2>&1
 echo "main's A" > work-A.txt && git add work-A.txt && git commit -qm "main: work-A" && git push -q origin main
-# key paths, as 52-status-json compares them; a session (a metrics.jsonl row as stored) and a needs card are other files' shapes
+# key paths, as status-json compares them; a session (a metrics.jsonl row as stored) and a needs card are other files' shapes
 K='[paths | map(if type == "number" then "[]" else "." + . end) | join("") | ltrimstr(".")] | unique | .[] | select(test("^feature[.](sessions\\[\\]|card)[.]") | not)'
 cols() { node -e 'let bad = 0; for (const l of require("fs").readFileSync(0, "utf8").split("\n")) if ([...l].length > 60 && !/^  https:\/\//.test(l)) { console.error(l); bad = 1; } process.exit(bad)'; }
 row() { grep -E "^  $1  $2 " "$T/show.out"; }   # <status> <path>: its changes row

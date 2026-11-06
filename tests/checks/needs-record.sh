@@ -11,7 +11,7 @@ i=0; for r in $REASONS; do i=$(( i + 1 )); needs_fixture "$r" open $(( BASE - i 
 R1=$HARNESS_STATE/proj/nf-parked-open/needs/1.json
 
 # the v1 event keys, in order: the fixture is a copy of docs/specs/2026-10-22-n8n-events.md's Event JSON block, since
-# the suite reads nothing under a CHECK_KEY_IGNORE path (34)
+# the suite reads nothing under a CHECK_KEY_IGNORE path (check-key)
 EV=$(jq -r 'keys_unsorted | join(" ")' "$HERE/fixtures/n8n-event-v1.json")
 check "needs record: its first 13 keys are the v1 event keys in order, kind is park, needs_michael, blocked or limit (in v1's enum)" \
   '[[ $EV == "v id at kind project run feature title body priority click actions context" ]] \

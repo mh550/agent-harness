@@ -11,6 +11,7 @@ HARNESS_CHECK_KEY_IGNORE=docs ask treekey.mjs --pathspec: the bytes the same lin
 HARNESS_HELPER=0: every call spawns (count = calls), no helper.mjs ever started, no coproc
 INBOX repair in a run: noted, the record's comment as the driver wrote it, the question directly above ## Answers, C parked
 SPEC_FILES in the project's .harness/config.sh and no --spec: a missing path is refused
+WEEKLY_STOP_AT raises the bar
 a $( ask ) before this shell has a helper spawns and starts none: a coproc started in a subshell would die with it
 a body over the cap is trimmed
 a cwd that is gone: declined and spawned (the spawn's exit code), not a restart, no line from the helper
@@ -131,6 +132,7 @@ cli.mjs: the tail gives main the process's cwd, environment and stdin
 cli.mjs: the tail writes main's out to stdout and exits its rc
 continue after a no-list end merges main first
 coverage.mjs reduce reads a raw directory's traces and V8 documents into one set; tables, counts, union, covering and missing read sets
+coverage.mjs: the unit tier's check file (unit-tier) is a check file's set, never a unit row, as 00-unit-tier was
 coverage: V8's nested ranges paint the innermost count: a branch not taken and a function never called did not run
 coverage: a line ran when code of it ran, not its punctuation or the declaration of a function never called; partial when some code of it did not
 coverage: a trace line gives its source path and line at any nesting depth; a command's own continued text and other lines give nothing
@@ -222,6 +224,8 @@ gc units: --dry-run with units of another project's runs (live and ended) prints
 gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
 gotchasDiff: added, edited, deleted and no section
 gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
+harness gc --dry-run kills no tmux session
+harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
 harness merge merges v2 tags, closes the v2 PR
 harness needs --json: each command's full text (no ~, no cut)
@@ -235,6 +239,7 @@ harness needs: a card per item (<glyph> <run> · <headline> · since … · <ref
 harness parked --json: today's keys for parked features only, plus ref and card
 harness parked is harness needs for text: the parked card's question from INBOX.md, run, do
 harness queue list shows the parked entry with not in origin/main in its reason
+harness start refuses a run id whose tmux session another live run holds; its session lives
 helper health: build adds helper from the state dir's run.log, every segment's; zeros for a run with none or no log
 helper health: helperHealth counts run.log's helper restarted: and helper off: lines and each distinct reason, zeros for none
 helper health: helperNote is the last segment's count and first reason with see run.log, nothing for a segment with none; the CLI's helper-note prints it
@@ -612,11 +617,14 @@ the journal fills an entry question without Files: from the session (its files, 
 the lock file stays empty (a refused asker's open truncates it); scratch holds the environment's names, never a value
 the lock freed: the helper answers again (no start)
 the prompts ask every question for a Files: line and an INBOX question below the comment block, headed ### <id>: …
+the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
+the queue starts no run past the weekly budget
 the restart line says why: no reply in <n> s, a bad header, a wrong id, the helper gone
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the same runner goes on to the next entry and starts it (a --brief start of the same project)
 the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
-the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/00-unit-tier/v8
+the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/unit-tier/v8
+the weekly budget ends a run after the session that crossed it
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
 tmux: run id dot.run gets session h-dot-run, gone at keep 0

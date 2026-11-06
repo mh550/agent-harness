@@ -79,92 +79,104 @@ the one 2026-11-04 timing where that output has none.
 
 | File | Tier | Solo slot time (s) | Reason |
 |---|---|---|---|
-| `00-unit-tier` | fast | – | the unit tier (spec: a name the unit tier prints is fast); lc-4-solo timed its two rows then, `01-scheduler-pure` 0.0 s and `02-notifications-pure` 0.1 s |
-| `03-harness-parked-pure-report` | fast | 0.2 | ≤ 30 s |
-| `06-test-counts-pure-r1` | fast | 0.6 | ≤ 30 s |
-| `07-step-lint-pure-r3` | fast | 0.6 | ≤ 30 s |
-| `09-replay-set-e2-every` | fast | 0.2 | ≤ 30 s |
-| `11-deploy-guards-pure-and` | fast | 0.2 | ≤ 30 s |
-| `12-journal-pure-e4-entrys` | fast | 2.2 | ≤ 30 s |
-| `20-sync-live-checkout-level` | fast | 0.4 | ≤ 30 s |
-| `21-run-11-verify-refused` | fast | 16.7 | ≤ 30 s |
-| `22-run-12-session-claims` | fast | 17.3 | ≤ 30 s |
-| `23-run-12b-nothing-sets` | fast | 15.1 | ≤ 30 s |
-| `24-run-13-verify-and` | fast | 14.9 | ≤ 30 s |
-| `25-run-13b-bs-entry` | fast | 14.9 | ≤ 30 s |
-| `26-run-13c-stale-green` | fast | 10.5 | ≤ 30 s |
-| `27-run-14-v2-style` | fast | 18.3 | ≤ 30 s |
-| `28-run-14d-harness-merge` | fast | 17.7 | ≤ 30 s |
-| `29-run-15-resumed-run` | fast | 22.3 | ≤ 30 s |
-| `30-run-15b-run-that` | fast | 17.3 | ≤ 30 s |
-| `31-tmux-l3-03-when` | fast | 5.0 | ≤ 30 s |
-| `34-check-key` | fast | 16.8 | ≤ 30 s |
-| `35-backlog-pure-m1` | fast | 1.6 | ≤ 30 s |
-| `39-memlint-m4` | fast | 42.1 | over the line, fast by the spec: it caught a real regression outside its own feature twice (budget §7: the Gotchas cap) |
-| `43-lanes-scheduler` | fast | 1.4 | ≤ 30 s |
-| `51-view-pure` | fast | 1.0 | ≤ 30 s |
-| `52-status-json` | fast | 8.3 | ≤ 30 s |
-| `53-status-view` | fast | 10.1 | ≤ 30 s |
-| `54-status-card` | fast | 5.4 | ≤ 30 s |
-| `55-queue-view` | fast | 4.3 | ≤ 30 s |
-| `56-status-review` | fast | 2.9 | ≤ 30 s |
-| `57-inbox` | fast | 15.3 | ≤ 30 s |
-| `58-needs-record` | fast | 4.9 | ≤ 30 s |
-| `59-needs-cards` | fast | 2.5 | ≤ 30 s |
-| `62-needs-readers` | fast | 1.6 | ≤ 30 s |
-| `63-question-locations` | fast | 28.3 | ≤ 30 s |
-| `64-needs-review` | fast | 4.3 | ≤ 30 s |
-| `65-project-names` | fast | 16.8 | ≤ 30 s |
-| `66-record-after-gc` | fast | 15.8 | ≤ 30 s |
-| `67-gc-units` | fast | 0.3 | ≤ 30 s |
-| `68-show` | fast | 18.9 | ≤ 30 s |
-| `69-same-project-starts` | fast | 11.1 | ≤ 30 s |
-| `71-tty-views` | fast | 17.1 | ≤ 30 s |
-| `73-check-rerun` | fast | 3.1 | ≤ 30 s |
-| `75-merge-sorted` | fast | 16.8 | ≤ 30 s |
-| `75-suite-tools` | fast | 28.4 | ≤ 30 s |
-| `78-continue-busy` | fast | 0.5 | ≤ 30 s |
-| `81-partial-key` | fast | 29.1 | ≤ 30 s |
-| `82-key-map-lint` | fast | 1.7 | ≤ 30 s |
-| `83-spec-must-exist` | fast | 18.3 (2026-11-04) | not in lc-4-solo.out: timed once on 2026-11-04, `TEST_JOBS=4 bash tests/run.sh 83` alone, ≤ 30 s |
-| `94-mutants-runner` | fast | 2.5 (2026-11-06) | new with the slim suite's S1: timed once on 2026-11-06, `TEST_JOBS=4 bash tests/run.sh 94-mutants` alone, ≤ 30 s |
-| `93-xtrace` | fast | 20.7 (2026-11-05) | new with the slim suite's S1 (decisions/2026-11-03-suite-coverage): timed once on 2026-11-05, `TEST_JOBS=4 bash tests/run.sh 93-xtrace` alone, ≤ 30 s |
-| `84-node-memo` | fast | 27.6 (2026-11-04) | not in lc-4-solo.out: timed once on 2026-11-04, `TEST_JOBS=4 bash tests/run.sh 84` alone, ≤ 30 s |
-| `85-suite-runs` | fast | 13.2 (2026-11-04) | not in lc-4-solo.out: timed once on 2026-11-04, `TEST_JOBS=4 bash tests/run.sh 85` alone, ≤ 30 s |
-| `08-scope-sh-l1-02-run-capped-services-gc-scratch` | slow | 202.8 | over 30 s |
-| `10-harness-eval-run-e2` | slow | 58.9 | over 30 s |
-| `13-run-2-michael-sets-desk` | slow | 205.3 | over 30 s |
-| `14-run-2b-stop-records` | slow | 54.3 | over 30 s |
-| `15-run-4-same-but-queue-parked-debrief-tmux` | slow | 232.2 | over 30 s |
-| `16-run-6-limit-cuts` | slow | 46.5 | over 30 s |
-| `19-run-9e-deadline-verifies` | slow | 92.2 | over 30 s |
-| `32-l5-queue-runner-re` | slow | 58.7 | over 30 s |
-| `33-suite-runner` | slow | 25.5; 51.7, 51.7 (2026-11-04) | moved fast → slow by T1-02's two solo `--tier fast` runs: over 30 s in both (its `TEST_FILE_TIMEOUT` fixtures each wait out the runner's 10 s KILL grace) |
-| `36-run-16-retro-backlog` | slow | 109.4 | over 30 s |
-| `37-memory-prompts-m2` | slow | 62.6 | over 30 s |
-| `38-run-17-gotchas-and-pack-m3` | slow | 44.2 | over 30 s |
-| `40-run-18-test-counts-m5` | slow | 47.3 | over 30 s |
-| `41-run-19-review-gate-m6` | slow | 44.6 | over 30 s |
-| `42-run-20-review-gate-rounds-m6` | slow | 70.2 | over 30 s |
-| `44-lanes-record` | slow | 34.4 | over 30 s |
-| `45-lanes-run` | slow | 86.2 | over 30 s |
-| `46-lanes-continue` | slow | 123.7 | over 30 s |
-| `47-lanes-two` | slow | 96.8 | over 30 s |
-| `48-lanes-rebase` | slow | 102.6 | over 30 s |
-| `49-lanes-slots` | slow | 54.6 | over 30 s |
-| `50-lanes-record-pr` | slow | 68.0 | over 30 s |
-| `60-needs-driver` | slow | 36.1 | over 30 s |
-| `61-needs-git` | slow | 56.0 | over 30 s |
-| `70-overlap` | slow | 33.8 | over 30 s |
-| `72-u3-review` | slow | 33.6 | over 30 s |
-| `74-flakes-run` | slow | 64.8 | over 30 s |
-| `76-entries-survive` | slow | 131.4 | over 30 s |
-| `76-resolve-session` | slow | 35.4 | over 30 s |
-| `77-leftovers` | slow | 58.4 | over 30 s |
-| `77-resolve-fallbacks` | slow | 120.9 | over 30 s |
-| `78-needs-questions` | slow | 70.1 | over 30 s |
-| `79-suite-length` | slow | 49.5 | over 30 s |
-| `80-red-marker` | slow | 55.8 | over 30 s |
+| `unit-tier` | fast | – | the unit tier (spec: a name the unit tier prints is fast); lc-4-solo timed its two rows then, `01-scheduler-pure` 0.0 s and `02-notifications-pure` 0.1 s |
+| `notify-body-cap` | fast | 0.2 | ≤ 30 s |
+| `testcount-fixtures` | fast | 0.6 | ≤ 30 s |
+| `step-lint` | fast | 0.6 | ≤ 30 s |
+| `replay-set` | fast | 0.2 | ≤ 30 s |
+| `vercel-guard` | fast | 0.2 | ≤ 30 s |
+| `journal-entries` | fast | 2.2 | ≤ 30 s |
+| `sync` | fast | 0.4 | ≤ 30 s |
+| `verify-refused` | fast | 16.7 | ≤ 30 s |
+| `claim-reverted` | fast | 17.3 | ≤ 30 s |
+| `merge-policy-default` | fast | 15.1 | ≤ 30 s |
+| `verify-retro-read-only` | fast | 14.9 | ≤ 30 s |
+| `entry-not-json` | fast | 14.9 | ≤ 30 s |
+| `stale-green` | fast | 10.5 | ≤ 30 s |
+| `merge-v2-tags` | fast | 18.3 | ≤ 30 s |
+| `merge-legacy-record` | fast | 17.7 | ≤ 30 s |
+| `resume-reloads-config` | fast | 22.3 | ≤ 30 s |
+| `resume-before-list` | fast | 17.3 | ≤ 30 s |
+| `tmux-window-end` | fast | 5.0 | ≤ 30 s |
+| `check-key` | fast | 16.8 | ≤ 30 s |
+| `backlog-cli` | fast | 1.6 | ≤ 30 s |
+| `memlint-self` | fast | 0.0 (2026-11-06) | the one check of `39-memlint-m4` that lints this checkout (the regression it caught twice was this check's); timed once on 2026-11-06, alone, ≤ 30 s |
+| `lanes-scheduler` | fast | 1.4 | ≤ 30 s |
+| `view-formatter` | fast | 1.0 | ≤ 30 s |
+| `status-json` | fast | 8.3 | ≤ 30 s |
+| `status-view` | fast | 10.1 | ≤ 30 s |
+| `status-card` | fast | 5.4 | ≤ 30 s |
+| `queue-view` | fast | 4.3 | ≤ 30 s |
+| `status-review` | fast | 2.9 | ≤ 30 s |
+| `inbox` | fast | 15.3 | ≤ 30 s |
+| `needs-record` | fast | 4.9 | ≤ 30 s |
+| `needs-cards` | fast | 2.5 | ≤ 30 s |
+| `needs-readers` | fast | 1.6 | ≤ 30 s |
+| `question-locations` | fast | 28.3 | ≤ 30 s |
+| `needs-review` | fast | 4.3 | ≤ 30 s |
+| `project-names` | fast | 16.8 | ≤ 30 s |
+| `record-after-gc` | fast | 15.8 | ≤ 30 s |
+| `gc-units` | fast | 0.3 | ≤ 30 s |
+| `show` | fast | 18.9 | ≤ 30 s |
+| `same-project-starts` | fast | 11.1 | ≤ 30 s |
+| `tty-views` | fast | 17.1 | ≤ 30 s |
+| `check-rerun` | fast | 3.1 | ≤ 30 s |
+| `merge-sorted` | fast | 16.8 | ≤ 30 s |
+| `suite-tools` | fast | 28.4 | ≤ 30 s |
+| `continue-busy` | fast | 0.5 | ≤ 30 s |
+| `partial-key` | fast | 29.1 | ≤ 30 s |
+| `key-map-lint` | fast | 1.7 | ≤ 30 s |
+| `spec-must-exist` | fast | 18.3 (2026-11-04) | not in lc-4-solo.out: timed once on 2026-11-04, `TEST_JOBS=4 bash tests/run.sh 83` alone, ≤ 30 s |
+| `mutants-runner` | fast | 2.5 (2026-11-06) | new with the slim suite's S1: timed once on 2026-11-06, `TEST_JOBS=4 bash tests/run.sh 94-mutants` alone, ≤ 30 s |
+| `xtrace` | fast | 20.7 (2026-11-05) | new with the slim suite's S1 (decisions/2026-11-03-suite-coverage): timed once on 2026-11-05, `TEST_JOBS=4 bash tests/run.sh 93-xtrace` alone, ≤ 30 s |
+| `suite-runs` | fast | 13.2 (2026-11-04) | not in lc-4-solo.out: timed once on 2026-11-04, `TEST_JOBS=4 bash tests/run.sh 85` alone, ≤ 30 s |
+| `session-gate-check` | fast | 3.6 (2026-11-05) | was `86-fast-gate`; no row until the shape: the kept full run of 2026-11-05, `findings-and-research/2026-11-03-resident-helper/suite-after-files.txt`, solo at 4 jobs, ≤ 30 s |
+| `night-words` | fast | 0.1 (2026-11-05) | was `89-night-words`; no row until the shape: the same run, ≤ 30 s |
+| `resident-helper-ask` | fast | 14.7 (2026-11-05) | was `91-resident-helper`; no row until the shape: the same run, ≤ 30 s |
+| `weekly-budget` | fast | 2.9 (2026-11-06) | cut out of file 15 by the shape (it reads no run of that file); timed once on 2026-11-06, alone, ≤ 30 s |
+| `gc-tmux` | fast | 0.5 (2026-11-06) | cut out of file 15 by the shape; timed once on 2026-11-06, alone, ≤ 30 s |
+| `memlint-run` | slow | 17.1 (2026-11-06) | `39-memlint-m4`'s two stub runs; slow by Michael's word (Decision 3 of the redesign's dispatch list, 2026-11-05), though under the line alone on 2026-11-06 |
+| `node-memo` | slow | 27.6 (2026-11-04); 28.0, 27.9 (2026-11-06) | moved fast → slow by Michael's word (Decision 3 of the redesign's dispatch list, 2026-11-05: 31.5 s there, 31.0 s in the kept full run of 2026-11-05, `findings-and-research/2026-11-03-resident-helper/suite-after-files.txt`, solo at 4 jobs); under the line in both solo runs of 2026-11-06 |
+| `run-scopes-services-gc` | slow | 202.8 | over 30 s |
+| `eval-run` | slow | 58.9 | over 30 s |
+| `park-desk` | slow | 205.3 | over 30 s |
+| `stop-records` | slow | 54.3 | over 30 s |
+| `queue-debrief` | slow | 232.2; 129.7 (2026-11-06, after the cut) | over 30 s; its last two sections are `weekly-budget` and `gc-tmux` since the shape |
+| `limit-cuts` | slow | 46.5 | over 30 s |
+| `deadline-verifies` | slow | 92.2 | over 30 s |
+| `queue-runner-config` | slow | 58.7 | over 30 s |
+| `suite-runner` | slow | 25.5; 51.7, 51.7 (2026-11-04) | moved fast → slow by T1-02's two solo `--tier fast` runs: over 30 s in both (its `TEST_FILE_TIMEOUT` fixtures each wait out the runner's 10 s KILL grace) |
+| `retro-backlog` | slow | 109.4 | over 30 s |
+| `memory-prompts` | slow | 62.6 | over 30 s |
+| `gotchas-pack` | slow | 44.2 | over 30 s |
+| `test-count-source` | slow | 47.3 | over 30 s |
+| `review-gate-model` | slow | 44.6 | over 30 s |
+| `review-gate-rounds` | slow | 70.2 | over 30 s |
+| `lanes-record-lock` | slow | 34.4 | over 30 s |
+| `lanes-run` | slow | 86.2 | over 30 s |
+| `lanes-continue` | slow | 123.7 | over 30 s |
+| `lanes-two` | slow | 96.8 | over 30 s |
+| `lanes-rebase` | slow | 102.6 | over 30 s |
+| `lanes-slots` | slow | 54.6 | over 30 s |
+| `lanes-record-pr` | slow | 68.0 | over 30 s |
+| `needs-driver` | slow | 36.1 | over 30 s |
+| `needs-git` | slow | 56.0 | over 30 s |
+| `overlap` | slow | 33.8 | over 30 s |
+| `u3-review` | slow | 33.6 | over 30 s |
+| `flakes-run` | slow | 64.8 | over 30 s |
+| `entries-survive` | slow | 131.4 | over 30 s |
+| `resolve-session` | slow | 35.4 | over 30 s |
+| `leftovers` | slow | 58.4 | over 30 s |
+| `resolve-fallbacks` | slow | 120.9 | over 30 s |
+| `needs-questions` | slow | 70.1 | over 30 s |
+| `suite-length` | slow | 49.5 | over 30 s |
+| `red-marker` | slow | 55.8 | over 30 s |
+| `session-gate-driver` | slow | 21.5 (2026-11-05) | was `87-fast-gate-run`; no row until the shape. Declared slow by its session (T2-02); under the line in the same run, and only Michael moves a file slow → fast |
+| `origin-after-gc` | slow | 81.2 (2026-11-05) | was `88-origin-after-gc`; no row until the shape: the same run, over 30 s |
+| `origin-outage` | slow | 170.1 (2026-11-05) | was `88-origin-outage`; no row until the shape: the same run, over 30 s |
+| `no-deadline` | slow | 37.7 (2026-11-05) | was `89-no-deadline`; no row until the shape: the same run, over 30 s (50–67 s when its session timed it, `decisions/2026-11-04-no-default-end-time`) |
+| `fix-rounds` | slow | 64.8 (2026-11-05) | was `90-fix-rounds`; no row until the shape: the same run, over 30 s |
+| `resident-helper-run` | slow | 72.0 (2026-11-05) | was `92-resident-helper-run`; no row until the shape: the same run, over 30 s |
 
 Updated in place 2026-11-04: 33-suite-runner 51.7 s, 51.7 s (T1-02's two solo `TEST_JOBS=4 bash tests/run.sh --tier fast`
 runs, walls 161.9 s and 161.1 s): moved to slow, its header and the fast fixture. Over 30 s in both too:
@@ -179,3 +191,11 @@ Updated in place 2026-11-06 (the trim, `decisions/2026-11-03-trim`): four fast f
 `04-render-pure-sections-go`, `05-metrics-pure-tokens-cache` and `18-run-9c-refused-sessions` are unit tests now (the
 names unchanged, still fast); `17-run-8-thin-verify`'s one check moved into `61-needs-git`, so its name left the fast
 fixture. The lint's three lines are one check of `33-suite-runner` now (two were checks of their own).
+
+Updated in place 2026-11-06 (the shape, `decisions/2026-11-05-suite-shape`): the table lists every check file, under the
+name the shape gave it; the text above and the two notes before this one name the files as they were, and that
+decision has the old → new table. Eleven rows are new: the nine files whose sessions set a header and wrote no row,
+and `weekly-budget` and `gc-tmux`, cut out of file 15 (each timed once, alone). `39-memlint-m4` is `memlint-self` (fast),
+`memlint-run` (slow) and 15 unit tests. `84-node-memo` is slow as `node-memo`, and `memlint-run` is slow, by Michael's
+word (Decision 3 of the redesign's dispatch list, 2026-11-05), not by two timings over the line: alone on 2026-11-06
+`node-memo` took 28.0 s and 27.9 s and `memlint-run` 17.1 s. `tests/run.sh`'s per-file line ends `, tier <fast|slow>`.

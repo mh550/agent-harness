@@ -9,7 +9,7 @@
 # check that goes red only under the trace is in _suite.out; its file's set is what ran all the same.
 # The raw traces (about 10 GB for a full run) go to COVERAGE_RAW (default: a mktemp -d under TMPDIR), each file's
 # removed once reduced; KEEP=1 keeps them and names the directory. A raw directory named for no check file (a check
-# that runs check files of its own, 33-suite-runner's) is reduced to <sets dir>/_stray-<name>.txt, which no table reads.
+# that runs check files of its own, suite-runner's) is reduced to <sets dir>/_stray-<name>.txt, which no table reads.
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd); dir=${TEST_CHECKS:-$HERE/checks}
 only=0; [[ ${1:-} == --reduce ]] && { only=1; shift; }

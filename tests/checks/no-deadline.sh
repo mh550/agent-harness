@@ -19,7 +19,7 @@ pd() { ( HARNESS_HOME=$HH; source "$HH/lib/scope.sh"; source "$HH/lib/record.sh"
 check "no end time: past_deadline never reads DEADLINE=0 as now" \
   '[[ "$(pd 0) $(pd 1) $(pd $(( $(date +%s) + 3600 )))" == "not past not" ]]'
 
-# a merge in progress in a plain shell, as 77-resolve-fallbacks has it: the deadline is the only thing left to refuse it
+# a merge in progress in a plain shell, as resolve-fallbacks has it: the deadline is the only thing left to refuse it
 V=$T/v; git init -q -b main "$V"; g=(git -C "$V"); echo a > "$V/f"; "${g[@]}" add f; "${g[@]}" commit -qm a
 "${g[@]}" checkout -q -b lane; echo l > "$V/f"; "${g[@]}" commit -qam l
 "${g[@]}" checkout -q main; echo m > "$V/f"; "${g[@]}" commit -qam m; "${g[@]}" checkout -q lane; "${g[@]}" merge -q main > /dev/null 2>&1

@@ -51,7 +51,7 @@ check "resolve: prompts/resolve.md renders through lib/prompt.sh as a command, f
   '"$HH/lib/prompt.sh" "$S" resolve C > "$T/rs-prompt.md" 2> "$T/rs-prompt.err" && [[ $(head -1 "$T/rs-prompt.md") == "# Resolve session" ]] \
   && ! grep -F "{{" "$T/rs-prompt.md" > /dev/null && grep -F "Milestone: M2" "$T/rs-prompt.md" > /dev/null'
 
-# merge_one alone (64-needs-review.sh's mo shape): in a lane under CONFLICTS=resolve its conflict is the re-base's (3,
+# merge_one alone (needs-review.sh's mo shape): in a lane under CONFLICTS=resolve its conflict is the re-base's (3,
 # moved-<m>, no record); under HARNESS_MERGE_ONLY it is today's merge_conflict
 U=$T/u; mkdir -p "$U/st"; git init -q --bare -b main "$U/o.git"; git clone -q "$U/o.git" "$U/wt/run" 2> /dev/null
 ug() { git -C "$U/wt/run" -c user.name=t -c user.email=t@t "$@"; }

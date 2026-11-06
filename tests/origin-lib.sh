@@ -1,4 +1,4 @@
-# The helpers 88-origin-outage.sh and 88-origin-after-gc.sh share (M1 of docs/specs/2026-11-04-run-resilience.md):
+# The helpers origin-outage.sh and origin-after-gc.sh share (M1 of docs/specs/2026-11-04-run-resilience.md):
 # sourced after suite_setup. A run of theirs starts from the file's first main and goes through stub-git-down.sh when
 # its PATH says so; inv_scan collects the invariant over every run that still has a worktree.
 export COLUMNS=200 HARNESS_GLYPHS=unicode HARNESS_ORIGIN_WAITS="0 0 0"   # four tries per step, no wait between them

@@ -20,7 +20,7 @@ check "suite length: the coding and initializer prompts' This session Suite line
   '[[ -n $walls ]] && w=$(pwall "$SL/prompt-coding.md") && [[ -n $w ]] && grep -qx "$w" <<< "$walls" \
   && w=$(pwall "$SL/prompt-initializer.md") && [[ -n $w ]] && grep -qx "$w" <<< "$walls"'
 # a wall differs from session to session: above `# This session` it would split two sessions' shared prefix
-# (decisions/2026-10-21-static-first-prompts; the 08/13/14/15 prefix checks)
+# (decisions/2026-10-21-static-first-prompts; the prefix checks of run-scopes-services-gc, park-desk, stop-records and queue-debrief)
 below() { awk '/^# This session$/ { s = 1 } /last full run ([0-9]+ s|not measured)/ { print (s ? "below" : "above") }' "$1" | sort -u; }
 check "suite length: every kind's wall is under # This session; its This run Suite line points there" \
   'for k in coding initializer verify; do [[ $(below "$SL/prompt-$k.md") == below ]] || bad=1; done; [[ -z ${bad:-} ]] \
@@ -108,7 +108,7 @@ check "the coding prompt's Finish: the Gotchas step before the suite step, so th
   '[[ $(ord "$SL/prompt-coding.md") == gotchas-first ]] && grep -F "so the tree you tested is the tree that ends the session" "$SL/prompt-coding.md" > /dev/null'
 check "CLAUDE.md's suite line points at the run's prompt, with no fixed measurement" \
   'grep -q "see the run'"'"'s prompt" "$HH/CLAUDE.md" && [[ $(grep -c "208 s" "$HH/CLAUDE.md") == 0 ]]'
-check "CLAUDE.md names the node floor 22.8 and the unit tier: tests/unit, node --test, bash tests/run.sh 00-unit" \
+check "CLAUDE.md names the node floor 22.8 and the unit tier: tests/unit, node --test, bash tests/run.sh unit-tier" \
   'grep -q "node ≥ 22.8" "$HH/CLAUDE.md" && grep -F "tests/unit/<module>.test.mjs" "$HH/CLAUDE.md" > /dev/null \
-  && grep -F "node --test --test-isolation=none tests/unit/*.test.mjs" "$HH/CLAUDE.md" > /dev/null && grep -F "bash tests/run.sh 00-unit" "$HH/CLAUDE.md" > /dev/null'
+  && grep -F "node --test --test-isolation=none tests/unit/*.test.mjs" "$HH/CLAUDE.md" > /dev/null && grep -F "bash tests/run.sh unit-tier" "$HH/CLAUDE.md" > /dev/null'
 suite_end

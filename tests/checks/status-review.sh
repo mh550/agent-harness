@@ -7,7 +7,7 @@ CD() { HARNESS_GLYPHS=unicode COLUMNS=${C:-100} "$H" status "$@" 2> "$T/card.err
 QS() { HARNESS_GLYPHS=unicode COLUMNS=100 "$H" queue show "$@" 2> "$T/qs.err"; }
 Q=$HARNESS_STATE/queue port=7990   # sr numbers the ports it gives past this
 
-# the plain state's count (session 2: coding sessions only, plus the one running) is 52-status-json's and 54-status-card's
+# the plain state's count (session 2: coding sessions only, plus the one running) is status-json's and status-card's
 # checks of the running run; here, what the log's lines add to it
 # a session runs from its "session <n> · <id>" line until its "<id> · <model> · passes=" note or its limit note (lane.sh)
 lg() { cp "$RL" "$T/log.bak"; for l; do echo "$(date -d "@$(( HARNESS_NOW - ${l%%|*} ))" "+%F %T") ${l#*|}" >> "$RL"; done; }

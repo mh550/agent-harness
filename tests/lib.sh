@@ -34,7 +34,7 @@ mkdir -p "$T/bin" && printf '#!/usr/bin/env bash\nexec %q "$@"\n' "$HERE/stub-cl
 export PATH=$T/bin:$PATH
 fails=0 total=0
 
-# the base user config opens no record PR (50-lanes-record-pr turns it on: a third PR would change every run's gh.log); it posts through the stub curl (and keeps each run's scratch: checks read it after the run; L3's scrub run doesn't); NOTIFY_CMD is set too, and must not be called (NTFY_URL wins)
+# the base user config opens no record PR (lanes-record-pr turns it on: a third PR would change every run's gh.log); it posts through the stub curl (and keeps each run's scratch: checks read it after the run; L3's scrub run doesn't); NOTIFY_CMD is set too, and must not be called (NTFY_URL wins)
 printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=auto RECORD_PR=off NTFY_URL=https://ntfy.example/t NTFY_TOKEN=tok-secret-123' \
   "NOTIFY_CMD='printf \"%s\\n===\\n\" \"\$1\" >> \"$T/notify-cmd.log\"'" > "$T/base-config.sh"
 cp "$T/base-config.sh" "$T/user-config.sh"
@@ -91,7 +91,7 @@ held() { rm -f "$T"/held-* "$T"/release-* "$T"/vwait-*; : > "$T/hold-coding"; }
 ats() { hlog "$1" | grep -n -m1 -E -- "$2" | cut -d: -f1; }   # <run> <ERE>: the line of the first note matching
 desk_of() { grep -lx "desk · $1\( · .*\)\?" "$T"/desk/*.args 2> /dev/null | sort -V | tail -1; }   # the newest desk of run $1 (.args; .in beside it)
 GHP=https://github.com/test/proj
-# the debrief sections' helpers (file 15, and L5 calls settle, the desk ran, in files of their own since P0-02)
+# the debrief sections' helpers (queue-debrief, and L5 calls settle, the desk ran, in files of their own since P0-02)
 HH=$(cd "$HERE/.." && pwd)
 settle() {   # the runner's debrief is detached: wait until no debrief process is left. The runner starts it as
   # $HERE/../bin/harness (setsid -f: forked before the runner exits), which execs $HH/lib/debrief.sh: the pattern

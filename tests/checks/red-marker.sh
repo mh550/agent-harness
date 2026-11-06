@@ -2,7 +2,7 @@
 # tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the red marker (S1-03): a red full run that wasn't a timeout or a cap kill is cached; the next full call answers ----
-# 73-check-rerun.sh's stub suite, its own copy: one throwaway repo, a directory $T/rm-<case> per case (the counter n, each
+# check-rerun.sh's stub suite, its own copy: one throwaway repo, a directory $T/rm-<case> per case (the counter n, each
 # call's arguments, its scratch s and cache c). RM_MODE: always (red, HARNESS_FAILED=a), late (red on calls 1-3, green
 # from 4), noline (red, no HARNESS_FAILED= line), hang (past its timeout), oom (the scope stub's cap kill), plant (green,
 # after writing a red-<key> into the cache mid-run: a planted marker the lookup has already passed), three (always, exit 3),

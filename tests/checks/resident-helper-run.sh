@@ -2,7 +2,7 @@
 # tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the resident helper in a real start (H1-02b, decisions/2026-11-03-resident-helper): the driver's and the lanes' ----
-# A node shim first on PATH counts the starts (84-node-memo's) and execs the real node. fresh puts $T back as suite_setup
+# A node shim first on PATH counts the starts (node-memo's) and execs the real node. fresh puts $T back as suite_setup
 # left it, so a second start of the same run has the same paths and every difference in its logs is the helper's.
 MD=$T/hr; mkdir -p "$MD/shim" "$MD/pristine"
 printf '#!/usr/bin/env bash\na=$*; echo "${a//[[:cntrl:]]/ }" >> "$NODE_COUNT"\nexec %q "$@"\n' "$(command -v node)" > "$MD/shim/node"; chmod +x "$MD/shim/node"
@@ -12,7 +12,7 @@ fresh() {
   local f; for f in "$T"/* "$T"/.[!.]*; do case ${f##*/} in hr|bin|tmux|base-config.sh) ;; *) rm -rf "$f" ;; esac; done
   cp -a "$MD/pristine/proj" "$MD/pristine/origin.git" "$T/"; cp "$T/base-config.sh" "$T/user-config.sh"; cd "$T/proj" || return 1
 }
-# one_run <name> [<VAR=value>…]: file 13's first start, from a fresh state; its logs and list kept under $MD/<name>;
+# one_run <name> [<VAR=value>…]: park-desk's first start, from a fresh state; its logs and list kept under $MD/<name>;
 # CONFIG_LINE goes in the user's config file
 one_run() {
   local d=$MD/$1; shift; fresh; mkdir -p "$d"; : > "$d/count"; [[ -n ${CONFIG_LINE:-} ]] && echo "$CONFIG_LINE" >> "$T/user-config.sh"

@@ -2,7 +2,7 @@
 # tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the fast gate (T2-01): check.sh --fast runs CHECK_FAST_CMD, marks fast-<key>, never green-<key> ----
-# 73-check-rerun.sh's stub suite, its own copy: one throwaway repo, a directory $T/fg-<case> per case (the counter n,
+# check-rerun.sh's stub suite, its own copy: one throwaway repo, a directory $T/fg-<case> per case (the counter n,
 # every call's arguments in args, each call's output out<n>, its scratch s and cache c). FG_MODE: green (5 tests bare,
 # 3 under --tier fast, one PASS per name), always (red every call, HARNESS_FAILED=a), once (red on call 1, then green),
 # noline (red on call 1 with no HARNESS_FAILED= line, then green), nolinered (red every call, no line), hang (past its

@@ -206,7 +206,7 @@ mkdir -p "$T/nl" && tiny "$T/nl/gate.sh" true && tiny "$T/nl/gate-run.sh" true &
 namelint "$T/nl" > "$T/nl.out" 2> /dev/null; NL=$?
 check "name lint: no check file's name is part of another's (tests/run.sh <file> and a red file's rerun pick that file alone); a planted pair is named" \
   '{ namelint "$HERE/checks" > "$T/nl-real.out"; [[ $? == 0 && ! -s $T/nl-real.out ]] || { cat "$T/nl-real.out"; false; }; } && [[ $NL == 1 && $(cat "$T/nl.out") == "gate is part of gate-run" ]]'
-# ---- the unit tier: tests/checks/00-unit-tier.sh runs tests/unit (TEST_UNIT_DIR: another directory) under the reporter ----
+# ---- the unit tier: tests/checks/unit-tier.sh runs tests/unit (TEST_UNIT_DIR: another directory) under the reporter ----
 # u1: one test passes, one fails on an assert diff; u2: passing only; u3: a file that exits at import (no FAIL line from
 # node: the check file's own); u4: a file that throws at import (node's FAIL <file> or the check file's line: both red)
 UT=$T/ut; mkdir -p "$UT"/u{1,2,3,4}; UH='import { test } from "node:test"; import assert from "node:assert/strict";'
@@ -214,7 +214,7 @@ printf '%s\n' "$UH" 'test("a", () => {});' 'test("b", () => { assert.equal(1, 2)
 printf '%s\n' "$UH" 'test("a", () => { assert.equal(1, 1); });' > "$UT/u2/a.test.mjs"
 printf '%s\n' "$UH" 'process.exit(3);' 'test("a", () => {});' > "$UT/u3/a.test.mjs"
 printf '%s\n' "$UH" 'throw new Error("u4 at import");' 'test("a", () => {});' > "$UT/u4/a.test.mjs"
-for u in u1 u2 u3 u4; do TEST_UNIT_DIR=$UT/$u bash "$HERE/checks/00-unit-tier.sh" > "$UT/$u.out" 2> "$UT/$u.err"; echo $? > "$UT/$u.rc"; done
+for u in u1 u2 u3 u4; do TEST_UNIT_DIR=$UT/$u bash "$HERE/checks/unit-tier.sh" > "$UT/$u.out" 2> "$UT/$u.err"; echo $? > "$UT/$u.rc"; done
 check "unit tier: a passing and a failing test print PASS a, FAIL b, the indented assert diff, then its own N/M line, exit 1" \
   '[[ $(cat "$UT/u1.rc") == 1 && $(sed -n 1p "$UT/u1.out") == "PASS a" && $(sed -n 2p "$UT/u1.out") == "FAIL b" && $(tail -1 "$UT/u1.out") == "1/2 checks passed" ]] \
   && sed "1,2d;\$d" "$UT/u1.out" > "$UT/u1.mid" && [[ -s $UT/u1.mid ]] && ! grep -v "^  " "$UT/u1.mid" > /dev/null && grep -E "^  .*1.*2" "$UT/u1.mid" > /dev/null'
@@ -230,7 +230,7 @@ printf '%s\n' "$UH" 'test("a", () => {});' > "$UT/u6/a.test.mjs"; printf '%s\n' 
 printf '%s\n' "$UH" "import { total } from \"$HERE/../lib/testcount.mjs\";" 'test("a", () => { assert.equal(total("1/2 checks passed"), 2); });' > "$UT/u7/a.test.mjs"
 printf '%s\n' "$UH" 'const s = `' 'HARNESS_TESTS=5' '`;' 'test("b", () => {});' > "$UT/u7/b.test.mjs"
 printf '%s\n' "$UH" 'test("a", () => { console.log("PASS ghost"); });' > "$UT/u8/a.test.mjs"
-for u in u5 u6 u7 u8; do TEST_UNIT_DIR=$UT/$u bash "$HERE/checks/00-unit-tier.sh" > "$UT/$u.out" 2> "$UT/$u.err"; echo $? > "$UT/$u.rc"; done
+for u in u5 u6 u7 u8; do TEST_UNIT_DIR=$UT/$u bash "$HERE/checks/unit-tier.sh" > "$UT/$u.out" 2> "$UT/$u.err"; echo $? > "$UT/$u.rc"; done
 check "unit tier: no test file, a process.exit(0) at import or a test printing a PASS line is red with the tier's own FAIL line" \
   '[[ $(cat "$UT/u5.rc") == 1 && $(cat "$UT/u6.rc") == 1 && $(cat "$UT/u8.rc") == 1 ]] && grep -qx "FAIL unit tier: no \*.test.mjs in $UT/u5" "$UT/u5.out" \
   && grep -qx "FAIL unit tier: node --test ended without its summary (a process.exit?)" "$UT/u6.out" \

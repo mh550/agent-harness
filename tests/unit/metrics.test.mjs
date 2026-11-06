@@ -107,12 +107,12 @@ test("fix rounds: the CLI fix-round appends one row per call to a metrics.jsonl 
   const run = (...a) => execFileSync(process.execPath, [M, ...a], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   try {
     writeFileSync(p, JSON.stringify({ kind: "coding", role: "build", feature: "A", model: "opus", passes: true, cost_usd: 0.25, turns: 12, wall_s: 60 }) + "\n");
-    run("fix-round", p, "open", "r", "M1", "1", "all", "M1-fix1", "t1", "a check (x)", "--", "t1", "59-needs");
+    run("fix-round", p, "open", "r", "M1", "1", "all", "M1-fix1", "t1", "a check (x)", "--", "t1", "needs-cards");
     run("fix-round", p, "result", "r", "M1", "1", "all", "t3");
     run("fix-round", p, "result", "r", "M1", "2", "all");
     const rows = readFileSync(p, "utf8").trim().split("\n").map(l => JSON.parse(l));
     assert.equal(rows.length, 4);
-    assert.deepEqual([rows[1].kind, rows[1].round, rows[1].feature, rows[1].failed_before, rows[1].files_before], ["fix_round", 1, "M1-fix1", ["t1", "a check (x)"], ["t1", "59-needs"]]);
+    assert.deepEqual([rows[1].kind, rows[1].round, rows[1].feature, rows[1].failed_before, rows[1].files_before], ["fix_round", 1, "M1-fix1", ["t1", "a check (x)"], ["t1", "needs-cards"]]);
     assert.deepEqual([rows[2].kind, rows[2].failed_after, rows[2].fixed, rows[3].failed_after, rows[3].fixed], ["fix_result", ["t3"], false, [], true]);
     assert.deepEqual(rows.map(isSession), [true, false, false, false]);
     assert.equal(run("summary", p), "1 sessions (1 real) · 1 features passed · $0.25 · 0.0 h · by kind: coding 1 ($0.25) · by model: opus 1 ($0.25)\n");

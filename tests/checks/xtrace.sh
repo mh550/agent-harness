@@ -70,7 +70,7 @@ env -u TEST_XTRACE_DIR HARNESS_XTRACE=$T/leak TEST_CHECKS=$T/tc bash "$HERE/run.
 check "tests/lib.sh: without TEST_XTRACE_DIR an inherited HARNESS_XTRACE is dropped: no trace, whoever runs the suite" \
   'grep -q "^seen: unset " "$T/leak.out" && [[ ! -e $T/leak ]] && grep -qx "1/1 checks passed" "$T/leak.out"'
 printf '%s\n' 'import { test } from "node:test";' 'test("tu: one", () => {});' > "$T/tu/one.test.mjs"
-TEST_UNIT_DIR=$T/tu TEST_XTRACE_DIR=$T/txu bash "$HERE/checks/00-unit-tier.sh" > "$T/txu.out" 2>&1
-check "the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/00-unit-tier/v8" \
-  'grep -qx "1/1 checks passed" "$T/txu.out" && ls "$T/txu/00-unit-tier/v8"/*.json > /dev/null 2>&1'
+TEST_UNIT_DIR=$T/tu TEST_XTRACE_DIR=$T/txu bash "$HERE/checks/unit-tier.sh" > "$T/txu.out" 2>&1
+check "the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/unit-tier/v8" \
+  'grep -qx "1/1 checks passed" "$T/txu.out" && ls "$T/txu/unit-tier/v8"/*.json > /dev/null 2>&1'
 suite_end

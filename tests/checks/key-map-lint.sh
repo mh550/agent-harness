@@ -38,7 +38,7 @@ const ALLOWED = R => [
   raw`git -C "?${R}"? (?:log|rev-parse|cat-file|worktree|ls-files)(?![\w-])`,   // git metadata and names, never a work-tree file's content (grep, diff, show, status read it)
   raw`harness_config "?${R}"?`,   // reads .harness/config.sh only
   ASSIGN(R),   // an alias assignment is a string; the alias's uses are linted in turn
-  raw`(?<=\[\[[^\]]*)== "(?:[^"\x60$]|\$(?!\())*${R}"`,   // the right side of a [[ … == … ]] is a string no command reads (13-run-2's "PWD=$HH")
+  raw`(?<=\[\[[^\]]*)== "(?:[^"\x60$]|\$(?!\())*${R}"`,   // the right side of a [[ … == … ]] is a string no command reads (park-desk's "PWD=$HH")
 ];
 const out = [];
 const files = readdirSync(dir).filter(f => f.endsWith(".sh")).sort();
@@ -95,5 +95,5 @@ check "key map lint: a map name no check file's name holds is named (tests/run.s
   '(( c7 == 1 )) && [[ $o7 == "CLAUDE.md:no-such-check matches no check file" ]]'
 o5=$(keymaplint "$HERE/checks" "$MAP"); c5=$?
 check "key map lint: this repo's tests/checks/ passes with the map in .harness/config.sh (CLAUDE.md and its readers)" \
-  '(( c5 == 0 )) && [[ -z $o5 && $MAP == "CLAUDE.md:memlint-self:37-memory-prompts-m2:79-suite-length:89-night-words" ]] || { printf "%s\n" "$o5" | head -20; false; }'
+  '(( c5 == 0 )) && [[ -z $o5 && $MAP == "CLAUDE.md:memlint-self:memory-prompts:suite-length:night-words" ]] || { printf "%s\n" "$o5" | head -20; false; }'
 suite_end

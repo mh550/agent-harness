@@ -44,7 +44,7 @@ test("memlint: currentRules skips ranges written with any dash or to, and a head
 });
 
 // decisionsStore (M2): .harness/config.sh's DECISIONS= (a quoted one, after a comment) wins, else docs/decisions.md;
-// each case a worktree of these files under the OS temp dir (the store CLI's runs stay in 37-memory-prompts-m2)
+// each case a worktree of these files under the OS temp dir (the store CLI's runs stay in memory-prompts)
 const inWorktree = (files, fn) => {
   const d = mkdtempSync(join(tmpdir(), "u1-"));
   try {
@@ -73,7 +73,7 @@ test("decisionsStore: a quoted DECISIONS= naming a missing file wins over docs/d
 });
 
 // gotchasDiff (M3): the Gotchas lines added, edited and deleted between two project-rules texts (null: no file); a change
-// outside the section is none (the gotchas CLI on two files stays in 38-run-17-gotchas-and-pack-m3)
+// outside the section is none (the gotchas CLI on two files stays in gotchas-pack)
 const G = "# p\nrules\n\n## Gotchas\n\n- one (r 2026-10-26)\n- two (r 2026-10-26)\n\n## Later\nx\n";
 const gd = (b, a) => { const d = gotchasDiff(b, a); return `+${d.added} ~${d.edited} -${d.deleted}`; };
 

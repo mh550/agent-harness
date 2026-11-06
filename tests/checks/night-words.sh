@@ -2,8 +2,8 @@
 # tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- runs go regardless of the time of day: the night words stay out of what the sessions and the docs say ----
-# decisions/2026-11-04-no-default-end-time. Beside 89-no-deadline (its stub runs make it slow) so a stray word is red in
-# the fast tier, not first at a verify. It reads CLAUDE.md, so it is in CHECK_KEY_MAP (82-key-map-lint).
+# decisions/2026-11-04-no-default-end-time. Beside no-deadline (its stub runs make it slow) so a stray word is red in
+# the fast tier, not first at a verify. It reads CLAUDE.md, so it is in CHECK_KEY_MAP (key-map-lint).
 # Allowed by file and word: memlint's list of the patterns it looks for, and the catch-up's lines about deleting such words
 NW="\\btonight\\b|\\bovernight\\b|\\bnights?\\b|night's|morning after|morning session"
 nw_left=$(cd "$HERE/.." && grep -rnIioE "$NW" README.md docs/architecture.md CLAUDE.md prompts templates lib bin | awk -F: '
