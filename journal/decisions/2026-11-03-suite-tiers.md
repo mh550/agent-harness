@@ -131,6 +131,7 @@ the one 2026-11-04 timing where that output has none.
 | `81-partial-key` | fast | 29.1 | ≤ 30 s |
 | `82-key-map-lint` | fast | 1.7 | ≤ 30 s |
 | `83-spec-must-exist` | fast | 18.3 (2026-11-04) | not in lc-4-solo.out: timed once on 2026-11-04, `TEST_JOBS=4 bash tests/run.sh 83` alone, ≤ 30 s |
+| `94-mutants-runner` | fast | 2.5 (2026-11-06) | new with the slim suite's S1: timed once on 2026-11-06, `TEST_JOBS=4 bash tests/run.sh 94-mutants` alone, ≤ 30 s |
 | `93-xtrace` | fast | 20.7 (2026-11-05) | new with the slim suite's S1 (decisions/2026-11-03-suite-coverage): timed once on 2026-11-05, `TEST_JOBS=4 bash tests/run.sh 93-xtrace` alone, ≤ 30 s |
 | `84-node-memo` | fast | 27.6 (2026-11-04) | not in lc-4-solo.out: timed once on 2026-11-04, `TEST_JOBS=4 bash tests/run.sh 84` alone, ≤ 30 s |
 | `85-suite-runs` | fast | 13.2 (2026-11-04) | not in lc-4-solo.out: timed once on 2026-11-04, `TEST_JOBS=4 bash tests/run.sh 85` alone, ≤ 30 s |

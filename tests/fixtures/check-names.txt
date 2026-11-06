@@ -756,6 +756,19 @@ metrics: session-id prints the init line's session_id of first.jsonl
 metrics: summary counts an entry-resume row's cost but never as a session
 metrics: wall time and roles
 mid-session limit: attempt given back, work kept
+mutants runner: MUTANT_WRAP's command is what the suite runs under
+mutants runner: a mutant a check turns red on is caught and one nothing asserts on survives, each a line with its place, kind, files and seconds
+mutants runner: a mutant already in results.txt is not run again; with no id the rest of the sample runs
+mutants runner: a tree that is not clean stops it before anything runs, exit 1
+mutants runner: each mutant's suite output is kept: the caught one's holds the red check, the survivor's is all green
+mutants runner: stopped while a mutant is in the tree, it puts the tree back before it goes
+mutants runner: the tree is as it was after the sample: no mutant stays
+mutants.mjs pick reads the sets and the tree, drawing only lines a check file runs; apply writes the mutant and refuses a line that moved
+mutants: && and || swap, a comparison flips, true, false and a whole number change; never a comment, a redirection's digit, a parameter or an arrow
+mutants: a line's code ends where its trailing comment begins; a # or // inside quotes or a parameter is no comment
+mutants: mutate gives one change of a kind, the generator choosing which; delete gives null for a line with code and nothing for a blank or comment line
+mutants: pick draws each kind in a seeded order, one mutant per line, and passes over a candidate that no longer parses
+mutants: the seeded generator repeats: one seed gives one order every time, another seed another
 needs REASONS: kind, severity and priority for each of the 17 reasons, as the plan's table
 needs card base_conflict: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card driver_crash: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
