@@ -84,33 +84,47 @@ export const paint = (length, functions) => {
   for (const r of rs) c.fill(r.count > 0 ? 1 : 0, r.startOffset, Math.min(r.endOffset, length));
   return c;
 };
-// a source and its painted characters → { covered: [line…], partial: [line…] }: a line is covered when any character
-// of it that is no white space ran, partial when one also did not (blank lines are neither)
-export const lineStates = (src, cov) => {
+// a source and its painted characters → { covered: [line…], partial: [line…] }: a line is covered when code of it
+// ran, partial when other code of it did not. Code is every character but white space, the punctuation `;,(){}[]`
+// (the `;` after a function's body lies in the range around the function, and ran with it whether or not the body
+// did), and the declaration in front of a function never called (dead: where each such function starts): `export `,
+// `const f = `, `name: `, which the module's load "ran". A callback's call (`xs.map(` before `x => …`) is code.
+const PUNCT = new Set(" \t\r;,(){}[]");
+const DECL = /^(export\s+)?(default\s+)?(static\s+)?((const|let|var)\s+[\w$]+\s*=\s*|[\w$.]+\s*[:=]\s*)?(async\s*)?$/;
+export const lineStates = (src, cov, dead = []) => {
+  const quiet = new Uint8Array(src.length);
+  for (const s of dead) {
+    let a = src.lastIndexOf("\n", s - 1) + 1; for (let i = a; i < s; i++) if (",;{}(".includes(src[i])) a = i + 1;   // the declaration: from the last `, ; { } (` before it
+    while (a < s && (src[a] === " " || src[a] === "\t")) a++;
+    if (DECL.test(src.slice(a, s))) quiet.fill(1, a, s);
+  }
   const covered = [], partial = []; let line = 1, ran = false, not = false;
   for (let i = 0; i <= src.length; i++) {
     const ch = src[i];
     if (i === src.length || ch === "\n") { if (ran) { covered.push(line); if (not) partial.push(line); } line++; ran = not = false; continue; }
-    if (ch === " " || ch === "\t" || ch === "\r") continue;
+    if (PUNCT.has(ch) || quiet[i]) continue;
     if (cov[i]) ran = true; else not = true;
   }
   return { covered, partial };
 };
-// V8 coverage documents (parsed) → Map<lib file, Uint8Array>, a character ran when it did in any process
+// V8 coverage documents (parsed) → Map<lib file, { src, cov: a byte per character, 1 when it ran in any process,
+// starts: where each function starts }>
 export const v8Paint = (docs, root, read) => {
   const chars = new Map();
   for (const d of docs) for (const r of d.result ?? []) {
     if (!r.url?.startsWith("file://")) continue;
     const rel = relOf(fileURLToPath(r.url), root); if (rel === null || !MJS.test(rel)) continue;
-    let e = chars.get(rel); if (!e) { const src = read(rel); chars.set(rel, e = { src, cov: new Uint8Array(src.length) }); }
+    let e = chars.get(rel); if (!e) { const src = read(rel); chars.set(rel, e = { src, cov: new Uint8Array(src.length), starts: new Set() }); }
     const c = paint(e.src.length, r.functions); for (let i = 0; i < c.length; i++) if (c[i]) e.cov[i] = 1;
+    for (const f of r.functions) if (f.ranges[0] && f.ranges[0].startOffset > 0) e.starts.add(f.ranges[0].startOffset);
   }
   return chars;
 };
-// the painted characters as a set: the lines that hold code (mjsExecutable; a comment inside a function that ran "ran" too)
+// the painted characters as a set: the lines that hold code (mjsExecutable; a comment inside a function that ran "ran"
+// too), a function that ran in no process counted dead
 export const v8Set = chars => {
   const covered = new Map(), partial = new Map();
-  for (const [f, { src, cov }] of chars) { const s = lineStates(src, cov), can = mjsExecutable(src);
+  for (const [f, { src, cov, starts }] of chars) { const s = lineStates(src, cov, [...starts].filter(i => !cov[i])), can = mjsExecutable(src);
     const c = s.covered.filter(n => can.has(n)), p = s.partial.filter(n => can.has(n));
     if (c.length) covered.set(f, new Set(c)); if (p.length) partial.set(f, new Set(p)); }
   return { covered, partial };
@@ -127,45 +141,53 @@ export const v8Set = chars => {
 // one past (5.2, tried), so the group's first line stands for it, and a later line counts by itself only when a `\`
 // continuation starts a new command there (&&, ||, |).
 //   shScan(text) → { can: Set<line>, first: first[n] = the first line of the statement line n is in }
+// Each test reads the line's outline: its text with every quoted string and every `$( )`, `<( )`, `=( )` cut down to
+// one Q, so what is inside them can't look like a closing word, a pattern or a `;`. A line ending in `)` is a case
+// pattern only inside case … esac (outside one it closes a subshell and holds its last command); a closing word is
+// alone on its line only when nothing but redirections follows it (`done < Q; out=Q` holds a command).
 const STRUCT = /^((fi|done|esac|then|else|do|\{|\}|;;|\))\s*;?\s*)+&?$/;
-const noCommand = t => STRUCT.test(t) || /^[A-Za-z_][A-Za-z0-9_:.-]*\(\)\s*\{?$/.test(t) || /^(done|fi|esac|\})\s*(<|>|[0-9&]>)/.test(t)
-  || (/^\(?[^()\s][^()]*\)(\s*;;)?$/.test(t) && !/^([A-Za-z_][A-Za-z0-9_]*\+?=|case\s)/.test(t));
+const noCommand = (o, inCase) => STRUCT.test(o) || /^[A-Za-z_][A-Za-z0-9_:.-]*\(\)\s*\{?$/.test(o)
+  || /^(done|fi|esac|\})(\s*[0-9&]?[<>]{1,3}&?[0-9-]?\s*[^\s;|&<>]*)+(\s*;\s*(fi|done|esac|\}))*\s*;?$/.test(o)
+  || (inCase && /^\(?[^()\s][^()]*\)(\s*;;)?$/.test(o) && !/^([A-Za-z_][A-Za-z0-9_]*\+?=|case\s)/.test(o));
 export const shScan = text => {
   // open: what is open at this point, innermost last: ' " $' (an ANSI string) or ( (a `$(`, `<(`, `>(` or `=(`, and any ( inside one)
   const lines = text.split("\n"), can = new Set(), first = new Int32Array(lines.length + 2), open = [];
-  let here = null, cont = false, cond = false, head = 0;
+  let here = null, cont = false, cond = false, head = 0, cases = 0;
   for (let n = 0; n < lines.length; n++) {
     const raw = lines[n], wasCont = cont;
     if (here === null && !open.length && !cont && !cond) head = n + 1;
     first[n + 1] = head;
     if (here !== null) { if ((here.strip ? raw.replace(/^\t+/, "") : raw) === here.word) here = null; continue; }
-    let code = "", hd = null, comment = false;
+    let code = "", outline = "", hd = null, comment = false;
     for (let i = 0; i < raw.length; i++) {
-      const ch = raw[i], top = open.at(-1);
+      const ch = raw[i], top = open.at(-1), was = open.length;
       if (top === "'") { if (ch === "'") open.pop(); code += ch; continue; }
-      if (ch === "\\") { code += ch + (raw[i + 1] ?? ""); i++; continue; }
+      if (ch === "\\") { code += ch + (raw[i + 1] ?? ""); if (!was) outline += ch + (raw[i + 1] ?? ""); i++; continue; }
       if (top === "$'") { if (ch === "'") open.pop(); code += ch; continue; }
       if (top === '"') {
         if (ch === '"') open.pop(); else if (ch === "$" && raw[i + 1] === "(") { open.push("("); code += ch; i++; }
         code += raw[i]; continue;
       }
       // code: the top level, or inside ( )
-      if (ch === "'" || ch === '"') { open.push(ch === "'" && raw[i - 1] === "$" ? "$'" : ch); code += ch; continue; }
+      if (ch === "'" || ch === '"') { open.push(ch === "'" && raw[i - 1] === "$" ? "$'" : ch); code += ch; if (!was) outline += "Q"; continue; }
       if (ch === "#" && (i === 0 || /[\s;(&|]/.test(raw[i - 1]))) { comment = true; break; }   // a comment to the line's end
-      if ((ch === "$" || ch === "<" || ch === ">" || ch === "=") && raw[i + 1] === "(") { open.push("("); code += ch + "("; i++; continue; }
+      if ((ch === "$" || ch === "<" || ch === ">" || ch === "=") && raw[i + 1] === "(") {
+        open.push("("); code += ch + "("; if (!was) outline += ch === "=" ? "=Q" : "Q"; i++; continue; }
       if (ch === "(" && top === "(") open.push("(");
       if (ch === ")" && top === "(") open.pop();
       if (!open.length && ch === "<" && raw[i + 1] === "<" && raw[i + 2] !== "<" && raw[i - 1] !== "<") {
         const m = /^<<(-?)\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\2/.exec(raw.slice(i)); if (m) hd = { strip: m[1] === "-", word: m[3] };
       }
-      code += ch;
+      code += ch; if (!was) outline += ch;
     }
-    const t = code.trim();
+    const t = code.trim(), o = outline.trim(), inCase = cases > 0;
     cont = !comment && !open.length && /(^|[^\\])(\\\\)*\\$/.test(raw);
     if (cond) { if (code.includes("]]")) cond = false; } else if (code.lastIndexOf("[[ ") > code.lastIndexOf("]]")) cond = true;
+    if (/(^|[\s;({|&])case\s.*\sin(\s|;|$)/.test(o)) cases++;
+    cases = Math.max(0, cases - (o.match(/(^|[\s;])esac(?=$|[\s;)}])/g) ?? []).length);
     if (hd && !open.length) here = hd;
     if (t === "" || t === "\\") continue;
-    if (head === n + 1 ? !noCommand(t) : wasCont && /^(&&|\|\||\|)/.test(t)) can.add(n + 1);
+    if (head === n + 1 ? !noCommand(o, inCase) : wasCont && /^(&&|\|\||\|)/.test(t)) can.add(n + 1);
   }
   return { can, first };
 };
@@ -193,14 +215,14 @@ export const shAttribute = (text, traced) => {
   }
   return { lines, dropped };
 };
-// node: a line with code on it (not blank, not a comment, not only closing punctuation)
+// node: a line with code on it (not blank, not a comment, not only punctuation or a bare else, try, finally or do)
 export const mjsExecutable = text => {
   const out = new Set(); let block = false;
   text.split("\n").forEach((raw, n) => {
     let t = raw.trim();
     if (block) { const e = t.indexOf("*/"); if (e < 0) return; block = false; t = t.slice(e + 2).trim(); }
     if (t.startsWith("/*")) { if (!t.includes("*/")) block = true; return; }
-    if (t === "" || t.startsWith("//") || /^[\s})\];,]*$/.test(t)) return;
+    if (t === "" || t.startsWith("//") || /^[\s{}()[\];,]*((else|try|finally|do)[\s{]*)?$/.test(t)) return;
     out.add(n + 1);
   });
   return out;

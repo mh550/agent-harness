@@ -40,10 +40,15 @@ tended "$HARNESS_STATE/proj/runt2"
 check "xtrace: a run started in tmux traces its driver too: the CLI passes the variable to the tmux command" \
   'traced "$T/xt2" bin/harness && traced "$T/xt2" lib/driver.sh'
 
-mkdir -p "$T/nodir" && : > "$T/nodir/file"
+check "xtrace: a trace file is its owner's to read and nobody else's (it holds what the commands held, a token among it)" \
+  '[[ $(stat -c %a "$T"/xt/*.xtrace | sort -u) == 600 && $(stat -c %a "$T"/xt2/*.xtrace | sort -u) == 600 ]]'
+
+mkdir -p "$T/nodir" "$T/rodir" && : > "$T/nodir/file" && chmod 500 "$T/rodir"
 HARNESS_XTRACE=$T/nodir/file/sub "$H" status > "$T/nodir.out" 2>&1; nodir_rc=$?
-check "xtrace: a directory that can't be made costs the trace, never the command" \
-  '[[ $nodir_rc == 0 ]] && grep -q "^RUNNING" "$T/nodir.out" && ! grep -E "^\++" "$T/nodir.out" > /dev/null'
+HARNESS_XTRACE=$T/rodir "$H" status > "$T/rodir.out" 2>&1; rodir_rc=$?
+check "xtrace: a directory that can't be made, or can't be written, costs the trace, never the command" \
+  '[[ $nodir_rc == 0 && $rodir_rc == 0 && -z $(ls "$T/rodir") ]] && grep -q "^RUNNING" "$T/nodir.out" && grep -q "^RUNNING" "$T/rodir.out" && ! anytrace "$T/nodir.out" && ! anytrace "$T/rodir.out"'
+chmod 700 "$T/rodir"
 
 # every script that runs as a process of its own asks for itself (`set -x` does not cross a process): the executable
 # files of lib/ and bin/harness, each with the guard line

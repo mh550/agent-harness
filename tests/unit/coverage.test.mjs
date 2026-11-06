@@ -42,11 +42,14 @@ test("coverage: shScan finds the lines that hold a command and each multi-line s
   assert.deepEqual([5, 10, 17, 32].map(n => first[n]), [5, 10, 17, 32]);
 });
 
-test("coverage: shScan leaves out comments, closing words, a bare case pattern, a function's header and a comment's quote or backslash", () => {
+test("coverage: shScan leaves out comments, closing words, a case's bare pattern, a function's header and a comment's quote or backslash", () => {
   const t = ["# it's a comment \\", "f() {", "  x=1   # it's", "  case $x in", "    a|b)", "      : ;;", "    *) : ;;", "  esac; }", "g() { :; }",
     "if true; then", "  :", "else", "  :", "fi", "for i in 1; do", "  :", "done", "h=${#x} n=$# ok=1", "( cd /", ")",
-    'case $1 in "blocked on"* | "waiting"*) : ;; *) : ;; esac', 'case $1 in a*)', "  : ;;", "esac", "while read -r l; do", "  :", "done < <(cat f)", "{ :; } > out"].join("\n");
-  assert.equal(nums(shScan(t).can), "3 4 6 7 9 10 11 13 15 16 18 19 21 22 23 25 26 28");   // a `case … in <pattern>)` line is a command; `done < <(…)` is not
+    'case $1 in "blocked on"* | "waiting"*) : ;; *) : ;; esac', 'case $1 in a*)', "  : ;;", "esac", "while read -r l; do", "  :", "done < <(cat f)", "{ :; } > out",
+    '( cd "$p" &&', '  run "$a" "$b" )', "while read -r l; do :; done < <(cat f); out=$(grep x f)", '} > "$f" 2>&1', "fi > /dev/null", "done < <(cat f); n=$(wc -l < f)", "done < <(cat f); }"].join("\n");
+  // a `case … in <pattern>)` line is a command; `done < <(…)` and `} > file` are not; a subshell's closing line and a
+  // command after `done < <(…);` are (a line ending in `)` is a case pattern only inside case … esac)
+  assert.equal(nums(shScan(t).can), "3 4 6 7 9 10 11 13 15 16 18 19 21 22 23 25 26 28 29 30 31 34");
 });
 
 test("coverage: shScan keeps a multi-line array and a quoted string inside a $( ) inside a string as one statement; a case arm of only ;; holds no command", () => {
@@ -100,15 +103,20 @@ test("coverage: V8's nested ranges paint the innermost count: a branch not taken
   assert.deepEqual([...paint(src.length, shuffled)], [...c]);
 });
 
-test("coverage: a line is covered when any of it ran and partial when some of it did not; a set holds the lines with code only", () => {
+test("coverage: a line ran when code of it ran, not its punctuation or the declaration of a function never called; partial when some code of it did not", () => {
   const src = fx("lib/sample.mjs"), doc = JSON.parse(fx("v8.json"));
   const chars = v8Paint([doc], "/ROOT", rel => fx(rel)), s = v8Set(chars);
   assert.deepEqual([...chars.keys()], ["lib/sample.mjs"]);   // run.mjs is no lib file
-  const { cov } = chars.get("lib/sample.mjs");
-  assert.deepEqual(lineStates(src, cov), { covered: [1, 2, 3, 4, 5, 6, 9, 10, 11, 12], partial: [4, 6, 9, 12] });   // comments and a closing brace ran too
-  assert.equal(nums(mjsExecutable(src)), "4 5 6 7 9 10 12 13");
-  assert.equal(nums(s.covered.get("lib/sample.mjs")), "4 5 6 9 10 12");
-  assert.equal(nums(s.partial.get("lib/sample.mjs")), "4 6 9 12");
+  const { cov, starts } = chars.get("lib/sample.mjs");
+  // by characters alone: the comments ran, and so did `export const twice =`, `export` of never, `const label =`, `second:`
+  assert.deepEqual(lineStates(src, cov), { covered: [1, 2, 3, 4, 5, 6, 9, 10, 12, 15, 17, 19, 20, 22, 23, 24], partial: [4, 9, 12, 15, 19, 20] });
+  // 16 is a whole function body whose only outer character is its `;`, 18 a getter then `,`, 25 `} else {`: punctuation runs nothing
+  const dead = [...starts].filter(s => !cov[s]);
+  assert.deepEqual(lineStates(src, cov, dead), { covered: [1, 2, 3, 5, 6, 9, 10, 17, 20, 22, 23, 24], partial: [9, 20] });
+  assert.equal(nums(mjsExecutable(src)), "4 5 6 7 9 10 12 13 15 16 17 18 19 20 22 23 24 26");
+  // the set: lines with code; 20 ran in part (`[].map(` ran, its callback never did), 17 whole
+  assert.equal(nums(s.covered.get("lib/sample.mjs")), "5 6 9 10 17 20 22 23 24");
+  assert.equal(nums(s.partial.get("lib/sample.mjs")), "9 20");
   assert.deepEqual(lineStates("a\n\n  b\n", Uint8Array.from([1, 0, 0, 0, 0, 0, 0])), { covered: [1], partial: [] });
 });
 
@@ -116,14 +124,15 @@ test("coverage: two processes' V8 documents add up: a character ran when it did 
   const doc = JSON.parse(fx("v8.json")), other = structuredClone(doc);
   const fns = other.result.find(r => r.url.endsWith("/lib/sample.mjs")).functions;
   fns.find(f => f.functionName === "never").ranges[0].count = 1;
-  fns.find(f => f.functionName === "pick").ranges = [{ startOffset: 341, endOffset: 455, count: 0 }];
+  const pick = fns.find(f => f.functionName === "pick"); pick.ranges = [{ ...pick.ranges[0], count: 0 }];
   const s = v8Set(v8Paint([doc, other], "/ROOT", rel => fx(rel)));
-  assert.equal(nums(s.covered.get("lib/sample.mjs")), "4 5 6 9 10 12 13");
-  assert.equal(nums(s.partial.get("lib/sample.mjs")), "4 6 9");
+  assert.equal(nums(s.covered.get("lib/sample.mjs")), "5 6 9 10 12 13 17 20 22 23 24");   // never ran in the other process: its declaration counts now
+  assert.equal(nums(s.partial.get("lib/sample.mjs")), "9 20");
 });
 
-test("coverage: mjsExecutable leaves out blank lines, line and block comments and closing punctuation", () => {
+test("coverage: mjsExecutable leaves out blank lines, line and block comments, closing punctuation and a bare else, try or finally", () => {
   assert.equal(nums(mjsExecutable("// c\nimport x from 'y';\n\n/* a\n b */\nconst f = () => {\n  return 1;\n};\n/* one line */\n  });\nf();")), "2 6 7 11");
+  assert.equal(nums(mjsExecutable("if (a) {\n} else {\n} else if (b) {\n}\ntry {\n  x();\n} finally {\n}\n[\n  1,\n];")), "1 3 6 10");
 });
 
 test("coverage: line numbers round-trip through ranges, and a set's text parses back to the same set, partial lines beside", () => {
@@ -170,25 +179,25 @@ test("coverage.mjs reduce reads a raw directory's traces and V8 documents into o
     writeFileSync(join(d, "raw/one/v8/coverage-1.json"), fx("v8.json").replaceAll("/ROOT", join(d, "root")));
     writeFileSync(join(d, "raw/one/v8/broken.json"), "{");
     const root = join(d, "root"), r = await main(["reduce", join(d, "raw/one")], root);
-    assert.equal(r.out, "bin/harness 3-5\nlib/sample.mjs 4-6,9-10,12\nlib/sample.sh 5-6,8,10-11,15,17,20,23,25-28\n~lib/sample.mjs 4,6,9,12\n");
+    assert.equal(r.out, "bin/harness 3-5\nlib/sample.mjs 5-6,9-10,17,20,22-24\nlib/sample.sh 5-6,8,10-11,15,17,20,23,25-28\n~lib/sample.mjs 9,20\n");
     writeFileSync(join(d, "sets/one.txt"), r.out); writeFileSync(join(d, "sets/two.txt"), "lib/sample.sh 5-6\n");
     writeFileSync(join(d, "sets/unit-sample.txt"), "lib/sample.mjs 13\n"); writeFileSync(join(d, "sets/_suite.out"), "not a set");
     assert.equal((await main(["covering", join(d, "sets"), "lib/sample.sh", "5"], root)).out, "one\ntwo\n");
     assert.equal((await main(["covering", join(d, "sets"), "lib/sample.sh", "8"], root)).out, "one\n");
     assert.match((await main(["counts", join(d, "sets")], root)).out, /^bin\/harness:3 1\n[^]*lib\/sample\.sh:5 2\nlib\/sample\.sh:6 2\nlib\/sample\.sh:8 1\n/);
     const u = (await main(["union", join(d, "sets")], root)).out;
-    assert.equal(u, "bin/harness 3-5\nlib/sample.mjs 4-6,9-10,12\nlib/sample.sh 5-6,8,10-11,15,17,20,23,25-28\n");
+    assert.equal(u, "bin/harness 3-5\nlib/sample.mjs 5-6,9-10,17,20,22-24\nlib/sample.sh 5-6,8,10-11,15,17,20,23,25-28\n");
     writeFileSync(join(d, "u.txt"), u);
-    assert.deepEqual(await main(["missing", join(d, "u.txt"), join(d, "sets/two.txt")], root), { out: "bin/harness 3-5\nlib/sample.mjs 4-6,9-10,12\nlib/sample.sh 8,10-11,15,17,20,23,25-28\n", rc: 1 });
+    assert.deepEqual(await main(["missing", join(d, "u.txt"), join(d, "sets/two.txt")], root), { out: "bin/harness 3-5\nlib/sample.mjs 5-6,9-10,17,20,22-24\nlib/sample.sh 8,10-11,15,17,20,23,25-28\n", rc: 1 });
     assert.deepEqual(await main(["missing", join(d, "sets/two.txt"), join(d, "u.txt")], root), { out: "", rc: 0 });
     const t = (await main(["tables", join(d, "sets")], root)).out;
-    assert.match(t, /\| `one` \| fast \| 16 \| 6 \| 22 \| 20 \|/);                       // 3 + 13 bash lines, 6 node lines that hold code, 20 only it runs
+    assert.match(t, /\| `one` \| fast \| 16 \| 9 \| 25 \| 23 \|/);                       // 3 + 13 bash lines, 9 node lines, 23 only it runs
     assert.match(t, /\| `two` \| – \| 2 \| 0 \| 2 \| 0 \|/);
     assert.match(t, /\| `sample` \| 1 \| 1 \|/);                                         // the unit row: its one line no check file runs
     assert.match(t, /\| `lib\/sample\.sh` \| 16 \| 13 \| 11 \| 2 \| 0 \| 0 \| 3 \|/);     // can run, run, by 1, by 2–4, by 5–19, by 20+, by none
     assert.match(t, /\| `two` \| 2 \| `one` \|/);                                        // table 3
     assert.match(t, /\| `lib\/sample\.sh` \| 3 \| sample: 13,18 · unused: 32 \|/);       // table 5, by function
-    assert.match(t, /\| `lib\/sample\.mjs` \| 2 \| 7,13 \|/);
+    assert.match(t, /\| `lib\/sample\.mjs` \| 9 \| 4,7,12-13,15-16,18-19,26 \|/);
     assert.equal((await main(["nope"], root)).rc, 2);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });

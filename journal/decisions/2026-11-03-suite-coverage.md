@@ -29,6 +29,11 @@ file and line. Three facts shaped the switch, each seen on this tree on 2026-11-
   per nesting level), on a descriptor of its own (`BASH_XTRACEFD`), never stderr.
 - **Off unless set**: without the variable nothing is opened and no shell option changes. A directory that can't be
   made or written costs the trace, never the command.
+- **A trace holds what the commands held, expanded**: the notification token (`NTFY_TOKEN`, the `Authorization`
+  header `lib/notify.sh` hands to curl) and whatever a config sets are in it in the clear, though `harness-log.md`
+  and `run.log` never carry them. So each trace file is made its owner's alone (mode 600), and the directory is one
+  to keep out of a repo and to delete after use. Not hidden with `set +x` around those lines: a trace with holes
+  would report lines as never run (the review's finding 3).
 - **A traced segment says so**: the driver's first note is `trace: this segment's harness processes write every
   command they run to <dir> (HARNESS_XTRACE)`. A plain run's `harness-log.md` has no such line and is otherwise the
   same.
@@ -45,8 +50,9 @@ file and line. Three facts shaped the switch, each seen on this tree on 2026-11-
 - **Checks**: `tests/checks/93-xtrace.sh` (fast, 20.7 s alone): a plain and a traced foreground run of one stub
   project (no trace file without the variable; the CLI, the driver, a lane and the check runner traced with it; no
   trace line in either run's output or the helper's stderr file; the traced run's `harness-log.md` is the plain
-  run's plus the note, once ids, times, hashes, lengths, the port and the PR number are cut out), a tmux-started run, an unusable directory, the guard line
-  in every executable script, and `TEST_XTRACE_DIR` through `tests/lib.sh` and the unit tier.
+  run's plus the note, once ids, times, hashes, lengths, the port and the PR number are cut out), a tmux-started
+  run, the trace files' mode, a directory that can't be made and one that can't be written, the guard line in every
+  executable script, and `TEST_XTRACE_DIR` through `tests/lib.sh` and the unit tier.
 
 Defaults that differ from the spec: twelve scripts, not three; the full path in `PS4`, not the base name; the guard
 sources one file instead of three lines in each script.

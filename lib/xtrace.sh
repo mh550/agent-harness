@@ -6,7 +6,10 @@
 # set: nothing is opened and no option changes. Each line is bash's own trace led by `+<source file>:<line>: ` (the +
 # once per nesting level; the file as bash names it, a full path), on a descriptor of its own, never stderr; subshells
 # write to the same file. A directory that can't be made or written: no trace, and the script goes on.
+# A trace holds what the commands held, expanded: the notification token (NTFY_TOKEN, the curl header) and whatever a
+# config sets are in it in the clear. The file is made its owner's alone (600); keep the directory out of a repo.
 # tests/tools/coverage.mjs reduces the traces to the lines that ran (decisions/2026-11-03-suite-coverage).
-if mkdir -p "$HARNESS_XTRACE" 2> /dev/null && { exec {BASH_XTRACEFD}>> "$HARNESS_XTRACE/$$.xtrace"; } 2> /dev/null; then
+if mkdir -p "$HARNESS_XTRACE" 2> /dev/null && (umask 077; : >> "$HARNESS_XTRACE/$$.xtrace") 2> /dev/null \
+  && { exec {BASH_XTRACEFD}>> "$HARNESS_XTRACE/$$.xtrace"; } 2> /dev/null; then
   PS4='+${BASH_SOURCE:-}:${LINENO}: '; set -x
 fi
