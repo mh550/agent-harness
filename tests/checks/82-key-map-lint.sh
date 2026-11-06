@@ -95,5 +95,5 @@ check "key map lint: a map name no check file's name holds is named (tests/run.s
   '(( c7 == 1 )) && [[ $o7 == "CLAUDE.md:no-such-check matches no check file" ]]'
 o5=$(keymaplint "$HERE/checks" "$MAP"); c5=$?
 check "key map lint: this repo's tests/checks/ passes with the map in .harness/config.sh (CLAUDE.md and its readers)" \
-  '(( c5 == 0 )) && [[ -z $o5 && $MAP == "CLAUDE.md:39-memlint-m4:37-memory-prompts-m2:79-suite-length:89-night-words" ]] || { printf "%s\n" "$o5" | head -20; false; }'
+  '(( c5 == 0 )) && [[ -z $o5 && $MAP == "CLAUDE.md:memlint-self:37-memory-prompts-m2:79-suite-length:89-night-words" ]] || { printf "%s\n" "$o5" | head -20; false; }'
 suite_end

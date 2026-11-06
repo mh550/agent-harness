@@ -36,7 +36,7 @@ pk "$M" --names x.md > "$T/pk-nx.out" 2> /dev/null; pnx=$?
 check "treekey --names: the entries' names in map order (a duplicate path merged into the first), exit 1 and no line for a path no entry has" \
   '[[ $pn1 == "a b" && $pn2 == "memlint readme" && $pnx == 1 && ! -s $T/pk-nx.out ]]'
 # the pure functions (ignoreList, parseMap, treeKey, partialKeys, mapNames) are tests/unit/treekey.test.mjs
-M0=CLAUDE.md:39-memlint-m4:37-memory-prompts-m2   # its own line: beside harness_config "<root>" it would be a hit of 82-key-map-lint
+M0=CLAUDE.md:memlint-self:37-memory-prompts-m2   # its own line: beside harness_config "<root>" it would be a hit of 82-key-map-lint
 check "CHECK_KEY_MAP: harness default empty; this repo maps CLAUDE.md; the driver exports it; the template has it commented" \
   '( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ -z $CHECK_KEY_MAP ]] ) \
   && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config "$HERE/.." && [[ $CHECK_KEY_MAP == "$M0"* ]] ) \
