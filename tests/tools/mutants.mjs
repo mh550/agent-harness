@@ -140,7 +140,8 @@ const parses = (file, text) => {
 export async function main(argv, root = ROOT) {
   const [cmd, a, b, c] = argv;
   if (cmd === "pick" && a && /^\d+$/.test(b ?? "")) {
-    const sets = readdirSync(a).filter(f => f.endsWith(".txt") && !f.startsWith("_") && !f.startsWith("unit-")).sort()
+    // a unit-<name>.txt set is one tests/unit file's, no check file; unit-tier.txt is the unit tier's own check file's (coverage.mjs)
+    const sets = readdirSync(a).filter(f => f.endsWith(".txt") && !f.startsWith("_") && (!f.startsWith("unit-") || f === "unit-tier.txt")).sort()
       .map(f => [basename(f, ".txt"), parseSet(readFileSync(join(a, f), "utf8"))]);
     const by = new Map(), part = new Map();
     for (const [name, s] of sets) {

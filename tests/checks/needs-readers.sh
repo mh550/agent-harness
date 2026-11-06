@@ -3,7 +3,7 @@
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- everything reads the needs record (U2-07): harness status's NEEDS YOU, --json's needs and the card's needs you
 # field from <state dir>/needs/*.json (lib/needs.mjs list), the desk prompt and the answer skill on harness needs ----
-# Plan: docs/plans/2026-10-28-U2-needs-record.md §4.5. The debrief's #### needs block is checked in 15- (its dry run).
+# Plan: docs/plans/2026-10-28-U2-needs-record.md §4.5. The debrief's #### needs block is checked in queue-debrief (its dry run).
 export TZ=UTC HARNESS_NOW=1793145600 COLUMNS=200 HARNESS_GLYPHS=unicode
 ST=$HARNESS_STATE/proj
 # rec: a verify_thin record and a merge_refused one; marks: needs-, refused- and conflict- markers and a blocked end,

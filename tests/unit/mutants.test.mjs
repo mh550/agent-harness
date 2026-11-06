@@ -97,6 +97,12 @@ test("mutants.mjs pick reads the sets and the tree, drawing only lines a check f
       assert.equal(m.partial, m.file === "lib/b.mjs");
     }
     assert.deepEqual((await main(["pick", join(d, "sets"), "5", "1"], root)).out, r.out);
+    // the unit tier's own check file is a check file, whatever its prefix says (its set is unit-tier.txt since the shape,
+    // decisions/2026-11-05-suite-shape): its line is drawn, and it is the file to run against the mutant
+    mkdirSync(join(d, "sets2")); writeFileSync(join(d, "sets2/unit-tier.txt"), "lib/b.mjs 2\n"); writeFileSync(join(d, "sets2/unit-b.txt"), "lib/b.mjs 2\n");
+    const u = await main(["pick", join(d, "sets2"), "5", "1"], root);
+    assert.match(u.err, /pool: 1 lines\n$/);
+    assert.deepEqual(u.out.split("\n").filter(Boolean).map(l => JSON.parse(l).files), [["unit-tier"]]);
     writeFileSync(join(d, "sample.jsonl"), r.out);
     const m = sample.find(m => m.file === "lib/a.sh" && m.after !== null) ?? sample[0], before = readFileSync(join(root, m.file), "utf8");
     assert.equal((await main(["apply", join(d, "sample.jsonl"), m.id], root)).out, `${m.id} ${m.file}:${m.line} ${m.kind}\n`);
@@ -156,10 +162,12 @@ test("mutants: the table names what changed and the checks that caught it, per f
     "PASS conformance: every check a subset ran is in the fixture, once", "files that exited non-zero: stop-records lanes-two", "HARNESS_FAILED=stop-records lanes-two",
     "slowest: lanes-two 300.1 s; wall 300.2 s, 4 jobs, tier all", "4/8 checks passed"].join("\n");
   assert.deepEqual(caughtBy(red), { names: ["a two", "a three", "c one", "lanes-two: still running after TEST_FILE_TIMEOUT=5m; stopped"], files: ["stop-records", "lanes-two"] });
-  assert.deepEqual(caughtBy("PASS a one\n14-run-2b-stop-records: 1 checks, 2.0 s\nPASS conformance: every check a subset ran is in the fixture, once\n2/2 checks passed\n"), { names: [], files: [] });
+  assert.deepEqual(caughtBy("PASS a one\nstop-records: 1 checks, 2.0 s, tier slow\nPASS conformance: every check a subset ran is in the fixture, once\n2/2 checks passed\n"), { names: [], files: [] });
+  // an output kept from before the shape: the line without a tier, under the file's name as it was
+  assert.deepEqual(caughtBy("PASS a one\nFAIL a two\n14-run-2b-stop-records: 2 checks, 2.0 s\n1/2 checks passed\n"), { names: ["a two"], files: ["14-run-2b-stop-records"] });
   const sample = [{ id: "compare-01", file: "lib/a.sh", line: 2, kind: "compare", before: "[[ $1 -ge 2 ]]", after: "[[ $1 -gt 2 ]]", files: ["stop-records", "lanes-run", "lanes-two"], partial: false },
     { id: "delete-01", file: "lib/b.mjs", line: 7, kind: "delete", before: "x();", after: null, files: ["lanes-run"], partial: true }];
-  const rows = tableRows(sample, new Map([["compare-01", red], ["delete-01", "PASS b one\n45-lanes-run: 1 checks, 45.2 s, tier slow\n1/1 checks passed\n"]]));
+  const rows = tableRows(sample, new Map([["compare-01", red], ["delete-01", "PASS b one\nlanes-run: 1 checks, 45.2 s, tier slow\n1/1 checks passed\n"]]));
   assert.deepEqual(rows, [
     "| `compare-01` | `lib/a.sh:2` | `-ge` → `-gt` | 3 | caught by 4 checks in 2 files: `a two`, `a three`, `c one`, and 1 more |",
     "| `delete-01` | `lib/b.mjs:7` (run in part) | the line deleted | 1 | **survived** |"]);

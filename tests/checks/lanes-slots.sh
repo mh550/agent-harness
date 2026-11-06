@@ -2,7 +2,7 @@
 # tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- slots and cleanup (P2-04): a slot reused across milestones, merged lane branches deleted, gc's lane passes ----
-# The gc checks are here, not in 08 or 13 (the two largest files): this file builds the lane state they read.
+# The gc checks are here, not in run-scopes-services-gc or park-desk (the two largest files): this file builds the lane state they read.
 has() { git -C "$1" rev-parse -q --verify "refs/heads/$2" > /dev/null; }   # <repo> <branch>
 printf 'node_modules/\n' > .gitignore && git add .gitignore && git commit -qm "ignore node_modules" && git push -q origin main
 main0=$(git -C "$T/origin.git" rev-parse main)

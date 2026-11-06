@@ -70,7 +70,7 @@ check "a thin verify opens verify_thin under [<run>] M1 needs you; the notificat
 # 17-run-8-thin-verify, until the trim: decisions/2026-11-03-trim)
 check "thin evidence escalates the verify" 'hlog th | grep -q "evidence short of the steps" && grep -q "verify M1 · claude-opus-5-5" "$HARNESS_STATE/proj/th/run.log"'
 
-# slot_open alone (44-'s throwaway repo): a dependency's tag that conflicts with main opens base_conflict
+# slot_open alone (lanes-record-lock's throwaway repo): a dependency's tag that conflicts with main opens base_conflict
 U=$T/u; mkdir -p "$U/st"; git init -q --bare -b main "$U/o.git"; git clone -q "$U/o.git" "$U/wt/run" 2> /dev/null
 ug() { git -C "$U/wt/run" -c user.name=t -c user.email=t@t "$@"; }
 echo base > "$U/wt/run/f"; ug add f; ug commit -qm base; ug push -q origin main

@@ -380,11 +380,14 @@ full run's green is the suite's green.
 The unit tier (`tests/unit/<module>.test.mjs`, one node process) tests the pure functions of `lib/*.mjs` under
 `node --test`; `--test-name-pattern "<regex>"` picks tests, and `tests/checks/unit-tier.sh` puts its tests into
 every full run under their names in `tests/fixtures/check-names.txt` (decisions/2026-11-03-unit-tier).
+A check file is named for what it tests (`queue-debrief`, `memlint-self`, `session-gate-check`), with no number, and no
+file's name is part of another's: `tests/run.sh <file>` and the rerun of a red file then pick that file alone (the name
+lint in `suite-runner` is red on a pair; `journal/decisions/2026-11-05-suite-shape.md` has the names the files had before).
 Each `tests/checks/*.sh` sources `tests/lib.sh` (a fresh `$T`, private tmux server, stub environment and throwaway
 project) and runs alone; `tests/fixtures/check-names.txt` lists every check name and a full run fails on one missing,
 new or doubled (a subset run, on one new or doubled). The runner starts the files `TEST_JOBS` at a time, largest first, as plain background jobs inside the
-caller's check scope, prints each file's output whole when it finishes with a `<file>: <n> checks, <s> s` line, and
-ends with the slowest three, the wall time and the total. A file that exits non-zero with no `FAIL` line counts as one
+caller's check scope, prints each file's output whole when it finishes with a `<file>: <n> checks, <s> s, tier <fast|slow>`
+line (the file's own tier), and ends with the slowest three, the wall time and the total. A file that exits non-zero with no `FAIL` line counts as one
 failed check; stopped by a signal (check.sh's timeout), the runner prints each unfinished file's output so far and names it.
 A file still running after `TEST_FILE_TIMEOUT` (10m) is stopped, its process group with it, and counted as one
 `FAIL <file>: still running after TEST_FILE_TIMEOUT=<t>; stopped`.

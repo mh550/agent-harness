@@ -5,7 +5,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 NM=$HERE/../lib/needs.mjs FX=$HERE/fixtures/needs
 # 4 (mergedBy and a run id that is another's prefix), 5 and 11 (lib/inbox.mjs): tests/unit/needs.test.mjs, inbox.test.mjs
 
-# 1, 2: merge_one's conflict, then the card's commands as Michael pastes them (a throwaway origin, 61-'s shape)
+# 1, 2: merge_one's conflict, then the card's commands as Michael pastes them (a throwaway origin, needs-git's shape)
 U=$T/u; mkdir -p "$U/st"; git init -q --bare -b main "$U/o.git"; git clone -q "$U/o.git" "$U/wt/run" 2> /dev/null
 ug() { git -C "$U/wt/run" -c user.name=t -c user.email=t@t "$@"; }
 echo base > "$U/wt/run/f"; ug add f; ug commit -qm base; ug push -q origin main
