@@ -35,7 +35,6 @@ check "lanes rebase: main moved under a verified lane, files disjoint: the suite
   && grep "^check: green" "$S/lanes/M2/rebase-check.out" > /dev/null && ! grep cached "$S/lanes/M2/rebase-check.out" > /dev/null \
   && merged_rebased rb M2 && grep -q "^done" "$S/ended" && [[ $(grep -c "^verify M2 " "$T/scratch/proj/rb/sessions.log") == 1 ]] \
   && git -C "$T/origin.git" tag -l --format="%(contents:subject)" run/rb/M2 | grep -E "\(v3\); re-based on main [0-9a-f]{7}, suite green$" > /dev/null'
-check "lanes rebase: the tree on main after the re-based merge is the re-tagged tree (the invariant)" '[[ $(cat "$T/rb.inv" 2> /dev/null) == same ]]'
 check "lanes rebase: the re-based tag is the only ref the origin saw rewritten (its forced push)" '[[ $(cat "$T/rb.forced") == refs/tags/run/rb/M2 ]]'
 
 # overlapping: shared.txt is on main; A rewrites its first line, C its last (a clean merge, one path in both)

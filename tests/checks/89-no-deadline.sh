@@ -79,7 +79,7 @@ check "no end time: --until stays an option of start, continue and queue start" 
    && grep -F "harness continue <run-id> [--brief …] [--until HH:MM]" <<< "$u" > /dev/null && grep -F "start [--until HH:MM]" <<< "$u" > /dev/null'
 check "no end time: the user config template documents HOURS, the rule and what still bounds a run" \
   'c=$(cat "$HH/templates/user/config.sh"); grep -E "^# HOURS= +# .*(empty or 0).*whole number" <<< "$c" > /dev/null \
-   && for w in MAX_SESSIONS MAX_ATTEMPTS MAX_VERIFY_ROUNDS MAX_REBASE_ROUNDS MAX_RESOLVES MAX_LIMIT_HITS WEEKLY_STOP_AT AUTO_CONTINUE_MAX SESSION_TIMEOUT SESSION_BUDGET_USD stop pause --until; do
-        grep -F "bounds a run" -A3 <<< "$c" | grep -F -- "$w" > /dev/null || { echo "template: no $w"; false; } || break; done'
+   && { ok=1; for w in MAX_SESSIONS MAX_ATTEMPTS MAX_VERIFY_ROUNDS MAX_REBASE_ROUNDS MAX_RESOLVES MAX_LIMIT_HITS WEEKLY_STOP_AT AUTO_CONTINUE_MAX SESSION_TIMEOUT SESSION_BUDGET_USD stop pause --until; do
+        grep -F "bounds a run" -A3 <<< "$c" | grep -F -- "$w" > /dev/null || { echo "template: no $w"; ok=0; }; done; (( ok )); }'   # a flag: a loop left by break is status 0
 
 suite_end

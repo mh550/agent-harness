@@ -1,0 +1,61 @@
+2026-11-06 11:07:22 run stale on harness/stale in /tmp/tmp.WvOj1iOMHC/wt/proj/stale · port 7950 · policy build-only · merge auto · harness 4c81634+dirty · no end time
+2026-11-06 11:07:22   suite: test ! -f BROKEN · smoke: true · init: echo init ok; echo "cache: $HARNESS_CACHE"; [[ -z ${STUB_SLOW_INITCMD:-} ]] || { touch "${HARNESS_SCRATCH%%/lanes/*}/init-begin"; sleep "$STUB_SLOW_INITCMD"; }
+2026-11-06 11:07:22   permissions: user settings only (.claude/settings.json not found)
+2026-11-06 11:07:22   MCP servers: none (--strict-mcp-config; no .mcp.json)
+2026-11-06 11:07:22 memlint: .harness/config.sh:1 decisions: no store (no DECISIONS= in .harness/config.sh and no docs/decisions.md)
+2026-11-06 11:07:23 test count: no match in the suite's output (tests start/end stay unknown)
+2026-11-06 11:07:23 initializer · claude-fable-5-1
+2026-11-06 11:07:23   init exit 0 · 9f7d89b HARNESS: feature list
+2026-11-06 11:07:23 feature list written: 0/3 passing
+2026-11-06 11:07:23 lint: 5 findings (no-anchor: 4, undeclared: 1); the list is not edited — first: A step 1 no-anchor
+2026-11-06 11:07:23 notified: harness
+2026-11-06 11:07:23 dependencies: M2 has no after list, so it waits on every earlier feature (one given up or parked there stops it)
+2026-11-06 11:07:23 lane M1 opened (slot 0, port 7950, from 7579333)
+2026-11-06 11:07:23 context.md for A: 269 bytes
+2026-11-06 11:07:23 session 1 · A · claude-sonnet-5-5
+2026-11-06 11:07:24   coding exit 1 · 7579333 init
+2026-11-06 11:07:24 A: suite ran 0x (0 s) in the session
+2026-11-06 11:07:24 A: entry.json missing; recorded a minimal entry
+2026-11-06 11:07:24 notified: harness
+2026-11-06 11:07:24 session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+2026-11-06 11:07:24 context.md for A: 428 bytes
+2026-11-06 11:07:24 session 1 · A · claude-sonnet-5-5
+2026-11-06 11:07:24   coding exit 1 · 7579333 init
+2026-11-06 11:07:24 A: suite ran 0x (0 s) in the session
+2026-11-06 11:07:24 A: entry.json missing; recorded a minimal entry
+2026-11-06 11:07:24 session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+2026-11-06 11:07:24 context.md for A: 550 bytes
+2026-11-06 11:07:25 session 1 · A · claude-sonnet-5-5
+2026-11-06 11:07:25   coding exit 1 · 7579333 init
+2026-11-06 11:07:25 A: suite ran 0x (0 s) in the session
+2026-11-06 11:07:25 A: entry.json missing; recorded a minimal entry
+2026-11-06 11:07:25 session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+2026-11-06 11:07:25 context.md for A: 568 bytes
+2026-11-06 11:07:25 session 1 · A · claude-sonnet-5-5
+2026-11-06 11:07:25   coding exit 1 · 7579333 init
+2026-11-06 11:07:25 A: suite ran 0x (0 s) in the session
+2026-11-06 11:07:25 A: entry.json missing; recorded a minimal entry
+2026-11-06 11:07:25 session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+2026-11-06 11:07:26 context.md for A: 690 bytes
+2026-11-06 11:07:26 session 1 · A · claude-sonnet-5-5
+2026-11-06 11:07:26   coding exit 1 · 7579333 init
+2026-11-06 11:07:26 A: suite ran 0x (0 s) in the session
+2026-11-06 11:07:26 A: entry.json missing; recorded a minimal entry
+2026-11-06 11:07:26 session for A hit a limit (You've hit your session limit · resets 6:10am (America/New_York)); not counted; resuming at 06:12
+2026-11-06 11:07:26 context.md for A: 812 bytes
+2026-11-06 11:07:26 session 1 · A · claude-sonnet-5-5
+2026-11-06 11:07:26   coding exit 1 · 7579333 init
+2026-11-06 11:07:26 A: suite ran 0x (0 s) in the session
+2026-11-06 11:07:26 A: entry.json missing; recorded a minimal entry
+2026-11-06 11:07:26 6 sessions in a row refused (You've hit your session limit · resets 6:10am (America/New_York))
+2026-11-06 11:07:26 lane M1 closed (usage limit (6 sessions refused in a row))
+2026-11-06 11:07:26 run ended (usage limit (6 sessions refused in a row)): 0/3 passing · 7 sessions (1 real) · 0 features passed · $1.50 · 0.0 h · by kind: init 1 ($1.50), coding 6 ($0.00) · by model: claude-fable-5-1 1 ($1.50), claude-sonnet-5-5 6 ($0.00)
+2026-11-06 11:07:27 services stopped (usage limit (6 sessions refused in a row))
+2026-11-06 11:07:27 notified: [stale] ended: usage limit (6 sessions refused in a row)
+2026-11-06 11:07:27 retro · claude-sonnet-5-5
+2026-11-06 11:07:27   retro exit 0 · 1fe70f5 HARNESS: run ended (usage limit (6 sessions refused in a row))
+2026-11-06 11:07:27 backlog: the retro wrote no retro-proposals.json
+2026-11-06 11:07:27 summary.json and report.md kept in the state dir (harness report reads them after gc)
+2026-11-06 11:07:27 record PR: none (RECORD_PR=off)
+2026-11-06 11:07:27 scratch kept (KEEP_SCRATCH=1): /tmp/tmp.WvOj1iOMHC/scratch/proj/stale
+2026-11-06 11:07:27 run kept in /tmp/tmp.WvOj1iOMHC/wt/proj/stale on harness/stale · report: harness report stale · continue: harness continue stale

@@ -11,9 +11,9 @@ lanes() { FM lanes "$LS/$1.json" "$LS/att.json" 2 "$LS/parked.json" "$2" | tr '\
 echo '{}' > "$LS/att.json"; echo '{}' > "$LS/parked.json"
 ll und '[{"id":"a1","milestone":"M1","passes":false},{"id":"b1","milestone":"M2","after":[],"passes":false},{"id":"c1","milestone":"M3","passes":false}]'
 s=$(st und0); u0=$(lanes und "$s"); touch "$s/verified-M1"; u1=$(lanes und "$s"); touch "$s/verified-M2"; u2=$(lanes und "$s")
+# u0: M2, whose first feature has after: [], opens at once beside M1; M3, with no after, waits on both
 check "lanes: a milestone whose first feature has no after waits on every earlier milestone (tags of each as its base)" \
   '[[ $u0 == "M1| M2|" && $u1 == "M2|" && $u2 == "M3|run/demo/M1 run/demo/M2" ]]'
-check "lanes: a milestone whose first feature has after: [] opens at once, beside the first" '[[ $u0 == "M1| M2|" ]]'
 ll into '[{"id":"a1","milestone":"M1","passes":false},{"id":"b1","milestone":"M2","after":[],"passes":false},{"id":"b2","milestone":"M2","after":["a1"],"passes":false}]'
 s=$(st into); i0=$(lanes into "$s"); i0d=$(FM deps "$LS/into.json" M2 | paste -sd ' ' -); touch "$s/verified-M1"; i1=$(lanes into "$s")
 check "lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)" \

@@ -66,6 +66,9 @@ STUB_THIN_VERIFY=all STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$
 check "a thin verify opens verify_thin under [<run>] M1 needs you; the notification's body is the card, click needs.md" \
   '[[ $(ni th verify_thin:M1 "[.kind, .priority, .title, .card.headline] | join(\"|\")") == "needs_michael|high|[th] M1 needs you|M1 not verified: evidence too thin" ]] \
   && [[ $(posts "Title: [th] M1 needs you" "M1 not verified: evidence too thin" "Priority: high" "Click: $GHP/blob/harness/th/.harness/runs/th/needs.md") == 1 ]]'
+# the round before the card: thin evidence → one more verify on the stronger model (a file and run of its own,
+# 17-run-8-thin-verify, until the trim: decisions/2026-11-03-trim)
+check "thin evidence escalates the verify" 'hlog th | grep -q "evidence short of the steps" && grep -q "verify M1 · claude-opus-5-5" "$HARNESS_STATE/proj/th/run.log"'
 
 # slot_open alone (44-'s throwaway repo): a dependency's tag that conflicts with main opens base_conflict
 U=$T/u; mkdir -p "$U/st"; git init -q --bare -b main "$U/o.git"; git clone -q "$U/o.git" "$U/wt/run" 2> /dev/null

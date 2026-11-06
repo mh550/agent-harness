@@ -73,13 +73,11 @@ echo r > "$VR/ledger/runs.jsonl"; vg add -A; vg commit -qm ledger; echo r2 >> "$
 check "harness version skips ledger commits" 'V1=$(source "$HERE/../lib/version.sh"; harness_version "$VR"; echo "$HARNESS_VERSION $HARNESS_DIRTY") \
   && echo b >> "$VR/lib/x" && V2=$(source "$HERE/../lib/version.sh"; harness_version "$VR"; echo "$HARNESS_VERSION $HARNESS_DIRTY") \
   && V3=$(source "$HERE/../lib/version.sh"; harness_version "$T/nonexistent"; echo "$HARNESS_VERSION $HARNESS_DIRTY") && [[ $V1 == "$VC 0" && $V2 == "$VC 1" && $V3 == "unknown 0" ]]'
-check "harness report prints the writeup" 'grep -q "Spend by role" <<< "$("$H" report demo)"'
 # reviews sized to the milestone (R2): the demo has no review feature, so a copy of its summary gets a review cost
 check "the report lists the review role when a review ran" 'jq ".cost.by_role.review = 1.25" "$RD/summary.json" > "$T/summary-review.json" \
   && grep -q "^| Spend by role | .*build \$[0-9.]* · review \$1.25 · .*manager (the bash driver) \$0.00 |$" <<< "$(node "$HERE/../lib/summary.mjs" report "$T/summary-review.json")"'
 check "init model resolved to fable"      'grep -q "initializer · claude-fable-5-1" "$HARNESS_STATE/proj/demo/run.log"'
 check "summary end reason is how the run ended" '[[ $(jq -r .end_reason "$RD/summary.json") == done ]]'
-check "a milestone without an after list is noted" 'hlog demo | grep -q "dependencies: M2 has no after list"'
 # the step lint (R3) and the after rule (R10): the initializer runs the live harness's lint; the driver notes what is left, once
 check "the initializer prompt has the resolved lint command" 'grep -qF "\`node $(readlink -f "$HERE/..")/lib/features.mjs lint <run directory>/feature_list.json\`" "$HARNESS_STATE/proj/demo/prompt-initializer.md"'
 check "the initializer prompt sizes reviews to the milestone" 'grep -q "folds its review" "$HARNESS_STATE/proj/demo/prompt-initializer.md" \
@@ -277,6 +275,7 @@ check "a killed debrief changes nothing" '[[ $(cat "$Q/last-debrief") == "$LD" &
 touch "$Q/0099-continue-walled.args"; echo $$ > "$HARNESS_STATE/proj/gated/driver.pid"
 "$H" debrief --dry-run > "$T/dry.out" 2>&1
 check "--dry-run prints the context, launches nothing" '[[ $(ndb) == $B && -f $(head -1 "$T/dry.out") && $(cat "$Q/last-debrief") == "$LD" ]] && grep -q "^## harness status" "$T/dry.out" && grep -q "^### stoppy (proj)" "$T/dry.out" && grep -q "ended: deadline" "$T/dry.out" \
+  && [[ $(grep "^## harness " "$T/dry.out" | paste -sd"|") == "## harness status (these runs; each one'"'"'s section below has more)|## harness trends (last 40 lines)|## harness queue" ]] \
   && awk '"'"'/^#### / { if ($0 == "#### needs") { n++; if (prev != "#### harness status") bad++ } prev = $0 } END { exit !(n > 0 && !bad) }'"'"' "$T/dry.out"'
 check "the debrief's harness status block per run opens with the run's card line" 'awk '"'"'/^### / { run = $2 } /^#### harness status$/ { want = 2; next }
   want == 2 { want = (/^~~~$/) ? 1 : 0; if (!want) bad++; next } want == 1 { n++; if (index($0, " " run " · ") == 0 || $0 !~ /^[^ ]+ [^ ]+ · [^ ]+ · /) bad++; want = 0 }

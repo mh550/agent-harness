@@ -81,15 +81,11 @@ the one 2026-11-04 timing where that output has none.
 |---|---|---|---|
 | `00-unit-tier` | fast | – | the unit tier (spec: a name the unit tier prints is fast); lc-4-solo timed its two rows then, `01-scheduler-pure` 0.0 s and `02-notifications-pure` 0.1 s |
 | `03-harness-parked-pure-report` | fast | 0.2 | ≤ 30 s |
-| `04-render-pure-sections-go` | fast | 0.1 | ≤ 30 s |
-| `05-metrics-pure-tokens-cache` | fast | 0.3 | ≤ 30 s |
 | `06-test-counts-pure-r1` | fast | 0.6 | ≤ 30 s |
 | `07-step-lint-pure-r3` | fast | 0.6 | ≤ 30 s |
 | `09-replay-set-e2-every` | fast | 0.2 | ≤ 30 s |
 | `11-deploy-guards-pure-and` | fast | 0.2 | ≤ 30 s |
 | `12-journal-pure-e4-entrys` | fast | 2.2 | ≤ 30 s |
-| `17-run-8-thin-verify` | fast | 16.7 | ≤ 30 s |
-| `18-run-9c-refused-sessions` | fast | 15.4 | ≤ 30 s |
 | `20-sync-live-checkout-level` | fast | 0.4 | ≤ 30 s |
 | `21-run-11-verify-refused` | fast | 16.7 | ≤ 30 s |
 | `22-run-12-session-claims` | fast | 17.3 | ≤ 30 s |
@@ -178,3 +174,8 @@ and its time is below the 42.1 s it was placed at.
 Updated in place 2026-11-04 (T1-04's review): the full run's fast-list check, the hint's real path and the stricter
 option parsing above; line 2 is read exactly (`IFS= read`, so a trailing blank refuses it, as the lint's `sed -n 2p`
 does), and a non-file `*.sh` (a directory, a FIFO) is refused without being read.
+
+Updated in place 2026-11-06 (the trim, `decisions/2026-11-03-trim`): four fast files are gone and their rows with them.
+`04-render-pure-sections-go`, `05-metrics-pure-tokens-cache` and `18-run-9c-refused-sessions` are unit tests now (the
+names unchanged, still fast); `17-run-8-thin-verify`'s one check moved into `61-needs-git`, so its name left the fast
+fixture. The lint's three lines are one check of `33-suite-runner` now (two were checks of their own).

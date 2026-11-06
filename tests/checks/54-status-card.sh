@@ -67,3 +67,12 @@ check "status card: a driver killed before run.log has no NaN, a missing worktre
   (( r == 0 )) && [[ $(head -1 "$T/now.out") == *" · started now" ]] && ! N=0 CD done2h | grep "^  log " > /dev/null'
 check "status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)" '
   "$H" needs parked > "$T/needs.out" 2>&1 && grep "set the gatus vars" "$T/needs.out" > /dev/null'
+# the boundary of "past three, +<k> more" (S1's surviving mutant compare-06, lib/status.mjs's `items.length > 3`): last in
+# the file, since the items stay open
+nopen proj parked 3600 parked C feature=C why="db url"
+nopen proj parked 3500 given_up A feature=A attempts=2 max_attempts=2 log="$HARNESS_STATE/proj/parked/run.log"
+CD parked | fld "needs you" > "$T/three.out"
+nopen proj parked 3400 parked A feature=A why="a fourth"
+check "status card: exactly three open items are three headlines and no +0 more; a fourth is +1 more" '
+  [[ $(paste -sd"|" "$T/three.out") == "  needs you  ⚠ 3 · B parked: set the gatus vars|             C parked: db url|             A given up after 2 attempts|             harness needs parked" ]] \
+  && [[ $(CD parked | fld "needs you" | paste -sd"|") == "  needs you  ⚠ 4 · B parked: set the gatus vars|             C parked: db url|             A given up after 2 attempts|             +1 more|             harness needs parked" ]]'

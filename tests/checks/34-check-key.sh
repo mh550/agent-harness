@@ -6,9 +6,9 @@ git init -q "$T/ky" && ( cd "$T/ky" && mkdir -p lib docs/plans docs/plansx && ec
   && git add -A && git -c user.name=t -c user.email=t@t commit -qm a )
 ky() { ( cd "$T/ky" && node "$HERE/../lib/treekey.mjs" ); }
 KI=".harness/runs docs/plans docs/specs"
-ky0=$(HARNESS_CHECK_KEY_IGNORE=$KI ky); ky0u=$(ky)
+ky0=$(HARNESS_CHECK_KEY_IGNORE=$KI ky)
 echo q > "$T/ky/docs/plans/new.md"; echo changed >> "$T/ky/docs/plans/p.md"; mkdir -p "$T/ky/docs/specs" && echo s > "$T/ky/docs/specs/s.md"
-ky1=$(HARNESS_CHECK_KEY_IGNORE=$KI ky); ky1u=$(ky)
+ky1=$(HARNESS_CHECK_KEY_IGNORE=$KI ky)
 echo x > "$T/ky/docs/plansx/x.md"; ky2=$(HARNESS_CHECK_KEY_IGNORE=$KI ky)   # a sibling sharing the prefix's letters is not under it
 rm "$T/ky/docs/plansx/x.md"; echo b >> "$T/ky/lib/a.sh"; ky3=$(HARNESS_CHECK_KEY_IGNORE=$KI ky)
 check "treekey: two trees that differ only under an ignored prefix have the same 16-hex key; a change under lib/ changes it" \
@@ -17,8 +17,8 @@ ky4=$(ky); ky5=$(HARNESS_CHECK_KEY_IGNORE=". ./ * lib/* docs/pl*" ky); ky6=$(HAR
 check "treekey: entries are literal path prefixes (. and globs leave nothing out; ./docs/plans/ is docs/plans)" '[[ $ky5 == "$ky4" && $ky6 == "$ky7" && $ky7 != "$ky4" ]]'
 ky8=$(HARNESS_CHECK_KEY_IGNORE="/docs/plans ../x docs/../lib docs/plans" ky 2>&1)   # P0 review: git rejects a pathspec outside the repo
 check "treekey: an absolute or .. entry is dropped, not an error (the key is docs/plans' alone)" '[[ $ky8 == "$ky7" ]]'
-check "treekey: unset, HARNESS_CHECK_KEY_IGNORE leaves out .harness/runs alone (docs/plans changes the key)" \
-  '[[ $ky0u =~ ^[0-9a-f]{16}$ && $ky1u != "$ky0u" ]]'
+# unset, the list is .harness/runs alone (docs/plans counts): the unit tier's, treekey.test.mjs (the key equals its
+# definition after each change to a tree; main's --pathspec from io.env)
 check "CHECK_KEY_IGNORE: harness default .harness/runs docs/plans; this repo extends it; the template has it commented; the driver exports it" \
   '( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ $CHECK_KEY_IGNORE == ".harness/runs docs/plans" ]] ) \
   && ( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config "$HERE/.." && [[ $CHECK_KEY_IGNORE == ".harness/runs docs/plans docs/specs journal findings-and-research ledger" ]] ) \

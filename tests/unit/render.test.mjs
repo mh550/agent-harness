@@ -35,3 +35,14 @@ test("render.mjs: main gives the CLI's bytes, HARNESS_ variables from io.env, a 
     assert.notEqual((await sameAsCli("render.mjs", [join(d, "t.md")], { env: { HARNESS_X: "x2" } })).out, r.out);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+// --raw pastes the one file after it as written, so a brief with "{{X}}" in it stays out of the fill (E3 review F7);
+// until the trim a bash check of its own file (decisions/2026-11-03-trim)
+test("render.mjs: --raw applies to the next file only", async () => {
+  const d = mkdtempSync(join(tmpdir(), "rr-"));
+  try {
+    writeFileSync(join(d, "tpl"), "top\n"); writeFileSync(join(d, "b1"), "b {{X}}\n"); writeFileSync(join(d, "b2"), "b {{X}}\n");
+    const r = await sameAsCli("render.mjs", [join(d, "tpl"), "--raw", join(d, "b1"), join(d, "b2")], { env: { HARNESS_X: "x" } });
+    assert.deepEqual(r, { rc: 0, out: "top\n\nb {{X}}\n\nb x\n" });
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});

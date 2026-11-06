@@ -1,0 +1,4 @@
+{ "run": "test", "features": [ 
+  { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
+  { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false }, 
+  { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"], "passes": false } ] }

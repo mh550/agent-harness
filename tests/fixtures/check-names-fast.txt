@@ -92,7 +92,6 @@ backlog set: specced --spec flips the status and records the spec; an unknown id
 backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
 backlog validate: the why line of a huge bad id stays under 300 bytes
 backlog.mjs: STATUSES in order, mergeProposals adds a new id, orderRows of none is empty
-bash -n lib/lane.sh; node --check lib/metrics.mjs lib/summary.mjs
 bash -n lib/record.sh lib/lane.sh lib/driver.sh
 bash -n lib/record.sh; node --check lib/helper.mjs; helper.mjs has a one-line usage header
 busy continue: another project's live run changes nothing: answer, then continue
@@ -266,7 +265,6 @@ helper health: helperHealth counts run.log's helper restarted: and helper off: l
 helper health: helperNote is the last segment's count and first reason with see run.log, nothing for a segment with none; the CLI's helper-note prints it
 helper health: the report's Helper row comes before Sessions (0 restarts, or the counts and the reasons, most first), no row for a summary without the key
 inbox fixture: n8n-home's INBOX.md at 4632d1c, byte for byte (2504 bytes; line 13 the split, line 28 the heading)
-inbox.mjs answers CLI: on a lone <!-- INBOX with no final newline, the same bytes as sed's cut, never empty
 inbox.mjs repair: n8n-home's fixture against its template keeps Q2 and moves Q1 above ## Answers, out of the comment
 inbox.mjs repair: the comment back byte for byte, the question directly above ## Answers; exit 3, then 0
 inbox.mjs review: a --> inside the moved question, a word-aligned insertion, a reworded comment, a comment of the session's own
@@ -302,7 +300,6 @@ lanes summary: laneSpans counts the lanes open at once and sums open-to-close ho
 lanes: F blocked names a given-up feature of a milestone another lane waits on (C and D wait on B through M1)
 lanes: a complete unverified milestone is a candidate (to be verified); a given-up one with nothing to try is not
 lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)
-lanes: a milestone whose first feature has after: [] opens at once, beside the first
 lanes: a milestone whose first feature has no after waits on every earlier milestone (tags of each as its base)
 lanes: a needs-<m> milestone never opens
 lanes: an after into a later milestone (a name or its feature) never makes a lane wait on a later one (no cycle)
@@ -331,6 +328,7 @@ lint: unreproducible flags a time bound or one run's count, once per step, with 
 lint: unreproducible leaves names, flags, budgets, sizes and file counts alone
 main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
 memlint.mjs: main gives the CLI's bytes for a worktree, gotchas, store and store-line, and reads MEMLINT_LINES from io.env
+memlint.mjs: main with a wrong argument count is the usage error: exit 2, nothing on stdout, the usage line on stderr
 memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
 memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
 memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
@@ -539,6 +537,7 @@ status card: a driver killed before run.log has no NaN, a missing worktree is no
 status card: a running run has now (feature, session, attempt of max, model, minutes in), lanes verbatim, its own units, next attach
 status card: an ended run has ended, milestones, spend, branch, worktree, next; no now, lanes or units
 status card: branch names its commit and ahead, behind origin/main from local refs, with no fetch and no write
+status card: exactly three open items are three headlines and no +0 more; a fourth is +1 more
 status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)
 status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
 status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule
@@ -569,7 +568,6 @@ status review: a session waiting out a limit (its limit note, its row refused) i
 status review: between sessions (the newest session has its passes note and row) the run counts its rows and shows no minutes in
 status review: harness queue show takes --parked before or after the number
 status review: queue show shortens the home directory in spec and brief to a tilde
-status review: session counts coding sessions only (no init, verify, retro or limit-refused row) plus the one running
 status review: two lanes: one lane closing its session leaves the other live (counted, its minutes in)
 status view: --since 4d adds the 3-day-old run and drops the footer; --all lists every run; --project proj2 only that project's
 status view: -v adds each running run's lane lines (P2-06's text), its own units with MemoryCurrent and the last 3 run.log lines; N alone implies -v
@@ -590,11 +588,9 @@ status view: no run.log line without -v; a bad --since is an error
 suite cache: a session that adds only docs/plans/x.md leaves the next session's suite cached green
 suite cache: a session that edits lib/ (tracked) makes the next session's suite run
 suite runs: a run of one such session: full_per_session 2, harness report --md's Suite runs row after Flakes, the TTY card carries the same value
-suite runs: a run whose coding rows carry no count (rebuilt from run.log) reports 0
 suite runs: a session with no call has suite_runs 0, suite_full 0 and suite_fast 0
 suite runs: a session with two full calls and one subset has suite_runs 3, suite_full 2 and suite_fast 0 on its coding row, and the suite ran 3x note
 suite runs: the rendered retro prompt carries the run's full and fast runs per coding session
-suite runs: the run's summary.json suite_runs is { sessions, full, fast, runs, full_per_session, fast_per_session } over its coding rows
 suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1
 suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0
 suite tools: STUB_BARRIER holds that feature's first coding session until stub_go
@@ -621,15 +617,9 @@ sync: nothing local: fast-forward
 sync: pulls the merged PR and pushes the ledger commit, no merge commit
 testCount: a HARNESS_TESTS= line wins over the jest summary (1115, not 7), source contract
 testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 is no contract, a CRLF one is
-testCount: cargo fixture gives the sum of its test result lines (3)
-testCount: go fixture gives its --- PASS count (3)
-testCount: jest fixture gives the Tests: count (7), not Test Suites:
-testCount: node:test fixture gives 3
-testCount: pytest fixture gives 4
 testCount: the last HARNESS_TESTS= line wins, and only a whole line counts
 testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
-testcount.mjs: --total is the last N/M line's total; nothing without one
 testcount.mjs: main gives the CLI's bytes with and without --total and --source, and a missing file is no output and 0
 testcount.mjs: the runner's last N/M checks passed is the count
 testcount.mjs: total is the last N/M line's M, null without one
@@ -655,7 +645,6 @@ the runner parks a queued start whose spec left origin/main: .args and .why in h
 the same runner goes on to the next entry and starts it (a --brief start of the same project)
 the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
 the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/00-unit-tier/v8
-thin evidence escalates the verify
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
 tmux: run id dot.run gets session h-dot-run, gone at keep 0
@@ -679,7 +668,6 @@ treekey: a map whose every entry is dropped is as no map (two lines); the bare c
 treekey: an absolute or .. entry is dropped, not an error (the key is docs/plans' alone)
 treekey: entries are literal path prefixes (. and globs leave nothing out; ./docs/plans/ is docs/plans)
 treekey: two trees that differ only under an ignored prefix have the same 16-hex key; a change under lib/ changes it
-treekey: unset, HARNESS_CHECK_KEY_IGNORE leaves out .harness/runs alone (docs/plans changes the key)
 treekey: without a map --partial prints two equal keys and no blob line; the bare call is one line, --partial's line 1, map or not
 tty views: a dry run that stops at the fetch says where it stopped, no empty sections after it and no footer
 tty views: finish writes report.md as markdown under HARNESS_TTY=1

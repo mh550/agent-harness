@@ -406,3 +406,7 @@ so its files are mode 600 and the directory is yours to delete). `node tests/too
 <sets dir> <seed>` draws a mutation sample and `bash tests/tools/mutants.sh <sample.jsonl> <out dir>` runs it: each small
 change against the check files that run its line, the tree put back after each. Neither is part of the suite or of a run;
 the first map and sample are `findings-and-research/2026-11-03-suite-coverage.md` (decisions/2026-11-03-suite-coverage).
+**Removing a check.** A check goes only when every assertion it makes is made by a check or unit test that stays, and
+it is named with that successor in a decision file; then the map is run again and `coverage.mjs missing <union before>
+<union after>` prints nothing. The first trim, row by row: decisions/2026-11-03-trim. A check of what a `lib/*.mjs`
+CLI prints belongs in `tests/unit/` (`sameAsCli` holds `main`'s bytes and exit code to the spawned CLI's).

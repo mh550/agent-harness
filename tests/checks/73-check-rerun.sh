@@ -75,9 +75,6 @@ check "check rerun: a kill at the memory cap is never rerun" \
 o_sub=$(rr sub once a; echo "rc=$?")
 check "check rerun: the subset form never reruns" '[[ $(tail -1 <<< "$o_sub") == rc=1 && $(calls sub) == 1 ]] && ! grep "after a rerun" <<< "$o_sub"'
 
-printf '%s\n' "FAIL a" "3/5 checks passed" "PASS b" "2/2 checks passed" > "$T/tc-two.txt"; printf '%s\n' "HARNESS_TESTS=4" "12 passed" > "$T/tc-none.txt"
-check "testcount.mjs: --total is the last N/M line's total; nothing without one" \
-  '[[ $(node "$HERE/../lib/testcount.mjs" "$T/tc-two.txt" --total) == "2 tests" && -z $(node "$HERE/../lib/testcount.mjs" "$T/tc-none.txt" --total) ]]'
 check "check rerun: CHECK_RERUN=auto in config.sh, exported as HARNESS_CHECK_RERUN; the template has it; lanes export HARNESS_LANE" \
   '( source "$HERE/../lib/config.sh" && HARNESS_CONFIG=/dev/null harness_config /nonexistent && [[ $CHECK_RERUN == auto ]] ) \
   && grep -qF "HARNESS_CHECK_RERUN=\$CHECK_RERUN" "$HERE/../lib/prompt.sh" && grep -q "^# CHECK_RERUN=auto .*auto.*failed.*suite.*off" "$HERE/../templates/user/config.sh" \

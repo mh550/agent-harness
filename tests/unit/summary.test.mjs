@@ -1,7 +1,7 @@
 // lib/summary.mjs: a run's cause and rework read from its log, and the report's memory peaks.   node --test tests/unit/summary.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,6 +29,33 @@ test("summary.mjs: cause and rework read the log by exact id (E1 review)", () =>
   assert.equal(failedRecheck(h, "A"), true);
   assert.equal(failedRecheck(h, "c++"), false);
   assert.equal(failedRecheck(h, "1"), false);
+});
+
+// Run 9c: refused sessions in an earlier segment aren't the cause of a later ending. tests/fixtures/summary-stale/ is the
+// record and state a stub run left (STUB_LIMIT_HITS=6, then `harness continue --until-epoch <a minute ago>`), captured
+// 2026-11-06: limit/ after the start, deadline/ after the continue. A stub run of its own file until the trim
+// (decisions/2026-11-03-trim).
+const staleBuild = name => {
+  const d = mkdtempSync(join(tmpdir(), "st-")), rec = join(d, "wt/.harness/runs/stale"), st = join(d, "state");
+  const fx = f => fileURLToPath(new URL(`../fixtures/summary-stale/${name}/${f}`, import.meta.url));
+  try {
+    mkdirSync(rec, { recursive: true }); mkdirSync(st);
+    for (const f of ["feature_list.json", "metrics.jsonl", "harness-log.md"]) cpSync(fx(f), join(rec, f));
+    for (const f of ["run.log", "attempts.json", "max-attempts", "ended"]) cpSync(fx(f), join(st, f));
+    return build(join(d, "wt"), "stale", st);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+};
+
+test("a limit ending: the cause is the usage limit", () => {
+  const s = staleBuild("limit");
+  assert.equal(s.end_reason, "usage limit (6 sessions refused in a row)");
+  assert.equal(s.features_detail[0].cause, "usage limit");
+});
+
+test("a later deadline: the earlier refusals aren't the cause", () => {
+  const s = staleBuild("deadline");
+  assert.equal(s.end_reason, "deadline");
+  assert.equal(s.features_detail[0].cause, "not reached");
 });
 
 test("summary.mjs: report lists only the sessions over 2 GB", () => {

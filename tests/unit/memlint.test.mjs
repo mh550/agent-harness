@@ -107,3 +107,20 @@ test("memlint.mjs: main gives the CLI's bytes for a worktree, gotchas, store and
     await sameAsCli("memlint.mjs", ["store-line", d]);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+// S1's surviving mutant andor-05 (`cmd === "gotchas" && wt && rest.length === 1` read with `||`): a command with one
+// argument too many or too few is the usage error, never an answer
+test("memlint.mjs: main with a wrong argument count is the usage error: exit 2, nothing on stdout, the usage line on stderr", async () => {
+  const d = mkdtempSync(join(tmpdir(), "ml-"));
+  try {
+    writeFileSync(join(d, "a"), "## Gotchas\n- x\n");
+    for (const argv of [["store", d, "extra"], ["store-line", d, "extra"], ["gotchas", join(d, "a")], ["gotchas", join(d, "a"), join(d, "a"), "extra"]]) {
+      const r = await sameAsCli("memlint.mjs", argv);
+      assert.equal(r.rc, 2, argv.join(" ")); assert.equal(r.out, "", argv.join(" "));
+    }
+    const { main } = await import("../../lib/memlint.mjs"), said = [], err = console.error;
+    console.error = (...a) => said.push(a.join(" "));
+    try { await main(["store", d, "extra"], { cwd: d, env: process.env }); } finally { console.error = err; }
+    assert.equal(said.length, 1); starts(said[0], "usage: memlint.mjs <worktree> | store <worktree> | ");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
