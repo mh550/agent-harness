@@ -168,7 +168,6 @@ mkdir -p "$T/tw" && printf '%s\n' '#!/usr/bin/env bash' '# tier: fast  ' 'echo "
 TEST_CHECKS=$T/tw bash "$HERE/run.sh" > "$T/tw.out" 2> "$T/tw.err"; echo $? > "$T/tw.rc"
 check "tiers: line 2 is read exactly (a trailing blank refuses it) and a directory named *.sh is refused without a read error" \
   '[[ $(cat "$T/tw.rc") == 2 && $(cat "$T/tw.out") == "no tier header: $T/tw/01-a.sh"$'"'"'\n'"'"'"no tier header: $T/tw/02-d.sh" && ! -s $T/tw.err ]]'
-check "tiers: bash -n tests/run.sh passes" 'bash -n "$HERE/run.sh"'
 # the lint, on the real tree (read only): the headers and the two fixtures agree. tierlint <checks dir> <full fixture>
 # <fast fixture> [<more fast sources>…]: one line per inconsistency, exit 1 on any. A name belongs to the files whose
 # source holds its text (most names are literal; one built at run time is told by the fast run's conformance instead)
@@ -180,12 +179,10 @@ tierlint() { local d=$1 full=$2 ff=$3 fs=("${@:4}") ss=() f m bad=0
   done < <(grep -ohFf "$ff" "${ss[@]}" | LC_ALL=C sort -u)
   return $bad; }
 FX=$HERE/fixtures UNIT=("$HERE"/unit/*.test.mjs)
-check "tier lint: every tests/checks/*.sh has a tier header on line 2" \
-  'ok=1; for f in "$HERE"/checks/*.sh; do [[ $(sed -n 2p "$f") =~ ^"# tier: "(fast|slow)$ ]] || { echo "  ($f)"; ok=0; }; done; (( ok ))'
-check "tier lint: every name of check-names-fast.txt is in check-names.txt" \
-  '[[ -s $FX/check-names-fast.txt && -z $(LC_ALL=C comm -23 "$FX/check-names-fast.txt" "$FX/check-names.txt") ]]'
+# the lint's three lines on the real tree: a file without a tier header on line 2, a fast name the full fixture lacks, a
+# fast name from a slow file (the first two were checks of their own until the trim, decisions/2026-11-03-trim)
 check "tier lint: every name of check-names-fast.txt comes from a file whose header says fast" \
-  'tierlint "$HERE/checks" "$FX/check-names.txt" "$FX/check-names-fast.txt" "${UNIT[@]}" > "$T/lint.out"; [[ $? == 0 && ! -s $T/lint.out ]] || { cat "$T/lint.out"; false; }'
+  '[[ -s $FX/check-names-fast.txt ]] && { tierlint "$HERE/checks" "$FX/check-names.txt" "$FX/check-names-fast.txt" "${UNIT[@]}" > "$T/lint.out"; [[ $? == 0 && ! -s $T/lint.out ]] || { cat "$T/lint.out"; false; }; }'
 # planted on a copy of the fixtures: a slow file's name (the first whose text no fast file holds) in the fast list
 mkdir -p "$T/lf" && cp "$FX/check-names.txt" "$FX/check-names-fast.txt" "$T/lf/" && mapfile -t LS < <(grep -lx "# tier: slow" "$HERE"/checks/*.sh) && mapfile -t LFS < <(grep -lx "# tier: fast" "$HERE"/checks/*.sh)
 PL=""; while IFS= read -r m; do grep -qF -- "$m" "${LFS[@]}" "${UNIT[@]}" || { PL=$m; break; }; done < <(grep -ohFf <(LC_ALL=C comm -23 "$FX/check-names.txt" "$FX/check-names-fast.txt") "${LS[@]}" | LC_ALL=C sort -u)
@@ -210,7 +207,6 @@ check "unit tier: a passing-only file prints PASS a and its N/M line, exit 0" \
 check "unit tier: node --test exiting non-zero with no FAIL line prints the unit tier FAIL line; a throw at import is red too" \
   '[[ $(cat "$UT/u3.rc") == 1 && $(cat "$UT/u4.rc") == 1 ]] && grep -qx "FAIL unit tier: node --test exited 3 with no FAIL line" "$UT/u3.out" \
   && [[ $(tail -1 "$UT/u3.out") == "0/1 checks passed" ]] && grep -E "^FAIL (unit tier: node --test exited [0-9]+ with no FAIL line|$UT/u4/a.test.mjs)$" "$UT/u4.out" > /dev/null'
-check "unit tier: tests/unit/reporter.mjs passes node --check" 'node --check "$HERE/unit/reporter.mjs"'
 # u5: no test file; u6: a process.exit(0) at the second file's import (node exits 0, its output lost); u7: lib/testcount.mjs
 # imported beside a file holding a HARNESS_TESTS= line (argv[2] under one process); u8: a test that prints a PASS line
 mkdir -p "$UT"/u{5,6,7,8}

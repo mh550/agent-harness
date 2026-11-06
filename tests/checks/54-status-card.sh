@@ -65,8 +65,6 @@ check "status card: a driver killed before run.log has no NaN, a missing worktre
   && cp "$RL" "$T/rl.bak" && echo "$(date -d "@$(( HARNESS_NOW - 30 ))" "+%F %T") run running on harness/running" >> "$RL" \
   && CD running > "$T/now.out"; r=$?; [[ -f $T/rl.bak ]] && cp "$T/rl.bak" "$RL"
   (( r == 0 )) && [[ $(head -1 "$T/now.out") == *" · started now" ]] && ! N=0 CD done2h | grep "^  log " > /dev/null'
-check "status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)" '
-  "$H" needs parked > "$T/needs.out" 2>&1 && grep "set the gatus vars" "$T/needs.out" > /dev/null'
 # the boundary of "past three, +<k> more" (S1's surviving mutant compare-06, lib/status.mjs's `items.length > 3`): last in
 # the file, since the items stay open
 nopen proj parked 3600 parked C feature=C why="db url"

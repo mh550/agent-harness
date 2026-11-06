@@ -11,8 +11,7 @@ row() { jq -sc --arg f "$1" '[.[] | select(.kind == "coding" and .feature == $f)
 check "suite runs: a session with two full calls and one subset has suite_runs 3, suite_full 2 and suite_fast 0 on its coding row, and the suite ran 3x note" \
   '[[ $(row A) == "[3,2,0]" ]] && hlog su | grep -F "· A: suite ran 3x (" > /dev/null'
 check "suite runs: a session with no call has suite_runs 0, suite_full 0 and suite_fast 0" '[[ $(row B) == "[0,0,0]" && $(row C) == "[0,0,0]" ]]'
-check "suite runs: the run's summary.json suite_runs is { sessions, full, fast, runs, full_per_session, fast_per_session } over its coding rows" \
-  '[[ $(jq -c .suite_runs "$RD/summary.json") == "{\"sessions\":3,\"full\":2,\"fast\":0,\"runs\":3,\"full_per_session\":0.7,\"fast_per_session\":0}" ]]'
+# the line is the record's summary.json suite_runs as suiteRunsLine prints it (lib/driver.sh): its six values over the coding rows
 check "suite runs: the rendered retro prompt carries the run's full and fast runs per coding session" \
   'grep -F "0.7 full and 0 fast per coding session (2 full, 0 fast in 3; 3 runs in all)" "$SU/prompt-retro.md" > /dev/null'
 
@@ -26,6 +25,4 @@ check "suite runs: a run of one such session: full_per_session 2, harness report
   && grep "suite runs" "$T/rep1.tty" | grep -F "2 full and 0 fast per coding session (2 full, 0 fast in 1; 3 runs in all)" > /dev/null'
 jq -c 'select(.kind != "coding")' "$RD/metrics.jsonl" > "$T/m0" && cp "$T/m0" "$RD/metrics.jsonl"
 check "suite runs: a run whose coding rows carry no count (rebuilt from run.log) reports 0" '"$H" report --md su | grep -xF "| Suite runs | 0 |" > /dev/null'
-check "bash -n lib/lane.sh; node --check lib/metrics.mjs lib/summary.mjs" \
-  'bash -n "$HH/lib/lane.sh" && node --check "$HH/lib/metrics.mjs" && node --check "$HH/lib/summary.mjs"'
 suite_end

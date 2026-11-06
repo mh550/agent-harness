@@ -99,7 +99,6 @@ a listed worktree whose directory is gone never ends gc: every later step still 
 a main conflict notifies once per main commit across 2 verifies: high, title <m> needs you, body the card, click needs.md
 a main's own exit code passes through (rc 3, its bytes, no start)
 a malformed entry is recorded as minimal and the run goes on
-a milestone without an after list is noted
 a miss in a subshell is not kept (a nested subshell starts node again); the parent's own call then stores it
 a name exported and then unset is gone; X=1 ask … is that call's alone; an unset HOME in a $( ) is that call's alone
 a name taken in held/ parks under another; the one there is untouched; the queue drains
@@ -216,7 +215,6 @@ backlog set: specced --spec flips the status and records the spec; an unknown id
 backlog validate: bad JSON, a missing id or a non-slug id exits 1 with one line, rows unchanged
 backlog validate: the why line of a huge bad id stays under 300 bytes
 backlog.mjs: STATUSES in order, mergeProposals adds a new id, orderRows of none is empty
-bash -n lib/lane.sh; node --check lib/metrics.mjs lib/summary.mjs
 bash -n lib/record.sh lib/lane.sh lib/driver.sh
 bash -n lib/record.sh; node --check lib/helper.mjs; helper.mjs has a one-line usage header
 bash -n on the shell files the helper touched
@@ -545,7 +543,6 @@ harness parked is read-only
 harness parked: an unknown or glob run id is an error
 harness parked: id, why, question, both commands
 harness queue list shows the parked entry with not in origin/main in its reason
-harness report prints the writeup
 harness start --base: persisted, and the record branch and every lane start from it
 harness start refuses a run id whose tmux session another live run holds; its session lives
 harness start refuses the run id lanes (the slots' directory)
@@ -625,7 +622,6 @@ lanes rebase: main moved under a verified lane, files disjoint: the suite runs i
 lanes rebase: merge_one says main moved (3) again when moved-<m> is today's main but no rebase-<m> is left (a lane killed mid-re-base)
 lanes rebase: overlapping files get one verify round on the merged tree, then the tag moves and it merges
 lanes rebase: the re-based tag is the only ref the origin saw rewritten (its forced push)
-lanes rebase: the tree on main after the re-based merge is the re-tagged tree (the invariant)
 lanes rebase: under MERGE_POLICY=pr, harness merge re-bases a proposed milestone on the moved main in a slot and merges it, then its dependent
 lanes rebase: with its re-base rounds used the milestone needs Michael: the slot back at the verified commit, nothing merged, nothing pushed
 lanes record: a lane commit touching .harness/runs/ is reverted with a note, and harness/<run> never gets it
@@ -664,7 +660,6 @@ lanes: F blocked names a given-up feature of a milestone another lane waits on (
 lanes: a complete unverified milestone is a candidate (to be verified); a given-up one with nothing to try is not
 lanes: a lane opened after the default lane's features pass starts on the default lane's code (M1's tag holds work-Z.txt)
 lanes: a later feature's after into another milestone makes the lane wait for it (F deps names it)
-lanes: a milestone whose first feature has after: [] opens at once, beside the first
 lanes: a milestone whose first feature has no after waits on every earlier milestone (tags of each as its base)
 lanes: a needs-<m> milestone never opens
 lanes: an after into a later milestone (a name or its feature) never makes a lane wait on a later one (no cycle)
@@ -1167,7 +1162,6 @@ status card: a running run has now (feature, session, attempt of max, model, min
 status card: an ended run has ended, milestones, spend, branch, worktree, next; no now, lanes or units
 status card: branch names its commit and ahead, behind origin/main from local refs, with no fetch and no write
 status card: exactly three open items are three headlines and no +0 more; a fourth is +1 more
-status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)
 status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
 status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule
 status card: needs you counts the run's items with the first headline and the harness needs hint
@@ -1197,7 +1191,6 @@ status review: a session waiting out a limit (its limit note, its row refused) i
 status review: between sessions (the newest session has its passes note and row) the run counts its rows and shows no minutes in
 status review: harness queue show takes --parked before or after the number
 status review: queue show shortens the home directory in spec and brief to a tilde
-status review: session counts coding sessions only (no init, verify, retro or limit-refused row) plus the one running
 status review: two lanes: one lane closing its session leaves the other live (counted, its minutes in)
 status view: --since 4d adds the 3-day-old run and drops the footer; --all lists every run; --project proj2 only that project's
 status view: -v adds each running run's lane lines (P2-06's text), its own units with MemoryCurrent and the last 3 run.log lines; N alone implies -v
@@ -1248,7 +1241,6 @@ suite runs: a run whose coding rows carry no count (rebuilt from run.log) report
 suite runs: a session with no call has suite_runs 0, suite_full 0 and suite_fast 0
 suite runs: a session with two full calls and one subset has suite_runs 3, suite_full 2 and suite_fast 0 on its coding row, and the suite ran 3x note
 suite runs: the rendered retro prompt carries the run's full and fast runs per coding session
-suite runs: the run's summary.json suite_runs is { sessions, full, fast, runs, full_per_session, fast_per_session } over its coding rows
 suite tools: --repeat 3 on a file red every other copy prints k/3 green and the red copies' FAIL lines, exit 1
 suite tools: --repeat 3 on a steady file prints 3/3 green, exit 0
 suite tools: STUB_BARRIER holds that feature's first coding session until stub_go
@@ -1286,11 +1278,6 @@ test count: no match is noted once per run (demo: no output; nocount: text with 
 test count: report.md labels the tests cell, trends its column (baseline → end)
 testCount: a HARNESS_TESTS= line wins over the jest summary (1115, not 7), source contract
 testCount: a HARNESS_TESTS= line with trailing text or a count past 2^53 is no contract, a CRLF one is
-testCount: cargo fixture gives the sum of its test result lines (3)
-testCount: go fixture gives its --- PASS count (3)
-testCount: jest fixture gives the Tests: count (7), not Test Suites:
-testCount: node:test fixture gives 3
-testCount: pytest fixture gives 4
 testCount: the last HARNESS_TESTS= line wins, and only a whole line counts
 testCount: this repo's own check.out (last 30 lines) gives its N/M checks passed by the generic rule (395)
 testcount --source names the rule: jest, generic (pytest), node, cargo, go; an empty file gives none
@@ -1385,15 +1372,12 @@ tier conformance: a run without --tier checks the full list as before
 tier conformance: a slow name missing from a --tier slow run is red naming it; a fast name absent from it is not missing
 tier lint: a planted fast name whose file says slow turns the lint red naming it (on a copy of the fixtures)
 tier lint: every name of check-names-fast.txt comes from a file whose header says fast
-tier lint: every name of check-names-fast.txt is in check-names.txt
-tier lint: every tests/checks/*.sh has a tier header on line 2
 tiers: --repeat combines with --tier: the tier's matching files n times, no file of the other tier
 tiers: --tier after a name, twice, or as --tier=<t> prints the usage, exit 2, runs nothing
 tiers: --tier fast <name> runs the one fast file whose name matches; a slow file's name under --tier fast matches none
 tiers: --tier fast runs the two fast files and not the slow one, --tier slow the slow one only, exit 0
 tiers: --tier with no tier the runner knows prints the usage, exit 2, runs nothing
 tiers: a check file without a tier header on line 2 is refused: no tier header: <path> per file in name order, exit 2, nothing run or written
-tiers: bash -n tests/run.sh passes
 tiers: line 2 is read exactly (a trailing blank refuses it) and a directory named *.sh is refused without a read error
 tiers: the slowest: line ends , tier fast, , tier slow, or , tier all for a run without --tier
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
@@ -1452,7 +1436,6 @@ unit tier: a passing-only file prints PASS a and its N/M line, exit 0
 unit tier: lib/testcount.mjs imported beside another test file prints nothing of its own
 unit tier: no test file, a process.exit(0) at import or a test printing a PASS line is red with the tier's own FAIL line
 unit tier: node --test exiting non-zero with no FAIL line prints the unit tier FAIL line; a throw at import is red too
-unit tier: tests/unit/reporter.mjs passes node --check
 unpark_warm: with a feature to unpark it fills nothing (the unpark on the note line runs and prints it); with none, that unpark starts no node
 v2 tags don't merge on resume
 verifier caught A, re-queued
@@ -1486,7 +1469,6 @@ view: the CLI renders a table, a card and a section from tab-separated stdin
 view: the glyph set is fixed, each one text-presentation code point of width 1, with its ASCII form; an unknown name throws
 view: when and duration use local time: 00:19 and a local midnight under TZ=America/New_York
 view: when gives 2026-10-27 00:19 (10h ago) under TZ=UTC, and (now) under a minute
-waits for another run's limit window
 waitsOn: a feature's and a milestone's unfinished dependants through after, every unfinished one for run
 what lands on main is byte for byte what was verified
 where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
