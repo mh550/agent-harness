@@ -1160,6 +1160,7 @@ status card: a running run has now (feature, session, attempt of max, model, min
 status card: an ended run has ended, milestones, spend, branch, worktree, next; no now, lanes or units
 status card: branch names its commit and ahead, behind origin/main from local refs, with no fetch and no write
 status card: exactly three open items are three headlines and no +0 more; a fourth is +1 more
+status card: harness needs <run>, the card's hint, answers until U2's own command (the parked features)
 status card: harness status nope exits 1 with harness: on stderr; -a, --since, -p with a run are an error
 status card: line 1 is glyph, run, project, class or state, x/y passing and the age, then a rule
 status card: needs you counts the run's items with the first headline and the harness needs hint
