@@ -1,0 +1,82 @@
+{
+ "result": [
+  {
+   "scriptId": "88",
+   "url": "file:///ROOT/run.mjs",
+   "functions": [
+    {
+     "functionName": "",
+     "ranges": [
+      {
+       "startOffset": 0,
+       "endOffset": 50,
+       "count": 1
+      }
+     ],
+     "isBlockCoverage": true
+    }
+   ]
+  },
+  {
+   "scriptId": "89",
+   "url": "file:///ROOT/lib/sample.mjs",
+   "functions": [
+    {
+     "functionName": "",
+     "ranges": [
+      {
+       "startOffset": 0,
+       "endOffset": 496,
+       "count": 1
+      }
+     ],
+     "isBlockCoverage": true
+    },
+    {
+     "functionName": "twice",
+     "ranges": [
+      {
+       "startOffset": 322,
+       "endOffset": 332,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": false
+    },
+    {
+     "functionName": "pick",
+     "ranges": [
+      {
+       "startOffset": 341,
+       "endOffset": 455,
+       "count": 1
+      },
+      {
+       "startOffset": 373,
+       "endOffset": 396,
+       "count": 0
+      },
+      {
+       "startOffset": 428,
+       "endOffset": 437,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": true
+    },
+    {
+     "functionName": "never",
+     "ranges": [
+      {
+       "startOffset": 463,
+       "endOffset": 495,
+       "count": 0
+      }
+     ],
+     "isBlockCoverage": false
+    }
+   ]
+  }
+ ],
+ "timestamp": 1065958.645723
+}

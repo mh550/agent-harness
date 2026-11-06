@@ -151,6 +151,22 @@ cli.mjs: the tail awaits a main that returns a promise
 cli.mjs: the tail gives main the process's cwd, environment and stdin
 cli.mjs: the tail writes main's out to stdout and exits its rc
 continue after a no-list end merges main first
+coverage.mjs reduce reads a raw directory's traces and V8 documents into one set; tables, counts, union, covering and missing read sets
+coverage: V8's nested ranges paint the innermost count: a branch not taken and a function never called did not run
+coverage: a line is covered when any of it ran and partial when some of it did not; a set holds the lines with code only
+coverage: a trace line gives its source path and line at any nesting depth; a command's own continued text and other lines give nothing
+coverage: a traced path counts when it is a lib/*.sh or bin/harness under the root, however it is spelled; a project's config.sh and a harness elsewhere do not
+coverage: beforeTrace names the lines a script runs before its trace starts, its option line to the guard; a file without the guard has none
+coverage: line numbers round-trip through ranges, and a set's text parses back to the same set, partial lines beside
+coverage: lineCounts, unionOf and missingFrom give a line's check files, every set's union and what one set lacks of another
+coverage: mjsExecutable leaves out blank lines, line and block comments and closing punctuation
+coverage: shAttribute moves a traced number to the line that holds its command, the statement's first line; a number on a line with none is dropped
+coverage: shFunctions names the function around each line, and none outside one
+coverage: shScan finds the lines that hold a command and each multi-line statement's first line
+coverage: shScan keeps a multi-line array and a quoted string inside a $( ) inside a string as one statement; a case arm of only ;; holds no command
+coverage: shScan leaves out comments, closing words, a bare case pattern, a function's header and a comment's quote or backslash
+coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
+coverage: two processes' V8 documents add up: a character ran when it did in either
 decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
 decisionsStore: a quoted DECISIONS= naming a missing file wins over docs/decisions.md, a file store that doesn't exist
 decisionsStore: neither is null, and store prints nothing

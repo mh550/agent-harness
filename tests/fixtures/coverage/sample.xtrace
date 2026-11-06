@@ -1,0 +1,27 @@
+++/ROOT/bin/harness:3: dirname /ROOT/bin/harness
++/ROOT/bin/harness:3: source /ROOT/bin/../lib/sample.sh
++/ROOT/bin/harness:4: source /ROOT/proj/.harness/config.sh
+++/ROOT/proj/.harness/config.sh:2: X=1
+++/ROOT/proj/.harness/config.sh:3: Y=2
++/ROOT/bin/harness:5: sample 1
++/ROOT/bin/../lib/sample.sh:5: local a=1
++/ROOT/bin/../lib/sample.sh:6: echo one two
++/ROOT/bin/../lib/sample.sh:9: [[ 1 == 1 ]]
++/ROOT/bin/../lib/sample.sh:9: [[ 1 != 2 ]]
++/ROOT/bin/../lib/sample.sh:9: echo yes
++/ROOT/bin/../lib/sample.sh:10: case $a in
++/ROOT/bin/../lib/sample.sh:11: : first
+++/ROOT/bin/../lib/sample.sh:16: echo sub
+++/ROOT/bin/../lib/sample.sh:17: echo sub2
++/ROOT/bin/../lib/sample.sh:16: x='sub
+sub2'
++/ROOT/bin/../lib/sample.sh:17: ((  a > 5  ))
++/ROOT/bin/../lib/sample.sh:20: cat
++/ROOT/bin/../lib/sample.sh:24: echo 'multi
+line 1'
++/ROOT/bin/../lib/sample.sh:26: true
++/ROOT/bin/../lib/sample.sh:26: : cont
++/ROOT/bin/../lib/sample.sh:27: read -r l
+++/ROOT/bin/../lib/sample.sh:4: echo fed
++/ROOT/bin/../lib/sample.sh:28: : fed
++/ROOT/bin/../lib/sample.sh:27: read -r l
