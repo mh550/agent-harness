@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 15:59 · A1-01 · passes
+
+Wrote docs/plans/2026-11-07-A1-event-hook.md: the v1 event keys and who fills each, the POST verbatim (-w '%{http_code}', no --fail/--retry/token), the two log lines, stub-curl's STUB_EVENT knob with fixtures from real curl 8.5.0 on loopback, every notify call mapped to its kind, 11 existing curl checks (all stay) and the 23 new check names with tiers.
+
+- **Files:** docs/plans/2026-11-07-A1-event-hook.md
+- **Verified:** fast tier green (check.sh --fast: cached for this code tree, 1791 tests; docs/plans is outside the key); plan's line refs re-read against main 8e05980; curl outputs captured from a node listener on 127.0.0.1:7829
+- **Tests:** 1791 → 1791
+- **Discovery** (affects A1-03): A park run ends 'waiting on Michael: B' (ehigh 1), so with EVENT_URL set it posts a park event AND a blocked run-end event: event-run's park check must count park events, not POSTs.
+- **Discovery** (affects A1-03): needs_notify already forwards a caller's kind=/feature= (both branches call notify "$msg" "$@" before the record's 5 fields): no change to lib/needs.sh in A1.
+- **Discovery** (affects A1-02): Real curl 8.5.0, -s -o /dev/null -w '%{http_code}': 500 → stdout 500 exit 0 no stderr; timeout → stdout 000, exit 28, 'curl: (28) Operation timed out after N milliseconds with 0 bytes received'.
+- **Discovery** (affects run): features.mjs repair compares the list as JSON, so a jq rewrite of feature_list.json that flips only passes is not an edit.
+- **Proposed change:** A1-03 step 1: 'posts exactly one event to EVENT_URL with kind == park' should read 'exactly one park event': the park run's end (waiting on Michael) also posts a blocked event.
+- **Proposed change:** A1-02 step 2 could add (j) NOTIFY_CMD not called on a 2xx and called on a refusal, and (k) an event node can't build falls back to ntfy (the ask gotcha): the plan names both.
+- *01-A1-01 · claude-opus-5-5*
+
 ### 2026-11-07 15:53 · init · passes
 
 14 features: A1 3 (plan, event builder + routed post, call sites with folded review), A2 5 (plan, lib/glossary.mjs, lib/context.sh + harness context, context.json + retention + hook bundle, review), A3 5 (plan, lib/requests.mjs, harness requests, systemd units + docs, review), A4 1 (docs, sonnet). In series: A2 after A1, A3 after A2, A4 after A3. No check budget (the spec sets none).
