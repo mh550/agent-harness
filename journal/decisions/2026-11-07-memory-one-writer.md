@@ -39,3 +39,8 @@
   of main would take main's `CLAUDE.md` lines out on the lane branch, and the milestone's merge then out of main: in
   M2 a merged memory PR makes exactly that change); blocking the session or the gate on the edit (the revert costs
   nothing, and a stop would cost a night).
+
+Updated in place 2026-11-07: Michael — M1-03's question (`.claude/CLAUDE.md`): cover it. `restrict`'s `memory` spec and
+the curator's `FILES` take `.claude/CLAUDE.md` too (Claude Code loads it as project memory; a guard beside a second file
+doing the same job is no guard); whether `.claude/rules/*.md` loads the same way is checked before the feature is
+specced. A follow-up feature, not built in this run (walkthrough, `journal/learning/2026-11-07-memory-curator.md`).
