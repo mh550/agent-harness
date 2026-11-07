@@ -39,3 +39,6 @@
 - 2026-11-07 18:05 · context.md for A2-05: 7997 bytes
 - 2026-11-07 18:38 · A2-05: suite ran 2x (838 s) in the session
 - 2026-11-07 18:38 · A2-05 · claude-opus-5-5 · passes=true · 32 min · 8/14 passing · tests 1857
+- 2026-11-07 18:38 · merged main into harness-lane/agent-harness-2026-11-07-3/A2
+- 2026-11-07 18:38 · verify A2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 18:49 · context.md for A2: 15008 bytes
