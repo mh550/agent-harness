@@ -268,3 +268,9 @@ test("inbox.mjs: main's unstop writes the file, prints the old line and exits 3,
   const m = await mainOf("inbox.mjs", ["unstop", f]), c = cli("inbox.mjs", ["unstop", g]);
   assert.deepEqual([m.rc, m.out, readFileSync(f, "utf8")], [c.rc, c.out, readFileSync(g, "utf8")]);
 }));
+
+test("inbox.mjs: stopWhy: [[:alnum:]] as glibc has it, no fraction or superscript: stop ½ done gives done, stop, ³ none", () => {
+  assert.equal(I.stopWhy("", "stop ½ done"), `${by}: done`);
+  assert.equal(I.stopWhy("", "stop, ³"), by);
+  assert.equal(I.stopWhy("", "stop: ٣ Ⅻ é"), `${by}: ٣ Ⅻ é`);
+});

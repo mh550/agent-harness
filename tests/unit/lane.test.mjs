@@ -312,3 +312,8 @@ test("lane.mjs: main: an unknown question is the usage line and exit 2", async (
   assert.deepEqual(await sameAsCli("lane.mjs", ["nope"]), { rc: 2, out: "" });
   assert.deepEqual(await sameAsCli("lane.mjs", []), { rc: 2, out: "" });
 });
+
+test("lane.mjs: main fix-round: a count or cap that isn't a whole number (08, 1e3, empty) is the card, as bash's (( )) refused it", async () => {
+  for (const [n, max] of [["0", "08"], ["0", "1e3"], ["0", ""], ["1e0", "2"]]) assert.equal((await sameAsCli("lane.mjs", ["fix-round", "", n, max])).rc, 1, `${n} < ${max}`);
+  assert.equal((await sameAsCli("lane.mjs", ["fix-round", "", "0", "10"])).rc, 0);
+});

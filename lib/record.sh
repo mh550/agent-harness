@@ -481,8 +481,11 @@ unpark_warm() {
   return 0
 }
 
-control() { ask inbox.mjs control "$REC/INBOX.md" "$STATE"; }   # → run | pause | stop
-stop_why() { ask inbox.mjs stop-why "$REC/INBOX.md" "$STATE"; }   # → "stopped by Michael[: <why>]": STOP's line (harness stop --why), else the text after control()'s `status: stop`
+control() {   # → run | pause | stop. The common case answers here, with no node start on a helper-off poll (node-memo): no STOP or
+  # PAUSE file and `status: run` as the first status line; any other asks lib/inbox.mjs
+  [[ ! -f $STATE/STOP && ! -f $STATE/PAUSE && $(grep -m1 "^status:" "$REC/INBOX.md" 2> /dev/null) == "status: run" ]] && { echo run; return 0; }
+  ask inbox.mjs control "$REC/INBOX.md" "$STATE"; }
+stop_why() { local w; w=$(ask inbox.mjs stop-why "$REC/INBOX.md" "$STATE"); echo "${w:-stopped by Michael}"; }   # → "stopped by Michael[: <why>]": STOP's line (harness stop --why), else the text after control()'s `status: stop`; no answer, the plain words
 
 # <epoch>: the box-wide usage-limit window raised to it, never lowered (any lane, any run may have set a later one)
 limit_raise() { (( $1 > $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) )) && echo "$1" > "$LIMIT_FILE"; return 0; }

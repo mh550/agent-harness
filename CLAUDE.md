@@ -78,7 +78,6 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - A {{X}} above {{SECTIONS}} in a prompt template turns run-scopes-services-gc/park-desk/stop-records/queue-debrief's same-prefix checks red: put it under This session (agent-harness-2026-10-29-2 2026-10-29)
 - a check's regex on a glyph run is locale-bound: `grep -E "(─)+"` (BRE: parens literal), never `─+`; awk length: bytes (agent-harness-2026-10-29-2 2026-10-29)
 - a card or view cuts every line at the width (100 off a TTY): a check comparing whole run.log lines sets COLUMNS=200 (agent-harness-2026-10-28 2026-10-28)
-- status.mjs: a session runs from its `session <n> · <id>` log line to its `passes=` or limit note; stub logs need both (agent-harness-2026-10-28 2026-10-28)
 - tests/fixtures/check-names.txt is LC_ALL=C sorted: add run.sh <f>'s PASS names; a fast file's in check-names-fast.txt too (agent-harness-2026-11-04 2026-11-04)
 - INBOX.md: cut at lib/inbox.mjs answersLine (the `## Answers` outside the steering comment), never `/^## Answers/` (agent-harness-2026-10-28 2026-10-28)
 - F's memo (lib/record.sh) lives in its shell: one stored in $(F …), < <(…) or a pipe dies there; Fv <var> … keeps it (agent-harness-2026-11-03 2026-11-03)
@@ -86,4 +85,5 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - stub runs in one check file share origin main: update-ref it between runs; `git log --all` sees all runs' commits (agent-harness-2026-10-29-2 2026-10-29)
 - stub-claude.sh is set -e, which holds in a `[[ … ]] && { … }` block: a stub step that may fail runs in `( set +e; … )` (agent-harness-2026-11-03 2026-11-03)
 - a check that sources lib/*.sh needs `HARNESS_HOME=$HH`: a run's session inherits its driver's, so a missing one fails only in a plain shell (2026-10-29)
+- ask and its spawn can both fail, so an .mjs answer may be empty: give the bash a safe branch (tests/checks/no-answer.sh) (agent-harness-2026-11-07 2026-11-07)
 - key-map-lint reads a node import string "'"$HH"'/lib/x.mjs" as a repo-root read: use "'$HERE'/../lib/x.mjs" (agent-harness-2026-11-03 2026-11-03)

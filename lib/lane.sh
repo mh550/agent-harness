@@ -179,7 +179,10 @@ verify() {
       else vnew=true; short=$(F evidence "$LIST" "$m" "$REC/progress.md") && vev=true; fi
     fi
     vr=$(ask lane.mjs verify-round "$vdone" "$vnew" "$vev" "$vlast")
-    case $vr in fail | hold | thin) result=$vr; break ;; esac   # no answer: the next model's round, or the fail it started as
+    # no answer: a milestone not done is the fail; a done one is thin, the card (a fail with every feature passing has none,
+    # and the lane would verify again and again)
+    [[ -n $vr ]] || { [[ $vdone == true ]] && vr=thin || vr=fail; }
+    case $vr in fail | hold | thin) result=$vr; break ;; esac
     note "verify $m: evidence short of the steps ($short); re-running on $VERIFY_ESCALATE_MODEL"
   done
   echo "$rounds" > "$STATE/verify-rounds-$m"
@@ -189,7 +192,8 @@ verify() {
   # card), not a re-check's attempt: on a red suite they pass again and the result is red
   local fixu="" sgreen=1 was=$result
   if [[ $result == hold ]] || { [[ $result == fail ]] && fixu=$(fix_unpassed "$m"); }; then green || sgreen=0; fi
-  result=$(ask lane.mjs suite-verdict "$result" "$sgreen" "${fixu:+1}")
+  local sv; sv=$(ask lane.mjs suite-verdict "$result" "$sgreen" "${fixu:+1}")
+  if [[ -n $sv ]]; then result=$sv; else (( sgreen )) || result=red; fi   # no answer: a red suite is never a hold
   if [[ $was == fail && $result == red ]]; then
     for id in $fixu; do record F pass "$LIST" "$id"; done
     note "verify $m: the verifier un-passed ${fixu//$'\n'/, } on a red suite; the verdict is the suite's (a fix round or the card, no re-check)"
@@ -256,6 +260,8 @@ verify() {
   # its need, the lane's exit reason, and its card: thin, red, or the re-check's failed ids (verify_recheck's rebase words are rebase_fail's)
   local k v reason="" variant=""
   while read -r k v; do case $k in need) need=$v ;; reason) reason=$v ;; variant) variant=$v ;; esac; done < <(ask lane.mjs verdict "$result" "$own" "$mode" "${failed[@]}")
+  # no answer where the verdict needs Michael (needs-<m> is there): words of its own and the card, never an empty need
+  [[ -n $need || ! -f $STATE/needs-$m ]] || { need="verify $result (see harness-log.md)" reason=verify_${result/#fail/recheck}; }
   if [[ $mode == rebase ]]; then   # not verified on today's main: the old tag must not merge, and a later verify tags afresh
     rm -f "$STATE/verified-$m" "$STATE/tag-local-$m" "$STATE/merge-failed-$m"; git tag -d "run/$RUN_ID/$m" > /dev/null 2>&1   # this verdict's card speaks for it now
     origin_t git push -q origin --delete "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"

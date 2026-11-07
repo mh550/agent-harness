@@ -361,6 +361,7 @@ inbox.mjs: stopWhy on an empty STOP reads the status line's why
 inbox.mjs: stopWhy starts at the first letter or digit past the marks, and drops blanks at the end only
 inbox.mjs: stopWhy takes every CR out of the status line's why
 inbox.mjs: stopWhy's first letter may be beyond ASCII (the driver's UTF-8 locale)
+inbox.mjs: stopWhy: [[:alnum:]] as glibc has it, no fraction or superscript: stop ½ done gives done, stop, ³ none
 inbox.mjs: the driver template has no "## Answers" inside its comment; answers() hashes as answers_hash's sed did
 inbox.mjs: unstop of a run or pause line, or of none, changes nothing
 inbox.mjs: unstop sets the first status: stop line back to status: run, the rest byte for byte
@@ -420,6 +421,7 @@ lane.mjs: laneDone: needs Michael gives its need, before waits
 lane.mjs: laneDone: needs Michael with no need keeps its colon and space
 lane.mjs: laneDone: no marker at all is the unknown merge failure, the one row with its side effect
 lane.mjs: laneDone: proposed, before waits
+lane.mjs: main fix-round: a count or cap that isn't a whole number (08, 1e3, empty) is the card, as bash's (( )) refused it
 lane.mjs: main: an unknown question is the usage line and exit 2
 lane.mjs: main: closed reads the exit file, or its absence
 lane.mjs: main: end-kind gives the card, the priority and the desk

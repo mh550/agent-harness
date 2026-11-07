@@ -58,8 +58,10 @@ while :; do
   fi
   [[ -f $Q/STOP ]] && { rm -f "$Q/STOP"; log "stopped by harness queue stop"; break; }
   next="" held="" a=$(alive_count) now=$(date +%s) busy=$(busy_projects) entries=($(ls "$Q"/*.args 2>/dev/null | sort)) projects=()
-  # each entry's project, read once a poll: a start's repository, a continue's run's (lib/queue.mjs)
+  # each entry's project, read once a poll: a start's repository, a continue's run's (lib/queue.mjs). No answer holds
+  # every entry until the next poll: an empty project would let a second run start on a busy one
   (( ${#entries[@]} )) && mapfile -d '' -t projects < <(node "$HARNESS_HOME/lib/queue.mjs" projects "$STATE_ROOT" "${entries[@]}")
+  (( ${#projects[@]} == ${#entries[@]} )) || { log "could not read the queued entries' projects: none starts this poll"; sleep "$POLL"; continue; }
   for i in "${!entries[@]}"; do   # two runs on one repo would build conflicting PRs from the same base
     f=${entries[i]} p=${projects[i]:-}; [[ -n $p ]] && grep -qxF -- "$p" <<< "$busy" && { held+="${held:+, }$(basename "$f" .args) ($p)"; continue; }
     next=$f; break
@@ -81,6 +83,10 @@ while :; do
   if why=$(weekly_over "$STATE_ROOT/USAGE_7D"); then   # days, not minutes: stop, leaving the queue for later
     log "not starting runs: $why; $(ls "$Q"/*.args | wc -l) left queued"; break
   fi
+  # its arguments, decoded before the spec check reads them again: no answer for a file that holds some keeps it
+  # queued (a start with no arguments would take it to done/ unread)
+  mapfile -d '' -t args < <(node "$HARNESS_HOME/lib/queue.mjs" decode "$next")   # a multi-line brief is one argument
+  (( ${#args[@]} )) || [[ ! -s $next ]] || { log "could not read $(basename "$next"): it stays queued"; sleep "$POLL"; continue; }
   # the spec again, as the start is about to happen: a park, never a start that dies in done/ unread; the loop goes on
   if miss=$(spec_entry "$next" 2>> "$Q/runner.log"); then :; else   # a failed fetch is said there
     pk=$Q/held/$(basename "$next"); mkdir -p "$Q/held"
@@ -91,7 +97,6 @@ while :; do
     log "could not park $(basename "$next") ($miss): it stays queued"; sleep "$POLL"; continue
   fi
   (( a == 0 )) && log "$("$HARNESS_HOME/lib/sync.sh")"   # no driver alive: the live checkout may move under none
-  mapfile -d '' -t args < <(node "$HARNESS_HOME/lib/queue.mjs" decode "$next")   # a multi-line brief is one argument
   mv "$next" "$Q/done/$(date +%Y%m%d-%H%M%S)-$(basename "$next")"
   extra=(--now); [[ ${HARNESS_QUEUE_FOREGROUND:-} ]] && extra=(--foreground) || extra+=(--no-supervisor)
   (( UNTIL )) && extra+=(--until-epoch "$UNTIL")

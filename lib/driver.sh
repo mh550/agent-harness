@@ -103,12 +103,12 @@ lane_wait() {
 # every other lane exits 16 before its next session); a stop and the deadline are seen by the coordinator itself. A
 # lane that died without a reason needs Michael (never reopened in a loop).
 reap() {
-  local f m code why crash ends k v n=0
+  local f m why crash ends k v n=0
   for f in "$STATE"/lanes/*/pid; do
     [[ -f $f ]] || continue; m=${f%/pid}; m=${m##*/}
     lane_alive "$m" && continue
-    code=12 why="lane exited unexpectedly" crash=1 ends=0   # no answer reads as the crash: its card opens
-    while read -r k v; do case $k in code) code=$v ;; why) why=$v ;; crash) crash=$v ;; ends) ends=$v ;; esac; done < <(ask lane.mjs closed "$STATE/lanes/$m/exit")
+    why="lane exited unexpectedly" crash=1 ends=0   # no answer reads as the crash: its card opens
+    while read -r k v; do case $k in why) why=$v ;; crash) crash=$v ;; ends) ends=$v ;; esac; done < <(ask lane.mjs closed "$STATE/lanes/$m/exit")
     mv -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/closed" 2> /dev/null; rm -f "$f"; n=$(( n + 1 ))
     note "lane $m closed ($why)"
     [[ -f $STATE/merged-$m ]] && lane_branch_gone "$m"   # it merged itself: its branch went from the origin, here it goes now
@@ -317,7 +317,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   # after ended, so the item an end opens below is never swept by its own finish; committed with the run's end
   needs_sweep
-  local nr="" ehigh=0 edesk=0 k v
+  local nr="" ehigh=1 edesk=0 k v   # no answer: loud (high priority), and no card kind
   while read -r k v; do case $k in needs) nr=$v ;; high) ehigh=$v ;; desk) edesk=$v ;; esac; done < <(ask lane.mjs end-kind "$1")
   [[ -n $nr ]] && needs_open "$nr" run end_reason="$1" > /dev/null
   flakes_note   # every lane's, before the line
@@ -532,7 +532,7 @@ fi
 export HARNESS_T0=$T0 HARNESS_DEADLINE=$DEADLINE LANE_MAX_SESSIONS=$MAX_SESSIONS SCOPE_OK
 mkdir -p "$STATE/lanes"; lanes_orphans   # an earlier segment's lanes are gone, and its run end with them
 rm -f "$STATE"/lanes/*/pid "$STATE"/lanes/*/exit "$STATE"/lanes/*/opening "$STATE"/lanes/*/waiting "$STATE/lanes-end"
-paused=0 LAST_LANE=""
+paused=0 LAST_LANE="" endmiss=0
 # The coordinator: every POLL seconds (at once when a lane exits) reap, check the run's ends, open what can open.
 while :; do
   rec_cd
@@ -598,9 +598,11 @@ while :; do
     # D5: needs is the features that could run but wait on a milestone that needs Michael (its lane can't open past it).
     # blocked's sort stays here: by the driver's locale, and the end reason's bytes depend on that order
     enm=(); for f in "$STATE"/needs-*; do [[ -f $f ]] && enm+=("${f##*/needs-}"); done
-    edone=0 parked="" blocked="" needs=""
+    edone="" parked="" blocked="" needs=""
     while read -r ek ev; do case $ek in done) edone=$ev ;; parked) parked=$ev ;; blocked) blocked=$ev ;; needs) needs=$ev ;; esac; done < <(ask lane.mjs run-end "$(F summary "$LIST")" \
       "$(F parked "$PARKED" "$LIST" | cut -f1)" "$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | awk -F'\t' '{print $2}' | sort -u)" "$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED")" "${enm[@]}")
+    # no answer: asked again at the next poll, three times; then the end the lists read (none), as F's gave on a dead node
+    [[ -z $edone ]] && (( endmiss++ < 3 )) && { lane_wait; continue; }
     [[ $edone == 1 ]] && { note "every feature passes"; finish "done"; }
     ends=()
     if [[ -n $blocked ]]; then note "blocked: the remaining features wait on $blocked (given up; needs Michael)"; ends+=("blocked on $blocked"); fi
