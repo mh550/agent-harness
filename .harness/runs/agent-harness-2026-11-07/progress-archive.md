@@ -3,6 +3,19 @@
 
 What this file is: the run's journal, rendered from `entries.jsonl`, newest entry first. Each entry is one session's own account: what it built, what it verified, what failed. The feature list (`feature_list.json` in this directory) has one milestone, S4 of the slim-suite spec (`docs/specs/2026-11-03-slim-suite.md`): the bash decision logic that burns the suite moves into pure `.mjs` functions with a unit test per branch, no note text changed, no check removed (the brief's Decision 16 (b)). Five features: S4-01 plans the moves, S4-02 the suite runner's decisions (`lib/check.sh` → `lib/checkdecide.mjs`), S4-03 the lane's verdict and exit table and how a run ends (`lib/lane.sh`, `lib/driver.sh` → `lib/lane.mjs`), S4-04 the queue entry format and INBOX status parsers (`lib/queue.mjs`, `lib/inbox.mjs`), S4-05 the review with the proofs, the forty mutants and the Predictions table (the after row and the solo CPU and wall rows wait for an empty box after the run). `passes` on a feature means its session's fast tier was green and its steps were done; the milestone is verified independently and merged into `main` when all five pass. Steer from the phone: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`).
 
+### 2026-11-07 02:57 · S4-02 · passes
+
+lib/check.sh's decisions moved to lib/checkdecide.mjs: redReason, cachedAnswer, partialPlan, rerunChoice, keepRed, failedNames. check.sh asks per moment by one decide() line; check_run hands the first answer through ask (served). All check: lines and notes unchanged. check.sh -72/+42; 65 unit tests, 1 check; literal-04 caught at its new home.
+
+- **Files:** lib/checkdecide.mjs, lib/check.sh, lib/record.sh, lib/helper.mjs, tests/unit/checkdecide.test.mjs, tests/unit/cli.test.mjs, tests/checks/resident-helper-ask.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-03-purity.md, docs/plans/2026-11-07-S4-purity.md
+- **Verified:** check.sh --fast: green, 791 tests. By file, all passing: resident-helper-ask 62, partial-key 26, red-marker 16, session-gate-check 20, session-gate-driver 12, check-rerun 13, check-key 9, suite-runs 4, flakes-run 9, suite-length 16, test-count-source 4, stale-green 1, run-scopes-services-gc 123. Both note proofs print nothing; the check: proof prints two pairs identical in quoted text. Mutant no(8)→no(9): unit exit 1, 64 pass, 1 fail; tree put back. The full suite was not run here: it runs at verify.
+- **Tests:** 1506 → 1572
+- **Discovery** (affects S4-05): The helper's served set grew by checkdecide.mjs, beyond the plan's first list: with lane.mjs it will be thirteen scripts, not the twelve S4-05's architecture step says.
+- **Discovery** (affects S4-05): partialPlan's answer has no paths and guard's has no kind label: nothing in bash read them, so the plan's tables were corrected in place.
+- **Proposed change:** S4-02 step 2 says check.sh spawns the module 'once per full or --fast call' and that the subset path reaches no node but testcount's. As built (the plan's rule 3): a green call asks once, a red one three times because its facts come later, and a subset killed by its timeout or cap asks why once. The grep in that step holds literally (one line, below the subset's exit) because the subset form became a function.
+- **Proposed change:** S4-05 step 'the served set now twelve scripts' should read thirteen.
+- *02-S4-02 · claude-opus-5-5*
+
 ### 2026-11-07 02:44 · S4-01 · passes
 
 The plan of the purity moves (docs/plans/2026-11-07-S4-purity.md) and the decision file's skeleton (journal/decisions/2026-11-03-purity.md): three builds, each function's inputs, answer and branches, the note rule, the one mutant moved (literal-04), two push-downs, and the Decision 16 (b) table: 4 stub start lines of 65 read could go; none is removed.
