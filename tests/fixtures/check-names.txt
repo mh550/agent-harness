@@ -390,6 +390,7 @@ curator.mjs: a fact a later entry resolved, or already in its section, is droppe
 curator.mjs: a file already over the cap takes a replace or a delete
 curator.mjs: a heading inside a code fence, a repeated heading or CRLF line ends never misplace a write
 curator.mjs: a result over 120 lines refuses the tier-1 commit
+curator.mjs: a tier-1 op whose text memlint finds a derivable count or run scope in is dropped, naming the lint
 curator.mjs: an anchor with no match or two matches drops its op, naming the anchor
 curator.mjs: an op on a protected section is dropped and carried as a proposal
 curator.mjs: an op whose write would change a protected section's lines is dropped
@@ -1539,7 +1540,7 @@ summary end reason is how the run ended
 summary, report and retro written
 summary.mjs memory: a summary built before this run has no Memory row
 summary.mjs memory: build reads memory.json's five keys, none with no file
-summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per run with a memory PR
+summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
 summary.mjs memory: memoryView lists newest first with the summary line, (none) for none
 summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing

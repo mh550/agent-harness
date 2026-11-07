@@ -53,13 +53,13 @@ mv "$T/gh.log" "$T/gh-cb.log" 2> /dev/null
 check "curator: an invalid memory-ops.json is one note; the run ends done and its record PR opens" \
   '[[ $(hlog cb | grep -c " · curator: memory-ops.json invalid: not JSON") == 1 ]] && grep -q "^done" "$(st cb)/ended" && titles | grep -x "cb: run record" > /dev/null'
 
-# co: MEMORY_POLICY=off
+# co: MEMORY_POLICY=off (the memory gate's notes, lib/scope.sh, are not the curator's)
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=off' >> "$T/user-config.sh"
 STUB_CURATOR_OPS=three-ops STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" co --spec SPEC.md --foreground > "$T/co.out" 2>&1
 check "curator: MEMORY_POLICY=off runs no curator and writes no curator or memory note" \
   'grep -q "^done" "$(st co)/ended" && ! grep " curator · " "$(st co)/run.log" > /dev/null && ! grep -x curator "$T/scratch/proj/co/sessions.log" > /dev/null \
-  && ! hlog co | grep -E " · (curator|memory)" > /dev/null && grep -x retro "$T/scratch/proj/co/sessions.log" > /dev/null'
+  && ! hlog co | grep -E " · (curator|memory)" | grep -vE " · memory(: [0-9]+ GB| still at )" > /dev/null && grep -x retro "$T/scratch/proj/co/sessions.log" > /dev/null'
 
 # cx: a MEMORY_POLICY that is none of the three: one note, then the curator as under pr (the safe value)
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"

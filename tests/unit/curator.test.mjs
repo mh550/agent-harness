@@ -139,6 +139,17 @@ test("curator.mjs: a result over 120 lines refuses the tier-1 commit", () => {
   assert.equal(apply([op()], T(md), ENTRIES, RUN, { maxLines: 130 }).refused, null);   // MEMLINT_LINES's cap
 });
 
+// memlint-self's "this checkout lints clean" for what the driver writes: the two line lints hold at the write too
+test("curator.mjs: a tier-1 op whose text memlint finds a derivable count or run scope in is dropped, naming the lint", () => {
+  const count = "The suite runs ~1,870 tests in eleven minutes (r1 2026-11-07)", scope = "Keep lane slots at two for this run (r1 2026-11-07)";
+  const es = [ENTRIES[0], E({ discoveries: [count, scope, FACT].map(text => ({ text, affects: ["project"] })) })];
+  const r = apply([op({ text: count }), op({ text: scope }), op()], T(MD), es, RUN);
+  assert.equal(reasons(r), 'derivable-count: "~1,870 tests" (the suite can tell: store no count) | run-scope: "this run" (run scope goes in the run\'s brief)');
+  assert.equal(r.applied.length, 1);
+  assert.equal(r.texts["CLAUDE.md"].includes("1,870") || r.texts["CLAUDE.md"].includes("this run"), false);
+  assert.equal(apply([op({ section: "## Code rules", text: count })], T(MD), es, RUN).proposed.length, 1);   // tier 2: Michael's to judge
+});
+
 test("curator.mjs: a file already over the cap takes a replace or a delete", () => {
   const md = gotchas(16, [...Array.from({ length: 120 }, (_, i) => `line ${i}`), ""]);
   const r = apply([op({ op: "replace", anchor: "gotcha number 1 is about its own thing (r0 2026-11-01)" }),

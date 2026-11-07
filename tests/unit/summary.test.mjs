@@ -449,7 +449,7 @@ test("summary.mjs memory: a summary built before this run has no Memory row", ()
   assert.doesNotMatch(report(fx), /Memory \|/);
 });
 
-test("summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per run with a memory PR", async () => {
+test("summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it", async () => {
   const d = mkdtempSync(join(tmpdir(), "meml-"));
   try {
     const mem = { ops: 3, applied: 2, dropped: 0, proposed: 1, pr: "https://example.test/pr/4" };
@@ -458,22 +458,23 @@ test("summary.mjs memory: ledger-line carries memory; memory-line is one memory.
     assert.equal(JSON.stringify(JSON.parse(readFileSync(join(d, "runs.jsonl"), "utf8")).memory), JSON.stringify(mem));
     await sameAsCli("summary.mjs", ["ledger-line", fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), join(d, "old.jsonl")]);
     assert.equal(JSON.parse(readFileSync(join(d, "old.jsonl"), "utf8")).memory, null);
-    // memory-line: the ledger's memory.jsonl, one row per run with a memory PR (a continue's replaces it), its note on stdout
+    // memory-line: the ledger's memory.jsonl, one row per memory PR (a continue's on the same PR replaces it), its note on stdout
     const m = join(d, "memory.jsonl");
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-line", fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), m]), { rc: 0, out: "" });
     assert.equal(existsSync(m), false, "no memory, no row");
     writeFileSync(join(d, "n.json"), JSON.stringify({ ...fixture(), memory: { ...mem, pr: null } }));
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-line", join(d, "n.json"), m]), { rc: 0, out: "" });
     assert.equal(existsSync(m), false, "no PR, no row");
-    writeFileSync(m, '{"run":"other","url":"https://example.test/pr/1"}\n');
+    // a continue after its PR merged opens a new one: the merged PR's row stays, or harness memory loses it from the count
+    writeFileSync(m, '{"run":"other","url":"https://example.test/pr/1"}\n' + JSON.stringify({ run: fixture().run, url: "https://example.test/pr/2" }) + "\n");
     const { out } = await sameAsCli("summary.mjs", ["memory-line", join(d, "s.json"), m]);
     assert.equal(out, `ledger: memory PR ${mem.pr} in memory.jsonl (2 applied · 0 dropped · 1 proposals)\n`);
     await sameAsCli("summary.mjs", ["memory-line", join(d, "s.json"), m]);
     const rows = readFileSync(m, "utf8").trim().split("\n").map(l => JSON.parse(l));
     const run = fixture().run;
-    assert.equal(JSON.stringify(rows.map(r => [r.run, r.url])), JSON.stringify([["other", "https://example.test/pr/1"], [run, mem.pr]]));
-    assert.equal(JSON.stringify(Object.keys(rows[1])), '["run","project","url","ops","applied","dropped","proposed","at"]');
-    assert.match(rows[1].at, /^\d{4}-\d\d-\d\dT/);
+    assert.equal(JSON.stringify(rows.map(r => [r.run, r.url])), JSON.stringify([["other", "https://example.test/pr/1"], [run, "https://example.test/pr/2"], [run, mem.pr]]));
+    assert.equal(JSON.stringify(Object.keys(rows[2])), '["run","project","url","ops","applied","dropped","proposed","at"]');
+    assert.match(rows[2].at, /^\d{4}-\d\d-\d\dT/);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
