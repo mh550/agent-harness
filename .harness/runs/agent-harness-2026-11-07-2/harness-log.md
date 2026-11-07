@@ -6,3 +6,6 @@
 - 2026-11-07 10:24 · context.md for M1-01: 3731 bytes
 - 2026-11-07 10:35 · M1-01: suite ran 0x (0 s) in the session
 - 2026-11-07 10:35 · M1-01 · claude-opus-5-5 · passes=true · 11 min · 1/12 passing · tests 1721
+- 2026-11-07 10:35 · context.md for M1-02: 4938 bytes
+- 2026-11-07 10:45 · M1-02: suite ran 1x (110 s) in the session
+- 2026-11-07 10:45 · M1-02 · claude-opus-5-5 · passes=true · 9 min · 2/12 passing · tests 1721

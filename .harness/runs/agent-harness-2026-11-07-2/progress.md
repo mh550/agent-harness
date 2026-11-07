@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 10:45 · M1-02 · passes
+
+The pack's Promote to Gotchas lists a project fact once, at its first unresolved entry, and reads no CLAUDE.md (the gotchas option and the CLI's read are gone). The coding Finish step 2, initializer paragraph, the three where-things-go parts, the template, draft-claude-md.md and this repo's CLAUDE.md send a fact to discoveries (project) and a workflow line to proposed_changes.
+
+- **Files:** lib/entries.mjs, prompts/coding.md, prompts/initializer.md, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, prompts/parts/where-things-go-override.md, prompts/draft-claude-md.md, templates/project/CLAUDE.md, CLAUDE.md, tests/unit/entries.test.mjs, tests/checks/gotchas-pack.sh, tests/checks/memory-prompts.sh, +3 more
+- **Verified:** Unit: 2 of 3 new pack tests red before the change (the third is the renamed resolved test, minus its Gotchas assertion), 21/21 after. Shell: the new checks run on the old tree (git archive HEAD + new tests): 5 of 6 FAIL; the CLAUDE.md-stays-main's one passes there too (no knob wrote CLAUDE.md before either). bash tests/run.sh gotchas-pack memory-prompts unit-tier: 478/478; suite-length 16/16; fast tier (check.sh --fast): fast green in 110 s, 931 tests.
+- **Tests:** 1721 → 1723
+- **Discovery** (affects project): A prompt line containing `## Where things go` counts as the block in memory-prompts' grep -c: name it 'Where things go' bare (agent-harness-2026-11-07-2 2026-11-07)
+- **Discovery** (affects M1-03): gotchas-pack's facts run runs after the gotcha run, so main's CLAUDE.md already carries the fact (B's Gotchas line): the facts packs prove CLAUDE.md clears nothing
+- **Discovery** (affects M1-03): docs/architecture.md still describes the pack's Promote part as cleared by a Gotchas line (§4 Context pack): M1-03's doc pass rewrites it with the clearing rule
+- **Proposed change:** M1-02's clearing-rule unit test for case/backticks/spacing passes on the old code too (resolved already used key()); the step's 'watched failing' holds for the other two unit tests and five of six shell checks
+- *02-M1-02 · claude-opus-5-5*
+
 ### 2026-11-07 10:35 · M1-01 · passes
 
 Wrote docs/plans/2026-11-07-M1-one-writer.md: M1-02 (the pack's earliest-unresolved clearing rule, no CLAUDE.md read; the prompts, parts, template, draft prompt and this repo's line rerouted) and M1-03 (restrict's memory spec via a memory_guard at the merge-base, its note, gotchas() retired), every check turned false with its replacement, 4+3 stub knobs, ≤17 names of 30.
