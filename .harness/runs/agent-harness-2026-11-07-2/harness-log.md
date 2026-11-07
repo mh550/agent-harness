@@ -64,3 +64,5 @@
 - 2026-11-07 14:52 · M3-04: suite ran 2x (2074 s) in the session
 - 2026-11-07 14:52 · M3-04: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-07 14:52 · M3-04 · claude-opus-5-5 · passes=true · 37 min · 12/12 passing · tests 1791
+- 2026-11-07 14:52 · verify M3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 15:03 · context.md for M3: 16197 bytes

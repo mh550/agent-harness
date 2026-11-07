@@ -9,6 +9,37 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 15:04 · verify M3 · passes
+
+All four M3 features hold: memlint-self retired with successors, MEMORY_POLICY, memory counting/harness memory, review and docs. Full suite green (1791); targeted reruns pass; names +18 -2 of 35.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M3-01 | 1 | read docs/plans/2026-11-07-M3-policy.md | plan has sections per feature with the memlint-self split table | yes |
+| M3-01 | 2 | ls tests/checks/memlint-self.sh; grep decisionsStore tests/unit/memlint.test.mjs; grep CHECK_KEY_MAP .harness/config.sh; run key-map-lint | file gone; unit test present; map CLAUDE.md:memory-prompts:suite-length:night-words; key-map-lint 8 checks pass | yes |
+| M3-01 | 3 | grep -rn memlint-self tests/ lib/ bin/ docs/ README.md CLAUDE.md .harness/config.sh | only comments/prose (curator.mjs, curator.test.mjs comments, spec, plans, README retirement line); no check/fixture/config reference | yes |
+| M3-01 | 4 | read journal/decisions/2026-11-07-memory-policy.md | decision file exists with retirement row, provenance, policy row | yes |
+| M3-01 | 5 | bash tests/run.sh key-map-lint memlint-run unit-tier; init full suite | key-map-lint 8, memlint-run 3, unit-tier 485 all pass; full suite green 1791 tests | yes |
+| M3-02 | 1 | bash tests/run.sh memory-pr (inside 513/513 subset run) | all memory-pr checks pass: auto merges, pr open, off no notes, MERGE_POLICY independent, unknown value one note | yes |
+| M3-02 | 2 | grep MEMORY_POLICY lib/config.sh templates/*/config.sh; bash -n lib/config.sh lib/record.sh | documented in config.sh and both templates; syntax ok; refused-merge check passes | yes |
+| M3-02 | 3 | read decision file policy row | policy row with three values, default, separation from MERGE_POLICY | yes |
+| M3-02 | 4 | bash tests/run.sh memory-pr merge-policy-default | merge-policy-default 1/1; memory-pr pass; 513/513 passed | yes |
+| M3-02 | 5 | bash tests/run.sh --tier fast (init full suite green) | full suite green in init, 1791 tests | yes |
+| M3-03 | 1 | unit-tier run; check-names diff | 6 summary.mjs memory unit tests pass in 485/485; names in fixtures | yes |
+| M3-03 | 2 | bash bin/harness (usage); README grep; memory unit tests | memory listed in usage; README table row present; memoryView/memoryState tests pass | yes |
+| M3-03 | 3 | ledger check in memory-pr; usage lists ledger/memory.jsonl | ledger: memory PR row check passes | yes |
+| M3-03 | 4 | memory-pr stub checks; bash -n bin/harness lib/driver.sh; node --check lib/summary.mjs | summary/report/harness memory open then merged unchanged, empty ops zeros: pass; syntax ok | yes |
+| M3-03 | 5 | bash tests/run.sh memory-pr unit-tier | 513/513 passed | yes |
+| M3-03 | 6 | init full suite | green 1791 tests | yes |
+| M3-04 | 1 | read docs/plans/2026-11-07-M3-review.md | review by one reviewer on fable (Michael's answer), 0 Critical 2 Important 5 Minor, memlint-self question answered with findings and done column | yes |
+| M3-04 | 2 | curator test for I1 present; bash -n and node --check | fix test exists; syntax ok | yes |
+| M3-04 | 3 | read decision file | retirement, policy, counting, over-cap, rejected, Predictions with measured-after-run rows; fast files 58, CLAUDE.md 97 lines match commands | yes |
+| M3-04 | 4 | grep architecture.md and README.md | §10 MEMORY_POLICY, §11 memory row/ledger/harness memory, §4 memory.json, README row and memlint-self retirement present | yes |
+| M3-04 | 5 | git diff check-names.txt count | +18 -2 against 35, written in decision file | yes |
+| M3-04 | 6 | init full suite | green in 679 s, 1791 tests | yes |
+
+- *150335-verify-M3 · claude-sonnet-5-5*
+
 ### 2026-11-07 14:52 · M3-04 · passes
 
 M3 review (fable, one round): 0 Critical, 2 Important, 5 Minor. I1: memlint-self's 'lints clean' lost its derivable-count and run-scope half; apply now drops such a tier-1 op. I2: memory.jsonl is keyed by url, so a continue's new PR no longer erases a merged one. Doc drift fixed, co check anchored. Decision completed (over-cap, rejected, Predictions, budget 18+/2-). Full suite green, 1791.

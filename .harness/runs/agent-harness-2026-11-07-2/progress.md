@@ -9,6 +9,37 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 15:04 · verify M3 · passes
+
+All four M3 features hold: memlint-self retired with successors, MEMORY_POLICY, memory counting/harness memory, review and docs. Full suite green (1791); targeted reruns pass; names +18 -2 of 35.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M3-01 | 1 | read docs/plans/2026-11-07-M3-policy.md | plan has sections per feature with the memlint-self split table | yes |
+| M3-01 | 2 | ls tests/checks/memlint-self.sh; grep decisionsStore tests/unit/memlint.test.mjs; grep CHECK_KEY_MAP .harness/config.sh; run key-map-lint | file gone; unit test present; map CLAUDE.md:memory-prompts:suite-length:night-words; key-map-lint 8 checks pass | yes |
+| M3-01 | 3 | grep -rn memlint-self tests/ lib/ bin/ docs/ README.md CLAUDE.md .harness/config.sh | only comments/prose (curator.mjs, curator.test.mjs comments, spec, plans, README retirement line); no check/fixture/config reference | yes |
+| M3-01 | 4 | read journal/decisions/2026-11-07-memory-policy.md | decision file exists with retirement row, provenance, policy row | yes |
+| M3-01 | 5 | bash tests/run.sh key-map-lint memlint-run unit-tier; init full suite | key-map-lint 8, memlint-run 3, unit-tier 485 all pass; full suite green 1791 tests | yes |
+| M3-02 | 1 | bash tests/run.sh memory-pr (inside 513/513 subset run) | all memory-pr checks pass: auto merges, pr open, off no notes, MERGE_POLICY independent, unknown value one note | yes |
+| M3-02 | 2 | grep MEMORY_POLICY lib/config.sh templates/*/config.sh; bash -n lib/config.sh lib/record.sh | documented in config.sh and both templates; syntax ok; refused-merge check passes | yes |
+| M3-02 | 3 | read decision file policy row | policy row with three values, default, separation from MERGE_POLICY | yes |
+| M3-02 | 4 | bash tests/run.sh memory-pr merge-policy-default | merge-policy-default 1/1; memory-pr pass; 513/513 passed | yes |
+| M3-02 | 5 | bash tests/run.sh --tier fast (init full suite green) | full suite green in init, 1791 tests | yes |
+| M3-03 | 1 | unit-tier run; check-names diff | 6 summary.mjs memory unit tests pass in 485/485; names in fixtures | yes |
+| M3-03 | 2 | bash bin/harness (usage); README grep; memory unit tests | memory listed in usage; README table row present; memoryView/memoryState tests pass | yes |
+| M3-03 | 3 | ledger check in memory-pr; usage lists ledger/memory.jsonl | ledger: memory PR row check passes | yes |
+| M3-03 | 4 | memory-pr stub checks; bash -n bin/harness lib/driver.sh; node --check lib/summary.mjs | summary/report/harness memory open then merged unchanged, empty ops zeros: pass; syntax ok | yes |
+| M3-03 | 5 | bash tests/run.sh memory-pr unit-tier | 513/513 passed | yes |
+| M3-03 | 6 | init full suite | green 1791 tests | yes |
+| M3-04 | 1 | read docs/plans/2026-11-07-M3-review.md | review by one reviewer on fable (Michael's answer), 0 Critical 2 Important 5 Minor, memlint-self question answered with findings and done column | yes |
+| M3-04 | 2 | curator test for I1 present; bash -n and node --check | fix test exists; syntax ok | yes |
+| M3-04 | 3 | read decision file | retirement, policy, counting, over-cap, rejected, Predictions with measured-after-run rows; fast files 58, CLAUDE.md 97 lines match commands | yes |
+| M3-04 | 4 | grep architecture.md and README.md | §10 MEMORY_POLICY, §11 memory row/ledger/harness memory, §4 memory.json, README row and memlint-self retirement present | yes |
+| M3-04 | 5 | git diff check-names.txt count | +18 -2 against 35, written in decision file | yes |
+| M3-04 | 6 | init full suite | green in 679 s, 1791 tests | yes |
+
+- *150335-verify-M3 · claude-sonnet-5-5*
+
 ### 2026-11-07 14:52 · M3-04 · passes
 
 M3 review (fable, one round): 0 Critical, 2 Important, 5 Minor. I1: memlint-self's 'lints clean' lost its derivable-count and run-scope half; apply now drops such a tier-1 op. I2: memory.jsonl is keyed by url, so a continue's new PR no longer erases a merged one. Doc drift fixed, co check anchored. Decision completed (over-cap, rejected, Predictions, budget 18+/2-). Full suite green, 1791.
@@ -270,18 +301,6 @@ Wrote docs/plans/2026-11-07-M1-one-writer.md: M1-02 (the pack's earliest-unresol
 - **Proposed change:** M1-02 step 5's CLAUDE.md clause should compare against main as it was before the run (git diff --quiet <m0> main -- CLAUDE.md): origin/main after the run holds any merged edit on both sides
 - *01-M1-01 · claude-opus-5-5*
 
-### 2026-11-07 10:24 · init · passes
+## Older entries (in full in progress-archive.md)
 
-12 features: M1 3 (plan, pack+prompts rerouted, memory restrict spec with folded review), M2 5 (plan, lib/curator.mjs pure rules, curator role, memory_pr, review), M3 4 (plan+memlint-self retired, MEMORY_POLICY, counting+harness memory, Sonnet review). In series: M2 after M1, M3 after M2. Check budgets 30/60/35 copied from the spec.
-
-- **Files:** .harness/runs/agent-harness-2026-11-07-2/feature_list.json
-- **Discovery** (affects M1): The decision file holding the rejected LLM curator (for M1-03's Updated in place line) is journal/decisions/2026-10-22-context-pack.md:35 (`Rejected: an LLM curator`); the two specs (2026-10-24-memory-model.md:161, 2026-10-25-throughput-and-memory-design.md:43) are history and stay as written (default).
-- **Discovery** (affects M2): The eight projects for the tier fixture are agent-harness, dj-crate-streaming, hit_list, n8n-home, pathways, portfolio_site, rane-one-mixxx and voice-concierge (the projects directory the user CLAUDE.md names; read-only). rane's protected headings carry suffixes: `## Hardware facts (verified 2026-10-19 on Michael's desktop)`, `## Hardware and Mixxx rules (binding on every session)`.
-- **Discovery** (affects M1, M2): Existing stub knobs M1 reuses: STUB_GOTCHA=<id> (a coding session adds a ## Gotchas line), STUB_PROJECT_FACT=<id> (its entry carries that fact affecting project), STUB_RESOLVE=<id> (later entries resolve STUB_ASK's question, not a fact: a fact-resolving knob is new). The stub's first-line role switch is `case $first in "# Retro")…` in tests/stub-claude.sh:163; a `# Curator session` branch goes beside it.
-- **Discovery** (affects M2, M3): retro() in lib/driver.sh:228 is the template for curator(): restrict … nothing with retro-proposals.json rescued to $SCRATCH (not a symlink, at most 65536 bytes, changed since the start commit) and S_NOTES noted after the restrict. finish() calls retro, then SUM build/report, then record_pr, then ledger: the curator goes between the retro and record_pr, and memory.json must exist before the final SUM build for M3's summary.memory.
-- **Discovery** (affects M2): Tier 2 is body-only by default: the spec says tier 2 is carried to the PR for Michael and its check wants the workflow line absent from the branch, so only tier-1 ops are committed; tier 2 and 3 appear in the PR body with their `from` (M2-01 marks it *default*; see the question).
-- **Discovery** (affects run): Earlier runs' coding sessions took 12–77 min (median about 30); S4's review feature took 75 min. The full suite was 640 s at init: a full-suite step gets a 1,500,000 ms timeout.
-- **Question for Michael:** Tier 2 (conventions and workflow lines): the spec says `one commit per tier` and also `carried to the PR for Michael` with the workflow line `not applied`. The list takes body-only as the default (tier-1 ops are the branch's one commit; tier 2 and 3 appear in the PR body as ready-to-paste text with provenance). If you want tier-2 ops committed as a second commit on the same branch instead, say so before M2-04 starts. Files: /home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/docs/specs/2026-11-07-memory-curator.md:107, /home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/feature_list.json
-- **Question for Michael:** M3-04 (the M3 review) is set to `sonnet`, as the spec's M3-review says (`a Sonnet reader`), against the initializer's default of Opus for reviews. Say `opus` if you'd rather the general rule win. Files: /home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/docs/specs/2026-11-07-memory-curator.md:175, /home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/feature_list.json
-- **Proposed change:** prompts/initializer.md still tells the initializer to put a durable gotcha under ## Gotchas in CLAUDE.md, which lib/driver.sh's restrict … record then reverts; M1-02 reroutes it, as the spec says.
-- *00-init · claude-fable-5-1*
+- 2026-11-07 10:24 · init · passes · 12 features: M1 3 (plan, pack+prompts rerouted, memory restrict spec with folded review), M2 5 (plan… ([in full](progress-archive.md))
