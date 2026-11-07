@@ -1,0 +1,107 @@
+{
+ "run": "agent-harness-2026-11-07",
+ "branch": "harness/agent-harness-2026-11-07",
+ "features": [
+  {
+   "id": "S4-01",
+   "milestone": "S4",
+   "kind": "plan",
+   "model": "opus",
+   "description": "The plan of the purity moves: which bash decision logic leaves `lib/check.sh`, `lib/lane.sh`, `lib/driver.sh`, `bin/harness`, `lib/queue.sh` and `lib/record.sh` for a pure function in an `.mjs` module with a unit test per branch, how each bash file calls it, which of S1's forty mutants sit on a moved line, which push-downs the opened modules carry, and per move how many stub starts a removal would free (none is made).",
+   "steps": [
+    "`docs/plans/2026-11-07-S4-purity.md` exists with one section per build feature (S4-02 the suite runner's decisions, S4-03 the lane's verdict and exit table with how a run ends, S4-04 the twice-written parsers), each naming the bash functions it empties (`why`, `partial`, `guard` and the red-marker read in lib/check.sh; `verify`'s verdict tail and `lane_done` in lib/lane.sh; `reap`, the end block and `finish`'s reason maps in lib/driver.sh; `queue_add` and `entry_overlaps` in bin/harness, `entry_project` and the start line of lib/queue.sh; `control` and `stop_why` in lib/record.sh and the status reset in `cmd_continue` of bin/harness), the module that takes the logic (`lib/checkdecide.mjs` new, `lib/lane.mjs` new, `lib/queue.mjs` new, `lib/inbox.mjs`), each exported function's inputs as the bash has them and its answer as labelled lines or one JSON line, and the branches to test (one input per behaviour, learning entry 15 of journal/learning/2026-10-30-test-engineering.md).",
+    "The plan says how each bash file reaches its function: `lib/check.sh`, `bin/harness` and `lib/queue.sh` run outside a driver's shell and have no resident helper, so they spawn `node` once per call (a subset `check.sh <args…>` call spawns nothing new); `lib/record.sh`, `lib/lane.sh` and `lib/driver.sh` call through `ask` (lib/record.sh) and `lib/lane.mjs` is added to the SERVED set of lib/helper.mjs.",
+    "The plan states the note rule every build feature keeps: every `note \"…\"` literal stays in its bash file and a pure function answers a branch and its values, never a note's words, so that the two proofs of docs/plans/2026-11-05-slim-suite-by-hand.md (S4 section) hold: `git diff <base> HEAD -- lib/*.sh bin/harness | grep '^[-+].*note \"'` prints only pairs identical in their quoted text, and the `diff <(sed -n 's/^-\\(.*[^-a-z]\\)\\{0,1\\}\\(note \".*\\)$/\\2/p' …) <(sed … '+' …)` comparison prints nothing; `<base>` is `git merge-base HEAD origin/main`.",
+    "The plan lists the mutants of findings-and-research/2026-11-03-suite-coverage/_mutants.jsonl whose `before` line (`jq -r .before`) is in a function a move empties (`grep -F` of the text in its `lib/*.sh` file today), each assigned to its build feature with the rule of docs/plans/2026-11-05-slim-suite-by-hand.md: applied at the line's new home in the `.mjs`, the module's unit test must exit non-zero, the tree put back (`git diff --quiet -- lib`); the other mutants are marked `line not moved`.",
+    "The plan lists, from the table `Push-downs left where they are` in journal/decisions/2026-11-03-trim.md, the rows whose module a build feature edits (`lib/status.mjs` if S4-04 imports the queue decoder into it; `lib/treekey.mjs` only if S4-02 edits it; `lib/features.mjs` only if S4-03 edits it), each assigned to that feature as a one-for-one push-down (the check leaves its file, a unit test takes its name), and marks every other row `stays listed in the trim's decision file` (Decision 14 (a) of docs/plans/2026-11-03-test-suite-redesign-dispatch.md).",
+    "`journal/decisions/2026-11-03-purity.md` exists with its title, provenance (this run, the spec's S4, the brief's Decisions 14 (a) and 16 (b)), a Finding, a Choice with one row per move to be filled by the build features (function, bash lines removed, tests added, how bash calls it), and a table for Decision 16 (b) with one row per move: the stub `harness start` lines (S1's count: `grep -hE '\"\\$H\" start' tests/checks/*.sh | grep -vcE '^\\s*#'`) in check files that exist only to reach one branch of the moved table, how many the move would free, and what proving each removal costs (the trim's rule: a successor named, the coverage union not smaller, its mutants still caught); the defaults taken are marked *default*.",
+    "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+   ],
+   "after": [],
+   "passes": false
+  },
+  {
+   "id": "S4-02",
+   "milestone": "S4",
+   "kind": "build",
+   "model": "opus",
+   "description": "The suite runner's cache and rerun decisions (`lib/check.sh`: what a red exit means in `why` (a timeout, a kill at the memory cap, a plain exit), the cached green, red and fast marker reads, the partial-run conditions rows 4 to 11 of `partial`, the rerun choice of `guard`) become exported pure functions in a new `lib/checkdecide.mjs`, called once by a spawn from `check.sh` and answered in labelled lines; every `check:` line, marker and flake row stays byte for byte.",
+   "steps": [
+    "Written first and watched failing: `tests/unit/checkdecide.test.mjs`, one flat `test(\"checkdecide.mjs: …\")` per branch: `why`'s answers (exit 124 → timed out; 137 with the run's seconds at or over the timeout → timed out; 137 under it in a scope at its cap → killed at its cap; any other code → `exit <rc> after <s> s`); the marker reads (a green marker with a count and an older empty one, a red marker whose first line is no number → exit 1, a fast marker read only under `--fast`); each of `partial`'s rows 4, 4a, 5, 6, 7, 8 and 9/10 refusing on one input and one input accepted with its names in map order; `guard`'s table for `auto`, `failed`, `suite` and `off` with and without `HARNESS_FAILED=` names and no rerun after a timeout or a cap kill. Each test's name is in tests/fixtures/check-names.txt and tests/fixtures/check-names-fast.txt (LC_ALL=C sorted).",
+    "`lib/checkdecide.mjs` exists (a one-line usage header, exported functions, `main(argv, io)` with the lib/cli.mjs tail) and `node --check lib/checkdecide.mjs` passes; `lib/check.sh` spawns it once per full or `--fast` call and reads its labelled lines, and the subset path (`check.sh <args…>`) reaches no `node` call but `testcount.mjs`'s: `grep -n 'checkdecide.mjs' lib/check.sh` prints one line, below the subset branch's `exit`.",
+    "The emptied bash is gone: `why`'s branch table, `partial`'s row tests, `guard`'s `case $rerun` and the red marker's field read are not in lib/check.sh; `git diff --numstat $(git merge-base HEAD origin/main) HEAD -- lib/check.sh` (deletions, insertions) is written in this move's row of journal/decisions/2026-11-03-purity.md with the tests added and the row of the Decision 16 (b) table (stub starts the move would free in tests/checks/check-rerun.sh, partial-key.sh, red-marker.sh, session-gate-check.sh, what proving each removal costs; none removed).",
+    "Every printed line is the same text: `git diff $(git merge-base HEAD origin/main) HEAD -- lib/check.sh | grep '^[-+].*\"check: '` prints only pairs identical in their quoted text or nothing, and the note comparison of docs/plans/2026-11-05-slim-suite-by-hand.md over `lib/*.sh bin/harness` prints nothing.",
+    "Each mutant the plan (docs/plans/2026-11-07-S4-purity.md) assigns to this feature (the `lib/check.sh` ones of findings-and-research/2026-11-03-suite-coverage/_mutants.jsonl whose `before` text left lib/check.sh) is applied by hand at its new line in lib/checkdecide.mjs: `node --test --test-isolation=none tests/unit/checkdecide.test.mjs` exits non-zero, then `git diff --quiet -- lib` succeeds (the tree put back); each outcome is a row in the decision file's mutant table.",
+    "`bash -n lib/check.sh` passes; `bash tests/run.sh check-key check-rerun partial-key red-marker session-gate flakes-run suite-runs` ends with every check passing (its `N/N checks passed` line).",
+    "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+   ],
+   "after": [
+    "S4-01"
+   ],
+   "passes": false
+  },
+  {
+   "id": "S4-03",
+   "milestone": "S4",
+   "kind": "build",
+   "model": "opus",
+   "description": "The lane's verify verdict and exit table (`verify`'s result and need choice hold, thin, red or fail, and `lane_done`'s exit code and reason, in `lib/lane.sh`; `reap`'s reading of a closed lane in `lib/driver.sh`) and how a run ends (the end block's blocked, parked and needs reasons and `finish`'s reason to card kind and notification priority maps in `lib/driver.sh`) become exported pure functions in a new `lib/lane.mjs`, served by the resident helper and called through `ask`; every note, card, exit reason and end reason stays byte for byte.",
+   "steps": [
+    "Written first and watched failing: `tests/unit/lane.test.mjs`, one flat `test(\"lane.mjs: …\")` per branch: `lane_done`'s rows in order (merged; needs Michael with its need; a re-base waits; proposed; its PR waits; main did not merge with and without a main conflict; `MERGE_POLICY=off`; merge refused; conflicts with main; the unknown merge failure) → exit code and reason; the verdict rows of `verify` (milestone not done → fail; no new verify entry or evidence short → thin at the last model, else escalate; hold with a red suite → red; fail where only fix features were un-passed on a red suite → red; red under `MAX_FIX_ROUNDS` in a plain verify → a fix round, past it or in `once` and `rebase` modes → the card; fail's need words for one and for several failed ids); `reap`'s reading of a closed lane (no exit file → code 12 and `lane exited unexpectedly` with a card; code 13 or `feature-list edits` → the run's end); the run's end (every feature passes → done; blocked, parked and needs in each combination → the reasons joined with `; `, `no feature left to try` otherwise); `finish`'s maps (reason → card kind for `feature-list edits`, `initializer failed`, `usage limit`, `weekly budget` and none; reason → priority high with the two actions for `blocked on`, `waiting on Michael`, `feature-list edits`, `initializer failed`). Each name is in tests/fixtures/check-names.txt and check-names-fast.txt (LC_ALL=C sorted).",
+    "`lib/lane.mjs` exists (usage header, exports, `main(argv, io)` with the lib/cli.mjs tail), `node --check lib/lane.mjs lib/helper.mjs` passes, `lane.mjs` is in the SERVED set of lib/helper.mjs, and lib/lane.sh and lib/driver.sh reach it only through `ask lane.mjs …` (or `Fv` into a variable where a `$( )` would lose the helper, as CLAUDE.md's Gotcha on `F` says): `grep -n 'lane.mjs' lib/lane.sh lib/driver.sh` prints only `ask` or `Fv` lines.",
+    "The emptied bash is gone: `lane_done`'s if-chain, `verify`'s `case $result` verdict choice, `reap`'s code and why reading, the end block's `ends` composition and `finish`'s two `case $1` maps are replaced by one call each; `git diff --numstat $(git merge-base HEAD origin/main) HEAD -- lib/lane.sh lib/driver.sh` is written in this move's rows of journal/decisions/2026-11-03-purity.md with the tests added and the rows of the Decision 16 (b) table (stub starts the move would free in tests/checks/lanes-run.sh, lanes-two.sh, stop-records.sh, fix-rounds.sh, needs-driver.sh, deadline-verifies.sh, what proving each removal costs; none removed).",
+    "Every `note \"…\"` literal of the touched functions stays in lib/lane.sh and lib/driver.sh: the two proofs of docs/plans/2026-11-05-slim-suite-by-hand.md over `git diff $(git merge-base HEAD origin/main) HEAD -- lib/*.sh bin/harness` print only identical pairs and nothing from the comparison; `grep -c 'needs Michael' lib/lane.mjs` is 0 unless the decision file names the exit reasons that moved with their text unchanged.",
+    "Any `(( $(jq …) ))` or `| head` shape in the touched functions is rewritten to the safe shape CLAUDE.md's Gotchas name (a jq test, `grep X > /dev/null`), or the decision file's row says the functions had none; each mutant of findings-and-research/2026-11-03-suite-coverage/_mutants.jsonl whose `before` text was in lib/lane.sh or lib/driver.sh is marked `line not moved` or applied at its new home as S4-02's step does, in the decision file's mutant table.",
+    "`bash -n lib/lane.sh lib/driver.sh` passes; `bash tests/run.sh lanes stop-records fix-rounds needs-driver deadline-verifies verify-refused no-deadline merge-policy u3-review` ends with every check passing (its `N/N checks passed` line).",
+    "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+   ],
+   "after": [
+    "S4-01"
+   ],
+   "passes": false
+  },
+  {
+   "id": "S4-04",
+   "milestone": "S4",
+   "kind": "build",
+   "model": "opus",
+   "description": "The two parsers written twice: the queue entry format (one argument per line, a newline inside one stored as the byte 0x1f), encoded by `queue_add` in `bin/harness` and decoded again by `entry_project` and the start line of `lib/queue.sh` and by `entry_overlaps` in `bin/harness`, becomes a new `lib/queue.mjs` whose decoder `lib/status.mjs` imports too; INBOX.md's `status:` line and the stop reason after it, read by `control` and `stop_why` in `lib/record.sh` and by `harness continue`'s reset of a stopped line in `bin/harness`, become `status` and `stopWhy` in `lib/inbox.mjs`; every queue file byte, runner log line and note stays as it is.",
+   "steps": [
+    "Written first and watched failing: `tests/unit/queue.test.mjs` (encode: an argument with a newline is one line holding 0x1f and decodes back to itself; a CR at a line's end is dropped as status.mjs's `argsOf` does; an entry's project for a start is its repository's directory name and for a continue its run id to look up; `entry_overlaps`' inputs from a start's `--spec` and `--brief` values and a continue's run and options) and new tests in `tests/unit/inbox.test.mjs` (`status`: `status: stop`, `status:   pause` with spaces, a CR at the end, no line → run, the first `status:` line wins; `stopWhy`: `stop: <why>` gives the why cut at 200 characters, `stopped`, `stop` and `stop -` give none, a `harness stop --why` line wins over the INBOX's). Each name is in tests/fixtures/check-names.txt and check-names-fast.txt (LC_ALL=C sorted).",
+    "`lib/queue.mjs` exists (usage header, exports, `main(argv, io)` with the lib/cli.mjs tail) and `node --check lib/queue.mjs lib/inbox.mjs lib/status.mjs` passes; `bin/harness` and `lib/queue.sh` call it by one spawn each (`node \"$HARNESS_HOME/lib/queue.mjs\" …`, they have no resident helper); `lib/status.mjs` imports the decoder and keeps no copy: `grep -c 'replaceAll(\"\\\\x1f\"' lib/status.mjs` prints 0 (the `argsOf` copy is gone); `control` and `stop_why` in lib/record.sh call `ask inbox.mjs …` and the `sed -n 's/^status:…' … | head -1` shape is gone from lib/record.sh and the `grep -n -m1 '^status:'` from bin/harness.",
+    "The emptied bash is gone and counted: `git diff --numstat $(git merge-base HEAD origin/main) HEAD -- bin/harness lib/queue.sh lib/record.sh` is written in this move's rows of journal/decisions/2026-11-03-purity.md with the tests added and the rows of the Decision 16 (b) table (stub starts the move would free in tests/checks/queue-debrief.sh, same-project-starts.sh, continue-busy.sh, stop-records.sh, what proving each removal costs; none removed).",
+    "The note proofs of docs/plans/2026-11-05-slim-suite-by-hand.md over `git diff $(git merge-base HEAD origin/main) HEAD -- lib/*.sh bin/harness` print only identical pairs and nothing from the comparison; the queue file bytes are unchanged: a `harness queue add` of a brief with a newline in the suite's throwaway state writes the same `.args` file as before (tests/checks/queue-view.sh and same-project-starts.sh read them).",
+    "The push-down the plan assigns to this feature (the `unquote` row of the trim's table in journal/decisions/2026-11-03-trim.md, `lib/status.mjs`, one check, in tests/checks/journal-entries.sh, because this feature edits that module) is a unit test under the check's name in a `tests/unit/status.test.mjs` (new; `unquote` exported), the check gone from its check file, the fixtures changed one for one (`wc -l < tests/fixtures/check-names.txt` grows by the new tests alone); every other row stays listed.",
+    "`bash -n bin/harness lib/queue.sh lib/record.sh` passes; `bash tests/run.sh queue same-project-starts continue-busy spec-must-exist project-names stop-records status park-desk overlap inbox` ends with every check passing (its `N/N checks passed` line).",
+    "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+   ],
+   "after": [
+    "S4-01"
+   ],
+   "passes": false
+  },
+  {
+   "id": "S4-05",
+   "milestone": "S4",
+   "kind": "review",
+   "model": "opus",
+   "description": "Review + simplify of S4: an Opus reviewer reads the milestone diff from a file, each moved function against the bash it replaced branch by branch; Critical and Important findings are fixed RED→GREEN; simplifications applied; the decision file carries the two proofs that no note text changed, the forty mutants caught before and after, and the Predictions table filled from the tree (the after row and the solo CPU and wall rows left for Michael's empty box); docs/architecture.md and README.md describe the modules as built.",
+   "steps": [
+    "The milestone diff is written to a file (`git diff $(git merge-base HEAD origin/main) -- bin lib tests docs journal README.md > $HARNESS_SCRATCH/S4.diff`) and read by an Opus subagent, one round (a second only if the first finds something Critical), each moved function checked against the bash it replaced branch by branch (a branch the unit test does not reach is a finding); its findings, each Critical, Important or Minor with file and line and what was done, are in `docs/plans/2026-11-07-S4-review.md`.",
+    "Every Critical and Important finding is fixed with a failing test first (a unit test in tests/unit/ for a pure branch, a check in tests/checks/ for a driver behaviour) and then green; simplification passes are applied; `bash -n` passes on every shell file the milestone touched and `node --check` on every `.mjs`.",
+    "journal/decisions/2026-11-03-purity.md holds the two proofs with their output pasted: `git diff $(git merge-base HEAD origin/main) HEAD -- lib/*.sh bin/harness | grep '^[-+].*note \"'` with each printed pair shown identical in its quoted text, and the comparison of docs/plans/2026-11-05-slim-suite-by-hand.md (S4 section) printing nothing.",
+    "The decision file restates the forty mutants of findings-and-research/2026-11-03-suite-coverage/_mutants.jsonl in one table: caught before (the `after the trim` column of journal/decisions/2026-11-03-trim.md), whether the `before` line moved (`grep -F` of its text in its file today), and caught after (the unit tier's verdict at the new home for a moved line; `as before` for an unmoved one, the by-hand plan's default, marked *default*).",
+    "The decision file fills the spec's Predictions table (docs/specs/2026-11-03-slim-suite.md) from commands on the tree, each against S1's before row in findings-and-research/2026-11-03-suite-coverage.md: check names (`wc -l < tests/fixtures/check-names.txt`, the shortfall against 85 % of the before row said with its reason, Decision 12 of the dispatch list), unit tests (the `tests` line of `node --test --test-isolation=none tests/unit/*.test.mjs`), stub `harness start` lines (S1's grep; the miss said with its reason: Decision 16 (b), no check removed, and the per-move counts of what a removal would free), note texts changed (the proofs: 0), lines of bash removed (`git diff --numstat $(git merge-base HEAD origin/main) HEAD -- lib/*.sh bin/harness`, deletions and insertions summed, against the 150 row); the `after S4` solo CPU and wall cells and the after row read `after this run, by the solo method on an empty box` (the brief).",
+    "The decision file is complete for a reader with no source open (everything named by what it is, its code after it, as the brief asks): title, provenance, finding, choice with one row per move (the function, its bash lines removed, the tests added, how bash calls it), the Decision 16 (b) table, the push-downs moved and the rows that stay listed (Decision 14 (a)), rejected (the removals not made, a note's words in an `.mjs`), every default marked *default*; a durable fact a fresh session would rediscover is one line under `## Gotchas` in CLAUDE.md (`bash tests/run.sh memlint-self` stays green).",
+    "`docs/architecture.md` §3 has rows for `lib/checkdecide.mjs`, `lib/lane.mjs` and `lib/queue.mjs`, its `lib/inbox.mjs`, `lib/check.sh`, `lib/lane.sh`, `lib/queue.sh` and `lib/helper.mjs` rows say what moved (the served set now twelve scripts), and README.md's module list names the three new modules where it names their neighbours.",
+    "`bash tests/run.sh` (in the background, a timeout of at least 1,500,000 ms) ends with every check passing (its `N/M checks passed` line with N = M); the suite is green."
+   ],
+   "after": [
+    "S4-02",
+    "S4-03",
+    "S4-04"
+   ],
+   "passes": false
+  }
+ ]
+}
