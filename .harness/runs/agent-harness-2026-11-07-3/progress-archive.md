@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 16:19 · A1-03 · passes
+
+Every notify call site names its kind (park+feature, needs_michael, blocked/ended by ehigh, started, paused, verified, merged, limit, debrief, other); tests/checks/event-run.sh (slow, 6 checks, 5 stub runs + debrief) proves the routes end to end; decision 2026-10-22-event-hook-ntfy-fallback; architecture §3/§4/§7/§10 and README Steering; Opus review: no Critical/Important.
+
+- **Files:** lib/record.sh, lib/driver.sh, lib/lane.sh, lib/debrief.sh, lib/desk.sh, lib/needs.sh, bin/harness, tests/checks/event-run.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-22-event-hook-ntfy-fallback.md, docs/architecture.md, README.md, +1 more
+- **Verified:** event-run.sh red first (4/6 FAIL: park, refused park, blocked, debrief), then 6/6; bash tests/run.sh event-run event-hook park-desk needs-driver queue-debrief: 165/165; check.sh --fast green (986 tests); bash -n on every touched shell file, node --check lib/notify.mjs.
+- **Tests:** 1808 → 1814
+- **Discovery** (affects A2): event-run.sh's five stub runs plus the debrief take ~35 s; events are read from curl.log (Content-Type: application/json calls) and $HARNESS_STATE/events/*/event.json, filtered by .run
+- **Discovery** (affects A2): A park run with EVENT_URL set posts two events: park, then blocked (its end reason 'waiting on Michael: B' is ehigh); A2-04's context bundle check must select by kind
+- **Question for Michael:** EVENT_URL may hold a webhook secret but sits on curl's command line (ps, HARNESS_XTRACE traces) as NTFY_URL does; should lib/xtrace.sh's warning name it too, or the POST read the URL from a file (curl -K)? Default: left as is. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/docs/plans/2026-11-07-A1-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/lib/notify.sh:62
+- *03-A1-03 · claude-opus-5-5*
+
 ### 2026-11-07 16:08 · A1-02 · passes
 
 notify takes kind=/feature=; with EVENT_URL set park/needs_michael/blocked/debrief build v1 JSON in lib/notify.mjs event, keep it at events/<id>/event.json and POST it once (-w http_code, --max-time EVENT_TIMEOUT, no retry/token); 2xx logs and returns, else a note and today's ntfy/NOTIFY_CMD post unchanged. Stub-curl STUB_EVENT knob with real curl fixtures.
