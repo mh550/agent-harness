@@ -1,15 +1,18 @@
 # shellcheck shell=bash
-# Usage: source lib/notify.sh; notify "<message>" [title=…] [body=…] [click=…] [actions=…] [priority=…] [tags=…]
+# Usage: source lib/notify.sh; notify "<message>" [title=…] [body=…] [click=…] [actions=…] [priority=…] [tags=…] [kind=…] [feature=…]
 #        gh_url <path in the repo> [blob|edit]   (the GitHub URL of that file on $BRANCH or the current one, or nothing)
 # Structured notifications (plan: docs/plans/2026-10-19-P1-notifications.md). With NTFY_URL set the harness posts to
 # ntfy itself through ${HARNESS_CURL:-curl} and NOTIFY_CMD is not called; otherwise NOTIFY_CMD gets "$1" as it always
 # has ("[<NOTIFY_TAG>] <message>") plus the fields as HARNESS_NOTIFY_*. Always returns 0: a notification never stops
 # a run. Needs the caller's log (and note, where there is one) and NTFY_URL NTFY_TOKEN NOTIFY_CMD from lib/config.sh.
+# The event hook (docs/plans/2026-11-07-A1-event-hook.md): kind= park|needs_michael|blocked|debrief with EVENT_URL set
+# go to EVENT_URL as v1 event JSON first (lib/notify.mjs event); ntfy/NOTIFY_CMD only when that isn't a 2xx. No kind is
+# other; feature= is the event's feature.
 NOTIFY_MJS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/notify.mjs
 declare -F ask > /dev/null || ask() { local s=$1; shift; node "${NOTIFY_MJS%/*}/$s" "$@"; }   # a plain spawn; lib/record.sh's, sourced after this in a driver or lane, answers from its helper
 
 notify() {
-  local msg=${1-} kv k v title=harness body="" click="" actions="" priority="" tags="" rc a
+  local msg=${1-} kv k v title=harness body="" click="" actions="" priority="" tags="" kind=other feature="" rc a
   shift
   [[ -n ${NOTIFY_TAG:-} ]] && msg="[$NOTIFY_TAG] $msg"
   for kv; do
@@ -18,10 +21,11 @@ notify() {
     [[ $k == body ]] || v=${v//[[:cntrl:]]/ }   # a why must not add a header, nor carry a byte ntfy refuses (400)
     case $k in
       title) [[ -n $v ]] && title=$v ;; body) body=$v ;; click) click=$v ;; actions) actions=$v ;;
-      priority) priority=$v ;; tags) tags=$v ;;
+      priority) priority=$v ;; tags) tags=$v ;; kind) [[ -n $v ]] && kind=$v ;; feature) feature=$v ;;
     esac
   done
   [[ -n $body ]] && body=$(notify_trim "$body")
+  case $kind in park|needs_michael|blocked|debrief) [[ -n ${EVENT_URL:-} ]] && notify_event && return 0 ;; esac   # 2xx: n8n tells Michael
   if [[ -n ${NTFY_URL:-} ]]; then
     # retries a 429/5xx; --retry-max-time keeps a hung ntfy from holding the run for minutes
     a=(-sS --fail --max-time 15 --retry 2 --retry-delay 3 --retry-max-time 20 -o /dev/null -H "Title: $title")
@@ -41,6 +45,28 @@ notify() {
       HARNESS_NOTIFY_PRIORITY=$priority bash -c "$NOTIFY_CMD" _ "$msg" > /dev/null 2>&1 9>&-
   fi
   return 0
+}
+
+# notify's routed post, reading its locals: the event built in node, kept at <STATE_ROOT>/events/<id>/event.json and
+# POSTed once (no --retry, no token: NTFY_TOKEN is ntfy's). 0: a 2xx took it; 1: noted, and notify's ntfy branch runs.
+# Neither line carries EVENT_URL (it may hold a webhook secret) nor the body.
+notify_event() {
+  local ev id d code rc why
+  ev=$(ask notify.mjs event kind="$kind" run="${RUN_ID:-}" project="${PROJECT_NAME:-}" feature="$feature" title="$title" \
+    body="${body:-$(notify_trim "$msg")}" priority="$priority" click="$click" actions="$actions" 2> /dev/null)
+  id=$(jq -r '.id // empty' <<< "$ev" 2> /dev/null)
+  if [[ -z $id ]]; then why="no event"   # ask and its spawn can both fail
+  else
+    d=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}/events/$id
+    { mkdir -p "$d" && printf '%s\n' "$ev" > "$d/event.json"; } 2> /dev/null   # a record, not the delivery: best effort
+    code=$("${HARNESS_CURL:-curl}" -s -o /dev/null -w '%{http_code}' --max-time "${EVENT_TIMEOUT:-5}" \
+      -H "Content-Type: application/json" --data-binary "$ev" "$EVENT_URL" < /dev/null 2> /dev/null 8>&- 9>&-); rc=$?
+    if (( rc == 0 )) && [[ $code =~ ^2[0-9][0-9]$ ]]; then log "event → n8n: $kind $id"; return 0; fi
+    (( rc != 0 )) && why="curl exit $rc" || why=$code
+  fi
+  if declare -F note > /dev/null; then note "event hook failed ($why): $kind; sent to ntfy"
+  else log "event hook failed ($why): $kind; sent to ntfy"; fi
+  return 1
 }
 
 # The 3500-byte cap (trimBody), without a node per post when the text already fits (text that fits is sent as-is:
