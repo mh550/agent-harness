@@ -41,3 +41,24 @@ harness needs done agent-harness-2026-11-07-2/1 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-07-2/2 --why "<answer>"
 ```
+
+## ⚠ M1-03 asked: Should restrict's memory spec also cover .claude/CLAUDE.md,…
+
+`agent-harness-2026-11-07-2/3` · since 2026-11-07T15:59:18.692Z
+
+**blocked** nothing waits on it; M1-03's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:4](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L4)
+
+> Should restrict's memory spec also cover .claude/CLAUDE.md, which Claude Code loads as project memory too? (default: no, the spec names CLAUDE.md and .harness/project.md only) Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/lib/record.sh:365, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/docs/plans/2026-11-07-M1-one-writer.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/lib/record.sh:365](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M1/lib/record.sh#L365) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/docs/plans/2026-11-07-M1-one-writer.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M1/docs/plans/2026-11-07-M1-one-writer.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl:4](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L4)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-2/3 --why "<answer>"
+```

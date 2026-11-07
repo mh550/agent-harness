@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 10:59 · M1-03 · passes
+
+restrict gains a memory spec (CLAUDE.md, .harness/project.md at the root); memory_guard (merge-base base) calls it once per coding session between the WIP commit and sync_lane, one note per file; gotchas() retires. New tests/checks/memory-one-writer.sh (fast, 7 checks), stub knobs, partial-key moved to README.md:readme, decision, docs, folded review: 0 Critical, 0 Important.
+
+- **Files:** lib/record.sh, lib/lane.sh, tests/checks/memory-one-writer.sh, tests/stub-claude.sh, tests/checks/gotchas-pack.sh, tests/checks/partial-key.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, prompts/coding.md, docs/architecture.md, README.md, journal/decisions/2026-11-07-memory-one-writer.md, +3 more
+- **Verified:** memory-one-writer 7/7 watched failing first (0/7), then green; bash tests/run.sh memory-one-writer verify-retro-read-only gotchas-pack lanes-run: 31/31; partial-key 26/26; check.sh --fast green, 938 tests (931 before); Opus review proved memory reverts only the two files on the mem run and no other restrict call changed
+- **Tests:** 1723 → 1728
+- **Discovery** (affects project): From M1 on a coding session's CLAUDE.md/.harness/project.md edit is reverted by memory_guard: a check needing a CLAUDE.md-only session tree must map another file (README.md:readme)
+- **Discovery** (affects M2, run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line; the Promote to Gotchas item about 'Where things go' bare stays for M2's curator
+- **Discovery** (affects M2, M3): memory_guard's base is the merge-base: an earlier unguarded CLAUDE.md edit on a lane (a run in flight at deploy) is reverted at the next coding session and noted against its feature
+- **Question for Michael:** Should restrict's memory spec also cover .claude/CLAUDE.md, which Claude Code loads as project memory too? (default: no, the spec names CLAUDE.md and .harness/project.md only) Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/lib/record.sh:365, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/docs/plans/2026-11-07-M1-one-writer.md
+- **Proposed change:** The coding prompt's Finish step 2 (live driver, pre-M1) still asks for a ## Gotchas line; M2/M3 sessions of this run should follow their branch's CLAUDE.md and put facts in the entry
+- *03-M1-03 · claude-opus-5-5*
+
 ### 2026-11-07 10:45 · M1-02 · passes
 
 The pack's Promote to Gotchas lists a project fact once, at its first unresolved entry, and reads no CLAUDE.md (the gotchas option and the CLI's read are gone). The coding Finish step 2, initializer paragraph, the three where-things-go parts, the template, draft-claude-md.md and this repo's CLAUDE.md send a fact to discoveries (project) and a workflow line to proposed_changes.
