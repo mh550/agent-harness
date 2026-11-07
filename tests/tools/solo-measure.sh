@@ -72,9 +72,11 @@ N_TSLOW=$(awk '/# tier: slow/ {print $1}' <<< "$TIERS")
 N_STUB=$(grep -hE '"\$H" start' tests/checks/*.sh | grep -vcE '^\s*#')
 N_STUBF=$(grep -lE '"\$H" start' tests/checks/*.sh | wc -l)
 say "unit tests: counting (one node process)"
+# node's spec reporter ends with "\u2139 tests <n>"; match the trailing number, not a '#' TAP prefix
 U_OUT=$(node --test --test-isolation=none tests/unit/*.test.mjs 2>&1 | tail -20)
-N_UNIT=$(grep -oE '^# tests ([0-9]+)' <<< "$U_OUT" | grep -oE '[0-9]+' | tail -1)
-[[ -n ${N_UNIT:-} ]] || N_UNIT=$(grep -oE '^# pass ([0-9]+)' <<< "$U_OUT" | grep -oE '[0-9]+' | tail -1)
+N_UNIT=$(awk '/ tests [0-9]+$/ { n = $NF } END { print n }' <<< "$U_OUT")
+[[ -n ${N_UNIT:-} ]] || N_UNIT=$(awk '/ pass [0-9]+$/ { n = $NF } END { print n }' <<< "$U_OUT")
+[[ -n ${N_UNIT:-} ]] || die "could not read the unit-test count from node --test"
 say "static: names $N_NAMES · fast names $N_FAST · files ${N_TFAST}f/${N_TSLOW}s · stub starts $N_STUB in $N_STUBF files · unit tests ${N_UNIT:-?}"
 
 if (( CHECK_ONLY )); then say "--check: stopping before any suite"; exit 0; fi
