@@ -35,3 +35,8 @@
 - 2026-11-07 12:10 · context.md for M2-04: 7841 bytes, 1 items left out
 - 2026-11-07 12:35 · M2-04: suite ran 1x (113 s) in the session
 - 2026-11-07 12:35 · M2-04 · claude-opus-5-5 · passes=true · 25 min · 7/12 passing · tests 1721
+- 2026-11-07 12:35 · review M2-05: 1855 changed lines, at or over 400; opus
+- 2026-11-07 12:35 · context.md for M2-05: 8004 bytes
+- 2026-11-07 13:17 · M2-05: suite ran 2x (1436 s) in the session
+- 2026-11-07 13:17 · M2-05: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-07 13:17 · M2-05 · claude-opus-5-5 · passes=true · 41 min · 8/12 passing · tests 1775

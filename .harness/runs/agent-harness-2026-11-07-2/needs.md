@@ -125,3 +125,24 @@ harness needs done agent-harness-2026-11-07-2/5 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-07-2/6 --why "<answer>"
 ```
+
+## ⚠ M2-05 asked: Should the curator session run with a deny list (Bash(git p…
+
+`agent-harness-2026-11-07-2/7` · since 2026-11-07T18:17:35.940Z
+
+**blocked** nothing waits on it; M2-05's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:10](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L10)
+
+> Should the curator session run with a deny list (Bash(git push:*), Bash(gh:*)) passed by the driver, so a push can't happen at all rather than being refused at the next base? Default: not built; memory_foreign refuses a foreign tip. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/lib/record.sh
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-review.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M2/docs/plans/2026-11-07-M2-review.md) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/lib/record.sh](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M2/lib/record.sh) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl:10](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L10)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-2/7 --why "<answer>"
+```

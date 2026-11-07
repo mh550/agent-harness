@@ -9,6 +9,24 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 13:17 · M2-05 · passes
+
+M2 review: 0 Critical, 4 Important, 6 Minor. Fixed RED→GREEN: memory_foreign refuses a foreign harness-memory tip; quiet+cap section in the body; a reused tip without PR gets one (memory_open); a write changing a protected section's raw lines is dropped. ro_rescue shared by retro/curator; decision completed; architecture/README document the curator.
+
+- **Files:** lib/curator.mjs, lib/record.sh, lib/driver.sh, prompts/curator.md, tests/unit/curator.test.mjs, tests/checks/memory-pr.sh, tests/checks/curator-run.sh, tests/fixtures/memory/stub-proposal.json, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-07-M2-review.md, journal/decisions/2026-11-07-memory-tiers.md, +5 more
+- **Verified:** Full suite 1775/1775 in 684 s (bash tests/run.sh via check.sh), after a first run red on name lint (memory-pr ⊂ memory-prompts) and the helper-note shape check, both M2 leftovers fixed; fast tier green (cached on that tree); unit curator.test.mjs 23/23; memory-branch 15/15, curator-run 8/8, retro-backlog 13/13; the I1/I3 checks and the I2/I4 unit asserts watched RED first
+- **Tests:** 961 → 962
+- **Dead end:** url=$(memory_open) capturing the PR URL — note → log tees to stdout, so the capture would hold the note line: memory_open sets the caller's url instead
+- **Dead end:** trusting the coding sessions' fast-tier green for M2 — two slow-tier checks were red since M2-03/M2-04: the full suite found them
+- **Discovery** (affects M3): A tier-3 op counts in both dropped and proposals (ops = applied + tier 2 + dropped): M3's summary.memory must not add dropped and proposed
+- **Discovery** (affects M3, project): restrict covers only the session's checkout: a read-only role's push or out-of-tree write is bounded only by its permission mode; memory_foreign guards the memory branch
+- **Discovery** (affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 and M2-04 did; the Promote to Gotchas items stay for the curator
+- **Discovery** (affects M3, run): tests/checks/memory-pr.sh is now memory-branch.sh: memory-pr was part of memory-prompts (name lint); resident-helper-run's helper-note grep now counts finish's retro/curator lines and the one (( rc )) SUM build
+- **Question for Michael:** Should the curator session run with a deny list (Bash(git push:*), Bash(gh:*)) passed by the driver, so a push can't happen at all rather than being refused at the next base? Default: not built; memory_foreign refuses a foreign tip. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/lib/record.sh
+- **Proposed change:** M3: a Gotchas suffix naming another run than RUN_ID could be dropped by the gate (review M2, kept)
+- **Proposed change:** M3: checks for memory_base's did-not-answer and taken-by-main paths, MERGE_POLICY=off and a failed apply/worktree add (review M5's remaining gaps)
+- *08-M2-05 · claude-opus-5-5*
+
 ### 2026-11-07 12:35 · M2-04 · passes
 
 memory_pr in lib/record.sh: ops applied in a detached $SCRATCH/memory worktree at the base, tier 1 one commit pushed to harness-memory/<run>, a memory: <run> PR left for Michael (reused on a continue, body over earlier segments), cap refusal, notes, memory.md and $STATE/memory.json; memory_base's reuse rules; STUB_FACTS, stub-gh bodies and pr edit; memory-pr.sh (13).
