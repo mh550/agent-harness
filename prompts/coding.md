@@ -20,7 +20,7 @@ checkouts on this machine.
   tree, so a tree that was green isn't run twice). The suite has two tiers: `<suite> --fast` runs the fast tier (the
   whole suite when *This run* names no fast tier), bare `<suite>` the full suite. While iterating, run the fast tier or
   pass arguments for a subset: `<suite> <args>`. Before you flip `passes`,
-  **run the fast tier once, last, after your final edit of any file**, `CLAUDE.md` included: your feature passes on
+  **run the fast tier once, last, after your final edit of any file**: your feature passes on
   that green, and a run before it is one you pay twice. The full suite runs at verify on the milestone's tree: if
   your change touches the driver's scenario paths (in agent-harness: `lib/driver.sh`, `lib/lane.sh`, `lib/record.sh`,
   `bin/harness`) or a slow-tier check file, also run the slow-tier files that exercise it (`<suite> <file>`) before
@@ -89,16 +89,15 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    **only** edit you may make to `feature_list.json`. The harness reverts anything else and stops
    the run if it keeps happening. A wrong step or a missing feature goes under `proposed_changes`
    in your entry.
-2. Write each `Promote to Gotchas` item of context.md that still holds (a fact an earlier session
-   recorded with `affects: ["project"]`) as a line under `## Gotchas` in the project's `CLAUDE.md`,
-   shortened but keeping its opening words (that is how the harness sees it carried); one that no
-   longer holds, or that you drop from a full section, goes in your entry's `resolved`. And if this
-   session taught you a fact a fresh session would otherwise rediscover, add or edit one line there
-   too (create the section if it has none): at most 160 characters, ending `(<run> <date>)` (the
-   run id from the `Run:` line under *This run*, today's date). 15 lines at most: at 15, replace
-   the least useful. A wrong line is edited in place; never rewrite the section. The harness notes
-   each change in `harness-log.md`.
-3. The suite green: the fast tier's one run now (`<suite> --fast`), after the `## Gotchas` line,
+2. Project memory is not yours to write: leave the project's `CLAUDE.md` and `.harness/project.md`
+   alone, whatever their own Where things go says. A fact this session taught you that a fresh
+   session would otherwise rediscover goes in your entry's `discoveries` with `affects: ["project"]`:
+   at most 160 characters, ending `(<run> <date>)` (the run id from the `Run:` line under *This run*,
+   today's date). A convention or workflow line (how to work here) goes in `proposed_changes`. Read
+   context.md's `Promote to Gotchas` part first: a fact listed there is already recorded, so don't
+   state it again. Put one that no longer holds in your entry's `resolved`, copied as context.md
+   shows it.
+3. The suite green: the fast tier's one run now (`<suite> --fast`), after your last edit,
    so the tree you tested is the tree that ends the session (`entry.json`, the `passes` flip and
    the commit come after; the run directory is outside the suite's key). If your work is half
    done, commit only what leaves the fast tier green. The harness un-passes a feature whose session
@@ -124,8 +123,8 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    you tried that failed and why (the next attempt reads it), `discoveries` what changes other
    features or the whole run (`affects`: feature ids, milestone ids, `"run"`, or `"project"` for a
    fact that outlives the run), `questions` are for Michael, `resolved` the questions you found
-   answered (in `## Answers` or a decision) and the `Promote to Gotchas` facts you left out of
-   `## Gotchas`, copied as context.md shows them; the pack then leaves them out. `checks` is one line
+   answered (in `## Answers` or a decision) and the `Promote to Gotchas` facts that no longer hold,
+   copied as context.md shows them; the pack then leaves them out. `checks` is one line
    saying why your milestone adds more check names than its `check_budget` in the feature list, when it
    has one and you went over (the verify's note quotes it); a check that duplicates an existing
    assertion replaces it, the old name leaving the fixture in the same commit. Say what changed (files, test count

@@ -18,9 +18,10 @@
 - What happened, what was tried, what failed → the session's entry (the harness keeps the journal), never here.
 - A decision → the decisions store above. Overturned → rewrite it in place, plus one `Updated in place <date>: …`
   line; never a new entry beside a dead one.
-- A fact a fresh session would otherwise rediscover → one line under `## Gotchas`, edited in place.
+- A fact a fresh session would otherwise rediscover → the session's entry (`discoveries`, `affects: ["project"]`);
+  never written here by a session.
 - The run's scope (what to build, drop or do first) → the run's brief, never this file.
-- How to work here (rules, conventions, workflow) → Michael's: propose it, don't write it.
+- How to work here (rules, conventions, workflow) → Michael's: the entry's `proposed_changes`.
 - Anything the code, git or the suite can tell (test counts, file lists, constants) → nowhere.
 
 ## Gotchas

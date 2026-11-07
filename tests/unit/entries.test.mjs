@@ -154,24 +154,24 @@ test("entries.mjs: the pack drops a question a later entry resolves", () => {
   assert.equal(has([c({ questions: [q] }), { feature: "M1", kind: "verify", outcome: "passes", summary: "v", resolved: [q] }]), false);
 });
 
-// Promote to Gotchas (M3-03): project discoveries in a coding pack, newest first, one per first 40 characters, left out once a
-// Gotchas line carries them, at most cap/8 bytes (the rest counted, the pack goes on); a milestone pack has no such part
-test("entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them", () => {
+// Promote to Gotchas (M3-03, M1-02 of 2026-11-07): project discoveries in a coding pack, newest first, each key (its first
+// 40 characters, loose) once, at its first unresolved entry, at most cap/8 bytes (the rest counted, the pack goes on);
+// CLAUDE.md's `## Gotchas` clear nothing (a session no longer writes them); a milestone pack has no such part
+test("entries.mjs pack: Promote to Gotchas lists project facts newest first within cap/8, whatever CLAUDE.md's Gotchas hold", () => {
   const c = (f, d) => coding(f, { discoveries: d });
   const list = [{ id: "X", milestone: "M1" }, { id: "Y", milestone: "M1" }], P = t => ({ text: t, affects: ["project"] });
   const e = [c("Y", [P("old fact about the port being 7900 for every run here"), { text: "for X only", affects: ["X"] }]), c("Y", [P("old fact about the port being 7900 for every run, newer wording")]), c("Y", [P("the stub writes work files")])];
   const p = pack(e, { feature: "X", list }), pr = sec(p, "Promote to Gotchas"), ls = pr.split("\n").filter(l => l.startsWith("- "));
-  const g = pack(e, { feature: "X", list, gotchas: ["- note: the stub writes work files (r 2026-10-26)"] }), m = pack(e, { feature: "M1", list });
+  const g = pack(e, { feature: "X", list, gotchas: ["- note: the stub writes work files (r 2026-10-26)", "- old fact about the port being 7900 for every run here"] }), m = pack(e, { feature: "M1", list });
   const many = Array.from({ length: 30 }, (_, i) => c("Y", [P(i + " " + "z".repeat(300))])), f = pack([...many, c("Y", [{ text: "late run fact", affects: ["run"] }])], { feature: "X", list, cap: 4096 });
   assert.equal(ls.length, 2);
   assert.equal(ls[0], "- the stub writes work files → entries.jsonl:3");
-  assert.ok(ls[1].includes("newer wording → entries.jsonl:2"), ls[1]);
+  assert.equal(ls[1], "- old fact about the port being 7900 for every run here → entries.jsonl:1");
   assert.ok(!sec(p, "Discoveries for this feature").includes("fact"), "a project fact among the feature's discoveries");
   assert.ok(sec(p, "Discoveries for this feature").includes("for X only"), "the feature's discovery");
   assert.ok(p.indexOf("## Promote to Gotchas") > p.indexOf("## Discoveries"), "Promote after Discoveries");
   assert.ok(p.indexOf("## Promote to Gotchas") < p.indexOf("## Lately"), "Promote before Lately");
-  assert.ok(!sec(g, "Promote to Gotchas").includes("stub writes"), "a carried fact still promoted");
-  assert.ok(sec(g, "Promote to Gotchas").includes("newer wording"), "an uncarried fact left out");
+  assert.equal(sec(g, "Promote to Gotchas"), pr, "a Gotchas line cleared a fact");
   assert.ok(!m.includes("Promote to Gotchas"), "a milestone pack with a Promote part");
   assert.ok(B(sec(f, "Promote to Gotchas")) <= 512, `${B(sec(f, "Promote to Gotchas"))} bytes`);
   assert.ok(f.includes("## Lately in the run"), "the pack goes on after the cut Promote part");
@@ -179,21 +179,21 @@ test("entries.mjs: Promote to Gotchas lists project facts until a Gotchas line c
   for (const [k, n] of [[8192, 1000], [1024, 100]]) {
     const q = pack([c("Y", [P("a".repeat(n))])], { feature: "X", list, cap: k }), s = sec(q, "Promote to Gotchas");
     assert.match(s, /^- a+… → entries\.jsonl:1$/m);
-    assert.ok(B(s) <= k / 8, `cap ${k}: ${B(s)} bytes`);
+    assert.ok(B(s) <= Math.floor(k / 8), `cap ${k}: ${B(s)} bytes`);
     assert.ok(!q.includes("items left out"), `cap ${k}: items left out`);
   }
 });
 
-// M3 review (M3-05): a Gotchas line carries a fact whatever its case, backticks or emphasis; a later entry's `resolved`
-// dismisses a promoted fact (by its first 40 characters) or a question copied with the line's ` → entries.jsonl:<n>`,
-// its `Question (<id>): ` lead or as cut with `…`; progress.md shows what an entry resolved
-test("entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it", () => {
+// M3 review (M3-05): a later entry's `resolved` dismisses a promoted fact (by its first 40 characters, whatever its case,
+// backticks, emphasis or spacing) or a question copied with the line's ` → entries.jsonl:<n>`, its `Question (<id>): `
+// lead or as cut with `…`; an earlier entry's resolved dismisses nothing; progress.md shows what an entry resolved
+test("entries.mjs pack: a later entry's resolved dismisses a fact in any case, markup or spacing, or a question as context.md shows it", () => {
   const c = coding, list = [{ id: "X", milestone: "M1" }, { id: "Y", milestone: "M1" }], P = t => ({ text: t, affects: ["project"] });
-  const fact = "the stub writes work files at the repo root, one per feature", promoted = (es, g = []) => sec(pack(es, { feature: "X", list, gotchas: g }), "Promote to Gotchas").includes("stub writes");
+  const fact = "the stub writes work files at the repo root, one per feature", promoted = es => sec(pack(es, { feature: "X", list }), "Promote to Gotchas").includes("stub writes");
   const q = "Should X default to off? It decides whether the queue starts a run on its own at night", long = "Is it " + "w".repeat(1100) + "?";
   const asked = (es, t = q) => pack(es, { feature: "X", list }).includes("Question (X): " + t.slice(0, 40));
   assert.equal(promoted([c("Y", { discoveries: [P(fact)] })]), true);
-  assert.equal(promoted([c("Y", { discoveries: [P(fact)] })], ["- The `stub` **writes** work  files at the repo root, one per feature (r 2026-10-26)"]), false);
+  assert.equal(promoted([c("Y", { discoveries: [P(fact)] }), c("X", { resolved: ["The `stub` **writes** work  files\nat the repo root, one per feature"] })]), false);
   assert.equal(promoted([c("Y", { discoveries: [P(fact)] }), c("X", { resolved: ["- " + fact + " → entries.jsonl:1"] })]), false);
   assert.equal(promoted([c("Y", { discoveries: [P(fact)] }), c("X", { resolved: [fact.slice(0, 45) + " (wrong now)"] })]), false);
   assert.equal(promoted([c("X", { resolved: [fact] }), c("Y", { discoveries: [P(fact)] })]), true);
@@ -203,6 +203,26 @@ test("entries.mjs: a Gotchas line carries a fact in any case or markup, resolved
   assert.equal(asked([c("X", { questions: [long] }), c("X", { resolved: [long.slice(0, 900) + "…"] })], long), false);
   assert.equal(asked([c("X", { questions: [q] }), c("X", { resolved: ["Should X…"] })]), true);
   assert.ok(renderEntry(c("X", { resolved: [q] })).includes("- **Resolved:** " + q), "progress.md's Resolved line");
+});
+
+// M1-02: the part names a fact once, at the first entry that states it unresolved (the line a curator's `from` names): a
+// restatement adds nothing, a resolved one restated later is listed at the restatement, another key is its own line
+test("entries.mjs pack: a fact restated by key is listed once, at its first unresolved entry; another key is listed too", () => {
+  const c = coding, list = [{ id: "X", milestone: "M1" }, { id: "Y", milestone: "M1" }], P = t => ({ text: t, affects: ["project"] });
+  const fact = "the stub writes work files at the repo root, one per feature", again = "The `stub` writes work files at the repo root (said again)";
+  const lines = es => sec(pack(es, { feature: "X", list }), "Promote to Gotchas").split("\n").filter(l => l.startsWith("- "));
+  const once = lines([c("Y"), c("Y", { discoveries: [P(fact), P(fact)] }), c("Y"), c("Y", { discoveries: [P(again)] })]);
+  assert.equal(once.length, 1, once.join("|"));
+  assert.equal(once[0], `- ${fact} → entries.jsonl:2`);
+  const re = lines([c("Y"), c("Y", { discoveries: [P(fact)] }), c("X", { resolved: [fact] }), c("Y", { discoveries: [P(again)] })]);
+  assert.equal(re.length, 1, re.join("|"));
+  assert.equal(re[0], `- ${again} → entries.jsonl:4`);
+  const gone = lines([c("Y", { discoveries: [P(fact)] }), c("Y", { discoveries: [P(again)] }), c("X", { resolved: [fact] })]);
+  assert.equal(gone.length, 0, gone.join("|"));
+  const two = lines([c("Y"), c("Y", { discoveries: [P(fact)] }), c("Y"), c("Y", { discoveries: [P(again), P("the port is 7900 for every run on this box")] })]);
+  assert.equal(two.length, 2, two.join("|"));
+  assert.equal(two[0], "- the port is 7900 for every run on this box → entries.jsonl:4");
+  assert.equal(two[1], `- ${fact} → entries.jsonl:2`);
 });
 
 // the part: last, within cap/4 (and the room left), the rest one `older rules` line that isn't an item left out; a pack

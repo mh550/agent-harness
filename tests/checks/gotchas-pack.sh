@@ -9,36 +9,46 @@ check "memlint.mjs gotchas: the CLI prints +added ~edited -deleted of two files,
   printf "%s" "$G" > "$T/g1.md" && printf "%s" "${G/- two/- 2}" > "$T/g2.md" &&
   [[ $(node "$MM" gotchas "$T/g1.md" "$T/g2.md") == "+0 ~1 -0" ]] && o=$(node "$MM" gotchas "$T/g1.md" "$T/g1.md") && [[ -z $o ]] &&
   [[ $(node "$MM" gotchas "$T/none.md" "$T/g1.md") == "+2 ~0 -0" ]]'
-# the CLI builds the pack without the Gotchas when CLAUDE.md can't be read (here a directory), as readRules skips its store
-check "entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack" '
-  mkdir -p "$T/cw/.harness/runs/r" "$T/cw/CLAUDE.md" && : > "$T/cw/.harness/runs/r/entries.jsonl" && echo "{\"features\":[{\"id\":\"X\",\"milestone\":\"M1\"}]}" > "$T/cw/.harness/runs/r/feature_list.json" &&
-  node "$HERE/../lib/entries.mjs" pack "$T/cw/.harness/runs/r" X 8192 > "$T/cw.out" 2> "$T/cw.err" && grep -q "^# Context pack for \`X\`" "$T/cw.out"'
 # the stub project has a decisions store (rane-one-mixxx's first three, copied): every pack ends with its rules (M3-04)
 mkdir -p docs && cp "$HERE/fixtures/decisions-rane.md" docs/decisions.md && git add docs && git commit -qm "decisions store" && git push -q origin main
-# the same run asks and resolves a question of C's (M3-03) and records A's project fact, which B's Gotchas line carries
-STUB_GOTCHA=B STUB_PROJECT_FACT=A STUB_ASK=C STUB_RESOLVE=C "$H" start "$T/proj" gotcha --spec SPEC.md --foreground > "$T/gotcha.out" 2>&1
-check "coding prompt: the Finish step adds one Gotchas line" '
-  p=$(sed -n "/^## 3\. Finish/,/^Final message/p" "$HARNESS_STATE/proj/gotcha/prompt-coding.md" | tr -s " \n" "  ") &&
-  [[ $p == *"## Gotchas"* && $p == *"160 characters"* && $p == *"(<run> <date>)"* && $p == *"15 lines"* && $p == *"never rewrite the section"* ]]'
+# the same run asks and resolves a question of C's (M3-03)
+STUB_GOTCHA=B STUB_ASK=C STUB_RESOLVE=C "$H" start "$T/proj" gotcha --spec SPEC.md --foreground > "$T/gotcha.out" 2>&1
 check "a stub session that adds a Gotchas line is noted" '
   hlog gotcha | grep -q "· B: gotchas +1 ~0 -0$" && git -C "$T/wt/proj/gotcha" show run/gotcha/M1:CLAUDE.md | sed -n "/^## Gotchas/,\$p" | grep "(gotcha " > /dev/null'
 check "a session that leaves CLAUDE.md alone gets no gotchas note" '
   [[ $(hlog gotcha | grep -c ": gotchas ") == 1 ]] && (( $(grep -c " attempt " "$T/scratch/proj/gotcha/sessions.log") >= 3 ))'
 GL=$HARNESS_STATE/proj/gotcha/logs
-check "coding and verify prompts name resolved, project facts and Promote to Gotchas" '
+# M1-02: a fact goes in the entry, never in CLAUDE.md (decisions/2026-11-07-memory-one-writer)
+check "coding and verify prompts: a fact to discoveries affecting project, a workflow line to proposed_changes, a stale one to resolved; no Gotchas write" '
   c=$(tr -s " \n" "  " < "$HARNESS_STATE/proj/gotcha/prompt-coding.md") && v=$(tr -s " \n" "  " < "$HARNESS_STATE/proj/gotcha/prompt-verify.md") &&
-  [[ $c == *"\"resolved\": [\"Should X default to off?\"]"* && $c == *"\"affects\": [\"project\"]"* && $c == *"\"project\"\` for a fact that outlives the run"* ]] &&
-  [[ $c == *"Write each \`Promote to Gotchas\` item of context.md"* && $v == *"durable fact"*"with \`affects: [\"project\"]\`"* ]]'
+  p=$(sed -n "/^## 3\. Finish/,/^Final message/p" "$HARNESS_STATE/proj/gotcha/prompt-coding.md" | tr -s " \n" "  ") &&
+  [[ $p == *"leave the project'"'"'s \`CLAUDE.md\` and \`.harness/project.md\` alone"* && $p == *"\`discoveries\` with \`affects: [\"project\"]\`: at most 160 characters, ending \`(<run> <date>)\`"* ]] &&
+  [[ $p == *"workflow line (how to work here) goes in \`proposed_changes\`"* && $p == *"\`Promote to Gotchas\` part first"*"no longer holds in your entry'"'"'s \`resolved\`"* ]] &&
+  [[ $c != *"under \`## Gotchas\`"* && $c != *"15 lines at most"* && $c == *"\"resolved\": [\"Should X default to off?\"]"* && $c == *"\"affects\": [\"project\"]"* ]] &&
+  [[ $c == *"\"project\"\` for a fact that outlives the run"* && $v == *"durable fact"*"with \`affects: [\"project\"]\`"* ]]'
 check "a resolved question is gone from the next context.md" '
   grep -Eqx -- "- Question \(C\): Should C default to off\? Files \(harness, from the session\): /.*/work-C.txt(, /[^ ]+)* → entries.jsonl:[0-9]+" "$GL/05-C.context.md" &&
   v=$(ls "$GL"/*-verify-M2.context.md | head -1) && grep -q "^# Context pack for \`M2\`" "$v" && ! grep -q "Question (" "$v"'
-check "a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it" '
-  sed -n "/^## Promote to Gotchas/,/^## /p" "$GL/02-B.context.md" | grep -x -- "- the stub.s work files sit at the repo root, one per feature → entries.jsonl:[0-9]*" > /dev/null &&
-  ! grep -q "Promote to Gotchas" "$GL/01-A.context.md" && ! grep -q "Promote to Gotchas" "$GL/03-A.context.md" && grep -q "^## " "$GL/03-A.context.md"'
 check "context.md lists the decisions store's rules newest first" '
   [[ $(grep "^## " "$GL/01-A.context.md" | tail -1) == "## Current rules" ]] &&
   [[ $(sed -n "/^## Current rules/,\$p" "$GL/01-A.context.md" | grep -o "^- D[0-9]* .*→ docs/decisions.md:[0-9]*$" | sed "s/^- \(D[0-9]*\) .*:\([0-9]*\)$/\1@\2/" | tr "\n" " ") == "D3@15 D2@13 D1@7 " ]] &&
   grep -q -- "^- D1 default · Playback model: hybrid. Mixxx.s clock plays the track while the platter is within tolerance of the expected .*… → docs/decisions.md:7$" "$GL/01-A.context.md"'
+# M1-02: A and B state one project fact, C resolves it, A proposes a workflow line; main's CLAUDE.md (B's Gotchas line
+# from the gotcha run carries the fact) is read by no pack, and the run changes it nowhere
+m0=$(git -C "$T/origin.git" rev-parse main)
+STUB_PROJECT_FACT=A,B STUB_RESOLVE_FACT=C STUB_PROPOSE=A "$H" start "$T/proj" facts --spec SPEC.md --foreground > "$T/facts.out" 2>&1
+FL=$HARNESS_STATE/proj/facts/logs FR=$T/wt/proj/facts/.harness/runs/facts
+pg() { sed -n "/^## Promote to Gotchas/,/^## /p" "$FL/$1.context.md" | grep -c -- "^- the stub.s work files sit at the repo root, one per feature → entries.jsonl:2$"; }
+check "a project discovery is listed under Promote to Gotchas once, at its first entry, until a later entry resolves it" '
+  [[ $(pg 02-B) == 1 && $(pg 03-A) == 1 && $(pg 04-C) == 1 ]] && [[ $(grep -c "stub.s work files sit" "$FL/03-A.context.md") == 1 ]] &&
+  ! grep -q "Promote to Gotchas" "$FL/01-A.context.md" && ! grep -q "Promote to Gotchas" "$FL/05-C.context.md" && grep -q "^## " "$FL/05-C.context.md" &&
+  [[ $(jq -rs "[.[] | select(.feature == \"C\" and .kind == \"coding\")][0].resolved[0]" "$FR/entries.jsonl") == "the stub'"'"'s work files sit"* ]]'
+check "a coding entry's project fact and proposed change reach entries.jsonl and progress.md; CLAUDE.md stays main's" '
+  grep -q "^done" "$HARNESS_STATE/proj/facts/ended" &&
+  [[ $(jq -rs "[.[] | select(.feature == \"A\" and .kind == \"coding\")][0] | [(.discoveries[0].affects | join(\",\")), .proposed_changes[0]] | join(\"|\")" "$FR/entries.jsonl") == "project|stub proposal: run the stub suite before each commit" ]] &&
+  grep -qF -- "- **Discovery** (affects project): the stub'"'"'s work files sit at the repo root, one per feature" "$FR/progress.md" &&
+  grep -qF -- "- **Proposed change:** stub proposal: run the stub suite before each commit" "$FR/progress.md" &&
+  git -C "$T/origin.git" diff --quiet "$m0" main -- CLAUDE.md && git -C "$T/origin.git" diff --quiet "$m0" run/facts/M1 -- CLAUDE.md'
 # a 1024-byte coding cap from the project's config, and a verify that finds A's step 1 failing after A recorded a dead end
 git pull -q --ff-only origin main && printf 'CONTEXT_PACK_BYTES=1024\n' >> .harness/config.sh && git commit -qam "a tight pack" && git push -q origin main
 # HARNESS_COUNT_HOLD: M1's lane exits between the coordinator's lane count and its end check, the window that ended
