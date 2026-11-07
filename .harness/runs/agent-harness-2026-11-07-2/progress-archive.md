@@ -9,6 +9,22 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 13:52 · M3-02 · passes
+
+MEMORY_POLICY=pr|auto|off: auto merges the memory PR at the pushed tier-1 head (memory_merge, --match-head-commit; refused → left open, one note), an unknown value is one note and runs as pr, off writes no curator/memory note. Config, both templates, architecture §10 row, README, decision policy row. Review: under auto a PR opened with no new tier-1 commit had no note; fixed red→green.
+
+- **Files:** lib/config.sh, lib/driver.sh, lib/record.sh, templates/project/config.sh, templates/user/config.sh, tests/checks/memory-branch.sh, tests/checks/curator-run.sh, tests/fixtures/check-names.txt, journal/decisions/2026-11-07-memory-policy.md, docs/architecture.md, README.md
+- **Verified:** Red first on unchanged lib: memory-branch 16/18, curator-run 8/9 (the auto, refused and unknown checks; the independence and off checks already held). Green: bash tests/run.sh curator-run memory-branch merge-policy-default 29/29, then memory-branch 19/19 + curator-run 9/9 after the review fix (seen red 18/19 first); fast tier green 962; bash -n on lib/config.sh lib/record.sh lib/driver.sh, both check files and both templates.
+- **Tests:** 962 → 962
+- **Dead end:** running the red phase while editing lib/ — tests/lib.sh's HH is the worktree itself, so a red run sees edits made mid-run; stopped it, reverted lib, reran
+- **Discovery** (affects M3-03, M3-04): memory_open [merge]: under auto it notes nothing when the merge's note follows, else 'memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · <url>'; pr's note unchanged
+- **Discovery** (affects M3-03, M3-04): memory-branch.sh now has 10 runs (ma auto, mr refused, mw auto without tier 1): its final worktree count is 11; mp (MERGE_POLICY=auto from base-config, MEMORY_POLICY=pr) carries the independence check
+- **Discovery** (affects M3-03, M3-04): `bash tests/run.sh memory-pr` matches memory-prompts, not memory-branch (substring of the file name): M3-02/M3-03's step commands miss the memory checks
+- **Discovery** (affects project): A check run reads lib/ live from the worktree (tests/lib.sh HH=the checkout): never edit lib/ while a red run is going (agent-harness-2026-11-07-2 2026-11-07)
+- **Question for Michael:** Default taken: under MEMORY_POLICY=auto a memory PR is merged even when its body refresh (gh pr edit) failed, and a merge whose answer is lost is noted as refused (both as record_pr does; the review's two Minor findings). Keep, or skip the merge after a failed edit? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/lib/record.sh:458, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/journal/decisions/2026-11-07-memory-policy.md
+- **Proposed change:** M3-02 step 4 and M3-03 step 5 should run `bash tests/run.sh memory-branch …` (the file is memory-branch.sh since M2-05; `memory-pr` matches memory-prompts)
+- *10-M3-02 · claude-opus-5-5*
+
 ### 2026-11-07 13:39 · M3-01 · passes
 
 M3 plan written (docs/plans/2026-11-07-M3-policy.md). memlint-self retired: its grep is a unit test in memlint.test.mjs (red on a mutant, conformance red before the fixture), its self-lint the curator's capCheck at the write plus memlint-run's notes. File deleted, names swapped in both fixtures, CHECK_KEY_MAP, key-map-lint, partial-key, README follow. Decision skeleton memory-policy.

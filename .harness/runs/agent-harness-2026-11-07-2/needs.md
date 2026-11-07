@@ -146,3 +146,24 @@ harness needs done agent-harness-2026-11-07-2/6 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-07-2/7 --why "<answer>"
 ```
+
+## ⚠ M3-02 asked: Default taken: under MEMORY_POLICY=auto a memory PR is merg…
+
+`agent-harness-2026-11-07-2/8` · since 2026-11-07T18:52:53.909Z
+
+**blocked** nothing waits on it; M3-02's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:13](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L13)
+
+> Default taken: under MEMORY_POLICY=auto a memory PR is merged even when its body refresh (gh pr edit) failed, and a merge whose answer is lost is noted as refused (both as record_pr does; the review's two Minor findings). Keep, or skip the merge after a failed edit? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/lib/record.sh:458, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/journal/decisions/2026-11-07-memory-policy.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/lib/record.sh:458](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M3/lib/record.sh#L458) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/journal/decisions/2026-11-07-memory-policy.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M3/journal/decisions/2026-11-07-memory-policy.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl:13](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L13)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-2/8 --why "<answer>"
+```
