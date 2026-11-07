@@ -43,3 +43,5 @@
 - 2026-11-07 13:17 · merged main into harness-lane/agent-harness-2026-11-07-2/M2
 - 2026-11-07 13:17 · verify M2: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-07 13:28 · context.md for M2: 16065 bytes
+- 2026-11-07 13:30 · M2: checks +47 ~0 −0 against a budget of 60
+- 2026-11-07 13:31 · M2 verified and tagged run/agent-harness-2026-11-07-2/M2
