@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-11-07",
   "started": "2026-11-07T07:11:10.000Z",
-  "ended_at": "2026-11-07T10:08:35.000Z",
+  "ended_at": "2026-11-07T10:09:02.000Z",
   "end_reason": "done",
   "continuations": 0,
   "features": {
@@ -63,19 +63,20 @@
   },
   "resolutions": [],
   "cost": {
-    "total": 31.5,
-    "per_passing_feature": 6.3,
+    "total": 31.62,
+    "per_passing_feature": 6.32,
     "by_role": {
       "init": 5.79,
       "plan": 3.59,
       "build": 10.5,
       "review": 11.35,
-      "verify": 0.27
+      "verify": 0.27,
+      "retro": 0.13
     },
     "by_model": {
       "claude-fable-5-1": 5.79,
       "claude-opus-5-5": 25.44,
-      "claude-sonnet-5-5": 0.27
+      "claude-sonnet-5-5": 0.4
     },
     "manager": 0
   },
@@ -88,7 +89,8 @@
       "plan": 0.2,
       "build": 0.93,
       "review": 1.26,
-      "verify": 0.02
+      "verify": 0.02,
+      "retro": 0.01
     }
   },
   "lanes": {
@@ -102,10 +104,10 @@
     "whys": {}
   },
   "tokens": {
-    "in": 1010,
-    "cache_read": 31596427,
-    "cache_write": 1581580,
-    "out": 510738,
+    "in": 1020,
+    "cache_read": 31739662,
+    "cache_write": 1604661,
+    "out": 512667,
     "cache_hit_rate": 0.952,
     "context_peak": 242427,
     "by_role": {
@@ -138,12 +140,18 @@
         "cache_read": 395072,
         "cache_write": 44736,
         "out": 4773
+      },
+      "retro": {
+        "in": 10,
+        "cache_read": 143235,
+        "cache_write": 23081,
+        "out": 1929
       }
     }
   },
   "per_verified_feature": {
-    "cost": 6.3,
-    "tokens": 6737951
+    "cost": 6.32,
+    "tokens": 6771602
   },
   "orientation": {
     "tokens": 1271488,
@@ -154,7 +162,7 @@
   "first_attempt_pass_rate": 1,
   "verify_fail_rate": 0,
   "review": {
-    "cost_pct": 36,
+    "cost_pct": 35.9,
     "found_nothing": 0,
     "reviews": 1
   },
@@ -163,8 +171,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 7,
-    "real": 7,
+    "total": 8,
+    "real": 8,
     "environmental": 0
   },
   "guards": {
