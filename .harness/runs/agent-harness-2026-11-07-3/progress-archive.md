@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 17:06 · A2-02 · passes
+
+lib/glossary.mjs: findIds (the list's own ids, then three masking passes), resolveIds (feature list; doc rows and headings newest file first; unresolved never guessed), glossaryMarkdown (byte cap, whole lines), strip, knownIds, fsReader and a CLI; 17 unit tests on fixtures copied read-only from dj-crate-streaming; tests 1814 → 1831.
+
+- **Files:** lib/glossary.mjs, tests/unit/glossary.test.mjs, tests/fixtures/glossary/, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
+- **Verified:** red first (module missing; then 2 review tests red), node --test glossary.test.mjs 17/17; bash tests/run.sh unit-tier 509/509; fast tier green 1003; node --check; CLI on the real dj checkout: 24 entries in 0.1 s, D-H1, Q99, I3 unresolved; dj git status --porcelain unchanged. Opus review: 2 Important (non-array features threw; D pass split a known S2-D1) and 9 Minor fixed (fences, spaced ranges, M8.1, empty ids, vanished files, absolute store, readStdin); strip of [a](x/(y)) and __init__ left.
+- **Tests:** 1814 → 1831
+- **Discovery** (affects A2-03, A2-04): glossary.mjs resolveIds takes featureList {path,text} and a reader {root, files()→[{path,mtimeMs,titleOnly}], read()}; fsReader(root,{mtimes}) is the fs one; knownIds(list) feeds findIds
+- **Discovery** (affects A2-05): Glossary refinements of the plan: D<n>-<digit> is a feature; a heading names an ID only before end/punctuation/a separator (not `## D24 on`, `## D1 – D23`, `## M8.1`); known ids go first
+- **Question for Michael:** The session's `git push -u origin harness-lane/agent-harness-2026-11-07-3/A2` was denied by the auto-mode classifier (Out-of-Place Publication); commit 62c1210 is local only. Should lane sessions be allowed that push, or does the harness push the lane branch itself? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/lib/glossary.mjs
+- **Proposed change:** A2-05's decision file should name the three glossary refinements above (D1-01 a feature, the heading's follower rule, the section number stripped) as *default*
+- *05-A2-02 · claude-opus-5-5*
+
 ### 2026-11-07 16:54 · A2-01 · passes
 
 Wrote docs/plans/2026-11-07-A2-context-bundle.md: glossary rules verbatim and how glossary.mjs applies them, dj fixtures with provenance, the line-by-line move of debrief.sh's gatherer into context.sh, harness context's CLI, context.json's shape, 30-day retention, the hook's bundle before the POST, all checks named with tiers.

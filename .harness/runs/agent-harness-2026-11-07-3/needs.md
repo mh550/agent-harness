@@ -62,3 +62,24 @@ harness needs done agent-harness-2026-11-07-3/2 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-07-3/3 --why "<answer>"
 ```
+
+## ⚠ A2-02 asked: The session's `git push -u origin harness-lane/agent-harnes…
+
+`agent-harness-2026-11-07-3/4` · since 2026-11-07T22:06:59.351Z
+
+**blocked** nothing waits on it; A2-02's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:7](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl?plain=1#L7)
+
+> The session's `git push -u origin harness-lane/agent-harness-2026-11-07-3/A2` was denied by the auto-mode classifier (Out-of-Place Publication); commit 62c1210 is local only. Should lane sessions be allowed that push, or does the harness push the lane branch itself? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/lib/glossary.mjs
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/lib/glossary.mjs](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-3/A2/lib/glossary.mjs) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl:7](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl?plain=1#L7)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-3/4 --why "<answer>"
+```
