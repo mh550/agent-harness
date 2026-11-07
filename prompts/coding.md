@@ -125,7 +125,10 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    features or the whole run (`affects`: feature ids, milestone ids, `"run"`, or `"project"` for a
    fact that outlives the run), `questions` are for Michael, `resolved` the questions you found
    answered (in `## Answers` or a decision) and the `Promote to Gotchas` facts you left out of
-   `## Gotchas`, copied as context.md shows them; the pack then leaves them out. Say what changed (files, test count
+   `## Gotchas`, copied as context.md shows them; the pack then leaves them out. `checks` is one line
+   saying why your milestone adds more check names than its `check_budget` in the feature list, when it
+   has one and you went over (the verify's note quotes it); a check that duplicates an existing
+   assertion replaces it, the old name leaving the fixture in the same commit. Say what changed (files, test count
    before → after), how you verified it (real names and numbers) and what the next session must
    know. The harness renders `progress.md` from these
    entries for Michael's phone: don't edit it. Then run

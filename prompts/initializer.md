@@ -42,6 +42,10 @@ Rules:
   e.g. `"after": ["N1"]`, or `"after": []`. The harness notes every milestone after the first that
   lacks it, and the lint flags it. On 2026-10-17 one feature waiting on Michael held back four whole
   milestones that didn't need it.
+- **`check_budget`**: when the spec gives a milestone a check budget (the number of check names it may
+  add to the suite's fixture), copy it as a top-level map beside `features`, `"check_budget": { "T1": 3 }`;
+  the verify notes the milestone's count against it (`T1: checks +4 ~1 −0 against a budget of 3 (over
+  budget: <why>)`), a note, never a gate. Leave the key out when the spec sets none.
 - **One feature = one session**: aim for 15–60 minutes of agent work ending in a commit with a green
   suite. Split anything bigger; merge anything trivially small into its neighbour (for a small
   milestone, plan and build can be one feature).
