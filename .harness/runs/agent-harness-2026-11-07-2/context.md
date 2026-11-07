@@ -1,15 +1,21 @@
-# Context pack for `M3-03`
+# Context pack for `M3-04`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## Michael's answers
+
+- ### 2026-11-07 14:02 (local) Question 2 (M3-04 review model): set M3-04, the M3 review, to `fable` for this run — we have the budget. In general, Opus stays the default model for reviews; the spec's "a Sonnet reader" does not override the initializer's rule. — Michael, 2026-11-07 → INBOX.md
+
 ## Discoveries for this feature
 
+- Discovery (M3-03, affects M3-04): The [] stub check went into curator-run.sh on its existing ce run (no new run), not memory-branch.sh; memory-branch.sh now sets LEDGER_COMMIT=1 with a git-init'ed $T/ledger → entries.jsonl:14
+- Discovery (M3-03, affects M3-04): finish now removes $STATE/memory.json right after ended (it was the top of curator()): a continue without a curator counts none. No stub run covers that path yet → entries.jsonl:14
+- Discovery (M3-03, affects M3-04): memoryState: unchanged = every headline 'memory: <run>: <n> facts' (GitHub's Update-branch merge neutral, no commits = edited); a commit of Michael's titled like the driver's reads unchanged (known limit, in the decision) → entries.jsonl:14
 - Discovery (M3-02, affects M3-03, M3-04): memory_open [merge]: under auto it notes nothing when the merge's note follows, else 'memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · <url>'; pr's note unchanged → entries.jsonl:13
 - Discovery (M3-02, affects M3-03, M3-04): memory-branch.sh now has 10 runs (ma auto, mr refused, mw auto without tier 1): its final worktree count is 11; mp (MERGE_POLICY=auto from base-config, MEMORY_POLICY=pr) carries the independence check → entries.jsonl:13
 - Discovery (M3-02, affects M3-03, M3-04): `bash tests/run.sh memory-pr` matches memory-prompts, not memory-branch (substring of the file name): M3-02/M3-03's step commands miss the memory checks → entries.jsonl:13
-- Discovery (M3-01, affects M3-02, M3-03): The spec's and M3-02/M3-03's tests/checks/memory-pr.sh is tests/checks/memory-branch.sh (renamed in M2-05); the off check to replace is in curator-run.sh → entries.jsonl:12
-- Discovery (M3-01, affects M3-03): stub-gh pr view takes a head branch, not a URL, and answers no mergedAt/commits: M3-03 adds both (gh's documented JSON shape, a fixture naming its source) → entries.jsonl:12
 - Discovery (M3-01, affects M3-03, M3-04): A continue adds a second driver commit to a reused memory PR: the plan reads 'merged unchanged' as every commit headline starting 'memory: <run>: ', not 'one commit' (default) → entries.jsonl:12
+- Discovery (M3-01, affects M3-04): Fast-tier check files are 58 after the retirement (grep -l '^# tier: fast' tests/checks/*.sh), not the spec's 55: its 'now 56' was older → entries.jsonl:12
 - Discovery (M3-01, affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 and M2-04/05 did; the Promote to Gotchas items stay for the curator → entries.jsonl:12
 - Discovery (M2-05, affects M3): A tier-3 op counts in both dropped and proposals (ops = applied + tier 2 + dropped): M3's summary.memory must not add dropped and proposed → entries.jsonl:10
 - Discovery (M2-05, affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 and M2-04 did; the Promote to Gotchas items stay for the curator → entries.jsonl:10
@@ -29,18 +35,11 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Promote to Gotchas
 
+- stub-gh answers pr view <url> --json state,mergedAt,commits: base..head in $STUB_DIR/origin.git, base kept at pr create (agent-harness-2026-11-07-2 2026-11-07) → entries.jsonl:14
 - A check run reads lib/ live from the worktree (tests/lib.sh HH=the checkout): never edit lib/ while a red run is going (agent-harness-2026-11-07-2 2026-11-07) → entries.jsonl:13
 - restrict covers only the session's checkout: a read-only role's push or out-of-tree write is bounded only by its permission mode; memory_foreign guards the memory branch → entries.jsonl:10
 - stub-gh keeps pr create's --body-file as prs/pr-N.body and has a pr edit case that rewrites it (record_pr's reuse now refreshes it too) → entries.jsonl:9
 - Check files that write user-config.sh from scratch (not cp base-config.sh) must carry MEMORY_POLICY=off, or their runs get a curator: the nine that exist now do. lib/eval.sh's safety() sets it too. → entries.jsonl:8
-- restrict commits the dirty tree, then reverts all since its base: a read-only role run after another in finish must rec_commit first (agent-harness-2026-11-07-2 2026-11-07) → entries.jsonl:6
+- restrict commits the dirty tree, then … → entries.jsonl:6
 
-## What it builds on
-
-- 2026-11-07 13:52 · M3-02 · passes: MEMORY_POLICY=pr|auto|off: auto merges the memory PR at the pushed tier-1 head (memory_merge, --match-head-commit; refused → left open, one note), an unknown value is one note and runs as pr, off writes no curator/memory note. Config, both templates, architecture §10 row, README, decision policy row. Review: under auto a PR opened with no new tier-1 commit had no note; fixed red→green.; tests 962 → 962; files lib/config.sh, lib/driver.sh, lib/record.sh, templates/project/config.sh, templates/user/config.sh, … → entries.jsonl:13
-
-## Lately in the run
-
-- 2026-11-07 13:39 · M3-01 · passes: M3 plan written (docs/plans/2026-11-07-M3-policy.md). memlint-self retired: its grep is a unit test in memlint.test.mjs (red on a mutant, conformance red before the fixture), its self-lint the curator's capCheck at the write plus memlint-run's notes. File deleted, names swapped in both fixtures, CHECK_KEY_MAP, key-map-lint, partial-key, README follow. Decision skeleton memory-policy.; tests 962 → 962; files docs/plans/2026-11-07-M3-policy.md, journal/decisions/2026-11-07-memory-policy.md, journal/decisions/2026-11-03-suite-tiers.md, tests/unit/memlint.test.mjs, tests/checks/memlint-self.sh, … → entries.jsonl:12
-
-_3 items left out at 8192 bytes: entries.jsonl has them all._
+_5 items left out at 8192 bytes: entries.jsonl has them all._
