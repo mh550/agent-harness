@@ -62,3 +62,45 @@ harness needs done agent-harness-2026-11-07-2/2 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-07-2/3 --why "<answer>"
 ```
+
+## ⚠ M2-01 asked: Default taken: tier 2 (every non-Gotchas, non-protected sec…
+
+`agent-harness-2026-11-07-2/4` · since 2026-11-07T16:27:45.758Z
+
+**blocked** nothing waits on it; M2-01's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L6)
+
+> Default taken: tier 2 (every non-Gotchas, non-protected section) is never committed; it goes in the memory PR body and the run record's memory.md as ready-to-paste text. The spec said 'one commit per tier'. Should tier 2 instead be a second commit on harness-memory/<run>? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-curator.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/journal/decisions/2026-11-07-memory-tiers.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-curator.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M2/docs/plans/2026-11-07-M2-curator.md) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/journal/decisions/2026-11-07-memory-tiers.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M2/journal/decisions/2026-11-07-memory-tiers.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L6)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-2/4 --why "<answer>"
+```
+
+## ⚠ M2-01 asked: Default taken: the cap refuses a tier-1 commit only when th…
+
+`agent-harness-2026-11-07-2/5` · since 2026-11-07T16:27:45.774Z
+
+**blocked** nothing waits on it; M2-01's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L6)
+
+> Default taken: the cap refuses a tier-1 commit only when the result is over 120 lines or 15 Gotchas AND grew on that measure, so hit_list (181 lines) can still take a replace or delete. Keep it, or refuse every write to an over-cap file? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-curator.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-curator.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M2/docs/plans/2026-11-07-M2-curator.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L6)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-2/5 --why "<answer>"
+```

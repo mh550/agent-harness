@@ -17,3 +17,11 @@
 - 2026-11-07 11:10 · context.md for M1: 9566 bytes
 - 2026-11-07 11:11 · M1: checks +12 ~5 −5 against a budget of 30
 - 2026-11-07 11:11 · M1 verified and tagged run/agent-harness-2026-11-07-2/M1
+- 2026-11-07 11:12 · lane M2 opened (slot 1, port 7829, from c225856)
+- 2026-11-07 11:12 · context.md for M2-01: 7458 bytes
+- 2026-11-07 11:12 · M1 merged into main · https://github.com/mh550/agent-harness/pull/125
+- 2026-11-07 11:12 · lane M1 closed (M1 merged)
+- 2026-11-07 11:12 · lane M1: branch harness-lane/agent-harness-2026-11-07-2/M1 deleted (merged)
+- 2026-11-07 11:27 · M2-01: suite ran 1x (112 s) in the session
+- 2026-11-07 11:27 · M2-01: 2 question(s) for Michael recorded (harness needs)
+- 2026-11-07 11:27 · M2-01 · claude-opus-5-5 · passes=true · 15 min · 4/12 passing · tests 1721

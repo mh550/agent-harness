@@ -9,6 +9,25 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 11:27 · M2-01 · passes
+
+Wrote docs/plans/2026-11-07-M2-curator.md: memory-ops.json's shape and validator, the tier rule and fixed protected list, anchor/gate/duplicate/cap steps, the bucket arithmetic, curator() in finish, memory_base/memory_pr, prompts/curator.md drafted, stub knobs, 40 of 60 planned names; tests/fixtures/memory/headings.txt (64 lines); the memory-tiers decision skeleton.
+
+- **Files:** docs/plans/2026-11-07-M2-curator.md, journal/decisions/2026-11-07-memory-tiers.md, tests/fixtures/memory/headings.txt
+- **Verified:** fast tier 938/938 (check.sh --fast, 112 s); headings.txt read from the eight ~/projects/*/CLAUDE.md: 8 tier 1, 43 tier 2, 12 tier 3; an Opus reviewer checked the plan against the code (1 Critical, 5 Important, 2 Minor), all eight folded into the plan and the two strongest confirmed in lib/record.sh:366 and :570.
+- **Tests:** 938 → 938
+- **Dead end:** a {{SECTIONS}} line at the end of the drafted curator prompt — retro.md has none: assemble appends the parts at the end, so the draft follows retro.md
+- **Discovery** (affects M2-03): In finish the retro's notes, retro.md, retro-proposals.json and metrics row are uncommitted: curator() must rec_commit before taking cstart, or its restrict reverts them
+- **Discovery** (affects M2-03): session() notes S_NOTES itself for every kind but retro (lib/record.sh:570): curator must join that exception, or its notes land before the restrict and are reverted
+- **Discovery** (affects M2-04): STUB_PROJECT_FACT gives every listed id one shared text (one key): M2-04's two distinct facts need the new STUB_FACTS knob
+- **Discovery** (affects M2-04): stub-gh has no pr edit case and keeps no PR body: M2-04 adds prs/pr-N.body and a pr edit case (record_pr's reuse already calls pr edit, which falls through to exit 0)
+- **Discovery** (affects M2-03, M3): tests/lib.sh base config must set MEMORY_POLICY=off (RETRO=1 is on in every stub run): a default-on curator moves counts in many check files
+- **Discovery** (affects project): restrict commits the dirty tree, then reverts all since its base: a read-only role run after another in finish must rec_commit first (agent-harness-2026-11-07-2 2026-11-07)
+- **Question for Michael:** Default taken: tier 2 (every non-Gotchas, non-protected section) is never committed; it goes in the memory PR body and the run record's memory.md as ready-to-paste text. The spec said 'one commit per tier'. Should tier 2 instead be a second commit on harness-memory/<run>? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-curator.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/journal/decisions/2026-11-07-memory-tiers.md
+- **Question for Michael:** Default taken: the cap refuses a tier-1 commit only when the result is over 120 lines or 15 Gotchas AND grew on that measure, so hit_list (181 lines) can still take a replace or delete. Keep it, or refuse every write to an over-cap file? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-curator.md
+- **Proposed change:** M2-04 step 1's 'git diff --stat origin/main names CLAUDE.md alone' should use origin/main...harness-memory/<run> (three dots): MERGE_POLICY=auto in the suite's base config merges the record PR into main after the curator
+- *04-M2-01 · claude-opus-5-5*
+
 ### 2026-11-07 11:11 · verify M1 · passes
 
 All 20 steps of M1-01..03 hold: full suite green (1728), subset runs pass (477/477, 31/31), prompts/pack/memory spec/docs/decision verified by reading code and tests.
