@@ -29,6 +29,10 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   not a stub run.
 - **Fakes mirror the live API.** Stub output copies real CLI/HTTP shapes (`tests/fixtures/`); never invent a format.
   The 2026-10-17 usage-limit miss came from a guessed stub line.
+- A new behaviour in a pure function gets a unit test in `tests/unit/`, never a stub run.
+- A stub run is added only for a driver behaviour no unit test can see, and goes in the check file named for its unit.
+- A check that duplicates an existing assertion replaces it: the old name leaves the fixture in the same commit.
+- A feature's checks are named for the behaviour, not for the feature id.
 
 ## How to verify
 
@@ -50,6 +54,9 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   (`bash tests/run.sh`) runs at verify. A change to `lib/driver.sh`, `lib/lane.sh`, `lib/record.sh`, `bin/harness` or a
   slow-tier check file also runs that file (`bash tests/run.sh <file>`) before the session ends.
 - `bash -n` on every shell file you touch; `node --check` on every `.mjs`.
+- Every retro reports the checks added, replaced and removed (`checks: +a ~b −c`, the record's `Checks` row).
+- A spec may give each milestone a check-count budget (`check_budget`); a milestone over it says why in its last coding
+  entry's `checks` field, and the verify note carries the reason.
 
 ## Where decisions and docs live
 
