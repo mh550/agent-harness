@@ -15,17 +15,30 @@ ON=(STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1)
 PARK=(STUB_PARK=B STUB_INDEPENDENT_M2=1 "${ON[@]}")
 withurl() { cp "$T/base-config.sh" "$T/user-config.sh"; echo "EVENT_URL=$EU" >> "$T/user-config.sh"; }
 
-# a park the hook takes (the stub answers 200): one park event, no ntfy post of it
+# a park the hook takes (the stub answers 200): one park event, no ntfy post of it. The spy notes, at the event POST,
+# whether its context.json and the context.md beside it exist yet; a 31-day-old bundle waits to be pruned
 withurl
-env "${PARK[@]}" "$H" start "$T/proj" evp --spec SPEC.md --foreground > "$T/evp.out" 2>&1
+mkdir -p "$HARNESS_STATE/events/stale" && touch -d '31 days ago' "$HARNESS_STATE/events/stale/event.json"
+SPY='for a; do [[ $a == "Content-Type: application/json" ]] && j=1; done; [[ ${j:-} ]] || exit 0
+  while (( $# )); do [[ $1 == --data-binary ]] && { c=$(jq -r ".context // empty" <<< "$2"); test -f "$c"; a=$?; test -f "${c%/*}/context.md"; b=$?
+    echo "$(jq -r ".kind + \" \" + .run" <<< "$2") $a $b $c" >> "$STUB_DIR/spy.log"; }; shift; done'
+env STUB_CURL_SPY="$SPY" "${PARK[@]}" "$H" start "$T/proj" evp --spec SPEC.md --foreground > "$T/evp.out" 2>&1
 P=$(evs 'map(select(.kind == "park" and .run == "evp"))') PID=$(jq -r '.[0].id // empty' <<< "$P" 2> /dev/null)
+PC=$HARNESS_STATE/events/$PID/context.json
+check "event run: a park event's context.json exists when the POST is made, event.json beside it" \
+  '[[ -n $PID && $(jq -r ".[0].context" <<< "$P") == "$PC" ]] && grep -Fx "park evp 0 0 $PC" "$T/spy.log" > /dev/null \
+   && jq -e ".scope.runs == [\"evp\"] and .runs[0].parked[0].feature == \"B\" and any(.runs[0].open_questions[]; startswith(\"B: set the gatus vars, then answer\"))" "$PC" > /dev/null \
+   && [[ -f $HARNESS_STATE/events/$PID/event.json && -s $HARNESS_STATE/events/$PID/context.md ]]'
+check "event run: the hook notes the old bundles it removed" \
+  '[[ ! -e $HARNESS_STATE/events/stale ]] && hlog evp | grep -F "events: removed 1 bundle older than 30 days" > /dev/null'
 check "event run: a park posts one park event with its feature, run, project and title, and no ntfy" \
-  '[[ $(jq length <<< "$P") == 1 ]] && jq -e ".[0] | .feature == \"B\" and .project == \"proj\" and .title == \"[evp] B needs you\" and .context == null and .v == 1" <<< "$P" > /dev/null \
+  '[[ $(jq length <<< "$P") == 1 ]] && jq -e ".[0] | .feature == \"B\" and .project == \"proj\" and .title == \"[evp] B needs you\" and .v == 1" <<< "$P" > /dev/null \
    && [[ $(kept "map(select(.id == \"$PID\")) | length") == 1 ]] && grep -F "event → n8n: park $PID" "$HARNESS_STATE/proj/evp/run.log" > /dev/null \
    && [[ $(curl_count "Title: [evp] B needs you") == 0 ]] && ! hlog evp | grep -F "event hook failed" > /dev/null'
 
-# the same park refused (500): the event, then today's ntfy post with the event's fields, and a note
-STUB_EVENT=500 env "${PARK[@]}" "$H" start "$T/proj" evf --spec SPEC.md --foreground > "$T/evf.out" 2>&1
+# the same park refused (500): the event, then today's ntfy post with the event's fields, and a note; its bundle
+# fails too (HARNESS_CONTEXT, the bundle command, is false), so the event goes without a context
+STUB_EVENT=500 env HARNESS_CONTEXT=false "${PARK[@]}" "$H" start "$T/proj" evf --spec SPEC.md --foreground > "$T/evf.out" 2>&1
 E=$(kept 'map(select(.kind == "park" and .run == "evf")) | .[0]') N=$(curl_with "Title: [evf] B needs you")
 check "event run: a park the hook refuses reaches ntfy with the event's fields, noted" \
   '[[ $(evs "map(select(.kind == \"park\" and .run == \"evf\")) | length") == 1 && -n $N && $E != null ]] \
@@ -33,6 +46,9 @@ check "event run: a park the hook refuses reaches ntfy with the event's fields, 
    && [[ $(hv "$N" Click) == "$(jq -r .click <<< "$E")" && $(hv "$N" Actions) == "$(jq -r .actions <<< "$E")" ]] \
    && [[ $(curl_body "Title: [evf] B needs you") == "$(jq -r .body <<< "$E")" ]] \
    && hlog evf | grep -F "event hook failed (500): park; sent to ntfy" > /dev/null'
+check "event run: a bundle that fails sends the event with a null context, noted" \
+  '[[ $(jq -r .context <<< "$E") == null && $(kept "map(select(.kind == \"park\" and .run == \"evf\")) | length") == 1 ]] \
+   && hlog evf | grep -F "context bundle failed for park; event sent without it" > /dev/null'
 
 # and again with EVENT_URL unset: the ntfy post is the fallback's, byte for byte but for the run id and the times
 cp "$T/base-config.sh" "$T/user-config.sh"
@@ -47,6 +63,9 @@ check "event run: a blocked run end posts a blocked event, feature null" \
   '[[ $(evs "map(select(.kind == \"blocked\" and .run == \"evg\")) | length") == 1 ]] \
    && jq -e ".[0] | .feature == null and .title == \"[evg] ended: blocked on A\" and .project == \"proj\" and .priority == \"high\"" <<< "$(evs "map(select(.kind == \"blocked\" and .run == \"evg\"))")" > /dev/null \
    && [[ $(curl_count "Title: [evg] ended: blocked on A") == 0 ]]'
+check "event run: a blocked run end's bundle says how it ended, not still running" \
+  'c=$(evs "map(select(.kind == \"blocked\" and .run == \"evg\")) | .[0].context") && c=$(jq -r . <<< "$c") && [[ -f $c ]] \
+   && jq -e ".runs[0] | .ended == \"blocked on A\" and .running == false" "$c" > /dev/null && grep -E -- "^- ended: blocked on A · [0-9-]+ [0-9:]+$" "${c%/*}/context.md" > /dev/null'
 
 # a run that ends done, EVENT_URL set: its start and its end are ntfy's alone
 env "${ON[@]}" "$H" start "$T/proj" evd --spec SPEC.md --foreground > "$T/evd.out" 2>&1
@@ -60,4 +79,11 @@ D=$(evs 'map(select(.kind == "debrief"))') DID=$(jq -r '.[0].id // empty' <<< "$
 check "event run: the debrief posts a debrief event with null project, run and feature" \
   '[[ $(jq length <<< "$D") == 1 ]] && jq -e ".[0] | .project == null and .run == null and .feature == null and .title == \"harness debrief\"" <<< "$D" > /dev/null \
    && grep -F "event → n8n: debrief $DID" "$HARNESS_STATE/queue/runner.log" > /dev/null && [[ $(curl_count "Title: harness debrief") == 0 ]]'
+DC=$(ls "$HARNESS_STATE"/debrief/*/context.md 2> /dev/null | tail -1)
+check "event run: the debrief event's bundle covers the debrief's runs" \
+  'c=$(jq -r ".[0].context" <<< "$D") && [[ $c == "$HARNESS_STATE/events/$DID/context.json" && -n $DC ]] \
+   && [[ $(jq -r ".scope.runs | join(\" \")" "$c") == "$(sed -n "s/^- Covers: .*: [0-9]* (\(.*\))\$/\1/p" "$DC")" ]] \
+   && [[ $(jq -r .scope.since "$c") == "$(sed -n "s/^- Covers: every run whose driver started since \([0-9-]* [0-9:]*\) .*/\1/p" "$DC")" && $(jq ".scope.runs | length" "$c") -ge 5 ]]'
+check "event run: the debrief event's bundle is the context its note was written from" \
+  'c=$(jq -r ".[0].context" <<< "$D") && [[ -n $DC && -f $c ]] && cmp "$DC" "${c%/*}/context.md" > /dev/null && [[ $(jq -r .id "$c") == "$DID" ]]'
 suite_end

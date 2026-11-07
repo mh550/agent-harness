@@ -362,8 +362,26 @@ coding and verify prompts: a fact to discoveries affecting project, a workflow l
 coding prompt names CLAUDE.md but doesn't paste it
 coding prompt: reviews go to subagents on the session's own model (A's prompt, its metrics row, prompt.sh's render: claude-sonnet-5-5)
 conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)
+context bundle: --since matches the debrief's dry-run context but the glossary
+context bundle: a bundle says how a finishing run ended
+context bundle: a new bundle removes events older than 30 days and says so
+context bundle: a run's summary is its summary.json, or null without one
+context bundle: an unknown run exits 1, no argument prints the usage and exits 2
+context bundle: context.json for --since names its time and every run since it
+context bundle: context.json has the spec's shape for one run
+context bundle: one run's context.md is its debrief section and a glossary
+context bundle: open_questions carries the parked run's INBOX question
+context bundle: the debrief's context says a finishing run is still running, as before the move
+context bundle: the debrief's own context ends with the glossary
+context bundle: with no --out it writes events/<uuid>/ and prints that directory
+context bundle: writes nothing outside its out directory, never summary.json
 context.md carries the earlier attempt's dead end
 context.md lists the decisions store's rules newest first
+context.mjs: context.json's keys are the spec's, in order
+context.mjs: mergeResults keeps each source once and drops an id another run resolved
+context.mjs: open questions are the INBOX's open asks, then the open question items
+context.mjs: runSection cuts one run's section from the gatherer's markdown
+context.mjs: staleBundles keeps a dir with any file newer than 30 days
 continuation queued: keeps attempts, brief marked as the debrief's
 continue after a no-list end merges main first
 continue finishes a paused run
@@ -508,10 +526,16 @@ event hook: notify returns 0 received, refused and timed out
 event hook: the fallback event carries ntfy's title, body, click, actions and priority
 event hook: the received event is kept under events/<id>/
 event run: a blocked run end posts a blocked event, feature null
+event run: a blocked run end's bundle says how it ended, not still running
+event run: a bundle that fails sends the event with a null context, noted
+event run: a park event's context.json exists when the POST is made, event.json beside it
 event run: a park posts one park event with its feature, run, project and title, and no ntfy
 event run: a park the hook refuses reaches ntfy with the event's fields, noted
 event run: started and a done run's end reach ntfy alone
+event run: the debrief event's bundle covers the debrief's runs
+event run: the debrief event's bundle is the context its note was written from
 event run: the debrief posts a debrief event with null project, run and feature
+event run: the hook notes the old bundles it removed
 event run: with EVENT_URL unset a park's ntfy post is the fallback's
 every one of those answers is the spawn's bytes; a reader asking while < <(ask) runs still gets its own; nothing on stderr
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
@@ -626,6 +650,24 @@ gc removed the finished worktree
 gc removes merged, clean worktrees holding ignored build output (--force, then rm -rf)
 gc units: --dry-run with units of another project's runs (live and ended) prints no ? line and no line naming them
 gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
+glossary.mjs: Q99 is unresolved and no near match is taken
+glossary.mjs: a D1 that is a decision row and a milestone keeps both
+glossary.mjs: a dotted id (M8.1, D24.3) is not its prefix, in a text or a table row
+glossary.mjs: a milestone of the feature list comes before its headings
+glossary.mjs: an id written in two files gives every match, newest file first
+glossary.mjs: an odd feature list or doc never throws and resolves nothing it cannot
+glossary.mjs: findIds never takes N1 from N1-01 nor H1 from D-H1
+glossary.mjs: findIds takes D24 and D-H1 as decisions, N1-01 as a feature, M8 and Q99 as milestones
+glossary.mjs: findIds takes an id of the feature list the regexes miss
+glossary.mjs: findIds takes the feature list's ids before the regex passes
+glossary.mjs: glossaryMarkdown keeps whole lines within its byte cap and says how many are left
+glossary.mjs: glossaryMarkdown renders one line per entry under ## Glossary, then Unresolved
+glossary.mjs: journal/decisions files count by their title line only
+glossary.mjs: resolveIds gives D-H1 its heading and the text under it
+glossary.mjs: resolveIds gives D24 its table row, stripped and cut at 300, with path and line
+glossary.mjs: resolveIds gives M8 the headings that open with it, newest file first
+glossary.mjs: resolveIds gives N1-01 its description and milestone
+glossary.mjs: the CLI prints the glossary and unresolved for a worktree, a list and stdin
 gotchasDiff: added, edited, deleted and no section
 gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
 harness backlog import of the seed file gives 8 rows, and 8 again on a second import
@@ -1143,6 +1185,7 @@ no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
 not queued: ended done / already queued / no work left / still running
 nothing parked
 notify.mjs event: a debrief has null project, run and feature
+notify.mjs event: a given id= is the event's id
 notify.mjs event: a kind outside v1 prints nothing and exits 2
 notify.mjs event: an empty click, actions or context is null, an empty priority stays the empty string
 notify.mjs event: buildEvent's keys are the v1 fixture's, in order

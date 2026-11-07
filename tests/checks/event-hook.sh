@@ -8,6 +8,7 @@ EU=https://n8n.example/webhook/harness-event
 # curl.log, log lines, notes, NOTIFY_CMD calls and return code land in $T/eh-<case>.{log,out,note,cmd,rc}
 eh() { local c=$1 s=$2; shift 2; rm -f "$T/curl.log"
   ( NTFY_URL=https://ntfy.example/t NTFY_TOKEN=tok-secret-123 NOTIFY_CMD="" EVENT_URL="" EVENT_TIMEOUT=5 RUN_ID=r1 PROJECT_NAME=proj
+    HARNESS_CONTEXT=$HERE/stub-context.sh   # r1 has no state dir: the real bundle would fail and note it
     log() { echo "$*" >> "$T/eh-$c.out"; }; note() { echo "$*" >> "$T/eh-$c.note"; }
     eval "$s"; source "$HERE/../lib/notify.sh"
     notify "needs Michael: B · x" title="[r1] B needs you" body="PARKED: x" priority=high click=https://e.test/c \

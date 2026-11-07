@@ -1,0 +1,11 @@
+{
+  "run": "planted-d",
+  "features": [
+    {
+      "id": "D1-01",
+      "milestone": "D1",
+      "description": "A planted feature of a project whose milestones start with D.",
+      "passes": false
+    }
+  ]
+}

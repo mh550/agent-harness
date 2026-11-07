@@ -9,6 +9,7 @@
 #      git, flock, claude), the usage-limit window (LIMIT_UNTIL): waits up to 5 h, longer: exits, the next one covers it
 #   2. bash gathers the context, no model: status, trends, the queue, runner.log, and for every run: why it ended, its card,
 #      what waits on Michael (harness needs), summary.json, report.md, the flakers, retro.md, INBOX.md, the open question items, each capped
+#      (lib/context.sh, shared with `harness context`), then a ## Glossary of the IDs the runs' sections name
 #   3. one headless session (DEBRIEF_MODEL), prompt on stdin, in dontAsk mode with an allowlist of read-only tools and
 #      the never-list as --disallowedTools; git status and refs of the ledger, worktrees and projects compared after
 #   4. its "CONTINUE: <run> :: <brief>" lines are checked here and queued (`harness queue add --continue … --automatic --keep-attempts`);
@@ -44,11 +45,8 @@ if [[ -n $(missing) ]]; then
 fi
 F() { node "$HARNESS_HOME/lib/features.mjs" "$@"; }
 MET() { node "$HARNESS_HOME/lib/metrics.mjs" "$@"; }
-alive() { local p; p=$(cat "$1/driver.pid" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null; }
-rec_dir() {   # state dir → the run's record: in its worktree, else the ledger's copy
-  ( source "$1/meta.env"; local r=$WT/.harness/runs/$RUN_ID
-    [[ -d $r ]] && echo "$r" || echo "$LEDGER/$(basename "$PROJECT_DIR")/$RUN_ID" )
-}
+# shellcheck source=lib/context.sh
+source "$HARNESS_HOME/lib/context.sh"   # alive, rec_dir and the gatherer (context_since, context_runs, context_glossary)
 
 if (( ! dry )); then
   exec 9> "$STATE_ROOT/debrief.lock"
@@ -68,11 +66,7 @@ fi
 # The next debrief's "since", taken before the scan: a run that starts from here on (during the limit wait, the
 # session) is not in this note, and the next debrief covers it.
 STARTED=$(date '+%F %T')
-RUNS=()
-for d in "$STATE_ROOT"/*/*/; do
-  [[ -f $d/meta.env && -f $d/run.log ]] || continue
-  awk -v s="$SINCE" '/^[0-9-]+ [0-9:]+ run [^ ]+ on / && ($1 " " $2) >= s { f = 1; exit } END { exit !f }' "$d/run.log" && RUNS+=("${d%/}")
-done
+mapfile -t RUNS < <(context_since "$SINCE")
 (( ${#RUNS[@]} )) || { say "no runs started since the last debrief ($SINCE); nothing to do"; exit 0; }
 
 if (( ! dry )); then
@@ -94,96 +88,10 @@ for d in "${RUNS[@]}"; do   # a still-running run: the next debrief starts from 
   [[ -n $t && $t < $STARTED ]] && STARTED=$t
 done
 WS=$STATE_ROOT/debrief/$(date +%F-%H%M%S); mkdir -p "$WS"; CTX=$WS/context.md
-fence() { echo '~~~'; cat; echo '~~~'; }
-capped() {   # bytes file [tail] → the file's head (or tail), with a note when cut
-  local n; n=$(wc -c < "$2")
-  if [[ ${3:-} == tail ]]; then tail -c "$1" "$2"; else head -c "$1" "$2"; fi
-  (( n > $1 )) && printf '\n… (cut: %s of %s bytes shown; the whole file: %s)\n' "$1" "$n" "$2"
-  return 0
-}
-run_context() {   # state dir → this run's section
-  ( source "$1/meta.env"
-    local proj rd ended f
-    proj=$(basename "$PROJECT_DIR"); rd=$(rec_dir "$1")
-    if alive "$1"; then ended="still running"; else ended=$(cat "$1/ended" 2>/dev/null || echo "not running, no end reason"); fi
-    echo; echo "### $RUN_ID ($proj)"; echo
-    echo "- ended: $ended"
-    echo "- project: $PROJECT_DIR (its docs: CLAUDE.md, README.md, docs/) · branch harness/$RUN_ID"
-    echo "- worktree: $WT$( [[ -d $WT ]] || echo ' (removed)') · run record: $rd · local state: $1"
-    echo "- started by a queue runner: $( [[ -s $1/runners ]] && echo yes || echo 'no (by hand)') · continuation queued: $(compgen -G "$Q/*-continue-$RUN_ID.args" > /dev/null && echo yes || echo no)"
-    echo "- features: $(F summary "$rd/feature_list.json" 2>/dev/null || echo 'no feature list')"
-    echo; echo "#### harness status"; N=3 "$H" status "$RUN_ID" 2>&1 | head -c 3000 | fence
-    # what waits on Michael: the records' cards, cut at a line with a note (the model can't tell a cut list otherwise)
-    echo; echo "#### needs"; COLUMNS=80 "$H" needs "$RUN_ID" > "$WS/needs.txt" 2>&1
-    if (( $(wc -c < "$WS/needs.txt") > 4000 )); then head -c 4000 "$WS/needs.txt" | sed '$d'; echo "… (cut at 4000 bytes; the rest: harness needs $RUN_ID)"
-    else cat "$WS/needs.txt"; fi | fence
-    for f in summary.json:12000 report.md:8000 retro.md:6000 INBOX.md:4000; do
-      echo; echo "#### ${f%%:*}"
-      if [[ ! -s $rd/${f%%:*} ]]; then echo "(none)"
-      elif [[ $f == summary.json:* ]]; then jq -c . "$rd/summary.json" > "$WS/s.json" 2>/dev/null || cp "$rd/summary.json" "$WS/s.json"
-        capped "${f##*:}" "$WS/s.json" | fence
-      elif [[ $f == INBOX.md:* ]]; then capped "${f##*:}" "$rd/INBOX.md" tail | fence
-      else capped "${f##*:}" "$rd/${f%%:*}" | fence; fi
-      # the checks that flaked in two or more of the project's last five ledgered runs (a flake once is noise)
-      [[ $f == report.md:* ]] && { echo; echo "#### flakes"; node "$HARNESS_HOME/lib/summary.mjs" flakers "$LEDGER/$proj" 2>&1 | fence; }
-    done
-    # the sessions' questions, from the needs record: open until answered (a later entry's resolved, or needs done); a run
-    # with no question item ever (asked before R4) from its entries, those no later entry resolves. 12 at most
-    echo; echo "#### Questions for Michael"
-    "$H" needs "$RUN_ID" --all --json > "$WS/q.json" 2> /dev/null
-    if jq -e 'any(.[]; .reason == "question")' "$WS/q.json" > /dev/null 2>&1; then
-      jq '[.[] | select(.reason == "question" and .resolved_at == null)
-        | "\(.card.question.text // "" | gsub("\\s+"; " ") | .[0:600]) (\(.ref)\(if .seen > 1 then ", asked \(.seen) times" else "" end))"]' "$WS/q.json"
-    else node "$HARNESS_HOME/lib/entries.mjs" questions "$rd" 2> /dev/null | jq '[.[] | "\(.text | gsub("\\s+"; " ") | .[0:600]) (\(.feature), entries.jsonl:\(.line))"]'
-    fi | jq -r --arg run "$RUN_ID" 'if length == 0 then "none open" else (.[0:12][] | "- " + .),
-      (if length > 12 then "… and \(length - 12) more: harness needs \($run)" else empty end) end' | fence
-    echo; echo "#### harness-log.md: needs Michael, conflicts, refusals, holds"
-    grep -iE 'needs Michael|conflict|refused|blocked|held' "$rd/harness-log.md" 2>/dev/null | tail -15 | cut -c1-400 | fence
-    echo; echo "#### harness-log.md (last 12 lines)"
-    tail -n 12 "$rd/harness-log.md" 2>/dev/null | cut -c1-400 | fence )
-}
-rate_info() {   # the newest rate-limit event in these runs' transcripts
-  local d f files=() last line=""
-  for d in "${RUNS[@]}"; do for f in "$d"/logs/*.jsonl; do [[ -f $f ]] && files+=("$f"); done; done
-  while IFS= read -r f; do   # oldest first: the last one found is the newest
-    last=$(grep -h '"type":"rate_limit_event"' "$f" | tail -1); [[ -n $last ]] && line=$last
-  done < <( (( ${#files[@]} )) && ls -tr "${files[@]}")
-  [[ -n $line ]] || { echo "none recorded"; return; }
-  jq -r '.rate_limit_info | "status \(.status); " + ([.unifiedWindows // {} | to_entries[]
-    | "\(.key) \((.value.utilization // 0) * 100 | round)% (resets \(.value.resetsAt | strflocaltime("%a %H:%M")))"] | join(", "))' <<< "$line" 2>/dev/null \
-    || echo "${line:0:400}"
-}
-spend() {
-  local d c total=0
-  for d in "${RUNS[@]}"; do c=$(jq -r '.cost.total // 0' "$(rec_dir "$d")/summary.json" 2>/dev/null || echo 0); total=$(jq -n "$total + ${c:-0}"); done
-  echo "$total"
-}
-names() { local d; for d in "${RUNS[@]}"; do basename "$d"; done | paste -sd' ' -; }
-{
-  echo "# Debrief context · $(date '+%F %H:%M')"
-  echo
-  echo "- Covers: every run whose driver started since $SINCE (the last debrief, or the queue runner's start): ${#RUNS[@]} ($(names))"
-  echo "- Queue runner now: $( [[ -f $Q/runner.pid ]] && kill -0 "$(cat "$Q/runner.pid")" 2>/dev/null && echo "going (pid $(cat "$Q/runner.pid"))" || echo "not running")"
-  echo "- Spend of these runs (summary.json cost.total, summed): \$$(spend)"
-  upto=$(cat "$STATE_ROOT/LIMIT_UNTIL" 2>/dev/null || echo 0)
-  echo "- Usage-limit window (LIMIT_UNTIL): $( (( upto > $(date +%s) )) && echo "closed until $(date -d "@$upto" '+%F %H:%M')" || echo "open$( (( upto )) && echo " (last closed until $(date -d "@$upto" '+%F %H:%M'))")")"
-  echo "- Latest rate-limit info in these runs' sessions: $(rate_info)"
-  echo; echo "## harness status (these runs; each one's section below has more)"; echo
-  for d in "${RUNS[@]}"; do N=1 "$H" status "$(basename "$d")" 2>&1 | head -1; done | fence
-  echo; echo "## harness trends (last 40 lines)"; echo; "$H" trends --md 2>&1 | tail -n 40 | cut -c1-400 | fence
-  echo; echo "## harness queue"; echo; "$H" queue list 2>&1 | head -n 60 | cut -c1-400 | fence
-  echo; echo "## Queue runner.log since $SINCE (last 200 lines)"; echo
-  awk -v s="$SINCE" 'on || (/^[0-9-]+ [0-9:]+ / && ($1 " " $2) >= s) { on = 1; print }' "$Q/runner.log" 2>/dev/null | tail -n 200 | cut -c1-400 | fence
-  echo; echo "## Runs"
-  for d in "${RUNS[@]}"; do run_context "$d"; done
-  echo; echo "## Retro backlog (ledger/retro-backlog.jsonl)"; echo
-  node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --jsonl --max-bytes 6000 2>&1 | fence
-} > "$CTX"
-CMAX=${HARNESS_DEBRIEF_CONTEXT_MAX:-150000}   # the whole context, after each part's own cap (many runs add up)
-if (( $(wc -c < "$CTX") > CMAX )); then
-  n=$(wc -c < "$CTX"); head -c $(( CMAX - 300 )) "$CTX" > "$WS/c.md"
-  printf '\n\n… (context cut at %s of %s bytes; the rest is in the run records listed above)\n' "$CMAX" "$n" >> "$WS/c.md"; mv "$WS/c.md" "$CTX"
-fi
+# its context.json beside it, from the same node call: the debrief event's bundle is this one copied (bundle=), so n8n
+# reads the runs the note covers, gathered once
+CTX_ID=$(cat /proc/sys/kernel/random/uuid 2> /dev/null) CTX_SCOPE_SINCE=$SINCE; [[ -n $CTX_ID ]] && CTX_JSON=$WS/context.json
+context_runs "${RUNS[@]}"; context_glossary "${RUNS[@]}"   # the context (lib/context.sh), then the glossary of its IDs
 
 if (( dry )); then echo "$CTX"; echo; cat "$CTX"; exit 0; fi
 
@@ -340,7 +248,7 @@ HL[0]="[debrief] ${HL[0]:-}"
 # lines (CONTINUE: answers, wherever the model put them). No click: the note is a local path.
 NM=$(awk '/^## / { on = tolower($0) ~ /^## needs michael/; next } on && NF' "$WS/body.md" | grep -Evix '[-*_ ]*(nothing|none)\.?[*_[:space:]]*' \
   | grep -Ev '^- (Queued|Not queued): ')
-notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}" kind=debrief
+notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}" kind=debrief bundle="$WS"
 # DESK=1 and something needs Michael: a Remote Control session briefs him on the note (9>&-: debrief.lock stays ours)
 [[ -n $NM && $DESK == 1 ]] && { "$H" desk --debrief > /dev/null 2>&1 9>&- || log "debrief: desk could not start (exit $?)"; }
 exit 0

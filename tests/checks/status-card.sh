@@ -55,7 +55,7 @@ check "status card: ASCII only under LC_ALL=C (lane and log lines are verbatim);
   && ! CD running -v | grep $'\''\e'\'' > /dev/null && HARNESS_TTY=1 TERM=xterm CD running | grep $'\''\e\\['\'' > /dev/null \
   && HOME=$T CD running | grep -x "  worktree   ~/wt/proj/running" > /dev/null'
 check "status card: the debrief keeps N=3 harness status <run>; the supervisor asks for -v and keeps N=20" '
-  grep -F "N=3 \"\$H\" status \"\$RUN_ID\"" "$HERE/../lib/debrief.sh" > /dev/null \
+  grep -F "N=3 \"\$H\" status \"\$RUN_ID\"" "$HERE/../lib/context.sh" > /dev/null \
   && grep -F "harness status {{RUN_ID}} -v" "$HERE/../prompts/supervisor.md" > /dev/null && grep -F "N=20 harness status {{RUN_ID}}" "$HERE/../prompts/supervisor.md" > /dev/null'
 check "status card: a driver killed before run.log has no NaN, a missing worktree is not removed by gc; a run started just now; N=0 adds no log field" '
   D=$HARNESS_STATE/proj/early; mkdir -p "$D" && printf "PROJECT_DIR=%q\nWT=%q\nRUN_ID=early\nSTATE=%q\n" "$T/proj" "$T/wt/proj/early" "$D" > "$D/meta.env" && sh -c "echo \$\$" > "$D/driver.pid"
