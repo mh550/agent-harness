@@ -1,0 +1,3 @@
+{"feature":"init","kind":"init","outcome":"passes","summary":"Set up the run."}
+{"feature":"A","kind":"coding","outcome":"passes","summary":"Built A.","discoveries":[{"text":"The stub server's port, set in tests/lib.sh, is 7000 (r1 2026-11-07)","affects":["project"]}]}
+{"feature":"B","kind":"coding","outcome":"passes","summary":"Built B; moved the stub port.","discoveries":[{"text":"The stub server's port, set in tests/lib.sh, is 7001 since B moved it (r1 2026-11-07)","affects":["project"]}]}

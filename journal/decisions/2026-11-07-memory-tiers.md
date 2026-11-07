@@ -30,8 +30,20 @@ invariants by M2-05); spec `docs/specs/2026-11-07-memory-curator.md` §M2; plan 
   - **Anchors** match one line of the section by the `key` normalizer of `lib/entries.mjs`, exported and imported,
     never copied (*default*); zero or two matches drop the op, naming the anchor.
   - **The write gate**: an op's text must be, by `key`, a `project` discovery or a `proposed_changes` string of the
-    entry its `from` names, not resolved later (*default*); a `delete` is exempt, its anchor must exist. Among ops of
-    one `key` the latest `from` is kept.
+    entry its `from` names, not resolved later (*default*); a `delete` is exempt, its anchor must exist. The gate runs
+    before the protected test (M2-02), so a tier-3 proposal reaches Michael only when an entry states it, and before
+    the dedupe, so among the ops of one `key` that pass it the latest `from` is kept (an op naming no entry never
+    eclipses one that does). Anchors, the dedupe and "already there" compare by `key` after a leading list marker
+    (`- `, `* `, `1. `) and the `(<run> <date>)` suffix are cut. *Tightened by M2-02's review:* the gate compares the
+    whole text, not its `key`: the op's text (suffix aside) is the stated item's or a cut of it at least 40
+    characters long (or the whole item), so no unstated tail rides on a stated first 40 characters; and a
+    `proposed_changes` string (Michael's: how to work here) gates a tier-2 or tier-3 op, never a tier-1 commit
+    (*default*).
+  - **The file as text**: a heading inside a ``` or ~~~ fence is no heading (`sectionEntries`, `headingLines` in
+    `lib/memlint.mjs`), a fenced block is one entry; a section heading that appears twice drops the op (which one is
+    meant is Michael's); a CRLF file keeps its line ends; a symlinked `CLAUDE.md` or `.harness/` is no file (apply
+    never reads or writes through a link); `why` is one line, and an `@login` outside a fence in the body is broken
+    with a zero-width space so the PR notifies no one.
   - **The cap**: `lintText` re-run on the result; over 120 lines or 15 `## Gotchas` entries, and grown on that
     measure (*default*), refuses the tier-1 commit whole with one note. An `add` past the cap passes only with an
     anchor, the line it evicts.

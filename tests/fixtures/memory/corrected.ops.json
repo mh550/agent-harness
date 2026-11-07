@@ -1,0 +1,4 @@
+[
+  {"op":"add","file":"CLAUDE.md","section":"## Gotchas","text":"The stub server's port, set in tests/lib.sh, is 7000 (r1 2026-11-07)","tier":1,"why":"A found the port.","from":"entries.jsonl:2"},
+  {"op":"add","file":"CLAUDE.md","section":"## Gotchas","text":"The stub server's port, set in tests/lib.sh, is 7001 since B moved it (r1 2026-11-07)","tier":1,"why":"B moved it.","from":"entries.jsonl:3"}
+]

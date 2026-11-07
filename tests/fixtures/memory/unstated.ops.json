@@ -1,0 +1,3 @@
+[
+  {"op":"add","file":"CLAUDE.md","section":"## Gotchas","text":"Never run the suite under TEST_JOBS=1: it hides the races (r1 2026-11-07)","tier":1,"why":"Composed by the curator.","from":"entries.jsonl:2"}
+]
