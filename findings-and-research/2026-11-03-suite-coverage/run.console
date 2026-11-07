@@ -1,0 +1,11 @@
+2026-11-07 09:39:50 solo-measure in /home/mh550/projects/agent-harness/.claude/worktrees/after-measure
+2026-11-07 09:39:51 pre-flight ok · branch worktree-after-measure · tree 85114a1 · load 1.06 1.06 1.11
+2026-11-07 09:39:51 unit tests: counting (one node process)
+2026-11-07 09:40:03 static: names 1720 · fast names 929 · files 58f/42s · stub starts 203 in 67 files · unit tests 452
+2026-11-07 09:40:03 solo run 1/2 starting (hang guard 2400s) → findings-and-research/2026-11-03-suite-coverage/after-solo-1.out
+2026-11-07 09:50:36 solo run 1: wall 633.0 s · CPU 2284.1 CPU-s (1194.29 user + 1089.85 system) · 1721/1721 checks passed · exit 0
+2026-11-07 09:50:36 solo run 2/2 starting (hang guard 2400s) → findings-and-research/2026-11-03-suite-coverage/after-solo-2.out
+2026-11-07 10:01:13 solo run 2: wall 637.1 s · CPU 2274.5 CPU-s (1189.29 user + 1085.21 system) · 1721/1721 checks passed · exit 0
+2026-11-07 10:01:13 best run 2: CPU 2274.5 CPU-s (+7.9 % against 2108.1), wall 637.1 s · prediction -10 to -20 %: missed
+filled: the after row in findings-and-research/2026-11-03-suite-coverage.md, and both Predictions cells in journal/decisions/2026-11-03-purity.md
+2026-11-07 10:01:13 files written
