@@ -40,3 +40,6 @@
 - 2026-11-07 13:17 · M2-05: suite ran 2x (1436 s) in the session
 - 2026-11-07 13:17 · M2-05: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-07 13:17 · M2-05 · claude-opus-5-5 · passes=true · 41 min · 8/12 passing · tests 1775
+- 2026-11-07 13:17 · merged main into harness-lane/agent-harness-2026-11-07-2/M2
+- 2026-11-07 13:17 · verify M2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 13:28 · context.md for M2: 16065 bytes

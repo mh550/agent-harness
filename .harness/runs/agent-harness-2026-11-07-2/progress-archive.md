@@ -9,6 +9,45 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 13:30 · verify M2 · passes
+
+All five M2 features hold: full suite green (1775), unit 477/477, curator-run/memory-branch/lanes-record-pr/retro-backlog/verify-retro-read-only 51/51, syntax checks pass, docs/decision/review present, 47 names within budget 60.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M2-01 | 1 | grep '^#' docs/plans/2026-11-07-M2-curator.md | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 2 | read plan 'memory-ops.json' section | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 3 | wc -l tests/fixtures/memory/headings.txt; head -3 | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 4 | read plan 'Applying' section; ls tests/fixtures/memory | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 5 | read plan 'driver's flow' | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 6 | read plan prompt draft | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 7 | grep '^-' journal/decisions/2026-11-07-memory-tiers.md | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 8 | init.out: full suite | full suite green 676 s, 1775 tests | yes |
+| M2-02 | 1 | node --test --test-isolation=none tests/unit/*.test.mjs | 477 tests, 477 pass, fail 0 incl. curator.mjs tests | yes |
+| M2-02 | 2 | node --check lib/curator.mjs; grep -c 'slice(0, 40)' lib/curator.mjs | syntax ok; grep prints 0; exports tierOf etc present | yes |
+| M2-02 | 3 | head headings.txt; ls tests/fixtures/memory | 64 lines, 3-column, source line first; harm fixtures present | yes |
+| M2-02 | 4 | read prompts/curator.md; curator-run.sh:33 renders prompt-curator.md | placeholders RUN_ID/PROJECT/RUN_DIR; rendered-prompt check passes in curator-run | yes |
+| M2-02 | 5 | unit run + init full suite | fail 0; suite green | yes |
+| M2-03 | 1 | bash tests/run.sh curator-run | curator-run checks all PASS | yes |
+| M2-03 | 2 | read lib/driver.sh:265-289,389; lib/config.sh:42,58; summary.mjs; bash -n; node --check | curator() after retro before record_pr; MEMORY_POLICY=pr, CURATOR_MODEL=opus; summary counts curator; syntax ok | yes |
+| M2-03 | 3 | read tests/stub-claude.sh:433; curator-run.sh:33 | stub branch exists; prompt check passes | yes |
+| M2-03 | 4 | bash tests/run.sh curator-run lanes-record-pr retro-backlog verify-retro-read-only memory-branch | 51/51 checks passed | yes |
+| M2-03 | 5 | init full suite | suite green | yes |
+| M2-04 | 1 | bash tests/run.sh memory-branch (file renamed from memory-pr.sh by M2-05) | 15/15 pass incl. one commit, body, record PR opens, cap refusal, anchor evict, continue reuse | yes |
+| M2-04 | 2 | read lib/record.sh memory_pr/driver.sh:285; bash -n | memory_pr present, scratch worktree, never forced; syntax ok | yes |
+| M2-04 | 3 | memory-branch checks on notes and memory.json | notes check PASS; memory.json counts | yes |
+| M2-04 | 4 | read decision choice section | choice section records as built | yes |
+| M2-04 | 5 | bash tests/run.sh memory-branch curator-run lanes-record-pr | 51/51 checks passed | yes |
+| M2-04 | 6 | init full suite | suite green | yes |
+| M2-05 | 1 | read docs/plans/2026-11-07-M2-review.md | three questions answered with file/line; 0 Critical, 4 Important, 6 Minor | yes |
+| M2-05 | 2 | review findings table; unit 477 pass; bash -n/node --check | 4 Important fixed with tests; syntax ok | yes |
+| M2-05 | 3 | read decision: Finding, Choice, Rejected, invariants, Checks | all sections present incl. rejected and two invariants | yes |
+| M2-05 | 4 | grep architecture.md and README.md for curator/memory-ops/MEMORY_POLICY | §3,§4,§5,§7,§8,§10 and README paragraph present | yes |
+| M2-05 | 5 | git diff base -- check-names.txt \| grep -c '^+[^+]' / '^-[^-]' | 47 added, 0 removed, within 60; reason in decision | yes |
+| M2-05 | 6 | init.out | green 676 s, 1775 tests | yes |
+
+- *132857-verify-M2 · claude-sonnet-5-5*
+
 ### 2026-11-07 13:17 · M2-05 · passes
 
 M2 review: 0 Critical, 4 Important, 6 Minor. Fixed RED→GREEN: memory_foreign refuses a foreign harness-memory tip; quiet+cap section in the body; a reused tip without PR gets one (memory_open); a write changing a protected section's raw lines is dropped. ro_rescue shared by retro/curator; decision completed; architecture/README document the curator.
