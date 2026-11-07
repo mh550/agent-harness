@@ -9,7 +9,8 @@ printf '#!/usr/bin/env bash\na=$*; echo "${a//[[:cntrl:]]/ }" >> "$NODE_COUNT"\n
 cp -a "$T/proj" "$T/origin.git" "$MD/pristine/"
 fresh() {
   cd "$MD" || return 1
-  local f; for f in "$T"/* "$T"/.[!.]*; do case ${f##*/} in hr|bin|tmux|base-config.sh) ;; *) rm -rf "$f" ;; esac; done
+  # tmp is the suite's TMPDIR (tests/lib.sh): without it every mktemp of a stub fails and the gh stub's merge hangs on retries
+  local f; for f in "$T"/* "$T"/.[!.]*; do case ${f##*/} in hr|bin|tmux|tmp|base-config.sh) ;; *) rm -rf "$f" ;; esac; done
   cp -a "$MD/pristine/proj" "$MD/pristine/origin.git" "$T/"; cp "$T/base-config.sh" "$T/user-config.sh"; cd "$T/proj" || return 1
 }
 # one_run <name> [<VAR=value>…]: park-desk's first start, from a fresh state; its logs and list kept under $MD/<name>;
