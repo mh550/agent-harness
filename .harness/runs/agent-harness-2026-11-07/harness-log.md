@@ -26,3 +26,9 @@
 - 2026-11-07 05:07 · context.md for S4: 15728 bytes
 - 2026-11-07 05:08 · S4: checks +215 ~1 −0
 - 2026-11-07 05:08 · S4 verified and tagged run/agent-harness-2026-11-07/S4
+- 2026-11-07 05:08 · S4 merged into main · https://github.com/mh550/agent-harness/pull/120
+- 2026-11-07 05:08 · lane S4 closed (S4 merged)
+- 2026-11-07 05:08 · lane S4: branch harness-lane/agent-harness-2026-11-07/S4 deleted (merged)
+- 2026-11-07 05:08 · every feature passes
+- 2026-11-07 05:08 · run ended (done): 5/5 passing · 7 sessions (7 real) · 5 features passed · $31.50 · 2.6 h · by kind: init 1 ($5.79), coding 5 ($25.44), verify 1 ($0.27) · by model: claude-fable-5-1 1 ($5.79), claude-opus-5-5 5 ($25.44), claude-sonnet-5-5 1 ($0.27)
+- 2026-11-07 05:08 · services stopped (done)
