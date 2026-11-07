@@ -924,7 +924,7 @@ memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming i
 memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9
 memlint: the old rane store without its current-rule-set header yields a header finding
 memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonight
-memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
+memlint: the store lookup is decisionsStore, the one function reading .harness/config.sh and docs/decisions.md, each on one line
 memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
 memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
 memory PR: a 16th Gotchas add without an anchor refuses the tier-1 commit; no branch, no PR

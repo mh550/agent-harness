@@ -205,3 +205,6 @@ Updated in place 2026-11-06 (the process session, Decision 18 of the redesign's 
 were slow (the whole file was over the line) went with the shape's split, and the gate's own path through the driver
 runs in a coding session's gate again. `node-memo` stays slow: at the line (28 s alone, 31 s inside a full run), it
 would change sides with the load. Two header lines and 15 names into the fast fixture.
+Updated in place 2026-11-07 (run agent-harness-2026-11-07-2, M3-01): `memlint-self` is retired, its grep a unit test and
+its lint of this checkout the curator's cap check at the write (decisions/2026-11-07-memory-policy); its row above
+stays as history, and the fast tier has one file fewer.

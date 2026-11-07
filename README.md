@@ -412,7 +412,7 @@ every full run under their names in `tests/fixtures/check-names.txt` (decisions/
 hold decisions that used to be bash, each answering a branch and never a note's words (decisions/2026-11-03-purity):
 `lib/checkdecide.mjs` the suite runner's cache and rerun, `lib/lane.mjs` the lane's verdict and exit table and how a run
 ends, `lib/queue.mjs` the queue entry's format, beside `lib/inbox.mjs`, which now reads INBOX.md's `status:` line too.
-A check file is named for what it tests (`queue-debrief`, `memlint-self`, `session-gate-check`), with no number, and no
+A check file is named for what it tests (`queue-debrief`, `memlint-run`, `session-gate-check`), with no number, and no
 file's name is part of another's: `tests/run.sh <file>` and the rerun of a red file then pick that file alone (the name
 lint in `suite-runner` is red on a pair; `journal/decisions/2026-11-05-suite-shape.md` has the names the files had before).
 Each `tests/checks/*.sh` sources `tests/lib.sh` (a fresh `$T`, private tmux server, stub environment and throwaway
