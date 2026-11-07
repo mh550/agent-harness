@@ -9,6 +9,23 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 12:10 · M2-03 · passes
+
+curator() in lib/driver.sh: after the retro, before the summary and record_pr; MEMORY_POLICY=pr|off and CURATOR_MODEL=opus in config; memory_base and memory_pr's validate (invalid, []) in record.sh; summary.mjs counts the curator role; stub # Curator session with STUB_CURATOR_OPS/EDITS; curator-run.sh (8, slow) and 1 unit test. Opus review: 1 Important, 4 Minor; 4 fixed.
+
+- **Files:** lib/driver.sh, lib/record.sh, lib/config.sh, lib/prompt.sh, lib/summary.mjs, lib/eval.sh, tests/checks/curator-run.sh, tests/stub-claude.sh, tests/lib.sh, tests/unit/summary.test.mjs, tests/fixtures/memory/stub-three-ops.json, tests/fixtures/check-names.txt, +1 more
+- **Verified:** curator-run 8/8 watched red first (1/8, the off check vacuous); summary unit test red then green; mutant without rec_commit before cstart turns the edits check red; curator-run lanes-record-pr retro-backlog verify-retro-read-only memory-prompts 51/51; with park-desk queue-debrief stop-records eval-run 198/198; fast tier 961 green (check.sh --fast, 113 s)
+- **Tests:** 960 → 961
+- **Dead end:** grepping the rendered prompt for the absolute run dir — {{RUN_DIR}} renders relative (.harness/runs/<run>)
+- **Discovery** (affects M2-04, M3): memory_pr ends at the validate: invalid → 'curator: memory-ops.json invalid: <why>', [] → 'curator: no operations', a non-empty valid file → nothing yet. M2-04 adds steps 2–8, memory.json (step 8) included: M2-03 writes none.
+- **Discovery** (affects M2-04): memory_base is the simple form: MEM_BASE=origin/<main> after a fetch, CLAUDE.md and .harness/project.md copied to $SCRATCH/memory-base/. M2-04 adds the open memory PR's reuse (pr view harness-memory/<run>) with its continue check.
+- **Discovery** (affects M2-04): tests/fixtures/memory/stub-three-ops.json exists, with the texts M2-04's STUB_FACTS must produce: 'the stub's <id> work sits in work-<id>.txt at the root ({{RUN}} {{DATE}})'. The stub fills {{LINE:<id>}} for any id the file names.
+- **Discovery** (affects project, M2-04, M3): Check files that write user-config.sh from scratch (not cp base-config.sh) must carry MEMORY_POLICY=off, or their runs get a curator: the nine that exist now do. lib/eval.sh's safety() sets it too.
+- **Discovery** (affects M2-05, M3): finish runs the curator only when MEMORY_POLICY != off and feature_list.json exists; it rebuilds summary.json once after the retro and the curator (rc flag), not after each one.
+- **Proposed change:** M2-05's review: where-things-go-readonly.md / -override.md say '(a retro: your report)'; the curator gets those parts too and has no entry or report, so a clause for it ('the curator: memory-ops.json') would read truer. Left alone here: memory-prompts greps those parts.
+- **Proposed change:** M2-05's docs: README and docs/architecture.md need MEMORY_POLICY, CURATOR_MODEL, the curator in finish's order, memory-ops.json in the run record, and the curator role in Spend by role.
+- *06-M2-03 · claude-opus-5-5*
+
 ### 2026-11-07 11:45 · M2-02 · passes
 
 lib/curator.mjs (validate, tierOf, matchAnchor, capCheck, apply, body, main validate|apply|body); factKey/factText/resolvedText exported from entries.mjs; sectionEntries/headingLines (fence-aware) in memlint.mjs; prompts/curator.md; 22 unit tests on headings.txt and three harm fixtures. Opus review: 2 Important, 6 Minor, fixed red→green.
