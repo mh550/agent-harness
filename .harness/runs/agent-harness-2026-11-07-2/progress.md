@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 14:52 · M3-04 · passes
+
+M3 review (fable, one round): 0 Critical, 2 Important, 5 Minor. I1: memlint-self's 'lints clean' lost its derivable-count and run-scope half; apply now drops such a tier-1 op. I2: memory.jsonl is keyed by url, so a continue's new PR no longer erases a merged one. Doc drift fixed, co check anchored. Decision completed (over-cap, rejected, Predictions, budget 18+/2-). Full suite green, 1791.
+
+- **Files:** lib/curator.mjs, lib/summary.mjs, tests/unit/curator.test.mjs, tests/unit/summary.test.mjs, tests/checks/curator-run.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-07-memory-policy.md, docs/plans/2026-11-07-M3-review.md, docs/architecture.md, README.md
+- **Verified:** Both new or changed unit tests seen red in the baseline full run (1788/1791: those two plus conformance), then green; full suite 'check: green in 687 s, 1791 tests'; fast tier green (cached on the same tree); bash -n and node --check on every M3 file; fixture diff 18 added, 2 removed.
+- **Tests:** 1790 → 1791
+- **Discovery** (affects run): curator.mjs apply drops a tier-1 op whose text lintText finds a derivable-count or run-scope in (reason '<check>: <text>'); tier 2/3 untouched
+- **Discovery** (affects project): journal/ is in this repo's CHECK_KEY_IGNORE: a check reading journal/decisions answers from the cache on a journal-only edit (agent-harness-2026-11-07-2 2026-11-07)
+- **Discovery** (affects run): Prediction missed: agent-harness CLAUDE.md is 97 lines (predicted 96 or fewer): M1-02's rerouted Where-things-go line wraps to two
+- **Question for Michael:** The decisions-store half of memlint-self's 'this checkout lints clean' now has no suite check (journal/ is outside the suite key), only the segment-start memlint note and harness memlint (default). Keep it that way, or add a unit test reading journal/decisions and take journal/ out of CHECK_KEY_IGNORE? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/journal/decisions/2026-11-07-memory-policy.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/docs/plans/2026-11-07-M3-review.md
+- **Proposed change:** Before MEMORY_POLICY=auto is turned on anywhere: record the pushed memory head in the state dir and have memory_base accept only that tip (memory_foreign trusts headlines, so a hand-pushed 'memory: <run>: <n> facts' commit would ride an auto merge; M3 review m2)
+- *12-M3-04 · claude-opus-5-5*
+
 ### 2026-11-07 14:14 · M3-03 · passes
 
 Counting: summary.json's memory (memory.json's five keys), the report's Memory row after Checks, the ledger row's memory, ledger/memory.jsonl (ledger(), memory-line, committed under LEDGER_COMMIT=1), and harness memory [--last n] [project] (lib/memory.sh: gh pr view <url> --json state,mergedAt,commits per row, never stored). stub-gh answers pr view by URL. Review: 9 Minor fixed.
