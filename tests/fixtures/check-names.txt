@@ -407,6 +407,14 @@ curator.mjs: tierOf gives every heading of the eight projects its fixture tier
 curator.mjs: tierOf protects a heading by prefix, its dated or parenthesised suffix aside
 curator.mjs: validate passes a file of three ops and returns them
 curator.mjs: validate refuses a malformed file whole with its first reason
+curator: MEMORY_POLICY=off runs no curator and writes no curator note
+curator: a curator's edits to CLAUDE.md and lib/ are reverted with one note, its memory-ops.json kept
+curator: a run under MEMORY_POLICY=pr ends done with one zz-curator transcript and a curator metrics row
+curator: an empty memory-ops.json notes no operations; no memory branch, no memory PR
+curator: an invalid memory-ops.json is one note; the run ends done and its record PR opens
+curator: its run.log line comes after the retro's, its notes before the record PR's
+curator: memory-ops.json is kept in the run record
+curator: the rendered prompt names memory-ops.json, the three ops, the write gate and that it writes no project file
 debrief --dry-run gathers the retro backlog, not Earlier retros
 debrief notifications go to NTFY_URL when set
 debrief waits for the usage-limit window, then runs
@@ -1515,6 +1523,7 @@ summary.mjs: main gives the CLI's bytes for report --md, suite-runs, ledger-line
 summary.mjs: main's view is the io's: isTTY and columns from io, never the process's stdout
 summary.mjs: report lists only the sessions over 2 GB
 summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: the curator session counts under its own role in cost by role
 summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
 summary: tokens, per verified feature, first-attempt rate, rework
 sync: a local commit outside ledger/ is left alone, nothing pushed

@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sameAsCli, mainOf } from "./cli-same.mjs";
-import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine } from "../../lib/summary.mjs";
+import { parseRunLog, redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
@@ -389,4 +389,23 @@ test("summary.mjs: checksLine prints +a ~b −c with each milestone and its budg
     writeFileSync(join(d2, "b.txt"), "a\nb\nc\nd\n"); writeFileSync(join(d2, "t.txt"), "a\nbb\nd\n");
     assert.deepEqual(await sameAsCli("summary.mjs", ["checks-diff", join(d2, "b.txt"), join(d2, "t.txt")]), { rc: 0, out: '{"added":0,"replaced":1,"removed":1}\n' });
   } finally { rmSync(d2, { recursive: true, force: true }); }
+});
+
+// ---- the curator (M2-03): its own session and role, after the retro ----
+test("summary.mjs: the curator session counts under its own role in cost by role", () => {
+  const log = ["2026-11-07 10:00:00 run r on harness/r in /w · port 7800", "2026-11-07 10:01:00 retro · sonnet", "2026-11-07 10:03:00   retro exit 0 · abc x",
+    "2026-11-07 10:03:10 curator · opus", "2026-11-07 10:05:10   curator exit 0 · abc x"].join("\n");
+  const { sessions } = parseRunLog(log);
+  assert.equal(JSON.stringify(sessions.map(s => [s.kind, s.feature, s.wall])), JSON.stringify([["retro", null, 120], ["curator", null, 120]]));
+  const d = mkdtempSync(join(tmpdir(), "cur-")), wt = join(d, "p", "w"), rec = join(wt, ".harness/runs/r"), st = join(d, "state");
+  try {
+    mkdirSync(rec, { recursive: true }); mkdirSync(st);
+    writeFileSync(join(rec, "feature_list.json"), JSON.stringify({ features: [{ id: "A", milestone: "M1", kind: "build", passes: true }] }));
+    writeFileSync(join(rec, "metrics.jsonl"), [{ kind: "retro", role: "retro", feature: null, model: "sonnet", passes: true, cost_usd: 0.2, turns: 12 },
+      { kind: "curator", role: "curator", feature: null, model: "opus", passes: true, cost_usd: 0.1, turns: 12 }].map(r => JSON.stringify(r) + "\n").join(""));
+    writeFileSync(join(st, "run.log"), log + "\n");
+    const s = build(wt, "r", st);
+    assert.equal(JSON.stringify([s.sessions.total, s.cost.by_role, Object.keys(s.time.by_role_h)]), JSON.stringify([2, { retro: 0.2, curator: 0.1 }, ["retro", "curator"]]));
+    assert.equal(rowOf(s, "| Spend by role | ").row, "| Spend by role | retro $0.20 · curator $0.10 · manager (the bash driver) $0.00 |");
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });

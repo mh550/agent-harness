@@ -2,9 +2,9 @@
 # tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- run 14: v2-style tags don't merge on a resume; `harness merge` merges them ----
-echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MERGE_POLICY=off' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MEMORY_POLICY=off MERGE_POLICY=off' > "$T/user-config.sh"
 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" legacy --spec SPEC.md --foreground > "$T/run14.out" 2>&1
-echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MEMORY_POLICY=off' > "$T/user-config.sh"
 # its record made pre-E4 (E4-04): no journal, a progress.md the sessions wrote; `harness continue` keeps it as the archive
 LW=$T/wt/proj/legacy LR=$T/wt/proj/legacy/.harness/runs/legacy
 git -C "$LW" rm -q --ignore-unmatch "$LR/entries.jsonl" "$LR/progress-archive.md"

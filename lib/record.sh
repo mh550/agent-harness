@@ -372,6 +372,27 @@ restrict() {   # base record|nothing|memory who
   commit_all "HARNESS: reverted edits a $3 session may not make"
 }
 
+# The curator's base (decisions/2026-11-07-memory-tiers): origin's main, whose CLAUDE.md and .harness/project.md go to
+# $SCRATCH/memory-base/ for the session to read, so its anchors are matched against the text the apply sees, not the
+# record branch's older copy. MEM_BASE ← that commit; 1 (one note) when there is none
+memory_base() {
+  local d=$SCRATCH/memory-base f
+  origin_t git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
+  MEM_BASE=$(git -C "$RWT" rev-parse -q --verify "origin/$MAIN_BRANCH^{commit}") || { note "curator: none (no origin/$MAIN_BRANCH to curate against)"; return 1; }
+  rm -rf "$d"; mkdir -p "$d/.harness"
+  for f in CLAUDE.md .harness/project.md; do git -C "$RWT" show "$MEM_BASE:$f" > "$d/$f" 2> /dev/null || rm -f "$d/$f"; done
+}
+
+# The curator's memory-ops.json (rescued to $SCRATCH) → its notes: invalid or empty is one note and nothing more
+memory_pr() {
+  local why n
+  why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) \
+    || { note "curator: memory-ops.json invalid: $(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)"; return 0; }
+  n=$(jq length "$SCRATCH/memory-ops.json" 2> /dev/null)
+  [[ $n == 0 ]] && { note "curator: no operations"; return 0; }
+  return 0
+}
+
 # Bring main's new commits into the branch checked out here (a lane at its verify, so what is verified is what merges;
 # the record branch at a resumed start, for its configuration). In a lane under CONFLICTS=resolve a conflict goes to a
 # resolve session first (lib/resolve.sh): resolved, 0 (the verify runs on the merged tree); refused by a limit, 2 (no
@@ -540,7 +561,7 @@ clock() {
 
 # kind model log who → runs claude headless on $LS/prompt.md in its own capped scope (decisions/2026-10-25-scoped-sessions);
 # sets S_EXIT, S_WALL, S_PEAK (MB, empty when uncapped) and S_NOTES (what the scope showed; noted here, except for the
-# read-only retro, whose caller notes them after restrict, which would revert them). The caller's S_RESUME (a session id:
+# read-only retro and curator, whose callers note them after restrict, which would revert them). The caller's S_RESUME (a session id:
 # --resume, and its entry.json kept), S_TURNS, S_TIMEOUT and S_BUDGET override the defaults (entry_resume's)
 session() {
   local settings=() mcp=(--strict-mcp-config) t0 seq unit left x resume=()
@@ -567,7 +588,7 @@ session() {
   [[ -n ${SCOPE_BARE:-} ]] && S_NOTES+=("$1 session ran uncapped: $SCOPE_BARE")   # its error is in the transcript
   # the peak alone could be page cache: a cap kill is the kernel's 137 with the peak at the cap
   (( S_EXIT == 137 )) && scope_capped "$unit" "$SESSION_MEMORY_MAX" && S_NOTES+=("${4:-$1}: the session hit its memory cap ($SESSION_MEMORY_MAX)")
-  [[ $1 == retro ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
+  [[ $1 == retro || $1 == curator ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
   # the box-wide 7-day and 5-hour windows (admit reads the second); a temporary file per process: two lanes' sessions
   # may end in the same second
   MET usage "$3" > "$USAGE.$$.tmp" 2> /dev/null && mv "$USAGE.$$.tmp" "$USAGE" || rm -f "$USAGE.$$.tmp"

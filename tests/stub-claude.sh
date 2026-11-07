@@ -30,6 +30,8 @@
 # STUB_RETRO_PROPOSALS=<id>[,<id>…]: the retro writes retro-proposals.json in the run directory, one
 # `{id, title: "stub proposal <id>", evidence}` per id (`bad`: `{not json`; `link`: a symlink to feature_list.json). STUB_RETRO_EDITS=1: the retro edits code, progress.md
 # and the worktree's ledger/retro-backlog.jsonl (restrict reverts all three).
+# STUB_CURATOR_OPS=[]|bad|<name>: the curator writes memory-ops.json: [], {not json, or tests/fixtures/memory/stub-<name>.json with {{RUN}}, {{DATE}} and {{LINE:<id>}} (<id>'s first coding entry) filled (M2-03).
+# STUB_CURATOR_EDITS=1: the curator also edits CLAUDE.md and writes lib/curator-hack.sh (restrict reverts both, M2-03).
 # STUB_GOTCHA=<id>: that feature's first coding session adds a `## Gotchas` line to CLAUDE.md (and the section when
 # it has none), committed with its work (M3; the driver reverts it since M1-03). STUB_README_ONLY=<id>: that feature's
 # first coding session passes with one README.md line as its only change (no work-<id>.txt: a tree differing from the
@@ -426,6 +428,16 @@ JSON
       link) ln -s feature_list.json "$HARNESS_RUN_DIR/retro-proposals.json" ;;
       *) tr , '\n' <<< "$STUB_RETRO_PROPOSALS" | jq -R '{id: ., title: "stub proposal \(.)", evidence: "stub retro"}' | jq -s . > "$HARNESS_RUN_DIR/retro-proposals.json" ;; esac
     ok 0.2 "## Outcome\\nStub retro.\\n\\n## Proposed harness changes\\n1. none" ;;
+  "# Curator session")
+    echo "curator" >> "$RS/sessions.log"
+    [[ ${STUB_CURATOR_EDITS:-} ]] && { echo "curator was here" >> CLAUDE.md; mkdir -p lib && echo "# curator was here" > lib/curator-hack.sh; }
+    o=$HARNESS_RUN_DIR/memory-ops.json
+    case ${STUB_CURATOR_OPS:-[]} in "[]") echo '[]' > "$o" ;; bad) printf '{not json' > "$o" ;;
+      *) sed -e "s/{{RUN}}/${HARNESS_RUN_ID:-}/g" -e "s/{{DATE}}/$(date +%F)/g" "$HERE/fixtures/memory/stub-$STUB_CURATOR_OPS.json" > "$o"
+        for id in $(grep -o '{{LINE:[^}]*}}' "$o" | sed 's/^{{LINE://; s/}}$//' | sort -u); do
+          sed -i "s/{{LINE:$id}}/$(jq -s --arg i "$id" 'map(.feature == $i and .kind == "coding") | index(true) + 1' "$HARNESS_RUN_DIR/entries.jsonl")/g" "$o"
+        done ;; esac
+    ok 0.1 "Stub curator: $(jq length "$o" 2> /dev/null || echo 0) ops." ;;
   "# Entry resume")   # resumed.jsonl on the session's figures: cost plus the fixture's increment, modelUsage plus its usage
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }')
     kind=$(after_session '/^Kind: `/ { sub(/^Kind: `/, ""); sub(/`.*/, ""); print; exit }')

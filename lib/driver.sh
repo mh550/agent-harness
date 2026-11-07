@@ -253,6 +253,34 @@ retro() {   # a short read-only session that turns this run's evidence into prop
   record MET append "$rlog" "$REC/metrics.jsonl" "$RUN_ID" retro "" "$(F model "$RETRO_MODEL")" true "$S_WALL" "$S_EXIT" false retro "$S_PEAK"
 }
 
+# One read-only session after the retro that turns the run's project facts into operations on CLAUDE.md and
+# .harness/project.md (memory-ops.json); the driver validates and applies them, never the session (MEMORY_POLICY=pr;
+# off runs none, with no note). decisions/2026-11-07-memory-tiers
+curator() {
+  local clog=$LOGS/zz-curator-$(date +%H%M%S).jsonl cstart reverted x p=$RUN_DIR/memory-ops.json
+  case $MEMORY_POLICY in off) return 0 ;; pr) ;;
+    *) note "curator: none (MEMORY_POLICY=$MEMORY_POLICY is neither pr nor off)"; return 0 ;; esac
+  # the retro's notes, retro.md, its proposals and metrics row are uncommitted here: restrict commits the tree and then
+  # reverts everything since cstart, so they are committed first or the curator's revert takes them
+  rec_commit "HARNESS: retro"; sync_record
+  cstart=$(git rev-parse HEAD)
+  memory_base || return 0   # the texts the apply will see, in $SCRATCH/memory-base/
+  HARNESS_MEMORY_BASE=$SCRATCH/memory-base HARNESS_STATE=$STATE prompt curator
+  log "curator · $(F model "$CURATOR_MODEL")"
+  MAX_TURNS=40 SESSION_BUDGET_USD=3 session curator "$(F model "$CURATOR_MODEL")" "$clog" curator
+  # its one output file, rescued as the retro's proposals are: a plain file of at most 64 KB, written by this curator
+  rm -f "$SCRATCH/memory-ops.json"
+  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= 65536 )) && ! git show "$cstart:$p" 2> /dev/null | cmp -s - "$p" \
+    && cp "$p" "$SCRATCH/memory-ops.json"
+  reverted=$(restrict "$cstart" nothing curator | { [[ -f $SCRATCH/memory-ops.json ]] && grep -vxF "$p" || cat; } | paste -sd' ')
+  for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict, as the retro's: session() leaves them to us
+  [[ -n $reverted ]] && note "curator: reverted edits (it is read-only): $reverted"
+  record MET append "$clog" "$REC/metrics.jsonl" "$RUN_ID" curator "" "$(F model "$CURATOR_MODEL")" true "$S_WALL" "$S_EXIT" false curator "$S_PEAK"
+  [[ -f $SCRATCH/memory-ops.json ]] || { note "curator: wrote no memory-ops.json"; return 0; }
+  cp "$SCRATCH/memory-ops.json" "$REC/"   # in the run record, as retro-proposals.json
+  memory_pr
+}
+
 ledger() {   # the whole run record into the harness's own record, for `harness trends`, retros and calibration
   local d=$LEDGER/$PROJECT_NAME/$RUN_ID
   mkdir -p "$d" && cp -r "$REC/." "$d/"
@@ -351,7 +379,11 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   # a failed post notes it in harness-log.md: commit it now, before a retro that may never finish
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run-end notification failed"; sync_record; }
   [[ $edesk == 1 ]] && desk "ended: $1"   # after that commit: its note is no failed post
-  if [[ $RETRO == 1 && -f $LIST ]]; then retro; helper_note; SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"; fi
+  # the curator needs no retro and runs after it, before the summary (M3's summary.memory reads its memory.json)
+  local rc=0
+  if [[ $RETRO == 1 && -f $LIST ]]; then retro; helper_note; rc=1; fi
+  if [[ -f $LIST && $MEMORY_POLICY != off ]]; then curator; helper_note; rc=1; fi
+  (( rc )) && SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"
   SUM report --md "$REC/summary.json" > "$REC/report.md"
   # the state dir outlives the worktree gc removes: harness report reads these there (decisions/2026-10-27-record-after-gc)
   # (metrics.jsonl beside them for report's memory peaks, when the run has one)

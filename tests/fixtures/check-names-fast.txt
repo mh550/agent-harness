@@ -839,6 +839,7 @@ summary.mjs: main gives the CLI's bytes for report --md, suite-runs, ledger-line
 summary.mjs: main's view is the io's: isTTY and columns from io, never the process's stdout
 summary.mjs: report lists only the sessions over 2 GB
 summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: the curator session counts under its own role in cost by role
 summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
 sync: a local commit outside ledger/ is left alone, nothing pushed
 sync: a modified tracked file: skipped
