@@ -422,7 +422,8 @@ memory_json() {
 
 # The curator's memory-ops.json (rescued to $SCRATCH) → applied on harness-memory/<run> in a detached scratch worktree
 # at MEM_BASE: tier 1 one commit (refused whole past the cap), tier 2 and 3 and every dropped op in the body of a
-# `memory: <run>` PR left for Michael (MEMORY_POLICY=pr); the body kept as memory.md in the run record. The record
+# `memory: <run>` PR left for Michael (MEMORY_POLICY=pr) or merged at the pushed head (auto: only a push of a tier-1
+# commit merges; never --delete-branch, as record_pr); the body kept as memory.md in the run record. The record
 # branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
 memory_pr() {
   local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" o a d p rd refused x files=() b=harness-memory/$RUN_ID
@@ -453,8 +454,9 @@ memory_pr() {
     note "memory PR: could not commit the tier-1 change (see run.log)"
   elif ! origin_t git -C "$w" push -q origin "HEAD:refs/heads/$b" 2>> "$STATE/run.log"; then   # never forced: a reused head moves forward
     note "memory PR: could not push $b (see run.log)"
-  elif [[ $MEM_URL == http* ]]; then url=$MEM_URL; memory_edit "$url" ""
-  else memory_open
+  else
+    if [[ $MEM_URL == http* ]]; then url=$MEM_URL; memory_edit "$url" ""; else memory_open merge; fi
+    [[ $MEMORY_POLICY == auto && $url == http* ]] && memory_merge "$url" "$(git -C "$w" rev-parse HEAD)"
   fi
   memory_wt_gone
   memory_json "$o" "$a" "$d" "$p" "${url:-$MEM_URL}"
@@ -471,10 +473,17 @@ memory_body() {
   fi
   cp "$m" "$REC/memory.md"
 }
-memory_open() {   # the memory PR opened on harness-memory/<run>, left for Michael and noted; its URL in url (the caller's), else ""
+memory_open() {   # [merge]: the memory PR opened on harness-memory/<run> and noted, unless the merge's note follows; its URL in url (the caller's), else ""
   local u
   url=""; u=$(origin_t $GH pr create --base "$MAIN_BRANCH" --head "harness-memory/$RUN_ID" --title "memory: $RUN_ID" --body-file "$SCRATCH/memory-body.md" 2>> "$STATE/run.log" | tail -1)
-  if [[ $u == http* ]]; then note "memory PR opened; left for Michael (MEMORY_POLICY=pr) · $u"; url=$u; else note "memory PR: could not open it (see run.log)"; fi
+  if [[ $u != http* ]]; then note "memory PR: could not open it (see run.log)"; return 0; fi
+  url=$u
+  if [[ $MEMORY_POLICY != auto ]]; then note "memory PR opened; left for Michael (MEMORY_POLICY=pr) · $u"
+  elif [[ ${1:-} != merge ]]; then note "memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · $u"; fi
+}
+memory_merge() {   # <url> <head> (MEMORY_POLICY=auto): merged only at the commit pushed, else left open, as record_pr
+  if origin_t $GH pr merge "$1" --merge --match-head-commit "$2" > /dev/null 2>> "$STATE/run.log"; then note "memory PR merged into $MAIN_BRANCH · $1"
+  else note "memory PR: the merge was refused; left open · $1"; fi
 }
 memory_edit() {   # <url> <why suffix>: the open memory PR's body refreshed, noted
   if origin_t $GH pr edit "$1" --body-file "$SCRATCH/memory-body.md" > /dev/null 2>> "$STATE/run.log"; then note "memory PR updated$2 · $1"

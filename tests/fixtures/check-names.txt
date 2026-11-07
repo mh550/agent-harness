@@ -390,6 +390,7 @@ curator.mjs: a fact a later entry resolved, or already in its section, is droppe
 curator.mjs: a file already over the cap takes a replace or a delete
 curator.mjs: a heading inside a code fence, a repeated heading or CRLF line ends never misplace a write
 curator.mjs: a result over 120 lines refuses the tier-1 commit
+curator.mjs: a tier-1 op whose text memlint finds a derivable count or run scope in is dropped, naming the lint
 curator.mjs: an anchor with no match or two matches drops its op, naming the anchor
 curator.mjs: an op on a protected section is dropped and carried as a proposal
 curator.mjs: an op whose write would change a protected section's lines is dropped
@@ -408,11 +409,13 @@ curator.mjs: tierOf gives every heading of the eight projects its fixture tier
 curator.mjs: tierOf protects a heading by prefix, its dated or parenthesised suffix aside
 curator.mjs: validate passes a file of three ops and returns them
 curator.mjs: validate refuses a malformed file whole with its first reason
-curator: MEMORY_POLICY=off runs no curator and writes no curator note
+curator: MEMORY_POLICY=off runs no curator and writes no curator or memory note
 curator: a curator's edits to CLAUDE.md and lib/ are reverted with one note, its memory-ops.json kept and the record PR opened
 curator: a run under MEMORY_POLICY=pr ends done with one zz-curator transcript and a curator metrics row
+curator: an empty memory-ops.json counts zeros and PR none (summary.json, the Memory row), and harness memory lists no PR for it
 curator: an empty memory-ops.json notes no operations; no memory branch, no memory PR
 curator: an invalid memory-ops.json is one note; the run ends done and its record PR opens
+curator: an unknown MEMORY_POLICY is one note and the curator runs as under pr
 curator: its run.log line comes after the retro's, its notes before the record PR's
 curator: memory-ops.json is kept in the run record
 curator: the rendered prompt names memory-ops.json, the three ops, the write gate and that it writes no project file
@@ -628,6 +631,7 @@ harness gc keeps the worktree of a run whose desk is open
 harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
 harness gc stops the units of this project's runs with no live driver; --dry-run stops none
 harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line
+harness memory: the run's PR is open, then merged unchanged after its merge
 harness merge keeps the harness version of the run (E1 review)
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
 harness merge merges v2 tags, closes the v2 PR
@@ -882,6 +886,7 @@ lanes_v: F lanes memoized on the list, attempts, parked and the state laneState 
 lanes_v: a pid file that is not digits is never memoized (node reads it its own way); stderr empty
 ledger has the run
 ledger row has harness_version and harness_dirty
+ledger: a memory PR is one row of memory.jsonl, committed with the ledger's paths
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
 lib.sh: a check replayed for its state (REPLAY=1) runs silent and uncounted
 lib/helper.mjs keeps nothing between requests: the same request after its file changed gives the new answer; no module-level let or var
@@ -924,17 +929,21 @@ memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming i
 memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9
 memlint: the old rane store without its current-rule-set header yields a header finding
 memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonight
-memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
+memlint: the store lookup is decisionsStore, the one function reading .harness/config.sh and docs/decisions.md, each on one line
 memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
 memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
+memory PR: MEMORY_POLICY=auto merges the memory PR into main and notes it
+memory PR: MERGE_POLICY=auto merges the milestones and leaves the memory PR open under MEMORY_POLICY=pr
 memory PR: a 16th Gotchas add without an anchor refuses the tier-1 commit; no branch, no PR
 memory PR: a continued run reuses its open memory PR
 memory PR: a memory branch on origin with no PR gets its PR when nothing new reaches tier 1
 memory PR: a memory branch on origin with no PR is the base, and its PR opens on it
 memory PR: a memory branch whose PR Michael closed stops the curator with one note; nothing pushed
 memory PR: a memory branch with a commit the driver would not write stops the curator with one note; nothing pushed
+memory PR: a refused auto merge leaves the memory PR open with one note
 memory PR: an op on Live system is dropped with a note and carried as a proposal; an unmatched anchor is dropped naming it
 memory PR: no run leaves its scratch worktree registered or a local harness-memory branch
+memory PR: summary.json's memory holds the counts and the URL, and harness report prints the Memory row
 memory PR: the PR is opened and left for Michael under MEMORY_POLICY=pr
 memory PR: the commit changes CLAUDE.md alone
 memory PR: the notes count the ops, re-derived tiers and each dropped op; memory.json holds the counts
@@ -942,6 +951,7 @@ memory PR: the run's record PR opens too
 memory PR: the same add with an anchor lands as one edit
 memory PR: the two project facts land under Gotchas in one commit on harness-memory/<run>, with their suffix
 memory PR: the workflow line is not committed and is in the PR body with its entries.jsonl line
+memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit is left open with one note
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
@@ -1528,6 +1538,12 @@ suite tools: wait_for refuses a limit that isn't whole seconds with one line, ex
 suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
 summary end reason is how the run ended
 summary, report and retro written
+summary.mjs memory: a summary built before this run has no Memory row
+summary.mjs memory: build reads memory.json's five keys, none with no file
+summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
+summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
+summary.mjs memory: memoryView lists newest first with the summary line, (none) for none
+summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing
 summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary

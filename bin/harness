@@ -23,6 +23,10 @@
 #   harness backlog set <id> <status> [--spec <path>] [--pr <url>] [--note <text>]
 #                                                move an item: proposed|specced|queued|merged|dropped (a ledger commit)
 #   harness backlog import <file.jsonl>          merge rows by id (the seed: docs/specs/2026-10-25-memory.backlog-seed.jsonl)
+#   harness memory [--last <n>] [<project>]      the last n (10) runs' memory PRs (ledger/memory.jsonl), newest first: run,
+#                                                project, applied/dropped/proposed, URL and what became of it (gh now:
+#                                                open, merged unchanged, merged edited, closed; unknown: gh can't say),
+#                                                then the counts
 #   harness status [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]
 #                                                one screen: NEEDS YOU, RUNNING, QUEUED, FINISHED (the last 24h,
 #                                                STATUS_SINCE or --since; 3 to 10) and how to see the older runs;
@@ -81,7 +85,7 @@
 #                         metrics.jsonl,brief.md,summary.json,report.md,retro.md}
 #   local state           ~/.local/state/harness/<project>/<run-id>/{run.log,logs/*.jsonl,attempts.json,port,driver.pid,ended,…}
 #   queue                 ~/.local/state/harness/queue/   · shared usage-limit window: ~/.local/state/harness/LIMIT_UNTIL
-#   ledger                <harness>/ledger/{runs.jsonl,<project>/<run-id>/,debrief.md}
+#   ledger                <harness>/ledger/{runs.jsonl,memory.jsonl,<project>/<run-id>/,debrief.md}
 #   scratch               /tmp/harness/<project>/<run-id>/
 #   config layers         harness defaults → ~/.config/harness/config.sh → <project>/.harness/config.sh → the run's options
 set -euo pipefail
@@ -889,6 +893,7 @@ case ${1:-help} in
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
   sync) shift; exec "$HARNESS_HOME/lib/sync.sh" "$@" ;;
   backlog) shift; exec "$HARNESS_HOME/lib/backlog.sh" "$@" ;;
+  memory) shift; exec "$HARNESS_HOME/lib/memory.sh" "$@" ;;
   desk) shift; exec "$HARNESS_HOME/lib/desk.sh" "$@" ;;
   eval) shift; exec "$HARNESS_HOME/lib/eval.sh" "$@" ;;
   *) sed -n '2,/^set -/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;   # the header, whatever its length

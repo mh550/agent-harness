@@ -72,6 +72,16 @@ test("decisionsStore: a quoted DECISIONS= naming a missing file wins over docs/d
     '{"path":"docs/d.md","kind":"file","exists":false}');
 });
 
+// The store lookup is one function: the grep of the self-lint check file M3-01 retired (its lint of this checkout
+// went to the write: curator.mjs capCheck; decisions/2026-11-07-memory-policy). A second lookup would repeat a path.
+test("memlint: the store lookup is decisionsStore, the one function reading .harness/config.sh and docs/decisions.md, each on one line", () => {
+  const src = readFileSync(new URL("../../lib/memlint.mjs", import.meta.url), "utf8"), n = s => src.split("\n").filter(l => l.includes(s)).length;   // lines, as grep -c
+  assert.equal(`${n('".harness/config.sh"')} ${n('"docs/decisions.md"')}`, "1 1");
+  assert.equal(src.includes('const CONFIG = ".harness/config.sh"'), true);
+  const fn = decisionsStore.toString();
+  assert.equal(`${fn.includes("join(worktree, CONFIG)")} ${fn.includes('"docs/decisions.md"')}`, "true true");
+});
+
 // gotchasDiff (M3): the Gotchas lines added, edited and deleted between two project-rules texts (null: no file); a change
 // outside the section is none (the gotchas CLI on two files stays in gotchas-pack)
 const G = "# p\nrules\n\n## Gotchas\n\n- one (r 2026-10-26)\n- two (r 2026-10-26)\n\n## Later\nx\n";
@@ -130,8 +140,8 @@ test("memlint.mjs: main with a wrong argument count is the usage error: exit 2, 
 // ---- the lint (M4), on fixtures trimmed from the projects' files as they were before chunk 3 Part 2 tidied them ----
 // The 15 cases the memlint check file (39-memlint-m4) ran through the CLI until the shape (decisions/2026-11-05-suite-shape),
 // under the same names: each is the CLI's own bytes and exit code (sameAsCli: main's are held to them), on a worktree
-// under the OS temp dir with the empty docs/ and .harness/ every case there had. The lint of this checkout's own
-// files stays a bash check (tests/checks/memlint-self.sh), the driver's notes tests/checks/memlint-run.sh.
+// under the OS temp dir with the empty docs/ and .harness/ every case there had. The lint of a checkout's own
+// files is the driver: its notes at each segment start (tests/checks/memlint-run.sh) and the cap at the write (curator.mjs capCheck).
 const MM = fileURLToPath(new URL("../../lib/memlint.mjs", import.meta.url));
 const fx = name => readFileSync(new URL(`../fixtures/memlint/${name}`, import.meta.url), "utf8");
 // files: path → text, null for a directory; fn(d) may be async (the worktree outlives its awaits)

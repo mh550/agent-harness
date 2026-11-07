@@ -21,7 +21,8 @@ seed() {   # <n gotchas> → origin main's new tip: the project's CLAUDE.md with
 }
 main0=$(git -C "$O" rev-parse main)
 seed3=$(seed 3); git -C "$O" update-ref refs/heads/main "$main0"; seed15=$(seed 15)
-cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=pr RECORD_PR=end' >> "$T/user-config.sh"
+cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=pr RECORD_PR=end LEDGER_COMMIT=1' >> "$T/user-config.sh"
+git init -q -b main "$T/ledger" && git -C "$T/ledger" config user.name t && git -C "$T/ledger" config user.email t@t   # the ledger commits its memory.jsonl
 run() { local r=$1; shift; env "$@" STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" "$r" --spec SPEC.md --foreground > "$T/$r.out" 2>&1; mv "$T/gh.log" "$T/gh-$r.log" 2> /dev/null; }
 
 # mp: two project facts and a workflow line, three ops
@@ -50,6 +51,15 @@ check "memory PR: the notes count the ops, re-derived tiers and each dropped op;
   && ! hlog mp | grep " · memory: dropped " > /dev/null \
   && jq -e "{ops, applied, dropped, proposed} == {ops: 3, applied: 2, dropped: 0, proposed: 1} and (.pr | startswith(\"https://example.test/pr/\"))" "$(st mp)/memory.json" > /dev/null'
 
+check "memory PR: MERGE_POLICY=auto merges the milestones and leaves the memory PR open under MEMORY_POLICY=pr" \
+  'p=$(mpr mp) && on_main run/mp/M1 && ! on_main harness-memory/mp && [[ ! -f $p.merged ]] \
+  && hlog mp | grep -F " · M1 merged" > /dev/null && ! hlog mp | grep -F " · memory PR merged" > /dev/null && ! grep "^gh pr merge https://example.test/pr/${p##*-} " "$T/gh-mp.log" > /dev/null'
+
+HARNESS_TTY=0 "$H" report mp > "$T/mp-report.out" 2>&1; HARNESS_TTY=0 "$H" memory > "$T/mp-memory.out" 2>&1; mv "$T/gh.log" "$T/gh-mp-memory.log" 2> /dev/null
+check "memory PR: summary.json's memory holds the counts and the URL, and harness report prints the Memory row" \
+  'p=$(mpr mp) && u=https://example.test/pr/${p##*-} && [[ $(jq .memory.applied "$(rec mp)/summary.json") == 2 && $(jq -r .memory.pr "$(rec mp)/summary.json") == "$u" ]] \
+  && grep -xF "| Memory | 2 applied · 0 dropped · 1 proposals · PR $u |" "$T/mp-report.out" > /dev/null'
+
 # mp's continue: the open memory PR's head is the base; A's and B's are already there, C's is the one new line
 STUB_CURATOR_OPS=continue STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue mp --foreground > "$T/mp2.out" 2>&1
 mv "$T/gh.log" "$T/gh-mp2.log" 2> /dev/null
@@ -61,6 +71,21 @@ check "memory PR: a continued run reuses its open memory PR" \
   && git -C "$O" show harness-memory/mp:CLAUDE.md | gotchas | grep -F -- "- the stub'"'"'s C work sits in work-C.txt at the root (mp " > /dev/null \
   && [[ $(git -C "$O" show harness-memory/mp:CLAUDE.md | gotchas | wc -l) == 6 ]] \
   && sed -n "/^_An earlier segment of this run:_$/,\$p" "$p.body" | grep -F "## Gotchas: the stub'"'"'s A work sits in work-A.txt" > /dev/null'
+
+# mp's memory PR merged by hand (stub-gh's pr merge): harness memory reads its state from gh again
+HARNESS_TTY=0 "$H" memory > "$T/mp-memory2.out" 2>&1
+p=$(mpr mp); (cd "$T/proj" && "$HARNESS_GH" pr merge "https://example.test/pr/${p##*-}" --merge --match-head-commit "$(git -C "$O" rev-parse harness-memory/mp)") > /dev/null 2>&1
+HARNESS_TTY=0 "$H" memory --last 5 proj > "$T/mp-memory3.out" 2>&1; mv "$T/gh.log" "$T/gh-mp-merge.log" 2> /dev/null
+check "harness memory: the run's PR is open, then merged unchanged after its merge" \
+  'p=$(mpr mp) && u=https://example.test/pr/${p##*-} && [[ -f $p.merged ]] \
+  && [[ $(cat "$T/mp-memory.out") == "mp · proj · 2/0/1 · $u · open"$'"'"'\n'"'"'"merged unchanged 0 · edited 0 · closed 0 · open 1" ]] \
+  && [[ $(cat "$T/mp-memory2.out") == "mp · proj · 1/2/1 · $u · open"$'"'"'\n'"'"'"merged unchanged 0 · edited 0 · closed 0 · open 1" ]] \
+  && [[ $(cat "$T/mp-memory3.out") == "mp · proj · 1/2/1 · $u · merged unchanged"$'"'"'\n'"'"'"merged unchanged 1 · edited 0 · closed 0 · open 0" ]] \
+  && grep -x "gh pr view $u --json state,mergedAt,commits" "$T/gh-mp-merge.log" > /dev/null'
+check "ledger: a memory PR is one row of memory.jsonl, committed with the ledger's paths" \
+  'p=$(mpr mp) && [[ $(jq -sc "map(select(.run == \"mp\")) | map({project, url, ops, applied, dropped, proposed})" "$T/ledger/memory.jsonl") == "[{\"project\":\"proj\",\"url\":\"https://example.test/pr/${p##*-}\",\"ops\":4,\"applied\":1,\"dropped\":2,\"proposed\":1}]" ]] \
+  && [[ $(git -C "$T/ledger" log --format=%s -- memory.jsonl | grep -c "^ledger: mp (proj): ") == 2 && -z $(git -C "$T/ledger" status --porcelain -- memory.jsonl) ]] \
+  && [[ $(hlog mp | grep -c " · ledger: memory PR https://example.test/pr/${p##*-} in memory.jsonl (2 applied · 0 dropped · 1 proposals)$") == 1 ]]'
 
 # mc: a project at 15 Gotchas lines, a 16th add without an anchor
 git -C "$O" update-ref refs/heads/main "$seed15"
@@ -126,8 +151,35 @@ check "memory PR: a memory branch on origin with no PR gets its PR when nothing 
   && [[ $(hlog mz | grep -c " · memory PR opened; left for Michael (MEMORY_POLICY=pr) · https://example.test/pr/${p##*-}$") == 1 ]] \
   && sed -n "/^## Proposals (protected, tier 3)$/,\$p" "$p.body" | grep -xF -- "- stub proposal: run the stub suite before each commit" > /dev/null \
   && jq -e ".pr == \"https://example.test/pr/${p##*-}\"" "$(st mz)/memory.json" > /dev/null'
+# ma: MEMORY_POLICY=auto, the driver merges the memory PR at the tier-1 commit; mr: that merge refused (MERGE_POLICY=pr,
+# so no milestone or record PR merge meets the refusing stub)
+git -C "$O" update-ref refs/heads/main "$seed3"
+cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=auto RECORD_PR=end' >> "$T/user-config.sh"
+run ma STUB_FACTS=A,B STUB_PROPOSE=A STUB_CURATOR_OPS=three-ops
+mah=$(git -C "$O" rev-parse -q --verify harness-memory/ma)
+check "memory PR: MEMORY_POLICY=auto merges the memory PR into main and notes it" \
+  'p=$(mpr ma) && grep -q "^done" "$(st ma)/ended" && [[ -n $mah && -f $p.merged ]] && on_main "$mah" \
+  && grep -x "gh pr merge https://example.test/pr/${p##*-} --merge --match-head-commit $mah" "$T/gh-ma.log" > /dev/null \
+  && [[ $(hlog ma | grep -c " · memory PR merged into main · https://example.test/pr/${p##*-}$") == 1 ]] && ! hlog ma | grep -F "left for Michael (MEMORY_POLICY" > /dev/null \
+  && git -C "$O" show main:CLAUDE.md | gotchas | grep -F -- "- the stub'"'"'s B work sits in work-B.txt at the root (ma " > /dev/null \
+  && jq -e ".pr == \"https://example.test/pr/${p##*-}\"" "$(st ma)/memory.json" > /dev/null'
+git -C "$O" update-ref refs/heads/main "$seed3"
+cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=auto MERGE_POLICY=pr RECORD_PR=end' >> "$T/user-config.sh"
+run mr STUB_FACTS=A,B STUB_PROPOSE=A STUB_CURATOR_OPS=three-ops STUB_REFUSE_MERGE=1
+check "memory PR: a refused auto merge leaves the memory PR open with one note" \
+  'p=$(mpr mr) && [[ ! -f $p.merged ]] && ! on_main harness-memory/mr \
+  && [[ $(hlog mr | grep -c " · memory PR: the merge was refused; left open · https://example.test/pr/${p##*-}$") == 1 ]] \
+  && [[ $(grep -c "^gh pr merge https://example.test/pr/${p##*-} " "$T/gh-mr.log") == 1 ]] && ! hlog mr | grep -F " · memory PR merged" > /dev/null'
+# mw: auto, harness-memory/mw on origin with no PR and this segment's one op a proposal: the PR opens, nothing to merge
+git -C "$O" update-ref refs/heads/main "$seed3"; mw0=$(hand mw)
+cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=auto RECORD_PR=end' >> "$T/user-config.sh"
+run mw STUB_FACTS=A STUB_PROPOSE=A STUB_CURATOR_OPS=proposal
+check "memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit is left open with one note" \
+  'p=$(mpr mw) && [[ -n $mw0 && ! -f $p.merged && $(git -C "$O" rev-parse harness-memory/mw) == "$mw0" ]] \
+  && [[ $(hlog mw | grep -c " · memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · https://example.test/pr/${p##*-}$") == 1 ]] \
+  && ! grep "^gh pr merge https://example.test/pr/${p##*-} " "$T/gh-mw.log" > /dev/null'
 check "memory PR: no run leaves its scratch worktree registered or a local harness-memory branch" \
   '! git -C "$T/proj" worktree list --porcelain | grep "/memory$" > /dev/null && [[ -z $(git -C "$T/proj" branch --list "harness-memory/*") ]] \
-  && [[ $(git -C "$T/proj" worktree list --porcelain | grep -c "^worktree ") == 8 ]]'
+  && [[ $(git -C "$T/proj" worktree list --porcelain | grep -c "^worktree ") == 11 ]]'
 
 suite_end

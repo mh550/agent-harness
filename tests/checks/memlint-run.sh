@@ -2,8 +2,8 @@
 # tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- memlint in a run (M4-02): the driver notes each finding before the first session; harness memlint ----
-# The module's cases are tests/unit/memlint.test.mjs, the lint of this checkout tests/checks/memlint-self.sh
-# (decisions/2026-11-05-suite-shape).
+# The module's cases are tests/unit/memlint.test.mjs; the cap at the write is lib/curator.mjs capCheck
+# (decisions/2026-11-07-memory-policy, decisions/2026-11-05-suite-shape).
 mkdir -p "$T/ml"   # a directory in no git repository (harness memlint's last case)
 # ---- the driver (M4-02): each segment's memlint findings become notes before the first session, never a stop ----
 mkdir -p docs && cp "$HERE/fixtures/decisions-rane.md" docs/decisions.md && printf "%s\n" "- the suite: ~1,870 tests" "- no rename tonight" >> CLAUDE.md &&
