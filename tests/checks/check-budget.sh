@@ -31,6 +31,11 @@ check "check budget: harness report --md has the Checks row after Suite runs, th
 # the line is the record's summary.json checks as checksLine prints it (lib/driver.sh): the retro reports it in Outcome
 check "check budget: the rendered retro prompt carries the run's checks line" \
   'grep -F "checks: +2 ~0 −1 (M1 +2 ~0 −1; M2 +0 ~0 −0, budget 3)" "$S1/prompt-retro.md" > /dev/null'
+# the suite's own hygiene (a leak found 2026-11-06: 88,652 clones of the gh stub's `pr merge` left under /tmp since
+# 2026-10-25, 161 GB): every mktemp of a stub or of the harness under test lands under this file's state (tests/lib.sh
+# exports TMPDIR=$T/tmp), gone with it, and the gh stub removes its clone when the merge is done
+check "check budget: the gh stub's two merges cloned under the file's own TMPDIR (\$T/tmp, tests/lib.sh) and removed the clones: no .git is left there" \
+  '[[ ${TMPDIR:-} == "$T/tmp" && -d $T/tmp && $(grep -c "pr merge" "$T/gh.log") == 2 ]] && ! compgen -G "$T/tmp/*/.git" > /dev/null'
 
 # cb2: M1 has a budget of 3; A adds four names (new ones: main holds cb1's beta and gamma now) and replaces one
 # (mid: holds → mid: holds now, adjacent in the sorted file), and A's entry gives the reason in its `checks` field: the

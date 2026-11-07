@@ -194,7 +194,7 @@ JSON
       tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "$HARNESS_BRANCH"
       why=""; [[ $STUB_PHONE_STOP == 1 ]] || why=" $STUB_PHONE_STOP"
       sed -i "1s/.*/status: stop$why/" "$tmp/$HARNESS_RUN_DIR/INBOX.md"
-      git -C "$tmp" commit -qam "phone: stop" && git -C "$tmp" push -q origin "$HARNESS_BRANCH"
+      git -C "$tmp" commit -qam "phone: stop" && git -C "$tmp" push -q origin "$HARNESS_BRANCH"; rm -rf "$tmp"
     fi
     ok 1.5 ;;
   "# Coding session")

@@ -46,7 +46,7 @@ case "$1 $2" in
   "pr merge")
     n=${3##*/} c=""; while (( $# )); do [[ $1 == --match-head-commit ]] && c=$2; shift; done
     [[ ${STUB_REFUSE_MERGE:-} ]] && { echo "$GRAPHQL_MOVED" >&2; exit 1; }
-    origin=$(git remote get-url origin) tmp=$(mktemp -d)
+    origin=$(git remote get-url origin) tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT   # the clone goes with the call (88,652 of them leaked under /tmp by 2026-11-06)
     # --match-head-commit: the PR's head branch must still be at that commit
     [[ -z $c || $(git ls-remote "$origin" "refs/heads/$(cat "$P/pr-$n")" | cut -f1) == "$c" ]] \
       || { echo "$GRAPHQL_MOVED" >&2; exit 1; }

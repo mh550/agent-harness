@@ -15,6 +15,9 @@ else unset HARNESS_XTRACE; fi
 # a fresh $T, private tmux server, stub environment, base user config and throwaway project (cwd: $T/proj), so every file starts from the same state
 suite_setup() {
 T=$(mktemp -d); echo "tmp: $T"
+# every mktemp of a stub or of the harness under test lands here and goes with $T: on 2026-11-06 /tmp held 88,652 clones of
+# the gh stub's `pr merge` (161 GB, 73 million files) from the suite's runs since 2026-10-25 (check-budget asserts it)
+export TMPDIR=$T/tmp; mkdir -p "$TMPDIR"
 unset TMUX TMUX_PANE   # inside Michael's tmux, plain `tmux` talks to his server: the suite must never
 export TMUX_TMPDIR=$T/tmux HARNESS_DESK_SESSION=h-desk-test-$$; mkdir -p "$TMUX_TMPDIR"   # a private tmux server
 trap 'for w in "$T"/evaltmp/*/harness; do [[ -d $w ]] && git -C "$HERE/.." worktree remove --force "$w"; done 2> /dev/null   # the harness worktree of a killed eval
