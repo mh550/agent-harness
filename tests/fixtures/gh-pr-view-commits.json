@@ -1,0 +1,21 @@
+{
+  "commits": [
+    {
+      "authoredDate": "2026-11-07T13:40:12Z",
+      "authors": [
+        {
+          "email": "octocat@github.com",
+          "id": "MDQ6VXNlcjE=",
+          "login": "octocat",
+          "name": "The Octocat"
+        }
+      ],
+      "committedDate": "2026-11-07T13:40:12Z",
+      "messageBody": "",
+      "messageHeadline": "memory: agent-harness-2026-11-07-2: 2 facts",
+      "oid": "9fceb02d0ae598e95dc970b74767f19372d61af8"
+    }
+  ],
+  "mergedAt": null,
+  "state": "OPEN"
+}

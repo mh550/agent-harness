@@ -411,6 +411,7 @@ curator.mjs: validate refuses a malformed file whole with its first reason
 curator: MEMORY_POLICY=off runs no curator and writes no curator or memory note
 curator: a curator's edits to CLAUDE.md and lib/ are reverted with one note, its memory-ops.json kept and the record PR opened
 curator: a run under MEMORY_POLICY=pr ends done with one zz-curator transcript and a curator metrics row
+curator: an empty memory-ops.json counts zeros and PR none (summary.json, the Memory row), and harness memory lists no PR for it
 curator: an empty memory-ops.json notes no operations; no memory branch, no memory PR
 curator: an invalid memory-ops.json is one note; the run ends done and its record PR opens
 curator: an unknown MEMORY_POLICY is one note and the curator runs as under pr
@@ -629,6 +630,7 @@ harness gc keeps the worktree of a run whose desk is open
 harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
 harness gc stops the units of this project's runs with no live driver; --dry-run stops none
 harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line
+harness memory: the run's PR is open, then merged unchanged after its merge
 harness merge keeps the harness version of the run (E1 review)
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
 harness merge merges v2 tags, closes the v2 PR
@@ -883,6 +885,7 @@ lanes_v: F lanes memoized on the list, attempts, parked and the state laneState 
 lanes_v: a pid file that is not digits is never memoized (node reads it its own way); stderr empty
 ledger has the run
 ledger row has harness_version and harness_dirty
+ledger: a memory PR is one row of memory.jsonl, committed with the ledger's paths
 lib.sh: a REPLAY from the environment silences nothing (suite_setup unsets it)
 lib.sh: a check replayed for its state (REPLAY=1) runs silent and uncounted
 lib/helper.mjs keeps nothing between requests: the same request after its file changed gives the new answer; no module-level let or var
@@ -939,6 +942,7 @@ memory PR: a memory branch with a commit the driver would not write stops the cu
 memory PR: a refused auto merge leaves the memory PR open with one note
 memory PR: an op on Live system is dropped with a note and carried as a proposal; an unmatched anchor is dropped naming it
 memory PR: no run leaves its scratch worktree registered or a local harness-memory branch
+memory PR: summary.json's memory holds the counts and the URL, and harness report prints the Memory row
 memory PR: the PR is opened and left for Michael under MEMORY_POLICY=pr
 memory PR: the commit changes CLAUDE.md alone
 memory PR: the notes count the ops, re-derived tiers and each dropped op; memory.json holds the counts
@@ -1533,6 +1537,12 @@ suite tools: wait_for refuses a limit that isn't whole seconds with one line, ex
 suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
 summary end reason is how the run ended
 summary, report and retro written
+summary.mjs memory: a summary built before this run has no Memory row
+summary.mjs memory: build reads memory.json's five keys, none with no file
+summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per run with a memory PR
+summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
+summary.mjs memory: memoryView lists newest first with the summary line, (none) for none
+summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing
 summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary

@@ -10,6 +10,10 @@
 # a real gh's line for a refused connection (fixtures/gh-down.txt) on stderr and exit 1. STUB_REFUSE_MERGE=1: every
 # pr merge is refused with live gh's GraphQL line. STUB_GH_DOWN_ONLY=<view|create|merge…>: the calls STUB_GH_DOWN counts.
 # "pr create --body-file <f>" keeps its copy as prs/pr-N.body; "pr edit <url> --body-file <f>" rewrites it.
+# "pr view <url> --json state,mergedAt,commits" (harness memory) answers by pr-N: the state, mergedAt (null unless merged)
+# and commits, the head's commits past origin's main at pr create (prs/pr-N.base; main's merge-base for a PR made by
+# hand, so [] once its branch is in main), each in the shape of fixtures/gh-pr-view-commits.json (gh 2.45's
+# `pr view --json commits` object: oid, messageHeadline, messageBody, authoredDate, committedDate, authors); -q as above.
 # STUB_GH_LOST_MERGE=1: a pr merge lands and its answer is lost (that same line, exit 1). Its own git calls are GitHub's
 # side: never the outage stub's.
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -34,6 +38,17 @@ case "$1 $2" in
       *) cat "$HERE/fixtures/gh-deployments.json" ;; esac ;;
   "pr view")
     b=$3 q="" js=""; while (( $# )); do [[ $1 == -q ]] && q=$2; [[ $1 == --json ]] && js=$2; shift; done
+    if [[ $b == https://example.test/pr/* ]]; then   # by URL: the memory PR's state and commits
+      n=${b##*/}; [[ -f $P/pr-$n ]] || { echo "GraphQL: Could not resolve to a PullRequest with the number of $n. (repository.pullRequest)" >&2; exit 1; }
+      O=$STUB_DIR/origin.git h=refs/heads/$(cat "$P/pr-$n"); s=$(state "$n")
+      base=$(cat "$P/pr-$n.base" 2> /dev/null) || base=$(git -C "$O" merge-base main "$h" 2> /dev/null)
+      m=null; [[ $s == MERGED ]] && m="\"$(date -u -r "$P/pr-$n.merged" +%FT%TZ)\""
+      v=$(git -C "$O" log --reverse --format=%H%x09%s%x09%aI "$base..$h" 2> /dev/null \
+        | jq -Rn --slurpfile fx "$HERE/fixtures/gh-pr-view-commits.json" --arg s "$s" --argjson m "$m" --arg f "$js" \
+            '[inputs | split("\t") | $fx[0].commits[0] + {oid: .[0], messageHeadline: .[1], messageBody: "", authoredDate: .[2], committedDate: .[2]}]
+             | {state: $s, mergedAt: $m, commits: .} | with_entries(select(.key as $k | $f | split(",") | index($k)))')
+      if [[ -n $q ]]; then jq -r "($q) | if . == null then \"\" else . end" <<< "$v"; else echo "$v"; fi; exit 0
+    fi
     if [[ -f $P/branch-${b//\//_} ]]; then answer "https://example.test/pr/old" OPEN "v2 run" "$b" "$js" "$q"; exit 0; fi
     n=$(open_pr "$b") || n=$(prs_of "$b" | tail -1)
     [[ -n $n ]] || { echo "no pull requests found for branch \"$b\"" >&2; exit 1; }
@@ -44,6 +59,7 @@ case "$1 $2" in
     head="" title="" bf=""; while (( $# )); do case $1 in --head) head=$2 ;; --title) title=$2 ;; --body-file) bf=$2 ;; esac; shift; done
     if n=$(open_pr "$head"); then echo "a pull request for branch \"$head\" into branch \"main\" already exists:"; echo "https://example.test/pr/$n"; exit 1; fi
     n=$(( $(ls "$P" | grep -c '^pr-[0-9]*$') + 1 )); echo "$head" > "$P/pr-$n"; echo "$title" > "$P/pr-$n.title"
+    git -C "$STUB_DIR/origin.git" rev-parse -q --verify main > "$P/pr-$n.base" 2> /dev/null || rm -f "$P/pr-$n.base"
     [[ -n $bf ]] && cp "$bf" "$P/pr-$n.body"; echo "https://example.test/pr/$n" ;;
   "pr edit")   # <url> --body-file <f>: its body rewritten
     n=${3##*/} bf=""; while (( $# )); do [[ $1 == --body-file ]] && bf=$2; shift; done

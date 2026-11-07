@@ -265,7 +265,6 @@ retro() {   # a short read-only session that turns this run's evidence into prop
 # the safe one). decisions/2026-11-07-memory-tiers, decisions/2026-11-07-memory-policy
 curator() {
   local clog=$LOGS/zz-curator-$(date +%H%M%S).jsonl cstart reverted x
-  rm -f "$STATE/memory.json"   # a continue's: the summary reads this segment's or none
   case $MEMORY_POLICY in off) return 0 ;; pr|auto) ;;
     *) note "memory PR: MEMORY_POLICY=$MEMORY_POLICY is none of pr, auto, off; treated as pr"; MEMORY_POLICY=pr ;; esac
   # the retro's notes, retro.md, its proposals and metrics row are uncommitted here: restrict commits the tree and then
@@ -298,6 +297,9 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
       note "${out:-backlog: merge failed (run.log)}"
     fi
     [[ -f $LEDGER/retro-backlog.jsonl ]] && paths+=("$LEDGER/retro-backlog.jsonl")
+    # the curator's memory PR, one row per run (a continue's replaces it): harness memory reads its state from gh
+    out=$(SUM memory-line "$REC/summary.json" "$LEDGER/memory.jsonl" 2>> "$STATE/run.log") && [[ -n $out ]] && note "$out"
+    [[ -f $LEDGER/memory.jsonl ]] && paths+=("$LEDGER/memory.jsonl")
     if [[ $LEDGER_COMMIT == 1 ]] && git -C "$LEDGER" rev-parse --show-toplevel > /dev/null 2>&1; then
       git -C "$LEDGER" add -- "${paths[@]}" \
         && git -C "$LEDGER" commit -q -m "ledger: $RUN_ID ($PROJECT_NAME): $(F summary "$LIST")" -- "${paths[@]}" \
@@ -348,6 +350,7 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   wait_lanes   # each stops between sessions: a stop, the deadline, a cap
   unmaterialize; rec_cd   # a copy a killed lane left in its slot
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
+  rm -f "$STATE/memory.json"   # an earlier segment's: the summary, report and ledger read this segment's curator's or none
   # after ended, so the item an end opens below is never swept by its own finish; committed with the run's end
   needs_sweep
   local nr="" ehigh=1 edesk=0 k v   # no answer: loud (high priority), and no card kind
