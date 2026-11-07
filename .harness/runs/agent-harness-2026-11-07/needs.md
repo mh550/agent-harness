@@ -62,3 +62,24 @@ harness needs done agent-harness-2026-11-07/2 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-07/3 --why "<answer>"
 ```
+
+## ⚠ S4-05 asked: The review's Minor findings 5, 6 and 8 are taken as default…
+
+`agent-harness-2026-11-07/4` · since 2026-11-07T09:56:21.179Z
+
+**blocked** nothing waits on it; S4-05's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07/.harness/runs/agent-harness-2026-11-07/entries.jsonl?plain=1#L6)
+
+> The review's Minor findings 5, 6 and 8 are taken as defaults, not fixed: an INBOX.md or HARNESS_FAILED name that isn't valid UTF-8 gets U+FFFD, and hand-planted queue entries the harness never writes (start of /, a glob run id, continue ../alpha/r1) read differently. Keep them as defaults? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/docs/plans/2026-11-07-S4-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/journal/decisions/2026-11-03-purity.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/docs/plans/2026-11-07-S4-review.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07/S4/docs/plans/2026-11-07-S4-review.md) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/journal/decisions/2026-11-03-purity.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07/S4/journal/decisions/2026-11-03-purity.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07/.harness/runs/agent-harness-2026-11-07/entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07/.harness/runs/agent-harness-2026-11-07/entries.jsonl?plain=1#L6)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07/4 --why "<answer>"
+```

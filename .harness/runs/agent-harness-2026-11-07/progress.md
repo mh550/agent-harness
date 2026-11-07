@@ -3,6 +3,22 @@
 
 What this file is: the run's journal, rendered from `entries.jsonl`, newest entry first. Each entry is one session's own account: what it built, what it verified, what failed. The feature list (`feature_list.json` in this directory) has one milestone, S4 of the slim-suite spec (`docs/specs/2026-11-03-slim-suite.md`): the bash decision logic that burns the suite moves into pure `.mjs` functions with a unit test per branch, no note text changed, no check removed (the brief's Decision 16 (b)). Five features: S4-01 plans the moves, S4-02 the suite runner's decisions (`lib/check.sh` → `lib/checkdecide.mjs`), S4-03 the lane's verdict and exit table and how a run ends (`lib/lane.sh`, `lib/driver.sh` → `lib/lane.mjs`), S4-04 the queue entry format and INBOX status parsers (`lib/queue.mjs`, `lib/inbox.mjs`), S4-05 the review with the proofs, the forty mutants and the Predictions table (the after row and the solo CPU and wall rows wait for an empty box after the run). `passes` on a feature means its session's fast tier was green and its steps were done; the milestone is verified independently and merged into `main` when all five pass. Steer from the phone: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`).
 
+### 2026-11-07 04:56 · S4-05 · passes
+
+0 Critical, 4 Important, 7 Minor. An Opus review read each move against its bash. All 3 Important were no-answer branches when helper and spawn both fail (queue start, verify verdict, run end); fixed red first, 10 checks in tests/checks/no-answer.sh. Two Minors fixed (glibc alnum, fix-round numbers). Decision file: both proofs, the 40 mutants (31→32), Predictions. Docs updated.
+
+- **Files:** lib/queue.sh, lib/lane.sh, lib/driver.sh, lib/record.sh, lib/inbox.mjs, lib/lane.mjs, lib/checkdecide.mjs, lib/cli.mjs, lib/status.mjs, lib/queue.mjs, tests/checks/no-answer.sh, tests/unit/inbox.test.mjs, +8 more
+- **Verified:** full suite via check.sh: green in 636 s, 1721 tests; fast tier green (cached, 1721); tests/run.sh no-answer 10/10, each check watched red first (0/9, then nr and nd); node-memo red on the first full run (an S4-04 regression), green after the control fast path; both note proofs clean; unit tier 452/452
+- **Tests:** 1709 → 1721
+- **Dead end:** no answer to verify-round on a done milestone read as the fail — a fail with every feature passing has no card: the lane verified again and again (127 rounds in one stub run); it is thin now, its card
+- **Dead end:** a watchdog on the subagent's output file's mtime — the path is a symlink: stat read the link's time and fired while the reviewer was still working
+- **Discovery** (affects project): Every bash decision moved into an .mjs reads an empty answer when the helper and its spawn both fail; journal/decisions/2026-11-03-purity.md's 'A question with no answer' holds the rule (wait for the next poll, or the branch with a card) and tests/checks/no-answer.sh's node wrapper refuses named questions.
+- **Discovery** (affects project): The Gotchas section was at 15 lines: the status.mjs stub-log line (a session runs from its session line to its passes= or limit note) was dropped for the no-answer line; the check that needs it names it when it fails.
+- **Question for Michael:** The review's Minor findings 5, 6 and 8 are taken as defaults, not fixed: an INBOX.md or HARNESS_FAILED name that isn't valid UTF-8 gets U+FFFD, and hand-planted queue entries the harness never writes (start of /, a glob run id, continue ../alpha/r1) read differently. Keep them as defaults? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/docs/plans/2026-11-07-S4-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/journal/decisions/2026-11-03-purity.md
+- **Proposed change:** S4-05 step 7 says the served set is twelve scripts; it is thirteen (cli.mjs's eleven, checkdecide.mjs, lane.mjs), as docs/architecture.md now says.
+- **Proposed change:** S4-05 step 7 asks for README.md's module list: README has none, so the three modules are named in a sentence beside the unit tier's paragraph, with lib/inbox.mjs.
+- *05-S4-05 · claude-opus-5-5*
+
 ### 2026-11-07 03:40 · S4-04 · passes
 
 Queue format now in lib/queue.mjs (encode, decode, name, project, facts); status.mjs imports the decoder. INBOX status line now status, control, stopWhy, unstop in lib/inbox.mjs. Two push-downs moved. Notes unchanged: both proofs clean; 625 old-bash vs new-node comparisons, no difference. 57 new test names; fast tier 928/928.
