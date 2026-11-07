@@ -9,6 +9,24 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 17:33 · A2-03 · passes
+
+Moved the debrief's gatherer verbatim into lib/context.sh (context_since, context_runs, context_glossary); debrief.sh sources it, no copy. New `harness context <run> | --since <ts> [--out] [--id]` writes context.md (gatherer + ## Glossary via new lib/context.mjs) to events/<uuid>/ by default. The debrief's context gains the glossary. Tests 1831 → 1839.
+
+- **Files:** lib/context.sh, lib/context.mjs, lib/debrief.sh, bin/harness, tests/checks/context-bundle.sh, tests/unit/context.test.mjs, tests/checks/status-card.sh, tests/checks/needs-questions.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
+- **Verified:** Bytes: in one status_stubs throwaway, the saved pre-move debrief.sh and the new one, --dry-run, two windows x CMAX 150000/8000/3000: `diff <(sed '1d; /^## Glossary$/,$d' old) <(same new)` is one blank line (the glossary's separator) in all 6. context-bundle 6/6 red then green; context-bundle+queue-debrief+flakes-run 88/88; needs-questions 21/21; status-card 15/15; unit-tier 511/511; check.sh --fast green, 1011 tests. Opus review: 0 Critical/Important, 6 Minor, 5 fixed.
+- **Tests:** 1831 → 1839
+- **Dead end:** `${CTX_SINCE_WHY:-the queue runner's start}` inside the moved double-quoted echo — the apostrophe in a ${:-} default parses as a quote inside a function body (bash -n: syntax error); a local `why` variable carries the default
+- **Dead end:** runSection ending at any `##`/`###` line — the fenced INBOX.md has `### B:` and `## Answers` headings of its own; it now skips ~~~ fences and also stops at every run's known heading (a part cut mid-fence leaves an odd ~~~)
+- **Discovery** (affects A2-04): context.sh: context_glossary writes $WS/runs.tsv (state, run, project, ended, running, features, record, worktree, docs root, needs json) and $WS/needs-<i>.json for A2-04's context.json; context.mjs parseRow reads it
+- **Discovery** (affects A2-04, A2-05): glossaryMarkdown's cut line says 'context.json lists every one', but the debrief's own context dir never gets a context.json: reword it or write one there
+- **Discovery** (affects A2-05): harness context writes $STATE_ROOT/queue/done (an empty dir) when there is no queue yet: cmd_queue mkdirs before list; context-bundle (c) finds files only (! -type d)
+- **Discovery** (affects A2-04, A2-05): status_stubs's run ids A/B/C are matched as the run's own feature ids (knownIds), so a bare English 'A' resolves to feature A in stub glossaries; real ids (N1-01) don't collide
+- **Discovery** (affects A2-05): capped's cut note names $WS/s.json; in a `harness context` bundle that scratch is removed on exit, so the note's path is gone (debrief bytes kept as they were)
+- **Discovery** (affects project): bash: an apostrophe in a ${v:-default} inside a double-quoted string fails to parse in a function body; put the default in a variable (agent-harness-2026-11-07-3 2026-11-07)
+- **Proposed change:** A2-05's review should name the queue/done mkdir (cmd_queue) and the glossary cut line's context.json wording as its two leftover Minor findings from A2-03's review
+- *06-A2-03 · claude-opus-5-5*
+
 ### 2026-11-07 17:06 · A2-02 · passes
 
 lib/glossary.mjs: findIds (the list's own ids, then three masking passes), resolveIds (feature list; doc rows and headings newest file first; unresolved never guessed), glossaryMarkdown (byte cap, whole lines), strip, knownIds, fsReader and a CLI; 17 unit tests on fixtures copied read-only from dj-crate-streaming; tests 1814 → 1831.
