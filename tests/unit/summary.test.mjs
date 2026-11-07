@@ -352,7 +352,8 @@ test("summary.mjs: checksDiff counts the names a tip adds and removes against a 
 test("summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary", async () => {
   const two = { added: 2, replaced: 0, removed: 1, source: "fixture", by_milestone: { M1: { added: 2, replaced: 0, removed: 1, budget: null }, M2: { added: 0, replaced: 0, removed: 0, budget: 3 } } };
   assert.equal(checksLine(two), "+2 ~0 −1 (M1 +2 ~0 −1; M2 +0 ~0 −0, budget 3)");
-  assert.equal(checksLine({ added: 4, replaced: 1, removed: 0, source: "fixture", by_milestone: { M1: { added: 4, replaced: 1, removed: 0, budget: 3 } } }), "+4 ~1 −0 (M1 +4 ~1 −0, budget 3 (over))");
+  assert.equal(checksLine({ added: 4, replaced: 1, removed: 0, source: "fixture", by_milestone: { M1: { added: 4, replaced: 1, removed: 0, budget: 3 } } }), "+4 ~1 −0 (M1 +4 ~1 −0, budget 3, over)");
+  assert.equal(checksLine({ added: 3, replaced: 0, removed: 0, source: "fixture", by_milestone: { M1: { added: 3, replaced: 0, removed: 0, budget: 3 } } }), "+3 ~0 −0 (M1 +3 ~0 −0, budget 3)", "at the budget is not over");
   assert.equal(checksLine({ added: 2, source: "counts", from: 3, to: 5 }), "+2 (the suite's count, 3 → 5)");
   assert.equal(checksLine({ added: -1, source: "counts", from: 5, to: 4 }), "−1 (the suite's count, 5 → 4)");
   assert.equal(checksLine({ source: "none" }), "not counted");

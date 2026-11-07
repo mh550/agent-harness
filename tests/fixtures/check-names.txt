@@ -226,14 +226,14 @@ busy continue: once that run has ended, the plain continue is back
 busy continue: the card's do and run lines name the hold
 by hand right after: nothing new, no session
 by hand while another debrief runs: it says it is waiting
+check budget: TMPDIR is the file's own $T/tmp (tests/lib.sh), the gh stub merged twice, and no clone (.git) is left under it
 check budget: a milestone with check_budget 3 whose sessions added nothing is noted M2: checks +0 ~0 −0 against a budget of 3, no parenthesis
-check budget: a project without the fixture: checks is +<n> from the suite's count (3 → 5), source counts, no checks note, the row says where it came from
+check budget: a project without the fixture and CHECK_NAMES empty: checks is +<n> from the suite's count (3 → 5), source counts, no checks note (no tree listing counted), the row says where it came from
 check budget: a verified milestone whose session added two names and removed one is noted M1: checks +2 ~0 −1 (no budget: no budget words)
 check budget: four names added against a budget of 3 is noted over budget with the reason from the last coding entry's checks field; a name changed in place counts as replaced
 check budget: harness report --md has the Checks row after Suite runs, the counts then each milestone's, a budget named; the TTY card carries the same value
 check budget: summary.json has checks {added: 2, replaced: 0, removed: 1} from the fixture, by milestone, M2 with its budget 3
-check budget: the fixture's tip is main's plus the run's edits: cb2's main held cb1's merged names (beta, gamma, no zeta) before A's session
-check budget: the gh stub's two merges cloned under the file's own TMPDIR ($T/tmp, tests/lib.sh) and removed the clones: no .git is left there
+check budget: the fixture's tip is main's plus the run's edits: cb2's main held cb1's merged names (beta, gamma, no zeta) before A's session; the report marks M1 over its budget
 check budget: the rendered retro prompt carries the run's checks line
 check partial: a CLAUDE.md-only diff runs exactly memlint: the partial line, exit 0, check-partial.out, check.out untouched
 check partial: a green full run writes green-<full> (count, wall) and part-<reduced>: the full key, then the blob lines

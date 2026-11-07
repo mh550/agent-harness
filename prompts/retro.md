@@ -13,7 +13,7 @@ Read (with `jq`/`grep` for large files; never read a `.jsonl` transcript whole):
   Its `tokens` (cache hit rate, context peak), `orientation`, `rework` and `first_attempt_pass_rate` (with
   `verify_fail_rate`) say where the run spent tokens and which features needed rework; use them before guessing.
   Its `suite_runs` (this run: {{SUITE_RUNS}}) counts full and fast suite runs per coding session (a call check.sh answered from its cache, a subset or a partial run in neither); the coding prompt asks for one fast-tier run, last, and the verify runs the full suite.
-  Its `checks` (this run: {{CHECKS}}) counts the check names the verified milestones added, replaced and removed in the project's check-name fixture (`tests/fixtures/check-names.txt`; a project without one: the suite's count, start → end), each milestone against its `check_budget` when the feature list set one; a check that duplicates an assertion should replace it, not add to the count.
+  Its `checks` (this run: {{CHECKS}}) counts the check names the verified milestones added, replaced and removed in the project's check-name fixture (`CHECK_NAMES`, by default `tests/fixtures/check-names.txt`; a run with no verified milestone's count, or a project without the fixture: the suite's count, start → end), each milestone against its `check_budget` when the feature list set one; a check that duplicates an assertion should replace it, not add to the count.
 - `{{RUN_DIR}}/harness-log.md` (driver events) and `{{RUN_DIR}}/progress.md` (the 15 newest entries in full; every
   entry is in full in `progress-archive.md`, one JSON line each in `entries.jsonl`).
 - `{{RUN_DIR}}/feature_list.json` and `{{RUN_DIR}}/brief.md` if present.

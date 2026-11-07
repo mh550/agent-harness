@@ -398,6 +398,10 @@ test("entries.mjs: a coding entry's checks field (the over-budget reason) is a s
   assert.equal(checksReason(rows, ["A"]), "A's last", "A's third entry has none: its second counts");
   assert.equal(checksReason(rows, ["C"]), "", "none");
   assert.equal(checksReason([], ["A"]), "");
+  // the note quotes it on one line: whitespace runs to one space, 200 characters at most (the S3 review's finding)
+  assert.equal(checksReason([{ ...c, checks: " one row\n\n  per table\t of the view \n" }], ["A"]), "one row per table of the view");
+  const long = checksReason([{ ...c, checks: "x".repeat(260) }], ["A"]);
+  assert.equal([...long].length, 200); assert.equal(long.endsWith("…"), true);
   const d = mkdtempSync(join(tmpdir(), "u1-"));
   try {
     wr(join(d, "entries.jsonl"), rows.map(r => JSON.stringify(r)).join("\n") + "\nnot json\n");

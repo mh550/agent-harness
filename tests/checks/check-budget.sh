@@ -34,7 +34,7 @@ check "check budget: the rendered retro prompt carries the run's checks line" \
 # the suite's own hygiene (a leak found 2026-11-06: 88,652 clones of the gh stub's `pr merge` left under /tmp since
 # 2026-10-25, 161 GB): every mktemp of a stub or of the harness under test lands under this file's state (tests/lib.sh
 # exports TMPDIR=$T/tmp), gone with it, and the gh stub removes its clone when the merge is done
-check "check budget: the gh stub's two merges cloned under the file's own TMPDIR (\$T/tmp, tests/lib.sh) and removed the clones: no .git is left there" \
+check "check budget: TMPDIR is the file's own \$T/tmp (tests/lib.sh), the gh stub merged twice, and no clone (.git) is left under it" \
   '[[ ${TMPDIR:-} == "$T/tmp" && -d $T/tmp && $(grep -c "pr merge" "$T/gh.log") == 2 ]] && ! compgen -G "$T/tmp/*/.git" > /dev/null'
 
 # cb2: M1 has a budget of 3; A adds four names (new ones: main holds cb1's beta and gamma now) and replaces one
@@ -48,18 +48,19 @@ R2=$T/wt/proj/cb2/.harness/runs/cb2
 check "check budget: four names added against a budget of 3 is noted over budget with the reason from the last coding entry's checks field; a name changed in place counts as replaced" \
   'hlog cb2 | grep -F "· M1: checks +4 ~1 −0 against a budget of 3 (over budget: one row per table of the new view)" > /dev/null \
   && [[ $(jq -rs "[.[] | select(.kind == \"coding\" and .feature == \"A\")] | last | .checks" "$R2/entries.jsonl") == "one row per table of the new view" ]]'
-check "check budget: the fixture's tip is main's plus the run's edits: cb2's main held cb1's merged names (beta, gamma, no zeta) before A's session" \
-  'git -C "$T/origin.git" show "run/cb1/M1:tests/fixtures/check-names.txt" | grep -qx "gamma: new" && git -C "$T/origin.git" show "run/cb2/M1:tests/fixtures/check-names.txt" | grep -qx "theta2: new" \
-  && git -C "$T/origin.git" show "run/cb2/M1:tests/fixtures/check-names.txt" | grep -qx "gamma: new" \
+check "check budget: the fixture's tip is main's plus the run's edits: cb2's main held cb1's merged names (beta, gamma, no zeta) before A's session; the report marks M1 over its budget" \
+  'git -C "$T/origin.git" show "run/cb2/M1:tests/fixtures/check-names.txt" > "$T/cb2-names.txt" && grep -x "beta: new" "$T/cb2-names.txt" > /dev/null \
+  && grep -x "gamma: new" "$T/cb2-names.txt" > /dev/null && ! grep -x "zeta: holds" "$T/cb2-names.txt" > /dev/null && grep -x "theta2: new" "$T/cb2-names.txt" > /dev/null \
   && [[ $(jq -c ".checks | {added, replaced, removed}" "$R2/summary.json") == "{\"added\":4,\"replaced\":1,\"removed\":0}" ]] \
-  && [[ $("$H" report --md cb2 | grep "^| Checks |") == "| Checks | +4 ~1 −0 (M1 +4 ~1 −0, budget 3 (over); M2 +0 ~0 −0) |" ]]'
+  && [[ $("$H" report --md cb2 | grep "^| Checks |") == "| Checks | +4 ~1 −0 (M1 +4 ~1 −0, budget 3, over; M2 +0 ~0 −0) |" ]]'
 
-# cb3: a project without the fixture, whose suite prints its count: +<n> from tests-start and tests-end, no note
+# cb3: a project without the fixture that has opted out (CHECK_NAMES empty: `git show <commit>:` would list the tree, and the
+# S3 review found the listing counted as names), whose suite prints its count: +<n> from tests-start and tests-end, no note
 git pull -q --ff-only origin main && git rm -q tests/fixtures/check-names.txt && echo 3 > tests.n && git add -A && git commit -qm "no fixture; tests.n 3" && git push -q origin main
-mkdir -p "$HARNESS_STATE/proj/cb3" && echo "CHECK_CMD='echo HARNESS_TESTS=\$(cat tests.n); test ! -f BROKEN'" > "$HARNESS_STATE/proj/cb3/run.env"
+mkdir -p "$HARNESS_STATE/proj/cb3" && printf '%s\n' "CHECK_CMD='echo HARNESS_TESTS=\$(cat tests.n); test ! -f BROKEN'" 'CHECK_NAMES=""' > "$HARNESS_STATE/proj/cb3/run.env"
 STUB_TESTS_N=A:5 STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" cb3 --spec SPEC.md --foreground > "$T/cb3.out" 2>&1
 S3=$HARNESS_STATE/proj/cb3 R3=$T/wt/proj/cb3/.harness/runs/cb3
-check "check budget: a project without the fixture: checks is +<n> from the suite's count (3 → 5), source counts, no checks note, the row says where it came from" \
+check "check budget: a project without the fixture and CHECK_NAMES empty: checks is +<n> from the suite's count (3 → 5), source counts, no checks note (no tree listing counted), the row says where it came from" \
   '[[ $(jq -c ".checks" "$R3/summary.json") == "{\"added\":2,\"source\":\"counts\",\"from\":3,\"to\":5}" ]] && ! hlog cb3 | grep -F ": checks +" > /dev/null \
   && [[ $("$H" report --md cb3 | grep "^| Checks |") == "| Checks | +2 (the suite'"'"'s count, 3 → 5) |" ]] && ! compgen -G "$S3/checks-*" > /dev/null \
   && grep -F "checks: +2 (the suite'"'"'s count, 3 → 5)" "$S3/prompt-retro.md" > /dev/null'

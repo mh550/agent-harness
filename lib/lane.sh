@@ -97,8 +97,12 @@ checks_note() {
   for t in $(F deps "$LIST" "$m"); do t=run/$RUN_ID/$t
     git merge-base --is-ancestor "$t" HEAD 2> /dev/null && git merge-base --is-ancestor "$base" "$t" 2> /dev/null && base=$t
   done
-  git show "$base:$CHECK_NAMES" > "$SCRATCH/checks-base.txt" 2> /dev/null || : > "$SCRATCH/checks-base.txt"
-  git show "HEAD:$CHECK_NAMES" > "$SCRATCH/checks-tip.txt" 2> /dev/null || : > "$SCRATCH/checks-tip.txt"
+  # a blob on each side, or nothing: `git show <commit>:` with an empty CHECK_NAMES (a project opting out) or a directory
+  # would print the tree's listing and count file names as check names (the S3 review's finding)
+  for t in base tip; do
+    local c=HEAD; [[ $t == base ]] && c=$base
+    if [[ $(git cat-file -t "$c:$CHECK_NAMES" 2> /dev/null) == blob ]]; then git show "$c:$CHECK_NAMES" > "$SCRATCH/checks-$t.txt"; else : > "$SCRATCH/checks-$t.txt"; fi
+  done
   [[ -s $SCRATCH/checks-base.txt || -s $SCRATCH/checks-tip.txt ]] || return 0
   j=$(SUM checks-diff "$SCRATCH/checks-base.txt" "$SCRATCH/checks-tip.txt" 2>> "$STATE/run.log") || return 0
   words="checks $(jq -r '"+\(.added) ~\(.replaced) −\(.removed)"' <<< "$j")"
