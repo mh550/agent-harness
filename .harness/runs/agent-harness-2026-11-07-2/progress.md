@@ -1,0 +1,306 @@
+<!-- harness: rendered from entries.jsonl after every session; edits here are overwritten -->
+# Progress — run `agent-harness-2026-11-07-2` (agent-harness)
+
+What this file is: the run's journal, rendered by the harness from `entries.jsonl`, newest entry first (the 15 newest in full; every entry is in `progress-archive.md`). Each entry is one session: its feature, outcome, summary, what it tried, what it found.
+
+The run builds the memory curator of `docs/specs/2026-11-07-memory-curator.md`, three milestones in series: **M1** a coding session's `CLAUDE.md` edit is reverted (`restrict … memory`) and facts go in the entry; **M2** an Opus `curator` session emits itemized operations (`memory-ops.json`) that the driver validates, tiers and applies on `harness-memory/<run>` behind a `memory: <run>` PR; **M3** `memlint-self` retires, `MEMORY_POLICY=pr|auto|off`, acceptance counted (`summary.memory`, the `Memory` row, `harness memory`).
+
+How to read the feature list: `feature_list.json` is in priority order; a feature runs when it isn't passing and its `after` all pass. Each milestone's plan feature writes `docs/plans/2026-11-07-M<n>-….md`; the last feature of each milestone is its review (M1's is folded into M1-03). When every feature of a milestone passes the harness verifies it and opens its PR against `main` (`MERGE_POLICY=pr`).
+
+How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
+
+### 2026-11-07 15:04 · verify M3 · passes
+
+All four M3 features hold: memlint-self retired with successors, MEMORY_POLICY, memory counting/harness memory, review and docs. Full suite green (1791); targeted reruns pass; names +18 -2 of 35.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M3-01 | 1 | read docs/plans/2026-11-07-M3-policy.md | plan has sections per feature with the memlint-self split table | yes |
+| M3-01 | 2 | ls tests/checks/memlint-self.sh; grep decisionsStore tests/unit/memlint.test.mjs; grep CHECK_KEY_MAP .harness/config.sh; run key-map-lint | file gone; unit test present; map CLAUDE.md:memory-prompts:suite-length:night-words; key-map-lint 8 checks pass | yes |
+| M3-01 | 3 | grep -rn memlint-self tests/ lib/ bin/ docs/ README.md CLAUDE.md .harness/config.sh | only comments/prose (curator.mjs, curator.test.mjs comments, spec, plans, README retirement line); no check/fixture/config reference | yes |
+| M3-01 | 4 | read journal/decisions/2026-11-07-memory-policy.md | decision file exists with retirement row, provenance, policy row | yes |
+| M3-01 | 5 | bash tests/run.sh key-map-lint memlint-run unit-tier; init full suite | key-map-lint 8, memlint-run 3, unit-tier 485 all pass; full suite green 1791 tests | yes |
+| M3-02 | 1 | bash tests/run.sh memory-pr (inside 513/513 subset run) | all memory-pr checks pass: auto merges, pr open, off no notes, MERGE_POLICY independent, unknown value one note | yes |
+| M3-02 | 2 | grep MEMORY_POLICY lib/config.sh templates/*/config.sh; bash -n lib/config.sh lib/record.sh | documented in config.sh and both templates; syntax ok; refused-merge check passes | yes |
+| M3-02 | 3 | read decision file policy row | policy row with three values, default, separation from MERGE_POLICY | yes |
+| M3-02 | 4 | bash tests/run.sh memory-pr merge-policy-default | merge-policy-default 1/1; memory-pr pass; 513/513 passed | yes |
+| M3-02 | 5 | bash tests/run.sh --tier fast (init full suite green) | full suite green in init, 1791 tests | yes |
+| M3-03 | 1 | unit-tier run; check-names diff | 6 summary.mjs memory unit tests pass in 485/485; names in fixtures | yes |
+| M3-03 | 2 | bash bin/harness (usage); README grep; memory unit tests | memory listed in usage; README table row present; memoryView/memoryState tests pass | yes |
+| M3-03 | 3 | ledger check in memory-pr; usage lists ledger/memory.jsonl | ledger: memory PR row check passes | yes |
+| M3-03 | 4 | memory-pr stub checks; bash -n bin/harness lib/driver.sh; node --check lib/summary.mjs | summary/report/harness memory open then merged unchanged, empty ops zeros: pass; syntax ok | yes |
+| M3-03 | 5 | bash tests/run.sh memory-pr unit-tier | 513/513 passed | yes |
+| M3-03 | 6 | init full suite | green 1791 tests | yes |
+| M3-04 | 1 | read docs/plans/2026-11-07-M3-review.md | review by one reviewer on fable (Michael's answer), 0 Critical 2 Important 5 Minor, memlint-self question answered with findings and done column | yes |
+| M3-04 | 2 | curator test for I1 present; bash -n and node --check | fix test exists; syntax ok | yes |
+| M3-04 | 3 | read decision file | retirement, policy, counting, over-cap, rejected, Predictions with measured-after-run rows; fast files 58, CLAUDE.md 97 lines match commands | yes |
+| M3-04 | 4 | grep architecture.md and README.md | §10 MEMORY_POLICY, §11 memory row/ledger/harness memory, §4 memory.json, README row and memlint-self retirement present | yes |
+| M3-04 | 5 | git diff check-names.txt count | +18 -2 against 35, written in decision file | yes |
+| M3-04 | 6 | init full suite | green in 679 s, 1791 tests | yes |
+
+- *150335-verify-M3 · claude-sonnet-5-5*
+
+### 2026-11-07 14:52 · M3-04 · passes
+
+M3 review (fable, one round): 0 Critical, 2 Important, 5 Minor. I1: memlint-self's 'lints clean' lost its derivable-count and run-scope half; apply now drops such a tier-1 op. I2: memory.jsonl is keyed by url, so a continue's new PR no longer erases a merged one. Doc drift fixed, co check anchored. Decision completed (over-cap, rejected, Predictions, budget 18+/2-). Full suite green, 1791.
+
+- **Files:** lib/curator.mjs, lib/summary.mjs, tests/unit/curator.test.mjs, tests/unit/summary.test.mjs, tests/checks/curator-run.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-07-memory-policy.md, docs/plans/2026-11-07-M3-review.md, docs/architecture.md, README.md
+- **Verified:** Both new or changed unit tests seen red in the baseline full run (1788/1791: those two plus conformance), then green; full suite 'check: green in 687 s, 1791 tests'; fast tier green (cached on the same tree); bash -n and node --check on every M3 file; fixture diff 18 added, 2 removed.
+- **Tests:** 1790 → 1791
+- **Discovery** (affects run): curator.mjs apply drops a tier-1 op whose text lintText finds a derivable-count or run-scope in (reason '<check>: <text>'); tier 2/3 untouched
+- **Discovery** (affects project): journal/ is in this repo's CHECK_KEY_IGNORE: a check reading journal/decisions answers from the cache on a journal-only edit (agent-harness-2026-11-07-2 2026-11-07)
+- **Discovery** (affects run): Prediction missed: agent-harness CLAUDE.md is 97 lines (predicted 96 or fewer): M1-02's rerouted Where-things-go line wraps to two
+- **Question for Michael:** The decisions-store half of memlint-self's 'this checkout lints clean' now has no suite check (journal/ is outside the suite key), only the segment-start memlint note and harness memlint (default). Keep it that way, or add a unit test reading journal/decisions and take journal/ out of CHECK_KEY_IGNORE? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/journal/decisions/2026-11-07-memory-policy.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/docs/plans/2026-11-07-M3-review.md
+- **Proposed change:** Before MEMORY_POLICY=auto is turned on anywhere: record the pushed memory head in the state dir and have memory_base accept only that tip (memory_foreign trusts headlines, so a hand-pushed 'memory: <run>: <n> facts' commit would ride an auto merge; M3 review m2)
+- *12-M3-04 · claude-opus-5-5*
+
+### 2026-11-07 14:14 · M3-03 · passes
+
+Counting: summary.json's memory (memory.json's five keys), the report's Memory row after Checks, the ledger row's memory, ledger/memory.jsonl (ledger(), memory-line, committed under LEDGER_COMMIT=1), and harness memory [--last n] [project] (lib/memory.sh: gh pr view <url> --json state,mergedAt,commits per row, never stored). stub-gh answers pr view by URL. Review: 9 Minor fixed.
+
+- **Files:** lib/summary.mjs, lib/memory.sh, lib/driver.sh, bin/harness, tests/stub-gh.sh, tests/fixtures/gh-pr-view-commits.json, tests/unit/summary.test.mjs, tests/checks/memory-branch.sh, tests/checks/curator-run.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, README.md, +2 more
+- **Verified:** unit: the 6 summary.mjs memory tests red (missing exports, then empty stubs) then green; the review's edge cases red on the pre-review summary.mjs. Stub runs: with the code at HEAD 4 new checks FAIL (29/33); after, bash tests/run.sh memory-branch curator-run unit-tier 517/517. bash -n and node --check clean. check.sh --fast green, 968 tests.
+- **Tests:** 962 → 968
+- **Dead end:** the [] check in curator-run expecting cu's memory PR listed open — curator-run's project CLAUDE.md has no Gotchas or Code rules: cu's three ops all drop, no PR; harness memory there prints (none)
+- **Discovery** (affects M3-04): The [] stub check went into curator-run.sh on its existing ce run (no new run), not memory-branch.sh; memory-branch.sh now sets LEDGER_COMMIT=1 with a git-init'ed $T/ledger
+- **Discovery** (affects M3-04): finish now removes $STATE/memory.json right after ended (it was the top of curator()): a continue without a curator counts none. No stub run covers that path yet
+- **Discovery** (affects M3-04): memoryState: unchanged = every headline 'memory: <run>: <n> facts' (GitHub's Update-branch merge neutral, no commits = edited); a commit of Michael's titled like the driver's reads unchanged (known limit, in the decision)
+- **Discovery** (affects M3-04, project): stub-gh answers pr view <url> --json state,mergedAt,commits: base..head in $STUB_DIR/origin.git, base kept at pr create (agent-harness-2026-11-07-2 2026-11-07)
+- **Proposed change:** M3-03 step 4/5 name tests/checks/memory-pr.sh and `bash tests/run.sh memory-pr`: the file is memory-branch.sh and the [] check is in curator-run.sh; the subset is `bash tests/run.sh memory-branch curator-run unit-tier`
+- *11-M3-03 · claude-opus-5-5*
+
+### 2026-11-07 13:52 · M3-02 · passes
+
+MEMORY_POLICY=pr|auto|off: auto merges the memory PR at the pushed tier-1 head (memory_merge, --match-head-commit; refused → left open, one note), an unknown value is one note and runs as pr, off writes no curator/memory note. Config, both templates, architecture §10 row, README, decision policy row. Review: under auto a PR opened with no new tier-1 commit had no note; fixed red→green.
+
+- **Files:** lib/config.sh, lib/driver.sh, lib/record.sh, templates/project/config.sh, templates/user/config.sh, tests/checks/memory-branch.sh, tests/checks/curator-run.sh, tests/fixtures/check-names.txt, journal/decisions/2026-11-07-memory-policy.md, docs/architecture.md, README.md
+- **Verified:** Red first on unchanged lib: memory-branch 16/18, curator-run 8/9 (the auto, refused and unknown checks; the independence and off checks already held). Green: bash tests/run.sh curator-run memory-branch merge-policy-default 29/29, then memory-branch 19/19 + curator-run 9/9 after the review fix (seen red 18/19 first); fast tier green 962; bash -n on lib/config.sh lib/record.sh lib/driver.sh, both check files and both templates.
+- **Tests:** 962 → 962
+- **Dead end:** running the red phase while editing lib/ — tests/lib.sh's HH is the worktree itself, so a red run sees edits made mid-run; stopped it, reverted lib, reran
+- **Discovery** (affects M3-03, M3-04): memory_open [merge]: under auto it notes nothing when the merge's note follows, else 'memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · <url>'; pr's note unchanged
+- **Discovery** (affects M3-03, M3-04): memory-branch.sh now has 10 runs (ma auto, mr refused, mw auto without tier 1): its final worktree count is 11; mp (MERGE_POLICY=auto from base-config, MEMORY_POLICY=pr) carries the independence check
+- **Discovery** (affects M3-03, M3-04): `bash tests/run.sh memory-pr` matches memory-prompts, not memory-branch (substring of the file name): M3-02/M3-03's step commands miss the memory checks
+- **Discovery** (affects project): A check run reads lib/ live from the worktree (tests/lib.sh HH=the checkout): never edit lib/ while a red run is going (agent-harness-2026-11-07-2 2026-11-07)
+- **Question for Michael:** Default taken: under MEMORY_POLICY=auto a memory PR is merged even when its body refresh (gh pr edit) failed, and a merge whose answer is lost is noted as refused (both as record_pr does; the review's two Minor findings). Keep, or skip the merge after a failed edit? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/lib/record.sh:458, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/journal/decisions/2026-11-07-memory-policy.md
+- **Proposed change:** M3-02 step 4 and M3-03 step 5 should run `bash tests/run.sh memory-branch …` (the file is memory-branch.sh since M2-05; `memory-pr` matches memory-prompts)
+- *10-M3-02 · claude-opus-5-5*
+
+### 2026-11-07 13:39 · M3-01 · passes
+
+M3 plan written (docs/plans/2026-11-07-M3-policy.md). memlint-self retired: its grep is a unit test in memlint.test.mjs (red on a mutant, conformance red before the fixture), its self-lint the curator's capCheck at the write plus memlint-run's notes. File deleted, names swapped in both fixtures, CHECK_KEY_MAP, key-map-lint, partial-key, README follow. Decision skeleton memory-policy.
+
+- **Files:** docs/plans/2026-11-07-M3-policy.md, journal/decisions/2026-11-07-memory-policy.md, journal/decisions/2026-11-03-suite-tiers.md, tests/unit/memlint.test.mjs, tests/checks/memlint-self.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, .harness/config.sh, tests/checks/key-map-lint.sh, tests/checks/partial-key.sh, tests/checks/memlint-run.sh, README.md
+- **Verified:** bash tests/run.sh key-map-lint memlint-run unit-tier partial-key: 516/516; check.sh --fast: 962/962 in 113 s; the unit test red on a mutant (actual '2 1'); unit-tier red on conformance before the name was in the fixture (478/479); bash -n and node --check clean
+- **Tests:** 962 → 962
+- **Dead end:** counting occurrences of the literals in the unit test — lib/memlint.mjs:37 holds "docs/decisions.md" twice on one line; the old grep -c counted lines, so the test counts lines
+- **Discovery** (affects M3-02, M3-03): The spec's and M3-02/M3-03's tests/checks/memory-pr.sh is tests/checks/memory-branch.sh (renamed in M2-05); the off check to replace is in curator-run.sh
+- **Discovery** (affects M3-02): curator() today notes 'curator: none (MEMORY_POLICY=<v> is neither pr nor off)' and skips; M3-02 replaces it with the treated-as-pr note. memory_open's note hardcodes MEMORY_POLICY=pr
+- **Discovery** (affects M3-03): stub-gh pr view takes a head branch, not a URL, and answers no mergedAt/commits: M3-03 adds both (gh's documented JSON shape, a fixture naming its source)
+- **Discovery** (affects M3-03, M3-04): A continue adds a second driver commit to a reused memory PR: the plan reads 'merged unchanged' as every commit headline starting 'memory: <run>: ', not 'one commit' (default)
+- **Discovery** (affects M3-04): Fast-tier check files are 58 after the retirement (grep -l '^# tier: fast' tests/checks/*.sh), not the spec's 55: its 'now 56' was older
+- **Discovery** (affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 and M2-04/05 did; the Promote to Gotchas items stay for the curator
+- **Proposed change:** M3-01 step 3's grep includes docs/, where the spec, the dispatch list and the M3 plan (which step 1 requires to name the assertion) keep the name: read it as the live tree (tests lib bin README.md CLAUDE.md .harness/config.sh docs/architecture.md), which prints nothing
+- **Proposed change:** M3-02 and M3-03 steps name tests/checks/memory-pr.sh: it is tests/checks/memory-branch.sh, and `bash tests/run.sh memory-pr` picks memory-prompts alone (substring); use memory-branch
+- *09-M3-01 · claude-opus-5-5*
+
+### 2026-11-07 13:30 · verify M2 · passes
+
+All five M2 features hold: full suite green (1775), unit 477/477, curator-run/memory-branch/lanes-record-pr/retro-backlog/verify-retro-read-only 51/51, syntax checks pass, docs/decision/review present, 47 names within budget 60.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M2-01 | 1 | grep '^#' docs/plans/2026-11-07-M2-curator.md | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 2 | read plan 'memory-ops.json' section | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 3 | wc -l tests/fixtures/memory/headings.txt; head -3 | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 4 | read plan 'Applying' section; ls tests/fixtures/memory | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 5 | read plan 'driver's flow' | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 6 | read plan prompt draft | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 7 | grep '^-' journal/decisions/2026-11-07-memory-tiers.md | plan sections/skeleton present as described; budget 60 section exists | yes |
+| M2-01 | 8 | init.out: full suite | full suite green 676 s, 1775 tests | yes |
+| M2-02 | 1 | node --test --test-isolation=none tests/unit/*.test.mjs | 477 tests, 477 pass, fail 0 incl. curator.mjs tests | yes |
+| M2-02 | 2 | node --check lib/curator.mjs; grep -c 'slice(0, 40)' lib/curator.mjs | syntax ok; grep prints 0; exports tierOf etc present | yes |
+| M2-02 | 3 | head headings.txt; ls tests/fixtures/memory | 64 lines, 3-column, source line first; harm fixtures present | yes |
+| M2-02 | 4 | read prompts/curator.md; curator-run.sh:33 renders prompt-curator.md | placeholders RUN_ID/PROJECT/RUN_DIR; rendered-prompt check passes in curator-run | yes |
+| M2-02 | 5 | unit run + init full suite | fail 0; suite green | yes |
+| M2-03 | 1 | bash tests/run.sh curator-run | curator-run checks all PASS | yes |
+| M2-03 | 2 | read lib/driver.sh:265-289,389; lib/config.sh:42,58; summary.mjs; bash -n; node --check | curator() after retro before record_pr; MEMORY_POLICY=pr, CURATOR_MODEL=opus; summary counts curator; syntax ok | yes |
+| M2-03 | 3 | read tests/stub-claude.sh:433; curator-run.sh:33 | stub branch exists; prompt check passes | yes |
+| M2-03 | 4 | bash tests/run.sh curator-run lanes-record-pr retro-backlog verify-retro-read-only memory-branch | 51/51 checks passed | yes |
+| M2-03 | 5 | init full suite | suite green | yes |
+| M2-04 | 1 | bash tests/run.sh memory-branch (file renamed from memory-pr.sh by M2-05) | 15/15 pass incl. one commit, body, record PR opens, cap refusal, anchor evict, continue reuse | yes |
+| M2-04 | 2 | read lib/record.sh memory_pr/driver.sh:285; bash -n | memory_pr present, scratch worktree, never forced; syntax ok | yes |
+| M2-04 | 3 | memory-branch checks on notes and memory.json | notes check PASS; memory.json counts | yes |
+| M2-04 | 4 | read decision choice section | choice section records as built | yes |
+| M2-04 | 5 | bash tests/run.sh memory-branch curator-run lanes-record-pr | 51/51 checks passed | yes |
+| M2-04 | 6 | init full suite | suite green | yes |
+| M2-05 | 1 | read docs/plans/2026-11-07-M2-review.md | three questions answered with file/line; 0 Critical, 4 Important, 6 Minor | yes |
+| M2-05 | 2 | review findings table; unit 477 pass; bash -n/node --check | 4 Important fixed with tests; syntax ok | yes |
+| M2-05 | 3 | read decision: Finding, Choice, Rejected, invariants, Checks | all sections present incl. rejected and two invariants | yes |
+| M2-05 | 4 | grep architecture.md and README.md for curator/memory-ops/MEMORY_POLICY | §3,§4,§5,§7,§8,§10 and README paragraph present | yes |
+| M2-05 | 5 | git diff base -- check-names.txt \| grep -c '^+[^+]' / '^-[^-]' | 47 added, 0 removed, within 60; reason in decision | yes |
+| M2-05 | 6 | init.out | green 676 s, 1775 tests | yes |
+
+- *132857-verify-M2 · claude-sonnet-5-5*
+
+### 2026-11-07 13:17 · M2-05 · passes
+
+M2 review: 0 Critical, 4 Important, 6 Minor. Fixed RED→GREEN: memory_foreign refuses a foreign harness-memory tip; quiet+cap section in the body; a reused tip without PR gets one (memory_open); a write changing a protected section's raw lines is dropped. ro_rescue shared by retro/curator; decision completed; architecture/README document the curator.
+
+- **Files:** lib/curator.mjs, lib/record.sh, lib/driver.sh, prompts/curator.md, tests/unit/curator.test.mjs, tests/checks/memory-pr.sh, tests/checks/curator-run.sh, tests/fixtures/memory/stub-proposal.json, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-07-M2-review.md, journal/decisions/2026-11-07-memory-tiers.md, +5 more
+- **Verified:** Full suite 1775/1775 in 684 s (bash tests/run.sh via check.sh), after a first run red on name lint (memory-pr ⊂ memory-prompts) and the helper-note shape check, both M2 leftovers fixed; fast tier green (cached on that tree); unit curator.test.mjs 23/23; memory-branch 15/15, curator-run 8/8, retro-backlog 13/13; the I1/I3 checks and the I2/I4 unit asserts watched RED first
+- **Tests:** 961 → 962
+- **Dead end:** url=$(memory_open) capturing the PR URL — note → log tees to stdout, so the capture would hold the note line: memory_open sets the caller's url instead
+- **Dead end:** trusting the coding sessions' fast-tier green for M2 — two slow-tier checks were red since M2-03/M2-04: the full suite found them
+- **Discovery** (affects M3): A tier-3 op counts in both dropped and proposals (ops = applied + tier 2 + dropped): M3's summary.memory must not add dropped and proposed
+- **Discovery** (affects M3, project): restrict covers only the session's checkout: a read-only role's push or out-of-tree write is bounded only by its permission mode; memory_foreign guards the memory branch
+- **Discovery** (affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 and M2-04 did; the Promote to Gotchas items stay for the curator
+- **Discovery** (affects M3, run): tests/checks/memory-pr.sh is now memory-branch.sh: memory-pr was part of memory-prompts (name lint); resident-helper-run's helper-note grep now counts finish's retro/curator lines and the one (( rc )) SUM build
+- **Question for Michael:** Should the curator session run with a deny list (Bash(git push:*), Bash(gh:*)) passed by the driver, so a push can't happen at all rather than being refused at the next base? Default: not built; memory_foreign refuses a foreign tip. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/lib/record.sh
+- **Proposed change:** M3: a Gotchas suffix naming another run than RUN_ID could be dropped by the gate (review M2, kept)
+- **Proposed change:** M3: checks for memory_base's did-not-answer and taken-by-main paths, MERGE_POLICY=off and a failed apply/worktree add (review M5's remaining gaps)
+- *08-M2-05 · claude-opus-5-5*
+
+### 2026-11-07 12:35 · M2-04 · passes
+
+memory_pr in lib/record.sh: ops applied in a detached $SCRATCH/memory worktree at the base, tier 1 one commit pushed to harness-memory/<run>, a memory: <run> PR left for Michael (reused on a continue, body over earlier segments), cap refusal, notes, memory.md and $STATE/memory.json; memory_base's reuse rules; STUB_FACTS, stub-gh bodies and pr edit; memory-pr.sh (13).
+
+- **Files:** lib/record.sh, lib/driver.sh, tests/checks/memory-pr.sh, tests/stub-claude.sh, tests/stub-gh.sh, tests/fixtures/memory/stub-continue.json, tests/fixtures/memory/stub-cap.json, tests/fixtures/memory/stub-cap-evict.json, tests/fixtures/memory/README.md, tests/fixtures/check-names.txt, journal/decisions/2026-11-07-memory-tiers.md
+- **Verified:** memory-pr.sh 13/13 (10 red before memory_pr except the record-PR guard; the two branch-reuse checks red on HEAD's record.sh); bash tests/run.sh memory-pr curator-run lanes-record-pr gotchas-pack needs-driver 65/65; fast tier green, 961 tests; inspected a kept run: notes, PR body, branch CLAUDE.md, memory.json, no worktree left. Opus review: 4 Important, 10 Minor; 13 fixed, 1 documented.
+- **Tests:** 961 → 961
+- **Dead end:** ${st:-not the run's} inside a double-quoted note — an apostrophe inside ${…:-…} in double quotes breaks bash's parse (syntax error far below); worded without it
+- **Discovery** (affects M2-05): stub-mixed.json was folded into stub-cap-evict.json (the evict add plus a Live system add and an unmatched-anchor replace): one run fewer; the plan's table still names stub-mixed
+- **Discovery** (affects M2-05, M3): memory_base: a tip main lacks is reused when its PR is OPEN or there is none (gh pr view's 'no pull requests found'); CLOSED or another title stops the curator with one note; a gh or origin failure is one note, no curator. A squash-merged memory PR whose branch stayed reads as not taken (documented limit)
+- **Discovery** (affects M3): $STATE/memory.json is removed at the top of curator() and written by memory_pr on every path past the rescue: {ops, applied, dropped, proposed, pr} (+ invalid); absent when the curator stopped early or wrote no file
+- **Discovery** (affects project): stub-gh keeps pr create's --body-file as prs/pr-N.body and has a pr edit case that rewrites it (record_pr's reuse now refreshes it too)
+- **Discovery** (affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 did; the Promote to Gotchas items stay for the curator
+- **Proposed change:** M2-05's architecture/README pass should name memory.md (the body in the run record) and memory_base's reuse rules beside memory-ops.json and memory.json
+- *07-M2-04 · claude-opus-5-5*
+
+### 2026-11-07 12:10 · M2-03 · passes
+
+curator() in lib/driver.sh: after the retro, before the summary and record_pr; MEMORY_POLICY=pr|off and CURATOR_MODEL=opus in config; memory_base and memory_pr's validate (invalid, []) in record.sh; summary.mjs counts the curator role; stub # Curator session with STUB_CURATOR_OPS/EDITS; curator-run.sh (8, slow) and 1 unit test. Opus review: 1 Important, 4 Minor; 4 fixed.
+
+- **Files:** lib/driver.sh, lib/record.sh, lib/config.sh, lib/prompt.sh, lib/summary.mjs, lib/eval.sh, tests/checks/curator-run.sh, tests/stub-claude.sh, tests/lib.sh, tests/unit/summary.test.mjs, tests/fixtures/memory/stub-three-ops.json, tests/fixtures/check-names.txt, +1 more
+- **Verified:** curator-run 8/8 watched red first (1/8, the off check vacuous); summary unit test red then green; mutant without rec_commit before cstart turns the edits check red; curator-run lanes-record-pr retro-backlog verify-retro-read-only memory-prompts 51/51; with park-desk queue-debrief stop-records eval-run 198/198; fast tier 961 green (check.sh --fast, 113 s)
+- **Tests:** 960 → 961
+- **Dead end:** grepping the rendered prompt for the absolute run dir — {{RUN_DIR}} renders relative (.harness/runs/<run>)
+- **Discovery** (affects M2-04, M3): memory_pr ends at the validate: invalid → 'curator: memory-ops.json invalid: <why>', [] → 'curator: no operations', a non-empty valid file → nothing yet. M2-04 adds steps 2–8, memory.json (step 8) included: M2-03 writes none.
+- **Discovery** (affects M2-04): memory_base is the simple form: MEM_BASE=origin/<main> after a fetch, CLAUDE.md and .harness/project.md copied to $SCRATCH/memory-base/. M2-04 adds the open memory PR's reuse (pr view harness-memory/<run>) with its continue check.
+- **Discovery** (affects M2-04): tests/fixtures/memory/stub-three-ops.json exists, with the texts M2-04's STUB_FACTS must produce: 'the stub's <id> work sits in work-<id>.txt at the root ({{RUN}} {{DATE}})'. The stub fills {{LINE:<id>}} for any id the file names.
+- **Discovery** (affects project, M2-04, M3): Check files that write user-config.sh from scratch (not cp base-config.sh) must carry MEMORY_POLICY=off, or their runs get a curator: the nine that exist now do. lib/eval.sh's safety() sets it too.
+- **Discovery** (affects M2-05, M3): finish runs the curator only when MEMORY_POLICY != off and feature_list.json exists; it rebuilds summary.json once after the retro and the curator (rc flag), not after each one.
+- **Proposed change:** M2-05's review: where-things-go-readonly.md / -override.md say '(a retro: your report)'; the curator gets those parts too and has no entry or report, so a clause for it ('the curator: memory-ops.json') would read truer. Left alone here: memory-prompts greps those parts.
+- **Proposed change:** M2-05's docs: README and docs/architecture.md need MEMORY_POLICY, CURATOR_MODEL, the curator in finish's order, memory-ops.json in the run record, and the curator role in Spend by role.
+- *06-M2-03 · claude-opus-5-5*
+
+### 2026-11-07 11:45 · M2-02 · passes
+
+lib/curator.mjs (validate, tierOf, matchAnchor, capCheck, apply, body, main validate|apply|body); factKey/factText/resolvedText exported from entries.mjs; sectionEntries/headingLines (fence-aware) in memlint.mjs; prompts/curator.md; 22 unit tests on headings.txt and three harm fixtures. Opus review: 2 Important, 6 Minor, fixed red→green.
+
+- **Files:** lib/curator.mjs, lib/entries.mjs, lib/memlint.mjs, prompts/curator.md, tests/unit/curator.test.mjs, tests/fixtures/memory/README.md, tests/fixtures/memory/corrected.entries.jsonl, tests/fixtures/memory/corrected.ops.json, tests/fixtures/memory/unstated.entries.jsonl, tests/fixtures/memory/unstated.ops.json, tests/fixtures/memory/tool-result.entries.jsonl, tests/fixtures/memory/tool-result.ops.json, +4 more
+- **Verified:** node --test --test-isolation=none tests/unit/*.test.mjs: 475/475 (curator 22/22, red first: module missing, then 7 red after the review's tests); check.sh --fast green in 113 s, 960 tests; grep -c 'slice(0, 40)' lib/curator.mjs → 0; node --check on the four .mjs.
+- **Tests:** 938 → 960
+- **Dead end:** the gate as factKey equality (the plan's rule) — the review showed a stated first 40 characters plus an unstated tail passes and is written; the gate now compares the whole text (a stated item or a cut of it ≥ 40 chars, suffix aside)
+- **Discovery** (affects M2-03, M2-04, M2-05): Built step order differs from the plan: file, section (0 or 2+ headings drop), from, gate for every op first; then the dedupe among survivors; then tier 3 → proposal; anchor; already there. An unstated tier-3 op is dropped 'not stated by …', never proposed.
+- **Discovery** (affects M2-03, M2-04): The gate needs the op text to be the stated item whole or cut ≥ 40 chars (suffix aside): M2-04's stub-three-ops ops must copy STUB_FACTS' texts verbatim; a STUB_PROPOSE string passes only in a tier-2 section (a Gotchas op with it: 'not stated by entries.jsonl:<n> as a project fact').
+- **Discovery** (affects M2-03, M2-04): Anchors match by factKey after the list marker and the (<run> <date>) suffix are cut: an anchor under 40 chars must be the whole line (a short prefix matches nothing).
+- **Discovery** (affects M2-04): curator.mjs apply prints {ops, applied, proposed, dropped:[{op,reason}], rederived, refused, run, files}; files lists what it wrote (none when refused); a symlinked CLAUDE.md is read as absent; it is not in lib/helper.mjs's SERVED set (it writes files): call it with node, not ask.
+- **Discovery** (affects M2-03, M2-04): The stub fixtures (stub-three-ops, stub-cap, stub-cap-evict, stub-mixed, stub-continue) were left to M2-03/M2-04, whose checks and knobs fill their placeholders.
+- **Question for Michael:** Default taken (journal/decisions/2026-11-07-memory-tiers.md): a proposed_changes string gates only a tier-2/3 op, never a tier-1 Gotchas commit, since how-to-work-here is yours. Keep it, or let proposals land in Gotchas too? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/lib/curator.mjs, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/journal/decisions/2026-11-07-memory-tiers.md
+- *05-M2-02 · claude-opus-5-5*
+
+### 2026-11-07 11:27 · M2-01 · passes
+
+Wrote docs/plans/2026-11-07-M2-curator.md: memory-ops.json's shape and validator, the tier rule and fixed protected list, anchor/gate/duplicate/cap steps, the bucket arithmetic, curator() in finish, memory_base/memory_pr, prompts/curator.md drafted, stub knobs, 40 of 60 planned names; tests/fixtures/memory/headings.txt (64 lines); the memory-tiers decision skeleton.
+
+- **Files:** docs/plans/2026-11-07-M2-curator.md, journal/decisions/2026-11-07-memory-tiers.md, tests/fixtures/memory/headings.txt
+- **Verified:** fast tier 938/938 (check.sh --fast, 112 s); headings.txt read from the eight ~/projects/*/CLAUDE.md: 8 tier 1, 43 tier 2, 12 tier 3; an Opus reviewer checked the plan against the code (1 Critical, 5 Important, 2 Minor), all eight folded into the plan and the two strongest confirmed in lib/record.sh:366 and :570.
+- **Tests:** 938 → 938
+- **Dead end:** a {{SECTIONS}} line at the end of the drafted curator prompt — retro.md has none: assemble appends the parts at the end, so the draft follows retro.md
+- **Discovery** (affects M2-03): In finish the retro's notes, retro.md, retro-proposals.json and metrics row are uncommitted: curator() must rec_commit before taking cstart, or its restrict reverts them
+- **Discovery** (affects M2-03): session() notes S_NOTES itself for every kind but retro (lib/record.sh:570): curator must join that exception, or its notes land before the restrict and are reverted
+- **Discovery** (affects M2-04): STUB_PROJECT_FACT gives every listed id one shared text (one key): M2-04's two distinct facts need the new STUB_FACTS knob
+- **Discovery** (affects M2-04): stub-gh has no pr edit case and keeps no PR body: M2-04 adds prs/pr-N.body and a pr edit case (record_pr's reuse already calls pr edit, which falls through to exit 0)
+- **Discovery** (affects M2-03, M3): tests/lib.sh base config must set MEMORY_POLICY=off (RETRO=1 is on in every stub run): a default-on curator moves counts in many check files
+- **Discovery** (affects project): restrict commits the dirty tree, then reverts all since its base: a read-only role run after another in finish must rec_commit first (agent-harness-2026-11-07-2 2026-11-07)
+- **Question for Michael:** Default taken: tier 2 (every non-Gotchas, non-protected section) is never committed; it goes in the memory PR body and the run record's memory.md as ready-to-paste text. The spec said 'one commit per tier'. Should tier 2 instead be a second commit on harness-memory/<run>? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-curator.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/journal/decisions/2026-11-07-memory-tiers.md
+- **Question for Michael:** Default taken: the cap refuses a tier-1 commit only when the result is over 120 lines or 15 Gotchas AND grew on that measure, so hit_list (181 lines) can still take a replace or delete. Keep it, or refuse every write to an over-cap file? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/docs/plans/2026-11-07-M2-curator.md
+- **Proposed change:** M2-04 step 1's 'git diff --stat origin/main names CLAUDE.md alone' should use origin/main...harness-memory/<run> (three dots): MERGE_POLICY=auto in the suite's base config merges the record PR into main after the curator
+- *04-M2-01 · claude-opus-5-5*
+
+### 2026-11-07 11:11 · verify M1 · passes
+
+All 20 steps of M1-01..03 hold: full suite green (1728), subset runs pass (477/477, 31/31), prompts/pack/memory spec/docs/decision verified by reading code and tests.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M1-01 | 1 | read docs/plans/2026-11-07-M1-one-writer.md headings | sections M1-02 and M1-03 with files, checks, tiers | yes |
+| M1-01 | 2 | read plan's turned-false list; grep fixtures for old check names | list present; old names gone from check-names.txt; gotchas note retires, decision updated in place (grep count 1) | yes |
+| M1-01 | 3 | read plan 'The spec's exact shape' / Stub knobs; grep record.sh, lane.sh | memory spec shape and note words match lib/record.sh:365, memory_guard in lane.sh:451 | yes |
+| M1-01 | 4 | read plan 'clearing rule'; unit tests entries.test.mjs:160-210 | rule as stated is what the unit tests assert | yes |
+| M1-01 | 5 | read plan budget section; grep Updated in place 2026-11-07 in context-pack decision | budget section present; line at context-pack.md:39 | yes |
+| M1-01 | 6 | full suite via init output | green in 639 s, 1728 tests | yes |
+| M1-02 | 1 | read tests/unit/entries.test.mjs 160-210; bash tests/run.sh unit-tier | tests for fact listed despite gotchas arg, resolved dismiss, key dedupe, other key; unit-tier passes | yes |
+| M1-02 | 2 | grep carried lib/entries.mjs; node --check | no carried.some filter; syntax ok | yes |
+| M1-02 | 3 | grep -c 'under `## Gotchas`' prompts/coding.md prompts/initializer.md | 0 and 0 | yes |
+| M1-02 | 4 | read where-things-go*.md, templates/project/CLAUDE.md, CLAUDE.md Where things go | all route fact to discoveries/project, workflow to proposed_changes, never CLAUDE.md | yes |
+| M1-02 | 5 | read gotchas-pack.sh checks at 40,44; grep old names | replacement checks exist; old four names gone from sources and fixtures | yes |
+| M1-02 | 6 | bash tests/run.sh gotchas-pack memory-prompts unit-tier | 477/477 checks passed | yes |
+| M1-02 | 7 | init full suite (covers fast tier) | green, 1728 tests | yes |
+| M1-03 | 1 | read tests/checks/memory-one-writer.sh (tier: fast on line 2); run it | 5 stub-run checks + 2 restrict/guard checks, pass | yes |
+| M1-03 | 2 | read lib/record.sh restrict, memory_guard, lane.sh:451; bash -n | memory spec limited to two root files, called between commit and journal, note in step's words; syntax ok | yes |
+| M1-03 | 3 | read plan '## M1 review' | Opus review: 0 Critical, 0 Important, 3 Minor; memory reverts only two files, no other restrict changed | yes |
+| M1-03 | 4 | read decision file and context-pack Updated in place line | decision exists with finding/choice; Rejected row carries the 2026-11-07 line | yes |
+| M1-03 | 5 | grep architecture.md and README.md | §7 guard row, lane/record rows and README memory-lint paragraph carry the note words | yes |
+| M1-03 | 6 | bash tests/run.sh memory-one-writer verify-retro-read-only gotchas-pack lanes-run | 31/31 checks passed | yes |
+| M1-03 | 7 | init full suite | green, 1728 tests | yes |
+
+- *111002-verify-M1 · claude-sonnet-5-5*
+
+### 2026-11-07 10:59 · M1-03 · passes
+
+restrict gains a memory spec (CLAUDE.md, .harness/project.md at the root); memory_guard (merge-base base) calls it once per coding session between the WIP commit and sync_lane, one note per file; gotchas() retires. New tests/checks/memory-one-writer.sh (fast, 7 checks), stub knobs, partial-key moved to README.md:readme, decision, docs, folded review: 0 Critical, 0 Important.
+
+- **Files:** lib/record.sh, lib/lane.sh, tests/checks/memory-one-writer.sh, tests/stub-claude.sh, tests/checks/gotchas-pack.sh, tests/checks/partial-key.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, prompts/coding.md, docs/architecture.md, README.md, journal/decisions/2026-11-07-memory-one-writer.md, +3 more
+- **Verified:** memory-one-writer 7/7 watched failing first (0/7), then green; bash tests/run.sh memory-one-writer verify-retro-read-only gotchas-pack lanes-run: 31/31; partial-key 26/26; check.sh --fast green, 938 tests (931 before); Opus review proved memory reverts only the two files on the mem run and no other restrict call changed
+- **Tests:** 1723 → 1728
+- **Discovery** (affects project): From M1 on a coding session's CLAUDE.md/.harness/project.md edit is reverted by memory_guard: a check needing a CLAUDE.md-only session tree must map another file (README.md:readme)
+- **Discovery** (affects M2, run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line; the Promote to Gotchas item about 'Where things go' bare stays for M2's curator
+- **Discovery** (affects M2, M3): memory_guard's base is the merge-base: an earlier unguarded CLAUDE.md edit on a lane (a run in flight at deploy) is reverted at the next coding session and noted against its feature
+- **Question for Michael:** Should restrict's memory spec also cover .claude/CLAUDE.md, which Claude Code loads as project memory too? (default: no, the spec names CLAUDE.md and .harness/project.md only) Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/lib/record.sh:365, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-0/docs/plans/2026-11-07-M1-one-writer.md
+- **Proposed change:** The coding prompt's Finish step 2 (live driver, pre-M1) still asks for a ## Gotchas line; M2/M3 sessions of this run should follow their branch's CLAUDE.md and put facts in the entry
+- *03-M1-03 · claude-opus-5-5*
+
+### 2026-11-07 10:45 · M1-02 · passes
+
+The pack's Promote to Gotchas lists a project fact once, at its first unresolved entry, and reads no CLAUDE.md (the gotchas option and the CLI's read are gone). The coding Finish step 2, initializer paragraph, the three where-things-go parts, the template, draft-claude-md.md and this repo's CLAUDE.md send a fact to discoveries (project) and a workflow line to proposed_changes.
+
+- **Files:** lib/entries.mjs, prompts/coding.md, prompts/initializer.md, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, prompts/parts/where-things-go-override.md, prompts/draft-claude-md.md, templates/project/CLAUDE.md, CLAUDE.md, tests/unit/entries.test.mjs, tests/checks/gotchas-pack.sh, tests/checks/memory-prompts.sh, +3 more
+- **Verified:** Unit: 2 of 3 new pack tests red before the change (the third is the renamed resolved test, minus its Gotchas assertion), 21/21 after. Shell: the new checks run on the old tree (git archive HEAD + new tests): 5 of 6 FAIL; the CLAUDE.md-stays-main's one passes there too (no knob wrote CLAUDE.md before either). bash tests/run.sh gotchas-pack memory-prompts unit-tier: 478/478; suite-length 16/16; fast tier (check.sh --fast): fast green in 110 s, 931 tests.
+- **Tests:** 1721 → 1723
+- **Discovery** (affects project): A prompt line containing `## Where things go` counts as the block in memory-prompts' grep -c: name it 'Where things go' bare (agent-harness-2026-11-07-2 2026-11-07)
+- **Discovery** (affects M1-03): gotchas-pack's facts run runs after the gotcha run, so main's CLAUDE.md already carries the fact (B's Gotchas line): the facts packs prove CLAUDE.md clears nothing
+- **Discovery** (affects M1-03): docs/architecture.md still describes the pack's Promote part as cleared by a Gotchas line (§4 Context pack): M1-03's doc pass rewrites it with the clearing rule
+- **Proposed change:** M1-02's clearing-rule unit test for case/backticks/spacing passes on the old code too (resolved already used key()); the step's 'watched failing' holds for the other two unit tests and five of six shell checks
+- *02-M1-02 · claude-opus-5-5*
+
+### 2026-11-07 10:35 · M1-01 · passes
+
+Wrote docs/plans/2026-11-07-M1-one-writer.md: M1-02 (the pack's earliest-unresolved clearing rule, no CLAUDE.md read; the prompts, parts, template, draft prompt and this repo's line rerouted) and M1-03 (restrict's memory spec via a memory_guard at the merge-base, its note, gotchas() retired), every check turned false with its replacement, 4+3 stub knobs, ≤17 names of 30.
+
+- **Files:** docs/plans/2026-11-07-M1-one-writer.md
+- **Verified:** Read restrict, lane.sh 447-461, entries.mjs pack 289-296 and its CLI, the prompts and parts, all eight projects' Where things go lines; ran KEEP=1 bash tests/run.sh gotchas-pack (12/12) to read the gotcha run's session order and packs; grepped every fixture name the plan lists (each present once); check.sh --fast green (cached, 1721 tests; docs/plans is outside the key).
+- **Tests:** 1721 → 1721
+- **Dead end:** the feature's literal `restrict "$sstart" memory "$id"` call in lib/lane.sh — a session that merged origin/main itself brings main's CLAUDE.md change; reverting to sstart takes main's lines out at the milestone's merge, so the plan uses the merge-base in a memory_guard beside lane_guard
+- **Discovery** (affects M1-03): partial-key.sh's two driver-partial checks (pkedit, pkv) need a coding session's CLAUDE.md-only tree; the revert makes it impossible, so M1-03 moves them to README.md:readme
+- **Discovery** (affects M1-02): All eight projects have their own ## Where things go block (facts → ## Gotchas), so a coding prompt there gets no where-things-go part: only Finish step 2 can say the new route
+- **Discovery** (affects M1-03): The initializer's revert note (lib/driver.sh:513) has no check and no stub knob; M1-03 adds STUB_INIT_GOTCHA=1
+- **Discovery** (affects run, M2, M3): This run's driver is the pre-M1 live checkout: M1's revert never runs here, and M2/M3 sessions see a Finish step asking for a Gotchas line while their branch's CLAUDE.md says the entry
+- **Discovery** (affects M1, M2, M3): checks-diff pairs a renamed check as replaced only when the new name sorts into the old one's hunk; elsewhere it counts as added + removed
+- **Proposed change:** M1-03 step 2 should read: lib/lane.sh calls memory_guard "$sstart" "$id" (lib/record.sh, beside lane_guard: restrict <merge-base or sstart> memory <id>, one note per file), per docs/plans/2026-11-07-M1-one-writer.md
+- **Proposed change:** M1-02 step 5's CLAUDE.md clause should compare against main as it was before the run (git diff --quiet <m0> main -- CLAUDE.md): origin/main after the run holds any merged edit on both sides
+- *01-M1-01 · claude-opus-5-5*
+
+## Older entries (in full in progress-archive.md)
+
+- 2026-11-07 10:24 · init · passes · 12 features: M1 3 (plan, pack+prompts rerouted, memory restrict spec with folded review), M2 5 (plan… ([in full](progress-archive.md))
