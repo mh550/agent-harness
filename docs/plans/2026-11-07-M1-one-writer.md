@@ -276,3 +276,34 @@ The fast fixture: +3 unit −2 unit, +7 memory-one-writer, ±1 partial-key, so n
   `## Gotchas` lines alone.
 - The pack's sibling rule shows the *first* wording of a fact. A real correction should `resolve` the old fact and
   state the new one, which rule 1 then lists at the new line.
+
+---
+
+## M1 review
+
+*(2026-11-07, M1-03; an Opus subagent read `git diff $(git merge-base HEAD origin/main) -- lib prompts tests docs
+journal CLAUDE.md templates README.md` with one job: prove `memory` reverts nothing but the two files, and that no
+other role's `restrict` call changed.)*
+
+**Both claims hold. 0 Critical, 0 Important, 3 Minor.**
+
+- **`memory` reverts only the two files.** On a copy of the `mem` run, the only `HARNESS: reverted edits …` commits on
+  `run/mem/M1` are `M CLAUDE.md` (A) and `D .harness/project.md` (B). The net diff from `m0` keeps
+  `journal/decisions/stub-A.md`, `lib/stub-A.sh`, `tests/stub-A.txt` and the work files. `memory_guard` runs only in
+  the slot root (after `lane_cd`), so the pathspecs are root-exact. `--no-renames` turns a renamed `CLAUDE.md` into a
+  restored D. restrict's leading `commit_all` is a no-op there.
+- **No other call changed.** verify `record` (lane.sh:155), retro `nothing` (driver.sh:245), the initializer `record`
+  (driver.sh:512) and entry-resume `record` (record.sh:611) are unchanged. lib/driver.sh is untouched.
+- **Placement.** `commit_all` → `memory_guard; sync_lane` → `journal coding` → `lane_guard` → the limit branch → the
+  fast gate. A limited session's edit is reverted and pushed too. The journal's file list is a net diff, so it drops
+  `CLAUDE.md`.
+- **Minor 1 (not fixed).** A session that merges a ref ahead of a stale `origin/main` (a local `main` with an unpushed
+  `CLAUDE.md` line) has that line reverted and noted against it. This is contrived: the lanes fetch before every merge
+  of main, and a session merging main itself is already noted by `lane_guard`.
+- **Minor 2 (not fixed; recorded).** The base is the merge-base, so an earlier unguarded `CLAUDE.md` edit on the lane is
+  reverted at the next coding session and noted against that session's feature. That covers a run in flight when M1
+  deploys, and a driver killed between a session's end and the guard. A lane with no further coding session merges
+  such an edit, because verify's `restrict record` keeps it. This is accepted: the first run after the merge starts
+  clean.
+- **Minor 3 (asked).** Claude Code also loads `.claude/CLAUDE.md` as project memory, and the spec names only
+  `CLAUDE.md` and `.harness/project.md`. Adding it is a scope question for Michael (the entry's `questions`).
