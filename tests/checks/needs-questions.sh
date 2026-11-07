@@ -138,7 +138,7 @@ check "needs questions: no notification carries a question" \
 for n in $(seq 1 12); do node "$NM" open "$P/qa" qa proj question "Should A take extra $n? (default: no)" asker=A feature=A line=1 > /dev/null; done
 rm -f "$P/qm1"/needs/done/*.json
 check "needs questions: the debrief gatherer lists the open questions under #### Questions for Michael" \
-  '"$H" debrief --dry-run > "$T/db.out" 2>&1 && [[ $(grep -c "grep -i '"'"'question'"'"'" "$HH/lib/debrief.sh") == 0 ]] \
+  '"$H" debrief --dry-run > "$T/db.out" 2>&1 && [[ $(cat "$HH/lib/debrief.sh" "$HH/lib/context.sh" | grep -c "grep -i '"'"'question'"'"'") == 0 ]] \
   && awk "/^### qa \\(proj\\)/ { r = 1 } /^### / && !/^### qa / { r = 0 } r && /^#### / { on = \$0 == \"#### Questions for Michael\" } r && on" "$T/db.out" > "$T/db-qa" \
   && grep -F "Should A keep the old cache? (default: kept) Files: /srv/q/lib/a.sh:12 (qa/" "$T/db-qa" > /dev/null && grep -F "Should A log at debug?" "$T/db-qa" > /dev/null \
   && awk "/^### qm2 \\(proj\\)/ { r = 1 } /^### / && !/^### qm2 / { r = 0 } r && /^#### / { on = \$0 == \"#### Questions for Michael\" } r && on" "$T/db.out" | grep -F "Should A default to off?" | grep -F "asked 2 times" > /dev/null \

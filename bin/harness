@@ -46,6 +46,11 @@
 #                                                passing, $/feature, cache hit, orientation)
 #   harness debrief [--dry-run]                  after a queue: one short read-only session writes the debrief
 #                               (ledger/debrief.md; NOTIFY_CMD gets its headline). The queue runner starts it as it exits
+#   harness context <run-id> | --since <YYYY-MM-DD HH:MM:SS> [--out <dir>]
+#                                                read-only: the context bundle for one run, or every run whose driver
+#                                                started since then: context.md (the debrief's gatherer, then a
+#                                                ## Glossary of its IDs) in <dir>, else <state>/events/<uuid>/; prints
+#                                                the directory. Never summary.json, nothing outside the directory
 #   harness merge <run-id>                       merge the run's verified milestones into main now (a PR each); with its
 #                                                worktree gone it makes one (no spec asked) and restores the record from
 #                                                origin/main or the ledger, a missing tag fetched from origin
@@ -891,6 +896,7 @@ case ${1:-help} in
   gc) shift; cmd_gc "$@" ;;
   memlint) p=$(project_dir "${2:?usage: harness memlint <project>}") && node "$HARNESS_HOME/lib/memlint.mjs" "$p" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
+  context) shift; exec "$HARNESS_HOME/lib/context.sh" "$@" ;;
   sync) shift; exec "$HARNESS_HOME/lib/sync.sh" "$@" ;;
   backlog) shift; exec "$HARNESS_HOME/lib/backlog.sh" "$@" ;;
   memory) shift; exec "$HARNESS_HOME/lib/memory.sh" "$@" ;;

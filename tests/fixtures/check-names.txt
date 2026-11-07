@@ -362,8 +362,16 @@ coding and verify prompts: a fact to discoveries affecting project, a workflow l
 coding prompt names CLAUDE.md but doesn't paste it
 coding prompt: reviews go to subagents on the session's own model (A's prompt, its metrics row, prompt.sh's render: claude-sonnet-5-5)
 conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)
+context bundle: --since matches the debrief's dry-run context but the glossary
+context bundle: an unknown run exits 1, no argument prints the usage and exits 2
+context bundle: one run's context.md is its debrief section and a glossary
+context bundle: the debrief's own context ends with the glossary
+context bundle: with no --out it writes events/<uuid>/ and prints that directory
+context bundle: writes nothing outside its out directory, never summary.json
 context.md carries the earlier attempt's dead end
 context.md lists the decisions store's rules newest first
+context.mjs: mergeResults keeps each source once and drops an id another run resolved
+context.mjs: runSection cuts one run's section from the gatherer's markdown
 continuation queued: keeps attempts, brief marked as the debrief's
 continue after a no-list end merges main first
 continue finishes a paused run
