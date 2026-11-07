@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # The context bundle: the debrief's gatherer (moved here from lib/debrief.sh, same bytes) and `harness context`.
-#   context.sh <run-id> | --since <YYYY-MM-DD HH:MM:SS> [--out <dir>] [--id <id>]   sourced: context_since, context_runs, context_glossary
+#   context.sh <run-id> | --since <YYYY-MM-DD HH:MM:SS> | --from <dir> [--out <dir>] [--id <id>]   sourced: context_since, context_runs, context_glossary
 # Run, it writes <out>/context.md (the gatherer's markdown, then a ## Glossary of its IDs) and <out>/context.json (the
 # spec's shape; both from one lib/context.mjs call) for one run or every run whose driver started since then, and prints
-# <out>; <out> defaults to <state>/events/<id>/, <id> a uuid. A bundle in <state>/events/ then prunes the bundles there
+# <out>; <out> defaults to <state>/events/<id>/, <id> a uuid. --from copies a bundle already written (the debrief's, from
+# the context its note was written from) instead of gathering again. A bundle in <state>/events/ then prunes the bundles there
 # with no file newer than 30 days (the real clock), one stdout line saying how many.
 # Read-only: everything it runs only reads (status, needs, trends, queue list; never `harness report`, so never
 # summary.json), it takes no lock, and its scratch is <out>/.work.*, removed on exit. docs/plans/2026-11-07-A2-context-bundle.md §2.
@@ -29,12 +30,17 @@ capped() {   # bytes file [tail] → the file's head (or tail), with a note when
   (( n > $1 )) && printf '\n… (cut: %s of %s bytes shown; the whole file: %s)\n' "$1" "$n" "$2"
   return 0
 }
+ended_of() {   # state dir → how it ended: the debrief's words (alive first: "still running" while the driver finishes);
+  # CTX_ENDED_FIRST=1 (harness context): the ended file first, since the driver writes it before its end's event, alive still
+  if [[ -n ${CTX_ENDED_FIRST:-} && -s $1/ended ]]; then cat "$1/ended"
+  elif alive "$1"; then echo "still running"
+  else cat "$1/ended" 2>/dev/null || echo "not running, no end reason"; fi
+}
 run_context() {   # state dir → this run's section
   ( source "$1/meta.env"
     local proj rd ended f
     proj=$(basename "$PROJECT_DIR"); rd=$(rec_dir "$1")
-    # the driver writes ended before its end notification, alive still: a bundle the end's event asks for says how it ended
-    if [[ -s $1/ended ]]; then ended=$(cat "$1/ended"); elif alive "$1"; then ended="still running"; else ended="not running, no end reason"; fi
+    ended=$(ended_of "$1")
     echo; echo "### $RUN_ID ($proj)"; echo
     echo "- ended: $ended"
     echo "- project: $PROJECT_DIR (its docs: CLAUDE.md, README.md, docs/) · branch harness/$RUN_ID"
@@ -82,9 +88,9 @@ rate_info() {   # the newest rate-limit event in these runs' transcripts
     | "\(.key) \((.value.utilization // 0) * 100 | round)% (resets \(.value.resetsAt | strflocaltime("%a %H:%M")))"] | join(", "))' <<< "$line" 2>/dev/null \
     || echo "${line:0:400}"
 }
-spend() {   # summed by one jq over each record's cost.total (0 without one), as jq added them before
+spend() {   # summed by one jq over each record's cost.total (0 without one; raw, and + 0: a computed number, as before)
   local d
-  for d in "${RUNS[@]}"; do jq '.cost.total // 0' "$(rec_dir "$d")/summary.json" 2>/dev/null || echo 0; done | jq -s 'add // 0'
+  for d in "${RUNS[@]}"; do jq -r '.cost.total // 0' "$(rec_dir "$d")/summary.json" 2>/dev/null || echo 0; done | jq -s 'add + 0'
 }
 names() { local d; for d in "${RUNS[@]}"; do basename "$d"; done | paste -sd' ' -; }
 context_runs() {   # <state dir>… → $CTX: the gatherer's markdown for these runs, every part capped, the whole cut at CMAX
@@ -124,7 +130,8 @@ context_glossary() {   # <state dir>… → appends to $CTX a ## Glossary of the
     ( source "$d/meta.env"
       local rd ended running=0 docs=$PROJECT_DIR
       rd=$(rec_dir "$d"); [[ -e $WT/.git ]] && docs=$WT   # a run's docs: its worktree when it is a checkout, else its project's
-      if [[ -s $d/ended ]]; then ended=$(sed 's/ · [0-9-]* [0-9:]*$//' "$d/ended"); elif alive "$d"; then ended="still running" running=1; fi
+      ended=$(ended_of "$d"); [[ $ended == "still running" ]] && running=1   # the same words as its section's
+      ended=$(sed 's/ · [0-9-]* [0-9:]*$//' <<< "$ended")
       "$H" needs "$RUN_ID" --json > "$WS/needs-$i.json" 2> /dev/null || echo '[]' > "$WS/needs-$i.json"   # by row: two projects may share a run id
       printf '%s\t' "$d" "$RUN_ID" "$(basename "$PROJECT_DIR")" "${ended:-not running, no end reason}" "$running" \
         "$(F summary "$rd/feature_list.json" 2> /dev/null || echo 'no feature list')" "$rd" "$WT" "$docs" | tr -d '\n'
@@ -150,20 +157,22 @@ H=$HARNESS_HOME/bin/harness LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger}
 F() { node "$HARNESS_HOME/lib/features.mjs" "$@"; }
 usage() { echo "usage: harness context <run-id> | --since <YYYY-MM-DD HH:MM:SS> [--out <dir>]" >&2; exit 2; }
 die() { echo "harness context: $*" >&2; exit 1; }
-run="" since="" out="" id="" by=0
+run="" since="" out="" id="" from="" by=0
 while (( $# )); do
   case $1 in
-    --since|--out|--id) (( $# >= 2 )) || usage
-      case $1 in --since) since=$2 by=1 ;; --out) out=$2 ;; --id) id=$2 ;; esac; shift 2 ;;
+    --since|--out|--id|--from) (( $# >= 2 )) || usage
+      case $1 in --since) since=$2 by=1 ;; --out) out=$2 ;; --id) id=$2 ;; --from) from=$2 ;; esac; shift 2 ;;
     -*) usage ;;
     *) [[ -z $run ]] || usage; run=$1; shift ;;
   esac
 done
+(( by + ${#run} > 0 && ${#from} > 0 )) && usage   # one scope: a run, a time or a bundle
 (( by )) && [[ -n $run ]] && usage
-(( by )) || [[ -n $run ]] || usage
+(( by )) || [[ -n $run || -n $from ]] || usage
 (( by )) && { [[ $since =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2}$ ]] || usage; }
 [[ -z $id || $id =~ ^[A-Za-z0-9-]{8,64}$ ]] || usage   # an events/<id>/ name n8n accepts (its ID_GUARD)
-if [[ -n $run ]]; then   # bin/harness's state_of rule
+if [[ -n $from ]]; then :
+elif [[ -n $run ]]; then   # bin/harness's state_of rule
   [[ $run =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "no run '$run' (run-id: letters, digits, . _ - only)"
   d=$(compgen -G "$STATE_ROOT/*/$run" | head -1)
   [[ -n $d && -f $d/meta.env && -f $d/run.log ]] || die "no run '$run' (see: harness status)"
@@ -178,9 +187,13 @@ fi
 [[ -n $out ]] || out=$STATE_ROOT/events/$id
 mkdir -p "$out" && out=$(CDPATH='' cd -- "$out" && pwd) || die "cannot write $out"
 WS=$(mktemp -d "$out/.work.XXXXXX") || die "cannot write $out"; trap 'rm -rf "$WS"' EXIT   # nothing outside $out
-CTX=$out/context.md CTX_TITLE=Context CTX_JSON=$out/context.json CTX_ID=$id CTX_SCOPE_SINCE=$since
-context_runs "${RUNS[@]}"
-context_glossary "${RUNS[@]}" || die "no context.json in $out (the bundle's markdown is there)"
+if [[ -n $from ]]; then   # copied as it is: the bundle names the runs its writer read, not the ones started since
+  cp -- "$from/context.md" "$from/context.json" "$out/" 2> /dev/null && [[ -s $out/context.json ]] || die "no bundle in $from"
+else
+  CTX=$out/context.md CTX_TITLE=Context CTX_JSON=$out/context.json CTX_ID=$id CTX_SCOPE_SINCE=$since CTX_ENDED_FIRST=1
+  context_runs "${RUNS[@]}"
+  context_glossary "${RUNS[@]}" || die "no context.json in $out (the bundle's markdown is there)"
+fi
 echo "$out"
 # the retention (decisions/2026-10-22-context-bundle-glossary): a bundle written among the others prunes the stale ones
 ev=$(CDPATH='' cd -- "$STATE_ROOT/events" 2> /dev/null && pwd)

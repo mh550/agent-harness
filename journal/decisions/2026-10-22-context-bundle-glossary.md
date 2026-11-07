@@ -20,11 +20,19 @@ Contracts (v1, fixed: n8n-home's `docs/specs/2026-10-22-harness-reporter.md` §4
     (features, milestones) and the decisions store and docs (table rows `| D24 | … |`, headings `# M9`, `### D-H1 · …`
     in CLAUDE.md, README.md, docs/\*\*/\*.md, journal/decisions.md and the titles of journal/decisions/\*.md), every match
     newest file first, `source` as `<path>:<line>`; an ID nothing resolves is listed in `unresolved`, never guessed.
-    It has no store of its own: it is re-derived each time.
+    It has no store of its own: it is re-derived each time. The regexes, in the order they are tried (each match masks
+    its text for the next pass): the run's own feature and milestone ids exactly; decisions `\bD-H\d+\b` and
+    `\bD\d+\b` not followed by `-\d`; features `\b[A-Z]{1,2}\d+-\d+\b`; milestones `\b[A-Z]{1,2}\d+\b` not followed by
+    `-\d` (so `N1-01` never yields `N1`). The sources, in order: the feature list (a feature's `description` and
+    `milestone`; a milestone id it lists), then the docs (headings `# M9`, `## 9. M8`, `## H1 · …`, `### D-H1 · …`;
+    table rows `| D24 | … |`), each entry's text its first 300 characters, markdown stripped. An entry matches its ID
+    whole: never a prefix (`D2` is not `D24`), a sub-heading (`M8.1`) or a range (`D1 – D23`).
   - **The hook** (lib/notify.sh `notify_event`): a routed event builds its bundle first, at `events/<id>/` with the
     event's own id (`notify.mjs event id=…`), so `context` names a `context.json` that exists when n8n reads it, and
-    `event.json` lands beside it. A run's event bundles `RUN_ID`; the debrief's bundles every run since its `SINCE`
-    (`notify … since=`). A bundle that fails (or times out) is the note `context bundle failed for <kind>; event sent
+    `event.json` lands beside it. A run's event bundles `RUN_ID`. The debrief's is the debrief's own: its gather writes
+    `context.json` beside its `context.md` (one node call), and `notify … bundle=<its workspace>` copies both into
+    `events/<id>/` with that context.json's id as the event's (`context.sh --from`), so n8n reads the runs the note covers,
+    gathered once (a second gather at notify time would add a run started during the session, the A2 review's I1). A bundle that fails (or times out) is the note `context bundle failed for <kind>; event sent
     without it` and a null `context`; the event is still sent. `HARNESS_CONTEXT` replaces the bundle command in tests.
   - *default*: **30-day retention, on write.** A bundle written in `<STATE_ROOT>/events/` removes every other
     `events/<dir>/` with no file modified in the last 30 days (the real clock), and says `events: removed <n> bundle(s)
@@ -36,6 +44,9 @@ Contracts (v1, fixed: n8n-home's `docs/specs/2026-10-22-harness-reporter.md` §4
     the INBOX ask at the card's line, else the card's question text. `open_questions` come from the files progress.md is
     rendered from, not progress.md: the INBOX's open asks (above `## Answers`, outside the steering comment, 600 chars
     each), then the open question items' text not among them; 12 at most.
+  - **The move keeps the debrief's bytes.** `ended_of` says `still running` while the driver is alive, as the debrief
+    did; a bundle `harness context` writes (`CTX_ENDED_FIRST=1`) reads the `ended` file first, since the driver writes it
+    before its end's event, still alive, and that event's bundle must say how the run ended (the A2 review's I2).
   - *default*: newest file by mtime (ties by path); the docs root is the run's worktree when it is a checkout, else
     its project's; the run's own feature and milestone ids are matched exactly even when the spec's regexes miss
     their shape (`N1F-01`); the debrief's own context gains the glossary section; the id is the kernel's uuid.

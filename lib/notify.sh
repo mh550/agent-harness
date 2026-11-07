@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Usage: source lib/notify.sh; notify "<message>" [title=…] [body=…] [click=…] [actions=…] [priority=…] [tags=…] [kind=…] [feature=…] [since=…]
+# Usage: source lib/notify.sh; notify "<message>" [title=…] [body=…] [click=…] [actions=…] [priority=…] [tags=…] [kind=…] [feature=…] [bundle=…]
 #        gh_url <path in the repo> [blob|edit]   (the GitHub URL of that file on $BRANCH or the current one, or nothing)
 # Structured notifications (plan: docs/plans/2026-10-19-P1-notifications.md). With NTFY_URL set the harness posts to
 # ntfy itself through ${HARNESS_CURL:-curl} and NOTIFY_CMD is not called; otherwise NOTIFY_CMD gets "$1" as it always
@@ -8,13 +8,13 @@
 # The event hook (docs/plans/2026-11-07-A1-event-hook.md): kind= park|needs_michael|blocked|debrief with EVENT_URL set
 # go to EVENT_URL as v1 event JSON first (lib/notify.mjs event); ntfy/NOTIFY_CMD only when that isn't a 2xx. No kind is
 # other; feature= is the event's feature. Before the POST the event's context bundle is written to events/<id>/ by
-# ${HARNESS_CONTEXT:-lib/context.sh} (RUN_ID's run, or every run since= for the debrief) and `context` names its
+# ${HARNESS_CONTEXT:-lib/context.sh} (RUN_ID's run, or the debrief's own bundle= copied, its id the event's) and `context` names its
 # context.json; a bundle that fails is a note and a null context (docs/plans/2026-11-07-A2-context-bundle.md §3.4).
 NOTIFY_MJS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/notify.mjs
 declare -F ask > /dev/null || ask() { local s=$1; shift; node "${NOTIFY_MJS%/*}/$s" "$@"; }   # a plain spawn; lib/record.sh's, sourced after this in a driver or lane, answers from its helper
 
 notify() {
-  local msg=${1-} kv k v title=harness body="" click="" actions="" priority="" tags="" kind=other feature="" since="" rc a
+  local msg=${1-} kv k v title=harness body="" click="" actions="" priority="" tags="" kind=other feature="" bundle="" rc a
   shift
   [[ -n ${NOTIFY_TAG:-} ]] && msg="[$NOTIFY_TAG] $msg"
   for kv; do
@@ -23,7 +23,7 @@ notify() {
     [[ $k == body ]] || v=${v//[[:cntrl:]]/ }   # a why must not add a header, nor carry a byte ntfy refuses (400)
     case $k in
       title) [[ -n $v ]] && title=$v ;; body) body=$v ;; click) click=$v ;; actions) actions=$v ;;
-      priority) priority=$v ;; tags) tags=$v ;; kind) [[ -n $v ]] && kind=$v ;; feature) feature=$v ;; since) since=$v ;;
+      priority) priority=$v ;; tags) tags=$v ;; kind) [[ -n $v ]] && kind=$v ;; feature) feature=$v ;; bundle) bundle=$v ;;
     esac
   done
   [[ -n $body ]] && body=$(notify_trim "$body")
@@ -57,8 +57,8 @@ notify_event() {
   # the bundle first, synchronous and capped (*default*, decisions/2026-10-22-context-bundle-glossary), so the path the
   # event names exists when n8n reads it; the event takes its id, so event.json lands beside it
   E=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}/events
-  id=$(cat /proc/sys/kernel/random/uuid 2> /dev/null)
-  if [[ -n $since ]]; then sc=(--since "$since"); elif [[ -n ${RUN_ID:-} ]]; then sc=("$RUN_ID"); fi
+  if [[ -n $bundle ]]; then id=$(jq -r '.id // empty' "$bundle/context.json" 2> /dev/null) sc=(--from "$bundle")
+  else id=$(cat /proc/sys/kernel/random/uuid 2> /dev/null); [[ -n ${RUN_ID:-} ]] && sc=("$RUN_ID"); fi
   if [[ -n $id ]] && (( ${#sc[@]} )) && out=$(timeout 60 "${HARNESS_CONTEXT:-${NOTIFY_MJS%/*}/context.sh}" "${sc[@]}" \
        --out "$E/$id" --id "$id" < /dev/null 2> /dev/null 8>&- 9>&-) && [[ ${out%%$'\n'*} == /* && -s ${out%%$'\n'*}/context.json ]]; then
     E=${out%%$'\n'*}; E=${E%/*} ctx=${out%%$'\n'*}/context.json   # the directory it printed: absolute, no // (n8n's path guard)

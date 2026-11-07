@@ -38,8 +38,8 @@ check "context bundle: with no --out it writes events/<uuid>/ and prints that di
   (( b3 == 0 )) && E=$(head -1 "$T/b3.out") && [[ $E =~ ^"$HARNESS_STATE/events/"[0-9a-f-]{36}$ && -s $E/context.md ]] \
   && [[ -z $(compgen -G "$E/.work.*") ]] && sec parked "$E/context.md" | diff "$T/s0" - > /dev/null'
 check "context bundle: writes nothing outside its out directory, never summary.json" '
-  find "$HARNESS_STATE" "$T/wt" "$HARNESS_LEDGER" "$T/proj" -newer "$T/mark" ! -type d 2> /dev/null \
-    | grep -Ev "^($T/b1|$T/b2|$HARNESS_STATE/events|$HARNESS_STATE/debrief)/" > "$T/new.txt"; [[ ! -s $T/new.txt ]] \
+  E3=$(head -1 "$T/b3.out") && find "$HARNESS_STATE" "$T/wt" "$HARNESS_LEDGER" "$T/proj" -newer "$T/mark" 2> /dev/null \
+    | grep -Evx "($T/b1|$T/b2|$E3|$HARNESS_STATE/debrief)(/.*)?|$HARNESS_STATE(/events)?" > "$T/new.txt"; [[ ! -s $T/new.txt ]] \
   && [[ -z $(find "$HARNESS_STATE" "$T/wt" "$HARNESS_LEDGER" "$T/b1" "$T/b2" -name summary.json -newer "$T/mark" 2> /dev/null) ]]'
 check "context bundle: context.json has the spec's shape for one run" '
   jq -e ".v == 1 and (.id | type) == \"string\" and .generated_at != null and .scope.runs == [\"parked\"] and .scope.since == null and (.runs | length) == 1 and .runs[0].paths.record != null and .runs[0].parked[0].feature == \"B\" and ([.glossary[].id] | index(\"D24\")) != null and .unresolved == [\"Q99\"]" "$T/b1/context.json" > /dev/null \
@@ -60,7 +60,20 @@ check "context bundle: a new bundle removes events older than 30 days and says s
 check "context bundle: an unknown run exits 1, no argument prints the usage and exits 2" '
   "$H" context nosuch > /dev/null 2> "$T/d1.err"; r1=$?; "$H" context > /dev/null 2> "$T/d2.err"; r2=$?
   "$H" context --since yesterday > /dev/null 2> "$T/d3.err"; r3=$?; "$H" context parked --since "$(at 11000)" > /dev/null 2>&1; r4=$?
-  (( r1 == 1 && r2 == 2 && r3 == 2 && r4 == 2 )) && grep -F "no run '"'"'nosuch'"'"'" "$T/d1.err" > /dev/null \
+  "$H" context parked --from "$T/b1" > /dev/null 2>&1; r5=$?
+  (( r1 == 1 && r2 == 2 && r3 == 2 && r4 == 2 && r5 == 2 )) && grep -F "no run '"'"'nosuch'"'"'" "$T/d1.err" > /dev/null \
   && grep "^usage: harness context <run-id> | --since <YYYY-MM-DD HH:MM:SS> \[--out <dir>\]" "$T/d2.err" > /dev/null && grep "^usage: harness context" "$T/d3.err" > /dev/null'
+
+# a run whose driver is still finishing (alive, its ended written: the driver's end notify) and one with an empty ended:
+# the debrief's context says what it said before the move; a bundle says how the finishing run ended
+printf 'done · %s\n' "$(at 60)" > "$HARNESS_STATE/proj/running/ended"; : > "$HARNESS_STATE/proj2/givenup/ended"
+"$H" debrief --dry-run > "$T/dry2.out" 2>&1; DRY2=$(head -1 "$T/dry2.out")
+"$H" context running --out "$T/b4" > /dev/null 2>&1
+check "context bundle: the debrief's context says a finishing run is still running, as before the move" '
+  sec running "$DRY2" | grep -x -- "- ended: still running" > /dev/null \
+  && awk "/^### givenup \\(proj2\\)\$/ { on = 1 } on && /^- ended:/ { print; exit }" "$DRY2" | grep -x -- "- ended: " > /dev/null'
+check "context bundle: a bundle says how a finishing run ended" '
+  sec running "$T/b4/context.md" | grep -x -- "- ended: done · $(at 60)" > /dev/null \
+  && jq -e ".runs[0] | .ended == \"done\" and .running == false" "$T/b4/context.json" > /dev/null'
 
 suite_end

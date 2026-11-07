@@ -197,6 +197,7 @@ cli.mjs: the tail awaits a main that returns a promise
 cli.mjs: the tail gives main the process's cwd, environment and stdin
 cli.mjs: the tail writes main's out to stdout and exits its rc
 context bundle: --since matches the debrief's dry-run context but the glossary
+context bundle: a bundle says how a finishing run ended
 context bundle: a new bundle removes events older than 30 days and says so
 context bundle: a run's summary is its summary.json, or null without one
 context bundle: an unknown run exits 1, no argument prints the usage and exits 2
@@ -204,6 +205,7 @@ context bundle: context.json for --since names its time and every run since it
 context bundle: context.json has the spec's shape for one run
 context bundle: one run's context.md is its debrief section and a glossary
 context bundle: open_questions carries the parked run's INBOX question
+context bundle: the debrief's context says a finishing run is still running, as before the move
 context bundle: the debrief's own context ends with the glossary
 context bundle: with no --out it writes events/<uuid>/ and prints that directory
 context bundle: writes nothing outside its out directory, never summary.json
@@ -358,6 +360,7 @@ gc units: --dry-run with units of another project's runs (live and ended) prints
 gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
 glossary.mjs: Q99 is unresolved and no near match is taken
 glossary.mjs: a D1 that is a decision row and a milestone keeps both
+glossary.mjs: a dotted id (M8.1, D24.3) is not its prefix, in a text or a table row
 glossary.mjs: a milestone of the feature list comes before its headings
 glossary.mjs: an id written in two files gives every match, newest file first
 glossary.mjs: an odd feature list or doc never throws and resolves nothing it cannot

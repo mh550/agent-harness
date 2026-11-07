@@ -84,4 +84,6 @@ check "event run: the debrief event's bundle covers the debrief's runs" \
   'c=$(jq -r ".[0].context" <<< "$D") && [[ $c == "$HARNESS_STATE/events/$DID/context.json" && -n $DC ]] \
    && [[ $(jq -r ".scope.runs | join(\" \")" "$c") == "$(sed -n "s/^- Covers: .*: [0-9]* (\(.*\))\$/\1/p" "$DC")" ]] \
    && [[ $(jq -r .scope.since "$c") == "$(sed -n "s/^- Covers: every run whose driver started since \([0-9-]* [0-9:]*\) .*/\1/p" "$DC")" && $(jq ".scope.runs | length" "$c") -ge 5 ]]'
+check "event run: the debrief event's bundle is the context its note was written from" \
+  'c=$(jq -r ".[0].context" <<< "$D") && [[ -n $DC && -f $c ]] && cmp "$DC" "${c%/*}/context.md" > /dev/null && [[ $(jq -r .id "$c") == "$DID" ]]'
 suite_end

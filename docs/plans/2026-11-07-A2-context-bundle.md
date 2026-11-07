@@ -398,7 +398,7 @@ else notify_say "context bundle failed for $kind; event sent without it"; fi
 
 then `ask notify.mjs event id="$id" context="$ctx" …` (buildEvent takes a given `id=` of v1's shape, A2-04 unit
 test; an empty one gets a fresh uuid as today). `notify_say` is the `note`-else-`log` pair notify_event already
-has at its end, made a function. `notify` gains one field, `since=` (the debrief passes `since="$SINCE"` at
+has at its end, made a function. `notify` gains one field, `since=` (*Updated in place 2026-11-07, A2-05: `bundle=`, the debrief's own bundle copied; see the review*) (the debrief passes `since="$SINCE"` at
 lib/debrief.sh:343: the debrief has no `RUN_ID`, and n8n refuses a debrief without a context). event.json is
 written into the same `events/<id>/`. *default*: the bundle is synchronous and capped at 60 s (`timeout`), before
 the 5 s POST; a slow or failed bundle costs at most that and a note, and `notify` still returns 0 with the POST or

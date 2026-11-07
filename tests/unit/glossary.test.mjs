@@ -191,3 +191,11 @@ test("glossary.mjs: findIds takes the feature list's ids before the regex passes
   const known = [{ id: "S2-D1", kind: "feature" }, { id: "X-H1", kind: "milestone" }];
   assert.equal(ids(findIds("see S2-D1 and X-H1, then D1", known)), "S2-D1:feature X-H1:milestone D1:decision");
 });
+
+test("glossary.mjs: a dotted id (M8.1, D24.3) is not its prefix, in a text or a table row", () => {
+  assert.equal(ids(findIds("M8.1 and D24.3 and N1-01.2, then M8.")), "M8:milestone");
+  assert.equal(ids(findIds("M8.1", [{ id: "M8", kind: "milestone" }])), "");
+  const g = resolveIds([{ id: "D24", kind: "decision" }], {}, memReader("/r", { "docs/d.md": "| D24.1 | a near row |\n" }));
+  assert.equal(g.glossary.length, 0);
+  assert.deepEqual(g.unresolved, ["D24"]);
+});

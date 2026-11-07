@@ -88,6 +88,9 @@ for d in "${RUNS[@]}"; do   # a still-running run: the next debrief starts from 
   [[ -n $t && $t < $STARTED ]] && STARTED=$t
 done
 WS=$STATE_ROOT/debrief/$(date +%F-%H%M%S); mkdir -p "$WS"; CTX=$WS/context.md
+# its context.json beside it, from the same node call: the debrief event's bundle is this one copied (bundle=), so n8n
+# reads the runs the note covers, gathered once
+CTX_ID=$(cat /proc/sys/kernel/random/uuid 2> /dev/null) CTX_SCOPE_SINCE=$SINCE; [[ -n $CTX_ID ]] && CTX_JSON=$WS/context.json
 context_runs "${RUNS[@]}"; context_glossary "${RUNS[@]}"   # the context (lib/context.sh), then the glossary of its IDs
 
 if (( dry )); then echo "$CTX"; echo; cat "$CTX"; exit 0; fi
@@ -245,7 +248,7 @@ HL[0]="[debrief] ${HL[0]:-}"
 # lines (CONTINUE: answers, wherever the model put them). No click: the note is a local path.
 NM=$(awk '/^## / { on = tolower($0) ~ /^## needs michael/; next } on && NF' "$WS/body.md" | grep -Evix '[-*_ ]*(nothing|none)\.?[*_[:space:]]*' \
   | grep -Ev '^- (Queued|Not queued): ')
-notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}" kind=debrief since="$SINCE"
+notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}" kind=debrief bundle="$WS"
 # DESK=1 and something needs Michael: a Remote Control session briefs him on the note (9>&-: debrief.lock stays ours)
 [[ -n $NM && $DESK == 1 ]] && { "$H" desk --debrief > /dev/null 2>&1 9>&- || log "debrief: desk could not start (exit $?)"; }
 exit 0
