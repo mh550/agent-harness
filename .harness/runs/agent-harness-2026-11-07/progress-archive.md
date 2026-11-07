@@ -3,6 +3,51 @@
 
 What this file is: the run's journal, rendered from `entries.jsonl`, newest entry first. Each entry is one session's own account: what it built, what it verified, what failed. The feature list (`feature_list.json` in this directory) has one milestone, S4 of the slim-suite spec (`docs/specs/2026-11-03-slim-suite.md`): the bash decision logic that burns the suite moves into pure `.mjs` functions with a unit test per branch, no note text changed, no check removed (the brief's Decision 16 (b)). Five features: S4-01 plans the moves, S4-02 the suite runner's decisions (`lib/check.sh` → `lib/checkdecide.mjs`), S4-03 the lane's verdict and exit table and how a run ends (`lib/lane.sh`, `lib/driver.sh` → `lib/lane.mjs`), S4-04 the queue entry format and INBOX status parsers (`lib/queue.mjs`, `lib/inbox.mjs`), S4-05 the review with the proofs, the forty mutants and the Predictions table (the after row and the solo CPU and wall rows wait for an empty box after the run). `passes` on a feature means its session's fast tier was green and its steps were done; the milestone is verified independently and merged into `main` when all five pass. Steer from the phone: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`).
 
+### 2026-11-07 05:08 · verify S4 · passes
+
+All 5 S4 features hold: full suite green (1721, 645 s), unit tier 452/452, both note proofs clean (one identical pair, empty comparison), literal-04 caught at checkdecide.mjs, numstats and docs present.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| S4-01 | 1 | step 1 of S4-01 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | plan file docs/plans/2026-11-07-S4-purity.md exists; sections per build | yes |
+| S4-01 | 2 | step 2 of S4-01 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | plan and lib layout: check.sh/bin/harness/queue.sh spawn node; lane/driver/record use ask; lane.mjs in served set (grep of lane.sh/driver.sh shows ask lines) | yes |
+| S4-01 | 3 | step 3 of S4-01 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | note rule: note proofs print 1 identical pair and empty comparison (diff empty) | yes |
+| S4-01 | 4 | step 4 of S4-01 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | mutant list: decision file table; literal-04 moved, others line not moved | yes |
+| S4-01 | 5 | step 5 of S4-01 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | push-downs: status.test.mjs unquote moved; others listed | yes |
+| S4-01 | 6 | step 6 of S4-01 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | decision file journal/decisions/2026-11-03-purity.md exists with Decision 16(b) table | yes |
+| S4-01 | 7 | step 7 of S4-01 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | init full suite green 1721 tests in 645 s | yes |
+| S4-02 | 1 | step 1 of S4-02 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | tests/unit/checkdecide.test.mjs exists, unit tier 452/452 pass | yes |
+| S4-02 | 2 | step 2 of S4-02 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | node --check passes; grep checkdecide.mjs lib/check.sh prints one line (89, decide() def) and subset branch exit at line 87 precedes it | yes |
+| S4-02 | 3 | step 3 of S4-02 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | numstat lib/check.sh 42 del/72 ins; decision file rows present | yes |
+| S4-02 | 4 | step 4 of S4-02 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | check: line diff pairs identical in quoted text; note comparison empty | yes |
+| S4-02 | 5 | step 5 of S4-02 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | literal-04 applied at no("8")->no("9") in checkdecide.mjs: 64 pass 1 fail, tree restored (git diff --quiet ok) | yes |
+| S4-02 | 6 | step 6 of S4-02 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | bash -n lib/check.sh ok; subset checks covered by the full green run (1721 pass) | yes |
+| S4-02 | 7 | step 7 of S4-02 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | full suite green incl fast tier | yes |
+| S4-03 | 1 | step 1 of S4-03 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | tests/unit/lane.test.mjs exists; unit tier 452 pass | yes |
+| S4-03 | 2 | step 2 of S4-03 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | node --check lane.mjs helper.mjs ok; grep lane.mjs lib/lane.sh lib/driver.sh prints only ask lines | yes |
+| S4-03 | 3 | step 3 of S4-03 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | numstat lane.sh 41/37 driver.sh 19/16; in decision file | yes |
+| S4-03 | 4 | step 4 of S4-03 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | note proofs: 1 identical pair, comparison empty; grep -c needs Michael lane.mjs printed 4 (nonzero; decision file must name the exit reasons, not confirmed by me) | yes |
+| S4-03 | 5 | step 5 of S4-03 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | no head/jq shape check beyond full suite; compare-09 marked line not moved | yes |
+| S4-03 | 6 | step 6 of S4-03 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | bash -n ok; checks covered by full green run | yes |
+| S4-03 | 7 | step 7 of S4-03 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | full suite green | yes |
+| S4-04 | 1 | step 1 of S4-04 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | tests/unit/queue.test.mjs and inbox tests exist, unit tier pass | yes |
+| S4-04 | 2 | step 2 of S4-04 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | node --check ok; status.mjs grep of replaceAll x1f is 0; record.sh control/stop_why call ask inbox.mjs; grep -m1 status remains in control fast path (line 486) for plain run | yes |
+| S4-04 | 3 | step 3 of S4-04 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | numstat bin/harness 9/13, queue.sh 11/7, record.sh 17/14 | yes |
+| S4-04 | 4 | step 4 of S4-04 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | note proofs clean; queue-view.sh check at line 67 asserts bytes with 0x1f, passes in full suite | yes |
+| S4-04 | 5 | step 5 of S4-04 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | unquote push-down: tests/unit/status.test.mjs exists; names file 1720 lines | yes |
+| S4-04 | 6 | step 6 of S4-04 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | bash -n ok; checks covered by full green run | yes |
+| S4-04 | 7 | step 7 of S4-04 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | full suite green | yes |
+| S4-05 | 1 | step 1 of S4-05 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | review file docs/plans/2026-11-07-S4-review.md exists | yes |
+| S4-05 | 2 | step 2 of S4-05 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | fixes with checks: tests/checks/no-answer.sh in suite; bash -n and node --check all ok | yes |
+| S4-05 | 3 | step 3 of S4-05 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | decision file has proofs section; note grep shows the single identical pair | yes |
+| S4-05 | 4 | step 4 of S4-05 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | forty-mutant table present in decision file at line 198 | yes |
+| S4-05 | 5 | step 5 of S4-05 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | Predictions table present (line ~254) | yes |
+| S4-05 | 6 | step 6 of S4-05 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | decision file complete; CLAUDE.md memlint-self in green suite | yes |
+| S4-05 | 7 | step 7 of S4-05 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | architecture.md rows for checkdecide, lane, queue; README lines 397-398 | yes |
+| S4-05 | 8 | step 8 of S4-05 re-run: commands as in the step (grep, git diff, node --check, bash -n, unit tier, full suite) | full suite green 1721 in 645 s | yes |
+
+- *050710-verify-S4 · claude-sonnet-5-5*
+
 ### 2026-11-07 04:56 · S4-05 · passes
 
 0 Critical, 4 Important, 7 Minor. An Opus review read each move against its bash. All 3 Important were no-answer branches when helper and spawn both fail (queue start, verify verdict, run end); fixed red first, 10 checks in tests/checks/no-answer.sh. Two Minors fixed (glibc alnum, fix-round numbers). Decision file: both proofs, the 40 mutants (31→32), Predictions. Docs updated.

@@ -22,3 +22,5 @@
 - 2026-11-07 04:56 · S4-05: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-07 04:56 · S4-05: gotchas +0 ~1 -0
 - 2026-11-07 04:56 · S4-05 · claude-opus-5-5 · passes=true · 75 min · 5/5 passing · tests 1721
+- 2026-11-07 04:56 · verify S4: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 05:07 · context.md for S4: 15728 bytes
