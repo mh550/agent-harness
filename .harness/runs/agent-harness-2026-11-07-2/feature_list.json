@@ -214,7 +214,7 @@
       "after": [
         "M3-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-04",

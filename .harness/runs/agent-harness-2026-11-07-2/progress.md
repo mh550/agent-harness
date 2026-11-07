@@ -9,6 +9,21 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 14:14 · M3-03 · passes
+
+Counting: summary.json's memory (memory.json's five keys), the report's Memory row after Checks, the ledger row's memory, ledger/memory.jsonl (ledger(), memory-line, committed under LEDGER_COMMIT=1), and harness memory [--last n] [project] (lib/memory.sh: gh pr view <url> --json state,mergedAt,commits per row, never stored). stub-gh answers pr view by URL. Review: 9 Minor fixed.
+
+- **Files:** lib/summary.mjs, lib/memory.sh, lib/driver.sh, bin/harness, tests/stub-gh.sh, tests/fixtures/gh-pr-view-commits.json, tests/unit/summary.test.mjs, tests/checks/memory-branch.sh, tests/checks/curator-run.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, README.md, +2 more
+- **Verified:** unit: the 6 summary.mjs memory tests red (missing exports, then empty stubs) then green; the review's edge cases red on the pre-review summary.mjs. Stub runs: with the code at HEAD 4 new checks FAIL (29/33); after, bash tests/run.sh memory-branch curator-run unit-tier 517/517. bash -n and node --check clean. check.sh --fast green, 968 tests.
+- **Tests:** 962 → 968
+- **Dead end:** the [] check in curator-run expecting cu's memory PR listed open — curator-run's project CLAUDE.md has no Gotchas or Code rules: cu's three ops all drop, no PR; harness memory there prints (none)
+- **Discovery** (affects M3-04): The [] stub check went into curator-run.sh on its existing ce run (no new run), not memory-branch.sh; memory-branch.sh now sets LEDGER_COMMIT=1 with a git-init'ed $T/ledger
+- **Discovery** (affects M3-04): finish now removes $STATE/memory.json right after ended (it was the top of curator()): a continue without a curator counts none. No stub run covers that path yet
+- **Discovery** (affects M3-04): memoryState: unchanged = every headline 'memory: <run>: <n> facts' (GitHub's Update-branch merge neutral, no commits = edited); a commit of Michael's titled like the driver's reads unchanged (known limit, in the decision)
+- **Discovery** (affects M3-04, project): stub-gh answers pr view <url> --json state,mergedAt,commits: base..head in $STUB_DIR/origin.git, base kept at pr create (agent-harness-2026-11-07-2 2026-11-07)
+- **Proposed change:** M3-03 step 4/5 name tests/checks/memory-pr.sh and `bash tests/run.sh memory-pr`: the file is memory-branch.sh and the [] check is in curator-run.sh; the subset is `bash tests/run.sh memory-branch curator-run unit-tier`
+- *11-M3-03 · claude-opus-5-5*
+
 ### 2026-11-07 13:52 · M3-02 · passes
 
 MEMORY_POLICY=pr|auto|off: auto merges the memory PR at the pushed tier-1 head (memory_merge, --match-head-commit; refused → left open, one note), an unknown value is one note and runs as pr, off writes no curator/memory note. Config, both templates, architecture §10 row, README, decision policy row. Review: under auto a PR opened with no new tier-1 commit had no note; fixed red→green.
