@@ -313,7 +313,18 @@ services_down() {
 }
 # check.sh's first question, the tree's key, asked here: it is a child process with no helper, and that's a node start per
 # call in it. Only from the tree's top, where check.sh takes it; empty (a subdirectory, a failure): check.sh asks itself.
-check_run() { local tk=""; [[ -e .git ]] && tk=$(ask treekey.mjs --partial --names 2> /dev/null); HARNESS_CHECK_TK=$tk "$CHECK" "$@"; }
+# check.sh's first two questions asked here, so this shell's helper answers them: the tree's key, then (a full or --fast
+# call on a key) what its markers and the map say (decisions/2026-11-03-purity). No answer: check.sh asks.
+check_run() {
+  local tk="" before="" f=0 l=()
+  [[ -e .git ]] && tk=$(ask treekey.mjs --partial --names 2> /dev/null)
+  if [[ -n $tk && ( $# == 0 || $1 == --fast ) ]]; then
+    [[ ${1:-} == --fast && -n ${HARNESS_CHECK_FAST_CMD:-} ]] && f=1
+    mapfile -t l <<< "$tk"
+    before=$(ask checkdecide.mjs before "${HARNESS_CHECK_CACHE:-${HARNESS_SCRATCH:-}}" "$f" "${l[@]}" 2> /dev/null)
+  fi
+  HARNESS_CHECK_BEFORE=$before HARNESS_CHECK_TK=$tk "$CHECK" "$@"
+}
 green() { check_run > /dev/null 2>&1; }
 green_fast() { check_run --fast > /dev/null 2>&1; }   # the gate `passes` stands on (decisions/2026-11-03-fast-gate)
 # <fix feature id>: the gate a fix feature's `passes` stands on (decisions/2026-11-04-fix-rounds): the red's files through

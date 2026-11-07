@@ -34,14 +34,16 @@
 # check-*.out spares check-fast*.out.
 # Each call that ran or answered appends `<epoch> <full|fast|subset|partial|cached> <seconds>` to $HARNESS_SCRATCH/check-runs.log
 # (the lane's "suite ran" note counts a session's from it).
+# The flow and every line stay here; the decisions are pure functions in lib/checkdecide (decisions/2026-11-03-purity), one
+# question per moment: a green call asks once, a red one three times, a subset only when it was killed.
 set -uo pipefail
 [[ -z ${HARNESS_XTRACE:-} ]] || source "$(dirname "$0")/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 cmd=${HARNESS_CHECK_CMD:-} fast=0 scratch=${HARNESS_SCRATCH:?HARNESS_SCRATCH is not set}
 cache=${HARNESS_CHECK_CACHE:-$scratch}   # green-<key> and red-<key> markers, part-<key> sidecars (the driver keeps them in its state dir, not in scratch)
 max=${HARNESS_CHECK_MEMORY_MAX:-3G} to=${HARNESS_CHECK_TIMEOUT:-15m}
-rerun=${HARNESS_CHECK_RERUN:-auto}; [[ $rerun == @(auto|failed|suite|off) ]] || rerun=auto   # an unknown value: one wasted rerun at worst
+rerun=${HARNESS_CHECK_RERUN:-auto}
 here=$(cd "$(dirname "$0")" && pwd)
-tk_given=${HARNESS_CHECK_TK:-}; unset HARNESS_CHECK_TK   # a lane's answer to this call's first question (check_run, lib/record.sh); the suite never sees it
+tk_given=${HARNESS_CHECK_TK:-} before_given=${HARNESS_CHECK_BEFORE:-}; unset HARNESS_CHECK_TK HARNESS_CHECK_BEFORE   # a lane's answers to this call's first two questions (check_run, lib/record.sh); the suite never sees them
 tc() { [[ -s $1 ]] && node "$here/testcount.mjs" "$@"; }   # an empty output has no count: no node start for it
 if [[ ${1:-} == --fast ]]; then   # with no fast command the whole suite is the fast tier: the bare form, byte for byte
   shift; (( $# )) && { echo "check: --fast takes no arguments (usage: check.sh [--fast | <args…>])"; exit 2; }
@@ -71,15 +73,6 @@ run() {
   (( scoped )) && scope_stop "$unit"; return $rc
 }
 
-# <rc> <seconds> [<the run's own seconds>]: what the RED line says. GNU timeout exits 137, not 124, when it had to KILL, so
-# a 137 that took the whole CHECK_TIMEOUT is the timeout; a 137 whose scope peaked at its cap is the kernel's kill there.
-why() {
-  local lim; lim=$(dur_s "$to") || lim=0
-  if (( $1 == 124 )) || (( $1 == 137 && lim > 0 && ${3:-$2} >= lim )); then echo "timed out after $to, exit $1 after $2 s"
-  elif (( $1 == 137 && scoped )) && scope_capped "$unit" "$max"; then echo "killed at its $max memory cap, exit 137 after $2 s"
-  else echo "exit $1 after $2 s"; fi
-}
-
 # <full|fast|subset|partial|cached>: this call's row; the epoch is its end (to the microsecond, a dot whatever the locale), so a row
 # between a lane's two stamps ended in between
 row() { printf '%s\t%s\t%s\n' "$(date +%s.%6N)" "$1" "$(( $(date +%s) - start ))" >> "$scratch/check-runs.log"; }
@@ -88,73 +81,53 @@ row() { printf '%s\t%s\t%s\n' "$(date +%s.%6N)" "$1" "$(( $(date +%s) - start ))
 mark() { local t=$cache/.${1%%-*}-$$; printf '%s\n' "${@:2}" > "$t" && mv -f "$t" "$cache/$1"; }
 
 start=$(date +%s)
-if (( $# )); then   # a subset: its output is the caller's; only a kill gets a line of its own
+subset() {   # its output is the caller's; only a kill gets a line of its own
   run "$cmd \"\$@\"" _ "$@"; rc=$?
   [[ $rc == 124 || $rc == 137 ]] && echo "check: RED ($(why $rc $(( $(date +%s) - start ))))"
   row subset; exit $rc
-fi
+}
+decide() { node "$here/checkdecide.mjs" "$@"; }
+# <rc> <seconds> [<the run's own seconds>] → rf, the facts every question about a red takes; the scope is read only for a 137
+facts() {
+  local lim cap=0; lim=$(dur_s "$to") || lim=0
+  (( $1 == 137 && scoped )) && scope_capped "$unit" "$max" && cap=1
+  rf=("$1" "$2" "${3:-$2}" "$to" "$lim" "$cap" "$max")
+}
+why() { facts "$@"; decide why "${rf[@]}"; }   # what the RED line says
+(( $# )) && subset "$@"
 
 # line 1 the tree's key, line 2 the key without the mapped paths, then one `<blob> <path>` per mapped path, then one
 # `: <path> <name>…` per map entry (--names: the partial run's checks, without a second start)
 if [[ -n $tk_given ]]; then mapfile -t tk <<< "$tk_given"; else mapfile -t tk < <(node "$here/treekey.mjs" --partial --names 2> /dev/null); fi
-key=${tk[0]:-} red=${tk[1]:-} blobs=() pmap=()
-for l in "${tk[@]:2}"; do if [[ $l == ": "* ]]; then pmap+=("${l#: }"); else blobs+=("$l"); fi; done
+key=${tk[0]:-} red=${tk[1]:-} blobs=()
+for l in "${tk[@]:2}"; do [[ $l == ": "* ]] || blobs+=("$l"); done
 [[ $key =~ ^[0-9a-f]{16}$ ]] || key=""   # treekey failed: the full run, no marker
-if [[ -n $key && -f $cache/green-$key ]]; then   # the marker holds the tree's test count (older markers are empty: its output's)
-  n=""; read -r n < "$cache/green-$key"; [[ -n $n ]] || n=$(tc "$scratch/check-$key.out")
+answer=run n="" nm="" line="" ref=""
+if [[ -n $key ]]; then
+  while read -r k v; do case $k in answer) answer=$v ;; n) n=$v ;; rc) rc=$v ;; names) nm=$v ;; line) line=$v ;; ref) ref=$v ;; esac
+  done <<< "${before_given:-$(decide before "$cache" "$fast" "${tk[@]}")}"
+fi
+if [[ $answer == green ]]; then   # the marker holds the tree's test count (older markers are empty: its output's)
+  [[ -n $n ]] || n=$(tc "$scratch/check-$key.out")
   # a key ignore list beyond the default (CHECK_KEY_IGNORE, the run record aside) is named, so a docs change's skip is explained
   ki=$(tr -s ' \t' '\n' <<< "${HARNESS_CHECK_KEY_IGNORE:-}" | grep -vx -e '' -e '\.harness/runs' | paste -sd' '); [[ $ki == docs/plans ]] && ki=""
   echo "check: green (cached for this code tree${n:+, $n}${ki:+; key ignores: $ki})"; row cached; exit 0
 fi
-if [[ -n $key && -f $cache/red-$key ]]; then   # the rerun guard already said it isn't a flake: nothing runs on this tree again
-  rc="" nm="" line=""; { read -r rc; read -r nm; read -r _; read -r line; } < "$cache/red-$key"
-  [[ $rc =~ ^[1-9][0-9]*$ ]] || rc=1   # a marker caught mid-write (or planted) is still a red
+if [[ $answer == red ]]; then   # the rerun guard already said it isn't a flake: nothing runs on this tree again
   # the tree's own output, check-<key>.out, if it is still the newest tree's: check.out and check-rerun.out may be another's
   echo "check: RED (cached for this code tree: ${nm:-whole suite})"; o=$scratch/check-$key.out
   if [[ -f $o ]]; then echo "${line% — last lines of *} — last lines of $o (this tree's first run):"; tail -25 "$o"
   else echo "${line% — last lines of *} — its output is gone from scratch${nm:+: check.sh $nm shows the failures}"; fi
   row cached; exit "$rc"
 fi
-if (( fast )) && [[ -n $key && -f $cache/fast-$key ]]; then
-  n=""; read -r n < "$cache/fast-$key"; echo "check: fast green (cached for this code tree${n:+, $n})"; row cached; exit 0
-fi
+if [[ $answer == fast ]]; then echo "check: fast green (cached for this code tree${n:+, $n})"; row cached; exit 0; fi
 # collapsed whitespace, so a map spelled over two lines or with double spaces is the same map
 ws() { local a; read -ra a <<< "$(tr -s '[:space:]' ' ' <<< "$1")"; echo "${a[*]}"; }
-# <assoc> <`<blob> <path>` line…>: the lines as path → blob; fails on a malformed line or a path twice (no set)
-bmap() { local -n m=$1; local l; for l in "${@:2}"; do
-  [[ $l =~ ^([0-9a-f]{40}|[0-9a-f]{64}|-)\ ([^ ]+)$ && -z ${m[${BASH_REMATCH[2]}]+x} ]] || return 1; m[${BASH_REMATCH[2]}]=${BASH_REMATCH[1]}
-done; }
-
-# <path>… → pn: the names of the map entries (pmap, treekey's `: <path> <name>…` lines) whose path is one of them, map
-# order, each once (treekey.mjs mapNames); none when a path is no entry's
-pnames() {
-  local p e n; local -a w; local -A has=() mine=(); pn=()
-  for p; do mine[$p]=1; done
-  for e in "${pmap[@]}"; do read -ra w <<< "$e"; [[ ${mine[${w[0]}]+x} ]] && has[${w[0]}]=1; done
-  for p; do [[ ${has[$p]+x} ]] || return 0; done
-  for e in "${pmap[@]}"; do read -ra w <<< "$e"; [[ ${mine[${w[0]}]+x} ]] || continue
-    for n in "${w[@]:1}"; do [[ " ${pn[*]} " == *" $n "* ]] || pn+=("$n"); done; done
-}
-# Sets ref (the green tree this one differs from in mapped paths only) and pn (the checks that read those paths, map
-# order) and succeeds when a partial run may stand for the full one; any doubt fails, and the full run runs. The rows of
-# the plan's table, in order: the invariant is that a tree is never marked green by anything but a green run of every
-# check that reads what changed in it.
-partial() {
-  local tmap sc p; local -A was=() now=(); local -a s=()
-  # 4: no map (treekey prints none either while .harness/config.sh is outside the key: its map could change unseen)
-  [[ -n $(ws "${HARNESS_CHECK_KEY_MAP:-}") && ${#blobs[@]} -gt 0 && $red =~ ^[0-9a-f]{16}$ ]] || return 1
-  # 4a: only the tree's own map may choose a subset (the lint proves that one); the exported one is the driver's at its start
-  tmap=$(unset CHECK_KEY_MAP; set +u; [[ -f .harness/config.sh ]] && source .harness/config.sh > /dev/null 2>&1 < /dev/null; echo "${CHECK_KEY_MAP:-}")
-  [[ $(ws "$tmap") == "$(ws "$HARNESS_CHECK_KEY_MAP")" ]] || return 1
-  [[ -f $cache/part-$red ]] || return 1   # 5: no green full run of a tree with these unmapped paths
-  mapfile -t sc < "$cache/part-$red"; ref=${sc[0]:-}
-  [[ $ref =~ ^[0-9a-f]{16}$ && -f $cache/green-$ref ]] || return 1   # 6: the reference is gone (run_init fresh, a new cache)
-  bmap was "${sc[@]:1}" && bmap now "${blobs[@]}" || return 1   # 7: the path sets
-  [[ $(printf '%s\n' "${!was[@]}" | sort) == "$(printf '%s\n' "${!now[@]}" | sort)" ]] || return 1
-  for p in "${!now[@]}"; do [[ ${was[$p]} == "${now[$p]}" ]] || s+=("$p"); done
-  (( ${#s[@]} )) || return 1   # 8: nothing mapped differs (the full key would have matched)
-  pnames "${s[@]}"
-  (( ${#pn[@]} ))   # 9, 10: a path no entry's, no name
+# Row 4a of the partial table, the one that needs a shell: only the tree's own map may choose a subset (the lint proves
+# that one); the exported one is the driver's at its start. Asked last, for a call that would otherwise go partial.
+own_map() {
+  local tmap; tmap=$(unset CHECK_KEY_MAP; set +u; [[ -f .harness/config.sh ]] && source .harness/config.sh > /dev/null 2>&1 < /dev/null; echo "${CHECK_KEY_MAP:-}")
+  [[ $(ws "$tmap") == "$(ws "${HARNESS_CHECK_KEY_MAP:-}")" ]]
 }
 
 # The rerun guard on a red run (rc) whose output is <out>: once more by CHECK_RERUN, never after a timeout or a cap kill
@@ -163,14 +136,10 @@ partial() {
 # suite, or the fast tier for --fast).
 # Sets first (the first run's reason), names, how (failed, or suite: the rest), out and r0; rc becomes the rerun's.
 guard() {
-  first=$(why $rc $(( $(date +%s) - start )))
-  read -ra names <<< "$(sed -n 's/^HARNESS_FAILED=//p' "$1" | tail -1)"
-  [[ $first != @("timed out"|"killed at")* ]] || return 0
-  case $rerun in
-    auto) how=suite; (( ${#names[@]} )) && how=failed ;;
-    failed) (( ${#names[@]} )) && how=failed ;;
-    suite) how=suite ;;
-  esac
+  local k v
+  facts $rc $(( $(date +%s) - start ))
+  while read -r k v; do case $k in first) first=$v ;; how) how=$v ;; names) read -ra names <<< "$v" ;; esac
+  done < <(decide guard "${rf[@]}" "$rerun" "$1")
   [[ -n $how ]] || return 0
   local c=$sc args=("${@:3}"); [[ $how == failed ]] && c=$cmd args=("${names[@]}")
   out=$2 r0=$(date +%s); run "$c \"\$@\"" _ "${args[@]}" > "$out" 2>&1; rc=$?
@@ -205,7 +174,8 @@ if (( fast )); then   # the fast tier: its own output and marker, no partial; a 
   fi
   row fast; exit $rc
 fi
-if [[ -n $key ]] && partial; then   # 11: the checks that read what differs, the subset form's way (names as arguments)
+if [[ $answer == partial ]] && own_map; then   # 11: the checks that read what differs, the subset form's way (names as arguments)
+  read -ra pn <<< "$nm"
   rm -f "$scratch/check-partial-rerun.out"   # it belongs to the check-partial.out beside it
   run "$cmd \"\$@\"" _ "${pn[@]}" > "$scratch/check-partial.out" 2>&1; rc=$?
   out=$scratch/check-partial.out
@@ -245,11 +215,11 @@ if (( rc == 0 )); then   # the marker ("<n> tests" or empty, then the wall) outl
     flake; flaky=${names[*]}; echo "check: green after a rerun (flaky: ${flaky:-whole suite})${n:+, $n}"
   else echo "check: green in $s s${n:+, $n}"; fi
 else
-  last=$(why $rc $s $(( $(date +%s) - ${r0:-$start} ))); line="check: RED ($last$(again)) — last lines of $out:"
+  last="" keep=0; facts $rc $s $(( $(date +%s) - ${r0:-$start} ))
+  while read -r k v; do case $k in last) last=$v ;; keep) keep=$v ;; esac
+  done < <(decide last "${rf[@]}" "$first" "$rc0" "$key")
+  line="check: RED ($last$(again)) — last lines of $out:"
   echo "$line"; tail -25 "$out"
-  # cached only when neither run was a timeout (the box's load), a cap kill (the scope's) or a signal's code (a kill the
-  # scope didn't see, a TERM: the box's, not the tree's): those the next call runs
-  [[ -n $key && $first == "exit "* && $last == "exit "* ]] && (( rc0 < 128 && rc < 128 )) \
-    && mark "red-$key" "$rc" "${names[*]}" "wall $w" "$line"
+  (( keep )) && mark "red-$key" "$rc" "${names[*]}" "wall $w" "$line"
 fi
 row full; exit $rc

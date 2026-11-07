@@ -112,7 +112,73 @@ check rerun: the subset form never reruns
 check.sh: a green full run's marker is `2 tests` then `wall <s>`; a planted one-line marker gives the same cached line
 check.sh: an empty suite output starts no testcount.mjs, a suite that printed a count one, and says it
 check.sh: the cached line names the key's ignore list only when it isn't the default
+check_run: check.sh's cache answer comes from the parent's helper too (no checkdecide.mjs start) and the suite never sees it; a check.sh with no parent asks it itself (one start each)
 check_run: check.sh's key comes from the parent's helper (no treekey.mjs start), the same marker a spawn would write
+checkdecide.mjs: cachedAnswer: a fast marker answers under --fast, with its count
+checkdecide.mjs: cachedAnswer: a fast marker is never read without --fast
+checkdecide.mjs: cachedAnswer: a green marker answers with its count
+checkdecide.mjs: cachedAnswer: a marker cut mid-write gives what it has, the rest empty
+checkdecide.mjs: cachedAnswer: a red beats a fast marker under --fast
+checkdecide.mjs: cachedAnswer: a red marker answers with its exit code, names and line
+checkdecide.mjs: cachedAnswer: a red marker whose first line is no number exits 1
+checkdecide.mjs: cachedAnswer: a red marker with no names has none (the whole suite)
+checkdecide.mjs: cachedAnswer: an older empty green marker answers with no count
+checkdecide.mjs: cachedAnswer: green beats a red and a fast marker
+checkdecide.mjs: cachedAnswer: no key runs, whatever markers exist
+checkdecide.mjs: cachedAnswer: no marker runs
+checkdecide.mjs: cachedAnswer: read's trim takes outer spaces and tabs only, a no-break space and a CR stay
+checkdecide.mjs: failedNames: an empty last line clears the names, and no final newline still counts
+checkdecide.mjs: failedNames: the last whole line's names; no line is none
+checkdecide.mjs: keepRed: a first run that was no plain exit is not kept
+checkdecide.mjs: keepRed: a first run's signal code (128 up) is not kept
+checkdecide.mjs: keepRed: a last run that was no plain exit is not kept
+checkdecide.mjs: keepRed: a rerun's signal code (128 up) is not kept
+checkdecide.mjs: keepRed: both runs a plain exit under 128, with a key, is kept
+checkdecide.mjs: keepRed: no key is not kept
+checkdecide.mjs: main before: --fast never reads the sidecar
+checkdecide.mjs: main before: a directory where a marker should be is no marker
+checkdecide.mjs: main before: a fast marker answers only with the fast flag
+checkdecide.mjs: main before: a green marker answers green with its count
+checkdecide.mjs: main before: a red marker answers red with its fields
+checkdecide.mjs: main before: a tree key that isn't one answers run, whatever the cache holds
+checkdecide.mjs: main before: a tree that differs from a green one in mapped paths answers partial, map order
+checkdecide.mjs: main before: the reference's green marker gone answers run, row 6; no sidecar, row 5
+checkdecide.mjs: main guard: a timeout still names what failed, and chooses no rerun
+checkdecide.mjs: main guard: an output that isn't there has no names
+checkdecide.mjs: main guard: the first run's words, the choice and the last HARNESS_FAILED= names
+checkdecide.mjs: main last: the last run's words and whether its red is kept
+checkdecide.mjs: main why: the words alone
+checkdecide.mjs: main: no question or an unknown one exits 2 with no answer
+checkdecide.mjs: partialPlan row 10: an entry with no names refuses
+checkdecide.mjs: partialPlan row 11: names in map order, each once, whatever the blob lines' order
+checkdecide.mjs: partialPlan row 11: the reference and the names of what differs
+checkdecide.mjs: partialPlan row 4: a blank map refuses
+checkdecide.mjs: partialPlan row 4: a reduced key that isn't 16 hex refuses
+checkdecide.mjs: partialPlan row 4: no blob lines refuses
+checkdecide.mjs: partialPlan row 5: no sidecar refuses
+checkdecide.mjs: partialPlan row 6: a malformed reference refuses
+checkdecide.mjs: partialPlan row 6: the reference's green marker gone refuses
+checkdecide.mjs: partialPlan row 7: a different path set refuses
+checkdecide.mjs: partialPlan row 7: a malformed blob line refuses, on either side
+checkdecide.mjs: partialPlan row 7: a path twice refuses, on either side
+checkdecide.mjs: partialPlan row 7: a sidecar with no path lines refuses
+checkdecide.mjs: partialPlan row 8: nothing mapped differs refuses
+checkdecide.mjs: partialPlan row 9: a differing path that is no entry's refuses
+checkdecide.mjs: partialPlan: a '-' blob (a deleted mapped file) and 40- and 64-hex blobs are valid
+checkdecide.mjs: partialPlan: a map spelled over two lines is still a map
+checkdecide.mjs: redReason: 137 under the limit in a scope at its cap is the cap
+checkdecide.mjs: redReason: 137 under the limit with the scope under its cap is a plain exit
+checkdecide.mjs: redReason: 137 whose own seconds reach the limit is a timeout, not the cap
+checkdecide.mjs: redReason: 137 with no limit (a duration dur_s can't read) is never a timeout
+checkdecide.mjs: redReason: any other code is a plain exit, a capped scope or not
+checkdecide.mjs: redReason: exit 124 is a timeout, however short the run
+checkdecide.mjs: redReason: own decides the timeout while seconds is what is printed
+checkdecide.mjs: rerunChoice: an unknown value is auto
+checkdecide.mjs: rerunChoice: auto reruns the failed names, else the whole suite
+checkdecide.mjs: rerunChoice: failed reruns only named files
+checkdecide.mjs: rerunChoice: no rerun after a timeout or a cap kill, under every setting
+checkdecide.mjs: rerunChoice: off never reruns
+checkdecide.mjs: rerunChoice: suite reruns the whole suite, names or none
 cli.mjs: a CLI with no answer and a closed stdout still exits its rc
 cli.mjs: a deleted cwd stops only a main that reads it
 cli.mjs: a main that throws prints the message on stderr, nothing on stdout, and exits 70
