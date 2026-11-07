@@ -9,6 +9,24 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 13:39 · M3-01 · passes
+
+M3 plan written (docs/plans/2026-11-07-M3-policy.md). memlint-self retired: its grep is a unit test in memlint.test.mjs (red on a mutant, conformance red before the fixture), its self-lint the curator's capCheck at the write plus memlint-run's notes. File deleted, names swapped in both fixtures, CHECK_KEY_MAP, key-map-lint, partial-key, README follow. Decision skeleton memory-policy.
+
+- **Files:** docs/plans/2026-11-07-M3-policy.md, journal/decisions/2026-11-07-memory-policy.md, journal/decisions/2026-11-03-suite-tiers.md, tests/unit/memlint.test.mjs, tests/checks/memlint-self.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, .harness/config.sh, tests/checks/key-map-lint.sh, tests/checks/partial-key.sh, tests/checks/memlint-run.sh, README.md
+- **Verified:** bash tests/run.sh key-map-lint memlint-run unit-tier partial-key: 516/516; check.sh --fast: 962/962 in 113 s; the unit test red on a mutant (actual '2 1'); unit-tier red on conformance before the name was in the fixture (478/479); bash -n and node --check clean
+- **Tests:** 962 → 962
+- **Dead end:** counting occurrences of the literals in the unit test — lib/memlint.mjs:37 holds "docs/decisions.md" twice on one line; the old grep -c counted lines, so the test counts lines
+- **Discovery** (affects M3-02, M3-03): The spec's and M3-02/M3-03's tests/checks/memory-pr.sh is tests/checks/memory-branch.sh (renamed in M2-05); the off check to replace is in curator-run.sh
+- **Discovery** (affects M3-02): curator() today notes 'curator: none (MEMORY_POLICY=<v> is neither pr nor off)' and skips; M3-02 replaces it with the treated-as-pr note. memory_open's note hardcodes MEMORY_POLICY=pr
+- **Discovery** (affects M3-03): stub-gh pr view takes a head branch, not a URL, and answers no mergedAt/commits: M3-03 adds both (gh's documented JSON shape, a fixture naming its source)
+- **Discovery** (affects M3-03, M3-04): A continue adds a second driver commit to a reused memory PR: the plan reads 'merged unchanged' as every commit headline starting 'memory: <run>: ', not 'one commit' (default)
+- **Discovery** (affects M3-04): Fast-tier check files are 58 after the retirement (grep -l '^# tier: fast' tests/checks/*.sh), not the spec's 55: its 'now 56' was older
+- **Discovery** (affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 and M2-04/05 did; the Promote to Gotchas items stay for the curator
+- **Proposed change:** M3-01 step 3's grep includes docs/, where the spec, the dispatch list and the M3 plan (which step 1 requires to name the assertion) keep the name: read it as the live tree (tests lib bin README.md CLAUDE.md .harness/config.sh docs/architecture.md), which prints nothing
+- **Proposed change:** M3-02 and M3-03 steps name tests/checks/memory-pr.sh: it is tests/checks/memory-branch.sh, and `bash tests/run.sh memory-pr` picks memory-prompts alone (substring); use memory-branch
+- *09-M3-01 · claude-opus-5-5*
+
 ### 2026-11-07 13:30 · verify M2 · passes
 
 All five M2 features hold: full suite green (1775), unit 477/477, curator-run/memory-branch/lanes-record-pr/retro-backlog/verify-retro-read-only 51/51, syntax checks pass, docs/decision/review present, 47 names within budget 60.

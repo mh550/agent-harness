@@ -177,7 +177,7 @@
       "after": [
         "M2"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3-02",
