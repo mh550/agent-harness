@@ -27,57 +27,51 @@ dd{margin:0;font-variant-numeric:tabular-nums;font-size:14px}.open{margin:12px 0
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--line) 60%,transparent);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
 pre{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}</style></head>
 <body><main>
-<h1>Debrief · 2026-11-05 13:48</h1>
-<p class="sub">1 run · page built 2026-11-05 18:48 UTC from each run's summary.json and the debrief note</p>
-<section class="headline"><p>Landed on main (agent-harness): H1 resident helper, 6/6, PR #104, plus record PR #105. Blocked: agent-harness-2026-11-04-2 (run-resilience spec) died after 1/12 and none of it is on main.</p></section>
+<h1>Debrief · 2026-11-07 05:09</h1>
+<p class="sub">1 run · page built 2026-11-07 10:09 UTC from each run's summary.json and the debrief note</p>
+<section class="headline"><p>agent-harness-2026-11-07 finished 5/5 features. Milestone S4 (the purity moves) was verified and merged into main in PR #120, and the run record went in as PR #121.</p></section>
 <section class="cards"><article class="card">
-  <header><h3>agent-harness-2026-11-05</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
-  <div class="big"><b>6/6 passing</b><span>6 verified · 6 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="H1: 6/6 passing, merged">H1</li></ul>
-  <dl><div><dt>Spend</dt><dd>$30.91</dd></div><div><dt>Per feature</dt><dd>$5.15</dd></div>
-  <div><dt>Wall</dt><dd>3.85 h</dd></div><div><dt>Tests</dt><dd>1332 → 1455</dd></div></dl>
+  <header><h3>agent-harness-2026-11-07</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>5/5 passing</b><span>5 verified · 5 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="S4: 5/5 passing, merged">S4</li></ul>
+  <dl><div><dt>Spend</dt><dd>$31.62</dd></div><div><dt>Per feature</dt><dd>$6.32</dd></div>
+  <div><dt>Wall</dt><dd>2.96 h</dd></div><div><dt>Tests</dt><dd>1506 → 1721</dd></div></dl>
   
 </article></section>
-<section class="note"><p><em>runs since 2026-11-04 06:19:37: agent-harness-2026-11-04-2 agent-harness-2026-11-05 · claude-sonnet-5-5, $0.14461400000000002 · context: /home/mh550/.local/state/harness/debrief/2026-11-05-134751/context.md</em></p>
-<p>Spend $30.91 (the run-resilience run $9.67, the resident-helper run $21.24). The usage window is open, and seven_day is at 17% (resets Sun 17:00).</p>
+<section class="note"><p><em>runs since 2026-11-05 13:47:51: agent-harness-2026-11-07 · claude-sonnet-5-5, $0.12038599999999999 · context: /home/mh550/.local/state/harness/debrief/2026-11-07-050946/context.md</em></p>
+<p>Nothing is blocked. Spend was $31.62, and tests went 1506 → 1721.<br>The usage window is open (seven_day 35%, resets Sun 17:00).</p>
 <h3>Runs</h3>
-<h4>agent-harness-2026-11-04-2 (agent-harness) · failed, driver exited unexpectedly</h4>
+<h4>agent-harness-2026-11-07 (agent-harness) · done</h4>
 <ul>
-<li>1/12 features passing (M1-01). M1 is 1/4, M2 and M3 are 0/4. The M1 lane was never verified or merged.</li>
-<li>Spend $9.67, 1 session, 1.0 h wall. Tests were 1224 at the start, with no end count.</li>
-<li>The last log lines say M1-02 started at 15:20, then at 15:27 &quot;lane M1: stopped (the driver is exiting)&quot;. There is no summary, report or retro. I couldn&#39;t find the cause in what I could read.</li>
-<li>The branch is 8 ahead and 76 behind main. The lane worktree <code>~/worktrees/agent-harness/lanes/agent-harness-2026-11-04-2/slot-0</code> has uncommitted work, so gc kept it. This run is not eligible for a <code>CONTINUE:</code> line, because it did not end on a deadline or usage limit.</li>
-</ul>
-<h4>agent-harness-2026-11-05 (agent-harness) · done</h4>
-<ul>
-<li>6/6 passing and verified. H1 merged as PR #104. Features: H1-01, 02, 02b, 03, 04 (the proof), 05 (review).</li>
-<li>Tests went from 1332 to 1455. There were 0 flakes, 0 fix rounds, 0 limit waits, and a first-attempt pass rate of 1.00.</li>
-<li>Cost $30.91 ($5.15 per feature) over 3.85 h. The review was 21% of the cost.</li>
-<li>Retro: nothing went wrong. H1-02b&#39;s two in-session suite runs took 828 s and peaked at 4266 MB memory. The record-branch push failed 6 times in 5 minutes, and each recovered within a minute.</li>
+<li><strong>Features:</strong> 5/5 passing (S4-01 plan, S4-02 to S4-04 build, S4-05 review). S4 was verified once and merged once (PR #120).</li>
+<li><strong>Tests:</strong> 1506 → 1721, with +215 ~1 −0 checks. There were 0 flakes, 0 fix rounds and 0 conflicts. The first-attempt pass rate was 1.0.</li>
+<li><strong>Cost:</strong> $31.62 ($6.32 per feature), in 2.96 h wall.</li>
+<li>By role: review $11.35, build $10.50, init $5.79, plan $3.59, verify $0.27, retro $0.13.</li>
+<li>The review was 35.9% of the cost.</li>
+<li><strong>Review:</strong> S4-05 went to opus because 2612 changed lines is over the 400-line threshold. It took 76 min, and its 2 suite runs took 1310 s. Builds ran the suite for about 105 s per run.</li>
+<li><strong>Retro:</strong> The run was delivered clean and no guard fired. It re-raised <code>suite-time-budget</code> and <code>verify-evidence-rows</code>. The retro could not audit whether verify re-ran each step: one S4 entry carries 36 items and there are no per-step verify rows.</li>
+<li><strong>After the run:</strong> gc removed the worktree and the branch, local and remote. The gc left the <code>lanes/agent-harness-2026-11-04-2/slot-0</code> worktree in place because it has uncommitted work.</li>
 </ul>
 <h3>Needs Michael</h3>
-<ul>
-<li>Why the 11-04-2 driver exited at 15:27 on 11-04. Decide whether to continue it or restart it on current main (76 commits behind). Nothing was recorded in <code>needs</code>, <code>INBOX.md</code> or <code>harness-log.md</code>.</li>
-</ul>
+<p>Nothing.</p>
 <h3>For the next interactive session</h3>
 <ul>
-<li>Run agent-harness-2026-11-04-2: check <code>run.log</code> and the slot-0 uncommitted work. The driver exit is unexplained. Merge conflicts: none reported.</li>
-<li>Open <code>proposed</code> backlog items, most seen first:</li>
+<li><strong>Merge conflicts, held or refused merges:</strong> none.</li>
+<li><strong>Leftover worktree:</strong> <code>/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04-2/slot-0</code> has uncommitted work. gc kept it, so check whether the work is worth keeping.</li>
+<li><strong>Open proposed retro items, most <code>runs_seen</code> first:</strong></li>
 </ul>
 <ol>
-<li><code>verify-evidence-rows</code>, seen 7. Record per-step verify evidence rows.</li>
-<li><code>suite-time-budget</code>, seen 6. Warn or cap on long session suite runs (H1-02b took 828 s).</li>
-<li><code>suite-flake-retry</code>, seen 5. Re-run failed test files serially before declaring the suite red.</li>
-<li><code>memlint-before-session-end</code>, seen 1.</li>
-<li><code>session-entry-write-guard</code>, seen 1.</li>
-<li><code>step-contradiction-lint</code>, seen 1.</li>
-<li><code>record-push-retry-noise</code>, seen 1, new. Collapse record-branch push-failure log lines.</li>
-<li><code>no-retry-on-denial</code>, seen 0.</li>
-<li><code>base-branch-runs-reverted</code>, seen 0.</li>
-<li><code>restrict-merge-tree-base</code>, seen 0.</li>
-<li><code>slot-copy-overwritten-on-merge</code>, seen 0.</li>
+<li><code>verify-evidence-rows</code>: record per-step verify evidence rows in <code>entries.jsonl</code> (seen 8 times; re-raised by this run).</li>
+<li><code>suite-time-budget</code>: cap or warn on session suite runs (seen 7 times; re-raised by this run).</li>
+<li><code>suite-flake-retry</code>: re-run failed test files serially before declaring the suite red (seen 5 times).</li>
+<li><code>memlint-before-session-end</code>: run the memlint check inside the session&#39;s own end-of-session gate (seen once).</li>
+<li><code>session-entry-write-guard</code>: tell sessions that <code>entries.jsonl</code> and <code>progress-archive.md</code> are driver-only (seen once).</li>
+<li><code>step-contradiction-lint</code>: flag self-contradictory steps at init (seen once).</li>
+<li><code>record-push-retry-noise</code>: back off and collapse record-branch push-failure log lines (seen once).</li>
+<li><code>no-retry-on-denial</code>: don&#39;t retry a session that stopped on a permission question with nothing changed (0 runs seen).</li>
+<li><code>base-branch-runs-reverted</code>, <code>restrict-merge-tree-base</code> and <code>slot-copy-overwritten-on-merge</code> (0 runs seen each). All three are dormant and conditional, per their notes.</li>
 </ol>
 <ul>
-<li>Nothing is <code>specced</code> or <code>queued</code> and was re-raised.</li>
+<li><strong>Re-raised items already <code>specced</code> or <code>queued</code>:</strong> none.</li>
 </ul></section>
 </main></body></html>

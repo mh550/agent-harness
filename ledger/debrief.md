@@ -1,40 +1,37 @@
-# Debrief · 2026-11-05 13:48
+# Debrief · 2026-11-07 05:09
 
-_runs since 2026-11-04 06:19:37: agent-harness-2026-11-04-2 agent-harness-2026-11-05 · claude-sonnet-5-5, $0.14461400000000002 · context: /home/mh550/.local/state/harness/debrief/2026-11-05-134751/context.md_
+_runs since 2026-11-05 13:47:51: agent-harness-2026-11-07 · claude-sonnet-5-5, $0.12038599999999999 · context: /home/mh550/.local/state/harness/debrief/2026-11-07-050946/context.md_
 
 ## Headline
-Landed on main (agent-harness): H1 resident helper, 6/6, PR #104, plus record PR #105. Blocked: agent-harness-2026-11-04-2 (run-resilience spec) died after 1/12 and none of it is on main.
-Spend $30.91 (the run-resilience run $9.67, the resident-helper run $21.24). The usage window is open, and seven_day is at 17% (resets Sun 17:00).
+agent-harness-2026-11-07 finished 5/5 features. Milestone S4 (the purity moves) was verified and merged into main in PR #120, and the run record went in as PR #121.
+Nothing is blocked. Spend was $31.62, and tests went 1506 → 1721.
+The usage window is open (seven_day 35%, resets Sun 17:00).
 
 ## Runs
-
-### agent-harness-2026-11-04-2 (agent-harness) · failed, driver exited unexpectedly
-- 1/12 features passing (M1-01). M1 is 1/4, M2 and M3 are 0/4. The M1 lane was never verified or merged.
-- Spend $9.67, 1 session, 1.0 h wall. Tests were 1224 at the start, with no end count.
-- The last log lines say M1-02 started at 15:20, then at 15:27 "lane M1: stopped (the driver is exiting)". There is no summary, report or retro. I couldn't find the cause in what I could read.
-- The branch is 8 ahead and 76 behind main. The lane worktree `~/worktrees/agent-harness/lanes/agent-harness-2026-11-04-2/slot-0` has uncommitted work, so gc kept it. This run is not eligible for a `CONTINUE:` line, because it did not end on a deadline or usage limit.
-
-### agent-harness-2026-11-05 (agent-harness) · done
-- 6/6 passing and verified. H1 merged as PR #104. Features: H1-01, 02, 02b, 03, 04 (the proof), 05 (review).
-- Tests went from 1332 to 1455. There were 0 flakes, 0 fix rounds, 0 limit waits, and a first-attempt pass rate of 1.00.
-- Cost $30.91 ($5.15 per feature) over 3.85 h. The review was 21% of the cost.
-- Retro: nothing went wrong. H1-02b's two in-session suite runs took 828 s and peaked at 4266 MB memory. The record-branch push failed 6 times in 5 minutes, and each recovered within a minute.
+### agent-harness-2026-11-07 (agent-harness) · done
+- **Features:** 5/5 passing (S4-01 plan, S4-02 to S4-04 build, S4-05 review). S4 was verified once and merged once (PR #120).
+- **Tests:** 1506 → 1721, with +215 ~1 −0 checks. There were 0 flakes, 0 fix rounds and 0 conflicts. The first-attempt pass rate was 1.0.
+- **Cost:** $31.62 ($6.32 per feature), in 2.96 h wall.
+  - By role: review $11.35, build $10.50, init $5.79, plan $3.59, verify $0.27, retro $0.13.
+  - The review was 35.9% of the cost.
+- **Review:** S4-05 went to opus because 2612 changed lines is over the 400-line threshold. It took 76 min, and its 2 suite runs took 1310 s. Builds ran the suite for about 105 s per run.
+- **Retro:** The run was delivered clean and no guard fired. It re-raised `suite-time-budget` and `verify-evidence-rows`. The retro could not audit whether verify re-ran each step: one S4 entry carries 36 items and there are no per-step verify rows.
+- **After the run:** gc removed the worktree and the branch, local and remote. The gc left the `lanes/agent-harness-2026-11-04-2/slot-0` worktree in place because it has uncommitted work.
 
 ## Needs Michael
-- Why the 11-04-2 driver exited at 15:27 on 11-04. Decide whether to continue it or restart it on current main (76 commits behind). Nothing was recorded in `needs`, `INBOX.md` or `harness-log.md`.
+Nothing.
 
 ## For the next interactive session
-- Run agent-harness-2026-11-04-2: check `run.log` and the slot-0 uncommitted work. The driver exit is unexplained. Merge conflicts: none reported.
-- Open `proposed` backlog items, most seen first:
-  1. `verify-evidence-rows`, seen 7. Record per-step verify evidence rows.
-  2. `suite-time-budget`, seen 6. Warn or cap on long session suite runs (H1-02b took 828 s).
-  3. `suite-flake-retry`, seen 5. Re-run failed test files serially before declaring the suite red.
-  4. `memlint-before-session-end`, seen 1.
-  5. `session-entry-write-guard`, seen 1.
-  6. `step-contradiction-lint`, seen 1.
-  7. `record-push-retry-noise`, seen 1, new. Collapse record-branch push-failure log lines.
-  8. `no-retry-on-denial`, seen 0.
-  9. `base-branch-runs-reverted`, seen 0.
-  10. `restrict-merge-tree-base`, seen 0.
-  11. `slot-copy-overwritten-on-merge`, seen 0.
-- Nothing is `specced` or `queued` and was re-raised.
+- **Merge conflicts, held or refused merges:** none.
+- **Leftover worktree:** `/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04-2/slot-0` has uncommitted work. gc kept it, so check whether the work is worth keeping.
+- **Open proposed retro items, most `runs_seen` first:**
+  1. `verify-evidence-rows`: record per-step verify evidence rows in `entries.jsonl` (seen 8 times; re-raised by this run).
+  2. `suite-time-budget`: cap or warn on session suite runs (seen 7 times; re-raised by this run).
+  3. `suite-flake-retry`: re-run failed test files serially before declaring the suite red (seen 5 times).
+  4. `memlint-before-session-end`: run the memlint check inside the session's own end-of-session gate (seen once).
+  5. `session-entry-write-guard`: tell sessions that `entries.jsonl` and `progress-archive.md` are driver-only (seen once).
+  6. `step-contradiction-lint`: flag self-contradictory steps at init (seen once).
+  7. `record-push-retry-noise`: back off and collapse record-branch push-failure log lines (seen once).
+  8. `no-retry-on-denial`: don't retry a session that stopped on a permission question with nothing changed (0 runs seen).
+  9. `base-branch-runs-reverted`, `restrict-merge-tree-base` and `slot-copy-overwritten-on-merge` (0 runs seen each). All three are dormant and conditional, per their notes.
+- **Re-raised items already `specced` or `queued`:** none.
