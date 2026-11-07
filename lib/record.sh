@@ -550,7 +550,7 @@ take_answers() { record take_answers_; }
 # A milestone Michael must act on (verify, a conflict): its needs record's title, body (the card), click (needs.md) and
 # priority; without a record (a failed open) high, one tap from the run-record file that explains it.
 needs_you() {   # <milestone> <why> <file in the run record> <the record's ref>
-  needs_notify "${4:-}" "$1 needs Michael: $2" title="[$RUN_ID] $1 needs you" priority=high click="$(gh_url "$RUN_DIR/$3")"
+  needs_notify "${4:-}" "$1 needs Michael: $2" title="[$RUN_ID] $1 needs you" priority=high click="$(gh_url "$RUN_DIR/$3")" kind=needs_michael
   desk "$1 needs Michael: $2"
 }
 
@@ -572,7 +572,7 @@ park_actions() { ask notify.mjs actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.m
 notify_park() {   # <id> <why> <the parked record's ref>
   local id=$1 why=$2 q
   q=$(cat "$LS/question" 2> /dev/null)   # what take_question found in the session's copy (gone by now)
-  needs_notify "${3:-}" "needs Michael: $id · $why" title="[$RUN_ID] $id needs you" priority=high tags=question actions="$(park_actions)" click="$(gh_url "$RUN_DIR/INBOX.md")" \
+  needs_notify "${3:-}" "needs Michael: $id · $why" kind=park feature="$id" title="[$RUN_ID] $id needs you" priority=high tags=question actions="$(park_actions)" click="$(gh_url "$RUN_DIR/INBOX.md")" \
     body="PARKED: $why"$'\n\n'"${q:+$q$'\n\n'}Answer: harness answer $RUN_ID \"…\""
 }
 
@@ -1008,7 +1008,7 @@ merge_refused_() {
   if [[ -n $url ]]; then note "$m: the merge was refused; PR left open for Michael · $url"
   else note "$m: the merge was refused at $what; no PR is open (see run.log)"; fi
   ref=$(needs_open merge_refused "$m" milestone="$m" pr="$url" click="$url" what="$what" head="$c"); rec_commit "HARNESS: $m merge refused"; sync_record
-  needs_notify "$ref" "$m needs Michael: merge refused${url:+ · $url}" title="[$RUN_ID] $m needs you" priority=high click="$url"
+  needs_notify "$ref" "$m needs Michael: merge refused${url:+ · $url}" title="[$RUN_ID] $m needs you" priority=high click="$url" kind=needs_michael
   [[ ${HARNESS_MERGE_ONLY:-} ]] || desk "$m: merge refused"   # `harness merge`: Michael is at the terminal
   return 1
 }
@@ -1098,12 +1098,12 @@ merge_one() {
   PR_URL=""; merge_step "$m" "opening its PR" pr_open_ "$head" "$m" 8>&- || return 1
   url=$PR_URL
   [[ ${2:-} == --open ]] && { merge_settled "$m"; return 0; }   # a dependency hasn't merged: the PR waits for it, whatever the policy
-  if [[ $MERGE_POLICY != auto && ! ${HARNESS_MERGE_ONLY:-} ]]; then touch "$STATE/proposed-$m"; merge_settled "$m"; note "$m proposed for merging · $url"; notify "$m verified · review: $url" title="[$RUN_ID] $m ready to merge" click="$url"; return 0; fi   # harness merge lands it whatever the policy
+  if [[ $MERGE_POLICY != auto && ! ${HARNESS_MERGE_ONLY:-} ]]; then touch "$STATE/proposed-$m"; merge_settled "$m"; note "$m proposed for merging · $url"; notify "$m verified · review: $url" title="[$RUN_ID] $m ready to merge" click="$url" kind=verified; return 0; fi   # harness merge lands it whatever the policy
   # a merge whose answer was lost looks like a failure, and every later try too (already merged): main decides
   if origin_try "$m" "merging its PR" "$GH" pr merge "$url" --merge --match-head-commit "$c" > /dev/null 8>&- \
     || { fetch_main_ 2> /dev/null && git merge-base --is-ancestor "$c" "origin/$MAIN_BRANCH"; }; then
     origin_t git push -q origin --delete "$head" 8>&- 2>/dev/null
-    merged_ "$m" " · $url"; notify "$m merged · $url" click="$url"
+    merged_ "$m" " · $url"; notify "$m merged · $url" click="$url" kind=merged
     lane_branch_gone "$m"; return 0
   fi
   merge_stop "$m" "merging its PR" "$url"

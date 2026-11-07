@@ -273,6 +273,13 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   A park's notification carries the question the session wrote in INBOX.md (body capped at 3500 bytes), the
   `harness answer` command, and Edit INBOX / Progress actions; `DESK_URL` (e.g. a Claude Code environment URL; no `,` or
   `;` in it, they split ntfy's Actions header) adds **Answer with Claude**. A non-GitHub origin sends the same without URLs.
+
+  `EVENT_URL` (n8n's harness-event webhook; `EVENT_TIMEOUT`, 5 s, bounds the wait) routes the four notifications that
+  need you, a park, a milestone needing you, a run ending blocked and the debrief, to n8n first as v1 event JSON (kept
+  under `~/.local/state/harness/events/<id>/`); a 2xx and n8n tells you, and the run log says `event → n8n: <kind>
+  <id>`. Anything else (n8n down, a 500, the timeout) is noted `event hook failed (…): <kind>; sent to ntfy` and the
+  ntfy post (or `NOTIFY_CMD`) goes out exactly as without it. `NTFY_TOKEN` is never sent to n8n. Every other
+  notification goes to ntfy as before; unset, nothing changes (decisions/2026-10-22-event-hook-ntfy-fallback).
 - **Permissions:** the policy (agents merge, push and clean up; only the irreversible is denied; production is gated
   per project) lives in `~/.claude/CLAUDE.md` § "Git, merges and permissions" and the user settings. Install or
   refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`.

@@ -1,7 +1,7 @@
 // lib/notify.mjs: the body cap, ntfy's actions header, GitHub URLs and the INBOX question.   node --test tests/unit/notify.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sameAsCli } from "./cli-same.mjs";
@@ -64,4 +64,64 @@ test("notify.mjs: main gives the CLI's bytes for trim (stdin from io), actions, 
 test("notify.mjs: main's trim with an io that has no stdin throws without reading fd 0", async () => {
   const { main } = await import("../../lib/notify.mjs");
   assert.throws(() => main(["trim"], { cwd: "/" }), /no stdin/);
+});
+
+// ---- the v1 event (event-hook.sh; n8n-home's harness-reporter §4.3 contract, tests/fixtures/n8n-event-v1.json) ----
+const v1Keys = () => Object.keys(JSON.parse(readFileSync(new URL("../fixtures/n8n-event-v1.json", import.meta.url), "utf8"))).join(" ");
+const evf = { kind: "park", run: "r1", project: "p", feature: "B", title: "t", body: "b", priority: "high", click: "", actions: "" };
+
+test("notify.mjs event: buildEvent's keys are the v1 fixture's, in order", async () => {
+  const { buildEvent } = await import("../../lib/notify.mjs");
+  assert.equal(Object.keys(buildEvent(evf)).join(" "), v1Keys());
+});
+
+test("notify.mjs event: v is 1, id a uuid, at an ISO time", async () => {
+  const { buildEvent } = await import("../../lib/notify.mjs");
+  const e = buildEvent(evf);
+  assert.equal(e.v, 1);
+  assert.match(e.id, /^[0-9a-f-]{36}$/);
+  assert.ok(!Number.isNaN(Date.parse(e.at)), e.at);
+  assert.notEqual(buildEvent(evf).id, e.id);
+  const fixed = buildEvent(evf, new Date("2026-11-07T12:00:00Z"), () => "00000000-0000-4000-8000-000000000000");
+  assert.equal(`${fixed.at} ${fixed.id}`, "2026-11-07T12:00:00.000Z 00000000-0000-4000-8000-000000000000");
+});
+
+test("notify.mjs event: an empty click, actions or context is null, an empty priority stays the empty string", async () => {
+  const { buildEvent } = await import("../../lib/notify.mjs");
+  const e = buildEvent({ ...evf, priority: "", context: "" });
+  assert.equal(JSON.stringify([e.click, e.actions, e.context, e.priority]), '[null,null,null,""]');
+  const f = buildEvent({ ...evf, click: "https://e/c", actions: "view, E, https://e/e", feature: "", project: "", run: "" });
+  assert.equal(JSON.stringify([f.click, f.actions, f.feature, f.project, f.run]), '["https://e/c","view, E, https://e/e",null,null,null]');
+  assert.equal(JSON.stringify([e.kind, e.project, e.run, e.feature, e.title, e.body]), '["park","p","r1","B","t","b"]');
+});
+
+test("notify.mjs event: a debrief has null project, run and feature", async () => {
+  const { buildEvent } = await import("../../lib/notify.mjs");
+  const e = buildEvent({ ...evf, kind: "debrief" });
+  assert.equal(JSON.stringify([e.kind, e.project, e.run, e.feature]), '["debrief",null,null,null]');
+});
+
+test("notify.mjs event: the CLI prints buildEvent's JSON on one line", async () => {
+  const { cli } = await import("./cli-same.mjs");
+  const argv = ["event", "kind=park", "run=r1", "project=p", "feature=B", "title=t", "body=b=c", "priority=high", "click=", "actions="];
+  const r = cli("notify.mjs", argv);
+  assert.equal(r.rc, 0);
+  assert.equal(r.out.split("\n").length, 2, r.out);   // one line and its newline
+  const e = JSON.parse(r.out);
+  assert.equal(Object.keys(e).join(" "), v1Keys());
+  assert.equal(JSON.stringify([e.v, e.kind, e.run, e.project, e.feature, e.title, e.body, e.priority, e.click, e.actions, e.context]),
+    '[1,"park","r1","p","B","t","b=c","high",null,null,null]');
+  assert.match(e.id, /^[0-9a-f-]{36}$/);
+  assert.ok(!Number.isNaN(Date.parse(e.at)));
+  const m = await sameAsCli("notify.mjs", ["event", "kind=nope", "title=t"]);   // main in the helper answers as the spawn does
+  assert.equal(m.rc, 2);
+});
+
+test("notify.mjs event: a kind outside v1 prints nothing and exits 2", async () => {
+  const { cli } = await import("./cli-same.mjs");
+  for (const k of ["paused", "", "PARK"]) {
+    const r = cli("notify.mjs", ["event", `kind=${k}`, "title=t", "body=b"]);
+    assert.equal(`${r.rc} ${JSON.stringify(r.out)}`, '2 ""', k);
+  }
+  assert.equal(cli("notify.mjs", ["event", "title=t"]).rc, 2);
 });

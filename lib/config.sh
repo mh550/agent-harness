@@ -68,6 +68,7 @@ harness_config() {
   CHECK_NAMES=tests/fixtures/check-names.txt   # the suite's check names, one per line: a verified milestone's diff of it is its `checks +a ~b −c` note (decisions/2026-11-03-check-budget); absent: the suite's count
   CHECK_CMD="" INIT_CMD="" SMOKE_CMD="" SPEC_FILES="" NOTIFY_CMD="" AGENT_SETTINGS=.claude/settings.json PR_POLICY=""
   NTFY_URL="" NTFY_TOKEN="" DESK_URL=""   # NTFY_URL set: the harness posts to ntfy itself (NOTIFY_CMD is then not called)
+  EVENT_URL="" EVENT_TIMEOUT=5   # EVENT_URL set: park, needs_michael, blocked and debrief go to n8n first, ntfy only when it doesn't take them
   DESK=0 DESK_MODEL=opus   # DESK=1: a Remote Control session briefs you when a run needs you (lib/desk.sh)
   for f in "${HARNESS_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/harness/config.sh}" "$wt/.harness/config.sh" ${st:+"$st/run.env"}; do
     # shellcheck source=/dev/null

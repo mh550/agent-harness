@@ -380,10 +380,10 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   rec_commit "HARNESS: run ended ($1)"; sync_record
   # the run's one end notification goes out now, not after the retro (minutes, and a crash there would lose it).
   # The reasons below are Michael's to act on: the report, the INBOX one tap away
-  local pri="" acts="" sum
-  [[ $ehigh == 1 ]] && pri=high acts=$(ask notify.mjs actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" Progress "$(gh_url "$RUN_DIR/progress.md")")
+  local pri="" acts="" sum ekind=ended   # Michael's to act on: a blocked event (n8n first, with EVENT_URL set)
+  [[ $ehigh == 1 ]] && ekind=blocked pri=high acts=$(ask notify.mjs actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" Progress "$(gh_url "$RUN_DIR/progress.md")")
   sum="$(F summary "$LIST" 2>/dev/null) · $(jq -r '"$\(.cost.total) · $\(.cost.per_passing_feature) per passing feature"' "$REC/summary.json" 2>/dev/null)"
-  notify "ended ($1): $sum" title="[$RUN_ID] ended: $1" priority=$pri click="$(gh_url "$RUN_DIR/report.md")" actions="$acts"
+  notify "ended ($1): $sum" title="[$RUN_ID] ended: $1" priority=$pri click="$(gh_url "$RUN_DIR/report.md")" actions="$acts" kind=$ekind
   # a failed post notes it in harness-log.md: commit it now, before a retro that may never finish
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run-end notification failed"; sync_record; }
   [[ $edesk == 1 ]] && desk "ended: $1"   # after that commit: its note is no failed post
@@ -515,7 +515,7 @@ deploy_check() {
     hosts+=("$h")
   done < <(deploy_status "$WT" "origin/$MAIN_BRANCH")
   (( ${#hosts[@]} )) || return 0
-  printf -v j '%s, ' "${hosts[@]}"; notify "no deploy guard (${j%, }): this run will create a preview deploy per session"
+  printf -v j '%s, ' "${hosts[@]}"; notify "no deploy guard (${j%, }): this run will create a preview deploy per session" kind=other
   return 0
 }
 deploy_check
@@ -560,7 +560,7 @@ if [[ ! -f $LIST ]]; then
   note "feature list written: $(F summary "$LIST")"
   note "$(F lint "$LIST" --note)"   # what the initializer's own lint run left; the list stays as written (decisions/2026-10-26-step-lint)
   rec_commit "HARNESS: initializer done"; sync_record
-  notify "started: $(F summary "$LIST")" click="$(gh_url "$RUN_DIR/progress.md")"
+  notify "started: $(F summary "$LIST")" click="$(gh_url "$RUN_DIR/progress.md")" kind=started
 fi
 
 if [[ ! -f $STATE/deps-noted ]]; then   # once per run: milestones that wait on everything before them
@@ -595,7 +595,7 @@ while :; do
   [[ $c == stop ]] && { wait_lanes; demote_requests; why=$(stop_why); note "$why"; finish "$why"; }
   if [[ $c == pause ]]; then   # the lanes pause themselves after their session; nothing opens
     if (( ! paused )); then
-      paused=1; log "paused (INBOX.md status or harness pause)"; notify "paused"
+      paused=1; log "paused (INBOX.md status or harness pause)"; notify "paused" kind=paused
       services_down paused; lanes_services_down paused; rec_commit "HARNESS: paused"; sync_record   # the note reaches the phone now
     fi
     lane_wait "${HARNESS_PAUSE_POLL:-60}"; continue

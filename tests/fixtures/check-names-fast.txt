@@ -273,6 +273,17 @@ eval.mjs: per verified feature counts every repeat's cost (E2 review)
 eval.mjs: probe questions derived from the list, the session rows and the commits; answers scored exact, contains or miss
 eval.mjs: validateTask accepts a task and names the field of each bad one
 eval: every task.json validates and a bad one is rejected
+event hook: EVENT_URL unset, a park goes to ntfy alone
+event hook: NOTIFY_CMD is not called for a received event, and is for a refused one
+event hook: a 500 falls back to the same ntfy post, and notes it
+event hook: a kind that isn't routed goes to ntfy alone with EVENT_URL set
+event hook: a received park is one POST to EVENT_URL, v1 JSON, no token
+event hook: a timeout falls back to the same ntfy post, and notes curl's exit
+event hook: an event node can't build is noted and sent to ntfy
+event hook: no kind is other, ntfy alone
+event hook: notify returns 0 received, refused and timed out
+event hook: the fallback event carries ntfy's title, body, click, actions and priority
+event hook: the received event is kept under events/<id>/
 every one of those answers is the spawn's bytes; a reader asking while < <(ask) runs still gets its own; nothing on stderr
 fast gate run: a coding session's init output is the fast tier's (B's prompt: check: fast green)
 fast gate run: a fast-tier red after the session un-passes it with the fast note; the retry's init runs the fast tier
@@ -637,6 +648,12 @@ needs: a run whose worktree and record branch are both gone resolves run removed
 next <m>: a feature without after waits on its own milestone's earlier features only
 night words: memlint says run-scope and that it goes in the run's brief
 night words: out of the docs, prompts, templates and code, but for memlint's patterns and the catch-up's lines
+notify.mjs event: a debrief has null project, run and feature
+notify.mjs event: a kind outside v1 prints nothing and exits 2
+notify.mjs event: an empty click, actions or context is null, an empty priority stays the empty string
+notify.mjs event: buildEvent's keys are the v1 fixture's, in order
+notify.mjs event: the CLI prints buildEvent's JSON on one line
+notify.mjs event: v is 1, id a uuid, at an ISO time
 notify.mjs urls compare <origin> <base> <branch>: the GitHub compare URL; exit 1 off GitHub
 notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3
 notify.mjs: githubUrls for ssh, https and non-GitHub origins

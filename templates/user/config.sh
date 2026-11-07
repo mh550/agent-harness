@@ -6,6 +6,8 @@
 # NTFY_URL=https://ntfy.sh/<your private topic>
 # NTFY_TOKEN=<access token>          # optional; sent as "Authorization: Bearer …", never logged
 # NOTIFY_CMD='curl -s -H "Title: $HARNESS_NOTIFY_TITLE" -d "$1" https://ntfy.sh/<topic>'   # $1 = "[<run>] <message>"
+# EVENT_URL=http://127.0.0.1:5678/webhook/harness-event   # park, needs-you, blocked and debrief go here first (v1 event JSON); ntfy/NOTIFY_CMD when it fails
+# EVENT_TIMEOUT=5                    # seconds a dead n8n may hold the driver, then the ntfy fallback
 
 # "Answer with Claude" on a park's notification opens this: your Remote Control environment's URL from the Claude app.
 # DESK_URL=<the URL>                 # no "," or ";" in it (they split ntfy's Actions header)

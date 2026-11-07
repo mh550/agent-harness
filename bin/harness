@@ -266,7 +266,7 @@ legacy_refuse() {
     source "$HARNESS_HOME/lib/notify.sh"; NOTIFY_TAG=$run
     log "continue refused: $why"
     notify "continue refused: $why. Ways forward: harness merge $run; a new run with --brief naming harness/$run; or by hand" \
-      title="[$run] continue refused: a pre-lanes run" priority=high )
+      title="[$run] continue refused: a pre-lanes run" priority=high kind=other )
   exit 1
 }
 
