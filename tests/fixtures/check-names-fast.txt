@@ -340,6 +340,23 @@ framing: no trailing newline, empty, lone newline, two newlines, UTF-8, every by
 framing: those answers come from the helper (one start for all of them)
 gc units: --dry-run with units of another project's runs (live and ended) prints no ? line and no line naming them
 gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
+glossary.mjs: Q99 is unresolved and no near match is taken
+glossary.mjs: a D1 that is a decision row and a milestone keeps both
+glossary.mjs: a milestone of the feature list comes before its headings
+glossary.mjs: an id written in two files gives every match, newest file first
+glossary.mjs: an odd feature list or doc never throws and resolves nothing it cannot
+glossary.mjs: findIds never takes N1 from N1-01 nor H1 from D-H1
+glossary.mjs: findIds takes D24 and D-H1 as decisions, N1-01 as a feature, M8 and Q99 as milestones
+glossary.mjs: findIds takes an id of the feature list the regexes miss
+glossary.mjs: findIds takes the feature list's ids before the regex passes
+glossary.mjs: glossaryMarkdown keeps whole lines within its byte cap and says how many are left
+glossary.mjs: glossaryMarkdown renders one line per entry under ## Glossary, then Unresolved
+glossary.mjs: journal/decisions files count by their title line only
+glossary.mjs: resolveIds gives D-H1 its heading and the text under it
+glossary.mjs: resolveIds gives D24 its table row, stripped and cut at 300, with path and line
+glossary.mjs: resolveIds gives M8 the headings that open with it, newest file first
+glossary.mjs: resolveIds gives N1-01 its description and milestone
+glossary.mjs: the CLI prints the glossary and unresolved for a worktree, a list and stdin
 gotchasDiff: added, edited, deleted and no section
 gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
 harness gc --dry-run kills no tmux session

@@ -1,0 +1,129 @@
+{
+  "run": "dj-2026-10-17",
+  "features": [
+    {
+      "id": "N1-01",
+      "milestone": "N1",
+      "model": "opus",
+      "description": "A reviewed plan file exists for the Navidrome duplicate cleanup (D31): plan -> repoint -> trash as scripts/duplicate_cleanup.py, with the plan JSON schema, the hold rules, the reverse logs and the staged live runbook.",
+      "steps": [
+        "Read docs/next-todos.md item 1, pivot spec D31, M9 spec section 3, docs/hard-won-facts.md, scripts/dedupe_copies.py, scripts/duplicate_report.py, crates/playlist_edit.py, crates/trash.py, sourcing/replace.py, and .harness/runs/dj-2026-10-17/progress.md (the initializer's entry fixes the defaults).",
+        "Write docs/plans/2026-10-17-n1-duplicate-cleanup.md in the style of docs/plans/2026-10-15-m3-dedupe.md: goal, facts (102 groups, 115 extra files, 59 extras in a playlist, 9 extras that are lossless beside a lossless keeper), design of `python -m scripts.duplicate_cleanup plan|repoint|trash`, the plan JSON schema ({\"made_at\", \"groups\": [{\"keep\": {id, path, suffix, bit_rate}, \"extras\": [{id, path, suffix, bit_rate, held_by: [playlist names]}], \"hold\": null | \"both lossless\" | \"keeper missing on disk\" | \"keeper missing in Navidrome\"}], \"playlists\": [{id, name, before, after}]}), the reverse logs (repoint-<ts>.jsonl with before/after per playlist, MOVES.txt for files), the lock rule (trash takes <dirname(CRATES_DB)>/worker.lock, so the worker must be stopped), the recompute-before-acting rule, and the task list N1-02..N1-05.",
+        "The plan names the safety tests each task must have: never trash while playlist_edit.references(db, extra) is non-empty (hidden rows included); refuse while a scan is running; a pair no longer in one duplicate_groups group is skipped; the keeper must exist on disk and not be missing in navidrome.db; every move has its MOVES.txt line before it happens.",
+        "Record the new defaults in docs/specs/2026-10-17-amperfy-pivot.md as new ledger rows `D35 *default*` (groups with two lossless copies are held, listed only, until Michael clears the hold in the plan JSON) and `D36 *default*` (the trash step runs only with the worker stopped, holding worker.lock, so beets has one writer), each in one sentence with what it replaces or refines.",
+        "Append a short entry to .harness/runs/dj-2026-10-17/progress.md (newest first) naming the plan file and the two defaults as direct questions for Michael.",
+        "Commit `N1-01: plan for the duplicate cleanup`.",
+        ".harness/check.sh is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "N1-02",
+      "milestone": "N1",
+      "model": "opus",
+      "description": "`python -m scripts.duplicate_cleanup plan` reads navidrome.db read-only, recomputes the duplicate groups, picks the keeper with scripts.duplicate_report.keep_rank, marks holds, lists which playlists (hidden rows included) hold each extra, and writes plan.json plus a markdown report without touching ",
+      "steps": [
+        "Test-first in tests/test_duplicate_cleanup.py against FakeSubsonicServer(db_path=...): add a `bit_rate` column to subsonic/fake_server.py NAVIDROME_SCHEMA and its media_file INSERT (from the song's `bitRate`), then a flac copy s9 of s3 'Move Your Body' (suffix flac, bitRate 900, duration 383, path 'Marshall Jefferson/The House Music Anthem/01 - Move Your Body.flac'); tests/test_fake_navidrome_db.py still passes.",
+        "scripts/duplicate_cleanup.py: `build_plan(navidrome_db, music_root) -> dict` uses scripts.duplicate_report.load + duplicate_groups (so the groups are recomputed from the live DB every time, never from docs/duplicates-report.md); keeper = group[0]; each extra lists `held_by` from crates.playlist_edit.references (hidden rows included) resolved to playlist names; `hold` is set to 'both lossless' when any extra's suffix is in duplicate_report.LOSSLESS beside a lossless keeper (D35), 'keeper missing on disk' when music_root/keep.path is not a file, 'keeper missing in Navidrome' when media_file.missing is set.",
+        "`playlists` in the plan: for every playlist holding an extra of an unheld group, before = navidrome.db playlist_tracks order, after = scripts.dedupe_copies.remap(before, {extra: keeper}) (an extra becomes the keeper in place; dropped when the keeper is already there).",
+        "`write_plan(plan, out_dir)` writes out_dir/plan.json and out_dir/report.md (sections: groups to act on with keeper and extras, held groups with the reason, playlists repointed before -> after counts); `--limit N` keeps the first N unheld groups; `--out` defaults to $CLEANUP_DIR or /data/duplicate-cleanup; the command prints the counts line.",
+        "Tests: s3+s9 form one group with keeper s9 and extra s3 held by 'Disco Edits' and 'Chicago 86'; pl-1 after == ['s1','s2','s9'] and pl-2 after == ['s9','s4','s5']; a hidden missing song in pl-1 still appears in held_by; two flac copies of one recording are held 'both lossless' and produce no playlists entry; a keeper whose file is absent under music_root is held; `--limit 1` with two unheld groups plans one; running plan twice writes identical JSON apart from made_at; nothing in navidrome.db, the fake's playlists or music_root changed (compare before/after).",
+        "Run .harness/check.sh tests/test_duplicate_cleanup.py tests/test_fake_navidrome_db.py tests/test_playlist_edit.py tests/test_duplicate_report.py while iterating; commit `N1-02: duplicate_cleanup plan`.",
+        ".harness/check.sh is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "N1-03",
+      "milestone": "N1",
+      "model": "opus",
+      "description": "`python -m scripts.duplicate_cleanup repoint --plan plan.json` repoints every playlist from each extra to its keeper through crates.playlist_edit.repoint_everywhere, after recomputing the groups, writing a reverse log line per edit, and starts a scan when done.",
+      "steps": [
+        "Test-first in tests/test_duplicate_cleanup.py with the N1-02 fixture: `repoint(plan, client, navidrome_db, log_path, limit=None, dry_run=False) -> dict[str, str]` keyed by extra song id with values 'repointed N playlists', 'skipped: held (<why>)', 'skipped: no longer a duplicate of <keeper>', 'skipped: keeper missing', 'refused: <playlist>: <why>', 'dry run: would repoint <names>'.",
+        "Before acting on a group, recompute: duplicate_groups over the current navidrome.db must still put extra and keeper in one group and the keeper must not be missing; otherwise skip with the reason (the plan is advice, the live DB decides).",
+        "For each unheld extra call crates.playlist_edit.repoint_everywhere(client, db, extra, keeper); every value that is not 'repointed' (refused: owned by another user, PlaylistSkew on a hidden row, PlaylistChanged, failed) is reported and the command exits 1 at the end, but the other groups are still done. Smart playlists are 'skipped: smart playlist' as repoint_everywhere reports them.",
+        "Reverse log: before each repoint_everywhere call append one JSON line per affected playlist to log_path (repoint-<UTC timestamp>.jsonl beside the plan) with {ts, playlist_id, name, extra, keeper, before, after}; the after list is the one read back. `--dry-run` writes no log and sends no updatePlaylist (assert on srv.state.requests).",
+        "After the loop, when at least one playlist was repointed and not dry_run, call client.start_scan() once (the scan between repoint and trash).",
+        "Tests: the happy path repoints pl-1 and pl-2 to s9 and the log has two lines whose before equals the fixture order; a hidden missing song in pl-1 makes that playlist 'refused' with nothing written to pl-1 and pl-2 still repointed, exit code 1; a playlist edited after the plan is still repointed correctly because repoint_everywhere reads the current entries (the plan's before/after are advice only); a keeper deleted from the fake before repoint is 'skipped: keeper missing'; running repoint twice sends no second updatePlaylist; `--limit 1` acts on one group; a group held in the plan is never touched.",
+        "Commit `N1-03: duplicate_cleanup repoint`.",
+        ".harness/check.sh is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "N1-04",
+      "milestone": "N1",
+      "model": "opus",
+      "description": "`python -m scripts.duplicate_cleanup trash --plan plan.json` moves each extra to the trash with crates.trash.move_to_trash only when no playlist entry (hidden included) holds it, the keeper is on disk and listed, no scan is running and the worker lock is free; beets forgets it; everything is logged.",
+      "steps": [
+        "Test-first: `trash(plan, client, navidrome_db, music_root, trash_root, lock_path, forget, log_path, limit=None, dry_run=False) -> dict[str, str]` with values 'moved to <trash path>', 'already gone', 'skipped: held (<why>)', 'skipped: no longer a duplicate of <keeper>', 'skipped: keeper missing', 'refused: still in <n> playlist entries', 'dry run: would move'.",
+        "Preconditions, each a test: raises WorkerRunning-style `CleanupRefused('stop the worker first')` when lock_path (<dirname(CRATES_DB)>/worker.lock) is held by another process (reuse sourcing.worker.hold_lock); raises CleanupRefused when client.scan_status()['scanning'] is true; an extra with any row in crates.playlist_edit.references(db, extra) is 'refused' and its file stays (a hidden missing row counts); the keeper must be a file under music_root and not missing in navidrome.db; the group is recomputed as in N1-03.",
+        "The move: crates.trash.move_to_trash(extra.path, music_root, trash_root) (its MOVES.txt line is written before the move; the test reads it back as `mv <quoted trash path> <quoted library path>`); then `forget(music_root / extra.path)` (sourcing.filer.BeetsFiler.forget in the worker; a failure is logged, not fatal); then one JSON line {ts, extra, path, keeper, trash_path} to trash-<UTC timestamp>.jsonl.",
+        "After the loop, when a file moved and not dry_run, client.start_scan() once. Exit 1 when anything was refused.",
+        "Tests (files under tmp_path/music created with real bytes): the happy path after N1-03's repoint moves s3's file to trash_root/<today>/<path>, MOVES.txt holds the reverse line, forget was called with the old absolute path, the plan's keeper file is untouched; before repoint the same call refuses with 'still in 2 playlist entries' and moves nothing; a hidden missing row in a third playlist alone blocks the move; a running scan refuses before any move; a held worker.lock refuses; `--dry-run` moves nothing and writes no log; a second run reports 'already gone' and does not call forget again; trash never overwrites (two runs on a restored file give a '(2)' name via free_path).",
+        "Commit `N1-04: duplicate_cleanup trash`.",
+        ".harness/check.sh is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "N1-05",
+      "milestone": "N1",
+      "model": "opus",
+      "description": "N1 review and simplify: an Opus reviewer reads the N1 diff from a file, Critical/Important findings are fixed test-first, the CLI, events and the live runbook are complete, and the docs touched by N1 are updated.",
+      "steps": [
+        "Write the milestone diff to $HARNESS_SCRATCH/n1.diff (`git diff <commit before N1-01>..HEAD -- scripts/duplicate_cleanup.py tests/test_duplicate_cleanup.py subsonic/fake_server.py docs`) and review it against the safety invariants in .harness/project.md and the plan file; list findings as Critical / Important / Minor in the progress entry.",
+        "Fix every Critical and Important finding RED -> GREEN with a test; apply simplifications (dead branches, duplicated checks, anything dedupe_copies or playlist_edit already does).",
+        "Complete `main()` in scripts/duplicate_cleanup.py: subcommands plan|repoint|trash, defaults from the worker's environment (NAVIDROME_DB, MUSIC_ROOT, TRASH_ROOT, CRATES_DB for worker.lock and events, SUBSONIC_URL/USER/PASS via crates.service.Config.from_env, CLEANUP_DIR default /data/duplicate-cleanup), `--plan`, `--limit`, `--dry-run`; every repoint and move is also a crates.db event (kind `cleanup`, song_id = the extra, detail names the playlist or trash path, no absolute library path beyond what MOVES.txt already holds); tests/test_sourcing_cli.py-style test of main([...]) on the fake.",
+        "One end-to-end test: plan -> repoint -> (fake marks nothing missing) -> trash on the fake with files on disk, then scripts.export_playlists.export + check on the result report no problems.",
+        "docs/worker.md gets a section 'Duplicate cleanup' with the staged runbook: snapshots (scripts/snapshot-crates-db.sh, sqlite3 .backup of navidrome.db), `export_playlists check` green, `plan` (read-only, report to read), `repoint --dry-run`, `repoint --limit 5`, check, `--limit 50`, check, all, scan, `docker compose stop worker`, `trash --dry-run`, `trash --limit 5`, check, ..., `up -d worker`, and the undo (MOVES.txt lines, the repoint log's before lists); docs/architecture.md section 7 table gets the cleanup row; docs/next-todos.md item 1 says 'built (N1), not run live'.",
+        "Commit `N1-05: review and simplify the duplicate cleanup`.",
+        ".harness/check.sh is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "N1F-01",
+      "milestone": "N1F",
+      "kind": "build",
+      "model": "opus",
+      "description": "duplicate_cleanup trash refuses to start unless a Navidrome scan finished after the newest repoint log (review I1), and refuses any extra whose file on disk is no longer the planned file (size on disk ≠ media_file.size; review I2).",
+      "steps": [
+        "A test with the fake's lastScan older than the newest repoint-*.jsonl: `trash` exits 1 with a refusal naming the scan, and moves nothing",
+        "A test with lastScan newer than the newest repoint log: `trash` proceeds as before (existing trash tests unchanged and green)",
+        "A test where one planned extra's size on disk differs from its media_file.size: that extra is refused with its path and both sizes in the report; the other extras move",
+        "docs/worker.md's trash section states both refusals",
+        "`.harness/check.sh` is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "H3-02",
+      "milestone": "H3",
+      "kind": "build",
+      "model": "opus",
+      "description": "Gatus is added to deploy/compose.yml (pinned v5 tag, 127.0.0.1:4590, read-only config from the repo, history in /srv/docker/gatus) with deploy/gatus/config.yaml: navidrome /ping, crates /api/status incl. worker age < 180 s, slskd via gluetun, external endpoints 'backup' (26 h heartbeat) and 'disk', ",
+      "steps": [
+        "A test parses deploy/compose.yml and finds gatus pinned (not :latest), bound to 127.0.0.1 only, config mounted read-only",
+        "A test checks config.yaml has every endpoint in the spec's table with a 60 s interval and failure-threshold 3 on the HTTP ones, and no secret literals (only ${...} names)",
+        "deploy/.env.example lists GATUS_NTFY_TOPIC and GATUS_BACKUP_TOKEN",
+        "If the pinned Gatus doesn't support external-endpoint heartbeats, INBOX says so and proposes an alternative; nothing is improvised",
+        "`.harness/check.sh` is green"
+      ],
+      "passes": true
+    },
+    {
+      "id": "H3-04",
+      "milestone": "H3",
+      "kind": "build",
+      "model": "opus",
+      "description": "Gatus is deployed live under the live-staged protocol: `flock -n <LIVE_LOCK> scripts/deploy.sh gatus` from this run's worktree (outside the 03:15–04:30 window), then the navidrome, crates and slskd endpoints read green from http://127.0.0.1:4590/api/v1/endpoints/statuses; backup and disk may stay gr",
+      "steps": [
+        "The progress entry quotes the deploy command, the statuses response for the three HTTP endpoints, and the rollback command",
+        "No other container was recreated (`docker ps` uptimes for navidrome, crates, worker, slskd, gluetun unchanged)",
+        "INBOX lists Michael's one-time steps from the spec, verbatim"
+      ],
+      "passes": true
+    }
+  ]
+}
