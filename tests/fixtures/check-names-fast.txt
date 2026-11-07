@@ -156,6 +156,8 @@ default MERGE_POLICY proposes a verified milestone, never merges it
 deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
 deploy.mjs: vercel and netlify guards merge, keep keys and detect
 deploy: vercel-guard prints by-hand for a vercel.json with a true harness/ key (E1 review)
+driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
+driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
 driver partial: a session that edits only CLAUDE.md gets a partial init (memlint alone after the full run); tests-end is the full count
 driver partial: verify's run_init fresh removes the verified tree's part-; its suite runs in full (no arguments), after B's partial
 entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
@@ -181,6 +183,18 @@ eval.mjs: probe questions derived from the list, the session rows and the commit
 eval.mjs: validateTask accepts a task and names the field of each bad one
 eval: every task.json validates and a bad one is rejected
 every one of those answers is the spawn's bytes; a reader asking while < <(ask) runs still gets its own; nothing on stderr
+fast gate run: a coding session's init output is the fast tier's (B's prompt: check: fast green)
+fast gate run: a fast-tier red after the session un-passes it with the fast note; the retry's init runs the fast tier
+fast gate run: a session's own fast call is suite_fast 1 on its coding row (a cached one aside) and a run in its suite ran note
+fast gate run: a slow-tier red passes the session (passes=true, no un-pass) and the verify's full run is red (note, needs record)
+fast gate run: each coding session is followed by a --tier fast call, and no bare call comes before the verify's
+fast gate run: harness report --md's Suite runs row counts full and fast calls per coding session
+fast gate run: tests-end is never the fast count (the full count or none)
+fast gate run: the coding prompt names both tiers' commands, carries both lengths under # This session, and the tier rule
+fast gate run: the run passes and merges on the full suite; tests-end is the full count, no un-pass
+fast gate run: the run's first init is a bare (full) call and tests-start holds the full count
+fast gate run: the verify's init ran the full suite (its prompt's init output is the full RED, not a fast line)
+fast gate run: the verify's run_init fresh removes a planted fast-<key> beside red- and green-<key>
 fast gate: --fast runs the fast command (--tier fast), writes fast-<key> (the fast count, wall) and no green-<key>; row fast
 fast gate: --fast with further arguments is a usage error (exit 2), nothing run
 fast gate: CHECK_FAST_CMD empty by default, exported as HARNESS_CHECK_FAST_CMD; the template has it commented; this repo sets the fast tier
@@ -228,6 +242,7 @@ gotchasDiff: added, edited, deleted and no section
 gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
 harness gc --dry-run kills no tmux session
 harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
+harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
 harness merge merges v2 tags, closes the v2 PR
 harness needs --json: each command's full text (no ~, no cut)
