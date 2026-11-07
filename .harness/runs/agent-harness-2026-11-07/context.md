@@ -1,12 +1,20 @@
-# Context pack for `S4-04`
+# Context pack for `S4-05`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (S4-01, affects S4-03, S4-04): The second note proof compares from note " to the END of the line, so a line holding a note keeps its trailing code byte for byte: the three end-block lines keep ends+=(…), so runEnd answers lists and bash still builds the reason. → entries.jsonl:2
-- Discovery (S4-01, affects S4-04): spec_entry in lib/spec.sh is a fifth queue decoder the feature list doesn't name; the plan moves it with S4-04 (default). No check holds a 0x1f byte today: grep -rl x1f tests/checks tests/unit prints nothing. → entries.jsonl:2
-- Discovery (S4-01, affects S4-02, S4-03, S4-04): bash read fails at end of file on a last line with no newline, so closedLane must answer 'lane exited unexpectedly' for an exit file with no final newline; rule 4 of the plan lists the others (read's trim, [[:space:]] against \s, [[:alnum:]], ${w:0:200}). → entries.jsonl:2
+- Discovery (S4-04, affects S4-05): bin/harness is set -e, unlike lib/*.sh: was=$(node … exit 3) ends it silently (stop-records caught it); write x=$(…) || { (( $? == 3 )) && …; } → entries.jsonl:5
+- Discovery (S4-04, affects S4-05, run): `harness queue add --continue` replacing a queued entry writes the format itself (printf in cmd_queue), raw: a multi-line option reads back as several arguments. A base-tree bug, left because this move changes no queue byte; asked below. → entries.jsonl:5
+- Discovery (S4-04, affects S4-05): Node decodes argv and files as UTF-8, so a queue argument that isn't valid UTF-8 no longer keeps its bytes (U+FFFD); marked default in the decision file. → entries.jsonl:5
+- Discovery (S4-04, affects S4-05): If node fails at the runner's decode, the entry goes to done/ with a failed start logged (mapfile from the file couldn't fail); recoverable by hand, no guard added. → entries.jsonl:5
+- Discovery (S4-04, affects S4-05): String.replace in an edit script expands $' in the replacement text (it ate a check file once): use a function replacement when editing bash through node. → entries.jsonl:5
+- Discovery (S4-03, affects S4-05): The plan said a failed verify's card takes the mode as variant; the bash's `a || b || c` stops at `a`, so the variant is empty in every mode. The bash won, the plan is corrected in place, and a unit test pins it. → entries.jsonl:4
+- Discovery (S4-03, affects S4-05): Moves 2 and 3 barely shorten the bash (52 deleted, 51 added): each decision became a question plus a read of its labelled answer. S4-05's bash-removed row (150 or more) misses by more than S4-01's 90 to 110 gross estimate suggests if read net; say gross and net. → entries.jsonl:4
+- Discovery (S4-03, affects S4-05): lane-done's answer is the one unlabelled line, `<code> <merge failed 0|1> <reason>`, taken whole: read would trim the space an empty need leaves in the exit file. → entries.jsonl:4
+- Discovery (S4-02, affects S4-05): The helper's served set grew by checkdecide.mjs, beyond the plan's first list: with lane.mjs it will be thirteen scripts, not the twelve S4-05's architecture step says. → entries.jsonl:3
+- Discovery (S4-02, affects S4-05): partialPlan's answer has no paths and guard's has no kind label: nothing in bash read them, so the plan's tables were corrected in place. → entries.jsonl:3
+- Discovery (S4-01, affects S4-02, S4-05): Only literal-04 of S1's forty lies in an emptied function. In bash it was equivalent (any non-zero refuses), so partialPlan answers the refusing row and the mutant at its new home is row 8 to row 9, which the unit test must catch. → entries.jsonl:2
 - Discovery (init, affects run): The milestone PR's body is composed by the harness (pr_body in lib/record.sh) from the features' descriptions and the verify entry: the brief's 'PR body for a reader with no source open' is met by the descriptions (written in that register) and by journal/decisions/2026-11-03-purity.md, which S4-05 writes the same way. → entries.jsonl:1
 - Discovery (init, affects run): S1's forty mutants with their `before` line text are in findings-and-research/2026-11-03-suite-coverage/_mutants.jsonl (.id .file .line .before .after); the findings file's line numbers are the sample tree's, not today's: relocate a mutant by grep -F of its `before` text. → entries.jsonl:1
 - Discovery (init, affects run): lib/check.sh, bin/harness and lib/queue.sh run outside a driver's or lane's shell, so no resident helper serves them: a pure function they call is one node spawn per call (check.sh already spawns treekey.mjs when no lane hands it the key); only lib/record.sh, lib/lane.sh and lib/driver.sh go through ask. → entries.jsonl:1
@@ -15,12 +23,9 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-11-07 02:44 · S4-01 · passes: The plan of the purity moves (docs/plans/2026-11-07-S4-purity.md) and the decision file's skeleton (journal/decisions/2026-11-03-purity.md): three builds, each function's inputs, answer and branches, the note rule, the one mutant moved (literal-04), two push-downs, and the Decision 16 (b) table: 4 stub start lines of 65 read could go; none is removed.; tests 1506 → 1506; files docs/plans/2026-11-07-S4-purity.md, journal/decisions/2026-11-03-purity.md → entries.jsonl:2
-
-## Lately in the run
-
-- 2026-11-07 03:13 · S4-03 · passes: The lane's verify verdict and exit table, how a closed lane reads, and how a run ends are now pure functions in lib/lane.mjs, served by the helper and reached through ask. 80 unit tests. Notes, cards, exit and end reasons unchanged: both note proofs clean, 295 inputs compared old bash against new with no difference. lib/lane.sh and lib/driver.sh: 52 deleted, 51 added.; tests 1572 → 1652; files lib/lane.mjs, lib/lane.sh, lib/driver.sh, lib/helper.mjs, tests/unit/lane.test.mjs, … → entries.jsonl:4
 - 2026-11-07 02:57 · S4-02 · passes: lib/check.sh's decisions moved to lib/checkdecide.mjs: redReason, cachedAnswer, partialPlan, rerunChoice, keepRed, failedNames. check.sh asks per moment by one decide() line; check_run hands the first answer through ask (served). All check: lines and notes unchanged. check.sh -72/+42; 65 unit tests, 1 check; literal-04 caught at its new home.; tests 1506 → 1572; files lib/checkdecide.mjs, lib/check.sh, lib/record.sh, lib/helper.mjs, tests/unit/checkdecide.test.mjs, … → entries.jsonl:3
+- 2026-11-07 03:13 · S4-03 · passes: The lane's verify verdict and exit table, how a closed lane reads, and how a run ends are now pure functions in lib/lane.mjs, served by the helper and reached through ask. 80 unit tests. Notes, cards, exit and end reasons unchanged: both note proofs clean, 295 inputs compared old bash against new with no difference. lib/lane.sh and lib/driver.sh: 52 deleted, 51 added.; tests 1572 → 1652; files lib/lane.mjs, lib/lane.sh, lib/driver.sh, lib/helper.mjs, tests/unit/lane.test.mjs, … → entries.jsonl:4
+- 2026-11-07 03:40 · S4-04 · passes: Queue format now in lib/queue.mjs (encode, decode, name, project, facts); status.mjs imports the decoder. INBOX status line now status, control, stopWhy, unstop in lib/inbox.mjs. Two push-downs moved. Notes unchanged: both proofs clean; 625 old-bash vs new-node comparisons, no difference. 57 new test names; fast tier 928/928.; tests 1652 → 1709; files lib/queue.mjs, lib/inbox.mjs, lib/status.mjs, lib/queue.sh, lib/spec.sh, … → entries.jsonl:5
 
 ## Current rules
 
@@ -34,7 +39,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - The suite's tiers: every check file declares `fast` or `slow` on line 2, and `tests/run.sh --tier` runs one tier → journal/decisions/2026-11-03-suite-tiers.md
 - The trace switch: `HARNESS_XTRACE=<dir>` traces every harness process, off unless set → journal/decisions/2026-11-03-suite-coverage.md
 - The resident helper: one warm node process per driver and lane answers the `.mjs` questions over a coproc → journal/decisions/2026-11-03-resident-helper.md
-- The purity moves: the bash decision tables become pure functions with a unit test per branch; no note text changes → journal/decisions/2026-11-03-purity.md
-- The fast gate: `check.sh --fast` runs the fast tier, marks `fast-<key>`, and a fast-green is never read as a green → journal/decisions/2026-11-03-fast-gate.md
 
-_85 older rules: journal/decisions._
+_87 older rules: journal/decisions._
