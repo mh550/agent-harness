@@ -12,3 +12,5 @@
 - 2026-11-07 16:19 · A1-03: suite ran 1x (114 s) in the session
 - 2026-11-07 16:19 · A1-03: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-07 16:19 · A1-03 · claude-opus-5-5 · passes=true · 11 min · 3/14 passing · tests 1791
+- 2026-11-07 16:19 · verify A1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 16:30 · context.md for A1: 8967 bytes
