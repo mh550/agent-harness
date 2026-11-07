@@ -9,6 +9,24 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 18:05 · A2-04 · passes
+
+context.json (spec key order) now comes from the same lib/context.mjs call as context.md; a bundle written in events/ prunes bundles with no file newer than 30 days and says so; notify_event writes the bundle to events/<id>/ before the POST, so context names an existing context.json; the debrief passes since=$SINCE. A failed bundle: a note, context null. Decision file, docs.
+
+- **Files:** lib/context.mjs, lib/context.sh, lib/notify.sh, lib/notify.mjs, lib/debrief.sh, tests/checks/context-bundle.sh, tests/checks/event-run.sh, tests/checks/event-hook.sh, tests/stub-context.sh, tests/fixtures/context-bundle.json, tests/unit/context.test.mjs, tests/unit/notify.test.mjs, +5 more
+- **Verified:** Each new check watched red on the old lib (reverted with a patch file), then green: context-bundle 11/11, event-run 11/11, event-hook 11/11, queue-debrief 72/72, flakes-run 9/9, unit tier 515/515; check.sh --fast green, 1020 tests; bash -n and node --check clean; grep -c 'jq -n' lib/context.sh = 0.
+- **Tests:** 1839 → 1853
+- **Dead end:** parked[].why from the needs item's .why, as the plan said — a real `harness needs parked --json` has no top-level why; it comes from <state>/parked.json, else the card headline
+- **Discovery** (affects A2-05): The event-run check's spy compares context.md beside context.json, not the plan's second `test -f context.json` (the same file twice).
+- **Discovery** (affects A2-05, run): run_context and context_glossary now read <state>/ended before alive: the driver writes ended (driver.sh:352) before its end notify, while still alive.
+- **Discovery** (affects A2-05): The debrief's bundle reruns context_since at notify time, so a run started during the debrief's session is in scope.runs but not in the note's Covers (accepted, review finding 6).
+- **Discovery** (affects A2-05): A glossary exception now costs context.json too (one node call, as the spec says). For the debrief that means a null context, so ntfy (review finding 5, accepted).
+- **Discovery** (affects A2-05, A4): notify_event's ctx is the directory context.sh prints (cd && pwd), so a trailing-slash HARNESS_STATE never gives n8n a // path (its contextPaths guard).
+- **Discovery** (affects project): A bundle runs the gatherer (harness status/needs/trends/queue): each routed event in a stub run costs ~1 s more; event-run.sh takes 39 s
+- **Question for Michael:** Default taken: a routed event's context bundle is synchronous, capped at 60 s, before the 5 s POST, and events/ bundles older than 30 days are removed when a new one is written. Keep both? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/journal/decisions/2026-10-22-context-bundle-glossary.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/lib/notify.sh:55
+- **Proposed change:** A2-04 step 3: the spy's second test should be `test -f <context dir>/context.md` (n8n reads it beside context.json); `test -f <context dir>/context.json` repeats the first.
+- *07-A2-04 · claude-opus-5-5*
+
 ### 2026-11-07 17:33 · A2-03 · passes
 
 Moved the debrief's gatherer verbatim into lib/context.sh (context_since, context_runs, context_glossary); debrief.sh sources it, no copy. New `harness context <run> | --since <ts> [--out] [--id]` writes context.md (gatherer + ## Glossary via new lib/context.mjs) to events/<uuid>/ by default. The debrief's context gains the glossary. Tests 1831 → 1839.

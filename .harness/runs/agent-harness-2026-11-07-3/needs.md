@@ -83,3 +83,24 @@ harness needs done agent-harness-2026-11-07-3/3 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-07-3/4 --why "<answer>"
 ```
+
+## ⚠ A2-04 asked: Default taken: a routed event's context bundle is synchrono…
+
+`agent-harness-2026-11-07-3/5` · since 2026-11-07T23:05:09.340Z
+
+**blocked** nothing waits on it; A2-04's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:9](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl?plain=1#L9)
+
+> Default taken: a routed event's context bundle is synchronous, capped at 60 s, before the 5 s POST, and events/ bundles older than 30 days are removed when a new one is written. Keep both? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/journal/decisions/2026-10-22-context-bundle-glossary.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/lib/notify.sh:55
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/journal/decisions/2026-10-22-context-bundle-glossary.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-3/A2/journal/decisions/2026-10-22-context-bundle-glossary.md) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/lib/notify.sh:55](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-3/A2/lib/notify.sh#L55) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl:9](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl?plain=1#L9)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-3/5 --why "<answer>"
+```

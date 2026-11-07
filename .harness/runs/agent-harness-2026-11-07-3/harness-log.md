@@ -31,3 +31,7 @@
 - 2026-11-07 17:07 · context.md for A2-03: 6508 bytes
 - 2026-11-07 17:33 · A2-03: suite ran 2x (348 s) in the session
 - 2026-11-07 17:33 · A2-03 · claude-opus-5-5 · passes=true · 26 min · 6/14 passing · tests 1814
+- 2026-11-07 17:33 · context.md for A2-04: 7961 bytes
+- 2026-11-07 18:05 · A2-04: suite ran 1x (117 s) in the session
+- 2026-11-07 18:05 · A2-04: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-07 18:05 · A2-04 · claude-opus-5-5 · passes=true · 31 min · 7/14 passing · tests 1814
