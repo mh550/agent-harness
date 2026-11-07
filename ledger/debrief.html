@@ -27,51 +27,50 @@ dd{margin:0;font-variant-numeric:tabular-nums;font-size:14px}.open{margin:12px 0
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--line) 60%,transparent);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
 pre{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}</style></head>
 <body><main>
-<h1>Debrief · 2026-11-07 05:09</h1>
-<p class="sub">1 run · page built 2026-11-07 10:09 UTC from each run's summary.json and the debrief note</p>
-<section class="headline"><p>agent-harness-2026-11-07 finished 5/5 features. Milestone S4 (the purity moves) was verified and merged into main in PR #120, and the run record went in as PR #121.</p></section>
+<h1>Debrief · 2026-11-07 15:06</h1>
+<p class="sub">1 run · page built 2026-11-07 20:06 UTC from each run's summary.json and the debrief note</p>
+<section class="headline"><p>agent-harness-2026-11-07-2 finished 12/12: M1, M2 and M3 are verified and merged to main (PRs #126, #127, #128 for the record, plus the M1 PR).</p></section>
 <section class="cards"><article class="card">
-  <header><h3>agent-harness-2026-11-07</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
-  <div class="big"><b>5/5 passing</b><span>5 verified · 5 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="S4: 5/5 passing, merged">S4</li></ul>
-  <dl><div><dt>Spend</dt><dd>$31.62</dd></div><div><dt>Per feature</dt><dd>$6.32</dd></div>
-  <div><dt>Wall</dt><dd>2.96 h</dd></div><div><dt>Tests</dt><dd>1506 → 1721</dd></div></dl>
+  <header><h3>agent-harness-2026-11-07-2</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>12/12 passing</b><span>12 verified · 12 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="M1: 3/3 passing, merged">M1</li><li class="ms merged" title="M2: 5/5 passing, merged">M2</li><li class="ms merged" title="M3: 4/4 passing, merged">M3</li></ul>
+  <dl><div><dt>Spend</dt><dd>$59.64</dd></div><div><dt>Per feature</dt><dd>$4.97</dd></div>
+  <div><dt>Wall</dt><dd>5.06 h</dd></div><div><dt>Tests</dt><dd>1721 → 1791</dd></div></dl>
   
 </article></section>
-<section class="note"><p><em>runs since 2026-11-05 13:47:51: agent-harness-2026-11-07 · claude-sonnet-5-5, $0.12038599999999999 · context: /home/mh550/.local/state/harness/debrief/2026-11-07-050946/context.md</em></p>
-<p>Nothing is blocked. Spend was $31.62, and tests went 1506 → 1721.<br>The usage window is open (seven_day 35%, resets Sun 17:00).</p>
+<section class="note"><p><em>runs since 2026-11-07 05:09:46: agent-harness-2026-11-07-2 · claude-sonnet-5-5, $0.13027 · context: /home/mh550/.local/state/harness/debrief/2026-11-07-150615/context.md</em></p>
+<p>Nothing is blocked and nothing needs you.<br>Spend was $59.64 (tests 1721 → 1791). The usage window is open, with seven_day at 40% (resets Sun 17:00).</p>
 <h3>Runs</h3>
-<h4>agent-harness-2026-11-07 (agent-harness) · done</h4>
+<h4>agent-harness-2026-11-07-2 (agent-harness) · done</h4>
 <ul>
-<li><strong>Features:</strong> 5/5 passing (S4-01 plan, S4-02 to S4-04 build, S4-05 review). S4 was verified once and merged once (PR #120).</li>
-<li><strong>Tests:</strong> 1506 → 1721, with +215 ~1 −0 checks. There were 0 flakes, 0 fix rounds and 0 conflicts. The first-attempt pass rate was 1.0.</li>
-<li><strong>Cost:</strong> $31.62 ($6.32 per feature), in 2.96 h wall.</li>
-<li>By role: review $11.35, build $10.50, init $5.79, plan $3.59, verify $0.27, retro $0.13.</li>
-<li>The review was 35.9% of the cost.</li>
-<li><strong>Review:</strong> S4-05 went to opus because 2612 changed lines is over the 400-line threshold. It took 76 min, and its 2 suite runs took 1310 s. Builds ran the suite for about 105 s per run.</li>
-<li><strong>Retro:</strong> The run was delivered clean and no guard fired. It re-raised <code>suite-time-budget</code> and <code>verify-evidence-rows</code>. The retro could not audit whether verify re-ran each step: one S4 entry carries 36 items and there are no per-step verify rows.</li>
-<li><strong>After the run:</strong> gc removed the worktree and the branch, local and remote. The gc left the <code>lanes/agent-harness-2026-11-04-2/slot-0</code> worktree in place because it has uncommitted work.</li>
+<li><strong>Features:</strong> 12/12 passing, all on the first attempt. Verify failures, fix rounds, flakes and guard repairs were all 0.</li>
+<li><strong>Milestones:</strong> M1 (3), M2 (5) and M3 (4) were each verified, tagged <code>run/agent-harness-2026-11-07-2/M&lt;n&gt;</code> and merged. Branch and worktree were removed by gc.</li>
+<li><strong>Cost and time:</strong> $59.64, or $4.97 per feature. Build was $32.44, review $12.25, plan $8.31 and init $5.77. It took 5.06 h wall.</li>
+<li><strong>Checks:</strong> +75 ~7 −5, within budget in every milestone (M1 30, M2 60, M3 35).</li>
+<li><strong>Inefficiency:</strong> M2-05 (1436 s) and M3-04 (2074 s) each ran the full suite twice. Together that is about 55 min of the 4.29 h of session time.</li>
+<li><strong>Retro:</strong> nothing new. It re-raised <code>suite-time-budget</code> and <code>verify-evidence-rows</code>. It also noted 1 question each from M2-05, M3-02 and M3-04, none blocking.</li>
 </ul>
 <h3>Needs Michael</h3>
 <p>Nothing.</p>
+<p>One thing to check: your INBOX answer (2026-11-07 14:02) set the M3-04 review to <code>fable</code>. <code>summary.json</code> lists M3-04 as <code>sonnet</code> ($5.96), and the by-model totals show no fable review cost (fable $5.77 is init only). The retro says the review-size guard routed both reviews to opus. Your answer may not have been applied. It&#39;s worth confirming when you look at the run record.</p>
 <h3>For the next interactive session</h3>
 <ul>
-<li><strong>Merge conflicts, held or refused merges:</strong> none.</li>
-<li><strong>Leftover worktree:</strong> <code>/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-04-2/slot-0</code> has uncommitted work. gc kept it, so check whether the work is worth keeping.</li>
-<li><strong>Open proposed retro items, most <code>runs_seen</code> first:</strong></li>
+<li><strong>Merge conflicts or held merges:</strong> none.</li>
+<li><strong>Open <code>proposed</code> items from the Retro backlog</strong>, most seen first:</li>
 </ul>
 <ol>
-<li><code>verify-evidence-rows</code>: record per-step verify evidence rows in <code>entries.jsonl</code> (seen 8 times; re-raised by this run).</li>
-<li><code>suite-time-budget</code>: cap or warn on session suite runs (seen 7 times; re-raised by this run).</li>
-<li><code>suite-flake-retry</code>: re-run failed test files serially before declaring the suite red (seen 5 times).</li>
-<li><code>memlint-before-session-end</code>: run the memlint check inside the session&#39;s own end-of-session gate (seen once).</li>
-<li><code>session-entry-write-guard</code>: tell sessions that <code>entries.jsonl</code> and <code>progress-archive.md</code> are driver-only (seen once).</li>
-<li><code>step-contradiction-lint</code>: flag self-contradictory steps at init (seen once).</li>
-<li><code>record-push-retry-noise</code>: back off and collapse record-branch push-failure log lines (seen once).</li>
-<li><code>no-retry-on-denial</code>: don&#39;t retry a session that stopped on a permission question with nothing changed (0 runs seen).</li>
-<li><code>base-branch-runs-reverted</code>, <code>restrict-merge-tree-base</code> and <code>slot-copy-overwritten-on-merge</code> (0 runs seen each). All three are dormant and conditional, per their notes.</li>
+<li><code>verify-evidence-rows</code>: record per-step evidence rows from verify sessions (seen 9).</li>
+<li><code>suite-time-budget</code>: cap or warn on repeated suite runs (seen 8).</li>
+<li><code>suite-flake-retry</code>: re-run failed test files serially before declaring the suite red (seen 5).</li>
+<li><code>memlint-before-session-end</code> (seen 1).</li>
+<li><code>session-entry-write-guard</code> (seen 1).</li>
+<li><code>step-contradiction-lint</code> (seen 1).</li>
+<li><code>record-push-retry-noise</code> (seen 1).</li>
+<li>Seen 0 times: <code>no-retry-on-denial</code>, <code>base-branch-runs-reverted</code>, <code>restrict-merge-tree-base</code>, <code>slot-copy-overwritten-on-merge</code>, <code>cli-verbiage-and-syntax</code>, <code>git-provider-migration</code>, and <code>rebase-pending-card</code>. You accepted <code>rebase-pending-card</code> as a fix at dispatch Decision 5 item 2.</li>
+<li>The backlog shows &quot;more: 9&quot; entries I couldn&#39;t see.</li>
 </ol>
 <ul>
-<li><strong>Re-raised items already <code>specced</code> or <code>queued</code>:</strong> none.</li>
+<li><strong>Re-raised items already <code>specced</code> or <code>queued</code>:</strong> none visible.</li>
+<li><strong>Retro/summary mismatch:</strong> the retro says $59.51 and 16 sessions, while <code>summary.json</code> says $59.64 and 17 sessions. This is minor.</li>
 </ul></section>
 </main></body></html>
