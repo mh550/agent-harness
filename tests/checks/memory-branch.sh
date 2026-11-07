@@ -5,7 +5,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # the cap, tier 2 and 3 and every dropped op in the body of a `memory: <run>` PR left for Michael ----
 # Origin's main gets a CLAUDE.md with Code rules, Live system and Gotchas (3 lines; 15 for the cap runs) before each run.
 # mp carries the three ops and its continue; mc is refused at the cap; me evicts, with a Live system op and an
-# unmatched anchor beside it. Each run gets its own gh.log.
+# unmatched anchor beside it; mn, mk, mf and mz meet a memory branch already on origin. Each run gets its own gh.log.
 st() { echo "$HARNESS_STATE/proj/$1"; }
 rec() { echo "$T/wt/proj/$1/.harness/runs/$1"; }
 titles() { cat "$T"/prs/pr-*.title 2> /dev/null; }
@@ -88,9 +88,10 @@ check "memory PR: the same add with an anchor lands as one edit" \
   && [[ $(git -C "$O" show "$seed15:CLAUDE.md" > "$T/me-main.md" && node -e "import(\"'$HERE'/../lib/memlint.mjs\").then(m => { const f = require(\"fs\"); console.log(JSON.stringify(m.gotchasDiff(f.readFileSync(process.argv[1], \"utf8\"), f.readFileSync(process.argv[2], \"utf8\")))) })" "$T/me-main.md" "$T/me-claude.md") == "{\"added\":0,\"edited\":1,\"deleted\":0}" ]]'
 
 # mn: harness-memory/mn already on origin with no PR (an earlier push whose pr create failed): it is the base, its PR opens
-hand() {   # <run> → harness-memory/<run> pushed by hand, one commit past seed3
+hand() {   # <run> [<path>] → harness-memory/<run> pushed by hand, one commit past seed3 (that also adds <path>: not the driver's)
   local w=$T/hand-$1; rm -rf "$w"; git clone -q "$O" "$w" && git -C "$w" checkout -q --detach "$seed3" \
     && echo "- an earlier push of this memory branch keeps its own line ($1 2026-11-01)" >> "$w/CLAUDE.md" \
+    && { [[ -z ${2:-} ]] || { mkdir -p "$(dirname "$w/$2")" && echo "# not memory" > "$w/$2" && git -C "$w" add -- "$2"; }; } \
     && git -C "$w" -c user.name=m -c user.email=m@test commit -qam "memory: $1: 1 facts" && git -C "$w" push -q origin "HEAD:refs/heads/harness-memory/$1" && git -C "$w" rev-parse HEAD
 }
 git -C "$O" update-ref refs/heads/main "$seed3"; mn0=$(hand mn)
@@ -108,8 +109,25 @@ check "memory PR: a memory branch whose PR Michael closed stops the curator with
   'grep -q "^done" "$(st mk)/ended" && [[ $(hlog mk | grep -c " · memory PR: none (harness-memory/mk is on origin and main lacks it, its PR CLOSED; delete the branch to curate again)$") == 1 ]] \
   && [[ $(git -C "$O" rev-parse harness-memory/mk) == "$mk0" ]] && ! grep -x curator "$T/scratch/proj/mk/sessions.log" > /dev/null \
   && ! grep "^gh pr create .*--head harness-memory/mk " "$T/gh-mk.log" > /dev/null && titles | grep -x "mk: run record" > /dev/null'
+# mf: harness-memory/mf on origin, no PR, its commit also adds lib/hack.sh (a session's push, say): never a base
+git -C "$O" update-ref refs/heads/main "$seed3"; mf0=$(hand mf lib/hack.sh)
+run mf STUB_FACTS=A,B STUB_PROPOSE=A STUB_CURATOR_OPS=three-ops
+check "memory PR: a memory branch with a commit the driver would not write stops the curator with one note; nothing pushed" \
+  'grep -q "^done" "$(st mf)/ended" && [[ $(hlog mf | grep -c " · memory PR: none (harness-memory/mf has a commit the driver would not write, ${mf0:0:12} \"memory: mf: 1 facts\" (lib/hack.sh); delete the branch to curate again)$") == 1 ]] \
+  && [[ -n $mf0 && $(git -C "$O" rev-parse harness-memory/mf) == "$mf0" ]] && ! grep -x curator "$T/scratch/proj/mf/sessions.log" > /dev/null \
+  && ! grep "^gh pr create .*--head harness-memory/mf " "$T/gh-mf.log" > /dev/null && titles | grep -x "mf: run record" > /dev/null'
+
+# mz: harness-memory/mz on origin with no PR, and this segment's one op a protected proposal: the PR still opens on it
+git -C "$O" update-ref refs/heads/main "$seed3"; mz0=$(hand mz)
+run mz STUB_FACTS=A STUB_PROPOSE=A STUB_CURATOR_OPS=proposal
+check "memory PR: a memory branch on origin with no PR gets its PR when nothing new reaches tier 1" \
+  'p=$(mpr mz) && [[ -n $mz0 && $(git -C "$O" rev-parse harness-memory/mz) == "$mz0" ]] && [[ $(hlog mz | grep -c " · memory: 1 ops · 0 applied · 1 dropped · 1 proposals$") == 1 ]] \
+  && grep -x "gh pr create --base main --head harness-memory/mz --title memory: mz --body-file .*" "$T/gh-mz.log" > /dev/null \
+  && [[ $(hlog mz | grep -c " · memory PR opened; left for Michael (MEMORY_POLICY=pr) · https://example.test/pr/${p##*-}$") == 1 ]] \
+  && sed -n "/^## Proposals (protected, tier 3)$/,\$p" "$p.body" | grep -xF -- "- stub proposal: run the stub suite before each commit" > /dev/null \
+  && jq -e ".pr == \"https://example.test/pr/${p##*-}\"" "$(st mz)/memory.json" > /dev/null'
 check "memory PR: no run leaves its scratch worktree registered or a local harness-memory branch" \
   '! git -C "$T/proj" worktree list --porcelain | grep "/memory$" > /dev/null && [[ -z $(git -C "$T/proj" branch --list "harness-memory/*") ]] \
-  && [[ $(git -C "$T/proj" worktree list --porcelain | grep -c "^worktree ") == 6 ]]'
+  && [[ $(git -C "$T/proj" worktree list --porcelain | grep -c "^worktree ") == 8 ]]'
 
 suite_end

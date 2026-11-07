@@ -379,8 +379,8 @@ restrict() {   # base record|nothing|memory who
 # note, never a branch over it. The texts go to $SCRATCH/memory-base/ for the session to read, so its anchors are
 # matched against the text the apply sees
 memory_base() {
-  local d=$SCRATCH/memory-base f tip pv st="" b=harness-memory/$RUN_ID err=$STATE/memory-base.err
-  MEM_URL=""
+  local d=$SCRATCH/memory-base f tip pv st="" x b=harness-memory/$RUN_ID err=$STATE/memory-base.err
+  MEM_URL="" MEM_NOPR=""
   origin_t git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
   MEM_BASE=$(git -C "$RWT" rev-parse -q --verify "origin/$MAIN_BRANCH^{commit}") || { note "curator: none (no origin/$MAIN_BRANCH to curate against)"; return 1; }
   tip=$(origin_t git -C "$RWT" ls-remote -q origin "refs/heads/$b" 2>> "$STATE/run.log") || { note "memory PR: none (origin did not answer for $b; see run.log)"; return 1; }
@@ -393,11 +393,25 @@ memory_base() {
     origin_t git -C "$RWT" fetch -q origin "refs/heads/$b" 2>> "$STATE/run.log"
     git -C "$RWT" cat-file -e "$tip^{commit}" 2> /dev/null || { note "memory PR: none (could not fetch $b; see run.log)"; return 1; }
     if git -C "$RWT" merge-base --is-ancestor "$tip" "$MEM_BASE"; then :   # taken by main: cut from main, a fast-forward of it
-    elif [[ $st == OPEN || $st == NONE ]]; then MEM_BASE=$tip; [[ $st == OPEN ]] && MEM_URL=$(jq -r .url <<< "$pv")
+    elif [[ $st == OPEN || $st == NONE ]]; then
+      x=$(memory_foreign "$MEM_BASE" "$tip")   # a commit a session pushed there is never a base, nor carried to Michael
+      [[ -n $x ]] && { note "memory PR: none ($b has a commit the driver would not write, $x; delete the branch to curate again)"; return 1; }
+      MEM_BASE=$tip; if [[ $st == OPEN ]]; then MEM_URL=$(jq -r .url <<< "$pv"); else MEM_NOPR=1; fi
     else note "memory PR: none ($b is on origin and main lacks it, its PR ${st:-titled otherwise}; delete the branch to curate again)"; return 1; fi
   fi
   rm -rf "$d"; mkdir -p "$d/.harness"
   for f in CLAUDE.md .harness/project.md; do git -C "$RWT" show "$MEM_BASE:$f" > "$d/$f" 2> /dev/null || rm -f "$d/$f"; done
+}
+
+# <base> <tip> → the first commit of base..tip memory_pr would not have written: a merge, another subject than
+# `memory: <run>: <n> facts`, or a path besides CLAUDE.md and .harness/project.md (`<sha12> "<subject>" (<paths>)`); else nothing
+memory_foreign() {
+  local c s f
+  while read -r c; do
+    s=$(git -C "$RWT" log -1 --format=%s "$c"); f=$(git -C "$RWT" diff-tree --no-commit-id --name-only -r "$c" | grep -vxE 'CLAUDE\.md|\.harness/project\.md' | paste -sd' ')
+    if [[ -n $f || ! ${s#"memory: $RUN_ID: "} =~ ^[0-9]+\ facts$ || $(git -C "$RWT" rev-list --parents -n 1 "$c" | wc -w) != 2 ]]; then
+      echo "${c:0:12} \"${s:0:80}\"${f:+ ($f)}"; return 0; fi
+  done < <(git -C "$RWT" rev-list --reverse "$1..$2")
 }
 
 # <ops> <applied> <dropped> <proposed> <pr url|""> [<invalid why>] → $STATE/memory.json, for the summary (M3)
@@ -432,6 +446,7 @@ memory_pr() {
   mapfile -t files < <(jq -r '.files[]?' "$r")
   if (( a == 0 || ${#files[@]} == 0 )) || [[ $refused != - ]]; then
     if [[ $MEM_URL == http* && $MERGE_POLICY != off ]]; then memory_edit "$MEM_URL" " (no tier-1 change)"   # its proposals still reach Michael
+    elif [[ -n $MEM_NOPR && $MERGE_POLICY != off ]]; then memory_open   # an earlier segment's commit, still without its PR
     else note "memory PR: none (no tier-1 change); the body is in memory.md"; fi
   elif [[ $MERGE_POLICY == off ]]; then note "memory PR: none (MERGE_POLICY=off); the body is in memory.md"
   elif ! git -C "$w" add -- "${files[@]}" 2>> "$STATE/run.log" || ! git -C "$w" commit -q -m "memory: $RUN_ID: $a facts" -- "${files[@]}" 2>> "$STATE/run.log"; then
@@ -439,9 +454,7 @@ memory_pr() {
   elif ! origin_t git -C "$w" push -q origin "HEAD:refs/heads/$b" 2>> "$STATE/run.log"; then   # never forced: a reused head moves forward
     note "memory PR: could not push $b (see run.log)"
   elif [[ $MEM_URL == http* ]]; then url=$MEM_URL; memory_edit "$url" ""
-  else
-    url=$(origin_t $GH pr create --base "$MAIN_BRANCH" --head "$b" --title "memory: $RUN_ID" --body-file "$SCRATCH/memory-body.md" 2>> "$STATE/run.log" | tail -1)
-    if [[ $url == http* ]]; then note "memory PR opened; left for Michael (MEMORY_POLICY=pr) · $url"; else url=""; note "memory PR: could not open it (see run.log)"; fi
+  else memory_open
   fi
   memory_wt_gone
   memory_json "$o" "$a" "$d" "$p" "${url:-$MEM_URL}"
@@ -457,6 +470,11 @@ memory_body() {
     printf '\n---\n\n_An earlier segment of this run:_\n\n' >> "$m"; cat "$REC/memory.md" >> "$m"
   fi
   cp "$m" "$REC/memory.md"
+}
+memory_open() {   # the memory PR opened on harness-memory/<run>, left for Michael and noted; its URL in url (the caller's), else ""
+  local u
+  url=""; u=$(origin_t $GH pr create --base "$MAIN_BRANCH" --head "harness-memory/$RUN_ID" --title "memory: $RUN_ID" --body-file "$SCRATCH/memory-body.md" 2>> "$STATE/run.log" | tail -1)
+  if [[ $u == http* ]]; then note "memory PR opened; left for Michael (MEMORY_POLICY=pr) · $u"; url=$u; else note "memory PR: could not open it (see run.log)"; fi
 }
 memory_edit() {   # <url> <why suffix>: the open memory PR's body refreshed, noted
   if origin_t $GH pr edit "$1" --body-file "$SCRATCH/memory-body.md" > /dev/null 2>> "$STATE/run.log"; then note "memory PR updated$2 · $1"

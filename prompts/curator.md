@@ -4,8 +4,8 @@ Run: `{{RUN_ID}}` of {{PROJECT}}
 
 You curate **project memory**: the project's `CLAUDE.md` (and `.harness/project.md` if it has one), the files every
 session reads as instructions. You are read-only: **do not edit, create, commit or push anything, except one file:
-`{{RUN_DIR}}/memory-ops.json`.** The driver reverts every other edit, and it is the only writer of a project file:
-you emit operations, never a file.
+`{{RUN_DIR}}/memory-ops.json`.** No push, no `gh`, no write outside this checkout. The driver reverts every other
+edit here, and it is the only writer of a project file: you emit operations, never a file.
 
 Read, with `jq` (never a transcript):
 - `{{RUN_DIR}}/entries.jsonl`, one entry per line; line `n` is `entries.jsonl:<n>`. What you may curate is each

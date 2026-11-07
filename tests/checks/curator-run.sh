@@ -24,11 +24,12 @@ check "curator: its run.log line comes after the retro's, its notes before the r
   'r=$(rline cu "[0-9] retro · ") c=$(rline cu "[0-9] curator · ") n=$(ats cu " · curator: ") p=$(ats cu " · record PR "); [[ -n $r && -n $c && -n $n && -n $p ]] && (( r < c && n < p ))'
 check "curator: memory-ops.json is kept in the run record" \
   '[[ $la =~ ^[0-9]+$ && $lb =~ ^[0-9]+$ ]] && (( la > 1 && lb > 1 )) && git -C "$T/origin.git" show harness/cu:.harness/runs/cu/memory-ops.json > "$T/cu-kept.json" && cmp -s "$T/cu-ops.json" "$T/cu-kept.json"'
-check "curator: a curator's edits to CLAUDE.md and lib/ are reverted with one note, its memory-ops.json kept" \
+check "curator: a curator's edits to CLAUDE.md and lib/ are reverted with one note, its memory-ops.json kept and the record PR opened" \
   '[[ $(hlog cu | grep -c " · curator: reverted edits (it is read-only): ") == 1 ]] && hlog cu | grep -x -- "- .* · curator: reverted edits (it is read-only): CLAUDE.md lib/curator-hack.sh" > /dev/null \
   && git -C "$T/origin.git" show harness/cu:.harness/runs/cu/retro.md > /dev/null 2>&1 \
   && ! git -C "$T/origin.git" show harness/cu:lib/curator-hack.sh > /dev/null 2>&1 && ! git -C "$T/origin.git" show harness/cu:CLAUDE.md 2> /dev/null | grep -F "curator was here" > /dev/null \
-  && [[ ! -e $T/wt/proj/cu/lib/curator-hack.sh ]] && ! hlog cu | grep " · curator: reverted edits" | grep -F memory-ops.json > /dev/null && [[ -s $(rec cu)/memory-ops.json ]]'
+  && [[ ! -e $T/wt/proj/cu/lib/curator-hack.sh ]] && ! hlog cu | grep " · curator: reverted edits" | grep -F memory-ops.json > /dev/null && [[ -s $(rec cu)/memory-ops.json ]] \
+  && titles | grep -x "cu: run record" > /dev/null && ! hlog cu | grep -F "record PR: none (" > /dev/null'
 check "curator: the rendered prompt names memory-ops.json, the three ops, the write gate and that it writes no project file" \
   'P=$(st cu)/prompt-curator.md; grep -F ".harness/runs/cu/memory-ops.json" "$P" > /dev/null && grep -F "/memory-base/CLAUDE.md" "$P" > /dev/null && grep -F "\"add\"|\"replace\"|\"delete\"" "$P" > /dev/null && grep -F "write gate" "$P" > /dev/null \
   && grep -F "never a file" "$P" > /dev/null && [[ $(grep -c "{{" "$P") == 0 ]]'

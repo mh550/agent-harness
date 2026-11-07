@@ -50,6 +50,7 @@ test("curator.mjs: validate refuses a malformed file whole with its first reason
   assert.equal(why([op({ text: "two\nlines (r1 2026-11-07)" })]), "op 1: add without a one-line text");
   assert.equal(why([op({ extra: 1 })]), 'op 1: unknown key "extra"');
   assert.equal(why([op({ section: "Gotchas" })]), 'op 1: section "Gotchas" is not one ## heading');
+  assert.equal(why([op({ section: "## " + "x".repeat(200) })]), "op 1: section of 203 characters, at most 200");
   assert.equal(why([op({ tier: 4 })]), "op 1: tier 4 is not 1, 2 or 3");
   assert.equal(why([op({ why: " " })]), "op 1: why is not one non-blank line of at most 300 characters");
   assert.equal(why([op({ why: "x\n## Applied" })]), "op 1: why is not one non-blank line of at most 300 characters");
@@ -237,6 +238,17 @@ test("curator.mjs: an op on a protected section is dropped and carried as a prop
   assert.equal(claim.applied.length + claim.texts["CLAUDE.md"].length, MD.length);   // a tier-1 claim writes nothing
 });
 
+test("curator.mjs: an op whose write would change a protected section's lines is dropped", () => {
+  // an unclosed fence in Gotchas runs to the end of the file as one entry: deleting it would take Live system with it
+  const md = ["# P", "", "## Gotchas", "", "- a (r0 2026-11-01)", "```", "- fenced", "", "## Live system", "", "- deploy via scripts/deploy.sh.", ""].join("\n");
+  const fenced = sectionEntries(md, "## Gotchas")[1].text;
+  const r = apply([op({ op: "delete", anchor: fenced, text: undefined }), op({ op: "replace", anchor: fenced })], T(md), ENTRIES, RUN);
+  assert.equal(r.applied.length, 0);
+  assert.equal(reasons(r), "would change the protected section ## Live system | would change the protected section ## Live system");
+  assert.equal(r.texts["CLAUDE.md"] === md, true);
+  assert.equal(apply([op()], T(MD), ENTRIES, RUN).applied.length, 1);   // a write beside a protected section is no change to it
+});
+
 test("curator.mjs: only tier 1 is written; a tier-2 op leaves the texts as they were", () => {
   const r = apply([op({ section: "## Code rules", text: PROPOSAL, tier: 2 }), op({ op: "replace", section: "## Code rules", anchor: "bash only.", text: PROPOSAL, tier: 2 })], T(MD), ENTRIES, RUN);
   assert.equal(r.applied.length, 0);
@@ -264,6 +276,8 @@ test("curator.mjs: body lists the applied and tier-2 ops with their from, then t
   const at2 = body({ ...r, applied: [{ ...r.applied[0], why: "ask @mh550 first" }] }, RUN);
   assert.equal(/(^|[^`])@mh550/.test(at2.replace(/@\u200b/g, "")), false);   // a mention outside a fence would notify
   assert.equal(at2.includes("@\u200bmh550"), true);
+  const sec = body(apply([op({ section: "## @mh550 see" })], T(MD), ENTRIES, RUN), RUN);   // a section no file has, in Dropped
+  assert.equal(/(^|[^`])@mh550/.test(sec.replace(/@\u200b/g, "")), false);
   const empty = body(apply([], T(MD), ENTRIES, RUN), RUN);
   assert.equal(/## (Applied|For you|Proposals|Dropped)/.test(empty), false);
   const refused = body(apply([op()], T(gotchas(15)), ENTRIES, RUN), RUN);

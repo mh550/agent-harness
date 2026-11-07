@@ -221,6 +221,7 @@ curator.mjs: a heading inside a code fence, a repeated heading or CRLF line ends
 curator.mjs: a result over 120 lines refuses the tier-1 commit
 curator.mjs: an anchor with no match or two matches drops its op, naming the anchor
 curator.mjs: an op on a protected section is dropped and carried as a proposal
+curator.mjs: an op whose write would change a protected section's lines is dropped
 curator.mjs: apply derives the tier from the heading and counts a claim that disagrees
 curator.mjs: body lists the applied and tier-2 ops with their from, then the proposals, then the dropped with reasons
 curator.mjs: harm, a fact no entry states gives no op

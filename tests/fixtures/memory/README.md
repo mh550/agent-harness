@@ -5,6 +5,7 @@
 - `unstated.entries.jsonl`, `unstated.ops.json`: harm case, an op whose text no entry states → dropped by the write gate.
 - `tool-result.entries.jsonl`, `tool-result.ops.json`: harm case, a line from a tool's output (in the entry's `summary` and `verified_how`, not its `discoveries`), and a stated fact with an unstated tail after its first 40 characters → both dropped by the write gate.
 - `stub-three-ops.json`: `STUB_CURATOR_OPS=three-ops` (tests/stub-claude.sh fills `{{RUN}}`, `{{DATE}}`, `{{LINE:<id>}}`): two `## Gotchas` adds of A's and B's `STUB_FACTS` facts and a `## Code rules` add of `STUB_PROPOSE`'s string claiming tier 1 (M2-03; M2-04's apply checks).
-- `stub-continue.json`: `STUB_CURATOR_OPS=continue` on a continued run: `stub-three-ops`'s three ops (A's and B's now `already in ## Gotchas` on the open memory PR's head) plus C's `STUB_FACTS` fact, the one new tier-1 line (M2-04, tests/checks/memory-pr.sh).
+- `stub-continue.json`: `STUB_CURATOR_OPS=continue` on a continued run: `stub-three-ops`'s three ops (A's and B's now `already in ## Gotchas` on the open memory PR's head) plus C's `STUB_FACTS` fact, the one new tier-1 line (M2-04, tests/checks/memory-branch.sh).
 - `stub-cap.json`: one `## Gotchas` add without an anchor (A's fact), the 16th on a project at 15: the tier-1 commit is refused (M2-04).
 - `stub-cap-evict.json`: B's fact added with an anchor on the 3rd of the 15 (the eviction: one edit), an add to `## Live system` (tier 3: dropped, a proposal), and a `replace` in `## Gotchas` whose anchor matches no line (dropped naming it) (M2-04).
+- `stub-proposal.json`: one `## Live system` add of `STUB_PROPOSE`'s string (tier 3: dropped, a proposal), so nothing reaches tier 1 (M2-05, a memory branch on origin with no PR).
