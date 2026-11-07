@@ -1,7 +1,11 @@
 {
   "run": "agent-harness-2026-11-07-2",
   "branch": "harness/agent-harness-2026-11-07-2",
-  "check_budget": { "M1": 30, "M2": 60, "M3": 35 },
+  "check_budget": {
+    "M1": 30,
+    "M2": 60,
+    "M3": 35
+  },
   "features": [
     {
       "id": "M1-01",
@@ -18,7 +22,7 @@
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-02",
@@ -35,7 +39,9 @@
         "`bash tests/run.sh gotchas-pack memory-prompts unit-tier` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["M1-01"],
+      "after": [
+        "M1-01"
+      ],
       "passes": false
     },
     {
@@ -53,7 +59,9 @@
         "`bash tests/run.sh memory-one-writer verify-retro-read-only gotchas-pack lanes-run` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["M1-02"],
+      "after": [
+        "M1-02"
+      ],
       "passes": false
     },
     {
@@ -72,7 +80,9 @@
         "`journal/decisions/2026-11-07-memory-tiers.md` exists as a skeleton: title, provenance (this run, the spec's M2, field guide lines 707–736, 820–844, 1031–1055, 1081–1121 of findings-and-research/Agent Memory Field Guide.md), finding, the protected list and the tier rule, every *default* marked, a `Rejected` section to be completed by M2-05.",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["M1"],
+      "after": [
+        "M1"
+      ],
       "passes": false
     },
     {
@@ -88,7 +98,9 @@
         "`prompts/curator.md` exists as the plan drafts it, with `{{RUN_ID}}`, `{{PROJECT}}` and `{{RUN_DIR}}` and the read-only where-things-go part; `node lib/prompt.mjs` or lib/prompt.sh renders it with no placeholder left (`grep -c '{{' <rendered>` prints 0), shown by a unit test or a check in tests/checks/memory-prompts.sh.",
         "`node --test --test-isolation=none tests/unit/*.test.mjs` ends with `fail 0`; `bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["M2-01"],
+      "after": [
+        "M2-01"
+      ],
       "passes": false
     },
     {
@@ -104,7 +116,9 @@
         "`bash tests/run.sh curator-run lanes-record-pr retro-backlog verify-retro-read-only` ends with every check passing (its `N/N checks passed` line): the retro and the record PR keep their behaviour.",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["M2-02"],
+      "after": [
+        "M2-02"
+      ],
       "passes": false
     },
     {
@@ -121,7 +135,9 @@
         "`bash tests/run.sh memory-pr curator-run lanes-record-pr` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["M2-03"],
+      "after": [
+        "M2-03"
+      ],
       "passes": false
     },
     {
@@ -138,7 +154,11 @@
         "The M2 check names added, replaced and removed are counted against the budget of 60 (`git diff $(git merge-base HEAD origin/main) -- tests/fixtures/check-names.txt | grep -c '^+[^+]'` and `grep -c '^-[^-]'`), the count and any overrun's reason written in the decision file.",
         "`bash tests/run.sh` (in the background, a timeout of at least 1,500,000 ms) ends with every check passing (its `N/M checks passed` line with N = M); the suite is green."
       ],
-      "after": ["M2-02", "M2-03", "M2-04"],
+      "after": [
+        "M2-02",
+        "M2-03",
+        "M2-04"
+      ],
       "passes": false
     },
     {
@@ -154,7 +174,9 @@
         "`journal/decisions/2026-11-07-memory-policy.md` exists as a skeleton (title, provenance: this run, the spec's M3, journal/decisions/2026-11-05-suite-shape.md; finding; a choice section with the retirement's row: the assertion, its successors, the trim's rule; `Rejected` and the policy rows left for M3-02 to M3-04).",
         "`bash tests/run.sh key-map-lint memlint-run unit-tier` ends with every check passing (its `N/N checks passed` line); `bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["M2"],
+      "after": [
+        "M2"
+      ],
       "passes": false
     },
     {
@@ -170,7 +192,9 @@
         "`bash tests/run.sh memory-pr merge-policy-default` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["M3-01"],
+      "after": [
+        "M3-01"
+      ],
       "passes": false
     },
     {
@@ -187,7 +211,9 @@
         "`bash tests/run.sh memory-pr unit-tier` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["M3-02"],
+      "after": [
+        "M3-02"
+      ],
       "passes": false
     },
     {
@@ -204,7 +230,11 @@
         "The M3 check names added, replaced and removed are counted against the budget of 35 (`git diff $(git merge-base HEAD origin/main) -- tests/fixtures/check-names.txt | grep -c '^+[^+]'` and `grep -c '^-[^-]'`), the count and any overrun's reason written in the decision file.",
         "`bash tests/run.sh` (in the background, a timeout of at least 1,500,000 ms) ends with every check passing (its `N/M checks passed` line with N = M); the suite is green."
       ],
-      "after": ["M3-01", "M3-02", "M3-03"],
+      "after": [
+        "M3-01",
+        "M3-02",
+        "M3-03"
+      ],
       "passes": false
     }
   ]

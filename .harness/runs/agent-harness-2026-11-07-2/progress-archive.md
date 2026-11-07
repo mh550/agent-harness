@@ -9,6 +9,23 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 10:35 · M1-01 · passes
+
+Wrote docs/plans/2026-11-07-M1-one-writer.md: M1-02 (the pack's earliest-unresolved clearing rule, no CLAUDE.md read; the prompts, parts, template, draft prompt and this repo's line rerouted) and M1-03 (restrict's memory spec via a memory_guard at the merge-base, its note, gotchas() retired), every check turned false with its replacement, 4+3 stub knobs, ≤17 names of 30.
+
+- **Files:** docs/plans/2026-11-07-M1-one-writer.md
+- **Verified:** Read restrict, lane.sh 447-461, entries.mjs pack 289-296 and its CLI, the prompts and parts, all eight projects' Where things go lines; ran KEEP=1 bash tests/run.sh gotchas-pack (12/12) to read the gotcha run's session order and packs; grepped every fixture name the plan lists (each present once); check.sh --fast green (cached, 1721 tests; docs/plans is outside the key).
+- **Tests:** 1721 → 1721
+- **Dead end:** the feature's literal `restrict "$sstart" memory "$id"` call in lib/lane.sh — a session that merged origin/main itself brings main's CLAUDE.md change; reverting to sstart takes main's lines out at the milestone's merge, so the plan uses the merge-base in a memory_guard beside lane_guard
+- **Discovery** (affects M1-03): partial-key.sh's two driver-partial checks (pkedit, pkv) need a coding session's CLAUDE.md-only tree; the revert makes it impossible, so M1-03 moves them to README.md:readme
+- **Discovery** (affects M1-02): All eight projects have their own ## Where things go block (facts → ## Gotchas), so a coding prompt there gets no where-things-go part: only Finish step 2 can say the new route
+- **Discovery** (affects M1-03): The initializer's revert note (lib/driver.sh:513) has no check and no stub knob; M1-03 adds STUB_INIT_GOTCHA=1
+- **Discovery** (affects run, M2, M3): This run's driver is the pre-M1 live checkout: M1's revert never runs here, and M2/M3 sessions see a Finish step asking for a Gotchas line while their branch's CLAUDE.md says the entry
+- **Discovery** (affects M1, M2, M3): checks-diff pairs a renamed check as replaced only when the new name sorts into the old one's hunk; elsewhere it counts as added + removed
+- **Proposed change:** M1-03 step 2 should read: lib/lane.sh calls memory_guard "$sstart" "$id" (lib/record.sh, beside lane_guard: restrict <merge-base or sstart> memory <id>, one note per file), per docs/plans/2026-11-07-M1-one-writer.md
+- **Proposed change:** M1-02 step 5's CLAUDE.md clause should compare against main as it was before the run (git diff --quiet <m0> main -- CLAUDE.md): origin/main after the run holds any merged edit on both sides
+- *01-M1-01 · claude-opus-5-5*
+
 ### 2026-11-07 10:24 · init · passes
 
 12 features: M1 3 (plan, pack+prompts rerouted, memory restrict spec with folded review), M2 5 (plan, lib/curator.mjs pure rules, curator role, memory_pr, review), M3 4 (plan+memlint-self retired, MEMORY_POLICY, counting+harness memory, Sonnet review). In series: M2 after M1, M3 after M2. Check budgets 30/60/35 copied from the spec.
