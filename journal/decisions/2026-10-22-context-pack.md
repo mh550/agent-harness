@@ -36,3 +36,8 @@
   item leaves with lower-priority items (the order would stop being monotonic and hard to test); pasting the pack
   into the prompt (the spec asks for a file, which a session can open again mid-session and which is committed with
   the run record); a pack for the initializer (it has no journal to read).
+  Updated in place 2026-11-07: an LLM curator is now built (docs/specs/2026-11-07-memory-curator.md): the 120-line
+  and 15-Gotchas cap was enforced by one repo's suite check alone, red outside the feature that caused it; restrict
+  never covered coding sessions, so "Michael's" in Where things go was advisory; memlint found 0 findings in 31 runs,
+  inventory rather than safety. What the field guide forbids is a rewriter, not a curator: this one emits itemized
+  operations the driver validates and applies (decisions/2026-11-07-memory-one-writer).

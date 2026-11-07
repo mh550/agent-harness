@@ -447,7 +447,8 @@ while :; do
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   sstart=$(git rev-parse HEAD)
   t0=$(date +%s.%6N); session coding "$mdl" "$slog" "$id"; t1=$(date +%s.%6N)   # the session's own suite calls are check-runs.log's rows in between
-  commit_all "WIP: $id — uncommitted at session end (harness)"; sync_lane   # the copy is excluded: code only
+  commit_all "WIP: $id — uncommitted at session end (harness)"   # the copy is excluded: code only
+  memory_guard "$sstart" "$id"; sync_lane   # its CLAUDE.md edit goes before the journal and the gate see the tree
   # the full and fast ones apart for metrics.jsonl's suite_runs, suite_full and suite_fast: no log, no third field, so all
   # null (decisions/2026-10-31-one-full-run, decisions/2026-11-03-fast-gate)
   read -r sn ss sf sk < <(awk -F'\t' -v a="$t0" -v b="$t1" '$1 > a && $1 < b && $2 != "cached" { n++; s += $3; f += ($2 == "full"); k += ($2 == "fast") }
@@ -458,7 +459,6 @@ while :; do
   inbox_repair "$id" "$LS/inbox-before.md" "$SLOT/$RUN_DIR/INBOX.md"   # a question inside the comment, moved out first
   take_question   # what it asked above ## Answers, into the record's INBOX.md
   lane_guard "$sstart" "$id"
-  gotchas "$id" "$sstart"   # a limited session's edit is noted too
 
   # A usage/rate limit, an API error or a session that did no work is not the feature's fault: give the attempt back.
   # Its work stays (committed above); its claims never reach the record (the copy goes).

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tier: slow
 source "$(dirname "$0")/../lib.sh" && suite_setup
-# ---- Gotchas in place (M3): the coding prompt's Finish step edits one `## Gotchas` line; the driver notes the diff ----
+# ---- project facts (M3, M1-02): a coding entry's fact reaches the pack's Promote to Gotchas, never CLAUDE.md ----
 MM=$HERE/../lib/memlint.mjs
 G=$'# p\nrules\n\n## Gotchas\n\n- one (r 2026-10-26)\n- two (r 2026-10-26)\n\n## Later\nx\n'
 # gotchasDiff and gotchasLines are tests/unit/memlint.test.mjs; here the gotchas CLI on two files
@@ -12,11 +12,7 @@ check "memlint.mjs gotchas: the CLI prints +added ~edited -deleted of two files,
 # the stub project has a decisions store (rane-one-mixxx's first three, copied): every pack ends with its rules (M3-04)
 mkdir -p docs && cp "$HERE/fixtures/decisions-rane.md" docs/decisions.md && git add docs && git commit -qm "decisions store" && git push -q origin main
 # the same run asks and resolves a question of C's (M3-03)
-STUB_GOTCHA=B STUB_ASK=C STUB_RESOLVE=C "$H" start "$T/proj" gotcha --spec SPEC.md --foreground > "$T/gotcha.out" 2>&1
-check "a stub session that adds a Gotchas line is noted" '
-  hlog gotcha | grep -q "· B: gotchas +1 ~0 -0$" && git -C "$T/wt/proj/gotcha" show run/gotcha/M1:CLAUDE.md | sed -n "/^## Gotchas/,\$p" | grep "(gotcha " > /dev/null'
-check "a session that leaves CLAUDE.md alone gets no gotchas note" '
-  [[ $(hlog gotcha | grep -c ": gotchas ") == 1 ]] && (( $(grep -c " attempt " "$T/scratch/proj/gotcha/sessions.log") >= 3 ))'
+STUB_ASK=C STUB_RESOLVE=C "$H" start "$T/proj" gotcha --spec SPEC.md --foreground > "$T/gotcha.out" 2>&1
 GL=$HARNESS_STATE/proj/gotcha/logs
 # M1-02: a fact goes in the entry, never in CLAUDE.md (decisions/2026-11-07-memory-one-writer)
 check "coding and verify prompts: a fact to discoveries affecting project, a workflow line to proposed_changes, a stale one to resolved; no Gotchas write" '
@@ -33,8 +29,10 @@ check "context.md lists the decisions store's rules newest first" '
   [[ $(grep "^## " "$GL/01-A.context.md" | tail -1) == "## Current rules" ]] &&
   [[ $(sed -n "/^## Current rules/,\$p" "$GL/01-A.context.md" | grep -o "^- D[0-9]* .*→ docs/decisions.md:[0-9]*$" | sed "s/^- \(D[0-9]*\) .*:\([0-9]*\)$/\1@\2/" | tr "\n" " ") == "D3@15 D2@13 D1@7 " ]] &&
   grep -q -- "^- D1 default · Playback model: hybrid. Mixxx.s clock plays the track while the platter is within tolerance of the expected .*… → docs/decisions.md:7$" "$GL/01-A.context.md"'
-# M1-02: A and B state one project fact, C resolves it, A proposes a workflow line; main's CLAUDE.md (B's Gotchas line
-# from the gotcha run carries the fact) is read by no pack, and the run changes it nowhere
+# M1-02: A and B state one project fact, C resolves it, A proposes a workflow line; main's CLAUDE.md (a Gotchas line,
+# committed to main as the curator would, carries the fact) is read by no pack, and the run changes it nowhere
+git pull -q --ff-only origin main && printf '\n## Gotchas\n\n- %s\n' "the stub's work files sit at the repo root, one per feature (main)" >> CLAUDE.md &&
+  git commit -qam "a Gotchas line" && git push -q origin main
 m0=$(git -C "$T/origin.git" rev-parse main)
 STUB_PROJECT_FACT=A,B STUB_RESOLVE_FACT=C STUB_PROPOSE=A "$H" start "$T/proj" facts --spec SPEC.md --foreground > "$T/facts.out" 2>&1
 FL=$HARNESS_STATE/proj/facts/logs FR=$T/wt/proj/facts/.harness/runs/facts

@@ -96,7 +96,8 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    today's date). A convention or workflow line (how to work here) goes in `proposed_changes`. Read
    context.md's `Promote to Gotchas` part first: a fact listed there is already recorded, so don't
    state it again. Put one that no longer holds in your entry's `resolved`, copied as context.md
-   shows it.
+   shows it. The harness reverts an edit to either file and notes `<feature>: reverted its
+   CLAUDE.md edit (project memory is the curator's; say it in the entry)`.
 3. The suite green: the fast tier's one run now (`<suite> --fast`), after your last edit,
    so the tree you tested is the tree that ends the session (`entry.json`, the `passes` flip and
    the commit come after; the run directory is outside the suite's key). If your work is half

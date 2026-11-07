@@ -31,8 +31,11 @@
 # `{id, title: "stub proposal <id>", evidence}` per id (`bad`: `{not json`; `link`: a symlink to feature_list.json). STUB_RETRO_EDITS=1: the retro edits code, progress.md
 # and the worktree's ledger/retro-backlog.jsonl (restrict reverts all three).
 # STUB_GOTCHA=<id>: that feature's first coding session adds a `## Gotchas` line to CLAUDE.md (and the section when
-# it has none), committed with its work (M3). STUB_GOTCHA_ONLY=<id>: that feature's first coding session passes with
-# that line as its only change (no work-<id>.txt: a tree differing from the last in CLAUDE.md alone, S2-05).
+# it has none), committed with its work (M3; the driver reverts it since M1-03). STUB_README_ONLY=<id>: that feature's
+# first coding session passes with one README.md line as its only change (no work-<id>.txt: a tree differing from the
+# last in a mapped file alone, S2-05). STUB_TOUCH_CODE=<id>: that feature's first coding session also writes a file
+# under lib/, tests/ and journal/decisions/ (M1-03). STUB_PROJECT_MD=<id>: that feature's first coding session edits
+# .harness/project.md (M1-03). STUB_INIT_GOTCHA=1: the initializer adds a ## Gotchas line to CLAUDE.md, uncommitted (M1-03).
 # STUB_ASK=<id>: that feature's first coding session's entry asks "Should <id> default to off?"; STUB_RESOLVE=<id>: its later sessions' entries list it in `resolved`. STUB_ASK_TWO=<id>:
 # that feature's first coding session's entry asks two questions, each with a `Files:` line (R4-03); STUB_ASK_AGAIN=<id>:
 # that feature's first coding session's entry asks STUB_ASK's question again, same words. STUB_PROJECT_FACT=<id>[,<id>…]:
@@ -192,6 +195,8 @@ JSON
     fi
     entry init 1 '{feature: "init", kind: "init", outcome: "passes", summary: "3 features: M1 2, M2 1", header: "# progress"}'
     git add -A && git commit -qm "HARNESS: feature list" && git push -q -u origin "$HARNESS_BRANCH"
+    if [[ ${STUB_INIT_GOTCHA:-} ]]; then   # as prompts/initializer.md asked before M1: left uncommitted
+      printf '\n## Gotchas\n\n- the initializer'"'"'s fact (%s)\n' "$HARNESS_RUN_ID" >> CLAUDE.md; fi
     if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop [<why>]
       tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "$HARNESS_BRANCH"
       why=""; [[ $STUB_PHONE_STOP == 1 ]] || why=" $STUB_PHONE_STOP"
@@ -292,11 +297,10 @@ JSON
     if [[ ${STUB_PASS_THEN_LIMIT:-} && $id == A && $n == 1 ]]; then   # claims the feature, then the limit cuts it off
       echo "A $n" > "work-A.txt"; git add -A && git commit -qm "A: claimed"; sed -n 2p "$HERE/fixtures/usage-limit.jsonl"; exit 1
     fi
-    if [[ ${STUB_GOTCHA_ONLY:-} == "$id" && $n == 1 ]]; then   # passes with the Gotchas line as its only change: a CLAUDE.md-only tree
-      grep -qx '## Gotchas' CLAUDE.md 2> /dev/null || printf '\n## Gotchas\n\n' >> CLAUDE.md
-      echo "- the stub's work files sit at the repo root, one per feature ($HARNESS_RUN_ID $(date +%F))" >> CLAUDE.md
-      entry "$id" "$n" --arg id "$id" '{feature: $id, kind: "coding", outcome: "passes", summary: "\($id): a Gotchas line", files: ["CLAUDE.md"], verified_how: "stub"}'
-      git add -A && git commit -qm "$id: a Gotchas line" && git push -q origin "$HARNESS_BRANCH"
+    if [[ ${STUB_README_ONLY:-} == "$id" && $n == 1 ]]; then   # passes with one README.md line as its only change: a mapped-file-only tree
+      echo "- $id: the stub's work files sit at the repo root ($HARNESS_RUN_ID)" >> README.md
+      entry "$id" "$n" --arg id "$id" '{feature: $id, kind: "coding", outcome: "passes", summary: "\($id): a README line", files: ["README.md"], verified_how: "stub"}'
+      git add -A && git commit -qm "$id: a README line" && git push -q origin "$HARNESS_BRANCH"
       ok; exit 0
     fi
     if [[ $id == B && $n == 1 && ! ${STUB_NO_TAMPER:-} ]]; then   # tampers: flips C and rewrites its description
@@ -340,6 +344,9 @@ JSON
       grep -qx '## Gotchas' CLAUDE.md 2> /dev/null || printf '\n## Gotchas\n\n' >> CLAUDE.md
       echo "- the stub's work files sit at the repo root, one per feature ($HARNESS_RUN_ID $(date +%F))" >> CLAUDE.md
     fi
+    if [[ ${STUB_TOUCH_CODE:-} == "$id" && $n == 1 ]]; then mkdir -p lib tests journal/decisions
+      echo ": $id" > "lib/stub-$id.sh"; echo "$id" > "tests/stub-$id.txt"; echo "# stub $id" > "journal/decisions/stub-$id.md"; fi
+    if [[ ${STUB_PROJECT_MD:-} == "$id" && $n == 1 ]]; then mkdir -p .harness && echo "$id fact" >> .harness/project.md; fi
     # main may already have work-<id>.txt as written here (run demo merged it): a file only this run adds, for the minimal entry's files
     [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
     # STUB_ASK_TOUCH=<path>: the session that asks (STUB_ASK) changes it too, outside its entry's files (U2-08's fill)
