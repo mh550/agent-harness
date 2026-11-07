@@ -122,27 +122,37 @@ import os, re
 g = os.environ.get
 cover, purity = g("COVER"), g("PURITY")
 
+def num(v):  return f"{float(v):,.1f}"            # 1799.4 -> 1,799.4, as the before row writes 2,108.1
+CPU_A, WALL_A = num(g("B_CPU")), num(g("B_WALL"))
+PCT_A = g("PCT").replace("-", "−")           # ASCII minus -> the U+2212 the tables use
+CHK_A = g("B_CHK").replace(" checks passed", " passed")
+BAR = "\\|"                                       # a pipe inside a table cell, escaped as the before row does
+
 rows = [
   ("check names (the full fixture)", f'{int(g("N_NAMES")):,}', "`wc -l < tests/fixtures/check-names.txt`"),
   ("fast names (the fast tier's fixture)", f'{int(g("N_FAST")):,}', "`wc -l < tests/fixtures/check-names-fast.txt`"),
   ("unit tests", f'{int(g("N_UNIT")):,}', "`node --test --test-isolation=none tests/unit/*.test.mjs`, its `tests` line"),
-  ("check files, fast tier", g("N_TFAST"), "`awk 'FNR == 2' tests/checks/*.sh | sort | uniq -c`"),
+  ("check files, fast tier", g("N_TFAST"), f"`awk 'FNR == 2' tests/checks/*.sh {BAR} sort {BAR} uniq -c`"),
   ("check files, slow tier", g("N_TSLOW"), "the same"),
-  ("lines that start a stub run", f'{int(g("N_STUB"))} in {int(g("N_STUBF"))} files', "`grep -hE '\"$H\" start' tests/checks/*.sh | grep -vcE '^\\s*#'`"),
-  ("full suite, solo: checks", g("B_CHK"), "the solo method: the output's last line"),
-  ("full suite, solo: wall", f'{g("B_WALL")} s at 4 jobs', "the runner's `wall … s` line"),
-  ("full suite, solo: CPU", f'{g("B_CPU")} CPU-s', "`User time` + `System time` of `time -v`"),
+  ("lines that start a stub run", f'{int(g("N_STUB"))} in {int(g("N_STUBF"))} files',
+   f"`grep -hE '\"$H\" start' tests/checks/*.sh {BAR} grep -vcE '^\\s*#'`"),
+  ("full suite, solo: checks", CHK_A, "the solo method: the output's last line"),
+  ("full suite, solo: wall", f"{WALL_A} s at 4 jobs", "the runner's `wall … s` line"),
+  ("full suite, solo: CPU", f"{CPU_A} CPU-s", "`User time` + `System time` of `time -v`"),
 ]
+
 sec  = f'\n## The after row (S4, `{g("TREE")}`)\n\n'
-sec += f'Taken by `tests/tools/solo-measure.sh` with the box quiet, {g("RUNS")} solo suites in sequence; the figures below are\n'
-sec += f'run {g("best")}, the lower CPU of them. Raw output and `time -v` beside this file in `2026-11-03-suite-coverage/`.\n\n'
-sec += "| measure | after S4 (`%s`) | the command |\n|---|---:|---|\n" % g("TREE")
-for a, b, c in rows: sec += f"| {a} | {b} | {c} |\n"
-sec += f'\nAgainst the before row: CPU {g("PCT")} % (2,108.1 → {g("B_CPU")} CPU-s), wall 599.4 → {g("B_WALL")} s. The slim suite\'s\n'
-sec += f'prediction for the solo CPU was −10 to −20 %: **{g("MET")}**. The three slowest files of the run: {g("B_SLOW")}.\n'
+sec += f'Taken by `tests/tools/solo-measure.sh` with the box quiet, {g("RUNS")} solo suites in sequence; the figures below\n'
+sec += f'are run {g("best")}, the lower CPU of them. Raw output and `time -v` beside this file in\n`2026-11-03-suite-coverage/`.\n\n'
+sec += f'| measure | after S4 (`{g("TREE")}`) | the command |\n|---|---:|---|\n'
+for a, b, c in rows:
+    sec += f"| {a} | {b} | {c} |\n"
+sec += f'\nAgainst the before row: CPU {PCT_A} % (2,108.1 → {CPU_A} CPU-s), wall 599.4 → {WALL_A} s. The slim\n'
+sec += f'suite\'s prediction for the solo CPU was −10 to −20 %: **{g("MET")}**. The three slowest files of the run:\n{g("B_SLOW")}.\n'
 
 t = open(cover, encoding="utf-8").read()
-if "## The after row" in t: raise SystemExit("the after row is already in %s" % cover)
+if "## The after row" in t:
+    raise SystemExit(f"the after row is already in {cover}; nothing written")
 m = re.search(r"\n## How the map was measured", t)
 t = (t[:m.start()] + sec + t[m.start():]) if m else (t.rstrip() + "\n" + sec)
 open(cover, "w", encoding="utf-8").write(t)
@@ -150,18 +160,22 @@ open(cover, "w", encoding="utf-8").write(t)
 p = open(purity, encoding="utf-8").read()
 pend = "after this run, by the solo method on an empty box"
 for name, before, pred, val in (
-  ("full suite solo CPU",  "2,108.1 CPU-s", "−10 to −20 %", f'{g("B_CPU")} CPU-s'),
-  ("full suite solo wall", "599.4 s",       "–",                 f'{g("B_WALL")} s'),
+    ("full suite solo CPU",  "2,108.1 CPU-s", "−10 to −20 %", f"{CPU_A} CPU-s"),
+    ("full suite solo wall", "599.4 s",       "–",                 f"{WALL_A} s"),
 ):
-  old = f"| {name} | {before} | {pend} | {pred} | {pend} |"
-  if old not in p: raise SystemExit("could not find the %s row to fill in %s" % (name, purity))
-  verdict = f'**{g("MET")}**: {g("PCT")} % against the before row' if "CPU" in name else f'{g("PCT")} % CPU beside it; no prediction on the wall'
-  p = p.replace(old, f"| {name} | {before} | {val} | {pred} | {verdict} |")
+    old = f"| {name} | {before} | {pend} | {pred} | {pend} |"
+    if old not in p:
+        raise SystemExit(f"could not find the {name} row to fill in {purity}; nothing written to it")
+    verdict = (f'**{g("MET")}**: {PCT_A} % against the before row' if "CPU" in name
+               else f"{PCT_A} % CPU beside it; no prediction on the wall")
+    p = p.replace(old, f"| {name} | {before} | {val} | {pred} | {verdict} |")
+
 note = "The after row and the solo CPU and wall rows of the\nPredictions wait for an empty box, after this run ends."
 if note in p:
-  p = p.replace(note, f'The after row and the solo CPU and wall rows of the\nPredictions were taken on {g("TREE")} with the box quiet (`tests/tools/solo-measure.sh`).')
+    p = p.replace(note, 'The after row and the solo CPU and wall rows of the\n'
+                        f'Predictions were taken on `{g("TREE")}` with the box quiet (`tests/tools/solo-measure.sh`).')
 open(purity, "w", encoding="utf-8").write(p)
-print("filled: the after row in %s, and both Predictions cells in %s" % (cover, purity))
+print(f"filled: the after row in {cover}, and both Predictions cells in {purity}")
 PY
 say "files written"
 
