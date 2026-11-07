@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tier: slow
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the fast gate in the driver (T2-02, decisions/2026-11-03-fast-gate): `passes` stands on the fast tier ----
 # The stub project gets two tiers: .harness/suite.sh logs every call's arguments (`bare` for none) to suite-args.log in

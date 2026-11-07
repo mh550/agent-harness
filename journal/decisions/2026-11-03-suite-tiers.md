@@ -135,7 +135,7 @@ the one 2026-11-04 timing where that output has none.
 | `resident-helper-ask` | fast | 14.7 (2026-11-05) | was `91-resident-helper`; no row until the shape: the same run, ≤ 30 s |
 | `weekly-budget` | fast | 2.9 (2026-11-06) | cut out of file 15 by the shape (it reads no run of that file); timed once on 2026-11-06, alone, ≤ 30 s |
 | `gc-tmux` | fast | 0.5 (2026-11-06) | cut out of file 15 by the shape; timed once on 2026-11-06, alone, ≤ 30 s |
-| `memlint-run` | slow | 17.1 (2026-11-06) | `39-memlint-m4`'s two stub runs; slow by Michael's word (Decision 3 of the redesign's dispatch list, 2026-11-05), though under the line alone on 2026-11-06 |
+| `memlint-run` | fast | 17.1 (2026-11-06) | `39-memlint-m4`'s two stub runs; slow by Michael's word (Decision 3 of the redesign's dispatch list, 2026-11-05) while the whole memlint file was over the line; fast since 2026-11-06 by Michael's word (Decision 18, the process session), as the rule has it |
 | `node-memo` | slow | 27.6 (2026-11-04); 28.0, 27.9 (2026-11-06) | moved fast → slow by Michael's word (Decision 3 of the redesign's dispatch list, 2026-11-05: 31.5 s there, 31.0 s in the kept full run of 2026-11-05, `findings-and-research/2026-11-03-resident-helper/suite-after-files.txt`, solo at 4 jobs); under the line in both solo runs of 2026-11-06 |
 | `run-scopes-services-gc` | slow | 202.8 | over 30 s |
 | `eval-run` | slow | 58.9 | over 30 s |
@@ -171,7 +171,7 @@ the one 2026-11-04 timing where that output has none.
 | `needs-questions` | slow | 70.1 | over 30 s |
 | `suite-length` | slow | 49.5 | over 30 s |
 | `red-marker` | slow | 55.8 | over 30 s |
-| `session-gate-driver` | slow | 21.5 (2026-11-05) | was `87-fast-gate-run`; no row until the shape. Declared slow by its session (T2-02); under the line in the same run, and only Michael moves a file slow → fast |
+| `session-gate-driver` | fast | 21.5 (2026-11-05) | was `87-fast-gate-run`; no row until the shape. Declared slow by its session (T2-02); under the line in the same run; fast since 2026-11-06 by Michael's word (Decision 18, the process session) |
 | `origin-after-gc` | slow | 81.2 (2026-11-05) | was `88-origin-after-gc`; no row until the shape: the same run, over 30 s |
 | `origin-outage` | slow | 170.1 (2026-11-05) | was `88-origin-outage`; no row until the shape: the same run, over 30 s |
 | `no-deadline` | slow | 37.7 (2026-11-05) | was `89-no-deadline`; no row until the shape: the same run, over 30 s (50–67 s when its session timed it, `decisions/2026-11-04-no-default-end-time`) |
@@ -199,3 +199,9 @@ and `weekly-budget` and `gc-tmux`, cut out of file 15 (each timed once, alone). 
 `memlint-run` (slow) and 15 unit tests. `84-node-memo` is slow as `node-memo`, and `memlint-run` is slow, by Michael's
 word (Decision 3 of the redesign's dispatch list, 2026-11-05), not by two timings over the line: alone on 2026-11-06
 `node-memo` took 28.0 s and 27.9 s and `memlint-run` 17.1 s. `tests/run.sh`'s per-file line ends `, tier <fast|slow>`.
+
+Updated in place 2026-11-06 (the process session, Decision 18 of the redesign's dispatch list, Michael): `memlint-run`
+(17.1 s alone) and `session-gate-driver` (21.5 s) are fast, as the 30 s rule has them: the reason memlint's stub runs
+were slow (the whole file was over the line) went with the shape's split, and the gate's own path through the driver
+runs in a coding session's gate again. `node-memo` stays slow: at the line (28 s alone, 31 s inside a full run), it
+would change sides with the load. Two header lines and 15 names into the fast fixture.

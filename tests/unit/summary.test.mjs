@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sameAsCli, mainOf } from "./cli-same.mjs";
-import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote } from "../../lib/summary.mjs";
+import { redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
@@ -326,4 +326,67 @@ test("summary.mjs: main's view is the io's: isTTY and columns from io, never the
   const plain = main(["report", s], { env }), tty = main(["report", s], { env, isTTY: true, columns: 80 });
   assert.notEqual(tty.out, plain.out, "a TTY gets the view, a pipe the markdown");
   assert.equal(plain.out, main(["report", "--md", s], { env, isTTY: true, columns: 80 }).out);
+});
+
+test("summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing", () => {
+  const base = "alpha: holds\ndelta: holds\nmid: holds\nzeta: holds\n";
+  // two added, one removed, none beside another: nothing replaced (tests/checks/check-budget.sh's cb1)
+  assert.deepEqual(checksDiff(base, "alpha: holds\nbeta: new\ndelta: holds\ngamma: new\nmid: holds\n"), { added: 2, replaced: 0, removed: 1 });
+  // a name changed in place (−mid: holds, +mid: holds now, adjacent in the sorted file) is replaced, not added and removed (cb2)
+  assert.deepEqual(checksDiff(base, "alpha: holds\nbeta: new\nbeta2: new\ndelta: holds\ngamma: new\ngamma2: new\nmid: holds now\nzeta: holds\n"), { added: 4, replaced: 1, removed: 0 });
+  // a hunk of two removed and one added: one pair, one removed; the other way round: one pair, one added
+  assert.deepEqual(checksDiff("a\nb\nc\nd\n", "a\nbb\nd\n"), { added: 0, replaced: 1, removed: 1 });
+  assert.deepEqual(checksDiff("a\nb\nd\n", "a\nbb\nbc\nd\n"), { added: 1, replaced: 1, removed: 0 });
+  // two hunks never pair across a common line
+  assert.deepEqual(checksDiff("a\nb\nc\nd\n", "a\nc\ncc\nd\n"), { added: 1, replaced: 0, removed: 1 });
+  assert.deepEqual(checksDiff(base, base), { added: 0, replaced: 0, removed: 0 });
+  assert.deepEqual(checksDiff("", base), { added: 4, replaced: 0, removed: 0 });
+  assert.deepEqual(checksDiff(base, ""), { added: 0, replaced: 0, removed: 4 });
+  assert.deepEqual(checksDiff("", ""), { added: 0, replaced: 0, removed: 0 });
+  // blank lines and a repeated line are not names: a name is counted once
+  assert.deepEqual(checksDiff("a\n\nb\nb\n", "a\n\n\nb\nc\nc\n"), { added: 1, replaced: 0, removed: 0 });
+  // the common names in another order (an unsorted fixture): the sets' counts, no pairing
+  assert.deepEqual(checksDiff("a\nb\nc\n", "c\nbb\na\n"), { added: 1, replaced: 0, removed: 1 });
+});
+
+test("summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary", async () => {
+  const two = { added: 2, replaced: 0, removed: 1, source: "fixture", by_milestone: { M1: { added: 2, replaced: 0, removed: 1, budget: null }, M2: { added: 0, replaced: 0, removed: 0, budget: 3 } } };
+  assert.equal(checksLine(two), "+2 ~0 −1 (M1 +2 ~0 −1; M2 +0 ~0 −0, budget 3)");
+  assert.equal(checksLine({ added: 4, replaced: 1, removed: 0, source: "fixture", by_milestone: { M1: { added: 4, replaced: 1, removed: 0, budget: 3 } } }), "+4 ~1 −0 (M1 +4 ~1 −0, budget 3, over)");
+  assert.equal(checksLine({ added: 3, replaced: 0, removed: 0, source: "fixture", by_milestone: { M1: { added: 3, replaced: 0, removed: 0, budget: 3 } } }), "+3 ~0 −0 (M1 +3 ~0 −0, budget 3)", "at the budget is not over");
+  assert.equal(checksLine({ added: 2, source: "counts", from: 3, to: 5 }), "+2 (the suite's count, 3 → 5)");
+  assert.equal(checksLine({ added: -1, source: "counts", from: 5, to: 4 }), "−1 (the suite's count, 5 → 4)");
+  assert.equal(checksLine({ source: "none" }), "not counted");
+  // build: the lanes' files, keyed by the list's milestones; a milestone without one counts nothing and has no row
+  const d = mkdtempSync(join(tmpdir(), "u1-")), w = mkdtempSync(join(tmpdir(), "u1w-"));
+  try {
+    mkdirSync(join(w, ".harness", "runs", "r"), { recursive: true });
+    writeFileSync(join(w, ".harness", "runs", "r", "feature_list.json"), JSON.stringify({ features: [{ id: "A", milestone: "M1", passes: true }, { id: "C", milestone: "M2", passes: false }] }));
+    writeFileSync(join(d, "checks-M1"), '{"added":2,"replaced":0,"removed":1,"budget":null}\n');
+    assert.deepEqual(build(w, "r", d).checks, { added: 2, replaced: 0, removed: 1, source: "fixture", by_milestone: { M1: { added: 2, replaced: 0, removed: 1, budget: null } } });
+    writeFileSync(join(d, "checks-M2"), '{"added":0,"replaced":0,"removed":0,"budget":3}\n');
+    assert.deepEqual(build(w, "r", d).checks, two);
+    // no file: the suite's count, start → end; one of the two unknown: none
+    for (const m of ["M1", "M2"]) rmSync(join(d, `checks-${m}`));
+    writeFileSync(join(d, "tests-start"), "3\n"); writeFileSync(join(d, "tests-end"), "5\n");
+    assert.deepEqual(build(w, "r", d).checks, { added: 2, source: "counts", from: 3, to: 5 });
+    rmSync(join(d, "tests-end"));
+    assert.deepEqual(build(w, "r", d).checks, { source: "none" });
+  } finally { rmSync(d, { recursive: true, force: true }); rmSync(w, { recursive: true, force: true }); }
+  const fx = { run: "r", project: "p", features: { passing: 0, total: 0, verified: 0, merged: 0 }, milestones: [], tests: {}, suite_runs: suiteRuns([]),
+    flakes: { count: 0, names: {} }, cost: { by_role: {} }, time: { by_role_h: {} }, sessions: {}, features_detail: [] };
+  const before = (s, row) => { const l = report(s).split("\n"), i = l.indexOf(row); return i > 0 ? l[i - 1] : undefined; };
+  assert.match(before({ ...fx, checks: two }, "| Checks | +2 ~0 −1 (M1 +2 ~0 −1; M2 +0 ~0 −0, budget 3) |"), /^\| Suite runs \|/);
+  assert.match(before({ ...fx, checks: { source: "none" } }, "| Checks | not counted |"), /^\| Suite runs \|/);
+  assert.equal(report(fx).includes("| Checks |"), false, "a summary from before S3 has no row");
+  // the retro prompt's {{CHECKS}} (lib/driver.sh): the same line from a summary.json; nothing for an older one
+  const d2 = mkdtempSync(join(tmpdir(), "u1-"));
+  try {
+    writeFileSync(join(d2, "s.json"), JSON.stringify({ ...fx, checks: two })); writeFileSync(join(d2, "old.json"), JSON.stringify(fx));
+    assert.deepEqual(await sameAsCli("summary.mjs", ["checks", join(d2, "s.json")]), { rc: 0, out: "+2 ~0 −1 (M1 +2 ~0 −1; M2 +0 ~0 −0, budget 3)\n" });
+    assert.deepEqual(await sameAsCli("summary.mjs", ["checks", join(d2, "old.json")]), { rc: 0, out: "" });
+    // checks-diff <base> <tip>: the lane's call, one JSON line
+    writeFileSync(join(d2, "b.txt"), "a\nb\nc\nd\n"); writeFileSync(join(d2, "t.txt"), "a\nbb\nd\n");
+    assert.deepEqual(await sameAsCli("summary.mjs", ["checks-diff", join(d2, "b.txt"), join(d2, "t.txt")]), { rc: 0, out: '{"added":0,"replaced":1,"removed":1}\n' });
+  } finally { rmSync(d2, { recursive: true, force: true }); }
 });

@@ -63,6 +63,7 @@ harness_config() {
   DEBRIEF_PAGE_CMD=""   # run with the debrief page's path as $1 after each debrief (e.g. copy it where your phone can open it)
   LIVE_LOCK=""   # live-staged: the one-writer lock (default /tmp/harness/<project>/live.lock); share it with the backup job
   CHECK_FAST_CMD=""   # the suite's fast tier, what `passes` stands on (check.sh --fast); empty: the whole suite is the fast tier
+  CHECK_NAMES=tests/fixtures/check-names.txt   # the suite's check names, one per line: a verified milestone's diff of it is its `checks +a ~b −c` note (decisions/2026-11-03-check-budget); absent: the suite's count
   CHECK_CMD="" INIT_CMD="" SMOKE_CMD="" SPEC_FILES="" NOTIFY_CMD="" AGENT_SETTINGS=.claude/settings.json PR_POLICY=""
   NTFY_URL="" NTFY_TOKEN="" DESK_URL=""   # NTFY_URL set: the harness posts to ntfy itself (NOTIFY_CMD is then not called)
   DESK=0 DESK_MODEL=opus   # DESK=1: a Remote Control session briefs you when a run needs you (lib/desk.sh)

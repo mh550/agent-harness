@@ -97,6 +97,19 @@ is its baseline (`tests-start`); the latest tree's (`tests-end`) is refreshed af
 `harness report` and each session's line in `harness-log.md` show it mid-run, and report.md's Tests cell reads
 `<start> → <end> (baseline at run start → end)`.
 
+**Check counts.** A suite that keeps its check names in a file, one per line, C-sorted (`CHECK_NAMES`, default
+`tests/fixtures/check-names.txt`, as this repo's `tests/run.sh` enforces), gets each verified milestone's diff of it
+counted at the verify: `harness-log.md` says `<m>: checks +<added> ~<replaced> −<removed>` (a removed and an added name
+in one run of changed lines of the sorted file count as one replaced, the way `git diff` shows a name changed in place), the
+run's `summary.json` has `checks` summed over its milestones, `harness report` a `Checks` row after `Suite runs`
+(`+2 ~0 −1 (M1 +2 ~0 −1; M2 +0 ~0 −0, budget 3)`) and the retro prompt its `{{CHECKS}}`. A spec may give a milestone a
+**check budget**, the number of names it may add: the initializer copies it into the feature list's top-level
+`check_budget` map (`{"M1": 3}`), the note reads `<m>: checks +4 ~1 −0 against a budget of 3 (over budget: <why>)`
+when it is exceeded, the reason from the `checks` field of the milestone's last coding entry (`none given` without
+one), and nothing stops: a count is measured and recorded, never a gate. A project without the file (or with
+`CHECK_NAMES=""`), and a run that verified no milestone, get `+<n>` from the test counts instead (`+2 (the suite's
+count, 3 → 5)`; decisions/2026-11-03-check-budget).
+
 **Failed files.** A red suite may print a line `HARNESS_FAILED=<name> <name>…` (a whole line from column 0, the last one
 wins): the names, taken as arguments by the suite, of the files that failed. Its promise: every failure of the run is
 inside a named file. A suite omits the line when one isn't (this repo's `tests/run.sh` leaves it out on a red

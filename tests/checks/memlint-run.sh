@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tier: slow
+# tier: fast
 source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- memlint in a run (M4-02): the driver notes each finding before the first session; harness memlint ----
 # The module's cases are tests/unit/memlint.test.mjs, the lint of this checkout tests/checks/memlint-self.sh

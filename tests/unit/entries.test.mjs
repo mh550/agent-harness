@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync as rd, rmSync, writeFileSync as wr } from "no
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { sameAsCli, cli, mainOf } from "./cli-same.mjs";
-import { validate, minimal, normalize, journalEntry, renderProgress, renderArchive, renderEntry, legacyOf, headerOf, pack, reviewFindings, sessionFiles, fillQuestions } from "../../lib/entries.mjs";
+import { validate, minimal, normalize, journalEntry, renderProgress, renderArchive, renderEntry, legacyOf, headerOf, pack, reviewFindings, sessionFiles, fillQuestions, checksReason } from "../../lib/entries.mjs";
 import { evidence } from "../../lib/features.mjs";
 
 const B = s => Buffer.byteLength(s);
@@ -381,3 +381,32 @@ test("entries.mjs: main's ingest and render leave the files the CLI leaves, with
   const prog = d => rd(join(d, "progress.md"), "utf8").replaceAll(basename(d), "D");
   assert.equal(prog(m), prog(c));
 })));
+
+test("entries.mjs: a coding entry's checks field (the over-budget reason) is a string, validated and kept by normalize; checksReason gives the last coding entry's among the milestone's features, none without; checks-reason prints it", async () => {
+  const c = { feature: "A", kind: "coding", outcome: "passes", summary: "s" };
+  assert.deepEqual(validate({ ...c, checks: "one row per table" }), []);
+  assert.deepEqual(validate({ ...c, checks: 3 }), ["checks: not a string"]);
+  assert.deepEqual(validate({ ...c, checks: "" }), ["checks: empty"]);
+  assert.equal(normalize({ ...c, checks: "one row per table" }).checks, "one row per table");
+  assert.equal("checks" in normalize(c), false, "left out when the entry has none");
+  // valid entries (readEntries drops the rest), the verify's and another milestone's never the reason
+  const rows = [
+    { ...c, checks: "first" }, { ...c, checks: "A's last" }, { ...c },
+    { ...c, feature: "M1", kind: "verify", checks: "a verifier's" }, { ...c, feature: "B", checks: "B's" }, { ...c, feature: "Z", checks: "another milestone's" },
+  ];
+  assert.equal(checksReason(rows, ["A", "B"]), "B's", "the newest coding entry with one, of the milestone's features");
+  assert.equal(checksReason(rows, ["A"]), "A's last", "A's third entry has none: its second counts");
+  assert.equal(checksReason(rows, ["C"]), "", "none");
+  assert.equal(checksReason([], ["A"]), "");
+  // the note quotes it on one line: whitespace runs to one space, 200 characters at most (the S3 review's finding)
+  assert.equal(checksReason([{ ...c, checks: " one row\n\n  per table\t of the view \n" }], ["A"]), "one row per table of the view");
+  const long = checksReason([{ ...c, checks: "x".repeat(260) }], ["A"]);
+  assert.equal([...long].length, 200); assert.equal(long.endsWith("…"), true);
+  const d = mkdtempSync(join(tmpdir(), "u1-"));
+  try {
+    wr(join(d, "entries.jsonl"), rows.map(r => JSON.stringify(r)).join("\n") + "\nnot json\n");
+    assert.deepEqual(await sameAsCli("entries.mjs", ["checks-reason", d, "A", "B"]), { rc: 0, out: "B's\n" });
+    assert.deepEqual(await sameAsCli("entries.mjs", ["checks-reason", d, "C"]), { rc: 0, out: "" });
+    assert.deepEqual(await sameAsCli("entries.mjs", ["checks-reason", join(d, "none"), "A"]), { rc: 0, out: "" }, "no journal yet");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
