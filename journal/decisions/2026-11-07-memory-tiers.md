@@ -131,3 +131,18 @@ invariants by M2-05); spec `docs/specs/2026-11-07-memory-curator.md` §M2; plan 
 - **Checks:** M2 adds 47 check names (23 `curator.mjs:` unit tests, 8 `curator:`, 15 `memory PR:`, 1 `summary.mjs:`;
   M2-05's review added three and renamed one of M2-03's in place), replaces and removes none against main: within its
   budget of 60.
+
+Updated in place 2026-11-07: Michael — init's and M2-01's question (tier 2 body-only or a commit): tier 2 becomes its
+own branch and PR (`harness-memory/<run>/rules` or similar), a diff he merges, counted separately by `harness memory`
+and never reached by `MEMORY_POLICY=auto`; tier 3 stays body text (a diff one could merge is the wrong affordance for
+`## Live system`); approval is to be one click from the n8n/ntfy review flow. Body-only stands until that feature lands
+(it reworks `memory_pr` and the counter). Reason: body text cannot graduate, there is no event to count.
+Updated in place 2026-11-07: Michael — M2-01's cap question: the default stands (an over-cap file may improve, not
+grow). Todo: prune hit_list, n8n-home and portfolio_site by hand under the cap before the first curator run, one session
+per project. Separately, `capCheck`'s refusal of the whole tier-1 commit when one op breaches (`apply`, every applied op
+to Dropped) is to become per-op: apply what fits, drop the breaching ops with the reason.
+Updated in place 2026-11-07: Michael — M2-02's question: the default stands; a `proposed_changes` string never gates a
+tier-1 Gotchas commit. A classifier (a jev-style decision model) may revisit the fact-or-rule line later, on evidence,
+never as the gate itself.
+Updated in place 2026-11-07: Michael — M2-05's question: build the deny list. The driver passes the curator session
+`Bash(git push:*)` and `Bash(gh:*)` denies so a push cannot happen; `memory_foreign` stays as the second layer.

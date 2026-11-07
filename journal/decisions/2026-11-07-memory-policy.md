@@ -50,3 +50,13 @@ out of `39-memlint-m4`); journal/decisions/2026-11-03-trim.md (the rule a remove
 | fast-tier check files | 55 | **58**: the spec's "now 56" was older (M3-01); `memlint-self` retired took one away | `grep -l '^# tier: fast' tests/checks/*.sh \| wc -l` |
 | memory PRs merged unchanged, of those opened | measured | *measured after the run* (`harness memory`) | – |
 | a whole-file rewrite of `CLAUDE.md` by a session | 0: no path exists | *measured after the run* (the guard is `restrict`'s revert and `apply`'s per-op writes; whether a run tries is the runs' record) | – |
+
+Updated in place 2026-11-07: Michael — M3-02's question: flipped. Under `MEMORY_POLICY=auto` a memory PR whose body
+refresh (`gh pr edit`) failed is not merged: left open with one note, reused by the next segment. The body (ops, reasons,
+provenance) is the post-merge audit trail, so a merge without it is the one case the driver stops.
+Updated in place 2026-11-07: Michael — M3-04's question: the default stands; the decisions-store lint stays the
+segment-start note and `harness memlint`, and `journal/` stays in `CHECK_KEY_IGNORE`.
+Updated in place 2026-11-07: Michael — `pr` stays the default; `auto` is turned on per project when `harness memory`'s
+merged-unchanged count earns it, never box-wide. The review in the meantime is to be one click: the memory PR's ntfy
+notification carries the tally and merge / decline actions, and the n8n run-review flow shows the PR's ops (applied,
+proposed, dropped with reasons) beside the record PR.
