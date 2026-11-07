@@ -231,7 +231,8 @@ retro() {   # a short read-only session that turns this run's evidence into prop
   backlog=$(node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --max-bytes 6000 2> "$SCRATCH/backlog.err") \
     || nolist="backlog: the retro prompt has no backlog: $(head -1 "$SCRATCH/backlog.err" | cut -c1-200 | sed 's/^backlog: //')"
   sruns=$(SUM suite-runs "$REC/summary.json" 2> /dev/null)   # {{SUITE_RUNS}}: the report's Suite runs value
-  HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$REC/summary.json HARNESS_SUITE_RUNS=${sruns:-not counted} HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
+  chk=$(SUM checks "$REC/summary.json" 2> /dev/null)   # {{CHECKS}}: the report's Checks value (decisions/2026-11-03-check-budget)
+  HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$REC/summary.json HARNESS_SUITE_RUNS=${sruns:-not counted} HARNESS_CHECKS=${chk:-not counted} HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
   # its one output file besides retro.md: restrict deletes it, so it goes to scratch first, and only when this retro

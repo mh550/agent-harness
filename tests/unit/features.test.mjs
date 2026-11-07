@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { sameAsCli } from "./cli-same.mjs";
-import { deps, lint, lintNote, RULES, fixFeature, kindOf, repairList, schedule } from "../../lib/features.mjs";
+import { deps, lint, lintNote, RULES, fixFeature, kindOf, repairList, schedule, budgetOf } from "../../lib/features.mjs";
 
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const got = (...steps) => lint([{ id: "A", milestone: "M1", steps }]).map(f => `${f.step}:${f.rule}`).join();
@@ -255,3 +255,21 @@ function execFileRc(argv) {
   try { execFileSync(process.execPath, [fileURLToPath(new URL("../../lib/features.mjs", import.meta.url)), ...argv], { stdio: ["ignore", "pipe", "ignore"] }); return 0; }
   catch (e) { return e.status; }
 }
+
+test("features.mjs: budgetOf reads a milestone's check_budget from the list's top-level map (an integer ≥ 0, else none); budget prints it, exit 1 for none; repair keeps the map", async () => {
+  const list = { check_budget: { M1: 3, M2: 0, M3: "4", M4: -1, M5: 2.5 }, features: [{ id: "A", milestone: "M1", passes: false }] };
+  assert.equal(budgetOf(list, "M1"), 3);
+  assert.equal(budgetOf(list, "M2"), 0);
+  for (const m of ["M3", "M4", "M5", "M9"]) assert.equal(budgetOf(list, m), null, m);
+  assert.equal(budgetOf({ features: [] }, "M1"), null, "no map");
+  assert.equal(budgetOf({ check_budget: 3, features: [] }, "M1"), null, "not a map");
+  const d = mkdtempSync(join(tmpdir(), "u1-"));
+  try {
+    const p = join(d, "list.json"); writeFileSync(p, JSON.stringify(list));
+    assert.deepEqual(await sameAsCli("features.mjs", ["budget", p, "M1"]), { rc: 0, out: "3\n" });
+    assert.deepEqual(await sameAsCli("features.mjs", ["budget", p, "M9"]), { rc: 1, out: "" });
+    // the initializer's map survives a session's list edits: repairList rebuilds from before, the map with it
+    const after = { features: [{ id: "A", milestone: "M1", passes: true }] };
+    assert.deepEqual(repairList(list, after, () => true).list.check_budget, list.check_budget);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});

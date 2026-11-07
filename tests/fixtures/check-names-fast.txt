@@ -162,6 +162,7 @@ entries.mjs fill: a question without Files: gets the session's files appended (e
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
 entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
 entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
+entries.mjs: a coding entry's checks field (the over-budget reason) is a string, validated and kept by normalize; checksReason gives the last coding entry's among the milestone's features, none without; checks-reason prints it
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: a milestone pack lists failed verify rows before dead ends
 entries.mjs: a summary can't open a code fence or an HTML block, and a 2000-character id keeps the pack within its cap
@@ -200,6 +201,7 @@ fast gate: the subset form is unchanged with a fast command set: its args, row s
 fast gate: with a part- sidecar and a mapped-only diff, --fast runs the fast tier, not the partial subset; row fast
 fast gate: with no fast command, --fast runs the suite bare, writes green-<key> (count, wall) and prints the full green line
 fast gate: with no fast command, the next --fast call is the full form's cached line; rows full then cached
+features.mjs: budgetOf reads a milestone's check_budget from the list's top-level map (an integer ≥ 0, else none); budget prints it, exit 1 for none; repair keeps the map
 features.mjs: main gives the CLI's bytes for summary, next, poll, lanes, model and the read-only questions
 features.mjs: main throws where the CLI exits 70 (a list that is not JSON)
 features.mjs: main's exit codes are the CLI's: passes of a feature not passing is 1, of one passing 0, milestone-done, an unknown subcommand 2
@@ -578,6 +580,8 @@ suite tools: wait_for gives up after its limit with its still-failing line, exit
 suite tools: wait_for refuses a limit that isn't whole seconds with one line, exit 2
 suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
 summary.mjs: cause and rework read the log by exact id (E1 review)
+summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing
+summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary
 summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes
 summary.mjs: flakers names a check in the flakes of two or more of the five newest summaries (one without ended_at oldest) as name ×runs, (none) for none
 summary.mjs: flakes counts a fast flake with no names as the fast tier, a full one as whole suite

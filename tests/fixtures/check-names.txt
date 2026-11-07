@@ -226,6 +226,14 @@ busy continue: once that run has ended, the plain continue is back
 busy continue: the card's do and run lines name the hold
 by hand right after: nothing new, no session
 by hand while another debrief runs: it says it is waiting
+check budget: a milestone with check_budget 3 whose sessions added nothing is noted M2: checks +0 ~0 −0 against a budget of 3, no parenthesis
+check budget: a project without the fixture: checks is +<n> from the suite's count (3 → 5), source counts, no checks note, the row says where it came from
+check budget: a verified milestone whose session added two names and removed one is noted M1: checks +2 ~0 −1 (no budget: no budget words)
+check budget: four names added against a budget of 3 is noted over budget with the reason from the last coding entry's checks field; a name changed in place counts as replaced
+check budget: harness report --md has the Checks row after Suite runs, the counts then each milestone's, a budget named; the TTY card carries the same value
+check budget: summary.json has checks {added: 2, replaced: 0, removed: 1} from the fixture, by milestone, M2 with its budget 3
+check budget: the fixture's tip is main's plus the run's edits: cb2's main held cb1's merged names (beta, gamma, no zeta) before A's session
+check budget: the rendered retro prompt carries the run's checks line
 check partial: a CLAUDE.md-only diff runs exactly memlint: the partial line, exit 0, check-partial.out, check.out untouched
 check partial: a green full run writes green-<full> (count, wall) and part-<reduced>: the full key, then the blob lines
 check partial: a lib/ diff runs the full suite (no arguments); a diff of both mapped paths runs memlint readme, map order
@@ -357,6 +365,7 @@ entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
 entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
 entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
+entries.mjs: a coding entry's checks field (the over-budget reason) is a string, validated and kept by normalize; checksReason gives the last coding entry's among the milestone's features, none without; checks-reason prints it
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: a milestone pack lists failed verify rows before dead ends
 entries.mjs: a summary can't open a code fence or an HTML block, and a 2000-character id keeps the pack within its cap
@@ -425,6 +434,7 @@ fast gate: with no fast command, the next --fast call is the full form's cached 
 features.mjs models: every alias of MODELS, <alias>\t<id>; node --check lib/features.mjs
 features.mjs poll: its labelled lines are what summary, parked, blocked, next and milestone-done answer, for no lane and four lanes (pollLines the same)
 features.mjs writes atomically: 200 bumps beside a parsing reader, which never throws; no temp file left
+features.mjs: budgetOf reads a milestone's check_budget from the list's top-level map (an integer ≥ 0, else none); budget prints it, exit 1 for none; repair keeps the map
 features.mjs: main gives the CLI's bytes for summary, next, poll, lanes, model and the read-only questions
 features.mjs: main throws where the CLI exits 70 (a list that is not JSON)
 features.mjs: main's exit codes are the CLI's: passes of a feature not passing is 1, of one passing 0, milestone-done, an unknown subcommand 2
@@ -1252,6 +1262,8 @@ suite tools: wait_for returns as soon as its command succeeds (a background touc
 summary end reason is how the run ended
 summary, report and retro written
 summary.mjs: cause and rework read the log by exact id (E1 review)
+summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing
+summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary
 summary.mjs: conflicts counts resolutions, distinct escalated milestones and resolve rows; resolutions names the files; the Conflicts row after Flakes
 summary.mjs: flakers names a check in the flakes of two or more of the five newest summaries (one without ended_at oldest) as name ×runs, (none) for none
 summary.mjs: flakes counts a fast flake with no names as the fast tier, a full one as whole suite

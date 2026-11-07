@@ -85,6 +85,33 @@ fix_open_() {
   rec_commit_ "HARNESS: verify $m: fix round $r"
 }
 
+# <m>, at its verified verdict: the check names m's tree adds, replaces and removes against its base, from the fixture
+# CHECK_NAMES (decisions/2026-11-03-check-budget). The base: main as this lane merged it (the merge-base), or the tag of
+# a milestone the lane opened from when that is later (a dependency not yet on main; with two, the second one's own names
+# count here too). Without the fixture on either side nothing is written; else checks-<m> (summary.json's by_milestone)
+# and one note `<m>: checks +a ~b −c`, with the list's check_budget for m when it has one and, over it, the reason the
+# milestone's last coding entry gave in `checks` (`none given` without). A note, never a gate.
+checks_note() {
+  local m=$1 base t j b="" why="" words
+  base=$(git merge-base HEAD "origin/$MAIN_BRANCH" 2> /dev/null) || return 0
+  for t in $(F deps "$LIST" "$m"); do t=run/$RUN_ID/$t
+    git merge-base --is-ancestor "$t" HEAD 2> /dev/null && git merge-base --is-ancestor "$base" "$t" 2> /dev/null && base=$t
+  done
+  git show "$base:$CHECK_NAMES" > "$SCRATCH/checks-base.txt" 2> /dev/null || : > "$SCRATCH/checks-base.txt"
+  git show "HEAD:$CHECK_NAMES" > "$SCRATCH/checks-tip.txt" 2> /dev/null || : > "$SCRATCH/checks-tip.txt"
+  [[ -s $SCRATCH/checks-base.txt || -s $SCRATCH/checks-tip.txt ]] || return 0
+  j=$(SUM checks-diff "$SCRATCH/checks-base.txt" "$SCRATCH/checks-tip.txt" 2>> "$STATE/run.log") || return 0
+  words="checks $(jq -r '"+\(.added) ~\(.replaced) −\(.removed)"' <<< "$j")"
+  if b=$(F budget "$LIST" "$m"); then
+    words+=" against a budget of $b"
+    if (( $(jq -r .added <<< "$j") > b )); then
+      why=$(ask entries.mjs checks-reason "$REC" $(F ids "$LIST" "$m") 2>> "$STATE/run.log"); words+=" (over budget: ${why:-none given})"
+    fi
+  fi
+  jq -c --argjson b "${b:-null}" '. + {budget: $b}' <<< "$j" > "$STATE/checks-$m"
+  note "$m: $words"
+}
+
 # Independently re-check milestone m, in its lane. 0 = verified (tagged) · 1 = not verified · 2 = deferred (a usage
 # limit: retry). `once` (at the deadline): one session, no escalation, and this round is the last
 # (decisions/2026-10-26-verify-before-deadline). `rebase`: the re-base's verify round (rebase below) on the merged
@@ -172,6 +199,7 @@ verify() {
   case $result in
     hold)
       touch "$STATE/verified-$m"
+      checks_note "$m"
       if [[ $mode == rebase ]]; then   # the tag exists: moved to the merged commit, the one forced push (the old stays reachable from its PR)
         git tag -f -a "run/$RUN_ID/$m" -m "harness run $RUN_ID: $m verified (v3); re-based on $MAIN_BRANCH, verify round $(cat "$STATE/rebase-rounds-$m")" > /dev/null \
           && tag_push "$m" --force

@@ -38,6 +38,10 @@
 # that feature's first coding session's entry asks STUB_ASK's question again, same words. STUB_PROJECT_FACT=<id>:
 # its first session's entry has the discovery STUB_GOTCHA writes, affecting "project" (M3-03). STUB_VERIFY_FAIL_ROW=1: A's
 # coding entries record a dead end and verify M1 round 1's entry has a `holds: false` row for A step 1 (M3-04).
+# STUB_CHECK_NAMES=<id>:<+name|-name>[,…]: that feature's first coding session adds (+) and removes (-) those check names in
+# tests/fixtures/check-names.txt, re-sorted (C order), committed with its work; STUB_CHECKS_REASON=<id>:<text>: every entry
+# of that feature carries `checks: <text>` (why its milestone went over its check budget); STUB_CHECK_BUDGET=<m>:<n>[,…]:
+# the initializer's list has `check_budget: {<m>: <n>}` at the top (tests/checks/check-budget.sh).
 # STUB_TESTS_N=<id>:<n>[,<id>:<n>…]: that feature's first coding session commits tests.n <n> (a suite echoing it counts <n>). STUB_SNAPSHOT=<id>:
 # its first coding session saves `harness status`, `harness report` and the state's summary.json, tests-start and
 # tests-end in $STUB_DIR/snap-<run>/ (M5-02).
@@ -169,15 +173,16 @@ case $first in
     after=""; [[ ${STUB_INDEPENDENT_M2:-} ]] && after=', "after": []'
     z=""; [[ ${STUB_DEFAULT_FEATURE:-} ]] && z='{ "id": "Z", "kind": "build", "description": "z, in no milestone", "steps": ["v"], "passes": false },'   # the default lane
     taken=""; [[ ${STUB_FIX_ID_TAKEN:-} ]] && taken='{ "id": "M1-fix1", "milestone": "M1", "kind": "build", "description": "a build feature with a fix round id", "steps": ["v"], "passes": false },'
+    budget=""; [[ ${STUB_CHECK_BUDGET:-} ]] && budget="\"check_budget\": $(jq -nc --arg s "$STUB_CHECK_BUDGET" '[$s | split(",")[] | split(":")] | map({(.[0]): (.[1] | tonumber)}) | add'),"   # the spec's per-milestone budget, copied
     if [[ ${STUB_REVIEW_LIST:-} ]]; then cat > "$L" <<JSON
-{ "run": "test", "features": [
+{ "run": "test", $budget "features": [
   { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
   { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false },
   { "id": "D", "milestone": "M1", "kind": "build", "description": "d", "steps": ["w"], "passes": false },
   { "id": "R", "milestone": "M1", "kind": "review", "model": "sonnet", "description": "review M1", "steps": ["r"], "passes": false } ] }
 JSON
     else cat > "$L" <<JSON
-{ "run": "test", "features": [ $z
+{ "run": "test", $budget "features": [ $z
   { "id": "A", "milestone": "M1", "kind": "build", "model": "sonnet", "description": "a", "steps": ["x", "y"], "passes": false },
   { "id": "B", "milestone": "M1", "kind": "build", "description": "b", "steps": ["y"], "passes": false }, $taken
   { "id": "C", "milestone": "M2", "kind": "build", "model": "opus", "description": "c", "steps": ["z"]$after, "passes": false } ] }
@@ -316,6 +321,14 @@ JSON
     if [[ ${STUB_SORTED:-} && $n == 1 && $id == [AC] ]]; then printf '%s\n' "b $id check" >> "$STUB_SORTED"; LC_ALL=C sort -o "$STUB_SORTED" "$STUB_SORTED"; fi
     [[ ${STUB_BIG_DIFF:-} && $id == A && $n == 1 ]] && seq 500 > big-A.txt   # a milestone diff over REVIEW_OPUS_LINES (M6)
     tns=${STUB_TESTS_N:-}; for tn in ${tns//,/ }; do if [[ ${tn%%:*} == "$id" && $n == 1 ]]; then echo "${tn#*:}" > tests.n; fi; done   # the suite's count moves (M5-02)
+    cn=${STUB_CHECK_NAMES:-}   # the check-name fixture gains and loses names (check-budget)
+    if [[ $cn && ${cn%%:*} == "$id" && $n == 1 ]]; then cnf=tests/fixtures/check-names.txt; IFS=, read -ra cnops <<< "${cn#*:}"
+      for cnop in "${cnops[@]}"; do case $cnop in
+        +*) printf '%s\n' "${cnop#+}" >> "$cnf" ;;
+        -*) { grep -vxF -- "${cnop#-}" "$cnf" || :; } > "$cnf.new"; mv "$cnf.new" "$cnf" ;; esac; done
+      LC_ALL=C sort -o "$cnf" "$cnf"
+    fi
+    creason=""; [[ ${STUB_CHECKS_REASON:-} && ${STUB_CHECKS_REASON%%:*} == "$id" ]] && creason=${STUB_CHECKS_REASON#*:}
     if [[ ${STUB_SNAPSHOT:-} == "$id" && $n == 1 ]]; then   # what Michael sees between sessions, before finish (M5-02)
       st=$(compgen -G "$HARNESS_STATE/*/$HARNESS_RUN_ID") && mkdir -p "$STUB_DIR/snap-$HARNESS_RUN_ID" && (set +e; cd "$STUB_DIR/snap-$HARNESS_RUN_ID"
         HARNESS_GLYPHS=unicode "$HERE/../bin/harness" status "$HARNESS_RUN_ID" > status.txt; "$HERE/../bin/harness" report "$HARNESS_RUN_ID" > report.md
@@ -329,10 +342,11 @@ JSON
     [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
     # STUB_ASK_TOUCH=<path>: the session that asks (STUB_ASK) changes it too, outside its entry's files (U2-08's fill)
     [[ ${STUB_ASK_TOUCH:-} && ${STUB_ASK:-} == "$id" && $n == 1 ]] && mkdir -p "$(dirname "$STUB_ASK_TOUCH")" && echo "$id" > "$STUB_ASK_TOUCH"
-    entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg two "${STUB_ASK_TWO:-}" --arg again "${STUB_ASK_AGAIN:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --arg rf "${STUB_REVIEW_FINDINGS:-}" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
+    entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg two "${STUB_ASK_TWO:-}" --arg again "${STUB_ASK_AGAIN:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --arg rf "${STUB_REVIEW_FINDINGS:-}" --arg checks "$creason" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
       outcome: "passes", summary: (if $id == "R" and $rf != "" then "R: stub review (\($n)): \($rf | split(",")[0]) Critical, \($rf | split(",")[1]) Important, 0 Minor" else "\($id): stub work (\($n))" end), files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
       + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end
       + if $failrow == "1" and $id == "A" then {dead_ends: [{tried: "A by the first approach (\($n))", why: "verify M1 may find step 1 failing"}]} else {} end
+      + if $checks != "" then {checks: $checks} else {} end
       + ({questions: ((if $ask == $id and $n == "1" then ["Should \($id) default to off?"] else [] end)
           + (if $two == $id and $n == "1" then ["Should \($id) keep the old cache? (default: kept) Files: /srv/q/lib/a.sh:12", "Should \($id) log at debug? (default: info) Files: /srv/q/lib/b.sh"] else [] end)
           + (if $again == $id and $n == "1" and $ask != "" then ["Should \($ask) default to off?"] else [] end))} | if .questions == [] then {} else . end)
