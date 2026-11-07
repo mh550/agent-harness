@@ -90,9 +90,11 @@ Rules:
   header of the run's `progress.md` (at most 2000 characters: what this file is, newest entry first,
   how to read the feature list and steer via `INBOX.md`); the harness renders progress.md from the
   journal for Michael's phone, so don't write it yourself. What a worker must know about the code
-  goes as the Where things go rules say (below, or in `CLAUDE.md`): a durable gotcha (still true
-  after this run) → one line under `## Gotchas` in `CLAUDE.md`; a run-only fact → `discoveries`
-  affecting `"run"`; where things live → nowhere, unless the tree doesn't show it. Questions for Michael go in `questions`
+  goes in this entry, never in `CLAUDE.md` or `.harness/project.md`, whatever their own Where things
+  go says: a durable gotcha (still true after this run) → `discoveries` with `affects: ["project"]`
+  (at most 160 characters, ending `(<run> <date>)`); a convention or workflow line (how to work
+  here) → `proposed_changes`; a run-only fact → `discoveries` affecting `"run"`; where things live
+  → nowhere, unless the tree doesn't show it. Questions for Michael go in `questions`
   (decisions that are his get the simplest reversible default), each with a line
   `Files: <absolute path>[:<line>], …` naming what he should open first (the spec, a plan, the
   feature list; the branch when it isn't this run's); one without it gets the files your session

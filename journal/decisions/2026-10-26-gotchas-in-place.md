@@ -27,3 +27,5 @@
   blocking size guard (a 16th line or a long one is noted by review, not worth stopping a night's run); an LLM tidy of
   the section (a rewrite is exactly what the rule forbids, and it isn't deterministic); a line-position diff (a moved
   line would read as an edit and a deleted line shift every one after it).
+- Updated in place 2026-11-07: a coding session no longer edits `## Gotchas`; restrict's memory spec reverts it and
+  gotchas() and its note are gone (decisions/2026-11-07-memory-one-writer).

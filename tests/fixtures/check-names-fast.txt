@@ -224,12 +224,13 @@ deploy.mjs: vercel and netlify guards merge, keep keys and detect
 deploy: vercel-guard prints by-hand for a vercel.json with a true harness/ key (E1 review)
 driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
 driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
-driver partial: a session that edits only CLAUDE.md gets a partial init (memlint alone after the full run); tests-end is the full count
+driver partial: a session that edits only a mapped file gets a partial init (its check alone after the full run); tests-end is the full count
 driver partial: verify's run_init fresh removes the verified tree's part-; its suite runs in full (no arguments), after B's partial
 entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
+entries.mjs pack: Promote to Gotchas lists project facts newest first within cap/8, whatever CLAUDE.md's Gotchas hold
+entries.mjs pack: a fact restated by key is listed once, at its first unresolved entry; another key is listed too
+entries.mjs pack: a later entry's resolved dismisses a fact in any case, markup or spacing, or a question as context.md shows it
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
-entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
-entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
 entries.mjs: a coding entry's checks field (the over-budget reason) is a string, validated and kept by normalize; checksReason gives the last coding entry's among the milestone's features, none without; checks-reason prints it
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: a milestone pack lists failed verify rows before dead ends
@@ -515,6 +516,12 @@ memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonig
 memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
 memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
 memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
+memory: a coding session's .harness/project.md edit is reverted the same way
+memory: a coding session's CLAUDE.md edit is reverted with one note in the coding prompt's words, and the run ends done
+memory: a session that leaves CLAUDE.md and .harness/project.md alone gets no revert note
+memory: the initializer's Gotchas write stays reverted with its outside-the-record note
+memory: the same session's lib, tests and journal/decisions edits stay on the branch and merge
+memory_guard: after a session's own merge of main, main's CLAUDE.md lines stay; only the session's own edit goes
 merge-sorted: a base line one side removed stays removed
 merge-sorted: a line both sides added is one line
 merge-sorted: a side not in LC_ALL=C order falls back to git's text merge: clean is 0, a conflict exits 1 with markers in A
@@ -689,6 +696,7 @@ render.mjs: a line opening {{?X}} stays (the marker cut) only when HARNESS_X is 
 render.mjs: assemble puts the sections at the {{SECTIONS}} line, one blank line apart
 render.mjs: main gives the CLI's bytes, HARNESS_ variables from io.env, a titled and a --raw section
 report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
+restrict memory: CLAUDE.md and .harness/project.md go back, added, edited or deleted; docs/CLAUDE.md, lib/ and .harness/config.sh stay
 resume reloads config merged from main
 retro edits reverted
 review gate: reviewFindings reads <n> Critical and <n> Important, null without either

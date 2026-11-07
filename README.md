@@ -82,7 +82,7 @@ then lands every proposed milestone, dependencies first, re-basing in a slot eac
 
 | File | What | Required |
 |---|---|---|
-| `CLAUDE.md` | durable rules: code rules, how to verify, off-limits; a `## Where things go` block (what goes in which store: your entry, a decision file, a plan, `CLAUDE.md`) and `## Gotchas` (15 lines, edited in place, facts a fresh session would rediscover: a coding session adds or edits one line as it finishes, and `harness-log.md` notes `<feature>: gotchas +<a> ~<e> -<d>`); the harness appends its own routing block to the prompts only when `CLAUDE.md` lacks the `## Where things go` heading; `## Live system` for live projects. Claude Code loads it in every session; the harness prompt names it, it doesn't paste it | yes (template: `harness init`, or `harness init --draft` to have Claude draft it) |
+| `CLAUDE.md` | durable rules: code rules, how to verify, off-limits; a `## Where things go` block (what goes in which store: your entry, a decision file, a plan, `CLAUDE.md`) and `## Gotchas` (15 lines, edited in place, facts a fresh session would rediscover; no session writes it: a coding session puts a fact in its entry's `discoveries` with `affects: ["project"]`, and the harness reverts its edit to `CLAUDE.md`); the harness appends its own routing block to the prompts only when `CLAUDE.md` lacks the `## Where things go` heading; `## Live system` for live projects. Claude Code loads it in every session; the harness prompt names it, it doesn't paste it | yes (template: `harness init`, or `harness init --draft` to have Claude draft it) |
 | `.harness/config.sh` | `POLICY=build-only` or `POLICY=live-staged`, plus real overrides only; `DECISIONS=<path>` names the decisions store (a directory of one file each, or one file) when it isn't `docs/decisions.md` | recommended |
 | `.mcp.json` | the MCP servers runs may use. Sessions run with `--strict-mcp-config`, so a committed `.mcp.json` (passed as `--mcp-config <worktree>/.mcp.json`) is what run worktrees load; without one they get none, whatever your user config holds | no |
 | `.harness/check.sh` · `init.sh` · `smoke.mjs` | only if the conventions don't fit: a sandboxed suite, a dev server, a browser smoke test | no |
@@ -119,7 +119,10 @@ conformance check or a FAIL in a file that exited 0), and `CHECK_RERUN=auto` the
 `<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines),
 `derivable-count` (a stored `<n> tests`), `run-scope` (a line tied to one run: `this run`, `as of <date>`) and `decisions` (no
 store, no current-rule-set header, a superseded entry without an `Updated in place` line). Every run segment starts
-with the same lint as `memlint: …` notes in `harness-log.md`; they never stop the run. Run `harness memlint
+with the same lint as `memlint: …` notes in `harness-log.md`; they never stop the run. A coding session's edit to
+`CLAUDE.md` or `.harness/project.md` is reverted and noted (`<feature>: reverted its CLAUDE.md edit (project memory is
+the curator's; say it in the entry)`): a fact goes in the entry's `discoveries` with `affects: ["project"]`, a
+workflow line in `proposed_changes` (decisions/2026-11-07-memory-one-writer). Run `harness memlint
 <project>` for each project to confirm chunk 3 Part 2's tidy held: on 2026-10-26 the projects with a `CLAUDE.md`
 give two `size` findings (hit_list's, 181 lines; portfolio_site's, 127) and nothing else, agent-harness once the memory
 run's tidy of its own `CLAUDE.md` and `DECISIONS=` is on main; a directory without a decisions store gives `decisions:

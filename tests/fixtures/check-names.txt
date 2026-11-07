@@ -54,6 +54,7 @@ a TERM during finish's teardown runs no second teardown: the trap waits for it, 
 a TERM to the driver mid-session stops the session's scope, runs the teardown, stops the svc scope and notes it
 a body over the cap is trimmed
 a brief is pasted as written: its {{X}} isn't filled (E3 review F7)
+a coding entry's project fact and proposed change reach entries.jsonl and progress.md; CLAUDE.md stays main's
 a continued run whose suite is cached green keeps its test count (the green marker holds it, not scratch)
 a cwd that is gone: declined and spawned (the spawn's exit code), not a restart, no line from the helper
 a dead desk is replaced
@@ -106,7 +107,7 @@ a park notification: title, question, answer command, click and Edit INBOX actio
 a park opens one parked record; card.question.line is the first line the session added, its URL that line
 a park whose INBOX question has Files: <path>:48: the record's where[0] is that path at line 48, files_from question
 a park without Files: gets the session's files as the card's where (files_from session, absolute lib/z.sh); noted
-a project discovery is listed under Promote to Gotchas until CLAUDE.md carries it
+a project discovery is listed under Promote to Gotchas once, at its first entry, until a later entry resolves it
 a proposed merge: ready to merge, click = the PR, default priority
 a queued continuation: only the answer command
 a reason after any separator is kept whole, " · 2026-" in it included
@@ -138,7 +139,6 @@ a scratch directory that is missing or unset: a spawn with the spawn's bytes, no
 a second event reuses the desk window
 a session killed at its memory cap is noted and spends the attempt (STUB_OOM=A)
 a session that dies at startup: failed, and no usage-limit window for the box
-a session that leaves CLAUDE.md alone gets no gotchas note
 a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
 a session's edits to the journal are restored (E4 review F1)
 a spec check that fails without a line parks with a reason, never an empty one
@@ -152,7 +152,6 @@ a stop reason with | keeps its card on the debrief page and is one cell in repor
 a stop reason's words are never read as a feature's cause (A failed the re-check)
 a stop with a reason: an automatic continuation is still skipped; summary.json has the whole end_reason
 a stop without a reason says just: stopped by Michael (the note and ended)
-a stub session that adds a Gotchas line is noted
 a stub start through the helpers starts node at most 30 times (one helper for the driver and each lane among them)
 a stub start through the helpers: the same harness-log.md, run.log and feature_list.json as helper off, stripped the same way
 a stub start's run.log has no helper restarted and no helper off line
@@ -359,10 +358,9 @@ cli.mjs: the modules a served script imports have no module-level let or var
 cli.mjs: the tail awaits a main that returns a promise
 cli.mjs: the tail gives main the process's cwd, environment and stdin
 cli.mjs: the tail writes main's out to stdout and exits its rc
-coding and verify prompts name resolved, project facts and Promote to Gotchas
+coding and verify prompts: a fact to discoveries affecting project, a workflow line to proposed_changes, a stale one to resolved; no Gotchas write
 coding prompt names CLAUDE.md but doesn't paste it
 coding prompt: reviews go to subagents on the session's own model (A's prompt, its metrics row, prompt.sh's render: claude-sonnet-5-5)
-coding prompt: the Finish step adds one Gotchas line
 conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)
 context.md carries the earlier attempt's dead end
 context.md lists the decisions store's rules newest first
@@ -402,7 +400,7 @@ deploy.mjs: vercel and netlify guards merge, keep keys and detect
 deploy: vercel-guard prints by-hand for a vercel.json with a true harness/ key (E1 review)
 driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
 driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
-driver partial: a session that edits only CLAUDE.md gets a partial init (memlint alone after the full run); tests-end is the full count
+driver partial: a session that edits only a mapped file gets a partial init (its check alone after the full run); tests-end is the full count
 driver partial: verify's run_init fresh removes the verified tree's part-; its suite runs in full (no arguments), after B's partial
 each debrief is a commit of ledger/debrief.md
 each session's scope is stopped after it returns
@@ -428,10 +426,10 @@ entries survive: the stub answers --resume of an unknown id with the CLI's two l
 entries survive: the stub's resume keeps the session id and a cumulative total_cost_usd
 entries survive: {{ENTRY_CHECK}} renders as lib/entries.mjs validate in the coding, verify and initializer prompts
 entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
-entries.mjs pack: an unreadable CLAUDE.md leaves the Gotchas out, never the pack
+entries.mjs pack: Promote to Gotchas lists project facts newest first within cap/8, whatever CLAUDE.md's Gotchas hold
+entries.mjs pack: a fact restated by key is listed once, at its first unresolved entry; another key is listed too
+entries.mjs pack: a later entry's resolved dismisses a fact in any case, markup or spacing, or a question as context.md shows it
 entries.mjs: Current rules is the last part within cap/4, the rest one older-rules line
-entries.mjs: Promote to Gotchas lists project facts until a Gotchas line carries them
-entries.mjs: a Gotchas line carries a fact in any case or markup, resolved dismisses a fact or a question as context.md shows it
 entries.mjs: a coding entry's checks field (the over-budget reason) is a string, validated and kept by normalize; checksReason gives the last coding entry's among the milestone's features, none without; checks-reason prints it
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: a milestone pack lists failed verify rows before dead ends
@@ -903,6 +901,12 @@ memory gate: every session starts with the services up, a verify after its wait 
 memory gate: the real fixture's 9 GB passes without a note
 memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+memory: a coding session's .harness/project.md edit is reverted the same way
+memory: a coding session's CLAUDE.md edit is reverted with one note in the coding prompt's words, and the run ends done
+memory: a session that leaves CLAUDE.md and .harness/project.md alone gets no revert note
+memory: the initializer's Gotchas write stays reverted with its outside-the-record note
+memory: the same session's lib, tests and journal/decisions edits stay on the branch and merge
+memory_guard: after a session's own merge of main, main's CLAUDE.md lines stay; only the session's own edit goes
 merge-sorted: a base line one side removed stays removed
 merge-sorted: a line both sides added is one line
 merge-sorted: a side not in LC_ALL=C order falls back to git's text merge: clean is 0, a conflict exits 1 with markers in A
@@ -1287,6 +1291,7 @@ resolve: the resolution's note names its files, model and minutes, and the verif
 resolve: the resolve prompt names README.md and a commit subject from each side
 resolve: the resolved merge takes one verify round, then M2 merges (one resolve line, two verify lines)
 resolve: the tree on main is the tree verified as run/<run>/M2 (the invariant)
+restrict memory: CLAUDE.md and .harness/project.md go back, added, edited or deleted; docs/CLAUDE.md, lib/ and .harness/config.sh stay
 resume reloads config merged from main
 retro edits reverted
 review gate: a review at or over REVIEW_OPUS_LINES runs on opus
@@ -1312,7 +1317,8 @@ review_diff: fetches main first, so a milestone merged meanwhile drops out; the 
 routine notifications keep the default priority
 routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count
 routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=
-routing: the rendered initializer prompt sends gotchas to ## Gotchas, run-only facts to discoveries, no decision number
+routing: the rendered initializer prompt sends a durable fact to discoveries affecting project, a run-only fact affecting run, no decision number
+routing: the template, the drafting prompt and this repo's Where things go send a fact to the entry, never to CLAUDE.md by a session
 routing: this repo has the block (journal/decisions/, never numbered), an empty Gotchas and DECISIONS=journal/decisions
 run start with the guard: nothing
 run start without the deploy guard: one note, one notification
@@ -1698,6 +1704,7 @@ view: when and duration use local time: 00:19 and a local midnight under TZ=Amer
 view: when gives 2026-10-27 00:19 (10h ago) under TZ=UTC, and (now) under a minute
 waitsOn: a feature's and a milestone's unfinished dependants through after, every unfinished one for run
 what lands on main is byte for byte what was verified
+where things go: the block and its read-only variant send a fact to discoveries affecting project, no Gotchas write
 where things go: the coding, initializer and verify prompts carry the block once when CLAUDE.md lacks the heading
 where things go: the retro prompt carries the read-only variant once, with or without a CLAUDE.md
 where things go: the verify prompt has the read-only variant (discoveries, no Gotchas edit)

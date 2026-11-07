@@ -355,12 +355,14 @@ _flakes_note() {
   echo $(( off + $(printf %s "$chunk" | wc -c) )) > "$STATE/flakes-noted"
 }
 
-# Revert what a session changed since <base> outside what it may change: "record" (the run record) or "nothing" (a
-# lane's .harness/runs/ is lane_guard's). Its commits stay in history; a new commit puts the files back. Prints what it
+# Revert what a session changed since <base> outside what it may change: "record" (the run record), "nothing" (a
+# lane's .harness/runs/ is lane_guard's) or, inverted, "memory": the project's memory at the repo root (CLAUDE.md,
+# .harness/project.md) and nothing else. Its commits stay in history; a new commit puts the files back. Prints what it
 # reverted.
-restrict() {   # base record|nothing who
+restrict() {   # base record|nothing|memory who
   local base=$1 spec=(. ':!.harness/runs') st path
   [[ $2 == nothing ]] && spec=(.)
+  [[ $2 == memory ]] && spec=(CLAUDE.md .harness/project.md)   # plain pathspecs from the root: docs/CLAUDE.md is code
   commit_all "WIP: uncommitted at session end (harness)"
   while IFS=$'\t' read -r st path; do
     [[ -n $path ]] || continue
@@ -678,17 +680,6 @@ questions_() {
   done < <(jq -j '.questions[]? | strings | select(test("\\S")) | . + "\u0000"' <<< "$last")
   (( n )) && note "$1: $n question(s) for Michael recorded (harness needs)"
   [[ $(jq '.resolved // [] | length' <<< "$last") == 0 ]] || needs_sweep
-  return 0
-}
-
-# <feature> <start commit> → a note when the `## Gotchas` lines of CLAUDE.md differ between the session's start commit
-# and HEAD (lib/memlint.mjs gotchasDiff; decisions/2026-10-26-gotchas-in-place). Coding sessions only: verify and retro
-# are read-only, restrict reverts their CLAUDE.md. In a lane, the slot's commits.
-gotchas() {
-  local d
-  git show "$2:CLAUDE.md" > "$SCRATCH/gotchas-before.md" 2> /dev/null || : > "$SCRATCH/gotchas-before.md"
-  git show HEAD:CLAUDE.md > "$SCRATCH/gotchas-after.md" 2> /dev/null || : > "$SCRATCH/gotchas-after.md"
-  d=$(ask memlint.mjs gotchas "$SCRATCH/gotchas-before.md" "$SCRATCH/gotchas-after.md") && [[ -n $d ]] && note "$1: gotchas $d"
   return 0
 }
 
@@ -1281,6 +1272,16 @@ lane_guard() {
   git ls-files -z -- "$RUN_DIR" | xargs -0 -r git update-index --skip-worktree
   note "$2: a lane commit touched the run record; reverted"
   sync_lane
+}
+# A coding session's edit to the project's memory goes back, one note per file: the curator is its one writer
+# (decisions/2026-11-07-memory-one-writer). Base: the merge-base with main, as lane_guard's, so the CLAUDE.md lines a
+# session's own merge of main brought in stay main's; <start commit> when there is none. The caller pushes.
+memory_guard() {   # start who
+  local mb f; mb=$(git merge-base HEAD "origin/$MAIN_BRANCH" 2> /dev/null) || mb=$1
+  while IFS= read -r f; do
+    [[ -n $f ]] && note "$2: reverted its $f edit (project memory is the curator's; say it in the entry)"
+  done < <(restrict "$mb" memory "$2")
+  return 0
 }
 # <start commit>: a merge since it whose second parent is main's history (a session's own `git merge origin/main`)
 main_merged() {

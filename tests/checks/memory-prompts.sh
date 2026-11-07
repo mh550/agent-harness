@@ -42,10 +42,19 @@ check "where things go: the retro prompt carries the read-only variant once, wit
   ok=1; for r in wt1 wt3; do [[ $(n $r retro) == 1 ]] && sed -n "/^## Where things go/,/^#/p" "$(P $r retro)" | grep "discoveries" > /dev/null &&
     ! sed -n "/^## Where things go/,/^#/p" "$(P $r retro)" | grep -q "Updated in place" || ok=0; done; (( ok ))'
 # ---- the prompts and templates stop contradicting the block (M2-02) ----
-check "routing: the rendered initializer prompt sends gotchas to ## Gotchas, run-only facts to discoveries, no decision number" '
-  i=$(tr -s " \n" "  " < "$(P wt1 initializer)") && [[ $i != *"where things live, gotchas"* && $i != *"D<n>"* ]] &&
-  [[ $i == *"a durable gotcha (still true after this run) → one line under \`## Gotchas\`"* ]] &&
-  [[ $i == *"a run-only fact → \`discoveries\` affecting \`\"run\"\`"* && $i == *"says \`record as a new decision\`"* ]]'
+# M1-02: a fact goes to the entry, never to CLAUDE.md (decisions/2026-11-07-memory-one-writer)
+check "routing: the rendered initializer prompt sends a durable fact to discoveries affecting project, a run-only fact affecting run, no decision number" '
+  i=$(tr -s " \n" "  " < "$(P wt1 initializer)") && [[ $i != *"where things live, gotchas"* && $i != *"D<n>"* && $i != *"under \`## Gotchas\`"* ]] &&
+  [[ $i == *"never in \`CLAUDE.md\` or \`.harness/project.md\`"* && $i == *"a durable gotcha (still true after this run) → \`discoveries\` with \`affects: [\"project\"]\`"* ]] &&
+  [[ $i == *"(how to work here) → \`proposed_changes\`"* && $i == *"a run-only fact → \`discoveries\` affecting \`\"run\"\`"* && $i == *"says \`record as a new decision\`"* ]]'
+check "where things go: the block and its read-only variant send a fact to discoveries affecting project, no Gotchas write" '
+  c=$(sed -n "/^## Where things go/,/^#/p" "$(P wt1 coding)" | tr -s " \n" "  ") && v=$(sed -n "/^## Where things go/,/^#/p" "$(P wt1 verify)" | tr -s " \n" "  ") &&
+  [[ $c == *"rediscover → your entry'"'"'s \`discoveries\` with \`affects: [\"project\"]\`"* && $c == *"never writes \`CLAUDE.md\` or \`.harness/project.md\`"* ]] &&
+  [[ $c == *"How to work here"*"→ Michael'"'"'s: your entry'"'"'s \`proposed_changes\`"* && $v == *"\`discoveries\` with \`affects: [\"project\"]\`"* ]] &&
+  [[ $c != *"## Gotchas"* && $v != *"## Gotchas"* && $v != *"writes it into"* ]]'
+check "routing: the template, the drafting prompt and this repo's Where things go send a fact to the entry, never to CLAUDE.md by a session" '
+  ok=1; for f in templates/project/CLAUDE.md prompts/draft-claude-md.md CLAUDE.md; do w=$(tr -s " \n" "  " < "$HERE/../$f")
+    [[ $w == *"rediscover → "*"\`discoveries\`"*"\`affects: [\"project\"]\`"* && $w != *"one line under \`## Gotchas\`"* && $w != *"one \`## Gotchas\` line"* ]] || ok=0; done; (( ok ))'
 check "routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count" '
   c=$HERE/../prompts/coding.md d=$HERE/../prompts/draft-claude-md.md &&
   sed -n "/^- \*\*Decisions\.\*\*/,/^- \*\*W/p" "$c" | grep "Where things go" > /dev/null && ! grep -q "D<n> \*default\*" "$c" &&

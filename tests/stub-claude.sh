@@ -31,12 +31,17 @@
 # `{id, title: "stub proposal <id>", evidence}` per id (`bad`: `{not json`; `link`: a symlink to feature_list.json). STUB_RETRO_EDITS=1: the retro edits code, progress.md
 # and the worktree's ledger/retro-backlog.jsonl (restrict reverts all three).
 # STUB_GOTCHA=<id>: that feature's first coding session adds a `## Gotchas` line to CLAUDE.md (and the section when
-# it has none), committed with its work (M3). STUB_GOTCHA_ONLY=<id>: that feature's first coding session passes with
-# that line as its only change (no work-<id>.txt: a tree differing from the last in CLAUDE.md alone, S2-05).
+# it has none), committed with its work (M3; the driver reverts it since M1-03). STUB_README_ONLY=<id>: that feature's
+# first coding session passes with one README.md line as its only change (no work-<id>.txt: a tree differing from the
+# last in a mapped file alone, S2-05). STUB_TOUCH_CODE=<id>: that feature's first coding session also writes a file
+# under lib/, tests/ and journal/decisions/ (M1-03). STUB_PROJECT_MD=<id>: that feature's first coding session edits
+# .harness/project.md (M1-03). STUB_INIT_GOTCHA=1: the initializer adds a ## Gotchas line to CLAUDE.md, uncommitted (M1-03).
 # STUB_ASK=<id>: that feature's first coding session's entry asks "Should <id> default to off?"; STUB_RESOLVE=<id>: its later sessions' entries list it in `resolved`. STUB_ASK_TWO=<id>:
 # that feature's first coding session's entry asks two questions, each with a `Files:` line (R4-03); STUB_ASK_AGAIN=<id>:
-# that feature's first coding session's entry asks STUB_ASK's question again, same words. STUB_PROJECT_FACT=<id>:
-# its first session's entry has the discovery STUB_GOTCHA writes, affecting "project" (M3-03). STUB_VERIFY_FAIL_ROW=1: A's
+# that feature's first coding session's entry asks STUB_ASK's question again, same words. STUB_PROJECT_FACT=<id>[,<id>…]:
+# each one's first session's entry has the discovery STUB_GOTCHA writes, affecting "project" (M3-03; a list, M1-02).
+# STUB_RESOLVE_FACT=<id>: that feature's first coding session's entry lists STUB_PROJECT_FACT's fact in resolved (M1-02).
+# STUB_PROPOSE=<id>: that feature's first coding session's entry carries one proposed_changes string (M1-02). STUB_VERIFY_FAIL_ROW=1: A's
 # coding entries record a dead end and verify M1 round 1's entry has a `holds: false` row for A step 1 (M3-04).
 # STUB_CHECK_NAMES=<id>:<+name|-name>[,…]: that feature's first coding session adds (+) and removes (-) those check names in
 # tests/fixtures/check-names.txt, re-sorted (C order), committed with its work; STUB_CHECKS_REASON=<id>:<text>: every entry
@@ -190,6 +195,8 @@ JSON
     fi
     entry init 1 '{feature: "init", kind: "init", outcome: "passes", summary: "3 features: M1 2, M2 1", header: "# progress"}'
     git add -A && git commit -qm "HARNESS: feature list" && git push -q -u origin "$HARNESS_BRANCH"
+    if [[ ${STUB_INIT_GOTCHA:-} ]]; then   # as prompts/initializer.md asked before M1: left uncommitted
+      printf '\n## Gotchas\n\n- the initializer'"'"'s fact (%s)\n' "$HARNESS_RUN_ID" >> CLAUDE.md; fi
     if [[ ${STUB_PHONE_STOP:-} ]]; then   # Michael edits INBOX.md on GitHub: status: stop [<why>]
       tmp=$(mktemp -d); git clone -q "$(git remote get-url origin)" "$tmp" -b "$HARNESS_BRANCH"
       why=""; [[ $STUB_PHONE_STOP == 1 ]] || why=" $STUB_PHONE_STOP"
@@ -290,11 +297,10 @@ JSON
     if [[ ${STUB_PASS_THEN_LIMIT:-} && $id == A && $n == 1 ]]; then   # claims the feature, then the limit cuts it off
       echo "A $n" > "work-A.txt"; git add -A && git commit -qm "A: claimed"; sed -n 2p "$HERE/fixtures/usage-limit.jsonl"; exit 1
     fi
-    if [[ ${STUB_GOTCHA_ONLY:-} == "$id" && $n == 1 ]]; then   # passes with the Gotchas line as its only change: a CLAUDE.md-only tree
-      grep -qx '## Gotchas' CLAUDE.md 2> /dev/null || printf '\n## Gotchas\n\n' >> CLAUDE.md
-      echo "- the stub's work files sit at the repo root, one per feature ($HARNESS_RUN_ID $(date +%F))" >> CLAUDE.md
-      entry "$id" "$n" --arg id "$id" '{feature: $id, kind: "coding", outcome: "passes", summary: "\($id): a Gotchas line", files: ["CLAUDE.md"], verified_how: "stub"}'
-      git add -A && git commit -qm "$id: a Gotchas line" && git push -q origin "$HARNESS_BRANCH"
+    if [[ ${STUB_README_ONLY:-} == "$id" && $n == 1 ]]; then   # passes with one README.md line as its only change: a mapped-file-only tree
+      echo "- $id: the stub's work files sit at the repo root ($HARNESS_RUN_ID)" >> README.md
+      entry "$id" "$n" --arg id "$id" '{feature: $id, kind: "coding", outcome: "passes", summary: "\($id): a README line", files: ["README.md"], verified_how: "stub"}'
+      git add -A && git commit -qm "$id: a README line" && git push -q origin "$HARNESS_BRANCH"
       ok; exit 0
     fi
     if [[ $id == B && $n == 1 && ! ${STUB_NO_TAMPER:-} ]]; then   # tampers: flips C and rewrites its description
@@ -338,11 +344,14 @@ JSON
       grep -qx '## Gotchas' CLAUDE.md 2> /dev/null || printf '\n## Gotchas\n\n' >> CLAUDE.md
       echo "- the stub's work files sit at the repo root, one per feature ($HARNESS_RUN_ID $(date +%F))" >> CLAUDE.md
     fi
+    if [[ ${STUB_TOUCH_CODE:-} == "$id" && $n == 1 ]]; then mkdir -p lib tests journal/decisions
+      echo ": $id" > "lib/stub-$id.sh"; echo "$id" > "tests/stub-$id.txt"; echo "# stub $id" > "journal/decisions/stub-$id.md"; fi
+    if [[ ${STUB_PROJECT_MD:-} == "$id" && $n == 1 ]]; then mkdir -p .harness && echo "$id fact" >> .harness/project.md; fi
     # main may already have work-<id>.txt as written here (run demo merged it): a file only this run adds, for the minimal entry's files
     [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
     # STUB_ASK_TOUCH=<path>: the session that asks (STUB_ASK) changes it too, outside its entry's files (U2-08's fill)
     [[ ${STUB_ASK_TOUCH:-} && ${STUB_ASK:-} == "$id" && $n == 1 ]] && mkdir -p "$(dirname "$STUB_ASK_TOUCH")" && echo "$id" > "$STUB_ASK_TOUCH"
-    entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg two "${STUB_ASK_TWO:-}" --arg again "${STUB_ASK_AGAIN:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --arg rf "${STUB_REVIEW_FINDINGS:-}" --arg checks "$creason" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
+    entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg two "${STUB_ASK_TWO:-}" --arg again "${STUB_ASK_AGAIN:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg rfact "${STUB_RESOLVE_FACT:-}" --arg propose "${STUB_PROPOSE:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --arg rf "${STUB_REVIEW_FINDINGS:-}" --arg checks "$creason" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
       outcome: "passes", summary: (if $id == "R" and $rf != "" then "R: stub review (\($n)): \($rf | split(",")[0]) Critical, \($rf | split(",")[1]) Important, 0 Minor" else "\($id): stub work (\($n))" end), files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
       + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end
       + if $failrow == "1" and $id == "A" then {dead_ends: [{tried: "A by the first approach (\($n))", why: "verify M1 may find step 1 failing"}]} else {} end
@@ -351,7 +360,9 @@ JSON
           + (if $two == $id and $n == "1" then ["Should \($id) keep the old cache? (default: kept) Files: /srv/q/lib/a.sh:12", "Should \($id) log at debug? (default: info) Files: /srv/q/lib/b.sh"] else [] end)
           + (if $again == $id and $n == "1" and $ask != "" then ["Should \($ask) default to off?"] else [] end))} | if .questions == [] then {} else . end)
       + if $resolve == $id and $n != "1" then {resolved: ["Should \($id) default to off?"]} else {} end
-      + if $fact == $id and $n == "1" then {discoveries: [{text: "the stub'"'"'s work files sit at the repo root, one per feature", affects: ["project"]}]} else {} end'
+      + if ($fact | split(",") | index($id)) and $n == "1" then {discoveries: [{text: "the stub'"'"'s work files sit at the repo root, one per feature", affects: ["project"]}]} else {} end
+      + if $rfact == $id and $n == "1" then {resolved: ["the stub'"'"'s work files sit at the repo root, one per feature"]} else {} end
+      + if $propose == $id and $n == "1" then {proposed_changes: ["stub proposal: run the stub suite before each commit"]} else {} end'
     git add -A && git commit -qm "$id: stub work ($n)" && git push -q origin "$HARNESS_BRANCH"
     if [[ ${STUB_STALE_GREEN:-} == "$id" && $n == 1 ]]; then   # red tree, cached green: only a full run catches it
       touch BROKEN && git add -A && git commit -qm "$id: left BROKEN" && git push -q origin "$HARNESS_BRANCH"
