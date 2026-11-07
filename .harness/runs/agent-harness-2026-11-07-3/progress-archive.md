@@ -9,6 +9,23 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 18:38 · A2-05 · passes
+
+A2 review (one Opus round): 0 Critical, 2 Important, 6 Minor. Fixed RED→GREEN: I1 the debrief event's bundle is now the debrief's own (context.json from its gather, copied by context.sh --from via notify bundle=); I2 the debrief's ended words are alive-first again (ended_of; CTX_ENDED_FIRST for harness context). Minor fixed: dotted ids, spend, queue/done. Review file, decision, docs.
+
+- **Files:** lib/context.sh, lib/debrief.sh, lib/notify.sh, lib/glossary.mjs, bin/harness, tests/checks/context-bundle.sh, tests/checks/event-run.sh, tests/unit/glossary.test.mjs, tests/stub-context.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-07-A2-review.md, +4 more
+- **Verified:** Full suite: check.sh green in 720 s, 1857 tests (N = M). Fast tier: green in 118 s, 1023 tests, run before the full suite with no edits after. Unit tests: node --test, 515 pass. RED then GREEN, each check watched failing first: context-bundle 11/13 (the queue/done and still-running checks red, then 13/13), event-run 11/12 (the debrief bundle cmp red, then 12/12), the dotted-id unit test red, then 515/515. bash -n and node --check clean on every file touched.
+- **Tests:** 1853 → 1857
+- **Dead end:** an event-run check counting `# Context ·` bundles against routed events — fragile across the file's runs (stale and stub bundles); a cmp of the debrief's context.md with the bundle's says it directly
+- **Discovery** (affects A3, A4): The debrief's bundle is its own gather's (context.json in its workspace, copied by context.sh --from); notify's since= is gone, bundle=<dir> replaces it
+- **Discovery** (affects A3, A4): lib/context.sh ended_of: alive first (the debrief's bytes); CTX_ENDED_FIRST=1 (harness context only) reads ended first for the end event's bundle
+- **Discovery** (affects project): harness queue list/show no longer mkdir queue/done (cmd_queue makes it only for a write) (agent-harness-2026-11-07-3 2026-11-07)
+- **Resolved:** Discovery (A2-04, affects A2-05): The debrief's bundle reruns context_since at notify time, so a run started during the debrief's session is in scope.runs but not in the note's Covers (accepted, review finding 6).
+- **Resolved:** Discovery (A2-03, affects A2-05): harness context writes $STATE_ROOT/queue/done (an empty dir) when there is no queue yet: cmd_queue mkdirs before list; context-bundle (c) finds files only (! -type d)
+- **Proposed change:** M1: lib/lane.sh:535 commits any dirty record after notify_park as 'HARNESS: park notification failed', including a routed park's 'events: removed' note; name it 'HARNESS: park notification notes' and change park-desk's assertion with it
+- **Proposed change:** M6: a CONTEXT_TIMEOUT config value and the bundle's exit code in the 'context bundle failed' note, if a real bundle nears the 60 s cap
+- *08-A2-05 · claude-opus-5-5*
+
 ### 2026-11-07 18:05 · A2-04 · passes
 
 context.json (spec key order) now comes from the same lib/context.mjs call as context.md; a bundle written in events/ prunes bundles with no file newer than 30 days and says so; notify_event writes the bundle to events/<id>/ before the POST, so context names an existing context.json; the debrief passes since=$SINCE. A failed bundle: a note, context null. Decision file, docs.
