@@ -258,6 +258,7 @@ retro() {   # a short read-only session that turns this run's evidence into prop
 # off runs none, with no note). decisions/2026-11-07-memory-tiers
 curator() {
   local clog=$LOGS/zz-curator-$(date +%H%M%S).jsonl cstart reverted x p=$RUN_DIR/memory-ops.json
+  rm -f "$STATE/memory.json"   # a continue's: the summary reads this segment's or none
   case $MEMORY_POLICY in off) return 0 ;; pr) ;;
     *) note "curator: none (MEMORY_POLICY=$MEMORY_POLICY is neither pr nor off)"; return 0 ;; esac
   # the retro's notes, retro.md, its proposals and metrics row are uncommitted here: restrict commits the tree and then

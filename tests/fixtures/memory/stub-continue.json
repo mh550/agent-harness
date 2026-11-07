@@ -1,0 +1,6 @@
+[
+  {"op":"add","file":"CLAUDE.md","section":"## Gotchas","text":"the stub's A work sits in work-A.txt at the root ({{RUN}} {{DATE}})","tier":1,"why":"A found where its work sits.","from":"entries.jsonl:{{LINE:A}}"},
+  {"op":"add","file":"CLAUDE.md","section":"## Gotchas","text":"the stub's B work sits in work-B.txt at the root ({{RUN}} {{DATE}})","tier":1,"why":"B found where its work sits.","from":"entries.jsonl:{{LINE:B}}"},
+  {"op":"add","file":"CLAUDE.md","section":"## Code rules","text":"stub proposal: run the stub suite before each commit","tier":1,"why":"A proposed it.","from":"entries.jsonl:{{LINE:A}}"},
+  {"op":"add","file":"CLAUDE.md","section":"## Gotchas","text":"the stub's C work sits in work-C.txt at the root ({{RUN}} {{DATE}})","tier":1,"why":"C found where its work sits.","from":"entries.jsonl:{{LINE:C}}"}
+]

@@ -9,6 +9,7 @@
 # STUB_GH_DOWN=<n>: GitHub unreachable for the first <n> calls of each of pr view, pr create and pr merge: they print
 # a real gh's line for a refused connection (fixtures/gh-down.txt) on stderr and exit 1. STUB_REFUSE_MERGE=1: every
 # pr merge is refused with live gh's GraphQL line. STUB_GH_DOWN_ONLY=<view|create|merge…>: the calls STUB_GH_DOWN counts.
+# "pr create --body-file <f>" keeps its copy as prs/pr-N.body; "pr edit <url> --body-file <f>" rewrites it.
 # STUB_GH_LOST_MERGE=1: a pr merge lands and its answer is lost (that same line, exit 1). Its own git calls are GitHub's
 # side: never the outage stub's.
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -40,9 +41,13 @@ case "$1 $2" in
   "pr close")   # one PR: the v2 one if the head has it, else its open one
     if [[ -f $P/branch-${3//\//_} ]]; then rm -f "$P/branch-${3//\//_}"; elif n=$(open_pr "$3"); then touch "$P/pr-$n.closed"; fi ;;
   "pr create")
-    head="" title=""; while (( $# )); do case $1 in --head) head=$2 ;; --title) title=$2 ;; esac; shift; done
+    head="" title="" bf=""; while (( $# )); do case $1 in --head) head=$2 ;; --title) title=$2 ;; --body-file) bf=$2 ;; esac; shift; done
     if n=$(open_pr "$head"); then echo "a pull request for branch \"$head\" into branch \"main\" already exists:"; echo "https://example.test/pr/$n"; exit 1; fi
-    n=$(( $(ls "$P" | grep -c '^pr-[0-9]*$') + 1 )); echo "$head" > "$P/pr-$n"; echo "$title" > "$P/pr-$n.title"; echo "https://example.test/pr/$n" ;;
+    n=$(( $(ls "$P" | grep -c '^pr-[0-9]*$') + 1 )); echo "$head" > "$P/pr-$n"; echo "$title" > "$P/pr-$n.title"
+    [[ -n $bf ]] && cp "$bf" "$P/pr-$n.body"; echo "https://example.test/pr/$n" ;;
+  "pr edit")   # <url> --body-file <f>: its body rewritten
+    n=${3##*/} bf=""; while (( $# )); do [[ $1 == --body-file ]] && bf=$2; shift; done
+    [[ -n $bf && -f $P/pr-$n ]] && cp "$bf" "$P/pr-$n.body"; true ;;
   "pr merge")
     n=${3##*/} c=""; while (( $# )); do [[ $1 == --match-head-commit ]] && c=$2; shift; done
     [[ ${STUB_REFUSE_MERGE:-} ]] && { echo "$GRAPHQL_MOVED" >&2; exit 1; }

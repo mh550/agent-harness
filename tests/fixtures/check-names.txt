@@ -926,6 +926,19 @@ memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonig
 memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
 memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
 memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
+memory PR: a 16th Gotchas add without an anchor refuses the tier-1 commit; no branch, no PR
+memory PR: a continued run reuses its open memory PR
+memory PR: a memory branch on origin with no PR is the base, and its PR opens on it
+memory PR: a memory branch whose PR Michael closed stops the curator with one note; nothing pushed
+memory PR: an op on Live system is dropped with a note and carried as a proposal; an unmatched anchor is dropped naming it
+memory PR: no run leaves its scratch worktree registered or a local harness-memory branch
+memory PR: the PR is opened and left for Michael under MEMORY_POLICY=pr
+memory PR: the commit changes CLAUDE.md alone
+memory PR: the notes count the ops, re-derived tiers and each dropped op; memory.json holds the counts
+memory PR: the run's record PR opens too
+memory PR: the same add with an anchor lands as one edit
+memory PR: the two project facts land under Gotchas in one commit on harness-memory/<run>, with their suffix
+memory PR: the workflow line is not committed and is in the PR body with its entries.jsonl line
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note

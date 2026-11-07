@@ -47,9 +47,43 @@ invariants by M2-05); spec `docs/specs/2026-11-07-memory-curator.md` §M2; plan 
   - **The cap**: `lintText` re-run on the result; over 120 lines or 15 `## Gotchas` entries, and grown on that
     measure (*default*), refuses the tier-1 commit whole with one note. An `add` past the cap passes only with an
     anchor, the line it evicts.
-  - *To be completed by M2-04, as built:* `memory_pr`, the `harness-memory/<run>` branch cut from `origin/<main>` in a
-    detached scratch worktree, the one tier-1 commit, the PR body, the reuse of an open `memory: <run>` PR, the cap
-    refusal, `memory.json`, `MEMORY_POLICY=pr|off` (`pr` *default*), `CURATOR_MODEL=opus` (*default*).
+  - **`memory_pr`, as built (M2-04, `lib/record.sh`)**, called by `curator()` after its restrict and the rescue:
+    - **The base** (`memory_base`, before the session, which reads its texts in `$SCRATCH/memory-base/`):
+      `origin/<main>`, unless origin has `harness-memory/<run>` and main lacks its tip. Then it is that tip when the
+      branch's `memory: <run>` PR is open (reused: `MEM_URL`) or the branch has no PR at all (a push whose `pr create`
+      failed: the PR opens on it now). A closed PR, or one titled otherwise, stops the curator with one note,
+      `memory PR: none (harness-memory/<run> is on origin and main lacks it, its PR CLOSED; delete the branch to
+      curate again)` (*default*: never a branch over one Michael closed, never a force-push). A tip main has taken
+      (a merged PR whose branch stayed) is cut from main again, the push a fast-forward of it. GitHub or origin not
+      answering is no answer: one note, no curator, rather than a wrong base. *Known limit:* a squash-merged memory
+      PR whose branch stayed reads as "main lacks it" and stops with the delete-the-branch note.
+    - **The worktree**: `git worktree add --detach $SCRATCH/memory <base>` (*default*: detached, so no local
+      `harness-memory/<run>` is left behind), removed after every path (`--force`, then a prune), so gc never meets a
+      stale registration. `curator.mjs apply` writes only there; the record branch's tree (`$RWT`) is never checked
+      out or written, so `record_pr`'s `":!$RUN_DIR"` guard stays untripped (tests/checks/memory-pr.sh's record-PR
+      check).
+    - **One commit** of the tier-1 ops, `memory: <run>: <n> facts`, of the files apply changed only, pushed to
+      `harness-memory/<run>` (never forced: on a reused head it moves forward). Tier 2 and 3 are never committed.
+    - **The PR**: `gh pr create --base <main> --head harness-memory/<run> --title "memory: <run>" --body-file`, left
+      for Michael (`MEMORY_POLICY=pr`, *default*); on a reused head `pr edit --body-file`, also when this segment
+      commits nothing (its proposals still reach him), the body this segment's over the earlier segments' while
+      both fit under 60000 bytes (*default*), so the PR's first commit stays explained.
+      The body (`curator.mjs body`: the counts, the applied ops, tier 2 to paste, the tier-3 proposals, every dropped
+      op with its reason and `from`) is kept as `memory.md` in the run record (*default*), so tier 2 and 3 reach
+      Michael through the record PR even when no memory PR opens.
+    - **The cap refusal**: a breach refuses the tier-1 commit whole: no commit, no push, no PR, one note `memory:
+      tier-1 commit refused (<breach>)` and `memory PR: none (no tier-1 change); the body is in memory.md`
+      (*default*). The same add with an anchor evicts that line and lands as one edit. `MERGE_POLICY=off` pushes
+      and opens nothing, noted the same way (*default*, as `record_pr`). An `apply` that answers nothing is
+      `memory: apply failed (see run.log)`, treated as refused.
+    - **The notes**, each outcome once in `harness-log.md`: `memory: <ops> ops · <applied> applied · <dropped>
+      dropped · <proposed> proposals` (*default* wording), one `memory: dropped <op> <section> (<reason>)` per dropped
+      op (the refused ones aside: their one note covers them), `memory: tier re-derived for <n> ops`, then the PR's
+      `memory PR opened; left for Michael (MEMORY_POLICY=pr) · <url>`, `memory PR updated · <url>` or why none.
+    - **`$STATE/memory.json`**: `{ops, applied, dropped, proposed, pr}` (the PR's URL or `null`; `invalid` beside
+      them for a refused file), for M3's summary (*default*).
+  - **`MEMORY_POLICY=pr|off`** in `lib/config.sh` beside `RECORD_PR` (`pr` *default*; `off` runs no curator and
+    writes no note; `auto` is M3's), **`CURATOR_MODEL=opus`** (*default*).
 - **Rejected:** *to be completed by M2-05:* a rewritten file; an inferred protected set; a trusted `tier` field; a
   curator that commits tier 2; a curator that writes where the retro runs; a local or force-pushed memory branch.
   And the spec's two invariants, each with the check that proves it: (1) the curator never writes a project file;
