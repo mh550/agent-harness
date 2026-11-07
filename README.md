@@ -139,7 +139,9 @@ as a `project` fact is dropped; a result over 120 lines or 15 Gotchas is refused
 one commit on `harness-memory/<run>`, and its `memory: <run>` PR is left for you; its body (also `memory.md` in the run
 record) lists what was applied, what to paste, the proposals and every dropped op with its reason. A `harness continue`
 adds to the open PR. `harness-log.md` says `memory: <n> ops · <a> applied · <d> dropped · <p> proposals` and the PR's
-fate. `MEMORY_POLICY=off` runs no curator (decisions/2026-11-07-memory-tiers).
+fate. `MEMORY_POLICY=auto` has the driver merge that PR itself (a refused merge stays open with a note),
+`MEMORY_POLICY=off` runs no curator; it is separate from `MERGE_POLICY`, so verified code can merge itself while the
+instruction file waits for you (decisions/2026-11-07-memory-tiers, decisions/2026-11-07-memory-policy).
 
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; a red full run rerun once, never after a timeout or a cap kill, by `CHECK_RERUN`: `auto` (the `HARNESS_FAILED=` files, else the whole suite) · `failed` (the named files only) · `suite` (the whole suite) · `off`, a rerun that goes green counted as a flake in `harness-log.md`, `summary.json` and report.md's `Flakes` row; cached per code tree, whose key

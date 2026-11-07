@@ -260,13 +260,14 @@ retro() {   # a short read-only session that turns this run's evidence into prop
 }
 
 # One read-only session after the retro that turns the run's project facts into operations on CLAUDE.md and
-# .harness/project.md (memory-ops.json); the driver validates and applies them, never the session (MEMORY_POLICY=pr;
-# off runs none, with no note). decisions/2026-11-07-memory-tiers
+# .harness/project.md (memory-ops.json); the driver validates and applies them, never the session (MEMORY_POLICY=pr
+# leaves the memory PR for Michael, auto merges it, off runs none with no note; another value is noted and runs as pr,
+# the safe one). decisions/2026-11-07-memory-tiers, decisions/2026-11-07-memory-policy
 curator() {
   local clog=$LOGS/zz-curator-$(date +%H%M%S).jsonl cstart reverted x
   rm -f "$STATE/memory.json"   # a continue's: the summary reads this segment's or none
-  case $MEMORY_POLICY in off) return 0 ;; pr) ;;
-    *) note "curator: none (MEMORY_POLICY=$MEMORY_POLICY is neither pr nor off)"; return 0 ;; esac
+  case $MEMORY_POLICY in off) return 0 ;; pr|auto) ;;
+    *) note "memory PR: MEMORY_POLICY=$MEMORY_POLICY is none of pr, auto, off; treated as pr"; MEMORY_POLICY=pr ;; esac
   # the retro's notes, retro.md, its proposals and metrics row are uncommitted here: restrict commits the tree and then
   # reverts everything since cstart, so they are committed first or the curator's revert takes them
   rec_commit "HARNESS: retro"; sync_record

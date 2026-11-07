@@ -52,8 +52,18 @@ check "curator: an invalid memory-ops.json is one note; the run ends done and it
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
 cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=off' >> "$T/user-config.sh"
 STUB_CURATOR_OPS=three-ops STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" co --spec SPEC.md --foreground > "$T/co.out" 2>&1
-check "curator: MEMORY_POLICY=off runs no curator and writes no curator note" \
+check "curator: MEMORY_POLICY=off runs no curator and writes no curator or memory note" \
   'grep -q "^done" "$(st co)/ended" && ! grep " curator · " "$(st co)/run.log" > /dev/null && ! grep -x curator "$T/scratch/proj/co/sessions.log" > /dev/null \
-  && ! hlog co | grep " · curator: " > /dev/null && grep -x retro "$T/scratch/proj/co/sessions.log" > /dev/null'
+  && ! hlog co | grep -E " · (curator|memory)" > /dev/null && grep -x retro "$T/scratch/proj/co/sessions.log" > /dev/null'
+
+# cx: a MEMORY_POLICY that is none of the three: one note, then the curator as under pr (the safe value)
+git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=always RECORD_PR=end' >> "$T/user-config.sh"
+STUB_CURATOR_OPS=three-ops STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" cx --spec SPEC.md --foreground > "$T/cx.out" 2>&1
+mv "$T/gh.log" "$T/gh-cx.log" 2> /dev/null
+check "curator: an unknown MEMORY_POLICY is one note and the curator runs as under pr" \
+  'grep -q "^done" "$(st cx)/ended" && [[ $(hlog cx | grep -c " · memory PR: MEMORY_POLICY=always is none of pr, auto, off; treated as pr$") == 1 ]] \
+  && [[ $(grep -cx curator "$T/scratch/proj/cx/sessions.log") == 1 ]] && hlog cx | grep " · memory: 3 ops · " > /dev/null \
+  && ! hlog cx | grep -F " · memory PR merged" > /dev/null'
 
 suite_end
