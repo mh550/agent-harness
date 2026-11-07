@@ -60,6 +60,11 @@ check "queue show: an --until text shows as given, a --brief-file as its path; a
   && ! grep "^  options" "$T/o1.out" > /dev/null && QO show 2 > "$T/o2.out" && ! grep "^  brief" "$T/o2.out" > /dev/null \
   && QO list > "$T/ol.out" && ! grep "brief \"\"" "$T/ol.out" > /dev/null && ! grep -c $'"'"'\r'"'"' "$T/ol.out" > /dev/null \
   && QO show 3 > "$T/o3.out" && ! grep $'"'"'\r'"'"' "$T/o3.out" > /dev/null && ! grep null "$T/ol.out" > /dev/null && QO show 4 > "$T/o4.out" && ! grep null "$T/o4.out" > /dev/null'
-check "queue show: a continue names its project path from meta.env, one %q quoted under a C locale too" '
-  mkdir -p "$T/odd/p/qrun" && printf "%s\n" "PROJECT_DIR=\$'"'"'/p/caf\\303\\251 x'"'"'" "RUN_ID=qrun" "STATE=$T/odd/p/qrun" "WT=/nonexistent" > "$T/odd/p/qrun/meta.env" \
-  && printf "%s\n" continue qrun --queued > "$E/0005-continue-qrun.args" && HARNESS_STATE=$T/odd HARNESS_GLYPHS=unicode "$H" queue show 5 | grep -x "  project    /p/café x" > /dev/null'
+
+# ---- the entry's bytes (lib/queue.mjs): what the runner, spec_entry, entry_overlaps and the view read back ----
+mkdir -p "$T/qb" && printf 'start\n%s\n--brief\nline one\x1fline two\x1f\x1fline four\n' "$T/proj" > "$T/qb/want"
+QB=$HARNESS_STATE/queue; rm -f "$QB"/*.args "$QB"/held/*.args
+check "queue add: a brief with a newline is one line holding 0x1f in the .args file, byte for byte; show prints it back; park and unpark keep the bytes" '
+  "$H" queue add "$T/proj" --brief "$(printf "line one\nline two\n\nline four")" > /dev/null 2>&1 && e=$(compgen -G "$QB/*-start-proj.args") && cmp "$e" "$T/qb/want" \
+  && QS 1 | grep -x "  brief      line one line two line four" > /dev/null \
+  && "$H" queue park 1 > /dev/null && "$H" queue unpark 1 > /dev/null && e=$(compgen -G "$QB/*-start-proj.args") && cmp "$e" "$T/qb/want"'

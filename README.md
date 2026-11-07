@@ -392,7 +392,10 @@ file, exit 2, nothing run). A `--tier fast` run checks its names against `tests/
 full run's green is the suite's green.
 The unit tier (`tests/unit/<module>.test.mjs`, one node process) tests the pure functions of `lib/*.mjs` under
 `node --test`; `--test-name-pattern "<regex>"` picks tests, and `tests/checks/unit-tier.sh` puts its tests into
-every full run under their names in `tests/fixtures/check-names.txt` (decisions/2026-11-03-unit-tier).
+every full run under their names in `tests/fixtures/check-names.txt` (decisions/2026-11-03-unit-tier). Three modules
+hold decisions that used to be bash, each answering a branch and never a note's words (decisions/2026-11-03-purity):
+`lib/checkdecide.mjs` the suite runner's cache and rerun, `lib/lane.mjs` the lane's verdict and exit table and how a run
+ends, `lib/queue.mjs` the queue entry's format, beside `lib/inbox.mjs`, which now reads INBOX.md's `status:` line too.
 A check file is named for what it tests (`queue-debrief`, `memlint-self`, `session-gate-check`), with no number, and no
 file's name is part of another's: `tests/run.sh <file>` and the rerun of a red file then pick that file alone (the name
 lint in `suite-runner` is red on a pair; `journal/decisions/2026-11-05-suite-shape.md` has the names the files had before).

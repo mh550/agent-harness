@@ -275,7 +275,73 @@ check.sh: appends <epoch> <full|cached|subset> <seconds> to check-runs.log on ea
 check.sh: exit 124 prints the timed-out RED line
 check.sh: exit 137 prints the memory-cap RED line
 check.sh: the cached line names the key's ignore list only when it isn't the default
+check_run: check.sh's cache answer comes from the parent's helper too (no checkdecide.mjs start) and the suite never sees it; a check.sh with no parent asks it itself (one start each)
 check_run: check.sh's key comes from the parent's helper (no treekey.mjs start), the same marker a spawn would write
+checkdecide.mjs: cachedAnswer: a fast marker answers under --fast, with its count
+checkdecide.mjs: cachedAnswer: a fast marker is never read without --fast
+checkdecide.mjs: cachedAnswer: a green marker answers with its count
+checkdecide.mjs: cachedAnswer: a marker cut mid-write gives what it has, the rest empty
+checkdecide.mjs: cachedAnswer: a red beats a fast marker under --fast
+checkdecide.mjs: cachedAnswer: a red marker answers with its exit code, names and line
+checkdecide.mjs: cachedAnswer: a red marker whose first line is no number exits 1
+checkdecide.mjs: cachedAnswer: a red marker with no names has none (the whole suite)
+checkdecide.mjs: cachedAnswer: an older empty green marker answers with no count
+checkdecide.mjs: cachedAnswer: green beats a red and a fast marker
+checkdecide.mjs: cachedAnswer: no key runs, whatever markers exist
+checkdecide.mjs: cachedAnswer: no marker runs
+checkdecide.mjs: cachedAnswer: read's trim takes outer spaces and tabs only, a no-break space and a CR stay
+checkdecide.mjs: failedNames: an empty last line clears the names, and no final newline still counts
+checkdecide.mjs: failedNames: the last whole line's names; no line is none
+checkdecide.mjs: keepRed: a first run that was no plain exit is not kept
+checkdecide.mjs: keepRed: a first run's signal code (128 up) is not kept
+checkdecide.mjs: keepRed: a last run that was no plain exit is not kept
+checkdecide.mjs: keepRed: a rerun's signal code (128 up) is not kept
+checkdecide.mjs: keepRed: both runs a plain exit under 128, with a key, is kept
+checkdecide.mjs: keepRed: no key is not kept
+checkdecide.mjs: main before: --fast never reads the sidecar
+checkdecide.mjs: main before: a directory where a marker should be is no marker
+checkdecide.mjs: main before: a fast marker answers only with the fast flag
+checkdecide.mjs: main before: a green marker answers green with its count
+checkdecide.mjs: main before: a red marker answers red with its fields
+checkdecide.mjs: main before: a tree key that isn't one answers run, whatever the cache holds
+checkdecide.mjs: main before: a tree that differs from a green one in mapped paths answers partial, map order
+checkdecide.mjs: main before: the reference's green marker gone answers run, row 6; no sidecar, row 5
+checkdecide.mjs: main guard: a timeout still names what failed, and chooses no rerun
+checkdecide.mjs: main guard: an output that isn't there has no names
+checkdecide.mjs: main guard: the first run's words, the choice and the last HARNESS_FAILED= names
+checkdecide.mjs: main last: the last run's words and whether its red is kept
+checkdecide.mjs: main why: the words alone
+checkdecide.mjs: main: no question or an unknown one exits 2 with no answer
+checkdecide.mjs: partialPlan row 10: an entry with no names refuses
+checkdecide.mjs: partialPlan row 11: names in map order, each once, whatever the blob lines' order
+checkdecide.mjs: partialPlan row 11: the reference and the names of what differs
+checkdecide.mjs: partialPlan row 4: a blank map refuses
+checkdecide.mjs: partialPlan row 4: a reduced key that isn't 16 hex refuses
+checkdecide.mjs: partialPlan row 4: no blob lines refuses
+checkdecide.mjs: partialPlan row 5: no sidecar refuses
+checkdecide.mjs: partialPlan row 6: a malformed reference refuses
+checkdecide.mjs: partialPlan row 6: the reference's green marker gone refuses
+checkdecide.mjs: partialPlan row 7: a different path set refuses
+checkdecide.mjs: partialPlan row 7: a malformed blob line refuses, on either side
+checkdecide.mjs: partialPlan row 7: a path twice refuses, on either side
+checkdecide.mjs: partialPlan row 7: a sidecar with no path lines refuses
+checkdecide.mjs: partialPlan row 8: nothing mapped differs refuses
+checkdecide.mjs: partialPlan row 9: a differing path that is no entry's refuses
+checkdecide.mjs: partialPlan: a '-' blob (a deleted mapped file) and 40- and 64-hex blobs are valid
+checkdecide.mjs: partialPlan: a map spelled over two lines is still a map
+checkdecide.mjs: redReason: 137 under the limit in a scope at its cap is the cap
+checkdecide.mjs: redReason: 137 under the limit with the scope under its cap is a plain exit
+checkdecide.mjs: redReason: 137 whose own seconds reach the limit is a timeout, not the cap
+checkdecide.mjs: redReason: 137 with no limit (a duration dur_s can't read) is never a timeout
+checkdecide.mjs: redReason: any other code is a plain exit, a capped scope or not
+checkdecide.mjs: redReason: exit 124 is a timeout, however short the run
+checkdecide.mjs: redReason: own decides the timeout while seconds is what is printed
+checkdecide.mjs: rerunChoice: an unknown value is auto
+checkdecide.mjs: rerunChoice: auto reruns the failed names, else the whole suite
+checkdecide.mjs: rerunChoice: failed reruns only named files
+checkdecide.mjs: rerunChoice: no rerun after a timeout or a cap kill, under every setting
+checkdecide.mjs: rerunChoice: off never reruns
+checkdecide.mjs: rerunChoice: suite reruns the whole suite, names or none
 cli.mjs: a CLI with no answer and a closed stdout still exits its rc
 cli.mjs: a deleted cwd stops only a main that reads it
 cli.mjs: a main that throws prints the message on stderr, nothing on stdout, and exits 70
@@ -574,12 +640,38 @@ inbox.mjs review: a --> inside the moved question, a word-aligned insertion, a r
 inbox.mjs review: a lone <!-- in a question hides nothing; answers() equals sed on it (no final newline); a CRLF heading counts
 inbox.mjs: added() on a session that wrote inside the comment returns that question (and only it)
 inbox.mjs: answersLine skips the comment (27 on the fixture, not 12), allows trailing blanks, and an unclosed comment runs to the end
+inbox.mjs: control counts STOP and PAUSE only as files, as [[ -f ]] does
+inbox.mjs: control is pause on the PAUSE file or a line starting pause
+inbox.mjs: control is stop on a line starting stop: stop, stopped, stop with a why, a CR behind it
+inbox.mjs: control is stop on the STOP file, whatever the line says
+inbox.mjs: control takes stop over pause, file or line
+inbox.mjs: control with no status line and no file is run, and any other word is too
 inbox.mjs: insert() puts the question and a blank line above ## Answers (appended without one); questionLine and files
 inbox.mjs: main gives the CLI's bytes for answers (no newline added), question and repair
+inbox.mjs: main gives the CLI's bytes for control and stop-why, reading the status line and the state's markers
 inbox.mjs: main's insert takes stdin from io and leaves the file the CLI leaves
 inbox.mjs: main's insert with an io that has no stdin throws without reading fd 0
+inbox.mjs: main's unstop writes the file, prints the old line and exits 3, then changes nothing and exits 0
 inbox.mjs: question(fixture, B1-05) is Q2, cut at the real heading, no comment in it
+inbox.mjs: status drops the spaces and tabs after the colon
+inbox.mjs: status is the first status: line anywhere in the file, one under ## Answers too
+inbox.mjs: status keeps a CR at the line's end, and takes it as space with nothing before it
+inbox.mjs: status keeps a no-break space after the colon ([[:space:]] isn't \s)
+inbox.mjs: status of a file with no status line, and of none, is empty
+inbox.mjs: status of a first-line status: stop is stop
+inbox.mjs: stopWhy cuts at 200 characters by code point, STOP's line and the INBOX's alike
+inbox.mjs: stopWhy gives STOP's line over the INBOX's (harness stop --why wins), its CR kept
+inbox.mjs: stopWhy keeps a no-break space at the why's end ([[:space:]] isn't \s)
+inbox.mjs: stopWhy of stop, stopped, stop - and no line gives none
+inbox.mjs: stopWhy on an empty STOP reads the status line's why
+inbox.mjs: stopWhy starts at the first letter or digit past the marks, and drops blanks at the end only
+inbox.mjs: stopWhy takes every CR out of the status line's why
+inbox.mjs: stopWhy's first letter may be beyond ASCII (the driver's UTF-8 locale)
+inbox.mjs: stopWhy: [[:alnum:]] as glibc has it, no fraction or superscript: stop ½ done gives done, stop, ³ none
 inbox.mjs: the driver template has no "## Answers" inside its comment; answers() hashes as answers_hash's sed did
+inbox.mjs: unstop of a run or pause line, or of none, changes nothing
+inbox.mjs: unstop sets the first status: stop line back to status: run, the rest byte for byte
+inbox.mjs: unstop's was keeps the line's bytes, its spaces and CR
 independent M2 verified and merged alone (its tag carries no M1 work)
 independent work goes on past a parked feature
 init model resolved to fable
@@ -601,6 +693,87 @@ key map lint: both files pass once the map's CLAUDE.md entry names them
 key map lint: each allowed form alone passes (HARNESS_HOME=, git -C log, readlink -f and cd && pwd as an alias, harness_config, == "…")
 key map lint: git -C show and grep, an alias of readlink -f, HH, a relative read up from tests/, an inline cd && pwd and a %/* root are hits; comments and sub-paths are not
 key map lint: this repo's tests/checks/ passes with the map in .harness/config.sh (CLAUDE.md and its readers)
+lane.mjs: closedLane: a code 0 neither opens a card nor ends the run
+lane.mjs: closedLane: a code alone has an empty reason
+lane.mjs: closedLane: a missing exit file is unexpected, code 12 with a card
+lane.mjs: closedLane: a normal line
+lane.mjs: closedLane: an empty first line reads as no code and no reason
+lane.mjs: closedLane: an exit file with no final newline is unexpected, as read fails there
+lane.mjs: closedLane: code 13 ends the run
+lane.mjs: closedLane: feature-list edits end the run, under its code 12
+lane.mjs: closedLane: only the first line counts
+lane.mjs: closedLane: read's trim takes blanks around the fields, never a CR or a no-break space
+lane.mjs: closedLane: the card opens on exactly the words a crash has, whatever the code
+lane.mjs: endKind: a prefix holds across a newline, as case's star does
+lane.mjs: endKind: a reason holding the words later in its text has none, each is a prefix
+lane.mjs: endKind: blocked on is high and the desk, no card of its own
+lane.mjs: endKind: done, the deadline and a session cap have none
+lane.mjs: endKind: feature-list edits have their card and the high priority
+lane.mjs: endKind: initializer failed has its card and the high priority
+lane.mjs: endKind: usage limit has its card, no high priority
+lane.mjs: endKind: waiting on Michael is high and the desk, no card of its own
+lane.mjs: endKind: weekly budget has its card, no high priority
+lane.mjs: fixRoundOpens: a plain verify at the cap is the card
+lane.mjs: fixRoundOpens: a plain verify under the cap opens one
+lane.mjs: fixRoundOpens: once mode, past the deadline, is the card
+lane.mjs: fixRoundOpens: past the cap is the card, and a cap of 0 never opens one
+lane.mjs: fixRoundOpens: rebase mode, whose caller is no lane loop, is the card
+lane.mjs: laneDone: MERGE_POLICY=off is verified, before refused
+lane.mjs: laneDone: a main conflict alone, with nomerge gone, is not read
+lane.mjs: laneDone: a re-base waits, before proposed
+lane.mjs: laneDone: conflicts with main
+lane.mjs: laneDone: its PR waits, before nomerge
+lane.mjs: laneDone: main did not merge, with a main conflict, needs Michael
+lane.mjs: laneDone: main did not merge, with no conflict, is tried again
+lane.mjs: laneDone: merge refused, before conflict
+lane.mjs: laneDone: merged wins over every other marker
+lane.mjs: laneDone: needs Michael gives its need, before waits
+lane.mjs: laneDone: needs Michael with no need keeps its colon and space
+lane.mjs: laneDone: no marker at all is the unknown merge failure, the one row with its side effect
+lane.mjs: laneDone: proposed, before waits
+lane.mjs: main fix-round: a count or cap that isn't a whole number (08, 1e3, empty) is the card, as bash's (( )) refused it
+lane.mjs: main: an unknown question is the usage line and exit 2
+lane.mjs: main: closed reads the exit file, or its absence
+lane.mjs: main: end-kind gives the card, the priority and the desk
+lane.mjs: main: fix-round answers by its exit code
+lane.mjs: main: lane-done gives the code, the side effect and the reason's exact bytes
+lane.mjs: main: run-end takes lines and answers the lists comma-joined
+lane.mjs: main: suite-verdict through the CLI
+lane.mjs: main: verdict gives the need and the card, in labelled lines
+lane.mjs: main: verify-round through the CLI
+lane.mjs: runEnd: a parked id leaves blocked, the rest keep the order given
+lane.mjs: runEnd: a parked id that isn't blocked changes nothing, and an id only equal to a whole one matches
+lane.mjs: runEnd: an empty list, 0/0, is done, as the regex has it
+lane.mjs: runEnd: blocked, parked and needs all at once
+lane.mjs: runEnd: every feature passing is done
+lane.mjs: runEnd: fewer passing is not done, and nothing else is no feature left to try
+lane.mjs: runEnd: needs with a next are the milestones
+lane.mjs: runEnd: needs with an empty next is empty
+lane.mjs: runEnd: the counts compare as written, and a summary that is no count is not done
+lane.mjs: suiteVerdict: fail where only fix features were un-passed, on a green suite, stays fail
+lane.mjs: suiteVerdict: fail where only fix features were un-passed, on a red suite, is red
+lane.mjs: suiteVerdict: fail with other features un-passed stays fail, whatever the suite
+lane.mjs: suiteVerdict: hold on a green suite stays hold
+lane.mjs: suiteVerdict: hold on a red suite is red
+lane.mjs: suiteVerdict: thin stays thin, whatever the suite
+lane.mjs: verifyCard: a re-base's red and thin give rebase
+lane.mjs: verifyCard: fail is the re-check's card with no variant, in every mode
+lane.mjs: verifyCard: red and not own gives the mode
+lane.mjs: verifyCard: red and own says own, over the mode
+lane.mjs: verifyCard: thin gives the mode, own or not
+lane.mjs: verifyNeed: fail with none failed (each has an attempt left) is empty
+lane.mjs: verifyNeed: fail with one failed id
+lane.mjs: verifyNeed: fail with several failed ids
+lane.mjs: verifyNeed: hold is empty
+lane.mjs: verifyNeed: red on a tree main brought nothing to is the milestone's own
+lane.mjs: verifyNeed: red with main merged in
+lane.mjs: verifyNeed: thin
+lane.mjs: verifyRound: a milestone not done is fail, whatever the rest says
+lane.mjs: verifyRound: a new entry short of the evidence on the last model is thin
+lane.mjs: verifyRound: a new entry with its evidence is hold, on any model
+lane.mjs: verifyRound: evidence short on an earlier model runs again
+lane.mjs: verifyRound: no new verify entry on an earlier model runs again
+lane.mjs: verifyRound: no new verify entry on the last model is thin
 lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
 lane_guard: a session that merged main keeps main's records (merge-base base); its own edits are un-indexed, still on disk
 lane_guard: a session's own merge of main into its branch is noted
@@ -858,6 +1031,16 @@ night words: memlint says run-scope and that it goes in the run's brief
 night words: out of the docs, prompts, templates and code, but for memlint's patterns and the catch-up's lines
 no URL in time: no window, the plain notification
 no URLs for a non-GitHub origin
+no answer: a poll that can't read its entries' projects starts nothing on a busy project: said, the entry still queued
+no answer: an entry the runner can't decode stays queued, said: not moved to done/, no start with no arguments
+no answer: end-kind unanswered: the run end's notification goes out at high priority
+no answer: run-end unanswered once is asked again at the next poll: the run ends done, not no feature left to try
+no answer: stop_why with no answer is the plain stop's words, never an empty end reason
+no answer: suite-verdict unanswered on a green suite: the hold stands, the milestone verified and tagged
+no answer: suite-verdict unanswered on a red suite: red, no tag, never a hold
+no answer: verdict unanswered where the milestone needs Michael: the lane closes on a need, its card and its notification
+no answer: verify-round unanswered on a done milestone: thin, its card, one verify round per model and no more
+no answer: verify-round unanswered when the verifier un-passed a feature: the re-check's fail, no lane crash
 no code PR touches the run record, and the record branch holds every entry
 no dependency note when every milestone has after
 no end time: --until stays an option of start, continue and queue start
@@ -974,6 +1157,7 @@ queue add --continue marks its entry --requested; --automatic (the driver's, the
 queue add --spec of a missing path: the line, exit 1, no .args file
 queue add --spec of a present path is queued
 queue add numbers past a parked entry
+queue add: a brief with a newline is one line holding 0x1f in the .args file, byte for byte; show prints it back; park and unpark keep the bytes
 queue end triggers one debrief, detached
 queue holds an entry whose project has a live run, starts the next one
 queue list marks continuations (requested) or (automatic)
@@ -997,6 +1181,34 @@ queue show: a continue names its project path from meta.env, one %q quoted under
 queue show: an --until text shows as given, a --brief-file as its path; an empty --brief is no brief; a CR or an empty file never reaches the screen
 queue stop after a run: one debrief
 queue unpark puts it back at the end, its reason gone
+queue.mjs: decodeEntry drops a CR at each line's end (a file edited elsewhere), a last line's too, and no other
+queue.mjs: decodeEntry keeps an empty argument in the middle and at the end
+queue.mjs: decodeEntry reads a last line with no final newline
+queue.mjs: decodeEntry reads an empty file as no arguments and one blank line as one empty argument
+queue.mjs: decodeEntry takes back what encodeEntry wrote, a multi-line argument whole
+queue.mjs: encodeEntry gives an empty argument its empty line
+queue.mjs: encodeEntry keeps a multi-line argument on one line, each newline as 0x1f
+queue.mjs: encodeEntry leaves a line that already holds 0x1f as it is (queue unpark passes raw lines)
+queue.mjs: encodeEntry writes one argument per line
+queue.mjs: entryFacts gives each --brief behind a newline, a multi-line one whole
+queue.mjs: entryFacts of a continue gives its run and no project
+queue.mjs: entryFacts of a start gives its path and run id, and a start with options first has no run
+queue.mjs: entryFacts reads every place from the third on, a value that looks like an option too
+queue.mjs: entryFacts takes the last --spec, a --spec with no value being empty
+queue.mjs: entryName grows past four digits as printf %04d does
+queue.mjs: entryName numbers past the highest name, a parked one's included, and reads no name that isn't an entry
+queue.mjs: entryName of a continue names its run id
+queue.mjs: entryName of an empty queue is 0001
+queue.mjs: entryName takes what follows a start path's last slash, so a trailing slash leaves none
+queue.mjs: entryProject of a continue is its run id looked up
+queue.mjs: entryProject of a continue whose run is unknown is none
+queue.mjs: entryProject of a start is its repository's directory name
+queue.mjs: entryProject of a start reads a trailing slash as basename does
+queue.mjs: entryProject of a start with no path, and of an empty entry, is none
+queue.mjs: main gives the CLI's bytes for decode, projects and facts: NUL-separated, a missing file empty
+queue.mjs: main with no question is a usage error
+queue.mjs: main's add with no verb or first argument is a usage error and writes nothing
+queue.mjs: main's add writes the entry, makes done and held, prints its path, and numbers past a parked entry
 real limit message: not counted, run completes
 record PR: RECORD_PR=off opens none, noted
 record PR: a harness continue after finish ends again and reuses the open record PR (one pr create for it), its body refreshed
@@ -1190,7 +1402,7 @@ status json: finished holds the runs ended in the last 24h, newest first, and ol
 status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
 status json: harness status --json over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3)
 status json: harness status <run> --json prints that one run object with v; an unknown run is an error
-status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs and ./overlap.mjs, exports runObject, queueEntry and sections
+status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs, ./overlap.mjs and ./queue.mjs, exports runObject, queueEntry and sections
 status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
 status json: queued holds the entries as queue list numbers them, held by a live run of their project, a brief's first 30 characters
 status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
@@ -1220,6 +1432,8 @@ status view: four sections in order (NEEDS YOU · harness needs, RUNNING, QUEUED
 status view: harness status --all over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3), and lists them all
 status view: no line over 60 or 80 display columns (also with -v); at 60 the long field and the cost go on an indented second line
 status view: no run.log line without -v; a bad --since is an error
+status.mjs: unquote reads a $'…' word's octal bytes and C escapes as UTF-8
+status.mjs: unquote reads a '…' word and a backslash-escaped one, and none is null
 status: stop <why> from the phone: the same note, ended and services note
 stub-gh: STUB_GH_DOWN=2 fails two pr creates with fixtures/gh-down.txt (a real gh's), the third opens the PR
 stub-git-down: a count of 2 fails the first two pushes with the fixture's lines (ref and url in), the third reaches origin.git
@@ -1358,6 +1572,7 @@ the report lists the review role when a review ran
 the restart line says why: no reply in <n> s, a bad header, a wrong id, the helper gone
 the retro prompt carries the end reason
 the run end goes out before the retro, once report.md is pushed
+the runner hands a queued multi-line --brief to harness start as one argument: both lines in the run's brief, none a word of its own
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the runner skips a parked entry and says so
 the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)

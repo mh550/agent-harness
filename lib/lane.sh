@@ -169,25 +169,34 @@ verify() {
     Fv vids ids "$LIST" "$m"
     for id in $vids; do F passes "$SLIST" "$id" || record F unpass "$LIST" "$id"; done   # the verdict, on the record
     unmaterialize
-    local vdone=false; F milestone-done "$LIST" "$m" && vdone=true   # in this shell: the line after it is a memo hit
+    local vdone=false; F milestone-done "$LIST" "$m" && vdone=true
     record MET append "$vlog" "$REC/metrics.jsonl" "$RUN_ID" verify "$m" "$(F model "$model")" \
       "$vdone" "$S_WALL" "$S_EXIT" false verify "$S_PEAK" "$LANE"
-    F milestone-done "$LIST" "$m" || { result=fail; break; }
-    if (( $(vcount "$m") <= before )); then short="no new verify entry"
-    elif short=$(F evidence "$LIST" "$m" "$REC/progress.md"); then result=hold; break; fi
-    [[ $model == "${models[-1]}" ]] && { result=thin; break; }   # the last model (the only one in once mode)
+    local vnew=false vev=false vlast=false vr
+    [[ $model == "${models[-1]}" ]] && vlast=true   # the last model (the only one in once mode)
+    if [[ $vdone == true ]]; then
+      if (( $(vcount "$m") <= before )); then short="no new verify entry"
+      else vnew=true; short=$(F evidence "$LIST" "$m" "$REC/progress.md") && vev=true; fi
+    fi
+    vr=$(ask lane.mjs verify-round "$vdone" "$vnew" "$vev" "$vlast")
+    # no answer: a milestone not done is the fail; a done one is thin, the card (a fail with every feature passing has none,
+    # and the lane would verify again and again)
+    [[ -n $vr ]] || { [[ $vdone == true ]] && vr=thin || vr=fail; }
+    case $vr in fail | hold | thin) result=$vr; break ;; esac
     note "verify $m: evidence short of the steps ($short); re-running on $VERIFY_ESCALATE_MODEL"
   done
   echo "$rounds" > "$STATE/verify-rounds-$m"
-  if [[ $result == hold ]] && ! green; then result=red; fi   # on the slot's tree, the one tagged below
-  # A verifier that performs a fix feature's steps as written (its last is the full suite) un-passes it on a tree whose
-  # suite is red. That verdict is the suite's, and the rule below answers it (the next round, or the card), not a
-  # re-check's attempt: when fix features are all it un-passed and the suite is red, they pass again and the result is red
-  local fixu
-  if [[ $result == fail ]] && fixu=$(fix_unpassed "$m") && ! green; then
+  # The suite runs on the slot's tree, the one tagged below, and only on a hold or on a fail where fix features are all
+  # the verifier un-passed. One that performs a fix feature's steps as written (its last is the full suite) un-passes it
+  # on a tree whose suite is red. That verdict is the suite's, and the rule below answers it (the next round, or the
+  # card), not a re-check's attempt: on a red suite they pass again and the result is red
+  local fixu="" sgreen=1 was=$result
+  if [[ $result == hold ]] || { [[ $result == fail ]] && fixu=$(fix_unpassed "$m"); }; then green || sgreen=0; fi
+  local sv; sv=$(ask lane.mjs suite-verdict "$result" "$sgreen" "${fixu:+1}")
+  if [[ -n $sv ]]; then result=$sv; else (( sgreen )) || result=red; fi   # no answer: a red suite is never a hold
+  if [[ $was == fail && $result == red ]]; then
     for id in $fixu; do record F pass "$LIST" "$id"; done
     note "verify $m: the verifier un-passed ${fixu//$'\n'/, } on a red suite; the verdict is the suite's (a fix round or the card, no re-check)"
-    result=red
   fi
   flakes_note
   # Fix rounds (decisions/2026-11-04-fix-rounds). The suite spoke (hold: green; red: after check.sh's rerun guard, so
@@ -220,14 +229,14 @@ verify() {
       elif [[ $mode != rebase && ! -f $STATE/nomerge-$m ]]; then merge_own; fi
       return 0 ;;
     thin) touch "$STATE/needs-$m"; note "verify $m: evidence still short of the steps ($short) after $last; not verified (needs Michael)"
-      need="verify evidence too thin" ;;
+      ;;
     red)
       # with main merged in, main and the milestone disagree; without, a slow-tier red the fast gate let through (fast-gate)
-      local whose="main merged in" after=""; need="suite red after merging main"
-      (( own )) && whose="main had nothing new: a slow-tier red the fast gate let through" need="suite red on the verified tree"
+      local whose="main merged in" after=""
+      (( own )) && whose="main had nothing new: a slow-tier red the fast gate let through"
       # under MAX_FIX_ROUNDS a red opens a fix round, no card: the lane loop's next pick is its feature, then this verify
       # again. In a plain verify only: `once` is past the deadline (no session can follow), `rebase`'s caller is no lane loop
-      if [[ -z $mode ]] && (( fixn < MAX_FIX_ROUNDS )) && fix_open "$m" $(( fixn + 1 )) $(( rounds - 1 )) "$whose"; then return 1; fi
+      if ask lane.mjs fix-round "$mode" "$fixn" "$MAX_FIX_ROUNDS" && fix_open "$m" $(( fixn + 1 )) $(( rounds - 1 )) "$whose"; then return 1; fi
       # the card, as before fix rounds; after rounds (never a re-base's: its milestone was verified since) the note names
       # them (their ids from the list) and the card's why what each left red (the rows, paired by metrics.mjs fixPairs)
       touch "$STATE/needs-$m"
@@ -246,18 +255,20 @@ verify() {
           touch "$STATE/needs-$m"; note "verify $m: $id failed the re-check in round $rounds of $maxr; $m needs Michael (see progress.md)"
           failed+=("$id")
         fi
-      done
-      if (( ${#failed[@]} == 1 )); then need="${failed[0]} fails verification"
-      elif (( ${#failed[@]} )); then need=$(printf '%s, ' "${failed[@]}"); need="${need%, } fail verification"; fi ;;
+      done ;;
   esac
+  # its need, the lane's exit reason, and its card: thin, red, or the re-check's failed ids (verify_recheck's rebase words are rebase_fail's)
+  local k v reason="" variant=""
+  while read -r k v; do case $k in need) need=$v ;; reason) reason=$v ;; variant) variant=$v ;; esac; done < <(ask lane.mjs verdict "$result" "$own" "$mode" "${failed[@]}")
+  # no answer where the verdict needs Michael (needs-<m> is there): words of its own and the card, never an empty need
+  [[ -n $need || ! -f $STATE/needs-$m ]] || { need="verify $result (see harness-log.md)" reason=verify_${result/#fail/recheck}; }
   if [[ $mode == rebase ]]; then   # not verified on today's main: the old tag must not merge, and a later verify tags afresh
     rm -f "$STATE/verified-$m" "$STATE/tag-local-$m" "$STATE/merge-failed-$m"; git tag -d "run/$RUN_ID/$m" > /dev/null 2>&1   # this verdict's card speaks for it now
     origin_t git push -q origin --delete "refs/tags/run/$RUN_ID/$m" 8>&- 2>> "$STATE/run.log"
     note "verify $m: the re-based tree did not hold; tag run/$RUN_ID/$m removed"
   fi
-  printf '%s' "$need" > "$LDIR/need"   # the lane's exit reason
-  # its record, committed with the verdict: thin, red, or the re-check's failed ids
-  [[ -n $need ]] && nref=$(needs_open "verify_$( [[ $result == fail ]] && echo recheck || echo "$result")" "$m" milestone="$m" failed="${failed[*]}" variant="$( [[ $result == fail ]] || { (( own )) && [[ $result == red ]] && echo own; } || echo "$mode")" ${fixj:+"rounds=$fixj"})   # verify_recheck's rebase words are rebase_fail's
+  printf '%s' "$need" > "$LDIR/need"
+  [[ -n $need ]] && nref=$(needs_open "$reason" "$m" milestone="$m" failed="${failed[*]}" variant="$variant" ${fixj:+"rounds=$fixj"})   # its record, committed with the verdict
   rec_commit "HARNESS: verify $m"; sync_record
   [[ -n $need ]] && needs_you "$m" "$need" progress.md "$nref"   # after the push: the click shows the verify entry
   return 1
@@ -330,22 +341,15 @@ merge_own() { merge_milestones "$M"; while [[ -f $STATE/rebase-$M ]]; do rebase 
 
 # Verified: merged, proposed, waiting on a dependency's merge or on its re-base's deferred round is the lane's 0; a
 # merge or re-base that needs Michael its 12. A lane never closes "needs Michael" without a card: every branch's card
-# exists; the last, which nothing should reach, opens one (fail-closed).
+# exists; the last, which nothing should reach, opens one (fail-closed), and no answer takes that branch too.
 lane_done() {
-  if [[ -f $STATE/merged-$M ]]; then lane_exit 0 "$M merged"
-  elif [[ -f $STATE/needs-$M ]]; then lane_exit 12 "$M needs Michael: $(cat "$LDIR/need" 2> /dev/null)"   # before waits-<m>, which stays
-  elif [[ -f $STATE/rebase-$M ]]; then lane_exit 0 "$M verified; its re-base waits"
-  elif [[ -f $STATE/proposed-$M ]]; then lane_exit 0 "$M proposed"
-  elif [[ -f $STATE/waits-$M ]]; then lane_exit 0 "$M verified; its PR waits"
-  # a conflict has its card. A merge that never started has none and needs no one yet: the coordinator's next merge
-  # re-bases it, and anything that stops there has its own card
-  elif [[ -f $STATE/nomerge-$M ]]; then
-    [[ -f $STATE/main-conflict-$M ]] && lane_exit 12 "$M needs Michael: $MAIN_BRANCH conflicts with its lane"
-    lane_exit 0 "$M verified; $MAIN_BRANCH did not merge into its lane; its merge is tried again"
-  elif [[ $MERGE_POLICY == off ]]; then lane_exit 0 "$M verified"
-  elif [[ -f $STATE/refused-$M ]]; then lane_exit 12 "$M needs Michael: merge refused"
-  elif [[ -f $STATE/conflict-$M ]]; then lane_exit 12 "$M needs Michael: conflicts with $MAIN_BRANCH"
-  else merge_failed "$M" unknown; lane_exit 12 "$M needs Michael: its merge"; fi
+  local f on=() a mf
+  for f in merged needs rebase proposed waits nomerge main-conflict refused conflict; do [[ -f $STATE/$f-$M ]] && on+=("$f"); done
+  a=$(ask lane.mjs lane-done "$M" "$MAIN_BRANCH" "$MERGE_POLICY" "$(cat "$LDIR/need" 2> /dev/null)" "${on[@]}")   # <code> <merge failed 0|1> <reason>
+  [[ -n $a ]] || a="12 1 $M needs Michael: its merge"
+  mf=${a#* }; mf=${mf%% *}
+  [[ $mf == 1 ]] && merge_failed "$M" unknown
+  lane_exit "${a%% *}" "${a#* * }"
 }
 in_lane() { local m; m=$(F milestone "$LIST" "$1"); [[ ${m:-default} == "$M" ]]; }
 

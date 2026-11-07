@@ -10,7 +10,7 @@ import { captured, isMain, readStdin } from "../../lib/cli.mjs";
 import { mainOf, sameAsCli } from "./cli-same.mjs";
 
 const url = name => new URL(`../../lib/${name}`, import.meta.url).href;
-const SERVED = ["features", "metrics", "treekey", "testcount", "entries", "inbox", "memlint", "render", "needs", "summary", "notify"].map(s => `${s}.mjs`);
+const SERVED = ["features", "metrics", "treekey", "testcount", "entries", "inbox", "memlint", "render", "needs", "summary", "notify", "checkdecide", "lane"].map(s => `${s}.mjs`);
 const inTmp = fn => { const d = mkdtempSync(join(tmpdir(), "cli-")); try { return fn(d); } finally { rmSync(d, { recursive: true, force: true }); } };
 const node = (argv, opts = {}) => { const r = spawnSync(process.execPath, argv, { encoding: "utf8", maxBuffer: 1 << 26, ...opts }); return { rc: r.status, out: r.stdout, err: r.stderr }; };
 // a script whose main is the given body, run through the shared tail

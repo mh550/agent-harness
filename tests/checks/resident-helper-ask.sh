@@ -355,7 +355,7 @@ check "a failure with no STATE in this shell: the spawn's bytes, nothing fatal u
 CK=$MD/ck; git init -q -b main "$CK"; echo a > "$CK/a"; mkdir "$CK/sub"; echo b > "$CK/sub/b"; git -C "$CK" add -A; git -C "$CK" -c user.name=t -c user.email=t@t commit -qm i
 ckey=$(cd "$CK" && node "$HH/lib/treekey.mjs")
 sc ckrun << 'EOF'
-export HARNESS_CHECK_CACHE=$D/cache HARNESS_CHECK_CMD='echo "tk=${HARNESS_CHECK_TK-unset}" >> "$D/suite-saw"'
+export HARNESS_CHECK_CACHE=$D/cache HARNESS_CHECK_CMD='echo "tk=${HARNESS_CHECK_TK-unset}" >> "$D/suite-saw"; echo "before=${HARNESS_CHECK_BEFORE-unset}" >> "$D/suite-saw-before"'
 CHECK=$HARNESS_HOME/lib/check.sh; cd "$MD/ck"; ask features.mjs summary "$L" > /dev/null; keep 0
 check_run > "$D/first"; echo $? > "$D/rc-first"; keep first
 check_run > "$D/cached"; keep cached
@@ -367,6 +367,8 @@ check "check_run: check.sh's key comes from the parent's helper (no treekey.mjs 
   '[[ $(slice ckrun 0 cached | grep -c treekey) == 0 && -f $CR/cache/green-$ckey && $(cat "$CR/rc-first") == 0 ]] && grep -q "^check: green" "$CR/first" && grep -q "^check: green (cached" "$CR/cached"'
 check "the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key" \
   '[[ $(sort -u "$CR/suite-saw") == tk=unset && $(slice ckrun cached sub | grep -c treekey) == 1 && $(slice ckrun sub direct | grep -c treekey) == 1 ]] && grep -q "^check: green (cached" "$CR/sub" && grep -q "^check: green (cached" "$CR/direct"'
+check "check_run: check.sh's cache answer comes from the parent's helper too (no checkdecide.mjs start) and the suite never sees it; a check.sh with no parent asks it itself (one start each)" \
+  '[[ $(slice ckrun 0 cached | grep -c checkdecide) == 0 && $(sort -u "$CR/suite-saw-before") == before=unset && $(slice ckrun cached sub | grep -c checkdecide) == 1 && $(slice ckrun sub direct | grep -c checkdecide) == 1 ]]'
 sc ckcount << 'EOF'
 CHECK=$HARNESS_HOME/lib/check.sh; cd "$MD/ck"; export HARNESS_CHECK_CACHE=$D/cache HARNESS_CHECK_CMD=true
 ask features.mjs summary "$L" > /dev/null
