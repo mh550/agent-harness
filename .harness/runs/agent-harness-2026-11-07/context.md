@@ -1,10 +1,11 @@
-# Context pack for `S4-03`
+# Context pack for `S4-04`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
 - Discovery (S4-01, affects S4-03, S4-04): The second note proof compares from note " to the END of the line, so a line holding a note keeps its trailing code byte for byte: the three end-block lines keep ends+=(…), so runEnd answers lists and bash still builds the reason. → entries.jsonl:2
+- Discovery (S4-01, affects S4-04): spec_entry in lib/spec.sh is a fifth queue decoder the feature list doesn't name; the plan moves it with S4-04 (default). No check holds a 0x1f byte today: grep -rl x1f tests/checks tests/unit prints nothing. → entries.jsonl:2
 - Discovery (S4-01, affects S4-02, S4-03, S4-04): bash read fails at end of file on a last line with no newline, so closedLane must answer 'lane exited unexpectedly' for an exit file with no final newline; rule 4 of the plan lists the others (read's trim, [[:space:]] against \s, [[:alnum:]], ${w:0:200}). → entries.jsonl:2
 - Discovery (init, affects run): The milestone PR's body is composed by the harness (pr_body in lib/record.sh) from the features' descriptions and the verify entry: the brief's 'PR body for a reader with no source open' is met by the descriptions (written in that register) and by journal/decisions/2026-11-03-purity.md, which S4-05 writes the same way. → entries.jsonl:1
 - Discovery (init, affects run): S1's forty mutants with their `before` line text are in findings-and-research/2026-11-03-suite-coverage/_mutants.jsonl (.id .file .line .before .after); the findings file's line numbers are the sample tree's, not today's: relocate a mutant by grep -F of its `before` text. → entries.jsonl:1
@@ -18,8 +19,8 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Lately in the run
 
+- 2026-11-07 03:13 · S4-03 · passes: The lane's verify verdict and exit table, how a closed lane reads, and how a run ends are now pure functions in lib/lane.mjs, served by the helper and reached through ask. 80 unit tests. Notes, cards, exit and end reasons unchanged: both note proofs clean, 295 inputs compared old bash against new with no difference. lib/lane.sh and lib/driver.sh: 52 deleted, 51 added.; tests 1572 → 1652; files lib/lane.mjs, lib/lane.sh, lib/driver.sh, lib/helper.mjs, tests/unit/lane.test.mjs, … → entries.jsonl:4
 - 2026-11-07 02:57 · S4-02 · passes: lib/check.sh's decisions moved to lib/checkdecide.mjs: redReason, cachedAnswer, partialPlan, rerunChoice, keepRed, failedNames. check.sh asks per moment by one decide() line; check_run hands the first answer through ask (served). All check: lines and notes unchanged. check.sh -72/+42; 65 unit tests, 1 check; literal-04 caught at its new home.; tests 1506 → 1572; files lib/checkdecide.mjs, lib/check.sh, lib/record.sh, lib/helper.mjs, tests/unit/checkdecide.test.mjs, … → entries.jsonl:3
-- 2026-11-07 02:32 · init · passes: 5 features, one milestone S4 (the purity moves): S4-01 plan (docs/plans/2026-11-07-S4-purity.md, the decision file's skeleton); S4-02 lib/check.sh's cache and rerun decisions → lib/checkdecide.mjs; S4-03 the lane's verdict and exit table and how a run ends → lib/lane.mjs; S4-04 the queue entry format → lib/queue.mjs and INBOX status → inbox.mjs; S4-05 review, proofs, mutants, Predictions, docs. → entries.jsonl:1
 
 ## Current rules
 
