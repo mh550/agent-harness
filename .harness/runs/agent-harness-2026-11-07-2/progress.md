@@ -9,6 +9,22 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 11:45 · M2-02 · passes
+
+lib/curator.mjs (validate, tierOf, matchAnchor, capCheck, apply, body, main validate|apply|body); factKey/factText/resolvedText exported from entries.mjs; sectionEntries/headingLines (fence-aware) in memlint.mjs; prompts/curator.md; 22 unit tests on headings.txt and three harm fixtures. Opus review: 2 Important, 6 Minor, fixed red→green.
+
+- **Files:** lib/curator.mjs, lib/entries.mjs, lib/memlint.mjs, prompts/curator.md, tests/unit/curator.test.mjs, tests/fixtures/memory/README.md, tests/fixtures/memory/corrected.entries.jsonl, tests/fixtures/memory/corrected.ops.json, tests/fixtures/memory/unstated.entries.jsonl, tests/fixtures/memory/unstated.ops.json, tests/fixtures/memory/tool-result.entries.jsonl, tests/fixtures/memory/tool-result.ops.json, +4 more
+- **Verified:** node --test --test-isolation=none tests/unit/*.test.mjs: 475/475 (curator 22/22, red first: module missing, then 7 red after the review's tests); check.sh --fast green in 113 s, 960 tests; grep -c 'slice(0, 40)' lib/curator.mjs → 0; node --check on the four .mjs.
+- **Tests:** 938 → 960
+- **Dead end:** the gate as factKey equality (the plan's rule) — the review showed a stated first 40 characters plus an unstated tail passes and is written; the gate now compares the whole text (a stated item or a cut of it ≥ 40 chars, suffix aside)
+- **Discovery** (affects M2-03, M2-04, M2-05): Built step order differs from the plan: file, section (0 or 2+ headings drop), from, gate for every op first; then the dedupe among survivors; then tier 3 → proposal; anchor; already there. An unstated tier-3 op is dropped 'not stated by …', never proposed.
+- **Discovery** (affects M2-03, M2-04): The gate needs the op text to be the stated item whole or cut ≥ 40 chars (suffix aside): M2-04's stub-three-ops ops must copy STUB_FACTS' texts verbatim; a STUB_PROPOSE string passes only in a tier-2 section (a Gotchas op with it: 'not stated by entries.jsonl:<n> as a project fact').
+- **Discovery** (affects M2-03, M2-04): Anchors match by factKey after the list marker and the (<run> <date>) suffix are cut: an anchor under 40 chars must be the whole line (a short prefix matches nothing).
+- **Discovery** (affects M2-04): curator.mjs apply prints {ops, applied, proposed, dropped:[{op,reason}], rederived, refused, run, files}; files lists what it wrote (none when refused); a symlinked CLAUDE.md is read as absent; it is not in lib/helper.mjs's SERVED set (it writes files): call it with node, not ask.
+- **Discovery** (affects M2-03, M2-04): The stub fixtures (stub-three-ops, stub-cap, stub-cap-evict, stub-mixed, stub-continue) were left to M2-03/M2-04, whose checks and knobs fill their placeholders.
+- **Question for Michael:** Default taken (journal/decisions/2026-11-07-memory-tiers.md): a proposed_changes string gates only a tier-2/3 op, never a tier-1 Gotchas commit, since how-to-work-here is yours. Keep it, or let proposals land in Gotchas too? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/lib/curator.mjs, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/journal/decisions/2026-11-07-memory-tiers.md
+- *05-M2-02 · claude-opus-5-5*
+
 ### 2026-11-07 11:27 · M2-01 · passes
 
 Wrote docs/plans/2026-11-07-M2-curator.md: memory-ops.json's shape and validator, the tier rule and fixed protected list, anchor/gate/duplicate/cap steps, the bucket arithmetic, curator() in finish, memory_base/memory_pr, prompts/curator.md drafted, stub knobs, 40 of 60 planned names; tests/fixtures/memory/headings.txt (64 lines); the memory-tiers decision skeleton.

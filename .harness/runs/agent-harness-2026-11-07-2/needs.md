@@ -104,3 +104,24 @@ harness needs done agent-harness-2026-11-07-2/4 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-07-2/5 --why "<answer>"
 ```
+
+## ⚠ M2-02 asked: Default taken (journal/decisions/2026-11-07-memory-tiers.md…
+
+`agent-harness-2026-11-07-2/6` · since 2026-11-07T16:45:18.521Z
+
+**blocked** nothing waits on it; M2-02's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:7](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L7)
+
+> Default taken (journal/decisions/2026-11-07-memory-tiers.md): a proposed_changes string gates only a tier-2/3 op, never a tier-1 Gotchas commit, since how-to-work-here is yours. Keep it, or let proposals land in Gotchas too? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/lib/curator.mjs, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/journal/decisions/2026-11-07-memory-tiers.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/lib/curator.mjs](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M2/lib/curator.mjs) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-2/slot-1/journal/decisions/2026-11-07-memory-tiers.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-2/M2/journal/decisions/2026-11-07-memory-tiers.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl:7](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-2/.harness/runs/agent-harness-2026-11-07-2/entries.jsonl?plain=1#L7)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-2/6 --why "<answer>"
+```
