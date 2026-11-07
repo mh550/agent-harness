@@ -1,0 +1,2 @@
+{"feature":"init","kind":"init","outcome":"passes","summary":"Set up the run."}
+{"feature":"A","kind":"coding","outcome":"passes","summary":"Built A.","discoveries":[{"text":"tests/lib.sh needs HARNESS_HOME set before it sources lib/*.sh (r1 2026-11-07)","affects":["project"]}]}

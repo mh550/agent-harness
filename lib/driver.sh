@@ -225,8 +225,19 @@ deadline_verify() {
   fi
 }
 
+# <start> <file> <role>: a read-only session's one output file, $RUN_DIR/<file>, rescued to $SCRATCH/<file> (restrict
+# deletes it) only when this session wrote it (not a continued run's earlier copy) as a plain file of at most 64 KB (a
+# symlink would carry another file into the record); then every edit since <start> reverted, the paths in RO_REVERTED
+# (the rescued file left out)
+ro_rescue() {
+  local p=$RUN_DIR/$2
+  rm -f "$SCRATCH/$2"
+  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= 65536 )) && ! git show "$1:$p" 2> /dev/null | cmp -s - "$p" && cp "$p" "$SCRATCH/$2"
+  RO_REVERTED=$(restrict "$1" nothing "$3" | { [[ -f $SCRATCH/$2 ]] && grep -vxF "$p" || cat; } | paste -sd' ')
+}
+
 retro() {   # a short read-only session that turns this run's evidence into proposed harness changes
-  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x backlog sruns nolist="" p=$RUN_DIR/retro-proposals.json
+  local rlog=$LOGS/zz-retro-$(date +%H%M%S).jsonl rstart reverted x backlog sruns nolist=""
   rstart=$(git rev-parse HEAD)
   # the backlog as the list prints it ({{BACKLOG}}): ids to reuse and statuses to cite, not re-argue
   backlog=$(node "$HARNESS_HOME/lib/backlog.mjs" list "$LEDGER/retro-backlog.jsonl" --max-bytes 6000 2> "$SCRATCH/backlog.err") \
@@ -236,13 +247,8 @@ retro() {   # a short read-only session that turns this run's evidence into prop
   HARNESS_BACKLOG=$backlog HARNESS_SUMMARY=$REC/summary.json HARNESS_SUITE_RUNS=${sruns:-not counted} HARNESS_CHECKS=${chk:-not counted} HARNESS_STATE=$STATE HARNESS_LEDGER=$LEDGER HARNESS_END_REASON=$END_REASON prompt retro
   log "retro · $(F model "$RETRO_MODEL")"
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session retro "$(F model "$RETRO_MODEL")" "$rlog" retro
-  # its one output file besides retro.md: restrict deletes it, so it goes to scratch first, and only when this retro
-  # wrote it (not a continued run's earlier copy) as a plain file of at most 64 KB (a symlink would carry another file
-  # into the record); ledger() merges it into the backlog (decisions/2026-10-26-retro-backlog)
-  rm -f "$SCRATCH/retro-proposals.json"
-  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= 65536 )) && ! git show "$rstart:$p" 2> /dev/null | cmp -s - "$p" \
-    && cp "$p" "$SCRATCH/retro-proposals.json"
-  reverted=$(restrict "$rstart" nothing retro | { [[ -f $SCRATCH/retro-proposals.json ]] && grep -vxF "$p" || cat; } | paste -sd' ')
+  # its one output file besides retro.md; ledger() merges it into the backlog (decisions/2026-10-26-retro-backlog)
+  ro_rescue "$rstart" retro-proposals.json retro; reverted=$RO_REVERTED
   for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict: the driver's notes, not the retro's edits
   [[ -n $reverted ]] && note "retro: reverted edits (it is read-only): $reverted"
   [[ -n $nolist ]] && note "$nolist"   # noted here: restrict reverts a note written before the session
@@ -251,6 +257,32 @@ retro() {   # a short read-only session that turns this run's evidence into prop
   MET final "$rlog" > "$SCRATCH/retro.md"
   [[ -s $SCRATCH/retro.md ]] && ! MET limit "$rlog" "$S_WALL" "$S_EXIT" > /dev/null && cp "$SCRATCH/retro.md" "$REC/retro.md"
   record MET append "$rlog" "$REC/metrics.jsonl" "$RUN_ID" retro "" "$(F model "$RETRO_MODEL")" true "$S_WALL" "$S_EXIT" false retro "$S_PEAK"
+}
+
+# One read-only session after the retro that turns the run's project facts into operations on CLAUDE.md and
+# .harness/project.md (memory-ops.json); the driver validates and applies them, never the session (MEMORY_POLICY=pr;
+# off runs none, with no note). decisions/2026-11-07-memory-tiers
+curator() {
+  local clog=$LOGS/zz-curator-$(date +%H%M%S).jsonl cstart reverted x
+  rm -f "$STATE/memory.json"   # a continue's: the summary reads this segment's or none
+  case $MEMORY_POLICY in off) return 0 ;; pr) ;;
+    *) note "curator: none (MEMORY_POLICY=$MEMORY_POLICY is neither pr nor off)"; return 0 ;; esac
+  # the retro's notes, retro.md, its proposals and metrics row are uncommitted here: restrict commits the tree and then
+  # reverts everything since cstart, so they are committed first or the curator's revert takes them
+  rec_commit "HARNESS: retro"; sync_record
+  cstart=$(git rev-parse HEAD)
+  memory_base || return 0   # the texts the apply will see, in $SCRATCH/memory-base/
+  HARNESS_MEMORY_BASE=$SCRATCH/memory-base HARNESS_STATE=$STATE prompt curator
+  log "curator · $(F model "$CURATOR_MODEL")"
+  MAX_TURNS=40 SESSION_BUDGET_USD=3 session curator "$(F model "$CURATOR_MODEL")" "$clog" curator
+  ro_rescue "$cstart" memory-ops.json curator; reverted=$RO_REVERTED   # its one output file, as the retro's proposals
+  rm -f "$STATE/memory.json"   # the driver's alone: memory_pr writes it, or no file says no curation
+  for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict, as the retro's: session() leaves them to us
+  [[ -n $reverted ]] && note "curator: reverted edits (it is read-only): $reverted"
+  record MET append "$clog" "$REC/metrics.jsonl" "$RUN_ID" curator "" "$(F model "$CURATOR_MODEL")" true "$S_WALL" "$S_EXIT" false curator "$S_PEAK"
+  [[ -f $SCRATCH/memory-ops.json ]] || { note "curator: wrote no memory-ops.json"; return 0; }
+  cp "$SCRATCH/memory-ops.json" "$REC/"   # in the run record, as retro-proposals.json
+  memory_pr
 }
 
 ledger() {   # the whole run record into the harness's own record, for `harness trends`, retros and calibration
@@ -351,7 +383,11 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   # a failed post notes it in harness-log.md: commit it now, before a retro that may never finish
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run-end notification failed"; sync_record; }
   [[ $edesk == 1 ]] && desk "ended: $1"   # after that commit: its note is no failed post
-  if [[ $RETRO == 1 && -f $LIST ]]; then retro; helper_note; SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"; fi
+  # the curator needs no retro and runs after it, before the summary (M3's summary.memory reads its memory.json)
+  local rc=0
+  if [[ $RETRO == 1 && -f $LIST ]]; then retro; helper_note; rc=1; fi
+  if [[ -f $LIST && $MEMORY_POLICY != off ]]; then curator; helper_note; rc=1; fi
+  (( rc )) && SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"
   SUM report --md "$REC/summary.json" > "$REC/report.md"
   # the state dir outlives the worktree gc removes: harness report reads these there (decisions/2026-10-27-record-after-gc)
   # (metrics.jsonl beside them for report's memory peaks, when the run has one)

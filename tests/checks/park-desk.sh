@@ -230,7 +230,7 @@ rm -rf "$HARNESS_STATE"/proj/deps-{end,live,q,co,ro}   # a live fake driver.pid 
 
 REPLAY=
 # ---- run 2: Michael sets "status: stop" in INBOX.md from the phone (and only NOTIFY_CMD is configured) ----
-printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"
+printf '%s\n' 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MEMORY_POLICY=off' "NOTIFY_CMD='{ printf \"%s\\n\" \"\$1\"; env | grep ^HARNESS_NOTIFY_; echo ===; } >> \"$T/notify-env.log\"'" > "$T/user-config.sh"
 # a continuation Michael requested before this stop (state_of needs a meta.env; the start writes the real one)
 mkdir -p "$HARNESS_STATE/proj/stoppy" && printf 'RUN_ID=stoppy\n' > "$HARNESS_STATE/proj/stoppy/meta.env" && "$H" queue add --continue stoppy > /dev/null
 STUB_PHONE_STOP=1 "$H" start "$T/proj" stoppy --spec SPEC.md --foreground > "$T/run2.out" 2>&1
@@ -461,6 +461,6 @@ check "harness merge says it was refused again, and starts no desk" '[[ $(hlog r
 check "the dialog guard: the CLI's dialog words, not the desk's own questions" 'DG=$(sed -n "s/^DIALOG=\x27\(.*\)\x27$/\1/p" "$HH/lib/desk.sh"); [[ -n $DG ]] \
   && sed 1d "$HERE/fixtures/permission-menu.txt" | grep -qE "$DG" && ! printf "%s\n" "Do you want to merge M1 now?" "1. yes  2. no" "Enter the value" | grep -qE "$DG"'
 "$H" desk --all > /dev/null
-echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MEMORY_POLICY=off' > "$T/user-config.sh"
 
 suite_end

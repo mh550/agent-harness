@@ -214,6 +214,29 @@ coverage: shScan keeps a multi-line array and a quoted string inside a $( ) insi
 coverage: shScan leaves out comments, closing words, a case's bare pattern, a function's header and a comment's quote or backslash
 coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
 coverage: two processes' V8 documents add up: a character ran when it did in either
+curator.mjs: a 16th Gotchas add without an anchor refuses the tier-1 commit, naming the breach
+curator.mjs: a fact a later entry resolved, or already in its section, is dropped
+curator.mjs: a file already over the cap takes a replace or a delete
+curator.mjs: a heading inside a code fence, a repeated heading or CRLF line ends never misplace a write
+curator.mjs: a result over 120 lines refuses the tier-1 commit
+curator.mjs: an anchor with no match or two matches drops its op, naming the anchor
+curator.mjs: an op on a protected section is dropped and carried as a proposal
+curator.mjs: an op whose write would change a protected section's lines is dropped
+curator.mjs: apply derives the tier from the heading and counts a claim that disagrees
+curator.mjs: body lists the applied and tier-2 ops with their from, then the proposals, then the dropped with reasons
+curator.mjs: harm, a fact no entry states gives no op
+curator.mjs: harm, a fact stated then corrected gives one op, the correction
+curator.mjs: harm, a line from a tool result is dropped by the gate
+curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSON line
+curator.mjs: matchAnchor matches a line whose whitespace, backticks, emphasis or bullet differ
+curator.mjs: only tier 1 is written; a tier-2 op leaves the texts as they were
+curator.mjs: the curator prompt renders with no placeholder left
+curator.mjs: the same add with an anchor evicts that line and is accepted
+curator.mjs: the write gate drops a text the entry its from names does not state, and keeps a delete with an existing anchor
+curator.mjs: tierOf gives every heading of the eight projects its fixture tier
+curator.mjs: tierOf protects a heading by prefix, its dated or parenthesised suffix aside
+curator.mjs: validate passes a file of three ops and returns them
+curator.mjs: validate refuses a malformed file whole with its first reason
 decisionsStore: DECISIONS=journal/decisions in .harness/config.sh is a directory store
 decisionsStore: a quoted DECISIONS= naming a missing file wins over docs/decisions.md, a file store that doesn't exist
 decisionsStore: neither is null, and store prints nothing
@@ -817,6 +840,7 @@ summary.mjs: main gives the CLI's bytes for report --md, suite-runs, ledger-line
 summary.mjs: main's view is the io's: isTTY and columns from io, never the process's stdout
 summary.mjs: report lists only the sessions over 2 GB
 summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: the curator session counts under its own role in cost by role
 summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
 sync: a local commit outside ledger/ is left alone, nothing pushed
 sync: a modified tracked file: skipped

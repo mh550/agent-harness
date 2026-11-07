@@ -372,6 +372,117 @@ restrict() {   # base record|nothing|memory who
   commit_all "HARNESS: reverted edits a $3 session may not make"
 }
 
+# The curator's base (decisions/2026-11-07-memory-tiers): harness-memory/<run>'s tip when origin has it with its open
+# `memory: <run>` PR (MEM_URL ← its URL: a continue's curator restates nothing already there) or with no PR at all (a
+# push whose pr create failed: the PR opens on it), main when main has taken that tip, else origin's main. A tip main
+# lacks whose PR is closed (or not the run's) is Michael's, and GitHub or origin not answering is no answer: 1, one
+# note, never a branch over it. The texts go to $SCRATCH/memory-base/ for the session to read, so its anchors are
+# matched against the text the apply sees
+memory_base() {
+  local d=$SCRATCH/memory-base f tip pv st="" x b=harness-memory/$RUN_ID err=$STATE/memory-base.err
+  MEM_URL="" MEM_NOPR=""
+  origin_t git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
+  MEM_BASE=$(git -C "$RWT" rev-parse -q --verify "origin/$MAIN_BRANCH^{commit}") || { note "curator: none (no origin/$MAIN_BRANCH to curate against)"; return 1; }
+  tip=$(origin_t git -C "$RWT" ls-remote -q origin "refs/heads/$b" 2>> "$STATE/run.log") || { note "memory PR: none (origin did not answer for $b; see run.log)"; return 1; }
+  tip=${tip%%$'\t'*}
+  if [[ -n $tip ]]; then
+    if pv=$(origin_t $GH pr view "$b" --json url,state,title 2> "$err"); then   # the head's open PR, else its newest
+      [[ $(jq -r .title <<< "$pv" 2> /dev/null) == "memory: $RUN_ID" ]] && st=$(jq -r .state <<< "$pv")
+    elif grep -q '^no pull requests found' "$err"; then st=NONE
+    else cat "$err" >> "$STATE/run.log"; note "memory PR: none (GitHub did not answer for $b; see run.log)"; return 1; fi
+    origin_t git -C "$RWT" fetch -q origin "refs/heads/$b" 2>> "$STATE/run.log"
+    git -C "$RWT" cat-file -e "$tip^{commit}" 2> /dev/null || { note "memory PR: none (could not fetch $b; see run.log)"; return 1; }
+    if git -C "$RWT" merge-base --is-ancestor "$tip" "$MEM_BASE"; then :   # taken by main: cut from main, a fast-forward of it
+    elif [[ $st == OPEN || $st == NONE ]]; then
+      x=$(memory_foreign "$MEM_BASE" "$tip")   # a commit a session pushed there is never a base, nor carried to Michael
+      [[ -n $x ]] && { note "memory PR: none ($b has a commit the driver would not write, $x; delete the branch to curate again)"; return 1; }
+      MEM_BASE=$tip; if [[ $st == OPEN ]]; then MEM_URL=$(jq -r .url <<< "$pv"); else MEM_NOPR=1; fi
+    else note "memory PR: none ($b is on origin and main lacks it, its PR ${st:-titled otherwise}; delete the branch to curate again)"; return 1; fi
+  fi
+  rm -rf "$d"; mkdir -p "$d/.harness"
+  for f in CLAUDE.md .harness/project.md; do git -C "$RWT" show "$MEM_BASE:$f" > "$d/$f" 2> /dev/null || rm -f "$d/$f"; done
+}
+
+# <base> <tip> → the first commit of base..tip memory_pr would not have written: a merge, another subject than
+# `memory: <run>: <n> facts`, or a path besides CLAUDE.md and .harness/project.md (`<sha12> "<subject>" (<paths>)`); else nothing
+memory_foreign() {
+  local c s f
+  while read -r c; do
+    s=$(git -C "$RWT" log -1 --format=%s "$c"); f=$(git -C "$RWT" diff-tree --no-commit-id --name-only -r "$c" | grep -vxE 'CLAUDE\.md|\.harness/project\.md' | paste -sd' ')
+    if [[ -n $f || ! ${s#"memory: $RUN_ID: "} =~ ^[0-9]+\ facts$ || $(git -C "$RWT" rev-list --parents -n 1 "$c" | wc -w) != 2 ]]; then
+      echo "${c:0:12} \"${s:0:80}\"${f:+ ($f)}"; return 0; fi
+  done < <(git -C "$RWT" rev-list --reverse "$1..$2")
+}
+
+# <ops> <applied> <dropped> <proposed> <pr url|""> [<invalid why>] → $STATE/memory.json, for the summary (M3)
+memory_json() {
+  jq -nc --argjson o "$1" --argjson a "$2" --argjson d "$3" --argjson p "$4" --arg u "$5" --arg w "${6:-}" \
+    '{ops: $o, applied: $a, dropped: $d, proposed: $p, pr: (if $u == "" then null else $u end)} + (if $w == "" then {} else {invalid: $w} end)' > "$STATE/memory.json"
+}
+
+# The curator's memory-ops.json (rescued to $SCRATCH) → applied on harness-memory/<run> in a detached scratch worktree
+# at MEM_BASE: tier 1 one commit (refused whole past the cap), tier 2 and 3 and every dropped op in the body of a
+# `memory: <run>` PR left for Michael (MEMORY_POLICY=pr); the body kept as memory.md in the run record. The record
+# branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
+memory_pr() {
+  local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" o a d p rd refused x files=() b=harness-memory/$RUN_ID
+  why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
+    why=$(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)
+    note "curator: memory-ops.json invalid: $why"; memory_json 0 0 0 0 "$MEM_URL" "$why"; return 0; }
+  n=$(jq length "$SCRATCH/memory-ops.json" 2> /dev/null)
+  [[ $n == 0 ]] && { note "curator: no operations"; memory_json 0 0 0 0 "$MEM_URL"; return 0; }
+  memory_wt_gone
+  git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
+    || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 "$MEM_URL"; memory_wt_gone; return 0; }
+  node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" > "$r" 2>> "$STATE/run.log"
+  # an apply that threw prints nothing: refused, no commit and no PR (tests/checks/no-answer.sh's rule)
+  IFS=$'\t' read -r o a d p rd refused < <(jq -r '[.ops, (.applied | length), (.dropped | length), (.proposed | length), .rederived, (.refused // "-")] | @tsv' "$r" 2> /dev/null)
+  if [[ ! $o =~ ^[0-9]+$ ]]; then note "memory: apply failed (see run.log)"; memory_json "$n" 0 0 0 "$MEM_URL"; memory_wt_gone; return 0; fi
+  note "memory: $o ops · $a applied · $d dropped · $p proposals"
+  while IFS= read -r x; do note "${x:0:200}"; done < <(jq -r '.dropped[] | select(.reason | startswith("refused: ") | not) | "memory: dropped \(.op.op) \(.op.section) (\(.reason))"' "$r")
+  (( rd > 0 )) && note "memory: tier re-derived for $rd ops"
+  [[ $refused != - ]] && note "memory: tier-1 commit refused ($refused)"
+  memory_body "$r"
+  mapfile -t files < <(jq -r '.files[]?' "$r")
+  if (( a == 0 || ${#files[@]} == 0 )) || [[ $refused != - ]]; then
+    if [[ $MEM_URL == http* && $MERGE_POLICY != off ]]; then memory_edit "$MEM_URL" " (no tier-1 change)"   # its proposals still reach Michael
+    elif [[ -n $MEM_NOPR && $MERGE_POLICY != off ]]; then memory_open   # an earlier segment's commit, still without its PR
+    else note "memory PR: none (no tier-1 change); the body is in memory.md"; fi
+  elif [[ $MERGE_POLICY == off ]]; then note "memory PR: none (MERGE_POLICY=off); the body is in memory.md"
+  elif ! git -C "$w" add -- "${files[@]}" 2>> "$STATE/run.log" || ! git -C "$w" commit -q -m "memory: $RUN_ID: $a facts" -- "${files[@]}" 2>> "$STATE/run.log"; then
+    note "memory PR: could not commit the tier-1 change (see run.log)"
+  elif ! origin_t git -C "$w" push -q origin "HEAD:refs/heads/$b" 2>> "$STATE/run.log"; then   # never forced: a reused head moves forward
+    note "memory PR: could not push $b (see run.log)"
+  elif [[ $MEM_URL == http* ]]; then url=$MEM_URL; memory_edit "$url" ""
+  else memory_open
+  fi
+  memory_wt_gone
+  memory_json "$o" "$a" "$d" "$p" "${url:-$MEM_URL}"
+}
+# <result.json> → $SCRATCH/memory-body.md, the PR's body, and the run record's memory.md: on a reused PR this segment's
+# body over the earlier ones (the PR's first commit is explained there), while that fits GitHub's limit; a body that
+# fails is one line saying so
+memory_body() {
+  local m=$SCRATCH/memory-body.md
+  node "$HARNESS_HOME/lib/curator.mjs" body "$1" "$RUN_ID" > "$m" 2>> "$STATE/run.log" \
+    || { note "memory: the PR body failed (see run.log)"; echo "Project memory curated by run \`$RUN_ID\`: the body failed; memory-result.json in the run's scratch has the ops." > "$m"; }
+  if [[ $MEM_URL == http* && -s $REC/memory.md ]] && (( $(stat -c %s "$m") + $(stat -c %s "$REC/memory.md") < 60000 )); then
+    printf '\n---\n\n_An earlier segment of this run:_\n\n' >> "$m"; cat "$REC/memory.md" >> "$m"
+  fi
+  cp "$m" "$REC/memory.md"
+}
+memory_open() {   # the memory PR opened on harness-memory/<run>, left for Michael and noted; its URL in url (the caller's), else ""
+  local u
+  url=""; u=$(origin_t $GH pr create --base "$MAIN_BRANCH" --head "harness-memory/$RUN_ID" --title "memory: $RUN_ID" --body-file "$SCRATCH/memory-body.md" 2>> "$STATE/run.log" | tail -1)
+  if [[ $u == http* ]]; then note "memory PR opened; left for Michael (MEMORY_POLICY=pr) · $u"; url=$u; else note "memory PR: could not open it (see run.log)"; fi
+}
+memory_edit() {   # <url> <why suffix>: the open memory PR's body refreshed, noted
+  if origin_t $GH pr edit "$1" --body-file "$SCRATCH/memory-body.md" > /dev/null 2>> "$STATE/run.log"; then note "memory PR updated$2 · $1"
+  else note "memory PR: its body was not updated (see run.log) · $1"; fi
+}
+# the scratch worktree goes after every path: a stale registration would trip gc (prune is the fallback)
+memory_wt_gone() { git -C "$RWT" worktree remove --force "$SCRATCH/memory" 2> /dev/null; rm -rf "$SCRATCH/memory"; git -C "$RWT" worktree prune 2> /dev/null; return 0; }
+
 # Bring main's new commits into the branch checked out here (a lane at its verify, so what is verified is what merges;
 # the record branch at a resumed start, for its configuration). In a lane under CONFLICTS=resolve a conflict goes to a
 # resolve session first (lib/resolve.sh): resolved, 0 (the verify runs on the merged tree); refused by a limit, 2 (no
@@ -540,7 +651,7 @@ clock() {
 
 # kind model log who → runs claude headless on $LS/prompt.md in its own capped scope (decisions/2026-10-25-scoped-sessions);
 # sets S_EXIT, S_WALL, S_PEAK (MB, empty when uncapped) and S_NOTES (what the scope showed; noted here, except for the
-# read-only retro, whose caller notes them after restrict, which would revert them). The caller's S_RESUME (a session id:
+# read-only retro and curator, whose callers note them after restrict, which would revert them). The caller's S_RESUME (a session id:
 # --resume, and its entry.json kept), S_TURNS, S_TIMEOUT and S_BUDGET override the defaults (entry_resume's)
 session() {
   local settings=() mcp=(--strict-mcp-config) t0 seq unit left x resume=()
@@ -567,7 +678,7 @@ session() {
   [[ -n ${SCOPE_BARE:-} ]] && S_NOTES+=("$1 session ran uncapped: $SCOPE_BARE")   # its error is in the transcript
   # the peak alone could be page cache: a cap kill is the kernel's 137 with the peak at the cap
   (( S_EXIT == 137 )) && scope_capped "$unit" "$SESSION_MEMORY_MAX" && S_NOTES+=("${4:-$1}: the session hit its memory cap ($SESSION_MEMORY_MAX)")
-  [[ $1 == retro ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
+  [[ $1 == retro || $1 == curator ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
   # the box-wide 7-day and 5-hour windows (admit reads the second); a temporary file per process: two lanes' sessions
   # may end in the same second
   MET usage "$3" > "$USAGE.$$.tmp" 2> /dev/null && mv "$USAGE.$$.tmp" "$USAGE" || rm -f "$USAGE.$$.tmp"

@@ -30,6 +30,9 @@
 # STUB_RETRO_PROPOSALS=<id>[,<id>…]: the retro writes retro-proposals.json in the run directory, one
 # `{id, title: "stub proposal <id>", evidence}` per id (`bad`: `{not json`; `link`: a symlink to feature_list.json). STUB_RETRO_EDITS=1: the retro edits code, progress.md
 # and the worktree's ledger/retro-backlog.jsonl (restrict reverts all three).
+# STUB_CURATOR_OPS=[]|bad|<name>: the curator writes memory-ops.json: [], {not json, or tests/fixtures/memory/stub-<name>.json with {{RUN}}, {{DATE}} and {{LINE:<id>}} (<id>'s first coding entry) filled (M2-03).
+# STUB_CURATOR_EDITS=1: the curator also edits CLAUDE.md and writes lib/curator-hack.sh (restrict reverts both, M2-03).
+# STUB_FACTS=<id>[,<id>…]: each one's first coding entry has its own project fact, naming <id> (M2-04).
 # STUB_GOTCHA=<id>: that feature's first coding session adds a `## Gotchas` line to CLAUDE.md (and the section when
 # it has none), committed with its work (M3; the driver reverts it since M1-03). STUB_README_ONLY=<id>: that feature's
 # first coding session passes with one README.md line as its only change (no work-<id>.txt: a tree differing from the
@@ -351,7 +354,7 @@ JSON
     [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
     # STUB_ASK_TOUCH=<path>: the session that asks (STUB_ASK) changes it too, outside its entry's files (U2-08's fill)
     [[ ${STUB_ASK_TOUCH:-} && ${STUB_ASK:-} == "$id" && $n == 1 ]] && mkdir -p "$(dirname "$STUB_ASK_TOUCH")" && echo "$id" > "$STUB_ASK_TOUCH"
-    entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg two "${STUB_ASK_TWO:-}" --arg again "${STUB_ASK_AGAIN:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg rfact "${STUB_RESOLVE_FACT:-}" --arg propose "${STUB_PROPOSE:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --arg rf "${STUB_REVIEW_FINDINGS:-}" --arg checks "$creason" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
+    entry "$id" "$n" --arg id "$id" --arg n "$n" --arg ask "${STUB_ASK:-}" --arg resolve "${STUB_RESOLVE:-}" --arg two "${STUB_ASK_TWO:-}" --arg again "${STUB_ASK_AGAIN:-}" --arg fact "${STUB_PROJECT_FACT:-}" --arg facts "${STUB_FACTS:-}" --arg run "${HARNESS_RUN_ID:-}" --arg day "$(date +%F)" --arg rfact "${STUB_RESOLVE_FACT:-}" --arg propose "${STUB_PROPOSE:-}" --arg failrow "${STUB_VERIFY_FAIL_ROW:-}" --arg rf "${STUB_REVIEW_FINDINGS:-}" --arg checks "$creason" --argjson broken "$([[ -f BROKEN ]] && echo true || echo false)" '{feature: $id, kind: "coding",
       outcome: "passes", summary: (if $id == "R" and $rf != "" then "R: stub review (\($n)): \($rf | split(",")[0]) Critical, \($rf | split(",")[1]) Important, 0 Minor" else "\($id): stub work (\($n))" end), files: ["work-\($id).txt"], verified_how: "stub", tests_before: 1, tests_after: 1}
       + if $broken then {dead_ends: [{tried: "left BROKEN in the tree", why: "the suite goes red"}]} else {} end
       + if $failrow == "1" and $id == "A" then {dead_ends: [{tried: "A by the first approach (\($n))", why: "verify M1 may find step 1 failing"}]} else {} end
@@ -360,7 +363,8 @@ JSON
           + (if $two == $id and $n == "1" then ["Should \($id) keep the old cache? (default: kept) Files: /srv/q/lib/a.sh:12", "Should \($id) log at debug? (default: info) Files: /srv/q/lib/b.sh"] else [] end)
           + (if $again == $id and $n == "1" and $ask != "" then ["Should \($ask) default to off?"] else [] end))} | if .questions == [] then {} else . end)
       + if $resolve == $id and $n != "1" then {resolved: ["Should \($id) default to off?"]} else {} end
-      + if ($fact | split(",") | index($id)) and $n == "1" then {discoveries: [{text: "the stub'"'"'s work files sit at the repo root, one per feature", affects: ["project"]}]} else {} end
+      + ({discoveries: ((if ($fact | split(",") | index($id)) and $n == "1" then [{text: "the stub'"'"'s work files sit at the repo root, one per feature", affects: ["project"]}] else [] end)
+          + (if ($facts | split(",") | index($id)) and $n == "1" then [{text: "the stub'"'"'s \($id) work sits in work-\($id).txt at the root (\($run) \($day))", affects: ["project"]}] else [] end))} | if .discoveries == [] then {} else . end)
       + if $rfact == $id and $n == "1" then {resolved: ["the stub'"'"'s work files sit at the repo root, one per feature"]} else {} end
       + if $propose == $id and $n == "1" then {proposed_changes: ["stub proposal: run the stub suite before each commit"]} else {} end'
     git add -A && git commit -qm "$id: stub work ($n)" && git push -q origin "$HARNESS_BRANCH"
@@ -426,6 +430,16 @@ JSON
       link) ln -s feature_list.json "$HARNESS_RUN_DIR/retro-proposals.json" ;;
       *) tr , '\n' <<< "$STUB_RETRO_PROPOSALS" | jq -R '{id: ., title: "stub proposal \(.)", evidence: "stub retro"}' | jq -s . > "$HARNESS_RUN_DIR/retro-proposals.json" ;; esac
     ok 0.2 "## Outcome\\nStub retro.\\n\\n## Proposed harness changes\\n1. none" ;;
+  "# Curator session")
+    echo "curator" >> "$RS/sessions.log"
+    [[ ${STUB_CURATOR_EDITS:-} ]] && { echo "curator was here" >> CLAUDE.md; mkdir -p lib && echo "# curator was here" > lib/curator-hack.sh; }
+    o=$HARNESS_RUN_DIR/memory-ops.json
+    case ${STUB_CURATOR_OPS:-[]} in "[]") echo '[]' > "$o" ;; bad) printf '{not json' > "$o" ;;
+      *) sed -e "s/{{RUN}}/${HARNESS_RUN_ID:-}/g" -e "s/{{DATE}}/$(date +%F)/g" "$HERE/fixtures/memory/stub-$STUB_CURATOR_OPS.json" > "$o"
+        for id in $(grep -o '{{LINE:[^}]*}}' "$o" | sed 's/^{{LINE://; s/}}$//' | sort -u); do
+          sed -i "s/{{LINE:$id}}/$(jq -s --arg i "$id" 'map(.feature == $i and .kind == "coding") | (index(true) // -1) + 1' "$HARNESS_RUN_DIR/entries.jsonl")/g" "$o"
+        done ;; esac
+    ok 0.1 "Stub curator: $(jq length "$o" 2> /dev/null || echo 0) ops." ;;
   "# Entry resume")   # resumed.jsonl on the session's figures: cost plus the fixture's increment, modelUsage plus its usage
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }')
     kind=$(after_session '/^Kind: `/ { sub(/^Kind: `/, ""); sub(/`.*/, ""); print; exit }')

@@ -1,0 +1,3 @@
+[
+  {"op":"add","file":"CLAUDE.md","section":"## Live system","text":"stub proposal: run the stub suite before each commit","tier":3,"why":"A proposed it.","from":"entries.jsonl:{{LINE:A}}"}
+]

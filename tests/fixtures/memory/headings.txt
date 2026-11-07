@@ -1,0 +1,64 @@
+# 2026-11-07, read from ~/projects/<project>/CLAUDE.md (never edited): <project>\t<heading>\t<tier> (1 Gotchas, 3 protected by prefix, 2 the rest)
+agent-harness	## This repo runs Michael's harness runs: what that means for a session working on it	3
+agent-harness	## Code rules	2
+agent-harness	## How to verify	2
+agent-harness	## Where decisions and docs live	2
+agent-harness	## Where things go	2
+agent-harness	## Gotchas	1
+dj-crate-streaming	## Code rules	2
+dj-crate-streaming	## How to verify	2
+dj-crate-streaming	## Decisions and plans	2
+dj-crate-streaming	## Where things go	2
+dj-crate-streaming	## Gotchas	1
+dj-crate-streaming	## Off-limits	3
+dj-crate-streaming	## Live system	3
+hit_list	## Plan Mode	2
+hit_list	## What this is	2
+hit_list	## Stack	2
+hit_list	## Commands	2
+hit_list	## Layout	2
+hit_list	## Decisions and plans	2
+hit_list	## Conventions that are easy to get wrong	2
+hit_list	## Testing	2
+hit_list	## Git	2
+hit_list	## Where things go	2
+hit_list	## Gotchas	1
+hit_list	## AI skills in the repo	2
+n8n-home	## Code rules	2
+n8n-home	## How to verify	2
+n8n-home	## Decisions and plans	2
+n8n-home	## Where things go	2
+n8n-home	## Gotchas	1
+n8n-home	## Off-limits	3
+n8n-home	## Live system	3
+pathways	## Code rules	2
+pathways	## How to verify	2
+pathways	## Decisions and plans	2
+pathways	## Where things go	2
+pathways	## Gotchas	1
+pathways	## Off-limits	3
+portfolio_site	## Routes	2
+portfolio_site	## Commands	2
+portfolio_site	## Architecture	2
+portfolio_site	## Testing	2
+portfolio_site	## Code rules	2
+portfolio_site	## How to verify	2
+portfolio_site	## Decisions and plans	2
+portfolio_site	## Where things go	2
+portfolio_site	## Gotchas	1
+portfolio_site	## Off-limits	3
+rane-one-mixxx	## Hardware facts (verified 2026-10-19 on Michael's desktop)	3
+rane-one-mixxx	## Hardware and Mixxx rules (binding on every session)	3
+rane-one-mixxx	## Code rules	2
+rane-one-mixxx	## How to verify	2
+rane-one-mixxx	## Decisions and plans	2
+rane-one-mixxx	## Where things go	2
+rane-one-mixxx	## Gotchas	1
+rane-one-mixxx	## On-limits	3
+rane-one-mixxx	## Off-limits	3
+voice-concierge	## Code rules	2
+voice-concierge	## How to verify	2
+voice-concierge	## Decisions and plans	2
+voice-concierge	## Where things go	2
+voice-concierge	## Gotchas	1
+voice-concierge	## Off-limits	3

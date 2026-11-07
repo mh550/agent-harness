@@ -4,7 +4,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # A section of the queue and debrief file (tests/checks/queue-debrief.sh) until the shape cut it out
 # (decisions/2026-11-05-suite-shape): it reads no run of that file, so it needs no replay. What it had there, and has here:
 # the plain user config, and has_s (the queue section's one-liner).
-echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1' > "$T/user-config.sh"
+echo 'KEEP_SCRATCH=1 LEDGER_COMMIT=0 MAX_PARALLEL_RUNS=1 MEMORY_POLICY=off' > "$T/user-config.sh"
 has_s() { tmux has-session -t "=$1" 2> /dev/null; }
 # ---- tmux (L3-04): harness gc reaps the sessions of its project's ended runs, run → session, never the other way ----
 # sessions first, then the markers: a session created after its run ended stands for a resume's (fresh), spared

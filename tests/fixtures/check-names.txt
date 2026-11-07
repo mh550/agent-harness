@@ -385,6 +385,37 @@ coverage: shScan keeps a multi-line array and a quoted string inside a $( ) insi
 coverage: shScan leaves out comments, closing words, a case's bare pattern, a function's header and a comment's quote or backslash
 coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
 coverage: two processes' V8 documents add up: a character ran when it did in either
+curator.mjs: a 16th Gotchas add without an anchor refuses the tier-1 commit, naming the breach
+curator.mjs: a fact a later entry resolved, or already in its section, is dropped
+curator.mjs: a file already over the cap takes a replace or a delete
+curator.mjs: a heading inside a code fence, a repeated heading or CRLF line ends never misplace a write
+curator.mjs: a result over 120 lines refuses the tier-1 commit
+curator.mjs: an anchor with no match or two matches drops its op, naming the anchor
+curator.mjs: an op on a protected section is dropped and carried as a proposal
+curator.mjs: an op whose write would change a protected section's lines is dropped
+curator.mjs: apply derives the tier from the heading and counts a claim that disagrees
+curator.mjs: body lists the applied and tier-2 ops with their from, then the proposals, then the dropped with reasons
+curator.mjs: harm, a fact no entry states gives no op
+curator.mjs: harm, a fact stated then corrected gives one op, the correction
+curator.mjs: harm, a line from a tool result is dropped by the gate
+curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSON line
+curator.mjs: matchAnchor matches a line whose whitespace, backticks, emphasis or bullet differ
+curator.mjs: only tier 1 is written; a tier-2 op leaves the texts as they were
+curator.mjs: the curator prompt renders with no placeholder left
+curator.mjs: the same add with an anchor evicts that line and is accepted
+curator.mjs: the write gate drops a text the entry its from names does not state, and keeps a delete with an existing anchor
+curator.mjs: tierOf gives every heading of the eight projects its fixture tier
+curator.mjs: tierOf protects a heading by prefix, its dated or parenthesised suffix aside
+curator.mjs: validate passes a file of three ops and returns them
+curator.mjs: validate refuses a malformed file whole with its first reason
+curator: MEMORY_POLICY=off runs no curator and writes no curator note
+curator: a curator's edits to CLAUDE.md and lib/ are reverted with one note, its memory-ops.json kept and the record PR opened
+curator: a run under MEMORY_POLICY=pr ends done with one zz-curator transcript and a curator metrics row
+curator: an empty memory-ops.json notes no operations; no memory branch, no memory PR
+curator: an invalid memory-ops.json is one note; the run ends done and its record PR opens
+curator: its run.log line comes after the retro's, its notes before the record PR's
+curator: memory-ops.json is kept in the run record
+curator: the rendered prompt names memory-ops.json, the three ops, the write gate and that it writes no project file
 debrief --dry-run gathers the retro backlog, not Earlier retros
 debrief notifications go to NTFY_URL when set
 debrief waits for the usage-limit window, then runs
@@ -896,6 +927,21 @@ memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonig
 memlint: the store lookup is decisionsStore (one function), and this worktree prints nothing
 memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
 memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
+memory PR: a 16th Gotchas add without an anchor refuses the tier-1 commit; no branch, no PR
+memory PR: a continued run reuses its open memory PR
+memory PR: a memory branch on origin with no PR gets its PR when nothing new reaches tier 1
+memory PR: a memory branch on origin with no PR is the base, and its PR opens on it
+memory PR: a memory branch whose PR Michael closed stops the curator with one note; nothing pushed
+memory PR: a memory branch with a commit the driver would not write stops the curator with one note; nothing pushed
+memory PR: an op on Live system is dropped with a note and carried as a proposal; an unmatched anchor is dropped naming it
+memory PR: no run leaves its scratch worktree registered or a local harness-memory branch
+memory PR: the PR is opened and left for Michael under MEMORY_POLICY=pr
+memory PR: the commit changes CLAUDE.md alone
+memory PR: the notes count the ops, re-derived tiers and each dropped op; memory.json holds the counts
+memory PR: the run's record PR opens too
+memory PR: the same add with an anchor lands as one edit
+memory PR: the two project facts land under Gotchas in one commit on harness-memory/<run>, with their suffix
+memory PR: the workflow line is not committed and is in the PR body with its entries.jsonl line
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
@@ -1493,6 +1539,7 @@ summary.mjs: main gives the CLI's bytes for report --md, suite-runs, ledger-line
 summary.mjs: main's view is the io's: isTTY and columns from io, never the process's stdout
 summary.mjs: report lists only the sessions over 2 GB
 summary.mjs: suiteRuns counts the coding rows that carry suite_full, full and fast apart; the Suite runs row after Flakes, 0 for none, none for an older summary
+summary.mjs: the curator session counts under its own role in cost by role
 summary.mjs: the fast gate's un-pass note reads as a red suite, beside the older note (T2-02)
 summary: tokens, per verified feature, first-attempt rate, rework
 sync: a local commit outside ledger/ is left alone, nothing pushed
