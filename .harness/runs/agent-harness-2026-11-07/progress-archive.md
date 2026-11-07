@@ -3,6 +3,25 @@
 
 What this file is: the run's journal, rendered from `entries.jsonl`, newest entry first. Each entry is one session's own account: what it built, what it verified, what failed. The feature list (`feature_list.json` in this directory) has one milestone, S4 of the slim-suite spec (`docs/specs/2026-11-03-slim-suite.md`): the bash decision logic that burns the suite moves into pure `.mjs` functions with a unit test per branch, no note text changed, no check removed (the brief's Decision 16 (b)). Five features: S4-01 plans the moves, S4-02 the suite runner's decisions (`lib/check.sh` → `lib/checkdecide.mjs`), S4-03 the lane's verdict and exit table and how a run ends (`lib/lane.sh`, `lib/driver.sh` → `lib/lane.mjs`), S4-04 the queue entry format and INBOX status parsers (`lib/queue.mjs`, `lib/inbox.mjs`), S4-05 the review with the proofs, the forty mutants and the Predictions table (the after row and the solo CPU and wall rows wait for an empty box after the run). `passes` on a feature means its session's fast tier was green and its steps were done; the milestone is verified independently and merged into `main` when all five pass. Steer from the phone: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`).
 
+### 2026-11-07 03:40 · S4-04 · passes
+
+Queue format now in lib/queue.mjs (encode, decode, name, project, facts); status.mjs imports the decoder. INBOX status line now status, control, stopWhy, unstop in lib/inbox.mjs. Two push-downs moved. Notes unchanged: both proofs clean; 625 old-bash vs new-node comparisons, no difference. 57 new test names; fast tier 928/928.
+
+- **Files:** lib/queue.mjs, lib/inbox.mjs, lib/status.mjs, lib/queue.sh, lib/spec.sh, lib/record.sh, bin/harness, tests/unit/queue.test.mjs, tests/unit/inbox.test.mjs, tests/unit/status.test.mjs, tests/checks/queue-view.sh, tests/checks/spec-must-exist.sh, +7 more
+- **Verified:** check.sh --fast: green, 928 tests. Named subset: 282/282. Slow files reached (resident-helper, lanes-run, lanes-continue, origin-outage, weekly-budget, desk): 204/204. Both note proofs clean over lib/*.sh and bin/harness. Throwaway script: 625 comparisons of old bash against the new CLI, 0 differ. By hand: a raw mapfile in the runner turned the new runner check red, an encoder without 0x1f turned the new queue-view check red; tree put back (cmp).
+- **Tests:** 1652 → 1709
+- **Dead end:** a Gotcha line for bin/harness being set -e — the section is full: its steering comment counts, so 15 entries is 16 to memlint and memlint-self goes red; dropped, nothing replaced
+- **Discovery** (affects S4-05): bin/harness is set -e, unlike lib/*.sh: was=$(node … exit 3) ends it silently (stop-records caught it); write x=$(…) || { (( $? == 3 )) && …; }
+- **Discovery** (affects S4-05, run): `harness queue add --continue` replacing a queued entry writes the format itself (printf in cmd_queue), raw: a multi-line option reads back as several arguments. A base-tree bug, left because this move changes no queue byte; asked below.
+- **Discovery** (affects S4-05): Node decodes argv and files as UTF-8, so a queue argument that isn't valid UTF-8 no longer keeps its bytes (U+FFFD); marked default in the decision file.
+- **Discovery** (affects S4-05): If node fails at the runner's decode, the entry goes to done/ with a failed start logged (mapfile from the file couldn't fail); recoverable by hand, no guard added.
+- **Discovery** (affects S4-05): String.replace in an edit script expands $' in the replacement text (it ate a check file once): use a function replacement when editing bash through node.
+- **Question for Michael:** Should `harness queue add --continue` replacing a queued entry write through lib/queue.mjs, so a multi-line --brief in a repeated request stays one argument? Default: left as it is, because this move changes no queue byte; the fix is one line plus a check. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/bin/harness:574, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/journal/decisions/2026-11-03-purity.md
+- **Proposed change:** S4-04's push-down step names tests/checks/journal-entries.sh for the unquote check; it was in tests/checks/queue-view.sh (the plan had it right). The same step names one push-down; the plan assigns two (unquote and repair), and both moved under Decision 14 (a).
+- **Proposed change:** `node --check a b c` checks only the first file (step 2 of S4-03 and S4-04): run it once per file.
+- **Proposed change:** How to work here: the Gotchas cap counts the section's steering comment, so its 14 entries are already full; the 15-line rule in the coding prompt reads as 15 entries.
+- *04-S4-04 · claude-opus-5-5*
+
 ### 2026-11-07 03:13 · S4-03 · passes
 
 The lane's verify verdict and exit table, how a closed lane reads, and how a run ends are now pure functions in lib/lane.mjs, served by the helper and reached through ask. 80 unit tests. Notes, cards, exit and end reasons unchanged: both note proofs clean, 295 inputs compared old bash against new with no difference. lib/lane.sh and lib/driver.sh: 52 deleted, 51 added.

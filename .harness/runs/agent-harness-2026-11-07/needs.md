@@ -41,3 +41,24 @@ harness needs done agent-harness-2026-11-07/1 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-07/2 --why "<answer>"
 ```
+
+## ⚠ S4-04 asked: Should `harness queue add --continue` replacing a queued en…
+
+`agent-harness-2026-11-07/3` · since 2026-11-07T08:40:43.737Z
+
+**blocked** nothing waits on it; S4-04's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:5](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07/.harness/runs/agent-harness-2026-11-07/entries.jsonl?plain=1#L5)
+
+> Should `harness queue add --continue` replacing a queued entry write through lib/queue.mjs, so a multi-line --brief in a repeated request stays one argument? Default: left as it is, because this move changes no queue byte; the fix is one line plus a check. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/bin/harness:574, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/journal/decisions/2026-11-03-purity.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/bin/harness:574](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07/S4/bin/harness#L574) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07/slot-0/journal/decisions/2026-11-03-purity.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07/S4/journal/decisions/2026-11-03-purity.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07/.harness/runs/agent-harness-2026-11-07/entries.jsonl:5](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07/.harness/runs/agent-harness-2026-11-07/entries.jsonl?plain=1#L5)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07/3 --why "<answer>"
+```
