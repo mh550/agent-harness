@@ -9,6 +9,35 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 11:11 · verify M1 · passes
+
+All 20 steps of M1-01..03 hold: full suite green (1728), subset runs pass (477/477, 31/31), prompts/pack/memory spec/docs/decision verified by reading code and tests.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| M1-01 | 1 | read docs/plans/2026-11-07-M1-one-writer.md headings | sections M1-02 and M1-03 with files, checks, tiers | yes |
+| M1-01 | 2 | read plan's turned-false list; grep fixtures for old check names | list present; old names gone from check-names.txt; gotchas note retires, decision updated in place (grep count 1) | yes |
+| M1-01 | 3 | read plan 'The spec's exact shape' / Stub knobs; grep record.sh, lane.sh | memory spec shape and note words match lib/record.sh:365, memory_guard in lane.sh:451 | yes |
+| M1-01 | 4 | read plan 'clearing rule'; unit tests entries.test.mjs:160-210 | rule as stated is what the unit tests assert | yes |
+| M1-01 | 5 | read plan budget section; grep Updated in place 2026-11-07 in context-pack decision | budget section present; line at context-pack.md:39 | yes |
+| M1-01 | 6 | full suite via init output | green in 639 s, 1728 tests | yes |
+| M1-02 | 1 | read tests/unit/entries.test.mjs 160-210; bash tests/run.sh unit-tier | tests for fact listed despite gotchas arg, resolved dismiss, key dedupe, other key; unit-tier passes | yes |
+| M1-02 | 2 | grep carried lib/entries.mjs; node --check | no carried.some filter; syntax ok | yes |
+| M1-02 | 3 | grep -c 'under `## Gotchas`' prompts/coding.md prompts/initializer.md | 0 and 0 | yes |
+| M1-02 | 4 | read where-things-go*.md, templates/project/CLAUDE.md, CLAUDE.md Where things go | all route fact to discoveries/project, workflow to proposed_changes, never CLAUDE.md | yes |
+| M1-02 | 5 | read gotchas-pack.sh checks at 40,44; grep old names | replacement checks exist; old four names gone from sources and fixtures | yes |
+| M1-02 | 6 | bash tests/run.sh gotchas-pack memory-prompts unit-tier | 477/477 checks passed | yes |
+| M1-02 | 7 | init full suite (covers fast tier) | green, 1728 tests | yes |
+| M1-03 | 1 | read tests/checks/memory-one-writer.sh (tier: fast on line 2); run it | 5 stub-run checks + 2 restrict/guard checks, pass | yes |
+| M1-03 | 2 | read lib/record.sh restrict, memory_guard, lane.sh:451; bash -n | memory spec limited to two root files, called between commit and journal, note in step's words; syntax ok | yes |
+| M1-03 | 3 | read plan '## M1 review' | Opus review: 0 Critical, 0 Important, 3 Minor; memory reverts only two files, no other restrict changed | yes |
+| M1-03 | 4 | read decision file and context-pack Updated in place line | decision exists with finding/choice; Rejected row carries the 2026-11-07 line | yes |
+| M1-03 | 5 | grep architecture.md and README.md | §7 guard row, lane/record rows and README memory-lint paragraph carry the note words | yes |
+| M1-03 | 6 | bash tests/run.sh memory-one-writer verify-retro-read-only gotchas-pack lanes-run | 31/31 checks passed | yes |
+| M1-03 | 7 | init full suite | green, 1728 tests | yes |
+
+- *111002-verify-M1 · claude-sonnet-5-5*
+
 ### 2026-11-07 10:59 · M1-03 · passes
 
 restrict gains a memory spec (CLAUDE.md, .harness/project.md at the root); memory_guard (merge-base base) calls it once per coding session between the WIP commit and sync_lane, one note per file; gotchas() retires. New tests/checks/memory-one-writer.sh (fast, 7 checks), stub knobs, partial-key moved to README.md:readme, decision, docs, folded review: 0 Critical, 0 Important.
