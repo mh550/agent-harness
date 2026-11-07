@@ -68,3 +68,10 @@
 - 2026-11-07 15:03 · context.md for M3: 16197 bytes
 - 2026-11-07 15:04 · M3: checks +16 ~2 −0 against a budget of 35
 - 2026-11-07 15:04 · M3 verified and tagged run/agent-harness-2026-11-07-2/M3
+- 2026-11-07 15:05 · M3 merged into main · https://github.com/mh550/agent-harness/pull/127
+- 2026-11-07 15:05 · lane M3 closed (M3 merged)
+- 2026-11-07 15:05 · lane M3: branch harness-lane/agent-harness-2026-11-07-2/M3 deleted (merged)
+- 2026-11-07 15:05 · every feature passes
+- 2026-11-07 15:05 · run ended (done): 12/12 passing · 16 sessions (16 real) · 12 features passed · $59.51 · 4.3 h · by kind: init 1 ($5.77), coding 12 ($52.98), verify 3 ($0.76) · by model: claude-fable-5-1 1 ($5.77), claude-opus-5-5 12 ($52.98), claude-sonnet-5-5 3 ($0.76)
+- 2026-11-07 15:05 · services stopped (done)
+- 2026-11-07 15:05 · services stopped (done)
