@@ -1,1 +1,4 @@
 - 2026-11-07 10:12 · test count: parsed (generic)
+- 2026-11-07 10:24 · init: 2 question(s) for Michael recorded (harness needs)
+- 2026-11-07 10:24 · feature list written: 0/12 passing
+- 2026-11-07 10:24 · lint: clean
