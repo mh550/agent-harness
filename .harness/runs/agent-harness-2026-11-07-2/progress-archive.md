@@ -9,6 +9,22 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 12:35 · M2-04 · passes
+
+memory_pr in lib/record.sh: ops applied in a detached $SCRATCH/memory worktree at the base, tier 1 one commit pushed to harness-memory/<run>, a memory: <run> PR left for Michael (reused on a continue, body over earlier segments), cap refusal, notes, memory.md and $STATE/memory.json; memory_base's reuse rules; STUB_FACTS, stub-gh bodies and pr edit; memory-pr.sh (13).
+
+- **Files:** lib/record.sh, lib/driver.sh, tests/checks/memory-pr.sh, tests/stub-claude.sh, tests/stub-gh.sh, tests/fixtures/memory/stub-continue.json, tests/fixtures/memory/stub-cap.json, tests/fixtures/memory/stub-cap-evict.json, tests/fixtures/memory/README.md, tests/fixtures/check-names.txt, journal/decisions/2026-11-07-memory-tiers.md
+- **Verified:** memory-pr.sh 13/13 (10 red before memory_pr except the record-PR guard; the two branch-reuse checks red on HEAD's record.sh); bash tests/run.sh memory-pr curator-run lanes-record-pr gotchas-pack needs-driver 65/65; fast tier green, 961 tests; inspected a kept run: notes, PR body, branch CLAUDE.md, memory.json, no worktree left. Opus review: 4 Important, 10 Minor; 13 fixed, 1 documented.
+- **Tests:** 961 → 961
+- **Dead end:** ${st:-not the run's} inside a double-quoted note — an apostrophe inside ${…:-…} in double quotes breaks bash's parse (syntax error far below); worded without it
+- **Discovery** (affects M2-05): stub-mixed.json was folded into stub-cap-evict.json (the evict add plus a Live system add and an unmatched-anchor replace): one run fewer; the plan's table still names stub-mixed
+- **Discovery** (affects M2-05, M3): memory_base: a tip main lacks is reused when its PR is OPEN or there is none (gh pr view's 'no pull requests found'); CLOSED or another title stops the curator with one note; a gh or origin failure is one note, no curator. A squash-merged memory PR whose branch stayed reads as not taken (documented limit)
+- **Discovery** (affects M3): $STATE/memory.json is removed at the top of curator() and written by memory_pr on every path past the rescue: {ops, applied, dropped, proposed, pr} (+ invalid); absent when the curator stopped early or wrote no file
+- **Discovery** (affects project): stub-gh keeps pr create's --body-file as prs/pr-N.body and has a pr edit case that rewrites it (record_pr's reuse now refreshes it too)
+- **Discovery** (affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 did; the Promote to Gotchas items stay for the curator
+- **Proposed change:** M2-05's architecture/README pass should name memory.md (the body in the run record) and memory_base's reuse rules beside memory-ops.json and memory.json
+- *07-M2-04 · claude-opus-5-5*
+
 ### 2026-11-07 12:10 · M2-03 · passes
 
 curator() in lib/driver.sh: after the retro, before the summary and record_pr; MEMORY_POLICY=pr|off and CURATOR_MODEL=opus in config; memory_base and memory_pr's validate (invalid, []) in record.sh; summary.mjs counts the curator role; stub # Curator session with STUB_CURATOR_OPS/EDITS; curator-run.sh (8, slow) and 1 unit test. Opus review: 1 Important, 4 Minor; 4 fixed.
