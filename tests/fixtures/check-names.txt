@@ -667,6 +667,86 @@ key map lint: both files pass once the map's CLAUDE.md entry names them
 key map lint: each allowed form alone passes (HARNESS_HOME=, git -C log, readlink -f and cd && pwd as an alias, harness_config, == "…")
 key map lint: git -C show and grep, an alias of readlink -f, HH, a relative read up from tests/, an inline cd && pwd and a %/* root are hits; comments and sub-paths are not
 key map lint: this repo's tests/checks/ passes with the map in .harness/config.sh (CLAUDE.md and its readers)
+lane.mjs: closedLane: a code 0 neither opens a card nor ends the run
+lane.mjs: closedLane: a code alone has an empty reason
+lane.mjs: closedLane: a missing exit file is unexpected, code 12 with a card
+lane.mjs: closedLane: a normal line
+lane.mjs: closedLane: an empty first line reads as no code and no reason
+lane.mjs: closedLane: an exit file with no final newline is unexpected, as read fails there
+lane.mjs: closedLane: code 13 ends the run
+lane.mjs: closedLane: feature-list edits end the run, under its code 12
+lane.mjs: closedLane: only the first line counts
+lane.mjs: closedLane: read's trim takes blanks around the fields, never a CR or a no-break space
+lane.mjs: closedLane: the card opens on exactly the words a crash has, whatever the code
+lane.mjs: endKind: a prefix holds across a newline, as case's star does
+lane.mjs: endKind: a reason holding the words later in its text has none, each is a prefix
+lane.mjs: endKind: blocked on is high and the desk, no card of its own
+lane.mjs: endKind: done, the deadline and a session cap have none
+lane.mjs: endKind: feature-list edits have their card and the high priority
+lane.mjs: endKind: initializer failed has its card and the high priority
+lane.mjs: endKind: usage limit has its card, no high priority
+lane.mjs: endKind: waiting on Michael is high and the desk, no card of its own
+lane.mjs: endKind: weekly budget has its card, no high priority
+lane.mjs: fixRoundOpens: a plain verify at the cap is the card
+lane.mjs: fixRoundOpens: a plain verify under the cap opens one
+lane.mjs: fixRoundOpens: once mode, past the deadline, is the card
+lane.mjs: fixRoundOpens: past the cap is the card, and a cap of 0 never opens one
+lane.mjs: fixRoundOpens: rebase mode, whose caller is no lane loop, is the card
+lane.mjs: laneDone: MERGE_POLICY=off is verified, before refused
+lane.mjs: laneDone: a main conflict alone, with nomerge gone, is not read
+lane.mjs: laneDone: a re-base waits, before proposed
+lane.mjs: laneDone: conflicts with main
+lane.mjs: laneDone: its PR waits, before nomerge
+lane.mjs: laneDone: main did not merge, with a main conflict, needs Michael
+lane.mjs: laneDone: main did not merge, with no conflict, is tried again
+lane.mjs: laneDone: merge refused, before conflict
+lane.mjs: laneDone: merged wins over every other marker
+lane.mjs: laneDone: needs Michael gives its need, before waits
+lane.mjs: laneDone: needs Michael with no need keeps its colon and space
+lane.mjs: laneDone: no marker at all is the unknown merge failure, the one row with its side effect
+lane.mjs: laneDone: proposed, before waits
+lane.mjs: main: an unknown question is the usage line and exit 2
+lane.mjs: main: closed reads the exit file, or its absence
+lane.mjs: main: end-kind gives the card, the priority and the desk
+lane.mjs: main: fix-round answers by its exit code
+lane.mjs: main: lane-done gives the code, the side effect and the reason's exact bytes
+lane.mjs: main: run-end takes lines and answers the lists comma-joined
+lane.mjs: main: suite-verdict through the CLI
+lane.mjs: main: verdict gives the need and the card, in labelled lines
+lane.mjs: main: verify-round through the CLI
+lane.mjs: runEnd: a parked id leaves blocked, the rest keep the order given
+lane.mjs: runEnd: a parked id that isn't blocked changes nothing, and an id only equal to a whole one matches
+lane.mjs: runEnd: an empty list, 0/0, is done, as the regex has it
+lane.mjs: runEnd: blocked, parked and needs all at once
+lane.mjs: runEnd: every feature passing is done
+lane.mjs: runEnd: fewer passing is not done, and nothing else is no feature left to try
+lane.mjs: runEnd: needs with a next are the milestones
+lane.mjs: runEnd: needs with an empty next is empty
+lane.mjs: runEnd: the counts compare as written, and a summary that is no count is not done
+lane.mjs: suiteVerdict: fail where only fix features were un-passed, on a green suite, stays fail
+lane.mjs: suiteVerdict: fail where only fix features were un-passed, on a red suite, is red
+lane.mjs: suiteVerdict: fail with other features un-passed stays fail, whatever the suite
+lane.mjs: suiteVerdict: hold on a green suite stays hold
+lane.mjs: suiteVerdict: hold on a red suite is red
+lane.mjs: suiteVerdict: thin stays thin, whatever the suite
+lane.mjs: verifyCard: a re-base's red and thin give rebase
+lane.mjs: verifyCard: fail is the re-check's card with no variant, in every mode
+lane.mjs: verifyCard: red and not own gives the mode
+lane.mjs: verifyCard: red and own says own, over the mode
+lane.mjs: verifyCard: thin gives the mode, own or not
+lane.mjs: verifyNeed: fail with none failed (each has an attempt left) is empty
+lane.mjs: verifyNeed: fail with one failed id
+lane.mjs: verifyNeed: fail with several failed ids
+lane.mjs: verifyNeed: hold is empty
+lane.mjs: verifyNeed: red on a tree main brought nothing to is the milestone's own
+lane.mjs: verifyNeed: red with main merged in
+lane.mjs: verifyNeed: thin
+lane.mjs: verifyRound: a milestone not done is fail, whatever the rest says
+lane.mjs: verifyRound: a new entry short of the evidence on the last model is thin
+lane.mjs: verifyRound: a new entry with its evidence is hold, on any model
+lane.mjs: verifyRound: evidence short on an earlier model runs again
+lane.mjs: verifyRound: no new verify entry on an earlier model runs again
+lane.mjs: verifyRound: no new verify entry on the last model is thin
 lane: each coding session's suite calls are noted from check-runs.log, cached ones aside (A: 2x, B: 0x (0 s))
 lane_guard: a session that merged main keeps main's records (merge-base base); its own edits are un-indexed, still on disk
 lane_guard: a session's own merge of main into its branch is noted

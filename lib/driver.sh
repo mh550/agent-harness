@@ -103,16 +103,17 @@ lane_wait() {
 # every other lane exits 16 before its next session); a stop and the deadline are seen by the coordinator itself. A
 # lane that died without a reason needs Michael (never reopened in a loop).
 reap() {
-  local f m code why n=0
+  local f m code why crash ends k v n=0
   for f in "$STATE"/lanes/*/pid; do
     [[ -f $f ]] || continue; m=${f%/pid}; m=${m##*/}
     lane_alive "$m" && continue
-    read -r code why < "$STATE/lanes/$m/exit" 2> /dev/null || { code=12 why="lane exited unexpectedly"; }
+    code=12 why="lane exited unexpectedly" crash=1 ends=0   # no answer reads as the crash: its card opens
+    while read -r k v; do case $k in code) code=$v ;; why) why=$v ;; crash) crash=$v ;; ends) ends=$v ;; esac; done < <(ask lane.mjs closed "$STATE/lanes/$m/exit")
     mv -f "$STATE/lanes/$m/exit" "$STATE/lanes/$m/closed" 2> /dev/null; rm -f "$f"; n=$(( n + 1 ))
     note "lane $m closed ($why)"
     [[ -f $STATE/merged-$m ]] && lane_branch_gone "$m"   # it merged itself: its branch went from the origin, here it goes now
-    [[ $why == "lane exited unexpectedly" ]] && { touch "$STATE/needs-$m"; needs_open driver_crash "$m" milestone="$m" log="$STATE/run.log" > /dev/null; }
-    [[ $code == 13 || $why == "feature-list edits" ]] && { LANE_END=$why; echo "$why" > "$STATE/lanes-end"; }
+    [[ $crash == 1 ]] && { touch "$STATE/needs-$m"; needs_open driver_crash "$m" milestone="$m" log="$STATE/run.log" > /dev/null; }
+    [[ $ends == 1 ]] && { LANE_END=$why; echo "$why" > "$STATE/lanes-end"; }
   done
   (( n )) && merge_milestones
   return 0
@@ -316,8 +317,8 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   echo "$1 · $(date '+%F %T')" > "$STATE/ended"   # now, not at exit: the summary reads it
   # after ended, so the item an end opens below is never swept by its own finish; committed with the run's end
   needs_sweep
-  local nr=""; case $1 in "feature-list edits"*) nr=feature_list_edits ;; "initializer failed"*) nr=initializer_failed ;;
-    "usage limit"*) nr=usage_limit ;; "weekly budget"*) nr=weekly_budget ;; esac
+  local nr="" ehigh=0 edesk=0 k v
+  while read -r k v; do case $k in needs) nr=$v ;; high) ehigh=$v ;; desk) edesk=$v ;; esac; done < <(ask lane.mjs end-kind "$1")
   [[ -n $nr ]] && needs_open "$nr" run end_reason="$1" > /dev/null
   flakes_note   # every lane's, before the line
   note "run ended ($1): $(F summary "$LIST" 2>/dev/null) · $(MET summary "$REC/metrics.jsonl")"
@@ -344,14 +345,12 @@ finish() {   # reason → every lane exited, summary, notification, retro, ledge
   # the run's one end notification goes out now, not after the retro (minutes, and a crash there would lose it).
   # The reasons below are Michael's to act on: the report, the INBOX one tap away
   local pri="" acts="" sum
-  case $1 in "blocked on"* | "waiting on Michael"* | "feature-list edits"* | "initializer failed"*)
-    pri=high acts=$(ask notify.mjs actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" Progress "$(gh_url "$RUN_DIR/progress.md")") ;;
-  esac
+  [[ $ehigh == 1 ]] && pri=high acts=$(ask notify.mjs actions "Edit INBOX" "$(gh_url "$RUN_DIR/INBOX.md" edit)" Progress "$(gh_url "$RUN_DIR/progress.md")")
   sum="$(F summary "$LIST" 2>/dev/null) · $(jq -r '"$\(.cost.total) · $\(.cost.per_passing_feature) per passing feature"' "$REC/summary.json" 2>/dev/null)"
   notify "ended ($1): $sum" title="[$RUN_ID] ended: $1" priority=$pri click="$(gh_url "$RUN_DIR/report.md")" actions="$acts"
   # a failed post notes it in harness-log.md: commit it now, before a retro that may never finish
   [[ -n $(git status --porcelain -- "$RUN_DIR") ]] && { rec_commit "HARNESS: run-end notification failed"; sync_record; }
-  case $1 in "blocked on"* | "waiting on Michael"*) desk "ended: $1" ;; esac   # after that commit: its note is no failed post
+  [[ $edesk == 1 ]] && desk "ended: $1"   # after that commit: its note is no failed post
   if [[ $RETRO == 1 && -f $LIST ]]; then retro; helper_note; SUM build "$RWT" "$RUN_ID" "$STATE" > "$REC/summary.json"; fi
   SUM report --md "$REC/summary.json" > "$REC/report.md"
   # the state dir outlives the worktree gc removes: harness report reads these there (decisions/2026-10-27-record-after-gc)
@@ -596,11 +595,13 @@ while :; do
     # one node start for the four answers below (F poll), which fills the memo in this shell: every F after it, in a
     # $( ) or a pipe too, is a hit (a throw fills nothing, so each starts node, as before)
     F poll "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" > /dev/null
-    [[ $(F summary "$LIST") =~ ^([0-9]+)/([0-9]+) && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] && { note "every feature passes"; finish "done"; }
-    parked=$(F parked "$PARKED" "$LIST" | cut -f1 | paste -sd, -)
-    blocked=$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | awk -F'\t' '{print $2}' | sort -u | grep -vxF -f <(tr , '\n' <<< "$parked") | paste -sd, -)
-    # D5: features that could run but wait on a milestone that needs Michael (its lane can't open past it)
-    needs=""; [[ -n $(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED") ]] && for f in "$STATE"/needs-*; do [[ -f $f ]] && needs+="${needs:+,}${f##*/needs-}"; done
+    # D5: needs is the features that could run but wait on a milestone that needs Michael (its lane can't open past it).
+    # blocked's sort stays here: by the driver's locale, and the end reason's bytes depend on that order
+    enm=(); for f in "$STATE"/needs-*; do [[ -f $f ]] && enm+=("${f##*/needs-}"); done
+    edone=0 parked="" blocked="" needs=""
+    while read -r ek ev; do case $ek in done) edone=$ev ;; parked) parked=$ev ;; blocked) blocked=$ev ;; needs) needs=$ev ;; esac; done < <(ask lane.mjs run-end "$(F summary "$LIST")" \
+      "$(F parked "$PARKED" "$LIST" | cut -f1)" "$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" | awk -F'\t' '{print $2}' | sort -u)" "$(F next "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED")" "${enm[@]}")
+    [[ $edone == 1 ]] && { note "every feature passes"; finish "done"; }
     ends=()
     if [[ -n $blocked ]]; then note "blocked: the remaining features wait on $blocked (given up; needs Michael)"; ends+=("blocked on $blocked"); fi
     if [[ -n $parked ]]; then note "waiting on Michael: $parked (parked; answer in INBOX.md, then harness continue $RUN_ID)"; ends+=("waiting on Michael: $parked"); fi
