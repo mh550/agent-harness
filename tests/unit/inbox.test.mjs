@@ -1,7 +1,7 @@
 // lib/inbox.mjs: the INBOX.md parser (## Answers outside the steering comment), question, added, insert and repair.   node --test tests/unit/inbox.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sameAsCli, cli, mainOf } from "./cli-same.mjs";
@@ -134,4 +134,137 @@ test("inbox.mjs: main's insert with an io that has no stdin throws without readi
   writeFileSync(f, "x\n");
   assert.throws(() => main(["insert", f], { cwd: d }), /no stdin/);
   assert.equal(readFileSync(f, "utf8"), "x\n");
+}));
+
+test("inbox.mjs repair: the comment back byte for byte, the question directly above ## Answers; exit 3, then 0", () => inTmpInbox(async d => {
+  const b = join(d, "tpl.md"), f = join(d, "rep.md"), same = join(d, "same.md");
+  writeFileSync(b, tpl); writeFileSync(f, planted); writeFileSync(same, tpl);
+  assert.equal(cli("inbox.mjs", ["repair", b, f]).rc, 3);
+  const once = readFileSync(f, "utf8"), ls = once.split("\n"), comment = t => t.slice(t.indexOf("<!--"), t.indexOf("-->") + 3);
+  assert.equal(comment(once), comment(tpl));
+  assert.equal(ls.lastIndexOf("## Answers"), ls.lastIndexOf(Q1) + 2);
+  assert.equal(cli("inbox.mjs", ["repair", b, f]).rc, 0);
+  assert.equal(readFileSync(f, "utf8"), once);
+  assert.equal(cli("inbox.mjs", ["repair", b, same]).rc, 0);
+  assert.equal(readFileSync(same, "utf8"), tpl);
+}));
+
+// ---- the status line: control, stop_why and harness continue read it one way ----
+test("inbox.mjs: status of a first-line status: stop is stop", () => assert.equal(I.status("status: stop\n\n## Answers\n"), "stop"));
+test("inbox.mjs: status drops the spaces and tabs after the colon", () => {
+  assert.equal(I.status("status:   pause\n"), "pause");
+  assert.equal(I.status("status:\t pause now\n"), "pause now");
+  assert.equal(I.status("status:stop\n"), "stop");
+});
+test("inbox.mjs: status of a file with no status line, and of none, is empty", () => {
+  assert.equal(I.status("# nothing\n\n## Answers\n"), "");
+  assert.equal(I.status(" status: stop\n"), "");
+  assert.equal(I.status(""), "");
+});
+test("inbox.mjs: status is the first status: line anywhere in the file, one under ## Answers too", () => {
+  assert.equal(I.status("status: run\nstatus: stop\n"), "run");
+  assert.equal(I.status("# x\n\n## Answers\nstatus: stop\nstatus: run\n"), "stop");
+});
+test("inbox.mjs: status keeps a CR at the line's end, and takes it as space with nothing before it", () => {
+  assert.equal(I.status("status: stop\r\n"), "stop\r");
+  assert.equal(I.status("status:\r\n"), "");
+});
+test("inbox.mjs: status keeps a no-break space after the colon ([[:space:]] isn't \\s)", () => assert.equal(I.status("status: stop\n"), " stop"));
+
+const ctl = (stop, pause, status) => I.control({ stop, pause, status });
+test("inbox.mjs: control is stop on the STOP file, whatever the line says", () => assert.equal(ctl(true, false, "run"), "stop"));
+test("inbox.mjs: control is stop on a line starting stop: stop, stopped, stop with a why, a CR behind it", () => {
+  for (const s of ["stop", "stopped", "stop - the spec changed", "stop\r"]) assert.equal(ctl(false, false, s), "stop", s);
+});
+test("inbox.mjs: control is pause on the PAUSE file or a line starting pause", () => {
+  assert.equal(ctl(false, true, "run"), "pause");
+  for (const s of ["pause", "paused"]) assert.equal(ctl(false, false, s), "pause", s);
+});
+test("inbox.mjs: control takes stop over pause, file or line", () => {
+  assert.equal(ctl(true, true, ""), "stop");
+  assert.equal(ctl(false, true, "stop"), "stop");
+  assert.equal(ctl(true, false, "pause"), "stop");
+});
+test("inbox.mjs: control with no status line and no file is run, and any other word is too", () => {
+  for (const s of ["", "run", "running", "resume", "Stop", " stop"]) assert.equal(ctl(false, false, s), "run", s);
+});
+
+const by = "stopped by Michael";
+test("inbox.mjs: stopWhy gives STOP's line over the INBOX's (harness stop --why wins), its CR kept", () => {
+  assert.equal(I.stopWhy("from the CLI", "stop: from the phone"), `${by}: from the CLI`);
+  assert.equal(I.stopWhy("from the CLI\r", ""), `${by}: from the CLI\r`);
+});
+test("inbox.mjs: stopWhy on an empty STOP reads the status line's why", () => {
+  assert.equal(I.stopWhy("", "stop: the spec changed"), `${by}: the spec changed`);
+  assert.equal(I.stopWhy(null, "stop the spec changed"), `${by}: the spec changed`);
+});
+test("inbox.mjs: stopWhy of stop, stopped, stop - and no line gives none", () => {
+  for (const s of ["stop", "stopped", "stop -", "stop - ", "stopped: because", "", "run: x"]) assert.equal(I.stopWhy(null, s), by, s);
+});
+test("inbox.mjs: stopWhy starts at the first letter or digit past the marks, and drops blanks at the end only", () => {
+  assert.equal(I.stopWhy(null, "stop - the spec changed"), `${by}: the spec changed`);
+  assert.equal(I.stopWhy(null, "stop -- 2 things -  "), `${by}: 2 things -`);
+  assert.equal(I.stopWhy(null, "stop: x"), `${by}: x`);
+});
+test("inbox.mjs: stopWhy's first letter may be beyond ASCII (the driver's UTF-8 locale)", () => assert.equal(I.stopWhy(null, "stop: é tout"), `${by}: é tout`));
+test("inbox.mjs: stopWhy keeps a no-break space at the why's end ([[:space:]] isn't \\s)", () => assert.equal(I.stopWhy(null, "stop: x "), `${by}: x `));
+test("inbox.mjs: stopWhy cuts at 200 characters by code point, STOP's line and the INBOX's alike", () => {
+  const astral = `a${"😀".repeat(300)}`, want = `${by}: a${"😀".repeat(199)}`;
+  assert.equal(I.stopWhy(null, `stop: ${astral}`), want);
+  assert.equal(I.stopWhy(astral, ""), want);
+  assert.equal(I.stopWhy(null, `stop: ${"x".repeat(200)}`).length, by.length + 2 + 200);
+});
+test("inbox.mjs: stopWhy takes every CR out of the status line's why", () => {
+  assert.equal(I.stopWhy(null, "stop: a\rb\r"), `${by}: ab`);
+  assert.equal(I.stopWhy(null, "stop\r"), by);
+});
+
+test("inbox.mjs: unstop sets the first status: stop line back to status: run, the rest byte for byte", () => {
+  const r = I.unstop("# top\nstatus: stop now\nstatus: stop\n\n## Answers\nyes");
+  assert.equal(r.text, "# top\nstatus: run\nstatus: stop\n\n## Answers\nyes");
+  assert.equal(r.was, "status: stop now");
+});
+test("inbox.mjs: unstop's was keeps the line's bytes, its spaces and CR", () => {
+  const r = I.unstop("status:  stopped\r\nnext\n");
+  assert.equal(r.text, "status: run\nnext\n");
+  assert.equal(r.was, "status:  stopped\r");
+});
+test("inbox.mjs: unstop of a run or pause line, or of none, changes nothing", () => {
+  for (const t of ["status: run\nstatus: stop\n", "status: pause\n", "# x\n", ""]) assert.deepEqual(I.unstop(t), { text: t, was: null }, t);
+});
+
+test("inbox.mjs: main gives the CLI's bytes for control and stop-why, reading the status line and the state's markers", () => inTmpInbox(async d => {
+  const f = join(d, "INBOX.md"), st = join(d, "state");
+  mkdirSync(st);
+  writeFileSync(f, "status: pause\n\n## Answers\n");
+  assert.equal((await sameAsCli("inbox.mjs", ["control", f, st])).out, "pause\n");
+  writeFileSync(f, "status: stop - the spec changed\r\n");
+  assert.equal((await sameAsCli("inbox.mjs", ["control", f, st])).out, "stop\n");
+  assert.equal((await sameAsCli("inbox.mjs", ["stop-why", f, st])).out, "stopped by Michael: the spec changed\n");
+  writeFileSync(join(st, "STOP"), "first\nsecond\n");
+  assert.equal((await sameAsCli("inbox.mjs", ["stop-why", f, st])).out, "stopped by Michael: first\n");
+  writeFileSync(f, "status: run\n");
+  assert.equal((await sameAsCli("inbox.mjs", ["control", f, st])).out, "stop\n");
+  rmSync(join(st, "STOP"));
+  writeFileSync(join(st, "PAUSE"), "");
+  assert.equal((await sameAsCli("inbox.mjs", ["control", f, st])).out, "pause\n");
+  rmSync(join(st, "PAUSE"));
+  assert.equal((await sameAsCli("inbox.mjs", ["control", join(d, "absent.md"), join(d, "absent")])).out, "run\n");
+  assert.equal((await sameAsCli("inbox.mjs", ["stop-why", join(d, "absent.md"), join(d, "absent")])).out, "stopped by Michael\n");
+}));
+test("inbox.mjs: control counts STOP and PAUSE only as files, as [[ -f ]] does", () => inTmpInbox(async d => {
+  mkdirSync(join(d, "STOP"));
+  assert.equal((await sameAsCli("inbox.mjs", ["control", join(d, "absent.md"), d])).out, "run\n");
+  assert.equal((await sameAsCli("inbox.mjs", ["stop-why", join(d, "absent.md"), d])).out, "stopped by Michael\n");
+}));
+test("inbox.mjs: main's unstop writes the file, prints the old line and exits 3, then changes nothing and exits 0", () => inTmpInbox(async d => {
+  const f = join(d, "INBOX.md"), g = join(d, "same.md");
+  writeFileSync(f, "status: stop\r\n\n## Answers\n");
+  const r = await I.main(["unstop", f], {});
+  assert.deepEqual([r.rc, r.out, readFileSync(f, "utf8")], [3, "status: stop\r\n", "status: run\n\n## Answers\n"]);
+  assert.deepEqual(await I.main(["unstop", f], {}), { rc: 0, out: "" });
+  assert.deepEqual(await I.main(["unstop", join(d, "absent.md")], {}), { rc: 0, out: "" });
+  writeFileSync(f, "status: stop\n"); writeFileSync(g, "status: stop\n");
+  const m = await mainOf("inbox.mjs", ["unstop", f]), c = cli("inbox.mjs", ["unstop", g]);
+  assert.deepEqual([m.rc, m.out, readFileSync(f, "utf8")], [c.rc, c.out, readFileSync(g, "utf8")]);
 }));

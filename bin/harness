@@ -150,12 +150,13 @@ overlap_warn() { local r; for r in $(cut -f1 <<< "$1" | uniq); do
 run_brief() { cat "$1/brief.md" 2> /dev/null; (source "$1/meta.env" && cat "$WT/.harness/runs/$RUN_ID/brief.md") 2> /dev/null; true; }
 # <queue entry> → its overlaps: a start's --spec and --brief; a continue's run's spec and briefs, and the entry's
 entry_overlaps() {
-  local a=() i p run="" spec="" brief="" st; mapfile -t a < "$1"; a=(${a[@]+"${a[@]//$'\x1f'/$'\n'}"})
-  if [[ ${a[0]:-} == start ]]; then p=${a[1]:-}; [[ ${a[2]:-} && ${a[2]} != --* ]] && run=${a[2]}
-  else run=${a[1]:-}; st=$(compgen -G "$STATE_ROOT/*/$run" | head -1) && [[ -f $st/meta.env ]] || return 0
+  local e=() m=() p run spec="" brief="" st; mapfile -d '' -t e < <(node "$HARNESS_HOME/lib/queue.mjs" facts "$1")   # start|other, project, run, --spec given, its value, the --brief text
+  p=${e[1]:-} run=${e[2]:-}
+  if [[ ${e[0]:-} != start ]]; then mapfile -t m < <(compgen -G "$STATE_ROOT/*/$run"); st=${m[0]:-}; [[ -n $st && -f $st/meta.env ]] || return 0
     p=$( (source "$st/meta.env" && echo "$PROJECT_DIR") 2> /dev/null ) || return 0
     spec=$( (source "$st/run.env" 2> /dev/null; echo "${SPEC_FILES:-}") ); brief=$(run_brief "$st"); fi
-  for (( i = 2; i < ${#a[@]}; i++ )); do case ${a[i]} in --spec) spec=${a[i+1]:-} ;; --brief) brief+=$'\n'${a[i+1]:-} ;; esac; done
+  [[ ${e[3]:-} == 1 ]] && spec=${e[4]:-}
+  brief+=${e[5]:-}
   [[ -d $p ]] || return 0; overlaps "$p" "$run" "$spec" "$brief"
 }
 # the waiting entries' overlaps as status.mjs --overlaps reads them: "<entry file>\t<R>\t<path>"
@@ -215,12 +216,7 @@ auto_id() {   # project → <project>-<date>[-n], not used before
 # when a new run's spec is not in its base ref (lib/spec.sh spec_new_run; decisions/2026-10-31-spec-must-exist)
 spec_refuse() { local miss; miss=$(spec_new_run "$@") || die "$miss"; }
 
-queue_add() {   # verb args… → a queue entry (one argument per line, a newline in one as \x1f), numbered past the parked ones too
-  mkdir -p "$Q/done" "$Q/held"
-  local n; n=$(( $(ls "$Q" "$Q/held" | sed -n 's/^\([0-9]\{4\}\)-.*\.args$/\1/p' | sort -n | tail -1 | sed 's/^0*//' || true) + 1 ))
-  local f; f=$Q/$(printf '%04d' "$n")-$1-${2##*/}.args
-  local a; for a in "$@"; do printf '%s\n' "${a//$'\n'/$'\x1f'}"; done > "$f"; echo "$f"   # a multi-line brief stays one argument
-}
+queue_add() { node "$HARNESS_HOME/lib/queue.mjs" add "$Q" "$@"; }   # verb args… → a queue entry (lib/queue.mjs: the format), its path printed
 
 queue_ensure_runner() {
   [[ ${HARNESS_NO_RUNNER:-} ]] && return 0   # tests
@@ -438,9 +434,9 @@ cmd_continue() {   # run-id [--keep-attempts] [--queued [--requested]] [start op
       rm -f "$STATE"/needs-* "$STATE"/verify-rounds-* "$STATE"/refused-* "$STATE"/rebase-rounds-* "$STATE"/moved-* \
         "$STATE"/resolves-* "$STATE"/resolve-*-*; }   # the resolve bounds start over too
     # a phone stop that ended the last segment would end this one at once: its line goes back to run (the driver notes it)
-    local inbox=$WT/.harness/runs/$RUN_ID/INBOX.md s n
-    if grep -qs '^stopped by Michael' "$STATE/ended" && s=$(grep -n -m1 '^status:' "$inbox" 2> /dev/null) && [[ ${s#*:} =~ ^status:[[:space:]]*stop ]]; then
-      n=${s%%:*}; sed -i "${n}s/.*/status: run/" "$inbox" && echo "${s#*:}" > "$STATE/inbox-unstopped"; fi
+    local was
+    if grep -qs '^stopped by Michael' "$STATE/ended"; then
+      was=$(node "$HARNESS_HOME/lib/inbox.mjs" unstop "$WT/.harness/runs/$RUN_ID/INBOX.md") || { (( $? == 3 )) && echo "$was" > "$STATE/inbox-unstopped"; }; fi
     rm -f "$STATE/PAUSE" "$STATE/STOP" "$STATE/ended"
     # the items the cleared markers, the reset attempts and the removed ended resolve (no driver: no record lock to
     # take); noted in harness-log.md, which the driver commits

@@ -35,7 +35,7 @@ spec_new_run() {
 # A subshell: the project's config must not leak into the runner's. A project that is no repository passes (its start
 # says why, as before); a check that fails without a line (a config that exits) still gives one, never an empty reason.
 spec_entry() {
-  local a out rc=0; mapfile -t a < "$1"; a=("${a[@]//$'\x1f'/$'\n'}")   # queue_add's newlines back, as the runner reads them
+  local a out rc=0; mapfile -d '' -t a < <(node "$HARNESS_HOME/lib/queue.mjs" decode "$1")   # as the runner reads them
   [[ ${a[0]:-} == start && -n ${a[1]:-} ]] || return 0
   git -C "${a[1]}" rev-parse --git-dir > /dev/null 2>&1 || return 0
   out=$( harness_config "${a[1]}"; spec_args "${a[@]:2}"; GIT_TERMINAL_PROMPT=0 spec_new_run "${a[1]}" "$SPEC_RUN" "$SPEC_ARG" "$SPEC_BASE" ) || rc=$?

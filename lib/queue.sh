@@ -35,9 +35,6 @@ busy_projects() { local d p f; for d in "$STATE_ROOT"/*/*/; do
   p=$(cat "$d/driver.pid" 2>/dev/null) && kill -0 "$p" 2>/dev/null && { basename "$(dirname "$d")"; continue; }
   for f in "$d"lanes/*/pid; do p=$(cat "$f" 2>/dev/null) && [[ -n $p ]] && kill -0 "$p" 2>/dev/null \
     && tr '\0' ' ' < "/proc/$p/cmdline" 2> /dev/null | grep "lib/lane.sh" > /dev/null && { basename "$(dirname "$d")"; break; }; done; done; }
-# An entry's project: start → the repo's directory name (what the state dir is named after); continue → its run's state dir.
-entry_project() { local verb arg d; { read -r verb; read -r arg; } < "$1"
-  if [[ $verb == start ]]; then basename "$arg"; else d=$(compgen -G "$STATE_ROOT/*/$arg" | head -1) && basename "$(dirname "$d")"; fi; }
 # One block, parsed whole before it runs: lib/sync.sh may rewrite this file under the running loop.
 {
 echo $$ > "$Q/runner.pid"; trap 'rm -f "$Q/runner.pid"' EXIT
@@ -60,9 +57,11 @@ while :; do
     unset bad_max; [[ $MAX_PARALLEL_RUNS != "$was" ]] && log "MAX_PARALLEL_RUNS $was → $MAX_PARALLEL_RUNS (config reloaded)"
   fi
   [[ -f $Q/STOP ]] && { rm -f "$Q/STOP"; log "stopped by harness queue stop"; break; }
-  next="" held="" a=$(alive_count) now=$(date +%s) busy=$(busy_projects)
-  for f in $(ls "$Q"/*.args 2>/dev/null | sort); do   # two runs on one repo would build conflicting PRs from the same base
-    p=$(entry_project "$f"); [[ -n $p ]] && grep -qxF -- "$p" <<< "$busy" && { held+="${held:+, }$(basename "$f" .args) ($p)"; continue; }
+  next="" held="" a=$(alive_count) now=$(date +%s) busy=$(busy_projects) entries=($(ls "$Q"/*.args 2>/dev/null | sort)) projects=()
+  # each entry's project, read once a poll: a start's repository, a continue's run's (lib/queue.mjs)
+  (( ${#entries[@]} )) && mapfile -d '' -t projects < <(node "$HARNESS_HOME/lib/queue.mjs" projects "$STATE_ROOT" "${entries[@]}")
+  for i in "${!entries[@]}"; do   # two runs on one repo would build conflicting PRs from the same base
+    f=${entries[i]} p=${projects[i]:-}; [[ -n $p ]] && grep -qxF -- "$p" <<< "$busy" && { held+="${held:+, }$(basename "$f" .args) ($p)"; continue; }
     next=$f; break
   done
   [[ $held != "${last_held:-}" ]] && { [[ -n $held ]] && log "holding $held: that project has a run going"; last_held=$held; }
@@ -92,7 +91,7 @@ while :; do
     log "could not park $(basename "$next") ($miss): it stays queued"; sleep "$POLL"; continue
   fi
   (( a == 0 )) && log "$("$HARNESS_HOME/lib/sync.sh")"   # no driver alive: the live checkout may move under none
-  mapfile -t args < "$next"; args=("${args[@]//$'\x1f'/$'\n'}")   # queue_add's newlines back
+  mapfile -d '' -t args < <(node "$HARNESS_HOME/lib/queue.mjs" decode "$next")   # a multi-line brief is one argument
   mv "$next" "$Q/done/$(date +%Y%m%d-%H%M%S)-$(basename "$next")"
   extra=(--now); [[ ${HARNESS_QUEUE_FOREGROUND:-} ]] && extra=(--foreground) || extra+=(--no-supervisor)
   (( UNTIL )) && extra+=(--until-epoch "$UNTIL")

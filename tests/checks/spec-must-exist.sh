@@ -61,7 +61,7 @@ echo gone > docs/gone.md && git add docs/gone.md && git commit -qm "a spec" && g
 "$H" queue add "$T/proj" qgone --spec docs/gone.md > "$T/qgone.out" 2>&1
 git rm -q docs/gone.md && git commit -qm "the spec moved away" && git push -q origin main   # a pushed delete, no rewrite
 printf '%s\n' start "$T/proj" qplant --spec docs/missing.md > "$Q/0002-start-proj.args"   # planted by hand: never checked at add
-"$H" queue add "$T/proj" qbrief --brief x --until-epoch "$(past)" > /dev/null
+"$H" queue add "$T/proj" qbrief --brief $'first line\nsecond line' --until-epoch "$(past)" > /dev/null
 HARNESS_QUEUE_FOREGROUND=1 HARNESS_HOME=$HERE/.. timeout 120 "$HERE/../lib/queue.sh" > "$T/qrun.out" 2>&1; settle
 check "the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run" \
   'grep -q "^queued: 0001-start-proj.args" "$T/qgone.out" && [[ -e $Q/held/0001-start-proj.args && ! -e $Q/0001-start-proj.args ]] \
@@ -70,6 +70,8 @@ check "the runner parks a queued start whose spec left origin/main: .args and .w
   && [[ ! -e $HARNESS_STATE/proj/qgone && ! -e $T/wt/proj/qgone ]] && ! grep -q "starting: harness start $T/proj qgone" "$Q/runner.log"'
 check "the same runner goes on to the next entry and starts it (a --brief start of the same project)" \
   'grep -q "starting: harness start $T/proj qbrief" "$Q/runner.log" && [[ -d $HARNESS_STATE/proj/qbrief ]] && grep -q "run qbrief on harness/qbrief" "$Q/runner.log" && grep -q "queue empty" "$Q/runner.log"'
+check "the runner hands a queued multi-line --brief to harness start as one argument: both lines in the run's brief, none a word of its own" \
+  'L=$HARNESS_LEDGER/proj/qbrief/brief.md; grep -x "first line" "$L" > /dev/null && grep -x "second line" "$L" > /dev/null'
 check "an .args planted by hand naming a missing spec is parked at dequeue the same way" \
   '[[ -e $Q/held/0002-start-proj.args && ! -e $HARNESS_STATE/proj/qplant && ! -e $T/wt/proj/qplant ]] && grep -qF "spec docs/missing.md: not in origin/main" "$Q/held/0002-start-proj.why" \
   && grep -qF "parked 0002-start-proj.args: spec docs/missing.md: not in origin/main" "$Q/runner.log"'

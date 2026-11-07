@@ -481,19 +481,8 @@ unpark_warm() {
   return 0
 }
 
-control() {   # → run | pause | stop
-  local s; s=$(sed -n 's/^status:[[:space:]]*//p' "$REC/INBOX.md" 2>/dev/null | head -1)
-  if [[ -f $STATE/STOP || $s == stop* ]]; then echo stop
-  elif [[ -f $STATE/PAUSE || $s == pause* ]]; then echo pause
-  else echo run; fi
-}
-
-stop_why() {   # → "stopped by Michael[: <why>]": STOP's line (harness stop --why), else the text after control()'s `status: stop`
-  local w s; w=$(head -1 "$STATE/STOP" 2> /dev/null)
-  s=$(sed -n 's/^status:[[:space:]]*//p' "$REC/INBOX.md" 2> /dev/null | head -1 | tr -d '\r')
-  [[ -z $w && $s =~ ^stop[^[:alnum:]]+([[:alnum:]](.*[^[:space:]])?) ]] && w=${BASH_REMATCH[1]}   # "stopped", "stop" or "stop -" give none
-  echo "stopped by Michael${w:+: ${w:0:200}}"
-}
+control() { ask inbox.mjs control "$REC/INBOX.md" "$STATE"; }   # → run | pause | stop
+stop_why() { ask inbox.mjs stop-why "$REC/INBOX.md" "$STATE"; }   # → "stopped by Michael[: <why>]": STOP's line (harness stop --why), else the text after control()'s `status: stop`
 
 # <epoch>: the box-wide usage-limit window raised to it, never lowered (any lane, any run may have set a later one)
 limit_raise() { (( $1 > $(cat "$LIMIT_FILE" 2> /dev/null || echo 0) )) && echo "$1" > "$LIMIT_FILE"; return 0; }

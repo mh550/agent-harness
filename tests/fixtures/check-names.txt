@@ -640,12 +640,37 @@ inbox.mjs review: a --> inside the moved question, a word-aligned insertion, a r
 inbox.mjs review: a lone <!-- in a question hides nothing; answers() equals sed on it (no final newline); a CRLF heading counts
 inbox.mjs: added() on a session that wrote inside the comment returns that question (and only it)
 inbox.mjs: answersLine skips the comment (27 on the fixture, not 12), allows trailing blanks, and an unclosed comment runs to the end
+inbox.mjs: control counts STOP and PAUSE only as files, as [[ -f ]] does
+inbox.mjs: control is pause on the PAUSE file or a line starting pause
+inbox.mjs: control is stop on a line starting stop: stop, stopped, stop with a why, a CR behind it
+inbox.mjs: control is stop on the STOP file, whatever the line says
+inbox.mjs: control takes stop over pause, file or line
+inbox.mjs: control with no status line and no file is run, and any other word is too
 inbox.mjs: insert() puts the question and a blank line above ## Answers (appended without one); questionLine and files
 inbox.mjs: main gives the CLI's bytes for answers (no newline added), question and repair
+inbox.mjs: main gives the CLI's bytes for control and stop-why, reading the status line and the state's markers
 inbox.mjs: main's insert takes stdin from io and leaves the file the CLI leaves
 inbox.mjs: main's insert with an io that has no stdin throws without reading fd 0
+inbox.mjs: main's unstop writes the file, prints the old line and exits 3, then changes nothing and exits 0
 inbox.mjs: question(fixture, B1-05) is Q2, cut at the real heading, no comment in it
+inbox.mjs: status drops the spaces and tabs after the colon
+inbox.mjs: status is the first status: line anywhere in the file, one under ## Answers too
+inbox.mjs: status keeps a CR at the line's end, and takes it as space with nothing before it
+inbox.mjs: status keeps a no-break space after the colon ([[:space:]] isn't \s)
+inbox.mjs: status of a file with no status line, and of none, is empty
+inbox.mjs: status of a first-line status: stop is stop
+inbox.mjs: stopWhy cuts at 200 characters by code point, STOP's line and the INBOX's alike
+inbox.mjs: stopWhy gives STOP's line over the INBOX's (harness stop --why wins), its CR kept
+inbox.mjs: stopWhy keeps a no-break space at the why's end ([[:space:]] isn't \s)
+inbox.mjs: stopWhy of stop, stopped, stop - and no line gives none
+inbox.mjs: stopWhy on an empty STOP reads the status line's why
+inbox.mjs: stopWhy starts at the first letter or digit past the marks, and drops blanks at the end only
+inbox.mjs: stopWhy takes every CR out of the status line's why
+inbox.mjs: stopWhy's first letter may be beyond ASCII (the driver's UTF-8 locale)
 inbox.mjs: the driver template has no "## Answers" inside its comment; answers() hashes as answers_hash's sed did
+inbox.mjs: unstop of a run or pause line, or of none, changes nothing
+inbox.mjs: unstop sets the first status: stop line back to status: run, the rest byte for byte
+inbox.mjs: unstop's was keeps the line's bytes, its spaces and CR
 independent M2 verified and merged alone (its tag carries no M1 work)
 independent work goes on past a parked feature
 init model resolved to fable
@@ -1120,6 +1145,7 @@ queue add --continue marks its entry --requested; --automatic (the driver's, the
 queue add --spec of a missing path: the line, exit 1, no .args file
 queue add --spec of a present path is queued
 queue add numbers past a parked entry
+queue add: a brief with a newline is one line holding 0x1f in the .args file, byte for byte; show prints it back; park and unpark keep the bytes
 queue end triggers one debrief, detached
 queue holds an entry whose project has a live run, starts the next one
 queue list marks continuations (requested) or (automatic)
@@ -1143,6 +1169,34 @@ queue show: a continue names its project path from meta.env, one %q quoted under
 queue show: an --until text shows as given, a --brief-file as its path; an empty --brief is no brief; a CR or an empty file never reaches the screen
 queue stop after a run: one debrief
 queue unpark puts it back at the end, its reason gone
+queue.mjs: decodeEntry drops a CR at each line's end (a file edited elsewhere), a last line's too, and no other
+queue.mjs: decodeEntry keeps an empty argument in the middle and at the end
+queue.mjs: decodeEntry reads a last line with no final newline
+queue.mjs: decodeEntry reads an empty file as no arguments and one blank line as one empty argument
+queue.mjs: decodeEntry takes back what encodeEntry wrote, a multi-line argument whole
+queue.mjs: encodeEntry gives an empty argument its empty line
+queue.mjs: encodeEntry keeps a multi-line argument on one line, each newline as 0x1f
+queue.mjs: encodeEntry leaves a line that already holds 0x1f as it is (queue unpark passes raw lines)
+queue.mjs: encodeEntry writes one argument per line
+queue.mjs: entryFacts gives each --brief behind a newline, a multi-line one whole
+queue.mjs: entryFacts of a continue gives its run and no project
+queue.mjs: entryFacts of a start gives its path and run id, and a start with options first has no run
+queue.mjs: entryFacts reads every place from the third on, a value that looks like an option too
+queue.mjs: entryFacts takes the last --spec, a --spec with no value being empty
+queue.mjs: entryName grows past four digits as printf %04d does
+queue.mjs: entryName numbers past the highest name, a parked one's included, and reads no name that isn't an entry
+queue.mjs: entryName of a continue names its run id
+queue.mjs: entryName of an empty queue is 0001
+queue.mjs: entryName takes what follows a start path's last slash, so a trailing slash leaves none
+queue.mjs: entryProject of a continue is its run id looked up
+queue.mjs: entryProject of a continue whose run is unknown is none
+queue.mjs: entryProject of a start is its repository's directory name
+queue.mjs: entryProject of a start reads a trailing slash as basename does
+queue.mjs: entryProject of a start with no path, and of an empty entry, is none
+queue.mjs: main gives the CLI's bytes for decode, projects and facts: NUL-separated, a missing file empty
+queue.mjs: main with no question is a usage error
+queue.mjs: main's add with no verb or first argument is a usage error and writes nothing
+queue.mjs: main's add writes the entry, makes done and held, prints its path, and numbers past a parked entry
 real limit message: not counted, run completes
 record PR: RECORD_PR=off opens none, noted
 record PR: a harness continue after finish ends again and reuses the open record PR (one pr create for it), its body refreshed
@@ -1336,7 +1390,7 @@ status json: finished holds the runs ended in the last 24h, newest first, and ol
 status json: harness status --json is one v1 document whose sorted key paths equal tests/fixtures/status-json-keys.txt
 status json: harness status --json over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3)
 status json: harness status <run> --json prints that one run object with v; an unknown run is an error
-status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs and ./overlap.mjs, exports runObject, queueEntry and sections
+status json: lib/status.mjs has a usage header, imports only node: built-ins, ./view.mjs, ./needs.mjs, ./overlap.mjs and ./queue.mjs, exports runObject, queueEntry and sections
 status json: needs counts a parked feature, a given-up one and a crashed driver; the gc'd run none, nor a live run's last attempt; items oldest first
 status json: queued holds the entries as queue list numbers them, held by a live run of their project, a brief's first 30 characters
 status json: state is running, ended or crashed, end_class done, stopped or waiting as endClass says
@@ -1366,6 +1420,8 @@ status view: four sections in order (NEEDS YOU · harness needs, RUNNING, QUEUED
 status view: harness status --all over 38 stub runs takes under 1 s of CPU time and 5 s of wall (best of 3), and lists them all
 status view: no line over 60 or 80 display columns (also with -v); at 60 the long field and the cost go on an indented second line
 status view: no run.log line without -v; a bad --since is an error
+status.mjs: unquote reads a $'…' word's octal bytes and C escapes as UTF-8
+status.mjs: unquote reads a '…' word and a backslash-escaped one, and none is null
 status: stop <why> from the phone: the same note, ended and services note
 stub-gh: STUB_GH_DOWN=2 fails two pr creates with fixtures/gh-down.txt (a real gh's), the third opens the PR
 stub-git-down: a count of 2 fails the first two pushes with the fixture's lines (ref and url in), the third reaches origin.git
@@ -1504,6 +1560,7 @@ the report lists the review role when a review ran
 the restart line says why: no reply in <n> s, a bad header, a wrong id, the helper gone
 the retro prompt carries the end reason
 the run end goes out before the retro, once report.md is pushed
+the runner hands a queued multi-line --brief to harness start as one argument: both lines in the run's brief, none a word of its own
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the runner skips a parked entry and says so
 the runner syncs before a start with nothing alive (this ledger is no checkout: skipped, said so)
