@@ -1,1 +1,3 @@
 - 2026-11-07 15:40 · test count: parsed (generic)
+- 2026-11-07 15:53 · feature list written: 0/14 passing
+- 2026-11-07 15:53 · lint: clean
