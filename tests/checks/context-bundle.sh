@@ -11,6 +11,9 @@ touch -d '2026-11-01 00:00' "$T/proj/docs/decisions.md"; touch -d '2026-11-02 00
 jq --slurpfile g "$GX/feature_list.json" '.features += [$g[0].features[] | select(.id == "N1-01")]' "$PR/feature_list.json" > "$T/fl.json" && mv "$T/fl.json" "$PR/feature_list.json"
 printf 'status: run\n\n### B: set the gatus vars, then answer\n\n%s\n\n## Answers\n' "$(cat "$GX/text.md")" > "$PR/INBOX.md"
 printf '%s\t%s\n' "$(( HARNESS_NOW - 11000 ))" "$(at 11000)" > "$Q/last-debrief"   # covers parked, givenup, running
+GR=$T/wt/proj2/givenup/.harness/runs/givenup; echo '{"features":{"passing":2,"total":3},"cost":{"total":1.5}}' > "$GR/summary.json"   # a record's own summary
+mkdir -p "$HARNESS_STATE/events/old" "$HARNESS_STATE/events/recent"   # the retention's (real clock: HARNESS_NOW is pinned in the past)
+touch -d '31 days ago' "$HARNESS_STATE/events/old/event.json" "$HARNESS_STATE/events/old"; touch -d '1 day ago' "$HARNESS_STATE/events/recent/event.json"
 touch "$T/mark"
 sec() { awk -v h="### $1 (proj)" '$0 == h { on = 1; print; next } on && $0 == "~~~" { f = !f } on && !f && /^###? / { exit } on' "$2"; }   # one run's section
 body() { sed '1d; /^## Glossary$/,$d' "$1"; }   # the context without its header line and its glossary
@@ -38,6 +41,22 @@ check "context bundle: writes nothing outside its out directory, never summary.j
   find "$HARNESS_STATE" "$T/wt" "$HARNESS_LEDGER" "$T/proj" -newer "$T/mark" ! -type d 2> /dev/null \
     | grep -Ev "^($T/b1|$T/b2|$HARNESS_STATE/events|$HARNESS_STATE/debrief)/" > "$T/new.txt"; [[ ! -s $T/new.txt ]] \
   && [[ -z $(find "$HARNESS_STATE" "$T/wt" "$HARNESS_LEDGER" "$T/b1" "$T/b2" -name summary.json -newer "$T/mark" 2> /dev/null) ]]'
+check "context bundle: context.json has the spec's shape for one run" '
+  jq -e ".v == 1 and (.id | type) == \"string\" and .generated_at != null and .scope.runs == [\"parked\"] and .scope.since == null and (.runs | length) == 1 and .runs[0].paths.record != null and .runs[0].parked[0].feature == \"B\" and ([.glossary[].id] | index(\"D24\")) != null and .unresolved == [\"Q99\"]" "$T/b1/context.json" > /dev/null \
+  && [[ $(grep -c "jq -n" "$HH/lib/context.sh") == 0 ]] && jq -e ".runs[0] | .run == \"parked\" and .project == \"proj\" and .running == false and .paths.inbox == \"$PR/INBOX.md\" and .paths.worktree == \"$T/wt/proj/parked\" and .paths.state == \"$HARNESS_STATE/proj/parked\" and .parked[0].why == \"set the gatus vars and the token\"" "$T/b1/context.json" > /dev/null'
+check "context bundle: context.json for --since names its time and every run since it" '
+  c=$(sed -n "s/^- Covers: .*: [0-9]* (\(.*\))\$/\1/p" "$T/b2/context.md") && [[ -n $c ]] \
+  && [[ $(jq -r ".scope.since" "$T/b2/context.json") == "$(at 11000)" && $(jq -r ".scope.runs | join(\" \")" "$T/b2/context.json") == "$c" ]] \
+  && [[ $(jq -r "[.runs[].run] | join(\" \")" "$T/b2/context.json") == "$c" && $(jq ".scope.runs | length" "$T/b2/context.json") == 3 ]]'
+check "context bundle: a run's summary is its summary.json, or null without one" '
+  [[ $(jq -c ".runs[] | select(.run == \"givenup\") | .summary" "$T/b2/context.json") == "$(jq -c . "$GR/summary.json")" ]] \
+  && jq -e "[.runs[] | select(.run != \"givenup\") | .summary] == [null, null]" "$T/b2/context.json" > /dev/null'
+check "context bundle: open_questions carries the parked run's INBOX question" '
+  jq -e "(.runs[0].open_questions | length) == 1 and (.runs[0].open_questions[0] | startswith(\"B: set the gatus vars, then answer Does N1-01\"))
+    and .runs[0].parked[0].question == .runs[0].open_questions[0]" "$T/b1/context.json" > /dev/null'
+check "context bundle: a new bundle removes events older than 30 days and says so" '
+  [[ ! -e $HARNESS_STATE/events/old && -f $HARNESS_STATE/events/recent/event.json ]] && [[ $(sed -n 2p "$T/b3.out") == "events: removed 1 bundle older than 30 days" ]] \
+  && [[ -s $(head -1 "$T/b3.out")/context.json && -e $HARNESS_STATE/events/recent ]] && ! grep -F "events: removed" "$T/b1.out" "$T/b2.out" > /dev/null'
 check "context bundle: an unknown run exits 1, no argument prints the usage and exits 2" '
   "$H" context nosuch > /dev/null 2> "$T/d1.err"; r1=$?; "$H" context > /dev/null 2> "$T/d2.err"; r2=$?
   "$H" context --since yesterday > /dev/null 2> "$T/d3.err"; r3=$?; "$H" context parked --since "$(at 11000)" > /dev/null 2>&1; r4=$?

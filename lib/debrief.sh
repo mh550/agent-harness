@@ -245,7 +245,7 @@ HL[0]="[debrief] ${HL[0]:-}"
 # lines (CONTINUE: answers, wherever the model put them). No click: the note is a local path.
 NM=$(awk '/^## / { on = tolower($0) ~ /^## needs michael/; next } on && NF' "$WS/body.md" | grep -Evix '[-*_ ]*(nothing|none)\.?[*_[:space:]]*' \
   | grep -Ev '^- (Queued|Not queued): ')
-notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}" kind=debrief
+notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}" kind=debrief since="$SINCE"
 # DESK=1 and something needs Michael: a Remote Control session briefs him on the note (9>&-: debrief.lock stays ours)
 [[ -n $NM && $DESK == 1 ]] && { "$H" desk --debrief > /dev/null 2>&1 9>&- || log "debrief: desk could not start (exit $?)"; }
 exit 0

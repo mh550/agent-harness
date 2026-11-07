@@ -1,0 +1,60 @@
+{
+  "v": 1,
+  "id": "00000000-0000-4000-8000-000000000001",
+  "generated_at": "2026-11-07T22:39:39.773Z",
+  "scope": {
+    "runs": [
+      "parked"
+    ],
+    "since": null
+  },
+  "runs": [
+    {
+      "run": "parked",
+      "project": "proj",
+      "ended": "waiting on Michael: B",
+      "running": false,
+      "features": "1/3 passing",
+      "paths": {
+        "record": "/tmp/T/wt/proj/parked/.harness/runs/parked",
+        "worktree": "/tmp/T/wt/proj/parked",
+        "state": "/tmp/T/state/proj/parked",
+        "report": "/tmp/T/wt/proj/parked/.harness/runs/parked/report.md",
+        "inbox": "/tmp/T/wt/proj/parked/.harness/runs/parked/INBOX.md",
+        "progress": "/tmp/T/wt/proj/parked/.harness/runs/parked/progress.md"
+      },
+      "summary": null,
+      "parked": [
+        {
+          "feature": "B",
+          "why": "set the gatus vars and the token",
+          "question": "B: set the gatus vars, then answer"
+        }
+      ],
+      "open_questions": [
+        "B: set the gatus vars, then answer"
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "id": "B",
+      "kind": "feature",
+      "text": "B (milestone M1)",
+      "source": "/tmp/T/wt/proj/parked/.harness/runs/parked/feature_list.json:13"
+    },
+    {
+      "id": "M1",
+      "kind": "milestone",
+      "text": "milestone in feature_list.json: A, B, C (3 features, 1 passing)",
+      "source": "/tmp/T/wt/proj/parked/.harness/runs/parked/feature_list.json:4"
+    },
+    {
+      "id": "A",
+      "kind": "feature",
+      "text": "A (milestone M1)",
+      "source": "/tmp/T/wt/proj/parked/.harness/runs/parked/feature_list.json:4"
+    }
+  ],
+  "unresolved": []
+}

@@ -363,15 +363,23 @@ coding prompt names CLAUDE.md but doesn't paste it
 coding prompt: reviews go to subagents on the session's own model (A's prompt, its metrics row, prompt.sh's render: claude-sonnet-5-5)
 conflict_files: the conflicted paths of git merge-tree --write-tree --name-only (a real conflict's output)
 context bundle: --since matches the debrief's dry-run context but the glossary
+context bundle: a new bundle removes events older than 30 days and says so
+context bundle: a run's summary is its summary.json, or null without one
 context bundle: an unknown run exits 1, no argument prints the usage and exits 2
+context bundle: context.json for --since names its time and every run since it
+context bundle: context.json has the spec's shape for one run
 context bundle: one run's context.md is its debrief section and a glossary
+context bundle: open_questions carries the parked run's INBOX question
 context bundle: the debrief's own context ends with the glossary
 context bundle: with no --out it writes events/<uuid>/ and prints that directory
 context bundle: writes nothing outside its out directory, never summary.json
 context.md carries the earlier attempt's dead end
 context.md lists the decisions store's rules newest first
+context.mjs: context.json's keys are the spec's, in order
 context.mjs: mergeResults keeps each source once and drops an id another run resolved
+context.mjs: open questions are the INBOX's open asks, then the open question items
 context.mjs: runSection cuts one run's section from the gatherer's markdown
+context.mjs: staleBundles keeps a dir with any file newer than 30 days
 continuation queued: keeps attempts, brief marked as the debrief's
 continue after a no-list end merges main first
 continue finishes a paused run
@@ -516,10 +524,15 @@ event hook: notify returns 0 received, refused and timed out
 event hook: the fallback event carries ntfy's title, body, click, actions and priority
 event hook: the received event is kept under events/<id>/
 event run: a blocked run end posts a blocked event, feature null
+event run: a blocked run end's bundle says how it ended, not still running
+event run: a bundle that fails sends the event with a null context, noted
+event run: a park event's context.json exists when the POST is made, event.json beside it
 event run: a park posts one park event with its feature, run, project and title, and no ntfy
 event run: a park the hook refuses reaches ntfy with the event's fields, noted
 event run: started and a done run's end reach ntfy alone
+event run: the debrief event's bundle covers the debrief's runs
 event run: the debrief posts a debrief event with null project, run and feature
+event run: the hook notes the old bundles it removed
 event run: with EVENT_URL unset a park's ntfy post is the fallback's
 every one of those answers is the spawn's bytes; a reader asking while < <(ask) runs still gets its own; nothing on stderr
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
@@ -1168,6 +1181,7 @@ no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
 not queued: ended done / already queued / no work left / still running
 nothing parked
 notify.mjs event: a debrief has null project, run and feature
+notify.mjs event: a given id= is the event's id
 notify.mjs event: a kind outside v1 prints nothing and exits 2
 notify.mjs event: an empty click, actions or context is null, an empty priority stays the empty string
 notify.mjs event: buildEvent's keys are the v1 fixture's, in order

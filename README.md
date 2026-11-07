@@ -377,6 +377,13 @@ ran out of time or hit the usage limit (`CONTINUE: <run> :: <brief>`); the harne
   usage-limit window is waited out up to 5 h; past that, the next debrief (or yours, by hand) covers these runs.
 - `harness debrief --dry-run` prints the gathered context and launches nothing.
 
+`harness context <run-id>` (or `--since "<YYYY-MM-DD HH:MM:SS>"` for every run started since then) writes the same
+gathered context without a session: `context.md` (the debrief's context plus a `## Glossary` that looks up every
+decision, feature and milestone ID it mentions in the feature list and the project's docs, and lists the ones nothing
+explains) and `context.json` (the same in a fixed shape), into `--out <dir>` or `~/.local/state/harness/events/<id>/`,
+and prints the directory. It only reads. With `EVENT_URL` set, each event n8n gets carries such a bundle's path,
+written just before; bundles there older than 30 days are removed when a new one is written.
+
 ## Evals
 
 A **task** is 1–3 features copied from a real past run, with the commit they started from (`evals/tasks/<id>/task.json`);

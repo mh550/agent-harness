@@ -125,3 +125,11 @@ test("notify.mjs event: a kind outside v1 prints nothing and exits 2", async () 
   }
   assert.equal(cli("notify.mjs", ["event", "title=t"]).rc, 2);
 });
+
+test("notify.mjs event: a given id= is the event's id", async () => {
+  const { buildEvent } = await import("../../lib/notify.mjs");
+  const id = "6b80f60a-b34d-4abd-9ec8-3c037d8ef44d";
+  assert.equal(buildEvent({ ...evf, id }).id, id);   // the bundle's events/<id>/ is the event's
+  for (const bad of ["", "short", "../x/../y-zzzz", "a".repeat(65), "has space 123"])
+    assert.match(buildEvent({ ...evf, id: bad }).id, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, bad);
+});

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # The context bundle: the debrief's gatherer (moved here from lib/debrief.sh, same bytes) and `harness context`.
 #   context.sh <run-id> | --since <YYYY-MM-DD HH:MM:SS> [--out <dir>] [--id <id>]   sourced: context_since, context_runs, context_glossary
-# Run, it writes <out>/context.md (the gatherer's markdown, then a ## Glossary of its IDs, lib/context.mjs) for one run
-# or every run whose driver started since then, and prints <out>; <out> defaults to <state>/events/<id>/, <id> a uuid.
+# Run, it writes <out>/context.md (the gatherer's markdown, then a ## Glossary of its IDs) and <out>/context.json (the
+# spec's shape; both from one lib/context.mjs call) for one run or every run whose driver started since then, and prints
+# <out>; <out> defaults to <state>/events/<id>/, <id> a uuid. A bundle in <state>/events/ then prunes the bundles there
+# with no file newer than 30 days (the real clock), one stdout line saying how many.
 # Read-only: everything it runs only reads (status, needs, trends, queue list; never `harness report`, so never
 # summary.json), it takes no lock, and its scratch is <out>/.work.*, removed on exit. docs/plans/2026-11-07-A2-context-bundle.md §2.
 # Sourced (lib/debrief.sh), the caller sets STATE_ROOT, Q, H, LEDGER, SINCE, CTX (the output file), WS (scratch) and F.
@@ -31,7 +33,8 @@ run_context() {   # state dir → this run's section
   ( source "$1/meta.env"
     local proj rd ended f
     proj=$(basename "$PROJECT_DIR"); rd=$(rec_dir "$1")
-    if alive "$1"; then ended="still running"; else ended=$(cat "$1/ended" 2>/dev/null || echo "not running, no end reason"); fi
+    # the driver writes ended before its end notification, alive still: a bundle the end's event asks for says how it ended
+    if [[ -s $1/ended ]]; then ended=$(cat "$1/ended"); elif alive "$1"; then ended="still running"; else ended="not running, no end reason"; fi
     echo; echo "### $RUN_ID ($proj)"; echo
     echo "- ended: $ended"
     echo "- project: $PROJECT_DIR (its docs: CLAUDE.md, README.md, docs/) · branch harness/$RUN_ID"
@@ -79,10 +82,9 @@ rate_info() {   # the newest rate-limit event in these runs' transcripts
     | "\(.key) \((.value.utilization // 0) * 100 | round)% (resets \(.value.resetsAt | strflocaltime("%a %H:%M")))"] | join(", "))' <<< "$line" 2>/dev/null \
     || echo "${line:0:400}"
 }
-spend() {
-  local d c total=0
-  for d in "${RUNS[@]}"; do c=$(jq -r '.cost.total // 0' "$(rec_dir "$d")/summary.json" 2>/dev/null || echo 0); total=$(jq -n "$total + ${c:-0}"); done
-  echo "$total"
+spend() {   # summed by one jq over each record's cost.total (0 without one), as jq added them before
+  local d
+  for d in "${RUNS[@]}"; do jq '.cost.total // 0' "$(rec_dir "$d")/summary.json" 2>/dev/null || echo 0; done | jq -s 'add // 0'
 }
 names() { local d; for d in "${RUNS[@]}"; do basename "$d"; done | paste -sd' ' -; }
 context_runs() {   # <state dir>… → $CTX: the gatherer's markdown for these runs, every part capped, the whole cut at CMAX
@@ -115,24 +117,27 @@ context_runs() {   # <state dir>… → $CTX: the gatherer's markdown for these 
     printf '\n\n… (context cut at %s of %s bytes; the rest is in the run records listed above)\n' "$CMAX" "$n" >> "$WS/c.md"; mv "$WS/c.md" "$CTX"
   fi
 }
-context_glossary() {   # <state dir>… → appends to $CTX a ## Glossary of the IDs each run's section names, in the bytes CMAX leaves
-  local d left i=0
+context_glossary() {   # <state dir>… → appends to $CTX a ## Glossary of the IDs each run's section names, in the bytes CMAX
+  # leaves; with CTX_JSON (and CTX_ID, CTX_SCOPE_SINCE) set, the same node call writes context.json there: 1 when it can't
+  local d left i=0 js=()
   for d in "$@"; do i=$(( i + 1 ))
     ( source "$d/meta.env"
       local rd ended running=0 docs=$PROJECT_DIR
       rd=$(rec_dir "$d"); [[ -e $WT/.git ]] && docs=$WT   # a run's docs: its worktree when it is a checkout, else its project's
-      if alive "$d"; then ended="still running" running=1; else ended=$(sed 's/ · [0-9-]* [0-9:]*$//' "$d/ended" 2> /dev/null); fi
+      if [[ -s $d/ended ]]; then ended=$(sed 's/ · [0-9-]* [0-9:]*$//' "$d/ended"); elif alive "$d"; then ended="still running" running=1; fi
       "$H" needs "$RUN_ID" --json > "$WS/needs-$i.json" 2> /dev/null || echo '[]' > "$WS/needs-$i.json"   # by row: two projects may share a run id
       printf '%s\t' "$d" "$RUN_ID" "$(basename "$PROJECT_DIR")" "${ended:-not running, no end reason}" "$running" \
         "$(F summary "$rd/feature_list.json" 2> /dev/null || echo 'no feature list')" "$rd" "$WT" "$docs" | tr -d '\n'
       echo "$WS/needs-$i.json" )
   done > "$WS/runs.tsv"
-  [[ ${CMAX:-} =~ ^[0-9]+$ ]] || return 0   # a malformed HARNESS_DEBRIEF_CONTEXT_MAX: no glossary, as before no cut
-  left=$(( CMAX - $(wc -c < "$CTX") - 1 ))   # the gatherer is cut as before; the glossary gets what is left
-  (( left > 0 )) || return 0
-  if node "$HARNESS_HOME/lib/context.mjs" bundle "$CTX" "$WS/runs.tsv" --max-bytes "$left" > "$WS/glossary.md" 2> "$WS/glossary.err"; then
-    [[ -s $WS/glossary.md ]] && { echo; cat "$WS/glossary.md"; } >> "$CTX"
-  else echo "context: no glossary ($(tail -1 "$WS/glossary.err" | cut -c1-300))" >&2; fi   # the context stands without it
+  [[ -n ${CTX_JSON:-} ]] && js=(--json "$CTX_JSON" --id "$CTX_ID" --since "${CTX_SCOPE_SINCE:-}")
+  left=0   # a malformed HARNESS_DEBRIEF_CONTEXT_MAX: no glossary, as before no cut
+  [[ ${CMAX:-} =~ ^[0-9]+$ ]] && left=$(( CMAX - $(wc -c < "$CTX") - 1 ))   # the gatherer is cut as before; the glossary gets what is left
+  (( left > 0 || ${#js[@]} )) || return 0
+  if node "$HARNESS_HOME/lib/context.mjs" bundle "$CTX" "$WS/runs.tsv" --max-bytes "$(( left > 0 ? left : 0 ))" "${js[@]}" > "$WS/glossary.md" 2> "$WS/glossary.err"; then
+    (( left > 0 )) && [[ -s $WS/glossary.md ]] && { echo; cat "$WS/glossary.md"; } >> "$CTX"
+  else echo "context: no glossary ($(tail -1 "$WS/glossary.err" | cut -c1-300))" >&2   # the context stands without it
+    (( ${#js[@]} )) && return 1; fi
   return 0
 }
 
@@ -173,7 +178,11 @@ fi
 [[ -n $out ]] || out=$STATE_ROOT/events/$id
 mkdir -p "$out" && out=$(CDPATH='' cd -- "$out" && pwd) || die "cannot write $out"
 WS=$(mktemp -d "$out/.work.XXXXXX") || die "cannot write $out"; trap 'rm -rf "$WS"' EXIT   # nothing outside $out
-CTX=$out/context.md CTX_TITLE=Context
+CTX=$out/context.md CTX_TITLE=Context CTX_JSON=$out/context.json CTX_ID=$id CTX_SCOPE_SINCE=$since
 context_runs "${RUNS[@]}"
-context_glossary "${RUNS[@]}"
+context_glossary "${RUNS[@]}" || die "no context.json in $out (the bundle's markdown is there)"
 echo "$out"
+# the retention (decisions/2026-10-22-context-bundle-glossary): a bundle written among the others prunes the stale ones
+ev=$(CDPATH='' cd -- "$STATE_ROOT/events" 2> /dev/null && pwd)
+[[ -n $ev && ${out%/*} == "$ev" ]] && node "$HARNESS_HOME/lib/context.mjs" prune "$ev" "${out##*/}"
+exit 0

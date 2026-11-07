@@ -197,13 +197,21 @@ cli.mjs: the tail awaits a main that returns a promise
 cli.mjs: the tail gives main the process's cwd, environment and stdin
 cli.mjs: the tail writes main's out to stdout and exits its rc
 context bundle: --since matches the debrief's dry-run context but the glossary
+context bundle: a new bundle removes events older than 30 days and says so
+context bundle: a run's summary is its summary.json, or null without one
 context bundle: an unknown run exits 1, no argument prints the usage and exits 2
+context bundle: context.json for --since names its time and every run since it
+context bundle: context.json has the spec's shape for one run
 context bundle: one run's context.md is its debrief section and a glossary
+context bundle: open_questions carries the parked run's INBOX question
 context bundle: the debrief's own context ends with the glossary
 context bundle: with no --out it writes events/<uuid>/ and prints that directory
 context bundle: writes nothing outside its out directory, never summary.json
+context.mjs: context.json's keys are the spec's, in order
 context.mjs: mergeResults keeps each source once and drops an id another run resolved
+context.mjs: open questions are the INBOX's open asks, then the open question items
 context.mjs: runSection cuts one run's section from the gatherer's markdown
+context.mjs: staleBundles keeps a dir with any file newer than 30 days
 continue after a no-list end merges main first
 coverage.mjs reduce reads a raw directory's traces and V8 documents into one set; tables, counts, union, covering and missing read sets
 coverage.mjs: the unit tier's check file (unit-tier) is a check file's set, never a unit row, as 00-unit-tier was
@@ -674,6 +682,7 @@ next <m>: a feature without after waits on its own milestone's earlier features 
 night words: memlint says run-scope and that it goes in the run's brief
 night words: out of the docs, prompts, templates and code, but for memlint's patterns and the catch-up's lines
 notify.mjs event: a debrief has null project, run and feature
+notify.mjs event: a given id= is the event's id
 notify.mjs event: a kind outside v1 prints nothing and exits 2
 notify.mjs event: an empty click, actions or context is null, an empty priority stays the empty string
 notify.mjs event: buildEvent's keys are the v1 fixture's, in order
