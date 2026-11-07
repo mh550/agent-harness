@@ -3,6 +3,21 @@
 
 What this file is: the run's journal, rendered from `entries.jsonl`, newest entry first. Each entry is one session's own account: what it built, what it verified, what failed. The feature list (`feature_list.json` in this directory) has one milestone, S4 of the slim-suite spec (`docs/specs/2026-11-03-slim-suite.md`): the bash decision logic that burns the suite moves into pure `.mjs` functions with a unit test per branch, no note text changed, no check removed (the brief's Decision 16 (b)). Five features: S4-01 plans the moves, S4-02 the suite runner's decisions (`lib/check.sh` → `lib/checkdecide.mjs`), S4-03 the lane's verdict and exit table and how a run ends (`lib/lane.sh`, `lib/driver.sh` → `lib/lane.mjs`), S4-04 the queue entry format and INBOX status parsers (`lib/queue.mjs`, `lib/inbox.mjs`), S4-05 the review with the proofs, the forty mutants and the Predictions table (the after row and the solo CPU and wall rows wait for an empty box after the run). `passes` on a feature means its session's fast tier was green and its steps were done; the milestone is verified independently and merged into `main` when all five pass. Steer from the phone: edit `INBOX.md` on this branch (first line `status: pause` or `status: stop`; answers under `## Answers`).
 
+### 2026-11-07 03:13 · S4-03 · passes
+
+The lane's verify verdict and exit table, how a closed lane reads, and how a run ends are now pure functions in lib/lane.mjs, served by the helper and reached through ask. 80 unit tests. Notes, cards, exit and end reasons unchanged: both note proofs clean, 295 inputs compared old bash against new with no difference. lib/lane.sh and lib/driver.sh: 52 deleted, 51 added.
+
+- **Files:** lib/lane.mjs, lib/lane.sh, lib/driver.sh, lib/helper.mjs, tests/unit/lane.test.mjs, tests/unit/cli.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-07-S4-purity.md, journal/decisions/2026-11-03-purity.md
+- **Verified:** Fast tier: check.sh --fast green, 871 tests, 106 s (791 before). tests/run.sh over the step's files plus needs-git, park-desk, origin-outage, weekly-budget, resident-helper, node-memo: 396/396. Note proof 1 prints one identical pair, proof 2 prints nothing. A scratch script (not committed) compared the base tree's bash with lane.mjs on 295 inputs: 0 differences. compare-09 is still in lib/driver.sh, line not moved.
+- **Tests:** 1572 → 1652
+- **Dead end:** Dropping `;;` onto the thin branch's note line once its need= line left — note proof 2 compares from note " to the end of the line and printed it; the `;;` sits on its own line now
+- **Discovery** (affects S4-05): The plan said a failed verify's card takes the mode as variant; the bash's `a || b || c` stops at `a`, so the variant is empty in every mode. The bash won, the plan is corrected in place, and a unit test pins it.
+- **Discovery** (affects S4-05): Moves 2 and 3 barely shorten the bash (52 deleted, 51 added): each decision became a question plus a read of its labelled answer. S4-05's bash-removed row (150 or more) misses by more than S4-01's 90 to 110 gross estimate suggests if read net; say gross and net.
+- **Discovery** (affects S4-05): lane-done's answer is the one unlabelled line, `<code> <merge failed 0|1> <reason>`, taken whole: read would trim the space an empty need leaves in the exit file.
+- **Proposed change:** S4-03 step 3 says the end block's `ends` composition is replaced by one call, but note proof 2 keeps those three lines and the join whole, so runEnd answers the lists they read. The decision file marks this *default*; the step should say the lists.
+- **Proposed change:** S4-03 step 3 also calls verify's `case $result` a verdict choice replaced by one call; the case stays because it holds the actions and notes. The choice moved (verifyRound, suiteVerdict, verifyNeed, verifyCard).
+- *03-S4-03 · claude-opus-5-5*
+
 ### 2026-11-07 02:57 · S4-02 · passes
 
 lib/check.sh's decisions moved to lib/checkdecide.mjs: redReason, cachedAnswer, partialPlan, rerunChoice, keepRed, failedNames. check.sh asks per moment by one decide() line; check_run hands the first answer through ask (served). All check: lines and notes unchanged. check.sh -72/+42; 65 unit tests, 1 check; literal-04 caught at its new home.
