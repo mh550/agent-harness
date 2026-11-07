@@ -1,11 +1,15 @@
-# Context pack for `M3-02`
+# Context pack for `M3-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (M3-02, affects M3-03, M3-04): memory_open [merge]: under auto it notes nothing when the merge's note follows, else 'memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · <url>'; pr's note unchanged → entries.jsonl:13
+- Discovery (M3-02, affects M3-03, M3-04): memory-branch.sh now has 10 runs (ma auto, mr refused, mw auto without tier 1): its final worktree count is 11; mp (MERGE_POLICY=auto from base-config, MEMORY_POLICY=pr) carries the independence check → entries.jsonl:13
+- Discovery (M3-02, affects M3-03, M3-04): `bash tests/run.sh memory-pr` matches memory-prompts, not memory-branch (substring of the file name): M3-02/M3-03's step commands miss the memory checks → entries.jsonl:13
 - Discovery (M3-01, affects M3-02, M3-03): The spec's and M3-02/M3-03's tests/checks/memory-pr.sh is tests/checks/memory-branch.sh (renamed in M2-05); the off check to replace is in curator-run.sh → entries.jsonl:12
-- Discovery (M3-01, affects M3-02): curator() today notes 'curator: none (MEMORY_POLICY=<v> is neither pr nor off)' and skips; M3-02 replaces it with the treated-as-pr note. memory_open's note hardcodes MEMORY_POLICY=pr → entries.jsonl:12
+- Discovery (M3-01, affects M3-03): stub-gh pr view takes a head branch, not a URL, and answers no mergedAt/commits: M3-03 adds both (gh's documented JSON shape, a fixture naming its source) → entries.jsonl:12
+- Discovery (M3-01, affects M3-03, M3-04): A continue adds a second driver commit to a reused memory PR: the plan reads 'merged unchanged' as every commit headline starting 'memory: <run>: ', not 'one commit' (default) → entries.jsonl:12
 - Discovery (M3-01, affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 and M2-04/05 did; the Promote to Gotchas items stay for the curator → entries.jsonl:12
 - Discovery (M2-05, affects M3): A tier-3 op counts in both dropped and proposals (ops = applied + tier 2 + dropped): M3's summary.memory must not add dropped and proposed → entries.jsonl:10
 - Discovery (M2-05, affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 and M2-04 did; the Promote to Gotchas items stay for the curator → entries.jsonl:10
@@ -25,27 +29,18 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Promote to Gotchas
 
+- A check run reads lib/ live from the worktree (tests/lib.sh HH=the checkout): never edit lib/ while a red run is going (agent-harness-2026-11-07-2 2026-11-07) → entries.jsonl:13
 - restrict covers only the session's checkout: a read-only role's push or out-of-tree write is bounded only by its permission mode; memory_foreign guards the memory branch → entries.jsonl:10
 - stub-gh keeps pr create's --body-file as prs/pr-N.body and has a pr edit case that rewrites it (record_pr's reuse now refreshes it too) → entries.jsonl:9
 - Check files that write user-config.sh from scratch (not cp base-config.sh) must carry MEMORY_POLICY=off, or their runs get a curator: the nine that exist now do. lib/eval.sh's safety() sets it too. → entries.jsonl:8
 - restrict commits the dirty tree, then reverts all since its base: a read-only role run after another in finish must rec_commit first (agent-harness-2026-11-07-2 2026-11-07) → entries.jsonl:6
-- From M1 on a coding session's CLAUDE.md/.harness/project.md edit is reverted by memory_guard: a check needing a CLAUDE.md-only session tree must map another file (README.md:readme) → entries.jsonl:4
 
 ## What it builds on
 
-- 2026-11-07 13:39 · M3-01 · passes: M3 plan written (docs/plans/2026-11-07-M3-policy.md). memlint-self retired: its grep is a unit test in memlint.test.mjs (red on a mutant, conformance red before the fixture), its self-lint the curator's capCheck at the write plus memlint-run's notes. File deleted, names swapped in both fixtures, CHECK_KEY_MAP, key-map-lint, partial-key, README follow. Decision skeleton memory-policy.; tests 962 → 962; files docs/plans/2026-11-07-M3-policy.md, journal/decisions/2026-11-07-memory-policy.md, journal/decisions/2026-11-03-suite-tiers.md, tests/unit/memlint.test.mjs, tests/checks/memlint-self.sh, … → entries.jsonl:12
+- 2026-11-07 13:52 · M3-02 · passes: MEMORY_POLICY=pr|auto|off: auto merges the memory PR at the pushed tier-1 head (memory_merge, --match-head-commit; refused → left open, one note), an unknown value is one note and runs as pr, off writes no curator/memory note. Config, both templates, architecture §10 row, README, decision policy row. Review: under auto a PR opened with no new tier-1 commit had no note; fixed red→green.; tests 962 → 962; files lib/config.sh, lib/driver.sh, lib/record.sh, templates/project/config.sh, templates/user/config.sh, … → entries.jsonl:13
 
 ## Lately in the run
 
-- 2026-11-07 13:30 · verify M2 · passes: All five M2 features hold: full suite green (1775), unit 477/477, curator-run/memory-branch/lanes-record-pr/retro-backlog/verify-retro-read-only 51/51, syntax checks pass, docs/decision/review present, 47 names within budget 60. → entries.jsonl:11
-- 2026-11-07 13:17 · M2-05 · passes: M2 review: 0 Critical, 4 Important, 6 Minor. Fixed RED→GREEN: memory_foreign refuses a foreign harness-memory tip; quiet+cap section in the body; a reused tip without PR gets one (memory_open); a write changing a protected section's raw lines is dropped. ro_rescue shared by retro/curator; decision completed; architecture/README document the curator.; tests 961 → 962; files lib/curator.mjs, lib/record.sh, lib/driver.sh, prompts/curator.md, tests/unit/curator.test.mjs, … → entries.jsonl:10
+- 2026-11-07 13:39 · M3-01 · passes: M3 plan written (docs/plans/2026-11-07-M3-policy.md). memlint-self retired: its grep is a unit test in memlint.test.mjs (red on a mutant, conformance red before the fixture), its self-lint the curator's capCheck at the write plus memlint-run's notes. File deleted, names swapped in both fixtures, CHECK_KEY_MAP, key-map-lint, partial-key, README follow. Decision skeleton memory-policy.; tests 962 → 962; files docs/plans/2026-11-07-M3-policy.md, journal/decisions/2026-11-07-memory-policy.md, journal/decisions/2026-11-03-suite-tiers.md, tests/unit/memlint.test.mjs, tests/checks/memlint-self.sh, … → entries.jsonl:12
 
-## Current rules
-
-- The memory curator: itemized operations, a tier the driver derives, a protected list that is fixed → journal/decisions/2026-11-07-memory-tiers.md
-- The gate replaces the lint: `memlint-self` retired, `MEMORY_POLICY`, and the curator's acceptance counted → journal/decisions/2026-11-07-memory-policy.md
-- One writer for project memory: a coding session's `CLAUDE.md` edit is reverted, a fact goes in the entry → journal/decisions/2026-11-07-memory-one-writer.md
-
-_97 older rules: journal/decisions._
-
-_1 items left out at 8192 bytes: entries.jsonl has them all._
+_3 items left out at 8192 bytes: entries.jsonl has them all._
