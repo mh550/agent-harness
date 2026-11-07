@@ -33,6 +33,28 @@ than one run, and `harness continue`, a start by the queue runner and a start th
 it. The three slowest files of the before run: `88-origin-outage` 170.6 s, `15-run-4-same-but-queue-parked-debrief-tmux`
 147.3 s, `13-run-2-michael-sets-desk` 121.3 s.
 
+## The after row (S4, `85114a1`)
+
+Taken by `tests/tools/solo-measure.sh` with the box quiet, 2 solo suites in sequence; the figures below
+are run 2, the lower CPU of them. Raw output and `time -v` beside this file in
+`2026-11-03-suite-coverage/`.
+
+| measure | after S4 (`85114a1`) | the command |
+|---|---:|---|
+| check names (the full fixture) | 1,720 | `wc -l < tests/fixtures/check-names.txt` |
+| fast names (the fast tier's fixture) | 929 | `wc -l < tests/fixtures/check-names-fast.txt` |
+| unit tests | 452 | `node --test --test-isolation=none tests/unit/*.test.mjs`, its `tests` line |
+| check files, fast tier | 58 | `awk 'FNR == 2' tests/checks/*.sh \| sort \| uniq -c` |
+| check files, slow tier | 42 | the same |
+| lines that start a stub run | 203 in 67 files | `grep -hE '"$H" start' tests/checks/*.sh \| grep -vcE '^\s*#'` |
+| full suite, solo: checks | 1721/1721 passed | the solo method: the output's last line |
+| full suite, solo: wall | 637.1 s at 4 jobs | the runner's `wall … s` line |
+| full suite, solo: CPU | 2,274.5 CPU-s | `User time` + `System time` of `time -v` |
+
+Against the before row: CPU +7.9 % (2,108.1 → 2,274.5 CPU-s), wall 599.4 → 637.1 s. The slim
+suite's prediction for the solo CPU was −10 to −20 %: **missed**. The three slowest files of the run:
+origin-outage 173.1 s, queue-debrief 144.7 s, park-desk 122.5 s.
+
 ## How the map was measured
 
 One run of the whole suite with every check file's bash traced and its node covered, then one reduction per check file:
