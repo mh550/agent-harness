@@ -809,8 +809,8 @@ The supervisor checks: `wc -l` of each file on its main at or under 120, the Got
 listing the removed lines and where they went, and `harness memlint <path>` green.
 
 ```bash
-# one at a time, <project> one of hit_list, n8n-home, portfolio_site
-cd ~/projects/<project> && claude --model claude-fable-5-1 "$(cat <<'EOF'
+P=hit_list   # one at a time: hit_list, then n8n-home, then portfolio_site
+cd ~/projects/$P && claude --model claude-fable-5-1 "$(cat <<'EOF'
 Prune this project's CLAUDE.md under the memory cap (120 lines, 15 Gotchas) by the checklist at ~/projects/agent-harness/docs/plans/2026-11-<dd>-claude-md-prune-checklist.md. This project's CLAUDE.md binds on how a change lands and what is live; change nothing but CLAUDE.md. Before: `harness memlint .`; after: the same, green. The PR body lists every removed line and where it went (dropped as stale, moved to a decision or doc, or proposed for ~/.claude/CLAUDE.md, which you never edit). Report the line counts before and after and the PR number.
 EOF
 )"
