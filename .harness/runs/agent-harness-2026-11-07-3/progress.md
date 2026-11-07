@@ -9,6 +9,23 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 16:54 · A2-01 · passes
+
+Wrote docs/plans/2026-11-07-A2-context-bundle.md: glossary rules verbatim and how glossary.mjs applies them, dj fixtures with provenance, the line-by-line move of debrief.sh's gatherer into context.sh, harness context's CLI, context.json's shape, 30-day retention, the hook's bundle before the POST, all checks named with tiers.
+
+- **Files:** docs/plans/2026-11-07-A2-context-bundle.md
+- **Verified:** Plan only; fast tier green (check.sh --fast: cached green for this code tree, 1814 tests; docs/plans is outside the key). Line refs checked against lib/debrief.sh, lib/notify.sh, dj at 429dd96 and n8n-home's lib/intake.js.
+- **Tests:** 1814 → 1814
+- **Discovery** (affects A2-04): n8n-home's intake (lib/intake.js contextPaths) needs event.context = absolute <STATE_ROOT>/events/<dir>/context.json, dir = the event id (^[A-Za-z0-9-]{8,64}$); context.md beside it
+- **Discovery** (affects A2-04, run): n8n-home's intake refuses a debrief event whose context isn't a string, so A1's debrief event (context null) always falls back to ntfy until A2-04
+- **Discovery** (affects A2-04): event-hook.sh (c),(d),(k) compare the whole note file: A2-04 sets HARNESS_CONTEXT to a stub there, or the 'context bundle failed' note turns them red
+- **Discovery** (affects A2-03): queue-debrief.sh 'the whole context is capped too' asserts <= CMAX bytes: the debrief's glossary gets only the bytes the gatherer left (--max-bytes)
+- **Discovery** (affects A2-02): The spec's regexes miss dj ids N1F-01, S2-05a, S2-R1: the plan adds exact matches of the feature list's own ids (known) as a default
+- **Discovery** (affects A2-04): status_stubs pins HARNESS_NOW in the past: events/ retention must use the real clock, or touch -d '31 days ago' reads as recent
+- **Question for Michael:** Default taken: the glossary also matches exact ids from the run's feature list that the spec's regexes miss (dj's N1F-01, S2-05a, S2-R1, N1F). Keep that, or stick to the spec's regexes only? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/docs/plans/2026-11-07-A2-context-bundle.md:60
+- **Question for Michael:** Default taken: the debrief's own context also ends with the ## Glossary section, so its session reads the IDs explained (within the context cap). Keep it, or keep the glossary in harness context bundles only? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/docs/plans/2026-11-07-A2-context-bundle.md
+- *04-A2-01 · claude-opus-5-5*
+
 ### 2026-11-07 16:40 · verify A1 · passes
 
 A1-01..03 hold. Full suite green at init (690 s, 1814); fast tier 986/986; event-run/event-hook/park-desk/needs-driver/queue-debrief 165/165; event-hook+unit-tier 503/503; notify-body-cap/origin-outage/needs-record 45/45. Mutation: pre-A1 notify turns 7/11 event-hook + 5/6 unit red; pre-A1-03 call sites turn 4/6 event-run red. Real curl 8.5.0 loopback matches the fixtures.

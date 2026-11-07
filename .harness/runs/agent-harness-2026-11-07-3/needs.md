@@ -20,3 +20,45 @@
 ```sh
 harness needs done agent-harness-2026-11-07-3/1 --why "<answer>"
 ```
+
+## ⚠ A2-01 asked: Default taken: the glossary also matches exact ids from the…
+
+`agent-harness-2026-11-07-3/2` · since 2026-11-07T21:54:18.424Z
+
+**blocked** nothing waits on it; A2-01's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl?plain=1#L6)
+
+> Default taken: the glossary also matches exact ids from the run's feature list that the spec's regexes miss (dj's N1F-01, S2-05a, S2-R1, N1F). Keep that, or stick to the spec's regexes only? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/docs/plans/2026-11-07-A2-context-bundle.md:60
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/docs/plans/2026-11-07-A2-context-bundle.md:60](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-3/A2/docs/plans/2026-11-07-A2-context-bundle.md#L60) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl?plain=1#L6)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-3/2 --why "<answer>"
+```
+
+## ⚠ A2-01 asked: Default taken: the debrief's own context also ends with the…
+
+`agent-harness-2026-11-07-3/3` · since 2026-11-07T21:54:18.443Z
+
+**blocked** nothing waits on it; A2-01's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl?plain=1#L6)
+
+> Default taken: the debrief's own context also ends with the ## Glossary section, so its session reads the IDs explained (within the context cap). Keep it, or keep the glossary in harness context bundles only? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/docs/plans/2026-11-07-A2-context-bundle.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/docs/plans/2026-11-07-A2-context-bundle.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-07-3/A2/docs/plans/2026-11-07-A2-context-bundle.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl:6](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/entries.jsonl?plain=1#L6)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-07-3/3 --why "<answer>"
+```
