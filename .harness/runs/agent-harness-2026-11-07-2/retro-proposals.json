@@ -1,2 +1,0 @@
-[{"id":"suite-time-budget","title":"Cap or warn on session suite runs: a second full run costs 20-35 min","evidence":"M2-05 suite ran 2x (1436 s) and M3-04 2x (2074 s) vs 113 s for a single run in every other session"},
-{"id":"verify-evidence-rows","title":"Record per-step evidence rows from verify sessions in entries.jsonl so step re-runs can be audited","evidence":"3 verify sessions ($0.76, 0.08 h) passed M1-M3; evidence rows per verify entry not matched to steps"}]
