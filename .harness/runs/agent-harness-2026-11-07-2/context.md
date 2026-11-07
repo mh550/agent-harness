@@ -1,19 +1,14 @@
-# Context pack for `M2-04`
+# Context pack for `M2-05`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (M2-03, affects M2-04, M3): memory_pr ends at the validate: invalid → 'curator: memory-ops.json invalid: <why>', [] → 'curator: no operations', a non-empty valid file → nothing yet. M2-04 adds steps 2–8, memory.json (step 8) included: M2-03 writes none. → entries.jsonl:8
-- Discovery (M2-03, affects M2-04): memory_base is the simple form: MEM_BASE=origin/<main> after a fetch, CLAUDE.md and .harness/project.md copied to $SCRATCH/memory-base/. M2-04 adds the open memory PR's reuse (pr view harness-memory/<run>) with its continue check. → entries.jsonl:8
-- Discovery (M2-03, affects M2-04): tests/fixtures/memory/stub-three-ops.json exists, with the texts M2-04's STUB_FACTS must produce: 'the stub's <id> work sits in work-<id>.txt at the root ({{RUN}} {{DATE}})'. The stub fills {{LINE:<id>}} for any id the file names. → entries.jsonl:8
+- Discovery (M2-04, affects M2-05): stub-mixed.json was folded into stub-cap-evict.json (the evict add plus a Live system add and an unmatched-anchor replace): one run fewer; the plan's table still names stub-mixed → entries.jsonl:9
+- Discovery (M2-04, affects M2-05, M3): memory_base: a tip main lacks is reused when its PR is OPEN or there is none (gh pr view's 'no pull requests found'); CLOSED or another title stops the curator with one note; a gh or origin failure is one note, no curator. A squash-merged memory PR whose branch stayed reads as not taken (documented limit) → entries.jsonl:9
+- Discovery (M2-04, affects run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line, as M1-03 did; the Promote to Gotchas items stay for the curator → entries.jsonl:9
+- Discovery (M2-03, affects M2-05, M3): finish runs the curator only when MEMORY_POLICY != off and feature_list.json exists; it rebuilds summary.json once after the retro and the curator (rc flag), not after each one. → entries.jsonl:8
 - Discovery (M2-02, affects M2-03, M2-04, M2-05): Built step order differs from the plan: file, section (0 or 2+ headings drop), from, gate for every op first; then the dedupe among survivors; then tier 3 → proposal; anchor; already there. An unstated tier-3 op is dropped 'not stated by …', never proposed. → entries.jsonl:7
-- Discovery (M2-02, affects M2-03, M2-04): The gate needs the op text to be the stated item whole or cut ≥ 40 chars (suffix aside): M2-04's stub-three-ops ops must copy STUB_FACTS' texts verbatim; a STUB_PROPOSE string passes only in a tier-2 section (a Gotchas op with it: 'not stated by entries.jsonl:<n> as a project fact'). → entries.jsonl:7
-- Discovery (M2-02, affects M2-03, M2-04): Anchors match by factKey after the list marker and the (<run> <date>) suffix are cut: an anchor under 40 chars must be the whole line (a short prefix matches nothing). → entries.jsonl:7
-- Discovery (M2-02, affects M2-04): curator.mjs apply prints {ops, applied, proposed, dropped:[{op,reason}], rederived, refused, run, files}; files lists what it wrote (none when refused); a symlinked CLAUDE.md is read as absent; it is not in lib/helper.mjs's SERVED set (it writes files): call it with node, not ask. → entries.jsonl:7
-- Discovery (M2-02, affects M2-03, M2-04): The stub fixtures (stub-three-ops, stub-cap, stub-cap-evict, stub-mixed, stub-continue) were left to M2-03/M2-04, whose checks and knobs fill their placeholders. → entries.jsonl:7
-- Discovery (M2-01, affects M2-04): STUB_PROJECT_FACT gives every listed id one shared text (one key): M2-04's two distinct facts need the new STUB_FACTS knob → entries.jsonl:6
-- Discovery (M2-01, affects M2-04): stub-gh has no pr edit case and keeps no PR body: M2-04 adds prs/pr-N.body and a pr edit case (record_pr's reuse already calls pr edit, which falls through to exit 0) → entries.jsonl:6
 - Discovery (M1-03, affects M2, run): This session followed the branch's CLAUDE.md (facts to the entry) and wrote no ## Gotchas line; the Promote to Gotchas item about 'Where things go' bare stays for M2's curator → entries.jsonl:4
 - Discovery (M1-03, affects M2, M3): memory_guard's base is the merge-base: an earlier unguarded CLAUDE.md edit on a lane (a run in flight at deploy) is reverted at the next coding session and noted against its feature → entries.jsonl:4
 - Discovery (M1-01, affects run, M2, M3): This run's driver is the pre-M1 live checkout: M1's revert never runs here, and M2/M3 sessions see a Finish step asking for a Gotchas line while their branch's CLAUDE.md says the entry → entries.jsonl:2
@@ -26,6 +21,7 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Promote to Gotchas
 
+- stub-gh keeps pr create's --body-file as prs/pr-N.body and has a pr edit case that rewrites it (record_pr's reuse now refreshes it too) → entries.jsonl:9
 - Check files that write user-config.sh from scratch (not cp base-config.sh) must carry MEMORY_POLICY=off, or their runs get a curator: the nine that exist now do. lib/eval.sh's safety() sets it too. → entries.jsonl:8
 - restrict commits the dirty tree, then reverts all since its base: a read-only role run after another in finish must rec_commit first (agent-harness-2026-11-07-2 2026-11-07) → entries.jsonl:6
 - From M1 on a coding session's CLAUDE.md/.harness/project.md edit is reverted by memory_guard: a check needing a CLAUDE.md-only session tree must map another file (README.md:readme) → entries.jsonl:4
@@ -33,10 +29,16 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-11-07 12:10 · M2-03 · passes: curator() in lib/driver.sh: after the retro, before the summary and record_pr; MEMORY_POLICY=pr|off and CURATOR_MODEL=opus in config; memory_base and memory_pr's validate (invalid, []) in record.sh; summary.mjs counts the curator role; stub # Curator session with STUB_CURATOR_OPS/EDITS; curator-run.sh (8, slow) and 1 unit test. Opus review: 1 Important, 4 Minor; 4 fixed.; tests 960 → 961; files lib/driver.sh, lib/record.sh, lib/config.sh, lib/prompt.sh, lib/summary.mjs, … → entries.jsonl:8
-
-## Lately in the run
-
 - 2026-11-07 11:45 · M2-02 · passes: lib/curator.mjs (validate, tierOf, matchAnchor, capCheck, apply, body, main validate|apply|body); factKey/factText/resolvedText exported from entries.mjs; sectionEntries/headingLines (fence-aware) in memlint.mjs; prompts/curator.md; 22 unit tests on headings.txt and three harm fixtures. Opus review: 2 Important, 6 Minor, fixed red→green.; tests 938 → 960; files lib/curator.mjs, lib/entries.mjs, lib/memlint.mjs, prompts/curator.md, tests/unit/curator.test.mjs, … → entries.jsonl:7
+- 2026-11-07 12:10 · M2-03 · passes: curator() in lib/driver.sh: after the retro, before the summary and record_pr; MEMORY_POLICY=pr|off and CURATOR_MODEL=opus in config; memory_base and memory_pr's validate (invalid, []) in record.sh; summary.mjs counts the curator role; stub # Curator session with STUB_CURATOR_OPS/EDITS; curator-run.sh (8, slow) and 1 unit test. Opus review: 1 Important, 4 Minor; 4 fixed.; tests 960 → 961; files lib/driver.sh, lib/record.sh, lib/config.sh, lib/prompt.sh, lib/summary.mjs, … → entries.jsonl:8
+- 2026-11-07 12:35 · M2-04 · passes: memory_pr in lib/record.sh: ops applied in a detached $SCRATCH/memory worktree at the base, tier 1 one commit pushed to harness-memory/<run>, a memory: <run> PR left for Michael (reused on a continue, body over earlier segments), cap refusal, notes, memory.md and $STATE/memory.json; memory_base's reuse rules; STUB_FACTS, stub-gh bodies and pr edit; memory-pr.sh (13).; tests 961 → 961; files lib/record.sh, lib/driver.sh, tests/checks/memory-pr.sh, tests/stub-claude.sh, tests/stub-gh.sh, … → entries.jsonl:9
 
-_1 items left out at 8192 bytes: entries.jsonl has them all._
+## Current rules
+
+- The memory curator: itemized operations, a tier the driver derives, a protected list that is fixed → journal/decisions/2026-11-07-memory-tiers.md
+- One writer for project memory: a coding session's `CLAUDE.md` edit is reverted, a fact goes in the entry → journal/decisions/2026-11-07-memory-one-writer.md
+- Supervised efforts for every project: one user-level skill, one dispatch list per effort, plain names throughout → journal/decisions/2026-11-05-supervised-efforts.md
+- The suite's shape: check files named for what they test, no name part of another's, two cuts that need no replay, a tier on every line → journal/decisions/2026-11-05-suite-shape.md
+- A merge survives an origin outage: bounded retries, a card past them, a tag that isn't claimed, gc holds verified work → journal/decisions/2026-11-04-origin-retries.md
+
+_94 older rules: journal/decisions._
