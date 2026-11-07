@@ -475,7 +475,7 @@ while :; do
     read -ra waits <<< "$LIMIT_WAITS"; w=${waits[$(( limits > ${#waits[@]} ? ${#waits[@]} - 1 : limits - 1 ))]}
     upto=$(( ${reset:-0} > 0 ? reset + 120 : $(date +%s) + w ))
     record limit_raise "$upto"
-    (( limits == 1 )) && notify "refused ($reason); waiting until $(date -d "@$upto" '+%H:%M')"
+    (( limits == 1 )) && notify "refused ($reason); waiting until $(date -d "@$upto" '+%H:%M')" kind=limit
     note "session for $id hit a limit ($reason); not counted; resuming at $(date -d "@$upto" '+%H:%M')"
     rec_commit "HARNESS: usage limit"; sync_record
     continue

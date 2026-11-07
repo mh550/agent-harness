@@ -32,7 +32,7 @@ say() { echo "harness debrief: $*"; }                            # why it did no
 source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # defaults + the user's config (NOTIFY_CMD, models)
 # shellcheck source=lib/notify.sh
 source "$HARNESS_HOME/lib/notify.sh"   # no NOTIFY_TAG: the debrief's messages start "[debrief]" themselves
-fail() { log "debrief: $1"; notify "[debrief] ${2:-failed}: $1" title="harness debrief"; exit 1; }   # one line to Michael, and the next debrief covers these runs
+fail() { log "debrief: $1"; notify "[debrief] ${2:-failed}: $1" title="harness debrief" kind=other; exit 1; }   # one line to Michael, and the next debrief covers these runs
 
 # A detached start may not have Michael's PATH (node comes from nvm, claude from ~/.local/bin).
 missing() { local c m=(); for c in node jq git flock "$CLAUDE"; do command -v "$c" > /dev/null 2>&1 || m+=("$c"); done; echo "${m[*]}"; }
@@ -340,7 +340,7 @@ HL[0]="[debrief] ${HL[0]:-}"
 # lines (CONTINUE: answers, wherever the model put them). No click: the note is a local path.
 NM=$(awk '/^## / { on = tolower($0) ~ /^## needs michael/; next } on && NF' "$WS/body.md" | grep -Evix '[-*_ ]*(nothing|none)\.?[*_[:space:]]*' \
   | grep -Ev '^- (Queued|Not queued): ')
-notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}"
+notify "$(printf '%s\n' "${HL[@]}"; echo "$NOTE")" title="harness debrief" priority="${NM:+high}" kind=debrief
 # DESK=1 and something needs Michael: a Remote Control session briefs him on the note (9>&-: debrief.lock stays ours)
 [[ -n $NM && $DESK == 1 ]] && { "$H" desk --debrief > /dev/null 2>&1 9>&- || log "debrief: desk could not start (exit $?)"; }
 exit 0

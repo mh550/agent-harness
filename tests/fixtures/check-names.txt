@@ -507,6 +507,12 @@ event hook: no kind is other, ntfy alone
 event hook: notify returns 0 received, refused and timed out
 event hook: the fallback event carries ntfy's title, body, click, actions and priority
 event hook: the received event is kept under events/<id>/
+event run: a blocked run end posts a blocked event, feature null
+event run: a park posts one park event with its feature, run, project and title, and no ntfy
+event run: a park the hook refuses reaches ntfy with the event's fields, noted
+event run: started and a done run's end reach ntfy alone
+event run: the debrief posts a debrief event with null project, run and feature
+event run: with EVENT_URL unset a park's ntfy post is the fallback's
 every one of those answers is the spawn's bytes; a reader asking while < <(ask) runs still gets its own; nothing on stderr
 every session passes --strict-mcp-config and, without a .mcp.json, no --mcp-config
 fast gate run: a coding session's init output is the fast tier's (B's prompt: check: fast green)

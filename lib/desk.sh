@@ -147,7 +147,7 @@ tell() {
   [[ -n $url ]] && b+=("Open the desk: $url")
   [[ -n ${dialog:-} ]] && b+=("The desk waits on you: answer its dialog, then ask it to re-read $P")
   b+=("Or by hand: $hand")
-  notify "needs you${why:+: $why}" title="[$RUN_ID] needs you${why:+: $why}" priority=high tags=question click="$click" \
+  notify "needs you${why:+: $why}" title="[$RUN_ID] needs you${why:+: $why}" priority=high tags=question click="$click" kind=other \
     body="$(printf '%s\n' "${b[@]}")"
 }
 # A run whose driver is gone: commit the note now so the worktree stays clean for gc (a live driver's next commit takes it).

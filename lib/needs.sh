@@ -16,7 +16,8 @@ needs_open() {
   return "$rc"
 }
 # <ref> <message> [key=value…]: the record's title, body, click, priority and actions, sent; the caller's fields are
-# the rest (tags=) and what goes out when the record can't be read (a failed open)
+# the rest (tags=, and kind= and feature=, which route it: the call site's, never the record's) and what goes out when
+# the record can't be read (a failed open)
 needs_notify() {
   local ref=$1 msg=$2 f=() x; shift 2
   [[ -n $ref ]] && while IFS= read -r -d '' x; do f+=("$x"); done < <(node "$NEEDS_MJS" fields "$STATE" "$ref" 2>> "$STATE/run.log")
