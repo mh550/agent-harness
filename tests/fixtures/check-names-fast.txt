@@ -238,6 +238,7 @@ curator.mjs: a delete and an anchorless add in one list on a file at 15 Gotchas 
 curator.mjs: a fact a later entry resolved, or already in its section, is dropped
 curator.mjs: a file already over the cap takes a replace or a delete and drops an anchorless add naming the cap
 curator.mjs: a heading inside a code fence, a repeated heading or CRLF line ends never misplace a write
+curator.mjs: a rules write that would change a protected section's raw lines is dropped
 curator.mjs: a tier-1 op whose text memlint finds a derivable count or run scope in is dropped, naming the lint
 curator.mjs: an anchor with no match or two matches drops its op, naming the anchor
 curator.mjs: an anchored add appends while the file is under both caps, and evicts its anchor at 15 Gotchas
@@ -245,15 +246,17 @@ curator.mjs: an anchored add whose anchor a delete in the same list removed land
 curator.mjs: an op on a protected section is dropped and carried as a proposal
 curator.mjs: an op whose write would change a protected section's lines is dropped
 curator.mjs: apply derives the tier from the heading and counts a claim that disagrees
-curator.mjs: body lists the applied and tier-2 ops with their from, then the proposals, then the dropped with reasons
+curator.mjs: apply writes a tier-2 op into ruleTexts and a tier-1 op into texts, each from the base; proposed is tier 3 only
+curator.mjs: body renders the facts, rules and union bodies, rules then proposals numbered <run>/<n>, each naming the other PR
 curator.mjs: harm, a fact no entry states gives no op
 curator.mjs: harm, a fact stated then corrected gives one op, the correction
 curator.mjs: harm, a line from a tool result is dropped by the gate
 curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSON line
 curator.mjs: matchAnchor matches a line whose whitespace, backticks, emphasis or bullet differ
-curator.mjs: only tier 1 is written; a tier-2 op leaves the texts as they were
+curator.mjs: on a continue the union shadow is the rules tip with the facts tip's Gotchas, so neither tier's op takes the merge past 120 lines
 curator.mjs: the curator prompt renders with no placeholder left
 curator.mjs: the op that crosses 120 lines is dropped naming the cap; the ops before and after it land
+curator.mjs: the union shadow drops a tier-2 add that takes the merged file past 120 lines while each tier alone fits
 curator.mjs: the write gate drops a text the entry its from names does not state, and keeps a delete with an existing anchor
 curator.mjs: tierOf gives every heading of the eight projects its fixture tier
 curator.mjs: tierOf protects a heading by prefix, its dated or parenthesised suffix aside
@@ -929,10 +932,10 @@ suite tools: wait_for gives up after its limit with its still-failing line, exit
 suite tools: wait_for refuses a limit that isn't whole seconds with one line, exit 2
 suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
 summary.mjs memory: a summary built before this run has no Memory row
-summary.mjs memory: build reads memory.json's five keys, none with no file
+summary.mjs memory: build reads memory.json's keys, the rules PR's among them, none with no file
 summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
-summary.mjs memory: memoryView lists newest first with the summary line, (none) for none
+summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row
 summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing

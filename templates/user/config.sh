@@ -44,7 +44,7 @@
 # RESOLVE_TIMEOUT=30m                # its wall time; none starts with less than this left before the run's deadline, when it has one
 # MAX_RESOLVES=3                     # resolve sessions per milestone per run; past them a conflict needs you
 # RECORD_PR=end                      # the run record's own PR, opened when the run ends; off = none
-# MEMORY_POLICY=pr                   # the curator at the run's end, tier-1 Gotchas edits in a memory: <run> PR: pr = left for you · auto = the driver merges it · off = no curator (separate from MERGE_POLICY)
+# MEMORY_POLICY=pr                   # the curator at the run's end, tier-1 Gotchas edits in a memory: <run> PR: pr = left for you · auto = the driver merges it (facts only: the memory rules: <run> PR is always yours) · off = no curator (separate from MERGE_POLICY)
 # CURATOR_MODEL=opus                 # the curator session's model (40 turns, $3)
 # HOURS=                             # a run's end time: empty or 0 none; a whole number, that many hours (anything else is refused)
 #                                    #     With none, what still bounds a run: MAX_SESSIONS, MAX_ATTEMPTS, MAX_VERIFY_ROUNDS, MAX_FIX_ROUNDS, MAX_REBASE_ROUNDS, MAX_RESOLVES,

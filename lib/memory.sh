@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# `harness memory [--last <n>] [<project>]`: the ledger's memory PRs (<ledger>/memory.jsonl, one row per run), newest
-# first, each one's state asked of gh now and never written back; lib/summary.mjs renders them. decisions/2026-11-07-memory-policy.
+# `harness memory [--last <n>] [<project>]`: the ledger's memory PRs (<ledger>/memory.jsonl, one row per PR: a run's
+# facts PR and its rules PR, each with its tier), newest first, each one's state asked of gh now and never written back;
+# lib/summary.mjs renders them with one tally line per tier. decisions/2026-11-07-memory-policy, decisions/2026-11-08-memory-rules-pr.
 #   memory.sh [--last <n>] [<project name or path>]
 set -uo pipefail
 : "${HARNESS_HOME:?}"

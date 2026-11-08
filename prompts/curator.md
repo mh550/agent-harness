@@ -34,10 +34,11 @@ Write `{{RUN_DIR}}/memory-ops.json`: a JSON array, `[]` when the run taught noth
   correction; never two contradicting lines. A fact already in its section gets none, or a `replace` when the entry
   corrects it.
 - `tier` is your claim; the driver re-derives it from the heading and logs a disagreement. `## Gotchas` is tier 1
-  (applied on a `harness-memory/{{RUN_ID}}` branch). Every other section is tier 2 (sent to Michael in the PR body,
-  never applied). The protected sections are tier 3, never edited: `## Live system`, `## Off-limits`,
+  (applied on a `harness-memory/{{RUN_ID}}` branch). Every other section is tier 2: a diff on its own
+  `harness-rules/{{RUN_ID}}` branch, cut from the same base, in a `memory rules: {{RUN_ID}}` PR that Michael merges or
+  closes and the driver never merges. The protected sections are tier 3, never edited: `## Live system`, `## Off-limits`,
   `## On-limits`, `## Hardware facts…`, `## Hardware and Mixxx rules…`, `## This repo runs Michael's harness runs…`.
-  A protected change you think is needed is an op with `tier: 3`, which the PR body carries as a proposal.
+  A protected change you think is needed is an op with `tier: 3`, which both PR bodies carry as a proposal.
 - Fewer is better: a longer file is followed less. Prefer a `replace` that sharpens a line to an `add` beside it.
 
 Your final message: at most 60 words, how many ops and why.

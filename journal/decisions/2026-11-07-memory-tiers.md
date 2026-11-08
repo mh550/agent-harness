@@ -145,6 +145,10 @@ to Dropped) is to become per-op: apply what fits, drop the breaching ops with th
 Updated in place 2026-11-08: N1-03 (run agent-harness-2026-11-08) built it: the cap is checked per op in the order
 delete, replace, anchored add, plain add, a breaching op dropped `over the cap: …` alone, and an anchored add evicts its
 anchor only past the cap; `refused` and the refusal note retired (decisions/2026-11-08-memory-rules-pr).
+Updated in place 2026-11-08: N1-01 (run agent-harness-2026-11-08) built tier 2's branch: `harness-rules/<run>` (a
+sibling prefix: git holds no ref beneath `harness-memory/<run>`), one commit cut from its own base in a `memory rules:
+<run>` PR the driver never merges under any `MEMORY_POLICY`; the union of both PRs is capped; tier 3 stays text in both
+bodies; facts and rules are counted apart (decisions/2026-11-08-memory-rules-pr). The body-only lines above are history.
 Updated in place 2026-11-07: Michael — M2-02's question: the default stands; a `proposed_changes` string never gates a
 tier-1 Gotchas commit. A classifier (a jev-style decision model) may revisit the fact-or-rule line later, on evidence,
 never as the gate itself.
