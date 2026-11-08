@@ -1,3 +1,0 @@
-[{"id":"verify-evidence-rows","title":"Record per-step evidence rows from verify sessions so step coverage is auditable and not short by one step per feature","evidence":"verify N1 ended 'evidence still short of the steps (N1-03 6/7; N1-02 6/7; N1-01 7/8) after opus' and closed the lane, stranding 4 passing N2 features"},
-{"id":"suite-time-budget","title":"Cap or warn on session suite runs; N1-04 spent 1491 s on two suite runs","evidence":"N1-04: suite ran 2x (1491 s) in the session; N1-02 ran 5x (388 s)"},
-{"id":"verify-failed-recheck","title":"After a thin-evidence verify, re-verify only the short steps rather than closing the lane and waiting on Michael","evidence":"one verify escalation to opus, then 'lane N1 closed (needs Michael)'; N2 never reached, 0 sessions"}]
