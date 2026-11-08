@@ -1,9 +1,10 @@
-# Context pack for `A3-01`
+# Context pack for `A3-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (A3-01, affects A3-02, A3-03, A3-05): n8n writes requests/<id>.json in one write, no rename (its D25); answer 1-<h> before continue 2-<h>; its card needs a string result id → entries.jsonl:12
 - Discovery (A2-05, affects A3, A4): The debrief's bundle is its own gather's (context.json in its workspace, copied by context.sh --from); notify's since= is gone, bundle=<dir> replaces it → entries.jsonl:10
 - Discovery (A2-05, affects A3, A4): lib/context.sh ended_of: alive first (the debrief's bytes); CTX_ENDED_FIRST=1 (harness context only) reads ended first for the end event's bundle → entries.jsonl:10
 - Discovery (A2-04, affects A2-05, run): run_context and context_glossary now read <state>/ended before alive: the driver writes ended (driver.sh:352) before its end notify, while still alive. → entries.jsonl:9
@@ -16,23 +17,20 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Promote to Gotchas
 
+- A check file name may not hold or sit inside another (suite-runner.sh namelint): requests-inbox.sh fails on inbox.sh (agent-harness-2026-11-07-3 2026-11-07) → entries.jsonl:12
 - Verify can check the gatherer's move against main directly: git archive origin/main into scratch, run its bin/harness debrief --dry-run and the branch's on one status_stubs state, diff with line 1 and ## Glossary cut (context-bundle's own (b) compares two callers of the same function). → entries.jsonl:11
 - harness queue list/show no longer mkdir queue/done (cmd_queue makes it only for a write) (agent-harness-2026-11-07-3 2026-11-07) → entries.jsonl:10
 - A bundle runs the gatherer (harness status/needs/trends/queue): each routed event in a stub run costs ~1 s more; event-run.sh takes 39 s → entries.jsonl:9
 - bash: an apostrophe in a ${v:-default} inside a double-quoted string fails to parse in a function body; put the default in a variable (agent-harness-2026-11-07-3 2026-11-07) → entries.jsonl:8
-- Real curl 8.5.0 with -s (no -S) prints nothing on stderr for a 500 or a --max-time timeout; stdout is the -w code ('000' on timeout), exit 28. → entries.jsonl:5
 
 ## What it builds on
 
-- 2026-11-07 16:54 · A2-01 · passes: Wrote docs/plans/2026-11-07-A2-context-bundle.md: glossary rules verbatim and how glossary.mjs applies them, dj fixtures with provenance, the line-by-line move of debrief.sh's gatherer into context.sh, harness context's CLI, context.json's shape, 30-day retention, the hook's bundle before the POST, all checks named with tiers.; tests 1814 → 1814; files docs/plans/2026-11-07-A2-context-bundle.md → entries.jsonl:6
-- 2026-11-07 17:06 · A2-02 · passes: lib/glossary.mjs: findIds (the list's own ids, then three masking passes), resolveIds (feature list; doc rows and headings newest file first; unresolved never guessed), glossaryMarkdown (byte cap, whole lines), strip, knownIds, fsReader and a CLI; 17 unit tests on fixtures copied read-only from dj-crate-streaming; tests 1814 → 1831.; tests 1814 → 1831; files lib/glossary.mjs, tests/unit/glossary.test.mjs, tests/fixtures/glossary/, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt → entries.jsonl:7
-- 2026-11-07 17:33 · A2-03 · passes: Moved the debrief's gatherer verbatim into lib/context.sh (context_since, context_runs, context_glossary); debrief.sh sources it, no copy. New `harness context <run> | --since <ts> [--out] [--id]` writes context.md (gatherer + ## Glossary via new lib/context.mjs) to events/<uuid>/ by default. The debrief's context gains the glossary. Tests 1831 → 1839.; tests 1831 → 1839; files lib/context.sh, lib/context.mjs, lib/debrief.sh, bin/harness, tests/checks/context-bundle.sh, … → entries.jsonl:8
-- 2026-11-07 18:05 · A2-04 · passes: context.json (spec key order) now comes from the same lib/context.mjs call as context.md; a bundle written in events/ prunes bundles with no file newer than 30 days and says so; notify_event writes the bundle to events/<id>/ before the POST, so context names an existing context.json; the debrief passes since=$SINCE. A failed bundle: a note, context null. Decision file, docs.; tests 1839 → 1853; files lib/context.mjs, lib/context.sh, lib/notify.sh, lib/notify.mjs, lib/debrief.sh, … → entries.jsonl:9
-- 2026-11-07 18:38 · A2-05 · passes: A2 review (one Opus round): 0 Critical, 2 Important, 6 Minor. Fixed RED→GREEN: I1 the debrief event's bundle is now the debrief's own (context.json from its gather, copied by context.sh --from via notify bundle=); I2 the debrief's ended words are alive-first again (ended_of; CTX_ENDED_FIRST for harness context). Minor fixed: dotted ids, spend, queue/done. Review file, decision, docs.; tests 1853 → 1857; files lib/context.sh, lib/debrief.sh, lib/notify.sh, lib/glossary.mjs, bin/harness, … → entries.jsonl:10
+- 2026-11-07 19:07 · A3-01 · passes: Wrote docs/plans/2026-11-07-A3-request-inbox.md: requests.mjs's validation table with exact reason strings, result JSON, log line and CLI; harness requests' pass (flock, order, claim-then-run, argv calls, backup window, real-clock grace); the runner start seen through gc-tmux's tmux shim; both units (verified with systemd-analyze here); 29 checks named with tiers.; tests 1857 → 1857; files docs/plans/2026-11-07-A3-request-inbox.md → entries.jsonl:12
 
 ## Lately in the run
 
 - 2026-11-07 18:55 · verify A2 · passes: All 5 A2 features hold. Full suite 1857/1857, fast 1023/1023, context-bundle/event-run/queue-debrief/flakes-run green. Independent diff: origin/main's debrief --dry-run context equals the branch's but the appended ## Glossary. Glossary CLI on fixtures resolves D24 (2 files, newest first), N1-01, M8, D-H1; Q99 unresolved. dj checkout clean. → entries.jsonl:11
+- 2026-11-07 18:38 · A2-05 · passes: A2 review (one Opus round): 0 Critical, 2 Important, 6 Minor. Fixed RED→GREEN: I1 the debrief event's bundle is now the debrief's own (context.json from its gather, copied by context.sh --from via notify bundle=); I2 the debrief's ended words are alive-first again (ended_of; CTX_ENDED_FIRST for harness context). Minor fixed: dotted ids, spend, queue/done. Review file, decision, docs.; tests 1853 → 1857; files lib/context.sh, lib/debrief.sh, lib/notify.sh, lib/glossary.mjs, bin/harness, … → entries.jsonl:10
 
 ## Current rules
 
@@ -47,7 +45,8 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - The unit tier: node evals become `node:test` files in one process, reported as the suite's PASS/FAIL lines → journal/decisions/2026-11-03-unit-tier.md
 - The trim: 22 checks removed, each with the check that makes its assertions now; five gaps closed; no covered line lost → journal/decisions/2026-11-03-trim.md
 - The suite's tiers: every check file declares `fast` or `slow` on line 2, and `tests/run.sh --tier` runs one tier → journal/decisions/2026-11-03-suite-tiers.md
+- The trace switch: `HARNESS_XTRACE=<dir>` traces every harness process, off unless set → journal/decisions/2026-11-03-suite-coverage.md
 
-_91 older rules: journal/decisions._
+_90 older rules: journal/decisions._
 
-_3 items left out at 8192 bytes: entries.jsonl has them all._
+_4 items left out at 8192 bytes: entries.jsonl has them all._
