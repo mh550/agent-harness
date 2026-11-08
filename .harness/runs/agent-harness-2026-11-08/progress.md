@@ -9,6 +9,23 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. The brief says: proceed on every default marked *default*, record them, never park.
 
+### 2026-11-08 05:11 · N1-04 · passes
+
+N1 review on Opus: 0 Critical, 1 Important, 8 Minor. Fixed the Important one: a continue after main moved outside Gotchas under a stale rules tip let the merge pass the cap; the union shadow now counts that drift. Fixed 6 Minor; docs/plans/2026-11-08-N1-review.md; decision gets the successors and the 32/19 count; two stale slow checks updated.
+
+- **Files:** lib/curator.mjs, lib/record.sh, lib/driver.sh, tests/unit/curator.test.mjs, tests/checks/memory-branch.sh, tests/checks/memory-prompts.sh, tests/checks/gotchas-pack.sh, tests/fixtures/memory/stub-drift.json, tests/fixtures/memory/README.md, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-08-N1-review.md, +2 more
+- **Verified:** RED: the drift unit test and the mx stub check failed (rule landed; mq counted rules 1); GREEN: curator unit 31/31, memory-branch 26/26, memory-one-writer 8/8, curator-run 10/10, unit-tier 546/546; full suite: first run red only on memory-prompts and gotchas-pack (N1-02's prompt rewording vs the checks' old strings), fixed 24/24, full rerun check: green in 730 s, 1911 tests; fast tier green (cached for that tree, 1911).
+- **Tests:** 1909 → 1911
+- **Dead end:** naming the new stub run mw — mw is already the auto/no-new-tier-1 run in memory-branch.sh; the reuse failed its check. It is mx
+- **Discovery** (affects N1, run): N1-02 reworded prompts/coding.md and where-things-go*.md to name .claude/CLAUDE.md and .claude/rules/; memory-prompts and gotchas-pack (slow) assert those sentences verbatim and were red until N1-04
+- **Discovery** (affects N2, run): A stale facts tip (an open memory: <run> PR) after main moved can still merge past the cap; the drift covers the rules side only (pre-N1 behaviour, not changed)
+- **Discovery** (affects N2-01, N2-02, N2-03): curator.mjs apply's CLI takes 4, 5 or 7 args: a 6th and 7th (the rules tip's merge-base with main, main) give the union shadow's drift; memory_base writes them to $SCRATCH/memory-rules-mb and memory-main
+- **Discovery** (affects N2-03): Under RULES_STOP memory_pr moves the tier-2 ops to dropped ('the rules half stopped; its note says why') and renumbers the proposals from 1
+- **Discovery** (affects project): memory-branch.sh's worktree-count check (== 14) counts one worktree per stub run in the file: a new run there bumps it (agent-harness-2026-11-08 2026-11-08)
+- **Question for Michael:** Default taken (N1-04): the union cap's drift is a line count (main's growth outside Gotchas since the rules tip's merge-base), not a three-way text merge; and a stale facts tip after main moved can still merge past the cap, as before N1. Keep the line count, and should the facts side get the same drift? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-0/docs/plans/2026-11-08-N1-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-0/lib/curator.mjs
+- **Proposed change:** A review feature's steps could name the slow-tier files the milestone's prompt edits touch (memory-prompts, gotchas-pack): N1-02's rewording went red there and only the review's full run saw it
+- *04-N1-04 · claude-opus-5-5*
+
 ### 2026-11-08 04:25 · N1-01 · passes
 
 Tier 2 lands on harness-rules/<run> in a `memory rules: <run>` PR the driver never merges: apply cuts texts and ruleTexts from their bases under a union cap (graft), memory_pr runs one pass per tier, auto merges facts only, bodies number rules/proposals <run>/<n> and link each other, memory.json/report/ledger/harness memory count facts and rules apart.

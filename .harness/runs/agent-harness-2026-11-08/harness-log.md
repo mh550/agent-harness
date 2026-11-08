@@ -14,3 +14,8 @@
 - 2026-11-08 03:48 · context.md for N1-01: 6214 bytes
 - 2026-11-08 04:25 · N1-01: suite ran 2x (238 s) in the session
 - 2026-11-08 04:25 · N1-01 · claude-opus-5-5 · passes=true · 36 min · 3/8 passing
+- 2026-11-08 04:25 · review N1-04: 1343 changed lines, at or over 0; opus
+- 2026-11-08 04:25 · context.md for N1-04: 7497 bytes
+- 2026-11-08 05:11 · N1-04: suite ran 2x (1491 s) in the session
+- 2026-11-08 05:11 · N1-04: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-08 05:11 · N1-04 · claude-opus-5-5 · passes=true · 46 min · 4/8 passing · tests 1911
