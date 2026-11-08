@@ -22,3 +22,7 @@
 - 2026-11-08 05:11 · verify N1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-08 05:23 · context.md for N1: 13892 bytes
 - 2026-11-08 05:39 · verify N1: evidence still short of the steps (N1-03 6/7; N1-02 6/7; N1-01 7/8) after opus; not verified (needs Michael)
+- 2026-11-08 05:39 · lane N1 closed (N1 needs Michael: verify evidence too thin)
+- 2026-11-08 05:39 · waiting on Michael: the remaining features wait on N1 (needs Michael; see harness-log.md)
+- 2026-11-08 05:39 · run ended (waiting on Michael: N1): 4/8 passing · 6 sessions (6 real) · 4 features passed · $31.83 · 2.4 h · by kind: init 1 ($5.98), coding 4 ($23.35), verify 1 ($2.50) · by model: claude-fable-5-1 1 ($5.98), claude-opus-5-5 5 ($25.85)
+- 2026-11-08 05:39 · services stopped (waiting on Michael: N1)
