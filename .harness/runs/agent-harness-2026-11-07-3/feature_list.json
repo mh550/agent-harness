@@ -245,7 +245,7 @@
         "A3-03",
         "A3-04"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "A4-01",

@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 19:57 · A3-05 · passes
+
+A3 review: 1 Critical, 3 Important, 8 Minor. Fixed C1 (queue add --continue rewrote a queued entry raw, so a brief's lines became continue options), I1 (brief that is one option word refused), I2 (runner via systemd-run --scope under the unit), I3 (unreadable/non-regular *.json rejected), M1, M2, M5. Review file, decision, architecture, README.
+
+- **Files:** bin/harness, lib/queue.mjs, lib/requests.mjs, lib/requests.sh, tests/checks/request-files.sh, tests/unit/queue.test.mjs, tests/unit/requests.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-07-A3-review.md, journal/decisions/2026-10-22-request-inbox.md, docs/architecture.md, +1 more
+- **Verified:** Each finding checked before it was fixed; 8 new tests (4 unit, 4 checks) watched red, then green. request-files + unit-tier 557/557; the slow files that use queue add --continue 174/174; full suite (check.sh) green in 724 s, 1898 tests; fast tier green after the last edit. On this box, a process started in a systemd-run --scope outlived a oneshot service, and a plain background one died with it.
+- **Tests:** 1890 → 1898
+- **Dead end:** the I2 check matching the systemd-run line with $H — tests/lib.sh's H is tests/../bin/harness, while requests.sh's is the resolved HARNESS_HOME path: match /.*/bin/harness
+- **Discovery** (affects project): bin/harness's cmd_continue and queue add match --now, --queued, --requested, --automatic and --keep-attempts anywhere in the args, not in pairs, so a value equal to a flag is read as that flag (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects project, A4): A tmux server first started from a systemd oneshot dies with the oneshot's cgroup: start it via systemd-run --user --scope when INVOCATION_ID is set (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects A4): A4's live checklist should include running systemctl --user reset-failed harness-requests.path when the path unit has failed (five restarts in 10 s).
+- **Proposed change:** A later run: parse cmd_continue's and queue add's flags as option-and-value pairs (bin/harness), so the option-word brief refusal in lib/requests.mjs can go (docs/plans/2026-11-07-A3-review.md I1)
+- *13-A3-05 · claude-opus-5-5*
+
 ### 2026-11-07 19:29 · A3-04 · passes
 
 Shipped systemd/harness-requests.path (PathExistsGlob=%h/.local/state/harness/requests/*.json) and .service (oneshot, ExecStart the live bin/harness requests); 3 checks in request-files.sh (unit lines, systemd-analyze --user verify on copies pointed at this checkout, no XDG_CONFIG_HOME/systemd); decision 2026-10-22-request-inbox; README Steering paragraph with install; architecture §3/§4/§7.
@@ -266,14 +280,6 @@ Wrote docs/plans/2026-11-07-A1-event-hook.md: the v1 event keys and who fills ea
 - **Proposed change:** A1-02 step 2 could add (j) NOTIFY_CMD not called on a 2xx and called on a refusal, and (k) an event node can't build falls back to ntfy (the ask gotcha): the plan names both.
 - *01-A1-01 · claude-opus-5-5*
 
-### 2026-11-07 15:53 · init · passes
+## Older entries (in full in progress-archive.md)
 
-14 features: A1 3 (plan, event builder + routed post, call sites with folded review), A2 5 (plan, lib/glossary.mjs, lib/context.sh + harness context, context.json + retention + hook bundle, review), A3 5 (plan, lib/requests.mjs, harness requests, systemd units + docs, review), A4 1 (docs, sonnet). In series: A2 after A1, A3 after A2, A4 after A3. No check budget (the spec sets none).
-
-- **Discovery** (affects run): A1 ships events with `context: null`; A2-04 wires lib/context.sh's bundle into lib/notify.sh's routed post (the spec's A1 text puts the bundle in A1).
-- **Discovery** (affects run): Decision files take the spec's names (journal/decisions/2026-10-22-<slug>.md, the three §A4 lists), not today's date: the spec and n8n-home cite them so.
-- **Discovery** (affects run): tests/fixtures/n8n-event-v1.json already holds the v1 event JSON (needs-record.sh reads its keys): the event builder's key order is checked against it.
-- **Discovery** (affects run): tests/lib.sh exports HARNESS_NO_RUNNER=1 (queue_ensure_runner a silent no-op): A3-03's runner check unsets it for that call or reads `queue start`'s line.
-- **Discovery** (affects project): needs_notify (lib/needs.sh) rebuilds notify's fields from the needs record: forward a caller's kind= or it is lost (agent-harness-2026-11-07-3 2026-11-07)
-- **Discovery** (affects project): lib/debrief.sh has log (runner.log) but no note: notify's failure line lands in $Q/runner.log, not harness-log.md (agent-harness-2026-11-07-3 2026-11-07)
-- *00-init · claude-fable-5-1*
+- 2026-11-07 15:53 · init · passes · 14 features: A1 3 (plan, event builder + routed post, call sites with folded review), A2 5 (plan, li… ([in full](progress-archive.md))
