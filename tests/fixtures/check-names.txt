@@ -1383,6 +1383,25 @@ render.mjs: main gives the CLI's bytes, HARNESS_ variables from io.env, a titled
 report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
 report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
+requests.mjs: a NUL byte in the text is rejected as a NUL
+requests.mjs: a brief of 2001 characters is rejected, 2000 is ok
+requests.mjs: a run not among the real runs is rejected with state_of's words
+requests.mjs: a run with a parent-directory segment is rejected by its pattern before any lookup
+requests.mjs: a valid answer is ok and keeps its text byte for byte
+requests.mjs: a valid continue is ok with and without a brief, and an empty brief is none
+requests.mjs: an array, a string and null are not a request object
+requests.mjs: an empty text and a text of 4001 characters are rejected, 4000 is ok
+requests.mjs: an id already in done is a duplicate
+requests.mjs: an id of 7 characters or with a slash is rejected and named nowhere
+requests.mjs: logLine names id, verb, run, the status and exit and never the text
+requests.mjs: resultJson has the contract's ten keys in order and cuts output at 2000 bytes on a character boundary
+requests.mjs: resultName is the id, else the file name when it passes the id rule, else none
+requests.mjs: the backup window holds 03:15:00 and 04:29:59 local, not 03:14:59 or 04:30:00
+requests.mjs: the result CLI prints the result JSON and appends its log line, and none for a missing name
+requests.mjs: the validate CLI prints labelled lines and writes text and brief byte for byte
+requests.mjs: unparsable text waits at 5 s and is rejected at 11 s
+requests.mjs: v 2 is rejected
+requests.mjs: verb merge is rejected
 resolve fallbacks: a lane's sync_main hands its conflict to resolve: refused is 2 with no record, unresolved the main_conflict record with tried
 resolve fallbacks: a refused session is deferred: no needs record, rebase-M2 back, then it re-bases and merges after the wait
 resolve fallbacks: a session that gives up counts as escalated in summary.json and report.md's Conflicts row
