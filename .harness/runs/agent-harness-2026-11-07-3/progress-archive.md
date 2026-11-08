@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 19:13 · A3-02 · passes
+
+lib/requests.mjs: validateRequest (the plan's 11 rules in order, exact reasons; id/verb/run set only once validated), inBackupWindow + BACKUP_REFUSAL, resultJson (ten keys, output cut at 2000 bytes on a char boundary), resultName, logLine (takes no text), and validate/result CLIs. 19 unit tests, fixtures made by n8n-home's buildRequest at 859b25a.
+
+- **Files:** lib/requests.mjs, tests/unit/requests.test.mjs, tests/fixtures/requests/answer.json, tests/fixtures/requests/continue.json, tests/fixtures/requests/continue-brief.json, tests/fixtures/requests/README.md, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
+- **Verified:** Red first (ERR_MODULE_NOT_FOUND), then node --test tests/unit/requests.test.mjs 19/19; all units 534/534; bash tests/run.sh unit-tier 535/535; check.sh --fast green, 1042 tests (1023 before). node --check lib/requests.mjs.
+- **Tests:** 1857 → 1876
+- **Discovery** (affects A3-03): requests.mjs result --id - prints no result JSON and only appends the log line (a request with no usable name); for a duplicate, bash ignores result's stdout so done/<id>.json stays the first's
+- **Discovery** (affects A3-03): validate's done set reads <done>/*.json names, stripping .request.json or .json, so a claim counts; window is judged at --now in the process's TZ; text/brief land in --out only for verdict ok
+- **Discovery** (affects A3-03, A3-05): Request fixtures come from n8n-home's buildRequest (tests/fixtures/requests/README.md holds the generator): change a value with jq, never hand-type a shape
+- **Proposed change:** A3-02 step 1 lists 18 named cases; the plan's §1.5 result CLI got a 19th unit test (the result CLI prints the JSON and appends the log line, none for --id -).
+- *10-A3-02 · claude-opus-5-5*
+
 ### 2026-11-07 19:07 · A3-01 · passes
 
 Wrote docs/plans/2026-11-07-A3-request-inbox.md: requests.mjs's validation table with exact reason strings, result JSON, log line and CLI; harness requests' pass (flock, order, claim-then-run, argv calls, backup window, real-clock grace); the runner start seen through gc-tmux's tmux shim; both units (verified with systemd-analyze here); 29 checks named with tiers.
