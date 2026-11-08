@@ -286,7 +286,9 @@ curator() {
   memory_pr
   # beside memory-ops.json: the numbered rules and proposals (harness memory accept|decline names them) and the counts
   # (none this segment: an earlier one's goes, so it never sits beside other ops)
-  if [[ -f $SCRATCH/memory-result.json ]]; then cp "$SCRATCH/memory-result.json" "$REC/"; else rm -f "$REC/memory-result.json"; fi
+  # the record keeps the ops and the numbered items, not ruleTexts (whole files, the rules commit has them)
+  if [[ -f $SCRATCH/memory-result.json ]]; then jq -c 'del(.ruleTexts)' "$SCRATCH/memory-result.json" > "$REC/memory-result.json" 2> /dev/null || cp "$SCRATCH/memory-result.json" "$REC/"
+  else rm -f "$REC/memory-result.json"; fi
 }
 
 ledger() {   # the whole run record into the harness's own record, for `harness trends`, retros and calibration

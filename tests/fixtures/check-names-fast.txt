@@ -234,6 +234,7 @@ coverage: subsets names each check file whose lines all lie in another's, smalle
 coverage: two processes' V8 documents add up: a character ran when it did in either
 curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and written as CLAUDE.md; a rules file is refused; never through a symlinked .claude/
 curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands
+curator.mjs: a continue after main gained lines outside Gotchas counts them in the union shadow, from the CLI's rules merge-base and main
 curator.mjs: a delete and an anchorless add in one list on a file at 15 Gotchas both land, the delete first
 curator.mjs: a fact a later entry resolved, or already in its section, is dropped
 curator.mjs: a file already over the cap takes a replace or a delete and drops an anchorless add naming the cap

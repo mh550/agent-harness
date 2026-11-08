@@ -365,23 +365,24 @@ restrict() {   # base record|nothing|memory who
   [[ $2 == nothing ]] && spec=(.)
   [[ $2 == memory ]] && spec=(CLAUDE.md .harness/project.md .claude/CLAUDE.md .claude/rules)   # from the root: docs/CLAUDE.md and .claude/settings.json are code
   commit_all "WIP: uncommitted at session end (harness)"
-  # -z and no quotePath: a path git would quote (a rules file named café.md) is the path the revert needs
+  # -z: a path git would quote (a rules file named café.md) comes verbatim, the path the revert needs
   while IFS= read -r -d '' st && IFS= read -r -d '' path; do
     [[ -n $path ]] || continue
     if [[ $st == A ]]; then git rm -q --cached -- "$path" && rm -f -- "$path"; else git checkout -q "$base" -- "$path"; fi
     echo "$path"
-  done < <(git -c core.quotePath=false diff -z --name-status --no-renames "$base" HEAD -- "${spec[@]}")
+  done < <(git diff -z --name-status --no-renames "$base" HEAD -- "${spec[@]}")
   commit_all "HARNESS: reverted edits a $3 session may not make"
 }
 
 # The curator's bases (decisions/2026-11-07-memory-tiers, decisions/2026-11-08-memory-rules-pr): for the facts
 # (harness-memory/<run>: MEM_BASE, MEM_URL, MEM_NOPR) and then the rules (harness-rules/<run>: RULES_BASE, RULES_URL,
 # RULES_NOPR), each by memory_tip from origin's main. The facts' texts go to $SCRATCH/memory-base/ for the session to read
-# (so its anchors are matched against the text the apply sees), the rules' to $SCRATCH/memory-rules-base/ for the apply.
+# (so its anchors are matched against the text the apply sees), the rules' to $SCRATCH/memory-rules-base/ for the apply,
+# and for a rules tip main lacks, its merge-base with main and main to memory-rules-mb/ and memory-main/ (the drift).
 # A facts base that fails is 1 and one note (no curator); a rules base that fails sets RULES_STOP and RULES_NOTE (noted by
 # curator() after the session), and the facts half goes on
 memory_base() {
-  local d=$SCRATCH/memory-base f main
+  local d=$SCRATCH/memory-base f main mb=""
   MEM_URL="" MEM_NOPR="" RULES_BASE="" RULES_URL="" RULES_NOPR="" RULES_STOP="" RULES_NOTE=""
   origin_t git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
   main=$(git -C "$RWT" rev-parse -q --verify "origin/$MAIN_BRANCH^{commit}") || { note "curator: none (no origin/$MAIN_BRANCH to curate against)"; return 1; }
@@ -389,7 +390,10 @@ memory_base() {
   MEM_BASE=$TIP_BASE MEM_URL=$TIP_URL MEM_NOPR=$TIP_NOPR
   # the rules half's note waits for curator() to give it after the session's restrict, which reverts harness-log.md
   if memory_tip rules "$main"; then RULES_BASE=$TIP_BASE RULES_URL=$TIP_URL RULES_NOPR=$TIP_NOPR; else RULES_STOP=1 RULES_NOTE=$TIP_NOTE; fi
-  for d in "$SCRATCH/memory-base:$MEM_BASE" "$SCRATCH/memory-rules-base:$RULES_BASE"; do
+  # a rules tip main lacks: its merge-base with main and main itself, so the apply counts what main gained outside
+  # Gotchas since (the merge takes it too: the union cap's drift)
+  [[ -n $RULES_BASE && $RULES_BASE != "$main" ]] && mb=$(git -C "$RWT" merge-base "$RULES_BASE" "$main" 2> /dev/null)
+  for d in "$SCRATCH/memory-base:$MEM_BASE" "$SCRATCH/memory-rules-base:$RULES_BASE" "$SCRATCH/memory-rules-mb:$mb" "$SCRATCH/memory-main:${mb:+$main}"; do
     rm -rf "${d%%:*}"; [[ -n ${d#*:} ]] || continue
     mkdir -p "${d%%:*}/.harness" "${d%%:*}/.claude"
     for f in CLAUDE.md .harness/project.md .claude/CLAUDE.md; do git -C "$RWT" show "${d#*:}:$f" > "${d%%:*}/$f" 2> /dev/null || rm -f "${d%%:*}/$f"; done
@@ -460,6 +464,7 @@ memory_json() {
 memory_pr() {
   local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" rurl="" fhead="" o a rl d p rd x f files=() rfiles=() rb=()
   rm -f "$r"; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
+  [[ -z $RULES_STOP && -d $SCRATCH/memory-rules-mb ]] && rb+=("$SCRATCH/memory-rules-mb" "$SCRATCH/memory-main")
   why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
     why=$(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)
     note "curator: memory-ops.json invalid: $why"; memory_json 0 0 0 0 0 "$MEM_URL" "$RULES_URL" "$why"; return 0; }
@@ -468,8 +473,10 @@ memory_pr() {
   memory_wt_gone
   git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
     || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
-  # a stopped rules half cuts its texts from the facts base: counted, never committed
   node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" "${rb[@]}" > "$r" 2>> "$STATE/run.log"
+  # a stopped rules half commits nothing: its tier-2 ops are dropped (named in both bodies), the proposals renumbered
+  [[ -n $RULES_STOP && -s $r ]] && jq -c '.dropped += [.rules[]? | {op: del(.n), reason: "the rules half stopped; its note says why"}]
+    | .rules = [] | .ruleFiles = [] | .ruleTexts = {} | .proposed |= (to_entries | map(.value + {n: (.key + 1)}))' "$r" > "$r.t" 2> /dev/null && mv "$r.t" "$r"
   # an apply that threw prints nothing: no commit and no PR (tests/checks/no-answer.sh's rule)
   IFS=$'\t' read -r o a rl d p rd < <(jq -r '[.ops, (.applied | length), (.rules | length), (.dropped | length), (.proposed | length), .rederived] | @tsv' "$r" 2> /dev/null)
   if [[ ! $o =~ ^[0-9]+$ ]]; then note "memory: apply failed (see run.log)"; rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; fi

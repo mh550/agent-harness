@@ -5,7 +5,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # harness-memory/<run> (`memory: <run>`), tier 2 one commit on harness-rules/<run> (`memory rules: <run>`, never merged by
 # the driver), tier 3 and every dropped op in both bodies ----
 # Origin's main gets a CLAUDE.md with Code rules, Live system and Gotchas (3 lines; 15 for the cap runs) before each run.
-# mp carries the three ops (two facts, one rule) and its continue; mq meets a rules branch it would not write; mc drops its 16th add at the cap and lands its replace; me evicts, with a Live system op and an
+# mp carries the three ops (two facts, one rule) and its continue; mq meets a rules branch it would not write; mx's continue meets a main that moved; mc drops its 16th add at the cap and lands its replace; me evicts, with a Live system op and an
 # unmatched anchor beside it; mn, mk, mf and mz meet a memory branch already on origin. Each run gets its own gh.log.
 st() { echo "$HARNESS_STATE/proj/$1"; }
 rec() { echo "$T/wt/proj/$1/.harness/runs/$1"; }
@@ -71,7 +71,7 @@ check "memory PR: summary.json's memory holds the counts and both URLs, harness 
   'p=$(mpr mp) && u=$(url "$p") && ru=$(url "$(rpr mp)") && [[ $(jq .memory.applied "$(rec mp)/summary.json") == 2 && $(jq -r .memory.pr "$(rec mp)/summary.json") == "$u" ]] \
   && [[ $(jq .memory.rules "$(rec mp)/summary.json") == 1 && $(jq -r .memory.rules_pr "$(rec mp)/summary.json") == "$ru" ]] \
   && grep -xF "| Memory | 2 applied · 1 rules · 0 dropped · 0 proposals · PR $u · rules PR $ru |" "$T/mp-report.out" > /dev/null \
-  && [[ -s $(rec mp)/memory-ops.json ]] && jq -e "(.rules | map(.n)) == [1] and (.ruleFiles == [\"CLAUDE.md\"])" "$(rec mp)/memory-result.json" > /dev/null'
+  && [[ -s $(rec mp)/memory-ops.json ]] && jq -e "(.rules | map(.n)) == [1] and (.ruleFiles == [\"CLAUDE.md\"]) and (has(\"ruleTexts\") | not)" "$(rec mp)/memory-result.json" > /dev/null'
 
 # mp's continue: the open memory PR's head is the base; A's and B's are already there, C's is the one new line
 STUB_CURATOR_OPS=continue STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue mp --foreground > "$T/mp2.out" 2>&1
@@ -172,7 +172,20 @@ check "memory rules PR: a rules branch with a commit the driver would not write 
   'p=$(mpr mq) && grep -q "^done" "$(st mq)/ended" && [[ $(hlog mq | grep -c " · memory rules PR: none (harness-rules/mq has a commit the driver would not write, ${mq0:0:12} \"memory: mq: 1 rules\" (hack.sh); delete the branch to curate again)$") == 1 ]] \
   && [[ -n $mq0 && $(git -C "$O" rev-parse harness-rules/mq) == "$mq0" ]] && [[ -z $(rpr mq) ]] && ! grep "^gh pr create .*--head harness-rules/mq " "$T/gh-mq.log" > /dev/null \
   && [[ $(git -C "$O" log --oneline main..harness-memory/mq | wc -l) == 1 && $(hlog mq | grep -c " · memory PR opened; left for Michael (MEMORY_POLICY=pr) · $(url "$p")$") == 1 ]] \
-  && grep -xF "Rules of this run: none" "$p.body" > /dev/null && jq -e ".rules_pr == null and .rules == 1" "$(st mq)/memory.json" > /dev/null'
+  && grep -xF "Rules of this run: none" "$p.body" > /dev/null && jq -e ".rules_pr == null and .rules == 0 and .dropped == 1" "$(st mq)/memory.json" > /dev/null \
+  && [[ $(hlog mq | grep -c " · memory: dropped add ## Code rules (the rules half stopped; its note says why)$") == 1 ]]'
+
+# mx: main gains five Code rules lines under mx's open rules PR (another PR merged); the continue's new rule fits the
+# stale rules tip but the merge would take CLAUDE.md past the cap (24 lines): the union counts main's lines, the rule drops
+git -C "$O" update-ref refs/heads/main "$seed3"
+run mx STUB_FACTS=A,B,C STUB_PROPOSE=A STUB_CURATOR_OPS=three-ops
+w=$T/hand-mx; rm -rf "$w"; git clone -q "$O" "$w" && sed -i 's/^- bash, set -uo pipefail$/&\n- later rule 1\n- later rule 2\n- later rule 3\n- later rule 4\n- later rule 5/' "$w/CLAUDE.md" \
+  && git -C "$w" -c user.name=m -c user.email=m@test commit -qam "five more rules" && git -C "$w" push -q origin HEAD:main
+MEMLINT_LINES=24 STUB_CURATOR_OPS=drift STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue mx --foreground > "$T/mx2.out" 2>&1
+mv "$T/gh.log" "$T/gh-mx2.log" 2> /dev/null
+check "memory rules PR: a continue after main gained lines outside Gotchas drops the tier-2 add the merge would take past the cap" \
+  '[[ $(hlog mx | grep -c " · memory: dropped add ## Code rules (over the cap: CLAUDE.md: 25 lines, over 24)$") == 1 ]] \
+  && [[ $(git -C "$O" log --oneline main..harness-rules/mx | wc -l) == 1 && $(hlog mx | grep -c " · memory: 1 ops · 0 facts · 0 rules · 1 dropped · 0 proposals$") == 1 ]]'
 
 # mz: harness-memory/mz on origin with no PR, and this segment's one op a protected proposal: the PR still opens on it
 git -C "$O" update-ref refs/heads/main "$seed3"; mz0=$(hand mz)
@@ -227,6 +240,6 @@ check "memory PR: a project whose memory is .claude/CLAUDE.md alone gets its fac
   && ! git -C "$O" cat-file -e harness-memory/md:CLAUDE.md 2> /dev/null && [[ $(hlog md | grep -c " · memory: 2 ops · 2 facts · 0 rules · 0 dropped · 0 proposals$") == 1 ]]'
 check "memory PR: no run leaves a local harness-memory or harness-rules branch or a registered scratch worktree" \
   '! git -C "$T/proj" worktree list --porcelain | grep "/memory$" > /dev/null && [[ -z $(git -C "$T/proj" branch --list "harness-memory/*" "harness-rules/*") ]] \
-  && [[ $(git -C "$T/proj" worktree list --porcelain | grep -c "^worktree ") == 13 ]]'
+  && [[ $(git -C "$T/proj" worktree list --porcelain | grep -c "^worktree ") == 14 ]]'
 
 suite_end

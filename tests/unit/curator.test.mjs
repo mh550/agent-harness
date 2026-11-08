@@ -174,6 +174,8 @@ test("curator.mjs: an anchored add whose anchor a delete in the same list remove
   assert.equal(`${g.length} ${g.at(-1) === `- ${FACT}`} ${g.includes(`- ${G(3)}`)}`, "15 true false");
   const none = apply([op({ anchor: "no such gotcha (r0 2026-11-01)" })], T(md), ENTRIES, RUN);   // at the cap it still needs its anchor
   assert.equal(reasons(none), 'anchor "no such gotcha (r0 2026-11-01)" matches no line');
+  const typo = apply([op({ anchor: "no such gotcha (r0 2026-11-01)" })], T(gotchas(3)), ENTRIES, RUN);   // under the cap: no delete took it
+  assert.equal(`${typo.applied.length} ${reasons(typo)}`, '0 anchor "no such gotcha (r0 2026-11-01)" matches no line');
 });
 
 // memlint-self's "this checkout lints clean" for what the driver writes: the two line lints hold at the write too
@@ -343,6 +345,39 @@ test("curator.mjs: on a continue the union shadow is the rules tip with the fact
   assert.equal(`${one.applied.length} ${reasons(one)}`, "0 over the cap: CLAUDE.md: 121 lines, over 120");
   assert.equal(apply([op()], T(factsTip), ENTRIES, RUN).applied.length, 1, "without a rules tip of its own it fits");
   assert.equal(graft(null, factsTip), factsTip);
+});
+
+test("curator.mjs: a continue after main gained lines outside Gotchas counts them in the union shadow, from the CLI's rules merge-base and main", () => {
+  // the rules tip was cut from main0; main has since gained 5 Code rules lines (another PR merged): the merge takes them all
+  const main0 = ["# P", "", "## Code rules", "", "- bash only.", "", "## Gotchas", "", "- an earlier gotcha (r0 2026-11-01)", ""].join("\n");
+  const main1 = main0.replace("- bash only.", ["- bash only.", ...Array.from({ length: 5 }, (_, i) => `- a later rule ${i + 1}.`)].join("\n"));
+  const rulesTip = main0.replace("- bash only.", "- bash only.\n- an earlier rule.");
+  assert.equal(`${lineCount(main0)} ${lineCount(main1)} ${lineCount(rulesTip)}`, "9 14 10");
+  const rule = op({ section: "## Code rules", text: PROPOSAL, tier: 2 });
+  // the stale tip alone: 11 lines on the shadow, under 13; the merge would be 15 (main1 + 2 rules)
+  assert.equal(apply([rule], T(main1), ENTRIES, RUN, { ruleBase: T(rulesTip), maxLines: 13 }).rules.length, 1);
+  const r = apply([rule], T(main1), ENTRIES, RUN, { ruleBase: T(rulesTip), maxLines: 13, drift: { "CLAUDE.md": 5 } });
+  assert.equal(`${r.rules.length} ${reasons(r)}`, "0 over the cap: CLAUDE.md: 16 lines, over 13");
+  // a tier-1 add is capped on the same shadow
+  const f = apply([op()], T(main1), ENTRIES, RUN, { ruleBase: T(rulesTip), maxLines: 15, drift: { "CLAUDE.md": 5 } });
+  assert.equal(`${f.applied.length} ${reasons(f)}`, "0 over the cap: CLAUDE.md: 16 lines, over 15");
+  // an anchored tier-1 add that fits the facts text but not the union evicts its anchor rather than dropping
+  const ev = apply([op({ anchor: "an earlier gotcha (r0 2026-11-01)" })], T(main1), ENTRIES, RUN, { ruleBase: T(rulesTip), maxLines: 15, drift: { "CLAUDE.md": 5 } });
+  assert.equal(`${ev.applied.length} ${ev.applied[0]?.evicted} ${reasons(ev)}`, "1 - an earlier gotcha (r0 2026-11-01) ");
+  const d = mkdtempSync(join(tmpdir(), "curator-drift-"));
+  try {
+    const put = (dir, md) => { mkdirSync(join(d, dir)); writeFileSync(join(d, dir, "CLAUDE.md"), md); return join(d, dir); };
+    const w = put("w", main1), rb = put("rb", rulesTip), mb = put("mb", main0), mn = put("main", main1);
+    writeFileSync(join(d, "ops.json"), JSON.stringify([rule]));
+    writeFileSync(join(d, "entries.jsonl"), ENTRIES.map(e => JSON.stringify(e)).join("\n") + "\n");
+    const cli = (...x) => JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl"), rb, ...x], { env: { MEMLINT_LINES: "13" } }).out);
+    assert.equal(cli().rules.length, 1, "no merge-base given: no drift");
+    assert.equal(cli(mb, mn).dropped.map(x => x.reason).join(), "over the cap: CLAUDE.md: 16 lines, over 13");
+    // main moved only inside Gotchas (the facts PR merged): no drift
+    put("g", main0.replace("- an earlier gotcha (r0 2026-11-01)", "- an earlier gotcha (r0 2026-11-01)\n- a merged gotcha (r0 2026-11-02)"));
+    assert.equal(cli(mb, join(d, "g")).rules.length, 1);
+    assert.equal(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl"), rb, mb], { env: {} }).rc, 2, "a merge-base needs its main");
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
 test("curator.mjs: a rules write that would change a protected section's raw lines is dropped", () => {
