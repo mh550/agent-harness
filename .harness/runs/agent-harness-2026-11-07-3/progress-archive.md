@@ -9,6 +9,27 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 19:07 · A3-01 · passes
+
+Wrote docs/plans/2026-11-07-A3-request-inbox.md: requests.mjs's validation table with exact reason strings, result JSON, log line and CLI; harness requests' pass (flock, order, claim-then-run, argv calls, backup window, real-clock grace); the runner start seen through gc-tmux's tmux shim; both units (verified with systemd-analyze here); 29 checks named with tiers.
+
+- **Files:** docs/plans/2026-11-07-A3-request-inbox.md
+- **Verified:** fast tier green (check.sh --fast: cached, 1857 tests; the plan is outside the key). Drafted units passed systemd-analyze --user verify (exit 0; a bad ExecStart exits 1). The name lint loop flagged requests-inbox vs inbox; request-files clean. n8n-home 859b25a read for D25, buildRequest and renderResult.
+- **Tests:** 1857 → 1857
+- **Dead end:** tests/checks/requests-inbox.sh as the steps name it — suite-runner.sh's name lint fails it: inbox.sh's name is part of it
+- **Dead end:** DirectoryNotEmpty= on requests/ — done/, rejected/, requests.log, .lock keep it true: systemd restarts the service at once, 5 starts in 10 s fail the path unit (systemd.path(5))
+- **Discovery** (affects project): A check file name may not hold or sit inside another (suite-runner.sh namelint): requests-inbox.sh fails on inbox.sh (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects A3-02, A3-03, A3-05): n8n writes requests/<id>.json in one write, no rename (its D25); answer 1-<h> before continue 2-<h>; its card needs a string result id
+- **Discovery** (affects A3-03, A3-04, A3-05): The check file is tests/checks/request-files.sh (the plan's intro); runner start is seen via gc-tmux.sh's tmux shim with HARNESS_NO_RUNNER unset (plan 2.5)
+- **Discovery** (affects A3-03, A3-05): A duplicate id keeps the first done/<id>.json as it is and goes to rejected/ (plan 1.3), not A3-03 step 3 ok==false result
+- **Discovery** (affects A3-03, A3-04): systemd: a path unit restarts its service at once while the glob holds; 5 starts in 10 s fail it. One call waits out a young file (plan 2.4)
+- **Question for Michael:** A duplicate request id (default): moved to requests/rejected/, the first result left as it is, a refused log line; no second result. Keep, or write the duplicate's refusal somewhere n8n reads? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/docs/plans/2026-11-07-A3-request-inbox.md:101
+- **Question for Michael:** A rejected request's result has exit: null (default: no command ran; n8n's card shows refused first). Keep null, or an integer like 2? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/docs/plans/2026-11-07-A3-request-inbox.md:101
+- **Proposed change:** A3-03 steps 1-5 and A3-04 steps 1 and 4: tests/checks/requests-inbox.sh -> tests/checks/request-files.sh (the name lint, suite-runner.sh:207); step 5's command is bash tests/run.sh request-files queue-view
+- **Proposed change:** A3-03 step 3: the duplicate id ends in rejected/ with done/req-0001-aaaa.json unchanged (cmp), not a second ok==false result
+- **Proposed change:** A3-04 step 1: PathExistsGlob= only (DirectoryNotEmpty= loops on done/); A3-01 step 4's Environment=PATH= with node's directory is PATH without nvm, lib/requests.sh sourcing nvm.sh as lib/debrief.sh does
+- *09-A3-01 · claude-opus-5-5*
+
 ### 2026-11-07 18:55 · verify A2 · passes
 
 All 5 A2 features hold. Full suite 1857/1857, fast 1023/1023, context-bundle/event-run/queue-debrief/flakes-run green. Independent diff: origin/main's debrief --dry-run context equals the branch's but the appended ## Glossary. Glossary CLI on fixtures resolves D24 (2 files, newest first), N1-01, M8, D-H1; Q99 unresolved. dj checkout clean.
