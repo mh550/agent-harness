@@ -1,0 +1,95 @@
+- 2026-11-07 15:40 · test count: parsed (generic)
+- 2026-11-07 15:53 · feature list written: 0/14 passing
+- 2026-11-07 15:53 · lint: clean
+- 2026-11-07 15:53 · lane A1 opened (slot 0, port 7829, from 8e05980)
+- 2026-11-07 15:54 · context.md for A1-01: 3849 bytes
+- 2026-11-07 15:59 · A1-01: suite ran 0x (0 s) in the session
+- 2026-11-07 15:59 · A1-01 · claude-opus-5-5 · passes=true · 5 min · 1/14 passing · tests 1791
+- 2026-11-07 15:59 · context.md for A1-02: 4785 bytes
+- 2026-11-07 16:08 · A1-02: suite ran 1x (116 s) in the session
+- 2026-11-07 16:08 · A1-02 · claude-opus-5-5 · passes=true · 8 min · 2/14 passing · tests 1791
+- 2026-11-07 16:08 · context.md for A1-03: 6351 bytes
+- 2026-11-07 16:19 · A1-03: suite ran 1x (114 s) in the session
+- 2026-11-07 16:19 · A1-03: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-07 16:19 · A1-03 · claude-opus-5-5 · passes=true · 11 min · 3/14 passing · tests 1791
+- 2026-11-07 16:19 · verify A1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 16:30 · context.md for A1: 8967 bytes
+- 2026-11-07 16:40 · A1: checks +23 ~0 −0
+- 2026-11-07 16:40 · A1 verified and tagged run/agent-harness-2026-11-07-3/A1
+- 2026-11-07 16:40 · lane A2 opened (slot 1, port 7830, from 201d4a9)
+- 2026-11-07 16:40 · A1 merged into main · https://github.com/mh550/agent-harness/pull/129
+- 2026-11-07 16:40 · context.md for A2-01: 6385 bytes
+- 2026-11-07 16:40 · lane A1 closed (A1 merged)
+- 2026-11-07 16:40 · lane A1: branch harness-lane/agent-harness-2026-11-07-3/A1 deleted (merged)
+- 2026-11-07 16:54 · A2-01: suite ran 0x (0 s) in the session
+- 2026-11-07 16:54 · A2-01: 2 question(s) for Michael recorded (harness needs)
+- 2026-11-07 16:54 · A2-01 · claude-opus-5-5 · passes=true · 13 min · 4/14 passing · tests 1814
+- 2026-11-07 16:54 · context.md for A2-02: 6217 bytes
+- 2026-11-07 17:06 · A2-02: suite ran 2x (230 s) in the session
+- 2026-11-07 17:06 · A2-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-07 17:06 · A2-02 · claude-opus-5-5 · passes=true · 12 min · 5/14 passing · tests 1814
+- 2026-11-07 17:07 · context.md for A2-03: 6508 bytes
+- 2026-11-07 17:33 · A2-03: suite ran 2x (348 s) in the session
+- 2026-11-07 17:33 · A2-03 · claude-opus-5-5 · passes=true · 26 min · 6/14 passing · tests 1814
+- 2026-11-07 17:33 · context.md for A2-04: 7961 bytes
+- 2026-11-07 18:05 · A2-04: suite ran 1x (117 s) in the session
+- 2026-11-07 18:05 · A2-04: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-07 18:05 · A2-04 · claude-opus-5-5 · passes=true · 31 min · 7/14 passing · tests 1814
+- 2026-11-07 18:05 · review A2-05: 2042 changed lines, at or over 0; opus
+- 2026-11-07 18:05 · context.md for A2-05: 7997 bytes
+- 2026-11-07 18:38 · A2-05: suite ran 2x (838 s) in the session
+- 2026-11-07 18:38 · A2-05 · claude-opus-5-5 · passes=true · 32 min · 8/14 passing · tests 1857
+- 2026-11-07 18:38 · merged main into harness-lane/agent-harness-2026-11-07-3/A2
+- 2026-11-07 18:38 · verify A2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 18:49 · context.md for A2: 15008 bytes
+- 2026-11-07 18:55 · A2: checks +43 ~0 −0
+- 2026-11-07 18:55 · A2 verified and tagged run/agent-harness-2026-11-07-3/A2
+- 2026-11-07 18:55 · lane A3 opened (slot 0, port 7829, from 565414f, slot reused)
+- 2026-11-07 18:55 · context.md for A3-01: 8074 bytes, 3 items left out
+- 2026-11-07 18:55 · A2 merged into main · https://github.com/mh550/agent-harness/pull/133
+- 2026-11-07 18:55 · lane A2 closed (A2 merged)
+- 2026-11-07 18:55 · lane A2: branch harness-lane/agent-harness-2026-11-07-3/A2 deleted (merged)
+- 2026-11-07 19:07 · A3-01: suite ran 0x (0 s) in the session
+- 2026-11-07 19:07 · A3-01: 2 question(s) for Michael recorded (harness needs)
+- 2026-11-07 19:07 · A3-01 · claude-opus-5-5 · passes=true · 11 min · 9/14 passing · tests 1857
+- 2026-11-07 19:07 · context.md for A3-02: 6815 bytes, 4 items left out
+- 2026-11-07 19:13 · A3-02: suite ran 1x (117 s) in the session
+- 2026-11-07 19:13 · A3-02 · claude-opus-5-5 · passes=true · 5 min · 10/14 passing · tests 1857
+- 2026-11-07 19:13 · context.md for A3-03: 8067 bytes, 4 items left out
+- 2026-11-07 19:23 · A3-03: suite ran 2x (260 s) in the session
+- 2026-11-07 19:23 · A3-03 · claude-opus-5-5 · passes=true · 10 min · 11/14 passing · tests 1857
+- 2026-11-07 19:23 · context.md for A3-04: 7727 bytes, 6 items left out
+- 2026-11-07 19:29 · A3-04: suite ran 1x (119 s) in the session
+- 2026-11-07 19:29 · A3-04 · claude-opus-5-5 · passes=true · 5 min · 12/14 passing · tests 1857
+- 2026-11-07 19:29 · review A3-05: 1275 changed lines, at or over 0; opus
+- 2026-11-07 19:29 · context.md for A3-05: 8033 bytes, 6 items left out
+- 2026-11-07 19:57 · A3-05: suite ran 1x (724 s) in the session
+- 2026-11-07 19:57 · A3-05 · claude-opus-5-5 · passes=true · 27 min · 13/14 passing · tests 1898
+- 2026-11-07 19:57 · merged main into harness-lane/agent-harness-2026-11-07-3/A3
+- 2026-11-07 19:57 · verify A3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 20:08 · context.md for A3: 12944 bytes
+- 2026-11-07 20:24 · A3: checks +41 ~0 −0
+- 2026-11-07 20:24 · A3 verified and tagged run/agent-harness-2026-11-07-3/A3
+- 2026-11-07 20:24 · lane A4 opened (slot 1, port 7830, from 2a81c4d, slot reused)
+- 2026-11-07 20:24 · context.md for A4-01: 7983 bytes, 8 items left out
+- 2026-11-07 20:24 · A3 merged into main · https://github.com/mh550/agent-harness/pull/136
+- 2026-11-07 20:24 · lane A3 closed (A3 merged)
+- 2026-11-07 20:24 · lane A3: branch harness-lane/agent-harness-2026-11-07-3/A3 deleted (merged)
+- 2026-11-07 20:28 · A4-01: suite ran 1x (119 s) in the session
+- 2026-11-07 20:28 · A4-01 · claude-sonnet-5-5 · passes=true · 3 min · 14/14 passing · tests 1898
+- 2026-11-07 20:28 · merged main into harness-lane/agent-harness-2026-11-07-3/A4
+- 2026-11-07 20:28 · verify A4: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 20:40 · context.md for A4: 9084 bytes
+- 2026-11-07 20:42 · verify A4: A4-01 failed the re-check, back in the queue (one more attempt)
+- 2026-11-07 20:42 · context.md for A4-01: 7925 bytes, 11 items left out
+- 2026-11-07 20:45 · A4-01: suite ran 1x (120 s) in the session
+- 2026-11-07 20:45 · A4-01 · claude-sonnet-5-5 · passes=false · 2 min · 13/14 passing · tests 1898
+- 2026-11-07 20:45 · lane A4 closed (given up (nothing left to try))
+- 2026-11-07 20:45 · no feature left to try: 13/14 passing
+- 2026-11-07 20:45 · run ended (no feature left to try): 13/14 passing · 20 sessions (20 real) · 14 features passed · $56.10 · 4.3 h · by kind: init 1 ($6.80), coding 15 ($42.46), verify 4 ($6.84) · by model: claude-fable-5-1 1 ($6.80), claude-opus-5-5 17 ($48.63), claude-sonnet-5-5 2 ($0.66)
+- 2026-11-07 20:56 · services stopped (no feature left to try)
+- 2026-11-07 20:56 · services stopped (no feature left to try)
+- 2026-11-07 20:58 · memory: 2 ops · 1 applied · 1 dropped · 0 proposals
+- 2026-11-07 20:58 · memory: dropped add ## How to verify (not stated by entries.jsonl:17)
+- 2026-11-07 20:58 · memory PR opened; left for Michael (MEMORY_POLICY=pr) · https://github.com/mh550/agent-harness/pull/137
+- 2026-11-07 20:58 · summary.json and report.md kept in the state dir (harness report reads them after gc)
