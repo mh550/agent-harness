@@ -58,3 +58,6 @@
 - 2026-11-07 19:13 · context.md for A3-03: 8067 bytes, 4 items left out
 - 2026-11-07 19:23 · A3-03: suite ran 2x (260 s) in the session
 - 2026-11-07 19:23 · A3-03 · claude-opus-5-5 · passes=true · 10 min · 11/14 passing · tests 1857
+- 2026-11-07 19:23 · context.md for A3-04: 7727 bytes, 6 items left out
+- 2026-11-07 19:29 · A3-04: suite ran 1x (119 s) in the session
+- 2026-11-07 19:29 · A3-04 · claude-opus-5-5 · passes=true · 5 min · 12/14 passing · tests 1857

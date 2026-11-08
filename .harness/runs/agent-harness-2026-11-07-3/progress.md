@@ -9,6 +9,18 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 19:29 · A3-04 · passes
+
+Shipped systemd/harness-requests.path (PathExistsGlob=%h/.local/state/harness/requests/*.json) and .service (oneshot, ExecStart the live bin/harness requests); 3 checks in request-files.sh (unit lines, systemd-analyze --user verify on copies pointed at this checkout, no XDG_CONFIG_HOME/systemd); decision 2026-10-22-request-inbox; README Steering paragraph with install; architecture §3/§4/§7.
+
+- **Files:** systemd/harness-requests.path, systemd/harness-requests.service, tests/checks/request-files.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-10-22-request-inbox.md, README.md, docs/architecture.md
+- **Verified:** Two unit checks FAIL before systemd/ existed (the install check passes by design: requests.sh never installed anything); then bash tests/run.sh request-files 15/15; by hand systemd-analyze --user verify exits 0 on the units and 1 with ExecStart=/nonexistent (Command … is not executable), XDG_CONFIG_HOME untouched; check.sh --fast green in 119 s, 1056 tests.
+- **Tests:** 1053 → 1056
+- **Discovery** (affects A4): The README's request-inbox paragraph is a Steering bullet after Notifications ('Answers from the phone card'); A4's live checklist can link it rather than repeat the install
+- **Discovery** (affects A3-05, A4): architecture.md now has Request inbox rows in §3 (lib/requests.sh, lib/requests.mjs), §4 and §7 (Request inbox, Backup window); A3-05 corrects them as built, A4 needn't add more
+- **Proposed change:** A3-04 step 1 and 4 name tests/checks/requests-inbox.sh; the file is tests/checks/request-files.sh (A3-01's name-lint fix), and `bash tests/run.sh requests-inbox` is `bash tests/run.sh request-files`
+- *12-A3-04 · claude-opus-5-5*
+
 ### 2026-11-07 19:23 · A3-03 · passes
 
 lib/requests.sh (harness requests): flock on requests/.lock, *.json oldest by mtime then name, each judged by requests.mjs validate, claimed into done/<id>.request.json, run as one argv call (answer; queue add --continue [--brief] then queue start outside 03:15–04:30), result written to a temp name and renamed, one log line; rest to rejected/. bin/harness dispatch and header.
