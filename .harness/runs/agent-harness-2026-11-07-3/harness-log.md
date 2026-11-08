@@ -65,3 +65,6 @@
 - 2026-11-07 19:29 · context.md for A3-05: 8033 bytes, 6 items left out
 - 2026-11-07 19:57 · A3-05: suite ran 1x (724 s) in the session
 - 2026-11-07 19:57 · A3-05 · claude-opus-5-5 · passes=true · 27 min · 13/14 passing · tests 1898
+- 2026-11-07 19:57 · merged main into harness-lane/agent-harness-2026-11-07-3/A3
+- 2026-11-07 19:57 · verify A3: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 20:08 · context.md for A3: 12944 bytes

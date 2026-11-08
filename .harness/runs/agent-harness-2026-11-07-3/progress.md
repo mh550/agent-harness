@@ -9,6 +9,42 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 20:24 · verify A3 · passes
+
+A3-01..05 hold. Full suite 1898/1898 (710 s), fast 1064/1064, unit 538/538. Re-ran every step by hand in a throwaway state: verbatim answer, continue+runner via tmux shim, 03:30 refusal, 6 rejections, grace, lock, unit PATH without nvm, systemd-analyze. Reverting C1's fix turns its check red. Plan-recorded deviations accepted: request-files.sh name, duplicate keeps first result, unit PATH, --out.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| A3-01 | 1 | read docs/plans/2026-11-07-A3-request-inbox.md | §1 A3-02 (requests.mjs, unit tier), §2 A3-03 (requests.sh, bin/harness, request-files.sh # tier: fast), §3 A3-04 (units, decision, README, architecture, checks in the same fast file); each names files and checks first | yes |
+| A3-01 | 2 | compared plan §1.1/§1.3/§1.4 with spec §A3 and Contracts | 11-rule table matches spec (v==1, id ^[A-Za-z0-9-]{8,64}$ + not in done, verb, run ^[A-Za-z0-9._-]+$ + state_of, text 1-4000, brief <=2000, NUL, 10 s grace) each with an exact reason string; result's ten keys in contract order, output 2000 bytes; log line fields without text | yes |
+| A3-01 | 3 | read plan §2.1-2.5 | flock requests/.lock, find ... sort mtime then name, umask 077 mkdir (700), argv calls for answer/continue/queue start, 03:15-04:30 refusal, temp name + rename, claim to done/<id>.request.json or rejected/; runner start seen by unsetting HARNESS_NO_RUNNER with gc-tmux's tmux shim, asserting runner_started and the 'queue runner started' line | yes |
+| A3-01 | 4 | read plan §3.1, §3.2, §3.4 | path unit PathExistsGlob=…/requests/*.json, Unit=, WantedBy=default.target; service Type=oneshot, absolute ExecStart; both install commands; systemd-analyze check with skip note. Environment=PATH holds no node dir: plan's recorded default (requests.sh sources nvm.sh); I confirmed node is found under that PATH | yes |
+| A3-01 | 5 | read plan §1.7, §2.7, §3.2 and the defaults | checks named for verbatim answer, continue+runner, 03:30, each rejection incl ../x, 4001, v 2, duplicate, young file, log without text, units verified; defaults no third verb, no batching, live-run continue. File is tests/checks/request-files.sh not requests-inbox.sh: the name lint (suite-runner.sh, decisions/2026-11-05-suite-shape) forbids inbox being part of a name; plan intro says so | yes |
+| A3-01 | 6 | bash tests/run.sh --tier fast | 1064/1064 checks passed | yes |
+| A3-02 | 1 | node --test --test-isolation=none --test-name-pattern requests.mjs tests/unit/requests.test.mjs; read assertions; grep both check-name fixtures | 22/22 pass; asserts ok answer/continue with and without brief, each named rejection with its reason (v 2, 7-char id, id with /, done duplicate, merge, ../x with x in runs, nosuch, empty, 4001, 2001 brief, NUL), wait at 5 s/rejected at 11 s, window 03:15:00/04:29:59 true 03:14:59/04:30:00 false, ten keys joined in order, 2000-byte cut on é, logLine without rm -rf; all 22 names in both fixtures, LC_ALL=C sort -c ok. Red phase not re-observable | yes |
+| A3-02 | 2 | head -3 lib/requests.mjs; grep ^export; node --check; node lib/requests.mjs validate <file> --runs parked,stopped --done <d> --now <epoch> --out <d> | usage header; exports validateRequest, inBackupWindow, resultJson, logLine (+resultName); node --check ok; labelled lines verdict/name/id/verb/run/window; text written byte for byte to --out (the plan's added required flag; without it rc 2 usage); requests.sh has no jq/JSON parsing | yes |
+| A3-02 | 3 | node --test --test-isolation=none tests/unit/*.test.mjs; bash tests/run.sh unit-tier | 538 pass 0 fail; 539/539 checks passed | yes |
+| A3-02 | 4 | bash tests/run.sh --tier fast; bash tests/run.sh | 1064/1064; full 1898/1898 checks passed | yes |
+| A3-03 | 1 | own script (tests/lib.sh suite_setup+status_stubs): the step's exact request JSON in requests/, harness requests | cmp of jq -r .text with proj/parked/inbox.md identical; done/req-0001-aaaa.json ok true exit 0 verb answer; request in done/req-0001-aaaa.request.json; one log line 'id=req-0001-aaaa verb=answer run=parked ok exit=0', grep -c 'rm -rf' 0; requests/ made by harness is 700 (a pre-existing 775 dir keeps its mode: recorded default). Check request-files.sh asserts the same | yes |
+| A3-03 | 2 | continue request for stopped with brief, PATH=tmux shim, HARNESS_NO_RUNNER= ; then HARNESS_NOW+12600 (03:30 UTC) | queue/0002-continue-stopped.args decodes continue\|stopped\|--queued\|--requested\|--brief\|Do the brief thing.; runner_started true, refused null, output has 'queue runner started (tmux h-queue)', shim logged new-session -d -s h-queue; at 03:30 entry queued, no tmux calls, no h-queue session, refused 'backup window 03:15–04:30: queued, runner not started' | yes |
+| A3-03 | 3 | six bad requests in one pass; half-written {"v":1, 2 s old then HARNESS_NOW+10; flock holder 2 s + two concurrent calls | 5 in rejected/ with done/<id>.json ok false exit null and the reason; inbox md5s unchanged; duplicate in rejected/, first result cmp-identical (plan §1.3 default: no second result over the first, spec 'ignored: idempotent'); half file left, no result, then rejected with not-JSON reason; both lock calls rc 0 after ~1.8 s, one result, one log line, text once | yes |
+| A3-03 | 4 | grep -c 'eval\\|bash -c' lib/requests.sh; bash -n lib/requests.sh bin/harness; read requests.sh and bin/harness | 0; bash -n ok; set -uo pipefail and header; bin/harness:906 dispatch, header lines 62-66; "$H" answer "$run" "$text"; result to done/.<n>.json.tmp then mv -f | yes |
+| A3-03 | 5 | bash tests/run.sh requests-inbox queue-view; bash tests/run.sh request-files queue-view | literal name matches only queue-view (13/13); with the file's real name 31/31 checks passed; all 18 request-files names in both fixtures | yes |
+| A3-03 | 6 | bash tests/run.sh --tier fast; bash tests/run.sh | 1064/1064; 1898/1898 | yes |
+| A3-04 | 1 | read systemd/*; copied both with ExecStart=$PWD/bin/harness, XDG_CONFIG_HOME=<tmp> systemd-analyze --user verify; read request-files.sh checks | PathExistsGlob=%h/.local/state/harness/requests/*.json, Unit=harness-requests.service, WantedBy=default.target, Type=oneshot, ExecStart=…/bin/harness requests; systemd-analyze rc 0, no output; check copies to $T/units, asserts rc 0 and no error line, prints 'skipped: no systemd-analyze' otherwise | yes |
+| A3-04 | 2 | XDG_CONFIG_HOME=$T/cfg harness requests (own script) and the check | rc 0, $T/cfg does not exist afterwards; check 'harness requests installs nothing…' asserts ! -e $T/cfg/systemd | yes |
+| A3-04 | 3 | read journal/decisions/2026-10-22-request-inbox.md, README ## Steering, docs/architecture.md | title, provenance, finding/choice/rejected; dir+mode, verbs, validation, result/log, backup window, path unit not runner, defaults marked *default*; rejected GitHub API INBOX, queue runner, third verb; README paragraph with both systemctl commands and done/<id>.json; architecture §3 rows 65-66, §4 row 164, §7 rows 428-429 | yes |
+| A3-04 | 4 | bash tests/run.sh requests-inbox; bash tests/run.sh request-files | literal: 'no check file matches: requests-inbox' (renamed by the plan for the name lint); request-files 18/18 checks passed | yes |
+| A3-04 | 5 | bash tests/run.sh --tier fast | 1064/1064 checks passed | yes |
+| A3-05 | 1 | read docs/plans/2026-11-07-A3-review.md | one Opus round on the diff command as written; answers the four questions (argv, paths, at most once, grace) with file/function refs; 1 Critical, 3 Important, 8 Minor each with where and what was done; a second round not run (allowed: 'a second only if' bounds rounds), reason given | yes |
+| A3-05 | 2 | reverted C1's queue.mjs write line in bin/harness to printf, bash tests/run.sh request-files, restored (cmp identical); read I1/I2/I3 tests; bash -n, node --check | FAIL 'a continue that replaces a queued entry keeps a multi-line brief one argument' (17/18), green after restore; I1 unit test option-word brief, I2 check systemd-run --user --scope stub, I3 check unreadable/FIFO/dir rejected, all passing; bash -n and node --check ok | yes |
+| A3-05 | 3 | read decision file, architecture §3/§4/§7 and command list, README Steering | decision complete with *default* marks and §A4's rejected list; architecture bin/harness row lists requests, request inbox rows; README has both install commands and the card's four texts | yes |
+| A3-05 | 4 | bash tests/run.sh (background, 1,800,000 ms timeout) | 1898/1898 checks passed, wall 709.8 s, exit 0 (my C1 mutation overlapped it for ~10 s; still all green, and the harness's init full run on this tree was green 1898) | yes |
+
+- **Discovery** (affects run): Step texts naming tests/checks/requests-inbox.sh and `bash tests/run.sh requests-inbox` match no file: the check file is tests/checks/request-files.sh (the name lint). A3-03 step 3's 'duplicate gets ok==false result' is by design not written: the first result stands (plan §1.3, A3-01's open question).
+- **Proposed change:** A verify session that mutates code to prove a check catches a bug should not do it while its background full suite runs: run the mutation after the full run ends.
+- *200859-verify-A3 · claude-opus-5-5*
+
 ### 2026-11-07 19:57 · A3-05 · passes
 
 A3 review: 1 Critical, 3 Important, 8 Minor. Fixed C1 (queue add --continue rewrote a queued entry raw, so a brief's lines became continue options), I1 (brief that is one option word refused), I2 (runner via systemd-run --scope under the unit), I3 (unreadable/non-regular *.json rejected), M1, M2, M5. Review file, decision, architecture, README.
@@ -265,21 +301,7 @@ notify takes kind=/feature=; with EVENT_URL set park/needs_michael/blocked/debri
 - **Proposed change:** A1-02's unit-test name says 'stays ""'; it is 'stays the empty string' (a quote in a node:test name breaks the name fixtures' extraction)
 - *02-A1-02 · claude-opus-5-5*
 
-### 2026-11-07 15:59 · A1-01 · passes
-
-Wrote docs/plans/2026-11-07-A1-event-hook.md: the v1 event keys and who fills each, the POST verbatim (-w '%{http_code}', no --fail/--retry/token), the two log lines, stub-curl's STUB_EVENT knob with fixtures from real curl 8.5.0 on loopback, every notify call mapped to its kind, 11 existing curl checks (all stay) and the 23 new check names with tiers.
-
-- **Files:** docs/plans/2026-11-07-A1-event-hook.md
-- **Verified:** fast tier green (check.sh --fast: cached for this code tree, 1791 tests; docs/plans is outside the key); plan's line refs re-read against main 8e05980; curl outputs captured from a node listener on 127.0.0.1:7829
-- **Tests:** 1791 → 1791
-- **Discovery** (affects A1-03): A park run ends 'waiting on Michael: B' (ehigh 1), so with EVENT_URL set it posts a park event AND a blocked run-end event: event-run's park check must count park events, not POSTs.
-- **Discovery** (affects A1-03): needs_notify already forwards a caller's kind=/feature= (both branches call notify "$msg" "$@" before the record's 5 fields): no change to lib/needs.sh in A1.
-- **Discovery** (affects A1-02): Real curl 8.5.0, -s -o /dev/null -w '%{http_code}': 500 → stdout 500 exit 0 no stderr; timeout → stdout 000, exit 28, 'curl: (28) Operation timed out after N milliseconds with 0 bytes received'.
-- **Discovery** (affects run): features.mjs repair compares the list as JSON, so a jq rewrite of feature_list.json that flips only passes is not an edit.
-- **Proposed change:** A1-03 step 1: 'posts exactly one event to EVENT_URL with kind == park' should read 'exactly one park event': the park run's end (waiting on Michael) also posts a blocked event.
-- **Proposed change:** A1-02 step 2 could add (j) NOTIFY_CMD not called on a 2xx and called on a refusal, and (k) an event node can't build falls back to ntfy (the ask gotcha): the plan names both.
-- *01-A1-01 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-11-07 15:59 · A1-01 · passes · Wrote docs/plans/2026-11-07-A1-event-hook.md: the v1 event keys and who fills each, the POST verbati… ([in full](progress-archive.md))
 - 2026-11-07 15:53 · init · passes · 14 features: A1 3 (plan, event builder + routed post, call sites with folded review), A2 5 (plan, li… ([in full](progress-archive.md))
