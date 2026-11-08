@@ -1,8 +1,0 @@
-[
-  {"op": "add", "file": "CLAUDE.md", "section": "## Gotchas",
-   "anchor": "A check file name may not hold or sit inside another (suite-runner.sh namelint): requests-inbox.sh fails on inbox.sh (agent-harness-2026-11-07-3 2026-11-07)",
-   "text": "A note given before the curator session is reverted by its restrict: note after ro_rescue, as curator() does (agent-harness-2026-11-08 2026-11-08)",
-   "tier": 1,
-   "why": "A silently reverted harness-log note is invisible until a check misses it; the namelint line it evicts fails loudly with its own message.",
-   "from": "entries.jsonl:4"}
-]
