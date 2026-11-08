@@ -80,7 +80,6 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - Anything the code, git or the suite can tell (test counts, file lists, constants) → nowhere.
 
 ## Gotchas
-<!-- At most 15 lines, one fact each, edited in place: replace a wrong or least useful line, never rewrite the section. -->
 - tests/lib.sh runs under `pipefail`: never pipe a multi-write producer (sed/awk/git show, a log over 4 KiB) into `grep -q`, `grep -m` or `head` in a check; the early exit SIGPIPEs the producer now and then (141). Use `grep X > /dev/null`.
 - check() evals its command in the check file's shell: an `exit` in it ends the whole file; fail with `false` or a flag (agent-harness-2026-10-28 2026-10-28)
 - A {{X}} above {{SECTIONS}} in a prompt template turns run-scopes-services-gc/park-desk/stop-records/queue-debrief's same-prefix checks red: put it under This session (agent-harness-2026-10-29-2 2026-10-29)
